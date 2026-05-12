@@ -1,0 +1,245 @@
+{
+  "_meta": {
+    "source": "PC Spell Lists.pdf, pages 1-5 (book pages 126-129)",
+    "captured_via": "computer-use screenshots in VS Code; visual transcription (PDF is image-only, no OCR tooling available)",
+    "captured_at": "2026-05-11",
+    "phase": "10B.1g.2",
+    "notes": [
+      "Italicization styling in the source PDF is NOT preserved here (it appears to indicate class-unique / novel spells, not a mechanical attribute).",
+      "Asterisks (*) on spell names indicate reversibility — captured on the catalog entry, NOT in this list.",
+      "Superscript flags (elm(fire), enc, tm, dth, ill, nec, dth) are ACKS arcane source/school markers from Player's Companion — captured on the catalog entry, NOT in this list.",
+      "Spell keys are lowercase snake_case derived from the PDF spell name (e.g. 'Cure Light Wounds' -> 'cure_light_wounds').",
+      "Multi-list spells (e.g. 'Alter Self' = Arcane 2 + Divine 3 (Witch)) appear in BOTH lists at their respective levels.",
+      "Divine ritual list (L6-L7) is shared across all divine classes per RAW; not class-specific.",
+      "Witch Traditions supplemental list is a sub-class addendum; treated as separate from the main witch list."
+    ],
+    "classes_covered_by_pdf": ["mage_via_arcane", "bladedancer", "cleric", "priestess", "shaman", "witch"],
+    "classes_NOT_in_pdf_use_existing_lists": {
+      "lightblessed_wonderworker": "arcane + divine_cleric (dual-list per Q2)",
+      "dwarven_craftpriest": "divine_cleric",
+      "warlock": "arcane (disabled from play)",
+      "elven_enchanter": "arcane",
+      "elven_spellsword": "arcane (in armor)",
+      "elven_courtier": "arcane (in armor)",
+      "elven_nightblade": "arcane (in armor)",
+      "darkblood_ruinguard": "arcane (in armor)"
+    }
+  },
+
+  "arcane": {
+    "1": [
+      "burning_hands", "charm_person", "chameleon", "choking_grip", "detect_magic",
+      "floating_disc", "hold_portal", "jump", "light", "magic_missile",
+      "magic_mouth", "magic_rope", "protection_from_evil", "read_languages",
+      "sharpness", "shield", "silent_step", "sleep", "slipperiness",
+      "spider_climb", "summon_berserkers", "unseen_servant", "ventriloquism",
+      "wall_of_smoke"
+    ],
+    "2": [
+      "alter_self", "continual_light", "deathless_minion", "detect_evil",
+      "detect_invisible", "esp", "glitterdust", "gust_of_wind", "hypnotic_pattern",
+      "inaudibility", "invisibility", "knock", "levitate", "locate_object",
+      "mirror_image", "necromantic_potence", "ogre_power", "phantasmal_force",
+      "stinking_cloud", "summon_hero", "uncanny_gyration", "web", "wizard_lock"
+    ],
+    "3": [
+      "clairvoyance", "clairaudience", "chimerical_force", "command_person",
+      "dismember", "dispel_magic", "earths_teeth", "enervate", "fireball",
+      "fly", "gaseous_form", "growth", "haste", "hold_person", "infravision",
+      "invisibility_10_radius", "lightning_bolt", "nondetection",
+      "protection_from_evil_sustained", "protection_from_normal_missiles",
+      "skinchange", "summon_winged_steed", "telepathy", "water_breathing"
+    ],
+    "4": [
+      "charm_monster", "command_plant", "confusion", "conjure_ooze", "dimension_door",
+      "fear", "find_treasure", "giant_strength", "growth_of_plants",
+      "hallucinatory_terrain", "magic_carpet", "massmorph",
+      "minor_globe_of_invulnerability", "polymorph_other", "polymorph_self",
+      "remove_curse", "scry", "spectral_force", "spell_storing",
+      "summon_fantastic_creature", "wall_of_fire", "wall_of_ice", "wall_of_wood",
+      "wizard_eye"
+    ],
+    "5": [
+      "animate_dead", "adaptation", "cloudkill", "cone_of_cold", "cone_of_paralysis",
+      "conjure_elemental", "contact_other_plane", "control_undead", "curse_of_swine",
+      "enchanted_container", "feeblemind", "hold_monster", "magic_jar",
+      "mass_infravision", "panic", "passwall", "phantasmal_killer",
+      "protection_from_normal_weapons", "scouring_wind", "telekinesis", "teleport",
+      "transform_rock_to_mud", "wall_of_stone", "x_ray_vision"
+    ],
+    "6": [
+      "anti_magic_shell", "control_plants", "control_weather", "death_spell",
+      "detect_ritual_magic", "disintegrate", "enslave", "flesh_to_stone", "geas",
+      "globe_of_invulnerability", "invisible_stalker", "lower_water", "move_earth",
+      "oblivion", "permanent_illusion", "programmed_illusion", "projected_image",
+      "reincarnate", "summon_djinni", "torpor", "trollblood", "wall_of_corpses",
+      "wall_of_force", "wall_of_iron"
+    ]
+  },
+
+  "arcane_ritual": {
+    "7": ["cancellation", "energy_drain", "phase_door", "spell_turning"],
+    "8": ["opposition", "permanency", "summon_efreeti", "temporal_stasis"],
+    "9": ["life_trapping", "plague", "undead_legion", "wish"]
+  },
+
+  "divine_cleric": {
+    "1": [
+      "command_word", "cure_light_wounds", "detect_evil", "detect_magic", "light",
+      "protection_from_evil", "purify_food_and_water", "remove_fear", "resist_cold",
+      "sanctuary"
+    ],
+    "2": [
+      "augury", "bless", "delay_poison", "find_traps", "hold_person", "resist_fire",
+      "righteous_wrath", "silence_15_radius", "speak_with_animals", "spiritual_weapon"
+    ],
+    "3": [
+      "continual_light", "cure_blindness", "cure_disease", "feign_death",
+      "glyph_of_warding", "growth_of_animals", "locate_object", "remove_curse",
+      "speak_with_dead", "striking"
+    ],
+    "4": [
+      "create_water", "cure_serious_wounds", "dispel_magic", "divination",
+      "neutralize_poison", "protection_from_evil_sustained", "smite_undead",
+      "speak_with_plants", "sticks_to_snakes", "tongues"
+    ],
+    "5": [
+      "atonement", "commune", "create_food", "dispel_evil", "flame_strike",
+      "insect_plague", "quest", "restore_life_and_limb", "strength_of_mind",
+      "true_seeing"
+    ]
+  },
+
+  "divine_bladedancer": {
+    "1": [
+      "angelic_choir", "cure_light_wounds", "detect_evil", "detect_magic",
+      "faerie_fire", "fellowship", "light", "protection_from_evil", "remove_fear",
+      "resist_cold"
+    ],
+    "2": [
+      "bless", "charm_animal", "enthrall", "hold_person", "holy_chant", "resist_fire",
+      "shimmer", "speak_with_animals", "spiritual_weapon", "swift_sword"
+    ],
+    "3": [
+      "continual_light", "cure_disease", "glyph_of_warding", "growth_of_animals",
+      "invulnerability_to_evil", "prayer", "remove_curse", "speak_with_dead",
+      "striking", "winged_flight"
+    ],
+    "4": [
+      "create_water", "cure_serious_wounds", "dispel_magic", "divination",
+      "neutralize_poison", "protection_from_evil_sustained", "smite_undead",
+      "speak_with_plants", "vigor", "tongues"
+    ],
+    "5": [
+      "atonement", "commune", "create_food", "dispel_evil", "flame_strike",
+      "insect_plague", "quest", "restore_life_and_limb", "sword_of_fire",
+      "true_seeing"
+    ]
+  },
+
+  "divine_priestess": {
+    "1": [
+      "angelic_choir", "command_word", "cure_light_wounds", "delay_disease",
+      "detect_danger", "detect_evil", "detect_magic", "fellowship", "light",
+      "protection_from_evil", "purify_food_and_water", "remove_fear",
+      "resist_cold", "sanctuary", "salving_rest"
+    ],
+    "2": [
+      "augury", "bless", "charm_animal", "cure_moderate_wounds", "delay_poison",
+      "detect_charm", "divine_grace", "enthrall", "hold_person", "holy_chant",
+      "resist_fire", "silence_15_radius", "shimmer", "snake_charm",
+      "speak_with_animals"
+    ],
+    "3": [
+      "continual_light", "cure_blindness", "cure_disease", "cure_major_wounds",
+      "detect_curse", "feign_death", "glyph_of_warding", "growth_of_animals",
+      "locate_object", "prayer", "protection_from_normal_missiles", "remove_curse",
+      "speak_with_dead", "sphere_of_visibility", "water_walking"
+    ],
+    "4": [
+      "control_undead", "create_water", "cure_serious_wounds", "death_ward",
+      "dispel_magic", "divination", "fate", "neutralize_poison",
+      "protection_from_evil_sustained", "smite_undead", "speak_with_plants",
+      "spirit_of_healing", "sticks_to_snakes", "tongues", "vigor"
+    ],
+    "5": [
+      "atonement", "commune", "command_person", "cure_critical_wounds",
+      "create_food", "dispel_evil", "fear", "insect_plague", "lower_water",
+      "protection_from_normal_weapons", "quest", "restore_life_and_limb", "scry",
+      "strength_of_mind", "true_seeing"
+    ]
+  },
+
+  "divine_shaman": {
+    "1": [
+      "command_word", "cure_light_wounds", "faerie_fire", "locate_animal_or_plant",
+      "pass_without_trace", "predict_weather", "purify_food_and_water", "remove_fear",
+      "resist_cold", "trance"
+    ],
+    "2": [
+      "bless", "charm_animal", "delay_poison", "holy_chant", "obscuring_cloud",
+      "produce_fire", "resist_fire", "snake_charm", "speak_with_animals", "warp_wood"
+    ],
+    "3": [
+      "call_lightning", "cure_blindness", "cure_disease", "detect_curse",
+      "eyes_of_the_eagle", "growth_of_animals", "striking", "water_breathing",
+      "water_walking", "winged_flight"
+    ],
+    "4": [
+      "command_animals", "create_water", "cure_serious_wounds", "dispel_magic",
+      "divination", "fate", "neutralize_poison", "skinchange", "sticks_to_snakes",
+      "summon_animals"
+    ],
+    "5": [
+      "call_dragon", "control_animals", "control_winds", "create_food",
+      "finger_of_death", "insect_plague", "quest", "reincarnation", "sword_of_fire",
+      "summon_weather"
+    ]
+  },
+
+  "divine_witch": {
+    "1": [
+      "cause_fear", "command_word", "cure_light_wounds", "delay_disease",
+      "detect_magic", "faerie_fire", "light", "locate_animal_or_plant",
+      "predict_weather", "protection_from_evil", "purify_food_and_water",
+      "read_languages", "resist_cold", "salving_rest", "trance"
+    ],
+    "2": [
+      "augury", "bane", "charm_animal", "chameleon", "choking_grip", "detect_charm",
+      "enthrall", "locate_object", "hold_person", "magic_mouth", "resist_fire",
+      "speak_with_animals", "sleep", "ventriloquism", "unseen_servant"
+    ],
+    "3": [
+      "alter_self", "cause_disease", "charm_person", "continual_light",
+      "cure_major_wounds", "detect_curse", "detect_invisible", "esp",
+      "growth_of_animals", "invisibility", "levitate", "mirror_image",
+      "phantasmal_force", "remove_curse", "speak_with_dead"
+    ],
+    "4": [
+      "clairaudience", "clairvoyance", "chimerical_force", "dispel_magic",
+      "divination", "fate", "fly", "infravision", "neutralize_poison",
+      "nondetection", "protection_from_evil_sustained", "telepathy", "tongues",
+      "speak_with_plants", "water_breathing"
+    ],
+    "5": [
+      "charm_monster", "command_person", "commune", "dispel_evil", "fear",
+      "growth_of_plants", "magic_carpet", "polymorph_self", "polymorph_other",
+      "quest", "scry", "spectral_force", "strength_of_mind", "summon_weather",
+      "true_seeing"
+    ]
+  },
+
+  "divine_ritual": {
+    "_doc": "Shared across all divine casters per RAW. Researchable at L11+ per acore-campaign-general-and-magic-research.xml §ritual_spells L253-255.",
+    "6": ["forbiddance", "harvest", "longevity", "regeneration"],
+    "7": ["cataclysm", "energy_drain", "miracle", "resurrection"]
+  },
+
+  "witch_traditions_supplemental": {
+    "_doc": "Optional sub-class flavor additions for Witch traditions. Not in the base witch list; available per Judge / tradition choice.",
+    "1": ["detect_poison", "detect_undead"],
+    "2": ["delay_poison", "holy_chant", "obscuring_cloud", "silent_step", "spiritual_weapon"],
+    "3": ["cure_disease", "glitterdust", "necromantic_potence", "prayer"],
+    "4": ["animate_dead", "cure_serious_wounds", "smite_undead", "summon_animals"]
+  }
+}

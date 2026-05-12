@@ -1,0 +1,143 @@
+{
+  "_meta": {
+    "category": "magical",
+    "source": "rules/ax_campaign_play.xml §magical L732-793 + rules/acore-campaign-general-and-magic-research.xml §researching_spells L64-110",
+    "schema_version": 1,
+    "phase": "10B.1b",
+    "notes": "Per Q15-Q25 [RESOLVED 2026-05-11]. 10B.1a shipped schema + UI shell; 10B.1b ships the four spell-research handlers (research_magic for spell targets, rewrite_spell, replace_spell, scribe_spell). research_magic for magic_item / construct / monster targets is deferred to 10B.1c/e/f. manage_assistant is included as a registered no-op trivial restricted (its supervise-assistants effect is consumed by 10B.1c item-creation handlers). Per Q21 [RESOLVED 2026-05-11], all four spell-research activities require physical presence at the library used to launch the project; location_kind='at_library' + location_ref='library:<id>' enforces this via the executor's existing absence-accumulator semantics. Full location-resolver wiring lands in 10B.1h polish. Per Q17, the v1 research_magic spell-target picker is restricted to existing spells from acore/pc catalogs — no custom-spell builder."
+  },
+  "activities": [
+    {
+      "id": "research_magic",
+      "category": "magical",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "research_magic_duration",
+      "default_ticks_required": 14,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_library",
+      "prerequisites": ["arcane_caster", "level_5_plus", "library_or_workshop_supports_target_level"],
+      "param_schema": {
+        "project_kind": "spell | magic_item | construct | monster (10B.1b: spell; 10B.1c: magic_item; 10B.1e: construct; 10B.1f: monster)",
+        "target_spell_key": "String (for project_kind=spell: registry key for the spell being researched)",
+        "target_spell_level": "int (1-9; for project_kind=spell)",
+        "library_id": "String (FK to libraries(id); for spell research becomes location_ref; for construct: optional design-step library)",
+        "item_name": "String (for project_kind=magic_item: name of the crafted item)",
+        "item_category": "weapon | armor | shield | scroll | potion | wand | rod | staff | ring | wondrous",
+        "effect_kind": "one_use | charged | permanent_unlimited | permanent_per_turn | permanent_per_3_turns | permanent_per_hour | permanent_3_per_day | permanent_per_day | permanent_per_week | weapon_plus_1 | weapon_plus_2 | weapon_plus_3 | armor_plus_1 | armor_plus_2 | armor_plus_3",
+        "primary_spell_key": "String (for magic_item: imbued spell — must be in character_spell_formulas)",
+        "primary_spell_level": "int (for magic_item: spell level being enchanted)",
+        "charges": "int (for effect_kind=charged: number of charges)",
+        "magical_bonus": "int (for weapon/armor enchantments: 1-3)",
+        "base_item_key": "String (for weapon/armor: FK to data/equipment/base_equipment.json item_key)",
+        "precious_materials_gp": "int (optional, +1 throw per 10,000 gp, cap = base_cost)",
+        "special_components_xp": "int (optional, monster XP value used as components, in addition to base cost)",
+        "workshop_id": "String (for magic_item / construct: FK to workshops(id), becomes location_ref as workshop:<id>)",
+        "gp_committed": "int (debited at launch; for spell=1,000gp×level, for magic_item=full base + precious materials, for construct=2,000gp×HD + 5,000gp×special_abilities)",
+        "name": "String (for project_kind=construct: the new construct's name)",
+        "hit_dice": "int (for construct: 1+ and <= 2× caster level per RAW L388)",
+        "attacks_per_round": "int (for construct: 1-4 per RAW L410)",
+        "max_damage_per_round": "int (for construct: <= 3×HD per RAW L411)",
+        "damage_expression": "String (for construct: dice expression like '1d8')",
+        "special_abilities": "Array[String] (for construct: each name = 1 special ability; standard immunity package counts as one per RAW L408)",
+        "armor_class": "int (for construct: optional; defaults to floor(HD/2) per RAW L407)",
+        "location_kind": "stronghold | with_owner | wilderness_hex | dungeon_room | laboratory | other (for construct/crossbreed instance)",
+        "location_ref": "String (for construct/crossbreed: id of the location)",
+        "monster_action": "crossbreed (v1 only; future: scratch for monster-from-scratch per Q19)",
+        "progenitor_a_name": "String (for crossbreed: name of first progenitor — free-text in v1)",
+        "progenitor_b_name": "String (for crossbreed: name of second progenitor)",
+        "progenitor_a_hd": "int (for crossbreed: <= caster level per RAW L423)",
+        "progenitor_b_hd": "int (for crossbreed: <= caster level per RAW L423)",
+        "progenitor_a_alignment": "lawful | neutral | chaotic (used for crossbreed alignment derivation per RAW L430-432)",
+        "progenitor_b_alignment": "lawful | neutral | chaotic",
+        "morale": "int (for crossbreed: better of two progenitors per RAW L451)",
+        "movement_kind": "progenitor_a | progenitor_b | both (per RAW L434-436; 'both' counts as +1 ability)",
+        "additional_types": "Array[String] — Judge-discretion non-fantastic types (beastman | enchanted_creature | giant_humanoid | humanoid | ooze | vermin per RAW L459)",
+        "laboratory_id": "String (for crossbreed: FK to laboratories(id); required per RAW L471)",
+        "initial_reaction": "hostile | unfriendly | neutral | friendly | helpful (optional; v1 supplies Judge's reaction roll result per RAW L482; future polish: roll in handler)"
+      },
+      "effect_summary": "Unified magical-research backend with project_kind dispatch. For project_kind=spell: 14 days/level, 1k gp/level, throw vs level_table + (spell_level/2). For project_kind=magic_item: cost/time from RAW magic_item_creation_table (one_use 500gp×level/7days×level → permanent_unlimited 500gp×level×50/100days×level; weapon_plus_1 5,000gp/30days×base_cost/10; etc.). Formula previously-crafted same-template gives -50% cost+time + half-level target modifier. Workshop is required for magic_item (parallel to library for spell research). Success creates crafted_magic_items row + inventory_items row; failure loses gp+time.",
+      "raw_citation": "acore-campaign-general-and-magic-research.xml §researching_spells L64-110 + §creating_magic_items L112-248 + §formulas_and_samples L142-158 + §workshops L174-183 + §magic_item_creation_table L185-215 + ax_campaign_play.xml §research_magic L744-754"
+    },
+    {
+      "id": "manage_assistant",
+      "category": "magical",
+      "frequency": "restricted",
+      "activity_level": "trivial",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "restricted_period_rounds": 241920,
+      "location_kind": "at_workshop",
+      "prerequisites": ["spellcaster", "level_9_plus"],
+      "param_schema": {
+        "workshop_id": "String (FK to workshops(id))",
+        "assistant_character_ids": "Array[String] (optional; assistants being supervised this period)"
+      },
+      "effect_summary": "Per ax_campaign_play.xml §manage_assistant L733-742: a L9+ spellcaster may supervise 1 + INT bonus assistants. Each assistant performs one additional magic item creation task per work session under supervision. v1 10B.1c: handler validates eligibility and records the supervisor relationship; the actual parallel item-creation orchestration is a future polish item (waits on the full assistant entity model).",
+      "raw_citation": "ax_campaign_play.xml §manage_assistant L733-742 + acore-campaign-general-and-magic-research.xml §assistants L217-228"
+    },
+    {
+      "id": "rewrite_spell",
+      "category": "magical",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "rewrite_replace_spell_duration",
+      "default_ticks_required": 7,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_library",
+      "prerequisites": ["arcane_caster", "has_lost_spellbook"],
+      "param_schema": {
+        "target_spell_key": "String (spell to rewrite into the new spellbook)",
+        "target_spell_level": "int (1-9)",
+        "gp_committed": "int (1,000 gp per spell level, debited at launch)",
+        "library_id": "String (FK to libraries(id); recovered work happens at a library)"
+      },
+      "effect_summary": "Rewrite a single lost spell into a new spellbook per RAW §rewrite_spell L756-766. 7 days + 1,000 gp per spell level. No throw. On completion: re-add spell to character_spells (in repertoire) if missing; idempotent if already present.",
+      "raw_citation": "ax_campaign_play.xml §rewrite_spell L756-766"
+    },
+    {
+      "id": "replace_spell",
+      "category": "magical",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "rewrite_replace_spell_duration",
+      "default_ticks_required": 7,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_library",
+      "prerequisites": ["arcane_caster", "repertoire_full", "has_new_spell_formula"],
+      "param_schema": {
+        "old_spell_key": "String (repertoire entry to remove)",
+        "new_spell_key": "String (spell to swap in; must be in character_spell_formulas)",
+        "target_spell_level": "int (1-9; must equal level of both spells)",
+        "gp_committed": "int (1,000 gp per spell level)",
+        "library_id": "String"
+      },
+      "effect_summary": "Swap a repertoire entry per RAW §replace_spell L768-779. 7 days + 1,000 gp per spell level. No throw. Both spells must be at the same level; new spell must already be in character_spell_formulas. On completion: remove old from character_spells, add new to character_spells. Old formula is NOT lost — character_spell_formulas keeps the old entry.",
+      "raw_citation": "ax_campaign_play.xml §replace_spell L768-779"
+    },
+    {
+      "id": "scribe_spell",
+      "category": "magical",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 7,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_library",
+      "prerequisites": ["arcane_caster", "has_formula_source", "can_learn_spell_level"],
+      "param_schema": {
+        "target_spell_key": "String",
+        "target_spell_level": "int (1-9; caster must be able to learn spells of this level)",
+        "source_kind": "scroll | spellbook (scroll is consumed; spellbook is preserved per RAW)",
+        "source_ref": "String (inventory_items.id for scroll OR spellbook owner character_id)",
+        "library_id": "String"
+      },
+      "effect_summary": "Scribe a spell into the character's spellbook (character_spell_formulas) per RAW §scribe_spell L781-792. 7 days regardless of spell level. No gp cost in RAW (the scroll or formula access is the cost). On completion: add to character_spell_formulas (idempotent via UNIQUE constraint); if source_kind='scroll', delete the scroll inventory_items row. Scribing from another spellbook does NOT erase the original.",
+      "raw_citation": "ax_campaign_play.xml §scribe_spell L781-792 + ax_codex_and_scroll_magic.xml (scroll consumption rule)"
+    }
+  ]
+}

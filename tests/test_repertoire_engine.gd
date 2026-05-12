@@ -101,11 +101,15 @@ func test_starting_arcane_with_bonus() -> void:
 
 
 func test_starting_arcane_duplicates_reduce() -> void:
+	# Phase 10B.1g.2 (2026-05-11): index-1 spell updated from charm_person
+	# to burning_hands after PDF ingestion of the canonical arcane L1 list
+	# (PC Spell Lists.pdf book p.126). Order is now:
+	# burning_hands(1), charm_person(2), chameleon(3), choking_grip(4), ...
+	# Test logic unchanged: judge_selected matches the index-1 spell;
+	# both bonus rolls return the same index; the three should dedupe to 1.
 	var engine := _make_engine()
-	# Force both bonus rolls to index 1 (charm_person), but judge_selected = charm_person
-	# Result: charm_person already in set, both rolls are duplicates -> 1 spell total
 	GameState.dice_overrides["starting_spell"] = 1
-	var result := engine.generate_arcane_starting_repertoire("mage", 13, "charm_person")
+	var result := engine.generate_arcane_starting_repertoire("mage", 13, "burning_hands")
 	var spells: Array = result.get("spells", [])
 	# Duplicate rolls should NOT reroll per ACKS rules — character gets fewer spells
 	check(spells.size() == 1,

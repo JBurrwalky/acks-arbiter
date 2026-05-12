@@ -1,0 +1,6 @@
+{
+  "eval_id": 4,
+  "eval_name": "topical-prior-work",
+  "prompt": "I'm about to implement market price drift for the settlement economy. Has anything in this area been worked on before, and what are the relevant prior decisions?",
+  "assertions": []
+}

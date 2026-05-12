@@ -1,0 +1,40 @@
+{
+  "skill_name": "acks-build-log",
+  "evals": [
+    {
+      "id": 1,
+      "name": "session-start-recent-work",
+      "prompt": "I'm starting a new build session. What did I work on most recently, and what does the last session say I should do next?",
+      "expected_output": "Uses build_log_index.py --last to find the most recent session and --next-actions to surface the next-action notes from recent entries. Does NOT read the entire build_log.md file. Returns the date, title, and key content of the most recent session, plus any next-action notes. Total token cost should be a fraction of reading the full 21,000-line log.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "interface-lookup",
+      "prompt": "I'm about to add a new signal called combat_ended to the combat system. Has this signal already been defined? What's its payload shape?",
+      "expected_output": "Uses build_log_index.py --interface 'combat_ended' (or --search if interface doesn't find it). Returns the session(s) where this signal was defined or last modified, including the payload shape if recorded. Does NOT make up a payload shape from memory. If no prior definition exists, says so explicitly so the asker can define it fresh.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "outstanding-review-flags",
+      "prompt": "What outstanding items still need Opus review? I have some time to clear the backlog today.",
+      "expected_output": "Uses build_log_index.py --needs-review to find sessions containing [NEEDS-OPUS-REVIEW] flags. Returns a list with date, title, and the actual flagged lines with line numbers, so the user can read full context. Does NOT manually scan the file.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "topical-prior-work",
+      "prompt": "I'm about to implement market price drift for the settlement economy. Has anything in this area been worked on before, and what are the relevant prior decisions?",
+      "expected_output": "Uses build_log_index.py --for-task 'market price drift settlement economy' OR --search 'market price' to find relevant prior sessions. Returns the top 3-5 relevant sessions with dates and line ranges. Surfaces prior decisions on the topic (formula, drift trigger, demand-modifier inputs, etc.) without inventing rules.",
+      "files": []
+    }
+  ],
+  "_notes": [
+    "Eval 1 tests session-start retrieval — the most common use.",
+    "Eval 2 tests interface lookup — the prevention-of-naming-drift use case.",
+    "Eval 3 tests [NEEDS-OPUS-REVIEW] surfacing — outstanding-work-management.",
+    "Eval 4 tests --for-task — the 'don't know to look' value proposition.",
+    "All four tests should show the with-skill version using the script and the baseline either reading the whole file or grepping inefficiently."
+  ]
+}

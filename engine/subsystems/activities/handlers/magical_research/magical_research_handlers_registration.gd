@@ -22,16 +22,15 @@ extends RefCounted
 ## research_magic handler based on params.project_kind.
 
 
-static func register_all(_registry: ActivityHandlerRegistry) -> void:
-	# Phase 10B.1a: no handlers registered yet. The Magical Research block
-	# launcher cards in scenes/ui/notebook/domain/blocks/magical_research_block.gd
-	# render disabled in 10B.1a and become live as each subsequent wave attaches
-	# its handler here.
-	#
-	# Wave-by-wave additions will look like:
-	#   _registry.register("research_magic",    ResearchMagicHandler.on_complete)
-	#   _registry.register("rewrite_spell",     RewriteSpellHandler.on_complete)
-	#   _registry.register("replace_spell",     ReplaceSpellHandler.on_complete)
-	#   _registry.register("scribe_spell",      ScribeSpellHandler.on_complete)
-	#   _registry.register("manage_assistant",  ManageAssistantHandler.on_complete)
-	pass
+static func register_all(registry: ActivityHandlerRegistry) -> void:
+	# Phase 10B.1b: spell-side handlers wired. research_magic supports
+	# project_kind='spell' (10B.1b) AND project_kind='magic_item' (10B.1c).
+	# project_kind='construct' lands in 10B.1e; 'monster' in 10B.1f.
+	registry.register("research_magic", ResearchMagicHandler.on_complete)
+	registry.register("rewrite_spell",  RewriteSpellHandler.on_complete)
+	registry.register("replace_spell",  ReplaceSpellHandler.on_complete)
+	registry.register("scribe_spell",   ScribeSpellHandler.on_complete)
+	# Phase 10B.1c: L9+ supervise-N-assistants stub. The "+N parallel item
+	# creation tasks" effect is documented but the parallel orchestration is
+	# deferred to a future polish wave.
+	registry.register("manage_assistant", ManageAssistantHandler.on_complete)

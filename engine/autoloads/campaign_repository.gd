@@ -1103,8 +1103,27 @@ func create_domain(data: Dictionary) -> String:
 	return data["id"]
 
 
+## Domain reads attach an aggregated `urban_families` column computed from
+## settlement_entrances. Per Q-MERC-15 Option A [RESOLVED 2026-05-12], the
+## SoT for urban_families moved from `domains.urban_families` to
+## `settlement_entrances.urban_families` (migration 097, GDD §1.3).
+## Callers continue reading the field name `urban_families` from the
+## returned dict; the value is the SUM across all settlements with
+## `parent_domain_id = domain.id`.
+const _DOMAIN_READ_WITH_URBAN_AGGREGATE := """
+	SELECT d.*,
+		COALESCE((
+			SELECT SUM(urban_families)
+			FROM settlement_entrances
+			WHERE parent_domain_id = d.id
+		), 0) AS urban_families
+	FROM domains d
+"""
+
+
 func get_domain(id: String) -> Dictionary:
-	if not db.query_with_bindings("SELECT * FROM domains WHERE id = ?", [id]) \
+	if not db.query_with_bindings(
+			_DOMAIN_READ_WITH_URBAN_AGGREGATE + " WHERE d.id = ?", [id]) \
 			or db.query_result.is_empty():
 		push_error("CampaignRepository.get_domain: not found. id=%s" % id)
 		return {}
@@ -1113,18 +1132,78 @@ func get_domain(id: String) -> Dictionary:
 
 func list_campaign_domains(campaign_id: String) -> Array:
 	db.query_with_bindings(
-		"SELECT * FROM domains WHERE campaign_id = ? ORDER BY created_at",
+		_DOMAIN_READ_WITH_URBAN_AGGREGATE + " WHERE d.campaign_id = ? ORDER BY d.created_at",
 		[campaign_id]
 	)
 	return db.query_result.duplicate()
+
+
+## Canonical write path for a domain's urban_families count. Per Q-MERC-15
+## Option A, urban_families lives on settlement_entrances; this method writes
+## to the first settlement_entrance for the given domain, creating a
+## placeholder settlement if none exists.
+##
+## The placeholder uses the domain's location/campaign fields and a "Chief
+## Settlement" suffix on the name. Setting-generation, when it lands, will
+## either reuse this placeholder or replace it with a proper settlement.
+func set_domain_urban_families(domain_id: String, urban_families: int) -> bool:
+	if domain_id.is_empty():
+		return false
+	# Find first existing settlement_entrance for this domain.
+	if not db.query_with_bindings("""
+		SELECT id FROM settlement_entrances
+		WHERE parent_domain_id = ?
+		ORDER BY id ASC LIMIT 1
+	""", [domain_id]):
+		push_error("CampaignRepository.set_domain_urban_families: query failed. domain_id=%s" % domain_id)
+		return false
+	if not db.query_result.is_empty():
+		var settlement_id: String = str(db.query_result[0]["id"])
+		if not db.query_with_bindings(
+				"UPDATE settlement_entrances SET urban_families = ? WHERE id = ?",
+				[urban_families, settlement_id]):
+			push_error("CampaignRepository.set_domain_urban_families: UPDATE failed. settlement_id=%s" % settlement_id)
+			return false
+		return true
+	# No settlement exists for this domain. Create a placeholder using the
+	# domain's location/campaign as the seed. This path is exercised by
+	# test fixtures that create domains without an explicit settlement.
+	if not db.query_with_bindings(
+			"SELECT campaign_id, location_map_id, location_hex_q, location_hex_r, name FROM domains WHERE id = ?",
+			[domain_id]):
+		push_error("CampaignRepository.set_domain_urban_families: domain query failed. id=%s" % domain_id)
+		return false
+	if db.query_result.is_empty():
+		push_error("CampaignRepository.set_domain_urban_families: domain not found. id=%s" % domain_id)
+		return false
+	var domain_row: Dictionary = db.query_result[0]
+	var settlement_id: String = generate_id()
+	var map_id: String = str(domain_row.get("location_map_id", "") if domain_row.get("location_map_id") != null else "")
+	var hex_q: int = int(domain_row.get("location_hex_q", 0) if domain_row.get("location_hex_q") != null else 0)
+	var hex_r: int = int(domain_row.get("location_hex_r", 0) if domain_row.get("location_hex_r") != null else 0)
+	var name: String = "%s (Chief Settlement)" % str(domain_row.get("name", "Domain"))
+	if not db.query_with_bindings("""
+		INSERT INTO settlement_entrances
+			(id, campaign_id, map_id, hex_q, hex_r, name,
+			 parent_domain_id, urban_families)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [settlement_id, str(domain_row.get("campaign_id", "")), map_id, hex_q, hex_r,
+		  name, domain_id, urban_families]):
+		push_error("CampaignRepository.set_domain_urban_families: INSERT failed. domain_id=%s" % domain_id)
+		return false
+	return true
 
 
 # ---------------------------------------------------------------------------
 # Domain monthly state (Domain Phase 0)
 # ---------------------------------------------------------------------------
 
+## urban_families intentionally absent — per Q-MERC-15 Option A, SoT moved to
+## settlement_entrances. update_domain_monthly_state below intercepts callers
+## that still pass urban_families and routes them through
+## set_domain_urban_families for back-compat.
 const _DOMAIN_MONTHLY_FIELDS := [
-	"morale", "peasant_families", "urban_families",
+	"morale", "peasant_families",
 	"treasury_gp", "revenue_gp", "expenses_gp", "net_income_gp",
 	"domain_xp_this_month", "classification_progress_families",
 	"territory_type", "realm_title",
@@ -1151,17 +1230,30 @@ const _DOMAIN_SETTINGS_FIELDS := [
 
 ## Update a whitelisted set of monthly-tick fields on a single domain.
 ## Replaces the inline UPDATE that used to live in `domain_handlers._save_domain`.
+##
+## Back-compat shim: callers may pass `urban_families` in the fields dict.
+## The value is intercepted and routed through set_domain_urban_families
+## (writing to settlement_entrances). Per Q-MERC-15 Option A.
 func update_domain_monthly_state(domain_id: String, fields: Dictionary) -> bool:
 	if domain_id.is_empty():
 		return false
+	var working_fields: Dictionary = fields.duplicate()
+	if working_fields.has("urban_families"):
+		var uf_value: int = int(working_fields["urban_families"])
+		working_fields.erase("urban_families")
+		set_domain_urban_families(domain_id, uf_value)
+		# Continue with the remaining domain-fields update path. If the only
+		# field was urban_families, we return after the redirect.
+		if working_fields.is_empty():
+			return true
 	var set_clauses: Array[String] = []
 	var values: Array = []
-	for key in fields:
+	for key in working_fields:
 		if not _DOMAIN_MONTHLY_FIELDS.has(key):
 			push_error("CampaignRepository.update_domain_monthly_state: rejected non-whitelisted field '%s'" % key)
 			continue
 		set_clauses.append("%s = ?" % key)
-		values.append(fields[key])
+		values.append(working_fields[key])
 	if set_clauses.is_empty():
 		return false
 	set_clauses.append("updated_at = datetime('now')")
@@ -6377,3 +6469,600 @@ func promote_follower_to_henchman(follower_id: String) -> String:
 			+ "follower update failed; new_char_id=%s, follower_id=%s" % [new_char_id, follower_id]
 		)
 	return new_char_id
+
+
+# ---------------------------------------------------------------------------
+# Magic item enchanting (Domain Phase 10B.1c) — migration 094
+# ---------------------------------------------------------------------------
+#
+# Public API:
+#   crafted_magic_items: create / get / list_for_creator /
+#                        list_formulas_known_by /
+#                        update_charges (for charged items)
+#
+# Per Jedidiah constraint 2026-05-11: crafted items live ONLY in this table,
+# NOT in the static data/equipment/*.json catalog. ShopInventoryGenerator
+# reads from EquipmentCatalog (JSON) so crafted items NEVER appear in shops.
+# inventory_items rows for crafted instances use item_key='crafted:<id>' to
+# back-link here.
+
+
+func create_crafted_magic_item(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO crafted_magic_items
+			(id, campaign_id, creator_character_id, name, item_category,
+			 base_item_key, effect_kind,
+			 primary_spell_key, primary_spell_level, spell_keys_json,
+			 charges_max, charges_remaining, magical_bonus,
+			 weapon_damage, armor_ac_bonus, encumbrance_units,
+			 gp_cost_base, gp_cost_precious_materials, special_components_xp,
+			 days_to_create, used_formula, workshop_id, notes,
+			 created_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("creator_character_id", "")),
+		String(data.get("name", "Crafted Magic Item")),
+		String(data.get("item_category", "wondrous")),
+		String(data.get("base_item_key", "")),
+		String(data.get("effect_kind", "one_use")),
+		String(data.get("primary_spell_key", "")),
+		int(data.get("primary_spell_level", 0)),
+		String(data.get("spell_keys_json", "[]")),
+		data.get("charges_max", null),
+		data.get("charges_remaining", null),
+		int(data.get("magical_bonus", 0)),
+		String(data.get("weapon_damage", "")),
+		int(data.get("armor_ac_bonus", 0)),
+		int(data.get("encumbrance_units", 100)),
+		int(data.get("gp_cost_base", 0)),
+		int(data.get("gp_cost_precious_materials", 0)),
+		int(data.get("special_components_xp", 0)),
+		int(data.get("days_to_create", 0)),
+		1 if bool(data.get("used_formula", false)) else 0,
+		data.get("workshop_id", null),
+		String(data.get("notes", "")),
+		int(data.get("created_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_crafted_magic_item: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_crafted_magic_item(item_id: String) -> Dictionary:
+	if item_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM crafted_magic_items WHERE id = ? LIMIT 1", [item_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_crafted_magic_items_for_creator(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM crafted_magic_items
+		WHERE creator_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns the set of crafted_magic_items rows that the given character has
+## the formula for. v1 simplification: a character "knows the formula" for
+## any item they personally crafted (creator_character_id = character_id).
+## Future: a separate character_item_formulas table can grant formulas
+## acquired from treasure or other sources.
+func list_known_item_formulas(character_id: String) -> Array:
+	return list_crafted_magic_items_for_creator(character_id)
+
+
+## Returns true if the character knows a formula matching the given template
+## signature (item_category + effect_kind + primary_spell_key). Used by the
+## enchanting handler to apply the -50% cost/time / +1/2-target-modifier
+## reduction per RAW §formulas_and_samples L155-156.
+func character_has_item_formula(
+	character_id: String,
+	item_category: String,
+	effect_kind: String,
+	primary_spell_key: String,
+) -> bool:
+	if character_id.is_empty():
+		return false
+	if not db.query_with_bindings("""
+		SELECT id FROM crafted_magic_items
+		WHERE creator_character_id = ?
+		  AND item_category = ?
+		  AND effect_kind = ?
+		  AND primary_spell_key = ?
+		LIMIT 1
+	""", [character_id, item_category, effect_kind, primary_spell_key]):
+		return false
+	return not db.query_result.is_empty()
+
+
+func update_crafted_magic_item_charges(item_id: String, charges_remaining: int) -> bool:
+	if item_id.is_empty():
+		return false
+	return db.query_with_bindings("""
+		UPDATE crafted_magic_items
+		SET charges_remaining = ?, updated_at = datetime('now')
+		WHERE id = ?
+	""", [charges_remaining, item_id])
+
+
+# ---------------------------------------------------------------------------
+# Construct creation (Domain Phase 10B.1e) — migration 095
+# ---------------------------------------------------------------------------
+#
+# Public API:
+#   construct_designs:   create / get / list_for_creator / find_matching_design
+#   construct_instances: create / get / list_for_creator /
+#                        update_status (for damage / destruction)
+
+
+func create_construct_design(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO construct_designs
+			(id, campaign_id, creator_character_id, name,
+			 hit_dice, armor_class, attacks_per_round,
+			 max_damage_per_round, damage_expression, special_abilities_json,
+			 gp_cost_total, days_to_design,
+			 library_id, designed_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("creator_character_id", "")),
+		String(data.get("name", "Construct")),
+		int(data.get("hit_dice", 1)),
+		int(data.get("armor_class", 0)),
+		int(data.get("attacks_per_round", 1)),
+		int(data.get("max_damage_per_round", 1)),
+		String(data.get("damage_expression", "1d6")),
+		String(data.get("special_abilities_json", "[]")),
+		int(data.get("gp_cost_total", 0)),
+		int(data.get("days_to_design", 0)),
+		data.get("library_id", null),
+		int(data.get("designed_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_construct_design: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_construct_design(design_id: String) -> Dictionary:
+	if design_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM construct_designs WHERE id = ? LIMIT 1", [design_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_construct_designs_for_creator(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM construct_designs
+		WHERE creator_character_id = ?
+		ORDER BY designed_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns a construct_designs row matching the given (creator, name,
+## hit_dice, attacks_per_round, max_damage_per_round, special_abilities_json)
+## signature, or empty dict if none. Used by the handler to dedupe — if the
+## caster has previously designed this exact construct, the create-only flow
+## reuses the design rather than re-paying the design cost.
+func find_matching_construct_design(
+	character_id: String,
+	name: String,
+	hit_dice: int,
+	attacks_per_round: int,
+	max_damage_per_round: int,
+	special_abilities_json: String,
+) -> Dictionary:
+	if character_id.is_empty():
+		return {}
+	if not db.query_with_bindings("""
+		SELECT * FROM construct_designs
+		WHERE creator_character_id = ?
+		  AND name = ?
+		  AND hit_dice = ?
+		  AND attacks_per_round = ?
+		  AND max_damage_per_round = ?
+		  AND special_abilities_json = ?
+		LIMIT 1
+	""", [
+		character_id, name, hit_dice,
+		attacks_per_round, max_damage_per_round, special_abilities_json,
+	]):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func create_construct_instance(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO construct_instances
+			(id, campaign_id, design_id, creator_character_id,
+			 owner_character_id, name, hp_max, hp_current,
+			 location_kind, location_ref, workshop_id,
+			 gp_cost_total, days_to_create, status,
+			 created_calendar_day, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("design_id", "")),
+		String(data.get("creator_character_id", "")),
+		data.get("owner_character_id", null),
+		String(data.get("name", "Construct")),
+		int(data.get("hp_max", 1)),
+		int(data.get("hp_current", int(data.get("hp_max", 1)))),
+		String(data.get("location_kind", "stronghold")),
+		String(data.get("location_ref", "")),
+		data.get("workshop_id", null),
+		int(data.get("gp_cost_total", 0)),
+		int(data.get("days_to_create", 0)),
+		String(data.get("status", "active")),
+		int(data.get("created_calendar_day", 0)),
+		String(data.get("notes", "")),
+	]):
+		push_error("CampaignRepository.create_construct_instance: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_construct_instance(instance_id: String) -> Dictionary:
+	if instance_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM construct_instances WHERE id = ? LIMIT 1", [instance_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_construct_instances_for_creator(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM construct_instances
+		WHERE creator_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_construct_instance_status(
+	instance_id: String,
+	new_status: String,
+	destroyed_calendar_day: int = -1,
+) -> bool:
+	if instance_id.is_empty():
+		return false
+	if destroyed_calendar_day > 0:
+		return db.query_with_bindings("""
+			UPDATE construct_instances
+			SET status = ?, destroyed_calendar_day = ?, updated_at = datetime('now')
+			WHERE id = ?
+		""", [new_status, destroyed_calendar_day, instance_id])
+	return db.query_with_bindings("""
+		UPDATE construct_instances
+		SET status = ?, updated_at = datetime('now')
+		WHERE id = ?
+	""", [new_status, instance_id])
+
+
+# ---------------------------------------------------------------------------
+# Cross-breeding (Domain Phase 10B.1f) — migration 096
+# ---------------------------------------------------------------------------
+#
+# Public API:
+#   laboratories:         create / get / list_for_owner / update
+#   crossbreed_species:   create / get / list_for_creator /
+#                         find_matching_species (dedupe)
+#   crossbreed_instances: create / get / list_for_creator /
+#                         update_status
+
+
+# laboratories ----------------------------------------------------------------
+
+func create_laboratory(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO laboratories
+			(id, campaign_id, owner_character_id, stronghold_id,
+			 structure_kind, gp_invested, max_crossbreed_cost_gp,
+			 magic_research_throw_bonus, status, created_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("owner_character_id", "")),
+		data.get("stronghold_id", null),
+		String(data.get("structure_kind", "crossbreeding_laboratory")),
+		int(data.get("gp_invested", 0)),
+		int(data.get("max_crossbreed_cost_gp", 0)),
+		int(data.get("magic_research_throw_bonus", 0)),
+		String(data.get("status", "operational")),
+		int(data.get("created_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_laboratory: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_laboratory(laboratory_id: String) -> Dictionary:
+	if laboratory_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM laboratories WHERE id = ? LIMIT 1", [laboratory_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_laboratories_for_owner(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM laboratories
+		WHERE owner_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_laboratory(laboratory_id: String, fields: Dictionary) -> bool:
+	if laboratory_id.is_empty():
+		return false
+	var allowed := {
+		"gp_invested": true,
+		"max_crossbreed_cost_gp": true,
+		"magic_research_throw_bonus": true,
+		"status": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_laboratory: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(laboratory_id)
+	var sql := "UPDATE laboratories SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+# crossbreed_species ----------------------------------------------------------
+
+func create_crossbreed_species(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO crossbreed_species
+			(id, campaign_id, creator_character_id, name,
+			 progenitor_a_name, progenitor_b_name,
+			 progenitor_a_hd, progenitor_b_hd,
+			 progenitor_a_alignment, progenitor_b_alignment,
+			 hit_dice, armor_class,
+			 attacks_per_round, max_damage_per_round, damage_expression,
+			 morale, movement_kind,
+			 special_abilities_json, alignment, types_json,
+			 gp_cost_total, days_to_create,
+			 laboratory_id, designed_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("creator_character_id", "")),
+		String(data.get("name", "Crossbreed")),
+		String(data.get("progenitor_a_name", "")),
+		String(data.get("progenitor_b_name", "")),
+		int(data.get("progenitor_a_hd", 1)),
+		int(data.get("progenitor_b_hd", 1)),
+		String(data.get("progenitor_a_alignment", "neutral")),
+		String(data.get("progenitor_b_alignment", "neutral")),
+		int(data.get("hit_dice", 1)),
+		int(data.get("armor_class", 0)),
+		int(data.get("attacks_per_round", 1)),
+		int(data.get("max_damage_per_round", 1)),
+		String(data.get("damage_expression", "1d6")),
+		int(data.get("morale", 0)),
+		String(data.get("movement_kind", "progenitor_a")),
+		String(data.get("special_abilities_json", "[]")),
+		String(data.get("alignment", "neutral")),
+		String(data.get("types_json", "[\"fantastic\"]")),
+		int(data.get("gp_cost_total", 0)),
+		int(data.get("days_to_create", 0)),
+		data.get("laboratory_id", null),
+		int(data.get("designed_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_crossbreed_species: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_crossbreed_species(species_id: String) -> Dictionary:
+	if species_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM crossbreed_species WHERE id = ? LIMIT 1", [species_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_crossbreed_species_for_creator(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM crossbreed_species
+		WHERE creator_character_id = ?
+		ORDER BY designed_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Dedupe lookup: returns a matching species row if the caster has already
+## designed this exact crossbreed signature; else empty dict. Used by the
+## handler so repeat creates of the same crossbreed reuse the species row.
+## Match key: (creator, name, progenitor_a_name, progenitor_b_name,
+##             hit_dice, attacks_per_round, max_damage_per_round,
+##             special_abilities_json).
+func find_matching_crossbreed_species(
+	character_id: String,
+	name: String,
+	progenitor_a_name: String,
+	progenitor_b_name: String,
+	hit_dice: int,
+	attacks_per_round: int,
+	max_damage_per_round: int,
+	special_abilities_json: String,
+) -> Dictionary:
+	if character_id.is_empty():
+		return {}
+	if not db.query_with_bindings("""
+		SELECT * FROM crossbreed_species
+		WHERE creator_character_id = ?
+		  AND name = ?
+		  AND progenitor_a_name = ?
+		  AND progenitor_b_name = ?
+		  AND hit_dice = ?
+		  AND attacks_per_round = ?
+		  AND max_damage_per_round = ?
+		  AND special_abilities_json = ?
+		LIMIT 1
+	""", [
+		character_id, name,
+		progenitor_a_name, progenitor_b_name,
+		hit_dice, attacks_per_round, max_damage_per_round,
+		special_abilities_json,
+	]):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+# crossbreed_instances --------------------------------------------------------
+
+func create_crossbreed_instance(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO crossbreed_instances
+			(id, campaign_id, species_id, creator_character_id,
+			 owner_character_id, name, hp_max, hp_current,
+			 location_kind, location_ref, laboratory_id,
+			 initial_reaction, status,
+			 gp_cost_total, days_to_create,
+			 created_calendar_day, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("species_id", "")),
+		String(data.get("creator_character_id", "")),
+		data.get("owner_character_id", null),
+		String(data.get("name", "Crossbreed")),
+		int(data.get("hp_max", 1)),
+		int(data.get("hp_current", int(data.get("hp_max", 1)))),
+		String(data.get("location_kind", "stronghold")),
+		String(data.get("location_ref", "")),
+		data.get("laboratory_id", null),
+		data.get("initial_reaction", null),
+		String(data.get("status", "alive")),
+		int(data.get("gp_cost_total", 0)),
+		int(data.get("days_to_create", 0)),
+		int(data.get("created_calendar_day", 0)),
+		String(data.get("notes", "")),
+	]):
+		push_error("CampaignRepository.create_crossbreed_instance: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_crossbreed_instance(instance_id: String) -> Dictionary:
+	if instance_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM crossbreed_instances WHERE id = ? LIMIT 1", [instance_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_crossbreed_instances_for_creator(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM crossbreed_instances
+		WHERE creator_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_crossbreed_instance_status(
+	instance_id: String,
+	new_status: String,
+	killed_calendar_day: int = -1,
+) -> bool:
+	if instance_id.is_empty():
+		return false
+	if killed_calendar_day > 0:
+		return db.query_with_bindings("""
+			UPDATE crossbreed_instances
+			SET status = ?, killed_calendar_day = ?, updated_at = datetime('now')
+			WHERE id = ?
+		""", [new_status, killed_calendar_day, instance_id])
+	return db.query_with_bindings("""
+		UPDATE crossbreed_instances
+		SET status = ?, updated_at = datetime('now')
+		WHERE id = ?
+	""", [new_status, instance_id])

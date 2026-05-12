@@ -312,6 +312,22 @@ extends Node
 @onready var _phase_10a3_tests = $Phase10A3Tests
 # Phase 10B.1a — Magical Research block (schema + repo + shell)
 @onready var _phase_10b1a_tests = $Phase10B1aTests
+# Phase 10B.1b — Magical Research spell-side handlers
+@onready var _phase_10b1b_tests = $Phase10B1bTests
+# Phase 10B.1c — Magic item enchanting + manage_assistant
+@onready var _phase_10b1c_tests = $Phase10B1cTests
+# Phase 10B.1d — Sanctum apprentices + aspirants
+@onready var _phase_10b1d_tests = $Phase10B1dTests
+# Phase 10B.1e — Construct creation
+@onready var _phase_10b1e_tests = $Phase10B1eTests
+# Phase 10B.1f — Cross-breeding
+@onready var _phase_10b1f_tests = $Phase10B1fTests
+# Phase 10B.1g — Lightblessed dual-list + dungeon-under-tower hook
+@onready var _phase_10b1g_tests = $Phase10B1gTests
+# Phase 10B.1h — Magical Research UI polish (picker + launchers + laboratories)
+@onready var _phase_10b1h_tests = $Phase10B1hTests
+# Phase 10B-prereq mercantile / Prereq.1 — MerchandiseRegistry
+@onready var _merchandise_registry_tests = $MerchandiseRegistryTests
 
 
 func _ready() -> void:
@@ -602,7 +618,23 @@ func run() -> void:
 			# Phase 10A.3 — Bardic Patronage + proficiency-gated training
 			_phase_10a3_tests,
 			# Phase 10B.1a — Magical Research block (schema + repo + shell)
-			_phase_10b1a_tests]:
+			_phase_10b1a_tests,
+			# Phase 10B.1b — Magical Research spell-side handlers
+			_phase_10b1b_tests,
+			# Phase 10B.1c — Magic item enchanting
+			_phase_10b1c_tests,
+			# Phase 10B.1d — Sanctum apprentices + aspirants
+			_phase_10b1d_tests,
+			# Phase 10B.1e — Construct creation
+			_phase_10b1e_tests,
+			# Phase 10B.1f — Cross-breeding
+			_phase_10b1f_tests,
+			# Phase 10B.1g — Lightblessed dual-list + dungeon hook
+			_phase_10b1g_tests,
+			# Phase 10B.1h — Magical Research UI polish
+			_phase_10b1h_tests,
+			# Phase 10B-prereq mercantile / Prereq.1 — MerchandiseRegistry
+			_merchandise_registry_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

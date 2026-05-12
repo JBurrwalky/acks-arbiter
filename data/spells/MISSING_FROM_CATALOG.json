@@ -1,0 +1,218 @@
+{
+  "bane": [
+    {
+      "tradition": "divine",
+      "level": 2,
+      "restricted_to": [
+        "witch"
+      ]
+    }
+  ],
+  "cancellation": [
+    {
+      "tradition": "arcane",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "cataclysm": [
+    {
+      "tradition": "divine",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "cause_disease": [
+    {
+      "tradition": "divine",
+      "level": 3,
+      "restricted_to": [
+        "witch"
+      ]
+    }
+  ],
+  "cause_fear": [
+    {
+      "tradition": "divine",
+      "level": 1,
+      "restricted_to": [
+        "witch"
+      ]
+    }
+  ],
+  "command_plant": [
+    {
+      "tradition": "arcane",
+      "level": 4,
+      "restricted_to": []
+    }
+  ],
+  "conjure_ooze": [
+    {
+      "tradition": "arcane",
+      "level": 4,
+      "restricted_to": []
+    }
+  ],
+  "control_winds": [
+    {
+      "tradition": "divine",
+      "level": 5,
+      "restricted_to": [
+        "shaman"
+      ]
+    }
+  ],
+  "energy_drain": [
+    {
+      "tradition": "arcane",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    },
+    {
+      "tradition": "divine",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "finger_of_death": [
+    {
+      "tradition": "divine",
+      "level": 5,
+      "restricted_to": [
+        "shaman"
+      ]
+    }
+  ],
+  "harvest": [
+    {
+      "tradition": "divine",
+      "level": 6,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "life_trapping": [
+    {
+      "tradition": "arcane",
+      "level": 9,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "miracle": [
+    {
+      "tradition": "divine",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "opposition": [
+    {
+      "tradition": "arcane",
+      "level": 8,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "permanency": [
+    {
+      "tradition": "arcane",
+      "level": 8,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "phase_door": [
+    {
+      "tradition": "arcane",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "plague": [
+    {
+      "tradition": "arcane",
+      "level": 9,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "reincarnation": [
+    {
+      "tradition": "divine",
+      "level": 5,
+      "restricted_to": [
+        "shaman"
+      ]
+    }
+  ],
+  "resurrection": [
+    {
+      "tradition": "divine",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "sharpness": [
+    {
+      "tradition": "arcane",
+      "level": 1,
+      "restricted_to": []
+    }
+  ],
+  "spell_turning": [
+    {
+      "tradition": "arcane",
+      "level": 7,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "summon_efreeti": [
+    {
+      "tradition": "arcane",
+      "level": 8,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "temporal_stasis": [
+    {
+      "tradition": "arcane",
+      "level": 8,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "transform_rock_to_mud": [
+    {
+      "tradition": "arcane",
+      "level": 5,
+      "restricted_to": []
+    }
+  ],
+  "undead_legion": [
+    {
+      "tradition": "arcane",
+      "level": 9,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ],
+  "wish": [
+    {
+      "tradition": "arcane",
+      "level": 9,
+      "restricted_to": [],
+      "is_ritual": true
+    }
+  ]
+}

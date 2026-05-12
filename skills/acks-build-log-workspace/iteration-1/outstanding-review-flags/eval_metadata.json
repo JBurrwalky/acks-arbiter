@@ -1,0 +1,6 @@
+{
+  "eval_id": 3,
+  "eval_name": "outstanding-review-flags",
+  "prompt": "What outstanding items still need Opus review? I have some time to clear the backlog today.",
+  "assertions": []
+}

@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "source": "rules/acore-campaign-hijinks.xml:915-947 (Common Merchandise table)",
+  "category": "common",
+  "entries": [
+    {
+      "merchandise_type": "grain_vegetables",
+      "display_name": "Grain, vegetables",
+      "roll_range": [1, 4],
+      "load_description": "20 bags",
+      "load_weight_stone": 80,
+      "base_price_gp": 10,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "fish_preserved",
+      "display_name": "Fish, preserved",
+      "roll_range": [5, 8],
+      "load_description": "10 barrels",
+      "load_weight_stone": 80,
+      "base_price_gp": 50,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "wood_common",
+      "display_name": "Wood, common",
+      "roll_range": [9, 12],
+      "load_description": "1 cord of logs",
+      "load_weight_stone": 80,
+      "base_price_gp": 50,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "animals",
+      "display_name": "Animals",
+      "roll_range": [13, 16],
+      "load_description": "Roll 1d6 on Animals",
+      "load_weight_stone": null,
+      "base_price_gp": null,
+      "precious": false,
+      "dispatcher": "animals_subtable",
+      "subroll": "1d6"
+    },
+    {
+      "merchandise_type": "salt",
+      "display_name": "Salt",
+      "roll_range": [17, 20],
+      "load_description": "150 bricks",
+      "load_weight_stone": 80,
+      "base_price_gp": 100,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "beer_ale",
+      "display_name": "Beer, ale",
+      "roll_range": [21, 25],
+      "load_description": "10 barrels",
+      "load_weight_stone": 80,
+      "base_price_gp": 100,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "oil_lamp",
+      "display_name": "Oil, lamp",
+      "roll_range": [26, 30],
+      "load_description": "5 jars",
+      "load_weight_stone": 30,
+      "base_price_gp": 100,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "textiles",
+      "display_name": "Textiles",
+      "roll_range": [31, 35],
+      "load_description": "4 bags",
+      "load_weight_stone": 20,
+      "base_price_gp": 100,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "hides_furs",
+      "display_name": "Hides, furs",
+      "roll_range": [36, 39],
+      "load_description": "10 bundles",
+      "load_weight_stone": 30,
+      "base_price_gp": 150,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "tea_coffee",
+      "display_name": "Tea or coffee",
+      "roll_range": [40, 43],
+      "load_description": "2 bags",
+      "load_weight_stone": 10,
+      "base_price_gp": 150,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "metals_common",
+      "display_name": "Metals, common",
+      "roll_range": [44, 47],
+      "load_description": "200 ingots",
+      "load_weight_stone": 100,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "meats_preserved",
+      "display_name": "Meats, preserved",
+      "roll_range": [48, 51],
+      "load_description": "10 barrels",
+      "load_weight_stone": 80,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "cloth",
+      "display_name": "Cloth",
+      "roll_range": [52, 54],
+      "load_description": "20 rolls",
+      "load_weight_stone": 80,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "wine_spirits",
+      "display_name": "Wine, spirits",
+      "roll_range": [55, 60],
+      "load_description": "1 barrel",
+      "load_weight_stone": 16,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "pottery",
+      "display_name": "Pottery",
+      "roll_range": [61, 63],
+      "load_description": "2 crates",
+      "load_weight_stone": 10,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "tools",
+      "display_name": "Tools",
+      "roll_range": [64, 68],
+      "load_description": "1 crate",
+      "load_weight_stone": 10,
+      "base_price_gp": 200,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "armor_weapons",
+      "display_name": "Armor, weapons",
+      "roll_range": [69, 73],
+      "load_description": "1 crate",
+      "load_weight_stone": 10,
+      "base_price_gp": 225,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "dye_pigments",
+      "display_name": "Dye & pigments",
+      "roll_range": [74, 75],
+      "load_description": "5 jars",
+      "load_weight_stone": 25,
+      "base_price_gp": 250,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "glassware",
+      "display_name": "Glassware",
+      "roll_range": [76, 80],
+      "load_description": "2 crates",
+      "load_weight_stone": 10,
+      "base_price_gp": 400,
+      "precious": false,
+      "dispatcher": null
+    },
+    {
+      "merchandise_type": "mounts",
+      "display_name": "Mounts",
+      "roll_range": [81, 85],
+      "load_description": "Roll 1d4+4 on Animals",
+      "load_weight_stone": null,
+      "base_price_gp": null,
+      "precious": false,
+      "dispatcher": "animals_subtable",
+      "subroll": "1d4+4"
+    }
+  ],
+  "precious_dispatch_range": [86, 100]
+}

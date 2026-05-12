@@ -112,8 +112,15 @@
           "flag_key": "has_anti_magic_shell",
           "metadata": {
             "radius_feet": 10,
-            "blocks_save_categories_for_spell_like_effects": ["spells", "staffs_wands"],
-            "does_not_block_save_categories": ["poison_death", "blast", "paralysis_petrification"],
+            "blocks_save_categories_for_spell_like_effects": [
+              "spells",
+              "staffs_wands"
+            ],
+            "does_not_block_save_categories": [
+              "poison_death",
+              "blast",
+              "paralysis_petrification"
+            ],
             "blocks_caster_own_spells": true,
             "self_and_touch_self_not_blocked": true,
             "dispels_ongoing_spell_effects_on_entry": true,
@@ -121,7 +128,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' radius, 12 turns; blocks spells AND spell-like effects entering OR leaving the shell — INCLUDING the caster's own. Spell-like effects = those resisted via save vs Spells or Staffs & Wands; NOT effects resisted via Poison/Breath/Paralysis/Petrification. Self-range + touch-self spells used by caster on himself are NOT blocked. Creature/item entering the shell with ongoing spell or spell-like effect → effect dispelled as if by dispel magic. Effects that cannot be dispelled (e.g. magic weapon bonuses) unaffected. SHELL CANNOT ITSELF BE DISPELLED). Flag carries the full RAW gating metadata; consumer (CastingResolver pre-resolve check + AttackResolver damage application + active_effect tracker on enter) consults the flag."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' radius, 12 turns; blocks spells AND spell-like effects entering OR leaving the shell \u00e2\u20ac\u201d INCLUDING the caster's own. Spell-like effects = those resisted via save vs Spells or Staffs & Wands; NOT effects resisted via Poison/Breath/Paralysis/Petrification. Self-range + touch-self spells used by caster on himself are NOT blocked. Creature/item entering the shell with ongoing spell or spell-like effect \u00e2\u2020\u2019 effect dispelled as if by dispel magic. Effects that cannot be dispelled (e.g. magic weapon bonuses) unaffected. SHELL CANNOT ITSELF BE DISPELLED). Flag carries the full RAW gating metadata; consumer (CastingResolver pre-resolve check + AttackResolver damage application + active_effect tracker on enter) consults the flag."
     }
   },
   {
@@ -349,6 +356,44 @@
     "summary": "Allows the caster to call lightning bolts from a nearby storm, dealing damage to targets."
   },
   {
+    "spell_key": "cancellation",
+    "spell_name": "Cancellation",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
+    "spell_key": "cataclysm",
+    "spell_name": "Cataclysm",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "chameleon",
     "spell_name": "Chameleon",
     "is_reversible": false,
@@ -428,7 +473,9 @@
             "count": 1,
             "creature_filter": {
               "min_hd": 5,
-              "excludes_type": ["undead"]
+              "excludes_type": [
+                "undead"
+              ]
             }
           },
           {
@@ -443,7 +490,9 @@
             "selection_order": "lowest_hd_first",
             "creature_filter": {
               "max_hd": 4,
-              "excludes_type": ["undead"]
+              "excludes_type": [
+                "undead"
+              ]
             },
             "out_of_budget_handling": "wasted_remaining_hd"
           }
@@ -460,7 +509,7 @@
           "save_modifier": 0
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, disjunctive: one creature >4 HD OR 3d6 HD of ≤4 HD creatures, undead invalid). Save vs Spells negates per RAW. Sub-1 HD creatures count as 1/2 HD; bonus HD count as flat amount; excess HD wasted. Repeat-save cadence (daily 7+1 HD, weekly 5-6 HD, monthly ≤4 HD; or charm person frequencies if INT 9+) is the same scheduled-event polish deferred from Charm Person Session 4. Caster picks targets first in mixed groups — picker-side ordering."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, disjunctive: one creature >4 HD OR 3d6 HD of \u00e2\u2030\u00a44 HD creatures, undead invalid). Save vs Spells negates per RAW. Sub-1 HD creatures count as 1/2 HD; bonus HD count as flat amount; excess HD wasted. Repeat-save cadence (daily 7+1 HD, weekly 5-6 HD, monthly \u00e2\u2030\u00a44 HD; or charm person frequencies if INT 9+) is the same scheduled-event polish deferred from Charm Person Session 4. Caster picks targets first in mixed groups \u00e2\u20ac\u201d picker-side ordering."
     }
   },
   {
@@ -717,7 +766,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: special range, 6 turns, 30' diameter cloud, spreads from caster's fingertips and moves 20'/round AWAY from caster, heavier than air — sinks down holes / slides downhill, broken by trees / thick vegetation, persists full duration even if caster stops concentrating). Damage rules per RAW: ≥5 HD creatures take 1 point/round in cloud; <5 HD save vs Poison or DIE per round (even on save, 1 point damage). Custom resolver records cloud_profile (diameter, drift, hd_threshold, save_category=poison_death, environmental tags); SpellCombatHooks.on_round_end consumes the profile to advance the cloud and apply per-round death-save / damage to creatures in area. The 'inside the cloud' check is consumer-side (movement_resolver / area_query)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: special range, 6 turns, 30' diameter cloud, spreads from caster's fingertips and moves 20'/round AWAY from caster, heavier than air \u00e2\u20ac\u201d sinks down holes / slides downhill, broken by trees / thick vegetation, persists full duration even if caster stops concentrating). Damage rules per RAW: \u00e2\u2030\u00a55 HD creatures take 1 point/round in cloud; <5 HD save vs Poison or DIE per round (even on save, 1 point damage). Custom resolver records cloud_profile (diameter, drift, hd_threshold, save_category=poison_death, environmental tags); SpellCombatHooks.on_round_end consumes the profile to advance the cloud and apply per-round death-save / damage to creatures in area. The 'inside the cloud' check is consumer-side (movement_resolver / area_query)."
     }
   },
   {
@@ -763,6 +812,25 @@
     "range": "60'",
     "duration": "concentration",
     "summary": "Commands persons within range to perform actions the caster directs while the caster concentrates."
+  },
+  {
+    "spell_key": "command_plant",
+    "spell_name": "Command Plant",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "command_plants",
@@ -835,8 +903,67 @@
           "placeholder_message": "Commune requires LLM-driven yes/no question handling. Awaiting LLM narration subsystem."
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: self range, 3 turns, 1 turn casting time; contacted being answers 3 yes-or-no questions; only once per WEEK; once per year on patron deity's feast day → twice the questions; contacted being may not be omniscient — Judge discretion on unclear answers). STUB this session — requires LLM narration layer for the actual question/answer flow. Per-week cap is enforced by the picker / scheduled-event subsystem (active_effect tracker carries last_cast_week metadata; future scheduler integration consumes)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: self range, 3 turns, 1 turn casting time; contacted being answers 3 yes-or-no questions; only once per WEEK; once per year on patron deity's feast day \u00e2\u2020\u2019 twice the questions; contacted being may not be omniscient \u00e2\u20ac\u201d Judge discretion on unclear answers). STUB this session \u00e2\u20ac\u201d requires LLM narration layer for the actual question/answer flow. Per-week cap is enforced by the picker / scheduled-event subsystem (active_effect tracker carries last_cast_week metadata; future scheduler integration consumes)."
     }
+  },
+  {
+    "spell_key": "cone_of_cold",
+    "spell_name": "Cone of Cold",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Produces a chilling cone of cold energy dealing 1d6 damage per caster level.",
+    "effect": {
+      "range_feet": 60,
+      "duration_model": {
+        "kind": "instantaneous"
+      },
+      "target_spec": {
+        "kind": "area_from_caster",
+        "shape": "cone",
+        "length_feet": 60,
+        "width_at_far_end_feet": 30
+      },
+      "save_spec": {
+        "category": "blast",
+        "on_success": "half_damage",
+        "damage_type": "cold"
+      },
+      "resolution": [
+        {
+          "kind": "damage_per_level",
+          "dice_per_level": "1d6",
+          "damage_type": "cold"
+        }
+      ],
+      "notes": "ACKS RAW (pc_spell_catalog_a-e.xml: Cone of Cold, 0' range cone 60' long \u00c3\u2014 30' wide far end, instantaneous, 1d6 per caster level cold damage; save vs Blast for half). DEVIATION FROM CATALOG SUMMARY: the catalog summary listed '1d4+1 per caster level' which is a 3.5e/2e port \u00e2\u20ac\u201d pc SACRED says 1d6/level. SACRED wins per CLAUDE.md. Used to create wands of cold (item-creation interaction). save_vs_cold modifier (Resist Cold from Session 5) automatically applies via the save_spec.damage_type='cold' wiring (Session 9.5). Cone geometry reuses Burning Hands path from Session 4 (CastingGeometry.cells_in_cone)."
+    }
+  },
+  {
+    "spell_key": "cone_of_paralysis",
+    "spell_name": "Cone of Paralysis",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Produces a cone that paralyzes all creatures in the area unless they save vs. Paralysis."
   },
   {
     "spell_key": "confusion",
@@ -881,67 +1008,8 @@
           "condition_key": "confused"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 120' range, 30' radius, 12 rounds, up to 3d6 living creatures). Save vs Spells negates ONLY if HD>2; ≤2 HD creatures get no save (save_spec.exempt_under_hd=3 — i.e., creatures with HD<3 cannot save). Per-round confusion behavior table (2-5 attack caster/allies, 6-8 babble, 9-12 attack own party) is consumed by monster AI / combat controller; the condition flags the state. Confused creature attacked by another auto-retaliates next turn if still confused. No special advantage when attacking confused creature. The exempt_under_hd save_spec key is new this session — _roll_saves_for_targets reads it to short-circuit small-HD creatures into auto-fail."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 120' range, 30' radius, 12 rounds, up to 3d6 living creatures). Save vs Spells negates ONLY if HD>2; \u00e2\u2030\u00a42 HD creatures get no save (save_spec.exempt_under_hd=3 \u00e2\u20ac\u201d i.e., creatures with HD<3 cannot save). Per-round confusion behavior table (2-5 attack caster/allies, 6-8 babble, 9-12 attack own party) is consumed by monster AI / combat controller; the condition flags the state. Confused creature attacked by another auto-retaliates next turn if still confused. No special advantage when attacking confused creature. The exempt_under_hd save_spec key is new this session \u00e2\u20ac\u201d _roll_saves_for_targets reads it to short-circuit small-HD creatures into auto-fail."
     }
-  },
-  {
-    "spell_key": "cone_of_cold",
-    "spell_name": "Cone of Cold",
-    "is_reversible": false,
-    "reverse_name": "",
-    "reverse_key": "",
-    "classifications": [
-      {
-        "tradition": "arcane",
-        "level": 5,
-        "restricted_to": []
-      }
-    ],
-    "range": "0'",
-    "duration": "instantaneous",
-    "summary": "Produces a chilling cone of cold energy dealing 1d6 damage per caster level.",
-    "effect": {
-      "range_feet": 60,
-      "duration_model": {
-        "kind": "instantaneous"
-      },
-      "target_spec": {
-        "kind": "area_from_caster",
-        "shape": "cone",
-        "length_feet": 60,
-        "width_at_far_end_feet": 30
-      },
-      "save_spec": {
-        "category": "blast",
-        "on_success": "half_damage",
-        "damage_type": "cold"
-      },
-      "resolution": [
-        {
-          "kind": "damage_per_level",
-          "dice_per_level": "1d6",
-          "damage_type": "cold"
-        }
-      ],
-      "notes": "ACKS RAW (pc_spell_catalog_a-e.xml: Cone of Cold, 0' range cone 60' long × 30' wide far end, instantaneous, 1d6 per caster level cold damage; save vs Blast for half). DEVIATION FROM CATALOG SUMMARY: the catalog summary listed '1d4+1 per caster level' which is a 3.5e/2e port — pc SACRED says 1d6/level. SACRED wins per CLAUDE.md. Used to create wands of cold (item-creation interaction). save_vs_cold modifier (Resist Cold from Session 5) automatically applies via the save_spec.damage_type='cold' wiring (Session 9.5). Cone geometry reuses Burning Hands path from Session 4 (CastingGeometry.cells_in_cone)."
-    }
-  },
-  {
-    "spell_key": "cone_of_paralysis",
-    "spell_name": "Cone of Paralysis",
-    "is_reversible": false,
-    "reverse_name": "",
-    "reverse_key": "",
-    "classifications": [
-      {
-        "tradition": "arcane",
-        "level": 5,
-        "restricted_to": []
-      }
-    ],
-    "range": "0'",
-    "duration": "instantaneous",
-    "summary": "Produces a cone that paralyzes all creatures in the area unless they save vs. Paralysis."
   },
   {
     "spell_key": "conjure_elemental",
@@ -983,6 +1051,25 @@
       ],
       "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 240' range, special duration, summons elemental of Air/Earth/Fire/Water; serves indefinitely WHILE caster concentrates SOLELY on controlling it. Loss of concentration triggers: spellcasting, combat, movement >half rate. Once concentration lost: control PERMANENTLY lost; elemental becomes hostile to conjurer. Caster may dismiss controlled elemental at will. At most ONE elemental of each TYPE per day. Uncontrolled: only dispel magic / dispel evil banishes; may also choose to return home). resolver_args.elemental_type picked by caster (default 'earth' for headless tests). Custom resolver records spawn_profile (becomes_hostile_on_concentration_break, daily_cap_per_type=1, banishable_only_by=[dispel_magic, dispel_evil]); SpellCombatHooks consumes the hostility flip when concentration breaks."
     }
+  },
+  {
+    "spell_key": "conjure_ooze",
+    "spell_name": "Conjure Ooze",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "conjure_oozes",
@@ -1036,7 +1123,7 @@
           "placeholder_message": "Contact Other Plane requires LLM-driven yes/no question handling and insanity-check resolution. Awaiting LLM narration subsystem."
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: self range, special duration; ask 3-12 yes/no/maybe/never/irrelevant/one-word questions; per-question dont_know%, true_answer%, insanity% from the contact_other_plane_results table). Insanity lasts weeks equal to # questions; -5%/level above 11. STUB this session — requires LLM narration layer for the actual question/answer flow plus the insanity-check resolution. Picker-supplied questions pass through to LLM at runtime."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: self range, special duration; ask 3-12 yes/no/maybe/never/irrelevant/one-word questions; per-question dont_know%, true_answer%, insanity% from the contact_other_plane_results table). Insanity lasts weeks equal to # questions; -5%/level above 11. STUB this session \u00e2\u20ac\u201d requires LLM narration layer for the actual question/answer flow plus the insanity-check resolution. Picker-supplied questions pass through to LLM at runtime."
     }
   },
   {
@@ -1220,6 +1307,27 @@
     "summary": "Manipulates airflow within range, increasing or decreasing wind speed."
   },
   {
+    "spell_key": "control_winds",
+    "spell_name": "Control Winds",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "create_food",
     "spell_name": "Create Food",
     "is_reversible": false,
@@ -1268,11 +1376,13 @@
         {
           "kind": "query_game_state",
           "query_kind": "produce_water_in_cell",
-          "reveals": ["water_yield_gallons"],
+          "reveals": [
+            "water_yield_gallons"
+          ],
           "response_format": "structured_water_quantity"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range, permanent, 50 gallons of clean rain-water-like water; enough for 12 men + mounts for 1 day; +12 men/mounts per caster level above 8th; water weighs ~1 stone per gallon). Per RAW: 'Appropriate vessels to contain the water must be available when the spell is cast' — picker layer enforces vessel availability (out-of-combat check). The query_game_state contract surfaces water_yield_gallons to the runtime layer; the sustenance subsystem (gdd-sustenance.md / party_sustenance_log) consumes the result to refill water_units. Scaling formula: 50 gallons base; if caster_level > 8, additional (caster_level - 8) × 12 men supplied — surface-layer math (resolver records the contract; sustenance refill logic computes the gallon delta)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range, permanent, 50 gallons of clean rain-water-like water; enough for 12 men + mounts for 1 day; +12 men/mounts per caster level above 8th; water weighs ~1 stone per gallon). Per RAW: 'Appropriate vessels to contain the water must be available when the spell is cast' \u00e2\u20ac\u201d picker layer enforces vessel availability (out-of-combat check). The query_game_state contract surfaces water_yield_gallons to the runtime layer; the sustenance subsystem (gdd-sustenance.md / party_sustenance_log) consumes the result to refill water_units. Scaling formula: 50 gallons base; if caster_level > 8, additional (caster_level - 8) \u00c3\u2014 12 men supplied \u00e2\u20ac\u201d surface-layer math (resolver records the contract; sustenance refill logic computes the gallon delta)."
     }
   },
   {
@@ -1347,7 +1457,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: touch, instantaneous, 3d6+3 healing). Cleric / Priestess access (catalog already restricts to priestess). Reverse Cause Critical Wounds: 3d6+3 unholy damage on successful attack throw. Diseased magic-heal block (Session 9.5) still applies. Note SACRED has 3d6+3 fixed (not 3d6+caster_level like Cure Serious — different scaling pattern); the dice expression carries the +3 flat bonus. If RAW is later read as 3d6+3+caster_level, switch to bonus_per_caster_level=1 (the field is wired)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: touch, instantaneous, 3d6+3 healing). Cleric / Priestess access (catalog already restricts to priestess). Reverse Cause Critical Wounds: 3d6+3 unholy damage on successful attack throw. Diseased magic-heal block (Session 9.5) still applies. Note SACRED has 3d6+3 fixed (not 3d6+caster_level like Cure Serious \u00e2\u20ac\u201d different scaling pattern); the dice expression carries the +3 flat bonus. If RAW is later read as 3d6+3+caster_level, switch to bonus_per_caster_level=1 (the field is wired)."
     }
   },
   {
@@ -1550,7 +1660,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: touch range, instantaneous, 2d6 + 1 per caster level healing). Reverse Cause Serious Wounds: same dice but as damage on a successful attack throw (cause_light_wounds pattern). bonus_per_caster_level=1 is new this session — _apply_heal and _apply_damage both consume it. Diseased magic-heal block applies (per Session 9.5)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: touch range, instantaneous, 2d6 + 1 per caster level healing). Reverse Cause Serious Wounds: same dice but as damage on a successful attack throw (cause_light_wounds pattern). bonus_per_caster_level=1 is new this session \u00e2\u20ac\u201d _apply_heal and _apply_damage both consume it. Diseased magic-heal block applies (per Session 9.5)."
     }
   },
   {
@@ -1597,7 +1707,11 @@
         "radius_feet": 30,
         "creature_filter": {
           "max_hd": 7,
-          "excludes_type": ["undead", "golem", "construct"],
+          "excludes_type": [
+            "undead",
+            "golem",
+            "construct"
+          ],
           "living_only": true
         }
       },
@@ -2025,7 +2139,7 @@
           "fail_on_solid_object": true
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range to subject, instantaneous, transports up to 360' from subject's current location). May target caster OR a single creature within range. Unwilling targets save vs Spells to avoid transport (save_spec.applies_only_to_unwilling — picker layer determines willingness; resolver runs the save unconditionally and the picker can skip willing-target saves). 'If destination lies within a solid object, the spell fails automatically' — recorded on outcome via fail_on_solid_object=true; the runtime map layer enforces. Anything worn or carried transports with subject; a transported creature may carry another if it can lift. error_profile='precise' per RAW (Dimension Door is the precise-teleport variant; Teleport L5 will use 'imprecise')."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range to subject, instantaneous, transports up to 360' from subject's current location). May target caster OR a single creature within range. Unwilling targets save vs Spells to avoid transport (save_spec.applies_only_to_unwilling \u00e2\u20ac\u201d picker layer determines willingness; resolver runs the save unconditionally and the picker can skip willing-target saves). 'If destination lies within a solid object, the spell fails automatically' \u00e2\u20ac\u201d recorded on outcome via fail_on_solid_object=true; the runtime map layer enforces. Anything worn or carried transports with subject; a transported creature may carry another if it can lift. error_profile='precise' per RAW (Dimension Door is the precise-teleport variant; Teleport L5 will use 'imprecise')."
     }
   },
   {
@@ -2065,7 +2179,7 @@
           "condition_key": "disintegrated"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, instantaneous, one creature OR one object up to 10'×10'×10' cube of material; ray projects from caster). Save vs Death — succeed → unaffected. Failed → reduced to fine dust. Equipment UNAFFECTED. Ray targets only ONE creature per casting; if target saves, spell wasted. The 'disintegrated' condition (added this session) tags the state as helpless+vulnerable; the runtime mortal_wounds_resolver / combat_controller consumes it to remove the body from combat. Cannot be Raised by Raise Dead (no corpse) — requires Wish."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, instantaneous, one creature OR one object up to 10'\u00c3\u201410'\u00c3\u201410' cube of material; ray projects from caster). Save vs Death \u00e2\u20ac\u201d succeed \u00e2\u2020\u2019 unaffected. Failed \u00e2\u2020\u2019 reduced to fine dust. Equipment UNAFFECTED. Ray targets only ONE creature per casting; if target saves, spell wasted. The 'disintegrated' condition (added this session) tags the state as helpless+vulnerable; the runtime mortal_wounds_resolver / combat_controller consumes it to remove the body from combat. Cannot be Raised by Raise Dead (no corpse) \u00e2\u20ac\u201d requires Wish."
     }
   },
   {
@@ -2114,7 +2228,10 @@
         "shape": "sphere",
         "radius_feet": 30,
         "creature_filter": {
-          "requires_type": ["undead", "enchanted"]
+          "requires_type": [
+            "undead",
+            "enchanted"
+          ]
         }
       },
       "save_spec": {
@@ -2130,7 +2247,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 30' range, 1 turn, undead+enchanted creatures entering within 30' save vs Death or destroyed; on save → flee area; if directed at one monster, that monster saves at -2). Caster takes no other action and concentrates entire duration. May rid unholy place / shrine of evil (Judge discretion). Removing cursed item from being within range DISCHARGES + ends spell. Custom resolver supports two modes: 'area' (default) and 'single' (-2 save penalty); per-target outcome is destroyed or fleeing. Concentration_mode=exclusive_focus per RAW."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 30' range, 1 turn, undead+enchanted creatures entering within 30' save vs Death or destroyed; on save \u00e2\u2020\u2019 flee area; if directed at one monster, that monster saves at -2). Caster takes no other action and concentrates entire duration. May rid unholy place / shrine of evil (Judge discretion). Removing cursed item from being within range DISCHARGES + ends spell. Custom resolver supports two modes: 'area' (default) and 'single' (-2 save penalty); per-target outcome is destroyed or fleeing. Concentration_mode=exclusive_focus per RAW."
     }
   },
   {
@@ -2259,6 +2376,30 @@
     "range": "0'",
     "duration": "60 days",
     "summary": "Creates a nondimensional storage space inside a small container that holds far more than its size suggests."
+  },
+  {
+    "spell_key": "energy_drain",
+    "spell_name": "Energy Drain",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 7,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "enervate",
@@ -2485,7 +2626,7 @@
           "condition_key": "feebleminded"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 180' range, permanent until dispel magic). Save vs Spells negates BUT arcane-caster targets suffer -4 penalty on save. The condition `feebleminded` already exists in the catalog with prevents_attacking + prevents_casting + prevents_speech. save_spec.modifier_for_arcane_caster_target=-4 is a NEW save_spec field this session — picker / save loop applies -4 if target.has_method('can_cast_arcane') returns true (deferred polish — for now the save is the unmodified base; the -4 is captured for future consumption). Lasts until dispel magic."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 180' range, permanent until dispel magic). Save vs Spells negates BUT arcane-caster targets suffer -4 penalty on save. The condition `feebleminded` already exists in the catalog with prevents_attacking + prevents_casting + prevents_speech. save_spec.modifier_for_arcane_caster_target=-4 is a NEW save_spec field this session \u00e2\u20ac\u201d picker / save loop applies -4 if target.has_method('can_cast_arcane') returns true (deferred polish \u00e2\u20ac\u201d for now the save is the unmodified base; the -4 is captured for future consumption). Lasts until dispel magic."
     }
   },
   {
@@ -2581,6 +2722,27 @@
     "range": "360'",
     "duration": "3 turns",
     "summary": "Senses the direction to the most valuable treasure within range."
+  },
+  {
+    "spell_key": "finger_of_death",
+    "spell_name": "Finger of Death",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "fireball",
@@ -2681,7 +2843,9 @@
       "reverse": {
         "target_spec": {
           "kind": "single_creature",
-          "creature_filter": {"requires_petrified_or_stone_volume": true}
+          "creature_filter": {
+            "requires_petrified_or_stone_volume": true
+          }
         },
         "save_spec": {
           "category": "none"
@@ -2693,7 +2857,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: Flesh to Stone — 120' range, permanent, creatures of flesh, save vs Petrification negates. Permanent statue including all carried gear. If statue broken/damaged, target suffers corresponding damage/deformity if restored. DISPEL MAGIC DOES NOT UNDO Flesh to Stone — requires reverse Stone to Flesh). Reverse Stone to Flesh: removes petrification; on ordinary stone (not from petrification), converts a man-sized volume of stone into gooey organic matter. Statue-damage restoration mechanic deferred to runtime layer (the petrified condition tags state; mortal_wounds on restore consults the stored damage-while-stone)."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: Flesh to Stone \u00e2\u20ac\u201d 120' range, permanent, creatures of flesh, save vs Petrification negates. Permanent statue including all carried gear. If statue broken/damaged, target suffers corresponding damage/deformity if restored. DISPEL MAGIC DOES NOT UNDO Flesh to Stone \u00e2\u20ac\u201d requires reverse Stone to Flesh). Reverse Stone to Flesh: removes petrification; on ordinary stone (not from petrification), converts a man-sized volume of stone into gooey organic matter. Statue-damage restoration mechanic deferred to runtime layer (the petrified condition tags state; mortal_wounds on restore consults the stored damage-while-stone)."
     }
   },
   {
@@ -2875,7 +3039,7 @@
         ],
         "notes_per_caster_level_fail_chance": 5
       },
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 30' range, special, target must understand caster). Cannot compel suicide / certain death. Voluntary acceptance allowed (bargain). Open-ended quest max 1 day per caster level. Same penalty cascade as Quest. DISPEL MAGIC DOES NOT AFFECT GEAS. Remove Curse / Wish / Reverse Geas can end it; 5% per level the removing caster is BELOW imposing caster the removal fails. New 'geased' condition (added this session) — stronger semantic than 'questing' (geas is permanent until completion). Reverse Remove Geas: removes the condition (deferred polish: per-level fail chance enforcement); cleric reverse path is the same."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 30' range, special, target must understand caster). Cannot compel suicide / certain death. Voluntary acceptance allowed (bargain). Open-ended quest max 1 day per caster level. Same penalty cascade as Quest. DISPEL MAGIC DOES NOT AFFECT GEAS. Remove Curse / Wish / Reverse Geas can end it; 5% per level the removing caster is BELOW imposing caster the removal fails. New 'geased' condition (added this session) \u00e2\u20ac\u201d stronger semantic than 'questing' (geas is permanent until completion). Reverse Remove Geas: removes the condition (deferred polish: per-level fail chance enforcement); cleric reverse path is the same."
     }
   },
   {
@@ -2956,7 +3120,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml: equivalent to minor globe of invulnerability except blocks ≤4th level spell effects; 0' range, 1 round/level). The Minor variant (L4 arcane) blocks ≤3rd level. blocks_spell_levels_up_to=4 in metadata; consumer (CastingResolver pre-resolve check) consults the flag when a spell hits a creature inside the globe; if spell.level ≤ blocks_spell_levels_up_to, the resolution short-circuits with applied=false, reason='globe_of_invulnerability'. Polish item: globe-vs-globe interaction (do they nest? do they cancel?) — RAW silent; default to higher-level globe takes precedence."
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml: equivalent to minor globe of invulnerability except blocks \u00e2\u2030\u00a44th level spell effects; 0' range, 1 round/level). The Minor variant (L4 arcane) blocks \u00e2\u2030\u00a43rd level. blocks_spell_levels_up_to=4 in metadata; consumer (CastingResolver pre-resolve check) consults the flag when a spell hits a creature inside the globe; if spell.level \u00e2\u2030\u00a4 blocks_spell_levels_up_to, the resolution short-circuits with applied=false, reason='globe_of_invulnerability'. Polish item: globe-vs-globe interaction (do they nest? do they cancel?) \u00e2\u20ac\u201d RAW silent; default to higher-level globe takes precedence."
     }
   },
   {
@@ -3128,8 +3292,27 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 240' range, 1 turn casting time, special duration). Outdoor only. Save vs Spells ONLY for creatures actively trying to disbelieve (applies_only_when_actively_disbelieving — picker/AI layer triggers per-viewer save when disbelief attempted; resolver pre-rolls saves but they only matter under disbelief). Illusion ENDS when intelligent creature physically enters and touches the hallucinatory terrain. resolver_args.apparent_terrain is the picker-supplied disguise type (forest/swamp/hills/etc.); default 'forest' for headless tests. Custom resolver records illusion_overlay on persist_metadata; per-viewer disbelief tracked in active_effect.metadata.viewers_disbelieved. Wilderness rendering layer reads the overlay and shows illusory terrain to non-disbelieving viewers."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 240' range, 1 turn casting time, special duration). Outdoor only. Save vs Spells ONLY for creatures actively trying to disbelieve (applies_only_when_actively_disbelieving \u00e2\u20ac\u201d picker/AI layer triggers per-viewer save when disbelief attempted; resolver pre-rolls saves but they only matter under disbelief). Illusion ENDS when intelligent creature physically enters and touches the hallucinatory terrain. resolver_args.apparent_terrain is the picker-supplied disguise type (forest/swamp/hills/etc.); default 'forest' for headless tests. Custom resolver records illusion_overlay on persist_metadata; per-viewer disbelief tracked in active_effect.metadata.viewers_disbelieved. Wilderness rendering layer reads the overlay and shows illusory terrain to non-disbelieving viewers."
     }
+  },
+  {
+    "spell_key": "harvest",
+    "spell_name": "Harvest",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "haste",
@@ -3230,7 +3413,7 @@
           "condition_key": "paralyzed"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 180' range, 2d8 turns, any living creature; functions like hold person but no humanoid restriction). Save vs Paralysis negates. Mirror of Hold Person (Session 7) but without target_spec.creature_filter.requires_type=humanoid. The disjunctive single-vs-group of Hold Person is NOT present in Hold Monster RAW — single target only."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 180' range, 2d8 turns, any living creature; functions like hold person but no humanoid restriction). Save vs Paralysis negates. Mirror of Hold Person (Session 7) but without target_spec.creature_filter.requires_type=humanoid. The disjunctive single-vs-group of Hold Person is NOT present in Hold Monster RAW \u00e2\u20ac\u201d single target only."
     }
   },
   {
@@ -3499,7 +3682,7 @@
           "resolver_args": {}
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 480' range, 1 day, 4 contiguous swarms each 30'×30' with 4 HD; placed adjacent for one contiguous area; may be summoned in occupied spaces). Each swarm attacks creatures in its area. Whole plague obscures vision. <3 HD creatures auto-driven off (no save). Caster concentrates to maintain control. Loses control if successfully attacked OR plague leaves spell range. Controlled: swarms move 20'/round. Once control lost: STATIONARY. Custom resolver records plague_profile (4 swarms, control_state, auto_drive_off_threshold=3, becomes_stationary_on_control_loss); SpellCombatHooks consumes for per-round attacks + control-loss handling."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 480' range, 1 day, 4 contiguous swarms each 30'\u00c3\u201430' with 4 HD; placed adjacent for one contiguous area; may be summoned in occupied spaces). Each swarm attacks creatures in its area. Whole plague obscures vision. <3 HD creatures auto-driven off (no save). Caster concentrates to maintain control. Loses control if successfully attacked OR plague leaves spell range. Controlled: swarms move 20'/round. Once control lost: STATIONARY. Custom resolver records plague_profile (4 swarms, control_state, auto_drive_off_threshold=3, becomes_stationary_on_control_loss); SpellCombatHooks consumes for per-round attacks + control-loss handling."
     }
   },
   {
@@ -3641,7 +3824,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range, special duration. Stalker appears anywhere within 10'. Spell ends when: dispel evil cast on stalker, stalker slain, OR assigned task completed. Stalker may not always be reliable — consult monster entry). Custom resolver records spawn_profile (assigned_task, end_conditions, reliability_check_required, banishable_only_by=[dispel_evil]); invisible_stalker entity is spawned by the runtime layer reading the profile."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 10' range, special duration. Stalker appears anywhere within 10'. Spell ends when: dispel evil cast on stalker, stalker slain, OR assigned task completed. Stalker may not always be reliable \u00e2\u20ac\u201d consult monster entry). Custom resolver records spawn_profile (assigned_task, end_conditions, reliability_check_required, banishable_only_by=[dispel_evil]); invisible_stalker entity is spawned by the runtime layer reading the profile."
     }
   },
   {
@@ -3791,6 +3974,25 @@
       ],
       "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch range, 6 turns + 1/level; subject moves vertically 20'/round by caster's concentration; cannot move horizontally by spell (lateral movement at half normal land speed by clambering); normal weight allowance carried; combat penalty -1 cumulative on attacks while levitating, max -5; full round of stabilization resets penalty). Session 6 binds the flag + vertical-only movement_mode_grant. The cumulative attack penalty is a future combat-resolver hook (consumes is_levitating flag); the lateral-clambering mechanic is also future scene polish."
     }
+  },
+  {
+    "spell_key": "life_trapping",
+    "spell_name": "Life Trapping",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 9,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "light",
@@ -4064,7 +4266,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 10 turns; lowers depth by up to 2'/caster level (min 1\"); roughly square depression sides up to 10'/caster level. Very large/deep bodies → whirlpool sweeping ships downward, prevents normal movement out of area for duration). Save vs Spells negates SLOW effect on water elementals / water-based creatures only (functions as Slow against them per RAW). NO effect on creatures other than water-based. modify_cell_state contract is recorded; the runtime water/terrain layer consumes it (deferred polish — water-state mutation handler not yet wired)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 10 turns; lowers depth by up to 2'/caster level (min 1\"); roughly square depression sides up to 10'/caster level. Very large/deep bodies \u00e2\u2020\u2019 whirlpool sweeping ships downward, prevents normal movement out of area for duration). Save vs Spells negates SLOW effect on water elementals / water-based creatures only (functions as Slow against them per RAW). NO effect on creatures other than water-based. modify_cell_state contract is recorded; the runtime water/terrain layer consumes it (deferred polish \u00e2\u20ac\u201d water-state mutation handler not yet wired)."
     }
   },
   {
@@ -4112,7 +4314,9 @@
       },
       "target_spec": {
         "kind": "single_object",
-        "valid_targets": ["inanimate_object"],
+        "valid_targets": [
+          "inanimate_object"
+        ],
         "anchor": "inanimate_object_within_30"
       },
       "save_spec": {
@@ -4127,7 +4331,7 @@
           "placeholder_message": "Magic Jar requires a 4-state soul-state machine (caster_in_jar / caster_possessing_host / caster_returned / spell_ended) plus host-soul tracking. Awaiting dedicated soul-tracking subsystem."
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range to jar, special duration, jar must be inanimate object known to caster; possession target within 120' of jar; save vs Death negates possession). Possession transfers Int/Wis/Cha/level/class/attack/saves/mental abilities (incl. spellcasting) to caster; host body keeps Str/Dex/Con/HP/natural abilities; no special abilities of host gained. Blocked by Protection from Evil. Complex interaction tree: jar-broken-with-caster-soul-inside → caster body within 120' returns; else dies. Dispel evil from host with jar within 120' → soul exchange + 1-turn no-repossession lock; else both die. Host soul in jar + jar broken → caster ejected if jar within 120' of host, else caster stranded. STUB this session — needs dedicated soul-state-machine subsystem (tracks 4 states: caster_in_jar / caster_possessing_host / caster_returned / spell_ended) plus host-soul tracking. Picker / spell action surfaces only the cast (transfers caster to jar); subsequent possession attempts are runtime soul-state actions."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range to jar, special duration, jar must be inanimate object known to caster; possession target within 120' of jar; save vs Death negates possession). Possession transfers Int/Wis/Cha/level/class/attack/saves/mental abilities (incl. spellcasting) to caster; host body keeps Str/Dex/Con/HP/natural abilities; no special abilities of host gained. Blocked by Protection from Evil. Complex interaction tree: jar-broken-with-caster-soul-inside \u00e2\u2020\u2019 caster body within 120' returns; else dies. Dispel evil from host with jar within 120' \u00e2\u2020\u2019 soul exchange + 1-turn no-repossession lock; else both die. Host soul in jar + jar broken \u00e2\u2020\u2019 caster ejected if jar within 120' of host, else caster stranded. STUB this session \u00e2\u20ac\u201d needs dedicated soul-state-machine subsystem (tracks 4 states: caster_in_jar / caster_possessing_host / caster_returned / spell_ended) plus host-soul tracking. Picker / spell action surfaces only the cast (transfers caster to jar); subsequent possession attempts are runtime soul-state actions."
     }
   },
   {
@@ -4298,7 +4502,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, special duration, up to 100 willing man-sized creatures within 120' radius of caster at casting time, may include self). Concealed creatures appear as natural terrain features; remain hidden as long as they stay still. Per RAW: 'If an affected creature moves or attacks, the illusion ends FOR THAT CREATURE ONLY' — metadata.ends_on_movement / ends_on_attack are consumed by SpellCombatHooks auto-clear (already wired for ends_on_attack; ends_on_movement is movement-resolver polish). Caster ends spell with single word; dispel magic ends it for everyone. Targeting picker is responsible for the 120' radius selection + willingness check + man-sized filter."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, special duration, up to 100 willing man-sized creatures within 120' radius of caster at casting time, may include self). Concealed creatures appear as natural terrain features; remain hidden as long as they stay still. Per RAW: 'If an affected creature moves or attacks, the illusion ends FOR THAT CREATURE ONLY' \u00e2\u20ac\u201d metadata.ends_on_movement / ends_on_attack are consumed by SpellCombatHooks auto-clear (already wired for ends_on_attack; ends_on_movement is movement-resolver polish). Caster ends spell with single word; dispel magic ends it for everyone. Targeting picker is responsible for the 120' radius selection + willingness check + man-sized filter."
     }
   },
   {
@@ -4317,6 +4521,25 @@
     "range": "0'",
     "duration": "1 round per level",
     "summary": "Prevents 1st, 2nd, and 3rd level spells or spell effects from penetrating the globe."
+  },
+  {
+    "spell_key": "miracle",
+    "spell_name": "Miracle",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "mirror_image",
@@ -4410,7 +4633,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 6 turns; earth in area moved at 60'/turn per caster's wishes; range extends downward until 240' or solid rock; affects soil ONLY, not stone). modify_cell_state contract is recorded; runtime earth/terrain layer consumes it (deferred polish — terrain-mutation handler for earth not yet wired)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 6 turns; earth in area moved at 60'/turn per caster's wishes; range extends downward until 240' or solid rock; affects soil ONLY, not stone). modify_cell_state contract is recorded; runtime earth/terrain layer consumes it (deferred polish \u00e2\u20ac\u201d terrain-mutation handler for earth not yet wired)."
     }
   },
   {
@@ -4487,7 +4710,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch, instantaneous, neutralizes poison in creature OR object; if cast on creature slain by poison within last 10 rounds, revives at 1 hp; if cast on poisonous object, poison permanently neutralized). Reverse Poison: caster's touch deadly — successful attack throw + save vs Poison or DIE per RAW. Forward removes 'poisoned' condition (added this session). DEFERRED: revival-from-poison-death special case (10-round window check + 1-hp revival) is a future polish — needs interaction with mortal_wounds_resolver for the revive path. Poisonous-object neutralization needs item-state mutation (parallel to Striking's apply_modifier_to_item); for now only the creature path is fully wired. Reverse Poison's 'or DIE' is captured by the apply_condition 'poisoned' tag; the death cascade is the runtime poison subsystem's call (the condition flags the state)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch, instantaneous, neutralizes poison in creature OR object; if cast on creature slain by poison within last 10 rounds, revives at 1 hp; if cast on poisonous object, poison permanently neutralized). Reverse Poison: caster's touch deadly \u00e2\u20ac\u201d successful attack throw + save vs Poison or DIE per RAW. Forward removes 'poisoned' condition (added this session). DEFERRED: revival-from-poison-death special case (10-round window check + 1-hp revival) is a future polish \u00e2\u20ac\u201d needs interaction with mortal_wounds_resolver for the revive path. Poisonous-object neutralization needs item-state mutation (parallel to Striking's apply_modifier_to_item); for now only the creature path is fully wired. Reverse Poison's 'or DIE' is captured by the apply_condition 'poisoned' tag; the death cascade is the runtime poison subsystem's call (the condition flags the state)."
     }
   },
   {
@@ -4564,6 +4787,25 @@
     "summary": "Grants the subject the strength and prowess of an ogre for the duration."
   },
   {
+    "spell_key": "opposition",
+    "spell_name": "Opposition",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 8,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "panic",
     "spell_name": "Panic",
     "is_reversible": false,
@@ -4613,6 +4855,25 @@
     "range": "30'",
     "duration": "3 turns",
     "summary": "Creates a temporary passage through rock, earth, or similar solid material."
+  },
+  {
+    "spell_key": "permanency",
+    "spell_name": "Permanency",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 8,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "permanent_illusion",
@@ -4704,6 +4965,44 @@
     "summary": "Creates an illusion of the target's greatest fear that attacks; target must save or die from fright."
   },
   {
+    "spell_key": "phase_door",
+    "spell_name": "Phase Door",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
+    "spell_key": "plague",
+    "spell_name": "Plague",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 9,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "polymorph_other",
     "spell_name": "Polymorph Other",
     "is_reversible": false,
@@ -4729,7 +5028,10 @@
         "count": 1,
         "creature_filter": {
           "living_only": true,
-          "excludes_form": ["incorporeal", "gaseous"]
+          "excludes_form": [
+            "incorporeal",
+            "gaseous"
+          ]
         }
       },
       "save_spec": {
@@ -4753,7 +5055,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent until dispel magic / target's death). Save vs Spells negates if unwilling. HD constraints: new form ≤ caster level AND new form HD < 2x old form HD. Target gains physical capabilities AND mental traits (alignment, behavior, special/supernatural/spell-like abilities) of new form — distinct from Polymorph Self which only gives physical. If less intelligent, may not remember former life. Keeps SAME hit points regardless of new form's HD. Shape-changers (e.g. doppelganger) revert in 1 round. If slain, corpse reverts to original. Cannot produce incorporeal/gaseous form. resolver_args.form_profile is the picker-supplied form (wolf/bear/ape/etc.); default 'wolf' for headless tests. Custom resolver enforces both HD caps + snapshots original stats for revert-on-death."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent until dispel magic / target's death). Save vs Spells negates if unwilling. HD constraints: new form \u00e2\u2030\u00a4 caster level AND new form HD < 2x old form HD. Target gains physical capabilities AND mental traits (alignment, behavior, special/supernatural/spell-like abilities) of new form \u00e2\u20ac\u201d distinct from Polymorph Self which only gives physical. If less intelligent, may not remember former life. Keeps SAME hit points regardless of new form's HD. Shape-changers (e.g. doppelganger) revert in 1 round. If slain, corpse reverts to original. Cannot produce incorporeal/gaseous form. resolver_args.form_profile is the picker-supplied form (wolf/bear/ape/etc.); default 'wolf' for headless tests. Custom resolver enforces both HD caps + snapshots original stats for revert-on-death."
     }
   },
   {
@@ -4806,7 +5108,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: self target, 6 turns + 1/level). Assumed form must be living creature with HD ≤ caster level. Caster gets PHYSICAL stats of form (HP/AC/attacks/movement) but RETAINS own mental abilities (INT/WIS/CHA/spellcasting). Caster gets all PHYSICAL attacks of form. Does NOT grant special, supernatural, or spell-like abilities (no breath weapon, no gaze, no innate spells). If slain, reverts to original. Caster may end early. Cannot assume incorporeal/gaseous. resolver_args.form_profile is picker-supplied; default 'eagle' for headless tests. Custom resolver snapshots original physical stats so the active_effect can revert at expiration."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: self target, 6 turns + 1/level). Assumed form must be living creature with HD \u00e2\u2030\u00a4 caster level. Caster gets PHYSICAL stats of form (HP/AC/attacks/movement) but RETAINS own mental abilities (INT/WIS/CHA/spellcasting). Caster gets all PHYSICAL attacks of form. Does NOT grant special, supernatural, or spell-like abilities (no breath weapon, no gaze, no innate spells). If slain, reverts to original. Caster may end early. Cannot assume incorporeal/gaseous. resolver_args.form_profile is picker-supplied; default 'eagle' for headless tests. Custom resolver snapshots original physical stats so the active_effect can revert at expiration."
     }
   },
   {
@@ -5366,7 +5668,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range, special duration. Compels service or restraint from action. Almost any course short of suicide / certain death. Recipient must follow until quest completed). Unwilling save vs Spells when first cast; recipient may voluntarily accept. Open-ended quests last max 1 day per caster level (amount_per_level=1, max_for_open_ended_only=true — picker / quest-tracker enforces). Disobedience: cumulative Judge-chosen penalties (combat penalties, lowered ability scores, lost spells, pain, weakness, eventually death) until obedience resumes or recipient dies. Penalties removed 24h after obedience resumes. DISPEL MAGIC DOES NOT AFFECT QUEST per RAW. Reverse Quest, Remove Curse from caster ≥2 levels higher, or Wish ends it. Reverse: removes 'questing' condition. The penalty-cascade enforcement is the quest-tracker subsystem's job (deferred — for now the condition tags the state)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range, special duration. Compels service or restraint from action. Almost any course short of suicide / certain death. Recipient must follow until quest completed). Unwilling save vs Spells when first cast; recipient may voluntarily accept. Open-ended quests last max 1 day per caster level (amount_per_level=1, max_for_open_ended_only=true \u00e2\u20ac\u201d picker / quest-tracker enforces). Disobedience: cumulative Judge-chosen penalties (combat penalties, lowered ability scores, lost spells, pain, weakness, eventually death) until obedience resumes or recipient dies. Penalties removed 24h after obedience resumes. DISPEL MAGIC DOES NOT AFFECT QUEST per RAW. Reverse Quest, Remove Curse from caster \u00e2\u2030\u00a52 levels higher, or Wish ends it. Reverse: removes 'questing' condition. The penalty-cascade enforcement is the quest-tracker subsystem's job (deferred \u00e2\u20ac\u201d for now the condition tags the state)."
     }
   },
   {
@@ -5458,7 +5760,10 @@
       },
       "target_spec": {
         "kind": "touch_creature",
-        "valid_targets": ["corpse", "remnant"]
+        "valid_targets": [
+          "corpse",
+          "remnant"
+        ]
       },
       "save_spec": {
         "category": "none"
@@ -5472,8 +5777,29 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch, instantaneous; new young-adult body created. All physical ills repaired. Remnant suffices — even small portion of body works. Reincarnation table determines new form. Recalls most of former life. If human/demi-human: same class level w/ minimum XP, keep INT/WIS/CHA, reroll STR/DEX/CON. If monster: alignment-appropriate column; gain monster abilities; doesn't auto-know language; HD raised to former class level if lower. Monster XP-to-advance: 3000 + 500 per * special, doubles per HD, max rounded to nearest 1000). Custom resolver records reincarnation_roll + alignment column + ability score adjustment flags; the character_subsystem handles actual identity rebuild + table lookup."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch, instantaneous; new young-adult body created. All physical ills repaired. Remnant suffices \u00e2\u20ac\u201d even small portion of body works. Reincarnation table determines new form. Recalls most of former life. If human/demi-human: same class level w/ minimum XP, keep INT/WIS/CHA, reroll STR/DEX/CON. If monster: alignment-appropriate column; gain monster abilities; doesn't auto-know language; HD raised to former class level if lower. Monster XP-to-advance: 3000 + 500 per * special, doubles per HD, max rounded to nearest 1000). Custom resolver records reincarnation_roll + alignment column + ability score adjustment flags; the character_subsystem handles actual identity rebuild + table lookup."
     }
+  },
+  {
+    "spell_key": "reincarnation",
+    "spell_name": "Reincarnation",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "remove_curse",
@@ -5705,6 +6031,25 @@
     "summary": "Restores life to the recently dead and repairs permanent bodily damage including lost limbs."
   },
   {
+    "spell_key": "resurrection",
+    "spell_name": "Resurrection",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "righteous_wrath",
     "spell_name": "Righteous Wrath",
     "is_reversible": false,
@@ -5819,6 +6164,25 @@
     "range": "special",
     "duration": "1 turn",
     "summary": "Shows images of distant creatures, objects, or places through a scrying device."
+  },
+  {
+    "spell_key": "sharpness",
+    "spell_name": "Sharpness",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "shield",
@@ -6120,26 +6484,36 @@
         "shape": "sphere",
         "diameter_feet": 60,
         "creature_filter": {
-          "requires_type": ["undead"]
+          "requires_type": [
+            "undead"
+          ]
         }
       },
       "save_spec": {
         "category": "poison_death",
         "on_success": "negate",
-        "exempt_creature_keys": ["skeleton", "zombie"]
+        "exempt_creature_keys": [
+          "skeleton",
+          "zombie"
+        ]
       },
       "resolution": [
         {
           "kind": "destroy_undead_by_hd_budget",
           "hd_budget_formula": "caster_level",
           "hd_immunity_threshold": 8,
-          "exempt_creature_keys": ["skeleton", "zombie"]
+          "exempt_creature_keys": [
+            "skeleton",
+            "zombie"
+          ]
         }
       ],
       "reverse": {
         "target_spec": {
           "kind": "touch_creature",
-          "valid_targets": ["corpse"]
+          "valid_targets": [
+            "corpse"
+          ]
         },
         "save_spec": {
           "category": "none"
@@ -6152,7 +6526,7 @@
           }
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, touch for reverse, special, 60' diameter sphere, all undead within. Forward Smite Undead: destroys up to caster_level HD of undead; skeletons + zombies get NO save; other undead save vs Death; immune at 8+ HD/levels. Reverse Animate Dead: 'Functions exactly like the 5th level arcane spell animate dead' — 2 × caster_level HD of skeletons/zombies, obey caster). Forward destruction is a stub this session — needs a dedicated `_destroy_undead_by_hd_budget` step kind that walks the area, sorts by HD ascending, destroys until budget spent (parallel to Sleep's HD-budget mechanic but for instant-destruction). save_spec.exempt_creature_keys=skeleton+zombie captures the no-save rule for the future destroy-routine. Reverse uses the new animate_dead custom resolver (HD-budget = caster_level × 2; spawn_profile persists allegiance to caster)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, touch for reverse, special, 60' diameter sphere, all undead within. Forward Smite Undead: destroys up to caster_level HD of undead; skeletons + zombies get NO save; other undead save vs Death; immune at 8+ HD/levels. Reverse Animate Dead: 'Functions exactly like the 5th level arcane spell animate dead' \u00e2\u20ac\u201d 2 \u00c3\u2014 caster_level HD of skeletons/zombies, obey caster). Forward destruction is a stub this session \u00e2\u20ac\u201d needs a dedicated `_destroy_undead_by_hd_budget` step kind that walks the area, sorts by HD ascending, destroys until budget spent (parallel to Sleep's HD-budget mechanic but for instant-destruction). save_spec.exempt_creature_keys=skeleton+zombie captures the no-save rule for the future destroy-routine. Reverse uses the new animate_dead custom resolver (HD-budget = caster_level \u00c3\u2014 2; spawn_profile persists allegiance to caster)."
     }
   },
   {
@@ -6349,7 +6723,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range, 3 turns, normal plants and plant creatures). Normal plants communicate only about immediate vicinity; cannot describe creatures or distant events. Spell does NOT alter reaction/attitude. Plant creatures (e.g., shambling mounds, treants) behave like other monsters — terse/evasive. Friendly plant creatures may perform a favor or service. Mirrors Speak with Animals (Session 7) — flag-only binding; the LLM/dialog layer consumes the flag for plant-conversation surface. Communication_range_feet=30 captures the RAW range cap."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 30' range, 3 turns, normal plants and plant creatures). Normal plants communicate only about immediate vicinity; cannot describe creatures or distant events. Spell does NOT alter reaction/attitude. Plant creatures (e.g., shambling mounds, treants) behave like other monsters \u00e2\u20ac\u201d terse/evasive. Friendly plant creatures may perform a favor or service. Mirrors Speak with Animals (Session 7) \u00e2\u20ac\u201d flag-only binding; the LLM/dialog layer consumes the flag for plant-conversation surface. Communication_range_feet=30 captures the RAW range cap."
     }
   },
   {
@@ -6390,6 +6764,25 @@
     "range": "touch",
     "duration": "special",
     "summary": "Prepares an item to hold up to six spells that can be triggered by a designated bearer."
+  },
+  {
+    "spell_key": "spell_turning",
+    "spell_name": "Spell Turning",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 7,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "sphere_of_visibility",
@@ -6514,23 +6907,6 @@
     }
   },
   {
-    "spell_key": "stinking_cloud",
-    "spell_name": "Stinking Cloud",
-    "is_reversible": false,
-    "reverse_name": "",
-    "reverse_key": "",
-    "classifications": [
-      {
-        "tradition": "arcane",
-        "level": 2,
-        "restricted_to": []
-      }
-    ],
-    "range": "30'",
-    "duration": "1 round per level",
-    "summary": "Creates foul vapors that render creatures within the cloud helpless with nausea unless they save."
-  },
-  {
     "spell_key": "sticks_to_snakes",
     "spell_name": "Sticks to Snakes",
     "is_reversible": false,
@@ -6555,8 +6931,13 @@
       },
       "target_spec": {
         "kind": "multiple_objects",
-        "valid_targets": ["normal_wooden_stick"],
-        "invalid_targets": ["enchanted_staff", "magical_stick"]
+        "valid_targets": [
+          "normal_wooden_stick"
+        ],
+        "invalid_targets": [
+          "enchanted_staff",
+          "magical_stick"
+        ]
       },
       "save_spec": {
         "category": "none"
@@ -6568,8 +6949,25 @@
           "resolver_args": {}
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 120' range, 6 turns, transforms 2d8 sticks per 4 caster levels into normal snakes obeying caster commands; 50% chance poisonous; revert to sticks on death/dispel/expiration; magical staffs invalid). Custom resolver computes brackets (1 per 4 caster levels, min 1 — L1-L4 = 1 bracket = 2d8 snakes; L5-L8 = 2 brackets = 4d8; etc.) and rolls per-snake poisonous coin flip. Spawn_profile persists allegiance + revert-on-death contract; runtime layer's combat/encounter subsystem consumes the spawn list to add transient combatants. Stick → snake reversion is the active_effect tracker's expiration callback (parallel to Floating Disc's disc_profile)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 120' range, 6 turns, transforms 2d8 sticks per 4 caster levels into normal snakes obeying caster commands; 50% chance poisonous; revert to sticks on death/dispel/expiration; magical staffs invalid). Custom resolver computes brackets (1 per 4 caster levels, min 1 \u00e2\u20ac\u201d L1-L4 = 1 bracket = 2d8 snakes; L5-L8 = 2 brackets = 4d8; etc.) and rolls per-snake poisonous coin flip. Spawn_profile persists allegiance + revert-on-death contract; runtime layer's combat/encounter subsystem consumes the spawn list to add transient combatants. Stick \u00e2\u2020\u2019 snake reversion is the active_effect tracker's expiration callback (parallel to Floating Disc's disc_profile)."
     }
+  },
+  {
+    "spell_key": "stinking_cloud",
+    "spell_name": "Stinking Cloud",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 round per level",
+    "summary": "Creates foul vapors that render creatures within the cloud helpless with nausea unless they save."
   },
   {
     "spell_key": "strength_of_mind",
@@ -6687,6 +7085,25 @@
     "range": "10'",
     "duration": "1 day",
     "summary": "Summons a djinni to serve and obey the summoner for one day."
+  },
+  {
+    "spell_key": "summon_efreeti",
+    "spell_name": "Summon Efreeti",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 8,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "summon_fantastic_creature",
@@ -6847,7 +7264,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 120' range, 6 rounds, object or creature within range). 2 stone (20 lb) per caster level max weight. Move 20'/round. Save vs Spells negates effect on creature OR object the creature holds/carries. Concentration loss + later resume → new save. While concentrating: caster moves at half speed max, no attacks, no spells. New flag is_telekinetically_held with full constraint metadata; consumer (movement_resolver) reads max_weight + movement_feet for the lift/move; SpellCombatHooks consumes ends_on_concentration_break for the cleanup. caster_movement_capped_to_half_speed + caster_blocked_from_attacks_and_spells are caster-side constraints that the combat controller honors when the caster has a telekinesis active_effect."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 120' range, 6 rounds, object or creature within range). 2 stone (20 lb) per caster level max weight. Move 20'/round. Save vs Spells negates effect on creature OR object the creature holds/carries. Concentration loss + later resume \u00e2\u2020\u2019 new save. While concentrating: caster moves at half speed max, no attacks, no spells. New flag is_telekinetically_held with full constraint metadata; consumer (movement_resolver) reads max_weight + movement_feet for the lift/move; SpellCombatHooks consumes ends_on_concentration_break for the cleanup. caster_movement_capped_to_half_speed + caster_blocked_from_attacks_and_spells are caster-side constraints that the combat controller honors when the caster has a telekinesis active_effect."
     }
   },
   {
@@ -6911,8 +7328,27 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch range, instantaneous, subject transported with up to full encumbrance). Save vs Spells negates if unwilling. Familiarity table d% (very_familiar / studied / seen_casually / viewed_once → on_target / off_target / lost). Off-target into solid matter = INSTANT KILL; off-target above ground = falling damage. Lost subjects DO NOT REAPPEAR. Caster cannot intentionally teleport into thin air, off target, or solid. resolver_args.familiarity picked by caster (default 'studied' for headless tests). Custom resolver rolls d% against the familiarity threshold and records on_target/off_target/lost outcome with destination_cell scatter. The lethal solid-matter / falling-damage consequences are applied by the runtime layer after reading the per_target outcome (parallel to Dimension Door's contract pattern)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: touch range, instantaneous, subject transported with up to full encumbrance). Save vs Spells negates if unwilling. Familiarity table d% (very_familiar / studied / seen_casually / viewed_once \u00e2\u2020\u2019 on_target / off_target / lost). Off-target into solid matter = INSTANT KILL; off-target above ground = falling damage. Lost subjects DO NOT REAPPEAR. Caster cannot intentionally teleport into thin air, off target, or solid. resolver_args.familiarity picked by caster (default 'studied' for headless tests). Custom resolver rolls d% against the familiarity threshold and records on_target/off_target/lost outcome with destination_cell scatter. The lethal solid-matter / falling-damage consequences are applied by the runtime layer after reading the per_target outcome (parallel to Dimension Door's contract pattern)."
     }
+  },
+  {
+    "spell_key": "temporal_stasis",
+    "spell_name": "Temporal Stasis",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 8,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "tongues",
@@ -6964,6 +7400,25 @@
     "range": "120'",
     "duration": "1 round per level",
     "summary": "Places the caster in a deep trance that detects specific supernatural presences within range."
+  },
+  {
+    "spell_key": "transform_rock_to_mud",
+    "spell_name": "Transform Rock to Mud",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "transmute_rock_to_mud",
@@ -7068,6 +7523,25 @@
     "range": "60'",
     "duration": "6 rounds",
     "summary": "Violently whirls a target through the air, dealing damage and allowing the caster to fling it."
+  },
+  {
+    "spell_key": "undead_legion",
+    "spell_name": "Undead Legion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 9,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
   },
   {
     "spell_key": "unseen_servant",
@@ -7318,7 +7792,7 @@
           }
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent; normally 1\" thick + up to 1000 sq ft; thicker → area reduced proportionally. May bond to nonliving material OR be upright unattached → can tip and fall. Tipping: random 50/50 unless creatures push (Open Doors throw to push direction). Creatures with room to flee may save vs Blast. Ogre-size or smaller failed save → 10d6 damage. Cannot be <1\" thick. Cannot appear where objects/creatures are. Always flat plane. Edges may shape to fit. Cannot crush larger-than-ogre creatures. Permanent unless destroyed or dispel magic. Subject to rust + perforation as ordinary iron). DEVIATION FROM CATALOG SUMMARY: catalog said '3' thick and 500 sq ft' which is unsourced — RAW is 1\" thick and 1000 sq ft scaled. SACRED wins. Custom resolver enforces area cap (with thickness scaling) + records wall_profile (bonded vs upright_unattached, tipping rules, crush damage 10d6, crush_size_cap=ogre); tipping resolution + crush damage application is consumer-side."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent; normally 1\" thick + up to 1000 sq ft; thicker \u00e2\u2020\u2019 area reduced proportionally. May bond to nonliving material OR be upright unattached \u00e2\u2020\u2019 can tip and fall. Tipping: random 50/50 unless creatures push (Open Doors throw to push direction). Creatures with room to flee may save vs Blast. Ogre-size or smaller failed save \u00e2\u2020\u2019 10d6 damage. Cannot be <1\" thick. Cannot appear where objects/creatures are. Always flat plane. Edges may shape to fit. Cannot crush larger-than-ogre creatures. Permanent unless destroyed or dispel magic. Subject to rust + perforation as ordinary iron). DEVIATION FROM CATALOG SUMMARY: catalog said '3' thick and 500 sq ft' which is unsourced \u00e2\u20ac\u201d RAW is 1\" thick and 1000 sq ft scaled. SACRED wins. Custom resolver enforces area cap (with thickness scaling) + records wall_profile (bonded vs upright_unattached, tipping rules, crush damage 10d6, crush_size_cap=ogre); tipping resolution + crush damage application is consumer-side."
     }
   },
   {
@@ -7375,7 +7849,7 @@
           "resolver_args": {}
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent, up to 1000 cubic feet). Free-form shape: bridge, ramp, structure, crenellations etc. Cannot appear where objects/creatures are. Must rest on solid surface; non-vertical / unsupported forms must merge with + be supported by existing stone. Spans >20' must be arched + buttressed (effective area halved). Crenellations/shaping reduce area further. Permanent unless destroyed or dispel magic. Custom resolver enforces volume cap (with span/shaping reductions); records wall_profile (segments, cubic_feet, span_feet, has_crenellations, support_tags). Persistent effect — no duration tick."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 60' range, permanent, up to 1000 cubic feet). Free-form shape: bridge, ramp, structure, crenellations etc. Cannot appear where objects/creatures are. Must rest on solid surface; non-vertical / unsupported forms must merge with + be supported by existing stone. Spans >20' must be arched + buttressed (effective area halved). Crenellations/shaping reduce area further. Permanent unless destroyed or dispel magic. Custom resolver enforces volume cap (with span/shaping reductions); records wall_profile (segments, cubic_feet, span_feet, has_crenellations, support_tags). Persistent effect \u00e2\u20ac\u201d no duration tick."
     }
   },
   {
@@ -7567,6 +8041,25 @@
     "summary": "Grants the caster large wings and the ability to fly at 120' per round."
   },
   {
+    "spell_key": "wish",
+    "spell_name": "Wish",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 9,
+        "restricted_to": []
+      }
+    ],
+    "range": "TBD",
+    "duration": "TBD",
+    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
+    "_stub": true,
+    "_added_in": "10B.1g.2 PDF ingestion"
+  },
+  {
     "spell_key": "wizard_eye",
     "spell_name": "Wizard Eye",
     "is_reversible": false,
@@ -7614,11 +8107,15 @@
         {
           "kind": "query_game_state",
           "query_kind": "scry_via_floating_eye",
-          "reveals": ["visible_terrain", "visible_creatures", "visible_features"],
+          "reveals": [
+            "visible_terrain",
+            "visible_creatures",
+            "visible_features"
+          ],
           "response_format": "structured_perception"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 6 turns, invisible magical eye). Eye has infravision; otherwise sees as caster (including detect magic, see invisible, detect evil if those affect caster). Created anywhere caster can see within 240'. Moves 40' per round, directed by caster. Tether: never more than 240' from caster. Cannot pass solid objects but passes openings ≥1\" diameter. Caster must concentrate to use the eye (concentration_mode=continuous_focus per duration_model). Apply_flag wizard_eye_active carries metadata for the scry subsystem; query_game_state surfaces a structured perception result. Eye-position rendering is the scry subsystem's job (parallel to Detect Magic / Clairaudience)."
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml: 240' range, 6 turns, invisible magical eye). Eye has infravision; otherwise sees as caster (including detect magic, see invisible, detect evil if those affect caster). Created anywhere caster can see within 240'. Moves 40' per round, directed by caster. Tether: never more than 240' from caster. Cannot pass solid objects but passes openings \u00e2\u2030\u00a51\" diameter. Caster must concentrate to use the eye (concentration_mode=continuous_focus per duration_model). Apply_flag wizard_eye_active carries metadata for the scry subsystem; query_game_state surfaces a structured perception result. Eye-position rendering is the scry subsystem's job (parallel to Detect Magic / Clairaudience)."
     }
   },
   {

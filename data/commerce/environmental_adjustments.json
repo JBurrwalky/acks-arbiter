@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "source": "rules/acore-setting-construction-rules.xml:297-353 (Environmental Adjustments to Demand, post-Q-MERC-1A correction 2026-05-11)",
+  "audit_trail": "docs/phase-10b-prereq-environmental-adjustments-table.md",
+  "_schema_note": "31 merchandise types (20 common + 11 precious). Each entry carries 20 modifier columns split into 4 groups: age (5), water_source (3), climate (10), elevation (2). Halves stored as floats; per RAW step 3 (gdd-settlement-economy.md §4.3), fractions are dropped via truncate-toward-zero AFTER summing all step-2 contributions for a given merchandise.",
+  "entries": {
+    "grain_vegetables": {
+      "display_name": "Grain, vegetables",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -1.0, "101_1000_years": 0.0, "1001_2000_years": 2.0, "2001_plus_years": 3.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": -1.0 },
+      "climate": { "rainforest": 0.0, "savanna": 0.5, "desert": 1.0, "steppe": 0.5, "scrub": -0.5, "grasslands": -1.0, "deciduous_forest": -0.5, "taiga": 0.5, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.5 }
+    },
+    "fish_preserved": {
+      "display_name": "Fish, preserved",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.5 },
+      "water_source": { "sea_coast": -1.0, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 0.0, "savanna": 0.5, "desert": 1.0, "steppe": 0.5, "scrub": 0.0, "grasslands": 0.5, "deciduous_forest": -0.5, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": 0.5, "mountains": 1.0 }
+    },
+    "wood_common": {
+      "display_name": "Wood, common",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 1.0, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": 0.0, "desert": 1.0, "steppe": 0.5, "scrub": 0.0, "grasslands": 0.5, "deciduous_forest": -1.0, "taiga": -1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.5 }
+    },
+    "animals": {
+      "display_name": "Animals",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.5 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": -0.5, "desert": 1.0, "steppe": -1.0, "scrub": 0.0, "grasslands": -0.5, "deciduous_forest": -1.0, "taiga": 0.0, "tundra": 0.5, "plains": 0.0 },
+      "elevation": { "hills": 0.0, "mountains": 0.5 }
+    },
+    "salt": {
+      "display_name": "Salt",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 0.0, "desert": -0.5, "steppe": -0.5, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 0.0, "tundra": 0.0, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.0 }
+    },
+    "beer_ale": {
+      "display_name": "Beer, ale",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": 1.0, "steppe": 1.0, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "oil_lamp": {
+      "display_name": "Oil, lamp",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": 0.0, "river_bank": -0.5 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": 0.5, "steppe": 0.5, "scrub": -1.0, "grasslands": 1.0, "deciduous_forest": 0.0, "taiga": -1.0, "tundra": 0.0, "plains": 0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "textiles": {
+      "display_name": "Textiles",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 0.5, "desert": 1.0, "steppe": 0.5, "scrub": 0.0, "grasslands": -0.5, "deciduous_forest": -1.0, "taiga": -1.0, "tundra": 0.5, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "hides_furs": {
+      "display_name": "Hides, furs",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": 0.0, "savanna": 0.0, "desert": 0.0, "steppe": 0.0, "scrub": 0.0, "grasslands": -0.5, "deciduous_forest": 0.0, "taiga": -0.5, "tundra": -0.5, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.0 }
+    },
+    "tea_coffee": {
+      "display_name": "Tea or coffee",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": -0.5, "desert": -0.5, "steppe": 0.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": 0.5, "taiga": 1.0, "tundra": 1.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "metals_common": {
+      "display_name": "Metals, common",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": 0.0, "steppe": 0.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": 0.5, "taiga": 0.0, "tundra": -0.5, "plains": 0.5 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "meats_preserved": {
+      "display_name": "Meats, preserved",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.5 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": 1.0, "savanna": 0.0, "desert": 1.0, "steppe": -1.0, "scrub": 0.0, "grasslands": -0.5, "deciduous_forest": -1.0, "taiga": 0.0, "tundra": -0.5, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.0 }
+    },
+    "cloth": {
+      "display_name": "Cloth",
+      "precious": false,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": -1.0 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": 0.5, "steppe": 0.0, "scrub": -0.5, "grasslands": -0.5, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "wine_spirits": {
+      "display_name": "Wine, spirits",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": 0.5, "steppe": 1.0, "scrub": -1.0, "grasslands": 1.0, "deciduous_forest": -0.5, "taiga": 0.5, "tundra": 1.0, "plains": 0.5 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "pottery": {
+      "display_name": "Pottery",
+      "precious": false,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": -0.5, "steppe": -0.5, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "tools": {
+      "display_name": "Tools",
+      "precious": false,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": 1.0, "steppe": 1.0, "scrub": -0.5, "grasslands": -0.5, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "armor_weapons": {
+      "display_name": "Armor, weapons",
+      "precious": false,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": 1.0, "steppe": 1.0, "scrub": -0.5, "grasslands": -0.5, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "dye_pigments": {
+      "display_name": "Dye & pigments",
+      "precious": false,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": -0.5, "steppe": 0.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 1.0, "tundra": 1.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "glassware": {
+      "display_name": "Glassware",
+      "precious": false,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": -0.5, "steppe": 0.0, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 1.0, "tundra": 1.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "mounts": {
+      "display_name": "Mounts",
+      "precious": false,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": 1.0, "savanna": 0.5, "desert": -0.5, "steppe": -1.0, "scrub": -0.5, "grasslands": -1.0, "deciduous_forest": 0.0, "taiga": 0.5, "tundra": 1.0, "plains": -1.0 },
+      "elevation": { "hills": 0.5, "mountains": 1.0 }
+    },
+    "monster_parts": {
+      "display_name": "Monster parts",
+      "precious": true,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -0.5, "savanna": -0.5, "desert": -0.5, "steppe": 0.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": -0.5, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": 0.0, "mountains": -1.0 }
+    },
+    "wood_rare": {
+      "display_name": "Wood, rare",
+      "precious": true,
+      "age": { "0_20_years": -1.5, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 1.0, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": 0.0, "desert": 1.0, "steppe": 0.5, "scrub": 0.0, "grasslands": 0.5, "deciduous_forest": -1.0, "taiga": -1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.5 }
+    },
+    "furs_rare": {
+      "display_name": "Furs, rare",
+      "precious": true,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 1.0, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": 0.0, "savanna": 0.0, "desert": 0.0, "steppe": 0.0, "scrub": 0.0, "grasslands": -0.5, "deciduous_forest": 0.0, "taiga": -0.5, "tundra": -0.5, "plains": -0.5 },
+      "elevation": { "hills": 0.0, "mountains": 0.0 }
+    },
+    "metals_precious": {
+      "display_name": "Metals, precious",
+      "precious": true,
+      "age": { "0_20_years": -1.5, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 1.5 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": 0.0, "steppe": 0.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "ivory": {
+      "display_name": "Ivory",
+      "precious": true,
+      "age": { "0_20_years": -1.0, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 1.0, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": -1.0, "desert": -0.5, "steppe": -0.5, "scrub": -0.5, "grasslands": 0.5, "deciduous_forest": 0.5, "taiga": 0.5, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": 0.5, "mountains": 1.0 }
+    },
+    "spices": {
+      "display_name": "Spices",
+      "precious": true,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 0.5 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": -1.0, "desert": -0.5, "steppe": -0.5, "scrub": -0.5, "grasslands": 1.0, "deciduous_forest": 1.0, "taiga": 1.0, "tundra": 0.0, "plains": -0.5 },
+      "elevation": { "hills": 0.5, "mountains": 1.0 }
+    },
+    "porcelain_fine": {
+      "display_name": "Porcelain, fine",
+      "precious": true,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": -0.5, "steppe": -0.5, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": 0.0, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "books_rare": {
+      "display_name": "Books, rare",
+      "precious": true,
+      "age": { "0_20_years": 1.0, "21_100_years": 0.5, "101_1000_years": 0.0, "1001_2000_years": -0.5, "2001_plus_years": -1.0 },
+      "water_source": { "sea_coast": -0.5, "lake_shore": -0.5, "river_bank": -0.5 },
+      "climate": { "rainforest": 1.0, "savanna": 1.0, "desert": 1.0, "steppe": 1.0, "scrub": 0.0, "grasslands": 0.0, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "silk": {
+      "display_name": "Silk",
+      "precious": true,
+      "age": { "0_20_years": 0.5, "21_100_years": -0.5, "101_1000_years": -0.5, "1001_2000_years": -0.5, "2001_plus_years": 1.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -1.0, "savanna": 0.5, "desert": 0.5, "steppe": 0.5, "scrub": -0.5, "grasslands": 1.0, "deciduous_forest": -0.5, "taiga": 1.0, "tundra": 1.0, "plains": -0.5 },
+      "elevation": { "hills": -0.5, "mountains": 0.0 }
+    },
+    "semiprecious_stones": {
+      "display_name": "Semiprecious stones",
+      "precious": true,
+      "age": { "0_20_years": -1.5, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": -0.5, "steppe": 0.0, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": -0.5, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    },
+    "gems": {
+      "display_name": "Gems",
+      "precious": true,
+      "age": { "0_20_years": -1.5, "21_100_years": -0.5, "101_1000_years": 0.0, "1001_2000_years": 0.5, "2001_plus_years": 2.0 },
+      "water_source": { "sea_coast": 0.0, "lake_shore": 0.0, "river_bank": 0.0 },
+      "climate": { "rainforest": -0.5, "savanna": 0.0, "desert": -0.5, "steppe": 0.0, "scrub": -0.5, "grasslands": 0.0, "deciduous_forest": -0.5, "taiga": 0.0, "tundra": 0.0, "plains": 0.0 },
+      "elevation": { "hills": -0.5, "mountains": -0.5 }
+    }
+  }
+}

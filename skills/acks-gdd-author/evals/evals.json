@@ -1,0 +1,40 @@
+{
+  "skill_name": "acks-gdd-author",
+  "evals": [
+    {
+      "id": 1,
+      "name": "new-gdd-raw-implementation",
+      "prompt": "Draft a new GDD for character aging in ACKS Arbiter. The system should implement the ACKS 1e aging rules and tables, including the timing of aging events, the stat changes that happen at each age bracket, and the death-from-old-age mechanic. The relevant rules are in rules/acore_aging_poisons_high-level-start_optional_rules.xml and rules/pc_aging_tables.xml. Save it to generation/gdd-character-aging.md.",
+      "expected_output": "Produces a full first draft (not a skeleton) at generation/gdd-character-aging.md. Header includes Authority, Status (Draft), Depends on ACKS rules with cited XML files + line ranges, Last updated. §1 Purpose explains the system. §2 ACKS Constraints lists the aging rules verbatim with citations to the cited XML files (verified via acks-raw-lookup). §3+ Project Decisions handles project-specific design (when aging is applied, how the timeline interacts with EventScheduler, UI surface). Closes with Open Questions / Architectural Concerns. All citations include line ranges. No D&D-style aging rules invented.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "new-gdd-generation-procedural",
+      "prompt": "I need a GDD for generating tavern menus in the settlement system. The tavern should procedurally generate available drinks and meals with prices, with variation by settlement market class and regional/cultural flavor. ACKS doesn't specify tavern menus directly but the settlement economy and market rules in rules/acore-campaign-hijinks.xml and rules/acore-setting-construction-rules.xml are relevant.",
+      "expected_output": "Produces a full first draft of a procedural-generation GDD (Archetype 2). Header authority field marks as PROJECT-DESIGNED filling an ACKS gap. ACKS Constraints section is thin (only what RAW provides as input — market class, regional cultures, currency). Generation Pipeline section with a top-level outline in a code fence, then step-by-step sections. Weighted tables for menu composition. Depends on gdd-settlement-economy.md and similar. Open Questions flags any overlap with existing settlement/economy GDDs. Saves to generation/gdd-tavern-menus.md or similar.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "refactor-existing-gdd",
+      "prompt": "Update generation/gdd-trap-generation.md to add a new section on disarming-failure consequences. ACKS says trap disarming has a chance of failure; my current GDD doesn't handle what happens when disarming fails (does the trap fire? is it still disarm-able? is it stuck?). Add a project-designed system for this and update the status.",
+      "expected_output": "Reads the existing gdd-trap-generation.md completely BEFORE proposing changes. Preserves the existing ACKS Constraints section unchanged (does not rewrite cited rules silently). Bumps Status to reflect the update (Draft v2 or similar with a note on what's new). Updates Last updated to today's date. Adds Replaces or version note if appropriate. New disarming-failure section is project-designed, cites the disarming rule from rules/acore_proficiencies_rules_and_catalog.xml or similar via acks-raw-lookup. Notes the architectural delta inline.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "ambiguous-scope-asks-clarifying",
+      "prompt": "Draft a GDD for combat.",
+      "expected_output": "Recognizes the topic is too broad and asks clarifying questions BEFORE drafting. Combat in ACKS Arbiter could be the combat-resolution mechanics, combat UI, combat AI for monsters, mass-combat / Domains at War, ranged vs melee subsystems, or any of several other GDDs. Asks Jedidiah to scope down. Does NOT draft a 4000-line monolith covering everything.",
+      "files": []
+    }
+  ],
+  "_notes": [
+    "Eval 1 tests new-GDD mode with a RAW-implementation archetype.",
+    "Eval 2 tests new-GDD mode with a procedural/generation archetype that fills an ACKS gap.",
+    "Eval 3 tests refactor mode and the preservation-of-ACKS-Constraints requirement.",
+    "Eval 4 tests scope discipline — should ask rather than over-draft.",
+    "Assertions intentionally left empty for first pass."
+  ]
+}

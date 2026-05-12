@@ -84,6 +84,13 @@ var _strenuous_accountant: StrenuousAccountant = null
 ## for wave 3 (one game-month after completion) per acore_axioms
 ## §followers_arrival L111-116.
 var _follower_arrival_resolver: FollowerArrivalResolver = null
+## Global SanctumApprenticeResolver (Phase 10B.1d, 2026-05-11). Subscribes to
+## EventBus.stronghold_completed and spawns sanctum apprentices + aspirants
+## into the followers table per Q20 [RESOLVED 2026-05-11]. Promotion-roll
+## resolution lives in DomainHandlers._resolve_magic_research_month, which
+## calls SanctumApprenticeResolver.resolve_promotion_throw for each due
+## aspirant.
+var _sanctum_apprentice_resolver: SanctumApprenticeResolver = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
@@ -669,6 +676,19 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_follower_arrival_resolver = FollowerArrivalResolver.new()
 	_follower_arrival_resolver.setup(_scheduler, _handler_registry)
 
+	# 7g. Register SanctumApprenticeResolver (Phase 10B.1d, 2026-05-11).
+	#     Listens for stronghold_completed events on sanctum-archetype
+	#     strongholds owned by L9+ mage/witch/elven_enchanter/Lightblessed
+	#     casters. Spawns 1d6 apprentices (L1-3) + 2d6 aspirants (0-level
+	#     Normal Men) in the followers table. Promotion-throw resolution
+	#     lives in DomainHandlers._resolve_magic_research_month, called
+	#     each monthly tick for aspirants whose 4-month timer has fired.
+	if _sanctum_apprentice_resolver != null:
+		_sanctum_apprentice_resolver.unsubscribe()
+		_sanctum_apprentice_resolver = null
+	_sanctum_apprentice_resolver = SanctumApprenticeResolver.new()
+	_sanctum_apprentice_resolver.subscribe()
+
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
 		_entity_outliner = EntityOutliner.new()
@@ -821,11 +841,21 @@ func do_encounter_check(terrain: HexTerrainData,
 	return {"triggered": false, "encounter_data": {}}
 
 
-## Picks a random monster for an encounter based on terrain weights.
+## Picks a random monster for an encounter based on terrain.
+##
+## Wilderness flow (terrain != null and no dungeon table):
+##   1. Call EncounterTerrainResolver.resolve(terrain) — picks an encounter
+##      column (handling civilization cascade, water tiles, subtype
+##      overrides) and rolls a creature type from the RAW d8 table, with
+##      any subtype creature-type tilt applied.
+##   2. Filter the catalog by terrain_affinity (column) AND creature type.
+##   3. Fall back to terrain-only if no monster matches both; fall back to
+##      all monsters if no monster is tagged for this terrain.
+##
+## If [param dungeon_wandering_table] is non-empty, it takes precedence —
+## used to scope dungeon wandering rolls to a curated per-dungeon list.
+##
 ## Returns a monster_id from the catalog, or "" if none available.
-## If [param dungeon_wandering_table] is non-empty, it takes precedence over
-## the terrain/catalog fallback — used to scope dungeon wandering rolls to a
-## curated per-dungeon monster list.
 func _pick_encounter_monster(terrain: HexTerrainData,
 		dungeon_wandering_table: Array = []) -> String:
 	if _monster_registry == null or _monster_registry.get_monster_count() == 0:
@@ -835,33 +865,43 @@ func _pick_encounter_monster(terrain: HexTerrainData,
 	if not dungeon_wandering_table.is_empty():
 		return _weighted_pick_from_table(dungeon_wandering_table)
 
-	# Get weighted terrain table keys for this hex
-	var weights: Dictionary = terrain.encounter_table_weights() if terrain != null else {}
-	if weights.is_empty():
-		# Dungeon or unknown — pick from all monsters
-		var all_ids := _monster_registry.get_all_monster_ids()
-		if all_ids.is_empty():
-			return ""
-		return all_ids[randi() % all_ids.size()]
+	# No terrain context (dungeon without a wandering table) — pick uniformly
+	# from the full catalog.
+	if terrain == null:
+		return _pick_uniform_from_all()
 
-	# Collect candidate monsters from all relevant terrain tables
-	var candidates: Array[String] = []
-	for table_key in weights:
-		if table_key == "_natural":
-			continue  # sentinel for borderlands — skip
-		var table_monsters := _monster_registry.get_monsters_for_terrain(table_key)
-		for mid in table_monsters:
-			if mid not in candidates:
-				candidates.append(mid)
+	# Wilderness encounter — resolver picks the RAW column + creature type.
+	var resolved: Dictionary = EncounterTerrainResolver.resolve(terrain)
+	var column: String = resolved.get("column", "")
+	var creature_type: String = resolved.get("creature_type", "")
 
-	if candidates.is_empty():
-		# Fallback: pick from all monsters
-		var all_ids := _monster_registry.get_all_monster_ids()
-		if all_ids.is_empty():
-			return ""
-		return all_ids[randi() % all_ids.size()]
+	if column.is_empty():
+		return _pick_uniform_from_all()
 
-	return candidates[randi() % candidates.size()]
+	var by_terrain: Array[String] = _monster_registry.get_monsters_for_terrain(column)
+	if by_terrain.is_empty():
+		# No monster is tagged for this terrain column — fall back to all.
+		return _pick_uniform_from_all()
+
+	# Narrow by creature type. If the catalog has no monster matching both
+	# the terrain column and the rolled creature type, relax to terrain-only
+	# rather than emit nothing — RAW intent is "some encounter happens here."
+	var filtered: Array[String] = []
+	for mid in by_terrain:
+		var m: Dictionary = _monster_registry.get_monster(mid)
+		if EncounterTerrainResolver.monster_matches_creature_type(m, creature_type):
+			filtered.append(mid)
+
+	if filtered.is_empty():
+		return by_terrain[randi() % by_terrain.size()]
+	return filtered[randi() % filtered.size()]
+
+
+func _pick_uniform_from_all() -> String:
+	var all_ids := _monster_registry.get_all_monster_ids()
+	if all_ids.is_empty():
+		return ""
+	return all_ids[randi() % all_ids.size()]
 
 
 ## Weighted pick from [{"monster_key": String, "weight": int}, ...].

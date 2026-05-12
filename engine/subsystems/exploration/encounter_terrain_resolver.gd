@@ -34,6 +34,83 @@ extends RefCounted
 # that type, e.g. Animal appears twice in Clear/Grass/Scrub → weight 2).
 # ---------------------------------------------------------------------------
 
+## Maps RAW d8 creature-type names to monster_catalog filter specs.
+## A monster matches a creature type if any of its `monster_types` is in the
+## filter's `monster_types` list, OR any of its `sub_types` is in the
+## filter's `sub_types` list. Unknown creature types match anything (no
+## filter applied). Empty creature type (e.g. lake placeholder column)
+## also matches anything.
+##
+## Vocabulary sources:
+##   - monster_types: animal, beast, beastman, construct, dragon, elemental,
+##     enchanted_creature, fantastic_creature, fey, giant, giant_humanoid,
+##     human, humanoid, summoned_creature, undead, vermin.
+##   - sub_types: men, brigand, nomad, pirate, winged, aquatic, cetacean,
+##     amphibian, insect, swarm, lycanthrope, etc. (see data/monsters/
+##     monster_catalog.json for the full vocabulary).
+##
+## Mapping rationale (cross-reference RAW d8 column → catalog filter):
+##   "Men" (Set 1/2 sub-tables list Berserker, Brigand, Cleric*, Fighter*,
+##     Mage, Merchant, Noble, Nomad, NPC Party*, Thief*, Venturer*,
+##     Buccaneer, Pirate, Barbarian*, Medium) — these are PC-class NPCs and
+##     human variants. The catalog tags them with sub_types containing
+##     "men", "brigand", "nomad", or "pirate".
+##   "Humanoid" (Set 1/2 sub-tables list Bugbear, Cyclops, Dryad, Elf, Hill
+##     Giant, Gnoll, Goblin, Hobgoblin, Kobold, Lizard Man, Ogre, Orc,
+##     Pixie, Sprite, Throghrin, Troll, Doppelganger, Dwarf, Gnome,
+##     Halfling, Naiad, Werebear/boar/rat/tiger/wolf) — beastmen, giants,
+##     fey humanoids, demihumans, lycanthropes.
+##   "Animal" — mundane fauna (boar, bear, cat, eagle, hawk, herd animal,
+##     horse, mule, owl, snake, weasel, wolf, plus prehistoric variants).
+##   "Insect" — vermin & swarms (giant ants, bees, beetles, centipedes,
+##     spiders, scorpions, snakes when listed under insects).
+##   "Dragon" — true dragons + dragonkin.
+##   "Undead" — all undead.
+##   "Flyer" — winged creatures (cockatrice, gargoyle, griffon, harpy, etc.).
+##   "Swimmer" — aquatic (crocodile, hydra, octopus, shark, sea creatures).
+##   "Unusual" — anything not in the above categories (most of the
+##     fantastic_creature / enchanted_creature / elemental / construct /
+##     fey / plant pool).
+const CREATURE_TYPE_FILTERS := {
+	"Men": {
+		"monster_types": ["human"],
+		"sub_types": ["men", "brigand", "nomad", "pirate"],
+	},
+	"Flyer": {
+		"monster_types": [],
+		"sub_types": ["winged"],
+	},
+	"Humanoid": {
+		"monster_types": ["beastman", "humanoid", "giant_humanoid", "giant"],
+		"sub_types": ["goblinoid", "lycanthrope", "dwarf", "elf", "gnome", "halfling", "faerie", "nymph"],
+	},
+	"Animal": {
+		"monster_types": ["animal", "beast"],
+		"sub_types": ["herd_animal", "prehistoric"],
+	},
+	"Insect": {
+		"monster_types": ["vermin"],
+		"sub_types": ["insect", "spider", "swarm"],
+	},
+	"Dragon": {
+		"monster_types": ["dragon"],
+		"sub_types": ["dragonkin"],
+	},
+	"Undead": {
+		"monster_types": ["undead"],
+		"sub_types": ["incorporeal"],
+	},
+	"Swimmer": {
+		"monster_types": [],
+		"sub_types": ["aquatic", "cetacean", "amphibian"],
+	},
+	"Unusual": {
+		"monster_types": ["fantastic_creature", "enchanted_creature", "elemental", "construct", "fey", "summoned_creature"],
+		"sub_types": ["plant", "celestial", "planar", "golem"],
+	},
+}
+
+
 const CREATURE_TYPE_TABLE := {
 	"clear_grass_scrub": {
 		"Men": 1, "Flyer": 1, "Humanoid": 1, "Animal": 2,
@@ -119,6 +196,33 @@ static func resolve_column(terrain: HexTerrainData,
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
 	return _pick_column(terrain, rng)
+
+
+## Returns true if the given monster_catalog entry matches the rolled RAW
+## creature type. Used to narrow the monster pool after the encounter
+## resolver picks a column + creature type.
+##
+## Empty / unknown creature types match anything (no filter applied) — this
+## is the safe default for the "lake" placeholder column and for any future
+## column whose CREATURE_TYPE_TABLE entry has not yet been authored.
+static func monster_matches_creature_type(monster_data: Dictionary,
+		creature_type: String) -> bool:
+	if creature_type.is_empty():
+		return true
+	if not CREATURE_TYPE_FILTERS.has(creature_type):
+		return true
+	var filter: Dictionary = CREATURE_TYPE_FILTERS[creature_type]
+	var allowed_mt: Array = filter.get("monster_types", [])
+	var allowed_st: Array = filter.get("sub_types", [])
+	var mt: Array = monster_data.get("monster_types", [])
+	for x in mt:
+		if x in allowed_mt:
+			return true
+	var st: Array = monster_data.get("sub_types", [])
+	for x in st:
+		if x in allowed_st:
+			return true
+	return false
 
 
 ## Applies a tilt dictionary to a base creature-type weight table and

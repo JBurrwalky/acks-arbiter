@@ -291,6 +291,14 @@
 [ext_resource type="Script" path="res://tests/test_faith_block.gd" id="277_faith_block_tests"]
 [ext_resource type="Script" path="res://tests/test_phase_10a3.gd" id="278_phase_10a3_tests"]
 [ext_resource type="Script" path="res://tests/test_phase_10b1a.gd" id="279_phase_10b1a_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1b.gd" id="280_phase_10b1b_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1c.gd" id="281_phase_10b1c_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1d.gd" id="282_phase_10b1d_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1e.gd" id="283_phase_10b1e_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1f.gd" id="284_phase_10b1f_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1g.gd" id="285_phase_10b1g_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1h.gd" id="286_phase_10b1h_tests"]
+[ext_resource type="Script" path="res://tests/test_merchandise_registry.gd" id="287_merchandise_registry_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1164,3 +1172,27 @@ script = ExtResource("278_phase_10a3_tests")
 
 [node name="Phase10B1aTests" type="Node" parent="."]
 script = ExtResource("279_phase_10b1a_tests")
+
+[node name="Phase10B1bTests" type="Node" parent="."]
+script = ExtResource("280_phase_10b1b_tests")
+
+[node name="Phase10B1cTests" type="Node" parent="."]
+script = ExtResource("281_phase_10b1c_tests")
+
+[node name="Phase10B1dTests" type="Node" parent="."]
+script = ExtResource("282_phase_10b1d_tests")
+
+[node name="Phase10B1eTests" type="Node" parent="."]
+script = ExtResource("283_phase_10b1e_tests")
+
+[node name="Phase10B1fTests" type="Node" parent="."]
+script = ExtResource("284_phase_10b1f_tests")
+
+[node name="Phase10B1gTests" type="Node" parent="."]
+script = ExtResource("285_phase_10b1g_tests")
+
+[node name="Phase10B1hTests" type="Node" parent="."]
+script = ExtResource("286_phase_10b1h_tests")
+
+[node name="MerchandiseRegistryTests" type="Node" parent="."]
+script = ExtResource("287_merchandise_registry_tests")

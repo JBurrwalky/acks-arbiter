@@ -3,7 +3,10 @@
   "class_name": "Witch",
   "source": "Player's Companion",
   "race": "human",
-  "prime_requisites": ["WIS", "CHA"],
+  "prime_requisites": [
+    "WIS",
+    "CHA"
+  ],
   "minimum_abilities": {},
   "alignment_restriction": "",
   "sex_restriction": "female",
@@ -14,70 +17,331 @@
   "combat_progression": "mage",
   "base_attack_throw": 10,
   "attack_progression": {
-    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7, "13": 6, "14": 6
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 9,
+    "5": 9,
+    "6": 9,
+    "7": 8,
+    "8": 8,
+    "9": 8,
+    "10": 7,
+    "11": 7,
+    "12": 7,
+    "13": 6,
+    "14": 6
   },
   "saving_throws": {
-    "1":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
-    "2":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
-    "3":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
-    "4":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
-    "5":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
-    "6":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
-    "7":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
-    "8":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
-    "9":  {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
-    "10": {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
-    "11": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
-    "12": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
-    "13": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9},
-    "14": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9}
+    "1": {
+      "petrification": 13,
+      "poison_death": 10,
+      "blast_breath": 16,
+      "staffs_wands": 13,
+      "spells": 15
+    },
+    "2": {
+      "petrification": 13,
+      "poison_death": 10,
+      "blast_breath": 16,
+      "staffs_wands": 13,
+      "spells": 15
+    },
+    "3": {
+      "petrification": 12,
+      "poison_death": 9,
+      "blast_breath": 15,
+      "staffs_wands": 12,
+      "spells": 14
+    },
+    "4": {
+      "petrification": 12,
+      "poison_death": 9,
+      "blast_breath": 15,
+      "staffs_wands": 12,
+      "spells": 14
+    },
+    "5": {
+      "petrification": 11,
+      "poison_death": 8,
+      "blast_breath": 14,
+      "staffs_wands": 11,
+      "spells": 13
+    },
+    "6": {
+      "petrification": 11,
+      "poison_death": 8,
+      "blast_breath": 14,
+      "staffs_wands": 11,
+      "spells": 13
+    },
+    "7": {
+      "petrification": 10,
+      "poison_death": 7,
+      "blast_breath": 13,
+      "staffs_wands": 10,
+      "spells": 12
+    },
+    "8": {
+      "petrification": 10,
+      "poison_death": 7,
+      "blast_breath": 13,
+      "staffs_wands": 10,
+      "spells": 12
+    },
+    "9": {
+      "petrification": 9,
+      "poison_death": 6,
+      "blast_breath": 12,
+      "staffs_wands": 9,
+      "spells": 11
+    },
+    "10": {
+      "petrification": 9,
+      "poison_death": 6,
+      "blast_breath": 12,
+      "staffs_wands": 9,
+      "spells": 11
+    },
+    "11": {
+      "petrification": 8,
+      "poison_death": 5,
+      "blast_breath": 11,
+      "staffs_wands": 8,
+      "spells": 10
+    },
+    "12": {
+      "petrification": 8,
+      "poison_death": 5,
+      "blast_breath": 11,
+      "staffs_wands": 8,
+      "spells": 10
+    },
+    "13": {
+      "petrification": 7,
+      "poison_death": 4,
+      "blast_breath": 10,
+      "staffs_wands": 7,
+      "spells": 9
+    },
+    "14": {
+      "petrification": 7,
+      "poison_death": 4,
+      "blast_breath": 10,
+      "staffs_wands": 7,
+      "spells": 9
+    }
   },
-  "xp_table": [0, 2000, 4000, 8000, 16000, 32000, 65000, 130000, 230000, 330000, 430000, 530000, 630000, 730000],
-  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
-  "weapon_permissions": ["club", "dagger", "dart", "quarterstaff"],
+  "xp_table": [
+    0,
+    2000,
+    4000,
+    8000,
+    16000,
+    32000,
+    65000,
+    130000,
+    230000,
+    330000,
+    430000,
+    530000,
+    630000,
+    730000
+  ],
+  "hd_table": [
+    "1d4",
+    "2d4",
+    "3d4",
+    "4d4",
+    "5d4",
+    "6d4",
+    "7d4",
+    "8d4",
+    "9d4",
+    "9d4+1",
+    "9d4+2",
+    "9d4+3",
+    "9d4+4",
+    "9d4+5"
+  ],
+  "weapon_permissions": [
+    "club",
+    "dagger",
+    "dart",
+    "quarterstaff"
+  ],
   "weapon_restrictions": [],
   "armor_permissions": [],
   "shield_permitted": false,
-  "fighting_styles": ["two_handed"],
+  "fighting_styles": [
+    "two_handed"
+  ],
   "class_proficiency_list": [
-    "alchemy", "apostasy", "beast_friendship", "arcane_dabbling", "black_lore_of_chaos",
-    "contemplation", "craft", "divine_blessing", "divine_health",
-    "elementalism", "elven_bloodline", "familiar", "healing", "illusion_resistance", "laying_on_hands",
-    "loremastery", "magical_engineering", "magical_music", "mystic_aura", "naturalism",
-    "prestidigitation", "prophecy", "quiet_magic",
-    "seduction", "sensing_power", "soothsaying", "theology", "transmogrification",
+    "alchemy",
+    "apostasy",
+    "beast_friendship",
+    "arcane_dabbling",
+    "black_lore_of_chaos",
+    "contemplation",
+    "craft",
+    "divine_blessing",
+    "divine_health",
+    "elementalism",
+    "elven_bloodline",
+    "familiar",
+    "healing",
+    "illusion_resistance",
+    "laying_on_hands",
+    "loremastery",
+    "magical_engineering",
+    "magical_music",
+    "mystic_aura",
+    "naturalism",
+    "prestidigitation",
+    "prophecy",
+    "quiet_magic",
+    "seduction",
+    "sensing_power",
+    "soothsaying",
+    "theology",
+    "transmogrification",
     "unflappable_casting"
   ],
   "proficiency_progression": {
-    "class": [1, 5, 9, 13],
-    "general": [1, 5, 9, 13]
+    "class": [
+      1,
+      5,
+      9,
+      13
+    ],
+    "general": [
+      1,
+      5,
+      9,
+      13
+    ]
   },
   "level_titles": [
-    "Initiate", "Seeress", "Siren", "Pythoness", "Sibyl",
-    "Enchantress", "Sorceress", "Incantrix", "Witch", "Witch, 10th lvl",
-    "Witch, 11th lvl", "Witch, 12th lvl", "Witch, 13th lvl", "Witch Queen"
+    "Initiate",
+    "Seeress",
+    "Siren",
+    "Pythoness",
+    "Sibyl",
+    "Enchantress",
+    "Sorceress",
+    "Incantrix",
+    "Witch",
+    "Witch, 10th lvl",
+    "Witch, 11th lvl",
+    "Witch, 12th lvl",
+    "Witch, 13th lvl",
+    "Witch Queen"
   ],
   "class_powers": [
     {
       "power_id": "divine_casting",
       "unlock_level": 1,
       "tradition": "divine",
-      "spell_list": "divine_cleric",
+      "spell_list": "divine_witch",
       "progression": {
-        "1":  [1, 0, 0, 0, 0],
-        "2":  [2, 0, 0, 0, 0],
-        "3":  [3, 0, 0, 0, 0],
-        "4":  [3, 2, 0, 0, 0],
-        "5":  [3, 3, 0, 0, 0],
-        "6":  [3, 3, 2, 2, 0],
-        "7":  [3, 3, 3, 2, 2],
-        "8":  [5, 5, 3, 3, 2],
-        "9":  [5, 5, 5, 3, 3],
-        "10": [6, 6, 5, 5, 3],
-        "11": [6, 6, 6, 5, 5],
-        "12": [8, 8, 6, 6, 5],
-        "13": [8, 8, 8, 6, 5],
-        "14": [9, 8, 8, 8, 6]
+        "1": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "2": [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "3": [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        "4": [
+          3,
+          2,
+          0,
+          0,
+          0
+        ],
+        "5": [
+          3,
+          3,
+          0,
+          0,
+          0
+        ],
+        "6": [
+          3,
+          3,
+          2,
+          2,
+          0
+        ],
+        "7": [
+          3,
+          3,
+          3,
+          2,
+          2
+        ],
+        "8": [
+          5,
+          5,
+          3,
+          3,
+          2
+        ],
+        "9": [
+          5,
+          5,
+          5,
+          3,
+          3
+        ],
+        "10": [
+          6,
+          6,
+          5,
+          5,
+          3
+        ],
+        "11": [
+          6,
+          6,
+          6,
+          5,
+          5
+        ],
+        "12": [
+          8,
+          8,
+          6,
+          6,
+          5
+        ],
+        "13": [
+          8,
+          8,
+          8,
+          6,
+          5
+        ],
+        "14": [
+          9,
+          8,
+          8,
+          8,
+          6
+        ]
       }
     },
     {
@@ -86,7 +350,12 @@
       "description": "Select one tradition at character creation: Antiquarian, Chthonic, Sylvan, or Voudon. Each adds spells to the class list and grants abilities at 1st, 3rd, 5th, and 7th level.",
       "traditions": {
         "antiquarian": {
-          "bonus_spells": {"1": "detect_poison", "2": "delay_poison", "3": "cure_disease", "4": "cure_serious_wounds"},
+          "bonus_spells": {
+            "1": "detect_poison",
+            "2": "delay_poison",
+            "3": "cure_disease",
+            "4": "cure_serious_wounds"
+          },
           "abilities": {
             "1": "One rank of Healing proficiency",
             "3": "Cure moderate wounds by touch once every 8 hours (1 turn)",
@@ -95,7 +364,12 @@
           }
         },
         "chthonic": {
-          "bonus_spells": {"1": "detect_undead", "2": "spiritual_weapon", "3": "necromantic_potence", "4": "animate_dead"},
+          "bonus_spells": {
+            "1": "detect_undead",
+            "2": "spiritual_weapon",
+            "3": "necromantic_potence",
+            "4": "animate_dead"
+          },
           "abilities": {
             "1": "Seduction proficiency",
             "3": "Black Lore of Chaos proficiency",
@@ -104,7 +378,14 @@
           }
         },
         "sylvan": {
-          "bonus_spells": {"2": ["obscuring_cloud", "silent_step"], "3": "glitterdust", "4": "summon_animals"},
+          "bonus_spells": {
+            "2": [
+              "obscuring_cloud",
+              "silent_step"
+            ],
+            "3": "glitterdust",
+            "4": "summon_animals"
+          },
           "abilities": {
             "1": "Beast Friendship proficiency",
             "3": "Change shape as warlock once per day (1 turn)",
@@ -113,7 +394,12 @@
           }
         },
         "voudon": {
-          "bonus_spells": {"1": "detect_undead", "2": "holy_chant", "3": "prayer", "4": "smite_undead"},
+          "bonus_spells": {
+            "1": "detect_undead",
+            "2": "holy_chant",
+            "3": "prayer",
+            "4": "smite_undead"
+          },
           "abilities": {
             "1": "One Craft proficiency of choice",
             "3": "Turn undead as cleric of half class level; fear spells calculated as 2 levels higher with -2 save penalty",

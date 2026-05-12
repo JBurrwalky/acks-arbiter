@@ -91,6 +91,19 @@ extends RefCounted
 const _FREQUENCY_TABLE_PATH := "res://data/domain_events/encounter_frequency_table.json"
 const _CREATURE_TABLE_PATH := "res://data/domain_events/wilderness_creature_table.json"
 
+# Phase 10B.1g (Q9 shortcut, 2026-05-11): Mage's dungeon-under-tower hook.
+# When a dungeon entrance exists within a domain, encounter frequency is
+# bumped by lowering the throw target. The plan-doc shortcut (vs. the full
+# RAW dungeon-stocking-with-monsters per acore-campaign-hijinks.xml L545-611)
+# is a flat target reduction. Acts as a "the dungeon attracts wandering
+# creatures from miles around" abstraction.
+#
+# Encounter throw fires when `roll >= target`, so a SMALLER target means
+# MORE encounters. We REDUCE the target by this amount when has_dungeon is
+# true. Set conservatively at -1 to avoid pushing encounter frequency past
+# the wilderness ceiling.
+const DUNGEON_UNDER_TOWER_TARGET_REDUCTION: int = 1
+
 # Per-classification number of throws compressed into one monthly call.
 # Civilized: 1 throw / month. Borderlands: 4 weekly throws / month
 # (4 weeks / month). Wilderness: 30 daily throws / month
@@ -148,6 +161,8 @@ static func roll_monthly_encounters_for_domain(
 	var target: int = int(lookup.get("target", 100))
 	if die_sides <= 0 or target <= 0:
 		return summary
+	# Phase 10B.1g (Q9 shortcut, 2026-05-11): Mage's dungeon-under-tower hook.
+	target = apply_dungeon_target_reduction(target, has_dungeon)
 	var alignment: String = String(domain_data.get("alignment", "neutral"))
 	var current_morale: int = int(domain_data.get("morale", 0))
 
@@ -235,6 +250,17 @@ static func roll_monthly_encounters_for_domain(
 # ---------------------------------------------------------------------------
 # Public API: testable helpers
 # ---------------------------------------------------------------------------
+
+## Phase 10B.1g (Q9 shortcut, 2026-05-11): applies the Mage's dungeon-under-
+## tower target reduction. Public for testability. Encounter throw fires on
+## `roll >= target`, so a SMALLER target means MORE encounters. Returns the
+## reduced target if [param has_dungeon] is true, clamped at 1; returns
+## [param base_target] unchanged otherwise.
+static func apply_dungeon_target_reduction(base_target: int, has_dungeon: bool) -> int:
+	if not has_dungeon:
+		return base_target
+	return maxi(1, base_target - DUNGEON_UNDER_TOWER_TARGET_REDUCTION)
+
 
 static func look_up_die_target(territory_size_hexes: int, terrain_band: String) -> Dictionary:
 	_ensure_frequency_loaded()

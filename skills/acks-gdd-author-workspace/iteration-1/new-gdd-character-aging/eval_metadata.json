@@ -1,0 +1,6 @@
+{
+  "eval_id": 1,
+  "eval_name": "new-gdd-character-aging",
+  "prompt": "Draft a new GDD for character aging in ACKS Arbiter. The system should implement the ACKS 1e aging rules and tables, including the timing of aging events, the stat changes that happen at each age bracket, and the death-from-old-age mechanic. The relevant rules are in rules/acore_aging_poisons_high-level-start_optional_rules.xml and rules/pc_aging_tables.xml. Save it as gdd-character-aging.md.",
+  "assertions": []
+}

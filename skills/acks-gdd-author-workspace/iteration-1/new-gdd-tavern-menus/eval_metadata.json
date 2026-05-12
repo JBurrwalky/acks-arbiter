@@ -1,0 +1,6 @@
+{
+  "eval_id": 2,
+  "eval_name": "new-gdd-tavern-menus",
+  "prompt": "I need a GDD for generating tavern menus in the settlement system. The tavern should procedurally generate available drinks and meals with prices, with variation by settlement market class and regional/cultural flavor. ACKS doesn't specify tavern menus directly but the settlement economy and market rules in rules/acore-campaign-hijinks.xml and rules/acore-setting-construction-rules.xml are relevant.",
+  "assertions": []
+}

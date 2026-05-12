@@ -434,6 +434,16 @@ func _compute_ticks_required(def: Dictionary, params: Dictionary) -> int:
 		"ceil(gp_committed / 500)":
 			var gp: int = int(params.get("gp_committed", 0))
 			return maxi(1, int(ceil(float(gp) / 500.0)))
+		# Phase 10B.1b: research_magic — 14 days (2 weeks) per spell level.
+		# Per acore-campaign-general-and-magic-research.xml §research_existing_spell L75.
+		"research_magic_duration":
+			var spell_level: int = int(params.get("target_spell_level", 1))
+			return maxi(14, 14 * spell_level)
+		# Phase 10B.1b: rewrite_spell / replace_spell — 7 days per spell level.
+		# Per ax_campaign_play.xml §rewrite_spell L760 + §replace_spell L772.
+		"rewrite_replace_spell_duration":
+			var spell_level2: int = int(params.get("target_spell_level", 1))
+			return maxi(7, 7 * spell_level2)
 
 	return maxi(1, default_ticks)
 

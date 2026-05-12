@@ -1,0 +1,6 @@
+{
+  "eval_id": 1,
+  "eval_name": "session-start-recent-work",
+  "prompt": "I'm starting a new build session. What did I work on most recently, and what does the last session say I should do next?",
+  "assertions": []
+}

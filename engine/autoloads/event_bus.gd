@@ -1411,6 +1411,11 @@ signal library_built(library_id: String, owner_character_id: String, gp_invested
 ## Emitted when a workshops row transitions from 'building' to 'operational'.
 signal workshop_built(workshop_id: String, owner_character_id: String, gp_invested: int)
 
+## Emitted when a laboratories row transitions from 'building' to 'operational'
+## (or is created already operational). Laboratories enable cross-breeding
+## (RAW L471 separate from libraries/workshops).
+signal laboratory_built(laboratory_id: String, owner_character_id: String, gp_invested: int)
+
 ## Emitted when a followers row is created — covers aspirant arrivals, bard
 ## recruits, class-attracted followers, race followers. source_kind matches
 ## the followers.source_kind enum.

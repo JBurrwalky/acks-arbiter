@@ -1160,8 +1160,8 @@ func test_settled_lair_lingering_creates_settled_lair_kind() -> void:
 	var domain_id := _next_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO domains (id, campaign_id, name, territory_type,
-			peasant_families, urban_families, morale)
-		VALUES (?, ?, 'LairKindTest', 'wilderness', 100, 0, 0)
+			peasant_families, morale)
+		VALUES (?, ?, 'LairKindTest', 'wilderness', 100, 0)
 	""", [domain_id, _campaign_id])
 	# Direct round-trip: create a kind='settled_lair' threat and verify
 	# the row stores it correctly.
@@ -1206,8 +1206,8 @@ func test_settled_lair_morale_penalty_xp_per_family() -> void:
 	var domain_id := _next_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO domains (id, campaign_id, name, territory_type,
-			peasant_families, urban_families, morale)
-		VALUES (?, ?, 'PenaltyTestDomain', 'wilderness', 100, 0, 0)
+			peasant_families, morale)
+		VALUES (?, ?, 'PenaltyTestDomain', 'wilderness', 100, 0)
 	""", [domain_id, _campaign_id])
 	# Create a settled_lair threat: 10 goblins at 5 xp each = 50 xp / 100 fam = 0.5 → 0 (banker).
 	DomainThreatRepository.create_threat({
@@ -1248,8 +1248,8 @@ func test_settled_lair_morale_penalty_subtracts_from_event_modifiers() -> void:
 	var domain_id := _next_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO domains (id, campaign_id, name, territory_type,
-			peasant_families, urban_families, morale)
-		VALUES (?, ?, 'PenaltySumTest', 'wilderness', 50, 0, 0)
+			peasant_families, morale)
+		VALUES (?, ?, 'PenaltySumTest', 'wilderness', 50, 0)
 	""", [domain_id, _campaign_id])
 	# Create 4 wolves @ 35 xp + 4 dire_wolves @ 140 xp = 140 + 560 = 700 xp.
 	# 700 / 50 = 14.

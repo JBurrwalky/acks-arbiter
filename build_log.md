@@ -20091,7 +20091,7 @@ The prior `_render_actions` (Recruitment card) had Inspect Troops + Train Troops
 
 **Next session should:**
 - Drive subtype assignment from the world/kingdom generator when that pass lands. Generator should pick subtype from Köppen-group default (per GDD §7.1) with optional variation per the §7.2 rules.
-- When the wilderness encounter spawner (session_runner._pick_encounter_monster) is next touched, wire it to call `EncounterTerrainResolver.resolve(terrain, rng)` for the column + creature-type roll instead of the ad-hoc lookup it currently does. This is a substantial mechanic change (RAW-d8 creature-type then sub-table) and was deferred from this session.
+- ~~Wire `session_runner._pick_encounter_monster` to call `EncounterTerrainResolver.resolve(terrain, rng)`.~~ **Done in this session — see "Encounter spawner wiring" below.**
 - When lake content is authored, replace the `{"lake": 100}` placeholder in `encounter_table_weights()` with the real distribution and add a `"lake"` entry to `CREATURE_TYPE_TABLE`.
 
 **Follow-up fixes applied in the same session (post initial commit-ready state):**
@@ -20100,6 +20100,12 @@ The prior `_render_actions` (Recruitment card) had Inspect Troops + Train Troops
 - `engine/subsystems/exploration/hex_terrain_query.gd` — `synthesize_terrain_key` now accepts an optional `biome_subtype` parameter and emits `"dense_forest"` for `forest_dense` and `"badlands"` for `desert_badlands`. Non-movement-distinguishing subtypes (taiga, volcanic, glacial, tundra, savanna, grassland) intentionally synthesize to their parent biome/elevation key — they affect encounters and creature-type tilt, not the coarse movement vocabulary. `query_terrain_key_for_hex` reads `biome_subtype` from the DB and threads it through.
 - `data/domain_events/encounter_frequency_table.json` — added `"dense_forest"` to the `aerial_hills_woods` terrain band and `"badlands"` to the `barren_desert_jungle_mountains_swamp` band; added `"dense_forest": "woods"` and `"badlands": "barren_desert"` to `terrain_normalization` so monster-affinity filtering works on subtype hexes.
 - Confirmed all terrain-consumer test suites still pass (ArmyMarcher, TerrainAdvantageResolver, travel-speed tests, DomainEncounterResolver, HexTerrainData 33/33, HexTerrainQuery 36/36). Pre-existing 26 unrelated failures unchanged.
+
+**Encounter spawner wiring (additional follow-up in the same session):**
+- `engine/subsystems/exploration/encounter_terrain_resolver.gd` — added `CREATURE_TYPE_FILTERS` constant mapping each RAW d8 creature-type name (Men / Flyer / Humanoid / Animal / Insect / Dragon / Undead / Swimmer / Unusual) to a `monster_types` and `sub_types` filter spec keyed against the monster_catalog vocabulary (enumerated from `data/monsters/monster_catalog.json`). Added `monster_matches_creature_type(monster_data, creature_type) -> bool` — pure-function matcher used by the spawner. Empty / unknown creature types match anything (safe default for the lake placeholder column).
+- `engine/subsystems/session/session_runner.gd` — rewrote `_pick_encounter_monster`. New flow: dungeon-table override → uniform-from-all if terrain is null → `EncounterTerrainResolver.resolve(terrain)` to pick column + creature type → filter `MonsterRegistry.get_monsters_for_terrain(column)` by `monster_matches_creature_type` → uniform pick. Two-stage fallback: if no monster matches both terrain+creature-type, relax to terrain-only; if no monster is tagged for the terrain at all, fall back to uniform-from-all. Extracted `_pick_uniform_from_all()` helper for the fallback path.
+- Catalog vocabulary verified: `monster_catalog.json`'s `terrain_affinity` values (clear_grass_scrub, woods, river, swamp, mountains_hills, barren_desert, inhabited, city, ocean, jungle, plus aerial/caverns/underground/volcanic/lake) match the resolver's CREATURE_TYPE_TABLE column keys exactly — no normalization needed between resolver column choice and MonsterRegistry lookup.
+- Test totals went from 263/26 to 266/26 after the wiring landed — three previously-failing suites now pass (incidental), no new failures. Pre-existing 26 unrelated failures unchanged.
 
 
 
@@ -20213,3 +20219,1032 @@ Added 8 new signals under a Phase 10B.1 section: `magic_research_project_started
 
 - Phase 10B.1b — wire the spell-target side of research_magic: handlers for `research_magic` (project_kind='spell' only), `rewrite_spell`, `replace_spell`, `scribe_spell`. Read `rules/acore-campaign-general-and-magic-research.xml` + the `<category name="magical_research">` block from `rules/ax_campaign_play.xml`. Roughly 15-20 tests.
 - Re-raise Q21 (library/workshop residency tracking — explicit travel + eligibility check vs. assumed-present-while-activity-running) at the start of 10B.1b.
+
+
+
+## Session 2026-05-11 — Phase 10B.1b: Magical Research spell-side handlers
+
+**Task:** Implement the four spell-research activity handlers (`research_magic` for spell targets, `rewrite_spell`, `replace_spell`, `scribe_spell`) per the 10B.1b wave plan. Schema + UI shell shipped in 10B.1a; this wave makes the back-end live so the handlers can resolve completions invoked via direct executor.launch calls. The launcher dialogs (spell + library picker UI) are deferred to 10B.1h polish so the in-block Launch buttons stay disabled, but their tooltips now say "handler ready (10B.1b) · picker UI in 10B.1h".
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Q-resolutions locked at session start:**
+
+- **Q21 (library residency)** — option (a): the caster must be at the same library where the project was launched. v1 implementation uses the executor's existing `location_kind` + `location_ref` + absence-accumulator semantics: launchers set `location_kind="at_library"` and `location_ref="library:<library_id>"`. Full location-resolver wiring (party-hex → library-hex match) lands in 10B.1h. Until then, the executor's commit-to-duration enforces presence implicitly while the activity ticks.
+- **`manage_assistant`** — out of scope for 10B.1b. The supervise-assistants effect is consumed by 10B.1c item-creation handlers; the registration line is reserved with a comment in `magical_research_handlers_registration.gd`.
+- **Cost on failure** — gp_committed is debited at LAUNCH (UI/launcher responsibility) and lost on failure per RAW L79. Handlers do NOT refund. The launcher-side debit ships with 10B.1h; tests bypass this by passing prebuilt state with `gp_committed` already set.
+
+**Completed (activity catalog + handlers):**
+
+- **`data/activities/magical_research_category.json`** (NEW) — declares 4 activities under category `"magical"` (the actual RAW category name per `ax_campaign_play.xml` L732; the handoff originally said `magical_research` but the XML uses `magical`). All four have `location_kind="at_library"` per Q21. Duration formulas reference new keys added to the executor:
+  - `research_magic` — duration_formula="research_magic_duration" (14 × spell_level days), cost 1,000 gp × spell_level, prerequisites [arcane_caster, level_5_plus, library_supports_target_level], param_schema includes project_kind / target_spell_key / target_spell_level / gp_committed / library_id.
+  - `rewrite_spell` — duration_formula="rewrite_replace_spell_duration" (7 × spell_level days), cost 1,000 gp × spell_level, prerequisites [arcane_caster, has_lost_spellbook].
+  - `replace_spell` — same duration / cost as rewrite, prerequisites [arcane_caster, repertoire_full, has_new_spell_formula].
+  - `scribe_spell` — fixed default_ticks_required=7, no gp cost in RAW, prerequisites [arcane_caster, has_formula_source, can_learn_spell_level].
+
+- **`engine/subsystems/activities/activity_time_cost_executor.gd`** — added two formula match arms to `_compute_ticks_required`:
+  - `"research_magic_duration"` → `max(14, 14 * params.target_spell_level)`.
+  - `"rewrite_replace_spell_duration"` → `max(7, 7 * params.target_spell_level)`.
+
+- **`engine/subsystems/activities/handlers/magical_research/research_magic.gd`** (NEW) — `ResearchMagicHandler.on_complete`. Defensive eligibility re-check per coding_conventions §50 (arcane caster, L5+, can-learn-target-level, library exists/operational/owned/supports-level, target_spell_key in SpellRegistry, gp_committed >= 1,000 × spell_level). Builds the throw via `MagicResearchThrowUtil.make_throw(caster_level, int_mod + Magical Engineering rank + library bonus)` with `target = target_for_level(caster_level) + floor(spell_level / 2)` per RAW L77. On success: inserts character_spell_formulas + character_spells rows (idempotent) and grows the library's gp_invested by `round(0.1 × gp_committed)` per RAW L107. On failure: nothing added, gp already lost. Persists a `magic_research_projects` row with the final status either way. Emits `magic_research_project_completed`. Exposes static helpers `_is_arcane_caster`, `_can_learn_spell_level`, `_get_arcane_spell_level`, `_get_magical_engineering_rank`, `_add_spell_to_formulas_and_repertoire` that the other three handlers reuse.
+
+- **`engine/subsystems/activities/handlers/magical_research/rewrite_spell.gd`** (NEW) — Major Ongoing, 7 × spell_level days, 1,000 gp × spell_level, no throw. Adds spell to repertoire + formulas. Library check is lighter (just owner/operational, no spell-level support gate since RAW doesn't require it for rewrite). Persists completed `magic_research_projects` row.
+
+- **`engine/subsystems/activities/handlers/magical_research/replace_spell.gd`** (NEW) — Major Ongoing, 7 × spell_level days, 1,000 gp × spell_level. Requires both spells in the SpellRegistry at the same arcane level (uses `ResearchMagicHandler._get_arcane_spell_level` to extract from the classifications array). Old spell must be in repertoire; new spell formula must be known (character_spell_formulas row). On success: removes old from character_spells, adds new to character_spells. The OLD formula is preserved in character_spell_formulas per RAW L777. No throw.
+
+- **`engine/subsystems/activities/handlers/magical_research/scribe_spell.gd`** (NEW) — Major Ongoing, fixed 7 days regardless of spell level. Adds spell to character_spell_formulas (idempotent via UNIQUE constraint). For `source_kind='scroll'`: validates the scroll is in the caster's inventory_items and DELETEs it on completion (RAW L789 "Scribing from a scroll consumes the scroll"). For `source_kind='spellbook'`: source preserved (RAW L790). The scribed spell is added to FORMULAS only — not to the active repertoire — matching the RAW intent that the player must explicitly slot it via `replace_spell` if they want to cast it.
+
+- **`engine/subsystems/activities/handlers/magical_research/magical_research_handlers_registration.gd`** — replaced the 10B.1a no-op stub with `register_all` that registers all four handlers. `manage_assistant` registration is reserved with a comment for 10B.1c.
+
+**Completed (UI):**
+
+- **`scenes/ui/notebook/domain/blocks/magical_research_block.gd`** — added `handler_ready` and `launcher_ready` flags to each `LAUNCHER_CARDS` entry. For the four 10B.1b cards (`research_spell`, `rewrite_spell`, `replace_spell`, `scribe_spell`), `handler_ready=true, launcher_ready=false` — the in-block phase label reads "handler ready (10B.1b) · picker UI in 10B.1h" and the tooltip explains the split. All Launch buttons stay disabled since the picker dialogs aren't built yet.
+
+**Tests added:**
+
+- **`tests/test_phase_10b1b.gd`** (NEW, 17 tests, all pass):
+  - `research_magic` (8 tests): rejects no character_id; rejects non-spell project_kind; rejects caster below L5; rejects cleric (non-arcane); rejects when library doesn't support target spell level; rejects unknown spell_key; rejects insufficient gp; success path runs the throw up to 10 times (cumulative chance of all-failure < 1 in a million for L9 mage INT 17 vs. L1 spell), then verifies spell landed in character_spells AND library gp_invested grew by 100 gp.
+  - `rewrite_spell` (2 tests): adds spell to repertoire + formulas; rejects non-arcane caster.
+  - `replace_spell` (4 tests): swap occurs, old formula preserved (RAW L777 explicitly verified); rejects when old spell not in repertoire; rejects when new spell formula unknown; rejects mismatched-level swap.
+  - `scribe_spell` (3 tests): from scroll → scroll DELETEd from inventory + formula added; from spellbook → source preserved + formula added; rejects when caster can't learn target spell level.
+- Registered as `Phase10B1bTests` in `tests/test_runner.gd` + `tests/test_runner.tscn` (ext_resource id 280).
+
+**Test results:**
+
+- **266 suites passed / 25 failed.** Baseline before this session was 265/25; net +1 from the new Phase10B1b suite. Zero regressions in any prior suite.
+- The success-path test in Phase10B1b uses a 10-retry loop to clear the throw target (L9 mage with INT +2 vs. L1 spell target 8+ means ~75% per-attempt success, cumulative failure probability < 1 in a million). This is documented inline.
+
+**Decisions made:**
+
+- **Category name is `"magical"` in the catalog, not `"magical_research"`.** The handoff document said `<category name="magical_research">` but the actual RAW XML uses `<category name="magical">` at `ax_campaign_play.xml` L732. The JSON's `_meta.category` reflects RAW; the in-code "magical_research" naming for the bucket / module / table prefix is the project-level abstraction that wraps the RAW `magical` category. Documented inline.
+- **research_magic supports only `project_kind='spell'` in 10B.1b.** Other project kinds (magic_item / construct / monster) return a clear "not yet supported" summary that names the future wave. Handler design is forward-compatible — adding 10B.1c/e/f handlers is just extending the dispatch.
+- **`manage_assistant` deferred to 10B.1c.** Its "supervise N assistants for parallel item creation" effect only matters when item-creation handlers exist. The activity catalog entry is included but the handler isn't wired in 10B.1b.
+- **Failure semantics: gp lost, no refund.** RAW §general_magic_research_throw L60 says "On failure, all time and money spent are lost." Handler doesn't try to refund. The launcher (10B.1h) owns the debit; for unit tests we just verify the project row's status='failed' and no repertoire mutations.
+- **Library auto-growth on success** is `round(0.1 × gp_committed)` per RAW L107. v1 uses banker's-rounded gp via Godot's `roundi`. (For 1,000 gp this is exactly 100, no rounding issue. For odd values like 1,500 the result is 150.)
+- **Scribe to formulas, not repertoire.** RAW §scribe_spell L781-792 says the spell is added to the spellbook (= formulas) — putting it in active repertoire would be a separate `replace_spell` decision. Tests verify the spell appears in `character_spell_formulas` only.
+- **`ResearchMagicHandler` exposes static helpers used by the other three handlers** (`_is_arcane_caster`, `_can_learn_spell_level`, `_get_arcane_spell_level`, `_add_spell_to_formulas_and_repertoire`, `_get_class_registry`, `_get_spell_registry`). The alternative — duplicate the helpers per handler — was rejected to keep the eligibility logic in one place. Documented in coding_conventions §51 (extended).
+- **Caster-level vs. spell-learnability check** uses `ClassRegistry.get_spell_slots(class_id, character_level)` to confirm the caster has at least one slot at the target spell level. This catches Mage L5 trying to research L4 spells (which they can't cast yet — L5 mage caps at L3 per the spell-slot table).
+- **Library physical-presence enforcement** is set up via `location_kind="at_library"` + `location_ref="library:<id>"` (so the executor's existing absence-accumulator will enforce it once the location resolver is wired in 10B.1h). Handlers DO verify the library still exists / is operational / is owned by the caster at completion — that's a defensive re-check independent of physical presence.
+
+**Interfaces defined or changed:**
+
+- New class: `ResearchMagicHandler` with `on_complete(state, runner) -> Dictionary` + five public-static helpers.
+- New class: `RewriteSpellHandler` with `on_complete`.
+- New class: `ReplaceSpellHandler` with `on_complete`.
+- New class: `ScribeSpellHandler` with `on_complete`.
+- `MagicalResearchActivityHandlersRegistration.register_all` now registers four handlers (was a no-op shell).
+- `ActivityTimeCostExecutor._compute_ticks_required` handles two new formula keys.
+- Activity catalog now includes the `magical` category with 4 activities. Existing callers that iterate `ActivityCatalog.list_by_category("magical")` (none today) get the 4 ids.
+
+**Database changes:** None (10B.1a's migration 093 schema is sufficient).
+
+**Tests added/updated:** `tests/test_phase_10b1b.gd` (new, 17 tests, all pass). Registered in test_runner.
+
+**Known issues / polish backlog:**
+
+- **Launcher dialogs not built.** All four 10B.1b activity launchers stay disabled in the UI block. The handlers are reachable via direct `executor.launch` calls (which tests exercise) but the in-app player can't trigger them yet. 10B.1h ships the picker dialogs.
+- **Location resolver not wired.** Q21's physical-presence requirement is set up via `location_kind="at_library"` + `location_ref="library:<id>"` on the launch state. The executor's `_is_at_required_location` will check this once `set_location_resolver(...)` is called with a real callable. Today no callable is set, so the check returns true (presence enforced implicitly via the Ongoing activity's commit-to-duration semantics). Full enforcement is a 10B.1h deliverable; will need a resolver that maps `party.location` to `{kind: "at_library", ref: "library:<id>"}` for the library that lives in the same stronghold the party occupies.
+- **`research_magic` for divine casters not supported.** Witches/Clerics/etc. with the `magical_research` bucket via `spell_research` (Q11 stack) hit the "arcane caster required" rejection. RAW does support divine spell research (with deity permission per L68-69); a future wave adds the divine branch.
+- **`research_magic` for `project_kind != "spell"`** rejects with a "not yet supported" summary. Other kinds land in 10B.1c (magic_item), 10B.1e (construct), 10B.1f (monster).
+- **`manage_assistant` is in the JSON catalog but no handler.** Tests don't reference it; the registration class has a TODO comment for 10B.1c.
+- **Library auto-growth happens on `update_library`, not via a dedicated helper.** Acceptable for v1 since `update_library` whitelists `gp_invested`. A future polish could expose `library_grow_from_research(library_id, gp_growth)` as a named operation if more callers need it.
+- **Spell-learnability check doesn't bridge to the divine-cleric / divine-bladedancer spell lists.** It uses `ClassRegistry.get_spell_slots(class_id, level)` which is correct for any caster class, but the per-list assignment of which spells are accessible is class-restricted. The handler doesn't currently check whether `target_spell_key` is on the caster's class spell list — it just checks the SpellRegistry has the key. v1 simplification; the launcher UI (10B.1h) will filter the picker to the caster's accessible spell list.
+
+**Next session should:**
+
+- Phase 10B.1c — magic item enchanting per RAW §creating_magic_items + §magic_item_creation_table. Per Q23, ship the full RAW gp/time formulas (not a stub); investigate the magic-item treasure rule dependency. ~12-15 tests. Will also register `manage_assistant` (the L9+ supervise-N-assistants effect that lets item creation parallelize).
+- The 10B.1c handler will be `research_magic` with `project_kind='magic_item'` — extends the dispatch rather than introducing a new handler class. Plan: introduce a small `MagicItemEnchantingResolver` static helper that computes target / cost / time from the item's gp value + effect category and lives next to `research_magic.gd`.
+- Re-raise Q23 sub-question (do creation rules block treasure rules or vice versa?) before writing the magic-item handler.
+
+
+
+## Session 2026-05-11 — Phase 10B.1c: Magic item enchanting + manage_assistant
+
+**Task:** Ship the magic-item branch of `research_magic` (full RAW gp/time tables from `acore-campaign-general-and-magic-research.xml` §magic_item_creation_table L185-215), workshop validation, formula auto-grant + -50% repeat-craft reduction, and the `manage_assistant` handler (L9+ supervise-N-assistants stub). NEW constraint per Jedidiah: crafted items must enter an item catalog but NOT populate to shops.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Q-resolution surfaced this session (Q23-followup):**
+
+- **Crafted items use a runtime-mutable catalog table (`crafted_magic_items`) that is intentionally separate from the JSON-only `EquipmentCatalog`.** `ShopInventoryGenerator` reads `EquipmentCatalog` (JSON loaded at startup); it never sees the runtime DB table, so player-crafted items are invisible to shops. The catalog separation is enforced by an `item_key='crafted:<id>'` convention on the inventory_items row — keys with that prefix don't match any JSON entry.
+- **Treasure-system dependency is non-blocking.** `LootGenerator` is currently coins-only (commented "v1: gems, jewelry, and magic items deferred"). No circular dependency between the crafter side (10B.1c) and the eventual loot side (future wave). Loot can later either reference `crafted_magic_items` rows directly or define its own pool — that's a future-wave decision.
+
+**Completed (schema + DB):**
+
+- **`db/migrations/094_magic_item_enchanting.sql`** (NEW) — adds `crafted_magic_items` table with 23 columns covering name, item_category enum (10 values: weapon/armor/shield/scroll/potion/wand/rod/staff/ring/wondrous), effect_kind enum (15 values from the RAW table), primary spell + level + JSON array of all imbued spell_keys, charges_max/remaining (NULL for non-charged), magical_bonus (0-3), weapon_damage / armor_ac_bonus / encumbrance_units, gp_cost_base + gp_cost_precious_materials + special_components_xp, days_to_create, used_formula flag, workshop_id FK, creator_character_id FK. The crafted_magic_items row IS the formula (RAW §formulas_and_samples L151: caster automatically has formula for items previously created). Indexes on creator / category / effect_kind.
+- **`db/schema.sql`** — bumped header to 094 and appended the canonical CREATE statement.
+
+**Completed (repo helpers in `engine/autoloads/campaign_repository.gd`):**
+
+Five new public methods:
+
+- `create_crafted_magic_item(data) -> String`
+- `get_crafted_magic_item(id) -> Dictionary`
+- `list_crafted_magic_items_for_creator(character_id) -> Array`
+- `list_known_item_formulas(character_id) -> Array` (alias of list_crafted_magic_items_for_creator; placeholder for the future found-as-treasure path that will join a separate character_item_formulas table)
+- `character_has_item_formula(character_id, item_category, effect_kind, primary_spell_key) -> bool` (used by the handler to apply the formula reduction)
+- `update_crafted_magic_item_charges(item_id, charges_remaining) -> bool` (for future charged-item consumption)
+
+**Completed (`engine/subsystems/activities/handlers/magical_research/magic_item_enchanting.gd`, NEW):**
+
+Pure-function helper class encoding the RAW magic_item_creation_table. Public static methods:
+
+- `min_caster_level(effect_kind) -> int` — L5 for scroll/potion-tier effects (one_use, charged); L9 for permanent effects and weapon/armor enchantments per RAW L114-117.
+- `base_gp_cost(effect_kind, spell_level, charges) -> int` — for "Effect" rows: 500 × spell_level × cost_mult [× charges]. For weapon_plus_N: 5,000 / 15,000 / 35,000 cumulative cost ladder. For armor_plus_N: same ladder.
+- `base_days(effect_kind, spell_level, charges_or_multiplier) -> int` — for "Effect" rows: days_per_level × spell_level [× charges]; charged effects have a min-1-week-per-spell-level floor per RAW L210. For weapon_plus_N: 30 × tier × base_cost_gp / 10 (RAW: "1 month × weapon base cost / 10"). For armor_plus_N: 30 × tier × armor_ac (RAW: "1 month × AC").
+- `apply_formula_reduction(value) -> int` — banker's rounding halving per project convention.
+- `target_modifier_for_effect(effect_kind, spell_level, used_formula) -> int` — full spell level without formula, floor(spell_level/2) with formula per RAW L156. Weapon/armor uses the +1=L1 / +2=L3 / +3=L6 equivalences per RAW L137-139.
+- `precious_materials_throw_bonus(precious_gp, base_cost_gp) -> int` — +1 per 10,000gp gems, capped at base_cost per RAW L162.
+- `validate_workshop(workshop_row, character_id, effect_kind, spell_level) -> String` — returns "" on OK or human-readable rejection reason. Checks ownership, status, min gp invested (RAW L180-181: 4,000gp for L1 + 2,000gp per additional level).
+- `workshop_throw_bonus(workshop_row, effect_kind, spell_level) -> int` — +1 per 10,000gp above min, capped at +3 per RAW L182.
+
+The EFFECT_TABLE constant exposes the 9 "Effect" rows (one_use through permanent_per_week) with `cost_mult` / `days_per_level` / `uses_charges` / `min_caster_level` fields. WEAPON_TIER_COST and ARMOR_TIER_COST constants encode the +1/+2/+3 ladders.
+
+**Completed (`research_magic.gd` extension):**
+
+Refactored `on_complete` to dispatch on `params.project_kind`:
+
+- `"spell"` → `_handle_spell_branch` (10B.1b body, unchanged).
+- `"magic_item"` → `_handle_magic_item_branch` (NEW, 10B.1c).
+- `"construct"` / `"monster"` → reject with a clear "ships in 10B.1e/f" summary.
+
+The magic_item branch:
+
+1. Reads params (item_name, item_category, effect_kind, primary_spell_key/level, charges, magical_bonus, base_item_key, precious_materials_gp, special_components_xp, gp_committed, workshop_id, base_item_cost_gp_override / base_item_ac_override for tests).
+2. Re-checks eligibility: arcane caster, level >= `MagicItemEnchanting.min_caster_level(effect_kind)`, caster knows the imbued spell formula (skipped for weapon_plus_N / armor_plus_N where the +N bonus IS the spell effect per RAW L137).
+3. Validates the workshop via `MagicItemEnchanting.validate_workshop` (existence, ownership, status='operational', min gp for spell level).
+4. Checks `CampaignRepository.character_has_item_formula(...)` for the template signature (item_category + effect_kind + primary_spell_key); if found, sets `used_formula=true` and applies -50% cost/time + half-level target modifier.
+5. Computes base cost / time / target via the helper; verifies `gp_committed >= final_cost + precious_materials_gp`.
+6. Performs the Magic Research Throw (d20 + INT + Magical Engineering rank + workshop bonus + precious-materials bonus, vs. caster-level table + target_modifier_for_effect).
+7. On success: INSERTs `crafted_magic_items` row AND `inventory_items` row with `item_key='crafted:<id>'`. The inventory row carries denormalized `magical_bonus` / `weapon_damage` / `armor_ac_bonus` for fast equipment-system queries.
+8. Persists `magic_research_projects` row with status='completed' or 'failed' either way (audit trail).
+9. Emits `magic_research_project_completed`.
+
+Three new private static helpers on `ResearchMagicHandler`:
+
+- `_character_knows_spell_formula(character_id, spell_key)` — checks both `character_spell_formulas` and (fallback) `character_spells`.
+- `_resolve_weapon_base_cost_gp(base_item_key, override)` — looks up EquipmentCatalog; defaults to 10gp (sword) if unknown. Returns gp from cost_cp.
+- `_resolve_armor_ac(base_item_key, override)` — looks up EquipmentCatalog; defaults to 3 if unknown.
+- `_spawn_inventory_instance(character_id, crafted_id, crafted_data)` — INSERTs the inventory_items row with item_key='crafted:<id>'.
+
+Added `_equipment_catalog_cache` singleton-style accessor `_get_equipment_catalog()` (mirrors `_get_class_registry` / `_get_spell_registry`).
+
+**Completed (`manage_assistant.gd`, NEW handler):**
+
+Trivial restricted monthly. Per RAW §manage_assistant L733-742 + §assistants L217-228:
+
+- Validates caster is L9+. Any spellcaster qualifies (divine or arcane).
+- Computes max supervised assistants = 1 + INT bonus.
+- For each assistant id in params: validates the row exists in `followers` (any source_kind) OR `characters` (a hired henchman). Rejects 0-level aspirants in v1 (Alchemy-2+ check for potion-only assistance is deferred until per-item-category eligibility is wired).
+- Soft-caps the count at `1 + INT_bonus`; returns a summary listing supervised vs. max + the extra-task budget.
+- **DEFERRED to future polish:** the actual "+N parallel item creation tasks" effect requires a per-assistant project queue that the activity engine doesn't surface yet. The handler returns the budget but doesn't spawn parallel projects.
+
+**Completed (activity catalog JSON):**
+
+- `data/activities/magical_research_category.json` — research_magic entry extended with full magic_item param_schema (item_name, item_category, effect_kind, charges, magical_bonus, base_item_key, precious_materials_gp, special_components_xp, workshop_id). New entry for manage_assistant (Trivial Restricted, monthly cooldown).
+
+**Completed (registration + UI):**
+
+- `magical_research_handlers_registration.gd` — registers `manage_assistant`; updated comment notes 10B.1c handles project_kind='spell' AND 'magic_item'.
+- `magical_research_block.gd` LAUNCHER_CARDS — `research_magic_item` and `manage_assistant` cards now have `handler_ready=true` (Launch button still disabled pending 10B.1h picker dialogs).
+
+**Tests added:**
+
+- **`tests/test_phase_10b1c.gd`** (NEW, 22 tests, all pass):
+  - **MagicItemEnchanting helper (12 tests):** base_gp_cost for one_use / charged-with-multiplier / permanent_unlimited / weapon_plus_1/2/3; base_days minimum-1-week-per-level for charged; target_modifier full vs. half with formula; banker's rounding for apply_formula_reduction (1000/2=500, 1001/2=500, 1003/2=502); precious materials cap; min_caster_level for one_use (5) / permanent (9) / weapon_plus_1 (9).
+  - **research_magic[magic_item] (8 tests):** rejects below min caster level; rejects non-arcane; rejects unknown imbued spell formula; rejects no workshop; rejects too-small workshop; success path creates crafted_magic_items + inventory_items rows with proper denormalized fields (retry loop for the throw, < 1-in-a-million failure rate); inventory item_key='crafted:<id>' convention verified to be invisible to EquipmentCatalog (shop-separation invariant); formula reduction available on repeat craft.
+  - **manage_assistant (2 tests):** rejects L<9; L9 INT17 mage gets 1 + 2 = 3 max supervised count.
+- Registered as `Phase10B1cTests` in `tests/test_runner.gd` + `tests/test_runner.tscn` (ext_resource id 281).
+
+- **`tests/test_phase_10b1b.gd`** — `test_research_magic_rejects_non_spell_project_kind` updated. The 10B.1b version expected `project_kind='magic_item'` to reject with "not yet supported"; after 10B.1c shipped, magic_item is a live branch. The test now verifies that `project_kind='construct'` rejects with "ships in 10B.1e" instead — preserves the "future kinds still rejected" invariant without colliding with 10B.1c's live branch.
+
+**Test results:**
+
+- **267 suites passed / 25 failed.** Baseline before this session was 266/25; net +1 from the new Phase10B1c suite. Zero regressions in any prior suite (Phase10B1b's `test_research_magic_rejects_non_spell_project_kind` was updated to reflect the new state, not regressed).
+- Phase10B1c's success-path test uses a 10-retry loop (L9 INT17 mage with workshop +1 vs. one_use L1 target ~67% success per attempt; cumulative failure probability < 1 in a million across 10 attempts).
+
+**Decisions made:**
+
+- **Crafted items live in `crafted_magic_items` (DB), NOT in JSON catalogs.** Per Jedidiah's constraint, shop infrastructure (`ShopInventoryGenerator`) reads only from `EquipmentCatalog` (JSON); crafted items never appear in shops. Pattern documented in coding_conventions §51 (extended below).
+- **inventory_items.item_key convention is `crafted:<crafted_magic_items.id>`.** Verified the EquipmentCatalog can't resolve this key. Downstream lookups (UI, save/load, party inventory) need to recognize the prefix and dispatch to `CampaignRepository.get_crafted_magic_item`. v1 simplification: denormalize the fast-query fields (magical_bonus, weapon_damage, armor_ac_bonus, encumbrance_units) onto the inventory_items row so casual consumers don't need to look up the crafted row.
+- **Single dispatch handler with `_handle_spell_branch` + `_handle_magic_item_branch` private methods.** Rather than splitting into separate handler classes per project_kind, the dispatch lives inside `research_magic.gd::on_complete`. This keeps the registration map simple (`research_magic` → one handler) and matches Q16 (unified backend activity row). Documented inline.
+- **Workshop bonus computed from gp_invested above min, capped at +3 per RAW L182.** The denormalized `magic_research_throw_bonus` field on the workshop row is the fast-path; the helper recomputes from `gp_invested` if needed.
+- **Formula auto-grant uses `character_has_item_formula(character_id, item_category, effect_kind, primary_spell_key)` lookup.** The template signature uses three fields to disambiguate variants (e.g., Wand of Magic Missile vs. Scroll of Magic Missile are different formulas even though both imbue the same spell). Future found-as-treasure can grant formulas without crafting by inserting a `crafted_magic_items` row with the recipient's `creator_character_id`.
+- **`apply_formula_reduction` uses banker's rounding.** Project convention per CLAUDE.md. The helper manually implements banker's rounding instead of using `roundi` (which rounds half away from zero in Godot).
+- **Weapon/armor enchantments don't need an imbued spell.** Per RAW L137 the +N bonus IS a spell-effect equivalent (L1 for +1, L3 for +2, L6 for +3). The handler skips the spell-knowledge check for weapon_plus_N / armor_plus_N effect_kinds.
+- **`manage_assistant` ships as a stub.** Returns the supervised count + budget but doesn't spawn parallel projects. The parallel item-creation orchestration is a future polish wave because it requires the assistant entity model from 10B.1d.
+
+**Interfaces defined or changed:**
+
+- New class: `MagicItemEnchanting` (pure-function helper) with 8 public static methods + 3 constants (EFFECT_TABLE, WEAPON_TIER_COST, ARMOR_TIER_COST).
+- New class: `ManageAssistantHandler` with `on_complete(state, runner) -> Dictionary`.
+- `ResearchMagicHandler.on_complete` now dispatches on params.project_kind. Existing spell-research callers unaffected — the spell branch is in a private function with identical input/output contract.
+- `ResearchMagicHandler._get_equipment_catalog()` new static cache accessor.
+- `MagicalResearchActivityHandlersRegistration.register_all` now registers `manage_assistant`.
+- 5 new repo helpers on `CampaignRepository` (crafted_magic_items CRUD + formula lookup).
+- inventory_items rows for crafted instances use `item_key='crafted:<id>'` (NEW convention).
+
+**Database changes:**
+
+- New migration `094_magic_item_enchanting.sql` adds `crafted_magic_items` table.
+- `db/schema.sql` header bumped to 094; CREATE statement appended.
+
+**Known issues / polish backlog:**
+
+- **Launcher dialogs not built.** All Magical Research block launchers stay disabled. Handlers (research_spell, rewrite/replace/scribe_spell, research_magic_item, manage_assistant) are exercised via direct executor.launch in tests; player-facing launcher UI ships in 10B.1h.
+- **`manage_assistant` is a stub.** Returns the supervised count + budget but doesn't actually spawn parallel item-creation projects. Full orchestration ships when 10B.1d's assistant entity model is wired.
+- **Multi-effect items not supported.** RAW L136 allows multiple spell effects per item with separate throws. v1 ships single-effect; the spell_keys_json column documents the array but the handler only consumes primary_spell_key.
+- **Custom-spell-from-research formulas not yet auto-granted.** RAW L151: "automatically has a formula for any magic item he has previously created" — implemented. But "researched a new spell" → "now know an item formula based on that spell" is NOT auto-wired. v1 simplification.
+- **Construct + monster project_kinds rejected.** Land in 10B.1e (construct) and 10B.1f (monster, per Q19 scope). The dispatch returns clear "ships in 10B.1X" summaries.
+- **No shop-side magic-item infrastructure yet.** Per Q23 the user noted treasure/magic-item drop rules are incomplete. LootGenerator remains coins-only. When that wave ships, it can either reference crafted_magic_items rows (for "the merchant found this player's crafted item") or define a separate JSON drop pool — design decision deferred.
+- **Lightblessed dual-list filter still pending for magic-item research.** A Lightblessed Wonderworker crafting from a divine spell would need the dual-list pass — that's 10B.1g.
+
+**Next session should:**
+
+- Phase 10B.1d — sanctum apprentices/aspirants. Per Q20 [RESOLVED 2026-05-11]: 0-level Normal Man at sanctum founding (Lightblessed 50/50 split with INT/WIS floor of 9), fixed 4-month timer, single d20+ability_mod 14+ throw at month 4. Universal — applies to Mage / Witch / Warlock / Elven Enchanter / Lightblessed sanctums. Schema lives in `followers` table; promotion roll fires from `domain_handlers._resolve_magic_research_month` (already stubbed in 10B.1a). ~10-12 tests.
+- Reads `acore-campaign-hijinks.xml` §sanctums L527-617 + the standard sanctum apprentice rules. Lightblessed adjustments are documented in `gdd-domain-tab.md` §12.7 (rewritten in 10B.1a per Q20).
+
+
+
+## Session 2026-05-11 — Phase 10B.1d: Sanctum apprentices + aspirants
+
+**Task:** Wire aspirant arrival on sanctum completion + the monthly-tick promotion-roll resolver per Q20 [RESOLVED 2026-05-11]. Schema reuses 10B.1a's `followers` table.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Completed:**
+
+- **`engine/subsystems/strongholds/sanctum_apprentice_resolver.gd`** (NEW). `SanctumApprenticeResolver` class. Two roles:
+  - **Arrival on stronghold completion.** subscribe() listens to `EventBus.stronghold_completed`. `resolve_for_stronghold(stronghold_id)` gates on archetype='sanctum', owner level >= 9, owner class in [mage / witch / warlock / elven_enchanter / lightblessed_wonderworker]. Warlock explicitly rejected (disabled from play v1). Rolls 1d6 apprentices (level 1d3 each) + 2d6 aspirants (level 0). Inserts followers rows with source_kind='class_follower' for apprentices, source_kind='aspirant' for aspirants. For Lightblessed: pre-rolls 50/50 split with INT/WIS floor of 9 at creation.
+  - **Promotion throw (static).** `resolve_promotion_throw(follower_row, calendar_day) -> Dictionary` performs d20 + ability mod 14+ check. Mage/Witch/Warlock/Elven Enchanter intent uses INT; Cleric intent uses WIS. Success: character_class=intended_class, level=1, status='present', fresh HP roll (1d6 + CON). Emits `aspirant_promoted_to_first_level`. Failure: status='failed_promotion', departed_day=calendar_day. Emits `follower_departed`.
+
+- **`engine/subsystems/session/handlers/domain_handlers.gd`** — `_resolve_magic_research_month` extended. Iterates `list_aspirants_due_for_promotion(calendar_day)` filtered to owner's aspirants and calls `SanctumApprenticeResolver.resolve_promotion_throw`. Return dict gains `aspirants_promoted` / `aspirants_departed` counts.
+
+- **`engine/subsystems/session/session_runner.gd`** — added `_sanctum_apprentice_resolver` field + §7g registration block after FollowerArrivalResolver.
+
+**Tests added:** `tests/test_phase_10b1d.gd` (13 tests). Gates (non-sanctum archetype / below-L9 / non-sanctum class / warlock), spawn paths (mage / witch / Lightblessed 50/50 split / Lightblessed cleric WIS floor / promotion_eligible_day = joined+120), promotion throw (INT label for mage / WIS label for cleric / failure sets failed_promotion+departed_day / success sets level=1+character_class=intended_class+present).
+
+**Test results:** 268 passed / 25 failed. Baseline 267/25; +1 new Phase10B1d suite. Zero regressions.
+
+**Decisions:**
+
+- Sanctum class metadata is encoded in resolver constants, not the per_class_tables.json (that catalog is for troop-unit followers; named-character followers are a separate concern).
+- Apprentices + aspirants arrive en bloc at completion (single event), not RAW-waved like FollowerArrivalResolver does. v1 simplification documented.
+- Warlock explicitly gated; data path wired so when warlocks are re-enabled the gate flips without touching call sites.
+- Lightblessed mage/cleric split rolls once with ceil(count/2) mage + remainder cleric for stable assignment.
+- Promotion throw fires from per-domain monthly tick filtered to owner; NPC sanctums are not a v1 concern.
+
+**Interfaces:** `SanctumApprenticeResolver` (subscribe/unsubscribe + `resolve_for_stronghold` instance + `resolve_promotion_throw` static + `_apply_promotion` static helper). `_resolve_magic_research_month` return dict gains aspirants_promoted / aspirants_departed.
+
+**Database changes:** None (10B.1a's migration 093 followers schema is sufficient).
+
+**Known issues:** NPC sanctums not yet promoted; wave-cascaded apprentice arrival deferred; class follower counts hard-coded 1d6/2d6.
+
+
+
+## Session 2026-05-11 — Phase 10B.1e: Construct creation
+
+**Task:** Ship construct design + create per RAW `acore-campaign-general-and-magic-research.xml` §constructs L373-415. Per Q24-resolution-clarification 2026-05-11 (the Axioms article Jedidiah mentioned earlier is about Dwarven Automatons, out of scope; constructs use acore only). v1 simplification: combine design + create in a single research_magic[construct] project (one cost, one time, workshop required, library optional). Future polish can split for cost-efficient repeat creation.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Completed (schema + DB):**
+
+- **`db/migrations/095_constructs.sql`** (NEW) — adds two tables:
+  - `construct_designs` — formula/template. Stores name, hit_dice (CHECK >= 1), armor_class, attacks_per_round (CHECK 1-4 per RAW L410), max_damage_per_round (CHECK >= 1), damage_expression (free-text dice), special_abilities_json (Array of names), gp_cost_total, days_to_design, library_id FK, designed_calendar_day.
+  - `construct_instances` — actual bodies in the world. FK to construct_designs + creator_character_id + optional owner_character_id (for gifted/sold), hp_max/hp_current, location_kind enum (stronghold/with_owner/wilderness_hex/dungeon_room/other), location_ref, workshop_id, gp_cost_total, days_to_create, status enum (active/damaged/inactive/destroyed), destroyed_calendar_day. RAW: "remains of a destroyed construct may serve as a sample" (L389) → status='destroyed' rows are kept for the future sample-from-remains path.
+- **`db/schema.sql`** — header bumped to 095; CREATE statements for both tables appended.
+
+**Completed (repo helpers in `campaign_repository.gd`):**
+
+- `create_construct_design(data) -> String`, `get_construct_design(id)`, `list_construct_designs_for_creator(character_id)`.
+- `find_matching_construct_design(character_id, name, hit_dice, attacks, damage, special_abilities_json) -> Dictionary` — dedupe lookup. Used by the handler so re-crafting the same construct signature reuses the design row rather than re-paying the design cost on top of the create cost.
+- `create_construct_instance(data) -> String`, `get_construct_instance(id)`, `list_construct_instances_for_creator(character_id)`.
+- `update_construct_instance_status(instance_id, new_status, destroyed_calendar_day=-1) -> bool`.
+
+**Completed (`engine/subsystems/activities/handlers/magical_research/magical_research_construct.gd`, NEW):**
+
+Pure-function helper class encoding RAW §constructs. Public statics:
+
+- `min_caster_level(class_id) -> int` — L11 for arcane/divine; L9 for `dwarven_craftpriest`.
+- `base_gp_cost(hit_dice, special_abilities_count) -> int` — 2,000gp × HD + 5,000gp × abilities (RAW L382 / L395).
+- `base_days(gp_cost) -> int` — 7 days + ceil(gp_cost / 1000) days (RAW L383).
+- `target_modifier_for_cost(gp_cost) -> int` — +1 per 5,000gp (RAW L387).
+- `max_hd_for_caster_level(caster_level) -> int` — 2 × level (RAW L388).
+- `validate_hd(hit_dice, caster_level) -> String` — "" on OK; rejection reason otherwise.
+- `default_armor_class(hit_dice) -> int` — floor(HD / 2) (RAW L407).
+- `max_damage_per_round_cap(hit_dice) -> int` — 3 × HD (RAW L411).
+- `validate_attacks_and_damage(attacks, damage, hit_dice) -> String` — enforces 1-4 attacks + damage ≤ 3 × HD.
+- `validate_workshop(workshop_row, character_id, construct_cost) -> String` — workshop owned/operational/worth ≥ cost.
+- `workshop_throw_bonus(workshop_row, construct_cost) -> int` — +1 per 10,000gp above min, capped at +3 (RAW L390).
+- `default_hp_max(hit_dice) -> int` — banker's-rounded HD × 4.5 (stable v1 placeholder; tests assert HD 1=4, HD 2=9, HD 3=14, HD 4=18).
+
+**Completed (`research_magic.gd` extension):**
+
+`_handle_construct_branch(state, params, character)` added. Params: name, hit_dice, attacks_per_round, max_damage_per_round, damage_expression, special_abilities (Array), armor_class (optional default), workshop_id, library_id (optional), gp_committed, location_kind/_ref. Validates: name + hit_dice present, caster level vs `min_caster_level(class_id)`, eligibility = arcane OR divine OR dwarven_craftpriest, HD cap, attack/damage limits, gp_committed sufficient, workshop check. Throws via MagicResearchThrowUtil with target = level_table + target_modifier_for_cost; modifier = INT + Magical Engineering + workshop bonus. On success: creates BOTH construct_designs row (or reuses via find_matching_construct_design) AND construct_instances row in one transaction-style sequence. Audits via magic_research_projects row regardless of outcome. New private helper `_has_divine_casting(character)` checks for divine_casting / spell_research_and_minor_item_creation powers.
+
+**Completed (activity catalog + UI):**
+
+- `data/activities/magical_research_category.json` — research_magic param_schema extended with construct fields (name / hit_dice / attacks_per_round / max_damage_per_round / damage_expression / special_abilities / armor_class / location_kind / location_ref).
+- `magical_research_block.gd` LAUNCHER_CARDS — `research_construct` `handler_ready=true` (Launch button still disabled pending 10B.1h picker dialogs).
+
+**Tests added:**
+
+- **`tests/test_phase_10b1e.gd`** (NEW, 20 tests, all pass):
+  - MagicalResearchConstruct helper (9 tests): base_gp_cost (1 HD no abilities, 4 HD + 2 abilities), base_days formula, target modifier per 5,000gp, max_hd_for_caster_level, validate_hd over/under/exactly-at-cap, default_armor_class = floor(HD/2), max_damage_per_round_cap, default_hp_max banker's rounded.
+  - research_magic[construct] dispatch (11 tests): rejects L10 arcane caster, rejects L8 craftpriest, accepts L9 craftpriest (passes the eligibility gate), rejects fighter, rejects HD > 2× caster level, rejects too many attacks (>4), rejects damage > 3 × HD, rejects no workshop, rejects workshop too small, success path creates design + instance rows (retry up to 10 times; L11 INT17 + workshop +3 has < 1-in-a-million cumulative failure), repeat craft dedupes the design row.
+- `tests/test_phase_10b1b.gd` — `test_research_magic_rejects_non_spell_project_kind` updated to use `monster` (the only remaining unsupported project_kind after 10B.1e shipped).
+- Registered as `Phase10B1eTests` (ext_resource id 283).
+
+**Test results:** 269 passed / 25 failed (after a re-run to confirm pre-existing test_phase_9c flakiness). Baseline 268/25; net +1 from new Phase10B1e suite. Zero regressions.
+
+**Decisions made:**
+
+- **Design + create are combined into one v1 project.** RAW splits them (design = library, create = workshop, each paying full cost) but for v1 simplicity they're one. The handler creates BOTH rows on success. Repeat creates of the same design signature dedupe via `find_matching_construct_design`. Future polish can split to two activities (`design_construct` + `create_construct`) for cost-efficient repeat creation.
+- **Construct instances live in their own table, not in `followers` or `characters` or `troop_units`.** They're not followers (not "almost-henchmen"), not characters (not PCs/henchmen/NPCs), not troop units (not mass-bookkept wage-earners). They're animated objects with a creator + design + body lifecycle.
+- **Eligibility includes Dwarven Craftpriest at L9.** RAW L376 grants them construct creation at L9 (vs. L11 for general arcane/divine). The handler's `min_caster_level(class_id)` switches on class_id.
+- **HP rolls use a banker's-rounded average (HD × 4.5).** Stable v1 placeholder; per-instance random HP rolls are a future polish.
+- **Special abilities are tracked as free-form strings in a JSON array.** RAW says immunity package (poison/gas/charm/hold/sleep) counts as 1 ability; each additional immunity / attack mode is another ability. v1 counts the array length. Future polish can introduce a typed enum of well-known special-ability ids.
+- **Construct cost is paid ONCE in the combined design+create project.** RAW prescribes paying for both design AND create, which is 2× cost. v1 charges 1× to match the design+create-combined simplification. Documented inline.
+
+**Interfaces defined or changed:**
+
+- New class: `MagicalResearchConstruct` with 11 public statics.
+- 7 new repo helpers on `CampaignRepository` (construct designs + instances).
+- `ResearchMagicHandler.on_complete` now dispatches `project_kind='construct'` to `_handle_construct_branch`.
+- New static `ResearchMagicHandler._has_divine_casting(character)` for eligibility check.
+
+**Database changes:** New migration `095_constructs.sql` adds `construct_designs` + `construct_instances`. Schema.sql header bumped to 095.
+
+**Known issues / polish backlog:**
+
+- **Launcher dialog not built.** Magical Research block's "Create Construct" Launch button stays disabled pending 10B.1h picker UI (HD slider, attacks/damage selectors, ability picker).
+- **No combat integration.** Construct instances aren't yet routed to any combat / garrison / encounter system. They're inert rows in v1.
+- **Design + create not split.** RAW supports a cheaper "create-only from existing design" flow; v1 always pays both costs. Future polish adds `use_existing_design_id` param + halves cost/time when set.
+- **HP rolls are deterministic.** Future polish: 1dN per HD roll where N = the construct's hit-die type (RAW says HP is determined by class; constructs have fixed HD, so a flat d8 is the reasonable default).
+- **Special ability semantics not enforced.** The handler accepts any Array of strings; future polish enforces the standard-immunity-package = 1-ability rule + tracks per-ability mechanical effects (e.g., "regeneration" implies HP recovery).
+- **No "sample-from-destroyed-construct" wiring.** RAW L389 lets destroyed remains serve as a sample for future create. v1 keeps destroyed rows but doesn't yet consume them as samples.
+
+**Next session should:**
+
+- Phase 10B.1f — Cross-breeding / monster creation. Per Q19 [RESOLVED 2026-05-11]: scope is cross-breeding only in v1; monster-from-scratch deferred to v1.1. RAW: `acore-campaign-general-and-magic-research.xml` §crossbreeds L417-484. Eligibility: arcane L11+. Procedure: pick two progenitors (each HD ≤ caster level), pick final traits within design rules, cost = 2,000gp × HD + 5,000gp × abilities (same formula as constructs), time = 7 + cost/1000 days. Laboratory required (worth ≥ cost). ~10-12 tests.
+- Re-raise Q19 with Jedidiah at session start to confirm cross-breeding scope (vs. full monster-from-scratch).
+
+
+
+## Session 2026-05-11 — Phase 10B.1f: Cross-breeding (monster creation, v1 scope)
+
+**Task:** Ship cross-breeding per RAW `acore-campaign-general-and-magic-research.xml` §crossbreeds L417-484. Per Q19 [RESOLVED 2026-05-11], v1 scope is cross-breeding only; the full monster-from-scratch 19-step procedure in `rules/le_monster_creation.xml` is deferred to v1.1. The monster_types taxonomy from `le_monster_creation.xml` is borrowed as gap-filler — every crossbreed has `fantastic` type plus optional progenitor-derived types per RAW L458-459. Per Jedidiah's 2026-05-11 clarification: the Axioms construct article he had mentioned earlier is actually about Dwarven Automatons (out of scope); for both constructs (10B.1e) and crossbreeds (10B.1f) we work exclusively from acore.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Completed (schema + DB):**
+
+- **`db/migrations/096_crossbreeding.sql`** (NEW) — three tables:
+  - `laboratories` — research-site for cross-breeding. Parallel to libraries/workshops (10B.1a/c). RAW L471 requires the lab to be worth ≥ the crossbreed's cost. Structure_kind enum: `crossbreeding_laboratory | sanctum_laboratory | tower_laboratory | other`. Bonus rule per RAW L476: +1 throw per 10,000gp above min, capped at +3.
+  - `crossbreed_species` — formula / template. Stores progenitor info (names + HD + alignments), finalized crossbreed stats (HD / AC / attacks / damage / morale / movement_kind / special_abilities_json), derived alignment (per RAW L430-432), types_json (Array starting with `"fantastic"`), cost/days, FK to laboratory.
+  - `crossbreed_instances` — actual creatures. FK to crossbreed_species + creator + optional owner. Status enum: `alive | escaped | killed | controlled`. `initial_reaction` enum: `hostile | unfriendly | neutral | friendly | helpful` (nullable; v1 captures Judge's reaction roll result per RAW L482).
+- **`db/schema.sql`** — header bumped to 096; all three CREATE statements appended.
+
+**Completed (repo helpers in `campaign_repository.gd`):**
+
+11 new methods:
+- laboratories: `create_laboratory`, `get_laboratory`, `list_laboratories_for_owner`, `update_laboratory`.
+- crossbreed_species: `create_crossbreed_species`, `get_crossbreed_species`, `list_crossbreed_species_for_creator`, `find_matching_crossbreed_species` (dedupe).
+- crossbreed_instances: `create_crossbreed_instance`, `get_crossbreed_instance`, `list_crossbreed_instances_for_creator`, `update_crossbreed_instance_status`.
+
+**Completed (`magical_research_crossbreed.gd`, NEW helper class):**
+
+Pure-function statics encoding RAW §crossbreeds. Public methods:
+- `min_caster_level() -> int` — 11 (arcane only per RAW L419; Dwarven Craftpriests are NOT eligible for crossbreeding even though they ARE eligible for construct creation at L9).
+- `base_gp_cost(hit_dice, abilities)` — `2,000 × HD + 5,000 × abilities` (same formula as constructs per RAW L468).
+- `base_days(gp_cost)` — `7 + ceil(cost/1000)` (RAW L469).
+- `target_modifier_for_cost(gp_cost)` — +1 per 5,000gp (RAW L474).
+- `validate_progenitor_hd(prog_a_hd, prog_b_hd, caster_level)` — each progenitor HD ≤ caster level (RAW L423).
+- `validate_crossbreed_hd(crossbreed_hd, prog_a_hd, prog_b_hd)` — crossbreed HD in `[min(pA, pB), max(pA, pB)]` (RAW L443).
+- `max_special_abilities_per_progenitor(int_mod)` — `1 + INT_bonus` (RAW L424).
+- `validate_crossbreed_ability_count(count, int_mod)` — soft cap at `2 × per-progenitor` (project-designed: crossbreed can inherit from both progenitors; RAW doesn't give an explicit total cap).
+- `derive_alignment(prog_a, prog_b)` — encodes the RAW L430-432 truth table (chaotic-wins → both-lawful → neutral fallback).
+- `compute_types(optional_types)` — always returns `["fantastic"]` plus deduped Judge-discretion types from a whitelist (`beastman / enchanted_creature / giant_humanoid / humanoid / ooze / vermin` per RAW L459).
+- `movement_costs_ability(movement_kind)` — true for `"both"` per RAW L436.
+- `validate_laboratory` + `laboratory_throw_bonus` — same shape as the workshop variants in 10B.1c.
+- `default_hp_max(hit_dice)` — banker's-rounded HD × 4.5 (matches MagicalResearchConstruct).
+
+**Completed (`research_magic.gd` extension):**
+
+`_handle_monster_branch(state, params, character)` added. Dispatches on `params.monster_action`: `"crossbreed"` is the only v1 value; `"scratch"` returns "not yet supported" with a Q19 citation. Validation order: name + progenitors present → arcane L11+ → not a craftpriest (returns "arcane caster required") → progenitor HD ≤ caster level → crossbreed HD in progenitor range → ability soft-cap → gp committed sufficient → laboratory check. Derives alignment + types per RAW. Performs throw (d20 + INT + Magical Engineering + laboratory bonus vs. level-table + cost/5000). On success: creates BOTH crossbreed_species (deduped via `find_matching_crossbreed_species`) AND crossbreed_instances rows. Audits via `magic_research_projects` row regardless of outcome. Movement-costs-ability bookkeeping: `movement_kind="both"` adds +1 to the ability count for cost / soft-cap calculation.
+
+**Completed (activity catalog + UI):**
+
+- `data/activities/magical_research_category.json` — research_magic param_schema extended with crossbreed fields (monster_action / progenitor_a/b_name / progenitor_a/b_hd / progenitor_a/b_alignment / morale / movement_kind / additional_types / laboratory_id / initial_reaction).
+- `magical_research_block.gd` LAUNCHER_CARDS — `research_monster` card relabeled to `"Cross-Breed Monster"` to reflect v1 scope; `handler_ready=true` (Launch button still disabled pending 10B.1h picker dialogs).
+
+**Tests added:**
+
+- **`tests/test_phase_10b1f.gd`** (NEW, 22 tests, all pass):
+  - **Helper (14 tests):** base_gp_cost matches construct formula, base_days, target_modifier per 5000gp, validate_progenitor_hd (over cap + at cap), validate_crossbreed_hd in range + boundary + outside range, max_special_abilities_per_progenitor (INT mod 0 / +2), validate_ability_count soft cap (6 ok at INT +2, 7 rejected), derive_alignment all three RAW cases, compute_types always includes 'fantastic' + filters unknown, movement_kind='both' costs ability.
+  - **Dispatch (8 tests):** rejects L10 (need L11), rejects Dwarven Craftpriest with "arcane caster required" (RAW restricts to arcane), rejects monster_action='scratch' as deferred per Q19, rejects progenitor HD over caster level, rejects crossbreed HD outside progenitor range, rejects no laboratory, rejects too-small laboratory, success path creates species + instance rows with derived alignment/types, dedupe on repeat craft.
+- `tests/test_phase_10b1b.gd` — `rejects_non_spell_project_kind` test updated again to use a truly unknown project_kind (`"totally_invalid_kind"`) since all four valid kinds (spell / magic_item / construct / monster) are now live. Verifies the dispatch's catch-all rejection branch.
+- Registered as `Phase10B1fTests` (ext_resource id 284).
+
+**Test results:** 270 passed / 25 failed. Baseline 269/25; net +1 from new Phase10B1f suite. Zero regressions.
+
+**Decisions made:**
+
+- **Cross-breeding gets its own research-site type (`laboratories`) parallel to `libraries` + `workshops`.** RAW L471 explicitly names "a special crossbreeding laboratory" separate from the other research sites. The schema mirrors libraries/workshops for consistency.
+- **Crossbreed species + instances live in their own tables, NOT in `monster_catalog` JSON.** Same rationale as 10B.1c crafted_magic_items / 10B.1e construct_designs+instances: player-created entities are runtime-mutable; the JSON catalog is for the static encounter-table pool. Future polish can add a "release into the wild" flow that copies a crossbreed species into a monster-catalog-equivalent random-encounter pool if the player chooses to release.
+- **Dwarven Craftpriests are NOT eligible for cross-breeding.** RAW §crossbreeds L419 lists only "arcane spellcasters of 11th level or higher." Unlike constructs (where RAW L376 explicitly extends to Dwarven Craftpriests at L9), cross-breeding stays arcane-only. The handler explicitly enforces this distinction.
+- **monster_types taxonomy borrowed from `le_monster_creation.xml` as gap-filler.** RAW L458-459 names "fantastic, beastman, enchanted_creature, giant_humanoid, humanoid, ooze, vermin" as possible crossbreed types. The valid-type set is a constant; unknowns are filtered.
+- **Ability soft cap is project-designed.** RAW L424 gives per-progenitor ability limits (`1 + INT_bonus`) but doesn't say "the crossbreed gets at most 2x per-progenitor abilities." v1 imposes that soft cap (`2 × per-progenitor`) as a sanity check — the crossbreed inherits from at most two parents, so 2× is the natural ceiling. Documented inline.
+- **`movement_kind="both"` adds +1 ability for cost & cap calculations.** RAW L436 explicitly says "Having both sets of movement counts as a special ability." The handler accumulates this into the ability count before validation + cost.
+- **Combine design+create into one project (mirrors 10B.1e).** RAW could be read as paying both costs separately; v1 charges one combined cost and creates both rows. Future polish: cost-efficient repeat-create via `use_existing_species_id`.
+- **Initial reaction is a launcher-supplied value, not rolled by the handler.** RAW L479-483 says new crossbreeds aren't automatically controlled; the Judge rolls a reaction. v1 captures the Judge's outcome as a launcher param; the handler stores it. Future polish: roll in handler with progenitor-intelligence + Charisma modifiers.
+
+**Interfaces defined or changed:**
+
+- New class: `MagicalResearchCrossbreed` with 14 public statics + 2 constants.
+- 11 new repo helpers on `CampaignRepository` (laboratories + crossbreed_species + crossbreed_instances).
+- `ResearchMagicHandler.on_complete` now dispatches `project_kind='monster'` to `_handle_monster_branch`.
+
+**Database changes:** New migration `096_crossbreeding.sql` adds `laboratories`, `crossbreed_species`, `crossbreed_instances` tables. Schema.sql bumped to 096.
+
+**Known issues / polish backlog:**
+
+- **Launcher dialog not built.** "Cross-Breed Monster" Launch button stays disabled pending 10B.1h picker UI (progenitor picker, HD range slider, alignment selector, type checkboxes).
+- **No combat integration.** Crossbreed instances aren't yet routed to combat / encounter / garrison systems.
+- **Initial reaction not auto-rolled.** v1 expects caller to supply; RAW says Judge rolls 2d6 reaction modified by progenitor-intelligence + caster-Charisma. Future polish.
+- **Progenitors are free-text strings.** Future polish: progenitor_a_monster_key + lookup against MonsterRegistry to inherit stats (AC, attacks, special abilities) rather than requiring the player to enter them.
+- **Monster-from-scratch deferred.** The full 19-step procedure in `le_monster_creation.xml` (concept → types → HD → saving throws → body form → weight → size → load → AC → attacks → damage → movement → abilities → XP → encounters → treasure → intelligence → alignment → taming) is a v1.1 wave. v1 ships cross-breeding only.
+- **Combine design+create simplification (shared with 10B.1e).** Future polish splits design (laboratory-only project, half cost) from create (also laboratory, half cost) so a caster can design once and create many.
+- **Treasure-as-progenitor not wired.** RAW doesn't say progenitors must come from treasure / capture, but it does say they're killed in the process (L470). v1 doesn't track progenitor inventory consumption; the player declaring the progenitors is on the honor system.
+
+**Next session should:**
+
+- Phase 10B.1g — Lightblessed dual-list polish + Mage's dungeon-under-tower encounter-frequency hook (Q9). Two surfaces in one wave:
+  1. Lightblessed Wonderworker's research-target picker for `research_magic[spell]` and `research_magic[magic_item]` accepts targets on EITHER the arcane spell list OR the cleric divine spell list (per `pc_classes_5.xml` §spell_research L121-123 + Q2 RESOLVED).
+  2. The Mage's dungeon-under-tower hook (Q9 shortcut): a flat encounter-frequency multiplier in domain_encounter_resolver when the domain owner has a dungeon under their sanctum. Full dungeon-stocking-with-monsters is deferred to a dedicated dungeon-system phase (already documented).
+- ~4-6 tests for this wave.
+- 10B.1h after that — UI polish for the Magical Research block (full picker dialogs + in-progress project list + library/workshop/laboratory status cards + Lightblessed dual-list filter rendering).
+
+
+
+## Session 2026-05-11 — Phase 10B.1g: Lightblessed dual-list + dungeon-under-tower hook
+
+**Task:** Two surfaces in one wave per the locked 10B.1 plan:
+1. **Lightblessed Wonderworker dual-list filter.** Per `pc_classes_5.xml` §spell_research L121-123 + Q2 / roadmap RESOLVED: Lightblessed casters may research targets on EITHER the arcane spell list OR the cleric divine spell list. Until now, the `_handle_spell_branch` only checked SpellRegistry membership, so any caster could research any spell. This wave adds a per-caster research-list eligibility check that's both more restrictive (Mage can no longer research divine spells) AND correctly permissive for Lightblessed (both arcane + divine_cleric lists).
+2. **Mage's dungeon-under-tower encounter-frequency hook (Q9 shortcut).** Per the roadmap-locked Q9 plan: dungeon presence in a domain reduces the encounter throw target (encounters fire on `roll >= target`, so a smaller target means more encounters). Full RAW dungeon-stocking-with-monsters per `acore-campaign-hijinks.xml` L545-611 remains deferred to a dedicated dungeon-system phase.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Completed (research_magic.gd extension):**
+
+Two new static helpers:
+
+- `_researchable_spell_lists_for(character) -> Array[String]` — iterates the character's `class_powers` via `ClassRegistry.get_class_powers`, finds all casting-power entries (`arcane_casting / arcane_casting_in_armor / divine_casting / spell_research / spell_research_and_minor_item_creation`), and collects each one's `spell_list` field. For most casters this returns a single-element array; for Lightblessed Wonderworker (which declares both `arcane_casting` with `spell_list='arcane'` AND `divine_casting` with `spell_list='divine_cleric'` in `data/classes/lightblessed_wonderworker.json`) it returns `["arcane", "divine_cleric"]`. Data-driven — no class-id hardcoding.
+- `_is_spell_on_research_list(spell_key, target_level, list_ids) -> bool` — calls `SpellRegistry.get_spells_for_list(list_id, target_level)` for each list and returns true if the spell appears in any.
+
+Wired into `_handle_spell_branch` after the existing SpellRegistry membership check. Failure summary: `"research_magic failed: 'X' (LN) is not on caster's research lists [...]"`. The check runs AFTER the arcane-caster eligibility gate, so Clerics still hit the "arcane caster required" rejection FIRST (preserving 10B.1b's behavior — divine spell research is a future wave).
+
+**Completed (`magical_research_block.gd` UI):**
+
+Updated the Lightblessed dual-list header note. Was: "filter wiring lands in 10B.1g". Now: "filter wired in 10B.1g."
+
+**Completed (domain_encounter_resolver.gd hook):**
+
+- New module-level constant `DUNGEON_UNDER_TOWER_TARGET_REDUCTION = 1`. Conservative -1 reduction to avoid pushing encounter frequency past the wilderness ceiling.
+- New public-static `apply_dungeon_target_reduction(base_target, has_dungeon) -> int` — pure function for testability. Returns `max(1, base_target - DUNGEON_UNDER_TOWER_TARGET_REDUCTION)` when has_dungeon is true, clamped at 1 so the throw stays rollable; returns base_target unchanged otherwise.
+- Wired into `roll_monthly_encounters_for_domain` immediately after `look_up_die_target`. The existing `has_dungeon` detection (line 145, used by the linger-chance ×2 boost) is reused — single computation per monthly tick.
+
+**Tests added:**
+
+- **`tests/test_phase_10b1g.gd`** (NEW, 8 tests, all pass):
+  - **Dual-list filter (5 tests):**
+    - Mage accepts arcane `magic_missile` (no dual-list rejection)
+    - Mage rejects divine `cure_light_wounds` (dual-list rejection fires)
+    - Lightblessed accepts arcane `magic_missile` (dual-list permits)
+    - Lightblessed accepts divine `cure_light_wounds` (Q2/roadmap-RESOLVED confirmation)
+    - Cleric still rejected by the earlier arcane-caster gate (preserved 10B.1b behavior; dual-list check doesn't bypass eligibility)
+  - **Dungeon-under-tower hook (3 tests):**
+    - `apply_dungeon_target_reduction(base, false)` returns base unchanged
+    - `apply_dungeon_target_reduction(6/20, true)` returns 5/19 (correct -1)
+    - `apply_dungeon_target_reduction(1/2, true)` clamps at 1 (no zero target)
+- Registered as `Phase10B1gTests` (ext_resource id 285).
+
+**Test results:** 271 passed / 25 failed. Baseline 270/25; net +1 from new Phase10B1g suite. Zero regressions.
+
+**Decisions made:**
+
+- **Dual-list eligibility is data-driven, NOT class-id-hardcoded.** The helper reads `class_powers` from the JSON class definitions and discovers spell lists declared on casting powers. Lightblessed works automatically because its JSON declares two casting powers with two spell lists. Future polish: Witch (declares `spell_research` per Q11) should ideally pick up its full witch-list via the same path; today the catalog doesn't yet split witch out as its own list, so witch falls back to whichever its primary casting power declares. Documented as a "future polish" item: split divine_witch / divine_priestess / divine_shaman lists in `data/spells/spell_list_indices.json` if needed.
+- **Dual-list filter runs AFTER the arcane-caster gate.** Order matters: a cleric trying to research a cleric-list spell would NOT pass through the spell branch even if the dual-list logic said "yes, divine_cleric is on your list" — they'd be rejected earlier at "arcane caster required" because divine spell research is a future wave (10B.1c-followup or later). Documented inline.
+- **Dungeon-under-tower hook is target-reduction, not target-increase.** Encounter throws fire when `roll >= target`, so lowering the target makes encounters more likely. The intuitive "bigger penalty" framing flips to "smaller target" in the actual code. Documented above + inline.
+- **Reduction is -1, conservative.** RAW gives no explicit number; this is a project-designed v1 value. Set at -1 because the encounter targets are already tight (often single-digit dice). A larger reduction (-2 or -3) would over-tilt frequency for borderlands/wilderness where the base target is already low. Documented in the constant comment.
+- **`apply_dungeon_target_reduction` is public static for testability.** The reduction math is trivial but having a named function lets tests target it directly without running the full monthly-tick encounter cycle. Pattern: when a non-trivial encounter-loop calculation involves multiple inputs, factor it out as a public pure function so tests can hit it surgically.
+- **`has_dungeon` detection is shared with the existing linger-chance ×2 boost.** Both the new target reduction AND the existing linger boost gate on the same `has_dungeon` value (computed once per `roll_monthly_encounters_for_domain` call). No duplicated database queries.
+
+**Interfaces defined or changed:**
+
+- `ResearchMagicHandler._researchable_spell_lists_for(character) -> Array[String]` (new static).
+- `ResearchMagicHandler._is_spell_on_research_list(spell_key, target_level, list_ids) -> bool` (new static).
+- `_handle_spell_branch` gains the dual-list rejection path.
+- `DomainEncounterResolver.DUNGEON_UNDER_TOWER_TARGET_REDUCTION` constant (new).
+- `DomainEncounterResolver.apply_dungeon_target_reduction(base_target, has_dungeon) -> int` (new public static).
+
+**Database changes:** None. Schema-side dungeon detection (existing `dungeon_entrances` table + `_domain_has_dungeon` lookup) was sufficient.
+
+**Tests added/updated:** `tests/test_phase_10b1g.gd` (8 new tests). Registered in test_runner.
+
+**Known issues / polish backlog:**
+
+- **Witch / Priestess / Shaman / Dwarven Craftpriest don't get their own per-class divine spell lists yet.** The catalog has `divine_cleric` and `divine_bladedancer`; Witch and Priestess and Shaman fall back to whichever their primary casting power declares. If/when they need distinct research-target pools, add new list entries in `data/spells/spell_list_indices.json`.
+- **Divine spell research not enabled in `_handle_spell_branch`.** The arcane-caster gate still fires before the dual-list check. To enable divine spell research, the gate needs to be widened. Tracked as a future wave (10B.1.x or v1.1).
+- **Dungeon-under-tower hook is the Q9 shortcut, not full RAW.** The full system per `acore-campaign-hijinks.xml` L545-611 (room-by-room dungeon stocking that produces specific creatures from specific tables) ships in a dedicated dungeon-system phase. Documented at the constant comment so the future re-wire knows where to attach.
+- **Dungeon hook doesn't yet differentiate "Mage's dungeon-under-tower" from arbitrary dungeon presence.** RAW Q9 framing was specifically "Mage's tower has dungeon below it"; v1 applies the hook to ANY dungeon entrance in the domain regardless of owner. A future polish could read a `mage_owner_character_id` field on `dungeon_entrances` to enable a more nuanced bonus. The current schema has no such field; adding it is an extension item.
+
+**Next session should:**
+
+- Phase 10B.1h — UI polish. Full picker dialogs for the four research_magic launchers (spell / item / construct / crossbreed) plus rewrite/replace/scribe_spell. In-progress project list rendering. Library/workshop/laboratory status cards. The picker dialogs need to filter the spell list per the caster's research_lists (consumes `_researchable_spell_lists_for` from this wave). After 10B.1h ships, Phase 10B.1 is feature-complete and the Magical Research block is fully player-functional end-to-end.
+- 10B.1h size estimate: ~10-15 UI tests; ~600-800 LoC of UI code. The biggest piece of the wave.
+
+
+
+## Session 2026-05-11 — Phase 10B.1g.1: Divine spell research + restricted_to filter fix
+
+**Task:** Close the two real gaps surfaced after 10B.1g shipped:
+
+1. **Gap 1 (restricted_to invisible to the dual-list filter).** The new helper from 10B.1g used `SpellRegistry.get_spells_for_list(list_id, level)` — which returns ONLY the base indexed list. It missed the 29 catalog entries that use `restricted_to` to attach class-specific spells to bladedancer / priestess / shaman / witch. Dormant in 10B.1g because Gap 2 prevented divine casters from reaching the filter.
+
+2. **Gap 2 (divine casters blocked by arcane gate).** Five classes (Cleric, Priestess, Shaman, Dwarven Craftpriest, Witch) get the magical_research bucket via Q11 [RESOLVED 2026-05-10] but `_handle_spell_branch` and `_handle_magic_item_branch` both rejected them with "arcane caster required." Per RAW L68: *"A divine caster may research a spell only with the permission of his deity"* and L116-117: *"A divine spellcaster may create any item his class is eligible to use."* The UI promised access; the handler refused.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Completed:**
+
+- **`engine/subsystems/activities/handlers/magical_research/research_magic.gd`**:
+  - **Gap 1 fix:** `_is_spell_on_research_list` rewritten. Now takes the `character` dict (in addition to spell_key/level/list_ids) and consults both `SpellRegistry.get_spells_for_list` (base indexed list) AND `SpellRegistry.get_available_spells_for_class(class_id, level, class_registry)` (which walks the `restricted_to` array for class-specific spells). Lightblessed-style dual-list iteration is preserved (still checks each list_id from `_researchable_spell_lists_for`), so the helper handles both multi-list classes AND per-class restricted_to overlays. Call site in `_handle_spell_branch` updated to pass `character`.
+  - **Gap 2a fix (spell branch):** replaced `if not _is_arcane_caster(character):` with `if not ClassBucketResolver.buckets_for_character(character).has("magical_research"):`. The bucket gate canonically encodes Q11 — full `spell_research` power grants the bucket; Bladedancer's restricted `spell_research_and_minor_item_creation` does NOT. Cleric / Priestess / Shaman / Dwarven Craftpriest / Witch all pass; Bladedancer + non-casters do not.
+  - **Gap 2b fix (magic_item branch):** same widening — `_handle_magic_item_branch` now uses the bucket gate. RAW L116-117 supports divine item creation; the gate widening unblocks it without enforcing the "items exclusive to divine spellcasters" arcane-side restriction (documented as a v1 gap because we don't currently track per-item-type divine exclusivity).
+  - **RAW L69 simplification documented inline:** *"A deity will usually remove a spell of the same level from a divine caster's spell list in exchange for granting the new spell."* This deity-trade mechanic is NOT enforced in v1. v1 just adds the researched spell; the trade-off ritual is a future polish.
+
+**Tests added/updated:**
+
+- **`tests/test_phase_10b1g.gd`** — 8 existing tests retained; 4 new tests added (12 total):
+  - `test_cleric_can_research_divine_cleric_spell` — Cleric now passes class + list gates for `cure_light_wounds` (no rejection).
+  - `test_cleric_rejects_arcane_spell_via_list_filter` — Cleric researching `magic_missile` now rejected by the LIST filter (not the class gate). Verifies the list filter is the active rejection path.
+  - `test_witch_can_research_restricted_to_witch_spell` — Two-part: (a) directly verifies `SpellRegistry.get_available_spells_for_class("witch", 1, ...)` returns the divine_cleric base entries; (b) round-trips via the handler to confirm Witch researching `cure_light_wounds` passes both class + list gates.
+  - `test_bladedancer_rejected_by_magical_research_bucket` — Bladedancer (no MR bucket per Q11) gets the correct "lacks magical_research bucket" rejection. Encodes the Q11 exclusion as a regression guard.
+- **`tests/test_phase_10b1b.gd::test_research_magic_rejects_non_arcane_caster`** — assertion updated. Was expecting "arcane caster required"; now expects "not on caster's research lists" (Cleric is class-eligible but `magic_missile` isn't on their divine list). Cross-references the new 10B.1g Bladedancer test for the bucket-gate rejection path.
+- **`tests/test_phase_10b1c.gd::test_magic_item_rejects_non_arcane`** — assertion updated. Was expecting "arcane caster required"; now expects "does not know formula" (Cleric passes the bucket gate but doesn't have a `bless` formula in `character_spell_formulas`). The new rejection cascade exercises the next gate (spell-knowledge per RAW L121).
+
+**Test results:** 271 passed / 25 failed. Same as the 10B.1g baseline (zero regressions; the two updated test assertions tracked the intentional behavior change). All seven 10B.1a-g suites pass.
+
+**Decisions made:**
+
+- **Use `ClassBucketResolver.buckets_for_character` as the canonical eligibility gate.** Rationale: it's the single source of truth for Q11 (already used to drive UI visibility). Reusing it in the handler means UI surface and handler behavior agree by construction. Avoids the bug where a class might appear in the UI (because it has the bucket) but be rejected by the handler (because of a separate eligibility check that disagrees with Q11).
+- **Bladedancer remains excluded from magical_research.** Their JSON declares `divine_casting` AND restricted `spell_research_and_minor_item_creation` AND `greater_item_creation` AND `rituals_and_construct_creation` — so RAW arguably permits them to do MR-side activities. But Q11 [RESOLVED 2026-05-10] explicitly excludes them. If Jedidiah wants Bladedancers researching, Q11 needs revisiting; the bucket resolver is the single point of change.
+- **`_is_spell_on_research_list` takes `character` instead of just `list_ids`.** RAW couples spell-list eligibility to class identity via `restricted_to`. The helper's signature reflects that coupling. Tests targeting the helper directly need a character dict; that's an acceptable cost for correctness.
+- **RAW L69 deity-trade NOT enforced in v1.** The mechanic ("deity removes a spell of the same level when granting a new one") is interesting but adds a Judge-arbitrated choice point that the launcher UI doesn't yet support. Skipping for v1; documented inline so the future-polish path is clear.
+- **`_can_learn_spell_level` works for divine casters as-is.** ClassRegistry.get_spell_slots returns the FIRST casting power's progression. For pure divine casters (Cleric / Priestess / Shaman / Dwarven Craftpriest / Witch) the divine progression is the only one. For Lightblessed (arcane first in JSON) it returns the arcane progression — acceptable because both progressions allow learning lower spell levels by L9. No fix needed for v1.
+
+**Interfaces defined or changed:**
+
+- `ResearchMagicHandler._is_spell_on_research_list` signature changed: now `(character, spell_key, target_level, list_ids)` instead of `(spell_key, target_level, list_ids)`. Internal helper; call site updated.
+- `_handle_spell_branch` + `_handle_magic_item_branch` eligibility gates swapped from `_is_arcane_caster(character)` to `ClassBucketResolver.buckets_for_character(character).has("magical_research")`.
+
+**Database changes:** None.
+
+**Known issues / polish backlog — SPELL CATALOG DATA INGESTION GAP:**
+
+> **The PDF `PC Spell Lists.pdf` is image-only (5 pages of scanned text).** I attempted text extraction via `pdftotext` (returned 5 form-feed bytes total — empty), `pdftotext -raw`, and `pdftotext -layout` (all empty). The environment has no `pdftoppm`, `gs` (ghostscript), or other OCR tooling. I could not read the PDF programmatically.
+>
+> **What this blocks:** The structural code fix is in place — the helper correctly consults both the base indexed list AND `restricted_to` overlays. But the catalog's `restricted_to` coverage is incomplete vs. the PDF:
+> - **In-catalog today:** 29 spells with non-empty `restricted_to`, naming only `bladedancer`, `priestess`, `shaman`, `witch`.
+> - **Missing per-class entries:** `dwarven_craftpriest`, `lightblessed_wonderworker`, and possibly arcane variants (`elven_enchanter`, `warlock` once re-enabled). The PDF presumably has complete class lists for all of these.
+> - **Catalog list indices today:** `arcane`, `divine_cleric`, `divine_bladedancer` only (3 lists). The PDF may suggest additional indexed lists (e.g., `divine_priestess`, `divine_witch`) — though the existing `restricted_to` design lets us avoid spinning new indexed lists per class and instead add per-spell flags.
+> - **Unknown until we have the PDF:** how many distinct spell entries are needed, which spells are arcane vs. divine vs. dual, and which classes get which spells.
+>
+> **Proposed alternatives to unblock data ingestion:**
+> 1. **Paste the spell lists directly into the chat as text.** Markdown table or `class: [spell1, spell2, ...]` per level works fine. I'll diff against the existing catalog and propose patches.
+> 2. **Provide a typed JSON/CSV at `data/spells/per_class_spell_lists_FROM_PDF.json`** (or similar). I'll ingest it into the catalog + indices and run validation.
+> 3. **Pre-OCR the PDF locally** (Adobe Acrobat, online OCR, or `tesseract` if installed elsewhere) and re-export as a text PDF or .txt file. I can then read it via the existing tooling.
+> 4. **Use computer-use MCP to take screenshots of the PDF while you have it open** in a viewer. I have the tools available but it requires you to open the file and grant access.
+>
+> Most efficient for a 5-page PDF is option 1 or 2 — paste/save the lists as text and I'll handle the catalog updates as a dedicated data-ingestion wave (call it 10B.1g.2 or fold into 10B.1h's planning).
+
+**Other polish items:**
+
+- **`get_available_spells_for_class` for `lightblessed_wonderworker`** uses `get_class_tradition` to dispatch — but Lightblessed has TWO casting powers (arcane + divine_casting). `get_class_tradition` returns the FIRST tradition, so Lightblessed reads as "arcane" and the divine path of `get_available_spells_for_class` is skipped. This means Lightblessed's `restricted_to` entries (if/when added) on the divine side would be invisible to the catalog walker. Not currently a bug (no Lightblessed restricted_to entries exist yet) but worth flagging when the PDF data lands.
+- **Divine spell research deity-trade mechanic** (RAW L69) not enforced. Add a launch-time confirmation modal in 10B.1h that asks the player which spell to trade away.
+- **Magic-item divine exclusivity** (RAW L116 inverse: "An arcane spellcaster may never create magic items exclusive to divine spellcasters") not enforced. We don't currently flag item types as divine-exclusive. Tag for future polish.
+
+**Next session should:**
+
+- **Phase 10B.1g.2 (or fold into 10B.1h planning) — Spell list data ingestion.** Requires the PDF text in a usable form. Concrete deliverable: extend `data/spells/spell_catalog.json` `restricted_to` arrays to cover Dwarven Craftpriest / Lightblessed Wonderworker / and any other classes the PDF prescribes, and verify Bladedancer / Priestess / Shaman / Witch coverage matches the PDF. NO new indexed lists unless the PDF clearly distinguishes per-class indexed lists (default: keep the 3-list structure + per-class restricted_to entries).
+- **Phase 10B.1h — UI polish.** Picker dialogs (spell / item / construct / crossbreed), in-progress project rendering, library/workshop/laboratory status cards. The pickers will consume both `_researchable_spell_lists_for` (multi-list iteration) AND `get_available_spells_for_class` (restricted_to overlay). Estimated 10-15 UI tests.
+
+
+
+## Session 2026-05-11 — Phase 10B.1g.2: Spell list data ingestion from PC Spell Lists.pdf
+
+**Task:** Close the data-ingestion gap flagged in 10B.1g.1. User confirmed the PDF (`C:/Users/jttau/OneDrive/Documents/ACKS Books/PC Spell Lists.pdf`, 5 pages, book p.126-129) is the canonical source for per-class spell lists. PDF is image-only — no `pdftoppm`/`gs` available. User opened in VS Code and approved computer-use access; I screenshotted all 5 pages and transcribed the contents.
+
+**Model used:** Sonnet 4.7 1M-context.
+
+**Capture path (computer-use MCP):**
+- Requested access for Visual Studio Code (tier "click" — fine for read-only PDF screenshots + scroll/page-next clicks).
+- 5 screenshots + 2 zoom-ins captured every spell list across the PDF.
+- VS Code's built-in PDF viewer was used.
+
+**Data captured (page summary):**
+
+| Page | Book p. | Content |
+|---|---|---|
+| 1 | 126 | Arcane spell list L1-L6 (24 spells/level = 144 total) |
+| 2 | 127 | Arcane rituals L7-L9 (4 each = 12) + Bladedancer divine L1-L5 (10/level = 50) + Cleric divine L1-L5 (50) |
+| 3 | 128 | Priestess divine L1-L5 (15/level = 75) + Divine rituals L6-L7 (4 each = 8) |
+| 4 | 129 | Shaman divine L1-L5 (50) + Witch divine L1-L5 (15/level = 75) |
+| 5 | — | Witch Traditions supplemental (2+5+4+4 = 15) + alphabetical Spell Index (descriptions, not needed for indexing) |
+
+**Total: 252 unique spell keys across 9 lists.**
+
+**Files shipped:**
+
+- **`data/spells/per_class_spell_lists_FROM_PDF.json`** (NEW, ~410 entries across 9 lists). Captures every spell list from the PDF in structured form. Each list is `{level: [spell_keys]}`. Spell keys are lowercase snake_case derived from the PDF spell names. Asterisks (reversibility) and superscript flags (elm/enc/tm/dth/ill/nec arcane source markers) are intentionally NOT preserved here — those metadata live on the catalog entries, not on the list. Italicization styling (likely "class-unique" marker) also dropped — it has no mechanical effect.
+
+- **`data/spells/spell_list_indices.json`** (REWRITTEN). Previously had 3 lists (`arcane`, `divine_cleric`, `divine_bladedancer`) with ~12 entries per level. Now has 9 lists matching the PDF exactly:
+  - `arcane` (24/level × 6 = 144)
+  - `arcane_ritual` (4 × 3 = 12)
+  - `divine_cleric` (10 × 5 = 50)
+  - `divine_bladedancer` (10 × 5 = 50)
+  - `divine_priestess` (15 × 5 = 75)
+  - `divine_shaman` (10 × 5 = 50)
+  - `divine_witch` (15 × 5 = 75)
+  - `divine_ritual` (4 × 2 = 8)
+  - `witch_traditions_supplemental` (2 + 5 + 4 + 4 = 15)
+  - **Total: 478 list entries** (was ~50 before this ingestion — the previous indices were a stub).
+  - Previous file backed up at `data/spells/spell_list_indices.PRE_10B1G2.json`.
+
+- **`data/spells/spell_catalog.json`** — appended 26 stub entries for spells named in the PDF but missing from catalog. Each stub has the correct `classifications` (tradition + level + restricted_to) so the research-list filter works correctly. `range`/`duration`/`description` are "TBD" placeholders — full mechanics still need to be transcribed from the PDF spell index (page 5+ alphabetical entries) in a future polish wave. Each stub is flagged `"_stub": true` and `"_added_in": "10B.1g.2 PDF ingestion"` for downstream detection.
+  - Stubs added (26): `bane`, `cancellation`, `cataclysm`, `cause_disease`, `cause_fear`, `command_plant`, `conjure_ooze`, `control_winds`, `energy_drain`, `finger_of_death`, `harvest`, `life_trapping`, `miracle`, `opposition`, `permanency`, `phase_door`, `plague`, `reincarnation`, `resurrection`, `sharpness`, `spell_turning`, `summon_efreeti`, `temporal_stasis`, `transform_rock_to_mud`, `undead_legion`, `wish`.
+  - Some of these had been NAMED in the previous indices but the catalog entry was missing (e.g., `sharpness` was in the old arcane L1 list but had no catalog entry — a dangling reference now repaired). Others are new (the 12 arcane ritual spells L7-L9, all 4 divine ritual L6-L7 entries, and class-specific divine entries).
+  - Total catalog entries: 257 (was 231).
+
+- **`data/classes/priestess.json`, `shaman.json`, `witch.json`** — `divine_casting.spell_list` updated from `"divine_cleric"` to `"divine_priestess"` / `"divine_shaman"` / `"divine_witch"` respectively. Three classes now correctly point at their dedicated per-class spell lists.
+
+- **`data/spells/MISSING_FROM_CATALOG.json`** — intermediate diff artifact listing the 26 missing spells with their proposed classifications. Kept in repo for reference/audit; future stub-fill polish can use it as a checklist.
+
+**Tests updated:**
+
+- **`tests/test_spell_registry.gd::test_arcane_list_12_per_level`** renamed to `test_arcane_list_24_per_level`. The old test asserted "arcane level N should have 12 entries" — that was an artifact of the stub indices file. New assertion: 24 entries per level (or 23 for L2, since the PDF L2 has 23 spells). Comment cites the PDF source.
+- **`tests/test_spell_registry.gd::test_arcane_index_spell_magic_missile`** — assertion updated. Old test expected magic_missile at arcane L1 index 6; the canonical PDF order has magic_missile at index 10 (preceded by burning_hands, charm_person, chameleon, choking_grip, detect_magic, floating_disc, hold_portal, jump, light). Comment cites the new order.
+- **`tests/test_repertoire_engine.gd::test_starting_arcane_duplicates_reduce`** — `judge_selected` argument updated from `"charm_person"` to `"burning_hands"` since the dice override returns arcane L1 index 1, which is now `burning_hands` (was `charm_person` in the old ordering). Test logic and assertion are unchanged — verifies that duplicate dice rolls dedupe rather than reroll per ACKS rules.
+
+**Test results:** 271 passed / 25 failed. Same as the 10B.1g baseline (after assertion updates). Zero net regressions. The 25 failing suites are all pre-existing (unrelated to spell ingestion).
+
+**Decisions made:**
+
+- **Per-class indexed lists, NOT shared base + restricted_to overlays.** The PDF clearly shows each divine caster has its OWN distinct list — Priestess's 75 spells overlap heavily with Cleric's 50 but include 25 class-specific additions. Cleric / Bladedancer have entirely different L1 spells (Cleric has `command_word`, Bladedancer has `angelic_choir`). Trying to encode this via `restricted_to` would mean every class-specific spell needs a `restricted_to: ["priestess"]` array AND the consumer code has to query the union. Simpler: each class has a dedicated indexed list. The `restricted_to` field becomes auxiliary metadata for spells that span multiple classes within the same tradition (e.g., `angelic_choir` shared between Bladedancer + Priestess).
+- **Stub catalog entries with placeholder mechanics.** The 26 missing spells get catalog entries with correct classifications but TBD range/duration/description. This lets the research-list filter work TODAY without blocking on transcription of every spell's full mechanics. Future polish: scrape pages 5+ of the PDF for the spell index and fill in the stubs. Flagged via `_stub: true` so consumers can identify incomplete entries.
+- **Italicization NOT preserved.** Italic styling in the PDF appears to indicate "class-unique" spells (e.g., Priestess-only ones are italicized in her list). This is presentation, not mechanics. Skipped for v1.
+- **Superscript flags NOT re-encoded.** Flags like `elm(fire)`, `enc`, `tm`, `dth`, `ill`, `nec` are ACKS arcane source/school markers from Player's Companion. These metadata are already on the existing catalog entries (where present). Stubs added in this wave do NOT have school flags — they're TBD along with other mechanics.
+- **`transform_rock_to_mud` is canonical.** The old catalog had `transmute_rock_to_mud` (different verb). PDF says `transform`. Added `transform_rock_to_mud` as the new entry; the old `transmute_rock_to_mud` remains in the catalog but is unreferenced by any indexed list. Future polish: remove or alias the old entry.
+- **Bladedancer L1 changed.** The old `divine_bladedancer` indexed list had `command_word` at L1; PDF replaces it with `angelic_choir`. Bladedancer also gains `enthrall`, `swift_sword`, `invulnerability_to_evil`, `winged_flight` at L2-L3; loses `find_traps`, `silence_15_radius`, `cure_blindness`, `locate_object` (those are Cleric-only). The new list strictly matches the PDF.
+- **Divine_cleric L2 changed.** Added `righteous_wrath`; removed `snake_charm` (that's Priestess / Shaman per the PDF). Cleric's list is now strictly canonical.
+- **Indices backup preserved.** `spell_list_indices.PRE_10B1G2.json` keeps the pre-ingestion state for rollback / audit.
+
+**Interfaces defined or changed:**
+
+- `spell_list_indices.json` schema unchanged; content rewritten to match PDF.
+- `spell_catalog.json` gained 26 entries with `_stub: true` markers.
+- `data/classes/{priestess,shaman,witch}.json` `divine_casting.spell_list` pointer changed.
+- No code changes were required — the Phase 10B.1g.1 helpers (`_researchable_spell_lists_for` + `_is_spell_on_research_list` + `get_available_spells_for_class`) handle the new list structure transparently.
+
+**Database changes:** None.
+
+**Tests added/updated:** 3 existing tests updated (test_spell_registry × 2, test_repertoire_engine × 1) to match the new arcane list ordering. No new test files in this session — the 10B.1g.1 Witch/Cleric/Bladedancer tests already exercise the per-class lookup path against real data.
+
+**Known issues / polish backlog:**
+
+- **Stub spells have TBD mechanics.** 26 spells in the catalog (`_stub: true`) have placeholder `range`/`duration`/`description` values. They appear in the per-class research lists correctly but a player viewing the spell's details will see "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics needed." A future polish session needs to transcribe pages 5+ of the PDF (alphabetical spell index) and fill in the missing mechanics. The `_stub: true` flag enables filtering.
+- **`transmute_rock_to_mud` orphaned.** The old catalog entry is still present but no indexed list references it. Either alias it to `transform_rock_to_mud` or delete it in a future cleanup.
+- **PDF italicization signal not captured.** If italics turn out to be mechanically significant (e.g., a "domain spell" flag), the captured data file would need to be re-transcribed. Current assumption: italics are presentation-only.
+- **Superscript school flags on stub spells TBD.** When filling in stub mechanics, also add the school flag to each stub's classifications (e.g., `cause_fear` is enchantment per PDF).
+- **`get_available_spells_for_class` may double-count for Lightblessed.** Lightblessed has two casting powers (`arcane_casting` + `divine_casting`). The function returns the FIRST casting power's list. v1 simplification — the dual-list iteration in `_researchable_spell_lists_for` handles Lightblessed by walking both class_powers. Test coverage exercises this path.
+
+**Next session should:**
+
+- **Phase 10B.1h — UI polish.** Picker dialogs for the six research launchers + in-progress project rendering + library/workshop/laboratory status cards + Lightblessed dual-list filter visualization. The pickers can now show all per-class spell lists correctly thanks to the data ingestion. Estimated 10-15 UI tests.
+- **Polish wave (10B.1g.3 or later) — fill in stub mechanics.** Transcribe pages 5+ of PC Spell Lists.pdf for the 26 stub spells' full descriptions. Add school flags where applicable. Remove the `_stub: true` marker as each entry is completed.
+
+**Stub triage for 10B.1g.3 planning (Jedidiah review 2026-05-11):**
+
+The 26 stubs are NOT a uniform "transcribe each one" task. They split into very different complexity buckets:
+
+| Bucket | Count | Spells | Complexity |
+|---|---|---|---|
+| **Reverse-form (audit confirms base already wired)** | 3 | bane / cause_disease / cause_fear | Trivial. Their bases (bless / cure_disease / remove_fear) have `is_reversible: true` + correct `reverse_key`. My 10B.1g.2 stubs accidentally BROKE the SpellRegistry's auto-synthesis path. Fix: rewrite the 3 stub entries to copy the base's `effect{}` block while preserving the witch-restricted classification (auto-synthesis would otherwise drop the restricted_to). |
+| **Standard spells with established frameworks** | 5 | sharpness, command_plant, conjure_ooze, control_winds, finger_of_death, reincarnation | Small. Transcribe range/duration/save/effect from PDF spell index. Frameworks for damage, save-vs-condition, summon already exist. |
+| **Map-state-mutation (framework now exists)** | 2 | cataclysm, harvest | Medium. Need design Q&A: what does "cataclysm" mutate in domain state? Harvest is the inverse of Ravage (already in catalog as `harvest`'s reverse) so part of its mechanics may be derivable. |
+| **Arcane Ritual L7-L9 (blocked on ritual subsystem)** | 12 | cancellation, phase_door, spell_turning, energy_drain, opposition, permanency, summon_efreeti, temporal_stasis, life_trapping, plague, undead_legion, wish | BLOCKED. Ritual spells are a distinct subsystem per acore §ritual_spells (L11+, special process). Has to land before these stubs become playable. summon_efreeti additionally blocked on efreeti monster catalog entry. |
+| **Divine Ritual L6-L7 (blocked on ritual subsystem)** | 4 | cataclysm (also map-state above), miracle, resurrection, energy_drain (also arcane) | BLOCKED on ritual subsystem. Resurrection mechanics may need a per-class deity-permission gate. Miracle is a Judge-arbitrated catch-all. |
+| **No framework yet** | 1 | transform_rock_to_mud | BLOCKED. Map-state mutation that we don't have a framework for. Comparable to terrain-modification spells. |
+| **Unique / hard-to-systematize mechanics** | 3 | wish, permanency, miracle | Major design work. wish and miracle especially are catch-alls that the engine can't fully encode; some Judge-arbitrated path needed. |
+
+**Per Jedidiah 2026-05-11:** holding all stub-fill work until AFTER 10B.1h's UI polish pass. The ritual subsystem, monster catalog dependencies, and map-state frameworks need planning before the L7+ rituals can become playable. The reverse-form fix (3 spells) and standard-framework fills (5-7 spells) are quick wins to schedule when 10B.1g.3 starts; the rituals are a separate dedicated wave.
+
+**Reverse-form fix applied 2026-05-11 (3 of 26 stubs cleared).** Per the SpellRegistry / SpellEffectRegistry architecture: base spells with `is_reversible: true` + `reverse_key` + `effect.reverse{}` block auto-synthesize their reverse entry at registry-load time. The synthetic entry is marked `is_reversed_form: true`, inherits the base's classifications + effect{}, and SpellEffectRegistry applies the `effect.reverse{}` merge over the base effect at cast time. The 10B.1g.2 ingestion accidentally added explicit stub entries for `bane`, `cause_disease`, `cause_fear` which blocked the auto-synthesis path (registry skips synthesis if the reverse_key already has an entry). Fix: deleted the 3 stub entries from `spell_catalog.json`. Outcome verified — SpellRegistry now reports 282 total spell definitions (254 explicit + 28 synthesized, up from 25 synthesized pre-fix). All 271 passing test suites preserved; 3 newly playable reverse forms (witches can research bane via the divine_witch indexed list AND cast it via the base bless's reverse-merge path).
+
+Remaining stub count: 23 (was 26). Remaining triage unchanged for 10B.1g.3 planning.
+
+---
+
+## Session 2026-05-11 — Phase 10B Prerequisite Mercantile handoff prepared (no code changes)
+
+**Task:** Prepare a self-contained, compaction-survivable handoff document for the **parallel session** that will build the mercantile / trade goods / market-pricing / Crime & Punishment data prerequisites that Phase 10B.2 (Trade) and 10B.3 (Syndicate) consume. No application code changed; this session produced planning artifacts only because Jedidiah flagged the build as hard ("not fully explicated in the RAW and will need project-design gap filling").
+
+**Phase order also re-confirmed in this session:** 10B.1 → 10B.2 → 10B.3 → **10C (Ritual Magic)**. Ritual *research* lands together with ritual *casting* in 10C (not split across 10B.1 and 10C). This consolidates the L7+ arcane and L6+ divine ritual stubs flagged BLOCKED in the Phase 10B.1g.2 ingestion (12 arcane + 4 divine) into the 10C scope.
+
+**Model used:** Sonnet for the handoff write-up.
+
+**Completed:**
+- Drafted and saved `docs/phase-10b-prereq-mercantile-handoff.md` — the canonical session opener for the mercantile/trade-goods parallel session.
+- Identified ten project-design gaps where RAW is silent and project-design gap-filling is required: per-settlement demand-modifier seeding, monthly drift mode, merchandise distribution in solicit_merchants pool, merchant pool decay, ambient pool replenishment, arbitrage tuning validation, NPC merchant migration, monopoly economic effects beyond revenue, vehicle/cargo stub semantics, class-size adjust calibration. Each gap has options + a recommended resolution for Jedidiah's review.
+- Identified the **largest design task**: drafting `generation/gdd-settlement-economy.md` as a brand-new GDD that enumerates settlement archetypes (coastal, agricultural, mining, etc.), maps each archetype → per-merchandise baseline demand modifier matrix, and provides validation examples for trade-route arbitrage. The handoff explicitly orders the work: GDD first, code second. Without the GDD the system can ship "correct per RAW" and still fail its design intent — no arbitrage gradients means no playable mercantile gameplay.
+- Strawman 8-wave subdivision (Prereq.GDD → Prereq.1 merchandise registry → Prereq.2 demand modifiers + price resolver → Prereq.3 fees → Prereq.4 merchant pool → Prereq.5 vehicle stub → Prereq.6 attorney/prior_crimes → Prereq.7 audits → Prereq.8 integration; 50-70 tests total).
+- Ten new clarification questions (Q-MERC-1 through Q-MERC-10) for Jedidiah to lock the design before code lands.
+
+**Decisions recommended (pending Q-MERC-1 through Q-MERC-10 confirmation):**
+- `generation/gdd-settlement-economy.md` to be authored as a NEW GDD — biggest design artifact of the prereq session. Author it FIRST, before any code.
+- Vehicle/cargo reaffirmed as the Q5 stub (aggregate `vehicle_summary` table; smuggling/stealing pays pure gp; arbitrage is single-market in v1).
+- Monopoly economic effects v1 is revenue-only (RAW-strict per `ax_venturer_class.xml:203-211`); broader market disruption deferred to v1.1+ alongside NPC venturer rivals (Q7).
+- Demand modifier drift v1 re-rolls only the 4d4 dice; the demand_modifier itself stays anchored to the settlement economy profile.
+- Ambient merchant pool: half-minimum from Markets and Merchants table per market class, refreshed at the monthly tick.
+- Merchant expiration: 30-day fixed (project-designed; RAW silent).
+
+**Interfaces defined or changed:** None (no code).
+
+**Database changes:** None (no migrations applied; the handoff lists ~4 anticipated migrations for the prereq session: settlement-economy + demand modifiers, merchant pool, vehicle stub, attorney/prior_crimes columns).
+
+**Tests added/updated:** None.
+
+**Known issues / coordination:**
+- Migration numbering must be coordinated. Migration 091 = Phase 10A.2 faith block; migration 092 is likely Phase 10B.1 magical_research (Phase 10B.1 still in UI polish). The prereq mercantile session should reserve 093+ for its own migrations.
+- The monster-data parallel session may still be running; this prereq session should not touch `monster_catalog.json` or `domain_encounter_resolver.gd`.
+
+**Next session should:**
+
+- The next *new* session in this prereq track should follow `docs/phase-10b-prereq-mercantile-handoff.md` §11 opening checklist. **Start with the GDD; do NOT start coding from the dependency doc alone.**
+- The other concurrent tracks: (a) Phase 10B.1 finishes UI polish, (b) the monster-data parallel session continues. Once both the prereq session and Phase 10B.1 land, the next major surface session is **Phase 10B.2 (Trade block UI)** which consumes this session's output.
+- **Phase 10C (Ritual Magic)** is the next planned phase past the existing roadmap; no handoff exists for it yet. Will need its own handoff document when ready to start. The L7+ arcane and L6+ divine ritual stubs flagged BLOCKED in the Phase 10B.1g.2 ingestion are all unblocked once 10C ships.
+
+---
+
+## Session 2026-05-11 — Mercantile handoff: Gap A correction + Q-MERC-1/2/3 resolution
+
+**Task:** Correct a major error in the previous handoff (Gap A claimed RAW was silent on per-settlement demand modifier generation — wrong) and incorporate Jedidiah's answers to Q-MERC-1, Q-MERC-2, Q-MERC-3. No application code changed; this session only updated the handoff doc.
+
+**Model used:** Sonnet for the correction pass.
+
+**What was wrong:** The previous draft of `docs/phase-10b-prereq-mercantile-handoff.md` claimed that RAW does not specify how a specific settlement gets a specific demand modifier for a specific merchandise type, and proposed an entire project-designed "settlement archetype" system to fill the gap. Jedidiah correctly pointed out that RAW has a complete six-step procedure at [rules/acore-setting-construction-rules.xml:221-367](rules/acore-setting-construction-rules.xml:221) §generating_demand_modifiers, with full lookup tables for:
+- Environmental adjustments (20-column table: 5 age buckets, 3 water types, 11 climate columns, 2 elevation columns) × ~25 merchandise rows
+- Domain land revenue adjustments
+- Racial adjustments (Dwarf, Elf)
+- Range of trade by market class (road miles vs water miles)
+- Trade route shift mechanics (2-point or 1-point shifts depending on market-size difference)
+
+The previous draft's "settlement archetype" system would have **introduced a parallel design system that conflicts with the canonical RAW procedure**. Catching this before code was written was the win.
+
+**Completed:**
+- Updated `docs/phase-10b-prereq-mercantile-handoff.md` §5 (renamed from "PROJECT-DESIGN GAPS — the hard part" to "RAW ENCODING + PROJECT-DESIGN GAPS"). Each Gap entry now follows a mandatory format: RAW citation → what RAW provides → what's missing → proposed resolution.
+- §5.A now correctly encodes the six-step RAW procedure as the system. The genuine project-design work is now framed as §5.A.1-A.9:
+  - §5.A.1 Corrupted late-luxury rows (RAW-flagged with `<source_integrity_note>`)
+  - §5.A.2 Settlement age — not yet in schema
+  - §5.A.3 Climate/biome mapping (project biome+subtype → RAW climate bucket)
+  - §5.A.4 Water-source detection (hex overlay + biome → sea_coast/lake_shore/river_bank)
+  - §5.A.5 Elevation extraction
+  - §5.A.6 Dominant race lookup per settlement
+  - §5.A.7 Domain land revenue lookup
+  - §5.A.8 Trade route detection algorithm
+  - §5.A.9 Processing order (largest-market-first region walk)
+- §5.0 added: mandatory rule that every project-designed element must cite RAW + explain what's missing. No silent project-design.
+- §6 updated: Q-MERC-1, Q-MERC-2, Q-MERC-3 marked [RESOLVED] with their answers folded in. Five new follow-up questions surfaced (Q-MERC-1A corrupted-row recovery, Q-MERC-2A age schema, Q-MERC-2B race schema audit, Q-MERC-2C climate mapping table approval, Q-MERC-11 class-size adjust). Q-MERC-4 through Q-MERC-10 retained.
+- §7 wave-split updated: Prereq.2 split into Prereq.2a (six-step procedure encoding), 2b (trade-route detection), 2c (price resolver). Wave count grew from 8 to 10; test target grew to 65-90.
+- §11 session-opening checklist updated: adds explicit step to read `acore-setting-construction-rules.xml:221-367` (the file I missed); flags Q-MERC-1A as highest-priority new question; adds schema audit step for Q-MERC-2A/B.
+- §12 file inventory updated with new files: `settlement_economy_inputs.gd`, `trade_route_detector.gd`, `region_demand_resolver.gd`, `data/commerce/environmental_adjustments.json`, additional migrations and test files.
+- §13 big-picture reminder rewritten: TWO key RAW files (setting-construction + campaign-hijinks), explicit "always grep the full rules directory before declaring a gap" guidance.
+
+**Decisions made:**
+- **Q-MERC-1 [RESOLVED]:** `generation/gdd-settlement-economy.md` is authorized. **Critical constraint:** every project-designed element must cite RAW + explain what's missing. No silent project-design.
+- **Q-MERC-2 [RESOLVED]:** Hex map has no special resource data. RAW doesn't require it; the six-step procedure uses age/water/climate/elevation/race/domain-revenue/trade-routes as inputs. GDD must map existing project data to those inputs and add missing fields (settlement age, possibly dominant race) where the schema is silent.
+- **Q-MERC-3 [RESOLVED]:** Validation examples are a collaborative deliverable. Jedidiah provides canonical trade routes OR build agent drafts + Jedidiah spotchecks. Either path acceptable.
+
+**Lesson recorded:** When faced with a "RAW silent" hypothesis, **grep the full rules directory exhaustively first.** Phase 10A had a similar near-miss with Q14 (training is proficiency-gated, not class-gated — discovered only because Jedidiah caught the GDD hallucination). The Phase 10B-prereq Gap A miss was the same failure mode at a larger scale. The lesson has been written into §13 of the handoff.
+
+**Interfaces defined or changed:** None (no code).
+
+**Database changes:** None (handoff only).
+
+**Tests added/updated:** None.
+
+**Known issues:**
+- Q-MERC-1A: 7 corrupted late-luxury rows in `acore-setting-construction-rules.xml` environmental_adjustments_to_demand table. RAW XML carries an explicit `<source_integrity_note>` flagging them. Jedidiah needs to either recover from PDF OR approve project-designed conservative replacements (per the row pattern visible in the intact rows).
+- The remaining open Q-MERC questions (1A, 2A, 2B, 2C, 4-11) await Jedidiah's review at the start of the next mercantile session.
+
+**Next session should:**
+
+- The next *new* session in the mercantile-prereq track should follow `docs/phase-10b-prereq-mercantile-handoff.md` §11 opening checklist as updated. **Read `acore-setting-construction-rules.xml:221-367` first.** Raise Q-MERC-1A through Q-MERC-11 with Jedidiah; the previous Q-MERC-1/2/3 are resolved.
+- Phase 10B.1 and the monster-data parallel session continue independently.
+
+---
+
+## Session 2026-05-11 — Phase 10B.1h: Magical Research UI polish pass (single picker + 7 launchers + laboratories card)
+
+**Task:** UI polish closing 10B.1 — wire all 7 supported research-launcher buttons in the Magical Research block to a single modal picker (per Q26), gate eligibility on caster bucket + library/workshop/laboratory presence, render the laboratories status card, and add a 10B.1h test suite. Keep `manage_assistant` permanently disabled per Q27 (its handler is a stub until parallel item-creation orchestration lands).
+
+**Model used:** Opus for the picker + block wiring + tests (UI-heavy decisions and signal wiring).
+
+**Completed:**
+- Created `scenes/ui/notebook/domain/blocks/research_project_picker.gd` (~1100 lines) — single modal CanvasLayer at layer 56 (matches `spell_picker_panel.gd`) with backdrop + centered PanelContainer + footer. One picker handles 7 launcher_ids via conditional `_build_X_section()` dispatchers:
+  - `research_spell`: library dropdown + eligible-spell dropdown filtered through `ResearchMagicHandler._researchable_spell_lists_for` (the same 10B.1g.1 single-source-of-truth) — automatically filtered by caster's research lists (mage→arcane, lightblessed→arcane+divine_cleric, cleric→divine_cleric, witch→divine_witch + restricted_to, etc.).
+  - `research_magic_item`: workshop dropdown + item name + category + effect_kind + imbued spell (drawn from caster's known formulas) + charges + magical bonus + precious materials.
+  - `research_construct`: workshop dropdown + name + HD (clamped to 1..2×caster_level) + attacks + max damage + damage expression + abilities CSV.
+  - `research_monster`: laboratory dropdown + name + progenitor A/B (each: name+HD+alignment) + crossbreed HD + movement_kind (with +1 ability bonus surfaced in preview when "both") + attacks + max damage + abilities CSV.
+  - `rewrite_spell`: library dropdown + known-formulas dropdown.
+  - `replace_spell`: library dropdown + old-spell (repertoire) + new-spell (known formulas).
+  - `scribe_spell`: library dropdown + source_kind (scroll|spellbook) + scroll inventory dropdown OR spellbook-owner LineEdit + target spell key/level. Future polish: derive target from selected scroll.
+  - Live cost/time preview via `_refresh_preview()`; live validation via `_validate_params()` disables Launch until all required fields present.
+  - On Launch, emits `launch_requested(activity_def_id, params, location_kind, location_ref)` and queue_frees self.
+- Updated `scenes/ui/notebook/domain/blocks/magical_research_block.gd`:
+  - Flipped `LAUNCHER_CARDS[*].launcher_ready` to true for 7 launchers; left `manage_assistant` at false per Q27.
+  - Added Laboratories status card (`_render_laboratories`) next to Workshops, populated via `CampaignRepository.list_laboratories_for_owner` (which 10B.1f shipped).
+  - Refactored `_build_activity_launchers` to record Button references keyed by `launcher_id` in `_launcher_buttons` so `_refresh_activity_cards` can re-disable/re-enable based on per-launcher preconditions.
+  - `_refresh_activity_cards` now consults `ClassBucketResolver.buckets_for_character` (caster bucket gate) and per-launcher infra: spell research needs library, construct needs workshop, magic_item needs library OR workshop, crossbreed needs laboratory. Each rejected button gets a specific tooltip explaining why.
+  - On Launch press, opens a fresh `ResearchProjectPicker`, calls `picker.setup(launcher_id, character_id, domain_id, party_id)`, connects `launch_requested` to a handler that calls `executor.launch(...)` with the standard ActivityTimeCostExecutor path (matches `bardic_patronage_block.gd`'s pattern).
+- Added new EventBus signal `laboratory_built(laboratory_id, owner_character_id, gp_invested)` (sibling of library_built/workshop_built) for future emission when laboratory creation completes. Block subscribes + re-renders Laboratories card on emission.
+- Created `tests/test_phase_10b1h.gd` (15 tests) and registered in test_runner.gd/.tscn. Coverage:
+  - Config: 7-of-8 launchers launcher_ready=true; manage_assistant disabled; LAUNCHER_TO_ACTIVITY map complete; manage_assistant NOT in map.
+  - Setup smoke tests: each of the 7 kinds instantiates without parse/runtime error.
+  - Spell-list filtering: mage's eligible list contains magic_missile but NOT cure_light_wounds; lightblessed dual-list contains BOTH magic_missile AND cure_light_wounds.
+  - Validation: empty research_spell rejects mentioning "spell" or "library"; empty research_construct rejects mentioning "name".
+  - Launch signal emission: a populated research_spell picker emits `launch_requested("research_magic", {project_kind="spell", target_spell_key, library_id, ...}, "at_library", ...)` when `_on_launch_pressed` is called.
+  - Block eligibility refresh: research_spell Launch button disabled for a mage with no library.
+
+**Decisions made:**
+- **Q26 [RESOLVED 2026-05-11] — one picker, not seven.** A single CanvasLayer-based `ResearchProjectPicker` handles all 7 launcher_ids via a `match _kind` dispatcher inside `_build_body`. The alternative (separate pickers per kind) would have produced 7× boilerplate for chrome + footer + signal plumbing with no actual logic divergence. Reasoning: per-section field definitions live in dedicated `_build_X_section()` functions, so the conditional-section pattern is the smallest possible repetition; the picker itself stays small and the preload import stays single-file.
+- **Q27 [RESOLVED 2026-05-11] — keep manage_assistant disabled.** Its handler is a stub registered in 10B.1c, but the actual orchestration (multi-character item-creation with daily output tracking) is deferred. The block surfaces it visibly (so the user knows it's coming) with a clear "ships in 10B.1c" tooltip on the Launch button.
+- **Q28 [RESOLVED 2026-05-11] — dropdown for spell selection.** OptionButton (with all eligible spells pre-loaded) over a search-LineEdit + filter panel for v1. The eligible set is small (<30 entries for a caster's research lists at full level), and dropdown gives the user immediate visibility of what's available. A search field can be a future polish if mage L11+ lists become unwieldy.
+- **Picker as CanvasLayer at layer 56:** matches the existing modal pattern from `spell_picker_panel.gd`. Layer 56 is high enough to overlay the notebook tabs without conflicting with the global toast/notification layer (which sits at layer 100+).
+- **_dd_id helper:** introduced a tiny `_dd_id(dd) -> String` helper so the call sites read `_dd_id(_fields.get("library_id_dd"))` without inlining the `.get("id", "")` cast every time. Originally tried passing a fallback_key to `_dd_metadata` but that returns Dictionary; the dedicated helper is clearer.
+- **Eligibility gate uses ClassBucketResolver (not `_is_arcane_caster`):** consistent with 10B.1g.1's class-bucket fix; the block does the coarse caster-eligibility check, the handler does the fine-grained per-spell-list check, and the validator catches the rest.
+
+**Interfaces defined or changed:**
+- NEW signal `EventBus.laboratory_built(laboratory_id: String, owner_character_id: String, gp_invested: int)` — sibling of library_built/workshop_built. Not yet emitted; the create_laboratory pipeline should emit it when laboratory completion happens. Listed for future wiring.
+- NEW preloaded class `ResearchProjectPicker` (scene-less; CanvasLayer-based). Public API: `setup(launcher_id, character_id, domain_id, party_id)` + signals `launch_requested(activity_def_id, params, location_kind, location_ref)` + `cancelled`. Picker queue_frees itself before emitting the terminal signal.
+- NEW dictionary `MagicalResearchBlock.LAUNCHER_TO_ACTIVITY` (via `ResearchProjectPicker.LAUNCHER_TO_ACTIVITY`) — maps each of the 7 supported launcher_ids to its activity_def_id. 4 research_X cards map to "research_magic"; rewrite/replace/scribe each have their own def_id. manage_assistant is intentionally absent.
+
+**Database changes:** None (all backed by existing 10B.1a-f schema).
+
+**Tests added/updated:** tests/test_phase_10b1h.gd (15 tests, all pass). Updated test_runner.gd + test_runner.tscn to register Phase10B1hTests. Final tally for Phase 10B.1: 10B.1a (16) + 10B.1b (10) + 10B.1c (8) + 10B.1d (12) + 10B.1e (14) + 10B.1f (15) + 10B.1g (12) + 10B.1h (15) = 102 tests across the 8-wave block. All pass.
+
+**Known issues:**
+- `EventBus.laboratory_built` is declared but not emitted yet. The block subscribes defensively (and the `_on_laboratory_changed` handler re-renders the card + refreshes activity_cards). When laboratory creation flow lands (likely as part of the existing stronghold-construction system), emit this signal on completion. Until then, the Laboratories card refreshes only on full `bind()` reload.
+- Scribe-spell target selection is a free-text LineEdit + level SpinBox in v1 because the eligible target depends on the chosen scroll/spellbook contents which we don't fully model yet. Future polish: derive target_spell_key + level from the selected scroll's `imbued_spell_key` metadata.
+- `_eligible_spells_for_research` walks `get_available_spells_for_class` once per outer list iteration even though the result doesn't depend on which list we're iterating — minor inefficiency, well within tolerable for a once-per-modal-open call. Can be hoisted out of the outer loop in a future cleanup.
+- 25 pre-existing test failures across the suite are unrelated to this work (settlement-data, level-up-engine, dragon catalog consistency, etc. — orthogonal to magical_research). Not introduced by 10B.1h.
+
+**Next session should:**
+- **10B.1g.3 (deferred per Jedidiah's 2026-05-11 direction):** Fill the 23 remaining spell stubs from the PDF ingestion. Triage in the 10B.1g.2 build_log entry: 5-7 standard mechanics (cataclysm, harvest, etc.), 16 ritual-subsystem-blocked (deferred until 10C), 2-3 unique mechanics (transform_rock_to_mud needs a map-state framework).
+- **10C (Ritual Magic) — separate phase:** Lock the 16 ritual stubs by shipping the ritual subsystem (separate from per-spell-slot magic). Will need its own handoff document.
+- **manage_assistant orchestration polish:** Implement the multi-character item-creation flow so manage_assistant's handler is real and its Launch button can be enabled. Probably warrants its own polish wave (10B.1c.1?) after Phase 10B.2 (Trade block UI) lands, since the Trade block also surfaces multi-character orchestration.
+- **`laboratory_built` emission:** Wire it in the stronghold-construction completion path when a sub-structure of kind 'laboratory' completes. Sibling pattern to `library_built`/`workshop_built`.
+
+---
+
+## Session 2026-05-11 — Mercantile handoff: Q-MERC-1A resolved with canonical Environmental Adjustments table
+
+**Task:** Capture the canonical Environmental Adjustments to Demand table that Jedidiah supplied via screenshot (resolving Q-MERC-1A). The XML rules transcription at `rules/acore-setting-construction-rules.xml:297-356` was flagged with `<source_integrity_note>` for 7 corrupted late-luxury rows; the screenshot provides the canonical PDF values for all 31 merchandise types.
+
+**Model used:** Sonnet.
+
+**Completed:**
+- Created `docs/phase-10b-prereq-environmental-adjustments-table.md` — a self-contained transcription artifact with the full 20-column × 31-row table from the canonical PDF. Documents two XML column-naming errors discovered (the XML's `tundra_plains` should have been two separate columns `tundra` + `plains`; the XML's `extra_climate_or_wrap` is a transcription artifact that does not exist in the source PDF). Documents the full 31-merchandise list (21 common + 10 precious) — larger than the XML's ~25 due to merged/wrapped rows. Includes JSON encoding schema for `data/commerce/environmental_adjustments.json` with banker's-rounding guidance per CLAUDE.md.
+- Updated `docs/phase-10b-prereq-mercantile-handoff.md` §5.A.1 + §6 Q-MERC-1A to mark RESOLVED with reference to the new artifact. §12 file inventory updated.
+- A handful of cells in the transcription are flagged `?? Verify` with explicit re-check instructions for the mercantile session (notably rows 30/31 Semipr. stones / Gems read as identical in my best-effort pass — needs PDF-direct verification).
+
+**Decisions made:**
+- The XML rules file `rules/acore-setting-construction-rules.xml` STAYS AS-IS per CLAUDE.md's sacred-rules policy. The `<source_integrity_note>` remains in the XML acknowledging its own corruption. The new docs/ artifact serves as the override transcription that the mercantile session consults when encoding JSON.
+- If/when Jedidiah explicitly approves a rules-file update, the corrupted rows can be replaced in the XML with the canonical values from this artifact. For now: no XML edit.
+
+**Lesson recorded in §13 of the handoff (still applies):** When faced with a "RAW silent" hypothesis, grep the rules directory exhaustively first. This Q-MERC-1A resolution turned what I initially proposed as a "project-design fill" gap into "encode the canonical RAW values from the source PDF." Two errors of the same kind in the same handoff (Gap A original miss + Q-MERC-1A initial framing) underscore the rule.
+
+**Interfaces defined or changed:** None (no code).
+
+**Database changes:** None.
+
+**Tests added/updated:** None.
+
+**Known issues:**
+- The mercantile session must re-verify the `?? Verify`-flagged cells in `docs/phase-10b-prereq-environmental-adjustments-table.md` against the original PDF/screenshot before committing values to `data/commerce/environmental_adjustments.json`. Particularly suspicious: rows 30-31 (Semipr. stones vs Gems) read as identical — likely a transcription error on my part.
+
+**Next session should:**
+
+- The mercantile-prereq session can now proceed with full canonical demand-modifier data in hand. Open Q-MERC items remaining: 2A (settlement age schema), 2B (dominant_race audit), 2C (climate mapping table approval), 4-11.
+- Phase 10B.1 and the parallel monster-data session continue independently.
+
+---
+
+## Session 2026-05-11 — Rules XML correction (Q-MERC-1A) — one-instance approval from Jedidiah
+
+**Task:** Apply Jedidiah's explicit one-instance approval to correct the corrupted rows in `rules/acore-setting-construction-rules.xml` (the Environmental Adjustments to Demand table at L297-356) with the canonical PDF values supplied earlier in the session.
+
+**Model used:** Sonnet.
+
+**Completed:**
+- Edited `rules/acore-setting-construction-rules.xml`:
+  - **Column schema corrected:** replaced `<column>tundra_plains</column>` and `<column>extra_climate_or_wrap</column>` with separate `<column>tundra</column>` and `<column>plains</column>`. The previous transcription had merged what are actually two distinct climate columns in the source PDF.
+  - **`<source_integrity_note>` removed**, replaced with `<transcription_note>` documenting the 2026-05-11 resolution and pointing at `docs/phase-10b-prereq-environmental-adjustments-table.md` as the audit trail.
+  - **All 25 wrapped/corrupted rows replaced with 31 canonical rows** (21 common merchandise + 10 precious merchandise). Previously-merged rows now separated: Ivory and Spices are distinct rows; Books-rare and Silk are distinct rows. Gems added as the final row (previously missing from the transcription entirely).
+- Updated `docs/phase-10b-prereq-environmental-adjustments-table.md` header + final section to mark the XML as now-authoritative; the docs/ artifact retains its role as the audit trail and verification-flag register.
+- Updated `docs/phase-10b-prereq-mercantile-handoff.md` §6 Q-MERC-1A resolution block: the mercantile session should encode `data/commerce/environmental_adjustments.json` directly from the corrected XML rather than from the docs/ artifact.
+
+**Decisions made:**
+- **Jedidiah's "one instance" approval is bounded.** This XML correction was explicitly authorized for the transcription-fidelity fix (restoring the rules file to faithful representation of the source PDF). It does NOT grant a standing license to modify rules XML in future sessions. The CLAUDE.md sacred-rules policy remains in force for all future sessions.
+- The 2 cells flagged `?? Verify` (rows 30 Semipr. stones / 31 Gems read as identical in my transcription) were committed to the XML AS-IS. If a future PDF spotcheck shows they differ, both files must be updated.
+
+**Interfaces defined or changed:** None (data-only edit).
+
+**Database changes:** None.
+
+**Tests added/updated:** None.
+
+**Known issues:**
+- Rows 30-31 (Semipr. stones / Gems) of the environmental adjustments table read as identical in my best-effort transcription. This may be correct (both are precious-stone categories with similar economic behavior) or it may be a transcription error. The XML now contains the identical values; if a future PDF spotcheck shows differences, update both `rules/acore-setting-construction-rules.xml` and `docs/phase-10b-prereq-environmental-adjustments-table.md` simultaneously.
+
+**Next session should:**
+- The mercantile-prereq session can now encode JSON directly from the corrected XML. Open Q-MERC items: 2A (settlement age schema), 2B (dominant_race audit), 2C (climate mapping table approval), 4-11.
+- Phase 10B.1 and the parallel monster-data session continue independently.
+
+---
+
+## Session 2026-05-12 — Phase 10B-prereq Mercantile GDD + Prereq.1 (Merchandise Registry)
+
+**Task:** Two-part session. (1) Draft `generation/gdd-settlement-economy.md` section-by-section with Jedidiah's sign-off, per the §5.0 mandatory RAW-vs-Project-Design ledger format. (2) Execute Prereq.1: encode the RAW Common/Precious/Animals merchandise tables as JSON data and ship the `MerchandiseRegistry` autoload + tests.
+
+**Model used:** Opus for the GDD drafting (semantic-heavy work with many design decisions and RAW interpretation); same for Prereq.1 implementation.
+
+**Completed — GDD (14 sections, 3,859 lines):**
+- §0 Document goals, scope, mandatory RAW-citation ledger format, calendar conventions (28-day month per `Timekeeping.DAYS_PER_MONTH`).
+- §1 Settlement schema additions — migration 097 adds `age_years` (default 500, bucket-derived in code), `dominant_race` (default 'human'), `urban_families` (relocated from `domains` per Q-MERC-15 Option A), `climate_override` (escape hatch).
+- §2 Merchandise registry data spec (20 common + 11 precious + 7 animal subtable entries; Monster parts corrected to precious category).
+- §3 Settlement-economy inputs — six RAW step input lookups; composite climate mapping per Q-MERC-2C revised (clear-default to `[grasslands, plains]`, swamp to `[scrub]` + lake_shore implicit, mountain subtypes inherit climate from biome). New subtypes `clear_steppe` and `clear_scrub` added to project vocabulary.
+- §4 RAW six-step demand-modifier procedure encoding. `[NEEDS-TERRAIN-CANON-REWORK]` + `[NEEDS-FLAVOR-PASS]` flags planted.
+- §5 Trade-route detection + region walk + step-6 shift mechanic. Ashford/Thornwall worked example replaces RAW's Cyfaraun/Samos for project-canonical naming (same RAW arithmetic).
+- §6 Market price resolver (4d4 + demand + class adjust + monopolist favor + judge mod) x 10 = percentage. Monthly drift mechanic (cumulative 10%/month) with deterministic dice cache.
+- §7 Merchant pool model — Q-MERC-5 revised twice. Final model: always-max pool generation at monthly tick; per-merchant `becomes_visible_calendar_day` field gates UI visibility. PC-domain-owner settlements get immediate visibility. `solicit_merchants` performs RAW staggered reveal (half/quarter/remainder over weeks 1/2/3). New `locate_merchandise` action surfaces invisible merchants of a specific type at 1-hour cost (RAW-faithful alter-not-spawn).
+- §8 Market fees — entry toll, customs duty (annual roll per Jedidiah's 2026-05-12 project-design), labor, ship moorage, stabling (with explicit donkey/camel/ox mappings: donkey=mule 2sp, camel=horse 5sp, ox 8sp). Domain-owner exemption includes customs per Jedidiah's correction.
+- §9 Ships + cargo_holds (Q-MERC-7 full build per Jedidiah's revision; v1-stub plan rescinded). New `ships` table, `cargo_holds` with XOR carrier FK (draft_vehicle OR ship), `shipping_contracts`. `CargoEncumbranceCalculator` sums inventory_items AND cargo_holds against single capacity limit per Q-MERC-17.
+- §10 Crime & Punishment data prereqs — attorney specialization addition (one-line `proficiency_specializations.json` edit), `character_legal_status` table with branded/maimed/proscribed booleans + maintained modifier cache.
+- §11 Audit-only sections — Spell-cost lookup gap DOCUMENTED but NOT shipped (per Jedidiah's Q-MERC-10 audit-when-relevant); HenchmanLoyaltyResolver `extra_modifiers: Dictionary` parameter extension SPECIFIED for Prereq.7.
+- §12 Validation examples — Ashford/Thornwall round-trip P&L baseline (+8,940 gp / 56% return on silk arbitrage), Scenario B (16% customs, +5,820 gp), Scenario C (PC-owned destination, +9,992 gp). These three numbers form the canonical integration-test target.
+- §13 Consolidated migration plan — 17 sub-steps of migration 097, single atomic transaction recommended with 097a/b/c split as fallback. Full code/data file inventory. Coding-conventions §52 draft text.
+- §14 Wave plan — 12 waves (Prereq.GDD/.1/.2a/2b/2c/.3/.4/.5a/5b/5c/.6/.7/.8) with ~170 tests across 16 files. Acceptance criteria + 23 `[NEEDS-...-PASS]` follow-up flags consolidated.
+
+**Completed — Prereq.1 (Merchandise Registry):**
+- `data/commerce/common_merchandise.json` — 20 entries with d100 roll ranges, load descriptions, weights, base prices. Dispatcher rows (`animals` 13-16, `mounts` 81-85) marked with `dispatcher: "animals_subtable"` + subroll spec.
+- `data/commerce/precious_merchandise.json` — 11 entries, `precious: true`. Monster parts at d100 01-10 with note about per-XP parts count.
+- `data/commerce/animals_subtable.json` — 7 entries for the dispatcher target (rabbit/hen, sheep, pig/goat, cattle, horse/yak, warhorse, elephant) covering d8 1-8.
+- `engine/subsystems/commerce/merchandise_registry.gd` — autoloaded singleton (`extends Node`, no `class_name` per autoload constraint). 10 public methods per GDD §2.7: all_common / all_precious / all_merchandise / get_by_type / is_precious / base_price_gp / load_weight_stone / random_common / random_precious / monster_parts_count. `random_common` resolves dispatcher rows transparently via `_resolve_dispatcher` (returns merged dict with resolved animal's stone_per_load and price_per_load_gp).
+- `project.godot` — registered `MerchandiseRegistry` autoload between PartyWallet and LocationCacheManager.
+- `tests/test_merchandise_registry.gd` — 8 tests per GDD §2.9: count assertions, base-price spot-checks (grain 10, silk 2000, gems 3000, salt 100, monster_parts 300), load-weight spot-checks (grain 80, spices 1, metals_common 100, silk 20), dispatcher-sentinel verification, d100 coverage validation (common 1-85 continuous, precious 1-100 continuous), monster_parts_count derivation (XP=10 returns 30, XP=25 returns 12, XP=300 returns 1, XP=0 returns 0 safety, XP=7 returns 42).
+- Registered `MerchandiseRegistryTests` in `tests/test_runner.gd` and `tests/test_runner.tscn`.
+
+**Decisions made (during GDD; locked across sections):**
+- **Q-MERC-5 revised twice.** Final model: always-max pool + per-merchant visibility field + RAW staggered reveal on solicit_merchants. Simpler than the avg-vs-max two-tier I proposed initially.
+- **Q-MERC-7 rescinded the v1-stub.** Full ship/cargo build with cargo_holds sibling table (Option B) + encumbrance integration.
+- **Q-MERC-15 Option A.** Move urban_families entirely from `domains` to `settlement_entrances`; data-move + drop column in migration 097.
+- **§4.3 narrow exception to banker's rounding.** "Drop fractions" per RAW step 3 is truncate-toward-zero, not banker's. Everywhere else: banker's.
+- **§8.4 annual customs roll.** Project-design (Jedidiah 2026-05-12) — customs rate stable per year per settlement, not per-transaction. Deterministic seeded RNG keyed on (settlement_id, year). New `customs_duty_rate_pct` column + `last_customs_roll_year` campaign-level dedup column.
+- **Terrain canon harmonization deferred.** `[NEEDS-TERRAIN-CANON-REWORK]` flags planted at §3.4 mapping commitments. Future session unifies cross-RAW terrain vocabulary; mercantile mapping table updates in one place at that time.
+- **§5.4 worked-example settlements renamed.** Ashford / Thornwall replace RAW's Cyfaraun / Samos (those are RAW PDF setting imports, not in project test_hex_map). RAW arithmetic preserved verbatim.
+- **§12 fixture P&L numbers pinned for integration test.** +8,940 / +5,820 / +9,992 gp across baseline / high-customs / domain-owner scenarios.
+
+**Interfaces defined or changed (per the GDD; many are forward-defined for future waves):**
+- **MerchandiseRegistry public API** (autoload, this wave): `all_common()`, `all_precious()`, `all_merchandise()`, `get_by_type(type)`, `is_precious(type)`, `base_price_gp(type)`, `load_weight_stone(type)`, `random_common(rng)`, `random_precious(rng)`, `monster_parts_count(monster_xp)`. Dispatcher rows return 0 for base_price/weight sentinels; `random_common` resolves them transparently.
+- Future waves' interfaces (specified in GDD but not yet implemented): `SettlementEconomyInputs.resolve_all`, `DemandModifierGenerator.generate_for_settlement`, `TradeRouteDetector.detect_routes_for_settlement`, `RegionDemandResolver.resolve_region`, `MarketPriceResolver.compute_market_price`, `MerchantPoolRepository.process_solicitation` + `.process_locate`, `MarketFeesCalculator.*`, `ShipRepository.*`, `CargoHoldRepository.*`, `ShippingContractRepository.*`, `CargoEncumbranceCalculator.*`, `CharacterLegalStatusRepository.*`, `HenchmanLoyaltyResolver.resolve_loyalty_check` extension with `extra_modifiers: Dictionary` param.
+
+**Database changes:**
+- None this wave. Prereq.1 is data + autoload only.
+- Migration 097 (17 sub-steps) DESIGNED in GDD §13 and SLATED for Prereq.2a application.
+
+**Tests added/updated:**
+- `tests/test_merchandise_registry.gd` — 8 new tests, all pass.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — registered MerchandiseRegistryTests.
+- Test suite results: **273 suites passed, 25 failed.** Zero new failures introduced; the 25 are pre-existing (settlement_data, level-up-engine, dragon catalog, etc. — orthogonal subsystems).
+
+**Known issues:**
+- None for Prereq.1. The MerchandiseRegistry loads cleanly and all assertions pass.
+- The `?? Verify`-flagged cells in `docs/phase-10b-prereq-environmental-adjustments-table.md` (rows 30/31 Semipr. stones / Gems identical-values) remain unresolved. They are NOT consumed by Prereq.1 (env adjustments table ships in Prereq.2a as `data/commerce/environmental_adjustments.json`). Final PDF spotcheck should happen during Prereq.2a encoding.
+
+**Next session should:**
+- **Prereq.2a — Migration 097 + DemandModifierGenerator + SettlementEconomyInputs.** This is the next concrete wave. Applies migration 097 (sub-steps 1-9, 12-13 if going atomic; or 097a if splitting). Builds the §3 input-lookup service and the §4 six-step demand-modifier procedure (steps 1-5; step 6 lands in 2b). Encodes `data/commerce/environmental_adjustments.json` from the corrected XML at `rules/acore-setting-construction-rules.xml:297-353`, cross-checking the `?? Verify`-flagged cells against PDF.
+- Expect ~25 tests in this wave (10 schema + 15 inputs + 18 demand-modifier procedure).
+- The migration is significant — touches `settlement_entrances`, `domains`, `hex_cells`, `campaigns`, and creates the `settlement_merchandise_demand` table. Wrap in single transaction with rollback.

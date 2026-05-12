@@ -1,0 +1,65 @@
+{
+  "skill_name": "acks-raw-lookup",
+  "evals": [
+    {
+      "id": 1,
+      "name": "named-lookup-turn-undead",
+      "prompt": "What does ACKS say about turning undead? I want to know how the cleric's class power works in 1e.",
+      "expected_output": "Cites rules/acore_core_classes.xml (cleric class power section) with line range. Returns a verbatim excerpt of the turn-undead mechanic. Uses the ACKS term 'turn undead' throughout (not 'rebuke undead'). Synthesizes how the d20-roll-vs-HD-indexed-target-value mechanic works.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "precedence-axioms-overrides-core",
+      "prompt": "How do thief skills work in ACKS? I'm implementing the proficiency throw mechanic for hear-noise, climb-walls, and the rest.",
+      "expected_output": "Surfaces BOTH the Axioms update (rules/ax_thief_skill_update.xml) AND the Core thief skill definitions (rules/acore_core_classes.xml). Treats the Axioms file as the canonical mechanic. Cites both with line ranges. Does not invent a unified-skill-check d20+modifier system from D&D.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "absent-rule-critical-hit",
+      "prompt": "How does ACKS handle critical hits? When I roll a natural 20 on my attack throw, what happens?",
+      "expected_output": "States clearly that ACKS 1e does not have a generic critical-hit rule. References cleaving (rules/acore_combat_and_wounds.xml) as the closest analogue with a citation. Does NOT invent a critical-hit system from D&D/Pathfinder. Asks Jedidiah whether a designed critical-hit system in generation/ is wanted, or whether attack throws should stay flat.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "bleed-through-rebuke-undead",
+      "prompt": "Write a short GDD section describing how clerics rebuke undead, including the dice mechanic and how it scales with cleric level.",
+      "expected_output": "Catches the bleed-through term 'rebuke undead' and substitutes 'turn undead'. Either (a) explicitly notes that ACKS uses 'turn undead' and proceeds with the ACKS mechanic, citing rules/acore_core_classes.xml, or (b) asks for confirmation that the user meant 'turn undead' before drafting. Does NOT draft a D&D-flavored rebuke-undead mechanic.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "structural-lookup-condition",
+      "prompt": "What are the mechanical effects of the blinded condition in ACKS? I need to wire it into the combat system.",
+      "expected_output": "Cites rules/ax_conditions_catalog.xml (the <condition name='blinded'> block) with line range. Returns the verbatim effects: -2 to surprise rolls, -4 to attack throws, movement reduced to 1/4. Does NOT add D&D-style effects like 'attacks against the creature have advantage' or 'creature attacks have disadvantage' that aren't in the ACKS block.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "free-text-mortal-wounds",
+      "prompt": "I need to implement mortal wounds resolution. Find me the relevant rules and procedures.",
+      "expected_output": "Returns the Axioms mortal wounds file (rules/ax_mortal_wounds_and_tampering.xml) and the combat-and-wounds file (rules/acore_combat_and_wounds.xml) where mortal wounds is referenced. Cites both with line ranges. Notes the missing tables that the Core extraction flagged (per the <coverage> block in the XML). Does NOT invent the mortal wounds table results from memory.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "ambiguous-territory-classification",
+      "prompt": "I'm working on the wilderness generation system. Tell me about the Outlands territory classification.",
+      "expected_output": "Catches the bleed-through term 'Outlands'. States that ACKS 1e has three territory classifications: Civilized, Borderlands, Wilderness. Cites the rules file where these are defined (likely acore_axioms_strongholds_and_domains.xml or similar). Does NOT invent an 'Outlands' classification. Asks the user whether they meant Wilderness, Borderlands, or something else.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "code-comment-citation",
+      "prompt": "I'm writing the initiative roll function in GDScript. Give me the function with a proper citation comment for the ACKS 1e initiative rule.",
+      "expected_output": "Looks up initiative in rules/acore_combat_and_wounds.xml (around line 55-77). Produces a GDScript function with a `# RAW: rules/acore_combat_and_wounds.xml:NNN-MMM — ...` comment that glosses the rule (1d6 + Dex, high acts first, ties simultaneous, long-reach/readied missile interrupts). Uses 1d6 not 1d20 for initiative. The comment is self-documenting.",
+      "files": []
+    }
+  ],
+  "_notes": [
+    "Assertions field intentionally left out for the first pass — will be drafted during the eval-run phase per skill-creator instructions.",
+    "Evals 1, 5, 8 test clean retrieval. Evals 2, 6 test precedence handling. Evals 3 tests absent-rule escalation. Evals 4, 7 test bleed-through detection. Together these cover the skill's primary failure modes."
+  ]
+}

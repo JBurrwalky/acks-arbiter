@@ -26,7 +26,9 @@ const CLASSES_WITH_OPEN_LOCKS := ["thief"]
 ## casters).
 const CLASSES_THAT_CAST := [
 	"mage", "elven_spellsword", "elven_nightblade", "warlock", "witch",
-	"cleric", "bladedancer", "dwarven_craftpriest"
+	"cleric", "bladedancer", "dwarven_craftpriest", "elven_enchanter", 
+	"shaman", "lightblessed_wonderworker", "warlock", "darkblood_ruinguard",
+	"elven_courtier",
 ]
 
 

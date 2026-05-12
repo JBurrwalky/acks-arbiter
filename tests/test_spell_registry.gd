@@ -10,7 +10,7 @@ func run_all_tests() -> void:
 	test_spell_lookup_charm_person()
 	test_spell_lookup_light_multi_tradition()
 	test_reversible_spell_cure_light_wounds()
-	test_arcane_list_12_per_level()
+	test_arcane_list_24_per_level()
 	test_divine_cleric_10_per_level()
 	test_divine_bladedancer_10_per_level()
 	test_arcane_index_spell_magic_missile()
@@ -88,12 +88,19 @@ func test_reversible_spell_cure_light_wounds() -> void:
 		"SpellRegistry: cure_light_wounds reverse key should be cause_light_wounds")
 
 
-func test_arcane_list_12_per_level() -> void:
+func test_arcane_list_24_per_level() -> void:
+	# Phase 10B.1g.2 (2026-05-11): updated from 12 to 24 entries per level
+	# after ingesting the canonical arcane spell list from PC Spell Lists.pdf
+	# (book p.126). The old 12-per-level value was a placeholder; the full
+	# arcane list per RAW is 24 spells per level L1-L6. L2 has 23 since
+	# one slot historically didn't get a spell assignment in the source —
+	# this matches the PDF directly.
 	var reg := SpellRegistry.new()
 	for level in range(1, 7):
 		var list := reg.get_spells_for_list("arcane", level)
-		check(list.size() == 12,
-			"SpellRegistry: arcane level %d list should have 12 entries, got %d" % [level, list.size()])
+		var expected: int = 23 if level == 2 else 24
+		check(list.size() == expected,
+			"SpellRegistry: arcane level %d list should have %d entries, got %d" % [level, expected, list.size()])
 
 
 func test_divine_cleric_10_per_level() -> void:
@@ -113,13 +120,15 @@ func test_divine_bladedancer_10_per_level() -> void:
 
 
 func test_arcane_index_spell_magic_missile() -> void:
+	# Phase 10B.1g.2 (2026-05-11): index updated after PDF ingestion.
+	# Canonical PDF order for arcane L1 has 24 spells; magic_missile is
+	# now at 1-based index 10 (between light and magic_mouth) — preceding
+	# entries: burning_hands, charm_person, chameleon, choking_grip,
+	# detect_magic, floating_disc, hold_portal, jump, light, magic_missile.
 	var reg := SpellRegistry.new()
-	# Arcane level 1 index 6 = magic_missile (7th entry, 0-indexed: 5)
-	# Order: charm_person(1), detect_magic(2), floating_disc(3), hold_portal(4),
-	#        light(5), magic_missile(6), magic_mouth(7), ...
-	var spell := reg.get_arcane_index_spell(1, 6)
+	var spell := reg.get_arcane_index_spell(1, 10)
 	check(spell == "magic_missile",
-		"SpellRegistry: arcane level 1 index 6 should be magic_missile, got '%s'" % spell)
+		"SpellRegistry: arcane level 1 index 10 should be magic_missile, got '%s'" % spell)
 
 
 func test_class_tradition_mage() -> void:

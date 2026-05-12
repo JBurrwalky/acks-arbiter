@@ -106,13 +106,21 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func _list_owned_domains(character_id: String) -> Array:
+	# urban_families lives on settlement_entrances post-migration 097 (Q-MERC-15
+	# Option A). LEFT JOIN + SUM aggregates per domain; COALESCE returns 0
+	# when no settlement_entrances rows exist for the domain.
 	if character_id.is_empty():
 		return []
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT id, peasant_families, urban_families, revenue_gp,
-			   expenses_gp, garrison_troops, realm_title
-		FROM domains
-		WHERE owner_character_id = ?
+		SELECT d.id, d.peasant_families,
+			   COALESCE((
+				   SELECT SUM(urban_families)
+				   FROM settlement_entrances
+				   WHERE parent_domain_id = d.id
+			   ), 0) AS urban_families,
+			   d.revenue_gp, d.expenses_gp, d.garrison_troops, d.realm_title
+		FROM domains d
+		WHERE d.owner_character_id = ?
 	""", [character_id]):
 		return []
 	return CampaignRepository.db.query_result.duplicate()

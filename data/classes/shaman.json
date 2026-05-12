@@ -3,7 +3,9 @@
   "class_name": "Shaman",
   "source": "Player's Companion",
   "race": "human",
-  "prime_requisites": ["WIS"],
+  "prime_requisites": [
+    "WIS"
+  ],
   "minimum_abilities": {},
   "alignment_restriction": "",
   "hit_die": "1d6",
@@ -13,71 +15,334 @@
   "combat_progression": "cleric",
   "base_attack_throw": 10,
   "attack_progression": {
-    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+    "1": 10,
+    "2": 10,
+    "3": 9,
+    "4": 9,
+    "5": 8,
+    "6": 8,
+    "7": 7,
+    "8": 7,
+    "9": 6,
+    "10": 6,
+    "11": 5,
+    "12": 5,
+    "13": 4,
+    "14": 4
   },
   "saving_throws": {
-    "1":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
-    "2":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
-    "3":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
-    "4":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
-    "5":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
-    "6":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
-    "7":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
-    "8":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
-    "9":  {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
-    "10": {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
-    "11": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
-    "12": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
-    "13": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9},
-    "14": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9}
+    "1": {
+      "petrification": 13,
+      "poison_death": 10,
+      "blast_breath": 16,
+      "staffs_wands": 13,
+      "spells": 15
+    },
+    "2": {
+      "petrification": 13,
+      "poison_death": 10,
+      "blast_breath": 16,
+      "staffs_wands": 13,
+      "spells": 15
+    },
+    "3": {
+      "petrification": 12,
+      "poison_death": 9,
+      "blast_breath": 15,
+      "staffs_wands": 12,
+      "spells": 14
+    },
+    "4": {
+      "petrification": 12,
+      "poison_death": 9,
+      "blast_breath": 15,
+      "staffs_wands": 12,
+      "spells": 14
+    },
+    "5": {
+      "petrification": 11,
+      "poison_death": 8,
+      "blast_breath": 14,
+      "staffs_wands": 11,
+      "spells": 13
+    },
+    "6": {
+      "petrification": 11,
+      "poison_death": 8,
+      "blast_breath": 14,
+      "staffs_wands": 11,
+      "spells": 13
+    },
+    "7": {
+      "petrification": 10,
+      "poison_death": 7,
+      "blast_breath": 13,
+      "staffs_wands": 10,
+      "spells": 12
+    },
+    "8": {
+      "petrification": 10,
+      "poison_death": 7,
+      "blast_breath": 13,
+      "staffs_wands": 10,
+      "spells": 12
+    },
+    "9": {
+      "petrification": 9,
+      "poison_death": 6,
+      "blast_breath": 12,
+      "staffs_wands": 9,
+      "spells": 11
+    },
+    "10": {
+      "petrification": 9,
+      "poison_death": 6,
+      "blast_breath": 12,
+      "staffs_wands": 9,
+      "spells": 11
+    },
+    "11": {
+      "petrification": 8,
+      "poison_death": 5,
+      "blast_breath": 11,
+      "staffs_wands": 8,
+      "spells": 10
+    },
+    "12": {
+      "petrification": 8,
+      "poison_death": 5,
+      "blast_breath": 11,
+      "staffs_wands": 8,
+      "spells": 10
+    },
+    "13": {
+      "petrification": 7,
+      "poison_death": 4,
+      "blast_breath": 10,
+      "staffs_wands": 7,
+      "spells": 9
+    },
+    "14": {
+      "petrification": 7,
+      "poison_death": 4,
+      "blast_breath": 10,
+      "staffs_wands": 7,
+      "spells": 9
+    }
   },
-  "xp_table": [0, 1500, 3000, 6000, 12000, 24000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000],
-  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+1", "9d6+2", "9d6+3", "9d6+4", "9d6+5"],
-  "weapon_permissions": ["club", "dagger", "hand_axe", "short_sword", "staff", "spear"],
+  "xp_table": [
+    0,
+    1500,
+    3000,
+    6000,
+    12000,
+    24000,
+    50000,
+    100000,
+    200000,
+    300000,
+    400000,
+    500000,
+    600000,
+    700000
+  ],
+  "hd_table": [
+    "1d6",
+    "2d6",
+    "3d6",
+    "4d6",
+    "5d6",
+    "6d6",
+    "7d6",
+    "8d6",
+    "9d6",
+    "9d6+1",
+    "9d6+2",
+    "9d6+3",
+    "9d6+4",
+    "9d6+5"
+  ],
+  "weapon_permissions": [
+    "club",
+    "dagger",
+    "hand_axe",
+    "short_sword",
+    "staff",
+    "spear"
+  ],
   "weapon_restrictions": [],
-  "armor_permissions": ["leather"],
+  "armor_permissions": [
+    "leather"
+  ],
   "shield_permitted": true,
-  "fighting_styles": ["weapon_and_shield", "two_handed"],
-  "class_proficiency_list": [ 
-    "animal_husbandry", "animal_training", "apostasy", "beast_friendship",
-    "berserkergang", "command", "diplomacy", "divine_blessing", "divine_health",
-    "elementalism", "fighting_style", "healing", "laying_on_hands", "leadership",
-    "loremastery", "magical_engineering", "magical_music", "naturalism",
-    "passing_without_trace", "prestidigitation", "quiet_magic",
-    "sensing_evil", "sensing_power", "theology", "tracking",
-    "unflappable_casting", "weapon_focus"
+  "fighting_styles": [
+    "weapon_and_shield",
+    "two_handed"
+  ],
+  "class_proficiency_list": [
+    "animal_husbandry",
+    "animal_training",
+    "apostasy",
+    "beast_friendship",
+    "berserkergang",
+    "command",
+    "diplomacy",
+    "divine_blessing",
+    "divine_health",
+    "elementalism",
+    "fighting_style",
+    "healing",
+    "laying_on_hands",
+    "leadership",
+    "loremastery",
+    "magical_engineering",
+    "magical_music",
+    "naturalism",
+    "passing_without_trace",
+    "prestidigitation",
+    "quiet_magic",
+    "sensing_evil",
+    "sensing_power",
+    "theology",
+    "tracking",
+    "unflappable_casting",
+    "weapon_focus"
   ],
   "proficiency_progression": {
-    "class": [1, 4, 8, 12],
-    "general": [1, 5, 9, 13]
+    "class": [
+      1,
+      4,
+      8,
+      12
+    ],
+    "general": [
+      1,
+      5,
+      9,
+      13
+    ]
   },
   "level_titles": [
-    "Spirit Whisperer", "Village Healer", "Tribal Priest", "Medicine Man",
-    "Totem Bearer", "Witch Doctor", "Spirit Walker", "Tribal Elder",
-    "Shaman", "Shaman, 10th lvl", "Shaman, 11th lvl", "Shaman, 12th lvl",
-    "Shaman, 13th lvl", "Grandfather of Totem"
+    "Spirit Whisperer",
+    "Village Healer",
+    "Tribal Priest",
+    "Medicine Man",
+    "Totem Bearer",
+    "Witch Doctor",
+    "Spirit Walker",
+    "Tribal Elder",
+    "Shaman",
+    "Shaman, 10th lvl",
+    "Shaman, 11th lvl",
+    "Shaman, 12th lvl",
+    "Shaman, 13th lvl",
+    "Grandfather of Totem"
   ],
   "class_powers": [
     {
       "power_id": "divine_casting",
       "unlock_level": 2,
       "tradition": "divine",
-      "spell_list": "divine_cleric",
+      "spell_list": "divine_shaman",
       "progression": {
-        "1":  [0, 0, 0, 0, 0],
-        "2":  [1, 0, 0, 0, 0],
-        "3":  [2, 0, 0, 0, 0],
-        "4":  [2, 1, 0, 0, 0],
-        "5":  [2, 2, 0, 0, 0],
-        "6":  [2, 2, 1, 1, 0],
-        "7":  [2, 2, 2, 1, 1],
-        "8":  [3, 3, 2, 2, 1],
-        "9":  [3, 3, 3, 2, 2],
-        "10": [4, 4, 3, 3, 2],
-        "11": [4, 4, 4, 3, 3],
-        "12": [5, 5, 4, 4, 3],
-        "13": [5, 5, 5, 4, 3],
-        "14": [6, 5, 5, 5, 4]
+        "1": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "2": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "3": [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "4": [
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        "5": [
+          2,
+          2,
+          0,
+          0,
+          0
+        ],
+        "6": [
+          2,
+          2,
+          1,
+          1,
+          0
+        ],
+        "7": [
+          2,
+          2,
+          2,
+          1,
+          1
+        ],
+        "8": [
+          3,
+          3,
+          2,
+          2,
+          1
+        ],
+        "9": [
+          3,
+          3,
+          3,
+          2,
+          2
+        ],
+        "10": [
+          4,
+          4,
+          3,
+          3,
+          2
+        ],
+        "11": [
+          4,
+          4,
+          4,
+          3,
+          3
+        ],
+        "12": [
+          5,
+          5,
+          4,
+          4,
+          3
+        ],
+        "13": [
+          5,
+          5,
+          5,
+          4,
+          3
+        ],
+        "14": [
+          6,
+          5,
+          5,
+          5,
+          4
+        ]
       }
     },
     {

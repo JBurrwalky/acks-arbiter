@@ -1,0 +1,6 @@
+{
+  "eval_id": 3,
+  "eval_name": "absent-rule-critical-hit",
+  "prompt": "How does ACKS handle critical hits? When I roll a natural 20 on my attack throw, what happens?",
+  "assertions": []
+}

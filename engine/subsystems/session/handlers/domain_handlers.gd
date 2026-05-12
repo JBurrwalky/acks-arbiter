@@ -312,25 +312,52 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	}
 
 
-## Phase 10B.1a stub. Advances days_completed on every in_progress
-## magic_research_projects row owned by the given character by 30 (one
-## month). Returns a summary dict the parent resolver folds into its result.
-## Completion logic + library/workshop bonuses land in 10B.1b.
+## Phase 10B.1a stub + 10B.1d aspirant promotion. Advances days_completed
+## on every in_progress magic_research_projects row owned by the given
+## character by 30 (one month), and fires aspirant promotion throws for
+## every aspirant_in_training follower whose promotion_eligible_day has
+## come due (Q20 [RESOLVED 2026-05-11]).
+##
+## v1 scope: completion logic + library/workshop bonuses for magic_research
+## projects land in 10B.1b/c handlers (this stub just ages the timer).
+## Aspirant promotion roll is fully wired here via
+## SanctumApprenticeResolver.resolve_promotion_throw.
 func _resolve_magic_research_month(
 	owner_character_id: String,
-	_calendar_day: int,
+	calendar_day: int,
 ) -> Dictionary:
-	if owner_character_id.is_empty():
-		return {"projects_advanced": 0}
-	# Snapshot the in-progress count BEFORE advancing so the summary reflects
-	# how many projects actually had days_completed bumped.
-	var before: Array = CampaignRepository.list_magic_research_projects_for_character(
-		owner_character_id, "in_progress")
-	if before.is_empty():
-		return {"projects_advanced": 0}
-	CampaignRepository.advance_magic_research_projects_for_character(
-		owner_character_id, 30)
-	return {"projects_advanced": before.size()}
+	var projects_advanced: int = 0
+	if not owner_character_id.is_empty():
+		var before: Array = CampaignRepository.list_magic_research_projects_for_character(
+			owner_character_id, "in_progress")
+		if not before.is_empty():
+			CampaignRepository.advance_magic_research_projects_for_character(
+				owner_character_id, 30)
+			projects_advanced = before.size()
+
+	# Aspirant promotion throws (Q20). list_aspirants_due_for_promotion is
+	# global across all owners — we filter to this owner's aspirants since
+	# the monthly tick fires per domain. (Future polish: a dedicated
+	# realm-AI pass can handle NPC sanctums in one batch.)
+	var aspirants_promoted: int = 0
+	var aspirants_departed: int = 0
+	if not owner_character_id.is_empty():
+		var due_aspirants: Array = CampaignRepository.list_aspirants_due_for_promotion(calendar_day)
+		for aspirant in due_aspirants:
+			if String(aspirant.get("owner_character_id", "")) != owner_character_id:
+				continue
+			var result: Dictionary = SanctumApprenticeResolver.resolve_promotion_throw(
+				aspirant, calendar_day)
+			if bool(result.get("success", false)):
+				aspirants_promoted += 1
+			else:
+				aspirants_departed += 1
+
+	return {
+		"projects_advanced": projects_advanced,
+		"aspirants_promoted": aspirants_promoted,
+		"aspirants_departed": aspirants_departed,
+	}
 
 
 ## Persist domain updates after monthly resolution.

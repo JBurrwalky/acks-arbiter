@@ -1,0 +1,6 @@
+{
+  "eval_id": 3,
+  "eval_name": "refactor-trap-disarm-failure",
+  "prompt": "Update generation/gdd-trap-generation.md to add a new section on disarming-failure consequences. ACKS says trap disarming has a chance of failure; my current GDD doesn't handle what happens when disarming fails (does the trap fire? is it still disarm-able? is it stuck?). Add a project-designed system for this and update the status.",
+  "assertions": []
+}
