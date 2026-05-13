@@ -66,12 +66,12 @@ This project has three kinds of reference documents with different modification 
 ```
 C:/Users/jttau/acks-arbiter/
 ├── CLAUDE.md                    # This file (read every session)
-├── build_log.md                 # Cross-session memory (read and update every session)
+├── build_log.md                 # Cross-session memory — query via acks-build-log skill; append at session end
 ├── docs/
 │   ├── acks_arbiter_design_brief_v11.md   # Architecture (read every session)
 │   ├── document_map.md                     # File index (read every session, once created)
 │   ├── rule_system_map.md                  # System dependencies (read every session, once created)
-│   └── coding_conventions.md               # (consolidated here for reference)
+│   └── coding_conventions.md               # Living style rulebook — query via acks-conventions skill
 ├── rules/                        # XML rule summaries — NEVER MODIFY
 │   ├── acore_*.xml
 │   ├── pc_*.xml
@@ -93,30 +93,41 @@ C:/Users/jttau/acks-arbiter/
 
 ---
 
+## Installed Skills
+
+The project has four navigator/authoring skills installed at `.claude/skills/`. Consult them per the Build Session Protocol below; each is documented at `.claude/skills/<skill-name>/SKILL.md`.
+
+- **`acks-raw-lookup`** — retrieves ACKS rules from `rules/*.xml` with citation and source precedence. Use whenever referencing or implementing any ACKS rule. Bundled `scripts/lookup.py` handles search and tag-based retrieval.
+- **`acks-gdd-author`** — drafts new GDDs and refactors existing ones in the project's format. Used when capturing in-session design output as a `generation/gdd-*.md` file.
+- **`acks-build-log`** — queries the 21,000-line `build_log.md` without full-file reads. Use at session start (`--last`, `--next-actions`, `--needs-review`) and mid-session (`--search`, `--interface`, `--for-task`).
+- **`acks-conventions`** — queries the 3,000-line `docs/coding_conventions.md` without full-file reads. Use before writing code (`--for-task`); surfaces conventions you might not know to look for.
+
+---
+
 ## Build Session Protocol
 
 Every session that modifies application code:
 
 1. Read this file (`CLAUDE.md`).
-2. Read `build_log.md` to understand current project state and what happened last session.
+2. Consult `acks-build-log` to retrieve session context: run `--last 1` for the most recent entry, `--next-actions 3` for prior next-action notes, and `--needs-review` for outstanding `[NEEDS-OPUS-REVIEW]` flags. If today's task touches an existing system, also run `--for-task "<task description>"` to surface relevant prior sessions. Do NOT read the full `build_log.md` directly — at 21,000+ lines the navigator exists to replace that read.
 3. Read `docs/acks_arbiter_design_brief_v11.md`.
 4. Read `docs/document_map.md` and `docs/rule_system_map.md` (when they exist).
-5. Read `docs/coding_conventions.md` before writing code, edit after creating new conventions or modifying existing conventions. (Modify only according to coding conventions section rules below).
+5. Consult `acks-conventions` before writing code: run `--for-task "<today's work>"` to surface applicable conventions, including ones you might not know to look for. Use `--section N` to drill into specific sections. Do NOT read the full `docs/coding_conventions.md` directly — the navigator surfaces just the relevant sections. After creating or modifying conventions, update the file directly per the conventions-maintenance section below.
 6. Read `docs/proficiency_system_map.md`, `docs/spell_system_map.md` as needed to understand how spells and proficiencies relate to game systems during planning. Read `docs/acks-arbiter-build-plan.md` for context surrounding the current build phase task.
-7. Identify which XML rule summaries and GDDs are relevant to the current task. **Load only those files.** Never load the entire rules corpus.
+7. For ACKS rule references, use `acks-raw-lookup` — its bundled `scripts/lookup.py` retrieves the right rule with citation and respects source precedence. Never read the entire rules corpus. For GDDs, load the specific files relevant to the current task.
    - For exploration, session runner, or UI work: also load `gdd-realtime-scheduler.md`, `gdd-dungeon-map-ui.md`, and/or `gdd-settlement-exploration-ui.md` as relevant.
 8. If persistence is involved, inspect the current database schema.
 9. If touching shared subsystem boundaries, inspect the relevant interface definitions.
 10. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
 11. Register any new actions in the action vocabulary definition file.
 12. Run or update focused tests for the affected subsystem and any adjacent boundaries.
-13. **Before ending the session**, update `build_log.md` and `docs/coding_conventions.md` (see below).
+13. **Before ending the session**: append a new entry to `build_log.md` (use the template from `acks-build-log`'s `references/entry_template.md`; run `acks-build-log --lint` after appending to check for format drift). Update `docs/coding_conventions.md` if any new conventions emerged or existing ones changed.
 
 ---
 
 ## Build Log — Cross-Session Memory
 
-The file `build_log.md` at the project root is your memory across sessions. **Read it at the start of every session. Update it at the end of every session.**
+The file `build_log.md` at the project root is your memory across sessions. **Consult it via the `acks-build-log` skill at the start of every session. Append a new entry at the end of every session.** Do not read the full file directly; the navigator exists to replace that read.
 
 ### What to Record
 
@@ -168,7 +179,7 @@ At the end of each session, append an entry with:
 
 ## Coding Conventions Maintenance
 
-The file `docs/coding_conventions.md` is a living document that grows as the project grows. **Review and update it when any of the following happen during a session:**
+The file `docs/coding_conventions.md` is a living document that grows as the project grows. **Consult it via the `acks-conventions` skill before writing code; update the file directly when any of the following happen during a session:**
 
 - You establish a new pattern that isn't documented (add it).
 - You find yourself making a judgment call about style or structure that future sessions will face again (document the decision).

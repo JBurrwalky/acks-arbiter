@@ -36,11 +36,28 @@ static func loyalty_modifier(morale_score: int, is_grudging: bool = false,
 
 
 ## Resolves a loyalty check: rolls 2d6 + total_modifier and returns a result
-## Dictionary with keys: {roll, modifier, total, outcome, morale_delta,
-## clear_grudging, set_fanatic, departs}.
+## Dictionary with keys: {roll, modifier, extra_modifier_breakdown, total,
+## outcome, morale_delta, clear_grudging, set_fanatic, departs}.
+##
+## [param extra_modifiers] (Prereq.7 extension per gdd-settlement-economy.md §11.2):
+## optional `{source_label: int_modifier}` dict that contributes additional
+## integer adjustments on top of morale + grudging + fanatic. Phase 10B.3's
+## order_hijink handler uses this for the RAW hijink-overload (-1 per extra
+## hijink beyond one per month per acore-campaign-hijinks.xml:488-494) and
+## underboss-strain (-1 per additional 10% over the 20% threshold per
+## ax_campaign_play.xml:1213-1214) modifiers. Empty dict (the default) makes
+## this a no-op — existing callers are unaffected.
+##
+## The [param dice] fixture seam is preserved unchanged. The new modifier
+## path is summed in this function's body, OUTSIDE `loyalty_modifier(...)`,
+## so direct callers of the helper keep the same RAW morale+grudging+fanatic
+## semantic.
 static func resolve_loyalty_check(morale_score: int, is_grudging: bool = false,
-		is_fanatic: bool = false, dice = null) -> Dictionary:
+		is_fanatic: bool = false, dice = null,
+		extra_modifiers: Dictionary = {}) -> Dictionary:
 	var mod := loyalty_modifier(morale_score, is_grudging, is_fanatic)
+	for source in extra_modifiers:
+		mod += int(extra_modifiers[source])
 	var roll := _roll_2d6(dice)
 	var total := roll + mod
 	var outcome: String = HenchmanTables.loyalty_result(total)
@@ -48,6 +65,7 @@ static func resolve_loyalty_check(morale_score: int, is_grudging: bool = false,
 	var result := {
 		"roll": roll,
 		"modifier": mod,
+		"extra_modifier_breakdown": extra_modifiers.duplicate(),
 		"total": total,
 		"outcome": outcome,
 		"morale_delta": 0,

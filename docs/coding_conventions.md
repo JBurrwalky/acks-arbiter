@@ -1510,7 +1510,7 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-## 14. ACKS-Specific Implementation Rules (continued)
+## 14. Dice Conventions
 
 ### 14.1 Dice Conventions
 
@@ -1526,7 +1526,7 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-## 13. Tactical Grid Conventions (Voxel)
+## 53. Tactical Grid Conventions (Voxel)
 
 <!-- Rewritten 2026-04-23 (12b) — voxel-only. The prior 2D `TacticalMapData` / `CellData`
      schema was deleted with the 12b cleanup sweep; historical entries for that model
@@ -2741,7 +2741,7 @@ Phase 9A polish unifies `data/monsters/monster_catalog.json` (per-creature stat 
 - **Data engineering vs functional engineering sessions split when scope > ~10h.** This session was framed as "expand monster_catalog 53 → ~184 entries + refactor + tests" — a 10h+ data engineering task. Pragmatic delivery: complete the FUNCTIONAL refactor (resolver, wilderness_creature_table.json, validation, consistency test) end-to-end, plus high-priority category coverage (96 new entries: 100% coverage of beastmen_humanoids / men / giants / undead / summoned / vermin / constructs, plus priority animals + fantastic). Document remaining ~80 BR rows as carry-forward in build_log. Pattern: when a session is framed with a "big number" target, prioritize FUNCTIONAL completeness over numerical completeness. A 60% catalog expansion with full structural refactor + tests is more shippable than a 100% catalog expansion with no validation. Carry-forward gets explicit, named entries in build_log so future sessions know exactly what to pick up.
 
 
-## 42. Phase 9C polish round 2 — five carry-forward conventions (2026-05-09)
+## 54. Phase 9C polish round 2 — five carry-forward conventions (2026-05-09)
 
 Phase 9C polish round 2 lands the carry-forward items from §41 (modal terrain, alignment metadata, per-troop save overlay, disease cure reconciliation, magnitude UI slider). New patterns:
 

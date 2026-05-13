@@ -48,7 +48,7 @@ func _setup() -> void:
 	_campaign_id = CampaignRepository.create_campaign("SettlementEconomyInputsTests", "World")
 	_map_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings(
-		"INSERT INTO hex_maps (id, campaign_id, name, hex_size_miles) VALUES (?, ?, ?, 6)",
+		"INSERT INTO hex_maps (id, campaign_id, name, scale) VALUES (?, ?, ?, 'regional_6mi')",
 		[_map_id, _campaign_id, "TestMap"]
 	)
 

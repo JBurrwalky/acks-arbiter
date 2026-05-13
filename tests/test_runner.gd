@@ -328,6 +328,30 @@ extends Node
 @onready var _phase_10b1h_tests = $Phase10B1hTests
 # Phase 10B-prereq mercantile / Prereq.1 — MerchandiseRegistry
 @onready var _merchandise_registry_tests = $MerchandiseRegistryTests
+# Phase 10B-prereq mercantile / Prereq.2a — Settlement economy inputs + demand modifier generator
+@onready var _settlement_economy_inputs_tests = $SettlementEconomyInputsTests
+@onready var _demand_modifier_generator_tests = $DemandModifierGeneratorTests
+# Phase 10B-prereq mercantile / Prereq.2b — Trade route detector + region demand resolver
+@onready var _trade_route_detector_tests = $TradeRouteDetectorTests
+@onready var _region_demand_resolver_tests = $RegionDemandResolverTests
+# Phase 10B-prereq mercantile / Prereq.2c — Market price resolver + monthly drift
+@onready var _market_price_resolver_tests = $MarketPriceResolverTests
+# Phase 10B-prereq mercantile / Prereq.3 — Market fees calculator
+@onready var _market_fees_calculator_tests = $MarketFeesCalculatorTests
+# Phase 10B-prereq mercantile / Prereq.4 — Merchant pool repository
+@onready var _merchant_pool_repository_tests = $MerchantPoolRepositoryTests
+# Phase 10B-prereq mercantile / Prereq.5a — Ships persistence
+@onready var _ship_repository_tests = $ShipRepositoryTests
+# Phase 10B-prereq mercantile / Prereq.5b — Cargo holds + encumbrance
+@onready var _cargo_hold_repository_tests = $CargoHoldRepositoryTests
+@onready var _cargo_encumbrance_calculator_tests = $CargoEncumbranceCalculatorTests
+# Phase 10B-prereq mercantile / Prereq.5c — Shipping contracts
+@onready var _shipping_contract_repository_tests = $ShippingContractRepositoryTests
+# Phase 10B-prereq mercantile / Prereq.6 — Crime & Punishment data prereqs
+@onready var _character_legal_status_repository_tests = $CharacterLegalStatusRepositoryTests
+@onready var _attorney_specialization_tests = $AttorneySpecializationTests
+# Phase 10B-prereq mercantile / Prereq.8 — End-to-end commerce integration
+@onready var _commerce_integration_tests = $CommerceIntegrationTests
 
 
 func _ready() -> void:
@@ -634,7 +658,31 @@ func run() -> void:
 			# Phase 10B.1h — Magical Research UI polish
 			_phase_10b1h_tests,
 			# Phase 10B-prereq mercantile / Prereq.1 — MerchandiseRegistry
-			_merchandise_registry_tests]:
+			_merchandise_registry_tests,
+			# Phase 10B-prereq mercantile / Prereq.2a — Settlement economy + demand mod
+			_settlement_economy_inputs_tests,
+			_demand_modifier_generator_tests,
+			# Phase 10B-prereq mercantile / Prereq.2b — Trade routes + region resolver
+			_trade_route_detector_tests,
+			_region_demand_resolver_tests,
+			# Phase 10B-prereq mercantile / Prereq.2c — Market price + drift
+			_market_price_resolver_tests,
+			# Phase 10B-prereq mercantile / Prereq.3 — Market fees calculator
+			_market_fees_calculator_tests,
+			# Phase 10B-prereq mercantile / Prereq.4 — Merchant pool
+			_merchant_pool_repository_tests,
+			# Phase 10B-prereq mercantile / Prereq.5a — Ships persistence
+			_ship_repository_tests,
+			# Phase 10B-prereq mercantile / Prereq.5b — Cargo holds + encumbrance
+			_cargo_hold_repository_tests,
+			_cargo_encumbrance_calculator_tests,
+			# Phase 10B-prereq mercantile / Prereq.5c — Shipping contracts
+			_shipping_contract_repository_tests,
+			# Phase 10B-prereq mercantile / Prereq.6 — C&P data prereqs
+			_character_legal_status_repository_tests,
+			_attorney_specialization_tests,
+			# Phase 10B-prereq mercantile / Prereq.8 — Commerce integration
+			_commerce_integration_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

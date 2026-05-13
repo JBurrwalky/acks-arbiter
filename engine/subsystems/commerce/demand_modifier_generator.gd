@@ -251,10 +251,12 @@ static func generate_for_settlement(settlement_id: String) -> Dictionary:
 	return modifiers
 
 
-## Regenerate trigger — wraps generate_for_settlement. Prereq.2b will extend
-## this to invoke the region demand resolver (§5) so the cache reflects step 6.
+## Regenerate trigger — runs steps 1-5 then invokes the region resolver to
+## apply step 6 shifts across the settlement's trade-connected region.
+## Per generation/gdd-settlement-economy.md §4.10 + §5.0.
 static func regenerate(settlement_id: String) -> void:
 	generate_for_settlement(settlement_id)
+	RegionDemandResolver.resolve_region(settlement_id)
 
 
 # ---------------------------------------------------------------------------
@@ -290,6 +292,36 @@ static func get_all_demand_modifiers(settlement_id: String) -> Dictionary:
 		var key: String = str((row as Dictionary).get("merchandise_type", ""))
 		if not key.is_empty():
 			result[key] = int((row as Dictionary).get("demand_modifier", 0))
+	return result
+
+
+## Returns {merchandise_type: int} of the pre-trade-route-shift values from
+## the cache. Consumed by the region resolver (§5) as the input to step 6.
+## Manual rows still report their `demand_modifier` as the pre-shift value
+## (manual overrides are not subjected to step 6 shifts by construction).
+static func get_all_pre_shift_demand_modifiers(settlement_id: String) -> Dictionary:
+	var result: Dictionary = {}
+	if settlement_id.is_empty():
+		return result
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT merchandise_type, pre_trade_route_shift_value, demand_modifier, source_kind
+		FROM settlement_merchandise_demand
+		WHERE settlement_entrance_id = ?
+	""", [settlement_id]):
+		return result
+	for row in CampaignRepository.db.query_result:
+		var d: Dictionary = row
+		var key: String = str(d.get("merchandise_type", ""))
+		if key.is_empty():
+			continue
+		var kind: String = str(d.get("source_kind", "generated"))
+		if kind == "manual":
+			# Manual rows are exempt from step 6; emit demand_modifier as the
+			# "pre-shift" value so the resolver's working state stays
+			# consistent if a manual row is read into a region walk.
+			result[key] = int(d.get("demand_modifier", 0))
+		else:
+			result[key] = int(d.get("pre_trade_route_shift_value", 0))
 	return result
 
 

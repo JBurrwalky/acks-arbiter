@@ -20,6 +20,18 @@ extends RefCounted
 ## deferred to the caller — typically the UI Faith block builds the gp_value
 ## from the launched spells before launching the activity. Future iterations
 ## may move that lookup here.
+##
+## [NEEDS-SPELL-COST-LOOKUP-PASS] (Prereq.7 audit per gdd-settlement-economy.md §11.1)
+## The Spell Availability by Market table is not yet encoded as data; this handler
+## relies entirely on the caller's gp_value computation. When a future session
+## ships the lookup, expected scope:
+##   1. Encode the table from RAW (acore-campaign-hijinks.xml) as
+##      `data/spells/spell_availability_by_market.json`.
+##   2. Add `SpellRegistry.get_spell_cost_gp(spell_key: String) -> int` reading the JSON.
+##   3. Rewire this handler to compute `gp_value_total` from `spell_keys` rather
+##      than taking it as a caller param.
+## The gap is not blocking — Phase 10B.2 (Trade) and 10B.3 (Syndicate) do not
+## depend on the spell-cost lookup.
 
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:

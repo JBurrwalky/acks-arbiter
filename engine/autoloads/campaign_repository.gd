@@ -2414,6 +2414,36 @@ func get_character_proficiencies(character_id: String) -> Array:
 	return _sanitize_language_proficiency_rows(db.query_result.duplicate())
 
 
+## Returns the character's rank in a specific proficiency_key + specialization.
+## Per generation/gdd-settlement-economy.md §10.2.1 — closes the audit task
+## `[NEEDS-PROFICIENCY-API-VERIFICATION]`. Phase 10B.3's Crime & Punishment
+## resolver invokes this once per throw to look up Profession (attorney).
+##
+## Specialization is matched literally (empty string '' is the canonical
+## "no specialization" value in character_proficiencies). Returns 0 if no
+## matching row exists.
+##
+## If multiple rows match (shouldn't normally happen — rank progressions
+## live as separate rows in the existing schema), returns the MAX rank.
+func get_character_proficiency_rank(
+		character_id: String,
+		proficiency_key: String,
+		specialization: String = "",
+) -> int:
+	if character_id.is_empty() or proficiency_key.is_empty():
+		return 0
+	db.query_with_bindings("""
+		SELECT MAX(rank) AS max_rank FROM character_proficiencies
+		WHERE character_id = ? AND proficiency_key = ? AND specialization = ?
+	""", [character_id, proficiency_key, specialization])
+	if db.query_result.is_empty():
+		return 0
+	var v: Variant = db.query_result[0].get("max_rank", null)
+	if v == null:
+		return 0
+	return int(v)
+
+
 # ---------------------------------------------------------------------------
 # Batch inventory save (for character generation)
 # ---------------------------------------------------------------------------

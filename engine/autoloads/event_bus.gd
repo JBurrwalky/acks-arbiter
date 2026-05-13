@@ -1434,3 +1434,108 @@ signal aspirant_promoted_to_first_level(follower_id: String, owner_character_id:
 ## followers row and transitions the follower to 'promoted_to_henchman'.
 ## new_character_id is the new characters.id.
 signal follower_promoted_to_henchman(follower_id: String, new_character_id: String, owner_character_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq mercantile signals (Prereq.2c — market price drift)
+# ---------------------------------------------------------------------------
+
+## Emitted when the monthly drift mechanic re-rolls a (settlement, merchandise)
+## pair's cached 4d4 dice value per RAW acore-campaign-hijinks.xml:737-739.
+## Per generation/gdd-settlement-economy.md §6.6.
+signal market_price_drifted(settlement_id: String, merchandise_type: String, old_dice: int, new_dice: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq merchant pool signals (Prereq.4)
+# ---------------------------------------------------------------------------
+
+## Emitted when MerchantPoolRepository regenerates a settlement's cohort on
+## the monthly tick. Per generation/gdd-settlement-economy.md §7.11.
+signal merchant_pool_refreshed(settlement_id: String, new_merchant_count: int)
+
+## Emitted when solicit_merchants assigns staggered reveal days to a
+## settlement's invisible cohort. The week-1/2/3 boundaries are driven by
+## becomes_visible_calendar_day reaching current_calendar_day, not by this
+## signal — this fires at solicit START.
+signal solicitation_started(settlement_id: String, character_id: String, merchants_revealed_count: int)
+
+## Emitted when locate_merchandise surfaces a previously-invisible merchant
+## of the requested type. Per §7.5.2 alter-not-spawn semantics.
+signal merchant_surfaced_via_locate(merchant_id: String, settlement_id: String, merchandise_type: String)
+
+## Emitted when consume_loads decrements a merchant's loads_available.
+## loads_consumed is how many loads were removed this call.
+signal merchant_loads_consumed(merchant_id: String, loads_consumed: int, loads_remaining: int)
+
+## Emitted when consume_loads flips a merchant's status to 'depleted'
+## (loads_available reached 0).
+signal merchant_depleted(merchant_id: String, settlement_id: String)
+
+## Emitted when process_expirations deletes an expired merchant row.
+signal merchant_expired(merchant_id: String, settlement_id: String)
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq ship persistence signals (Prereq.5a)
+# ---------------------------------------------------------------------------
+
+## Emitted when ShipRepository.create_ship inserts a new ships row.
+## Per generation/gdd-settlement-economy.md §9.11.
+signal ship_created(ship_id: String, party_id: String, vessel_key: String)
+
+## Emitted when destroy_ship or damage_ship (with damage reaching 0 SHP)
+## flips a ships row to is_destroyed=1.
+signal ship_destroyed(ship_id: String, party_id: String)
+
+## Emitted when set_ship_location transitions a ship between moored / at_sea / wrecked.
+signal ship_location_changed(ship_id: String, new_kind: String, settlement_id: String)
+
+## Emitted when process_monthly_operating_costs_for_campaign successfully debits
+## a ship's monthly operating cost from the party wallet.
+signal ship_operating_cost_paid(ship_id: String, gp_amount: int)
+
+## Emitted when process_monthly_operating_costs_for_campaign cannot fully
+## debit a ship's monthly cost (party wallet shortfall). v1: log only; ship
+## is NOT destroyed for non-payment per §9.6.1. [NEEDS-CREW-MORALE-PASS] flag.
+signal ship_operating_cost_unpaid(ship_id: String, owed_gp: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq cargo holds signals (Prereq.5b)
+# ---------------------------------------------------------------------------
+
+## Emitted when CargoHoldRepository inserts a cargo row (any source kind:
+## purchased / smuggled / stolen / shipping_contract). Per
+## generation/gdd-settlement-economy.md §9.11.
+signal cargo_loaded(cargo_hold_id: String, carrier_id: String, merchandise_type: String, loads_count: int)
+
+## Emitted when delete_sold removes a cargo row at sell time. gp_received is
+## the caller-supplied actual gp credit (post-fees etc.).
+signal cargo_sold(cargo_hold_id: String, gp_received: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq shipping contracts signals (Prereq.5c)
+# ---------------------------------------------------------------------------
+
+## Emitted when ShippingContractRepository.accept_contract inserts a new
+## shipping_contracts row. Per generation/gdd-settlement-economy.md §9.11.
+signal shipping_contract_accepted(contract_id: String, party_id: String, fee_gp: int)
+
+## Emitted when deliver marks the contract status='delivered'. fee_paid_gp
+## is the actual gp credited (0 if missed_deadline path took).
+## deadline_missed=true means the deliver call landed after the deadline.
+signal shipping_contract_delivered(contract_id: String, fee_paid_gp: int, deadline_missed: bool)
+
+## Emitted when a contract transitions to a non-success terminal state
+## (cancelled, or other failure modes added in v1.1+). reason is a free-text
+## tag for telemetry / log surfacing.
+signal shipping_contract_failed(contract_id: String, reason: String)
+
+# ---------------------------------------------------------------------------
+# Phase 10B-prereq syndicate / legal-status signals (Prereq.6)
+# ---------------------------------------------------------------------------
+
+## Emitted when CharacterLegalStatusRepository.apply_* or clear_flag mutates
+## a character's legal status row. Per generation/gdd-settlement-economy.md §10.5.
+##   flag = 'branded' | 'maimed' | 'proscribed'
+##   new_value = 0 or 1 (the new boolean state of [param flag])
+##   modifier_total = the recomputed prior_crimes_modifier_cache value
+signal character_legal_status_changed(character_id: String, flag: String, new_value: int, modifier_total: int)

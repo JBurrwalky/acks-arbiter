@@ -1,0 +1,31 @@
+{
+  "skill_name": "acks-conventions",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pre-write-for-task",
+      "prompt": "I'm about to implement a combat resolver function that rolls initiative and handles backstab. Which coding conventions sections should I check before I start?",
+      "expected_output": "Uses conventions_lookup.py --for-task with the task description. Returns the top 5-7 most relevant sections. Should surface §17 Combat, §10 Action Vocabulary, §12 ACKS Rules, §14 Dice Conventions, and possibly §53 Tactical Grid. Does NOT read the entire conventions file directly.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "naming-decision-lookup",
+      "prompt": "I want to name a new autoload that manages location-cache decay. What's the project's naming convention for autoloads?",
+      "expected_output": "Uses conventions_lookup.py --section 5 (Autoload Rules) and/or --section 1 (Naming Conventions). Returns the autoload naming convention (PascalCase, truly-global-only). Surfaces relevant constraints (no class_name in autoloads). Does NOT invent a naming convention from training data.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "drift-detection",
+      "prompt": "Run a quick health check on coding_conventions.md — any structural drift I should address?",
+      "expected_output": "Uses conventions_lookup.py --lint. Returns the gap between §52 and §53 (the surgical-fix artifact), any stale [PROVISIONAL] tags, sections without dates where one would be expected. Does NOT try to read the whole file or grep manually.",
+      "files": []
+    }
+  ],
+  "_notes": [
+    "Eval 1 tests --for-task — the 'don't know to look for' value prop.",
+    "Eval 2 tests targeted section retrieval before naming decisions.",
+    "Eval 3 tests --lint for ongoing-health surfacing."
+  ]
+}

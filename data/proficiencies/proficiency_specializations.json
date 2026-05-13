@@ -129,6 +129,7 @@
   "profession": {
     "specializations": [
       { "id": "actuary", "display_name": "Actuary", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "attorney", "display_name": "Attorney", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "banker", "display_name": "Banker", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "chamberlain", "display_name": "Chamberlain", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "judge", "display_name": "Judge", "layer": "base", "prerequisite_ids": [], "metadata": {} },

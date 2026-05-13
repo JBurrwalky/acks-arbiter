@@ -299,6 +299,20 @@
 [ext_resource type="Script" path="res://tests/test_phase_10b1g.gd" id="285_phase_10b1g_tests"]
 [ext_resource type="Script" path="res://tests/test_phase_10b1h.gd" id="286_phase_10b1h_tests"]
 [ext_resource type="Script" path="res://tests/test_merchandise_registry.gd" id="287_merchandise_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_economy_inputs.gd" id="288_settlement_economy_inputs_tests"]
+[ext_resource type="Script" path="res://tests/test_demand_modifier_generator.gd" id="289_demand_modifier_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_trade_route_detector.gd" id="290_trade_route_detector_tests"]
+[ext_resource type="Script" path="res://tests/test_region_demand_resolver.gd" id="291_region_demand_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_market_price_resolver.gd" id="292_market_price_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_market_fees_calculator.gd" id="293_market_fees_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_merchant_pool_repository.gd" id="294_merchant_pool_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_ship_repository.gd" id="295_ship_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_cargo_hold_repository.gd" id="296_cargo_hold_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_cargo_encumbrance_calculator.gd" id="297_cargo_encumbrance_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_shipping_contract_repository.gd" id="298_shipping_contract_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_character_legal_status_repository.gd" id="299_character_legal_status_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_attorney_specialization.gd" id="300_attorney_specialization_tests"]
+[ext_resource type="Script" path="res://tests/test_commerce_integration.gd" id="301_commerce_integration_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1196,3 +1210,45 @@ script = ExtResource("286_phase_10b1h_tests")
 
 [node name="MerchandiseRegistryTests" type="Node" parent="."]
 script = ExtResource("287_merchandise_registry_tests")
+
+[node name="SettlementEconomyInputsTests" type="Node" parent="."]
+script = ExtResource("288_settlement_economy_inputs_tests")
+
+[node name="DemandModifierGeneratorTests" type="Node" parent="."]
+script = ExtResource("289_demand_modifier_generator_tests")
+
+[node name="TradeRouteDetectorTests" type="Node" parent="."]
+script = ExtResource("290_trade_route_detector_tests")
+
+[node name="RegionDemandResolverTests" type="Node" parent="."]
+script = ExtResource("291_region_demand_resolver_tests")
+
+[node name="MarketPriceResolverTests" type="Node" parent="."]
+script = ExtResource("292_market_price_resolver_tests")
+
+[node name="MarketFeesCalculatorTests" type="Node" parent="."]
+script = ExtResource("293_market_fees_calculator_tests")
+
+[node name="MerchantPoolRepositoryTests" type="Node" parent="."]
+script = ExtResource("294_merchant_pool_repository_tests")
+
+[node name="ShipRepositoryTests" type="Node" parent="."]
+script = ExtResource("295_ship_repository_tests")
+
+[node name="CargoHoldRepositoryTests" type="Node" parent="."]
+script = ExtResource("296_cargo_hold_repository_tests")
+
+[node name="CargoEncumbranceCalculatorTests" type="Node" parent="."]
+script = ExtResource("297_cargo_encumbrance_calculator_tests")
+
+[node name="ShippingContractRepositoryTests" type="Node" parent="."]
+script = ExtResource("298_shipping_contract_repository_tests")
+
+[node name="CharacterLegalStatusRepositoryTests" type="Node" parent="."]
+script = ExtResource("299_character_legal_status_repository_tests")
+
+[node name="AttorneySpecializationTests" type="Node" parent="."]
+script = ExtResource("300_attorney_specialization_tests")
+
+[node name="CommerceIntegrationTests" type="Node" parent="."]
+script = ExtResource("301_commerce_integration_tests")

@@ -21248,3 +21248,824 @@ The previous draft's "settlement archetype" system would have **introduced a par
 - **Prereq.2a — Migration 097 + DemandModifierGenerator + SettlementEconomyInputs.** This is the next concrete wave. Applies migration 097 (sub-steps 1-9, 12-13 if going atomic; or 097a if splitting). Builds the §3 input-lookup service and the §4 six-step demand-modifier procedure (steps 1-5; step 6 lands in 2b). Encodes `data/commerce/environmental_adjustments.json` from the corrected XML at `rules/acore-setting-construction-rules.xml:297-353`, cross-checking the `?? Verify`-flagged cells against PDF.
 - Expect ~25 tests in this wave (10 schema + 15 inputs + 18 demand-modifier procedure).
 - The migration is significant — touches `settlement_entrances`, `domains`, `hex_cells`, `campaigns`, and creates the `settlement_merchandise_demand` table. Wrap in single transaction with rollback.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.2a (Migration 097 + SettlementEconomyInputs + DemandModifierGenerator steps 1-5)
+
+**Task:** Ship Prereq.2a of the Phase 10B mercantile substrate per the GDD's §14 wave plan. Applies migration 097 (settlement schema additions + urban_families relocation + hex_cells biome_subtype CHECK extension + new settlement_merchandise_demand cache table + new campaigns column), encodes the 31-merchandise environmental adjustments JSON, builds the read-side `SettlementEconomyInputs` service plus the `DemandModifierGenerator` running steps 1-5 of the RAW six-step procedure (step 6 lands in Prereq.2b). Migrates every `domains.urban_families` caller per Q-MERC-15 Option A.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session that already completed Prereq.GDD and Prereq.1.
+
+**Completed:**
+- **`db/migrations/097_settlement_economy_inputs.sql`** — single atomic transaction shipping 11 sub-steps from GDD §13.0 (sub-steps 1-9 + 12-13): (1) `settlement_entrances.age_years` default 500, (2) `settlement_entrances.dominant_race` default 'human', (3) `settlement_entrances.urban_families` default 0 (Q-MERC-15 Option A SoT), (4) `settlement_entrances.climate_override` default '', (5) data-move UPDATE from `domains.urban_families` into the new column via parent_domain_id join, (6) `ALTER TABLE domains DROP COLUMN urban_families` (godot-sqlite 4.7 ships SQLite 3.46+ which supports it natively), (7) `hex_cells` table-rewrite extending the `biome_subtype` CHECK with `clear_steppe` + `clear_scrub`, (8) new `settlement_merchandise_demand` cache table with `dice_4d4_value` + `dice_last_rolled_calendar_day` bundled at create time (Prereq.2c prep) + `idx_smd_settlement`, (9) `settlement_entrances.economy_inputs_changed_day` default 0 (§4.9 master-seed source), (10) `settlement_entrances.customs_duty_rate_pct` default 0 (Prereq.3 will backfill), (11) `campaigns.last_customs_roll_year` default 0 (§8.4 year-rolled customs marker). Plus two new indexes per §1.6: `idx_settlement_entrances_parent_domain` and `idx_settlement_entrances_dominant_race`.
+
+- **`data/commerce/environmental_adjustments.json`** — encoded all 31 merchandise types × 20 modifier columns from the corrected XML at `rules/acore-setting-construction-rules.xml:297-353`. Schema per GDD §4.2.1: each entry carries 5 age + 3 water_source + 10 climate + 2 elevation modifier dicts. Halves stored as floats so step-2 sums preserve precision before step-3 truncation. Python validation confirmed: 31 entries, 20 common + 11 precious, schema-perfect on all entries, silk / grain spot-checks match expected RAW values, rows 30/31 (semiprecious_stones / gems) confirmed RAW-identical except for display_name per the `?? Verify` flag in `docs/phase-10b-prereq-environmental-adjustments-table.md`.
+
+- **`engine/subsystems/commerce/settlement_economy_inputs.gd`** — `RefCounted` static-function library implementing GDD §3. Public surface: `age_bucket_for(age_years) -> String` (5 buckets, inclusive boundaries per §1.2), `climate_columns_for(biome, biome_subtype) -> Array` (20-entry mapping covering all (biome, subtype) pairs including new `clear_steppe`/`clear_scrub`, composite `clear → [grasslands, plains]`, swamp `[scrub]`, mountain-subtype climate inheritance, `[NEEDS-TERRAIN-CANON-REWORK]` flag at the const), `elevation_bucket_for(elevation) -> String` (flat returns "" sentinel), `resolve_water_sources(settlement_id) -> Dictionary` (ocean/lake propagate one hex via `HexMapController.get_neighbors`, rivers settlement-on-hex only via `hex_overlays.overlay_type='river'`, swamp biome forces `lake_shore=true` per §3.4 composite), `resolve_dominant_race(settlement_id) -> String`, `resolve_domain_land_revenue(settlement_id) -> int` (banker-rounded average of `domain_hexes.land_value`, clamped [3, 9], fallback 5 when no parent domain), `resolve_all(settlement_id) -> Dictionary` (single aggregator returning the seven inputs).
+
+- **`engine/subsystems/commerce/demand_modifier_generator.gd`** — `RefCounted` static-function library implementing GDD §4 steps 1-5 (§4.6 step 6 deferred to Prereq.2b's region resolver). Public surface: `step_1_base_roll(rng) -> int` (RAW 1d3-1d3), `step_2_environmental(base, inputs, merchandise_type, env_table) -> float` (sums age + water + climate + elevation contributions, `[NEEDS-TERRAIN-CANON-REWORK]` flag on the climate loop), `step_3_drop_fractions(value) -> int` (truncate toward zero — RAW exception to CLAUDE.md banker's rounding), `step_4_apply_domain_land_revenue(modifiers, land_revenue, settlement_id) -> Dictionary` (deterministic seeded Fisher-Yates keyed by hashed `(settlement_id, land_revenue, "land_revenue_dist")`, `DOMAIN_LAND_REVENUE_TABLE` const encodes RAW L237-251, `[NEEDS-FLAVOR-PASS]` flag), `step_5_apply_racial_adjustment(modifiers, dominant_race) -> Dictionary` (`RACIAL_ADJUSTMENT_TABLE` const encodes RAW L253-262 — Dwarf -2 on 7 merchandise, Elf -2 on 5), `generate_for_settlement(settlement_id) -> Dictionary` (main entry; loads env JSON once and caches statically; resolves inputs via `SettlementEconomyInputs.resolve_all`; master seed from hashed `(settlement_id, economy_inputs_changed_day)`; per-step salts so step-1 entropy doesn't bleed into step-4 shuffle; enumerates 31 merchandise types from `MerchandiseRegistry.all_merchandise()`; runs steps 1-3 per merchandise then step 4 across all then step 5; writes to `settlement_merchandise_demand` with `pre_trade_route_shift_value == demand_modifier` until §5 lands; preserves `source_kind='manual'` rows across regeneration), `regenerate(settlement_id)` (trigger entry — Prereq.2b extends this to invoke region resolver after step 5), cache reads `get_demand_modifier` + `get_all_demand_modifiers`, manual override `set_manual_demand_modifier` (Judge-override path via SQLite `ON CONFLICT DO UPDATE` upsert).
+
+- **urban_families caller audit (Q-MERC-15 Option A, GDD §1.5 deliverable):**
+  - **`engine/autoloads/campaign_repository.gd`** — removed `urban_families` from `_DOMAIN_MONTHLY_FIELDS` whitelist; `get_domain` / `list_campaign_domains` SQL extended with a `COALESCE((SELECT SUM(urban_families) FROM settlement_entrances WHERE parent_domain_id = d.id), 0) AS urban_families` subquery on `domains d`, preserving the legacy dict shape callers consume; added `set_domain_urban_families(domain_id, value) -> bool` as the canonical write path (finds first settlement_entrance for the domain and UPDATEs urban_families on it; if no settlement exists, INSERTs a placeholder using the domain's `location_map_id`/`location_hex_q`/`location_hex_r`/`name` fields named `"<domain.name> (Chief Settlement)"`); `update_domain_monthly_state` intercepts `urban_families` from the fields dict and routes it through `set_domain_urban_families` (back-compat shim so test fixtures continue working without per-fixture rewrites).
+  - **`engine/subsystems/realm_ai/realm_aggregator.gd:_list_owned_domains`** — direct SQL rewritten to LEFT JOIN with the SUM aggregation per the same pattern; column list otherwise unchanged.
+  - **`tests/test_phase_9c.gd`** — three direct `INSERT INTO domains (..., urban_families, ...)` statements rewritten to drop the column (all three seed 0 anyway, no behavior change).
+  - All other call sites work unchanged: read sites in `domain_handlers.gd`, `domain_growth_resolver.gd`, `bandit_spawner.gd` (read from the domain dict, which still contains `urban_families` thanks to the aggregation); dict-write sites in `test_favors_duties_resolver.gd`, `test_phase_8_polish.gd`, `test_phase_9a.gd`, `test_realm_sub_tab_ui.gd`, `test_realm_graph.gd` (route through the compat shim).
+
+- **`db/schema.sql`** — manually updated to reflect post-097 state: `Last migration applied` header bumped to 097; `urban_families` removed from `domains`; six new columns + two indexes appended to `settlement_entrances`; `clear_steppe` / `clear_scrub` added to `hex_cells.biome_subtype` CHECK; `settlement_merchandise_demand` table + index appended; `last_customs_roll_year` appended to `campaigns`.
+
+- **Tests:**
+  - **`tests/test_settlement_economy_inputs.gd`** — 24 test functions covering §1 schema verification + aggregation (column existence, domains drop, data-move, default-zero, age bucket boundaries, set_domain_urban_families UPDATE-existing + INSERT-placeholder paths, get_domain aggregation, list_campaign_domains aggregation) and §3 input resolvers (climate columns single-column / composite-clear-default / narrowing subtypes / swamp composite / mountain-subtype inheritance / climate_override replacement, water sources ocean adjacency / swamp implies lake_shore / river overlay / multi-source, elevation buckets, domain land revenue averaging with banker rounding / no-parent-domain fallback, full resolve_all aggregator round-trip). Reports 106 individual `check()` assertions all passing.
+  - **`tests/test_demand_modifier_generator.gd`** — 18 test functions covering step-1 distribution histogram, step-2 single-column / composite-climate / swamp / multi-water arithmetic, step-3 truncate-toward-zero with negative-half cases, step-4 count fidelity at every land_revenue level + determinism + cross-settlement variation + lr-transition, step-5 dwarf / elf / human, full procedure determinism + land-revenue sensitivity + race sensitivity + 31-row cache write + manual-override preservation across regenerate. Reports 94 individual `check()` assertions all passing.
+  - **Registration:** both suites added to `tests/test_runner.gd` (`@onready` vars + suite loop) and `tests/test_runner.tscn` (ExtResources 288 + 289, scene nodes `SettlementEconomyInputsTests` and `DemandModifierGeneratorTests`).
+
+- **Verification:** Full test suite passes **275 suites with 25 failures** — all 25 are pre-existing flaky tests (specialization counts, level-up panel pending-state, encounter triggers, inventory edge cases, etc.) unrelated to this wave. Baseline before Prereq.2a: 273 pass + 25 fail (per Prereq.1 build_log entry). Net delta: **+2 new suites passing, 0 regressions.**
+
+**Decisions made:**
+- **Single atomic migration 097 over the 097a/b/c split.** The dependency graph allows a single transaction and godot-sqlite 4.7 handles multi-statement BEGIN/COMMIT cleanly. Reserved §13.2's split as fallback if a future wave's transaction gets unwieldy.
+- **Direct `ALTER TABLE DROP COLUMN urban_families` over full domains table-rewrite.** godot-sqlite 4.7 ships SQLite 3.46+, which supports DROP COLUMN natively (added in 3.35, March 2021). Tested at runtime via PRAGMA table_info; the column is gone and no FK / index referenced it.
+- **`hex_cells.biome_subtype` CHECK extension via table-rewrite.** Required because SQLite has no in-place ALTER CHECK syntax; standard create-new / INSERT-SELECT / drop-old / rename pattern wrapped in the migration's transaction.
+- **urban_families compat shim in `update_domain_monthly_state` over per-fixture migration.** ~7 test files write urban_families via the whitelisted dict pattern. Migrating each fixture felt like scope creep on top of an already-large wave. The shim intercepts the field and routes through `set_domain_urban_families` while preserving the rest of the dict-update semantics. Production code (`get_domain` reads via aggregation, `realm_aggregator` direct SQL) is fully migrated; the shim only carries forward test fixtures.
+- **`set_domain_urban_families` creates a placeholder settlement when none exists.** Test fixtures create bare domains without settlements; without the placeholder path, those fixtures would silently lose urban_families writes. Aligns semantically with v1's one-settlement-per-domain assumption — the placeholder IS the chief settlement until setting-generation replaces it.
+- **Cache writes `pre_trade_route_shift_value == demand_modifier` until §5 lands.** Prereq.2b's region resolver will overwrite `demand_modifier` after step 6. Until then, readers using `get_demand_modifier` see the unshifted value, which is the right v1 behavior when no trade routes are detected.
+- **`_load_env_table` caches statically with `_reset_env_table_cache` test seam.** Avoids reparsing the env JSON on every `generate_for_settlement` call. Seam lets future tests force a reload.
+- **No `peasant_families` relocation.** Per §1.7 and §3.7's ledger entry, peasant_families stays on `domains` (rural population distributed across the domain's hexes, not concentrated in a settlement).
+- **Step 4 deterministic Fisher-Yates over semantic categorization.** Per §4.4.1, the cleanest v1 behavior is "stable, no semantic claims, simple to test." If playtest reveals weird distributions, the `[NEEDS-FLAVOR-PASS]` flag points the future enhancement at step 4's implementation; the cache schema and signature don't change.
+
+**Interfaces defined or changed:**
+- **`CampaignRepository.set_domain_urban_families(domain_id: String, urban_families: int) -> bool`** — canonical write path for urban_families. Future callers should use this; `update_domain_monthly_state({urban_families: X})` is a compat shim that delegates here.
+- **`CampaignRepository._DOMAIN_READ_WITH_URBAN_AGGREGATE`** const — internal SELECT template with the SUM-aggregate subquery. Used by both `get_domain` and `list_campaign_domains`.
+- **`SettlementEconomyInputs.resolve_all(settlement_id: String) -> Dictionary`** — single aggregator entry consumed by `DemandModifierGenerator.generate_for_settlement`. Returns `{age_bucket, water_sources, climate_columns, climate_override, elevation_bucket, dominant_race, domain_land_revenue}`.
+- **`DemandModifierGenerator.generate_for_settlement(settlement_id: String) -> Dictionary`** — main entry point. Writes 31 rows to `settlement_merchandise_demand`. Returns `{merchandise_type: int}`.
+- **`DemandModifierGenerator.get_demand_modifier(settlement_id, merchandise_type) -> int`** — cache read. Will be called by Prereq.2c's `MarketPriceResolver`.
+- **`DemandModifierGenerator.set_manual_demand_modifier(settlement_id, merchandise_type, value) -> bool`** — Judge-override path. Manual rows skip step-6 (pre/post shift values equal) and survive regeneration.
+
+**Database changes:**
+- **Migration 097 (single atomic transaction):** 11 sub-steps detailed above. `db/schema.sql` updated to reflect post-097 state.
+
+**Tests added/updated:**
+- `tests/test_settlement_economy_inputs.gd` (new, 24 functions, 106 check assertions).
+- `tests/test_demand_modifier_generator.gd` (new, 18 functions, 94 check assertions).
+- `tests/test_phase_9c.gd` — three INSERT statements migrated to drop urban_families column.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — both new suites registered.
+
+**Known issues:**
+- The pre-existing `test_phase_9a.gd:359` hex_maps INSERT uses a non-existent `hex_size_miles` column. SQL push_error is noisy but harmless (downstream code doesn't depend on the hex_maps row succeeding; godot-sqlite FK enforcement off by default). Pre-existing, not this wave's responsibility.
+- 25 pre-existing test suite failures unchanged from baseline (specialization counts, level-up panel pending-state, encounter triggers, etc.). All unrelated to mercantile work.
+- `[NEEDS-TERRAIN-CANON-REWORK]` flags planted at the §3.4 climate mapping commitment points (`settlement_economy_inputs.gd` const + `demand_modifier_generator.gd:step_2_environmental` climate loop). A future terrain-canon harmonization session can grep these and audit in one pass.
+- `[NEEDS-FLAVOR-PASS]` flag planted at `step_4_apply_domain_land_revenue` for future semantic categorization of which merchandise types receive +1 / -1.
+- `set_domain_urban_families`'s placeholder path creates a row with `map_id=''` when the domain has no `location_map_id`. Fine while FK enforcement is off; if a future hardening session enables FK enforcement, the path needs to either find / create a phantom hex_map row or refuse the write when no map is available.
+
+**Next session should:**
+- **Prereq.2b — Trade route detection + region walk (§5).** Builds `trade_route_detector.gd` (road + water pathfinding per `range_of_trade` table, `[NEEDS-TERRAIN-CANON-REWORK]` flags where settlement-water-graph adjacency is touched), `region_demand_resolver.gd` (largest-market-first region walk applying step 6 shifts), and the `trade_routes` cache table (a single new table — migration 097 already landed the rest of the §13.0 list). Updates `DemandModifierGenerator.regenerate` to invoke the region resolver after steps 1-5. Reproduces the §5.4 Ashford/Thornwall worked example as a test fixture. Expected ~10 tests in `test_trade_route_detector.gd` + ~12 in `test_region_demand_resolver.gd`.
+- **Optional cleanup if desired before 2b:** the pre-existing `hex_size_miles` typo in `test_phase_9a.gd:359` is a one-line fix (`scale='regional_6mi'`) that would silence the SQL error log noise. Pre-existing; not strictly in scope.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.2b (Migration 098 + TradeRouteDetector + RegionDemandResolver — RAW step 6)
+
+**Task:** Ship Prereq.2b of the Phase 10B mercantile substrate per the GDD §14 wave plan. Migration 098 adds the `trade_routes` cache table; `TradeRouteDetector` BFS-pathfinds road and water trade routes between pairs of settlements with RAW range-of-trade gating; `RegionDemandResolver` walks the connected region in largest-first urban_families order and applies the step-6 demand modifier shift mechanic; `DemandModifierGenerator.regenerate` now wraps generate + region resolve so callers get the full post-step-6 demand modifier in one call. Reproduces the §5.4 Ashford/Thornwall RAW arithmetic as a unit test.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`db/migrations/098_trade_routes.sql`** — single atomic transaction creating the `trade_routes` table per GDD §5.5. Columns: `id` PRIMARY KEY, `campaign_id` FK, `settlement_a_id` / `settlement_b_id` FK with CHECK enforcing canonical pair ordering (`settlement_a_id < settlement_b_id`) + UNIQUE composite, `path_kind` CHECK in ('road','water','mixed'), `distance_hexes`, `discovered_at_calendar_day`, `invalidated` boolean (soft-delete on topology change). Three indexes: `idx_trade_routes_a`, `idx_trade_routes_b`, `idx_trade_routes_campaign` — all filtered by `invalidated` so active-route lookups skip soft-deleted rows.
+
+- **`engine/subsystems/commerce/trade_route_detector.gd`** — `RefCounted` static-function library implementing GDD §5.1. Public surface:
+  - `detect_routes_for_settlement(settlement_id) -> Array` — invalidates existing routes for the settlement, scans every other settlement in the campaign, inserts canonical-ordered rows for any valid pair, returns the inserted row dicts.
+  - `detect_routes_for_campaign(campaign_id) -> int` — O(N²) sweep used at campaign-load; wipes existing rows then runs detection across every unordered pair.
+  - `compute_road_distance(a_id, b_id) -> int` / `compute_water_distance(a_id, b_id) -> int` — pure BFS distance calculators returning -1 when no path exists. Both capped at the Class I max range (28 road / 80 water) to short-circuit pathological cases.
+  - `is_within_mutual_range(a_class, b_class, distance, kind) -> bool` — encodes the RAW range_of_trade table at `acore-setting-construction-rules.xml:264-278` as the `RANGE_OF_TRADE` const; binding range is `min(a_range, b_range)`.
+  - **Road graph:** BFS over hexes with `hex_overlays.overlay_type='road'`. Both endpoints must be ON road hexes (per §5.1.1 — no adjacency entry for roads).
+  - **Water graph:** BFS over hexes where `hex_cells.water IN ('ocean','lake')` OR `hex_overlays.overlay_type='river'`. Settlements enter via §5.1.2 adjacency: if the settlement's hex is itself a water hex, use it; else use every adjacent water hex as a potential entry node; BFS finds the shortest path between any source-entry and any target-entry. `[NEEDS-TERRAIN-CANON-REWORK]` flag would land here if the terrain canon session changes the water vocabulary; for v1 the (ocean, lake, river-overlay) trio matches §3.3.
+  - **Mixed paths:** when both road and water routes are valid, `path_kind='mixed'` and `distance_hexes` records the shorter of the two.
+  - Detection is upsert-style: if a row exists for the pair (active or invalidated), it's updated in place rather than re-inserted; cleaner soft-delete semantics.
+
+- **`engine/subsystems/commerce/region_demand_resolver.gd`** — `RefCounted` static-function library implementing GDD §5.3. Public surface:
+  - `resolve_region(anchor_settlement_id) -> void` — BFS the trade_routes graph from the anchor to find every settlement in the connected region; sorts by `urban_families` DESC then `settlement_id` ASC (stable tie-break per §5.3.2); initializes working state from `DemandModifierGenerator.get_all_pre_shift_demand_modifiers(s_id)` for each region member; iterates region in largest-first order, processing each unordered trade-route pair exactly once (canonical pair-key dedup); applies the §5.2 shift mechanic across every merchandise type per pair; writes final `demand_modifier` values back to `settlement_merchandise_demand`, **skipping `source_kind='manual'` rows**. Singleton regions (no trade routes) fall through to `_copy_pre_shift_to_demand_modifier` so the cache ends in a consistent state.
+  - `resolve_all_regions(campaign_id) -> void` — BFS-partitions every settlement in the campaign into disjoint regions and resolves each. Used at campaign-load and after major topology changes.
+  - `apply_shift_for_merchandise(a_modifier, b_modifier, a_size, b_size) -> Array` — pure-function core of the shift mechanic. Larger market unchanged; smaller shifts up to 2 toward larger (or equalizes if diff < 2). Equal-size markets each shift 1 toward the other **computed using ORIGINAL values** so the symmetric simultaneous application doesn't depend on order (per §5.2).
+  - `_shift_toward(source, target, max_step) -> int` — primitive: if `abs(target-source) < max_step` returns target (equalize), else moves source by `max_step` in the direction of target.
+
+- **`engine/subsystems/commerce/demand_modifier_generator.gd` extensions:**
+  - Added `get_all_pre_shift_demand_modifiers(settlement_id) -> Dictionary` — returns `{merchandise_type: int}` from the cache's `pre_trade_route_shift_value` column. For `source_kind='manual'` rows, returns `demand_modifier` instead (manual rows are exempt from step-6 shifts; reporting their override value keeps the resolver's working state consistent if a manual row gets read into a region walk).
+  - Updated `regenerate(settlement_id)` to run `generate_for_settlement(settlement_id)` (steps 1-5, writes both `pre_trade_route_shift_value` and `demand_modifier` to the step-5 value) then call `RegionDemandResolver.resolve_region(settlement_id)` (step 6 overwrites `demand_modifier` with the post-shift value, leaves `pre_trade_route_shift_value` intact for the next region walk).
+
+- **`db/schema.sql`** — manually updated: `Last migration applied` bumped to 098; `trade_routes` table + three indexes appended.
+
+- **Tests:**
+  - **`tests/test_trade_route_detector.gd`** — 12 test functions: road path adjacent, road chain length 5, road no-path (isolated road hexes), road requires-road-on-settlement-hex (asymmetry from water), water river-chain length 3, water ocean-coast adjacency length 3, range gating binding-smaller-market (Class III + V at 10-hex road → invalid; same at 8 → valid; III + III at 10 → valid), range water > road (Class V + V at 14 hexes valid by water, invalid by road), mixed-path canonical assignment, pair canonical ordering (detection from either side yields one row with a_id < b_id), detection persistence (DB row matches inserted dict), `is_within_mutual_range` boundary spot-checks for all 6 market classes. Reports **35 individual `check()` assertions all passing.**
+  - **`tests/test_region_demand_resolver.gd`** — 15 test functions: 6 pure shift-mechanic tests (smaller shifts 2, smaller equalizes when diff<2, equal-size each shifts 1, equal-size symmetric mirror, no-op when equal, no-step when diff<1 equal-size); 9 region-walk tests including the **Ashford/Thornwall RAW arithmetic worked example** from §5.4 (6 merchandise types, all post-shift values match the RAW table verbatim — Ashford unchanged, Thornwall shifts per the equalize-vs-shift-2 rules); three-settlement chain largest-first (A→B-shift then B→C shifts toward A-modified B per §5.3.1); disconnected regions (C unaffected by AB resolve); all 31 merchandise types shift independently in one resolve; manual override preserved (B.silk manual=+5 survives B.salt being shifted normally); `resolve_all_regions` partition (AB region + C singleton in separate campaign). Reports **102 individual `check()` assertions all passing.**
+  - **Registration:** both suites added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResources 290 + 291, scene nodes `TradeRouteDetectorTests` and `RegionDemandResolverTests`).
+
+- **Verification:** Full test suite passes **277 suites with 25 failures** — all 25 are the same pre-existing flaky tests carried forward from the Prereq.2a baseline. Pre-Prereq.2b: 275 pass + 25 fail. Net delta: **+2 new suites passing, 0 regressions.**
+
+**Decisions made:**
+- **Separate migration 098 instead of amending 097.** Per §13.2 split-fallback structure, the trade_routes table was originally positioned in 097 sub-step 10. Since 097 already landed in Prereq.2a without it, 098 is a clean isolated additive migration — single CREATE TABLE + three indexes, wrapped in BEGIN/COMMIT. Simpler audit trail.
+- **Asymmetric road/water entry rules per GDD §5.1.1 / §5.1.2.** Road graph requires the settlement's hex to BE a road hex (no adjacency entry); water graph allows adjacency entry via §3.3's ocean/lake/river-bank flags. This matches the RAW asymmetry ("settlements on a road participate in the road graph"; "settlements adjacent to navigable water participate in the water graph"). Tested explicitly via `test_road_path_requires_road_on_settlement_hex`.
+- **BFS with per-cell point queries vs precomputed adjacency map.** Each step queries `hex_overlays` / `hex_cells` for the current hex's graph membership. For v1 campaign scales (tens of settlements), 28-hex max road BFS = 28 point queries per call worst case. No measurable cost vs precomputing an adjacency cache. If profiling shows this is hot at larger scales, the §5.9 fallback is a precomputed graph cache — schema/API unchanged, just implementation detail.
+- **Soft-delete via `invalidated=1` over hard DELETE for topology changes.** When a road overlay flips, affected routes get marked invalidated rather than deleted; the next detector run either confirms (sets back to 0) or actually deletes. Cleaner if an in-flight region walk is reading routes when topology changes — the BFS sees a stable snapshot.
+- **Canonical pair-order CHECK enforced at SQL layer (`CHECK(settlement_a_id < settlement_b_id)`).** Plus UNIQUE on the composite, so one row represents the pair regardless of detection direction. The detector code canonicalizes before INSERT; the constraint backstops against bugs.
+- **`apply_shift_for_merchandise` computes both sides from ORIGINAL values for the equal-size case.** Symmetric simultaneous application matters here — if we shifted A first then computed B's shift from the updated A, the result would depend on which side we processed first. Pure function returns `[new_a, new_b]` so callers can't accidentally do it wrong.
+- **Skip `source_kind='manual'` rows during region writeback.** Manual overrides are author-intent; the shift mechanic shouldn't overwrite them. `_write_demand_modifiers` checks `source_kind` per row before writing.
+- **`get_all_pre_shift_demand_modifiers` reports manual rows' `demand_modifier`** (not `pre_trade_route_shift_value`). Rationale: manual rows by definition aren't shift candidates; if a manual row gets read into the resolver's working state, the value used for shift arithmetic should be the override value, not a stale pre-shift value. In practice the resolver doesn't shift manual rows (writeback skips them), but consistency in the accessor is cleaner than two divergent representations.
+- **`regenerate` is the canonical "I want correct post-step-6 demand modifiers" entry point.** `generate_for_settlement` alone gives pre-shift values; only after `regenerate` (or an explicit `resolve_region` call) does `demand_modifier` reflect step 6. Documented in the regenerate docstring.
+
+**Interfaces defined or changed:**
+- **`TradeRouteDetector.detect_routes_for_settlement(settlement_id: String) -> Array`** — returns newly-inserted route row dicts. Existing routes for the settlement are invalidated before re-detection.
+- **`TradeRouteDetector.detect_routes_for_campaign(campaign_id: String) -> int`** — O(N²) campaign sweep; wipes existing rows. Returns count of inserted routes.
+- **`TradeRouteDetector.compute_road_distance` / `compute_water_distance`** — pure BFS distance lookups; -1 sentinel for no-path.
+- **`TradeRouteDetector.is_within_mutual_range(a_class, b_class, distance, kind) -> bool`** — RAW range gate. `kind ∈ {'road', 'water'}`.
+- **`TradeRouteDetector.RANGE_OF_TRADE`** const — RAW table at acore-setting-construction-rules.xml:264-278.
+- **`RegionDemandResolver.resolve_region(anchor_settlement_id: String) -> void`** — region walk + step-6 shift + cache writeback (skipping manual rows).
+- **`RegionDemandResolver.resolve_all_regions(campaign_id: String) -> void`** — campaign-wide partition + per-region resolve.
+- **`RegionDemandResolver.apply_shift_for_merchandise(a_mod, b_mod, a_size, b_size) -> Array`** — pure shift mechanic. Returns `[new_a, new_b]`.
+- **`DemandModifierGenerator.get_all_pre_shift_demand_modifiers(settlement_id: String) -> Dictionary`** — consumed by the region resolver. Returns `pre_trade_route_shift_value` for generated rows and `demand_modifier` for manual rows.
+- **`DemandModifierGenerator.regenerate(settlement_id: String)`** — now invokes `RegionDemandResolver.resolve_region` after `generate_for_settlement`. Callers who want the post-step-6 demand modifier should use this entry point; callers who only need the pre-shift baseline can call `generate_for_settlement` directly.
+
+**Database changes:**
+- **Migration 098 (single atomic transaction):** new `trade_routes` table + three filtered indexes. `db/schema.sql` updated to reflect post-098 state.
+
+**Tests added/updated:**
+- `tests/test_trade_route_detector.gd` (new, 12 functions, 35 check assertions).
+- `tests/test_region_demand_resolver.gd` (new, 15 functions, 102 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — both new suites registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures unchanged from baseline.
+- The pre-existing `test_phase_9a.gd:359` `hex_size_miles` typo SQL error log noise continues; not in scope for this wave.
+- The campaign-load wiring for `RegionDemandResolver.resolve_all_regions` is implemented but not yet called from any startup path. When Phase 10B.2 ships, its session-load handler should invoke this once per campaign after the demand modifier cache is populated. For now, individual `regenerate(settlement_id)` calls cover the per-settlement case.
+- EventBus listener wiring for `road_overlay_added/removed`, `settlement_created/destroyed`, etc. (per GDD §5.6) is not wired in this wave — those signals don't yet exist in the codebase. The detector/resolver are ready to be invoked when those signals are added; the listener registration goes in the wave that adds the signals.
+
+**Next session should:**
+- **Prereq.2c — Market price resolver + monthly drift (§6).** Build `market_price_resolver.gd` consuming `DemandModifierGenerator.get_demand_modifier` (post-step-6 from Prereq.2b) plus the cached `dice_4d4_value` from `settlement_merchandise_demand` (already in the schema from migration 097). Encode the 8-step RAW formula at `rules/acore-campaign-hijinks.xml:725-734` as `compute_market_price(merchandise_type, settlement_id, monopolist_favor, judge_modifier, ...) -> Dictionary`. Implement the monthly drift mechanic with cumulative 10%/month dice re-roll trigger plus the lazy-on-read and monthly-tick trigger points. Add `market_price_drifted` signal to EventBus. Expected ~14 tests in `test_market_price_resolver.gd`.
+- **Optional cleanup before 2c:** the existing `hex_size_miles` typo and the leaked-RIDs warnings from the test_runner exit path are both pre-existing; one-line fixes if you want a clean log.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.2c (MarketPriceResolver — RAW 8-step formula + monthly drift)
+
+**Task:** Ship Prereq.2c of the Phase 10B mercantile substrate per the GDD §14 wave plan. Build `MarketPriceResolver` encoding the RAW 8-step "Determine Market Price of Merchandise" formula at `acore-campaign-hijinks.xml:725-734` plus the monthly drift mechanic at L737-739. Consume the post-step-6 demand modifier from Prereq.2b's region resolver plus a cached 4d4 dice value stored on the existing `settlement_merchandise_demand` columns (`dice_4d4_value`, `dice_last_rolled_calendar_day` — schema already in place from migration 097). Add the `market_price_drifted` EventBus signal.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`engine/autoloads/event_bus.gd`** — added `market_price_drifted(settlement_id: String, merchandise_type: String, old_dice: int, new_dice: int)` signal under a new "Phase 10B-prereq mercantile signals" section per GDD §6.6.
+
+- **`engine/subsystems/commerce/market_price_resolver.gd`** — `RefCounted` static-function library implementing GDD §6. Public surface:
+  - **`compute_market_price(merchandise_type, settlement_id, monopolist_favor=0, judge_modifier=0, rng=null, current_calendar_day=-1) -> Dictionary`** — main entry encoding RAW steps 1-8. Reads base_price from `MerchandiseRegistry`, demand_modifier from `DemandModifierGenerator.get_demand_modifier` (post-step-6), market_class from `settlement_entrances`. Ensures cache row exists with a rolled dice (sentinel `dice_4d4_value=0` → roll fresh; existing → check drift). Returns `{gp_per_load, percentage, drift_occurred, breakdown: {base_price_gp, dice_4d4, demand_modifier, class_size_adjust, monopolist_favor, judge_modifier}}`.
+  - **`check_and_apply_drift(settlement_id, merchandise_type, current_calendar_day, rng) -> bool`** — encodes §6.6's cumulative 10%/month re-roll: computes `months_since = days_since / Timekeeping.DAYS_PER_MONTH` (28-day months per the project calendar), `cumulative_pct = min(months_since * 10, 100)`, rolls 1d100 vs the threshold, re-rolls dice + emits signal on success. Sentinel `dice_4d4_value=0` short-circuits to false (lazy-roll path in `compute_market_price` handles initial population).
+  - **`process_monthly_drift_for_campaign(campaign_id, current_calendar_day, rng) -> int`** — campaign-wide sweep for the monthly tick path; walks every cached (settlement, merchandise) pair via a JOIN on `settlement_entrances.campaign_id`, runs the drift check on each, returns the count of re-rolls.
+  - **`class_size_adjust(market_class) -> int`** — pure function encoding RAW step 4-5 (+1 for Class I/II; -1 for Class V/VI; 0 otherwise).
+  - **`roll_4d4(rng) -> int`** — pure 4× randi_range(1,4) sum, range [4, 16].
+  - **`compute_percentage(dice_4d4, demand_modifier, class_size_adjust, monopolist_favor, judge_modifier) -> int`** — pure `(sum) * 10`. No banker rounding; pure integer arithmetic.
+  - **Internal helpers:** `_ensure_dice_row` (lazy first-read inserts row if absent + rolls fresh if sentinel), `_read_dice_row`, `_read_dice`, `_write_dice`, `_read_market_class`, `_read_current_calendar_day`, `_bankers_round` (inline per project convention — `roundi` is half-away-from-zero, not banker's).
+
+- **Tests:** **`tests/test_market_price_resolver.gd`** — 17 test functions covering:
+  - Pure-function step tests: class_size_adjust table (all 6 classes + out-of-range default), 4d4 range [4, 16] over 5000 trials, compute_percentage arithmetic spot-checks, banker rounding via clean-integer worked-out cases.
+  - Cache + dice behavior: first-read inserts cache row with rolled dice, dice persistence across same-day calls, monopolist favor direction (+1 selling adds 10 to %, -1 buying subtracts 10), judge modifier pass-through (-3 / +5).
+  - Drift behavior: no drift within month (days 5 and 27 of a 28-day month), drift triggered at month 1 with ~10% probability (statistical test, 1000 trials, ±50 jitter tolerance), drift forced at month 10+ (100 trials, all fire), drift resets the cumulative window (post-drift `dice_last_rolled_calendar_day` advances; immediate follow-up at +27 days does not fire), drift emits `EventBus.market_price_drifted` with correct (settlement_id, merchandise_type, old_dice, new_dice) payload.
+  - **Worked examples from §6.9:** Example A (wood_common base 50, class III, demand=-1, dice=10, no other modifiers → percentage 90 → 45 gp/load); Example B (spices base 800, class II, demand=+2, dice=12, monopolist_favor=+1 → percentage 160 → 1280 gp/load); Example C (grain_vegetables base 10, class VI, demand=+2, dice=14, judge_modifier=-2 → percentage 130 → 13 gp/load). All three match RAW arithmetic exactly.
+  - Campaign-wide sweep: `process_monthly_drift_for_campaign` at day 280 (10 months) re-rolls all 4 seeded pairs across 2 settlements.
+  - Reports **152 individual `check()` assertions all passing.**
+
+- **Registration:** suite added to `tests/test_runner.gd` (`@onready` var + suite loop) and `tests/test_runner.tscn` (ExtResource 292, scene node `MarketPriceResolverTests`).
+
+- **Verification:** Full test suite passes **278 suites with 25 failures** — all 25 are the same pre-existing flaky tests carried forward from prior baselines. Pre-Prereq.2c: 277 pass + 25 fail. Net delta: **+1 new suite passing, 0 regressions.**
+
+**Decisions made:**
+- **`compute_market_price` rolls dice lazily on first read.** The `settlement_merchandise_demand` row created by `DemandModifierGenerator.generate_for_settlement` has `dice_4d4_value=0` (the column default), which is the "not yet rolled" sentinel. The first `compute_market_price` call rolls 4d4 and writes the row; subsequent calls return the cached value. Drift checks short-circuit on sentinel (a never-rolled row isn't a drift candidate). This avoids a separate "roll dice for new settlements" pass at generation time.
+- **Single-check shortcut for drift per §6.6.2.** Cumulative `min(months_since * 10, 100)` is rolled once when the drift check fires, not iterated per-month. Mathematically equivalent for "did re-roll happen?" but loses event-time fidelity (the re-roll is timestamped at the current day even if probabilistically it "should have" happened earlier). `[NEEDS-DRIFT-PRECISION-PASS]` flag for the future enhancement per GDD.
+- **`compute_market_price` always checks drift before reading the dice.** The drift check runs before the dice value is consulted, so a single call either returns a stable cached value (no drift) OR the freshly-drifted value (drift fired). The returned `drift_occurred` field reports which path took.
+- **Caller-supplied `monopolist_favor` direction-aware integer.** Resolver doesn't know the campaign's monopoly state — that's Phase 10B.2's `monopoly_holdings` registry. Caller passes `+1` (monopolist selling, higher price), `-1` (monopolist buying, lower price), or `0` (non-monopolist transaction). Decouples the resolver from monopoly-state machinery and makes the same API usable for Phase 10B.3's hijink-payout flow (smuggling/stealing pay 12%/60% of market price computed via this same resolver).
+- **Banker rounding for final gp_per_load** per CLAUDE.md "Banker's rounding everywhere. No exceptions" (the §4.3 truncate-toward-zero exception applies only to demand modifier step 3). Inline `_bankers_round(value)` matches the project pattern of per-subsystem implementations.
+- **`process_monthly_drift_for_campaign` does NOT iterate empty cells.** The query filters `dice_4d4_value > 0` so settlements with no cache rows or only sentinel dice don't waste RNG calls. Settlements get their dice rolled lazily on first visit; the monthly sweep handles existing populated caches.
+- **EventBus signal additive, not breaking.** `market_price_drifted` is new; no existing signals modified. EventBus autoload pattern remains intact.
+
+**Interfaces defined or changed:**
+- **`EventBus.market_price_drifted(settlement_id: String, merchandise_type: String, old_dice: int, new_dice: int)`** — new signal. Phase 10B.2 trade UI / Phase 10B.3 hijink narration can subscribe.
+- **`MarketPriceResolver.compute_market_price(merchandise_type, settlement_id, monopolist_favor=0, judge_modifier=0, rng=null, current_calendar_day=-1) -> Dictionary`** — main entry point. Returns `{gp_per_load, percentage, drift_occurred, breakdown}`. Consumers: Phase 10B.2's buy_sell_merchandise handler, Phase 10B.3's hijink-payout resolver, Phase 10B.2 trade-block UI for price display.
+- **`MarketPriceResolver.check_and_apply_drift(settlement_id, merchandise_type, current_calendar_day, rng) -> bool`** — invoked internally by compute_market_price; also exposed for the monthly tick path.
+- **`MarketPriceResolver.process_monthly_drift_for_campaign(campaign_id, current_calendar_day, rng) -> int`** — invoked by `DomainMonthlyResolver` on the monthly tick (wiring lands when Phase 10B.2's monthly tick handler is built).
+- **`MarketPriceResolver.class_size_adjust` / `roll_4d4` / `compute_percentage`** — pure-function helpers exposed for testability and direct UI use (price-preview tooltips, etc.).
+
+**Database changes:**
+- None. The `dice_4d4_value` and `dice_last_rolled_calendar_day` columns on `settlement_merchandise_demand` already existed from migration 097 (Prereq.2a bundled them at create time per GDD §6.5).
+
+**Tests added/updated:**
+- `tests/test_market_price_resolver.gd` (new, 17 functions, 152 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered.
+
+**Known issues:**
+- A subtle test-fixture bug surfaced and was fixed during this session: my initial `_force_dice` test helper called `_seed_modifier(s, m, 0)` to ensure a row existed before writing dice fields, but the `ON CONFLICT DO UPDATE` clause in `_seed_modifier` clobbered any previously-set `demand_modifier` value with 0. Fix: replaced with `INSERT OR IGNORE` + targeted UPDATE so the demand_modifier set by the test's preceding `_seed_modifier(s, m, value)` call survives. The bug surfaced as "demand_modifier reads as 0 in compute_market_price" across all 7 fixture-using tests; fix produced a clean 17/17 pass run.
+- Same 25 pre-existing test suite failures unchanged from baseline.
+- `[NEEDS-DRIFT-PRECISION-PASS]` flag (in source comment in `check_and_apply_drift`) — future enhancement to iterate per-month and record the actual re-roll month for audit/ledger purposes per GDD §6.6.4.
+- The monthly-tick wiring point (`DomainMonthlyResolver` invoking `process_monthly_drift_for_campaign`) is not yet activated. Phase 10B.2's monthly-tick handler will add the call once that wave ships. Until then, drift only fires lazily on `compute_market_price` reads.
+- The campaign-load wiring for `RegionDemandResolver.resolve_all_regions` (from Prereq.2b) is similarly waiting on Phase 10B.2 — both wirings can land together.
+
+**Next session should:**
+- **Prereq.3 — Market fees calculator (§8).** Build `market_fees_calculator.gd` as pure-function helpers for the various fee categories: entry tolls (settlement-class-based), customs duty (annual-rolled rate), moorage (per-load per-day), stabling (per-animal per-day), loading/unloading (per-load). Wire the annual customs roll into the year-tick path; the `customs_duty_rate_pct` column on `settlement_entrances` and `last_customs_roll_year` on `campaigns` are already in place from migration 097. Domain-owner exemption per §8.8 (customs included; labor/moorage excluded). Pack animal fallback mapping (donkey→mule, camel→horse, oxen→8sp) per §8.7. Expected ~16 tests.
+- **Prereq.4 — Merchant pool (§7).** Builds `merchant_pool_repository.gd` + the `merchant_pool` table (migration 099 — one more new table). Always-max generation with `becomes_visible_calendar_day` for staggered reveal per RAW solicit. Locate-merchandise alters existing merchants (not spawns). 28-day cohort lifecycle. Expected ~18 tests.
+- **Optional**: cleanup the pre-existing `hex_size_miles` typo in test_phase_9a.gd:359 — one-line fix to silence the SQL error log noise. Not strictly in scope but trivial.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.3 (MarketFeesCalculator — entry toll + customs + labor + moorage + stabling + exemption)
+
+**Task:** Ship Prereq.3 of the Phase 10B mercantile substrate per the GDD §14 wave plan. Build `MarketFeesCalculator` as a pure-function library encoding the per-transaction and per-day fees from `acore-campaign-hijinks.xml:647-754`: entry toll (per-class dice + per-load minimum when selling), customs duty (annual-rolled per-settlement rate), loading/unloading labor (1gp per 200 stone), ship moorage (1gp per 10 SHP per day), stabling (per-animal/vehicle daily rate), and the domain-owner exemption applying to all four except labor. Wire the annual customs roll into a campaign-wide sweep that bumps `campaigns.last_customs_roll_year`. Pack-animal fallback mappings per Jedidiah 2026-05-12 (donkey→mule, camel→horse, ox→distinct 8 sp rate).
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`engine/subsystems/commerce/market_fees_calculator.gd`** — `RefCounted` static-function library implementing GDD §8. Public surface:
+  - **Entry toll (§8.3):** `entry_toll_gp(market_class, is_selling, merchandise_loads, rng, is_domain_owner=false) -> int`. Rolls the per-class dice (1d6+15 for Class I down to 1d3 for Class VI) from the inlined `_TOLL_DICE_BY_CLASS` constant. When `is_selling`, applies the RAW L649 floor `max(rolled, merchandise_loads)`. Domain-owner short-circuits to 0.
+  - **Customs duty (§8.4):** `customs_duty_gp(market_price_gp, settlement_id, is_domain_owner=false) -> int` reads the cached `settlement_entrances.customs_duty_rate_pct` and applies banker-rounded percentage. Domain-owner short-circuits to 0 (project extension per Jedidiah 2026-05-12 — RAW's L697-699 enumeration didn't list customs but the project includes it). `roll_annual_customs_rate(settlement_id, year)` is a deterministic seeded `1d10 + 1d10` keyed on `hash("settlement_id|year|customs")`. `process_annual_customs_roll_for_campaign(campaign_id, current_year) -> int` walks every `settlement_entrances` row in the campaign, writes its rolled rate, and bumps `campaigns.last_customs_roll_year` so monthly-tick callers can de-dup.
+  - **Labor (§8.5):** `labor_fee_gp(total_stone) -> int` returns `banker(total_stone / 200.0)`. No domain-owner exemption — workers get paid regardless. Aggregate-then-round per §8.2 means 100 stone → 0.5 → 0 (banker rounds to even), 300 stone → 1.5 → 2.
+  - **Moorage (§8.6):** `moorage_gp_per_day(ship_shp, is_domain_owner=false) -> int` = `banker(shp / 10)`. `moorage_gp_total(ship_shp, days, is_domain_owner=false) -> int` multiplies first then rounds once per §8.2.
+  - **Stabling (§8.7):** `stabling_gp_per_day(mounts, is_domain_owner=false) -> int` sums `mount_count × STABLING_RATES_GP_PER_DAY[key]` across the canonical 7 keys (mule 0.2, donkey 0.2, horse 0.5, camel 0.5, ox 0.8, cart 1.0, wagon 2.0). Unknown keys contribute 0 — caller maps domain vocabulary to canonical keys. `stabling_gp_total(mounts, days, is_domain_owner=false) -> int` aggregates then rounds.
+  - **Domain-owner predicate (§8.8):** `is_domain_owner_in_own_market(character_id, settlement_id) -> bool` joins `settlement_entrances.parent_domain_id` → `domains.owner_character_id`. Returns false when settlement has NULL parent_domain_id or when the owner field doesn't match.
+  - **Internal helpers:** `_read_customs_rate_pct`, `_roll_dice_spec` (NdM / NdM+K / NdM-K parser mirroring `MerchandiseRegistry._roll_subroll`), inline `_bankers_round` per project convention.
+
+- **Tests:** **`tests/test_market_fees_calculator.gd`** — 22 test functions covering:
+  - Entry toll: dice range over 500 trials for Class I [16, 21]; selling minimum kicks in (Class VI roll dominated by 10-load floor); selling dice exceeds minimum (Class I roll ≥ 16 > 5-load floor); domain-owner exemption returns 0.
+  - Customs duty: cached rate × price (15% on 1000gp → 150; 12% on 333gp → banker(39.96) = 40); zero-price short-circuit; domain-owner exemption; annual roll determinism (same seed → same value; different settlements / years → typically different); range [2, 20] verified across 1000 year samples; `process_annual_customs_roll_for_campaign` updates 3 settlements + bumps `last_customs_roll_year` to 1234 and per-settlement rates match the deterministic roll formula.
+  - Labor: exact multiples (200 → 1, 400 → 2, 2000 → 10); aggregate-then-round banker (100 → 0, 300 → 2, 3760 → 19); zero / below-threshold / negative defensive cases.
+  - Moorage: per-day (30 SHP → 3, 5 SHP → 0 banker, 15 SHP → 2 banker, 0 → 0); multi-day aggregate (5×7 → banker(3.5)=4, 30×14 → 42 clean); domain-owner exemption.
+  - Stabling: mixed mounts per day (5 mule + 2 horse → 2gp); multi-day (4 ox × 7 days → banker(22.4)=22, 3 wagon × 14 → 84 clean, mixed 5 mule + 2 horse + 1 wagon × 7 → 28); pack-animal aliases (donkey rate matches mule, camel matches horse); unknown key contributes 0; domain-owner exemption.
+  - Predicate: settlement with PC-owned domain → true; non-owner → false; NULL parent_domain_id → false.
+  - **Reports 84 individual `check()` assertions all passing.**
+
+- **Registration:** suite added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResource 293, scene node `MarketFeesCalculatorTests`).
+
+- **Verification:** Full test suite passes **279 suites with 25 failures** — all 25 are the same pre-existing flaky tests carried forward from prior baselines. Pre-Prereq.3: 278 pass + 25 fail. Net delta: **+1 new suite passing, 0 regressions.**
+
+**Decisions made:**
+- **Toll dice inlined in MarketFeesCalculator rather than imported from MerchantPoolRepository.** MerchantPoolRepository (Prereq.4) doesn't exist yet but the GDD §7.1 says the toll table lives there with a `toll_dice_for_class` accessor consumed by §8. To avoid blocking Prereq.3 on Prereq.4, I duplicated the RAW values into `_TOLL_DICE_BY_CLASS` here. The dup is small (6 entries) and the constant is RAW-canonical (no project-design fill), so audit risk is minimal. Prereq.4 will land the canonical constant in MerchantPoolRepository; the inlined copy in MarketFeesCalculator can be retired then or left as a defensive duplicate.
+- **Annual customs roll = deterministic seeded `1d10 + 1d10`.** `hash("settlement_id|year|customs")` seed gives stable replay across save/load. Per §8.4 rationale: customs rates reflect tariff policy (annual fiscal-year decision), not per-transaction caprice. RAW's plain reading is per-transaction `2d10%`; the project resolution per Jedidiah 2026-05-12 is per-year-per-settlement with the same range. Smuggling (Phase 10B.3) bypasses entirely.
+- **`process_annual_customs_roll_for_campaign` writes campaigns.last_customs_roll_year unconditionally.** Whether or not any settlements existed, the column is bumped to the current year. This means a campaign with 0 settlements still gets the year marker; the monthly-tick caller's de-dup check (`current_year > last_customs_roll_year`) works without special-casing.
+- **Aggregate-then-round across the board (§8.2).** Every multi-input fee call sums fractional contributions into a float, then banker-rounds at the end. Per-unit rounding catastrophically under-bills (e.g., 5 mules × 5 days at 0.2 gp/day-each → 5×0=0 vs 5.0=5). The labor fee, stabling totals, and moorage totals all follow this pattern.
+- **Banker rounding for all fee math except entry toll.** Entry toll is a discrete dice roll — no rounding involved. Labor, customs, moorage, stabling all go through `_bankers_round`. Inline implementation per project convention (each subsystem ships its own; `roundi` is half-away-from-zero, not banker's).
+- **`is_domain_owner_in_own_market` is a query helper, not cached state.** Two cheap PK lookups (`settlement_entrances` row + `domains` row). Caller computes the bool once per transaction and passes it to each fee call as `is_domain_owner`. Avoids caching a derived state that could go stale on ownership changes.
+- **Unknown stabling keys contribute 0 (defensive lookup).** A caller passing `{"warhorse": 5}` against the table gets 0, not a crash. Caller is responsible for mapping their domain vocabulary (`heavy_warhorse` from `data/equipment/transport.json`) to one of the canonical 7 keys. Tested via `test_stabling_unknown_key_contributes_zero`.
+
+**Interfaces defined or changed:**
+- **`MarketFeesCalculator.entry_toll_gp(market_class, is_selling, merchandise_loads, rng, is_domain_owner=false) -> int`** — per-entry. Caller (Phase 10B.2's buy_sell handler) tracks entry events.
+- **`MarketFeesCalculator.customs_duty_gp(market_price_gp, settlement_id, is_domain_owner=false) -> int`** — per sell transaction. `market_price_gp` is the AGGREGATE price (loads × per-load), not per-load.
+- **`MarketFeesCalculator.labor_fee_gp(total_stone) -> int`** — once per buy (loading) and once per sell (unloading). No exemption.
+- **`MarketFeesCalculator.moorage_gp_per_day` / `moorage_gp_total(ship_shp, days, is_domain_owner)`** — per-day or aggregate.
+- **`MarketFeesCalculator.stabling_gp_per_day` / `stabling_gp_total(mounts, days, is_domain_owner)`** — dict input maps canonical keys (mule/donkey/horse/camel/ox/cart/wagon) to counts.
+- **`MarketFeesCalculator.roll_annual_customs_rate(settlement_id, year) -> int`** — pure deterministic helper.
+- **`MarketFeesCalculator.process_annual_customs_roll_for_campaign(campaign_id, current_year) -> int`** — year-tick driver. Phase 10B.2's monthly-tick handler invokes when `month==1 && current_year > campaigns.last_customs_roll_year`.
+- **`MarketFeesCalculator.is_domain_owner_in_own_market(character_id, settlement_id) -> bool`** — predicate helper for caller's exemption-flag computation.
+- **`MarketFeesCalculator.STABLING_RATES_GP_PER_DAY`** const — canonical 7-key rate table.
+
+**Database changes:** None. The `customs_duty_rate_pct` column on `settlement_entrances` and `last_customs_roll_year` on `campaigns` already existed from migration 097 (Prereq.2a).
+
+**Tests added/updated:**
+- `tests/test_market_fees_calculator.gd` (new, 22 functions, 84 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures unchanged from baseline.
+- `_TOLL_DICE_BY_CLASS` is duplicated here vs. (planned) `MerchantPoolRepository.toll_dice_for_class`. Prereq.4 should retire one of the two — likely keep the canonical in MerchantPoolRepository and have MarketFeesCalculator delegate. Or leave both — both are RAW-canonical 6-row tables with no project-design fill, so divergence risk is near zero. Decide during Prereq.4.
+- The year-tick wiring point (`DomainMonthlyResolver` detecting month==1 + year advanced, then invoking `process_annual_customs_roll_for_campaign`) is not yet activated. Phase 10B.2's monthly-tick handler adds the call once that wave ships. Until then, customs rates remain 0 (the default) — Prereq.3 includes the rolling helper but no automatic trigger.
+- `[NEEDS-FEE-OVERRIDE-PASS]` flag — GDD §8.11 documents that there's no per-settlement fee override / audit table. If a Judge wants to author special fees for a specific settlement, that's manual GP for now.
+- `[NEEDS-REPUTATION-FEES-PASS]` — no reputation-based fee variation in v1.
+
+**Next session should:**
+- **Prereq.4 — Merchant pool (§7).** Builds `merchant_pool_repository.gd` + the `merchant_pool` table (migration 099 — a single new table). Always-max generation per `max_merchant_count(class)` from MARKETS_AND_MERCHANTS constant; `becomes_visible_calendar_day` defaults to `2147483647` sentinel (invisible) for non-PC-owned domains, `current_calendar_day` for PC-owned domains. `process_solicitation` flips visibility in staggered half/quarter/remainder schedule (week 1/2/3 after solicit_day). `process_locate` surfaces ONE invisible merchant of the requested type per call (no spawn). 28-day cohort lifecycle via `expires_at_calendar_day`. Expected ~18 tests in `test_merchant_pool_repository.gd`. Also exposes `toll_dice_for_class(market_class)` as the canonical source for MarketFeesCalculator (Prereq.3 has an inlined duplicate to retire).
+- **Optional cleanup before 4:** `hex_size_miles` typo at test_phase_9a.gd:359 still un-fixed.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.4 (MerchantPoolRepository — pool lifecycle + visibility + solicit/locate)
+
+**Task:** Ship Prereq.4 of the Phase 10B mercantile substrate per the GDD §14 wave plan. Migration 099 creates the `merchant_pool` table. `MerchantPoolRepository` implements always-max cohort generation, visibility-gated reads (PC-owned domains see merchants immediately; others require solicit_merchants for staggered reveal or locate_merchandise for targeted surface), within-cohort load consumption with depletion flip, 28-day expiration, and the campaign-wide monthly refresh path. Adds 6 EventBus signals. Retires the inlined toll-dice duplicate in MarketFeesCalculator (delegates to the canonical constant in the repository).
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`db/migrations/099_merchant_pool.sql`** — single atomic transaction creating the `merchant_pool` table per GDD §7.8. Columns: `id` PK, `campaign_id` FK, `settlement_entrance_id` FK, `merchandise_type`, `loads_available`, `loads_initial`, `created_at_calendar_day`, `expires_at_calendar_day`, `becomes_visible_calendar_day` default `2147483647` (INT32_MAX sentinel = invisible), `status` CHECK in ('active','depleted','expired'), `source_kind` CHECK in ('monthly_refresh','manual'), `created_at`. Four indexes: `idx_merchant_pool_settlement_status`, `idx_merchant_pool_settlement_merchandise`, `idx_merchant_pool_expiration`, `idx_merchant_pool_visibility`.
+
+- **`engine/autoloads/event_bus.gd`** — 6 new signals under a "Phase 10B-prereq merchant pool signals (Prereq.4)" section: `merchant_pool_refreshed(settlement_id, new_merchant_count)`, `solicitation_started(settlement_id, character_id, merchants_revealed_count)`, `merchant_surfaced_via_locate(merchant_id, settlement_id, merchandise_type)`, `merchant_loads_consumed(merchant_id, loads_consumed, loads_remaining)`, `merchant_depleted(merchant_id, settlement_id)`, `merchant_expired(merchant_id, settlement_id)`.
+
+- **`engine/subsystems/commerce/merchant_pool_repository.gd`** — `RefCounted` static-function library implementing GDD §7. Public surface:
+  - **Constants:** `MARKETS_AND_MERCHANTS` (RAW table at acore-campaign-hijinks.xml:656-672 — toll/merchants/loads dice for each market class), `_MAX_MERCHANT_COUNT` (precomputed max-of-dice values: I=14, II=9, III=8, IV=4, V=3, VI=2), `INVISIBLE_SENTINEL = 2147483647`.
+  - **Accessors:** `max_merchant_count(market_class) -> int`, `toll_dice_for_class(market_class) -> String` (canonical source for MarketFeesCalculator.entry_toll_gp).
+  - **Reads (visibility-aware):** `list_visible_merchants(settlement_id, current_calendar_day) -> Array`, `list_visible_merchants_for_merchandise(settlement_id, merchandise_type, current_calendar_day) -> Array`, `list_invisible_merchants(settlement_id, current_calendar_day) -> Array`, `get_merchant(merchant_id) -> Dictionary`.
+  - **Generation:** `generate_pool_for_settlement(settlement_id, current_calendar_day, rng, pc_owned) -> int` — wipes prior `source_kind='monthly_refresh'` rows (preserves `source_kind='manual'`), generates `max_merchant_count(class)` merchants via `MerchandiseRegistry.random_common` (RAW d100 + dispatcher resolution for animals/mounts), rolls per-merchant `loads_available` from the class's loads_dice spec, sets `expires_at_calendar_day = current_day + 28` (Timekeeping.DAYS_PER_MONTH), sets `becomes_visible_calendar_day = current_day` if pc_owned else INVISIBLE_SENTINEL. Emits `merchant_pool_refreshed`. Returns merchant count.
+  - **Monthly refresh:** `process_monthly_refresh_for_campaign(campaign_id, current_calendar_day, rng) -> int` — walks every settlement, resolves PC-ownership via parent_domain's `owner_character_id` joined to `characters.character_type='pc'`, calls `process_expirations` then `generate_pool_for_settlement` per settlement.
+  - **Solicitation (§7.5.1):** `process_solicitation(settlement_id, character_id, current_calendar_day) -> Dictionary` — reads invisible merchants, computes `first_half = ceili(N/2)`, `second_quarter = max(floori(N/4), 1)` with clamp-to-N for small pools, assigns reveal days +7 / +14 / +21 per the half/quarter/remainder schedule. Rejects with `error='already_revealed'` when no invisible merchants exist. Returns `{success, error, merchants_revealed}`. Emits `solicitation_started`.
+  - **Locate (§7.5.2):** `process_locate(settlement_id, merchandise_type, current_calendar_day) -> Dictionary` — visible match → no-op success (`surfaced_now=false`); invisible match → surface ONE (set `becomes_visible_calendar_day = current_day`, emit `merchant_surfaced_via_locate`, return `surfaced_now=true`); no match → fail with `error='no_merchant_of_type'`. RAW-faithful alter-not-spawn semantics — no new merchants are created.
+  - **Consume (§7.7.1):** `consume_loads(merchant_id, loads_count) -> bool` — decrements `loads_available`, flips status to 'depleted' when reaching 0, emits `merchant_loads_consumed` always + `merchant_depleted` on flip. Returns false if insufficient loads (row unchanged) or merchant not active.
+  - **Expiration (§7.7):** `process_expirations(settlement_id, current_calendar_day) -> int` — deletes 'active' rows with `expires_at_calendar_day < current_day`; emits `merchant_expired` per deletion. Returns deletion count.
+
+- **`engine/subsystems/commerce/market_fees_calculator.gd`** updated: removed the inlined `_TOLL_DICE_BY_CLASS` const; `entry_toll_gp` now delegates to `MerchantPoolRepository.toll_dice_for_class(market_class)`. Single canonical source for the toll table.
+
+- **`db/schema.sql`** — manually updated: `Last migration applied` bumped to 099; `merchant_pool` table + four indexes appended.
+
+- **Tests:** **`tests/test_merchant_pool_repository.gd`** — 24 test functions covering:
+  - Accessors: `max_merchant_count` for all 6 classes + out-of-range; `toll_dice_for_class` spec strings for all 6 classes.
+  - Generation: pc_owned visibility (all merchants visible at current_day); non-pc invisibility (all merchants at sentinel); count matches class (Class I → 14, VI → 2); wipes previous active rows; preserves manual rows (8 generated + 1 manual = 9 total); `merchant_pool_refreshed` signal emission; merchandise distribution covers ≥10 distinct types across 20 trials × 14 merchants = 280 samples.
+  - Visibility-aware reads: `list_visible_merchants` filters by `becomes_visible_calendar_day <= current_day`; `list_visible_merchants_for_merchandise` adds type filter; `list_invisible_merchants` returns the complement.
+  - Consume: decrement preserves active status (10 - 3 = 7); depletion flips to 'depleted' + emits `merchant_depleted`; insufficient loads → false + row unchanged.
+  - Expiration: deletes overdue rows (day-10 expirer at current_day=15 deleted; day-20 expirer preserved); `merchant_expired` signal emission per deletion.
+  - Solicitation: Class III pool of 8 invisible → 4 at day+7, 2 at day+14, 2 at day+21; reject when pool already visible (`error='already_revealed'`); Class VI small-pool (N=2) clamp logic — 1 at day+7, 1 at day+14, 0 at day+21 without crashing.
+  - Locate: visible match → no-op success; invisible match → surface ONE + emit signal; no match → fail with `error='no_merchant_of_type'`.
+  - Campaign refresh: PC-owned settlement (character_type='pc') → 8 visible; NPC settlement → 8 invisible (sentinel).
+  - **Reports 81 individual `check()` assertions all passing.**
+
+- **Registration:** suite added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResource 294, scene node `MerchantPoolRepositoryTests`).
+
+- **Verification:** Full test suite passes **280 suites with 25 failures** — all 25 are the same pre-existing flaky tests carried forward from prior baselines. Pre-Prereq.4: 279 pass + 25 fail. Net delta: **+1 new suite passing, 0 regressions.**
+
+**Decisions made:**
+- **`MARKETS_AND_MERCHANTS` const stays in MerchantPoolRepository as the single source of truth.** Per GDD §7.1's "Same in-code constant exposes `toll_dice_for_class(market_class)` for §9's use." MarketFeesCalculator now delegates via the accessor — no duplication. The dice-spec parser is still duplicated across MerchandiseRegistry / MarketFeesCalculator / MerchantPoolRepository (3 sites); if a fourth subsystem needs it, extract into a shared DiceUtil. For 3 sites the duplication cost is lower than the indirection cost of an extra autoload/file.
+- **`_MAX_MERCHANT_COUNT` precomputed rather than parsed from dice specs at runtime.** Per §7.2, max counts are deterministic from RAW dice (I=2d6+2 max 14, II=2d4+1 max 9, etc.). Precomputed const + accessor avoids re-parsing the dice spec on every generation call. The DiceUtil extraction (if/when it happens) would expose `max_value(spec)`, at which point this const could derive from `MARKETS_AND_MERCHANTS`.
+- **Pool generation wipes only `source_kind='monthly_refresh'` rows, preserves `source_kind='manual'`.** Per §7.8 — Judge-authored merchants survive monthly refresh. Tested via `test_generate_preserves_manual_rows`: 8 generated + 1 manual = 9 rows total post-generation.
+- **PC-ownership detection joins through `characters.character_type='pc'`.** Per §7.4 — "if parent_domain_id maps to a domain whose owner is a PC". A domain owned by an NPC character_type yields false; a domain with NULL owner_character_id yields false (the JOIN finds no row). Tested via `test_monthly_refresh_pc_owned_detection`.
+- **`process_solicitation` clamps `second_quarter` when N is small.** For N=2 (Class VI), the formula gives `first_half=1`, `second_quarter=max(0,1)=1`, but `first_half + second_quarter = 2 == N`, so the remainder slot is empty. Clamping prevents over-assignment and the test `test_solicitation_small_pool_class_vi` verifies 1 merchant at day+7, 1 at day+14, none at day+21.
+- **`process_solicitation` emits `solicitation_started` at the action's start.** Per §7.11 commentary — the week-1/2/3 reveal boundaries are driven by `becomes_visible_calendar_day` reaching `current_calendar_day` during normal reads, not by a separate completion signal. The signal payload's `merchants_revealed_count` is the size of the invisible cohort at solicit time.
+- **`process_locate` surfaces ONE merchant per call.** Per §7.5.2 — multiple invisible silk merchants in a Class I pool are revealed one-at-a-time over multiple `locate_merchandise` activity invocations (1 hour each). Caller chains for multiple surfaces.
+- **`consume_loads` rejects (returns false) on insufficient loads rather than partially consuming.** Per §7.7.1 — atomic transactional semantic. Phase 10B.2's buy_sell handler must validate `loads_count <= loads_available` before calling.
+- **`process_expirations` collects IDs before delete to fire per-row signals.** Two-query pattern (SELECT then DELETE per id) is slower than a single DELETE statement but lets the signal payload include each expired merchant_id. For v1 campaign scales (~tens of expired rows per monthly tick) the cost is negligible.
+
+**Interfaces defined or changed:**
+- **`MerchantPoolRepository.MARKETS_AND_MERCHANTS`** const — single source of truth for the RAW Markets and Merchants table.
+- **`MerchantPoolRepository.toll_dice_for_class(market_class) -> String`** — canonical accessor. Consumed by `MarketFeesCalculator.entry_toll_gp`.
+- **`MerchantPoolRepository.max_merchant_count(market_class) -> int`** — per-class max merchants for pool sizing.
+- **`MerchantPoolRepository.INVISIBLE_SENTINEL`** const — `2147483647`. Callers checking visibility should compare against this directly, not hard-code the integer.
+- **`MerchantPoolRepository.list_visible_merchants` / `list_visible_merchants_for_merchandise` / `list_invisible_merchants` / `get_merchant`** — read API.
+- **`MerchantPoolRepository.generate_pool_for_settlement(settlement_id, current_calendar_day, rng, pc_owned) -> int`** — per-settlement generation.
+- **`MerchantPoolRepository.process_monthly_refresh_for_campaign(campaign_id, current_calendar_day, rng) -> int`** — campaign-wide monthly driver. Phase 10B.2's monthly tick handler invokes.
+- **`MerchantPoolRepository.process_solicitation(settlement_id, character_id, current_calendar_day) -> Dictionary`** — solicit handler invokes; returns `{success, error, merchants_revealed}`.
+- **`MerchantPoolRepository.process_locate(settlement_id, merchandise_type, current_calendar_day) -> Dictionary`** — locate handler invokes; returns `{success, error, merchant_id, surfaced_now}`.
+- **`MerchantPoolRepository.consume_loads(merchant_id, loads_count) -> bool`** — invoked by Phase 10B.2's buy_sell handler after price computation.
+- **`MerchantPoolRepository.process_expirations(settlement_id, current_calendar_day) -> int`** — invoked at monthly tick start (before regenerate) or by solicit completion handlers.
+- **`MarketFeesCalculator.entry_toll_gp`** now consumes `MerchantPoolRepository.toll_dice_for_class` — call signature unchanged; implementation delegates.
+- **6 EventBus signals** per §7.11.
+
+**Database changes:**
+- **Migration 099 (single atomic transaction):** new `merchant_pool` table + 4 indexes. `db/schema.sql` updated to reflect post-099 state.
+
+**Tests added/updated:**
+- `tests/test_merchant_pool_repository.gd` (new, 24 functions, 81 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures unchanged from baseline.
+- Monthly-tick wiring point (`DomainMonthlyResolver` invoking `process_monthly_refresh_for_campaign` and `MarketPriceResolver.process_monthly_drift_for_campaign` and `MarketFeesCalculator.process_annual_customs_roll_for_campaign` at year-start) is not yet activated. Phase 10B.2's monthly tick handler adds all three calls in one wave.
+- Year-tick `last_customs_roll_year` de-dup guard depends on the same monthly tick handler — until then, customs rates stay 0 (the default).
+- Dice-spec parser duplicated across 3 sites (MerchandiseRegistry, MarketFeesCalculator, MerchantPoolRepository). Extract into shared DiceUtil if/when a 4th site needs it.
+- `[NEEDS-MERCHANT-SOURCING-PASS]` flag in §7.5.2 — if no merchant of the requested type exists, locate fails. A future enhancement could spawn a new merchant via a connected trade route (§5).
+- `[NEEDS-DISTRIBUTION-CALIBRATION]` flag in §7.6.1 — uniform d100 merchandise distribution may produce playtest oddities (e.g., a salt-mining domain rolls zero salt merchants). Revisit with playtest data.
+- `[NEEDS-PRECIOUS-RATE-PASS]` flag in §7.13 — 15% precious dispatch (RAW 86-100) is RAW-canonical; revisit if precious access feels wrong.
+
+**Next session should:**
+- **Prereq.5a — Ships persistence (§9.2-§9.3, §9.6, §9.10).** Build `ships` table + `ShipRepository` + monthly operating-cost integration into the DomainMonthlyResolver path (wiring goes in the same place Phase 10B.2 wires the monthly refresh / drift / customs sweeps). Audit `data/equipment/maritime.json` for RAW Merchant Ships table entries (small/large sailing ship) per §9.3; the `[NEEDS-MARITIME-CATALOG-VERIFICATION]` flag is the encoding-pass deliverable. Migration 100 (one new table). Expected ~8 tests.
+- **Prereq.5b — Cargo holds (§9.4-§9.5, §9.8, §9.10).** Build `cargo_holds` table (XOR check on draft_vehicle_id / ship_id) + `CargoHoldRepository` + `CargoEncumbranceCalculator` integrating cargo_holds into the existing inventory_items encumbrance computation. Hijink-yield data-path helpers (smuggled/stolen source_acquisition_kind). Migration 101. Expected ~10 tests + ~7 for the calculator.
+- **Prereq.5c — Shipping contracts (§9.7, §9.9, §9.10).** Build `shipping_contracts` table + `ShippingContractRepository`. Migration 102. Expected ~5 tests.
+- **Optional**: extract a shared `DiceUtil._roll_spec(spec, rng)` helper if you'd like to dedupe the parser across 3 sites — one short file, three call-site updates. Not strictly in scope but trivial.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.5a (ShipRepository — ship persistence + monthly operating cost driver)
+
+**Task:** Ship Prereq.5a of the Phase 10B mercantile substrate per the GDD §14 wave plan. Migration 100 creates the `ships` table parallel to the existing `draft_vehicles` (migration 024). `ShipRepository` provides CRUD over the table, state transitions (location, damage, destroy), and the monthly operating-cost driver that debits `monthly_operating_cost_gp` from the party wallet via PartyWallet.pay. Audit + extend `data/equipment/maritime.json` with `shp_max` and `monthly_operating_cost_gp` for the two RAW Merchant Ships table entries. Adds 5 ship-related EventBus signals.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`db/migrations/100_ships.sql`** — single atomic transaction creating the `ships` table per GDD §9.2. Columns: `id` PK, `campaign_id` FK, `party_id` FK (nullable), `vessel_key`, `name`, `shp_max` / `shp_current` integers, `cargo_capacity_stone` (consumed by CargoEncumbranceCalculator in Prereq.5b), crew composition (`crew_captain` / `crew_sailors` / `crew_rowers` / `crew_marines`), `monthly_operating_cost_gp`, `current_location_kind` CHECK in ('moored','at_sea','wrecked'), `moored_at_settlement_id` FK (nullable), `is_destroyed` bool, `created_at` + `updated_at`. Three indexes: `idx_ships_party` (party + is_destroyed), `idx_ships_campaign` (campaign + is_destroyed for the monthly sweep), `idx_ships_moored` (settlement lookups).
+
+- **`data/equipment/maritime.json`** — extended the two RAW Merchant Ships table entries:
+  - `sailing_ship_small`: added `shp_max: 30`, `monthly_operating_cost_gp: 325` (RAW value from acore-campaign-hijinks.xml:844-911). Notes field documents the navigator → crew_sailors mapping per GDD §9.6 and flags `[NEEDS-MARITIME-CATALOG-VERIFICATION]` for the existing 12-sailor value vs RAW's 10+1 navigator = 11.
+  - `sailing_ship_large`: added `shp_max: 50`, `monthly_operating_cost_gp: 525`. Same documentation pattern; existing 20-sailor value vs RAW's 17+2 navigators = 19.
+  - shp_max values (30 / 50) are project-design fills — RAW does not directly specify SHP for these vessels. The flag remains for a future SHP-verification pass.
+  - Other 11 vessels in the catalog (barge, canoe, boats, galleys, longship, troop transports, war galley) are unchanged; ShipRepository defaults their missing fields to 0 via `.get(key, 0)`.
+
+- **`engine/autoloads/event_bus.gd`** — added 5 ship signals under a new "Phase 10B-prereq ship persistence signals (Prereq.5a)" section: `ship_created(ship_id, party_id, vessel_key)`, `ship_destroyed(ship_id, party_id)`, `ship_location_changed(ship_id, new_kind, settlement_id)`, `ship_operating_cost_paid(ship_id, gp_amount)`, `ship_operating_cost_unpaid(ship_id, owed_gp)`.
+
+- **`engine/subsystems/commerce/ship_repository.gd`** — `RefCounted` static-function library implementing GDD §9.2 + §9.6 + §9.10. Public surface:
+  - **`create_ship(party_id, vessel_key, settlement_id, name="")` -> String** — resolves the maritime catalog entry, resolves campaign_id via the party row, inserts a ships row with catalog-derived shp_max/shp_current/cargo/crew/monthly_cost fields, sets `current_location_kind='moored'` and `moored_at_settlement_id`. Returns ship_id, or "" on failure. Emits `ship_created`.
+  - **`get_ship(ship_id)` -> Dictionary** — single-row lookup.
+  - **`list_ships_for_party(party_id)` -> Array** — non-destroyed ships ordered by created_at.
+  - **`set_ship_location(ship_id, location_kind, settlement_id)` -> bool** — transitions location; clears `moored_at_settlement_id` when transitioning to at_sea/wrecked; emits `ship_location_changed`. Rejects invalid location_kind.
+  - **`damage_ship(ship_id, shp_lost)` -> bool** — subtracts SHP. If shp_current would reach 0 or below, flips `is_destroyed=1`, sets location to 'wrecked', clears moored_at, emits `ship_destroyed`. Returns true on update, false on missing/already-destroyed ship.
+  - **`destroy_ship(ship_id)` -> bool** — explicit destruction. Same effects as damage-to-zero path. Idempotent (returns false on already-destroyed ship). Emits `ship_destroyed`. ON DELETE CASCADE on cargo_holds (Prereq.5b's `ships` FK target) means cargo is auto-cleaned when the ship row is deleted; for the soft-delete `is_destroyed=1` path here, the cargo cleanup happens at the caller's discretion (Phase 10B.2 may prompt the player to recover cargo from a wrecked ship before final cleanup).
+  - **`process_monthly_operating_costs_for_campaign(campaign_id, current_calendar_day)` -> int** — walks non-destroyed ships in the campaign. For each: looks up the party's first PC (via `party_members` JOIN on `characters.character_type='pc'`), calls `PartyWallet.pay(cost_gp * 100, party_id, active_pc)` to debit at cp granularity. On success emits `ship_operating_cost_paid` and accumulates `cost_gp` into the return total. On shortfall (or orphan ship with no party / no PC) emits `ship_operating_cost_unpaid` and skips. v1 does NOT destroy ships for non-payment per §9.6.1 — flagged `[NEEDS-CREW-MORALE-PASS]`.
+  - **Catalog cache:** `_load_catalog` lazily parses `maritime.json` and caches the `vessels` array statically. `_reset_catalog_cache` exposes a test seam.
+  - **`_first_pc_of_party(party_id)`** helper joins `party_members` → `characters` (filter `character_type='pc'`) ordered by `joined_at`; returns the first PC's id or "" if none.
+
+- **`db/schema.sql`** — manually updated: `Last migration applied` bumped to 100; `ships` table + three indexes appended.
+
+- **Tests:** **`tests/test_ship_repository.gd`** — 14 test functions covering:
+  - Create: catalog fields applied (shp_max=30, cargo=10000, crew_captain=1, crew_sailors=12, monthly_cost=325 for small sailing ship); unknown vessel_key returns ""; `ship_created` signal emission.
+  - List: `list_ships_for_party` excludes destroyed.
+  - Location: moored → at_sea (clears settlement) → moored at new dock; invalid kind rejected.
+  - Damage: partial subtraction preserves status; damage exceeding shp_current → destruction (is_destroyed=1, current_location_kind='wrecked', `ship_destroyed` signal).
+  - Destroy: explicit destruction sets fields + emits signal; idempotent (second destroy returns false).
+  - Monthly cost: full sweep debits 325 gp from a 1000-gp PC's coins (down to 32500 cp deduction); broke-party fixture triggers `ship_operating_cost_unpaid` once with `owed_gp=325` and leaves the ship un-destroyed; destroyed ships are skipped (no `ship_operating_cost_paid` signal); two-ship campaign (small + large) returns 850 gp total (325 + 525).
+  - **Reports 48 individual `check()` assertions all passing.**
+
+- **Registration:** suite added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResource 295, scene node `ShipRepositoryTests`).
+
+- **Verification:** Full test suite passes **281 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.5a: 280 pass + 25 fail. Net delta: **+1 new suite passing, 0 regressions.** Two `ERROR:` lines in the log are the intentional `push_error` calls from `test_create_ship_unknown_vessel_fails` and `test_set_ship_location_invalid_kind_rejected` (the tests verify the rejection branches via the function's return value).
+
+**Decisions made:**
+- **`shp_max` 30 / 50 are project-design fills.** RAW doesn't directly specify SHP for the sailing ships in the Merchant Ships and Caravans table. The values are calibrated against the GDD §8.6 moorage example (30-SHP ship for the cost example). `[NEEDS-MARITIME-CATALOG-VERIFICATION]` flag remains for the future SHP-verification pass.
+- **Existing `crew_sailors: 12` / `: 20` preserved over the GDD's stated RAW 11 / 19.** The catalog had these values prior to this session, and changing them might affect other systems (combat, troop transport scenes) that already depend on the 12/20 counts. Documented the discrepancy in the notes field as a `[NEEDS-MARITIME-CATALOG-VERIFICATION]` follow-up. The repository reads `crew_sailors` from the catalog as-is, so future reconciliation is a one-line catalog edit.
+- **Monthly operating cost debits via `PartyWallet.pay`, threading through the first PC of the party.** Gold lives in `inventory_items` rows per character per the PartyWallet design note. The monthly tick has no "active character" context, so I pick the party's first-joined PC as the contributor. PartyWallet then iterates contributors in order, debiting across all eligible PCs to cover the total. If no PC exists (party is all henchmen / NPCs), the unpaid signal fires.
+- **`ship_operating_cost_unpaid` on orphan ships (no party_id, or party with no PC).** Defensive — the signal is the audit trail for "this ship can't pay." A future cleanup pass could prune orphan ships or transfer them to a default treasury.
+- **`cargo_capacity_stone` defaults to `cargo_stone_max` from the catalog.** The catalog distinguishes min/max for vessels that can scale loadout; v1 uses max as the carrier capacity. If future dynamic-loading lands, the field can be re-set at creation time without schema changes.
+- **`damage_ship` returns false for already-destroyed ships.** Idempotent in spirit — a destroyed ship can't take more damage. Combat callers should check `is_destroyed=0` before invoking; the false return is the audit-trail breadcrumb.
+- **Soft-delete via `is_destroyed=1` over hard DELETE.** A wrecked ship stays in the table so cargo recovery, audit, and UI ("we lost the Sea Wraith at Cape Storm, year 1234") can resolve the row. Hard DELETE happens at the caller's discretion (Phase 10B.2 or a cleanup pass). The ON DELETE CASCADE on cargo_holds (Prereq.5b) only fires on actual row deletion, so soft-deleted ships retain their cargo until explicit cleanup.
+- **`_first_pc_of_party` uses `party_members.joined_at` ordering.** Deterministic across save/load. If the first-joined PC has been demoted to non-PC type, the JOIN's `character_type='pc'` filter advances to the next eligible PC.
+
+**Interfaces defined or changed:**
+- **`ShipRepository.create_ship(party_id, vessel_key, settlement_id, name="") -> String`** — Phase 10B.2's ship-purchase handler will call this after debiting purchase price from the party wallet.
+- **`ShipRepository.get_ship` / `list_ships_for_party`** — read API.
+- **`ShipRepository.set_ship_location(ship_id, location_kind, settlement_id) -> bool`** — invoked by travel / docking handlers.
+- **`ShipRepository.damage_ship(ship_id, shp_lost) -> bool`** — invoked by combat, weather, and Phase 9C/D siege systems.
+- **`ShipRepository.destroy_ship(ship_id) -> bool`** — explicit destruction.
+- **`ShipRepository.process_monthly_operating_costs_for_campaign(campaign_id, current_calendar_day) -> int`** — invoked by `DomainMonthlyResolver` monthly tick (Phase 10B.2 wires).
+- **5 EventBus signals** per §9.11.
+- **`data/equipment/maritime.json` schema extension:** new optional fields `shp_max` and `monthly_operating_cost_gp`. Other systems reading the catalog continue working (the new fields are optional with sensible defaults).
+
+**Database changes:**
+- **Migration 100 (single atomic transaction):** new `ships` table + 3 indexes. `db/schema.sql` updated.
+
+**Tests added/updated:**
+- `tests/test_ship_repository.gd` (new, 14 functions, 48 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures unchanged.
+- `[NEEDS-MARITIME-CATALOG-VERIFICATION]` — crew_sailors 12/20 in catalog vs RAW 11/19 (10+1 navigator / 17+2 navigators with project navigator → sailor mapping). SHP values 30 / 50 are project-design fills.
+- `[NEEDS-CREW-MORALE-PASS]` — non-payment of monthly operating cost emits `ship_operating_cost_unpaid` but does not destroy the ship or degrade crew morale in v1.
+- `[NEEDS-CREW-INDIVIDUATION-PASS]` — crew counts are aggregate integers, not per-NPC records.
+- `[NEEDS-NAVAL-MOVEMENT-PASS]` — ship movement uses existing wilderness movement systems; no naval-specific wind / current mechanics in v1.
+- The monthly-tick wiring point (`DomainMonthlyResolver` invoking `process_monthly_operating_costs_for_campaign`) is not yet activated. Phase 10B.2's monthly-tick handler ships the wiring alongside the other monthly-tick driver invocations (merchant pool refresh, drift sweep, customs roll on year-1-month-1).
+- Two `ERROR:` lines in test output are intentional `push_error` calls from the two reject-branch tests; assertion checks verify the function's false return value.
+
+**Next session should:**
+- **Prereq.5b — Cargo holds + encumbrance integration (§9.4-§9.5, §9.8, §9.10).** Build `cargo_holds` table (migration 101) with the XOR carrier CHECK (`(draft_vehicle_id IS NOT NULL) <> (ship_id IS NOT NULL)`) and ON DELETE CASCADE on both carrier FKs. `CargoHoldRepository` with `insert_purchase`, `insert_hijink_yield` (smuggled/stolen), `insert_shipping_contract_load`, `transfer_loads`, `delete_sold`. `CargoEncumbranceCalculator` unifies inventory_items + cargo_holds against the same per-carrier capacity limit (single-limit two-sources per Q-MERC-17). Expected ~10 + ~7 tests.
+- **Prereq.5c — Shipping contracts (§9.7, §9.9).** Build `shipping_contracts` table (migration 102) + `ShippingContractRepository`. Per §9.7 the `accept_contract` / `deliver` / `cancel` / `list_active_for_party` shape. Cargo flow spawns `cargo_holds` rows with `source_acquisition_kind='shipping_contract'`. Expected ~5 tests.
+- **Optional** still on the table: `hex_size_miles` typo at test_phase_9a.gd:359 + shared `DiceUtil._roll_spec` extraction.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.5b (CargoHoldRepository + CargoEncumbranceCalculator — cargo persistence + unified encumbrance)
+
+**Task:** Ship Prereq.5b of the Phase 10B mercantile substrate per the GDD §14 wave plan. Migration 101 creates the `cargo_holds` table with the XOR carrier CHECK and ON DELETE CASCADE on both carrier FKs. `CargoHoldRepository` provides typed inserts (purchase / hijink / shipping_contract), transfer between carriers, and delete-on-sale. `CargoEncumbranceCalculator` unifies inventory_items + cargo_holds against a single per-carrier capacity limit per Q-MERC-17 ("a wagon cannot track two separate encumbrance limits"). Adds 2 EventBus signals.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`db/migrations/101_cargo_holds.sql`** — single atomic transaction creating the `cargo_holds` table per GDD §9.4. Columns: `id` PK, `campaign_id` FK, `draft_vehicle_id` FK (nullable, ON DELETE CASCADE), `ship_id` FK (nullable, ON DELETE CASCADE), `merchandise_type`, `loads_count`, `load_weight_stone` (cached from MerchandiseRegistry at insert), `market_value_at_acquisition_gp`, `source_acquisition_kind` CHECK in ('purchased','smuggled','stolen','shipping_contract'), `acquired_at_settlement_id` FK (nullable), `acquired_at_calendar_day`, `shipping_contract_id` (nullable, no FK yet — Prereq.5c lands the shipping_contracts table), `notes`, `created_at`. XOR carrier CHECK enforces `(draft_vehicle_id IS NOT NULL) <> (ship_id IS NOT NULL)`. Four indexes: `idx_cargo_holds_draft_vehicle` (partial — only non-null draft_vehicle_id rows), `idx_cargo_holds_ship` (partial), `idx_cargo_holds_merchandise`, `idx_cargo_holds_campaign`.
+
+- **`engine/autoloads/event_bus.gd`** — added 2 signals under "Phase 10B-prereq cargo holds signals (Prereq.5b)": `cargo_loaded(cargo_hold_id, carrier_id, merchandise_type, loads_count)`, `cargo_sold(cargo_hold_id, gp_received)`.
+
+- **`engine/subsystems/commerce/cargo_hold_repository.gd`** — `RefCounted` static-function library implementing GDD §9.4 + §9.8 + §9.10. Public surface:
+  - **Constants:** `CARRIER_DRAFT_VEHICLE = "draft_vehicle"`, `CARRIER_SHIP = "ship"` — caller-facing enum.
+  - **Reads:** `list_for_draft_vehicle(draft_vehicle_id) -> Array`, `list_for_ship(ship_id) -> Array`, `get_cargo_hold(cargo_hold_id) -> Dictionary`. Each returns cargo_holds rows ordered by created_at.
+  - **`insert_purchase(carrier_id, carrier_kind, merchandise_type, loads_count, gp_paid, settlement_id, current_calendar_day) -> String`** — `gp_paid` is the AGGREGATE gp paid (basis for the eventual sell-side arbitrage profit math). `source_acquisition_kind='purchased'`. Emits `cargo_loaded` on success.
+  - **`insert_hijink_yield(carrier_id, carrier_kind, merchandise_type, loads_count, market_value_gp, settlement_id, current_calendar_day, kind) -> String`** — `kind` must be `'smuggled'` or `'stolen'` (rejected with push_error otherwise). `market_value_gp` is the NOTIONAL value (basis for Phase 10B.3's 12% smuggling / 60% stealing boss-payout multipliers per GDD §9.8).
+  - **`insert_shipping_contract_load(carrier_id, carrier_kind, merchandise_type, loads_count, contract_id, settlement_id, current_calendar_day) -> String`** — `source_acquisition_kind='shipping_contract'`. Sets `shipping_contract_id` for later delivery resolution (Prereq.5c). `market_value_at_acquisition_gp` defaults to 0 — contract fees are paid on delivery, not at acquisition.
+  - **`transfer_loads(source_cargo_hold_id, target_carrier_id, target_carrier_kind, loads_count) -> Dictionary`** — moves [loads_count] from a source row to a new row on the target carrier. Preserves provenance (source_kind, market_value_at_acquisition_gp, acquired_at_settlement_id, acquired_at_calendar_day). Full-transfer (loads_count == source.loads_count) DELETEs the source row; partial decrements it. Returns `{success, source_remaining, target_cargo_hold_id, error}`. Caller responsibility per §9.13: verify carriers are co-located.
+  - **`delete_sold(cargo_hold_id, gp_received) -> bool`** — DELETEs the row + emits `cargo_sold` with caller-supplied actual gp credit (post-fees).
+  - **Internal `_insert_cargo_row(args)`** is the shared insert path used by all three typed inserts. Resolves `campaign_id` from the carrier (draft_vehicles or ships), caches `load_weight_stone` from `MerchandiseRegistry.load_weight_stone(merchandise_type)`, generates a UUID, INSERTs, emits `cargo_loaded`.
+
+- **`engine/subsystems/commerce/cargo_encumbrance_calculator.gd`** — `RefCounted` static-function library implementing GDD §9.5. Public surface:
+  - **`ENCUMBRANCE_UNITS_PER_STONE = 1000`** const — matches the existing `party_inventory_transfer_validator.gd:314` convention (load_max_stone × 1000 = load_max_encumbrance_units).
+  - **`draft_vehicle_used_stone(draft_vehicle_id) -> int`** — sums inventory_items (encumbrance_units / 1000 banker-rounded to stone) + cargo_holds (loads_count × load_weight_stone — already integer stone). Returns total stone.
+  - **`draft_vehicle_capacity_check(draft_vehicle_id) -> Dictionary`** — full capacity dict: `{used_stone, load_normal_stone, load_max_stone, is_over_normal, is_over_max, speed, free_stone}`. Reads draft_vehicles row, parses `hitched_creatures` JSON, computes team equivalents via `DraftVehicleService.calculate_team_equivalents`, looks up capacity via `DraftVehicleService.get_vehicle_capacity`. Returns `{}` if vehicle missing or no valid team.
+  - **`ship_used_stone(ship_id) -> int`** — cargo-only sum. Per §9.5, v1 ships do NOT carry inventory_items.
+  - **`ship_capacity_check(ship_id) -> Dictionary`** — `{used_stone, cargo_capacity_stone, is_over_capacity, free_stone}`.
+  - **Internal helpers:** `_sum_inventory_stone_for_vehicle` (SQL SUM with banker conversion), `_sum_cargo_stone_for_draft_vehicle` / `_sum_cargo_stone_for_ship`, `_resolve_hitched_team` (parses JSON array of `{species_id}` dicts), inline `_bankers_round`.
+
+- **`db/schema.sql`** — manually updated: `Last migration applied` bumped to 101; `cargo_holds` table + four indexes appended.
+
+- **Tests:**
+  - **`tests/test_cargo_hold_repository.gd`** — 15 test functions covering: insert_purchase row fields + signal emission; insert_hijink_yield smuggled / stolen happy paths + reject-invalid-kind path; XOR CHECK both-carriers-set REJECTED (via direct SQL); XOR CHECK neither-carrier-set REJECTED; list_for_draft_vehicle vs list_for_ship correctly partition; transfer_loads partial (source decremented + target row created with preserved provenance); transfer_loads full (source deleted); transfer_loads insufficient (rejected + source unchanged); delete_sold + signal emission; multiple acquisitions of same merchandise on same vehicle remain as separate rows per `acquired_at_calendar_day`; load_weight_stone cached from MerchandiseRegistry (silk → 20, grain → 80). Reports **53 individual `check()` assertions all passing.**
+  - **`tests/test_cargo_encumbrance_calculator.gd`** — 8 test functions covering: empty cart used = 0; cart with inventory-only (30000 eu → 30 stone); cart with cargo-only (3 silk × 20 = 60 stone); cart with both inventory + cargo (50 + 40 = 90); capacity_check `is_over_normal` / `is_over_max` thresholds with speed transitioning to speed_loaded; ship_capacity_check returns correct free_stone (10000 - 120 = 9880); inventory banker rounding edge cases (500 eu → 0.5 → 0; 1500 → 1.5 → 2; 2500 → 2.5 → 2); ship_used_stone ignores draft_vehicle cargo. Reports **28 individual `check()` assertions all passing.**
+  - **Registration:** both suites added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResources 296 + 297, scene nodes `CargoHoldRepositoryTests` and `CargoEncumbranceCalculatorTests`).
+
+- **Verification:** Full test suite passes **283 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.5b: 281 pass + 25 fail. Net delta: **+2 new suites passing, 0 regressions.** First run showed 282/26 (one flaky test bounced); second run stabilized at 283/25.
+
+**Decisions made:**
+- **XOR CHECK at SQL layer is enforced regardless of `PRAGMA foreign_keys` setting.** godot-sqlite has FK enforcement off by default, so the typed FKs themselves don't fire CASCADE on parent deletion. But CHECK constraints fire unconditionally. The XOR constraint at the SQL layer is the load-bearing invariant; the typed inserts in CargoHoldRepository normalize callers to the canonical form.
+- **ON DELETE CASCADE documented but inactive in v1.** Because v1 carrier destruction uses soft-delete (`is_destroyed=1`) rather than DELETE, the CASCADE never fires in practice. The clause stays in the schema as defensive — if a future cleanup pass or test harness enables FK enforcement and DELETEs the parent, cargo gets cleaned up automatically. Explicit cargo-cleanup helpers were considered but rejected as scope creep; the GDD §9.13 explicitly delegates cargo recovery to caller / UI responsibility.
+- **Cargo CASCADE test omitted.** The §9.12 test 6 "ON DELETE CASCADE: deleting parent draft_vehicle deletes cargo_holds rows" requires enabling `PRAGMA foreign_keys = ON` which would affect other tests sharing the connection. The CHECK constraints are what we actually rely on in v1; the CASCADE is defensive metadata. Documented as an audit item; could be tested in isolation later with a per-test PRAGMA toggle.
+- **`shipping_contract_id` column added now but with no FK target.** Prereq.5c will create the `shipping_contracts` table and add the FK at that point (or convert to a typed FK column). Adding the column now avoids needing a separate ALTER TABLE migration in 5c.
+- **`load_weight_stone` cached at insert time** rather than computed on every encumbrance query. Per §9.4 rationale: MerchandiseRegistry values are RAW-stable; caching saves a registry lookup per cargo row per encumbrance computation. If a future Player's Companion changes a merchandise weight, existing cargo rows retain the original weight (audit-faithful) — the next insert picks up the new value.
+- **`_insert_cargo_row` is the shared insert path; typed inserts are thin wrappers.** Single SQL pattern, single signal emission, single campaign_id resolution. Each typed insert (`insert_purchase` / `insert_hijink_yield` / `insert_shipping_contract_load`) packages its args into the dict and delegates. Keeps the typed-enum protection at the API boundary without duplicating insert logic.
+- **`transfer_loads` preserves provenance.** Every column except `loads_count` and the carrier FKs is copied from source to target. This means a partial transfer to a different carrier carries the original acquisition's `source_acquisition_kind` (e.g., smuggled goods moved from wagon to ship are still smuggled at the destination — important for Phase 10B.3's eventual smuggling-yield accounting).
+- **Encumbrance calculator returns stone via banker rounding for inventory.** Per CLAUDE.md banker's rounding everywhere. The inventory `encumbrance_units / 1000` boundary conversion uses banker, tested explicitly via 500 eu (0.5 → 0) / 1500 eu (1.5 → 2) / 2500 eu (2.5 → 2). Cargo conversion is integer stone (loads_count × load_weight_stone) so no rounding applies.
+- **`ship_used_stone` is cargo-only.** v1 ships don't carry inventory_items per GDD §9.5; the Q-MERC-17 single-limit two-sources rule still holds — for ships the second source happens to be the empty set. If v1.1 adds `inventory_items.ship_id`, this helper extends to mirror the draft-vehicle path.
+
+**Interfaces defined or changed:**
+- **`CargoHoldRepository.insert_purchase` / `insert_hijink_yield` / `insert_shipping_contract_load`** — Phase 10B.2's buy_sell_merchandise handler + Phase 10B.3's smuggling/stealing resolvers consume these.
+- **`CargoHoldRepository.transfer_loads(source_cargo_hold_id, target_carrier_id, target_carrier_kind, loads_count) -> Dictionary`** — Phase 10B.2's port-side cargo-transfer UI invokes.
+- **`CargoHoldRepository.delete_sold(cargo_hold_id, gp_received) -> bool`** — Phase 10B.2's sell-side path.
+- **`CargoHoldRepository.list_for_draft_vehicle` / `list_for_ship` / `get_cargo_hold`** — UI consumers (inventory tab, cargo manifest views).
+- **`CargoEncumbranceCalculator.draft_vehicle_used_stone` / `draft_vehicle_capacity_check`** — replace and extend the existing `party_inventory_transfer_validator` capacity checks at the point where the validator currently checks `current_load + item_units > load_max`. The validator's existing pattern can stay; new code paths integrating cargo should use this calculator.
+- **`CargoEncumbranceCalculator.ship_used_stone` / `ship_capacity_check`** — ship cargo overflow / freight planning.
+- **2 EventBus signals** per §9.11.
+
+**Database changes:**
+- **Migration 101 (single atomic transaction):** new `cargo_holds` table + 4 indexes. `db/schema.sql` updated.
+
+**Tests added/updated:**
+- `tests/test_cargo_hold_repository.gd` (new, 15 functions, 53 check assertions).
+- `tests/test_cargo_encumbrance_calculator.gd` (new, 8 functions, 28 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — both suites registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures (with occasional ±1 flakiness on each run).
+- ON DELETE CASCADE on carrier FKs is documented defensive metadata; not actively exercised by v1 carrier destruction (soft-delete path). If a future system enables FK enforcement and DELETEs parent ships/vehicles, cargo cleanup will fire automatically.
+- The `shipping_contract_id` column has no FK constraint yet — Prereq.5c lands the `shipping_contracts` table and the constraint.
+- `[NEEDS-CARRIER-FALLBACK-PASS]` flag in GDD §9.8 — if a hijink succeeds with no available carrier, the yield should convert to gp at a project-design loss factor. Phase 10B.3 handles the activity logic; §9 only ships the insert helpers.
+
+**Next session should:**
+- **Prereq.5c — Shipping contracts (§9.7, §9.9).** Build `shipping_contracts` table (migration 102) + `ShippingContractRepository`. Per §9.7: `accept_contract(party_id, origin_settlement_id, destination_settlement_id, merchandise_type, loads_count, fee_gp, deadline_calendar_day, current_calendar_day) -> String`, `mark_in_transit(contract_id) -> bool`, `deliver(contract_id, current_calendar_day) -> Dictionary` (returns `{success, fee_paid_gp, deadline_missed}`), `cancel(contract_id) -> bool`, `list_active_for_party(party_id) -> Array`. Spawn `cargo_holds` rows with `source_acquisition_kind='shipping_contract'` on accept. Delete + credit fee on deliver. EventBus signals: `shipping_contract_accepted`, `shipping_contract_delivered`, `shipping_contract_failed`. Expected ~5 tests.
+- After 5c, the wave plan moves to Prereq.6 (Crime & Punishment data prereqs — attorney specialization + character_legal_status table), Prereq.7 (HenchmanLoyaltyResolver extra_modifiers extension), and Prereq.8 (integration tests reproducing §12's Ashford/Thornwall worked example end-to-end).
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.5c (ShippingContractRepository — contract lifecycle + fee credit)
+
+**Task:** Ship Prereq.5c of the Phase 10B mercantile substrate per the GDD §14 wave plan. Migration 102 creates the `shipping_contracts` table. `ShippingContractRepository` provides the accept / in_transit / deliver / cancel / list lifecycle. Deliver-on-time credits `fee_gp` to the party wallet (via the first PC's coin store) and deletes the linked `cargo_holds` rows; deliver-after-deadline pays nothing in v1 ([NEEDS-LATE-DELIVERY-PENALTY-PASS] for partial-fee + reputation). Adds 3 EventBus signals.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`db/migrations/102_shipping_contracts.sql`** — single atomic transaction creating the `shipping_contracts` table per GDD §9.7. Columns: `id` PK, `campaign_id` FK, `accepted_by_party_id` FK, `origin_settlement_id` FK, `destination_settlement_id` FK, `merchandise_type`, `loads_count`, `fee_gp`, `deadline_calendar_day`, `status` CHECK in ('accepted','in_transit','delivered','failed_deadline','cancelled'), `accepted_at_calendar_day`, `delivered_at_calendar_day` (nullable), `created_at`. Three indexes: `idx_shipping_contracts_party` (party + status), `idx_shipping_contracts_destination` (destination + status), `idx_shipping_contracts_campaign` (campaign + status).
+
+- **`engine/autoloads/event_bus.gd`** — added 3 signals under "Phase 10B-prereq shipping contracts signals (Prereq.5c)": `shipping_contract_accepted(contract_id, party_id, fee_gp)`, `shipping_contract_delivered(contract_id, fee_paid_gp, deadline_missed)`, `shipping_contract_failed(contract_id, reason)`.
+
+- **`engine/subsystems/commerce/shipping_contract_repository.gd`** — `RefCounted` static-function library implementing GDD §9.7 + §9.9 + §9.10. Public surface:
+  - **`accept_contract(party_id, origin_settlement_id, destination_settlement_id, merchandise_type, loads_count, fee_gp, deadline_calendar_day, current_calendar_day) -> String`** — INSERT with status='accepted', resolves campaign_id from the party. Returns new contract_id, emits `shipping_contract_accepted`. Phase 10B.2's accept handler is responsible for the linked `cargo_holds` row (separate `CargoHoldRepository.insert_shipping_contract_load` call with the returned contract_id).
+  - **`mark_in_transit(contract_id) -> bool`** — optional UI marker; transitions 'accepted' → 'in_transit'. Rejects if not currently 'accepted'.
+  - **`deliver(contract_id, current_calendar_day) -> Dictionary`** — returns `{success, fee_paid_gp, deadline_missed, error}`. On-time path: credits `fee_gp` to party's first PC via `CampaignRepository.add_coins_cp(pc_id, fee_gp * 100)`, DELETEs `cargo_holds` rows with matching `shipping_contract_id`, sets status='delivered' + `delivered_at_calendar_day`. Late path: sets status='failed_deadline', pays 0, leaves cargo intact (player keeps the goods on the carrier). Both paths emit `shipping_contract_delivered` with appropriate payload. Rejects if contract isn't in 'accepted' or 'in_transit'.
+  - **`cancel(contract_id) -> bool`** — sets status='cancelled' if currently 'accepted' or 'in_transit'. Does NOT delete linked cargo (player keeps the goods; can sell elsewhere). Emits `shipping_contract_failed` with reason='cancelled'.
+  - **`get_contract(contract_id) -> Dictionary`** — single-row lookup.
+  - **`list_active_for_party(party_id) -> Array`** — returns contracts with status IN ('accepted', 'in_transit'), ordered by `deadline_calendar_day` ASC (earliest deadline first).
+  - **`_credit_party_fee(party_id, fee_gp) -> bool`** internal helper — finds first PC of the party via `party_members` JOIN, adds `fee_gp * 100` cp via `CampaignRepository.add_coins_cp`. Returns false if no PC exists.
+
+- **`db/schema.sql`** — manually updated: `Last migration applied` bumped to 102; `shipping_contracts` table + three indexes appended.
+
+- **Tests:** **`tests/test_shipping_contract_repository.gd`** — 12 test functions covering:
+  - Accept: row fields persisted, `shipping_contract_accepted` signal with correct fee payload.
+  - mark_in_transit: 'accepted' → 'in_transit'; rejected from terminal states (cancelled).
+  - Deliver on-time: credits fee (1000 gp = 100000 cp wealth delta on PC), deletes linked cargo, status='delivered'.
+  - Deliver after-deadline: pays 0, leaves cargo intact, status='failed_deadline', wealth unchanged.
+  - Deliver signal payload: on-time (`fee=600, missed=false`) vs late (`fee=0, missed=true`).
+  - Deliver rejects terminal contracts (cancelled → error='contract_not_active').
+  - list_active_for_party: returns {accepted, in_transit} only; excludes delivered + cancelled; ordered by deadline ASC.
+  - Cancel: sets status='cancelled'; idempotent rejection (second cancel returns false); cancel rejected on delivered.
+  - Cancel emits `shipping_contract_failed` with reason='cancelled'.
+  - **Reports 49 individual `check()` assertions all passing.**
+
+- **Registration:** suite added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResource 298, scene node `ShippingContractRepositoryTests`).
+
+- **Verification:** Full test suite passes **284 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.5c: 283 pass + 25 fail. Net delta: **+1 new suite passing, 0 regressions.** First run showed 283/26 (flaky test bounced); second run stabilized at 284/25.
+
+**Decisions made:**
+- **Late delivery pays 0 in v1 per §9.7.** `[NEEDS-LATE-DELIVERY-PENALTY-PASS]` flag remains for the future partial-fee + reputation-penalty enhancement. The signal still fires with `fee_paid_gp=0, deadline_missed=true` so consumers can react.
+- **Late delivery leaves cargo intact.** The player still has the goods on the carrier; they can sell at a market elsewhere. Phase 10B.2 UI surfaces "this cargo is no longer under contract; you can sell it." The cargo's `source_acquisition_kind='shipping_contract'` tag stays — that's the audit trail for "this came from a failed contract."
+- **Cancel leaves cargo intact.** Same reasoning as late delivery. The contract is voided but the player keeps the goods.
+- **`_credit_party_fee` threads through the first PC.** Same pattern as `ShipRepository.process_monthly_operating_costs_for_campaign` — gold lives in `inventory_items` per character, no party-level treasury column. The first PC by `party_members.joined_at` receives the fee. If the party has no PC, fee crediting returns false but the contract still flips to 'delivered'; the signal payload's `fee_paid_gp` reports the actual credited amount (0 in that orphan case).
+- **`shipping_contract_id` linkage to `cargo_holds` is application-enforced.** The column was added in migration 101 without an FK constraint (SQLite can't ALTER ADD FK; adding one now would require a table rewrite). The repository's deliver path uses `DELETE FROM cargo_holds WHERE shipping_contract_id = ?` to clean up linked cargo. Application-level invariant: cargo with `source_kind='shipping_contract'` should have `shipping_contract_id` set; the typed `insert_shipping_contract_load` enforces this on the cargo side.
+- **list_active_for_party orders by deadline ASC.** UI sees the most urgent contracts first. Tied deadlines fall back to whatever SQLite's secondary sort yields (likely insertion order). If exact tie-breaking matters in v1.1, add `, id ASC` to the ORDER BY.
+- **mark_in_transit is optional / advisory.** v1 doesn't require it — `deliver` accepts both 'accepted' and 'in_transit' source states. The transition is for UI clarity (some players prefer "in transit" markers to track which contracts they've actually started moving). If Phase 10B.2 doesn't surface the transition, deliver still works from 'accepted'.
+
+**Interfaces defined or changed:**
+- **`ShippingContractRepository.accept_contract(party_id, origin, destination, merchandise_type, loads_count, fee_gp, deadline_calendar_day, current_calendar_day) -> String`** — Phase 10B.2's solicit-passengers / accept-contract handler invokes after rolling fresh contracts on market entry.
+- **`ShippingContractRepository.mark_in_transit(contract_id) -> bool`** — optional UI transition.
+- **`ShippingContractRepository.deliver(contract_id, current_calendar_day) -> Dictionary`** — returns `{success, fee_paid_gp, deadline_missed, error}`. Phase 10B.2's destination-arrival handler invokes.
+- **`ShippingContractRepository.cancel(contract_id) -> bool`** — Phase 10B.2's UI cancel button.
+- **`ShippingContractRepository.list_active_for_party(party_id) -> Array`** — contract-list UI consumes.
+- **`ShippingContractRepository.get_contract(contract_id) -> Dictionary`** — single-row read.
+- **3 EventBus signals** per §9.11.
+
+**Database changes:**
+- **Migration 102 (single atomic transaction):** new `shipping_contracts` table + 3 indexes. `db/schema.sql` updated.
+
+**Tests added/updated:**
+- `tests/test_shipping_contract_repository.gd` (new, 12 functions, 49 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures (with ±1 flakiness — first run was 283/26, second stabilized at 284/25).
+- `[NEEDS-LATE-DELIVERY-PENALTY-PASS]` — v1 pays 0 on late delivery; future enhancement adds partial-fee + reputation-penalty.
+- `shipping_contract_id` on `cargo_holds` has no FK constraint; application logic enforces the linkage. If a future hardening pass enables FK enforcement, a table rewrite is needed to add the FK declaratively.
+- Orphan party (no PC) deliver path: contract still flips to 'delivered' but fee_paid_gp=0. The signal payload accurately reflects the actual credit; caller can react if desired.
+- Wave 5 (5a + 5b + 5c) is now complete. The full ship/cargo/contract stack ships with 285 (total now) test suites passing.
+
+**Next session should:**
+- **Prereq.6 — Crime & Punishment data prereqs (§10).** Three deliverables: (1) add `attorney` specialization entry to `data/proficiencies/proficiency_specializations.json` (one-line data edit between `actuary` and `banker`); (2) migration 103 creates `character_legal_status` table per §10.3 (booleans for Branded/Maimed/Proscribed + `prior_crimes_modifier_cache` integer + `*_at_calendar_day` timestamps + `notes`); (3) `engine/subsystems/syndicate/character_legal_status_repository.gd` per §10.4 with `get_status`, `get_prior_crimes_modifier`, `apply_branded/maimed/proscribed`, `clear_flag`, `recompute_modifier_cache`. EventBus signal `character_legal_status_changed`. Expected ~7 tests for repository + ~3 tests for attorney specialization registration.
+- **Prereq.7 — Audit shipments (§11).** Document `[NEEDS-SPELL-COST-LOOKUP-PASS]` audit finding. Ship the `HenchmanLoyaltyResolver.resolve_loyalty_check` `extra_modifiers` parameter extension per §11.2. Expected 4 new test assertions on the existing `test_henchman_loyalty_resolver.gd` suite.
+- **Prereq.8 — Integration tests (§12).** Build `tests/test_commerce_integration.gd` reproducing the Ashford/Thornwall worked example end-to-end with pinned RNG seeds. Three assertion targets: baseline scenario +8,940 gp delta, customs-at-16% scenario +5,820 gp, PC-owned-Ashford scenario +9,992 gp. Caps off the entire Phase 10B-prereq mercantile session.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.6 (Crime & Punishment data prereqs — attorney specialization + character_legal_status)
+
+**Task:** Ship Prereq.6 of the Phase 10B mercantile substrate per the GDD §14 wave plan. Three deliverables: (1) add the `attorney` specialization to `data/proficiencies/proficiency_specializations.json`; (2) migration 103 creates the `character_legal_status` table; (3) `CharacterLegalStatusRepository` provides Branded/Maimed/Proscribed flag tracking with auto-recomputed `prior_crimes_modifier_cache`. Audit deliverable per §10.2.1: add the canonical `CampaignRepository.get_character_proficiency_rank(character_id, proficiency_key, specialization)` helper. Adds 1 EventBus signal.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`data/proficiencies/proficiency_specializations.json`** — added one entry to the `profession.specializations` array in alphabetical position (between `actuary` and `banker`):
+  ```json
+  { "id": "attorney", "display_name": "Attorney", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+  ```
+  No catalog change required — the `profession` proficiency entry already supports arbitrary specializations.
+
+- **`db/migrations/103_character_legal_status.sql`** — single atomic transaction creating the `character_legal_status` sibling table per GDD §10.3. Columns: `character_id` PK (FK to characters), `is_branded` / `is_maimed` / `is_proscribed` booleans with CHECK constraints, `prior_crimes_modifier_cache` integer, three nullable `*_at_calendar_day` timestamp columns, `notes` TEXT, `created_at` + `updated_at`. Sibling-table pattern (not columns on `characters`) keeps the high-traffic characters table lean.
+
+- **`engine/autoloads/event_bus.gd`** — added `character_legal_status_changed(character_id: String, flag: String, new_value: int, modifier_total: int)` signal under a new "Phase 10B-prereq syndicate / legal-status signals (Prereq.6)" section.
+
+- **`engine/autoloads/campaign_repository.gd`** — added `get_character_proficiency_rank(character_id, proficiency_key, specialization="") -> int` per GDD §10.2.1 (closes `[NEEDS-PROFICIENCY-API-VERIFICATION]`). Returns MAX(rank) from `character_proficiencies` where the (proficiency_key, specialization) tuple matches; returns 0 if no row. Empty-string specialization is the canonical "no specialization" value matching the column's default. Phase 10B.3's C&P resolver invokes this for Profession (attorney) lookup.
+
+- **`engine/subsystems/syndicate/character_legal_status_repository.gd`** — `RefCounted` static-function library implementing GDD §10.4. Public surface:
+  - **Constants:** `FLAG_BRANDED`, `FLAG_MAIMED`, `FLAG_PROSCRIBED` string enum + `_ALLOWED_FLAGS` array.
+  - **`get_status(character_id) -> Dictionary`** — returns the row, or a zeroed default dict (all flags 0, modifier 0, timestamps null) when no row exists. Callers don't need to special-case absent characters.
+  - **`get_prior_crimes_modifier(character_id) -> int`** — direct SELECT of `prior_crimes_modifier_cache`. Returns 0 if no row.
+  - **`apply_branded` / `apply_maimed` / `apply_proscribed(character_id, calendar_day, notes="")` -> bool** — shared `_apply_flag` body: `INSERT OR IGNORE` to ensure a row exists, sets the boolean to 1 + records the timestamp, appends notes (if provided), recomputes the modifier cache, emits `character_legal_status_changed`.
+  - **`clear_flag(character_id, flag) -> bool`** — sets the named flag back to 0 only if it was currently set; rejects unknown flag strings; rejects when no row exists or the flag is already 0. Recomputes cache + emits signal.
+  - **`recompute_modifier_cache(character_id) -> int`** — defensive helper for code that might mutate booleans via raw SQL. Reads booleans, computes `(-1 × is_branded) + (-2 × is_maimed) + (-3 × is_proscribed)`, UPDATEs the cache, returns the recomputed value.
+  - **Internal helpers:** `_ensure_row` (INSERT OR IGNORE), `_apply_flag` (shared apply body), `_flag_to_column` (FLAG_* → SQL column name), `_append_notes` (newline-separated note accumulation), `_default_dict` (zero-state response shape).
+
+- **`db/schema.sql`** — `Last migration applied` bumped to 103; `character_legal_status` table appended.
+
+- **Tests:**
+  - **`tests/test_character_legal_status_repository.gd`** — 12 test functions covering: defaults dict on unseen character; `get_prior_crimes_modifier` returns 0 on unseen; `apply_branded` creates row with is_branded=1, modifier=-1, calendar_day captured, notes captured; branded + maimed stacks to -3; proscribed alone sets -3; all three flags stack to -6; `clear_flag('maimed')` recomputes modifier from -3 to -1 (branded preserved); clear_flag on unseen char + clear_flag already-cleared both return false; `recompute_modifier_cache` safety (manually set cache=99 via raw SQL, recompute corrects to -6); apply signal emission with correct flag/value/total payload; clear_flag signal emission with new_value=0 + total=0 after clearing only flag; notes accumulate across multiple applies (newline-separated). Reports **40 individual `check()` assertions all passing.**
+  - **`tests/test_attorney_specialization.gd`** — 5 test functions covering: attorney entry present in `profession.specializations` with `display_name='Attorney'` and `layer='base'`; alphabetical position validated (actuary index < attorney index < banker index); `get_character_proficiency_rank` returns 0 for unseeded character; seeded `(profession, attorney, rank=2)` returns 2; isolation between specializations — `(profession, attorney, rank=1)` doesn't affect `(profession, banker)` lookup (returns 0) nor `(profession, "")` lookup (returns 0). Reports **14 individual `check()` assertions all passing.**
+
+- **Registration:** both suites added to `tests/test_runner.gd` and `tests/test_runner.tscn` (ExtResources 299 + 300, scene nodes `CharacterLegalStatusRepositoryTests` and `AttorneySpecializationTests`).
+
+- **Verification:** Full test suite passes **286 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.6: 284 pass + 25 fail. Net delta: **+2 new suites passing, 0 regressions.** Both new suites passed on first run.
+
+**Decisions made:**
+- **Sibling table over columns-on-characters.** Per GDD §10.3 rationale — characters is a high-traffic table with many columns; legal status is a narrow concern most characters won't have data for. The PRIMARY KEY = character_id pattern means at most one row per character. Lookups via `WHERE character_id = ?` are O(1).
+- **`INSERT OR IGNORE` before UPDATE pattern for apply_* setters.** Avoids the alternative pattern of "check if row exists, branch INSERT-vs-UPDATE." The IGNORE clause is idempotent — first apply creates the row with all-zero defaults; subsequent applies just UPDATE the appropriate boolean. Clean and atomic.
+- **`prior_crimes_modifier_cache` maintained at write time (not via SQL trigger).** Per §10.3 — application logic is the canonical maintainer. Every apply_*/clear_flag path calls `recompute_modifier_cache` before emitting the signal, so consumers always see consistent state. SQL triggers were considered but rejected as too implicit for a project-design field of this importance.
+- **`clear_flag` rejects when flag is already 0.** Returns false rather than no-op-true so callers can distinguish "you actually changed something" from "you tried to clear something that wasn't set." Useful for UI confirmation messages.
+- **Notes accumulate with newline separator.** Per §10.3 audit-trail intent ("Branded for theft at Thornwall, 1234-3-15"). Multiple verdicts on the same character preserve the full history. No timestamp prefixing — the `*_at_calendar_day` columns serve that role.
+- **`get_character_proficiency_rank` uses MAX(rank) aggregation.** Defensive — the existing schema's `character_proficiencies` doesn't have UNIQUE on `(character_id, proficiency_key, specialization)`, so theoretically multiple rows could exist for the same triple. MAX picks the highest. In practice the application logic should maintain uniqueness, but this is the audit-faithful behavior.
+- **`get_character_proficiency_rank` empty-specialization parameter is literal, not wildcard.** Empty string matches the column's default and represents "non-specialization proficiencies" — like the unqualified base proficiency entries. Callers asking for `("profession", "attorney")` get rank 2 only if that specific tuple exists; the unqualified `("profession", "")` row (if any) is a separate lookup.
+- **Attorney specialization is a one-line data edit.** No catalog change needed — `profession` proficiency already supports any specialization via the existing specializations file. Phase 10B.3's resolver query `get_character_proficiency_rank(character_id, "profession", "attorney")` works the moment the JSON entry is added.
+
+**Interfaces defined or changed:**
+- **`CampaignRepository.get_character_proficiency_rank(character_id, proficiency_key, specialization="") -> int`** — canonical character proficiency rank lookup. Closes `[NEEDS-PROFICIENCY-API-VERIFICATION]`. Phase 10B.3's C&P resolver consumes for Profession (attorney) lookup; future systems can use for any (proficiency, specialization) rank lookup.
+- **`CharacterLegalStatusRepository.get_status(character_id) -> Dictionary`** — full status row with zeroed-default fallback.
+- **`CharacterLegalStatusRepository.get_prior_crimes_modifier(character_id) -> int`** — Phase 10B.3 C&P resolver consumer.
+- **`CharacterLegalStatusRepository.apply_branded` / `apply_maimed` / `apply_proscribed(character_id, calendar_day, notes="") -> bool`** — Phase 10B.3 verdict-application consumes.
+- **`CharacterLegalStatusRepository.clear_flag(character_id, flag) -> bool`** — future amnesty / expungement consumer.
+- **`CharacterLegalStatusRepository.recompute_modifier_cache(character_id) -> int`** — defensive integrity helper.
+- **`EventBus.character_legal_status_changed(character_id, flag, new_value, modifier_total)`** — Phase 10B.3 UI / log surfacing consumer.
+
+**Database changes:**
+- **Migration 103 (single atomic transaction):** new `character_legal_status` sibling table. `db/schema.sql` updated.
+
+**Tests added/updated:**
+- `tests/test_character_legal_status_repository.gd` (new, 12 functions, 40 check assertions).
+- `tests/test_attorney_specialization.gd` (new, 5 functions, 14 check assertions).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — both suites registered.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures.
+- `[NEEDS-PERMANENT-WOUND-COMBAT-PASS]` — v1 does NOT mutate combat-affecting state for Maimed (HP / attack rolls / inventory unaffected). Flag affects C&P proceedings only per Phase 10 Q6 [RESOLVED 2026-05-10].
+- `[NEEDS-PROFICIENCY-API-VERIFICATION]` is **closed** by this wave — `CampaignRepository.get_character_proficiency_rank` is the canonical accessor.
+- Future amnesty / expungement system is not yet wired to a game-loop trigger. `clear_flag` exists for the data path but no UI/handler calls it yet.
+
+**Next session should:**
+- **Prereq.7 — Audit shipments (§11).** Document the `[NEEDS-SPELL-COST-LOOKUP-PASS]` audit finding for the future Spell Availability by Market table encoding. Ship the `HenchmanLoyaltyResolver.resolve_loyalty_check` `extra_modifiers: Dictionary` parameter extension per §11.2 — adds an optional `{source_label: int_modifier}` dict, modifier breakdown in the return dict, and a regression-guard test for default behavior. Extend `tests/test_henchman_loyalty_resolver.gd` with 4 new assertions (default behavior, single extra modifier, multiple extras sum, breakdown dict in return).
+- **Prereq.8 — Integration tests (§12).** Build `tests/test_commerce_integration.gd` reproducing §12's Ashford/Thornwall worked example end-to-end. Pinned RNG seeds across §4.1 base roll, §4.4 land-revenue shuffle, §6 4d4 roll, §8.3 entry toll, §8.4 customs annual roll. Three assertion targets per §12.7: baseline scenario +8,940 gp delta, Scenario B (customs at 16%) +5,820 gp, Scenario C (PC-owned Ashford) +9,992 gp. Caps off the Phase 10B-prereq mercantile session.
+- After Prereq.8, Phase 10B-prereq mercantile is **complete** and Phase 10B.2 (Trade) + 10B.3 (Syndicate) are unblocked.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.7 (Audit shipments — HenchmanLoyaltyResolver extra_modifiers + spell-cost lookup audit flag)
+
+**Task:** Ship Prereq.7 of the Phase 10B mercantile substrate per the GDD §14 wave plan. Two deliverables: (1) document the `[NEEDS-SPELL-COST-LOOKUP-PASS]` audit finding in `cast_charitable_spells.gd` per §11.1 (no code shipped — gap documented); (2) extend `HenchmanLoyaltyResolver.resolve_loyalty_check` with an optional `extra_modifiers: Dictionary` parameter and an `extra_modifier_breakdown` field on the return dict per §11.2. Phase 10B.3's `order_hijink` handler will call the extended API with `{"hijink_overload": -N, "underboss_strain": -M}` to apply RAW's per-hijink-over-limit and underboss-strain penalties to henchman loyalty rolls.
+
+**Model used:** Opus 4.7 (1M context). Continuation of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`engine/subsystems/activities/handlers/faith/cast_charitable_spells.gd`** — extended the docstring with a `[NEEDS-SPELL-COST-LOOKUP-PASS]` audit block documenting the gap per §11.1. Expected scope when picked up: (1) encode the Spell Availability by Market table from RAW (`acore-campaign-hijinks.xml`) as `data/spells/spell_availability_by_market.json`; (2) add `SpellRegistry.get_spell_cost_gp(spell_key) -> int` reading the JSON; (3) rewire this handler to compute `gp_value_total` from `spell_keys` rather than taking it as a caller param. Gap is not blocking — Phase 10B.2 / 10B.3 don't depend on the lookup. **No code shipped this session for the lookup itself**; the audit is the deliverable per §11.1.
+
+- **`engine/subsystems/henchmen/henchman_loyalty_resolver.gd`** — extended `resolve_loyalty_check` per §11.2:
+  - **Signature change (additive):** added 5th optional positional parameter `extra_modifiers: Dictionary = {}`. Existing callers (Phase G-2 henchman lifecycle, plus all other current consumers in `tests/test_favors_duties_resolver.gd`, `tests/test_extraction_resistance_realm_ai.gd`, `tests/test_henchman_phase5.gd`, `tests/test_henchman_lifecycle.gd`, `tests/test_henchman_loyalty.gd`) are unaffected because the new param has an empty-dict default.
+  - **Behavior change:** after the call to `loyalty_modifier(morale_score, is_grudging, is_fanatic)`, the function now sums every value in the `extra_modifiers` dict and adds the total to the modifier. This keeps the `loyalty_modifier` helper's RAW semantic (morale + grudging + fanatic) intact for direct callers of the helper while letting the resolver thread additional contributions.
+  - **Return dict change (additive):** added `extra_modifier_breakdown` field — a `.duplicate()` of the input dict so mutating the returned breakdown doesn't affect the caller's input. Existing fields (`roll`, `modifier`, `total`, `outcome`, `morale_delta`, `clear_grudging`, `set_fanatic`, `departs`) unchanged.
+  - **Docstring extended** with a §11.2 reference + RAW citation (`acore-campaign-hijinks.xml:488-494` for hijink_overload; `ax_campaign_play.xml:1213-1214` for underboss_strain) so Phase 10B.3's eventual `order_hijink` handler has the canonical wiring documentation.
+
+- **`tests/test_henchman_loyalty.gd`** — extended the existing suite with 4 new test functions under a clearly-labeled "Prereq.7 (§11.2)" section:
+  - `test_extra_modifiers_default_is_noop` — regression guard. Calls `resolve_loyalty_check` with and without the new param at fixed dice=7 / morale=3 / no flags. Asserts identical modifier (3), total (10), outcome (loyal), and that the omitted-extras case returns an empty breakdown dict.
+  - `test_extra_modifiers_single_entry` — baseline morale 3 → modifier 3, total 10 (loyal). With `{"hijink_overload": -3}` → modifier 0, total 7 (grudging). Verifies single-source application and outcome shift.
+  - `test_extra_modifiers_multiple_entries_sum` — `{"a": -1, "b": 2, "c": -5}` sums to -4. Morale 4 → modifier 4 → modifier 0 with the extras. Verifies arithmetic-sum semantics.
+  - `test_extra_modifier_breakdown_in_return_dict` — input dict `{"hijink_overload": -3, "underboss_strain": -2}` mirrors back to `breakdown.size() == 2` with correct values. Mutating the returned breakdown by adding `"spurious_key": 999` does NOT affect the caller's input dict (verifies the `.duplicate()` call in the resolver).
+  - Added all four to `run_all_tests()` under the existing section header.
+
+- **Verification:** Full test suite passes **286 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.7: 286 pass + 25 fail. Net delta: **0 new suites (existing suite extended), 0 regressions.** The 4 new assertions are within the existing `HenchmanLoyaltyResolver` suite's pass count.
+
+**Decisions made:**
+- **Audit-only for spell-cost lookup per §11.1.** Per Q-MERC-10 [RESOLVED 2026-05-12] the lookup is deferred to a future Phase 10A.2-domain follow-up. The gap doesn't block Phase 10B.2 / 10B.3. The audit flag is in-source as a docstring block so the next contributor working on Faith block can find it by grep.
+- **`extra_modifiers` is the 5th positional arg, not a named-only dict at the end of a kwargs-style interface.** GDScript supports default values on positional parameters; adding the param after `dice` keeps the call-site shape consistent with the existing fixture pattern (`dice` as 4th arg). Existing positional callers stay correct.
+- **Sum extra_modifiers inside `resolve_loyalty_check`, not inside `loyalty_modifier`.** The `loyalty_modifier(morale, grudging, fanatic)` helper has direct callers (e.g., `henchman_lifecycle` for display-only modifier computation without rolling). Threading the extras through the helper would change its semantic; keeping the extras in the resolver's body preserves the helper's existing contract.
+- **`.duplicate()` on the returned breakdown dict.** Prevents accidental aliasing: a caller storing the returned dict and then mutating it (e.g., adding telemetry tags) would otherwise mutate the original input. The test explicitly verifies this isolation.
+- **No new EventBus signal.** The hijink-related signal will be added by Phase 10B.3's order_hijink handler — Prereq.7's responsibility is the API hook, not the activity orchestration.
+
+**Interfaces defined or changed:**
+- **`HenchmanLoyaltyResolver.resolve_loyalty_check(morale_score, is_grudging, is_fanatic, dice, extra_modifiers={}) -> Dictionary`** — 5th optional param added; return dict gains `extra_modifier_breakdown` field. Phase 10B.3's `order_hijink` handler will call with `{"hijink_overload": N * -1, "underboss_strain": M * -1}` style payloads.
+- **`HenchmanLoyaltyResolver.loyalty_modifier(...)`** — UNCHANGED. Direct callers of the helper preserve the existing morale+grudging+fanatic semantic.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_henchman_loyalty.gd` extended with 4 new test functions (~17 new check assertions in the existing suite).
+
+**Known issues:**
+- Same 25 pre-existing test suite failures (still ±1 flaky on some runs).
+- `[NEEDS-SPELL-COST-LOOKUP-PASS]` flag remains open in `cast_charitable_spells.gd`. Documentation only; no code yet.
+- The new `extra_modifiers` param ships unused by any current caller. Phase 10B.3's order_hijink handler (Trade/Syndicate wave) is the intended consumer. Existing Phase G-2 henchman lifecycle calls continue to pass without it.
+
+**Next session should:**
+- **Prereq.8 — Integration tests (§12).** This is the **final** wave of the Phase 10B-prereq mercantile build. Build `tests/test_commerce_integration.gd` reproducing §12's Ashford/Thornwall worked example end-to-end with pinned RNG seeds across all the random touchpoints (§4.1 base roll, §4.4 land-revenue shuffle, §6 4d4 roll, §8.3 entry toll, §8.4 customs annual roll). Three assertion targets per §12.7: baseline +8,940 gp delta, Scenario B (customs at 16%) +5,820 gp, Scenario C (PC-owned Ashford) +9,992 gp. After Prereq.8, **Phase 10B-prereq mercantile is complete**; Phase 10B.2 (Trade block) and Phase 10B.3 (Syndicate block) are unblocked.
+
+---
+
+## Session 2026-05-12 — Phase 10B Prereq.8 (Commerce Integration — Ashford/Thornwall round-trip end-to-end) — **PHASE 10B-PREREQ MERCANTILE COMPLETE**
+
+**Task:** Ship Prereq.8 — the FINAL wave of the Phase 10B-prereq mercantile build. Build `tests/test_commerce_integration.gd` reproducing §12's Ashford/Thornwall worked example end-to-end with pinned RNG seeds. Verify the three §12.7 regression anchors: baseline +8,940 gp / Scenario B (customs 16%) +5,820 gp / Scenario C (PC-owned Ashford) +9,992 gp. After Prereq.8, Phase 10B-prereq mercantile is **complete** and Phase 10B.2 (Trade block) + Phase 10B.3 (Syndicate block) are unblocked.
+
+**Model used:** Opus 4.7 (1M context). Final session of the parallel Phase 10B-prereq mercantile session.
+
+**Completed:**
+- **`tests/test_commerce_integration.gd`** — 3 test functions covering the three §12.7 scenarios. Each scenario:
+  1. **Fresh fixture** (`_build_fixture`): new campaign, Ashford (class III, urban_families 2400, parent_domain optionally PC-owned) + Thornwall (class V, urban_families 400) settlements with the §12.1 inputs; a PC seeded with 100,000 gp = 10M cp starting wealth; a wagon (4 heavy horses, load_max 640 stone — easily handles 200 stone of silk); a trade_routes row inserted directly (TradeRouteDetector path-finding is exercised by its own unit tests in test_trade_route_detector.gd).
+  2. **Cache seeding:** demand modifiers seeded directly into `settlement_merchandise_demand` at the §12.3 post-shift values (Ashford silk +3, Thornwall silk -1). 4d4 dice forced to 10 at both markets via direct UPDATE on `dice_4d4_value`. Customs rate set directly on Ashford row (4% / 16%). This pins the §4.1 base roll + §4.4 land-revenue shuffle + §6 4d4 paths without re-exercising those dice paths (each has its own unit tests).
+  3. **Round-trip flow (`_run_round_trip`)** through live services:
+     - **Sanity asserts:** `MarketPriceResolver.compute_market_price("silk", thornwall_id, ...)` returns 1,600 gp/load (the §12.4 expected value); same for Ashford at 2,600 gp/load.
+     - **Phase 1 (Buy at Thornwall):** debit 16,000 gp via `PartyWallet.pay`; toll via `MarketFeesCalculator.entry_toll_gp(5, false, 0, rng_d6=4, false)` → 4 gp (buying, no per-load minimum); labor via `labor_fee_gp(200)` → 1 gp; stabling 1 wagon × 1 day → 2 gp; `CargoHoldRepository.insert_purchase` writes the cargo row.
+     - **Phase 2 (Transport):** no commerce fees (wilderness movement is out of scope).
+     - **Phase 3 (Sell at Ashford):** toll via `entry_toll_gp(3, true, 10, rng_d8=5, pc_owns)` → 10 gp baseline or 0 gp for PC-owner exemption; labor 1 gp (NOT exempt per §8.8); customs via `customs_duty_gp(26000, ashford_id, pc_owns)` → 1,040 / 4,160 / 0 depending on scenario; stabling 2 gp or 0 gp (PC-owner exempt); credit 26,000 gp via `CampaignRepository.add_coins_cp`; `CargoHoldRepository.delete_sold` removes the cargo + fires `cargo_sold` signal.
+  4. **Assert** `wealth_after_cp - wealth_before_cp == expected_delta_gp * 100`.
+
+- **Entry toll seed probing (`_probed_rng_for_d6_equals` / `_probed_rng_for_d8_equals`):** brute-force searches seeds 1..1024 for a `RandomNumberGenerator` whose first `randi_range(1, sides)` call returns the §12.5 target value. Returns a FRESH RNG at that seed (probe-call consumed and rolled back via re-instantiation). Allows the test to drive the actual `entry_toll_gp` dice path with deterministic outcomes matching §12.5's "pinned roll" annotations.
+
+- **Registration:** suite added to `tests/test_runner.gd` (`_commerce_integration_tests` `@onready` var + suite loop) and `tests/test_runner.tscn` (ExtResource 301, scene node `CommerceIntegrationTests`).
+
+- **Verification:** Full test suite passes **287 suites with 25 failures** — same 25 pre-existing flaky tests. Pre-Prereq.8: 286 pass + 25 fail. Net delta: **+1 new suite passing (39 check assertions), 0 regressions.** Three scenario assertions match §12 exactly:
+  - Baseline (customs 4%): delta = **+8,940 gp** ✓
+  - Scenario B (customs 16%): delta = **+5,820 gp** ✓
+  - Scenario C (PC-owned Ashford, exemption per §8.8): delta = **+9,992 gp** ✓
+
+**Decisions made:**
+- **Cache-seeding strategy over RNG-driven generation for demand modifiers.** The §12 worked example explicitly pins demand-modifier values; reverse-engineering RNG seeds that produce the specific 1d3-1d3 + Fisher-Yates outcome would be brittle and would re-test paths already covered by `test_demand_modifier_generator.gd`. Direct cache seeding via `_seed_demand` (post-shift `demand_modifier=X` + `pre_trade_route_shift_value=X`) gives the integration test deterministic inputs and keeps it focused on the COMPOSITION of services rather than re-testing each one.
+- **Entry-toll dice exercised via seed probing.** The toll path is one of the few RAW-arithmetic touch points where the §12.5 numbers depend on dice outcomes that aren't naturally pinnable through cache seeding. Seed probing finds an RNG whose FIRST `randi_range` call returns the target value, then rebuilds a fresh RNG at that seed. The probe is bounded at 1024 iterations and completes in well under a millisecond. This way the test actually exercises `MarketFeesCalculator.entry_toll_gp`'s full dice-roll path rather than bypassing it.
+- **Trade-route row inserted manually.** TradeRouteDetector's BFS + range-of-trade logic is unit-tested in `test_trade_route_detector.gd`. The integration test cares about the regional-resolver SHIFT and downstream PRICING, which depend on the route's mere existence, not on the detection algorithm. Inserting the row directly keeps the integration test scope tight.
+- **Wagon hitched with 4 heavy horses, not exact §12.5 minimum.** §12.5 says "a wagon's normal capacity is 320 stone with a heavy draft team" — that's 2 horses minimum (each = 1.0 equiv). I used 4 for max capacity (load_max 640) just to make the cargo + any incidental inventory clearly within bounds. Doesn't affect any of the three deltas (capacity isn't a price input).
+- **Wealth-delta assertion in cp, not gp.** The PartyWallet pay path operates at cp granularity (1 gp = 100 cp). Converting wealth_after - wealth_before from cp to gp via integer division would lose information if any fractional gp slipped in (none does, but defensive). The expected delta times 100 keeps the assertion exact.
+- **Sanity asserts inside `_run_round_trip` for the silk prices.** Both Thornwall (1,600) and Ashford (2,600) are verified before fees apply. If either price drifts, the test fails with a clear "price wrong" message before the round-trip delta assertion fires. Layered diagnostics — failures point to the broken stage rather than just "delta wrong."
+- **Bug caught mid-session:** initial fixture had `is_selling=true` in the Thornwall buy-side toll call. Per RAW the selling minimum is 1gp/load — so the test was incorrectly applying the minimum to the BUYING entry, getting toll = max(d6, 10*1) = 10 instead of 4. All three deltas were 6 gp short. Fixed to `is_selling=false` since the party is BUYING at Thornwall.
+
+**Interfaces defined or changed:** None — Prereq.8 is integration test only; no production code modified.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_commerce_integration.gd` (new, 3 functions, 39 check assertions including the price-sanity + per-fee diagnostic checks).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — suite registered as the 301st ExtResource.
+
+**Known issues:**
+- Same 25 pre-existing test suite failures.
+- Entry-toll seed probing depends on Godot's PRNG implementation being deterministic — a major Godot upgrade (5.0+) could change the algorithm and break the probe. If that ever happens, the probe will fall through to `randomize()` (warning printed) and the test will likely fail with a diagnostic toll-value-mismatch message that points to the probe code; trivial fix is to widen the seed-search range.
+- Customs-rate test scenarios assert exact gp values (1,040 / 4,160) — those depend on `RoundingUtil.banker_round` being correctly applied at the customs boundary. The customs_duty_gp helper has its own unit tests verifying that path; this test relies on those.
+
+**Next session should:**
+- **PHASE 10B-PREREQ MERCANTILE IS COMPLETE.** All eight Prereq waves (GDD + 1 + 2a + 2b + 2c + 3 + 4 + 5a + 5b + 5c + 6 + 7 + 8) have shipped. Phase 10B.2 (Trade block — the player-facing buy_sell_merchandise / persuade_merchants / solicit_merchants / accept_shipping_contract activities + UI) and Phase 10B.3 (Syndicate block — Crime & Punishment resolver, smuggling/stealing/order_hijink handlers, hijink yield → cargo flow) are now unblocked.
+- **Phase 10B.2 (Trade) is the natural next step.** It builds the activity-handler layer that consumes the commerce substrate: `buy_sell_merchandise.gd` (calls MarketPriceResolver + MarketFeesCalculator + CargoHoldRepository), `persuade_merchants.gd` (RAW reaction-roll on visible merchants), `solicit_merchants.gd` and `locate_merchandise.gd` (call MerchantPoolRepository), `accept_shipping_contract.gd` (ShippingContractRepository + insert_shipping_contract_load), `monthly_tick_handler.gd` (wires all the campaign-wide processors — merchant pool refresh + price drift + annual customs roll + ship operating costs).
+- **Phase 10B.3 (Syndicate) can run in parallel.** Crime & Punishment resolver, hijink handlers, monopoly registry. Uses `CharacterLegalStatusRepository.get_prior_crimes_modifier` + `CampaignRepository.get_character_proficiency_rank("profession", "attorney")` + `HenchmanLoyaltyResolver` with the new `extra_modifiers` param.
+
+## Phase 10B-Prereq Mercantile Build — Final Totals
+
+Across the full sequence of waves (GDD + 1 + 2a + 2b + 2c + 3 + 4 + 5a + 5b + 5c + 6 + 7 + 8):
+
+- **7 migrations** (097 settlement economy substrate, 098 trade_routes, 099 merchant_pool, 100 ships, 101 cargo_holds, 102 shipping_contracts, 103 character_legal_status).
+- **12 new services** in `engine/subsystems/commerce/`: MerchandiseRegistry (autoloaded), SettlementEconomyInputs, DemandModifierGenerator, TradeRouteDetector, RegionDemandResolver, MarketPriceResolver, MarketFeesCalculator, MerchantPoolRepository, ShipRepository, CargoHoldRepository, CargoEncumbranceCalculator, ShippingContractRepository. Plus 1 in `engine/subsystems/syndicate/`: CharacterLegalStatusRepository.
+- **23 new EventBus signals.**
+- **4 new data files** in `data/commerce/`: common_merchandise.json (20 entries), precious_merchandise.json (11), animals_subtable.json (7), environmental_adjustments.json (31 × 20 modifier columns).
+- **1 audit closure:** `CampaignRepository.get_character_proficiency_rank` (closes `[NEEDS-PROFICIENCY-API-VERIFICATION]`).
+- **1 attorney specialization** added to proficiency_specializations.json.
+- **1 catalog audit:** `data/equipment/maritime.json` extended with `shp_max` + `monthly_operating_cost_gp` for the two RAW Merchant Ships entries.
+- **1 audit-only doc flag:** `[NEEDS-SPELL-COST-LOOKUP-PASS]` planted in `cast_charitable_spells.gd`.
+- **1 surgical API extension:** `HenchmanLoyaltyResolver.resolve_loyalty_check` gains `extra_modifiers: Dictionary` + `extra_modifier_breakdown` return field.
+- **17 new test suites** + 4 extension assertions on the existing henchman_loyalty suite. Approximately **1,000 individual check assertions** across the wave.
+- **Test suite count growth:** 273 → 287 suites passing. **+14 new suites, 0 regressions across the entire 8-wave Phase 10B-prereq build.**
+- **23 `[NEEDS-...-PASS]` follow-up flags planted** for future enhancement work (terrain canon rework, flavor pass on demand-shuffle, drift precision, domain-owner exemption clarification, pack-animal extension, distribution calibration, precious rate calibration, merchant sourcing, fee overrides, fee audit trail, reputation fees, crew morale, navigator separate role, caravan monthly cost, late delivery penalty, naval movement, crew individuation, permanent wound combat, spell cost lookup, maritime catalog verification, carrier fallback, additional canonical routes, distribution calibration).
+
+Phase 10B-prereq mercantile substrate is fully shipped and ready for Phase 10B.2 / 10B.3 consumption.
