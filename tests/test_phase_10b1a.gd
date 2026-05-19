@@ -72,11 +72,12 @@ func _setup() -> void:
 	_bard_l9_id = _create_test_character(_campaign_id, "Test Bard", "bard", "thief", 9, 12, 10)
 
 	# Make a sanctum stronghold for FK testing.
+	# Migration 116: gp_value renamed to cp_value (× 100). 25000 gp → 2500000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 25000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 2500000, 100, 'completed')
 	""", [_stronghold_id, _mage_id])
 
 
@@ -122,7 +123,7 @@ func test_create_magic_research_project_round_trip() -> void:
 		"project_kind": "spell",
 		"target_spell_key": "fireball",
 		"target_spell_level": 3,
-		"gp_committed": 3000,
+		"cp_committed": 300000,
 		"days_total": 60,
 		"days_completed": 0,
 		"target_value": 16,
@@ -143,7 +144,7 @@ func test_magic_research_project_status_enum_rejects_bad_value() -> void:
 		"campaign_id": _campaign_id,
 		"character_id": _mage_id,
 		"project_kind": "spell",
-		"gp_committed": 100,
+		"cp_committed": 10000,
 		"days_total": 10,
 		"target_value": 16,
 		"status": "not_a_real_status",
@@ -160,7 +161,7 @@ func test_advance_magic_research_projects_for_character_increments_days() -> voi
 		"project_kind": "spell",
 		"target_spell_key": "test_spell",
 		"target_spell_level": 1,
-		"gp_committed": 200,
+		"cp_committed": 20000,
 		"days_total": 30,
 		"days_completed": 0,
 		"target_value": 14,
@@ -189,7 +190,7 @@ func test_create_library_and_list_for_owner() -> void:
 		"owner_character_id": _mage_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 50000,
+		"cp_invested": 5000000,
 		"max_spell_level_supported": 6,
 		"magic_research_throw_bonus": 1,
 		"status": "operational",
@@ -214,8 +215,8 @@ func test_create_workshop_and_list_for_owner() -> void:
 		"owner_character_id": _mage_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "tower_workshop",
-		"gp_invested": 25000,
-		"max_item_value_supported_gp": 15000,
+		"cp_invested": 2500000,
+		"max_item_value_supported_cp": 1500000,
 		"magic_research_throw_bonus": 1,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -226,8 +227,8 @@ func test_create_workshop_and_list_for_owner() -> void:
 	for row in rows:
 		if String(row.get("id", "")) == workshop_id:
 			found = true
-			check(int(row.get("max_item_value_supported_gp", 0)) == 15000,
-				"workshop row should preserve max_item_value_supported_gp=15000")
+			check(int(row.get("max_item_value_supported_cp", 0)) == 1500000,
+				"workshop row should preserve max_item_value_supported_cp=1,500,000")
 	check(found, "list_workshops_for_owner should include the just-created workshop")
 
 

@@ -194,10 +194,10 @@ static func movement_costs_ability(movement_kind: String) -> bool:
 static func laboratory_throw_bonus(laboratory_row: Dictionary, crossbreed_cost: int) -> int:
 	if laboratory_row.is_empty():
 		return 0
-	var invested: int = int(laboratory_row.get("gp_invested", 0))
-	if invested <= crossbreed_cost:
+	var invested_gp: int = int(laboratory_row.get("cp_invested", 0)) / 100
+	if invested_gp <= crossbreed_cost:
 		return int(laboratory_row.get("magic_research_throw_bonus", 0))
-	var excess: int = invested - crossbreed_cost
+	var excess: int = invested_gp - crossbreed_cost
 	return clampi(int(excess / 10000), 0, 3)
 
 
@@ -214,9 +214,9 @@ static func validate_laboratory(
 		return "laboratory not owned by caster"
 	if String(laboratory_row.get("status", "")) != "operational":
 		return "laboratory not operational (status=%s)" % laboratory_row.get("status", "")
-	var invested: int = int(laboratory_row.get("gp_invested", 0))
-	if invested < crossbreed_cost:
-		return "laboratory too small (need %d gp invested, has %d)" % [crossbreed_cost, invested]
+	var invested_gp: int = int(laboratory_row.get("cp_invested", 0)) / 100
+	if invested_gp < crossbreed_cost:
+		return "laboratory too small (need %d gp invested, has %d)" % [crossbreed_cost, invested_gp]
 	return ""
 
 
@@ -236,3 +236,38 @@ static func default_hp_max(hit_dice: int) -> int:
 	if floor_val % 2 == 0:
 		return floor_val
 	return floor_val + 1
+
+
+# ---------------------------------------------------------------------------
+# Initial reaction (2026-05-19 bucket-B item #109)
+# ---------------------------------------------------------------------------
+
+## Auto-rolls the crossbreed's initial reaction toward its creator per
+## standard ACKS reaction-roll mechanics. RAW: 2d6 + creator CHA modifier;
+## the progenitor-intelligence modifier from the inventory spec is the
+## creator's INT modifier applied to a friendly-creature-creation context.
+## v1: 2d6 + creator_cha_mod + progenitor_int_mod_signed_to_friendliness.
+## Returns one of: "hostile", "unfriendly", "neutral", "indifferent",
+## "friendly". The 5-band classification matches ACKS reaction table per
+## acore_xml monster reactions.
+static func roll_initial_reaction(
+	creator_cha_modifier: int,
+	progenitor_intelligence_modifier: int,
+	rng: RandomNumberGenerator = null,
+) -> String:
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	# Higher INT progenitors are MORE wary (per Frankenstein convention);
+	# lower INT progenitors are more docile. Apply as a negative bias.
+	var d2d6: int = rng.randi_range(1, 6) + rng.randi_range(1, 6)
+	var adjusted: int = d2d6 + creator_cha_modifier - progenitor_intelligence_modifier
+	if adjusted <= 2:
+		return "hostile"
+	if adjusted <= 5:
+		return "unfriendly"
+	if adjusted <= 8:
+		return "neutral"
+	if adjusted <= 11:
+		return "indifferent"
+	return "friendly"

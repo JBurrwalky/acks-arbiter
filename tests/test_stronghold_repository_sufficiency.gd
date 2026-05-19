@@ -66,65 +66,67 @@ func test_empty_domain_not_sufficient() -> void:
 # ----- Classification minimums -----
 
 func test_classification_minimum_civilized() -> void:
-	check(StrongholdRepository.per_hex_minimum_for("civilized") == 15000,
-		"civilized = 15,000 gp/hex")
+	# Migration 116: per_hex_minimum_for returns cp (× 100). 15,000 gp → 1,500,000 cp.
+	check(StrongholdRepository.per_hex_minimum_for("civilized") == 1500000,
+		"civilized = 1,500,000 cp/hex (15,000 gp)")
 
 
 func test_classification_minimum_borderlands() -> void:
-	check(StrongholdRepository.per_hex_minimum_for("borderlands") == 22500,
-		"borderlands = 22,500 gp/hex")
+	check(StrongholdRepository.per_hex_minimum_for("borderlands") == 2250000,
+		"borderlands = 2,250,000 cp/hex (22,500 gp)")
 
 
 func test_classification_minimum_wilderness() -> void:
-	check(StrongholdRepository.per_hex_minimum_for("wilderness") == 32000,
-		"wilderness = 32,000 gp/hex")
+	check(StrongholdRepository.per_hex_minimum_for("wilderness") == 3200000,
+		"wilderness = 3,200,000 cp/hex (32,000 gp)")
 
 
 # ----- One stronghold -----
 
 func test_one_completed_below_minimum() -> void:
 	var domain_id := _make_test_domain("wilderness")
-	# Wilderness minimum is 32,000 gp × 1 hex (no hexes added yet, so default 1)
-	# = 32,000. We commit a 16,000 gp completed stronghold → below minimum.
+	# Wilderness minimum is 32,000 gp × 1 hex (no hexes added yet, so default 1).
+	# Migration 116: column + sum are in cp. 16,000 gp → 1,600,000 cp; 32,000 gp
+	# minimum → 3,200,000 cp; 1.6M < 3.2M → not sufficient.
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id,
 		"archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 16000,
+		"cp_value": 1600000,
 		"completion_pct": 100,
 		"status": "completed",
 	})
 	var v := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-	check(v == 16000, "value sum = 16,000, got %d" % v)
+	check(v == 1600000, "value sum = 1,600,000 cp, got %d" % v)
 	check(StrongholdRepository.is_sufficient_for_domain(domain_id) == false,
-		"16,000 < 32,000 wilderness minimum → not sufficient")
+		"1.6M cp < 3.2M cp wilderness minimum → not sufficient")
 
 
 func test_one_completed_at_minimum_sufficient() -> void:
 	var domain_id := _make_test_domain("borderlands")
-	# Borderlands min = 22,500 × 1 hex.
+	# Borderlands min = 22,500 gp × 1 hex = 2,250,000 cp.
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id,
 		"archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 22500,
+		"cp_value": 2250000,
 		"completion_pct": 100,
 		"status": "completed",
 	})
 	check(StrongholdRepository.is_sufficient_for_domain(domain_id) == true,
-		"22,500 = borderlands minimum → sufficient")
+		"2.25M cp = borderlands minimum → sufficient")
 
 
 # ----- In-progress doesn't count -----
 
 func test_in_progress_does_not_count() -> void:
 	var domain_id := _make_test_domain("civilized")
-	# Civilized min = 15,000 × 1 hex.
+	# Civilized min = 15,000 gp × 1 hex = 1,500,000 cp.
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id,
 		"archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 15000,
+		"cp_value": 1500000,
 		"completion_pct": 75,
 		"status": "in_progress",
 	})
@@ -138,20 +140,21 @@ func test_in_progress_does_not_count() -> void:
 
 func test_multiple_completed_sum() -> void:
 	var domain_id := _make_test_domain("wilderness")
+	# Migration 116: cp_value (× 100). 12,000 gp → 1,200,000 cp; 22,000 gp → 2,200,000 cp.
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id, "archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 12000, "completion_pct": 100, "status": "completed",
+		"cp_value": 1200000, "completion_pct": 100, "status": "completed",
 	})
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id, "archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 22000, "completion_pct": 100, "status": "completed",
+		"cp_value": 2200000, "completion_pct": 100, "status": "completed",
 	})
 	var v := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-	check(v == 34000, "12k + 22k = 34k, got %d" % v)
+	check(v == 3400000, "1.2M + 2.2M = 3.4M cp, got %d" % v)
 	check(StrongholdRepository.is_sufficient_for_domain(domain_id) == true,
-		"34k > 32k wilderness min → sufficient")
+		"3.4M cp > 3.2M cp wilderness min → sufficient")
 
 
 # ----- recompute_sufficiency_after_change -----
@@ -161,22 +164,23 @@ func test_recompute_emits_on_flip_to_sufficient() -> void:
 	StrongholdRepository._set_sufficiency_cache_for_test(domain_id, false)
 
 	# Insert a stronghold that flips sufficiency to true.
+	# Migration 116: cp_value (× 100). 25,000 gp → 2,500,000 cp.
 	CampaignRepository.create_stronghold({
 		"domain_id": domain_id, "archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
-		"gp_value": 25000, "completion_pct": 100, "status": "completed",
+		"cp_value": 2500000, "completion_pct": 100, "status": "completed",
 	})
 
 	var fired: Array[Array] = []
-	var conn := func(d_id: String, is_sufficient: bool, value_gp: int, minimum_gp: int):
-		fired.append([d_id, is_sufficient, value_gp, minimum_gp])
+	var conn := func(d_id: String, is_sufficient: bool, value_cp: int, minimum_cp: int):
+		fired.append([d_id, is_sufficient, value_cp, minimum_cp])
 	EventBus.stronghold_sufficiency_changed.connect(conn)
 
 	StrongholdRepository.recompute_sufficiency_after_change(domain_id)
 	check(fired.size() == 1, "signal fired exactly once on flip")
 	if fired.size() > 0:
 		check(fired[0][1] == true, "is_sufficient = true on flip")
-		check(fired[0][2] == 25000, "value_gp = 25000")
+		check(fired[0][2] == 2500000, "value_cp = 2,500,000")
 
 	EventBus.stronghold_sufficiency_changed.disconnect(conn)
 

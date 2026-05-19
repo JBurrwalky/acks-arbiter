@@ -131,9 +131,12 @@ func _build_card(def: Dictionary) -> Dictionary:
 	# Phase 9C polish 2026-05-09: per-card extras for activity-specific params.
 	# Currently only call_to_arms surfaces a magnitude_pct slider; extend this
 	# pattern as other activities gain per-launch parameters.
+	# 2026-05-19 bucket-A item #28: per-activity picker for issue_decree.
 	var extras: Dictionary = {}
 	if String(def.get("id", "")) == "call_to_arms":
 		extras["magnitude_pct_slider"] = _build_magnitude_pct_slider(inner)
+	elif String(def.get("id", "")) == "issue_decree":
+		extras["decree_picker"] = _build_decree_picker(inner)
 
 	return {
 		"panel": panel,
@@ -143,6 +146,65 @@ func _build_card(def: Dictionary) -> Dictionary:
 		"cancel_btn": cancel_btn,
 		"extras": extras,
 	}
+
+
+## 2026-05-19 bucket-A item #28: per-activity picker for issue_decree.
+##
+## RAW allowed kinds: tax / liturgy / tithe (numeric rate in gp/family),
+## religion_change (text), rename (text), other (free text).
+## The picker shows a kind dropdown + a kind-appropriate input (SpinBox for
+## the three rate kinds, LineEdit for the three text kinds). The visible
+## input swaps when the dropdown selection changes. Returns a dict the
+## launcher reads in _params_for.
+func _build_decree_picker(inner: VBoxContainer) -> Dictionary:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	inner.add_child(row)
+	var label := Label.new()
+	label.text = "Decree:"
+	label.custom_minimum_size = Vector2(80, 0)
+	row.add_child(label)
+	var kind_dd := OptionButton.new()
+	# Order matches IssueDecreeHandler._ALLOWED_DECREE_KINDS plus a friendly
+	# label per kind.
+	kind_dd.add_item("Tax rate (gp/family)", 0)
+	kind_dd.set_item_metadata(0, "tax")
+	kind_dd.add_item("Liturgy rate (gp/family)", 1)
+	kind_dd.set_item_metadata(1, "liturgy")
+	kind_dd.add_item("Tithe rate (gp/family)", 2)
+	kind_dd.set_item_metadata(2, "tithe")
+	kind_dd.add_item("Religion change", 3)
+	kind_dd.set_item_metadata(3, "religion_change")
+	kind_dd.add_item("Rename domain", 4)
+	kind_dd.set_item_metadata(4, "rename")
+	kind_dd.add_item("Other (free text)", 5)
+	kind_dd.set_item_metadata(5, "other")
+	kind_dd.custom_minimum_size = Vector2(180, 0)
+	row.add_child(kind_dd)
+	# Numeric input (rates) — 0-10 gp/family per RAW.
+	var rate_spin := SpinBox.new()
+	rate_spin.min_value = 0
+	rate_spin.max_value = 10
+	rate_spin.step = 1
+	rate_spin.value = 2  # default tax rate
+	rate_spin.custom_minimum_size = Vector2(80, 0)
+	row.add_child(rate_spin)
+	# Text input (religion / rename / other).
+	var text_edit := LineEdit.new()
+	text_edit.placeholder_text = "value"
+	text_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_edit.visible = false
+	row.add_child(text_edit)
+	# Swap input visibility by kind. Numeric kinds: tax / liturgy / tithe.
+	# Text kinds: religion_change / rename / other.
+	kind_dd.item_selected.connect(func(idx: int) -> void:
+		var meta: Variant = kind_dd.get_item_metadata(idx)
+		var k: String = String(meta) if meta != null else ""
+		var is_numeric: bool = k in ["tax", "liturgy", "tithe"]
+		rate_spin.visible = is_numeric
+		text_edit.visible = not is_numeric
+	)
+	return {"kind_dd": kind_dd, "rate_spin": rate_spin, "text_edit": text_edit}
 
 
 ## Phase 9C polish 2026-05-09: magnitude_pct slider for call_to_arms.
@@ -346,7 +408,25 @@ func _params_for(activity_def_id: String) -> Dictionary:
 		"oversee_investment":
 			return {"gp_committed": 1000, "domain_id": _domain_id}
 		"issue_decree":
-			return {"domain_id": _domain_id, "decree_kind": "other", "value": "no-op"}
+			# 2026-05-19 bucket-A item #28: read kind + value from the per-card
+			# picker (decree_picker extras). Falls back to {kind:'other',
+			# value:''} only when the picker isn't built (shouldn't happen).
+			var ic_card: Dictionary = _cards.get(activity_def_id, {})
+			var picker: Dictionary = ic_card.get("extras", {}).get("decree_picker", {})
+			if picker.is_empty():
+				return {"domain_id": _domain_id, "decree_kind": "other", "value": ""}
+			var kind_dd: OptionButton = picker.get("kind_dd")
+			var meta: Variant = kind_dd.get_item_metadata(kind_dd.selected) if kind_dd != null and kind_dd.selected >= 0 else "other"
+			var kind: String = String(meta) if meta != null else "other"
+			var is_numeric: bool = kind in ["tax", "liturgy", "tithe"]
+			var value: Variant
+			if is_numeric:
+				var spin: SpinBox = picker.get("rate_spin")
+				value = int(spin.value) if spin != null else 0
+			else:
+				var le: LineEdit = picker.get("text_edit")
+				value = le.text if le != null else ""
+			return {"domain_id": _domain_id, "decree_kind": kind, "value": value}
 		"call_to_arms":
 			# Phase 9C polish 2026-05-09: read magnitude_pct from the per-card slider.
 			var mag_pct: int = 50

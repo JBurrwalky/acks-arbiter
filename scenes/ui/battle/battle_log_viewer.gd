@@ -136,12 +136,21 @@ func _event_color(event_type: String) -> Color:
 
 
 # ---------------------------------------------------------------------------
-# Inspect-math popup (v1: print to console; UI session polish converts to a
-# tooltip-style popup)
+# Inspect-math popup (2026-05-19 bucket-B item #44: print() replaced with an
+# AcceptDialog showing the formatted payload).
 # ---------------------------------------------------------------------------
 
 func _on_inspect_pressed(payload_json: String) -> void:
-	print("[Inspect math]", _format_payload(payload_json))
+	var dialog := AcceptDialog.new()
+	dialog.title = "Inspect math"
+	dialog.dialog_text = _format_payload(payload_json)
+	dialog.size = Vector2(520, 360)
+	add_child(dialog)
+	dialog.popup_centered()
+	# Free the dialog when it closes so we don't accumulate orphaned popups
+	# across repeated inspect-clicks.
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
 
 
 # ---------------------------------------------------------------------------

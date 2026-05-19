@@ -79,11 +79,12 @@ func _setup() -> void:
 	_cleric_id = _create_test_character(_campaign_id, "Test Cleric", "cleric", "cleric", 9, 10, 16)
 
 	# Stronghold for FK consistency on the library rows.
+	# Migration 116: gp_value → cp_value (× 100). 30000 gp → 3000000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 30000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 3000000, 100, 'completed')
 	""", [_stronghold_id, _mage_l9_high_int_id])
 
 	# Library supporting L3 spells with +0 bonus (used by the success path).
@@ -92,7 +93,7 @@ func _setup() -> void:
 		"owner_character_id": _mage_l9_high_int_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -106,7 +107,7 @@ func _setup() -> void:
 		"owner_character_id": _mage_l5_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 4000,
+		"cp_invested": 400000,
 		"max_spell_level_supported": 1,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -188,7 +189,7 @@ func test_research_magic_rejects_non_arcane_caster() -> void:
 		"owner_character_id": _cleric_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 4000,
+		"cp_invested": 400000,
 		"max_spell_level_supported": 1,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -271,9 +272,9 @@ func test_research_magic_succeeds_for_l9_high_int_caster_and_grows_library() -> 
 	# of 10 consecutive failures at 25% per failure is < 1 in a million.
 	_clear_completed_projects_for(_mage_l9_high_int_id)
 
-	# Pre-snapshot library gp_invested.
+	# Pre-snapshot library cp_invested (column is cp since Migration 115).
 	var lib_before := CampaignRepository.get_library(_library_l3_id)
-	var gp_invested_before: int = int(lib_before.get("gp_invested", 0))
+	var cp_invested_before: int = int(lib_before.get("cp_invested", 0))
 
 	var spell_added := false
 	var library_grew := false
@@ -309,15 +310,15 @@ func test_research_magic_succeeds_for_l9_high_int_caster_and_grows_library() -> 
 			) and not CampaignRepository.db.query_result.is_empty():
 				spell_added = true
 
-			# Confirm library gp_invested grew by 100 (10% of 1000).
+			# Confirm library cp_invested grew by 10,000 cp (= 100 gp, 10% of 1000 gp).
 			var lib_after := CampaignRepository.get_library(_library_l3_id)
-			if int(lib_after.get("gp_invested", 0)) == gp_invested_before + 100:
+			if int(lib_after.get("cp_invested", 0)) == cp_invested_before + 10000:
 				library_grew = true
 			break
 	check(spell_added,
 		"After at most 10 attempts of L9 INT+2 mage researching L1 spell, the spell should land in character_spells")
 	check(library_grew,
-		"On success, library gp_invested should grow by 10%% of gp_committed (= 100 gp)")
+		"On success, library cp_invested should grow by 10%% of cp_committed (= 10,000 cp / 100 gp)")
 
 	# Verify a magic_research_projects row exists for this work (either
 	# completed or failed). It should exist regardless of the throw outcome.

@@ -866,10 +866,24 @@ func apply_healing(amount: int) -> int:
 
 
 func add_nonlethal_damage(amount: int) -> void:
-	## Accumulates nonlethal damage for Mortal Wounds bonus.
-	## Only counts damage dealt while the combatant is still alive.
-	if is_alive():
-		nonlethal_damage_taken += amount
+	## Accumulates nonlethal damage for the ACKS Mortal Wounds bonus
+	## (+1 per point of nonlethal damage on the recovery roll).
+	##
+	## 2026-05-19 bucket-B fix: removed the `is_alive()` guard. The prior
+	## guard silently dropped the killing-blow's nonlethal damage because
+	## the caller (CombatController._resolve_maneuver_action) invokes this
+	## AFTER `AttackResolver.resolve_melee_attack` has already applied lethal
+	## damage to the target. With the guard, a brawl that drops the target to
+	## 0 hp would record zero nonlethal damage despite the entire damage roll
+	## being nonlethal by intent. Without the guard, the full nonlethal
+	## damage accumulates per RAW.
+	##
+	## Caller responsibility: don't accumulate on a combatant that was
+	## already dead BEFORE the current attack — combat flow naturally
+	## prevents this since dead combatants don't receive new attacks.
+	if amount <= 0:
+		return
+	nonlethal_damage_taken += amount
 
 
 func get_equipped_armor_material() -> String:

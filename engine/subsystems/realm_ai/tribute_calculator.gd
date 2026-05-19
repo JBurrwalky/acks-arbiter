@@ -58,7 +58,7 @@ static func compute_tribute_base_gp(realm_families: int) -> int:
 		return 0
 	# Precise optional formula: 18 × families^0.6, banker's rounded.
 	var raw: float = 18.0 * pow(float(realm_families), 0.6)
-	return _bankers_round(raw)
+	return XPAwardCalculator.bankers_round(raw)
 
 
 static func efficiency_factor(direct_vassal_count: int) -> float:
@@ -95,13 +95,13 @@ static func compute_tribute_received_gp(realm_families: int, direct_vassal_count
 	if base <= 0:
 		return 0
 	var factor: float = efficiency_factor(direct_vassal_count)
-	return _bankers_round(float(base) * factor)
+	return XPAwardCalculator.bankers_round(float(base) * factor)
 
 
 static func describe(realm_families: int, direct_vassal_count: int) -> Dictionary:
 	var base: int = compute_tribute_base_gp(realm_families)
 	var factor: float = efficiency_factor(direct_vassal_count)
-	var received: int = _bankers_round(float(base) * factor)
+	var received: int = XPAwardCalculator.bankers_round(float(base) * factor)
 	return {
 		"base_gp": base,
 		"efficiency_factor": factor,
@@ -113,23 +113,7 @@ static func describe(realm_families: int, direct_vassal_count: int) -> Dictionar
 	}
 
 
-# ---------------------------------------------------------------------------
-# Banker's rounding (round half to even) — per CLAUDE.md core principle
-# ---------------------------------------------------------------------------
-
-static func _bankers_round(value: float) -> int:
-	if not is_finite(value):
-		return 0
-	var floor_v: int = int(floor(value))
-	var frac: float = value - float(floor_v)
-	# Tolerance for floating-point .5 detection.
-	var EPS: float = 1e-9
-	if absf(frac - 0.5) < EPS:
-		# Round to even.
-		if floor_v % 2 == 0:
-			return floor_v
-		else:
-			return floor_v + 1
-	if frac < 0.5:
-		return floor_v
-	return floor_v + 1
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep. The local copy had a defensive `is_finite` guard
+# but every caller pre-guards its inputs (`if realm_families <= 0: return 0`),
+# so the consolidated helper is functionally equivalent.

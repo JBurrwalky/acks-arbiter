@@ -107,7 +107,7 @@ func generate(
 		# Apply shop size fraction with banker's rounding.
 		# Guarantee at least 1 if the settlement has the item at all.
 		var raw_qty: float = settlement_qty * fraction
-		var shop_qty: int = maxi(1, _bankers_round(raw_qty))
+		var shop_qty: int = maxi(1, XPAwardCalculator.bankers_round(raw_qty))
 
 		# Persist to DB.
 		CampaignRepository.upsert_shop_inventory(
@@ -156,16 +156,8 @@ func _get_settlement_availability(cost_cp: int, market_idx: int) -> int:
 	return 0
 
 
-## Banker's rounding (round half to even).
-static func _bankers_round(value: float) -> int:
-	var floor_val := floori(value)
-	var frac := value - float(floor_val)
-	if absf(frac - 0.5) < 0.0001:
-		# Exactly half: round to even.
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return roundi(value)
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.
 
 
 func _load_market_availability() -> void:

@@ -20,6 +20,7 @@ func run_all_tests() -> void:
 
 	# Customs duty
 	test_customs_duty_uses_cached_rate()
+	test_customs_duty_fractional_cp_rounds_bankers()
 	test_customs_duty_zero_price()
 	test_customs_duty_domain_owner_exemption()
 	test_annual_customs_roll_determinism()
@@ -28,8 +29,9 @@ func run_all_tests() -> void:
 
 	# Labor
 	test_labor_fee_exact_multiples()
-	test_labor_fee_aggregate_then_round()
-	test_labor_fee_zero_and_below_threshold()
+	test_labor_fee_cp_precision_below_gp()
+	test_labor_fee_odd_stone_banker_rounds_to_whole_cp()
+	test_labor_fee_zero_and_negative()
 
 	# Moorage
 	test_moorage_per_day()
@@ -39,6 +41,7 @@ func run_all_tests() -> void:
 	# Stabling
 	test_stabling_mixed_mounts_per_day()
 	test_stabling_multi_day_aggregate()
+	test_stabling_warhorse_premium_rate()
 	test_stabling_unknown_key_contributes_zero()
 	test_stabling_domain_owner_exemption()
 
@@ -88,74 +91,88 @@ func _seeded_rng(seed_val: int) -> RandomNumberGenerator:
 
 
 # ---------------------------------------------------------------------------
-# Entry toll
+# Entry toll — returns cp per the 2026-05-15 currency-precision rule.
+# RAW dice rolls produce whole-gp values; cp result = rolled_gp × 100 (exact).
 # ---------------------------------------------------------------------------
 
 func test_entry_toll_dice_range_class_i() -> void:
-	# Class I toll = 1d6+15 → [16, 21].
+	# Class I toll = 1d6+15 gp → [16, 21] gp = [1600, 2100] cp.
 	var rng: RandomNumberGenerator = _seeded_rng(1)
-	var min_seen: int = 999
+	var min_seen: int = 99999
 	var max_seen: int = 0
 	for _i in 500:
-		var v: int = MarketFeesCalculator.entry_toll_gp(1, false, 0, rng, false)
+		var v: int = MarketFeesCalculator.entry_toll_cp(1, false, 0, rng, false)
 		if v < min_seen:
 			min_seen = v
 		if v > max_seen:
 			max_seen = v
-	check(min_seen >= 16, "Class I toll min should be ≥ 16, got %d" % min_seen)
-	check(max_seen <= 21, "Class I toll max should be ≤ 21, got %d" % max_seen)
+	check(min_seen >= 1600, "Class I toll min should be ≥ 1600 cp, got %d" % min_seen)
+	check(max_seen <= 2100, "Class I toll max should be ≤ 2100 cp, got %d" % max_seen)
 
 
 func test_entry_toll_selling_minimum_kicks_in() -> void:
-	# Force a low Class VI roll (1d3 → 1..3). Sell 10 loads → minimum is 10.
-	# Use a seed that produces a low roll then verify result.
-	# Try multiple seeds; the minimum applies regardless.
+	# Class VI roll = 1d3 gp → 1..3 gp = 100..300 cp. Sell 10 loads → minimum
+	# 10 gp = 1000 cp dominates.
 	for trial in range(10):
 		var rng: RandomNumberGenerator = _seeded_rng(trial * 7 + 1)
-		var v: int = MarketFeesCalculator.entry_toll_gp(6, true, 10, rng, false)
-		check(v >= 10, "selling minimum: VI + 10 loads should yield ≥ 10, got %d (seed %d)" % [v, trial])
-		check(v <= 10, "selling minimum: VI roll ≤ 3, so 10-load minimum dominates → 10, got %d" % v)
+		var v: int = MarketFeesCalculator.entry_toll_cp(6, true, 10, rng, false)
+		check(v == 1000,
+			"selling minimum: VI roll ≤ 300 cp, 10-load minimum 1000 cp dominates → 1000, got %d (seed %d)" % [v, trial])
 
 
 func test_entry_toll_selling_dice_exceeds_minimum() -> void:
-	# Class I roll (1d6+15 → ≥16). Sell 5 loads → minimum 5 < dice → dice wins.
+	# Class I roll = 1d6+15 gp → ≥ 1600 cp. Sell 5 loads → 500 cp min < dice.
 	for trial in range(10):
 		var rng: RandomNumberGenerator = _seeded_rng(trial)
-		var v: int = MarketFeesCalculator.entry_toll_gp(1, true, 5, rng, false)
-		check(v >= 16, "dice exceeds minimum: result should be ≥ 16, got %d" % v)
+		var v: int = MarketFeesCalculator.entry_toll_cp(1, true, 5, rng, false)
+		check(v >= 1600, "dice exceeds minimum: result should be ≥ 1600 cp, got %d" % v)
 
 
 func test_entry_toll_domain_owner_exemption() -> void:
 	var rng: RandomNumberGenerator = _seeded_rng(42)
-	check(MarketFeesCalculator.entry_toll_gp(1, false, 0, rng, true) == 0,
+	check(MarketFeesCalculator.entry_toll_cp(1, false, 0, rng, true) == 0,
 		"domain owner pays 0 toll regardless of class")
-	check(MarketFeesCalculator.entry_toll_gp(1, true, 100, rng, true) == 0,
+	check(MarketFeesCalculator.entry_toll_cp(1, true, 100, rng, true) == 0,
 		"domain owner pays 0 toll even when selling 100 loads")
 
 
 # ---------------------------------------------------------------------------
-# Customs duty
+# Customs duty — cp-native. rate_pct × price_cp / 100 = rate_pct × price_gp
+# (when input is a whole-gp price). Banker's rounding only fires on
+# fractional cp (e.g., odd-cp prices × odd-pct rate).
 # ---------------------------------------------------------------------------
 
 func test_customs_duty_uses_cached_rate() -> void:
+	# 15% of 1000 gp = 150 gp = 15,000 cp (exact).
 	var s: String = _make_settlement({"customs_duty_rate_pct": 15, "name": "Customs15"})
-	check(MarketFeesCalculator.customs_duty_gp(1000, s, false) == 150,
-		"customs at 15%% on 1000gp → 150, got %d" % MarketFeesCalculator.customs_duty_gp(1000, s, false))
-	# Boundary: 12% rate, 333 gp → 39.96 → 40 banker
+	check(MarketFeesCalculator.customs_duty_cp(100000, s, false) == 15000,
+		"customs at 15%% on 100,000 cp → 15,000, got %d" % MarketFeesCalculator.customs_duty_cp(100000, s, false))
+	# 12% of 333 gp = 12% of 33,300 cp = 3,996 cp (exact).
 	var s2: String = _make_settlement({"customs_duty_rate_pct": 12, "name": "Customs12"})
-	check(MarketFeesCalculator.customs_duty_gp(333, s2, false) == 40,
-		"customs at 12%% on 333gp → 39.96 → 40, got %d" % MarketFeesCalculator.customs_duty_gp(333, s2, false))
+	check(MarketFeesCalculator.customs_duty_cp(33300, s2, false) == 3996,
+		"customs at 12%% on 33,300 cp → 3996, got %d" % MarketFeesCalculator.customs_duty_cp(33300, s2, false))
+
+
+func test_customs_duty_fractional_cp_rounds_bankers() -> void:
+	# 7% of 13 cp = 0.91 cp → banker → 1 cp (closer to 1 than 0).
+	var s: String = _make_settlement({"customs_duty_rate_pct": 7, "name": "Customs7Frac"})
+	check(MarketFeesCalculator.customs_duty_cp(13, s, false) == 1,
+		"7%% × 13 cp = 0.91 cp → banker 1, got %d" % MarketFeesCalculator.customs_duty_cp(13, s, false))
+	# 5% of 50 cp = 2.5 cp → banker → 2 cp (2 is even).
+	var s2: String = _make_settlement({"customs_duty_rate_pct": 5, "name": "Customs5Half"})
+	check(MarketFeesCalculator.customs_duty_cp(50, s2, false) == 2,
+		"5%% × 50 cp = 2.5 cp → banker 2, got %d" % MarketFeesCalculator.customs_duty_cp(50, s2, false))
 
 
 func test_customs_duty_zero_price() -> void:
 	var s: String = _make_settlement({"customs_duty_rate_pct": 20, "name": "Customs20Zero"})
-	check(MarketFeesCalculator.customs_duty_gp(0, s, false) == 0,
-		"customs on 0 gp price → 0")
+	check(MarketFeesCalculator.customs_duty_cp(0, s, false) == 0,
+		"customs on 0 cp price → 0")
 
 
 func test_customs_duty_domain_owner_exemption() -> void:
 	var s: String = _make_settlement({"customs_duty_rate_pct": 15, "name": "Customs15Owner"})
-	check(MarketFeesCalculator.customs_duty_gp(1000, s, true) == 0,
+	check(MarketFeesCalculator.customs_duty_cp(100000, s, true) == 0,
 		"domain owner pays 0 customs (project extension per §8.8)")
 
 
@@ -226,114 +243,142 @@ func test_process_annual_customs_roll_for_campaign() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Labor
+# Labor — cp-native. 1 gp per 200 stone = 100 cp / 200 stone = stone / 2 cp.
+# Even stone is exact; odd stone produces fractional cp resolved by banker's.
 # ---------------------------------------------------------------------------
 
 func test_labor_fee_exact_multiples() -> void:
-	check(MarketFeesCalculator.labor_fee_gp(200) == 1, "200 stone → 1 gp")
-	check(MarketFeesCalculator.labor_fee_gp(400) == 2, "400 stone → 2 gp")
-	check(MarketFeesCalculator.labor_fee_gp(2000) == 10, "2000 stone → 10 gp")
+	check(MarketFeesCalculator.labor_fee_cp(200) == 100, "200 stone → 100 cp (= 1 gp)")
+	check(MarketFeesCalculator.labor_fee_cp(400) == 200, "400 stone → 200 cp (= 2 gp)")
+	check(MarketFeesCalculator.labor_fee_cp(2000) == 1000, "2000 stone → 1000 cp (= 10 gp)")
 
 
-func test_labor_fee_aggregate_then_round() -> void:
-	# 100 stone → 0.5 gp → banker rounds to even 0
-	check(MarketFeesCalculator.labor_fee_gp(100) == 0,
-		"100 stone → 0.5 gp banker → 0, got %d" % MarketFeesCalculator.labor_fee_gp(100))
-	# 300 stone → 1.5 gp → banker rounds to even 2
-	check(MarketFeesCalculator.labor_fee_gp(300) == 2,
-		"300 stone → 1.5 gp banker → 2, got %d" % MarketFeesCalculator.labor_fee_gp(300))
-	# 3760 stone → 18.8 gp → 19
-	check(MarketFeesCalculator.labor_fee_gp(3760) == 19,
-		"3760 stone → 18.8 gp → 19, got %d" % MarketFeesCalculator.labor_fee_gp(3760))
+func test_labor_fee_cp_precision_below_gp() -> void:
+	# 100 stone = 50 cp exact (no rounding — was banker→0 gp under the old gp path).
+	check(MarketFeesCalculator.labor_fee_cp(100) == 50,
+		"100 stone → 50 cp (exact, no rounding), got %d" % MarketFeesCalculator.labor_fee_cp(100))
+	# 300 stone = 150 cp exact (was banker→2 gp under the old gp path).
+	check(MarketFeesCalculator.labor_fee_cp(300) == 150,
+		"300 stone → 150 cp exact, got %d" % MarketFeesCalculator.labor_fee_cp(300))
+	# 3760 stone = 1880 cp exact (was banker→19 gp = 1900 cp under the old gp path).
+	check(MarketFeesCalculator.labor_fee_cp(3760) == 1880,
+		"3760 stone → 1880 cp exact, got %d" % MarketFeesCalculator.labor_fee_cp(3760))
 
 
-func test_labor_fee_zero_and_below_threshold() -> void:
-	check(MarketFeesCalculator.labor_fee_gp(0) == 0, "0 stone → 0 gp")
-	check(MarketFeesCalculator.labor_fee_gp(30) == 0, "30 stone (one hides load) → 0 gp (below threshold)")
-	check(MarketFeesCalculator.labor_fee_gp(-50) == 0, "negative → 0 (defensive)")
+func test_labor_fee_odd_stone_banker_rounds_to_whole_cp() -> void:
+	# 1 stone = 0.5 cp → banker → 0 (0 is even).
+	check(MarketFeesCalculator.labor_fee_cp(1) == 0,
+		"1 stone → 0.5 cp → banker 0, got %d" % MarketFeesCalculator.labor_fee_cp(1))
+	# 3 stone = 1.5 cp → banker → 2 (closer-to-even resolves up).
+	check(MarketFeesCalculator.labor_fee_cp(3) == 2,
+		"3 stone → 1.5 cp → banker 2, got %d" % MarketFeesCalculator.labor_fee_cp(3))
+	# 5 stone = 2.5 cp → banker → 2 (2 is even).
+	check(MarketFeesCalculator.labor_fee_cp(5) == 2,
+		"5 stone → 2.5 cp → banker 2, got %d" % MarketFeesCalculator.labor_fee_cp(5))
+
+
+func test_labor_fee_zero_and_negative() -> void:
+	check(MarketFeesCalculator.labor_fee_cp(0) == 0, "0 stone → 0 cp")
+	check(MarketFeesCalculator.labor_fee_cp(-50) == 0, "negative → 0 (defensive)")
 
 
 # ---------------------------------------------------------------------------
-# Moorage
+# Moorage — cp is the project's base currency; values are exact integers per
+# the 2026-05-15 currency-precision rule (no banker's rounding on fractional gp).
 # ---------------------------------------------------------------------------
 
 func test_moorage_per_day() -> void:
-	check(MarketFeesCalculator.moorage_gp_per_day(30, false) == 3, "30 SHP → 3 gp/day")
-	check(MarketFeesCalculator.moorage_gp_per_day(5, false) == 0, "5 SHP → 0.5 banker → 0 gp/day")
-	check(MarketFeesCalculator.moorage_gp_per_day(15, false) == 2, "15 SHP → 1.5 banker → 2 gp/day")
-	check(MarketFeesCalculator.moorage_gp_per_day(0, false) == 0, "0 SHP → 0")
+	# RAW: 1 gp per 10 SHP per day = 10 cp per SHP per day.
+	check(MarketFeesCalculator.moorage_cp_per_day(30, false) == 300, "30 SHP → 300 cp/day")
+	check(MarketFeesCalculator.moorage_cp_per_day(5, false) == 50, "5 SHP → 50 cp/day (no rounding)")
+	check(MarketFeesCalculator.moorage_cp_per_day(15, false) == 150, "15 SHP → 150 cp/day")
+	check(MarketFeesCalculator.moorage_cp_per_day(0, false) == 0, "0 SHP → 0")
 
 
 func test_moorage_multi_day_aggregate() -> void:
-	# 5 SHP × 7 days = 35/10 = 3.5 → banker → 4
-	check(MarketFeesCalculator.moorage_gp_total(5, 7, false) == 4,
-		"5 SHP × 7 days → 3.5 → 4, got %d" % MarketFeesCalculator.moorage_gp_total(5, 7, false))
-	# 30 × 14 = 420/10 = 42 (clean)
-	check(MarketFeesCalculator.moorage_gp_total(30, 14, false) == 42,
-		"30 SHP × 14 days → 42")
+	# 5 SHP × 7 days × 10 cp = 350 cp (was 3.5 gp under old banker logic).
+	check(MarketFeesCalculator.moorage_cp_total(5, 7, false) == 350,
+		"5 SHP × 7 days → 350 cp, got %d" % MarketFeesCalculator.moorage_cp_total(5, 7, false))
+	# 30 SHP × 14 days × 10 cp = 4200 cp (= 42 gp clean).
+	check(MarketFeesCalculator.moorage_cp_total(30, 14, false) == 4200,
+		"30 SHP × 14 days → 4200 cp")
 
 
 func test_moorage_domain_owner_exemption() -> void:
-	check(MarketFeesCalculator.moorage_gp_per_day(30, true) == 0,
+	check(MarketFeesCalculator.moorage_cp_per_day(30, true) == 0,
 		"domain owner pays 0 moorage per day")
-	check(MarketFeesCalculator.moorage_gp_total(30, 14, true) == 0,
+	check(MarketFeesCalculator.moorage_cp_total(30, 14, true) == 0,
 		"domain owner pays 0 moorage total")
 
 
 # ---------------------------------------------------------------------------
-# Stabling
+# Stabling — cp variants only. Rates are whole-cp integers per the
+# 2026-05-15 currency-precision rule.
 # ---------------------------------------------------------------------------
 
 func test_stabling_mixed_mounts_per_day() -> void:
-	# 5 mules × 0.2 + 2 horses × 0.5 = 1.0 + 1.0 = 2.0 → 2 gp/day
+	# 5 mules × 20 cp + 2 horses × 50 cp = 100 + 100 = 200 cp/day.
 	var mounts := {"mule": 5, "horse": 2}
-	check(MarketFeesCalculator.stabling_gp_per_day(mounts, false) == 2,
-		"5 mules + 2 horses → 2 gp/day, got %d" % MarketFeesCalculator.stabling_gp_per_day(mounts, false))
-	# 1 horse → 0.5 → banker → 0
-	check(MarketFeesCalculator.stabling_gp_per_day({"horse": 1}, false) == 0,
-		"1 horse alone → 0.5 → banker 0 gp/day")
-	# 1 horse × 2 days → 1.0 → 1
-	check(MarketFeesCalculator.stabling_gp_total({"horse": 1}, 2, false) == 1,
-		"1 horse × 2 days → 1.0 → 1")
-	# 1 horse × 7 days → 3.5 → 4
-	check(MarketFeesCalculator.stabling_gp_total({"horse": 1}, 7, false) == 4,
-		"1 horse × 7 days → 3.5 → 4, got %d" % MarketFeesCalculator.stabling_gp_total({"horse": 1}, 7, false))
+	check(MarketFeesCalculator.stabling_cp_per_day(mounts, false) == 200,
+		"5 mules + 2 horses → 200 cp/day, got %d" % MarketFeesCalculator.stabling_cp_per_day(mounts, false))
+	# 1 horse → 50 cp/day (no rounding; this is an exact integer).
+	check(MarketFeesCalculator.stabling_cp_per_day({"horse": 1}, false) == 50,
+		"1 horse → 50 cp/day")
+	# 1 horse × 2 days = 100 cp.
+	check(MarketFeesCalculator.stabling_cp_total({"horse": 1}, 2, false) == 100,
+		"1 horse × 2 days → 100 cp")
+	# 1 horse × 7 days = 350 cp (no rounding — exact).
+	check(MarketFeesCalculator.stabling_cp_total({"horse": 1}, 7, false) == 350,
+		"1 horse × 7 days → 350 cp, got %d" % MarketFeesCalculator.stabling_cp_total({"horse": 1}, 7, false))
 
 
 func test_stabling_multi_day_aggregate() -> void:
-	# 4 oxen × 0.8 × 7 days = 22.4 → 22
-	check(MarketFeesCalculator.stabling_gp_total({"ox": 4}, 7, false) == 22,
-		"4 oxen × 7 days → 22.4 → 22, got %d" % MarketFeesCalculator.stabling_gp_total({"ox": 4}, 7, false))
-	# 3 wagons × 2 × 14 = 84 (clean)
-	check(MarketFeesCalculator.stabling_gp_total({"wagon": 3}, 14, false) == 84,
-		"3 wagons × 14 days → 84")
-	# Mix per §8.10 test 13: 5 mule + 2 horse + 1 wagon × 7 days
-	# = (5×0.2 + 2×0.5 + 1×2.0) × 7 = (1 + 1 + 2) × 7 = 4 × 7 = 28
-	check(MarketFeesCalculator.stabling_gp_total({"mule": 5, "horse": 2, "wagon": 1}, 7, false) == 28,
-		"5 mule + 2 horse + 1 wagon × 7 days → 28")
-	# Test the donkey/camel/cart aliases.
-	check(MarketFeesCalculator.stabling_gp_total({"donkey": 5}, 10, false) ==
-			MarketFeesCalculator.stabling_gp_total({"mule": 5}, 10, false),
+	# 4 oxen × 80 cp × 7 days = 2240 cp.
+	check(MarketFeesCalculator.stabling_cp_total({"ox": 4}, 7, false) == 2240,
+		"4 oxen × 7 days → 2240 cp, got %d" % MarketFeesCalculator.stabling_cp_total({"ox": 4}, 7, false))
+	# 3 wagons × 200 cp × 14 days = 8400 cp.
+	check(MarketFeesCalculator.stabling_cp_total({"wagon": 3}, 14, false) == 8400,
+		"3 wagons × 14 days → 8400 cp")
+	# Mix: 5 mule + 2 horse + 1 wagon × 7 days
+	# = (5×20 + 2×50 + 1×200) × 7 = (100 + 100 + 200) × 7 = 2800 cp.
+	check(MarketFeesCalculator.stabling_cp_total({"mule": 5, "horse": 2, "wagon": 1}, 7, false) == 2800,
+		"5 mule + 2 horse + 1 wagon × 7 days → 2800 cp")
+	# Test the donkey/camel aliases.
+	check(MarketFeesCalculator.stabling_cp_total({"donkey": 5}, 10, false) ==
+			MarketFeesCalculator.stabling_cp_total({"mule": 5}, 10, false),
 		"donkey rate matches mule rate (project-design fill)")
-	check(MarketFeesCalculator.stabling_gp_total({"camel": 4}, 5, false) ==
-			MarketFeesCalculator.stabling_gp_total({"horse": 4}, 5, false),
+	check(MarketFeesCalculator.stabling_cp_total({"camel": 4}, 5, false) ==
+			MarketFeesCalculator.stabling_cp_total({"horse": 4}, 5, false),
 		"camel rate matches horse rate")
 
 
+func test_stabling_warhorse_premium_rate() -> void:
+	# Per RAW, war horses stable at 1 gp/night = 100 cp/night.
+	# 1 warhorse × 3 days = 300 cp.
+	check(MarketFeesCalculator.stabling_cp_total({"warhorse": 1}, 3, false) == 300,
+		"1 warhorse × 3 days = 300 cp (100 cp/night), got %d" %
+			MarketFeesCalculator.stabling_cp_total({"warhorse": 1}, 3, false))
+	# 2 warhorses + 1 horse × 1 day = 2×100 + 50 = 250 cp (exact, no rounding).
+	check(MarketFeesCalculator.stabling_cp_total({"warhorse": 2, "horse": 1}, 1, false) == 250,
+		"mixed warhorse + horse → 250 cp exact, got %d" %
+			MarketFeesCalculator.stabling_cp_total({"warhorse": 2, "horse": 1}, 1, false))
+
+
 func test_stabling_unknown_key_contributes_zero() -> void:
-	# Unknown key like "warhorse" should contribute 0.
-	check(MarketFeesCalculator.stabling_gp_total({"warhorse": 100}, 30, false) == 0,
-		"unknown key contributes 0 (caller maps to canonical key)")
-	# Mixed with known key: known key still contributes correctly.
-	check(MarketFeesCalculator.stabling_gp_total({"warhorse": 5, "horse": 2}, 1, false) ==
-			MarketFeesCalculator.stabling_gp_total({"horse": 2}, 1, false),
+	# Genuinely unknown key — caller is expected to map species to canonical
+	# keys before calling stabling_cp_total; unmapped values silently 0.
+	check(MarketFeesCalculator.stabling_cp_total({"chimera": 100}, 30, false) == 0,
+		"unknown key 'chimera' contributes 0 (caller must map to canonical key)")
+	# Mixed with known keys: known keys still contribute correctly.
+	check(MarketFeesCalculator.stabling_cp_total({"chimera": 5, "horse": 2}, 1, false) ==
+			MarketFeesCalculator.stabling_cp_total({"horse": 2}, 1, false),
 		"unknown key in mix doesn't affect known key's contribution")
 
 
 func test_stabling_domain_owner_exemption() -> void:
-	check(MarketFeesCalculator.stabling_gp_per_day({"horse": 10, "wagon": 5}, true) == 0,
+	check(MarketFeesCalculator.stabling_cp_per_day({"horse": 10, "wagon": 5}, true) == 0,
 		"domain owner pays 0 stabling per day")
-	check(MarketFeesCalculator.stabling_gp_total({"horse": 10, "wagon": 5}, 14, true) == 0,
+	check(MarketFeesCalculator.stabling_cp_total({"horse": 10, "wagon": 5}, 14, true) == 0,
 		"domain owner pays 0 stabling total")
 
 

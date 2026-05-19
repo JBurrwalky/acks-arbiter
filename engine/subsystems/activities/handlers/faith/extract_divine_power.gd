@@ -48,21 +48,27 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			var per_ten: int = max(0, roll_result.modified_total)
 			ruler_bonus = per_ten * family_tens
 
-	var dp_total: int = base_dp + ruler_bonus
-	if dp_total <= 0:
+	var dp_total_gp: int = base_dp + ruler_bonus
+	if dp_total_gp <= 0:
 		return {"summary": "extract_divine_power: 0 gp generated this week"}
+	# RAW computes DP in gp; convert to cp for the unified storage standard.
+	var dp_total_cp: int = dp_total_gp * 100
+	var base_dp_cp: int = base_dp * 100
+	var ruler_bonus_cp: int = ruler_bonus * 100
 
-	var new_balance: int = CampaignRepository.add_divine_power(character_id, dp_total)
+	var new_balance: int = CampaignRepository.add_divine_power_cp(character_id, dp_total_cp)
 	CampaignRepository.set_divine_power_last_extraction(character_id, _calendar_day())
-	EventBus.divine_power_changed.emit(character_id, new_balance, dp_total)
+	EventBus.divine_power_changed.emit(character_id, new_balance, dp_total_cp)
 
-	var summary := "Extracted %d gp DP (%d from congregants" % [dp_total, base_dp]
-	if ruler_bonus > 0:
-		summary += ", %d from domain families" % ruler_bonus
-	summary += "; new balance %d)" % new_balance
+	var summary := "Extracted %s DP (%s from congregants" % [
+		Currency.format_cost(dp_total_cp), Currency.format_cost(base_dp_cp),
+	]
+	if ruler_bonus_cp > 0:
+		summary += ", %s from domain families" % Currency.format_cost(ruler_bonus_cp)
+	summary += "; new balance %s)" % Currency.format_cost(new_balance)
 	return {
 		"summary": summary,
-		"presentation": {"type": "toast", "text": "DP +%d (extracted)" % dp_total},
+		"presentation": {"type": "toast", "text": "DP +%s (extracted)" % Currency.format_cost(dp_total_cp)},
 	}
 
 

@@ -52,6 +52,16 @@ func run_all_tests() -> void:
 	# Campaign-wide refresh + pc_owned detection
 	test_monthly_refresh_pc_owned_detection()
 
+	# Phase 10B.2 Wave 1 substrate amendments (§4.8 + §11.7 + §0.1.1)
+	test_refused_filter_excludes_from_list_visible()
+	test_refused_filter_excludes_from_list_visible_for_merchandise()
+	test_refused_filter_excludes_from_list_invisible()
+	test_promoted_row_preserved_through_monthly_refresh()
+	test_promoted_row_loads_refreshed_in_place()
+	test_promoted_row_skipped_by_process_expirations()
+	test_promoted_refused_flag_cleared_on_monthly_refresh()
+	test_cohort_cap_counts_promoted_rows()
+
 	if not has_failures():
 		print("MerchantPoolRepository: all %d tests passed." % test_count())
 
@@ -575,3 +585,209 @@ func test_monthly_refresh_pc_owned_detection() -> void:
 	""", [npc_settlement, MerchantPoolRepository.INVISIBLE_SENTINEL])
 	check(int(CampaignRepository.db.query_result[0].get("n", 0)) == 8,
 		"NPC settlement: 8 merchants invisible (sentinel)")
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Wave 1 substrate amendments (§4.8 + §11.7 + §0.1.1)
+# Refused-cohort filter on list_visible* + promoted-row preservation across
+# monthly refresh / expiration.
+# ---------------------------------------------------------------------------
+
+func _insert_refused_merchant(settlement_id: String, merchandise_type: String, refused_day: int) -> String:
+	# Helper: inserts a visible merchant with refused_at_calendar_day set.
+	var mid: String = _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO merchant_pool
+			(id, campaign_id, settlement_entrance_id, merchandise_type,
+			 loads_available, loads_initial, created_at_calendar_day,
+			 expires_at_calendar_day, becomes_visible_calendar_day, status, source_kind,
+			 refused_at_calendar_day)
+		VALUES (?, ?, ?, ?, 5, 5, 0, 999, 0, 'active', 'monthly_refresh', ?)
+	""", [mid, _campaign_id, settlement_id, merchandise_type, refused_day])
+	return mid
+
+
+func _insert_active_merchant(settlement_id: String, merchandise_type: String, visible_day: int = 0) -> String:
+	var mid: String = _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO merchant_pool
+			(id, campaign_id, settlement_entrance_id, merchandise_type,
+			 loads_available, loads_initial, created_at_calendar_day,
+			 expires_at_calendar_day, becomes_visible_calendar_day, status, source_kind)
+		VALUES (?, ?, ?, ?, 5, 5, 0, 999, ?, 'active', 'monthly_refresh')
+	""", [mid, _campaign_id, settlement_id, merchandise_type, visible_day])
+	return mid
+
+
+func _insert_promoted_merchant(
+		settlement_id: String, merchandise_type: String,
+		npc_id: String, expires_day: int = 999, visible_day: int = 0
+) -> String:
+	var mid: String = _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO merchant_pool
+			(id, campaign_id, settlement_entrance_id, merchandise_type,
+			 loads_available, loads_initial, created_at_calendar_day,
+			 expires_at_calendar_day, becomes_visible_calendar_day, status, source_kind,
+			 promoted_npc_id)
+		VALUES (?, ?, ?, ?, 7, 7, 0, ?, ?, 'active', 'monthly_refresh', ?)
+	""", [mid, _campaign_id, settlement_id, merchandise_type, expires_day, visible_day, npc_id])
+	return mid
+
+
+func test_refused_filter_excludes_from_list_visible() -> void:
+	var s: String = _make_settlement(3, "RefusedFilterListVisible")
+	_insert_active_merchant(s, "silk")
+	_insert_refused_merchant(s, "silk", 50)
+	var rows: Array = MerchantPoolRepository.list_visible_merchants(s, 100)
+	check(rows.size() == 1,
+		"list_visible_merchants filters refused row, got %d rows" % rows.size())
+
+
+func test_refused_filter_excludes_from_list_visible_for_merchandise() -> void:
+	var s: String = _make_settlement(3, "RefusedFilterByMerch")
+	_insert_active_merchant(s, "salt")
+	_insert_refused_merchant(s, "salt", 50)
+	var rows: Array = MerchantPoolRepository.list_visible_merchants_for_merchandise(s, "salt", 100)
+	check(rows.size() == 1,
+		"list_visible_merchants_for_merchandise filters refused row, got %d" % rows.size())
+
+
+func test_refused_filter_excludes_from_list_invisible() -> void:
+	var s: String = _make_settlement(3, "RefusedFilterInvisible")
+	# Set up: one invisible (sentinel) + one refused invisible.
+	_insert_active_merchant(s, "silk", MerchantPoolRepository.INVISIBLE_SENTINEL)
+	var refused_invisible_id: String = _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO merchant_pool
+			(id, campaign_id, settlement_entrance_id, merchandise_type,
+			 loads_available, loads_initial, created_at_calendar_day,
+			 expires_at_calendar_day, becomes_visible_calendar_day, status, source_kind,
+			 refused_at_calendar_day)
+		VALUES (?, ?, ?, 'silk', 5, 5, 0, 999, ?, 'active', 'monthly_refresh', 50)
+	""", [refused_invisible_id, _campaign_id, s, MerchantPoolRepository.INVISIBLE_SENTINEL])
+	var rows: Array = MerchantPoolRepository.list_invisible_merchants(s, 100)
+	check(rows.size() == 1,
+		"list_invisible_merchants filters refused row, got %d" % rows.size())
+
+
+func test_promoted_row_preserved_through_monthly_refresh() -> void:
+	var s: String = _make_settlement(3, "PromotedPreserve")
+	# Seed a promoted NPC merchant.
+	var npc_id: String = "%s_npc" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters (id, campaign_id, name, character_type)
+		VALUES (?, ?, 'PromotedNPC', 'npc')
+	""", [npc_id, _campaign_id])
+	var promoted_mid: String = _insert_promoted_merchant(s, "silk", npc_id)
+	# Add a regular transactional row.
+	var transact_mid: String = _insert_active_merchant(s, "salt")
+	# Refresh.
+	MerchantPoolRepository.generate_pool_for_settlement(s, 28, _seeded_rng(99), false)
+	# Promoted row should still exist with the same id.
+	CampaignRepository.db.query_with_bindings(
+		"SELECT id FROM merchant_pool WHERE id = ?", [promoted_mid])
+	check(not CampaignRepository.db.query_result.is_empty(),
+		"promoted row survives monthly refresh (id=%s)" % promoted_mid)
+	# Transactional row should have been deleted (replaced by new cohort).
+	CampaignRepository.db.query_with_bindings(
+		"SELECT id FROM merchant_pool WHERE id = ?", [transact_mid])
+	check(CampaignRepository.db.query_result.is_empty(),
+		"transactional row deleted on monthly refresh")
+
+
+func test_promoted_row_loads_refreshed_in_place() -> void:
+	var s: String = _make_settlement(3, "PromotedLoadsRefresh")
+	var npc_id: String = "%s_npc" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters (id, campaign_id, name, character_type)
+		VALUES (?, ?, 'PromotedLoadsNPC', 'npc')
+	""", [npc_id, _campaign_id])
+	var promoted_mid: String = _insert_promoted_merchant(s, "silk", npc_id, 50, 0)
+	# Deplete the merchant's loads to verify refresh re-rolls them.
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE merchant_pool SET loads_available = 0 WHERE id = ?", [promoted_mid])
+	# Refresh at day 28 — expires_at should extend to 28 + 28 = 56.
+	MerchantPoolRepository.generate_pool_for_settlement(s, 28, _seeded_rng(7), false)
+	var row: Dictionary = MerchantPoolRepository.get_merchant(promoted_mid)
+	check(int(row.get("loads_available", 0)) > 0,
+		"promoted row's loads_available re-rolled to non-zero, got %d" % int(row.get("loads_available", 0)))
+	check(int(row.get("expires_at_calendar_day", 0)) == 28 + Timekeeping.DAYS_PER_MONTH,
+		"promoted row expires extended to current + 28 days, got %d" % int(row.get("expires_at_calendar_day", 0)))
+	check(str(row.get("status", "")) == "active",
+		"promoted row status reset to 'active'")
+
+
+func test_promoted_row_skipped_by_process_expirations() -> void:
+	var s: String = _make_settlement(3, "PromotedExpireSkip")
+	var npc_id: String = "%s_npc" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters (id, campaign_id, name, character_type)
+		VALUES (?, ?, 'PromotedExpireNPC', 'npc')
+	""", [npc_id, _campaign_id])
+	# Promoted row that's "overdue" — expires day 10.
+	var promoted_mid: String = _insert_promoted_merchant(s, "silk", npc_id, 10)
+	# A transactional row that's also overdue.
+	var transact_mid: String = _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO merchant_pool
+			(id, campaign_id, settlement_entrance_id, merchandise_type,
+			 loads_available, loads_initial, created_at_calendar_day,
+			 expires_at_calendar_day, becomes_visible_calendar_day, status, source_kind)
+		VALUES (?, ?, ?, 'salt', 5, 5, 0, 10, 0, 'active', 'monthly_refresh')
+	""", [transact_mid, _campaign_id, s])
+	var expired_count: int = MerchantPoolRepository.process_expirations(s, 50)
+	check(expired_count == 1,
+		"process_expirations skips promoted row, deletes 1 transactional, got %d" % expired_count)
+	# Promoted survives.
+	CampaignRepository.db.query_with_bindings(
+		"SELECT id FROM merchant_pool WHERE id = ?", [promoted_mid])
+	check(not CampaignRepository.db.query_result.is_empty(),
+		"promoted row survives process_expirations")
+
+
+func test_promoted_refused_flag_cleared_on_monthly_refresh() -> void:
+	var s: String = _make_settlement(3, "PromotedRefusedClear")
+	var npc_id: String = "%s_npc" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters (id, campaign_id, name, character_type)
+		VALUES (?, ?, 'PromotedRefusedNPC', 'npc')
+	""", [npc_id, _campaign_id])
+	var promoted_mid: String = _insert_promoted_merchant(s, "silk", npc_id)
+	# Mark the promoted row as refused this cohort (simulating persuade-fail).
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE merchant_pool SET refused_at_calendar_day = 5 WHERE id = ?", [promoted_mid])
+	# Verify it's hidden from list_visible while refused.
+	var before: Array = MerchantPoolRepository.list_visible_merchants(s, 10)
+	check(before.is_empty(),
+		"refused promoted row hidden before refresh, got %d row(s)" % before.size())
+	# Run monthly refresh.
+	MerchantPoolRepository.generate_pool_for_settlement(s, 28, _seeded_rng(11), true)
+	# Refused flag should be NULL after refresh, and the row should be visible again.
+	var row: Dictionary = MerchantPoolRepository.get_merchant(promoted_mid)
+	check(row.get("refused_at_calendar_day", null) == null,
+		"refused_at_calendar_day cleared to NULL on refresh, got %s" % str(row.get("refused_at_calendar_day", null)))
+
+
+func test_cohort_cap_counts_promoted_rows() -> void:
+	# Class IV cap = 4. Seed 2 promoted rows; refresh should create only
+	# 4 - 2 = 2 new transactional rows (total cohort = 4).
+	var s: String = _make_settlement(4, "PromotedCohortCap")
+	var npc_id: String = "%s_npc" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters (id, campaign_id, name, character_type)
+		VALUES (?, ?, 'CohortNPC', 'npc')
+	""", [npc_id, _campaign_id])
+	_insert_promoted_merchant(s, "silk", npc_id)
+	_insert_promoted_merchant(s, "spices", npc_id)
+	# generate_pool_for_settlement should report 2 NEW transactional rows
+	# (cohort cap 4 - existing 2 promoted = 2).
+	var new_count: int = MerchantPoolRepository.generate_pool_for_settlement(
+		s, 28, _seeded_rng(13), false)
+	check(new_count == 2,
+		"cohort cap 4 - 2 promoted = 2 new transactional rows, got %d" % new_count)
+	# Total rows should be 4 (2 promoted + 2 new transactional).
+	CampaignRepository.db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM merchant_pool WHERE settlement_entrance_id = ?", [s])
+	check(int(CampaignRepository.db.query_result[0].get("n", 0)) == 4,
+		"total cohort size = 4 (promoted + new), got %d" % int(CampaignRepository.db.query_result[0].get("n", 0)))

@@ -13,6 +13,14 @@ const TEST_DUNGEON_ENTRANCE_HEX := Vector2i(-1, 0)
 const TEST_SETTLEMENT_ENTRANCE_HEX := Vector2i(0, 0)
 const TEST_SETTLEMENT_THORNWALL_HEX := Vector2i(2, 1)
 
+# Migration 119 cross-scale linkage — also seed a 24-mile campaign-scale map
+# as the parent of test_region_001 so the Strategic / Regional view toggle
+# has somewhere to switch to. The campaign map id is read from the JSON file.
+const TEST_CAMPAIGN_MAP_JSON_PATH := "res://data/test_campaign_map.json"
+# Parent hex on the 24-mile campaign map that contains test_region_001.
+# (test_campaign_map.json's "test_keep" hex at (0,0).)
+const TEST_REGION_PARENT_HEX := Vector2i(0, 0)
+
 
 func enter(runner, context: Dictionary) -> void:
 	var campaign_id: String = context.get("campaign_id", "")
@@ -88,6 +96,10 @@ func _get_or_create_party(campaign_id: String) -> String:
 
 
 func _load_or_seed_map(campaign_id: String) -> HexMapData:
+	# First: ensure the 24-mile campaign-scale parent map exists. Idempotent —
+	# load_hex_map returns null on first run, populated on subsequent runs.
+	_ensure_test_campaign_parent_map(campaign_id)
+
 	var from_db: HexMapData = CampaignRepository.load_hex_map(TEST_MAP_ID)
 	if from_db != null:
 		return from_db
@@ -97,9 +109,32 @@ func _load_or_seed_map(campaign_id: String) -> HexMapData:
 		push_error("SessionLoadState: could not load %s" % TEST_MAP_JSON_PATH)
 		return null
 
+	# Migration 119: link the 6-mile regional test map to the 24-mile
+	# campaign-scale parent. Hand-authored footprint covers exactly one
+	# parent hex (the borderwood keep area). In production this is what
+	# proc-gen will produce: each 24-mile hex gets a dedicated 6-mile child.
+	from_json.parent_map_id = "test_campaign_001"
+	from_json.parent_anchor = TEST_REGION_PARENT_HEX
+	from_json.parent_hex_footprint = [TEST_REGION_PARENT_HEX]
+
 	if not CampaignRepository.save_hex_map(from_json, campaign_id):
 		push_error("SessionLoadState: save_hex_map failed — continuing with in-memory map.")
 	return from_json
+
+
+## Idempotent seeding of the 24-mile campaign-scale parent map. Reads
+## test_campaign_map.json and stores it under its declared id. Subsequent
+## session loads are no-ops (the row already exists).
+func _ensure_test_campaign_parent_map(campaign_id: String) -> void:
+	var campaign_map: HexMapData = HexMapData.load_from_file(TEST_CAMPAIGN_MAP_JSON_PATH)
+	if campaign_map == null:
+		push_warning("SessionLoadState: could not load %s — Strategic view toggle will be unavailable" % TEST_CAMPAIGN_MAP_JSON_PATH)
+		return
+	var existing: HexMapData = CampaignRepository.load_hex_map(campaign_map.id)
+	if existing != null:
+		return  # already seeded
+	if not CampaignRepository.save_hex_map(campaign_map, campaign_id):
+		push_warning("SessionLoadState: could not save campaign-scale parent map.")
 
 
 func _ensure_test_dungeon_entrance(campaign_id: String) -> void:

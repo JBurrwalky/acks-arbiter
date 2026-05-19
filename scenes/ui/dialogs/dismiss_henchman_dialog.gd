@@ -58,9 +58,13 @@ func _ready() -> void:
 # Public API
 # ---------------------------------------------------------------------------
 
+## 2026-05-19 bucket-A item #131: signature flipped from gp → cp at the API
+## boundary. The dialog keeps its SpinBox in gp for player ergonomics (RAW
+## prescribes amounts in gp), but converts × 100 on emit and / 100 on display.
+## Callers pass the cp-native default that matches HenchmanLifecycleManager.
 func show_dialog(character_id: String, settlement_id: String, party_id: String,
 		henchman_name: String,
-		default_final_wages_gp: int,
+		default_final_wages_cp: int,
 		on_confirm: Callable = Callable(),
 		on_cancel: Callable = Callable()) -> void:
 	_character_id = character_id
@@ -73,7 +77,8 @@ func show_dialog(character_id: String, settlement_id: String, party_id: String,
 	_body_label.text = "%s will leave service and the Henchmen tab Departure Log will record the result. Choose how to send them off." % \
 		(henchman_name if not henchman_name.is_empty() else "This henchman")
 
-	_final_wages_spin.value = float(maxi(0, default_final_wages_gp))
+	# SpinBox values are gp (RAW unit); divide cp default by 100 for display.
+	_final_wages_spin.value = float(maxi(0, default_final_wages_cp)) / 100.0
 	_parting_bonus_spin.value = 0.0
 
 	_retention_keep.button_pressed = true
@@ -226,9 +231,12 @@ func _on_confirm_pressed() -> void:
 	elif _retention_take_all.button_pressed:
 		retention = RETENTION_TAKE_EVERYTHING
 
+	# 2026-05-19 bucket-A item #131: emit cp keys matching the engine's
+	# HenchmanLifecycleManager.dismiss_henchman contract. SpinBox values are
+	# gp; convert × 100 at the boundary.
 	var options := {
-		"final_wages_gp":      int(_final_wages_spin.value),
-		"parting_bonus_gp":    int(_parting_bonus_spin.value),
+		"final_wages_cp":      int(_final_wages_spin.value * 100.0),
+		"parting_bonus_cp":    int(_parting_bonus_spin.value * 100.0),
 		"equipment_retention": retention,
 		"settlement_id":       _settlement_id,
 		"party_id":            _party_id,

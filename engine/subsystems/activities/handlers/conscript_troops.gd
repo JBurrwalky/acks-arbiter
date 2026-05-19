@@ -15,8 +15,8 @@ extends RefCounted
 
 const UNTRAINED_TEMPLATE_ID := "untrained_conscripts"
 const UNIT_SIZE := 120  # company size; if requested < 120 the unit ships at requested count
-const WAGE_PER_SOLDIER := 3
-const SUPPLY_PER_SOLDIER := 1
+const WAGE_CP_PER_SOLDIER := 300    # RAW 3 gp/month per soldier
+const SUPPLY_CP_PER_SOLDIER_PER_WEEK := 100  # RAW 1 gp/week per soldier
 
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
@@ -44,7 +44,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": calendar_day,
 		"category": "garrison",
 		"subcategory": "conscript_levy",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Levied %d conscripts (untrained, %d unit(s))" % [count, ids.size()],
 	})
 	return {
@@ -61,9 +61,9 @@ static func _spawn_conscript_units(character: Dictionary, domain_id: String,
 	var owner_id: String = String(character.get("id", ""))
 	while remaining > 0:
 		var unit_count: int = mini(remaining, UNIT_SIZE)
-		var monthly_wage: int = WAGE_PER_SOLDIER * unit_count
-		var monthly_supply: int = SUPPLY_PER_SOLDIER * 4 * unit_count
-		var monthly_cost: int = monthly_wage + monthly_supply
+		var monthly_wage_cp: int = WAGE_CP_PER_SOLDIER * unit_count
+		var monthly_supply_cp: int = SUPPLY_CP_PER_SOLDIER_PER_WEEK * 4 * unit_count
+		var monthly_cost_cp: int = monthly_wage_cp + monthly_supply_cp
 		var unit_id: String = TroopUnitRepository.create_unit({
 			"campaign_id": campaign_id,
 			"owner_character_id": owner_id,
@@ -75,10 +75,10 @@ static func _spawn_conscript_units(character: Dictionary, domain_id: String,
 			"starting_count": unit_count,
 			"count": unit_count,
 			"battle_rating": 0.003 * unit_count,
-			"monthly_wage_gp": monthly_wage,
-			"monthly_supply_gp": monthly_supply,
-			"monthly_specialist_gp": 0,
-			"monthly_cost_gp": monthly_cost,
+			"monthly_wage_cp": monthly_wage_cp,
+			"monthly_supply_cp": monthly_supply_cp,
+			"monthly_specialist_cp": 0,
+			"monthly_cost_cp": monthly_cost_cp,
 			"morale": -2,
 			"is_veteran": false,
 			"is_trained": false,

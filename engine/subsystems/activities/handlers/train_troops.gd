@@ -86,7 +86,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": _calendar_day(),
 		"category": "other",
 		"subcategory": "train_troops",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Trained %d unit(s) (%s); %d soldier slots used of %d" % [
 			trained_units, troop_type,
 			TRAIN_CAP_PER_ACTIVITY - soldiers_remaining,

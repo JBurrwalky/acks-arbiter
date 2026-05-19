@@ -170,8 +170,8 @@ static func calculate_party_speed(
 		tracking_mult = 0.5
 		miles_per_day *= tracking_mult
 
-	# Banker's rounding to nearest mile
-	miles_per_day = _bankers_round(miles_per_day)
+	# Banker's rounding to nearest mile (consolidated to XPAwardCalculator).
+	miles_per_day = float(XPAwardCalculator.bankers_round(miles_per_day))
 
 	return {
 		"base_exploration_speed": base_speed,
@@ -225,7 +225,7 @@ static func hex_crossing_rounds(
 		return Timekeeping.ROUNDS_PER_HOUR * 8
 	var travel_rounds_per_day: int = Timekeeping.ROUNDS_PER_HOUR * TRAVEL_HOURS_PER_DAY
 	var rounds: float = float(travel_rounds_per_day) / hexes_per_day
-	return maxi(1, int(_bankers_round(rounds)))
+	return maxi(1, XPAwardCalculator.bankers_round(rounds))
 
 
 ## Returns the terrain multiplier for a given movement_cost_category.
@@ -364,14 +364,7 @@ static func _get_campaign_repository():
 	return root.get_node_or_null("CampaignRepository")
 
 
-## Banker's rounding (round half to even) per project convention.
-static func _bankers_round(value: float) -> float:
-	var floor_val: float = floorf(value)
-	var frac: float = value - floor_val
-	if absf(frac - 0.5) < 0.0001:
-		# Exactly half — round to even
-		if int(floor_val) % 2 == 0:
-			return floor_val
-		else:
-			return floor_val + 1.0
-	return roundf(value)
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep. The local float-returning variant was retired in
+# favor of the canonical int-returning helper; callers that need float cast at
+# the use site.

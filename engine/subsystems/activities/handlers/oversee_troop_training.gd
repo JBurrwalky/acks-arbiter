@@ -55,7 +55,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		# 'other' for the informational audit row (no gp moves).
 		"category": "other",
 		"subcategory": "oversee_troop_training",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Oversaw training of %d unit(s); +1 permanent morale%s" % [
 			bumped_units, summary_suffix,
 		],

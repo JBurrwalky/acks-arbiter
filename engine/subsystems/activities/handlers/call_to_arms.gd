@@ -66,7 +66,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"kind": "duty",
 			"type": "call_to_arms",
 			"magnitude": 0,
-			"gp_value": 0,
+			"cp_value": 0,
 			"is_one_time": false,
 			"issued_calendar_day": calendar_day,
 			"status": "active",
@@ -87,7 +87,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": calendar_day,
 		"category": "other",
 		"subcategory": "vassal_muster_called",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Call to arms — %s realm muster window: %d days; %d vassals called" % [
 			title, delay_days, vassals_called.size()
 		],

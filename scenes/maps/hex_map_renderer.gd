@@ -610,6 +610,57 @@ func _update_party_token_position() -> void:
 ## Rebuilds all party tokens from the database. Creates/removes Sprite2D nodes
 ## and their paired HeraldryRenderer instances as needed. Active party token is
 ## full-bright at 1.15×; inactive tokens are slightly desaturated at 0.9×.
+## Migration 119 — decide where a party should render on the currently-
+## loaded map. Returns a dict with keys:
+##   "hex": Vector2i — the coordinate to place the token at on this map
+##   "on_rendered_map": bool — true if the party's logical current_map_id
+##       matches the rendered map (so the controller's live party_hex can
+##       override the DB hex for the primary party)
+## Returns {} when the party is NOT visible on the current map (different
+## map entirely, no ancestor relationship).
+func _resolve_party_render_position(party_row: Dictionary) -> Dictionary:
+	if _map_data == null:
+		return {}
+	var party_map_id := String(party_row.get("current_map_id", ""))
+	var party_hex := Vector2i(
+		int(party_row.get("current_hex_q", 0) if party_row.get("current_hex_q") != null else 0),
+		int(party_row.get("current_hex_r", 0) if party_row.get("current_hex_r") != null else 0),
+	)
+	# Party is logically on this map: direct render.
+	if party_map_id == _map_data.id:
+		return {"hex": party_hex, "on_rendered_map": true}
+	# Party on a child map of this map (strategic view onto an inset's
+	# parent): project to the first parent hex in the child's footprint.
+	# Walks up the parent chain in case of multi-level nesting.
+	var safety := 8
+	var current_child := party_map_id
+	while safety > 0 and not current_child.is_empty():
+		var parent_id := CampaignRepository.get_hex_map_parent_id(current_child)
+		if parent_id.is_empty():
+			break
+		if parent_id == _map_data.id:
+			var footprint: Array = CampaignRepository.get_hex_map_parent_footprint(current_child)
+			if footprint.size() > 0:
+				return {"hex": footprint[0], "on_rendered_map": false}
+			# No footprint declared — fall back to the child's parent_anchor.
+			var anchor_dict: Dictionary = {}
+			CampaignRepository.db.query_with_bindings(
+				"SELECT parent_anchor_q, parent_anchor_r FROM hex_maps WHERE id = ?",
+				[current_child]
+			)
+			if not CampaignRepository.db.query_result.is_empty():
+				anchor_dict = CampaignRepository.db.query_result[0]
+			if anchor_dict.get("parent_anchor_q") != null and anchor_dict.get("parent_anchor_r") != null:
+				return {
+					"hex": Vector2i(int(anchor_dict["parent_anchor_q"]), int(anchor_dict["parent_anchor_r"])),
+					"on_rendered_map": false,
+				}
+			return {}
+		current_child = parent_id
+		safety -= 1
+	return {}
+
+
 func _rebuild_party_tokens() -> void:
 	if _map_data == null or _terrain_layer == null:
 		return
@@ -627,14 +678,20 @@ func _rebuild_party_tokens() -> void:
 
 	for p in all_parties:
 		var pid: String = p.id
+
+		# Migration 119: resolve where this party should render on the
+		# currently-loaded map. A party on a different map either projects
+		# to the parent hex (if the rendered map is its ancestor — strategic
+		# view) or doesn't render at all.
+		var resolved := _resolve_party_render_position(p)
+		if resolved.is_empty():
+			# Party isn't visible on the rendered map; skip it (and any
+			# existing token for it will be cleaned up via stale_ids below).
+			continue
 		valid_ids[pid] = true
-
-		var hex_q: int = p.get("current_hex_q", 0) if p.get("current_hex_q") != null else 0
-		var hex_r: int = p.get("current_hex_r", 0) if p.get("current_hex_r") != null else 0
-
-		var coord := Vector2i(hex_q, hex_r)
-		# Primary party prefers live map data over DB.
-		if pid == GameState.party_id and _map_data != null:
+		var coord: Vector2i = resolved["hex"]
+		# Primary party prefers live map data over DB when on the rendered map.
+		if pid == GameState.party_id and _map_data != null and resolved["on_rendered_map"]:
 			coord = _map_data.party_hex
 
 		var token := _get_or_create_token_for_party(pid)

@@ -1,5 +1,7 @@
 # GDD — Settlement Economy
 
+> **2026-05-15 currency-precision note:** All gp-suffixed money identifiers in this GDD have been renamed to their `_cp` equivalents in the engine — the project's base currency is cp (1 gp = 100 cp). Banker's rounding only fires on fractional cp. Examples: `entry_toll_cp`, `labor_fee_cp`, `customs_duty_cp`, `stabling_cp_per_day`, `stabling_cp_total`, `moorage_cp_per_day`, `moorage_cp_total`, `fee_cp`, `cp_per_load`, `market_value_at_acquisition_cp`, `entry_toll_paid_cp`, `fee_paid_cp`, `cp_received`. Treat any remaining `_gp` references in pseudocode below as documentation drift.
+
 > **Status:** Drafting (2026-05-12). Section-by-section sign-off in progress with project owner.
 >
 > **Audience:** The Phase 10B-prerequisite mercantile build session and the downstream Phase 10B.2 (Trade) / 10B.3 (Syndicate) sessions that consume it.
@@ -1506,7 +1508,7 @@ The 4d4 dice value is **cached per (settlement, merchandise) pair** so that pric
 ```
 percentage = (dice_4d4 + demand_modifier + class_size_adjust
              + monopolist_favor + judge_modifier) * 10
-gp_per_load = banker_round(base_price_gp * percentage / 100)
+cp_per_load = banker_round(base_price_gp * percentage / 100)
 ```
 
 All inputs are integers; intermediate arithmetic stays integer until the final percentage-to-gp conversion where banker's rounding handles fractional results.
@@ -1634,7 +1636,7 @@ The drift check fires at two points:
 
 The shortcut in §6.6.2 produces correct probabilities for "did re-roll happen?" but loses event-time fidelity (we record the re-roll as happening on the current day, even if probabilistically it "should" have happened some months earlier). A future enhancement iterates per-month and records the actual re-roll month for audit / ledger purposes. Tagged `[NEEDS-DRIFT-PRECISION-PASS]` in the source.
 
-### 6.7 Banker's rounding for the final gp_per_load
+### 6.7 Banker's rounding for the final cp_per_load
 
 Per CLAUDE.md: "Banker's rounding (round half to even) everywhere. No exceptions." Step 3's `int(value)` truncation (§4.3) is explicitly RAW-prescribed and narrow-scoped; everywhere else, including §6.1's `base_price_gp * percentage / 100` conversion, uses `RoundingUtil.banker_round`.
 
@@ -1669,7 +1671,7 @@ static func compute_market_price(
 ) -> Dictionary
     # Returns:
     # {
-    #   "gp_per_load": int,           # banker-rounded
+    #   "cp_per_load": int,           # banker-rounded
     #   "percentage": int,            # the post-formula percentage applied
     #   "drift_occurred": bool,       # true if check_and_apply_drift re-rolled
     #   "breakdown": {
@@ -1725,7 +1727,7 @@ static func compute_percentage(
 
 ```
 percentage = (10 + (-1) + 0 + 0 + 0) * 10 = 90
-gp_per_load = 50 * 90 / 100 = 45
+cp_per_load = 50 * 90 / 100 = 45
 ```
 
 A 50 gp base good in a slightly-low-demand class-III market sells at 45 gp.
@@ -1739,7 +1741,7 @@ A 50 gp base good in a slightly-low-demand class-III market sells at 45 gp.
 
 ```
 percentage = (12 + 2 + 1 + 1 + 0) * 10 = 160
-gp_per_load = 800 * 160 / 100 = 1280
+cp_per_load = 800 * 160 / 100 = 1280
 ```
 
 A monopolist selling spices in a class-II market with +2 demand and average dice gets 1,280 gp per load — 60% over base.
@@ -1753,7 +1755,7 @@ A monopolist selling spices in a class-II market with +2 demand and average dice
 
 ```
 percentage = (14 + 2 + (-1) + 0 + (-2)) * 10 = 130
-gp_per_load = 10 * 130 / 100 = 13
+cp_per_load = 10 * 130 / 100 = 13
 ```
 
 Even with war disruption, the hamlet's high demand for grain plus a good dice roll keeps the price at 13 gp/load — 30% over base.
@@ -1786,7 +1788,7 @@ Even with war disruption, the hamlet's high demand for grain plus a good dice ro
 
 **End-to-end:**
 
-14. **Worked-example reproducibility.** Pin a settlement with known demand_modifier and market_class, seed RNG to produce a specific 4d4 value, call `compute_market_price` → assert gp_per_load matches a hand-calculated expected value. Run for each of §6.9's three worked examples.
+14. **Worked-example reproducibility.** Pin a settlement with known demand_modifier and market_class, seed RNG to produce a specific 4d4 value, call `compute_market_price` → assert cp_per_load matches a hand-calculated expected value. Run for each of §6.9's three worked examples.
 
 ### 6.11 What §6 does NOT add
 
@@ -2235,7 +2237,7 @@ Where fees are inherently integer (cart at 1gp/day, wagon at 2gp/day), no roundi
 - **Implementation:**
 
 ```gdscript
-static func entry_toll_gp(
+static func entry_toll_cp(
     market_class: int,
     is_selling: bool,
     merchandise_loads: int,        # total loads being sold (0 if buying-only or visit-only)
@@ -2267,7 +2269,7 @@ static func entry_toll_gp(
 - **Implementation:**
 
 ```gdscript
-static func customs_duty_gp(
+static func customs_duty_cp(
     market_price_gp: int,
     settlement_id: String,
     is_domain_owner: bool = false,
@@ -2299,7 +2301,7 @@ static func process_annual_customs_roll_for_campaign(
 
 **Why deterministic seeding.** A campaign-load reproduces the same customs rates the campaign-save knew. A future Judge auditing "why is silk so cheap to ship out of Ashford?" can reproduce the rate from settlement_id + year + "customs" string and verify the value. No surprise drift across save/load.
 
-**Charged on each sell transaction**, not per load — `market_price_gp` is the total (= loads × gp_per_load from §6) and the rate applies to that aggregate.
+**Charged on each sell transaction**, not per load — `market_price_gp` is the total (= loads × cp_per_load from §6) and the rate applies to that aggregate.
 
 ### 8.5 Loading and unloading labor
 
@@ -2308,7 +2310,7 @@ static func process_annual_customs_roll_for_campaign(
 - **Implementation:**
 
 ```gdscript
-static func labor_fee_gp(total_stone: int) -> int:
+static func labor_fee_cp(total_stone: int) -> int:
     # 1gp per 200 stone. Aggregate-then-round.
     return RoundingUtil.banker_round(float(total_stone) / 200.0)
 ```
@@ -2330,11 +2332,11 @@ Charged once on buying (loading) AND once on selling (unloading); the same call 
 - **Implementation:**
 
 ```gdscript
-static func moorage_gp_per_day(ship_shp: int) -> int:
+static func moorage_cp_per_day(ship_shp: int) -> int:
     # 1gp per 10 SHP. Aggregate-then-round per-day.
     return RoundingUtil.banker_round(float(ship_shp) / 10.0)
 
-static func moorage_gp_total(ship_shp: int, days: int) -> int:
+static func moorage_cp_total(ship_shp: int, days: int) -> int:
     # Multi-day total. Roundsthe per-day rate then multiplies, OR
     # multiplies first then rounds — RAW is silent. Project resolution:
     # multiply first, round once.
@@ -2375,7 +2377,7 @@ const STABLING_RATES_GP_PER_DAY := {
     "wagon":  2.0,
 }
 
-static func stabling_gp_per_day(mounts: Dictionary) -> int:
+static func stabling_cp_per_day(mounts: Dictionary) -> int:
     # mounts = {"mule": n, "horse": n, "ox": n, "cart": n, ...}
     var total: float = 0.0
     for key in mounts:
@@ -2383,7 +2385,7 @@ static func stabling_gp_per_day(mounts: Dictionary) -> int:
         total += float(mounts[key]) * rate
     return RoundingUtil.banker_round(total)
 
-static func stabling_gp_total(mounts: Dictionary, days: int) -> int:
+static func stabling_cp_total(mounts: Dictionary, days: int) -> int:
     # Multiply totals first, round once.
     var per_day_raw: float = 0.0
     for key in mounts:
@@ -2421,7 +2423,7 @@ The exemption does **NOT** apply to:
 **Implementation pattern.** Each exempt-fee helper accepts an `is_domain_owner: bool` parameter and returns 0 when applicable:
 
 ```gdscript
-static func entry_toll_gp(
+static func entry_toll_cp(
     market_class: int,
     is_selling: bool,
     merchandise_loads: int,
@@ -2433,7 +2435,7 @@ static func entry_toll_gp(
     # ... rest of the formula
 ```
 
-Same pattern for `customs_duty_gp`, `moorage_gp_per_day`, `moorage_gp_total`, `stabling_gp_per_day`, and `stabling_gp_total`. The labor fee helper does not accept the flag.
+Same pattern for `customs_duty_cp`, `moorage_cp_per_day`, `moorage_cp_total`, `stabling_cp_per_day`, and `stabling_cp_total`. The labor fee helper does not accept the flag.
 
 A convenience helper for the caller's monopoly/domain check:
 
@@ -2460,7 +2462,7 @@ class_name MarketFeesCalculator
 extends RefCounted
 
 # Per-transaction fees
-static func entry_toll_gp(
+static func entry_toll_cp(
     market_class: int,
     is_selling: bool,
     merchandise_loads: int,
@@ -2468,19 +2470,19 @@ static func entry_toll_gp(
     is_domain_owner: bool = false,
 ) -> int
 
-static func customs_duty_gp(
+static func customs_duty_cp(
     market_price_gp: int,
     settlement_id: String,
     is_domain_owner: bool = false,
 ) -> int
 
-static func labor_fee_gp(total_stone: int) -> int   # No domain-owner exemption per §8.8
+static func labor_fee_cp(total_stone: int) -> int   # No domain-owner exemption per §8.8
 
 # Per-day fees
-static func moorage_gp_per_day(ship_shp: int, is_domain_owner: bool = false) -> int
-static func moorage_gp_total(ship_shp: int, days: int, is_domain_owner: bool = false) -> int
-static func stabling_gp_per_day(mounts: Dictionary, is_domain_owner: bool = false) -> int
-static func stabling_gp_total(mounts: Dictionary, days: int, is_domain_owner: bool = false) -> int
+static func moorage_cp_per_day(ship_shp: int, is_domain_owner: bool = false) -> int
+static func moorage_cp_total(ship_shp: int, days: int, is_domain_owner: bool = false) -> int
+static func stabling_cp_per_day(mounts: Dictionary, is_domain_owner: bool = false) -> int
+static func stabling_cp_total(mounts: Dictionary, days: int, is_domain_owner: bool = false) -> int
 
 # Annual customs roll (per §8.4)
 static func roll_annual_customs_rate(settlement_id: String, year: int) -> int
@@ -2494,21 +2496,21 @@ static func is_domain_owner_in_own_market(character_id: String, settlement_id: S
 
 `tests/test_market_fees_calculator.gd` budget: **~14 tests.**
 
-1. **Entry toll: dice range.** `entry_toll_gp(1, false, 0, rng)` returns value in [16, 21] (1d6+15).
-2. **Entry toll: selling minimum kicks in.** `entry_toll_gp(6, true, 10, seeded_rng_that_rolls_1)` returns 10 (= 1gp × 10 loads), not 1 (the dice roll).
-3. **Entry toll: selling dice exceeds minimum.** `entry_toll_gp(1, true, 5, seeded_rng_that_rolls_16)` returns 16, not 5.
+1. **Entry toll: dice range.** `entry_toll_cp(1, false, 0, rng)` returns value in [16, 21] (1d6+15).
+2. **Entry toll: selling minimum kicks in.** `entry_toll_cp(6, true, 10, seeded_rng_that_rolls_1)` returns 10 (= 1gp × 10 loads), not 1 (the dice roll).
+3. **Entry toll: selling dice exceeds minimum.** `entry_toll_cp(1, true, 5, seeded_rng_that_rolls_16)` returns 16, not 5.
 4. **Entry toll: domain-owner exemption.** Same fixture as test 1 but `is_domain_owner=true` → returns 0.
-5. **Customs duty: uses cached annual rate.** Fixture: settlement with `customs_duty_rate_pct=15`. `customs_duty_gp(1000, settlement_id)` returns 150 (1000 × 15% = 150).
-6. **Customs duty: zero price.** `customs_duty_gp(0, settlement_id)` returns 0 regardless of rate.
+5. **Customs duty: uses cached annual rate.** Fixture: settlement with `customs_duty_rate_pct=15`. `customs_duty_cp(1000, settlement_id)` returns 150 (1000 × 15% = 150).
+6. **Customs duty: zero price.** `customs_duty_cp(0, settlement_id)` returns 0 regardless of rate.
 7. **Customs duty: domain-owner exemption.** Same fixture as test 5 but `is_domain_owner=true` → returns 0.
 7b. **Annual customs roll determinism.** `roll_annual_customs_rate("settle_abc", 1234)` returns the same value on repeat calls. Different settlements at the same year yield different rates; same settlement at different years yields different rates. Range always in [2, 20].
 7c. **Annual customs roll: year-trigger.** Fixture: campaign with three settlements, `campaigns.last_customs_roll_year = 1233`. Invoke `process_annual_customs_roll_for_campaign(campaign_id, 1234)` → all three settlement_entrances rows updated to new rates; `last_customs_roll_year` advanced to 1234.
-8. **Labor fee: exact multiples.** `labor_fee_gp(200) == 1`; `labor_fee_gp(400) == 2`; `labor_fee_gp(2000) == 10`.
-9. **Labor fee: aggregate-then-round.** `labor_fee_gp(100) == 0` (0.5 rounds to even 0); `labor_fee_gp(300) == 2` (1.5 rounds to even 2); `labor_fee_gp(3760) == 19`.
-10. **Moorage: per-day formula.** `moorage_gp_per_day(30) == 3`; `moorage_gp_per_day(5) == 0` (banker 0.5 → 0); `moorage_gp_per_day(15) == 2` (banker 1.5 → 2).
-11. **Moorage: multi-day aggregate.** `moorage_gp_total(5, 7) == 4` (5×7/10 = 3.5 → 4).
-12. **Moorage: domain-owner exemption.** `moorage_gp_total(30, 14, is_domain_owner=true) == 0`.
-13. **Stabling: mixed-mount totals.** `stabling_gp_total({"mule": 5, "horse": 2, "wagon": 1}, 7) == ?` (calculate: 5×0.2 + 2×0.5 + 1×2 = 1 + 1 + 2 = 4/day × 7 = 28).
+8. **Labor fee: exact multiples.** `labor_fee_cp(200) == 1`; `labor_fee_cp(400) == 2`; `labor_fee_cp(2000) == 10`.
+9. **Labor fee: aggregate-then-round.** `labor_fee_cp(100) == 0` (0.5 rounds to even 0); `labor_fee_cp(300) == 2` (1.5 rounds to even 2); `labor_fee_cp(3760) == 19`.
+10. **Moorage: per-day formula.** `moorage_cp_per_day(30) == 3`; `moorage_cp_per_day(5) == 0` (banker 0.5 → 0); `moorage_cp_per_day(15) == 2` (banker 1.5 → 2).
+11. **Moorage: multi-day aggregate.** `moorage_cp_total(5, 7) == 4` (5×7/10 = 3.5 → 4).
+12. **Moorage: domain-owner exemption.** `moorage_cp_total(30, 14, is_domain_owner=true) == 0`.
+13. **Stabling: mixed-mount totals.** `stabling_cp_total({"mule": 5, "horse": 2, "wagon": 1}, 7) == ?` (calculate: 5×0.2 + 2×0.5 + 1×2 = 1 + 1 + 2 = 4/day × 7 = 28).
 14. **`is_domain_owner_in_own_market` predicate.** Fixture: settlement S has parent_domain D; D.owner = character C. `is_domain_owner_in_own_market(C, S)` → true; `is_domain_owner_in_own_market(other_char, S)` → false; `is_domain_owner_in_own_market(C, settlement_without_parent_domain)` → false.
 
 ### 8.11 What §8 does NOT add
@@ -2629,7 +2631,7 @@ CREATE TABLE IF NOT EXISTS cargo_holds (
     merchandise_type                    TEXT    NOT NULL,
     loads_count                         INTEGER NOT NULL DEFAULT 0,
     load_weight_stone                   INTEGER NOT NULL DEFAULT 0,   -- cached from MerchandiseRegistry at acquisition
-    market_value_at_acquisition_gp      INTEGER NOT NULL DEFAULT 0,   -- gp paid (purchase) or notional value (smuggle/steal)
+    market_value_at_acquisition_cp      INTEGER NOT NULL DEFAULT 0,   -- gp paid (purchase) or notional value (smuggle/steal)
     source_acquisition_kind             TEXT    NOT NULL DEFAULT 'purchased'
         CHECK(source_acquisition_kind IN ('purchased', 'smuggled', 'stolen', 'shipping_contract')),
     acquired_at_settlement_id           TEXT    REFERENCES settlement_entrances(id),
@@ -2648,7 +2650,7 @@ CREATE INDEX idx_cargo_holds_merchandise ON cargo_holds(merchandise_type);
 - Two nullable carrier FKs with XOR CHECK — exactly one is set per row. Cleaner than a polymorphic carrier_kind/carrier_id pattern in SQLite (typed FKs preserve referential integrity).
 - `ON DELETE CASCADE` on both carriers — destroying the carrier (sunk ship, scrapped wagon) destroys its cargo. Phase 10B.2 / UI is responsible for prompting "unload first?" before player-initiated destruction. Combat-driven destruction (ship sunk) loses cargo naturally.
 - `load_weight_stone` cached at acquisition — `MerchandiseRegistry.load_weight_stone(merchandise_type)` is RAW-stable, but caching avoids a registry lookup on every encumbrance query.
-- `market_value_at_acquisition_gp` — the gp value at the time of acquisition. For purchased cargo, this is the gp PAID. For smuggled/stolen cargo, it's the notional gp value at the acquisition market (used by Phase 10B.3's smuggling/stealing yield formulas: 12% of market value to boss for smuggling, 60% for stealing — multiplied against this column).
+- `market_value_at_acquisition_cp` — the gp value at the time of acquisition. For purchased cargo, this is the gp PAID. For smuggled/stolen cargo, it's the notional gp value at the acquisition market (used by Phase 10B.3's smuggling/stealing yield formulas: 12% of market value to boss for smuggling, 60% for stealing — multiplied against this column).
 - `source_acquisition_kind` — provenance. Four values:
   - `'purchased'` — legitimate buy at market
   - `'smuggled'` — Phase 10B.3 hijink output
@@ -2765,7 +2767,7 @@ CREATE TABLE IF NOT EXISTS shipping_contracts (
     destination_settlement_id       TEXT    NOT NULL REFERENCES settlement_entrances(id),
     merchandise_type                TEXT    NOT NULL,
     loads_count                     INTEGER NOT NULL DEFAULT 0,
-    fee_gp                          INTEGER NOT NULL DEFAULT 0,
+    fee_cp                          INTEGER NOT NULL DEFAULT 0,
     deadline_calendar_day           INTEGER NOT NULL DEFAULT 0,
     status                          TEXT    NOT NULL DEFAULT 'accepted'
         CHECK(status IN ('accepted', 'in_transit', 'delivered', 'failed_deadline', 'cancelled')),
@@ -2780,7 +2782,7 @@ CREATE INDEX idx_shipping_contracts_destination ON shipping_contracts(destinatio
 - **RAW citation:** `rules/acore-campaign-hijinks.xml:765-790ish` (passenger and shipping contracts table — six rows by market class).
 - **What RAW provides:** at each market, roll counts of available passengers (2d4+1 for class I, ..., none for class VI) and shipping contracts (similar). Cargo to be shipped per contract is rolled in loads.
 - **Project resolution:** the `shipping_contracts` table tracks contracts the player has *accepted*. Available contracts (not yet accepted) are rolled fresh at each market visit — they don't persist between visits. The activity handler for `solicit_passengers` / accept-shipping-contract (Phase 10B.2) rolls fresh contracts on each market entry and writes accepted ones to this table.
-- **Cargo flow.** Accepted shipping contracts spawn `cargo_holds` rows with `source_acquisition_kind='shipping_contract'`. The merchandise (or stand-in for passenger fares) is loaded onto a carrier. Delivery at destination zeros out the cargo_hold row and credits `fee_gp` to the party treasury.
+- **Cargo flow.** Accepted shipping contracts spawn `cargo_holds` rows with `source_acquisition_kind='shipping_contract'`. The merchandise (or stand-in for passenger fares) is loaded onto a carrier. Delivery at destination zeros out the cargo_hold row and credits `fee_cp` to the party treasury.
 - **Deadline mechanic.** RAW silent on deadlines; project-design: contracts carry an explicit `deadline_calendar_day`. Late delivery → `status='failed_deadline'`, no fee paid (or partial fee with reputation penalty — `[NEEDS-LATE-DELIVERY-PENALTY-PASS]`).
 
 ### 9.8 Hijink → cargo flow (data path)
@@ -2793,7 +2795,7 @@ On smuggling_hijink_success (Phase 10B.3 invokes):
        (or context-specific source per RAW).
     2. Compute loads_count = 10 × syndicate_member_level (per RAW for smuggling).
     3. Compute notional market value: MarketPriceResolver.compute_market_price(merch_type, settlement_id, ...)
-       returns gp_per_load; market_value = gp_per_load × loads_count.
+       returns cp_per_load; market_value = cp_per_load × loads_count.
     4. Identify a recipient carrier (Phase 10B.3 responsibility — defaults to boss's available
        draft_vehicle or ship). If none has capacity, hijink yield converts to pure gp at a
        project-design loss factor (`[NEEDS-CARRIER-FALLBACK-PASS]`).
@@ -2802,7 +2804,7 @@ On smuggling_hijink_success (Phase 10B.3 invokes):
        - merchandise_type = identified type
        - loads_count = as computed
        - load_weight_stone = MerchandiseRegistry.load_weight_stone(...)
-       - market_value_at_acquisition_gp = computed market value (basis for the eventual 12% boss payout)
+       - market_value_at_acquisition_cp = computed market value (basis for the eventual 12% boss payout)
        - source_acquisition_kind = 'smuggled'
        - acquired_at_settlement_id = settlement where the hijink occurred
        - acquired_at_calendar_day = current_calendar_day
@@ -2822,7 +2824,7 @@ Buy-at-A / transport / sell-at-B is the core mercantile loop:
    - Debits gp from party treasury.
    - Calls CargoHoldRepository.insert_purchase(...)
      → new cargo_holds row, draft_vehicle_id or ship_id set, source='purchased',
-       market_value_at_acquisition_gp = gp_paid.
+       market_value_at_acquisition_cp = gp_paid.
    - CargoEncumbranceCalculator validates carrier has capacity (§9.5).
 2. Player travels A → B via wilderness adventure (existing systems handle).
    - Cargo persists in cargo_holds rows.
@@ -2918,13 +2920,13 @@ extends RefCounted
 
 static func accept_contract(
     party_id: String, origin_settlement_id: String, destination_settlement_id: String,
-    merchandise_type: String, loads_count: int, fee_gp: int,
+    merchandise_type: String, loads_count: int, fee_cp: int,
     deadline_calendar_day: int, current_calendar_day: int
 ) -> String
 
 static func mark_in_transit(contract_id: String) -> bool
 static func deliver(contract_id: String, current_calendar_day: int) -> Dictionary
-    # Returns {success: bool, fee_paid_gp: int, deadline_missed: bool}
+    # Returns {success: bool, fee_paid_cp: int, deadline_missed: bool}
 static func cancel(contract_id: String) -> bool
 static func list_active_for_party(party_id: String) -> Array
 ```
@@ -2942,9 +2944,9 @@ signal ship_location_changed(ship_id: String, new_kind: String, settlement_id: S
 signal ship_operating_cost_paid(ship_id: String, gp_amount: int)
 signal ship_operating_cost_unpaid(ship_id: String, owed_gp: int)
 signal cargo_loaded(cargo_hold_id: String, carrier_id: String, merchandise_type: String, loads_count: int)
-signal cargo_sold(cargo_hold_id: String, gp_received: int)
-signal shipping_contract_accepted(contract_id: String, party_id: String, fee_gp: int)
-signal shipping_contract_delivered(contract_id: String, fee_paid_gp: int, deadline_missed: bool)
+signal cargo_sold(cargo_hold_id: String, cp_received: int)
+signal shipping_contract_accepted(contract_id: String, party_id: String, fee_cp: int)
+signal shipping_contract_delivered(contract_id: String, fee_paid_cp: int, deadline_missed: bool)
 signal shipping_contract_failed(contract_id: String, reason: String)
 ```
 
@@ -3417,14 +3419,14 @@ Pinned 4d4 roll at both markets: 10 (the expected value of 4d4 ≈ 10).
 ```
 percentage = (10 + (+3) + class_III_adjust(0) + monopolist(0) + judge(0)) × 10
            = (10 + 3 + 0) × 10 = 130
-gp_per_load = 2000 × 130 / 100 = 2,600 gp
+cp_per_load = 2000 × 130 / 100 = 2,600 gp
 ```
 
 **Thornwall silk:**
 ```
 percentage = (10 + (-1) + class_V_adjust(-1) + 0 + 0) × 10
            = (10 - 1 - 1) × 10 = 80
-gp_per_load = 2000 × 80 / 100 = 1,600 gp
+cp_per_load = 2000 × 80 / 100 = 1,600 gp
 ```
 
 **Gross arbitrage margin: 2,600 - 1,600 = 1,000 gp/load** (selling in Ashford after buying in Thornwall). Direction: **buy in Thornwall (low demand → cheap), sell in Ashford (high demand → expensive).**
@@ -3687,9 +3689,9 @@ signal ship_location_changed(ship_id: String, new_kind: String, settlement_id: S
 signal ship_operating_cost_paid(ship_id: String, gp_amount: int)
 signal ship_operating_cost_unpaid(ship_id: String, owed_gp: int)
 signal cargo_loaded(cargo_hold_id: String, carrier_id: String, merchandise_type: String, loads_count: int)
-signal cargo_sold(cargo_hold_id: String, gp_received: int)
-signal shipping_contract_accepted(contract_id: String, party_id: String, fee_gp: int)
-signal shipping_contract_delivered(contract_id: String, fee_paid_gp: int, deadline_missed: bool)
+signal cargo_sold(cargo_hold_id: String, cp_received: int)
+signal shipping_contract_accepted(contract_id: String, party_id: String, fee_cp: int)
+signal shipping_contract_delivered(contract_id: String, fee_paid_cp: int, deadline_missed: bool)
 signal shipping_contract_failed(contract_id: String, reason: String)
 
 # §10 — legal status
@@ -3803,7 +3805,7 @@ Per the handoff §13's three-corner alignment principle:
 - [ ] `MerchandiseRegistry.get_by_type("silk")` returns `{base_price_gp: 2000, load_weight_stone: 20, precious: true}`.
 - [ ] `MarketPriceResolver.compute_market_price("silk", ashford_settlement_id, ...)` returns the 2,600 gp/load value from §12.4 (with pinned RNG).
 - [ ] `MerchantSolicitor.process_solicitation(ashford_settlement_id, ...)` reveals the pool's invisible merchants on the half/quarter/remainder schedule per §7.5.1.
-- [ ] `MarketFeesCalculator.customs_duty_gp(26000, ashford_settlement_id, false)` returns 1,040 gp (4% × 26000).
+- [ ] `MarketFeesCalculator.customs_duty_cp(26000, ashford_settlement_id, false)` returns 1,040 gp (4% × 26000).
 - [ ] `CargoHoldRepository.insert_purchase(...)` writes a row with `source_acquisition_kind='purchased'`; cascade behavior verified on parent vehicle destruction.
 - [ ] `CharacterLegalStatusRepository.get_prior_crimes_modifier(branded_maimed_character_id)` returns -3.
 - [ ] `HenchmanLoyaltyResolver.resolve_loyalty_check(5, false, false, fixed_dice, {"hijink_overload": -3})` returns a result with `modifier` 3 less than the no-extras case.

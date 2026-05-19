@@ -30,14 +30,14 @@ func test_list_kinds_returns_pathfinder_and_land_surveyor() -> void:
 
 
 func test_pathfinder_wage_25gp() -> void:
-	# RAW le_wilderness_lair_rules.xml: <wage>25gp/month</wage>
-	check(SpecialistCatalog.monthly_wage_gp("pathfinder") == 25,
-		"pathfinder wage = 25 gp/month")
+	# RAW le_wilderness_lair_rules.xml: <wage>25gp/month</wage> = 2500 cp/month.
+	check(SpecialistCatalog.monthly_wage_cp("pathfinder") == 2500,
+		"pathfinder wage = 2500 cp/month (= 25 gp)")
 
 
 func test_land_surveyor_wage_25gp() -> void:
-	check(SpecialistCatalog.monthly_wage_gp("land_surveyor") == 25,
-		"land_surveyor wage = 25 gp/month")
+	check(SpecialistCatalog.monthly_wage_cp("land_surveyor") == 2500,
+		"land_surveyor wage = 2500 cp/month (= 25 gp)")
 
 
 func test_pathfinder_bonuses() -> void:
@@ -72,7 +72,7 @@ func test_land_surveyor_bonuses() -> void:
 func test_unknown_kind_returns_safe_defaults() -> void:
 	check(not SpecialistCatalog.is_known_kind("alchemist"),
 		"alchemist is not a v1 wilderness specialist")
-	check(SpecialistCatalog.monthly_wage_gp("alchemist") == 0,
+	check(SpecialistCatalog.monthly_wage_cp("alchemist") == 0,
 		"unknown kind wage = 0")
 	check(SpecialistCatalog.bonus_for_resolver("alchemist",
 		SpecialistCatalog.KIND_LAIR_SEARCH) == 0,
@@ -83,6 +83,6 @@ func test_get_definition_returns_copy() -> void:
 	# Ensure callers cannot mutate the catalog by editing the returned Dict.
 	var def := SpecialistCatalog.get_definition("pathfinder")
 	check(not def.is_empty(), "pathfinder def returned")
-	def["monthly_wage_gp"] = 9999
-	check(SpecialistCatalog.monthly_wage_gp("pathfinder") == 25,
+	def["monthly_wage_cp"] = 9999
+	check(SpecialistCatalog.monthly_wage_cp("pathfinder") == 2500,
 		"catalog wage unchanged after caller mutation")

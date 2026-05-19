@@ -119,14 +119,14 @@ static func validate_attacks_and_damage(
 
 ## Workshop must be worth at least the construct's cost (RAW L384).
 ## +1 throw per 10,000gp above the minimum, capped at +3 (matches the
-## general magic-research workshop bonus rule).
+## general magic-research workshop bonus rule). [param construct_cost] is gp.
 static func workshop_throw_bonus(workshop_row: Dictionary, construct_cost: int) -> int:
 	if workshop_row.is_empty():
 		return 0
-	var invested: int = int(workshop_row.get("gp_invested", 0))
-	if invested <= construct_cost:
+	var invested_gp: int = int(workshop_row.get("cp_invested", 0)) / 100
+	if invested_gp <= construct_cost:
 		return int(workshop_row.get("magic_research_throw_bonus", 0))
-	var excess: int = invested - construct_cost
+	var excess: int = invested_gp - construct_cost
 	return clampi(int(excess / 10000), 0, 3)
 
 
@@ -143,9 +143,9 @@ static func validate_workshop(
 		return "workshop not owned by caster"
 	if String(workshop_row.get("status", "")) != "operational":
 		return "workshop not operational (status=%s)" % workshop_row.get("status", "")
-	var invested: int = int(workshop_row.get("gp_invested", 0))
-	if invested < construct_cost:
-		return "workshop too small (need %d gp invested, has %d)" % [construct_cost, invested]
+	var invested_gp: int = int(workshop_row.get("cp_invested", 0)) / 100
+	if invested_gp < construct_cost:
+		return "workshop too small (need %d gp invested, has %d)" % [construct_cost, invested_gp]
 	return ""
 
 

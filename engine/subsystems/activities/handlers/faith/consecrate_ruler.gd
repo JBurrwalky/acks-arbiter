@@ -51,15 +51,15 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	if domain_id.is_empty():
 		return {"summary": "consecrate_ruler failed: target character does not rule a domain"}
 	var domain := _get_domain(domain_id)
-	var monthly_revenue: int = int(domain.get("revenue_gp", 0))
-	if monthly_revenue <= 0:
+	var monthly_revenue_cp: int = int(domain.get("revenue_cp", 0))
+	if monthly_revenue_cp <= 0:
 		return {"summary": "consecrate_ruler failed: domain has zero monthly revenue (cannot compute DP cost)"}
 
-	# Step 1: expend DP equal to ruler's monthly revenue.
-	if not CampaignRepository.spend_divine_power(caster_character_id, monthly_revenue):
-		return {"summary": "consecrate_ruler failed: insufficient divine power (needed %d)" % monthly_revenue}
-	var new_dp_balance: int = CampaignRepository.get_divine_power_gp(caster_character_id)
-	EventBus.divine_power_changed.emit(caster_character_id, new_dp_balance, -monthly_revenue)
+	# Step 1: expend DP equal to ruler's monthly revenue (both in cp).
+	if not CampaignRepository.spend_divine_power_cp(caster_character_id, monthly_revenue_cp):
+		return {"summary": "consecrate_ruler failed: insufficient divine power (needed %s)" % Currency.format_cost(monthly_revenue_cp)}
+	var new_dp_balance: int = CampaignRepository.get_divine_power_cp(caster_character_id)
+	EventBus.divine_power_changed.emit(caster_character_id, new_dp_balance, -monthly_revenue_cp)
 
 	# Step 2: magic research throw (WIS-modified for divine activity).
 	var caster_level: int = int(caster.get("level", 9))
@@ -102,7 +102,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 
 	EventBus.consecrate_ruler_resolved.emit(domain_id, ruler_character_id, success, expires_at)
 
-	var summary := "Consecrate Ruler: rolled %d + %d = %d vs %d → %s · -%d DP" % [
+	var summary := "Consecrate Ruler: rolled %d + %d = %d vs %d → %s · -%s DP" % [
 		int(throw_result.get("raw_roll", 0)),
 		int(throw_result.get("ability_modifier", 0)),
 		int(throw_result.get("modified_total", 0)),
@@ -110,7 +110,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"success (12-month buff)" if success else (
 			"awry on natural 1 (12-month curse)" if natural_one else "failure (no effect)"
 		),
-		monthly_revenue,
+		Currency.format_cost(monthly_revenue_cp),
 	]
 	return {
 		"summary": summary,

@@ -156,6 +156,28 @@ static func _apply_sacred_modifiers(stack: ModifierStack, tone: String, ctx: Dic
 	if twis != 0:
 		stack.add_modifier(_mk("target_wis", "ability", -twis, "ability_target_wis"))
 
+	# Phase 10B.3 #6: permanent-wound reaction modifier (branded -2, ear cut -1,
+	# whipped scar -2, etc.) per acore-campaign-hijinks.xml §retribution_by_crime.
+	# Caller passes `character_id` so the aggregator can look up the character's
+	# wound rows; falls back to ctx["wound_reaction_modifier"] for tests or
+	# callers that pre-computed the value.
+	var cid: String = String(ctx.get("character_id", ""))
+	var wound_agg: Dictionary = {}
+	if not cid.is_empty():
+		wound_agg = WoundEffectAggregator.compute(cid)
+	var wound_reaction: int = int(ctx.get("wound_reaction_modifier", 0))
+	if wound_reaction == 0:
+		wound_reaction = int(wound_agg.get("reaction_modifier", 0))
+	if wound_reaction != 0:
+		stack.add_modifier(_mk("wound_reaction", "wound", wound_reaction, "permanent_wound"))
+	# Speech penalty: maimed_tongue (and equivalent MW outcomes) applies -4
+	# to speech-based interactions per RAW L354. All three reaction tones
+	# (diplomatic, intimidation, seduction) involve speech, so the penalty
+	# applies universally when cannot_speak is true.
+	var speech_pen: int = int(wound_agg.get("speech_proficiency_modifier", 0))
+	if speech_pen != 0 and bool(wound_agg.get("cannot_speak", false)):
+		stack.add_modifier(_mk("wound_speech", "wound", speech_pen, "permanent_wound_speech"))
+
 	# Already-attitude (relationship category) per ax table.
 	var already: String = ctx.get("already_attitude", "")
 	if already != "":

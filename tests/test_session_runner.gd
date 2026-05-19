@@ -86,6 +86,22 @@ func _reset_game_state() -> void:
 	GameState.exploration_context = GameState.ExplorationContext.NONE
 
 
+## Clears the persistent `campaign_clock` row for [param campaign_id] so a
+## test's `Timekeeping.advance_days(...)` starts from day 0. Without this,
+## `user://campaign.db` accumulates 5-day increments across every `--headless`
+## test invocation because `_on_session_started → load_state(campaign_id)`
+## restores the saved clock from the previous run.
+func _wipe_campaign_clock(campaign_id: String) -> void:
+	if CampaignRepository.db == null or campaign_id.is_empty():
+		return
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id]
+	)
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM party_clocks WHERE campaign_id = ?", [campaign_id]
+	)
+
+
 # ---------------------------------------------------------------------------
 # State machine tests
 # ---------------------------------------------------------------------------
@@ -322,6 +338,7 @@ func test_weighted_pick_empty_uniform_when_zero_weights() -> void:
 
 func test_advance_exploration_time() -> void:
 	_reset_game_state()
+	_wipe_campaign_clock("test_session_c")
 	# Start a minimal session so Timekeeping has state
 	GameState.start_session("test_session_c", "test_session_p")
 	var runner := _make_runner()
@@ -351,6 +368,7 @@ func test_effect_ticker_connect_disconnect() -> void:
 
 func test_effect_ticker_round_tick() -> void:
 	_reset_game_state()
+	_wipe_campaign_clock("test_tick_c")
 	GameState.start_session("test_tick_c", "test_tick_p")
 	var tracker := ActiveEffectTracker.new()
 	var ticker := EffectTicker.new(tracker)
@@ -437,6 +455,7 @@ func test_submit_action_delegates_to_state() -> void:
 
 func test_dice_roll_logs_game_day() -> void:
 	_reset_game_state()
+	_wipe_campaign_clock("test_gd_c")
 	GameState.start_session("test_gd_c", "test_gd_p")
 	# Advance to day 5
 	Timekeeping.advance_days(5)

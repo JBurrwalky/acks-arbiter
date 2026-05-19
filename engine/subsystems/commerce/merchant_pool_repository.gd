@@ -58,7 +58,7 @@ static func max_merchant_count(market_class: int) -> int:
 
 
 ## Returns the toll-dice spec for a market class (e.g., "1d8+5" for Class III).
-## Canonical source for MarketFeesCalculator.entry_toll_gp.
+## Canonical source for MarketFeesCalculator.entry_toll_cp.
 static func toll_dice_for_class(market_class: int) -> String:
 	var row: Dictionary = MARKETS_AND_MERCHANTS.get(market_class, {})
 	return String(row.get("toll_dice", "1d3"))
@@ -70,6 +70,10 @@ static func toll_dice_for_class(market_class: int) -> String:
 
 ## Returns active merchants visible at [param current_calendar_day]. A merchant
 ## is visible iff `status='active'` AND `becomes_visible_calendar_day <= current_day`.
+##
+## Phase 10B.2 §4.8: filters out rows whose `refused_at_calendar_day IS NOT NULL`
+## — persuade-failed promoted merchants refuse to transact this cohort. Cleared
+## by monthly refresh per §11.7.
 static func list_visible_merchants(settlement_id: String, current_calendar_day: int) -> Array:
 	if settlement_id.is_empty():
 		return []
@@ -77,6 +81,7 @@ static func list_visible_merchants(settlement_id: String, current_calendar_day: 
 		SELECT * FROM merchant_pool
 		WHERE settlement_entrance_id = ? AND status = 'active'
 			AND becomes_visible_calendar_day <= ?
+			AND refused_at_calendar_day IS NULL
 		ORDER BY id ASC
 	""", [settlement_id, current_calendar_day]):
 		return []
@@ -84,6 +89,7 @@ static func list_visible_merchants(settlement_id: String, current_calendar_day: 
 
 
 ## Same as list_visible_merchants but filtered by [param merchandise_type].
+## Phase 10B.2 §4.8 refused filter applied.
 static func list_visible_merchants_for_merchandise(
 		settlement_id: String,
 		merchandise_type: String,
@@ -96,6 +102,7 @@ static func list_visible_merchants_for_merchandise(
 		WHERE settlement_entrance_id = ? AND status = 'active'
 			AND merchandise_type = ?
 			AND becomes_visible_calendar_day <= ?
+			AND refused_at_calendar_day IS NULL
 		ORDER BY id ASC
 	""", [settlement_id, merchandise_type, current_calendar_day]):
 		return []
@@ -105,6 +112,10 @@ static func list_visible_merchants_for_merchandise(
 ## Returns active merchants whose `becomes_visible_calendar_day` is in the
 ## future (or equal to the INVISIBLE_SENTINEL). Used by solicit_merchants
 ## and locate_merchandise to find reveal candidates.
+##
+## Phase 10B.2 §4.8: also filters refused_at_calendar_day IS NULL — refused
+## promoted merchants are neither visible nor candidates for re-reveal until
+## the cohort cycles.
 static func list_invisible_merchants(settlement_id: String, current_calendar_day: int) -> Array:
 	if settlement_id.is_empty():
 		return []
@@ -112,6 +123,7 @@ static func list_invisible_merchants(settlement_id: String, current_calendar_day
 		SELECT * FROM merchant_pool
 		WHERE settlement_entrance_id = ? AND status = 'active'
 			AND becomes_visible_calendar_day > ?
+			AND refused_at_calendar_day IS NULL
 		ORDER BY id ASC
 	""", [settlement_id, current_calendar_day]):
 		return []
@@ -133,17 +145,28 @@ static func get_merchant(merchant_id: String) -> Dictionary:
 # §7.4 Pool generation
 # ---------------------------------------------------------------------------
 
-## Wipes the settlement's previous `source_kind='monthly_refresh'` rows
-## (preserving `source_kind='manual'`) and generates a fresh cohort of
-## `max_merchant_count(class)` merchants. Each merchant's merchandise type
-## is rolled via MerchandiseRegistry.random_common; loads_available rolled
-## from the class's loads_dice spec.
+## Wipes the settlement's previous transactional `source_kind='monthly_refresh'`
+## rows (preserving `source_kind='manual'` AND `promoted_npc_id IS NOT NULL`
+## per §0.1.1) and generates a fresh cohort of `max_merchant_count(class)`
+## merchants. Each new merchant's merchandise type is rolled via
+## MerchandiseRegistry.random_common; loads_available rolled from the class's
+## loads_dice spec.
+##
+## Per gdd-phase-10b-2-trade-block.md §0.1.1 + §11.7: promoted-NPC merchants
+## (`promoted_npc_id IS NOT NULL`) are NOT deleted on refresh. They are
+## UPDATEd in-place with fresh `loads_available`, extended
+## `expires_at_calendar_day`, reset `becomes_visible_calendar_day`, and
+## cleared `refused_at_calendar_day`. The class cohort cap counts them, so
+## generation creates `max_count - existing_promoted_count` new transactional
+## rows. v1 has no caller populating `promoted_npc_id`; the path ships ready
+## for the future LLM tool-caller layer. `[NEEDS-LLM-PROMOTION-LATER]`.
 ##
 ## Visibility depends on [param pc_owned]:
 ##   * pc_owned = true  → becomes_visible_calendar_day = current_calendar_day (visible)
 ##   * pc_owned = false → becomes_visible_calendar_day = INVISIBLE_SENTINEL (invisible)
 ##
-## Returns the number of merchants generated.
+## Returns the number of merchants generated (NEW transactional rows;
+## promoted rows refreshed in place are NOT counted in the return).
 static func generate_pool_for_settlement(
 		settlement_id: String,
 		current_calendar_day: int,
@@ -164,17 +187,48 @@ static func generate_pool_for_settlement(
 	if market_class < 1 or market_class > 6:
 		return 0
 
-	# Delete previous monthly_refresh rows; preserve manual.
+	# Delete previous transactional monthly_refresh rows; preserve manual AND
+	# promoted (per §0.1.1). [NEEDS-LLM-PROMOTION-LATER]
 	CampaignRepository.db.query_with_bindings("""
 		DELETE FROM merchant_pool
-		WHERE settlement_entrance_id = ? AND source_kind = 'monthly_refresh'
+		WHERE settlement_entrance_id = ?
+			AND source_kind = 'monthly_refresh'
+			AND promoted_npc_id IS NULL
 	""", [settlement_id])
 
 	var visibility_default: int = current_calendar_day if pc_owned else INVISIBLE_SENTINEL
 	var expires: int = current_calendar_day + Timekeeping.DAYS_PER_MONTH
 	var loads_spec: String = String((MARKETS_AND_MERCHANTS.get(market_class, {}) as Dictionary).get("loads_dice", "1d2"))
-	var n: int = max_merchant_count(market_class)
+	var max_count: int = max_merchant_count(market_class)
 
+	# Refresh promoted rows in place per §11.7: re-roll loads_available,
+	# extend expires_at, reset visibility, clear refused_at. The cohort cap
+	# counts these rows. [NEEDS-LLM-PROMOTION-LATER]
+	var promoted_count: int = 0
+	if CampaignRepository.db.query_with_bindings("""
+		SELECT id FROM merchant_pool
+		WHERE settlement_entrance_id = ? AND promoted_npc_id IS NOT NULL
+		ORDER BY id ASC
+	""", [settlement_id]):
+		var promoted_ids: Array = CampaignRepository.db.query_result.duplicate()
+		for row in promoted_ids:
+			var pid: String = str((row as Dictionary).get("id", ""))
+			if pid.is_empty():
+				continue
+			var fresh_loads: int = maxi(1, _roll_dice_spec(loads_spec, rng))
+			CampaignRepository.db.query_with_bindings("""
+				UPDATE merchant_pool
+				SET loads_available = ?,
+					loads_initial = ?,
+					expires_at_calendar_day = ?,
+					becomes_visible_calendar_day = ?,
+					refused_at_calendar_day = NULL,
+					status = 'active'
+				WHERE id = ?
+			""", [fresh_loads, fresh_loads, expires, visibility_default, pid])
+			promoted_count += 1
+
+	var n: int = maxi(0, max_count - promoted_count)
 	for _i in n:
 		var entry: Dictionary = MerchandiseRegistry.random_common(rng)
 		var merchandise_type: String = String(entry.get("merchandise_type", ""))
@@ -396,7 +450,13 @@ static func consume_loads(merchant_id: String, loads_count: int) -> bool:
 
 ## Deletes 'active' rows where expires_at_calendar_day < current_calendar_day.
 ## Emits one merchant_expired signal per deleted row.
-## Returns the count of deleted rows.
+##
+## Per gdd-phase-10b-2-trade-block.md §0.1.1 + §11.7: promoted-NPC merchants
+## (`promoted_npc_id IS NOT NULL`) are SKIPPED — they survive expiration
+## and are re-cycled by the next monthly refresh's promoted-row UPDATE path
+## above. [NEEDS-LLM-PROMOTION-LATER]
+##
+## Returns the count of deleted rows (transactional only).
 static func process_expirations(settlement_id: String, current_calendar_day: int) -> int:
 	if settlement_id.is_empty():
 		return 0
@@ -405,6 +465,7 @@ static func process_expirations(settlement_id: String, current_calendar_day: int
 		SELECT id FROM merchant_pool
 		WHERE settlement_entrance_id = ? AND status = 'active'
 			AND expires_at_calendar_day < ?
+			AND promoted_npc_id IS NULL
 	""", [settlement_id, current_calendar_day]):
 		return 0
 	var ids: Array = []

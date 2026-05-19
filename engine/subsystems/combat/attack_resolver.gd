@@ -35,6 +35,19 @@ func resolve_melee_attack(
 		target: Combatant,
 		damage_expression: String = "",
 		extra_attack_mod: int = 0) -> Dictionary:
+	# Phase 10B.3 #6: hard-block invalid attacks based on permanent wounds
+	# per RAW acore-campaign-hijinks.xml L342-398 (corporal punishment
+	# effects) and ax_mortal_wounds_and_tampering.xml (combat-relevant MW
+	# outcomes). The aggregator returns an Empty Dictionary if the character
+	# has no wounds, so this check is free for unwounded combatants.
+	if attacker.is_character:
+		var block: Dictionary = _wound_blocks_attack(attacker)
+		if not block.is_empty():
+			var miss := _build_miss_result(attacker, target, 0, 0, damage_expression)
+			miss["wound_blocked"] = true
+			miss["wound_block_reason"] = block.get("reason", "")
+			return miss
+
 	# Get the damage expression
 	if damage_expression.is_empty():
 		damage_expression = _get_melee_damage_expression(attacker)
@@ -404,3 +417,26 @@ static func _build_result(
 		"damage_result": damage_result,
 		"target_downed": damage_result.get("is_downed", false),
 	}
+
+
+## Phase 10B.3 #6: returns {reason: String} if the attacker's permanent wounds
+## prevent the attack outright per RAW. Empty dict = no block.
+##
+## Blocks (RAW acore-campaign-hijinks.xml L372 + MW table):
+##   * both_hands_amputated → cannot use weapons of any kind
+##   * one_hand_amputated wielding a two-handed weapon → invalid combination
+##   * one_hand_amputated dual-wielding → invalid combination
+##
+## Numeric penalties (blindness -4, etc.) are handled inside the to_hit_bonus
+## computation; this helper only handles the binary "cannot perform" blocks.
+static func _wound_blocks_attack(attacker: Combatant) -> Dictionary:
+	var agg: Dictionary = WoundEffectAggregator.compute(attacker.id)
+	if int(agg.get("wound_count", 0)) == 0:
+		return {}
+	if bool(agg.get("cannot_use_weapons", false)):
+		return {"reason": "both hands amputated — cannot use weapons"}
+	if bool(agg.get("cannot_use_two_handed_weapons", false)) and attacker.is_wielding_two_handed():
+		return {"reason": "one hand amputated — cannot use two-handed weapons"}
+	if bool(agg.get("cannot_dual_wield", false)) and attacker.is_dual_wielding():
+		return {"reason": "one hand amputated — cannot dual wield"}
+	return {}

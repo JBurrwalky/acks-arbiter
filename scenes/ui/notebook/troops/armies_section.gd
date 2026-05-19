@@ -179,14 +179,17 @@ func _build_card(army: Dictionary) -> Control:
 	# Supply gauge.
 	var supply: Dictionary = ArmyRepository.get_supply_state(army_id)
 	if not supply.is_empty():
-		var weekly_cost: int = int(supply.get("weekly_supply_cost_gp", 0))
-		var stockpile: int = int(supply.get("current_stockpile_gp", 0))
+		var weekly_cost_cp: int = int(supply.get("weekly_supply_cost_cp", 0))
+		var stockpile_cp: int = int(supply.get("current_stockpile_cp", 0))
 		var weeks_remaining: float = 0.0
-		if weekly_cost > 0:
-			weeks_remaining = float(stockpile) / float(weekly_cost)
+		if weekly_cost_cp > 0:
+			weeks_remaining = float(stockpile_cp) / float(weekly_cost_cp)
 		var supply_line := Label.new()
-		supply_line.text = "Supply: %d gp / %d gp/wk = %.1f weeks" % [
-			stockpile, weekly_cost, weeks_remaining,
+		# stockpile + weekly_cost are cp; format_cost denominates.
+		supply_line.text = "Supply: %s / %s/wk = %.1f weeks" % [
+			Currency.format_cost(stockpile_cp),
+			Currency.format_cost(weekly_cost_cp),
+			weeks_remaining,
 		]
 		var status: String = String(supply.get("supply_line_status", "out_of_supply_no_base"))
 		if status != "in_supply":

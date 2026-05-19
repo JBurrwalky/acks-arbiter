@@ -54,7 +54,7 @@ class FakeRepo:
 			"id": id, "campaign_id": campaign_id,
 			"settlement_id": settlement_id,
 			"generated_month": month, "generated_year": year,
-			"total_available": total, "search_cost_gp": cost,
+			"total_available": total, "search_cost_cp": cost,
 		}
 		db_members[id] = []
 		return id

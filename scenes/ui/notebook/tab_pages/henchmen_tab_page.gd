@@ -178,7 +178,7 @@ func _build_status_header() -> Control:
 func _refresh_status_header(active: Array) -> void:
 	var humanoid := 0
 	var animal := 0
-	var monthly_wages_gp := 0
+	var monthly_wages_cp := 0
 	for row in active:
 		var ctype: String = str(row.get("character_type", "henchman"))
 		if ctype == "henchman":
@@ -190,7 +190,7 @@ func _refresh_status_header(active: Array) -> void:
 				animal += 1
 			else:
 				humanoid += 1
-		monthly_wages_gp += int(row.get("wage_gp_per_month", 0))
+		monthly_wages_cp += int(row.get("wage_cp_per_month", 0))
 
 	var total: int = humanoid + animal
 	if total == 0:
@@ -199,8 +199,8 @@ func _refresh_status_header(active: Array) -> void:
 		return
 	# Pluralization: "henchman" / "henchmen" — irregular plural; not -s suffix.
 	var noun: String = "henchman" if total == 1 else "henchmen"
-	_status_summary_label.text = "%d %s (%d humanoid · %d animal)  ·  Monthly wages: %d gp" % [
-		total, noun, humanoid, animal, monthly_wages_gp,
+	_status_summary_label.text = "%d %s (%d humanoid · %d animal)  ·  Monthly wages: %s" % [
+		total, noun, humanoid, animal, Currency.format_cost(monthly_wages_cp),
 	]
 	_status_payday_label.text = "Wages auto-deduct on payday per acore_equipment.xml §monthly_fee_table"
 
@@ -378,7 +378,7 @@ func _append_roster_row(grid: GridContainer, row: Dictionary,
 	var morale: int = int(row.get("morale_score", 0))
 	var grudging: bool = int(row.get("is_grudging", 0)) == 1
 	var fanatic: bool = int(row.get("is_fanatic", 0)) == 1
-	var wage: int = int(row.get("wage_gp_per_month", 0))
+	var wage: int = int(row.get("wage_cp_per_month", 0))
 	var share: int = int(row.get("treasure_share_percent", 15))
 
 	# Portrait — clickable, cross-activates Character tab.
@@ -427,9 +427,9 @@ func _append_roster_row(grid: GridContainer, row: Dictionary,
 	# overrides per HenchmanLifecycleManager.trigger_loyalty_check semantics.
 	grid.add_child(_loyalty_label(morale, grudging, fanatic))
 
-	# Wage per month.
+	# Wage per month (wage_cp_per_month is cp).
 	var wage_label := Label.new()
-	wage_label.text = "%d gp" % wage if wage > 0 else "—"
+	wage_label.text = Currency.format_cost(wage) if wage > 0 else "—"
 	wage_label.add_theme_color_override("font_color", BODY_COLOR)
 	wage_label.add_theme_font_size_override("font_size", 12)
 	grid.add_child(wage_label)
@@ -797,10 +797,12 @@ func _open_dismiss_dialog(character_id: String) -> void:
 	if char_row.is_empty():
 		return
 	var hench_name: String = String(char_row.get("name", "henchman"))
-	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	# wage_cp_per_month is cp; unpaid × monthly stays in cp. 2026-05-19 bucket-A
+	# item #131: variable + dialog parameter renamed _cp to match engine contract.
+	var monthly_wage_cp: int = int(char_row.get("wage_cp_per_month", 0))
 	var state: Dictionary = CampaignRepository.get_henchman_state(character_id)
 	var unpaid_months: int = int(state.get("unpaid_months", 0))
-	var default_final_wages_gp: int = unpaid_months * monthly_wage
+	var default_final_wages_cp: int = unpaid_months * monthly_wage_cp
 
 	var party_id: String = ""
 	if has_method("get_active_party_id"):
@@ -820,7 +822,7 @@ func _open_dismiss_dialog(character_id: String) -> void:
 	# Wait one frame so _ready builds the UI before show_dialog mutates it.
 	await get_tree().process_frame
 	dialog.show_dialog(character_id, "", party_id, hench_name,
-		default_final_wages_gp,
+		default_final_wages_cp,
 		func(opts): _do_dismiss(character_id, opts, dialog),
 		func(): dialog.queue_free())
 
@@ -901,11 +903,12 @@ func _open_pay_back_wages_prompt(character_id: String) -> void:
 	if char_row.is_empty():
 		return
 	var name_str: String = String(char_row.get("name", "henchman"))
-	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	# wage_cp_per_month is cp; unpaid × monthly = cp owed.
+	var monthly_wage_cp: int = int(char_row.get("wage_cp_per_month", 0))
 	var state: Dictionary = CampaignRepository.get_henchman_state(character_id)
 	var unpaid: int = int(state.get("unpaid_months", 0))
-	var owed_gp: int = unpaid * monthly_wage
-	if owed_gp <= 0:
+	var owed_cp: int = unpaid * monthly_wage_cp
+	if owed_cp <= 0:
 		EventBus.notification_requested.emit({
 			"type":  "info",
 			"category": "henchman",
@@ -919,9 +922,9 @@ func _open_pay_back_wages_prompt(character_id: String) -> void:
 	await get_tree().process_frame
 	prompt.show_prompt(
 		"Pay back wages?",
-		"%s is owed %d gp in unpaid wages (%d month%s × %d gp/mo). The amount will be deducted from the active party's wallet." % [
-			name_str, owed_gp, unpaid,
-			"" if unpaid == 1 else "s", monthly_wage,
+		"%s is owed %s in unpaid wages (%d month%s × %s/mo). The amount will be deducted from the active party's wallet." % [
+			name_str, Currency.format_cost(owed_cp), unpaid,
+			"" if unpaid == 1 else "s", Currency.format_cost(monthly_wage_cp),
 		],
 		func(): _do_pay_back_wages(character_id, prompt),
 		func(): prompt.queue_free(),
@@ -932,11 +935,12 @@ func _do_pay_back_wages(character_id: String, prompt: Node) -> void:
 	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, null, null)
 	var result: Dictionary = lifecycle.pay_back_wages(character_id)
 	if result.get("ok", false):
+		# Lifecycle manager returns paid_cp per its return contract.
 		EventBus.notification_requested.emit({
 			"type":  "info",
 			"category": "henchman",
 			"title": "Wages paid",
-			"body":  "Paid %d gp in back-wages." % int(result.get("paid_gp", 0)),
+			"body":  "Paid %s in back-wages." % Currency.format_cost(int(result.get("paid_cp", 0))),
 		})
 	else:
 		EventBus.notification_requested.emit({

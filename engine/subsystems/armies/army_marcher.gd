@@ -338,9 +338,9 @@ func _apply_marching_extraction(
 		extracted_gp = 50
 	if extracted_gp <= 0:
 		return {}
-	var current: int = int(supply.get("current_stockpile_gp", 0))
+	var current: int = int(supply.get("current_stockpile_cp", 0))
 	ArmyRepository.update_supply_state(army_id, {
-		"current_stockpile_gp": current + extracted_gp,
+		"current_stockpile_cp": current + extracted_gp,
 	})
 	return {
 		"mode": mode,

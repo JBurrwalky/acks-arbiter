@@ -268,7 +268,7 @@ func generate_henchman(class_id: String, level: int, campaign_id: String,
 		return null
 	character.employer_id = employer_id
 	character.loyalty_score = morale_base
-	character.wage_gp_per_month = HenchmanTables.monthly_wage(level)
+	character.wage_cp_per_month = HenchmanTables.monthly_wage(level)
 	return character
 
 

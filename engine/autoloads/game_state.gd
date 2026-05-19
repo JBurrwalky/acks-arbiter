@@ -44,6 +44,18 @@ enum ExplorationContext {
 	SETTLEMENT,
 }
 
+## Hex-map view mode (migration 119 cross-scale linkage).
+## STRATEGIC renders the top-level 24-mile parent map; REGIONAL renders the
+## fine-grained child map the party is currently on. The party's logical
+## position (parties.current_map_id, current_hex_*) is unaffected by view
+## changes — only the camera shifts. A separate "Enter Region" action is
+## what actually moves the party between maps via CampaignRepository
+## .transition_party_to_map.
+enum MapViewMode {
+	REGIONAL,   ## Render the party's current map at its native scale (6-mile, etc.)
+	STRATEGIC,  ## Render the top-level (24-mile) ancestor of the party's map.
+}
+
 
 # ---------------------------------------------------------------------------
 # Project-wide constants
@@ -89,6 +101,12 @@ var pre_pause_state: State = State.MAIN_MENU
 
 ## Current exploration context. Meaningful only when current_state == EXPLORATION.
 var exploration_context: ExplorationContext = ExplorationContext.NONE
+
+## Active hex-map view mode. Camera-only state — does NOT move the party.
+## Defaults to REGIONAL. Mutate via set_map_view_mode() so consumers (the
+## wilderness state, hex_map_renderer, status-bar toggle) all observe the
+## change through EventBus.map_view_mode_changed.
+var map_view_mode: MapViewMode = MapViewMode.REGIONAL
 
 ## Persistent identifier for the loaded campaign.
 var campaign_id: String = ""
@@ -162,6 +180,16 @@ func set_exploration_context(context: ExplorationContext) -> void:
 		return
 	exploration_context = context
 	exploration_context_changed.emit(context)
+
+
+## Change the active hex-map view mode (camera-only). Emits
+## EventBus.map_view_mode_changed when the value actually changes.
+func set_map_view_mode(mode: MapViewMode) -> void:
+	if mode == map_view_mode:
+		return
+	var prev := map_view_mode
+	map_view_mode = mode
+	EventBus.map_view_mode_changed.emit(int(prev), int(mode))
 
 
 ## Begin a session. Transitions to EXPLORATION and emits session_started.

@@ -58,15 +58,16 @@ static func get_cargo_hold(cargo_hold_id: String) -> Dictionary:
 # Typed writes — purchased / hijink yield / shipping contract
 # ---------------------------------------------------------------------------
 
-## Inserts a purchase row. `market_value_at_acquisition_gp` is the gp PAID
-## (the bridge between purchase price and resale price for arbitrage math).
+## Inserts a purchase row. `cp_paid` is the cp PAID (the bridge between
+## purchase price and resale price for arbitrage math). Stored in
+## cargo_holds.market_value_at_acquisition_cp.
 ## Emits cargo_loaded on success. Returns new cargo_hold_id, or "" on failure.
 static func insert_purchase(
 		carrier_id: String,
 		carrier_kind: String,
 		merchandise_type: String,
 		loads_count: int,
-		gp_paid: int,
+		cp_paid: int,
 		settlement_id: String,
 		current_calendar_day: int,
 ) -> String:
@@ -75,22 +76,22 @@ static func insert_purchase(
 		"carrier_kind": carrier_kind,
 		"merchandise_type": merchandise_type,
 		"loads_count": loads_count,
-		"market_value_gp": gp_paid,
+		"market_value_cp": cp_paid,
 		"source_kind": "purchased",
 		"settlement_id": settlement_id,
 		"calendar_day": current_calendar_day,
 	})
 
 
-## Inserts a smuggling or stealing hijink yield. `market_value_gp` is the
-## NOTIONAL gp value at the source market (basis for Phase 10B.3's 12% / 60%
+## Inserts a smuggling or stealing hijink yield. `market_value_cp` is the
+## NOTIONAL cp value at the source market (basis for Phase 10B.3's 12% / 60%
 ## boss-payout multipliers).
 static func insert_hijink_yield(
 		carrier_id: String,
 		carrier_kind: String,
 		merchandise_type: String,
 		loads_count: int,
-		market_value_gp: int,
+		market_value_cp: int,
 		settlement_id: String,
 		current_calendar_day: int,
 		kind: String,
@@ -103,7 +104,7 @@ static func insert_hijink_yield(
 		"carrier_kind": carrier_kind,
 		"merchandise_type": merchandise_type,
 		"loads_count": loads_count,
-		"market_value_gp": market_value_gp,
+		"market_value_cp": market_value_cp,
 		"source_kind": kind,
 		"settlement_id": settlement_id,
 		"calendar_day": current_calendar_day,
@@ -126,7 +127,7 @@ static func insert_shipping_contract_load(
 		"carrier_kind": carrier_kind,
 		"merchandise_type": merchandise_type,
 		"loads_count": loads_count,
-		"market_value_gp": 0,
+		"market_value_cp": 0,
 		"source_kind": "shipping_contract",
 		"settlement_id": settlement_id,
 		"calendar_day": current_calendar_day,
@@ -171,7 +172,7 @@ static func transfer_loads(
 		"carrier_kind": target_carrier_kind,
 		"merchandise_type": str(source.get("merchandise_type", "")),
 		"loads_count": loads_count,
-		"market_value_gp": int(source.get("market_value_at_acquisition_gp", 0)),
+		"market_value_cp": int(source.get("market_value_at_acquisition_cp", 0)),
 		"source_kind": str(source.get("source_acquisition_kind", "purchased")),
 		"settlement_id": str(source.get("acquired_at_settlement_id", "")),
 		"calendar_day": int(source.get("acquired_at_calendar_day", 0)),
@@ -199,9 +200,9 @@ static func transfer_loads(
 # Delete on sale
 # ---------------------------------------------------------------------------
 
-## Deletes the row at sell time. Caller passes [param gp_received] (the
-## actual gp credited post-fees) for the cargo_sold signal payload.
-static func delete_sold(cargo_hold_id: String, gp_received: int) -> bool:
+## Deletes the row at sell time. Caller passes [param cp_received] (the
+## actual cp credited post-fees) for the cargo_sold signal payload.
+static func delete_sold(cargo_hold_id: String, cp_received: int) -> bool:
 	if cargo_hold_id.is_empty():
 		return false
 	var row: Dictionary = get_cargo_hold(cargo_hold_id)
@@ -210,8 +211,58 @@ static func delete_sold(cargo_hold_id: String, gp_received: int) -> bool:
 	if not CampaignRepository.db.query_with_bindings(
 			"DELETE FROM cargo_holds WHERE id = ?", [cargo_hold_id]):
 		return false
-	EventBus.cargo_sold.emit(cargo_hold_id, gp_received)
+	EventBus.cargo_sold.emit(cargo_hold_id, cp_received)
 	return true
+
+
+## Decrements [param loads_to_sell] from the cargo row's loads_count. If the
+## decrement reaches 0 (i.e., loads_to_sell == current loads_count), delegates
+## to delete_sold for atomic row removal. Emits cargo_sold with [param cp_received]
+## on either path.
+##
+## Per gdd-phase-10b-2-trade-block.md §13.2. Consumed by sell_merchandise
+## handler (§3.3, Wave 2) when the player partial-sells a cargo row.
+##
+## Returns true on success; false on missing row, zero/negative loads_to_sell,
+## or loads_to_sell > current loads_count.
+static func partial_sell(cargo_hold_id: String, loads_to_sell: int, cp_received: int) -> bool:
+	if cargo_hold_id.is_empty() or loads_to_sell <= 0:
+		return false
+	var row: Dictionary = get_cargo_hold(cargo_hold_id)
+	if row.is_empty():
+		return false
+	var current_loads: int = int(row.get("loads_count", 0))
+	if loads_to_sell > current_loads:
+		return false
+	if loads_to_sell == current_loads:
+		return delete_sold(cargo_hold_id, cp_received)
+	if not CampaignRepository.db.query_with_bindings(
+			"UPDATE cargo_holds SET loads_count = loads_count - ? WHERE id = ?",
+			[loads_to_sell, cargo_hold_id]):
+		return false
+	EventBus.cargo_sold.emit(cargo_hold_id, cp_received)
+	return true
+
+
+## Returns all cargo_holds rows owned by [param party_id] whose carriers are
+## NOT destroyed. Joined across draft_vehicles + ships.
+##
+## Per gdd-phase-10b-2-trade-block.md §13.5. Consumed by the sell-section UI
+## in mercantile_panel (§3.6, Wave 2) — orphan cargo on soft-destroyed
+## carriers is filtered out at the read layer rather than at write time.
+static func list_for_party_active_carriers(party_id: String) -> Array:
+	if party_id.is_empty():
+		return []
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT ch.* FROM cargo_holds ch
+		LEFT JOIN draft_vehicles dv ON ch.draft_vehicle_id = dv.id
+		LEFT JOIN ships s ON ch.ship_id = s.id
+		WHERE ((dv.id IS NOT NULL AND dv.party_id = ? AND dv.is_destroyed = 0)
+			OR (s.id IS NOT NULL AND s.party_id = ? AND s.is_destroyed = 0))
+		ORDER BY ch.created_at ASC
+	""", [party_id, party_id]):
+		return []
+	return CampaignRepository.db.query_result.duplicate()
 
 
 # ---------------------------------------------------------------------------
@@ -259,14 +310,14 @@ static func _insert_cargo_row(args: Dictionary) -> String:
 		INSERT INTO cargo_holds
 			(id, campaign_id, draft_vehicle_id, ship_id,
 			 merchandise_type, loads_count, load_weight_stone,
-			 market_value_at_acquisition_gp, source_acquisition_kind,
+			 market_value_at_acquisition_cp, source_acquisition_kind,
 			 acquired_at_settlement_id, acquired_at_calendar_day,
 			 shipping_contract_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		cargo_id, campaign_id, draft_vehicle_id, ship_id,
 		merchandise_type, loads_count, load_weight,
-		int(args.get("market_value_gp", 0)),
+		int(args.get("market_value_cp", 0)),
 		str(args.get("source_kind", "purchased")),
 		settlement_id, int(args.get("calendar_day", 0)),
 		contract_id,

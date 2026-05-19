@@ -33,14 +33,14 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 
 	match kind:
 		"tax":
-			settings["tax_rate_gp_per_family"] = int(value) if value != null else 2
-			summary = "Tax rate set to %d gp/family" % settings["tax_rate_gp_per_family"]
+			settings["tax_rate_cp_per_family"] = int(value) if value != null else 2
+			summary = "Tax rate set to %d gp/family" % settings["tax_rate_cp_per_family"]
 		"liturgy":
-			settings["liturgy_rate_gp_per_family"] = int(value) if value != null else 1
-			summary = "Liturgy rate set to %d gp/family" % settings["liturgy_rate_gp_per_family"]
+			settings["liturgy_rate_cp_per_family"] = int(value) if value != null else 1
+			summary = "Liturgy rate set to %d gp/family" % settings["liturgy_rate_cp_per_family"]
 		"tithe":
-			settings["tithe_rate_gp_per_family"] = int(value) if value != null else 1
-			summary = "Tithe rate set to %d gp/family" % settings["tithe_rate_gp_per_family"]
+			settings["tithe_rate_cp_per_family"] = int(value) if value != null else 1
+			summary = "Tithe rate set to %d gp/family" % settings["tithe_rate_cp_per_family"]
 		"religion_change":
 			settings["religion"] = String(value) if value != null else ""
 			summary = "Religion changed to '%s' (-4 morale this month, -2 ongoing)" % settings["religion"]
@@ -58,7 +58,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": _calendar_day(),
 		"category": "other",
 		"subcategory": "decree_%s" % kind,
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": summary,
 	})
 	return {

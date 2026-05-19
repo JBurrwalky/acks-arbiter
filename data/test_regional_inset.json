@@ -1,0 +1,23 @@
+{
+  "id": "test_regional_inset_001",
+  "name": "Borderwood Inset — 6-mile Adventure Zone",
+  "scale": "regional_6mi",
+  "parent_map_id": "test_campaign_001",
+  "parent_anchor": {"q": 0, "r": 0},
+  "parent_hex_footprint": [
+    {"q": -1, "r": 0},
+    {"q":  0, "r": 0}
+  ],
+  "party_hex": {"q": 0, "r": 0},
+  "hexes": [
+    { "q":  0, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_keep"] },
+    { "q":  1, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  0, "r":  1, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  0, "r": -1, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  1, "r": -1, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r":  1, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -2, "r":  1, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  2, "r":  0, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] }
+  ]
+}

@@ -40,20 +40,24 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		return {"summary": "cast_charitable_spells: no character_id"}
 
 	var params := _parse_params(state)
+	# RAW spell value is captured in gp by the launcher; convert at the
+	# boundary so storage stays in cp.
 	var gp_value: int = int(params.get("gp_value_total", 0))
 	if gp_value <= 0:
 		return {"summary": "cast_charitable_spells completed (no gp value tracked)"}
+	var cp_value: int = gp_value * 100
 
-	CampaignRepository.add_congregant_pending_gp(character_id, gp_value)
+	CampaignRepository.add_congregant_pending_cp(character_id, cp_value)
 
 	var spell_keys: Array = params.get("spell_keys", [])
 	var spell_summary: String = ""
 	if spell_keys is Array and not spell_keys.is_empty():
 		spell_summary = " — " + ", ".join((spell_keys as Array).map(func(k): return String(k)))
 
+	var pretty := Currency.format_cost(cp_value)
 	return {
-		"summary": "Charitable spells cast: %d gp value tracked%s" % [gp_value, spell_summary],
-		"presentation": {"type": "toast", "text": "Charitable spells cast (%d gp value)" % gp_value},
+		"summary": "Charitable spells cast: %s value tracked%s" % [pretty, spell_summary],
+		"presentation": {"type": "toast", "text": "Charitable spells cast (%s value)" % pretty},
 	}
 
 

@@ -859,9 +859,9 @@ func _form_row(label_text: String, ctrl: Control) -> HBoxContainer:
 func _add_library_dropdown(parent: VBoxContainer, label: String) -> OptionButton:
 	var dd := OptionButton.new()
 	for lib in CampaignRepository.list_libraries_for_owner(_character_id):
-		var s: String = "%s (gp %d, max L%d, +%d throw, %s)" % [
+		var s: String = "%s (%s invested, max L%d, +%d throw, %s)" % [
 			String(lib.get("structure_kind", "library")).replace("_", " ").capitalize(),
-			int(lib.get("gp_invested", 0)),
+			Currency.format_cost(int(lib.get("cp_invested", 0))),
 			int(lib.get("max_spell_level_supported", 1)),
 			int(lib.get("magic_research_throw_bonus", 0)),
 			String(lib.get("status", "?")),
@@ -875,10 +875,10 @@ func _add_library_dropdown(parent: VBoxContainer, label: String) -> OptionButton
 func _add_workshop_dropdown(parent: VBoxContainer, label: String) -> OptionButton:
 	var dd := OptionButton.new()
 	for ws in CampaignRepository.list_workshops_for_owner(_character_id):
-		var s: String = "%s (gp %d, max %d gp items, +%d throw, %s)" % [
+		var s: String = "%s (%s invested, max %s items, +%d throw, %s)" % [
 			String(ws.get("structure_kind", "workshop")).replace("_", " ").capitalize(),
-			int(ws.get("gp_invested", 0)),
-			int(ws.get("max_item_value_supported_gp", 0)),
+			Currency.format_cost(int(ws.get("cp_invested", 0))),
+			Currency.format_cost(int(ws.get("max_item_value_supported_cp", 0))),
 			int(ws.get("magic_research_throw_bonus", 0)),
 			String(ws.get("status", "?")),
 		]
@@ -891,10 +891,10 @@ func _add_workshop_dropdown(parent: VBoxContainer, label: String) -> OptionButto
 func _add_laboratory_dropdown(parent: VBoxContainer, label: String) -> OptionButton:
 	var dd := OptionButton.new()
 	for lab in CampaignRepository.list_laboratories_for_owner(_character_id):
-		var s: String = "%s (gp %d, max %d gp crossbreeds, +%d throw, %s)" % [
+		var s: String = "%s (%s invested, max %s crossbreeds, +%d throw, %s)" % [
 			String(lab.get("structure_kind", "laboratory")).replace("_", " ").capitalize(),
-			int(lab.get("gp_invested", 0)),
-			int(lab.get("max_crossbreed_cost_gp", 0)),
+			Currency.format_cost(int(lab.get("cp_invested", 0))),
+			Currency.format_cost(int(lab.get("max_crossbreed_cost_cp", 0))),
 			int(lab.get("magic_research_throw_bonus", 0)),
 			String(lab.get("status", "?")),
 		]

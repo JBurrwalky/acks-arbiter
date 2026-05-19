@@ -187,8 +187,12 @@ func _query_settlements(map_id: String) -> Array:
 func _query_visible_strongholds(map_id: String) -> Array:
 	## Per O-9C-9: only completed or claimed strongholds get icons.
 	## In-progress / paused / destroyed are skipped.
+	# Migration 116 renamed strongholds.gp_value → cp_value. The selected
+	# columns aren't consumed for value here (icons only need id / hex / shp /
+	# status); cp_value is kept in the SELECT for downstream extensibility
+	# and to avoid silent SELECT failures from the pre-rename column name.
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT id, location_hex_q, location_hex_r, shp, status, gp_value
+		SELECT id, location_hex_q, location_hex_r, shp, status, cp_value
 		FROM strongholds
 		WHERE location_map_id = ? AND status IN ('completed', 'claimed')
 		      AND location_hex_q IS NOT NULL AND location_hex_r IS NOT NULL

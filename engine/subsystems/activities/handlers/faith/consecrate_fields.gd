@@ -44,12 +44,12 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	if peasant_families <= 0:
 		return {"summary": "consecrate_fields: no peasant families to consecrate"}
 
-	# Step 2: Expend 2 gp DP per family.
-	var dp_cost: int = 2 * peasant_families
-	if not CampaignRepository.spend_divine_power(character_id, dp_cost):
-		return {"summary": "consecrate_fields failed: insufficient divine power (needed %d)" % dp_cost}
-	var new_dp_balance: int = CampaignRepository.get_divine_power_gp(character_id)
-	EventBus.divine_power_changed.emit(character_id, new_dp_balance, -dp_cost)
+	# Step 2: Expend 2 gp DP per family (= 200 cp/family under the unified cp standard).
+	var dp_cost_cp: int = 200 * peasant_families
+	if not CampaignRepository.spend_divine_power_cp(character_id, dp_cost_cp):
+		return {"summary": "consecrate_fields failed: insufficient divine power (needed %s)" % Currency.format_cost(dp_cost_cp)}
+	var new_dp_balance: int = CampaignRepository.get_divine_power_cp(character_id)
+	EventBus.divine_power_changed.emit(character_id, new_dp_balance, -dp_cost_cp)
 
 	# Step 3: magic research throw (WIS-modified).
 	var level: int = int(character.get("level", 1))
@@ -95,7 +95,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	if delta_per_family != 0:
 		summary += " (+%d gp/family land value next month)" % delta_per_family if delta_per_family > 0 \
 			else " (-1 gp/family land value next month — natural 1!)"
-	summary += " · -%d DP" % dp_cost
+	summary += " · -%s DP" % Currency.format_cost(dp_cost_cp)
 	return {
 		"summary": summary,
 		"presentation": {"type": "toast", "text": "Fields consecrated" if success else "Consecration failed"},

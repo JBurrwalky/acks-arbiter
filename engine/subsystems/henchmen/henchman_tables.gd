@@ -167,32 +167,34 @@ static func level_from_roll(roll_value: int, market_class: int = 1) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Monthly wage by level (acore_equipment.xml:778-793)
+# Monthly wage by level (acore_equipment.xml:778-793) — values in CP
+# (RAW gp × 100 per the 2026-05-16 cp pass)
 # ---------------------------------------------------------------------------
 
-const MONTHLY_WAGE: Array = [
-	12,      # level 0
-	25,      # level 1
-	50,      # level 2
-	100,     # level 3
-	200,     # level 4
-	400,     # level 5
-	800,     # level 6
-	1600,    # level 7
-	3000,    # level 8
-	7250,    # level 9
-	12000,   # level 10
-	32000,   # level 11
-	50000,   # level 12
-	135000,  # level 13
-	350000,  # level 14
+const MONTHLY_WAGE_CP: Array = [
+	1200,        # level 0  — RAW 12 gp
+	2500,        # level 1  — RAW 25 gp
+	5000,        # level 2  — RAW 50 gp
+	10000,       # level 3  — RAW 100 gp
+	20000,       # level 4  — RAW 200 gp
+	40000,       # level 5  — RAW 400 gp
+	80000,       # level 6  — RAW 800 gp
+	160000,      # level 7  — RAW 1,600 gp
+	300000,      # level 8  — RAW 3,000 gp
+	725000,      # level 9  — RAW 7,250 gp
+	1200000,     # level 10 — RAW 12,000 gp
+	3200000,     # level 11 — RAW 32,000 gp
+	5000000,     # level 12 — RAW 50,000 gp
+	13500000,    # level 13 — RAW 135,000 gp
+	35000000,    # level 14 — RAW 350,000 gp
 ]
 
 
 static func monthly_wage(level: int) -> int:
-	if level < 0 or level >= MONTHLY_WAGE.size():
-		return MONTHLY_WAGE[MONTHLY_WAGE.size() - 1]
-	return MONTHLY_WAGE[level]
+	## Returns the henchman's monthly wage in cp for the given level.
+	if level < 0 or level >= MONTHLY_WAGE_CP.size():
+		return MONTHLY_WAGE_CP[MONTHLY_WAGE_CP.size() - 1]
+	return MONTHLY_WAGE_CP[level]
 
 
 # ---------------------------------------------------------------------------

@@ -149,7 +149,7 @@ func launch(
 		"absence_accumulated": 0,
 		"started_calendar_day": _calendar_day(),
 		"last_session_day": 0,
-		"gp_committed": int(params.get("gp_committed", 0)),
+		"cp_committed": int(params.get("gp_committed", 0)) * 100,
 		"params_json": JSON.stringify(params),
 		"scheduled_event_id": "",
 	}
@@ -444,6 +444,25 @@ func _compute_ticks_required(def: Dictionary, params: Dictionary) -> int:
 		"rewrite_replace_spell_duration":
 			var spell_level2: int = int(params.get("target_spell_level", 1))
 			return maxi(7, 7 * spell_level2)
+		# Phase 10B.3 (Syndicate): each of the four syndicate-Ongoing
+		# durations is pre-rolled by the launcher (per RAW the perpetrator
+		# does not know the required time until completion) and stuffed
+		# into the params dict before executor.launch is called. The
+		# executor reads it back here. Convention: SyndicateLauncher's
+		# prepare_* helpers roll via the relevant resolver and embed:
+		#   * plan_hijink_duration     → params.planning_days_required
+		#   * perform_hijink_duration  → params.perform_days_required
+		#   * lay_low_duration         → params.lay_low_days
+		#   * await_trial_duration     → params.time_languishing_days
+		# Fallback default: 1 tick (per Phase 10B.3 schema defaults).
+		"plan_hijink_duration":
+			return maxi(1, int(params.get("planning_days_required", 1)))
+		"perform_hijink_duration":
+			return maxi(1, int(params.get("perform_days_required", 1)))
+		"lay_low_duration":
+			return maxi(1, int(params.get("lay_low_days", 1)))
+		"await_trial_duration":
+			return maxi(1, int(params.get("time_languishing_days", 1)))
 
 	return maxi(1, default_ticks)
 

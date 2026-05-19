@@ -98,8 +98,9 @@ func run_all_tests() -> void:
 # Helpers
 # ---------------------------------------------------------------------------
 
+## 2026-05-16 cp pass: monthly_wage_cp is cp; fixture default 25 gp = 2500 cp.
 func _make_lifecycle(unpaid_months: int = 0,
-		monthly_wage: int = 25,
+		monthly_wage_cp: int = 2500,
 		morale: int = 0,
 		share: int = 15,
 		allow_pay: bool = true) -> FakeLifecycle:
@@ -109,7 +110,7 @@ func _make_lifecycle(unpaid_months: int = 0,
 		"name": "Test Henchman",
 		"character_type": "henchman",
 		"employer_id": "patron1",
-		"wage_gp_per_month": monthly_wage,
+		"wage_cp_per_month": monthly_wage_cp,
 	}
 	repo.states["h1"] = {
 		"morale_score": morale,
@@ -131,7 +132,7 @@ func _make_lifecycle(unpaid_months: int = 0,
 
 func test_unpaid_wages_triggers_loyalty_check_at_two_months() -> void:
 	# Start with unpaid_months=1, increment → 2 → loyalty check fires.
-	var lifecycle := _make_lifecycle(1, 25)
+	var lifecycle := _make_lifecycle(1, 2500)
 	lifecycle._increment_unpaid_months("h1")
 	check(lifecycle.trigger_calls.size() == 1,
 		"loyalty check should fire once when unpaid_months reaches 2")
@@ -143,7 +144,7 @@ func test_unpaid_wages_triggers_loyalty_check_at_two_months() -> void:
 
 func test_unpaid_wages_does_not_trigger_at_one_month() -> void:
 	# Start with unpaid_months=0, increment → 1 → no check.
-	var lifecycle := _make_lifecycle(0, 25)
+	var lifecycle := _make_lifecycle(0, 2500)
 	lifecycle._increment_unpaid_months("h1")
 	check(lifecycle.trigger_calls.is_empty(),
 		"loyalty check should NOT fire at 1 unpaid month")
@@ -155,11 +156,11 @@ func test_unpaid_wages_does_not_trigger_at_one_month() -> void:
 
 func test_pay_back_wages_resets_unpaid_months() -> void:
 	# 3 months × 25 gp = 75 gp owed.
-	var lifecycle := _make_lifecycle(3, 25)
+	var lifecycle := _make_lifecycle(3, 2500)
 	var result: Dictionary = lifecycle.pay_back_wages("h1")
 	check(result.get("ok", false), "pay_back_wages should succeed")
-	check(int(result.get("paid_gp", 0)) == 75,
-		"paid_gp should be unpaid_months × wage; got %d" % int(result.get("paid_gp", 0)))
+	check(int(result.get("paid_cp", 0)) == 7500,
+		"paid_cp should be unpaid_months × wage_cp; got %d" % int(result.get("paid_cp", 0)))
 	check(lifecycle.fake_wallet.paid_cp == 7500,
 		"wallet should be charged 7500 cp; got %d" % lifecycle.fake_wallet.paid_cp)
 	# unpaid_months reset.
@@ -172,17 +173,17 @@ func test_pay_back_wages_resets_unpaid_months() -> void:
 
 
 func test_pay_back_wages_no_owed_returns_zero() -> void:
-	var lifecycle := _make_lifecycle(0, 25)
+	var lifecycle := _make_lifecycle(0, 2500)
 	var result: Dictionary = lifecycle.pay_back_wages("h1")
 	check(result.get("ok", false), "no-debt pay_back should succeed (no-op)")
-	check(int(result.get("paid_gp", 0)) == 0,
-		"paid_gp should be 0 when no debt")
+	check(int(result.get("paid_cp", 0)) == 0,
+		"paid_cp should be 0 when no debt")
 	check(lifecycle.fake_wallet.paid_cp == 0,
 		"wallet not charged when no debt")
 
 
 func test_pay_back_wages_insufficient_funds_returns_false() -> void:
-	var lifecycle := _make_lifecycle(2, 25, 0, 15, false)
+	var lifecycle := _make_lifecycle(2, 2500, 0, 15, false)
 	var result: Dictionary = lifecycle.pay_back_wages("h1")
 	check(not result.get("ok", false),
 		"pay_back_wages should fail on insufficient funds")
@@ -197,7 +198,7 @@ func test_pay_back_wages_insufficient_funds_returns_false() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adjust_treatment_updates_share() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 0, 15)
+	var lifecycle := _make_lifecycle(0, 2500, 0, 15)
 	var result: Dictionary = lifecycle.adjust_treatment("h1", 25, 0)
 	check(result.get("ok", false), "adjust_treatment should succeed")
 	var state: Dictionary = lifecycle._repo.get_henchman_state("h1")
@@ -209,20 +210,20 @@ func test_adjust_treatment_updates_share() -> void:
 
 
 func test_adjust_treatment_bonus_stamps_plus_one_morale() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 0, 15)
-	lifecycle.adjust_treatment("h1", 20, 50)
+	var lifecycle := _make_lifecycle(0, 2500, 0, 15)
+	lifecycle.adjust_treatment("h1", 20, 5000)  # 50 gp = 5000 cp bonus
 	var state: Dictionary = lifecycle._repo.get_henchman_state("h1")
 	check(int(state.get("morale_score", -99)) == 1,
 		"bonus > 0 should stamp +1 morale; got %d" % int(state.get("morale_score", -99)))
 	check(lifecycle.fake_wallet.paid_cp == 5000,
-		"wallet should be charged 50 gp = 5000 cp")
+		"wallet should be charged 5000 cp (= 50 gp)")
 	# Henchman receives the bonus into purse.
 	check(int(lifecycle._repo.coin_added_cp.get("h1", 0)) == 5000,
 		"henchman should receive bonus into purse")
 
 
 func test_adjust_treatment_clamps_share() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 0, 15)
+	var lifecycle := _make_lifecycle(0, 2500, 0, 15)
 	lifecycle.adjust_treatment("h1", 200, 0)
 	var state: Dictionary = lifecycle._repo.get_henchman_state("h1")
 	check(int(state.get("treasure_share_percent", -1)) == 100,
@@ -234,8 +235,8 @@ func test_adjust_treatment_clamps_share() -> void:
 
 
 func test_adjust_treatment_insufficient_funds_returns_false() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 0, 15, false)
-	var result: Dictionary = lifecycle.adjust_treatment("h1", 30, 100)
+	var lifecycle := _make_lifecycle(0, 2500, 0, 15, false)
+	var result: Dictionary = lifecycle.adjust_treatment("h1", 30, 10000)  # 100 gp = 10000 cp
 	check(not result.get("ok", false),
 		"insufficient funds should yield false")
 	# Share update should NOT have landed (atomic with the bonus payment).

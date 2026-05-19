@@ -7404,28 +7404,9 @@
   {
     "spell_key": "transform_rock_to_mud",
     "spell_name": "Transform Rock to Mud",
-    "is_reversible": false,
-    "reverse_name": "",
-    "reverse_key": "",
-    "classifications": [
-      {
-        "tradition": "arcane",
-        "level": 5,
-        "restricted_to": []
-      }
-    ],
-    "range": "TBD",
-    "duration": "TBD",
-    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
-    "_stub": true,
-    "_added_in": "10B.1g.2 PDF ingestion"
-  },
-  {
-    "spell_key": "transmute_rock_to_mud",
-    "spell_name": "Transmute Rock to Mud",
     "is_reversible": true,
-    "reverse_name": "Transmute Mud to Rock",
-    "reverse_key": "transmute_mud_to_rock",
+    "reverse_name": "Transform Mud to Rock",
+    "reverse_key": "transform_mud_to_rock",
     "classifications": [
       {
         "tradition": "arcane",

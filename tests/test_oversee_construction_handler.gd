@@ -44,7 +44,7 @@ func _make_commission(daily_rate: int) -> String:
 		"archetype": "fortress",
 		"archetype_power_id": "fighter_castle",
 		"structure_type": "keep",
-		"gp_value": 30000,
+		"cp_value": 3000000,  # Migration 116: 30000 gp × 100 = 3,000,000 cp.
 		"shp": 100,
 		"ac": 6,
 		"garrison_capacity": 50,
@@ -53,19 +53,19 @@ func _make_commission(daily_rate: int) -> String:
 	})
 	return CampaignRepository.create_commission({
 		"stronghold_id": stronghold_id,
-		"gp_committed": 30000,
-		"daily_construction_rate_gp": daily_rate,
+		"cp_committed": 3000000,  # 30,000 gp × 100
+		"daily_construction_rate_cp": daily_rate,
 		"speed_tier_pct": 100,
 		"engineers_required": 1,
 		"engineers_assigned": 1,
-		"engineer_monthly_wage_gp": 250,
+		"engineer_monthly_wage_cp": 250,
 		"magic_rate_modifier_pct": 100,
 		"materials_strategy": "local",
 		"class_cost_reduction_pct": 0,
 		"started_calendar_day": 1,
 		"expected_halfway_day": 30,
 		"expected_completion_day": 60,
-		"gp_progressed": 0,
+		"cp_progressed": 0,
 		"halfway_signal_fired": false,
 		"status": "in_progress",
 	})
@@ -86,32 +86,32 @@ func _delete_commissions() -> void:
 
 func test_oversee_construction_bumps_rate_by_5_pct() -> void:
 	_delete_commissions()
-	var cid := _make_commission(500)
+	var cid := _make_commission(50000)  # 500 gp/day × 100 = 50,000 cp/day
 	var state: Dictionary = {
 		"id": "test_state_oversee",
 		"character_id": _ruler_id,
 	}
 	var result: Dictionary = OverseeConstructionHandler.on_complete(state, null)
-	check(String(result.get("summary", "")).contains("525"),
-		"summary should reflect new rate 525 (500 * 1.05), got: %s" % result.get("summary", ""))
+	check(String(result.get("summary", "")).contains("525gp"),
+		"summary should reflect new rate 52,500 cp = 525 gp (500 * 1.05), got: %s" % result.get("summary", ""))
 	var commission := CampaignRepository.get_commission(cid)
-	check(int(commission.get("daily_construction_rate_gp", 0)) == 525,
-		"commission rate should be 525, got %d" % int(commission.get("daily_construction_rate_gp", 0)))
+	check(int(commission.get("daily_construction_rate_cp", 0)) == 52500,
+		"commission rate should be 52500 cp, got %d" % int(commission.get("daily_construction_rate_cp", 0)))
 
 
 func test_supervise_construction_bumps_rate_by_10_pct() -> void:
 	_delete_commissions()
-	var cid := _make_commission(500)
+	var cid := _make_commission(50000)
 	var state: Dictionary = {
 		"id": "test_state_supervise",
 		"character_id": _ruler_id,
 	}
 	var result: Dictionary = SuperviseConstructionHandler.on_complete(state, null)
-	check(String(result.get("summary", "")).contains("550"),
-		"summary should reflect new rate 550 (500 * 1.10), got: %s" % result.get("summary", ""))
+	check(String(result.get("summary", "")).contains("550gp"),
+		"summary should reflect new rate 55,000 cp = 550 gp (500 * 1.10), got: %s" % result.get("summary", ""))
 	var commission := CampaignRepository.get_commission(cid)
-	check(int(commission.get("daily_construction_rate_gp", 0)) == 550,
-		"commission rate should be 550, got %d" % int(commission.get("daily_construction_rate_gp", 0)))
+	check(int(commission.get("daily_construction_rate_cp", 0)) == 55000,
+		"commission rate should be 55000 cp, got %d" % int(commission.get("daily_construction_rate_cp", 0)))
 
 
 func test_oversee_no_active_commission_logs_ledger_no_op() -> void:

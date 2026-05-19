@@ -19,7 +19,7 @@ extends RefCounted
 ##   1. Compute spoils gp from monthly wages of destroyed/routed enemy units +
 ##      40 gp per prisoner. (Already done by `_calculate_spoils` in the
 ##      field-battle resolver; we accept the precomputed amount.)
-##   2. 50% of spoils go to troops pro rata by monthly_wage_gp; credited as
+##   2. 50% of spoils go to troops pro rata by monthly_wage_cp; credited as
 ##      unit_xp on troop_units.
 ##   3. 50% of spoils go to officers via:
 ##      - 50% of officer pool to army leader (= 25% of total spoils)
@@ -33,11 +33,15 @@ extends RefCounted
 ##      troop_units.unit_xp += amount.
 ##
 ## Public API:
-##   distribute(battle_id, spoils_gp_total, calendar_day) -> Dictionary
-##     {success, total_distributed_gp, attacker_distribution, defender_distribution}
+##   distribute(battle_id, spoils_cp_total, calendar_day) -> Dictionary
+##     {success, total_distributed_xp, attacker_distribution, defender_distribution}
+##
+## RAW awards 1 XP per gp of loot (combat XP) — under the 2026-05-16 cp pass,
+## that's 100 cp per 1 XP. The function accepts cp and divides by 100 for the
+## XP allocation math.
 
 
-static func distribute(battle_id: String, spoils_gp_total: int, calendar_day: int) -> Dictionary:
+static func distribute(battle_id: String, spoils_cp_total: int, calendar_day: int) -> Dictionary:
 	if battle_id.is_empty():
 		return {"success": false, "reason": "battle_id_required"}
 	var battle: Dictionary = BattleRepository.get_battle(battle_id)
@@ -59,13 +63,12 @@ static func distribute(battle_id: String, spoils_gp_total: int, calendar_day: in
 		losing_army_id = String(battle.get("attacker_army_id", ""))
 	else:
 		# Mutual withdrawal — no spoils.
-		return {"success": true, "total_distributed_gp": 0, "reason": "mutual_withdrawal_no_spoils"}
+		return {"success": true, "total_distributed_xp": 0, "reason": "mutual_withdrawal_no_spoils"}
 
-	# Compute combat XP totals: value of enemy BR destroyed * combat_xp_per_br
-	# minus value of friendly BR lost. v1 conversion: 1 gp value per BR point
-	# of destroyed unit (rough proxy). The actual gp value is monthly wages,
-	# already aggregated in spoils_gp_total. Combat XP = spoils_gp_total
-	# (winners' commander earnings) minus value-of-friendly-losses.
+	# Convert spoils cp → gp for XP allocation (RAW: 1 XP per gp of loot).
+	@warning_ignore("integer_division")
+	var spoils_gp_total: int = spoils_cp_total / 100
+	# winning_lost_value reads troop_units.monthly_wage_cp (cp) — convert at read.
 	var winning_lost_value_gp: int = _compute_lost_unit_value_gp(battle_id, _side_for_army(battle, winning_army_id))
 	var combat_xp_total: int = max(0, spoils_gp_total - winning_lost_value_gp)
 
@@ -78,7 +81,7 @@ static func distribute(battle_id: String, spoils_gp_total: int, calendar_day: in
 	return {
 		"success": true,
 		"battle_id": battle_id,
-		"total_distributed_gp": int(winning_distribution.get("total_xp_credited", 0)),
+		"total_distributed_xp": int(winning_distribution.get("total_xp_credited", 0)),
 		"winning_army_id": winning_army_id,
 		"winning_distribution": winning_distribution,
 		"combat_xp_total": combat_xp_total,
@@ -144,17 +147,17 @@ static func _distribute_to_side(
 			total_xp_credited += amount
 			dc_credits.append({"character_id": dc_char_id, "officer_id": dc_officer_id, "xp": amount})
 
-	# Distribute troops_pool to troop_units pro rata by monthly_wage_gp.
+	# Distribute troops_pool to troop_units pro rata by monthly_wage_cp.
 	var troop_credits: Array = _distribute_troops_pool(army_id, troops_pool)
 	for credit in troop_credits:
 		total_xp_credited += int(credit.get("xp", 0))
 
-	# Log to battle_log.
+	# Log to battle_log. spoils_gp_total is the gp magnitude used for XP allocation.
 	BattleRepository.append_log(battle_id, "xp_distributed", 1, "aftermath", 0, side,
 		{
 			"side": side,
 			"army_id": army_id,
-			"spoils_gp_total": spoils_gp_total,
+			"spoils_xp_total": spoils_gp_total,
 			"combat_xp_total": combat_xp_total,
 			"troops_pool": troops_pool,
 			"officers_pool": officers_pool,
@@ -185,9 +188,9 @@ static func _side_for_army(battle: Dictionary, army_id: String) -> String:
 
 
 static func _compute_lost_unit_value_gp(battle_id: String, side: String) -> int:
-	## Sum of monthly_wage_gp of units on this side whose battle status is
-	## destroyed or routed. Used as the "friendly units lost" subtractor for
-	## combat XP per RAW L639.
+	## Sum of monthly_wage_cp ÷ 100 (gp value) of units on this side whose battle
+	## status is destroyed or routed. Used as the "friendly units lost"
+	## subtractor for combat XP per RAW L639 (RAW: 1 XP per gp of unit value).
 	var states: Array = BattleRepository.list_unit_states_for_side(battle_id, side)
 	var total: int = 0
 	for s in states:
@@ -198,11 +201,13 @@ static func _compute_lost_unit_value_gp(battle_id: String, side: String) -> int:
 		if unit_id.is_empty():
 			continue
 		if not CampaignRepository.db.query_with_bindings(
-			"SELECT monthly_wage_gp FROM troop_units WHERE id = ?", [unit_id]):
+			"SELECT monthly_wage_cp FROM troop_units WHERE id = ?", [unit_id]):
 			continue
 		if CampaignRepository.db.query_result.is_empty():
 			continue
-		total += int(CampaignRepository.db.query_result[0].get("monthly_wage_gp", 0))
+		# cp/100 → gp for XP allocation per RAW (1 XP per gp).
+		@warning_ignore("integer_division")
+		total += int(CampaignRepository.db.query_result[0].get("monthly_wage_cp", 0)) / 100
 	return total
 
 
@@ -300,15 +305,19 @@ static func _credit_unit_xp(troop_unit_id: String, amount: int) -> void:
 	TroopUnitRepository.update_unit(troop_unit_id, {"unit_xp": new_xp})
 
 
+## Returns the per-unit monthly wage in gp (for XP-pro-rata weighting). Reads
+## the cp column and converts; ratios are unit-invariant so the math doesn't
+## change but the function name + return value stay gp-typed for the XP layer.
 static func _get_unit_wage(troop_unit_id: String) -> int:
 	if troop_unit_id.is_empty():
 		return 0
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT monthly_wage_gp FROM troop_units WHERE id = ?", [troop_unit_id]):
+		"SELECT monthly_wage_cp FROM troop_units WHERE id = ?", [troop_unit_id]):
 		return 0
 	if CampaignRepository.db.query_result.is_empty():
 		return 0
-	return int(CampaignRepository.db.query_result[0].get("monthly_wage_gp", 0))
+	@warning_ignore("integer_division")
+	return int(CampaignRepository.db.query_result[0].get("monthly_wage_cp", 0)) / 100
 
 
 static func _get_unit(troop_unit_id: String) -> Dictionary:

@@ -66,14 +66,14 @@ func _make_character(name: String) -> String:
 	return id
 
 
-func _make_domain(name: String, owner: String, peasant_families: int, urban_families: int, treasury_gp: int) -> String:
+func _make_domain(name: String, owner: String, peasant_families: int, urban_families: int, treasury_cp: int) -> String:
 	var id := CampaignRepository.create_domain({
 		"campaign_id": _campaign_id, "name": name, "owner_character_id": owner,
 	})
 	CampaignRepository.update_domain_monthly_state(id, {
 		"peasant_families": peasant_families,
 		"urban_families": urban_families,
-		"treasury_gp": treasury_gp,
+		"treasury_cp": treasury_cp,
 	})
 	return id
 
@@ -121,9 +121,9 @@ func test_roll_monthly_gift_transfers_treasury() -> void:
 	var vd := _make_domain("GiftVRealm", v, 100, 0, 500)
 	var ld_id := _liege_domain_id
 	var ld_before_v: Dictionary = CampaignRepository.get_domain(ld_id)
-	var ld_before: int = int(ld_before_v.get("treasury_gp", 0))
+	var ld_before: int = int(ld_before_v.get("treasury_cp", 0))
 	var vd_before_v: Dictionary = CampaignRepository.get_domain(vd)
-	var vd_before: int = int(vd_before_v.get("treasury_gp", 0))
+	var vd_before: int = int(vd_before_v.get("treasury_cp", 0))
 	var assn := VassalRepository.create_assignment({
 		"campaign_id": _campaign_id, "liege_character_id": _liege_id,
 		"vassal_character_id": v, "vassal_domain_id": vd,
@@ -134,21 +134,21 @@ func test_roll_monthly_gift_transfers_treasury() -> void:
 	var result := FavorsDutiesResolver.roll_monthly(assn, 100, dice)
 	check(String(result["result_key"]) == "gift", "gift rolled")
 	# magnitude = 1gp/family in vassal's realm. v's domain has 100 peasants + 0 urban = 100 families.
-	check(int(result["gp_value"]) == 100, "gift gp_value = 100; got %d" % int(result["gp_value"]))
-	# Lord treasury should have decreased by 100; vassal treasury increased by 100.
+	check(int(result["cp_value"]) == 10000, "gift cp_value = 10000 (1gp/family × 100 families × 100cp/gp); got %d" % int(result["cp_value"]))
+	# Migration 116 + 111: treasury_cp delta = cp_value = gp_value × 100 = 10000.
 	var ld_after_v: Dictionary = CampaignRepository.get_domain(ld_id)
-	var ld_after: int = int(ld_after_v.get("treasury_gp", 0))
+	var ld_after: int = int(ld_after_v.get("treasury_cp", 0))
 	var vd_after_v: Dictionary = CampaignRepository.get_domain(vd)
-	var vd_after: int = int(vd_after_v.get("treasury_gp", 0))
-	check(ld_after == ld_before - 100, "lord treasury -100; before=%d after=%d" % [ld_before, ld_after])
-	check(vd_after == vd_before + 100, "vassal treasury +100; before=%d after=%d" % [vd_before, vd_after])
+	var vd_after: int = int(vd_after_v.get("treasury_cp", 0))
+	check(ld_after == ld_before - 10000, "lord treasury -10000 cp; before=%d after=%d" % [ld_before, ld_after])
+	check(vd_after == vd_before + 10000, "vassal treasury +10000 cp; before=%d after=%d" % [vd_before, vd_after])
 
 
 func test_roll_monthly_loan_credits_lord_treasury() -> void:
 	var v := _make_character("LoanVassal")
 	var vd := _make_domain("LoanVRealm", v, 200, 0, 1000)
 	var ld_before_v: Dictionary = CampaignRepository.get_domain(_liege_domain_id)
-	var ld_before: int = int(ld_before_v.get("treasury_gp", 0))
+	var ld_before: int = int(ld_before_v.get("treasury_cp", 0))
 	var assn := VassalRepository.create_assignment({
 		"campaign_id": _campaign_id, "liege_character_id": _liege_id,
 		"vassal_character_id": v, "vassal_domain_id": vd,
@@ -158,10 +158,11 @@ func test_roll_monthly_loan_credits_lord_treasury() -> void:
 	dice.fixed_d20 = 7  # loan
 	var result := FavorsDutiesResolver.roll_monthly(assn, 100, dice)
 	check(String(result["result_key"]) == "loan", "loan rolled")
-	check(int(result["gp_value"]) == 200, "loan gp_value = 200; got %d" % int(result["gp_value"]))
+	check(int(result["cp_value"]) == 20000, "loan cp_value = 20000 (1gp/family × 200 families × 100cp/gp); got %d" % int(result["cp_value"]))
+	# Migration 116 + 111: treasury_cp delta = cp_value = gp_value × 100 = 20000.
 	var ld_after_v: Dictionary = CampaignRepository.get_domain(_liege_domain_id)
-	var ld_after: int = int(ld_after_v.get("treasury_gp", 0))
-	check(ld_after == ld_before + 200, "lord treasury +200; before=%d after=%d" % [ld_before, ld_after])
+	var ld_after: int = int(ld_after_v.get("treasury_cp", 0))
+	check(ld_after == ld_before + 20000, "lord treasury +20000 cp; before=%d after=%d" % [ld_before, ld_after])
 
 
 func test_roll_monthly_revoke_clears_most_recent() -> void:

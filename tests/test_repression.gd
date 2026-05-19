@@ -31,7 +31,7 @@ func test_repression_expense_line_when_active() -> void:
 	# 100 peasant families, 3 gp/family of repression → 300 gp/month.
 	var domain := {"peasant_families": 100,
 		"is_repressed_this_month": 1,
-		"repression_gp_per_family_this_month": 3}
+		"repression_cp_per_family_this_month": 3}
 	var e := DomainExpenseCalculator.calculate_monthly_expenses(domain, 200, false)
 	check(e["repression"] == 300, "repression = 100 × 3 = 300, got %d" % e["repression"])
 
@@ -39,7 +39,7 @@ func test_repression_expense_line_when_active() -> void:
 func test_repression_zero_when_not_active() -> void:
 	var domain := {"peasant_families": 100,
 		"is_repressed_this_month": 0,
-		"repression_gp_per_family_this_month": 0}
+		"repression_cp_per_family_this_month": 0}
 	var e := DomainExpenseCalculator.calculate_monthly_expenses(domain, 200, false)
 	check(e["repression"] == 0, "no repression line when inactive, got %d" % e["repression"])
 

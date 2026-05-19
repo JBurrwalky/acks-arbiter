@@ -47,7 +47,7 @@ func _make_unit(owner_id: String, br: float, wage: int) -> String:
 		"campaign_id": _campaign_id, "owner_character_id": owner_id,
 		"source_type": "mercenary", "troop_type": "Inf",
 		"count": 60, "starting_count": 60, "battle_rating": br,
-		"monthly_wage_gp": wage,
+		"monthly_wage_cp": wage,
 	})
 
 
@@ -70,9 +70,9 @@ func test_mutual_withdrawal_returns_zero() -> void:
 		"attacker_army_id": attacker, "defender_army_id": defender,
 		"outcome": "mutual_withdrawal_draw",
 	})
-	var result := BattleXPDistributor.distribute(battle_id, 1000, 100)
+	var result := BattleXPDistributor.distribute(battle_id, 100000, 100)  # 1000 gp = 100,000 cp
 	check(bool(result.get("success", false)), "mutual withdrawal still returns success")
-	check(int(result.get("total_distributed_gp", -1)) == 0, "no XP distributed in mutual draw")
+	check(int(result.get("total_distributed_xp", -1)) == 0, "no XP distributed in mutual draw")
 
 
 func test_distribute_credits_leader_50_percent() -> void:
@@ -92,18 +92,20 @@ func test_distribute_credits_leader_50_percent() -> void:
 	})
 	# Add an attacker unit so the troops_pool has a recipient (otherwise it
 	# falls into "equal distribution if no wage data" path on empty list).
-	var atk_unit: String = _make_unit(atk_owner, 1.0, 100)
+	# Per the 2026-05-16 army wage cp pass, _make_unit's wage arg is cp; 100 × 100 = 10000 cp.
+	var atk_unit: String = _make_unit(atk_owner, 1.0, 10000)
 	ArmyRepository.create_assignment({
 		"army_id": attacker, "troop_unit_id": atk_unit,
 		"parent_officer_id": ArmyRepository.list_officers_for_army(attacker)[0]["id"],
 		"role": "line", "assigned_calendar_day": 100,
 	})
-	var spoils_gp := 1000
-	var result := BattleXPDistributor.distribute(battle_id, spoils_gp, 100)
+	# distribute() takes spoils in cp; 1000 gp = 100,000 cp.
+	var spoils_cp := 100000
+	var result := BattleXPDistributor.distribute(battle_id, spoils_cp, 100)
 	check(bool(result.get("success", false)), "distribute ok")
-	# Leader gets at least half of officer pool. With no DCs the commanders_pool
+	# 100,000 cp / 100 = 1000 gp for XP allocation. With no DCs, commanders_pool
 	# collapses back to leader → leader_xp = officer_total = 500 (officers' half
-	# of spoils) + combat_xp (which is spoils_gp - lost_value, here 1000 - 0 = 1000).
+	# of 1000 gp spoils) + combat_xp (spoils_gp - lost_value, here 1000 - 0 = 1000).
 	# leader_xp ≥ 50% × (500 + 1000) = 750.
 	var leader_xp_actual: int = _get_xp(atk_owner)
 	check(leader_xp_actual >= 750, "leader xp ≥ 750; got %d" % leader_xp_actual)
@@ -130,12 +132,12 @@ func test_distribute_credits_dcs_proportionally() -> void:
 	})
 	# DC1 leads 3 units; DC2 leads 1 unit.
 	for i in range(3):
-		var u: String = _make_unit(leader_id, 1.0, 100)
+		var u: String = _make_unit(leader_id, 1.0, 10000)
 		ArmyRepository.create_assignment({
 			"army_id": attacker, "troop_unit_id": u,
 			"parent_officer_id": dc1_oid, "role": "line", "assigned_calendar_day": 100,
 		})
-	var u4: String = _make_unit(leader_id, 1.0, 100)
+	var u4: String = _make_unit(leader_id, 1.0, 10000)
 	ArmyRepository.create_assignment({
 		"army_id": attacker, "troop_unit_id": u4,
 		"parent_officer_id": dc2_oid, "role": "line", "assigned_calendar_day": 100,
@@ -145,7 +147,7 @@ func test_distribute_credits_dcs_proportionally() -> void:
 		"attacker_army_id": attacker, "defender_army_id": defender,
 		"outcome": "attacker_victory",
 	})
-	BattleXPDistributor.distribute(battle_id, 1000, 100)
+	BattleXPDistributor.distribute(battle_id, 100000, 100)  # 1000 gp = 100,000 cp
 	var dc1_xp := _get_xp(dc1)
 	var dc2_xp := _get_xp(dc2)
 	# DC1 should have ~3× DC2's XP (proportional to units led: 3:1).
@@ -162,7 +164,7 @@ func test_distribute_increments_unit_xp_for_troops() -> void:
 		"army_id": attacker, "character_id": leader_id, "rank": "army_leader",
 		"appointed_calendar_day": 100,
 	})
-	var unit_id: String = _make_unit(leader_id, 1.0, 100)
+	var unit_id: String = _make_unit(leader_id, 1.0, 10000)
 	ArmyRepository.create_assignment({
 		"army_id": attacker, "troop_unit_id": unit_id,
 		"parent_officer_id": leader_oid, "role": "line", "assigned_calendar_day": 100,
@@ -172,6 +174,6 @@ func test_distribute_increments_unit_xp_for_troops() -> void:
 		"attacker_army_id": attacker, "defender_army_id": defender,
 		"outcome": "attacker_victory",
 	})
-	BattleXPDistributor.distribute(battle_id, 1000, 100)
+	BattleXPDistributor.distribute(battle_id, 100000, 100)  # 1000 gp = 100,000 cp
 	var unit := TroopUnitRepository.get_unit(unit_id)
 	check(int(unit.get("unit_xp", 0)) > 0, "unit_xp incremented from troops_pool")

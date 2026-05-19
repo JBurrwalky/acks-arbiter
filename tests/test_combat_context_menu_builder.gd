@@ -39,7 +39,10 @@ func _make_controller(
 	## We build a real CombatRoster and MovementResolver for accurate tests.
 	var roster := CombatRoster.new()
 	for c in combatants:
-		roster.add(c)
+		# CombatRoster's public API is add_combatant(combatant); the older
+		# `roster.add(c)` signature was renamed before this test was updated.
+		# 2026-05-19 bucket-A item #5 rescue: fix the helper.
+		roster.add_combatant(c)
 
 	var mr: MovementResolver = null
 	if map != null:
@@ -60,7 +63,12 @@ func _make_pc(id: String, name: String, progression: String = "fighter",
 	var cd := CharacterData.new()
 	cd.id = id
 	cd.name = name
+	# 2026-05-19 bucket-B sweep: set BOTH combat_progression and character_class.
+	# Backstab eligibility (Combatant.has_backstab_power) reads character_class
+	# to look up class_powers in ClassRegistry. Previously only progression was
+	# set, causing test_backstab_thief_conditions to fail (empty class_id).
 	cd.combat_progression = progression
+	cd.character_class = progression
 	cd.level = level
 	cd.hp_max = hp
 	cd.hp_current = hp
@@ -330,11 +338,15 @@ func test_maneuver_combat_trickery_penalty() -> void:
 	cd.id = "pc1"
 	cd.name = "Trickster"
 	cd.combat_progression = "fighter"
+	cd.character_class = "fighter"
 	cd.level = 3
 	cd.hp_max = 10
 	cd.hp_current = 10
 	cd.base_movement = 120
-	cd.proficiencies = [{"proficiency_key": "combat_trickery", "rank": 1}]
+	# 2026-05-19 bucket-B sweep: Combat Trickery is per-specialization in
+	# production (has_proficiency_with_specialization checks the exact pair),
+	# so the fixture must carry the specialization the test asserts against.
+	cd.proficiencies = [{"proficiency_key": "combat_trickery", "rank": 1, "specialization": "disarm"}]
 	var pc := Combatant.from_character(cd, "pc1")
 	pc.grid_position = Vector3i(5, 5, 0)
 	pc.set_equipped_weapon({"name": "Sword", "weapon_damage": "1d8", "weapon_tags": ["melee"]})

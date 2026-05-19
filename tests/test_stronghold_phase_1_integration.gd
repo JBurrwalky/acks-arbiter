@@ -119,8 +119,9 @@ func test_full_construction_lifecycle_wilderness() -> void:
 	if sufficiency_fired.size() > 0:
 		check(sufficiency_fired[0][1] == true,
 			"sufficiency now true")
-		check(sufficiency_fired[0][2] == 32000,
-			"value_gp = 32,000")
+		# Migration 116: signal payload is cp_value (× 100). 32,000 gp → 3,200,000 cp.
+		check(sufficiency_fired[0][2] == 3200000,
+			"value_cp = 3,200,000 (32,000 gp × 100)")
 
 	# Verify final DB state.
 	var sh: Dictionary = CampaignRepository.get_stronghold(stronghold_id)

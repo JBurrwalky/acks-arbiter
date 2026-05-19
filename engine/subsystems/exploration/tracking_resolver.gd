@@ -120,10 +120,14 @@ static func attempt(
 	var group_bonus: int = _group_size_bonus(target_size)
 	var ground_mod: int = _ground_modifier(ground_kind)
 	var lighting_mod: int = _lighting_modifier(lighting)
+	# RAW §effort_rules L168: strenuous penalty applies to proficiency throws.
+	# Tracking is a Tracking proficiency throw per ACore.
+	var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(tracker.id)
 
 	var roll: RollResult = dice.roll_digital(20, 1, 0, "tracking")
 	var total: int = (roll.modified_total + group_bonus + ground_mod
-		+ lighting_mod + weather_decay + optional_specialist_bonus)
+		+ lighting_mod + weather_decay + optional_specialist_bonus
+		- strenuous_penalty)
 	var succeeded: bool = total >= BASE_THROW
 
 	var note := "Tracking succeeded." if succeeded else "Lost the trail."
@@ -136,6 +140,7 @@ static func attempt(
 		"lighting_modifier": lighting_mod,
 		"weather_decay": weather_decay,
 		"specialist_bonus": optional_specialist_bonus,
+		"strenuous_penalty": strenuous_penalty,
 		"total": total,
 		"target": BASE_THROW,
 		"succeeded": succeeded,

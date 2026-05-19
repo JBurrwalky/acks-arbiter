@@ -9,9 +9,13 @@
 # Public API per generation/gdd-settlement-economy.md §2.7:
 #   - all_common(), all_precious(), all_merchandise()
 #   - get_by_type(key), is_precious(key)
-#   - base_price_gp(key), load_weight_stone(key)
+#   - base_price_cp(key), load_weight_stone(key)
 #   - random_common(rng), random_precious(rng) — RAW d100 rolls; resolve dispatchers transparently
 #   - monster_parts_count(monster_xp) — RAW L971-972 helper
+#
+# 2026-05-15 currency-precision pass: catalog prices are stored as cp
+# (1 gp = 100 cp). RAW base prices are integer gp; the JSON stores them
+# × 100 as cp; the registry returns cp.
 
 extends Node
 
@@ -136,12 +140,12 @@ func is_precious(merchandise_type: String) -> bool:
 # Price / weight
 # ---------------------------------------------------------------------------
 
-## Returns the base price in gp. Returns 0 for dispatcher rows (animals/mounts)
+## Returns the base price in cp. Returns 0 for dispatcher rows (animals/mounts)
 ## per §2.5.1 — caller should resolve the dispatcher via random_common/_precious
 ## first, then ask for the concrete row's price.
-func base_price_gp(merchandise_type: String) -> int:
+func base_price_cp(merchandise_type: String) -> int:
 	var entry: Dictionary = _by_type.get(merchandise_type, {})
-	var v: Variant = entry.get("base_price_gp", null)
+	var v: Variant = entry.get("base_price_cp", null)
 	if v == null:
 		return 0
 	return int(v)
@@ -164,9 +168,9 @@ func load_weight_stone(merchandise_type: String) -> int:
 ## precious_dispatch_range (86-100), recurses into the precious table.
 ## If the resolved row is an 'animals' or 'mounts' dispatcher, resolves via
 ## the animals sub-table. Returns a fully-resolved merchandise dict with
-## concrete load_weight_stone and base_price_gp (the dispatcher row's null
+## concrete load_weight_stone and base_price_cp (the dispatcher row's null
 ## values are replaced by the animal sub-table's stone_per_load and
-## price_per_load_gp).
+## price_per_load_cp).
 func random_common(rng: RandomNumberGenerator) -> Dictionary:
 	if rng == null:
 		rng = RandomNumberGenerator.new()
@@ -218,8 +222,8 @@ func _resolve_dispatcher(entry: Dictionary, rng: RandomNumberGenerator) -> Dicti
 			resolved["resolved_animal_type"] = animal.get("animal_type", "")
 			resolved["resolved_animal_display"] = animal.get("display_name", "")
 			resolved["load_weight_stone"] = int(animal.get("stone_per_load", 0))
-			resolved["base_price_gp"] = int(animal.get("price_per_load_gp", 0))
-			resolved["fodder_gp_per_week"] = int(animal.get("fodder_gp_per_week", 0))
+			resolved["base_price_cp"] = int(animal.get("price_per_load_cp", 0))
+			resolved["fodder_cp_per_week"] = int(animal.get("fodder_cp_per_week", 0))
 			return resolved
 	push_error("MerchandiseRegistry: animals subroll %d (%s) matched no animal row" % [animal_roll, subroll])
 	return entry.duplicate()

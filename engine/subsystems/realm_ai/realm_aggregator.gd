@@ -24,8 +24,8 @@ extends RefCounted
 ##       personal_families: int,           — sum of peasant + urban for ruler-owned domains
 ##       personal_peasant_families: int,
 ##       personal_urban_families: int,
-##       personal_revenue_gp: int,
-##       personal_expenses_gp: int,
+##       personal_revenue_cp: int,
+##       personal_expenses_cp: int,
 ##       personal_garrison_units: int,
 ##       direct_vassals: Array,            — [{vassal_assignment_id, vassal_character_id, families}]
 ##       direct_vassal_count: int,
@@ -44,8 +44,8 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 		"personal_families": 0,
 		"personal_peasant_families": 0,
 		"personal_urban_families": 0,
-		"personal_revenue_gp": 0,
-		"personal_expenses_gp": 0,
+		"personal_revenue_cp": 0,
+		"personal_expenses_cp": 0,
 		"personal_garrison_units": 0,
 		"direct_vassals": [],
 		"direct_vassal_count": 0,
@@ -67,8 +67,8 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 		result["personal_peasant_families"] = int(result["personal_peasant_families"]) + peasant
 		result["personal_urban_families"] = int(result["personal_urban_families"]) + urban
 		result["personal_families"] = int(result["personal_families"]) + peasant + urban
-		result["personal_revenue_gp"] = int(result["personal_revenue_gp"]) + int(d.get("revenue_gp", 0))
-		result["personal_expenses_gp"] = int(result["personal_expenses_gp"]) + int(d.get("expenses_gp", 0))
+		result["personal_revenue_cp"] = int(result["personal_revenue_cp"]) + int(d.get("revenue_cp", 0))
+		result["personal_expenses_cp"] = int(result["personal_expenses_cp"]) + int(d.get("expenses_cp", 0))
 		result["personal_garrison_units"] = int(result["personal_garrison_units"]) + int(d.get("garrison_troops", 0))
 
 	# Direct vassals + recursive realm sum.
@@ -118,7 +118,7 @@ static func _list_owned_domains(character_id: String) -> Array:
 				   FROM settlement_entrances
 				   WHERE parent_domain_id = d.id
 			   ), 0) AS urban_families,
-			   d.revenue_gp, d.expenses_gp, d.garrison_troops, d.realm_title
+			   d.revenue_cp, d.expenses_cp, d.garrison_troops, d.realm_title
 		FROM domains d
 		WHERE d.owner_character_id = ?
 	""", [character_id]):

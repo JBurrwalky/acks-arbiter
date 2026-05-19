@@ -106,8 +106,8 @@ func test_generate_henchman_produces_normal_man() -> void:
 		"character_type should be 'henchman', got %s" % nm.character_type)
 	check(nm.combat_progression == "fighter",
 		"combat_progression should be 'fighter' (RAW default-trajectory hint), got %s" % nm.combat_progression)
-	check(int(nm.wage_gp_per_month) == 12,
-		"NM monthly wage should be 12 gp, got %d" % nm.wage_gp_per_month)
+	check(int(nm.wage_cp_per_month) == 1200,
+		"NM monthly wage should be 1200 cp (= 12 gp), got %d" % nm.wage_cp_per_month)
 
 
 func test_generated_normal_man_has_no_adventuring() -> void:

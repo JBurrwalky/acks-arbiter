@@ -72,7 +72,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"project_kind": "spell",
 		"target_spell_key": target_spell_key,
 		"target_spell_level": target_spell_level,
-		"gp_committed": gp_committed,
+		"cp_committed": gp_committed * 100,
 		"days_total": 7 * target_spell_level,
 		"days_completed": 7 * target_spell_level,
 		"target_value": 0,  # no throw for rewrite

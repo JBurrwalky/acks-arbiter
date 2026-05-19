@@ -83,7 +83,7 @@ func test_deposit_writes_ledger_and_emits_signal() -> void:
 	# Ledger entry written.
 	var entries := CampaignRepository.list_ledger_entries(d)
 	check(entries.size() == 1, "1 ledger entry, got %d" % entries.size())
-	check(int(entries[0]["gp_amount"]) == 500, "ledger gp_amount = 500")
+	check(int(entries[0]["cp_amount"]) == 500, "ledger cp_amount = 500")
 
 
 func test_withdraw_decrements_balance() -> void:
@@ -148,9 +148,11 @@ func test_invest_land_improvement_succeeds() -> void:
 	# Add a hex at land_value=5, no improvement yet.
 	CampaignRepository.add_domain_hex({
 		"domain_id": d, "hex_q": 0, "hex_r": 0,
-		"land_value": 5, "land_improvement_gp": 0,
+		"land_value": 5, "land_improvement_level": 0,
 	})
-	DomainTreasury.deposit(d, 30000, 1)
+	# Seed 30,000 gp = 3,000,000 cp. Improvement costs 2,500,000 cp; expect
+	# 500,000 cp left.
+	DomainTreasury.deposit(d, 3_000_000, 1)
 	var fired: Array = []
 	var listener := func(did: String, q: int, r: int, new_value: int, count: int):
 		if did == d:
@@ -159,8 +161,8 @@ func test_invest_land_improvement_succeeds() -> void:
 	var result := DomainTreasury.invest_land_improvement(d, 0, 0, 2)
 	EventBus.land_value_improved.disconnect(listener)
 	check(result["ok"], "land improvement ok, reason=%s" % result.get("reason", "?"))
-	check(int(result["new_balance"]) == 5000,
-		"30,000 - 25,000 = 5,000 left, got %d" % int(result["new_balance"]))
+	check(int(result["new_balance"]) == 500_000,
+		"3,000,000 - 2,500,000 = 500,000 cp left, got %d" % int(result["new_balance"]))
 	check(int(result["new_land_value"]) == 6,
 		"land_value 5 -> 6, got %d" % int(result["new_land_value"]))
 	check(int(result["new_improvement_count"]) == 1,
@@ -173,9 +175,10 @@ func test_invest_land_improvement_insufficient_funds() -> void:
 	CampaignRepository.add_domain_hex({
 		"domain_id": d, "hex_q": 0, "hex_r": 0, "land_value": 5,
 	})
-	DomainTreasury.deposit(d, 10000, 1)
+	# 1,000,000 cp = 10,000 gp; below the 2,500,000 cp threshold.
+	DomainTreasury.deposit(d, 1_000_000, 1)
 	var result := DomainTreasury.invest_land_improvement(d, 0, 0, 2)
-	check(not result["ok"], "blocked at 10,000 gp")
+	check(not result["ok"], "blocked at 1,000,000 cp (10,000 gp)")
 	check(String(result["reason"]) == DomainTreasury.REASON_INSUFFICIENT_FUNDS,
 		"reason = insufficient_funds")
 
@@ -184,9 +187,9 @@ func test_invest_land_improvement_caps_at_plus_three() -> void:
 	var d := _make_fresh_domain("LI Cap +3")
 	CampaignRepository.add_domain_hex({
 		"domain_id": d, "hex_q": 0, "hex_r": 0,
-		"land_value": 5, "land_improvement_gp": 3,  # already at +3
+		"land_value": 5, "land_improvement_level": 3,  # already at +3
 	})
-	DomainTreasury.deposit(d, 30000, 1)
+	DomainTreasury.deposit(d, 3_000_000, 1)
 	var result := DomainTreasury.invest_land_improvement(d, 0, 0, 2)
 	check(not result["ok"], "blocked at +3 cap")
 	check(String(result["reason"]) == DomainTreasury.REASON_LAND_IMPROVEMENT_REJECTED,
@@ -198,16 +201,16 @@ func test_invest_land_improvement_caps_at_land_value_nine() -> void:
 	# land_value 9 already; +1 would push to 10 which exceeds cap.
 	CampaignRepository.add_domain_hex({
 		"domain_id": d, "hex_q": 0, "hex_r": 0,
-		"land_value": 9, "land_improvement_gp": 0,
+		"land_value": 9, "land_improvement_level": 0,
 	})
-	DomainTreasury.deposit(d, 30000, 1)
+	DomainTreasury.deposit(d, 3_000_000, 1)
 	var result := DomainTreasury.invest_land_improvement(d, 0, 0, 2)
 	check(not result["ok"], "blocked at land_value 9 cap")
 
 
 func test_invest_land_improvement_invalid_hex() -> void:
 	var d := _make_fresh_domain("LI Bad Hex")
-	DomainTreasury.deposit(d, 30000, 1)
+	DomainTreasury.deposit(d, 3_000_000, 1)
 	var result := DomainTreasury.invest_land_improvement(d, 99, 99, 2)
 	check(not result["ok"], "blocked when hex not in domain")
 	check(String(result["reason"]) == DomainTreasury.REASON_HEX_NOT_FOUND,
@@ -243,7 +246,7 @@ func test_inter_stronghold_transfer_emits_route() -> void:
 		"archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
 		"structure_type": "keep",
-		"gp_value": 22500,
+		"cp_value": 2250000,  # Migration 116: 22500 gp × 100.
 		"completion_pct": 100,
 		"status": "completed",
 		"location_map_id": "map_a",
@@ -255,7 +258,7 @@ func test_inter_stronghold_transfer_emits_route() -> void:
 		"archetype": "fortress",
 		"archetype_power_id": "stronghold_castle",
 		"structure_type": "keep",
-		"gp_value": 22500,
+		"cp_value": 2250000,  # Migration 116: 22500 gp × 100.
 		"completion_pct": 100,
 		"status": "completed",
 		"location_map_id": "map_a",

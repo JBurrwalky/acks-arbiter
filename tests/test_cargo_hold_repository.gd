@@ -30,6 +30,14 @@ func run_all_tests() -> void:
 	test_multiple_acquisitions_remain_separate_rows()
 	test_load_weight_cached_from_registry()
 
+	# Phase 10B.2 Wave 1 substrate amendments (§13.2 + §13.5)
+	test_partial_sell_decrements_loads()
+	test_partial_sell_delegates_to_delete_at_zero()
+	test_partial_sell_rejects_over_sell()
+	test_partial_sell_emits_cargo_sold()
+	test_list_for_party_active_carriers_aggregates_both()
+	test_list_for_party_active_carriers_filters_destroyed()
+
 	if not has_failures():
 		print("CargoHoldRepository: all %d tests passed." % test_count())
 
@@ -84,7 +92,7 @@ func test_insert_purchase_creates_row() -> void:
 	var row: Dictionary = CargoHoldRepository.get_cargo_hold(cid)
 	check(str(row.get("merchandise_type", "")) == "silk", "merchandise_type persisted")
 	check(int(row.get("loads_count", 0)) == 5, "loads_count = 5")
-	check(int(row.get("market_value_at_acquisition_gp", 0)) == 12000, "market_value = 12000")
+	check(int(row.get("market_value_at_acquisition_cp", 0)) == 12000, "market_value = 12000")
 	check(str(row.get("source_acquisition_kind", "")) == "purchased", "source_kind = 'purchased'")
 	check(str(row.get("draft_vehicle_id", "")) == wagon, "draft_vehicle_id set")
 	check(row.get("ship_id", null) == null, "ship_id NULL (XOR)")
@@ -120,7 +128,7 @@ func test_insert_hijink_yield_smuggled() -> void:
 	check(not cid.is_empty(), "insert_hijink_yield smuggled returns id")
 	var row: Dictionary = CargoHoldRepository.get_cargo_hold(cid)
 	check(str(row.get("source_acquisition_kind", "")) == "smuggled", "source_kind = 'smuggled'")
-	check(int(row.get("market_value_at_acquisition_gp", 0)) == 24000, "notional market_value = 24000")
+	check(int(row.get("market_value_at_acquisition_cp", 0)) == 24000, "notional market_value = 24000")
 	check(str(row.get("ship_id", "")) == ship, "ship_id set")
 	check(row.get("draft_vehicle_id", null) == null, "draft_vehicle_id NULL")
 
@@ -155,7 +163,7 @@ func test_xor_constraint_both_carriers_rejected() -> void:
 		INSERT INTO cargo_holds
 			(id, campaign_id, draft_vehicle_id, ship_id,
 			 merchandise_type, loads_count, load_weight_stone,
-			 market_value_at_acquisition_gp, source_acquisition_kind,
+			 market_value_at_acquisition_cp, source_acquisition_kind,
 			 acquired_at_calendar_day)
 		VALUES (?, ?, ?, ?, 'silk', 1, 20, 100, 'purchased', 0)
 	""", ["%s_both" % _next_id(), _campaign_id, wagon, ship])
@@ -167,7 +175,7 @@ func test_xor_constraint_neither_carrier_rejected() -> void:
 		INSERT INTO cargo_holds
 			(id, campaign_id, draft_vehicle_id, ship_id,
 			 merchandise_type, loads_count, load_weight_stone,
-			 market_value_at_acquisition_gp, source_acquisition_kind,
+			 market_value_at_acquisition_cp, source_acquisition_kind,
 			 acquired_at_calendar_day)
 		VALUES (?, ?, NULL, NULL, 'silk', 1, 20, 100, 'purchased', 0)
 	""", ["%s_neither" % _next_id(), _campaign_id])
@@ -232,7 +240,7 @@ func test_transfer_loads_partial() -> void:
 	# Provenance carried over.
 	check(str(target.get("source_acquisition_kind", "")) == "purchased",
 		"source_kind preserved across transfer")
-	check(int(target.get("market_value_at_acquisition_gp", 0)) == 20000,
+	check(int(target.get("market_value_at_acquisition_cp", 0)) == 20000,
 		"market_value preserved across transfer")
 
 
@@ -275,18 +283,18 @@ func test_delete_sold_removes_row_and_emits_signal() -> void:
 	var cid: String = CargoHoldRepository.insert_purchase(
 		wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
 		"silk", 5, 10000, _settlement_id, 0)
-	var got_signal := {"emitted": false, "cargo_id": "", "gp": -1}
-	var cb: Callable = func(c_id: String, gp: int) -> void:
+	var got_signal := {"emitted": false, "cargo_id": "", "cp": -1}
+	var cb: Callable = func(c_id: String, cp: int) -> void:
 		got_signal["emitted"] = true
 		got_signal["cargo_id"] = c_id
-		got_signal["gp"] = gp
+		got_signal["cp"] = cp
 	EventBus.cargo_sold.connect(cb)
 	check(CargoHoldRepository.delete_sold(cid, 13500), "delete_sold returns true")
 	EventBus.cargo_sold.disconnect(cb)
 	check(CargoHoldRepository.get_cargo_hold(cid).is_empty(), "row removed from cache")
 	check(bool(got_signal["emitted"]), "cargo_sold signal fired")
 	check(str(got_signal["cargo_id"]) == cid, "signal payload cargo_id matches")
-	check(int(got_signal["gp"]) == 13500, "signal payload gp_received = 13500")
+	check(int(got_signal["cp"]) == 13500, "signal payload cp_received = 13500")
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +317,7 @@ func test_multiple_acquisitions_remain_separate_rows() -> void:
 	# market_value per row preserves the per-acquisition snapshot.
 	var by_day: Dictionary = {}
 	for r in rows:
-		by_day[int((r as Dictionary).get("acquired_at_calendar_day", -1))] = int((r as Dictionary).get("market_value_at_acquisition_gp", 0))
+		by_day[int((r as Dictionary).get("acquired_at_calendar_day", -1))] = int((r as Dictionary).get("market_value_at_acquisition_cp", 0))
 	check(int(by_day.get(10, -1)) == 50, "day-10 row has market_value = 50")
 	check(int(by_day.get(12, -1)) == 60, "day-12 row has market_value = 60")
 
@@ -334,3 +342,122 @@ func test_load_weight_cached_from_registry() -> void:
 	var grain: Dictionary = CargoHoldRepository.get_cargo_hold(cid_grain)
 	check(int(grain.get("load_weight_stone", 0)) == 80,
 		"grain cached load_weight = 80 stone")
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Wave 1 substrate amendments — partial_sell + list_for_party_active_carriers
+# Per gdd-phase-10b-2-trade-block.md §13.2 + §13.5.
+# ---------------------------------------------------------------------------
+
+func test_partial_sell_decrements_loads() -> void:
+	var wagon: String = _make_wagon()
+	var cid: String = CargoHoldRepository.insert_purchase(
+		wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 10, 20000, _settlement_id, 0)
+	check(CargoHoldRepository.partial_sell(cid, 3, 6000), "partial_sell 3/10 returns true")
+	var row: Dictionary = CargoHoldRepository.get_cargo_hold(cid)
+	check(int(row.get("loads_count", 0)) == 7,
+		"partial_sell decremented loads_count from 10 to 7, got %d" % int(row.get("loads_count", 0)))
+
+
+func test_partial_sell_delegates_to_delete_at_zero() -> void:
+	var wagon: String = _make_wagon()
+	var cid: String = CargoHoldRepository.insert_purchase(
+		wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 5, 10000, _settlement_id, 0)
+	check(CargoHoldRepository.partial_sell(cid, 5, 13000),
+		"partial_sell at full quantity returns true")
+	check(CargoHoldRepository.get_cargo_hold(cid).is_empty(),
+		"row deleted when partial_sell consumes full quantity")
+
+
+func test_partial_sell_rejects_over_sell() -> void:
+	var wagon: String = _make_wagon()
+	var cid: String = CargoHoldRepository.insert_purchase(
+		wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 5, 10000, _settlement_id, 0)
+	check(not CargoHoldRepository.partial_sell(cid, 6, 12000),
+		"partial_sell of 6/5 returns false")
+	var row: Dictionary = CargoHoldRepository.get_cargo_hold(cid)
+	check(int(row.get("loads_count", 0)) == 5,
+		"row unchanged at 5 loads after rejected over-sell")
+	check(not CargoHoldRepository.partial_sell(cid, 0, 0),
+		"partial_sell with loads_to_sell=0 returns false")
+	check(not CargoHoldRepository.partial_sell("", 1, 100),
+		"partial_sell with empty cargo_hold_id returns false")
+	check(not CargoHoldRepository.partial_sell("nonexistent_id", 1, 100),
+		"partial_sell on missing row returns false")
+
+
+func test_partial_sell_emits_cargo_sold() -> void:
+	var wagon: String = _make_wagon()
+	var cid: String = CargoHoldRepository.insert_purchase(
+		wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 8, 16000, _settlement_id, 0)
+	var captured := {"emitted": false, "cp": 0, "cid": ""}
+	var cb: Callable = func(c_id: String, cp: int) -> void:
+		captured["emitted"] = true
+		captured["cp"] = cp
+		captured["cid"] = c_id
+	EventBus.cargo_sold.connect(cb)
+	CargoHoldRepository.partial_sell(cid, 3, 7800)
+	EventBus.cargo_sold.disconnect(cb)
+	check(bool(captured["emitted"]), "partial_sell emits cargo_sold on partial path")
+	check(int(captured["cp"]) == 7800, "signal payload cp_received = 7800")
+	check(str(captured["cid"]) == cid, "signal payload cargo_id matches")
+
+
+func test_list_for_party_active_carriers_aggregates_both() -> void:
+	# Pattern 1: separate party so other suite-leftover rows don't bleed in.
+	var party_id: String = "%s_party_active" % _next_id()
+	CampaignRepository.db.query_with_bindings(
+		"INSERT INTO parties (id, campaign_id, name) VALUES (?, ?, 'PActive')",
+		[party_id, _campaign_id])
+	# Wagon + ship attached to this isolated party.
+	var wagon_id: String = "%s_wagon_active" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO draft_vehicles (id, campaign_id, party_id, item_key, name)
+		VALUES (?, ?, ?, 'wagon', 'ActiveWagon')
+	""", [wagon_id, _campaign_id, party_id])
+	var ship_id: String = ShipRepository.create_ship(party_id, "sailing_ship_small", _settlement_id)
+	# Two cargo rows — one per carrier.
+	CargoHoldRepository.insert_purchase(wagon_id, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 2, 4000, _settlement_id, 0)
+	CargoHoldRepository.insert_purchase(ship_id, CargoHoldRepository.CARRIER_SHIP,
+		"gems", 1, 3000, _settlement_id, 0)
+	var rows: Array = CargoHoldRepository.list_for_party_active_carriers(party_id)
+	check(rows.size() == 2,
+		"list_for_party_active_carriers returns 2 rows across wagon + ship, got %d" % rows.size())
+	var seen: Dictionary = {}
+	for r in rows:
+		seen[str((r as Dictionary).get("merchandise_type", ""))] = true
+	check(seen.has("silk") and seen.has("gems"),
+		"both wagon (silk) and ship (gems) cargo present in aggregation")
+
+
+func test_list_for_party_active_carriers_filters_destroyed() -> void:
+	var party_id: String = "%s_party_destroy" % _next_id()
+	CampaignRepository.db.query_with_bindings(
+		"INSERT INTO parties (id, campaign_id, name) VALUES (?, ?, 'PDestroy')",
+		[party_id, _campaign_id])
+	var alive_wagon: String = "%s_alive_wagon" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO draft_vehicles (id, campaign_id, party_id, item_key, name)
+		VALUES (?, ?, ?, 'wagon', 'AliveWagon')
+	""", [alive_wagon, _campaign_id, party_id])
+	var dead_wagon: String = "%s_dead_wagon" % _next_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO draft_vehicles (id, campaign_id, party_id, item_key, name, is_destroyed)
+		VALUES (?, ?, ?, 'wagon', 'DeadWagon', 1)
+	""", [dead_wagon, _campaign_id, party_id])
+	CargoHoldRepository.insert_purchase(alive_wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"silk", 1, 2000, _settlement_id, 0)
+	# Insert on dead wagon BEFORE destruction would be the realistic order, but
+	# the helper just rejects is_destroyed != 0 on read regardless.
+	CargoHoldRepository.insert_purchase(dead_wagon, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
+		"gems", 1, 3000, _settlement_id, 0)
+	var rows: Array = CargoHoldRepository.list_for_party_active_carriers(party_id)
+	check(rows.size() == 1,
+		"list_for_party_active_carriers filters destroyed wagon's cargo, got %d row(s)" % rows.size())
+	check(str((rows[0] as Dictionary).get("merchandise_type", "")) == "silk",
+		"surviving cargo is the silk on the alive wagon")

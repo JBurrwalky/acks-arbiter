@@ -782,21 +782,8 @@ static func compute_settled_lair_morale_penalty(domain_id: String, families: int
 		total_xp += xp_per * count
 	if total_xp <= 0:
 		return 0
-	return _bankers_round(float(total_xp) / float(families))
+	return XPAwardCalculator.bankers_round(float(total_xp) / float(families))
 
 
-static func _bankers_round(value: float) -> int:
-	## Round-half-to-even. GDScript's roundi() rounds half AWAY from zero,
-	## which is NOT banker's rounding. Project convention (CLAUDE.md): all
-	## computed integers use banker's rounding.
-	var floor_v: float = floor(value)
-	var frac: float = value - floor_v
-	if frac < 0.5:
-		return int(floor_v)
-	if frac > 0.5:
-		return int(floor_v) + 1
-	# Exactly 0.5 — round to even.
-	var f: int = int(floor_v)
-	if f % 2 == 0:
-		return f
-	return f + 1
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

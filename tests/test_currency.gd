@@ -16,7 +16,7 @@ func run_all_tests() -> void:
 	test_format_cost_gp()
 	test_format_cost_mixed()
 	test_format_cost_zero()
-	test_format_cost_with_ep_pp()
+	test_format_cost_skips_pp_ep()
 	test_format_wealth_mixed()
 	test_format_wealth_empty()
 	test_deduction_exact_amount()
@@ -105,15 +105,21 @@ func test_cp_to_coins_small() -> void:
 # ---------------------------------------------------------------------------
 
 func test_format_cost_gp() -> void:
-	# 300cp = 3gp (below pp threshold of 500cp)
+	# 300cp = 3gp.
 	check(Currency.format_cost(300) == "3gp", "300cp should format as 3gp, got '%s'" % Currency.format_cost(300))
+	# User spec: 5000cp = 50gp.
+	check(Currency.format_cost(5000) == "50gp", "5000cp should format as 50gp, got '%s'" % Currency.format_cost(5000))
 	print("  format_cost_gp: OK")
 
 
 func test_format_cost_mixed() -> void:
-	# 667cp = 1pp(500) + 1gp(100) + 1ep(50) + 1sp(10) + 7cp
-	check(Currency.format_cost(667) == "1pp 1gp 1ep 1sp 7cp",
-		"667cp format_cost: got '%s'" % Currency.format_cost(667))
+	# 2026-05-18 cost format: gp/sp/cp only, comma+space separator (per user spec).
+	# User spec: 1789 cp → "17gp, 8sp, 9cp".
+	check(Currency.format_cost(1789) == "17gp, 8sp, 9cp",
+		"1789cp format_cost: got '%s'" % Currency.format_cost(1789))
+	# User spec: 50,107 cp → "501gp, 7cp" (no sp because remainder < 10).
+	check(Currency.format_cost(50_107) == "501gp, 7cp",
+		"50,107cp format_cost: got '%s'" % Currency.format_cost(50_107))
 	print("  format_cost_mixed: OK")
 
 
@@ -122,12 +128,19 @@ func test_format_cost_zero() -> void:
 	print("  format_cost_zero: OK")
 
 
-func test_format_cost_with_ep_pp() -> void:
-	# 50cp = 1ep (ACKS RAW: 1ep = 50cp)
-	check(Currency.format_cost(50) == "1ep", "50cp = 1ep, got '%s'" % Currency.format_cost(50))
-	# 550cp = 1pp(500) + 1ep(50)
-	check(Currency.format_cost(550) == "1pp 1ep", "550cp = 1pp 1ep, got '%s'" % Currency.format_cost(550))
-	print("  format_cost_with_ep_pp: OK")
+func test_format_cost_skips_pp_ep() -> void:
+	# Cost format uses only gp/sp/cp; pp/ep are physical-coin denominations
+	# reserved for format_wealth (inventory/treasure/loot displays).
+	# 50 cp was "1ep" under the old format; cost format = "5sp".
+	check(Currency.format_cost(50) == "5sp",
+		"50cp under cost format = 5sp (no ep), got '%s'" % Currency.format_cost(50))
+	# 550 cp was "1pp 1ep"; cost format = "5gp, 5sp".
+	check(Currency.format_cost(550) == "5gp, 5sp",
+		"550cp under cost format = 5gp, 5sp (no pp/ep), got '%s'" % Currency.format_cost(550))
+	# User spec: 30 cp = "3sp" (no gp magnitude).
+	check(Currency.format_cost(30) == "3sp",
+		"30cp = 3sp, got '%s'" % Currency.format_cost(30))
+	print("  format_cost_skips_pp_ep: OK")
 
 
 func test_format_wealth_mixed() -> void:

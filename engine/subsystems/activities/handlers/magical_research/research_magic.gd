@@ -205,7 +205,7 @@ static func _handle_spell_branch(
 			"project_kind": "spell",
 			"target_spell_key": target_spell_key,
 			"target_spell_level": target_spell_level,
-			"gp_committed": gp_committed,
+			"cp_committed": gp_committed * 100,
 			"days_total": 14 * target_spell_level,
 			"days_completed": 14 * target_spell_level,
 			"target_value": effective_target,
@@ -230,7 +230,7 @@ static func _handle_spell_branch(
 		var growth_gp: int = int(roundi(0.1 * float(gp_committed)))
 		if growth_gp > 0:
 			CampaignRepository.update_library(library_id, {
-				"gp_invested": int(library.get("gp_invested", 0)) + growth_gp,
+				"cp_invested": int(library.get("cp_invested", 0)) + growth_gp * 100,
 			})
 
 	EventBus.magic_research_project_completed.emit(project_id, character_id, success)
@@ -438,7 +438,7 @@ static func _handle_magic_item_branch(
 			"target_item_kind": item_category,
 			"target_spell_key": primary_spell_key,
 			"target_spell_level": primary_spell_level,
-			"gp_committed": gp_committed,
+			"cp_committed": gp_committed * 100,
 			"days_total": final_days,
 			"days_completed": final_days,
 			"target_value": effective_target,
@@ -662,7 +662,7 @@ static func _handle_construct_branch(
 		"character_id": character_id,
 		"project_kind": "construct",
 		"target_item_kind": "construct",
-		"gp_committed": gp_committed,
+		"cp_committed": gp_committed * 100,
 		"days_total": days,
 		"days_completed": days,
 		"target_value": effective_target,
@@ -932,7 +932,7 @@ static func _handle_monster_branch(
 		"character_id": character_id,
 		"project_kind": "monster",
 		"target_item_kind": "crossbreed",
-		"gp_committed": gp_committed,
+		"cp_committed": gp_committed * 100,
 		"days_total": days,
 		"days_completed": days,
 		"target_value": effective_target,
@@ -990,6 +990,16 @@ static func _handle_monster_branch(
 		var initial_reaction_val: Variant = initial_reaction_v
 		if initial_reaction_val is String and (initial_reaction_val as String).is_empty():
 			initial_reaction_val = null
+		# 2026-05-19 bucket-B item #109: auto-roll initial reaction when the
+		# caller doesn't supply one. RAW: 2d6 + creator CHA mod modified by
+		# progenitor intelligence.
+		if initial_reaction_val == null:
+			var cha_mod: int = CharacterData.ability_modifier(int(character.get("charisma", 10)))
+			# Progenitor INT mod: v1 sources from params (caller-provided);
+			# defaults to 0 when not specified.
+			var prog_int_mod: int = int(params.get("progenitor_intelligence_modifier", 0))
+			initial_reaction_val = MagicalResearchCrossbreed.roll_initial_reaction(
+				cha_mod, prog_int_mod, null)
 		instance_id = CampaignRepository.create_crossbreed_instance({
 			"campaign_id": String(character.get("campaign_id", "")),
 			"species_id": species_id,

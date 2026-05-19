@@ -52,6 +52,14 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.encounter_decision_required.is_connected(_on_encounter_decision_required):
 		EventBus.encounter_decision_required.connect(_on_encounter_decision_required)
 
+	# Migration 119 cross-scale view-mode toggle. Swap the controller's
+	# loaded map when the player toggles Strategic / Regional view, and
+	# refresh the camera when the party crosses between maps.
+	if not EventBus.map_view_mode_changed.is_connected(_on_map_view_mode_changed):
+		EventBus.map_view_mode_changed.connect(_on_map_view_mode_changed)
+	if not EventBus.party_map_changed.is_connected(_on_party_map_changed):
+		EventBus.party_map_changed.connect(_on_party_map_changed)
+
 	# Ensure all parties in the campaign are registered with Timekeeping
 	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
 	for p in all_parties:
@@ -102,6 +110,10 @@ func exit(runner) -> void:
 		EventBus.wilderness_cache_visit_requested.disconnect(_on_wilderness_cache_visit_requested)
 	if EventBus.encounter_decision_required.is_connected(_on_encounter_decision_required):
 		EventBus.encounter_decision_required.disconnect(_on_encounter_decision_required)
+	if EventBus.map_view_mode_changed.is_connected(_on_map_view_mode_changed):
+		EventBus.map_view_mode_changed.disconnect(_on_map_view_mode_changed)
+	if EventBus.party_map_changed.is_connected(_on_party_map_changed):
+		EventBus.party_map_changed.disconnect(_on_party_map_changed)
 
 	_close_context_menu()
 	_close_encounter_prompt()
@@ -435,6 +447,130 @@ func _on_active_party_changed(_prev_id: String, _new_id: String) -> void:
 		var q: int = party.get("current_hex_q", 0) if party.get("current_hex_q") != null else 0
 		var r: int = party.get("current_hex_r", 0) if party.get("current_hex_r") != null else 0
 		renderer.center_on_hex(Vector2i(q, r))
+
+
+# ---------------------------------------------------------------------------
+# Migration 119 — cross-scale view-mode + party-map-change handlers
+# ---------------------------------------------------------------------------
+
+## Swap the loaded map when the view mode changes. Camera-only — the party's
+## logical map (parties.current_map_id) is unchanged. STRATEGIC walks up the
+## parent_map_id chain to the topmost ancestor and renders that; REGIONAL
+## renders the party's actual current map.
+func _on_map_view_mode_changed(_from_mode: int, to_mode: int) -> void:
+	if _runner == null:
+		return
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null:
+		return
+	var target_map_id := _resolve_target_map_id_for_view(to_mode)
+	if target_map_id.is_empty():
+		return
+	var current_map: HexMapData = controller.get_map()
+	if current_map != null and current_map.id == target_map_id:
+		return  # already showing the right map
+	var loaded: HexMapData = CampaignRepository.load_hex_map(target_map_id)
+	if loaded == null:
+		push_warning("WildernessExploreState: load_hex_map returned null for %s" % target_map_id)
+		return
+	# Set party_hex on the loaded map to the active party's position projected
+	# onto this map (live DB read), so camera-centering + enter-button logic
+	# resolves correctly. The renderer's _resolve_party_render_position
+	# handles per-token placement on top of this.
+	_apply_party_hex_to_loaded_map(loaded)
+	controller.load_map(loaded)
+
+
+## Set [param loaded].party_hex to the active party's actual coordinate on
+## that map (if directly on it), or to the parent_anchor of the party's
+## child map (if [param loaded] is the parent / ancestor of the party's
+## actual map). Falls through to the map's existing party_hex on no match.
+func _apply_party_hex_to_loaded_map(loaded: HexMapData) -> void:
+	var party_id := GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+	if party_id.is_empty():
+		return
+	var party := CampaignRepository.get_party(party_id)
+	if party.is_empty():
+		return
+	var party_map_id := String(party.get("current_map_id", ""))
+	if party_map_id == loaded.id:
+		var q: int = int(party.get("current_hex_q", 0)) if party.get("current_hex_q") != null else 0
+		var r: int = int(party.get("current_hex_r", 0)) if party.get("current_hex_r") != null else 0
+		loaded.party_hex = Vector2i(q, r)
+		return
+	# Party is on a child map of `loaded` — walk up looking for an ancestor
+	# match and use that child's parent_anchor (or first footprint hex).
+	var safety := 8
+	var current_child := party_map_id
+	while safety > 0 and not current_child.is_empty():
+		var parent_id := CampaignRepository.get_hex_map_parent_id(current_child)
+		if parent_id.is_empty():
+			break
+		if parent_id == loaded.id:
+			var footprint: Array = CampaignRepository.get_hex_map_parent_footprint(current_child)
+			if footprint.size() > 0:
+				loaded.party_hex = footprint[0]
+			return
+		current_child = parent_id
+		safety -= 1
+
+
+## Refresh the loaded map when the party crosses between hex maps. Honors
+## the current view mode: if the player is in STRATEGIC view, we may not
+## need to swap (still showing the ancestor); if REGIONAL, we always swap
+## to the party's new map.
+func _on_party_map_changed(party_id: String, _from_map: String, to_map: String) -> void:
+	if _runner == null or to_map.is_empty():
+		return
+	# Only react when the active/primary party changes maps. Background-party
+	# transitions don't move the player's camera.
+	if party_id != GameState.party_id and party_id != GameState.active_party_id:
+		return
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null:
+		return
+	var target_map_id := _resolve_target_map_id_for_view(int(GameState.map_view_mode))
+	if target_map_id.is_empty():
+		target_map_id = to_map
+	var current_map: HexMapData = controller.get_map()
+	if current_map != null and current_map.id == target_map_id:
+		# Still the right map; the renderer's party-token rebuild will
+		# reposition the token without a full reload.
+		return
+	var loaded: HexMapData = CampaignRepository.load_hex_map(target_map_id)
+	if loaded != null:
+		_apply_party_hex_to_loaded_map(loaded)
+		controller.load_map(loaded)
+
+
+## Returns the map_id that should be displayed for the given view mode,
+## based on the active party's current_map_id and its parent chain.
+func _resolve_target_map_id_for_view(view_mode: int) -> String:
+	var party_id := GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+	if party_id.is_empty():
+		return ""
+	var party := CampaignRepository.get_party(party_id)
+	if party.is_empty():
+		return ""
+	var party_map_id := String(party.get("current_map_id", ""))
+	if party_map_id.is_empty():
+		return ""
+	if view_mode == GameState.MapViewMode.REGIONAL:
+		return party_map_id
+	# STRATEGIC: walk up the parent chain.
+	var current := party_map_id
+	var safety := 8
+	while safety > 0:
+		var parent := CampaignRepository.get_hex_map_parent_id(current)
+		if parent.is_empty():
+			break
+		current = parent
+		safety -= 1
+	return current
 
 
 # ---------------------------------------------------------------------------

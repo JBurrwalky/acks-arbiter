@@ -48,8 +48,8 @@ func run_all_tests() -> void:
 	# Group 1: unit_capacity_no_map_formula
 	test_unit_capacity_boundaries()
 	test_breach_count_from_damage()
-	test_estimate_shp_from_gp_value_stone()
-	test_estimate_shp_from_gp_value_wood()
+	test_estimate_shp_from_cp_value_stone()
+	test_estimate_shp_from_cp_value_wood()
 	test_max_assaulting_and_defending_units()
 	# Group 2: dispatcher routing
 	test_dispatch_npc_vs_npc_routes_simplified()
@@ -132,11 +132,13 @@ func _make_stronghold(owner_id: String, shp: int, gp_value: int = 0, structure_t
 	var id := CampaignRepository.generate_id()
 	if gp_value <= 0:
 		gp_value = shp * 8
+	# Migration 116: strongholds.gp_value renamed to cp_value with × 100 scaling.
+	var cp_value: int = gp_value * 100
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status)
 		VALUES (?, ?, ?, ?, ?, 6, 0, 100, 'completed')
-	""", [id, owner_id, structure_type, gp_value, shp])
+	""", [id, owner_id, structure_type, cp_value, shp])
 	return id
 
 
@@ -174,16 +176,16 @@ func test_breach_count_from_damage() -> void:
 	check(UnitCapacityCalculator.breach_count_from_damage(2500) == 2, "2500 damage → 2 breaches")
 
 
-func test_estimate_shp_from_gp_value_stone() -> void:
-	# RAW L32: stone shp = ceil(gp_value / 8).
-	check(UnitCapacityCalculator.estimate_shp_from_gp_value(8) == 1, "8gp stone → 1 shp")
-	check(UnitCapacityCalculator.estimate_shp_from_gp_value(15) == 2, "15gp stone → 2 shp")
-	check(UnitCapacityCalculator.estimate_shp_from_gp_value(32000) == 4000, "32000gp stone → 4000 shp")
+func test_estimate_shp_from_cp_value_stone() -> void:
+	# RAW L32: stone shp = ceil(gp_value / 8); in cp, ceil(cp / 800).
+	check(UnitCapacityCalculator.estimate_shp_from_cp_value(800) == 1, "800cp (8gp) stone → 1 shp")
+	check(UnitCapacityCalculator.estimate_shp_from_cp_value(1500) == 2, "1500cp (15gp) stone → 2 shp")
+	check(UnitCapacityCalculator.estimate_shp_from_cp_value(3200000) == 4000, "3200000cp (32000gp) stone → 4000 shp")
 
 
-func test_estimate_shp_from_gp_value_wood() -> void:
+func test_estimate_shp_from_cp_value_wood() -> void:
 	# RAW L33: wood = 1/10 of comparable stone shp.
-	check(UnitCapacityCalculator.estimate_shp_from_gp_value(8000, "wood") == 100, "8000gp wood → 100 shp (8000/8/10)")
+	check(UnitCapacityCalculator.estimate_shp_from_cp_value(800000, "wood") == 100, "800000cp (8000gp) wood → 100 shp")
 
 
 func test_max_assaulting_and_defending_units() -> void:

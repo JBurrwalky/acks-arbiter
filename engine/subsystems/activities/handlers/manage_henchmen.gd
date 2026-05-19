@@ -17,7 +17,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "other",
 			"subcategory": "manage_henchmen_completed",
-			"gp_amount": 0,
+			"cp_amount": 0,
 			"description": "Henchmen managed this period",
 		})
 	return {

@@ -120,7 +120,9 @@ func _render_sufficiency() -> void:
 		_sufficiency_card.add_child(_dim_label("—"))
 		return
 	var territory: String = String(_domain_data.get("territory_type", "wilderness"))
-	var hex_count: int = CampaignRepository.get_domain_hexes(_domain_id).size()
+	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
+	# domains) per RAW §noncontiguous_domains; equals owned count when contiguous.
+	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
 	var stronghold_value: int = StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
 	var minimum: int = StrongholdRepository.classification_minimum_gp(territory, hex_count)
 
@@ -131,8 +133,11 @@ func _render_sufficiency() -> void:
 		pct_text = "%d%%" % int(round(pct * 100.0))
 
 	var headline := Label.new()
-	headline.text = "%d gp / %d gp (%s of classification minimum)" % [
-		stronghold_value, minimum, pct_text,
+	# stronghold_value + minimum are cp (per StrongholdRepository post-Migration 116).
+	headline.text = "%s / %s (%s of classification minimum)" % [
+		Currency.format_cost(stronghold_value),
+		Currency.format_cost(minimum),
+		pct_text,
 	]
 	_sufficiency_card.add_child(headline)
 
@@ -184,17 +189,18 @@ func _render_combined() -> void:
 	var strongholds: Array = CampaignRepository.list_domain_strongholds(_domain_id)
 	var completed_count: int = 0
 	var in_progress_count: int = 0
-	var completed_value: int = 0
+	var completed_value_cp: int = 0
 	for s: Dictionary in strongholds:
 		var status: String = String(s.get("status", ""))
 		if status == "completed":
 			completed_count += 1
-			completed_value += int(s.get("gp_value", 0))
+			# Migration 116 renamed strongholds.gp_value → cp_value.
+			completed_value_cp += int(s.get("cp_value", 0))
 		elif status == "in_progress":
 			in_progress_count += 1
 	var lbl := Label.new()
-	lbl.text = "%d completed (%d gp combined value) · %d in progress" % [
-		completed_count, completed_value, in_progress_count,
+	lbl.text = "%d completed (%s combined value) · %d in progress" % [
+		completed_count, Currency.format_cost(completed_value_cp), in_progress_count,
 	]
 	_combined_card.add_child(lbl)
 
@@ -244,10 +250,11 @@ func _make_stronghold_row(s: Dictionary) -> Control:
 	var top := HBoxContainer.new()
 	row.add_child(top)
 	var name_label := Label.new()
-	name_label.text = "%s · %s · %d gp" % [
+	# Migration 116 renamed strongholds.gp_value → cp_value.
+	name_label.text = "%s · %s · %s" % [
 		String(s.get("structure_type", "?")),
 		String(s.get("archetype", "?")),
-		int(s.get("gp_value", 0)),
+		Currency.format_cost(int(s.get("cp_value", 0))),
 	]
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name_label)
@@ -301,21 +308,23 @@ func _make_progress_row(s: Dictionary, commission: Dictionary) -> Control:
 		row.add_child(unknown)
 		return row
 
-	var gp_progressed: int = int(commission.get("gp_progressed", 0))
-	var gp_committed: int = int(commission.get("gp_committed", 0))
-	var rate: int = int(commission.get("daily_construction_rate_gp", 0))
+	var cp_progressed: int = int(commission.get("cp_progressed", 0))
+	var cp_committed: int = int(commission.get("cp_committed", 0))
+	var rate_cp: int = int(commission.get("daily_construction_rate_cp", 0))
 
 	var bar := ProgressBar.new()
 	bar.min_value = 0
-	bar.max_value = max(1, gp_committed)
-	bar.value = gp_progressed
+	bar.max_value = max(1, cp_committed)
+	bar.value = cp_progressed
 	bar.show_percentage = true
 	bar.custom_minimum_size = Vector2(0, 18)
 	row.add_child(bar)
 
 	var details := Label.new()
-	details.text = "%d / %d gp · %d gp/day · expected completion: day %d" % [
-		gp_progressed, gp_committed, rate,
+	details.text = "%s / %s · %s/day · expected completion: day %d" % [
+		Currency.format_cost(cp_progressed),
+		Currency.format_cost(cp_committed),
+		Currency.format_cost(rate_cp),
 		int(commission.get("expected_completion_day", 0)),
 	]
 	details.modulate = Color(0.7, 0.7, 0.7)

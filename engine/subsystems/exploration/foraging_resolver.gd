@@ -142,8 +142,23 @@ static func _attempt_food(
 	for cd: CharacterData in party.character_data:
 		var has_survival: bool = cd.has_proficiency(SURVIVAL_PROFICIENCY)
 		var bonus: int = HUNT_AND_FORAGE_TRAINED_BONUS if has_survival else 0
+		# RAW §effort_rules L168: cumulative -N per day past the 6-day strenuous
+		# grace window applies to proficiency throws (forage_food is a Survival
+		# proficiency throw per the foraging GDD). Subtracted from the total
+		# alongside survival_bonus / weather_mod so the per-character throws
+		# Dictionary surfaces the penalty for transparency.
+		var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(cd.id)
+		# Phase 10B.3 #6: permanent-wound penalty to general proficiency
+		# throws (e.g., "permanently addled" MW outcomes apply -2). Speech-
+		# based prof throws use a different aggregator field; this is the
+		# generic prof throw penalty currently equal to 0 for v1 since
+		# no general-prof penalty wound_kind is encoded yet, but the wiring
+		# is in place for the broader MW catalog.
+		var wound_prof_penalty: int = -int(
+			WoundEffectAggregator.compute(cd.id).get("proficiency_throw_modifier", 0))
 		var roll: RollResult = dice.roll_digital(20, 1, 0, "forage_food")
-		var total: int = roll.modified_total + bonus + weather_mod
+		var total: int = roll.modified_total + bonus + weather_mod \
+			- strenuous_penalty - wound_prof_penalty
 		var succeeded: bool = total >= FOOD_TARGET_UNTRAINED
 		rolls += 1
 		if succeeded:
@@ -157,6 +172,8 @@ static func _attempt_food(
 			"roll": roll.modified_total,
 			"survival_bonus": bonus,
 			"weather_modifier": weather_mod,
+			"strenuous_penalty": strenuous_penalty,
+			"wound_proficiency_penalty": wound_prof_penalty,
 			"total": total,
 			"target": FOOD_TARGET_UNTRAINED,
 			"succeeded": succeeded,
@@ -202,8 +219,10 @@ static func _attempt_water(
 	for cd: CharacterData in party.character_data:
 		var has_survival: bool = cd.has_proficiency(SURVIVAL_PROFICIENCY)
 		var bonus: int = HUNT_AND_FORAGE_TRAINED_BONUS if has_survival else 0
+		# RAW §effort_rules L168: strenuous penalty applies to proficiency throws.
+		var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(cd.id)
 		var roll: RollResult = dice.roll_digital(20, 1, 0, "forage_water")
-		var total: int = roll.modified_total + bonus
+		var total: int = roll.modified_total + bonus - strenuous_penalty
 		var succeeded: bool = total >= WATER_TARGET_UNTRAINED
 		rolls += 1
 		if succeeded:
@@ -215,6 +234,7 @@ static func _attempt_water(
 			"character_id": cd.id,
 			"roll": roll.modified_total,
 			"survival_bonus": bonus,
+			"strenuous_penalty": strenuous_penalty,
 			"total": total,
 			"target": WATER_TARGET_UNTRAINED,
 			"succeeded": succeeded,

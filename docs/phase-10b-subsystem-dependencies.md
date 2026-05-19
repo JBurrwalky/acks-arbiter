@@ -1,5 +1,7 @@
 # Phase 10B Subsystem Dependencies — Build Map for the Parallel Session
 
+> **2026-05-15 currency-precision note:** Identifiers in this document predate the cp-precision pass. The engine now exposes `entry_toll_cp`, `labor_fee_cp` (replacing the planning-stage `loading_fee_gp`), `customs_duty_cp`, `stabling_cp_per_day`, `stabling_cp_total`, `moorage_cp_per_day`, `moorage_cp_total`, `cp_per_load`, `base_price_gp` (catalog input), `fee_cp` (shipping). Values are stored as cp (1 gp = 100 cp); banker's rounding only fires on fractional cp.
+
 > **Purpose:** This document is the Q5 deliverable from the Phase 10 planning conversation (2026-05-10). It enumerates every prerequisite subsystem that the **Trade block (Phase 10B.2)** and **Syndicate block (Phase 10B.3)** will need to consume, so a separate parallel build session can map and execute the subsystem work without colliding with the Phase 10 surface work.
 >
 > **Audience:** The build agent (likely Claude in a separate worktree) responsible for landing the merchandise / market-price / Crime & Punishment infrastructure that Phase 10B depends on.
@@ -60,7 +62,7 @@
       class_size_adjust: int,  # +1 for class I/II, -1 for V/VI
       special_judge_modifier: int = 0,
       rng: RandomNumberGenerator = null,
-  ) -> Dictionary  # { gp_per_load: int, percentage: int, breakdown: Array }
+  ) -> Dictionary  # { cp_per_load: int, percentage: int, breakdown: Array }
   ```
   - **Price changes over time:** [rules/acore-campaign-hijinks.xml:737-739](rules/acore-campaign-hijinks.xml:737) — 10% cumulative monthly chance of a re-roll while staying in the same market. Implement as a `last_priced_calendar_day` field per (settlement, merchandise) pair, plus a monthly-tick step that rolls per cached price.
 - **Tests:** `tests/test_demand_modifier_generator.gd`, `tests/test_market_price_resolver.gd` (verify formula, monopolist bonus, class-size adjust, +/- demand pivot for buy vs sell).
@@ -105,11 +107,11 @@
 ### What to build
 - **`engine/subsystems/commerce/market_fees_calculator.gd`** — pure-function helpers:
   ```
-  static func loading_fee_gp(merchandise_loads: int, load_weight_stone: int) -> int
-  static func customs_duty_gp(market_price_gp: int, rng: RandomNumberGenerator) -> int  # 2d10% of price
-  static func entry_toll_gp(settlement_market_class: int, rng: RandomNumberGenerator) -> int
-  static func ship_moorage_gp_per_day(ship_shp: int) -> int
-  static func stabling_gp_per_day(mounts: Dictionary) -> int  # {mule: n, horse: n, cart: n, wagon: n}
+  static func labor_fee_cp(total_stone: int) -> int  # renamed from planning-stage loading_fee_gp
+  static func customs_duty_cp(market_price_cp: int, settlement_id: String, is_domain_owner: bool) -> int  # annual cached rate
+  static func entry_toll_cp(market_class: int, is_selling: bool, merchandise_loads: int, rng: RandomNumberGenerator, is_domain_owner: bool) -> int
+  static func moorage_cp_per_day(ship_shp: int, is_domain_owner: bool) -> int
+  static func stabling_cp_per_day(mounts: Dictionary, is_domain_owner: bool) -> int  # {mule: n, horse: n, warhorse: n, cart: n, wagon: n, …}
   static func is_domain_owner_in_own_market(character_id: String, settlement_id: String) -> bool
   ```
 - **No schema** — fees are computed per transaction/per day, not stored.
@@ -215,7 +217,7 @@ The parallel session is **done** for Phase 10B.2/10B.3 unblocking when:
 - [ ] `MerchandiseRegistry.get_by_type("bulk_grain")` returns a fully-populated dict with base price and load weight matching the ACKS Core Common Merchandise table.
 - [ ] `MarketPriceResolver.compute_market_price("salt", "<settlement_id>", false, +1, 0, rng)` returns a sensible gp value per the 4d4+demand+class procedure.
 - [ ] `MerchantSolicitor.run_weekly_tick(activity_state)` produces correct phased merchant counts (half ceil / quarter floor min 1 / remainder) into the `merchant_pool` table.
-- [ ] `MarketFeesCalculator.customs_duty_gp(1000, rng)` returns a value in [20, 200] (2d10% of 1000).
+- [ ] `MarketFeesCalculator.customs_duty_cp(100000, settlement_id, false)` returns the cached-rate cp (annual roll resolves the per-settlement rate; legacy planning-stage 2d10% per-call is the year-tick path now).
 - [ ] A character can be assigned the `profession_attorney` proficiency at rank 1-3, and `ProficiencyRegistry.get_rank` returns the correct value.
 - [ ] `prior_crimes_modifier` field exists on `characters` (or sibling table) and is mutable.
 - [ ] All new tests pass; existing test suite is not regressed.

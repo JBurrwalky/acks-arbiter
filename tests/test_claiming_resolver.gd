@@ -64,15 +64,16 @@ func test_claim_inserts_completed_stronghold() -> void:
 		"is_claimed = 1, got %d" % int(sh.get("is_claimed", 0)))
 	check(String(sh.get("claimed_from_source", "")) == "ruin",
 		"claimed_from_source = ruin")
-	check(int(sh.get("gp_value", 0)) == 25000,
-		"gp_value = 25000")
+	# Migration 116: column is cp_value (gp × 100). Caller passes 25000 gp.
+	check(int(sh.get("cp_value", 0)) == 2500000,
+		"cp_value = 2,500,000 (25,000 gp × 100)")
 
 
 func test_claim_emits_signal() -> void:
 	var domain_id := _make_test_domain()
 	var fired: Array[Array] = []
-	var conn := func(stronghold_id: String, source: String, gp_value: int):
-		fired.append([stronghold_id, source, gp_value])
+	var conn := func(stronghold_id: String, source: String, cp_value: int):
+		fired.append([stronghold_id, source, cp_value])
 	EventBus.stronghold_claimed.connect(conn)
 
 	var result := ClaimingResolver.claim_existing(
@@ -82,7 +83,8 @@ func test_claim_emits_signal() -> void:
 	check(fired.size() == 1, "stronghold_claimed fired exactly once")
 	if fired.size() > 0:
 		check(fired[0][1] == "dungeon", "source = dungeon")
-		check(fired[0][2] == 15000, "gp_value = 15000")
+		# Migration 116: signal payload is cp_value (gp × 100).
+		check(fired[0][2] == 1500000, "cp_value = 1,500,000 (15,000 gp × 100)")
 	EventBus.stronghold_claimed.disconnect(conn)
 
 

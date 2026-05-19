@@ -80,11 +80,12 @@ func _setup() -> void:
 		"lightblessed_wonderworker", "mage", 9, 16, 16)
 	_fighter_id = _create_test_character(_campaign_id, "Test Fighter L5", "fighter", "fighter", 5, 10, 10)
 
+	# Migration 116: gp_value → cp_value (× 100). 50000 gp → 5000000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 50000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 5000000, 100, 'completed')
 	""", [_stronghold_id, _mage_id])
 
 	_library_id = CampaignRepository.create_library({
@@ -92,7 +93,7 @@ func _setup() -> void:
 		"owner_character_id": _mage_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -103,8 +104,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_workshop",
-		"gp_invested": 5000,
-		"max_item_value_supported_gp": 20000,
+		"cp_invested": 500000,
+		"max_item_value_supported_cp": 2000000,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -114,8 +115,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_laboratory",
-		"gp_invested": 5000,
-		"max_crossbreed_cost_gp": 40000,
+		"cp_invested": 500000,
+		"max_crossbreed_cost_cp": 4000000,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -128,7 +129,7 @@ func _setup() -> void:
 		"owner_character_id": _lightblessed_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",

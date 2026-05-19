@@ -11,13 +11,14 @@ extends RefCounted
 
 
 # Income bands for the personal_authority table (§personal_authority L433).
-# Each entry is the inclusive maximum gp of monthly domain income for that band.
-# An income greater than the last value falls into the final (highest) band.
-const _INCOME_BAND_MAX := [
-	25, 75, 150, 300, 650, 1250, 2500, 5000,
-	12000, 18000, 40000, 60000, 150000, 425000,
+# Each entry is the inclusive maximum CP of monthly domain income for that band
+# (RAW values × 100). An income greater than the last value falls into the
+# final (highest) band.
+const _INCOME_BAND_MAX_CP := [
+	2500, 7500, 15000, 30000, 65000, 125000, 250000, 500000,
+	1200000, 1800000, 4000000, 6000000, 15000000, 42500000,
 ]
-# 15th band has no upper bound; index = _INCOME_BAND_MAX.size().
+# 15th band has no upper bound; index = _INCOME_BAND_MAX_CP.size().
 
 # Personal-authority modifier per (level row, income-band column).
 # Rows 0..14 cover level 0 (commoner) through level 14. Levels above 14 clamp
@@ -61,28 +62,33 @@ const CURRENT_MORALE_MAX := 4
 ##   level: int                            — class level for personal_authority lookup.
 ##   has_leadership_proficiency: bool      — +1 morale.
 ##   alignment: String                     — "lawful", "neutral", or "chaotic".
+##
+## [param additional_troops_morale_bonus] is the +0/+1/+2 bonus the caller has
+## already resolved against the additional-troops table per
+## `acore_axioms` §additional_troops L461-464. Caller computes via
+## GarrisonExpenditureCalculator.morale_incentive_bonus.
 static func resolve_base_morale(
 	domain: Dictionary,
 	ruler: Dictionary,
-	monthly_revenue_gp: int,
-	stronghold_value_gp: int,
-	stronghold_minimum_gp: int,
-	additional_garrison_gp_per_family: int
+	monthly_revenue_cp: int,
+	stronghold_value_cp: int,
+	stronghold_minimum_cp: int,
+	additional_troops_morale_bonus: int
 ) -> int:
 	var base: int = 0
 	base += int(ruler.get("cha_modifier", 0))
 	if bool(ruler.get("has_leadership_proficiency", false)):
 		base += 1
-	base += _personal_authority_modifier(int(ruler.get("level", 1)), monthly_revenue_gp)
+	base += _personal_authority_modifier(int(ruler.get("level", 1)), monthly_revenue_cp)
 
 	# Insufficient-stronghold tiered penalty per §insufficient_stronghold L452-456.
 	# Tier boundaries: ½ minimum and ¼ minimum. At or above minimum: no penalty.
-	if stronghold_minimum_gp > 0 and stronghold_value_gp < stronghold_minimum_gp:
-		var half: int = stronghold_minimum_gp / 2
-		var quarter: int = stronghold_minimum_gp / 4
-		if stronghold_value_gp >= half:
+	if stronghold_minimum_cp > 0 and stronghold_value_cp < stronghold_minimum_cp:
+		var half: int = stronghold_minimum_cp / 2
+		var quarter: int = stronghold_minimum_cp / 4
+		if stronghold_value_cp >= half:
 			base -= 1
-		elif stronghold_value_gp >= quarter:
+		elif stronghold_value_cp >= quarter:
 			base -= 2
 		else:
 			base -= 3
@@ -94,18 +100,9 @@ static func resolve_base_morale(
 	elif territory == "wilderness":
 		base -= 2
 
-	# Additional-troops bonus per §additional_troops L461-464.
-	# In Borderlands, +1 at 1gp/fam additional. In Wilderness, +1 at 1gp/fam,
-	# +2 at 2+ gp/fam additional. (Civilized has no additional-troops bonus
-	# in the modifier_summary at L416-428.)
-	if additional_garrison_gp_per_family > 0:
-		if territory == "borderlands" and additional_garrison_gp_per_family >= 1:
-			base += 1
-		elif territory == "wilderness":
-			if additional_garrison_gp_per_family >= 2:
-				base += 2
-			else:
-				base += 1
+	# Additional-troops bonus per §additional_troops L461-464. Caller pre-
+	# resolves the tier via GarrisonExpenditureCalculator.morale_incentive_bonus.
+	base += additional_troops_morale_bonus
 
 	# Alignment match per §alignment_and_religion L466-471.
 	var ruler_align: String = String(ruler.get("alignment", "neutral"))
@@ -118,7 +115,41 @@ static func resolve_base_morale(
 		else:
 			base -= 1
 
+	# Consecrate Ruler buff propagation (Phase 10A.2 / bucket-B Phase 2 long-tail):
+	# active consecrate_ruler_buff on this domain contributes its base_morale_bonus
+	# (+1 success / -1 natural-1 curse) to base morale. Wired 2026-05-19.
+	base += _consecrate_ruler_base_morale_bonus(domain.get("id", ""))
+
 	return base
+
+
+## Returns the base_morale_bonus from an active consecrate_ruler_buff on this
+## domain, or 0 when no active buff exists. "Active" = status='applied' AND
+## expires_at_calendar_day > current_day.
+static func _consecrate_ruler_base_morale_bonus(domain_id: Variant) -> int:
+	if domain_id == null:
+		return 0
+	var did: String = str(domain_id)
+	if did.is_empty():
+		return 0
+	var current_day: int = Timekeeping.get_total_days()
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT effect_payload_json FROM pending_divine_effects
+		WHERE domain_id = ?
+		  AND effect_kind = 'consecrate_ruler_buff'
+		  AND status = 'applied'
+		  AND expires_at_calendar_day > ?
+		ORDER BY applies_at_calendar_day DESC
+		LIMIT 1
+	""", [did, current_day]):
+		return 0
+	if CampaignRepository.db.query_result.is_empty():
+		return 0
+	var raw: String = String(CampaignRepository.db.query_result[0].get("effect_payload_json", "{}"))
+	var parsed: Variant = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return 0
+	return int((parsed as Dictionary).get("base_morale_bonus", 0))
 
 
 ## Resolve a single month's current morale per §current_morale_score L473-501.
@@ -216,15 +247,15 @@ static func morale_tier(current_morale: int) -> String:
 # Internal
 # ---------------------------------------------------------------------------
 
-static func _personal_authority_modifier(level: int, monthly_revenue_gp: int) -> int:
+static func _personal_authority_modifier(level: int, monthly_revenue_cp: int) -> int:
 	var row: int = clampi(level, 0, _PERSONAL_AUTHORITY.size() - 1)
-	var col: int = _income_band_index(monthly_revenue_gp)
+	var col: int = _income_band_index(monthly_revenue_cp)
 	return _PERSONAL_AUTHORITY[row][col]
 
 
-static func _income_band_index(monthly_revenue_gp: int) -> int:
+static func _income_band_index(monthly_revenue_cp: int) -> int:
 	# Negative/zero income falls into band 0.
-	for i in range(_INCOME_BAND_MAX.size()):
-		if monthly_revenue_gp <= _INCOME_BAND_MAX[i]:
+	for i in range(_INCOME_BAND_MAX_CP.size()):
+		if monthly_revenue_cp <= _INCOME_BAND_MAX_CP[i]:
 			return i
-	return _INCOME_BAND_MAX.size()  # the unbounded 15th band
+	return _INCOME_BAND_MAX_CP.size()  # the unbounded 15th band

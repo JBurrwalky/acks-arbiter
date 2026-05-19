@@ -109,7 +109,7 @@ func _setup() -> void:
 	})
 	CampaignRepository.update_domain_monthly_state(_domain_id, {
 		"peasant_families": 200,
-		"treasury_gp": 500,
+		"treasury_cp": 500,
 	})
 
 	# Create a party and add the bard L9 + fighter so the aura test has a

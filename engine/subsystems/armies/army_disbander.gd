@@ -16,7 +16,7 @@ extends RefCounted
 ## or sale; vassal_troops → return to vassal garrison) per
 ## daw_armies_recruitment.xml §morale_and_loyalty + §slave_soldiers + §vassal_troops.
 ##
-## Returns Dictionary {success, army_id, reason, units_released, mercenary_severance_gp,
+## Returns Dictionary {success, army_id, reason, units_released, mercenary_severance_cp,
 ## errors}. EventBus.army_disbanded fires on success.
 
 const REASON_VOLUNTARY := "voluntary"
@@ -57,7 +57,7 @@ static func disband(army_id: String, reason: String, calendar_day: int) -> Dicti
 	# Release every active assignment.
 	var assignments: Array = ArmyRepository.list_active_assignments_for_army(army_id)
 	var units_released: int = 0
-	var mercenary_severance_gp: int = 0
+	var mercenary_severance_cp: int = 0
 	for assn in assignments:
 		var assn_id: String = String(assn.get("id", ""))
 		var troop_unit_id: String = String(assn.get("troop_unit_id", ""))
@@ -76,7 +76,8 @@ static func disband(army_id: String, reason: String, calendar_day: int) -> Dicti
 		# from where it came. Phase 5 stored that at hire time; v1 keeps it.
 		if reason == REASON_VOLUNTARY and source_type == "mercenary":
 			# Pay 1 month's wages discharge bonus (RAW: §morale_and_loyalty calamity-if-not-paid).
-			mercenary_severance_gp += int(troop_unit.get("monthly_wage_gp", 0))
+			# Cp-native: troop_units.monthly_wage_cp adds directly to severance_cp.
+			mercenary_severance_cp += int(troop_unit.get("monthly_wage_cp", 0))
 		# Annihilation removes the unit entirely.
 		if reason == REASON_ANNIHILATION:
 			unit_updates["status"] = "departed"
@@ -105,7 +106,7 @@ static func disband(army_id: String, reason: String, calendar_day: int) -> Dicti
 		"army_id": army_id,
 		"reason": reason,
 		"units_released": units_released,
-		"mercenary_severance_gp": mercenary_severance_gp,
+		"mercenary_severance_cp": mercenary_severance_cp,
 		"errors": errors,
 	}
 

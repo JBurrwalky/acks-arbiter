@@ -127,11 +127,16 @@ func _build_obligation_row(obligation: Dictionary) -> Control:
 	hbox.add_child(type_label)
 	var mag_label := Label.new()
 	var magnitude: int = int(obligation.get("magnitude", 0))
-	if magnitude > 0:
-		mag_label.text = "%d gp" % magnitude
-	else:
-		mag_label.text = "—"
-	mag_label.custom_minimum_size = Vector2(80, 0)
+	# 2026-05-19 bucket-B item #132: type-dispatched magnitude formatting.
+	# The magnitude column is mixed-semantic per obligation type per
+	# FavorsDutiesResolver._size_obligation — gp for construction, family
+	# count for scutage/call_to_arms/loan/gift/troops, zero (display-only)
+	# for council/monopoly/office/grant_of_land. The prior unconditional
+	# "%d gp" was correct only for construction; this helper picks the
+	# right unit + adds a RAW-cited parenthetical for clarity.
+	mag_label.text = _format_obligation_magnitude(
+		String(obligation.get("type", "")), magnitude)
+	mag_label.custom_minimum_size = Vector2(160, 0)
 	hbox.add_child(mag_label)
 	var day_label := Label.new()
 	day_label.text = "Day %d" % int(obligation.get("issued_calendar_day", 0))
@@ -144,6 +149,44 @@ func _build_obligation_row(obligation: Dictionary) -> Control:
 	revoke_btn.pressed.connect(_on_revoke_pressed.bind(String(obligation.get("id", ""))))
 	hbox.add_child(revoke_btn)
 	return hbox
+
+
+## 2026-05-19 bucket-B item #132: type-dispatched magnitude formatter.
+## Per FavorsDutiesResolver._size_obligation, `magnitude` carries different
+## units per obligation type:
+##   - construction → gp (build-target lump sum; 15000 × hex_count per RAW L361)
+##   - scutage / call_to_arms / troops → realm_families count
+##     (RAW L362/L364/L370: 1 gp/family/month → magnitude IS the family count)
+##   - loan / gift → realm_families count (gp_value equals magnitude here,
+##     since RAW prescribes 1 gp/family for both; family count is the
+##     more readable unit)
+##   - call_to_council, charter_of_monopoly, office, grant_of_land →
+##     magnitude=0 (these are categorical favors with no numeric mag)
+## Returns a short, unit-suffixed string suitable for the per-obligation row.
+## Returns "—" when magnitude=0 (the typical case for the categorical kinds).
+static func _format_obligation_magnitude(obligation_type: String, magnitude: int) -> String:
+	if magnitude <= 0:
+		return "—"
+	match obligation_type:
+		"construction":
+			# Lump-sum gp build target.
+			return Currency.format_cost(magnitude * 100)
+		"scutage":
+			return "%d families (1gp/fam/month)" % magnitude
+		"call_to_arms":
+			return "%d families (1gp/fam wages)" % magnitude
+		"troops":
+			return "%d families garrison" % magnitude
+		"loan":
+			# RAW L365: 1 gp/family loaned.
+			return "%s loaned (%d families)" % [Currency.format_cost(magnitude * 100), magnitude]
+		"gift":
+			# RAW L368: at least 1gp/family transferred to vassal.
+			return "%s gift (%d families)" % [Currency.format_cost(magnitude * 100), magnitude]
+		_:
+			# Unknown obligation types fall back to a neutral display.
+			# Better to label the unit ambiguously than mislabel as gp.
+			return "%d" % magnitude
 
 
 func _on_revoke_pressed(obligation_id: String) -> void:

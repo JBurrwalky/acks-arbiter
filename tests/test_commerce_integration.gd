@@ -208,91 +208,92 @@ func _run_round_trip(fx: Dictionary, ashford_customs_pct: int, pc_owns_ashford: 
 	var party_id: String = fx["party_id"]
 
 	# Sanity-check the pricing inputs match §12.4 expectations.
+	# Price resolver returns cp_per_load (1,600 gp = 160,000 cp; 2,600 gp = 260,000 cp).
 	var thornwall_price_result: Dictionary = MarketPriceResolver.compute_market_price(
 		"silk", thornwall_id, 0, 0, null, 0)
-	check(int(thornwall_price_result["gp_per_load"]) == 1600,
-		"Thornwall silk price should be 1,600 gp/load, got %d" % int(thornwall_price_result["gp_per_load"]))
+	check(int(thornwall_price_result["cp_per_load"]) == 160000,
+		"Thornwall silk price should be 160,000 cp/load, got %d" % int(thornwall_price_result["cp_per_load"]))
 
 	var ashford_price_result: Dictionary = MarketPriceResolver.compute_market_price(
 		"silk", ashford_id, 0, 0, null, 0)
-	check(int(ashford_price_result["gp_per_load"]) == 2600,
-		"Ashford silk price should be 2,600 gp/load, got %d" % int(ashford_price_result["gp_per_load"]))
+	check(int(ashford_price_result["cp_per_load"]) == 260000,
+		"Ashford silk price should be 260,000 cp/load, got %d" % int(ashford_price_result["cp_per_load"]))
 
-	# --- Phase 1: Buy at Thornwall (10 loads × 1,600 gp = 16,000 gp) ---
+	# --- Phase 1: Buy at Thornwall (10 loads × 160,000 cp = 1,600,000 cp = 16,000 gp) ---
 	var wealth_before: int = CampaignRepository.get_character_wealth_cp(pc_id)
-	var thornwall_total_price: int = 10 * 1600
+	var thornwall_total_price_cp: int = 10 * 160000
 
 	# Debit purchase price.
-	var pay_result: Dictionary = PartyWallet.pay(thornwall_total_price * 100, party_id, pc_id)
+	var pay_result: Dictionary = PartyWallet.pay(thornwall_total_price_cp, party_id, pc_id)
 	check(bool(pay_result.get("ok", false)), "Thornwall silk purchase debit should succeed")
 
 	# Pay Thornwall entry toll. Per §12.5: pinned 1d6 roll = 4. At Thornwall the
 	# party is BUYING, so is_selling=false (no per-load minimum applies).
 	var thornwall_toll_rng: RandomNumberGenerator = _probed_rng_for_d6_equals(4)
-	var thornwall_toll: int = MarketFeesCalculator.entry_toll_gp(5, false, 0, thornwall_toll_rng, false)
-	check(thornwall_toll == 4,
-		"Thornwall Class V toll with pinned d6=4 should be 4 gp, got %d" % thornwall_toll)
-	PartyWallet.pay(thornwall_toll * 100, party_id, pc_id)
+	var thornwall_toll_cp: int = MarketFeesCalculator.entry_toll_cp(5, false, 0, thornwall_toll_rng, false)
+	check(thornwall_toll_cp == 400,
+		"Thornwall Class V toll with pinned d6=4 should be 400 cp (= 4 gp), got %d" % thornwall_toll_cp)
+	PartyWallet.pay(thornwall_toll_cp, party_id, pc_id)
 
-	# Loading labor: 10 loads × 20 stone = 200 stone → 1 gp.
-	var thornwall_labor: int = MarketFeesCalculator.labor_fee_gp(200)
-	check(thornwall_labor == 1, "Thornwall loading labor for 200 stone = 1 gp")
-	PartyWallet.pay(thornwall_labor * 100, party_id, pc_id)
+	# Loading labor: 10 loads × 20 stone = 200 stone → 100 cp (= 1 gp).
+	var thornwall_labor_cp: int = MarketFeesCalculator.labor_fee_cp(200)
+	check(thornwall_labor_cp == 100, "Thornwall loading labor for 200 stone = 100 cp")
+	PartyWallet.pay(thornwall_labor_cp, party_id, pc_id)
 
-	# Stabling at Thornwall during loading: 1 wagon × 1 day = 2 gp.
-	var thornwall_stabling: int = MarketFeesCalculator.stabling_gp_total({"wagon": 1}, 1, false)
-	check(thornwall_stabling == 2, "Thornwall stabling 1 wagon × 1 day = 2 gp")
-	PartyWallet.pay(thornwall_stabling * 100, party_id, pc_id)
+	# Stabling at Thornwall during loading: 1 wagon × 1 day = 200 cp.
+	var thornwall_stabling_cp: int = MarketFeesCalculator.stabling_cp_total({"wagon": 1}, 1, false)
+	check(thornwall_stabling_cp == 200, "Thornwall stabling 1 wagon × 1 day = 200 cp")
+	PartyWallet.pay(thornwall_stabling_cp, party_id, pc_id)
 
-	# Insert cargo onto the wagon.
+	# Insert cargo onto the wagon. Repository takes cp.
 	var cargo_id: String = CargoHoldRepository.insert_purchase(
 		wagon_id, CargoHoldRepository.CARRIER_DRAFT_VEHICLE,
-		"silk", 10, thornwall_total_price, thornwall_id, 0)
+		"silk", 10, thornwall_total_price_cp, thornwall_id, 0)
 	check(not cargo_id.is_empty(), "Silk cargo inserted on wagon")
 
 	# --- Phase 2: Transport (wilderness movement — no commerce fees) ---
 	# Calendar advances ~3 days; the commerce flow doesn't model wilderness travel.
 
-	# --- Phase 3: Sell at Ashford (10 loads × 2,600 gp = 26,000 gp) ---
-	var ashford_total_price: int = 10 * 2600
+	# --- Phase 3: Sell at Ashford (10 loads × 260,000 cp = 2,600,000 cp = 26,000 gp) ---
+	var ashford_total_price_cp: int = 10 * 260000
 
-	# Ashford entry toll: pinned 1d8 = 5 → toll = 5 + 5 = 10 (or 0 if PC-owned).
+	# Ashford entry toll: pinned 1d8 = 5 → toll = 5 + 5 = 10 gp = 1000 cp (or 0 if PC-owned).
 	var ashford_toll_rng: RandomNumberGenerator = _probed_rng_for_d8_equals(5)
-	var ashford_toll: int = MarketFeesCalculator.entry_toll_gp(3, true, 10, ashford_toll_rng, pc_owns_ashford)
+	var ashford_toll_cp: int = MarketFeesCalculator.entry_toll_cp(3, true, 10, ashford_toll_rng, pc_owns_ashford)
 	if pc_owns_ashford:
-		check(ashford_toll == 0, "PC-owner Ashford toll exempt → 0 gp")
+		check(ashford_toll_cp == 0, "PC-owner Ashford toll exempt → 0 cp")
 	else:
-		check(ashford_toll == 10, "Ashford Class III toll with pinned d8=5 = 1d8+5 = 10 gp")
-	PartyWallet.pay(ashford_toll * 100, party_id, pc_id)
+		check(ashford_toll_cp == 1000, "Ashford Class III toll with pinned d8=5 = 1d8+5 gp = 1000 cp")
+	PartyWallet.pay(ashford_toll_cp, party_id, pc_id)
 
-	# Unloading labor (NOT exempt for domain owner per §8.8): 200 stone → 1 gp.
-	var ashford_labor: int = MarketFeesCalculator.labor_fee_gp(200)
-	check(ashford_labor == 1, "Ashford unloading labor = 1 gp (labor NOT domain-owner exempt)")
-	PartyWallet.pay(ashford_labor * 100, party_id, pc_id)
+	# Unloading labor (NOT exempt for domain owner per §8.8): 200 stone → 100 cp.
+	var ashford_labor_cp: int = MarketFeesCalculator.labor_fee_cp(200)
+	check(ashford_labor_cp == 100, "Ashford unloading labor = 100 cp (labor NOT domain-owner exempt)")
+	PartyWallet.pay(ashford_labor_cp, party_id, pc_id)
 
 	# Customs duty at Ashford (exempt for PC-owner; else customs_pct × sell_price).
-	var ashford_customs: int = MarketFeesCalculator.customs_duty_gp(
-		ashford_total_price, ashford_id, pc_owns_ashford)
+	var ashford_customs_cp: int = MarketFeesCalculator.customs_duty_cp(
+		ashford_total_price_cp, ashford_id, pc_owns_ashford)
 	if pc_owns_ashford:
-		check(ashford_customs == 0, "PC-owner Ashford customs exempt → 0 gp")
+		check(ashford_customs_cp == 0, "PC-owner Ashford customs exempt → 0 cp")
 	elif ashford_customs_pct == 4:
-		check(ashford_customs == 1040, "Ashford customs at 4%% of 26,000 = 1,040 gp")
+		check(ashford_customs_cp == 104000, "Ashford customs at 4%% of 26,000 gp = 104,000 cp")
 	elif ashford_customs_pct == 16:
-		check(ashford_customs == 4160, "Ashford customs at 16%% of 26,000 = 4,160 gp")
-	PartyWallet.pay(ashford_customs * 100, party_id, pc_id)
+		check(ashford_customs_cp == 416000, "Ashford customs at 16%% of 26,000 gp = 416,000 cp")
+	PartyWallet.pay(ashford_customs_cp, party_id, pc_id)
 
-	# Stabling at Ashford during sale: 1 wagon × 1 day = 2 gp (exempt for PC-owner).
-	var ashford_stabling: int = MarketFeesCalculator.stabling_gp_total(
+	# Stabling at Ashford during sale: 1 wagon × 1 day = 200 cp (exempt for PC-owner).
+	var ashford_stabling_cp: int = MarketFeesCalculator.stabling_cp_total(
 		{"wagon": 1}, 1, pc_owns_ashford)
 	if pc_owns_ashford:
-		check(ashford_stabling == 0, "PC-owner Ashford stabling exempt → 0 gp")
+		check(ashford_stabling_cp == 0, "PC-owner Ashford stabling exempt → 0 cp")
 	else:
-		check(ashford_stabling == 2, "Ashford stabling 1 wagon × 1 day = 2 gp")
-	PartyWallet.pay(ashford_stabling * 100, party_id, pc_id)
+		check(ashford_stabling_cp == 200, "Ashford stabling 1 wagon × 1 day = 200 cp")
+	PartyWallet.pay(ashford_stabling_cp, party_id, pc_id)
 
-	# Credit the sale + delete the cargo row.
-	CampaignRepository.add_coins_cp(pc_id, ashford_total_price * 100)
-	check(CargoHoldRepository.delete_sold(cargo_id, ashford_total_price),
+	# Credit the sale + delete the cargo row. CargoHoldRepository takes cp.
+	CampaignRepository.add_coins_cp(pc_id, ashford_total_price_cp)
+	check(CargoHoldRepository.delete_sold(cargo_id, ashford_total_price_cp),
 		"Cargo deleted on sell")
 
 	# Compute round-trip delta in gp.

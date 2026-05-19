@@ -133,7 +133,7 @@ func test_march_army_forced_doubles_speed_via_multiplier() -> void:
 func test_marching_extraction_credits_supply_on_arrival() -> void:
 	var army_id := _make_army_with_units(["Heavy Infantry", "Heavy Infantry"])
 	var initial_supply := ArmyRepository.get_supply_state(army_id)
-	var initial_stockpile := int(initial_supply.get("current_stockpile_gp", 0))
+	var initial_stockpile := int(initial_supply.get("current_stockpile_cp", 0))
 
 	# Build a fake travel_leg event payload and call _handle_army_travel_leg directly.
 	var marcher := ArmyMarcher.new()
@@ -146,9 +146,9 @@ func test_marching_extraction_credits_supply_on_arrival() -> void:
 	var result := marcher._handle_army_travel_leg(event)
 	check(not result.is_empty(), "event handler returned result")
 	var final_supply := ArmyRepository.get_supply_state(army_id)
-	check(int(final_supply.get("current_stockpile_gp", 0)) > initial_stockpile,
+	check(int(final_supply.get("current_stockpile_cp", 0)) > initial_stockpile,
 		"stockpile increased after marching extraction; before=%d after=%d" % [
-			initial_stockpile, final_supply.get("current_stockpile_gp", 0)
+			initial_stockpile, final_supply.get("current_stockpile_cp", 0)
 		])
 	# Army state transitioned to encamped at destination.
 	var army := ArmyRepository.get_army(army_id)

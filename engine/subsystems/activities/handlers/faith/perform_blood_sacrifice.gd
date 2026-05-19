@@ -38,23 +38,26 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		# Defensive fallback: nothing to sacrifice.
 		return {"summary": "perform_blood_sacrifice: no sacrifices recorded"}
 
-	# Cap at class_level sacrifices per RAW.
+	# Cap at class_level sacrifices per RAW. RAW says "DP equal to XP value":
+	# XP values are integer gp-equivalents, so total XP is in gp; convert to cp.
 	var capped: Array = (xp_values as Array).slice(0, min(class_level, xp_values.size()))
-	var dp_total: int = 0
+	var dp_total_gp: int = 0
 	for v in capped:
-		dp_total += int(v)
+		dp_total_gp += int(v)
 
-	if dp_total <= 0:
+	if dp_total_gp <= 0:
 		return {"summary": "perform_blood_sacrifice: total XP value is 0"}
+	var dp_total_cp: int = dp_total_gp * 100
 
-	var new_balance: int = CampaignRepository.add_divine_power(character_id, dp_total)
-	EventBus.divine_power_changed.emit(character_id, new_balance, dp_total)
+	var new_balance: int = CampaignRepository.add_divine_power_cp(character_id, dp_total_cp)
+	EventBus.divine_power_changed.emit(character_id, new_balance, dp_total_cp)
 
+	var pretty := Currency.format_cost(dp_total_cp)
 	return {
-		"summary": "Blood sacrifice: %d sacrifices, %d gp DP generated (new balance %d)" % [
-			capped.size(), dp_total, new_balance
+		"summary": "Blood sacrifice: %d sacrifices, %s DP generated (new balance %s)" % [
+			capped.size(), pretty, Currency.format_cost(new_balance)
 		],
-		"presentation": {"type": "toast", "text": "DP +%d (blood sacrifice)" % dp_total},
+		"presentation": {"type": "toast", "text": "DP +%s (blood sacrifice)" % pretty},
 	}
 
 

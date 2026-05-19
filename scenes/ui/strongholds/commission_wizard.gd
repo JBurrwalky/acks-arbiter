@@ -321,7 +321,7 @@ func _build_confirmation_step() -> void:
 		cost.get("speed_premium_gp", 0),
 		_magic_rate_modifier_pct,
 		cost.get("engineers_required", 1),
-		cost.get("engineer_monthly_wage_gp", 250),
+		cost.get("engineer_monthly_wage_cp", 250),
 		cost.get("daily_construction_rate_gp", 500),
 		cost.get("estimated_duration_days", 0),
 		cost.get("gp_committed", 0),

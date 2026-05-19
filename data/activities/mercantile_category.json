@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "category": "mercantile",
+    "source": "rules/acore-campaign-hijinks.xml §market_arbitrage L617-763; rules/ax_campaign_play.xml §arbitrage activities",
+    "schema_version": 1,
+    "phase": "10B.2",
+    "notes": "Five activities + the implicit entry-toll fold per Q-TB-2 (toll fires on first transaction per visit; see VisitStateManager + BuySellCommon.charge_entry_toll_if_first_visit). Wave 10B.2.2 ships buy_merchandise + sell_merchandise as real handlers; persuade/solicit/locate/accept_shipping_contract ship as stubs returning 'not yet implemented' until Waves 10B.2.3 (persuade/solicit/locate) and 10B.2.4 (accept_shipping_contract) replace them. The original gdd §1.3.1 combined-mode buy_sell_merchandise is replaced by two activities per §3.1 (cleaner UI + diverging param schemas + diverging eligibility)."
+  },
+  "activities": [
+    {
+      "id": "buy_merchandise",
+      "category": "mercantile",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi", "visible_merchant_present", "carrier_present"],
+      "remote_capable": false,
+      "param_schema": {
+        "merchant_id": "string (merchant_pool.id whose loads_available we consume)",
+        "merchandise_type": "string (one of the 31 MerchandiseRegistry types)",
+        "loads_count": "int (positive; <= merchant.loads_available, or 2× via monopolist bonus per §4.11)",
+        "carrier_id": "string (draft_vehicle.id or ship.id)",
+        "carrier_kind": "string ('draft_vehicle' or 'ship')"
+      },
+      "effect_summary": "Buys loads_count of merchandise_type from merchant_id at the per-load price computed by MarketPriceResolver. Consumes merchant.loads_available. Inserts a cargo_holds row on the carrier (CargoHoldRepository.insert_purchase). Debits party wallet for purchase + labor + (first-of-visit) entry toll. Monopolist active character gets favor_for_buy = -1 and a 2× max_buyable cap.",
+      "raw_citation": "acore-campaign-hijinks.xml §market_arbitrage step 4 L617-763"
+    },
+    {
+      "id": "sell_merchandise",
+      "category": "mercantile",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi", "visible_merchant_present", "carrier_has_cargo"],
+      "remote_capable": false,
+      "param_schema": {
+        "merchant_id": "string (visible merchant whose merchandise_type matches the cargo)",
+        "cargo_hold_id": "string (cargo_holds.id being sold)",
+        "loads_to_sell": "int (positive; <= cargo.loads_count for partial sells per §13.2)"
+      },
+      "effect_summary": "Sells loads_to_sell of cargo_hold_id's contents to merchant_id at the per-load price (must match merchandise_type). Deletes cargo row on full sell (CargoHoldRepository.delete_sold); decrements on partial (CargoHoldRepository.partial_sell). Credits party wallet net of labor + customs duty. Monopolist active character gets favor_for_sell = +1. Domain-owner exemption per §8.8 zeroes toll + customs + stabling.",
+      "raw_citation": "acore-campaign-hijinks.xml §market_arbitrage step 4 L617-763"
+    },
+    {
+      "id": "persuade_merchants",
+      "category": "mercantile",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi", "visible_merchant_present"],
+      "remote_capable": false,
+      "param_schema": {
+        "merchant_id": "string (visible merchant whose merchandise_type changes on success)",
+        "target_merchandise_type": "string (the type they should start dealing in)",
+        "direction": "string ('buy' or 'sell' — controls demand modifier sign per §4.3)"
+      },
+      "effect_summary": "Reaction roll 2d6 + CHA mod + proficiency suite (Bribery / Diplomacy / Intimidation / Mystic Aura / Seduction) + signed demand modifier (+demand for sell, -demand for buy per RAW L711-712) + monopolist +3 (per RAW L713). Threshold 9 Common, 12 Precious. Success: merchant's merchandise_type updates. Failure: merchant DELETEd (transactional) or marked refused_at_calendar_day (promoted per §0.1.1). [WAVE-10B.2.3-STUB]",
+      "raw_citation": "acore-campaign-hijinks.xml §market_arbitrage step 3 L707-716"
+    },
+    {
+      "id": "solicit_merchants",
+      "category": "mercantile",
+      "frequency": "ongoing",
+      "activity_level": "minor",
+      "strenuous": false,
+      "duration_formula": "21",
+      "default_ticks_required": 21,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi", "invisible_merchants_remaining"],
+      "remote_capable": false,
+      "param_schema": {},
+      "effect_summary": "Ongoing 1-3 weeks (RAW); 1 hour of game time per day. At launch, assigns staggered becomes_visible_calendar_day to invisible merchants (half ceil → +7 day, quarter floor min 1 → +14, remainder → +21 per substrate process_solicitation). Reveals fire on schedule while the activity remains active; forfeiture rolls back unfired reveals (per §5 spec). [WAVE-10B.2.3-STUB]",
+      "raw_citation": "acore-campaign-hijinks.xml §market_arbitrage step 2 L679-684; ax_campaign_play.xml §solicit_merchants L949-963"
+    },
+    {
+      "id": "locate_merchandise",
+      "category": "mercantile",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi"],
+      "remote_capable": false,
+      "param_schema": {
+        "merchandise_type": "string (the type the player is searching for)"
+      },
+      "effect_summary": "1 hour of game time. Surfaces one invisible merchant carrying merchandise_type. Outcomes: visible match → no-op success; invisible match → reveal one (MerchantPoolRepository.process_locate); no match → fail with no_merchant_of_type. [WAVE-10B.2.3-STUB]",
+      "raw_citation": "acore-campaign-hijinks.xml §market_arbitrage step 3 sub-clause L707-715 (alter-not-spawn reading)"
+    },
+    {
+      "id": "accept_shipping_contract",
+      "category": "mercantile",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["at_market_poi", "carrier_present", "shipping_offer_present"],
+      "remote_capable": false,
+      "param_schema": {
+        "offer_id": "string (shipping_contract_offers.id rolled at market entry)",
+        "carrier_id": "string (draft_vehicle.id or ship.id with sufficient capacity)",
+        "carrier_kind": "string ('draft_vehicle' or 'ship')"
+      },
+      "effect_summary": "Accepts a fresh shipping-contract offer (rolled at market entry per ShippingContractOfferRoller, Wave 4). Inserts a shipping_contracts row (ShippingContractRepository.accept_contract) + linked cargo_holds row on the designated carrier (CargoHoldRepository.insert_shipping_contract_load). DELETEs the offer row. [WAVE-10B.2.4-STUB]",
+      "raw_citation": "acore-campaign-hijinks.xml §passenger_and_cargo_transport L765-790"
+    }
+  ]
+}

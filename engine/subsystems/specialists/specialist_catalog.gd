@@ -47,14 +47,14 @@ const KIND_TRACKING := "tracking"
 ## Each entry:
 ##   id:            String  — kind key (matches DB CHECK constraint)
 ##   display_name:  String  — UI label
-##   monthly_wage_gp: int
+##   monthly_wage_cp: int
 ##   bonuses:       Dictionary[String, int] — bonus by resolver kind key
 ##   notes:         String  — short tooltip for the hiring panel
 const _DEFINITIONS := {
 	PATHFINDER: {
 		"id": PATHFINDER,
 		"display_name": "Pathfinder",
-		"monthly_wage_gp": 25,
+		"monthly_wage_cp": 2500,  # RAW 25 gp/month
 		"bonuses": {
 			KIND_LAIR_SEARCH: 4,
 			KIND_LAIR_SEARCH_PASSIVE: 4,
@@ -65,7 +65,7 @@ const _DEFINITIONS := {
 	LAND_SURVEYOR: {
 		"id": LAND_SURVEYOR,
 		"display_name": "Land Surveyor",
-		"monthly_wage_gp": 25,
+		"monthly_wage_cp": 2500,  # RAW 25 gp/month
 		"bonuses": {
 			KIND_SURVEYING: 4,
 		},
@@ -100,9 +100,9 @@ static func display_name(kind: String) -> String:
 	return String(def.get("display_name", kind.capitalize()))
 
 
-static func monthly_wage_gp(kind: String) -> int:
+static func monthly_wage_cp(kind: String) -> int:
 	var def: Dictionary = _DEFINITIONS.get(kind, {})
-	return int(def.get("monthly_wage_gp", 0))
+	return int(def.get("monthly_wage_cp", 0))
 
 
 ## Returns the bonus this specialist kind contributes for the given resolver

@@ -250,8 +250,10 @@ func get_hp_after_max_hd(class_id: String) -> int:
 
 
 func get_casting_power(class_id: String) -> Dictionary:
-	## Returns the casting power entry for a class, or {} for non-casters.
+	## Returns the FIRST casting power entry for a class, or {} for non-casters.
 	## Checks for arcane_casting, divine_casting, and arcane_casting_in_armor.
+	## For dual-tradition classes (e.g., Lightblessed Wonderworker), use
+	## get_casting_powers (plural) to walk both lists.
 	var cls := get_class_def(class_id)
 	if cls.is_empty():
 		return {}
@@ -260,3 +262,20 @@ func get_casting_power(class_id: String) -> Dictionary:
 		if power.get("power_id", "") in CASTING_POWER_IDS:
 			return power
 	return {}
+
+
+## 2026-05-19 bucket-B item #117: returns ALL casting powers for a class.
+## Lightblessed Wonderworker has both arcane_casting and divine_casting; the
+## singular get_casting_power returns only the first one, which caused
+## SpellRegistry helpers to miss the second tradition's spell list. Callers
+## that need full dual-tradition coverage should walk this array.
+func get_casting_powers(class_id: String) -> Array:
+	var cls := get_class_def(class_id)
+	if cls.is_empty():
+		return []
+	const CASTING_POWER_IDS := ["arcane_casting", "divine_casting", "arcane_casting_in_armor"]
+	var out: Array = []
+	for power in cls.get("class_powers", []):
+		if power.get("power_id", "") in CASTING_POWER_IDS:
+			out.append(power)
+	return out

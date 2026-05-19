@@ -69,8 +69,11 @@ static func attempt(party: PartyData, dice) -> Dictionary:
 	var hunter: CharacterData = _pick_hunter(party)
 	var has_survival: bool = hunter.has_proficiency(SURVIVAL_PROFICIENCY)
 	var bonus: int = HUNT_AND_FORAGE_TRAINED_BONUS if has_survival else 0
+	# RAW §effort_rules L168: strenuous penalty applies to proficiency throws.
+	# Hunting is a Survival proficiency throw per the hunting-foraging GDD.
+	var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(hunter.id)
 	var roll: RollResult = dice.roll_digital(20, 1, 0, "hunt")
-	var total: int = roll.modified_total + bonus
+	var total: int = roll.modified_total + bonus - strenuous_penalty
 	var succeeded: bool = total >= HUNT_TARGET_UNTRAINED
 
 	var units_added: int = 0
@@ -95,6 +98,7 @@ static func attempt(party: PartyData, dice) -> Dictionary:
 		"has_survival": has_survival,
 		"roll": roll.modified_total,
 		"modifier": bonus,
+		"strenuous_penalty": strenuous_penalty,
 		"total": total,
 		"target": HUNT_TARGET_UNTRAINED,
 		"succeeded": succeeded,

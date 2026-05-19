@@ -1,0 +1,17 @@
+{
+  "_schema_version": 1,
+  "_description": "Slider preset for the large_human_male body type. Used by bake_body_type.py. Values harvested from Models/human_male_large.blend as a starting point — refine in Phase 2 body production.",
+  "_last_updated": "2026-05-16",
+  "body_id": "large_human_male",
+  "display_name": "Large Human Male",
+  "source_basemesh": "Models/Customisable Male Basemesh v2.1.1/customisable male basemesh v2.1.blend",
+  "polycount_target": 4000,
+  "shape_keys": {
+    "Large Torso": 0.7,
+    "Large Arms": 0.5,
+    "Muscles": 0.8,
+    "Large Jaw": 0.2,
+    "Square Jaw": 0.3
+  },
+  "notes": "Heroic warrior proportions. Targets the 1:6.5 head-to-body ratio per gdd-art-direction.md §11. Slider values are starting points; visual review with project director in Phase 2 will refine."
+}

@@ -6,113 +6,146 @@
     {
       "merchandise_type": "monster_parts",
       "display_name": "Monster parts",
-      "roll_range": [1, 10],
+      "roll_range": [
+        1,
+        10
+      ],
       "load_description": "1 crate",
       "load_weight_stone": 5,
-      "base_price_gp": 300,
       "precious": true,
       "dispatcher": null,
-      "notes": "Each part has gp value = monster's XP value; parts_per_load = floor(300 / monster_xp). See MerchandiseRegistry.monster_parts_count()."
+      "notes": "Each part has gp value = monster's XP value; parts_per_load = floor(300 / monster_xp). See MerchandiseRegistry.monster_parts_count().",
+      "base_price_cp": 30000
     },
     {
       "merchandise_type": "wood_rare",
       "display_name": "Wood, rare",
-      "roll_range": [11, 25],
+      "roll_range": [
+        11,
+        25
+      ],
       "load_description": "1 cord",
       "load_weight_stone": 16,
-      "base_price_gp": 500,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 50000
     },
     {
       "merchandise_type": "furs_rare",
       "display_name": "Furs, rare",
-      "roll_range": [26, 35],
+      "roll_range": [
+        26,
+        35
+      ],
       "load_description": "1 bundle",
       "load_weight_stone": 5,
-      "base_price_gp": 500,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 50000
     },
     {
       "merchandise_type": "metals_precious",
       "display_name": "Metals, precious",
-      "roll_range": [36, 45],
+      "roll_range": [
+        36,
+        45
+      ],
       "load_description": "2 ingots",
       "load_weight_stone": 4,
-      "base_price_gp": 600,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 60000
     },
     {
       "merchandise_type": "ivory",
       "display_name": "Ivory",
-      "roll_range": [46, 60],
+      "roll_range": [
+        46,
+        60
+      ],
       "load_description": "1 tusk",
       "load_weight_stone": 8,
-      "base_price_gp": 800,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 80000
     },
     {
       "merchandise_type": "spices",
       "display_name": "Spices",
-      "roll_range": [61, 65],
+      "roll_range": [
+        61,
+        65
+      ],
       "load_description": "1 jar",
       "load_weight_stone": 1,
-      "base_price_gp": 800,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 80000
     },
     {
       "merchandise_type": "porcelain_fine",
       "display_name": "Porcelain, fine",
-      "roll_range": [66, 70],
+      "roll_range": [
+        66,
+        70
+      ],
       "load_description": "2 crates",
       "load_weight_stone": 10,
-      "base_price_gp": 1000,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 100000
     },
     {
       "merchandise_type": "books_rare",
       "display_name": "Books, rare",
-      "roll_range": [71, 75],
+      "roll_range": [
+        71,
+        75
+      ],
       "load_description": "1 box",
       "load_weight_stone": 3,
-      "base_price_gp": 1000,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 100000
     },
     {
       "merchandise_type": "silk",
       "display_name": "Silk",
-      "roll_range": [76, 90],
+      "roll_range": [
+        76,
+        90
+      ],
       "load_description": "5 rolls",
       "load_weight_stone": 20,
-      "base_price_gp": 2000,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 200000
     },
     {
       "merchandise_type": "semiprecious_stones",
       "display_name": "Semiprecious stones",
-      "roll_range": [91, 95],
+      "roll_range": [
+        91,
+        95
+      ],
       "load_description": "1 box",
       "load_weight_stone": 1,
-      "base_price_gp": 1000,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 100000
     },
     {
       "merchandise_type": "gems",
       "display_name": "Gems",
-      "roll_range": [96, 100],
+      "roll_range": [
+        96,
+        100
+      ],
       "load_description": "1 box",
       "load_weight_stone": 1,
-      "base_price_gp": 3000,
       "precious": true,
-      "dispatcher": null
+      "dispatcher": null,
+      "base_price_cp": 300000
     }
   ]
 }

@@ -49,13 +49,13 @@ func _teardown() -> void:
 
 func test_bankers_rounding() -> void:
 	# Half rounds to even.
-	check(ShopInventoryGenerator._bankers_round(2.5) == 2, "2.5 → 2 (even)")
-	check(ShopInventoryGenerator._bankers_round(3.5) == 4, "3.5 → 4 (even)")
-	check(ShopInventoryGenerator._bankers_round(4.5) == 4, "4.5 → 4 (even)")
-	check(ShopInventoryGenerator._bankers_round(5.5) == 6, "5.5 → 6 (even)")
+	check(XPAwardCalculator.bankers_round(2.5) == 2, "2.5 → 2 (even)")
+	check(XPAwardCalculator.bankers_round(3.5) == 4, "3.5 → 4 (even)")
+	check(XPAwardCalculator.bankers_round(4.5) == 4, "4.5 → 4 (even)")
+	check(XPAwardCalculator.bankers_round(5.5) == 6, "5.5 → 6 (even)")
 	# Non-half rounds normally.
-	check(ShopInventoryGenerator._bankers_round(2.3) == 2, "2.3 → 2")
-	check(ShopInventoryGenerator._bankers_round(2.7) == 3, "2.7 → 3")
+	check(XPAwardCalculator.bankers_round(2.3) == 2, "2.3 → 2")
+	check(XPAwardCalculator.bankers_round(2.7) == 3, "2.7 → 3")
 	print("  bankers_rounding: OK")
 
 

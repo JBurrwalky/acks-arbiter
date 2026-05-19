@@ -41,7 +41,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": _calendar_day(),
 		"category": "garrison",
 		"subcategory": "inspect_troops",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Inspected %d garrison units (+1 morale each)" % bumped,
 	})
 	return {

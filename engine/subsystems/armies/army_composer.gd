@@ -39,7 +39,7 @@ extends RefCounted
 
 const MERCENARY_OFFICER_TABLE := {
 	# Per daw_armies_recruitment.xml §mercenary_officer_characteristics L993-1006.
-	# rank_label : {leadership, strategic, morale, monthly_wage_gp}
+	# rank_label : {leadership, strategic, morale, monthly_wage_cp}
 	"lieutenant": {"leadership": 4, "strategic": 1, "morale": 3, "wage": 400},
 	"captain":    {"leadership": 4, "strategic": 2, "morale": 3, "wage": 1600},
 	"colonel":    {"leadership": 5, "strategic": 2, "morale": 3, "wage": 7250},
@@ -114,7 +114,7 @@ static func compose(plan: Dictionary) -> Dictionary:
 		"strategic_ability": int(leader_abilities.get("strategic", 0)),
 		"morale_modifier": int(leader_abilities.get("morale", 0)),
 		"derivation_source": leader_derivation,
-		"monthly_wage_gp": int(leader_abilities.get("wage", 0)),
+		"monthly_wage_cp": int(leader_abilities.get("wage", 0)),
 		"appointed_calendar_day": formed_day,
 	})
 	if leader_id.is_empty():
@@ -143,7 +143,7 @@ static func compose(plan: Dictionary) -> Dictionary:
 			"strategic_ability": int(dc_abilities.get("strategic", 0)),
 			"morale_modifier": int(dc_abilities.get("morale", 0)),
 			"derivation_source": dc_derivation,
-			"monthly_wage_gp": int(dc_abilities.get("wage", 0)),
+			"monthly_wage_cp": int(dc_abilities.get("wage", 0)),
 			"appointed_calendar_day": formed_day,
 		})
 		if dc_id.is_empty():
@@ -181,7 +181,7 @@ static func compose(plan: Dictionary) -> Dictionary:
 			"strategic_ability": int(lt_abilities.get("strategic", 0)),
 			"morale_modifier": int(lt_abilities.get("morale", 0)),
 			"derivation_source": lt_derivation,
-			"monthly_wage_gp": int(lt_abilities.get("wage", 0)),
+			"monthly_wage_cp": int(lt_abilities.get("wage", 0)),
 			"appointed_calendar_day": formed_day,
 		})
 		if lt_id.is_empty():

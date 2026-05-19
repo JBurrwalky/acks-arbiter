@@ -91,9 +91,9 @@
       "cargo_stone_min": 10000,
       "cargo_stone_max": 10000,
       "shp_max": 30,
-      "monthly_operating_cost_gp": 325,
+      "monthly_operating_cost_cp": 32500,
       "weapon_mounts": "",
-      "notes": "Requires 1 captain and minimum 12 sailors (RAW: 10 sailors + 1 navigator = 11; navigator mapped to crew_sailors per gdd-settlement-economy.md §9.6; existing catalog value of 12 preserved pending [NEEDS-MARITIME-CATALOG-VERIFICATION] reconciliation). Monthly cost 325 gp from RAW Merchant Ships and Caravans table (acore-campaign-hijinks.xml:844-911). shp_max 30 is project-design fill."
+      "notes": "Requires 1 captain and minimum 12 sailors (RAW: 10 sailors + 1 navigator = 11; navigator mapped to crew_sailors per gdd-settlement-economy.md §9.6; existing catalog value of 12 preserved pending [NEEDS-MARITIME-CATALOG-VERIFICATION] reconciliation). Monthly cost 325 gp (= 32,500 cp under the unified cp standard) from RAW Merchant Ships and Caravans table (acore-campaign-hijinks.xml:844-911). shp_max 30 is project-design fill."
     },
     {
       "vessel_key": "sailing_ship_large",
@@ -106,9 +106,9 @@
       "cargo_stone_min": 30000,
       "cargo_stone_max": 30000,
       "shp_max": 50,
-      "monthly_operating_cost_gp": 525,
+      "monthly_operating_cost_cp": 52500,
       "weapon_mounts": "Up to 2 light catapults",
-      "notes": "Requires 1 captain and minimum 20 sailors (RAW: 17 sailors + 2 navigators = 19; navigators mapped to crew_sailors per gdd-settlement-economy.md §9.6; existing catalog value of 20 preserved pending [NEEDS-MARITIME-CATALOG-VERIFICATION] reconciliation). Monthly cost 525 gp from RAW Merchant Ships and Caravans table (acore-campaign-hijinks.xml:844-911). shp_max 50 is project-design fill."
+      "notes": "Requires 1 captain and minimum 20 sailors (RAW: 17 sailors + 2 navigators = 19; navigators mapped to crew_sailors per gdd-settlement-economy.md §9.6; existing catalog value of 20 preserved pending [NEEDS-MARITIME-CATALOG-VERIFICATION] reconciliation). Monthly cost 525 gp (= 52,500 cp under the unified cp standard) from RAW Merchant Ships and Caravans table (acore-campaign-hijinks.xml:844-911). shp_max 50 is project-design fill."
     },
     {
       "vessel_key": "galley_large",

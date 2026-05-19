@@ -86,9 +86,12 @@ static func assess(
 
 	var search_bonus: int = SEARCH_BONUS_PER_SUCCESS * max(0, successful_searches_so_far)
 	var effective_target: int = BASE_TARGET - search_bonus
+	# RAW §effort_rules L168: strenuous penalty applies to proficiency throws.
+	# Land Surveying is the Land Surveying proficiency throw.
+	var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(surveyor.id)
 	var roll: RollResult = dice.roll_digital(20, 1, 0, "land_surveying")
 	var raw: int = roll.modified_total
-	var total: int = raw + optional_specialist_bonus
+	var total: int = raw + optional_specialist_bonus - strenuous_penalty
 	var succeeded: bool = total >= effective_target
 	# Natural-1 RAW trigger uses the unmodified roll, not the modified total.
 	var natural_one: bool = (raw == 1)
@@ -122,6 +125,7 @@ static func assess(
 		"target": effective_target,
 		"search_bonus": search_bonus,
 		"specialist_bonus": optional_specialist_bonus,
+		"strenuous_penalty": strenuous_penalty,
 		"total": total,
 		"succeeded": succeeded,
 		"natural_one": natural_one,

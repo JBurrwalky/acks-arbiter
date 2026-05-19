@@ -119,6 +119,17 @@ func roll_morale(
 		extra_modifier: int = 0) -> Dictionary:
 	var base_morale := combatant.get_morale()
 	var conditional_mod := evaluate_conditional_modifiers(combatant, roster)
+	# Chronicles of Battle aura (Phase 10A.3 / bucket-A item #90):
+	# +1 morale for henchmen co-located with their patron Bard L5+. Wired
+	# 2026-05-19. has_active_aura_for traverses the henchman's party to find
+	# any Bard L5+ in the same party (simpler than the army-side per-hex
+	# check; in combat the entire party is at one location).
+	var aura_mod: int = 0
+	if combatant.is_character and combatant._character != null \
+			and combatant._character.character_type == "henchman":
+		var char_id: String = combatant._character.id
+		if ChroniclesOfBattleAura.has_active_aura_for(char_id):
+			aura_mod = ChroniclesOfBattleAura.AURA_MORALE_BONUS
 
 	var roll: int
 	if _dice_system != null:
@@ -127,7 +138,7 @@ func roll_morale(
 	else:
 		roll = 7  # Default for tests without dice
 
-	var total := roll + base_morale + conditional_mod + extra_modifier
+	var total := roll + base_morale + conditional_mod + extra_modifier + aura_mod
 	var outcome := _outcome_from_total(total)
 
 	return {
@@ -135,6 +146,7 @@ func roll_morale(
 		"base_morale": base_morale,
 		"conditional_modifier": conditional_mod,
 		"extra_modifier": extra_modifier,
+		"chronicles_aura_modifier": aura_mod,
 		"modified_total": total,
 		"outcome": outcome,
 	}

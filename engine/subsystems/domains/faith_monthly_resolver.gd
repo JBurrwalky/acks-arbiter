@@ -105,7 +105,7 @@ static func apply_pending_consecrate_fields(effect_ids: Array) -> void:
 
 ## Resolves congregant growth + upkeep for the ruler-character of this domain.
 ## Returns a dict with the resolution payload (for ledger writes + signal
-## emission). Called AFTER revenue/morale/growth — the domain's own gp
+## emission). Called AFTER revenue/morale/growth — the domain's own cp
 ## treasury is debited for upkeep if applicable.
 ##
 ## ruler_character_id: domains.owner_character_id for the active domain.
@@ -116,13 +116,25 @@ static func apply_pending_consecrate_fields(effect_ids: Array) -> void:
 ##   {
 ##     "growth_rolled":  int,  # families added (positive)
 ##     "growth_dice":    Array,  # for the unified log
-##     "upkeep_paid":    int,
-##     "upkeep_unpaid":  int,
+##     "upkeep_paid":    int,   # cp paid
+##     "upkeep_unpaid":  int,   # cp owed but not paid
 ##     "attrition":      int,   # congregants lost from unpaid upkeep
-##     "pending_gp_consumed": int,
-##     "pending_gp_remaining": int,
+##     "pending_cp_consumed":  int,
+##     "pending_cp_remaining": int,
 ##     "new_count":      int,
 ##   }
+##
+## RAW (ax_campaign_play.xml §congregant_growth L20-22, §end_of_month L109-112):
+##   * Growth roll: 1d10 + Cha mod per 1,000 gp of pending committed gp.
+##   * Upkeep:      1 gp / congregant / month.
+##   * Attrition:   1d10 congregants depart per 1,000 gp of unpaid upkeep.
+## With the cp standard (1 gp = 100 cp): thresholds become 100,000 cp and
+## upkeep is 100 cp/congregant.
+const _GROWTH_TRIGGER_CP := 100_000    # RAW 1,000 gp per growth roll
+const _ATTRITION_TRIGGER_CP := 100_000  # RAW 1,000 gp unpaid per attrition roll
+const _UPKEEP_CP_PER_CONGREGANT := 100  # RAW 1 gp per congregant
+
+
 static func resolve_congregants_monthly(
 	ruler_character_id: String,
 	ruler_cha_mod: int,
@@ -135,8 +147,8 @@ static func resolve_congregants_monthly(
 		"upkeep_paid":           0,
 		"upkeep_unpaid":         0,
 		"attrition":             0,
-		"pending_gp_consumed":   0,
-		"pending_gp_remaining":  0,
+		"pending_cp_consumed":   0,
+		"pending_cp_remaining":  0,
 		"new_count":             0,
 		"applies":               false,
 	}
@@ -149,11 +161,12 @@ static func resolve_congregants_monthly(
 
 	result["applies"] = true
 	var count: int = int(row.get("count", 0))
-	var pending_gp: int = int(row.get("monthly_growth_pending_gp", 0))
+	var pending_cp: int = int(row.get("monthly_growth_pending_cp", 0))
 
-	# Step 1: Growth from pending gp. Roll 1d10 + cha_mod per 1,000 gp.
-	if pending_gp >= 1000:
-		var rolls_count: int = int(pending_gp / 1000)
+	# Step 1: Growth from pending cp. Roll 1d10 + cha_mod per 100,000 cp
+	# (= 1,000 gp) per RAW §congregant_growth L20-22.
+	if pending_cp >= _GROWTH_TRIGGER_CP:
+		var rolls_count: int = int(pending_cp / _GROWTH_TRIGGER_CP)
 		var growth_total: int = 0
 		var dice_log: Array = []
 		for i in range(rolls_count):
@@ -163,41 +176,42 @@ static func resolve_congregants_monthly(
 			growth_total += amount
 			dice_log.append(amount)
 		count += growth_total
-		var consumed: int = rolls_count * 1000
-		pending_gp -= consumed
+		var consumed: int = rolls_count * _GROWTH_TRIGGER_CP
+		pending_cp -= consumed
 		result["growth_rolled"] = growth_total
 		result["growth_dice"] = dice_log
-		result["pending_gp_consumed"] = consumed
-	result["pending_gp_remaining"] = pending_gp
+		result["pending_cp_consumed"] = consumed
+	result["pending_cp_remaining"] = pending_cp
 
-	# Step 2: Upkeep — 1 gp/congregant/month, debited from the ruler's
-	# divine_power (preferred per RAW conventions: DP funds church operations)
-	# then from the domain treasury, then unpaid.
-	var upkeep_required: int = count
+	# Step 2: Upkeep — 100 cp/congregant/month (RAW 1 gp/congregant per
+	# §end_of_month L109-110). Debited from the ruler's divine_power first
+	# (DP funds church operations per RAW), then from the domain treasury,
+	# then unpaid.
+	var upkeep_required: int = count * _UPKEEP_CP_PER_CONGREGANT
 	var upkeep_paid: int = 0
-	var dp_balance: int = CampaignRepository.get_divine_power_gp(ruler_character_id)
+	var dp_balance: int = CampaignRepository.get_divine_power_cp(ruler_character_id)
 	if dp_balance > 0 and upkeep_required > 0:
 		var from_dp: int = min(dp_balance, upkeep_required)
-		CampaignRepository.spend_divine_power(ruler_character_id, from_dp)
+		CampaignRepository.spend_divine_power_cp(ruler_character_id, from_dp)
 		upkeep_paid += from_dp
 		upkeep_required -= from_dp
 
 	# Domain treasury fallback (for ruler-with-domain only).
 	if upkeep_required > 0 and not domain_id.is_empty():
 		var domain := _get_domain(domain_id)
-		var treasury: int = int(domain.get("treasury_gp", 0))
+		var treasury: int = int(domain.get("treasury_cp", 0))
 		var from_treasury: int = min(treasury, upkeep_required)
 		if from_treasury > 0:
 			CampaignRepository.update_domain_monthly_state(domain_id, {
-				"treasury_gp": treasury - from_treasury,
+				"treasury_cp": treasury - from_treasury,
 			})
 			CampaignRepository.add_ledger_entry({
 				"domain_id": domain_id,
 				"calendar_day": calendar_day,
 				"category": "expense",
 				"subcategory": "congregant_upkeep",
-				"gp_amount": from_treasury,
-				"description": "Congregant upkeep: %d gp (1 gp/congregant)" % from_treasury,
+				"cp_amount": from_treasury,
+				"description": "Congregant upkeep: %s (1 gp/congregant)" % Currency.format_cost(from_treasury),
 			})
 			upkeep_paid += from_treasury
 			upkeep_required -= from_treasury
@@ -205,9 +219,10 @@ static func resolve_congregants_monthly(
 	result["upkeep_paid"] = upkeep_paid
 	result["upkeep_unpaid"] = upkeep_required
 
-	# Step 3: Attrition — 1d10 congregants depart per 1,000 gp unpaid.
-	if upkeep_required >= 1000:
-		var attrition_rolls: int = int(upkeep_required / 1000)
+	# Step 3: Attrition — 1d10 congregants depart per 100,000 cp (= 1,000 gp)
+	# unpaid per RAW §end_of_month L110-112.
+	if upkeep_required >= _ATTRITION_TRIGGER_CP:
+		var attrition_rolls: int = int(upkeep_required / _ATTRITION_TRIGGER_CP)
 		var attrition_total: int = 0
 		for i in range(attrition_rolls):
 			var rr: RollResult = DiceSystem.roll_digital(
@@ -221,7 +236,7 @@ static func resolve_congregants_monthly(
 	# Persist the updated congregant row.
 	CampaignRepository.upsert_congregants(ruler_character_id, {
 		"count": count,
-		"monthly_growth_pending_gp": pending_gp,
+		"monthly_growth_pending_cp": pending_cp,
 		"last_resolved_calendar_day": calendar_day,
 	})
 

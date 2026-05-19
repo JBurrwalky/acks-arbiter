@@ -237,10 +237,10 @@ func _update_preview() -> void:
 		var char_cp: int = computed.get(char_id, 0)
 		amount_label.text = Currency.format_cost(char_cp)
 
-	# Summary line.
-	var total_gp := _total_cp / 100.0
-	_preview_label.text = "Total: %s (%.2f GP) split among %d recipients." % [
-		Currency.format_cost(_total_cp), total_gp, computed.size()]
+	# Summary line — Currency.format_cost already denominates gp/sp/cp,
+	# so the redundant decimal-gp form was dropped (Tier 3 sweep 2026-05-19).
+	_preview_label.text = "Total: %s split among %d recipients." % [
+		Currency.format_cost(_total_cp), computed.size()]
 
 
 func _collect_weights() -> Dictionary:

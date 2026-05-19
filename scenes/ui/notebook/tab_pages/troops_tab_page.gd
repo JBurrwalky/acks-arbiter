@@ -108,12 +108,12 @@ func _render() -> void:
 		return
 
 	var aggregates: Dictionary = _aggregate(units)
-	_status_label.text = "%d unit%s · %d soldiers · BR %.1f · %d gp/month" % [
+	_status_label.text = "%d unit%s · %d soldiers · BR %.1f · %s/month" % [
 		aggregates["unit_count"],
 		"" if aggregates["unit_count"] == 1 else "s",
 		aggregates["soldier_count"],
 		float(aggregates["battle_rating"]),
-		aggregates["monthly_cost_gp"],
+		Currency.format_cost(int(aggregates["monthly_cost_cp"])),
 	]
 
 	# Group by source_type for legibility.
@@ -159,7 +159,7 @@ func _make_unit_row(u: Dictionary) -> Control:
 	row.add_child(lbl)
 
 	var cost := Label.new()
-	cost.text = "%d gp/mo" % int(u.get("monthly_cost_gp", 0))
+	cost.text = "%s/mo" % Currency.format_cost(int(u.get("monthly_cost_cp", 0)))
 	cost.modulate = Color(0.85, 0.85, 0.85)
 	row.add_child(cost)
 
@@ -207,18 +207,18 @@ func _collect_party_units() -> Array:
 
 static func _aggregate(units: Array) -> Dictionary:
 	var soldier_count: int = 0
-	var monthly_cost: int = 0
+	var monthly_cost_cp: int = 0
 	var br: float = 0.0
 	for u in units:
 		if not (u is Dictionary):
 			continue
 		soldier_count += int(u.get("count", 0))
-		monthly_cost += int(u.get("monthly_cost_gp", 0))
+		monthly_cost_cp += int(u.get("monthly_cost_cp", 0))
 		br += float(u.get("battle_rating", 0.0))
 	return {
 		"unit_count": units.size(),
 		"soldier_count": soldier_count,
-		"monthly_cost_gp": monthly_cost,
+		"monthly_cost_cp": monthly_cost_cp,
 		"battle_rating": br,
 	}
 

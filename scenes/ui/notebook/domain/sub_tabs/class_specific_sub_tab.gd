@@ -26,15 +26,14 @@ extends VBoxContainer
 const FaithBlockScript := preload("res://scenes/ui/notebook/domain/blocks/faith_block.gd")
 const BardicPatronageBlockScript := preload("res://scenes/ui/notebook/domain/blocks/bardic_patronage_block.gd")
 const MagicalResearchBlockScript := preload("res://scenes/ui/notebook/domain/blocks/magical_research_block.gd")
+const SyndicateBlockScript := preload("res://scenes/ui/notebook/domain/blocks/syndicate_block.gd")
 
 const _PLACEHOLDER_LABELS := {
 	"trade":              "Trade block — guildhouse, monopoly, mercantile ventures.",
-	"syndicate":          "Syndicate block — hijinks, hideout management, crime & punishment.",
 }
 
 const _PLACEHOLDER_PHASES := {
 	"trade":              "Phase 10B.2",
-	"syndicate":          "Phase 10B.3",
 }
 
 
@@ -161,6 +160,12 @@ func _make_block_card(
 		body.add_child(mr_block)
 		var domain_id: String = String(_domain_data.get("id", ""))
 		mr_block.bind(_owner_character_id, domain_id, _resolve_party_id())
+	elif bucket_id == "syndicate":
+		var syn_block: VBoxContainer = SyndicateBlockScript.new()
+		syn_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(syn_block)
+		var domain_id: String = String(_domain_data.get("id", ""))
+		syn_block.bind(_owner_character_id, domain_id, _resolve_party_id())
 	else:
 		var label_text: String = _PLACEHOLDER_LABELS.get(bucket_id, "")
 		var phase_text: String = _PLACEHOLDER_PHASES.get(bucket_id, "a future phase")

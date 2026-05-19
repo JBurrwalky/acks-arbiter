@@ -670,9 +670,9 @@ static func _run_aftermath(battle_id: String, dice_roller: Callable) -> void:
 		spoils, calendar_day)
 
 	# XP distribution per RAW §experience_points L630-645.
-	var spoils_gp_total: int = int(spoils.get("gp_total", 0))
-	if spoils_gp_total > 0:
-		var xp_dist: Dictionary = BattleXPDistributor.distribute(battle_id, spoils_gp_total, calendar_day)
+	var spoils_cp_total: int = int(spoils.get("cp_total", 0))
+	if spoils_cp_total > 0:
+		var xp_dist: Dictionary = BattleXPDistributor.distribute(battle_id, spoils_cp_total, calendar_day)
 		var _ignored := xp_dist  # logged inside distributor
 
 	# Mark battle concluded and reset army states.
@@ -1181,22 +1181,23 @@ static func _calculate_spoils(battle_id: String, casualties: Dictionary) -> Dict
 		enemy_summary = casualties.get("attacker_summary", {})
 		prisoners = int(enemy_summary.get("prisoners", 0))
 	else:
-		return {"gp_total": 0, "prisoners": 0}
+		return {"cp_total": 0, "prisoners": 0}
 
-	# Wages from destroyed-permanently units. Sum monthly_wage_gp from each.
+	# Wages from destroyed-permanently units in cp. troop_units.monthly_wage_cp
+	# adds directly; prisoners are valued at 40 gp = 4000 cp each.
 	var wages_total: int = 0
 	var destroyed_unit_ids: Array = enemy_summary.get("units_destroyed_permanently", [])
 	for unit_id in destroyed_unit_ids:
 		if not CampaignRepository.db.query_with_bindings(
-			"SELECT monthly_wage_gp FROM troop_units WHERE id = ?", [unit_id]):
+			"SELECT monthly_wage_cp FROM troop_units WHERE id = ?", [unit_id]):
 			continue
 		if CampaignRepository.db.query_result.is_empty():
 			continue
-		wages_total += int(CampaignRepository.db.query_result[0].get("monthly_wage_gp", 0))
-	var prisoner_value: int = prisoners * 40
+		wages_total += int(CampaignRepository.db.query_result[0].get("monthly_wage_cp", 0))
+	var prisoner_value: int = prisoners * 4000  # RAW 40 gp = 4000 cp per prisoner
 
 	return {
-		"gp_total": wages_total + prisoner_value,
+		"cp_total": wages_total + prisoner_value,
 		"wages_total": wages_total,
 		"prisoner_count": prisoners,
 		"prisoner_value": prisoner_value,

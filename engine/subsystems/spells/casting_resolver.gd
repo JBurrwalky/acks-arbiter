@@ -255,6 +255,20 @@ func resolve(
 	var result := ResolutionResult.new()
 
 	# --- Stage 4: validation ---
+	# Phase 10B.3 #6: hard-block spellcasting if the caster has a wound that
+	# prevents speech (RAW acore-campaign-hijinks.xml L354: tongue cut off —
+	# "cannot speak, cast spells, use magic items, or use speech-based
+	# proficiencies"). MW outcomes that destroy the tongue / jaw produce the
+	# same wound_kind and thus the same block.
+	if caster_context != null and not String(caster_context.caster_id).is_empty():
+		var wound_agg: Dictionary = WoundEffectAggregator.compute(caster_context.caster_id)
+		if bool(wound_agg.get("cannot_cast_spells", false)):
+			result.success = false
+			result.slot_consumed = false
+			result.failures.append(
+				"caster cannot cast spells (permanent wound: tongue/speech disabled)")
+			return result
+
 	if _spell_registry == null or not _spell_registry.has_spell(spell_choice.spell_key):
 		result.success = false
 		result.slot_consumed = false

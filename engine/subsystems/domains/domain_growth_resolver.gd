@@ -49,7 +49,7 @@ const _MORALE_TIER_GROWTH_DICE := {
 ##   income_gate_active: bool         — echoed from caller
 static func resolve_growth(
 	domain: Dictionary,
-	monthly_revenue_gp: int,
+	monthly_revenue_cp: int,
 	investment_gp: int,
 	morale_tier: String,
 	is_active_adventuring: bool,
@@ -94,7 +94,7 @@ static func resolve_growth(
 	if investment_gp > 0:
 		# Investment cap per §investments L132-135: max monthly investment is
 		# the domain's monthly revenue or 1,000 gp, whichever is greater.
-		var cap: int = maxi(monthly_revenue_gp, 1000)
+		var cap: int = maxi(monthly_revenue_cp, 1000)
 		var allowed_gp: int = mini(investment_gp, cap)
 		var investment_units: int = allowed_gp / 1000  # one 1d10 per full 1,000 gp
 		if investment_units > 0:

@@ -120,7 +120,7 @@ func test_hire_pathfinder_creates_row_and_emits() -> void:
 
 	var row: Dictionary = CampaignRepository.get_specialist(sid)
 	check(String(row.get("kind", "")) == "pathfinder", "kind persisted")
-	check(int(row.get("monthly_wage_gp", 0)) == 25, "wage from catalog")
+	check(int(row.get("monthly_wage_cp", 0)) == 2500, "wage from catalog (25 gp = 2500 cp)")
 	check(int(row.get("hired_at_round", -1)) == 100, "hired_at_round persisted")
 	check(int(row.get("closed", 1)) == 0, "row open by default")
 
@@ -191,7 +191,7 @@ func test_wages_processed_emits_summary_when_no_specialists() -> void:
 	_connect_recorders()
 	var manager := SpecialistHireManager.new(CampaignRepository, EventBus)
 	var summary: Dictionary = manager.process_monthly_wages(pid, "employer_x", 1000)
-	check(int(summary["total_deducted_gp"]) == 0, "no specialists → 0 deducted")
+	check(int(summary["total_deducted_cp"]) == 0, "no specialists → 0 deducted")
 	check((summary["unpaid_specialists"] as Array).is_empty(),
 		"no specialists → empty unpaid list")
 	check((summary["dismissed_specialists"] as Array).is_empty(),

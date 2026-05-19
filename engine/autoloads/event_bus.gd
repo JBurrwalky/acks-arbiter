@@ -81,6 +81,24 @@ signal morale_checked(check: Dictionary)
 ## The party has moved into a new wilderness hex.
 signal hex_entered(hex_id: String)
 
+## The party has transitioned between hex maps (cross-scale entry/exit).
+## Emitted by CampaignRepository.transition_party_to_map after the
+## parties.current_map_id and current_hex_(q,r) write commits. Either map id
+## may be empty if the party was previously off-map (campaign load) or is
+## being removed from any map (rare; reserved for future flows). Per-hex
+## state (fog, survey progress) does NOT carry over — those stay keyed to
+## the map they were generated against.
+signal party_map_changed(party_id: String, from_map_id: String, to_map_id: String)
+
+## The hex-map view mode (camera) has switched between STRATEGIC and
+## REGIONAL. Emitted by GameState.set_map_view_mode. Camera-only — the
+## party's logical map (parties.current_map_id) is unaffected. Listeners
+## include the wilderness state (swap which map is loaded into the
+## controller) and the status-bar toggle (update button label / pressed
+## state). Args are the GameState.MapViewMode enum values, cast to int
+## for cross-autoload signal portability.
+signal map_view_mode_changed(from_mode: int, to_mode: int)
+
 ## The party has moved into a dungeon room.
 signal room_entered(room_id: String)
 
@@ -280,7 +298,7 @@ signal pursuit_caught_up(party_id: String, pursuit_id: String, result: Dictionar
 ## acore_equipment.xml §specialists and le_wilderness_lair_rules.xml
 ## §hirelings — non-adventuring monthly hires, exempt from henchman cap.
 ## [param data] keys: specialist_id, kind ("pathfinder" | "land_surveyor"),
-## name, settlement_id, monthly_wage_gp, hired_at_round.
+## name, settlement_id, monthly_wage_cp, hired_at_round.
 signal specialist_hired(party_id: String, data: Dictionary)
 
 ## A wilderness specialist closed — voluntary dismissal OR auto-dismissal
@@ -395,7 +413,7 @@ signal condition_changed(character_id: String, change: Dictionary)
 signal loyalty_changed(henchman_id: String, old_score: int, new_score: int)
 
 ## A henchman was successfully hired.
-## [param hire_data] keys: employer_id, morale_score, wage_gp_per_month, settlement_id
+## [param hire_data] keys: employer_id, morale_score, wage_cp_per_month, settlement_id
 signal henchman_hired(henchman_id: String, hire_data: Dictionary)
 
 ## A henchman departed the party.
@@ -511,7 +529,7 @@ signal domain_event_resolved(domain_id: String, event_id: String, outcome: Dicti
 ## A domain's stronghold sufficiency status changed (value crossed the
 ## per-hex classification minimum threshold per §minimum_stronghold_value L88-94).
 ## Phase 0 declares this; Phase 1 emits it from the stronghold subsystem.
-signal stronghold_sufficiency_changed(domain_id: String, is_sufficient: bool, value_gp: int, minimum_gp: int)
+signal stronghold_sufficiency_changed(domain_id: String, is_sufficient: bool, value_cp: int, minimum_cp: int)
 
 ## A hex's land value was improved via 25,000 gp investment per §land_improvement L207-215.
 ## [param improvement_count] is the new cumulative improvement (1-3); [param new_value]
@@ -524,7 +542,7 @@ signal land_value_improved(domain_id: String, hex_q: int, hex_r: int, new_value:
 ## which the daily tick will mark this commission complete (assuming no
 ## interruptions); the half-built signal will fire roughly halfway between
 ## start and completion.
-signal stronghold_commission_started(stronghold_id: String, domain_id: String, gp_committed: int, expected_completion_day: int)
+signal stronghold_commission_started(stronghold_id: String, domain_id: String, cp_committed: int, expected_completion_day: int)
 
 ## A stronghold's construction crossed a milestone — half-built (50%) or
 ## completed (100%). Phase 5 consumes the "halfway" milestone for follower
@@ -537,7 +555,7 @@ signal stronghold_construction_progressed(stronghold_id: String, completion_pct:
 ## conquest / inheritance / purchase / grant). [param source] matches
 ## `strongholds.claimed_from_source`. Claimed strongholds are immediately
 ## treated as fully constructed (status='completed', completion_pct=100).
-signal stronghold_claimed(stronghold_id: String, source: String, gp_value: int)
+signal stronghold_claimed(stronghold_id: String, source: String, cp_value: int)
 
 ## A stronghold was destroyed (siege / pillage / abandonment). Cause matches
 ## the destruction event type (Phase 8 sieges fire this).
@@ -569,7 +587,7 @@ signal domain_treasury_transfer_blocked(domain_id: String, character_id: String,
 ## Inter-stronghold treasury transfer initiated (Domain Phase 2). Phase 6+
 ## wires the actual travel-with-treasure event; Phase 2 emits the signal so
 ## the future encounter system can hook the route.
-signal domain_treasury_route_started(domain_id: String, source_stronghold_id: String, dest_stronghold_id: String, gp_amount: int, carrier_character_id: String)
+signal domain_treasury_route_started(domain_id: String, source_stronghold_id: String, dest_stronghold_id: String, cp_amount: int, carrier_character_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -1177,7 +1195,7 @@ signal realm_title_changed(domain_id: String, old_title: String, new_title: Stri
 ## vassal_assignment. Payload includes the d20 roll, result_key (one of
 ## construction / scutage / call_to_council / call_to_arms / loan / revoke /
 ## charter_of_monopoly / gift / office / troops / grant_of_land), kind, type,
-## magnitude, gp_value, applied (bool), loyalty_outcome, revolted, etc.
+## magnitude, cp_value, applied (bool), loyalty_outcome, revolted, etc.
 ##
 ## Consumers: realm sub-tab Favors/Duties card, unified log, Phase 9/10/11
 ## downstream subsystems for stubbed mechanical effects (charter_of_monopoly
@@ -1336,14 +1354,14 @@ signal bandits_defeated(threat_id: String, killed_count: int, captured_count: in
 ## attrition, departure). delta is signed (negative = lost congregants).
 signal congregants_changed(character_id: String, new_count: int, delta: int)
 
-## Emitted whenever a character's divine_power_gp balance changes (extraction
+## Emitted whenever a character's divine_power_cp balance changes (extraction
 ## adds; consecrate_fields/consecrate_ruler/altar-dp-substitution spend).
 ## delta is signed.
 signal divine_power_changed(character_id: String, new_total: int, delta: int)
 
 ## Emitted when consecrate_altar Ongoing completes. altar_id is the
-## consecrated_altars row id; gp_invested includes any dp_substituted_gp.
-signal altar_consecrated(altar_id: String, character_id: String, gp_invested: int)
+## consecrated_altars row id; cp_invested includes any dp_substituted_cp.
+signal altar_consecrated(altar_id: String, character_id: String, cp_invested: int)
 
 ## Emitted when consecrate_fields completes (success or natural-1 failure).
 ## land_value_delta_per_family is +1 on success, -1 on natural 1, 0 on
@@ -1354,9 +1372,9 @@ signal consecrate_fields_resolved(domain_id: String, success: bool, land_value_d
 ## expires_at_day is the calendar_day on which the 12-month buff expires.
 signal consecrate_ruler_resolved(domain_id: String, ruler_character_id: String, success: bool, expires_at_day: int)
 
-## Emitted when dispatch_missionaries completes. gp_committed accrues into
+## Emitted when dispatch_missionaries completes. cp_committed accrues into
 ## next month's congregant growth roll.
-signal missionary_dispatch_recorded(character_id: String, gp_committed: int)
+signal missionary_dispatch_recorded(character_id: String, cp_committed: int)
 
 
 # ---------------------------------------------------------------------------
@@ -1406,15 +1424,15 @@ signal magic_research_project_completed(project_id: String, character_id: String
 
 ## Emitted when a libraries row transitions from 'building' to 'operational'
 ## (or is created already operational at sanctum founding).
-signal library_built(library_id: String, owner_character_id: String, gp_invested: int)
+signal library_built(library_id: String, owner_character_id: String, cp_invested: int)
 
 ## Emitted when a workshops row transitions from 'building' to 'operational'.
-signal workshop_built(workshop_id: String, owner_character_id: String, gp_invested: int)
+signal workshop_built(workshop_id: String, owner_character_id: String, cp_invested: int)
 
 ## Emitted when a laboratories row transitions from 'building' to 'operational'
 ## (or is created already operational). Laboratories enable cross-breeding
 ## (RAW L471 separate from libraries/workshops).
-signal laboratory_built(laboratory_id: String, owner_character_id: String, gp_invested: int)
+signal laboratory_built(laboratory_id: String, owner_character_id: String, cp_invested: int)
 
 ## Emitted when a followers row is created — covers aspirant arrivals, bard
 ## recruits, class-attracted followers, race followers. source_kind matches
@@ -1491,7 +1509,7 @@ signal ship_location_changed(ship_id: String, new_kind: String, settlement_id: S
 
 ## Emitted when process_monthly_operating_costs_for_campaign successfully debits
 ## a ship's monthly operating cost from the party wallet.
-signal ship_operating_cost_paid(ship_id: String, gp_amount: int)
+signal ship_operating_cost_paid(ship_id: String, cp_amount: int)
 
 ## Emitted when process_monthly_operating_costs_for_campaign cannot fully
 ## debit a ship's monthly cost (party wallet shortfall). v1: log only; ship
@@ -1507,9 +1525,9 @@ signal ship_operating_cost_unpaid(ship_id: String, owed_gp: int)
 ## generation/gdd-settlement-economy.md §9.11.
 signal cargo_loaded(cargo_hold_id: String, carrier_id: String, merchandise_type: String, loads_count: int)
 
-## Emitted when delete_sold removes a cargo row at sell time. gp_received is
-## the caller-supplied actual gp credit (post-fees etc.).
-signal cargo_sold(cargo_hold_id: String, gp_received: int)
+## Emitted when delete_sold removes a cargo row at sell time. cp_received is
+## the caller-supplied actual cp credit (post-fees etc.).
+signal cargo_sold(cargo_hold_id: String, cp_received: int)
 
 # ---------------------------------------------------------------------------
 # Phase 10B-prereq shipping contracts signals (Prereq.5c)
@@ -1517,12 +1535,12 @@ signal cargo_sold(cargo_hold_id: String, gp_received: int)
 
 ## Emitted when ShippingContractRepository.accept_contract inserts a new
 ## shipping_contracts row. Per generation/gdd-settlement-economy.md §9.11.
-signal shipping_contract_accepted(contract_id: String, party_id: String, fee_gp: int)
+signal shipping_contract_accepted(contract_id: String, party_id: String, fee_cp: int)
 
-## Emitted when deliver marks the contract status='delivered'. fee_paid_gp
-## is the actual gp credited (0 if missed_deadline path took).
+## Emitted when deliver marks the contract status='delivered'. fee_paid_cp
+## is the actual cp credited (0 if missed_deadline path took).
 ## deadline_missed=true means the deliver call landed after the deadline.
-signal shipping_contract_delivered(contract_id: String, fee_paid_gp: int, deadline_missed: bool)
+signal shipping_contract_delivered(contract_id: String, fee_paid_cp: int, deadline_missed: bool)
 
 ## Emitted when a contract transitions to a non-success terminal state
 ## (cancelled, or other failure modes added in v1.1+). reason is a free-text
@@ -1539,3 +1557,195 @@ signal shipping_contract_failed(contract_id: String, reason: String)
 ##   new_value = 0 or 1 (the new boolean state of [param flag])
 ##   modifier_total = the recomputed prior_crimes_modifier_cache value
 signal character_legal_status_changed(character_id: String, flag: String, new_value: int, modifier_total: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — transaction signals (§3.10)
+# ---------------------------------------------------------------------------
+
+## Emitted when buy_merchandise handler successfully completes a purchase.
+## Higher-level than the substrate's cargo_loaded — carries transaction
+## context (settlement, merchandise type, loads, total cp paid) for log /
+## UI surfacing without consumers re-querying the repository.
+## Per gdd-phase-10b-2-trade-block.md §3.10.
+signal merchandise_purchased(cargo_hold_id: String, settlement_id: String, merchandise_type: String, loads_count: int, total_cp_paid: int)
+
+## Emitted when sell_merchandise handler successfully completes a sale.
+## net_cp_received is the cp credited AFTER labor + customs.
+signal merchandise_sold(cargo_hold_id: String, settlement_id: String, merchandise_type: String, loads_count: int, net_cp_received: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — persuade-merchants signals (§4.12)
+# ---------------------------------------------------------------------------
+
+## Emitted when persuade_merchants handler succeeds — merchant's
+## merchandise_type is updated. old_merchandise_type allows UI / log to
+## render "Merchant X switched from wood_common to silk."
+## Per gdd-phase-10b-2-trade-block.md §4.6.
+signal merchant_persuaded(merchant_id: String, settlement_id: String, old_merchandise_type: String, new_merchandise_type: String)
+
+## Emitted when persuade_merchants handler fails. outcome ∈ {"deleted",
+## "refused_cohort"} per §4.7 (deleted = transactional merchant "permanently
+## lost" per RAW L715; refused_cohort = promoted NPC refuses this cohort
+## but persists per §0.1.1).
+signal merchant_persuasion_failed(merchant_id: String, settlement_id: String, target_merchandise_type: String, outcome: String)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — solicit-merchants lifecycle signals (§5.9)
+# ---------------------------------------------------------------------------
+
+## Emitted when solicit_merchants completes its 21-day duration. Substrate's
+## solicitation_started (Prereq.4) is reused for the launch event.
+signal solicit_merchants_completed(settlement_id: String, character_id: String)
+
+## Emitted when solicit_merchants is forfeited (player departs the market
+## or otherwise breaks the per-day presence requirement).
+## unfired_reveals_rolled_back is the count of reveal-days reset to
+## INVISIBLE_SENTINEL.
+signal solicit_merchants_forfeited(settlement_id: String, character_id: String, unfired_reveals_rolled_back: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — shipping-contract offer signals (§7.12)
+# ---------------------------------------------------------------------------
+
+## Emitted when ShippingContractOfferRoller rolls a fresh offer at market
+## entry. One signal per offer rolled (a Class I entry may emit 4-14).
+signal shipping_offer_rolled(offer_id: String, party_id: String, settlement_id: String)
+
+## Emitted when accept_shipping_contract handler accepts an offer. The
+## substrate's shipping_contract_accepted (Prereq.5c) also fires from
+## ShippingContractRepository.accept_contract.
+signal shipping_offer_accepted(offer_id: String, contract_id: String, cargo_hold_id: String)
+
+## Emitted when VisitStateManager.on_party_departed_settlement clears the
+## per-visit offers. cleared_count is the number of offer rows DELETEd.
+signal shipping_offer_cleared(party_id: String, settlement_id: String, cleared_count: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — monopoly registry signals (§8.6)
+# ---------------------------------------------------------------------------
+
+## Emitted when MonopolyRegistry.grant_monopoly inserts a new holding row.
+## v1 has no emitters — the API ships for future grant systems (Phase 10B.3
+## decree extension, etc.).
+signal monopoly_granted(holding_id: String, character_id: String, settlement_id: String, merchandise_type: String)
+
+## Emitted when MonopolyRegistry.revoke_monopoly* deletes a holding row.
+signal monopoly_revoked(holding_id: String, character_id: String, settlement_id: String, merchandise_type: String)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — visit lifecycle signals (§9.12)
+# ---------------------------------------------------------------------------
+
+## Emitted when VisitStateManager.on_party_entered_settlement creates a
+## visit row (or no-ops on re-entry).
+signal party_entered_settlement(party_id: String, settlement_id: String, calendar_day: int)
+
+## Emitted when VisitStateManager.on_party_departed_settlement clears the
+## visit row. stabling_cp + moorage_cp are the actual cp debited (1 gp = 100 cp;
+## cp is the project's base currency per the 2026-05-15 currency-precision
+## rule — stabling/moorage rates resolve to exact integer cp without rounding).
+## days_at_settlement is the visit duration.
+signal party_departed_settlement(party_id: String, settlement_id: String, stabling_cp: int, moorage_cp: int, days_at_settlement: int)
+
+## Emitted when the departure debit fails (insufficient party funds for
+## stabling + moorage). owed_cp is the unpaid amount in cp. v1 doesn't track
+## debt; signal is audit-trail only.
+## Per gdd-phase-10b-2-trade-block.md §9.9.
+signal visit_fees_unpaid(party_id: String, settlement_id: String, owed_cp: int)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — trade-route trigger signals (§10.2)
+# ---------------------------------------------------------------------------
+# These eight signals are CONTRACTS the Trade block consumes via Wave 5's
+# TradeRouteTriggerHandlers autoload. The EMITTERS (code paths that mutate
+# the underlying state and fire each signal) are wired in Wave 5 per the
+# [NEEDS-EMITTER-WIRING-<signal>] flags in §16.3. Wave 1 ships the contracts;
+# Wave 5 wires the emitters.
+
+## Emitted when a new settlement_entrances row is inserted.
+## [NEEDS-EMITTER-WIRING-settlement_created]
+signal settlement_created(settlement_id: String)
+
+## Emitted when a settlement_entrances row is deleted (or soft-deleted).
+## [NEEDS-EMITTER-WIRING-settlement_destroyed]
+signal settlement_destroyed(settlement_id: String)
+
+## Emitted when settlement_entrances.market_class is updated.
+## [NEEDS-EMITTER-WIRING-settlement_market_class_changed]
+signal settlement_market_class_changed(settlement_id: String, old_class: int, new_class: int)
+
+## Emitted when a hex_overlays row with overlay_type='road' is inserted.
+## [NEEDS-EMITTER-WIRING-road_overlay_added]
+signal road_overlay_added(map_id: String, q: int, r: int)
+
+## Emitted when a hex_overlays row with overlay_type='road' is deleted.
+## [NEEDS-EMITTER-WIRING-road_overlay_removed]
+signal road_overlay_removed(map_id: String, q: int, r: int)
+
+## Emitted when a hex_overlays row with overlay_type='river' is inserted.
+## [NEEDS-EMITTER-WIRING-river_overlay_added]
+signal river_overlay_added(map_id: String, q: int, r: int)
+
+## Emitted when a hex_overlays row with overlay_type='river' is deleted.
+## [NEEDS-EMITTER-WIRING-river_overlay_removed]
+signal river_overlay_removed(map_id: String, q: int, r: int)
+
+## Emitted when hex_cells.water changes value (e.g., '' → 'ocean').
+## [NEEDS-EMITTER-WIRING-hex_water_tag_changed]
+signal hex_water_tag_changed(map_id: String, q: int, r: int, old_water: String, new_water: String)
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Trade block — monthly tick observability (§11.9)
+# ---------------------------------------------------------------------------
+
+## Emitted when CommerceMonthlyResolver.process_for_campaign completes
+## (Wave 5). results carries the per-driver return values: customs_rolled,
+## ship_cp_debited, merchants_generated, prices_drifted.
+## Per gdd-phase-10b-2-trade-block.md §11.9.
+signal commerce_monthly_tick_completed(campaign_id: String, results: Dictionary)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.3 Syndicate block (Hijinks)
+# ---------------------------------------------------------------------------
+# All money payloads are in cp (Tier 1/2 currency unification).
+# Per docs/phase-10-plan.md §"Phase 10B.3 — Syndicate block".
+
+## A new syndicate has been founded by [param boss_character_id].
+signal syndicate_founded(syndicate_id: String, boss_character_id: String)
+
+## A character has joined a syndicate (as either a named member or unnamed bulk).
+signal syndicate_member_joined(syndicate_id: String, character_id: String)
+
+## A syndicate member has left (dismissed, killed, jailed long-term, etc.).
+## reason: "departed" | "dead" | "jailed" | "promoted" | "dismissed".
+signal syndicate_member_departed(syndicate_id: String, character_id: String, reason: String)
+
+## A hijink_assignments row has transitioned planning_state → 'planned'.
+signal hijink_planned(hijink_id: String, kind: String, target_id: String)
+
+## A hijink has resolved (success or failure). cp_yield is in cp.
+## caught is true if the proficiency throw failed by 14+ or rolled a natural 1.
+signal hijink_resolved(hijink_id: String, success: bool, cp_yield: int, caught: bool)
+
+## A character has been caught performing a hijink and is now awaiting trial.
+signal perpetrator_caught(caught_perpetrator_id: String, character_id: String, crime_type: String)
+
+## The Crime & Punishment resolver has rendered a verdict.
+## verdict: "punitive_conviction" | "conviction" | "conviction_lesser" |
+##          "acquittal" | "acquittal_with_damages".
+## fine_cp is the post-verdict fine in cp. punishment_kind is a free-form
+## label ("fine_only", "stocks", "branded", "maimed_tongue", "maimed_hand",
+## "execution", "proscribed", etc.) keyed off RAW §retribution_by_crime.
+signal verdict_rendered(caught_perpetrator_id: String, verdict: String, fine_cp: int, punishment_kind: String)
+
+## A character has entered the RAW 2d8+3-day lay-low window at [param base_id].
+signal lay_low_started(character_id: String, ends_day: int)
+
+## The lay-low window has expired (or been cleared early).
+signal lay_low_ended(character_id: String)
+
+## A permanent wound row was inserted into character_permanent_wounds
+## (Migration 120, Phase 10B.3 #6). Source is "corporal_punishment:<kind>",
+## "mortal_wounds:<damage_type>", or "manual".
+signal permanent_wound_applied(character_id: String, wound_kind: String, source: String)

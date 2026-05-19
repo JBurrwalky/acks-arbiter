@@ -49,6 +49,10 @@ func _ready() -> void:
 	add_theme_constant_override("separation", 10)
 	_build_summary_card()
 	_build_threats_card()
+	# 2026-05-19 bucket-B item #80: dedicated Settled Lairs card surfacing
+	# the cumulative morale penalty per RAW §L312-321. Sits after the
+	# general threats card so threat detail rows stay above their roll-up.
+	_build_settled_lairs_card()
 	_build_bandit_card()
 	_build_challenger_card()
 	_build_market_card()
@@ -74,6 +78,7 @@ func display(domain_data: Dictionary) -> void:
 	_domain_id = String(domain_data.get("id", ""))
 	_render_summary()
 	_render_threats()
+	_render_settled_lairs()
 	_render_bandit()
 	_render_challenger()
 	_render_market()
@@ -122,6 +127,63 @@ func _add_summary_kv(key: String, value: String) -> void:
 	var v := Label.new()
 	v.text = value
 	_summary_grid.add_child(v)
+
+
+# ---------------------------------------------------------------------------
+# Section 1b: Settled Lairs roll-up (2026-05-19 bucket-B item #80)
+# ---------------------------------------------------------------------------
+
+var _settled_lairs_card: VBoxContainer = null
+var _settled_lairs_body: VBoxContainer = null
+
+func _build_settled_lairs_card() -> void:
+	_settled_lairs_card = _make_card("Settled Lairs (cumulative morale penalty)")
+	add_child(_settled_lairs_card)
+	_settled_lairs_body = VBoxContainer.new()
+	_settled_lairs_body.add_theme_constant_override("separation", 4)
+	_settled_lairs_card.add_child(_settled_lairs_body)
+
+
+func _render_settled_lairs() -> void:
+	if _settled_lairs_body == null:
+		return
+	for child in _settled_lairs_body.get_children():
+		_settled_lairs_body.remove_child(child)
+		child.queue_free()
+	if _domain_id.is_empty():
+		var dim := Label.new()
+		dim.text = "(no domain bound)"
+		dim.modulate = Color(0.6, 0.6, 0.6)
+		_settled_lairs_body.add_child(dim)
+		return
+	# Aggregate stats — count + cumulative penalty per RAW §L312-321.
+	var lairs: Array = DomainThreatRepository.list_active_settled_lairs_for_domain(_domain_id)
+	# families = peasant + urban (domain row carries the totals).
+	var peasants: int = int(_domain_data.get("peasant_families", 0))
+	var urban: int = int(_domain_data.get("urban_families", 0))
+	var families: int = peasants + urban
+	var penalty: int = DomainEncounterResolver.compute_settled_lair_morale_penalty(
+		_domain_id, families)
+	var header := Label.new()
+	header.text = "%d settled lair(s) · cumulative morale −%d (vs %d families)" % [
+		lairs.size(), penalty, families,
+	]
+	header.modulate = Color(0.95, 0.85, 0.55)
+	_settled_lairs_body.add_child(header)
+	if lairs.is_empty():
+		var none := Label.new()
+		none.text = "(no settled lairs — no penalty)"
+		none.modulate = Color(0.6, 0.6, 0.6)
+		_settled_lairs_body.add_child(none)
+		return
+	# Per-lair rows: creature key + XP-per-creature × count.
+	for lair: Dictionary in lairs:
+		var row := Label.new()
+		row.text = "  • %s (lair entry %s)" % [
+			String(lair.get("creature_key", "?")),
+			String(lair.get("id", "?")).substr(0, 8),
+		]
+		_settled_lairs_body.add_child(row)
 
 
 # ---------------------------------------------------------------------------
@@ -436,12 +498,11 @@ func _render_siege() -> void:
 	var breach_count: int = int(siege.get("breach_count", 0))
 	shp_label.text = "Stronghold SHP: %d / %d  (%d breaches)" % [current_shp, starting_shp, breach_count]
 	_siege_body.add_child(shp_label)
-	# Supplies.
+	# Supplies (stored_supplies_cp is cp; format_cost denominates).
 	var supplies_label := Label.new()
 	var supplies_cp: int = int(siege.get("stored_supplies_cp", 0))
-	var supplies_gp: int = supplies_cp / 100
 	var weeks_unsupplied: int = int(siege.get("weeks_unsupplied", 0))
-	var supplies_text: String = "Stored supplies: %d gp" % supplies_gp
+	var supplies_text: String = "Stored supplies: %s" % Currency.format_cost(supplies_cp)
 	if weeks_unsupplied > 0:
 		supplies_text += "  (%d weeks unsupplied — penalty %d)" % [
 			weeks_unsupplied, int(siege.get("starvation_penalty_stacks", 0))

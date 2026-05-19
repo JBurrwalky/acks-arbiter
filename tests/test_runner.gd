@@ -352,6 +352,34 @@ extends Node
 @onready var _attorney_specialization_tests = $AttorneySpecializationTests
 # Phase 10B-prereq mercantile / Prereq.8 — End-to-end commerce integration
 @onready var _commerce_integration_tests = $CommerceIntegrationTests
+# Phase 10B.2 Wave 1 — Trade block foundation services
+@onready var _monopoly_registry_tests = $MonopolyRegistryTests
+@onready var _visit_state_manager_tests = $VisitStateManagerTests
+@onready var _buy_sell_common_tests = $BuySellCommonTests
+# Phase 10B.2 Wave 2 — Buy/Sell handlers + catalog parse
+@onready var _mercantile_category_parse_tests = $MercantileCategoryParseTests
+@onready var _buy_merchandise_handler_tests = $BuyMerchandiseHandlerTests
+@onready var _sell_merchandise_handler_tests = $SellMerchandiseHandlerTests
+# Phase 10B.2 Wave 3 — Persuade / Solicit / Locate handlers
+@onready var _persuade_merchants_handler_tests = $PersuadeMerchantsHandlerTests
+@onready var _solicit_merchants_handler_tests = $SolicitMerchantsHandlerTests
+@onready var _locate_merchandise_handler_tests = $LocateMerchandiseHandlerTests
+# Phase 10B.2 Wave 4 — Shipping contracts (offer roller + accept handler + workflow)
+@onready var _shipping_contract_offer_roller_tests = $ShippingContractOfferRollerTests
+@onready var _accept_shipping_contract_handler_tests = $AcceptShippingContractHandlerTests
+@onready var _shipping_contract_workflow_tests = $ShippingContractWorkflowTests
+# Phase 10B.2 Wave 5 — Triggers + Monthly Tick
+@onready var _commerce_monthly_resolver_tests = $CommerceMonthlyResolverTests
+@onready var _trade_route_trigger_handlers_tests = $TradeRouteTriggerHandlersTests
+# Phase 10B.2 Wave 6 — Integration + close-out
+@onready var _trade_block_integration_tests = $TradeBlockIntegrationTests
+@onready var _persuade_solicit_locate_workflow_tests = $PersuadeSolicitLocateWorkflowTests
+@onready var _phase_10b3_tests = $Phase10B3SyndicateTests
+@onready var _favors_duties_card_formatter_tests = $FavorsDutiesCardFormatterTests
+@onready var _stronghold_contiguity_tests = $StrongholdContiguityTests
+@onready var _strenuous_proficiency_throws_tests = $StrenuousProficiencyThrowsTests
+@onready var _hex_map_cross_scale_tests = $HexMapCrossScaleTests
+@onready var _permanent_wounds_tests = $PermanentWoundsTests
 
 
 func _ready() -> void:
@@ -682,7 +710,41 @@ func run() -> void:
 			_character_legal_status_repository_tests,
 			_attorney_specialization_tests,
 			# Phase 10B-prereq mercantile / Prereq.8 — Commerce integration
-			_commerce_integration_tests]:
+			_commerce_integration_tests,
+			# Phase 10B.2 Wave 1 — Trade block foundation services
+			_monopoly_registry_tests,
+			_visit_state_manager_tests,
+			_buy_sell_common_tests,
+			# Phase 10B.2 Wave 2 — Buy/Sell handlers + catalog parse
+			_mercantile_category_parse_tests,
+			_buy_merchandise_handler_tests,
+			_sell_merchandise_handler_tests,
+			# Phase 10B.2 Wave 3 — Persuade / Solicit / Locate handlers
+			_persuade_merchants_handler_tests,
+			_solicit_merchants_handler_tests,
+			_locate_merchandise_handler_tests,
+			# Phase 10B.2 Wave 4 — Shipping contracts
+			_shipping_contract_offer_roller_tests,
+			_accept_shipping_contract_handler_tests,
+			_shipping_contract_workflow_tests,
+			# Phase 10B.2 Wave 5 — Triggers + Monthly Tick
+			_commerce_monthly_resolver_tests,
+			_trade_route_trigger_handlers_tests,
+			# Phase 10B.2 Wave 6 — Integration + close-out
+			_trade_block_integration_tests,
+			_persuade_solicit_locate_workflow_tests,
+			# Phase 10B.3 — Syndicate block
+			_phase_10b3_tests,
+			# 2026-05-19 bucket-B item #132 — Favors & Duties magnitude formatter
+			_favors_duties_card_formatter_tests,
+			# 2026-05-19 bucket-B item #19 — stronghold contiguity / noncontiguous-domain rule
+			_stronghold_contiguity_tests,
+			# 2026-05-19 bucket-B item #26 — strenuous penalty propagation to proficiency throws
+			_strenuous_proficiency_throws_tests,
+			# 2026-05-19 migration 119 — cross-scale hex-map linkage + party transitions
+			_hex_map_cross_scale_tests,
+			# 2026-05-19 bucket-C item #6 — permanent-wound effects from C&P + MW
+			_permanent_wounds_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

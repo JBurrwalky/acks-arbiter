@@ -24,6 +24,8 @@ func run_all_tests() -> void:
 	test_l9_below_sufficiency_no_followers()
 	test_l9_at_sufficiency_halfway_spawns_wave1()
 	test_completed_spawns_wave2()
+	test_wave3_resolves_remainder_and_arrival_logged()
+	test_wave2_schedules_wave3_event()
 	if not has_failures():
 		print("FollowerArrivalResolver: all tests passed.")
 
@@ -85,12 +87,13 @@ func _setup_full_scenario() -> void:
 	})
 	CampaignRepository.update_domain_monthly_state(_domain_id, {"peasant_families": 100})
 	# Build a 16,000gp castle (above the 15,000gp civilized minimum).
+	# Migration 116: column is cp_value (gp × 100); 16000 gp → 1,600,000 cp.
 	_stronghold_id = CampaignRepository.create_stronghold({
 		"domain_id": _domain_id,
 		"owner_character_id": _ruler_id,
 		"archetype": "fortress",
 		"structure_type": "castle",
-		"gp_value": 16000,
+		"cp_value": 1600000,
 		"shp": 100,
 		"completion_pct": 50,
 		"is_conforming_to_class": true,
@@ -111,8 +114,9 @@ func _set_ruler_level(level: int) -> void:
 
 
 func _set_stronghold_gp(value: int) -> void:
+	# Migration 116: column is cp_value; convert gp → cp at the boundary.
 	CampaignRepository.db.query_with_bindings(
-		"UPDATE strongholds SET gp_value = ? WHERE id = ?", [value, _stronghold_id])
+		"UPDATE strongholds SET cp_value = ? WHERE id = ?", [value * 100, _stronghold_id])
 
 
 func _clear_followers_state() -> void:
@@ -201,3 +205,95 @@ func _arrival_log_count(wave_pct: int) -> int:
 	if CampaignRepository.db.query_result.is_empty():
 		return 0
 	return int(CampaignRepository.db.query_result[0].get("c", 0))
+
+
+# ---------------------------------------------------------------------------
+# Wave 3 + scheduler-integration coverage (2026-05-19 bucket-A item #20).
+# ---------------------------------------------------------------------------
+
+## Wave 3 fires when the POST_COMPLETION event scheduled by wave 2 elapses.
+## This test calls _resolve_milestone(stronghold_id, 3) directly to verify the
+## resolver's wave-3 path: remainder follower count spawned + audit row
+## recorded with wave_pct=25 + arrival_phase advanced to "post_completion".
+## Continues from test_completed_spawns_wave2 — wave 1 + 2 already done.
+func test_wave3_resolves_remainder_and_arrival_logged() -> void:
+	var prior_wave25_rows: int = _arrival_log_count(25)
+	var resolver := _make_resolver()
+	var summary: Dictionary = resolver._resolve_milestone(_stronghold_id, 3)
+	check(String(summary.get("summary", "")).contains("wave 3"),
+		"summary should reference wave 3, got: %s" % summary.get("summary", ""))
+	var new_wave25_rows: int = _arrival_log_count(25)
+	check(new_wave25_rows == prior_wave25_rows + 1,
+		"wave 3 should record one additional wave_pct=25 audit row; prior=%d new=%d" % [
+			prior_wave25_rows, new_wave25_rows])
+	# Domain followers row should now be in 'post_completion' arrival_phase.
+	CampaignRepository.db.query_with_bindings("""
+		SELECT arrival_phase FROM domain_followers WHERE domain_id = ? LIMIT 1
+	""", [_domain_id])
+	if not CampaignRepository.db.query_result.is_empty():
+		var phase := String(CampaignRepository.db.query_result[0].get("arrival_phase", ""))
+		check(phase == "post_completion",
+			"domain_followers.arrival_phase should advance to post_completion after wave 3; got '%s'" % phase)
+
+
+## Scheduler-integration smoke: verifies wave 2 schedules a POST_COMPLETION
+## event for wave 3 onto the scheduler. The integration uses a captured
+## stub-scheduler that records schedule_at calls and asserts the event
+## payload + fire-time offset (1 month = DAYS_PER_MONTH × ROUNDS_PER_DAY).
+func test_wave2_schedules_wave3_event() -> void:
+	# Use a fresh stronghold scenario so this test doesn't interfere with the
+	# prior wave1/2/3 progression on _stronghold_id.
+	var stub_stronghold_id: String = _make_completed_stronghold_for_wave2_scheduling_test()
+	var capture: WaveScheduleCapture = WaveScheduleCapture.new()
+	var resolver := _make_resolver()
+	resolver._scheduler = capture
+	# Pre-set wave 1 done so wave 2 is the next step (the resolver only
+	# schedules wave 3 from wave 2 per L161-168 in the resolver).
+	resolver._resolve_milestone(stub_stronghold_id, 1)
+	var summary: Dictionary = resolver._resolve_milestone(stub_stronghold_id, 2)
+	check(String(summary.get("summary", "")).contains("wave 2"),
+		"wave 2 summary expected, got: %s" % summary.get("summary", ""))
+	check(capture.schedule_calls.size() >= 1,
+		"wave 2 must schedule at least one POST_COMPLETION event; got %d" % capture.schedule_calls.size())
+	var call: Dictionary = capture.schedule_calls[0]
+	check(String(call.get("event_type", "")) == "follower_arrival_post_completion",
+		"scheduled event_type should match POST_COMPLETION constant; got '%s'" % call.get("event_type"))
+	check(String(call.get("entity_id", "")) == stub_stronghold_id,
+		"scheduled entity_id should be the stronghold id")
+	var data: Dictionary = call.get("data", {})
+	check(String(data.get("stronghold_id", "")) == stub_stronghold_id,
+		"event data should carry stronghold_id")
+	# Fire time should be 1 month out (DAYS_PER_MONTH * ROUNDS_PER_DAY) per L163.
+	var expected_offset: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
+	check(int(call.get("fire_time", 0)) >= expected_offset,
+		"fire_time should be >= 1-month offset; got %d expected >= %d" % [
+			int(call.get("fire_time", 0)), expected_offset])
+
+
+## Helper: clones the test scenario's stronghold into a new completed-and-sufficient
+## stronghold so the test can drive a fresh wave-1/wave-2 cycle without colliding
+## with the running test state. Returns the new stronghold id.
+func _make_completed_stronghold_for_wave2_scheduling_test() -> String:
+	var new_id: String = CampaignRepository.generate_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO strongholds
+			(id, campaign_id, domain_id, name, structure_type, archetype,
+			 cp_value, shp, max_shp, status, owner_character_id, ruler_class_id)
+		VALUES (?, ?, ?, 'WaveSchedTestKeep', 'keep_with_walls', 'fortress',
+				2500000, 100, 100, 'completed', ?, 'fighter')
+	""", [new_id, _campaign_id, _domain_id, _ruler_id])
+	return new_id
+
+
+## Lightweight scheduler stub that records schedule_at calls so tests can
+## verify scheduling without spinning up a full EventScheduler.
+class WaveScheduleCapture extends RefCounted:
+	var schedule_calls: Array = []
+	func schedule_at(fire_time: int, event_type: String, entity_id: String, data: Dictionary):
+		schedule_calls.append({
+			"fire_time": fire_time,
+			"event_type": event_type,
+			"entity_id": entity_id,
+			"data": data,
+		})
+		return "stub_event_%d" % schedule_calls.size()

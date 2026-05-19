@@ -78,8 +78,12 @@ func unsubscribe() -> void:
 ## 6-day grace window. Static so combat / proficiency resolvers can read the
 ## denormalized value without holding a StrenuousAccountant instance.
 ##
-## Per §effort_rules L168: cumulative −1 per day past the 6-day limit;
-## penalties remit at −1 per day of rest per §overtime_rules L181.
+## Per §effort_rules L168: cumulative −1 per day past the 6-day limit applies
+## to attack throws, damage rolls, AND proficiency throws; penalties remit
+## at −1 per day of rest per §overtime_rules L181. The column is named
+## `attack_throw_penalty` for historical reasons (the combat hot path was
+## wired first) but it is the unified strenuous penalty — `get_proficiency_throw_penalty`
+## below is a self-documenting alias for proficiency-resolver call sites.
 static func get_attack_throw_penalty(character_id: String) -> int:
 	if character_id.is_empty():
 		return 0
@@ -87,6 +91,17 @@ static func get_attack_throw_penalty(character_id: String) -> int:
 	if row.is_empty():
 		return 0
 	return int(row.get("attack_throw_penalty", 0))
+
+
+## Self-documenting alias for proficiency-throw call sites per RAW
+## §effort_rules L168. Returns the same value as `get_attack_throw_penalty`
+## because RAW lumps attack throws, damage rolls, and proficiency throws
+## under a single cumulative −N counter. Keeping it as an alias (rather
+## than a separate persisted field) avoids any risk of the two counters
+## drifting from each other — the strenuous-day bump and the rest-day
+## remission update one column that all three call-site categories read.
+static func get_proficiency_throw_penalty(character_id: String) -> int:
+	return get_attack_throw_penalty(character_id)
 
 
 ## Reset the streak (and clear the penalty) when a character rests as the

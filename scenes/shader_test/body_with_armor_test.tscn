@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://b8acksceltest003"]
+
+[ext_resource type="Script" path="res://scenes/shader_test/body_with_armor_test.gd" id="1_runner"]
+[ext_resource type="PackedScene" uid="uid://bcqa2f0w1rxnt" path="res://assets/characters/bodies/human_female.glb" id="2_body"]
+[ext_resource type="PackedScene" uid="uid://dqwyy772juxob" path="res://assets/characters/armor/plate_breastplate_01/human_female.glb" id="3_armor"]
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 1
+background_color = Color(0.55, 0.62, 0.7, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.4
+tonemap_mode = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(8, 8)
+
+[node name="BodyWithArmorTest" type="Node3D"]
+script = ExtResource("1_runner")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_test")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.9397, -0.171, 0.296, 0, 0.866, 0.5, -0.342, -0.469, 0.814, 1.0, 1.4, 2.5)
+fov = 45.0
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 2, 4, 2)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.2
+
+[node name="FillLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, -1)
+light_color = Color(0.6, 0.7, 0.95, 1)
+light_energy = 0.4
+omni_range = 8.0
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Body" parent="." instance=ExtResource("2_body")]
+[node name="Armor" parent="." instance=ExtResource("3_armor")]

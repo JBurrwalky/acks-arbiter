@@ -75,12 +75,16 @@ func display(domain: Dictionary) -> void:
 	# Stronghold / garrison / treasury status.
 	var territory_type := String(domain.get("territory_type", "wilderness"))
 	var stronghold_value := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-	var stronghold_minimum := StrongholdRepository.classification_minimum_gp(territory_type, hex_count)
+	# Sufficiency uses the effective hex count (owned + intervening for
+	# noncontiguous domains) per RAW §noncontiguous_domains L95-98; equals
+	# `hex_count` when the domain is contiguous.
+	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
+	var stronghold_minimum := StrongholdRepository.classification_minimum_gp(territory_type, sufficiency_hex_count)
 	var stronghold_glyph := _sufficiency_glyph(stronghold_value, stronghold_minimum)
 	var garrison_per_fam: int = _garrison_per_family(domain)
 	var garrison_min: int = _garrison_min_per_family(territory_type)
 	var garrison_glyph := "✓" if garrison_per_fam >= garrison_min else "!"
-	var treasury: int = int(domain.get("treasury_gp", 0))
+	var treasury: int = int(domain.get("treasury_cp", 0))
 	_row_operational.text = "Stronghold: %s/%s %s   Garrison: %dgp/fam %s   Treasury: %s" % [
 		_format_count(stronghold_value), _format_count(stronghold_minimum),
 		stronghold_glyph,

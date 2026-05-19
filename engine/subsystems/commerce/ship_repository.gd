@@ -9,7 +9,7 @@ extends RefCounted
 ## in Prereq.5b. v1 ships do NOT carry inventory_items.
 ##
 ## Maritime catalog: `data/equipment/maritime.json` is the source for
-## vessel_key → {shp_max, cargo_capacity_stone, crew_*, monthly_operating_cost_gp}.
+## vessel_key → {shp_max, cargo_capacity_stone, crew_*, monthly_operating_cost_cp}.
 ## Loaded once and cached statically; `_reset_catalog_cache` is the test seam.
 
 
@@ -110,14 +110,14 @@ static func create_ship(
 	var crew_sailors: int = int(vessel.get("crew_sailors", 0))
 	var crew_rowers: int = int(vessel.get("crew_rowers", 0))
 	var crew_marines: int = int(vessel.get("marines", 0))
-	var monthly_cost: int = int(vessel.get("monthly_operating_cost_gp", 0))
+	var monthly_cost: int = int(vessel.get("monthly_operating_cost_cp", 0))
 
 	if not CampaignRepository.db.query_with_bindings("""
 		INSERT INTO ships
 			(id, campaign_id, party_id, vessel_key, name,
 			 shp_max, shp_current, cargo_capacity_stone,
 			 crew_captain, crew_sailors, crew_rowers, crew_marines,
-			 monthly_operating_cost_gp,
+			 monthly_operating_cost_cp,
 			 current_location_kind, moored_at_settlement_id, is_destroyed)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'moored', ?, 0)
 	""", [
@@ -250,11 +250,11 @@ static func destroy_ship(ship_id: String) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Walks every non-destroyed ship in the campaign, debits its
-## monthly_operating_cost_gp from the party wallet via PartyWallet.pay,
+## monthly_operating_cost_cp from the party wallet via PartyWallet.pay,
 ## emits ship_operating_cost_paid on success or ship_operating_cost_unpaid
 ## on shortfall. v1 does NOT destroy ships for non-payment per §9.6.1.
 ##
-## Returns the total gp successfully debited across all ships.
+## Returns the total cp successfully debited across all ships.
 static func process_monthly_operating_costs_for_campaign(
 		campaign_id: String,
 		current_calendar_day: int,
@@ -262,36 +262,37 @@ static func process_monthly_operating_costs_for_campaign(
 	if campaign_id.is_empty():
 		return 0
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT id, party_id, monthly_operating_cost_gp
+		SELECT id, party_id, monthly_operating_cost_cp
 		FROM ships
 		WHERE campaign_id = ? AND is_destroyed = 0
 	""", [campaign_id]):
 		return 0
 	var ships: Array = CampaignRepository.db.query_result.duplicate()
-	var total_debited: int = 0
+	var total_debited_cp: int = 0
 	for row in ships:
 		var d: Dictionary = row
 		var ship_id: String = str(d.get("id", ""))
 		var party_id: String = str(d.get("party_id", ""))
-		var cost_gp: int = int(d.get("monthly_operating_cost_gp", 0))
-		if cost_gp <= 0:
+		var cost_cp: int = int(d.get("monthly_operating_cost_cp", 0))
+		if cost_cp <= 0:
 			continue
 		if party_id.is_empty():
 			# Orphan ship (no party) — can't debit; emit unpaid for audit.
-			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_gp)
+			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_cp)
 			continue
 		# Pick first PC of the party to thread through PartyWallet.pay.
 		var active_pc: String = _first_pc_of_party(party_id)
 		if active_pc.is_empty():
-			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_gp)
+			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_cp)
 			continue
-		var result: Dictionary = PartyWallet.pay(cost_gp * 100, party_id, active_pc)
+		# PartyWallet.pay takes cp directly — column is already cp, no scaling.
+		var result: Dictionary = PartyWallet.pay(cost_cp, party_id, active_pc)
 		if bool(result.get("ok", false)):
-			total_debited += cost_gp
-			EventBus.ship_operating_cost_paid.emit(ship_id, cost_gp)
+			total_debited_cp += cost_cp
+			EventBus.ship_operating_cost_paid.emit(ship_id, cost_cp)
 		else:
-			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_gp)
-	return total_debited
+			EventBus.ship_operating_cost_unpaid.emit(ship_id, cost_cp)
+	return total_debited_cp
 
 
 # ---------------------------------------------------------------------------

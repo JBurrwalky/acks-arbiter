@@ -10,15 +10,15 @@ extends RefCounted
 ##   - Lawful → "pinnacle of good"; chaotic → "sinkhole of evil".
 ##   - Divine power may be spent in lieu of gp if a humbler-looking altar is
 ##     desired (per RAW L419) — the player can elect to substitute DP for gp
-##     via the `dp_substituted_gp` param at launch. The aura still scales on
-##     gp_invested + dp_substituted_gp (RAW treats them equivalently for aura).
+##     via the `dp_substituted_cp` param at launch. The aura still scales on
+##     gp_invested + dp_substituted_cp (RAW treats them equivalently for aura).
 ##   - Aura persists until dispelled or the altar is physically broken and
 ##     blessed.
 ##
 ## State.params_json shape:
 ##   {
-##     "gp_invested":       <int>    # gp spent on the altar
-##     "dp_substituted_gp": <int>    # optional; DP substituted for gp
+##     "gp_invested":       <int>    # gp spent on the altar (launcher gp input)
+##     "dp_substituted_cp": <int>    # optional; DP substituted for gp (cp-native)
 ##     "alignment":         "lawful" | "neutral" | "chaotic"  # default: caster's alignment
 ##     "location_kind":     "stronghold" | "settlement_poi" | "wilderness_hex" | "dungeon_room"
 ##     "location_ref":      <String>  # id of the location
@@ -32,8 +32,8 @@ extends RefCounted
 ##
 ## At completion (on_complete here):
 ##   - UPDATE the consecrated_altars row to status='completed',
-##     completion_pct=100, aura_size_sq_ft = (gp_invested + dp_substituted_gp) ÷ 100 × 100.
-##   - Emit altar_consecrated signal.
+##     completion_pct=100, aura_size_sq_ft = (cp_invested + dp_substituted_cp) ÷ 100.
+##   - Emit altar_consecrated signal with cp_invested = total contribution in cp.
 
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
@@ -42,9 +42,10 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		return {"summary": "consecrate_altar: no character_id"}
 
 	var params := _parse_params(state)
-	var gp_invested: int = int(params.get("gp_invested", 0))
-	var dp_substituted: int = int(params.get("dp_substituted_gp", 0))
-	if gp_invested + dp_substituted <= 0:
+	# Launcher captures gp; × 100 to cp at the boundary.
+	var cp_invested: int = int(params.get("gp_invested", 0)) * 100
+	var dp_substituted_cp: int = int(params.get("dp_substituted_cp", 0))
+	if cp_invested + dp_substituted_cp <= 0:
 		return {"summary": "consecrate_altar: no value invested"}
 
 	# Look up the in-progress altar row created at launch. v1: the caller
@@ -56,17 +57,17 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var location_kind: String = String(params.get("location_kind", "stronghold"))
 	var location_ref: String = String(params.get("location_ref", ""))
 
-	var total_gp_value: int = gp_invested + dp_substituted
-	# Aura size: 100 sq ft per 100 gp per RAW L418. (Effectively 1 sq ft per gp.)
-	var aura_size: int = total_gp_value
+	var total_cp_value: int = cp_invested + dp_substituted_cp
+	# Aura size: 100 sq ft per 100 gp per RAW L418 = 1 sq ft per gp = total_cp / 100.
+	var aura_size: int = total_cp_value / 100
 
 	if altar_id.is_empty():
 		altar_id = CampaignRepository.create_consecrated_altar({
 			"character_id": character_id,
 			"location_kind": location_kind,
 			"location_ref": location_ref,
-			"gp_invested": gp_invested,
-			"dp_substituted_gp": dp_substituted,
+			"cp_invested": cp_invested,
+			"dp_substituted_cp": dp_substituted_cp,
 			"alignment": alignment,
 			"aura_size_sq_ft": aura_size,
 			"completion_pct": 100,
@@ -82,11 +83,11 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"completed_calendar_day": _calendar_day(),
 		})
 
-	EventBus.altar_consecrated.emit(altar_id, character_id, total_gp_value)
+	EventBus.altar_consecrated.emit(altar_id, character_id, total_cp_value)
 
 	return {
-		"summary": "Altar consecrated: %d gp value, %d sq ft aura (%s)" % [
-			total_gp_value, aura_size, alignment
+		"summary": "Altar consecrated: %s value, %d sq ft aura (%s)" % [
+			Currency.format_cost(total_cp_value), aura_size, alignment
 		],
 		"presentation": {
 			"type": "toast",

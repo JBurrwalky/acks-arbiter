@@ -73,11 +73,12 @@ func _setup() -> void:
 	_mage_l3_id = _create_test_character(_campaign_id, "Test Mage L3", "mage", "mage", 3, 12, 10)
 	_cleric_id = _create_test_character(_campaign_id, "Test Cleric", "cleric", "cleric", 9, 10, 16)
 
+	# Migration 116: gp_value → cp_value (× 100). 30000 gp → 3000000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 30000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 3000000, 100, 'completed')
 	""", [_stronghold_id, _mage_l9_int17_id])
 
 	# Workshop supporting L5 spell effects with +1 bonus.
@@ -88,8 +89,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_l9_int17_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "tower_workshop",
-		"gp_invested": 22000,
-		"max_item_value_supported_gp": 50000,
+		"cp_invested": 2200000,  # 22,000 gp × 100
+		"max_item_value_supported_cp": 5000000,  # 50,000 gp × 100
 		"magic_research_throw_bonus": 1,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -101,8 +102,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_l5_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "tower_workshop",
-		"gp_invested": 4000,
-		"max_item_value_supported_gp": 5000,
+		"cp_invested": 400000,  # 4,000 gp × 100
+		"max_item_value_supported_cp": 500000,  # 5,000 gp × 100
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,

@@ -506,7 +506,7 @@ func _persist_familiar_level_up(character: CharacterData, choices: Dictionary) -
 		if form_key.is_empty():
 			return
 		var prog: Dictionary = FamiliarData.compute_progression_for_master_level(character.level)
-		var hp_max_familiar: int = maxi(1, _bankers_round(float(character.hp_max) / 2.0))
+		var hp_max_familiar: int = maxi(1, XPAwardCalculator.bankers_round(float(character.hp_max) / 2.0))
 		var picks: Array = familiar_choices.get("proficiencies_chosen", [])
 		var budget: int = int(familiar_choices.get(
 			"proficiency_count_cached",
@@ -555,16 +555,8 @@ static func _sum_master_proficiency_count(proficiencies: Array) -> int:
 	return total
 
 
-static func _bankers_round(value: float) -> int:
-	## Banker's rounding (round half to even). Used by familiar HP halving to
-	## match the FamiliarData formula.
-	var floor_val := int(value)
-	var frac := value - floor_val
-	if is_equal_approx(frac, 0.5):
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.
 
 
 # ---------------------------------------------------------------------------

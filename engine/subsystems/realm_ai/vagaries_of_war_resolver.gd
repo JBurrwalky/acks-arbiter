@@ -105,6 +105,21 @@ static func roll_and_resolve(
 		var roll_b: int = _roll_1d100(dice_roller)
 		final_roll = mini(roll_a, roll_b)
 
+	# Consecrate Ruler buff propagation (Phase 10A.2 / bucket-A item #94):
+	# active consecrate_ruler_buff on the army-owner's domain converts the
+	# single roll into a best-of-two (success buff) or worst-of-two
+	# (natural-1 curse) selection. Wired 2026-05-19. Stacks with the siege
+	# double-roll: the helper picks two rolls regardless of siege state and
+	# applies the buff's bias.
+	var vagary_pick: String = _consecrate_ruler_vagary_pick_for_army(army)
+	if vagary_pick == "best_of_two":
+		var roll_c: int = _roll_1d100(dice_roller)
+		# Higher 1d100 = better RAW row, so "best" = maxi.
+		final_roll = maxi(final_roll, roll_c)
+	elif vagary_pick == "worst_of_two":
+		var roll_d: int = _roll_1d100(dice_roller)
+		final_roll = mini(final_roll, roll_d)
+
 	var result_name: String = classify_roll(final_roll)
 	var handler_outcome: Dictionary = _dispatch(army_id, result_name, calendar_day, army)
 
@@ -195,14 +210,14 @@ static func _apply_supply_problems(army_id: String) -> Dictionary:
 	var supply: Dictionary = ArmyRepository.get_supply_state(army_id)
 	if supply.is_empty():
 		return {"applied": false, "kind": "supply_problems", "reason": "no_supply_state"}
-	var last_weekly: int = int(supply.get("weekly_supply_cost_gp", 0))
+	var last_weekly: int = int(supply.get("weekly_supply_cost_cp", 0))
 	var penalty: int = int(round(last_weekly * 0.25))
 	if penalty <= 0:
 		return {"applied": true, "kind": "supply_problems", "penalty_gp": 0}
-	var stockpile: int = int(supply.get("current_stockpile_gp", 0))
+	var stockpile: int = int(supply.get("current_stockpile_cp", 0))
 	var new_stockpile: int = maxi(0, stockpile - penalty)
 	ArmyRepository.update_supply_state(army_id, {
-		"current_stockpile_gp": new_stockpile,
+		"current_stockpile_cp": new_stockpile,
 	})
 	return {
 		"applied": true,
@@ -218,13 +233,13 @@ static func _apply_supply_boon(army_id: String) -> Dictionary:
 	var supply: Dictionary = ArmyRepository.get_supply_state(army_id)
 	if supply.is_empty():
 		return {"applied": false, "kind": "supply_boon", "reason": "no_supply_state"}
-	var weekly: int = int(supply.get("weekly_supply_cost_gp", 0))
+	var weekly: int = int(supply.get("weekly_supply_cost_cp", 0))
 	if weekly <= 0:
 		return {"applied": true, "kind": "supply_boon", "bonus_gp": 0}
-	var stockpile: int = int(supply.get("current_stockpile_gp", 0))
+	var stockpile: int = int(supply.get("current_stockpile_cp", 0))
 	var new_stockpile: int = stockpile + weekly
 	ArmyRepository.update_supply_state(army_id, {
-		"current_stockpile_gp": new_stockpile,
+		"current_stockpile_cp": new_stockpile,
 	})
 	return {
 		"applied": true,
@@ -463,6 +478,40 @@ static func _signal_only(kind: String, summary: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 # Internals
 # ---------------------------------------------------------------------------
+
+## Returns the active consecrate_ruler_buff payload's `vagary_roll_pick`
+## ("best_of_two" / "worst_of_two") for the army's owner-domain, or "" if
+## no active buff exists. Wired 2026-05-19 for bucket-A item #94.
+static func _consecrate_ruler_vagary_pick_for_army(army: Dictionary) -> String:
+	var owner_id: String = String(army.get("owner_character_id", ""))
+	if owner_id.is_empty():
+		return ""
+	if not CampaignRepository.db.query_with_bindings(
+		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1", [owner_id]
+	):
+		return ""
+	if CampaignRepository.db.query_result.is_empty():
+		return ""
+	var domain_id: String = String(CampaignRepository.db.query_result[0].get("id", ""))
+	var current_day: int = Timekeeping.get_total_days()
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT effect_payload_json FROM pending_divine_effects
+		WHERE domain_id = ?
+		  AND effect_kind = 'consecrate_ruler_buff'
+		  AND status = 'applied'
+		  AND expires_at_calendar_day > ?
+		ORDER BY applies_at_calendar_day DESC
+		LIMIT 1
+	""", [domain_id, current_day]):
+		return ""
+	if CampaignRepository.db.query_result.is_empty():
+		return ""
+	var raw: String = String(CampaignRepository.db.query_result[0].get("effect_payload_json", "{}"))
+	var parsed: Variant = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return ""
+	return String((parsed as Dictionary).get("vagary_roll_pick", ""))
+
 
 static func _roll_1d100(dice_roller: Callable) -> int:
 	if dice_roller.is_valid():

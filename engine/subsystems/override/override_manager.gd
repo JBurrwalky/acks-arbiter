@@ -38,7 +38,7 @@ const CHARACTER_STAT_FIELDS := [
 	"name", "level", "xp",
 	"strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma",
 	"hp_max", "hp_current", "armor_class", "attack_throw",
-	"loyalty_score", "wage_gp_per_month",
+	"loyalty_score", "wage_cp_per_month",
 ]
 
 ## Valid direct-settable fields on the trained_creatures table (mounts, animals).

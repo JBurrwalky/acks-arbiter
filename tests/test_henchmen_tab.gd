@@ -91,10 +91,13 @@ func test_status_header_summary_with_mock_rows() -> void:
 	# need a populated DB.
 	var page = HenchmenTabPageScript.new()
 	add_child(page)
+	# wage_cp_per_month is cp; 25 gp = 2500 cp for a typical L1 fighter henchman.
+	# Sum = 2500 + 2500 + 5000 = 10000 cp = 100 gp displayed as "100gp" via
+	# Currency.format_cost.
 	var rows: Array = [
-		{"character_type": "henchman", "class_id": "fighter", "wage_gp_per_month": 25},
-		{"character_type": "henchman", "class_id": "thief",   "wage_gp_per_month": 25},
-		{"character_type": "henchman", "class_id": "",        "wage_gp_per_month": 50},
+		{"character_type": "henchman", "class_id": "fighter", "wage_cp_per_month": 2500},
+		{"character_type": "henchman", "class_id": "thief",   "wage_cp_per_month": 2500},
+		{"character_type": "henchman", "class_id": "",        "wage_cp_per_month": 5000},
 	]
 	page._refresh_status_header(rows)
 	var text: String = page._status_summary_label.text
@@ -104,8 +107,8 @@ func test_status_header_summary_with_mock_rows() -> void:
 		"Summary should report 2 humanoid (got '%s')" % text)
 	check(text.contains("1 animal"),
 		"Summary should report 1 animal (got '%s')" % text)
-	check(text.contains("100 gp"),
-		"Summary should report 100 gp monthly wages (got '%s')" % text)
+	check(text.contains("100gp"),
+		"Summary should report 100gp monthly wages via Currency.format_cost (got '%s')" % text)
 	page.queue_free()
 
 

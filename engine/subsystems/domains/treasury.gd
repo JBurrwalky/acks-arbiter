@@ -31,7 +31,8 @@ extends RefCounted
 # ---------------------------------------------------------------------------
 
 ## Cost per +1 land value per hex per `acore_axioms` §land_improvement L207-215.
-const LAND_IMPROVEMENT_GP_PER_PLUS_ONE := 25000
+## RAW 25,000 gp expressed in cp under the unified currency standard.
+const LAND_IMPROVEMENT_CP_PER_PLUS_ONE := 2_500_000
 
 ## Reason codes returned to UI / tests when an action is blocked.
 const REASON_OK := "ok"
@@ -58,7 +59,7 @@ static func get_balance(domain_id: String) -> int:
 	var domain := CampaignRepository.get_domain(domain_id)
 	if domain.is_empty():
 		return 0
-	return int(domain.get("treasury_gp", 0))
+	return int(domain.get("treasury_cp", 0))
 
 
 ## Whether [param character_id] is currently at one of [param domain_id]'s
@@ -105,7 +106,7 @@ static func is_character_at_stronghold(character_id: String, domain_id: String) 
 # Direct treasury writes (used by monthly resolution and direct deposits)
 # ---------------------------------------------------------------------------
 
-## Deposit [param gp_amount] gp into [param domain_id]'s treasury. Used by
+## Deposit [param cp_amount] gp into [param domain_id]'s treasury. Used by
 ## monthly revenue collection, tribute_in arrival, and player-initiated
 ## transfers from a personal wallet (which the caller validates).
 ##
@@ -114,26 +115,26 @@ static func is_character_at_stronghold(character_id: String, domain_id: String) 
 ## Returns a result dict: {ok: bool, reason: String, new_balance: int}.
 static func deposit(
 	domain_id: String,
-	gp_amount: int,
+	cp_amount: int,
 	calendar_day: int,
 	category: String = "revenue",
 	subcategory: String = "deposit",
 	description: String = "",
 	source_event_id: String = ""
 ) -> Dictionary:
-	if gp_amount <= 0:
+	if cp_amount <= 0:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
 	var prior := get_balance(domain_id)
 	var domain := CampaignRepository.get_domain(domain_id)
 	if domain.is_empty():
 		return {"ok": false, "reason": REASON_DOMAIN_NOT_FOUND, "new_balance": prior}
-	var new_balance := CampaignRepository.adjust_domain_treasury(domain_id, gp_amount)
+	var new_balance := CampaignRepository.adjust_domain_treasury(domain_id, cp_amount)
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": calendar_day,
 		"category": category,
 		"subcategory": subcategory,
-		"gp_amount": gp_amount,
+		"cp_amount": cp_amount,
 		"description": description,
 		"source_event_id": source_event_id,
 	})
@@ -141,22 +142,22 @@ static func deposit(
 	return {"ok": true, "reason": REASON_OK, "new_balance": new_balance}
 
 
-## Withdraw [param gp_amount] gp from [param domain_id]'s treasury. Used by
+## Withdraw [param cp_amount] gp from [param domain_id]'s treasury. Used by
 ## monthly expense payment, tribute_out, investments, and player-initiated
 ## transfers to a personal wallet (which the caller validates).
 ##
-## Writes the matching ledger entry (with negative gp_amount) and emits
+## Writes the matching ledger entry (with negative cp_amount) and emits
 ## `domain_treasury_changed`. Refuses if the balance is insufficient.
 static func withdraw(
 	domain_id: String,
-	gp_amount: int,
+	cp_amount: int,
 	calendar_day: int,
 	category: String = "expense",
 	subcategory: String = "withdrawal",
 	description: String = "",
 	source_event_id: String = ""
 ) -> Dictionary:
-	if gp_amount <= 0:
+	if cp_amount <= 0:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
 	var prior := get_balance(domain_id)
 	if prior < 0:
@@ -164,15 +165,15 @@ static func withdraw(
 		var domain := CampaignRepository.get_domain(domain_id)
 		if domain.is_empty():
 			return {"ok": false, "reason": REASON_DOMAIN_NOT_FOUND, "new_balance": 0}
-	if prior < gp_amount:
+	if prior < cp_amount:
 		return {"ok": false, "reason": REASON_INSUFFICIENT_FUNDS, "new_balance": prior}
-	var new_balance := CampaignRepository.adjust_domain_treasury(domain_id, -gp_amount)
+	var new_balance := CampaignRepository.adjust_domain_treasury(domain_id, -cp_amount)
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": calendar_day,
 		"category": category,
 		"subcategory": subcategory,
-		"gp_amount": -gp_amount,
+		"cp_amount": -cp_amount,
 		"description": description,
 		"source_event_id": source_event_id,
 	})
@@ -200,18 +201,18 @@ static func withdraw(
 static func withdraw_to_personal(
 	domain_id: String,
 	character_id: String,
-	gp_amount: int,
+	cp_amount: int,
 	calendar_day: int
 ) -> Dictionary:
-	if gp_amount <= 0:
+	if cp_amount <= 0:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
 	if not is_character_at_stronghold(character_id, domain_id):
 		EventBus.domain_treasury_transfer_blocked.emit(
 			domain_id, character_id, REASON_NOT_AT_STRONGHOLD)
 		return {"ok": false, "reason": REASON_NOT_AT_STRONGHOLD, "new_balance": get_balance(domain_id)}
-	return withdraw(domain_id, gp_amount, calendar_day,
+	return withdraw(domain_id, cp_amount, calendar_day,
 		"expense", "withdraw_to_personal",
-		"Withdrew %d gp to personal wallet of %s" % [gp_amount, character_id])
+		"Withdrew %s to personal wallet of %s" % [Currency.format_cost(cp_amount), character_id])
 
 
 ## Deposit gp from the active character's personal wallet into the domain
@@ -219,18 +220,18 @@ static func withdraw_to_personal(
 static func deposit_from_personal(
 	domain_id: String,
 	character_id: String,
-	gp_amount: int,
+	cp_amount: int,
 	calendar_day: int
 ) -> Dictionary:
-	if gp_amount <= 0:
+	if cp_amount <= 0:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
 	if not is_character_at_stronghold(character_id, domain_id):
 		EventBus.domain_treasury_transfer_blocked.emit(
 			domain_id, character_id, REASON_NOT_AT_STRONGHOLD)
 		return {"ok": false, "reason": REASON_NOT_AT_STRONGHOLD, "new_balance": get_balance(domain_id)}
-	return deposit(domain_id, gp_amount, calendar_day,
+	return deposit(domain_id, cp_amount, calendar_day,
 		"revenue", "deposit_from_personal",
-		"Deposited %d gp from personal wallet of %s" % [gp_amount, character_id])
+		"Deposited %s from personal wallet of %s" % [Currency.format_cost(cp_amount), character_id])
 
 
 # ---------------------------------------------------------------------------
@@ -250,11 +251,11 @@ static func transfer_between_strongholds(
 	domain_id: String,
 	source_stronghold_id: String,
 	dest_stronghold_id: String,
-	gp_amount: int,
+	cp_amount: int,
 	carrier_character_id: String,
 	calendar_day: int
 ) -> Dictionary:
-	if gp_amount <= 0:
+	if cp_amount <= 0:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
 	if source_stronghold_id == dest_stronghold_id:
 		return {"ok": false, "reason": REASON_AMOUNT_INVALID, "new_balance": get_balance(domain_id)}
@@ -262,7 +263,7 @@ static func transfer_between_strongholds(
 	var dst := CampaignRepository.get_stronghold(dest_stronghold_id)
 	if src.is_empty() or dst.is_empty():
 		return {"ok": false, "reason": REASON_STRONGHOLD_NOT_FOUND, "new_balance": get_balance(domain_id)}
-	var withdraw_result := withdraw(domain_id, gp_amount, calendar_day,
+	var withdraw_result := withdraw(domain_id, cp_amount, calendar_day,
 		"other", "in_transit_route",
 		"Treasury route %s → %s, carrier %s" % [
 			source_stronghold_id, dest_stronghold_id, carrier_character_id])
@@ -270,7 +271,7 @@ static func transfer_between_strongholds(
 		return withdraw_result
 	EventBus.domain_treasury_route_started.emit(
 		domain_id, source_stronghold_id, dest_stronghold_id,
-		gp_amount, carrier_character_id)
+		cp_amount, carrier_character_id)
 	return withdraw_result
 
 
@@ -278,11 +279,11 @@ static func transfer_between_strongholds(
 # Land Improvement investment line ([RAW PATCH])
 # ---------------------------------------------------------------------------
 
-## Spend 25,000 gp from the domain treasury to apply +1 land value to one hex,
-## capped at +3 per hex and final land value ≤ 9 per `acore_axioms`
-## §land_improvement L207-215. Delegates the cap math to `LandImprovement`,
-## then writes the treasury debit + ledger entry on success and emits
-## `land_value_improved`.
+## Spend 25,000 gp (= 2,500,000 cp) from the domain treasury to apply +1 land
+## value to one hex, capped at +3 per hex and final land value ≤ 9 per
+## `acore_axioms` §land_improvement L207-215. Delegates the cap math to
+## `LandImprovement`, then writes the treasury debit + ledger entry on success
+## and emits `land_value_improved`.
 ##
 ## Returns: {ok, reason, new_balance, new_land_value, new_improvement_count}.
 static func invest_land_improvement(
@@ -292,7 +293,7 @@ static func invest_land_improvement(
 	calendar_day: int
 ) -> Dictionary:
 	var balance := get_balance(domain_id)
-	if balance < LAND_IMPROVEMENT_GP_PER_PLUS_ONE:
+	if balance < LAND_IMPROVEMENT_CP_PER_PLUS_ONE:
 		return {
 			"ok": false, "reason": REASON_INSUFFICIENT_FUNDS,
 			"new_balance": balance, "new_land_value": 0, "new_improvement_count": 0,
@@ -309,20 +310,20 @@ static func invest_land_improvement(
 			"new_balance": balance, "new_land_value": 0, "new_improvement_count": 0,
 		}
 	var attempt: Dictionary = LandImprovement.attempt_improvement(
-		hex_row, LAND_IMPROVEMENT_GP_PER_PLUS_ONE)
+		hex_row, LAND_IMPROVEMENT_CP_PER_PLUS_ONE)
 	if not bool(attempt.get("accepted", false)):
 		return {
 			"ok": false, "reason": REASON_LAND_IMPROVEMENT_REJECTED,
 			"new_balance": balance,
 			"new_land_value": int(hex_row.get("land_value", 0)),
-			"new_improvement_count": int(hex_row.get("land_improvement_gp", 0)),
+			"new_improvement_count": int(hex_row.get("land_improvement_level", 0)),
 			"land_improvement_reason": attempt.get("reason", ""),
 		}
 	# Persist the improvement, debit the treasury, write the ledger.
 	CampaignRepository.update_domain_hex_land_improvement(
 		domain_id, hex_q, hex_r, int(attempt["new_improvement"]))
 	var withdraw_result := withdraw(
-		domain_id, int(attempt["gp_spent"]), calendar_day,
+		domain_id, int(attempt["cp_spent"]), calendar_day,
 		"investment", "land_improvement",
 		"Land improvement on hex (%d, %d): +1 land value" % [hex_q, hex_r])
 	EventBus.land_value_improved.emit(
@@ -330,7 +331,7 @@ static func invest_land_improvement(
 		int(attempt["new_land_value"]), int(attempt["new_improvement"]))
 	return {
 		"ok": true, "reason": REASON_OK,
-		"new_balance": withdraw_result.get("new_balance", balance - LAND_IMPROVEMENT_GP_PER_PLUS_ONE),
+		"new_balance": withdraw_result.get("new_balance", balance - LAND_IMPROVEMENT_CP_PER_PLUS_ONE),
 		"new_land_value": int(attempt["new_land_value"]),
 		"new_improvement_count": int(attempt["new_improvement"]),
 	}

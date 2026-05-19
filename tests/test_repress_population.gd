@@ -3,7 +3,7 @@ extends "res://tests/test_suite_base.gd"
 ## Tests for the repress_population activity handler [RAW PATCH] (Domain Phase 3).
 ##
 ## Verifies the handler sets domains.is_repressed_this_month=1 and
-## repression_gp_per_family_this_month=N per acore_axioms §repression L510-516.
+## repression_cp_per_family_this_month=N per acore_axioms §repression L510-516.
 ## The morale-cap-at-0 invariant is exercised by tests/test_repression.gd
 ## (Phase 0); this suite covers the handler's responsibility for SETTING the
 ## inputs to that resolver.
@@ -56,7 +56,7 @@ func test_handler_sets_columns_when_gp_per_family_positive() -> void:
 	# Reset state.
 	CampaignRepository.update_domain_monthly_state(_domain_id, {
 		"is_repressed_this_month": 0,
-		"repression_gp_per_family_this_month": 0,
+		"repression_cp_per_family_this_month": 0,
 	})
 	var state := _make_state(4)
 	var result: Dictionary = RepressPopulationHandler.on_complete(state, null)
@@ -64,26 +64,26 @@ func test_handler_sets_columns_when_gp_per_family_positive() -> void:
 		"handler should return a summary")
 	# Verify columns set.
 	CampaignRepository.db.query_with_bindings(
-		"SELECT is_repressed_this_month, repression_gp_per_family_this_month FROM domains WHERE id = ?",
+		"SELECT is_repressed_this_month, repression_cp_per_family_this_month FROM domains WHERE id = ?",
 		[_domain_id])
 	check(not CampaignRepository.db.query_result.is_empty(), "domain row should be readable")
 	var row: Dictionary = CampaignRepository.db.query_result[0]
 	check(int(row.get("is_repressed_this_month", 0)) == 1,
 		"is_repressed_this_month should be 1, got %s" % str(row.get("is_repressed_this_month", 0)))
-	check(int(row.get("repression_gp_per_family_this_month", 0)) == 4,
-		"repression_gp_per_family should be 4, got %s" % str(row.get("repression_gp_per_family_this_month", 0)))
+	check(int(row.get("repression_cp_per_family_this_month", 0)) == 4,
+		"repression_gp_per_family should be 4, got %s" % str(row.get("repression_cp_per_family_this_month", 0)))
 
 
 func test_handler_no_op_when_gp_per_family_zero() -> void:
 	CampaignRepository.update_domain_monthly_state(_domain_id, {
 		"is_repressed_this_month": 0,
-		"repression_gp_per_family_this_month": 0,
+		"repression_cp_per_family_this_month": 0,
 	})
 	var state := _make_state(0)
 	var result: Dictionary = RepressPopulationHandler.on_complete(state, null)
 	# Verify columns unchanged.
 	CampaignRepository.db.query_with_bindings(
-		"SELECT is_repressed_this_month, repression_gp_per_family_this_month FROM domains WHERE id = ?",
+		"SELECT is_repressed_this_month, repression_cp_per_family_this_month FROM domains WHERE id = ?",
 		[_domain_id])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
 	check(int(row.get("is_repressed_this_month", 0)) == 0,
@@ -95,7 +95,7 @@ func test_handler_no_op_when_gp_per_family_zero() -> void:
 func test_handler_writes_ledger_entry() -> void:
 	CampaignRepository.update_domain_monthly_state(_domain_id, {
 		"is_repressed_this_month": 0,
-		"repression_gp_per_family_this_month": 0,
+		"repression_cp_per_family_this_month": 0,
 	})
 	var prior_count := CampaignRepository.list_ledger_entries(_domain_id).size()
 	var state := _make_state(2)

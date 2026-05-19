@@ -313,6 +313,28 @@
 [ext_resource type="Script" path="res://tests/test_character_legal_status_repository.gd" id="299_character_legal_status_repository_tests"]
 [ext_resource type="Script" path="res://tests/test_attorney_specialization.gd" id="300_attorney_specialization_tests"]
 [ext_resource type="Script" path="res://tests/test_commerce_integration.gd" id="301_commerce_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_monopoly_registry.gd" id="302_monopoly_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_visit_state_manager.gd" id="303_visit_state_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_buy_sell_common.gd" id="304_buy_sell_common_tests"]
+[ext_resource type="Script" path="res://tests/test_mercantile_category_parse.gd" id="305_mercantile_category_parse_tests"]
+[ext_resource type="Script" path="res://tests/test_buy_merchandise_handler.gd" id="306_buy_merchandise_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_sell_merchandise_handler.gd" id="307_sell_merchandise_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_persuade_merchants_handler.gd" id="308_persuade_merchants_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_solicit_merchants_handler.gd" id="309_solicit_merchants_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_locate_merchandise_handler.gd" id="310_locate_merchandise_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_shipping_contract_offer_roller.gd" id="311_shipping_contract_offer_roller_tests"]
+[ext_resource type="Script" path="res://tests/test_accept_shipping_contract_handler.gd" id="312_accept_shipping_contract_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_shipping_contract_workflow.gd" id="313_shipping_contract_workflow_tests"]
+[ext_resource type="Script" path="res://tests/test_commerce_monthly_resolver.gd" id="314_commerce_monthly_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_trade_route_trigger_handlers.gd" id="315_trade_route_trigger_handlers_tests"]
+[ext_resource type="Script" path="res://tests/test_trade_block_integration.gd" id="316_trade_block_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_persuade_solicit_locate_workflow.gd" id="317_persuade_solicit_locate_workflow_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b3.gd" id="318_phase_10b3_tests"]
+[ext_resource type="Script" path="res://tests/test_favors_duties_card_formatter.gd" id="319_favors_duties_card_formatter_tests"]
+[ext_resource type="Script" path="res://tests/test_stronghold_contiguity.gd" id="320_stronghold_contiguity_tests"]
+[ext_resource type="Script" path="res://tests/test_strenuous_proficiency_throws.gd" id="321_strenuous_proficiency_throws_tests"]
+[ext_resource type="Script" path="res://tests/test_hex_map_cross_scale.gd" id="322_hex_map_cross_scale_tests"]
+[ext_resource type="Script" path="res://tests/test_permanent_wounds.gd" id="323_permanent_wounds_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1252,3 +1274,69 @@ script = ExtResource("300_attorney_specialization_tests")
 
 [node name="CommerceIntegrationTests" type="Node" parent="."]
 script = ExtResource("301_commerce_integration_tests")
+
+[node name="MonopolyRegistryTests" type="Node" parent="."]
+script = ExtResource("302_monopoly_registry_tests")
+
+[node name="VisitStateManagerTests" type="Node" parent="."]
+script = ExtResource("303_visit_state_manager_tests")
+
+[node name="BuySellCommonTests" type="Node" parent="."]
+script = ExtResource("304_buy_sell_common_tests")
+
+[node name="MercantileCategoryParseTests" type="Node" parent="."]
+script = ExtResource("305_mercantile_category_parse_tests")
+
+[node name="BuyMerchandiseHandlerTests" type="Node" parent="."]
+script = ExtResource("306_buy_merchandise_handler_tests")
+
+[node name="SellMerchandiseHandlerTests" type="Node" parent="."]
+script = ExtResource("307_sell_merchandise_handler_tests")
+
+[node name="PersuadeMerchantsHandlerTests" type="Node" parent="."]
+script = ExtResource("308_persuade_merchants_handler_tests")
+
+[node name="SolicitMerchantsHandlerTests" type="Node" parent="."]
+script = ExtResource("309_solicit_merchants_handler_tests")
+
+[node name="LocateMerchandiseHandlerTests" type="Node" parent="."]
+script = ExtResource("310_locate_merchandise_handler_tests")
+
+[node name="ShippingContractOfferRollerTests" type="Node" parent="."]
+script = ExtResource("311_shipping_contract_offer_roller_tests")
+
+[node name="AcceptShippingContractHandlerTests" type="Node" parent="."]
+script = ExtResource("312_accept_shipping_contract_handler_tests")
+
+[node name="ShippingContractWorkflowTests" type="Node" parent="."]
+script = ExtResource("313_shipping_contract_workflow_tests")
+
+[node name="CommerceMonthlyResolverTests" type="Node" parent="."]
+script = ExtResource("314_commerce_monthly_resolver_tests")
+
+[node name="TradeRouteTriggerHandlersTests" type="Node" parent="."]
+script = ExtResource("315_trade_route_trigger_handlers_tests")
+
+[node name="TradeBlockIntegrationTests" type="Node" parent="."]
+script = ExtResource("316_trade_block_integration_tests")
+
+[node name="PersuadeSolicitLocateWorkflowTests" type="Node" parent="."]
+script = ExtResource("317_persuade_solicit_locate_workflow_tests")
+
+[node name="Phase10B3SyndicateTests" type="Node" parent="."]
+script = ExtResource("318_phase_10b3_tests")
+
+[node name="FavorsDutiesCardFormatterTests" type="Node" parent="."]
+script = ExtResource("319_favors_duties_card_formatter_tests")
+
+[node name="StrongholdContiguityTests" type="Node" parent="."]
+script = ExtResource("320_stronghold_contiguity_tests")
+
+[node name="StrenuousProficiencyThrowsTests" type="Node" parent="."]
+script = ExtResource("321_strenuous_proficiency_throws_tests")
+
+[node name="HexMapCrossScaleTests" type="Node" parent="."]
+script = ExtResource("322_hex_map_cross_scale_tests")
+
+[node name="PermanentWoundsTests" type="Node" parent="."]
+script = ExtResource("323_permanent_wounds_tests")

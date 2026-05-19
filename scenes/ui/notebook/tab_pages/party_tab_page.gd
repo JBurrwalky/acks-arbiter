@@ -240,13 +240,15 @@ func _refresh_header() -> void:
 	else:
 		_header_encumbrance_label.text = "Slowest: %s @ %d'/turn" % [slowest_name, slowest_speed]
 
-	# Total gold — sum of party characters' wealth.
+	# Total gold — sum of party characters' wealth. Header sums coins from
+	# inventory (physical wealth, not abstract spend value), so format via
+	# Currency.format_cost for consistent gp/sp/cp denomination display.
 	var total_cp := 0
 	for cd: CharacterData in _party.character_data:
 		if cd.character_type != "pc":
 			continue
 		total_cp += CampaignRepository.get_character_wealth_cp(cd.id)
-	_header_gold_label.text = "Total gold: %.2f gp" % (total_cp / 100.0)
+	_header_gold_label.text = "Total gold: %s" % Currency.format_cost(total_cp)
 
 	# Location.
 	var loc_text: String = ""

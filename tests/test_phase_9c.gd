@@ -143,13 +143,13 @@ func _make_army(owner_id: String, command_id: String = "", state: String = "enca
 
 
 func _make_troop_unit(owner_id: String, br: float = 0.5,
-		monthly_wage_gp: int = 50, assignment_kind: String = "garrison") -> String:
+		monthly_wage_cp: int = 50, assignment_kind: String = "garrison") -> String:
 	var id := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO troop_units
 			(id, campaign_id, owner_character_id, source_type, troop_type, race, tier,
-			 starting_count, count, battle_rating, monthly_wage_gp, monthly_supply_gp,
-			 monthly_specialist_gp, monthly_cost_gp, morale, is_veteran, is_trained,
+			 starting_count, count, battle_rating, monthly_wage_cp, monthly_supply_cp,
+			 monthly_specialist_cp, monthly_cost_cp, morale, is_veteran, is_trained,
 			 unit_xp, assignment_kind, hire_calendar_day, equipment_kit, status,
 			 departure_kind, departure_calendar_day,
 			 is_diseased, disease_type, disease_recovery_calendar_day,
@@ -157,7 +157,7 @@ func _make_troop_unit(owner_id: String, br: float = 0.5,
 		VALUES (?, ?, ?, 'mercenary', 'light_infantry', 'human', 'average',
 			120, 120, ?, ?, 10, 0, ?, 0, 0, 1, 0, 'available', 0, '', 'active', '', 0,
 			0, '', 0, 0, 0)
-	""", [id, _campaign_id, owner_id, br, monthly_wage_gp, monthly_wage_gp + 10])
+	""", [id, _campaign_id, owner_id, br, monthly_wage_cp, monthly_wage_cp + 10])
 	# Note: `assignment_kind` overridden after insert — schema's CHECK enforces
 	# specific values, easier to set after creation than to embed in literal.
 	CampaignRepository.db.query_with_bindings(
@@ -171,7 +171,7 @@ func _assign_unit_to_army(unit_id: String, army_id: String) -> String:
 	var officer_id := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO army_officers (id, army_id, character_id, rank, leadership_ability,
-			strategic_ability, morale_modifier, derivation_source, monthly_wage_gp,
+			strategic_ability, morale_modifier, derivation_source, monthly_wage_cp,
 			appointed_calendar_day)
 		VALUES (?, ?, ?, 'army_leader', 4, 0, 0, 'pc', 0, 0)
 	""", [officer_id, army_id, _make_character("Officer", "npc")])
@@ -231,17 +231,18 @@ func test_landmark_icons_query_skips_destroyed_strongholds() -> void:
 	""", [map_id, _campaign_id])
 	var completed_id := CampaignRepository.generate_id()
 	var destroyed_id := CampaignRepository.generate_id()
+	# Migration 116: gp_value renamed to cp_value (× 100). 8000gp → 800000cp.
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status,
 			location_map_id, location_hex_q, location_hex_r)
-		VALUES (?, ?, 'keep', 8000, 1000, 6, 0, 100, 'completed', ?, 5, 5)
+		VALUES (?, ?, 'keep', 800000, 1000, 6, 0, 100, 'completed', ?, 5, 5)
 	""", [completed_id, owner, map_id])
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status,
 			location_map_id, location_hex_q, location_hex_r)
-		VALUES (?, ?, 'keep', 8000, 1000, 6, 0, 100, 'destroyed', ?, 6, 6)
+		VALUES (?, ?, 'keep', 800000, 1000, 6, 0, 100, 'destroyed', ?, 6, 6)
 	""", [destroyed_id, owner, map_id])
 	# Direct query mirroring HexMapLandmarkIcons._query_visible_strongholds.
 	check(CampaignRepository.db.query_with_bindings("""
@@ -367,7 +368,7 @@ func test_cure_capacity_aggregates_class_and_proficiency() -> void:
 		var off_id := CampaignRepository.generate_id()
 		CampaignRepository.db.query_with_bindings("""
 			INSERT INTO army_officers (id, army_id, character_id, rank, leadership_ability,
-				strategic_ability, morale_modifier, derivation_source, monthly_wage_gp,
+				strategic_ability, morale_modifier, derivation_source, monthly_wage_cp,
 				appointed_calendar_day)
 			VALUES (?, ?, ?, 'lieutenant', 4, 0, 0, 'pc', 0, 0)
 		""", [off_id, army, char_id])
@@ -442,11 +443,12 @@ func test_compute_realm_garrison_unit_count_aggregates_subvassals() -> void:
 		VALUES (?, ?, ?, ?, 'active', 0)
 	""", [va2, _campaign_id, vassal, subvassal])
 	# Vassal garrison army (with stronghold reference required for _vassal_garrison_army_id).
+	# Migration 116: gp_value → cp_value (× 100). 8000 gp → 800000 cp.
 	var stronghold_v := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status)
-		VALUES (?, ?, 'keep', 8000, 1000, 6, 0, 100, 'completed')
+		VALUES (?, ?, 'keep', 800000, 1000, 6, 0, 100, 'completed')
 	""", [stronghold_v, vassal])
 	var v_army := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
@@ -458,9 +460,9 @@ func test_compute_realm_garrison_unit_count_aggregates_subvassals() -> void:
 	# Sub-vassal garrison army.
 	var stronghold_sv := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status)
-		VALUES (?, ?, 'keep', 8000, 1000, 6, 0, 100, 'completed')
+		VALUES (?, ?, 'keep', 800000, 1000, 6, 0, 100, 'completed')
 	""", [stronghold_sv, subvassal])
 	var sv_army := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
@@ -492,11 +494,12 @@ func test_call_to_arms_issue_creates_state_and_lord_army() -> void:
 		VALUES (?, ?, ?, ?, 'active', 0)
 	""", [va_id, _campaign_id, liege, vassal])
 	# Garrison setup.
+	# Migration 116: gp_value → cp_value (× 100). 8000 gp → 800000 cp.
 	var stronghold_v := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status)
-		VALUES (?, ?, 'keep', 8000, 1000, 6, 0, 100, 'completed')
+		VALUES (?, ?, 'keep', 800000, 1000, 6, 0, 100, 'completed')
 	""", [stronghold_v, vassal])
 	var v_army := CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
@@ -514,7 +517,7 @@ func test_call_to_arms_issue_creates_state_and_lord_army() -> void:
 		"kind": "duty",
 		"type": "call_to_arms",
 		"magnitude": 0,
-		"gp_value": 0,
+		"cp_value": 0,
 		"is_one_time": false,
 		"issued_calendar_day": 0,
 		"status": "active",
@@ -547,7 +550,7 @@ func test_call_to_arms_revocation_clears_state() -> void:
 	""", [va_id, _campaign_id, liege, vassal])
 	var obligation_id := VassalObligationsRepository.create({
 		"vassal_assignment_id": va_id, "kind": "duty", "type": "call_to_arms",
-		"magnitude": 0, "gp_value": 0, "is_one_time": false, "issued_calendar_day": 0,
+		"magnitude": 0, "cp_value": 0, "is_one_time": false, "issued_calendar_day": 0,
 		"status": "active", "loyalty_modifier_applied": 0, "magnitude_pct": 50,
 	})
 	var lord_army := _make_army(liege)
@@ -777,8 +780,8 @@ func test_p1_save_vs_death_seeded_by_tier() -> void:
 		CampaignRepository.db.query_with_bindings("""
 			INSERT INTO troop_units
 				(id, campaign_id, owner_character_id, source_type, troop_type, race, tier,
-				 starting_count, count, battle_rating, monthly_wage_gp, monthly_supply_gp,
-				 monthly_specialist_gp, monthly_cost_gp, morale, is_veteran, is_trained,
+				 starting_count, count, battle_rating, monthly_wage_cp, monthly_supply_cp,
+				 monthly_specialist_cp, monthly_cost_cp, morale, is_veteran, is_trained,
 				 unit_xp, assignment_kind, hire_calendar_day, equipment_kit, status,
 				 departure_kind, departure_calendar_day,
 				 is_diseased, disease_type, disease_recovery_calendar_day,
@@ -1517,9 +1520,10 @@ func test_carry_call_to_arms_handler_reads_magnitude_from_params() -> void:
 
 func _make_stronghold(owner_id: String, shp: int) -> String:
 	var id := CampaignRepository.generate_id()
+	# Migration 116: gp_value renamed to cp_value (× 100). shp*8 gp → shp*800 cp.
 	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds (id, owner_character_id, structure_type, gp_value, shp,
+		INSERT INTO strongholds (id, owner_character_id, structure_type, cp_value, shp,
 			ac, garrison_capacity, completion_pct, status)
 		VALUES (?, ?, 'keep', ?, ?, 6, 0, 100, 'completed')
-	""", [id, owner_id, shp * 8, shp])
+	""", [id, owner_id, shp * 800, shp])
 	return id

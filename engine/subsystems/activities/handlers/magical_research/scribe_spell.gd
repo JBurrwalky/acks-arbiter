@@ -118,7 +118,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"project_kind": "spell",
 		"target_spell_key": target_spell_key,
 		"target_spell_level": target_spell_level,
-		"gp_committed": 0,
+		"cp_committed": 0,
 		"days_total": 7,
 		"days_completed": 7,
 		"target_value": 0,

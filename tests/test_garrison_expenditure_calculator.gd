@@ -6,6 +6,9 @@ extends "res://tests/test_suite_base.gd"
 ## §garrison L218 / L226-227, the morale-incentive band per §additional_troops
 ## L461-464, the wilderness <4gp/family warning per §garrison L233, and the
 ## chaotic +2gp/family adjustment per `ax_domains_of_chaos` §exceptions L86.
+##
+## 2026-05-16 cp pass: all returned amounts are cp (1 gp = 100 cp).
+## RAW gp values × 100 = cp expectations below.
 
 
 var _campaign_id: String = ""
@@ -64,9 +67,10 @@ func _wipe_units() -> void:
 		"DELETE FROM troop_units WHERE assigned_domain_id = ?", [_domain_id])
 
 
-func _add_unit(count: int, monthly_cost_gp: int, source: String = "mercenary",
-		assignment: String = "garrison", monthly_wage_gp: int = -1) -> void:
-	var wage: int = monthly_wage_gp if monthly_wage_gp >= 0 else monthly_cost_gp
+## All amounts (monthly_cost_cp, monthly_wage_cp) are cp.
+func _add_unit(count: int, monthly_cost_cp: int, source: String = "mercenary",
+		assignment: String = "garrison", monthly_wage_cp: int = -1) -> void:
+	var wage_cp: int = monthly_wage_cp if monthly_wage_cp >= 0 else monthly_cost_cp
 	TroopUnitRepository.create_unit({
 		"campaign_id": _campaign_id,
 		"owner_character_id": _ruler_id,
@@ -75,9 +79,9 @@ func _add_unit(count: int, monthly_cost_gp: int, source: String = "mercenary",
 		"troop_type": "Test Troop",
 		"count": count,
 		"starting_count": count,
-		"monthly_wage_gp": wage,
-		"monthly_supply_gp": 0,
-		"monthly_cost_gp": monthly_cost_gp,
+		"monthly_wage_cp": wage_cp,
+		"monthly_supply_cp": 0,
+		"monthly_cost_cp": monthly_cost_cp,
 		"battle_rating": 0.01 * count,
 		"morale": 0,
 		"assignment_kind": assignment,
@@ -88,27 +92,29 @@ func test_empty_domain_meets_minimum_with_zero() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(false)
 	_wipe_units()
-	# 100 peasants; minimum_total = 200gp. With no troops, total_value=0 < 200, fails.
+	# 100 peasants; minimum_total = 200 gp × 100 = 20,000 cp.
+	# No troops → total_value=0 < 20,000, fails.
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(int(summary["minimum_total_gp"]) == 200,
-		"100 peasants × 2gp/fam = 200, got %s" % str(summary["minimum_total_gp"]))
+	check(int(summary["minimum_total_cp"]) == 20_000,
+		"100 peasants × 200 cp/fam = 20,000 cp, got %s" % str(summary["minimum_total_cp"]))
 	check(not bool(summary["meets_minimum"]),
-		"empty domain should NOT meet 200gp minimum")
+		"empty domain should NOT meet 20,000 cp minimum")
 	check(int(summary["gp_below_minimum_per_family"]) == 2,
-		"should be 2gp/fam below minimum, got %s" % str(summary["gp_below_minimum_per_family"]))
+		"should be 2 gp/fam below minimum, got %s" % str(summary["gp_below_minimum_per_family"]))
 
 
 func test_below_minimum_flag() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(false)
 	_wipe_units()
-	_add_unit(50, 100)  # 100gp/month for 100 peasants = 1gp/fam
+	# 100 cp/month for 100 peasants = 1 cp/fam (way below minimum).
+	_add_unit(50, 10_000)  # 100 gp = 10,000 cp; 100 cp/fam = 1 gp/fam
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(int(summary["gp_per_family_value"]) == 1,
-		"100gp / 100 peasants = 1gp/fam, got %s" % str(summary["gp_per_family_value"]))
-	check(not bool(summary["meets_minimum"]), "1gp/fam < 2gp/fam minimum")
+	check(int(summary["cp_per_family_value"]) == 100,
+		"10,000 cp / 100 peasants = 100 cp/fam (= 1 gp/fam), got %s" % str(summary["cp_per_family_value"]))
+	check(not bool(summary["meets_minimum"]), "1 gp/fam < 2 gp/fam minimum")
 	check(int(summary["gp_below_minimum_per_family"]) == 1,
-		"1gp below minimum")
+		"1 gp below minimum")
 	check(int(summary["morale_incentive_bonus"]) == 0, "below minimum → no incentive")
 
 
@@ -116,70 +122,70 @@ func test_minimum_met_no_incentive() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(false)
 	_wipe_units()
-	_add_unit(50, 200)  # 2gp/fam exact
+	_add_unit(50, 20_000)  # 200 cp/fam = 2 gp/fam exact
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(bool(summary["meets_minimum"]), "exactly 2gp/fam meets minimum")
+	check(bool(summary["meets_minimum"]), "exactly 2 gp/fam meets minimum")
 	check(int(summary["gp_below_minimum_per_family"]) == 0, "no shortfall")
 	check(int(summary["morale_incentive_bonus"]) == 0,
-		"2gp/fam = minimum, no incentive bonus per §additional_troops L462")
+		"2 gp/fam = minimum, no incentive bonus per §additional_troops L462")
 
 
 func test_borderlands_incentive_plus1_at_3gp() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(false)
 	_wipe_units()
-	_add_unit(60, 300)  # 3gp/fam → +1 in Borderlands
+	_add_unit(60, 30_000)  # 300 cp/fam = 3 gp/fam → +1 in Borderlands
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(int(summary["gp_per_family_value"]) == 3, "3gp/fam expected")
+	check(int(summary["cp_per_family_value"]) == 300, "300 cp/fam expected")
 	check(int(summary["morale_incentive_bonus"]) == 1,
-		"Borderlands +1 at 3gp/fam, got %s" % str(summary["morale_incentive_bonus"]))
+		"Borderlands +1 at 3 gp/fam, got %s" % str(summary["morale_incentive_bonus"]))
 
 
 func test_wilderness_incentive_plus1_at_3gp() -> void:
 	_set_classification("wilderness")
 	_set_chaotic(false)
 	_wipe_units()
-	_add_unit(60, 300)
+	_add_unit(60, 30_000)  # 300 cp/fam = 3 gp/fam
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
 	check(int(summary["morale_incentive_bonus"]) == 1,
-		"Wilderness +1 at 3gp/fam (1gp above minimum)")
-	check(bool(summary["wilderness_under_4gp"]), "3gp < 4gp wilderness threshold")
+		"Wilderness +1 at 3 gp/fam (1 gp above minimum)")
+	check(bool(summary["wilderness_under_4gp"]), "3 gp < 4 gp wilderness threshold")
 
 
 func test_wilderness_incentive_plus2_at_4gp() -> void:
 	_set_classification("wilderness")
 	_set_chaotic(false)
 	_wipe_units()
-	_add_unit(80, 400)  # 4gp/fam
+	_add_unit(80, 40_000)  # 400 cp/fam = 4 gp/fam
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
 	check(int(summary["morale_incentive_bonus"]) == 2,
-		"Wilderness +2 at 4gp/fam (2gp above 2gp baseline), got %s" % str(summary["morale_incentive_bonus"]))
+		"Wilderness +2 at 4 gp/fam (2 gp above 2 gp baseline), got %s" % str(summary["morale_incentive_bonus"]))
 	check(not bool(summary["wilderness_under_4gp"]),
-		"4gp/fam meets the wilderness 4gp reference; warning should clear")
+		"4 gp/fam meets the wilderness 4 gp reference; warning should clear")
 
 
 func test_chaotic_offset_increases_minimum() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(true)
 	_wipe_units()
-	# 100 peasants × (2 + 2) chaotic = 400 minimum.
+	# 100 peasants × (200 + 200 chaotic) cp = 40,000 minimum.
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(int(summary["minimum_total_gp"]) == 400,
-		"chaotic borderlands: 100 × 4gp/fam = 400, got %s" % str(summary["minimum_total_gp"]))
-	check(int(summary["chaotic_offset_per_family"]) == 2,
-		"chaotic offset surfaced in result")
+	check(int(summary["minimum_total_cp"]) == 40_000,
+		"chaotic borderlands: 100 × 400 cp/fam = 40,000, got %s" % str(summary["minimum_total_cp"]))
+	check(int(summary["chaotic_offset_per_family_cp"]) == 200,
+		"chaotic offset of 200 cp/fam surfaced in result")
 
 
 func test_unpaid_followers_count_by_gp_value() -> void:
 	_set_classification("borderlands")
 	_set_chaotic(false)
 	_wipe_units()
-	# Faithful follower-source unit with monthly_cost_gp=0 (wages_required=false in
-	# template) but monthly_wage_gp=300 of by-gp-value; should count.
-	_add_unit(50, 0, "follower", "garrison", 300)
+	# Faithful follower-source unit with monthly_cost_cp=0 (wages_required=false in
+	# template) but monthly_wage_cp=30,000 of by-cp-value; should count toward total.
+	_add_unit(50, 0, "follower", "garrison", 30_000)
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
-	check(int(summary["unpaid_value_gp"]) == 300,
-		"unpaid faithful counts 300gp by gp value, got %s" % str(summary["unpaid_value_gp"]))
-	check(int(summary["total_value_gp"]) == 300, "unpaid faithful contributes to total")
+	check(int(summary["unpaid_value_cp"]) == 30_000,
+		"unpaid faithful counts 30,000 cp by cp value, got %s" % str(summary["unpaid_value_cp"]))
+	check(int(summary["total_value_cp"]) == 30_000, "unpaid faithful contributes to total")
 	check(bool(summary["meets_minimum"]),
-		"300 ≥ 200 minimum even though paid=0 (faithful counts by gp value)")
+		"30,000 ≥ 20,000 minimum even though paid=0 (faithful counts by cp value)")

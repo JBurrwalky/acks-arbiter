@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "category": "syndicate",
+    "source": "rules/ax_campaign_play.xml §syndicate L1127-1252; rules/acore-campaign-hijinks.xml §hijinks L48-237 + §getting_caught L240-410",
+    "schema_version": 1,
+    "phase": "10B.3",
+    "notes": "Eight activities. The six per-hijink kinds (assassinating / carousing / smuggling / spying / stealing / treasure_hunting) are exposed via the single perform_hijink activity with `hijink_kind` in params — RAW collapses them under one activity id per §perform_hijink L1235-1251 (singular major for plannable kinds at 1 day; ongoing major for carousing/spying/treasure_hunting at 3d6+10 days). plan_hijink + lay_low are Ongoing 2d8+3 days; their exact duration is rolled at launch and revealed on completion (RAW: 'the perpetrator does not know how long laying low will take until it is completed'). bribe_magistrate / hire_attorney / interplead are Singular minor side activities resolved instantly. await_trial is Ongoing with by_crime duration (rolled per crime_type at arrest)."
+  },
+  "activities": [
+    {
+      "id": "order_hijink",
+      "category": "syndicate",
+      "frequency": "singular",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_stronghold",
+      "prerequisites": ["is_syndicate_boss"],
+      "remote_capable": false,
+      "param_schema": {
+        "syndicate_id": "string (syndicates.id)",
+        "syndicate_member_id": "string (syndicate_members.id being assigned)",
+        "hijink_kind": "string (assassinating / carousing / smuggling / spying / stealing / treasure_hunting)",
+        "target_id": "string (optional — for assassinating: characters.id of victim; otherwise empty)"
+      },
+      "effect_summary": "Creates a hijink_assignments row (planning_state='unplanned', status='queued') and links it to the named member. Activity level downgrades from major to minor when the boss assigns ≤ 1/6 of syndicate membership in one tick per RAW L1212.",
+      "raw_citation": "ax_campaign_play.xml §order_hijink L1202-1215"
+    },
+    {
+      "id": "plan_hijink",
+      "category": "syndicate",
+      "frequency": "ongoing",
+      "activity_level": "minor",
+      "strenuous": false,
+      "duration_formula": "plan_hijink_duration",
+      "default_ticks_required": 8,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_stronghold",
+      "prerequisites": ["has_appropriate_thief_skill", "has_assigned_hijink"],
+      "remote_capable": false,
+      "param_schema": {
+        "hijink_assignment_id": "string (hijink_assignments.id with planning_state='unplanned'|'planning')"
+      },
+      "effect_summary": "Ongoing planning over 2d8+3 days (L1-4) / 2d6+3 (L5-8) / 2d4+3 (L9+). Advances hijink_assignments.planning_days_completed by 1 per day. Flips planning_state to 'planned' when complete. Required for arson / assassination / infiltration / sabotage / smuggling / subversion / stealing per RAW L1225; carousing / spying / treasure_hunting do not benefit from planning. Player does not see planning_days_required until completion (RAW L1228).",
+      "raw_citation": "ax_campaign_play.xml §plan_hijink L1217-1233"
+    },
+    {
+      "id": "perform_hijink",
+      "category": "syndicate",
+      "frequency": "singular_or_ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "perform_hijink_duration",
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_settlement",
+      "prerequisites": ["has_appropriate_thief_skill", "has_assigned_hijink", "not_laying_low_at_base"],
+      "remote_capable": false,
+      "param_schema": {
+        "hijink_assignment_id": "string (hijink_assignments.id)"
+      },
+      "effect_summary": "Dispatches to the per-hijink handler module by hijink_kind. Plannable kinds (assassinating / smuggling / stealing) resolve in 1 day; ongoing kinds (carousing / spying / treasure_hunting) take 3d6+10 days (L1-4) / 3d4+8 (L5-8) / 2d6+5 (L9+). Throw is made on completion. On success: cp_yield credited to syndicate boss treasury. On fail-by-14 or natural 1: caught_perpetrators row created + lay_low requirement set if applicable.",
+      "raw_citation": "ax_campaign_play.xml §perform_hijink L1235-1251; acore-campaign-hijinks.xml §hijinks L48-237"
+    },
+    {
+      "id": "lay_low",
+      "category": "syndicate",
+      "frequency": "ongoing",
+      "activity_level": "minor",
+      "strenuous": false,
+      "duration_formula": "lay_low_duration",
+      "default_ticks_required": 8,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_stronghold",
+      "prerequisites": ["caught_in_prior_hijink_at_this_base"],
+      "remote_capable": false,
+      "param_schema": {
+        "base_id": "string (stronghold:<id> or settlement_entrance:<id>)"
+      },
+      "effect_summary": "Ongoing 2d8+3 days. Inserts/refreshes lay_low_state(character_id, base_id, ends_day). While active, the character may not plan or perform hijinks in this base (operating in OTHER bases remains allowed per RAW L1196). If skipped, the next hijink in this base is caught on fail-by-11 or unmodified 1-3 per RAW L1198.",
+      "raw_citation": "ax_campaign_play.xml §lay_low L1188-1200"
+    },
+    {
+      "id": "await_trial",
+      "category": "syndicate",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": true,
+      "duration_formula": "await_trial_duration",
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["is_jailed"],
+      "remote_capable": false,
+      "param_schema": {
+        "caught_perpetrator_id": "string (caught_perpetrators.id with verdict IS NULL)"
+      },
+      "effect_summary": "Ongoing for caught_perpetrators.time_languishing_days (rolled at arrest per crime_type per RAW §await_trial L1138-1148). Character is unable to perform other activities. May plead guilty to immediately complete trial and accept the lesser punishment (RAW L1137). On completion: Crime & Punishment resolver fires.",
+      "raw_citation": "ax_campaign_play.xml §await_trial L1128-1149"
+    },
+    {
+      "id": "bribe_magistrate",
+      "category": "syndicate",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["has_bribery_proficiency", "has_caught_perpetrator_awaiting_trial"],
+      "remote_capable": false,
+      "param_schema": {
+        "caught_perpetrator_id": "string (caught_perpetrators.id with verdict IS NULL)",
+        "bonus": "int (+1, +2, or +3)"
+      },
+      "effect_summary": "Records bribe_amount_cp on the caught_perpetrators row: +1 = 5000cp (50gp), +2 = 35000cp (350gp), +3 = 150000cp (1500gp). Amount is debited from the bribing character's wallet (or syndicate boss treasury — application-level decision). Modifier applied additively at trial.",
+      "raw_citation": "ax_campaign_play.xml §bribe_magistrate L1151-1162; acore-campaign-hijinks.xml §bribery L279-286"
+    },
+    {
+      "id": "hire_attorney",
+      "category": "syndicate",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["has_caught_perpetrator_awaiting_trial"],
+      "remote_capable": false,
+      "param_schema": {
+        "caught_perpetrator_id": "string (caught_perpetrators.id with verdict IS NULL)",
+        "rank": "int (1, 2, or 3)"
+      },
+      "effect_summary": "Sets caught_perpetrators.attorney_rank to the hired rank. Fee debited from wallet: rank 1 = 2500cp (25gp), rank 2 = 5000cp (50gp), rank 3 = 10000cp (100gp). May be hired for self (if perpetrator has wallet) or by another character on the perpetrator's behalf.",
+      "raw_citation": "ax_campaign_play.xml §hire_attorney L1164-1173; acore-campaign-hijinks.xml §attorney L269-277"
+    },
+    {
+      "id": "interplead",
+      "category": "syndicate",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "in_domain",
+      "prerequisites": ["is_domain_ruler_where_caught", "has_caught_perpetrator_awaiting_trial"],
+      "remote_capable": false,
+      "param_schema": {
+        "caught_perpetrator_id": "string (caught_perpetrators.id with verdict IS NULL)"
+      },
+      "effect_summary": "Sets caught_perpetrators.interpleader_id. At trial: adds the interpleader's CHA modifier + 2 if they have Diplomacy / Intimidation / Mystic Aura. Special case: if the interpleader controls the domain where the crime occurred, they may issue a decree freeing the perpetrator without trial — handled by issue_decree, not this activity.",
+      "raw_citation": "ax_campaign_play.xml §interplead L1175-1186; acore-campaign-hijinks.xml §interpleader L293-298"
+    }
+  ]
+}

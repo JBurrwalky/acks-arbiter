@@ -36,11 +36,12 @@ func test_class_rarity_lookup() -> void:
 
 
 func test_monthly_wage_table() -> void:
-	check(HenchmanTables.monthly_wage(0) == 12, "level 0 = 12gp")
-	check(HenchmanTables.monthly_wage(1) == 25, "level 1 = 25gp")
-	check(HenchmanTables.monthly_wage(4) == 200, "level 4 = 200gp")
-	check(HenchmanTables.monthly_wage(9) == 7250, "level 9 = 7250gp")
-	check(HenchmanTables.monthly_wage(14) == 350000, "level 14 = 350000gp")
+	# 2026-05-16 cp pass: wages stored in cp (RAW gp × 100).
+	check(HenchmanTables.monthly_wage(0) == 1200, "level 0 = 1200 cp (= 12 gp)")
+	check(HenchmanTables.monthly_wage(1) == 2500, "level 1 = 2500 cp (= 25 gp)")
+	check(HenchmanTables.monthly_wage(4) == 20000, "level 4 = 20000 cp (= 200 gp)")
+	check(HenchmanTables.monthly_wage(9) == 725000, "level 9 = 725000 cp (= 7250 gp)")
+	check(HenchmanTables.monthly_wage(14) == 35000000, "level 14 = 35000000 cp (= 350000 gp)")
 
 
 func test_max_henchmen_calc() -> void:

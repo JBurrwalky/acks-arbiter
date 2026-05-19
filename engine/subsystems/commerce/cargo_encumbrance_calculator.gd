@@ -114,7 +114,7 @@ static func _sum_inventory_stone_for_vehicle(draft_vehicle_id: String) -> int:
 		return 0
 	var total_eu: int = int(CampaignRepository.db.query_result[0].get("total_eu", 0))
 	# encumbrance_units → stone via /1000 with banker rounding (per CLAUDE.md).
-	return _bankers_round(float(total_eu) / float(ENCUMBRANCE_UNITS_PER_STONE))
+	return XPAwardCalculator.bankers_round(float(total_eu) / float(ENCUMBRANCE_UNITS_PER_STONE))
 
 
 static func _sum_cargo_stone_for_draft_vehicle(draft_vehicle_id: String) -> int:
@@ -187,11 +187,5 @@ static func _resolve_hitched_team(hitched_json: String) -> Array:
 # Banker rounding (CLAUDE.md core principle)
 # ---------------------------------------------------------------------------
 
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var frac: float = value - float(floor_val)
-	if absf(frac - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

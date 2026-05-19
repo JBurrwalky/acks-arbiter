@@ -64,16 +64,18 @@ func test_total_count_31() -> void:
 # ---------------------------------------------------------------------------
 
 func test_spot_check_base_prices() -> void:
-	check(MerchandiseRegistry.base_price_gp("grain_vegetables") == 10,
-		"grain_vegetables base price should be 10 gp (RAW common merchandise table)")
-	check(MerchandiseRegistry.base_price_gp("silk") == 2000,
-		"silk base price should be 2000 gp")
-	check(MerchandiseRegistry.base_price_gp("gems") == 3000,
-		"gems base price should be 3000 gp")
-	check(MerchandiseRegistry.base_price_gp("salt") == 100,
-		"salt base price should be 100 gp")
-	check(MerchandiseRegistry.base_price_gp("monster_parts") == 300,
-		"monster_parts base price should be 300 gp")
+	# Registry returns cp per the 2026-05-15 currency-precision pass.
+	# RAW prices in gp × 100 = cp values.
+	check(MerchandiseRegistry.base_price_cp("grain_vegetables") == 1000,
+		"grain_vegetables base price should be 1000 cp (= 10 gp; RAW common merchandise table)")
+	check(MerchandiseRegistry.base_price_cp("silk") == 200000,
+		"silk base price should be 200,000 cp (= 2000 gp)")
+	check(MerchandiseRegistry.base_price_cp("gems") == 300000,
+		"gems base price should be 300,000 cp (= 3000 gp)")
+	check(MerchandiseRegistry.base_price_cp("salt") == 10000,
+		"salt base price should be 10,000 cp (= 100 gp)")
+	check(MerchandiseRegistry.base_price_cp("monster_parts") == 30000,
+		"monster_parts base price should be 30,000 cp (= 300 gp)")
 
 
 # ---------------------------------------------------------------------------
@@ -96,12 +98,12 @@ func test_spot_check_load_weights() -> void:
 # ---------------------------------------------------------------------------
 
 func test_dispatcher_rows_return_zero() -> void:
-	check(MerchandiseRegistry.base_price_gp("animals") == 0,
-		"animals dispatcher should return base_price_gp == 0 (sentinel)")
+	check(MerchandiseRegistry.base_price_cp("animals") == 0,
+		"animals dispatcher should return base_price_cp == 0 (sentinel)")
 	check(MerchandiseRegistry.load_weight_stone("animals") == 0,
 		"animals dispatcher should return load_weight_stone == 0 (sentinel)")
-	check(MerchandiseRegistry.base_price_gp("mounts") == 0,
-		"mounts dispatcher should return base_price_gp == 0 (sentinel)")
+	check(MerchandiseRegistry.base_price_cp("mounts") == 0,
+		"mounts dispatcher should return base_price_cp == 0 (sentinel)")
 	check(MerchandiseRegistry.load_weight_stone("mounts") == 0,
 		"mounts dispatcher should return load_weight_stone == 0 (sentinel)")
 

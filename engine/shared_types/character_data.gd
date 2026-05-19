@@ -88,7 +88,7 @@ var is_incapacitated: bool = false
 ## Henchman fields (empty/"" for PCs and NPCs)
 var employer_id: String = ""
 var loyalty_score: int = 0
-var wage_gp_per_month: int = 0
+var wage_cp_per_month: int = 0
 
 ## Runtime-only spell/effect state — NOT persisted; rebuilt from active_effects on load.
 var modifiers: ModifierContainer = ModifierContainer.new()
@@ -485,7 +485,7 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.is_incapacitated = data.get("is_incapacitated", 0) == 1
 	c.employer_id = data.get("employer_id", "")
 	c.loyalty_score = data.get("loyalty_score", 0)
-	c.wage_gp_per_month = data.get("wage_gp_per_month", 0)
+	c.wage_cp_per_month = data.get("wage_cp_per_month", 0)
 	return c
 
 
@@ -538,5 +538,5 @@ func to_dict() -> Dictionary:
 		"is_incapacitated": 1 if is_incapacitated else 0,
 		"employer_id": employer_id,
 		"loyalty_score": loyalty_score,
-		"wage_gp_per_month": wage_gp_per_month,
+		"wage_cp_per_month": wage_cp_per_month,
 	}

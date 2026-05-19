@@ -30,7 +30,7 @@ const _ARMY_UPDATE_FIELDS := [
 const _OFFICER_UPDATE_FIELDS := [
 	"rank", "parent_officer_id",
 	"leadership_ability", "strategic_ability", "morale_modifier",
-	"derivation_source", "monthly_wage_gp",
+	"derivation_source", "monthly_wage_cp",
 	"appointed_calendar_day", "removed_calendar_day",
 ]
 
@@ -42,7 +42,7 @@ const _ASSIGNMENT_UPDATE_FIELDS := [
 
 const _SUPPLY_UPDATE_FIELDS := [
 	"supply_base_stronghold_id", "supply_line_status",
-	"weekly_supply_cost_gp", "current_stockpile_gp",
+	"weekly_supply_cost_cp", "current_stockpile_cp",
 	"supply_line_weighted_hexes", "last_supply_check_calendar_day",
 	"consecutive_unsupplied_weeks",
 	"requisition_cooldowns_json", "partial_supply_priority_json",
@@ -179,7 +179,7 @@ static func create_officer(data: Dictionary) -> String:
 		INSERT INTO army_officers
 			(id, army_id, character_id, rank, parent_officer_id,
 			 leadership_ability, strategic_ability, morale_modifier,
-			 derivation_source, monthly_wage_gp,
+			 derivation_source, monthly_wage_cp,
 			 appointed_calendar_day, removed_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
@@ -192,7 +192,7 @@ static func create_officer(data: Dictionary) -> String:
 		int(data.get("strategic_ability", 0)),
 		int(data.get("morale_modifier", 0)),
 		String(data.get("derivation_source", "pc")),
-		int(data.get("monthly_wage_gp", 0)),
+		int(data.get("monthly_wage_cp", 0)),
 		int(data.get("appointed_calendar_day", 0)),
 		int(data.get("removed_calendar_day", 0)),
 	]):
@@ -349,7 +349,7 @@ static func create_supply_state(data: Dictionary) -> bool:
 	if not CampaignRepository.db.query_with_bindings("""
 		INSERT INTO army_supply_state
 			(army_id, supply_base_stronghold_id, supply_line_status,
-			 weekly_supply_cost_gp, current_stockpile_gp,
+			 weekly_supply_cost_cp, current_stockpile_cp,
 			 supply_line_weighted_hexes, last_supply_check_calendar_day,
 			 consecutive_unsupplied_weeks,
 			 requisition_cooldowns_json, partial_supply_priority_json)
@@ -358,8 +358,8 @@ static func create_supply_state(data: Dictionary) -> bool:
 		army_id,
 		_null_or_string(data.get("supply_base_stronghold_id", null)),
 		String(data.get("supply_line_status", "out_of_supply_no_base")),
-		int(data.get("weekly_supply_cost_gp", 0)),
-		int(data.get("current_stockpile_gp", 0)),
+		int(data.get("weekly_supply_cost_cp", 0)),
+		int(data.get("current_stockpile_cp", 0)),
 		int(data.get("supply_line_weighted_hexes", 0)),
 		int(data.get("last_supply_check_calendar_day", 0)),
 		int(data.get("consecutive_unsupplied_weeks", 0)),

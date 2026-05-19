@@ -150,7 +150,7 @@ func get_effective_movement() -> int:
 	var base := get_base_movement()
 	if is_overloaded():
 		# Banker's rounding: round half to even
-		return _bankers_round(base / 2.0)
+		return XPAwardCalculator.bankers_round(base / 2.0)
 	return base
 
 
@@ -175,13 +175,13 @@ func get_carrying_capacity_max() -> int:
 func get_effective_capacity_normal() -> int:
 	var base := get_carrying_capacity_normal()
 	var mult := get_load_multiplier()
-	return _bankers_round(base * mult)
+	return XPAwardCalculator.bankers_round(base * mult)
 
 
 func get_effective_capacity_max() -> int:
 	var base := get_carrying_capacity_max()
 	var mult := get_load_multiplier()
-	return _bankers_round(base * mult)
+	return XPAwardCalculator.bankers_round(base * mult)
 
 
 func get_current_load_units() -> int:
@@ -210,7 +210,7 @@ func get_current_load_units() -> int:
 
 
 func get_current_load_stone() -> int:
-	return _bankers_round(get_current_load_units() / 1000.0)
+	return XPAwardCalculator.bankers_round(get_current_load_units() / 1000.0)
 
 
 func is_overloaded() -> bool:
@@ -345,13 +345,6 @@ static func _str_or_empty(value) -> String:
 	return str(value)
 
 
-static func _bankers_round(value: float) -> int:
-	var floor_val := int(value)
-	var frac := value - floor_val
-	if is_equal_approx(frac, 0.5):
-		# Round half to even
-		if floor_val % 2 == 0:
-			return floor_val
-		else:
-			return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep. Previous private static here was an
+# identical-semantics duplicate of the canonical helper.

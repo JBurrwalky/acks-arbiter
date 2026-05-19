@@ -568,18 +568,26 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	if _domain_handlers != null:
 		_domain_handlers.unregister(_handler_registry)
 		_domain_handlers = null
-	var domains: Array = CampaignRepository.list_campaign_domains(campaign_id)
-	if not domains.is_empty():
-		_domain_handlers = DomainHandlers.new(self)
-		_domain_handlers.register(_handler_registry)
-		# Only seed the monthly tick if one isn't already in the restored queue.
-		var has_domain_tick := false
-		for ev in _scheduler.get_all_events():
-			if ev.event_type == "domain_monthly_tick":
-				has_domain_tick = true
-				break
-		if not has_domain_tick:
-			_domain_handlers.seed_monthly_tick(_scheduler, party_id)
+	# Phase 10B.2 Wave 5: always register DomainHandlers + seed monthly tick.
+	# Previously the tick only fired when domains existed; commerce monthly
+	# drivers (ship operating costs, merchant pool refresh, customs roll,
+	# market price drift) need to fire on every campaign regardless of
+	# domain presence. DomainHandlers._handle_monthly_tick now degenerates
+	# gracefully to commerce-only when domains.is_empty().
+	_domain_handlers = DomainHandlers.new(self)
+	_domain_handlers.register(_handler_registry)
+	var has_domain_tick := false
+	for ev in _scheduler.get_all_events():
+		if ev.event_type == "domain_monthly_tick":
+			has_domain_tick = true
+			break
+	if not has_domain_tick:
+		_domain_handlers.seed_monthly_tick(_scheduler, party_id)
+
+	# Phase 10B.2 Wave 5: trade-route full-sweep on load (idempotent — only
+	# runs once-ever per campaign, short-circuits if trade_routes already
+	# populated). Closes [NEEDS-CAMPAIGN-LOAD-WIRING] from Wave 1.
+	TradeRouteTriggerHandlers.full_sweep_for_campaign(campaign_id)
 
 	# 7b. Register the global wilderness day-tick handler (Phase 3, 2026-05-04).
 	#     Same pattern as domain handlers: registered at session load, owned
@@ -660,6 +668,15 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# Phase 10B.1a: magical_research-category handlers (shell — no handlers in
 	# 10B.1a; populated in 10B.1b-f).
 	MagicalResearchActivityHandlersRegistration.register_all(_activity_handler_registry)
+	# Phase 10B.2 Wave 2: mercantile-category activity handlers (Trade block).
+	# Wave 2 ships buy/sell as real; persuade/solicit/locate/accept_shipping_contract
+	# are stubs replaced in Waves 10B.2.3 + 10B.2.4.
+	MercantileActivityHandlersRegistration.register_all(_activity_handler_registry)
+	# Phase 10B.3 UI polish wave: syndicate-category activity handlers
+	# (Hijinks). All 8 launchers wired; perform_hijink dispatches to the
+	# 6 per-kind handlers (assassinating/carousing/smuggling/spying/
+	# stealing/treasure_hunting) shipped in the Phase 10B.3 main wave.
+	SyndicateActivityHandlersRegistration.register_all(_activity_handler_registry)
 	_activity_executor = ActivityTimeCostExecutor.new(
 		self, _activity_catalog, _activity_handler_registry)
 	_activity_executor.register(_handler_registry)

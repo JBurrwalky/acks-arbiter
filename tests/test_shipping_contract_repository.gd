@@ -91,7 +91,7 @@ func test_accept_contract_creates_row() -> void:
 	check(str(contract.get("destination_settlement_id", "")) == _dest_id, "destination set")
 	check(str(contract.get("merchandise_type", "")) == "silk", "merchandise_type set")
 	check(int(contract.get("loads_count", 0)) == 5, "loads_count = 5")
-	check(int(contract.get("fee_gp", 0)) == 500, "fee_gp = 500")
+	check(int(contract.get("fee_cp", 0)) == 500, "fee_cp = 500")
 	check(int(contract.get("deadline_calendar_day", 0)) == 100, "deadline = 100")
 	check(str(contract.get("status", "")) == "accepted", "status = 'accepted'")
 	check(int(contract.get("accepted_at_calendar_day", 0)) == 10, "accepted_at = 10")
@@ -110,7 +110,7 @@ func test_accept_contract_emits_signal() -> void:
 	check(bool(received["emitted"]), "shipping_contract_accepted fires")
 	check(str(received["contract_id"]) == cid, "signal payload contract_id matches")
 	check(str(received["party_id"]) == _party_id, "signal payload party_id matches")
-	check(int(received["fee"]) == 750, "signal payload fee = 750")
+	check(int(received["fee"]) == 750, "signal payload fee = 750 cp")
 
 
 # ---------------------------------------------------------------------------
@@ -136,9 +136,9 @@ func test_mark_in_transit_rejects_non_accepted() -> void:
 # ---------------------------------------------------------------------------
 
 func test_deliver_on_time_credits_fee_and_deletes_cargo() -> void:
-	# Seed: contract with fee 1000 gp, deadline day 100, delivered on day 50.
-	# Spawn the linked cargo_hold row.
-	var cid: String = _accept_default(100, 1000)
+	# Seed: contract with fee 100,000 cp (= 1000 gp), deadline day 100,
+	# delivered on day 50. Spawn the linked cargo_hold row.
+	var cid: String = _accept_default(100, 100000)
 	# Need a carrier (draft_vehicle) to host the cargo.
 	var vid: String = "%s_wagon" % _next_id()
 	CampaignRepository.db.query_with_bindings("""
@@ -153,12 +153,12 @@ func test_deliver_on_time_credits_fee_and_deletes_cargo() -> void:
 	var wealth_before: int = CampaignRepository.get_character_wealth_cp(_pc_id)
 	var result: Dictionary = ShippingContractRepository.deliver(cid, 50)
 	check(bool(result.get("success", false)), "on-time deliver returns success=true")
-	check(int(result.get("fee_paid_gp", 0)) == 1000, "fee_paid_gp = 1000")
+	check(int(result.get("fee_paid_cp", 0)) == 100000, "fee_paid_cp = 100,000")
 	check(not bool(result.get("deadline_missed", true)), "deadline_missed = false")
-	# Wealth credited by 1000 gp = 100000 cp.
+	# Wealth credited by 100,000 cp.
 	var wealth_after: int = CampaignRepository.get_character_wealth_cp(_pc_id)
 	check(wealth_after - wealth_before == 100000,
-		"PC wealth increased by 100000 cp, got delta %d" % (wealth_after - wealth_before))
+		"PC wealth increased by 100,000 cp, got delta %d" % (wealth_after - wealth_before))
 	# Status updated.
 	check(str(ShippingContractRepository.get_contract(cid).get("status", "")) == "delivered",
 		"status = 'delivered'")
@@ -168,7 +168,7 @@ func test_deliver_on_time_credits_fee_and_deletes_cargo() -> void:
 
 
 func test_deliver_after_deadline_pays_nothing() -> void:
-	var cid: String = _accept_default(20, 1000)  # deadline day 20
+	var cid: String = _accept_default(20, 100000)  # deadline day 20; fee 100,000 cp
 	# Spawn linked cargo.
 	var vid: String = "%s_wagon_late" % _next_id()
 	CampaignRepository.db.query_with_bindings("""
@@ -181,7 +181,7 @@ func test_deliver_after_deadline_pays_nothing() -> void:
 	var wealth_before: int = CampaignRepository.get_character_wealth_cp(_pc_id)
 	var result: Dictionary = ShippingContractRepository.deliver(cid, 50)  # late!
 	check(bool(result.get("success", false)), "late delivery still returns success=true (function ran)")
-	check(int(result.get("fee_paid_gp", 0)) == 0, "fee_paid_gp = 0 (v1 no partial payment)")
+	check(int(result.get("fee_paid_cp", 0)) == 0, "fee_paid_cp = 0 (v1 no partial payment)")
 	check(bool(result.get("deadline_missed", false)), "deadline_missed = true")
 	# Wealth UNCHANGED.
 	var wealth_after: int = CampaignRepository.get_character_wealth_cp(_pc_id)
@@ -195,8 +195,8 @@ func test_deliver_after_deadline_pays_nothing() -> void:
 
 
 func test_deliver_emits_signal_with_correct_payload() -> void:
-	# On-time path: deadline_missed=false, fee_paid_gp = fee.
-	var cid: String = _accept_default(100, 600)
+	# On-time path: deadline_missed=false, fee_paid_cp = fee.
+	var cid: String = _accept_default(100, 60000)  # 600 gp = 60,000 cp
 	var on_time := {"emitted": false, "fee": -1, "missed": null}
 	var cb_ontime: Callable = func(c_id: String, fee: int, missed: bool) -> void:
 		if c_id == cid:
@@ -207,11 +207,11 @@ func test_deliver_emits_signal_with_correct_payload() -> void:
 	ShippingContractRepository.deliver(cid, 50)
 	EventBus.shipping_contract_delivered.disconnect(cb_ontime)
 	check(bool(on_time["emitted"]), "on-time deliver fires signal")
-	check(int(on_time["fee"]) == 600, "signal fee = 600")
+	check(int(on_time["fee"]) == 60000, "signal fee = 60,000 cp")
 	check(on_time["missed"] == false, "signal deadline_missed = false")
 
-	# Late path: deadline_missed=true, fee_paid_gp = 0.
-	var cid_late: String = _accept_default(20, 600)
+	# Late path: deadline_missed=true, fee_paid_cp = 0.
+	var cid_late: String = _accept_default(20, 60000)
 	var late := {"emitted": false, "fee": -1, "missed": null}
 	var cb_late: Callable = func(c_id: String, fee: int, missed: bool) -> void:
 		if c_id == cid_late:

@@ -55,7 +55,7 @@ func _make_unit(source: String = "mercenary", count: int = 60) -> String:
 		"count": count,
 		"starting_count": count,
 		"battle_rating": 0.5,
-		"monthly_wage_gp": 100,
+		"monthly_wage_cp": 100,
 		"monthly_supply_gp": 30,
 		"monthly_cost_gp": 130,
 		"morale": -1,

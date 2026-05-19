@@ -78,7 +78,14 @@ static func compute_percentage(
 ##       generator. Tests should always pass a seeded RNG.
 ##   current_calendar_day — if -1, reads from the active campaign row.
 ##
-## Returns dict with: gp_per_load, percentage, drift_occurred, breakdown.
+## Returns dict with: cp_per_load, percentage, drift_occurred, breakdown.
+##
+## Per the 2026-05-15 currency-precision rule: cp is the project's base
+## currency. `cp_per_load = base_price_cp × percentage / 100`. When the
+## product is exactly divisible by 100 (the common case — all RAW base
+## prices are integer gp = 100 × n cp), the result is exact integer cp.
+## When fractional (sub-gp catalog entries × non-divisible percentage),
+## banker's rounding resolves to whole cp.
 static func compute_market_price(
 		merchandise_type: String,
 		settlement_id: String,
@@ -95,8 +102,8 @@ static func compute_market_price(
 	if current_calendar_day < 0:
 		current_calendar_day = _read_current_calendar_day()
 
-	# Inputs.
-	var base_price_gp: int = MerchandiseRegistry.base_price_gp(merchandise_type)
+	# Inputs. base_price is cp-native per the 2026-05-15 catalog migration.
+	var base_price_cp: int = MerchandiseRegistry.base_price_cp(merchandise_type)
 	var demand_modifier: int = DemandModifierGenerator.get_demand_modifier(settlement_id, merchandise_type)
 	var market_class: int = _read_market_class(settlement_id)
 	var class_adj: int = class_size_adjust(market_class)
@@ -114,14 +121,22 @@ static func compute_market_price(
 
 	var percentage: int = compute_percentage(
 		dice_4d4, demand_modifier, class_adj, monopolist_favor, judge_modifier)
-	var gp_per_load: int = _bankers_round(float(base_price_gp) * float(percentage) / 100.0)
+	# base_price_cp × percentage / 100. For RAW prices (integer gp = 100×n cp)
+	# the product is always a multiple of 100, so the division is exact.
+	# Banker's-round the residue defensively in case of sub-gp catalog entries.
+	var numerator: int = base_price_cp * percentage
+	var cp_per_load: int
+	if numerator % 100 == 0:
+		cp_per_load = numerator / 100
+	else:
+		cp_per_load = XPAwardCalculator.bankers_round(float(numerator) / 100.0)
 
 	return {
-		"gp_per_load": gp_per_load,
+		"cp_per_load": cp_per_load,
 		"percentage": percentage,
 		"drift_occurred": drift_occurred,
 		"breakdown": {
-			"base_price_gp": base_price_gp,
+			"base_price_cp": base_price_cp,
 			"dice_4d4": dice_4d4,
 			"demand_modifier": demand_modifier,
 			"class_size_adjust": class_adj,
@@ -296,20 +311,12 @@ static func _read_current_calendar_day() -> int:
 
 static func _empty_result() -> Dictionary:
 	return {
-		"gp_per_load": 0,
+		"cp_per_load": 0,
 		"percentage": 0,
 		"drift_occurred": false,
 		"breakdown": {},
 	}
 
 
-## Banker's rounding (round half to even) per CLAUDE.md core principle.
-## GDScript's roundi() rounds half AWAY from zero — not banker's.
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var frac: float = value - float(floor_val)
-	if absf(frac - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

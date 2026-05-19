@@ -45,7 +45,7 @@ func _setup() -> void:
 			"source_type": "mercenary",
 			"troop_type": "Test Troop",
 			"count": 60, "starting_count": 60, "battle_rating": 1.5,
-			"monthly_wage_gp": 500,
+			"monthly_wage_cp": 500,
 		}))
 
 

@@ -1,0 +1,41 @@
+{
+  "_schema_version": 1,
+  "_description": "First end-to-end soft-fit test asset. Validates the fit_garment.py pipeline against the baked human_female.glb body. Authored 2026-05-18.",
+  "id": "plate_breastplate_01",
+  "display_name": "Rounded Steel Breastplate (test)",
+  "acks_item_ref": "armor_plate",
+  "category": "armor_body",
+  "slot": "armor",
+  "kit_component": "body",
+  "fit_class": "plate",
+  "fit_mode": "preserve",
+  "fit_params": {
+    "max_distance": 0.010,
+    "gamma": 2.0,
+    "offset": 0.012,
+    "target_bone": "DEF-spine.003",
+    "auto_fit_scale": true,
+    "auto_fit_clearance": 1.15
+  },
+  "hide_regions": ["chest"],
+  "compatible_bodies": ["large_human_male", "small_human_male", "human_female"],
+  "polycount_target": 2500,
+  "source": {
+    "type": "fbx",
+    "path": "C:/Users/jttau/OneDrive/Pictures/Assets/low_poly_body_armor_3923003_fbx/fbx/breastplate_rounded.fbx",
+    "scale_factor": 100.0,
+    "needs_uv_unwrap": true
+  },
+  "outputs": {
+    "human_female": "assets/characters/armor/plate_breastplate_01/human_female.glb"
+  },
+  "texture_variants": [],
+  "pipeline_state": {
+    "imported": false,
+    "decimated": false,
+    "uv_unwrapped": false,
+    "fitted_bodies": [],
+    "textures_generated": [],
+    "last_processed": null
+  }
+}

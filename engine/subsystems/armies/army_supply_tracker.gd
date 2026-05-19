@@ -5,7 +5,7 @@ extends RefCounted
 ## daw_campaigning_armies.xml §weekly_procedure L18-64. Schedules an
 ## `army_weekly_supply_check` event every 7 game-days for each active army;
 ## fires the §4.9.1 intra-tick step ordering on event resolution:
-##   1. Supply check — compute weekly_supply_cost_gp via SupplyCalculator
+##   1. Supply check — compute weekly_supply_cost_cp via SupplyCalculator
 ##      and resolve supply line status.
 ##   2. Lack-of-supply effects — apply lazily-accumulated daily penalties
 ##      (Phase 6A part 2 v1 simplification: deduct stockpile, increment
@@ -113,10 +113,10 @@ func run_supply_tick(army_id: String, calendar_day: int) -> Dictionary:
 		return {"success": false, "error": "no_supply_state"}
 
 	# Step 1: weekly supply cost.
-	var weekly_cost: int = SupplyCalculator.compute_weekly_supply_cost_gp(army_id)
+	var weekly_cost: int = SupplyCalculator.compute_weekly_supply_cost_cp(army_id)
 
 	# Step 2: deduct from stockpile; track shortfall.
-	var stockpile: int = int(supply.get("current_stockpile_gp", 0))
+	var stockpile: int = int(supply.get("current_stockpile_cp", 0))
 	var consecutive_unsupplied: int = int(supply.get("consecutive_unsupplied_weeks", 0))
 	var shortfall: int = 0
 	var new_stockpile: int = stockpile - weekly_cost
@@ -134,8 +134,8 @@ func run_supply_tick(army_id: String, calendar_day: int) -> Dictionary:
 
 	# Step 4: persist updated supply_state.
 	ArmyRepository.update_supply_state(army_id, {
-		"weekly_supply_cost_gp": weekly_cost,
-		"current_stockpile_gp": new_stockpile,
+		"weekly_supply_cost_cp": weekly_cost,
+		"current_stockpile_cp": new_stockpile,
 		"consecutive_unsupplied_weeks": consecutive_unsupplied,
 		"last_supply_check_calendar_day": calendar_day,
 	})
@@ -167,7 +167,7 @@ func run_supply_tick(army_id: String, calendar_day: int) -> Dictionary:
 	return {
 		"success": true,
 		"army_id": army_id,
-		"weekly_cost_gp": weekly_cost,
+		"weekly_cost_cp": weekly_cost,
 		"deducted": weekly_cost - shortfall,
 		"shortfall": shortfall,
 		"stockpile_after": new_stockpile,

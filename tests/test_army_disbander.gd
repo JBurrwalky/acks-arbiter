@@ -41,7 +41,7 @@ func _setup() -> void:
 
 
 func _build_army_with_units(unit_specs: Array) -> Dictionary:
-	## unit_specs: Array[Dictionary{source, monthly_wage_gp}]
+	## unit_specs: Array[Dictionary{source, monthly_wage_cp}]
 	## Returns {army_id, leader_id, unit_ids}.
 	var army_id: String = ArmyRepository.create_army({
 		"campaign_id": _campaign_id, "name": "Disband Host",
@@ -61,7 +61,7 @@ func _build_army_with_units(unit_specs: Array) -> Dictionary:
 			"source_type": String(spec.get("source", "mercenary")),
 			"troop_type": "Disband Troop",
 			"count": 30, "starting_count": 30, "battle_rating": 1.0,
-			"monthly_wage_gp": int(spec.get("monthly_wage_gp", 200)),
+			"monthly_wage_cp": int(spec.get("monthly_wage_cp", 200)),
 		})
 		ArmyRepository.create_assignment({
 			"army_id": army_id, "troop_unit_id": unit_id,
@@ -74,18 +74,18 @@ func _build_army_with_units(unit_specs: Array) -> Dictionary:
 
 func test_voluntary_pays_mercenary_severance() -> void:
 	var built := _build_army_with_units([
-		{"source": "mercenary", "monthly_wage_gp": 500},
-		{"source": "mercenary", "monthly_wage_gp": 700},
+		{"source": "mercenary", "monthly_wage_cp": 50000},
+		{"source": "mercenary", "monthly_wage_cp": 70000},
 	])
 	var result := ArmyDisbander.disband(built["army_id"], "voluntary", 200)
 	check(bool(result.get("success", false)), "voluntary disband ok")
-	check(int(result.get("mercenary_severance_gp", 0)) == 1200,
-		"severance = sum of monthly_wage_gp; got %d" % result.get("mercenary_severance_gp", 0))
+	check(int(result.get("mercenary_severance_cp", 0)) == 120000,
+		"severance = sum of monthly_wage_cp (50000 + 70000); got %d" % result.get("mercenary_severance_cp", 0))
 
 
 func test_voluntary_releases_assignments() -> void:
 	var built := _build_army_with_units([
-		{"source": "mercenary", "monthly_wage_gp": 500},
+		{"source": "mercenary", "monthly_wage_cp": 50000},
 	])
 	var result := ArmyDisbander.disband(built["army_id"], "voluntary", 200)
 	check(bool(result.get("success", false)), "voluntary disband ok")
@@ -98,8 +98,8 @@ func test_voluntary_releases_assignments() -> void:
 
 func test_annihilation_marks_units_departed() -> void:
 	var built := _build_army_with_units([
-		{"source": "mercenary", "monthly_wage_gp": 500},
-		{"source": "follower", "monthly_wage_gp": 0},
+		{"source": "mercenary", "monthly_wage_cp": 50000},
+		{"source": "follower", "monthly_wage_cp": 0},
 	])
 	var result := ArmyDisbander.disband(built["army_id"], "annihilation", 250)
 	check(bool(result.get("success", false)), "annihilation disband ok")
@@ -109,12 +109,12 @@ func test_annihilation_marks_units_departed() -> void:
 		check(String(unit.get("status", "")) == "departed", "unit %s status=departed" % unit_id)
 		check(String(unit.get("departure_kind", "")) == "annihilated", "departure_kind=annihilated")
 	# Annihilation does NOT pay mercenary severance.
-	check(int(result.get("mercenary_severance_gp", 0)) == 0, "no severance on annihilation")
+	check(int(result.get("mercenary_severance_cp", 0)) == 0, "no severance on annihilation")
 
 
 func test_double_disband_rejected() -> void:
 	var built := _build_army_with_units([
-		{"source": "mercenary", "monthly_wage_gp": 200},
+		{"source": "mercenary", "monthly_wage_cp": 20000},
 	])
 	var first := ArmyDisbander.disband(built["army_id"], "voluntary", 200)
 	check(bool(first.get("success", false)), "first disband ok")
@@ -124,7 +124,7 @@ func test_double_disband_rejected() -> void:
 
 func test_disband_battling_rejected() -> void:
 	var built := _build_army_with_units([
-		{"source": "mercenary", "monthly_wage_gp": 200},
+		{"source": "mercenary", "monthly_wage_cp": 20000},
 	])
 	# Force army into 'battling' state.
 	ArmyRepository.update_army(built["army_id"], {"state": "battling"})
@@ -133,7 +133,7 @@ func test_disband_battling_rejected() -> void:
 
 
 func test_voluntary_during_battling_rejected_with_clear_error() -> void:
-	var built := _build_army_with_units([{"source": "mercenary", "monthly_wage_gp": 200}])
+	var built := _build_army_with_units([{"source": "mercenary", "monthly_wage_cp": 20000}])
 	ArmyRepository.update_army(built["army_id"], {"state": "battling"})
 	var result := ArmyDisbander.disband(built["army_id"], "voluntary", 200)
 	var found := false
@@ -145,6 +145,6 @@ func test_voluntary_during_battling_rejected_with_clear_error() -> void:
 
 
 func test_unknown_reason_rejected() -> void:
-	var built := _build_army_with_units([{"source": "mercenary", "monthly_wage_gp": 200}])
+	var built := _build_army_with_units([{"source": "mercenary", "monthly_wage_cp": 20000}])
 	var result := ArmyDisbander.disband(built["army_id"], "wandered_off", 200)
 	check(not bool(result.get("success", true)), "unknown reason rejected")

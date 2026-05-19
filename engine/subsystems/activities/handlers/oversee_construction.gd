@@ -23,7 +23,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "other",
 			"subcategory": "oversee_construction_no_active_commission",
-			"gp_amount": 0,
+			"cp_amount": 0,
 			"description": "Oversaw construction but no active commission to bump",
 		})
 		return {
@@ -31,8 +31,8 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		}
 
 	var commission_id: String = String(commission.get("id", ""))
-	var prior_rate: int = int(commission.get("daily_construction_rate_gp", 0))
-	var new_rate: int = CommissionPipeline.bump_daily_construction_rate(
+	var prior_rate_cp: int = int(commission.get("daily_construction_rate_cp", 0))
+	var new_rate_cp: int = CommissionPipeline.bump_daily_construction_rate(
 		commission_id, RATE_BUMP_PCT)
 
 	CampaignRepository.add_ledger_entry({
@@ -40,13 +40,15 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": _calendar_day(),
 		"category": "other",
 		"subcategory": "oversee_construction_completed",
-		"gp_amount": 0,
-		"description": "Construction overseen: rate %d → %d gp/day (+%d%%)" % [
-			prior_rate, new_rate, RATE_BUMP_PCT,
+		"cp_amount": 0,
+		"description": "Construction overseen: rate %s → %s/day (+%d%%)" % [
+			Currency.format_cost(prior_rate_cp), Currency.format_cost(new_rate_cp), RATE_BUMP_PCT,
 		],
 	})
 	return {
-		"summary": "Construction rate bumped %d → %d gp/day" % [prior_rate, new_rate],
+		"summary": "Construction rate bumped %s → %s/day" % [
+			Currency.format_cost(prior_rate_cp), Currency.format_cost(new_rate_cp),
+		],
 	}
 
 

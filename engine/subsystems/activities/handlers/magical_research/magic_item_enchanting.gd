@@ -238,23 +238,26 @@ static func validate_workshop(
 		return "workshop not owned by caster"
 	if String(workshop_row.get("status", "")) != "operational":
 		return "workshop not operational (status=%s)" % workshop_row.get("status", "")
-	# Workshops gate by max_item_value_supported_gp. v1 simplification: the
-	# workshop must have value at least equal to the base RAW workshop
-	# minimum for the spell level (4,000gp for L1 + 2,000gp per additional
-	# level per RAW L180-181).
-	var required_gp: int = _workshop_min_gp_for_level(_effective_spell_level(effect_kind, spell_level))
-	var supported_gp: int = int(workshop_row.get("max_item_value_supported_gp", 0))
-	# v1: if max_item_value_supported_gp isn't set, fall back to gp_invested
-	# vs. the minimum. gp_invested >= required_gp ⇒ workshop supports it.
-	var invested_gp: int = int(workshop_row.get("gp_invested", 0))
-	if supported_gp <= 0 and invested_gp < required_gp:
-		return "workshop too small (needs %d gp invested, has %d)" % [required_gp, invested_gp]
-	if supported_gp > 0 and supported_gp < required_gp:
-		return "workshop supports up to %d gp items (this item needs %d)" % [supported_gp, required_gp]
+	# Workshops gate by max_item_value_supported_cp (since Migration 114) and
+	# cp_invested (since Migration 115). v1 simplification: the workshop must
+	# have value at least equal to the base RAW workshop minimum for the spell
+	# level (4,000gp for L1 + 2,000gp per additional level per RAW L180-181).
+	# Both column and required value compare in cp.
+	var required_cp: int = _workshop_min_gp_for_level(_effective_spell_level(effect_kind, spell_level)) * 100
+	var supported_cp: int = int(workshop_row.get("max_item_value_supported_cp", 0))
+	var invested_cp: int = int(workshop_row.get("cp_invested", 0))
+	if supported_cp <= 0 and invested_cp < required_cp:
+		return "workshop too small (needs %s invested, has %s)" % [
+			Currency.format_cost(required_cp), Currency.format_cost(invested_cp),
+		]
+	if supported_cp > 0 and supported_cp < required_cp:
+		return "workshop supports up to %s items (this item needs %s)" % [
+			Currency.format_cost(supported_cp), Currency.format_cost(required_cp),
+		]
 	return ""
 
 
-## Workshop bonus to the throw, derived from gp_invested above the minimum
+## Workshop bonus to the throw, derived from cp_invested above the minimum
 ## for the effect's spell level. Per RAW L182: +1 per 10,000gp above minimum,
 ## max +3.
 static func workshop_throw_bonus(
@@ -264,14 +267,14 @@ static func workshop_throw_bonus(
 ) -> int:
 	if workshop_row.is_empty():
 		return 0
-	var min_gp: int = _workshop_min_gp_for_level(_effective_spell_level(effect_kind, spell_level))
-	var invested: int = int(workshop_row.get("gp_invested", 0))
-	if invested <= min_gp:
+	var min_cp: int = _workshop_min_gp_for_level(_effective_spell_level(effect_kind, spell_level)) * 100
+	var invested_cp: int = int(workshop_row.get("cp_invested", 0))
+	if invested_cp <= min_cp:
 		# The workshop row's denormalized magic_research_throw_bonus field is
 		# computed at construction; trust it if present.
 		return int(workshop_row.get("magic_research_throw_bonus", 0))
-	var excess: int = invested - min_gp
-	var bonus: int = int(excess / 10000)
+	var excess_cp: int = invested_cp - min_cp
+	var bonus: int = int(excess_cp / (10000 * 100))  # +1 per 10,000 gp = 1,000,000 cp
 	return clampi(bonus, 0, 3)
 
 

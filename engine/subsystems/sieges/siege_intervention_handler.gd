@@ -43,7 +43,7 @@ static func reconstruct_state_at_intervention(siege_id: String, current_calendar
 	if total > 0:
 		fraction_remaining = clampf(1.0 - float(elapsed) / float(total), 0.0, 1.0)
 	# Reconstruct shp proportionally (banker's rounded to keep tests deterministic).
-	var reconstructed_shp: int = _bankers_round(float(starting_shp) * fraction_remaining)
+	var reconstructed_shp: int = XPAwardCalculator.bankers_round(float(starting_shp) * fraction_remaining)
 	# Breach count from damage_dealt = starting_shp - reconstructed_shp.
 	var reconstructed_damage: int = maxi(0, starting_shp - reconstructed_shp)
 	var reconstructed_breaches: int = UnitCapacityCalculator.breach_count_from_damage(reconstructed_damage)
@@ -51,7 +51,7 @@ static func reconstruct_state_at_intervention(siege_id: String, current_calendar
 	# stronghold's unit_capacity acts as the "starting" pool; PC-intervention
 	# proportional logic applies the same fraction.
 	var default_supplies: int = SiegeSupplyTracker.compute_default_stored_supplies_cp(unit_capacity)
-	var reconstructed_supplies: int = _bankers_round(float(default_supplies) * fraction_remaining)
+	var reconstructed_supplies: int = XPAwardCalculator.bankers_round(float(default_supplies) * fraction_remaining)
 	return {
 		"elapsed_days": elapsed,
 		"total_days": total,
@@ -183,11 +183,5 @@ static func should_escalate_on_pc_arrival(siege_id: String, arriving_character_i
 # Internals
 # ---------------------------------------------------------------------------
 
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var diff: float = value - float(floor_val)
-	if absf(diff - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(round(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

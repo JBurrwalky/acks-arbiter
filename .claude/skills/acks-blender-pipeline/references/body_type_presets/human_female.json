@@ -1,0 +1,23 @@
+{
+  "_schema_version": 1,
+  "_description": "Slider preset for the human_female body type. Used by bake_body_type.py. Values are shape-key values 0.0-1.0 applied to the Customisable Female Basemesh v2.1 before flattening.",
+  "_last_updated": "2026-05-16",
+  "_authored_by": "initial draft from gdd-character-creation-pipeline.md §3 — refine in Phase 2 body production",
+  "body_id": "human_female",
+  "display_name": "Human / Elf Female",
+  "source_basemesh": "Models/Customisable Female Basemesh v2.1.1/customisable female basemesh v2.1.blend",
+  "polycount_target": 3500,
+  "shape_keys": {
+    "Large Breasts": 0.3,
+    "Skinny Torso": 0.1,
+    "Large Hips": 0.2,
+    "Pointy Ears": 0.0
+  },
+  "elf_variant_overrides": {
+    "Pointy Ears": 0.6,
+    "Angular Eyes": 0.2,
+    "Thin Jaw": 0.2,
+    "Skinny Face": 0.1
+  },
+  "notes": "Default proportions are intentionally mild — the goal is a baseline silhouette that armor packs (sculpted for generic humanoid bodies) fit reasonably. The elf_variant_overrides are applied additively when baking the elf variant; the body_id stays `human_female` and the variant is suffixed in the output filename. polycount_target is in BLENDER POLYGONS (a mix of quads/tris); glTF triangulation roughly doubles this. Targeting 3500 Blender polys → ~6000-7000 triangles in the exported glb, well within gdd-art-direction.md §13.3's 3-8k tri figure budget."
+}

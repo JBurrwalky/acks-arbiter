@@ -1,5 +1,7 @@
 # GDD: Domain Tab
 
+> **2026-05-15 currency-precision note:** All gp-suffixed money identifiers in this GDD have been renamed to their `_cp` equivalents in the engine — the project's base currency is cp (1 gp = 100 cp). Examples: `treasury_cp`, `deferred_maintenance_cp`, `pending_investment_cp`, `tax_rate_cp_per_family`, `liturgy_rate_cp_per_family`, `tithe_rate_cp_per_family`, `repression_cp_per_family_this_month`, `revenue_cp`, `expenses_cp`, `net_income_cp`, `cp_amount` (ledger). Banker's rounding only fires on fractional cp. Treat any remaining `_gp` references in pseudocode below as documentation drift.
+
 **Document type:** Game Design Document (Project-designed, improvable)
 **Authority:** Subordinate to `gdd-management-notebook.md`. Authoritative on the Domain tab's content (Status header, sub-tab structure, per-class sub-tab matrix, activity-execution model, lifecycle interactions). Defers to `gdd-stronghold-construction.md` for stronghold-construction details (the Domain tab consumes that GDD's outputs and surfaces them; it does not redefine construction mechanics). Defers to `gdd-troops-tab.md` for troop unit lifecycle (the Domain tab references troop units assigned to a domain's garrison but does not redefine unit mechanics).
 **Status:** Draft v1.6 — pending review

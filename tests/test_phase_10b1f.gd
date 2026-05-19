@@ -74,11 +74,12 @@ func _setup() -> void:
 	_craftpriest_l11_id = _create_test_character(_campaign_id, "Test Craftpriest L11",
 		"dwarven_craftpriest", "cleric", 11, 12, 16)
 
+	# Migration 116: gp_value → cp_value (× 100). 60000 gp → 6000000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 60000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 6000000, 100, 'completed')
 	""", [_stronghold_id, _mage_l11_id])
 
 	# Big laboratory (50,000gp invested) — supports up to a 50,000gp
@@ -88,8 +89,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_l11_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "crossbreeding_laboratory",
-		"gp_invested": 50000,
-		"max_crossbreed_cost_gp": 100000,
+		"cp_invested": 5000000,
+		"max_crossbreed_cost_cp": 10000000,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -101,8 +102,8 @@ func _setup() -> void:
 		"owner_character_id": _mage_l11_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "crossbreeding_laboratory",
-		"gp_invested": 2000,
-		"max_crossbreed_cost_gp": 3000,
+		"cp_invested": 200000,
+		"max_crossbreed_cost_cp": 300000,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,
@@ -304,8 +305,8 @@ func test_crossbreed_rejects_craftpriest() -> void:
 		"owner_character_id": _craftpriest_l11_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "crossbreeding_laboratory",
-		"gp_invested": 50000,
-		"max_crossbreed_cost_gp": 100000,
+		"cp_invested": 5000000,
+		"max_crossbreed_cost_cp": 10000000,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
 		"created_calendar_day": 1,

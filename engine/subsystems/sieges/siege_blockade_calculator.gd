@@ -61,9 +61,9 @@ static func compute_blockade_requirement(
 	# Banker's rounding for the partial case to avoid drift.
 	var ships_required: int = 0
 	if clamped_pct >= 100:
-		ships_required = _bankers_round(float(unit_capacity) / float(SHIPS_REQUIRED_WHEN_FULLY_WATER_DENOMINATOR))
+		ships_required = XPAwardCalculator.bankers_round(float(unit_capacity) / float(SHIPS_REQUIRED_WHEN_FULLY_WATER_DENOMINATOR))
 	else:
-		ships_required = _bankers_round(
+		ships_required = XPAwardCalculator.bankers_round(
 			float(unit_capacity) * float(clamped_pct) / 100.0 / float(SHIPS_REQUIRED_WHEN_FULLY_WATER_DENOMINATOR)
 		)
 	ships_required = maxi(ships_required, MIN_BLOCKADE_SHIPS) if clamped_pct > 0 else 0
@@ -132,8 +132,8 @@ static func is_blockade_complete(
 	var clamped_pct: int = clampi(water_facing_pct, 0, 100)
 	var ship_obligation_met: bool = besieging_ships >= int(req.get("ships_required_with_navy", 0))
 	var land_perimeter_pct: float = 1.0 - (float(clamped_pct) / 100.0)
-	var land_units_needed: int = _bankers_round(float(int(req.get("min_units", 0))) * land_perimeter_pct)
-	var land_feet_needed: int = _bankers_round(float(int(req.get("min_circumvallation_ft", 0))) * land_perimeter_pct)
+	var land_units_needed: int = XPAwardCalculator.bankers_round(float(int(req.get("min_units", 0))) * land_perimeter_pct)
+	var land_feet_needed: int = XPAwardCalculator.bankers_round(float(int(req.get("min_circumvallation_ft", 0))) * land_perimeter_pct)
 	var circ_effect: Dictionary = compute_circumvallation_effect(circumvallation_feet, unit_capacity)
 	var units_after_circ: int = maxi(0, land_units_needed - int(circ_effect.get("units_reduced", 0)))
 	var land_obligation_met: bool = besieging_units >= units_after_circ \
@@ -145,13 +145,5 @@ static func is_blockade_complete(
 # Helpers
 # ---------------------------------------------------------------------------
 
-## Banker's rounding (round half to even) per CLAUDE.md core principle.
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var diff: float = value - float(floor_val)
-	if absf(diff - 0.5) < 0.0000001:
-		# Halfway case: round to even.
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(round(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

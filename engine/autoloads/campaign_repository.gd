@@ -181,12 +181,25 @@ func _run_migrations() -> void:
 			return  # stop on first failure; leave DB in last good state
 
 
+## Dedicated RNG for id generation. Isolated from the global `randi()` /
+## `seed()` namespace so deterministic-dice tests (which call `seed(N)` on
+## the global RNG) cannot poison id uniqueness across suites. Randomized
+## once at class-load time.
+static var _id_rng: RandomNumberGenerator = _make_id_rng()
+
+
+static func _make_id_rng() -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.randomize()
+	return r
+
+
 static func generate_id() -> String:
 	# Generates a random hex string for use as a DB primary key.
 	# Not a proper UUID but collision-resistant for single-player use.
 	return "%08x%04x%04x%04x%08x%04x" % [
-		randi(), randi() & 0xFFFF, randi() & 0xFFFF,
-		randi() & 0xFFFF, randi(), randi() & 0xFFFF
+		_id_rng.randi(), _id_rng.randi() & 0xFFFF, _id_rng.randi() & 0xFFFF,
+		_id_rng.randi() & 0xFFFF, _id_rng.randi(), _id_rng.randi() & 0xFFFF
 	]
 
 
@@ -332,7 +345,7 @@ func create_character(data: Dictionary) -> String:
 			 xp_for_next_level, xp_adjustment_percent, title, alignment,
 			 portrait_id, current_age, age_category, languages, personality,
 			 is_dead, is_active, is_incapacitated,
-			 employer_id, loyalty_score, wage_gp_per_month,
+			 employer_id, loyalty_score, wage_cp_per_month,
 			 sex, token_variant, class_metadata)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
@@ -361,7 +374,7 @@ func create_character(data: Dictionary) -> String:
 		1 if data.get("is_incapacitated", false) else 0,
 		data.get("employer_id", null),
 		data.get("loyalty_score", null),
-		data.get("wage_gp_per_month", null),
+		data.get("wage_cp_per_month", null),
 		data.get("sex", "male"),
 		data.get("token_variant", ""),
 		data.get("class_metadata", "{}"),
@@ -402,7 +415,7 @@ func save_character(data: Dictionary) -> bool:
 				current_age = ?, age_category = ?,
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
-				employer_id = ?, loyalty_score = ?, wage_gp_per_month = ?, sex = ?,
+				employer_id = ?, loyalty_score = ?, wage_cp_per_month = ?, sex = ?,
 				token_variant = ?, class_metadata = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
@@ -432,7 +445,7 @@ func save_character(data: Dictionary) -> bool:
 			1 if data.get("is_incapacitated", false) else 0,
 			data.get("employer_id", null),
 			data.get("loyalty_score", null),
-			data.get("wage_gp_per_month", null),
+			data.get("wage_cp_per_month", null),
 			data.get("sex", "male"),
 			data.get("token_variant", ""),
 			data.get("class_metadata", "{}"),
@@ -557,6 +570,58 @@ func update_party_position(party_id: String, map_id: String, q: int, r: int) -> 
 		[map_id, q, r, party_id]
 	):
 		push_error("CampaignRepository.update_party_position: failed. party_id=%s" % party_id)
+
+
+## Atomically move a party from one hex map to another. Used by cross-scale
+## entry (descend into an inset) and cross-scale exit (return to the parent
+## map). The transition flow is:
+##   1. Look up the party's current map / hex (the "from" state).
+##   2. Validate the target map exists and is in the same campaign.
+##   3. UPDATE parties.current_map_id / current_hex_q / current_hex_r in one
+##      statement so a concurrent read never observes a half-state.
+##   4. Emit EventBus.party_map_changed(party_id, from_map_id, to_map_id).
+## Per-hex state (fog, survey progress) is NOT migrated — the new map keeps
+## its own keyed state. Returns true on success.
+##
+## Migration 119 interface contract. The two transition triggers (enter
+## inset / exit inset) live in the UI layer; this is the data-layer write
+## those triggers eventually call into.
+func transition_party_to_map(party_id: String, target_map_id: String, entry_hex: Vector2i) -> bool:
+	if party_id.is_empty() or target_map_id.is_empty():
+		push_error("CampaignRepository.transition_party_to_map: party_id and target_map_id are required")
+		return false
+
+	# Read current party state for the from_map_id signal arg and the
+	# same-campaign guard below.
+	if not db.query_with_bindings(
+		"SELECT campaign_id, current_map_id FROM parties WHERE id = ?", [party_id]
+	) or db.query_result.is_empty():
+		push_error("CampaignRepository.transition_party_to_map: party not found. id=%s" % party_id)
+		return false
+	var party_row: Dictionary = db.query_result[0]
+	var party_campaign := String(party_row.get("campaign_id", ""))
+	var from_map_id_value: Variant = party_row.get("current_map_id", null)
+	var from_map_id := String(from_map_id_value) if from_map_id_value != null else ""
+
+	if not db.query_with_bindings(
+		"SELECT campaign_id FROM hex_maps WHERE id = ?", [target_map_id]
+	) or db.query_result.is_empty():
+		push_error("CampaignRepository.transition_party_to_map: target map missing. map=%s" % target_map_id)
+		return false
+	var target_campaign := String(db.query_result[0].get("campaign_id", ""))
+	if target_campaign != party_campaign:
+		push_error("CampaignRepository.transition_party_to_map: target map is in a different campaign. party_campaign=%s target_campaign=%s" % [party_campaign, target_campaign])
+		return false
+
+	if not db.query_with_bindings(
+		"UPDATE parties SET current_map_id = ?, current_hex_q = ?, current_hex_r = ? WHERE id = ?",
+		[target_map_id, entry_hex.x, entry_hex.y, party_id]
+	):
+		push_error("CampaignRepository.transition_party_to_map: UPDATE failed. party=%s" % party_id)
+		return false
+
+	EventBus.party_map_changed.emit(party_id, from_map_id, target_map_id)
+	return true
 
 
 ## Returns all parties for a campaign, ordered by creation time.
@@ -951,19 +1016,49 @@ func create_default_heraldry_for_party(party_id: String, preset_library: PresetL
 # ---------------------------------------------------------------------------
 
 func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
-	# Ensure the map record exists
-	if not db.query_with_bindings("SELECT id FROM hex_maps WHERE id = ?", [map_data.id]) \
-			or db.query_result.is_empty():
-		var scale_str: String
-		match map_data.scale:
-			HexMapData.MapScale.CAMPAIGN_24MI: scale_str = "campaign_24mi"
-			HexMapData.MapScale.REGIONAL_6MI:  scale_str = "regional_6mi"
-			HexMapData.MapScale.LOCAL_15MI:    scale_str = "local_15mi"
-			_: scale_str = "regional_6mi"
-		db.query_with_bindings(
-			"INSERT OR IGNORE INTO hex_maps (id, campaign_id, name, scale) VALUES (?, ?, ?, ?)",
-			[map_data.id, campaign_id, map_data.name, scale_str]
-		)
+	# Validate parent linkage (migration 119) before any DB write.
+	# `validate_hex_map_parent_linkage` returns an error string or "" on success.
+	var link_err := validate_hex_map_parent_linkage(map_data, campaign_id)
+	if not link_err.is_empty():
+		push_error("CampaignRepository.save_hex_map: parent linkage invalid — %s" % link_err)
+		return false
+
+	var scale_str := HexMapData._scale_to_string(map_data.scale)
+	var anchor_q: Variant = null
+	var anchor_r: Variant = null
+	if map_data.has_parent() and map_data.parent_anchor != HexMapData.NO_PARENT_ANCHOR:
+		anchor_q = map_data.parent_anchor.x
+		anchor_r = map_data.parent_anchor.y
+	var parent_map_id_value: Variant = null
+	if map_data.has_parent():
+		parent_map_id_value = map_data.parent_map_id
+	var footprint_json := JSON.stringify(map_data.footprint_to_json_array())
+
+	# Upsert the hex_maps row so re-saves with updated parent linkage refresh.
+	if db.query_with_bindings("SELECT id FROM hex_maps WHERE id = ?", [map_data.id]) \
+			and not db.query_result.is_empty():
+		db.query_with_bindings("""
+			UPDATE hex_maps
+			SET campaign_id = ?, name = ?, scale = ?,
+				parent_map_id = ?, parent_anchor_q = ?, parent_anchor_r = ?,
+				parent_hex_footprint = ?
+			WHERE id = ?
+		""", [
+			campaign_id, map_data.name, scale_str,
+			parent_map_id_value, anchor_q, anchor_r,
+			footprint_json,
+			map_data.id,
+		])
+	else:
+		db.query_with_bindings("""
+			INSERT INTO hex_maps
+				(id, campaign_id, name, scale,
+				 parent_map_id, parent_anchor_q, parent_anchor_r, parent_hex_footprint)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		""", [
+			map_data.id, campaign_id, map_data.name, scale_str,
+			parent_map_id_value, anchor_q, anchor_r, footprint_json,
+		])
 
 	# Batch-insert all hex cells inside a transaction
 	db.query("BEGIN TRANSACTION")
@@ -1024,6 +1119,23 @@ func load_hex_map(map_id: String) -> HexMapData:
 	map_data.name = map_row["name"]
 	map_data.scale = HexMapData._scale_from_string(map_row["scale"])
 
+	# Migration 119: load parent linkage. Older rows have these as NULL / '[]'.
+	var parent_id_value: Variant = map_row.get("parent_map_id", null)
+	if parent_id_value != null and String(parent_id_value).length() > 0:
+		map_data.parent_map_id = String(parent_id_value)
+		var pq_val: Variant = map_row.get("parent_anchor_q", null)
+		var pr_val: Variant = map_row.get("parent_anchor_r", null)
+		if pq_val != null and pr_val != null:
+			map_data.parent_anchor = Vector2i(int(pq_val), int(pr_val))
+		else:
+			map_data.parent_anchor = HexMapData.NO_PARENT_ANCHOR
+	else:
+		map_data.parent_map_id = ""
+		map_data.parent_anchor = HexMapData.NO_PARENT_ANCHOR
+	var footprint_str_value: Variant = map_row.get("parent_hex_footprint", "[]")
+	var footprint_str := String(footprint_str_value) if footprint_str_value != null else "[]"
+	map_data.parent_hex_footprint = HexMapData.footprint_from_json_string(footprint_str)
+
 	db.query_with_bindings("SELECT * FROM hex_cells WHERE map_id = ?", [map_id])
 	for row in db.query_result:
 		var coord := Vector2i(row["q"], row["r"])
@@ -1070,6 +1182,68 @@ func update_hex_fog(map_id: String, q: int, r: int, fog_state: String) -> void:
 		[fog_state, map_id, q, r]
 	):
 		push_error("CampaignRepository.update_hex_fog: failed. map=%s q=%d r=%d" % [map_id, q, r])
+
+
+# ---------------------------------------------------------------------------
+# Hex map cross-scale linkage (migration 119)
+# ---------------------------------------------------------------------------
+
+## Returns "" on success or a human-readable error string if [param map_data]
+## declares a parent map that is missing, in a different campaign, or whose
+## scale is not strictly coarser than this map's. SQL cannot enforce the
+## "coarser scale" rule across rows of the same table, so the check lives
+## here at the repository write boundary.
+func validate_hex_map_parent_linkage(map_data: HexMapData, campaign_id: String) -> String:
+	if not map_data.has_parent():
+		return ""
+	if map_data.parent_map_id == map_data.id:
+		return "parent_map_id must not equal the map's own id"
+	if not db.query_with_bindings(
+		"SELECT campaign_id, scale FROM hex_maps WHERE id = ?", [map_data.parent_map_id]
+	) or db.query_result.is_empty():
+		return "parent_map_id '%s' does not exist" % map_data.parent_map_id
+	var parent_row: Dictionary = db.query_result[0]
+	if String(parent_row.get("campaign_id", "")) != campaign_id:
+		return "parent map belongs to a different campaign"
+	var parent_scale: HexMapData.MapScale = HexMapData._scale_from_string(parent_row.get("scale", ""))
+	if HexMapData.scale_compare_coarseness(parent_scale, map_data.scale) <= 0:
+		return "parent map scale must be strictly coarser than child scale"
+	return ""
+
+
+## Returns the parent_map_id (or "") for [param map_id]. Cheap lookup that
+## bypasses the full load_hex_map.
+func get_hex_map_parent_id(map_id: String) -> String:
+	if not db.query_with_bindings(
+		"SELECT parent_map_id FROM hex_maps WHERE id = ?", [map_id]
+	) or db.query_result.is_empty():
+		return ""
+	var v: Variant = db.query_result[0].get("parent_map_id", null)
+	return String(v) if v != null else ""
+
+
+## Returns the inset's hand-authored parent_hex_footprint (Array[Vector2i] of
+## parent-map coords this inset covers). Empty for top-level maps or insets
+## that have not declared coverage.
+func get_hex_map_parent_footprint(map_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT parent_hex_footprint FROM hex_maps WHERE id = ?", [map_id]
+	) or db.query_result.is_empty():
+		return []
+	var v: Variant = db.query_result[0].get("parent_hex_footprint", "[]")
+	return HexMapData.footprint_from_json_string(String(v) if v != null else "[]")
+
+
+## Returns all hex_maps in [param campaign_id] whose parent_map_id matches
+## [param parent_map_id]. Used by the cross-scale consistency helper to walk
+## the inset list when checking domain membership.
+func list_child_maps(parent_map_id: String, campaign_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM hex_maps WHERE parent_map_id = ? AND campaign_id = ?",
+		[parent_map_id, campaign_id]
+	):
+		return []
+	return db.query_result.duplicate()
 
 
 # ---------------------------------------------------------------------------
@@ -1191,6 +1365,10 @@ func set_domain_urban_families(domain_id: String, urban_families: int) -> bool:
 		  name, domain_id, urban_families]):
 		push_error("CampaignRepository.set_domain_urban_families: INSERT failed. domain_id=%s" % domain_id)
 		return false
+	# Phase 10B.2 Wave 5: trade-route trigger signal — closes
+	# [NEEDS-EMITTER-WIRING-settlement_created] from Wave 1 (chief-settlement
+	# auto-creation path when a domain crosses the urban_families threshold).
+	EventBus.settlement_created.emit(settlement_id)
 	return true
 
 
@@ -1204,15 +1382,15 @@ func set_domain_urban_families(domain_id: String, urban_families: int) -> bool:
 ## set_domain_urban_families for back-compat.
 const _DOMAIN_MONTHLY_FIELDS := [
 	"morale", "peasant_families",
-	"treasury_gp", "revenue_gp", "expenses_gp", "net_income_gp",
+	"treasury_cp", "revenue_cp", "expenses_cp", "net_income_cp",
 	"domain_xp_this_month", "classification_progress_families",
 	"territory_type", "realm_title",
 	"is_active_adventuring_this_month",
-	"is_repressed_this_month", "repression_gp_per_family_this_month",
+	"is_repressed_this_month", "repression_cp_per_family_this_month",
 	"tribute_out_owed",
 	# Migration 068: pending activity modifiers (Domain Phase 3) — set by
 	# activity handlers, reset by monthly tick after consumption.
-	"administer_domain_completed_this_month", "pending_investment_gp",
+	"administer_domain_completed_this_month", "pending_investment_cp",
 ]
 
 ## Player-mutable settings whitelist (Domain Phase 2). Surfaced via the Domain
@@ -1221,8 +1399,8 @@ const _DOMAIN_MONTHLY_FIELDS := [
 ## monthly resolution columns by accident.
 const _DOMAIN_SETTINGS_FIELDS := [
 	"name", "alignment", "religion",
-	"tax_rate_gp_per_family", "liturgy_rate_gp_per_family", "tithe_rate_gp_per_family",
-	"auto_pay_policies", "deferred_maintenance_gp",
+	"tax_rate_cp_per_family", "liturgy_rate_cp_per_family", "tithe_rate_cp_per_family",
+	"auto_pay_policies", "deferred_maintenance_cp",
 	"is_chaotic_domain", "establishment_method", "established_calendar_day",
 	"owner_character_id", "location_map_id", "location_hex_q", "location_hex_r",
 	"territory_type",
@@ -1269,37 +1447,391 @@ func update_domain_monthly_state(domain_id: String, fields: Dictionary) -> bool:
 # Domain hexes (migration 055)
 # ---------------------------------------------------------------------------
 
+## Returns every domain_hexes row for [param domain_id] across all maps,
+## ordered by map_id then hex coordinate. Each row dict carries the new
+## `map_id` column (migration 119) so callers that span multiple maps can
+## disambiguate; callers that work on a single map should use
+## `get_domain_hexes_on_map` instead.
 func get_domain_hexes(domain_id: String) -> Array:
 	db.query_with_bindings(
-		"SELECT * FROM domain_hexes WHERE domain_id = ? ORDER BY hex_q, hex_r",
+		"SELECT * FROM domain_hexes WHERE domain_id = ? ORDER BY map_id, hex_q, hex_r",
 		[domain_id]
 	)
 	return db.query_result.duplicate()
 
 
+## Map-filtered variant of get_domain_hexes. Returns only rows on
+## [param map_id] for [param domain_id].
+func get_domain_hexes_on_map(domain_id: String, map_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM domain_hexes WHERE domain_id = ? AND map_id = ? ORDER BY hex_q, hex_r",
+		[domain_id, map_id]
+	)
+	return db.query_result.duplicate()
+
+
+## Inserts a single domain_hexes row. [param data] keys:
+##   domain_id  (required)
+##   map_id     (optional — defaults to the domain's location_map_id)
+##   hex_q, hex_r
+##   land_value, surveyed_by, is_littoral, land_improvement_level (optional)
+## Returns the row id on success, "" on failure.
 func add_domain_hex(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
+	var domain_id_str := String(data.get("domain_id", ""))
+	var map_id_str := String(data.get("map_id", ""))
+	if map_id_str.is_empty() and not domain_id_str.is_empty():
+		# Default to the domain's location_map_id — preserves pre-migration-119
+		# caller behavior where hex (q,r) coordinates were implicitly scoped to
+		# the domain's home map.
+		if db.query_with_bindings(
+			"SELECT location_map_id FROM domains WHERE id = ?", [domain_id_str]
+		) and not db.query_result.is_empty():
+			var lv: Variant = db.query_result[0].get("location_map_id", null)
+			if lv != null:
+				map_id_str = String(lv)
+	# If the caller passed no map_id AND the domain has no location_map_id,
+	# we store '' as a sentinel. The schema's map_id is NOT NULL but has no
+	# FK REFERENCES (migration 119), so the empty-string row persists. The
+	# cross-scale consistency helper ignores rows whose map_id doesn't
+	# resolve to a hex_maps row.
 	if not db.query_with_bindings("""
 		INSERT INTO domain_hexes
-			(id, domain_id, hex_q, hex_r, land_value, surveyed_by, is_littoral, land_improvement_gp)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			(id, domain_id, map_id, hex_q, hex_r, land_value, surveyed_by, is_littoral, land_improvement_level)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		data.get("domain_id", ""),
+		domain_id_str,
+		map_id_str,
 		int(data.get("hex_q", 0)),
 		int(data.get("hex_r", 0)),
 		int(data.get("land_value", 5)),
 		data.get("surveyed_by", null),
 		1 if data.get("is_littoral", false) else 0,
-		int(data.get("land_improvement_gp", 0)),
+		int(data.get("land_improvement_level", 0)),
 	]):
-		push_error("CampaignRepository.add_domain_hex: failed. domain=%s q=%s r=%s" % [
-			data.get("domain_id", "?"), data.get("hex_q", "?"), data.get("hex_r", "?"),
+		push_error("CampaignRepository.add_domain_hex: failed. domain=%s map=%s q=%s r=%s" % [
+			domain_id_str, map_id_str, data.get("hex_q", "?"), data.get("hex_r", "?"),
 		])
 		return ""
 	return id
+
+
+# ---------------------------------------------------------------------------
+# Domain cross-scale consistency (migration 119)
+# ---------------------------------------------------------------------------
+#
+# RULE (per docs phase-10b plan + this session's GDD constraints):
+#   A single on-camera domain may span both a coarse campaign-scale map AND
+#   one or more finer-scale insets. The cross-scale consistency rule is:
+#
+#   (1) If a domain claims a parent-map hex AND that hex is covered by an
+#       inset (i.e. listed in the inset's parent_hex_footprint), then the
+#       domain MUST also claim every child hex in the inset — UNLESS those
+#       child hexes are explicitly assigned to a different domain.
+#   (2) Inverse: if a domain claims any child-map hex, it must also claim
+#       the parent-map hex that contains it (the parent hex from the inset's
+#       parent_hex_footprint).
+#
+# The repository SURFACES the diff (which hexes are missing on each side).
+# It does not auto-fix. UI / planning code chooses whether to commit the
+# proposed reconciled set.
+#
+# Off-camera NPC domains (only coarse hexes, no inset coverage) trivially
+# satisfy the rule because the relevant footprint is empty.
+
+## Result keys:
+##   ok: bool                         — true if the domain is consistent
+##   missing_child_hexes: Array       — Dictionaries {map_id, hex_q, hex_r}
+##                                       the domain SHOULD claim on inset maps
+##                                       to honor rule (1)
+##   missing_parent_hexes: Array      — Dictionaries {map_id, hex_q, hex_r}
+##                                       the domain SHOULD claim on the parent
+##                                       map to honor rule (2)
+##   blocked_by_other_domain: Array   — Dictionaries {map_id, hex_q, hex_r,
+##                                       owning_domain_id} for child hexes that
+##                                       another domain already owns; these
+##                                       are skipped, not flagged as missing.
+func check_domain_cross_scale_consistency(domain_id: String) -> Dictionary:
+	var result := {
+		"ok": true,
+		"missing_child_hexes": [],
+		"missing_parent_hexes": [],
+		"blocked_by_other_domain": [],
+	}
+	# Bucket the domain's existing hexes by map.
+	var owned: Dictionary = {}  # map_id → Dictionary[Vector2i, true]
+	for row in get_domain_hexes(domain_id):
+		var mid := String(row.get("map_id", ""))
+		if mid.is_empty():
+			continue
+		if not owned.has(mid):
+			owned[mid] = {}
+		owned[mid][Vector2i(int(row["hex_q"]), int(row["hex_r"]))] = true
+
+	# Identify the campaign so we can look up child maps. A domain row has a
+	# campaign_id, and so do its hexes' maps.
+	var domain_row: Dictionary = get_domain(domain_id)
+	if domain_row.is_empty():
+		result["ok"] = false
+		return result
+	var campaign_id := String(domain_row.get("campaign_id", ""))
+
+	# Build a map_id → {scale, parent_map_id, parent_hex_footprint} cache for
+	# every map the domain touches, plus their parents and children.
+	var visited_maps: Dictionary = {}
+	for mid in owned.keys():
+		_collect_related_maps(mid, campaign_id, visited_maps)
+
+	# Rule (1): for each (parent_map, claimed_parent_hex), walk children whose
+	# footprint covers it. If the domain doesn't already own the child hexes
+	# the inset places inside that parent hex, those are missing — unless
+	# another domain owns them.
+	for parent_mid in owned.keys():
+		var parent_set: Dictionary = owned[parent_mid]
+		for child in _children_of_map(parent_mid, campaign_id):
+			var child_id := String(child.get("id", ""))
+			var child_footprint: Array = HexMapData.footprint_from_json_string(
+				String(child.get("parent_hex_footprint", "[]")))
+			# Only consider child hexes whose parent-map cell the domain claims.
+			# Without a per-cell mapping we treat the entire inset as the
+			# coverage region; the inset is, by definition, the set of child
+			# hexes that exist on that map. If the parent hex is in the
+			# footprint AND the domain claims it, every child cell on this
+			# inset should be claimed.
+			var any_parent_claimed := false
+			for fp_coord in child_footprint:
+				if parent_set.has(fp_coord):
+					any_parent_claimed = true
+					break
+			if not any_parent_claimed:
+				continue
+			# Enumerate the child map's hex cells.
+			var child_cells: Array = _list_hex_cells(child_id)
+			var child_owned_set: Dictionary = owned.get(child_id, {})
+			for cell in child_cells:
+				var coord := Vector2i(int(cell["q"]), int(cell["r"]))
+				if child_owned_set.has(coord):
+					continue
+				var owner_id := _domain_owning_hex(child_id, coord, domain_id)
+				if not owner_id.is_empty():
+					result["blocked_by_other_domain"].append({
+						"map_id": child_id, "hex_q": coord.x, "hex_r": coord.y,
+						"owning_domain_id": owner_id,
+					})
+					continue
+				result["missing_child_hexes"].append({
+					"map_id": child_id, "hex_q": coord.x, "hex_r": coord.y,
+				})
+
+	# Rule (2): for every child-map hex the domain claims, the corresponding
+	# parent-map footprint hex(es) must also be claimed. Hand-authored insets
+	# don't store a per-cell child-to-parent index, so any child hex implies
+	# membership in EVERY parent hex listed in the inset's footprint. The
+	# common case is a footprint of size 1 (one parent hex per inset); in the
+	# larger-footprint case, the rule is "any inset hex pulls in the whole
+	# footprint" which matches the intended on-camera-domain semantic.
+	for child_mid in owned.keys():
+		var info: Dictionary = visited_maps.get(child_mid, {})
+		var parent_id := String(info.get("parent_map_id", ""))
+		if parent_id.is_empty():
+			continue
+		var footprint: Array = info.get("parent_hex_footprint", [])
+		if footprint.is_empty():
+			continue
+		var parent_owned_set: Dictionary = owned.get(parent_id, {})
+		for fp_coord in footprint:
+			if parent_owned_set.has(fp_coord):
+				continue
+			result["missing_parent_hexes"].append({
+				"map_id": parent_id, "hex_q": fp_coord.x, "hex_r": fp_coord.y,
+			})
+
+	result["ok"] = result["missing_child_hexes"].is_empty() \
+			and result["missing_parent_hexes"].is_empty()
+	return result
+
+
+## Returns the union of the domain's currently-claimed hexes plus every hex
+## that — iterated to a fixed point — must also be claimed to satisfy both
+## cross-scale rules. Format: Array of {map_id, hex_q, hex_r} dicts.
+##
+## The iteration is necessary because rules (1) and (2) interact: adding a
+## missing parent (rule 2) can in turn trigger rule (1) requiring its
+## sibling children. The helper still surfaces a single proposed set rather
+## than committing — the caller decides whether to call add_domain_hex for
+## each entry. Child hexes blocked by another domain are excluded.
+func compute_consistent_domain_hex_set(domain_id: String) -> Array:
+	# Stage the proposed set as a Dictionary keyed by (map_id|q|r) string so
+	# repeated additions don't double-count.
+	var proposed: Dictionary = {}
+	for row in get_domain_hexes(domain_id):
+		var key := "%s|%d|%d" % [
+			String(row.get("map_id", "")), int(row["hex_q"]), int(row["hex_r"])
+		]
+		proposed[key] = {
+			"map_id": String(row.get("map_id", "")),
+			"hex_q": int(row["hex_q"]),
+			"hex_r": int(row["hex_r"]),
+		}
+
+	# Iterate to a fixed point: each pass adds whatever the consistency
+	# check currently flags as missing, then re-runs against the new
+	# (in-memory) ownership. We bound the iteration count to avoid an
+	# infinite loop on pathological data.
+	var max_passes := 8
+	for _i in range(max_passes):
+		var report := _check_consistency_against(domain_id, proposed)
+		if report["ok"]:
+			break
+		var grew := false
+		for entry in report["missing_parent_hexes"]:
+			var key := "%s|%d|%d" % [entry["map_id"], int(entry["hex_q"]), int(entry["hex_r"])]
+			if not proposed.has(key):
+				proposed[key] = entry
+				grew = true
+		for entry in report["missing_child_hexes"]:
+			var key := "%s|%d|%d" % [entry["map_id"], int(entry["hex_q"]), int(entry["hex_r"])]
+			if not proposed.has(key):
+				proposed[key] = entry
+				grew = true
+		if not grew:
+			break
+
+	return proposed.values()
+
+
+## Internal helper: run the consistency check pretending the domain owns
+## the [param hypothetical] set instead of what's currently in the DB.
+## Used by compute_consistent_domain_hex_set to iterate to a fixed point.
+func _check_consistency_against(domain_id: String, hypothetical: Dictionary) -> Dictionary:
+	var result := {
+		"ok": true,
+		"missing_child_hexes": [],
+		"missing_parent_hexes": [],
+		"blocked_by_other_domain": [],
+	}
+	var owned: Dictionary = {}
+	for entry in hypothetical.values():
+		var mid := String(entry["map_id"])
+		if mid.is_empty():
+			continue
+		if not owned.has(mid):
+			owned[mid] = {}
+		owned[mid][Vector2i(int(entry["hex_q"]), int(entry["hex_r"]))] = true
+
+	var domain_row: Dictionary = get_domain(domain_id)
+	if domain_row.is_empty():
+		result["ok"] = false
+		return result
+	var campaign_id := String(domain_row.get("campaign_id", ""))
+
+	var visited_maps: Dictionary = {}
+	for mid in owned.keys():
+		_collect_related_maps(mid, campaign_id, visited_maps)
+
+	for parent_mid in owned.keys():
+		var parent_set: Dictionary = owned[parent_mid]
+		for child in _children_of_map(parent_mid, campaign_id):
+			var child_id := String(child.get("id", ""))
+			var child_footprint: Array = HexMapData.footprint_from_json_string(
+				String(child.get("parent_hex_footprint", "[]")))
+			var any_parent_claimed := false
+			for fp_coord in child_footprint:
+				if parent_set.has(fp_coord):
+					any_parent_claimed = true
+					break
+			if not any_parent_claimed:
+				continue
+			var child_cells: Array = _list_hex_cells(child_id)
+			var child_owned_set: Dictionary = owned.get(child_id, {})
+			for cell in child_cells:
+				var coord := Vector2i(int(cell["q"]), int(cell["r"]))
+				if child_owned_set.has(coord):
+					continue
+				var owner_id := _domain_owning_hex(child_id, coord, domain_id)
+				if not owner_id.is_empty():
+					result["blocked_by_other_domain"].append({
+						"map_id": child_id, "hex_q": coord.x, "hex_r": coord.y,
+						"owning_domain_id": owner_id,
+					})
+					continue
+				result["missing_child_hexes"].append({
+					"map_id": child_id, "hex_q": coord.x, "hex_r": coord.y,
+				})
+
+	for child_mid in owned.keys():
+		var info: Dictionary = visited_maps.get(child_mid, {})
+		var parent_id := String(info.get("parent_map_id", ""))
+		if parent_id.is_empty():
+			continue
+		var footprint: Array = info.get("parent_hex_footprint", [])
+		if footprint.is_empty():
+			continue
+		var parent_owned_set: Dictionary = owned.get(parent_id, {})
+		for fp_coord in footprint:
+			if parent_owned_set.has(fp_coord):
+				continue
+			result["missing_parent_hexes"].append({
+				"map_id": parent_id, "hex_q": fp_coord.x, "hex_r": fp_coord.y,
+			})
+
+	result["ok"] = result["missing_child_hexes"].is_empty() \
+			and result["missing_parent_hexes"].is_empty()
+	return result
+
+
+func _collect_related_maps(map_id: String, campaign_id: String, cache: Dictionary) -> void:
+	if cache.has(map_id):
+		return
+	if not db.query_with_bindings(
+		"SELECT * FROM hex_maps WHERE id = ?", [map_id]
+	) or db.query_result.is_empty():
+		return
+	var row: Dictionary = db.query_result[0]
+	cache[map_id] = {
+		"scale": String(row.get("scale", "")),
+		"parent_map_id": String(row.get("parent_map_id", "") if row.get("parent_map_id") != null else ""),
+		"parent_hex_footprint": HexMapData.footprint_from_json_string(
+			String(row.get("parent_hex_footprint", "[]"))),
+	}
+	var parent_id := cache[map_id]["parent_map_id"] as String
+	if not parent_id.is_empty():
+		_collect_related_maps(parent_id, campaign_id, cache)
+	for child in _children_of_map(map_id, campaign_id):
+		var child_id := String(child.get("id", ""))
+		if not child_id.is_empty():
+			_collect_related_maps(child_id, campaign_id, cache)
+
+
+func _children_of_map(map_id: String, campaign_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM hex_maps WHERE parent_map_id = ? AND campaign_id = ?",
+		[map_id, campaign_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+func _list_hex_cells(map_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT q, r FROM hex_cells WHERE map_id = ?", [map_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+func _domain_owning_hex(map_id: String, coord: Vector2i, excluding_domain_id: String) -> String:
+	if not db.query_with_bindings("""
+		SELECT domain_id FROM domain_hexes
+		WHERE map_id = ? AND hex_q = ? AND hex_r = ? AND domain_id != ?
+		LIMIT 1
+	""", [map_id, coord.x, coord.y, excluding_domain_id]) \
+			or db.query_result.is_empty():
+		return ""
+	return String(db.query_result[0].get("domain_id", ""))
 
 
 ## Update a whitelisted set of player-mutable settings on a single domain
@@ -1331,23 +1863,23 @@ func update_domain_settings(domain_id: String, fields: Dictionary) -> bool:
 	return true
 
 
-## Adjust a domain's treasury balance by a signed delta and return the new
+## Adjust a domain's treasury balance by a signed delta (cp) and return the new
 ## balance. Atomic single UPDATE so a concurrent monthly-tick write does not
 ## interleave. Caller is responsible for writing the matching ledger entry.
-func adjust_domain_treasury(domain_id: String, delta_gp: int) -> int:
+func adjust_domain_treasury(domain_id: String, delta_cp: int) -> int:
 	if domain_id.is_empty():
 		return 0
 	if not db.query_with_bindings(
-		"UPDATE domains SET treasury_gp = treasury_gp + ?, updated_at = datetime('now') WHERE id = ?",
-		[delta_gp, domain_id]
+		"UPDATE domains SET treasury_cp = treasury_cp + ?, updated_at = datetime('now') WHERE id = ?",
+		[delta_cp, domain_id]
 	):
-		push_error("CampaignRepository.adjust_domain_treasury: failed. id=%s delta=%d" % [domain_id, delta_gp])
+		push_error("CampaignRepository.adjust_domain_treasury: failed. id=%s delta=%d" % [domain_id, delta_cp])
 		return 0
 	if not db.query_with_bindings(
-		"SELECT treasury_gp FROM domains WHERE id = ?", [domain_id]
+		"SELECT treasury_cp FROM domains WHERE id = ?", [domain_id]
 	) or db.query_result.is_empty():
 		return 0
-	return int(db.query_result[0].get("treasury_gp", 0))
+	return int(db.query_result[0].get("treasury_cp", 0))
 
 
 ## Append a row to active_adventuring_log. Phase 2's
@@ -1382,12 +1914,12 @@ func list_active_adventuring_log(domain_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
-## Set the cumulative land_improvement_gp for a hex. Caller is responsible for
+## Set the cumulative land_improvement_level for a hex. Caller is responsible for
 ## the +3 cap and the final-land-value-≤9 check (see `LandImprovement`).
 func update_domain_hex_land_improvement(domain_id: String, hex_q: int, hex_r: int, new_improvement: int) -> bool:
 	if not db.query_with_bindings("""
 		UPDATE domain_hexes
-		SET land_improvement_gp = ?
+		SET land_improvement_level = ?
 		WHERE domain_id = ? AND hex_q = ? AND hex_r = ?
 	""", [new_improvement, domain_id, hex_q, hex_r]):
 		push_error("CampaignRepository.update_domain_hex_land_improvement: failed. domain=%s q=%d r=%d" % [
@@ -1407,7 +1939,7 @@ func add_ledger_entry(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO ledger_entries
-			(id, domain_id, calendar_day, category, subcategory, gp_amount,
+			(id, domain_id, calendar_day, category, subcategory, cp_amount,
 			 description, source_event_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
@@ -1416,7 +1948,7 @@ func add_ledger_entry(data: Dictionary) -> String:
 		int(data.get("calendar_day", 0)),
 		data.get("category", "other"),
 		data.get("subcategory", ""),
-		int(data.get("gp_amount", 0)),
+		int(data.get("cp_amount", 0)),
 		data.get("description", ""),
 		data.get("source_event_id", null),
 	]):
@@ -1484,7 +2016,7 @@ func add_follower_arrival(data: Dictionary) -> String:
 
 const _STRONGHOLD_UPDATE_FIELDS := [
 	"domain_id", "owner_character_id", "archetype", "archetype_power_id",
-	"structure_type", "gp_value", "shp", "ac", "garrison_capacity",
+	"structure_type", "cp_value", "shp", "ac", "garrison_capacity",
 	"completion_pct", "is_conforming_to_class", "is_claimed",
 	"claimed_from_source", "location_map_id", "location_hex_q", "location_hex_r",
 	"status",
@@ -1498,7 +2030,7 @@ func create_stronghold(data: Dictionary) -> String:
 	if not db.query_with_bindings("""
 		INSERT INTO strongholds
 			(id, domain_id, owner_character_id, archetype, archetype_power_id,
-			 structure_type, gp_value, shp, ac, garrison_capacity,
+			 structure_type, cp_value, shp, ac, garrison_capacity,
 			 completion_pct, is_conforming_to_class, is_claimed,
 			 claimed_from_source, location_map_id, location_hex_q, location_hex_r,
 			 status)
@@ -1510,7 +2042,7 @@ func create_stronghold(data: Dictionary) -> String:
 		data.get("archetype", "fortress"),
 		data.get("archetype_power_id", ""),
 		data.get("structure_type", "keep"),
-		int(data.get("gp_value", 0)),
+		int(data.get("cp_value", 0)),
 		int(data.get("shp", 0)),
 		int(data.get("ac", 6)),
 		int(data.get("garrison_capacity", 0)),
@@ -1588,11 +2120,11 @@ func list_strongholds_at_hex(map_id: String, hex_q: int, hex_r: int) -> Array:
 # ---------------------------------------------------------------------------
 
 const _COMMISSION_UPDATE_FIELDS := [
-	"gp_committed", "daily_construction_rate_gp", "speed_tier_pct",
-	"engineers_required", "engineers_assigned", "engineer_monthly_wage_gp",
+	"cp_committed", "daily_construction_rate_cp", "speed_tier_pct",
+	"engineers_required", "engineers_assigned", "engineer_monthly_wage_cp",
 	"supervisor_character_id", "magic_rate_modifier_pct",
 	"materials_strategy", "class_cost_reduction_pct",
-	"gp_progressed", "halfway_signal_fired",
+	"cp_progressed", "halfway_signal_fired",
 	"completed_calendar_day", "status",
 ]
 
@@ -1603,23 +2135,23 @@ func create_commission(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO stronghold_commissions
-			(id, stronghold_id, gp_committed, daily_construction_rate_gp,
+			(id, stronghold_id, cp_committed, daily_construction_rate_cp,
 			 speed_tier_pct, engineers_required, engineers_assigned,
-			 engineer_monthly_wage_gp, supervisor_character_id,
+			 engineer_monthly_wage_cp, supervisor_character_id,
 			 magic_rate_modifier_pct, materials_strategy,
 			 class_cost_reduction_pct,
 			 started_calendar_day, expected_halfway_day, expected_completion_day,
-			 gp_progressed, halfway_signal_fired, status)
+			 cp_progressed, halfway_signal_fired, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("stronghold_id", ""),
-		int(data.get("gp_committed", 0)),
-		int(data.get("daily_construction_rate_gp", 500)),
+		int(data.get("cp_committed", 0)),
+		int(data.get("daily_construction_rate_cp", 50000)),  # RAW 500 gp/day = 50,000 cp
 		int(data.get("speed_tier_pct", 100)),
 		int(data.get("engineers_required", 1)),
 		int(data.get("engineers_assigned", 1)),
-		int(data.get("engineer_monthly_wage_gp", 250)),
+		int(data.get("engineer_monthly_wage_cp", 25000)),  # RAW 250 gp/month = 25,000 cp
 		data.get("supervisor_character_id", null),
 		int(data.get("magic_rate_modifier_pct", 100)),
 		data.get("materials_strategy", "local"),
@@ -1627,7 +2159,7 @@ func create_commission(data: Dictionary) -> String:
 		int(data.get("started_calendar_day", 0)),
 		int(data.get("expected_halfway_day", 0)),
 		int(data.get("expected_completion_day", 0)),
-		int(data.get("gp_progressed", 0)),
+		int(data.get("cp_progressed", 0)),
 		1 if data.get("halfway_signal_fired", false) else 0,
 		data.get("status", "in_progress"),
 	]):
@@ -1695,13 +2227,13 @@ func create_accessory(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO stronghold_accessories
-			(id, stronghold_id, accessory_type, gp_value, status)
+			(id, stronghold_id, accessory_type, cp_value, status)
 		VALUES (?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("stronghold_id", ""),
 		data.get("accessory_type", ""),
-		int(data.get("gp_value", 0)),
+		int(data.get("cp_value", 0)),
 		data.get("status", "planned"),
 	]):
 		push_error("CampaignRepository.create_accessory: failed. stronghold=%s type=%s" % [
@@ -2866,6 +3398,9 @@ func create_settlement_entrance(data: Dictionary) -> String:
 	]):
 		push_error("CampaignRepository.create_settlement_entrance: failed. name=%s" % data.get("name", "?"))
 		return ""
+	# Phase 10B.2 Wave 5: trade-route trigger signal — closes
+	# [NEEDS-EMITTER-WIRING-settlement_created] from Wave 1.
+	EventBus.settlement_created.emit(id)
 	return id
 
 
@@ -4068,7 +4603,7 @@ func create_henchman_pool(campaign_id: String, settlement_id: String,
 	var ok := db.query_with_bindings(
 		"""INSERT INTO henchman_pools
 			(id, campaign_id, settlement_id, generated_month, generated_year,
-			 total_available, search_cost_gp)
+			 total_available, search_cost_cp)
 		   VALUES (?, ?, ?, ?, ?, ?, ?)""",
 		[id, campaign_id, settlement_id, month, year, total, cost])
 	if not ok:
@@ -5259,7 +5794,7 @@ func open_specialist(data: Dictionary) -> String:
 	var ok: bool = db.query_with_bindings("""
 		INSERT INTO specialists
 			(specialist_id, campaign_id, party_id, kind, name, settlement_id,
-			 hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months,
+			 hired_at_round, monthly_wage_cp, last_paid_round, unpaid_months,
 			 closed, closed_reason)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, '')
 	""", [
@@ -5270,7 +5805,7 @@ func open_specialist(data: Dictionary) -> String:
 		str(data.get("name", "")),
 		str(data.get("settlement_id", "")),
 		int(data.get("hired_at_round", 0)),
-		int(data.get("monthly_wage_gp", 25)),
+		int(data.get("monthly_wage_cp", 2500)),  # RAW 25 gp/month = 2,500 cp
 		int(data.get("last_paid_round", -1)),
 	])
 	if not ok:
@@ -5281,11 +5816,11 @@ func open_specialist(data: Dictionary) -> String:
 
 ## Returns all active (closed = 0) specialists for [param party_id].
 ## Result rows have keys specialist_id, kind, name, settlement_id,
-## hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months.
+## hired_at_round, monthly_wage_cp, last_paid_round, unpaid_months.
 func list_active_specialists(campaign_id: String, party_id: String) -> Array:
 	db.query_with_bindings("""
 		SELECT specialist_id, kind, name, settlement_id,
-		       hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months
+		       hired_at_round, monthly_wage_cp, last_paid_round, unpaid_months
 		FROM specialists
 		WHERE campaign_id = ? AND party_id = ? AND closed = 0
 		ORDER BY hired_at_round
@@ -5296,7 +5831,7 @@ func list_active_specialists(campaign_id: String, party_id: String) -> Array:
 func get_specialist(specialist_id: String) -> Dictionary:
 	db.query_with_bindings("""
 		SELECT specialist_id, campaign_id, party_id, kind, name, settlement_id,
-		       hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months,
+		       hired_at_round, monthly_wage_cp, last_paid_round, unpaid_months,
 		       closed, closed_reason
 		FROM specialists WHERE specialist_id = ?
 	""", [specialist_id])
@@ -5383,7 +5918,7 @@ const _ACTIVITY_STATE_FIELDS := [
 	"status", "location_kind", "location_ref",
 	"time_cost_rounds", "ticks_required", "ticks_accumulated",
 	"absence_accumulated", "started_calendar_day", "last_session_day",
-	"gp_committed", "params_json", "scheduled_event_id",
+	"cp_committed", "params_json", "scheduled_event_id",
 ]
 
 
@@ -5396,7 +5931,7 @@ func create_activity_state(record: Dictionary) -> String:
 			(id, campaign_id, character_id, activity_def_id, frequency_type,
 			 status, location_kind, location_ref, time_cost_rounds,
 			 ticks_required, ticks_accumulated, absence_accumulated,
-			 started_calendar_day, last_session_day, gp_committed,
+			 started_calendar_day, last_session_day, cp_committed,
 			 params_json, scheduled_event_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
@@ -5414,7 +5949,7 @@ func create_activity_state(record: Dictionary) -> String:
 		int(record.get("absence_accumulated", 0)),
 		int(record.get("started_calendar_day", 0)),
 		int(record.get("last_session_day", 0)),
-		int(record.get("gp_committed", 0)),
+		int(record.get("cp_committed", 0)),
 		record.get("params_json", "{}"),
 		record.get("scheduled_event_id", ""),
 	]):
@@ -5637,24 +6172,24 @@ func get_congregants(character_id: String) -> Dictionary:
 
 
 ## Upserts (character_id, fields). If no row exists, creates one with the given
-## fields (count and monthly_growth_pending_gp default to 0 if not supplied).
+## fields (count and monthly_growth_pending_cp default to 0 if not supplied).
 func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
 	if character_id.is_empty():
 		return false
 	var existing := get_congregants(character_id)
 	if existing.is_empty():
 		var count: int = int(fields.get("count", 0))
-		var pending: int = int(fields.get("monthly_growth_pending_gp", 0))
+		var pending: int = int(fields.get("monthly_growth_pending_cp", 0))
 		var last_day: int = int(fields.get("last_resolved_calendar_day", 0))
 		return db.query_with_bindings("""
 			INSERT INTO congregants
-				(character_id, count, monthly_growth_pending_gp, last_resolved_calendar_day)
+				(character_id, count, monthly_growth_pending_cp, last_resolved_calendar_day)
 			VALUES (?, ?, ?, ?)
 		""", [character_id, count, pending, last_day])
 	# Update path: only whitelisted fields.
 	var allowed := {
 		"count": true,
-		"monthly_growth_pending_gp": true,
+		"monthly_growth_pending_cp": true,
 		"last_resolved_calendar_day": true,
 	}
 	var set_clauses: Array[String] = []
@@ -5673,22 +6208,23 @@ func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
 	return db.query_with_bindings(sql, values)
 
 
-## Increments congregants.monthly_growth_pending_gp by the given gp amount,
+## Increments congregants.monthly_growth_pending_cp by the given cp amount,
 ## creating the row if absent. Used by missionary / charitable-spell /
-## ceremonial-sacrifice handlers.
-func add_congregant_pending_gp(character_id: String, gp_delta: int) -> bool:
-	if character_id.is_empty() or gp_delta <= 0:
+## ceremonial-sacrifice handlers (they convert their RAW gp input × 100 before
+## calling).
+func add_congregant_pending_cp(character_id: String, cp_delta: int) -> bool:
+	if character_id.is_empty() or cp_delta <= 0:
 		return false
 	var existing := get_congregants(character_id)
 	if existing.is_empty():
 		return db.query_with_bindings("""
-			INSERT INTO congregants (character_id, count, monthly_growth_pending_gp)
+			INSERT INTO congregants (character_id, count, monthly_growth_pending_cp)
 			VALUES (?, 0, ?)
-		""", [character_id, gp_delta])
-	var new_pending: int = int(existing.get("monthly_growth_pending_gp", 0)) + gp_delta
+		""", [character_id, cp_delta])
+	var new_pending: int = int(existing.get("monthly_growth_pending_cp", 0)) + cp_delta
 	return db.query_with_bindings("""
 		UPDATE congregants
-		SET monthly_growth_pending_gp = ?, updated_at = datetime('now')
+		SET monthly_growth_pending_cp = ?, updated_at = datetime('now')
 		WHERE character_id = ?
 	""", [new_pending, character_id])
 
@@ -5704,7 +6240,7 @@ func adjust_congregant_count(character_id: String, count_delta: int) -> int:
 		if count_delta < 0:
 			return 0
 		db.query_with_bindings("""
-			INSERT INTO congregants (character_id, count, monthly_growth_pending_gp)
+			INSERT INTO congregants (character_id, count, monthly_growth_pending_cp)
 			VALUES (?, ?, 0)
 		""", [character_id, count_delta])
 		return count_delta
@@ -5732,43 +6268,45 @@ func get_character_divine_power(character_id: String) -> Dictionary:
 	return db.query_result[0].duplicate()
 
 
-## Convenience: returns the current divine_power_gp balance, or 0 if no row.
-func get_divine_power_gp(character_id: String) -> int:
+## Convenience: returns the current divine_power_cp balance, or 0 if no row.
+func get_divine_power_cp(character_id: String) -> int:
 	var row := get_character_divine_power(character_id)
-	return int(row.get("divine_power_gp", 0)) if not row.is_empty() else 0
+	return int(row.get("divine_power_cp", 0)) if not row.is_empty() else 0
 
 
-## Adds gp_delta to the character's divine power balance (creates row if needed).
-## Returns the new balance.
-func add_divine_power(character_id: String, gp_delta: int) -> int:
+## Adds cp_delta to the character's divine power balance (creates row if needed).
+## Returns the new cp balance. Callers operating in RAW gp must convert × 100
+## before calling.
+func add_divine_power_cp(character_id: String, cp_delta: int) -> int:
 	if character_id.is_empty():
 		return 0
 	var existing := get_character_divine_power(character_id)
 	if existing.is_empty():
-		var initial: int = max(0, gp_delta)
+		var initial: int = max(0, cp_delta)
 		db.query_with_bindings("""
-			INSERT INTO character_divine_power (character_id, divine_power_gp)
+			INSERT INTO character_divine_power (character_id, divine_power_cp)
 			VALUES (?, ?)
 		""", [character_id, initial])
 		return initial
-	var new_total: int = max(0, int(existing.get("divine_power_gp", 0)) + gp_delta)
+	var new_total: int = max(0, int(existing.get("divine_power_cp", 0)) + cp_delta)
 	db.query_with_bindings("""
 		UPDATE character_divine_power
-		SET divine_power_gp = ?, updated_at = datetime('now')
+		SET divine_power_cp = ?, updated_at = datetime('now')
 		WHERE character_id = ?
 	""", [new_total, character_id])
 	return new_total
 
 
-## Spends `gp` from the character's divine power balance. Returns true on
-## success (sufficient balance), false otherwise (no debit applied).
-func spend_divine_power(character_id: String, gp: int) -> bool:
-	if character_id.is_empty() or gp <= 0:
+## Spends `cp` from the character's divine power balance. Returns true on
+## success (sufficient balance), false otherwise (no debit applied). Callers
+## operating in RAW gp must convert × 100 before calling.
+func spend_divine_power_cp(character_id: String, cp: int) -> bool:
+	if character_id.is_empty() or cp <= 0:
 		return false
-	var balance := get_divine_power_gp(character_id)
-	if balance < gp:
+	var balance := get_divine_power_cp(character_id)
+	if balance < cp:
 		return false
-	add_divine_power(character_id, -gp)
+	add_divine_power_cp(character_id, -cp)
 	return true
 
 
@@ -5781,7 +6319,7 @@ func set_divine_power_last_extraction(character_id: String, calendar_day: int) -
 	if existing.is_empty():
 		return db.query_with_bindings("""
 			INSERT INTO character_divine_power
-				(character_id, divine_power_gp, last_extraction_calendar_day)
+				(character_id, divine_power_cp, last_extraction_calendar_day)
 			VALUES (?, 0, ?)
 		""", [character_id, calendar_day])
 	return db.query_with_bindings("""
@@ -5799,8 +6337,8 @@ func create_consecrated_altar(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO consecrated_altars
-			(id, character_id, location_kind, location_ref, gp_invested,
-			 dp_substituted_gp, alignment, aura_size_sq_ft, completion_pct,
+			(id, character_id, location_kind, location_ref, cp_invested,
+			 dp_substituted_cp, alignment, aura_size_sq_ft, completion_pct,
 			 status, started_calendar_day, completed_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
@@ -5808,8 +6346,8 @@ func create_consecrated_altar(data: Dictionary) -> String:
 		data.get("character_id", ""),
 		data.get("location_kind", "stronghold"),
 		data.get("location_ref", ""),
-		int(data.get("gp_invested", 0)),
-		int(data.get("dp_substituted_gp", 0)),
+		int(data.get("cp_invested", 0)),
+		int(data.get("dp_substituted_cp", 0)),
 		data.get("alignment", "lawful"),
 		int(data.get("aura_size_sq_ft", 0)),
 		int(data.get("completion_pct", 0)),
@@ -5851,8 +6389,8 @@ func update_consecrated_altar(altar_id: String, fields: Dictionary) -> bool:
 	if altar_id.is_empty():
 		return false
 	var allowed := {
-		"gp_invested": true,
-		"dp_substituted_gp": true,
+		"cp_invested": true,
+		"dp_substituted_cp": true,
 		"aura_size_sq_ft": true,
 		"completion_pct": true,
 		"status": true,
@@ -6023,7 +6561,7 @@ func create_magic_research_project(data: Dictionary) -> String:
 		INSERT INTO magic_research_projects
 			(id, campaign_id, character_id, project_kind,
 			 target_spell_key, target_spell_level, target_item_kind,
-			 gp_committed, days_total, days_completed, target_value,
+			 cp_committed, days_total, days_completed, target_value,
 			 library_id, workshop_id, status,
 			 started_calendar_day, completed_calendar_day, params_json)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -6035,7 +6573,7 @@ func create_magic_research_project(data: Dictionary) -> String:
 		String(data.get("target_spell_key", "")),
 		int(data.get("target_spell_level", 0)),
 		String(data.get("target_item_kind", "")),
-		int(data.get("gp_committed", 0)),
+		int(data.get("cp_committed", 0)),
 		int(data.get("days_total", 0)),
 		int(data.get("days_completed", 0)),
 		int(data.get("target_value", 18)),
@@ -6096,7 +6634,7 @@ func update_magic_research_project(project_id: String, fields: Dictionary) -> bo
 		return false
 	var allowed := {
 		"days_completed": true,
-		"gp_committed": true,
+		"cp_committed": true,
 		"target_value": true,
 		"library_id": true,
 		"workshop_id": true,
@@ -6144,27 +6682,35 @@ func create_library(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
+	var status: String = String(data.get("status", "operational"))
+	var owner_id: String = String(data.get("owner_character_id", ""))
+	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO libraries
 			(id, campaign_id, owner_character_id, stronghold_id,
-			 structure_kind, gp_invested,
+			 structure_kind, cp_invested,
 			 max_spell_level_supported, magic_research_throw_bonus,
 			 status, created_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		String(data.get("campaign_id", "")),
-		String(data.get("owner_character_id", "")),
+		owner_id,
 		data.get("stronghold_id", null),
 		String(data.get("structure_kind", "sanctum_library")),
-		int(data.get("gp_invested", 0)),
+		cp_invested,
 		int(data.get("max_spell_level_supported", 1)),
 		int(data.get("magic_research_throw_bonus", 0)),
-		String(data.get("status", "operational")),
+		status,
 		int(data.get("created_calendar_day", 0)),
 	]):
 		push_error("CampaignRepository.create_library: failed. id=%s" % id)
 		return ""
+	# 2026-05-19 bucket-A sweep: emit library_built when the row is created
+	# in 'operational' status (the typical magical-research-handler path).
+	# Future building→operational transitions can re-emit from update_library.
+	if status == "operational":
+		EventBus.library_built.emit(id, owner_id, cp_invested)
 	return id
 
 
@@ -6196,7 +6742,7 @@ func update_library(library_id: String, fields: Dictionary) -> bool:
 	if library_id.is_empty():
 		return false
 	var allowed := {
-		"gp_invested": true,
+		"cp_invested": true,
 		"max_spell_level_supported": true,
 		"magic_research_throw_bonus": true,
 		"status": true,
@@ -6223,27 +6769,33 @@ func create_workshop(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
+	var status: String = String(data.get("status", "operational"))
+	var owner_id: String = String(data.get("owner_character_id", ""))
+	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO workshops
 			(id, campaign_id, owner_character_id, stronghold_id,
-			 structure_kind, gp_invested,
-			 max_item_value_supported_gp, magic_research_throw_bonus,
+			 structure_kind, cp_invested,
+			 max_item_value_supported_cp, magic_research_throw_bonus,
 			 status, created_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		String(data.get("campaign_id", "")),
-		String(data.get("owner_character_id", "")),
+		owner_id,
 		data.get("stronghold_id", null),
 		String(data.get("structure_kind", "tower_workshop")),
-		int(data.get("gp_invested", 0)),
-		int(data.get("max_item_value_supported_gp", 0)),
+		cp_invested,
+		int(data.get("max_item_value_supported_cp", 0)),
 		int(data.get("magic_research_throw_bonus", 0)),
-		String(data.get("status", "operational")),
+		status,
 		int(data.get("created_calendar_day", 0)),
 	]):
 		push_error("CampaignRepository.create_workshop: failed. id=%s" % id)
 		return ""
+	# 2026-05-19 bucket-A sweep: emit workshop_built when created operational.
+	if status == "operational":
+		EventBus.workshop_built.emit(id, owner_id, cp_invested)
 	return id
 
 
@@ -6275,8 +6827,8 @@ func update_workshop(workshop_id: String, fields: Dictionary) -> bool:
 	if workshop_id.is_empty():
 		return false
 	var allowed := {
-		"gp_invested": true,
-		"max_item_value_supported_gp": true,
+		"cp_invested": true,
+		"max_item_value_supported_cp": true,
 		"magic_research_throw_bonus": true,
 		"status": true,
 	}
@@ -6828,26 +7380,33 @@ func create_laboratory(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
+	var status: String = String(data.get("status", "operational"))
+	var owner_id: String = String(data.get("owner_character_id", ""))
+	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO laboratories
 			(id, campaign_id, owner_character_id, stronghold_id,
-			 structure_kind, gp_invested, max_crossbreed_cost_gp,
+			 structure_kind, cp_invested, max_crossbreed_cost_cp,
 			 magic_research_throw_bonus, status, created_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		String(data.get("campaign_id", "")),
-		String(data.get("owner_character_id", "")),
+		owner_id,
 		data.get("stronghold_id", null),
 		String(data.get("structure_kind", "crossbreeding_laboratory")),
-		int(data.get("gp_invested", 0)),
-		int(data.get("max_crossbreed_cost_gp", 0)),
+		cp_invested,
+		int(data.get("max_crossbreed_cost_cp", 0)),
 		int(data.get("magic_research_throw_bonus", 0)),
-		String(data.get("status", "operational")),
+		status,
 		int(data.get("created_calendar_day", 0)),
 	]):
 		push_error("CampaignRepository.create_laboratory: failed. id=%s" % id)
 		return ""
+	# 2026-05-19 bucket-A sweep: emit laboratory_built when created operational.
+	# Closes gap inventory item #118 [NEEDS-EMITTER-WIRING-laboratory_built].
+	if status == "operational":
+		EventBus.laboratory_built.emit(id, owner_id, cp_invested)
 	return id
 
 
@@ -6879,8 +7438,8 @@ func update_laboratory(laboratory_id: String, fields: Dictionary) -> bool:
 	if laboratory_id.is_empty():
 		return false
 	var allowed := {
-		"gp_invested": true,
-		"max_crossbreed_cost_gp": true,
+		"cp_invested": true,
+		"max_crossbreed_cost_cp": true,
 		"magic_research_throw_bonus": true,
 		"status": true,
 	}

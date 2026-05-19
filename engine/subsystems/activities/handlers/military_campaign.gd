@@ -17,7 +17,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "other",
 			"subcategory": "military_campaign_pending",
-			"gp_amount": 0,
+			"cp_amount": 0,
 			"description": "Military campaign concluded (battle resolution deferred)",
 		})
 	return {

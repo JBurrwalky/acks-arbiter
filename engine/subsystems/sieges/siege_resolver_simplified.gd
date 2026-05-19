@@ -98,7 +98,7 @@ static func start_simplified_siege(
 	var stronghold: Dictionary = CampaignRepository.db.query_result[0]
 	var shp: int = int(stronghold.get("shp", 0))
 	var unit_capacity: int = UnitCapacityCalculator.compute_unit_capacity(shp)
-	var material: String = "wood" if String(stronghold.get("structure_type", "")).find("wood") >= 0 else "stone"
+	var material: String = StrongholdRepository.resolve_material(stronghold)
 	# Pull army composition.
 	var besieger_units: int = _count_army_units(besieging_army_id)
 	var defender_units: int = _count_army_units(defending_army_id)
@@ -236,7 +236,7 @@ static func lookup_duration_days(stronghold_shp: int, unit_advantage: int, site_
 	# Apply site modifier.
 	if site_modifier <= 1.0:
 		return base_days
-	return _bankers_round(float(base_days) * site_modifier)
+	return XPAwardCalculator.bankers_round(float(base_days) * site_modifier)
 
 
 static func site_duration_modifier(site: String) -> float:
@@ -389,11 +389,5 @@ static func _domain_for_stronghold(stronghold_id: String) -> String:
 	return "" if v == null else String(v)
 
 
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var diff: float = value - float(floor_val)
-	if absf(diff - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(round(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

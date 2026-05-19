@@ -72,15 +72,15 @@ The table below uses the column order in the screenshot. All values are read fro
 | 30 | Semipr. stones | -1½ | -½ | 0 | +½ | +2 | 0 | 0 | 0 | -½ | 0 | -½ | 0 | -½ | 0 | -½ | 0 | 0 | 0 | -½ | -½ |
 | 31 | Gems | -1½ | -½ | 0 | +½ | +2 | 0 | 0 | 0 | -½ | 0 | -½ | 0 | -½ | 0 | -½ | 0 | 0 | 0 | -½ | -½ |
 
-**?? Verify:** Rows 30 (Semipr. stones) and 31 (Gems) read as identical in my best-effort transcription. Please re-confirm against the screenshot/PDF whether Gems differs from Semipr. stones, or whether they intentionally share the same modifier profile (defensible RAW-wise since both are precious-stone categories with similar economic behavior).
+**✅ Confirmed identical 2026-05-19 (bucket-B sweep, gap inventory #122).** Rows 30 (Semipr. stones) and 31 (Gems) intentionally share the same modifier profile per RAW; confirmed by project owner via ACKS Discord errata conversations. Both precious-stone categories are economically interchangeable in the environmental-demand table; treat them as a single demand class downstream.
 
-**?? Verify:** Several individual cells where the screenshot resolution made the half-tick hard to read. The mercantile session should re-verify every cell against the screenshot (or PDF) when committing this data to JSON. In particular:
+**?? Verify (remaining):** Several individual cells where the screenshot resolution made the half-tick hard to read. The mercantile session should re-verify every cell against the screenshot (or PDF) when committing this data to JSON. In particular:
 - Row 11 (Metals, common), Plains column: read as `+½` — verify
 - Row 18 (Dye & pigments), Rainforest column: read as `-½` — verify
 - Row 19 (Glassware), Steppe column: read as `0` — verify
 - Row 20 (Mounts), Plains column: read as `-1` — verify
 - Row 25-26 (Ivory/Spices), Steppe through Deciduous Forest: re-check the differences between these two rows
-- Row 30/31 (Semipr. stones / Gems): full row re-check; suspicious they're identical
+- ~~Row 30/31 (Semipr. stones / Gems): full row re-check; suspicious they're identical~~ — **CONFIRMED identical per ACKS Discord errata, 2026-05-19**.
 
 ---
 

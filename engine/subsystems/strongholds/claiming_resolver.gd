@@ -9,8 +9,10 @@ extends RefCounted
 ##
 ## For Phase 1, the appraised gp_value is supplied by the caller (Phase 4+
 ## adds dungeon-layout auto-appraisal per gdd-stronghold-construction.md §8.4).
-## Claimed strongholds are immediately treated as fully constructed
-## (status='completed', completion_pct=100) — no commission row is created.
+## Caller passes gp (UI convention); resolver converts to cp at the column-write
+## boundary per Migration 116. Claimed strongholds are immediately treated as
+## fully constructed (status='completed', completion_pct=100) — no commission row
+## is created.
 
 const _ARCHETYPE_TO_CONFORMING_CLASSES := {
 	"fortress":  ["fighter", "cleric", "bladedancer", "paladin", "ranger", "barbarian", "bard"],
@@ -55,13 +57,17 @@ static func claim_existing(
 	var is_conforming: bool = is_archetype_conforming_to_class(
 		archetype, archetype_power_id, ruler_class_id)
 
+	# Migration 116: strongholds.cp_value column stores money × 100. Caller's
+	# gp_value is converted at this boundary.
+	var appraised_cp_value: int = appraised_gp_value * 100
+
 	var stronghold_id: String = CampaignRepository.create_stronghold({
 		"domain_id": domain_id,
 		"owner_character_id": owner_character_id,
 		"archetype": archetype,
 		"archetype_power_id": archetype_power_id,
 		"structure_type": archetype,  # Phase 4+ may override with a more specific catalog id
-		"gp_value": appraised_gp_value,
+		"cp_value": appraised_cp_value,
 		"shp": 0,                     # Phase 8 / appraisal tooling fills this
 		"ac": 6,
 		"garrison_capacity": 0,
@@ -93,7 +99,7 @@ static func claim_existing(
 		var post: Variant = StrongholdRepository._sufficiency_cache.get(domain_id)
 		sufficiency_flipped = (post != null) and (bool(cached_prior) != bool(post))
 
-	EventBus.stronghold_claimed.emit(stronghold_id, source, appraised_gp_value)
+	EventBus.stronghold_claimed.emit(stronghold_id, source, appraised_cp_value)
 
 	return {
 		"stronghold_id": stronghold_id,

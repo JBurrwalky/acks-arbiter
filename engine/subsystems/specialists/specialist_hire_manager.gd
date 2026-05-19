@@ -53,7 +53,7 @@ func hire(
 		push_warning("SpecialistHireManager.hire: unknown kind '%s'" % kind)
 		return ""
 
-	var monthly_wage: int = SpecialistCatalog.monthly_wage_gp(kind)
+	var monthly_wage: int = SpecialistCatalog.monthly_wage_cp(kind)
 	if name.is_empty():
 		name = SpecialistCatalog.display_name(kind)
 
@@ -64,7 +64,7 @@ func hire(
 		"name": name,
 		"settlement_id": settlement_id,
 		"hired_at_round": hired_at_round,
-		"monthly_wage_gp": monthly_wage,
+		"monthly_wage_cp": monthly_wage,
 	})
 	if sid.is_empty():
 		return ""
@@ -75,7 +75,7 @@ func hire(
 			"kind": kind,
 			"name": name,
 			"settlement_id": settlement_id,
-			"monthly_wage_gp": monthly_wage,
+			"monthly_wage_cp": monthly_wage,
 			"hired_at_round": hired_at_round,
 		})
 	return sid
@@ -114,17 +114,17 @@ func dismiss(specialist_id: String, party_id: String) -> bool:
 ## [param fire_round] — current game round, recorded in last_paid_round on
 ## successful payment.
 ##
-## Returns Dictionary {total_deducted_gp, unpaid_specialists: Array[String],
+## Returns Dictionary {total_deducted_cp, unpaid_specialists: Array[String],
 ## dismissed_specialists: Array[String]}.
 func process_monthly_wages(party_id: String, employer_id: String, fire_round: int) -> Dictionary:
 	var campaign_id: String = _campaign_id_for_party(party_id)
 	if campaign_id.is_empty():
-		return {"total_deducted_gp": 0, "unpaid_specialists": [], "dismissed_specialists": []}
+		return {"total_deducted_cp": 0, "unpaid_specialists": [], "dismissed_specialists": []}
 
 	var rows: Array = _repo.list_active_specialists(campaign_id, party_id)
 	var wallet = _get_party_wallet()
 
-	var total_deducted: int = 0
+	var total_deducted_cp: int = 0
 	var unpaid: Array = []
 	var dismissed: Array = []
 
@@ -132,16 +132,17 @@ func process_monthly_wages(party_id: String, employer_id: String, fire_round: in
 
 	for row: Dictionary in rows:
 		var sid: String = String(row.get("specialist_id", ""))
-		var wage_gp: int = int(row.get("monthly_wage_gp", 0))
-		if sid.is_empty() or wage_gp <= 0:
+		var wage_cp: int = int(row.get("monthly_wage_cp", 0))
+		if sid.is_empty() or wage_cp <= 0:
 			continue
 		var paid: bool = false
 		if wallet != null and not employer_id.is_empty():
-			var result: Dictionary = wallet.pay(wage_gp * 100, party_id, employer_id)
+			# PartyWallet operates in cp; pay the cp wage directly.
+			var result: Dictionary = wallet.pay(wage_cp, party_id, employer_id)
 			paid = bool(result.get("ok", false))
 
 		if paid:
-			total_deducted += wage_gp
+			total_deducted_cp += wage_cp
 			_repo.update_specialist(sid, {
 				"last_paid_round": fire_round,
 				"unpaid_months": 0,
@@ -160,7 +161,7 @@ func process_monthly_wages(party_id: String, employer_id: String, fire_round: in
 					})
 
 	var summary := {
-		"total_deducted_gp": total_deducted,
+		"total_deducted_cp": total_deducted_cp,
 		"unpaid_specialists": unpaid,
 		"dismissed_specialists": dismissed,
 	}

@@ -68,6 +68,43 @@ func _build_body() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	add_child(vbox)
+	# 2026-05-19 bucket-B item #65: multi-PC liege selector. When the active
+	# party has more than one PC, surface a dropdown so the user picks which
+	# PC takes the vassalage. Default selection is whichever PC was returned
+	# by _resolve_active_liege (the first one).
+	var pid: String = GameState.active_party_id
+	if pid.is_empty():
+		pid = GameState.party_id
+	var pcs: Array = CampaignRepository.list_party_characters(pid) if not pid.is_empty() else []
+	if pcs.size() > 1:
+		var liege_row := HBoxContainer.new()
+		liege_row.add_theme_constant_override("separation", 6)
+		var liege_lbl := Label.new()
+		liege_lbl.text = "Liege:"
+		liege_lbl.custom_minimum_size = Vector2(60, 0)
+		liege_row.add_child(liege_lbl)
+		var liege_dd := OptionButton.new()
+		liege_dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var default_idx: int = 0
+		for i in pcs.size():
+			var pc: Dictionary = pcs[i]
+			var pc_id: String = String(pc.get("id", ""))
+			var pc_name: String = String(pc.get("name", pc_id.substr(0, 8)))
+			liege_dd.add_item(pc_name, i)
+			liege_dd.set_item_metadata(i, pc_id)
+			if pc_id == _liege_character_id:
+				default_idx = i
+		liege_dd.select(default_idx)
+		liege_dd.item_selected.connect(func(idx: int) -> void:
+			var meta: Variant = liege_dd.get_item_metadata(idx)
+			_liege_character_id = String(meta) if meta != null else ""
+			if _info_label != null:
+				_info_label.text = _info_text()
+			if _loyalty_label != null:
+				_loyalty_label.text = "Base loyalty modifier: %+d" % _compute_base_loyalty_modifier()
+		)
+		liege_row.add_child(liege_dd)
+		vbox.add_child(liege_row)
 	_info_label = Label.new()
 	_info_label.text = _info_text()
 	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -280,20 +280,24 @@ func _spawn_wave_troop_units(stronghold: Dictionary, owner: Dictionary,
 	var equipment_kit: String = String(attractor.get("equipment_kit", template.get("equipment_kit", "")))
 	var wages_required: bool = bool(table.get("wages_required", true))
 
-	# Followers count by gp value toward garrison cost when they don't require wages
+	# Followers count by cp value toward garrison cost when they don't require wages
 	# (faithful clerics/bladedancers per acore_axioms §garrison L229). When wages_required
-	# is false we set monthly_cost_gp=0 but track monthly_wage_gp_per_soldier for the
-	# garrison-counts-by-gp-value comparison the calculator does.
+	# is false we set monthly_cost_cp=0 but track monthly_wage_cp for the
+	# garrison-counts-by-cp-value comparison the calculator does.
+	#
+	# Template stores wage/supply/specialist per soldier in gp (RAW catalog
+	# convention). Widen × 100 at the boundary to produce cp values for the
+	# troop_units row.
 	var remaining: int = count
 	while remaining > 0:
 		var unit_count: int = mini(remaining, size_per_unit)
-		var wage_per: int = int(template.get("wage_gp_per_soldier", 0))
-		var supply_per: int = int(template.get("weekly_supply_gp_per_soldier", 0))
-		var spec_per: int = int(template.get("specialist_gp_per_soldier", 0))
-		var cost_per: int = wage_per + spec_per + 4 * supply_per
-		var monthly_wage_gp: int = wage_per * unit_count
-		var monthly_supply_gp: int = supply_per * 4 * unit_count
-		var monthly_cost_gp: int = (cost_per * unit_count) if wages_required else 0
+		var wage_per_gp: int = int(template.get("wage_gp_per_soldier", 0))
+		var supply_per_gp: int = int(template.get("weekly_supply_gp_per_soldier", 0))
+		var spec_per_gp: int = int(template.get("specialist_gp_per_soldier", 0))
+		var cost_per_gp: int = wage_per_gp + spec_per_gp + 4 * supply_per_gp
+		var monthly_wage_cp: int = wage_per_gp * unit_count * 100
+		var monthly_supply_cp: int = supply_per_gp * 4 * unit_count * 100
+		var monthly_cost_cp: int = (cost_per_gp * unit_count * 100) if wages_required else 0
 		var br: float = float(template.get("battle_rating", 0.0)) * unit_count
 		var unit_id: String = TroopUnitRepository.create_unit({
 			"campaign_id": String(owner.get("campaign_id", "")),
@@ -307,10 +311,10 @@ func _spawn_wave_troop_units(stronghold: Dictionary, owner: Dictionary,
 			"starting_count": unit_count,
 			"count": unit_count,
 			"battle_rating": br,
-			"monthly_wage_gp": monthly_wage_gp,
-			"monthly_supply_gp": monthly_supply_gp,
-			"monthly_specialist_gp": 0,
-			"monthly_cost_gp": monthly_cost_gp,
+			"monthly_wage_cp": monthly_wage_cp,
+			"monthly_supply_cp": monthly_supply_cp,
+			"monthly_specialist_cp": 0,
+			"monthly_cost_cp": monthly_cost_cp,
 			"morale": int(template.get("morale", 0)) + morale_bonus,
 			"is_veteran": false,
 			"is_trained": true,
@@ -334,22 +338,24 @@ static func _stronghold_meets_sufficiency(stronghold: Dictionary, domain_id: Str
 	if domain.is_empty():
 		return false
 	var classification: String = String(domain.get("territory_type", "wilderness")).to_lower()
-	var minimum_per_hex: int = _classification_minimum(classification)
+	var minimum_per_hex_cp: int = _classification_minimum_cp(classification)
 	# Phase 5 v1 simplification: treat the domain as a single 6-mile hex for
 	# sufficiency comparison. Full multi-hex sufficiency lives in
 	# stronghold_repository.get_stronghold_value_for_domain (Phase 1) — the
 	# resolver could call into it once that path is wired here, but for the
 	# follower-arrival gate the per-stronghold check matches RAW intent.
-	var value_gp: int = int(stronghold.get("gp_value", 0))
-	return value_gp >= minimum_per_hex
+	# Migration 116: strongholds column is cp_value (gp × 100).
+	var value_cp: int = int(stronghold.get("cp_value", 0))
+	return value_cp >= minimum_per_hex_cp
 
 
-static func _classification_minimum(classification: String) -> int:
+static func _classification_minimum_cp(classification: String) -> int:
+	# RAW gp thresholds × 100 to express as cp.
 	match classification:
-		"civilized":   return 15000
-		"borderlands": return 22500
-		"wilderness":  return 32000
-		_:             return 32000  # safest assumption
+		"civilized":   return 1500000   # RAW 15,000 gp
+		"borderlands": return 2250000   # RAW 22,500 gp
+		"wilderness":  return 3200000   # RAW 32,000 gp
+		_:             return 3200000   # safest assumption
 
 
 static func _roll_total_for_class(table: Dictionary) -> int:

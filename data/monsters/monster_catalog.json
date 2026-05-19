@@ -25023,6 +25023,138 @@
     "is_aquatic": false
   },
   {
+    "id": "hydra_5_head_regenerating",
+    "name": "Hydra",
+    "variant": "5 Head (Regenerating)",
+    "source": "ACKS Core (acore_monster_catalog_gol-lee.xml)",
+    "monster_types": [
+      "fantastic_creature"
+    ],
+    "sub_types": [
+      "multi_headed",
+      "regenerating"
+    ],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+    "hit_dice": {
+      "base": 5,
+      "modifier": 0,
+      "special_ability_stars": 2
+    },
+    "armor_class": 4,
+    "attack_routines": [
+      {
+        "routine_name": "natural",
+        "usage": "default",
+        "attacks": [
+          {
+            "attack_type": "bite",
+            "count": 5,
+            "damage": "1d10",
+            "to_hit_modifier": 0,
+            "special_effect": null
+          }
+        ]
+      }
+    ],
+    "save_as": {
+      "class": "F",
+      "level": 5
+    },
+    "morale": 2,
+    "xp": 700,
+    "movement": {
+      "land": {
+        "exploration": 120,
+        "combat": 40
+      }
+    },
+    "percent_in_lair": 20,
+    "dungeon_encounter": {
+      "outside_lair": {
+        "collective_noun": "Solitary",
+        "number": "1"
+      },
+      "in_lair": {
+        "collective_noun": "Lair",
+        "number": "1"
+      }
+    },
+    "wilderness_encounter": {
+      "outside_lair": {
+        "collective_noun": "Solitary",
+        "number": "1"
+      },
+      "in_lair": {
+        "collective_noun": "Lair",
+        "number": "1"
+      }
+    },
+    "treasure_type": "I",
+    "terrain_affinity": [
+      "swamp",
+      "mountains_hills",
+      "ocean",
+      "lake"
+    ],
+    "domain_encounter": {
+      "individual_br": 0.064,
+      "platoon_size": 1,
+      "platoon_br": 0.0,
+      "platoon_size_lair": 1,
+      "platoon_br_lair": 0.0,
+      "category": "fantastic_creatures",
+      "category_d8_columns": [
+        7
+      ],
+      "notes": "Regenerating variant: regrows severed heads each round unless cauterized. xp doubled per RAW for regenerating variants.",
+      "raw_citation": "ax_domain_level_encounters.xml battle_rating_reference_tables.fantastic_creatures.Hydra, 5 Head L843; regenerating variant per acore_monster_catalog_gol-lee.xml §hydra L_TBD"
+    },
+    "special_abilities": [
+      {
+        "ability_id": "head_loss",
+        "description": "Each 8 points of damage suffered makes one head useless (one less bite per round). When all heads are useless, the hydra dies.",
+        "hook_type": "flag",
+        "effect": {
+          "flag": "head_loss_8hp_each"
+        }
+      },
+      {
+        "ability_id": "max_hp_per_head",
+        "description": "Each Hit Die has maximum hit points (no rolling).",
+        "hook_type": "flag",
+        "effect": {
+          "flag": "max_hp_per_hd"
+        }
+      },
+      {
+        "ability_id": "regenerates_heads",
+        "description": "Each round, a severed/useless head regrows unless the stump was cauterized (fire / acid damage on the killing blow). Tracked per-head: cauterized heads stay lost.",
+        "hook_type": "flag",
+        "effect": {
+          "flag": "regenerates_heads_unless_cauterized"
+        }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "lowest_hp",
+      "morale_style": "steadfast"
+    },
+    "is_regenerating": true,
+    "is_aquatic": false
+  },
+  {
     "id": "hydra_6_head",
     "name": "Hydra",
     "variant": "6 Head",

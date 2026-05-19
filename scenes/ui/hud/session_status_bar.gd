@@ -136,6 +136,8 @@ var _hex_info_label: Label = null
 # Row 3
 var _camp_btn: Button = null
 var _notebook_btn: Button = null
+var _view_mode_btn: Button = null
+var _enter_region_btn: Button = null
 var _notification_label: Label = null
 
 # Travel speeds zone (right of widget zone, left of log zone).
@@ -311,6 +313,30 @@ func _build_widget_zone() -> GridContainer:
 	_notebook_btn.pressed.connect(_on_notebook_btn_pressed)
 	grid.add_child(_notebook_btn)
 	_refresh_notebook_btn_tooltip()
+
+	# Migration 119: cross-scale view toggle. Hidden when the active party's
+	# map has no parent (top-level map only — toggle is meaningless).
+	_view_mode_btn = Button.new()
+	_view_mode_btn.text = "Strategic Map"
+	_view_mode_btn.flat = true
+	_view_mode_btn.add_theme_font_size_override("font_size", FONT_SIZE)
+	_view_mode_btn.add_theme_color_override("font_color", LABEL_COLOR)
+	_view_mode_btn.custom_minimum_size = Vector2(110, 0)
+	_view_mode_btn.pressed.connect(_on_view_mode_btn_pressed)
+	_view_mode_btn.visible = false
+	grid.add_child(_view_mode_btn)
+
+	# "Enter Region" appears in Strategic view when the active party's
+	# 24-mile hex has an inset child map covering it.
+	_enter_region_btn = Button.new()
+	_enter_region_btn.text = "Enter Region"
+	_enter_region_btn.flat = true
+	_enter_region_btn.add_theme_font_size_override("font_size", FONT_SIZE)
+	_enter_region_btn.add_theme_color_override("font_color", LABEL_COLOR)
+	_enter_region_btn.custom_minimum_size = Vector2(110, 0)
+	_enter_region_btn.pressed.connect(_on_enter_region_btn_pressed)
+	_enter_region_btn.visible = false
+	grid.add_child(_enter_region_btn)
 
 	# Notification surface holds the latest non-modal notification.
 	# Pause-reason text reuses this slot when scheduler pauses.
@@ -581,9 +607,14 @@ func _connect_signals() -> void:
 	# resolution. Combat surfaces emit when CombatUIController.active_instance
 	# transitions; we re-evaluate cheaply on every state-change tick.
 	EventBus.notification_requested.connect(_on_notification_requested)
+	# Migration 119 — cross-scale view toggle visibility tracks the active
+	# party's map + the current view mode.
+	EventBus.map_view_mode_changed.connect(_on_map_view_mode_changed)
+	EventBus.party_map_changed.connect(_on_party_map_changed)
 	_refresh_party_portraits(GameState.active_party_id)
 	_refresh_party_status(GameState.active_party_id)
 	_refresh_notebook_btn_state()
+	_refresh_view_mode_btns()
 
 
 # ---------------------------------------------------------------------------
@@ -632,6 +663,7 @@ func _on_session_ended() -> void:
 func _on_active_party_changed(_prev_id: String, new_id: String) -> void:
 	_refresh_party_portraits(new_id)
 	_refresh_party_status(new_id)
+	_refresh_view_mode_btns()
 
 
 func _on_session_started(_campaign_id: String) -> void:
@@ -1022,3 +1054,138 @@ func _format_first_key_for_action(action_name: String) -> String:
 			if keycode != 0:
 				return OS.get_keycode_string(keycode)
 	return ""
+
+
+# ---------------------------------------------------------------------------
+# Migration 119 — cross-scale view toggle + Enter Region
+# ---------------------------------------------------------------------------
+
+func _on_view_mode_btn_pressed() -> void:
+	var current: GameState.MapViewMode = GameState.map_view_mode
+	if current == GameState.MapViewMode.REGIONAL:
+		GameState.set_map_view_mode(GameState.MapViewMode.STRATEGIC)
+	else:
+		GameState.set_map_view_mode(GameState.MapViewMode.REGIONAL)
+
+
+func _on_enter_region_btn_pressed() -> void:
+	# "Enter Region" only appears in Strategic view when the active party's
+	# 24-mile hex is covered by a child inset. Find that child map and
+	# transition the party into it at the inset's parent_anchor.
+	var party_id := GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+	if party_id.is_empty():
+		return
+	var party := CampaignRepository.get_party(party_id)
+	if party.is_empty():
+		return
+	var party_map_id := String(party.get("current_map_id", ""))
+	if party_map_id.is_empty():
+		return
+	var party_hex := Vector2i(
+		int(party.get("current_hex_q", 0)),
+		int(party.get("current_hex_r", 0)),
+	)
+	var child_map_id := _find_child_map_covering_hex(party_map_id, party_hex)
+	if child_map_id.is_empty():
+		return
+	# Entry hex = the child map's parent_anchor (the (q,r) on the child that
+	# corresponds to the parent hex the party was standing on).
+	var entry_hex := _get_child_parent_anchor(child_map_id)
+	if not CampaignRepository.transition_party_to_map(party_id, child_map_id, entry_hex):
+		push_warning("StatusBar: Enter Region transition failed for child map %s" % child_map_id)
+		return
+	# Switch the camera to Regional view so the player sees the new map.
+	GameState.set_map_view_mode(GameState.MapViewMode.REGIONAL)
+
+
+func _on_map_view_mode_changed(_from_mode: int, _to_mode: int) -> void:
+	_refresh_view_mode_btns()
+
+
+func _on_party_map_changed(_party_id: String, _from_map: String, _to_map: String) -> void:
+	_refresh_view_mode_btns()
+
+
+## Refresh the "Strategic Map / Regional Map" toggle button label + visibility
+## and the "Enter Region" button visibility based on the active party's
+## current map and the active view mode.
+func _refresh_view_mode_btns() -> void:
+	if _view_mode_btn == null or _enter_region_btn == null:
+		return
+	# Only meaningful in wilderness exploration.
+	var in_wilderness := (
+		GameState.current_state == GameState.State.EXPLORATION
+		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
+	)
+	if not in_wilderness:
+		_view_mode_btn.visible = false
+		_enter_region_btn.visible = false
+		return
+
+	var party_id := GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+	if party_id.is_empty():
+		_view_mode_btn.visible = false
+		_enter_region_btn.visible = false
+		return
+	var party := CampaignRepository.get_party(party_id)
+	if party.is_empty():
+		_view_mode_btn.visible = false
+		_enter_region_btn.visible = false
+		return
+	var party_map_id := String(party.get("current_map_id", ""))
+	if party_map_id.is_empty():
+		_view_mode_btn.visible = false
+		_enter_region_btn.visible = false
+		return
+
+	# The toggle is only meaningful if (a) the party's map has a parent, or
+	# (b) the party's map has children (some of its parent hexes have insets).
+	var has_parent := not CampaignRepository.get_hex_map_parent_id(party_map_id).is_empty()
+	var children: Array = CampaignRepository.list_child_maps(party_map_id, GameState.campaign_id)
+	var has_children := children.size() > 0
+	var toggle_meaningful := has_parent or has_children
+	_view_mode_btn.visible = toggle_meaningful
+
+	if GameState.map_view_mode == GameState.MapViewMode.REGIONAL:
+		_view_mode_btn.text = "Strategic Map"
+		_view_mode_btn.tooltip_text = "Switch to the 24-mile strategic view."
+		_enter_region_btn.visible = false
+	else:
+		_view_mode_btn.text = "Regional Map"
+		_view_mode_btn.tooltip_text = "Switch back to the 6-mile regional view."
+		# Show "Enter Region" if the party's 24-mile hex has an inset and
+		# the party isn't already on that inset.
+		var party_hex := Vector2i(
+			int(party.get("current_hex_q", 0)),
+			int(party.get("current_hex_r", 0)),
+		)
+		var inset_id := _find_child_map_covering_hex(party_map_id, party_hex)
+		_enter_region_btn.visible = not inset_id.is_empty()
+
+
+func _find_child_map_covering_hex(parent_map_id: String, hex: Vector2i) -> String:
+	var children: Array = CampaignRepository.list_child_maps(parent_map_id, GameState.campaign_id)
+	for child in children:
+		var fp_json := String(child.get("parent_hex_footprint", "[]"))
+		var footprint: Array = HexMapData.footprint_from_json_string(fp_json)
+		if footprint.has(hex):
+			return String(child.get("id", ""))
+	return ""
+
+
+func _get_child_parent_anchor(child_map_id: String) -> Vector2i:
+	if not CampaignRepository.db.query_with_bindings(
+		"SELECT parent_anchor_q, parent_anchor_r FROM hex_maps WHERE id = ?",
+		[child_map_id]
+	) or CampaignRepository.db.query_result.is_empty():
+		return Vector2i.ZERO
+	var row: Dictionary = CampaignRepository.db.query_result[0]
+	var q_val: Variant = row.get("parent_anchor_q", null)
+	var r_val: Variant = row.get("parent_anchor_r", null)
+	if q_val == null or r_val == null:
+		return Vector2i.ZERO
+	return Vector2i(int(q_val), int(r_val))

@@ -109,8 +109,9 @@ func run_all_tests() -> void:
 # Helpers
 # ---------------------------------------------------------------------------
 
+## 2026-05-16 cp pass: monthly_wage_cp is cp; fixture default is 25 gp = 2500 cp.
 func _make_lifecycle(unpaid_months: int = 0,
-		monthly_wage: int = 25,
+		monthly_wage_cp: int = 2500,
 		inventory_count: int = 0,
 		allow_pay: bool = true) -> FakeLifecycle:
 	var repo := FakeRepo.new()
@@ -119,7 +120,7 @@ func _make_lifecycle(unpaid_months: int = 0,
 		"name": "Test Henchman",
 		"character_type": "henchman",
 		"employer_id": "patron1",
-		"wage_gp_per_month": monthly_wage,
+		"wage_cp_per_month": monthly_wage_cp,
 	}
 	repo.characters["patron1"] = {
 		"id": "patron1",
@@ -178,7 +179,7 @@ func test_dismiss_routes_through_process_departure() -> void:
 
 func test_default_final_wages_unpaid_months_times_wage() -> void:
 	# 2 months unpaid × 25 gp/mo = 50 gp owed → 5000 cp.
-	var lifecycle := _make_lifecycle(2, 25)
+	var lifecycle := _make_lifecycle(2, 2500)
 	lifecycle.dismiss_henchman("henchman1", {
 		"party_id": "party1",
 	})
@@ -190,13 +191,13 @@ func test_default_final_wages_unpaid_months_times_wage() -> void:
 
 
 func test_parting_bonus_stamps_plus_one_morale() -> void:
-	var lifecycle := _make_lifecycle(0, 25)
+	var lifecycle := _make_lifecycle(0, 2500)
 	# Pre-condition: morale_score = 0
 	check(int(lifecycle._repo.states["henchman1"]["morale_score"]) == 0,
 		"baseline morale should be 0")
 	lifecycle.dismiss_henchman("henchman1", {
-		"final_wages_gp": 0,
-		"parting_bonus_gp": 10,
+		"final_wages_cp": 0,
+		"parting_bonus_cp": 1000,
 		"party_id": "party1",
 	})
 	# After dismiss: morale_score should be +1 (the parting bonus stamp).
@@ -210,7 +211,7 @@ func test_parting_bonus_stamps_plus_one_morale() -> void:
 
 
 func test_retention_keep_all_no_inventory_changes() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 3)
+	var lifecycle := _make_lifecycle(0, 2500, 3)
 	lifecycle.dismiss_henchman("henchman1", {
 		"equipment_retention": "keep_all",
 		"party_id": "party1",
@@ -221,7 +222,7 @@ func test_retention_keep_all_no_inventory_changes() -> void:
 
 
 func test_retention_take_party_gear_reassigns_to_employer() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 3)
+	var lifecycle := _make_lifecycle(0, 2500, 3)
 	lifecycle.dismiss_henchman("henchman1", {
 		"equipment_retention": "take_party_gear",
 		"party_id": "party1",
@@ -238,7 +239,7 @@ func test_retention_take_party_gear_reassigns_to_employer() -> void:
 
 
 func test_retention_take_everything_deletes_inventory() -> void:
-	var lifecycle := _make_lifecycle(0, 25, 3)
+	var lifecycle := _make_lifecycle(0, 2500, 3)
 	lifecycle.dismiss_henchman("henchman1", {
 		"equipment_retention": "take_everything",
 		"party_id": "party1",
@@ -250,7 +251,7 @@ func test_retention_take_everything_deletes_inventory() -> void:
 
 func test_pay_failure_returns_false() -> void:
 	# Insufficient funds — should return false WITHOUT advancing the dismissal.
-	var lifecycle := _make_lifecycle(2, 25, 0, false)
+	var lifecycle := _make_lifecycle(2, 2500, 0, false)
 	var ok := lifecycle.dismiss_henchman("henchman1", {
 		"party_id": "party1",
 	})

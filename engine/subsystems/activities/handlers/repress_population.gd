@@ -2,7 +2,7 @@ class_name RepressPopulationHandler
 extends RefCounted
 
 ## repress_population handler [RAW PATCH]. Sets domains.is_repressed_this_month
-## and domains.repression_gp_per_family_this_month per acore_axioms §repression
+## and domains.repression_cp_per_family_this_month per acore_axioms §repression
 ## L510-516 and §monthly_event_modifiers L488-491. Militia troops are not
 ## eligible to repress per L511; the executor's location_kind / params validate
 ## this at launch time.
@@ -32,14 +32,14 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 
 	CampaignRepository.update_domain_monthly_state(domain_id, {
 		"is_repressed_this_month": 1,
-		"repression_gp_per_family_this_month": gp_per_family,
+		"repression_cp_per_family_this_month": gp_per_family,
 	})
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": _calendar_day(),
 		"category": "other",
 		"subcategory": "repression_active",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Population repressed (%d gp/family) — morale capped at 0" % gp_per_family,
 	})
 	return {

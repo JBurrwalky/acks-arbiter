@@ -61,14 +61,14 @@ func _make_character(name: String, cha: int = 14) -> String:
 	return id
 
 
-func _make_domain(name: String, owner: String, peasant_families: int, treasury_gp: int) -> String:
+func _make_domain(name: String, owner: String, peasant_families: int, treasury_cp: int) -> String:
 	var id := CampaignRepository.create_domain({
 		"campaign_id": _campaign_id, "name": name, "owner_character_id": owner,
 	})
 	CampaignRepository.update_domain_monthly_state(id, {
 		"peasant_families": peasant_families,
 		"urban_families": 0,
-		"treasury_gp": treasury_gp,
+		"treasury_cp": treasury_cp,
 	})
 	return id
 
@@ -140,25 +140,25 @@ func test_loan_repayment_succeeds_when_roll_under_cha() -> void:
 		"vassal_character_id": vassal, "vassal_domain_id": vassal_d,
 		"assigned_calendar_day": 1, "is_henchman_vassal": true,
 	})
-	# Pre-seed an active loan owed to lord (gp_value = 100).
+	# Pre-seed an active loan owed to lord (gp_value = 100 → cp_value = 10000 per Migration 116).
 	var loan_id := VassalObligationsRepository.create({
 		"vassal_assignment_id": assn,
 		"kind": "duty", "type": "loan",
-		"gp_value": 100, "issued_calendar_day": 50,
+		"cp_value": 10000, "issued_calendar_day": 50,
 	})
 	# Loaded dice: roll 10 ≤ CHA 18 → repaid.
 	var dice := FakeDice.new()
 	dice.fixed_d100 = 10
-	var lord_before: int = int(CampaignRepository.get_domain(lord_d).get("treasury_gp", 0))
-	var vassal_before: int = int(CampaignRepository.get_domain(vassal_d).get("treasury_gp", 0))
+	var lord_before: int = int(CampaignRepository.get_domain(lord_d).get("treasury_cp", 0))
+	var vassal_before: int = int(CampaignRepository.get_domain(vassal_d).get("treasury_cp", 0))
 	var results: Array = FavorsDutiesResolver.roll_monthly_loan_repayments(assn, 100, dice)
 	check(results.size() == 1, "1 loan processed; got %d" % results.size())
 	check(bool(results[0]["repaid"]), "loan repaid (roll 10 ≤ CHA 18)")
-	# Lord paid vassal back 100 gp.
-	var lord_after: int = int(CampaignRepository.get_domain(lord_d).get("treasury_gp", 0))
-	var vassal_after: int = int(CampaignRepository.get_domain(vassal_d).get("treasury_gp", 0))
-	check(lord_after == lord_before - 100, "lord -100; before=%d after=%d" % [lord_before, lord_after])
-	check(vassal_after == vassal_before + 100, "vassal +100; before=%d after=%d" % [vassal_before, vassal_after])
+	# Lord paid vassal back loan_cp = 10000 cp.
+	var lord_after: int = int(CampaignRepository.get_domain(lord_d).get("treasury_cp", 0))
+	var vassal_after: int = int(CampaignRepository.get_domain(vassal_d).get("treasury_cp", 0))
+	check(lord_after == lord_before - 10000, "lord -10000 cp; before=%d after=%d" % [lord_before, lord_after])
+	check(vassal_after == vassal_before + 10000, "vassal +10000 cp; before=%d after=%d" % [vassal_before, vassal_after])
 	# Loan obligation status is completed.
 	var refreshed := VassalObligationsRepository.get_obligation(loan_id)
 	check(String(refreshed.get("status", "")) == "completed", "loan status completed")
@@ -176,7 +176,7 @@ func test_loan_repayment_fails_when_roll_over_cha() -> void:
 	var loan_id := VassalObligationsRepository.create({
 		"vassal_assignment_id": assn,
 		"kind": "duty", "type": "loan",
-		"gp_value": 100, "issued_calendar_day": 50,
+		"cp_value": 10000, "issued_calendar_day": 50,
 	})
 	var dice := FakeDice.new()
 	dice.fixed_d100 = 50  # 50 > 12 → not repaid
@@ -200,19 +200,21 @@ func test_construction_expenditure_increments_running_total() -> void:
 		"assigned_calendar_day": 1, "is_henchman_vassal": true,
 	})
 	# Construction obligation with target 50000 gp (large enough not to complete in one month)
+	# Migration 116: column is cp_value; pass cp_value: 0 to repo.
 	var ob_id := VassalObligationsRepository.create({
 		"vassal_assignment_id": assn,
 		"kind": "duty", "type": "construction",
-		"magnitude": 50000, "gp_value": 0, "issued_calendar_day": 50,
+		"magnitude": 50000, "cp_value": 0, "issued_calendar_day": 50,
 	})
 	var results: Array = FavorsDutiesResolver.roll_monthly_construction_expenditure(assn, 100)
 	check(results.size() == 1, "1 construction processed")
 	var monthly: int = int(results[0]["monthly_expenditure"])
 	check(monthly > 0, "monthly expenditure > 0; got %d" % monthly)
 	check(not bool(results[0]["completed"]), "not yet completed (only first month)")
-	# Verify running total persisted.
+	# Verify running total persisted. Column is cp_value; monthly is gp.
 	var refreshed := VassalObligationsRepository.get_obligation(ob_id)
-	check(int(refreshed.get("gp_value", 0)) == monthly, "running gp_value = monthly_expenditure")
+	check(int(refreshed.get("cp_value", 0)) == monthly * 100,
+		"running cp_value = monthly_expenditure × 100")
 
 
 func test_construction_expenditure_completes_at_target() -> void:
@@ -225,10 +227,11 @@ func test_construction_expenditure_completes_at_target() -> void:
 		"assigned_calendar_day": 1, "is_henchman_vassal": true,
 	})
 	# Construction with a tiny target — first month's expenditure exceeds it.
+	# Migration 116: column is cp_value (gp × 100).
 	var ob_id := VassalObligationsRepository.create({
 		"vassal_assignment_id": assn,
 		"kind": "duty", "type": "construction",
-		"magnitude": 100, "gp_value": 0, "issued_calendar_day": 50,
+		"magnitude": 100, "cp_value": 0, "issued_calendar_day": 50,
 	})
 	var results: Array = FavorsDutiesResolver.roll_monthly_construction_expenditure(assn, 100)
 	check(bool(results[0]["completed"]), "construction completes when expended >= target")

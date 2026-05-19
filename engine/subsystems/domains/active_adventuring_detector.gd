@@ -190,17 +190,17 @@ func record_siege_participated(domain_id: String) -> void:
 
 
 ## Trigger (g): treasure returned to a settlement. Each call adds [param
-## gp_amount] to the running total; the trigger fires when the cumulative
+## cp_amount] to the running total; the trigger fires when the cumulative
 ## total reaches TREASURE_RETURN_THRESHOLD_GP. Per the spec, the threshold is
 ## computed from NEW acquisitions returned to a settlement — the caller is
 ## responsible for filtering out passive sources (revenue, tribute, hireling
 ## wages).
-func record_treasure_returned(domain_id: String, gp_amount: int) -> void:
-	if gp_amount <= 0:
+func record_treasure_returned(domain_id: String, cp_amount: int) -> void:
+	if cp_amount <= 0:
 		return
 	_ensure_state(domain_id)
 	_state[domain_id][TRIGGER_TREASURE_RETURNED] = \
-		int(_state[domain_id].get(TRIGGER_TREASURE_RETURNED, 0)) + gp_amount
+		int(_state[domain_id].get(TRIGGER_TREASURE_RETURNED, 0)) + cp_amount
 
 
 # ---------------------------------------------------------------------------

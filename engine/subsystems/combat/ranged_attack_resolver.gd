@@ -48,6 +48,22 @@ func resolve_ranged_attack(
 		target_in_melee: bool = false,
 		extra_attack_mod: int = 0) -> Dictionary:
 
+	# Phase 10B.3 #6: hard-block invalid ranged attacks based on permanent
+	# wounds (cannot_use_weapons, cannot_dual_wield for two-handed bows,
+	# etc.). Mirrors the melee resolver's block. Missile weapons are
+	# nearly all two-handed (bows / crossbows); javelins / darts the rare
+	# single-handed exception.
+	if attacker.is_character:
+		var agg: Dictionary = WoundEffectAggregator.compute(attacker.id)
+		if int(agg.get("wound_count", 0)) > 0:
+			if bool(agg.get("cannot_use_weapons", false)):
+				return _build_blocked_result(attacker, target,
+					"both hands amputated — cannot use ranged weapons")
+			if bool(agg.get("cannot_use_two_handed_weapons", false)) \
+					and bool(weapon_data.get("two_handed", false)):
+				return _build_blocked_result(attacker, target,
+					"one hand amputated — cannot use two-handed ranged weapon")
+
 	# --- Range band ---
 	var range_info := _determine_range_band(distance_ft, weapon_data)
 	if range_info["out_of_range"]:

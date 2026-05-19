@@ -54,7 +54,7 @@ func _make_unit() -> String:
 		"campaign_id": _campaign_id, "owner_character_id": _ruler_id,
 		"source_type": "mercenary", "troop_type": "Heavy Infantry",
 		"count": 60, "starting_count": 60, "battle_rating": 1.0,
-		"monthly_wage_gp": 600,
+		"monthly_wage_cp": 600,
 	})
 
 

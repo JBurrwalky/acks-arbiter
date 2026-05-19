@@ -204,7 +204,7 @@ static func resolve_domain_land_revenue(settlement_id: String) -> int:
 	for row in rows:
 		total += float(int((row as Dictionary).get("land_value", 5)))
 	var avg: float = total / float(rows.size())
-	var rounded: int = _bankers_round(avg)
+	var rounded: int = XPAwardCalculator.bankers_round(avg)
 	return clamp(rounded, 3, 9)
 
 
@@ -285,13 +285,5 @@ static func resolve_all(settlement_id: String) -> Dictionary:
 # Helpers
 # ---------------------------------------------------------------------------
 
-## Banker's rounding (round half to even) per CLAUDE.md core principle.
-## GDScript's roundi() rounds half AWAY from zero — that is NOT banker's.
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var frac: float = value - float(floor_val)
-	if absf(frac - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

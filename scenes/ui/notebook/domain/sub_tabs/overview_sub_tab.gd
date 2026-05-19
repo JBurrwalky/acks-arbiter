@@ -173,7 +173,7 @@ func _render_land_value() -> void:
 	for hex in hexes:
 		var lbl := Label.new()
 		var land_value: int = int(hex.get("land_value", 5))
-		var improvement: int = int(hex.get("land_improvement_gp", 0))
+		var improvement: int = int(hex.get("land_improvement_level", 0))
 		var improved_text := ""
 		if improvement > 0:
 			improved_text = " (+%d improvement, base %d)" % [improvement, land_value - improvement]
@@ -203,22 +203,29 @@ func _render_classification() -> void:
 		info.text = "—"
 		return
 	var territory := String(_domain_data.get("territory_type", "wilderness"))
-	var hex_count: int = CampaignRepository.get_domain_hexes(_domain_id).size()
-	var stronghold_value := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum := StrongholdRepository.classification_minimum_gp(territory, hex_count)
+	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
+	# domains) per RAW §noncontiguous_domains; identical to owned count when
+	# the domain is contiguous.
+	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
+	# Both values are cp post-Migration 116.
+	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
+	var minimum_cp := StrongholdRepository.classification_minimum_gp(territory, sufficiency_hex_count)
 	var sufficiency_text: String
-	if minimum <= 0:
+	if minimum_cp <= 0:
 		sufficiency_text = "—"
-	elif stronghold_value >= minimum:
+	elif stronghold_value_cp >= minimum_cp:
 		sufficiency_text = "Sufficient ✓"
-	elif stronghold_value * 2 >= minimum:
+	elif stronghold_value_cp * 2 >= minimum_cp:
 		sufficiency_text = "Insufficient (≥½ minimum, −1 morale)"
-	elif stronghold_value * 4 >= minimum:
+	elif stronghold_value_cp * 4 >= minimum_cp:
 		sufficiency_text = "Insufficient (≥¼ minimum, −2 morale)"
 	else:
 		sufficiency_text = "Insufficient (<¼ minimum, −3 morale + income gate)"
-	info.text = "Current: %s     Stronghold value: %d / %d gp     Status: %s" % [
-		territory.capitalize(), stronghold_value, minimum, sufficiency_text,
+	info.text = "Current: %s     Stronghold value: %s / %s     Status: %s" % [
+		territory.capitalize(),
+		Currency.format_cost(stronghold_value_cp),
+		Currency.format_cost(minimum_cp),
+		sufficiency_text,
 	]
 
 
@@ -296,9 +303,9 @@ func _render_decree() -> void:
 		_liturgy_spin.value = 1
 		_tithe_spin.value = 1
 		return
-	_tax_spin.value = float(int(_domain_data.get("tax_rate_gp_per_family", 2)))
-	_liturgy_spin.value = float(int(_domain_data.get("liturgy_rate_gp_per_family", 1)))
-	_tithe_spin.value = float(int(_domain_data.get("tithe_rate_gp_per_family", 1)))
+	_tax_spin.value = float(int(_domain_data.get("tax_rate_cp_per_family", 2)))
+	_liturgy_spin.value = float(int(_domain_data.get("liturgy_rate_cp_per_family", 1)))
+	_tithe_spin.value = float(int(_domain_data.get("tithe_rate_cp_per_family", 1)))
 
 
 # ---------------------------------------------------------------------------
@@ -333,14 +340,14 @@ func _on_decree_issue_pressed() -> void:
 	if _domain_id.is_empty():
 		return
 	var fields := {
-		"tax_rate_gp_per_family": int(_tax_spin.value),
-		"liturgy_rate_gp_per_family": int(_liturgy_spin.value),
-		"tithe_rate_gp_per_family": int(_tithe_spin.value),
+		"tax_rate_cp_per_family": int(_tax_spin.value),
+		"liturgy_rate_cp_per_family": int(_liturgy_spin.value),
+		"tithe_rate_cp_per_family": int(_tithe_spin.value),
 	}
 	if CampaignRepository.update_domain_settings(_domain_id, fields):
-		EventBus.domain_decree_issued.emit(_domain_id, "tax_rate", {"new": fields["tax_rate_gp_per_family"]})
-		EventBus.domain_decree_issued.emit(_domain_id, "liturgy_rate", {"new": fields["liturgy_rate_gp_per_family"]})
-		EventBus.domain_decree_issued.emit(_domain_id, "tithe_rate", {"new": fields["tithe_rate_gp_per_family"]})
+		EventBus.domain_decree_issued.emit(_domain_id, "tax_rate", {"new": fields["tax_rate_cp_per_family"]})
+		EventBus.domain_decree_issued.emit(_domain_id, "liturgy_rate", {"new": fields["liturgy_rate_cp_per_family"]})
+		EventBus.domain_decree_issued.emit(_domain_id, "tithe_rate", {"new": fields["tithe_rate_cp_per_family"]})
 
 
 # ---------------------------------------------------------------------------

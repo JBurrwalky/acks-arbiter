@@ -102,10 +102,11 @@ func _setup() -> void:
 	})
 	# create_domain doesn't take monthly-state fields; set them via the
 	# monthly-state updater so they're persisted onto the row.
+	# All money columns are now cp (1 gp = 100 cp) per the unified standard.
 	CampaignRepository.update_domain_monthly_state(_domain_id, {
 		"peasant_families": 500,
-		"treasury_gp": 1000,
-		"revenue_gp": 3000,  # used by consecrate_ruler DP cost
+		"treasury_cp": 100_000,   # 1,000 gp working balance
+		"revenue_cp":  300_000,   # 3,000 gp monthly revenue (used by consecrate_ruler DP cost)
 	})
 
 
@@ -125,29 +126,30 @@ func _state_for(character_id: String, activity_def_id: String, params: Dictionar
 
 func test_dispatch_missionaries_accrues_pending_gp() -> void:
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 0, "monthly_growth_pending_gp": 0,
+		"count": 0, "monthly_growth_pending_cp": 0,
 	})
+	# Launcher commits 800 gp → executor stores 80,000 cp in state column.
 	var state := _state_for(_ruler_id, "dispatch_missionaries", {"gp_committed": 800})
-	state["gp_committed"] = 800  # mirrors what the executor would set
+	state["cp_committed"] = 80_000  # mirrors what the executor writes to the column
 	var result := DispatchMissionariesHandler.on_complete(state, null)
 	check(not String(result.get("summary", "")).is_empty(),
 		"handler should return a summary")
 	var row := CampaignRepository.get_congregants(_ruler_id)
-	check(int(row.get("monthly_growth_pending_gp", 0)) == 800,
-		"pending_gp should be 800, got %s" % str(row.get("monthly_growth_pending_gp", 0)))
+	check(int(row.get("monthly_growth_pending_cp", 0)) == 80_000,
+		"pending_cp should be 80,000 (= 800 gp), got %s" % str(row.get("monthly_growth_pending_cp", 0)))
 
 
 func test_dispatch_missionaries_zero_gp_no_op() -> void:
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 0, "monthly_growth_pending_gp": 0,
+		"count": 0, "monthly_growth_pending_cp": 0,
 	})
 	var state := _state_for(_ruler_id, "dispatch_missionaries", {"gp_committed": 0})
-	state["gp_committed"] = 0
+	state["cp_committed"] = 0
 	var result := DispatchMissionariesHandler.on_complete(state, null)
-	check(String(result.get("summary", "")).contains("no gp"),
-		"summary should note zero gp; got '%s'" % result.get("summary", ""))
+	check(String(result.get("summary", "")).contains("no cp"),
+		"summary should note zero cp; got '%s'" % result.get("summary", ""))
 	var row := CampaignRepository.get_congregants(_ruler_id)
-	check(int(row.get("monthly_growth_pending_gp", 0)) == 0,
+	check(int(row.get("monthly_growth_pending_cp", 0)) == 0,
 		"pending_gp should remain 0")
 
 
@@ -157,16 +159,17 @@ func test_dispatch_missionaries_zero_gp_no_op() -> void:
 
 func test_cast_charitable_spells_accrues_pending_gp() -> void:
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 0, "monthly_growth_pending_gp": 0,
+		"count": 0, "monthly_growth_pending_cp": 0,
 	})
+	# Launcher reports 150 gp of charitable spell value → handler stores 15,000 cp.
 	var state := _state_for(_ruler_id, "cast_charitable_spells", {
 		"gp_value_total": 150, "spell_keys": ["bless", "cure_light_wounds"],
 	})
 	var result := CastCharitableSpellsHandler.on_complete(state, null)
 	check(not String(result.get("summary", "")).is_empty(), "should return summary")
 	var row := CampaignRepository.get_congregants(_ruler_id)
-	check(int(row.get("monthly_growth_pending_gp", 0)) == 150,
-		"pending_gp should be 150, got %s" % str(row.get("monthly_growth_pending_gp", 0)))
+	check(int(row.get("monthly_growth_pending_cp", 0)) == 15_000,
+		"pending_cp should be 15,000 (= 150 gp), got %s" % str(row.get("monthly_growth_pending_cp", 0)))
 
 
 # ---------------------------------------------------------------------------
@@ -195,10 +198,11 @@ func test_consecrate_altar_completes_and_inserts_row() -> void:
 
 
 func test_consecrate_altar_dp_substitution() -> void:
-	# Substitute 500 gp DP for 500 gp altar value; total aura should include both.
+	# Substitute 500 gp DP (= 50,000 cp) for 500 gp altar value; total aura
+	# should include both.
 	var state := _state_for(_ruler_id, "consecrate_altar", {
 		"gp_invested": 500,
-		"dp_substituted_gp": 500,
+		"dp_substituted_cp": 50000,
 		"alignment": "lawful",
 		"location_kind": "stronghold",
 		"location_ref": _domain_id,
@@ -208,18 +212,18 @@ func test_consecrate_altar_dp_substitution() -> void:
 	var altars := CampaignRepository.list_consecrated_altars_for_character(_ruler_id)
 	check(altars.size() == prior_count + 1, "altar inserted")
 	# list ordering is by (started_calendar_day, id) which UUID-sorts. Filter
-	# by dp_substituted_gp > 0 to pick the row this test created (the prior
-	# test's altar has dp_substituted_gp=0).
+	# by dp_substituted_cp > 0 to pick the row this test created (the prior
+	# test's altar has dp_substituted_cp=0).
 	var dp_altar: Dictionary = {}
 	for r: Dictionary in altars:
-		if int(r.get("dp_substituted_gp", 0)) > 0:
+		if int(r.get("dp_substituted_cp", 0)) > 0:
 			dp_altar = r
 			break
 	check(not dp_altar.is_empty(), "should find the dp-substituted altar")
 	check(int(dp_altar.get("aura_size_sq_ft", 0)) == 1000,
 		"aura_size_sq_ft should be 1000 (500 gp + 500 dp), got %d" % dp_altar.get("aura_size_sq_ft", 0))
-	check(int(dp_altar.get("dp_substituted_gp", 0)) == 500,
-		"dp_substituted_gp recorded")
+	check(int(dp_altar.get("dp_substituted_cp", 0)) == 50000,
+		"dp_substituted_cp recorded")
 
 
 # ---------------------------------------------------------------------------
@@ -227,32 +231,32 @@ func test_consecrate_altar_dp_substitution() -> void:
 # ---------------------------------------------------------------------------
 
 func test_consecrate_fields_insufficient_dp_aborts() -> void:
-	# 500 families × 2 gp = 1000 DP required. Set balance to 100; handler must
-	# abort with insufficient DP.
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
-	CampaignRepository.add_divine_power(_ruler_id, 100)
+	# 500 families × 2 gp = 1000 gp DP required = 100,000 cp. Seed balance to
+	# 10,000 cp (= 100 gp); handler must abort with insufficient DP.
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
+	CampaignRepository.add_divine_power_cp(_ruler_id, 10_000)
 	var state := _state_for(_ruler_id, "consecrate_fields")
 	var result := ConsecrateFieldsHandler.on_complete(state, null)
 	check(String(result.get("summary", "")).contains("insufficient"),
 		"summary should report insufficient DP; got '%s'" % result.get("summary", ""))
 	# DP balance unchanged.
-	check(CampaignRepository.get_divine_power_gp(_ruler_id) == 100,
+	check(CampaignRepository.get_divine_power_cp(_ruler_id) == 10_000,
 		"DP balance should be unchanged on insufficient-DP abort")
 
 
 func test_consecrate_fields_consumes_dp_and_enqueues_effect() -> void:
-	# Reset DP to a generous balance (5000 gp).
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
-	CampaignRepository.add_divine_power(_ruler_id, 5000)
+	# Reset DP to a generous balance: 5,000 gp = 500,000 cp.
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
+	CampaignRepository.add_divine_power_cp(_ruler_id, 500_000)
 	var prior_pending := CampaignRepository.list_pending_divine_effects_due(
 		_domain_id, 99999, "consecrate_fields_land_value").size()
 	var state := _state_for(_ruler_id, "consecrate_fields")
 	var result := ConsecrateFieldsHandler.on_complete(state, null)
 	check(not String(result.get("summary", "")).is_empty(), "summary present")
-	# DP debited by 500 fam × 2 gp = 1000 gp.
-	var new_dp := CampaignRepository.get_divine_power_gp(_ruler_id)
-	check(new_dp == 4000,
-		"DP should be 4000 after 1000-gp debit, got %d" % new_dp)
+	# DP debited by 500 fam × 2 gp = 1,000 gp = 100,000 cp; remaining 400,000 cp.
+	var new_dp := CampaignRepository.get_divine_power_cp(_ruler_id)
+	check(new_dp == 400_000,
+		"DP should be 400,000 cp after 100,000 cp debit, got %d" % new_dp)
 	# Whether or not the throw succeeded, the handler should have done the
 	# debit. A pending effect is enqueued IFF the throw was success or
 	# natural-1 — non-natural-1 failures simply don't enqueue.
@@ -283,16 +287,17 @@ func test_consecrate_ruler_below_level_9_aborts() -> void:
 
 
 func test_consecrate_ruler_consumes_dp_and_enqueues_buff() -> void:
-	# Ruler's domain monthly revenue is 3000 gp (set in _setup). Give the
-	# caster 5000 DP and confirm 3000 is consumed.
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
-	CampaignRepository.add_divine_power(_ruler_id, 5000)
+	# Ruler's domain monthly revenue is 3,000 gp = 300,000 cp (set in _setup).
+	# Give the caster 500,000 cp DP (= 5,000 gp) and confirm 300,000 cp is
+	# consumed, leaving 200,000 cp.
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
+	CampaignRepository.add_divine_power_cp(_ruler_id, 500_000)
 	var state := _state_for(_ruler_id, "consecrate_ruler", {
 		"ruler_character_id": _ruler_id,
 	})
 	ConsecrateRulerHandler.on_complete(state, null)
-	check(CampaignRepository.get_divine_power_gp(_ruler_id) == 2000,
-		"DP should be 5000 - 3000 = 2000, got %d" % CampaignRepository.get_divine_power_gp(_ruler_id))
+	check(CampaignRepository.get_divine_power_cp(_ruler_id) == 200_000,
+		"DP should be 500,000 - 300,000 = 200,000 cp, got %d" % CampaignRepository.get_divine_power_cp(_ruler_id))
 	# Whether success or natural-1, an 'applied' row should exist with a buff
 	# payload. (Ordinary failure produces no row.)
 	var active := CampaignRepository.list_active_divine_effects(_domain_id, 1, "consecrate_ruler_buff")
@@ -313,7 +318,7 @@ func test_consecrate_ruler_consumes_dp_and_enqueues_buff() -> void:
 
 func test_extract_dp_below_50_congregants_fails() -> void:
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 49, "monthly_growth_pending_gp": 0,
+		"count": 49, "monthly_growth_pending_cp": 0,
 	})
 	var state := _state_for(_ruler_id, "extract_divine_power")
 	var result := ExtractDivinePowerHandler.on_complete(state, null)
@@ -322,23 +327,23 @@ func test_extract_dp_below_50_congregants_fails() -> void:
 
 
 func test_extract_dp_base_formula_congregants_div_5_times_10() -> void:
-	# 250 congregants → base_dp = 250 / 5 = 50 gp. Ruler bonus is randomized
-	# (0..8 per 10 families with 500 families = 0..400 bonus), so just verify
-	# DP increases by AT LEAST 50.
+	# 250 congregants → base_dp = 250 / 5 = 50 gp = 5,000 cp. Ruler bonus is
+	# randomized (0..8 per 10 families with 500 families = 0..400 gp bonus,
+	# 0..40,000 cp); verify DP increases by AT LEAST 5,000 cp.
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 250, "monthly_growth_pending_gp": 0,
+		"count": 250, "monthly_growth_pending_cp": 0,
 	})
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
 	var state := _state_for(_ruler_id, "extract_divine_power")
 	ExtractDivinePowerHandler.on_complete(state, null)
-	var new_dp := CampaignRepository.get_divine_power_gp(_ruler_id)
-	check(new_dp >= 50,
-		"DP should increase by >= 50 from congregants/5*10 formula, got %d" % new_dp)
+	var new_dp := CampaignRepository.get_divine_power_cp(_ruler_id)
+	check(new_dp >= 5_000,
+		"DP should increase by >= 5,000 cp (50 gp) from congregants/5×10 formula, got %d" % new_dp)
 
 
 func test_extract_dp_stamps_last_extraction() -> void:
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 100, "monthly_growth_pending_gp": 0,
+		"count": 100, "monthly_growth_pending_cp": 0,
 	})
 	CampaignRepository.set_divine_power_last_extraction(_ruler_id, 0)
 	var state := _state_for(_ruler_id, "extract_divine_power")
@@ -362,15 +367,16 @@ func test_blood_sacrifice_lawful_caster_aborts() -> void:
 
 
 func test_blood_sacrifice_chaotic_caster_adds_xp_as_dp() -> void:
-	CampaignRepository.add_divine_power(_chaotic_caster_id, -CampaignRepository.get_divine_power_gp(_chaotic_caster_id))
+	CampaignRepository.add_divine_power_cp(_chaotic_caster_id, -CampaignRepository.get_divine_power_cp(_chaotic_caster_id))
 	# Chaotic caster L7 → up to 7 sacrifices per session. 3 XP values; should all be consumed.
+	# Total XP = 50+100+300 = 450 gp DP = 45,000 cp.
 	var state := _state_for(_chaotic_caster_id, "perform_blood_sacrifice", {
 		"sacrifice_xp_values": [50, 100, 300],
 	})
 	PerformBloodSacrificeHandler.on_complete(state, null)
-	var new_dp := CampaignRepository.get_divine_power_gp(_chaotic_caster_id)
-	check(new_dp == 450,
-		"DP should be 50+100+300 = 450, got %d" % new_dp)
+	var new_dp := CampaignRepository.get_divine_power_cp(_chaotic_caster_id)
+	check(new_dp == 45_000,
+		"DP should be (50+100+300) gp × 100 = 45,000 cp, got %d" % new_dp)
 
 
 # ---------------------------------------------------------------------------
@@ -388,15 +394,16 @@ func test_ceremonial_sacrifice_chaotic_caster_aborts() -> void:
 
 func test_ceremonial_sacrifice_lawful_caster_accrues_pending_gp() -> void:
 	CampaignRepository.upsert_congregants(_lawful_caster_id, {
-		"count": 0, "monthly_growth_pending_gp": 0,
+		"count": 0, "monthly_growth_pending_cp": 0,
 	})
+	# 75 gp offering → handler stores 7,500 cp.
 	var state := _state_for(_lawful_caster_id, "perform_ceremonial_sacrifice", {
 		"gp_value_total": 75,
 	})
 	PerformCeremonialSacrificeHandler.on_complete(state, null)
 	var row := CampaignRepository.get_congregants(_lawful_caster_id)
-	check(int(row.get("monthly_growth_pending_gp", 0)) == 75,
-		"pending_gp should be 75, got %s" % str(row.get("monthly_growth_pending_gp", 0)))
+	check(int(row.get("monthly_growth_pending_cp", 0)) == 7_500,
+		"pending_cp should be 7,500 (= 75 gp), got %s" % str(row.get("monthly_growth_pending_cp", 0)))
 
 
 # ---------------------------------------------------------------------------
@@ -404,21 +411,22 @@ func test_ceremonial_sacrifice_lawful_caster_accrues_pending_gp() -> void:
 # ---------------------------------------------------------------------------
 
 func test_monthly_congregant_growth_4500_gp_rolls_four_times() -> void:
-	# 4,500 gp pending → 4 rolls of 1d10+CHA mod (caster CHA=14 → +1 mod).
+	# 4,500 gp pending (= 450,000 cp) → 4 rolls of 1d10+CHA mod (caster CHA=14
+	# → +1 mod), each triggered per 100,000 cp (RAW: 1,000 gp).
 	# Each roll yields 2..11 (1+1 to 10+1). Expected growth: 8..44. Pending
-	# remainder: 500 gp.
+	# remainder: 50,000 cp (= 500 gp).
 	CampaignRepository.upsert_congregants(_ruler_id, {
 		"count": 100,
-		"monthly_growth_pending_gp": 4500,
+		"monthly_growth_pending_cp": 450_000,
 		"last_resolved_calendar_day": 0,
 	})
 	# Use the caster's actual CHA mod (CHA 14 → +1).
 	var result := FaithMonthlyResolver.resolve_congregants_monthly(
 		_ruler_id, 1, _domain_id, 28)
-	check(int(result.get("pending_gp_consumed", 0)) == 4000,
-		"should consume 4000 gp (4 × 1000), got %d" % result.get("pending_gp_consumed", 0))
-	check(int(result.get("pending_gp_remaining", 0)) == 500,
-		"500 gp should remain, got %d" % result.get("pending_gp_remaining", 0))
+	check(int(result.get("pending_cp_consumed", 0)) == 400_000,
+		"should consume 400,000 cp (4 × 100,000), got %d" % result.get("pending_cp_consumed", 0))
+	check(int(result.get("pending_cp_remaining", 0)) == 50_000,
+		"50,000 cp should remain, got %d" % result.get("pending_cp_remaining", 0))
 	check(int(result.get("growth_rolled", 0)) >= 8,
 		"growth should be >= 8 (4 × min 2), got %d" % result.get("growth_rolled", 0))
 	check(int(result.get("growth_rolled", 0)) <= 44,
@@ -428,44 +436,45 @@ func test_monthly_congregant_growth_4500_gp_rolls_four_times() -> void:
 
 
 func test_monthly_congregant_upkeep_paid_from_dp() -> void:
-	# 100 congregants × 1 gp = 100 gp upkeep. Caster has 1000 DP → upkeep paid
-	# in full from DP; treasury untouched.
+	# 100 congregants × 1 gp = 100 gp upkeep = 10,000 cp. Caster has 100,000
+	# cp DP → upkeep paid in full from DP; treasury untouched.
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 100, "monthly_growth_pending_gp": 0,
+		"count": 100, "monthly_growth_pending_cp": 0,
 	})
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
-	CampaignRepository.add_divine_power(_ruler_id, 1000)
-	var prior_treasury := int(_get_domain_field("treasury_gp"))
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
+	CampaignRepository.add_divine_power_cp(_ruler_id, 100_000)
+	var prior_treasury := int(_get_domain_field("treasury_cp"))
 	var result := FaithMonthlyResolver.resolve_congregants_monthly(
 		_ruler_id, 1, _domain_id, 28)
-	check(int(result.get("upkeep_paid", 0)) == 100,
-		"upkeep_paid should be 100, got %d" % result.get("upkeep_paid", 0))
+	check(int(result.get("upkeep_paid", 0)) == 10_000,
+		"upkeep_paid should be 10,000 cp (= 100 gp), got %d" % result.get("upkeep_paid", 0))
 	check(int(result.get("upkeep_unpaid", 0)) == 0,
 		"upkeep_unpaid should be 0")
-	check(CampaignRepository.get_divine_power_gp(_ruler_id) == 900,
-		"DP should be 1000 - 100 = 900, got %d" % CampaignRepository.get_divine_power_gp(_ruler_id))
-	check(int(_get_domain_field("treasury_gp")) == prior_treasury,
-		"treasury_gp should be unchanged when DP covers upkeep")
+	check(CampaignRepository.get_divine_power_cp(_ruler_id) == 90_000,
+		"DP should be 100,000 - 10,000 = 90,000 cp, got %d" % CampaignRepository.get_divine_power_cp(_ruler_id))
+	check(int(_get_domain_field("treasury_cp")) == prior_treasury,
+		"treasury_cp should be unchanged when DP covers upkeep")
 
 
 func test_monthly_congregant_attrition_when_unpaid() -> void:
-	# 5,000 congregants × 1 gp = 5,000 gp upkeep. DP = 0, treasury = 1,000.
-	# After paying 1,000 from treasury, 4,000 gp remain unpaid. Attrition:
-	# 4 × 1d10 congregants depart (4..40 range).
+	# 5,000 congregants × 1 gp = 5,000 gp upkeep = 500,000 cp. DP = 0,
+	# treasury = 100,000 cp (= 1,000 gp). After paying 100,000 cp from
+	# treasury, 400,000 cp remain unpaid. Attrition: 4 × 1d10 congregants
+	# depart (4..40 range) per RAW 1d10 per 1,000 gp unpaid.
 	CampaignRepository.upsert_congregants(_ruler_id, {
-		"count": 5000, "monthly_growth_pending_gp": 0,
+		"count": 5000, "monthly_growth_pending_cp": 0,
 	})
-	CampaignRepository.add_divine_power(_ruler_id, -CampaignRepository.get_divine_power_gp(_ruler_id))
-	CampaignRepository.update_domain_monthly_state(_domain_id, {"treasury_gp": 1000})
+	CampaignRepository.add_divine_power_cp(_ruler_id, -CampaignRepository.get_divine_power_cp(_ruler_id))
+	CampaignRepository.update_domain_monthly_state(_domain_id, {"treasury_cp": 100_000})
 	var result := FaithMonthlyResolver.resolve_congregants_monthly(
 		_ruler_id, 1, _domain_id, 28)
-	check(int(result.get("upkeep_paid", 0)) == 1000,
-		"upkeep_paid should be 1000 (treasury), got %d" % result.get("upkeep_paid", 0))
-	check(int(result.get("upkeep_unpaid", 0)) == 4000,
-		"upkeep_unpaid should be 4000, got %d" % result.get("upkeep_unpaid", 0))
+	check(int(result.get("upkeep_paid", 0)) == 100_000,
+		"upkeep_paid should be 100,000 cp (= 1,000 gp from treasury), got %d" % result.get("upkeep_paid", 0))
+	check(int(result.get("upkeep_unpaid", 0)) == 400_000,
+		"upkeep_unpaid should be 400,000 cp (= 4,000 gp), got %d" % result.get("upkeep_unpaid", 0))
 	check(int(result.get("attrition", 0)) >= 4 and int(result.get("attrition", 0)) <= 40,
 		"attrition should be 4..40 (4 × 1d10), got %d" % result.get("attrition", 0))
-	check(int(_get_domain_field("treasury_gp")) == 0,
+	check(int(_get_domain_field("treasury_cp")) == 0,
 		"treasury should be drained to 0")
 
 

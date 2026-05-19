@@ -39,7 +39,9 @@ func _make_character(name: String) -> String:
 	return id
 
 
-func _make_army_with_supply(stockpile: int, weekly_cost: int = 0) -> String:
+## 2026-05-16 army wage cp pass: stockpile_cp + weekly_cost_cp; fixture sig
+## takes cp magnitudes directly.
+func _make_army_with_supply(stockpile_cp: int, weekly_cost_cp: int = 0) -> String:
 	var army_id: String = ArmyRepository.create_army({
 		"campaign_id": _campaign_id, "name": "SupplyArmy",
 		"political_owner_id": _ruler_id, "command_character_id": _ruler_id,
@@ -47,12 +49,12 @@ func _make_army_with_supply(stockpile: int, weekly_cost: int = 0) -> String:
 	})
 	ArmyRepository.create_supply_state({
 		"army_id": army_id,
-		"current_stockpile_gp": stockpile,
+		"current_stockpile_cp": stockpile_cp,
 	})
-	# Add a unit so weekly cost can be computed (60 gp/week base for
-	# infantry; 240/4 = 60 weekly when monthly_supply_gp=240, which is the
-	# Phase 5 monthly = 4 × weekly).
-	if weekly_cost > 0:
+	# Add a unit so weekly cost can be computed. Phase 5 stores
+	# monthly_supply_cp; supply_calculator divides by 4 to get weekly cp
+	# (cp-native end-to-end per this pass).
+	if weekly_cost_cp > 0:
 		var leader: String = ArmyRepository.create_officer({
 			"army_id": army_id, "character_id": _ruler_id, "rank": "army_leader",
 			"appointed_calendar_day": 100,
@@ -61,8 +63,8 @@ func _make_army_with_supply(stockpile: int, weekly_cost: int = 0) -> String:
 			"campaign_id": _campaign_id, "owner_character_id": _ruler_id,
 			"source_type": "mercenary", "troop_type": "Heavy Infantry",
 			"count": 60, "starting_count": 60, "battle_rating": 1.0,
-			"monthly_supply_gp": weekly_cost * 4,
-			"monthly_specialist_gp": 1,  # quartermaster present (avoid ×2)
+			"monthly_supply_cp": weekly_cost_cp * 4,
+			"monthly_specialist_cp": 100,  # quartermaster present (avoid ×2; >0 flag)
 		})
 		ArmyRepository.create_assignment({
 			"army_id": army_id, "troop_unit_id": unit_id,
@@ -85,20 +87,22 @@ func test_rejects_missing_supply_state() -> void:
 
 
 func test_deducts_weekly_cost_from_stockpile() -> void:
-	var army_id := _make_army_with_supply(500, 60)  # 500 stockpile, 60 weekly cost
+	# 500 cp stockpile, 60 cp weekly cost.
+	var army_id := _make_army_with_supply(500, 60)
 	var tracker := ArmySupplyTracker.new()
 	var result := tracker.run_supply_tick(army_id, 100)
 	check(bool(result.get("success", false)), "tick success")
-	check(int(result.get("weekly_cost_gp", 0)) == 60, "weekly cost = 60; got %d" % result.get("weekly_cost_gp", 0))
-	check(int(result.get("stockpile_after", 0)) == 440, "stockpile 500 - 60 = 440; got %d" % result.get("stockpile_after", 0))
+	check(int(result.get("weekly_cost_cp", 0)) == 60, "weekly cost = 60 cp; got %d" % result.get("weekly_cost_cp", 0))
+	check(int(result.get("stockpile_after", 0)) == 440, "stockpile 500 - 60 = 440 cp; got %d" % result.get("stockpile_after", 0))
 	check(int(result.get("consecutive_unsupplied_weeks", 99)) == 0, "no shortfall → counter 0")
 
 
 func test_shortfall_increments_consecutive_unsupplied_weeks() -> void:
-	var army_id := _make_army_with_supply(50, 60)  # 50 stockpile, 60 cost → 10 short
+	# 50 cp stockpile, 60 cp cost → 10 cp short.
+	var army_id := _make_army_with_supply(50, 60)
 	var tracker := ArmySupplyTracker.new()
 	var result := tracker.run_supply_tick(army_id, 100)
-	check(int(result.get("shortfall", 0)) == 10, "shortfall = 10")
+	check(int(result.get("shortfall", 0)) == 10, "shortfall = 10 cp")
 	check(int(result.get("stockpile_after", -1)) == 0, "stockpile clamped to 0")
 	check(int(result.get("consecutive_unsupplied_weeks", 0)) == 1, "counter = 1 after first shortfall")
 

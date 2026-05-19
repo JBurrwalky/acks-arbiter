@@ -150,8 +150,55 @@ While each individual chaotic entity seeks to accumulate as much power to itself
 
 When a chaotic follower of sufficient ambition sets out to gain power, the gods of chaos will sometimes lend their own power to him or her to further their own goals, power they expect to re-absorb when the follower dies. But by committing acts of chaos the chaotic mortal also gains power from those they harm and from the world around them, absorbing the spiritual power of those they dominate, slay, or otherwise harm. (This is another in world justification for the power gain of leveling up).
 
-## 2.2 Magic Power and Divine Power
+## 2.2 Primal Energy: Magic Power, Divine Power, and XP.
 
-In Arbiter's setting, Magic Power and Divine Power are both the same energy of creation that enables all things to exist. Lower order things (rocks, plants) possess lesser amounts of it, higher order things possess greater amounts of it (animals, humans, spirits). Some objects contain unusually high amounts of such power in specific configurations, such things are magical ingredients or spell components. Some creatures are more naturally attuned to it, like Elves or certain magical animals or plants, and contain or channel amounts of such energy uncommon for creatures of their kind.
+In Arbiter's setting, Magic Power and Divine Power are both the same Primal Energy of creation that enables all things to exist. Lower order things (rocks, plants) possess lesser amounts of it, higher order things possess greater amounts of it (animals, humans, spirits). Some objects contain unusually high amounts of such power in specific configurations, such things are magical ingredients or spell components. Some creatures are more naturally attuned to it, like Elves or certain magical animals or plants, and contain or channel amounts of such energy uncommon for creatures of their kind.
 
-The gods thrive on it, and are in some sense composed entirely of it, as are souls. 
+The gods thrive on it, and are in some sense composed entirely of it, as are souls. Rational souls need more energy than non-rational souls. Everything that has individual substance has a soul composed of this energy, but thinks like rocks have very little, just enough to inform their physical characteristics, wherease plants require enough to inform their growth cycles, and animals require even more to inform their movement and behaviors, and rational creatures require yet more to be able to think and act freely.
+
+Any creature that consumes or uses Primal Energy leaves a certain unique quality or mark to it when it leaves them, though it fades over time, and thus certain creatures body parts are useful for certain spells, and Primal Energy from a Lawful god is more naturally destructive to Chaotic creatures like Undead. It is also this property that allows a person's soul to be recaptured and reinfused into their body through a resurrection or restore life and limb spell, though sometimes other sources of Primal Energy are needed to supplement a soul's lost power, resulting in the oddities of the "tampering with mortality" tables.
+
+### 2.2.1 Divine Power
+
+Divine Power is this same energy locked into the Divine Economy, where gods or similar higher order entities posses great quantities of Pirmal Energy and share it back to their devotees and clerics in myraid forms, most visibly through spells and blessings, but also through good harvests, or good luck. The devotees then replenish the god's store of it by offering things from the physical world as sacrifices or offering aspects of themselves to the god by worship, praise, and behavior conformed to the god's mandates and sphere of influence.
+
+The gods also naturally accumulate errant Primal Energy like a metaphysical gravity well. As said before, everything that uses Primal Energy leaves a certain quality to it, and the closer this quality is to a particular god's quality the faster and the more likely it is to be absorbed by that god. Thus being that are chaotic funnel energy toward the chaos gods and being that lawful funnel energy to the gods of law.
+
+### 2.2.2 Magic Power
+
+Mages, sorcerers and other arcane magic users channel the energy present in the ambient world or in themselves to perform mighty acts that appear almost godlike. They have learned the secrets of manipulating the Primal Energy that suffuses the world and of drawing out of things, infusing it into them, or of manipulating it within them. The most common source of the energy is the stars, but it can also be drawn from the air, soil, stone, or nearby fire or water, but it can be drawn from nearly any source including the caster or the caster's target, and it takes surprisingly little to accomplish great effects.
+
+
+### 2.2.3 Experience Points
+
+Characters IN the game world are aware of the existence of Divine and Magic Power and of Primal Energy, and they are aware than non-casters can accumulate it within themselves without having the ability to cast magic, but they are NOT aware of "XP" or "levels" or "Hit Dice". These things are abstractions for gameplay purposes. What they ARE aware of however is the outsized effect certain idnividuals seem to have on the world around them, the extraordinary capabilities in combat, leadership, or subterfuge that great warriors, generals, and thieves posses that are quite beyond the capabilities of ordinary folk. Most people, being uneducated peasants, chalk it up to fate or divine favor or just happenstance of birth, but the educated nobility and wise sages are aware that it is the accumulation of Primal Energy that enables such men to surpass their natural talents and become truly great.
+
+As such, while no one in the world will speak of "experience points" or of a "9th level fighter" or "5th level mage", they will nevertheless speak of a man with powerful Energies, or an imposing presence, or some other such analogy, whether they are aware of what causes it or not. And it is the conscious or unconcious channeling of such energy that allows some such men to perform supernatural feats (like a high level rogue's ability to sneak up on nearly anything), or to achieve supernatural results with otherwise mundane activites (like a high level fighter's ability to Cleave through half a dozen foes in a few grim seconds).
+
+### 2.2.4 In-World Knowledge and Debate of Primal Energy
+
+Very few characters truly know how Primal Energy works (only Sages with 3 ranks of Knowledge (Metaphysics), Theology or Collegiate Wizardry), and even they differ on the specifics of how the exact economy of Primal Energy, Divine Power, and Magic Power actually flows. Some deny it's existence outright, other claim that all matter is merely an illusion and only Primal Energy existis, others that Magic Power, Divine Power, and Primal Energy are separate and competing sources of power, etc. For the most part, Arcane Casters, Sages, and Divine Casters know more about HOW to use Primal Energy than WHY it works, which is why Divine Rituals are closely preserved and seldom modified and spell formulae are usualy copies of copies of copies and creating a new one take ssuch immense cost and time. The process works, and no one knows why.
+
+## General Cosmology
+
+### 2.3.1 The Planes and Spheres
+
+### Heaven
+
+### Hell
+
+### The World
+
+### The Sun, Moon, and Stars
+
+### The elemental Spheres
+
+## 2.3 General Cosmology
+
+### 2.3.1 The Beginning
+
+In the beginning was the One, who is Law itself, and he is Law unto himself. He is perfect inner harmony, and it was by his own design and without any compulsion that he created all Creation. He created the World, the stars, and the animals and plants and the various other beings within the world. Over the World, and over all the rest of Creation, he appointed invisible guardians and stewards which men call "gods." Though these beings are of greatly varied kinds and abilities, more diverse than the whole manner of physical creation, mortals have not the ability to comprehend any one of them and so call them all by the same term "gods."
+
+The stewards and guardians were appointed to carry out the laws of creation, maintaining the movement of the sun and moon and stars, of the ocean currents and tides, of wind and weather, and even of the animals and plants, and were appointed to sheperd and guide mortals, given freedom of will, in the paths of the One's law.
+
+Through some unknown event however, many of the gods left the service of the One and rebelled against him, seeking to obtain the power become a law unto themselves as the One is. This led to a war among the gods, which rages even to this day: the Gods of Law seek to maintain the harmony they were tasked with safeguarding, while the Gods of Chaos seek to consume it entirely. The Gods of Chaos, in their greed and voraciousness, quickly grew in power and began to interact directly with Mortals, entering into pacts with some of the great among them, these mortals 

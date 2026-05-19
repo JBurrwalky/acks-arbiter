@@ -117,8 +117,9 @@ func _render_supply() -> void:
 		return
 	var lines := [
 		"Status: %s" % String(supply.get("supply_line_status", "—")).replace("_", " "),
-		"Stockpile: %d gp" % int(supply.get("current_stockpile_gp", 0)),
-		"Weekly cost: %d gp" % int(supply.get("weekly_supply_cost_gp", 0)),
+		# Stockpile + weekly cost are cp; format_cost denominates.
+		"Stockpile: %s" % Currency.format_cost(int(supply.get("current_stockpile_cp", 0))),
+		"Weekly cost: %s" % Currency.format_cost(int(supply.get("weekly_supply_cost_cp", 0))),
 		"Weighted line: %d hexes" % int(supply.get("supply_line_weighted_hexes", 0)),
 		"Consecutive unsupplied weeks: %d" % int(supply.get("consecutive_unsupplied_weeks", 0)),
 	]

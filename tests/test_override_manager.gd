@@ -209,45 +209,45 @@ func test_character_status_toggle() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adjust_gold_add() -> void:
-	# Ensure no coin_gp item exists
+	# Ensure no coins_gp item exists (plural prefix matches Currency.DENOMINATIONS)
 	CampaignRepository.db.query_with_bindings(
-		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coin_gp'",
+		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coins_gp'",
 		[TEST_CHARACTER_ID]
 	)
 	_mgr.override_adjust_gold(TEST_CHARACTER_ID, 150)
 	var items := CampaignRepository.get_inventory_items(TEST_CHARACTER_ID)
 	var found_gold := false
 	for item in items:
-		if item.get("item_key", "") == "coin_gp":
+		if item.get("item_key", "") == "coins_gp":
 			found_gold = true
 			check(item.get("quantity", 0) == 150, "gold qty should be 150, got %d" % item.get("quantity", 0))
-	check(found_gold, "coin_gp item not created")
+	check(found_gold, "coins_gp item not created")
 
 
 func test_adjust_gold_subtract() -> void:
 	# Ensure 200 GP exists
 	CampaignRepository.db.query_with_bindings(
-		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coin_gp'",
+		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coins_gp'",
 		[TEST_CHARACTER_ID]
 	)
 	_mgr.override_adjust_gold(TEST_CHARACTER_ID, 200)
 	_mgr.override_adjust_gold(TEST_CHARACTER_ID, -50)
 	var items := CampaignRepository.get_inventory_items(TEST_CHARACTER_ID)
 	for item in items:
-		if item.get("item_key", "") == "coin_gp":
+		if item.get("item_key", "") == "coins_gp":
 			check(item.get("quantity", 0) == 150, "gold after subtract should be 150, got %d" % item.get("quantity", 0))
 
 
 func test_adjust_gold_floors_at_zero() -> void:
 	CampaignRepository.db.query_with_bindings(
-		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coin_gp'",
+		"DELETE FROM inventory_items WHERE character_id = ? AND item_key = 'coins_gp'",
 		[TEST_CHARACTER_ID]
 	)
 	_mgr.override_adjust_gold(TEST_CHARACTER_ID, 10)
 	_mgr.override_adjust_gold(TEST_CHARACTER_ID, -9999)
 	var items := CampaignRepository.get_inventory_items(TEST_CHARACTER_ID)
 	for item in items:
-		if item.get("item_key", "") == "coin_gp":
+		if item.get("item_key", "") == "coins_gp":
 			check(item.get("quantity", 0) == 0, "gold should floor at 0, got %d" % item.get("quantity", 0))
 
 

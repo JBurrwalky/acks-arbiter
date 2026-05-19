@@ -69,7 +69,7 @@ func _baseline_cost_breakdown(gp_committed: int, daily_rate: int) -> Dictionary:
 		"daily_construction_rate_gp": daily_rate,
 		"magic_rate_modifier_pct": 100,
 		"engineers_required": maxi(1, int(ceil(float(gp_committed) / 100000.0))),
-		"engineer_monthly_wage_gp": maxi(1, int(ceil(float(gp_committed) / 100000.0))) * 250,
+		"engineer_monthly_wage_cp": maxi(1, int(ceil(float(gp_committed) / 100000.0))) * 250,
 		"estimated_duration_days": int(ceil(float(gp_committed) / float(daily_rate))),
 		"class_cost_reduction_pct": 0,
 	}
@@ -83,8 +83,8 @@ func test_start_commission_inserts_rows_and_emits_signal() -> void:
 	var cost := _baseline_cost_breakdown(5000, 500)
 
 	var signaled: Array[Array] = []
-	var conn := func(stronghold_id: String, sig_domain: String, gp: int, expected_day: int):
-		signaled.append([stronghold_id, sig_domain, gp, expected_day])
+	var conn := func(stronghold_id: String, sig_domain: String, cp: int, expected_day: int):
+		signaled.append([stronghold_id, sig_domain, cp, expected_day])
 	EventBus.stronghold_commission_started.connect(conn)
 
 	var result := CommissionPipeline.start_commission(sh_data, cost, 0)
@@ -97,7 +97,7 @@ func test_start_commission_inserts_rows_and_emits_signal() -> void:
 		"5000gp / 500gp/day = 10 days, got %d" % result["expected_completion_day"])
 	check(signaled.size() == 1, "stronghold_commission_started fired exactly once")
 	if signaled.size() > 0:
-		check(signaled[0][2] == 5000, "signal carries gp_committed = 5000")
+		check(signaled[0][2] == 500000, "signal carries cp_committed = 500000 (5000 gp × 100)")
 	EventBus.stronghold_commission_started.disconnect(conn)
 
 
@@ -142,8 +142,8 @@ func test_advance_commission_progresses_gp() -> void:
 
 	CommissionPipeline.advance_commissions(1)
 	var commission := CampaignRepository.get_commission(commission_id)
-	check(int(commission.get("gp_progressed", 0)) == 500,
-		"after day 1: 500 gp progressed, got %d" % int(commission.get("gp_progressed", 0)))
+	check(int(commission.get("cp_progressed", 0)) == 50000,
+		"after day 1: 50,000 cp progressed (500 gp × 100), got %d" % int(commission.get("cp_progressed", 0)))
 
 
 func test_advance_commission_fires_halfway_signal() -> void:

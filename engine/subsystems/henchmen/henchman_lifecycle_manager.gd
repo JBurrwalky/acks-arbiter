@@ -60,11 +60,11 @@ func get_search_cost(pool_id: String) -> int:
 		return 0
 	var pool_rows: Array = []
 	if _repo.db.query_with_bindings(
-			"SELECT search_cost_gp FROM henchman_pools WHERE id = ?", [pool_id]):
+			"SELECT search_cost_cp FROM henchman_pools WHERE id = ?", [pool_id]):
 		pool_rows = _repo.db.query_result.duplicate()
 	if pool_rows.is_empty():
 		return 0
-	return int(pool_rows[0].get("search_cost_gp", 0))
+	return int(pool_rows[0].get("search_cost_cp", 0))
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 		class_id = String(_repo.db.query_result[0].get("character_class", ""))
 	var wage := HenchmanTables.monthly_wage(level)
 	_repo.db.query_with_bindings(
-		"UPDATE characters SET wage_gp_per_month = ? WHERE id = ?",
+		"UPDATE characters SET wage_cp_per_month = ? WHERE id = ?",
 		[wage, character_id])
 
 	# Create henchman_state.
@@ -135,7 +135,7 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 		bus.emit_signal("henchman_hired", character_id, {
 			"employer_id": employer_id,
 			"morale_score": morale,
-			"wage_gp_per_month": wage,
+			"wage_cp_per_month": wage,
 			"settlement_id": settlement_id,
 		})
 
@@ -148,34 +148,33 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 
 ## Process wages for all henchmen of the given party. Deducts from party wallet
 ## (per-character coin inventory via PartyWallet), then deposits wages into each
-## henchman's personal purse.
-## Returns {total_deducted_gp, unpaid_henchmen}.
+## henchman's personal purse. All amounts in cp.
+## Returns {total_deducted_cp, unpaid_henchmen}.
 func process_monthly_wages(party_id: String) -> Dictionary:
 	var wallet = _get_party_wallet()
 
 	# Get all employed henchmen in this party.
 	_repo.db.query_with_bindings(
-		"""SELECT c.id, c.wage_gp_per_month, c.employer_id
+		"""SELECT c.id, c.wage_cp_per_month, c.employer_id
 		   FROM characters c
 		   JOIN party_members pm ON pm.character_id = c.id
 		   WHERE pm.party_id = ? AND c.character_type = 'henchman'""",
 		[party_id])
 	var henchmen: Array = _repo.db.query_result.duplicate()
 
-	var total_deducted := 0
+	var total_deducted_cp := 0
 	var unpaid: Array = []
 
 	for h in henchmen:
-		var wage_gp: int = int(h.get("wage_gp_per_month", 0))
-		if wage_gp <= 0:
+		var wage_cp: int = int(h.get("wage_cp_per_month", 0))
+		if wage_cp <= 0:
 			continue
-		var wage_cp: int = wage_gp * 100
 		var employer_id: String = h.get("employer_id", "")
 
 		if wallet != null and employer_id != "":
 			var result: Dictionary = wallet.pay(wage_cp, party_id, employer_id)
 			if result["ok"]:
-				total_deducted += wage_gp
+				total_deducted_cp += wage_cp
 				# Deposit wages into the henchman's personal purse.
 				_repo.add_coins_cp(h["id"], wage_cp)
 			else:
@@ -186,7 +185,7 @@ func process_monthly_wages(party_id: String) -> Dictionary:
 			unpaid.append(h["id"])
 			_increment_unpaid_months(h["id"])
 
-	var summary := {"total_deducted_gp": total_deducted, "unpaid_henchmen": unpaid}
+	var summary := {"total_deducted_cp": total_deducted_cp, "unpaid_henchmen": unpaid}
 	var bus := _event_bus()
 	if bus != null:
 		bus.emit_signal("wages_processed", party_id, summary)
@@ -223,18 +222,18 @@ func _increment_unpaid_months(character_id: String) -> void:
 func pay_back_wages(character_id: String) -> Dictionary:
 	## Pays the full unpaid_months × monthly_wage from the employer's wallet,
 	## resets unpaid_months to 0, deposits into the henchman's purse.
-	## Returns {"ok": bool, "paid_gp": int, "message": String}.
+	## Returns {"ok": bool, "paid_cp": int, "message": String}. All amounts in cp.
 	if character_id.is_empty():
-		return {"ok": false, "paid_gp": 0, "message": "no character"}
+		return {"ok": false, "paid_cp": 0, "message": "no character"}
 	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
 	if char_row.is_empty():
-		return {"ok": false, "paid_gp": 0, "message": "henchman not found"}
+		return {"ok": false, "paid_cp": 0, "message": "henchman not found"}
 	var state: Dictionary = _repo.get_henchman_state(character_id)
 	var unpaid_months: int = int(state.get("unpaid_months", 0))
-	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
-	var owed_gp: int = unpaid_months * monthly_wage
-	if owed_gp <= 0:
-		return {"ok": true, "paid_gp": 0, "message": "no back-wages owed"}
+	var monthly_wage_cp: int = int(char_row.get("wage_cp_per_month", 0))
+	var owed_cp: int = unpaid_months * monthly_wage_cp
+	if owed_cp <= 0:
+		return {"ok": true, "paid_cp": 0, "message": "no back-wages owed"}
 
 	var employer_id: String = String(char_row.get("employer_id", ""))
 	# Determine party_id via the henchman's party_members row.
@@ -248,10 +247,10 @@ func pay_back_wages(character_id: String) -> Dictionary:
 
 	var wallet = _get_party_wallet()
 	if wallet != null and party_id != "" and employer_id != "":
-		var pay_result: Dictionary = wallet.pay(owed_gp * 100, party_id, employer_id)
+		var pay_result: Dictionary = wallet.pay(owed_cp, party_id, employer_id)
 		if not pay_result.get("ok", false):
-			return {"ok": false, "paid_gp": 0, "message": "insufficient funds"}
-		_repo.add_coins_cp(character_id, owed_gp * 100)
+			return {"ok": false, "paid_cp": 0, "message": "insufficient funds"}
+		_repo.add_coins_cp(character_id, owed_cp)
 	# Reset unpaid_months.
 	state["unpaid_months"] = 0
 	_repo.upsert_henchman_state(character_id, state)
@@ -260,11 +259,11 @@ func pay_back_wages(character_id: String) -> Dictionary:
 	var bus := _event_bus()
 	if bus != null:
 		bus.emit_signal("wages_processed", party_id, {
-			"total_deducted_gp": owed_gp,
+			"total_deducted_cp": owed_cp,
 			"unpaid_henchmen": [],
 			"trigger": "pay_back_wages",
 		})
-	return {"ok": true, "paid_gp": owed_gp, "message": ""}
+	return {"ok": true, "paid_cp": owed_cp, "message": ""}
 
 
 # ---------------------------------------------------------------------------
@@ -273,11 +272,11 @@ func pay_back_wages(character_id: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 func adjust_treatment(character_id: String, treasure_share_percent: int,
-		bonus_gp: int = 0) -> Dictionary:
+		bonus_cp: int = 0) -> Dictionary:
 	## Updates henchman_state.treasure_share_percent (clamped to [0, 100]) and
-	## optionally pays a one-time gp bonus from the employer's wallet. A bonus
+	## optionally pays a one-time cp bonus from the employer's wallet. A bonus
 	## > 0 stamps +1 morale on the henchman_state.
-	## Returns {"ok": bool, "message": String}.
+	## Returns {"ok": bool, "message": String}. 2026-05-16 cp pass: bonus in cp.
 	if character_id.is_empty():
 		return {"ok": false, "message": "no character"}
 	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
@@ -296,13 +295,13 @@ func adjust_treatment(character_id: String, treasure_share_percent: int,
 			party_id = String(_repo.db.query_result[0].get("party_id", ""))
 
 	# Pay bonus first — if it fails, the share update doesn't land either.
-	if bonus_gp > 0:
+	if bonus_cp > 0:
 		var wallet = _get_party_wallet()
 		if wallet != null and party_id != "" and employer_id != "":
-			var pay_result: Dictionary = wallet.pay(bonus_gp * 100, party_id, employer_id)
+			var pay_result: Dictionary = wallet.pay(bonus_cp, party_id, employer_id)
 			if not pay_result.get("ok", false):
 				return {"ok": false, "message": "insufficient funds"}
-			_repo.add_coins_cp(character_id, bonus_gp * 100)
+			_repo.add_coins_cp(character_id, bonus_cp)
 		# Bonus payment stamps +1 morale.
 		state["morale_score"] = int(state.get("morale_score", 0)) + 1
 
@@ -314,8 +313,8 @@ func adjust_treatment(character_id: String, treasure_share_percent: int,
 	var bus := _event_bus()
 	if bus != null:
 		bus.emit_signal("treatment_adjusted", character_id,
-			int(state["treasure_share_percent"]), bonus_gp)
-		if bonus_gp > 0:
+			int(state["treasure_share_percent"]), bonus_cp)
+		if bonus_cp > 0:
 			bus.emit_signal("loyalty_changed", character_id,
 				int(state.get("morale_score", 1)) - 1, int(state["morale_score"]))
 	return {"ok": true, "message": ""}
@@ -425,10 +424,10 @@ func process_departure(character_id: String, reason: String,
 ## process_departure(reason="dismissed").
 ##
 ## [param options] keys (all optional):
-##   "final_wages_gp": int    — gp paid out at dismissal (deducted from
+##   "final_wages_cp": int    — cp paid out at dismissal (deducted from
 ##                              PartyWallet via the active employer). Defaults
-##                              to unpaid_months × monthly_wage.
-##   "parting_bonus_gp": int  — extra gp paid as a goodwill gesture; if > 0
+##                              to unpaid_months × monthly_wage_cp.
+##   "parting_bonus_cp": int  — extra cp paid as a goodwill gesture; if > 0
 ##                              applies +1 morale to the departed-record
 ##                              (improves re-recruitment odds). Defaults to 0.
 ##   "equipment_retention": String — "keep_all" (default) | "take_party_gear" |
@@ -453,27 +452,27 @@ func dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool:
 	if char_row.is_empty():
 		return false
 	var employer_id: String = String(char_row.get("employer_id", ""))
-	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	var monthly_wage_cp: int = int(char_row.get("wage_cp_per_month", 0))
 	var state: Dictionary = _repo.get_henchman_state(character_id)
 	var unpaid_months: int = int(state.get("unpaid_months", 0))
 
-	# Defaults.
-	var final_wages_gp: int = int(options.get("final_wages_gp", unpaid_months * monthly_wage))
-	var parting_bonus_gp: int = int(options.get("parting_bonus_gp", 0))
+	# Defaults (cp).
+	var final_wages_cp: int = int(options.get("final_wages_cp", unpaid_months * monthly_wage_cp))
+	var parting_bonus_cp: int = int(options.get("parting_bonus_cp", 0))
 	var retention: String = String(options.get("equipment_retention", "keep_all"))
 	var settlement_id: String = String(options.get("settlement_id", ""))
 	var party_id: String = String(options.get("party_id", ""))
 
-	# Pay final wages + parting bonus from the employer's wallet.
-	var total_owed_gp: int = maxi(0, final_wages_gp + parting_bonus_gp)
-	if total_owed_gp > 0:
+	# Pay final wages + parting bonus from the employer's wallet (cp).
+	var total_owed_cp: int = maxi(0, final_wages_cp + parting_bonus_cp)
+	if total_owed_cp > 0:
 		var wallet = _get_party_wallet()
 		if wallet != null and party_id != "" and employer_id != "":
-			var pay_result: Dictionary = wallet.pay(total_owed_gp * 100, party_id, employer_id)
+			var pay_result: Dictionary = wallet.pay(total_owed_cp, party_id, employer_id)
 			if not pay_result.get("ok", false):
 				return false
 			# Deposit into the henchman's purse.
-			_repo.add_coins_cp(character_id, total_owed_gp * 100)
+			_repo.add_coins_cp(character_id, total_owed_cp)
 
 	# Equipment retention. Snapshot the inventory array before iterating —
 	# remove_inventory_item mutates the same Array some FakeRepo
@@ -502,7 +501,7 @@ func dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool:
 	# Apply parting-bonus morale boost to the departed-record before
 	# process_departure sets reason="dismissed" — this is an audit-trail
 	# improvement so a re-recruitment of the same NPC sees the residual +1.
-	if parting_bonus_gp > 0:
+	if parting_bonus_cp > 0:
 		var s2: Dictionary = _repo.get_henchman_state(character_id)
 		s2["morale_score"] = int(s2.get("morale_score", 0)) + 1
 		_repo.upsert_henchman_state(character_id, s2)

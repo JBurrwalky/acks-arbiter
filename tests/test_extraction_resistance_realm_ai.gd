@@ -67,7 +67,7 @@ func _make_garrison_unit(domain_id: String, owner: String, br: float) -> String:
 		"campaign_id": _campaign_id, "owner_character_id": owner,
 		"source_type": "mercenary", "troop_type": "Heavy Infantry",
 		"count": 60, "starting_count": 60, "battle_rating": br,
-		"monthly_wage_gp": 600,
+		"monthly_wage_cp": 600,
 	})
 	# Garrison-assign and persist.
 	CampaignRepository.db.query_with_bindings(
@@ -93,7 +93,7 @@ func _make_attacker_army(br_per_unit: float, unit_count: int) -> String:
 			"campaign_id": _campaign_id, "owner_character_id": _attacker_id,
 			"source_type": "mercenary", "troop_type": "Heavy Infantry",
 			"count": 60, "starting_count": 60, "battle_rating": br_per_unit,
-			"monthly_wage_gp": 600,
+			"monthly_wage_cp": 600,
 		})
 		ArmyRepository.create_assignment({
 			"army_id": id, "troop_unit_id": unit_id,

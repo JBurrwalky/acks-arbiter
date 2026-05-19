@@ -471,11 +471,11 @@ static func _ensure_command_officer(army_id: String, calendar_day: int) -> Strin
 		return ""
 	var officer_id: String = CampaignRepository.generate_id()
 	# Schema columns per migration 071: rank (not role), leadership_ability,
-	# derivation_source, monthly_wage_gp.
+	# derivation_source, monthly_wage_cp.
 	if not CampaignRepository.db.query_with_bindings("""
 		INSERT INTO army_officers
 			(id, army_id, character_id, rank, leadership_ability, strategic_ability,
-			 morale_modifier, derivation_source, monthly_wage_gp,
+			 morale_modifier, derivation_source, monthly_wage_cp,
 			 appointed_calendar_day)
 		VALUES (?, ?, ?, 'army_leader', 4, 0, 0, 'pc', 0, ?)
 	""", [officer_id, army_id, command_id, calendar_day]):

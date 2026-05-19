@@ -139,8 +139,8 @@ func test_engineer_requirement_per_100k() -> void:
 	var r := StrongholdCostCalculator.calculate_total_cost(preset, structures, [], 100, 100)
 	check(r["engineers_required"] == 3,
 		"250k gp → 3 engineers, got %d" % r["engineers_required"])
-	check(r["engineer_monthly_wage_gp"] == 750,
-		"3 engineers × 250 gp = 750 gp/month, got %d" % r["engineer_monthly_wage_gp"])
+	check(r["engineer_monthly_wage_cp"] == 75000,
+		"3 engineers × 25000 cp = 75000 cp/month, got %d" % r["engineer_monthly_wage_cp"])
 
 
 func test_engineer_minimum_one() -> void:

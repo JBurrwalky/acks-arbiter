@@ -56,11 +56,11 @@ static func _sum_monthly_wages_of_defeated_units(siege_id: String) -> int:
 	if battle_id.is_empty():
 		return 0
 	# Sum monthly wages for defeated units in that battle. troop_units stores
-	# wages as monthly_wage_gp (legacy column, predates the cp convention);
-	# convert to cp by ×100. Defeated = status IN ('routed', 'destroyed') per
+	# wages as monthly_wage_cp (2026-05-16 cp pass); spoils total is cp-native
+	# so no conversion needed. Defeated = status IN ('routed', 'destroyed') per
 	# migration 076 L20-21.
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT COALESCE(SUM(tu.monthly_wage_gp), 0) AS total_gp
+		SELECT COALESCE(SUM(tu.monthly_wage_cp), 0) AS total_cp
 		FROM battle_unit_states bus
 		JOIN troop_units tu ON tu.id = bus.troop_unit_id
 		WHERE bus.battle_id = ? AND bus.status IN ('routed', 'destroyed')
@@ -68,4 +68,4 @@ static func _sum_monthly_wages_of_defeated_units(siege_id: String) -> int:
 		return 0
 	if CampaignRepository.db.query_result.is_empty():
 		return 0
-	return int(CampaignRepository.db.query_result[0].get("total_gp", 0)) * 100
+	return int(CampaignRepository.db.query_result[0].get("total_cp", 0))

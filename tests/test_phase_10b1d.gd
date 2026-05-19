@@ -93,10 +93,11 @@ func _create_test_character(
 
 func _create_sanctum_for(owner_id: String, archetype: String = "sanctum") -> String:
 	var id := CampaignRepository.generate_id()
+	# Migration 116: gp_value → cp_value (× 100). 25000 gp → 2500000 cp.
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, ?, ?, 25000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, ?, ?, 2500000, 100, 'completed')
 	""", [id, owner_id, archetype, archetype])
 	return id
 

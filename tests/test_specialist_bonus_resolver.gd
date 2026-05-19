@@ -23,7 +23,7 @@ func run_all_tests() -> void:
 # ---------------------------------------------------------------------------
 
 func _row(kind: String) -> Dictionary:
-	return {"specialist_id": "test", "kind": kind, "monthly_wage_gp": 25}
+	return {"specialist_id": "test", "kind": kind, "monthly_wage_cp": 25}
 
 
 # ---------------------------------------------------------------------------

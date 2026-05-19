@@ -60,6 +60,15 @@ func _ready() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 10)
 
+	# 2026-05-19 bucket-B item #13: launch-result banner mirroring the
+	# SyndicateBlock pattern. Sits above all cards; success notices
+	# auto-dismiss after 4s, failures persist until next press or rebind.
+	_launch_result_label = Label.new()
+	_launch_result_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_launch_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_launch_result_label.visible = false
+	add_child(_launch_result_label)
+
 	# _make_card already attaches the panel to self and returns the inner vbox
 	# for body-content access. Do NOT call add_child(_*_card) again.
 	_congregants_card = _make_card("Congregants")
@@ -70,6 +79,35 @@ func _ready() -> void:
 
 	_build_activity_launchers()
 	_subscribe_signals()
+
+
+# 2026-05-19 bucket-B item #13: launch-result banner state + helpers.
+var _launch_result_label: Label = null
+const BANNER_AUTO_DISMISS_SECS := 4.0
+
+func _show_launch_result(activity_label: String, result: Dictionary) -> void:
+	if _launch_result_label == null:
+		return
+	var ok: bool = bool(result.get("success", false))
+	var text: String
+	if ok:
+		text = "%s launched." % activity_label
+		_launch_result_label.modulate = Color(0.55, 0.85, 0.55)
+	else:
+		var err: String = str(result.get("error", "unknown error"))
+		text = "%s failed: %s" % [activity_label, err]
+		_launch_result_label.modulate = Color(0.95, 0.55, 0.45)
+	_launch_result_label.text = text
+	_launch_result_label.visible = true
+	if ok:
+		var tree := get_tree()
+		if tree != null:
+			var timer := tree.create_timer(BANNER_AUTO_DISMISS_SECS)
+			timer.timeout.connect(func() -> void:
+				if _launch_result_label != null and _launch_result_label.text == text:
+					_launch_result_label.text = ""
+					_launch_result_label.visible = false
+			)
 
 
 func _exit_tree() -> void:
@@ -111,9 +149,10 @@ func _render_congregants() -> void:
 		_congregants_card.add_child(_dim_label("No congregation yet. Dispatch missionaries or cast charitable spells to attract congregants."))
 		return
 	var count: int = int(row.get("count", 0))
-	var pending_gp: int = int(row.get("monthly_growth_pending_gp", 0))
+	var pending_cp: int = int(row.get("monthly_growth_pending_cp", 0))
 	var line := Label.new()
-	line.text = "%d congregants · %d gp accumulated for next-month growth (1d10 + CHA mod per 1,000 gp)" % [count, pending_gp]
+	line.text = "%d congregants · %s accumulated for next-month growth (1d10 + CHA mod per 1,000 gp)" \
+		% [count, Currency.format_cost(pending_cp)]
 	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_congregants_card.add_child(line)
 
@@ -124,10 +163,10 @@ func _render_divine_power() -> void:
 		_dp_card.add_child(_dim_label("—"))
 		return
 	var row: Dictionary = CampaignRepository.get_character_divine_power(_character_id)
-	var balance: int = int(row.get("divine_power_gp", 0))
+	var balance: int = int(row.get("divine_power_cp", 0))
 	var last_extraction: int = int(row.get("last_extraction_calendar_day", 0))
 	var balance_label := Label.new()
-	balance_label.text = "Divine Power balance: %d gp" % balance
+	balance_label.text = "Divine Power balance: %s" % Currency.format_cost(balance)
 	_dp_card.add_child(balance_label)
 	if last_extraction > 0:
 		var since := Label.new()
@@ -151,9 +190,9 @@ func _render_altars() -> void:
 		var sub_vbox := VBoxContainer.new()
 		sub_panel.add_child(sub_vbox)
 		var title := Label.new()
-		title.text = "%s altar · %d gp invested · %d sq ft aura · %s" % [
+		title.text = "%s altar · %s invested · %d sq ft aura · %s" % [
 			String(row.get("alignment", "?")).capitalize(),
-			int(row.get("gp_invested", 0)) + int(row.get("dp_substituted_gp", 0)),
+			Currency.format_cost(int(row.get("cp_invested", 0)) + int(row.get("dp_substituted_cp", 0))),
 			int(row.get("aura_size_sq_ft", 0)),
 			String(row.get("status", "?")),
 		]
@@ -274,15 +313,17 @@ func _refresh_activity_cards() -> void:
 
 
 func _on_launch_pressed(activity_def_id: String) -> void:
+	var label: String = activity_def_id.replace("_", " ").capitalize()
 	if _character_id.is_empty():
+		_show_launch_result(label, {"success": false, "error": "no active character"})
 		return
 	var executor: ActivityTimeCostExecutor = _get_activity_executor()
 	if executor == null:
-		push_warning("FaithBlock: no executor available")
+		_show_launch_result(label, {"success": false, "error": "no executor"})
 		return
 	var scheduler: EventScheduler = _get_scheduler()
 	if scheduler == null:
-		push_warning("FaithBlock: no scheduler available")
+		_show_launch_result(label, {"success": false, "error": "no scheduler"})
 		return
 	var def: Dictionary = _get_definition(activity_def_id)
 	var location_kind: String = String(def.get("location_kind", "anywhere"))
@@ -291,8 +332,9 @@ func _on_launch_pressed(activity_def_id: String) -> void:
 	var result: Dictionary = executor.launch(
 		_character_id, activity_def_id, location_kind, location_ref,
 		params, scheduler, _party_id)
-	if not bool(result.get("success", false)):
-		push_warning("FaithBlock: launch %s failed (%s)" % [activity_def_id, result.get("error", "")])
+	# 2026-05-19 bucket-B item #13: surface success/failure via banner instead
+	# of push_warning. Mirrors the SyndicateBlock pattern.
+	_show_launch_result(label, result)
 
 
 ## Default params for v1 launch. Full param-collection (gp committed, sacrifice
@@ -490,7 +532,7 @@ func _on_dp_changed(character_id: String, _new_total: int, _delta: int) -> void:
 		_refresh_activity_cards()
 
 
-func _on_altar_consecrated(_altar_id: String, character_id: String, _gp_invested: int) -> void:
+func _on_altar_consecrated(_altar_id: String, character_id: String, _cp_invested: int) -> void:
 	if character_id == _character_id:
 		_render_altars()
 

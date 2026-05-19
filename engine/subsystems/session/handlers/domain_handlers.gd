@@ -63,25 +63,26 @@ func seed_monthly_tick(scheduler: EventScheduler, party_id: String) -> void:
 # Event handler
 # ---------------------------------------------------------------------------
 
-## Resolve the monthly domain cycle for all domains in the campaign.
+## Resolve the monthly cycle: commerce-side drivers always fire (Phase 10B.2
+## Wave 5); domain-specific resolution runs only if the campaign has domains.
+## Always reschedules for next month — even domain-less campaigns need ongoing
+## commerce ticks (ship operating costs, merchant pool refresh, customs roll,
+## market price drift).
 func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
-	var domains: Array = CampaignRepository.list_campaign_domains(_campaign_id)
-	if domains.is_empty():
-		# No domains — don't reschedule.
-		return {}
-
 	var date: Dictionary = Timekeeping.get_date()
 	var month_name := "Month %d, Year %d" % [date.get("month", 1), date.get("year", 1)]
 	var calendar_day: int = _calendar_day_from_date(date)
+	var current_year: int = int(date.get("year", 1))
 
-	var domain_results: Array = []
-	for domain_data: Dictionary in domains:
-		var result := _resolve_domain_month(domain_data, calendar_day)
-		domain_results.append(result)
-		_save_domain(domain_data, result)
-		_emit_signals(domain_data, result)
+	# Phase 10B.2 Wave 5: commerce monthly tick fires every month regardless
+	# of domain presence — closes [NEEDS-MONTHLY-TICK-WIRING] from Wave 1.
+	var commerce_rng: RandomNumberGenerator = CommerceMonthlyResolver.seeded_monthly_rng(
+		_campaign_id, calendar_day)
+	var commerce_results: Dictionary = CommerceMonthlyResolver.process_for_campaign(
+		_campaign_id, calendar_day, current_year, commerce_rng)
 
-	# Reschedule for next month.
+	# Always reschedule for next month — commerce alone is reason enough to
+	# keep ticking.
 	var next_month_rounds: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
 	var next_events := [{
 		"fire_time": event.fire_time + next_month_rounds,
@@ -90,6 +91,23 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		"data": {},
 		"priority": ScheduledEvent.PRIORITY_ENVIRONMENTAL,
 	}]
+
+	# Domain-specific resolution (only when domains exist).
+	var domains: Array = CampaignRepository.list_campaign_domains(_campaign_id)
+	if domains.is_empty():
+		# Commerce-only tick: no monthly report modal, no auto-pause; just keep
+		# the scheduler advancing so the next month fires.
+		return {
+			"next_events": next_events,
+			"commerce_results": commerce_results,
+		}
+
+	var domain_results: Array = []
+	for domain_data: Dictionary in domains:
+		var result := _resolve_domain_month(domain_data, calendar_day)
+		domain_results.append(result)
+		_save_domain(domain_data, result)
+		_emit_signals(domain_data, result)
 
 	return {
 		"auto_pause": true,
@@ -100,6 +118,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			"month": month_name,
 			"domain_results": domain_results,
 		},
+		"commerce_results": commerce_results,
 	}
 
 
@@ -118,13 +137,29 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# --- Context: hexes, stronghold, ruler, additional garrison ---
 	var hexes: Array = CampaignRepository.get_domain_hexes(domain_id)
 	var hex_count: int = hexes.size()
-	var stronghold_value_gp: int = _stub_stronghold_value(domain_id)
-	var stronghold_minimum_gp: int = _classification_minimum_gp(territory, hex_count)
+	# Strongholds remain gp-denominated (their own subsystem); convert at the
+	# boundary to cp for the domain treasury layer.
+	var stronghold_value_cp: int = _stub_stronghold_value(domain_id) * 100
+	# Stronghold sufficiency uses the effective hex count (owned + intervening)
+	# per RAW §noncontiguous_domains L95-98. For contiguous domains this equals
+	# `hex_count`; for noncontiguous ones it adds the connecting hexes between
+	# components so the minimum scales with the territory the strongholds must
+	# secure, not just the territory directly held.
+	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
+	var stronghold_minimum_cp: int = _classification_minimum_cp(territory, sufficiency_hex_count)
 	var ruler: Dictionary = _build_ruler_context(domain_data)
-	var actual_garrison_paid_gp: int = int(domain_data.get("garrison_troops", 0)) \
-		* DomainExpenseCalculator.GARRISON_MIN_GP_PER_FAMILY
-	var additional_garrison_gp_per_family: int = _additional_garrison_per_family(
-		domain_data, actual_garrison_paid_gp)
+
+	# Phase 5 garrison wiring (2026-05-16): aggregate the actual garrison-assigned
+	# troop_units via GarrisonExpenditureCalculator. RAW §garrison L228-231:
+	# unpaid faithful followers + trained militia + scutage troops + lord-favor
+	# troops count toward the garrison cost by gp value even when no money
+	# changes hands. The calculator handles that distinction and returns the
+	# total cp value of garrison + the morale incentive bonus + below-minimum
+	# penalty. We feed the paid portion into the expense calculator (which
+	# clamps to the universal minimum) and the morale signals into the resolver.
+	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain_data)
+	var actual_garrison_paid_cp: int = int(garrison.get("total_paid_cp", 0))
+	var additional_garrison_cp_per_family: int = int(garrison.get("morale_incentive_bonus", 0))
 
 	# Phase 7: tribute_in via RealmAggregator + TributeCalculator. The ruler
 	# of THIS domain may have direct vassals; tribute flows from each vassal's
@@ -142,9 +177,9 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	var tribute_out: int = _compute_tribute_out_for_vassal_domain(domain_data)
 	domain_data["tribute_out_owed"] = tribute_out
 
-	# Phase 3: pending_investment_gp is set by oversee_investment handler on
+	# Phase 3: pending_investment_cp is set by oversee_investment handler on
 	# completion (migration 068); consumed and reset here.
-	var investment_gp: int = int(domain_data.get("pending_investment_gp", 0))
+	var investment_cp: int = int(domain_data.get("pending_investment_cp", 0))
 
 	# Phase 10A.2: Faith block pre-resolve modifiers. consecrate_fields adds
 	# land-value bonus to this month's revenue; consecrate_ruler adds base
@@ -158,7 +193,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 
 	# --- Resolvers: revenue → expenses → morale → growth → classification ---
 	var revenue := DomainRevenueCalculator.calculate_monthly_revenue(
-		domain_data, hexes, stronghold_value_gp, stronghold_minimum_gp, tribute_in)
+		domain_data, hexes, stronghold_value_cp, stronghold_minimum_cp, tribute_in)
 
 	# Phase 10A.2: apply consecrate_fields bonus to revenue total + subcategory.
 	if faith_land_value_bonus != 0 and not revenue.get("income_gate_active", false):
@@ -169,7 +204,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 		FaithMonthlyResolver.apply_pending_consecrate_fields(
 			faith_modifiers.get("consecrate_fields_fired_effect_ids", []))
 	var expenses := DomainExpenseCalculator.calculate_monthly_expenses(
-		domain_data, actual_garrison_paid_gp, revenue["income_gate_active"])
+		domain_data, actual_garrison_paid_cp, revenue["income_gate_active"])
 
 	# Phase 8: ongoing scutage owed by THIS domain (when D is a vassal). RAW
 	# §favors_and_duties L362: "Scutage: vassal pays 1gp per family in the
@@ -177,23 +212,24 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# vassal." We add scutage to the expenses dict as a subcategory and bump
 	# the total so the existing ledger writer + monthly settlement flow
 	# treats it like any other expense.
-	var scutage_gp: int = _compute_active_scutage_gp_for_domain(domain_data)
-	if scutage_gp > 0:
-		expenses["scutage"] = scutage_gp
-		expenses["total"] = int(expenses.get("total", 0)) + scutage_gp
+	# Scutage is RAW 1 gp/family; the helper returns cp internally.
+	var scutage_cp: int = _compute_active_scutage_cp_for_domain(domain_data)
+	if scutage_cp > 0:
+		expenses["scutage"] = scutage_cp
+		expenses["total"] = int(expenses.get("total", 0)) + scutage_cp
 
 	var base_morale := DomainMoraleResolver.resolve_base_morale(
 		domain_data, ruler, revenue["total"],
-		stronghold_value_gp, stronghold_minimum_gp,
-		additional_garrison_gp_per_family)
+		stronghold_value_cp, stronghold_minimum_cp,
+		additional_garrison_cp_per_family)
 	# Phase 10A.2: consecrate_ruler 12-month buff applies +1 / -1 to base morale
 	# while the window is active.
 	if faith_ruler_morale_bonus != 0:
 		base_morale = int(base_morale) + faith_ruler_morale_bonus
 
-	var event_modifiers_sum: int = _event_modifiers_sum(domain_data, expenses)
+	var event_modifiers_sum: int = _event_modifiers_sum(domain_data, garrison)
 	var repression_bonus: int = int(domain_data.get(
-		"repression_gp_per_family_this_month", 0))
+		"repression_cp_per_family_this_month", 0))
 	var is_repressed: bool = bool(domain_data.get(
 		"is_repressed_this_month", 0))
 	var morale_roll: int = DiceSystem.roll_digital(6, 2, 0, "domain_morale").modified_total
@@ -203,7 +239,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 
 	var morale_tier: String = DomainMoraleResolver.morale_tier(morale["current_morale"])
 	var growth := DomainGrowthResolver.resolve_growth(
-		domain_data, revenue["total"], investment_gp, morale_tier,
+		domain_data, revenue["total"], investment_cp, morale_tier,
 		bool(domain_data.get("is_active_adventuring_this_month", 0)),
 		revenue["income_gate_active"])
 
@@ -372,7 +408,7 @@ func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
 	var class_change: Dictionary = result.get("classification_change", {})
 	var new_territory: String = String(class_change.get(
 		"new_classification", domain_data.get("territory_type", "wilderness")))
-	var prior_treasury: int = int(domain_data.get("treasury_gp", 0))
+	var prior_treasury: int = int(domain_data.get("treasury_cp", 0))
 	var new_treasury: int = prior_treasury + net
 
 	# Phase 3: administer_domain bonus = +5% domain XP per acore_axioms
@@ -384,17 +420,17 @@ func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
 	var fields := {
 		"morale": result.get("current_morale", domain_data.get("morale", 0)),
 		"peasant_families": new_peasants,
-		"treasury_gp": new_treasury,
-		"revenue_gp": result.get("revenue", 0),
-		"expenses_gp": result.get("total_expenses", 0),
-		"net_income_gp": net,
+		"treasury_cp": new_treasury,
+		"revenue_cp": result.get("revenue", 0),
+		"expenses_cp": result.get("total_expenses", 0),
+		"net_income_cp": net,
 		"domain_xp_this_month": domain_xp,
 		"territory_type": new_territory,
 		# Phase 7: tribute_out_owed (recomputed each month from realm aggregate).
 		"tribute_out_owed": int(result.get("tribute_out_owed", 0)),
 		# Reset Phase 3 transient modifiers after consumption.
 		"administer_domain_completed_this_month": 0,
-		"pending_investment_gp": 0,
+		"pending_investment_cp": 0,
 	}
 	# Phase 7: realm_title persistence.
 	var title_update: Dictionary = result.get("realm_title", {})
@@ -423,7 +459,7 @@ func _emit_signals(domain_data: Dictionary, result: Dictionary) -> void:
 		EventBus.domain_morale_changed.emit(domain_id, prior_morale, current_morale)
 
 	if net != 0:
-		var prior_treasury: int = int(domain_data.get("treasury_gp", 0))
+		var prior_treasury: int = int(domain_data.get("treasury_cp", 0))
 		EventBus.domain_treasury_changed.emit(domain_id, prior_treasury, prior_treasury + net)
 
 	var class_change: Dictionary = result.get("classification_change", {})
@@ -459,14 +495,14 @@ func _write_revenue_ledger(domain_id: String, calendar_day: int, revenue: Dictio
 			CampaignRepository.add_ledger_entry({
 				"domain_id": domain_id, "calendar_day": calendar_day,
 				"category": "revenue", "subcategory": sub,
-				"gp_amount": amount, "description": "",
+				"cp_amount": amount, "description": "",
 			})
 	var tin: int = int(revenue.get("tribute_in", 0))
 	if tin != 0:
 		CampaignRepository.add_ledger_entry({
 			"domain_id": domain_id, "calendar_day": calendar_day,
 			"category": "tribute_in", "subcategory": "vassal_tribute",
-			"gp_amount": tin, "description": "",
+			"cp_amount": tin, "description": "",
 		})
 	# Phase 10A.2: consecrate_fields bonus (positive or negative).
 	var cf_bonus: int = int(revenue.get("consecrate_fields_bonus", 0))
@@ -474,7 +510,7 @@ func _write_revenue_ledger(domain_id: String, calendar_day: int, revenue: Dictio
 		CampaignRepository.add_ledger_entry({
 			"domain_id": domain_id, "calendar_day": calendar_day,
 			"category": "revenue", "subcategory": "consecrate_fields_bonus",
-			"gp_amount": cf_bonus,
+			"cp_amount": cf_bonus,
 			"description": "Consecrate Fields land-value adjustment (%+d gp/family)" % cf_bonus,
 		})
 
@@ -487,14 +523,14 @@ func _write_expense_ledger(domain_id: String, calendar_day: int, expenses: Dicti
 			CampaignRepository.add_ledger_entry({
 				"domain_id": domain_id, "calendar_day": calendar_day,
 				"category": "expense", "subcategory": sub,
-				"gp_amount": amount, "description": "",
+				"cp_amount": amount, "description": "",
 			})
 	var tout: int = int(expenses.get("tribute_out", 0))
 	if tout != 0:
 		CampaignRepository.add_ledger_entry({
 			"domain_id": domain_id, "calendar_day": calendar_day,
 			"category": "tribute_out", "subcategory": "liege_tribute",
-			"gp_amount": tout, "description": "",
+			"cp_amount": tout, "description": "",
 		})
 
 
@@ -502,7 +538,7 @@ func _write_expense_ledger(domain_id: String, calendar_day: int, expenses: Dicti
 # Resolver inputs (helpers)
 # ---------------------------------------------------------------------------
 
-## Sum the gp_value of completed strongholds in a domain. Phase 1 wired this
+## Sum the cp_value of completed strongholds in a domain. Phase 1 wired this
 ## via `StrongholdRepository.get_stronghold_value_for_domain`; Phase 2+
 ## may add caching or contiguous-territory enforcement at this seam.
 func _stub_stronghold_value(domain_id: String) -> int:
@@ -510,15 +546,16 @@ func _stub_stronghold_value(domain_id: String) -> int:
 
 
 ## Per-hex classification minimums per `acore_axioms` §minimum_stronghold_value
-## L88-94. Total = per_hex_minimum × hex_count.
-func _classification_minimum_gp(territory_type: String, hex_count: int) -> int:
-	var per_hex: int = 0
+## L88-94. RAW gp values × 100 to express as cp.
+## Total = per_hex_minimum_cp × hex_count.
+func _classification_minimum_cp(territory_type: String, hex_count: int) -> int:
+	var per_hex_cp: int = 0
 	match territory_type:
-		"civilized":   per_hex = 15000
-		"borderlands": per_hex = 22500
-		"wilderness":  per_hex = 32000
-		_:             per_hex = 32000
-	return per_hex * maxi(1, hex_count)
+		"civilized":   per_hex_cp = 1500000   # RAW 15,000 gp
+		"borderlands": per_hex_cp = 2250000   # RAW 22,500 gp
+		"wilderness":  per_hex_cp = 3200000   # RAW 32,000 gp
+		_:             per_hex_cp = 3200000
+	return per_hex_cp * maxi(1, hex_count)
 
 
 ## Build the ruler context dict the morale resolver expects. Looks up CHA mod,
@@ -564,44 +601,28 @@ func _has_leadership_proficiency(character_id: String) -> bool:
 	return not CampaignRepository.db.query_result.is_empty()
 
 
-## Phase 0: Phase 5 will compute (paid_garrison_gp - 2gp/family × peasants) /
-## peasants. For now we have no troop_units table feeding the handler, so
-## additional garrison is whatever the ruler over-paid above the universal
-## 2gp/fam minimum, divided by peasant families.
-func _additional_garrison_per_family(
-	domain_data: Dictionary,
-	actual_garrison_paid_gp: int
-) -> int:
-	var peasants: int = int(domain_data.get("peasant_families", 0))
-	if peasants <= 0:
-		return 0
-	var minimum: int = peasants * DomainExpenseCalculator.GARRISON_MIN_GP_PER_FAMILY
-	var extra: int = maxi(0, actual_garrison_paid_gp - minimum)
-	return extra / peasants  # integer truncation; +1 morale at 1+ extra
-
-
 ## Sum the morale roll modifiers driven by the current month's domain settings.
 ## Per §monthly_event_modifiers L488-499. Phase 0 wires up the modifiers we can
 ## compute deterministically (tax, liturgy, tithes, garrison underpayment).
 ## Pillage / occupation / new-religion are deferred to Phase 8 / Phase 10.
-func _event_modifiers_sum(domain_data: Dictionary, expenses: Dictionary) -> int:
+##
+## [param garrison_summary] is GarrisonExpenditureCalculator's output for this
+## domain — provides `gp_below_minimum_per_family` for the garrison
+## underpayment penalty per §monthly_event_modifiers L486.
+func _event_modifiers_sum(domain_data: Dictionary, garrison_summary: Dictionary) -> int:
 	var sum: int = 0
-	var liturgy_rate: int = int(domain_data.get("liturgy_rate_gp_per_family", 1))
-	# Liturgy bonus/penalty per L492-493 (1 gp/fam baseline).
-	sum += (liturgy_rate - 1)
-	# Tax bonus/penalty per L494-495 (2 gp/fam baseline; raising taxes harms,
-	# lowering helps).
-	var tax_rate: int = int(domain_data.get("tax_rate_gp_per_family", 2))
-	sum += (2 - tax_rate)
-	# Garrison underpayment: -1 per gp below the 2 gp/fam minimum. Since the
-	# expense calculator clamps actual garrison to the minimum, this only
-	# fires if the caller supplied an `actual_garrison_paid_gp` below that —
-	# Phase 0 always pays the minimum so this evaluates to 0.
-	var peasants: int = int(domain_data.get("peasant_families", 0))
-	var garrison: int = int(expenses.get("garrison", peasants * DomainExpenseCalculator.GARRISON_MIN_GP_PER_FAMILY))
-	var min_garrison: int = peasants * DomainExpenseCalculator.GARRISON_MIN_GP_PER_FAMILY
-	if garrison < min_garrison and peasants > 0:
-		sum -= int(ceil(float(min_garrison - garrison) / float(peasants)))
+	# Rates are cp/family per the 2026-05-15 currency-precision pass.
+	# RAW baseline is "1 gp/family" = 100 cp/family; morale modifier fires
+	# per gp deviation, so divide the cp delta by 100.
+	var liturgy_rate_cp: int = int(domain_data.get("liturgy_rate_cp_per_family", 100))
+	sum += (liturgy_rate_cp - 100) / 100
+	# Tax bonus/penalty per L494-495 (2 gp/fam baseline = 200 cp/fam).
+	var tax_rate_cp: int = int(domain_data.get("tax_rate_cp_per_family", 200))
+	sum += (200 - tax_rate_cp) / 100
+	# Garrison underpayment: -1 morale per gp/family below the universal RAW
+	# minimum, per §monthly_event_modifiers L486. GarrisonExpenditureCalculator
+	# pre-computes the ceiling of (min_cp_per_family - actual_cp_per_family)/100.
+	sum -= int(garrison_summary.get("gp_below_minimum_per_family", 0))
 	# Phase 3: administer_domain handler sets this column on completion;
 	# +1 morale roll modifier per `acore_axioms` §administration L499.
 	if bool(domain_data.get("administer_domain_completed_this_month", 0)):
@@ -618,9 +639,9 @@ func _event_modifiers_sum(domain_data: Dictionary, expenses: Dictionary) -> int:
 	# Phase 9C polish round 4 2026-05-09: settled-lair dungeon morale penalty
 	# per RAW ax_domain_level_encounters §dungeons L312-321. Sum XP × count
 	# across active settled_lair threats, divide by total families, banker's
-	# round → subtract from event modifiers sum. (Reuses outer `peasants`
-	# from the garrison-underpayment block above.)
+	# round → subtract from event modifiers sum.
 	if not domain_id.is_empty():
+		var peasants: int = int(domain_data.get("peasant_families", 0))
 		var urban: int = int(domain_data.get("urban_families", 0))
 		var families: int = peasants + urban
 		if families > 0:
@@ -735,7 +756,7 @@ func _resolve_realm_title(domain_data: Dictionary) -> Dictionary:
 	}
 
 
-## If the vassal cannot pay tribute_out from treasury_gp, trigger a Henchman
+## If the vassal cannot pay tribute_out from treasury_cp, trigger a Henchman
 ## Loyalty roll on the vassal-character. On Resignation/Hostility, the vassal
 ## revolts (vassal_assignment.status → revolted). Returns:
 ##   {paid: bool, gp_paid, gp_short, loyalty_outcome, revolted}
@@ -753,7 +774,7 @@ func _resolve_vassal_tribute_payment(
 	}
 	if tribute_out <= 0:
 		return summary
-	var treasury: int = int(domain_data.get("treasury_gp", 0))
+	var treasury: int = int(domain_data.get("treasury_cp", 0))
 	# Find the vassal_assignment row for the domain's owner.
 	var owner_id: String = String(domain_data.get("owner_character_id", ""))
 	if owner_id.is_empty():
@@ -798,9 +819,10 @@ func _resolve_vassal_tribute_payment(
 
 ## Phase 8: sum scutage owed by THIS domain to its liege per any active
 ## scutage duty obligations on the vassal_assignment where this domain's
-## owner is the vassal. Returns 0 if this domain has no liege or no active
-## scutage duty.
-func _compute_active_scutage_gp_for_domain(domain_data: Dictionary) -> int:
+## owner is the vassal. Returns cp (RAW magnitude is gp; × 100 at the
+## boundary since vassal_obligations.magnitude still stores gp).
+## Returns 0 if this domain has no liege or no active scutage duty.
+func _compute_active_scutage_cp_for_domain(domain_data: Dictionary) -> int:
 	var liege_v: Variant = domain_data.get("liege_domain_id")
 	if liege_v == null or String(liege_v).is_empty():
 		return 0
@@ -812,11 +834,11 @@ func _compute_active_scutage_gp_for_domain(domain_data: Dictionary) -> int:
 		return 0
 	var assn_id: String = String(assn.get("id", ""))
 	var active_duties: Array = VassalObligationsRepository.list_active_duties_for_assignment(assn_id)
-	var total: int = 0
+	var total_gp: int = 0
 	for d in active_duties:
 		if String(d.get("type", "")) == "scutage":
-			total += int(d.get("magnitude", 0))
-	return total
+			total_gp += int(d.get("magnitude", 0))
+	return total_gp * 100
 
 
 ## For each active vassal of THIS ruler, roll monthly on the Favors & Duties

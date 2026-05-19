@@ -131,8 +131,9 @@ func _render_aggregate() -> void:
 		str(int(aggregate.get("vassal_families", 0))))
 	_add_kv("Total realm families",
 		str(int(aggregate.get("all_realm_families", 0))))
+	# personal_revenue_cp is cp; convert via format_cost.
 	_add_kv("Personal revenue (last month)",
-		"%d gp" % int(aggregate.get("personal_revenue_gp", 0)))
+		Currency.format_cost(int(aggregate.get("personal_revenue_cp", 0))))
 
 
 func _add_kv(key: String, value: String) -> void:
@@ -187,14 +188,19 @@ func _render_tribute() -> void:
 		var v_received: int = int(round(float(v_base) * efficiency))
 		per_vassal_total_base += v_base
 		per_vassal_total_received += v_received
-	_add_tribute_kv("Tribute base (sum across vassals)", "%d gp" % per_vassal_total_base)
-	_add_tribute_kv("Tribute received this month", "%d gp" % per_vassal_total_received)
+	# TributeCalculator.compute_tribute_base_gp returns gp; convert × 100 for
+	# Currency.format_cost which expects cp. Same for tribute_out_owed column
+	# (still gp-semantic per Phase 7; conversion applied at display boundary).
+	_add_tribute_kv("Tribute base (sum across vassals)",
+		Currency.format_cost(per_vassal_total_base * 100))
+	_add_tribute_kv("Tribute received this month",
+		Currency.format_cost(per_vassal_total_received * 100))
 
 	# Tribute owed (this domain's owner is the VASSAL).
 	var tribute_out: int = int(_domain_data.get("tribute_out_owed", 0))
 	if tribute_out > 0:
 		_add_tribute_kv("Tribute OWED to liege",
-			"%d gp/month — RAW §tribute base by realm size" % tribute_out)
+			"%s/month — RAW §tribute base by realm size" % Currency.format_cost(tribute_out * 100))
 
 
 func _add_tribute_kv(key: String, value: String) -> void:
@@ -289,7 +295,8 @@ func _build_vassal_row(assn: Dictionary) -> Control:
 	var v_base: int = TributeCalculator.compute_tribute_base_gp(realm_families)
 	var v_received: int = int(round(float(v_base) * efficiency))
 	var trib_label := Label.new()
-	trib_label.text = "%d gp" % v_received
+	# v_received is gp from TributeCalculator; × 100 for Currency.format_cost.
+	trib_label.text = Currency.format_cost(v_received * 100)
 	trib_label.custom_minimum_size = Vector2(100, 0)
 	hbox.add_child(trib_label)
 

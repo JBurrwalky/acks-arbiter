@@ -6,72 +6,93 @@
     {
       "animal_type": "rabbit_hen",
       "display_name": "Rabbit, hen",
-      "roll_range": [1, 1],
+      "roll_range": [
+        1,
+        1
+      ],
       "stone_per_animal": 0.5,
       "animals_per_load": 200,
       "stone_per_load": 100,
-      "fodder_gp_per_week": 5,
-      "price_per_load_gp": 60
+      "price_per_load_cp": 6000,
+      "fodder_cp_per_week": 500
     },
     {
       "animal_type": "sheep",
       "display_name": "Sheep",
-      "roll_range": [2, 2],
+      "roll_range": [
+        2,
+        2
+      ],
       "stone_per_animal": 6,
       "animals_per_load": 30,
       "stone_per_load": 180,
-      "fodder_gp_per_week": 5,
-      "price_per_load_gp": 60
+      "price_per_load_cp": 6000,
+      "fodder_cp_per_week": 500
     },
     {
       "animal_type": "pig_goat",
       "display_name": "Pig, goat",
-      "roll_range": [3, 3],
+      "roll_range": [
+        3,
+        3
+      ],
       "stone_per_animal": 12,
       "animals_per_load": 20,
       "stone_per_load": 240,
-      "fodder_gp_per_week": 5,
-      "price_per_load_gp": 60
+      "price_per_load_cp": 6000,
+      "fodder_cp_per_week": 500
     },
     {
       "animal_type": "cattle",
       "display_name": "Cattle",
-      "roll_range": [4, 4],
+      "roll_range": [
+        4,
+        4
+      ],
       "stone_per_animal": 50,
       "animals_per_load": 5,
       "stone_per_load": 250,
-      "fodder_gp_per_week": 5,
-      "price_per_load_gp": 50
+      "price_per_load_cp": 5000,
+      "fodder_cp_per_week": 500
     },
     {
       "animal_type": "horse_yak",
       "display_name": "Horse, yak",
-      "roll_range": [5, 6],
+      "roll_range": [
+        5,
+        6
+      ],
       "stone_per_animal": 150,
       "animals_per_load": 2,
       "stone_per_load": 300,
-      "fodder_gp_per_week": 5,
-      "price_per_load_gp": 80
+      "price_per_load_cp": 8000,
+      "fodder_cp_per_week": 500
     },
     {
       "animal_type": "warhorse",
       "display_name": "Warhorse",
-      "roll_range": [7, 7],
+      "roll_range": [
+        7,
+        7
+      ],
       "stone_per_animal": 200,
       "animals_per_load": 2,
       "stone_per_load": 400,
-      "fodder_gp_per_week": 7,
-      "price_per_load_gp": 500
+      "price_per_load_cp": 50000,
+      "fodder_cp_per_week": 700
     },
     {
       "animal_type": "elephant",
       "display_name": "Elephant",
-      "roll_range": [8, 8],
+      "roll_range": [
+        8,
+        8
+      ],
       "stone_per_animal": 1000,
       "animals_per_load": 1,
       "stone_per_load": 1000,
-      "fodder_gp_per_week": 20,
-      "price_per_load_gp": 1500
+      "price_per_load_cp": 150000,
+      "fodder_cp_per_week": 2000
     }
   ]
 }

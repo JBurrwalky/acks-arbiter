@@ -441,7 +441,7 @@ Each wave is 3-5 hours of focused build time. Adjust per Q-MERC-8 approval.
 
 - **Ad-hoc class-id checks.** This session probably won't touch ClassBucketResolver, but Profession (attorney) gating should go through ProficiencyRegistry, not ad-hoc proficiency-name string matching.
 - **Ledger category invention.** Use only the six allowed categories. Use `subcategory` for granularity.
-- **Skipping banker's rounding.** Market price math: `gp_per_load = base_price_gp * (4d4 + demand_mod + class_adjust) * 0.1`. The `* 0.1` step rounds. Use `RoundingUtil`.
+- **Skipping banker's rounding.** Market price math is now cp-native per the 2026-05-15 currency-precision rule: `cp_per_load = base_price_gp × percentage` (where `percentage = (4d4 + demand_mod + class_adjust + monopolist + judge) × 10`) yields exact integer cp — no rounding fires. Banker's rounding only applies elsewhere when a computation produces a fractional cp (e.g., `labor_fee_cp` on odd stone, `customs_duty_cp` on odd-cp prices). Use `MarketFeesCalculator._bankers_round` for those.
 - **Trans-test data pollution.** Demand-modifier cache and merchant-pool rows persist across tests; purge between cases.
 - **Reading the GDD instead of the JSON.** Phase 10A.3 hit this — class data in `data/classes/*.json` is the truth. For this session, settlement data in DB rows is the truth — don't infer from setting lore.
 - **Inventing new schema columns without a migration.** Every new column needs migration N+x and a schema.sql update.

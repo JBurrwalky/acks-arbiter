@@ -85,7 +85,7 @@ func _build_headline() -> void:
 	card.add_child(heading)
 	_balance_label = Label.new()
 	_balance_label.add_theme_font_size_override("font_size", 24)
-	_balance_label.text = "0 gp"
+	_balance_label.text = Currency.format_cost(0)
 	card.add_child(_balance_label)
 	_gate_banner = Label.new()
 	_gate_banner.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
@@ -95,24 +95,36 @@ func _build_headline() -> void:
 
 
 func _render_headline() -> void:
-	var balance: int = int(_domain_data.get("treasury_gp", 0))
-	_balance_label.text = "%s gp" % _format_count(balance)
+	var balance_cp: int = int(_domain_data.get("treasury_cp", 0))
+	_balance_label.text = Currency.format_cost(balance_cp)
 	# Income-gate banner per `acore_axioms` §peasants_and_followers L108-109.
 	if _domain_id.is_empty():
 		_gate_banner.visible = false
 		return
 	var territory := String(_domain_data.get("territory_type", "wilderness"))
 	var hex_count: int = CampaignRepository.get_domain_hexes(_domain_id).size()
-	var stronghold_value := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum := StrongholdRepository.classification_minimum_gp(territory, hex_count)
-	if stronghold_value < minimum:
+	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
+	# domains) per RAW §noncontiguous_domains L95-98; equals owned count when
+	# contiguous. The displayed hex count remains the owned count so it matches
+	# what the player sees on the map; the noncontiguity caveat is shown
+	# inline when effective > owned.
+	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
+	# StrongholdRepository returns cp post-Migration 116.
+	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
+	var minimum_cp := StrongholdRepository.classification_minimum_gp(territory, sufficiency_hex_count)
+	if stronghold_value_cp < minimum_cp:
+		var noncontig_note: String = ""
+		if sufficiency_hex_count > hex_count:
+			noncontig_note = " (territory is noncontiguous — %d intervening hexes added per §noncontiguous_domains)" % (
+				sufficiency_hex_count - hex_count)
 		_gate_banner.text = (
-			"⚠ Income gate active — stronghold value %s gp is below the %s gp "
-			+ "minimum for a %d-hex %s domain. Revenue and population growth "
+			"⚠ Income gate active — stronghold value %s is below the %s "
+			+ "minimum for a %d-hex %s domain%s. Revenue and population growth "
 			+ "are zeroed each month until the stronghold reaches sufficiency."
 		) % [
-			_format_count(stronghold_value), _format_count(minimum),
-			hex_count, territory,
+			Currency.format_cost(stronghold_value_cp),
+			Currency.format_cost(minimum_cp),
+			hex_count, territory, noncontig_note,
 		]
 		_gate_banner.visible = true
 	else:
@@ -302,12 +314,13 @@ func _render_ledger() -> void:
 	# Reverse-chronological.
 	entries.reverse()
 	for entry in entries:
-		var sign_str := "+" if int(entry.get("gp_amount", 0)) >= 0 else ""
-		_ledger_list.add_item("Day %d  %s/%s  %s%d gp  %s" % [
+		var cp_amount: int = int(entry.get("cp_amount", 0))
+		var sign_str := "+" if cp_amount >= 0 else "-"
+		_ledger_list.add_item("Day %d  %s/%s  %s%s  %s" % [
 			int(entry.get("calendar_day", 0)),
 			String(entry.get("category", "")),
 			String(entry.get("subcategory", "")),
-			sign_str, int(entry.get("gp_amount", 0)),
+			sign_str, Currency.format_cost(abs(cp_amount)),
 			String(entry.get("description", "")),
 		])
 

@@ -101,28 +101,31 @@ func _render_expenditure() -> void:
 	var summary: Dictionary = GarrisonExpenditureCalculator.compute(_domain_id)
 	var classification: String = String(summary.get("classification", "")).capitalize()
 	var peasants: int = int(summary.get("peasant_families", 0))
-	var total_value: int = int(summary.get("total_value_gp", 0))
-	var minimum_total: int = int(summary.get("minimum_total_gp", 0))
-	var per_family: int = int(summary.get("gp_per_family_value", 0))
-	var minimum_per_family: int = int(summary.get("minimum_gp_per_family", 2))
+	var total_value_cp: int = int(summary.get("total_value_cp", 0))
+	var minimum_total_cp: int = int(summary.get("minimum_total_cp", 0))
+	var per_family_cp: int = int(summary.get("cp_per_family_value", 0))
+	var minimum_per_family_cp: int = int(summary.get("minimum_cp_per_family", 200))
 
 	var top := Label.new()
-	top.text = "%d gp/month  ·  %d gp/family  ·  %d peasant families (%s)" % [
-		total_value, per_family, peasants, classification,
+	top.text = "%s/month  ·  %s/family  ·  %d peasant families (%s)" % [
+		Currency.format_cost(total_value_cp),
+		Currency.format_cost(per_family_cp),
+		peasants, classification,
 	]
 	_expenditure_card.add_child(top)
 
 	# 2gp/fam minimum reference (solid red below).
 	var min_label := Label.new()
 	if bool(summary.get("meets_minimum", true)):
-		min_label.text = "Minimum (2gp/family%s): met (paying %d / %d gp)" % [
-			" + chaotic" if int(summary.get("chaotic_offset_per_family", 0)) > 0 else "",
-			total_value, minimum_total,
+		min_label.text = "Minimum (2gp/family%s): met (paying %s / %s)" % [
+			" + chaotic" if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0 else "",
+			Currency.format_cost(total_value_cp),
+			Currency.format_cost(minimum_total_cp),
 		]
 		min_label.modulate = Color(0.6, 0.95, 0.6)
 	else:
 		min_label.text = "Minimum (2gp/family%s): SHORT %d gp/family — base morale −%d" % [
-			" + chaotic" if int(summary.get("chaotic_offset_per_family", 0)) > 0 else "",
+			" + chaotic" if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0 else "",
 			int(summary.get("gp_below_minimum_per_family", 0)),
 			int(summary.get("gp_below_minimum_per_family", 0)),
 		]
@@ -159,30 +162,50 @@ func _render_expenditure() -> void:
 		warn.modulate = Color(0.95, 0.65, 0.45)
 		_expenditure_card.add_child(warn)
 
-	# Repress toggle (RAW PATCH).
+	# Repress toggle (RAW PATCH). 2026-05-19 bucket-A sweep: read-only label
+	# replaced with an inline launcher — gp/family SpinBox + Launch button
+	# that dispatches repress_population through the activity executor.
 	var repress_row := HBoxContainer.new()
 	repress_row.add_theme_constant_override("separation", 8)
 	var repress_label := Label.new()
-	var repressing_gp: int = int(_domain_data.get("repression_gp_per_family_this_month", 0))
+	var repressing_cp: int = int(_domain_data.get("repression_cp_per_family_this_month", 0))
 	var repressing_active: bool = bool(_domain_data.get("is_repressed_this_month", false))
 	if repressing_active:
-		repress_label.text = "Repressing population this month at %d gp/family. Current morale capped at 0." % repressing_gp
+		repress_label.text = "Repressing population this month at %s/family. Current morale capped at 0." % Currency.format_cost(repressing_cp)
 		repress_label.modulate = Color(0.95, 0.65, 0.45)
 	else:
-		repress_label.text = "Population repression: inactive (use repress_population activity to enable)."
+		repress_label.text = "Population repression: inactive."
 		repress_label.modulate = Color(0.85, 0.85, 0.85)
+	repress_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repress_row.add_child(repress_label)
+	# Inline launcher controls (hidden when already repressing — the activity
+	# is one-per-month).
+	if not repressing_active:
+		var gp_spin := SpinBox.new()
+		gp_spin.min_value = 1
+		gp_spin.max_value = 100
+		gp_spin.step = 1
+		gp_spin.value = 1
+		gp_spin.suffix = "gp/family"
+		gp_spin.custom_minimum_size = Vector2(140, 0)
+		repress_row.add_child(gp_spin)
+		var launch_btn := Button.new()
+		launch_btn.text = "Repress"
+		launch_btn.pressed.connect(func() -> void:
+			_on_repress_pressed(int(gp_spin.value))
+		)
+		repress_row.add_child(launch_btn)
 	_expenditure_card.add_child(repress_row)
 
 	# Quiet hint that minimum_per_family already accounts for chaotic +2.
-	if int(summary.get("chaotic_offset_per_family", 0)) > 0:
+	if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0:
 		var chaotic_hint := _dim_label(
 			"Chaotic domain: minimum garrison cost +2 gp/family per ax_domains_of_chaos §exceptions_from_clanholds L86.")
 		_expenditure_card.add_child(chaotic_hint)
 	# (minimum_per_family is the chaotic-adjusted figure; reference here keeps
 	# the symbol live for the static analyzer.)
 	@warning_ignore("unused_variable")
-	var _used := minimum_per_family
+	var _used := minimum_per_family_cp
 
 
 func _render_roster() -> void:
@@ -219,7 +242,7 @@ func _make_unit_row(u: Dictionary) -> Control:
 	row.add_child(label)
 
 	var cost := Label.new()
-	cost.text = "%d gp/mo" % int(u.get("monthly_cost_gp", 0))
+	cost.text = "%s/mo" % Currency.format_cost(int(u.get("monthly_cost_cp", 0)))
 	cost.modulate = Color(0.85, 0.85, 0.85)
 	row.add_child(cost)
 
@@ -401,6 +424,31 @@ func _on_activity_button(activity_def_id: String) -> void:
 	var location_kind: String = "in_domain"
 	var location_ref: String = "domain:%s" % _domain_id
 	executor.launch(owner_id, activity_def_id, location_kind, location_ref, {}, scheduler)
+
+
+## 2026-05-19 bucket-A sweep (gap inventory #22): the repress toggle was a
+## read-only display; now launches the repress_population activity directly
+## with the user-selected gp/family rate. Handler accepts
+## `repressing_troops_gp_per_family` per its params shape.
+func _on_repress_pressed(gp_per_family: int) -> void:
+	var owner_id: String = String(_domain_data.get("owner_character_id", ""))
+	if owner_id.is_empty():
+		_emit_notification("warning", "No domain ruler", "Cannot launch repression without an active ruler.")
+		return
+	var session_runner = get_tree().root.get_node_or_null("SessionRunner") if get_tree() else null
+	if session_runner == null or not session_runner.has_method("get_activity_executor"):
+		_emit_notification("warning", "Session not active", "Activity executor is unavailable outside a live session.")
+		return
+	var executor = session_runner.get_activity_executor()
+	var scheduler = session_runner.get_scheduler() if session_runner.has_method("get_scheduler") else null
+	if executor == null or scheduler == null:
+		return
+	var params: Dictionary = {"repressing_troops_gp_per_family": maxi(1, gp_per_family)}
+	executor.launch(
+		owner_id, "repress_population",
+		"in_domain", "domain:%s" % _domain_id,
+		params, scheduler,
+	)
 
 
 # ---------------------------------------------------------------------------

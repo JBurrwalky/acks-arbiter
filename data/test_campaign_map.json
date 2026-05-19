@@ -1,0 +1,21 @@
+{
+  "id": "test_campaign_001",
+  "name": "Marches of Telmarine — Campaign Map",
+  "scale": "campaign_24mi",
+  "party_hex": {"q": 0, "r": 0},
+  "hexes": [
+    { "q": -2, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "civilized",   "has_city": true,  "original_biome": "", "settlement_ids": ["test_capital"] },
+    { "q": -2, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r": -1, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r":  1, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  0, "r": -1, "elevation": "flat",      "biome": "clear",  "water": "",      "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  0, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",      "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_keep"] },
+    { "q":  0, "r":  1, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  1, "r": -1, "elevation": "hills",     "biome": "woods",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  1, "r":  0, "elevation": "mountains", "biome": "clear",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  1, "r":  1, "elevation": "mountains", "biome": "clear",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  2, "r": -1, "elevation": "flat",      "biome": "swamp",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  2, "r":  0, "elevation": "flat",      "biome": "swamp",  "water": "",      "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] }
+  ]
+}

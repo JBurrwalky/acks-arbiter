@@ -214,27 +214,48 @@ func get_divine_spells_not_on_class_list(class_id: String, class_registry: Class
 func get_available_spells_for_class(class_id: String, spell_level: int, class_registry: ClassRegistry) -> Array[String]:
 	## All spell_keys available to a class at a given spell level.
 	## Base list spells + class-restricted bonus spells (for divine classes).
-	var list_id := get_class_spell_list_id(class_id, class_registry)
-	if list_id.is_empty():
-		return []
+	##
+	## 2026-05-19 bucket-B item #117: walks ALL casting powers (plural) for
+	## dual-tradition classes (e.g., Lightblessed Wonderworker has both
+	## arcane_casting and divine_casting). Previously consumed only the first
+	## casting power, causing dual-tradition classes to silently miss their
+	## second spell list.
+	var result: Array[String] = []
+	var traditions_seen: Dictionary = {}
+	var casting_powers: Array = class_registry.get_casting_powers(class_id)
+	if casting_powers.is_empty():
+		# Backwards-compat path: single-tradition classes fall through the
+		# original list_id resolution if get_casting_powers returns empty.
+		var list_id := get_class_spell_list_id(class_id, class_registry)
+		if not list_id.is_empty():
+			result = get_spells_for_list(list_id, spell_level)
+	else:
+		for power in casting_powers:
+			var list_id_p: String = String(power.get("spell_list", ""))
+			if list_id_p.is_empty():
+				continue
+			for key in get_spells_for_list(list_id_p, spell_level):
+				if key not in result:
+					result.append(key)
+			var tradition: String = String(power.get("tradition", ""))
+			if not tradition.is_empty():
+				traditions_seen[tradition] = true
 
-	# Start from the indexed list
-	var result: Array[String] = get_spells_for_list(list_id, spell_level)
-
-	# For divine classes, add any catalog spells restricted to this class_id
-	var tradition := get_class_tradition(class_id, class_registry)
-	if tradition == "divine":
-		for spell_key in _spells.keys():
-			var entry: Dictionary = _spells[spell_key]
-			for classification in entry.get("classifications", []):
-				if classification.get("tradition", "") != "divine":
-					continue
-				if classification.get("level", 0) != spell_level:
-					continue
-				var restricted_to: Array = classification.get("restricted_to", [])
-				if restricted_to.is_empty():
-					continue
-				if class_id in restricted_to and spell_key not in result:
-					result.append(spell_key)
+	# Add catalog spells restricted to this class_id, scoped to traditions
+	# the class actually casts in. Dual-tradition classes pick up restricted_to
+	# overlays for BOTH traditions; single-tradition classes only their own.
+	for spell_key in _spells.keys():
+		var entry: Dictionary = _spells[spell_key]
+		for classification in entry.get("classifications", []):
+			var c_tradition: String = String(classification.get("tradition", ""))
+			if not traditions_seen.get(c_tradition, false):
+				continue
+			if classification.get("level", 0) != spell_level:
+				continue
+			var restricted_to: Array = classification.get("restricted_to", [])
+			if restricted_to.is_empty():
+				continue
+			if class_id in restricted_to and spell_key not in result:
+				result.append(spell_key)
 
 	return result

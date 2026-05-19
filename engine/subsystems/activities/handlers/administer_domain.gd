@@ -20,7 +20,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"calendar_day": _calendar_day(),
 		"category": "other",
 		"subcategory": "administer_domain_completed",
-		"gp_amount": 0,
+		"cp_amount": 0,
 		"description": "Ruler administered the domain this month (+1 morale roll, +5% XP)",
 	})
 	return {

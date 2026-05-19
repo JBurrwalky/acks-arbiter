@@ -141,7 +141,7 @@ func to_dict() -> Dictionary:
 ## hp_current is NOT modified here unless it exceeds the new max — the caller
 ## decides whether a level-up refreshes a familiar's wounds. We only clamp.
 func derive_stats_from_master(master: CharacterData) -> void:
-	hp_max_cached = maxi(1, _bankers_round(float(master.hp_max) / 2.0))
+	hp_max_cached = maxi(1, XPAwardCalculator.bankers_round(float(master.hp_max) / 2.0))
 	int_cached = master.intelligence
 	proficiency_count_cached = _master_proficiency_count(master)
 	_apply_hd_progression(master.level)
@@ -253,15 +253,7 @@ static func _str_or_empty(v: Variant) -> String:
 	return str(v)
 
 
-## Banker's rounding (round half to even). ACKS uses this everywhere.
-## GDScript's roundi() rounds half AWAY from zero — that is NOT banker's rounding.
-## Values here are always non-negative (HP halving) so int() truncation == floor.
-static func _bankers_round(value: float) -> int:
-	var floor_val := int(value)
-	var frac := value - floor_val
-	if is_equal_approx(frac, 0.5):
-		if floor_val % 2 == 0:
-			return floor_val
-		else:
-			return floor_val + 1
-	return int(roundf(value))
+## Banker's rounding consolidated to XPAwardCalculator.bankers_round per
+## coding_conventions §56 + the 2026-05-19 bucket-A sweep. The private helper
+## here was identical-semantics duplication; callers now go through the
+## canonical static method.

@@ -153,10 +153,13 @@ static func _apply_obligation(
 	var type: String = String(classification["type"])
 	var is_one_time: bool = bool(classification["is_one_time"])
 
-	# Compute magnitude / gp_value per RAW per type.
+	# Compute magnitude / gp_value per RAW per type. Internal math stays in gp
+	# to mirror RAW; conversion to cp happens at the column-write boundary
+	# (Migration 116: vassal_obligations.cp_value).
 	var sizing: Dictionary = _size_obligation(assignment, type, calendar_day)
 	var magnitude: int = int(sizing.get("magnitude", 0))
 	var gp_value: int = int(sizing.get("gp_value", 0))
+	var cp_value: int = gp_value * 100
 
 	# Duty-specific safe-threshold + cumulative loyalty roll per RAW L353-358.
 	var loyalty_penalty: int = 0
@@ -200,7 +203,7 @@ static func _apply_obligation(
 			"kind": kind,
 			"type": type,
 			"magnitude": magnitude,
-			"gp_value": gp_value,
+			"cp_value": cp_value,
 			"is_one_time": is_one_time,
 			"issued_calendar_day": calendar_day,
 			"status": "completed" if is_one_time else "active",
@@ -222,16 +225,19 @@ static func _apply_obligation(
 			scheduler  # Phase 9C polish: real scheduler from caller; null in tests.
 		)
 
-	# Mechanical effects.
+	# Mechanical effects. Treasury columns are cp (Migration 111), so pass cp.
 	var applied: bool = _apply_mechanical_effect(
-		assignment, type, magnitude, gp_value, calendar_day)
+		assignment, type, magnitude, cp_value, calendar_day)
 
+	# Tier 3 sweep 2026-05-19: removed the legacy "gp_value" key. UI consumers
+	# now read cp_value directly via Currency.format_cost. The internal gp_value
+	# local stays as the gp-native sizing-math intermediate.
 	return {
 		"kind": kind,
 		"type": type,
 		"is_one_time": is_one_time,
 		"magnitude": magnitude,
-		"gp_value": gp_value,
+		"cp_value": cp_value,
 		"summary": _summary_for(type, magnitude, gp_value),
 		"applied": applied,
 		"loyalty_penalty_applied": loyalty_penalty,
@@ -267,7 +273,7 @@ static func _apply_revoke(
 			"type": "revoke_%s" % revoke_kind,
 			"is_one_time": false,
 			"magnitude": 0,
-			"gp_value": 0,
+			"cp_value": 0,
 			"summary": "Revoke %s rolled (sub-roll %d) but no active %s exists." % [revoke_kind, sub_roll, revoke_kind],
 			"applied": true,
 			"loyalty_penalty_applied": 0,
@@ -291,7 +297,7 @@ static func _apply_revoke(
 		"type": "revoke_%s" % revoke_kind,
 		"is_one_time": false,
 		"magnitude": 0,
-		"gp_value": 0,
+		"cp_value": 0,
 		"summary": "Revoked most recent %s: %s." % [
 			revoke_kind, String(most_recent.get("type", ""))],
 		"applied": true,
@@ -349,22 +355,22 @@ static func _apply_mechanical_effect(
 	assignment: Dictionary,
 	type: String,
 	_magnitude: int,
-	gp_value: int,
+	cp_value: int,
 	_calendar_day: int
 ) -> bool:
 	match type:
 		"gift":
-			# Immediate transfer: lord domain treasury -gp, vassal +gp.
+			# Immediate transfer: lord domain treasury -cp, vassal +cp.
 			# RAW L368 also says "increases the recipient's domain income for XP
 			# purposes and decreases the grantor's" — XP accounting deferred
 			# to v1.1 (would need a per-character XP-domain-income tracker).
-			return _transfer_gp_lord_to_vassal(assignment, gp_value)
+			return _transfer_gp_lord_to_vassal(assignment, cp_value)
 		"loan":
 			# RAW L365: "Loan: lord demands a loan equal to 1gp per family in
 			# the realm; the loan is repaid when revoked." VASSAL pays lord
 			# at issue (loan flows TO the lord, not from). Repayment when
 			# revoked is deferred (v1: signal-only on revoke).
-			return _transfer_gp_vassal_to_lord(assignment, gp_value)
+			return _transfer_gp_vassal_to_lord(assignment, cp_value)
 		_:
 			# Other types are signal-only at issue; their ongoing effects are
 			# read by domain_handlers monthly (e.g. scutage as expense).
@@ -414,7 +420,65 @@ static func _run_loyalty_check(assignment: Dictionary, penalty: int, dice) -> Di
 	# favor, the rolling vassal gets +1 to loyalty rolls per RAW L369.
 	var rolling_character_id: String = String(assignment.get("vassal_character_id", ""))
 	combined_mod += office_bonus_for_vassal_roll(rolling_character_id)
+	# Consecrate Ruler buff propagation (Phase 10A.2 / bucket-A item #94):
+	# if the LIEGE's domain has an active consecrate_ruler_buff, the buff's
+	# vassal_loyalty_bonus (+1 success / -1 natural-1 failure) applies to
+	# this loyalty roll. Wired 2026-05-19.
+	combined_mod += consecrate_ruler_vassal_loyalty_bonus_for_assignment(assignment)
 	return HenchmanLoyaltyResolver.resolve_loyalty_check(combined_mod, false, false, dice)
+
+
+# ---------------------------------------------------------------------------
+# Consecrate Ruler buff propagation (Phase 10A.2 / bucket-A item #94)
+# ---------------------------------------------------------------------------
+
+## Returns the vassal_loyalty_bonus contributed by an active
+## consecrate_ruler_buff on the assignment's liege's primary domain.
+## Returns 0 when no active buff exists.
+static func consecrate_ruler_vassal_loyalty_bonus_for_assignment(assignment: Dictionary) -> int:
+	var liege_id: String = String(assignment.get("liege_character_id", ""))
+	if liege_id.is_empty():
+		return 0
+	var liege_domain: Dictionary = _primary_domain_for_character(liege_id)
+	if liege_domain.is_empty():
+		return 0
+	var domain_id: String = String(liege_domain.get("id", ""))
+	if domain_id.is_empty():
+		return 0
+	var payload: Dictionary = _active_consecrate_ruler_payload(domain_id)
+	if payload.is_empty():
+		return 0
+	return int(payload.get("vassal_loyalty_bonus", 0))
+
+
+## Reads the active consecrate_ruler_buff payload for a domain, if any.
+## Returns the parsed JSON payload or {} when no active buff exists.
+## "Active" = status='applied' AND expires_at_calendar_day > current_day.
+static func _active_consecrate_ruler_payload(domain_id: String) -> Dictionary:
+	if domain_id.is_empty():
+		return {}
+	var current_day: int = _current_calendar_day()
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT effect_payload_json FROM pending_divine_effects
+		WHERE domain_id = ?
+		  AND effect_kind = 'consecrate_ruler_buff'
+		  AND status = 'applied'
+		  AND expires_at_calendar_day > ?
+		ORDER BY applies_at_calendar_day DESC
+		LIMIT 1
+	""", [domain_id, current_day]):
+		return {}
+	if CampaignRepository.db.query_result.is_empty():
+		return {}
+	var raw: String = String(CampaignRepository.db.query_result[0].get("effect_payload_json", "{}"))
+	var parsed: Variant = JSON.parse_string(raw)
+	return parsed if parsed is Dictionary else {}
+
+
+static func _current_calendar_day() -> int:
+	if not Engine.has_singleton("Timekeeping"):
+		return 0
+	return Timekeeping.get_total_days()
 
 
 # ---------------------------------------------------------------------------
@@ -455,10 +519,12 @@ static func roll_monthly_loan_repayments(
 	for loan in loan_obligations:
 		var roll: int = _roll_d100(dice)
 		var repaid: bool = roll <= lord_cha
-		var loan_gp: int = int(loan.get("gp_value", 0))
+		# Migration 116: vassal_obligations column is cp_value (gp × 100).
+		var loan_cp: int = int(loan.get("cp_value", 0))
+		var loan_gp: int = loan_cp / 100
 		var obligation_id: String = String(loan.get("id", ""))
 		if repaid:
-			# Transfer gp_value back vassal → lord and complete the obligation.
+			# Transfer cp_value back vassal → lord and complete the obligation.
 			# Note: at issue the loan flowed VASSAL → LORD (lord demanded loan).
 			# At repayment, the LORD returns the principal to the VASSAL... wait,
 			# RAW L365: "the loan is repaid when revoked" — repayment means
@@ -468,7 +534,7 @@ static func roll_monthly_loan_repayments(
 			# equals the adventurer's CHA as a percentage" — the adventurer
 			# being the LORD who took the loan. So lord's CHA% = chance lord
 			# pays vassal back.
-			_transfer_gp_lord_to_vassal(assignment, loan_gp)
+			_transfer_gp_lord_to_vassal(assignment, loan_cp)
 			VassalObligationsRepository.set_status(obligation_id, "completed", calendar_day)
 			if EventBus.has_signal("obligation_revoked"):
 				EventBus.emit_signal("obligation_revoked",
@@ -476,6 +542,7 @@ static func roll_monthly_loan_repayments(
 		results.append({
 			"obligation_id": obligation_id,
 			"loan_gp": loan_gp,
+			"loan_cp": loan_cp,
 			"roll": roll,
 			"cha_pct": lord_cha,
 			"repaid": repaid,
@@ -529,24 +596,29 @@ static func roll_monthly_construction_expenditure(
 	if monthly_tribute <= 0:
 		return results
 	# Vassal's primary domain — to deduct treasury.
+	# Migration 116: vassal_obligations column is cp_value; the running total
+	# tracked here is in cp. monthly_tribute is gp from TributeCalculator.
+	var monthly_tribute_cp: int = monthly_tribute * 100
 	var vassal_dom: Dictionary = _primary_domain_for_character(vassal_id)
 	for obligation in construction_obligations:
 		var obligation_id: String = String(obligation.get("id", ""))
-		var prior_total: int = int(obligation.get("gp_value", 0))
+		var prior_total_cp: int = int(obligation.get("cp_value", 0))
 		var target: int = int(obligation.get("magnitude", 0))
-		var new_total: int = prior_total + monthly_tribute
-		var completed: bool = (target > 0 and new_total >= target)
-		# Deduct from vassal treasury.
+		# magnitude is in gp (RAW 15000 × hex_count); compare against cp running total.
+		var target_cp: int = target * 100
+		var new_total_cp: int = prior_total_cp + monthly_tribute_cp
+		var completed: bool = (target_cp > 0 and new_total_cp >= target_cp)
+		# Deduct from vassal treasury (also cp).
 		if not vassal_dom.is_empty():
-			var prior_treasury: int = int(vassal_dom.get("treasury_gp", 0))
+			var prior_treasury: int = int(vassal_dom.get("treasury_cp", 0))
 			CampaignRepository.update_domain_monthly_state(
 				String(vassal_dom.get("id", "")),
-				{"treasury_gp": prior_treasury - monthly_tribute}
+				{"treasury_cp": prior_treasury - monthly_tribute_cp}
 			)
 			# Refresh local cache for the next iteration.
-			vassal_dom["treasury_gp"] = prior_treasury - monthly_tribute
+			vassal_dom["treasury_cp"] = prior_treasury - monthly_tribute_cp
 		# Persist running total + status if completed.
-		var update_fields: Dictionary = {"gp_value": new_total}
+		var update_fields: Dictionary = {"cp_value": new_total_cp}
 		VassalObligationsRepository.update(obligation_id, update_fields)
 		if completed:
 			VassalObligationsRepository.set_status(obligation_id, "completed", calendar_day)
@@ -556,7 +628,8 @@ static func roll_monthly_construction_expenditure(
 		results.append({
 			"obligation_id": obligation_id,
 			"monthly_expenditure": monthly_tribute,
-			"total_expended": new_total,
+			"total_expended": new_total_cp / 100,  # gp for caller display
+			"total_expended_cp": new_total_cp,
 			"target": target,
 			"completed": completed,
 		})
@@ -621,8 +694,8 @@ static func office_bonus_for_vassal_roll(rolling_character_id: String) -> int:
 # Treasury transfers
 # ---------------------------------------------------------------------------
 
-static func _transfer_gp_lord_to_vassal(assignment: Dictionary, gp_value: int) -> bool:
-	if gp_value <= 0:
+static func _transfer_gp_lord_to_vassal(assignment: Dictionary, cp_value: int) -> bool:
+	if cp_value <= 0:
 		return true
 	var liege_id: String = String(assignment.get("liege_character_id", ""))
 	var vassal_id: String = String(assignment.get("vassal_character_id", ""))
@@ -630,21 +703,21 @@ static func _transfer_gp_lord_to_vassal(assignment: Dictionary, gp_value: int) -
 	var vassal_domain: Dictionary = _primary_domain_for_character(vassal_id)
 	if liege_domain.is_empty() or vassal_domain.is_empty():
 		return false
-	var liege_gp: int = int(liege_domain.get("treasury_gp", 0))
-	var vassal_gp: int = int(vassal_domain.get("treasury_gp", 0))
+	var liege_cp: int = int(liege_domain.get("treasury_cp", 0))
+	var vassal_cp: int = int(vassal_domain.get("treasury_cp", 0))
 	# v1 simplification: allow negative lord treasury (lord still owes the gift even if
 	# they can't pay this month). Phase 8 polish: gate behind affordability check.
 	CampaignRepository.update_domain_monthly_state(String(liege_domain.get("id", "")), {
-		"treasury_gp": liege_gp - gp_value,
+		"treasury_cp": liege_cp - cp_value,
 	})
 	CampaignRepository.update_domain_monthly_state(String(vassal_domain.get("id", "")), {
-		"treasury_gp": vassal_gp + gp_value,
+		"treasury_cp": vassal_cp + cp_value,
 	})
 	return true
 
 
-static func _transfer_gp_vassal_to_lord(assignment: Dictionary, gp_value: int) -> bool:
-	if gp_value <= 0:
+static func _transfer_gp_vassal_to_lord(assignment: Dictionary, cp_value: int) -> bool:
+	if cp_value <= 0:
 		return true
 	var liege_id: String = String(assignment.get("liege_character_id", ""))
 	var vassal_id: String = String(assignment.get("vassal_character_id", ""))
@@ -652,13 +725,13 @@ static func _transfer_gp_vassal_to_lord(assignment: Dictionary, gp_value: int) -
 	var vassal_domain: Dictionary = _primary_domain_for_character(vassal_id)
 	if liege_domain.is_empty() or vassal_domain.is_empty():
 		return false
-	var liege_gp: int = int(liege_domain.get("treasury_gp", 0))
-	var vassal_gp: int = int(vassal_domain.get("treasury_gp", 0))
+	var liege_cp: int = int(liege_domain.get("treasury_cp", 0))
+	var vassal_cp: int = int(vassal_domain.get("treasury_cp", 0))
 	CampaignRepository.update_domain_monthly_state(String(liege_domain.get("id", "")), {
-		"treasury_gp": liege_gp + gp_value,
+		"treasury_cp": liege_cp + cp_value,
 	})
 	CampaignRepository.update_domain_monthly_state(String(vassal_domain.get("id", "")), {
-		"treasury_gp": vassal_gp - gp_value,
+		"treasury_cp": vassal_cp - cp_value,
 	})
 	return true
 

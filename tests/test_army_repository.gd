@@ -39,7 +39,7 @@ func _setup() -> void:
 		"count": 60,
 		"starting_count": 60,
 		"battle_rating": 1.5,
-		"monthly_wage_gp": 600,
+		"monthly_wage_cp": 600,
 	})
 
 
@@ -206,13 +206,13 @@ func test_supply_state_round_trip() -> void:
 	check(String(row.get("supply_line_status", "")) == "out_of_supply_no_base",
 		"default status is out_of_supply_no_base")
 	check(ArmyRepository.update_supply_state(army_id, {
-		"weekly_supply_cost_gp": 240,
-		"current_stockpile_gp": 1000,
+		"weekly_supply_cost_cp": 240,
+		"current_stockpile_cp": 1000,
 		"supply_line_status": "in_supply",
 	}), "supply state updated")
 	row = ArmyRepository.get_supply_state(army_id)
-	check(int(row.get("weekly_supply_cost_gp", 0)) == 240, "weekly cost mutated")
-	check(int(row.get("current_stockpile_gp", 0)) == 1000, "stockpile mutated")
+	check(int(row.get("weekly_supply_cost_cp", 0)) == 240, "weekly cost mutated")
+	check(int(row.get("current_stockpile_cp", 0)) == 1000, "stockpile mutated")
 
 
 func test_recon_cooldown_upsert() -> void:

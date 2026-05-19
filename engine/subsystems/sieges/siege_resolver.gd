@@ -59,7 +59,7 @@ static func start_full_siege(
 	var stronghold: Dictionary = CampaignRepository.db.query_result[0]
 	var shp: int = int(stronghold.get("shp", 0))
 	var unit_capacity: int = UnitCapacityCalculator.compute_unit_capacity(shp)
-	var material: String = "wood" if String(stronghold.get("structure_type", "")).find("wood") >= 0 else "stone"
+	var material: String = StrongholdRepository.resolve_material(stronghold)
 	var supplies: int = SiegeSupplyTracker.accrue_prep_supplies_cp(unit_capacity, weeks_of_warning)
 	var campaign_id: String = _campaign_for_army(besieging_army_id)
 	var domain_id: String = _domain_for_stronghold(stronghold_id)

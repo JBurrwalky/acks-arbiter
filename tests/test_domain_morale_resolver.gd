@@ -79,7 +79,7 @@ func test_personal_authority_level1_in_high_band() -> void:
 	var domain := {"territory_type": "civilized", "alignment": "neutral"}
 	var ruler := {"cha_modifier": 0, "level": 1,
 		"has_leadership_proficiency": false, "alignment": "neutral"}
-	var base := DomainMoraleResolver.resolve_base_morale(domain, ruler, 15000, 999, 0, 0)
+	var base := DomainMoraleResolver.resolve_base_morale(domain, ruler, 1500000, 999, 0, 0)
 	check(base == -4, "level 1 / 15000 income personal authority = -4, got %d" % base)
 
 

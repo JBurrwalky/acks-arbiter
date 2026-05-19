@@ -1,5 +1,5 @@
 {
-  "_source": "acore_stronghold_construction_costs.pdf p.126-127 (Stronghold Structure Costs, Civilian Structure Costs, Structure Accessories Costs). SHP and AC values are sourced from daw_equipment_and_construction.xml §structures L583-606 where available; entries not in the DaW table use placeholder zeros and Phase 8 (sieges) will populate them.",
+  "_source": "acore_stronghold_construction_costs.pdf p.126-127 (Stronghold Structure Costs, Civilian Structure Costs, Structure Accessories Costs). SHP and AC values are sourced from daw_equipment_and_construction.xml §structures L583-606 where available; civilian-structure values were filled with project-scaled approximations during the 2026-05-19 bucket-B sweep (cottage / hut / longhouse / roundhouse / townhouse — scaled from the building_wood / building_stone reference rows by size + material). Moat entries retain shp=0 / ac=0 because moats are obstacles (delay terrain) rather than damage-tracked structures; siege resolvers treat them via payload_json flags, not structure SHP.",
   "_notes": "Costs match the PDF verbatim. SHP/AC are Phase 8 concerns; Phase 1 only consumes gp_cost for the cost calculator and sufficiency math.",
   "fortifications": [
     {
@@ -250,8 +250,8 @@
       "subcategory": "dungeon",
       "display_name": "Corridor, dungeon (10'×10'×10', hewn stone walls, flagstone floor)",
       "gp_cost": 500,
-      "shp": 0,
-      "ac": 0,
+      "shp": 100,
+      "ac": 7,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": true,
       "dimensions_alterable": false
@@ -264,8 +264,8 @@
       "subcategory": "cottage",
       "display_name": "Cottage, wood (20' high, 30' square, thatched roof, wood stairs, earthen floor)",
       "gp_cost": 300,
-      "shp": 0,
-      "ac": 0,
+      "shp": 60,
+      "ac": 4,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -276,8 +276,8 @@
       "subcategory": "hut",
       "display_name": "Hut, pit (8' high, 8' square, thatched roof, sunken earthen floor)",
       "gp_cost": 15,
-      "shp": 0,
-      "ac": 0,
+      "shp": 20,
+      "ac": 3,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -288,8 +288,8 @@
       "subcategory": "hut",
       "display_name": "Hut, sod or wattle (10' high, 10' square, thatched roof, earthen floor)",
       "gp_cost": 25,
-      "shp": 0,
-      "ac": 0,
+      "shp": 30,
+      "ac": 3,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -300,8 +300,8 @@
       "subcategory": "hut",
       "display_name": "Hut, mudbrick or wood (10' high, 10' square, thatched roof, earthen floor)",
       "gp_cost": 50,
-      "shp": 0,
-      "ac": 0,
+      "shp": 40,
+      "ac": 3,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -312,8 +312,8 @@
       "subcategory": "longhouse",
       "display_name": "Longhouse, wood (15' high, 30' long, 15' wide, thatched roof, earthen floor)",
       "gp_cost": 300,
-      "shp": 0,
-      "ac": 0,
+      "shp": 80,
+      "ac": 4,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -324,8 +324,8 @@
       "subcategory": "roundhouse",
       "display_name": "Roundhouse, wood (15' high, 15' diameter, thatched roof, earthen floor)",
       "gp_cost": 125,
-      "shp": 0,
-      "ac": 0,
+      "shp": 50,
+      "ac": 4,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true
@@ -336,8 +336,8 @@
       "subcategory": "townhouse",
       "display_name": "Townhouse, stone (20' high, 30' square, thatched roof, wood floor and stairs)",
       "gp_cost": 1200,
-      "shp": 0,
-      "ac": 0,
+      "shp": 200,
+      "ac": 5,
       "garrison_capacity_units": 0,
       "magic_assist_eligible": false,
       "dimensions_alterable": true

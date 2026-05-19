@@ -22,7 +22,7 @@ extends RefCounted
 const _UPDATE_FIELDS := [
 	"status",
 	"magnitude",
-	"gp_value",
+	"cp_value",
 	"due_calendar_day",
 	"loyalty_modifier_applied",
 	"magnitude_pct",  # Phase 9C: % of vassal realm garrison for call_to_arms.
@@ -39,7 +39,7 @@ static func create(data: Dictionary) -> String:
 		id = CampaignRepository.generate_id()
 	var sql := """
 		INSERT INTO vassal_obligations
-			(id, vassal_assignment_id, kind, type, magnitude, gp_value,
+			(id, vassal_assignment_id, kind, type, magnitude, cp_value,
 			 is_one_time, issued_calendar_day, due_calendar_day, status,
 			 loyalty_modifier_applied, magnitude_pct)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -50,7 +50,7 @@ static func create(data: Dictionary) -> String:
 		String(data.get("kind", "duty")),
 		String(data.get("type", "")),
 		int(data.get("magnitude", 0)),
-		int(data.get("gp_value", 0)),
+		int(data.get("cp_value", 0)),
 		1 if bool(data.get("is_one_time", false)) else 0,
 		int(data.get("issued_calendar_day", 0)),
 		int(data.get("due_calendar_day", 0)),

@@ -1,0 +1,93 @@
+[gd_scene load_steps=11 format=3 uid="uid://b8acksceltest001"]
+
+[ext_resource type="Shader" path="res://engine/shaders/cel_figure.gdshader" id="1_figure"]
+[ext_resource type="Shader" path="res://engine/shaders/cel_outline.gdshader" id="2_outline"]
+[ext_resource type="Shader" path="res://engine/shaders/cel_environment.gdshader" id="3_env"]
+[ext_resource type="Script" path="res://scenes/shader_test/cel_shader_test.gd" id="4_runner"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_figure"]
+shader = ExtResource("1_figure")
+shader_parameter/albedo_tint = Color(0.85, 0.62, 0.45, 1)
+shader_parameter/skin_color = Color(0.85, 0.72, 0.6, 1)
+shader_parameter/hair_color = Color(0.35, 0.22, 0.12, 1)
+shader_parameter/eye_color = Color(0.25, 0.55, 0.75, 1)
+shader_parameter/use_region_tinting = false
+shader_parameter/hide_mask = 0
+shader_parameter/use_hide_mask = false
+shader_parameter/shadow_threshold_1 = 0.5
+shader_parameter/shadow_threshold_2 = 0.0
+shader_parameter/lit_tint = Color(1, 1, 1, 1)
+shader_parameter/mid_tint = Color(0.7, 0.65, 0.75, 1)
+shader_parameter/shadow_tint = Color(0.35, 0.3, 0.55, 1)
+shader_parameter/rim_color = Color(0.96, 0.92, 0.84, 1)
+shader_parameter/rim_power = 4.0
+shader_parameter/rim_intensity = 0.6
+shader_parameter/spec_color = Color(0.96, 0.92, 0.84, 1)
+shader_parameter/spec_threshold = 0.92
+shader_parameter/spec_intensity = 1.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = ExtResource("2_outline")
+shader_parameter/outline_thickness = 0.022
+shader_parameter/outline_color = Color(0.051, 0.039, 0.031, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_env"]
+shader = ExtResource("3_env")
+shader_parameter/albedo_tint = Color(0.65, 0.55, 0.4, 1)
+shader_parameter/uv_tile = Vector2(4, 4)
+shader_parameter/wash_min = 0.7
+shader_parameter/wash_max = 1.0
+shader_parameter/atmospheric_tint = Color(1, 0.95, 0.85, 1)
+shader_parameter/atmospheric_blend = 0.08
+
+[sub_resource type="SphereMesh" id="SphereMesh_test"]
+radius = 0.5
+height = 1.0
+radial_segments = 32
+rings = 16
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(10, 10)
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 1
+background_color = Color(0.55, 0.62, 0.7, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.4
+tonemap_mode = 0
+
+[node name="CelShaderTest" type="Node3D"]
+script = ExtResource("4_runner")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_test")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 1.5, 1.8, 2.2)
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 2, 4, 2)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.2
+
+[node name="FillLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, -1)
+light_color = Color(0.6, 0.7, 0.95, 1)
+light_energy = 0.6
+omni_range = 8.0
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("PlaneMesh_floor")
+surface_material_override/0 = SubResource("ShaderMaterial_env")
+
+[node name="FigureSphere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("SphereMesh_test")
+surface_material_override/0 = SubResource("ShaderMaterial_figure")
+
+[node name="OutlineSphere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("SphereMesh_test")
+surface_material_override/0 = SubResource("ShaderMaterial_outline")

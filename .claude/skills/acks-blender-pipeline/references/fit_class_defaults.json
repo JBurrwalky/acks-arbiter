@@ -1,0 +1,31 @@
+{
+  "_schema_version": 1,
+  "_description": "Default Shrinkwrap_SoftFit parameters per fit class. Defined in gdd-character-creation-pipeline.md §7.4. Per-asset metadata may override individual fields.",
+  "_last_updated": "2026-05-16",
+  "fit_classes": {
+    "plate": {
+      "examples": ["cuirass", "helm", "gorget", "vambrace", "pauldron", "greave"],
+      "fit_mode": "preserve",
+      "max_distance": 0.010,
+      "gamma": 2.0,
+      "offset": 0.012,
+      "rationale": "Plate's sculpted silhouette must be preserved; preserve mode skips inside-body verts entirely. Tight rim mask + modest offset gives armor-thickness clearance."
+    },
+    "mail": {
+      "examples": ["chainmail", "scale", "lamellar", "banded", "splint"],
+      "fit_mode": "conform",
+      "max_distance": 0.015,
+      "gamma": 2.0,
+      "offset": 0.008,
+      "rationale": "Mail drapes naturally and should conform to body curves more readily than plate. Conform mode pushes inside-body verts out."
+    },
+    "cloth": {
+      "examples": ["robe", "dress", "tunic", "gambeson", "undergarment", "hair_style"],
+      "fit_mode": "conform",
+      "max_distance": 0.025,
+      "gamma": 1.5,
+      "offset": 0.005,
+      "rationale": "Cloth conforms most readily; wider capture radius and softer gamma let it follow body proportions closely without aggressive snap."
+    }
+  }
+}

@@ -81,7 +81,7 @@ func test_create_ship_from_catalog() -> void:
 	check(int(ship.get("cargo_capacity_stone", 0)) == 10000, "cargo capacity = 10000")
 	check(int(ship.get("crew_captain", 0)) == 1, "crew_captain = 1")
 	check(int(ship.get("crew_sailors", 0)) == 12, "crew_sailors = 12 from catalog")
-	check(int(ship.get("monthly_operating_cost_gp", 0)) == 325, "monthly cost = 325")
+	check(int(ship.get("monthly_operating_cost_cp", 0)) == 32_500, "monthly cost = 32,500 cp (= 325 gp)")
 	check(str(ship.get("current_location_kind", "")) == "moored", "starts moored")
 	check(str(ship.get("moored_at_settlement_id", "")) == _settlement_id, "moored at correct settlement")
 	check(int(ship.get("is_destroyed", -1)) == 0, "not destroyed")
@@ -223,17 +223,17 @@ func test_monthly_cost_debits_correctly() -> void:
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO party_members (party_id, character_id) VALUES (?, ?)
 	""", [pid, pc_id])
-	# Add 1000 gp = 100000 cp to the PC via inventory_items.
-	CampaignRepository.add_coins_cp(pc_id, 100000)
-	# Create a small sailing ship (325 gp/mo).
+	# Add 1000 gp = 100,000 cp to the PC via inventory_items.
+	CampaignRepository.add_coins_cp(pc_id, 100_000)
+	# Create a small sailing ship (325 gp/mo = 32,500 cp/mo).
 	ShipRepository.create_ship(pid, "sailing_ship_small", _settlement_id)
 	# Sweep.
 	var total: int = ShipRepository.process_monthly_operating_costs_for_campaign(_campaign_id, 100)
-	check(total >= 325, "sweep should debit at least 325 gp for the new ship, got %d" % total)
-	# PC's wealth should have dropped by 325 gp = 32500 cp.
+	check(total >= 32_500, "sweep should debit at least 32,500 cp for the new ship, got %d" % total)
+	# PC's wealth should have dropped by 32,500 cp.
 	var remaining_cp: int = CampaignRepository.get_character_wealth_cp(pc_id)
-	check(remaining_cp == 100000 - 32500,
-		"PC wealth should drop by 32500 cp, got remaining %d (expected %d)" % [remaining_cp, 100000 - 32500])
+	check(remaining_cp == 100_000 - 32_500,
+		"PC wealth should drop by 32,500 cp, got remaining %d (expected %d)" % [remaining_cp, 100_000 - 32_500])
 
 
 func test_monthly_cost_unpaid_emits_signal() -> void:
@@ -258,7 +258,7 @@ func test_monthly_cost_unpaid_emits_signal() -> void:
 	check(unpaid_events.size() == 1,
 		"unpaid signal should fire once for broke-party ship, got %d events" % unpaid_events.size())
 	if unpaid_events.size() >= 1:
-		check(int(unpaid_events[0]["owed_gp"]) == 325, "unpaid owed_gp = 325")
+		check(int(unpaid_events[0]["owed_gp"]) == 32_500, "unpaid owed cost = 32,500 cp (= 325 gp)")
 	# Ship should NOT be destroyed per §9.6.1 v1 policy.
 	var ship: Dictionary = ShipRepository.get_ship(sid)
 	check(int(ship.get("is_destroyed", -1)) == 0, "ship not destroyed for non-payment")
@@ -279,7 +279,7 @@ func test_monthly_cost_skips_destroyed_ships() -> void:
 	var s1: String = ShipRepository.create_ship(pid, "sailing_ship_small", _settlement_id)
 	ShipRepository.destroy_ship(s1)
 	var paid_events: Array = []
-	var cb_paid: Callable = func(ship_id: String, gp_amount: int) -> void:
+	var cb_paid: Callable = func(ship_id: String, cp_amount: int) -> void:
 		if ship_id == s1:
 			paid_events.append(ship_id)
 	EventBus.ship_operating_cost_paid.connect(cb_paid)
@@ -299,9 +299,10 @@ func test_monthly_cost_returns_total_debited() -> void:
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO party_members (party_id, character_id) VALUES (?, ?)
 	""", [pid, pc_id])
-	CampaignRepository.add_coins_cp(pc_id, 200000)  # 2000 gp
+	CampaignRepository.add_coins_cp(pc_id, 200_000)  # 2,000 gp
 	ShipRepository.create_ship(pid, "sailing_ship_small", _settlement_id)
 	ShipRepository.create_ship(pid, "sailing_ship_large", _settlement_id)
 	var total: int = ShipRepository.process_monthly_operating_costs_for_campaign(_campaign_id, 100)
-	check(total == 325 + 525,
-		"sweep should debit 850 gp (325 + 525) when both ships paid, got %d" % total)
+	# 325 gp + 525 gp = 850 gp = 85,000 cp.
+	check(total == 32_500 + 52_500,
+		"sweep should debit 85,000 cp (= 850 gp) when both ships paid, got %d" % total)

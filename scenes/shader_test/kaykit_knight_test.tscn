@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://6hovfk7sif0d"]
+
+[ext_resource type="Script" uid="uid://d0d8uin5aqvfu" path="res://scenes/shader_test/kaykit_knight_test.gd" id="1_runner"]
+[ext_resource type="PackedScene" uid="uid://bcqa2f0w1rxnt" path="res://assets/characters/bodies/human_female.glb" id="2_knight"]
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 1
+background_color = Color(0.55, 0.62, 0.7, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.4
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(8, 8)
+
+[node name="KayKitKnightTest" type="Node3D" unique_id=350879982]
+transform = Transform3D(0.9988775, 0, -0.047367956, 0, 1, 0, 0.047367956, 0, 0.9988775, 0, 0, 0)
+script = ExtResource("1_runner")
+spec_intensity_skin = 0.01
+outline_thickness_body = 0.008
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1436751462]
+environment = SubResource("Environment_test")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1235475730]
+transform = Transform3D(0.9397, -0.171, 0.296, 0, 0.866, 0.5, -0.342, -0.469, 0.814, 1, 1.4, 2.5)
+fov = 45.0
+
+[node name="KeyLight" type="DirectionalLight3D" parent="." unique_id=251234404]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 2, 4, 2)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.2
+
+[node name="FillLight" type="OmniLight3D" parent="." unique_id=642129121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, -1)
+light_color = Color(0.6, 0.7, 0.95, 1)
+light_energy = 0.4
+omni_range = 8.0
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=1714141011]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Character" parent="." unique_id=802832209 instance=ExtResource("2_knight")]
+transform = Transform3D(1.0000001, 0, 0, 0, 0.9999999, 0, 0, 0, 1.0000001, 0, 0, 0)

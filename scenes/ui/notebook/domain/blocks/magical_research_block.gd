@@ -102,6 +102,13 @@ func _ready() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 10)
 
+	# 2026-05-19 bucket-B item #13: launch-result banner mirroring SyndicateBlock.
+	_launch_result_label = Label.new()
+	_launch_result_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_launch_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_launch_result_label.visible = false
+	add_child(_launch_result_label)
+
 	_header_card = _make_card("Magic Research Throw — Status")
 	_libraries_card = _make_card("Libraries")
 	_workshops_card = _make_card("Workshops")
@@ -112,6 +119,35 @@ func _ready() -> void:
 
 	_build_activity_launchers()
 	_subscribe_signals()
+
+
+# 2026-05-19 bucket-B item #13: launch-result banner state + helper.
+var _launch_result_label: Label = null
+const BANNER_AUTO_DISMISS_SECS := 4.0
+
+func _show_launch_result(activity_label: String, result: Dictionary) -> void:
+	if _launch_result_label == null:
+		return
+	var ok: bool = bool(result.get("success", false))
+	var text: String
+	if ok:
+		text = "%s launched." % activity_label
+		_launch_result_label.modulate = Color(0.55, 0.85, 0.55)
+	else:
+		var err: String = str(result.get("error", "unknown error"))
+		text = "%s failed: %s" % [activity_label, err]
+		_launch_result_label.modulate = Color(0.95, 0.55, 0.45)
+	_launch_result_label.text = text
+	_launch_result_label.visible = true
+	if ok:
+		var tree := get_tree()
+		if tree != null:
+			var timer := tree.create_timer(BANNER_AUTO_DISMISS_SECS)
+			timer.timeout.connect(func() -> void:
+				if _launch_result_label != null and _launch_result_label.text == text:
+					_launch_result_label.text = ""
+					_launch_result_label.visible = false
+			)
 
 
 func _exit_tree() -> void:
@@ -189,9 +225,9 @@ func _render_libraries() -> void:
 	for row: Dictionary in rows:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.text = "%s · %d gp invested · supports up to level %d spells · +%d to research throws · %s" % [
+		line.text = "%s · %s invested · supports up to level %d spells · +%d to research throws · %s" % [
 			String(row.get("structure_kind", "library")).replace("_", " ").capitalize(),
-			int(row.get("gp_invested", 0)),
+			Currency.format_cost(int(row.get("cp_invested", 0))),
 			int(row.get("max_spell_level_supported", 1)),
 			int(row.get("magic_research_throw_bonus", 0)),
 			String(row.get("status", "?")),
@@ -211,10 +247,10 @@ func _render_workshops() -> void:
 	for row: Dictionary in rows:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.text = "%s · %d gp invested · supports items up to %d gp value · +%d to enchanting throws · %s" % [
+		line.text = "%s · %s invested · supports items up to %s value · +%d to enchanting throws · %s" % [
 			String(row.get("structure_kind", "workshop")).replace("_", " ").capitalize(),
-			int(row.get("gp_invested", 0)),
-			int(row.get("max_item_value_supported_gp", 0)),
+			Currency.format_cost(int(row.get("cp_invested", 0))),
+			Currency.format_cost(int(row.get("max_item_value_supported_cp", 0))),
 			int(row.get("magic_research_throw_bonus", 0)),
 			String(row.get("status", "?")),
 		]
@@ -233,10 +269,10 @@ func _render_laboratories() -> void:
 	for row: Dictionary in rows:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.text = "%s · %d gp invested · supports cross-breeding up to %d gp cost · +%d to research throws · %s" % [
+		line.text = "%s · %s invested · supports cross-breeding up to %s cost · +%d to research throws · %s" % [
 			String(row.get("structure_kind", "laboratory")).replace("_", " ").capitalize(),
-			int(row.get("gp_invested", 0)),
-			int(row.get("max_crossbreed_cost_gp", 0)),
+			Currency.format_cost(int(row.get("cp_invested", 0))),
+			Currency.format_cost(int(row.get("max_crossbreed_cost_cp", 0))),
 			int(row.get("magic_research_throw_bonus", 0)),
 			String(row.get("status", "?")),
 		]
@@ -262,11 +298,11 @@ func _render_projects() -> void:
 			target = String(row.get("target_item_kind", ""))
 		var days_done: int = int(row.get("days_completed", 0))
 		var days_total: int = int(row.get("days_total", 0))
-		line.text = "%s · %s · %d/%d days · %d gp committed" % [
+		line.text = "%s · %s · %d/%d days · %s committed" % [
 			kind.capitalize(),
 			target if not target.is_empty() else "(no target)",
 			days_done, days_total,
-			int(row.get("gp_committed", 0)),
+			Currency.format_cost(int(row.get("cp_committed", 0))),
 		]
 		_projects_card.add_child(line)
 
@@ -456,20 +492,21 @@ func _on_picker_launch_requested(
 		params: Dictionary,
 		location_kind: String,
 		location_ref: String) -> void:
+	var label: String = activity_def_id.replace("_", " ").capitalize()
 	var executor := _get_activity_executor()
 	if executor == null:
-		push_warning("MagicalResearchBlock: no executor available")
+		_show_launch_result(label, {"success": false, "error": "no executor"})
 		return
 	var scheduler := _get_scheduler()
 	if scheduler == null:
-		push_warning("MagicalResearchBlock: no scheduler available")
+		_show_launch_result(label, {"success": false, "error": "no scheduler"})
 		return
 	var result := executor.launch(
 		_character_id, activity_def_id,
 		location_kind, location_ref,
 		params, scheduler, _party_id)
-	if not bool(result.get("success", false)):
-		push_warning("MagicalResearchBlock: launch failed (%s)" % result.get("error", ""))
+	# 2026-05-19 bucket-B item #13: surface success/failure via banner.
+	_show_launch_result(label, result)
 
 
 func _on_picker_cancelled() -> void:

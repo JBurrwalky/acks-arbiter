@@ -38,11 +38,12 @@ func _stub() -> Callable:
 # ----- Revenue -----
 
 func test_revenue_zeroed_below_sufficiency() -> void:
-	var domain := {"peasant_families": 100, "tax_rate_gp_per_family": 2,
+	# 2026-05-15 cp pass: rates and stronghold values are cp (RAW × 100).
+	var domain := {"peasant_families": 100, "tax_rate_cp_per_family": 200,
 		"territory_type": "wilderness"}
-	var hexes: Array = [{"land_value": 5, "land_improvement_gp": 0}]
-	# Wilderness minimum: 32,000 gp/hex × 1 hex = 32,000. Value 0 ⇒ gate active.
-	var r := DomainRevenueCalculator.calculate_monthly_revenue(domain, hexes, 0, 32000, 999)
+	var hexes: Array = [{"land_value": 5, "land_improvement_level": 0}]
+	# Wilderness minimum: 32,000 gp/hex × 1 hex = 3,200,000 cp. Value 0 ⇒ gate active.
+	var r := DomainRevenueCalculator.calculate_monthly_revenue(domain, hexes, 0, 3_200_000, 99_900)
 	check(r["income_gate_active"] == true, "gate active below sufficiency")
 	check(r["total"] == 0, "total = 0 below sufficiency, got %d" % r["total"])
 
@@ -50,16 +51,17 @@ func test_revenue_zeroed_below_sufficiency() -> void:
 # ----- Expense -----
 
 func test_expense_keeps_garrison_zeros_others() -> void:
-	var domain := {"peasant_families": 100, "liturgy_rate_gp_per_family": 1,
-		"tithe_rate_gp_per_family": 1, "tribute_out_owed": 50}
+	var domain := {"peasant_families": 100, "liturgy_rate_cp_per_family": 100,
+		"tithe_rate_cp_per_family": 100, "tribute_out_owed": 5_000}
 	var e := DomainExpenseCalculator.calculate_monthly_expenses(domain, 0, true)
-	check(e["garrison"] == 200, "garrison still owed at 2 gp/fam × 100 fam = 200, got %d" % e["garrison"])
+	check(e["garrison"] == 20_000,
+		"garrison still owed at 200 cp/fam × 100 fam = 20,000 cp, got %d" % e["garrison"])
 	check(e["liturgy"] == 0, "liturgy zeroed under gate")
 	check(e["maintenance"] == 0, "maintenance zeroed under gate")
 	check(e["tithe"] == 0, "tithe zeroed under gate")
 	check(e["tribute_out"] == 0, "tribute_out zeroed under gate")
 	check(e["repression"] == 0, "repression zeroed under gate")
-	check(e["total"] == 200, "total = garrison only, got %d" % e["total"])
+	check(e["total"] == 20_000, "total = garrison only, got %d" % e["total"])
 
 
 # ----- Growth -----
@@ -91,9 +93,9 @@ func test_growth_active_adventuring_unaffected() -> void:
 # ----- Gate release -----
 
 func test_gate_releases_at_sufficiency() -> void:
-	var domain := {"peasant_families": 100, "tax_rate_gp_per_family": 2}
-	var hexes: Array = [{"land_value": 5, "land_improvement_gp": 0}]
-	# At exactly the minimum, gate is inactive.
-	var r := DomainRevenueCalculator.calculate_monthly_revenue(domain, hexes, 32000, 32000)
+	var domain := {"peasant_families": 100, "tax_rate_cp_per_family": 200}
+	var hexes: Array = [{"land_value": 5, "land_improvement_level": 0}]
+	# At exactly the minimum (3,200,000 cp = 32,000 gp), gate is inactive.
+	var r := DomainRevenueCalculator.calculate_monthly_revenue(domain, hexes, 3_200_000, 3_200_000)
 	check(r["income_gate_active"] == false, "gate releases at minimum")
 	check(r["total"] > 0, "revenue active at minimum")

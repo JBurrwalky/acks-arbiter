@@ -74,10 +74,10 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"starting_count": merc_count,
 			"count": merc_count,
 			"battle_rating": 0.5 * merc_count,  # light infantry baseline BR
-			"monthly_wage_gp": 3 * merc_count,  # standard mercenary wage
-			"monthly_supply_gp": 4 * merc_count,  # 1 gp/week × 4 weeks
-			"monthly_specialist_gp": 0,
-			"monthly_cost_gp": 7 * merc_count,
+			"monthly_wage_cp": 300 * merc_count,    # standard mercenary wage 3 gp/mo = 300 cp
+			"monthly_supply_cp": 400 * merc_count,  # 1 gp/week × 4 weeks = 400 cp
+			"monthly_specialist_cp": 0,
+			"monthly_cost_cp": 700 * merc_count,
 			"morale": 0,
 			"is_veteran": false,
 			"is_trained": false,
@@ -131,7 +131,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "other",
 			"subcategory": "bardic_recruitment",
-			"gp_amount": 0,
+			"cp_amount": 0,
 			"description": "Solicit Followers: %d 0-level mercenaries + %d 1st-3rd-level bard applicants" % [
 				merc_count, bard_count,
 			],

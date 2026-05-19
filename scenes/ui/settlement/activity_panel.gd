@@ -15,6 +15,9 @@ signal activity_requested(activity_type: String, poi: Dictionary)
 signal exit_settlement_requested()
 signal shop_requested(poi: Dictionary)
 signal hiring_requested(poi: Dictionary)
+# Phase 10B.2 Wave 2: routes mercantile activity launchers (the six market /
+# town_square trade activities) to SettlementExploreState's mercantile_panel.
+signal mercantile_requested(activity_id: String, poi: Dictionary)
 
 
 # ---------------------------------------------------------------------------
@@ -74,8 +77,40 @@ const ACTIVITIES := {
 		{"id": "sell_equipment", "label": "Sell Equipment", "major": false, "requires_open": true},
 		{"id": "hire_hirelings", "label": "Hire Hirelings", "major": false, "requires_open": true},
 		{"id": "gather_info", "label": "Gather Information (4 hours)", "major": true, "requires_open": true},
+		# Phase 10B.2 Wave 2 — Trade block mercantile activities.
+		{"id": "buy_merchandise", "label": "Buy Merchandise", "major": false, "requires_open": true},
+		{"id": "sell_merchandise", "label": "Sell Merchandise", "major": false, "requires_open": true},
+		{"id": "persuade_merchants", "label": "Persuade Merchants", "major": false, "requires_open": true},
+		{"id": "solicit_merchants", "label": "Solicit Merchants (1-3 weeks)", "major": true, "requires_open": true},
+		{"id": "locate_merchandise", "label": "Locate Merchandise (1 hour)", "major": false, "requires_open": true},
+		{"id": "accept_shipping_contract", "label": "Accept Shipping Contract", "major": false, "requires_open": true},
+	],
+	# Phase 10B.2 Wave 2 — town_square is the Class V/VI alias for market per §2.3.
+	# Hosts the same mercantile activities; the eligibility tag `at_market_poi`
+	# matches both POI types.
+	"town_square": [
+		{"id": "buy_merchandise", "label": "Buy Merchandise", "major": false, "requires_open": true},
+		{"id": "sell_merchandise", "label": "Sell Merchandise", "major": false, "requires_open": true},
+		{"id": "persuade_merchants", "label": "Persuade Merchants", "major": false, "requires_open": true},
+		{"id": "solicit_merchants", "label": "Solicit Merchants (1-3 weeks)", "major": true, "requires_open": true},
+		{"id": "locate_merchandise", "label": "Locate Merchandise (1 hour)", "major": false, "requires_open": true},
+		{"id": "accept_shipping_contract", "label": "Accept Shipping Contract", "major": false, "requires_open": true},
 	],
 }
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Wave 2 — mercantile activity routing.
+# ---------------------------------------------------------------------------
+
+const MERCANTILE_ACTIVITY_IDS: Array = [
+	"buy_merchandise",
+	"sell_merchandise",
+	"persuade_merchants",
+	"solicit_merchants",
+	"locate_merchandise",
+	"accept_shipping_contract",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -183,4 +218,8 @@ func _on_activity_pressed(activity_id: String) -> void:
 		"hire_henchmen":
 			hiring_requested.emit(_poi)
 		_:
-			activity_requested.emit(activity_id, _poi)
+			# Phase 10B.2 Wave 2: route mercantile launchers to the trade panel.
+			if activity_id in MERCANTILE_ACTIVITY_IDS:
+				mercantile_requested.emit(activity_id, _poi)
+			else:
+				activity_requested.emit(activity_id, _poi)

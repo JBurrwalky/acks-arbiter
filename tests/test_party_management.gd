@@ -364,10 +364,13 @@ func test_rest_penalty() -> void:
 # ---------------------------------------------------------------------------
 
 func test_bankers_rounding() -> void:
-	check(TravelSpeedCalculator._bankers_round(2.5) == 2.0, "2.5 → 2 (even)")
-	check(TravelSpeedCalculator._bankers_round(3.5) == 4.0, "3.5 → 4 (even)")
-	check(TravelSpeedCalculator._bankers_round(2.4) == 2.0, "2.4 → 2")
-	check(TravelSpeedCalculator._bankers_round(2.6) == 3.0, "2.6 → 3")
-	check(TravelSpeedCalculator._bankers_round(0.5) == 0.0, "0.5 → 0 (even)")
-	check(TravelSpeedCalculator._bankers_round(1.5) == 2.0, "1.5 → 2 (even)")
+	# 2026-05-19 bucket-A sweep: private TravelSpeedCalculator._bankers_round
+	# helper was consolidated to canonical XPAwardCalculator.bankers_round.
+	# That helper returns int (not float), so the assertions compare ints.
+	check(XPAwardCalculator.bankers_round(2.5) == 2, "2.5 → 2 (even)")
+	check(XPAwardCalculator.bankers_round(3.5) == 4, "3.5 → 4 (even)")
+	check(XPAwardCalculator.bankers_round(2.4) == 2, "2.4 → 2")
+	check(XPAwardCalculator.bankers_round(2.6) == 3, "2.6 → 3")
+	check(XPAwardCalculator.bankers_round(0.5) == 0, "0.5 → 0 (even)")
+	check(XPAwardCalculator.bankers_round(1.5) == 2, "1.5 → 2 (even)")
 	print("  bankers_rounding: OK")

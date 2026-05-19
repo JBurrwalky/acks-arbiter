@@ -26,26 +26,41 @@ extends RefCounted
 # Float values for aggregate-then-round arithmetic per §8.2.
 # ---------------------------------------------------------------------------
 
-const STABLING_RATES_GP_PER_DAY := {
-	"mule":   0.2,   # RAW L690 (2 sp)
-	"donkey": 0.2,   # Project — donkey ≈ mule
-	"horse":  0.5,   # RAW L691 (5 sp)
-	"camel":  0.5,   # Project — camel ≈ horse
-	"ox":     0.8,   # Project — distinct rate (8 sp) per Jedidiah
-	"cart":   1.0,   # RAW L692
-	"wagon":  2.0,   # RAW L693
+## Canonical stabling rates in COPPER PIECES (cp) per day. cp is the
+## project's base currency (1 gp = 100 cp). Rates are whole cp values so
+## `count × rate × days` is always an exact integer — no rounding ever
+## needed for stabling totals.
+##
+## Per the 2026-05-15 currency-precision correction: gp values like 0.5
+## (= 50 cp) and 0.2 (= 20 cp) aren't truly fractional — they're integer cp
+## amounts. Operating in cp throughout preserves precision. Banker's rounding
+## only applies when a calculation produces a fractional cp value (e.g.,
+## customs-duty percentages can yield 0.5 cp from rounding 0.5% of an odd
+## price), and the round resolves to whole cp — never to whole gp.
+const STABLING_RATES_CP_PER_DAY := {
+	"mule":      20,   # RAW (2 sp/night; mule or donkey)
+	"donkey":    20,   # RAW (2 sp/night; same row as mule)
+	"horse":     50,   # RAW (5 sp/night; riding OR draft horse)
+	"warhorse": 100,   # RAW (1 gp/night; war horses charge premium)
+	"camel":     50,   # Project — camel ≈ horse
+	"ox":        80,   # Project — 8 sp/night per Jedidiah
+	"cart":     100,   # RAW (1 gp/night)
+	"wagon":    200,   # RAW (2 gp/night)
 }
-
 
 # ---------------------------------------------------------------------------
 # §8.3 Entry toll
 # ---------------------------------------------------------------------------
 
-## Returns the entry toll in gp. Per RAW, each market entry costs a class-
-## dependent dice roll. When selling, the toll floor is `1gp × merchandise_loads`
+## Returns the entry toll in CP. Per RAW, each market entry costs a class-
+## dependent dice roll (in gp). When selling, the toll floor is `1 gp × loads`
 ## per RAW L649 ("characters entering to sell always pay a minimum toll of
 ## 1gp per load"). Domain owners in their own market pay 0 per §8.8.
-static func entry_toll_gp(
+##
+## Per the 2026-05-15 currency-precision rule: cp is the project's base
+## currency. The RAW dice rolls produce whole-gp values (e.g., 1d6 gp, 1d8+5
+## gp), so converting to cp is exact: rolled_gp × 100.
+static func entry_toll_cp(
 		market_class: int,
 		is_selling: bool,
 		merchandise_loads: int,
@@ -58,32 +73,44 @@ static func entry_toll_gp(
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
 	var dice_spec: String = MerchantPoolRepository.toll_dice_for_class(market_class)
-	var rolled: int = _roll_dice_spec(dice_spec, rng)
+	var rolled_gp: int = _roll_dice_spec(dice_spec, rng)
+	var rolled_cp: int = rolled_gp * 100
 	if is_selling:
-		var minimum: int = maxi(merchandise_loads, 0)
-		return maxi(rolled, minimum)
-	return rolled
+		# RAW minimum floor: 1 gp per load = 100 cp per load.
+		var minimum_cp: int = maxi(merchandise_loads, 0) * 100
+		return maxi(rolled_cp, minimum_cp)
+	return rolled_cp
 
 
 # ---------------------------------------------------------------------------
 # §8.4 Customs duty (selling only, annual rate per settlement)
 # ---------------------------------------------------------------------------
 
-## Returns the customs duty in gp for a sell transaction at this settlement.
+## Returns the customs duty in CP for a sell transaction at this settlement.
 ## Reads the per-settlement annual `customs_duty_rate_pct` (set at year-tick
 ## by `process_annual_customs_roll_for_campaign`). Domain owners exempt
 ## per §8.8 (project extension to RAW's enumeration).
-static func customs_duty_gp(
-		market_price_gp: int,
+##
+## Per the 2026-05-15 currency-precision rule: inputs and outputs are cp.
+## `customs_cp = banker_round(rate_pct × market_price_cp / 100)`. When the
+## price × rate produces a fractional cp (e.g., 7% of 13 cp = 0.91 cp), the
+## banker's-round resolves to whole cp — never to gp granularity.
+static func customs_duty_cp(
+		market_price_cp: int,
 		settlement_id: String,
 		is_domain_owner: bool = false,
 ) -> int:
 	if is_domain_owner:
 		return 0
 	var rate_pct: int = _read_customs_rate_pct(settlement_id)
-	if rate_pct <= 0 or market_price_gp <= 0:
+	if rate_pct <= 0 or market_price_cp <= 0:
 		return 0
-	return _bankers_round(float(market_price_gp) * float(rate_pct) / 100.0)
+	# rate_pct × cp / 100: integer-divisible most of the time; banker-round
+	# the residue when not (rare; occurs only on odd-cp prices).
+	var numerator: int = rate_pct * market_price_cp
+	if numerator % 100 == 0:
+		return numerator / 100
+	return XPAwardCalculator.bankers_round(float(numerator) / 100.0)
 
 
 ## Deterministic seeded `1d10 + 1d10` per (settlement_id, year, "customs").
@@ -142,62 +169,75 @@ static func process_annual_customs_roll_for_campaign(
 # §8.5 Loading / unloading labor
 # ---------------------------------------------------------------------------
 
-## Returns the labor fee in gp for moving [param total_stone] of merchandise.
-## RAW L746-750: 1gp per 200 stone. Aggregate-then-round banker per §8.2.
+## Returns the labor fee in CP for moving [param total_stone] of merchandise.
+## RAW L746-750: 1 gp per 200 stone = 100 cp per 200 stone = 0.5 cp/stone.
 ## No domain-owner exemption — labor is paid to workers, not to the settlement.
-static func labor_fee_gp(total_stone: int) -> int:
+##
+## Per the 2026-05-15 currency-precision rule: the per-stone rate is half a cp.
+## For even stone counts the result is an exact integer (stone/2 cp). For odd
+## stone counts the result has a fractional cp; banker's rounding resolves it
+## to whole cp. This is the only fee whose intrinsic precision lives below cp.
+static func labor_fee_cp(total_stone: int) -> int:
 	if total_stone <= 0:
 		return 0
-	return _bankers_round(float(total_stone) / 200.0)
+	# 1 gp / 200 stone = 100 cp / 200 stone = stone / 2 cp.
+	if total_stone % 2 == 0:
+		return total_stone / 2
+	return XPAwardCalculator.bankers_round(float(total_stone) / 2.0)
 
 
 # ---------------------------------------------------------------------------
 # §8.6 Ship moorage
 # ---------------------------------------------------------------------------
 
-## Per-day moorage in gp. RAW L687-689: 1gp per 10 SHP per day.
-## Domain-owner exempt per §8.8.
-static func moorage_gp_per_day(ship_shp: int, is_domain_owner: bool = false) -> int:
+## Per-day moorage in CP (exact, no rounding). RAW: 1gp per 10 SHP per day
+## = 10 cp per SHP per day. Domain-owner exempt per §8.8.
+## Per the 2026-05-15 currency-precision rule: prefer cp output for any
+## value used for actual payment. The gp companion below is for display.
+static func moorage_cp_per_day(ship_shp: int, is_domain_owner: bool = false) -> int:
 	if is_domain_owner or ship_shp <= 0:
 		return 0
-	return _bankers_round(float(ship_shp) / 10.0)
+	return ship_shp * 10
 
 
-## Multi-day moorage total. Multiplies first, rounds once per §8.2.
-static func moorage_gp_total(ship_shp: int, days: int, is_domain_owner: bool = false) -> int:
+## Multi-day moorage in CP (exact). ship_shp × days × 10 cp.
+static func moorage_cp_total(ship_shp: int, days: int, is_domain_owner: bool = false) -> int:
 	if is_domain_owner or ship_shp <= 0 or days <= 0:
 		return 0
-	return _bankers_round(float(ship_shp) * float(days) / 10.0)
+	return ship_shp * days * 10
 
 
 # ---------------------------------------------------------------------------
 # §8.7 Stabling
 # ---------------------------------------------------------------------------
 
-## Returns per-day stabling cost in gp for the given mount/vehicle counts.
-## [param mounts] keys map to `STABLING_RATES_GP_PER_DAY`. Unknown keys
-## contribute 0 (defensive — caller must map domain vocabulary to the seven
-## canonical keys: mule, donkey, horse, camel, ox, cart, wagon).
+## Returns per-day stabling cost in CP (exact, no rounding) for the given
+## mount/vehicle counts. [param mounts] keys map to `STABLING_RATES_CP_PER_DAY`.
+## Unknown keys contribute 0 (defensive — caller must map domain vocabulary
+## to the canonical keys: mule, donkey, horse, warhorse, camel, ox, cart, wagon).
 ## Domain-owner exempt per §8.8.
-static func stabling_gp_per_day(mounts: Dictionary, is_domain_owner: bool = false) -> int:
+##
+## Per the 2026-05-15 currency-precision rule: cp is the project's base
+## currency; stabling rates are whole cp values; the total is an exact integer.
+static func stabling_cp_per_day(mounts: Dictionary, is_domain_owner: bool = false) -> int:
 	if is_domain_owner:
 		return 0
-	var total: float = 0.0
+	var total_cp: int = 0
 	for key in mounts:
-		var rate: float = float(STABLING_RATES_GP_PER_DAY.get(key, 0.0))
-		total += float(int(mounts[key])) * rate
-	return _bankers_round(total)
+		var rate: int = int(STABLING_RATES_CP_PER_DAY.get(key, 0))
+		total_cp += int(mounts[key]) * rate
+	return total_cp
 
 
-## Multi-day stabling total. Aggregates rates × counts × days, rounds once.
-static func stabling_gp_total(mounts: Dictionary, days: int, is_domain_owner: bool = false) -> int:
+## Multi-day stabling total in CP (exact integer; counts × rates × days).
+static func stabling_cp_total(mounts: Dictionary, days: int, is_domain_owner: bool = false) -> int:
 	if is_domain_owner or days <= 0:
 		return 0
-	var per_day_raw: float = 0.0
+	var total_cp: int = 0
 	for key in mounts:
-		var rate: float = float(STABLING_RATES_GP_PER_DAY.get(key, 0.0))
-		per_day_raw += float(int(mounts[key])) * rate
-	return _bankers_round(per_day_raw * float(days))
+		var rate: int = int(STABLING_RATES_CP_PER_DAY.get(key, 0))
+		total_cp += int(mounts[key]) * rate * days
+	return total_cp
 
 
 # ---------------------------------------------------------------------------
@@ -278,12 +318,5 @@ static func _roll_dice_spec(spec: String, rng: RandomNumberGenerator) -> int:
 	return total + modifier
 
 
-## Banker's rounding (round half to even) per CLAUDE.md.
-static func _bankers_round(value: float) -> int:
-	var floor_val: int = int(floor(value))
-	var frac: float = value - float(floor_val)
-	if absf(frac - 0.5) < 0.0000001:
-		if floor_val % 2 == 0:
-			return floor_val
-		return floor_val + 1
-	return int(roundf(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

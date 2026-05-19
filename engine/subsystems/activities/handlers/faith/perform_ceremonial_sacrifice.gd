@@ -22,14 +22,18 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		return {"summary": "perform_ceremonial_sacrifice failed: lawful alignment required"}
 
 	var params := _parse_params(state)
+	# RAW reports the offering in gp (UI launcher captures gp from the user).
+	# Convert to cp at this boundary so all downstream storage + ledger writes
+	# stay in the unified cp standard.
 	var gp_value: int = int(params.get("gp_value_total", 0))
 	if gp_value <= 0:
 		return {"summary": "perform_ceremonial_sacrifice completed (no gp value tracked)"}
+	var cp_value: int = gp_value * 100
 
-	CampaignRepository.add_congregant_pending_gp(character_id, gp_value)
+	CampaignRepository.add_congregant_pending_cp(character_id, cp_value)
 
 	# Ledger entry on the ruler's domain (if any) — treasury was debited at
-	# launch for the offering gp.
+	# launch for the offering value.
 	var domain_id: String = _resolve_domain_for_character(character_id)
 	if not domain_id.is_empty():
 		CampaignRepository.add_ledger_entry({
@@ -37,13 +41,14 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "expense",
 			"subcategory": "ceremonial_sacrifice",
-			"gp_amount": gp_value,
-			"description": "Ceremonial sacrifice — %d gp; rolls into next-month congregant growth" % gp_value,
+			"cp_amount": cp_value,
+			"description": "Ceremonial sacrifice — %s; rolls into next-month congregant growth" % Currency.format_cost(cp_value),
 		})
 
+	var pretty := Currency.format_cost(cp_value)
 	return {
-		"summary": "Ceremonial sacrifice: %d gp tracked for next-month growth" % gp_value,
-		"presentation": {"type": "toast", "text": "Ceremonial sacrifice (%d gp)" % gp_value},
+		"summary": "Ceremonial sacrifice: %s tracked for next-month growth" % pretty,
+		"presentation": {"type": "toast", "text": "Ceremonial sacrifice (%s)" % pretty},
 	}
 
 

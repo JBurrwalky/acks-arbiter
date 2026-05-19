@@ -52,7 +52,7 @@ func _make_commission(daily_rate: int, status: String = "in_progress") -> String
 		"archetype": "fortress",
 		"archetype_power_id": "fighter_castle",
 		"structure_type": "keep",
-		"gp_value": 30000,
+		"cp_value": 3000000,  # Migration 116: 30000 gp × 100 = 3,000,000 cp.
 		"shp": 100,
 		"ac": 6,
 		"garrison_capacity": 50,
@@ -61,19 +61,19 @@ func _make_commission(daily_rate: int, status: String = "in_progress") -> String
 	})
 	return CampaignRepository.create_commission({
 		"stronghold_id": stronghold_id,
-		"gp_committed": 30000,
-		"daily_construction_rate_gp": daily_rate,
+		"cp_committed": 3000000,  # 30,000 gp × 100
+		"daily_construction_rate_cp": daily_rate,
 		"speed_tier_pct": 100,
 		"engineers_required": 1,
 		"engineers_assigned": 1,
-		"engineer_monthly_wage_gp": 250,
+		"engineer_monthly_wage_cp": 250,
 		"magic_rate_modifier_pct": 100,
 		"materials_strategy": "local",
 		"class_cost_reduction_pct": 0,
 		"started_calendar_day": 1,
 		"expected_halfway_day": 30,
 		"expected_completion_day": 60,
-		"gp_progressed": 0,
+		"cp_progressed": 0,
 		"halfway_signal_fired": false,
 		"status": status,
 	})
@@ -95,29 +95,27 @@ func test_bump_rejects_zero_or_negative_pct() -> void:
 
 
 func test_bump_increases_rate_by_5_pct() -> void:
-	var cid := _make_commission(500)
+	var cid := _make_commission(50000)  # 500 gp/day × 100 = 50,000 cp/day
 	var new_rate := CommissionPipeline.bump_daily_construction_rate(cid, 5)
-	# 500 * 1.05 = 525
-	check(new_rate == 525, "500 * 1.05 = 525, got %d" % new_rate)
+	# 50,000 * 1.05 = 52,500
+	check(new_rate == 52500, "50000 * 1.05 = 52500, got %d" % new_rate)
 	var commission := CampaignRepository.get_commission(cid)
-	check(int(commission.get("daily_construction_rate_gp", 0)) == 525,
+	check(int(commission.get("daily_construction_rate_cp", 0)) == 52500,
 		"persisted rate should match new_rate")
 
 
 func test_bump_stacks_compoundingly() -> void:
-	var cid := _make_commission(500)
+	var cid := _make_commission(50000)
 	var r1 := CommissionPipeline.bump_daily_construction_rate(cid, 10)
-	# 500 * 1.10 = 550
-	check(r1 == 550, "first +10%% bump → 550, got %d" % r1)
+	# 50,000 * 1.10 = 55,000
+	check(r1 == 55000, "first +10%% bump → 55000, got %d" % r1)
 	var r2 := CommissionPipeline.bump_daily_construction_rate(cid, 5)
-	# 550 * 1.05 = 577.5 → banker's rounds to 578 (half to even at .5 rounds
-	# 577 to 578 since 578 is even).
-	check(r2 == 578 or r2 == 577,
-		"second +5%% on top → 577 or 578 (banker's rounding), got %d" % r2)
+	# 55,000 * 1.05 = 57,750
+	check(r2 == 57750, "second +5%% on top → 57750, got %d" % r2)
 
 
 func test_bump_rejects_completed_commission() -> void:
-	var cid := _make_commission(500, "completed")
+	var cid := _make_commission(50000, "completed")
 	var new_rate := CommissionPipeline.bump_daily_construction_rate(cid, 5)
 	check(new_rate == 0, "completed commission rejects bump, got %d" % new_rate)
 
@@ -147,7 +145,7 @@ func test_get_in_progress_commission_for_domain_returns_active() -> void:
 		"archetype": "fortress",
 		"archetype_power_id": "fighter_castle",
 		"structure_type": "keep",
-		"gp_value": 30000,
+		"cp_value": 3000000,  # Migration 116: 30000 gp × 100 = 3,000,000 cp.
 		"shp": 100,
 		"ac": 6,
 		"garrison_capacity": 50,
@@ -156,23 +154,23 @@ func test_get_in_progress_commission_for_domain_returns_active() -> void:
 	})
 	CampaignRepository.create_commission({
 		"stronghold_id": stronghold_id,
-		"gp_committed": 30000,
-		"daily_construction_rate_gp": 500,
+		"cp_committed": 3000000,  # 30,000 gp × 100
+		"daily_construction_rate_cp": 50000,
 		"speed_tier_pct": 100,
 		"engineers_required": 1,
 		"engineers_assigned": 1,
-		"engineer_monthly_wage_gp": 250,
+		"engineer_monthly_wage_cp": 250,
 		"magic_rate_modifier_pct": 100,
 		"materials_strategy": "local",
 		"class_cost_reduction_pct": 0,
 		"started_calendar_day": 1,
 		"expected_halfway_day": 30,
 		"expected_completion_day": 60,
-		"gp_progressed": 0,
+		"cp_progressed": 0,
 		"halfway_signal_fired": false,
 		"status": "in_progress",
 	})
 	var commission := CommissionPipeline.get_in_progress_commission_for_domain(fresh_domain)
 	check(not commission.is_empty(), "active commission returned for domain")
-	check(int(commission.get("daily_construction_rate_gp", 0)) == 500,
+	check(int(commission.get("daily_construction_rate_cp", 0)) == 50000,
 		"correct rate read back")

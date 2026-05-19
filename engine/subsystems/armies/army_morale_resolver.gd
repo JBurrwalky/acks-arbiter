@@ -168,6 +168,24 @@ static func compute_modifiers(unit_state: Dictionary, ctx: Dictionary) -> Dictio
 	elif status == "fleeing":
 		mods["unit_fleeing"] = -5
 
+	# Chronicles of Battle aura (Phase 10A.3 / bucket-A item #90):
+	# +1 morale if a Bard L5+ is co-located with the unit's owner via party.
+	# Wired 2026-05-19. The aura is queried per-unit so heterogeneous armies
+	# (some units owned by the Bard's patron, others by a sub-officer) each
+	# get the right answer.
+	var owner_id: String = String(unit_state.get("owner_character_id", ""))
+	if not owner_id.is_empty():
+		var unit_location: Dictionary = ctx.get("unit_location", {})
+		var aura: Dictionary = ChroniclesOfBattleAura.compute_aura_bonus(
+			owner_id, unit_location)
+		var aura_delta: int = int(aura.get("morale_delta", 0))
+		if aura_delta != 0:
+			mods["chronicles_of_battle_aura"] = aura_delta
+			ChroniclesOfBattleAura.emit_aura_applied(
+				String(aura.get("bard_character_id", "")),
+				String(unit_state.get("id", "")),
+				aura_delta)
+
 	return mods
 
 

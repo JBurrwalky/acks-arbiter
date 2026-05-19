@@ -4,8 +4,8 @@ extends RefCounted
 ## Computes army weekly supply cost and weighted-supply-line geometry per
 ## daw_campaigning_armies.xml §supply L226-374; gdd-army-warfare.md §2.4 / §4.4.
 ##
-## The codebase stores per-unit monthly_supply_gp (denormalized at hire time)
-## on troop_units.monthly_supply_gp. RAW publishes weekly costs (60 gp / 240 gp
+## The codebase stores per-unit monthly_supply_cp (denormalized at hire time)
+## on troop_units.monthly_supply_cp. RAW publishes weekly costs (60 gp / 240 gp
 ## per company-sized infantry / cavalry); Phase 5 stores the monthly conversion
 ## (weekly × 4) to match the rest of the pay/expense math. We invert that here
 ## by dividing by 4 to get weekly. Banker's rounding per CLAUDE.md.
@@ -67,34 +67,38 @@ const STATUS_SIMPLIFIED := "simplified"
 # Weekly supply cost
 # ---------------------------------------------------------------------------
 
-static func compute_weekly_supply_cost_gp(army_id: String) -> int:
+static func compute_weekly_supply_cost_cp(army_id: String) -> int:
 	## Sums per-unit weekly supply cost across active assignments. Returns 0
 	## for empty armies. Quartermaster / carnivorous / hungerless modifiers
 	## are applied per RAW where unit metadata supports them.
+	##
+	## Cp-native end-to-end (2026-05-16 army wage pass): troop_units.monthly_supply_cp
+	## ÷ 4 yields cp/week, modifiers compound on cp, return is cp.
 	if army_id.is_empty():
 		return 0
 	var assignments: Array = ArmyRepository.list_active_assignments_for_army(army_id)
 	if assignments.is_empty():
 		return 0
 
-	var total_weekly_gp: float = 0.0
+	var total_weekly_cp: float = 0.0
 	for assn in assignments:
 		var troop_unit: Dictionary = _get_troop_unit(String(assn.get("troop_unit_id", "")))
 		if troop_unit.is_empty():
 			continue
-		var monthly_supply_gp: int = int(troop_unit.get("monthly_supply_gp", 0))
+		var monthly_supply_cp: int = int(troop_unit.get("monthly_supply_cp", 0))
 		# RAW publishes per-week. Phase 5 stores monthly = weekly × 4.
-		var unit_weekly: float = float(monthly_supply_gp) / 4.0
+		var unit_weekly_cp: float = float(monthly_supply_cp) / 4.0
 		# Apply modifiers (v1 scope; flag-based when columns land).
 		if _is_hungerless(troop_unit):
-			unit_weekly = 0.0
+			unit_weekly_cp = 0.0
 		elif _is_carnivorous(troop_unit):
-			unit_weekly *= 4.0
+			unit_weekly_cp *= 4.0
 		if not _has_quartermaster(troop_unit):
-			unit_weekly *= 2.0
-		total_weekly_gp += unit_weekly
+			unit_weekly_cp *= 2.0
+		total_weekly_cp += unit_weekly_cp
 
-	return _bankers_round(total_weekly_gp)
+	# Banker-round the cp residue (rare; modifiers can produce fractional cp).
+	return XPAwardCalculator.bankers_round(total_weekly_cp)
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +125,7 @@ static func compute_weighted_path_length(
 
 static func evaluate_supply_line_status(
 	supply_state: Dictionary,
-	weekly_cost_gp: int,
+	weekly_cost_cp: int,
 	weighted_hex_count: int,
 	path: Array
 ) -> String:
@@ -144,8 +148,8 @@ static func evaluate_supply_line_status(
 	# Stockpile vs cost is consumed by the weekly tick; supply line itself is
 	# "intact" if base exists, path is clear, and length is within range.
 	# A separate consecutive_unsupplied_weeks counter handles attrition.
-	# weekly_cost_gp parameter retained for future simplified-supply rule.
-	if weekly_cost_gp < 0:
+	# weekly_cost_cp parameter retained for future simplified-supply rule.
+	if weekly_cost_cp < 0:
 		return STATUS_NO_BASE  # defensive; never expected
 	return STATUS_IN_SUPPLY
 
@@ -192,12 +196,12 @@ static func _is_hungerless(troop_unit: Dictionary) -> bool:
 
 
 static func _has_quartermaster(troop_unit: Dictionary) -> bool:
-	# Phase 5 stores `monthly_specialist_gp`; a non-zero value means specialist
+	# Phase 5 stores `monthly_specialist_cp`; a non-zero value means specialist
 	# coverage was paid at hire time. Per daw_armies_recruitment.xml §quartermaster,
 	# 1 quartermaster per unit is the standard; we treat any specialist spend
 	# > 0 as quartermaster-present until Phase 6 introduces a typed specialist
 	# roster column on troop_units.
-	return int(troop_unit.get("monthly_specialist_gp", 0)) > 0
+	return int(troop_unit.get("monthly_specialist_cp", 0)) > 0
 
 
 static func _get_troop_unit(troop_unit_id: String) -> Dictionary:
@@ -211,13 +215,5 @@ static func _get_troop_unit(troop_unit_id: String) -> Dictionary:
 	return CampaignRepository.db.query_result[0].duplicate()
 
 
-static func _bankers_round(value: float) -> int:
-	# Round half to even per CLAUDE.md.
-	var floor_v: int = int(floor(value))
-	var diff: float = value - float(floor_v)
-	if absf(diff - 0.5) < 0.0001:
-		# Halfway — round to even.
-		if floor_v % 2 == 0:
-			return floor_v
-		return floor_v + 1
-	return int(round(value))
+# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
+# 2026-05-19 bucket-A sweep.

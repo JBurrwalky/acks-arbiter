@@ -67,11 +67,12 @@ func _setup() -> void:
 	_witch_l9_id = _create_test_character(_campaign_id, "Test Witch L9",
 		"witch", "mage", 9, 13, 17)
 
+	# Migration 116: gp_value → cp_value (× 100). 50000 gp → 5000000 cp.
 	_stronghold_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO strongholds (id, owner_character_id, archetype,
-			structure_type, gp_value, completion_pct, status)
-		VALUES (?, ?, 'sanctum', 'sanctum', 50000, 100, 'completed')
+			structure_type, cp_value, completion_pct, status)
+		VALUES (?, ?, 'sanctum', 'sanctum', 5000000, 100, 'completed')
 	""", [_stronghold_id, _mage_l9_id])
 
 	# Shared library supporting L3+ spells.
@@ -80,7 +81,7 @@ func _setup() -> void:
 		"owner_character_id": _mage_l9_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -95,7 +96,7 @@ func _setup() -> void:
 		"owner_character_id": _lightblessed_l9_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -107,7 +108,7 @@ func _setup() -> void:
 		"owner_character_id": _cleric_l9_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -119,7 +120,7 @@ func _setup() -> void:
 		"owner_character_id": _bladedancer_l9_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",
@@ -131,7 +132,7 @@ func _setup() -> void:
 		"owner_character_id": _witch_l9_id,
 		"stronghold_id": _stronghold_id,
 		"structure_kind": "sanctum_library",
-		"gp_invested": 8000,
+		"cp_invested": 800000,
 		"max_spell_level_supported": 3,
 		"magic_research_throw_bonus": 0,
 		"status": "operational",

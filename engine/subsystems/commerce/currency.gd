@@ -170,20 +170,38 @@ static func compute_deduction(coins: Dictionary, cost_cp: int) -> Dictionary:
 # Formatting
 # ---------------------------------------------------------------------------
 
-## Formats a copper amount as a price string using standard denominations.
-## Example: 1550 → "15gp 5sp", 3 → "3cp", 0 → "0cp"
+## Formats a copper amount as a cost-display string using only the three
+## "abstract value" denominations gp/sp/cp (pp/ep are physical coin types,
+## reserved for inventory/treasure/loot displays via `format_wealth`).
+##
+## Per the 2026-05-18 currency-display rule (user spec):
+##   * Use gp/sp/cp only — no pp, no ep.
+##   * Skip zero-magnitude denominations.
+##   * Comma+space separator between denominations.
+##
+## Examples:
+##   1789  → "17gp, 8sp, 9cp"
+##   5000  → "50gp"
+##   50_107 → "501gp, 7cp"
+##   30    → "3sp"
+##   0     → "0cp"
 static func format_cost(cost_cp: int) -> String:
 	if cost_cp <= 0:
 		return "0cp"
 
 	var parts: Array[String] = []
 	var remaining := cost_cp
+	# Only gp / sp / cp — pp and ep are reserved for `format_wealth` (physical
+	# coin display in inventory/treasure/loot views).
 	for d in DENOMINATIONS:
+		var abbr: String = String(d["abbr"])
+		if abbr != "gp" and abbr != "sp" and abbr != "cp":
+			continue
 		var qty: int = remaining / d["cp_value"]
 		if qty > 0:
-			parts.append("%d%s" % [qty, d["abbr"]])
+			parts.append("%d%s" % [qty, abbr])
 			remaining -= qty * d["cp_value"]
-	return " ".join(parts)
+	return ", ".join(parts)
 
 
 ## Formats a coins dictionary showing actual held quantities per denomination.

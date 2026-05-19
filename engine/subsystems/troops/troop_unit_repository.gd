@@ -6,10 +6,11 @@ extends RefCounted
 ## Per `daw_armies_recruitment.xml` §army_sources six source types:
 ## mercenary / conscript / militia / follower / slave_soldier / vassal.
 ##
-## monthly_cost_gp is denormalized = (wage + specialist + 4 × weekly_supply) × count
+## monthly_cost_cp is denormalized = (wage + specialist + 4 × weekly_supply) × count
 ## per `daw_campaigns_troop_tables_summary.xml` §unit_characteristics_summary.
 ## Phase 5 callers compute it from the unit_template + count at hire and pass the
-## result in directly; the repository does not derive it.
+## result in directly; the repository does not derive it. Per the 2026-05-16
+## garrison wiring, the cost columns are cp-native (1 gp = 100 cp).
 ##
 ## starting_count is captured separately so the §morale_and_loyalty 25%-casualties
 ## Calamity threshold can be evaluated at any time as `count < (starting_count * 3 / 4)`.
@@ -18,8 +19,8 @@ const _UPDATE_FIELDS := [
 	"assigned_domain_id", "assigned_stronghold_id",
 	"source_type", "troop_type", "race", "tier",
 	"starting_count", "count", "battle_rating",
-	"monthly_wage_gp", "monthly_supply_gp", "monthly_specialist_gp",
-	"monthly_cost_gp", "morale", "is_veteran", "is_trained",
+	"monthly_wage_cp", "monthly_supply_cp", "monthly_specialist_cp",
+	"monthly_cost_cp", "morale", "is_veteran", "is_trained",
 	"unit_xp", "assignment_kind", "hire_calendar_day", "equipment_kit",
 	"status", "departure_kind", "departure_calendar_day",
 ]
@@ -75,8 +76,8 @@ static func create_unit(data: Dictionary) -> String:
 			(id, campaign_id, owner_character_id, assigned_domain_id,
 			 assigned_stronghold_id, source_type, troop_type, race, tier,
 			 starting_count, count, battle_rating,
-			 monthly_wage_gp, monthly_supply_gp, monthly_specialist_gp,
-			 monthly_cost_gp, morale, is_veteran, is_trained,
+			 monthly_wage_cp, monthly_supply_cp, monthly_specialist_cp,
+			 monthly_cost_cp, morale, is_veteran, is_trained,
 			 unit_xp, assignment_kind, hire_calendar_day, equipment_kit,
 			 status, departure_kind, departure_calendar_day, save_vs_death)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -93,10 +94,10 @@ static func create_unit(data: Dictionary) -> String:
 		int(data.get("starting_count", 0)),
 		int(data.get("count", data.get("starting_count", 0))),
 		float(data.get("battle_rating", 0.0)),
-		int(data.get("monthly_wage_gp", 0)),
-		int(data.get("monthly_supply_gp", 0)),
-		int(data.get("monthly_specialist_gp", 0)),
-		int(data.get("monthly_cost_gp", 0)),
+		int(data.get("monthly_wage_cp", 0)),
+		int(data.get("monthly_supply_cp", 0)),
+		int(data.get("monthly_specialist_cp", 0)),
+		int(data.get("monthly_cost_cp", 0)),
 		int(data.get("morale", 0)),
 		1 if bool(data.get("is_veteran", false)) else 0,
 		1 if bool(data.get("is_trained", true)) else 0,

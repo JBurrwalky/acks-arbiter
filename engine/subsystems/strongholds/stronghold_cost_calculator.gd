@@ -25,7 +25,7 @@ const SPEED_TIER_TIME_MULTIPLIER := {
 	200: 50,   # +100% cost → -50% time (cap)
 }
 const ENGINEER_GP_PER_ENGINEER := 100000
-const ENGINEER_MONTHLY_WAGE_GP := 250
+const ENGINEER_MONTHLY_WAGE_CP := 25000  # RAW 250 gp/month per engineer
 const ACCESSORY_AT_CONSTRUCTION_DISCOUNT_PCT := 25
 
 
@@ -40,7 +40,7 @@ const ACCESSORY_AT_CONSTRUCTION_DISCOUNT_PCT := 25
 ##   daily_construction_rate_gp: int           — gp credited per day at this tier
 ##   magic_rate_modifier_pct: int              — 100 / 150 / 200
 ##   engineers_required: int                   — ceil(gp_committed / 100,000); minimum 1
-##   engineer_monthly_wage_gp: int             — engineers × 250
+##   engineer_monthly_wage_cp: int             — engineers × 250
 ##   estimated_duration_days: int              — ceil(gp_committed / daily_rate)
 static func calculate_total_cost(
 	archetype_preset: Dictionary,
@@ -86,7 +86,7 @@ static func calculate_total_cost(
 	# Equivalent simpler form: 500 × (100 / time_multiplier) × magic_mult / 100.
 
 	var engineers_required: int = maxi(1, int(ceil(float(gp_committed) / float(ENGINEER_GP_PER_ENGINEER))))
-	var engineer_monthly_wage_gp: int = engineers_required * ENGINEER_MONTHLY_WAGE_GP
+	var engineer_monthly_wage_cp: int = engineers_required * ENGINEER_MONTHLY_WAGE_CP
 
 	var estimated_duration_days: int = 0
 	if daily_construction_rate_gp > 0:
@@ -103,7 +103,7 @@ static func calculate_total_cost(
 		"daily_construction_rate_gp": daily_construction_rate_gp,
 		"magic_rate_modifier_pct": magic_rate_modifier_pct,
 		"engineers_required": engineers_required,
-		"engineer_monthly_wage_gp": engineer_monthly_wage_gp,
+		"engineer_monthly_wage_cp": engineer_monthly_wage_cp,
 		"estimated_duration_days": estimated_duration_days,
 	}
 

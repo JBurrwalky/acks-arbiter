@@ -99,8 +99,10 @@ static func start_commission(
 	for e in location_errors:
 		errors.append(String(e))
 
-	# Engineer requirement validation.
+	# Engineer requirement validation. Calculator returns gp values; convert at
+	# the column-write boundary (cp columns since Migration 115).
 	var gp_committed: int = int(cost_breakdown.get("gp_committed", 0))
+	var cp_committed: int = gp_committed * 100
 	var engineers_assigned: int = int(stronghold_data.get("engineers_assigned",
 		cost_breakdown.get("engineers_required", 1)))
 	if not StrongholdCostCalculator.validate_engineer_requirement(
@@ -116,11 +118,14 @@ static func start_commission(
 			"errors": errors,
 		}
 
-	# Phase 1: store the structure base cost as the stronghold's gp_value
+	# Phase 1: store the structure base cost as the stronghold's cp_value
 	# (the value that drives sufficiency) — speed-tier premium and class
 	# discount don't affect the security value, only the price paid.
+	# Migration 116: cost_breakdown values are gp; multiply × 100 at the
+	# column-write boundary.
 	var sufficiency_gp_value: int = int(cost_breakdown.get("base_structure_cost", 0)) \
 		+ int(cost_breakdown.get("accessory_cost", 0))
+	var sufficiency_cp_value: int = sufficiency_gp_value * 100
 
 	var stronghold_id: String = CampaignRepository.create_stronghold({
 		"domain_id": stronghold_data.get("domain_id", null),
@@ -128,7 +133,7 @@ static func start_commission(
 		"archetype": stronghold_data.get("archetype", "fortress"),
 		"archetype_power_id": stronghold_data.get("archetype_power_id", ""),
 		"structure_type": stronghold_data.get("structure_type", "keep"),
-		"gp_value": sufficiency_gp_value,
+		"cp_value": sufficiency_cp_value,
 		"shp": int(stronghold_data.get("shp", 0)),
 		"ac": int(stronghold_data.get("ac", 6)),
 		"garrison_capacity": int(stronghold_data.get("garrison_capacity", 0)),
@@ -149,22 +154,23 @@ static func start_commission(
 			"errors": errors,
 		}
 
-	var daily_rate: int = int(cost_breakdown.get("daily_construction_rate_gp", 500))
+	var daily_rate_gp: int = int(cost_breakdown.get("daily_construction_rate_gp", 500))
+	var daily_rate_cp: int = daily_rate_gp * 100
 	var duration_days: int = int(cost_breakdown.get("estimated_duration_days", 0))
-	if duration_days <= 0 and daily_rate > 0:
-		duration_days = int(ceil(float(gp_committed) / float(daily_rate)))
+	if duration_days <= 0 and daily_rate_gp > 0:
+		duration_days = int(ceil(float(gp_committed) / float(daily_rate_gp)))
 	var halfway_days: int = int(ceil(float(duration_days) / 2.0))
 	var expected_halfway_day: int = started_calendar_day + halfway_days
 	var expected_completion_day: int = started_calendar_day + duration_days
 
 	var commission_id: String = CampaignRepository.create_commission({
 		"stronghold_id": stronghold_id,
-		"gp_committed": gp_committed,
-		"daily_construction_rate_gp": daily_rate,
+		"cp_committed": cp_committed,
+		"daily_construction_rate_cp": daily_rate_cp,
 		"speed_tier_pct": int(cost_breakdown.get("speed_tier_pct", 100)),
 		"engineers_required": int(cost_breakdown.get("engineers_required", 1)),
 		"engineers_assigned": engineers_assigned,
-		"engineer_monthly_wage_gp": int(cost_breakdown.get("engineer_monthly_wage_gp", 250)),
+		"engineer_monthly_wage_cp": int(cost_breakdown.get("engineer_monthly_wage_cp", 25000)),
 		"supervisor_character_id": stronghold_data.get("supervisor_character_id", null),
 		"magic_rate_modifier_pct": int(cost_breakdown.get("magic_rate_modifier_pct", 100)),
 		"materials_strategy": stronghold_data.get("materials_strategy", "local"),
@@ -172,7 +178,7 @@ static func start_commission(
 		"started_calendar_day": started_calendar_day,
 		"expected_halfway_day": expected_halfway_day,
 		"expected_completion_day": expected_completion_day,
-		"gp_progressed": 0,
+		"cp_progressed": 0,
 		"halfway_signal_fired": false,
 		"status": "in_progress",
 	})
@@ -180,7 +186,7 @@ static func start_commission(
 	if not commission_id.is_empty():
 		EventBus.stronghold_commission_started.emit(
 			stronghold_id, String(stronghold_data.get("domain_id", "")),
-			gp_committed, expected_completion_day)
+			cp_committed, expected_completion_day)
 
 	return {
 		"stronghold_id": stronghold_id,
@@ -196,11 +202,11 @@ static func start_commission(
 # ---------------------------------------------------------------------------
 
 ## Advance every in-progress commission by one game day. For each commission:
-##   1. Add daily_construction_rate_gp to gp_progressed.
-##   2. If gp_progressed crosses 50% gp_committed and not halfway_signal_fired,
+##   1. Add daily_construction_rate_cp to cp_progressed.
+##   2. If cp_progressed crosses 50% cp_committed and not halfway_signal_fired,
 ##      mark halfway_signal_fired=1, update strongholds.completion_pct=50, and
 ##      emit `stronghold_construction_progressed(stronghold_id, 50, "halfway")`.
-##   3. If gp_progressed reaches gp_committed, set status='completed', set
+##   3. If cp_progressed reaches cp_committed, set status='completed', set
 ##      completed_calendar_day=today, update strongholds.status='completed'
 ##      and completion_pct=100, emit
 ##      `stronghold_construction_progressed(stronghold_id, 100, "completed")`,
@@ -218,11 +224,11 @@ static func advance_commissions(today_calendar_day: int) -> Array:
 		if commission_id.is_empty() or stronghold_id.is_empty():
 			continue
 
-		var rate: int = int(commission.get("daily_construction_rate_gp", 500))
-		var prior_progressed: int = int(commission.get("gp_progressed", 0))
-		var gp_committed: int = int(commission.get("gp_committed", 0))
-		var new_progressed: int = mini(prior_progressed + rate, gp_committed)
-		var halfway_threshold: int = int(ceil(float(gp_committed) / 2.0))
+		var rate: int = int(commission.get("daily_construction_rate_cp", 50000))
+		var prior_progressed: int = int(commission.get("cp_progressed", 0))
+		var cp_committed: int = int(commission.get("cp_committed", 0))
+		var new_progressed: int = mini(prior_progressed + rate, cp_committed)
+		var halfway_threshold: int = int(ceil(float(cp_committed) / 2.0))
 		var halfway_was_fired: bool = bool(commission.get("halfway_signal_fired", false))
 
 		var sh_row: Dictionary = CampaignRepository.get_stronghold(stronghold_id)
@@ -231,11 +237,11 @@ static func advance_commissions(today_calendar_day: int) -> Array:
 		# Detect crossings (without yet writing).
 		var fires_halfway: bool = (not halfway_was_fired) \
 			and (new_progressed >= halfway_threshold)
-		var fires_completion: bool = (new_progressed >= gp_committed)
+		var fires_completion: bool = (new_progressed >= cp_committed)
 
 		# Single commission update per iteration — coalesces all field changes
-		# (gp_progressed always; halfway/completion flags as needed).
-		var commission_fields: Dictionary = {"gp_progressed": new_progressed}
+		# (cp_progressed always; halfway/completion flags as needed).
+		var commission_fields: Dictionary = {"cp_progressed": new_progressed}
 		if fires_halfway or fires_completion:
 			commission_fields["halfway_signal_fired"] = true
 		if fires_completion:
@@ -288,7 +294,7 @@ static func advance_commissions(today_calendar_day: int) -> Array:
 ##
 ## The bonus stacks ON TOP of the current rate (i.e. +5% means the new rate
 ## is 1.05× the previous rate, not 1.05× the base rate). Returns the new
-## daily_construction_rate_gp; returns 0 if the commission is missing or no
+## daily_construction_rate_cp; returns 0 if the commission is missing or no
 ## longer in_progress. Banker's rounding via XPAwardCalculator.
 ##
 ## bonus_pct is an integer percentage (5, 10, etc.). Negative bonuses are
@@ -302,18 +308,18 @@ static func bump_daily_construction_rate(commission_id: String, bonus_pct: int) 
 		return 0
 	if String(commission.get("status", "")) != "in_progress":
 		return 0
-	var prior_rate: int = int(commission.get("daily_construction_rate_gp", 0))
+	var prior_rate: int = int(commission.get("daily_construction_rate_cp", 0))
 	if prior_rate <= 0:
 		return 0
 	var new_rate: int = XPAwardCalculator.bankers_round(
 		float(prior_rate) * (1.0 + float(bonus_pct) / 100.0))
 	if new_rate == prior_rate:
 		# Banker's rounding collapsed the bump (rate too small for rounding to
-		# bite). Force at least +1 gp/day so successive Phase 3 supervisors
+		# bite). Force at least +1 cp/day so successive Phase 3 supervisors
 		# accumulate progress.
 		new_rate = prior_rate + 1
 	CampaignRepository.update_commission(commission_id, {
-		"daily_construction_rate_gp": new_rate,
+		"daily_construction_rate_cp": new_rate,
 	})
 	return new_rate
 
@@ -345,7 +351,9 @@ static func recheck_engineer_requirement(commission_id: String) -> bool:
 	if commission.is_empty():
 		return false
 	var assigned: int = int(commission.get("engineers_assigned", 0))
-	var gp_committed: int = int(commission.get("gp_committed", 0))
+	# Calculator works in gp; convert from the now-cp column.
+	var cp_committed: int = int(commission.get("cp_committed", 0))
+	var gp_committed: int = cp_committed / 100
 	if not StrongholdCostCalculator.validate_engineer_requirement(gp_committed, assigned):
 		CampaignRepository.update_commission(commission_id, {
 			"status": "paused_engineers",

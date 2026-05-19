@@ -20,13 +20,14 @@ const SHP_PER_UNIT_CAPACITY: int = 1000          # L38
 const SHP_PER_BREACH: int = 1000                 # L43
 
 
-## Estimate stronghold shp from gp_value when no map exists.
-## RAW L32: stone shp = ceil(gp_value / 8).
+## Estimate stronghold shp from cp_value when no map exists.
+## RAW L32: stone shp = ceil(gp_value / 8); in cp, shp = ceil(cp / 800).
 ## RAW L33: wood shp = 1/10 of comparable stone shp.
-static func estimate_shp_from_gp_value(gp_value: int, material: String = "stone") -> int:
-	if gp_value <= 0:
+## Callers pass the strongholds.cp_value column (since Migration 116).
+static func estimate_shp_from_cp_value(cp_value: int, material: String = "stone") -> int:
+	if cp_value <= 0:
 		return 0
-	var stone_shp: int = int(ceil(float(gp_value) / float(STONE_GP_PER_SHP)))
+	var stone_shp: int = int(ceil(float(cp_value) / float(STONE_GP_PER_SHP * 100)))
 	if material == "wood":
 		return int(ceil(float(stone_shp) * WOOD_SHP_RATIO))
 	return stone_shp

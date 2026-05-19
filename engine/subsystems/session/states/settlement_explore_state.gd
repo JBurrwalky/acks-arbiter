@@ -86,8 +86,19 @@ func enter(runner, context: Dictionary) -> void:
 	# Check party time lock (returning from combat/dungeon in settlement).
 	runner.check_party_time_lock()
 
+	# Phase 10B.2 Wave 2: signal entry to VisitStateManager for the trade
+	# block's per-visit state (entry toll first-fire bookkeeping + Wave 4
+	# shipping-offer roll). Picks the first active PC as the active character;
+	# the mercantile_panel exposes a selector to swap mid-visit if desired.
+	_notify_visit_state_entered()
+
 
 func exit(runner) -> void:
+	# Phase 10B.2 Wave 2: signal departure to VisitStateManager — debits
+	# stabling + moorage, clears Wave 4's per-visit shipping offers, DELETEs
+	# the visit row. Fires party_departed_settlement.
+	_notify_visit_state_departed()
+
 	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.disconnect(_on_scheduler_event_resolved)
 	if EventBus.active_party_changed.is_connected(_on_active_party_changed):
@@ -159,6 +170,8 @@ func _create_settlement_hud() -> void:
 	_activity_panel.shop_requested.connect(_on_shop_requested)
 	_activity_panel.hiring_requested.connect(_on_hiring_requested)
 	_activity_panel.activity_requested.connect(_on_activity_requested)
+	# Phase 10B.2 Wave 2: route mercantile activity launchers to mercantile_panel.
+	_activity_panel.mercantile_requested.connect(_on_mercantile_requested)
 
 
 # ---------------------------------------------------------------------------
@@ -468,3 +481,127 @@ func get_location_key_for_character(_character_id: String) -> String:
 	if _settlement_id.is_empty():
 		return "unknown"
 	return "settlement:%s" % _settlement_id
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.2 Wave 2 — mercantile routing + visit-state hooks
+# ---------------------------------------------------------------------------
+
+func _on_mercantile_requested(activity_id: String, _poi: Dictionary) -> void:
+	if _runner == null or _settlement_id.is_empty():
+		return
+	var party_id: String = _runner.get_party_id()
+	var character_id: String = _first_active_character_id()
+	if character_id.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "settlement",
+			"title": "No Active Character",
+			"body": "The party has no active character to transact for.",
+		})
+		return
+
+	var picker = preload("res://scenes/ui/settlement/mercantile_panel.gd").new()
+	_settlement_hud.add_child(picker)
+	picker.setup(activity_id, _settlement_id, party_id, character_id)
+	picker.launch_requested.connect(_on_mercantile_launch_requested)
+	picker.cancelled.connect(func() -> void:
+		# Restore the activity panel on cancel — same UX as shop/hiring close.
+		if _activity_panel != null and _controller != null \
+				and not _controller.get_current_poi().is_empty():
+			_activity_panel.show_for_poi(_controller.get_current_poi()))
+
+	# Hide the activity panel while the picker is in front (mirrors shop/hire).
+	if _activity_panel != null:
+		_activity_panel.visible = false
+
+
+func _on_mercantile_launch_requested(
+		activity_def_id: String, params: Dictionary,
+		location_kind: String, location_ref: String) -> void:
+	if _runner == null:
+		return
+	var executor: ActivityTimeCostExecutor = _runner.get_activity_executor()
+	if executor == null:
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "settlement",
+			"title": "Activity Executor Unavailable",
+			"body": "Cannot launch %s — executor not initialized." % activity_def_id,
+		})
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var party_id: String = _runner.get_party_id()
+	var character_id: String = _first_active_character_id()
+
+	# Phase 10B.2 Wave 3: solicit_merchants uses a launch-side prepare hook
+	# (the ActivityHandlerRegistry has no on_started). prepare_launch runs
+	# MerchantPoolRepository.process_solicitation immediately + stamps
+	# started_at_calendar_day into params for forfeit-rollback attribution.
+	if activity_def_id == "solicit_merchants":
+		var prep: Dictionary = SolicitMerchantsHandler.prepare_launch(
+			party_id, location_ref, character_id)
+		if not bool(prep.get("success", false)):
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "settlement",
+				"title": "Cannot Solicit",
+				"body": "Solicit failed: %s" % String(prep.get("error", "?")),
+			})
+			if _activity_panel != null and _controller != null \
+					and not _controller.get_current_poi().is_empty():
+				_activity_panel.show_for_poi(_controller.get_current_poi())
+			return
+		# Merge prepare_launch's params into the picker's params (picker passes
+		# {} since solicit's picker has no fields).
+		var prep_params: Dictionary = prep.get("params", {})
+		for key in prep_params:
+			params[key] = prep_params[key]
+
+	var result: Dictionary = executor.launch(
+		character_id, activity_def_id, location_kind, location_ref,
+		params, scheduler, party_id)
+	if not bool(result.get("success", false)):
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "settlement",
+			"title": "Activity Launch Failed",
+			"body": "Could not launch %s: %s" % [activity_def_id, String(result.get("error", "?"))],
+		})
+	# Restore the activity panel after the launch.
+	if _activity_panel != null and _controller != null \
+			and not _controller.get_current_poi().is_empty():
+		_activity_panel.show_for_poi(_controller.get_current_poi())
+
+
+func _notify_visit_state_entered() -> void:
+	if _runner == null or _settlement_id.is_empty():
+		return
+	var party_id: String = _runner.get_party_id()
+	var character_id: String = _first_active_character_id()
+	if party_id.is_empty():
+		return
+	VisitStateManager.on_party_entered_settlement(
+		party_id, _settlement_id, character_id, Timekeeping.get_total_days())
+
+
+func _notify_visit_state_departed() -> void:
+	if _runner == null or _settlement_id.is_empty():
+		return
+	var party_id: String = _runner.get_party_id()
+	if party_id.is_empty():
+		return
+	VisitStateManager.on_party_departed_settlement(
+		party_id, _settlement_id, Timekeeping.get_total_days())
+
+
+func _first_active_character_id() -> String:
+	if _runner == null:
+		return ""
+	var party_data = _runner.get_party_data()
+	if party_data == null:
+		return ""
+	for cd in party_data.character_data:
+		if cd != null and not cd.is_dead and cd.is_active:
+			return cd.id
+	return ""

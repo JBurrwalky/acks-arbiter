@@ -160,7 +160,7 @@ const ROLL_TYPES := [
 const CHARACTER_STAT_FIELDS := [
 	"strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma",
 	"hp_max", "hp_current", "armor_class", "attack_throw", "level", "xp",
-	"loyalty_score", "wage_gp_per_month",
+	"loyalty_score", "wage_cp_per_month",
 ]
 
 const TERRAIN_FIELDS := ["elevation", "biome", "water", "civilization", "has_city"]

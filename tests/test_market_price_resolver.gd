@@ -17,7 +17,7 @@ func run_all_tests() -> void:
 	test_class_size_adjust_table()
 	test_roll_4d4_range()
 	test_compute_percentage_arithmetic()
-	test_compute_market_price_banker_rounding()
+	test_compute_market_price_cp_precision()
 
 	# Cache + dice behavior
 	test_first_read_rolls_fresh()
@@ -148,23 +148,25 @@ func test_compute_percentage_arithmetic() -> void:
 		"(14, 2, 1, 1, 0) → 180")
 
 
-func test_compute_market_price_banker_rounding() -> void:
+func test_compute_market_price_cp_precision() -> void:
 	# Set up a settlement with class III, demand 0, dice forced.
-	var s: String = _make_settlement(3, "BankerRound")
-	# base=50, percentage=115 → 57.5 → 58 (banker rounds to even)
+	# Per the 2026-05-15 currency-precision rule, cp_per_load is exact —
+	# base_price_cp × percentage / 100 is exact integer for whole-gp catalog entries.
+	var s: String = _make_settlement(3, "CpPrecision")
 	_seed_modifier(s, "grain_vegetables", 1)  # base 10, but we'll use the resolver call
 	# Use the silk fixture: base 2000.
 	_seed_modifier(s, "silk", 1)
-	# Force dice = 11 → percentage = (11 + 1 + 0 + 0 + 0) * 10 = 120 → 2000 * 1.20 = 2400 (clean integer)
+	# Force dice = 11 → percentage = (11 + 1 + 0 + 0 + 0) * 10 = 120 → 2000 gp × 1.20
+	# = 2400 gp = 240,000 cp (exact, no rounding needed cp-native).
 	_force_dice(s, "silk", 11, 0)
 	var r: Dictionary = MarketPriceResolver.compute_market_price("silk", s, 0, 0, _seeded_rng(1), 0)
-	check(int(r.get("gp_per_load", 0)) == 2400, "silk 2000 × 120%% → 2400, got %d" % int(r.get("gp_per_load", 0)))
-	# Banker edge case: base=50, dice=11, demand=0, class=0 → 110 → 55 (clean)
+	check(int(r.get("cp_per_load", 0)) == 240000, "silk 2000 gp × 120%% → 240,000 cp, got %d" % int(r.get("cp_per_load", 0)))
+	# salt base 100 gp, dice 11 → 110% → 110 gp = 11,000 cp.
 	var s2: String = _make_settlement(3, "BankerRound2")
 	_seed_modifier(s2, "salt", 0)  # salt base = 100
 	_force_dice(s2, "salt", 11, 0)
 	var r2: Dictionary = MarketPriceResolver.compute_market_price("salt", s2, 0, 0, _seeded_rng(1), 0)
-	check(int(r2.get("gp_per_load", 0)) == 110, "salt 100 × 110%% → 110")
+	check(int(r2.get("cp_per_load", 0)) == 11000, "salt 100 gp × 110%% → 11,000 cp")
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +179,7 @@ func test_first_read_rolls_fresh() -> void:
 	# Don't seed any demand modifier yet — the resolver's _ensure_dice_row
 	# should still create a row with demand_modifier=0 default.
 	var r: Dictionary = MarketPriceResolver.compute_market_price("silk", s, 0, 0, _seeded_rng(42), 0)
-	check(int(r.get("gp_per_load", -1)) >= 0, "first read should produce a price, got %d" % int(r.get("gp_per_load", -1)))
+	check(int(r.get("cp_per_load", -1)) >= 0, "first read should produce a price, got %d" % int(r.get("cp_per_load", -1)))
 	# Verify a cache row now exists with a non-zero dice value.
 	CampaignRepository.db.query_with_bindings("""
 		SELECT dice_4d4_value FROM settlement_merchandise_demand
@@ -199,8 +201,8 @@ func test_dice_persistence_across_calls() -> void:
 	var r2: Dictionary = MarketPriceResolver.compute_market_price("salt", s, 0, 0, _seeded_rng(7), 0)
 	check(int(r1["breakdown"]["dice_4d4"]) == int(r2["breakdown"]["dice_4d4"]),
 		"persistence: dice should match across calls")
-	check(int(r1["gp_per_load"]) == int(r2["gp_per_load"]),
-		"persistence: gp_per_load should match")
+	check(int(r1["cp_per_load"]) == int(r2["cp_per_load"]),
+		"persistence: cp_per_load should match")
 	check(not bool(r2.get("drift_occurred", true)),
 		"second call same day → no drift")
 
@@ -209,34 +211,34 @@ func test_monopolist_favor_direction() -> void:
 	var s: String = _make_settlement(3, "Monopoly")
 	_seed_modifier(s, "silk", 0)
 	_force_dice(s, "silk", 10, 0)
-	# baseline: percentage = (10+0+0+0+0)*10 = 100 → 2000 gp
+	# baseline: percentage = (10+0+0+0+0)*10 = 100 → 2000 gp = 200,000 cp.
 	var base: Dictionary = MarketPriceResolver.compute_market_price("silk", s, 0, 0, _seeded_rng(1), 0)
 	check(int(base["percentage"]) == 100, "baseline percentage = 100")
-	# selling monopolist (+1): percentage = 110 → 2200
+	# selling monopolist (+1): percentage = 110 → 220,000 cp.
 	var sell: Dictionary = MarketPriceResolver.compute_market_price("silk", s, 1, 0, _seeded_rng(1), 0)
 	check(int(sell["percentage"]) == 110, "monopolist selling adds 10 to percentage")
-	check(int(sell["gp_per_load"]) == 2200, "silk × 110%% = 2200")
-	# buying monopolist (-1): percentage = 90 → 1800
+	check(int(sell["cp_per_load"]) == 220000, "silk × 110%% = 220,000 cp")
+	# buying monopolist (-1): percentage = 90 → 180,000 cp.
 	var buy: Dictionary = MarketPriceResolver.compute_market_price("silk", s, -1, 0, _seeded_rng(1), 0)
 	check(int(buy["percentage"]) == 90, "monopolist buying subtracts 10 from percentage")
-	check(int(buy["gp_per_load"]) == 1800, "silk × 90%% = 1800")
+	check(int(buy["cp_per_load"]) == 180000, "silk × 90%% = 180,000 cp")
 
 
 func test_judge_modifier_pass_through() -> void:
 	var s: String = _make_settlement(3, "JudgeMod")
 	_seed_modifier(s, "salt", 0)
 	_force_dice(s, "salt", 10, 0)
-	# Baseline: 100 × 100% = 100
+	# Baseline: 100 gp × 100% = 100 gp = 10,000 cp.
 	var base: Dictionary = MarketPriceResolver.compute_market_price("salt", s, 0, 0, _seeded_rng(1), 0)
 	check(int(base["percentage"]) == 100, "baseline 100")
-	# Judge -3: percentage = 70 → 70 gp
+	# Judge -3: percentage = 70 → 70 gp = 7000 cp.
 	var penalty: Dictionary = MarketPriceResolver.compute_market_price("salt", s, 0, -3, _seeded_rng(1), 0)
 	check(int(penalty["percentage"]) == 70, "judge -3 reduces percentage to 70")
-	check(int(penalty["gp_per_load"]) == 70, "salt × 70%% = 70")
-	# Judge +5: percentage = 150 → 150
+	check(int(penalty["cp_per_load"]) == 7000, "salt × 70%% = 7000 cp")
+	# Judge +5: percentage = 150 → 150 gp = 15,000 cp.
 	var bonus: Dictionary = MarketPriceResolver.compute_market_price("salt", s, 0, 5, _seeded_rng(1), 0)
 	check(int(bonus["percentage"]) == 150, "judge +5 increases percentage to 150")
-	check(int(bonus["gp_per_load"]) == 150, "salt × 150%% = 150")
+	check(int(bonus["cp_per_load"]) == 15000, "salt × 150%% = 15,000 cp")
 
 
 # ---------------------------------------------------------------------------
@@ -352,36 +354,36 @@ func _on_drift_event(settlement_id: String, merchandise_type: String, old_dice: 
 # ---------------------------------------------------------------------------
 
 func test_worked_example_a_neutral_market() -> void:
-	# wood_common base 50, class III, demand=-1, dice=10, no modifiers.
-	# percentage = (10 + -1 + 0 + 0 + 0) * 10 = 90 → 50 * 0.90 = 45.
+	# wood_common base 50 gp, class III, demand=-1, dice=10, no modifiers.
+	# percentage = (10 + -1 + 0 + 0 + 0) * 10 = 90 → 50 gp × 0.90 = 45 gp = 4500 cp.
 	var s: String = _make_settlement(3, "ExampleA")
 	_seed_modifier(s, "wood_common", -1)
 	_force_dice(s, "wood_common", 10, 0)
 	var r: Dictionary = MarketPriceResolver.compute_market_price("wood_common", s, 0, 0, _seeded_rng(1), 0)
 	check(int(r["percentage"]) == 90, "Example A percentage = 90")
-	check(int(r["gp_per_load"]) == 45, "Example A gp_per_load = 45, got %d" % int(r["gp_per_load"]))
+	check(int(r["cp_per_load"]) == 4500, "Example A cp_per_load = 4500, got %d" % int(r["cp_per_load"]))
 
 
 func test_worked_example_b_class_ii_monopolist_spices() -> void:
-	# spices base 800, class II, demand=+2, dice=12, monopolist=+1, judge=0.
-	# percentage = (12 + 2 + 1 + 1 + 0) * 10 = 160 → 800 * 1.60 = 1280.
+	# spices base 800 gp, class II, demand=+2, dice=12, monopolist=+1, judge=0.
+	# percentage = (12 + 2 + 1 + 1 + 0) * 10 = 160 → 800 gp × 1.60 = 1280 gp = 128,000 cp.
 	var s: String = _make_settlement(2, "ExampleB")
 	_seed_modifier(s, "spices", 2)
 	_force_dice(s, "spices", 12, 0)
 	var r: Dictionary = MarketPriceResolver.compute_market_price("spices", s, 1, 0, _seeded_rng(1), 0)
 	check(int(r["percentage"]) == 160, "Example B percentage = 160")
-	check(int(r["gp_per_load"]) == 1280, "Example B gp_per_load = 1280, got %d" % int(r["gp_per_load"]))
+	check(int(r["cp_per_load"]) == 128000, "Example B cp_per_load = 128,000, got %d" % int(r["cp_per_load"]))
 
 
 func test_worked_example_c_class_vi_grain_with_war() -> void:
-	# grain_vegetables base 10, class VI, demand=+2, dice=14, judge=-2.
-	# percentage = (14 + 2 + -1 + 0 + -2) * 10 = 130 → 10 * 1.30 = 13.
+	# grain_vegetables base 10 gp, class VI, demand=+2, dice=14, judge=-2.
+	# percentage = (14 + 2 + -1 + 0 + -2) * 10 = 130 → 10 gp × 1.30 = 13 gp = 1300 cp.
 	var s: String = _make_settlement(6, "ExampleC")
 	_seed_modifier(s, "grain_vegetables", 2)
 	_force_dice(s, "grain_vegetables", 14, 0)
 	var r: Dictionary = MarketPriceResolver.compute_market_price("grain_vegetables", s, 0, -2, _seeded_rng(1), 0)
 	check(int(r["percentage"]) == 130, "Example C percentage = 130")
-	check(int(r["gp_per_load"]) == 13, "Example C gp_per_load = 13, got %d" % int(r["gp_per_load"]))
+	check(int(r["cp_per_load"]) == 1300, "Example C cp_per_load = 1300, got %d" % int(r["cp_per_load"]))
 
 
 # ---------------------------------------------------------------------------

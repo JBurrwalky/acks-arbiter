@@ -22,7 +22,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"calendar_day": _calendar_day(),
 			"category": "other",
 			"subcategory": "hire_mercenaries_offer",
-			"gp_amount": 0,
+			"cp_amount": 0,
 			"description": "Hiring offer reaction: %d (%s)" % [reaction, outcome],
 		})
 	return {

@@ -253,10 +253,10 @@ func test_movement_halved_when_overloaded() -> void:
 # --- Banker's rounding ---
 
 func test_bankers_rounding() -> void:
-	check(TrainedCreatureData._bankers_round(2.5) == 2, "2.5 rounds to 2 (even)")
-	check(TrainedCreatureData._bankers_round(3.5) == 4, "3.5 rounds to 4 (even)")
-	check(TrainedCreatureData._bankers_round(4.5) == 4, "4.5 rounds to 4 (even)")
-	check(TrainedCreatureData._bankers_round(5.5) == 6, "5.5 rounds to 6 (even)")
-	check(TrainedCreatureData._bankers_round(2.3) == 2, "2.3 rounds to 2")
-	check(TrainedCreatureData._bankers_round(2.7) == 3, "2.7 rounds to 3")
+	check(XPAwardCalculator.bankers_round(2.5) == 2, "2.5 rounds to 2 (even)")
+	check(XPAwardCalculator.bankers_round(3.5) == 4, "3.5 rounds to 4 (even)")
+	check(XPAwardCalculator.bankers_round(4.5) == 4, "4.5 rounds to 4 (even)")
+	check(XPAwardCalculator.bankers_round(5.5) == 6, "5.5 rounds to 6 (even)")
+	check(XPAwardCalculator.bankers_round(2.3) == 2, "2.3 rounds to 2")
+	check(XPAwardCalculator.bankers_round(2.7) == 3, "2.7 rounds to 3")
 	print("  bankers_rounding: OK")
