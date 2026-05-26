@@ -100,12 +100,10 @@ func _terrain_clear() -> HexTerrainData:
 
 func _terrain_with_river() -> HexTerrainData:
 	var t := _terrain_clear()
-	var ov := HexOverlayData.new()
-	# A river entering from edge 0 and exiting through edge 3 — minimum needed
-	# to make has_river() true.
-	ov.river_edges = [0, 3]
-	ov.river_flow_exit = 3
-	t.overlay = ov
+	# Migration 130: rivers are first-class edge entities, not overlays.
+	# Foraging only cares whether the hex touches a river; flip the cached
+	# flag directly rather than persisting a real edge for this unit test.
+	t.has_river_cached = true
 	return t
 
 

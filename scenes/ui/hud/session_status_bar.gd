@@ -996,11 +996,12 @@ func _format_hex_info(coord: Vector2i, terrain: HexTerrainData) -> String:
 		"Territory: %s" % terrain.civilization,
 		"City: %s" % ("yes" if has_settlement else "no"),
 	])
-	if terrain.overlay != null:
-		if terrain.overlay.has_river():
-			lines.append("River: yes")
-		if terrain.overlay.has_road():
-			lines.append("Road: yes")
+	# Rivers are first-class edge entities (migration 130) — has_river() is on
+	# HexTerrainData (cached flag), not on HexOverlayData.
+	if terrain.has_river():
+		lines.append("River: yes")
+	if terrain.overlay != null and terrain.overlay.has_road():
+		lines.append("Road: yes")
 	return "\n".join(lines)
 
 

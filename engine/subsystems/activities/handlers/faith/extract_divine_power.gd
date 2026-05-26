@@ -20,8 +20,11 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	if character_id.is_empty():
 		return {"summary": "extract_divine_power: no character_id"}
 
-	var congregant_row: Dictionary = CampaignRepository.get_congregants(character_id)
-	var congregant_count: int = int(congregant_row.get("count", 0))
+	# Migration 128 (Phase 11D.3): congregants are now per-character-per-domain.
+	# Divine-power extraction uses the caster's TOTAL congregation across all
+	# domains per RAW ("10 gp per 50 congregants" reads on the caster's whole
+	# following), so we sum across domains.
+	var congregant_count: int = CampaignRepository.total_congregants_for_character(character_id)
 	if congregant_count < 50:
 		return {"summary": "extract_divine_power failed: requires 50+ congregants (have %d)" % congregant_count}
 

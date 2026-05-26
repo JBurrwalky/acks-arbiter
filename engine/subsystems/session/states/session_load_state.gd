@@ -2,24 +2,11 @@ class_name SessionLoadState
 extends SessionState
 
 ## Transient bootstrap state — loads campaign data and transitions to wilderness.
-## Replaces the old main_scene._dev_load_test_map_for_campaign() flow.
-
-const TEST_MAP_ID := "test_region_001"
-const TEST_MAP_JSON_PATH := "res://data/test_hex_map.json"
-const TEST_DUNGEON_JSON_PATH := "res://data/test_dungeon.json"
-const TEST_SETTLEMENT_JSON_PATH := "res://data/test_settlement.json"
-const TEST_SETTLEMENT_THORNWALL_JSON_PATH := "res://data/test_settlement_thornwall.json"
-const TEST_DUNGEON_ENTRANCE_HEX := Vector2i(-1, 0)
-const TEST_SETTLEMENT_ENTRANCE_HEX := Vector2i(0, 0)
-const TEST_SETTLEMENT_THORNWALL_HEX := Vector2i(2, 1)
-
-# Migration 119 cross-scale linkage — also seed a 24-mile campaign-scale map
-# as the parent of test_region_001 so the Strategic / Regional view toggle
-# has somewhere to switch to. The campaign map id is read from the JSON file.
-const TEST_CAMPAIGN_MAP_JSON_PATH := "res://data/test_campaign_map.json"
-# Parent hex on the 24-mile campaign map that contains test_region_001.
-# (test_campaign_map.json's "test_keep" hex at (0,0).)
-const TEST_REGION_PARENT_HEX := Vector2i(0, 0)
+##
+## Pure loader. Test content lives in TestContentSeeder; campaigns are created
+## with their seed content already installed by the CampaignSelectScreen. The
+## legacy-Ashford fallback below exists so campaigns created before the
+## TestContentSeeder seam existed still load.
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -38,19 +25,30 @@ func enter(runner, context: Dictionary) -> void:
 	# Backfill heraldry for any party that predates the heraldry migration.
 	_backfill_party_heraldry(campaign_id)
 
-	# Load the hex map
-	var map_data := _load_or_seed_map(campaign_id)
-	if map_data == null:
-		push_error("SessionLoadState: failed to load hex map")
+	# Backwards-compatibility fallback for campaigns created before the
+	# TestContentSeeder seam: if no hex_maps row exists, seed the legacy
+	# Ashford Vale map so the session has somewhere to render.
+	if not TestContentSeeder.campaign_has_any_hex_map(campaign_id):
+		if not TestContentSeeder.seed_legacy_ashford_vale(campaign_id):
+			push_error("SessionLoadState: legacy seed fallback failed for campaign=%s" % campaign_id)
+			runner.transition_to_state("campaign_select")
+			return
+
+	# Pick the top-level map for this campaign (parent_map_id IS NULL first,
+	# then by created_at). Procgen / multi-region campaigns will eventually
+	# want richer selection here, but for now any campaign has exactly one
+	# top-level region.
+	var hex_maps: Array = CampaignRepository.list_hex_maps_for_campaign(campaign_id)
+	if hex_maps.is_empty():
+		push_error("SessionLoadState: campaign has no hex_maps after seeding (campaign=%s)" % campaign_id)
 		runner.transition_to_state("campaign_select")
 		return
-
-	CampaignRepository.save_hex_map(map_data, campaign_id)
-
-	# Seed test fixtures (dungeon/settlement entrances)
-	_ensure_test_dungeon_entrance(campaign_id)
-	_ensure_test_settlement_entrance(campaign_id)
-	_ensure_test_settlement_thornwall_entrance(campaign_id)
+	var primary_map_id: String = String(hex_maps[0].get("id", ""))
+	var map_data: HexMapData = CampaignRepository.load_hex_map(primary_map_id)
+	if map_data == null:
+		push_error("SessionLoadState: load_hex_map failed for id=%s" % primary_map_id)
+		runner.transition_to_state("campaign_select")
+		return
 
 	# Wire hex map renderer to controller (first time only)
 	var renderer: Node = runner.get_hex_map_renderer()
@@ -93,124 +91,3 @@ func _get_or_create_party(campaign_id: String) -> String:
 	if not CampaignRepository.db.query_result.is_empty():
 		return CampaignRepository.db.query_result[0]["id"]
 	return CampaignRepository.create_party(campaign_id, "Default Party")
-
-
-func _load_or_seed_map(campaign_id: String) -> HexMapData:
-	# First: ensure the 24-mile campaign-scale parent map exists. Idempotent —
-	# load_hex_map returns null on first run, populated on subsequent runs.
-	_ensure_test_campaign_parent_map(campaign_id)
-
-	var from_db: HexMapData = CampaignRepository.load_hex_map(TEST_MAP_ID)
-	if from_db != null:
-		return from_db
-
-	var from_json: HexMapData = HexMapData.load_from_file(TEST_MAP_JSON_PATH)
-	if from_json == null:
-		push_error("SessionLoadState: could not load %s" % TEST_MAP_JSON_PATH)
-		return null
-
-	# Migration 119: link the 6-mile regional test map to the 24-mile
-	# campaign-scale parent. Hand-authored footprint covers exactly one
-	# parent hex (the borderwood keep area). In production this is what
-	# proc-gen will produce: each 24-mile hex gets a dedicated 6-mile child.
-	from_json.parent_map_id = "test_campaign_001"
-	from_json.parent_anchor = TEST_REGION_PARENT_HEX
-	from_json.parent_hex_footprint = [TEST_REGION_PARENT_HEX]
-
-	if not CampaignRepository.save_hex_map(from_json, campaign_id):
-		push_error("SessionLoadState: save_hex_map failed — continuing with in-memory map.")
-	return from_json
-
-
-## Idempotent seeding of the 24-mile campaign-scale parent map. Reads
-## test_campaign_map.json and stores it under its declared id. Subsequent
-## session loads are no-ops (the row already exists).
-func _ensure_test_campaign_parent_map(campaign_id: String) -> void:
-	var campaign_map: HexMapData = HexMapData.load_from_file(TEST_CAMPAIGN_MAP_JSON_PATH)
-	if campaign_map == null:
-		push_warning("SessionLoadState: could not load %s — Strategic view toggle will be unavailable" % TEST_CAMPAIGN_MAP_JSON_PATH)
-		return
-	var existing: HexMapData = CampaignRepository.load_hex_map(campaign_map.id)
-	if existing != null:
-		return  # already seeded
-	if not CampaignRepository.save_hex_map(campaign_map, campaign_id):
-		push_warning("SessionLoadState: could not save campaign-scale parent map.")
-
-
-func _ensure_test_dungeon_entrance(campaign_id: String) -> void:
-	var file := FileAccess.open(TEST_DUNGEON_JSON_PATH, FileAccess.READ)
-	if file == null:
-		push_error("SessionLoadState: could not open %s" % TEST_DUNGEON_JSON_PATH)
-		return
-	var json_text := file.get_as_text()
-	file.close()
-
-	# Always refresh existing entrance's dungeon_data so dev edits to the JSON
-	# apply on next session load. Matches the settlement entrance pattern.
-	var entrances: Array = CampaignRepository.get_dungeon_entrances_for_map(TEST_MAP_ID)
-	for e: Dictionary in entrances:
-		if e.get("hex_q", 999) == TEST_DUNGEON_ENTRANCE_HEX.x and \
-		   e.get("hex_r", 999) == TEST_DUNGEON_ENTRANCE_HEX.y:
-			CampaignRepository.update_dungeon_entrance_data(e.get("id", ""), json_text)
-			return
-
-	CampaignRepository.create_dungeon_entrance({
-		"campaign_id": campaign_id,
-		"map_id": TEST_MAP_ID,
-		"hex_q": TEST_DUNGEON_ENTRANCE_HEX.x,
-		"hex_r": TEST_DUNGEON_ENTRANCE_HEX.y,
-		"name": "Goblin Warrens",
-		"dungeon_data": json_text,
-	})
-
-
-func _ensure_test_settlement_entrance(campaign_id: String) -> void:
-	var file := FileAccess.open(TEST_SETTLEMENT_JSON_PATH, FileAccess.READ)
-	if file == null:
-		push_error("SessionLoadState: could not open %s" % TEST_SETTLEMENT_JSON_PATH)
-		return
-	var json_text := file.get_as_text()
-	file.close()
-
-	var entrances: Array = CampaignRepository.get_settlement_entrances_for_map(TEST_MAP_ID)
-	for e: Dictionary in entrances:
-		if e.get("hex_q", 999) == TEST_SETTLEMENT_ENTRANCE_HEX.x and \
-		   e.get("hex_r", 999) == TEST_SETTLEMENT_ENTRANCE_HEX.y:
-			CampaignRepository.update_settlement_entrance_data(e.get("id", ""), json_text)
-			return
-
-	CampaignRepository.create_settlement_entrance({
-		"campaign_id": campaign_id,
-		"map_id": TEST_MAP_ID,
-		"hex_q": TEST_SETTLEMENT_ENTRANCE_HEX.x,
-		"hex_r": TEST_SETTLEMENT_ENTRANCE_HEX.y,
-		"name": "Ashford Village",
-		"market_class": 6,
-		"settlement_data": json_text,
-	})
-
-
-func _ensure_test_settlement_thornwall_entrance(campaign_id: String) -> void:
-	var file := FileAccess.open(TEST_SETTLEMENT_THORNWALL_JSON_PATH, FileAccess.READ)
-	if file == null:
-		push_error("SessionLoadState: could not open %s" % TEST_SETTLEMENT_THORNWALL_JSON_PATH)
-		return
-	var json_text := file.get_as_text()
-	file.close()
-
-	var entrances: Array = CampaignRepository.get_settlement_entrances_for_map(TEST_MAP_ID)
-	for e: Dictionary in entrances:
-		if e.get("hex_q", 999) == TEST_SETTLEMENT_THORNWALL_HEX.x and \
-		   e.get("hex_r", 999) == TEST_SETTLEMENT_THORNWALL_HEX.y:
-			CampaignRepository.update_settlement_entrance_data(e.get("id", ""), json_text)
-			return
-
-	CampaignRepository.create_settlement_entrance({
-		"campaign_id": campaign_id,
-		"map_id": TEST_MAP_ID,
-		"hex_q": TEST_SETTLEMENT_THORNWALL_HEX.x,
-		"hex_r": TEST_SETTLEMENT_THORNWALL_HEX.y,
-		"name": "Thornwall",
-		"market_class": 4,
-		"settlement_data": json_text,
-	})

@@ -114,8 +114,14 @@ var has_city: bool = false
 ## Preserved so deforestation/forestation can be reversed later.
 var original_biome: String = ""
 var settlement_ids: Array[String] = []
-## Overlay data for rivers/roads. null = no overlays on this hex.
+## Cell-attached overlay data (roads only as of migration 130). null = no
+## overlays on this hex. Rivers are not stored here — see has_river().
 var overlay: HexOverlayData = null
+## Cached "this hex has at least one river edge touching it" flag. Set by
+## the loader / repository after fetching hex_river_edges for the map (see
+## CampaignRepository.load_hex_map). Per-hex consumers (foraging,
+## wilderness water-source detection) read this; never write it directly.
+var has_river_cached: bool = false
 
 
 # ---------------------------------------------------------------------------
@@ -364,9 +370,13 @@ func is_valid() -> bool:
 	return true
 
 
-## Returns true if this hex has a river overlay.
+## Returns true if at least one river edge in hex_river_edges touches this
+## hex. Reads the cached flag set by the loader after fetching river edges
+## for the map (migration 130 / GDD §3.6); never reaches into the database
+## itself. Callers operating outside the load path can refresh the cache
+## via CampaignRepository.hex_has_river.
 func has_river() -> bool:
-	return overlay != null and overlay.has_river()
+	return has_river_cached
 
 
 ## Returns true if this hex has a road overlay.

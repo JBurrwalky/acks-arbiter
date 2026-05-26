@@ -1,0 +1,1226 @@
+{
+  "map_id": "test_campaign_region",
+  "campaign_id": "test_campaign",
+  "_coordinate_format": "Worldographer odd-q offset (col, row). Loader converts to axial (q, r).",
+  "_river_model": "Edge-based per gdd-terrain-system.md \u00a73.6 and migration 130. Owner = lex-lower (col, row) hex; edge = direction from owner to neighbor.",
+  "_road_model": "Cell-attached per gdd-terrain-system.md \u00a73.5. Edge numbering 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW.",
+  "river_edges": [
+    {
+      "hex": {
+        "col": 11,
+        "row": 13
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 12
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 11
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 10
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 9
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 8
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 7
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "ford",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 6
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 5
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 5
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 4
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 3
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "bridge",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 2
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 1
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "none",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 0
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "large_craft",
+      "crossing": "bridge",
+      "river_name": "Avalon River"
+    },
+    {
+      "hex": {
+        "col": 23,
+        "row": 1
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 22,
+        "row": 1
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 21,
+        "row": 1
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 1
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 1
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 2
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "bridge",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 2
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Lugdun Tributary"
+    },
+    {
+      "hex": {
+        "col": 6,
+        "row": 10
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Orenville Feeder"
+    },
+    {
+      "hex": {
+        "col": 6,
+        "row": 9
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "ford",
+      "river_name": "Orenville Feeder"
+    },
+    {
+      "hex": {
+        "col": 6,
+        "row": 8
+      },
+      "edge": 3,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Orenville Feeder"
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 6
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "small_craft",
+      "crossing": "none",
+      "river_name": "Westmarch Stream"
+    },
+    {
+      "hex": {
+        "col": 1,
+        "row": 6
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "small_craft",
+      "crossing": "none",
+      "river_name": "Westmarch Stream"
+    },
+    {
+      "hex": {
+        "col": 0,
+        "row": 6
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "small_craft",
+      "crossing": "bridge",
+      "river_name": "Westmarch Stream"
+    },
+    {
+      "hex": {
+        "col": 24,
+        "row": 13
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Central Tributary"
+    },
+    {
+      "hex": {
+        "col": 23,
+        "row": 13
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Central Tributary"
+    },
+    {
+      "hex": {
+        "col": 22,
+        "row": 13
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Central Tributary"
+    },
+    {
+      "hex": {
+        "col": 21,
+        "row": 13
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Central Tributary"
+    },
+    {
+      "hex": {
+        "col": 27,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 26,
+        "row": 16
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 25,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 24,
+        "row": 16
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 23,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 22,
+        "row": 16
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 21,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 16
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 18,
+        "row": 16
+      },
+      "edge": 2,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    },
+    {
+      "hex": {
+        "col": 17,
+        "row": 16
+      },
+      "edge": 1,
+      "flow_clockwise": true,
+      "navigability": "river_craft",
+      "crossing": "none",
+      "river_name": "Southern River"
+    }
+  ],
+  "road_overlays": [
+    {
+      "hex": {
+        "col": 0,
+        "row": 6
+      },
+      "road_edges": [
+        2
+      ]
+    },
+    {
+      "hex": {
+        "col": 1,
+        "row": 1
+      },
+      "road_edges": [
+        1
+      ]
+    },
+    {
+      "hex": {
+        "col": 1,
+        "row": 6
+      },
+      "road_edges": [
+        1,
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 1,
+        "row": 9
+      },
+      "road_edges": [
+        1
+      ]
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 1
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 6
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 7
+      },
+      "road_edges": [
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 8
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 2,
+        "row": 9
+      },
+      "road_edges": [
+        0,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 3,
+        "row": 1
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 3,
+        "row": 6
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 4,
+        "row": 1
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 4,
+        "row": 6
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 5,
+        "row": 1
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 5,
+        "row": 6
+      },
+      "road_edges": [
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 6,
+        "row": 1
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 6,
+        "row": 7
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 7,
+        "row": 1
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 7,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        2
+      ]
+    },
+    {
+      "hex": {
+        "col": 7,
+        "row": 6
+      },
+      "road_edges": [
+        1,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 1
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 4
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 5
+      },
+      "road_edges": [
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 6
+      },
+      "road_edges": [
+        0,
+        3,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 7
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 8
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 9
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 8,
+        "row": 10
+      },
+      "road_edges": [
+        0,
+        2
+      ]
+    },
+    {
+      "hex": {
+        "col": 9,
+        "row": 1
+      },
+      "road_edges": [
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 9,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 9,
+        "row": 10
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 2
+      },
+      "road_edges": [
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 3
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 4
+      },
+      "road_edges": [
+        0,
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 10,
+        "row": 10
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 11,
+        "row": 10
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 4
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 5
+      },
+      "road_edges": [
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 6
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 7
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 8
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 9
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 12,
+        "row": 10
+      },
+      "road_edges": [
+        0,
+        1,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 13,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 13,
+        "row": 9
+      },
+      "road_edges": [
+        1,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 14,
+        "row": 4
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 14,
+        "row": 9
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 15,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 15,
+        "row": 9
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 16,
+        "row": 4
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 16,
+        "row": 9
+      },
+      "road_edges": [
+        1,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 17,
+        "row": 4
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 17,
+        "row": 8
+      },
+      "road_edges": [
+        1,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 18,
+        "row": 4
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 18,
+        "row": 8
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 2
+      },
+      "road_edges": [
+        1,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 3
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 4
+      },
+      "road_edges": [
+        0,
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 19,
+        "row": 8
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 2
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 5
+      },
+      "road_edges": [
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 6
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 7
+      },
+      "road_edges": [
+        0,
+        3
+      ]
+    },
+    {
+      "hex": {
+        "col": 20,
+        "row": 8
+      },
+      "road_edges": [
+        0,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 21,
+        "row": 2
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 22,
+        "row": 2
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 23,
+        "row": 2
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 24,
+        "row": 2
+      },
+      "road_edges": [
+        2,
+        4
+      ]
+    },
+    {
+      "hex": {
+        "col": 25,
+        "row": 2
+      },
+      "road_edges": [
+        2,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 26,
+        "row": 3
+      },
+      "road_edges": [
+        2,
+        3,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 26,
+        "row": 4
+      },
+      "road_edges": [
+        0
+      ]
+    },
+    {
+      "hex": {
+        "col": 27,
+        "row": 3
+      },
+      "road_edges": [
+        1,
+        5
+      ]
+    },
+    {
+      "hex": {
+        "col": 28,
+        "row": 3
+      },
+      "road_edges": [
+        4
+      ]
+    }
+  ]
+}

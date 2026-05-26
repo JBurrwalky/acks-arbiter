@@ -380,9 +380,67 @@ extends Node
 @onready var _strenuous_proficiency_throws_tests = $StrenuousProficiencyThrowsTests
 @onready var _hex_map_cross_scale_tests = $HexMapCrossScaleTests
 @onready var _permanent_wounds_tests = $PermanentWoundsTests
+@onready var _departure_log_recorder_tests = $DepartureLogRecorderTests
+@onready var _departure_log_classification_hook_tests = $DepartureLogClassificationHookTests
+@onready var _departure_log_morale_tier_hook_tests = $DepartureLogMoraleTierHookTests
+@onready var _departure_log_sub_tab_visibility_tests = $DepartureLogSubTabVisibilityTests
+@onready var _lifecycle_handler_tests = $LifecycleHandlerTests
+@onready var _ruler_death_handler_tests = $RulerDeathHandlerTests
+@onready var _realm_substrate_tests = $RealmSubstrateTests
+@onready var _realm_reification_tests = $RealmReificationTests
+@onready var _lifecycle_conquest_outcomes_tests = $LifecycleConquestOutcomesTests
+# Phase 11D / Urban Growth Stocking (Migration 126) — Stage A schema + EventBus
+@onready var _settlement_pois_schema_tests = $SettlementPoisSchemaTests
+@onready var _event_bus_new_signals_tests = $EventBusNewSignalsTests
+# Urban Growth Stocking — Stage B SettlementGrowthResolver
+@onready var _settlement_growth_resolver_tests = $SettlementGrowthResolverTests
+# Urban Growth Stocking — Stage C POI emergence pipeline
+@onready var _poi_split_roller_tests = $PoiSplitRollerTests
+@onready var _poi_emergence_tests = $PoiEmergenceTests
+# Urban Growth Stocking — Stage D baseline NPC stocking
+@onready var _level_elevation_roller_tests = $LevelElevationRollerTests
+@onready var _baseline_npc_stocker_tests = $BaselineNpcStockerTests
+# Urban Growth Stocking — Stage E PoiContributionRegistry
+@onready var _poi_contribution_registry_tests = $PoiContributionRegistryTests
+# Urban Growth Stocking — Stage F stronghold POI registration
+@onready var _stronghold_poi_registrar_tests = $StrongholdPoiRegistrarTests
+# Urban Growth Stocking — Stage G spellcasting services
+@onready var _spell_offer_roller_tests = $SpellOfferRollerTests
+@onready var _spell_offer_repository_tests = $SpellOfferRepositoryTests
+@onready var _purchase_spellcasting_tests = $PurchaseSpellcastingTests
+# Urban Growth Stocking — Stage H stock/unstock decrees + cleanup
+@onready var _stock_poi_decree_tests = $StockPoiDecreeTests
+@onready var _poi_cleanup_tests = $PoiCleanupTests
+# Phase 11D.1 — Domain style + alignment orthogonal columns
+@onready var _domain_style_alignment_columns_tests = $DomainStyleAlignmentColumnsTests
+# Phase 11D.2 — Clanhold-style mechanics (revenue, growth, expense, classification, vassalage)
+@onready var _clanhold_mechanics_tests = $ClanholdMechanicsTests
+# Phase 11D.3 — Religion conversion + alignment effects
+@onready var _religion_conversion_tests = $ReligionConversionTests
+# Phase 11D.4 — Establishment eligibility matrix + vassal warnings
+@onready var _establish_domain_eligibility_matrix_tests = $EstablishDomainEligibilityMatrixTests
+# Phase 11D.5 — Tribal Warriors subsystem
+@onready var _tribal_warriors_tests = $TribalWarriorsTests
+# Phase 11E — Scenario harness integration tests
+@onready var _scenario_chaotic_clanhold = $ScenarioChaoticClanhold
+@onready var _scenario_succession = $ScenarioSuccession
+@onready var _scenario_conquest_outcomes = $ScenarioConquestOutcomes
+@onready var _scenario_below_sufficiency = $ScenarioBelowSufficiency
+@onready var _scenario_full_loop_borderlands = $ScenarioFullLoopBorderlands
+# Migration 130 — river edges as first-class entities
+@onready var _hex_river_edges_tests = $HexRiverEdgesTests
+# 2026-05-26 — Worldographer offset conversion + TestContentSeeder seam
+@onready var _hex_map_offset_conversion_tests = $HexMapOffsetConversionTests
+@onready var _test_content_seeder_tests = $TestContentSeederTests
+@onready var _session_load_fallback_tests = $SessionLoadFallbackTests
 
 
 func _ready() -> void:
+	# Wipe every user-data row before tests run so 101 test files that call
+	# `create_campaign` without ever calling `delete_campaign` don't keep
+	# accumulating orphans in user://campaign.db (last count: 10,191 rows
+	# making the live load screen lag). Schema is preserved.
+	CampaignRepository.wipe_for_tests()
 	run()
 
 
@@ -744,7 +802,66 @@ func run() -> void:
 			# 2026-05-19 migration 119 — cross-scale hex-map linkage + party transitions
 			_hex_map_cross_scale_tests,
 			# 2026-05-19 bucket-C item #6 — permanent-wound effects from C&P + MW
-			_permanent_wounds_tests]:
+			_permanent_wounds_tests,
+			# Phase 11A — Departure Log substrate + monthly-tick transition hooks
+			_departure_log_recorder_tests,
+			_departure_log_classification_hook_tests,
+			_departure_log_morale_tier_hook_tests,
+			_departure_log_sub_tab_visibility_tests,
+			# Phase 11B — Domain lifecycle handler (establishment / conquest /
+			# abandonment / stronghold-collapse / grace expiry)
+			_lifecycle_handler_tests,
+			# Phase 11C — Ruler death + succession state machine
+			_ruler_death_handler_tests,
+			# Phase 11D-prereq.0a — Realm substrate (realms + relations + outcome resolver)
+			_realm_substrate_tests,
+			# Phase 11D-prereq.0b — Realm reification + pillage + 3-outcome conquest
+			_realm_reification_tests,
+			_lifecycle_conquest_outcomes_tests,
+			# Urban Growth Stocking — Migration 126 Stage A
+			_settlement_pois_schema_tests,
+			_event_bus_new_signals_tests,
+			# Urban Growth Stocking — Stage B
+			_settlement_growth_resolver_tests,
+			# Urban Growth Stocking — Stage C
+			_poi_split_roller_tests,
+			_poi_emergence_tests,
+			# Urban Growth Stocking — Stage D
+			_level_elevation_roller_tests,
+			_baseline_npc_stocker_tests,
+			# Urban Growth Stocking — Stage E
+			_poi_contribution_registry_tests,
+			# Urban Growth Stocking — Stage F
+			_stronghold_poi_registrar_tests,
+			# Urban Growth Stocking — Stage G
+			_spell_offer_roller_tests,
+			_spell_offer_repository_tests,
+			_purchase_spellcasting_tests,
+			# Urban Growth Stocking — Stage H
+			_stock_poi_decree_tests,
+			_poi_cleanup_tests,
+			# Phase 11D.1 — Domain style + alignment orthogonal columns
+			_domain_style_alignment_columns_tests,
+			# Phase 11D.2 — Clanhold-style mechanics
+			_clanhold_mechanics_tests,
+			# Phase 11D.3 — Religion conversion + alignment effects
+			_religion_conversion_tests,
+			# Phase 11D.4 — Establishment eligibility matrix + vassal warnings
+			_establish_domain_eligibility_matrix_tests,
+			# Phase 11D.5 — Tribal Warriors subsystem
+			_tribal_warriors_tests,
+			# Phase 11E — Scenario integration tests
+			_scenario_chaotic_clanhold,
+			_scenario_succession,
+			_scenario_conquest_outcomes,
+			_scenario_below_sufficiency,
+			_scenario_full_loop_borderlands,
+			# 2026-05-22 migration 130 — river edges as first-class entities
+			_hex_river_edges_tests,
+			# 2026-05-26 — Worldographer offset conversion + TestContentSeeder
+			_hex_map_offset_conversion_tests,
+			_test_content_seeder_tests,
+			_session_load_fallback_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
@@ -756,6 +873,12 @@ func run() -> void:
 			failed += 1
 
 	print("=== TEST RESULTS: %d suites passed, %d failed ===" % [passed, failed])
+
+	# Final wipe so the user's campaign-select list is clean if they launch
+	# the live game after a test run. Belt-and-suspenders with the pre-run
+	# wipe — that one guarantees a clean test start; this one guarantees a
+	# clean game start.
+	CampaignRepository.wipe_for_tests()
 
 	get_tree().quit(1 if failed > 0 else 0)
 

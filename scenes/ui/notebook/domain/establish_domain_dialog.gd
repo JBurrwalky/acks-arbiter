@@ -1,8 +1,14 @@
 extends AcceptDialog
 
 ## EstablishDomainDialog — modal that branches per classification × class ×
-## chaotic-toggle for Phase 2 domain establishment per gdd-domain-tab.md
-## §16.1 and `docs/domain-roadmap-corrected.md` Phase 2.
+## clanhold-toggle for Phase 2 domain establishment per gdd-domain-tab.md
+## §16.1 and `docs/domain-roadmap-corrected.md` Phase 2. Migration 127 / Phase
+## 11D.1 split the v0 `is_chaotic_domain` boolean into the orthogonal
+## `domain_style` + `alignment` columns. The dialog's toggle now controls
+## `domain_style` only; alignment is read from the establishing character.
+## Toggle is gated to chaotic-aligned PCs in this minimal pass per the
+## existing UX; Phase 11D.4 revisits per the full establishment-eligibility
+## matrix in gdd-domain-style-and-alignment.md §7.
 ##
 ## Surfaces the available paths for the active character and the selected
 ## classification, calls EstablishDomainFlow.establish_domain on confirm,
@@ -23,7 +29,7 @@ var _campaign_id: String = ""
 var _name_edit: LineEdit = null
 var _classification_option: OptionButton = null
 var _method_option: OptionButton = null
-var _chaotic_toggle: CheckBox = null
+var _clanhold_toggle: CheckBox = null
 var _religion_edit: LineEdit = null
 var _own_race_toggle: CheckBox = null
 var _error_label: Label = null
@@ -80,10 +86,10 @@ func _build_ui() -> void:
 	method_row.add_child(method_lbl)
 	_method_option = OptionButton.new()
 	method_row.add_child(_method_option)
-	# Chaotic opt-in.
-	_chaotic_toggle = CheckBox.new()
-	_chaotic_toggle.text = "Establish as chaotic domain (chaotic-aligned PCs only)"
-	vbox.add_child(_chaotic_toggle)
+	# Clanhold-style opt-in (was "chaotic domain" pre-11D.1).
+	_clanhold_toggle = CheckBox.new()
+	_clanhold_toggle.text = "Establish as clanhold-style domain (chaotic-aligned PCs only in v1)"
+	vbox.add_child(_clanhold_toggle)
 	# Own-race flag.
 	_own_race_toggle = CheckBox.new()
 	_own_race_toggle.text = "Hex is in own-race area (dwarven / elven only — controls civilized/borderlands access)"
@@ -119,8 +125,8 @@ func setup(campaign_id: String, character: Dictionary) -> void:
 	_character = character
 	_name_edit.text = ""
 	_classification_option.selected = 0
-	_chaotic_toggle.button_pressed = false
-	_chaotic_toggle.disabled = String(character.get("alignment", "")) != "chaotic"
+	_clanhold_toggle.button_pressed = false
+	_clanhold_toggle.disabled = String(character.get("alignment", "")) != "chaotic"
 	_own_race_toggle.button_pressed = true
 	_religion_edit.text = ""
 	_error_label.text = ""
@@ -184,7 +190,10 @@ func _on_confirmed() -> void:
 		"name": name,
 		"territory_type": classification,
 		"establishment_method": method_id,
-		"is_chaotic_domain": _chaotic_toggle.button_pressed,
+		# Migration 127 (Phase 11D.1): pass domain_style instead of is_chaotic_domain.
+		# Chaotic-method paths (clanhold_annex / recruit_chieftain) force-lock
+		# this to 'clanhold' inside the flow regardless of the toggle value.
+		"domain_style": "clanhold" if _clanhold_toggle.button_pressed else "civilized",
 		"in_own_race_area": _own_race_toggle.button_pressed,
 		"religion": _religion_edit.text.strip_edges(),
 		"calendar_day": calendar_day,

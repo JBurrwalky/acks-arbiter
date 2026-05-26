@@ -117,6 +117,35 @@ static func roll_monthly(
 	var classification: Dictionary = classify_roll(roll)
 	var result_key: String = String(classification["result_key"])
 
+	# Phase 11D.2 (RAW ax_domains_of_chaos.xml:47-51 chieftain vassalage limits):
+	# When the LIEGE is a clanhold-style chieftain, certain obligation kinds
+	# are forbidden. If the d20 lands on a blocked obligation, the roll
+	# resolves to "no obligation issued this month" — the chieftain literally
+	# CAN'T impose the blocked thing.
+	#   * call_to_council        — Chieftains cannot call to council. (L48)
+	#   * loan                   — Chieftains cannot demand loans. (L49)
+	#   * charter_of_monopoly    — Chieftains cannot offer charters of monopoly. (L50)
+	#   * grant_of_land          — Chieftains cannot offer grants of title. (L51)
+	# (call_to_arms is RAW-allowed but the chieftain gets the tribal-warrior
+	# muster variant per RAW L52 — Phase 11D.5 implements the variant.)
+	var liege_id_for_chieftain_check: String = String(assignment.get("liege_character_id", ""))
+	if _liege_rules_clanhold(liege_id_for_chieftain_check) \
+			and result_key in ["call_to_council", "loan", "charter_of_monopoly", "grant_of_land"]:
+		var blocked_outcome: Dictionary = {
+			"success": true,
+			"vassal_assignment_id": vassal_assignment_id,
+			"roll": roll,
+			"result_key": result_key,
+			"calendar_day": calendar_day,
+			"applied": false,
+			"blocked_by_chieftain_vassalage_limits": true,
+			"summary": "%s blocked — clanhold-style chieftains cannot impose this (RAW ax_domains_of_chaos.xml:48-51)." % result_key,
+		}
+		if EventBus.has_signal("favor_or_duty_resolved"):
+			EventBus.emit_signal("favor_or_duty_resolved",
+				vassal_assignment_id, result_key, blocked_outcome)
+		return blocked_outcome
+
 	var outcome: Dictionary
 	match result_key:
 		"revoke":
@@ -214,16 +243,34 @@ static func _apply_obligation(
 	# Phase 9C: call_to_arms triggers troop materialization + scheduler tranches.
 	# CallToArmsMuster.issue_call returns a call_to_arms_state_id; the three
 	# tranches arrive on the EventScheduler at +1/+2/+3 muster periods.
+	#
+	# Phase 11D.5 polish: clanhold-vassal modification per gdd-tribal-warriors.md
+	# §8. When the sizing dict flagged this as a tribal-warrior muster, the
+	# standard gp-troops CallToArmsMuster flow does NOT apply — the muster is
+	# in warriors, not gp. Skip CallToArmsMuster + emit the
+	# `tribal_warriors_called_to_arms` signal for downstream UI / log
+	# consumers. The actual auto-levy materialization is a future polish.
 	var call_to_arms_state_id: String = ""
+	var is_tribal_muster: bool = bool(sizing.get("is_tribal_warrior_muster", false))
 	if type == "call_to_arms" and not obligation_id.is_empty():
-		call_to_arms_state_id = CallToArmsMuster.issue_call(
-			obligation_id,
-			String(assignment.get("liege_character_id", "")),
-			String(assignment.get("vassal_character_id", "")),
-			calendar_day,
-			call_to_arms_magnitude_pct,
-			scheduler  # Phase 9C polish: real scheduler from caller; null in tests.
-		)
+		if is_tribal_muster:
+			# Determine scope from magnitude_pct: 100% = "all" (2 favors), else "half" (1 favor).
+			var scope: String = "all" if call_to_arms_magnitude_pct >= 100 else "half"
+			var favor_cost: int = 2 if scope == "all" else 1
+			var vassal_domain: Dictionary = _primary_domain_for_character(
+				String(assignment.get("vassal_character_id", "")))
+			if EventBus.has_signal("tribal_warriors_called_to_arms"):
+				EventBus.emit_signal("tribal_warriors_called_to_arms",
+					String(vassal_domain.get("id", "")), scope, favor_cost)
+		else:
+			call_to_arms_state_id = CallToArmsMuster.issue_call(
+				obligation_id,
+				String(assignment.get("liege_character_id", "")),
+				String(assignment.get("vassal_character_id", "")),
+				calendar_day,
+				call_to_arms_magnitude_pct,
+				scheduler  # Phase 9C polish: real scheduler from caller; null in tests.
+			)
 
 	# Mechanical effects. Treasury columns are cp (Migration 111), so pass cp.
 	var applied: bool = _apply_mechanical_effect(
@@ -328,6 +375,20 @@ static func _size_obligation(assignment: Dictionary, type: String, _calendar_day
 			# RAW L362: 1 gp per family in the realm per month.
 			return {"magnitude": realm_families, "gp_value": 0}
 		"call_to_arms":
+			# Phase 11D.5 polish per gdd-tribal-warriors.md §8 + RAW
+			# ax_domains_of_chaos.xml:52: when the vassal is clanhold-style,
+			# the muster is denominated in tribal warriors (50% / 100% of
+			# available_tribal_warriors per favor cost) instead of gp.
+			# Sentinel `is_tribal_warrior_muster: true` lets _apply_obligation
+			# route to the tribal-muster path rather than CallToArmsMuster's
+			# standard gp-troops flow.
+			var vassal_dom: Dictionary = _primary_domain_for_character(vassal_id)
+			if String(vassal_dom.get("domain_style", "civilized")) == "clanhold":
+				return {
+					"magnitude": int(vassal_dom.get("available_tribal_warriors", 0)),
+					"gp_value": 0,
+					"is_tribal_warrior_muster": true,
+				}
 			# RAW L364: muster troops with wages = 1 gp per family in the realm.
 			return {"magnitude": realm_families, "gp_value": 0}
 		"loan":
@@ -751,6 +812,18 @@ static func _primary_domain_for_character(character_id: String) -> Dictionary:
 	if CampaignRepository.db.query_result.is_empty():
 		return {}
 	return CampaignRepository.db.query_result[0].duplicate()
+
+
+## Phase 11D.2 chieftain-vassalage-limits helper. Returns true when the
+## character's primary domain is clanhold-style. Used by roll_monthly to gate
+## blocked obligation kinds per RAW ax_domains_of_chaos.xml:48-51.
+static func _liege_rules_clanhold(liege_character_id: String) -> bool:
+	if liege_character_id.is_empty():
+		return false
+	var dom: Dictionary = _primary_domain_for_character(liege_character_id)
+	if dom.is_empty():
+		return false
+	return String(dom.get("domain_style", "civilized")) == "clanhold"
 
 
 static func _count_hexes_for_character(character_id: String) -> int:

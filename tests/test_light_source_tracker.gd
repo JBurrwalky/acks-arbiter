@@ -24,7 +24,7 @@ func test_activate_torch() -> void:
 	tracker.activate("torch", "fighter1")
 	check(tracker.is_active(), "should be active after activate")
 	check(tracker.source_type == "torch", "type should be torch")
-	check(tracker.radius_feet == 30, "torch radius should be 30")
+	check(tracker.radius_feet == 50, "torch radius should be 50")
 	check(tracker.remaining_turns == 6, "torch should have 6 turns")
 	check(tracker.carrier_id == "fighter1", "carrier should be fighter1")
 	check(not tracker.is_permanent(), "torch is not permanent")
@@ -34,7 +34,7 @@ func test_activate_lantern() -> void:
 	var tracker := LightSourceTracker.new()
 	tracker.activate("lantern")
 	check(tracker.remaining_turns == 24, "lantern should have 24 turns")
-	check(tracker.radius_feet == 30, "lantern radius should be 30")
+	check(tracker.radius_feet == 50, "lantern radius should be 50")
 
 
 func test_permanent_sources() -> void:

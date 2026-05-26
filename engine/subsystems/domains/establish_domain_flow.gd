@@ -22,10 +22,12 @@ extends RefCounted
 ##   * Elven (spellsword / courtier / ranger):
 ##                         same wilderness-or-own-race rule
 ##
-## Chaotic-aligned PCs may opt into chaotic-domain establishment via the
+## Chaotic-aligned PCs may opt into clanhold-style establishment via the
 ## clanhold_annex / recruit_chieftain paths in any wilderness area or by
 ## annexing an existing clanhold per `ax_domains_of_chaos` §chaotic_realms.
-## The opt-in toggle becomes the `is_chaotic_domain` column.
+## The chaotic-method paths force-lock `domain_style='clanhold'` per
+## migration 127 + gdd-domain-style-and-alignment.md §4-§6. Alignment is
+## carried separately on the `alignment` column.
 ##
 ## Public API:
 ##   * available_paths(character, classification) -> Array[Dictionary]
@@ -85,6 +87,20 @@ const ERR_CHAOTIC_REQUIRED := "chaotic_alignment_required"
 const ERR_OWNER_REQUIRED := "owner_character_id_required"
 const ERR_CAMPAIGN_REQUIRED := "campaign_id_required"
 const ERR_NAME_REQUIRED := "name_required"
+# Phase 11D.4 (gdd-domain-style-and-alignment.md §7.6):
+# Eligibility-matrix error codes that gate the new (style × alignment × method)
+# axis. ERR_BEASTMAN_BLOCKED_FOR_LAWFUL_NEUTRAL: a lawful or neutral PC
+# attempted METHOD_CONQUEST against a beastman-populated target — RAW + project
+# canon (§7.4 / memory/feedback_clanhold_vs_chaotic_alignment.md S3) blocks
+# this because conquest implies continuing to rule the existing beastman
+# population. METHOD_CLEAR remains allowed (scatters the beastmen, produces
+# a fresh domain). ERR_INVALID_STYLE_FOR_METHOD: caller passed an explicit
+# `domain_style='civilized'` with a clanhold-only method (CLANHOLD_ANNEX or
+# RECRUIT_CHIEFTAIN). Note: when the caller omits `domain_style`, the flow
+# already force-locks 'clanhold' for those methods — this error fires only
+# when a caller passed the contradictory value.
+const ERR_BEASTMAN_BLOCKED_FOR_LAWFUL_NEUTRAL := "beastman_blocked_for_lawful_neutral"
+const ERR_INVALID_STYLE_FOR_METHOD := "invalid_style_for_method"
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +154,25 @@ static func available_paths(
 ##       alignment for class/alignment gating
 ##   territory_type (String) — one of VALID_CLASSIFICATIONS
 ##   establishment_method (String) — one of VALID_METHODS
-##   is_chaotic_domain (bool) — opt-in flag
+##   domain_style (String, optional) — 'civilized' or 'clanhold'; force-locked
+##                                     to 'clanhold' when method is clanhold_annex
+##                                     or recruit_chieftain. Defaults to 'civilized'
+##                                     when caller does not specify and the method
+##                                     does not force-lock.
 ##   in_own_race_area (bool, default true) — caller-supplied
 ##   name (String, required)
+##
+##   Phase 11D.4 additions per gdd-domain-style-and-alignment.md §7:
+##   target_domain_id (String, optional) — for METHOD_CONQUEST: id of the
+##       defender domain being conquered. When provided, the flow reads the
+##       target's establishment_method to detect beastman population and
+##       enforces the S3 block.
+##   target_is_beastman (bool, optional) — alternative to target_domain_id
+##       for METHOD_CLEAR vs a beastman lair, where there's no existing
+##       domain row to read but the caller (wilderness encounter context)
+##       knows whether the cleared lair was beastman. METHOD_CLEAR does NOT
+##       trigger the S3 block — clearing scatters the beastmen and the new
+##       domain is fresh — but the flag flows through for audit.
 static func validate_establishment(params: Dictionary) -> Array:
 	var errors: Array = []
 	if String(params.get("campaign_id", "")).is_empty():
@@ -180,7 +212,46 @@ static func validate_establishment(params: Dictionary) -> Array:
 	if method in [METHOD_CLANHOLD_ANNEX, METHOD_RECRUIT_CHIEFTAIN] \
 			and alignment != "chaotic":
 		errors.append(ERR_CHAOTIC_REQUIRED)
+	# Phase 11D.4 — S3 enforcement per gdd-domain-style-and-alignment.md §7.4.
+	# METHOD_CONQUEST against a beastman-populated target is BLOCKED for
+	# lawful and neutral PCs: continuing to rule a beastman population is
+	# RAW-impossible for those alignments. METHOD_CLEAR is unaffected
+	# (clearing scatters the beastmen; the new domain is fresh kin / empty).
+	if method == METHOD_CONQUEST and alignment in ["lawful", "neutral"]:
+		if _target_is_beastman_populated(params):
+			errors.append(ERR_BEASTMAN_BLOCKED_FOR_LAWFUL_NEUTRAL)
+	# Phase 11D.4 — caller cannot pass an explicit civilized style with the
+	# clanhold-only methods. (When the caller omits `domain_style`, the
+	# `establish_domain` body force-locks 'clanhold' for these methods, but
+	# an explicit contradiction must be reported as an error rather than
+	# silently overridden — preserves the caller's intent visibility.)
+	if method in [METHOD_CLANHOLD_ANNEX, METHOD_RECRUIT_CHIEFTAIN]:
+		var requested_style: String = String(params.get("domain_style", "")).to_lower()
+		if requested_style == "civilized":
+			errors.append(ERR_INVALID_STYLE_FOR_METHOD)
 	return errors
+
+
+## Phase 11D.4 helper: returns true when the target of a conquest is a
+## beastman-populated domain (per gdd-domain-style-and-alignment.md §7.4).
+## Resolves the question by:
+##   1. If the caller passed an explicit `target_is_beastman` bool, use that.
+##   2. Else if the caller passed `target_domain_id`, read the target row's
+##      `establishment_method` — clanhold_annex / recruit_chieftain mark the
+##      population as beastman per §9.7's population-kind inference.
+##   3. Else default to false (no beastman target known; the eligibility
+##      check is permissive).
+static func _target_is_beastman_populated(params: Dictionary) -> bool:
+	if params.has("target_is_beastman"):
+		return bool(params.get("target_is_beastman", false))
+	var target_id: String = String(params.get("target_domain_id", ""))
+	if target_id.is_empty():
+		return false
+	var target: Dictionary = CampaignRepository.get_domain(target_id)
+	if target.is_empty():
+		return false
+	var method: String = String(target.get("establishment_method", "")).to_lower()
+	return method in [METHOD_CLANHOLD_ANNEX, METHOD_RECRUIT_CHIEFTAIN]
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +265,7 @@ static func validate_establishment(params: Dictionary) -> Array:
 ##
 ## [param params] keys (all optional unless noted):
 ##   campaign_id (required), owner_character_id (required), character (required),
-##   name (required), territory_type, establishment_method, is_chaotic_domain,
+##   name (required), territory_type, establishment_method, domain_style,
 ##   in_own_race_area, calendar_day, religion, location_map_id,
 ##   location_hex_q, location_hex_r.
 static func establish_domain(params: Dictionary) -> Dictionary:
@@ -205,10 +276,14 @@ static func establish_domain(params: Dictionary) -> Dictionary:
 	var method: String = String(params.get("establishment_method", "")).to_lower()
 	var alignment: String = String((params.get("character", {}) as Dictionary)
 		.get("alignment", "neutral")).to_lower()
-	# Chaotic-method paths force is_chaotic_domain=true; otherwise honor opt-in.
-	var is_chaotic := bool(params.get("is_chaotic_domain", false))
+	# Migration 127 (Phase 11D.1): chaotic-method paths force domain_style=
+	# 'clanhold'; otherwise honor the caller's explicit value, defaulting to
+	# 'civilized'. The orthogonal `alignment` column is set independently.
+	# Per gdd-domain-style-and-alignment.md §4-§6 the two axes do not
+	# co-determine each other beyond this force-lock for chaotic methods.
+	var domain_style: String = String(params.get("domain_style", "civilized"))
 	if method in [METHOD_CLANHOLD_ANNEX, METHOD_RECRUIT_CHIEFTAIN]:
-		is_chaotic = true
+		domain_style = "clanhold"
 	var domain_id := CampaignRepository.create_domain({
 		"campaign_id": params.get("campaign_id", ""),
 		"name": params.get("name", ""),
@@ -219,12 +294,21 @@ static func establish_domain(params: Dictionary) -> Dictionary:
 		"territory_type": classification,
 		"alignment": alignment,
 		"religion": params.get("religion", ""),
-		"is_chaotic_domain": is_chaotic,
+		"domain_style": domain_style,
 		"establishment_method": method,
 		"established_calendar_day": int(params.get("calendar_day", 0)),
 	})
 	if domain_id.is_empty():
 		return {"domain_id": "", "errors": ["create_domain_failed"]}
+	# Phase 11B: chronicle the founding to the departure log. Done BEFORE the
+	# `domain_established` signal so any listener that immediately scrolls to
+	# the log already sees the founding row.
+	LifecycleHandler.record_establishment(
+		String(params.get("campaign_id", "")),
+		domain_id,
+		int(params.get("calendar_day", 0)),
+		method,
+		String(params.get("owner_character_id", "")))
 	EventBus.domain_established.emit(
 		domain_id,
 		String(params.get("owner_character_id", "")),

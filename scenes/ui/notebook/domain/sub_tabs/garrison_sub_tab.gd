@@ -118,14 +118,14 @@ func _render_expenditure() -> void:
 	var min_label := Label.new()
 	if bool(summary.get("meets_minimum", true)):
 		min_label.text = "Minimum (2gp/family%s): met (paying %s / %s)" % [
-			" + chaotic" if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0 else "",
+			" + clanhold" if int(summary.get("clanhold_offset_per_family_cp", 0)) > 0 else "",
 			Currency.format_cost(total_value_cp),
 			Currency.format_cost(minimum_total_cp),
 		]
 		min_label.modulate = Color(0.6, 0.95, 0.6)
 	else:
 		min_label.text = "Minimum (2gp/family%s): SHORT %d gp/family — base morale −%d" % [
-			" + chaotic" if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0 else "",
+			" + clanhold" if int(summary.get("clanhold_offset_per_family_cp", 0)) > 0 else "",
 			int(summary.get("gp_below_minimum_per_family", 0)),
 			int(summary.get("gp_below_minimum_per_family", 0)),
 		]
@@ -197,12 +197,12 @@ func _render_expenditure() -> void:
 		repress_row.add_child(launch_btn)
 	_expenditure_card.add_child(repress_row)
 
-	# Quiet hint that minimum_per_family already accounts for chaotic +2.
-	if int(summary.get("chaotic_offset_per_family_cp", 0)) > 0:
-		var chaotic_hint := _dim_label(
-			"Chaotic domain: minimum garrison cost +2 gp/family per ax_domains_of_chaos §exceptions_from_clanholds L86.")
-		_expenditure_card.add_child(chaotic_hint)
-	# (minimum_per_family is the chaotic-adjusted figure; reference here keeps
+	# Quiet hint that minimum_per_family already accounts for clanhold +2.
+	if int(summary.get("clanhold_offset_per_family_cp", 0)) > 0:
+		var clanhold_hint := _dim_label(
+			"Clanhold-style domain: minimum garrison cost +2 gp/family per ax_domains_of_chaos §exceptions_from_clanholds L86.")
+		_expenditure_card.add_child(clanhold_hint)
+	# (minimum_per_family is the clanhold-adjusted figure; reference here keeps
 	# the symbol live for the static analyzer.)
 	@warning_ignore("unused_variable")
 	var _used := minimum_per_family_cp

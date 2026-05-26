@@ -146,14 +146,11 @@ static func resolve_water_sources(settlement_id: String) -> Dictionary:
 	if home_biome == "swamp":
 		result["lake_shore"] = true
 
-	# River detection — settlement-on-hex only (no adjacency propagation).
-	if CampaignRepository.db.query_with_bindings("""
-		SELECT 1 FROM hex_overlays
-		WHERE map_id = ? AND q = ? AND r = ? AND overlay_type = 'river'
-		LIMIT 1
-	""", [map_id, hex_q, hex_r]):
-		if not CampaignRepository.db.query_result.is_empty():
-			result["river_bank"] = true
+	# River detection (migration 130) — settlement-on-hex only (no
+	# adjacency propagation). A river edge touching the settlement's hex
+	# qualifies, whether owned by this hex or its neighbor.
+	if CampaignRepository.hex_has_river(map_id, hex_q, hex_r):
+		result["river_bank"] = true
 
 	return result
 

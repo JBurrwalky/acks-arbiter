@@ -31,10 +31,28 @@ func _init(runner) -> void:
 
 func register(registry: EventHandlerRegistry) -> void:
 	registry.register("domain_monthly_tick", _handle_monthly_tick)
+	# Phase 11B: bridge Phase 9A siege outcomes + Phase 1 stronghold-destroyed
+	# signals into LifecycleHandler. The siege resolver / stronghold subsystem
+	# already emit; we translate.
+	if not EventBus.siege_concluded.is_connected(_on_siege_concluded):
+		EventBus.siege_concluded.connect(_on_siege_concluded)
+	if not EventBus.stronghold_destroyed.is_connected(_on_stronghold_destroyed):
+		EventBus.stronghold_destroyed.connect(_on_stronghold_destroyed)
+	# Phase 11C: bridge character_died into RulerDeathHandler. Owns the
+	# "find domains owned by deceased + put each in succession_pending"
+	# sweep.
+	if not EventBus.character_died.is_connected(_on_character_died):
+		EventBus.character_died.connect(_on_character_died)
 
 
 func unregister(registry: EventHandlerRegistry) -> void:
 	registry.unregister("domain_monthly_tick")
+	if EventBus.siege_concluded.is_connected(_on_siege_concluded):
+		EventBus.siege_concluded.disconnect(_on_siege_concluded)
+	if EventBus.stronghold_destroyed.is_connected(_on_stronghold_destroyed):
+		EventBus.stronghold_destroyed.disconnect(_on_stronghold_destroyed)
+	if EventBus.character_died.is_connected(_on_character_died):
+		EventBus.character_died.disconnect(_on_character_died)
 
 
 # ---------------------------------------------------------------------------
@@ -104,10 +122,30 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 
 	var domain_results: Array = []
 	for domain_data: Dictionary in domains:
+		# Phase 11B: skip terminal-state domains entirely. abandoned /
+		# lost_to_foreign rows are preserved for the audit history but no
+		# longer run revenue / expense / morale / growth resolution.
+		var lifecycle_state: String = String(domain_data.get(
+			"lifecycle_state", LifecycleHandler.STATE_ACTIVE))
+		if lifecycle_state == LifecycleHandler.STATE_ABANDONED \
+			or lifecycle_state == LifecycleHandler.STATE_SALTED_TO_RUIN:
+			continue
 		var result := _resolve_domain_month(domain_data, calendar_day)
 		domain_results.append(result)
 		_save_domain(domain_data, result)
 		_emit_signals(domain_data, result)
+		# Phase 11A: chronicle classification + morale-tier transitions to the
+		# departure log. Conquest / abandonment / ruler death are written by the
+		# lifecycle handler in 11B/C, not here.
+		DepartureLogRecorder.record_monthly_transitions(
+			_campaign_id, domain_data, result, calendar_day)
+		# Phase 11B: check ruined-stronghold grace expiry. Fires automatic
+		# abandonment if the grace day has passed without rebuild.
+		LifecycleHandler.tick_lifecycle_state(domain_data, calendar_day)
+		# Phase 11C: check succession-pending grace expiry. Resolves with
+		# the designated heir if any, or routes to abandonment / overlord-
+		# revert if not.
+		RulerDeathHandler.tick_succession_grace(domain_data, calendar_day)
 
 	return {
 		"auto_pause": true,
@@ -243,11 +281,29 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 		bool(domain_data.get("is_active_adventuring_this_month", 0)),
 		revenue["income_gate_active"])
 
+	# Urban Growth Stocking — Stage B (Migration 126) per Q-UGS-15: a
+	# SEPARATE resolver running AFTER DomainGrowthResolver in the same
+	# start-of-month investment subphase. The domain's investment_cp pool
+	# is now committed; the settlement resolver pulls it (one settlement
+	# per domain in v1 — see Q-UGS for multi-settlement routing).
+	# `_resolve_settlement_growth_for_domain` returns the per-settlement
+	# growth results so we can include them in the monthly report; it
+	# also persists state and emits market_class_advanced /
+	# market_class_regressed / settlement_dissolved signals as needed.
+	var settlement_growth_results: Array = _resolve_settlement_growth_for_domain(
+		domain_data, investment_cp)
+
 	var class_change := ClassificationAdvancement.check_classification_change(
 		domain_data, hex_count, _has_urban_settlement(domain_data),
 		_urban_pct_of_peasants(domain_data),
 		_distance_to_friendly_city(domain_data),
-		_contiguous_expansion_blocked(domain_data))
+		_contiguous_expansion_blocked(domain_data),
+		# Phase 11D.2: clanhold-style classification gates require the friendly
+		# settlement to be in the same realm as the advancing domain (RAW L77-78).
+		# Default true until the friendly-city lookup is wired with realm awareness;
+		# the gate then becomes effective when _distance_to_friendly_city returns
+		# real values from a same-realm-aware lookup.
+		_friendly_settlement_in_same_realm(domain_data))
 
 	# Phase 10A.2: Faith block post-resolve — congregant growth + upkeep for
 	# divine-caster rulers. Runs AFTER revenue/expenses so the upkeep can debit
@@ -259,6 +315,32 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 		calendar_day)
 	# Phase 10A.2: sweep expired pending_divine_effects.
 	FaithMonthlyResolver.expire_stale_effects(domain_id, calendar_day)
+
+	# Phase 11D.3: religion conversion monthly tick per
+	# gdd-religion-conversion.md §5.2. Runs AFTER FaithMonthlyResolver so the
+	# congregant gain from this month's proselytizing is already credited to
+	# the per-domain congregants rows. The conversion resolver sums target-
+	# religion congregants in this domain and checks the 60% threshold.
+	# Updated domain_data is passed so the resolver sees the current morale
+	# (used to compute morale_multiplier per §5.3).
+	var domain_data_with_morale := domain_data.duplicate()
+	domain_data_with_morale["morale"] = int(morale.get("current_morale", 0))
+	var conversion_tick: Dictionary = ReligionConversionResolver.tick_conversion(
+		domain_data_with_morale, calendar_day)
+
+	# Phase 11D.5 polish: tribal-warrior retention tick per
+	# gdd-tribal-warriors.md §7. For each active tribal-warrior troop_unit
+	# in this domain, increment `months_without_qualifying_spoils`. When the
+	# counter hits 3, fire `tribal_warriors_morale_check_triggered` so the
+	# downstream morale-roll handler can resolve loyalty (signal-only stub
+	# in v1; the full roll mechanic lands when the morale-roll handler is
+	# wired in a future polish). Units that received qualifying spoils
+	# in-month have already had their counter reset to 0 via
+	# SiegeSpoilsResolver.apply_spoils_to_tribal_warriors; the increment
+	# here brings them back to 1 on the following month, which represents
+	# "one month has now passed since last qualifying credit" — the
+	# semantically correct "consecutive months without" reading.
+	_tick_tribal_warrior_retention(domain_id, calendar_day)
 
 	# Phase 10B.1a: Magical Research monthly-tick stub. Advances
 	# days_completed by 30 on every in_progress magic_research_projects row
@@ -345,6 +427,9 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 		"challenger_summary": challenger_summary,
 		# Phase 10B.1a: Magical Research monthly summary.
 		"magic_research_summary": mr_summary,
+		# Urban Growth Stocking — Stage B per `gdd-urban-growth-stocking.md`
+		# §6.2. One result dict per settlement under this domain.
+		"settlement_growth": settlement_growth_results,
 	}
 
 
@@ -432,6 +517,27 @@ func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
 		"administer_domain_completed_this_month": 0,
 		"pending_investment_cp": 0,
 	}
+
+	# Phase 11D.5 polish: population-growth refill of the tribal-warrior pool.
+	# Per gdd-tribal-warriors.md §3 + §5.5: when peasant_families grows on a
+	# clanhold, available_tribal_warriors grows with it (capped at
+	# `peasant_families - currently_levied` per the pool invariant). The slack
+	# = peasant_families - available - levied tracks the dead-not-yet-replaced
+	# count; population growth fills the slack first.
+	if String(domain_data.get("domain_style", "civilized")) == "clanhold":
+		var population_growth_count: int = new_peasants - prior_peasants
+		if population_growth_count > 0:
+			var prior_available: int = int(domain_data.get("available_tribal_warriors", 0))
+			# Sum currently-levied tribal_warrior unit counts to enforce the
+			# invariant cap. We could call TribalWarriorRegistry.pool_for_domain
+			# but that re-reads the domain row; the count we need is just the
+			# active tribal_warrior troop_units sum.
+			var levied: int = _sum_active_tribal_warrior_count(domain_id)
+			var cap: int = new_peasants - levied
+			var proposed: int = prior_available + population_growth_count
+			var new_available: int = clampi(proposed, 0, maxi(0, cap))
+			if new_available != prior_available:
+				fields["available_tribal_warriors"] = new_available
 	# Phase 7: realm_title persistence.
 	var title_update: Dictionary = result.get("realm_title", {})
 	if not title_update.is_empty():
@@ -664,8 +770,107 @@ func _urban_pct_of_peasants(domain_data: Dictionary) -> int:
 	return int(round(100.0 * float(urban) / float(peasants)))
 
 
-func _distance_to_friendly_city(_domain_data: Dictionary) -> int:
-	return 0  # Phase 2+ replaces with an actual hex-distance lookup
+## Distance in miles from the domain's location to the nearest friendly
+## city/large-town. Used by ClassificationAdvancement per RAW §classification
+## gates (72mi to borderlands; 48mi to civilized; clanhold-style tightens to
+## 50mi / 25mi same-realm per gdd-domain-style-and-alignment.md §2).
+##
+## Implementation (post-Phase-11 cleanup):
+## - Iterate settlement_entrances in the same campaign on the same map.
+## - "City or large town" = market_class ≤ 5 (Classes V/IV/III/II/I = town/city/metropolis).
+## - "Friendly" = settlement's realm is same-realm with the defender, OR the
+##   realms have a relation disposition in {cordial, friendly, allied}.
+## - Returns axial-hex-distance × 6 miles per project's 6-mile-hex convention.
+## - Returns a very large value (effectively-infinite) when no friendly city
+##   is reachable; the classification gates fail closed.
+func _distance_to_friendly_city(domain_data: Dictionary) -> int:
+	var closest: Dictionary = _find_closest_friendly_city(domain_data)
+	return int(closest.get("distance_miles", 9999))
+
+
+## Phase 11D.2: clanhold classification gates require the friendly reference
+## settlement to be in the same realm. Returns true when the closest friendly
+## city/large-town to this domain is in the same realm as the domain. For
+## civilized domains the same-realm requirement is moot (the resolver only
+## consults this for clanhold style).
+##
+## Per RAW ax_domains_of_chaos.xml:77-78 + gdd-domain-style-and-alignment.md §2.
+func _friendly_settlement_in_same_realm(domain_data: Dictionary) -> bool:
+	var closest: Dictionary = _find_closest_friendly_city(domain_data)
+	# Default true when no city found — keeps the gate permissive in worlds
+	# without any cities (classification advancement falls back to the
+	# distance check, which fails closed at INF).
+	return bool(closest.get("same_realm", true))
+
+
+## Returns {distance_miles: int, same_realm: bool, settlement_id: String, realm_id: String}.
+## Returns sentinel distance 9999 + same_realm=true when no friendly city is
+## found (caller treats the distance gate as failing-closed).
+func _find_closest_friendly_city(domain_data: Dictionary) -> Dictionary:
+	var no_city: Dictionary = {
+		"distance_miles": 9999, "same_realm": true,
+		"settlement_id": "", "realm_id": "",
+	}
+	var campaign_id: String = String(domain_data.get("campaign_id", ""))
+	var map_id_v: Variant = domain_data.get("location_map_id", null)
+	if campaign_id.is_empty() or map_id_v == null:
+		return no_city
+	var map_id: String = String(map_id_v)
+	var domain_q: int = int(domain_data.get("location_hex_q", 0))
+	var domain_r: int = int(domain_data.get("location_hex_r", 0))
+	var defender_realm: Dictionary = RealmRepository.get_realm_for_domain(
+		String(domain_data.get("id", "")))
+	var defender_realm_id: String = String(defender_realm.get("id", ""))
+	# Pull every Class-V-or-better settlement on the same map in the campaign.
+	# market_class is INVERSE — lower number = bigger settlement.
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT id, hex_q, hex_r, parent_domain_id, market_class
+		FROM settlement_entrances
+		WHERE campaign_id = ? AND map_id = ? AND market_class <= 5
+	""", [campaign_id, map_id]):
+		return no_city
+	if CampaignRepository.db.query_result.is_empty():
+		return no_city
+	var best_distance: int = 9999
+	var best_same_realm: bool = false
+	var best_settlement_id: String = ""
+	var best_realm_id: String = ""
+	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
+		var settlement_id: String = String(row.get("id", ""))
+		var s_q: int = int(row.get("hex_q", 0))
+		var s_r: int = int(row.get("hex_r", 0))
+		var hex_dist: int = HexMapController.hex_distance(
+			Vector2i(domain_q, domain_r), Vector2i(s_q, s_r))
+		var distance_miles: int = hex_dist * 6  # 6-mile-hex project convention
+		# Determine friendliness via realm-relations.
+		var settlement_realm_id: String = ""
+		var parent_id: String = String(row.get("parent_domain_id", ""))
+		if not parent_id.is_empty():
+			var s_realm: Dictionary = RealmRepository.get_realm_for_domain(parent_id)
+			settlement_realm_id = String(s_realm.get("id", ""))
+		var same_realm: bool = (not defender_realm_id.is_empty()
+			and settlement_realm_id == defender_realm_id)
+		var disposition: String = "neutral"
+		if not defender_realm_id.is_empty() and not settlement_realm_id.is_empty():
+			disposition = RealmRepository.get_relation(
+				defender_realm_id, settlement_realm_id)
+		var is_friendly: bool = same_realm or disposition in [
+			"cordial", "friendly", "allied"]
+		if not is_friendly:
+			continue
+		if distance_miles < best_distance:
+			best_distance = distance_miles
+			best_same_realm = same_realm
+			best_settlement_id = settlement_id
+			best_realm_id = settlement_realm_id
+	if best_settlement_id.is_empty():
+		return no_city
+	return {
+		"distance_miles": best_distance,
+		"same_realm": best_same_realm,
+		"settlement_id": best_settlement_id,
+		"realm_id": best_realm_id,
+	}
 
 
 func _contiguous_expansion_blocked(_domain_data: Dictionary) -> bool:
@@ -900,6 +1105,73 @@ func _maybe_generate_event(domain_name: String) -> Dictionary:
 # Date helper
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Urban Growth Stocking — Stage B (Migration 126)
+# Per `generation/gdd-urban-growth-stocking.md` §6.2 EVALUATE_GROWTH /
+# EVALUATE_CLASS, run as a sibling of DomainGrowthResolver (Q-UGS-15).
+# ---------------------------------------------------------------------------
+
+## Fan out SettlementGrowthResolver.process_monthly_tick across each
+## settlement attached to the domain. Persists each settlement's new
+## urban_families / market_class / cumulative_investment_gp; emits
+## market_class_advanced, market_class_regressed, and settlement_dissolved
+## signals as the per-settlement result indicates. Returns the array of
+## per-settlement result dicts (one entry per settlement, in repository
+## order) so the monthly report can show what happened.
+##
+## investment_cp is the domain's total committed investment for the month.
+## In v1 we route the full pool to the FIRST settlement under the domain
+## (matching the historical settlement_entrances seed pattern where each
+## domain has a single "Chief Settlement"). Multi-settlement routing is
+## flagged as a future polish item.
+func _resolve_settlement_growth_for_domain(
+	domain_data: Dictionary,
+	investment_cp: int,
+) -> Array:
+	var domain_id: String = String(domain_data.get("id", ""))
+	if domain_id.is_empty():
+		return []
+	var settlements: Array = CampaignRepository.list_settlements_for_domain(domain_id)
+	if settlements.is_empty():
+		return []
+	var results: Array = []
+	# In v1, the first settlement receives the full investment pool. If
+	# additional settlements exist, they grow only via population dice +
+	# random growth (steps 3 + 4 of §6.2) — no investment-driven attraction
+	# beyond what the chief settlement consumed.
+	var remaining_investment_cp: int = investment_cp
+	for settlement_row in settlements:
+		var settlement: Dictionary = settlement_row
+		var alloc_cp: int = remaining_investment_cp
+		remaining_investment_cp = 0  # next settlement gets none
+		var result: Dictionary = SettlementGrowthResolver.process_monthly_tick(
+			settlement, domain_data, alloc_cp)
+		var settlement_id: String = String(settlement.get("id", ""))
+		if not settlement_id.is_empty():
+			CampaignRepository.update_settlement_growth_state(
+				settlement_id,
+				int(result.get("urban_families_new", 0)),
+				int(result.get("market_class_new", 6)),
+				int(result.get("new_cumulative_investment_gp",
+					settlement.get("cumulative_investment_gp", 10000))))
+			if bool(result.get("dissolved", false)):
+				EventBus.settlement_dissolved.emit(settlement_id)
+			elif bool(result.get("class_advanced", false)):
+				EventBus.market_class_advanced.emit(
+					settlement_id,
+					int(result.get("market_class_old", 6)),
+					int(result.get("market_class_new", 6)))
+			elif bool(result.get("class_regressed", false)):
+				EventBus.market_class_regressed.emit(
+					settlement_id,
+					int(result.get("market_class_old", 6)),
+					int(result.get("market_class_new", 6)))
+		result["settlement_id"] = settlement_id
+		result["settlement_name"] = String(settlement.get("name", ""))
+		results.append(result)
+	return results
+
+
 ## Convert a Timekeeping date dict into a single integer day-of-campaign for
 ## ledger entries (year × 12 × DAYS_PER_MONTH + month-1 × DAYS_PER_MONTH + day).
 func _calendar_day_from_date(date: Dictionary) -> int:
@@ -907,6 +1179,128 @@ func _calendar_day_from_date(date: Dictionary) -> int:
 	var month: int = int(date.get("month", 1))
 	var day: int = int(date.get("day", 1))
 	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+
+
+# ---------------------------------------------------------------------------
+# Phase 11B: siege + stronghold-destroyed bridges
+# ---------------------------------------------------------------------------
+
+## Translate a Phase 9A siege conclusion into a lifecycle event.
+## Outcomes `captured` / `surrendered` mean the defender lost; the besieging
+## army's owner becomes the new ruler in the same_campaign_npc case.
+## Outcomes `liberated` / `destroyed` / `departed` / `sallied_won` /
+## `sallied_lost` are not domain-lifecycle events at this layer.
+func _on_siege_concluded(siege_id: String, outcome: String) -> void:
+	if outcome != "captured" and outcome != "surrendered":
+		return
+	# Look up the siege to find the defender domain + besieging force.
+	var siege: Dictionary = SiegeRepository.get_siege(siege_id)
+	if siege.is_empty():
+		return
+	var domain_id: String = String(siege.get("domain_id", ""))
+	if domain_id.is_empty():
+		return
+	var besieging_army_id: String = String(siege.get("besieging_army_id", ""))
+	var campaign_id: String = String(siege.get("campaign_id", ""))
+	# Resolve the attacker's owner character id via armies.political_owner_id.
+	var attacker_owner_id: String = ""
+	if not besieging_army_id.is_empty() and CampaignRepository.db.query_with_bindings(
+		"SELECT political_owner_id FROM armies WHERE id = ?", [besieging_army_id]
+	) and not CampaignRepository.db.query_result.is_empty():
+		attacker_owner_id = String(CampaignRepository.db.query_result[0].get("political_owner_id", ""))
+	# Phase 11D-prereq.0b: derive attacker intent and dispatch through
+	# RealmRepository's three-outcome resolver.
+	var attacker_intent: String = _derive_attacker_intent(siege, attacker_owner_id, domain_id)
+	var resolution: Dictionary = RealmRepository.resolve_conquest_outcome(
+		domain_id, attacker_owner_id, attacker_intent)
+	var calendar_day: int = _calendar_day_from_date(Timekeeping.get_date())
+	# Off-map occupy: instantiate a new tracked realm + head NPC, then patch
+	# new_owner_id in the resolution before forwarding to LifecycleHandler.
+	if String(resolution.get("outcome", "")) == RealmRepository.OUTCOME_OCCUPIED \
+		and String(resolution.get("new_owner_id", "")).is_empty():
+		var inst: Dictionary = RealmRepository.instantiate_realm_for_off_map_force(
+			campaign_id, "", {}, calendar_day)
+		resolution["new_owner_id"] = String(inst.get("head_character_id", ""))
+	# Loot-and-scoot: spawn a placeholder local NPC and patch new_owner_id.
+	elif String(resolution.get("outcome", "")) == RealmRepository.OUTCOME_LOOTED_LOCAL_SUCCESSION:
+		resolution["new_owner_id"] = RealmRepository.spawn_local_succession_npc(
+			domain_id, calendar_day)
+	# Forward to LifecycleHandler.
+	LifecycleHandler.conquer_domain(
+		domain_id, calendar_day,
+		String(resolution.get("outcome", "")),
+		String(resolution.get("new_owner_id", "")),
+		int(resolution.get("pillage_severity", 0)),
+		{"siege_id": siege_id, "siege_outcome": outcome,
+		 "attacker_owner_id": attacker_owner_id,
+		 "attacker_realm_id": String(resolution.get("attacker_realm_id", ""))})
+
+
+## Phase 11D-prereq.0b: pick the attacker's intent (`occupy` / `loot_and_scoot`
+## / `salt_the_earth`) based on attacker alignment + relation to defender.
+## v1 heuristic — refined later when factions/diplomacy expand:
+##   * Hostile relation + chaotic alignment + overwhelming BR ratio → salt_the_earth
+##   * Hostile relation + alignment-mismatch → loot_and_scoot
+##   * Otherwise → occupy
+##
+## For v1, without BR-ratio tracking in the siege row, we default to
+## INTENT_OCCUPY unless explicit signals tell us otherwise. Future polish
+## per the plan §11D-prereq.0b notes.
+func _derive_attacker_intent(
+	_siege: Dictionary,
+	attacker_owner_id: String,
+	defender_domain_id: String,
+) -> String:
+	# v1 default: occupy. Future heuristic consumes realm alignment + relation
+	# disposition + BR ratio to pick salt-the-earth or loot-and-scoot.
+	if attacker_owner_id.is_empty() or defender_domain_id.is_empty():
+		return RealmRepository.INTENT_OCCUPY
+	var attacker_realm: Dictionary = RealmRepository.get_realm_for_character(attacker_owner_id)
+	var defender_realm: Dictionary = RealmRepository.get_realm_for_domain(defender_domain_id)
+	if attacker_realm.is_empty() or defender_realm.is_empty():
+		return RealmRepository.INTENT_OCCUPY
+	var disposition: String = RealmRepository.get_relation(
+		String(attacker_realm.get("id", "")),
+		String(defender_realm.get("id", "")))
+	var attacker_alignment: String = String(attacker_realm.get("alignment", ""))
+	# Heuristic: chaotic + hostile → salt_the_earth.
+	if disposition == RealmRepository.DISP_HOSTILE and attacker_alignment == "chaotic":
+		return RealmRepository.INTENT_SALT_THE_EARTH
+	# Hostile but not chaotic → loot-and-scoot.
+	if disposition == RealmRepository.DISP_HOSTILE:
+		return RealmRepository.INTENT_LOOT_AND_SCOOT
+	# Otherwise → occupy.
+	return RealmRepository.INTENT_OCCUPY
+
+
+## Translate a Phase 1 stronghold-destroyed signal into a domain-side
+## lifecycle event. Listens for cause == "siege" (Phase 9A); other causes
+## (voluntary demolish / abandonment-cleanup) bypass this hook because
+## they're already routed through their own lifecycle entry points.
+func _on_stronghold_destroyed(stronghold_id: String, cause: String) -> void:
+	if cause != "siege":
+		return
+	# Look up the stronghold's domain. The strongholds table carries
+	# domain_id directly.
+	if not CampaignRepository.db.query_with_bindings(
+		"SELECT domain_id FROM strongholds WHERE id = ?", [stronghold_id]
+	) or CampaignRepository.db.query_result.is_empty():
+		return
+	var domain_id: String = String(CampaignRepository.db.query_result[0].get("domain_id", ""))
+	if domain_id.is_empty():
+		return
+	var calendar_day: int = _calendar_day_from_date(Timekeeping.get_date())
+	LifecycleHandler.mark_stronghold_collapsed(domain_id, stronghold_id, calendar_day)
+
+
+## Phase 11C: character_died → succession-pending sweep over the deceased's
+## domains. Idempotent. Domains already in abandoned / lost_to_foreign are
+## skipped by the handler.
+func _on_character_died(character_id: String) -> void:
+	if character_id.is_empty():
+		return
+	var calendar_day: int = _calendar_day_from_date(Timekeeping.get_date())
+	RulerDeathHandler.handle_ruler_death(character_id, calendar_day)
 
 
 # ---------------------------------------------------------------------------
@@ -925,3 +1319,54 @@ func _rounds_until_next_month() -> int:
 	var rounds_elapsed_today: int = (hour * Timekeeping.ROUNDS_PER_HOUR) + \
 		(minute * Timekeeping.ROUNDS_PER_MINUTE) + rnd
 	return (days_remaining * Timekeeping.ROUNDS_PER_DAY) - rounds_elapsed_today
+
+
+## Phase 11D.5 polish helper — sum of active tribal_warrior troop_unit counts
+## for this domain. Used by the population-growth refill hook to enforce the
+## pool invariant `available + levied <= peasant_families`.
+func _sum_active_tribal_warrior_count(domain_id: String) -> int:
+	if domain_id.is_empty():
+		return 0
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT COALESCE(SUM(count), 0) AS total
+		FROM troop_units
+		WHERE assigned_domain_id = ?
+		  AND source_type = 'tribal_warrior'
+		  AND status = 'active'
+	""", [domain_id]):
+		return 0
+	if CampaignRepository.db.query_result.is_empty():
+		return 0
+	return int(CampaignRepository.db.query_result[0].get("total", 0))
+
+
+## Phase 11D.5 polish — tribal-warrior retention monthly tick per
+## gdd-tribal-warriors.md §7. Increments months_without_qualifying_spoils on
+## each active tribal_warrior troop_unit assigned to this domain. When the
+## counter reaches 3, fires `tribal_warriors_morale_check_triggered` for the
+## downstream morale-roll handler (signal-only stub in v1). Counter resets
+## to 0 elsewhere when qualifying spoils land (see
+## SiegeSpoilsResolver.apply_spoils_to_tribal_warriors).
+func _tick_tribal_warrior_retention(domain_id: String, _calendar_day: int) -> void:
+	if domain_id.is_empty():
+		return
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT id, months_without_qualifying_spoils
+		FROM troop_units
+		WHERE assigned_domain_id = ?
+		  AND source_type = 'tribal_warrior'
+		  AND status = 'active'
+	""", [domain_id]):
+		return
+	if CampaignRepository.db.query_result.is_empty():
+		return
+	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
+		var unit_id: String = String(row.get("id", ""))
+		var prior: int = int(row.get("months_without_qualifying_spoils", 0))
+		var next: int = prior + 1
+		TroopUnitRepository.update_unit(unit_id, {
+			"months_without_qualifying_spoils": next,
+		})
+		if next == 3 and EventBus.has_signal("tribal_warriors_morale_check_triggered"):
+			EventBus.emit_signal("tribal_warriors_morale_check_triggered",
+				unit_id, "three_months_without_qualifying_spoils")

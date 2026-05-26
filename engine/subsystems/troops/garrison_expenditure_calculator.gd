@@ -27,15 +27,18 @@ extends RefCounted
 ##   * trained, equipped militia          — source_type='militia', is_trained=1
 ##   * troops provided by a lord as Favor — covered by Phase 6+ Favors layer
 ##
-## Chaotic domains add **+2 gp to garrison cost** per `ax_domains_of_chaos.xml`
+## Clanhold-style domains add **+2 gp to garrison cost** per `ax_domains_of_chaos.xml`
 ## §exceptions_from_clanholds L86 — the calculator surfaces an additive offset
-## that the morale resolver consumes when the domain is chaotic.
+## that the morale resolver consumes when the domain is clanhold-style. (Per
+## migration 127 / gdd-domain-style-and-alignment.md §4-§6, this is a STYLE
+## mechanic from `ax_domains_of_chaos` exceptions_from_clanholds, not an
+## ALIGNMENT mechanic — the v0 `is_chaotic_domain` flag conflated the two.)
 ##
 ## 2026-05-16 wiring + cp pass: this calculator is now consumed by the domain
 ## monthly tick (`domain_handlers._resolve_one_domain`); previously it was UI-
 ## only. All money fields are cp (1 gp = 100 cp).
 
-const CHAOTIC_GARRISON_OFFSET_CP_PER_FAMILY := 200  # RAW 2 gp per family
+const CLANHOLD_GARRISON_OFFSET_CP_PER_FAMILY := 200  # RAW 2 gp per family
 const UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY := 200   # RAW 2 gp per family
 
 
@@ -60,7 +63,7 @@ const UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY := 200   # RAW 2 gp per family
 ##   morale_incentive_bonus:           int — 0/1/2 per §additional_troops table
 ##   wilderness_under_4gp:             bool — true when classification=wilderness
 ##                                            and cp_per_family_value < 400
-##   chaotic_offset_per_family_cp:     int — 200 for chaotic, 0 otherwise
+##   clanhold_offset_per_family_cp:     int — 200 for clanhold-style, 0 otherwise
 ##   classification:                   String — domain classification (lowercased)
 static func compute(domain_id: String) -> Dictionary:
 	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
@@ -80,7 +83,9 @@ static func compute_from_domain(domain: Dictionary) -> Dictionary:
 	# label) but the SQL column name is territory_type.
 	var classification: String = String(domain.get("territory_type", "wilderness")).to_lower()
 	var peasants: int = int(domain.get("peasant_families", 0))
-	var is_chaotic: bool = bool(domain.get("is_chaotic_domain", false))
+	# Migration 127 (Phase 11D.1): the +2gp offset is style-driven (clanhold
+	# mechanics from `ax_domains_of_chaos`), not alignment-driven.
+	var is_clanhold: bool = String(domain.get("domain_style", "civilized")) == "clanhold"
 
 	var units: Array = TroopUnitRepository.list_active_for_domain(domain_id) if not domain_id.is_empty() else []
 	var total_paid: int = 0
@@ -103,8 +108,8 @@ static func compute_from_domain(domain: Dictionary) -> Dictionary:
 
 	var total_value: int = total_paid + unpaid_value
 
-	var chaotic_offset_per_fam: int = CHAOTIC_GARRISON_OFFSET_CP_PER_FAMILY if is_chaotic else 0
-	var minimum_per_family: int = UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY + chaotic_offset_per_fam
+	var clanhold_offset_per_fam: int = CLANHOLD_GARRISON_OFFSET_CP_PER_FAMILY if is_clanhold else 0
+	var minimum_per_family: int = UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY + clanhold_offset_per_fam
 	var minimum_total: int = minimum_per_family * peasants
 
 	var cp_per_family: int = (total_value / peasants) if peasants > 0 else 0
@@ -133,7 +138,7 @@ static func compute_from_domain(domain: Dictionary) -> Dictionary:
 		"gp_below_minimum_per_family": below_per_family_gp_ceil,
 		"morale_incentive_bonus": incentive,
 		"wilderness_under_4gp": wilderness_under_400,
-		"chaotic_offset_per_family_cp": chaotic_offset_per_fam,
+		"clanhold_offset_per_family_cp": clanhold_offset_per_fam,
 		"classification": classification,
 	}
 
@@ -181,6 +186,6 @@ static func _empty_result() -> Dictionary:
 		"gp_below_minimum_per_family": 0,
 		"morale_incentive_bonus": 0,
 		"wilderness_under_4gp": false,
-		"chaotic_offset_per_family_cp": 0,
+		"clanhold_offset_per_family_cp": 0,
 		"classification": "",
 	}

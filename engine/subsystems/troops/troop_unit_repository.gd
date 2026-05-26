@@ -23,6 +23,8 @@ const _UPDATE_FIELDS := [
 	"monthly_cost_cp", "morale", "is_veteran", "is_trained",
 	"unit_xp", "assignment_kind", "hire_calendar_day", "equipment_kit",
 	"status", "departure_kind", "departure_calendar_day",
+	# Migration 129 (Phase 11D.5): tribal-warrior 3-month-spoils counter.
+	"months_without_qualifying_spoils",
 ]
 
 

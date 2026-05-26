@@ -124,7 +124,18 @@ static func _resolve_side(unit_states: Array, side_won: bool, is_mutual_draw: bo
 		# Veterancy promotion: ≥50% loss but survived.
 		var starting_count: int = int(unit.get("starting_count", 1))
 		var loss_fraction: float = 0.0 if starting_count == 0 else float(starting_count - new_count) / float(starting_count)
-		var unit_destroyed: bool = (status == "destroyed") or (new_count <= 0) or (new_count < starting_count / 2)
+		# Phase 11D.5 polish (Option B; Q-TW-8 resolved as not-applicable):
+		# tribal-warrior units are EXEMPT from the 50%-operational-dissolution
+		# trigger per gdd-tribal-warriors.md §7. There is no "orphaned partial"
+		# state for tribal warriors — the owning chieftain retains control of
+		# survivors at any count > 0, marches them home, and stands them down
+		# voluntarily via StandDownTribalWarriorsHandler (which refills the
+		# pool by the surviving count). Tribal-warrior units only auto-depart
+		# when battle status is explicitly 'destroyed' OR new_count drops to 0.
+		var is_tribal_warrior: bool = String(unit.get("source_type", "")) == "tribal_warrior"
+		var operational_dissolution_threshold: bool = new_count < starting_count / 2
+		var unit_destroyed: bool = (status == "destroyed") or (new_count <= 0) \
+			or (operational_dissolution_threshold and not is_tribal_warrior)
 		if not unit_destroyed and loss_fraction >= 0.5 and not bool(unit.get("is_veteran", false)):
 			unit_updates["is_veteran"] = true
 			veterans_promoted.append(unit_id)
@@ -224,3 +235,13 @@ static func _get_troop_unit(unit_id: String) -> Dictionary:
 	if CampaignRepository.db.query_result.is_empty():
 		return {}
 	return CampaignRepository.db.query_result[0].duplicate()
+
+
+## Phase 11D.5 polish historical note (Option B / Q-TW-8 resolution 2026-05-22):
+## The _refill_tribal_warrior_pool_with_survivors helper was REMOVED here.
+## Under Option B, tribal-warrior units are exempt from the 50%-operational-
+## dissolution trigger above, so units only auto-depart when truly destroyed
+## (status='destroyed' or new_count <= 0). At new_count == 0 there are no
+## survivors to refill anyway, so the helper became a no-op. Surviving
+## warriors are now reclaimed exclusively via the player's voluntary
+## StandDownTribalWarriorsHandler. See gdd-tribal-warriors.md §7 + Q-TW-8.

@@ -20,8 +20,19 @@ extends RefCounted
 ## generates NO income and does NOT grow until sufficiency is reached
 ## (§peasants_and_followers L108-109). Garrison expense still applies — that is
 ## handled in `DomainExpenseCalculator`, not here.
+##
+## Phase 11D.2 — Clanhold-style land halving (`ax_domains_of_chaos.xml`
+## §exceptions_from_clanholds L79): *"Once population exceeds 125 peasant
+## families per 6-mile hex, excess peasant families provide only half normal
+## land revenue."* When `domains.domain_style == 'clanhold'`, the per-hex land
+## revenue is computed as
+##   floor(min(families_in_hex, 125) × land_value_cp) +
+##   floor(max(0, families_in_hex - 125) × land_value_cp / 2)
+## per hex. The halving applies regardless of alignment — it is a style-driven
+## mechanic per gdd-domain-style-and-alignment.md §2.
 
 const SERVICES_CP_PER_FAMILY := 400  # RAW: 4 gp per family
+const CLANHOLD_LAND_HALVING_THRESHOLD_PER_HEX := 125  # RAW L79: families/hex over this halve revenue
 
 
 ## Returns a Dictionary with keys:
@@ -64,15 +75,31 @@ static func calculate_monthly_revenue(
 	# total peasant_families is distributed evenly across its hexes. When Phase 1+
 	# adds per-hex allocation, we can switch to reading hex.peasant_families
 	# directly.
+	#
+	# Phase 11D.2: clanhold-style domains halve land revenue from families above
+	# the 125/hex threshold per RAW L79.
+	var is_clanhold: bool = String(domain.get("domain_style", "civilized")) == "clanhold"
 	var land_revenue: int = 0
 	if hexes.size() > 0:
 		var families_per_hex: float = float(peasants) / float(hexes.size())
 		for hex: Dictionary in hexes:
 			var per_fam_cp: int = (int(hex.get("land_value", 5)) + int(hex.get("land_improvement_level", 0))) * 100
+			var hex_cp: float
+			if is_clanhold and families_per_hex > float(CLANHOLD_LAND_HALVING_THRESHOLD_PER_HEX):
+				# Full-rate portion: first 125 families/hex.
+				var full_rate: float = float(CLANHOLD_LAND_HALVING_THRESHOLD_PER_HEX) * float(per_fam_cp)
+				# Halved portion: families beyond 125 contribute per_fam_cp/2.
+				# Banker's-round the half-rate at the per-hex level to honor the
+				# project-wide "round half to even" convention.
+				var excess_families: float = families_per_hex - float(CLANHOLD_LAND_HALVING_THRESHOLD_PER_HEX)
+				var half_rate: float = excess_families * float(per_fam_cp) / 2.0
+				hex_cp = full_rate + half_rate
+			else:
+				hex_cp = families_per_hex * float(per_fam_cp)
 			# Banker's round: families_per_hex is fractional; the per-hex slice
 			# rounds via the canonical XPAwardCalculator.bankers_round to keep
 			# the project's "no exceptions" rounding rule.
-			land_revenue += XPAwardCalculator.bankers_round(families_per_hex * float(per_fam_cp))
+			land_revenue += XPAwardCalculator.bankers_round(hex_cp)
 
 	var total: int = service_revenue + tax_revenue + land_revenue + tribute_in_cp
 	return {

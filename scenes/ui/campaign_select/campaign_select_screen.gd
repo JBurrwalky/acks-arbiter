@@ -35,6 +35,7 @@ var _create_dialog_backdrop: ColorRect
 var _create_dialog: PanelContainer   # new-campaign dialog (hidden until needed)
 var _name_input: LineEdit
 var _world_input: LineEdit
+var _map_choice: OptionButton
 var _confirm_dialog: ConfirmationDialog
 var _pending_delete_id: String = ""
 
@@ -213,10 +214,10 @@ func _build_create_dialog() -> PanelContainer:
 	dialog.anchor_top = 0.5
 	dialog.anchor_right = 0.5
 	dialog.anchor_bottom = 0.5
-	dialog.offset_left = -220.0
-	dialog.offset_top = -140.0
-	dialog.offset_right = 220.0
-	dialog.offset_bottom = 140.0
+	dialog.offset_left = -240.0
+	dialog.offset_top = -180.0
+	dialog.offset_right = 240.0
+	dialog.offset_bottom = 180.0
 	dialog.add_theme_stylebox_override("panel", _make_frame_style())
 	# Raise draw order so it sits above the campaign list panel
 	dialog.z_index = 10
@@ -266,6 +267,19 @@ func _build_create_dialog() -> PanelContainer:
 	_world_input.placeholder_text = "e.g. Mythworld"
 	_world_input.custom_minimum_size = Vector2(380, 0)
 	vbox.add_child(_world_input)
+
+	var map_label := Label.new()
+	map_label.text = "Starting Content:"
+	vbox.add_child(map_label)
+
+	_map_choice = OptionButton.new()
+	_map_choice.custom_minimum_size = Vector2(380, 0)
+	_map_choice.add_item("Principality of Avalon (600-hex test campaign)")
+	_map_choice.set_item_metadata(0, "avalon")
+	_map_choice.add_item("Ashford Vale (legacy 31-hex test region)")
+	_map_choice.set_item_metadata(1, "ashford_vale")
+	_map_choice.select(0)
+	vbox.add_child(_map_choice)
 
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -419,6 +433,19 @@ func _on_create_confirmed() -> void:
 	var campaign_id := CampaignRepository.create_campaign(name, world)
 	if campaign_id.is_empty():
 		push_error("CampaignSelectScreen: create_campaign failed for name=%s" % name)
+		return
+
+	var choice: String = String(_map_choice.get_item_metadata(_map_choice.get_selected_id()))
+	var seeded: bool = false
+	match choice:
+		"ashford_vale":
+			seeded = TestContentSeeder.seed_legacy_ashford_vale(campaign_id)
+		"avalon":
+			seeded = TestContentSeeder.seed_avalon_test_campaign(campaign_id)
+		_:
+			push_error("CampaignSelectScreen: unknown map choice '%s'" % choice)
+	if not seeded:
+		push_error("CampaignSelectScreen: seeding failed for choice=%s" % choice)
 		return
 
 	_set_create_dialog_visible(false)

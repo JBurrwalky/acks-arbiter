@@ -53,6 +53,24 @@ var _scheduler: EventScheduler = null
 var _handler_registry: EventHandlerRegistry = null
 var _scheduler_loop: SchedulerLoop = null
 var _domain_handlers: DomainHandlers = null
+## Urban Growth Stocking Stage C (Migration 126): subscribes to
+## EventBus.market_class_advanced and EventBus.settlement_dissolved. Emerges
+## new settlement_pois rows when a settlement crosses a market-class
+## threshold. Lifecycle is tied to SessionRunner — created at session load,
+## torn down at session end.
+var _poi_emergence_handler: PoiEmergenceHandler = null
+## Urban Growth Stocking Stage D (Migration 126): subscribes to
+## EventBus.poi_emerged. Generates baseline head + adherent NPC character
+## rows per GDD §7.3 stocking tables, applies §5.2.2 within-band level
+## elevation, and writes baseline_head_npc_character_id back onto the POI.
+var _baseline_npc_stocker: BaselineNpcStocker = null
+## Urban Growth Stocking Stage F (Migration 126): subscribes to
+## EventBus.stronghold_completed. Registers a settlement_pois row when a
+## player-built stronghold completes inside a settlement hex per GDD §12.4
+## / §13.6. Mage L9 sanctum → mages_guild_hall; divine-caster stronghold →
+## religious_site (tier='shrine' per Q-UGS-30). Other stronghold archetypes
+## leave registered_settlement_poi_id NULL.
+var _stronghold_poi_registrar: StrongholdPoiRegistrar = null
 ## Long-lived WildernessHandlers instance owning the global day-tick handler
 ## (Phase 3, 2026-05-04). State-scoped registration still lives in
 ## WildernessExploreState.enter; this instance only holds the cross-state
@@ -576,6 +594,27 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# gracefully to commerce-only when domains.is_empty().
 	_domain_handlers = DomainHandlers.new(self)
 	_domain_handlers.register(_handler_registry)
+	# Urban Growth Stocking Stage C (Migration 126): connect the POI
+	# emergence handler so market_class_advanced signals from
+	# SettlementGrowthResolver trigger POI emergence.
+	if _poi_emergence_handler != null:
+		_poi_emergence_handler.unregister()
+	_poi_emergence_handler = PoiEmergenceHandler.new()
+	_poi_emergence_handler.register()
+	# Urban Growth Stocking Stage D (Migration 126): connect the baseline
+	# NPC stocker so poi_emerged signals from PoiEmergenceHandler trigger
+	# NPC generation per §7.3.
+	if _baseline_npc_stocker != null:
+		_baseline_npc_stocker.unregister()
+	_baseline_npc_stocker = BaselineNpcStocker.new()
+	_baseline_npc_stocker.register()
+	# Urban Growth Stocking Stage F (Migration 126): connect the stronghold
+	# POI registrar so stronghold_completed signals from the commission
+	# pipeline trigger settlement_pois registration per §12.4 / §13.6.
+	if _stronghold_poi_registrar != null:
+		_stronghold_poi_registrar.unregister()
+	_stronghold_poi_registrar = StrongholdPoiRegistrar.new()
+	_stronghold_poi_registrar.register()
 	var has_domain_tick := false
 	for ev in _scheduler.get_all_events():
 		if ev.event_type == "domain_monthly_tick":
@@ -762,6 +801,18 @@ func end_session() -> void:
 	if _domain_handlers != null:
 		_domain_handlers.unregister(_handler_registry)
 		_domain_handlers = null
+	# Urban Growth Stocking Stage C: disconnect POI emergence handler.
+	if _poi_emergence_handler != null:
+		_poi_emergence_handler.unregister()
+		_poi_emergence_handler = null
+	# Urban Growth Stocking Stage D: disconnect baseline NPC stocker.
+	if _baseline_npc_stocker != null:
+		_baseline_npc_stocker.unregister()
+		_baseline_npc_stocker = null
+	# Urban Growth Stocking Stage F: disconnect stronghold POI registrar.
+	if _stronghold_poi_registrar != null:
+		_stronghold_poi_registrar.unregister()
+		_stronghold_poi_registrar = null
 	if _wilderness_global_handlers != null:
 		_wilderness_global_handlers.unregister_global(_handler_registry)
 		_wilderness_global_handlers = null

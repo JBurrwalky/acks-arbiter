@@ -314,7 +314,8 @@ func test_override_create_dungeon_loose_cache() -> void:
 	var cache := CampaignRepository.get_location_cache(cache_id)
 	check(not cache.is_empty(), "cache should exist in DB")
 	check(cache.get("location_type", "") == "dungeon_cell", "location_type should be dungeon_cell")
-	check(cache.get("location_key", "") == "dungeon:test_dungeon:cell:2,3",
+	# location_key format gained a z coord (defaults 0) post-Phase 9 voxel work.
+	check(cache.get("location_key", "") == "dungeon:test_dungeon:cell:2,3,0",
 		"location_key mismatch: %s" % cache.get("location_key", ""))
 	check(cache.get("cache_variant", "") == "loose", "variant should be loose")
 	check(cache.get("decay_check_day", 0) > 0, "decay_check_day should be set")

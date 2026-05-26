@@ -48,6 +48,22 @@ const OVERLAY_LINE_WIDTH := 8.0
 const RIVER_COLOR := Color(0.235, 0.471, 0.784)
 const ROAD_COLOR := Color(0.545, 0.353, 0.169)
 
+# River navigability → line weight (migration 130 / GDD §3.6.4).
+const RIVER_WIDTH_BY_NAV := {
+	"none":         3.0,   # creeks/rivulets, drawn dashed
+	"small_craft":  4.0,
+	"river_craft":  6.0,
+	"large_craft":  9.0,
+}
+# Arrowhead length (px) for downstream indicator drawn at the edge midpoint.
+const RIVER_ARROW_LENGTH := 10.0
+const RIVER_ARROW_HALF_WIDTH := 6.0
+# Crossing icon dimensions (drawn at edge midpoint when crossing != "none").
+const CROSSING_ICON_RADIUS := 7.0
+const CROSSING_BRIDGE_COLOR := Color(0.40, 0.27, 0.13)
+const CROSSING_FORD_COLOR := Color(0.85, 0.85, 0.55)
+const CROSSING_FERRY_COLOR := Color(0.95, 0.95, 0.95)
+
 # Camera panning
 const PAN_SPEED := 200.0
 const EDGE_MARGIN := 40.0
@@ -621,7 +637,8 @@ func _update_party_token_position() -> void:
 func _resolve_party_render_position(party_row: Dictionary) -> Dictionary:
 	if _map_data == null:
 		return {}
-	var party_map_id := String(party_row.get("current_map_id", ""))
+	var _raw_map_id = party_row.get("current_map_id")
+	var party_map_id: String = _raw_map_id if _raw_map_id != null else ""
 	var party_hex := Vector2i(
 		int(party_row.get("current_hex_q", 0) if party_row.get("current_hex_q") != null else 0),
 		int(party_row.get("current_hex_r", 0) if party_row.get("current_hex_r") != null else 0),
@@ -955,17 +972,22 @@ func _refresh_overlay_layer() -> void:
 		child.queue_free()
 	if _map_data == null:
 		return
+	# Draw roads (cell-attached overlay) first so river edges and crossings
+	# render on top.
 	for coord in _map_data.hexes.keys():
 		var terrain: HexTerrainData = _map_data.get_hex(coord)
 		if terrain == null or terrain.overlay == null:
 			continue
 		var godot_coord := HexMapController.axial_to_godot_map(coord)
 		var hex_center := _terrain_layer.map_to_local(godot_coord)
-		# Draw roads first (under rivers)
 		if terrain.overlay.has_road():
 			_draw_overlay_lines(hex_center, terrain.overlay.road_edges, ROAD_COLOR)
-		if terrain.overlay.has_river():
-			_draw_overlay_lines(hex_center, terrain.overlay.river_edges, RIVER_COLOR)
+
+	# Draw river edges (migration 130 / GDD §3.6).
+	for edge_data in _map_data.river_edges:
+		if not (edge_data is HexRiverEdgeData):
+			continue
+		_draw_river_edge(edge_data)
 
 
 ## Draws overlay lines from each connected edge midpoint through the hex center.
@@ -1011,6 +1033,130 @@ func _edge_midpoint_offset(edge: int) -> Vector2:
 		4: return Vector2(-qr, qh)       # SW
 		5: return Vector2(-qr, -qh)      # NW
 		_: return Vector2.ZERO
+
+
+## Returns [cw_vertex_offset, ccw_vertex_offset] of edge `e` from the hex
+## center, for a flat-top hex of circumradius R. Per GDD §3.6.3 the CW
+## vertex of edge e is the corner shared with edge (e+1) mod 6, and the
+## CCW vertex is the corner shared with edge (e+5) mod 6.
+##
+## Flat-top vertex layout (math-convention angles, Y-down screen):
+##   V0 = +X (right), V1 = lower-right, V2 = lower-left,
+##   V3 = -X (left),  V4 = upper-left,  V5 = upper-right.
+## Edge 0 (N) = V4-V5; edge `e` spans V_{(e+4) mod 6} (CCW) and
+## V_{(e+5) mod 6} (CW). Vertex V_n sits at math angle 60° * n.
+func _edge_vertex_offsets(e: int) -> Array:
+	var r := float(TERRAIN_TILE_SIZE.x) * 0.5
+	var ccw_idx: int = (e + 4) % 6
+	var cw_idx: int = (e + 5) % 6
+	var ccw_angle := deg_to_rad(60.0 * float(ccw_idx))
+	var cw_angle := deg_to_rad(60.0 * float(cw_idx))
+	var ccw := Vector2(cos(ccw_angle), sin(ccw_angle)) * r
+	var cw := Vector2(cos(cw_angle), sin(cw_angle)) * r
+	return [cw, ccw]
+
+
+## Draws one river edge along the boundary between the owning hex and its
+## neighbor across the edge. Line weight encodes navigability; an arrowhead
+## at the midpoint marks downstream direction; a crossing icon is rendered
+## over the midpoint when `crossing` != "none".
+func _draw_river_edge(edge_data: HexRiverEdgeData) -> void:
+	if _map_data == null:
+		return
+	var owner_coord := Vector2i(edge_data.hex_q, edge_data.hex_r)
+	if not _map_data.hexes.has(owner_coord):
+		# Edge references a hex that's not in this map; skip silently —
+		# may happen during partial loads or stale fixtures.
+		return
+	var godot_coord := HexMapController.axial_to_godot_map(owner_coord)
+	var hex_center := _terrain_layer.map_to_local(godot_coord)
+	var vertices: Array = _edge_vertex_offsets(edge_data.edge)
+	var cw_vertex: Vector2 = hex_center + vertices[0]
+	var ccw_vertex: Vector2 = hex_center + vertices[1]
+
+	var width: float = float(RIVER_WIDTH_BY_NAV.get(edge_data.navigability, OVERLAY_LINE_WIDTH))
+
+	var line := Line2D.new()
+	line.points = [ccw_vertex, cw_vertex]
+	line.width = width
+	line.default_color = RIVER_COLOR
+	line.antialiased = true
+	# "none" tier rivers (creeks/rivulets) render as a thinner darker line
+	# rather than dashed (Line2D has no native dash); easy to refine later.
+	if edge_data.navigability == HexRiverEdgeData.NAV_NONE:
+		line.default_color = RIVER_COLOR.darkened(0.3)
+	_overlay_layer.add_child(line)
+
+	# Downstream arrowhead. `flow_clockwise` true → cw_vertex is downstream.
+	var downstream: Vector2 = cw_vertex if edge_data.flow_clockwise else ccw_vertex
+	var upstream: Vector2 = ccw_vertex if edge_data.flow_clockwise else cw_vertex
+	_draw_river_arrowhead(upstream, downstream)
+
+	if edge_data.crossing != HexRiverEdgeData.CROSSING_NONE:
+		_draw_river_crossing_icon(
+			(cw_vertex + ccw_vertex) * 0.5,
+			edge_data.crossing)
+
+
+func _draw_river_arrowhead(upstream: Vector2, downstream: Vector2) -> void:
+	var dir: Vector2 = (downstream - upstream)
+	if dir.length() <= 0.001:
+		return
+	var unit: Vector2 = dir.normalized()
+	var midpoint: Vector2 = (upstream + downstream) * 0.5
+	# Tip sits slightly past midpoint toward downstream.
+	var tip: Vector2 = midpoint + unit * (RIVER_ARROW_LENGTH * 0.5)
+	var base_center: Vector2 = midpoint - unit * (RIVER_ARROW_LENGTH * 0.5)
+	var perp: Vector2 = Vector2(-unit.y, unit.x) * RIVER_ARROW_HALF_WIDTH
+	var arrow := Polygon2D.new()
+	arrow.polygon = PackedVector2Array([
+		tip, base_center + perp, base_center - perp,
+	])
+	arrow.color = RIVER_COLOR.lightened(0.15)
+	_overlay_layer.add_child(arrow)
+
+
+func _draw_river_crossing_icon(midpoint: Vector2, crossing: String) -> void:
+	match crossing:
+		HexRiverEdgeData.CROSSING_BRIDGE:
+			# Small rectangle perpendicular to the river; brown.
+			var rect := Polygon2D.new()
+			var r := CROSSING_ICON_RADIUS
+			rect.polygon = PackedVector2Array([
+				midpoint + Vector2(-r, -r * 0.5),
+				midpoint + Vector2( r, -r * 0.5),
+				midpoint + Vector2( r,  r * 0.5),
+				midpoint + Vector2(-r,  r * 0.5),
+			])
+			rect.color = CROSSING_BRIDGE_COLOR
+			_overlay_layer.add_child(rect)
+		HexRiverEdgeData.CROSSING_FORD:
+			# Zigzag — three short connected segments, light tan.
+			var zig := Line2D.new()
+			var r2 := CROSSING_ICON_RADIUS
+			zig.points = [
+				midpoint + Vector2(-r2, -r2 * 0.5),
+				midpoint + Vector2(-r2 * 0.33, r2 * 0.5),
+				midpoint + Vector2( r2 * 0.33, -r2 * 0.5),
+				midpoint + Vector2( r2, r2 * 0.5),
+			]
+			zig.width = 2.5
+			zig.default_color = CROSSING_FORD_COLOR
+			zig.antialiased = true
+			_overlay_layer.add_child(zig)
+		HexRiverEdgeData.CROSSING_FERRY:
+			# Small white triangle (boat); points downstream-agnostic, just a marker.
+			var boat := Polygon2D.new()
+			var r3 := CROSSING_ICON_RADIUS
+			boat.polygon = PackedVector2Array([
+				midpoint + Vector2(0.0, -r3),
+				midpoint + Vector2( r3, r3 * 0.5),
+				midpoint + Vector2(-r3, r3 * 0.5),
+			])
+			boat.color = CROSSING_FERRY_COLOR
+			_overlay_layer.add_child(boat)
+		_:
+			return
 
 
 func _on_overlay_updated(_coord: Vector2i) -> void:
@@ -1110,21 +1256,30 @@ func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
 		% [coord.x, coord.y, terrain.elevation, terrain.biome, water_str,
 		   terrain.civilization, "yes" if has_settlement else "no"]
 	)
-	if terrain.overlay != null:
-		if terrain.overlay.has_river():
-			var entry_names: Array[String] = []
-			for e in terrain.overlay.river_entry_edges():
-				entry_names.append(HexOverlayData.edge_name(e))
-			var exit_str := HexOverlayData.edge_name(terrain.overlay.river_flow_exit) if terrain.overlay.river_flow_exit >= 0 else "terminus"
-			if entry_names.is_empty():
-				text += "\nRiver: source -> %s" % exit_str
+	if terrain.has_river():
+		# Migration 130: rivers are edges between hexes, not per-cell data.
+		# List the edges of THIS hex that carry a river (translated into
+		# this hex's frame regardless of which side owns the row).
+		var river_edge_names: Array[String] = []
+		for edge_data in _map_data.river_edges:
+			if not (edge_data is HexRiverEdgeData):
+				continue
+			var owner_coord := Vector2i(edge_data.hex_q, edge_data.hex_r)
+			if owner_coord == coord:
+				river_edge_names.append(HexOverlayData.edge_name(edge_data.edge))
 			else:
-				text += "\nRiver: %s -> %s" % [", ".join(entry_names), exit_str]
-		if terrain.overlay.has_road():
-			var road_names: Array[String] = []
-			for e in terrain.overlay.road_edges:
-				road_names.append(HexOverlayData.edge_name(e))
-			text += "\nRoad: %s" % " - ".join(road_names)
+				# Is this row's neighbor side our hex?
+				var off: Vector2i = HexRiverEdgeData.neighbor_offset(edge_data.edge)
+				if owner_coord + off == coord:
+					river_edge_names.append(HexOverlayData.edge_name(
+						HexRiverEdgeData.opposite_edge(edge_data.edge)))
+		if not river_edge_names.is_empty():
+			text += "\nRiver: %s" % ", ".join(river_edge_names)
+	if terrain.overlay != null and terrain.overlay.has_road():
+		var road_names: Array[String] = []
+		for e in terrain.overlay.road_edges:
+			road_names.append(HexOverlayData.edge_name(e))
+		text += "\nRoad: %s" % " - ".join(road_names)
 	# Phase 2: weather hover line. Reads WeatherCache for the current
 	# campaign day at this hex. Mid-day cache misses on a hex the player
 	# hovers but has not yet visited resolve via WeatherCache.get_or_generate

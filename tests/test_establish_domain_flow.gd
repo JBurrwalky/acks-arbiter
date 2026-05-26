@@ -31,7 +31,7 @@ func run_all_tests() -> void:
 	# Chaotic-aligned paths
 	test_chaotic_method_requires_chaotic_alignment()
 	test_chaotic_aligned_can_annex_clanhold()
-	test_clanhold_annex_forces_chaotic_domain_flag()
+	test_clanhold_annex_forces_clanhold_domain_style()
 	# Validation
 	test_validate_missing_campaign()
 	test_validate_missing_owner()
@@ -190,7 +190,9 @@ func test_chaotic_aligned_can_annex_clanhold() -> void:
 		"chaotic PC can annex clanhold, errors=%s" % str(errors))
 
 
-func test_clanhold_annex_forces_chaotic_domain_flag() -> void:
+func test_clanhold_annex_forces_clanhold_domain_style() -> void:
+	# Migration 127 (Phase 11D.1): chaotic-method paths force `domain_style`
+	# to 'clanhold' regardless of caller's value, per orthogonal style+alignment.
 	var chaotic := {"character_class": "fighter", "alignment": "chaotic"}
 	var result := EstablishDomainFlow.establish_domain({
 		"campaign_id": _campaign_id,
@@ -199,13 +201,13 @@ func test_clanhold_annex_forces_chaotic_domain_flag() -> void:
 		"name": "Chaotic Clanhold A",
 		"territory_type": "wilderness",
 		"establishment_method": "clanhold_annex",
-		"is_chaotic_domain": false,  # Caller passes false; flow forces true.
+		"domain_style": "civilized",  # Caller passes civilized; flow forces clanhold.
 	})
 	check(result["errors"].is_empty(),
 		"establish ok, errors=%s" % str(result["errors"]))
 	var domain := CampaignRepository.get_domain(result["domain_id"])
-	check(int(domain.get("is_chaotic_domain", 0)) == 1,
-		"clanhold_annex forces is_chaotic_domain=1, got %d" % int(domain.get("is_chaotic_domain", -1)))
+	check(String(domain.get("domain_style", "")) == "clanhold",
+		"clanhold_annex forces domain_style=clanhold, got %s" % str(domain.get("domain_style", "?")))
 
 
 # ----- Validation -----
@@ -352,8 +354,8 @@ func test_establish_chaotic_clanhold_sets_flags() -> void:
 	check(result["errors"].is_empty(),
 		"establish ok, errors=%s" % str(result["errors"]))
 	var domain := CampaignRepository.get_domain(result["domain_id"])
-	check(int(domain.get("is_chaotic_domain", 0)) == 1,
-		"is_chaotic_domain = 1")
+	check(String(domain.get("domain_style", "")) == "clanhold",
+		"domain_style = clanhold (recruit_chieftain force-locks per 11D.1)")
 	check(String(domain.get("alignment", "")) == "chaotic",
 		"alignment = chaotic")
 	check(String(domain.get("establishment_method", "")) == "recruit_chieftain",

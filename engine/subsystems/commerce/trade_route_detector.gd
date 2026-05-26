@@ -11,9 +11,9 @@ extends RefCounted
 ##
 ## Pathfinding is BFS over (map_id, q, r) keyed graphs:
 ##   * Road graph — hexes with hex_overlays.overlay_type='road'.
-##   * Water graph — hexes where water in {'ocean','lake'} OR
-##     hex_overlays.overlay_type='river'. Settlements enter via §3.3
-##     water-source adjacency.
+##   * Water graph — hexes where water in {'ocean','lake'} OR any
+##     hex_river_edges row touches the hex (migration 130 / GDD §3.6).
+##     Settlements enter via §3.3 water-source adjacency.
 ##
 ## All static; no instance state. No EventBus listener wiring in this
 ## library — the detector is invoked by the region resolver / campaign-load
@@ -329,14 +329,8 @@ static func _is_water_hex(map_id: String, q: int, r: int) -> bool:
 			var water: String = str(CampaignRepository.db.query_result[0].get("water", ""))
 			if water == "ocean" or water == "lake":
 				return true
-	# River overlay on the hex?
-	if CampaignRepository.db.query_with_bindings("""
-		SELECT 1 FROM hex_overlays
-		WHERE map_id = ? AND q = ? AND r = ? AND overlay_type = 'river'
-		LIMIT 1
-	""", [map_id, q, r]):
-		return not CampaignRepository.db.query_result.is_empty()
-	return false
+	# River edge touching the hex (migration 130)?
+	return CampaignRepository.hex_has_river(map_id, q, r)
 
 
 ## Resolves the water-graph entry nodes for a settlement per §5.1.2:

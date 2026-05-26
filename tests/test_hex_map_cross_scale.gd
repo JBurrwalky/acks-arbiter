@@ -122,6 +122,8 @@ func _cleanup() -> void:
 		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM hex_overlays WHERE map_id = ?", [m])
 		CampaignRepository.db.query_with_bindings(
+			"DELETE FROM hex_river_edges WHERE map_id = ?", [m])
+		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM hex_maps WHERE id = ?", [m])
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM campaigns WHERE id = ?", [TEST_CAMPAIGN])

@@ -82,9 +82,13 @@ func _make_hex(q: int, r: int, biome: String, biome_subtype: String,
 
 
 func _add_river(q: int, r: int) -> void:
+	# Migration 130: rivers are edge entities. "Hex touches a river" is what
+	# the consuming code cares about — insert one edge row whose endpoint
+	# is this hex.
 	CampaignRepository.db.query_with_bindings("""
-		INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges)
-		VALUES (?, ?, ?, 'river', '[]')
+		INSERT OR REPLACE INTO hex_river_edges
+			(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing)
+		VALUES (?, ?, ?, 0, 1, 'river_craft', 'none')
 	""", [_map_id, q, r])
 
 

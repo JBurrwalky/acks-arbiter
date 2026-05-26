@@ -10,24 +10,24 @@
 
     { "q": -2, "r": -1, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -2, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q": -2, "r":  1, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [0, 2], "river_flow_exit": 2, "road_edges": [] } },
+    { "q": -2, "r":  1, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -2, "r":  2, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q": -1, "r": -2, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -1, "r": -1, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q": -1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [5, 2], "river_flow_exit": 2, "road_edges": [] } },
+    { "q": -1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -1, "r":  2, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q":  0, "r": -2, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  0, "r": -1, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  0, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_settlement_ashford"], "overlay": { "river_edges": [], "road_edges": [2, 5] } },
-    { "q":  0, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [5, 2], "river_flow_exit": 2, "road_edges": [] } },
+    { "q":  0, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_settlement_ashford"], "overlay": { "road_edges": [2, 5] } },
+    { "q":  0, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  0, "r":  2, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": true,  "original_biome": "", "settlement_ids": ["settlement_ashford"] },
 
     { "q":  1, "r": -2, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  1, "r": -1, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [], "road_edges": [2, 5] } },
+    { "q":  1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "road_edges": [2, 5] } },
     { "q":  1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  1, "r":  2, "elevation": "flat",      "biome": "desert", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
@@ -42,5 +42,23 @@
     { "q":  3, "r":  0, "elevation": "hills",     "biome": "clear",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  3, "r":  1, "elevation": "flat",      "biome": "jungle", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  3, "r":  2, "elevation": "flat",      "biome": "jungle", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] }
+  ],
+  "river_edges": [
+    {
+      "_comment": "Ashford River — northern reach: between (-2,0) and (-2,1) (replaces legacy cell-overlay on (-2,1) entering N).",
+      "hex": [-2, 0], "edge": 3, "flow_clockwise": true, "navigability": "river_craft", "crossing": "none"
+    },
+    {
+      "_comment": "Ashford River — east stretch through swamps: between (-2,1) and (-1,1).",
+      "hex": [-2, 1], "edge": 2, "flow_clockwise": true, "navigability": "river_craft", "crossing": "none"
+    },
+    {
+      "_comment": "Ashford River — past the borderlands cell: between (-1,1) and (0,1).",
+      "hex": [-1, 1], "edge": 2, "flow_clockwise": true, "navigability": "river_craft", "crossing": "none"
+    },
+    {
+      "_comment": "Ashford River — passing the civilized border: between (0,1) and (1,1).",
+      "hex": [0, 1], "edge": 2, "flow_clockwise": true, "navigability": "river_craft", "crossing": "none"
+    }
   ]
 }

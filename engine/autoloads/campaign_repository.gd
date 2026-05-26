@@ -28,6 +28,35 @@ func _ready() -> void:
 	_run_data_sweeps()
 
 
+## Empties every user-data table in the open DB while preserving
+## `schema_migrations` so subsequent test inserts see the full schema with
+## no leftover rows. Called from `tests/test_runner.gd._ready()` so test
+## runs don't accumulate orphan campaigns (101 test files call
+## `create_campaign`; zero call `delete_campaign`).
+##
+## Stays on the same DB file rather than swapping to a separate test DB —
+## attempting to swap+re-open via close_db / open_db surfaces FK-check
+## behavior in godot-sqlite that breaks otherwise-correct test inserts.
+## The downside is the user's persistent game data is wiped on every test
+## run; the trade-off is acceptable because tests were already polluting
+## that data before this fix landed.
+func wipe_for_tests() -> void:
+	if db == null:
+		push_error("CampaignRepository.wipe_for_tests: db not open")
+		return
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+	var tables: Array = db.query_result.duplicate()
+	const PRESERVE := ["schema_migrations"]
+	db.query("BEGIN TRANSACTION")
+	for row in tables:
+		var t: String = String(row.get("name", ""))
+		if t.is_empty() or t in PRESERVE:
+			continue
+		db.query("DELETE FROM \"%s\"" % t)
+	db.query("COMMIT")
+	print("CampaignRepository: wiped %d tables for test run" % (tables.size() - PRESERVE.size()))
+
+
 func _run_data_sweeps() -> void:
 	# Only run if migration 034 (schema_sweep_markers table) has been applied.
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_sweep_markers'")
@@ -269,45 +298,156 @@ func list_campaigns() -> Array:
 ## Delete a campaign and all data owned by it (characters, parties, maps, domains, etc.).
 ## Returns true on success, false if the DELETE query failed.
 func delete_campaign(campaign_id: String) -> bool:
-	# Collect IDs for cascading deletes (each SELECT overwrites db.query_result,
-	# so duplicate() before iterating to avoid stomping results mid-loop).
-	db.query_with_bindings("SELECT id FROM characters WHERE campaign_id = ?", [campaign_id])
-	var char_ids: Array = db.query_result.duplicate()
+	# Deletes every row owned by this campaign across all 63+ tables that have
+	# campaign_id, plus all indirect child tables whose FK chain leads back to
+	# campaign data. godot-sqlite does not enforce FK constraints, so orphaned
+	# rows must be removed explicitly in child-before-parent order.
+	#
+	# Tier 3 ── deepest indirect children (reference tier-2 tables) ──────────
+	# settlement_poi_spell_offers → settlement_pois → settlement_entrances
+	db.query_with_bindings("""
+		DELETE FROM settlement_poi_spell_offers WHERE poi_id IN (
+			SELECT sp.id FROM settlement_pois sp
+			JOIN settlement_entrances se ON sp.settlement_id = se.id
+			WHERE se.campaign_id = ?)""", [campaign_id])
+	# stronghold_accessories/commissions → strongholds → domains/characters
+	db.query_with_bindings("""
+		DELETE FROM stronghold_accessories WHERE stronghold_id IN (
+			SELECT id FROM strongholds
+			WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?))
+		""", [campaign_id])
+	db.query_with_bindings("""
+		DELETE FROM stronghold_commissions WHERE stronghold_id IN (
+			SELECT id FROM strongholds
+			WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?))
+		""", [campaign_id])
 
-	db.query_with_bindings("SELECT id FROM parties WHERE campaign_id = ?", [campaign_id])
-	var party_ids: Array = db.query_result.duplicate()
+	# Tier 2 ── indirect children with FK into campaign-owned tables ──────────
+	# Character sub-tables
+	db.query_with_bindings("DELETE FROM character_conditions WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_permanent_wounds WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_proficiencies WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_spell_formulas WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_spell_slots_expended WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_powers WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_activity_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_divine_power WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_legal_status WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM character_preferences WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM inventory_items WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM henchman_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM caught_perpetrators WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM congregants WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM consecrated_altars WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM lay_low_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM abandoned_characters WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM pending_divine_effects WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM strongholds WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
+	# Party sub-tables (heraldry before parties — parties.heraldry_id is the only back-link)
+	db.query_with_bindings("DELETE FROM party_heraldry WHERE heraldry_id IN (SELECT heraldry_id FROM parties WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM party_state WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM party_members WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM party_sustenance_log WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM party_visit_state WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
+	# Map sub-tables
+	db.query_with_bindings("DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_overlays WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM voxel_map_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	# Domain sub-tables
+	db.query_with_bindings("DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM domain_followers WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM follower_arrivals WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM ledger_entries WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM active_adventuring_log WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM pending_divine_effects WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
+	# Settlement sub-tables
+	db.query_with_bindings("DELETE FROM settlement_merchandise_demand WHERE settlement_entrance_id IN (SELECT id FROM settlement_entrances WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM settlement_pois WHERE settlement_id IN (SELECT id FROM settlement_entrances WHERE campaign_id = ?)", [campaign_id])
+	# Army sub-tables
+	db.query_with_bindings("DELETE FROM army_officers WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM army_supply_state WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM army_unit_assignments WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM reconnaissance_cooldowns WHERE observer_army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM call_to_arms_state WHERE lord_army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
+	# Field battle / siege sub-tables
+	db.query_with_bindings("DELETE FROM battle_log WHERE battle_id IN (SELECT id FROM field_battles WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM battle_unit_states WHERE battle_id IN (SELECT id FROM field_battles WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM siege_actions WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM siege_artillery WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM siege_mines WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
+	# Vassal / syndicate / faction / pool sub-tables
+	db.query_with_bindings("DELETE FROM vassal_obligations WHERE vassal_assignment_id IN (SELECT id FROM vassal_assignments WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM syndicate_members WHERE syndicate_id IN (SELECT id FROM syndicates WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM hijink_assignments WHERE syndicate_id IN (SELECT id FROM syndicates WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM faction_memberships WHERE faction_id IN (SELECT id FROM factions WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM henchman_pool_members WHERE pool_id IN (SELECT id FROM henchman_pools WHERE campaign_id = ?)", [campaign_id])
 
-	db.query_with_bindings("SELECT id FROM hex_maps WHERE campaign_id = ?", [campaign_id])
-	var map_ids: Array = db.query_result.duplicate()
-
-	# Delete character-owned rows
-	for row in char_ids:
-		var cid: String = row["id"]
-		db.query_with_bindings("DELETE FROM character_conditions WHERE character_id = ?", [cid])
-		db.query_with_bindings("DELETE FROM character_proficiencies WHERE character_id = ?", [cid])
-		db.query_with_bindings("DELETE FROM inventory_items WHERE character_id = ?", [cid])
-		db.query_with_bindings("DELETE FROM character_spells WHERE character_id = ?", [cid])
-
-	# Delete party-owned rows
-	for row in party_ids:
-		var pid: String = row["id"]
-		db.query_with_bindings("DELETE FROM party_members WHERE party_id = ?", [pid])
-		db.query_with_bindings("DELETE FROM party_clocks WHERE party_id = ?", [pid])
-
-	# Delete hex cells under each map
-	for row in map_ids:
-		db.query_with_bindings("DELETE FROM hex_cells WHERE map_id = ?", [row["id"]])
-
-	# Delete campaign-level rows
+	# Tier 1 ── direct campaign_id tables (63 tables) ─────────────────────────
 	db.query_with_bindings("DELETE FROM characters WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM parties WHERE campaign_id = ?", [campaign_id])
+	# party_state has party_id PK, not campaign_id — deleted via party subquery above
+	db.query_with_bindings("DELETE FROM weather_states WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM lairs WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM pois WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM survey_progress WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM tracking_sessions WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM pursuit_states WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM specialists WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM trained_creatures WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM draft_vehicles WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM domains WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM override_log WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM party_clocks WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM active_effects WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM trade_routes WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM merchant_pool WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM ships WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM cargo_holds WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM shipping_contracts WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM factions WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM reputation_entries WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM social_groups WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM henchman_pools WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM scheduled_events WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM auto_pause_config WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM shop_inventory WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM commissions WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM visited_pois WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM location_caches WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM familiars WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM activity_state WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM restricted_cooldowns WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM troop_units WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM armies WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM field_battles WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM vassal_assignments WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM domain_threats WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM market_class_modifiers WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM sieges WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM domain_religion_conversion WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM magic_research_projects WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM libraries WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM workshops WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM followers WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM crafted_magic_items WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM construct_designs WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM construct_instances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM laboratories WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM crossbreed_species WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM crossbreed_instances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM shipping_contract_offers WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM monopoly_holdings WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM syndicates WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM domain_departure_log WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM realms WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM realm_relations WHERE campaign_id = ?", [campaign_id])
 
 	# Finally delete the campaign record itself
 	var ok := db.query_with_bindings("DELETE FROM campaigns WHERE id = ?", [campaign_id])
@@ -1082,17 +1222,9 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			push_error("CampaignRepository.save_hex_map: cell insert failed at q=%d r=%d" % [coord.x, coord.y])
 			db.query("ROLLBACK")
 			return false
-		# Save overlay data (river/road) if present
+		# Save road overlay data if present. Rivers are persisted separately
+		# from hex_river_edges via the map_data.river_edges array below.
 		if terrain.overlay != null:
-			if terrain.overlay.has_river():
-				db.query_with_bindings("""
-					INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges, flow_exit)
-					VALUES (?, ?, ?, 'river', ?, ?)
-				""", [
-					map_data.id, coord.x, coord.y,
-					JSON.stringify(terrain.overlay.river_edges),
-					terrain.overlay.river_flow_exit
-				])
 			if terrain.overlay.has_road():
 				db.query_with_bindings("""
 					INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges, flow_exit)
@@ -1102,6 +1234,34 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 					JSON.stringify(terrain.overlay.road_edges),
 					-1
 				])
+
+	# Replace river edges for this map. Hand-authored map loads pre-canonicalize
+	# entries; here we re-canonicalize defensively so any non-canonical row
+	# from in-memory edits gets flipped before insert.
+	db.query_with_bindings(
+		"DELETE FROM hex_river_edges WHERE map_id = ?", [map_data.id])
+	for edge_data in map_data.river_edges:
+		if not (edge_data is HexRiverEdgeData):
+			continue
+		var canonical: HexRiverEdgeData = edge_data
+		if not canonical.is_canonical():
+			canonical = HexRiverEdgeData.from_dict(edge_data.to_dict())
+			canonical.flip_to_canonical()
+		if not db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_river_edges
+				(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [
+			map_data.id,
+			canonical.hex_q, canonical.hex_r, canonical.edge,
+			1 if canonical.flow_clockwise else 0,
+			canonical.navigability, canonical.crossing,
+		]):
+			push_error("CampaignRepository.save_hex_map: river edge insert failed at q=%d r=%d edge=%d"
+				% [canonical.hex_q, canonical.hex_r, canonical.edge])
+			db.query("ROLLBACK")
+			return false
+
 	db.query("COMMIT")
 	return true
 
@@ -1152,7 +1312,7 @@ func load_hex_map(map_id: String) -> HexMapData:
 			"visible":  map_data.fog[coord] = HexMapData.FogState.VISIBLE
 			_:          map_data.fog[coord] = HexMapData.FogState.HIDDEN
 
-	# Load overlay data (rivers/roads) and attach to terrain
+	# Load road overlay data and attach to terrain (rivers loaded separately below).
 	db.query_with_bindings("SELECT * FROM hex_overlays WHERE map_id = ?", [map_id])
 	for row in db.query_result:
 		var coord := Vector2i(row["q"], row["r"])
@@ -1165,14 +1325,34 @@ func load_hex_map(map_id: String) -> HexMapData:
 		var parsed_edges = JSON.parse_string(edges_json)
 		if parsed_edges == null:
 			parsed_edges = []
-		match row["overlay_type"]:
-			"river":
-				for e in parsed_edges:
-					terrain.overlay.river_edges.append(int(e))
-				terrain.overlay.river_flow_exit = int(row["flow_exit"])
-			"road":
-				for e in parsed_edges:
-					terrain.overlay.road_edges.append(int(e))
+		if String(row["overlay_type"]) == "road":
+			for e in parsed_edges:
+				terrain.overlay.road_edges.append(int(e))
+
+	# Load river edges (migration 130) and stamp has_river_cached on both
+	# endpoint terrains so per-hex consumers (foraging, wilderness water
+	# refill) can read terrain.has_river() without a DB round-trip.
+	db.query_with_bindings(
+		"SELECT * FROM hex_river_edges WHERE map_id = ?", [map_id])
+	for row in db.query_result:
+		var edge_data := HexRiverEdgeData.new()
+		edge_data.hex_q = int(row["hex_q"])
+		edge_data.hex_r = int(row["hex_r"])
+		edge_data.edge = int(row["edge"])
+		edge_data.flow_clockwise = int(row["flow_clockwise"]) == 1
+		edge_data.navigability = String(row["navigability"])
+		edge_data.crossing = String(row["crossing"])
+		map_data.river_edges.append(edge_data)
+
+		var owner_coord := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var owner_terrain: HexTerrainData = map_data.hexes.get(owner_coord)
+		if owner_terrain != null:
+			owner_terrain.has_river_cached = true
+		var off: Vector2i = HexRiverEdgeData.neighbor_offset(edge_data.edge)
+		var neighbor_coord: Vector2i = owner_coord + off
+		var neighbor_terrain: HexTerrainData = map_data.hexes.get(neighbor_coord)
+		if neighbor_terrain != null:
+			neighbor_terrain.has_river_cached = true
 	return map_data
 
 
@@ -1246,6 +1426,144 @@ func list_child_maps(parent_map_id: String, campaign_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+## Returns every hex_maps row for [param campaign_id], ordered with
+## top-level maps (parent_map_id IS NULL) first. Used by SessionLoadState
+## to pick "the" map to load and by TestContentSeeder.campaign_has_any_hex_map.
+func list_hex_maps_for_campaign(campaign_id: String) -> Array:
+	if not db.query_with_bindings("""
+		SELECT * FROM hex_maps
+		WHERE campaign_id = ?
+		ORDER BY (parent_map_id IS NOT NULL) ASC, created_at ASC
+	""", [campaign_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Hex river edges (migration 130 — GDD §3.6)
+# ---------------------------------------------------------------------------
+
+## Upserts a single river edge. The supplied [param edge_data] is
+## canonicalized before insert: if its (hex_q, hex_r) is the lex-higher
+## endpoint of the edge, the row is flipped to its lex-lower mirror.
+## Returns true on success, false on DB error. A non-adjacent / invalid
+## row is rejected with a push_error.
+func save_hex_river_edge(map_id: String, edge_data: HexRiverEdgeData) -> bool:
+	if edge_data == null:
+		push_error("CampaignRepository.save_hex_river_edge: null edge_data")
+		return false
+	if not edge_data.is_valid():
+		push_error("CampaignRepository.save_hex_river_edge: invalid edge_data")
+		return false
+	var canonical: HexRiverEdgeData = edge_data
+	if not canonical.is_canonical():
+		canonical = HexRiverEdgeData.from_dict(edge_data.to_dict())
+		canonical.flip_to_canonical()
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO hex_river_edges
+			(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	""", [
+		map_id,
+		canonical.hex_q, canonical.hex_r, canonical.edge,
+		1 if canonical.flow_clockwise else 0,
+		canonical.navigability, canonical.crossing,
+	])
+
+
+## Deletes the river edge owned by (hex_q, hex_r, edge). Pass the canonical
+## owner; if you have the non-owner endpoint, canonicalize via
+## HexRiverEdgeData.canonicalize_edge first.
+func delete_hex_river_edge(map_id: String, hex_q: int, hex_r: int, edge: int) -> bool:
+	return db.query_with_bindings("""
+		DELETE FROM hex_river_edges
+		WHERE map_id = ? AND hex_q = ? AND hex_r = ? AND edge = ?
+	""", [map_id, hex_q, hex_r, edge])
+
+
+## Two-sided river-edge lookup per GDD §3.6.2. Returns every river edge
+## that touches (hex_q, hex_r): rows owned by this hex plus rows whose
+## owner is a neighbor and whose `edge` points back at this hex.
+##
+## Edges returned in the second branch are NOT re-canonicalized to point
+## from this hex's perspective — the returned HexRiverEdgeData objects
+## carry the canonical (owner) coords. Callers that need to know "the
+## edge from THIS hex's perspective" can call HexRiverEdgeData.opposite_edge
+## on the returned row's `edge` when the row's owner != (hex_q, hex_r).
+func get_river_edges_for_hex(map_id: String, hex_q: int, hex_r: int) -> Array:
+	var results: Array = []
+	# Owner-side rows.
+	if db.query_with_bindings("""
+		SELECT * FROM hex_river_edges
+		WHERE map_id = ? AND hex_q = ? AND hex_r = ?
+	""", [map_id, hex_q, hex_r]):
+		for row in db.query_result:
+			results.append(_river_edge_from_row(row))
+	# Neighbor-side rows. For each of the 6 neighbors, look for an entry
+	# whose `edge` is the back-direction toward this hex.
+	for i in range(HexRiverEdgeData.EDGE_COUNT):
+		var off: Vector2i = HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[i]
+		var nq: int = hex_q + off.x
+		var nr: int = hex_r + off.y
+		var opposite: int = HexRiverEdgeData.opposite_edge(i)
+		if db.query_with_bindings("""
+			SELECT * FROM hex_river_edges
+			WHERE map_id = ? AND hex_q = ? AND hex_r = ? AND edge = ?
+		""", [map_id, nq, nr, opposite]):
+			for row in db.query_result:
+				results.append(_river_edge_from_row(row))
+	return results
+
+
+## Bulk-fetch every river edge on a map. Used by the renderer and the
+## hex-subdivision aggregation helper.
+func get_river_edges_for_map(map_id: String) -> Array:
+	if not db.query_with_bindings("""
+		SELECT * FROM hex_river_edges WHERE map_id = ?
+	""", [map_id]):
+		return []
+	var out: Array = []
+	for row in db.query_result:
+		out.append(_river_edge_from_row(row))
+	return out
+
+
+## Fast existence check — true if ANY river edge touches (hex_q, hex_r),
+## either as owner or as neighbor-of-owner. Single point query for
+## per-hex consumers that don't need the edges themselves.
+func hex_has_river(map_id: String, hex_q: int, hex_r: int) -> bool:
+	if not db.query_with_bindings("""
+		SELECT 1 FROM hex_river_edges
+		WHERE map_id = ? AND hex_q = ? AND hex_r = ?
+		LIMIT 1
+	""", [map_id, hex_q, hex_r]) or db.query_result.is_empty():
+		# Owner-side empty; check neighbor-side.
+		for i in range(HexRiverEdgeData.EDGE_COUNT):
+			var off: Vector2i = HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[i]
+			var nq: int = hex_q + off.x
+			var nr: int = hex_r + off.y
+			var opposite: int = HexRiverEdgeData.opposite_edge(i)
+			if db.query_with_bindings("""
+				SELECT 1 FROM hex_river_edges
+				WHERE map_id = ? AND hex_q = ? AND hex_r = ? AND edge = ?
+				LIMIT 1
+			""", [map_id, nq, nr, opposite]) and not db.query_result.is_empty():
+				return true
+		return false
+	return true
+
+
+func _river_edge_from_row(row: Dictionary) -> HexRiverEdgeData:
+	var e := HexRiverEdgeData.new()
+	e.hex_q = int(row["hex_q"])
+	e.hex_r = int(row["hex_r"])
+	e.edge = int(row["edge"])
+	e.flow_clockwise = int(row["flow_clockwise"]) == 1
+	e.navigability = String(row["navigability"])
+	e.crossing = String(row["crossing"])
+	return e
+
+
 # ---------------------------------------------------------------------------
 # Domain CRUD
 # ---------------------------------------------------------------------------
@@ -1257,7 +1575,7 @@ func create_domain(data: Dictionary) -> String:
 		INSERT INTO domains
 			(id, campaign_id, name, owner_character_id,
 			 location_map_id, location_hex_q, location_hex_r, territory_type,
-			 alignment, religion, is_chaotic_domain,
+			 alignment, religion, domain_style,
 			 establishment_method, established_calendar_day)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
@@ -1268,7 +1586,10 @@ func create_domain(data: Dictionary) -> String:
 		data.get("territory_type", "wilderness"),
 		data.get("alignment", "neutral"),
 		data.get("religion", ""),
-		1 if data.get("is_chaotic_domain", false) else 0,
+		# Migration 127 (Phase 11D.1): `is_chaotic_domain` dropped; callers
+		# now pass `domain_style` as 'civilized' or 'clanhold' per
+		# gdd-domain-style-and-alignment.md §4-§6.
+		data.get("domain_style", "civilized"),
 		data.get("establishment_method", ""),
 		int(data.get("established_calendar_day", 0)),
 	]):
@@ -1391,6 +1712,9 @@ const _DOMAIN_MONTHLY_FIELDS := [
 	# Migration 068: pending activity modifiers (Domain Phase 3) — set by
 	# activity handlers, reset by monthly tick after consumption.
 	"administer_domain_completed_this_month", "pending_investment_cp",
+	# Migration 129 (Phase 11D.5): tribal-warrior pool — monthly tick refills
+	# this from peasant_families growth per gdd-tribal-warriors.md §3 + §5.5.
+	"available_tribal_warriors",
 ]
 
 ## Player-mutable settings whitelist (Domain Phase 2). Surfaced via the Domain
@@ -1401,7 +1725,9 @@ const _DOMAIN_SETTINGS_FIELDS := [
 	"name", "alignment", "religion",
 	"tax_rate_cp_per_family", "liturgy_rate_cp_per_family", "tithe_rate_cp_per_family",
 	"auto_pay_policies", "deferred_maintenance_cp",
-	"is_chaotic_domain", "establishment_method", "established_calendar_day",
+	# Migration 127 (Phase 11D.1): `is_chaotic_domain` removed; `domain_style`
+	# takes its place per gdd-domain-style-and-alignment.md §4-§6.
+	"domain_style", "establishment_method", "established_calendar_day",
 	"owner_character_id", "location_map_id", "location_hex_q", "location_hex_r",
 	"territory_type",
 ]
@@ -1849,8 +2175,9 @@ func update_domain_settings(domain_id: String, fields: Dictionary) -> bool:
 			continue
 		set_clauses.append("%s = ?" % key)
 		var v: Variant = fields[key]
-		if key == "is_chaotic_domain":
-			v = 1 if bool(v) else 0
+		# Migration 127 (Phase 11D.1): the is_chaotic_domain bool→int coercion
+		# was removed along with the column. domain_style is a string enum so
+		# no coercion is needed.
 		values.append(v)
 	if set_clauses.is_empty():
 		return false
@@ -1880,6 +2207,146 @@ func adjust_domain_treasury(domain_id: String, delta_cp: int) -> int:
 	) or db.query_result.is_empty():
 		return 0
 	return int(db.query_result[0].get("treasury_cp", 0))
+
+
+## Phase 11B: read the domain's current treasury balance in cp. Companion to
+## `adjust_domain_treasury`; used by `LifecycleHandler.abandon_domain` to
+## liquidate the treasury to the ruler's coin on voluntary abandonment.
+func get_domain_treasury_cp(domain_id: String) -> int:
+	if domain_id.is_empty():
+		return 0
+	if not db.query_with_bindings(
+		"SELECT treasury_cp FROM domains WHERE id = ?", [domain_id]
+	) or db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("treasury_cp", 0))
+
+
+## Phase 11B: release every `domain_hexes` row owned by this domain. Called by
+## `LifecycleHandler` on abandonment / lost_to_foreign / same_campaign_npc
+## conquest (the new owner reclaims hexes via their own establishment path).
+func release_domain_hexes(domain_id: String) -> int:
+	if domain_id.is_empty():
+		return 0
+	# Count first so we can report.
+	var count: int = 0
+	if db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM domain_hexes WHERE domain_id = ?", [domain_id]
+	) and not db.query_result.is_empty():
+		count = int(db.query_result[0].get("n", 0))
+	if not db.query_with_bindings(
+		"DELETE FROM domain_hexes WHERE domain_id = ?", [domain_id]
+	):
+		push_error("CampaignRepository.release_domain_hexes: failed. id=%s" % domain_id)
+		return 0
+	return count
+
+
+## Phase 11B: update a domain's lifecycle_state with the canonical timestamp +
+## grace columns + emit `domain_lifecycle_state_changed`. The `LifecycleHandler`
+## calls this once per transition; UI / departure log are wired via the signal.
+##
+## [param grace_until_day] is 0 unless the new_state is 'ruined_stronghold'
+## (or 'succession_pending' once Phase 11C lands).
+func update_domain_lifecycle_state(
+	domain_id: String,
+	new_state: String,
+	calendar_day: int,
+	grace_until_day: int = 0,
+) -> bool:
+	if domain_id.is_empty():
+		return false
+	# Read prior state for the emitted signal.
+	var prior_state: String = "active"
+	if db.query_with_bindings(
+		"SELECT lifecycle_state FROM domains WHERE id = ?", [domain_id]
+	) and not db.query_result.is_empty():
+		prior_state = String(db.query_result[0].get("lifecycle_state", "active"))
+	if not db.query_with_bindings("""
+		UPDATE domains
+		SET lifecycle_state = ?,
+		    lifecycle_state_changed_day = ?,
+		    ruined_stronghold_grace_until_day = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [new_state, calendar_day, grace_until_day, domain_id]):
+		push_error("CampaignRepository.update_domain_lifecycle_state: failed. id=%s state=%s" % [
+			domain_id, new_state])
+		return false
+	if prior_state != new_state:
+		EventBus.domain_lifecycle_state_changed.emit(domain_id, prior_state, new_state)
+	return true
+
+
+## Phase 11B: reassign a domain to a new owner. Used by conquest (the
+## same_campaign_npc path) to preserve the row for diplomatic re-conquest.
+func reassign_domain_owner(domain_id: String, new_owner_id: String) -> bool:
+	if domain_id.is_empty():
+		return false
+	return db.query_with_bindings(
+		"UPDATE domains SET owner_character_id = ?, updated_at = datetime('now') WHERE id = ?",
+		[new_owner_id, domain_id])
+
+
+## Phase 11C: list every domain owned by a character. By default excludes
+## terminal-state rows (`abandoned` / `lost_to_foreign`) so a ruler-death
+## sweep doesn't re-process domains the ruler had already lost. Pass
+## `include_terminal=true` for audit / debug paths.
+func list_domains_owned_by(character_id: String, include_terminal: bool = false) -> Array:
+	if character_id.is_empty():
+		return []
+	var sql := "SELECT * FROM domains WHERE owner_character_id = ?"
+	if not include_terminal:
+		sql += " AND lifecycle_state NOT IN ('abandoned', 'lost_to_foreign')"
+	sql += " ORDER BY created_at"
+	if not db.query_with_bindings(sql, [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Phase 11C: set the three succession columns + lifecycle_state +
+## lifecycle_state_changed_day in a single UPDATE so the row is internally
+## consistent. The `LifecycleHandler.update_domain_lifecycle_state` path is
+## NOT used here because we also need to write succession-specific columns;
+## this helper consolidates both into one statement.
+func update_domain_succession_state(
+	domain_id: String,
+	lifecycle_state: String,
+	succession_pending_until_day: int,
+	designated_heir_character_id: String,
+	designated_heir_kind: String,
+	calendar_day: int,
+) -> bool:
+	if domain_id.is_empty():
+		return false
+	# Read prior state so we can emit the lifecycle-changed signal correctly.
+	var prior_state: String = "active"
+	if db.query_with_bindings(
+		"SELECT lifecycle_state FROM domains WHERE id = ?", [domain_id]
+	) and not db.query_result.is_empty():
+		prior_state = String(db.query_result[0].get("lifecycle_state", "active"))
+	if not db.query_with_bindings("""
+		UPDATE domains
+		SET lifecycle_state = ?,
+		    lifecycle_state_changed_day = ?,
+		    succession_pending_until_day = ?,
+		    designated_heir_character_id = ?,
+		    designated_heir_kind = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [
+		lifecycle_state,
+		calendar_day,
+		succession_pending_until_day,
+		designated_heir_character_id,
+		designated_heir_kind,
+		domain_id,
+	]):
+		push_error("CampaignRepository.update_domain_succession_state: failed. id=%s" % domain_id)
+		return false
+	if prior_state != lifecycle_state:
+		EventBus.domain_lifecycle_state_changed.emit(domain_id, prior_state, lifecycle_state)
+	return true
 
 
 ## Append a row to active_adventuring_log. Phase 2's
@@ -3428,6 +3895,357 @@ func update_settlement_entrance_data(entrance_id: String, settlement_data_json: 
 		"UPDATE settlement_entrances SET settlement_data = ? WHERE id = ?",
 		[settlement_data_json, entrance_id]
 	)
+
+
+## Migration 126 (Urban Growth Stocking Stage C): INSERT a settlement_pois
+## row. Returns the new POI id, or "" on failure. Fields recognized in the
+## data dict (all optional except `settlement_id` and `type`):
+##   settlement_id, type, tier, status, builder_kind, builder_character_id,
+##   emerged_via, established_at_calendar_day, gp_value, l3_plus_npc_count,
+##   l1_l2_adherent_count, attached_religion, attached_specialist_kind,
+##   stocked_character_id, baseline_head_npc_character_id,
+##   preferred_district_class, owner_faction_id.
+## Defaults are applied for omitted fields per the schema.
+func insert_settlement_poi(data: Dictionary) -> String:
+	var poi_id: String = String(data.get("id", ""))
+	if poi_id.is_empty():
+		poi_id = generate_id()
+	var settlement_id: String = String(data.get("settlement_id", ""))
+	var type_str: String = String(data.get("type", ""))
+	if settlement_id.is_empty() or type_str.is_empty():
+		push_error("CampaignRepository.insert_settlement_poi: settlement_id and type required")
+		return ""
+	# v1.10 builder_character_id may be NULL when builder_kind='emergent'; the
+	# CHECK constraint enforces consistency.
+	var builder_character_id_v: Variant = data.get("builder_character_id", null)
+	if builder_character_id_v is String and String(builder_character_id_v).is_empty():
+		builder_character_id_v = null
+	var stocked_character_id_v: Variant = data.get("stocked_character_id", null)
+	if stocked_character_id_v is String and String(stocked_character_id_v).is_empty():
+		stocked_character_id_v = null
+	var baseline_head_character_id_v: Variant = data.get("baseline_head_npc_character_id", null)
+	if baseline_head_character_id_v is String and String(baseline_head_character_id_v).is_empty():
+		baseline_head_character_id_v = null
+	var owner_faction_id_v: Variant = data.get("owner_faction_id", null)
+	if owner_faction_id_v is String and String(owner_faction_id_v).is_empty():
+		owner_faction_id_v = null
+	if not db.query_with_bindings("""
+		INSERT INTO settlement_pois (
+			id, settlement_id, type, tier, status, builder_kind,
+			builder_character_id, emerged_via, established_at_calendar_day,
+			gp_value, l3_plus_npc_count, l1_l2_adherent_count,
+			attached_religion, attached_specialist_kind,
+			stocked_character_id, baseline_head_npc_character_id,
+			preferred_district_class, owner_faction_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		poi_id,
+		settlement_id,
+		type_str,
+		String(data.get("tier", "")),
+		String(data.get("status", "active")),
+		String(data.get("builder_kind", "emergent")),
+		builder_character_id_v,
+		String(data.get("emerged_via", "")),
+		int(data.get("established_at_calendar_day", 0)),
+		int(data.get("gp_value", 0)),
+		int(data.get("l3_plus_npc_count", 0)),
+		int(data.get("l1_l2_adherent_count", 0)),
+		String(data.get("attached_religion", "")),
+		String(data.get("attached_specialist_kind", "")),
+		stocked_character_id_v,
+		baseline_head_character_id_v,
+		String(data.get("preferred_district_class", "")),
+		owner_faction_id_v,
+	]):
+		push_error("CampaignRepository.insert_settlement_poi: failed. settlement_id=%s type=%s"
+			% [settlement_id, type_str])
+		return ""
+	return poi_id
+
+
+## Migration 126 (Urban Growth Stocking Stage D): create a baseline-
+## placeholder NPC character row for a POI per GDD §7.3 stocking tables.
+## Returns the new character id, or "" on failure.
+##
+## Required data keys:
+##   campaign_id, name, character_class, combat_progression, level,
+##   alignment, home_poi_id.
+## Optional: character_type (default 'npc'), npc_role (default
+## 'baseline_placeholder'), persistence_tier (default 'named').
+## Stats default to 10s; HP defaults to a level × 4 floor for class HD.
+func insert_baseline_npc_character(data: Dictionary) -> String:
+	var character_id: String = String(data.get("id", ""))
+	if character_id.is_empty():
+		character_id = generate_id()
+	var campaign_id: String = String(data.get("campaign_id", ""))
+	if campaign_id.is_empty():
+		push_error("CampaignRepository.insert_baseline_npc_character: campaign_id required")
+		return ""
+	# Sensible HP default scaling with level. Real combat would compute from
+	# class HD; placeholder NPCs use level × 4 as an average d8 approximation.
+	var level: int = maxi(0, int(data.get("level", 1)))
+	var hp_floor: int = maxi(1, level * 4)
+	var home_poi_id_v: Variant = data.get("home_poi_id", null)
+	if home_poi_id_v is String and String(home_poi_id_v).is_empty():
+		home_poi_id_v = null
+	if not db.query_with_bindings("""
+		INSERT INTO characters (
+			id, campaign_id, name, character_type, persistence_tier,
+			race, character_class, level, combat_progression,
+			hp_max, hp_current, alignment,
+			home_poi_id, npc_role
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		character_id,
+		campaign_id,
+		String(data.get("name", "Unnamed NPC")),
+		String(data.get("character_type", "npc")),
+		String(data.get("persistence_tier", "named")),
+		String(data.get("race", "human")),
+		String(data.get("character_class", "fighter")),
+		level,
+		String(data.get("combat_progression", "fighter")),
+		hp_floor,
+		hp_floor,
+		String(data.get("alignment", "neutral")),
+		home_poi_id_v,
+		String(data.get("npc_role", "baseline_placeholder")),
+	]):
+		push_error("CampaignRepository.insert_baseline_npc_character: INSERT failed name=%s"
+			% String(data.get("name", "?")))
+		return ""
+	return character_id
+
+
+## Migration 126 Stage D: set the baseline head NPC pointer on a POI row
+## per `gdd-urban-growth-stocking.md` §7.3.
+func update_settlement_poi_baseline_head(
+	poi_id: String,
+	character_id: String,
+) -> bool:
+	if poi_id.is_empty():
+		return false
+	var head_id: Variant = character_id
+	if String(character_id).is_empty():
+		head_id = null
+	return db.query_with_bindings("""
+		UPDATE settlement_pois
+		SET baseline_head_npc_character_id = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [head_id, poi_id])
+
+
+## Migration 126 Stage F: find the settlement_entrances row whose hex
+## (map_id, q, r) matches the given coordinates. Used by
+## StrongholdPoiRegistrar to determine whether a completed stronghold is
+## sited in a settlement hex. Returns {} if no settlement is on that hex.
+func get_settlement_entrance_for_hex(
+	map_id: String,
+	hex_q: int,
+	hex_r: int,
+) -> Dictionary:
+	if map_id.is_empty():
+		return {}
+	if not db.query_with_bindings("""
+		SELECT * FROM settlement_entrances
+		WHERE map_id = ? AND hex_q = ? AND hex_r = ?
+		LIMIT 1
+	""", [map_id, hex_q, hex_r]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Migration 126 Stage H: set the player-stocked character on a POI per
+## §7.2 Stock POI decree. Pass an empty string for character_id to unstock.
+## Returns true on success.
+func set_settlement_poi_stocked_character(
+	poi_id: String,
+	character_id: String,
+) -> bool:
+	if poi_id.is_empty():
+		return false
+	var stocked_v: Variant = character_id
+	if character_id.is_empty():
+		stocked_v = null
+	return db.query_with_bindings("""
+		UPDATE settlement_pois
+		SET stocked_character_id = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [stocked_v, poi_id])
+
+
+## Migration 126 Stage H: find the POI a character is currently stocked
+## into (the §7.2 "one character per POI" invariant). Returns the POI's
+## id or "" if the character isn't stocked anywhere.
+func get_poi_by_stocked_character(character_id: String) -> String:
+	if character_id.is_empty():
+		return ""
+	if not db.query_with_bindings("""
+		SELECT id FROM settlement_pois
+		WHERE stocked_character_id = ?
+		LIMIT 1
+	""", [character_id]) or db.query_result.is_empty():
+		return ""
+	return String(db.query_result[0].get("id", ""))
+
+
+## Migration 126 Stage H: list characters with npc_role='on_demand' whose
+## home_poi_id points at any POI in the given settlement. Used by
+## PoiCleanup.party_departure_sweep / session_boundary_sweep to identify
+## ephemeral NPCs that no party member retained.
+func list_on_demand_characters_for_settlement(settlement_id: String) -> Array:
+	if settlement_id.is_empty():
+		return []
+	db.query_with_bindings("""
+		SELECT c.* FROM characters c
+		JOIN settlement_pois p ON c.home_poi_id = p.id
+		WHERE p.settlement_id = ?
+		  AND c.npc_role = 'on_demand'
+	""", [settlement_id])
+	return db.query_result.duplicate()
+
+
+## Migration 126 Stage H: list all on_demand characters across the
+## campaign (session-boundary sweep — used at save/load and game-shutdown
+## boundaries).
+func list_all_on_demand_characters() -> Array:
+	# godot-sqlite query() takes no params; query_with_bindings always
+	# needs the bindings array even when empty.
+	db.query("""
+		SELECT id, home_poi_id FROM characters
+		WHERE npc_role = 'on_demand'
+	""")
+	return db.query_result.duplicate()
+
+
+## Migration 126 Stage F: set the settlement_pois pointer on a stronghold
+## row. Used by StrongholdPoiRegistrar after creating the POI.
+func update_stronghold_registered_poi(
+	stronghold_id: String,
+	poi_id: String,
+) -> bool:
+	if stronghold_id.is_empty():
+		return false
+	var poi_id_v: Variant = poi_id
+	if poi_id.is_empty():
+		poi_id_v = null
+	return db.query_with_bindings("""
+		UPDATE strongholds
+		SET registered_settlement_poi_id = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [poi_id_v, stronghold_id])
+
+
+## Migration 126 Stage D: set a POI's status. Used by BaselineNpcStocker
+## (lifecycle flip on completion) and by future cleanup paths.
+func set_settlement_poi_status(poi_id: String, status: String) -> bool:
+	if poi_id.is_empty() or status.is_empty():
+		return false
+	return db.query_with_bindings("""
+		UPDATE settlement_pois
+		SET status = ?,
+		    updated_at = datetime('now')
+		WHERE id = ?
+	""", [status, poi_id])
+
+
+## Migration 126 Stage C: list all settlement_pois for a given settlement.
+func list_settlement_pois(settlement_id: String) -> Array:
+	if settlement_id.is_empty():
+		return []
+	db.query_with_bindings(
+		"SELECT * FROM settlement_pois WHERE settlement_id = ? ORDER BY id ASC",
+		[settlement_id]
+	)
+	return db.query_result.duplicate()
+
+
+## Migration 126 Stage C: list settlement_pois of a specific type. Useful
+## for the PoiEmergenceHandler delta computation (how many religious_sites
+## already exist in this settlement?).
+func list_settlement_pois_by_type(settlement_id: String, poi_type: String) -> Array:
+	if settlement_id.is_empty() or poi_type.is_empty():
+		return []
+	db.query_with_bindings("""
+		SELECT * FROM settlement_pois
+		WHERE settlement_id = ? AND type = ?
+		ORDER BY id ASC
+	""", [settlement_id, poi_type])
+	return db.query_result.duplicate()
+
+
+## Migration 126 Stage C: count settlement_pois of a specific type. Wraps
+## `list_settlement_pois_by_type(...).size()` for cheaper delta math.
+func count_settlement_pois_by_type(settlement_id: String, poi_type: String) -> int:
+	if settlement_id.is_empty() or poi_type.is_empty():
+		return 0
+	db.query_with_bindings("""
+		SELECT COUNT(*) AS c FROM settlement_pois
+		WHERE settlement_id = ? AND type = ?
+	""", [settlement_id, poi_type])
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("c", 0))
+
+
+## Migration 126 Stage C, Q-UGS-49 stub: same-hex water-access predicate
+## per `gdd-urban-growth-stocking.md` §4.2 v1.12. Returns true iff the
+## settlement's hex is itself a water hex (lake) OR carries a river overlay.
+## Adjacency does NOT qualify per Jedidiah 2026-05-31. Ocean hexes typically
+## have no settlements (per the existing hex_cells schema) but are accepted
+## for completeness. v1 ignores the `coastal` GDD value because the schema
+## treats ocean and land as discrete hex types — a future migration may add
+## an explicit `coastal` water-tag for land hexes that border ocean.
+func terrain_hex_has_water_access(map_id: String, hex_q: int, hex_r: int) -> bool:
+	if map_id.is_empty():
+		return false
+	# Check the hex itself for lake / ocean fill.
+	if db.query_with_bindings("""
+		SELECT water FROM hex_cells WHERE map_id = ? AND q = ? AND r = ?
+	""", [map_id, hex_q, hex_r]) and not db.query_result.is_empty():
+		var w: String = String(db.query_result[0].get("water", ""))
+		if w == "ocean" or w == "lake":
+			return true
+	# Check for any river edge touching this hex (migration 130).
+	return hex_has_river(map_id, hex_q, hex_r)
+
+
+## Migration 126 (Urban Growth Stocking Stage B): list all settlements
+## attached to a domain. Used by the monthly-tick orchestrator to fan out
+## SettlementGrowthResolver.process_monthly_tick across each settlement.
+func list_settlements_for_domain(domain_id: String) -> Array:
+	if domain_id.is_empty():
+		return []
+	db.query_with_bindings(
+		"SELECT * FROM settlement_entrances WHERE parent_domain_id = ? ORDER BY id ASC",
+		[domain_id]
+	)
+	return db.query_result.duplicate()
+
+
+## Migration 126: persist the post-growth state for a settlement. Stage B
+## resolver outputs `urban_families_new`, `market_class_new`, and
+## `new_cumulative_investment_gp`; the caller passes those through here.
+## Dissolution is signalled by the orchestrator via the EventBus, not via
+## a column flag in v1 (Q-UGS deferred). The settlement_entrances row
+## persists with urban_families = 0 + market_class = 6 after dissolution.
+func update_settlement_growth_state(
+	settlement_id: String,
+	urban_families: int,
+	market_class: int,
+	cumulative_investment_gp: int,
+) -> bool:
+	if settlement_id.is_empty():
+		return false
+	return db.query_with_bindings("""
+		UPDATE settlement_entrances
+		SET urban_families = ?, market_class = ?, cumulative_investment_gp = ?
+		WHERE id = ?
+	""", [urban_families, market_class, cumulative_investment_gp, settlement_id])
 
 
 # ---------------------------------------------------------------------------
@@ -6157,13 +6975,42 @@ func set_restricted_cooldown(
 
 
 # congregants -----------------------------------------------------------------
+# Migration 128 (Phase 11D.3 / gdd-religion-conversion.md §4.1): rebuilt to
+# per-character-per-domain. Helpers take an optional `domain_id` trailing
+# param; when empty, the caster's primary domain (first-created owned domain)
+# is used as the fallback per GDD §9.5. The '' sentinel matches the migration
+# 128 default for dev-test rows where no primary domain is resolvable.
 
-func get_congregants(character_id: String) -> Dictionary:
+## Returns the caster's primary domain id (first-created owned domain), or ''
+## when no owned domain exists. Used as the fallback when callers don't pass
+## an explicit domain_id to the congregants helpers below.
+func primary_domain_id_for_character(character_id: String) -> String:
+	if character_id.is_empty():
+		return ""
+	if not db.query_with_bindings(
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at LIMIT 1",
+		[character_id]
+	):
+		return ""
+	if db.query_result.is_empty():
+		return ""
+	return String(db.query_result[0].get("id", ""))
+
+
+func _resolve_congregants_domain_id(character_id: String, domain_id: String) -> String:
+	if not domain_id.is_empty():
+		return domain_id
+	# Fallback: caster's primary domain (or '' sentinel if no owned domain).
+	return primary_domain_id_for_character(character_id)
+
+
+func get_congregants(character_id: String, domain_id: String = "") -> Dictionary:
 	if character_id.is_empty():
 		return {}
+	var resolved_domain := _resolve_congregants_domain_id(character_id, domain_id)
 	if not db.query_with_bindings(
-		"SELECT * FROM congregants WHERE character_id = ? LIMIT 1",
-		[character_id]
+		"SELECT * FROM congregants WHERE character_id = ? AND domain_id = ? LIMIT 1",
+		[character_id, resolved_domain]
 	):
 		return {}
 	if db.query_result.is_empty():
@@ -6171,21 +7018,95 @@ func get_congregants(character_id: String) -> Dictionary:
 	return db.query_result[0].duplicate()
 
 
-## Upserts (character_id, fields). If no row exists, creates one with the given
-## fields (count and monthly_growth_pending_cp default to 0 if not supplied).
-func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
+## Returns the total congregant count for a caster across ALL their domains.
+## Used by extract_divine_power per gdd-religion-conversion.md §4.1
+## ("SUM(count) WHERE character_id = ?").
+func total_congregants_for_character(character_id: String) -> int:
+	if character_id.is_empty():
+		return 0
+	if not db.query_with_bindings(
+		"SELECT COALESCE(SUM(count), 0) AS total FROM congregants WHERE character_id = ?",
+		[character_id]
+	):
+		return 0
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("total", 0))
+
+
+## Returns total monthly_growth_pending_cp for a caster across ALL their
+## domains. Used by FaithMonthlyResolver when computing the monthly growth
+## roll input (Cha mod × per-1000gp); the gp pool is summed across the
+## caster's domains since RAW formulas are per-caster, not per-domain.
+func total_congregant_pending_cp_for_character(character_id: String) -> int:
+	if character_id.is_empty():
+		return 0
+	if not db.query_with_bindings(
+		"SELECT COALESCE(SUM(monthly_growth_pending_cp), 0) AS total FROM congregants WHERE character_id = ?",
+		[character_id]
+	):
+		return 0
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("total", 0))
+
+
+## Returns the count of congregants in a domain owned by a specific caster.
+## Used by ReligionConversionResolver to evaluate the 60% completion threshold
+## against the conversion arc's driving caster. (v1 simplification: per-caster
+## religion is implicit in class/alignment + the conversion arc's
+## driving_character_id; multi-caster contributions per gdd-religion-
+## conversion.md §5.7 require a future per-caster-religion column and are
+## deferred to a polish pass.)
+func congregants_in_domain_for_caster(character_id: String, domain_id: String) -> int:
+	if character_id.is_empty() or domain_id.is_empty():
+		return 0
+	if not db.query_with_bindings("""
+		SELECT COALESCE(count, 0) AS total
+		FROM congregants
+		WHERE character_id = ? AND domain_id = ?
+		LIMIT 1
+	""", [character_id, domain_id]):
+		return 0
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("total", 0))
+
+
+## Returns total monthly_growth_pending_cp committed this month by a specific
+## caster for a specific domain. Used by ReligionConversionResolver when
+## summing the arc's proselytizing budget.
+func congregant_pending_cp_for_caster_in_domain(character_id: String, domain_id: String) -> int:
+	if character_id.is_empty() or domain_id.is_empty():
+		return 0
+	if not db.query_with_bindings("""
+		SELECT COALESCE(monthly_growth_pending_cp, 0) AS total
+		FROM congregants
+		WHERE character_id = ? AND domain_id = ?
+		LIMIT 1
+	""", [character_id, domain_id]):
+		return 0
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("total", 0))
+
+
+## Upserts (character_id, domain_id, fields). If no row exists, creates one
+## with the given fields (count and monthly_growth_pending_cp default to 0).
+func upsert_congregants(character_id: String, fields: Dictionary, domain_id: String = "") -> bool:
 	if character_id.is_empty():
 		return false
-	var existing := get_congregants(character_id)
+	var resolved_domain := _resolve_congregants_domain_id(character_id, domain_id)
+	var existing := get_congregants(character_id, resolved_domain)
 	if existing.is_empty():
 		var count: int = int(fields.get("count", 0))
 		var pending: int = int(fields.get("monthly_growth_pending_cp", 0))
 		var last_day: int = int(fields.get("last_resolved_calendar_day", 0))
 		return db.query_with_bindings("""
 			INSERT INTO congregants
-				(character_id, count, monthly_growth_pending_cp, last_resolved_calendar_day)
-			VALUES (?, ?, ?, ?)
-		""", [character_id, count, pending, last_day])
+				(id, character_id, domain_id, count, monthly_growth_pending_cp, last_resolved_calendar_day)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [generate_id(), character_id, resolved_domain, count, pending, last_day])
 	# Update path: only whitelisted fields.
 	var allowed := {
 		"count": true,
@@ -6204,7 +7125,8 @@ func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
 		return false
 	set_clauses.append("updated_at = datetime('now')")
 	values.append(character_id)
-	var sql := "UPDATE congregants SET %s WHERE character_id = ?" % ", ".join(set_clauses)
+	values.append(resolved_domain)
+	var sql := "UPDATE congregants SET %s WHERE character_id = ? AND domain_id = ?" % ", ".join(set_clauses)
 	return db.query_with_bindings(sql, values)
 
 
@@ -6212,44 +7134,48 @@ func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
 ## creating the row if absent. Used by missionary / charitable-spell /
 ## ceremonial-sacrifice handlers (they convert their RAW gp input × 100 before
 ## calling).
-func add_congregant_pending_cp(character_id: String, cp_delta: int) -> bool:
+func add_congregant_pending_cp(character_id: String, cp_delta: int, domain_id: String = "") -> bool:
 	if character_id.is_empty() or cp_delta <= 0:
 		return false
-	var existing := get_congregants(character_id)
+	var resolved_domain := _resolve_congregants_domain_id(character_id, domain_id)
+	var existing := get_congregants(character_id, resolved_domain)
 	if existing.is_empty():
 		return db.query_with_bindings("""
-			INSERT INTO congregants (character_id, count, monthly_growth_pending_cp)
-			VALUES (?, 0, ?)
-		""", [character_id, cp_delta])
+			INSERT INTO congregants (id, character_id, domain_id, count, monthly_growth_pending_cp)
+			VALUES (?, ?, ?, 0, ?)
+		""", [generate_id(), character_id, resolved_domain, cp_delta])
 	var new_pending: int = int(existing.get("monthly_growth_pending_cp", 0)) + cp_delta
 	return db.query_with_bindings("""
 		UPDATE congregants
 		SET monthly_growth_pending_cp = ?, updated_at = datetime('now')
-		WHERE character_id = ?
-	""", [new_pending, character_id])
+		WHERE character_id = ? AND domain_id = ?
+	""", [new_pending, character_id, resolved_domain])
 
 
 ## Adjusts congregants.count by delta (positive grows; negative shrinks but
 ## floored at 0 per the CHECK constraint).
-func adjust_congregant_count(character_id: String, count_delta: int) -> int:
-	if character_id.is_empty() or count_delta == 0:
-		var row := get_congregants(character_id)
+func adjust_congregant_count(character_id: String, count_delta: int, domain_id: String = "") -> int:
+	if character_id.is_empty():
+		return 0
+	var resolved_domain := _resolve_congregants_domain_id(character_id, domain_id)
+	if count_delta == 0:
+		var row := get_congregants(character_id, resolved_domain)
 		return int(row.get("count", 0)) if not row.is_empty() else 0
-	var existing := get_congregants(character_id)
+	var existing := get_congregants(character_id, resolved_domain)
 	if existing.is_empty():
 		if count_delta < 0:
 			return 0
 		db.query_with_bindings("""
-			INSERT INTO congregants (character_id, count, monthly_growth_pending_cp)
-			VALUES (?, ?, 0)
-		""", [character_id, count_delta])
+			INSERT INTO congregants (id, character_id, domain_id, count, monthly_growth_pending_cp)
+			VALUES (?, ?, ?, ?, 0)
+		""", [generate_id(), character_id, resolved_domain, count_delta])
 		return count_delta
 	var new_count: int = max(0, int(existing.get("count", 0)) + count_delta)
 	db.query_with_bindings("""
 		UPDATE congregants
 		SET count = ?, updated_at = datetime('now')
-		WHERE character_id = ?
-	""", [new_count, character_id])
+		WHERE character_id = ? AND domain_id = ?
+	""", [new_count, character_id, resolved_domain])
 	return new_count
 
 

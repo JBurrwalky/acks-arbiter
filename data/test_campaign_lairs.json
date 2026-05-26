@@ -1,0 +1,2133 @@
+{
+  "campaign_id": "test_campaign",
+  "map_id": "test_campaign_region",
+  "seed": "acks_test_realm_v1",
+  "lair_count": 118,
+  "raw_citation": "rules/ax_domains_of_chaos.xml:261-317",
+  "lairs": [
+    {
+      "id": "lair_001",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 27,
+        "row": 2
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 43,
+        "race_d100": 16,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_002",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 29,
+        "row": 2
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 41,
+        "race_d100": 83,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_003",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 21,
+        "row": 4
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 75,
+        "race_d100": 3,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_004",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 23,
+        "row": 4
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 22,
+        "race_d100": 54,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_005",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 24,
+        "row": 4
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 22,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_006",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 25,
+        "row": 4
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 30,
+        "race_d100": 91,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_007",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 29,
+        "row": 4
+      },
+      "terrain_column": "mountains",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 36,
+        "race_d100": 38,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_008",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 21,
+        "row": 5
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 11,
+        "race_d100": 59,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_009",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 25,
+        "row": 5
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 70,
+        "race_d100": 93,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_010",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 28,
+        "row": 5
+      },
+      "terrain_column": "mountains",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 24,
+        "race_d100": 52,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_011",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 21,
+        "row": 6
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 74,
+        "race_d100": 82,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_012",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 24,
+        "row": 6
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 12,
+        "race_d100": 46,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_013",
+      "name": "Kobold clanhold",
+      "race": "kobold",
+      "hex": {
+        "col": 26,
+        "row": 6
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 46,
+        "race_d100": 21,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_014",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 29,
+        "row": 6
+      },
+      "terrain_column": "mountains",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 35,
+        "race_d100": 96,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_015",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 22,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 41,
+        "race_d100": 94,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_016",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 23,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 33,
+        "race_d100": 3,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_017",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 24,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 68,
+        "race_d100": 96,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_018",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 26,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 15,
+        "race_d100": 68,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_019",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 28,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 2,
+        "race_d100": 40,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_020",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 29,
+        "row": 7
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 58,
+        "race_d100": 80,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_021",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 21,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 19,
+        "race_d100": 2,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_022",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 22,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 11,
+        "race_d100": 62,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_023",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 23,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 69,
+        "race_d100": 80,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_024",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 24,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 17,
+        "race_d100": 70,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_025",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 25,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 62,
+        "race_d100": 45,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_026",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 26,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 28,
+        "race_d100": 22,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_027",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 27,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 42,
+        "race_d100": 50,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_028",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 28,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 18,
+        "race_d100": 46,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_029",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 29,
+        "row": 8
+      },
+      "terrain_column": "barren",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 63,
+        "race_d100": 55,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_030",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 4,
+        "row": 9
+      },
+      "terrain_column": "hills",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 2,
+        "race_d100": 85,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_031",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 24,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 38,
+        "race_d100": 92,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_032",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 25,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 64,
+        "race_d100": 7,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_033",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 26,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 31,
+        "race_d100": 49,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_034",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 27,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 23,
+        "race_d100": 38,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_035",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 28,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 48,
+        "race_d100": 28,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_036",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 29,
+        "row": 9
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 45,
+        "race_d100": 27,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_037",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 0,
+        "row": 10
+      },
+      "terrain_column": "mountains",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 56,
+        "race_d100": 96,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_038",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 1,
+        "row": 10
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 50,
+        "race_d100": 10,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_039",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 3,
+        "row": 10
+      },
+      "terrain_column": "hills",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 7,
+        "race_d100": 91,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_040",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 22,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 66,
+        "race_d100": 96,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_041",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 23,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 69,
+        "race_d100": 40,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_042",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 24,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 31,
+        "race_d100": 19,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_043",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 25,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 29,
+        "race_d100": 25,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_044",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 26,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 28,
+        "race_d100": 43,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_045",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 27,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 7,
+        "race_d100": 14,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_046",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 29,
+        "row": 10
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 49,
+        "race_d100": 72,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_047",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 1,
+        "row": 11
+      },
+      "terrain_column": "mountains",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 50,
+        "race_d100": 93,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_048",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 2,
+        "row": 11
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 61,
+        "race_d100": 68,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_049",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 21,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 1,
+        "race_d100": 78,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_050",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 22,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 53,
+        "race_d100": 74,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_051",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 23,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 38,
+        "race_d100": 31,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_052",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 24,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 10,
+        "race_d100": 33,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_053",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 26,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 3,
+        "race_d100": 43,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_054",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 27,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 27,
+        "race_d100": 86,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_055",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 28,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 26,
+        "race_d100": 21,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_056",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 29,
+        "row": 11
+      },
+      "terrain_column": "barren",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 74,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_057",
+      "name": "Kobold clanhold",
+      "race": "kobold",
+      "hex": {
+        "col": 2,
+        "row": 12
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 42,
+        "race_d100": 27,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_058",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 12,
+        "row": 12
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 3,
+        "race_d100": 38,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_059",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 18,
+        "row": 12
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 27,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_060",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 0,
+        "row": 13
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 38,
+        "race_d100": 58,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_061",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 1,
+        "row": 13
+      },
+      "terrain_column": "mountains",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 51,
+        "race_d100": 37,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_062",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 2,
+        "row": 13
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 12,
+        "race_d100": 80,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_063",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 12,
+        "row": 13
+      },
+      "terrain_column": "woods",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 15,
+        "race_d100": 95,
+        "chance_pct": 36
+      }
+    },
+    {
+      "id": "lair_064",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 16,
+        "row": 13
+      },
+      "terrain_column": "woods",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 5,
+        "race_d100": 15,
+        "chance_pct": 36
+      }
+    },
+    {
+      "id": "lair_065",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 18,
+        "row": 13
+      },
+      "terrain_column": "woods",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 4,
+        "race_d100": 72,
+        "chance_pct": 36
+      }
+    },
+    {
+      "id": "lair_066",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 22,
+        "row": 13
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 6,
+        "race_d100": 15,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_067",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 24,
+        "row": 13
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 69,
+        "race_d100": 41,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_068",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 26,
+        "row": 13
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 29,
+        "race_d100": 13,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_069",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 27,
+        "row": 13
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 16,
+        "race_d100": 67,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_070",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 29,
+        "row": 13
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 17,
+        "race_d100": 76,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_071",
+      "name": "Kobold clanhold",
+      "race": "kobold",
+      "hex": {
+        "col": 1,
+        "row": 14
+      },
+      "terrain_column": "hills",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 12,
+        "race_d100": 21,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_072",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 14,
+        "row": 14
+      },
+      "terrain_column": "clear_grass",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 5,
+        "race_d100": 49,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_073",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 16,
+        "row": 14
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 2,
+        "race_d100": 79,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_074",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 24,
+        "row": 14
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 15,
+        "race_d100": 81,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_075",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 25,
+        "row": 14
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 30,
+        "race_d100": 50,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_076",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 26,
+        "row": 14
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 74,
+        "race_d100": 76,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_077",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 29,
+        "row": 14
+      },
+      "terrain_column": "mountains",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 40,
+        "race_d100": 17,
+        "chance_pct": 62
+      }
+    },
+    {
+      "id": "lair_078",
+      "name": "Kobold clanhold",
+      "race": "kobold",
+      "hex": {
+        "col": 5,
+        "row": 15
+      },
+      "terrain_column": "hills",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 1,
+        "race_d100": 27,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_079",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 20,
+        "row": 15
+      },
+      "terrain_column": "clear_grass",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 12,
+        "race_d100": 45,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_080",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 26,
+        "row": 15
+      },
+      "terrain_column": "hills",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 20,
+        "race_d100": 83,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_081",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 27,
+        "row": 15
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 73,
+        "race_d100": 32,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_082",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 28,
+        "row": 15
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 31,
+        "race_d100": 39,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_083",
+      "name": "Hobgoblin clanhold",
+      "race": "hobgoblin",
+      "hex": {
+        "col": 1,
+        "row": 16
+      },
+      "terrain_column": "clear_grass",
+      "families": 87,
+      "family_multiplier": 1,
+      "average_families_raw": 87,
+      "rolls": {
+        "existence_d100": 9,
+        "race_d100": 50,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_084",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 5,
+        "row": 16
+      },
+      "terrain_column": "hills",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 100,
+        "chance_pct": 31
+      }
+    },
+    {
+      "id": "lair_085",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 22,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 36,
+        "race_d100": 14,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_086",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 23,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 64,
+        "race_d100": 8,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_087",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 24,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 53,
+        "race_d100": 76,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_088",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 25,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 15,
+        "race_d100": 32,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_089",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 26,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 48,
+        "race_d100": 25,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_090",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 27,
+        "row": 16
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 41,
+        "race_d100": 41,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_091",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 15,
+        "row": 17
+      },
+      "terrain_column": "clear_grass",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 99,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_092",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 17,
+        "row": 17
+      },
+      "terrain_column": "clear_grass",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 2,
+        "race_d100": 70,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_093",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 20,
+        "row": 17
+      },
+      "terrain_column": "clear_grass",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 3,
+        "race_d100": 13,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_094",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 22,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 70,
+        "race_d100": 22,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_095",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 23,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 41,
+        "race_d100": 79,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_096",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 24,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 43,
+        "race_d100": 85,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_097",
+      "name": "Bugbear clanhold",
+      "race": "bugbear",
+      "hex": {
+        "col": 25,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 4,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_098",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 27,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 52,
+        "race_d100": 90,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_099",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 29,
+        "row": 17
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 56,
+        "race_d100": 81,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_100",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 6,
+        "row": 18
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 12,
+        "race_d100": 76,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_101",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 16,
+        "row": 18
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 33,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_102",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 17,
+        "row": 18
+      },
+      "terrain_column": "clear_grass",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 27,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_103",
+      "name": "Goblin clanhold",
+      "race": "goblin",
+      "hex": {
+        "col": 22,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 47,
+        "race_d100": 34,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_104",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 23,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 26,
+        "race_d100": 49,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_105",
+      "name": "Lizardman clanhold",
+      "race": "lizardman",
+      "hex": {
+        "col": 24,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 124,
+      "family_multiplier": 1,
+      "average_families_raw": 124,
+      "rolls": {
+        "existence_d100": 16,
+        "race_d100": 40,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_106",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 25,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 6,
+        "race_d100": 92,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_107",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 26,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 42,
+        "race_d100": 74,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_108",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 27,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 58,
+        "race_d100": 20,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_109",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 28,
+        "row": 18
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 38,
+        "race_d100": 81,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_110",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 13,
+        "row": 19
+      },
+      "terrain_column": "clear_grass",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 8,
+        "race_d100": 24,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_111",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 15,
+        "row": 19
+      },
+      "terrain_column": "clear_grass",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 6,
+        "race_d100": 65,
+        "chance_pct": 12
+      }
+    },
+    {
+      "id": "lair_112",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 22,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 33,
+        "race_d100": 24,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_113",
+      "name": "Troglodyte clanhold",
+      "race": "troglodyte",
+      "hex": {
+        "col": 24,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 136,
+      "rolls": {
+        "existence_d100": 65,
+        "race_d100": 83,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_114",
+      "name": "Orc clanhold",
+      "race": "orc",
+      "hex": {
+        "col": 25,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 125,
+      "family_multiplier": 1,
+      "average_families_raw": 192,
+      "rolls": {
+        "existence_d100": 28,
+        "race_d100": 65,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_115",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 26,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 55,
+        "race_d100": 55,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_116",
+      "name": "Gnoll clanhold",
+      "race": "gnoll",
+      "hex": {
+        "col": 27,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 68,
+      "family_multiplier": 1,
+      "average_families_raw": 68,
+      "rolls": {
+        "existence_d100": 47,
+        "race_d100": 24,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_117",
+      "name": "Troll clanhold",
+      "race": "troll",
+      "hex": {
+        "col": 28,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 25,
+      "family_multiplier": 4,
+      "average_families_raw": 25,
+      "rolls": {
+        "existence_d100": 64,
+        "race_d100": 92,
+        "chance_pct": 75
+      }
+    },
+    {
+      "id": "lair_118",
+      "name": "Ogre clanhold",
+      "race": "ogre",
+      "hex": {
+        "col": 29,
+        "row": 19
+      },
+      "terrain_column": "jungle",
+      "families": 31,
+      "family_multiplier": 4,
+      "average_families_raw": 38,
+      "rolls": {
+        "existence_d100": 36,
+        "race_d100": 55,
+        "chance_pct": 75
+      }
+    }
+  ]
+}

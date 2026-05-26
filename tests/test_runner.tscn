@@ -335,6 +335,43 @@
 [ext_resource type="Script" path="res://tests/test_strenuous_proficiency_throws.gd" id="321_strenuous_proficiency_throws_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_cross_scale.gd" id="322_hex_map_cross_scale_tests"]
 [ext_resource type="Script" path="res://tests/test_permanent_wounds.gd" id="323_permanent_wounds_tests"]
+[ext_resource type="Script" path="res://tests/test_departure_log_recorder.gd" id="324_departure_log_recorder_tests"]
+[ext_resource type="Script" path="res://tests/test_departure_log_classification_hook.gd" id="325_departure_log_classification_hook_tests"]
+[ext_resource type="Script" path="res://tests/test_departure_log_morale_tier_hook.gd" id="326_departure_log_morale_tier_hook_tests"]
+[ext_resource type="Script" path="res://tests/test_departure_log_sub_tab_visibility.gd" id="327_departure_log_sub_tab_visibility_tests"]
+[ext_resource type="Script" path="res://tests/test_lifecycle_handler.gd" id="328_lifecycle_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_death_handler.gd" id="329_ruler_death_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_realm_substrate.gd" id="330_realm_substrate_tests"]
+[ext_resource type="Script" path="res://tests/test_realm_reification.gd" id="331_realm_reification_tests"]
+[ext_resource type="Script" path="res://tests/test_lifecycle_conquest_outcomes.gd" id="332_lifecycle_conquest_outcomes_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_pois_schema.gd" id="333_settlement_pois_schema_tests"]
+[ext_resource type="Script" path="res://tests/test_event_bus_new_signals.gd" id="334_event_bus_new_signals_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_growth_resolver.gd" id="335_settlement_growth_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_poi_split_roller.gd" id="336_poi_split_roller_tests"]
+[ext_resource type="Script" path="res://tests/test_poi_emergence.gd" id="337_poi_emergence_tests"]
+[ext_resource type="Script" path="res://tests/test_level_elevation_roller.gd" id="338_level_elevation_roller_tests"]
+[ext_resource type="Script" path="res://tests/test_baseline_npc_stocker.gd" id="339_baseline_npc_stocker_tests"]
+[ext_resource type="Script" path="res://tests/test_poi_contribution_registry.gd" id="340_poi_contribution_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_stronghold_poi_registrar.gd" id="341_stronghold_poi_registrar_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_offer_roller.gd" id="342_spell_offer_roller_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_offer_repository.gd" id="343_spell_offer_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_purchase_spellcasting.gd" id="344_purchase_spellcasting_tests"]
+[ext_resource type="Script" path="res://tests/test_stock_poi_decree.gd" id="345_stock_poi_decree_tests"]
+[ext_resource type="Script" path="res://tests/test_poi_cleanup.gd" id="346_poi_cleanup_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_style_alignment_columns.gd" id="347_domain_style_alignment_columns_tests"]
+[ext_resource type="Script" path="res://tests/test_clanhold_mechanics.gd" id="348_clanhold_mechanics_tests"]
+[ext_resource type="Script" path="res://tests/test_religion_conversion.gd" id="349_religion_conversion_tests"]
+[ext_resource type="Script" path="res://tests/test_establish_domain_eligibility_matrix.gd" id="350_establish_domain_eligibility_matrix_tests"]
+[ext_resource type="Script" path="res://tests/test_tribal_warriors.gd" id="351_tribal_warriors_tests"]
+[ext_resource type="Script" path="res://tests/scenarios/scenario_chaotic_clanhold.gd" id="352_scenario_chaotic_clanhold"]
+[ext_resource type="Script" path="res://tests/scenarios/scenario_succession.gd" id="353_scenario_succession"]
+[ext_resource type="Script" path="res://tests/scenarios/scenario_conquest_outcomes.gd" id="354_scenario_conquest_outcomes"]
+[ext_resource type="Script" path="res://tests/scenarios/scenario_below_sufficiency.gd" id="355_scenario_below_sufficiency"]
+[ext_resource type="Script" path="res://tests/scenarios/scenario_full_loop_borderlands.gd" id="356_scenario_full_loop_borderlands"]
+[ext_resource type="Script" path="res://tests/test_hex_river_edges.gd" id="357_hex_river_edges_tests"]
+[ext_resource type="Script" path="res://tests/test_hex_map_offset_conversion.gd" id="358_hex_map_offset_conversion_tests"]
+[ext_resource type="Script" path="res://tests/test_test_content_seeder.gd" id="359_test_content_seeder_tests"]
+[ext_resource type="Script" path="res://tests/test_session_load_fallback.gd" id="360_session_load_fallback_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1340,3 +1377,114 @@ script = ExtResource("322_hex_map_cross_scale_tests")
 
 [node name="PermanentWoundsTests" type="Node" parent="."]
 script = ExtResource("323_permanent_wounds_tests")
+
+[node name="DepartureLogRecorderTests" type="Node" parent="."]
+script = ExtResource("324_departure_log_recorder_tests")
+
+[node name="DepartureLogClassificationHookTests" type="Node" parent="."]
+script = ExtResource("325_departure_log_classification_hook_tests")
+
+[node name="DepartureLogMoraleTierHookTests" type="Node" parent="."]
+script = ExtResource("326_departure_log_morale_tier_hook_tests")
+
+[node name="DepartureLogSubTabVisibilityTests" type="Node" parent="."]
+script = ExtResource("327_departure_log_sub_tab_visibility_tests")
+
+[node name="LifecycleHandlerTests" type="Node" parent="."]
+script = ExtResource("328_lifecycle_handler_tests")
+
+[node name="RulerDeathHandlerTests" type="Node" parent="."]
+script = ExtResource("329_ruler_death_handler_tests")
+
+[node name="RealmSubstrateTests" type="Node" parent="."]
+script = ExtResource("330_realm_substrate_tests")
+
+[node name="RealmReificationTests" type="Node" parent="."]
+script = ExtResource("331_realm_reification_tests")
+
+[node name="LifecycleConquestOutcomesTests" type="Node" parent="."]
+script = ExtResource("332_lifecycle_conquest_outcomes_tests")
+
+[node name="SettlementPoisSchemaTests" type="Node" parent="."]
+script = ExtResource("333_settlement_pois_schema_tests")
+
+[node name="EventBusNewSignalsTests" type="Node" parent="."]
+script = ExtResource("334_event_bus_new_signals_tests")
+
+[node name="SettlementGrowthResolverTests" type="Node" parent="."]
+script = ExtResource("335_settlement_growth_resolver_tests")
+
+[node name="PoiSplitRollerTests" type="Node" parent="."]
+script = ExtResource("336_poi_split_roller_tests")
+
+[node name="PoiEmergenceTests" type="Node" parent="."]
+script = ExtResource("337_poi_emergence_tests")
+
+[node name="LevelElevationRollerTests" type="Node" parent="."]
+script = ExtResource("338_level_elevation_roller_tests")
+
+[node name="BaselineNpcStockerTests" type="Node" parent="."]
+script = ExtResource("339_baseline_npc_stocker_tests")
+
+[node name="PoiContributionRegistryTests" type="Node" parent="."]
+script = ExtResource("340_poi_contribution_registry_tests")
+
+[node name="StrongholdPoiRegistrarTests" type="Node" parent="."]
+script = ExtResource("341_stronghold_poi_registrar_tests")
+
+[node name="SpellOfferRollerTests" type="Node" parent="."]
+script = ExtResource("342_spell_offer_roller_tests")
+
+[node name="SpellOfferRepositoryTests" type="Node" parent="."]
+script = ExtResource("343_spell_offer_repository_tests")
+
+[node name="PurchaseSpellcastingTests" type="Node" parent="."]
+script = ExtResource("344_purchase_spellcasting_tests")
+
+[node name="StockPoiDecreeTests" type="Node" parent="."]
+script = ExtResource("345_stock_poi_decree_tests")
+
+[node name="PoiCleanupTests" type="Node" parent="."]
+script = ExtResource("346_poi_cleanup_tests")
+
+[node name="DomainStyleAlignmentColumnsTests" type="Node" parent="."]
+script = ExtResource("347_domain_style_alignment_columns_tests")
+
+[node name="ClanholdMechanicsTests" type="Node" parent="."]
+script = ExtResource("348_clanhold_mechanics_tests")
+
+[node name="ReligionConversionTests" type="Node" parent="."]
+script = ExtResource("349_religion_conversion_tests")
+
+[node name="EstablishDomainEligibilityMatrixTests" type="Node" parent="."]
+script = ExtResource("350_establish_domain_eligibility_matrix_tests")
+
+[node name="TribalWarriorsTests" type="Node" parent="."]
+script = ExtResource("351_tribal_warriors_tests")
+
+[node name="ScenarioChaoticClanhold" type="Node" parent="."]
+script = ExtResource("352_scenario_chaotic_clanhold")
+
+[node name="ScenarioSuccession" type="Node" parent="."]
+script = ExtResource("353_scenario_succession")
+
+[node name="ScenarioConquestOutcomes" type="Node" parent="."]
+script = ExtResource("354_scenario_conquest_outcomes")
+
+[node name="ScenarioBelowSufficiency" type="Node" parent="."]
+script = ExtResource("355_scenario_below_sufficiency")
+
+[node name="ScenarioFullLoopBorderlands" type="Node" parent="."]
+script = ExtResource("356_scenario_full_loop_borderlands")
+
+[node name="HexRiverEdgesTests" type="Node" parent="."]
+script = ExtResource("357_hex_river_edges_tests")
+
+[node name="HexMapOffsetConversionTests" type="Node" parent="."]
+script = ExtResource("358_hex_map_offset_conversion_tests")
+
+[node name="TestContentSeederTests" type="Node" parent="."]
+script = ExtResource("359_test_content_seeder_tests")
+
+[node name="SessionLoadFallbackTests" type="Node" parent="."]
+script = ExtResource("360_session_load_fallback_tests")

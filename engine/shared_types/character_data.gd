@@ -483,9 +483,12 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.is_dead = data.get("is_dead", 0) == 1
 	c.is_active = data.get("is_active", 1) == 1
 	c.is_incapacitated = data.get("is_incapacitated", 0) == 1
-	c.employer_id = data.get("employer_id", "")
-	c.loyalty_score = data.get("loyalty_score", 0)
-	c.wage_cp_per_month = data.get("wage_cp_per_month", 0)
+	var _emp = data.get("employer_id")
+	c.employer_id = _emp if _emp != null else ""
+	var _loyalty = data.get("loyalty_score")
+	c.loyalty_score = int(_loyalty) if _loyalty != null else 0
+	var _wage = data.get("wage_cp_per_month")
+	c.wage_cp_per_month = int(_wage) if _wage != null else 0
 	return c
 
 

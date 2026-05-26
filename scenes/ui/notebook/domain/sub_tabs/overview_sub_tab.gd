@@ -50,6 +50,7 @@ func _ready() -> void:
 	_build_classification_card()
 	_build_alignment_card()
 	_build_decree_card()
+	_build_actions_card()
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +67,7 @@ func display(domain_data: Dictionary) -> void:
 	_render_classification()
 	_render_alignment()
 	_render_decree()
+	_render_actions()
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +107,13 @@ func _render_identity() -> void:
 	if children.size() >= 3 and children[2] is Label:
 		var info: Label = children[2]
 		var territory: String = String(_domain_data.get("territory_type", "")).capitalize()
-		if int(_domain_data.get("is_chaotic_domain", 0)) == 1:
+		# Migration 127 (Phase 11D.1): "Chaotic" badge → alignment column;
+		# "Clanhold" badge → orthogonal domain_style column. See
+		# gdd-domain-style-and-alignment.md §4-§6.
+		if String(_domain_data.get("alignment", "neutral")) == "chaotic":
 			territory += " · Chaotic"
+		if String(_domain_data.get("domain_style", "civilized")) == "clanhold":
+			territory += " · Clanhold"
 		info.text = "Classification: %s     Established day %d via %s" % [
 			territory,
 			int(_domain_data.get("established_calendar_day", 0)),
@@ -390,3 +397,264 @@ static func _humanize_method(method: String) -> String:
 		"recruit_chieftain": return "Recruited chieftain"
 		"":                  return "(unknown)"
 		_:                   return method.capitalize()
+
+
+# ---------------------------------------------------------------------------
+# Section: Actions card (Phase 11B — voluntary abandonment)
+# ---------------------------------------------------------------------------
+
+var _actions_card: VBoxContainer = null
+var _abandon_button: Button = null
+var _abandon_dialog: AcceptDialog = null
+var _abandon_dialog_label: RichTextLabel = null
+var _abandon_confirm_edit: LineEdit = null
+var _abandon_confirm_button: Button = null
+
+
+func _build_actions_card() -> void:
+	_actions_card = _make_card("Domain Management")
+	add_child(_actions_card)
+	# Row 1: voluntary abandon.
+	_abandon_button = Button.new()
+	_abandon_button.text = "Abandon Domain…"
+	_abandon_button.pressed.connect(_on_abandon_pressed)
+	_actions_card.add_child(_abandon_button)
+	_build_abandon_dialog()
+	# Row 2: succession actions (only visible during succession_pending).
+	_succession_row = HBoxContainer.new()
+	_succession_row.add_theme_constant_override("separation", 8)
+	_succession_row.visible = false
+	_actions_card.add_child(_succession_row)
+	_designate_heir_button = Button.new()
+	_designate_heir_button.text = "Designate Heir…"
+	_designate_heir_button.pressed.connect(_on_designate_heir_pressed)
+	_succession_row.add_child(_designate_heir_button)
+	_confirm_succession_button = Button.new()
+	_confirm_succession_button.text = "Confirm Succession Now"
+	_confirm_succession_button.pressed.connect(_on_confirm_succession_pressed)
+	_succession_row.add_child(_confirm_succession_button)
+	_build_heir_dialog()
+
+
+func _render_actions() -> void:
+	if _abandon_button == null:
+		return
+	# Abandon button: hide when already terminal.
+	var state: String = String(_domain_data.get(
+		"lifecycle_state", LifecycleHandler.STATE_ACTIVE))
+	var is_terminal: bool = state == LifecycleHandler.STATE_ABANDONED \
+		or state == LifecycleHandler.STATE_SALTED_TO_RUIN
+	_abandon_button.disabled = is_terminal or _domain_id.is_empty()
+	_abandon_button.tooltip_text = "Already abandoned." if is_terminal else \
+		"Voluntarily abandon this domain. Liquidates treasury to the ruler's coin."
+	# Succession row: visible during succession_pending only.
+	var is_pending: bool = state == LifecycleHandler.STATE_SUCCESSION_PENDING
+	_succession_row.visible = is_pending
+	if is_pending:
+		var heir_id: String = String(_domain_data.get("designated_heir_character_id", ""))
+		_confirm_succession_button.disabled = heir_id.is_empty()
+		_confirm_succession_button.tooltip_text = (
+			"Resolve succession with the designated heir."
+			if not heir_id.is_empty()
+			else "Designate an heir before you can confirm.")
+
+
+func _build_abandon_dialog() -> void:
+	_abandon_dialog = AcceptDialog.new()
+	_abandon_dialog.title = "Abandon Domain"
+	_abandon_dialog.min_size = Vector2(520, 280)
+	_abandon_dialog.dialog_hide_on_ok = false  # we override with custom Confirm
+	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.add_theme_constant_override("separation", 8)
+	_abandon_dialog.add_child(vb)
+	_abandon_dialog_label = RichTextLabel.new()
+	_abandon_dialog_label.bbcode_enabled = true
+	_abandon_dialog_label.fit_content = true
+	_abandon_dialog_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_abandon_dialog_label.custom_minimum_size = Vector2(480, 160)
+	vb.add_child(_abandon_dialog_label)
+	var prompt := Label.new()
+	prompt.text = "Type the domain's name to confirm:"
+	vb.add_child(prompt)
+	_abandon_confirm_edit = LineEdit.new()
+	_abandon_confirm_edit.placeholder_text = "(domain name)"
+	_abandon_confirm_edit.text_changed.connect(_on_abandon_confirm_text_changed)
+	vb.add_child(_abandon_confirm_edit)
+	_abandon_confirm_button = _abandon_dialog.add_button("Abandon", true, "abandon_confirm")
+	_abandon_confirm_button.disabled = true
+	_abandon_dialog.custom_action.connect(_on_abandon_custom_action)
+	add_child(_abandon_dialog)
+
+
+func _on_abandon_pressed() -> void:
+	if _domain_id.is_empty():
+		return
+	var name: String = String(_domain_data.get("name", "this domain"))
+	var treasury_cp: int = int(_domain_data.get("treasury_cp", 0))
+	var peasants: int = int(_domain_data.get("peasant_families", 0))
+	var owner_id: String = String(_domain_data.get("owner_character_id", ""))
+	var vassal_count: int = 0
+	if not owner_id.is_empty():
+		vassal_count = VassalRepository.list_active_for_liege(owner_id).size()
+	var treasury_gp: int = treasury_cp / 100
+	var remainder_cp: int = treasury_cp - (treasury_gp * 100)
+	var text: String = (
+		"[b]%s[/b]\n\n"
+		+ "This action [b]cannot be undone[/b].\n\n"
+		+ "• Treasury [b]%d gp %d cp[/b] will transfer to the ruler's coin.\n"
+		+ "• [b]%d[/b] peasant families will disperse.\n"
+		+ "• [b]%d[/b] vassal henchman(en) will become independent.\n"
+		+ "• Stronghold (if any) reverts to ruined / available for other rulers.\n"
+		+ "• Domain hexes are released back to the unowned pool.\n\n"
+		+ "A Departure Log entry will record the event."
+	) % [name, treasury_gp, remainder_cp, peasants, vassal_count]
+	_abandon_dialog_label.text = text
+	_abandon_confirm_edit.text = ""
+	_abandon_confirm_button.disabled = true
+	_abandon_dialog.popup_centered()
+
+
+func _on_abandon_confirm_text_changed(new_text: String) -> void:
+	var expected: String = String(_domain_data.get("name", "")).strip_edges()
+	_abandon_confirm_button.disabled = new_text.strip_edges() != expected or expected.is_empty()
+
+
+func _on_abandon_custom_action(action: String) -> void:
+	if action != "abandon_confirm":
+		return
+	if _domain_id.is_empty():
+		_abandon_dialog.hide()
+		return
+	var owner_id: String = String(_domain_data.get("owner_character_id", ""))
+	var calendar_day: int = _abandon_calendar_day()
+	LifecycleHandler.abandon_domain(
+		_domain_id, calendar_day,
+		LifecycleHandler.REASON_VOLUNTARY,
+		owner_id)
+	_abandon_dialog.hide()
+
+
+static func _abandon_calendar_day() -> int:
+	var date: Dictionary = Timekeeping.get_date()
+	var year: int = int(date.get("year", 1))
+	var month: int = int(date.get("month", 1))
+	var day: int = int(date.get("day", 1))
+	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+
+
+# ---------------------------------------------------------------------------
+# Section: Succession picker (Phase 11C)
+# ---------------------------------------------------------------------------
+
+var _succession_row: HBoxContainer = null
+var _designate_heir_button: Button = null
+var _confirm_succession_button: Button = null
+var _heir_dialog: AcceptDialog = null
+var _heir_list: VBoxContainer = null
+var _heir_button_group: ButtonGroup = null
+var _heir_confirm_button: Button = null
+var _selected_heir_id: String = ""
+var _selected_heir_kind: String = ""
+
+
+func _build_heir_dialog() -> void:
+	_heir_dialog = AcceptDialog.new()
+	_heir_dialog.title = "Designate Heir"
+	_heir_dialog.min_size = Vector2(520, 360)
+	_heir_dialog.dialog_hide_on_ok = false
+	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.add_theme_constant_override("separation", 6)
+	_heir_dialog.add_child(vb)
+	var prompt := Label.new()
+	prompt.text = "Choose an heir for this domain. Non-henchman heirs inherit at base loyalty −2."
+	vb.add_child(prompt)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(480, 220)
+	vb.add_child(scroll)
+	_heir_list = VBoxContainer.new()
+	_heir_list.add_theme_constant_override("separation", 2)
+	scroll.add_child(_heir_list)
+	_heir_button_group = ButtonGroup.new()
+	_heir_confirm_button = _heir_dialog.add_button("Designate", true, "heir_designate")
+	_heir_confirm_button.disabled = true
+	_heir_dialog.custom_action.connect(_on_heir_dialog_action)
+	add_child(_heir_dialog)
+
+
+func _on_designate_heir_pressed() -> void:
+	if _domain_id.is_empty():
+		return
+	# Populate the candidate list freshly.
+	for child in _heir_list.get_children():
+		_heir_list.remove_child(child)
+		child.queue_free()
+	_selected_heir_id = ""
+	_selected_heir_kind = ""
+	_heir_confirm_button.disabled = true
+	var candidates: Array = RulerDeathHandler.eligible_heirs_for(_domain_id)
+	if candidates.is_empty():
+		var none_label := Label.new()
+		none_label.text = "(no eligible heirs found in this campaign)"
+		none_label.modulate = Color(0.7, 0.7, 0.7)
+		_heir_list.add_child(none_label)
+	for c: Dictionary in candidates:
+		_heir_list.add_child(_build_heir_row(c))
+	_heir_dialog.popup_centered()
+
+
+func _build_heir_row(candidate: Dictionary) -> Control:
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 8)
+	var radio := CheckBox.new()
+	radio.button_group = _heir_button_group
+	var heir_id: String = String(candidate.get("character_id", ""))
+	var heir_kind: String = String(candidate.get("kind", ""))
+	radio.pressed.connect(_on_heir_selected.bind(heir_id, heir_kind))
+	hb.add_child(radio)
+	var kind_chip := Label.new()
+	kind_chip.text = "[%s]" % heir_kind
+	kind_chip.modulate = (
+		Color(0.7, 0.85, 1.0) if heir_kind == "pc"
+		else Color(0.85, 0.85, 0.7) if heir_kind == "henchman"
+		else Color(0.95, 0.75, 0.55))
+	kind_chip.custom_minimum_size = Vector2(110, 0)
+	hb.add_child(kind_chip)
+	var name_label := Label.new()
+	name_label.text = String(candidate.get("name", ""))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(name_label)
+	var detail_label := Label.new()
+	detail_label.text = "%s L%d" % [
+		String(candidate.get("character_class", "")),
+		int(candidate.get("level", 0)),
+	]
+	detail_label.modulate = Color(0.7, 0.7, 0.7)
+	hb.add_child(detail_label)
+	return hb
+
+
+func _on_heir_selected(heir_id: String, heir_kind: String) -> void:
+	_selected_heir_id = heir_id
+	_selected_heir_kind = heir_kind
+	_heir_confirm_button.disabled = false
+
+
+func _on_heir_dialog_action(action: String) -> void:
+	if action != "heir_designate":
+		return
+	if _domain_id.is_empty() or _selected_heir_id.is_empty():
+		_heir_dialog.hide()
+		return
+	RulerDeathHandler.designate_heir(_domain_id, _selected_heir_id, _selected_heir_kind)
+	_heir_dialog.hide()
+
+
+func _on_confirm_succession_pressed() -> void:
+	if _domain_id.is_empty():
+		return
+	var calendar_day: int = _abandon_calendar_day()
+	RulerDeathHandler.resolve_succession(_domain_id, calendar_day)

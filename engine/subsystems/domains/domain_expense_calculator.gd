@@ -29,9 +29,19 @@ extends RefCounted
 ## When `income_gate_active` is true (stronghold < sufficiency), the domain
 ## still owes its 200 cp/family garrison minimum; liturgy / maintenance / tithe
 ## / tribute / repression are zeroed because there is no revenue to fund them.
+##
+## Phase 11D.2 — Clanhold-style garrison cost +2gp (`ax_domains_of_chaos.xml`
+## §exceptions_from_clanholds L86): *"Garrison cost is increased by 2gp."*
+## When `domains.domain_style == 'clanhold'`, the garrison hard floor becomes
+## 4gp/family (400 cp) instead of 2gp/family (200 cp). The same +2gp offset is
+## already surfaced by `GarrisonExpenditureCalculator` for the upstream actual-
+## paid + morale-incentive computation; this calculator's own clamp must match
+## so that the expense ledger reflects the higher floor even when the ruler
+## under-pays (RAW says they OWE this much regardless).
 
-const GARRISON_MIN_CP_PER_FAMILY := 200  # RAW: 2 gp per family
-const MAINTENANCE_CP_PER_FAMILY := 100   # RAW: 1 gp per family
+const GARRISON_MIN_CP_PER_FAMILY := 200          # RAW: 2 gp per family (civilized)
+const CLANHOLD_GARRISON_OFFSET_CP_PER_FAMILY := 200  # RAW L86: +2 gp per family for clanhold
+const MAINTENANCE_CP_PER_FAMILY := 100           # RAW: 1 gp per family
 
 
 ## Returns a Dictionary with keys (all cp):
@@ -48,7 +58,14 @@ static func calculate_monthly_expenses(
 	income_gate_active: bool
 ) -> Dictionary:
 	var peasants: int = int(domain.get("peasant_families", 0))
-	var garrison_min: int = peasants * GARRISON_MIN_CP_PER_FAMILY
+	# Phase 11D.2: clanhold-style domains owe an additional 2gp/family per
+	# RAW L86. The hard floor shifts from 200 to 400 cp/family; the +2gp is
+	# style-driven, not alignment-driven, per gdd-domain-style-and-alignment.md §2.
+	var is_clanhold: bool = String(domain.get("domain_style", "civilized")) == "clanhold"
+	var per_family_floor: int = GARRISON_MIN_CP_PER_FAMILY + (
+		CLANHOLD_GARRISON_OFFSET_CP_PER_FAMILY if is_clanhold else 0
+	)
+	var garrison_min: int = peasants * per_family_floor
 	# RAW universal min applies regardless of sufficiency. Ruler may pay more
 	# (incentive bonuses applied separately in the morale resolver).
 	var garrison: int = maxi(actual_garrison_paid_cp, garrison_min)

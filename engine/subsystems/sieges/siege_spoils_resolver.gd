@@ -13,8 +13,93 @@ extends RefCounted
 ## Public API:
 ##   compute_spoils(siege_id, casualty_assessment) -> Dictionary
 ##     {wages_cp, prisoner_value_cp, total_spoils_cp, pillage_pending}
+##   distribute_to_units(spoils_dict, victor_unit_ids) -> Dictionary
+##     {<unit_id>: share_cp, ...}
+##     Phase 11D.5 polish: per-warrior-headcount split of total_spoils_cp
+##     across the victor units, used by the tribal-warrior retention tick to
+##     decide which units met the qualifying-spoils threshold this month.
 
 const PRISONER_VALUE_CP: int = 4_000          # RAW L807: 40 gp = 4,000 cp
+
+
+## Phase 11D.5 polish — apply a spoils distribution to tribal-warrior units +
+## reset months_without_qualifying_spoils for units whose share met the
+## qualifying threshold per `gdd-tribal-warriors.md` §7 + Q-TW-1.
+##
+## Qualifying threshold: `share_cp >= unit.monthly_wage_cp × unit.count`. Units
+## with qualifying shares get their counter reset to 0. Non-qualifying units
+## are unchanged here; the monthly tick increments them.
+##
+## Returns a list of unit_ids whose counters were reset.
+static func apply_spoils_to_tribal_warriors(
+	distribution: Dictionary, calendar_day: int
+) -> Array:
+	var reset_unit_ids: Array = []
+	for unit_id_v in distribution.keys():
+		var unit_id: String = String(unit_id_v)
+		var share_cp: int = int(distribution[unit_id_v])
+		var unit: Dictionary = TroopUnitRepository.get_unit(unit_id)
+		if unit.is_empty():
+			continue
+		if String(unit.get("source_type", "")) != "tribal_warrior":
+			continue
+		var wage_per: int = int(unit.get("monthly_wage_cp", 0))
+		var count: int = int(unit.get("count", 0))
+		var required_share: int = wage_per * count
+		if share_cp >= required_share and required_share > 0:
+			TroopUnitRepository.update_unit(unit_id, {
+				"months_without_qualifying_spoils": 0,
+			})
+			reset_unit_ids.append(unit_id)
+	if not reset_unit_ids.is_empty() and calendar_day > 0:
+		# Defensive — calendar_day is currently unused but logged here for
+		# future polish (per-unit last_qualifying_spoils_day column would
+		# enable a more nuanced same-month-overrides-prior-month semantics).
+		pass
+	return reset_unit_ids
+
+
+## Phase 11D.5 polish — distribute spoils across the victor's surviving units
+## by per-warrior-headcount split. Used by the tribal-warrior retention tick
+## (gdd-tribal-warriors.md §7 + Q-TW-1) to determine which units received a
+## qualifying share (share ≥ unit's monthly_wage_cp × unit.count) this month.
+##
+## Returns Dictionary keyed by `troop_unit_id` → `share_cp`. Units not in the
+## victor list don't appear in the result.
+##
+## Distribution: `total_spoils_cp × (unit.count / total_victor_count)`,
+## floored. Banker's rounding isn't necessary here — the distribution is
+## already lossy (the floor at each unit) and the residual goes nowhere in
+## v1 (a future polish may credit the residual to the chieftain / domain
+## treasury per `gdd-tribal-warriors.md` §6.3 chieftain-share rules).
+static func distribute_to_units(spoils_dict: Dictionary, victor_unit_ids: Array) -> Dictionary:
+	var result: Dictionary = {}
+	if victor_unit_ids.is_empty():
+		return result
+	var total_spoils_cp: int = int(spoils_dict.get("total_spoils_cp", 0))
+	if total_spoils_cp <= 0:
+		for uid in victor_unit_ids:
+			result[String(uid)] = 0
+		return result
+	# Sum total counts across all victor units to derive per-warrior share.
+	var unit_counts: Dictionary = {}
+	var total_count: int = 0
+	for uid in victor_unit_ids:
+		var unit: Dictionary = TroopUnitRepository.get_unit(String(uid))
+		var c: int = int(unit.get("count", 0)) if not unit.is_empty() else 0
+		unit_counts[String(uid)] = c
+		total_count += c
+	if total_count <= 0:
+		for uid in victor_unit_ids:
+			result[String(uid)] = 0
+		return result
+	# Per-headcount split, floored per-unit.
+	for uid in victor_unit_ids:
+		var uid_s: String = String(uid)
+		var c: int = int(unit_counts.get(uid_s, 0))
+		@warning_ignore("integer_division")
+		result[uid_s] = (total_spoils_cp * c) / total_count
+	return result
 
 
 static func compute_spoils(siege_id: String, casualty_assessment: Dictionary) -> Dictionary:

@@ -12,6 +12,18 @@ extends RefCounted
 ## must return the SUM of `count` rolls of `d_faces`. Exploding-on-max means
 ## any die rolling its maximum face explodes (re-roll and add). Pass an empty
 ## Callable to use the project DiceSystem.
+##
+## Phase 11D.2 — Clanhold-style halved investment value
+## (`ax_domains_of_chaos.xml` §exceptions_from_clanholds L82-83):
+##   *"Value of investment in chaotic domains is halved."*
+##   *"It costs 2,000gp to attract 1d10 new families."*
+## When `domains.domain_style == 'clanhold'`, the investment-to-new-families
+## roll fires once per 2,000 gp invested instead of once per 1,000 gp. This is
+## the same rule restated two ways — half value <=> double cost per roll.
+## Style-driven, alignment-agnostic.
+
+const INVESTMENT_GP_PER_ROLL_CIVILIZED := 1000  # RAW: 1 1d10 per 1,000 gp invested
+const INVESTMENT_GP_PER_ROLL_CLANHOLD := 2000   # RAW L83: 1 1d10 per 2,000 gp invested
 
 const _ACTIVE_ADVENTURING_BANDS := [
 	# {min_population, dice_count, dice_faces}
@@ -96,7 +108,16 @@ static func resolve_growth(
 		# the domain's monthly revenue or 1,000 gp, whichever is greater.
 		var cap: int = maxi(monthly_revenue_cp, 1000)
 		var allowed_gp: int = mini(investment_gp, cap)
-		var investment_units: int = allowed_gp / 1000  # one 1d10 per full 1,000 gp
+		# Phase 11D.2: clanhold-style domains require 2,000 gp per 1d10 (RAW L83
+		# = halved-value of L82). The cap on max monthly investment is unchanged
+		# — clanholds still cap at max(revenue, 1000) gp/month — but each roll
+		# costs twice as much.
+		var is_clanhold: bool = String(domain.get("domain_style", "civilized")) == "clanhold"
+		var gp_per_roll: int = (
+			INVESTMENT_GP_PER_ROLL_CLANHOLD if is_clanhold
+			else INVESTMENT_GP_PER_ROLL_CIVILIZED
+		)
+		var investment_units: int = allowed_gp / gp_per_roll
 		if investment_units > 0:
 			investment_bonus = roller.call(10, investment_units, false)
 

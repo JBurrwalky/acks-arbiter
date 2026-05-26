@@ -1,9 +1,11 @@
 class_name HexOverlayData
 extends RefCounted
 
-## Overlay data for rivers and roads on a single hex cell.
+## Cell-attached overlay data for a single hex cell. As of migration 130
+## this holds road edges ONLY — rivers are first-class edge entities in
+## HexRiverEdgeData / hex_river_edges (see GDD §3.6).
 ##
-## Edge numbering: 0–5 clockwise from North (flat top = North).
+## Edge numbering: 0–5 clockwise from North (flat-top = North).
 ##   0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW
 ## Opposite edge: (n + 3) % 6
 
@@ -28,12 +30,6 @@ const EDGE_COUNT := 6
 # Fields
 # ---------------------------------------------------------------------------
 
-## Which edges the river touches (values 0–5). Empty = no river.
-var river_edges: Array[int] = []
-
-## The edge the river flows out of (downstream). -1 = terminus (e.g. flows into lake).
-var river_flow_exit: int = -1
-
 ## Which edges the road touches (values 0–5). Empty = no road.
 var road_edges: Array[int] = []
 
@@ -42,21 +38,8 @@ var road_edges: Array[int] = []
 # Public methods
 # ---------------------------------------------------------------------------
 
-func has_river() -> bool:
-	return not river_edges.is_empty()
-
-
 func has_road() -> bool:
 	return not road_edges.is_empty()
-
-
-## Returns all river edges except the flow exit (i.e. the entry edges).
-func river_entry_edges() -> Array[int]:
-	var entries: Array[int] = []
-	for edge in river_edges:
-		if edge != river_flow_exit:
-			entries.append(edge)
-	return entries
 
 
 ## Returns the opposite edge index: (edge + 3) % 6.
@@ -71,27 +54,21 @@ static func edge_name(edge: int) -> String:
 	return EDGE_NAMES[edge]
 
 
-## Validates that all edge values are in range 0–5 and flow_exit is valid.
+## Validates that all edge values are in range 0–5.
 func is_valid() -> bool:
-	for edge in river_edges:
-		if edge < 0 or edge >= EDGE_COUNT:
-			return false
 	for edge in road_edges:
 		if edge < 0 or edge >= EDGE_COUNT:
-			return false
-	if has_river() and river_flow_exit != -1:
-		if river_flow_exit not in river_edges:
 			return false
 	return true
 
 
-## Creates a HexOverlayData from a dictionary.
+## Creates a HexOverlayData from a dictionary. Tolerates legacy keys
+## (`river_edges`, `river_flow_exit`) by ignoring them — the migration-130
+## conversion is responsible for translating those into hex_river_edges
+## rows; a stale JSON file that still names them will simply lose its
+## rivers, which is the same behavior as the schema-side conversion.
 static func from_dict(data: Dictionary) -> HexOverlayData:
 	var overlay := HexOverlayData.new()
-	var raw_river: Array = data.get("river_edges", [])
-	for e in raw_river:
-		overlay.river_edges.append(int(e))
-	overlay.river_flow_exit = int(data.get("river_flow_exit", -1))
 	var raw_road: Array = data.get("road_edges", [])
 	for e in raw_road:
 		overlay.road_edges.append(int(e))
@@ -101,9 +78,6 @@ static func from_dict(data: Dictionary) -> HexOverlayData:
 ## Serializes to a dictionary for JSON/DB storage.
 func to_dict() -> Dictionary:
 	var d := {}
-	if has_river():
-		d["river_edges"] = river_edges.duplicate()
-		d["river_flow_exit"] = river_flow_exit
 	if has_road():
 		d["road_edges"] = road_edges.duplicate()
 	return d

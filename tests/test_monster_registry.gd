@@ -83,8 +83,12 @@ func test_catalog_loads() -> void:
 
 
 func test_monster_count() -> void:
-	check(_reg.get_monster_count() == 53,
-		"catalog should have exactly 53 monsters, got %d" % _reg.get_monster_count())
+	# Count derives from the L&E corpus and grows as the monster catalog
+	# fills in. Assert ≥ a sensible minimum rather than an exact value to
+	# avoid stale-assertion flakes whenever the catalog grows.
+	# Current count (2026-05-22): 224.
+	check(_reg.get_monster_count() >= 50,
+		"catalog should have at least 50 monsters (current: %d)" % _reg.get_monster_count())
 
 
 # --- Core lookup ---
@@ -104,7 +108,9 @@ func test_get_monster_not_empty() -> void:
 
 func test_get_all_monster_ids() -> void:
 	var ids := _reg.get_all_monster_ids()
-	check(ids.size() == 53, "get_all_monster_ids should return 53, got %d" % ids.size())
+	# Current count (2026-05-22): 224. Assert ≥ a sensible minimum.
+	check(ids.size() >= 50,
+		"get_all_monster_ids should return ≥50 (current: %d)" % ids.size())
 	# Verify sorted
 	if ids.size() >= 2:
 		check(ids[0] <= ids[1], "ids should be sorted, first two: '%s', '%s'" % [ids[0], ids[1]])
@@ -339,7 +345,8 @@ func test_orc_chieftain_stats() -> void:
 
 func test_animal_count() -> void:
 	var ids := _reg.get_monsters_by_type("animal")
-	check(ids.size() == 22, "should have 22 animal entries, got %d" % ids.size())
+	# Current count (2026-05-22): 73. Assert ≥ a minimum to avoid drift.
+	check(ids.size() >= 20, "should have ≥20 animal entries (current: %d)" % ids.size())
 
 
 func test_horse_variants() -> void:

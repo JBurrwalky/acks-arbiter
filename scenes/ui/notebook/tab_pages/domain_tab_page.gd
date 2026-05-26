@@ -33,6 +33,7 @@ const DecreesAndRemoteOrdersSubTabScript := preload("res://scenes/ui/notebook/do
 const GarrisonSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/garrison_sub_tab.gd")
 const RealmSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/realm_sub_tab.gd")
 const EncountersThreatsSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/encounters_threats_sub_tab.gd")
+const DepartureLogSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/departure_log_sub_tab.gd")
 const ClassSpecificSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/class_specific_sub_tab.gd")
 const PlaceholderSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/placeholder_sub_tab.gd")
 const EstablishDomainDialogScript := preload("res://scenes/ui/notebook/domain/establish_domain_dialog.gd")
@@ -70,9 +71,7 @@ const SUB_TABS := [
 	# dynamically via _refresh_class_specific_tab().
 	{"id": "class_specific","label": "Class Activities","phase_2": true, "script": "class_specific"},
 	{"id": "encounters",    "label": "Encounters & Threats", "phase_2": true,  "script": "encounters_threats"},
-	{"id": "departure_log", "label": "Departure Log",  "phase_2": false, "script": "placeholder",
-		"phase": "Phase 10 — Departure Log + Lifecycle Polish",
-		"description": "Chronological history of significant losses (classification regression, lost holdings, defeats, abandonment, ruler change, conquest)."},
+	{"id": "departure_log", "label": "Departure Log",  "phase_2": true,  "script": "departure_log"},
 ]
 
 
@@ -419,6 +418,8 @@ func _ensure_sub_tab_page(sub_tab_id: String) -> Control:
 			page = RealmSubTabScript.new()
 		"encounters_threats":
 			page = EncountersThreatsSubTabScript.new()
+		"departure_log":
+			page = DepartureLogSubTabScript.new()
 		"class_specific":
 			page = ClassSpecificSubTabScript.new()
 		_:

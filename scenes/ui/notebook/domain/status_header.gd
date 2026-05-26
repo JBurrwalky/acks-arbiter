@@ -18,6 +18,8 @@ extends PanelContainer
 
 var _row_identity: Label = null
 var _row_operational: Label = null
+# Phase 11C: succession-pending banner. Hidden when lifecycle_state != succession_pending.
+var _row_succession: RichTextLabel = null
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +43,12 @@ func _build_ui() -> void:
 	_row_operational.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_row_operational.text = ""
 	vbox.add_child(_row_operational)
+	_row_succession = RichTextLabel.new()
+	_row_succession.bbcode_enabled = true
+	_row_succession.fit_content = true
+	_row_succession.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_row_succession.visible = false
+	vbox.add_child(_row_succession)
 
 
 # ---------------------------------------------------------------------------
@@ -54,13 +62,21 @@ func display(domain: Dictionary) -> void:
 	if domain.is_empty():
 		_row_identity.text = "No domain yet  ·  See Overview tab for acquisition guidance"
 		_row_operational.text = ""
+		if _row_succession != null:
+			_row_succession.visible = false
 		return
 	var name := String(domain.get("name", "Untitled Domain"))
 	if name.is_empty():
 		name = "Untitled Domain"
 	var territory := String(domain.get("territory_type", "wilderness")).capitalize()
-	if int(domain.get("is_chaotic_domain", 0)) == 1:
+	# Migration 127 (Phase 11D.1): "Chaotic" badge describes ALIGNMENT (the
+	# `alignment` column), not domain_style. A clanhold-style + lawful domain
+	# does not earn the "Chaotic" badge here; alignment-vs-religion morale
+	# penalties + religion-conversion banners are the alignment-axis surfaces.
+	if String(domain.get("alignment", "neutral")) == "chaotic":
 		territory += " · Chaotic"
+	if String(domain.get("domain_style", "civilized")) == "clanhold":
+		territory += " · Clanhold"
 	var domain_id := String(domain.get("id", ""))
 	var hex_count: int = CampaignRepository.get_domain_hexes(domain_id).size()
 	var peasants: int = int(domain.get("peasant_families", 0))
@@ -91,6 +107,26 @@ func display(domain: Dictionary) -> void:
 		garrison_per_fam, garrison_glyph,
 		_format_count(treasury),
 	]
+	# Phase 11C: succession-pending banner. Shown only when the row's
+	# lifecycle_state is in the succession-pending state; the actual heir
+	# picker + Confirm flow lives on the Overview sub-tab's Domain
+	# Management card.
+	if _row_succession != null:
+		var state: String = String(domain.get("lifecycle_state", "active"))
+		if state == "succession_pending":
+			var grace_until: int = int(domain.get("succession_pending_until_day", 0))
+			var heir_id: String = String(domain.get("designated_heir_character_id", ""))
+			var heir_summary: String = (
+				"[color=#f0c060]heir designated: %s[/color]" % heir_id
+				if not heir_id.is_empty()
+				else "[color=#e08070]no heir designated[/color]")
+			_row_succession.text = (
+				"[b][color=#e08070]⚠ Succession pending[/color][/b]  ·  "
+				+ "%s  ·  grace until day %d  ·  use Overview > Domain Management to designate or confirm an heir"
+			) % [heir_summary, grace_until]
+			_row_succession.visible = true
+		else:
+			_row_succession.visible = false
 
 
 # ---------------------------------------------------------------------------

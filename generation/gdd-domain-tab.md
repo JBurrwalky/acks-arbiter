@@ -522,6 +522,21 @@ This serves as the "ruler dashboard" view for high-tier players running large re
 
 When the active entity has no vassals and is not themselves a vassal, the Realm sub-tab shows a minimal empty-state: *"No vassals yet. As your domain grows you may delegate territory to henchmen as vassal rulers."* + a "Learn about vassalage" link surfacing the §realms_and_vassals rule summary in a tooltip / modal (project-designed in-context help).
 
+### 9.4 Vassal-with-no-heir default: reverts-to-overlord (Phase 11C, v1)
+
+When a vassal henchman dies and no heir is designated before the succession grace period (1 game-month) lapses, the vassal's domain **reverts to the overlord under direct rule** rather than passing to abandonment. Mechanically:
+
+- The vassal_assignment row terminates (`status='departed'`).
+- `domains.liege_domain_id` is cleared (the domain is no longer a vassal).
+- `domains.owner_character_id` reassigns to the overlord PC.
+- `lifecycle_state` returns to `active`; the overlord runs the domain directly from the next monthly tick.
+
+A `succession_lapsed` departure-log entry records the overlord transfer. The overlord may subsequently delegate the domain to a new vassal via the standard Realm sub-tab "Assign domain to henchman" flow.
+
+**Why this default and not abandonment:** abandonment of a vassal's domain on grace lapse would force the overlord to swallow the loss of a productive realm-tier asset for an in-game admin oversight. Reverting to overlord direct rule preserves the realm's economic state while still imposing a cost (overlord now juggles an extra direct-rule domain, with its own per-domain tribute-efficiency consequences per `acore_axioms_strongholds_and_domains.xml` §tribute_inefficiency).
+
+**Placeholder for ACKS Dynasties:** this default is the v1 fallback. The long-term intent is the ACKS Dynasties bloodline-heir succession model — named bloodline relatives of the deceased ruler become the default heir-list, with the player choosing among them rather than from the open `eligible_heirs_for(domain_id)` list. The Phase 11C state machine + `designated_heir_*` columns are already shaped to accept a future bloodline-heir resolver; the reverts-to-overlord fallback should be preserved as the "no-bloodline-heir-available" terminal case. See `memory/project_dynasties_succession.md`.
+
 ---
 
 ## 10. Treasury & Ledger sub-tab
@@ -938,15 +953,23 @@ The Departure Log sub-tab is the chronological permanent record of significant l
 
 ### 14.1 Logged event types
 
-- **Classification regression** per `acore_axioms_strongholds_and_domains.xml` §regression: "Domain classification may regress if the circumstances that justified advancement end." Each regression event logs the old/new classification + the cause (e.g., "loss of urban settlement to dissolution per §dissolution: dropped below 75 urban families")
-- **Lost holdings** — when territory is lost (conquered by enemy, abandoned by player choice, ceded to lord, granted to vassal who became independent)
-- **Defeats** — battles lost where the domain's garrison was destroyed or repulsed; pillage events; sieges lost
-- **Stronghold loss** — when a stronghold falls below 0 SHP and collapses, or is voluntarily demolished, or is captured by an enemy
-- **Ruler change** — when the active entity dies or transfers domain rule. The Domain tab persists across ruler changes; the new ruler inherits the domain's state, with a Departure Log entry recording the predecessor
-- **Vassal loss** — when a vassal henchman dies, defects, declares independence, or is replaced
-- **Religious conversion** — when a domain's religion is changed (per §new_religion); records old religion → new religion + the morale-roll-penalty story arc
-- **Monster settlement** — when wandering monsters settle in a dungeon and impose ongoing morale penalty
-- **Catastrophic events** — utter catastrophe (−4 morale roll) per §calamities; ruler exile; succession war; etc.
+The canonical event-type list lives in the migration 121 `CHECK` constraint on `domain_departure_log.event_type` and is mirrored in `DepartureLogRecorder.VALID_EVENT_TYPES`. The two are kept in lockstep per `coding_conventions.md` §57. The descriptions below explain when each type fires; the codes are the literal `event_type` values written to the log.
+
+- `established` — a new domain is created (any path: grant / purchase / conquest / clear / clanhold_annex / recruit_chieftain). Written by Phase 11B's `LifecycleHandler.record_establishment` after `EstablishDomainFlow.establish_domain` inserts the row.
+- `classification_advanced` / `classification_regressed` — per `acore_axioms_strongholds_and_domains.xml` §classification_advancement L165-175 + §optional_rules.regression L178. Both written by Phase 11A's `DepartureLogRecorder.record_monthly_transitions` after the monthly tick detects the change.
+- `morale_tier_dropped` — Phase 11A: when the named morale tier (`Stalwart` / `Steadfast` / `Dedicated` / `Loyal` / `Apathetic` / `Demoralized` / `Turbulent` / `Defiant` / `Rebellious` per `acore_axioms` §effects_of_morale L538-549) transitions DOWNWARD. Intra-tier moves (e.g., -5 → -6 both Rebellious) do not log. Upward recovery does not log.
+- `territory_lost` — Phase 11B: hex(es) released from the domain via conquest, abandonment, or cession.
+- `stronghold_lost` — Phase 11B: stronghold falls to 0 SHP (collapse), is voluntarily demolished, or is captured by an enemy.
+- `defeat` / `pillaged` — battles lost where the garrison was destroyed/repulsed; pillage events. Wired in 11B alongside the lifecycle handler when the Phase 9A encounter/bandit summaries are surfaced.
+- `ruler_changed` / `ruler_died` — the active entity dies or transfers domain rule. Domain persists across the change; the log records the predecessor.
+- `succession_started` / `succession_resolved` / `succession_lapsed` — Phase 11C: ruler-death + grace-period state machine entries.
+- `vassal_lost` / `vassal_promoted` — vassal henchman dies, defects, declares independence, is replaced (lost), or is elevated within the realm (promoted).
+- `religion_converted` — domain religion changes per `acore_axioms` §tithes L245 "Changing religion is possible but causes severe morale penalties." Phase 11D wires the project-designed conversion process; this is the entry that records the start AND completion of the conversion arc.
+- `monster_settled` — wandering monsters settle in a dungeon and impose ongoing morale penalty per `ax_domain_level_encounters.xml`.
+- `calamity` — utter catastrophe (−4 morale roll) per `acore_axioms` §calamities; ruler exile; succession war; etc.
+- `conquered` — Phase 11B: terminal event where the domain passes to an enemy ruler (`same_campaign_npc`) or is lost to a foreign realm (`lost_to_foreign`).
+- `abandoned` — Phase 11B: domain abandoned (voluntary player action; ruler-bankrupt; stronghold-collapse grace lapsed without rebuild).
+- `restored` — Phase 11B: domain returns to `active` lifecycle state after `ruined_stronghold` rebuild within grace.
 
 ### 14.2 Layout and interaction
 
@@ -1285,28 +1308,46 @@ The Domain tab subscribes to scheduler boundary events for each stage. The Treas
 
 ### 16.4 Conquest and abandonment
 
-- **Conquest** — when an enemy successfully takes a domain by force (per `daw_sieges.xml` and `daw_campaigning_armies.xml` §occupation_and_conquest): the domain is removed from the player's holdings, a Departure Log entry is made, the players' Domain tab for that entity falls back to remaining domains or to the empty state if all are lost
-- **Abandonment** — voluntarily abandoning a domain: player flow with confirmation modal explaining the consequences (population disperses, stronghold becomes ruined or available for other rulers, treasury liquidated to ruler's wallet). Logged in Departure Log
+Phase 11B implements the foundation; Phase 11D-prereq.0b revised the conquest taxonomy to the three defender-POV outcomes used today. The `domains.lifecycle_state` column (migrations 122 + 125) is the canonical authority: `active` / `ruined_stronghold` / `succession_pending` / `abandoned` / `salted_to_ruin`. Monthly tick skips terminal-state rows (`abandoned` / `salted_to_ruin`); rows persist for the audit history.
+
+**Conquest** — when an enemy successfully takes a domain by force (per `daw_sieges.xml` + `daw_campaigning_armies.xml` §occupation_and_conquest). The Phase 9A `EventBus.siege_concluded(siege_id, outcome)` signal with `outcome in ['captured', 'surrendered']` triggers a two-step pipeline:
+
+1. **`RealmRepository.resolve_conquest_outcome(defender_domain_id, attacker_owner_id, attacker_intent)`** classifies the result into one of three outcomes from the defender's POV. `attacker_intent` is one of `occupy` / `loot_and_scoot` / `salt_the_earth` — derived by `DomainHandlers._derive_attacker_intent` (v1 heuristic: hostile + chaotic → salt; hostile alone → loot; otherwise → occupy) or surfaced via UI for player attackers.
+2. **`LifecycleHandler.conquer_domain(domain_id, calendar_day, outcome, new_owner_id, pillage_severity, summary)`** applies the outcome:
+   - **`occupied`** — domain row persists with hexes + (post-pillage) population preserved; ownership reassigns to `new_owner_id`. The new owner may be an existing tracked NPC, a PC, or — when the attacker is off-map — the head NPC of a realm just instantiated via `RealmRepository.instantiate_realm_for_off_map_force`. At this layer all three look the same.
+   - **`looted_local_succession`** — attacker took the treasury and left; the Realm Substrate's `spawn_local_succession_npc` minted a placeholder local ruler before this call; population reduced 10% via light pillage; stronghold shp reduced 25%; treasury looted to 0; land values decrement 1 (floored at 1).
+   - **`salted_to_ruin`** — the only genuinely terminal outcome per DaW salt-the-earth pillage rules. Hexes release, stronghold reduces 50%, population reduces 25%, treasury looted to 0, land values decrement 2 (floored at 1). Lifecycle state flips to `salted_to_ruin`. Row stays for audit; monthly tick skips.
+
+Pillage damage is applied uniformly via `RealmRepository.apply_pillage(domain_id, severity)` with severity 0 (no-op for clean occupy), 1 (light, looted_local_succession default), or 2 (heavy, salt-the-earth default). Vassals always cascade to `departed`. A Departure Log `conquered` entry records the outcome + new owner + pillage result + siege id.
+
+**Single-player note:** there is no `player-vs-player` conquest path in v1. ACKS Arbiter is single-player; multi-PC parties share the player's role. The `new_owner_id` parameter is polymorphic (any character_id is acceptable), so a hypothetical future multiplayer mode reaches PC-vs-PC conflict by setting `new_owner_id` to a hostile PC's character_id — no code path change required.
+
+**Abandonment** — voluntarily abandoning a domain: player flow on the Overview sub-tab's "Domain Management" card. Confirmation modal explains consequences (treasury liquidates to the ruler's coin via `add_coins_cp`, peasants disperse, hexes release back to the unowned pool, vassals become independent, stronghold reverts to ruined-or-available). The modal requires the player to type the domain name as a destructive-action gate. `LifecycleHandler.abandon_domain(domain_id, today, "voluntary", owner_id)` performs the mutation; a Departure Log `abandoned` entry records the reason + liquidation summary.
+
+**Stronghold collapse** — when a stronghold's shp reaches 0 via siege, `EventBus.stronghold_destroyed` with `cause='siege'` triggers `LifecycleHandler.mark_stronghold_collapsed(...)`. The domain enters `ruined_stronghold` state with a 1-game-month grace window (`ruined_stronghold_grace_until_day`). If the stronghold is rebuilt to ≥ 1 shp before the grace lapses, `restore_from_ruin` flips state back to `active`. Otherwise the monthly-tick's `tick_lifecycle_state` auto-fires `abandon_domain(..., REASON_STRONGHOLD_COLLAPSED)` with treasury forfeit (no rebuild ⇒ no stronghold to retrieve cp from).
 
 ### 16.5 Ruler death and succession
 
-Per O-D6 resolution: **a successor must be appointed** when a domain-ruling PC or henchman-vassal dies. The domain cannot simply lapse without active appointment — leaving it heirless triggers consequences per the abandonment path in §16.4.
+Per the [RESOLVED 2026-05-06] addendum the succession grace period is **1 game-month**. Phase 11C ships the full state machine in `engine/subsystems/domains/ruler_death_handler.gd`; this section describes the flow from the player's perspective.
 
-**Successor appointment flow:**
+**Trigger.** `EventBus.character_died(character_id)` (already emitted by combat, override, and crime resolvers) bridges through `DomainHandlers._on_character_died` into `RulerDeathHandler.handle_ruler_death(deceased_character_id, calendar_day)`. The handler sweeps every active domain owned by the deceased and transitions each into `lifecycle_state='succession_pending'` with `succession_pending_until_day = calendar_day + 30`. Per-domain `succession_started` signals fire plus one consolidated `ruler_died` signal carrying the affected domain ids.
 
-1. On ruler death (PC or henchman-vassal), the domain enters a "in succession" state for a configurable grace period (project-designed; default 1 game-month). During this period:
-   - Monthly resolution is paused (no revenue collected, no expenses paid, no morale roll)
-   - Vassals' loyalty rolls take a -2 penalty if their lord is "in succession" longer than the grace period (project-designed; flag for review)
-   - The Domain tab for the deceased ruler shows "Domain in succession — appoint successor" status with a prominent CTA
-2. The player must appoint a successor before the grace period ends. Successor candidates:
-   - **Another PC** in the player's roster (transfer of rule; Departure Log entry made for the deceased ruler; new PC inherits the domain)
-   - **An existing humanoid henchman** of the deceased ruler or of another PC in the same realm (henchman becomes vassal-of-the-new-overlord, or direct ruler if no overlord chain remains)
-   - **A non-henchman NPC**: per O-D6, if no henchman is available the engine spawns a non-henchman NPC successor candidate via the future NPC generator (see Open Question carry-over below). The NPC has base loyalty -2 (or -4 outside trade range) per `acore_axioms_strongholds_and_domains.xml` §non_henchman_vassals
-3. If no successor is appointed by the end of the grace period, the domain is treated as abandoned per §16.4 — population disperses, stronghold becomes ruined or unclaimed, and a Departure Log entry is made
+**Status header banner.** The Domain Status header surfaces an `⚠ Succession pending` banner with the grace day + the current heir-designation state. The banner instructs the player to use the Overview sub-tab's Domain Management card to designate or confirm.
 
-**For henchman-vassal death:** the henchman's domain similarly enters "in succession." The overlord PC must appoint a sub-vassal successor (another henchman, a non-henchman NPC, or — unusually — absorb the domain back into their personal management if rules-allowed and structure permits).
+**Heir designation.** The Overview sub-tab's Domain Management card shows two new buttons during `succession_pending`: **Designate Heir…** and **Confirm Succession Now**. The picker modal queries `RulerDeathHandler.eligible_heirs_for(domain_id)` and lists candidates with kind chips (`pc` / `henchman` / `non_henchman`), name, class, and level. Selecting a row + pressing Designate writes `designated_heir_character_id` + `designated_heir_kind` to the domains row and emits `succession_heir_designated`. Lifecycle state stays `succession_pending`.
 
-**Cross-doc dependency:** the non-henchman NPC successor path requires the future NPC generator subsystem (currently unbuilt). Until then, the engine handles non-henchman successors via a placeholder that prompts the player with a summary statline and proposed name; the full NPC generator will replace this placeholder when authored. **Flag for cross-GDD coordination during build.**
+**Resolution.** Two paths reach `RulerDeathHandler.resolve_succession(domain_id, calendar_day)`:
+- **Manual confirm** — player presses Confirm Succession Now on a domain with a designated heir.
+- **Automatic on grace expiry** — the monthly tick calls `tick_succession_grace(domain_data, calendar_day)`; if `calendar_day >= succession_pending_until_day` and a heir is designated, resolution auto-fires.
+
+Resolution dispatch:
+- **Designated heir present** — ownership transfers to the heir; `lifecycle_state` returns to `active`; `designated_heir_*` columns clear. A `succession_resolved` log entry records the new owner + heir_kind. **Non-henchman heirs** carry `base_loyalty_modifier = -2` per `acore_axioms_strongholds_and_domains.xml` §non_henchman_vassals L392-397; the modifier is captured in the log entry's `full_details_json` so future Dynasties / loyalty consumers can read it back.
+- **No designated heir + independent domain** — `LifecycleHandler.abandon_domain(domain_id, calendar_day, REASON_NO_HEIR, "")` fires. Treasury forfeit (no recipient). A `succession_lapsed` log entry precedes the `abandoned` entry.
+- **No designated heir + vassal domain** — reverts to overlord under direct rule per the v1 default. The vassal_assignment terminates, `liege_domain_id` clears (the domain is no longer a vassal), and ownership transfers to the overlord PC. This is a placeholder for the eventual ACKS Dynasties bloodline-heir model (see `memory/project_dynasties_succession.md`); the underlying state machine + designation columns are already shaped to accept a future bloodline-heir resolver.
+
+**Eligibility.** `eligible_heirs_for(domain_id)` returns active characters in the campaign, filtered by character_type (`pc` / `henchman`). Non-henchman NPC candidates are deferred until the setting-generator layer ships; the eligibility helper exposes the `non_henchman` kind in its API so future generators slot in without changing the UI contract.
+
+**Multi-domain rulers.** A ruler with N domains generates N `succession_pending` rows on death, each with its own independent grace clock. The player may designate different heirs per domain or let some lapse to abandonment / reverts-to-overlord.
 
 ### 16.6 Construction completion and stronghold transitions
 
@@ -1485,6 +1526,51 @@ The Domain tab is deeply cross-cutting — Phase H+ build per the project's buil
 - **Realm sub-tab vassal table:** virtualize when vassal count > 30; otherwise render directly
 
 The Domain tab should add zero noticeable latency to gameplay outside of monthly resolution. Monthly resolution is itself a known scheduler-tick boundary event with its own performance budget per `gdd-realtime-scheduler.md`.
+
+---
+
+## 21.5 Realm Substrate (Phase 11D-prereq.0a)
+
+Phase 11D-prereq.0a introduces an explicit `realms` table + diplomatic-relations layer that supports:
+- **Same-realm classification gates** per `ax_domains_of_chaos.xml:76-77` (chaotic clanhold civilized ≤25mi to same-realm city; borderlands ≤50mi).
+- **Friendly classification gates** per `acore_axioms_strongholds_and_domains.xml:165, 174` (lawful borderlands ≤72mi to friendly city; civilized ≤48mi). "Friendly" = relation disposition in `{cordial, friendly, allied}`.
+- **Conquest-outcome classification** for the 11B siege bridge — distinguishing the three-outcome conquest taxonomy (`occupied` / `looted_local_succession` / `salted_to_ruin`).
+- **Foundation for the broader faction system** (Phase 12+) without precluding extension to encounter reactions, hijink targeting, diplomacy proper, settlement control state, trade-route + customs effects.
+
+### Tables
+
+- **`realms`** — one row per realm. `realm_kind='tracked'` realms are in-simulation (have a corresponding apex domain in the campaign); `realm_kind='foreign'` realms are flavor-backdrop entities for off-map conquerors instantiated by Phase 11D-prereq.0b's `instantiate_realm_for_off_map_force` helper. Columns: `id`, `campaign_id`, `name`, `head_character_id` (nullable for foreign realms), `alignment` (nullable for mixed), `dominant_religion`, `culture` (placeholder until the culture system ships), `realm_kind`.
+- **`realm_relations`** — pair-symmetric diplomatic-disposition cache. Repository enforces canonical pair ordering (`realm_a_id < realm_b_id` lexicographically) so each pair has at most one row. Disposition is one of `hostile / unfriendly / neutral / cordial / friendly / allied` — six bands mapping loosely to the 2d6 reaction-table outcomes used throughout ACKS. Transitions happen via project-designed events (treaty signed, war declared, embargo lifted), not RAW dice rolls.
+- **`domains.realm_id`** — cached pointer to the realm a domain belongs to. NULL means "compute via apex walk" via `RealmGraph.apex_for_domain` as a fallback. The migration backfills this cache for every existing domain via iterative SQL UPDATE.
+
+### Repository — `RealmRepository` (static class in `engine/subsystems/realm_ai/realm_repository.gd`)
+
+Public API:
+- `create_realm(data) -> String` — insert helper; used by migration backfill + 11D-prereq.0b's off-map-force instantiation.
+- `get_realm(realm_id)`, `get_realm_for_character(character_id)`, `get_realm_for_domain(domain_id)`, `list_realms_for_campaign(campaign_id)`.
+- `get_relation(realm_a, realm_b) -> String` — defaults to `neutral`; same-realm queries return `allied` (a realm is allied with itself).
+- `set_relation(realm_a, realm_b, disposition, calendar_day) -> bool` — upsert with canonical pair ordering; rejects cross-campaign pairs.
+- `resolve_conquest_outcome(defender_domain_id, attacker_owner_id, attacker_intent) -> Dictionary` — the key 11B/11D consumer. Returns `{outcome, new_owner_id, pillage_severity, attacker_realm_id}`. For `occupied` outcomes against an off-map attacker, leaves `new_owner_id` empty in v1; 11D-prereq.0b's siege bridge fills it after calling `instantiate_realm_for_off_map_force`.
+
+### Relationship to RealmGraph (Phase 7)
+
+`RealmGraph` continues to own apex-walking (`apex_for_domain`, `liege_chain`, `is_same_realm`, army-hostility classification). It walks `domains.liege_domain_id` up to the apex domain. `RealmRepository` operates one level up — it asks "what realm is this domain part of?" rather than "what apex domain anchors this chain?" The two coexist: RealmRepository uses the cached `realm_id` (O(1)) and falls back to RealmGraph's apex walk when the cache is empty.
+
+### Deferred to 11D-prereq.0b
+
+- `instantiate_realm_for_off_map_force(culture_placeholder, head_npc_data)` — mints a new `realms` row + head NPC for off-map conquerors choosing to occupy.
+- `spawn_local_succession_npc(domain_id)` — placeholder for `looted_local_succession` outcome's new local ruler.
+- `apply_pillage(domain_id, severity)` — applies population/treasury/stronghold reductions per the DaW pillage table.
+- Retroactive `LifecycleHandler.conquer_domain` signature change to consume the three-outcome taxonomy; `lost_to_foreign` → `salted_to_ruin` rename.
+
+### Deferred to Phase 12 (broader faction system)
+
+- Encounter-reaction modifiers from realm-relations.
+- Faction-targeted hijinks (smuggling embargos, espionage cells).
+- Diplomatic actions as activities (treaties, alliances, war declarations, embargos).
+- Settlement-level control / contested / hostile state.
+- Trade-route + customs effects of realm-relations.
+- Realm-level economy aggregates.
 
 ---
 

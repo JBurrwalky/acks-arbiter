@@ -69,9 +69,15 @@ func _add_road(q: int, r: int) -> void:
 
 
 func _add_river(q: int, r: int) -> void:
+	# Migration 130: rivers are edge entities. For pathfinding tests we
+	# only need "any river edge touches this hex" to be true, so insert
+	# one canonical edge from this hex toward an arbitrary neighbor. The
+	# trade-route detector queries hex_has_river which is true if either
+	# endpoint is touched, so the choice of edge is fine.
 	CampaignRepository.db.query_with_bindings("""
-		INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges)
-		VALUES (?, ?, ?, 'river', '[]')
+		INSERT OR REPLACE INTO hex_river_edges
+			(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing)
+		VALUES (?, ?, ?, 0, 1, 'river_craft', 'none')
 	""", [_map_id, q, r])
 
 

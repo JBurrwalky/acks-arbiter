@@ -104,7 +104,12 @@ static func resolve_base_morale(
 	# resolves the tier via GarrisonExpenditureCalculator.morale_incentive_bonus.
 	base += additional_troops_morale_bonus
 
-	# Alignment match per §alignment_and_religion L466-471.
+	# Alignment match per §alignment_and_religion L466-471. The alignment field
+	# is derived from `effective_religion`, not from `religion` — during an
+	# active conversion arc, `alignment` reflects the ORIGINAL alignment and
+	# the penalty persists for the whole arc per gdd-religion-conversion.md
+	# §9.1. Phase 11D.3 keeps this behavior; the conversion itself adds an
+	# additional −1 penalty below.
 	var ruler_align: String = String(ruler.get("alignment", "neutral"))
 	var domain_align: String = String(domain.get("alignment", "neutral"))
 	if ruler_align != domain_align:
@@ -115,12 +120,78 @@ static func resolve_base_morale(
 		else:
 			base -= 1
 
+	# Phase 11D.3 — Beastman-ruler-over-kin stack per
+	# `ax_domains_of_chaos.xml:44`:
+	# *"Human and demi-human domains under beastman rule reduce base morale
+	#  by 2, in addition to any alignment penalty."*
+	# Reads ruler race + domain population kind. v1 uses race string compared
+	# against the beastman race set; kin is inferred by NOT being in the
+	# beastman set. Aligns with `memory/feedback_acks_kin_terminology.md`.
+	base += _beastman_over_kin_penalty(ruler, domain)
+
+	# Phase 11D.3 — Active religion-conversion penalty per
+	# `gdd-religion-conversion.md` §5.5: while a conversion arc is active,
+	# the domain takes an additional −1 base morale on top of the
+	# alignment penalty. The penalty clears when the arc transitions out of
+	# `active` (completed / aborted / failed_morale).
+	if _has_active_religion_conversion(domain.get("id", "")):
+		base -= 1
+
 	# Consecrate Ruler buff propagation (Phase 10A.2 / bucket-B Phase 2 long-tail):
 	# active consecrate_ruler_buff on this domain contributes its base_morale_bonus
 	# (+1 success / -1 natural-1 curse) to base morale. Wired 2026-05-19.
 	base += _consecrate_ruler_base_morale_bonus(domain.get("id", ""))
 
 	return base
+
+
+# Phase 11D.3 — Beastman race set per `memory/feedback_acks_kin_terminology.md`
+# + the eight beastman races covered by `ax_domains_of_chaos` /
+# `le_monster_catalog_*` clanhold-eligible entries. Lowercase comparison.
+const BEASTMAN_RACES := [
+	"hobgoblin", "orc", "gnoll", "goblin", "bugbear", "kobold", "ogre", "troll",
+]
+
+
+## Phase 11D.3 helper for the beastman-rules-kin penalty per
+## `ax_domains_of_chaos.xml:44`. Returns -2 when the ruler's race is a beastman
+## race AND the domain's population is NOT beastman (i.e., kin: human or
+## demi-human). Returns 0 otherwise.
+##
+## Domain population race: v1 uses a placeholder — if the domain's
+## `establishment_method` is `clanhold_annex` or `recruit_chieftain`, the
+## population is beastman; otherwise it's kin. This matches
+## `gdd-domain-style-and-alignment.md` §9.7 (population-race inference)
+## pending the future culture/population GDD that adds an explicit
+## `domains.population_race` column.
+static func _beastman_over_kin_penalty(ruler: Dictionary, domain: Dictionary) -> int:
+	var ruler_race: String = String(ruler.get("race", "")).to_lower()
+	if ruler_race.is_empty() or not BEASTMAN_RACES.has(ruler_race):
+		return 0  # ruler is not beastman; rule doesn't fire
+	# Domain population kind. v1 inference per gdd-domain-style-and-alignment §9.7.
+	var method: String = String(domain.get("establishment_method", "")).to_lower()
+	var domain_is_beastman: bool = method in ["clanhold_annex", "recruit_chieftain"]
+	if domain_is_beastman:
+		return 0  # beastman ruler over beastman population: rule doesn't fire
+	return -2  # beastman ruler over kin (human/demi-human) population
+
+
+## Phase 11D.3 helper: returns true when this domain has an active religion
+## conversion arc (status='active'). The conversion arc adds a −1 base morale
+## penalty per gdd-religion-conversion.md §5.5.
+static func _has_active_religion_conversion(domain_id: Variant) -> bool:
+	if domain_id == null:
+		return false
+	var did: String = str(domain_id)
+	if did.is_empty():
+		return false
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT 1 FROM domain_religion_conversion
+		WHERE domain_id = ? AND status = 'active'
+		LIMIT 1
+	""", [did]):
+		return false
+	return not CampaignRepository.db.query_result.is_empty()
 
 
 ## Returns the base_morale_bonus from an active consecrate_ruler_buff on this

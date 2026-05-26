@@ -26,6 +26,16 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		return {"summary": "conscript_troops: no domain resolved"}
 
 	var domain: Dictionary = _get_domain(domain_id)
+	# Phase 11D.2: chieftains of clanhold-style domains may NOT conscript
+	# peasants per RAW ax_domains_of_chaos.xml:36 (clanhold military section).
+	# Tribal warrior levy (Phase 11D.5) is the clanhold-style equivalent path.
+	if String(domain.get("domain_style", "civilized")) == "clanhold":
+		return {
+			"summary": "conscript_troops: blocked — clanhold-style chieftains "
+				+ "cannot conscript peasants (RAW ax_domains_of_chaos.xml:36). "
+				+ "Use Levy Tribal Warriors instead (Phase 11D.5).",
+			"blocked_reason": "clanhold_style_no_conscription",
+		}
 	var peasants: int = int(domain.get("peasant_families", 0))
 	@warning_ignore("integer_division")
 	var max_conscripts: int = peasants / 10

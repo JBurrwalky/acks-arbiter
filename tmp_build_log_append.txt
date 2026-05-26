@@ -1,0 +1,94 @@
+
+## Session 2026-05-22 — Per-race tribal-warrior composition import shipped
+
+**Task:** Import the RAW Tribal Warrior Troop Type table from `ax_domains_of_chaos.xml:417-444` + per-troop-type stats from `daw_campaigns_troop_tables_summary.xml`. Replace the v1 stub `tribal_infantry` template with a real per-race composition that drives the levy handler to spawn multiple troop_units rows per a race's RAW breakdown.
+
+**Model used:** Sonnet — data transcription + helper logic + handler refactor + tests.
+
+**Completed:**
+
+### TribalWarriorRegistry per-race tables
+
+- **`_COMPOSITION_PER_120`** — full RAW `ax_domains_of_chaos.xml:417-444` table transcribed as dict-of-dicts keyed `{race: {troop_type: count_per_120}}`. 11 races/cultures: jutland, iv_kingdom, skysos, kobold, goblin, orc, hobgoblin, gnoll, lizardman, bugbear, ogre. Counts verified to sum to 120 per race.
+- **`_TROOP_TYPE_STATS`** — per-troop-type wages (cp), supply (cp), battle_rating-per-warrior, is_cavalry flag for 12 troop types: light_infantry, heavy_infantry, hunters, slingers, bowmen, crossbowmen, longbowmen, composite_bowmen, light_cavalry, medium_cavalry, horse_archers, beast_riders. Values derived from `daw_campaigns_troop_tables_summary.xml` representative entries (NM tier).
+- **`VALID_TRIBAL_RACES`** — exported list of all 11 race/culture strings for validation.
+
+### New helpers
+
+- **`inferred_tribal_race_for_domain(domain_id) -> String`** — three-layer race inference: (1) explicit `domain.tribal_race` (future schema); (2) establishment_method inference (`clanhold_annex`/`recruit_chieftain` → `orc`; else → `jutland`); (3) hard fallback. Returns `""` for non-clanhold domains.
+- **`composition_for_race(race, total_count) -> Array`** — scales the per-120 composition to `total_count`, distributing the integer-rounding residual to the largest-count troop type. Returns `Array[Dictionary{troop_type, count, wage_cp, supply_cp, br_per_warrior, is_cavalry}]`. Empty array on unknown race or non-positive count.
+- **`base_morale_modifier_for_domain_morale(current_morale) -> int`** — RAW `ax_domains_of_chaos.xml:451-453` one-time modifier: +1 if Steadfast (+3) / Stalwart (+4); -1 if Demoralized (-1) or worse; 0 otherwise.
+- **`default_template_for_domain(domain_id) -> Dictionary`** — back-compat wrapper retained for v1 callers; new callers should use `composition_for_race` directly.
+
+### LevyTribalWarriorsHandler refactor
+
+- Replaced single-template spawn with multi-unit composition spawn.
+- **NEW `_spawn_levied_units_from_composition`** — iterates each composition row, chunks at `UNIT_SIZE_CAP` per row if needed, creates one troop_units row per (troop_type, chunk). Examples:
+  - **Orc 120 levy** → 5 rows: 44 light_infantry, 30 heavy_infantry, 20 bowmen, 20 crossbowmen, 6 beast_riders.
+  - **Kobold 120 levy** → 1 row: 120 light_infantry.
+  - **Skysos 120 levy** → 5 rows: 30 light_infantry, 25 composite_bowmen, 20 light_cavalry, 25 horse_archers, 20 medium_cavalry.
+  - **Jutland 100 levy** → 3 rows: 50 light_infantry + residual, 25 heavy_infantry, 25 bowmen (per the scaling-with-residual rule).
+- Departure log entry now includes the full composition + race + morale_modifier in the payload + a human-readable composition summary in the `summary` field.
+- The RAW domain-morale base-morale modifier (`base_morale_modifier_for_domain_morale`) is now applied to each spawned unit's morale field at creation time.
+
+### Test updates
+
+- **Updated existing tests** to handle multi-row levy output:
+  - `test_levy_decrements_available_and_creates_unit` — now checks `ids.size() >= 2` for orc levy + verifies race='orc' + sums counts to 100.
+  - `test_full_stand_down_marks_unit_departed_and_refills_pool` — loops across all spawned units and stands each down.
+  - `test_partial_stand_down_keeps_unit_active` — picks the largest-count unit for partial stand-down (since the previous fixed-100-on-first-unit assumption is gone).
+- **7 NEW tests for per-race import:**
+  - `test_composition_for_orc_120_warriors_matches_raw_table` — exact RAW-table verification (44/30/20/20/6).
+  - `test_composition_for_kobold_levy_is_all_light_infantry` — single-troop-type race.
+  - `test_composition_for_unknown_race_returns_empty`.
+  - `test_inferred_race_for_beastman_clanhold_is_orc`.
+  - `test_inferred_race_for_kin_clanhold_is_jutland`.
+  - `test_morale_modifier_for_steadfast_is_plus_one`.
+  - `test_morale_modifier_for_demoralized_is_minus_one`.
+
+### Conventions §72 appended
+
+Six patterns documented:
+- RAW tables transcribed as nested-dictionary constants (transpose to dict-of-dicts keyed by the most-queried dimension).
+- `per_N` normalization in the constant; scaling logic in the helper.
+- Residual assignment to the largest-count category preserves source intent at non-modular sizes.
+- Inference helpers with documented priority order beat magic defaults.
+- Per-troop-type stat tables stay separate from race composition (different growth dimensions).
+- Existing-test refactoring strategy for single-row → multi-row output changes.
+
+**Decisions made:**
+
+- **`orc` as the default beastman race + `jutland` as the default kin race.** Per RAW encounter tables, orcs are the most common beastman; per the user's culture-canon mapping note, Jutland covers the Germanic/Nordic human range (cultures 6/7/8). Both are sensible v1 defaults; player override lands when the future culture-canon GDD adds the explicit `domains.tribal_race` column.
+- **Stats derived from NM-tier representative entries** in DaW summary. The DaW tables list A/B/C/D variants per troop type with stat spreads; v1 picks one representative value per type. Future polish could read the L&E per-race monster catalog to provide race-tier-specific stat overrides (e.g., hobgoblin light_infantry has different AC than orc light_infantry).
+- **Residual goes to the largest-count troop type.** Alternative: distribute residual across all categories proportionally. Chosen approach: simpler + preserves the dominant troop-type signature at any levy size.
+- **`lizardman` included in the table** even though they're not strictly beastman per the project's race set. Per RAW the table lists them; v1 honors the table directly. No clanhold currently infers to lizardman; future polish or explicit schema may surface them.
+
+**Interfaces defined or changed:**
+
+- `TribalWarriorRegistry.composition_for_race(race, total_count) -> Array` — NEW.
+- `TribalWarriorRegistry.inferred_tribal_race_for_domain(domain_id) -> String` — NEW.
+- `TribalWarriorRegistry.base_morale_modifier_for_domain_morale(current_morale) -> int` — NEW.
+- `TribalWarriorRegistry.VALID_TRIBAL_RACES` — NEW exported const.
+- `TribalWarriorRegistry.default_template_for_domain` — kept for back-compat; now reads from composition internally.
+- `LevyTribalWarriorsHandler._spawn_levied_units` — REPLACED by `_spawn_levied_units_from_composition`. Old helper deleted.
+- `troop_units` row's `troop_type` field — values are now per-RAW (e.g., `'light_infantry'`, `'heavy_infantry'`, `'horse_archers'`, `'beast_riders'`) instead of the v1 stub `'tribal_infantry'`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 3 existing tests refactored for multi-row levy.
+- 7 new tests covering composition + inference + morale modifier.
+
+**Test results:** **346 / 21** — within the post-cleanup variance band (345-347 / 20-22). No regressions; all TribalWarriors + scenario suites pass.
+
+**Known issues / deferred:**
+
+- **Garrison sub-tab "Tribal Warriors" UI section** — the only remaining 11D.5 polish item. Handler API + composition data are fully ready for consumption; UI scene work + sub-tab wiring needed.
+- **L&E per-race monster-catalog stat overrides** — v1 uses generic NM-tier stats per troop type. A future polish could read MonsterRegistry data (which has per-race HD / AC / damage / save / morale) and apply race-tier-specific overlays to the troop_units rows. The `tribal_warrior` source_type + `race` + `troop_type` columns provide the lookup keys.
+- **Explicit `domains.tribal_race` column** — future schema migration would let players explicitly set the race (override inference). Inference falls back to it as priority-1 in the helper without further changes.
+
+**Next session should:**
+
+- Tackle the Garrison sub-tab "Tribal Warriors" UI section to fully close out the 11D.5 polish list.
+- Or continue with whatever next-direction Jedidiah prioritizes per `docs/phase-11-handoff.md` "What's next".

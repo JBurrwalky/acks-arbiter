@@ -141,13 +141,25 @@ static func grant_monopoly(
 		return ""
 	# Resolve campaign_id via the settlement.
 	if not CampaignRepository.db.query_with_bindings(
-			"SELECT campaign_id FROM settlement_entrances WHERE id = ?",
+			"SELECT campaign_id, parent_domain_id FROM settlement_entrances WHERE id = ?",
 			[settlement_id]):
 		return ""
 	if CampaignRepository.db.query_result.is_empty():
 		push_error("MonopolyRegistry.grant_monopoly: settlement '%s' not found" % settlement_id)
 		return ""
 	var campaign_id: String = str(CampaignRepository.db.query_result[0].get("campaign_id", ""))
+	# Phase 11D.2: chieftains of clanhold-style domains cannot offer charters of
+	# monopoly (RAW ax_domains_of_chaos.xml:50). Block the grant when the
+	# settlement's parent domain is clanhold-style.
+	var parent_domain_id: String = str(CampaignRepository.db.query_result[0].get("parent_domain_id", ""))
+	if not parent_domain_id.is_empty():
+		var parent_domain: Dictionary = CampaignRepository.get_domain(parent_domain_id)
+		if String(parent_domain.get("domain_style", "civilized")) == "clanhold":
+			push_error(
+				"MonopolyRegistry.grant_monopoly: rejected — settlement's parent domain "
+				+ "is clanhold-style; chieftains cannot offer charters of monopoly "
+				+ "(RAW ax_domains_of_chaos.xml:50).")
+			return ""
 	var holding_id: String = CampaignRepository.generate_id()
 	var grantor: Variant = granted_by_character_id if not granted_by_character_id.is_empty() else null
 	if not CampaignRepository.db.query_with_bindings("""

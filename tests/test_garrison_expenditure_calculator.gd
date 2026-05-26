@@ -58,8 +58,11 @@ func _set_classification(value: String) -> void:
 		"UPDATE domains SET territory_type = ? WHERE id = ?", [value, _domain_id])
 
 
-func _set_chaotic(value: bool) -> void:
-	CampaignRepository.update_domain_settings(_domain_id, {"is_chaotic_domain": 1 if value else 0})
+func _set_clanhold(value: bool) -> void:
+	# Migration 127 (Phase 11D.1): the +2gp garrison offset is now style-driven,
+	# not alignment-driven. Tests that exercise the offset toggle domain_style.
+	CampaignRepository.update_domain_settings(_domain_id,
+		{"domain_style": "clanhold" if value else "civilized"})
 
 
 func _wipe_units() -> void:
@@ -90,7 +93,7 @@ func _add_unit(count: int, monthly_cost_cp: int, source: String = "mercenary",
 
 func test_empty_domain_meets_minimum_with_zero() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	# 100 peasants; minimum_total = 200 gp × 100 = 20,000 cp.
 	# No troops → total_value=0 < 20,000, fails.
@@ -105,7 +108,7 @@ func test_empty_domain_meets_minimum_with_zero() -> void:
 
 func test_below_minimum_flag() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	# 100 cp/month for 100 peasants = 1 cp/fam (way below minimum).
 	_add_unit(50, 10_000)  # 100 gp = 10,000 cp; 100 cp/fam = 1 gp/fam
@@ -120,7 +123,7 @@ func test_below_minimum_flag() -> void:
 
 func test_minimum_met_no_incentive() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	_add_unit(50, 20_000)  # 200 cp/fam = 2 gp/fam exact
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
@@ -132,7 +135,7 @@ func test_minimum_met_no_incentive() -> void:
 
 func test_borderlands_incentive_plus1_at_3gp() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	_add_unit(60, 30_000)  # 300 cp/fam = 3 gp/fam → +1 in Borderlands
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
@@ -143,7 +146,7 @@ func test_borderlands_incentive_plus1_at_3gp() -> void:
 
 func test_wilderness_incentive_plus1_at_3gp() -> void:
 	_set_classification("wilderness")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	_add_unit(60, 30_000)  # 300 cp/fam = 3 gp/fam
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
@@ -154,7 +157,7 @@ func test_wilderness_incentive_plus1_at_3gp() -> void:
 
 func test_wilderness_incentive_plus2_at_4gp() -> void:
 	_set_classification("wilderness")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	_add_unit(80, 40_000)  # 400 cp/fam = 4 gp/fam
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
@@ -166,19 +169,19 @@ func test_wilderness_incentive_plus2_at_4gp() -> void:
 
 func test_chaotic_offset_increases_minimum() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(true)
+	_set_clanhold(true)
 	_wipe_units()
-	# 100 peasants × (200 + 200 chaotic) cp = 40,000 minimum.
+	# 100 peasants × (200 + 200 clanhold) cp = 40,000 minimum.
 	var summary := GarrisonExpenditureCalculator.compute(_domain_id)
 	check(int(summary["minimum_total_cp"]) == 40_000,
-		"chaotic borderlands: 100 × 400 cp/fam = 40,000, got %s" % str(summary["minimum_total_cp"]))
-	check(int(summary["chaotic_offset_per_family_cp"]) == 200,
-		"chaotic offset of 200 cp/fam surfaced in result")
+		"clanhold borderlands: 100 × 400 cp/fam = 40,000, got %s" % str(summary["minimum_total_cp"]))
+	check(int(summary["clanhold_offset_per_family_cp"]) == 200,
+		"clanhold offset of 200 cp/fam surfaced in result")
 
 
 func test_unpaid_followers_count_by_gp_value() -> void:
 	_set_classification("borderlands")
-	_set_chaotic(false)
+	_set_clanhold(false)
 	_wipe_units()
 	# Faithful follower-source unit with monthly_cost_cp=0 (wages_required=false in
 	# template) but monthly_wage_cp=30,000 of by-cp-value; should count toward total.

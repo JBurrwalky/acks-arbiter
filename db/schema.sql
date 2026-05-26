@@ -91,7 +91,16 @@ CREATE TABLE IF NOT EXISTS characters (
     -- Migration 040: class-specific sub-selections (JSON dict)
     -- e.g. {"regional_origin": "jutland"} for barbarians,
     -- {"witch_tradition": "sylvan"} for witches.
-    class_metadata TEXT NOT NULL DEFAULT '{}'
+    class_metadata TEXT NOT NULL DEFAULT '{}',
+    -- Migration 126 (Urban Growth Stocking §11.4, Q-UGS-28): per-character POI
+    -- affinity. Nullable: PC characters and itinerant NPCs are unanchored.
+    home_poi_id TEXT REFERENCES settlement_pois(id) ON DELETE SET NULL,
+    -- Migration 126 (Urban Growth Stocking §11.4, Q-UGS-29): NPC role enum.
+    npc_role TEXT NOT NULL DEFAULT 'player'
+        CHECK(npc_role IN (
+            'player', 'henchman', 'specialist', 'baseline_placeholder',
+            'stocked', 'named_npc', 'on_demand'
+        ))
 );
 
 -- Migration 120: structured permanent-wound records (Phase 10B.3 #6).
@@ -534,18 +543,40 @@ CREATE TABLE IF NOT EXISTS hex_cells (
     PRIMARY KEY (map_id, q, r)
 );
 
--- Migration 020: Hex overlays (rivers & roads)
+-- Migration 020 + 130: Hex overlays (roads only — rivers are now first-class
+-- edge entities in hex_river_edges per gdd-terrain-system.md §3.6).
 -- Edge numbering: 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW (clockwise from North).
 CREATE TABLE IF NOT EXISTS hex_overlays (
     map_id TEXT NOT NULL,
     q INTEGER NOT NULL,
     r INTEGER NOT NULL,
-    overlay_type TEXT NOT NULL CHECK(overlay_type IN ('river', 'road')),
+    overlay_type TEXT NOT NULL CHECK(overlay_type IN ('road')),
     edges TEXT NOT NULL DEFAULT '[]',
     flow_exit INTEGER NOT NULL DEFAULT -1,
     PRIMARY KEY (map_id, q, r, overlay_type),
     FOREIGN KEY (map_id) REFERENCES hex_maps(id)
 );
+
+-- Migration 130: River edges as first-class entities. Each row is one river
+-- segment along the shared edge between two adjacent hexes. The lex-lower
+-- (q, r) hex owns the entry; the neighbor is implied by `edge`. See
+-- gdd-terrain-system.md §3.6 for the canonical ownership rule and field
+-- semantics.
+CREATE TABLE IF NOT EXISTS hex_river_edges (
+    map_id          TEXT    NOT NULL REFERENCES hex_maps(id),
+    hex_q           INTEGER NOT NULL,
+    hex_r           INTEGER NOT NULL,
+    edge            INTEGER NOT NULL CHECK(edge BETWEEN 0 AND 5),
+    flow_clockwise  INTEGER NOT NULL DEFAULT 1 CHECK(flow_clockwise IN (0, 1)),
+    navigability    TEXT    NOT NULL DEFAULT 'river_craft'
+        CHECK(navigability IN ('none', 'small_craft', 'river_craft', 'large_craft')),
+    crossing        TEXT    NOT NULL DEFAULT 'none'
+        CHECK(crossing IN ('none', 'bridge', 'ford', 'ferry')),
+    PRIMARY KEY (map_id, hex_q, hex_r, edge)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hex_river_edges_owner
+    ON hex_river_edges(map_id, hex_q, hex_r);
 
 CREATE TABLE IF NOT EXISTS domains (
     id TEXT PRIMARY KEY,
@@ -571,14 +602,33 @@ CREATE TABLE IF NOT EXISTS domains (
     ruler_npc_id TEXT REFERENCES characters(id),
     -- Migration 056: Domain economy extensions (Domain Phase 0)
     religion TEXT NOT NULL DEFAULT '',
+    -- Migration 128 (Phase 11D.3 / gdd-religion-conversion.md §4.1):
+    -- `religion` is the DECLARED religion (the ruler's stated faith);
+    -- `effective_religion` is the PRACTICED religion (what the populace
+    -- actually worships). They diverge only during an active conversion arc
+    -- (domain_religion_conversion.status='active'). Alignment is derived from
+    -- effective_religion, not from religion — so the alignment penalty per
+    -- acore_axioms L467-470 reflects the original alignment for the whole arc.
+    effective_religion TEXT NOT NULL DEFAULT '',
+    -- Migration 129 (Phase 11D.5 / gdd-tribal-warriors.md §4.1):
+    -- Dormant tribal-warrior pool. Seeded at clanhold establishment to
+    -- peasant_families; civilized domains hold it at 0. Maintained by
+    -- levy / stand-down / casualty / population-change paths. Per the
+    -- v1.2 design (Q-TW-7 resolution): casualties leave a permanent gap;
+    -- population growth refills toward `peasant_families - levied`;
+    -- dead warriors cannot replace themselves.
+    available_tribal_warriors INTEGER NOT NULL DEFAULT 0,
     alignment TEXT NOT NULL DEFAULT 'neutral'
         CHECK(alignment IN ('lawful', 'neutral', 'chaotic')),
     tax_rate_cp_per_family INTEGER NOT NULL DEFAULT 200,
     liturgy_rate_cp_per_family INTEGER NOT NULL DEFAULT 100,
     tithe_rate_cp_per_family INTEGER NOT NULL DEFAULT 100,
     tribute_out_owed INTEGER NOT NULL DEFAULT 0,
-    is_chaotic_domain INTEGER NOT NULL DEFAULT 0
-        CHECK(is_chaotic_domain IN (0, 1)),
+    -- Migration 127 (Phase 11D.1): `is_chaotic_domain` DROPPED; replaced by
+    -- the orthogonal `domain_style` column below + existing `alignment`.
+    -- See gdd-domain-style-and-alignment.md §6 and §4 for the two-axis model.
+    domain_style TEXT NOT NULL DEFAULT 'civilized'
+        CHECK(domain_style IN ('civilized', 'clanhold')),
     is_active_adventuring_this_month INTEGER NOT NULL DEFAULT 0
         CHECK(is_active_adventuring_this_month IN (0, 1)),
     classification_progress_families INTEGER NOT NULL DEFAULT 0,
@@ -597,9 +647,37 @@ CREATE TABLE IF NOT EXISTS domains (
     administer_domain_completed_this_month INTEGER NOT NULL DEFAULT 0
         CHECK(administer_domain_completed_this_month IN (0, 1)),
     pending_investment_cp INTEGER NOT NULL DEFAULT 0,
+    -- Migration 122: Phase 11B lifecycle authority. `lifecycle_state` is the
+    -- canonical "is this domain mechanically alive?" column. Monthly tick
+    -- skips abandoned / salted_to_ruin rows; ruined_stronghold and
+    -- succession_pending continue to tick with reduced functionality.
+    -- Migration 125 renamed 'lost_to_foreign' → 'salted_to_ruin' per the
+    -- Phase 11D-prereq.0b conquest-taxonomy revision.
+    lifecycle_state TEXT NOT NULL DEFAULT 'active'
+        CHECK(lifecycle_state IN ('active', 'ruined_stronghold', 'succession_pending', 'abandoned', 'salted_to_ruin')),
+    lifecycle_state_changed_day INTEGER NOT NULL DEFAULT 0,
+    ruined_stronghold_grace_until_day INTEGER NOT NULL DEFAULT 0,
+    -- Migration 123: Phase 11C succession state. Grace day is non-zero only
+    -- when lifecycle_state='succession_pending'; designated_heir_kind is one
+    -- of '', 'pc', 'henchman', 'non_henchman'.
+    succession_pending_until_day INTEGER NOT NULL DEFAULT 0,
+    designated_heir_character_id TEXT NOT NULL DEFAULT '',
+    designated_heir_kind TEXT NOT NULL DEFAULT ''
+        CHECK(designated_heir_kind IN ('', 'pc', 'henchman', 'non_henchman')),
+    -- Migration 124: Phase 11D-prereq.0a realm substrate. Cached pointer to
+    -- the realms row this domain belongs to. NULL means "compute via apex
+    -- walk" (RealmGraph.apex_for_domain) as a fallback.
+    realm_id TEXT REFERENCES realms(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_domains_realm
+    ON domains(realm_id);
+CREATE INDEX IF NOT EXISTS idx_domains_lifecycle_state
+    ON domains(campaign_id, lifecycle_state);
+-- Migration 127 (Phase 11D.1): index for style-driven monthly-tick filtering.
+CREATE INDEX IF NOT EXISTS idx_domains_style
+    ON domains(campaign_id, domain_style);
 
 -- Migration 055: Domain hex land values (Domain Phase 0).
 -- Per-hex 3-9 gp/family base land value (3d3 when surveyed) plus up to +3
@@ -711,6 +789,10 @@ CREATE TABLE IF NOT EXISTS strongholds (
     location_hex_r           INTEGER,
     status                   TEXT    NOT NULL DEFAULT 'in_progress'
         CHECK(status IN ('in_progress', 'completed', 'paused', 'destroyed', 'claimed')),
+    -- Migration 126 (Urban Growth Stocking §11.4): siting hook for player-
+    -- built strongholds that register a parallel settlement_pois row.
+    registered_settlement_poi_id TEXT
+        REFERENCES settlement_pois(id) ON DELETE SET NULL,
     created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at               TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -922,7 +1004,13 @@ CREATE TABLE IF NOT EXISTS settlement_entrances (
     urban_families INTEGER NOT NULL DEFAULT 0,
     climate_override TEXT NOT NULL DEFAULT '',
     economy_inputs_changed_day INTEGER NOT NULL DEFAULT 0,
-    customs_duty_rate_pct INTEGER NOT NULL DEFAULT 0
+    customs_duty_rate_pct INTEGER NOT NULL DEFAULT 0,
+    -- Migration 126: cumulative urban investment in gp for the maximum-
+    -- population-by-total-investment cap per `acore_axioms_strongholds_and_
+    -- domains.xml:641-648`. SettlementGrowthResolver increments this each
+    -- month by the consumed investment_cp. Seeded to 10000gp (Class VI
+    -- founding floor) so pre-existing settlements stay above the cap.
+    cumulative_investment_gp INTEGER NOT NULL DEFAULT 10000
 );
 CREATE INDEX IF NOT EXISTS idx_settlement_entrances_parent_domain
     ON settlement_entrances(parent_domain_id);
@@ -1491,7 +1579,8 @@ CREATE TABLE IF NOT EXISTS troop_units (
     source_type              TEXT    NOT NULL DEFAULT 'mercenary'
         CHECK(source_type IN (
             'mercenary', 'conscript', 'militia',
-            'follower', 'slave_soldier', 'vassal'
+            'follower', 'slave_soldier', 'vassal',
+            'tribal_warrior'  -- Migration 129 (Phase 11D.5)
         )),
     troop_type               TEXT    NOT NULL,
     race                     TEXT    NOT NULL DEFAULT 'human',
@@ -1528,6 +1617,11 @@ CREATE TABLE IF NOT EXISTS troop_units (
     -- Migration 090 (Phase 9C polish): per-troop save vs Death.
     -- DiseaseResolver consumes this; defaults by tier are seeded in the migration.
     save_vs_death                INTEGER NOT NULL DEFAULT 14,
+    -- Migration 129 (Phase 11D.5): 3-month-spoils morale-trigger counter
+    -- for tribal_warrior source_type per gdd-tribal-warriors.md §7. Other
+    -- source_types leave it at 0 forever.
+    months_without_qualifying_spoils INTEGER NOT NULL DEFAULT 0
+        CHECK(months_without_qualifying_spoils >= 0),
     created_at               TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_troop_units_campaign
@@ -2079,20 +2173,27 @@ CREATE INDEX IF NOT EXISTS idx_siege_mines_active
 -- magic_research_projects table (separate from this migration's tables).
 
 
--- congregants: per-character congregant count + pending-gp accumulator.
+-- congregants: per-character-per-domain congregant count + pending-gp accumulator.
+-- Migration 128 (Phase 11D.3 / gdd-religion-conversion.md §4.1): rebuilt to
+-- per-character-per-domain. The conversion mechanic needs to know how many
+-- of a caster's congregants live in each domain, since the 60% completion
+-- threshold sums target-religion congregants WITHIN the conversion's target
+-- domain, not the caster's lifetime total.
+--
 -- The pending-gp accumulator tracks gp committed THIS month (via missionaries,
 -- charitable spells, or ceremonial sacrifices) that will roll into next
 -- month's growth roll. The growth roll happens in the domain monthly tick
 -- (1d10 + Cha mod per 1,000 gp per ax_campaign_play.xml §congregant_growth
--- L20-22), AFTER which pending_growth_pending_gp is reduced by the gp that
+-- L20-22), AFTER which monthly_growth_pending_cp is reduced by the gp that
 -- triggered the rolls.
 --
--- Keyed per-character (NOT per-domain) — a wandering divine caster without a
--- domain can still build a congregation in the settlement they minister to.
--- The domain-level ruler-bonus (+0..8 DP per 10 families) is computed by
--- joining congregants → characters → domains WHERE owner_character_id = ?.
+-- domain_id may be '' sentinel for dev-test rows where no primary domain
+-- is resolvable. No FK on domain_id — the row tracks even after domain
+-- teardown (per GDD §4.1).
 CREATE TABLE IF NOT EXISTS congregants (
-    character_id                   TEXT    PRIMARY KEY REFERENCES characters(id),
+    id                             TEXT    PRIMARY KEY,
+    character_id                   TEXT    NOT NULL REFERENCES characters(id),
+    domain_id                      TEXT    NOT NULL DEFAULT '',
     count                          INTEGER NOT NULL DEFAULT 0
         CHECK(count >= 0),
     monthly_growth_pending_cp      INTEGER NOT NULL DEFAULT 0
@@ -2101,6 +2202,42 @@ CREATE TABLE IF NOT EXISTS congregants (
     created_at                     TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at                     TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_congregants_caster_domain
+    ON congregants(character_id, domain_id);
+CREATE INDEX IF NOT EXISTS idx_congregants_domain
+    ON congregants(domain_id);
+
+-- domain_religion_conversion: active conversion arcs per
+-- gdd-religion-conversion.md §4.1. One row per arc; one active arc per
+-- domain (enforced by repository-level check at write).
+-- Migration 128 (Phase 11D.3).
+CREATE TABLE IF NOT EXISTS domain_religion_conversion (
+    id                          TEXT    PRIMARY KEY,
+    campaign_id                 TEXT    NOT NULL REFERENCES campaigns(id),
+    domain_id                   TEXT    NOT NULL REFERENCES domains(id),
+    from_religion               TEXT    NOT NULL,
+    to_religion                 TEXT    NOT NULL,
+    from_alignment              TEXT    NOT NULL
+        CHECK(from_alignment IN ('lawful', 'neutral', 'chaotic')),
+    to_alignment                TEXT    NOT NULL
+        CHECK(to_alignment IN ('lawful', 'neutral', 'chaotic')),
+    progress_pct                INTEGER NOT NULL DEFAULT 0
+        CHECK(progress_pct BETWEEN 0 AND 100),
+    driving_character_id        TEXT    REFERENCES characters(id),
+    started_calendar_day        INTEGER NOT NULL,
+    last_progressed_calendar_day INTEGER NOT NULL DEFAULT 0,
+    status                      TEXT    NOT NULL DEFAULT 'active'
+        CHECK(status IN ('active', 'completed', 'aborted', 'failed_morale')),
+    total_invested_cp           INTEGER NOT NULL DEFAULT 0,
+    months_at_rebellious        INTEGER NOT NULL DEFAULT 0
+        CHECK(months_at_rebellious >= 0),
+    created_at                  TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at                  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_drc_domain_active
+    ON domain_religion_conversion(domain_id, status);
+CREATE INDEX IF NOT EXISTS idx_drc_campaign_active
+    ON domain_religion_conversion(campaign_id, status);
 
 
 -- character_divine_power: per-character divine-power gp balance.
@@ -2808,3 +2945,240 @@ CREATE TABLE IF NOT EXISTS lay_low_state (
 );
 CREATE INDEX IF NOT EXISTS idx_lay_low_state_base
     ON lay_low_state(base_id, ends_day);
+
+-- Migration 121: domain_departure_log — Phase 11A append-only chronicle
+-- of significant losses and lifecycle changes per gdd-domain-tab.md §14.
+-- domain_id intentionally has no FK so the log survives a hard domain
+-- row deletion (the "conquered by foreign realm" terminal case).
+-- This table is APPEND-ONLY: no UPDATE, no DELETE — see coding_conventions.md.
+CREATE TABLE IF NOT EXISTS domain_departure_log (
+    id                       TEXT    PRIMARY KEY,
+    campaign_id              TEXT    NOT NULL REFERENCES campaigns(id),
+    domain_id                TEXT    NOT NULL,
+    calendar_day             INTEGER NOT NULL,
+    event_type               TEXT    NOT NULL
+        CHECK(event_type IN (
+            'established',
+            'classification_advanced',
+            'classification_regressed',
+            'territory_lost',
+            'stronghold_lost',
+            'defeat',
+            'pillaged',
+            'ruler_changed',
+            'ruler_died',
+            'succession_started',
+            'succession_resolved',
+            'succession_lapsed',
+            'vassal_lost',
+            'vassal_promoted',
+            'religion_converted',
+            'monster_settled',
+            'calamity',
+            'morale_tier_dropped',
+            'conquered',
+            'abandoned',
+            'restored',
+            -- Migration 129 (Phase 11D.5) tribal-warrior event types
+            -- per gdd-tribal-warriors.md §4.1.
+            'tribal_warriors_levied',
+            'tribal_warriors_stood_down',
+            'tribal_warriors_released_for_population_loss',
+            'tribal_warriors_morale_check_triggered',
+            'tribal_warriors_loyalty_failed',
+            'tribal_warriors_called_to_arms'
+        )),
+    summary                  TEXT    NOT NULL DEFAULT '',
+    full_details_json        TEXT    NOT NULL DEFAULT '{}',
+    related_ledger_entry_ids TEXT    NOT NULL DEFAULT '[]',
+    related_encounter_ids    TEXT    NOT NULL DEFAULT '[]',
+    created_at               TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_domain_departure_log_domain_calendar
+    ON domain_departure_log(domain_id, calendar_day DESC);
+CREATE INDEX IF NOT EXISTS idx_domain_departure_log_campaign_calendar
+    ON domain_departure_log(campaign_id, calendar_day DESC);
+
+-- Migration 124: Phase 11D-prereq.0a realm substrate. Realms are explicit
+-- rows now; tracked realms map 1:1 with apex domains (the realm head is
+-- the apex's owner), foreign realms exist without a corresponding domain
+-- (flavor backdrop for off-map conquerors instantiated by 11D-prereq.0b).
+CREATE TABLE IF NOT EXISTS realms (
+    id                       TEXT    PRIMARY KEY,
+    campaign_id              TEXT    NOT NULL REFERENCES campaigns(id),
+    name                     TEXT    NOT NULL,
+    head_character_id        TEXT    REFERENCES characters(id),
+    alignment                TEXT
+        CHECK(alignment IS NULL OR alignment IN ('lawful', 'neutral', 'chaotic')),
+    dominant_religion        TEXT    NOT NULL DEFAULT '',
+    culture                  TEXT    NOT NULL DEFAULT '',
+    realm_kind               TEXT    NOT NULL DEFAULT 'tracked'
+        CHECK(realm_kind IN ('tracked', 'foreign')),
+    created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at               TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_realms_campaign
+    ON realms(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_realms_head_character
+    ON realms(head_character_id);
+
+-- Pair-symmetric diplomatic-disposition cache. Repository enforces canonical
+-- ordering (realm_a_id < realm_b_id lexicographically) so each pair has at
+-- most one row. Disposition bands map to 2d6 reaction-table outcomes;
+-- transitions happen via project-designed events, not RAW rolls.
+CREATE TABLE IF NOT EXISTS realm_relations (
+    id                       TEXT    PRIMARY KEY,
+    campaign_id              TEXT    NOT NULL REFERENCES campaigns(id),
+    realm_a_id               TEXT    NOT NULL REFERENCES realms(id),
+    realm_b_id               TEXT    NOT NULL REFERENCES realms(id),
+    disposition              TEXT    NOT NULL DEFAULT 'neutral'
+        CHECK(disposition IN ('hostile', 'unfriendly', 'neutral', 'cordial', 'friendly', 'allied')),
+    last_changed_day         INTEGER NOT NULL DEFAULT 0,
+    created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at               TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_realm_relations_pair
+    ON realm_relations(realm_a_id, realm_b_id);
+
+-- ---------------------------------------------------------------------------
+-- Migration 126: Urban Growth Stocking — settlement_pois table per
+-- `generation/gdd-urban-growth-stocking.md` §11.1. Substrate for the POI
+-- emergence pipeline (Stages C-H land in later sessions).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS settlement_pois (
+    id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL REFERENCES settlement_entrances(id) ON DELETE CASCADE,
+    type TEXT NOT NULL
+        CHECK (type IN (
+            'religious_site', 'mercenary_guild_hall', 'mages_guild_hall',
+            'named_tavern', 'workshop', 'port'
+        )),
+    tier TEXT NOT NULL DEFAULT ''
+        CHECK (tier IN ('', 'shrine', 'temple')),
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN (
+            'emerging', 'active', 'understaffed', 'dormant', 'abandoned'
+        )),
+    builder_kind TEXT NOT NULL DEFAULT 'emergent'
+        CHECK (builder_kind IN ('emergent', 'character')),
+    builder_character_id TEXT REFERENCES characters(id) ON DELETE SET NULL,
+    emerged_via TEXT NOT NULL DEFAULT ''
+        CHECK (emerged_via IN (
+            '', 'class_advancement', 'player_commission', 'stronghold_register',
+            'baseline_emergence'
+        )),
+    established_at_calendar_day INTEGER NOT NULL DEFAULT 0,
+    gp_value INTEGER NOT NULL DEFAULT 0,
+    l3_plus_npc_count INTEGER NOT NULL DEFAULT 0,
+    l1_l2_adherent_count INTEGER NOT NULL DEFAULT 0
+        CHECK (l1_l2_adherent_count >= 0),
+    attached_religion TEXT NOT NULL DEFAULT '',
+    attached_specialist_kind TEXT NOT NULL DEFAULT '',
+    stocked_character_id TEXT REFERENCES characters(id) ON DELETE SET NULL,
+    baseline_head_npc_character_id TEXT REFERENCES characters(id) ON DELETE SET NULL,
+    preferred_district_class TEXT NOT NULL DEFAULT '',
+    owner_faction_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    CHECK (
+        (builder_kind = 'emergent' AND builder_character_id IS NULL)
+        OR
+        (builder_kind = 'character' AND builder_character_id IS NOT NULL)
+    ),
+    CHECK (
+        (type = 'religious_site' AND tier IN ('shrine', 'temple'))
+        OR (type <> 'religious_site' AND tier = '')
+    )
+);
+CREATE INDEX IF NOT EXISTS idx_settlement_pois_settlement
+    ON settlement_pois(settlement_id);
+CREATE INDEX IF NOT EXISTS idx_settlement_pois_type
+    ON settlement_pois(type);
+CREATE INDEX IF NOT EXISTS idx_settlement_pois_religion
+    ON settlement_pois(attached_religion)
+    WHERE attached_religion <> '';
+CREATE INDEX IF NOT EXISTS idx_settlement_pois_specialist_kind
+    ON settlement_pois(attached_specialist_kind)
+    WHERE attached_specialist_kind <> '';
+CREATE INDEX IF NOT EXISTS idx_settlement_pois_tier
+    ON settlement_pois(tier)
+    WHERE tier <> '';
+
+-- Migration 126: daily spellcasting service availability per
+-- `gdd-urban-growth-stocking.md` §11.4a. Lazy-init by §8.5.2's query — no
+-- background process pre-populates this table. 7-day retention sweep ships
+-- with Stage H.
+CREATE TABLE IF NOT EXISTS settlement_poi_spell_offers (
+    id TEXT PRIMARY KEY,
+    poi_id TEXT NOT NULL REFERENCES settlement_pois(id) ON DELETE CASCADE,
+    calendar_day INTEGER NOT NULL,
+    tradition TEXT NOT NULL
+        CHECK (tradition IN ('divine', 'arcane')),
+    spell_level INTEGER NOT NULL
+        CHECK (spell_level BETWEEN 1 AND 6),
+    count_initial INTEGER NOT NULL
+        CHECK (count_initial >= 0),
+    count_remaining INTEGER NOT NULL
+        CHECK (count_remaining >= 0 AND count_remaining <= count_initial),
+    unit_cost_gp INTEGER NOT NULL
+        CHECK (unit_cost_gp >= 0),
+    UNIQUE (poi_id, calendar_day, tradition, spell_level)
+);
+CREATE INDEX IF NOT EXISTS idx_settlement_poi_spell_offers_lookup
+    ON settlement_poi_spell_offers(poi_id, calendar_day);
+
+-- Migration 126: tier-cache maintenance triggers per §11.4. Religious_sites
+-- track 'shrine'/'temple' tier as a denormalized cache; the triggers below
+-- keep the cache in sync with the consecrated_altars rows attached via
+-- (location_kind='settlement_poi', location_ref=<settlement_pois.id>).
+CREATE TRIGGER IF NOT EXISTS trg_consecrated_altars_promote_religious_site
+AFTER UPDATE OF status ON consecrated_altars
+WHEN NEW.status = 'completed' AND NEW.location_kind = 'settlement_poi'
+BEGIN
+    UPDATE settlement_pois
+    SET tier = 'temple',
+        updated_at = datetime('now')
+    WHERE id = NEW.location_ref
+      AND type = 'religious_site';
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_consecrated_altars_promote_on_insert
+AFTER INSERT ON consecrated_altars
+WHEN NEW.status = 'completed' AND NEW.location_kind = 'settlement_poi'
+BEGIN
+    UPDATE settlement_pois
+    SET tier = 'temple',
+        updated_at = datetime('now')
+    WHERE id = NEW.location_ref
+      AND type = 'religious_site';
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_consecrated_altars_demote_religious_site
+AFTER UPDATE OF status ON consecrated_altars
+WHEN NEW.status = 'broken_unblessed' AND NEW.location_kind = 'settlement_poi'
+BEGIN
+    UPDATE settlement_pois
+    SET tier = CASE
+            WHEN EXISTS (
+                SELECT 1 FROM consecrated_altars ca
+                WHERE ca.location_kind = 'settlement_poi'
+                  AND ca.location_ref = settlement_pois.id
+                  AND ca.status = 'completed'
+                  AND ca.id <> NEW.id
+            ) THEN 'temple'
+            ELSE 'shrine'
+        END,
+        updated_at = datetime('now')
+    WHERE id = NEW.location_ref
+      AND type = 'religious_site';
+END;
+
+-- Migration 126: characters.home_poi_id index (Q-UGS-28).
+CREATE INDEX IF NOT EXISTS idx_characters_home_poi
+    ON characters(home_poi_id)
+    WHERE home_poi_id IS NOT NULL;
+
+-- Migration 126: characters.npc_role index (Q-UGS-29).
+CREATE INDEX IF NOT EXISTS idx_characters_npc_role
+    ON characters(npc_role)
+    WHERE npc_role <> 'player';

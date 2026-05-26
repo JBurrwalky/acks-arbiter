@@ -142,13 +142,8 @@ Chaos is not mere anarchism, and it is not nihilism. It is not a happy-go-lucky,
 
 The origins of the gods of Chaos are shrouded in mystery, and it is a mystery they do not reveal to their devotees. Whether there was ever a first God of chaos or if it has always been a pantheon is unknown. Similarly it is unknown whether the gods of chaos always existed as the first God of law has, or if they came into being later, or are corrupted servants of Law. Sages and philosophers argue over such points endlessly.
 
-What is known is that the Choas gods and their followers believe that, in the end, all of reality will be consumed and unified into one being, and it will be the one who consumes all else that remains, while the rest will be gone. Each devotee of chaos strives to accumulate as much spiritual power as possible either to be the Final One Who Remains, or at least to hold on to their individual existence as long as they can.
+What is known is that the Choas gods and their followers believe that, the ultimate order of reality is dictated by the one with the greatest power: might makes reality. They reject the notion that the present order in inherent to the world and believe that things only are as they are because the One used his own power to make them so, and they seek to challenge that power to remake the universe according to their own vision. 
 
-The doctrines of Chaos universally regard the teachings of Law as deception practiced by the gods of Law who seek only to weaken their followers so they may consume them when they die, and to prevent any of them from gaining sufficient power in life to cheat death or to ascend to godhood and avoid being consumed. Whether the Choas Gods know this is false or not is unknown.
-
-While each individual chaotic entity seeks to accumulate as much power to itself as it can, neither the gods of chaos nor the mortal devotees of chaos are stupid: they know that they cannot fight each other and the forces of law at the same time. As such, the gods of chaos tend to align into pantheons that cover a wide range of spiritual domains much the way an adventuring party tries to cover a wide range of skills. These pantheons are temporary alliances, mutual pacts to aid one another and avoid internal conflict until all other threats are dealt with. Chaotic adventuring parties and chaotic kingdoms operate with the same mentality. 
-
-When a chaotic follower of sufficient ambition sets out to gain power, the gods of chaos will sometimes lend their own power to him or her to further their own goals, power they expect to re-absorb when the follower dies. But by committing acts of chaos the chaotic mortal also gains power from those they harm and from the world around them, absorbing the spiritual power of those they dominate, slay, or otherwise harm. (This is another in world justification for the power gain of leveling up).
 
 ## 2.2 Primal Energy: Magic Power, Divine Power, and XP.
 
@@ -179,7 +174,7 @@ As such, while no one in the world will speak of "experience points" or of a "9t
 
 Very few characters truly know how Primal Energy works (only Sages with 3 ranks of Knowledge (Metaphysics), Theology or Collegiate Wizardry), and even they differ on the specifics of how the exact economy of Primal Energy, Divine Power, and Magic Power actually flows. Some deny it's existence outright, other claim that all matter is merely an illusion and only Primal Energy existis, others that Magic Power, Divine Power, and Primal Energy are separate and competing sources of power, etc. For the most part, Arcane Casters, Sages, and Divine Casters know more about HOW to use Primal Energy than WHY it works, which is why Divine Rituals are closely preserved and seldom modified and spell formulae are usualy copies of copies of copies and creating a new one take ssuch immense cost and time. The process works, and no one knows why.
 
-## General Cosmology
+## 2.3 General Cosmology
 
 ### 2.3.1 The Planes and Spheres
 
@@ -193,12 +188,62 @@ Very few characters truly know how Primal Energy works (only Sages with 3 ranks 
 
 ### The elemental Spheres
 
-## 2.3 General Cosmology
-
-### 2.3.1 The Beginning
+# 3 History
+## 3.1 Scope definitions - what is pre-defined, what is campaign-specific
+## 3.2 Creation of the world
 
 In the beginning was the One, who is Law itself, and he is Law unto himself. He is perfect inner harmony, and it was by his own design and without any compulsion that he created all Creation. He created the World, the stars, and the animals and plants and the various other beings within the world. Over the World, and over all the rest of Creation, he appointed invisible guardians and stewards which men call "gods." Though these beings are of greatly varied kinds and abilities, more diverse than the whole manner of physical creation, mortals have not the ability to comprehend any one of them and so call them all by the same term "gods."
 
 The stewards and guardians were appointed to carry out the laws of creation, maintaining the movement of the sun and moon and stars, of the ocean currents and tides, of wind and weather, and even of the animals and plants, and were appointed to sheperd and guide mortals, given freedom of will, in the paths of the One's law.
 
-Through some unknown event however, many of the gods left the service of the One and rebelled against him, seeking to obtain the power become a law unto themselves as the One is. This led to a war among the gods, which rages even to this day: the Gods of Law seek to maintain the harmony they were tasked with safeguarding, while the Gods of Chaos seek to consume it entirely. The Gods of Chaos, in their greed and voraciousness, quickly grew in power and began to interact directly with Mortals, entering into pacts with some of the great among them, these mortals 
+Through some unknown event however, many of the gods left the service of the One and rebelled against him, seeking to obtain the power become a law unto themselves as the One is. This led to a war among the gods, which rages even to this day: the Gods of Law seek to maintain the harmony they were tasked with safeguarding, while the Gods of Chaos seek to consume it entirely. The Gods of Chaos, in their greed and voraciousness, quickly grew in power and began to interact directly with Mortals, entering into pacts with some of the great among them, these mortals.
+
+## 3.3 Pre-history and the rise of evil
+
+## 3.4 Cataclysmic event options
+
+# 4 Religions
+
+## 4.1 Underlying Entities
+
+## 4.2 Alignment-Specific variations
+
+## 4.3 Cultural Variations
+
+## 4.4 Major Departures/New Religions
+
+# 5 Cultures
+
+## 5.1 Real-world analog sources
+What follows is a list of real world cultures, by name and time period/subculture, that serve as the basis for all cultures within Arbiter. Every culture, even the fantastical ones, will draw from one of these cultural archetypes, with the exception of beastman cultures which are so degenerate that no human culture maps to them. The numbered list is the canonical list and cultures can be referred to elsewhere by their list number, e.g Culture 1 means "Late Republican Rome". These serve as *LOOSE* cultural groundings for narrative styles, naming conventions, and eventually visual assets as well.
+
+1. Roman - 2nd century BC to 2nd century AD
+2. Greek - Classical Greece of Athens and Sparta
+3. Carthaginian - Punic Wars Era
+4. Ancient Mesopotamian - Loosely Assyrian, Babylonian, and Sumerian
+5. Ancient Egyptian - anachronistic blend of Old Kingdom culture and architecture and New Kingdom military
+6. Germanic - Dark Ages Germanic triobes and early feudal states
+7. Celtic - Broad and loose coverage
+8. Norse - Late antiquity to early medieval
+9. Chinese - Three Kingdoms period
+10. Japanese - Sengoku Jidai period
+11. Mayan
+12. Aztec
+13. Slavic - Early medieval period
+14. Ethiopian - 13th - 15th Century AD Ethiopian Empire
+15. American Indian Horse Nomads - Cheyenne, Comanche, Apache
+16. American Indian Forest Tribes - Iroquois Tribes
+17. Mongolian - Pre-Mongol Empire steppe nomad culture
+18. English - Early Medieval pre-norman Conquest Anglo-Saxon culture (Angelcynn)
+19. Frankish Kingdoms - Merovingian and Carolingian era
+20. Iberian - Pre-Islamic Spain
+
+## 5.2 Canonical Culture List
+
+
+
+## 5.3 Culture specific rules and guidelines
+
+## 5.4 Culture ID Code System
+
+# 6 Setting Generation application

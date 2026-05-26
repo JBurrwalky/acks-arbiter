@@ -515,6 +515,11 @@ signal classification_advanced(domain_id: String, old_classification: String, ne
 ## Per §optional_rules.regression L178.
 signal classification_regressed(domain_id: String, old_classification: String, new_classification: String)
 
+## An entry was appended to the domain_departure_log (Phase 11A). Sub-tabs
+## connect to this to incrementally refresh without re-querying. Fired AFTER
+## the row commits.
+signal departure_log_entry_recorded(domain_id: String, entry_id: String, event_type: String)
+
 ## A domain's treasury balance changed.
 signal domain_treasury_changed(domain_id: String, old_gp: int, new_gp: int)
 
@@ -566,6 +571,61 @@ signal stronghold_destroyed(stronghold_id: String, cause: String)
 ## 'clanhold_annex' / 'recruit_chieftain' per `acore_axioms_strongholds_and_domains.xml`
 ## §domain_acquisition + `ax_domains_of_chaos.xml` §establishment.
 signal domain_established(domain_id: String, owner_character_id: String, classification: String, method: String)
+
+## Phase 11B lifecycle signals — fire AFTER the corresponding state mutation
+## commits to the domains row. UI surfaces and other subsystems react.
+
+## A domain was taken by force. Phase 11D-prereq.0b updated the payload to
+## the three-outcome taxonomy:
+##   [param outcome] is one of:
+##     'occupied'                — domain persists under [param new_owner_id]
+##                                  (an existing tracked NPC, a PC, or the
+##                                  head of a newly-instantiated foreign realm)
+##     'looted_local_succession' — attacker scooted; [param new_owner_id] is
+##                                  a freshly-spawned local NPC
+##     'salted_to_ruin'          — terminal; [param new_owner_id] is empty
+signal domain_conquered(domain_id: String, outcome: String, new_owner_id: String)
+
+## A domain was abandoned. [param reason] is one of 'voluntary',
+## 'ruler_bankrupt', 'stronghold_collapsed', 'no_heir'.
+signal domain_abandoned(domain_id: String, reason: String)
+
+## A stronghold's shp reached 0 and the domain entered the ruined_stronghold
+## grace window. Distinct from `stronghold_destroyed` which fires at the
+## stronghold subsystem layer — this one is the domain-side lifecycle event.
+signal stronghold_collapsed(domain_id: String, stronghold_id: String)
+
+## A ruined-stronghold domain was rebuilt before the grace lapsed; it is
+## back to lifecycle_state='active'.
+signal stronghold_restored(domain_id: String, stronghold_id: String)
+
+## A domain's lifecycle_state column transitioned. Catch-all live-refresh
+## signal for UI surfaces that don't care WHICH transition fired.
+signal domain_lifecycle_state_changed(domain_id: String, from_state: String, to_state: String)
+
+## Phase 11C succession signals.
+
+## A ruler died and one or more domains entered succession-pending state.
+## [param affected_domain_ids] is the list of domain ids transitioned.
+signal ruler_died(deceased_character_id: String, affected_domain_ids: Array)
+
+## A domain entered succession_pending state. Fires per affected domain
+## (so a multi-domain ruler-death produces N succession_started signals plus
+## one ruler_died signal).
+signal succession_started(domain_id: String, deceased_character_id: String, grace_until_day: int)
+
+## The player designated an heir for a succession-pending domain. Resolution
+## may still be pending until manual confirm or grace expiry.
+signal succession_heir_designated(domain_id: String, heir_character_id: String, heir_kind: String)
+
+## A succession resolved: the designated heir is the new owner; lifecycle_state
+## back to 'active'. [param heir_kind] is 'pc', 'henchman', or 'non_henchman'.
+signal succession_resolved(domain_id: String, new_owner_id: String, heir_kind: String)
+
+## Succession grace expired without a designated heir. The downstream effect
+## differs by domain type: independent domains route to abandonment;
+## vassal domains revert to the overlord per the v1 project default.
+signal succession_lapsed(domain_id: String)
 
 ## A domain's monthly active-adventuring state was resolved per the project's
 ## seven-trigger heuristic (gdd-domain-tab.md §6.2). Fired at the start-of-month
@@ -1354,6 +1414,73 @@ signal bandits_defeated(threat_id: String, killed_count: int, captured_count: in
 ## attrition, departure). delta is signed (negative = lost congregants).
 signal congregants_changed(character_id: String, new_count: int, delta: int)
 
+# ---------------------------------------------------------------------------
+# Religion Conversion signals (Phase 11D.3, gdd-religion-conversion.md §10).
+# ---------------------------------------------------------------------------
+
+## Emitted when ReligionConversionResolver.start_conversion creates a new
+## active arc. Consumers: status header banner, departure log writer, Faith
+## block conversion card.
+signal religion_conversion_started(domain_id: String, from_religion: String, to_religion: String)
+
+## Emitted at the end of each monthly tick when an active conversion's
+## congregant count updates without crossing the 60% threshold. Carries the
+## new target-religion congregant count for UI refresh.
+signal religion_conversion_progressed(domain_id: String, conversion_id: String, new_congregant_count: int)
+
+## Emitted when the conversion crosses the 60% completion threshold. The
+## domain's effective_religion and alignment have already been updated by
+## ReligionConversionResolver before this fires.
+signal religion_conversion_completed(domain_id: String, from_religion: String, to_religion: String)
+
+## Emitted when a conversion ends without success (player abort, ruler death,
+## morale collapse, etc.). `reason` is one of `player_cancel`,
+## `morale_collapse`, `succession_mismatch`, or a free-form string for future
+## causes.
+signal religion_conversion_aborted(domain_id: String, reason: String)
+
+## Emitted specifically when failed_morale fires (3+ months at Rebellious).
+## Separate from aborted so consumers can distinguish failure modes.
+signal religion_conversion_failed(domain_id: String, reason: String)
+
+# ---------------------------------------------------------------------------
+# Tribal Warrior signals (Phase 11D.5, gdd-tribal-warriors.md §4.3).
+# ---------------------------------------------------------------------------
+
+## Emitted when LevyTribalWarriorsHandler completes. `troop_unit_ids` is the
+## array of newly-created `troop_units` rows (typically size 1 in v1; the
+## §5.1 'gang' / 'warband' / 'custom' templates land multiple rows in a
+## polish pass). `total_count` is the sum of warriors levied across all rows.
+signal tribal_warriors_levied(domain_id: String, character_id: String, troop_unit_ids: Array, total_count: int)
+
+## Emitted when StandDownTribalWarriorsHandler returns warriors to dormant
+## state. Voluntary action (player choice); warriors are NOT lost — they
+## refill the available pool.
+signal tribal_warriors_stood_down(domain_id: String, character_id: String, troop_unit_id: String, count: int)
+
+## Emitted when population shrinks below the pool invariant
+## (peasant_families < available + levied) and the resolver forces a stand-
+## down on dormant warriors first, then on levied units if necessary. The
+## monthly tick fires this; v1 implementation deferred to a polish pass.
+signal tribal_warriors_released_for_population_loss(domain_id: String, count_released: int)
+
+## Emitted when a tribal_warrior troop_unit's `months_without_qualifying_spoils`
+## counter reaches 3 and the morale-roll trigger fires per
+## gdd-tribal-warriors.md §7. The roll outcome determines whether the unit
+## stays loyal or departs (see tribal_warriors_loyalty_failed).
+signal tribal_warriors_morale_check_triggered(troop_unit_id: String, reason: String)
+
+## Emitted when the §7 morale roll fails and the unit departs. `departure_kind`
+## is `'returned_to_villages'` (within range → refills available pool) or
+## `'turned_brigand_or_mercenary'` (out of range → permanently lost; may
+## become a future bandit threat).
+signal tribal_warriors_loyalty_failed(troop_unit_id: String, departure_kind: String)
+
+## Emitted when the Phase 8 Call to Arms duty fires on a clanhold-style vassal
+## per the §8 clanhold-vassal modification. `scope` is `'half'` or `'all'`;
+## `favor_cost` is 1 or 2 per RAW ax_domains_of_chaos.xml:52.
+signal tribal_warriors_called_to_arms(domain_id: String, scope: String, favor_cost: int)
+
 ## Emitted whenever a character's divine_power_cp balance changes (extraction
 ## adds; consecrate_fields/consecrate_ruler/altar-dp-substitution spend).
 ## delta is signed.
@@ -1682,11 +1809,15 @@ signal road_overlay_added(map_id: String, q: int, r: int)
 ## [NEEDS-EMITTER-WIRING-road_overlay_removed]
 signal road_overlay_removed(map_id: String, q: int, r: int)
 
-## Emitted when a hex_overlays row with overlay_type='river' is inserted.
+## Emitted when a river edge is added that touches (q, r). Payload retains
+## the per-hex shape because the trade-route consumer keys on hex; emitters
+## should fire once per touched hex (owner AND neighbor). Migration 130:
+## underlying storage moved from hex_overlays to hex_river_edges.
 ## [NEEDS-EMITTER-WIRING-river_overlay_added]
 signal river_overlay_added(map_id: String, q: int, r: int)
 
-## Emitted when a hex_overlays row with overlay_type='river' is deleted.
+## Emitted when a river edge is removed that touches (q, r). Same per-hex
+## firing pattern as river_overlay_added; see migration 130.
 ## [NEEDS-EMITTER-WIRING-river_overlay_removed]
 signal river_overlay_removed(map_id: String, q: int, r: int)
 
@@ -1749,3 +1880,59 @@ signal lay_low_ended(character_id: String)
 ## (Migration 120, Phase 10B.3 #6). Source is "corporal_punishment:<kind>",
 ## "mortal_wounds:<damage_type>", or "manual".
 signal permanent_wound_applied(character_id: String, wound_kind: String, source: String)
+
+# ---------------------------------------------------------------------------
+# Urban Growth Stocking — Stage A (Migration 126)
+# Per `generation/gdd-urban-growth-stocking.md` §11.5 (v1.14).
+#
+# IDs are String per project convention (matches settlement_market_class_changed,
+# settlement_created, etc.) — the GDD's `int` notation reflects the design-doc
+# convention; the project-wide pattern is String, so we use String here.
+# ---------------------------------------------------------------------------
+
+## A settlement's market_class has improved per `gdd-urban-growth-stocking.md`
+## §6.2 EVALUATE_CLASS. Class 6 = Class VI (smallest) and Class 1 = Class I
+## (largest); "advanced" means new_class < old_class (numerically smaller =
+## larger settlement). Fired by SettlementGrowthResolver once per settlement
+## per month when a threshold is crossed.
+signal market_class_advanced(settlement_id: String, old_class: int, new_class: int)
+
+## A settlement's market_class has regressed (urban_families dropped through a
+## class threshold from above). new_class > old_class. v1 emits but largely
+## unconsumed — downgrade POI demolition is deferred per Q-UGS-4.
+signal market_class_regressed(settlement_id: String, old_class: int, new_class: int)
+
+## A settlement has dissolved per RAW (urban_families dropped below 75 — see
+## `acore_axioms_strongholds_and_domains.xml:686-689`). Remaining urban families
+## return to nearby hexes as peasant families. Distinct from the pre-existing
+## `settlement_destroyed` signal (which is for hex-map removal); dissolution
+## leaves the settlement_entrances row in place with status='dissolved'.
+signal settlement_dissolved(settlement_id: String)
+
+## A new settlement_pois row has been created per `gdd-urban-growth-stocking.md`
+## §6.1 EMIT_SIGNALS. `type` matches the settlement_pois.type enum
+## ('religious_site', 'mages_guild_hall', etc.). Stage C consumer (POI
+## emergence handler) wires this up; v1 emits but is unconsumed until Stages
+## C/D ship.
+signal poi_emerged(settlement_poi_id: String, type: String, settlement_id: String)
+
+## A player-stocked character has been bound to a POI via the Stock POI decree
+## per §7.2. Fired after `stocked_character_id` is set on the settlement_pois
+## row.
+signal poi_stocked(settlement_poi_id: String, character_id: String)
+
+## A previously-stocked character has been released from a POI (per the
+## Unstock POI decree or auto-release on character death / re-stocking
+## elsewhere). prior_character_id is the character that was bound before the
+## unstock — may be empty if no prior binding existed.
+signal poi_unstocked(settlement_poi_id: String, prior_character_id: String)
+
+## A POI's status has transitioned (e.g. 'active' → 'understaffed' → 'dormant'
+## → 'abandoned'). Both status strings are the settlement_pois.status enum.
+signal poi_status_changed(settlement_poi_id: String, old_status: String, new_status: String)
+
+## A spellcasting service has been purchased at a religious_site or
+## mages_guild_hall per §9.4 / §8.5. Fired by the purchase_spellcasting_handler
+## (Stage G); tradition is 'divine' or 'arcane'; spell_name identifies the
+## specific spell chosen from the catalog at purchase time.
+signal spellcasting_service_purchased(settlement_poi_id: String, tradition: String, spell_level: int, spell_name: String, payer_character_id: String, unit_cost_gp: int)
