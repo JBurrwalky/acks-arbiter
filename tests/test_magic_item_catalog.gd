@@ -118,7 +118,7 @@ func test_spot_prices() -> void:
 	check(int(c.get_item("sword_1").get("value_gp", -1)) == 5000, "Sword +1 = 5000gp")
 	check(int(c.get_item("sword_2").get("value_gp", -1)) == 15000, "Sword +2 = 15000gp (SACRED sample)")
 	check(int(c.get_item("vorpal_sword").get("value_gp", -1)) == 160000, "Vorpal Sword = 160000gp (Jedidiah 2026-05-29)")
-	check(int(c.get_item("vorpal_sword").get("creation_time_days", -1)) == 190, "Vorpal Sword creation_time_days (provisional 190)")
+	check(int(c.get_item("vorpal_sword").get("creation_time_days", -1)) == 590, "Vorpal Sword = 590 days (Jedidiah 2026-05-29)")
 	check(int(c.get_item("cursed_sword").get("value_gp", -99)) == 0, "Cursed Sword = 0gp (worthless)")
 	check(bool(c.get_item("cursed_sword").get("is_cursed", false)), "Cursed Sword is_cursed")
 	check(int(c.get_item("treasure_map").get("value_gp", -99)) == -1, "Treasure Map = -1 (non-merchandise)")

@@ -27998,13 +27998,13 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 - `MagicItemCatalog` (`engine/subsystems/inventory/magic_item_catalog.gd`): loads `generators`; `random_item_in_category`/`pick_for_token` now MATERIALIZE the chosen item via new `_materialize` -> `_resolve_sub_roll` (d100 -> priced Ring of Protection variant) / `_generate_spell_scroll` (rolls class/count/levels; price = 500 x sum(levels)). Added `get_all_items()` + `get_generator(name)`.
 - `TreasureInstantiator._resolve_magic`: stamps `value_cp = value_gp x 100` (>=0) onto resolved magic items (was hardcoded -1); records scroll class/levels in notes via new `_magic_item_notes`.
 - `ShopService.sell_item` + `get_sellable_items`: narrowed the `is_magical` exclusion to `is_magical AND value_cp < 0` — priced found items sell at `value_cp`; crafted/quest magic (value_cp -1) and cursed (value_cp 0, dropped by the existing `<= 0` guard) stay non-sellable.
-- Follow-up corrections (same session, after Jedidiah provided the full RAW scrolls d100 table + corrections): spell-scroll count now weighted by the RAW "Spells (N)" sub-band (`SPELL_SCROLL_GENERATOR.count_roll`, rows 41-76; `_generate_spell_scroll` rolls in [41,76]; `_lookup_level` generalized to `_lookup_band`); Ring-of-Protection radius variants record `radius_effect` (save bonus to allies within 5', AC to wearer only); **Vorpal Sword corrected 60,000 -> 160,000gp** (16,000,000 cp).
+- Follow-up corrections (same session, after Jedidiah provided the full RAW scrolls d100 table + corrections): spell-scroll count now weighted by the RAW "Spells (N)" sub-band (`SPELL_SCROLL_GENERATOR.count_roll`, rows 41-76; `_generate_spell_scroll` rolls in [41,76]; `_lookup_level` generalized to `_lookup_band`); Ring-of-Protection radius variants record `radius_effect` (save bonus to allies within 5', AC to wearer only); **Vorpal Sword corrected 60,000/190d -> 160,000gp/590d** (16,000,000 cp; vorpal = 5th-level Permanent/Unlimited effect 125,000gp/500d).
 
 **Decisions made:**
 - Cursed/trap items (8: cursed sword/armor/shield/scroll, ring of delusion/weakness, potion of delusion, bag of devouring) -> value_gp 0, non-sellable (Jedidiah; Macris prices only craftable items). Malign-but-craftable items (potion of poison 2,000; helm of alignment changing 75,000) ARE priced and in the clean 140.
 - Ring of Protection -> split into 5 priced `sub_roll` variants selected by the RAW d100 chart (Jedidiah: each variant is a unique item). +2 5'-radius (roll 92) is DERIVED at 75,000 (forum left it unpriced; the 5' radius adds +1 effective spell level = +25,000). Radius semantics (Jedidiah 2026-05-29, recorded on the variant): the save bonus extends to allies within 5'; the AC bonus applies to the wearer only.
 - Spell Scroll -> `scroll_of_spells` generator; price = 500 x sum(spell levels) (one-use effect, L193). Count weighted by the RAW scrolls-d100 "Spells (N)" sub-band (rows 41-76; Jedidiah supplied the full scrolls table 2026-05-29 — count 1 ~42%, tapering to 7 ~3%). Binding specific named spells deferred to the usage session.
-- Vorpal Sword = 160,000gp (16,000,000 cp) (Jedidiah 2026-05-29; supersedes the earlier 60,000 1st-level-vorpal derivation). creation_time_days provisionally 190 (from the superseded derivation), pending a corrected time. Sweet Water = 500 (1st-level one-use). Treasure Map = -1 (non-merchandise).
+- Vorpal Sword = 160,000gp (16,000,000 cp) / 590 days (Jedidiah 2026-05-29; vorpal portion = 5th-level Permanent/Unlimited effect 125,000gp/500d atop Sword +3 35,000/90d; supersedes the earlier 60,000/190d 1st-level-vorpal derivation). Sweet Water = 500 (1st-level one-use). Treasure Map = -1 (non-merchandise).
 - Prices live in the EXTRACTOR (reproducible) not hand-edited JSON. value_gp 0 = worthless; -1 = no fixed price (sub_roll/generator parent or non-merchandise).
 - Market-class gating for high-value magic sales deferred to Phase 3; V1 sells full `value_cp` through ShopService, like gems/jewelry.
 
@@ -28023,7 +28023,6 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 
 **Known issues:**
 - Treasure-map subtypes: the RAW scrolls d100 (rows 77-100, provided 2026-05-29) has 13 treasure-map variants leading to reward hoards (gp/gems/jewelry/magic); the catalog collapses them to one non-merchandise `treasure_map`. Generating those hoards + driving scroll TYPE selection off the full d100 are a deferred feature.
-- Vorpal Sword `creation_time_days` is provisionally 190 (from the superseded 60,000 derivation); the price is corrected to 160,000 but the time awaits Jedidiah's confirmation.
 - Magic items still grant 0 recovery XP (RAW) regardless of sale value; the future gem/jewelry recovery-XP pass must keep EXCLUDING magic items.
 - The flaky shipping-contract test (coding_conventions §69) is unchanged.
 - The magic catalog still lacks a §7.4.4 data-freshness test (pre-existing Phase-2 gap; the extractor's bidirectional validation covers typos but not hand-edits) — spawned as a follow-up task chip.
@@ -28032,5 +28031,4 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. (Dungeon-runtime) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot` (still pending from Phase 1).
 2. Magic-item USAGE session: per-item effects / charges / identification + binding specific named spells to generated scrolls (keyed off catalog item_keys + the recorded scroll metadata); also apply the Ring-of-Protection radius semantics (`radius_effect`).
 3. Phase 3 magic-item market: market-class gating for high-value magic sales.
-4. Confirm the Vorpal Sword creation time for the revised 160,000gp price (provisionally 190d).
-5. (Optional/future) treasure-map subtypes: generate the reward hoards the RAW scrolls d100 (rows 77-100) point to, and drive scroll TYPE selection off the full d100.
+4. (Optional/future) treasure-map subtypes: generate the reward hoards the RAW scrolls d100 (rows 77-100) point to, and drive scroll TYPE selection off the full d100.

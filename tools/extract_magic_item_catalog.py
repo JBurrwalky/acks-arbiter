@@ -221,11 +221,11 @@ PRICE_MAP = {
     "life_drinker": (41000, 174),  # Sword +1, Life Drinker (8 charges)
     "luck_blade":   (52500, 220),  # Sword +1, Luck Blade
     "frost_brand":  (145000, 315), # Sword +3, Frost Brand
-    # Jedidiah ruling (2026-05-29): 160,000gp. Supersedes the earlier 60,000gp
-    # (1st-level-vorpal) derivation — Sword +3 base (35,000) + a higher-valued
-    # vorpal effect = 160,000 total. creation_time_days 190 is PROVISIONAL (it
-    # reflected the superseded 60,000 derivation); pending a corrected time.
-    "vorpal_sword": (160000, 190),
+    # Jedidiah ruling (2026-05-29): 160,000gp / 590 days. Sword +3 base
+    # (35,000gp / 90d) + vorpal as a 5th-level Permanent/Unlimited effect
+    # (500 x 5 x 50 = 125,000gp; 100d x 5 = 500d). Supersedes the earlier
+    # 60,000gp / 190d (1st-level-vorpal) derivation.
+    "vorpal_sword": (160000, 590),
     "cursed_sword": WORTHLESS,     # cursed/trap
 
     # --- MISCELLANEOUS WEAPONS (all +1 = 5,000gp; arrows/bolts per bundle of 20) ---
