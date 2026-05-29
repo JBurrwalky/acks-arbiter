@@ -26,6 +26,7 @@ func run_all_tests() -> void:
 	test_invulnerable_target_harmable_by_5plus_hd_ferocity()
 	test_invulnerable_target_safe_from_low_hd_mundane_monster()
 	test_invulnerable_vs_invulnerable_can_harm()
+	test_real_catalog_wraith_is_flagged_invulnerable()
 	if not has_failures():
 		print("AttackResolver: all tests passed.")
 
@@ -283,6 +284,38 @@ func test_invulnerable_vs_invulnerable_can_harm() -> void:
 	var result := resolver.resolve_melee_attack(attacker, target)
 	check(result.get("cant_harm", false) == false,
 		"such monsters can always harm each other (RAW :404)")
+
+
+func test_real_catalog_wraith_is_flagged_invulnerable() -> void:
+	# End-to-end data test: the real monster_catalog.json wraith carries the
+	# damaged_only_by_magic_or_silver flag (2026-05-29 data flagging pass)
+	# and the flag flows through Combatant.from_monster to the resolver.
+	var f := FileAccess.open("res://data/monsters/monster_catalog.json", FileAccess.READ)
+	check(f != null, "monster_catalog.json should be readable")
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	check(data is Array, "monster_catalog.json is a top-level array")
+	var wraith_data: Dictionary = {}
+	for m in data:
+		if str((m as Dictionary).get("id", "")) == "wraith":
+			wraith_data = m
+			break
+	check(not wraith_data.is_empty(), "catalog contains a 'wraith' entry")
+	check(bool(wraith_data.get("damaged_only_by_magic_or_silver", false)) == true,
+		"wraith entry carries damaged_only_by_magic_or_silver=true (data flag landed)")
+	# Build a combatant from the real catalog row and verify the flag flows.
+	var wraith := Combatant.from_monster(wraith_data, 16, "wraith_test", "test_group")
+	check(wraith.is_damaged_only_by_magic_or_silver() == true,
+		"Combatant.from_monster honors the catalog flag")
+	# A PC with a mundane weapon cannot harm it.
+	var resolver := AttackResolver.new(_MockDice.new(20))
+	var attacker := _make_fighter("att", 10, 10)
+	_equip_weapon(attacker, "1d6", 0)
+	var result := resolver.resolve_melee_attack(attacker, wraith)
+	check(result.get("cant_harm", false) == true,
+		"mundane PC weapon vs real catalog wraith: cant_harm=true end-to-end")
 
 
 # ---------------------------------------------------------------------------

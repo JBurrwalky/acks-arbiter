@@ -1771,7 +1771,8 @@
       ],
       "notes": "",
       "raw_citation": "ax_domain_level_encounters.xml battle_rating_reference_tables.fantastic_creatures.Lycanthrope, Wererat L831"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "spider_giant_black_widow",
@@ -4048,7 +4049,7 @@
     "id": "skeleton",
     "name": "Skeleton",
     "variant": null,
-    "source": "LE Monster Catalog 2 (summary; stat block from project design — book skeleton stat block is not transcribed)",
+    "source": "LE Monster Catalog 2 (summary; stat block from project design \u2014 book skeleton stat block is not transcribed)",
     "monster_types": [
       "undead"
     ],
@@ -4414,7 +4415,7 @@
     "special_abilities": [
       {
         "ability_id": "heat_sense_60ft",
-        "description": "Senses heat to 60 feet — picks out warm-blooded targets through obstacles.",
+        "description": "Senses heat to 60 feet \u2014 picks out warm-blooded targets through obstacles.",
         "hook_type": "perception",
         "effect": {
           "range_feet": 60
@@ -4532,7 +4533,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled (attacks summoner and intervening creatures).",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled (attacks summoner and intervening creatures).",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -4563,7 +4564,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_air_12hd",
@@ -4629,7 +4631,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -4660,7 +4662,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_air_16hd",
@@ -4726,7 +4729,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -4757,7 +4760,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_earth_8hd",
@@ -4818,7 +4822,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -4849,7 +4853,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_earth_12hd",
@@ -4910,7 +4915,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -4941,7 +4946,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_earth_16hd",
@@ -5002,7 +5008,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5033,7 +5039,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_fire_8hd",
@@ -5103,7 +5110,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5135,7 +5142,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_fire_12hd",
@@ -5205,7 +5213,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5237,7 +5245,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_fire_16hd",
@@ -5307,7 +5316,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5339,7 +5348,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_water_8hd",
@@ -5404,7 +5414,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5435,7 +5445,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_water_12hd",
@@ -5500,7 +5511,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5531,7 +5542,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "elemental_water_16hd",
@@ -5596,7 +5608,7 @@
       },
       {
         "ability_id": "summoning_concentration_required",
-        "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.",
+        "description": "Summoner must fully concentrate; loss of concentration \u2192 uncontrolled.",
         "hook_type": "summoning",
         "effect": {
           "control_via": "concentration"
@@ -5627,7 +5639,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "invisible_stalker",
@@ -5689,7 +5702,7 @@
       },
       {
         "ability_id": "surprise_modifier_minus_3",
-        "description": "Foes unable to detect invisibility suffer −3 to avoid being surprised by the stalker.",
+        "description": "Foes unable to detect invisibility suffer \u22123 to avoid being surprised by the stalker.",
         "hook_type": "surprise_modifier",
         "effect": {
           "modifier": -3,
@@ -5810,7 +5823,7 @@
     "special_abilities": [
       {
         "ability_id": "swarm_auto_hit_2pts",
-        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.",
+        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC \u2264 3. Halved while warding/fleeing.",
         "hook_type": "swarm_tick_damage",
         "effect": {
           "tick_damage": 2,
@@ -5919,7 +5932,7 @@
     "special_abilities": [
       {
         "ability_id": "swarm_auto_hit_2pts",
-        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.",
+        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC \u2264 3. Halved while warding/fleeing.",
         "hook_type": "swarm_tick_damage",
         "effect": {
           "tick_damage": 2,
@@ -6028,7 +6041,7 @@
     "special_abilities": [
       {
         "ability_id": "swarm_auto_hit_2pts",
-        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.",
+        "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC \u2264 3. Halved while warding/fleeing.",
         "hook_type": "swarm_tick_damage",
         "effect": {
           "tick_damage": 2,
@@ -6163,7 +6176,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Bugbear L545"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Bugbear L545"
     },
     "special_abilities": [
       {
@@ -6284,7 +6297,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Dwarf L547"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Dwarf L547"
     },
     "special_abilities": [
       {
@@ -6428,7 +6441,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Elf L548"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Elf L548"
     },
     "special_abilities": [
       {
@@ -6560,7 +6573,7 @@
         2
       ],
       "notes": "Recon modifiers: magic camouflage, aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Faerie, Pixie L549"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Faerie, Pixie L549"
     },
     "special_abilities": [
       {
@@ -6684,7 +6697,7 @@
         2
       ],
       "notes": "Recon modifiers: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Faerie, Sprite L550"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Faerie, Sprite L550"
     },
     "special_abilities": [
       {
@@ -6796,7 +6809,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Gnoll L551"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Gnoll L551"
     },
     "special_abilities": [],
     "immunities": [],
@@ -6904,7 +6917,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Gnome L552"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Gnome L552"
     },
     "special_abilities": [
       {
@@ -7030,7 +7043,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Halfling L553"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Halfling L553"
     },
     "special_abilities": [
       {
@@ -7153,7 +7166,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Hobgoblin L554"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Hobgoblin L554"
     },
     "special_abilities": [
       {
@@ -7262,7 +7275,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Merman L555"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Merman L555"
     },
     "special_abilities": [
       {
@@ -7391,7 +7404,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Minotaur L557"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Minotaur L557"
     },
     "special_abilities": [
       {
@@ -7499,7 +7512,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Morlock L558"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Morlock L558"
     },
     "special_abilities": [
       {
@@ -7609,7 +7622,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Neanderthal L559"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Neanderthal L559"
     },
     "special_abilities": [],
     "immunities": [],
@@ -7699,7 +7712,7 @@
         2
       ],
       "notes": "Recon modifier: magic camouflage",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Nymph, Dryad L560"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Nymph, Dryad L560"
     },
     "special_abilities": [
       {
@@ -7813,7 +7826,7 @@
         2
       ],
       "notes": "Cannot be attacked by land-based units",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Nymph, Naiad L561"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Nymph, Naiad L561"
     },
     "special_abilities": [
       {
@@ -7925,7 +7938,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Ogre L562"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Ogre L562"
     },
     "special_abilities": [],
     "immunities": [],
@@ -8036,7 +8049,7 @@
         2
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.beastmen_and_humanoids.Troglodyte L564"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.beastmen_and_humanoids.Troglodyte L564"
     },
     "special_abilities": [
       {
@@ -8149,7 +8162,7 @@
         3
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Berserkers L570"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Berserkers L570"
     },
     "special_abilities": [
       {
@@ -8266,7 +8279,7 @@
         3
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Brigands (bowmen) L571"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Brigands (bowmen) L571"
     },
     "special_abilities": [],
     "immunities": [],
@@ -8361,7 +8374,7 @@
         3
       ],
       "notes": "Recon modifiers: cavalry units",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Brigands (medium cavalry) L572"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Brigands (medium cavalry) L572"
     },
     "special_abilities": [
       {
@@ -8461,7 +8474,7 @@
         3
       ],
       "notes": "Leaders available for heroic forays; Recon modifiers: cavalry units",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Merchants L573"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Merchants L573"
     },
     "special_abilities": [
       {
@@ -8564,7 +8577,7 @@
         3
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Nomads (medium cavalry) L574"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Nomads (medium cavalry) L574"
     },
     "special_abilities": [
       {
@@ -8667,7 +8680,7 @@
         3
       ],
       "notes": "Recon modifiers: cavalry units",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Nomads (horse archers) L575"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Nomads (horse archers) L575"
     },
     "special_abilities": [
       {
@@ -8770,7 +8783,7 @@
         3
       ],
       "notes": "Leaders available for heroic forays",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Pirates (swordsmen) L576"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Pirates (swordsmen) L576"
     },
     "special_abilities": [],
     "immunities": [],
@@ -8864,7 +8877,7 @@
         3
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.men.Pirates (bowmen) L577"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.men.Pirates (bowmen) L577"
     },
     "special_abilities": [],
     "immunities": [],
@@ -8964,7 +8977,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Cyclops L867"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Cyclops L867"
     },
     "special_abilities": [
       {
@@ -9070,7 +9083,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Ettin L868"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Ettin L868"
     },
     "special_abilities": [
       {
@@ -9182,7 +9195,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Hill L869"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Hill L869"
     },
     "special_abilities": [
       {
@@ -9295,7 +9308,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Stone L870"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Stone L870"
     },
     "special_abilities": [
       {
@@ -9417,7 +9430,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Frost L871"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Frost L871"
     },
     "special_abilities": [
       {
@@ -9534,7 +9547,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Fire L872"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Fire L872"
     },
     "special_abilities": [
       {
@@ -9650,7 +9663,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Cloud L873"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Cloud L873"
     },
     "special_abilities": [
       {
@@ -9763,7 +9776,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.giants.Giant, Storm L874"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.giants.Giant, Storm L874"
     },
     "special_abilities": [
       {
@@ -9882,7 +9895,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Ghoul L900"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Ghoul L900"
     },
     "special_abilities": [
       {
@@ -9999,7 +10012,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Mummy L901"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Mummy L901"
     },
     "special_abilities": [
       {
@@ -10013,7 +10026,7 @@
       },
       {
         "ability_id": "rot_disease",
-        "description": "Touch inflicts rotting disease — magical healing only at half rate; -2 to all rolls.",
+        "description": "Touch inflicts rotting disease \u2014 magical healing only at half rate; -2 to all rolls.",
         "hook_type": "save_or_effect",
         "effect": {
           "save_type": "Death",
@@ -10060,7 +10073,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "spectre",
@@ -10138,7 +10152,7 @@
         8
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Spectre L903"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Spectre L903"
     },
     "special_abilities": [
       {
@@ -10187,7 +10201,8 @@
       "primary_target_rule": "spellcaster",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "vampire",
@@ -10267,7 +10282,7 @@
         8
       ],
       "notes": "Recon modifier: aerial observation, magical camouflage",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Vampire L904"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Vampire L904"
     },
     "special_abilities": [
       {
@@ -10413,7 +10428,7 @@
         8
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Wight L905"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Wight L905"
     },
     "special_abilities": [
       {
@@ -10541,7 +10556,7 @@
         8
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.undead.Wraith L906"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.undead.Wraith L906"
     },
     "special_abilities": [
       {
@@ -10590,7 +10605,8 @@
       "primary_target_rule": "spellcaster",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "djinni",
@@ -10660,7 +10676,7 @@
       "category": "summoned",
       "category_d8_columns": [],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.summoned.Djinni L890"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.summoned.Djinni L890"
     },
     "special_abilities": [
       {
@@ -10693,7 +10709,8 @@
       "primary_target_rule": "spellcaster",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "efreeti",
@@ -10763,7 +10780,7 @@
       "category": "summoned",
       "category_d8_columns": [],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.summoned.Efreeti L891"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.summoned.Efreeti L891"
     },
     "special_abilities": [
       {
@@ -10805,7 +10822,8 @@
       "primary_target_rule": "spellcaster",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "salamander_flame",
@@ -10883,7 +10901,7 @@
       "category": "summoned",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.summoned.Salamander, Flame L892"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.summoned.Salamander, Flame L892"
     },
     "special_abilities": [
       {
@@ -11000,7 +11018,7 @@
       "category": "summoned",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.summoned.Salamander, Frost L893"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.summoned.Salamander, Frost L893"
     },
     "special_abilities": [
       {
@@ -11120,7 +11138,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Ankheg L800"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Ankheg L800"
     },
     "special_abilities": [
       {
@@ -11225,7 +11243,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Ant, Giant L801"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Ant, Giant L801"
     },
     "special_abilities": [],
     "immunities": [
@@ -11313,7 +11331,7 @@
         "number": "5d6"
       }
     },
-    "treasure_type": "honeycomb (1d6×100gp)",
+    "treasure_type": "honeycomb (1d6\u00d7100gp)",
     "terrain_affinity": [
       "woods",
       "clear_grass_scrub"
@@ -11329,7 +11347,7 @@
         6
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Bee, Giant L802"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Bee, Giant L802"
     },
     "special_abilities": [
       {
@@ -11446,7 +11464,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Beetle, Giant Bombardier L803"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Beetle, Giant Bombardier L803"
     },
     "special_abilities": [
       {
@@ -11554,7 +11572,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Beetle, Giant Fire L804"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Beetle, Giant Fire L804"
     },
     "special_abilities": [
       {
@@ -11661,7 +11679,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Beetle, Giant Tiger L805"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Beetle, Giant Tiger L805"
     },
     "special_abilities": [],
     "immunities": [
@@ -11756,7 +11774,7 @@
         6
       ],
       "notes": "Recon modifier: magical camouflage (burrowing)",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Caecilian L806"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Caecilian L806"
     },
     "special_abilities": [
       {
@@ -11857,7 +11875,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Carcass Scavenger L807"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Carcass Scavenger L807"
     },
     "special_abilities": [
       {
@@ -11958,7 +11976,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Centipede, Giant L808"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Centipede, Giant L808"
     },
     "special_abilities": [
       {
@@ -12071,7 +12089,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Crab, Giant L809"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Crab, Giant L809"
     },
     "special_abilities": [],
     "immunities": [],
@@ -12165,7 +12183,7 @@
         6
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Fly, Giant Carnivorous L810"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Fly, Giant Carnivorous L810"
     },
     "special_abilities": [],
     "immunities": [
@@ -12274,7 +12292,7 @@
         6
       ],
       "notes": "Recon modifier: magical camouflage (burrowing)",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Purple Worm L811"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Purple Worm L811"
     },
     "special_abilities": [
       {
@@ -12392,7 +12410,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Rhagodessa, Giant L813"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Rhagodessa, Giant L813"
     },
     "special_abilities": [
       {
@@ -12495,7 +12513,7 @@
         6
       ],
       "notes": "Recon modifier: magical camouflage",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Spider, Crab L815"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Spider, Crab L815"
     },
     "special_abilities": [
       {
@@ -12612,7 +12630,7 @@
         6
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.vermin.Spider, Tarantula L816"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.vermin.Spider, Tarantula L816"
     },
     "special_abilities": [
       {
@@ -12737,7 +12755,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Gargoyle L878"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Gargoyle L878"
     },
     "special_abilities": [
       {
@@ -12776,7 +12794,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "golem_amber",
@@ -12846,7 +12865,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "Recon modifier: magical scrying",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Golem, Amber L879"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Golem, Amber L879"
     },
     "special_abilities": [
       {
@@ -12941,7 +12960,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Golem, Bone L880"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Golem, Bone L880"
     },
     "special_abilities": [
       {
@@ -13036,7 +13055,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Golem, Bronze L881"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Golem, Bronze L881"
     },
     "special_abilities": [
       {
@@ -13140,7 +13159,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Golem, Wood L882"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Golem, Wood L882"
     },
     "special_abilities": [
       {
@@ -13237,7 +13256,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Statue, Animated Crystal L883"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Statue, Animated Crystal L883"
     },
     "special_abilities": [
       {
@@ -13332,7 +13351,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Statue, Animated Iron L884"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Statue, Animated Iron L884"
     },
     "special_abilities": [
       {
@@ -13427,7 +13446,7 @@
       "category": "constructs",
       "category_d8_columns": [],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.constructs.Statue, Animated Stone L885"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.constructs.Statue, Animated Stone L885"
     },
     "special_abilities": [
       {
@@ -13544,7 +13563,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Bear, Black L755"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Bear, Black L755"
     },
     "special_abilities": [
       {
@@ -13655,7 +13674,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Bear, Grizzly L754"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Bear, Grizzly L754"
     },
     "special_abilities": [
       {
@@ -13766,7 +13785,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Bear, Cave L756"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Bear, Cave L756"
     },
     "special_abilities": [
       {
@@ -13877,7 +13896,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Cat, Lion L759"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Cat, Lion L759"
     },
     "special_abilities": [
       {
@@ -13986,7 +14005,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Cat, Tiger L762"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Cat, Tiger L762"
     },
     "special_abilities": [
       {
@@ -14091,7 +14110,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Elephant L770"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Elephant L770"
     },
     "special_abilities": [
       {
@@ -14196,7 +14215,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Rhinoceros L781"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Rhinoceros L781"
     },
     "special_abilities": [
       {
@@ -14295,7 +14314,7 @@
         5
       ],
       "notes": "Cannot be attacked by land-based units",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Shark, Great White L783"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Shark, Great White L783"
     },
     "special_abilities": [
       {
@@ -14395,7 +14414,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Tyrannosaurus Rex L795"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Tyrannosaurus Rex L795"
     },
     "special_abilities": [
       {
@@ -14500,7 +14519,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Mastodon L777"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Mastodon L777"
     },
     "special_abilities": [],
     "immunities": [],
@@ -14591,7 +14610,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Herd Animal, 2HD L772"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Herd Animal, 2HD L772"
     },
     "special_abilities": [
       {
@@ -14704,7 +14723,7 @@
         5
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Hawk, Giant L771"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Hawk, Giant L771"
     },
     "special_abilities": [],
     "immunities": [],
@@ -14806,7 +14825,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Snake, Giant Python L786"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Snake, Giant Python L786"
     },
     "special_abilities": [
       {
@@ -14913,7 +14932,7 @@
         5
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.animals.Varmint, Giant Rat L797"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.animals.Varmint, Giant Rat L797"
     },
     "special_abilities": [
       {
@@ -15028,7 +15047,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Wyvern L857"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Wyvern L857"
     },
     "special_abilities": [
       {
@@ -15153,7 +15172,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Manticore L838"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Manticore L838"
     },
     "special_abilities": [
       {
@@ -15265,7 +15284,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Griffon L825"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Griffon L825"
     },
     "special_abilities": [
       {
@@ -15376,7 +15395,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Hippogriff L827"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Hippogriff L827"
     },
     "special_abilities": [
       {
@@ -15480,7 +15499,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Pegasus L843"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Pegasus L843"
     },
     "special_abilities": [
       {
@@ -15586,7 +15605,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Unicorn L856"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Unicorn L856"
     },
     "special_abilities": [
       {
@@ -15702,7 +15721,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Cockatrice L823"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Cockatrice L823"
     },
     "special_abilities": [
       {
@@ -15804,7 +15823,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Basilisk L820"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Basilisk L820"
     },
     "special_abilities": [
       {
@@ -15917,7 +15936,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Medusa L840"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Medusa L840"
     },
     "special_abilities": [
       {
@@ -16035,7 +16054,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Owl Bear L842"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Owl Bear L842"
     },
     "special_abilities": [
       {
@@ -16143,7 +16162,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Stirge L853"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Stirge L853"
     },
     "special_abilities": [
       {
@@ -16254,7 +16273,7 @@
         7
       ],
       "notes": "",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Doppelganger L824"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Doppelganger L824"
     },
     "special_abilities": [
       {
@@ -16400,7 +16419,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Chimera L822"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Chimera L822"
     },
     "special_abilities": [
       {
@@ -16501,7 +16520,7 @@
         7
       ],
       "notes": "Recon modifier: magical camouflage (if in forest)",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Treant L854"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Treant L854"
     },
     "special_abilities": [
       {
@@ -16641,7 +16660,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Dragon, Adult L835"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Dragon, Adult L835"
     },
     "special_abilities": [
       {
@@ -16792,7 +16811,7 @@
         7
       ],
       "notes": "Recon modifier: aerial observation",
-      "raw_citation": "ax_domain_level_encounters.xml §battle_rating_reference_tables.fantastic_creatures.Dragon, Juvenile L834"
+      "raw_citation": "ax_domain_level_encounters.xml \u00a7battle_rating_reference_tables.fantastic_creatures.Dragon, Juvenile L834"
     },
     "special_abilities": [
       {
@@ -21096,7 +21115,8 @@
       "primary_target_rule": "spellcaster",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "steadfast"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "dragon_turtle",
@@ -22900,7 +22920,8 @@
       "primary_target_rule": "weakest",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fearless"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "skittering_maw",
@@ -23296,7 +23317,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "steadfast"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "lycanthrope_wereboar",
@@ -23435,7 +23457,8 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "steadfast"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "lycanthrope_weretiger",
@@ -23581,7 +23604,8 @@
       "primary_target_rule": "weakest",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "steadfast"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "lycanthrope_werewolf",
@@ -23720,13 +23744,14 @@
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
       "morale_style": "normal"
-    }
+    },
+    "damaged_only_by_magic_or_silver": true
   },
   {
     "id": "dragon_spawn",
     "name": "Dragon",
     "variant": "Spawn (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -23868,7 +23893,7 @@
     "id": "dragon_very_young",
     "name": "Dragon",
     "variant": "Very Young (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24010,7 +24035,7 @@
     "id": "dragon_young",
     "name": "Dragon",
     "variant": "Young (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24152,7 +24177,7 @@
     "id": "dragon_mature_adult",
     "name": "Dragon",
     "variant": "Mature Adult (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24303,7 +24328,7 @@
     "id": "dragon_old",
     "name": "Dragon",
     "variant": "Old (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24454,7 +24479,7 @@
     "id": "dragon_very_old",
     "name": "Dragon",
     "variant": "Very Old (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24605,7 +24630,7 @@
     "id": "dragon_ancient",
     "name": "Dragon",
     "variant": "Ancient (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -24756,7 +24781,7 @@
     "id": "dragon_venerable",
     "name": "Dragon",
     "variant": "Venerable (any color)",
-    "source": "ACKS Core (acore_monster_catalog_dragons.xml § primary_dragon_attributes)",
+    "source": "ACKS Core (acore_monster_catalog_dragons.xml \u00a7 primary_dragon_attributes)",
     "monster_types": [
       "dragon"
     ],
@@ -25127,7 +25152,7 @@
         7
       ],
       "notes": "Regenerating variant: regrows severed heads each round unless cauterized. xp doubled per RAW for regenerating variants.",
-      "raw_citation": "ax_domain_level_encounters.xml battle_rating_reference_tables.fantastic_creatures.Hydra, 5 Head L843; regenerating variant per acore_monster_catalog_gol-lee.xml §hydra L_TBD"
+      "raw_citation": "ax_domain_level_encounters.xml battle_rating_reference_tables.fantastic_creatures.Hydra, 5 Head L843; regenerating variant per acore_monster_catalog_gol-lee.xml \u00a7hydra L_TBD"
     },
     "special_abilities": [
       {
@@ -26104,7 +26129,7 @@
     "special_abilities": [
       {
         "ability_id": "spit_stench",
-        "description": "Ranged spit (10' range), always resolved against AC 0. Target must save vs. Poison or be incapacitated by the stench for 1 turn; afterward the target is immune to that locust's odor. Spittle must be rinsed off — any creature coming within 5' of a spit-soaked creature must save vs. Poison or be wracked with vomiting.",
+        "description": "Ranged spit (10' range), always resolved against AC 0. Target must save vs. Poison or be incapacitated by the stench for 1 turn; afterward the target is immune to that locust's odor. Spittle must be rinsed off \u2014 any creature coming within 5' of a spit-soaked creature must save vs. Poison or be wracked with vomiting.",
         "hook_type": "save_or_effect",
         "effect": {
           "attack_vs_ac": 0,

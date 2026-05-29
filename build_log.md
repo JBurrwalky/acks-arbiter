@@ -28180,3 +28180,45 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. Item #3: Ring of Protection wearer-only effect (worn ring -> ModifierContainer +N AC + +N saves per §75).
 3. Per-item curse effects (Ring of Delusion, Ring of Weakness, etc.) belong to the future per-item-effects pass; the sticky-equip mechanism is now ready to host them.
 4. Remove Curse / Dispel Evil spell wiring: hook the spells to clear `is_cursed` on a target item (spell-effects pass).
+
+
+## Session 2026-05-29 — Invulnerable monsters: flag 25 canonical entries in monster_catalog.json
+
+**Task:** Item #2 of the post-AC next pass: a data-only follow-up to make the invulnerable-monster check (landed 2026-05-29 in attack_resolver / ranged_attack_resolver) actually fire in real combats. The Combatant flag + pre-roll logic was already in place; only the per-monster `damaged_only_by_magic_or_silver: true` flag on the catalog data was missing.
+
+**Model used:** Opus.
+
+**Completed:**
+- Surveyed the rules corpus for canonical invulnerable monsters via `grep -rEn` against `rules/acore_monster_catalog_*.xml` and `rules/le_monster_catalog_*.xml`, finding 12 RAW phrasings of "magic/silver weapons required to harm" (`"Damaged only by magical or silver weapons"`, `"May only be affected by magic and magical weapons"`, `"May only be struck with magical weapons"`, `"May only be harmed by magical weapons, spells, and weapons made of silver"`, etc.). Plus `le_monster_characteristics_stats.xml:303` ("Lycanthropes, shadows, and other fantastic creatures that can only be harmed by magical weapons are also enchanted creatures") and `le_monster_creation.xml:415-416` (the HD-tiered creation rule).
+- Cross-referenced against `data/monsters/monster_catalog.json` (225 monsters, hand-curated, no extractor) and identified 25 canonical invulnerable entries:
+  - **Incorporeal undead** (3): wraith, shadow, spectre.
+  - **Other classic magic-to-hit** (2): gargoyle, mummy.
+  - **Greater fantastic creatures** (3): djinni, efreeti, demon_boar.
+  - **Lycanthropes** (5; silver-or-magic per liz-orc.xml:297 animal-form rule): wererat, werebear, wereboar, weretiger, werewolf.
+  - **Elementals** (12; 4 types × 3 tiers: 8/12/16 HD): air, earth, fire, water.
+- **Excluded for now** (no RAW confirmation found in the searched corpus, conservative): vampire, wight, ghoul. The catalog flag is easy to extend if Jedidiah specifies additions.
+- Modified `data/monsters/monster_catalog.json` in place via a Python script (preserves indent=2 formatting, key ordering, file structure). Bidirectional-validated: the script errors if any target id isn't found in the catalog.
+
+**Decisions made:**
+- **Conservative inclusion**: only monsters with clear RAW phrasing OR canonical ACKS/OD&D-tradition invulnerability. Vampire / wight / ghoul left unflagged for now — Jedidiah can add later if intended.
+- **HD-tiered RAW refinement deferred** (`le_monster_creation.xml:415-416`: ≤4 HD → silver works; ≥5 HD → only magical works). V1 honors the simpler core rule (magical OR silver works for all flagged invulnerable monsters); the tiered version is a future data + logic refinement.
+- Modified the JSON file directly (it's hand-curated, not generated). The script is run-once data-mutating; alternative would be an extractor, but the catalog has no extractor today and this single-purpose script is the simplest correct path.
+
+**Interfaces defined or changed:** None (data-only).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_combat_attack_resolver.gd`: +1 `test_real_catalog_wraith_is_flagged_invulnerable` — end-to-end data test. Reads `res://data/monsters/monster_catalog.json`, finds the wraith entry, asserts `damaged_only_by_magic_or_silver=true`, builds a `Combatant.from_monster()`, verifies `is_damaged_only_by_magic_or_silver()` is true, and resolves a mundane PC attack against the catalog wraith asserting `cant_harm=true`. This locks the full JSON → Combatant → resolver path against future regressions to either the catalog data or the flag-propagation code.
+- Full suite: 389 / 19 net-zero new failures. AttackResolver suite green.
+
+**Known issues:**
+- 3 candidate monsters (vampire, wight, ghoul) NOT flagged pending Jedidiah's call. The catalog has them at default `damaged_only_by_magic_or_silver: false`; in current combat they can be harmed by mundane weapons.
+- The L&E HD-tiered rule (silver works ≤4 HD; magic-only ≥5 HD) is not modeled — the V1 implementation treats all flagged monsters as magical-OR-silver. A data + logic pass could split the flag into `harmed_by_silver_too: bool` if the refinement matters.
+- No `is_silvered` equipment data yet — the engine has the hook (`_equipped_weapon.is_silvered`, `_equipped_ammo.is_silvered`) but no equipment catalog entries carry it. A silvered-weapon data pass would let PCs harm lycanthropes without magic.
+
+**Next session should:**
+1. Item #3 of the next pass: Ring of Protection wearer-only effect (worn ring → ModifierContainer +N AC + +N saves per coding_conventions §75). Five priced variants already in the catalog; sticky-equip via is_cursed=false (it's a beneficial item).
+2. Per-item NON-numeric curse effects (Ring of Delusion deception, Ring of Weakness STR penalty, Bag of Devouring item-eater, Potion of Delusion illusion, Cursed Scroll trigger-on-read) — per-item-effects pass.
+3. (Optional) Silver weapon equipment data — flag mundane silver weapons / silvered ammo in the equipment catalog so PCs have a low-tier option against lycanthropes.
+4. (Optional) Add vampire / wight / ghoul to the invulnerable list if RAW supports.
