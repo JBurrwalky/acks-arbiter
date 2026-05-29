@@ -28222,3 +28222,57 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. Per-item NON-numeric curse effects (Ring of Delusion deception, Ring of Weakness STR penalty, Bag of Devouring item-eater, Potion of Delusion illusion, Cursed Scroll trigger-on-read) — per-item-effects pass.
 3. (Optional) Silver weapon equipment data — flag mundane silver weapons / silvered ammo in the equipment catalog so PCs have a low-tier option against lycanthropes.
 4. (Optional) Add vampire / wight / ghoul to the invulnerable list if RAW supports.
+
+
+## Session 2026-05-29 — Ring of Protection: wearer-only AC + saves bonus
+
+**Task:** Item #3 of the post-AC next pass: Ring of Protection wearer-only effect. The catalog already has 5 priced sub_roll variants (`ring_of_protection_1` +1, `_2` +2, `_2_radius` +2/5'r, `_3` +3, `_3_radius` +3/5'r); this pass implements the worn-effect mechanic per coding_conventions §75 ("`armor_class` BASE is equipment-derived; spells / conditions / Shield / Ring of Protection layer via ModifierContainer on top").
+
+**Model used:** Opus.
+
+**Completed:**
+- **`WornMagicEffectResolver`** (NEW; `engine/subsystems/inventory/worn_magic_effect_resolver.gd`) — pure static service. `refresh_for_character(character: CharacterData, inventory_rows: Array)` clears all prior `worn_magic:`-prefixed modifiers (across every stat) then re-adds modifiers for each currently-equipped worn magic item. V1 handles Ring of Protection variants (any `item_key` starting with `ring_of_protection_` with `magical_bonus > 0`); the resolver is the natural home for Cloak of Protection (+AC + saves), Bracers of Armor (+AC), and other beneficial worn items as they land.
+- **Ring of Protection effect composition:**
+  - `armor_class` += `magical_bonus` (ascending AC; positive value).
+  - For each of the 5 save categories (`save_petrification` / `save_poison_death` / `save_blast_breath` / `save_staffs_wands` / `save_spells`): modifier value -= `magical_bonus`. Saves are TARGET NUMBERS — lower is better, so a "+N save bonus" in RAW terms = -N to the target.
+  - source_id format: `worn_magic:<item_id>` — makes the modifiers individually removable and unambiguous for the prefix-clear.
+  - Stacking group: `""` (cumulative) per RAW `acore_treasure_and_magic_items_rules.xml:264` ("Cloak of Protection... cumulative with ring of protection").
+- **`Combatant.wire_equipment`** hook: after `CharacterAcCalculator.recompute` (existing), now also calls `WornMagicEffectResolver.refresh_for_character(_character, inventory_rows)`. This guarantees the modifiers are correct for combat. Guarded by `is_character and _character != null` (monsters / trained creatures don't have ring-equip slots).
+- Dual-shape input (mirrors EncumbranceCalculator / CharacterAcCalculator): accepts both `InventoryItem` objects and raw DB-row / `to_dict()` Dictionaries. Reads `is_equipped` as `int(...) == 1` for dicts.
+
+**Decisions made:**
+- **Combat-start refresh only (V1).** The modifiers are added at `Combatant.wire_equipment`, NOT on every equip-state change. Trade-off: AC/save modifiers stay current FOR COMBAT (the only context where they currently matter), but a non-combat save throw immediately after equipping a ring may not reflect the bonus until next combat. This is a known and documented V1 limitation; the persistent-modifier-on-equip pathway can be added later if non-combat saves become a thing.
+- **Saves as TARGET NUMBERS with NEGATIVE modifier values.** ACKS convention: roll d20, want >= target. RAW "+N to saves" = -N to the target. Documented prominently in the resolver to avoid future confusion.
+- **No clear-on-combat-end.** Modifiers persist past combat; next `wire_equipment` does its own clear-and-readd, so the state stays consistent across combats. Idempotency verified by `test_refresh_idempotent_after_repeated_calls`.
+- **Non-positive bonus guarded out** (`bonus > 0` check): handles malformed inventory rows (e.g., a not-yet-materialized parent `ring_of_protection` row, or catalog data corruption) without applying spurious modifiers.
+- **Radius variants' save-bonus-to-allies-within-5' deferred.** Recorded as `radius_effect` on the catalog +2/+3 5'-radius variants; needs combat-geometry resolution at save time. The wearer's own AC + save bonus IS applied identically for the radius variants (same `magical_bonus`).
+
+**Interfaces defined or changed:**
+- `WornMagicEffectResolver.refresh_for_character(character: CharacterData, inventory_rows: Array)` (static).
+- `Combatant.wire_equipment` calls the resolver as a combat-start safety net.
+- Modifier source_id namespace: `worn_magic:` prefix reserved for worn-magic-item modifiers.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_worn_magic_effect_resolver.gd` (NEW; registered as `WornMagicEffectResolverTests`, ext_resource id `397`): 7 pure-logic tests.
+  - `test_equipped_ring_of_protection_adds_ac_bonus`: +2 ring → AC base 4 + 2 = 6.
+  - `test_equipped_ring_of_protection_adds_save_bonus_to_all_five`: +3 ring → each of 5 saves' effective target lowered by 3.
+  - `test_unequipped_ring_of_protection_has_no_effect`: ring in pack (is_equipped=0) → no modifier.
+  - `test_refresh_clears_prior_worn_magic_modifiers`: equip → refresh → +2; unequip → refresh → back to base.
+  - `test_negative_or_zero_bonus_is_not_applied`: malformed row with bonus 0 → no modifier (guard).
+  - `test_refresh_idempotent_after_repeated_calls`: 3x refresh doesn't double-stack.
+  - `test_stacks_with_pre_existing_armor_class_modifier`: a non-`worn_magic:` modifier (simulating future Cloak of Protection) coexists with the ring's modifier — both stack, ring's refresh leaves the other modifier intact (prefix-clear scoped). RAW :264 cumulative-stacking confirmed.
+- Full suite: 390 passed / 19 failed — net-zero NEW failures. +1 suite for the new resolver (385 baseline + 5 prior new suites = 390).
+
+**Known issues:**
+- Combat-start refresh only — see Decisions for the documented V1 limitation. Non-combat saves don't reflect the bonus until next `wire_equipment`.
+- Radius variants' save-bonus-to-allies-within-5' deferred (combat-geometry concern).
+- Future worn-magic items (Cloak of Protection, Bracers of Armor, Helm of Telepathy, etc.) are stub-ready — add a new branch in `refresh_for_character` per item.
+
+**Next session should:**
+1. Per-item NON-numeric curse effects (Ring of Delusion deception, Ring of Weakness STR penalty, Bag of Devouring item-eater, Potion of Delusion illusion, Cursed Scroll trigger-on-read) — per-item-effects pass.
+2. Cloak of Protection and Bracers of Armor — same WornMagicEffectResolver pattern.
+3. Ring of Protection 5'-radius save-bonus-to-allies — needs save-resolution-time hook + ally targeting.
+4. (Dungeon-runtime, still pending from Treasure Phase 1) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`.
+5. Spell scroll specific-spell binding (Phase 3 magic-item usage).

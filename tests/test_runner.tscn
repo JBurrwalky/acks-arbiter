@@ -409,6 +409,7 @@
 [ext_resource type="Script" path="res://tests/test_treasure_instantiator.gd" id="394_treasure_instantiator_tests"]
 [ext_resource type="Script" path="res://tests/test_magic_item_catalog.gd" id="395_magic_item_catalog_tests"]
 [ext_resource type="Script" path="res://tests/test_character_ac_calculator.gd" id="396_character_ac_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_worn_magic_effect_resolver.gd" id="397_worn_magic_effect_resolver_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1636,3 +1637,6 @@ script = ExtResource("395_magic_item_catalog_tests")
 
 [node name="CharacterAcCalculatorTests" type="Node" parent="."]
 script = ExtResource("396_character_ac_calculator_tests")
+
+[node name="WornMagicEffectResolverTests" type="Node" parent="."]
+script = ExtResource("397_worn_magic_effect_resolver_tests")

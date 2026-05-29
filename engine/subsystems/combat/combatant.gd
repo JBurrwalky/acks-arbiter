@@ -449,6 +449,10 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 	# the in-memory CharacterData. Monsters and trained creatures derive AC elsewhere.
 	if is_character and _character != null:
 		CharacterAcCalculator.recompute(_character, inventory_rows)
+		# Worn-magic-item ModifierContainer entries (Ring of Protection +N to
+		# AC + saves, etc.) — refresh from currently equipped items per
+		# coding_conventions §75. Layers on top of the equipment-derived base AC.
+		WornMagicEffectResolver.refresh_for_character(_character, inventory_rows)
 
 
 # ---------------------------------------------------------------------------
