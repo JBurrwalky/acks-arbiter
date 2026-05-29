@@ -1794,12 +1794,103 @@ func _find_dungeon_controller() -> DungeonMapController:
 # ---------------------------------------------------------------------------
 
 ## Resolves the "loot" action: opens the loot distribution modal over the cache.
-## The dungeon explore state listens for the "open_loot_modal" presentation type.
+## The dungeon explore state listens for the "open_loot_modal" presentation type;
+## for locked / hidden containers it listens for "open_loot_modal_locked" so it
+## can route the player through a Pick Lock or Search prompt first.
+##
+## Lazy-materializes any cell-placed treasure container on first interaction
+## (Commit 3 of the cell-based-treasure-containers arc) — gdd-treasure-item-backing.md
+## §15. Idempotent: existing player-drop caches return through the same path.
 func _resolve_loot(_entity_id: String, cell, dungeon_id: String) -> Dictionary:  # cell: Vector2i or Vector3i
-	# TODO (voxel migration): extend location_key to include level coordinate
-	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
-	# becomes 3D (col,row,level) when the voxel schema lands.
-	var location_key := "dungeon:%s:cell:%d,%d" % [dungeon_id, cell.x, cell.y]
+	# Normalize the cell to 3D using the dungeon controller's current floor as
+	# the z-coordinate when only (x, y) was supplied. The 3D location_key
+	# (col, row, level) matches LocationCacheManager's canonical format
+	# (migration 037).
+	var cell_3d: Vector3i = _cell_to_3d(cell)
+
+	# Bridge cell.z -> floor_id (the TEXT FK that treasure_hoards is scoped by).
+	# When the floor lookup misses (a generated dungeon with no rows for this
+	# z, or an unknown dungeon_id), fall back to the legacy cache-only lookup
+	# so player-drop caches still loot correctly.
+	var floor_id: String = DungeonGeneratorRepository.get_floor_id_for_voxel_level(
+		dungeon_id, cell_3d.z)
+
+	if floor_id.is_empty():
+		# No dungeon-generator floor backing this dungeon_id at z=cell.z —
+		# treat this cell as a player-drop-only location.
+		return _resolve_loot_cache_only(cell_3d, dungeon_id)
+
+	# Lazy-promote any placed-hoard at this cell (Commit 3). The materializer
+	# is idempotent — it returns the existing cache verbatim when one exists
+	# from a prior call or a player drop.
+	var result: Dictionary = TreasureLootService.materialize_hoard_cell(
+		dungeon_id, floor_id, cell_3d)
+
+	# Hidden gate: a hidden hoard short-circuited materialization. From the
+	# player's POV nothing's there — they need a Search check to reveal it.
+	# TODO (search wiring): a Search action on this cell flips
+	# treasure_hoards.is_hidden = 0 so a follow-up loot succeeds.
+	if bool(result.get("is_hidden", false)):
+		return {
+			"auto_pause": true,
+			"pause_reason": "Nothing visible here.",
+		}
+
+	var cache_id: String = str(result.get("cache_id", ""))
+	if cache_id.is_empty():
+		# No placed hoard AND no player-drop cache. (materialize_hoard_cell
+		# already checked the existing-cache path.)
+		return {
+			"auto_pause": true,
+			"pause_reason": "Nothing to loot here.",
+		}
+
+	# Locked gate: a locked container needs a Pick Lock attempt (or a key
+	# match) before its contents are accessible. The handler surfaces the
+	# locked state to the UI via a distinct presentation type; the explore
+	# state can prompt the player to pick the lock (scheduling a
+	# `pick_lock_container` action against this cell).
+	# TODO (pick-lock-container wiring): add `pick_lock_container` action +
+	# handler that succeeds → CampaignRepository UPDATE inventory_items SET
+	# is_locked = 0 on the container_item_id, then re-fire loot.
+	# TODO (trap firing): until the traps subsystem ships, is_trapped is
+	# carried through the materializer for inspection but not fired here.
+	if bool(result.get("is_locked", false)):
+		return {
+			"auto_pause": true,
+			"pause_reason": "Locked",
+			"presentation": {
+				"type": "open_loot_modal_locked",
+				"cache_id": cache_id,
+				"container_item_id": str(result.get("container_item_id", "")),
+				"container_type": str(result.get("container_type", "")),
+				"is_trapped": bool(result.get("is_trapped", false)),
+				"cell_x": cell_3d.x,
+				"cell_y": cell_3d.y,
+				"cell_z": cell_3d.z,
+			},
+		}
+
+	# Visible + unlocked: open the loot modal directly.
+	return {
+		"auto_pause": true,
+		"pause_reason": "Looting",
+		"presentation": {
+			"type": "open_loot_modal",
+			"cache_id": cache_id,
+			"cell_x": cell_3d.x,
+			"cell_y": cell_3d.y,
+			"cell_z": cell_3d.z,
+		},
+	}
+
+
+## Legacy cache-only loot resolution for cells with no backing dungeon-floor row
+## (player drops, non-generator dungeons). Uses the 3D location_key so caches
+## created via the post-migration-037 path are findable. Vector2i callers
+## already had z inferred upstream.
+func _resolve_loot_cache_only(cell_3d: Vector3i, dungeon_id: String) -> Dictionary:
+	var location_key := LocationCacheManager.build_dungeon_cell_key(dungeon_id, cell_3d)
 	var cache: Dictionary = CampaignRepository.get_cache_at_location_key(
 		GameState.campaign_id, location_key)
 	if cache.is_empty():
@@ -1807,17 +1898,31 @@ func _resolve_loot(_entity_id: String, cell, dungeon_id: String) -> Dictionary: 
 			"auto_pause": true,
 			"pause_reason": "Nothing to loot here.",
 		}
-
 	return {
 		"auto_pause": true,
 		"pause_reason": "Looting",
 		"presentation": {
 			"type": "open_loot_modal",
 			"cache_id": cache.get("id", ""),
-			"cell_x": cell.x,
-			"cell_y": cell.y,
+			"cell_x": cell_3d.x,
+			"cell_y": cell_3d.y,
+			"cell_z": cell_3d.z,
 		},
 	}
+
+
+## Promote a Vector2i / Vector3i cell to Vector3i. For 2D inputs the z is read
+## from the dungeon controller's current floor (matching how other handlers
+## bridge 2D events into the voxel grid). The dispatcher's `cell` parameter is
+## documented "Vector2i or Vector3i"; this helper centralises the conversion.
+func _cell_to_3d(cell) -> Vector3i:
+	if cell is Vector3i:
+		return cell
+	var level: int = 0
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller != null:
+		level = controller.get_current_level()
+	return Vector3i(int(cell.x), int(cell.y), level)
 
 
 ## Resolves the "pick_up_all" action: transfers all cache items to the acting

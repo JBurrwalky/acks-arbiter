@@ -48,7 +48,11 @@ extends RefCounted
 ##
 ## Returns {cache_id:String, container_item_id:String, hoard_id:String,
 ##   coins_cp:int, item_count:int, container_type:String, is_locked:bool,
-##   is_trapped:bool}. cache_id == "" means no hoard or cache failure.
+##   is_trapped:bool, is_hidden:bool}. cache_id == "" means no hoard or
+##   cache failure. is_hidden is true ONLY when a hidden hoard was found and
+##   NOT materialized (the function short-circuits before creating a cache);
+##   the caller (e.g. dungeon_handlers._resolve_loot) gates rendering /
+##   interaction on it.
 static func materialize_hoard_cell(
 		dungeon_id: String, floor_id: String, cell: Vector3i) -> Dictionary:
 	var empty := {
@@ -60,6 +64,7 @@ static func materialize_hoard_cell(
 		"container_type": "",
 		"is_locked": false,
 		"is_trapped": false,
+		"is_hidden": false,
 	}
 
 	# Idempotency: short-circuit if a cache already exists at this cell. The
@@ -88,6 +93,21 @@ static func materialize_hoard_cell(
 		DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell(floor_id, cell))
 	if hoard == null:
 		return empty
+
+	# Hidden gate: a hidden hoard short-circuits materialization. The caller
+	# decides what "hidden" means at the interaction layer (typically: the
+	# player can't see it, and a Search check is required to reveal it before
+	# it can be looted). Returning is_hidden=true lets the caller surface
+	# "nothing here" or initiate a search prompt without re-querying the hoard.
+	# The hoard stays is_looted=0 so a later un-hide + materialize call works.
+	if hoard.is_hidden:
+		var hidden_result: Dictionary = empty.duplicate()
+		hidden_result["hoard_id"] = hoard.id
+		hidden_result["container_type"] = hoard.container_type
+		hidden_result["is_hidden"] = true
+		hidden_result["is_locked"] = hoard.is_locked
+		hidden_result["is_trapped"] = hoard.is_trapped
+		return hidden_result
 
 	# Branch on container kind.
 	var pile_types: Array[String] = [TreasureContainerTypes.COIN_PILE, TreasureContainerTypes.GEAR_PILE]

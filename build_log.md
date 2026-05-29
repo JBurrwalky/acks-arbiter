@@ -28447,3 +28447,68 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **Commit 4 — Per-cell interaction.** Rework `dungeon_handlers._resolve_loot(cell, dungeon_id)` to (a) extend location_key to 3D, (b) call `TreasureLootService.materialize_hoard_cell` first, (c) gate on `is_locked` (Pick Lock proficiency throw or key check via `KeyItemData`), (d) gate on `is_hidden` (Search proficiency throw to reveal — the placement service can also flag the hoard hidden), (e) stub `is_trapped` with a TODO until the traps system lands, then (f) open the loot modal on the returned cache_id.
 2. **Commit 5 — Retire `claim_room_hoards`.** Audit callers (likely just the dungeon runtime), migrate them to `materialize_hoard_cell`, then delete `claim_room_hoards` + its tests.
 3. **(Stretch)** Once Commits 4 + 5 land, do a quick build-log audit to make sure the older `claim_room_hoards` references are crossed out / replaced. The resumption doc tracks the arc state.
+
+
+## Session 2026-05-29 — Cell-based treasure containers (Commit 4: per-cell interaction)
+
+**Task:** Commit 4 of the cell-based-treasure-containers arc. Wire `TreasureLootService.materialize_hoard_cell` into `DungeonHandlers._resolve_loot` so first interaction with a placed-hoard cell lazy-promotes the hoard, gates on hidden / locked state, and opens the appropriate UI. Net-zero new failures vs the 391/19 baseline (392/19 after adding the new test suite).
+
+**Model used:** Opus.
+
+**Completed:**
+- **`DungeonHandlers._resolve_loot` rewritten** (`engine/subsystems/session/handlers/dungeon_handlers.gd`): the per-cell loot entry point now:
+  1. Normalizes the action's `cell` parameter to `Vector3i` via a new `_cell_to_3d` helper (reads the dungeon controller's current level for the z coordinate when only 2D was supplied).
+  2. Bridges `cell.z` → `floor_id` via the new `DungeonGeneratorRepository.get_floor_id_for_voxel_level` (matches the dungeon_voxel_serializer convention: voxel z = `level_number - 1`).
+  3. When no floor row backs the dungeon, falls through to a `_resolve_loot_cache_only` helper that uses the canonical 3D location_key — preserves the player-drop / non-generator-dungeon path.
+  4. Calls `TreasureLootService.materialize_hoard_cell` to lazy-promote any placed hoard at the cell (idempotent — returns the existing cache from a prior call or a player drop).
+  5. Gates on `is_hidden`: returns `"Nothing visible here."` without materializing (the hoard stays `is_looted=0` so a future Search-reveal + re-loot works).
+  6. Gates on `is_locked`: returns a new `open_loot_modal_locked` presentation type carrying `cache_id`, `container_item_id`, `container_type`, `is_trapped` (stub), and `cell_x/y/z`. The dungeon explore state can route this to a Pick Lock prompt.
+  7. Otherwise opens the loot modal via the existing `open_loot_modal` presentation type (now also carries `cell_z`).
+- **`TreasureLootService.materialize_hoard_cell`** return shape extended with `is_hidden`. When the hoard at the cell is hidden, the materializer short-circuits BEFORE creating a cache, returns `is_hidden=true` (along with `hoard_id`, `container_type`, `is_locked`, `is_trapped`), and leaves the hoard unlooted. The handler can then surface "Nothing visible here." without re-querying.
+- **`DungeonGeneratorRepository.get_floor_id_for_voxel_level(dungeon_id, voxel_z)`** (NEW): looks up the floor_id (TEXT PK) for a given dungeon at a given voxel z. Returns "" when nothing matches. Used by the dungeon-handler to convert cell.z into floor_id before calling the treasure service.
+- **Multi-floor z bug fixed in `DungeonStocker._place_hoards`** (carry-fix from Commit 2): the stocker was passing room.cells (Array[Vector2i]) directly to the placement service, which defaulted z=0 for every floor. Now the stocker promotes room.cells to Vector3i with `level_number - 1` before passing. Without this, materialize_hoard_cell's exact-match lookup (floor_id + cell_x + cell_y + cell_z) would have missed every floor>1 hoard. The bug was invisible in Commit 2 because all existing stocker tests use a single floor.
+- **New test suite** `tests/test_dungeon_handlers_resolve_loot.gd` (registered as `DungeonHandlersResolveLootTests`, ext_resource id `399`): 6 DB-backed tests against a real `DungeonHandlers` instance:
+  - `test_no_floor_no_cache_returns_nothing_to_loot` — cache-only fallback returns the expected pause_reason.
+  - `test_no_hoard_at_cell_returns_nothing_to_loot` — floor exists but no hoard.
+  - `test_unlocked_pile_opens_loot_modal` — visible unlocked pile → `open_loot_modal`.
+  - `test_locked_chest_returns_locked_presentation` — locked chest → `open_loot_modal_locked` with all the gating fields.
+  - `test_hidden_hoard_returns_nothing_visible` — hidden hoard → "Nothing visible here." AND the hoard stays unlooted (re-query confirms `is_looted=0`).
+  - `test_repeated_loot_on_same_cell_is_idempotent_modal` — second loot returns the same cache_id (the idempotency path through materialize_hoard_cell).
+- **Test runner registration**: 4-edit pattern done (tscn ext_resource id 399 + node, runner `@onready var` + run-loop array entry).
+- **GDD §15 + §15.7 updated** — Commit 4 marked landed; only Commit 5 remains. Pick Lock + Search wiring flagged as out-of-arc follow-up; the handler returns presentation types that let the UI initiate those interactions.
+
+**Decisions made:**
+- **Hidden gate at the materializer, not the handler.** Pre-querying the hoard from the handler would have meant duplicating the cell-lookup logic. Plumbing `is_hidden` through the materializer keeps the gate where the data lives, and the materializer can return early WITHOUT marking the hoard looted (so a Search-reveal flow can re-fire). The hidden result still carries `container_type` / `is_locked` / `is_trapped` for the handler's diagnostic use.
+- **Locked containers stay reachable through `materialize_hoard_cell`** — the materializer creates the cache + backing item REGARDLESS of lock state (the lock state lives on the container item). The handler is what gates the player from seeing the contents. This separation lets a future Pick Lock action update `inventory_items.is_locked=0` and immediately re-fire `_resolve_loot` without any re-materialization.
+- **`open_loot_modal_locked` is a new presentation type, not a field on the existing one.** A type discriminator lets the dungeon explore state route to a Pick Lock prompt vs. the regular loot UI cleanly; mixing them under one `open_loot_modal` would push gating logic into the UI.
+- **`_resolve_loot_cache_only` fallback** preserves the player-drop / non-generator-dungeon path. A future Phase 4 dungeon that doesn't go through DG-V1 (e.g. a hand-authored quest dungeon) still loots correctly even without a `dungeon_floors` row. Cache lookup via the canonical 3D location_key keeps it consistent with `LocationCacheManager`.
+- **`_cell_to_3d` reads from `_find_dungeon_controller`** rather than from a passed-in level argument. Matches the existing pattern in the file (the door / move handlers do this too) and keeps the dispatcher's call signature unchanged.
+- **Carry-fix for the multi-floor z bug**: fixing it in Commit 4 (instead of patching Commit 2) is correct timing — Commit 4 is where exact cell-match lookups (floor_id + cell_x + cell_y + cell_z) become load-bearing. Without the fix, every floor>1 hoard would have been unrecoverable through `materialize_hoard_cell`. Documented in the new code comment so a future reader sees the rationale.
+
+**Interfaces defined or changed:**
+- `DungeonHandlers._resolve_loot(entity_id, cell, dungeon_id)` — same signature; new behavior (hidden / locked / materialize-first).
+- `DungeonHandlers._cell_to_3d(cell) -> Vector3i` (NEW private).
+- `DungeonHandlers._resolve_loot_cache_only(cell_3d, dungeon_id) -> Dictionary` (NEW private).
+- `TreasureLootService.materialize_hoard_cell` return dict gains `"is_hidden": bool`.
+- `DungeonGeneratorRepository.get_floor_id_for_voxel_level(dungeon_id, voxel_z) -> String` (NEW).
+- Presentation types: existing `open_loot_modal` now carries `cell_z`; new `open_loot_modal_locked` with `cache_id` / `container_item_id` / `container_type` / `is_trapped` / `cell_x/y/z`.
+- Location-key format upgraded from 2D `dungeon:<id>:cell:x,y` to canonical 3D `dungeon:<id>:cell:x,y,z` via `LocationCacheManager.build_dungeon_cell_key`.
+
+**Database changes:** None (read-only schema query via the new repo helper).
+
+**Tests added/updated:**
+- `tests/test_dungeon_handlers_resolve_loot.gd` (NEW, 6 tests); registered as `DungeonHandlersResolveLootTests`, ext_resource id `399`.
+- Full suite: 392 passed / 19 failed — +1 suite added, net-zero NEW failures vs the Commit 3 baseline (391/19 → 392/19). ERROR count unchanged at 307.
+
+**Known issues:**
+- **Pick Lock + Search container action wiring** still TODO. The handler surfaces locked / hidden state via presentation types; a follow-up commit can:
+  1. Add a `pick_lock_container` action handler that rolls Pick Lock (mirror `_resolve_pick_lock` for doors), updates `inventory_items.is_locked=0` on success, then re-fires `_resolve_loot`.
+  2. Add a `search_container` action handler that rolls Search, flips `treasure_hoards.is_hidden=0` on success.
+  Both are out-of-arc — Commit 4's contract is that the handler emits clear gating state, not that it executes the gates.
+- **Trap firing** still stubbed — `is_trapped` propagates through to the locked presentation but the trap doesn't fire until the traps system ships.
+- **`_resolve_pick_up_all` still uses the legacy 2D location_key** — same bug pattern as the old `_resolve_loot`. Will be addressed in Commit 5 (where claim_room_hoards retirement also touches loot plumbing) or in a follow-up if Commit 5 stays narrowly scoped.
+
+**Next session should:**
+1. **Commit 5 — Retire `claim_room_hoards`.** Audit callers (probably just the dungeon runtime + tests). Migrate any production callers to `materialize_hoard_cell`. Delete `claim_room_hoards` + its dedicated tests. Update GDD §15 + the build_log + the resumption doc to mark the arc complete.
+2. **(Stretch — out-of-arc follow-up)** Add `pick_lock_container` + `search_container` action handlers + tests. Update `_resolve_pick_up_all` to use the 3D location_key.
+3. **(Stretch — out-of-arc)** Verify a multi-floor generated dungeon round-trips hoards correctly through the persistence layer + materialize path (the z fix needs an integration test against a 2-floor `DungeonGeneratorV1.generate` request).

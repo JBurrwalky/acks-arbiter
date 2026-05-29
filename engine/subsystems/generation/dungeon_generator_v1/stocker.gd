@@ -516,6 +516,15 @@ static func _place_hoards(layout: DungeonLayout, rng: RandomNumberGenerator) -> 
 	layout.treasure_hoards = []
 
 	var opts: Dictionary = {"traps_available": false}
+	# Voxel z-coordinate for this floor (gdd-voxel-tactical-architecture-v1.1).
+	# DungeonLayout.level_number is 1-based; voxel z is level_number - 1
+	# (matches dungeon_voxel_serializer + DungeonMapController._current_level).
+	# WITHOUT this conversion every floor's hoards would land at z = 0 because
+	# the placement service defaults Vector2i input to z = 0 — that masked the
+	# multi-floor bug on Commit 2 (which only tested floor 1). Fixed in Commit 4
+	# now that materialize_hoard_cell looks the hoard up by exact (floor_id +
+	# cell_x + cell_y + cell_z), making z correctness load-bearing.
+	var voxel_z: int = layout.level_number - 1
 
 	for h in original_hoards:
 		var hoard: TreasureHoardData = h
@@ -528,8 +537,15 @@ static func _place_hoards(layout: DungeonLayout, rng: RandomNumberGenerator) -> 
 			layout.treasure_hoards.append(hoard)
 			continue
 
+		# Promote the room's 2D cells to 3D with this floor's voxel z, so each
+		# placed hoard lands at (cell.x, cell.y, voxel_z). Without this, every
+		# floor's hoards would silently share z = 0.
+		var cells_3d: Array = []
+		for c in room.cells:
+			cells_3d.append(Vector3i(c.x, c.y, voxel_z))
+
 		var placed: Array[TreasureHoardData] = TreasurePlacementService.place_hoard(
-			hoard, room.cells, rng, opts)
+			hoard, cells_3d, rng, opts)
 		# The primary's id is preserved (service mutates the same object); the
 		# secondary needs a fresh id since it's a brand-new object.
 		for idx in range(placed.size()):

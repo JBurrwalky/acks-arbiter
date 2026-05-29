@@ -466,6 +466,24 @@ static func get_unlooted_treasure_hoards_for_room(floor_id: String, room_id: int
 	return out
 
 
+## Look up the floor_id (TEXT PK of dungeon_floors) for a given dungeon at the
+## given voxel z-coordinate. The voxel z = level_number - 1
+## (gdd-voxel-tactical-architecture-v1.1; dungeon_voxel_serializer convention).
+## Used by the dungeon runtime to bridge a Vector3i cell into a floor_id when
+## calling `TreasureLootService.materialize_hoard_cell` / `get_unlooted_treasure_hoard_at_cell`.
+## Returns "" if no floor matches (dungeon_id unknown or z out of range).
+static func get_floor_id_for_voxel_level(dungeon_id: String, voxel_z: int) -> String:
+	var db = CampaignRepository.db
+	var floor_index: int = voxel_z + 1
+	if not db.query_with_bindings(
+			"SELECT id FROM dungeon_floors WHERE dungeon_id = ? AND floor_index = ?",
+			[dungeon_id, floor_index]):
+		return ""
+	if db.query_result.is_empty():
+		return ""
+	return str(db.query_result[0].get("id", ""))
+
+
 ## Load the single UNLOOTED hoard placed at [param cell] on [param floor_id], or
 ## null when there's nothing to materialize there. Used by the cell-based loot
 ## flow (`TreasureLootService.materialize_hoard_cell` — see
