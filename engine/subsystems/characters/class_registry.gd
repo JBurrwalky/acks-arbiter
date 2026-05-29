@@ -243,10 +243,14 @@ func get_max_hd_count(class_id: String) -> int:
 
 func get_hp_after_max_hd(class_id: String) -> int:
 	## Returns the fixed HP added per level after max hit dice.
-	## E.g., "+2" -> 2, "+1" -> 1
+	## E.g., "+2" -> 2, "+1" -> 1, 0 (bare number) -> 0.
+	## Accepts both the canonical string format ("+2") and bare JSON numbers
+	## (some class files store 0 as a numeric rather than a quoted string).
 	var cls := get_class_def(class_id)
-	var raw: String = cls.get("hp_after_max_hd", "+2")
-	return int(raw.replace("+", ""))
+	var raw: Variant = cls.get("hp_after_max_hd", "+2")
+	if raw is float or raw is int:
+		return int(raw)
+	return int(str(raw).replace("+", ""))
 
 
 func get_casting_power(class_id: String) -> Dictionary:

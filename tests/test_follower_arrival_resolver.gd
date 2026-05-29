@@ -261,7 +261,7 @@ func test_wave2_schedules_wave3_event() -> void:
 	check(String(call.get("entity_id", "")) == stub_stronghold_id,
 		"scheduled entity_id should be the stronghold id")
 	var data: Dictionary = call.get("data", {})
-	check(String(data.get("stronghold_id", "")) == stub_stronghold_id,
+	check(str(data.get("stronghold_id", "")) == stub_stronghold_id,
 		"event data should carry stronghold_id")
 	# Fire time should be 1 month out (DAYS_PER_MONTH * ROUNDS_PER_DAY) per L163.
 	var expected_offset: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
@@ -287,9 +287,10 @@ func _make_completed_stronghold_for_wave2_scheduling_test() -> String:
 
 ## Lightweight scheduler stub that records schedule_at calls so tests can
 ## verify scheduling without spinning up a full EventScheduler.
-class WaveScheduleCapture extends RefCounted:
+class WaveScheduleCapture extends EventScheduler:
 	var schedule_calls: Array = []
-	func schedule_at(fire_time: int, event_type: String, entity_id: String, data: Dictionary):
+	func schedule_at(fire_time: int, event_type: String, entity_id: String,
+			data: Dictionary = {}, priority: int = 0) -> String:
 		schedule_calls.append({
 			"fire_time": fire_time,
 			"event_type": event_type,

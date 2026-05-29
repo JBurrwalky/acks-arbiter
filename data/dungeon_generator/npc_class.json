@@ -1,0 +1,58 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §npc_parties table:npc_class",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Roll",
+    "NPC Class"
+  ],
+  "rows": [
+    {
+      "Roll": "3-4",
+      "NPC Class": "Elven Nightblade"
+    },
+    {
+      "Roll": "5",
+      "NPC Class": "Elven Spellsword"
+    },
+    {
+      "Roll": "6",
+      "NPC Class": "Explorer"
+    },
+    {
+      "Roll": "7",
+      "NPC Class": "Bladedancer"
+    },
+    {
+      "Roll": "8",
+      "NPC Class": "Cleric"
+    },
+    {
+      "Roll": "9-11",
+      "NPC Class": "Fighter"
+    },
+    {
+      "Roll": "12",
+      "NPC Class": "Thief"
+    },
+    {
+      "Roll": "13",
+      "NPC Class": "Mage"
+    },
+    {
+      "Roll": "14",
+      "NPC Class": "Assassin"
+    },
+    {
+      "Roll": "15",
+      "NPC Class": "Bard"
+    },
+    {
+      "Roll": "16",
+      "NPC Class": "Dwarven Vaultguard"
+    },
+    {
+      "Roll": "17-18",
+      "NPC Class": "Dwarven Craftpriest"
+    }
+  ]
+}

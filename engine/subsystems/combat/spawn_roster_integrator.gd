@@ -121,10 +121,10 @@ func _spawn_animate_dead(effect: Dictionary) -> Array[String]:
 		if not (entry_raw is Dictionary):
 			continue
 		var entry: Dictionary = entry_raw
-		var template := String(entry.get("undead_template", "skeleton"))
+		var template := str(entry.get("undead_template", "skeleton"))
 		var monster_id := template if _monster_registry.has_monster(template) else "skeleton"
 		var combatant := _build_combatant(
-			monster_id, String(entry.get("undead_id", "")), Combatant.Side.PARTY)
+			monster_id, str(entry.get("undead_id", "")), Combatant.Side.PARTY)
 		if combatant == null:
 			continue
 		if _roster.add_combatant(combatant):
@@ -162,7 +162,7 @@ func _spawn_sticks_to_snakes(effect: Dictionary) -> Array[String]:
 			continue
 		var entry: Dictionary = entry_raw
 		var combatant := _build_combatant(
-			monster_id, String(entry.get("snake_id", "")), Combatant.Side.PARTY)
+			monster_id, str(entry.get("snake_id", "")), Combatant.Side.PARTY)
 		if combatant == null:
 			continue
 		# Carry the per-snake poison-disabled flag onto the combatant so the
@@ -292,7 +292,7 @@ func _spawn_insect_plague(effect: Dictionary) -> Array[String]:
 			# Fall back to the 4-HD insect entry for the spell-spawn path.
 			monster_id = "insect_swarm_4hd"
 		var combatant := _build_combatant(
-			monster_id, String(entry.get("swarm_id", "")), Combatant.Side.PARTY)
+			monster_id, str(entry.get("swarm_id", "")), Combatant.Side.PARTY)
 		if combatant == null:
 			continue
 		if _roster.add_combatant(combatant):

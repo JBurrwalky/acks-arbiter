@@ -35,7 +35,7 @@ const _UNIT_STATE_UPDATE_FIELDS := [
 # ---------------------------------------------------------------------------
 
 static func create_battle(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	if not CampaignRepository.db.query_with_bindings("""
@@ -52,28 +52,28 @@ static func create_battle(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
+		str(data.get("campaign_id", "")),
 		_null_or_string(data.get("map_id", null)),
 		int(data.get("hex_q", 0)),
 		int(data.get("hex_r", 0)),
-		String(data.get("attacker_army_id", "")),
-		String(data.get("defender_army_id", "")),
-		String(data.get("terrain_type", "clear_or_grass")),
+		str(data.get("attacker_army_id", "")),
+		str(data.get("defender_army_id", "")),
+		str(data.get("terrain_type", "clear_or_grass")),
 		int(data.get("starting_bpc", 1)),
 		int(data.get("current_bpc", 1)),
-		String(data.get("current_phase", "missile")),
+		str(data.get("current_phase", "missile")),
 		int(data.get("battle_turn_number", 1)),
-		String(data.get("attacker_terrain_advantage", "regular")),
-		String(data.get("defender_terrain_advantage", "regular")),
+		str(data.get("attacker_terrain_advantage", "regular")),
+		str(data.get("defender_terrain_advantage", "regular")),
 		1 if bool(data.get("attacker_surprised", false)) else 0,
 		1 if bool(data.get("defender_surprised", false)) else 0,
-		String(data.get("attacker_choice", "")),
-		String(data.get("defender_choice", "")),
-		String(data.get("outcome", "")),
+		str(data.get("attacker_choice", "")),
+		str(data.get("defender_choice", "")),
+		str(data.get("outcome", "")),
 		int(data.get("started_calendar_day", 0)),
 		int(data.get("ended_calendar_day", 0)),
 		1 if bool(data.get("is_player_involved", false)) else 0,
-		String(data.get("weather_condition", "calm")),
+		str(data.get("weather_condition", "calm")),
 		int(data.get("rng_seed", 0)),
 	]):
 		push_error("BattleRepository.create_battle failed: attacker=%s defender=%s" % [
@@ -128,7 +128,7 @@ static func list_active_battles_for_campaign(campaign_id: String) -> Array:
 # ---------------------------------------------------------------------------
 
 static func create_unit_state(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	if not CampaignRepository.db.query_with_bindings("""
@@ -140,11 +140,11 @@ static func create_unit_state(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("battle_id", "")),
-		String(data.get("troop_unit_id", "")),
-		String(data.get("side", "attacker")),
-		String(data.get("zone", "melee")),
-		String(data.get("status", "engaged")),
+		str(data.get("battle_id", "")),
+		str(data.get("troop_unit_id", "")),
+		str(data.get("side", "attacker")),
+		str(data.get("zone", "melee")),
+		str(data.get("status", "engaged")),
 		float(data.get("br_at_battle_start", 0.0)),
 		float(data.get("br_current", data.get("br_at_battle_start", 0.0))),
 		int(data.get("hits_absorbed_this_phase", 0)),

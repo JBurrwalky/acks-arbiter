@@ -1,0 +1,101 @@
+{
+  "_source": "rules/acore_treasure_and_magic_items_rules.xml §gems table:gem_value",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "roll",
+    "value_gp",
+    "type_examples"
+  ],
+  "rows": [
+    {
+      "roll": "2d20",
+      "value_gp": "avg. 30",
+      "type_examples": "Ornamental"
+    },
+    {
+      "roll": "d100",
+      "value_gp": "avg. 200",
+      "type_examples": "Gem"
+    },
+    {
+      "roll": "d100+80",
+      "value_gp": "avg. 4,000",
+      "type_examples": "Brilliant"
+    },
+    {
+      "roll": "01-10",
+      "value_gp": "10",
+      "type_examples": "Azurite, hematite, malachite, obsidian, quartz"
+    },
+    {
+      "roll": "11-25",
+      "value_gp": "25",
+      "type_examples": "Agate, lapis lazuli, tiger eye, turquoise"
+    },
+    {
+      "roll": "26-40",
+      "value_gp": "50",
+      "type_examples": "Bloodstone, crystal, citrine, jasper, moonstone, onyx"
+    },
+    {
+      "roll": "41-55",
+      "value_gp": "75",
+      "type_examples": "Carnelian, chalcedony, sardonyx, zircon"
+    },
+    {
+      "roll": "56-70",
+      "value_gp": "100",
+      "type_examples": "Amber, amethyst, coral, jade, jet, tourmaline"
+    },
+    {
+      "roll": "71-80",
+      "value_gp": "250",
+      "type_examples": "Garnet, pearl, spinel"
+    },
+    {
+      "roll": "81-90",
+      "value_gp": "500",
+      "type_examples": "Aquamarine, alexandrite, topaz"
+    },
+    {
+      "roll": "91-95",
+      "value_gp": "750",
+      "type_examples": "Opal, star ruby, star sapphire, sunset amethyst, imperial topaz"
+    },
+    {
+      "roll": "96-00",
+      "value_gp": "1,000",
+      "type_examples": "Black sapphire, diamond, emerald, jacinth, ruby"
+    },
+    {
+      "roll": "101-110",
+      "value_gp": "1,500",
+      "type_examples": "Amber with preserved extinct creatures, whorled nephrite jade"
+    },
+    {
+      "roll": "111-125",
+      "value_gp": "2,000",
+      "type_examples": "Black pearl, baroque pearl, crystal geode"
+    },
+    {
+      "roll": "126-145",
+      "value_gp": "4,000",
+      "type_examples": "Facet cut imperial topaz, flawless diamond"
+    },
+    {
+      "roll": "146-165",
+      "value_gp": "6,000",
+      "type_examples": "Facet cut star sapphire or star ruby"
+    },
+    {
+      "roll": "166-175",
+      "value_gp": "8,000",
+      "type_examples": "Flawless facet cut diamond, emerald, jacinth or ruby"
+    },
+    {
+      "roll": "176-180",
+      "value_gp": "10,000",
+      "type_examples": "Flawless facet cut black sapphire or blue diamond"
+    }
+  ]
+}

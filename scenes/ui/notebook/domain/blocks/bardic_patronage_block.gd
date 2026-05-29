@@ -167,7 +167,7 @@ func _render_history() -> void:
 	var entries := CampaignRepository.list_ledger_entries(_domain_id)
 	var bardic_entries: Array = []
 	for entry: Dictionary in entries:
-		if String(entry.get("subcategory", "")) == "bardic_recruitment":
+		if str(entry.get("subcategory", "")) == "bardic_recruitment":
 			bardic_entries.append(entry)
 	if bardic_entries.is_empty():
 		_history_card.add_child(_dim_label("No solicitations yet."))

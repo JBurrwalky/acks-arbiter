@@ -110,6 +110,7 @@ var _follower_arrival_resolver: FollowerArrivalResolver = null
 ## aspirant.
 var _sanctum_apprentice_resolver: SanctumApprenticeResolver = null
 var _entity_outliner: EntityOutliner = null
+var _entity_outliner_layer: CanvasLayer = null
 
 ## State keys where the scheduler loop should tick.
 const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "encounter", "downtime"]
@@ -747,13 +748,22 @@ func load_session(campaign_id: String, party_id: String) -> void:
 
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
+		# The outliner is a Control node and must live inside a CanvasLayer so
+		# that anchor presets resolve against the viewport rect (not a zero-size
+		# Node parent rect).  This mirrors SessionStatusBar, which is itself
+		# declared as a CanvasLayer root in session_status_bar.tscn (layer=80).
+		_entity_outliner_layer = CanvasLayer.new()
+		_entity_outliner_layer.name = "EntityOutlinerLayer"
+		_entity_outliner_layer.layer = 79  # just below SessionStatusBar (layer 80)
+		get_parent().add_child(_entity_outliner_layer)
+
 		_entity_outliner = EntityOutliner.new()
 		_entity_outliner.name = "EntityOutliner"
-		# Position on the right side of the screen as a CanvasLayer child.
+		_entity_outliner_layer.add_child(_entity_outliner)
+		# Anchor to right edge of viewport, stopping above the status bar.
 		_entity_outliner.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 		_entity_outliner.offset_left = -EntityOutliner.PANEL_WIDTH
 		_entity_outliner.offset_bottom = -SessionStatusBar.BAR_HEIGHT
-		get_parent().add_child(_entity_outliner)
 	_entity_outliner.set_scheduler(_scheduler)
 	_entity_outliner.visible = true
 
@@ -872,41 +882,63 @@ func do_encounter_check(terrain: HexTerrainData,
 		# (Future: different thresholds by territory type)
 
 	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "encounter_check")
+	if roll.modified_total > threshold:
+		return {"triggered": false, "encounter_data": {}}
 
-	if roll.modified_total <= threshold:
-		# Pick a monster from the terrain's encounter table
-		var monster_id := _pick_encounter_monster(terrain, dungeon_wandering_table)
-		if monster_id.is_empty():
-			# No monsters in catalog for this terrain — skip encounter
-			return {"triggered": false, "encounter_data": {}}
+	var encounter_data: Dictionary = spawn_encounter_data(
+		terrain, dungeon_wandering_table, roll.modified_total)
+	if encounter_data.is_empty():
+		return {"triggered": false, "encounter_data": {}}
+	return {"triggered": true, "encounter_data": encounter_data}
 
-		# Roll encounter number (1d6 for now; future: use per-monster encounter dice)
-		var count_roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "encounter_number")
-		var count: int = maxi(1, count_roll.modified_total)
 
-		# Roll reaction (2d6)
-		var reaction: RollResult = DiceSystem.roll_digital(6, 2, 0, "reaction")
-		var disposition := _reaction_to_disposition(reaction.modified_total)
+## Generates encounter_data for a wilderness or dungeon encounter that has
+## ALREADY been decided to trigger (the 1-in-6 throw passed elsewhere). Used
+## by `do_encounter_check` after a positive throw, and by the deferred
+## `wilderness_encounter` handler (gdd-realtime-scheduler.md §4.3.1) whose
+## throw fires at camp_setup but whose spawn fires at the rolled hour-of-day.
+##
+## Returns the encounter_data Dictionary, or an empty Dictionary if no monster
+## could be selected for the terrain (caller should treat this as a no-op).
+##
+## [param trigger_roll] is the 1d6 result that decided the trigger, stamped
+## into encounter_data["roll"] for diagnostics. Pass 0 when there was no
+## per-step throw (e.g. the camp throw rolled earlier and the value isn't
+## meaningful here).
+func spawn_encounter_data(terrain: HexTerrainData,
+		dungeon_wandering_table: Array = [],
+		trigger_roll: int = 0) -> Dictionary:
+	# Pick a monster from the terrain's encounter table
+	var monster_id := _pick_encounter_monster(terrain, dungeon_wandering_table)
+	if monster_id.is_empty():
+		# No monsters in catalog for this terrain — caller treats as no-op
+		return {}
 
-		var hex_id := ""
-		if terrain != null and _party_data != null:
-			hex_id = "%d,%d" % [_party_data.current_hex_q, _party_data.current_hex_r]
+	# Roll encounter number (1d6 for now; future: use per-monster encounter dice)
+	var count_roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "encounter_number")
+	var count: int = maxi(1, count_roll.modified_total)
 
-		var encounter_data := {
-			"encounter_id": CampaignRepository.generate_id(),
-			"monster_group": monster_id,
-			"number": count,
-			"reaction_roll": reaction.modified_total,
-			"behavioral_disposition": disposition,
-			"terrain_category": terrain.movement_cost_category() if terrain != null else "dungeon",
-			"territory": terrain.civilization if terrain != null else "wilderness",
-			"hex_id": hex_id,
-			"roll": roll.modified_total,
-		}
-		EventBus.encounter_triggered.emit(encounter_data)
-		return {"triggered": true, "encounter_data": encounter_data}
+	# Roll reaction (2d6)
+	var reaction: RollResult = DiceSystem.roll_digital(6, 2, 0, "reaction")
+	var disposition := _reaction_to_disposition(reaction.modified_total)
 
-	return {"triggered": false, "encounter_data": {}}
+	var hex_id := ""
+	if terrain != null and _party_data != null:
+		hex_id = "%d,%d" % [_party_data.current_hex_q, _party_data.current_hex_r]
+
+	var encounter_data := {
+		"encounter_id": CampaignRepository.generate_id(),
+		"monster_group": monster_id,
+		"number": count,
+		"reaction_roll": reaction.modified_total,
+		"behavioral_disposition": disposition,
+		"terrain_category": terrain.movement_cost_category() if terrain != null else "dungeon",
+		"territory": terrain.civilization if terrain != null else "wilderness",
+		"hex_id": hex_id,
+		"roll": trigger_roll,
+	}
+	EventBus.encounter_triggered.emit(encounter_data)
+	return encounter_data
 
 
 ## Picks a random monster for an encounter based on terrain.

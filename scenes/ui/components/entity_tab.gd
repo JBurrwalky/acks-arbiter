@@ -33,7 +33,12 @@ const ACTIVE_BG_COLOR := Color(0.42, 0.30, 0.16, 1.0)
 const INACTIVE_BG_COLOR := Color(0, 0, 0, 0)
 const BORDER_COLOR := Color(0.46, 0.33, 0.19, 0.55)
 const ACTIVE_BORDER_COLOR := Color(0.85, 0.65, 0.30, 1.0)
-const NAME_COLOR := Color(0.92, 0.86, 0.74, 1.0)
+# State-dependent name color (mirrors notebook_tab_strip): the active chip has a
+# dark-brown background → light text; the inactive chip is transparent and shows
+# the light parchment page → dark text. A single light NAME_COLOR was invisible
+# on inactive tabs. See docs/coding_conventions.md §6.10 / build_log.md 2026-05-27.
+const NAME_ACTIVE_COLOR := Color(0.92, 0.86, 0.74, 1.0)
+const NAME_INACTIVE_COLOR := Color(0.09, 0.06, 0.03, 1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +86,8 @@ func _build() -> void:
 
 	_name_label = Label.new()
 	_name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
-	_name_label.add_theme_color_override("font_color", NAME_COLOR)
+	# Default to the inactive (dark, on light page) color; set_active() flips it.
+	_name_label.add_theme_color_override("font_color", NAME_INACTIVE_COLOR)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_name_label.custom_minimum_size = Vector2(PORTRAIT_SIZE.x + PADDING * 2, 0)
@@ -110,6 +116,10 @@ func set_active(is_active: bool) -> void:
 		return
 	_is_active = is_active
 	add_theme_stylebox_override("panel", _make_style(is_active))
+	# Flip name text color to stay legible against the chip background.
+	if _name_label != null:
+		_name_label.add_theme_color_override(
+			"font_color", NAME_ACTIVE_COLOR if is_active else NAME_INACTIVE_COLOR)
 
 
 func entity_id() -> String:

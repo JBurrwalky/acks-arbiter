@@ -65,7 +65,7 @@ static func assess_battle_casualties(battle_id: String, siege_outcome: String) -
 		return result
 	var rows: Array = CampaignRepository.db.query_result.duplicate()
 	for row in rows:
-		var side: String = String(row.get("side", ""))
+		var side: String = str(row.get("side", ""))
 		var troop_count: int = int(row.get("troop_count", 0))
 		var per_unit: Dictionary = assess_unit_casualties(troop_count)
 		var bucket_key: String = ""

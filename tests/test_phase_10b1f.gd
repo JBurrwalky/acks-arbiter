@@ -58,6 +58,10 @@ func run_all_tests() -> void:
 	test_crossbreed_success_creates_species_and_instance()
 	test_crossbreed_dedupe_on_repeat_craft()
 
+	# Regression guards for migration 133 (reaction-enum fix).
+	test_crossbreed_instance_accepts_all_raw_reaction_tiers()
+	test_roll_initial_reaction_only_returns_schema_valid_tiers()
+
 	if not has_failures():
 		print("Phase10B1f: all tests passed.")
 
@@ -448,3 +452,74 @@ func test_crossbreed_dedupe_on_repeat_craft() -> void:
 			check(post_instances.size() >= 2,
 				"instance count should be >= 2 after the second successful craft")
 			break
+
+
+# ---------------------------------------------------------------------------
+# Migration 133 regression guards (reaction-enum fix)
+# ---------------------------------------------------------------------------
+
+## Deterministic guard for the root cause of the 2026-05-28 regression: the
+## crossbreed_instances.initial_reaction CHECK must accept every tier the RAW
+## Monster Reaction table produces (acore_adventures_and_encounters.xml:936-958)
+## — especially "indifferent" (adjusted 2d6 of 9-11), which migration 096's
+## CHECK erroneously omitted in favor of the non-tier descriptor "helpful".
+func test_crossbreed_instance_accepts_all_raw_reaction_tiers() -> void:
+	var species_id := CampaignRepository.create_crossbreed_species({
+		"campaign_id": _campaign_id,
+		"creator_character_id": _mage_l11_id,
+		"name": "Reaction Probe",
+		"progenitor_a_name": "Owl",
+		"progenitor_b_name": "Bear",
+		"progenitor_a_hd": 6,
+		"progenitor_b_hd": 5,
+		"hit_dice": 5,
+		"gp_cost_total": 10000,
+		"laboratory_id": _laboratory_big_id,
+		"designed_calendar_day": 1,
+	})
+	check(not species_id.is_empty(), "probe species should be created")
+	for tier in ["hostile", "unfriendly", "neutral", "indifferent", "friendly"]:
+		var iid := CampaignRepository.create_crossbreed_instance({
+			"campaign_id": _campaign_id,
+			"species_id": species_id,
+			"creator_character_id": _mage_l11_id,
+			"name": "Probe " + tier,
+			"hp_max": 22,
+			"hp_current": 22,
+			"location_kind": "stronghold",
+			"location_ref": "stronghold:" + _stronghold_id,
+			"laboratory_id": _laboratory_big_id,
+			"initial_reaction": tier,
+			"status": "alive",
+			"gp_cost_total": 10000,
+			"created_calendar_day": 1,
+		})
+		check(not iid.is_empty(),
+			"crossbreed instance with initial_reaction='%s' should insert (RAW reaction tier)" % tier)
+		var row: Dictionary = CampaignRepository.get_crossbreed_instance(iid)
+		check(String(row.get("initial_reaction", "")) == tier,
+			"initial_reaction should round-trip as '%s'" % tier)
+
+
+## Guard the other side of the contract: every value roll_initial_reaction can
+## return must be in the schema's CHECK set, so an auto-rolled reaction can
+## never fail the crossbreed_instances INSERT. Seeded RNG → deterministic.
+func test_roll_initial_reaction_only_returns_schema_valid_tiers() -> void:
+	var valid := {
+		"hostile": true, "unfriendly": true, "neutral": true,
+		"indifferent": true, "friendly": true,
+	}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	var bad := ""
+	# Vary both modifiers so every reaction band (2- through 12+) is exercised.
+	for cha_mod in range(-3, 4):
+		for prog_int_mod in range(-3, 4):
+			for _i in range(20):
+				var r := MagicalResearchCrossbreed.roll_initial_reaction(
+					cha_mod, prog_int_mod, rng)
+				if not valid.has(r):
+					bad = r
+					break
+	check(bad.is_empty(),
+		"roll_initial_reaction must only return schema-valid tiers; got '%s'" % bad)

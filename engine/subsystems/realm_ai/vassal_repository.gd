@@ -34,7 +34,7 @@ const _UPDATE_FIELDS := [
 # ---------------------------------------------------------------------------
 
 static func create_assignment(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 
@@ -51,16 +51,16 @@ static func create_assignment(data: Dictionary) -> String:
 		domain_v = null
 	var bindings: Array = [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("liege_character_id", "")),
-		String(data.get("vassal_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("liege_character_id", "")),
+		str(data.get("vassal_character_id", "")),
 		domain_v,
 		int(data.get("assigned_calendar_day", 0)),
-		String(data.get("status", "active")),
+		str(data.get("status", "active")),
 		1 if bool(data.get("is_henchman_vassal", true)) else 0,
 		int(data.get("base_loyalty_modifier", 0)),
 		int(data.get("last_loyalty_roll_day", 0)),
-		String(data.get("last_loyalty_outcome", "")),
+		str(data.get("last_loyalty_outcome", "")),
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
 		push_error("VassalRepository.create_assignment failed: liege=%s vassal=%s" % [

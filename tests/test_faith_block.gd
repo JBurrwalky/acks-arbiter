@@ -305,7 +305,7 @@ func test_consecrate_ruler_consumes_dp_and_enqueues_buff() -> void:
 	# bonus +1/-1.
 	if not active.is_empty():
 		var row: Dictionary = active[0]
-		var payload: Variant = JSON.parse_string(String(row.get("effect_payload_json", "{}")))
+		var payload: Variant = JSON.parse_string(str(row.get("effect_payload_json", "{}")))
 		check(payload is Dictionary, "buff payload is dict")
 		var bonus: int = int((payload as Dictionary).get("base_morale_bonus", 0))
 		check(bonus == 1 or bonus == -1,
@@ -549,7 +549,7 @@ func test_monthly_expire_stale_effects() -> void:
 	# After expiration, the row should not appear in list_active_divine_effects.
 	var active := CampaignRepository.list_active_divine_effects(_domain_id, today, "consecrate_ruler_buff")
 	for row: Dictionary in active:
-		check(String(row.get("id", "")) != effect_id,
+		check(str(row.get("id", "")) != effect_id,
 			"expired row should be filtered out of active list")
 
 

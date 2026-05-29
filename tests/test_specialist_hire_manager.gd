@@ -119,7 +119,7 @@ func test_hire_pathfinder_creates_row_and_emits() -> void:
 	check(not sid.is_empty(), "hire returns specialist_id")
 
 	var row: Dictionary = CampaignRepository.get_specialist(sid)
-	check(String(row.get("kind", "")) == "pathfinder", "kind persisted")
+	check(str(row.get("kind", "")) == "pathfinder", "kind persisted")
 	check(int(row.get("monthly_wage_cp", 0)) == 2500, "wage from catalog (25 gp = 2500 cp)")
 	check(int(row.get("hired_at_round", -1)) == 100, "hired_at_round persisted")
 	check(int(row.get("closed", 1)) == 0, "row open by default")
@@ -140,7 +140,7 @@ func test_hire_then_dismiss_closes_row_and_emits() -> void:
 
 	var row: Dictionary = CampaignRepository.get_specialist(sid)
 	check(int(row.get("closed", 0)) == 1, "row closed")
-	check(String(row.get("closed_reason", "")) == "dismissed",
+	check(str(row.get("closed_reason", "")) == "dismissed",
 		"closed_reason = dismissed")
 
 	# Two signals: hired then dismissed.

@@ -467,7 +467,7 @@ func test_composition_for_orc_120_warriors_matches_raw_table() -> void:
 	var by_type: Dictionary = {}
 	for row_v in comp:
 		var row: Dictionary = row_v
-		by_type[String(row.get("troop_type", ""))] = int(row.get("count", 0))
+		by_type[str(row.get("troop_type", ""))] = int(row.get("count", 0))
 	check(int(by_type.get("light_infantry", 0)) == 44,
 		"orc 120: 44 light_infantry; got %d" % int(by_type.get("light_infantry", 0)))
 	check(int(by_type.get("heavy_infantry", 0)) == 30,

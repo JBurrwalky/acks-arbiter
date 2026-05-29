@@ -300,7 +300,7 @@ func test_conquer_domain_blocks_lawful_conqueror_of_beastman() -> void:
 		% str(ok))
 	# Confirm ownership did NOT change.
 	var d := CampaignRepository.get_domain(TEST_TARGET_BEASTMAN_DOMAIN)
-	check(String(d.get("owner_character_id", "")) == TEST_CHAOTIC_PC,
+	check(str(d.get("owner_character_id", "")) == TEST_CHAOTIC_PC,
 		"ownership preserved after blocked conquest")
 
 

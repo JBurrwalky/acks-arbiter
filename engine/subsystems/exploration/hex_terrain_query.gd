@@ -120,12 +120,12 @@ static func query_terrain_key_for_hex(map_id: String, q: int, r: int,
 	if CampaignRepository.db.query_result.is_empty():
 		return fallback
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	var biome: String = String(row.get("biome", ""))
-	var elevation: String = String(row.get("elevation", ""))
-	var water: String = String(row.get("water", ""))
+	var biome: String = str(row.get("biome", ""))
+	var elevation: String = str(row.get("elevation", ""))
+	var water: String = str(row.get("water", ""))
 	if biome.is_empty() and elevation.is_empty() and water.is_empty():
 		return fallback
-	var civilization: String = String(row.get("civilization", ""))
+	var civilization: String = str(row.get("civilization", ""))
 	var has_city: int = int(row.get("has_city", 0))
-	var biome_subtype: String = String(row.get("biome_subtype", ""))
+	var biome_subtype: String = str(row.get("biome_subtype", ""))
 	return synthesize_terrain_key(biome, elevation, civilization, has_city, water, biome_subtype)

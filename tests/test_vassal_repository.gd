@@ -56,9 +56,9 @@ func test_create_and_get_assignment() -> void:
 	var id := _create_assignment()
 	check(not id.is_empty(), "create returned id")
 	var row := VassalRepository.get_assignment(id)
-	check(String(row.get("liege_character_id", "")) == _liege_id, "liege round-trips")
-	check(String(row.get("vassal_character_id", "")) == _vassal_id, "vassal round-trips")
-	check(String(row.get("status", "")) == "active", "default status active")
+	check(str(row.get("liege_character_id", "")) == _liege_id, "liege round-trips")
+	check(str(row.get("vassal_character_id", "")) == _vassal_id, "vassal round-trips")
+	check(str(row.get("status", "")) == "active", "default status active")
 	check(int(row.get("is_henchman_vassal", 0)) == 1, "henchman flag default 1")
 	# Cleanup
 	VassalRepository.update_status(id, "departed", 200)
@@ -95,7 +95,7 @@ func test_record_loyalty_roll_persists() -> void:
 	})
 	check(VassalRepository.record_loyalty_roll(id, "loyal", 30), "record returns true")
 	var row := VassalRepository.get_assignment(id)
-	check(String(row.get("last_loyalty_outcome", "")) == "loyal", "outcome persisted")
+	check(str(row.get("last_loyalty_outcome", "")) == "loyal", "outcome persisted")
 	check(int(row.get("last_loyalty_roll_day", 0)) == 30, "day persisted")
 
 
@@ -110,7 +110,7 @@ func test_update_status_transitions() -> void:
 	})
 	check(VassalRepository.update_status(id, "revolted", 50), "update returns true")
 	var row := VassalRepository.get_assignment(id)
-	check(String(row.get("status", "")) == "revolted", "status mutated to revolted")
+	check(str(row.get("status", "")) == "revolted", "status mutated to revolted")
 
 
 func test_partial_unique_index_only_one_active_per_pair() -> void:

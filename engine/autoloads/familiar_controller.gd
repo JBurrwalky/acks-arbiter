@@ -205,7 +205,7 @@ func kill_familiar_now(familiar_id: String) -> void:
 	var row: Dictionary = CampaignRepository.get_familiar(familiar_id)
 	if row.is_empty() or int(row.get("is_alive", 0)) == 0:
 		return
-	var master_id: String = String(row.get("master_character_id", ""))
+	var master_id: String = str(row.get("master_character_id", ""))
 	var max_hp: int = int(row.get("hp_max_cached", 0))
 	if not CampaignRepository.kill_familiar(familiar_id):
 		return
@@ -255,9 +255,9 @@ func _on_familiar_died(master_id: String, familiar_id: String, max_hp_at_death: 
 ## NULL DB values for non-henchman characters.
 func _master_from_row(row: Dictionary) -> CharacterData:
 	var c := CharacterData.new()
-	c.id = String(row.get("id", ""))
-	c.campaign_id = String(row.get("campaign_id", ""))
-	c.name = String(row.get("name", ""))
+	c.id = str(row.get("id", ""))
+	c.campaign_id = str(row.get("campaign_id", ""))
+	c.name = str(row.get("name", ""))
 	c.level = int(row.get("level", 1))
 	c.hp_max = int(row.get("hp_max", 1))
 	c.hp_current = int(row.get("hp_current", 1))

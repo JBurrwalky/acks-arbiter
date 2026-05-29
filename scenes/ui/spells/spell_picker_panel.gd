@@ -213,7 +213,7 @@ func _build_level_section(level: int, entries: Array) -> void:
 
 
 func _build_spell_row(level: int, entry: Dictionary) -> void:
-	var spell_key := String(entry.get("spell_key", ""))
+	var spell_key := str(entry.get("spell_key", ""))
 	if spell_key.is_empty() or _spell_registry == null:
 		return
 	var spell_data: Dictionary = _spell_registry.get_spell(spell_key)

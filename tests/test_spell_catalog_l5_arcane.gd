@@ -327,7 +327,7 @@ func test_teleport_on_target_outcome() -> void:
 	var result: Dictionary = resolver.resolve(args)
 	var pt: Dictionary = result.get("per_target", {})
 	var entry: Dictionary = pt.get(caster.id, {})
-	check(String(entry.get("outcome_kind", "")) == "on_target",
+	check(str(entry.get("outcome_kind", "")) == "on_target",
 		"studied familiarity + d%=50 → on_target")
 
 
@@ -348,7 +348,7 @@ func test_teleport_lost_outcome() -> void:
 	var result: Dictionary = resolver.resolve(args)
 	var pt: Dictionary = result.get("per_target", {})
 	var entry: Dictionary = pt.get(caster.id, {})
-	check(String(entry.get("outcome_kind", "")) == "lost",
+	check(str(entry.get("outcome_kind", "")) == "lost",
 		"studied familiarity + d%=100 → lost")
 
 

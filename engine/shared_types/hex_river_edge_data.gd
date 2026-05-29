@@ -162,8 +162,8 @@ static func from_dict(data: Dictionary) -> HexRiverEdgeData:
 		e.hex_r = int(data.get("hex_r", 0))
 	e.edge = int(data.get("edge", 0))
 	e.flow_clockwise = bool(data.get("flow_clockwise", true))
-	e.navigability = String(data.get("navigability", NAV_RIVER_CRAFT))
-	e.crossing = String(data.get("crossing", CROSSING_NONE))
+	e.navigability = str(data.get("navigability", NAV_RIVER_CRAFT))
+	e.crossing = str(data.get("crossing", CROSSING_NONE))
 	return e
 
 

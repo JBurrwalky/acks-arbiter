@@ -295,11 +295,11 @@ static func eligible_heirs_for(domain_id: String) -> Array:
 	""", [campaign_id]):
 		for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 			out.append({
-				"character_id": String(row.get("id", "")),
-				"name": String(row.get("name", "")),
+				"character_id": str(row.get("id", "")),
+				"name": str(row.get("name", "")),
 				"kind": KIND_PC,
 				"level": int(row.get("level", 0)),
-				"character_class": String(row.get("character_class", "")),
+				"character_class": str(row.get("character_class", "")),
 			})
 	# Henchmen (any employer).
 	if CampaignRepository.db.query_with_bindings("""
@@ -310,11 +310,11 @@ static func eligible_heirs_for(domain_id: String) -> Array:
 	""", [campaign_id]):
 		for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 			out.append({
-				"character_id": String(row.get("id", "")),
-				"name": String(row.get("name", "")),
+				"character_id": str(row.get("id", "")),
+				"name": str(row.get("name", "")),
 				"kind": KIND_HENCHMAN,
 				"level": int(row.get("level", 0)),
-				"character_class": String(row.get("character_class", "")),
+				"character_class": str(row.get("character_class", "")),
 			})
 	# Non-henchman generator candidates: not yet implemented; future polish.
 	return out
@@ -383,7 +383,7 @@ static func _revert_to_overlord(
 	""", [domain_id]):
 		for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 			VassalRepository.update_status(
-				String(row.get("id", "")), "departed", calendar_day)
+				str(row.get("id", "")), "departed", calendar_day)
 	# Domain itself: owner now overlord; lifecycle back to active; clear
 	# liege_domain_id so it's no longer a vassal-domain (direct rule).
 	CampaignRepository.reassign_domain_owner(domain_id, overlord_id)

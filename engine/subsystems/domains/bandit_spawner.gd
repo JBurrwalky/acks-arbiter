@@ -129,7 +129,7 @@ static func tier_for_morale(morale: int) -> String:
 	var data: Dictionary = _tier_data_for_morale(morale)
 	if data.is_empty():
 		return ""
-	return String(data.get("_name", ""))
+	return str(data.get("_name", ""))
 
 
 static func raise_morale_disperses_bandits(

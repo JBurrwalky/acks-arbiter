@@ -272,11 +272,11 @@ func test_start_conversion_inserts_row_and_sets_declared_religion() -> void:
 		"get_active_for_domain returns the new arc")
 	# domains.religion flipped to declared; effective_religion unchanged.
 	var d := CampaignRepository.get_domain(TEST_DOMAIN)
-	check(String(d.get("religion", "")) == "chaos-cult",
+	check(str(d.get("religion", "")) == "chaos-cult",
 		"declared religion (domains.religion) flipped to to_religion")
-	check(String(d.get("effective_religion", "")) == "sun-cult",
+	check(str(d.get("effective_religion", "")) == "sun-cult",
 		"effective_religion still original until completion")
-	check(String(d.get("alignment", "")) == "lawful",
+	check(str(d.get("alignment", "")) == "lawful",
 		"alignment still original until completion")
 
 
@@ -312,9 +312,9 @@ func test_abort_conversion_reverts_religion_and_marks_aborted() -> void:
 	var ok := ReligionConversionResolver.abort_conversion(conv_id, 30, "player_cancel")
 	check(ok, "abort returned true")
 	var d := CampaignRepository.get_domain(TEST_DOMAIN)
-	check(String(d.get("religion", "")) == "sun-cult",
+	check(str(d.get("religion", "")) == "sun-cult",
 		"declared religion reverted to original")
-	check(String(d.get("effective_religion", "")) == "sun-cult",
+	check(str(d.get("effective_religion", "")) == "sun-cult",
 		"effective_religion unchanged")
 	check(ReligionConversionResolver.get_active_for_domain(TEST_DOMAIN) == "",
 		"no longer an active arc")

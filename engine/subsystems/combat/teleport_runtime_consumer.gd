@@ -97,7 +97,7 @@ func process_target(
 	# Lost-in-transit comes BEFORE the save/applied gate because the teleport
 	# custom resolver records `applied=false` for both lost AND saved outcomes;
 	# the discriminator is outcome_kind. Per RAW, lost subjects do not reappear.
-	var outcome_kind := String(entry.get("outcome_kind", "on_target"))
+	var outcome_kind := str(entry.get("outcome_kind", "on_target"))
 	if outcome_kind == "lost":
 		combatant.is_lost = true
 		EventBus.combatant_lost.emit(target_id)

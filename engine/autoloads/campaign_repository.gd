@@ -49,7 +49,7 @@ func wipe_for_tests() -> void:
 	const PRESERVE := ["schema_migrations"]
 	db.query("BEGIN TRANSACTION")
 	for row in tables:
-		var t: String = String(row.get("name", ""))
+		var t: String = str(row.get("name", ""))
 		if t.is_empty() or t in PRESERVE:
 			continue
 		db.query("DELETE FROM \"%s\"" % t)
@@ -647,14 +647,27 @@ func list_party_characters(party_id: String) -> Array:
 
 
 ## Returns active, living characters in this campaign that are not in any party.
-func list_unpartied_characters(campaign_id: String) -> Array:
-	db.query_with_bindings("""
+## Lists active, living characters in [param campaign_id] that are not in any
+## party. Optional [param character_type] restricts the result (e.g. "pc");
+## default "" returns all types.
+##
+## The party-composition "Available Characters" recruit list MUST pass "pc" —
+## otherwise world NPCs (domain rulers from NpcRulerGenerator, bandits, generated
+## encounter NPCs — all character_type='npc') and henchmen surface as party
+## recruits, which they are not. See build_log.md 2026-05-27.
+func list_unpartied_characters(campaign_id: String, character_type: String = "") -> Array:
+	var sql := """
 		SELECT c.* FROM characters c
 		LEFT JOIN party_members pm ON pm.character_id = c.id
 		WHERE c.campaign_id = ? AND c.is_active = 1 AND c.is_dead = 0
 		  AND pm.character_id IS NULL
-		ORDER BY c.name
-	""", [campaign_id])
+	"""
+	var params: Array = [campaign_id]
+	if not character_type.is_empty():
+		sql += " AND c.character_type = ?"
+		params.append(character_type)
+	sql += " ORDER BY c.name"
+	db.query_with_bindings(sql, params)
 	return _sanitize_character_records(db.query_result.duplicate())
 
 
@@ -1806,8 +1819,8 @@ func add_domain_hex(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
-	var domain_id_str := String(data.get("domain_id", ""))
-	var map_id_str := String(data.get("map_id", ""))
+	var domain_id_str := str(data.get("domain_id", ""))
+	var map_id_str := str(data.get("map_id", ""))
 	if map_id_str.is_empty() and not domain_id_str.is_empty():
 		# Default to the domain's location_map_id — preserves pre-migration-119
 		# caller behavior where hex (q,r) coordinates were implicitly scoped to
@@ -1890,7 +1903,7 @@ func check_domain_cross_scale_consistency(domain_id: String) -> Dictionary:
 	# Bucket the domain's existing hexes by map.
 	var owned: Dictionary = {}  # map_id → Dictionary[Vector2i, true]
 	for row in get_domain_hexes(domain_id):
-		var mid := String(row.get("map_id", ""))
+		var mid := str(row.get("map_id", ""))
 		if mid.is_empty():
 			continue
 		if not owned.has(mid):
@@ -1995,10 +2008,10 @@ func compute_consistent_domain_hex_set(domain_id: String) -> Array:
 	var proposed: Dictionary = {}
 	for row in get_domain_hexes(domain_id):
 		var key := "%s|%d|%d" % [
-			String(row.get("map_id", "")), int(row["hex_q"]), int(row["hex_r"])
+			str(row.get("map_id", "")), int(row["hex_q"]), int(row["hex_r"])
 		]
 		proposed[key] = {
-			"map_id": String(row.get("map_id", "")),
+			"map_id": str(row.get("map_id", "")),
 			"hex_q": int(row["hex_q"]),
 			"hex_r": int(row["hex_r"]),
 		}
@@ -2118,10 +2131,10 @@ func _collect_related_maps(map_id: String, campaign_id: String, cache: Dictionar
 		return
 	var row: Dictionary = db.query_result[0]
 	cache[map_id] = {
-		"scale": String(row.get("scale", "")),
-		"parent_map_id": String(row.get("parent_map_id", "") if row.get("parent_map_id") != null else ""),
+		"scale": str(row.get("scale", "")),
+		"parent_map_id": str(row.get("parent_map_id", "") if row.get("parent_map_id") != null else ""),
 		"parent_hex_footprint": HexMapData.footprint_from_json_string(
-			String(row.get("parent_hex_footprint", "[]"))),
+			str(row.get("parent_hex_footprint", "[]"))),
 	}
 	var parent_id := cache[map_id]["parent_map_id"] as String
 	if not parent_id.is_empty():
@@ -2365,7 +2378,7 @@ func add_active_adventuring_log(data: Dictionary) -> String:
 		data.get("domain_id", ""),
 		int(data.get("calendar_day", 0)),
 		1 if data.get("is_active", false) else 0,
-		String(data.get("triggers_json", "{}")),
+		str(data.get("triggers_json", "{}")),
 	]):
 		push_error("CampaignRepository.add_active_adventuring_log: failed. domain=%s" % data.get("domain_id", "?"))
 		return ""
@@ -2811,18 +2824,18 @@ func sanitize_character_equipment(character_id: String) -> Array:
 	for item in get_inventory_items(character_id):
 		if int(item.get("is_equipped", 0)) != 1:
 			continue
-		var category: String = String(item.get("item_category", ""))
+		var category: String = str(item.get("item_category", ""))
 		if not (category in ["weapon", "armor", "shield"]):
 			continue
 		var check: Dictionary = validator_script.can_equip(class_def, character, item, catalog)
 		if check.get("ok", true):
 			continue
-		var item_id: String = String(item.get("id", ""))
+		var item_id: String = str(item.get("id", ""))
 		if item_id.is_empty():
 			continue
 		if update_inventory_item_equip_state(item_id, false, "pack"):
 			unequipped.append({
-				"item_name": String(item.get("name", item.get("item_key", "item"))),
+				"item_name": str(item.get("name", item.get("item_key", "item"))),
 				"reason": String(check.get("reason", "")),
 			})
 	return unequipped
@@ -3907,11 +3920,11 @@ func update_settlement_entrance_data(entrance_id: String, settlement_data_json: 
 ##   preferred_district_class, owner_faction_id.
 ## Defaults are applied for omitted fields per the schema.
 func insert_settlement_poi(data: Dictionary) -> String:
-	var poi_id: String = String(data.get("id", ""))
+	var poi_id: String = str(data.get("id", ""))
 	if poi_id.is_empty():
 		poi_id = generate_id()
-	var settlement_id: String = String(data.get("settlement_id", ""))
-	var type_str: String = String(data.get("type", ""))
+	var settlement_id: String = str(data.get("settlement_id", ""))
+	var type_str: String = str(data.get("type", ""))
 	if settlement_id.is_empty() or type_str.is_empty():
 		push_error("CampaignRepository.insert_settlement_poi: settlement_id and type required")
 		return ""
@@ -3942,20 +3955,20 @@ func insert_settlement_poi(data: Dictionary) -> String:
 		poi_id,
 		settlement_id,
 		type_str,
-		String(data.get("tier", "")),
-		String(data.get("status", "active")),
-		String(data.get("builder_kind", "emergent")),
+		str(data.get("tier", "")),
+		str(data.get("status", "active")),
+		str(data.get("builder_kind", "emergent")),
 		builder_character_id_v,
-		String(data.get("emerged_via", "")),
+		str(data.get("emerged_via", "")),
 		int(data.get("established_at_calendar_day", 0)),
 		int(data.get("gp_value", 0)),
 		int(data.get("l3_plus_npc_count", 0)),
 		int(data.get("l1_l2_adherent_count", 0)),
-		String(data.get("attached_religion", "")),
-		String(data.get("attached_specialist_kind", "")),
+		str(data.get("attached_religion", "")),
+		str(data.get("attached_specialist_kind", "")),
 		stocked_character_id_v,
 		baseline_head_character_id_v,
-		String(data.get("preferred_district_class", "")),
+		str(data.get("preferred_district_class", "")),
 		owner_faction_id_v,
 	]):
 		push_error("CampaignRepository.insert_settlement_poi: failed. settlement_id=%s type=%s"
@@ -3975,10 +3988,10 @@ func insert_settlement_poi(data: Dictionary) -> String:
 ## 'baseline_placeholder'), persistence_tier (default 'named').
 ## Stats default to 10s; HP defaults to a level × 4 floor for class HD.
 func insert_baseline_npc_character(data: Dictionary) -> String:
-	var character_id: String = String(data.get("id", ""))
+	var character_id: String = str(data.get("id", ""))
 	if character_id.is_empty():
 		character_id = generate_id()
-	var campaign_id: String = String(data.get("campaign_id", ""))
+	var campaign_id: String = str(data.get("campaign_id", ""))
 	if campaign_id.is_empty():
 		push_error("CampaignRepository.insert_baseline_npc_character: campaign_id required")
 		return ""
@@ -3999,21 +4012,21 @@ func insert_baseline_npc_character(data: Dictionary) -> String:
 	""", [
 		character_id,
 		campaign_id,
-		String(data.get("name", "Unnamed NPC")),
-		String(data.get("character_type", "npc")),
-		String(data.get("persistence_tier", "named")),
-		String(data.get("race", "human")),
-		String(data.get("character_class", "fighter")),
+		str(data.get("name", "Unnamed NPC")),
+		str(data.get("character_type", "npc")),
+		str(data.get("persistence_tier", "named")),
+		str(data.get("race", "human")),
+		str(data.get("character_class", "fighter")),
 		level,
-		String(data.get("combat_progression", "fighter")),
+		str(data.get("combat_progression", "fighter")),
 		hp_floor,
 		hp_floor,
-		String(data.get("alignment", "neutral")),
+		str(data.get("alignment", "neutral")),
 		home_poi_id_v,
-		String(data.get("npc_role", "baseline_placeholder")),
+		str(data.get("npc_role", "baseline_placeholder")),
 	]):
 		push_error("CampaignRepository.insert_baseline_npc_character: INSERT failed name=%s"
-			% String(data.get("name", "?")))
+			% str(data.get("name", "?")))
 		return ""
 	return character_id
 
@@ -4385,8 +4398,11 @@ func save_party_state(state: Dictionary) -> bool:
 			 current_mount_type,
 			 exhaustion_days, starvation_days, dehydration_days,
 			 water_units, ration_units, last_day_tick_round,
+			 is_camping, camp_start_round, camp_end_round,
+			 camp_watch_assignments_json, camp_armed_sleepers_json,
+			 last_encounter_trigger_day,
 			 updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
 	""", [
 		pid,
 		state.get("marching_order", "[]"),
@@ -4402,6 +4418,12 @@ func save_party_state(state: Dictionary) -> bool:
 		state.get("water_units", 0),
 		state.get("ration_units", 0),
 		state.get("last_day_tick_round", -1),
+		state.get("is_camping", 0),
+		state.get("camp_start_round", -1),
+		state.get("camp_end_round", -1),
+		state.get("camp_watch_assignments_json", "[]"),
+		state.get("camp_armed_sleepers_json", "[]"),
+		state.get("last_encounter_trigger_day", -1),
 	])
 
 
@@ -7493,22 +7515,22 @@ func create_magic_research_project(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("character_id", "")),
-		String(data.get("project_kind", "spell")),
-		String(data.get("target_spell_key", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("character_id", "")),
+		str(data.get("project_kind", "spell")),
+		str(data.get("target_spell_key", "")),
 		int(data.get("target_spell_level", 0)),
-		String(data.get("target_item_kind", "")),
+		str(data.get("target_item_kind", "")),
 		int(data.get("cp_committed", 0)),
 		int(data.get("days_total", 0)),
 		int(data.get("days_completed", 0)),
 		int(data.get("target_value", 18)),
 		data.get("library_id", null),
 		data.get("workshop_id", null),
-		String(data.get("status", "in_progress")),
+		str(data.get("status", "in_progress")),
 		int(data.get("started_calendar_day", 0)),
 		data.get("completed_calendar_day", null),
-		String(data.get("params_json", "{}")),
+		str(data.get("params_json", "{}")),
 	]):
 		push_error("CampaignRepository.create_magic_research_project: failed. id=%s" % id)
 		return ""
@@ -7608,8 +7630,8 @@ func create_library(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
-	var status: String = String(data.get("status", "operational"))
-	var owner_id: String = String(data.get("owner_character_id", ""))
+	var status: String = str(data.get("status", "operational"))
+	var owner_id: String = str(data.get("owner_character_id", ""))
 	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO libraries
@@ -7620,10 +7642,10 @@ func create_library(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
+		str(data.get("campaign_id", "")),
 		owner_id,
 		data.get("stronghold_id", null),
-		String(data.get("structure_kind", "sanctum_library")),
+		str(data.get("structure_kind", "sanctum_library")),
 		cp_invested,
 		int(data.get("max_spell_level_supported", 1)),
 		int(data.get("magic_research_throw_bonus", 0)),
@@ -7695,8 +7717,8 @@ func create_workshop(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
-	var status: String = String(data.get("status", "operational"))
-	var owner_id: String = String(data.get("owner_character_id", ""))
+	var status: String = str(data.get("status", "operational"))
+	var owner_id: String = str(data.get("owner_character_id", ""))
 	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO workshops
@@ -7707,10 +7729,10 @@ func create_workshop(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
+		str(data.get("campaign_id", "")),
 		owner_id,
 		data.get("stronghold_id", null),
-		String(data.get("structure_kind", "tower_workshop")),
+		str(data.get("structure_kind", "tower_workshop")),
 		cp_invested,
 		int(data.get("max_item_value_supported_cp", 0)),
 		int(data.get("magic_research_throw_bonus", 0)),
@@ -7793,18 +7815,18 @@ func create_follower(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("owner_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("owner_character_id", "")),
 		data.get("stronghold_id", null),
-		String(data.get("source_kind", "generic")),
-		String(data.get("intended_class", "")),
-		String(data.get("name", "Follower")),
-		String(data.get("race", "human")),
-		String(data.get("character_class", "normal_man")),
-		String(data.get("combat_progression", "fighter")),
+		str(data.get("source_kind", "generic")),
+		str(data.get("intended_class", "")),
+		str(data.get("name", "Follower")),
+		str(data.get("race", "human")),
+		str(data.get("character_class", "normal_man")),
+		str(data.get("combat_progression", "fighter")),
 		int(data.get("level", 0)),
 		int(data.get("xp", 0)),
-		String(data.get("alignment", "neutral")),
+		str(data.get("alignment", "neutral")),
 		int(data.get("strength", 10)),
 		int(data.get("intelligence", 10)),
 		int(data.get("wisdom", 10)),
@@ -7813,11 +7835,11 @@ func create_follower(data: Dictionary) -> String:
 		int(data.get("charisma", 10)),
 		int(data.get("hp_max", 1)),
 		int(data.get("hp_current", 1)),
-		String(data.get("status", "present")),
+		str(data.get("status", "present")),
 		int(data.get("joined_calendar_day", 0)),
 		data.get("promotion_eligible_day", null),
-		String(data.get("notes", "")),
-		String(data.get("params_json", "{}")),
+		str(data.get("notes", "")),
+		str(data.get("params_json", "{}")),
 	]):
 		push_error("CampaignRepository.create_follower: failed. id=%s" % id)
 		return ""
@@ -8012,19 +8034,19 @@ func create_crafted_magic_item(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("creator_character_id", "")),
-		String(data.get("name", "Crafted Magic Item")),
-		String(data.get("item_category", "wondrous")),
-		String(data.get("base_item_key", "")),
-		String(data.get("effect_kind", "one_use")),
-		String(data.get("primary_spell_key", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("creator_character_id", "")),
+		str(data.get("name", "Crafted Magic Item")),
+		str(data.get("item_category", "wondrous")),
+		str(data.get("base_item_key", "")),
+		str(data.get("effect_kind", "one_use")),
+		str(data.get("primary_spell_key", "")),
 		int(data.get("primary_spell_level", 0)),
-		String(data.get("spell_keys_json", "[]")),
+		str(data.get("spell_keys_json", "[]")),
 		data.get("charges_max", null),
 		data.get("charges_remaining", null),
 		int(data.get("magical_bonus", 0)),
-		String(data.get("weapon_damage", "")),
+		str(data.get("weapon_damage", "")),
 		int(data.get("armor_ac_bonus", 0)),
 		int(data.get("encumbrance_units", 100)),
 		int(data.get("gp_cost_base", 0)),
@@ -8033,7 +8055,7 @@ func create_crafted_magic_item(data: Dictionary) -> String:
 		int(data.get("days_to_create", 0)),
 		1 if bool(data.get("used_formula", false)) else 0,
 		data.get("workshop_id", null),
-		String(data.get("notes", "")),
+		str(data.get("notes", "")),
 		int(data.get("created_calendar_day", 0)),
 	]):
 		push_error("CampaignRepository.create_crafted_magic_item: failed. id=%s" % id)
@@ -8132,15 +8154,15 @@ func create_construct_design(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("creator_character_id", "")),
-		String(data.get("name", "Construct")),
+		str(data.get("campaign_id", "")),
+		str(data.get("creator_character_id", "")),
+		str(data.get("name", "Construct")),
 		int(data.get("hit_dice", 1)),
 		int(data.get("armor_class", 0)),
 		int(data.get("attacks_per_round", 1)),
 		int(data.get("max_damage_per_round", 1)),
-		String(data.get("damage_expression", "1d6")),
-		String(data.get("special_abilities_json", "[]")),
+		str(data.get("damage_expression", "1d6")),
+		str(data.get("special_abilities_json", "[]")),
 		int(data.get("gp_cost_total", 0)),
 		int(data.get("days_to_design", 0)),
 		data.get("library_id", null),
@@ -8223,21 +8245,21 @@ func create_construct_instance(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("design_id", "")),
-		String(data.get("creator_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("design_id", "")),
+		str(data.get("creator_character_id", "")),
 		data.get("owner_character_id", null),
-		String(data.get("name", "Construct")),
+		str(data.get("name", "Construct")),
 		int(data.get("hp_max", 1)),
 		int(data.get("hp_current", int(data.get("hp_max", 1)))),
-		String(data.get("location_kind", "stronghold")),
-		String(data.get("location_ref", "")),
+		str(data.get("location_kind", "stronghold")),
+		str(data.get("location_ref", "")),
 		data.get("workshop_id", null),
 		int(data.get("gp_cost_total", 0)),
 		int(data.get("days_to_create", 0)),
-		String(data.get("status", "active")),
+		str(data.get("status", "active")),
 		int(data.get("created_calendar_day", 0)),
-		String(data.get("notes", "")),
+		str(data.get("notes", "")),
 	]):
 		push_error("CampaignRepository.create_construct_instance: failed. id=%s" % id)
 		return ""
@@ -8306,8 +8328,8 @@ func create_laboratory(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
-	var status: String = String(data.get("status", "operational"))
-	var owner_id: String = String(data.get("owner_character_id", ""))
+	var status: String = str(data.get("status", "operational"))
+	var owner_id: String = str(data.get("owner_character_id", ""))
 	var cp_invested: int = int(data.get("cp_invested", 0))
 	if not db.query_with_bindings("""
 		INSERT INTO laboratories
@@ -8317,10 +8339,10 @@ func create_laboratory(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
+		str(data.get("campaign_id", "")),
 		owner_id,
 		data.get("stronghold_id", null),
-		String(data.get("structure_kind", "crossbreeding_laboratory")),
+		str(data.get("structure_kind", "crossbreeding_laboratory")),
 		cp_invested,
 		int(data.get("max_crossbreed_cost_cp", 0)),
 		int(data.get("magic_research_throw_bonus", 0)),
@@ -8406,25 +8428,25 @@ func create_crossbreed_species(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("creator_character_id", "")),
-		String(data.get("name", "Crossbreed")),
-		String(data.get("progenitor_a_name", "")),
-		String(data.get("progenitor_b_name", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("creator_character_id", "")),
+		str(data.get("name", "Crossbreed")),
+		str(data.get("progenitor_a_name", "")),
+		str(data.get("progenitor_b_name", "")),
 		int(data.get("progenitor_a_hd", 1)),
 		int(data.get("progenitor_b_hd", 1)),
-		String(data.get("progenitor_a_alignment", "neutral")),
-		String(data.get("progenitor_b_alignment", "neutral")),
+		str(data.get("progenitor_a_alignment", "neutral")),
+		str(data.get("progenitor_b_alignment", "neutral")),
 		int(data.get("hit_dice", 1)),
 		int(data.get("armor_class", 0)),
 		int(data.get("attacks_per_round", 1)),
 		int(data.get("max_damage_per_round", 1)),
-		String(data.get("damage_expression", "1d6")),
+		str(data.get("damage_expression", "1d6")),
 		int(data.get("morale", 0)),
-		String(data.get("movement_kind", "progenitor_a")),
-		String(data.get("special_abilities_json", "[]")),
-		String(data.get("alignment", "neutral")),
-		String(data.get("types_json", "[\"fantastic\"]")),
+		str(data.get("movement_kind", "progenitor_a")),
+		str(data.get("special_abilities_json", "[]")),
+		str(data.get("alignment", "neutral")),
+		str(data.get("types_json", "[\"fantastic\"]")),
 		int(data.get("gp_cost_total", 0)),
 		int(data.get("days_to_create", 0)),
 		data.get("laboratory_id", null),
@@ -8517,22 +8539,22 @@ func create_crossbreed_instance(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("species_id", "")),
-		String(data.get("creator_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("species_id", "")),
+		str(data.get("creator_character_id", "")),
 		data.get("owner_character_id", null),
-		String(data.get("name", "Crossbreed")),
+		str(data.get("name", "Crossbreed")),
 		int(data.get("hp_max", 1)),
 		int(data.get("hp_current", int(data.get("hp_max", 1)))),
-		String(data.get("location_kind", "stronghold")),
-		String(data.get("location_ref", "")),
+		str(data.get("location_kind", "stronghold")),
+		str(data.get("location_ref", "")),
 		data.get("laboratory_id", null),
 		data.get("initial_reaction", null),
-		String(data.get("status", "alive")),
+		str(data.get("status", "alive")),
 		int(data.get("gp_cost_total", 0)),
 		int(data.get("days_to_create", 0)),
 		int(data.get("created_calendar_day", 0)),
-		String(data.get("notes", "")),
+		str(data.get("notes", "")),
 	]):
 		push_error("CampaignRepository.create_crossbreed_instance: failed. id=%s" % id)
 		return ""

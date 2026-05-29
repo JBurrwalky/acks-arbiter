@@ -78,7 +78,7 @@ static func advance_planning(hijink_id: String) -> bool:
 	var row := SyndicateRepository.get_hijink(hijink_id)
 	if row.is_empty():
 		return false
-	if String(row.get("planning_state", "")) != "planning":
+	if str(row.get("planning_state", "")) != "planning":
 		return false
 	var completed: int = int(row.get("planning_days_completed", 0)) + 1
 	var required: int = int(row.get("planning_days_required", 0))
@@ -91,8 +91,8 @@ static func advance_planning(hijink_id: String) -> bool:
 	if finished:
 		EventBus.hijink_planned.emit(
 			hijink_id,
-			String(row.get("hijink_kind", "")),
-			String(row.get("target_id", "")),
+			str(row.get("hijink_kind", "")),
+			str(row.get("target_id", "")),
 		)
 	return finished
 
@@ -105,10 +105,10 @@ static func incomplete_planning_penalty(hijink_id: String) -> int:
 	var row := SyndicateRepository.get_hijink(hijink_id)
 	if row.is_empty():
 		return 0
-	var kind := String(row.get("hijink_kind", ""))
+	var kind := str(row.get("hijink_kind", ""))
 	if not is_plannable(kind):
 		return 0
-	var state := String(row.get("planning_state", ""))
+	var state := str(row.get("planning_state", ""))
 	if state == "planned" or state == "complete":
 		return 0
 	var required: int = int(row.get("planning_days_required", 0))

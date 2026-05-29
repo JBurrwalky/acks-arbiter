@@ -95,8 +95,8 @@ func test_create_and_fetch() -> void:
 
 	var row := CampaignRepository.get_familiar(fid)
 	check(not row.is_empty(), "get_familiar should return the inserted row")
-	check(String(row.get("master_character_id", "")) == TEST_MASTER, "master_character_id round-trips")
-	check(String(row.get("form_key", "")) == "bat", "form_key round-trips")
+	check(str(row.get("master_character_id", "")) == TEST_MASTER, "master_character_id round-trips")
+	check(str(row.get("form_key", "")) == "bat", "form_key round-trips")
 	check(int(row.get("is_alive", 0)) == 1, "is_alive defaults to 1")
 
 
@@ -162,7 +162,7 @@ func test_update_familiar_whitelist() -> void:
 	check(CampaignRepository.update_familiar(fid, {"master_character_id": "spoofed"}),
 		"update_familiar accepts the call but should ignore non-whitelisted fields")
 	row = CampaignRepository.get_familiar(fid)
-	check(String(row.get("master_character_id", "")) == TEST_MASTER,
+	check(str(row.get("master_character_id", "")) == TEST_MASTER,
 		"master_character_id is NOT mutable via update_familiar")
 
 

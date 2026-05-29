@@ -133,7 +133,7 @@ func test_create_magic_research_project_round_trip() -> void:
 	check(not project_id.is_empty(),
 		"create_magic_research_project should return a non-empty id")
 	var row := CampaignRepository.get_magic_research_project(project_id)
-	check(not row.is_empty() and String(row.get("project_kind", "")) == "spell",
+	check(not row.is_empty() and str(row.get("project_kind", "")) == "spell",
 		"round-tripped row should have project_kind='spell'")
 	check(int(row.get("target_spell_level", 0)) == 3,
 		"round-tripped row should preserve target_spell_level=3")
@@ -200,7 +200,7 @@ func test_create_library_and_list_for_owner() -> void:
 	var rows: Array = CampaignRepository.list_libraries_for_owner(_mage_id)
 	var found := false
 	for row in rows:
-		if String(row.get("id", "")) == library_id:
+		if str(row.get("id", "")) == library_id:
 			found = true
 			check(int(row.get("max_spell_level_supported", 0)) == 6,
 				"library row should preserve max_spell_level_supported=6")
@@ -225,7 +225,7 @@ func test_create_workshop_and_list_for_owner() -> void:
 	var rows: Array = CampaignRepository.list_workshops_for_owner(_mage_id)
 	var found := false
 	for row in rows:
-		if String(row.get("id", "")) == workshop_id:
+		if str(row.get("id", "")) == workshop_id:
 			found = true
 			check(int(row.get("max_item_value_supported_cp", 0)) == 1500000,
 				"workshop row should preserve max_item_value_supported_cp=1,500,000")
@@ -257,11 +257,11 @@ func test_create_follower_round_trip() -> void:
 	})
 	check(not follower_id.is_empty(), "create_follower should return a non-empty id")
 	var row := CampaignRepository.get_follower(follower_id)
-	check(String(row.get("source_kind", "")) == "aspirant",
+	check(str(row.get("source_kind", "")) == "aspirant",
 		"follower row should preserve source_kind='aspirant'")
-	check(String(row.get("intended_class", "")) == "mage",
+	check(str(row.get("intended_class", "")) == "mage",
 		"follower row should preserve intended_class='mage'")
-	check(String(row.get("status", "")) == "aspirant_in_training",
+	check(str(row.get("status", "")) == "aspirant_in_training",
 		"follower row should preserve status='aspirant_in_training'")
 	check(int(row.get("promotion_eligible_day", 0)) == 121,
 		"follower row should preserve promotion_eligible_day=121")
@@ -312,7 +312,7 @@ func test_list_followers_for_owner_filters_by_status() -> void:
 	check(aspirants_only.size() >= 1,
 		"list_followers_for_owner with status='aspirant_in_training' should return at least the aspirant")
 	for row in aspirants_only:
-		check(String(row.get("status", "")) == "aspirant_in_training",
+		check(str(row.get("status", "")) == "aspirant_in_training",
 			"all filtered rows should have status='aspirant_in_training'")
 
 
@@ -343,9 +343,9 @@ func test_list_aspirants_due_for_promotion_filters_by_day() -> void:
 	var found_soon := false
 	var found_later := false
 	for row in on_day_120:
-		if String(row.get("id", "")) == due_soon:
+		if str(row.get("id", "")) == due_soon:
 			found_soon = true
-		if String(row.get("id", "")) == due_later:
+		if str(row.get("id", "")) == due_later:
 			found_later = true
 	check(found_soon, "due_soon (day=100) should appear in list_aspirants_due_for_promotion(120)")
 	check(not found_later, "due_later (day=200) should NOT appear in list_aspirants_due_for_promotion(120)")

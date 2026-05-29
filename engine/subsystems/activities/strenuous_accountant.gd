@@ -153,7 +153,7 @@ func _on_activity_tick_earned(
 	# it for rendering.
 	var rows: Array = CampaignRepository.list_active_activity_states_for_character(character_id)
 	for row: Dictionary in rows:
-		var def_id: String = String(row.get("activity_def_id", ""))
+		var def_id: String = str(row.get("activity_def_id", ""))
 		if not _is_strenuous(def_id):
 			continue
 		_bump_strenuous(character_id)

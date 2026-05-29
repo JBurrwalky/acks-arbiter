@@ -8,6 +8,12 @@ const FRAME_BORDER_COLOR := Color(0.46, 0.33, 0.19, 1.0)
 const FRAME_FILL_COLOR := Color(0.19, 0.13, 0.08, 0.94)
 const FALLBACK_VELLUM_COLOR := Color(0.90, 0.84, 0.74, 1.0)
 const VELLUM_TEXT_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+## Secondary/dim text on the light vellum page. Readable mid-dark brown — use
+## for de-emphasized labels (hints, timestamps, "dim" rows) that should read as
+## secondary WITHOUT washing out on the parchment background. Replaces the
+## old light cream/gray "DIM" tones that were invisible on the light page.
+## See docs/coding_conventions.md §6.10 / build_log.md 2026-05-27.
+const VELLUM_SECONDARY_TEXT_COLOR := Color(0.34, 0.27, 0.19, 1.0)
 const VELLUM_WARNING_TEXT_COLOR := Color(0.46, 0.12, 0.08, 1.0)
 const BACKGROUND_NODE_NAME := "__ui_vellum_background"
 

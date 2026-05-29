@@ -37,9 +37,9 @@ func test_occupied_outcome() -> void:
 		conqueror, 0, {})
 	check(ok, "occupied conquest succeeded")
 	var d: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d.get("owner_character_id", "")) == conqueror,
+	check(str(d.get("owner_character_id", "")) == conqueror,
 		"ownership reassigned to conqueror")
-	check(String(d.get("lifecycle_state", "")) == "active",
+	check(str(d.get("lifecycle_state", "")) == "active",
 		"lifecycle_state stays active")
 	check(int(d.get("peasant_families", 0)) == 500,
 		"peasant_families preserved (no pillage)")
@@ -64,9 +64,9 @@ func test_looted_local_succession_outcome() -> void:
 		local_succ, 1, {})  # severity 1 = light pillage
 	check(ok, "looted_local_succession conquest succeeded")
 	var d: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d.get("owner_character_id", "")) == local_succ,
+	check(str(d.get("owner_character_id", "")) == local_succ,
 		"ownership reassigned to local successor NPC")
-	check(String(d.get("lifecycle_state", "")) == "active",
+	check(str(d.get("lifecycle_state", "")) == "active",
 		"lifecycle stays active under local successor")
 	# Pillage severity 1 reduces peasants ~10%.
 	var peasants_after: int = int(d.get("peasant_families", 500))
@@ -89,6 +89,6 @@ func test_salted_to_ruin_outcome() -> void:
 		"", 2, {})  # severity 2 = heavy pillage
 	check(ok, "salted_to_ruin conquest succeeded")
 	var d: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d.get("lifecycle_state", "")) == "salted_to_ruin",
+	check(str(d.get("lifecycle_state", "")) == "salted_to_ruin",
 		"lifecycle_state → salted_to_ruin; got %s"
 		% str(d.get("lifecycle_state", "?")))

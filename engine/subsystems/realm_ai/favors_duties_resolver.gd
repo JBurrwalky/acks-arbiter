@@ -570,7 +570,7 @@ static func roll_monthly_loan_repayments(
 	var duties: Array = VassalObligationsRepository.list_active_duties_for_assignment(vassal_assignment_id)
 	var loan_obligations: Array = []
 	for d in duties:
-		if String(d.get("type", "")) == "loan":
+		if str(d.get("type", "")) == "loan":
 			loan_obligations.append(d)
 	if loan_obligations.is_empty():
 		return results
@@ -643,7 +643,7 @@ static func roll_monthly_construction_expenditure(
 	var duties: Array = VassalObligationsRepository.list_active_duties_for_assignment(vassal_assignment_id)
 	var construction_obligations: Array = []
 	for d in duties:
-		if String(d.get("type", "")) == "construction":
+		if str(d.get("type", "")) == "construction":
 			construction_obligations.append(d)
 	if construction_obligations.is_empty():
 		return results

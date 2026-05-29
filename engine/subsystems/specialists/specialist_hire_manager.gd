@@ -131,7 +131,7 @@ func process_monthly_wages(party_id: String, employer_id: String, fire_round: in
 	const UNPAID_LIMIT := 2  # project-designed grace period
 
 	for row: Dictionary in rows:
-		var sid: String = String(row.get("specialist_id", ""))
+		var sid: String = str(row.get("specialist_id", ""))
 		var wage_cp: int = int(row.get("monthly_wage_cp", 0))
 		if sid.is_empty() or wage_cp <= 0:
 			continue

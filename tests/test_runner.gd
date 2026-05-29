@@ -101,6 +101,7 @@ extends Node
 @onready var _fog_reveal_engine_tests = $FogRevealEngineTests
 @onready var _notification_manager_tests = $NotificationManagerTests
 @onready var _camp_manager_tests = $CampManagerTests
+@onready var _camp_encounter_gate_tests = $CampEncounterGateTests
 @onready var _light_source_tracker_tests = $LightSourceTrackerTests
 @onready var _event_scheduler_tests = $EventSchedulerTests
 @onready var _scheduler_loop_tests = $SchedulerLoopTests
@@ -433,6 +434,45 @@ extends Node
 @onready var _hex_map_offset_conversion_tests = $HexMapOffsetConversionTests
 @onready var _test_content_seeder_tests = $TestContentSeederTests
 @onready var _session_load_fallback_tests = $SessionLoadFallbackTests
+@onready var _settlement_layout_generator_tests = $SettlementLayoutGeneratorTests
+# 2026-05-26 — Avalon ruler + abstract-tribute bootstrap
+@onready var _npc_ruler_generator_tests = $NpcRulerGeneratorTests
+@onready var _abstract_tribute_resolver_tests = $AbstractTributeResolverTests
+@onready var _stock_rulers_and_tribute_tests = $StockRulersAndTributeTests
+# 2026-05-26 — Domain infrastructure stocker (strongholds + garrisons + demand)
+@onready var _domain_stocker_tests = $DomainStockerTests
+# 2026-05-27 — Phase 11D bridge: settlement_pois → legacy dict + Avalon seeding
+@onready var _settlement_dict_builder_tests = $SettlementDictBuilderTests
+@onready var _settlement_explore_state_bridge_tests = $SettlementExploreStateBridgeTests
+# 2026-05-27 — DG-V1.A: dungeon-generator JSON data freshness gate
+@onready var _dungeon_generator_data_freshness_tests = $DungeonGeneratorDataFreshnessTests
+# 2026-05-27 — DG-V1.B-base (rev 2): clean-room rooms-first + MST/A* layout generator
+@onready var _dungeon_room_composer_tests = $DungeonRoomComposerTests
+@onready var _dungeon_layout_rasterizer_tests = $DungeonLayoutRasterizerTests
+@onready var _dungeon_layout_generator_tests = $DungeonLayoutGeneratorTests
+@onready var _dungeon_layout_navigability_tests = $DungeonLayoutNavigabilityTests
+# 2026-05-28 — DG-V1.C: dungeon generator persistence (migration 132 + repository)
+@onready var _dungeon_repository_roundtrip_tests = $DungeonRepositoryRoundtripTests
+@onready var _dungeon_repository_cascade_delete_tests = $DungeonRepositoryCascadeDeleteTests
+@onready var _dungeon_repository_check_constraints_tests = $DungeonRepositoryCheckConstraintsTests
+# 2026-05-28 — DG-V1.D: component + orchestrator tests
+@onready var _dungeon_tier_derivation_tests = $DungeonTierDerivationTests
+@onready var _dungeon_data_loader_tests = $DungeonDataLoaderTests
+@onready var _dungeon_encounter_roller_tests = $DungeonEncounterRollerTests
+@onready var _dungeon_treasure_resolver_tests = $DungeonTreasureResolverTests
+@onready var _dungeon_stocker_tests = $DungeonStockerTests
+@onready var _dungeon_acceptance_tests_tests = $DungeonAcceptanceTestsTests
+@onready var _dungeon_navigability_validator_tests = $DungeonNavigabilityValidatorTests
+@onready var _dungeon_key_lever_placer_tests = $DungeonKeyLeverPlacerTests
+@onready var _dungeon_repository_stocked_roundtrip_tests = $DungeonRepositoryStockedRoundtripTests
+@onready var _dungeon_generator_v1_tests = $DungeonGeneratorV1Tests
+# 2026-05-28 — DG-V1.E: end-to-end scenario tests for the dungeon generator
+@onready var _scenario_lair_single_floor_tier1 = $ScenarioLairSingleFloorTier1
+@onready var _scenario_medium_three_floor_subterranean = $ScenarioMediumThreeFloorSubterranean
+@onready var _scenario_six_floor_tier_clamp = $ScenarioSixFloorTierClamp
+@onready var _scenario_entrance_in_middle = $ScenarioEntranceInMiddle
+@onready var _scenario_placeholder_fallbacks_active = $ScenarioPlaceholderFallbacksActive
+@onready var _scenario_invalid_dungeon_type_fallback = $ScenarioInvalidDungeonTypeFallback
 
 
 func _ready() -> void:
@@ -519,6 +559,7 @@ func run() -> void:
 			_fog_reveal_engine_tests,
 			_notification_manager_tests,
 			_camp_manager_tests,
+			_camp_encounter_gate_tests,
 			_light_source_tracker_tests,
 			_event_scheduler_tests,
 			_scheduler_loop_tests,
@@ -861,7 +902,46 @@ func run() -> void:
 			# 2026-05-26 — Worldographer offset conversion + TestContentSeeder
 			_hex_map_offset_conversion_tests,
 			_test_content_seeder_tests,
-			_session_load_fallback_tests]:
+			_session_load_fallback_tests,
+			_settlement_layout_generator_tests,
+			# 2026-05-26 — Avalon ruler + abstract-tribute bootstrap
+			_npc_ruler_generator_tests,
+			_abstract_tribute_resolver_tests,
+			_stock_rulers_and_tribute_tests,
+			# 2026-05-26 — Domain infrastructure stocker
+			_domain_stocker_tests,
+			# 2026-05-27 — Phase 11D bridge: settlement_pois → legacy dict
+			_settlement_dict_builder_tests,
+			_settlement_explore_state_bridge_tests,
+			# 2026-05-27 — DG-V1.A: dungeon-generator JSON freshness vs sacred XML
+			_dungeon_generator_data_freshness_tests,
+			# 2026-05-27 — DG-V1.B-base (rev 2): dungeon layout generator unit + integration tests
+			_dungeon_room_composer_tests,
+			_dungeon_layout_rasterizer_tests,
+			_dungeon_layout_generator_tests,
+			_dungeon_layout_navigability_tests,
+			# 2026-05-28 — DG-V1.C: dungeon generator persistence
+			_dungeon_repository_roundtrip_tests,
+			_dungeon_repository_cascade_delete_tests,
+			_dungeon_repository_check_constraints_tests,
+			# 2026-05-28 — DG-V1.D: component + orchestrator
+			_dungeon_tier_derivation_tests,
+			_dungeon_data_loader_tests,
+			_dungeon_encounter_roller_tests,
+			_dungeon_treasure_resolver_tests,
+			_dungeon_stocker_tests,
+			_dungeon_acceptance_tests_tests,
+			_dungeon_navigability_validator_tests,
+			_dungeon_key_lever_placer_tests,
+			_dungeon_repository_stocked_roundtrip_tests,
+			_dungeon_generator_v1_tests,
+			# 2026-05-28 — DG-V1.E: end-to-end scenario tests for the dungeon generator
+			_scenario_lair_single_floor_tier1,
+			_scenario_medium_three_floor_subterranean,
+			_scenario_six_floor_tier_clamp,
+			_scenario_entrance_in_middle,
+			_scenario_placeholder_fallbacks_active,
+			_scenario_invalid_dungeon_type_fallback]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

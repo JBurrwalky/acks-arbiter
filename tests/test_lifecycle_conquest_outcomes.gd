@@ -138,9 +138,9 @@ func test_outcome_occupied_preserves_hexes_reassigns_owner() -> void:
 		"SELECT owner_character_id, lifecycle_state, treasury_cp, peasant_families FROM domains WHERE id = ?",
 		[DOMAIN_ID])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	check(String(row.get("owner_character_id", "")) == ATTACKER_ID,
+	check(str(row.get("owner_character_id", "")) == ATTACKER_ID,
 		"owner reassigned to attacker")
-	check(String(row.get("lifecycle_state", "")) == "active",
+	check(str(row.get("lifecycle_state", "")) == "active",
 		"lifecycle stays active for occupied")
 	check(int(row.get("treasury_cp", -1)) == 50_000,
 		"treasury preserved when pillage severity = 0")
@@ -204,9 +204,9 @@ func test_outcome_looted_local_succession_applies_pillage_and_reassigns() -> voi
 		"SELECT owner_character_id, lifecycle_state, treasury_cp, peasant_families FROM domains WHERE id = ?",
 		[DOMAIN_ID])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	check(String(row.get("owner_character_id", "")) == LOCAL_NPC_ID,
+	check(str(row.get("owner_character_id", "")) == LOCAL_NPC_ID,
 		"owner reassigned to local NPC")
-	check(String(row.get("lifecycle_state", "")) == "active",
+	check(str(row.get("lifecycle_state", "")) == "active",
 		"lifecycle stays active for looted")
 	check(int(row.get("treasury_cp", -1)) == 0,
 		"treasury looted to 0")

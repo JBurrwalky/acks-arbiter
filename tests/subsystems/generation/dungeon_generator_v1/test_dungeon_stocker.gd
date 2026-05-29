@@ -1,0 +1,297 @@
+extends "res://tests/test_suite_base.gd"
+
+## Tests for DungeonStocker.stock_floor() (gdd-dungeon-generator-v1.md §11).
+##
+## Strategy: generate a real DungeonLayout via DungeonLayoutGenerator, load a
+## DungeonDataLoader (res://data/dungeon_generator/), and construct a minimal
+## MonsterRegistry. Then call DungeonStocker.stock_floor() with a seeded RNG and
+## assert structural post-conditions.
+##
+## NOTE: DungeonEncounterRoller, DungeonTreasureResolver, and MonsterRegistry are
+## sibling DG-V1.D components built in parallel — this test file codes against their
+## declared signatures; all tests require those siblings to be present at runtime.
+
+
+var _loader: DungeonDataLoader
+var _registry: MonsterRegistry
+var _layout: DungeonLayout
+var _rng: RandomNumberGenerator
+
+
+func run_all_tests() -> void:
+	# Setup shared state — bail early if data load fails.
+	_loader = DungeonDataLoader.new()
+	if not _loader.load_all():
+		push_error("DungeonStocker tests: DungeonDataLoader.load_all() failed — skipping suite.")
+		return
+
+	_registry = MonsterRegistry.new()
+
+	var req := DungeonLayoutRequest.new()
+	req.dungeon_type = "wizards_dungeon"
+	req.dungeon_size = "small"
+	req.level_number = 1
+	req.floor_tier = 2
+	req.seed = 42
+	req.stairs_up = 1
+	req.stairs_down = 1
+	req.is_entrance_floor = true
+	_layout = DungeonLayoutGenerator.generate(req)
+
+	if _layout == null or _layout.rooms.is_empty():
+		push_error("DungeonStocker tests: DungeonLayoutGenerator.generate() returned null or 0 rooms — skipping suite.")
+		return
+
+	_rng = RandomNumberGenerator.new()
+	_rng.seed = 12345
+
+	# Run stock_floor once; all subsequent tests inspect the same stocked layout.
+	DungeonStocker.stock_floor(_layout, _loader, _registry, _rng)
+
+	test_all_rooms_have_contents_kind()
+	test_monster_rooms_have_group_id()
+	test_trap_placeholder_rooms_have_secret_door()
+	test_unique_placeholder_rooms_have_monster_group_id()
+	test_treasure_hoard_ids_match_layout_array()
+	test_monster_group_ids_match_layout_array()
+	test_all_rooms_have_current_purpose()
+	test_special_value_roll_ranges()
+	test_special_treasure_creates_lair_hoard_when_none()
+	test_special_treasure_folds_into_existing_lair_hoard()
+	test_special_treasure_noop_when_empty_or_zero_chance()
+	test_ant_giant_catalog_treasure_corrected()
+	test_animal_treasure_corrections()
+
+	if not has_failures():
+		print("DungeonStocker: all tests passed.")
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+## Every room must have a non-empty contents_kind after stocking.
+func test_all_rooms_have_contents_kind() -> void:
+	var valid_kinds: Array[String] = [
+		"empty", "monster", "monster_lair", "trap_placeholder", "unique_placeholder",
+	]
+	for room in _layout.rooms:
+		check(room.contents_kind in valid_kinds,
+			"room %d contents_kind '%s' is not a valid kind" % [room.id, room.contents_kind])
+
+
+## Rooms classified as "monster" or "monster_lair" must have a non-empty monster_group_id.
+func test_monster_rooms_have_group_id() -> void:
+	for room in _layout.rooms:
+		if room.contents_kind in ["monster", "monster_lair"]:
+			check(room.monster_group_id != "",
+				"room %d (%s) should have monster_group_id set" % [room.id, room.contents_kind])
+
+
+## trap_placeholder rooms must be gated by AT LEAST ONE bordering door with
+## is_secret == true AND type in [LOCKED, TRAPPED] (§11.4 fallback / §14.1.6).
+## Exactly-one is the stocker's per-room target, but the layout generator can
+## independently place extra secret+locked doors, so >= 1 is the real invariant.
+func test_trap_placeholder_rooms_have_secret_door() -> void:
+	for room in _layout.rooms:
+		if room.contents_kind != "trap_placeholder":
+			continue
+		if room.doors.is_empty():
+			# Edge case: a doorless room cannot be gated (the stocker demotes it to
+			# empty); navigability prevents doorless reachable rooms anyway.
+			continue
+		var qualifying: int = 0
+		for door in room.doors:
+			if door.is_secret and (
+				door.type == DungeonDoorData.TYPE_LOCKED
+				or door.type == DungeonDoorData.TYPE_TRAPPED
+			):
+				qualifying += 1
+		check(qualifying >= 1,
+			"trap_placeholder room %d should have at least 1 secret+locked/trapped bordering door, got %d"
+				% [room.id, qualifying])
+
+
+## unique_placeholder rooms must have a non-empty monster_group_id per acceptance test 7.
+func test_unique_placeholder_rooms_have_monster_group_id() -> void:
+	for room in _layout.rooms:
+		if room.contents_kind == "unique_placeholder":
+			check(room.monster_group_id != "",
+				"unique_placeholder room %d must have monster_group_id set" % room.id)
+
+
+## Every treasure_hoard_id on a room must reference a hoard in layout.treasure_hoards.
+func test_treasure_hoard_ids_match_layout_array() -> void:
+	var hoard_ids: Dictionary = {}
+	for hoard in _layout.treasure_hoards:
+		hoard_ids[hoard.id] = true
+	for room in _layout.rooms:
+		if room.treasure_hoard_id == "":
+			continue
+		check(hoard_ids.has(room.treasure_hoard_id),
+			"room %d treasure_hoard_id '%s' not found in layout.treasure_hoards"
+				% [room.id, room.treasure_hoard_id])
+
+
+## Every monster_group_id on a room must reference a group in layout.monster_groups.
+func test_monster_group_ids_match_layout_array() -> void:
+	var group_ids: Dictionary = {}
+	for grp in _layout.monster_groups:
+		group_ids[grp.id] = true
+	for room in _layout.rooms:
+		if room.monster_group_id == "":
+			continue
+		check(group_ids.has(room.monster_group_id),
+			"room %d monster_group_id '%s' not found in layout.monster_groups"
+				% [room.id, room.monster_group_id])
+
+
+## Every room must have a non-empty current_purpose string after stocking (§11.6).
+func test_all_rooms_have_current_purpose() -> void:
+	for room in _layout.rooms:
+		check(room.current_purpose != "",
+			"room %d should have a non-empty current_purpose after stocking" % room.id)
+
+
+# ---------------------------------------------------------------------------
+# Per-monster special lair treasure (e.g. Giant Ant gold nuggets).
+# ---------------------------------------------------------------------------
+
+func test_special_value_roll_ranges() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 24680
+	# "1d10x1000" -> 1000..10000 in multiples of 1000.
+	for _i in 30:
+		var v: int = DungeonStocker._roll_special_value("1d10x1000", rng)
+		check(v >= 1000 and v <= 10000 and v % 1000 == 0,
+			"1d10x1000 must be 1000..10000 in 1000s, got %d" % v)
+	# "2d4x100" -> 200..800.
+	for _j in 20:
+		var v2: int = DungeonStocker._roll_special_value("2d4x100", rng)
+		check(v2 >= 200 and v2 <= 800, "2d4x100 must be 200..800, got %d" % v2)
+	# Plain int, unicode '×' multiplier, empty, and unparseable.
+	check(DungeonStocker._roll_special_value("5", rng) == 5, "'5' -> 5")
+	var vx: int = DungeonStocker._roll_special_value("1d6×100", rng)
+	check(vx >= 100 and vx <= 600, "1d6×100 (unicode ×) must be 100..600, got %d" % vx)
+	check(DungeonStocker._roll_special_value("", rng) == 0, "'' -> 0")
+	check(DungeonStocker._roll_special_value("garbage", rng) == 0, "unparseable -> 0")
+
+
+func _make_special_group(chance: int, dice: String) -> MonsterGroupData:
+	var g := MonsterGroupData.new()
+	g.is_lair = true
+	g.special_treasure = {"chance_pct": chance, "value_dice": dice, "denomination": "gp"}
+	return g
+
+
+func test_special_treasure_creates_lair_hoard_when_none() -> void:
+	# Monster has a special but no lettered type: the special must CREATE a lair hoard.
+	var layout := DungeonLayout.new()
+	var room := DungeonRoomData.new()
+	room.id = 1
+	layout.rooms.append(room)
+	var grp := _make_special_group(100, "1d10x1000")  # 100% -> always fires
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 111
+	DungeonStocker._apply_special_treasure(grp, room, layout, 1, rng)
+	check(layout.treasure_hoards.size() == 1,
+		"special-only lair must create exactly 1 hoard, got %d" % layout.treasure_hoards.size())
+	if layout.treasure_hoards.size() == 1:
+		var h: TreasureHoardData = layout.treasure_hoards[0]
+		check(h.room_id == 1, "special hoard room_id should be 1, got %d" % h.room_id)
+		check(h.gold >= 1000 and h.gold <= 10000, "special gold must be 1000..10000, got %d" % h.gold)
+		check(h.total_gp_value == h.gold,
+			"total_gp_value should equal the added gold (%d), got %d" % [h.gold, h.total_gp_value])
+		check(room.treasure_hoard_id == h.id, "room should back-link the created hoard")
+
+
+func test_special_treasure_folds_into_existing_lair_hoard() -> void:
+	# A base type hoard already exists in the room: the special ADDS to it (no new hoard).
+	var layout := DungeonLayout.new()
+	var room := DungeonRoomData.new()
+	room.id = 7
+	layout.rooms.append(room)
+	var base := TreasureHoardData.new()
+	base.id = "base-hoard"
+	base.room_id = 7
+	base.source = TreasureHoardData.SOURCE_LAIR
+	base.gold = 50
+	base.total_gp_value = 50
+	layout.treasure_hoards.append(base)
+	room.treasure_hoard_id = base.id
+	var grp := _make_special_group(100, "1d10x1000")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 222
+	DungeonStocker._apply_special_treasure(grp, room, layout, 1, rng)
+	check(layout.treasure_hoards.size() == 1,
+		"special must fold into the existing hoard, not add one (got %d)" % layout.treasure_hoards.size())
+	check(base.gold > 50, "special must add gold to the existing hoard (was 50, now %d)" % base.gold)
+	check(base.total_gp_value == base.gold, "total_gp_value must track the new gold")
+
+
+func test_special_treasure_noop_when_empty_or_zero_chance() -> void:
+	var layout := DungeonLayout.new()
+	var room := DungeonRoomData.new()
+	room.id = 3
+	layout.rooms.append(room)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 333
+	# Empty spec -> no hoard.
+	var g_empty := MonsterGroupData.new()
+	g_empty.is_lair = true
+	DungeonStocker._apply_special_treasure(g_empty, room, layout, 1, rng)
+	check(layout.treasure_hoards.is_empty(), "empty special_treasure must add no hoard")
+	# chance_pct 0 -> no hoard.
+	var g0 := _make_special_group(0, "1d10x1000")
+	DungeonStocker._apply_special_treasure(g0, room, layout, 1, rng)
+	check(layout.treasure_hoards.is_empty(), "chance_pct 0 must add no hoard")
+
+
+func test_ant_giant_catalog_treasure_corrected() -> void:
+	# Giant Ant: treasure_type "I" (not the erroneous "U") plus the gold-nugget special.
+	check(_registry.has_monster("ant_giant"), "ant_giant must exist in catalog")
+	if _registry.has_monster("ant_giant"):
+		var m: Dictionary = _registry.get_monster("ant_giant")
+		check(str(m.get("treasure_type", "")) == "I",
+			"ant_giant treasure_type should be 'I', got '%s'" % str(m.get("treasure_type")))
+		var st: Dictionary = m.get("special_treasure", {})
+		check(int(st.get("chance_pct", 0)) == 30,
+			"ant special chance should be 30, got %s" % str(st.get("chance_pct")))
+		check(str(st.get("value_dice", "")) == "1d10x1000",
+			"ant special value_dice should be '1d10x1000', got '%s'" % str(st.get("value_dice")))
+
+
+func test_animal_treasure_corrections() -> void:
+	# Jedidiah's clarifications for the entries that carried the bogus "U" (there is no
+	# treasure type U; types end at R) plus the two "Special (...)" entries.
+	# expected treasure_type per id:
+	var expected_type := {
+		"bear_black": "None", "bear_grizzly": "None", "bear_cave": "None",
+		"lion": "None", "cat_tiger": "None",
+		"beetle_giant_bombardier": "None", "beetle_giant_fire": "None", "beetle_giant_tiger": "None",
+		"snake_giant_python": "None", "hawk_giant": "None", "pegasus": "None",
+		"spider_giant_crab": "C", "spider_giant_tarantula": "F",
+		"fly_giant_carnivorous": "C", "rhagodessa_giant": "I", "hippogriff": "F",
+		"caecilian": "K", "sea_serpent": "M, I", "whale_narwhal": "None",
+	}
+	for cid in expected_type:
+		check(_registry.has_monster(cid), "catalog must have '%s'" % cid)
+		if _registry.has_monster(cid):
+			var got: String = str(_registry.get_monster(cid).get("treasure_type", ""))
+			check(got == expected_type[cid],
+				"%s treasure_type should be '%s', got '%s'" % [cid, expected_type[cid], got])
+	# Loot-drop creatures carry a forward-looking delivery marker.
+	for cid in ["caecilian", "sea_serpent", "whale_narwhal"]:
+		if _registry.has_monster(cid):
+			check(str(_registry.get_monster(cid).get("treasure_delivery", "")) == "loot_drop",
+				"%s should be marked treasure_delivery=loot_drop" % cid)
+	# Narwhal ivory horn modeled as a monster-part special worth 1d6x1000 gp.
+	if _registry.has_monster("whale_narwhal"):
+		var nst: Dictionary = _registry.get_monster("whale_narwhal").get("special_treasure", {})
+		check(str(nst.get("value_dice", "")) == "1d6x1000",
+			"narwhal horn value_dice should be '1d6x1000', got '%s'" % str(nst.get("value_dice")))
+		check(bool(nst.get("is_monster_part", false)), "narwhal horn should be is_monster_part")
+	# Regression guard: the bogus type "U" must be fully purged from the catalog.
+	for mid in _registry.get_all_monster_ids():
+		check(str(_registry.get_monster(mid).get("treasure_type", "")) != "U",
+			"no catalog entry may carry the bogus treasure type 'U' (found on '%s')" % mid)

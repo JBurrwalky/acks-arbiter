@@ -213,7 +213,7 @@ func _populate_default_structures() -> void:
 func _find_structure(id: String) -> Dictionary:
 	for category in ["fortifications", "buildings", "civilian"]:
 		for entry: Dictionary in _structure_catalog.get(category, []):
-			if String(entry.get("id", "")) == id:
+			if str(entry.get("id", "")) == id:
 				return entry
 	return {}
 

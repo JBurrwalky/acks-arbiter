@@ -482,7 +482,7 @@ func dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool:
 		var items_raw: Array = _repo.get_inventory_items(character_id) if _repo.has_method("get_inventory_items") else []
 		var items: Array = items_raw.duplicate()
 		for item: Dictionary in items:
-			var item_id: String = String(item.get("id", ""))
+			var item_id: String = str(item.get("id", ""))
 			if item_id.is_empty():
 				continue
 			if retention == "take_party_gear" and employer_id != "":

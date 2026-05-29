@@ -300,9 +300,15 @@ func stamp_powers(character: CharacterData, class_id: String) -> Array:
 # Proficiency Auto-Selection (for NPCs)
 # ---------------------------------------------------------------------------
 
-func auto_select_proficiencies(class_id: String, level: int) -> Array:
+func auto_select_proficiencies(class_id: String, level: int,
+		prefer_keys: Array = []) -> Array:
 	## Auto-select proficiencies for NPC generation.
 	## Returns Array of Dictionaries ready for CampaignRepository.save_character_proficiencies().
+	##
+	## [param prefer_keys] — when non-empty, each random pick favors a preferred
+	## key (in the class/general list) 60% of the time, falling back to a fully
+	## random pick 40% of the time. Preferred keys NOT in the class list are
+	## silently skipped — RAW class restrictions still rule.
 	var cls := class_registry.get_class_def(class_id)
 	if cls.is_empty():
 		return []
@@ -341,8 +347,7 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 	for i in range(class_slots):
 		if available_class.is_empty():
 			break
-		var idx := DiceSystem.roll_digital(available_class.size(), 1, -1, "npc_class_prof").modified_total
-		idx = clampi(idx, 0, available_class.size() - 1)
+		var idx := _pick_index_with_preference(available_class, prefer_keys, "npc_class_prof")
 		var raw_key: String = available_class[idx]
 		available_class.remove_at(idx)
 		# Resolve compound keys (e.g., "combat_trickery_disarm") and pick specializations
@@ -376,8 +381,7 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 	for i in range(general_slots):
 		if general_options.is_empty():
 			break
-		var idx := DiceSystem.roll_digital(general_options.size(), 1, -1, "npc_general_prof").modified_total
-		idx = clampi(idx, 0, general_options.size() - 1)
+		var idx := _pick_index_with_preference(general_options, prefer_keys, "npc_general_prof")
 		var gen_key: String = general_options[idx]
 		general_options.remove_at(idx)
 		var gen_spec := ""
@@ -392,6 +396,31 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 		})
 
 	return proficiencies
+
+
+func _pick_index_with_preference(options: Array, prefer_keys: Array,
+		roll_label: String) -> int:
+	## Returns an index into [param options]. When [param prefer_keys] is empty,
+	## picks uniformly at random. Otherwise rolls a 60/40 weighted pick:
+	## on a 1-3 (60%) of 1d5, picks uniformly from preferred options in the list;
+	## on a 4-5 (40%) of 1d5, picks uniformly from the full list. Falls back to
+	## a uniform pick if no preferred options are available.
+	if options.is_empty():
+		return 0
+	if not prefer_keys.is_empty():
+		var preferred_indices: Array = []
+		for i in range(options.size()):
+			if String(options[i]) in prefer_keys:
+				preferred_indices.append(i)
+		if not preferred_indices.is_empty():
+			var weight_roll := DiceSystem.roll_digital(5, 1, 0, "%s_weight" % roll_label).modified_total
+			if weight_roll <= 3:
+				var pi := DiceSystem.roll_digital(preferred_indices.size(), 1, -1,
+					"%s_pref" % roll_label).modified_total
+				pi = clampi(pi, 0, preferred_indices.size() - 1)
+				return int(preferred_indices[pi])
+	var idx := DiceSystem.roll_digital(options.size(), 1, -1, roll_label).modified_total
+	return clampi(idx, 0, options.size() - 1)
 
 
 func _pick_random_specialization(prof_key: String) -> String:

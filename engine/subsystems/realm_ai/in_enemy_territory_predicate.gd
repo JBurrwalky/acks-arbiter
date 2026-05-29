@@ -49,8 +49,15 @@ static func is_in_enemy_territory(army_id: String) -> bool:
 	# Same null-guard pattern used by battle_dispatcher._get_hex_terrain.
 	var map_id_v: Variant = army.get("map_id")
 	var map_id: String = "" if map_id_v == null else String(map_id_v)
-	var hex_q: int = int(army.get("hex_q", 0))
-	var hex_r: int = int(army.get("hex_r", 0))
+	# hex_q / hex_r are NULL in the same "assembling" state as map_id (migration
+	# 070); Dictionary.get returns the stored null (not the default), so int(null)
+	# would raise "Nonexistent 'int' constructor". Coerce null to 0 — an unplaced
+	# army resolves to an empty owner apex below (resolve_hex_owner_apex returns ""
+	# for an empty map_id), so it is correctly treated as not in enemy territory.
+	var hex_q_v: Variant = army.get("hex_q")
+	var hex_q: int = 0 if hex_q_v == null else int(hex_q_v)
+	var hex_r_v: Variant = army.get("hex_r")
+	var hex_r: int = 0 if hex_r_v == null else int(hex_r_v)
 	var hex_apex: String = resolve_hex_owner_apex(map_id, hex_q, hex_r)
 	if hex_apex.is_empty():
 		return false  # Wilderness / unowned — not enemy territory.

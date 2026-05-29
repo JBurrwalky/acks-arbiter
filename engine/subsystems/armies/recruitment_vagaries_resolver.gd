@@ -203,7 +203,7 @@ static func list_recruiting_characters(
 		return []
 	var result: Array = []
 	for row in CampaignRepository.db.query_result:
-		result.append(String(row.get("character_id", "")))
+		result.append(str(row.get("character_id", "")))
 	return result
 
 

@@ -1,0 +1,123 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §dungeon_wandering_monsters table:random_monsters_by_level",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Roll",
+    "Monster Level 1",
+    "Monster Level 2",
+    "Monster Level 3",
+    "Monster Level 4",
+    "Monster Level 5",
+    "Monster Level 6"
+  ],
+  "rows": [
+    {
+      "Roll": "1",
+      "Monster Level 1": "Goblin (2d4)",
+      "Monster Level 2": "Gnoll (1d6)",
+      "Monster Level 3": "Bugbear (2d4)",
+      "Monster Level 4": "Lycanthrope, Wereboar (1d4)",
+      "Monster Level 5": "Ettin (1d2)",
+      "Monster Level 6": "Cyclops (1)"
+    },
+    {
+      "Roll": "2",
+      "Monster Level 1": "Kobold (4d4)",
+      "Monster Level 2": "Hobgoblin (1d6)",
+      "Monster Level 3": "Lycanthrope, Werewolf (1d6)",
+      "Monster Level 4": "Lycanthrope, Weretiger (1d4)",
+      "Monster Level 5": "Giant, Hill (1d4)",
+      "Monster Level 6": "Giant, Cloud (1d2)"
+    },
+    {
+      "Roll": "3",
+      "Monster Level 1": "Morlock (1d12)",
+      "Monster Level 2": "Lizardman (2d4)",
+      "Monster Level 3": "Ogre (1d6)",
+      "Monster Level 4": "Minotaur (1d6)",
+      "Monster Level 5": "Giant, Stone (1d2)",
+      "Monster Level 6": "Purple Worm (1d2)"
+    },
+    {
+      "Roll": "4",
+      "Monster Level 1": "Orc (2d4)",
+      "Monster Level 2": "Troglodyte (1d8)",
+      "Monster Level 3": "Throghrin (1d6)",
+      "Monster Level 4": "Boar, Giant (1d4)",
+      "Monster Level 5": "Troll (1d8)",
+      "Monster Level 6": "Demon Boar (1d4)"
+    },
+    {
+      "Roll": "5",
+      "Monster Level 1": "Beetle, Fire (1d8)",
+      "Monster Level 2": "Bat, Giant (1d10)",
+      "Monster Level 3": "Ant, Giant (2d4)",
+      "Monster Level 4": "Owl Bear (1d4)",
+      "Monster Level 5": "Ankheg (1d6)",
+      "Monster Level 6": "Dragon (20 HD) (1)"
+    },
+    {
+      "Roll": "6",
+      "Monster Level 1": "Centipede, Giant (2d4)",
+      "Monster Level 2": "Fly, Giant Carnivorous (1d8)",
+      "Monster Level 3": "Lizard, Draco (1d3)",
+      "Monster Level 4": "Phase Tiger (1d4)",
+      "Monster Level 5": "Caecilian (1d3)",
+      "Monster Level 6": "Hydra (12 HD) (1)"
+    },
+    {
+      "Roll": "7",
+      "Monster Level 1": "Ferret, Giant (1d8)",
+      "Monster Level 2": "Locust, Cavern (1d10)",
+      "Monster Level 3": "Scorpion, Giant (1d6)",
+      "Monster Level 4": "Rhagodessa, Giant (1d4)",
+      "Monster Level 5": "Basilisk (1d6)",
+      "Monster Level 6": "Gorgon (1d2)"
+    },
+    {
+      "Roll": "8",
+      "Monster Level 1": "Rat, Giant (3d6)",
+      "Monster Level 2": "Snake, Pit Viper (1d8)",
+      "Monster Level 3": "Wolf, Dire (1d4)",
+      "Monster Level 4": "Snake, Giant Python (1d3)",
+      "Monster Level 5": "Hell Hound, Greater (2d4)",
+      "Monster Level 6": "Lamia (1)"
+    },
+    {
+      "Roll": "9",
+      "Monster Level 1": "Men, Brigand (2d4)",
+      "Monster Level 2": "Ghoul (1d6)",
+      "Monster Level 3": "Carcass Scavenger (1d3)",
+      "Monster Level 4": "Cockatrice (1d4)",
+      "Monster Level 5": "Salamander, Flame (1d4+1)",
+      "Monster Level 6": "Remorhaz (15 HD) (1)"
+    },
+    {
+      "Roll": "10",
+      "Monster Level 1": "Skeleton (3d4)",
+      "Monster Level 2": "Men, Berserker (1d6)",
+      "Monster Level 3": "Gargoyle (1d6)",
+      "Monster Level 4": "Medusa (1d3)",
+      "Monster Level 5": "Spectre (1d4)",
+      "Monster Level 6": "Skittering Maw (1)"
+    },
+    {
+      "Roll": "11",
+      "Monster Level 1": "Stirge (1d10)",
+      "Monster Level 2": "Zombie (2d4)",
+      "Monster Level 3": "Wight (1d6)",
+      "Monster Level 4": "Wraith (1d4)",
+      "Monster Level 5": "Wyvern (1d2)",
+      "Monster Level 6": "Vampire (9 HD) (1d4)"
+    },
+    {
+      "Roll": "12",
+      "Monster Level 1": "NPC Party (Lvl 1) (1d4+2)",
+      "Monster Level 2": "NPC Party (Lvl 2) (1d4+2)",
+      "Monster Level 3": "NPC Party (Lvl 4) (1d4+2)",
+      "Monster Level 4": "NPC Party (Lvl 5) (1d4+2)",
+      "Monster Level 5": "NPC Party (Lvl 8) (1d4+3)",
+      "Monster Level 6": "NPC Party (Lvl 14) (1d4+3)"
+    }
+  ]
+}

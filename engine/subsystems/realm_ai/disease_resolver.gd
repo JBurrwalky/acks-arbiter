@@ -186,7 +186,7 @@ static func reconcile_cure_ticks_on_session_load(scheduler, calendar_day: int) -
 	"""):
 		return result
 	for row in CampaignRepository.db.query_result:
-		var army_id: String = String(row.get("army_id", ""))
+		var army_id: String = str(row.get("army_id", ""))
 		if army_id.is_empty():
 			continue
 		result.armies_reconciled += 1
@@ -444,7 +444,7 @@ static func _lookup_disease_by_type(disease_type: String) -> Dictionary:
 	_ensure_disease_table_loaded()
 	var rows: Array = _disease_table.get("rows", [])
 	for row in rows:
-		if String(row.get("type", "")) == disease_type:
+		if str(row.get("type", "")) == disease_type:
 			return row
 	return {}
 
@@ -453,8 +453,8 @@ static func _lookup_disease_by_type(disease_type: String) -> Dictionary:
 ## RAW: plague=1d8 days, putrid_fever=2 weeks, spotted_pox=3 weeks,
 ##      bilious_fever=4 weeks, ague=1d4 weeks, bloody_flux=1 week.
 static func _compute_duration_days(entry: Dictionary, dice) -> int:
-	var dice_str: String = String(entry.get("duration_dice", "1"))
-	var unit: String = String(entry.get("duration_unit", "weeks"))
+	var dice_str: String = str(entry.get("duration_dice", "1"))
+	var unit: String = str(entry.get("duration_unit", "weeks"))
 	var rolled: int = _parse_and_roll_dice(dice_str, dice)
 	if unit == "days":
 		return rolled
@@ -524,7 +524,7 @@ static func _list_attached_characters(army_id: String) -> Array:
 		SELECT character_id FROM army_officers WHERE army_id = ?
 	""", [army_id]):
 		for row in CampaignRepository.db.query_result:
-			var oc: String = String(row.get("character_id", ""))
+			var oc: String = str(row.get("character_id", ""))
 			if oc.is_empty():
 				continue
 			var char_data: Dictionary = _get_character(oc)

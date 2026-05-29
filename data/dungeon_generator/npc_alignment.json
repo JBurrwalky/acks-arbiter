@@ -1,0 +1,22 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §npc_parties table:npc_alignment",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Roll",
+    "NPC Alignment"
+  ],
+  "rows": [
+    {
+      "Roll": "1-2",
+      "NPC Alignment": "Lawful"
+    },
+    {
+      "Roll": "3-5",
+      "NPC Alignment": "Neutral"
+    },
+    {
+      "Roll": "6",
+      "NPC Alignment": "Chaotic"
+    }
+  ]
+}

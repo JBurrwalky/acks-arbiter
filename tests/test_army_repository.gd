@@ -72,9 +72,9 @@ func test_create_and_get_army() -> void:
 	var id := _create_test_army()
 	check(not id.is_empty(), "create_army returned an id")
 	var row := ArmyRepository.get_army(id)
-	check(String(row.get("name", "")) == "Test Host", "name round-trips")
-	check(String(row.get("state", "")) == "assembling", "state defaults to assembling")
-	check(String(row.get("unit_scale", "")) == "platoon", "unit_scale round-trips")
+	check(str(row.get("name", "")) == "Test Host", "name round-trips")
+	check(str(row.get("state", "")) == "assembling", "state defaults to assembling")
+	check(str(row.get("unit_scale", "")) == "platoon", "unit_scale round-trips")
 
 
 func test_update_army() -> void:
@@ -82,7 +82,7 @@ func test_update_army() -> void:
 	check(ArmyRepository.update_army(id, {"state": "encamped", "hex_q": 5, "hex_r": 7}),
 		"update succeeds")
 	var row := ArmyRepository.get_army(id)
-	check(String(row.get("state", "")) == "encamped", "state mutated")
+	check(str(row.get("state", "")) == "encamped", "state mutated")
 	check(int(row.get("hex_q", 0)) == 5 and int(row.get("hex_r", 0)) == 7, "hex coords mutated")
 	# Bad-field rejection.
 	var ok := ArmyRepository.update_army(id, {"campaign_id": "evil"})
@@ -203,7 +203,7 @@ func test_supply_state_round_trip() -> void:
 	var army_id := _create_test_army()
 	check(ArmyRepository.create_supply_state({"army_id": army_id}), "supply state created")
 	var row := ArmyRepository.get_supply_state(army_id)
-	check(String(row.get("supply_line_status", "")) == "out_of_supply_no_base",
+	check(str(row.get("supply_line_status", "")) == "out_of_supply_no_base",
 		"default status is out_of_supply_no_base")
 	check(ArmyRepository.update_supply_state(army_id, {
 		"weekly_supply_cost_cp": 240,
@@ -222,10 +222,10 @@ func test_recon_cooldown_upsert() -> void:
 		"first upsert ok")
 	var row := ArmyRepository.get_recon_cooldown(observer, observed)
 	check(int(row.get("last_roll_calendar_day", 0)) == 50, "first day stored")
-	check(String(row.get("last_result", "")) == "marginal_success", "first result stored")
+	check(str(row.get("last_result", "")) == "marginal_success", "first result stored")
 	# Upsert with later day overrides.
 	check(ArmyRepository.upsert_recon_cooldown(observer, observed, 75, "major_success"),
 		"second upsert ok")
 	row = ArmyRepository.get_recon_cooldown(observer, observed)
 	check(int(row.get("last_roll_calendar_day", 0)) == 75, "day overwritten")
-	check(String(row.get("last_result", "")) == "major_success", "result overwritten")
+	check(str(row.get("last_result", "")) == "major_success", "result overwritten")

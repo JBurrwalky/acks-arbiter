@@ -204,8 +204,22 @@ func _input(event: InputEvent) -> void:
 func setup(override_manager: OverrideManager, hex_controller: HexMapController) -> void:
 	_override_manager = override_manager
 	_hex_controller = hex_controller
-	if _hex_controller != null and _hex_controller.get_map() != null:
-		_selected_map_id = _hex_controller.get_map().id
+	if _hex_controller != null:
+		# Connect to map_loaded so _selected_map_id stays in sync with the
+		# live controller. Previously this was a one-shot read at setup time,
+		# which happens BEFORE any campaign is loaded — leaving the field
+		# empty forever and causing every fog/terrain-override action to
+		# silently return at the `if _selected_map_id.is_empty(): return`
+		# guard. Late-binding here fixes the "buttons press but nothing
+		# happens" symptom on a freshly-loaded campaign.
+		if not _hex_controller.map_loaded.is_connected(_on_hex_map_loaded):
+			_hex_controller.map_loaded.connect(_on_hex_map_loaded)
+		if _hex_controller.get_map() != null:
+			_selected_map_id = _hex_controller.get_map().id
+
+
+func _on_hex_map_loaded(map_id: String) -> void:
+	_selected_map_id = map_id
 
 
 # ---------------------------------------------------------------------------

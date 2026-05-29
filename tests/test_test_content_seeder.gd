@@ -48,8 +48,8 @@ func test_avalon_seed_produces_expected_row_counts() -> void:
 		"settlement_entrances: expected 16")
 	check(_count("SELECT COUNT(*) AS n FROM dungeon_entrances WHERE map_id = ?", [AVALON_MAP_ID]) == 3,
 		"dungeon_entrances: expected 3")
-	check(_count("SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [AVALON_MAP_ID]) == 43,
-		"hex_river_edges: expected 43")
+	check(_count("SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [AVALON_MAP_ID]) == 62,
+		"hex_river_edges: expected 62 (col-zigzag chains, each river terminating at lake or map edge)")
 	check(_count("SELECT COUNT(*) AS n FROM hex_overlays WHERE map_id = ? AND overlay_type = 'road'", [AVALON_MAP_ID]) == 74,
 		"hex_overlays road rows: expected 74")
 	check(_count("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ?", [AVALON_CAMPAIGN]) == 376,

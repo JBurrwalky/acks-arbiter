@@ -1,0 +1,91 @@
+{
+  "_source": "rules/acore_treasure_and_magic_items_rules.xml §jewelry table:jewelry_value",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "roll",
+    "value_gp",
+    "type"
+  ],
+  "rows": [
+    {
+      "roll": "2d20",
+      "value_gp": "avg. 225",
+      "type": "Trinkets"
+    },
+    {
+      "roll": "d100",
+      "value_gp": "avg. 1,000",
+      "type": "Jewelry"
+    },
+    {
+      "roll": "d100+80",
+      "value_gp": "avg. 11,000",
+      "type": "Regalia"
+    },
+    {
+      "roll": "01-10",
+      "value_gp": "2d20",
+      "type": "Bone, scrimshaw, beast parts"
+    },
+    {
+      "roll": "11-25",
+      "value_gp": "2d10x10",
+      "type": "Glass, shells, or wrought copper, brass, or bronze"
+    },
+    {
+      "roll": "26-40",
+      "value_gp": "2d4x100",
+      "type": "Fine wood, porcelain, or wrought silver"
+    },
+    {
+      "roll": "41-70",
+      "value_gp": "2d6x100",
+      "type": "Alabaster, chryselephantine, ivory, or wrought gold"
+    },
+    {
+      "roll": "71-80",
+      "value_gp": "3d6x100",
+      "type": "Carved jade or wrought platinum"
+    },
+    {
+      "roll": "81-95",
+      "value_gp": "1d4x1,000",
+      "type": "Wrought orichalcum, silver studded with turquoise, moonstone, or opal"
+    },
+    {
+      "roll": "96-100",
+      "value_gp": "2d4x1,000",
+      "type": "Silver studded with jet, amber, or pearl"
+    },
+    {
+      "roll": "101-125",
+      "value_gp": "3d4x1,000",
+      "type": "Gold studded with topaz, jacinth, ruby"
+    },
+    {
+      "roll": "126-145",
+      "value_gp": "2d8x1,000",
+      "type": "Platinum studded with diamond, sapphire, emerald"
+    },
+    {
+      "roll": "146-155",
+      "value_gp": "3d6x1,000",
+      "type": "Electrum or silver pendant with pearls and star rubies"
+    },
+    {
+      "roll": "156-165",
+      "value_gp": "2d20x1,000",
+      "type": "Gold or platinum with diamonds and sapphires"
+    },
+    {
+      "roll": "166-175",
+      "value_gp": "1d4x10,000",
+      "type": "Gold encrusted with flawless facet cut diamonds"
+    },
+    {
+      "roll": "176-180",
+      "value_gp": "1d8x10,000",
+      "type": "Platinum encrusted with flawless black sapphires or blue diamonds"
+    }
+  ]
+}

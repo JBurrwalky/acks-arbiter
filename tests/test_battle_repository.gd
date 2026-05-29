@@ -76,10 +76,10 @@ func test_create_and_get_battle() -> void:
 	var id := _create_battle()
 	check(not id.is_empty(), "create_battle returned id")
 	var row := BattleRepository.get_battle(id)
-	check(String(row.get("terrain_type", "")) == "hills", "terrain stored")
+	check(str(row.get("terrain_type", "")) == "hills", "terrain stored")
 	check(int(row.get("starting_bpc", 0)) == 1, "starting_bpc stored")
-	check(String(row.get("current_phase", "")) == "missile", "current_phase stored")
-	check(String(row.get("outcome", "")) == "", "outcome empty for active battle")
+	check(str(row.get("current_phase", "")) == "missile", "current_phase stored")
+	check(str(row.get("outcome", "")) == "", "outcome empty for active battle")
 
 
 func test_update_battle_field_whitelist() -> void:
@@ -90,7 +90,7 @@ func test_update_battle_field_whitelist() -> void:
 		"battle_turn_number": 4,
 	}), "valid update succeeds")
 	var row := BattleRepository.get_battle(id)
-	check(String(row.get("current_phase", "")) == "skirmish", "phase mutated")
+	check(str(row.get("current_phase", "")) == "skirmish", "phase mutated")
 	check(int(row.get("current_bpc", 99)) == 0, "bpc mutated")
 	check(int(row.get("battle_turn_number", 0)) == 4, "turn mutated")
 	# Bad-field rejection.

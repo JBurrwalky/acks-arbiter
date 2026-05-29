@@ -477,11 +477,11 @@ static func _domain_modal_terrain_key(_domain_id: String, hexes: Array) -> Strin
 		if CampaignRepository.db.query_result.is_empty():
 			continue
 		var row: Dictionary = CampaignRepository.db.query_result[0]
-		var b: String = String(row.get("biome", ""))
-		var el: String = String(row.get("elevation", ""))
-		var civ: String = String(row.get("civilization", ""))
+		var b: String = str(row.get("biome", ""))
+		var el: String = str(row.get("elevation", ""))
+		var civ: String = str(row.get("civilization", ""))
 		var hc: int = int(row.get("has_city", 0))
-		var w: String = String(row.get("water", ""))
+		var w: String = str(row.get("water", ""))
 		if b.is_empty() and el.is_empty() and w.is_empty():
 			continue
 		var synthesized: String = _synthesize_terrain_key(b, el, civ, hc, w)
@@ -609,7 +609,11 @@ static func _generate_encounter(dice, modal_terrain_key: String = "",
 	# Step 4: % In Lair check → lingering or migrating.
 	# in_lair_pct lives on the catalog entry's top-level percent_in_lair (RAW
 	# semantics: chance the creature is currently in its lair).
-	var in_lair_pct: int = int(entry.get("percent_in_lair", 0))
+	# percent_in_lair is explicitly null for the catalog's non-lairing monsters;
+	# Dictionary.get returns that null (the key exists), and int(null) raises
+	# "Nonexistent 'int' constructor". Coerce null/missing to 0% (never lairing).
+	var pct_raw: Variant = entry.get("percent_in_lair", 0)
+	var in_lair_pct: int = int(pct_raw) if pct_raw != null else 0
 	# Phase 9C polish round 4 2026-05-09: 2× boost when domain has a dungeon
 	# (RAW L349). Cap at 100.
 	if has_dungeon:
@@ -629,7 +633,7 @@ static func _generate_encounter(dice, modal_terrain_key: String = "",
 			br = float(de.get("platoon_br_lair", br))
 	# Phase 9C polish 2026-05-09: include the creature's alignment for
 	# downstream reaction-modifier consumption.
-	var creature_alignment: String = String(entry.get("alignment", "neutral")).to_lower()
+	var creature_alignment: String = str(entry.get("alignment", "neutral")).to_lower()
 	# Phase 9C polish round 3 2026-05-09: include the picked terrain (after
 	# normalization) so the threat row + UI can surface "Wandering goblin
 	# warband (woods)" — players can verify the terrain selection.

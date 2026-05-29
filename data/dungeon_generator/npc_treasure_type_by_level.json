@@ -1,0 +1,66 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §npc_parties table:npc_treasure_type_by_level",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Level",
+    "Treasure Type"
+  ],
+  "rows": [
+    {
+      "Level": "1",
+      "Treasure Type": "B x 1/4"
+    },
+    {
+      "Level": "2",
+      "Treasure Type": "B x 1/2"
+    },
+    {
+      "Level": "3",
+      "Treasure Type": "B x 1/2"
+    },
+    {
+      "Level": "4",
+      "Treasure Type": "B"
+    },
+    {
+      "Level": "5",
+      "Treasure Type": "D x 1/2"
+    },
+    {
+      "Level": "6",
+      "Treasure Type": "D"
+    },
+    {
+      "Level": "7",
+      "Treasure Type": "H"
+    },
+    {
+      "Level": "8",
+      "Treasure Type": "J"
+    },
+    {
+      "Level": "9",
+      "Treasure Type": "Jx2"
+    },
+    {
+      "Level": "10",
+      "Treasure Type": "N"
+    },
+    {
+      "Level": "11",
+      "Treasure Type": "O"
+    },
+    {
+      "Level": "12",
+      "Treasure Type": "Nx2"
+    },
+    {
+      "Level": "13",
+      "Treasure Type": "Q"
+    },
+    {
+      "Level": "14",
+      "Treasure Type": "R"
+    }
+  ]
+}

@@ -72,10 +72,16 @@ func exit(runner) -> void:
 func handle_action(runner, action: String, payload: Dictionary) -> String:
 	match action:
 		"cancel_camp":
-			# Cancel any scheduled camp events.
+			# Cancel any scheduled camp events and clear the camp state on
+			# PartyData. Per gdd-realtime-scheduler.md §4.3.1, breaking camp
+			# dissolves any pending wilderness_encounter scheduled by the
+			# camp's encounter throw — clear_camp_state handles that
+			# cancellation alongside the camp_* field reset.
 			var party_id: String = runner.get_party_id()
 			runner.get_scheduler().cancel_all_for_owner(party_id, "camp_watch")
 			runner.get_scheduler().cancel_all_for_owner(party_id, "camp_rest_complete")
+			if _handlers != null:
+				_handlers.clear_camp_state(party_id)
 			return _return_state
 		"end_session":
 			return "session_end"

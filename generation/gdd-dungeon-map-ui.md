@@ -143,7 +143,7 @@ Built by `_build_door_options`, `_build_stair_options`, `_build_trap_options`, `
 
 #### 4.2.1 Doors
 
-`DoorData` carries `door_material` ∈ {`wood_simple`, `wood_standard`, `wood_reinforced`, `iron`, `stone`} and `is_evil: bool`. `DungeonSessionState` tracks `is_spiked(cell)`, `is_wedged(cell)`, `is_held_open(cell)`, and `has_failed_pick_lock(entity_id, level)`. The full option set:
+`DoorData` carries `door_material` ∈ {`""` (none/arch), `curtain_cloth`, `curtain_leather`, `wood_standard`, `wood_thick`, `stone`, `metal`} and `is_evil: bool`. Bashability: curtains → free passage (no bash); `wood_standard` / `wood_thick` → bashable with an axe; `stone` / `metal` → unbashable. `DungeonSessionState` tracks `is_spiked(cell)`, `is_wedged(cell)`, `is_held_open(cell)`, and `has_failed_pick_lock(entity_id, level)`. The full option set:
 
 | Cell state | Option | Availability | Behavior |
 |---|---|---|---|

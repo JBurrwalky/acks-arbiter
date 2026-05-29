@@ -39,7 +39,7 @@ func test_six_months_steady_state() -> void:
 	# After 6 months: domain is still active, peasant_families ≥ starting
 	# (the deterministic roller's count×5 yields positive net growth at apathy).
 	var d: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d.get("lifecycle_state", "")) == "active",
+	check(str(d.get("lifecycle_state", "")) == "active",
 		"lifecycle_state still active after 6 months")
 	check(int(d.get("peasant_families", 0)) >= 500,
 		"peasant_families ≥ starting 500 after 6 months of growth; got %d"

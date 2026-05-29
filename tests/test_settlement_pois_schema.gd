@@ -121,8 +121,8 @@ func test_insert_religious_site_shrine() -> void:
 	check(not CampaignRepository.db.query_result.is_empty(), "shrine row should be readable")
 	if not CampaignRepository.db.query_result.is_empty():
 		var row: Dictionary = CampaignRepository.db.query_result[0]
-		check(String(row.get("tier", "")) == "shrine", "tier should be 'shrine'")
-		check(String(row.get("attached_religion", "")) == "lawful_silver_lady",
+		check(str(row.get("tier", "")) == "shrine", "tier should be 'shrine'")
+		check(str(row.get("attached_religion", "")) == "lawful_silver_lady",
 			"attached_religion preserved")
 
 

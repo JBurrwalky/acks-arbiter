@@ -493,8 +493,8 @@ static func _append_transferred_unit(target_army_id: String, troop_unit_id: Stri
 	if CampaignRepository.db.query_result.is_empty():
 		return
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	var state_id: String = String(row.get("id", ""))
-	var raw: String = String(row.get("payload_json", "{}"))
+	var state_id: String = str(row.get("id", ""))
+	var raw: String = str(row.get("payload_json", "{}"))
 	var parsed: Variant = JSON.parse_string(raw)
 	var d: Dictionary = parsed if (parsed is Dictionary) else {}
 	var ids: Array = d.get("transferred_unit_ids", []) if d.has("transferred_unit_ids") else []
@@ -542,7 +542,7 @@ static func _gather_sub_vassals_recursive(parent_id: String, accumulator: Array,
 		return
 	var ids: Array = CampaignRepository.db.query_result.duplicate()
 	for row in ids:
-		var sub: String = String(row.get("vassal_character_id", ""))
+		var sub: String = str(row.get("vassal_character_id", ""))
 		if sub.is_empty() or accumulator.has(sub):
 			continue
 		accumulator.append(sub)

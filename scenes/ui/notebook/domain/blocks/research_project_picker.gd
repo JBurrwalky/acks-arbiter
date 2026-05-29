@@ -907,7 +907,7 @@ func _add_laboratory_dropdown(parent: VBoxContainer, label: String) -> OptionBut
 func _add_spell_dropdown(parent: VBoxContainer, label: String, spells: Array) -> OptionButton:
 	var dd := OptionButton.new()
 	for entry in spells:
-		dd.add_item("L%d %s" % [int(entry.get("level", 0)), String(entry.get("display_name", entry.get("spell_key", "?")))])
+		dd.add_item("L%d %s" % [int(entry.get("level", 0)), str(entry.get("display_name", entry.get("spell_key", "?")))])
 		dd.set_item_metadata(dd.get_item_count() - 1, entry)
 	parent.add_child(_form_row(label, dd))
 	return dd
@@ -982,7 +982,7 @@ func _caster_known_formulas() -> Array:
 		return result
 	var registry := _get_spell_registry()
 	for row in CampaignRepository.db.query_result:
-		var k: String = String(row.get("spell_key", ""))
+		var k: String = str(row.get("spell_key", ""))
 		var lvl: int = int(row.get("spell_level", 1))
 		var spell_def: Dictionary = registry.get_spell(k) if registry.has_spell(k) else {}
 		result.append({
@@ -1003,7 +1003,7 @@ func _caster_repertoire_spells() -> Array:
 		return result
 	var registry := _get_spell_registry()
 	for row in CampaignRepository.db.query_result:
-		var k: String = String(row.get("spell_key", ""))
+		var k: String = str(row.get("spell_key", ""))
 		var lvl: int = int(row.get("spell_level", 1))
 		var spell_def: Dictionary = registry.get_spell(k) if registry.has_spell(k) else {}
 		result.append({
@@ -1024,9 +1024,9 @@ func _caster_scroll_inventory() -> Array:
 		return result
 	for row in CampaignRepository.db.query_result:
 		result.append({
-			"id": String(row.get("id", "")),
-			"name": String(row.get("name", "")),
-			"item_key": String(row.get("item_key", "")),
+			"id": str(row.get("id", "")),
+			"name": str(row.get("name", "")),
+			"item_key": str(row.get("item_key", "")),
 		})
 	return result
 

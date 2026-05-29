@@ -81,9 +81,9 @@ static func _army_is_player_involved(army_id: String) -> bool:
 	if CampaignRepository.db.query_result.is_empty():
 		return false
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	if _is_pc_or_pc_associate(String(row.get("political_owner_id", ""))):
+	if _is_pc_or_pc_associate(str(row.get("political_owner_id", ""))):
 		return true
-	if _is_pc_or_pc_associate(String(row.get("command_character_id", ""))):
+	if _is_pc_or_pc_associate(str(row.get("command_character_id", ""))):
 		return true
 	return false
 

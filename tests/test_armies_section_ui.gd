@@ -158,7 +158,7 @@ func test_marching_menu_for_encamped_army_includes_march() -> void:
 	var items := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
 	var actions: Array = []
 	for item in items:
-		actions.append(String(item.get("action", "")))
+		actions.append(str(item.get("action", "")))
 	check(actions.has(MarchingMenuScript.ACTION_MARCH), "encamped army has March action")
 	check(actions.has(MarchingMenuScript.ACTION_MARCH_FORCED), "has Forced March")
 	check(actions.has(MarchingMenuScript.ACTION_MARCH_CAUTIOUS), "has Cautious March")
@@ -171,7 +171,7 @@ func test_marching_menu_for_marching_army_includes_encamp_only() -> void:
 	var items := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
 	var actions: Array = []
 	for item in items:
-		actions.append(String(item.get("action", "")))
+		actions.append(str(item.get("action", "")))
 	check(actions.has(MarchingMenuScript.ACTION_ENCAMP), "marching army has Encamp")
 	check(not actions.has(MarchingMenuScript.ACTION_MARCH), "marching army does not have March")
 

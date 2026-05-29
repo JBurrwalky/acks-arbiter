@@ -240,22 +240,23 @@ static func _canonical_pair_key(a: String, b: String) -> String:
 
 ## Writes the post-shift demand_modifier values to the cache, skipping any
 ## row with source_kind='manual'.
+##
+## Single-statement UPDATE with the manual-skip predicate inlined in the WHERE
+## clause — NOT a SELECT-then-UPDATE pair. Per docs/coding_conventions.md §6.9,
+## godot-sqlite does not always finalize a SELECT statement before the next
+## same-table write on a tight inner loop, producing a self-locking SQLITE_LOCKED
+## cascade that propagates through the connection for the rest of the session.
+## See build_log.md 2026-05-27 for the diagnosis. Manual-skip predicate per
+## generation/gdd-settlement-economy.md §4.8.
 static func _write_demand_modifiers(settlement_id: String, modifiers: Dictionary) -> void:
 	for merchandise_type in modifiers:
 		var value: int = int(modifiers[merchandise_type])
-		# Skip manual rows.
-		if CampaignRepository.db.query_with_bindings("""
-			SELECT source_kind FROM settlement_merchandise_demand
-			WHERE settlement_entrance_id = ? AND merchandise_type = ?
-		""", [settlement_id, merchandise_type]):
-			if not CampaignRepository.db.query_result.is_empty():
-				var kind: String = str(CampaignRepository.db.query_result[0].get("source_kind", "generated"))
-				if kind == "manual":
-					continue
 		CampaignRepository.db.query_with_bindings("""
 			UPDATE settlement_merchandise_demand
 			SET demand_modifier = ?
-			WHERE settlement_entrance_id = ? AND merchandise_type = ?
+			WHERE settlement_entrance_id = ?
+			  AND merchandise_type = ?
+			  AND source_kind != 'manual'
 		""", [value, settlement_id, merchandise_type])
 
 

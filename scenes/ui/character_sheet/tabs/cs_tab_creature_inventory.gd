@@ -40,7 +40,7 @@ func display(creature: TrainedCreatureData, registries: Dictionary) -> void:
 
 		var equip_label := Label.new()
 		equip_label.text = "Equip from handler:"
-		equip_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		equip_label.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 		equip_row.add_child(equip_label)
 
 		var equip_option := OptionButton.new()
@@ -136,7 +136,7 @@ func _render_equip_slot(label: String, slot_type: String, creature: TrainedCreat
 	var slot_label := Label.new()
 	slot_label.text = label + ":"
 	slot_label.custom_minimum_size = Vector2(100, 0)
-	slot_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	slot_label.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 	row.add_child(slot_label)
 
 	var equipped_item = _find_equipped_by_type(creature, slot_type)
@@ -316,7 +316,7 @@ func _add_section_header(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 12)
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.75, 0.55))
+	lbl.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 	add_child(lbl)
 
 

@@ -61,7 +61,7 @@ static func max_merchant_count(market_class: int) -> int:
 ## Canonical source for MarketFeesCalculator.entry_toll_cp.
 static func toll_dice_for_class(market_class: int) -> String:
 	var row: Dictionary = MARKETS_AND_MERCHANTS.get(market_class, {})
-	return String(row.get("toll_dice", "1d3"))
+	return str(row.get("toll_dice", "1d3"))
 
 
 # ---------------------------------------------------------------------------
@@ -231,7 +231,7 @@ static func generate_pool_for_settlement(
 	var n: int = maxi(0, max_count - promoted_count)
 	for _i in n:
 		var entry: Dictionary = MerchandiseRegistry.random_common(rng)
-		var merchandise_type: String = String(entry.get("merchandise_type", ""))
+		var merchandise_type: String = str(entry.get("merchandise_type", ""))
 		if merchandise_type.is_empty():
 			continue
 		var loads: int = maxi(1, _roll_dice_spec(loads_spec, rng))

@@ -23,6 +23,13 @@ const DAY_TICK_EVENT := "wilderness_day_tick"
 const NOON_TICK_EVENT := "wilderness_noon_tick"
 const TRACKING_CHECK_EVENT := "tracking_check"
 const PURSUIT_CATCHUP_EVENT := "pursuit_catchup_check"
+## Deferred camp encounter resolution (gdd-realtime-scheduler.md §4.3.1). The
+## 1-in-6 throw fires at camp_setup in CampHandlers; this event fires at the
+## rolled hour-of-camp to spawn the creatures and compute per-member observer
+## state. Registered globally so it survives camp → wilderness/combat
+## transitions (though §4.3.1's cancel-on-camp-end rule normally cleans it up
+## first).
+const WILDERNESS_ENCOUNTER_EVENT := "wilderness_encounter"
 
 ## In-memory buffer keyed by party_id → most-recent foraging summary. Filled
 ## by the noon-tick handler and consumed by the midnight day-tick when
@@ -91,6 +98,7 @@ func register_global(registry: EventHandlerRegistry) -> void:
 	registry.register(NOON_TICK_EVENT, _handle_wilderness_noon_tick)
 	registry.register(TRACKING_CHECK_EVENT, _handle_tracking_check)
 	registry.register(PURSUIT_CATCHUP_EVENT, _handle_pursuit_catchup_check)
+	registry.register(WILDERNESS_ENCOUNTER_EVENT, _handle_wilderness_encounter)
 
 
 func unregister_global(registry: EventHandlerRegistry) -> void:
@@ -98,6 +106,7 @@ func unregister_global(registry: EventHandlerRegistry) -> void:
 	registry.unregister(NOON_TICK_EVENT)
 	registry.unregister(TRACKING_CHECK_EVENT)
 	registry.unregister(PURSUIT_CATCHUP_EVENT)
+	registry.unregister(WILDERNESS_ENCOUNTER_EVENT)
 
 
 # ---------------------------------------------------------------------------
@@ -339,6 +348,11 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 			if weather != null:
 				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
 
+			# Hybrid encounter-gate stamp (gdd-realtime-scheduler.md §4.3.3):
+			# any wilderness encounter trigger marks today's day_index, which
+			# gates subsequent same-day camp throws.
+			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(moving_pid))
+
 			# Phase 5 polish (2026-05-05): every encounter halts travel and
 			# surfaces an EncounterDecisionPrompt — the player picks how to
 			# respond (fight, evade, engage, parley, continue). The reaction
@@ -403,6 +417,9 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 			terrain, coord, Timekeeping.get_party_time(event.owner_id))
 		if weather != null:
 			enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
+
+		# Hybrid encounter-gate stamp (§4.3.3).
+		_stamp_encounter_gate(party_data, Timekeeping.get_party_time(event.owner_id))
 
 		# Phase 5 polish (2026-05-05): standalone encounter checks also route
 		# through the EncounterDecisionPrompt — same flow as travel-leg
@@ -901,6 +918,177 @@ func _handle_pursuit_catchup_check(event: ScheduledEvent) -> Dictionary:
 	}
 
 
+## Deferred camp encounter resolution (gdd-realtime-scheduler.md §4.3.1).
+## Fires at the absolute round-time CampHandlers rolled for hour-within-camp.
+## The 1-in-6 throw fired at camp_setup; this handler only spawns the
+## creatures, computes per-member observer state at event.fire_time against
+## the watch schedule persisted on PartyData, applies a Hear Noises 18+ on
+## 1d20 to sleeping characters, and routes through the existing
+## `encounter_decision_required` modal with surprise context attached.
+##
+## Cancellation: §4.3.1 says the encounter is bound to the camp; if the camp
+## ends first (rest_complete or cancel_camp), CampHandlers.clear_camp_state
+## removes any pending wilderness_encounter for this party. If this handler
+## fires anyway with `party_data.is_camping == false` (unusual race — camp
+## ended in the same scheduler tick), it gracefully no-ops.
+func _handle_wilderness_encounter(event: ScheduledEvent) -> Dictionary:
+	var party_data: PartyData = _party_data_for_event(event)
+	if party_data == null:
+		return {}
+	if not party_data.is_camping:
+		# Camp ended before this encounter could fire; pending event lingered.
+		# Treat as a no-op rather than spawning an encounter against a party
+		# that has already broken camp.
+		return {}
+
+	var party_id: String = event.owner_id
+	var is_active: bool = (party_id == GameState.active_party_id)
+
+	# Resolve the hex's terrain for the spawner.
+	var controller: HexMapController = _runner.get_hex_map_controller() if _runner != null else null
+	var map_data: HexMapData = controller.get_map() if controller != null else null
+	var coord := Vector2i(party_data.current_hex_q, party_data.current_hex_r)
+	var terrain: HexTerrainData = null
+	if map_data != null:
+		terrain = map_data.get_hex(coord)
+
+	# Spawn creatures (no re-roll of the 1-in-6 — the camp throw at setup
+	# already committed). The spawner uses the existing §4.1 column-selection
+	# flow via SessionRunner.spawn_encounter_data.
+	var enc: Dictionary = _runner.spawn_encounter_data(
+		terrain, [], int(event.data.get("trigger_roll", 0)))
+	if enc.is_empty():
+		# No monster could be selected for this terrain — drop the encounter
+		# rather than crashing. The gate flag has already been stamped at
+		# camp_setup, so this won't re-fire today.
+		return {}
+
+	# Weather visibility stamp (same as travel-leg / standalone encounter paths).
+	var weather: WeatherStateData = _weather_for_hex(terrain, coord, event.fire_time)
+	if weather != null:
+		enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
+
+	# Compute per-member observer state at fire_time against the watch
+	# schedule, then roll Hear Noises 18+ on 1d20 for each sleeper.
+	var surprise_ctx: Dictionary = _compute_camp_surprise_context(
+		party_data, event.fire_time)
+	enc["observer_states"] = surprise_ctx.get("observer_states", {})
+	enc["roused_sleepers"] = surprise_ctx.get("roused_sleepers", [])
+	enc["unroused_sleepers"] = surprise_ctx.get("unroused_sleepers", [])
+	enc["watch_index"] = surprise_ctx.get("watch_index", -1)
+	enc["trigger_source"] = "camp"
+
+	# Route through the existing player-decision modal (per §27 of
+	# coding_conventions.md). The state-tier listener
+	# (WildernessExploreState._on_encounter_decision_required) opens the
+	# EncounterDecisionPrompt.
+	var enc_label: String = _format_encounter_label(enc)
+	EventBus.encounter_decision_required.emit(party_id, enc)
+	return {
+		"auto_pause": is_active,
+		"pause_reason": "Encounter during camp — %s" % enc_label,
+		"presentation": {
+			"type": "encounter_decision",
+			"encounter_data": enc,
+		},
+	}
+
+
+## Computes per-party-member observer state at [param fire_time] against the
+## camp's watch schedule. Returns a Dictionary:
+##   {
+##     "watch_index": int,            # 0..WATCH_COUNT-1 (or -1 if outside)
+##     "observer_states": Dictionary, # {character_id: state_key}
+##     "roused_sleepers":  Array,     # character_ids who passed Hear Noises
+##     "unroused_sleepers": Array,    # character_ids who failed Hear Noises
+##   }
+## Observer state keys mirror acore_adventures_and_encounters.xml §surprise_and_sneaking:
+##   "actively_watching" / "passively_watching" / "distracted_or_not_looking".
+func _compute_camp_surprise_context(party_data: PartyData, fire_time: int) -> Dictionary:
+	var result := {
+		"watch_index": -1,
+		"observer_states": {} as Dictionary,
+		"roused_sleepers": [] as Array,
+		"unroused_sleepers": [] as Array,
+	}
+
+	# Parse the watch schedule. If it's malformed or empty, fall back to
+	# everyone passively_watching (safer than crashing).
+	var assignments_var: Variant = JSON.parse_string(party_data.camp_watch_assignments_json)
+	var assignments: Array = assignments_var if assignments_var is Array else []
+
+	var rounds_per_watch: int = CampManager.WATCH_HOURS * Timekeeping.ROUNDS_PER_HOUR
+	var camp_start: int = party_data.camp_start_round
+	var camp_end: int = party_data.camp_end_round
+	var watch_index: int = -1
+	if camp_start >= 0 and fire_time >= camp_start and fire_time < camp_end and rounds_per_watch > 0:
+		@warning_ignore("integer_division")
+		watch_index = (fire_time - camp_start) / rounds_per_watch
+		watch_index = clampi(watch_index, 0, CampManager.WATCH_COUNT - 1)
+	result["watch_index"] = watch_index
+
+	# Build the set of character_ids on the active watch and the set of all
+	# characters anywhere in the watch rotation.
+	var on_active_watch: Dictionary = {}
+	var in_any_watch: Dictionary = {}
+	if watch_index >= 0 and watch_index < assignments.size():
+		for cid in assignments[watch_index]:
+			on_active_watch[str(cid)] = true
+	for watch: Variant in assignments:
+		if watch is Array:
+			for cid in watch:
+				in_any_watch[str(cid)] = true
+
+	var observer_states: Dictionary = {}
+	var roused: Array = []
+	var unroused: Array = []
+
+	for cd: CharacterData in party_data.character_data:
+		var cid: String = cd.id
+		var state: String
+		if watch_index < 0:
+			# Encounter falls outside the camp window (defensive — shouldn't
+			# happen given our scheduling). Everyone is awake but off-duty.
+			state = "passively_watching"
+		elif on_active_watch.has(cid):
+			state = "actively_watching"
+		elif in_any_watch.has(cid):
+			# In the watch rotation but not on this watch → asleep.
+			state = "distracted_or_not_looking"
+			var hn_roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "hear_noises")
+			if hn_roll.modified_total >= 18:
+				roused.append(cid)
+			else:
+				unroused.append(cid)
+		else:
+			# Party member not in any watch (unusual — joined after camp_setup,
+			# or skipped from assignment). Treat as passively_watching.
+			state = "passively_watching"
+		observer_states[cid] = state
+
+	result["observer_states"] = observer_states
+	result["roused_sleepers"] = roused
+	result["unroused_sleepers"] = unroused
+	return result
+
+
+## Stamps `party_data.last_encounter_trigger_day` to the day_index containing
+## [param fire_time], persisting on change. Implements the hybrid encounter-
+## gate of gdd-realtime-scheduler.md §4.3.3 — any positive wilderness
+## encounter trigger (travel_leg / wilderness_encounter_check / hunt / lair
+## search) bookkeeps against today so subsequent same-day camp throws are
+## gated. Idempotent: re-stamping the same day is a no-op.
+func _stamp_encounter_gate(party_data: PartyData, fire_time: int) -> void:
+	if party_data == null:
+		return
+	@warning_ignore("integer_division")
+	var day_idx: int = fire_time / Timekeeping.ROUNDS_PER_DAY
+	if day_idx <= party_data.last_encounter_trigger_day:
+		return
+	party_data.last_encounter_trigger_day = day_idx
+	CampaignRepository.save_party_state(party_data.to_state_dict())
+
+
 ## Timed wilderness activity resolves. Today this only handles place_loot_cache;
 ## other activity types drop here only if more timed activities are added later.
 func _handle_wilderness_activity_complete(event: ScheduledEvent) -> Dictionary:
@@ -1040,6 +1228,8 @@ func _resolve_hunt_activity(party_id: String, hex_q: int, hex_r: int) -> Diction
 				terrain, Vector2i(hex_q, hex_r), Timekeeping.get_party_time(party_id))
 			if weather != null:
 				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
+			# Hybrid encounter-gate stamp (§4.3.3).
+			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(party_id))
 			var enc_label: String = _format_encounter_label(enc)
 			EventBus.encounter_decision_required.emit(party_id, enc)
 			return {
@@ -1191,6 +1381,8 @@ func _resolve_lair_search_activity(party_id: String, hex_q: int, hex_r: int) -> 
 					terrain, coord, Timekeeping.get_party_time(party_id))
 				if weather != null:
 					enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
+				# Hybrid encounter-gate stamp (§4.3.3).
+				_stamp_encounter_gate(party_data, Timekeeping.get_party_time(party_id))
 				EventBus.encounter_decision_required.emit(party_id, enc)
 				routed_encounter = {
 					"auto_pause": true,

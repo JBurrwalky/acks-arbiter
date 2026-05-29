@@ -251,13 +251,13 @@ func abandon(
 func on_day_advanced(character_id: String, scheduler: EventScheduler) -> void:
 	var rows: Array = CampaignRepository.list_active_activity_states_for_character(character_id)
 	for row: Dictionary in rows:
-		if String(row.get("frequency_type", "")) != "ongoing":
+		if str(row.get("frequency_type", "")) != "ongoing":
 			continue
-		if String(row.get("status", "")) != "active":
+		if str(row.get("status", "")) != "active":
 			continue
 		# If the day's session never fired (cancelled by interrupt) AND the
 		# character isn't here, count an absence day.
-		var event_id: String = String(row.get("scheduled_event_id", ""))
+		var event_id: String = str(row.get("scheduled_event_id", ""))
 		if event_id.is_empty() and not _is_at_required_location(character_id, row):
 			_record_absence(row, scheduler)
 
@@ -269,7 +269,7 @@ func on_day_advanced(character_id: String, scheduler: EventScheduler) -> void:
 ## Singular / Restricted activity completes atomically.
 func _handle_activity_complete(event: ScheduledEvent) -> Dictionary:
 	var data: Dictionary = event.data
-	var state_id: String = String(data.get("activity_state_id", ""))
+	var state_id: String = str(data.get("activity_state_id", ""))
 	var state: Dictionary = CampaignRepository.get_activity_state(state_id)
 	if state.is_empty() or String(state.get("status", "")) != "active":
 		return {}
@@ -311,7 +311,7 @@ func _handle_activity_complete(event: ScheduledEvent) -> Dictionary:
 ## either schedule the next day's session or finalize.
 func _handle_ongoing_session_complete(event: ScheduledEvent) -> Dictionary:
 	var data: Dictionary = event.data
-	var state_id: String = String(data.get("activity_state_id", ""))
+	var state_id: String = str(data.get("activity_state_id", ""))
 	var state: Dictionary = CampaignRepository.get_activity_state(state_id)
 	if state.is_empty() or String(state.get("status", "")) != "active":
 		return {}

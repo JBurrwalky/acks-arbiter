@@ -196,7 +196,7 @@ func test_offers_split_proportional_by_gp_value() -> void:
 	var big_total: int = 0
 	var small_total: int = 0
 	for row in CampaignRepository.db.query_result:
-		if String(row.get("poi_id", "")) == "sor_poi_big":
+		if str(row.get("poi_id", "")) == "sor_poi_big":
 			big_total = int(row.get("total", 0))
 		else:
 			small_total = int(row.get("total", 0))

@@ -102,8 +102,8 @@ static func list_active_offers_for_poi(
 	var offers: Array = []
 	for row in CampaignRepository.db.query_result:
 		var offer := SpellOffer.make(
-			String(row.get("poi_id", "")),
-			String(row.get("tradition", "")),
+			str(row.get("poi_id", "")),
+			str(row.get("tradition", "")),
 			int(row.get("spell_level", 0)),
 			int(row.get("count_remaining", 0)),
 			int(row.get("unit_cost_gp", 0)))

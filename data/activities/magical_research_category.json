@@ -55,7 +55,7 @@
         "movement_kind": "progenitor_a | progenitor_b | both (per RAW L434-436; 'both' counts as +1 ability)",
         "additional_types": "Array[String] — Judge-discretion non-fantastic types (beastman | enchanted_creature | giant_humanoid | humanoid | ooze | vermin per RAW L459)",
         "laboratory_id": "String (for crossbreed: FK to laboratories(id); required per RAW L471)",
-        "initial_reaction": "hostile | unfriendly | neutral | friendly | helpful (optional; v1 supplies Judge's reaction roll result per RAW L482; future polish: roll in handler)"
+        "initial_reaction": "hostile | unfriendly | neutral | indifferent | friendly (optional; v1 supplies Judge's reaction roll result per RAW L482 -> Monster Reaction table; handler auto-rolls when omitted)"
       },
       "effect_summary": "Unified magical-research backend with project_kind dispatch. For project_kind=spell: 14 days/level, 1k gp/level, throw vs level_table + (spell_level/2). For project_kind=magic_item: cost/time from RAW magic_item_creation_table (one_use 500gp×level/7days×level → permanent_unlimited 500gp×level×50/100days×level; weapon_plus_1 5,000gp/30days×base_cost/10; etc.). Formula previously-crafted same-template gives -50% cost+time + half-level target modifier. Workshop is required for magic_item (parallel to library for spell research). Success creates crafted_magic_items row + inventory_items row; failure loses gp+time.",
       "raw_citation": "acore-campaign-general-and-magic-research.xml §researching_spells L64-110 + §creating_magic_items L112-248 + §formulas_and_samples L142-158 + §workshops L174-183 + §magic_item_creation_table L185-215 + ax_campaign_play.xml §research_magic L744-754"

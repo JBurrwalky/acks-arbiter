@@ -138,6 +138,19 @@ func seed_avalon_test_campaign(campaign_id: String) -> bool:
 	if not _seed_avalon_lairs(campaign_id):
 		return false
 
+	# 7. NPC rulers for on-map + politically important domains (Prince + 3 Dukes),
+	#    plus tribute_out_owed populated on all 376 domains via per-title flat
+	#    rates for abstract domains. MUST run before step 8 because
+	#    troop_units.owner_character_id has a NOT NULL FK to characters(id);
+	#    DomainStocker's garrison stocking reads the domain's owner from this
+	#    step's output.
+	var ruler_gen := NpcRulerGenerator.new()
+	ruler_gen.stock_rulers_and_tribute(campaign_id)
+
+	# 8. Strongholds + garrisons + market demand modifiers for on-map domains
+	#    and settlement_entrances. Idempotent at the row level.
+	DomainStocker.stock_domain_infrastructure(campaign_id)
+
 	return true
 
 
@@ -251,8 +264,8 @@ func _seed_avalon_overlays() -> bool:
 		edge_data.hex_r = int(qr["r"])
 		edge_data.edge = int(entry.get("edge", 0))
 		edge_data.flow_clockwise = bool(entry.get("flow_clockwise", true))
-		edge_data.navigability = String(entry.get("navigability", HexRiverEdgeData.NAV_RIVER_CRAFT))
-		edge_data.crossing = String(entry.get("crossing", HexRiverEdgeData.CROSSING_NONE))
+		edge_data.navigability = str(entry.get("navigability", HexRiverEdgeData.NAV_RIVER_CRAFT))
+		edge_data.crossing = str(entry.get("crossing", HexRiverEdgeData.CROSSING_NONE))
 		if not CampaignRepository.save_hex_river_edge(_AVALON_MAP_ID, edge_data):
 			push_error("TestContentSeeder._seed_avalon_overlays: river edge insert failed at (%d,%d) edge=%d"
 				% [edge_data.hex_q, edge_data.hex_r, edge_data.edge])
@@ -286,16 +299,29 @@ func _seed_avalon_settlements(campaign_id: String, _region: HexMapData) -> bool:
 	if data.is_empty():
 		return false
 	var settlements: Array = data.get("settlements_preview", [])
+	var layout_gen := SettlementLayoutGenerator.new()
 	for entry_v in settlements:
 		var entry: Dictionary = entry_v
 		var hex_field: Dictionary = entry.get("hex", {})
 		var qr: Dictionary = HexMapData._offset_to_axial_dict(
 			int(hex_field.get("col", 0)), int(hex_field.get("row", 0)))
-		# INSERT OR REPLACE so partial re-runs and campaign-delete/recreate
-		# cycles don't collide on the fixed JSON IDs.
-		var se_id: String = String(entry.get("id", ""))
+		var se_id: String = str(entry.get("id", ""))
 		if se_id.is_empty():
 			se_id = CampaignRepository.generate_id()
+		# Generate a minimal-viable settlement_data JSON (districts + entry
+		# gates + service POIs) so the Enter Settlement button has something
+		# to navigate. The Urban Growth Stocking pipeline will eventually
+		# replace this with relational settlement_pois rows.
+		var market_class: int = int(entry.get("market_class", 6))
+		var name: String = str(entry.get("name", "Settlement"))
+		var layout: Dictionary = layout_gen.generate({
+			"id": se_id,
+			"name": name,
+			"market_class": market_class,
+		})
+		var layout_json: String = JSON.stringify(layout)
+		# INSERT OR REPLACE so partial re-runs and campaign-delete/recreate
+		# cycles don't collide on the fixed JSON IDs.
 		if not CampaignRepository.db.query_with_bindings("""
 			INSERT OR REPLACE INTO settlement_entrances
 				(id, campaign_id, map_id, hex_q, hex_r, name, market_class, settlement_data)
@@ -303,12 +329,16 @@ func _seed_avalon_settlements(campaign_id: String, _region: HexMapData) -> bool:
 		""", [
 			se_id, campaign_id, _AVALON_MAP_ID,
 			int(qr["q"]), int(qr["r"]),
-			String(entry.get("name", "Settlement")),
-			int(entry.get("market_class", 6)),
-			"{}",
+			name, market_class, layout_json,
 		]):
 			push_error("TestContentSeeder._seed_avalon_settlements: insert failed for %s" % se_id)
 			return false
+		# Phase 11D bridge: also seed initial settlement_pois rows so the
+		# Enter Settlement flow routes through the relational data via
+		# SettlementDictBuilder. The legacy JSON blob above is kept as
+		# belt-and-suspenders fallback until the bridge is verified
+		# end-to-end across all 16 Avalon settlements.
+		layout_gen.seed_pois(se_id, market_class, name, 0)
 	return true
 
 
@@ -327,7 +357,7 @@ func _seed_avalon_dungeons(campaign_id: String, _region: HexMapData) -> bool:
 			"difficulty_tier_max": int(entry.get("difficulty_tier_max", 1)),
 		})
 		# INSERT OR REPLACE so partial re-runs don't collide on fixed JSON IDs.
-		var de_id: String = String(entry.get("id", ""))
+		var de_id: String = str(entry.get("id", ""))
 		if de_id.is_empty():
 			de_id = CampaignRepository.generate_id()
 		if not CampaignRepository.db.query_with_bindings("""
@@ -337,7 +367,7 @@ func _seed_avalon_dungeons(campaign_id: String, _region: HexMapData) -> bool:
 		""", [
 			de_id, campaign_id, _AVALON_MAP_ID,
 			int(qr["q"]), int(qr["r"]),
-			String(entry.get("name", "Dungeon")),
+			str(entry.get("name", "Dungeon")),
 			stub_data,
 		]):
 			push_error("TestContentSeeder._seed_avalon_dungeons: insert failed for %s" % de_id)
@@ -365,7 +395,7 @@ func _seed_avalon_domains(campaign_id: String) -> bool:
 		var liege_id: Variant = null
 		if liege_id_v != null and not String(liege_id_v).is_empty():
 			liege_id = String(liege_id_v)
-		var civilization: String = String(entry.get("civilization", "wilderness"))
+		var civilization: String = str(entry.get("civilization", "wilderness"))
 		var location_map_id: Variant = null
 		var location_q: Variant = null
 		var location_r: Variant = null
@@ -378,7 +408,7 @@ func _seed_avalon_domains(campaign_id: String) -> bool:
 				location_q = int(qr["q"])
 				location_r = int(qr["r"])
 
-		var domain_id: String = String(entry.get("id", ""))
+		var domain_id: String = str(entry.get("id", ""))
 		if not CampaignRepository.db.query_with_bindings("""
 			INSERT OR REPLACE INTO domains
 				(id, campaign_id, name, owner_character_id,
@@ -390,7 +420,7 @@ func _seed_avalon_domains(campaign_id: String) -> bool:
 		""", [
 			domain_id,
 			campaign_id,
-			String(entry.get("name", "Domain")),
+			str(entry.get("name", "Domain")),
 			null,
 			location_map_id, location_q, location_r,
 			civilization,
@@ -399,7 +429,7 @@ func _seed_avalon_domains(campaign_id: String) -> bool:
 			"civilized",
 			int(entry.get("peasant_families", 0)),
 			liege_id,
-			String(entry.get("rank", "Baron")),
+			str(entry.get("rank", "Baron")),
 			"",
 			0,
 		]):
@@ -447,7 +477,7 @@ func _seed_avalon_lairs(campaign_id: String) -> bool:
 		# Schema: monster_group is TEXT (race name), monster_count is INTEGER
 		# (families). family_multiplier and average_families_raw are audit
 		# metadata that the schema does not currently store.
-		var lid: String = String(entry.get("id", ""))
+		var lid: String = str(entry.get("id", ""))
 		if lid.is_empty():
 			lid = CampaignRepository.generate_id()
 		if not CampaignRepository.db.query_with_bindings("""
@@ -459,7 +489,7 @@ func _seed_avalon_lairs(campaign_id: String) -> bool:
 		""", [
 			lid, campaign_id, _AVALON_MAP_ID,
 			int(qr["q"]), int(qr["r"]),
-			String(entry.get("race", "")),
+			str(entry.get("race", "")),
 			int(entry.get("families", 0)),
 			0, 0, "",
 		]):

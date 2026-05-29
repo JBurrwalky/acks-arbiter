@@ -40,7 +40,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		return {"summary": "plan_hijink: hijink_assignment_id missing"}
 	# Defensive: if the on_tick boundary didn't flip the state, force-flip here.
 	var row := SyndicateRepository.get_hijink(hijink_id)
-	if String(row.get("planning_state", "")) == "planning":
+	if str(row.get("planning_state", "")) == "planning":
 		SyndicateRepository.update_hijink(hijink_id, {
 			"planning_state": "planned",
 			"status": "queued",
@@ -48,12 +48,12 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		})
 		EventBus.hijink_planned.emit(
 			hijink_id,
-			String(row.get("hijink_kind", "")),
-			String(row.get("target_id", "")),
+			str(row.get("hijink_kind", "")),
+			str(row.get("target_id", "")),
 		)
 	return {
-		"summary": "plan_hijink complete (%s ready to perform)" % String(row.get("hijink_kind", "")),
-		"presentation": {"type": "toast", "text": "Hijink planned: %s" % String(row.get("hijink_kind", ""))},
+		"summary": "plan_hijink complete (%s ready to perform)" % str(row.get("hijink_kind", "")),
+		"presentation": {"type": "toast", "text": "Hijink planned: %s" % str(row.get("hijink_kind", ""))},
 	}
 
 

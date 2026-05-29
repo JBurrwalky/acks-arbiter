@@ -171,7 +171,7 @@ func test_syndicate_repository_round_trip() -> void:
 	var sid := _make_syndicate(_boss_id, 50)
 	var row := SyndicateRepository.get_syndicate(sid)
 	check(int(row.get("syndicate_size_max", 0)) == 50, "syndicate_size_max round-trips")
-	check(String(row.get("status", "")) == "active", "status defaults active")
+	check(str(row.get("status", "")) == "active", "status defaults active")
 	check(SyndicateRepository.update_syndicate(sid, {"current_size": 22}),
 		"update_syndicate current_size succeeds")
 	var row2 := SyndicateRepository.get_syndicate(sid)
@@ -214,7 +214,7 @@ func test_hijink_assignment_round_trip() -> void:
 		"target_id": "merchandise:wool",
 	})
 	var row := SyndicateRepository.get_hijink(hid)
-	check(String(row.get("planning_state", "")) == "unplanned", "planning_state defaults unplanned")
+	check(str(row.get("planning_state", "")) == "unplanned", "planning_state defaults unplanned")
 	check(int(row.get("cp_yield", 0)) == 0, "cp_yield defaults 0")
 	SyndicateRepository.update_hijink(hid, {
 		"planning_state": "planning",
@@ -269,7 +269,7 @@ func test_lay_low_upsert_and_query() -> void:
 	# Replace (start over in new base).
 	SyndicateRepository.upsert_lay_low(temp_id, "stronghold:xyz", 30, 50)
 	var row := SyndicateRepository.get_lay_low(temp_id)
-	check(String(row.get("base_id", "")) == "stronghold:xyz", "upsert REPLACES base_id")
+	check(str(row.get("base_id", "")) == "stronghold:xyz", "upsert REPLACES base_id")
 
 
 func test_whitelist_update_blocks_invalid_columns() -> void:
@@ -375,7 +375,7 @@ func test_planning_resolver_advance_to_completion() -> void:
 	var duration := HijinkPlanningResolver.start_planning(hid, 4, rng)
 	check(duration >= 5 and duration <= 19, "L4 duration in [5,19]")
 	var row := SyndicateRepository.get_hijink(hid)
-	check(String(row.get("planning_state", "")) == "planning", "state → planning")
+	check(str(row.get("planning_state", "")) == "planning", "state → planning")
 	check(int(row.get("planning_days_required", 0)) == duration, "duration stored")
 
 	# Advance by (duration - 1) days: should NOT yet flip.
@@ -633,7 +633,7 @@ func _read_character_coin_total_cp(character_id: String) -> int:
 	var total: int = 0
 	for row: Dictionary in CampaignRepository.db.query_result:
 		var qty: int = int(row.get("quantity", 0))
-		var cp_val: int = Currency.coin_key_to_cp_value(String(row.get("item_key", "")))
+		var cp_val: int = Currency.coin_key_to_cp_value(str(row.get("item_key", "")))
 		total += qty * cp_val
 	return total
 
@@ -722,10 +722,10 @@ func test_order_hijink_handler_creates_row() -> void:
 		"order_hijink returns a new hijink_id; result=%s" % str(result))
 	var hijink_id := String(result.get("hijink_id", ""))
 	var row := SyndicateRepository.get_hijink(hijink_id)
-	check(String(row.get("hijink_kind", "")) == "smuggling", "kind persisted")
-	check(String(row.get("planning_state", "")) == "unplanned", "state defaults unplanned")
-	check(String(row.get("status", "")) == "queued", "status defaults queued")
-	check(String(row.get("boss_character_id", "")) == _boss_id, "boss_character_id from state.character_id")
+	check(str(row.get("hijink_kind", "")) == "smuggling", "kind persisted")
+	check(str(row.get("planning_state", "")) == "unplanned", "state defaults unplanned")
+	check(str(row.get("status", "")) == "queued", "status defaults queued")
+	check(str(row.get("boss_character_id", "")) == _boss_id, "boss_character_id from state.character_id")
 
 
 func test_order_hijink_handler_rejects_wrong_boss() -> void:
@@ -773,7 +773,7 @@ func test_plan_hijink_handler_flips_state() -> void:
 	check(String(result.get("summary", "")).find("complete") >= 0,
 		"plan_hijink summary mentions completion")
 	var row := SyndicateRepository.get_hijink(hid)
-	check(String(row.get("planning_state", "")) == "planned",
+	check(str(row.get("planning_state", "")) == "planned",
 		"state flipped to planned; got %s" % row.get("planning_state"))
 
 
@@ -805,7 +805,7 @@ func test_perform_hijink_handler_dispatches_to_kind() -> void:
 	check(int(result.get("cp_yield", 0)) > 0,
 		"yield produced via stealing handler")
 	var row := SyndicateRepository.get_hijink(hid)
-	check(String(row.get("status", "")) == "resolved", "hijink resolved")
+	check(str(row.get("status", "")) == "resolved", "hijink resolved")
 
 
 func test_lay_low_handler_clears_state() -> void:
@@ -924,7 +924,7 @@ func test_interplead_handler_sets_interpleader_id() -> void:
 		"caught_perpetrator_id": caught_id,
 	}), null)
 	var row := SyndicateRepository.get_caught(caught_id)
-	check(String(row.get("interpleader_id", "")) == ruler_id,
+	check(str(row.get("interpleader_id", "")) == ruler_id,
 		"interpleader_id = ruler character_id")
 
 

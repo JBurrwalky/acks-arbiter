@@ -134,7 +134,7 @@ static func _spawn_levied_units_from_composition(
 	var owner_id: String = String(character.get("id", ""))
 	for row_v in composition:
 		var row: Dictionary = row_v
-		var troop_type: String = String(row.get("troop_type", "light_infantry"))
+		var troop_type: String = str(row.get("troop_type", "light_infantry"))
 		var count: int = int(row.get("count", 0))
 		if count <= 0:
 			continue

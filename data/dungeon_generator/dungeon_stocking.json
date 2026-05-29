@@ -1,0 +1,31 @@
+{
+  "_source": "rules/acore-setting-construction-rules.xml §stocking_the_dungeon table:dungeon_stocking",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "roll_d00",
+    "contents",
+    "treasure"
+  ],
+  "rows": [
+    {
+      "roll_d00": "01-30",
+      "contents": "Empty",
+      "treasure": "15%"
+    },
+    {
+      "roll_d00": "31-60",
+      "contents": "Monster",
+      "treasure": "If Lair"
+    },
+    {
+      "roll_d00": "61-75",
+      "contents": "Trap",
+      "treasure": "30%"
+    },
+    {
+      "roll_d00": "76-00",
+      "contents": "Unique",
+      "treasure": "As Needed"
+    }
+  ]
+}

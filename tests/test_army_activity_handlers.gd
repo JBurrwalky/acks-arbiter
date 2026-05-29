@@ -58,7 +58,7 @@ func test_form_army_handler_passes_plan_to_composer() -> void:
 		check(false, "could not query troop_units")
 		return
 	for row in CampaignRepository.db.query_result:
-		unit_ids.append(String(row.get("id", "")))
+		unit_ids.append(str(row.get("id", "")))
 	var plan := {
 		"campaign_id": _campaign_id,
 		"unit_scale": "platoon",

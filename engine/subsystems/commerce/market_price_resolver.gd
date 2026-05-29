@@ -156,15 +156,23 @@ static func compute_market_price(
 ##
 ## Returns true if a re-roll fired. Emits `EventBus.market_price_drifted`
 ## with (settlement_id, merchandise_type, old_dice, new_dice).
+## [param prefetched_row] lets a caller that already holds the dice row (e.g.
+## the monthly-drift sweep, which SELECTs all rows up front) skip the per-call
+## `_read_dice_row` SELECT. This avoids a SELECT-then-UPDATE on the same table
+## inside a tight loop, which trips godot-sqlite's self-locking cascade. See
+## docs/coding_conventions.md §6.9. Expects keys `dice_4d4_value` and
+## `dice_last_rolled_calendar_day` when provided.
 static func check_and_apply_drift(
 		settlement_id: String,
 		merchandise_type: String,
 		current_calendar_day: int,
 		rng: RandomNumberGenerator,
+		prefetched_row: Dictionary = {},
 ) -> bool:
 	if settlement_id.is_empty() or merchandise_type.is_empty() or rng == null:
 		return false
-	var row: Dictionary = _read_dice_row(settlement_id, merchandise_type)
+	var row: Dictionary = prefetched_row if not prefetched_row.is_empty() \
+			else _read_dice_row(settlement_id, merchandise_type)
 	if row.is_empty():
 		return false
 	var old_dice: int = int(row.get("dice_4d4_value", 0))
@@ -203,8 +211,13 @@ static func process_monthly_drift_for_campaign(
 ) -> int:
 	if campaign_id.is_empty() or rng == null:
 		return 0
+	# Hoist the dice fields into this one SELECT and pass each row to
+	# check_and_apply_drift as prefetched data, so the loop body issues only the
+	# drift UPDATE — never a SELECT-then-write on the same table per iteration
+	# (godot-sqlite self-locking cascade). See docs/coding_conventions.md §6.9.
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT smd.settlement_entrance_id, smd.merchandise_type
+		SELECT smd.settlement_entrance_id, smd.merchandise_type,
+		       smd.dice_4d4_value, smd.dice_last_rolled_calendar_day
 		FROM settlement_merchandise_demand smd
 		JOIN settlement_entrances se ON smd.settlement_entrance_id = se.id
 		WHERE se.campaign_id = ? AND smd.dice_4d4_value > 0
@@ -216,7 +229,7 @@ static func process_monthly_drift_for_campaign(
 		var d: Dictionary = row
 		var sid: String = str(d.get("settlement_entrance_id", ""))
 		var mtype: String = str(d.get("merchandise_type", ""))
-		if check_and_apply_drift(sid, mtype, current_calendar_day, rng):
+		if check_and_apply_drift(sid, mtype, current_calendar_day, rng, d):
 			count += 1
 	return count
 

@@ -99,8 +99,8 @@ static func can_equip(class_def: Dictionary, character: Dictionary,
 	if class_def.is_empty():
 		return {"ok": true, "reason": ""}
 
-	var category: String = String(item.get("item_category", "gear"))
-	var item_key: String = String(item.get("item_key", ""))
+	var category: String = str(item.get("item_category", "gear"))
+	var item_key: String = str(item.get("item_key", ""))
 
 	match category:
 		"weapon":

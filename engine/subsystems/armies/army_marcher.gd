@@ -268,8 +268,8 @@ func _handle_army_travel_leg(event: ScheduledEvent) -> Dictionary:
 	var data: Dictionary = event.data
 	var to_q: int = int(data.get("to_hex_q", 0))
 	var to_r: int = int(data.get("to_hex_r", 0))
-	var map_id: String = String(data.get("map_id", ""))
-	var extraction_mode: String = String(data.get("extraction_mode", "none"))
+	var map_id: String = str(data.get("map_id", ""))
+	var extraction_mode: String = str(data.get("extraction_mode", "none"))
 	var calendar_day: int = _calendar_day()
 
 	# 1. Move the army.
@@ -383,7 +383,7 @@ func _is_friendly_garrison_hex(army_id: String, map_id: String, hex_q: int, hex_
 		  AND s.status IN ('completed', 'in_progress', 'paused')
 	""", [map_id, hex_q, hex_r]):
 		for row in CampaignRepository.db.query_result:
-			var d_id: String = String(row.get("domain_id", ""))
+			var d_id: String = str(row.get("domain_id", ""))
 			if d_id.is_empty():
 				continue
 			if RealmGraph.apex_for_domain(d_id) == army_apex:

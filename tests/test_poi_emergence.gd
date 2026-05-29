@@ -203,7 +203,7 @@ func test_religion_attribution_largest_matches_effective() -> void:
 		"Expected ≥1 religious_site; got %d" % religious_sites.size())
 	var dominant_count: int = 0
 	for row in religious_sites:
-		var religion: String = String(row.get("attached_religion", ""))
+		var religion: String = str(row.get("attached_religion", ""))
 		if religion == "lawful_silver_lady":
 			dominant_count += 1
 		else:

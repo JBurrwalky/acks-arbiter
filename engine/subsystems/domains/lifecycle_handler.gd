@@ -427,7 +427,7 @@ static func _cascade_vassals(
 		return
 	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 		VassalRepository.update_status(
-			String(row.get("id", "")), "departed", calendar_day)
+			str(row.get("id", "")), "departed", calendar_day)
 
 
 

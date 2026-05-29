@@ -96,7 +96,7 @@ func _on_construction_progressed(stronghold_id: String, _completion_pct: int, mi
 
 func _on_post_completion_event(event) -> Dictionary:
 	var data: Dictionary = event.data if event != null and "data" in event else {}
-	var stronghold_id: String = String(data.get("stronghold_id", ""))
+	var stronghold_id: String = str(data.get("stronghold_id", ""))
 	if stronghold_id.is_empty():
 		return {"summary": "follower_post_completion: missing stronghold_id"}
 	var summary: Dictionary = _resolve_milestone(stronghold_id, 3)

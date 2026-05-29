@@ -132,7 +132,7 @@ func test_eight_hd_undead_immune() -> void:
 	var entry: Dictionary = outcome.per_target.get(v.id, {})
 	check(not bool(entry.get("destroyed", true)),
 		"8-HD vampire is immune, got entry=%s" % str(entry))
-	check(String(entry.get("reason", "")) == "hd_immunity",
+	check(str(entry.get("reason", "")) == "hd_immunity",
 		"reason recorded as hd_immunity")
 	check(not v.has_condition("dispel_destroyed"),
 		"vampire carries no destruction condition")

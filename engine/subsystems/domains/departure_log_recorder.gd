@@ -306,11 +306,11 @@ static func export_as_json(domain_id: String) -> String:
 ## don't have to parse repeatedly. Keeps raw_*_json fields too for export.
 static func _normalize_row(row: Dictionary) -> Dictionary:
 	var out: Dictionary = row.duplicate()
-	out["full_details"] = _parse_json_object(String(row.get("full_details_json", "{}")))
+	out["full_details"] = _parse_json_object(str(row.get("full_details_json", "{}")))
 	out["related_ledger_entry_ids_array"] = _parse_json_array(
-		String(row.get("related_ledger_entry_ids", "[]")))
+		str(row.get("related_ledger_entry_ids", "[]")))
 	out["related_encounter_ids_array"] = _parse_json_array(
-		String(row.get("related_encounter_ids", "[]")))
+		str(row.get("related_encounter_ids", "[]")))
 	return out
 
 

@@ -300,7 +300,7 @@ func test_consult_caster_alignment_auto_fills() -> void:
 	var saves: Dictionary = harness.resolver._roll_saves_for_targets(
 		td, {"pc_pfe2": pc}, save_spec, ctx)
 	var entry: Dictionary = saves.get("pc_pfe2", {})
-	check(String(entry.get("attacker_alignment", "")) == "chaotic",
+	check(str(entry.get("attacker_alignment", "")) == "chaotic",
 		"attacker_alignment auto-filled from caster_context.alignment")
 	check(int(entry.get("alignment_bonus", 0)) == 1,
 		"PfE +1 vs chaotic caster auto-stacked")

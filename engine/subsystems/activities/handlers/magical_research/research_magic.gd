@@ -790,10 +790,11 @@ static func _handle_construct_branch(
 #     laboratory_id:               String (FK; required per RAW L471)
 #     gp_committed:                int (must >= base_gp_cost)
 #     initial_reaction:            "hostile" | "unfriendly" | "neutral" |
-#                                  "friendly" | "helpful" (optional; v1
+#                                  "indifferent" | "friendly" (optional; v1
 #                                  caller supplies the Judge's reaction roll
-#                                  result per RAW L482; future polish: roll
-#                                  here)
+#                                  result per RAW L482 -> Monster Reaction table
+#                                  acore_adventures_and_encounters.xml:936-958;
+#                                  handler auto-rolls when omitted)
 #     location_kind:               for instance row
 #     location_ref:                for instance row
 #   }
@@ -1057,7 +1058,7 @@ static func _has_divine_casting(character: Dictionary) -> bool:
 	var powers: Array = registry.get_class_powers(class_id)
 	for entry in powers:
 		if entry is Dictionary:
-			var pid: String = String(entry.get("power_id", ""))
+			var pid: String = str(entry.get("power_id", ""))
 			if pid == "divine_casting" or pid == "spell_research_and_minor_item_creation":
 				return true
 	return false
@@ -1149,7 +1150,7 @@ static func _is_arcane_caster(character: Dictionary) -> bool:
 	var powers: Array = registry.get_class_powers(class_id)
 	for entry in powers:
 		if entry is Dictionary:
-			var pid: String = String(entry.get("power_id", ""))
+			var pid: String = str(entry.get("power_id", ""))
 			if pid == "arcane_casting" or pid == "arcane_casting_in_armor":
 				return true
 	return false
@@ -1180,7 +1181,7 @@ static func _can_learn_spell_level(character: Dictionary, target_level: int) -> 
 static func _get_arcane_spell_level(spell_def: Dictionary) -> int:
 	var classifications: Array = spell_def.get("classifications", [])
 	for entry in classifications:
-		if entry is Dictionary and String(entry.get("tradition", "")) == "arcane":
+		if entry is Dictionary and str(entry.get("tradition", "")) == "arcane":
 			return int(entry.get("level", 0))
 	return 0
 

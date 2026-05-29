@@ -349,7 +349,7 @@ func _render_training() -> void:
 		grid.add_theme_constant_override("h_separation", 8)
 		grid.add_theme_constant_override("v_separation", 4)
 		for entry: Dictionary in eligible:
-			var troop_type: String = String(entry.get("troop_type", ""))
+			var troop_type: String = str(entry.get("troop_type", ""))
 			var months: int = int(entry.get("training_months", 0))
 			var earnings: int = int(entry.get("monthly_earnings_gp", 0))
 			var btn := Button.new()

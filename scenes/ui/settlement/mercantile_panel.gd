@@ -256,8 +256,8 @@ func _populate_character_selector() -> void:
 	var selected_idx: int = 0
 	for i in _party_members.size():
 		var row: Dictionary = _party_members[i]
-		_character_selector.add_item(String(row.get("name", "Unknown")), i)
-		if String(row.get("id", "")) == _character_id:
+		_character_selector.add_item(str(row.get("name", "Unknown")), i)
+		if str(row.get("id", "")) == _character_id:
 			selected_idx = i
 	if _party_members.size() > 0:
 		_character_selector.select(selected_idx)
@@ -640,7 +640,7 @@ func _build_merchandise_dropdown() -> OptionButton:
 	_merchandise_index = MerchandiseRegistry.all_merchandise()
 	for i in _merchandise_index.size():
 		var entry: Dictionary = _merchandise_index[i]
-		var key: String = String(entry.get("merchandise_type", ""))
+		var key: String = str(entry.get("merchandise_type", ""))
 		if key.is_empty():
 			continue
 		var bucket: String = "Precious" if bool(entry.get("precious", false)) else "Common"

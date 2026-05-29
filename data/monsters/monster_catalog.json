@@ -11209,7 +11209,7 @@
         "number": "1d6 swarms"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "I",
     "terrain_affinity": [
       "barren_desert",
       "mountains_hills"
@@ -11245,6 +11245,12 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "fearless"
+    },
+    "special_treasure": {
+      "chance_pct": 30,
+      "value_dice": "1d10x1000",
+      "denomination": "gp",
+      "description": "Some nests inexplicably mine precious metals: as much as 1d10x1000 gp of raw gold nuggets, in addition to the type I incidental treasure left by past opponents."
     }
   },
   {
@@ -11424,7 +11430,7 @@
         "number": "2d6"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "woods",
       "underground"
@@ -11532,7 +11538,7 @@
       }
     },
     "wilderness_encounter": null,
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "underground",
       "woods"
@@ -11639,7 +11645,7 @@
       }
     },
     "wilderness_encounter": null,
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "woods",
       "underground"
@@ -11734,7 +11740,7 @@
       },
       "in_lair": null
     },
-    "treasure_type": "U",
+    "treasure_type": "K",
     "terrain_affinity": [
       "swamp",
       "underground"
@@ -11775,7 +11781,9 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "lowest_hp",
       "morale_style": "fragile"
-    }
+    },
+    "treasure_delivery": "loot_drop",
+    "treasure_notes": "Swallowed treasure found in its belly; drops on death whether the caecilian is encountered in a lair or wandering."
   },
   {
     "id": "carcass_scavenger",
@@ -12141,7 +12149,7 @@
         "number": "2d6"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "C",
     "terrain_affinity": [
       "swamp",
       "jungle"
@@ -12368,7 +12376,7 @@
         "number": "1d6"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "I",
     "terrain_affinity": [
       "barren_desert",
       "underground"
@@ -12471,7 +12479,7 @@
         "number": "1d3"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "C",
     "terrain_affinity": [
       "woods",
       "underground"
@@ -12588,7 +12596,7 @@
         "number": "1d3"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "F",
     "terrain_affinity": [
       "barren_desert",
       "jungle"
@@ -13519,7 +13527,7 @@
         "number": "1d2"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "woods",
       "mountains_hills"
@@ -13630,7 +13638,7 @@
         "number": "1d2"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "woods",
       "mountains_hills"
@@ -13741,7 +13749,7 @@
         "number": "1d2"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "mountains_hills",
       "underground"
@@ -13852,7 +13860,7 @@
         "number": "1d4"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "clear_grass_scrub",
       "barren_desert"
@@ -13962,7 +13970,7 @@
         "number": "1d2"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "jungle"
     ],
@@ -14680,7 +14688,7 @@
         "number": "1d2"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "mountains_hills"
     ],
@@ -14781,7 +14789,7 @@
       },
       "in_lair": null
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "jungle",
       "swamp"
@@ -15352,7 +15360,7 @@
         "number": "2d4"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "F",
     "terrain_affinity": [
       "mountains_hills",
       "clear_grass_scrub"
@@ -15456,7 +15464,7 @@
         "number": "1d6"
       }
     },
-    "treasure_type": "U",
+    "treasure_type": "None",
     "terrain_affinity": [
       "mountains_hills",
       "clear_grass_scrub"
@@ -20679,7 +20687,7 @@
       },
       "in_lair": null
     },
-    "treasure_type": "Special (ivory horn)",
+    "treasure_type": "None",
     "terrain_affinity": [
       "ocean"
     ],
@@ -20711,6 +20719,14 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "normal"
+    },
+    "treasure_delivery": "loot_drop",
+    "special_treasure": {
+      "chance_pct": 100,
+      "value_dice": "1d6x1000",
+      "denomination": "gp",
+      "is_monster_part": true,
+      "description": "Ivory horn harvested as a monster part; worth 1d6x1000 gp. Drops on death."
     }
   },
   {
@@ -22700,7 +22716,7 @@
       },
       "in_lair": null
     },
-    "treasure_type": "Special (ship cargo)",
+    "treasure_type": "M, I",
     "terrain_affinity": [
       "ocean"
     ],
@@ -22748,7 +22764,9 @@
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
       "morale_style": "normal"
-    }
+    },
+    "treasure_delivery": "loot_drop",
+    "treasure_notes": "No lairs. The M,I treasure is randomly divided among the group at spawn and drops as loot on each serpent's death (belly treasure)."
   },
   {
     "id": "shadow",
@@ -26014,5 +26032,123 @@
     },
     "is_regenerating": false,
     "is_aquatic": false
+  },
+  {
+    "id": "locust_cavern",
+    "name": "Locust, Cavern",
+    "variant": null,
+    "source": "ACKS Core (acore_monster_catalog_liz-orc.xml)",
+    "monster_types": [
+      "beast"
+    ],
+    "sub_types": [
+      "vermin",
+      "insect"
+    ],
+    "alignment": "neutral",
+    "intelligence": "non",
+    "size_category": "medium",
+    "hit_dice": {
+      "base": 2,
+      "modifier": 0,
+      "special_ability_stars": 1
+    },
+    "armor_class": 5,
+    "attack_routines": [
+      {
+        "routine_name": "natural",
+        "usage": "default",
+        "attacks": [
+          {
+            "attack_type": "bite",
+            "count": 1,
+            "damage": "1d2",
+            "to_hit_modifier": 0,
+            "special_effect": null
+          }
+        ]
+      }
+    ],
+    "save_as": {
+      "class": "F",
+      "level": 2
+    },
+    "morale": -3,
+    "xp": 29,
+    "movement": {
+      "land": {
+        "exploration": 60,
+        "combat": 20
+      },
+      "fly": {
+        "exploration": 180,
+        "combat": 60
+      }
+    },
+    "percent_in_lair": 30,
+    "dungeon_encounter": {
+      "outside_lair": {
+        "collective_noun": "Plague",
+        "number": "1d10"
+      },
+      "in_lair": {
+        "collective_noun": "Nest",
+        "number": "2d10"
+      }
+    },
+    "wilderness_encounter": null,
+    "treasure_type": "None",
+    "terrain_affinity": [
+      "underground"
+    ],
+    "special_abilities": [
+      {
+        "ability_id": "spit_stench",
+        "description": "Ranged spit (10' range), always resolved against AC 0. Target must save vs. Poison or be incapacitated by the stench for 1 turn; afterward the target is immune to that locust's odor. Spittle must be rinsed off — any creature coming within 5' of a spit-soaked creature must save vs. Poison or be wracked with vomiting.",
+        "hook_type": "save_or_effect",
+        "effect": {
+          "attack_vs_ac": 0,
+          "range_feet": 10,
+          "save_type": "Poison",
+          "on_failure": "incapacitated_1_turn",
+          "then": "immune_to_this_locust_odor"
+        }
+      },
+      {
+        "ability_id": "panic_slam",
+        "description": "When panicked locusts flee, half of panic flights are toward a creature group; a locust that collides inflicts 1d4 slam damage on a successful attack throw.",
+        "hook_type": "behavior",
+        "effect": {
+          "damage": "1d4",
+          "condition": "panicked_flight_into_group"
+        }
+      },
+      {
+        "ability_id": "wandering_monster_attraction",
+        "description": "While one or more cavern locusts are attacking, roll a wandering-monster encounter throw each round; indicated wandering monsters arrive in 1d4 rounds.",
+        "hook_type": "flag",
+        "effect": {
+          "flag": "wandering_monster_trigger",
+          "arrival_rounds": "1d4"
+        }
+      }
+    ],
+    "immunities": [
+      "poison",
+      "yellow_mold"
+    ],
+    "resistances": [],
+    "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "swarm",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
   }
 ]

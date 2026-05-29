@@ -37,7 +37,7 @@ const _THREAT_UPDATE_FIELDS := [
 # ---------------------------------------------------------------------------
 
 static func create_threat(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -52,16 +52,16 @@ static func create_threat(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("domain_id", "")),
-		String(data.get("kind", "encounter")),
-		String(data.get("status", "active")),
-		String(data.get("creature_key", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("domain_id", "")),
+		str(data.get("kind", "encounter")),
+		str(data.get("status", "active")),
+		str(data.get("creature_key", "")),
 		int(data.get("creature_count", 0)),
 		float(data.get("platoon_br", 0.0)),
 		1 if bool(data.get("is_lair", false)) else 0,
 		1 if bool(data.get("is_lingering", false)) else 0,
-		String(data.get("reaction", "")),
+		str(data.get("reaction", "")),
 		int(data.get("bandit_count", 0)),
 		_null_or_string(data.get("challenger_character_id")),
 		int(data.get("challenger_level", 0)),
@@ -70,7 +70,7 @@ static func create_threat(data: Dictionary) -> String:
 		_null_or_int(data.get("linked_hex_r")),
 		int(data.get("morale_penalty", 0)),
 		int(data.get("spawned_calendar_day", 0)),
-		String(data.get("payload_json", "{}")),
+		str(data.get("payload_json", "{}")),
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
 		push_error("DomainThreatRepository.create_threat failed: kind=%s domain=%s" % [
@@ -193,7 +193,7 @@ static func set_status(id: String, status: String, calendar_day: int) -> bool:
 # ---------------------------------------------------------------------------
 
 static func create_market_modifier(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -205,16 +205,16 @@ static func create_market_modifier(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("campaign_id", "")),
+		str(data.get("campaign_id", "")),
 		_null_or_string(data.get("settlement_entrance_id")),
-		String(data.get("source_kind", "unknown")),
+		str(data.get("source_kind", "unknown")),
 		int(data.get("delta", 0)),
 		int(data.get("price_multiplier_pct", 100)),
-		String(data.get("affected_categories", "")),
+		str(data.get("affected_categories", "")),
 		int(data.get("issued_calendar_day", 0)),
 		int(data.get("expires_calendar_day", 0)),
-		String(data.get("status", "active")),
-		String(data.get("payload_json", "{}")),
+		str(data.get("status", "active")),
+		str(data.get("payload_json", "{}")),
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
 		push_error("DomainThreatRepository.create_market_modifier failed: source=%s" % data.get("source_kind", ""))
@@ -262,7 +262,7 @@ static func sum_price_multiplier_pct(settlement_id: String, category: String) ->
 		var pct: int = int(row.get("price_multiplier_pct", 100))
 		if pct == 100 or pct == 0:
 			continue
-		var cats_csv: String = String(row.get("affected_categories", ""))
+		var cats_csv: String = str(row.get("affected_categories", ""))
 		if cats_csv.is_empty() or _csv_contains(cats_csv, category):
 			compound *= float(pct) / 100.0
 	return int(round(compound * 100.0))
@@ -283,7 +283,7 @@ static func expire_modifiers_for_campaign(campaign_id: String, calendar_day: int
 		return 0
 	var ids: Array = []
 	for row in CampaignRepository.db.query_result:
-		ids.append(String(row.get("id", "")))
+		ids.append(str(row.get("id", "")))
 	for mod_id in ids:
 		CampaignRepository.db.query_with_bindings("""
 			UPDATE market_class_modifiers

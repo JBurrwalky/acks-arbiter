@@ -142,7 +142,7 @@ static func compute(character_id: String) -> Dictionary:
 	if wounds.is_empty():
 		return agg
 	for row: Dictionary in wounds:
-		var kind: String = String(row.get("wound_kind", ""))
+		var kind: String = str(row.get("wound_kind", ""))
 		var effects: Dictionary = WOUND_EFFECTS.get(kind, {})
 		if effects.is_empty():
 			continue

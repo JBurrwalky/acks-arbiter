@@ -1,0 +1,41 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §dungeon_wandering_monsters table:wandering_monster_table_guidelines",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Dungeon Level",
+    "Party Level",
+    "Monster XP Value"
+  ],
+  "rows": [
+    {
+      "Dungeon Level": "1",
+      "Party Level": "1",
+      "Monster XP Value": "1-15"
+    },
+    {
+      "Dungeon Level": "2",
+      "Party Level": "2-3",
+      "Monster XP Value": "20-47"
+    },
+    {
+      "Dungeon Level": "3",
+      "Party Level": "4-5",
+      "Monster XP Value": "50-150"
+    },
+    {
+      "Dungeon Level": "4",
+      "Party Level": "6-7",
+      "Monster XP Value": "175-475"
+    },
+    {
+      "Dungeon Level": "5",
+      "Party Level": "8-9",
+      "Monster XP Value": "500-1,140"
+    },
+    {
+      "Dungeon Level": "6",
+      "Party Level": "10+",
+      "Monster XP Value": "1,200+"
+    }
+  ]
+}

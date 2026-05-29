@@ -93,6 +93,7 @@
 [ext_resource type="Script" path="res://tests/test_interaction_resolver.gd" id="76_interaction_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_notification_manager.gd" id="80_notification_manager_tests"]
 [ext_resource type="Script" path="res://tests/test_camp_manager.gd" id="81_camp_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_camp_encounter_gate.gd" id="81b_camp_encounter_gate_tests"]
 [ext_resource type="Script" path="res://tests/test_light_source_tracker.gd" id="82_light_source_tracker_tests"]
 [ext_resource type="Script" path="res://tests/test_event_scheduler.gd" id="84_event_scheduler_tests"]
 [ext_resource type="Script" path="res://tests/test_scheduler_loop.gd" id="85_scheduler_loop_tests"]
@@ -372,6 +373,37 @@
 [ext_resource type="Script" path="res://tests/test_hex_map_offset_conversion.gd" id="358_hex_map_offset_conversion_tests"]
 [ext_resource type="Script" path="res://tests/test_test_content_seeder.gd" id="359_test_content_seeder_tests"]
 [ext_resource type="Script" path="res://tests/test_session_load_fallback.gd" id="360_session_load_fallback_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_layout_generator.gd" id="361_settlement_layout_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_npc_ruler_generator.gd" id="362_npc_ruler_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_abstract_tribute_resolver.gd" id="363_abstract_tribute_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_stock_rulers_and_tribute.gd" id="364_stock_rulers_and_tribute_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_stocker.gd" id="365_domain_stocker_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_dict_builder.gd" id="366_settlement_dict_builder_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_explore_state_bridge.gd" id="367_settlement_explore_state_bridge_tests"]
+[ext_resource type="Script" path="res://tests/data_integrity/test_dungeon_generator_data_freshness.gd" id="368_dungeon_generator_data_freshness_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_layout/test_dungeon_room_composer.gd" id="369_dungeon_room_composer_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_layout/test_dungeon_layout_rasterizer.gd" id="370_dungeon_layout_rasterizer_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_layout/test_dungeon_layout_generator.gd" id="371_dungeon_layout_generator_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_layout/test_dungeon_layout_navigability.gd" id="372_dungeon_layout_navigability_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_roundtrip.gd" id="373_dungeon_repository_roundtrip_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_cascade_delete.gd" id="374_dungeon_repository_cascade_delete_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_check_constraints.gd" id="375_dungeon_repository_check_constraints_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_tier_derivation.gd" id="376_dungeon_tier_derivation_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_data_loader.gd" id="377_dungeon_data_loader_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_encounter_roller.gd" id="378_dungeon_encounter_roller_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_treasure_resolver.gd" id="379_dungeon_treasure_resolver_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_stocker.gd" id="380_dungeon_stocker_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_acceptance_tests.gd" id="381_dungeon_acceptance_tests_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_navigability_validator.gd" id="382_dungeon_navigability_validator_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_key_lever_placer.gd" id="383_dungeon_key_lever_placer_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_stocked_roundtrip.gd" id="384_dungeon_repository_stocked_roundtrip_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_generator_v1.gd" id="385_dungeon_generator_v1_tests"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_lair_single_floor_tier1.gd" id="386_scenario_lair_single_floor_tier1"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_medium_three_floor_subterranean.gd" id="387_scenario_medium_three_floor_subterranean"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_six_floor_tier_clamp.gd" id="388_scenario_six_floor_tier_clamp"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_entrance_in_middle.gd" id="389_scenario_entrance_in_middle"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_placeholder_fallbacks_active.gd" id="390_scenario_placeholder_fallbacks_active"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_invalid_dungeon_type_fallback.gd" id="391_scenario_invalid_dungeon_type_fallback"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -651,6 +683,9 @@ script = ExtResource("80_notification_manager_tests")
 
 [node name="CampManagerTests" type="Node" parent="."]
 script = ExtResource("81_camp_manager_tests")
+
+[node name="CampEncounterGateTests" type="Node" parent="."]
+script = ExtResource("81b_camp_encounter_gate_tests")
 
 [node name="LightSourceTrackerTests" type="Node" parent="."]
 script = ExtResource("82_light_source_tracker_tests")
@@ -1488,3 +1523,96 @@ script = ExtResource("359_test_content_seeder_tests")
 
 [node name="SessionLoadFallbackTests" type="Node" parent="."]
 script = ExtResource("360_session_load_fallback_tests")
+
+[node name="SettlementLayoutGeneratorTests" type="Node" parent="."]
+script = ExtResource("361_settlement_layout_generator_tests")
+
+[node name="NpcRulerGeneratorTests" type="Node" parent="."]
+script = ExtResource("362_npc_ruler_generator_tests")
+
+[node name="AbstractTributeResolverTests" type="Node" parent="."]
+script = ExtResource("363_abstract_tribute_resolver_tests")
+
+[node name="StockRulersAndTributeTests" type="Node" parent="."]
+script = ExtResource("364_stock_rulers_and_tribute_tests")
+
+[node name="DomainStockerTests" type="Node" parent="."]
+script = ExtResource("365_domain_stocker_tests")
+
+[node name="SettlementDictBuilderTests" type="Node" parent="."]
+script = ExtResource("366_settlement_dict_builder_tests")
+
+[node name="SettlementExploreStateBridgeTests" type="Node" parent="."]
+script = ExtResource("367_settlement_explore_state_bridge_tests")
+
+[node name="DungeonGeneratorDataFreshnessTests" type="Node" parent="."]
+script = ExtResource("368_dungeon_generator_data_freshness_tests")
+
+[node name="DungeonRoomComposerTests" type="Node" parent="."]
+script = ExtResource("369_dungeon_room_composer_tests")
+
+[node name="DungeonLayoutRasterizerTests" type="Node" parent="."]
+script = ExtResource("370_dungeon_layout_rasterizer_tests")
+
+[node name="DungeonLayoutGeneratorTests" type="Node" parent="."]
+script = ExtResource("371_dungeon_layout_generator_tests")
+
+[node name="DungeonLayoutNavigabilityTests" type="Node" parent="."]
+script = ExtResource("372_dungeon_layout_navigability_tests")
+
+[node name="DungeonRepositoryRoundtripTests" type="Node" parent="."]
+script = ExtResource("373_dungeon_repository_roundtrip_tests")
+
+[node name="DungeonRepositoryCascadeDeleteTests" type="Node" parent="."]
+script = ExtResource("374_dungeon_repository_cascade_delete_tests")
+
+[node name="DungeonRepositoryCheckConstraintsTests" type="Node" parent="."]
+script = ExtResource("375_dungeon_repository_check_constraints_tests")
+
+[node name="DungeonTierDerivationTests" type="Node" parent="."]
+script = ExtResource("376_dungeon_tier_derivation_tests")
+
+[node name="DungeonDataLoaderTests" type="Node" parent="."]
+script = ExtResource("377_dungeon_data_loader_tests")
+
+[node name="DungeonEncounterRollerTests" type="Node" parent="."]
+script = ExtResource("378_dungeon_encounter_roller_tests")
+
+[node name="DungeonTreasureResolverTests" type="Node" parent="."]
+script = ExtResource("379_dungeon_treasure_resolver_tests")
+
+[node name="DungeonStockerTests" type="Node" parent="."]
+script = ExtResource("380_dungeon_stocker_tests")
+
+[node name="DungeonAcceptanceTestsTests" type="Node" parent="."]
+script = ExtResource("381_dungeon_acceptance_tests_tests")
+
+[node name="DungeonNavigabilityValidatorTests" type="Node" parent="."]
+script = ExtResource("382_dungeon_navigability_validator_tests")
+
+[node name="DungeonKeyLeverPlacerTests" type="Node" parent="."]
+script = ExtResource("383_dungeon_key_lever_placer_tests")
+
+[node name="DungeonRepositoryStockedRoundtripTests" type="Node" parent="."]
+script = ExtResource("384_dungeon_repository_stocked_roundtrip_tests")
+
+[node name="DungeonGeneratorV1Tests" type="Node" parent="."]
+script = ExtResource("385_dungeon_generator_v1_tests")
+
+[node name="ScenarioLairSingleFloorTier1" type="Node" parent="."]
+script = ExtResource("386_scenario_lair_single_floor_tier1")
+
+[node name="ScenarioMediumThreeFloorSubterranean" type="Node" parent="."]
+script = ExtResource("387_scenario_medium_three_floor_subterranean")
+
+[node name="ScenarioSixFloorTierClamp" type="Node" parent="."]
+script = ExtResource("388_scenario_six_floor_tier_clamp")
+
+[node name="ScenarioEntranceInMiddle" type="Node" parent="."]
+script = ExtResource("389_scenario_entrance_in_middle")
+
+[node name="ScenarioPlaceholderFallbacksActive" type="Node" parent="."]
+script = ExtResource("390_scenario_placeholder_fallbacks_active")
+
+[node name="ScenarioInvalidDungeonTypeFallback" type="Node" parent="."]
+script = ExtResource("391_scenario_invalid_dungeon_type_fallback")

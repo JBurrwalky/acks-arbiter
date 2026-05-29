@@ -204,7 +204,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# realm to this ruler at the rate dictated by the RAW table reduced by the
 	# efficiency factor.
 	var tribute_aggregate: Dictionary = _compute_tribute_in_for_ruler(
-		String(domain_data.get("owner_character_id", "")))
+		_str_field(domain_data, "owner_character_id"))
 	var tribute_in: int = int(tribute_aggregate.get("total_received_gp", 0))
 
 	# Phase 7: tribute_out_owed is recomputed each month based on the vassal
@@ -309,7 +309,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# divine-caster rulers. Runs AFTER revenue/expenses so the upkeep can debit
 	# the domain treasury if the ruler's divine_power is insufficient.
 	var faith_congregants: Dictionary = FaithMonthlyResolver.resolve_congregants_monthly(
-		String(domain_data.get("owner_character_id", "")),
+		_str_field(domain_data, "owner_character_id"),
 		_cha_modifier(int(ruler.get("charisma", 10))),
 		domain_id,
 		calendar_day)
@@ -349,7 +349,7 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# 10B.1d (per Q20 [RESOLVED 2026-05-11]: universal d20+ability_mod 14+
 	# throw at joined_calendar_day + 120).
 	var mr_summary: Dictionary = _resolve_magic_research_month(
-		String(domain_data.get("owner_character_id", "")), calendar_day)
+		_str_field(domain_data, "owner_character_id"), calendar_day)
 
 	# --- Ledger writes (one row per nonzero subcategory) ---
 	if not domain_id.is_empty():
@@ -664,10 +664,22 @@ func _classification_minimum_cp(territory_type: String, hex_count: int) -> int:
 	return per_hex_cp * maxi(1, hex_count)
 
 
+## Coerces a Dictionary field to String, treating `null` as empty. SQLite
+## TEXT columns that are NULL come back as `null` in the row dict, and
+## `Dictionary.get(key, "")` returns the existing `null` rather than the
+## default — so `String(null)` errors with "Nonexistent String constructor".
+## Use this anywhere a nullable TEXT column is read into a String local.
+static func _str_field(d: Dictionary, key: String, fallback: String = "") -> String:
+	var v = d.get(key, fallback)
+	if v == null:
+		return fallback
+	return String(v)
+
+
 ## Build the ruler context dict the morale resolver expects. Looks up CHA mod,
 ## level, leadership proficiency, and alignment from the ruler character row.
 func _build_ruler_context(domain_data: Dictionary) -> Dictionary:
-	var ruler_id: String = String(domain_data.get("owner_character_id", ""))
+	var ruler_id: String = _str_field(domain_data, "owner_character_id")
 	if ruler_id.is_empty():
 		return {}
 	var character: Dictionary = CampaignRepository.get_character(ruler_id)
@@ -698,9 +710,13 @@ func _cha_modifier(cha: int) -> int:
 func _has_leadership_proficiency(character_id: String) -> bool:
 	if character_id.is_empty():
 		return false
+	# Column is `proficiency_key` per character_proficiencies schema (migration
+	# 007). The original `proficiency_id` was a typo that never fired because
+	# no domain had a real ruler until rulers got auto-seeded by the Avalon
+	# bootstrap; the monthly tick has been reaching here since that landed.
 	if not CampaignRepository.db.query_with_bindings("""
 		SELECT 1 FROM character_proficiencies
-		WHERE character_id = ? AND proficiency_id = 'leadership'
+		WHERE character_id = ? AND proficiency_key = 'leadership'
 		LIMIT 1
 	""", [character_id]):
 		return false
@@ -836,7 +852,7 @@ func _find_closest_friendly_city(domain_data: Dictionary) -> Dictionary:
 	var best_settlement_id: String = ""
 	var best_realm_id: String = ""
 	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
-		var settlement_id: String = String(row.get("id", ""))
+		var settlement_id: String = str(row.get("id", ""))
 		var s_q: int = int(row.get("hex_q", 0))
 		var s_r: int = int(row.get("hex_r", 0))
 		var hex_dist: int = HexMapController.hex_distance(
@@ -844,7 +860,7 @@ func _find_closest_friendly_city(domain_data: Dictionary) -> Dictionary:
 		var distance_miles: int = hex_dist * 6  # 6-mile-hex project convention
 		# Determine friendliness via realm-relations.
 		var settlement_realm_id: String = ""
-		var parent_id: String = String(row.get("parent_domain_id", ""))
+		var parent_id: String = str(row.get("parent_domain_id", ""))
 		if not parent_id.is_empty():
 			var s_realm: Dictionary = RealmRepository.get_realm_for_domain(parent_id)
 			settlement_realm_id = String(s_realm.get("id", ""))
@@ -1041,7 +1057,7 @@ func _compute_active_scutage_cp_for_domain(domain_data: Dictionary) -> int:
 	var active_duties: Array = VassalObligationsRepository.list_active_duties_for_assignment(assn_id)
 	var total_gp: int = 0
 	for d in active_duties:
-		if String(d.get("type", "")) == "scutage":
+		if str(d.get("type", "")) == "scutage":
 			total_gp += int(d.get("magnitude", 0))
 	return total_gp * 100
 
@@ -1361,7 +1377,7 @@ func _tick_tribal_warrior_retention(domain_id: String, _calendar_day: int) -> vo
 	if CampaignRepository.db.query_result.is_empty():
 		return
 	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
-		var unit_id: String = String(row.get("id", ""))
+		var unit_id: String = str(row.get("id", ""))
 		var prior: int = int(row.get("months_without_qualifying_spoils", 0))
 		var next: int = prior + 1
 		TroopUnitRepository.update_unit(unit_id, {

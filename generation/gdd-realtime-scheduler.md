@@ -5,7 +5,7 @@
 **Replaces:** Earlier drafts of this document; design brief §8.3 simultaneous-declaration day-cycle scheduling
 **Depends on:** `gdd-voxel-tactical-architecture.md` (3D voxel grid spatial substrate for the dungeon and combat layers), Timekeeping autoload (built), EventBus (built), CampaignRepository (built), DiceSystem (built)
 **Implementing files:** `engine/subsystems/session/event_scheduler.gd`, `scheduled_event.gd`, `scheduler_loop.gd`, `event_handler_registry.gd`, `session_runner.gd`, `session_state.gd`, `handlers/*`, `states/*`
-**Last updated:** 2026-04-30
+**Last updated:** 2026-05-27
 
 ---
 
@@ -202,7 +202,77 @@ If travel extends past the normal daily window, a forced march event fires. CON 
 
 ### 4.3 Camping and Watches
 
-The player orders a party to camp. `camp_handlers.gd` schedules a sequence of `camp_watch` events (typically 3 watches of ~4 hours each, configurable). Each watch boundary fires an encounter check. Dawn and dusk signals from Timekeeping interact naturally — the party wakes at dawn if they started resting at dusk.
+The player orders a party to camp. `camp_handlers.gd` schedules a sequence of `camp_watch` events (typically 3 watches of ~4 hours each, configurable). **Watch boundaries are state/UX events, not encounter-throw events** — they exist to track who is on duty, to gate mage memorization and cleric prayer windows, to surface notification cues, and to determine who is awake vs. asleep when an encounter resolves (see below). Dawn and dusk signals from Timekeeping interact naturally — the party wakes at dawn if they started resting at dusk.
+
+#### 4.3.1 The camp encounter throw
+
+A camp event receives **one** encounter throw, rolled at camp setup (when the player confirms watch assignments and `CampHandlers.schedule_watches` runs). The throw is **gated by the hybrid rule** described in §4.3.3: it only rolls if no other wilderness encounter has been triggered for this party earlier in the current calendar day.
+
+This is a deliberate, controlled deviation from RAW's literal text per `acore-monster-stocking-rules.xml §wilderness_wandering_monsters.encounter_check.frequency` L143–145 ("If the party is stationary, check once per day"), which treats the day as the unit of accounting. The hybrid rule produces approximately RAW encounter weight (~one effective check per day) while binding the camp's outcome to the camp event rather than the calendar day — a concession to a real-time-with-pause engine that cannot easily fake the GM's retrospective bookkeeping. Reasoning is in §4.3.3.
+
+**Flow when a camp's encounter throw is positive:**
+
+1. The handler picks the **time-of-occurrence** as a uniform roll across the camp window (1d(camp_hours), typically 1d12 for a 12-hour camp). The resulting absolute round-time is scheduled as a new `wilderness_encounter` event (a separate event type from the throw itself). The hour may fall in the same calendar day as camp_setup or in the next day if the camp spans midnight — that is expected.
+2. The handler stamps `party_state.last_encounter_trigger_day = day_index_at_camp_setup` so subsequent same-day travel-leg or camp throws are gated. The stamp uses the day at camp setup (the *evening* day for a typical 18:00 → 06:00 camp), not the day the encounter resolves — a cross-day camp's encounter is bookkept against the day it was scheduled from.
+3. When the `wilderness_encounter` event fires, the encounter spawner generates creatures per the §4.1 column-selection flow (table column → 1d8 creature type → 1d12 specific creature → distance per `acore_adventures_and_encounters.xml §wilderness_encounters.encounter_distance_table`). The encounter spawner does **not** re-roll the 1-in-6 throw — the camp throw at setup already committed.
+4. The handler computes **each party member's observer state at the encounter's fire_time** by reading the watch schedule:
+   - On watch at that hour → `actively_watching` per `acore_adventures_and_encounters.xml §surprise_and_sneaking.observer_state.actively_watching` L874–878.
+   - Off watch, awake (between watches, day-time rest, before camp start, after camp end) → `passively_watching` per L880–886.
+   - Off watch, asleep (the watch schedule has this character sleeping at this hour) → `distracted_or_not_looking` per L888–895. Each sleeping character gets a Hear Noises throw at 18+ on 1d20 to rouse before surprise resolution; on failure, they begin the encounter functionally surprised.
+5. Surprise then resolves per RAW (`acore_adventures_and_encounters.xml §surprise`, 1d6 per side, 2- = surprised). The party's effective surprise state is the composite of who roused, who was already alert, and who failed to wake.
+
+If the camp ends before the scheduled `wilderness_encounter` fires (the player aborts via the cancel action, `camp_rest_complete` resolves first because the encounter was scheduled past camp end, or another event transitions the party out of wilderness state), the pending `wilderness_encounter` event is cancelled. The camp is the encounter's binding context; leaving it dissolves the scheduled encounter.
+
+#### 4.3.2 Why the watch schedule still matters
+
+The watch schedule is the mechanical bridge between "the camp gets one encounter throw" and "who is caught sleeping when it resolves." It is a property of the camp, not a sequence of encounter-throw events. Watches determine:
+
+- Who can be wakened by ambient noise (Hear Noises throw at 18+ on 1d20).
+- Who is ready vs. surprised when an encounter resolves.
+- Who completes mage memorization / cleric prayer / Rest activity ticks at watch boundaries.
+- Who accumulates rest toward exhaustion mitigation per §4.4.
+
+#### 4.3.3 The hybrid rule for mixed travel-and-camp days (resolved 2026-05-27)
+
+RAW's three frequency rules (L143–145) read as mutually exclusive descriptors of the day's mode: stationary day = 1 check; settled-terrain day = 1 check; "otherwise" = per-hex check. The unambiguous cases are a fully-stationary day (camp the whole 24 hours = one check) and a fully-traveling day (per-hex checks at each travel_leg arrival = those checks only). The ambiguous case is the day that mixes both — travel during the daylight hours, then camp at night — which is the dominant pattern in expedition play.
+
+The project adopts a **hybrid rule** for mixed days, chosen by Jedidiah on 2026-05-27:
+
+- **Travel-leg per-hex checks are RAW (unchanged).** Every hex entered gets its own 1-in-6 throw. A day of three hexes traveled is three throws.
+- **The camp event gets one throw, gated on "has any wilderness encounter triggered for this party earlier today?"** If a travel-leg check earlier in the day produced an encounter, the camp gets no throw (the day's "encounter budget" was already spent). If the day's travel was uneventful, the camp's throw fires.
+- **The bookkeeping flag** is `party_state.last_encounter_trigger_day`. It is set to the current day_index on any wilderness encounter trigger — travel_leg or camp. The camp throw fires only when `current_day_index > last_encounter_trigger_day`.
+
+**Why hybrid, not strict RAW.** In tabletop play a GM can resolve the day in retrospect or pre-script the night, deciding mid-play whether the camp gets a check. A real-time-with-pause computer game cannot easily look ahead and see if the player will travel later, so it must fake the cap. The hybrid rule produces approximately RAW encounter weight (per-hex travel throws + at most one camp throw per day) while keeping the camp a meaningful site of risk in the common case where the day's travel was uneventful. The strict-RAW alternative — "any travel today means no camp throw at all" — was rejected because it makes camping mechanically free on travel days, which incentivizes degenerate over-camping and trivializes the watch-order mechanics.
+
+**Cross-day camps.** A typical 12-hour camp (e.g., 18:00 to 06:00) spans two calendar days. The throw is rolled once at camp_setup; the stamp on `last_encounter_trigger_day` uses the day-index at camp_setup (the evening day, not the morning). The rolled fire-time can fall on either side of midnight. The day-tick at midnight (§4.4) does NOT roll a separate camp throw — it does its normal sustenance/weather/rest work and self-reschedules. When the party wakes the next morning and travels, per-hex checks for that next day are independent: the previous evening's camp throw stamped the previous day's flag, and the new day's flag starts unset.
+
+**Edge case: same-day double camp.** If a party were to break a camp at, say, 04:00 and immediately start another camp (unusual but legal), the second camp_setup runs on the same day as the first. The gate checks: did the first camp's throw stamp today's flag? If the first camp's throw rolled positive, yes — second camp gets no throw. If the first camp's throw was negative, the gate flag is unstamped and the second camp's throw can fire. This is the intended behavior: the gate tracks triggers, not throws, and a degenerate two-camp pattern is no different from one long camp.
+
+**What this rule does not do.** It does not gate travel-leg per-hex checks against each other (RAW says per-hex, and we keep per-hex). It does not gate the camp throw against the next day's pending travel — at camp_setup we know what has happened, not what will happen. And it does not allow the camp to "absorb" a previously-rolled-but-not-yet-fired travel encounter; a triggered travel encounter stamps the flag at the moment of trigger, before its modal resolution, so the camp gate sees it.
+
+#### 4.3.4 Migration note (revised 2026-05-27)
+
+The earlier text of §4.3 stated "Each watch boundary fires an encounter check." That was a documentation hallucination, not a deliberate design — it ~40% over-shot the RAW encounter rate on stationary days. The first revision of this section (2026-05-27 morning) attempted a strict-RAW design with the throw folded into `wilderness_day_tick` and the hour rolled across the full 24-hour day. After Jedidiah's review that afternoon, the design was revised to the hybrid rule documented above: throw at camp_setup, gated on the per-day trigger flag, hour rolled within the camp window. Implementation work to do (held until current debugging effort lands):
+
+- **Schema.** Migration (next slot, 131 or later) adds to `party_state`: `is_camping INTEGER NOT NULL DEFAULT 0`, `camp_start_round INTEGER NOT NULL DEFAULT -1`, `camp_end_round INTEGER NOT NULL DEFAULT -1`, `camp_watch_assignments_json TEXT NOT NULL DEFAULT '[]'`, `camp_armed_sleepers_json TEXT NOT NULL DEFAULT '[]'`, `last_encounter_trigger_day INTEGER NOT NULL DEFAULT -1`. Mirror the fields on `PartyData` and round-trip via `to_state_dict` / `from_db`.
+- **`camp_handlers.gd::_handle_camp_watch`.** Strip the encounter throw and the enter_combat path. Returns a state/UX-only result (presentation: camp_watch_clear with watch_index). Watch boundary remains for memorization windows, prayer windows, Rest accumulation, and as the data source for observer-state lookup later.
+- **`camp_manager.gd::check_watch_encounter`.** Deprecated and removed (no remaining callers).
+- **`camp_handlers.gd::schedule_watches`.** After scheduling the three watches and rest_complete:
+  - Stamp PartyData with `is_camping = true`, `camp_start_round`, `camp_end_round = camp_start_round + TOTAL_REST_HOURS * ROUNDS_PER_HOUR`, the assignments JSON, the armed_sleepers JSON. Persist.
+  - Compute `current_day_index = camp_start_round / ROUNDS_PER_DAY`. If `current_day_index > last_encounter_trigger_day`, roll the camp encounter throw (1-in-6 on 1d6, or the terrain-appropriate threshold if/when terrain-varying thresholds land). On positive:
+    - Set `last_encounter_trigger_day = current_day_index`. Persist.
+    - Roll uniform `1d(camp_hours)` for the hour-within-camp; convert to absolute round.
+    - Schedule a `wilderness_encounter` event at that round with `priority = PRIORITY_SCHEDULED_CHECK`.
+- **`camp_handlers.gd::_handle_rest_complete` and the cancel-camp action.** Clear `is_camping = false` and the camp_* fields on PartyData. Cancel any pending `wilderness_encounter` events for this party via `scheduler.cancel_all_for_owner(party_id, "wilderness_encounter")`. Persist.
+- **`wilderness_handlers.gd::_handle_travel_leg`.** On a positive trigger from the per-hex check, before returning, stamp `last_encounter_trigger_day = (current_round / ROUNDS_PER_DAY)`. Persist as part of the existing party_state save path.
+- **`wilderness_encounter` event type.** Register globally by `SessionRunner.load_session` (alongside the day-tick and domain handlers) so it survives state transitions (party may be in camp when it scheduled, but combat or settlement entry mid-camp must not orphan it — though §4.3.1's cancel-on-camp-end rule will normally clean it up first). The handler:
+  - Loads the party's camp watch schedule (assignments + camp_start_round + camp_end_round) from PartyData.
+  - Spawns creatures via the existing wilderness encounter spawner (terrain column → creature type → specific creature → number → reaction). Skip the 1-in-6 — the camp throw at setup already committed. Factor the spawner out of `SessionRunner.do_encounter_check` (or add a `force_trigger = true` param) so this handler and the existing travel_leg path share the spawn logic.
+  - Computes each party member's observer state at `event.fire_time` against the watch schedule: actively_watching (on watch this hour) / passively_watching (off watch and awake — between watches, before camp_start, after camp_end) / distracted_or_not_looking (sleeping during this watch).
+  - For each distracted_or_not_looking member, rolls Hear Noises at 18+ on 1d20. Failures begin the encounter functionally surprised.
+  - Routes through the existing `encounter_decision_required` modal (per §27 of `docs/coding_conventions.md`) with surprise context attached so the player sees who roused vs. who is caught. The modal/state pair already handles the encounter-decision flow; surprise context is a new field on the encounter_data dict, consumed by the combat transition.
+- **`wilderness_day_tick`.** Does NOT roll the camp encounter throw. Continues to do sustenance, weather, exhaustion, and to self-reschedule. (The earlier morning revision wired this in; remove that wiring if it landed in any working branch before this revision.)
+- **Tests.** Any test asserting three encounter checks per camped night must assert at most one camp throw per camp event, gated by the hybrid flag. Add tests for: the gate behavior (camp after triggered travel = no throw; camp after uneventful travel = throw eligible), the cross-day fire-time scheduling (a 12-hour camp's wilderness_encounter can fire in either day, watch_index resolves correctly), the observer-state lookup at fire_time, the Hear Noises rouse path, and the cancel-on-camp-end behavior.
 
 ### 4.4 Wilderness Day Tick
 

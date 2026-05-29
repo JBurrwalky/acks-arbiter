@@ -270,8 +270,8 @@ func _load_entities(party_id: String, entity_type: String) -> Array:
 	if entity_type == TYPE_PCS:
 		for row in CampaignRepository.list_party_characters(party_id):
 			out.append({
-				"id":           String(row.get("id", "")),
-				"display_name": String(row.get("name", "(unnamed)")),
+				"id":           str(row.get("id", "")),
+				"display_name": str(row.get("name", "(unnamed)")),
 			})
 	elif entity_type == TYPE_HENCHMEN:
 		var seen := {}
@@ -314,7 +314,7 @@ func _first_entity_for_type(entity_type: String) -> String:
 func _resolve_entity_type(entity_id: String) -> String:
 	var pid := _resolve_party_id()
 	for row in CampaignRepository.list_party_characters(pid):
-		if String(row.get("id", "")) == entity_id:
+		if str(row.get("id", "")) == entity_id:
 			return TYPE_PCS
 	for pc_row in CampaignRepository.list_party_characters(pid):
 		var pc_id: String = String(pc_row.get("id", ""))
@@ -401,7 +401,7 @@ func _ensure_sub_tab_page(sub_tab_id: String) -> Control:
 			break
 	if entry.is_empty():
 		return null
-	var script_kind: String = String(entry.get("script", "placeholder"))
+	var script_kind: String = str(entry.get("script", "placeholder"))
 	var page: Control = null
 	match script_kind:
 		"overview":
@@ -426,8 +426,8 @@ func _ensure_sub_tab_page(sub_tab_id: String) -> Control:
 			page = PlaceholderSubTabScript.new()
 			page.setup(
 				String(entry["label"]),
-				String(entry.get("phase", "a future phase")),
-				String(entry.get("description", "")))
+				str(entry.get("phase", "a future phase")),
+				str(entry.get("description", "")))
 	_sub_tab_pages[sub_tab_id] = page
 	return page
 
@@ -524,7 +524,7 @@ func _resolve_domain_for_active_entity() -> Dictionary:
 		return {}
 	var domains := CampaignRepository.list_campaign_domains(campaign_id)
 	for d in domains:
-		if String(d.get("owner_character_id", "")) == _active_entity_id:
+		if str(d.get("owner_character_id", "")) == _active_entity_id:
 			return d
 	return {}
 

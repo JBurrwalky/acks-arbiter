@@ -186,6 +186,7 @@ func _ready() -> void:
 	_enter_dungeon_btn.text = "Enter Dungeon"
 	_enter_dungeon_btn.visible = false
 	_enter_dungeon_btn.pressed.connect(_on_enter_dungeon_pressed)
+	_style_overlay_button(_enter_dungeon_btn)
 	$HexHUD.add_child(_enter_dungeon_btn)
 
 	# "Enter Settlement" button — child of HexHUD so it stays on screen.
@@ -193,6 +194,7 @@ func _ready() -> void:
 	_enter_settlement_btn.text = "Enter Settlement"
 	_enter_settlement_btn.visible = false
 	_enter_settlement_btn.pressed.connect(_on_enter_settlement_pressed)
+	_style_overlay_button(_enter_settlement_btn)
 	$HexHUD.add_child(_enter_settlement_btn)
 
 
@@ -200,31 +202,36 @@ func _process(delta: float) -> void:
 	if _camera == null or _map_data == null:
 		return
 
-	var pan_dir := Vector2.ZERO
-
-	# Arrow key panning
-	if Input.is_action_pressed("ui_left"):
-		pan_dir.x -= 1.0
-	if Input.is_action_pressed("ui_right"):
-		pan_dir.x += 1.0
-	if Input.is_action_pressed("ui_up"):
-		pan_dir.y -= 1.0
-	if Input.is_action_pressed("ui_down"):
-		pan_dir.y += 1.0
-
-	# Mouse-to-edge panning (only when window has focus)
+	# Hoist these; button-positioning below reuses them.
 	var vp_size := get_viewport().get_visible_rect().size
 	var mouse_pos := get_viewport().get_mouse_position()
-	if mouse_pos.x >= 0.0 and mouse_pos.x <= vp_size.x and \
-	   mouse_pos.y >= 0.0 and mouse_pos.y <= vp_size.y:
-		if mouse_pos.x < EDGE_MARGIN:
-			pan_dir.x -= 1.0
-		elif mouse_pos.x > vp_size.x - EDGE_MARGIN:
-			pan_dir.x += 1.0
-		if mouse_pos.y < EDGE_MARGIN:
-			pan_dir.y -= 1.0
-		elif mouse_pos.y > vp_size.y - EDGE_MARGIN:
-			pan_dir.y += 1.0
+	var pan_dir := Vector2.ZERO
+
+	# Arrow key / WASD panning.
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+		pan_dir.x -= 1.0
+	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+		pan_dir.x += 1.0
+	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+		pan_dir.y -= 1.0
+	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+		pan_dir.y += 1.0
+
+	# Mouse-to-edge panning — only when no keyboard key is active.
+	# If both accumulated into pan_dir simultaneously, a mouse cursor sitting
+	# on the right edge (+1 x) would silently cancel pressing A (-1 x),
+	# making A/D appear unreliable depending on cursor position.
+	if pan_dir == Vector2.ZERO:
+		if mouse_pos.x >= 0.0 and mouse_pos.x <= vp_size.x and \
+		   mouse_pos.y >= 0.0 and mouse_pos.y <= vp_size.y:
+			if mouse_pos.x < EDGE_MARGIN:
+				pan_dir.x -= 1.0
+			elif mouse_pos.x > vp_size.x - EDGE_MARGIN:
+				pan_dir.x += 1.0
+			if mouse_pos.y < EDGE_MARGIN:
+				pan_dir.y -= 1.0
+			elif mouse_pos.y > vp_size.y - EDGE_MARGIN:
+				pan_dir.y += 1.0
 
 	if pan_dir != Vector2.ZERO:
 		_camera.position += pan_dir.normalized() * PAN_SPEED * delta / _zoom_level
@@ -296,6 +303,11 @@ func _on_map_loaded(_map_id: String) -> void:
 func _on_visibility_updated() -> void:
 	_map_data = _controller.get_map()
 	_refresh_fog_layer()
+	# Landmark icons are gated by fog (HIDDEN hexes skip their icons), so any
+	# fog change can expose previously-invisible settlements/strongholds.
+	# Without this refresh, a settlement on a hex revealed mid-session never
+	# gets its icon until the next map_loaded.
+	_refresh_landmark_icons()
 
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
@@ -472,8 +484,17 @@ func _update_enter_settlement_button() -> void:
 
 func _on_enter_settlement_pressed() -> void:
 	var entrance: Dictionary = _enter_settlement_btn.get_meta("entrance_data")
-	var settlement_json: String = entrance.get("settlement_data", "")
-	var settlement_dict = JSON.parse_string(settlement_json)
+	# Phase 11D bridge: prefer the relational settlement_pois path when any
+	# rows exist for this entrance; fall back to the legacy JSON blob.
+	# SettlementExploreState performs the same gate, so the entry_pois set
+	# the player picks from here matches the one the state will load.
+	var entrance_id: String = String(entrance.get("id", ""))
+	var settlement_dict: Variant = null
+	if SettlementDictBuilder.has_relational_pois(entrance_id):
+		settlement_dict = SettlementDictBuilder.build_from_pois(entrance_id, entrance)
+	else:
+		var settlement_json: String = entrance.get("settlement_data", "")
+		settlement_dict = JSON.parse_string(settlement_json)
 	if settlement_dict == null:
 		return
 
@@ -506,6 +527,37 @@ func _on_enter_settlement_pressed() -> void:
 	_show_entry_exit_dialog(entrance, entry_pois)
 
 
+## Applies parchment-on-dark styling to buttons that float over the hex map.
+## The default button style is near-transparent; these buttons need a solid
+## light background so they're readable over fog-covered hexes.
+func _style_overlay_button(btn: Button) -> void:
+	var bg_normal := StyleBoxFlat.new()
+	bg_normal.bg_color = Color(0.90, 0.84, 0.74, 0.96)
+	bg_normal.border_color = Color(0.46, 0.33, 0.19, 1.0)
+	bg_normal.set_border_width_all(1)
+	bg_normal.corner_radius_top_left = 5
+	bg_normal.corner_radius_top_right = 5
+	bg_normal.corner_radius_bottom_left = 5
+	bg_normal.corner_radius_bottom_right = 5
+	bg_normal.content_margin_left = 12.0
+	bg_normal.content_margin_right = 12.0
+	bg_normal.content_margin_top = 6.0
+	bg_normal.content_margin_bottom = 6.0
+
+	var bg_hover := bg_normal.duplicate() as StyleBoxFlat
+	bg_hover.bg_color = Color(0.82, 0.76, 0.65, 0.98)
+
+	var bg_pressed := bg_normal.duplicate() as StyleBoxFlat
+	bg_pressed.bg_color = Color(0.70, 0.64, 0.54, 1.0)
+
+	btn.add_theme_stylebox_override("normal", bg_normal)
+	btn.add_theme_stylebox_override("hover", bg_hover)
+	btn.add_theme_stylebox_override("pressed", bg_pressed)
+	btn.add_theme_color_override("font_color", Color(0.09, 0.06, 0.03, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.09, 0.06, 0.03, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(0.09, 0.06, 0.03, 1.0))
+
+
 ## Builds and shows a modal dialog listing entry/exit PoIs to choose from.
 func _show_entry_exit_dialog(entrance: Dictionary, entry_pois: Array) -> void:
 	if _gate_dialog != null and is_instance_valid(_gate_dialog):
@@ -526,6 +578,9 @@ func _show_entry_exit_dialog(entrance: Dictionary, entry_pois: Array) -> void:
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	panel.custom_minimum_size = Vector2(320, 0)
+	# Apply vellum chrome so the dialog is readable against the dark hex map
+	# (without this the panel has no background, leaving dark text on dark map).
+	UiSurfaceStyles.apply_framed_window_chrome(panel)
 	_gate_dialog.add_child(panel)
 
 	var vbox := VBoxContainer.new()

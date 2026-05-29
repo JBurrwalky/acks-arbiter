@@ -318,10 +318,10 @@ func _render_ledger() -> void:
 		var sign_str := "+" if cp_amount >= 0 else "-"
 		_ledger_list.add_item("Day %d  %s/%s  %s%s  %s" % [
 			int(entry.get("calendar_day", 0)),
-			String(entry.get("category", "")),
-			String(entry.get("subcategory", "")),
+			str(entry.get("category", "")),
+			str(entry.get("subcategory", "")),
 			sign_str, Currency.format_cost(abs(cp_amount)),
-			String(entry.get("description", "")),
+			str(entry.get("description", "")),
 		])
 
 

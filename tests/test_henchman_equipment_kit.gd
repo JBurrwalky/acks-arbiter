@@ -232,6 +232,6 @@ func test_no_kit_references_missing_item_keys() -> void:
 
 func _find_item(inventory: Array, item_key: String) -> Dictionary:
 	for row in inventory:
-		if String(row.get("item_key", "")) == item_key:
+		if str(row.get("item_key", "")) == item_key:
 			return row
 	return {}

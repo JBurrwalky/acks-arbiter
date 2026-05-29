@@ -276,7 +276,7 @@ func _render_eligible_list() -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var entry: Dictionary = _proficiency_registry.get_proficiency(key)
-		btn.tooltip_text = String(entry.get("description", ""))
+		btn.tooltip_text = str(entry.get("description", ""))
 		btn.text = _format_eligible_label(key, slot_type)
 		btn.disabled = _is_eligible_disabled(key, slot_type, slots_full)
 		btn.pressed.connect(_on_eligible_pressed.bind(key, slot_type))
@@ -593,4 +593,4 @@ func _spec_picks_for_key(key: String, slot_type: String, exclude_index: int) -> 
 
 func _display_name(prof_key: String) -> String:
 	var entry: Dictionary = _proficiency_registry.get_proficiency(prof_key)
-	return String(entry.get("proficiency_name", prof_key.capitalize()))
+	return str(entry.get("proficiency_name", prof_key.capitalize()))

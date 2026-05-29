@@ -4,7 +4,7 @@
 **Status:** Draft
 **Depends on ACKS rules:** `acore_adventures_and_encounters.xml` (movement costs by terrain), `acore-monster-stocking-rules.xml` (wilderness encounter tables by terrain), `acore-setting-construction-rules.xml` (territory classification, population density), gdd-weather-generation.md
 **Modifiable by Claude Code:** Yes — the tag system, generation algorithms, and weighting formulas are all engineering decisions.
-**Last updated:** 2026-05-11
+**Last updated:** 2026-05-27
 
 ---
 
@@ -319,6 +319,12 @@ When natural terrain is selected (steps 5–6 above), the hex may have multiple 
 | Wilderness | 0% — never use Inhabited |
 
 When a borderlands hex rolls to use natural terrain (the 50% failure case), the natural terrain selection in §4.2 applies normally.
+
+**Intentional divergence from RAW (Borderlands blend).** The 50% Borderlands rule is project-designed and does not derive from any ACKS rule. RAW (`ax_domain_level_encounters.xml §classification_rules.borderlands`) places borderlands domains on the natural terrain encounter column straight, distinguishing borderlands from wilderness by domain-level encounter *frequency* (weekly vs. daily) rather than by table selection. The Arbiter system diverges deliberately:
+
+- **Design intent — borderlands feel.** A borderlands hex sits between settled and unsettled land; merchants, patrols, scouts, refugees, and tax-collectors plausibly traverse it. A pure terrain column under-represents Men encounters relative to the design intent, returning the same humanoid/animal/dragon mix the deep wilderness would.
+- **Bounded mathematical effect.** For a Woods borderlands hex the blend shifts Men from 12.5% (RAW) to 25%, Animal from 25% to 18.75%, and Unusual from 12.5% to 6.25%; other creature types are unchanged. The shift is meaningful but well short of a full Inhabited bias.
+- **Status: keep.** The blend is deliberate, not drift. If borderlands play-tests as too civilized, tune the 50/50 ratio rather than reverting to RAW.
 
 ### 4.4 River Encounters
 

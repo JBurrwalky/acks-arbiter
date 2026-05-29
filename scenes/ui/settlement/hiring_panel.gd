@@ -156,7 +156,7 @@ func _add_candidate_row(candidate: Dictionary) -> void:
 		name,
 		class_id.capitalize() if not class_id.is_empty() else "?",
 		lvl,
-		HenchmanTables.monthly_wage(lvl),
+		HenchmanTables.monthly_wage(lvl) / 100,  # wage stored in cp; display in gp
 	]
 	detail.add_child(header)
 

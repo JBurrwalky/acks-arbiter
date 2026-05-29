@@ -95,7 +95,7 @@ func _render_summary() -> void:
 		return
 	var counts: Dictionary = {}
 	for row: Dictionary in _all_rows:
-		var t: String = String(row.get("event_type", ""))
+		var t: String = str(row.get("event_type", ""))
 		counts[t] = int(counts.get(t, 0)) + 1
 	var by_type: PackedStringArray = PackedStringArray()
 	for t in counts.keys():
@@ -202,17 +202,17 @@ func _build_entry_row(row: Dictionary) -> Control:
 	day_label.custom_minimum_size = Vector2(80, 0)
 	hb.add_child(day_label)
 	var type_label := Label.new()
-	type_label.text = String(row.get("event_type", ""))
+	type_label.text = str(row.get("event_type", ""))
 	type_label.modulate = Color(0.85, 0.75, 0.55)
 	type_label.custom_minimum_size = Vector2(180, 0)
 	hb.add_child(type_label)
 	var summary_label := Label.new()
-	summary_label.text = String(row.get("summary", ""))
+	summary_label.text = str(row.get("summary", ""))
 	summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hb.add_child(summary_label)
 	var inspect_btn := Button.new()
 	inspect_btn.text = "Inspect"
-	var entry_id: String = String(row.get("id", ""))
+	var entry_id: String = str(row.get("id", ""))
 	inspect_btn.pressed.connect(_on_inspect_pressed.bind(entry_id))
 	hb.add_child(inspect_btn)
 	return hb
@@ -241,8 +241,8 @@ func _on_inspect_pressed(entry_id: String) -> void:
 		return
 	var text: String = "[b]Day %d — %s[/b]\n\n%s\n" % [
 		int(row.get("calendar_day", 0)),
-		String(row.get("event_type", "")),
-		String(row.get("summary", "")),
+		str(row.get("event_type", "")),
+		str(row.get("summary", "")),
 	]
 	var details: Dictionary = row.get("full_details", {})
 	if not details.is_empty():
@@ -336,10 +336,10 @@ func _filter_rows(rows: Array) -> Array:
 	var out: Array = []
 	for row: Dictionary in rows:
 		if _event_type_filter != _FILTER_ALL:
-			if String(row.get("event_type", "")) != _event_type_filter:
+			if str(row.get("event_type", "")) != _event_type_filter:
 				continue
 		if not needle.is_empty():
-			if not String(row.get("summary", "")).to_lower().contains(needle):
+			if not str(row.get("summary", "")).to_lower().contains(needle):
 				continue
 		out.append(row)
 	return out

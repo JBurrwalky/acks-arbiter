@@ -82,22 +82,22 @@ func _build_entry_row(entry: Dictionary) -> Control:
 	hbox.add_child(seq)
 
 	var phase := Label.new()
-	phase.text = "T%d %s" % [int(entry.get("turn_number", 0)), String(entry.get("phase", ""))]
+	phase.text = "T%d %s" % [int(entry.get("turn_number", 0)), str(entry.get("phase", ""))]
 	phase.custom_minimum_size = Vector2(110, 0)
 	phase.modulate = Color(0.8, 0.8, 0.8)
 	hbox.add_child(phase)
 
 	var event_label := Label.new()
-	event_label.text = String(entry.get("event_type", ""))
+	event_label.text = str(entry.get("event_type", ""))
 	event_label.custom_minimum_size = Vector2(220, 0)
-	event_label.modulate = _event_color(String(entry.get("event_type", "")))
+	event_label.modulate = _event_color(str(entry.get("event_type", "")))
 	hbox.add_child(event_label)
 
 	var math_btn := Button.new()
 	math_btn.text = "Inspect math"
-	math_btn.tooltip_text = _format_payload(String(entry.get("payload_json", "{}")))
+	math_btn.tooltip_text = _format_payload(str(entry.get("payload_json", "{}")))
 	math_btn.flat = true
-	math_btn.pressed.connect(_on_inspect_pressed.bind(String(entry.get("payload_json", "{}"))))
+	math_btn.pressed.connect(_on_inspect_pressed.bind(str(entry.get("payload_json", "{}"))))
 	hbox.add_child(math_btn)
 
 	return hbox

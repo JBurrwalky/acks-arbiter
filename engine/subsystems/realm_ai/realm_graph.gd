@@ -194,7 +194,7 @@ static func muster_delay_period_for_apex(apex_id: String) -> String:
 	var row: Dictionary = _get_domain_row(apex_id)
 	if row.is_empty():
 		return "Week"
-	var title: String = String(row.get("realm_title", "Baron"))
+	var title: String = str(row.get("realm_title", "Baron"))
 	return _TITLE_MUSTER_PERIOD.get(title, "Week")
 
 

@@ -340,7 +340,7 @@ func _build_caught_row(member_cid: String, row: Dictionary) -> VBoxContainer:
 	var fine_cp: int = int(row.get("fine_cp", 0))
 	label.text = "%s — %s — %d days awaiting trial — fine %s — attorney rank %d — bribe %s" % [
 		member_cid.substr(0, 8),
-		String(row.get("crime_type", "")),
+		str(row.get("crime_type", "")),
 		time_days,
 		Currency.format_cost(fine_cp),
 		int(row.get("attorney_rank", 0)),
@@ -350,7 +350,7 @@ func _build_caught_row(member_cid: String, row: Dictionary) -> VBoxContainer:
 	outer.add_child(label)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 4)
-	var caught_id := String(row.get("id", ""))
+	var caught_id := str(row.get("id", ""))
 	var verdict_set: bool = row.get("verdict") != null
 	# 2026-05-19 bucket-A item #9: per-button proficiency / role preflights.
 	# Bribe requires Bribery proficiency on the boss (RAW §bribe_magistrate

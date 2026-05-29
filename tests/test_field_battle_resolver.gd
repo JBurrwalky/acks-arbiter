@@ -102,7 +102,7 @@ func test_battle_log_contains_canonical_events() -> void:
 	# Confirm canonical events fired at least once.
 	var event_types: Array = []
 	for entry in log_entries:
-		event_types.append(String(entry.get("event_type", "")))
+		event_types.append(str(entry.get("event_type", "")))
 	check(event_types.has("battle_started"), "battle_started logged")
 	check(event_types.has("surprise_resolved"), "surprise_resolved logged")
 	check(event_types.has("terrain_advantage_resolved"), "terrain_advantage_resolved logged")

@@ -489,7 +489,9 @@ func _refresh_composition_members() -> void:
 	avail_header.add_theme_font_size_override("font_size", 12)
 	_composition_members_vbox.add_child(avail_header)
 
-	var available := CampaignRepository.list_unpartied_characters(GameState.campaign_id)
+	# "pc" only — world NPCs (rulers, bandits, encounter NPCs) and henchmen are
+	# unpartied but are NOT player-recruitable here. See build_log.md 2026-05-27.
+	var available := CampaignRepository.list_unpartied_characters(GameState.campaign_id, "pc")
 	if available.is_empty():
 		var none_lbl := Label.new()
 		none_lbl.text = "No available characters."
@@ -509,6 +511,10 @@ func _make_member_row(cd: CharacterData, is_solo: bool) -> HBoxContainer:
 	name_btn.text = "%s (L%d %s)" % [cd.name, cd.level, cd.character_class.capitalize()]
 	name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_btn.add_theme_font_size_override("font_size", 11)
+	# LinkButton is not covered by the project theme → defaults to light text,
+	# invisible on the light notebook page. Force dark. See docs/coding_conventions.md §6.10.
+	name_btn.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+	name_btn.add_theme_color_override("font_hover_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 	name_btn.pressed.connect(_on_member_name_clicked.bind(cd.id))
 	row.add_child(name_btn)
 

@@ -249,7 +249,7 @@ func _refresh_all_cards() -> void:
 	var active: Array = CampaignRepository.list_active_activity_states_for_character(_ruler_id)
 	var by_def: Dictionary = {}
 	for row: Dictionary in active:
-		by_def[String(row.get("activity_def_id", ""))] = row
+		by_def[str(row.get("activity_def_id", ""))] = row
 	for id: String in _cards.keys():
 		_refresh_card(id, by_def.get(id, {}))
 
@@ -313,12 +313,12 @@ func _on_launch_pressed(activity_def_id: String) -> void:
 func _on_cancel_pressed(activity_def_id: String) -> void:
 	var rows: Array = CampaignRepository.list_active_activity_states_for_character(_ruler_id)
 	for row: Dictionary in rows:
-		if String(row.get("activity_def_id", "")) != activity_def_id:
+		if str(row.get("activity_def_id", "")) != activity_def_id:
 			continue
 		var executor: ActivityTimeCostExecutor = _get_activity_executor()
 		if executor == null:
 			return
-		executor.abandon(String(row.get("id", "")), "player_cancel", _get_scheduler())
+		executor.abandon(str(row.get("id", "")), "player_cancel", _get_scheduler())
 		return
 
 

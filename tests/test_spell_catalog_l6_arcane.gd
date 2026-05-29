@@ -425,7 +425,7 @@ func test_reincarnate_records_outcome() -> void:
 	var entry: Dictionary = pt.get(corpse.id, {})
 	check(int(entry.get("reincarnation_roll", 0)) == 5,
 		"reincarnation_roll=5 from forced d10")
-	check(String(entry.get("reincarnation_alignment_column", "")) == "lawful",
+	check(str(entry.get("reincarnation_alignment_column", "")) == "lawful",
 		"alignment column=lawful from corpse")
 
 

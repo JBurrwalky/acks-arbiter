@@ -307,7 +307,7 @@ func test_apply_disease_marks_units_with_failed_save() -> void:
 	CampaignRepository.db.query_with_bindings("SELECT is_diseased, disease_type FROM troop_units WHERE id = ?", [u1])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
 	check(int(row.get("is_diseased", 0)) == 1, "unit is_diseased=1")
-	check(String(row.get("disease_type", "")) == "bilious_fever", "disease_type set, got: %s" % row.get("disease_type", ""))
+	check(str(row.get("disease_type", "")) == "bilious_fever", "disease_type set, got: %s" % row.get("disease_type", ""))
 
 
 func test_apply_disease_safe_units_when_save_succeeds() -> void:
@@ -803,7 +803,7 @@ func test_p1_save_vs_death_seeded_by_tier() -> void:
 	var rows: Array = CampaignRepository.db.query_result.duplicate()
 	check(rows.size() == 3, "expected 3 troop rows, got: %d" % rows.size())
 	for row in rows:
-		var t: String = String(row.get("tier", ""))
+		var t: String = str(row.get("tier", ""))
 		var save: int = int(row.get("save_vs_death", 0))
 		match t:
 			"untrained":

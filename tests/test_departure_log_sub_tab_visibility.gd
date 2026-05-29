@@ -29,8 +29,8 @@ func test_sub_tab_registered_as_real_not_placeholder() -> void:
 			entry = e
 			break
 	check(not entry.is_empty(), "departure_log entry exists in SUB_TABS")
-	check(String(entry.get("script", "")) == "departure_log",
-		"script kind is 'departure_log' (not 'placeholder'), got %s" % String(entry.get("script", "")))
+	check(str(entry.get("script", "")) == "departure_log",
+		"script kind is 'departure_log' (not 'placeholder'), got %s" % str(entry.get("script", "")))
 	check(bool(entry.get("phase_2", false)),
 		"phase_2=true (sub-tab is live, not deferred)")
 

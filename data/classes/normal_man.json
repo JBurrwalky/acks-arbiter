@@ -8,7 +8,7 @@
   "minimum_abilities": {},
   "alignment_restriction": "",
   "hit_die": "1d4",
-  "hp_after_max_hd": 0,
+  "hp_after_max_hd": "+0",
   "max_hd_count": 1,
   "min_level": 0,
   "max_level": 1,

@@ -181,6 +181,13 @@ CREATE TABLE IF NOT EXISTS party_state (
     water_units INTEGER NOT NULL DEFAULT 0,
     ration_units INTEGER NOT NULL DEFAULT 0,
     last_day_tick_round INTEGER NOT NULL DEFAULT -1,
+    -- Migration 131: camp state + per-day encounter gate (gdd-realtime-scheduler.md §4.3).
+    is_camping INTEGER NOT NULL DEFAULT 0 CHECK(is_camping IN (0, 1)),
+    camp_start_round INTEGER NOT NULL DEFAULT -1,
+    camp_end_round INTEGER NOT NULL DEFAULT -1,
+    camp_watch_assignments_json TEXT NOT NULL DEFAULT '[]',
+    camp_armed_sleepers_json TEXT NOT NULL DEFAULT '[]',
+    last_encounter_trigger_day INTEGER NOT NULL DEFAULT -1,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -2733,8 +2740,12 @@ CREATE TABLE IF NOT EXISTS crossbreed_instances (
         CHECK(location_kind IN ('stronghold', 'with_owner', 'wilderness_hex', 'dungeon_room', 'laboratory', 'other')),
     location_ref                TEXT    NOT NULL DEFAULT '',
     laboratory_id               TEXT REFERENCES laboratories(id),
+    -- Migration 133: enum corrected to the RAW Monster Reaction tiers
+    -- (acore_adventures_and_encounters.xml:936-958); migration 096 erroneously
+    -- had ('...','friendly','helpful') -- 'helpful' is the Friendly tier's
+    -- descriptor, not a tier, and 'indifferent' is the real 9-11 tier.
     initial_reaction            TEXT
-        CHECK(initial_reaction IS NULL OR initial_reaction IN ('hostile', 'unfriendly', 'neutral', 'friendly', 'helpful')),
+        CHECK(initial_reaction IS NULL OR initial_reaction IN ('hostile', 'unfriendly', 'neutral', 'indifferent', 'friendly')),
     status                      TEXT    NOT NULL DEFAULT 'alive'
         CHECK(status IN ('alive', 'escaped', 'killed', 'controlled')),
     gp_cost_total               INTEGER NOT NULL DEFAULT 0,
@@ -3182,3 +3193,131 @@ CREATE INDEX IF NOT EXISTS idx_characters_home_poi
 CREATE INDEX IF NOT EXISTS idx_characters_npc_role
     ON characters(npc_role)
     WHERE npc_role <> 'player';
+
+-- ===========================================================================
+-- Migration 132: Random Dungeon Generator V1 persistence (DG-V1.C).
+-- Six self-contained tables (no FK to `dungeons`); dungeon_id is the external
+-- linkage. See db/migrations/132_dungeon_generator_v1.sql for the full rationale.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS dungeon_floors (
+    id                      TEXT    PRIMARY KEY,
+    dungeon_id              TEXT    NOT NULL,
+    floor_index             INTEGER NOT NULL,
+    floor_tier              INTEGER NOT NULL DEFAULT 1,
+    is_entrance_floor       INTEGER NOT NULL DEFAULT 0 CHECK(is_entrance_floor IN (0, 1)),
+    dungeon_type            TEXT    NOT NULL DEFAULT 'wizards_dungeon',
+    dungeon_size            TEXT    NOT NULL DEFAULT 'medium',
+    structure_type          TEXT    NOT NULL DEFAULT 'subterranean',
+    grid_width              INTEGER NOT NULL,
+    grid_height             INTEGER NOT NULL,
+    entrance_x              INTEGER NOT NULL DEFAULT -1,
+    entrance_y              INTEGER NOT NULL DEFAULT -1,
+    generation_seed         INTEGER NOT NULL DEFAULT 0,
+    total_monster_xp        INTEGER NOT NULL DEFAULT 0,
+    total_treasure_gp_value INTEGER NOT NULL DEFAULT 0,
+    xp_to_gp_ratio          REAL    NOT NULL DEFAULT 0.0,
+    encounter_table_row     INTEGER NOT NULL DEFAULT 0,
+    cells_json              TEXT    NOT NULL DEFAULT '[]',
+    stairs_json             TEXT    NOT NULL DEFAULT '[]',
+    created_at              TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_floors_dungeon ON dungeon_floors(dungeon_id);
+
+CREATE TABLE IF NOT EXISTS dungeon_rooms (
+    id                TEXT    PRIMARY KEY,
+    dungeon_id        TEXT    NOT NULL,
+    floor_id          TEXT    NOT NULL,
+    room_id_in_floor  INTEGER NOT NULL,
+    bounds_x          INTEGER NOT NULL,
+    bounds_y          INTEGER NOT NULL,
+    bounds_w          INTEGER NOT NULL,
+    bounds_h          INTEGER NOT NULL,
+    area_sqft         INTEGER NOT NULL DEFAULT 0,
+    center_x          INTEGER NOT NULL DEFAULT 0,
+    center_y          INTEGER NOT NULL DEFAULT 0,
+    original_purpose  TEXT    NOT NULL DEFAULT '',
+    current_purpose   TEXT    NOT NULL DEFAULT '',
+    contents_kind     TEXT    NOT NULL DEFAULT 'empty'
+        CHECK(contents_kind IN ('empty', 'monster', 'monster_lair', 'trap_placeholder', 'unique_placeholder')),
+    monster_group_id  TEXT,
+    treasure_hoard_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_dungeon ON dungeon_rooms(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_floor ON dungeon_rooms(floor_id);
+CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_floor_roomid ON dungeon_rooms(floor_id, room_id_in_floor);
+
+CREATE TABLE IF NOT EXISTS dungeon_doors (
+    id                     TEXT    PRIMARY KEY,
+    dungeon_id             TEXT    NOT NULL,
+    floor_id               TEXT    NOT NULL,
+    position_x             INTEGER NOT NULL,
+    position_y             INTEGER NOT NULL,
+    type                   TEXT    NOT NULL
+        CHECK(type IN ('arch', 'unlocked', 'locked', 'trapped', 'portcullis')),
+    is_secret              INTEGER NOT NULL DEFAULT 0 CHECK(is_secret IN (0, 1)),
+    door_state             TEXT    NOT NULL DEFAULT '',
+    door_material          TEXT    NOT NULL DEFAULT 'wood_standard'
+        CHECK(door_material IN ('', 'curtain_cloth', 'curtain_leather', 'wood_standard', 'wood_thick', 'stone', 'metal')),
+    is_evil                INTEGER NOT NULL DEFAULT 0 CHECK(is_evil IN (0, 1)),
+    connects_room_ids      TEXT    NOT NULL DEFAULT '[]',
+    required_key_id        TEXT,
+    wired_lever_position_x INTEGER NOT NULL DEFAULT -1,
+    wired_lever_position_y INTEGER NOT NULL DEFAULT -1
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_doors_dungeon ON dungeon_doors(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_dungeon_doors_floor ON dungeon_doors(floor_id);
+
+CREATE TABLE IF NOT EXISTS monster_groups (
+    id                   TEXT    PRIMARY KEY,
+    dungeon_id           TEXT    NOT NULL,
+    floor_id             TEXT    NOT NULL,
+    room_id              TEXT    NOT NULL,
+    monster_name         TEXT    NOT NULL DEFAULT '',
+    monster_xp_each      INTEGER NOT NULL DEFAULT 0,
+    number_appearing     INTEGER NOT NULL DEFAULT 0,
+    hd                   TEXT    NOT NULL DEFAULT '',
+    associated_creatures TEXT    NOT NULL DEFAULT '[]',
+    is_lair              INTEGER NOT NULL DEFAULT 0 CHECK(is_lair IN (0, 1)),
+    morale               INTEGER NOT NULL DEFAULT 0,
+    alignment            TEXT    NOT NULL DEFAULT '',
+    treasure_type_letter TEXT,
+    initial_inventory    TEXT    NOT NULL DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS idx_monster_groups_dungeon ON monster_groups(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_monster_groups_floor ON monster_groups(floor_id);
+
+CREATE TABLE IF NOT EXISTS treasure_hoards (
+    id                   TEXT    PRIMARY KEY,
+    dungeon_id           TEXT    NOT NULL,
+    floor_id             TEXT    NOT NULL,
+    room_id              TEXT    NOT NULL,
+    source               TEXT    NOT NULL
+        CHECK(source IN ('lair', 'unprotected_empty', 'unprotected_trap_placeholder', 'unprotected_unique_placeholder')),
+    treasure_type_letter TEXT,
+    copper               INTEGER NOT NULL DEFAULT 0,
+    silver               INTEGER NOT NULL DEFAULT 0,
+    electrum             INTEGER NOT NULL DEFAULT 0,
+    gold                 INTEGER NOT NULL DEFAULT 0,
+    platinum             INTEGER NOT NULL DEFAULT 0,
+    gems                 TEXT    NOT NULL DEFAULT '[]',
+    jewelry              TEXT    NOT NULL DEFAULT '[]',
+    magic_items          TEXT    NOT NULL DEFAULT '[]',
+    total_gp_value       INTEGER NOT NULL DEFAULT 0,
+    is_hidden            INTEGER NOT NULL DEFAULT 0 CHECK(is_hidden IN (0, 1))
+);
+CREATE INDEX IF NOT EXISTS idx_treasure_hoards_dungeon ON treasure_hoards(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_treasure_hoards_floor ON treasure_hoards(floor_id);
+
+CREATE TABLE IF NOT EXISTS key_items (
+    id                    TEXT    PRIMARY KEY,
+    dungeon_id            TEXT    NOT NULL,
+    opens_door_floor_id   TEXT    NOT NULL,
+    opens_door_position_x INTEGER NOT NULL,
+    opens_door_position_y INTEGER NOT NULL,
+    placed_in             TEXT    NOT NULL
+        CHECK(placed_in IN ('monster_group_inventory', 'treasure_hoard', 'loose_in_room')),
+    placed_in_room_id     TEXT,
+    placed_on_floor_id    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_key_items_dungeon ON key_items(dungeon_id);

@@ -253,8 +253,8 @@ func test_striking_apply_modifier_to_item_damage_dice() -> void:
 	for s in result.effects_applied:
 		var per_target: Dictionary = s.get("per_target", {})
 		var entry: Dictionary = per_target.get("item_axe", {})
-		if String(entry.get("item_attribute", "")) == "damage_bonus_dice":
-			check(String(entry.get("value_dice", "")) == "1d6",
+		if str(entry.get("item_attribute", "")) == "damage_bonus_dice":
+			check(str(entry.get("value_dice", "")) == "1d6",
 				"damage_bonus_dice='1d6' per RAW")
 			saw_dice = true
 	check(saw_dice, "Striking wrote damage_bonus_dice modifier to item")
@@ -272,7 +272,7 @@ func test_striking_strikes_as_magical() -> void:
 	for s in result.effects_applied:
 		var per_target: Dictionary = s.get("per_target", {})
 		var entry: Dictionary = per_target.get("item_axe", {})
-		if String(entry.get("item_attribute", "")) == "strikes_as_magical":
+		if str(entry.get("item_attribute", "")) == "strikes_as_magical":
 			saw_magical = true
 	check(saw_magical, "Striking writes strikes_as_magical modifier on item")
 
@@ -374,11 +374,11 @@ func test_apply_modifier_to_item_records_contract() -> void:
 	var per_target: Dictionary = outcome.get("per_target", {})
 	var entry: Dictionary = per_target.get("item_42", {})
 	check(bool(entry.get("applied", false)), "contract recorded for item_42")
-	check(String(entry.get("item_attribute", "")) == "damage_bonus_dice",
+	check(str(entry.get("item_attribute", "")) == "damage_bonus_dice",
 		"item_attribute carried through")
-	check(String(entry.get("value_dice", "")) == "1d6",
+	check(str(entry.get("value_dice", "")) == "1d6",
 		"value_dice carried through")
-	check(String(entry.get("stacking_group", "")) == "striking",
+	check(str(entry.get("stacking_group", "")) == "striking",
 		"stacking_group carried through")
 
 

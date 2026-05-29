@@ -33,17 +33,25 @@ func enter(runner, context: Dictionary) -> void:
 	var entrance: Dictionary = context.get("entrance", {})
 	var entry_poi_id: String = context.get("entry_poi_id", "")
 
-	var settlement_json: String = entrance.get("settlement_data", "")
-	if settlement_json.is_empty():
-		push_error("SettlementExploreState: entrance has empty settlement_data")
-		runner.transition_to_state("wilderness")
-		return
-
-	var settlement_dict = JSON.parse_string(settlement_json)
-	if settlement_dict == null:
-		push_error("SettlementExploreState: JSON parse failed")
-		runner.transition_to_state("wilderness")
-		return
+	# Phase 11D bridge: if any settlement_pois rows exist for this entrance,
+	# synthesize the legacy-shape dict from the relational data via the
+	# bridge. Otherwise fall back to parsing settlement_entrances.settlement_data
+	# (legacy hand-authored Ashford Vale + any campaigns that predate the stocker).
+	var entrance_id: String = String(entrance.get("id", ""))
+	var settlement_dict: Variant = null
+	if SettlementDictBuilder.has_relational_pois(entrance_id):
+		settlement_dict = SettlementDictBuilder.build_from_pois(entrance_id, entrance)
+	else:
+		var settlement_json: String = entrance.get("settlement_data", "")
+		if settlement_json.is_empty():
+			push_error("SettlementExploreState: entrance has empty settlement_data and no settlement_pois rows")
+			runner.transition_to_state("wilderness")
+			return
+		settlement_dict = JSON.parse_string(settlement_json)
+		if settlement_dict == null:
+			push_error("SettlementExploreState: JSON parse failed")
+			runner.transition_to_state("wilderness")
+			return
 
 	# Create the SettlementContext (still typed as SettlementMapController for
 	# class-name stability — see settlement_map_controller.gd header).
@@ -297,8 +305,7 @@ func _on_shop_requested(poi: Dictionary) -> void:
 	_settlement_hud.add_child(panel)
 	panel.closed.connect(func():
 		panel.queue_free()
-		if _activity_panel != null and not _controller.get_current_poi().is_empty():
-			_activity_panel.show_for_poi(_controller.get_current_poi())
+		_restore_navigation_ui()
 	)
 
 
@@ -348,8 +355,7 @@ func _on_hiring_requested(poi: Dictionary) -> void:
 	_settlement_hud.add_child(panel)
 	panel.closed.connect(func():
 		panel.queue_free()
-		if _activity_panel != null and not _controller.get_current_poi().is_empty():
-			_activity_panel.show_for_poi(_controller.get_current_poi())
+		_restore_navigation_ui()
 	)
 	panel.hire_completed.connect(func(_character_id: String):
 		EventBus.notification_requested.emit({
@@ -451,6 +457,24 @@ func _on_arrival(data: Dictionary) -> void:
 # Helpers
 # ---------------------------------------------------------------------------
 
+## Re-surfaces the main settlement menu after a modal sub-panel closes
+## (shop, hiring, mercantile). Called from all sub-panel close/cancel
+## callbacks so the player always has a navigation path out.
+##
+## The activity panel is intentionally NOT re-shown here. Showing it on top
+## of the menu would leave the player seeing the same shop/POI activities
+## they just left (blocking the menu behind it). After closing a sub-panel
+## the player wants to navigate — they get the menu directly and can re-click
+## their current PoI if they want the activity view again.
+func _restore_navigation_ui() -> void:
+	if _menu != null and _controller != null:
+		_menu.update_current_poi(_controller.get_current_poi_id())
+		_menu.visible = true
+	# Hide the activity panel explicitly so it doesn't occlude the menu.
+	if _activity_panel != null:
+		_activity_panel.visible = false
+
+
 func _is_nighttime() -> bool:
 	if _runner == null:
 		return false
@@ -506,10 +530,8 @@ func _on_mercantile_requested(activity_id: String, _poi: Dictionary) -> void:
 	picker.setup(activity_id, _settlement_id, party_id, character_id)
 	picker.launch_requested.connect(_on_mercantile_launch_requested)
 	picker.cancelled.connect(func() -> void:
-		# Restore the activity panel on cancel — same UX as shop/hiring close.
-		if _activity_panel != null and _controller != null \
-				and not _controller.get_current_poi().is_empty():
-			_activity_panel.show_for_poi(_controller.get_current_poi()))
+		picker.queue_free()
+		_restore_navigation_ui())
 
 	# Hide the activity panel while the picker is in front (mirrors shop/hire).
 	if _activity_panel != null:
@@ -548,9 +570,7 @@ func _on_mercantile_launch_requested(
 				"title": "Cannot Solicit",
 				"body": "Solicit failed: %s" % String(prep.get("error", "?")),
 			})
-			if _activity_panel != null and _controller != null \
-					and not _controller.get_current_poi().is_empty():
-				_activity_panel.show_for_poi(_controller.get_current_poi())
+			_restore_navigation_ui()
 			return
 		# Merge prepare_launch's params into the picker's params (picker passes
 		# {} since solicit's picker has no fields).
@@ -568,10 +588,8 @@ func _on_mercantile_launch_requested(
 			"title": "Activity Launch Failed",
 			"body": "Could not launch %s: %s" % [activity_def_id, String(result.get("error", "?"))],
 		})
-	# Restore the activity panel after the launch.
-	if _activity_panel != null and _controller != null \
-			and not _controller.get_current_poi().is_empty():
-		_activity_panel.show_for_poi(_controller.get_current_poi())
+	# Restore the full navigation UI after the launch (success or failure).
+	_restore_navigation_ui()
 
 
 func _notify_visit_state_entered() -> void:

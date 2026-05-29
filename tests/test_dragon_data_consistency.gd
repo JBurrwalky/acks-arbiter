@@ -79,7 +79,7 @@ func _load_data() -> void:
 		_catalog = parsed
 	for entry in _catalog:
 		if entry is Dictionary:
-			_by_id[String(entry.get("id", ""))] = entry
+			_by_id[str(entry.get("id", ""))] = entry
 
 	var f2 := FileAccess.open("res://data/monsters/dragon_types.json", FileAccess.READ)
 	if f2 == null:

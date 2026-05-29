@@ -64,7 +64,7 @@ const _CAUGHT_UPDATE_FIELDS := [
 # ===========================================================================
 
 static func create_syndicate(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -75,13 +75,13 @@ static func create_syndicate(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("boss_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("boss_character_id", "")),
 		_nullable_str(data.get("hideout_stronghold_id", null)),
 		_nullable_str(data.get("base_settlement_entrance_id", null)),
 		int(data.get("syndicate_size_max", 0)),
 		int(data.get("current_size", 0)),
-		String(data.get("status", "active")),
+		str(data.get("status", "active")),
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
 		push_error("SyndicateRepository.create_syndicate failed: %s" % data)
@@ -134,7 +134,7 @@ static func update_syndicate(id: String, fields: Dictionary) -> bool:
 # ===========================================================================
 
 static func create_member(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -145,11 +145,11 @@ static func create_member(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("syndicate_id", "")),
+		str(data.get("syndicate_id", "")),
 		_nullable_str(data.get("character_id_if_named", null)),
 		int(data.get("level", 1)),
-		String(data.get("follower_kind", "thief")),
-		String(data.get("status", "active")),
+		str(data.get("follower_kind", "thief")),
+		str(data.get("status", "active")),
 		1 if bool(data.get("hijink_eligible", true)) else 0,
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
@@ -193,7 +193,7 @@ static func count_members_by_status(syndicate_id: String) -> Dictionary:
 		return {}
 	var out: Dictionary = {}
 	for row: Dictionary in CampaignRepository.db.query_result:
-		out[String(row.get("status", ""))] = int(row.get("n", 0))
+		out[str(row.get("status", ""))] = int(row.get("n", 0))
 	return out
 
 
@@ -206,7 +206,7 @@ static func update_member(id: String, fields: Dictionary) -> bool:
 # ===========================================================================
 
 static func create_hijink(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -219,18 +219,18 @@ static func create_hijink(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("syndicate_id", "")),
+		str(data.get("syndicate_id", "")),
 		_nullable_str(data.get("syndicate_member_id", null)),
-		String(data.get("boss_character_id", "")),
+		str(data.get("boss_character_id", "")),
 		_nullable_str(data.get("hideout_id", null)),
-		String(data.get("hijink_kind", "")),
-		String(data.get("planning_state", "unplanned")),
+		str(data.get("hijink_kind", "")),
+		str(data.get("planning_state", "unplanned")),
 		int(data.get("planning_days_required", 0)),
 		int(data.get("planning_days_completed", 0)),
-		String(data.get("status", "queued")),
+		str(data.get("status", "queued")),
 		int(data.get("started_day", 0)),
 		data.get("completed_day", null),
-		String(data.get("target_id", "")),
+		str(data.get("target_id", "")),
 		data.get("throw_result", null),
 		int(data.get("cp_yield", 0)),
 		1 if bool(data.get("caught", false)) else 0,
@@ -285,7 +285,7 @@ static func update_hijink(id: String, fields: Dictionary) -> bool:
 # ===========================================================================
 
 static func create_caught(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -299,9 +299,9 @@ static func create_caught(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("character_id", "")),
+		str(data.get("character_id", "")),
 		_nullable_str(data.get("hijink_assignment_id", null)),
-		String(data.get("crime_type", "")),
+		str(data.get("crime_type", "")),
 		int(data.get("time_languishing_days", 0)),
 		int(data.get("attorney_rank", 0)),
 		int(data.get("bribe_amount_cp", 0)),
@@ -399,7 +399,7 @@ static func is_laying_low_at_base(character_id: String, base_id: String, current
 	var row := get_lay_low(character_id)
 	if row.is_empty():
 		return false
-	if String(row.get("base_id", "")) != base_id:
+	if str(row.get("base_id", "")) != base_id:
 		return false
 	return current_day < int(row.get("ends_day", 0))
 

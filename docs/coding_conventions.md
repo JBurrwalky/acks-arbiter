@@ -380,7 +380,7 @@ func calculate_xp(base_xp, modifier):  # no type hints
     return adjusted
 ```
 
-### 3.3 Banker's Rounding — Everywhere
+### 3.3 Banker's Rounding — Everywhere (with explicit RAW exceptions)
 
 All rounding in the entire project uses round-half-to-even. Godot's built-in `roundf()` uses this by default, but be explicit when it matters.
 
@@ -397,6 +397,27 @@ var hp_bonus := roundi(con_modifier * 0.5)  # banker's rounding per project conv
 var hp_bonus := int(con_modifier * 0.5)     # truncation, not rounding
 var hp_bonus := ceili(con_modifier * 0.5)   # ceiling, not banker's
 ```
+
+#### RAW-mandated exceptions (added 2026-05-27)
+
+When a specific ACKS rule **explicitly specifies** a non-banker's rounding mode, the RAW rule wins over the project-wide convention. These exceptions are rare; each must be documented at the call site with the RAW citation and a brief justification ("per RAW we round down here — banker's rounding would open game difficulty gaps").
+
+Known exceptions:
+
+| Rule | Rounding mode | RAW citation | Rationale |
+|---|---|---|---|
+| Cross-tier number-appearing adjustment for wandering monsters (when the rolled monster's table differs from the dungeon level, the rolled number appearing is multiplied by `0.5 ^ tier_diff` for deeper-than-floor monsters or `2.0 ^ tier_diff` for shallower-than-floor monsters) | **Round down** | `rules/acore-monster-stocking-rules.xml:42-46`, `<rounding>Round down.</rounding>` inside the `dungeon_wandering_monsters` procedure | Banker's rounding here would let some unlucky tier-difference rolls produce one extra creature in encounters intended to be small, opening a noticeable difficulty gap at low monster counts. RAW round-down keeps the procedure deterministically conservative on monster count. |
+
+Implementation pattern for exceptions:
+
+```gdscript
+# GOOD — RAW exception, cited inline
+# RAW rule: rules/acore-monster-stocking-rules.xml:42-46 — round DOWN on cross-tier
+# number-appearing adjustment (NOT banker's rounding — see docs/coding_conventions.md §3.3).
+var adjusted_number := floori(base_number * pow(0.5, tier_diff))
+```
+
+When a new RAW exception is encountered during implementation, add a row to the table above and use the `floori()` / `ceili()` variant matching the RAW direction, with the citation comment as shown.
 
 ### 3.4 Comments
 
@@ -804,6 +825,16 @@ combat_progression TEXT NOT NULL CHECK(combat_progression IN ('fighter', 'cleric
 territory_type INTEGER NOT NULL  -- 0=civilized, 1=borderlands... what was 2 again?
 ```
 
+<!-- 2026-05-28: added the writer/CHECK/RAW alignment invariant after the migration-133 crossbreed reaction-enum bug. -->
+
+**A CHECK enum must cover every value its writers can produce, and both must match the canonical (RAW) vocabulary.** When a column's allowed set diverges from the range of values the code actually writes, INSERTs fail *intermittently* — only when a writer happens to produce the uncovered value — which is hard to reproduce and easy to misattribute (e.g. to an unrelated concurrent edit). When adding or changing an enum column, cross-check three things:
+
+1. CHECK set ⊇ the output range of **every** code path that writes the column (helper functions, auto-rolls, launcher params), not just the path you're currently editing.
+2. CHECK set matches the **project-wide** vocabulary for that concept. Example: reaction / disposition tiers are `hostile / unfriendly / neutral / indifferent / friendly` per the RAW Monster Reaction table (`rules/acore_adventures_and_encounters.xml:936-958`), used by `attitude.gd`, `encounter_data.gd`, `override_manager.gd`, the reputation schema, etc.
+3. Where practical, add a deterministic test that inserts one row per allowed value (and/or asserts the writer's output set ⊆ the CHECK set). A round-trip-each-value test catches drift that an RNG-gated end-to-end test only hits probabilistically.
+
+Cautionary example: migration 096 wrote `crossbreed_instances.initial_reaction IN (...,'friendly','helpful')` — misreading the RAW "12+ Friendly, helpful" row as two tiers and dropping the real 9-11 tier — while `MagicalResearchCrossbreed.roll_initial_reaction()` correctly emits `'indifferent'`. ~25% of crossbreed crafts failed the INSERT until migration 133 corrected the constraint.
+
 ### 6.6 Primary Key Conventions
 
 <!-- Added 2026-03-27 — confirmed in schema.sql -->
@@ -935,6 +966,160 @@ func _on_day_changed(_d, _m, _y) -> void:
         _last_season = season
 ```
 
+### 6.9 Avoid SELECT-then-write on the same table inside a tight loop
+
+<!-- Added 2026-05-27 after debugging the "database is locked" cascade during
+     session load. See build_log.md 2026-05-27 — Lock-cascade fix. -->
+
+godot-sqlite (4.7) does not always finalize a SELECT statement before the next
+same-table write when both happen inside an inner loop. The dangling SELECT
+cursor leaves the table in a locked state and the following UPDATE/INSERT/DELETE
+fails with `SQL error: database is locked`. Worse, **once the cascade fires,
+later unrelated writes on the same connection (timekeeping save, weather cache,
+etc.) inherit the locked state for the rest of the session.** The error logs
+appear far from the actual bug site, so always trace cascades back to the first
+SELECT-then-same-table-write inside an inner loop.
+
+**Anti-pattern** — SELECT and write on the same table within the inner loop body:
+
+```gdscript
+# BAD — SELECT-then-write same table inside the loop body
+for merch_type in modifiers:
+    if db.query_with_bindings("SELECT source_kind FROM x WHERE id=? AND k=?",
+                              [id, merch_type]):
+        if db.query_result.is_empty(): continue
+        if db.query_result[0].source_kind == "manual": continue
+    db.query_with_bindings("UPDATE x SET v=? WHERE id=? AND k=?",   # FAILS: locked
+                           [value, id, merch_type])
+```
+
+**Preferred fix 1 — inline the predicate in a single guarded UPDATE:**
+
+```gdscript
+# GOOD — single statement; the skip-manual condition lives in the WHERE
+for merch_type in modifiers:
+    db.query_with_bindings("""
+        UPDATE x SET v = ?
+        WHERE id = ? AND k = ? AND source_kind != 'manual'
+    """, [value, id, merch_type])
+```
+
+**Preferred fix 2 — UPSERT with a WHERE on the DO UPDATE branch** (for the
+INSERT-or-update case; relies on SQLite 3.24+ UPSERT syntax):
+
+```gdscript
+# GOOD — INSERT-or-update without a separate SELECT
+db.query_with_bindings("""
+    INSERT INTO x (id, k, v, source_kind) VALUES (?, ?, ?, 'generated')
+    ON CONFLICT(id, k) DO UPDATE SET v = excluded.v
+    WHERE x.source_kind != 'manual'
+""", [id, k, value])
+```
+
+**Acceptable pattern — hoist the SELECT outside the loop**, `.duplicate()` the
+result, then iterate writes locally. This is the proven-working form used by
+e.g. `merchant_pool_repository.refresh_merchants` and
+`npc_ruler_generator.stock_rulers_and_tribute`:
+
+```gdscript
+# OK — SELECT once, duplicate, then loop the writes
+db.query_with_bindings("SELECT id FROM x WHERE ...", [...])
+var ids := db.query_result.duplicate()
+for row in ids:
+    db.query_with_bindings("UPDATE x SET v=? WHERE id=?", [value, row.id])
+```
+
+If you genuinely need per-row pre-write data (e.g. a value used in a check
+before deciding to write), include that data in the outer SELECT's column list
+rather than re-querying per iteration. Treat the outer SELECT as the place to
+gather everything the loop body needs.
+
+When grepping for the anti-pattern, look for `query_with_bindings("""` calls
+issuing `SELECT` and `UPDATE/INSERT/DELETE/REPLACE` on the same table within a
+single function body, especially inside `for`/`while` loops.
+
+**Known sites — fixed 2026-05-27:** [region_demand_resolver._write_demand_modifiers](engine/subsystems/commerce/region_demand_resolver.gd), [demand_modifier_generator._write_cache](engine/subsystems/commerce/demand_modifier_generator.gd).
+
+**Known sites — fixed 2026-05-27 (monthly-drift sweep):** [market_price_resolver.process_monthly_drift_for_campaign](engine/subsystems/commerce/market_price_resolver.gd) now hoists the dice fields into its outer SELECT and passes each row to `check_and_apply_drift(..., prefetched_row)`, so the loop body issues only the drift UPDATE. The one-shot callers (`compute_market_price` → `_ensure_dice_row` / `check_and_apply_drift`, fired once per market visit, not in a loop) keep the read-then-write form — that is the acceptable single-statement-sequence case, not the inner-loop cascade.
+
+### 6.10 Notebook page text colors — light parchment surface
+
+<!-- Added 2026-05-27 after the notebook content-text-invisible debugging. See
+     build_log.md 2026-05-27 — Notebook text-color fix. -->
+
+The Management Notebook page (`SBF_notebook_page`) is **light parchment**
+`Color(0.9, 0.84, 0.74)`. Any text rendered on it must be **dark** or it is
+invisible. Content migrated from the old `CharacterSheetOverlay` /
+`PartyManagementOverlay` (which had dark backgrounds) carried light/cream text
+colors that vanished on the light page — the bug class this section prevents.
+
+**Notebook surface → text-color map:**
+
+| Surface (stylebox) | bg | Text color |
+|---|---|---|
+| `SBF_notebook_page` (tab content) | light `0.9,0.84,0.74` | **dark** `VELLUM_TEXT_COLOR` (0.09,0.06,0.03) |
+| `SBF_notebook_tab_active` (active tab chip) | light | dark |
+| `SBF_notebook_container` (right-edge tab strip) | dark `0.16,0.1,0.05` | light |
+| `SBF_notebook_tab_inactive` (inactive tab chip) | dark `0.3,0.2,0.1` | light |
+| `SBF_framed_window` (sub-modals) | dark `0.19,0.13,0.08` | light |
+
+**Use the shared palette** from `UiSurfaceStyles` (do NOT hardcode cream/gray text on the page):
+- `VELLUM_TEXT_COLOR` `Color(0.09,0.06,0.03)` — primary body/heading text on the page.
+- `VELLUM_SECONDARY_TEXT_COLOR` `Color(0.34,0.27,0.19)` — de-emphasized/secondary text (hints, timestamps, "dim" rows). Readable on parchment without washing out. Replaces the old light "DIM"/cream tones.
+- `VELLUM_WARNING_TEXT_COLOR` `Color(0.46,0.12,0.08)` — warning/error text.
+- Saturated semantic accents (HP red/green/orange, loyalty bands, gold pins) are fine on the page — keep them.
+
+**Two traps that look like text-color bugs but are NOT** (don't "fix" these):
+1. **`modulate` on a Label is a multiplier** (≤1 darkens). A `modulate = Color(0.85,0.85,0.85)` on dark theme text keeps it dark — it does not make text light. Only `font_color` overrides (or unthemed control types) cause light-on-light.
+2. **`StyleBoxFlat.bg_color` named `_COLOR_NORMAL`/`_COLOR_DROP_OK`** etc. are panel/drop-zone backgrounds, not text. Light values there are correct.
+
+**State-dependent chips** (entity tabs, sub-tab buttons whose background flips with active state) must flip text color with the state — dark on the light/inactive surface, light on the dark/active surface. See `notebook_tab_strip.gd` (`ACTIVE_LABEL_COLOR`/`INACTIVE_LABEL_COLOR`) and `entity_tab.gd` (`NAME_ACTIVE_COLOR`/`NAME_INACTIVE_COLOR`) for the pattern.
+
+**`LinkButton` is NOT covered by the project theme** — it falls back to Godot's light default and is invisible on the page. Any `LinkButton` on the notebook page needs an explicit dark `font_color` override (see `party_tab_page.gd` member rows).
+
+### 6.11 A plain Control does not stretch its children — anchor script-built roots to full-rect
+
+<!-- Added 2026-05-27 after the "blank notebook tab" bug. See build_log.md
+     2026-05-27 — Notebook tab content-collapse fix. -->
+
+Containers (`VBoxContainer`, `HBoxContainer`, `PanelContainer`, …) lay out and
+stretch their children per size flags. A **plain `Control` does not** — a child
+added to it via `add_child()` keeps its default top-left anchors and **minimum
+size**, regardless of `SIZE_EXPAND_FILL`. Size flags are honored by the *parent
+container*, so they do nothing when the parent is a plain Control.
+
+This bit the Notebook hard: each tab page (`notebook_tab_page`) is a plain
+`Control` hosted in the `_page_holder` VBoxContainer. The page itself is
+stretched by that container, but the page is not a container, so the root
+layout node a tab builds (`root_vbox`, etc.) stayed at minimum size. Fixed-height
+chrome (headers, sub-tab strips, dropdowns) still showed, but an
+`SIZE_EXPAND_FILL` content area — especially a `ScrollContainer`, whose minimum
+size is ~0 — **collapsed to zero height and rendered blank**. Tabs whose content
+had intrinsic size (Inventory's carrier columns) showed but cramped at top-left.
+
+**Rule:** when you `add_child()` a layout root to a plain `Control` and want it
+to fill, anchor it explicitly:
+
+```gdscript
+# GOOD — root fills the plain-Control parent
+add_child(root_vbox)
+root_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+# BAD — relies on SIZE_EXPAND_FILL, which a plain Control ignores → collapses
+root_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+add_child(root_vbox)   # stays at minimum size
+```
+
+`set_anchors_and_offsets_preset(PRESET_FULL_RECT)` (anchors 0,0,1,1 + offsets 0)
+makes the child track the parent's size dynamically. `set_anchors_preset()`
+alone is NOT enough — with default `keep_offsets`, it leaves the child at its
+old rect.
+
+For the Notebook this is handled once in the base class:
+`notebook_tab_page._stretch_content_children()` (called after `_build_content`)
+full-rects every `Control` child, so individual tabs don't repeat it. The
+regression test is `tests/test_party_tab.gd::test_content_root_is_stretched_full_rect`.
+
 ---
 
 ## 7. Resource and Data Patterns
@@ -1045,6 +1230,68 @@ var attack_throw: int = 10
 ### 7.3 Data Shape Changes Are Contract Changes
 
 If you modify a class in `shared_types/`, every subsystem that imports it may be affected. Treat shared type changes as cross-subsystem contract changes requiring approval (see Section 11).
+
+### 7.4 Runtime Data Extracted from Sacred Rules XML (added 2026-05-27)
+
+**Hard rule: `rules/*.xml` files are NEVER read at runtime.** The XML rule summaries under `rules/` are the project's "sacred" source of truth for ACKS rules, but they are not the runtime format. Runtime systems consume RAW tables only through **build-time extracted** data files under `data/<subsystem>/`.
+
+This convention exists because runtime XML parsing is slow, brittle (one malformed cell breaks the parser at game start), and lacks the test discipline that the data layer demands. The encoded data files also serve as a stable interface: a Claude Code session editing a runtime subsystem can read the JSON without dragging the full XML grammar into its working context.
+
+#### 7.4.1 What gets extracted
+
+Any RAW table, list, or constant that a runtime system needs to consult. Examples:
+
+- Condition catalog (`data/conditions/condition_catalog.json` from `ax_conditions_catalog.xml`).
+- Dungeon stocking, wandering monster, and treasure tables (`data/dungeon_generator/*.json` from `acore-setting-construction-rules.xml`, `acore-monster-stocking-rules.xml`, and `acore_treasure_and_magic_items_rules.xml`; see [`gdd-dungeon-generator-v1.md`](../generation/gdd-dungeon-generator-v1.md) §12).
+- Monster catalog (the per-monster stat blocks from `acore_monster_catalog_*.xml` and `le_monster_catalog_*.xml`).
+- Domain encounter tables (`data/domain_events/encounter_frequency_table.json` from `ax_domain_level_encounters.xml`).
+
+What does NOT get extracted: prose, examples, flavor text, sidebars. The XML summaries already strip these; the JSON extraction should be a structurally faithful representation of the XML tables and procedures only.
+
+#### 7.4.2 Required structure of an extracted file
+
+Every extracted JSON file MUST include a `_source` field at the top level (or per-table inside, if multiple tables share a file) citing the originating XML file and line range. This makes "where did this datum come from?" trivially answerable:
+
+```json
+{
+  "_source": "rules/acore-monster-stocking-rules.xml:76-94 dungeon_wandering_monster_level",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "_extracted_at": "2026-05-27T12:00:00Z",
+  "rows": [...]
+}
+```
+
+The `_source` is mandatory. The `_extracted_by` and `_extracted_at` fields are recommended for traceability but optional.
+
+#### 7.4.3 Extraction script discipline
+
+Each subsystem's extraction lives in `tools/extract_<subsystem>_data.py` (or `.gd` if GDScript-only). The script MUST be:
+
+- **Idempotent.** Re-running on the same XML produces byte-identical JSON output.
+- **Single-purpose.** One script per subsystem dataset; do not pile multiple subsystems' extractions into one script.
+- **Self-documenting.** A header comment lists the input XML files, output JSON files, and how to invoke the script.
+
+The script is run manually before commits when the corresponding XML changes, and run automatically by the CI diff test (§7.4.4).
+
+#### 7.4.4 Mandatory CI diff test
+
+Every extracted dataset MUST be covered by a test under `tests/data_integrity/test_<subsystem>_data_freshness.<py|gd>` that:
+
+1. Re-runs the extraction script into a temp directory.
+2. Diffs each freshly-extracted JSON against the committed copy under `data/<subsystem>/`.
+3. Fails if any difference exists.
+
+This is the gate that catches the failure mode "someone edited the XML but forgot to re-run the extraction." It also catches "someone hand-edited the JSON," because that hand-edit will not match what the extraction script produces from the XML.
+
+#### 7.4.5 When a runtime system needs to query a RAW rule
+
+The runtime system loads the extracted JSON via the standard data loader (typically a Repository or a static loader class), caches it, and queries the cached data. It does NOT touch the XML directly under any circumstance. If you find yourself reaching for an XML file from a runtime path, stop and either (a) extract the data you need at build time, or (b) confirm the data is already extracted and use the existing JSON.
+
+#### 7.4.6 RAW PATCH lock-ins inside extracted data
+
+If a RAW table contains a documented error and the project has a corrected reading (e.g., the [RESOLVED 2026-05-06] 17-63 = 50% efficiency band correcting source XML's "17-36" — see §35 entry already in this file), the correction lives inside the extraction script as an inline patch with the citation. The extracted JSON carries the corrected values. The extraction script's patch comment must cite both the source XML line and the project-decision date. The CI diff test then locks the corrected values in: any drift requires touching the patch deliberately.
+
+The convention precedent for this pattern is the Vagaries-of-Recruitment table (§35-equivalent entries in this file's later sections); the dungeon generator dataset is the second instance.
 
 ---
 
@@ -3456,6 +3703,16 @@ Established during migration 130 (rivers as first-class edge entities). Pattern 
   - `opposite_edge(e)` — `(e + 3) % 6`, used when flipping owner.
 
   Repository code uses these helpers; subsystems should call them rather than reimplementing the geometry. **Pattern:** shared types encapsulate the geometry/algebra of canonical ownership; repositories handle persistence; subsystems do neither. If a subsystem finds itself computing axial-offset deltas or flipping edge indices, it's doing the shared type's job.
+
+## 74. Retry hygiene + satisfiable acceptance invariants (2026-05-28)
+
+Established while fixing the DG-V1 dungeon-generator stocking retry loop (`dungeon_generator_v1.gd`, `stocker.gd`, `acceptance_tests.gd`, `encounter_roller.gd`).
+
+- **A retry that re-runs a mutating step must restore the FULL pre-step state, not a subset.** The stocking retry loop snapshots door state before stocking and restores it before each retry. The original snapshot captured only the fields the author happened to remember (`is_secret`, `wired_lever_position`) and missed `type` / `door_material` — so a door forced to LOCKED on a failed attempt bled into the next attempt and corrupted acceptance ("found 2 qualifying doors"). **Pattern:** when you snapshot/restore mutable state for a retry, enumerate EVERY field the inner step can write — grep the step for assignments to the object — and restore all of them; restoring a subset is a latent state-bleed bug. Derived/cell state stamped from those fields (here, `lever_portcullis_*` terrain features) must also be cleared or recomputed on retry.
+
+- **An acceptance/validation gate must assert an invariant the producers can actually guarantee.** DG-V1 §14.1.6 originally hard-required "exactly one secret+locked door per trap room," but the layout generator independently places secret+locked doors (§8.1), so a room can already hold two before the stocker runs — "exactly one" is unsatisfiable and would fail valid, playable dungeons. The gate was set to the satisfiable playability invariant (">= 1") with the stricter ideal downgraded to a soft warning. **Pattern:** before making a count/shape check a HARD gate, ask "can every upstream producer be constrained to satisfy this?" If an independent producer can violate it without harming playability, the hard gate belongs at the playability floor (>= 1, reachable, non-null) and the ideal becomes a soft warning. Verify satisfiability with a multi-seed stress sweep, not just the few fixed test seeds.
+
+- **Changing an RNG-consuming sequence is deterministic but breaking — expect it to surface latent crashes.** Reordering the stocker into two passes shifted which monsters seeds roll, immediately hitting a latent `int(null)` crash in `encounter_roller.gd` (`percent_in_lair` is `null` for some catalog monsters). **Pattern:** any refactor that alters the order/count of `rng` draws changes every downstream roll, so the fixed-seed suite now exercises entirely different generated content. Re-run a multi-seed sweep after such a change, and treat newly-surfaced crashes as pre-existing latent bugs to fix — a function documented to "always return X, never null" must honor that for every data row — not as regressions to paper over.
 
 - **Two-sided lookup helper is mandatory for "is this hex touched?" queries.** Because rows are stored once on the lex-lower side, asking "what rivers touch hex H?" requires querying for rows where H is the owner UNION rows where H is the neighbor of an owner. `CampaignRepository.get_river_edges_for_hex` does this; `hex_has_river` is its fast existence-check variant. **Pattern:** any consumer asking "does X touch this record" must use the two-sided helper, not a direct WHERE clause that only matches the owner side. Putting both branches into the helper means subsystem code reads as "does river touch hex" without leaking the canonicality detail.
 

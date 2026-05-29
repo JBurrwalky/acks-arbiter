@@ -65,14 +65,14 @@ func test_record_roundtrip() -> void:
 	check(not id.is_empty(), "record returned an id")
 	var row: Dictionary = DepartureLogRecorder.get_entry(id)
 	check(not row.is_empty(), "get_entry returned the row")
-	check(String(row.get("domain_id", "")) == DOMAIN_A,
-		"domain_id roundtripped, got %s" % String(row.get("domain_id", "")))
+	check(str(row.get("domain_id", "")) == DOMAIN_A,
+		"domain_id roundtripped, got %s" % str(row.get("domain_id", "")))
 	check(int(row.get("calendar_day", 0)) == 100,
 		"calendar_day roundtripped, got %d" % int(row.get("calendar_day", 0)))
-	check(String(row.get("event_type", "")) == "established",
-		"event_type roundtripped, got %s" % String(row.get("event_type", "")))
-	check(String(row.get("summary", "")) == "Founded by grant",
-		"summary roundtripped, got %s" % String(row.get("summary", "")))
+	check(str(row.get("event_type", "")) == "established",
+		"event_type roundtripped, got %s" % str(row.get("event_type", "")))
+	check(str(row.get("summary", "")) == "Founded by grant",
+		"summary roundtripped, got %s" % str(row.get("summary", "")))
 	var details: Dictionary = row.get("full_details", {})
 	check(String(details.get("founder_id", "")) == "pc_1",
 		"detail founder_id roundtripped, got %s" % String(details.get("founder_id", "")))

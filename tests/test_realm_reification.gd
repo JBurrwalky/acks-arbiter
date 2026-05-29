@@ -175,9 +175,9 @@ func test_spawn_local_succession_npc_creates_npc_with_domain_alignment() -> void
 	CampaignRepository.db.query_with_bindings(
 		"SELECT character_type, alignment FROM characters WHERE id = ?", [npc_id])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	check(String(row.get("character_type", "")) == "npc", "character_type=npc")
-	check(String(row.get("alignment", "")) == "chaotic",
-		"alignment matches domain's chaotic, got %s" % String(row.get("alignment", "")))
+	check(str(row.get("character_type", "")) == "npc", "character_type=npc")
+	check(str(row.get("alignment", "")) == "chaotic",
+		"alignment matches domain's chaotic, got %s" % str(row.get("alignment", "")))
 
 
 # ---------------------------------------------------------------------------

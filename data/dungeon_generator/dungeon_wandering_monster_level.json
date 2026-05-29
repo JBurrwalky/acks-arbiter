@@ -1,0 +1,69 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §dungeon_wandering_monsters table:dungeon_wandering_monster_level",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Dungeon Level",
+    "Monster Level 1 Table on Roll",
+    "Monster Level 2 Table on Roll",
+    "Monster Level 3 Table on Roll",
+    "Monster Level 4 Table on Roll",
+    "Monster Level 5 Table on Roll",
+    "Monster Level 6 Table on Roll"
+  ],
+  "rows": [
+    {
+      "Dungeon Level": "1",
+      "Monster Level 1 Table on Roll": "1-9",
+      "Monster Level 2 Table on Roll": "10-11",
+      "Monster Level 3 Table on Roll": "12",
+      "Monster Level 4 Table on Roll": "-",
+      "Monster Level 5 Table on Roll": "-",
+      "Monster Level 6 Table on Roll": "-"
+    },
+    {
+      "Dungeon Level": "2",
+      "Monster Level 1 Table on Roll": "1-3",
+      "Monster Level 2 Table on Roll": "4-9",
+      "Monster Level 3 Table on Roll": "10-11",
+      "Monster Level 4 Table on Roll": "12",
+      "Monster Level 5 Table on Roll": "-",
+      "Monster Level 6 Table on Roll": "-"
+    },
+    {
+      "Dungeon Level": "3",
+      "Monster Level 1 Table on Roll": "1",
+      "Monster Level 2 Table on Roll": "2-3",
+      "Monster Level 3 Table on Roll": "4-9",
+      "Monster Level 4 Table on Roll": "10-11",
+      "Monster Level 5 Table on Roll": "12",
+      "Monster Level 6 Table on Roll": "-"
+    },
+    {
+      "Dungeon Level": "4",
+      "Monster Level 1 Table on Roll": "-",
+      "Monster Level 2 Table on Roll": "1",
+      "Monster Level 3 Table on Roll": "2-3",
+      "Monster Level 4 Table on Roll": "4-9",
+      "Monster Level 5 Table on Roll": "10-11",
+      "Monster Level 6 Table on Roll": "12"
+    },
+    {
+      "Dungeon Level": "5",
+      "Monster Level 1 Table on Roll": "-",
+      "Monster Level 2 Table on Roll": "-",
+      "Monster Level 3 Table on Roll": "1",
+      "Monster Level 4 Table on Roll": "2-3",
+      "Monster Level 5 Table on Roll": "4-9",
+      "Monster Level 6 Table on Roll": "10-12"
+    },
+    {
+      "Dungeon Level": "6",
+      "Monster Level 1 Table on Roll": "-",
+      "Monster Level 2 Table on Roll": "-",
+      "Monster Level 3 Table on Roll": "-",
+      "Monster Level 4 Table on Roll": "1",
+      "Monster Level 5 Table on Roll": "2-3",
+      "Monster Level 6 Table on Roll": "4-12"
+    }
+  ]
+}

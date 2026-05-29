@@ -361,24 +361,20 @@ static func _write_cache(
 		modifiers: Dictionary,
 		generation_day: int,
 ) -> void:
-	# Preserve manual rows: only update/insert rows whose existing source_kind
-	# is 'generated' (or that don't yet exist).
+	# Preserve manual rows: the manual-skip predicate is inlined in the
+	# UPSERT's WHERE clause rather than via a SELECT-then-INSERT pair. Per
+	# docs/coding_conventions.md §6.9, godot-sqlite does not always finalize a
+	# SELECT statement before the next same-table write on a tight inner loop,
+	# producing a self-locking SQLITE_LOCKED cascade. See build_log.md 2026-05-27.
+	#
+	# Semantics:
+	#   * row absent              → INSERT a fresh generated row
+	#   * row exists & generated  → UPDATE values
+	#   * row exists & manual     → WHERE filter zero-rows the DO UPDATE; no error
 	var calendar_day: int = _current_calendar_day()
 	for merch_type in modifiers:
 		var key: String = merch_type
 		var value: int = int(modifiers[key])
-		# Skip if a manual row exists.
-		if CampaignRepository.db.query_with_bindings("""
-			SELECT source_kind FROM settlement_merchandise_demand
-			WHERE settlement_entrance_id = ? AND merchandise_type = ?
-		""", [settlement_id, key]):
-			if not CampaignRepository.db.query_result.is_empty():
-				var existing_kind: String = str(CampaignRepository.db.query_result[0].get("source_kind", "generated"))
-				if existing_kind == "manual":
-					continue
-		# Insert-or-update with source_kind='generated'. pre_trade_route_shift_value
-		# and demand_modifier are both written to the step-5 result; Prereq.2b's
-		# region resolver overwrites demand_modifier post-shift.
 		CampaignRepository.db.query_with_bindings("""
 			INSERT INTO settlement_merchandise_demand
 				(settlement_entrance_id, merchandise_type, demand_modifier,
@@ -389,6 +385,7 @@ static func _write_cache(
 				pre_trade_route_shift_value = excluded.pre_trade_route_shift_value,
 				generated_at_calendar_day = excluded.generated_at_calendar_day,
 				source_kind = 'generated'
+			WHERE settlement_merchandise_demand.source_kind != 'manual'
 		""", [settlement_id, key, value, calendar_day, value])
 	# Stamp the regeneration timestamp on the settlement.
 	CampaignRepository.db.query_with_bindings("""

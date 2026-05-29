@@ -226,11 +226,11 @@ func _render_libraries() -> void:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		line.text = "%s · %s invested · supports up to level %d spells · +%d to research throws · %s" % [
-			String(row.get("structure_kind", "library")).replace("_", " ").capitalize(),
+			str(row.get("structure_kind", "library")).replace("_", " ").capitalize(),
 			Currency.format_cost(int(row.get("cp_invested", 0))),
 			int(row.get("max_spell_level_supported", 1)),
 			int(row.get("magic_research_throw_bonus", 0)),
-			String(row.get("status", "?")),
+			str(row.get("status", "?")),
 		]
 		_libraries_card.add_child(line)
 
@@ -248,11 +248,11 @@ func _render_workshops() -> void:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		line.text = "%s · %s invested · supports items up to %s value · +%d to enchanting throws · %s" % [
-			String(row.get("structure_kind", "workshop")).replace("_", " ").capitalize(),
+			str(row.get("structure_kind", "workshop")).replace("_", " ").capitalize(),
 			Currency.format_cost(int(row.get("cp_invested", 0))),
 			Currency.format_cost(int(row.get("max_item_value_supported_cp", 0))),
 			int(row.get("magic_research_throw_bonus", 0)),
-			String(row.get("status", "?")),
+			str(row.get("status", "?")),
 		]
 		_workshops_card.add_child(line)
 
@@ -270,11 +270,11 @@ func _render_laboratories() -> void:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		line.text = "%s · %s invested · supports cross-breeding up to %s cost · +%d to research throws · %s" % [
-			String(row.get("structure_kind", "laboratory")).replace("_", " ").capitalize(),
+			str(row.get("structure_kind", "laboratory")).replace("_", " ").capitalize(),
 			Currency.format_cost(int(row.get("cp_invested", 0))),
 			Currency.format_cost(int(row.get("max_crossbreed_cost_cp", 0))),
 			int(row.get("magic_research_throw_bonus", 0)),
-			String(row.get("status", "?")),
+			str(row.get("status", "?")),
 		]
 		_laboratories_card.add_child(line)
 
@@ -292,10 +292,10 @@ func _render_projects() -> void:
 	for row: Dictionary in rows:
 		var line := Label.new()
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		var kind: String = String(row.get("project_kind", "?"))
-		var target: String = String(row.get("target_spell_key", ""))
+		var kind: String = str(row.get("project_kind", "?"))
+		var target: String = str(row.get("target_spell_key", ""))
 		if target.is_empty():
-			target = String(row.get("target_item_kind", ""))
+			target = str(row.get("target_item_kind", ""))
 		var days_done: int = int(row.get("days_completed", 0))
 		var days_total: int = int(row.get("days_total", 0))
 		line.text = "%s · %s · %d/%d days · %s committed" % [

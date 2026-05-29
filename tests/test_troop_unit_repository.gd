@@ -69,8 +69,8 @@ func test_create_and_get() -> void:
 	var row := TroopUnitRepository.get_unit(id)
 	check(not row.is_empty(), "get_unit should return row")
 	check(int(row.get("count", 0)) == 60, "count should be 60")
-	check(String(row.get("source_type", "")) == "mercenary", "source_type roundtrip")
-	check(String(row.get("status", "")) == "active", "status defaults to active")
+	check(str(row.get("source_type", "")) == "mercenary", "source_type roundtrip")
+	check(str(row.get("status", "")) == "active", "status defaults to active")
 
 
 func test_update_unit_whitelist_rejects_unknown_field() -> void:
@@ -111,7 +111,7 @@ func test_depart_unit_marks_status() -> void:
 	var id := _make_unit()
 	check(TroopUnitRepository.depart_unit(id, "kia", 200), "depart_unit should succeed")
 	var row := TroopUnitRepository.get_unit(id)
-	check(String(row.get("status", "")) == "departed", "status should be departed")
-	check(String(row.get("departure_kind", "")) == "kia", "departure_kind should be kia")
+	check(str(row.get("status", "")) == "departed", "status should be departed")
+	check(str(row.get("departure_kind", "")) == "kia", "departure_kind should be kia")
 	check(int(row.get("departure_calendar_day", 0)) == 200,
 		"departure_calendar_day should be 200")

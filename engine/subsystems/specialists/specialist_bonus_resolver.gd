@@ -33,7 +33,7 @@ static func bonus_for(campaign_id: String, party_id: String, resolver_kind: Stri
 	var rows: Array = CampaignRepository.list_active_specialists(campaign_id, party_id)
 	var total: int = 0
 	for row: Dictionary in rows:
-		var kind: String = String(row.get("kind", ""))
+		var kind: String = str(row.get("kind", ""))
 		total += SpecialistCatalog.bonus_for_resolver(kind, resolver_kind)
 	return total
 
@@ -45,6 +45,6 @@ static func bonus_from_rows(rows: Array, resolver_kind: String) -> int:
 	for row in rows:
 		if not (row is Dictionary):
 			continue
-		var kind: String = String(row.get("kind", ""))
+		var kind: String = str(row.get("kind", ""))
 		total += SpecialistCatalog.bonus_for_resolver(kind, resolver_kind)
 	return total

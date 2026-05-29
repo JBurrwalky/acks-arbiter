@@ -244,10 +244,10 @@ func _render() -> void:
 		label.text = "[%d turn %d %s] %s" % [
 			int(entry.get("sequence_number", 0)),
 			int(entry.get("turn_number", 0)),
-			String(entry.get("phase", "")),
-			String(entry.get("event_type", "")),
+			str(entry.get("phase", "")),
+			str(entry.get("event_type", "")),
 		]
-		label.tooltip_text = String(entry.get("payload_json", "{}"))
+		label.tooltip_text = str(entry.get("payload_json", "{}"))
 		_battle_log_box.add_child(label)
 
 

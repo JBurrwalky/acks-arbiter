@@ -171,11 +171,11 @@ func test_punishment_kind_mapping_tortured_sentinel() -> void:
 	var entries: Array = WoundEffectAggregator.wound_kinds_for_punishment("tortured")
 	check(entries.size() == 1, "tortured returns one entry")
 	var entry: Dictionary = entries[0]
-	check(String(entry.get("wound_kind")) == "ROLL_MW",
+	check(str(entry.get("wound_kind")) == "ROLL_MW",
 		"tortured sentinel = ROLL_MW")
 	check(bool(entry.get("requires_save_vs_death")),
 		"tortured requires save vs Death")
-	check(String(entry.get("mw_damage_type")) == "bludgeoning",
+	check(str(entry.get("mw_damage_type")) == "bludgeoning",
 		"tortured rolls on bludgeoning column per Phase 10B.3 #6")
 	check(int(entry.get("mw_bracket_index", -1)) == 4,
 		"tortured rolls on critically_wounded bracket (index 4)")

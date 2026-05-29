@@ -165,7 +165,7 @@ func test_domain_style_writable_via_update_settings() -> void:
 			{"domain_style": "clanhold"}),
 		"update_domain_settings accepts domain_style='clanhold'")
 	var d := CampaignRepository.get_domain(TEST_DOMAIN_A)
-	check(String(d.get("domain_style", "")) == "clanhold",
+	check(str(d.get("domain_style", "")) == "clanhold",
 		"update flipped domain_style to clanhold")
 
 
@@ -304,7 +304,7 @@ func test_orthogonal_style_and_alignment_combine_freely() -> void:
 		""", [did, TEST_CAMPAIGN, "Combo " + did, TEST_CHAR, style, alignment])
 		check(ok, "INSERT %s + %s succeeds (orthogonal combo)" % [style, alignment])
 		var d := CampaignRepository.get_domain(did)
-		check(String(d.get("domain_style", "")) == style,
+		check(str(d.get("domain_style", "")) == style,
 			"%s + %s: domain_style roundtripped" % [style, alignment])
-		check(String(d.get("alignment", "")) == alignment,
+		check(str(d.get("alignment", "")) == alignment,
 			"%s + %s: alignment roundtripped" % [style, alignment])

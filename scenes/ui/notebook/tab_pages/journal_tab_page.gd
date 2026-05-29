@@ -40,12 +40,15 @@ const SUBTAB_BOOKMARKS := "bookmarks"
 const SUBTAB_DEFAULT := SUBTAB_NARRATIVE
 
 const SUBTAB_FONT_SIZE := 12
-const ACTIVE_SUBTAB_COLOR := Color(0.92, 0.86, 0.74, 1.0)
-const INACTIVE_SUBTAB_COLOR := Color(0.55, 0.50, 0.42, 1.0)
+# Notebook page is light parchment — dark text required (these were cream/light,
+# invisible on the light page). Dark primary = VELLUM_TEXT_COLOR; muted secondary
+# = VELLUM_SECONDARY_TEXT_COLOR. See docs/coding_conventions.md §6.10.
+const ACTIVE_SUBTAB_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const INACTIVE_SUBTAB_COLOR := Color(0.34, 0.27, 0.19, 1.0)
 
-const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
-const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
-const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
+const HEADING_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const BODY_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const DIM_COLOR := Color(0.34, 0.27, 0.19, 1.0)
 const PIN_COLOR := Color(1.0, 0.78, 0.30, 1.0)
 
 const SIGNIFICANCE_LABELS := {

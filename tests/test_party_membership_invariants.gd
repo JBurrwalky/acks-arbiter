@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	test_add_to_second_party_moves_not_copies()
 	test_unique_constraint_prevents_raw_duplicate()
 	test_list_unpartied_excludes_partied()
+	test_list_unpartied_character_type_filter()
 	test_remove_leaves_character_unpartied()
 	test_creature_requires_party_id()
 	test_split_preserves_invariant()
@@ -173,6 +174,46 @@ func test_list_unpartied_excludes_partied() -> void:
 		"PC_B (in PARTY_A) should NOT appear in unpartied list")
 
 	_cleanup()
+
+
+## The optional character_type filter must exclude world NPCs (domain rulers,
+## bandits, encounter NPCs) from the party-recruit "Available Characters" list,
+## while the unfiltered call still returns them. Regression for the bug where
+## NpcRulerGenerator's NPCs surfaced as party recruits (2026-05-27).
+func test_list_unpartied_character_type_filter() -> void:
+	_setup_two_parties()
+	var npc_id := "test_pmi_npc_ruler"
+	CampaignRepository.create_character({
+		"id": npc_id,
+		"campaign_id": TEST_CAMPAIGN,
+		"name": "Ruler NPC",
+		"character_type": "npc",
+		"persistence_tier": "full",
+		"race": "human",
+		"character_class": "fighter",
+		"level": 8,
+		"xp": 0,
+		"combat_progression": "fighter",
+		"strength": 10, "intelligence": 10, "wisdom": 10,
+		"dexterity": 10, "constitution": 10, "charisma": 10,
+	})
+
+	var all_ids: Array = []
+	for row in CampaignRepository.list_unpartied_characters(TEST_CAMPAIGN):
+		all_ids.append(row.id)
+	check(npc_id in all_ids, "unfiltered unpartied list should include the world NPC")
+	check(PC_C in all_ids, "unfiltered unpartied list should include unpartied PC_C")
+
+	var pc_ids: Array = []
+	for row in CampaignRepository.list_unpartied_characters(TEST_CAMPAIGN, "pc"):
+		pc_ids.append(row.id)
+	check(npc_id not in pc_ids, "pc-filtered list must EXCLUDE the world NPC ruler")
+	check(PC_C in pc_ids, "pc-filtered list must still include unpartied PC_C")
+
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM characters WHERE id = ?", [npc_id])
+	_cleanup()
+	print("  list_unpartied_character_type_filter: OK")
 
 
 ## After removing a character from their party, get_party_for_character should

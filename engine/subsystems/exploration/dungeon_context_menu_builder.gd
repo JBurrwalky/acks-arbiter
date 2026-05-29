@@ -790,9 +790,13 @@ static func _any_selected_has_axe(selected_ids: Array) -> bool:
 	return false
 
 
-## Is this a wooden door material?
+## Is this a bashable (wooden) door material? Per the canonical door material
+## vocabulary in DungeonDoorData: wood_standard / wood_thick are bashable with
+## an axe; curtains are free-passage (no bash); stone / metal are unbashable.
+## (Curtain free-passage handling is a V2 runtime concern; V1 dungeons don't
+## generate curtain doors yet.)
 static func _is_wooden_door(door_material: String) -> bool:
-	return door_material in ["wood_simple", "wood_standard", "wood_reinforced"]
+	return door_material in DungeonDoorData.BASHABLE_MATERIALS
 
 
 ## How many turns to bash a wooden door?

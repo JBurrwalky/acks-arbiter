@@ -90,36 +90,68 @@ RIVERS = [
     {
         "name": "Avalon River",
         "navigability": "large_craft",
-        # Major artery: flows S->N along col 10/11 boundary through Avalon's
-        # demesne and out the north edge. Source in the southern hills.
+        # Major artery: flows S->N along the col-10/11 boundary through
+        # Avalon's demesne and out the north edge. Source in the southern
+        # hills at row 14. Authored as a zigzag (alternating NW + NE steps)
+        # because flat-top hexes have no straight north-flowing chain of
+        # edges — see the docstring on generate_river_edges.
         "polyline": [
-            (11, 14), (11, 13), (11, 12), (11, 11), (11, 10),
-            (11, 9), (11, 8), (11, 7), (11, 6), (11, 5),
-            (10, 5), (10, 4), (10, 3), (10, 2), (10, 1), (10, 0),
+            (11, 14),
+            (10, 14), (11, 13),
+            (10, 13), (11, 12),
+            (10, 12), (11, 11),
+            (10, 11), (11, 10),
+            (10, 10), (11, 9),
+            (10, 9), (11, 8),
+            (10, 8), (11, 7),
+            (10, 7), (11, 6),
+            (10, 6), (11, 5),
+            (10, 5), (11, 4),
+            (10, 4), (11, 3),
+            (10, 3), (11, 2),
+            (10, 2), (11, 1),
+            (10, 1), (11, 0),
+            (10, 0),
         ],
         "crossings": {
-            (11, 8): "ford",       # rural crossing south of frontier
-            (10, 4): "bridge",     # Royal Highway bridge at Avalon
-            (10, 1): "bridge",     # Bridge on the Edburrow-Hardvale Road
+            (11, 8): "ford",      # rural crossing south of frontier
+            (10, 4): "bridge",    # Royal Highway bridge at Avalon
+            (10, 1): "bridge",    # Bridge on the Edburrow-Hardvale Road
         },
     },
     {
         "name": "Lugdun Tributary",
         "navigability": "river_craft",
-        # E->W flow from NE highlands into Lake Lugdun (terminates in lake at (19,3))
+        # N->S col-zigzag descending into Lake Lugdun at (19, 3). Source
+        # at (19, 0) in the north. Original was a straight E->W chain
+        # across row 1 — that fails the triangle-continuity rule because
+        # consecutive shared edges land on opposite sides of the middle
+        # hex. The col-19/20 zigzag descent is the simplest valid shape.
+        # DOWN pattern: (odd, r) -> (even, r+1) -> (odd, r+1) -> ...
         "polyline": [
-            (24, 1), (23, 1), (22, 1), (21, 1), (20, 1), (20, 2), (19, 2), (19, 3),
+            (19, 0),
+            (20, 1), (19, 1),
+            (20, 2), (19, 2),
+            (20, 3), (19, 3),
         ],
         "crossings": {
-            (20, 2): "bridge",   # Hardvale-Lugdun road crossing
+            (20, 2): "bridge",    # Hardvale-Lugdun road crossing
         },
     },
     {
         "name": "Orenville Feeder",
         "navigability": "river_craft",
-        # S->N flow into Lake Orenville (terminates at (6, 8) which is lake)
+        # S->N flow into Lake Orenville (terminates at (6, 8) which is lake).
+        # Zigzag between cols 6 and 7 (alternating NE + NW steps). NOTE the
+        # "even -> odd at row-1" step (NE) advances the row; the "odd ->
+        # even at same row" step (NW) brings us back. A naive (6,r) ->
+        # (7,r) -> (6,r-1) chain is NOT valid because (7,r) and (6,r-1) are
+        # not hex-adjacent in this offset convention.
         "polyline": [
-            (6, 11), (6, 10), (6, 9), (6, 8),
+            (6, 11),
+            (7, 10), (6, 10),
+            (7, 9), (6, 9),
+            (7, 8), (6, 8),
         ],
         "crossings": {
             (6, 10): "ford",
@@ -128,9 +160,17 @@ RIVERS = [
     {
         "name": "Westmarch Stream",
         "navigability": "small_craft",
-        # E->W flow through Riverroon area, exits west off-map
+        # Flows E into Lake Orenville at (4, 7), passing through Riverroon
+        # at (1, 6). Pattern: per-col S step followed by SE step. Each
+        # triple of consecutive hexes is mutually adjacent — the
+        # vertex-sharing continuity rule is satisfied even though this
+        # isn't a pure column zigzag (the polyline crosses cols 1->4 with
+        # a per-col descent).
         "polyline": [
-            (3, 6), (2, 6), (1, 6), (0, 6),
+            (1, 5),
+            (1, 6), (2, 6),
+            (2, 7), (3, 6),
+            (3, 7), (4, 7),
         ],
         "crossings": {
             (1, 6): "bridge",    # Riverroon's namesake river crossing
@@ -139,37 +179,91 @@ RIVERS = [
     {
         "name": "Central Tributary",
         "navigability": "river_craft",
-        # E->W flow into Central Lake (at 20-21, 12-13)
+        # N->S Lugdun-style descent into Central Lake at (21, 12). Cols
+        # 21/22 zigzag from row 10 down to lake entry.
         "polyline": [
-            (25, 13), (24, 13), (23, 13), (22, 13), (21, 13),
+            (22, 10),
+            (21, 10),
+            (22, 11), (21, 11),
+            (22, 12), (21, 12),
         ],
         "crossings": {},
     },
     {
         "name": "Southern River",
         "navigability": "river_craft",
-        # E->W flow through southern wilderness
+        # N->S col-zigzag through southern wilderness; exits the map at
+        # the south edge (row 19, the last row). Cols 22/23 Lugdun-style.
         "polyline": [
-            (28, 16), (27, 16), (26, 16), (25, 16), (24, 16), (23, 16),
-            (22, 16), (21, 16), (20, 16), (19, 16), (18, 16), (17, 16),
+            (23, 14),
+            (22, 15), (23, 15),
+            (22, 16), (23, 16),
+            (22, 17), (23, 17),
+            (22, 18), (23, 18),
+            (22, 19), (23, 19),
         ],
         "crossings": {},
     },
 ]
 
 
+def _are_adjacent(a, b):
+    """True if hexes a and b are direct hex-grid neighbors."""
+    return edge_between(a, b) is not None
+
+
 def generate_river_edges(rivers):
+    """Build canonical river edges from polylines of hex centers.
+
+    Continuity invariant (vertex-sharing): for each consecutive triple
+    (a, b, c) in the polyline, the three hexes must be MUTUALLY ADJACENT
+    (forming a triangle in the hex grid). The two edges produced — (a-b)
+    and (b-c) — share the vertex that is the corner of all three hexes.
+    Without this, the edges land on opposite sides of b, the river jumps
+    across b's interior, and the renderer shows two disconnected line
+    segments.
+
+    The classic "broken" patterns are:
+      * Straight chain in a single column: (q, 0), (q, 1), (q, 2), ...
+        Each pair is adjacent (N/S edges) but the triples are not
+        mutually adjacent — (q, 0) and (q, 2) are 2 rows apart.
+      * Straight chain in a single row: (24, r), (23, r), (22, r), ...
+        Same problem in the other axis: (24, r) and (22, r) are 2 cols
+        apart and not adjacent in flat-top.
+
+    The "correct" pattern for any directional river is a zigzag between
+    two adjacent columns (or two adjacent rows) such that every triple
+    forms a triangle. See `RIVERS` below for worked examples.
+    """
     edges = []
     for r in rivers:
         poly = r["polyline"]
         nav = r["navigability"]
         crossings = r.get("crossings", {})
+        # Pairwise adjacency check
         for i in range(len(poly) - 1):
             a, b = poly[i], poly[i + 1]
-            edge_dir = edge_between(a, b)
-            if edge_dir is None:
-                print(f"  WARN: {r['name']}: non-adjacent hexes {a} -> {b}; skipping")
-                continue
+            if edge_between(a, b) is None:
+                raise ValueError(
+                    f"{r['name']}: non-adjacent hexes in polyline: {a} -> {b}. "
+                    f"Each pair of consecutive polyline entries must be hex neighbors."
+                )
+        # Triple adjacency check (vertex-sharing continuity)
+        for i in range(len(poly) - 2):
+            a, b, c = poly[i], poly[i + 1], poly[i + 2]
+            if not _are_adjacent(a, c):
+                raise ValueError(
+                    f"{r['name']}: triple {a} -> {b} -> {c} doesn't form a triangle "
+                    f"({a} and {c} aren't adjacent). The two emitted river edges land "
+                    f"on opposite sides of {b} and render as disconnected segments. "
+                    f"Use a zigzag pattern where every triple of consecutive hexes is "
+                    f"mutually adjacent (e.g. for cols (X, Y) where X+1=Y: "
+                    f"(Y, r), (X, r), (Y, r-1) UP-flow, or "
+                    f"(X, r), (Y, r+1), (X, r+1) DOWN-flow)."
+                )
+        # All good — emit edges
+        for i in range(len(poly) - 1):
+            a, b = poly[i], poly[i + 1]
             crossing = crossings.get(a, "none")
             entry = canonical_river_edge(a, b, nav, crossing)
             entry["river_name"] = r["name"]

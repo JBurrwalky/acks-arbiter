@@ -54,7 +54,7 @@ const _SUPPLY_UPDATE_FIELDS := [
 # ---------------------------------------------------------------------------
 
 static func create_army(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	if not CampaignRepository.db.query_with_bindings("""
@@ -69,25 +69,25 @@ static func create_army(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("name", "")),
-		String(data.get("political_owner_id", "")),
-		String(data.get("command_character_id", "")),
-		String(data.get("state", "assembling")),
+		str(data.get("campaign_id", "")),
+		str(data.get("name", "")),
+		str(data.get("political_owner_id", "")),
+		str(data.get("command_character_id", "")),
+		str(data.get("state", "assembling")),
 		_null_or_string(data.get("map_id", null)),
 		data.get("hex_q", null),
 		data.get("hex_r", null),
 		_null_or_string(data.get("garrison_stronghold_id", null)),
 		int(data.get("formed_calendar_day", 0)),
 		int(data.get("disbanded_calendar_day", 0)),
-		String(data.get("unit_scale", "platoon")),
-		String(data.get("strategic_stance", "defensive")),
-		String(data.get("forced_march_bonus_expires_leg_id", "")),
+		str(data.get("unit_scale", "platoon")),
+		str(data.get("strategic_stance", "defensive")),
+		str(data.get("forced_march_bonus_expires_leg_id", "")),
 		int(data.get("consecutive_marching_days", 0)),
 		int(data.get("last_returned_to_garrison_day_index", 0)),
-		String(data.get("daily_penalty_state", "{}")),
+		str(data.get("daily_penalty_state", "{}")),
 		int(data.get("rng_seed_stream", 0)),
-		String(data.get("notes", "")),
+		str(data.get("notes", "")),
 	]):
 		push_error("ArmyRepository.create_army failed: name=%s" % data.get("name", "?"))
 		return ""
@@ -172,7 +172,7 @@ static func list_armies_under_command(command_character_id: String) -> Array:
 # ---------------------------------------------------------------------------
 
 static func create_officer(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	if not CampaignRepository.db.query_with_bindings("""
@@ -184,14 +184,14 @@ static func create_officer(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("army_id", "")),
-		String(data.get("character_id", "")),
-		String(data.get("rank", "lieutenant")),
+		str(data.get("army_id", "")),
+		str(data.get("character_id", "")),
+		str(data.get("rank", "lieutenant")),
 		_null_or_string(data.get("parent_officer_id", null)),
 		int(data.get("leadership_ability", 4)),
 		int(data.get("strategic_ability", 0)),
 		int(data.get("morale_modifier", 0)),
-		String(data.get("derivation_source", "pc")),
+		str(data.get("derivation_source", "pc")),
 		int(data.get("monthly_wage_cp", 0)),
 		int(data.get("appointed_calendar_day", 0)),
 		int(data.get("removed_calendar_day", 0)),
@@ -268,7 +268,7 @@ static func get_army_leader(army_id: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func create_assignment(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	if not CampaignRepository.db.query_with_bindings("""
@@ -279,14 +279,14 @@ static func create_assignment(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("army_id", "")),
-		String(data.get("troop_unit_id", "")),
-		String(data.get("parent_officer_id", "")),
-		String(data.get("role", "line")),
+		str(data.get("army_id", "")),
+		str(data.get("troop_unit_id", "")),
+		str(data.get("parent_officer_id", "")),
+		str(data.get("role", "line")),
 		int(data.get("assigned_calendar_day", 0)),
 		int(data.get("released_calendar_day", 0)),
-		String(data.get("release_reason", "")),
-		String(data.get("destination", "")),
+		str(data.get("release_reason", "")),
+		str(data.get("destination", "")),
 	]):
 		push_error("ArmyRepository.create_assignment failed: army=%s unit=%s" % [
 			data.get("army_id", "?"), data.get("troop_unit_id", "?"),
@@ -342,7 +342,7 @@ static func get_active_assignment_for_unit(troop_unit_id: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func create_supply_state(data: Dictionary) -> bool:
-	var army_id: String = String(data.get("army_id", ""))
+	var army_id: String = str(data.get("army_id", ""))
 	if army_id.is_empty():
 		push_error("ArmyRepository.create_supply_state: army_id is required")
 		return false
@@ -357,14 +357,14 @@ static func create_supply_state(data: Dictionary) -> bool:
 	""", [
 		army_id,
 		_null_or_string(data.get("supply_base_stronghold_id", null)),
-		String(data.get("supply_line_status", "out_of_supply_no_base")),
+		str(data.get("supply_line_status", "out_of_supply_no_base")),
 		int(data.get("weekly_supply_cost_cp", 0)),
 		int(data.get("current_stockpile_cp", 0)),
 		int(data.get("supply_line_weighted_hexes", 0)),
 		int(data.get("last_supply_check_calendar_day", 0)),
 		int(data.get("consecutive_unsupplied_weeks", 0)),
-		String(data.get("requisition_cooldowns_json", "{}")),
-		String(data.get("partial_supply_priority_json", "[]")),
+		str(data.get("requisition_cooldowns_json", "{}")),
+		str(data.get("partial_supply_priority_json", "[]")),
 	]):
 		push_error("ArmyRepository.create_supply_state failed: army=%s" % army_id)
 		return false

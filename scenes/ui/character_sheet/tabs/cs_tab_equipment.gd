@@ -316,7 +316,7 @@ func _is_thrown_self_ammo(item: Dictionary) -> bool:
 	## Ammunition that is also the projectile (darts). Has weapon_damage and "thrown".
 	if item.get("item_category", "") != "ammunition":
 		return false
-	if String(item.get("weapon_damage", "")).is_empty():
+	if str(item.get("weapon_damage", "")).is_empty():
 		return false
 	var tags: Array = _get_catalog().get_item(item.get("item_key", "")).get("weapon_tags", [])
 	return "thrown" in tags

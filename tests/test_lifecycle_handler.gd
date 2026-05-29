@@ -188,7 +188,7 @@ func test_stronghold_collapse_sets_ruined_state_and_grace() -> void:
 		check(false, "could not read domain row")
 		return
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	check(String(row.get("lifecycle_state", "")) == "ruined_stronghold",
+	check(str(row.get("lifecycle_state", "")) == "ruined_stronghold",
 		"state=ruined_stronghold")
 	check(int(row.get("ruined_stronghold_grace_until_day", 0)) == 530,
 		"grace_until = 500 + 30 = 530, got %d" % int(row.get("ruined_stronghold_grace_until_day", 0)))

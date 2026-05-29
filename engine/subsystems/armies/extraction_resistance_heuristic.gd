@@ -112,7 +112,7 @@ static func _compute_local_garrison_br(domain_id: String) -> float:
 	var rows: Array = CampaignRepository.db.query_result.duplicate()
 	var total: float = 0.0
 	for row in rows:
-		var unit_id: String = String(row.get("unit_id", ""))
+		var unit_id: String = str(row.get("unit_id", ""))
 		var assn: Dictionary = ArmyRepository.get_active_assignment_for_unit(unit_id)
 		if not assn.is_empty():
 			continue
@@ -235,7 +235,7 @@ static func _describe_resistance_force(domain_id: String) -> Dictionary:
 		return {"unit_ids": []}
 	var ids: Array = []
 	for row in CampaignRepository.db.query_result:
-		ids.append(String(row.get("id", "")))
+		ids.append(str(row.get("id", "")))
 	return {"unit_ids": ids}
 
 

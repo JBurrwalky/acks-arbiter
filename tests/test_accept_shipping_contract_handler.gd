@@ -68,21 +68,42 @@ func _build_fixture_with_offer(opts: Dictionary = {}) -> Dictionary:
 	VisitStateManager.on_party_entered_settlement(
 		bundle["party_id"], bundle["origin_settlement_id"], bundle["pc_id"],
 		Timekeeping.get_total_days())
-	# VisitStateManager auto-rolled offers via Wave 4 wiring. Read them back.
+	# VisitStateManager auto-rolled offers via Wave 4 wiring. The roller seeds its
+	# RNG from the (time-based, run-to-run-varying) party + settlement IDs, so a
+	# single roll can by chance yield only oversized offers — loads > 9, i.e.
+	# > 640 stone, exceeding the wagon's load_max — leaving no fitting offer and
+	# making this fixture flaky. Re-roll on successive calendar days (each day is a
+	# fresh RNG seed) until a road offer fits, bounded so a pathological seed can't
+	# hang the suite. Per-roll P(fit) >= ~0.976, so 64 attempts is astronomically
+	# safe. The roller itself is covered by its own 44-test suite; this loop only
+	# guarantees the handler fixture a deterministically-present fitting offer.
+	var entry_day: int = Timekeeping.get_total_days()
 	var offers: Array = ShippingContractOfferRoller.list_offers(
 		bundle["party_id"], bundle["origin_settlement_id"])
+	var picked: Dictionary = _pick_fitting_offer(offers)
+	var attempt: int = 0
+	while picked.is_empty() and attempt < 64:
+		attempt += 1
+		ShippingContractOfferRoller.clear_for_party_at_settlement(
+			bundle["party_id"], bundle["origin_settlement_id"])
+		offers = ShippingContractOfferRoller.roll_for_visit(
+			bundle["origin_settlement_id"], bundle["party_id"], entry_day + attempt)
+		picked = _pick_fitting_offer(offers)
 	bundle["offers"] = offers
 	bundle["wagon_id"] = wagon_id
-	# Find the first road-mode offer with capacity ≤ wagon's 640 stone (≤9 loads).
-	var picked: Dictionary = {}
+	bundle["picked_offer"] = picked
+	return bundle
+
+
+## First road-mode offer whose total cargo fits the fixture wagon's 640-stone
+## load_max (<= 9 loads of 70-stone mixed cargo). Returns {} if none fits.
+func _pick_fitting_offer(offers: Array) -> Dictionary:
 	for o in offers:
 		if String((o as Dictionary).get("route_mode", "")) == "road":
 			var stone: int = int((o as Dictionary).get("loads_count", 0)) * 70
 			if stone <= 640:
-				picked = o
-				break
-	bundle["picked_offer"] = picked
-	return bundle
+				return o
+	return {}
 
 
 func _make_state(fx: Dictionary, params: Dictionary) -> Dictionary:

@@ -56,7 +56,7 @@ func _build_ui() -> void:
 
 	_subline_label = Label.new()
 	_subline_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_subline_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.6))
+	_subline_label.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 	_subline_label.text = ""
 	_subline_label.visible = false
 	add_child(_subline_label)
@@ -68,7 +68,7 @@ func _build_ui() -> void:
 
 	_note_label = Label.new()
 	_note_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_note_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	_note_label.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 	_note_label.text = ""
 	_note_label.visible = false
 	add_child(_note_label)

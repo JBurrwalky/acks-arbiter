@@ -358,7 +358,7 @@ func test_polymorph_other_enforces_2x_old_hd_constraint() -> void:
 	var entry: Dictionary = pt.get(target.id, {})
 	check(not bool(entry.get("applied", true)),
 		"4-HD form rejected vs 2-HD old form (≥2x cap)")
-	check(String(entry.get("reason", "")) == "form_hd_at_or_above_2x_old_hd",
+	check(str(entry.get("reason", "")) == "form_hd_at_or_above_2x_old_hd",
 		"reason='form_hd_at_or_above_2x_old_hd'")
 
 
@@ -537,7 +537,7 @@ func test_teleport_step_unwilling_save_negates() -> void:
 	var entry: Dictionary = pt.get("b", {})
 	check(not bool(entry.get("applied", true)),
 		"unwilling target with successful save → applied=false")
-	check(String(entry.get("reason", "")) == "saved",
+	check(str(entry.get("reason", "")) == "saved",
 		"reason='saved'")
 
 

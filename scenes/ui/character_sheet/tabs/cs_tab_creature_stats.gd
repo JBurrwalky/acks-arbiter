@@ -221,7 +221,7 @@ func _add_section_header(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 12)
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.75, 0.55))
+	lbl.add_theme_color_override("font_color", Color(0.34, 0.27, 0.19, 1.0))
 	add_child(lbl)
 
 

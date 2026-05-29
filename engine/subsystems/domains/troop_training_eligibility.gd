@@ -187,7 +187,7 @@ static func eligible_troop_types(character_id: String) -> Array:
 ## proficiency loadout.
 static func can_train_troop_type(character_id: String, troop_type: String) -> bool:
 	for entry: Dictionary in eligible_troop_types(character_id):
-		if String(entry.get("troop_type", "")) == troop_type:
+		if str(entry.get("troop_type", "")) == troop_type:
 			return true
 	return false
 
@@ -196,7 +196,7 @@ static func can_train_troop_type(character_id: String, troop_type: String) -> bo
 ## eligible).
 static func training_months_for(troop_type: String) -> int:
 	for entry: Dictionary in TROOP_TYPE_TABLE:
-		if String(entry.get("troop_type", "")) == troop_type:
+		if str(entry.get("troop_type", "")) == troop_type:
 			return int(entry.get("training_months", 0))
 	return 0
 
@@ -205,6 +205,6 @@ static func training_months_for(troop_type: String) -> int:
 ## (30 gp/month at rank 1 light, 60 gp/month at rank 2 heavy).
 static func monthly_earnings_for(troop_type: String) -> int:
 	for entry: Dictionary in TROOP_TYPE_TABLE:
-		if String(entry.get("troop_type", "")) == troop_type:
+		if str(entry.get("troop_type", "")) == troop_type:
 			return int(entry.get("monthly_earnings_gp", 0))
 	return 0

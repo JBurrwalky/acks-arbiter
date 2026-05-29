@@ -1,0 +1,69 @@
+{
+  "_source": "rules/acore-setting-construction-rules.xml §assigning_treasure table:unprotected_treasure",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "dungeon_level",
+    "roll_1",
+    "roll_2",
+    "roll_3",
+    "roll_4",
+    "roll_5",
+    "roll_6"
+  ],
+  "rows": [
+    {
+      "dungeon_level": "1",
+      "roll_1": "A",
+      "roll_2": "B",
+      "roll_3": "C",
+      "roll_4": "D",
+      "roll_5": "E",
+      "roll_6": "F"
+    },
+    {
+      "dungeon_level": "2",
+      "roll_1": "C",
+      "roll_2": "D",
+      "roll_3": "E",
+      "roll_4": "F",
+      "roll_5": "G",
+      "roll_6": "H"
+    },
+    {
+      "dungeon_level": "3",
+      "roll_1": "E",
+      "roll_2": "F",
+      "roll_3": "G",
+      "roll_4": "H",
+      "roll_5": "I",
+      "roll_6": "J"
+    },
+    {
+      "dungeon_level": "4",
+      "roll_1": "G",
+      "roll_2": "H",
+      "roll_3": "I",
+      "roll_4": "J",
+      "roll_5": "K",
+      "roll_6": "L"
+    },
+    {
+      "dungeon_level": "5",
+      "roll_1": "I",
+      "roll_2": "J",
+      "roll_3": "K",
+      "roll_4": "L",
+      "roll_5": "M",
+      "roll_6": "N"
+    },
+    {
+      "dungeon_level": "6",
+      "roll_1": "M",
+      "roll_2": "N",
+      "roll_3": "O",
+      "roll_4": "P",
+      "roll_5": "Q",
+      "roll_6": "R"
+    }
+  ]
+}

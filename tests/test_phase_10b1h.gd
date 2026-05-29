@@ -163,7 +163,7 @@ func test_launcher_cards_config_matches_q27() -> void:
 	var enabled_count: int = 0
 	var manage_assistant_ready: bool = true
 	for entry in MagicalResearchBlock.LAUNCHER_CARDS:
-		if String(entry.get("id", "")) == "manage_assistant":
+		if str(entry.get("id", "")) == "manage_assistant":
 			manage_assistant_ready = bool(entry.get("launcher_ready", true))
 		else:
 			if bool(entry.get("launcher_ready", false)):
@@ -267,7 +267,7 @@ func test_eligible_spells_mage_returns_arcane() -> void:
 	var found_mm: bool = false
 	var found_clw: bool = false
 	for entry in spells:
-		var k: String = String(entry.get("spell_key", ""))
+		var k: String = str(entry.get("spell_key", ""))
 		if k == "magic_missile":
 			found_mm = true
 		elif k == "cure_light_wounds":
@@ -285,7 +285,7 @@ func test_eligible_spells_lightblessed_includes_divine_cleric() -> void:
 	var found_mm: bool = false
 	var found_clw: bool = false
 	for entry in spells:
-		var k: String = String(entry.get("spell_key", ""))
+		var k: String = str(entry.get("spell_key", ""))
 		if k == "magic_missile":
 			found_mm = true
 		elif k == "cure_light_wounds":

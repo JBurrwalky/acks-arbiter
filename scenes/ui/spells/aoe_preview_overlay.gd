@@ -102,8 +102,8 @@ func setup(spell_name: String, affected: Array, ally_ids: Array) -> void:
 	var lines := PackedStringArray()
 	lines.append("[b]%s[/b] will affect %d target(s):\n" % [spell_name, affected.size()])
 	for entry in affected:
-		var eid := String(entry.get("id", ""))
-		var nm := String(entry.get("name", eid))
+		var eid := str(entry.get("id", ""))
+		var nm := str(entry.get("name", eid))
 		if eid in ally_ids:
 			lines.append("  [color=red]• %s (ally!)[/color]" % nm)
 		else:

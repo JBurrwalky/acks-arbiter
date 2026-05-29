@@ -35,10 +35,12 @@ const HEADING_FONT_SIZE := 22
 const BODY_FONT_SIZE := 14
 const LINK_FONT_SIZE := 13
 
-const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
-const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
-const LINK_COLOR := Color(0.78, 0.65, 0.30, 1.0)
-const LINK_HOVER_COLOR := Color(1.0, 0.85, 0.50, 1.0)
+# Dark text for the light parchment notebook page (were cream → invisible).
+# See docs/coding_conventions.md §6.10 / build_log.md 2026-05-27.
+const HEADING_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const BODY_COLOR := Color(0.34, 0.27, 0.19, 1.0)
+const LINK_COLOR := Color(0.62, 0.40, 0.10, 1.0)        # gold accent, darkened for light-page contrast
+const LINK_HOVER_COLOR := Color(0.78, 0.52, 0.16, 1.0)
 
 const OUTER_MARGIN := 60
 const VERTICAL_SEPARATION := 18

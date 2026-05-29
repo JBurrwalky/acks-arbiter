@@ -1,0 +1,30 @@
+{
+  "_source": "rules/acore-monster-stocking-rules.xml §npc_parties table:npc_level",
+  "_extracted_by": "tools/extract_dungeon_generator_data.py",
+  "columns": [
+    "Roll",
+    "NPC Level Result"
+  ],
+  "rows": [
+    {
+      "Roll": "1",
+      "NPC Level Result": "Base level -2 (minimum 1)"
+    },
+    {
+      "Roll": "2",
+      "NPC Level Result": "Base level -1 (minimum 1)"
+    },
+    {
+      "Roll": "3-4",
+      "NPC Level Result": "Base level"
+    },
+    {
+      "Roll": "5",
+      "NPC Level Result": "Base level +1"
+    },
+    {
+      "Roll": "6",
+      "NPC Level Result": "Base level +2"
+    }
+  ]
+}

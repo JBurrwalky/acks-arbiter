@@ -153,7 +153,7 @@ static func on_expiration(
 		EventBus.combatant_reverted_to_object.emit(sid, "stick")
 		emitted[sid] = true
 	for entry in profile.get("snakes", []):
-		var sid := String(entry.get("snake_id", ""))
+		var sid := str(entry.get("snake_id", ""))
 		if sid.is_empty() or emitted.has(sid):
 			continue
 		EventBus.combatant_reverted_to_object.emit(sid, "stick")

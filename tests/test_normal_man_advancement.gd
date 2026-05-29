@@ -129,7 +129,7 @@ func test_advance_swaps_class_to_selected() -> void:
 		"in-memory character_class should be fighter, got %s" % nm.character_class)
 	# DB row reflects the swap.
 	var row := CampaignRepository.get_character(nm.id)
-	check(String(row.get("character_class", "")) == "fighter",
+	check(str(row.get("character_class", "")) == "fighter",
 		"DB character_class should be 'fighter', got '%s'" % str(row.get("character_class", "")))
 
 

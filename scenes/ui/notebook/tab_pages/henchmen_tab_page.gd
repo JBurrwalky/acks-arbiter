@@ -45,12 +45,16 @@ const SUBTAB_DEPARTURE_LOG := "departure_log"
 const SUBTAB_DEFAULT := SUBTAB_ROSTER
 
 const SUBTAB_FONT_SIZE := 12
-const ACTIVE_SUBTAB_COLOR := Color(0.92, 0.86, 0.74, 1.0)
-const INACTIVE_SUBTAB_COLOR := Color(0.55, 0.50, 0.42, 1.0)
+# Notebook page is light parchment — text must be dark to be visible. These were
+# cream/light (correct on the old dark overlay, invisible on the light page).
+# Dark primary = VELLUM_TEXT_COLOR; muted secondary = VELLUM_SECONDARY_TEXT_COLOR.
+# See docs/coding_conventions.md §6.10 / build_log.md 2026-05-27.
+const ACTIVE_SUBTAB_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const INACTIVE_SUBTAB_COLOR := Color(0.34, 0.27, 0.19, 1.0)
 
-const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
-const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
-const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
+const HEADING_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const BODY_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+const DIM_COLOR := Color(0.34, 0.27, 0.19, 1.0)
 
 # Per acore_equipment.xml §loyalty_results — 5-band ACKS scale.
 const LOYALTY_BAND_LABELS := {

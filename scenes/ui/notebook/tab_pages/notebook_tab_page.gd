@@ -32,11 +32,32 @@ func _init() -> void:
 
 func _ready() -> void:
 	_build_content()
+	_stretch_content_children()
 
 
 ## Subclasses override. Default builds nothing.
 func _build_content() -> void:
 	pass
+
+
+## A tab page is a plain Control hosted inside the Notebook's `_page_holder`
+## VBoxContainer. The page itself is stretched by that container, but the page
+## is NOT itself a container — so the root layout node a subclass adds via
+## `add_child()` keeps its default top-left/minimum-size rect and does NOT fill
+## the page. The visible chrome (header, sub-tab strip, dropdowns) has intrinsic
+## height so it still shows, but any `SIZE_EXPAND_FILL` content area — especially
+## a `ScrollContainer`, whose minimum size is ~0 — collapses to zero height and
+## renders blank. (Tabs whose content has intrinsic size, e.g. Inventory, show
+## but cramped for the same reason.)
+##
+## Stretch every Control child to full-rect so the subclass's EXPAND_FILL layout
+## gets the page's real size. CanvasLayer modals (party/inventory) are not
+## Controls and are skipped. See docs/coding_conventions.md §6.11 /
+## build_log.md 2026-05-27.
+func _stretch_content_children() -> void:
+	for child in get_children():
+		if child is Control:
+			(child as Control).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
 ## Helper: instantiate an EmptyStatePage configured with the given content,

@@ -41,7 +41,7 @@ static func on_complete(state: Dictionary, runner) -> Dictionary:
 	var row := SyndicateRepository.get_hijink(hijink_id)
 	if row.is_empty():
 		return {"summary": "perform_hijink: hijink_assignments row not found"}
-	var kind: String = String(row.get("hijink_kind", ""))
+	var kind: String = str(row.get("hijink_kind", ""))
 	var class_name_str: String = String(KIND_DISPATCH.get(kind, ""))
 	if class_name_str.is_empty():
 		return {"summary": "perform_hijink: unknown hijink_kind '%s'" % kind}

@@ -77,14 +77,14 @@ const VALID_INTENTS := [INTENT_OCCUPY, INTENT_LOOT_AND_SCOOT, INTENT_SALT_THE_EA
 ## by `instantiate_realm_for_off_map_force`. v1 caller responsibility: pass a
 ## valid campaign_id; head_character_id may be empty for foreign realms.
 static func create_realm(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
-	var campaign_id: String = String(data.get("campaign_id", ""))
+	var campaign_id: String = str(data.get("campaign_id", ""))
 	if campaign_id.is_empty():
 		push_error("RealmRepository.create_realm: campaign_id is required")
 		return ""
-	var realm_kind: String = String(data.get("realm_kind", KIND_TRACKED))
+	var realm_kind: String = str(data.get("realm_kind", KIND_TRACKED))
 	if not VALID_REALM_KINDS.has(realm_kind):
 		push_error("RealmRepository.create_realm: invalid realm_kind '%s'" % realm_kind)
 		return ""
@@ -101,11 +101,11 @@ static func create_realm(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id, campaign_id,
-		String(data.get("name", "Unnamed Realm")),
+		str(data.get("name", "Unnamed Realm")),
 		head_v,
 		alignment_v,
-		String(data.get("dominant_religion", "")),
-		String(data.get("culture", "")),
+		str(data.get("dominant_religion", "")),
+		str(data.get("culture", "")),
 		realm_kind,
 	]):
 		push_error("RealmRepository.create_realm: insert failed for campaign=%s" % campaign_id)
@@ -165,7 +165,11 @@ static func get_realm_for_domain(domain_id: String) -> Dictionary:
 		"SELECT owner_character_id FROM domains WHERE id = ?", [apex_domain_id]
 	) or CampaignRepository.db.query_result.is_empty():
 		return {}
-	var apex_owner: String = String(CampaignRepository.db.query_result[0].get("owner_character_id", ""))
+	# NULLable column; coerce defensively (Dictionary.get returns the existing
+	# null instead of the fallback when the key is present with a null value,
+	# and String(null) errors with "Nonexistent String constructor").
+	var owner_v = CampaignRepository.db.query_result[0].get("owner_character_id", "")
+	var apex_owner: String = String(owner_v) if owner_v != null else ""
 	if apex_owner.is_empty():
 		return {}
 	return get_realm_for_character(apex_owner)
@@ -440,8 +444,8 @@ static func spawn_local_succession_npc(
 	) or CampaignRepository.db.query_result.is_empty():
 		return ""
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	var campaign_id: String = String(row.get("campaign_id", ""))
-	var alignment: String = String(row.get("alignment", "neutral"))
+	var campaign_id: String = str(row.get("campaign_id", ""))
+	var alignment: String = str(row.get("alignment", "neutral"))
 	if not ["lawful", "neutral", "chaotic"].has(alignment):
 		alignment = "neutral"
 	var npc_id: String = CampaignRepository.generate_id()

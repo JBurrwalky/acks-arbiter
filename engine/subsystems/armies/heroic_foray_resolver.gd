@@ -84,7 +84,7 @@ static func is_qualifying_hero(character_id: String, unit_scale: String, is_henc
 	if CampaignRepository.db.query_result.is_empty():
 		return false
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	var character_type: String = String(row.get("character_type", ""))
+	var character_type: String = str(row.get("character_type", ""))
 	var level: int = int(row.get("level", 0))
 	var offset: int = int(SCALE_REQUIREMENT_OFFSETS.get(unit_scale, 0))
 
@@ -134,7 +134,7 @@ static func list_qualifying_heroes_for_army(army_id: String, unit_scale: String)
 			qualifiers.append({
 				"character_id": char_id,
 				"level": int(row.get("level", 0)),
-				"character_type": String(row.get("character_type", "")),
+				"character_type": str(row.get("character_type", "")),
 				"officer_rank": String(officer.get("rank", "")),
 			})
 	return qualifiers

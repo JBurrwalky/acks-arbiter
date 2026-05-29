@@ -18,7 +18,7 @@ func run_all_tests() -> void:
 	test_display_name_unknown_returns_empty()
 	test_weapon_focus_six_entries()
 	test_elementalism_four_entries()
-	test_knowledge_fourteen_entries()
+	test_knowledge_min_entries()
 	test_language_nineteen_entries()
 	test_prerequisite_ids_fantastic_mounts()
 	test_naturalism_eleven_entries()

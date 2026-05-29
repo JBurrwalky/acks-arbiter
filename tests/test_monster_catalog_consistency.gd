@@ -57,7 +57,7 @@ func _load_data() -> void:
 		_catalog = parsed
 	for entry in _catalog:
 		if entry is Dictionary:
-			_by_id[String(entry.get("id", ""))] = entry
+			_by_id[str(entry.get("id", ""))] = entry
 	var f2 := FileAccess.open("res://data/domain_events/wilderness_creature_table.json", FileAccess.READ)
 	if f2 == null:
 		push_error("test_monster_catalog_consistency: cannot open wilderness_creature_table.json")
@@ -86,7 +86,7 @@ func test_every_entry_has_required_fields() -> void:
 			missing_count += 1
 			continue
 		var d: Dictionary = entry
-		var eid: String = String(d.get("id", "?"))
+		var eid: String = str(d.get("id", "?"))
 		for field in REQUIRED_FIELDS:
 			if not d.has(field):
 				missing_count += 1

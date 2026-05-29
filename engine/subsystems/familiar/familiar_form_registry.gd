@@ -85,12 +85,12 @@ func get_form_count() -> int:
 
 func get_display_name(form_key: String) -> String:
 	var entry := get_form(form_key)
-	return String(entry.get("display_name", form_key.capitalize()))
+	return str(entry.get("display_name", form_key.capitalize()))
 
 
 func get_summary(form_key: String) -> String:
 	var entry := get_form(form_key)
-	return String(entry.get("summary", ""))
+	return str(entry.get("summary", ""))
 
 
 ## Returns the cosmetic species variants the player may pick for this form.
@@ -126,7 +126,7 @@ func get_form_stats(form_key: String) -> Dictionary:
 	if entry.has("stat_block"):
 		return entry["stat_block"]
 	# Canon: resolve monster_id via MonsterRegistry.
-	var monster_id: String = String(entry.get("monster_id", ""))
+	var monster_id: String = str(entry.get("monster_id", ""))
 	if monster_id.is_empty():
 		push_error("FamiliarFormRegistry: form '%s' has neither stat_block nor monster_id" % form_key)
 		return {}

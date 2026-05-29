@@ -191,18 +191,18 @@ func _render_altars() -> void:
 		sub_panel.add_child(sub_vbox)
 		var title := Label.new()
 		title.text = "%s altar · %s invested · %d sq ft aura · %s" % [
-			String(row.get("alignment", "?")).capitalize(),
+			str(row.get("alignment", "?")).capitalize(),
 			Currency.format_cost(int(row.get("cp_invested", 0)) + int(row.get("dp_substituted_cp", 0))),
 			int(row.get("aura_size_sq_ft", 0)),
-			String(row.get("status", "?")),
+			str(row.get("status", "?")),
 		]
 		title.add_theme_font_size_override("font_size", 14)
 		sub_vbox.add_child(title)
 		var loc := Label.new()
 		loc.modulate = Color(1, 1, 1, 0.7)
 		loc.text = "Location: %s (%s)" % [
-			String(row.get("location_kind", "?")),
-			String(row.get("location_ref", "—")),
+			str(row.get("location_kind", "?")),
+			str(row.get("location_ref", "—")),
 		]
 		sub_vbox.add_child(loc)
 		_altars_card.add_child(sub_panel)
@@ -219,7 +219,7 @@ func _render_buffs() -> void:
 		_buffs_card.add_child(_dim_label("No active divine effects."))
 		return
 	for row: Dictionary in active:
-		var kind: String = String(row.get("effect_kind", ""))
+		var kind: String = str(row.get("effect_kind", ""))
 		var expires_at: int = int(row.get("expires_at_calendar_day", 0))
 		var days_remaining: int = max(0, expires_at - calendar_day)
 		var label := Label.new()

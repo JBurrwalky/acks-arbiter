@@ -85,7 +85,7 @@ Monster catalog (split alphabetically): `acore_monster_catalog_a-dop.xml`, `acor
 | `gdd-calendar-seasons.md` | Seasonal calendar layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion, and transition blending |
 | `gdd-weather-generation.md` | Deterministic per-hex daily weather, dawn/dusk calculation, climate integration, and DaW weather mapping |
 | `gdd-poi-generation.md` | Wilderness point-of-interest taxonomy, placement budgets, mechanical skeletons, and rumor/quest seeding |
-| `gdd-dungeon-layout.md` | Procedural dungeon map generation (adapted from donjon, CC BY-NC 3.0), cellular automata caverns, cell-based walls, dual room purpose |
+| `gdd-dungeon-layout.md` | Procedural dungeon map generation (rooms-first pipeline: scattered rooms + MST connection graph + L-shape corridor routing + rasterization), cellular automata caverns (V2), cell-based walls, dual room purpose |
 | `gdd-dungeon-factions.md` | Dungeon faction generation, inter-group relationships, territory assignment |
 | `gdd-settlement-layout.md` | City/settlement spatial generation (Voronoi blocks, street graphs, districts, vertical layers) |
 | `gdd-settlement-stocking.md` | On-demand settlement content generation (buildings, occupants, encounters, commerce, undercity) |

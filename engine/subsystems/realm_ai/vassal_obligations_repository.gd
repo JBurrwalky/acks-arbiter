@@ -34,7 +34,7 @@ const _UPDATE_FIELDS := [
 # ---------------------------------------------------------------------------
 
 static func create(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	var sql := """
@@ -46,15 +46,15 @@ static func create(data: Dictionary) -> String:
 	"""
 	var bindings: Array = [
 		id,
-		String(data.get("vassal_assignment_id", "")),
-		String(data.get("kind", "duty")),
-		String(data.get("type", "")),
+		str(data.get("vassal_assignment_id", "")),
+		str(data.get("kind", "duty")),
+		str(data.get("type", "")),
 		int(data.get("magnitude", 0)),
 		int(data.get("cp_value", 0)),
 		1 if bool(data.get("is_one_time", false)) else 0,
 		int(data.get("issued_calendar_day", 0)),
 		int(data.get("due_calendar_day", 0)),
-		String(data.get("status", "active")),
+		str(data.get("status", "active")),
 		int(data.get("loyalty_modifier_applied", 0)),
 		int(data.get("magnitude_pct", 50)),  # Phase 9C: default 50% per RAW minimum
 	]

@@ -354,7 +354,7 @@ static func _apply_wound_effects(
 	if wound_entries.is_empty():
 		return
 	for entry: Dictionary in wound_entries:
-		var wound_kind: String = String(entry.get("wound_kind", ""))
+		var wound_kind: String = str(entry.get("wound_kind", ""))
 		match wound_kind:
 			"":
 				continue
@@ -368,7 +368,7 @@ static func _apply_wound_effects(
 						continue
 				_apply_mw_wound(
 					character_id,
-					String(entry.get("mw_damage_type", "bludgeoning")),
+					str(entry.get("mw_damage_type", "bludgeoning")),
 					int(entry.get("mw_bracket_index", 4)),
 					punishment_kind,
 					current_day)

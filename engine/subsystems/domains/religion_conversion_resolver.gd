@@ -347,12 +347,12 @@ static func religious_structures_gp_value_for_domain(domain_id: String, religion
 		return 0
 	var total_gp: int = 0
 	for row in CampaignRepository.db.query_result:
-		var raw: String = String(row.get("effect_payload_json", "{}"))
+		var raw: String = str(row.get("effect_payload_json", "{}"))
 		var parsed: Variant = JSON.parse_string(raw)
 		if not (parsed is Dictionary):
 			continue
 		var data: Dictionary = parsed as Dictionary
-		if String(data.get("religion", "")) != religion:
+		if str(data.get("religion", "")) != religion:
 			continue
 		total_gp += int(data.get("gp_value", 250))
 	return total_gp
@@ -430,7 +430,7 @@ static func _altar_bonus_pct(domain_id: String, religion: String) -> int:
 		return ALTAR_BONUS_BASE_PCT
 	var matching_altars: int = 0
 	for row in CampaignRepository.db.query_result:
-		var raw: String = String(row.get("effect_payload_json", "{}"))
+		var raw: String = str(row.get("effect_payload_json", "{}"))
 		var parsed: Variant = JSON.parse_string(raw)
 		if not (parsed is Dictionary):
 			continue

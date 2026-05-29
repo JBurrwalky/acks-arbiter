@@ -52,9 +52,9 @@ func test_create_and_get() -> void:
 	})
 	check(not id.is_empty(), "create returns id")
 	var row := VassalObligationsRepository.get_obligation(id)
-	check(String(row.get("type", "")) == "scutage", "type round-trips")
+	check(str(row.get("type", "")) == "scutage", "type round-trips")
 	check(int(row.get("magnitude", 0)) == 200, "magnitude round-trips")
-	check(String(row.get("status", "")) == "active", "status defaults active")
+	check(str(row.get("status", "")) == "active", "status defaults active")
 
 
 func test_list_active_favors_and_duties() -> void:
@@ -114,7 +114,7 @@ func test_set_status_revoked() -> void:
 	})
 	check(VassalObligationsRepository.set_status(id, "revoked", 60), "set_status returns true")
 	var row := VassalObligationsRepository.get_obligation(id)
-	check(String(row.get("status", "")) == "revoked", "status mutated")
+	check(str(row.get("status", "")) == "revoked", "status mutated")
 
 
 func test_update_whitelist_blocks_invalid() -> void:
@@ -128,4 +128,4 @@ func test_update_whitelist_blocks_invalid() -> void:
 	# should be rejected silently. We verify no mutation happened.
 	check(ok or not ok, "update returns bool")  # any return is fine
 	var row := VassalObligationsRepository.get_obligation(id)
-	check(String(row.get("kind", "")) == "duty", "kind unchanged after rejected update")
+	check(str(row.get("kind", "")) == "duty", "kind unchanged after rejected update")

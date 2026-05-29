@@ -24,6 +24,7 @@ func run_all_tests() -> void:
 	_setup_campaign()
 
 	test_page_builds_with_modal_layer_and_sub_tabs()
+	test_content_root_is_stretched_full_rect()
 	test_composition_loads_party_members()
 	test_wilderness_and_dungeon_grids_are_independent()
 	test_travel_consumption_humanoid_food_and_water()
@@ -116,6 +117,36 @@ func test_page_builds_with_modal_layer_and_sub_tabs() -> void:
 	page.queue_free()
 	_teardown()
 	print("  page_builds_with_modal_layer_and_sub_tabs: OK (party_id=%s)" % party["party_id"])
+
+
+func test_content_root_is_stretched_full_rect() -> void:
+	# Regression for the "blank tab" bug (2026-05-27): the page is a plain
+	# Control hosted in the Notebook's _page_holder. Its script-built root
+	# layout child must be anchored full-rect by
+	# notebook_tab_page._stretch_content_children(), or the EXPAND_FILL content
+	# area (a ScrollContainer with ~0 minimum) collapses to zero height and the
+	# tab renders blank even though the header + sub-tab strip show.
+	_setup_party_with_two_pcs()
+	var page = PARTY_TAB_PAGE.new()
+	add_child(page)
+
+	var root_control: Control = null
+	for child in page.get_children():
+		if child is Control:
+			root_control = child
+			break
+	check(root_control != null, "party tab page should have a Control root child")
+	if root_control != null:
+		check(root_control.anchor_right == 1.0 and root_control.anchor_bottom == 1.0,
+			"root content child must be anchored full-rect; got anchors r=%.2f b=%.2f"
+			% [root_control.anchor_right, root_control.anchor_bottom])
+		check(root_control.offset_right == 0.0 and root_control.offset_bottom == 0.0,
+			"root content child offsets must be 0 for fill; got r=%.1f b=%.1f"
+			% [root_control.offset_right, root_control.offset_bottom])
+
+	page.queue_free()
+	_teardown()
+	print("  content_root_is_stretched_full_rect: OK")
 
 
 func test_composition_loads_party_members() -> void:

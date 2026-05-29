@@ -56,19 +56,26 @@ static func validate_watch_assignment(assignments: Array, party_ids: Array) -> S
 
 
 # ---------------------------------------------------------------------------
-# Encounter check per watch
+# Encounter check per watch [DEPRECATED 2026-05-27]
 # ---------------------------------------------------------------------------
 
-## Roll an encounter check for a single watch.
-## Returns null if no encounter, or an encounter_data Dictionary if triggered.
-## terrain_encounter_chance: probability (0.0 to 1.0) of encounter per watch.
+## DEPRECATED — do not call from new code.
+##
+## Per gdd-realtime-scheduler.md §4.3 (revised 2026-05-27), a camp receives
+## ONE encounter throw at camp_setup (rolled in CampHandlers.schedule_watches
+## via the gated hybrid rule), NOT one per watch. The earlier per-watch model
+## was a documentation hallucination that ~40% over-shot RAW encounter rates.
+##
+## This static is retained for now to avoid breaking any test that hasn't
+## been audited yet; remove after the test audit (§5 of the migration punch
+## list). New code: see `CampHandlers._perform_camp_encounter_throw` and the
+## `wilderness_encounter` event in WildernessHandlers.
 static func check_watch_encounter(terrain_encounter_chance: float) -> Variant:
-	# ACKS: encounter check is 1-in-6 for most terrains during night.
-	# Each watch gets its own check.
+	push_warning("CampManager.check_watch_encounter is DEPRECATED. See gdd-realtime-scheduler.md §4.3.")
 	var roll := DiceSystem.roll_digital(6, 1, 0, "encounter_check")
 	var threshold := int(terrain_encounter_chance * 6.0)
 	if threshold < 1:
-		threshold = 1  # Minimum 1-in-6.
+		threshold = 1
 	if roll.raw_total <= threshold:
 		return {
 			"encounter_roll": roll.raw_total,

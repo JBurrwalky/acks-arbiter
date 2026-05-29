@@ -1212,13 +1212,13 @@ static func _insert_unit_states(battle_id: String, side: String, deployment: Arr
 	for entry in deployment:
 		BattleRepository.create_unit_state({
 			"battle_id": battle_id,
-			"troop_unit_id": String(entry.get("troop_unit_id", "")),
+			"troop_unit_id": str(entry.get("troop_unit_id", "")),
 			"side": side,
-			"zone": String(entry.get("zone", "melee")),
+			"zone": str(entry.get("zone", "melee")),
 			"status": "engaged",
 			"br_at_battle_start": float(entry.get("br", 0.0)),
 			"br_current": float(entry.get("br", 0.0)),
-			"parent_officer_id": String(entry.get("parent_officer_id", "")),
+			"parent_officer_id": str(entry.get("parent_officer_id", "")),
 		})
 	var _ignored := army_id
 
@@ -1226,10 +1226,10 @@ static func _insert_unit_states(battle_id: String, side: String, deployment: Arr
 static func _zones_summary(deployment: Array) -> Dictionary:
 	var summary: Dictionary = {"missile": [], "skirmish": [], "melee": [], "reserve": []}
 	for entry in deployment:
-		var zone: String = String(entry.get("zone", "melee"))
+		var zone: String = str(entry.get("zone", "melee"))
 		if not summary.has(zone):
 			summary[zone] = []
-		summary[zone].append(String(entry.get("troop_unit_id", "")))
+		summary[zone].append(str(entry.get("troop_unit_id", "")))
 	return summary
 
 

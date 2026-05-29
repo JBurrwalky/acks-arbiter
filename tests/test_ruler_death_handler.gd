@@ -116,8 +116,8 @@ func test_handle_ruler_death_marks_domains_pending() -> void:
 	check(affected.size() == 1, "affected count=1, got %d" % affected.size())
 	check(affected[0] == DOMAIN_ID, "affected list contains the domain")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("lifecycle_state", "")) == "succession_pending",
-		"lifecycle_state=succession_pending, got %s" % String(row.get("lifecycle_state", "")))
+	check(str(row.get("lifecycle_state", "")) == "succession_pending",
+		"lifecycle_state=succession_pending, got %s" % str(row.get("lifecycle_state", "")))
 	check(int(row.get("succession_pending_until_day", 0)) == 530,
 		"grace_until=530 (500+30), got %d" % int(row.get("succession_pending_until_day", 0)))
 	var entries: Array = DepartureLogRecorder.list_for_domain(DOMAIN_ID)
@@ -139,7 +139,7 @@ func test_handle_ruler_death_skips_terminal_domains() -> void:
 	check(affected.is_empty(),
 		"abandoned domains skipped by ruler-death sweep, affected count=%d" % affected.size())
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("lifecycle_state", "")) == "abandoned",
+	check(str(row.get("lifecycle_state", "")) == "abandoned",
 		"state stayed abandoned")
 
 
@@ -151,12 +151,12 @@ func test_designate_heir_writes_columns_and_emits_signal() -> void:
 		DOMAIN_ID, HEIR_HENCHMAN_ID, RulerDeathHandler.KIND_HENCHMAN)
 	check(ok, "designate_heir returned true")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("designated_heir_character_id", "")) == HEIR_HENCHMAN_ID,
-		"heir id persisted, got %s" % String(row.get("designated_heir_character_id", "")))
-	check(String(row.get("designated_heir_kind", "")) == "henchman",
-		"heir kind persisted, got %s" % String(row.get("designated_heir_kind", "")))
+	check(str(row.get("designated_heir_character_id", "")) == HEIR_HENCHMAN_ID,
+		"heir id persisted, got %s" % str(row.get("designated_heir_character_id", "")))
+	check(str(row.get("designated_heir_kind", "")) == "henchman",
+		"heir kind persisted, got %s" % str(row.get("designated_heir_kind", "")))
 	# Lifecycle state unchanged (still pending until resolve).
-	check(String(row.get("lifecycle_state", "")) == "succession_pending",
+	check(str(row.get("lifecycle_state", "")) == "succession_pending",
 		"state stays succession_pending until resolve")
 
 
@@ -183,9 +183,9 @@ func test_resolve_succession_with_henchman_heir_transfers_ownership() -> void:
 		"reverted_to_overlord=false")
 	check(not bool(result.get("abandoned", true)), "abandoned=false")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("owner_character_id", "")) == HEIR_HENCHMAN_ID,
+	check(str(row.get("owner_character_id", "")) == HEIR_HENCHMAN_ID,
 		"owner column = heir")
-	check(String(row.get("lifecycle_state", "")) == "active",
+	check(str(row.get("lifecycle_state", "")) == "active",
 		"lifecycle_state back to active")
 
 
@@ -218,7 +218,7 @@ func test_resolve_succession_independent_no_heir_abandons() -> void:
 	check(bool(result.get("abandoned", false)),
 		"abandoned=true for independent + no heir")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("lifecycle_state", "")) == "abandoned",
+	check(str(row.get("lifecycle_state", "")) == "abandoned",
 		"state=abandoned via LifecycleHandler")
 
 
@@ -233,9 +233,9 @@ func test_resolve_succession_vassal_no_heir_reverts_to_overlord() -> void:
 	check(String(result.get("new_owner_id", "")) == OVERLORD_ID,
 		"new owner = overlord PC")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("owner_character_id", "")) == OVERLORD_ID,
+	check(str(row.get("owner_character_id", "")) == OVERLORD_ID,
 		"owner column = overlord")
-	check(String(row.get("lifecycle_state", "")) == "active",
+	check(str(row.get("lifecycle_state", "")) == "active",
 		"lifecycle_state back to active under direct rule")
 	# liege_domain_id should be cleared so the domain is no longer a vassal.
 	var liege_v: Variant = row.get("liege_domain_id", null)
@@ -268,7 +268,7 @@ func test_tick_succession_grace_lapse_with_heir_auto_resolves() -> void:
 	check(not bool(summary.get("lapsed", true)),
 		"lapsed=false when heir was designated")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("owner_character_id", "")) == HEIR_HENCHMAN_ID,
+	check(str(row.get("owner_character_id", "")) == HEIR_HENCHMAN_ID,
 		"owner column = heir after auto-resolution")
 
 
@@ -284,8 +284,8 @@ func test_tick_succession_grace_lapse_no_heir_lapses() -> void:
 	check(not bool(summary.get("auto_resolved", true)),
 		"auto_resolved=false when no heir designated")
 	var row: Dictionary = _reload_domain(DOMAIN_ID)
-	check(String(row.get("lifecycle_state", "")) == "abandoned",
-		"independent + lapse → abandoned, got %s" % String(row.get("lifecycle_state", "")))
+	check(str(row.get("lifecycle_state", "")) == "abandoned",
+		"independent + lapse → abandoned, got %s" % str(row.get("lifecycle_state", "")))
 
 
 func test_eligible_heirs_for_returns_pcs_and_henchmen() -> void:

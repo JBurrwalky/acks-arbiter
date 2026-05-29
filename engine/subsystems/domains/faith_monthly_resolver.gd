@@ -66,7 +66,7 @@ static func compute_pre_resolve_modifiers(
 		var payload := _parse_payload(row)
 		var delta: int = int(payload.get("delta_gp_per_family", 0))
 		result["consecrate_fields_bonus_per_family"] = int(result["consecrate_fields_bonus_per_family"]) + delta
-		(result["consecrate_fields_fired_effect_ids"] as Array).append(String(row.get("id", "")))
+		(result["consecrate_fields_fired_effect_ids"] as Array).append(str(row.get("id", "")))
 
 	# consecrate_ruler: continuous-active effect with an expiration window. v1
 	# allows at most one active buff per domain at a time (per RAW yearly
@@ -266,7 +266,7 @@ static func expire_stale_effects(domain_id: String, calendar_day: int) -> void:
 # ---------------------------------------------------------------------------
 
 static func _parse_payload(row: Dictionary) -> Dictionary:
-	var raw: String = String(row.get("effect_payload_json", "{}"))
+	var raw: String = str(row.get("effect_payload_json", "{}"))
 	if raw.is_empty():
 		return {}
 	var parsed: Variant = JSON.parse_string(raw)

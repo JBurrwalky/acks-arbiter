@@ -211,7 +211,7 @@ func _resolve_dispatcher(entry: Dictionary, rng: RandomNumberGenerator) -> Dicti
 			str(dispatcher), entry.get("merchandise_type", "")
 		])
 		return entry.duplicate()
-	var subroll: String = String(entry.get("subroll", ""))
+	var subroll: String = str(entry.get("subroll", ""))
 	var animal_roll: int = _roll_subroll(subroll, rng)
 	for animal in _animals_entries:
 		var rr: Array = animal.get("roll_range", [0, 0])

@@ -32,7 +32,7 @@ func test_designated_heir_succession() -> void:
 		"ruler death affects the owned domain; got %s" % str(affected))
 	# Verify domain entered succession_pending.
 	var d: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d.get("lifecycle_state", "")) == "succession_pending",
+	check(str(d.get("lifecycle_state", "")) == "succession_pending",
 		"domain → succession_pending after ruler death; got %s"
 		% str(d.get("lifecycle_state", "?")))
 	# Designate heir.

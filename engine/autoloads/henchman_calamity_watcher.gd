@@ -61,7 +61,7 @@ func _is_henchman(character_id: String) -> bool:
 	var row: Dictionary = CampaignRepository.get_character(character_id)
 	if row.is_empty():
 		return false
-	return String(row.get("character_type", "")) == "henchman"
+	return str(row.get("character_type", "")) == "henchman"
 
 
 func _apply_calamity(character_id: String, reason: String) -> void:
@@ -74,7 +74,7 @@ func _apply_calamity(character_id: String, reason: String) -> void:
 	var name_str: String = character_id
 	var row: Dictionary = CampaignRepository.get_character(character_id)
 	if not row.is_empty():
-		name_str = String(row.get("name", character_id))
+		name_str = str(row.get("name", character_id))
 	EventBus.notification_requested.emit({
 		"type":     "warning",
 		"category": "henchman",

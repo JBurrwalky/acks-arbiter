@@ -88,6 +88,29 @@ var ration_units: int = 0
 ## -1 sentinel = never ticked (next midnight schedules the first tick).
 var last_day_tick_round: int = -1
 
+# Camp state + per-day encounter gate (migration 131, gdd-realtime-scheduler.md §4.3).
+#
+# The party's current camp, if any. When `is_camping` is true, the four
+# camp_* fields describe the camp's window and watch schedule, and
+# `_handle_wilderness_encounter` (registered globally) can compute observer
+# state at any fire_time. Cleared by CampHandlers on rest_complete /
+# cancel_camp; cross-day camps preserve them until the player wakes.
+var is_camping: bool = false
+var camp_start_round: int = -1
+var camp_end_round: int = -1
+## JSON-encoded Array[Array[String]] — 3 watches × character_ids on duty.
+## Empty "[]" when not camping. Parsed lazily by the wilderness_encounter
+## handler since it's the only read site outside CampState.
+var camp_watch_assignments_json: String = "[]"
+## JSON-encoded Array[String] — character_ids sleeping in armor.
+## Empty "[]" when not camping.
+var camp_armed_sleepers_json: String = "[]"
+## day_index (round / ROUNDS_PER_DAY) on which a wilderness encounter most
+## recently triggered for this party. The hybrid camp-gate rule (§4.3.3)
+## fires the camp throw only when current_day_index > last_encounter_trigger_day.
+## -1 sentinel = never triggered.
+var last_encounter_trigger_day: int = -1
+
 # ---------------------------------------------------------------------------
 # Runtime-only (not persisted — populated from loaded characters)
 # ---------------------------------------------------------------------------
@@ -426,6 +449,13 @@ static func from_db(party_row: Dictionary, member_rows: Array, state_row: Dictio
 		pd.water_units = _int(state_row, "water_units")
 		pd.ration_units = _int(state_row, "ration_units")
 		pd.last_day_tick_round = _int(state_row, "last_day_tick_round", -1)
+		# Migration 131: camp state + encounter gate (gdd-realtime-scheduler.md §4.3).
+		pd.is_camping = bool(_int(state_row, "is_camping"))
+		pd.camp_start_round = _int(state_row, "camp_start_round", -1)
+		pd.camp_end_round = _int(state_row, "camp_end_round", -1)
+		pd.camp_watch_assignments_json = _str(state_row, "camp_watch_assignments_json", "[]")
+		pd.camp_armed_sleepers_json = _str(state_row, "camp_armed_sleepers_json", "[]")
+		pd.last_encounter_trigger_day = _int(state_row, "last_encounter_trigger_day", -1)
 
 	return pd
 
@@ -447,6 +477,13 @@ func to_state_dict() -> Dictionary:
 		"water_units": water_units,
 		"ration_units": ration_units,
 		"last_day_tick_round": last_day_tick_round,
+		# Migration 131.
+		"is_camping": int(is_camping),
+		"camp_start_round": camp_start_round,
+		"camp_end_round": camp_end_round,
+		"camp_watch_assignments_json": camp_watch_assignments_json,
+		"camp_armed_sleepers_json": camp_armed_sleepers_json,
+		"last_encounter_trigger_day": last_encounter_trigger_day,
 	}
 
 

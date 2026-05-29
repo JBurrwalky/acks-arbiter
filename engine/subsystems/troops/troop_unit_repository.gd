@@ -61,14 +61,14 @@ static func compute_save_vs_death(race: String, tier: String) -> int:
 
 
 static func create_unit(data: Dictionary) -> String:
-	var id: String = String(data.get("id", ""))
+	var id: String = str(data.get("id", ""))
 	if id.is_empty():
 		id = CampaignRepository.generate_id()
 	# Phase 9C polish 2026-05-09: compute save_vs_death from race + tier when
 	# the caller didn't supply one. Falls back to schema DEFAULT 14 if the
 	# race+tier pair is unknown.
-	var race: String = String(data.get("race", "human"))
-	var tier: String = String(data.get("tier", "average"))
+	var race: String = str(data.get("race", "human"))
+	var tier: String = str(data.get("tier", "average"))
 	var explicit_save: int = int(data.get("save_vs_death", 0))
 	var save_vs_death: int = explicit_save if explicit_save > 0 else compute_save_vs_death(race, tier)
 	if save_vs_death <= 0:
@@ -85,12 +85,12 @@ static func create_unit(data: Dictionary) -> String:
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
-		String(data.get("campaign_id", "")),
-		String(data.get("owner_character_id", "")),
+		str(data.get("campaign_id", "")),
+		str(data.get("owner_character_id", "")),
 		_null_or_string(data.get("assigned_domain_id", null)),
 		_null_or_string(data.get("assigned_stronghold_id", null)),
-		String(data.get("source_type", "mercenary")),
-		String(data.get("troop_type", "")),
+		str(data.get("source_type", "mercenary")),
+		str(data.get("troop_type", "")),
 		race,
 		tier,
 		int(data.get("starting_count", 0)),
@@ -104,11 +104,11 @@ static func create_unit(data: Dictionary) -> String:
 		1 if bool(data.get("is_veteran", false)) else 0,
 		1 if bool(data.get("is_trained", true)) else 0,
 		int(data.get("unit_xp", 0)),
-		String(data.get("assignment_kind", "available")),
+		str(data.get("assignment_kind", "available")),
 		int(data.get("hire_calendar_day", 0)),
-		String(data.get("equipment_kit", "")),
-		String(data.get("status", "active")),
-		String(data.get("departure_kind", "")),
+		str(data.get("equipment_kit", "")),
+		str(data.get("status", "active")),
+		str(data.get("departure_kind", "")),
 		int(data.get("departure_calendar_day", 0)),
 		save_vs_death,
 	]):

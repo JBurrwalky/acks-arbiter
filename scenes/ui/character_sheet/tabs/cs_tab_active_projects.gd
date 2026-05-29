@@ -90,7 +90,7 @@ func _render_projects() -> void:
 	var rows: Array = CampaignRepository.list_active_activity_states_for_character(_character_id)
 	var ongoing: Array = []
 	for row: Dictionary in rows:
-		if String(row.get("frequency_type", "")) == "ongoing":
+		if str(row.get("frequency_type", "")) == "ongoing":
 			ongoing.append(row)
 
 	if ongoing.is_empty():
@@ -113,13 +113,13 @@ func _make_project_card(row: Dictionary) -> PanelContainer:
 	inner.add_theme_constant_override("separation", 4)
 	panel.add_child(inner)
 
-	var def_id: String = String(row.get("activity_def_id", ""))
+	var def_id: String = str(row.get("activity_def_id", ""))
 	var ticks: int = int(row.get("ticks_accumulated", 0))
 	var required: int = int(row.get("ticks_required", 1))
 	var absence: int = int(row.get("absence_accumulated", 0))
 	var tolerance: int = ticks - absence
-	var location_kind: String = String(row.get("location_kind", "anywhere"))
-	var location_ref: String = String(row.get("location_ref", ""))
+	var location_kind: String = str(row.get("location_kind", "anywhere"))
+	var location_ref: String = str(row.get("location_ref", ""))
 
 	var top := HBoxContainer.new()
 	inner.add_child(top)
@@ -157,7 +157,7 @@ func _make_project_card(row: Dictionary) -> PanelContainer:
 	btn_row.add_child(inspect_btn)
 	var abandon_btn := Button.new()
 	abandon_btn.text = "Abandon project"
-	abandon_btn.pressed.connect(_on_abandon_pressed.bind(String(row.get("id", ""))))
+	abandon_btn.pressed.connect(_on_abandon_pressed.bind(str(row.get("id", ""))))
 	btn_row.add_child(abandon_btn)
 
 	return panel
@@ -189,7 +189,7 @@ static func _color_for_status(status: String) -> Color:
 
 func _on_inspect_pressed(row: Dictionary) -> void:
 	var dialog := AcceptDialog.new()
-	dialog.title = "%s — Inspect math" % _humanize(String(row.get("activity_def_id", "")))
+	dialog.title = "%s — Inspect math" % _humanize(str(row.get("activity_def_id", "")))
 	var body := "Activity: %s\nFrequency: %s\nTicks: %d / %d\nAbsence: %d\nLocation: %s (%s)\nStarted day: %d" % [
 		row.get("activity_def_id", "?"),
 		row.get("frequency_type", "?"),

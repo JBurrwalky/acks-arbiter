@@ -725,7 +725,7 @@ func on_pre_attack(
 	# independent saves per RAW.
 	var sources_sanc: Array = target_flags.get_flag_source_entries("cannot_be_targeted_by_attacks")
 	for entry in sources_sanc:
-		var source_id := String(entry.get("source_id", ""))
+		var source_id := str(entry.get("source_id", ""))
 		if source_id.is_empty():
 			continue
 		var saved: bool = _sanctuary_resolve_save(attacker, entry)
@@ -941,10 +941,10 @@ func get_item_attack_bonuses(attacker: Variant) -> Dictionary:
 			# Defensive: legacy single-dict shape.
 			entries = [entries]
 		for entry in entries:
-			var attr := String(entry.get("item_attribute", ""))
+			var attr := str(entry.get("item_attribute", ""))
 			match attr:
 				"damage_bonus_dice":
-					var dice_expr := String(entry.get("value_dice", ""))
+					var dice_expr := str(entry.get("value_dice", ""))
 					if not dice_expr.is_empty() and _dice_system != null:
 						var roll = _dice_system.roll_expression(dice_expr, "spell_item_damage")
 						out.bonus_damage += int(roll.modified_total) if roll != null else 0

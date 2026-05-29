@@ -235,7 +235,7 @@ static func launch_await_trial(
 		return _err("no_caught_perpetrator")
 	if row.get("verdict") != null:
 		return _err("already_resolved")
-	if String(row.get("character_id", "")) != character_id:
+	if str(row.get("character_id", "")) != character_id:
 		return _err("ineligible")
 	var days: int = int(row.get("time_languishing_days", 1))
 	var params: Dictionary = {
