@@ -466,6 +466,34 @@ static func get_unlooted_treasure_hoards_for_room(floor_id: String, room_id: int
 	return out
 
 
+## Load the single UNLOOTED hoard placed at [param cell] on [param floor_id], or
+## null when there's nothing to materialize there. Used by the cell-based loot
+## flow (`TreasureLootService.materialize_hoard_cell` — see
+## gdd-treasure-item-backing.md §15). The placement service guarantees at most
+## one hoard per (floor_id, cell_x, cell_y, cell_z); if the DB has multiple
+## (would indicate a generation bug), the first row is returned and the rest
+## are warned about.
+##
+## Sets `id` on the returned hoard so the caller can hand it to
+## `mark_hoard_looted()` after materialization.
+static func get_unlooted_treasure_hoard_at_cell(
+		floor_id: String, cell: Vector3i) -> TreasureHoardData:
+	var db = CampaignRepository.db
+	if not db.query_with_bindings(
+			"SELECT * FROM treasure_hoards WHERE floor_id = ? AND cell_x = ? AND cell_y = ? AND cell_z = ? AND is_looted = 0",
+			[floor_id, cell.x, cell.y, cell.z]):
+		return null
+	if db.query_result.is_empty():
+		return null
+	if db.query_result.size() > 1:
+		push_warning("DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell: %d hoards at floor %s cell %s (expected <=1)"
+			% [db.query_result.size(), floor_id, str(cell)])
+	var row: Dictionary = db.query_result[0]
+	var h := _row_to_treasure_hoard(row, -1)
+	h.id = str(row.get("id", ""))
+	return h
+
+
 ## Mark a treasure hoard as claimed so it is not handed out again (Migration 135).
 static func mark_hoard_looted(hoard_id: String) -> bool:
 	if hoard_id.is_empty():

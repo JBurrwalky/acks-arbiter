@@ -2743,6 +2743,21 @@ func get_inventory_items(character_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+## Returns the single inventory_items row matching [param item_id], or an empty
+## Dictionary if the id is unknown. Read-only convenience for services that
+## need to inspect a specific item (e.g. the cell-based treasure container
+## interaction layer reading lock/trap state off a backing container item).
+func get_inventory_item_by_id(item_id: String) -> Dictionary:
+	if item_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+			"SELECT * FROM inventory_items WHERE id = ?", [item_id]):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return (db.query_result[0] as Dictionary).duplicate()
+
+
 func add_inventory_item(data: Dictionary) -> String:
 	var id: String = data.get("id", "")
 	if id.is_empty():
@@ -2753,8 +2768,8 @@ func add_inventory_item(data: Dictionary) -> String:
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp,
-			 is_cursed)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 is_cursed, is_locked, is_trapped)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -2775,6 +2790,8 @@ func add_inventory_item(data: Dictionary) -> String:
 		int(data.get("uses_remaining", -1)),
 		int(data.get("value_cp", -1)),
 		1 if data.get("is_cursed", false) else 0,
+		1 if data.get("is_locked", false) else 0,
+		1 if data.get("is_trapped", false) else 0,
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")

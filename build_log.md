@@ -28379,3 +28379,71 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **Commit 3 — First-visit materialization.** Create a `materialize_hoard_cell(dungeon_id, floor_id, cell)` API that looks up the single `treasure_hoards` row at the cell, creates a `location_caches` row with the right `cache_variant` (pile → `loose`; container → `locked_container` or a new `container` variant), and for chest/barrel/sack creates a backing `inventory_items` row referenced via `location_caches.container_item_id`. Mark the hoard `is_looted = 1` after materialization. Idempotent (re-call short-circuits on the flag). See `~/.claude/projects/C--Users-jttau-acks-arbiter/memory/treasure_containers_resumption.md` for the spec.
 2. **Commit 4 — Per-cell interaction.** Rework `dungeon_handlers._resolve_loot(cell, dungeon_id)` to identify the container at that cell, gate on `is_locked` (Pick Lock proficiency throw or key) and `is_hidden` (Search proficiency throw to reveal), stub `is_trapped` with a TODO, and open the loot modal for THAT container only via `TreasureInstantiator.hoard_to_loot`.
 3. **Commit 5 — Retire `claim_room_hoards`.** Once the cell-based path is wired end-to-end, remove the room-level claim service + its plumbing.
+
+
+## Session 2026-05-29 — Cell-based treasure containers (Commit 3: first-visit materialization)
+
+**Task:** Commit 3 of the cell-based-treasure-containers arc. Add a per-cell materialization API that lazy-promotes a placed hoard into runtime state (a `location_caches` row + the backing inventory_items container for chest/barrel/sack). Net-zero new failures vs the 391/19 baseline carried from Commit 2.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Migration 138** (`db/migrations/138_inventory_item_lock_and_trap.sql`): adds `is_locked` and `is_trapped` to `inventory_items` so chest/barrel/sack hoards can materialize into a backing inventory_items row that IS the container and carries lock/trap state forward. Non-destructive single-column ADD COLUMNs (migration 012 / 134 / 135 / 136 / 137 pattern). Schema.sql mirrors.
+- **`InventoryItem` shared type** (`engine/shared_types/inventory_item.gd`): added `is_locked: bool` + `is_trapped: bool` (default false); threaded through `from_dict` / `to_dict`. Container-only properties for non-container items default to false (the schema default).
+- **`CampaignRepository.add_inventory_item`** (`engine/autoloads/campaign_repository.gd`): the canonical insert path now threads `is_locked` + `is_trapped`. The other 5 INSERT paths default to 0 via the schema default — V1 containers stay static dungeon furniture and don't flow through item-transfer / split / equip / split_stack paths. (Flagged for thread-through if/when containers become carryable.)
+- **`CampaignRepository.get_inventory_item_by_id(item_id)`** (NEW): generally-useful read-only lookup for services that need to inspect a single item by id. The materializer uses it for idempotency re-derivation; Commit 4 will reuse it for lock-state checks at interaction time.
+- **`DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell(floor_id, cell)`** (NEW; `engine/subsystems/generation/dungeon_generator_v1/dungeon_generator_repository.gd`): returns the at-most-one unlooted hoard placed at the given cell on the given floor, with the primary-key `id` stamped. Warns if multiple rows match (would indicate a generation bug — the placement service guarantees at most one per cell).
+- **`TreasureLootService.materialize_hoard_cell(dungeon_id, floor_id, cell)`** (NEW; `engine/subsystems/inventory/treasure_loot_service.gd`): the per-cell entry point.
+  - Idempotency: if `location_caches` already has a cache at the cell's location_key, returns the existing cache + container item id (re-derives lock/trap state from the container item). Safe to call on every cell-interaction tick.
+  - No-op when no unlooted hoard sits at the cell. Returns the empty result with `cache_id = ""`.
+  - Pile branch (`coin_pile` / `gear_pile`): creates a `loose` cache; deposits coins + items (mirrors the existing `claim_room_hoards` per-hoard logic, scoped to one hoard).
+  - Container branch (`chest` / `barrel` / `sack`): creates a backing inventory_items row via the new `_create_container_item` helper (item_key `treasure_container_<type>`, item_category `container`, weight from `TreasureContainerTypes.PROPERTIES`, `is_locked` + `is_trapped` from the hoard); creates a `locked_container` cache with `container_item_id` pointing at the backing row; deposits coins + items INSIDE the cache (the container item itself is NOT inside the cache — it IS the container).
+  - Marks the hoard `is_looted=1` after the cache builds (defense-in-depth on top of the cache-exists idempotency).
+  - Return shape: `{cache_id, container_item_id, hoard_id, coins_cp, item_count, container_type, is_locked, is_trapped}`.
+- **`claim_room_hoards` marked DEPRECATED** in its docstring (will retire in Commit 5 once all callers migrate).
+- **Tests added** (`tests/test_treasure_instantiator.gd`): 6 new materialize tests, all DB-backed via the existing `_loot_setup` / `_loot_teardown` harness:
+  - `test_materialize_no_hoard_returns_empty` — no hoard at cell → empty result.
+  - `test_materialize_pile_creates_loose_cache_without_container_item` — pile branch creates `loose` cache, no `container_item_id`, items inside.
+  - `test_materialize_chest_creates_container_item_and_cache` — chest branch creates backing inventory_items + `locked_container` cache + loot inside; verifies item_key, encumbrance, item_category, lock/trap flags, and that the container is NOT inside its own cache.
+  - `test_materialize_marks_hoard_looted` — hoard `is_looted=1` after materialize; `get_unlooted_treasure_hoard_at_cell` returns null on second query.
+  - `test_materialize_is_idempotent` — second call returns the SAME `cache_id` + `container_item_id`; cache item count unchanged.
+  - `test_materialize_trap_fallback_locked_chest` — V1 trap-fallback shape (`is_locked=1` + `is_trapped=0`) flows through to the backing chest item.
+- Extended the test helper `_insert_hoard` to accept the migration-137 placement fields (`cell_x/y/z`, `container_type`, `is_locked`, `is_trapped`) — container_type "" persists as SQL NULL.
+- **GDD §15 updated** (`generation/gdd-treasure-item-backing.md`): Commit 3 marked landed; open-work list trimmed to per-cell interaction (Commit 4) + claim_room_hoards retirement (Commit 5).
+
+**Decisions made:**
+- **`cache_variant = 'locked_container'` for ALL backing-container caches**, locked OR not. The variant now means "has a backing container item" (linked via `container_item_id`), not "is locked". Actual lock state lives on the container's inventory_items row. SQLite ALTER CHECK is awkward, so introducing a new `container` variant would have meant a table rebuild — keeping `locked_container` is cheaper and the semantic shift is documented.
+- **Container is item_category `container`**, not `gear`. A new category keeps loot-distribution / inventory-display logic able to special-case containers if needed (e.g. show "Open" instead of "Use"). No existing category-CHECK constraint blocked this — `item_category` is free TEXT.
+- **Synthetic item_key `treasure_container_<type>`** instead of a catalog entry. Containers carry no intrinsic gp value yet (V1 doesn't let players move them); a future pass can add catalog rows + a flag to make them carryable / sellable.
+- **`value_cp = 0`** on the container row (rather than -1) — sentinel for "non-sellable", in line with how cursed items use 0 to mean "carriable but worthless".
+- **`is_heavy = weight >= 1000`** on the container row — a chest at 6 stone is unambiguously a heavy item; sack at 100 units (1/10 stone) is not. The encumbrance system already handles this signal.
+- **Defensive re-derivation of lock/trap on the idempotency path.** A re-call from the cell-interaction layer can ask the materializer for the cache state without needing to query the inventory_items table itself — the materializer reads the backing container row and re-fills the return dict. Keeps the interaction layer simple.
+- **`get_inventory_item_by_id` lives on `CampaignRepository`**, not as an inline query in the service. Generally-useful + likely to be reused in Commit 4. Returns a duplicated row dict so callers can't accidentally mutate the query cache.
+- **Threaded `is_locked` + `is_trapped` only through `add_inventory_item`**, not all 6 INSERT paths. V1 containers don't flow through `split_item_for_equip` / `split_stack` / `merge_item_on_unequip` / the loot-distribution copy / etc. (they're dungeon furniture). Flagged in the build log for revisit if Phase 3 makes them carryable.
+
+**Interfaces defined or changed:**
+- `inventory_items` columns: `+is_locked / +is_trapped` (migration 138).
+- `InventoryItem.is_locked: bool` + `InventoryItem.is_trapped: bool`.
+- `CampaignRepository.add_inventory_item(data)` — accepts `is_locked` / `is_trapped` in the data dict (default false).
+- `CampaignRepository.get_inventory_item_by_id(item_id) -> Dictionary` (NEW).
+- `DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell(floor_id, cell) -> TreasureHoardData` (NEW).
+- `TreasureLootService.materialize_hoard_cell(dungeon_id, floor_id, cell) -> Dictionary` (NEW). See docstring for the return shape.
+- `TreasureLootService.claim_room_hoards` marked deprecated (retires in Commit 5).
+- Semantic shift: `location_caches.cache_variant = 'locked_container'` now means "has a backing container item", not "is locked". Lock state lives on the container item.
+
+**Database changes:** Migration 138 (`is_locked` + `is_trapped` on `inventory_items`).
+
+**Tests added/updated:**
+- `tests/test_treasure_instantiator.gd`: 6 new DB-backed materialize tests (see above); `_insert_hoard` extended to take placement fields.
+- Full suite: 391 passed / 19 failed — net-zero NEW failures. ERROR count unchanged at 307.
+
+**Known issues:**
+- Per-cell interaction (Commit 4) not yet wired — `dungeon_handlers._resolve_loot` still uses the legacy 2D location_key + a single `get_cache_at_location_key` query. It needs to call `materialize_hoard_cell` first, then gate on the returned `is_locked` + `is_trapped` (the trap firing is still a stub).
+- `claim_room_hoards` retained (marked deprecated). All callers TBD — Commit 5 audits and removes.
+- The container item carries `is_locked` + `is_trapped` but no interaction handlers yet — Commit 4 wires Pick Lock proficiency / Search proficiency / trap-fire-stub. Until then a locked chest's cache is reachable through generic loot UI.
+- `inventory_items` is_locked / is_trapped only threaded through `add_inventory_item`; if Phase 3 makes containers carryable through transfer / split / merge paths, those will need updates too.
+
+**Next session should:**
+1. **Commit 4 — Per-cell interaction.** Rework `dungeon_handlers._resolve_loot(cell, dungeon_id)` to (a) extend location_key to 3D, (b) call `TreasureLootService.materialize_hoard_cell` first, (c) gate on `is_locked` (Pick Lock proficiency throw or key check via `KeyItemData`), (d) gate on `is_hidden` (Search proficiency throw to reveal — the placement service can also flag the hoard hidden), (e) stub `is_trapped` with a TODO until the traps system lands, then (f) open the loot modal on the returned cache_id.
+2. **Commit 5 — Retire `claim_room_hoards`.** Audit callers (likely just the dungeon runtime), migrate them to `materialize_hoard_cell`, then delete `claim_room_hoards` + its tests.
+3. **(Stretch)** Once Commits 4 + 5 land, do a quick build-log audit to make sure the older `claim_room_hoards` references are crossed out / replaced. The resumption doc tracks the arc state.

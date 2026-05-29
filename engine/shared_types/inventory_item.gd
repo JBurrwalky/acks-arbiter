@@ -56,6 +56,15 @@ var value_cp: int = -1
 ## unrestricted (the owner doesn't know — RAW :236).
 var is_cursed: bool = false
 
+## Container runtime state — migration 138 (cell-based treasure containers arc,
+## see gdd-treasure-item-backing.md §15). chest / barrel / sack hoards
+## materialize into a backing inventory_items row that IS the container; the
+## container's lock + trap state lives here so the per-cell interaction layer
+## can gate opening without re-reading the source treasure_hoards row.
+## For non-container items, both default to false (the schema default).
+var is_locked: bool = false
+var is_trapped: bool = false
+
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
 var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
@@ -92,6 +101,8 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.uses_remaining = data.get("uses_remaining", -1)
 	i.value_cp = data.get("value_cp", -1)
 	i.is_cursed = data.get("is_cursed", 0) == 1
+	i.is_locked = data.get("is_locked", 0) == 1
+	i.is_trapped = data.get("is_trapped", 0) == 1
 	return i
 
 
@@ -121,6 +132,8 @@ func to_dict() -> Dictionary:
 		"uses_remaining": uses_remaining,
 		"value_cp": value_cp,
 		"is_cursed": 1 if is_cursed else 0,
+		"is_locked": 1 if is_locked else 0,
+		"is_trapped": 1 if is_trapped else 0,
 	}
 
 

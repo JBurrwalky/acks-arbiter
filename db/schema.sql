@@ -434,7 +434,16 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- RAW (acore_treasure_and_magic_items_rules.xml:233-237). Equipping is
     -- unrestricted (the owner doesn't know it's cursed). Negative magical_bonus
     -- on a cursed item already applies penalties through the same +N paths.
-    is_cursed INTEGER NOT NULL DEFAULT 0 CHECK(is_cursed IN (0, 1))
+    is_cursed INTEGER NOT NULL DEFAULT 0 CHECK(is_cursed IN (0, 1)),
+    -- Migration 138 additions
+    -- Container-item runtime state for the cell-based treasure containers arc
+    -- (gdd-treasure-item-backing.md §15). chest / barrel / sack hoards
+    -- materialize into a backing inventory_items row that IS the container;
+    -- the container's lock + trap state lives here so the per-cell interaction
+    -- layer can gate opening without re-reading the source treasure_hoards
+    -- row (which is_looted=1 after materialization).
+    is_locked INTEGER NOT NULL DEFAULT 0 CHECK(is_locked IN (0, 1)),
+    is_trapped INTEGER NOT NULL DEFAULT 0 CHECK(is_trapped IN (0, 1))
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).

@@ -33,6 +33,13 @@ func run_all_tests() -> void:
 	test_shop_sells_priced_magic_item()
 	test_claim_room_hoards_creates_cache()
 	test_claim_room_hoards_idempotent_and_empty()
+	# Cell-based materialization (Commit 3 of the cell-based treasure containers arc).
+	test_materialize_no_hoard_returns_empty()
+	test_materialize_pile_creates_loose_cache_without_container_item()
+	test_materialize_chest_creates_container_item_and_cache()
+	test_materialize_marks_hoard_looted()
+	test_materialize_is_idempotent()
+	test_materialize_trap_fallback_locked_chest()
 	# Cursed items (RAW: acore_treasure_and_magic_items_rules.xml:233-237)
 	test_cursed_catalog_item_propagates_is_cursed()
 	test_cursed_item_round_trips_through_inventory_item()
@@ -506,6 +513,219 @@ func test_unequipping_non_cursed_item_still_works() -> void:
 
 
 # ---------------------------------------------------------------------------
+# DB-backed: TreasureLootService.materialize_hoard_cell (Commit 3 of the
+# cell-based treasure containers arc — gdd-treasure-item-backing.md §15).
+# ---------------------------------------------------------------------------
+
+func test_materialize_no_hoard_returns_empty() -> void:
+	_loot_setup()
+	# No hoard at the cell → empty result, no cache created.
+	var result := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(99, 99, 0))
+	check(str(result["cache_id"]).is_empty(),
+		"materialize on a hoardless cell yields no cache, got '%s'" % str(result["cache_id"]))
+	check(str(result["container_item_id"]).is_empty(),
+		"materialize on a hoardless cell yields no container item")
+	check(str(result["hoard_id"]).is_empty(), "no hoard_id on no-op")
+	_loot_teardown()
+	print("  materialize_no_hoard_returns_empty: OK")
+
+
+func test_materialize_pile_creates_loose_cache_without_container_item() -> void:
+	_loot_setup()
+	# A coin_pile hoard: loose loot — should create a `loose` cache with no
+	# container_item_id, but with the coins + items inside.
+	_insert_hoard("test_hoard_pile", _ROOM_ID, {
+		"gold": 5,
+		"gems": [{"value_gp": 200, "gem_class": "gem"}],
+		"total_gp_value": 205,
+		"cell_x": 10, "cell_y": 4, "cell_z": 0,
+		"container_type": TreasureContainerTypes.COIN_PILE,
+		"is_locked": false, "is_trapped": false,
+	})
+
+	var result := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(10, 4, 0))
+	check(not str(result["cache_id"]).is_empty(), "pile materialization creates a cache")
+	check(str(result["container_item_id"]).is_empty(),
+		"pile materialization has NO container_item_id, got '%s'" % str(result["container_item_id"]))
+	check(str(result["container_type"]) == TreasureContainerTypes.COIN_PILE,
+		"result carries the container_type back to the caller")
+	check(bool(result["is_locked"]) == false and bool(result["is_trapped"]) == false,
+		"pile lock/trap flags are false")
+	check(int(result["coins_cp"]) == 500, "5gp = 500cp, got %d" % int(result["coins_cp"]))
+
+	# Cache must be variant `loose`.
+	var cache_row: Dictionary = LocationCacheManager.get_cache_at_location(
+		LocationCacheManager.build_dungeon_cell_key(_DUNGEON_ID, Vector3i(10, 4, 0)))
+	check(str(cache_row.get("cache_variant", "")) == "loose",
+		"pile cache variant should be 'loose', got '%s'" % str(cache_row.get("cache_variant", "")))
+
+	# Cache holds the coins + gem (2 items).
+	var cache_items := CampaignRepository.list_items_in_cache(str(result["cache_id"]))
+	check(cache_items.size() == 2,
+		"pile cache should hold 2 items (coin + gem), got %d" % cache_items.size())
+
+	_loot_teardown()
+	print("  materialize_pile_creates_loose_cache_without_container_item: OK")
+
+
+func test_materialize_chest_creates_container_item_and_cache() -> void:
+	_loot_setup()
+	# A locked chest hoard: should create a backing inventory_items row that IS
+	# the chest, plus a `locked_container` cache referencing it via
+	# container_item_id, plus the coins + items INSIDE the cache.
+	_insert_hoard("test_hoard_chest", _ROOM_ID, {
+		"gold": 50,
+		"jewelry": [{"value_gp": 1000, "jewelry_class": "jewelry"}],
+		"total_gp_value": 1050,
+		"cell_x": 7, "cell_y": 9, "cell_z": 0,
+		"container_type": TreasureContainerTypes.CHEST,
+		"is_locked": true, "is_trapped": false,
+	})
+
+	var result := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(7, 9, 0))
+	check(not str(result["cache_id"]).is_empty(), "chest materialization creates a cache")
+	check(not str(result["container_item_id"]).is_empty(),
+		"chest materialization creates a backing container item")
+	check(str(result["container_type"]) == TreasureContainerTypes.CHEST,
+		"result carries container_type back")
+	check(bool(result["is_locked"]) == true, "locked chest carries is_locked=true through to result")
+	check(bool(result["is_trapped"]) == false, "non-trapped chest carries is_trapped=false")
+	check(int(result["coins_cp"]) == 5000, "50gp = 5000cp, got %d" % int(result["coins_cp"]))
+
+	# The backing container item exists, with the correct flags + key + weight.
+	var container_row: Dictionary = CampaignRepository.get_inventory_item_by_id(
+		str(result["container_item_id"]))
+	check(not container_row.is_empty(), "container item exists in inventory_items")
+	check(str(container_row.get("item_key", "")) == "treasure_container_chest",
+		"container item_key is 'treasure_container_chest', got '%s'" % str(container_row.get("item_key", "")))
+	check(int(container_row.get("is_locked", 0)) == 1,
+		"backing chest item carries is_locked=1 from the hoard")
+	check(int(container_row.get("is_trapped", 0)) == 0,
+		"backing chest item carries is_trapped=0 from the hoard (got %d)" % int(container_row.get("is_trapped", 0)))
+	check(str(container_row.get("item_category", "")) == "container",
+		"container item_category is 'container'")
+	check(int(container_row.get("encumbrance_units", 0)) == TreasureContainerTypes.weight_units(TreasureContainerTypes.CHEST),
+		"backing chest weight matches the catalog (6000 units)")
+
+	# Cache must be variant `locked_container` with container_item_id set.
+	var cache_row: Dictionary = LocationCacheManager.get_cache_at_location(
+		LocationCacheManager.build_dungeon_cell_key(_DUNGEON_ID, Vector3i(7, 9, 0)))
+	check(str(cache_row.get("cache_variant", "")) == "locked_container",
+		"chest cache variant should be 'locked_container', got '%s'" % str(cache_row.get("cache_variant", "")))
+	check(str(cache_row.get("container_item_id", "")) == str(result["container_item_id"]),
+		"cache.container_item_id should reference the backing chest item")
+
+	# Cache holds the loot (coins + jewelry = 2 items). The chest item itself
+	# is NOT inside the cache — it IS the container, referenced via
+	# container_item_id.
+	var cache_items := CampaignRepository.list_items_in_cache(str(result["cache_id"]))
+	check(cache_items.size() == 2,
+		"chest cache should hold 2 loot items (coin + jewelry), got %d" % cache_items.size())
+	for ci in cache_items:
+		check(str(ci.get("id", "")) != str(result["container_item_id"]),
+			"the chest item itself must NOT be inside its own cache (it IS the container)")
+
+	_loot_teardown()
+	print("  materialize_chest_creates_container_item_and_cache: OK")
+
+
+func test_materialize_marks_hoard_looted() -> void:
+	_loot_setup()
+	_insert_hoard("test_hoard_marked", _ROOM_ID, {
+		"gold": 10,
+		"total_gp_value": 10,
+		"cell_x": 3, "cell_y": 3, "cell_z": 0,
+		"container_type": TreasureContainerTypes.COIN_PILE,
+	})
+
+	# Pre-condition: hoard is unlooted.
+	var pre: TreasureHoardData = DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell(
+		_FLOOR_ID, Vector3i(3, 3, 0))
+	check(pre != null, "hoard should be unlooted before materialize")
+
+	TreasureLootService.materialize_hoard_cell(_DUNGEON_ID, _FLOOR_ID, Vector3i(3, 3, 0))
+
+	# Post-condition: hoard.is_looted=1, so the unlooted query returns nothing.
+	var post: TreasureHoardData = DungeonGeneratorRepository.get_unlooted_treasure_hoard_at_cell(
+		_FLOOR_ID, Vector3i(3, 3, 0))
+	check(post == null, "hoard should be marked looted after materialize")
+
+	_loot_teardown()
+	print("  materialize_marks_hoard_looted: OK")
+
+
+func test_materialize_is_idempotent() -> void:
+	_loot_setup()
+	_insert_hoard("test_hoard_idem", _ROOM_ID, {
+		"gold": 25,
+		"total_gp_value": 25,
+		"cell_x": 5, "cell_y": 5, "cell_z": 0,
+		"container_type": TreasureContainerTypes.SACK,
+		"is_locked": false, "is_trapped": false,
+	})
+
+	var first := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(5, 5, 0))
+	check(not str(first["cache_id"]).is_empty(), "first materialize creates a cache")
+	var first_cache_id: String = str(first["cache_id"])
+	var first_container_id: String = str(first["container_item_id"])
+	var first_items := CampaignRepository.list_items_in_cache(first_cache_id)
+	var first_item_count: int = first_items.size()
+
+	# Second call: cache pre-exists, should return the SAME cache id without
+	# duplicating items or creating a new container row.
+	var second := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(5, 5, 0))
+	check(str(second["cache_id"]) == first_cache_id,
+		"second call returns the same cache_id (idempotent)")
+	check(str(second["container_item_id"]) == first_container_id,
+		"second call returns the same container_item_id")
+	var second_items := CampaignRepository.list_items_in_cache(first_cache_id)
+	check(second_items.size() == first_item_count,
+		"cache item count unchanged after second materialize (was %d, now %d)"
+			% [first_item_count, second_items.size()])
+
+	_loot_teardown()
+	print("  materialize_is_idempotent: OK")
+
+
+func test_materialize_trap_fallback_locked_chest() -> void:
+	_loot_setup()
+	# The V1 trap-fallback guardrail: a hoard that "should" be trapped is emitted
+	# by the placement service as is_locked=1, is_trapped=0. The materializer
+	# must carry those flags through to the backing chest item — when the traps
+	# system lands and a hoard arrives with is_trapped=1, the chest item gets
+	# is_trapped=1 too. Here we exercise the V1 (fallback) shape.
+	_insert_hoard("test_hoard_fallback", _ROOM_ID, {
+		"gold": 100,
+		"total_gp_value": 100,
+		"cell_x": 1, "cell_y": 8, "cell_z": 0,
+		"container_type": TreasureContainerTypes.CHEST,
+		"is_locked": true, "is_trapped": false,   # V1 trap-fallback shape
+	})
+
+	var result := TreasureLootService.materialize_hoard_cell(
+		_DUNGEON_ID, _FLOOR_ID, Vector3i(1, 8, 0))
+	check(bool(result["is_locked"]) == true,
+		"trap-fallback chest materializes with is_locked=true")
+	check(bool(result["is_trapped"]) == false,
+		"trap-fallback chest materializes with is_trapped=false (per V1 guardrail)")
+
+	var container_row: Dictionary = CampaignRepository.get_inventory_item_by_id(
+		str(result["container_item_id"]))
+	check(int(container_row.get("is_locked", 0)) == 1,
+		"backing chest item carries the locked flag forward")
+	check(int(container_row.get("is_trapped", 0)) == 0,
+		"backing chest item is not trapped (matches the hoard)")
+
+	_loot_teardown()
+	print("  materialize_trap_fallback_locked_chest: OK")
+
+
+# ---------------------------------------------------------------------------
 # Loot-service DB helpers
 # ---------------------------------------------------------------------------
 
@@ -519,12 +739,18 @@ func _loot_setup() -> void:
 
 
 func _insert_hoard(hoard_pk: String, room_id: int, fields: Dictionary) -> void:
+	# container_type "" persists as SQL NULL (matches CHECK enum semantics).
+	var container_type: Variant = null
+	if not str(fields.get("container_type", "")).is_empty():
+		container_type = fields["container_type"]
 	CampaignRepository.db.query_with_bindings("""
 		INSERT INTO treasure_hoards
 			(id, dungeon_id, floor_id, room_id, source, treasure_type_letter,
 			 copper, silver, electrum, gold, platinum, gems, jewelry, magic_items,
-			 total_gp_value, is_hidden)
-		VALUES (?, ?, ?, ?, 'lair', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+			 total_gp_value, is_hidden,
+			 cell_x, cell_y, cell_z, container_type, is_locked, is_trapped)
+		VALUES (?, ?, ?, ?, 'lair', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0,
+			?, ?, ?, ?, ?, ?)
 	""", [
 		hoard_pk, _DUNGEON_ID, _FLOOR_ID, str(room_id),
 		int(fields.get("copper", 0)), int(fields.get("silver", 0)),
@@ -534,6 +760,12 @@ func _insert_hoard(hoard_pk: String, room_id: int, fields: Dictionary) -> void:
 		JSON.stringify(fields.get("jewelry", [])),
 		JSON.stringify(fields.get("magic_items", [])),
 		int(fields.get("total_gp_value", 0)),
+		int(fields.get("cell_x", -1)),
+		int(fields.get("cell_y", -1)),
+		int(fields.get("cell_z", 0)),
+		container_type,
+		1 if bool(fields.get("is_locked", false)) else 0,
+		1 if bool(fields.get("is_trapped", false)) else 0,
 	])
 
 
