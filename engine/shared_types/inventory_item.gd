@@ -47,6 +47,15 @@ var uses_remaining: int = -1
 ## items) whose value is not a fixed catalog price. See gdd-treasure-item-backing.md.
 var value_cp: int = -1
 
+## Cursed flag — migration 136
+## true = `CampaignRepository.update_inventory_item_equip_state` refuses to
+## UNEQUIP this item (RAW acore_treasure_and_magic_items_rules.xml:235: "Cursed
+## items cannot be discarded except by dispel evil or remove curse"). The
+## negative `magical_bonus` term itself flows through the existing +N paths;
+## this field is the sticky-equip signal only. Equipping a cursed item is
+## unrestricted (the owner doesn't know — RAW :236).
+var is_cursed: bool = false
+
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
 var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
@@ -82,6 +91,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.material = data.get("material", "")
 	i.uses_remaining = data.get("uses_remaining", -1)
 	i.value_cp = data.get("value_cp", -1)
+	i.is_cursed = data.get("is_cursed", 0) == 1
 	return i
 
 
@@ -110,6 +120,7 @@ func to_dict() -> Dictionary:
 		"material": material,
 		"uses_remaining": uses_remaining,
 		"value_cp": value_cp,
+		"is_cursed": 1 if is_cursed else 0,
 	}
 
 

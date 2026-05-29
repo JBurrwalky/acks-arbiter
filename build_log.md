@@ -28126,3 +28126,57 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **Ring of Protection — wearer-only effect.** Apply the worn ring as a `ModifierContainer` modifier per §75: +N to `armor_class` and +N to all saves. Five priced variants already in the catalog (the `sub_roll` table). Hook the apply/remove on the equip-state path. The 5'-radius save-to-allies effect (recorded as `radius_effect` on the radius variants) requires combat geometry and is deferred.
 3. **Flag invulnerable monsters in `monster_catalog.json`.** Survey RAW phrasings via `grep -rEn "only.{0,20}(magical|silver).{0,20}weapon" rules/acore_monster_catalog_*.xml rules/le_monster_*.xml` and set `damaged_only_by_magic_or_silver: true` on the canonical invulnerable monsters (wraith, shadow, gargoyle, lycanthropes, demon, devil, etc.). Makes the new logic actually fire in real combats.
 4. (Dungeon-runtime, still pending from Treasure Phase 1) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`.
+
+
+## Session 2026-05-29 — Cursed items: negative bonuses + sticky unequip
+
+**Task:** Item #1 of the post-AC magic-item-effects next pass: cursed-item negative `magical_bonus` (penalty math) + the RAW sticky-equip rule (`acore_treasure_and_magic_items_rules.xml:233-237`: "A negative value is cursed and applies penalties... Cursed items cannot be discarded except by dispel evil or remove curse").
+
+**Model used:** Opus.
+
+**Completed:**
+- **Migration 136** (`db/migrations/136_inventory_item_is_cursed.sql`): adds `is_cursed INTEGER NOT NULL DEFAULT 0 CHECK(is_cursed IN (0, 1))` to `inventory_items`. Non-destructive ADD COLUMN; SQLite stamps the default onto every existing row in place. Schema.sql mirrors.
+- **`CampaignRepository.update_inventory_item_equip_state`**: pre-check before the UPDATE. When the request is to UNEQUIP (`is_equipped=false`), SELECT the row's `is_equipped` + `is_cursed`; if currently-equipped AND cursed, `push_warning` and return `false` (refuses the unequip). Equipping is unrestricted (RAW :236: the owner doesn't know an item is cursed).
+- **Threaded `is_cursed` through all 6 valuables-bearing `inventory_items` INSERT paths** in `CampaignRepository` (add_inventory_item / split_item_for_equip / split_stack / save_character_inventory / add_party_inventory_item / add_creature_inventory_item) — mirrors the migration-134 value_cp threading pattern. `_create_coin_item` excluded (coins can't be cursed).
+- **`InventoryItem` shared type**: added `var is_cursed: bool = false` + from_dict/to_dict conversion (sqlite int <-> bool).
+- **`TreasureInstantiator._resolve_magic`**: propagates the resolved catalog item's `is_cursed` onto the instantiated row (so a found Cursed Sword arrives in inventory with `is_cursed = true`).
+- **Extractor + catalog regen** (`tools/extract_magic_item_catalog.py`):
+  - `CURSED_BONUS = {cursed_sword: -1, cursed_armor: -1, cursed_shield: -1}` (project default 2026-05-29; RAW silent on magnitude — -1 chosen as the ACKS-tradition baseline one tier below the weakest positive +1).
+  - `EXPLICIT_CURSED_KEYS = {ring_of_delusion, ring_of_weakness}` — worn cursed items whose name doesn't literally contain "cursed"; flag stamped is_cursed=true so the sticky-equip mechanic applies. magical_bonus stays 0 (their NON-numeric curse effects — delusion / weakness — belong in the per-item-effects pass).
+  - Regenerated `data/treasure/magic_item_catalog.json`. Net distribution: **6 is_cursed=true** (cursed_sword/armor/shield/scroll + ring_of_delusion/weakness) — only the WORN ones; **2 trap items NOT sticky** (potion_of_delusion = consumable, bag_of_devouring = container).
+
+**Decisions made:**
+- **Sticky-equip semantic = "this item resists removal once equipped."** The 8 cursed/trap items split: 6 are worn (sticky applies), 2 are use-activated (no equip-state interaction). `cursed_scroll` is_cursed=true is informationally correct but has no runtime impact (scrolls live in `pack`, never `is_equipped=1`, so the unequip path never fires).
+- **Curse magnitude default = -1** for cursed sword/armor/shield. RAW says "A negative value is cursed and applies penalties instead" but does not pin the magnitude in the rules corpus searched. Documented as project default in `CURSED_BONUS` comment, easy to override.
+- **Remove Curse / Dispel Evil interaction**: RAW (`acore_spell_catalog_k-w_summary.xml:828-878`) says Remove Curse "does not remove the item's curse but allows the afflicted creature to remove and discard it." For V1, the curse-clear mechanism is a manual `UPDATE inventory_items SET is_cursed = 0 WHERE id = ?` (verified in `test_sticky_unequip_blocks_cursed_item_removal`). The spell wiring belongs to the spell-effects pass.
+- **No `is_cursed` field for `potion_of_delusion` / `bag_of_devouring`** — their harmful effects are activated on use, not equip-driven. Excluding them avoids over-triggering the sticky check.
+
+**Interfaces defined or changed:**
+- `inventory_items.is_cursed INTEGER NOT NULL DEFAULT 0` (schema + migration 136).
+- `InventoryItem.is_cursed: bool` (+ from_dict/to_dict).
+- `CampaignRepository.update_inventory_item_equip_state` semantics: returns `false` (was: would succeed) when asked to UNEQUIP a currently-equipped cursed item.
+- `TreasureInstantiator` resolved-magic items now carry `is_cursed` from the catalog.
+- Catalog item shape: cursed sword/armor/shield carry `magical_bonus: -1` (was 0); ring_of_delusion / ring_of_weakness carry `is_cursed: true` (was: only flagged if "cursed" literally in name).
+
+**Database changes:** Migration 136 (adds `is_cursed` column, non-destructive).
+
+**Tests added/updated:**
+- `tests/test_treasure_instantiator.gd`: +4 cursed tests.
+  - `test_cursed_catalog_item_propagates_is_cursed` (pure): scans seeds until a sword-category roll lands on `cursed_sword`, asserts the instantiated row carries `is_cursed=true` + `magical_bonus=-1`.
+  - `test_cursed_item_round_trips_through_inventory_item` (pure): InventoryItem.from_dict / to_dict preserves is_cursed across the sqlite int <-> bool boundary.
+  - `test_sticky_unequip_blocks_cursed_item_removal` (DB): equip cursed item -> attempt unequip refused (returns false; item still equipped) -> manually clear is_cursed -> unequip succeeds.
+  - `test_unequipping_non_cursed_item_still_works` (DB regression): the sticky check must not block uncursed items.
+- `tests/test_combat_attack_resolver.gd`: +1 `test_cursed_weapon_negative_bonus_subtracts_from_attack` — a -1 cursed weapon turns a borderline hit into a miss (signed +N math).
+- Full suite: 389 passed / 19 failed — net-zero NEW failures. Migration 136 applied cleanly at startup.
+
+**Known issues:**
+- Curse magnitudes for sword/armor/shield are a project default (-1). RAW silent. Easy to update via `CURSED_BONUS` if Jedidiah specifies different magnitudes per item.
+- Per-item NON-numeric curse effects (Ring of Delusion = deception, Ring of Weakness = STR/attack penalty, Bag of Devouring = item-eater, Potion of Delusion = false-property illusion, Cursed Scroll = trigger-on-read) are NOT wired. The sticky-equip mechanism is in place for the worn ones; the actual gameplay effects belong to the per-item-effects pass.
+- Remove Curse / Dispel Evil spell wiring is deferred to the spell-effects pass. For now, a manual `UPDATE is_cursed = 0` is the curse-clear path (covered by test).
+- Cursed items still appear in `get_sellable_items` if they happen to carry value_cp >= 0 (none do today — catalog cursed items all sit at value_cp 0 → excluded by the existing `<= 0` shop guard). But if a future cursed item ever has a positive value_cp, the shop sale path doesn't currently check is_cursed; a cursed-aware sale block could be added if needed.
+
+**Next session should:**
+1. Item #2 of the next pass: flag the canonical invulnerable monsters in `monster_catalog.json` (wraith, shadow, gargoyle, lycanthropes, demon, devil, etc.).
+2. Item #3: Ring of Protection wearer-only effect (worn ring -> ModifierContainer +N AC + +N saves per §75).
+3. Per-item curse effects (Ring of Delusion, Ring of Weakness, etc.) belong to the future per-item-effects pass; the sticky-equip mechanism is now ready to host them.
+4. Remove Curse / Dispel Evil spell wiring: hook the spells to clear `is_cursed` on a target item (spell-effects pass).

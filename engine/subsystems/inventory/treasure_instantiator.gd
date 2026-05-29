@@ -142,6 +142,10 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 				"uses_remaining": -1,
 				"slot": "pack",
 				"notes": _magic_item_notes(resolved),
+				# RAW: acore_treasure_and_magic_items_rules.xml:233-237 — cursed
+				# items propagate the catalog flag through to the inventory row;
+				# the equip-state path enforces the sticky-unequip rule.
+				"is_cursed": bool(resolved.get("is_cursed", false)),
 			})
 		else:
 			placeholders.append({

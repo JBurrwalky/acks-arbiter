@@ -428,7 +428,13 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- Migration 134 additions
     -- -1 = value by item_key -> EquipmentCatalog.cost_cp (mundane equipment);
     -- >= 0 = authoritative per-item value in cp (gems, jewelry, trade goods, etc.)
-    value_cp INTEGER NOT NULL DEFAULT -1
+    value_cp INTEGER NOT NULL DEFAULT -1,
+    -- Migration 136 additions
+    -- is_cursed = 1 makes the equip-state path refuse to UNEQUIP this item per
+    -- RAW (acore_treasure_and_magic_items_rules.xml:233-237). Equipping is
+    -- unrestricted (the owner doesn't know it's cursed). Negative magical_bonus
+    -- on a cursed item already applies penalties through the same +N paths.
+    is_cursed INTEGER NOT NULL DEFAULT 0 CHECK(is_cursed IN (0, 1))
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).

@@ -252,6 +252,31 @@ PRICE_MAP = {
 # Items materialized via a sub_roll / generator: their parent has no fixed price.
 PARENT_KEYS = {"ring_of_protection", "spell_scroll"}
 
+# Cursed-item magnitude overrides. Project default 2026-05-29 — RAW
+# (acore_treasure_and_magic_items_rules.xml:233-237) says "A negative value is
+# cursed and applies penalties instead" but does NOT pin the magnitude in the
+# rules corpus. -1 is the ACKS-tradition-faithful baseline (one tier below the
+# weakest positive +1); revisit if Jedidiah specifies different values.
+# Other cursed items (potion_of_delusion, ring_of_delusion, ring_of_weakness,
+# cursed_scroll, bag_of_devouring) carry NON-NUMERIC curse effects (delusion,
+# stat penalty, devouring, etc.) — magical_bonus stays 0 for those; their
+# curse mechanics will land with the per-item effects pass.
+CURSED_BONUS = {
+    "cursed_sword":  -1,
+    "cursed_armor":  -1,
+    "cursed_shield": -1,
+}
+
+# Items whose name doesn't literally contain "cursed" but which carry the
+# sticky-equip cursed mechanic per RAW (because they are WORN cursed items —
+# Ring of Delusion masquerades as a different ring; Ring of Weakness saps
+# STR). magical_bonus stays 0 for these in V1 — their specific NON-numeric
+# curse effects (delusion / weakness) will land with the per-item-effects
+# pass. Excluded: bag_of_devouring (container, no equip), potion_of_delusion
+# (consumable), cursed_scroll (read) — they have harmful effects but no
+# equip-state sticky semantic.
+EXPLICIT_CURSED_KEYS = {"ring_of_delusion", "ring_of_weakness"}
+
 # ---------------------------------------------------------------------------
 # Ring of Protection d100 variant table (ACKS Core rulebook excerpt).
 # Each variant is a unique item resolved at instantiation by a d100 roll.
@@ -491,6 +516,13 @@ def main() -> int:
             value_gp, days = PRICE_MAP[key]
             it["value_gp"] = value_gp
             it["creation_time_days"] = days
+        # Cursed bonus override (project default — see CURSED_BONUS comment).
+        if key in CURSED_BONUS:
+            it["magical_bonus"] = CURSED_BONUS[key]
+        # Implicit cursed-flag override for worn cursed items whose name
+        # doesn't literally include "cursed" (see EXPLICIT_CURSED_KEYS).
+        if key in EXPLICIT_CURSED_KEYS:
+            it["is_cursed"] = True
 
     catalog = {
         "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",

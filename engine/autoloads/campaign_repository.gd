@@ -2752,8 +2752,9 @@ func add_inventory_item(data: Dictionary) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
-			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp,
+			 is_cursed)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -2773,6 +2774,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		data.get("container_id", ""),
 		int(data.get("uses_remaining", -1)),
 		int(data.get("value_cp", -1)),
+		1 if data.get("is_cursed", false) else 0,
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -2790,6 +2792,21 @@ func remove_inventory_item(item_id: String) -> bool:
 
 func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot: String, container_id: String = "") -> bool:
 	## Update the equip state, slot, and container assignment for a single inventory item.
+	# RAW: rules/acore_treasure_and_magic_items_rules.xml:233-237 — "Cursed
+	# items cannot be discarded except by dispel evil or remove curse." Equipping
+	# is unrestricted (the owner doesn't know an item is cursed and may even
+	# prefer to wield it). Unequipping a currently-equipped cursed item is
+	# refused; Remove Curse / Dispel Evil (future spell-effects pass) will be
+	# able to clear is_cursed temporarily so the wearer can discard it.
+	if not is_equipped:
+		db.query_with_bindings(
+			"SELECT is_equipped, is_cursed FROM inventory_items WHERE id = ?", [item_id])
+		if not db.query_result.is_empty():
+			var row: Dictionary = db.query_result[0]
+			if int(row.get("is_equipped", 0)) == 1 and int(row.get("is_cursed", 0)) == 1:
+				push_warning(
+					"CampaignRepository.update_inventory_item_equip_state: cursed item refuses to be unequipped. id=%s" % item_id)
+				return false
 	if not db.query_with_bindings(
 		"UPDATE inventory_items SET is_equipped = ?, slot = ?, container_id = ? WHERE id = ?",
 		[1 if is_equipped else 0, slot, container_id, item_id]
@@ -2947,8 +2964,8 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining, value_cp)
-		VALUES (?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
+			 container_id, uses_remaining, value_cp, is_cursed)
+		VALUES (?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)
 	""", [
 		new_id,
 		source.get("character_id", ""),
@@ -2967,6 +2984,7 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 		source.get("material", ""),
 		uses_per_unit,
 		int(source.get("value_cp", -1)),
+		int(source.get("is_cursed", 0)),
 	]):
 		db.query("ROLLBACK")
 		push_error("CampaignRepository.split_item_for_equip: failed inserting new item. source=%s" % item_id)
@@ -3011,8 +3029,8 @@ func split_stack(source_id: String, count: int) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining, value_cp)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 container_id, uses_remaining, value_cp, is_cursed)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		new_id,
 		source.get("character_id", ""),
@@ -3033,6 +3051,7 @@ func split_stack(source_id: String, count: int) -> String:
 		source.get("container_id", ""),
 		int(source.get("uses_remaining", -1)),
 		int(source.get("value_cp", -1)),
+		int(source.get("is_cursed", 0)),
 	]):
 		db.query("ROLLBACK")
 		push_error("CampaignRepository.split_stack: failed inserting new item. source=%s" % source_id)
@@ -3528,8 +3547,9 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 				(id, character_id, item_key, name, quantity, encumbrance_units,
 				 slot, is_equipped, notes,
 				 item_category, is_magical, magical_bonus,
-				 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp,
+				 is_cursed)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			item_id, character_id,
 			item.get("item_key", ""), item.get("name", ""),
@@ -3546,6 +3566,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 			item.get("container_id", ""),
 			int(item.get("uses_remaining", -1)),
 			int(item.get("value_cp", -1)),
+			1 if item.get("is_cursed", false) else 0,
 		]):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.save_character_inventory: insert failed. item=%s" % item.get("name", "?"))
@@ -4600,8 +4621,8 @@ func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
 			(id, character_id, party_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining, value_cp)
-		VALUES (?, '', ?, ?, ?, ?, ?, 'pack', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
+			 container_id, uses_remaining, value_cp, is_cursed)
+		VALUES (?, '', ?, ?, ?, ?, ?, 'pack', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)
 	""", [
 		id,
 		party_id,
@@ -4620,6 +4641,7 @@ func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
 		data.get("material", ""),
 		data.get("uses_remaining", -1),
 		int(data.get("value_cp", -1)),
+		1 if data.get("is_cursed", false) else 0,
 	])
 	if not ok:
 		push_error("CampaignRepository.add_party_inventory_item: insert failed")
@@ -5076,8 +5098,8 @@ func add_creature_inventory_item(creature_id: String, data: Dictionary) -> Strin
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id,
-			 creature_id, value_cp)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 creature_id, value_cp, is_cursed)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		"",
@@ -5097,6 +5119,7 @@ func add_creature_inventory_item(creature_id: String, data: Dictionary) -> Strin
 		data.get("container_id", ""),
 		creature_id,
 		int(data.get("value_cp", -1)),
+		1 if data.get("is_cursed", false) else 0,
 	]):
 		push_error("CampaignRepository.add_creature_inventory_item: failed. creature=%s item=%s" % [
 			creature_id, data.get("name", "?")])

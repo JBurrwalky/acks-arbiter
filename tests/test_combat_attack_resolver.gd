@@ -19,6 +19,7 @@ func run_all_tests() -> void:
 	test_magic_weapon_plus_n_adds_to_attack_throw()
 	test_magic_weapon_plus_n_adds_to_damage()
 	test_mundane_weapon_has_zero_magical_bonus()
+	test_cursed_weapon_negative_bonus_subtracts_from_attack()
 	# Invulnerable monsters (RAW: acore_combat_and_wounds.xml:402-407)
 	test_invulnerable_target_immune_to_mundane_pc_weapon()
 	test_invulnerable_target_harmable_by_magic_weapon()
@@ -202,6 +203,23 @@ func test_mundane_weapon_has_zero_magical_bonus() -> void:
 	_equip_weapon(attacker, "1d6", 0)
 	check(attacker.get_weapon_magical_bonus() == 0,
 		"mundane weapon reports magical_bonus 0")
+
+
+func test_cursed_weapon_negative_bonus_subtracts_from_attack() -> void:
+	# RAW: rules/acore_treasure_and_magic_items_rules.xml:234 — "A negative value
+	# is cursed and applies penalties instead." The same +N path that ADDS for
+	# magical_bonus >= 1 SUBTRACTS for magical_bonus < 0 (signed arithmetic).
+	# attack_throw 10, target AC 0 -> target_number 10. Roll 10 + 0 = 10 hits;
+	# -1 cursed weapon -> 10 + (-1) = 9 misses.
+	var resolver := AttackResolver.new(_MockDice.new(10))
+	var attacker := _make_fighter("att", 10, 10)
+	var target := _make_fighter("def", 10, 0)
+	_equip_weapon(attacker, "1d6", 0)
+	check(resolver.resolve_melee_attack(attacker, target)["hit"] == true,
+		"mundane: roll 10 vs target_number 10 should hit")
+	_equip_weapon(attacker, "1d6", -1)
+	check(resolver.resolve_melee_attack(attacker, target)["hit"] == false,
+		"cursed -1 weapon: 10 + (-1) = 9 vs target_number 10 should miss")
 
 
 # ---------------------------------------------------------------------------

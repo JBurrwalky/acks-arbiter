@@ -33,6 +33,11 @@ func run_all_tests() -> void:
 	test_shop_sells_priced_magic_item()
 	test_claim_room_hoards_creates_cache()
 	test_claim_room_hoards_idempotent_and_empty()
+	# Cursed items (RAW: acore_treasure_and_magic_items_rules.xml:233-237)
+	test_cursed_catalog_item_propagates_is_cursed()
+	test_cursed_item_round_trips_through_inventory_item()
+	test_sticky_unequip_blocks_cursed_item_removal()
+	test_unequipping_non_cursed_item_still_works()
 	if not has_failures():
 		print("TreasureInstantiator: all tests passed.")
 
@@ -367,6 +372,137 @@ func test_claim_room_hoards_idempotent_and_empty() -> void:
 
 	_loot_teardown()
 	print("  claim_room_hoards_idempotent_and_empty: OK")
+
+
+# ---------------------------------------------------------------------------
+# Cursed items (RAW: acore_treasure_and_magic_items_rules.xml:233-237)
+# - Negative magical_bonus flows through the existing +N attack/AC paths.
+# - is_cursed flag drives CampaignRepository.update_inventory_item_equip_state
+#   to refuse UNEQUIPPING a currently-equipped cursed item.
+# ---------------------------------------------------------------------------
+
+func test_cursed_catalog_item_propagates_is_cursed() -> void:
+	# Construct a hoard with a sword-category magic indicator. With the catalog
+	# loaded + a seeded rng, TreasureInstantiator resolves it to a real catalog
+	# item; if that item happens to be a Cursed Sword (the only sword with
+	# is_cursed=true), the instantiated row must carry is_cursed=true. Test
+	# directly by injecting the cursed entry via a custom seed scan — we
+	# enumerate seeds until the resolver lands on cursed_sword.
+	var h := _hoard()
+	h.magic_items = [{"category": "sword", "notes": "test"}]
+	var catalog := MagicItemCatalog.new()
+	var found_cursed := false
+	for seed_val in range(1, 200):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_val
+		var plan := TreasureInstantiator.hoard_to_loot(h, rng, catalog)
+		var items: Array = plan["items"]
+		if items.is_empty():
+			continue
+		var key: String = str(items[0].get("item_key", ""))
+		if key == "cursed_sword":
+			check(bool(items[0].get("is_cursed", false)) == true,
+				"cursed_sword instantiated item carries is_cursed=true (seed %d)" % seed_val)
+			check(int(items[0].get("magical_bonus", 99)) == -1,
+				"cursed_sword carries -1 magical_bonus, got %d" % int(items[0].get("magical_bonus", 99)))
+			found_cursed = true
+			break
+	check(found_cursed,
+		"across 200 seeds at least one sword-category roll should land on cursed_sword")
+
+
+func test_cursed_item_round_trips_through_inventory_item() -> void:
+	# InventoryItem.from_dict / to_dict must preserve is_cursed across the
+	# DB-integer / GDScript-bool boundary.
+	var item := InventoryItem.from_dict({
+		"id": "x", "item_key": "cursed_sword", "name": "Cursed Sword",
+		"magical_bonus": -1, "is_cursed": 1, "is_magical": 1,
+	})
+	check(item.is_cursed == true, "is_cursed=1 -> bool true via from_dict")
+	check(item.magical_bonus == -1, "magical_bonus=-1 preserved")
+	var d := item.to_dict()
+	check(int(d.get("is_cursed", -99)) == 1, "to_dict emits is_cursed=1 for sqlite")
+	# Round-trip the dict back through from_dict.
+	var item2 := InventoryItem.from_dict(d)
+	check(item2.is_cursed == true, "is_cursed round-trips: true -> 1 -> true")
+
+
+func test_sticky_unequip_blocks_cursed_item_removal() -> void:
+	CampaignRepository.db.query_with_bindings(
+		"INSERT OR IGNORE INTO campaigns (id, name, world_name) VALUES (?, ?, ?)",
+		[_DB_CAMPAIGN, "Cursed Test", "Test World"])
+	CampaignRepository.db.query_with_bindings("""
+		INSERT OR IGNORE INTO characters
+			(id, campaign_id, name, character_class, level, xp, hp_max, hp_current)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [_DB_CHAR, _DB_CAMPAIGN, "Cursed Wearer", "fighter", 1, 0, 8, 8])
+	GameState.campaign_id = _DB_CAMPAIGN
+
+	# A cursed sword, equipped in the main hand from the start.
+	var cursed_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "cursed_sword", "name": "Cursed Sword",
+		"quantity": 1, "encumbrance_units": 1000, "item_category": "weapon",
+		"is_magical": true, "magical_bonus": -1, "is_cursed": true,
+		"is_equipped": true, "slot": "hands_main",
+	})
+
+	# Try to unequip → must fail per RAW :235; item must remain equipped.
+	var ok := CampaignRepository.update_inventory_item_equip_state(cursed_id, false, "pack", "")
+	check(ok == false, "unequipping a cursed item must return false")
+	CampaignRepository.db.query_with_bindings(
+		"SELECT is_equipped, slot FROM inventory_items WHERE id = ?", [cursed_id])
+	var row: Dictionary = CampaignRepository.db.query_result[0]
+	check(int(row.get("is_equipped", 0)) == 1,
+		"cursed item must remain equipped after a refused unequip attempt")
+	check(str(row.get("slot", "")) == "hands_main",
+		"slot must not change on a refused unequip attempt")
+
+	# Manually clear the curse (simulating Remove Curse / Dispel Evil) — the
+	# wearer should now be able to discard the item.
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE inventory_items SET is_cursed = 0 WHERE id = ?", [cursed_id])
+	var ok2 := CampaignRepository.update_inventory_item_equip_state(cursed_id, false, "pack", "")
+	check(ok2 == true, "after Remove Curse clears is_cursed, unequip succeeds")
+
+	# Teardown.
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM inventory_items WHERE character_id = ?", [_DB_CHAR])
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM characters WHERE id = ?", [_DB_CHAR])
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM campaigns WHERE id = ?", [_DB_CAMPAIGN])
+	print("  sticky_unequip_blocks_cursed_item_removal: OK")
+
+
+func test_unequipping_non_cursed_item_still_works() -> void:
+	# Regression: the sticky check must not block UNCURSED items.
+	CampaignRepository.db.query_with_bindings(
+		"INSERT OR IGNORE INTO campaigns (id, name, world_name) VALUES (?, ?, ?)",
+		[_DB_CAMPAIGN, "Non-Cursed Test", "Test World"])
+	CampaignRepository.db.query_with_bindings("""
+		INSERT OR IGNORE INTO characters
+			(id, campaign_id, name, character_class, level, xp, hp_max, hp_current)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [_DB_CHAR, _DB_CAMPAIGN, "Normal Wearer", "fighter", 1, 0, 8, 8])
+	GameState.campaign_id = _DB_CAMPAIGN
+
+	var sword_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "sword_1", "name": "Magic Sword +1",
+		"quantity": 1, "encumbrance_units": 1000, "item_category": "weapon",
+		"is_magical": true, "magical_bonus": 1, "is_cursed": false,
+		"is_equipped": true, "slot": "hands_main",
+	})
+	check(CampaignRepository.update_inventory_item_equip_state(sword_id, false, "pack", "") == true,
+		"uncursed magic sword unequips freely")
+
+	# Teardown.
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM inventory_items WHERE character_id = ?", [_DB_CHAR])
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM characters WHERE id = ?", [_DB_CHAR])
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM campaigns WHERE id = ?", [_DB_CAMPAIGN])
+	print("  unequipping_non_cursed_item_still_works: OK")
 
 
 # ---------------------------------------------------------------------------
