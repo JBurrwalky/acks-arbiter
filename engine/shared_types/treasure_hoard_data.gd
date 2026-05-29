@@ -31,3 +31,13 @@ var jewelry: Array = []                    ## [{value_gp:int, jewelry_class:Stri
 var magic_items: Array = []                ## [{category, specific_item_id, is_placeholder:bool, notes}]
 var total_gp_value: int = 0                ## computed after rolling; cached for XP-balance reporting
 var is_hidden: bool = false                ## true for unprotected_* hoards (RAW: hidden by default)
+
+## Migration 137 — per-cell placement + container properties for the cell-based
+## loot model (see generation/gdd-treasure-item-backing.md §15). All default
+## to "not yet placed"; populated by TreasurePlacementService at generation.
+var cell_x: int = -1                       ## voxel cell x (-1 = not placed)
+var cell_y: int = -1                       ## voxel cell y (-1 = not placed)
+var cell_z: int = 0                        ## voxel cell z (floor index in voxel terms)
+var container_type: String = ""            ## "chest"|"barrel"|"sack"|"coin_pile"|"gear_pile"; "" = unassigned
+var is_locked: bool = false                ## lockable containers may carry a lock
+var is_trapped: bool = false               ## trappable containers may fire a trap on open

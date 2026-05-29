@@ -3316,7 +3316,17 @@ CREATE TABLE IF NOT EXISTS treasure_hoards (
     total_gp_value       INTEGER NOT NULL DEFAULT 0,
     is_hidden            INTEGER NOT NULL DEFAULT 0 CHECK(is_hidden IN (0, 1)),
     -- Migration 135: runtime loot-consumption flag (0 = unlooted, 1 = claimed)
-    is_looted            INTEGER NOT NULL DEFAULT 0
+    is_looted            INTEGER NOT NULL DEFAULT 0,
+    -- Migration 137: per-cell placement + container properties
+    -- (cell -1/-1/0 = not yet placed; container_type NULL = unassigned)
+    cell_x               INTEGER NOT NULL DEFAULT -1,
+    cell_y               INTEGER NOT NULL DEFAULT -1,
+    cell_z               INTEGER NOT NULL DEFAULT 0,
+    container_type       TEXT
+        CHECK(container_type IS NULL OR container_type IN
+            ('chest', 'barrel', 'sack', 'coin_pile', 'gear_pile')),
+    is_locked            INTEGER NOT NULL DEFAULT 0 CHECK(is_locked IN (0, 1)),
+    is_trapped           INTEGER NOT NULL DEFAULT 0 CHECK(is_trapped IN (0, 1))
 );
 CREATE INDEX IF NOT EXISTS idx_treasure_hoards_dungeon ON treasure_hoards(dungeon_id);
 CREATE INDEX IF NOT EXISTS idx_treasure_hoards_floor ON treasure_hoards(floor_id);

@@ -28276,3 +28276,63 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 3. Ring of Protection 5'-radius save-bonus-to-allies — needs save-resolution-time hook + ally targeting.
 4. (Dungeon-runtime, still pending from Treasure Phase 1) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`.
 5. Spell scroll specific-spell binding (Phase 3 magic-item usage).
+
+
+## Session 2026-05-29 — Cell-based treasure containers (foundation)
+
+**Task:** Pivot from the "claim_room_hoards on entry" model (which Jedidiah rejected — "Not just 'oh you entered Room #4, here's a claim all the shit Modal.'") to per-cell interactable containers. This session lands the foundation: schema + container catalog + placement service that decides cell + container_type + lock/trap state at generation time, with all the project constraints honored. DG-V1 integration, materialization, and per-cell interaction come in subsequent commits.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Migration 137** (`db/migrations/137_treasure_hoard_cell_and_container.sql`): adds `cell_x / cell_y / cell_z` (INTEGER, defaults -1 / -1 / 0 = not placed), `container_type` (nullable TEXT with CHECK enum: chest / barrel / sack / coin_pile / gear_pile), `is_locked` and `is_trapped` (INTEGER 0/1 with CHECK) to `treasure_hoards`. Non-destructive single-column ADD COLUMNs (migration 012/134/135 pattern). Schema.sql mirrors.
+- **`TreasureContainerTypes`** (`engine/subsystems/inventory/treasure_container_types.gd`): catalog of the 5 V1 container types with per-type capability flags (`can_lock` / `can_trap` / `can_hide` / `opaque` / `weight_units`) + display_name. coin_pile / gear_pile correctly forbid lock & trap (they're loose); sack forbids trap (too small / cloth); chest + barrel allow everything.
+- **`TreasurePlacementService`** (`engine/subsystems/generation/dungeon_generator_v1/treasure_placement_service.gd`): `place_hoard(hoard, room_cells, rng, opts) -> Array[TreasureHoardData]` returns 1 or 2 placed hoards. Source-dispatched:
+  - `SOURCE_UNPROTECTED_TRAP` → whole hoard into one chest. `is_locked = true`; `is_trapped = opts.traps_available` (the trap-fallback guardrail).
+  - `SOURCE_LAIR` → 40% chance to split per the **25% rule** (`_split_25_percent`: ≤ 25% of total gp + optionally one magic item to secondary, ≥ 75% remains on primary). Primary container picked by content profile + maybe locked. Secondary prefers chest + rolls hidden / trapped / hidden+trapped (trapped variants fall back to locked when traps unavailable).
+  - `SOURCE_UNPROTECTED_EMPTY` / `SOURCE_UNPROTECTED_UNIQUE` → single plain visible container.
+- **`TreasureHoardData`** (`engine/shared_types/treasure_hoard_data.gd`): added `cell_x / cell_y / cell_z / container_type / is_locked / is_trapped` fields with documented defaults matching the schema sentinels.
+- **GDD §15 added** (`generation/gdd-treasure-item-backing.md`): full design record — container catalog, placement rules per source, 25% rule, trap-fallback guardrail, trapped-room rule, schema additions, and the open work that follows.
+
+**Decisions made:**
+- **Containers as real inventory items** (Jedidiah pick): the placement service stamps `container_type` on the hoard; materialization (next commit) creates an `inventory_items` row for each chest/barrel/sack and links it via `location_caches.container_item_id`. Piles use `cache_variant = "loose"` with no container item.
+- **40% split chance** (lair hoards): tunable via `SPLIT_CHANCE`. Below `SPLIT_MIN_TOTAL_GP = 25` gp, splitting is suppressed (not worth the data overhead).
+- **Lock chances:** 60% for visible containers with > 1000 gp value, 30% otherwise. Tunable.
+- **25% split algorithm:** moves coins highest-denomination-first toward the cap, then optionally moves one magic item (RAW: magic items contribute 0 to total_gp_value for the recovery-XP math, so a magic-item move doesn't bust the cap by itself). Gems/jewelry stay on the primary unless coins alone can't reach the cap (a deferred refinement). Banker's rounding per CLAUDE.md.
+- **Trap fallback honored**: every "would-be-trapped" branch checks `opts.traps_available` and emits `is_locked = true` + `is_trapped = false` if traps aren't available. Documented as a guardrail that auto-upgrades when traps land.
+- **Trapped room rule** honored: `SOURCE_UNPROTECTED_TRAP` always emits a single chest, never splits. The chest IS the trap.
+- **`SOURCE_UNPROTECTED_TRAP` constant name** is the existing one on `TreasureHoardData` (was tempted to use `SOURCE_TRAP_PLACEHOLDER` to match the SQL enum literal but kept it consistent with the existing constant).
+
+**Interfaces defined or changed:**
+- `treasure_hoards` columns: `+cell_x / +cell_y / +cell_z / +container_type / +is_locked / +is_trapped` (migration 137).
+- `TreasureHoardData`: `+cell_x / +cell_y / +cell_z: int`, `+container_type: String`, `+is_locked / +is_trapped: bool` (matching defaults).
+- `TreasureContainerTypes` (new class) — see GDD §15.1.
+- `TreasurePlacementService.place_hoard(hoard, room_cells, rng, opts) -> Array[TreasureHoardData]` (static).
+
+**Database changes:** Migration 137.
+
+**Tests added/updated:**
+- `tests/test_treasure_placement_service.gd` (NEW; registered as `TreasurePlacementServiceTests`, ext_resource id `398`): 12 pure-logic tests covering:
+  - Trapped room: trapped chest with traps available; locked-fallback when not.
+  - Lair below split threshold: single visible container.
+  - 25% rule: secondary stays ≤ 25%, primary + secondary preserve total gp.
+  - Lair split with traps unavailable: secondary never emits is_trapped=true.
+  - Magic item lands in opaque container (across the split).
+  - Pile containers never lock or trap.
+  - Cell placement uses the provided room_cells.
+  - Empty room cells → graceful warning + cell unchanged.
+  - Unprotected_empty / unprotected_unique_placeholder simple paths.
+- Full suite: 391 passed / 19 failed — net-zero NEW failures. Migration 137 applies cleanly at startup.
+
+**Known issues:**
+- DG-V1 generation flow doesn't yet call `place_hoard` — hoards are still persisted with cell -1 / unset container_type. Next commit wires this in.
+- First-visit materialization (cell → `location_caches`) not yet implemented.
+- `_resolve_loot` still operates on the room-level cache model. Per-cell interaction (lock-pick, search, trap-fire-stub) comes next.
+- `TreasureLootService.claim_room_hoards` is still in the codebase pending the cell-based flow taking over — retired in a later commit once the full pipe works end-to-end.
+- 25% split currently only redistributes COINS (and optionally one magic item). Gems/jewelry redistribution is a refinement — if a lair hoard is gem/jewelry-heavy with few coins, the split might fall short of the 25% target. Acceptable for V1; tighten later if it matters.
+
+**Next session should:**
+1. **DG-V1 integration**: call `TreasurePlacementService.place_hoard` in the dungeon generator after `DungeonTreasureResolver` produces a hoard; persist the split-into-two result through `DungeonGeneratorRepository`. This means each room can have 0..N hoards (was: 1 per room source).
+2. **First-visit materialization**: create a `location_caches` row at each placed hoard's cell with the right `cache_variant`. For chests/barrels/sacks, create a backing `inventory_items` row (container catalog: name, encumbrance, lock state) and link via `location_caches.container_item_id`. For piles, `cache_variant = "loose"` with no container_item.
+3. **Per-cell interaction**: update `dungeon_handlers._resolve_loot` to identify the container at the cell, gate on `is_locked` (Pick Lock proficiency throw or key check) and `is_hidden` (Search proficiency throw to reveal), stub `is_trapped` with a clear TODO until traps land, then open the loot modal for THAT specific container's contents (via `TreasureInstantiator.hoard_to_loot`).
+4. **Retire `claim_room_hoards`**: once the cell-based path is wired end-to-end, remove the room-level claim service. The build-log noted it as deferred from Treasure Phase 1 — this whole arc replaces it.

@@ -343,3 +343,65 @@ Per-item effects are landing incrementally as the magic-item-usage work continue
 **RAW anchors:** `acore_treasure_and_magic_items_rules.xml:231-235` (the +N rule); `acore_combat_and_wounds.xml:402-407` (invulnerable monsters); `acore-campaign-general-and-magic-research.xml:185-215` (creation cost formula backing the +N values).
 
 **Catalog-flag-driven combat rules pattern.** The invulnerable-monster work established the pattern: a boolean field on the monster catalog data → set as a flag in `_apply_monster_catalog_flags` → read via a `Combatant` helper → consumed by a pre-roll check in the resolver. Reusable for any future "this monster property modifies the to-hit/damage path" rule.
+
+---
+
+## 15. Cell-based interactable treasure containers (in progress)
+
+**Status (2026-05-29):** foundation landed — migration 137 + `TreasureContainerTypes` catalog + `TreasurePlacementService` (cell + container_type + lock + 25%-split + trap-fallback) + 12 tests. Remaining: DG-V1 integration, first-visit materialization (cell-spawn `location_caches`), per-cell interaction wiring (lock/search/loot), retirement of `claim_room_hoards`.
+
+**Replaces (in progress)** the room-level *"enter Room #4 → claim-all-treasure modal"* model with **per-cell interactable containers** placed at dungeon generation. Each hoard becomes one or two physical objects in the dungeon (a chest, a barrel, a sack, a pile of loose coins, a pile of loose gear) at specific cells; players walk up to them and interact individually.
+
+### 15.1 Container types (V1)
+
+`engine/subsystems/inventory/treasure_container_types.gd` — constants + capability flags.
+
+| Type | can_lock | can_trap | can_hide | Notes |
+|---|---|---|---|---|
+| `chest` | ✓ | ✓ | ✓ | Sturdy opaque container; the default for valuables. |
+| `barrel` | ✓ | ✓ | ✓ | Opaque, bulky; good for big coin piles. |
+| `sack` | ✓ | ✗ | ✓ | Small opaque pouch; coins/gems. Locked = tied/sealed. |
+| `coin_pile` | ✗ | ✗ | ✓ | Loose coins visible on the floor; nothing to lock or trap. |
+| `gear_pile` | ✗ | ✗ | ✓ | Loose gear; same constraints as coin_pile. |
+
+Extensible — future types (urn, weapon_rack, altar, pedestal, bookcase) plug into the same flag schema.
+
+### 15.2 Placement rules (per-hoard, at generation)
+
+For each rolled hoard, `TreasurePlacementService.place_hoard(hoard, room_cells, rng, opts)` returns **1 or 2** placed hoards:
+
+- **Source `unprotected_trap_placeholder`:** the whole hoard → one **trapped chest** (the chest IS the trap). With `opts.traps_available = false` (V1) the chest emits as **locked-only** per the trap-fallback guardrail.
+- **Source `lair`:** 40% chance to split per the **25% rule** (the secondary holds ≤ 25% of total gp + optionally one magic item; the primary keeps ≥ 75%). The visible primary picks a container by content profile (magic item → chest/barrel; jewelry/gems → chest/sack; lots of coins → barrel/chest; small coins → coin_pile/sack/chest; mostly gear → gear_pile/chest) and may carry a lock by value (60% if > 1000 gp, else 30%). The secondary prefers chest and rolls one of {hidden / trapped / hidden+trapped} — trapped variants degrade to locked under the trap-fallback.
+- **Source `unprotected_empty` / `unprotected_unique_placeholder`:** a single plain visible container, no lock / trap / hide.
+
+### 15.3 The 25% rule (project constraint, Jedidiah 2026-05-29)
+
+> Treasure rolled as part of a monster's hoard must never have more than **25% of its gp value** in hidden and/or trapped containers.
+
+Implementation: when splitting a lair hoard, `_split_25_percent` moves ≤ 25% of the hoard's gp into the secondary by peeling off coins (highest denomination first) and optionally moving one magic item (RAW: 0 gp for XP/recovery, so it doesn't bust the cap). `primary.total_gp_value + secondary.total_gp_value == original.total_gp_value` (banker's rounding). Tests pin this invariant across all split seeds.
+
+### 15.4 Trap-fallback guardrail
+
+When the traps system isn't available (`opts.traps_available = false`, the V1 reality) or trap generation errors, any container that would be trapped is emitted with `is_trapped = false` + `is_locked = true` — the would-be-trapped chest becomes a **locked chest**, and seamlessly re-upgrades to trapped when the traps system lands. This guarantees the dungeon always has well-defined container state regardless of traps system availability.
+
+### 15.5 Trapped room → trapped container (Jedidiah 2026-05-29)
+
+> Treasure in a "trapped" room should be in a trapped container (that is the trap).
+
+Honored: when `hoard.source == SOURCE_UNPROTECTED_TRAP`, the whole hoard goes into ONE chest with `is_trapped = traps_available, is_locked = true`. No split (the trapped chest IS the room's reason for existence).
+
+### 15.6 Schema additions (migration 137)
+
+Added to `treasure_hoards`:
+- `cell_x`, `cell_y`, `cell_z INTEGER NOT NULL DEFAULT -1 / -1 / 0` (sentinel = not placed).
+- `container_type TEXT` (nullable; CHECK enum = the 5 V1 types).
+- `is_locked`, `is_trapped INTEGER NOT NULL DEFAULT 0` with 0/1 CHECK.
+
+`is_hidden` (existed since migration 132) is honored — hidden hoards' containers don't render on the dungeon map until a Search action reveals them.
+
+### 15.7 Open work
+
+- **DG-V1 integration**: call `TreasurePlacementService.place_hoard` on each rolled hoard before persisting; handle the split-into-two case at the persistence layer.
+- **First-visit materialization**: create a `location_caches` row per placed hoard at its cell. Container is a real `inventory_items` row (chest/barrel/sack) referenced via `location_caches.container_item_id`; piles use `cache_variant = "loose"` with no container item.
+- **Per-cell interaction**: `_resolve_loot` already accepts a cell parameter. Lock/search gates fire here (Pick Lock proficiency throw for locked; Search proficiency throw for hidden). Trap firing is a stub until the traps system lands.
+- **Retire `claim_room_hoards`**: room-level model goes away once the cell-based flow is wired end-to-end.

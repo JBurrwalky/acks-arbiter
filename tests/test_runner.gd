@@ -481,6 +481,7 @@ extends Node
 @onready var _magic_item_catalog_tests = $MagicItemCatalogTests
 @onready var _character_ac_calculator_tests = $CharacterAcCalculatorTests
 @onready var _worn_magic_effect_resolver_tests = $WornMagicEffectResolverTests
+@onready var _treasure_placement_service_tests = $TreasurePlacementServiceTests
 
 
 func _ready() -> void:
@@ -956,7 +957,8 @@ func run() -> void:
 			_treasure_instantiator_tests,
 			_magic_item_catalog_tests,
 			_character_ac_calculator_tests,
-			_worn_magic_effect_resolver_tests]:
+			_worn_magic_effect_resolver_tests,
+			_treasure_placement_service_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
