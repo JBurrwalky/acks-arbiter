@@ -352,9 +352,18 @@ func _seed_avalon_dungeons(campaign_id: String, _region: HexMapData) -> bool:
 		var hex_field: Dictionary = entry.get("hex", {})
 		var qr: Dictionary = HexMapData._offset_to_axial_dict(
 			int(hex_field.get("col", 0)), int(hex_field.get("row", 0)))
+		var tier_min: int = int(entry.get("difficulty_tier_min", 1))
+		var tier_max: int = int(entry.get("difficulty_tier_max", 1))
 		var stub_data := JSON.stringify({
-			"difficulty_tier_min": int(entry.get("difficulty_tier_min", 1)),
-			"difficulty_tier_max": int(entry.get("difficulty_tier_max", 1)),
+			"spec": {
+				"kind": str(entry.get("kind", "wizards_dungeon")),
+				"tier": tier_min,
+				"tier_min": tier_min,
+				"tier_max": tier_max,
+				"size": str(entry.get("size", "medium")),
+				"floors": int(entry.get("floors", 1)),
+				"entrance_floor_index": 1,
+			}
 		})
 		# INSERT OR REPLACE so partial re-runs don't collide on fixed JSON IDs.
 		var de_id: String = str(entry.get("id", ""))

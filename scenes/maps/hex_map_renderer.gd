@@ -339,6 +339,22 @@ func _update_enter_dungeon_button() -> void:
 
 func _on_enter_dungeon_pressed() -> void:
 	var entrance: Dictionary = _enter_dungeon_btn.get_meta("entrance_data")
+
+	# Lazy generation: if dungeon_data holds a spec stub (no "cells" or "levels"
+	# key), generate the dungeon now and persist it before entering.
+	var _pre_parse: Variant = JSON.parse_string(entrance.get("dungeon_data", ""))
+	var _is_generated: bool = (
+		_pre_parse is Dictionary
+		and (_pre_parse.has("cells") or _pre_parse.has("levels"))
+	)
+	if not _is_generated:
+		var generated_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+		if generated_json.is_empty():
+			push_error("HexMapRenderer._on_enter_dungeon_pressed: dungeon generation failed for entrance '%s'"
+				% str(entrance.get("id", "?")))
+			return
+		# entrance["dungeon_data"] is already updated by get_or_generate_voxel.
+
 	var dungeon_json: String = entrance.get("dungeon_data", "")
 	var dungeon_dict = JSON.parse_string(dungeon_json)
 	if dungeon_dict == null:

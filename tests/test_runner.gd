@@ -473,6 +473,9 @@ extends Node
 @onready var _scenario_entrance_in_middle = $ScenarioEntranceInMiddle
 @onready var _scenario_placeholder_fallbacks_active = $ScenarioPlaceholderFallbacksActive
 @onready var _scenario_invalid_dungeon_type_fallback = $ScenarioInvalidDungeonTypeFallback
+# 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
+@onready var _dungeon_voxel_serializer_tests = $DungeonVoxelSerializerTests
+@onready var _dungeon_fixture_service_tests = $DungeonFixtureServiceTests
 
 
 func _ready() -> void:
@@ -941,7 +944,10 @@ func run() -> void:
 			_scenario_six_floor_tier_clamp,
 			_scenario_entrance_in_middle,
 			_scenario_placeholder_fallbacks_active,
-			_scenario_invalid_dungeon_type_fallback]:
+			_scenario_invalid_dungeon_type_fallback,
+			# 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
+			_dungeon_voxel_serializer_tests,
+			_dungeon_fixture_service_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

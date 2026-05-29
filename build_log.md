@@ -27794,3 +27794,71 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 **Next session should:**
 1. The Random Dungeon Generator V1 epic (DG-V1.A → DG-V1.E) is COMPLETE. Pick up the two quality chips above when convenient.
 2. Consider the runtime consumer: `DungeonGeneratorV1` produces + persists dungeon data; a system needs to instantiate a generated/persisted dungeon into a playable exploration session.
+
+
+## Session 2026-05-28 — DG-V1.E entry correction (verification follow-up)
+
+**Task:** Correct the "Known issues" of the DG-V1.E entry above after verifying that the two issues it flagged as "open chips" were already resolved by earlier same-day sessions. (My DG-V1.E briefing missed those entries; this corrects the record so future sessions don't re-investigate closed work.)
+
+**Model used:** Opus (verification only).
+
+**Completed:**
+- Verified the monster name→catalog-id resolution issue is FIXED (sessions "DG-V1 Encounter Roller: monster name→catalog-id resolution" + "DG-V1 Monster Catalog: Cavern Locust entry"). `encounter_roller.gd` now carries `_resolve_monster_id` / `_resolve_dragon_by_hd` / `_token_match` / `_normalize_id`, and the latest full suite run logs ZERO "using placeholder" warnings (was ~38). The DG-V1.E entry's claim that this is "open" — and that statless placeholders skew the XP/GP ratio — is therefore obsolete: there are no placeholders. The per-floor XP/GP variance is natural small-sample treasure variance (soft-test observation only, never a hard failure).
+- Verified the trap-door gating + retry-cleanliness issue is RESOLVED (session "DG-V1 Retry-Cleanliness Fix + Trap-Door Gating Invariant"). Door state is now cleanly reset across generation retries (the root cause originally flagged), and acceptance Hard Test 6 (`acceptance_tests.gd` §14.1.6) is correctly "≥1 = playable": 0 qualifying secret+locked/trapped doors = HARD fail, exactly-one is the stocker's per-room TARGET, >1 = benign SOFT warning. Strict "exactly one" was determined unworkable because the layout generator's §8.1 secret roll can independently place a second secret+locked/trapped door that no stocking choice can undo. This is the correct invariant, not a workaround.
+
+**Decisions made:** None new — this entry only corrects the record.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:** None (verification only; full suite re-confirmed at 384 suites passed / 19 failed, 0 monster placeholders).
+
+**Known issues:**
+- The two "open chips" listed in the DG-V1.E entry above are now MOOT (resolved by the cited sessions). The Random Dungeon Generator V1 epic (A–E) has no outstanding quality follow-ups.
+
+**Next session should:**
+1. Runtime consumer: instantiate a generated/persisted dungeon into a playable EventScheduler-driven exploration session.
+
+
+## Session 2026-05-28 — Dungeon Runtime Consumer (full slice, lazy generation) (Opus)
+
+**Task:** Build the runtime consumer that turns the dungeon generator's persisted output into a playable dungeon, wired into the hex-map entry flow: a hex's dungeon tag (kind/tier/size/floors) → lazy-generate on first entry → serialize to voxel JSON → persist as a permanent fixture → play in the existing dungeon explorer.
+
+**Model used:** Opus for investigation/architecture/contracts/verification; Sonnet subagents for implementation + integration.
+
+**Key finding:** the dungeon RUNTIME already exists and is fully functional — `DungeonExploreState` + `DungeonMapController` + the 3D voxel renderer (`scenes/maps/dungeon_map_3d.tscn`) + the wilderness→dungeon transition (`dungeon_entry_requested` → `transition_to_state("dungeon", {entrance, spawn_cell})`). It consumes voxel-format JSON via `VoxelMapData.from_dict`. So the work was a DATA ADAPTER + fixture wiring, NOT a runtime build.
+
+**Completed:**
+- `engine/subsystems/generation/dungeon_generator_v1/dungeon_voxel_serializer.gd` — `DungeonVoxelSerializer.to_voxel_dict(result)` / `.to_voxel_json(result)`: converts `DungeonGeneratorResultV1` (per-floor `DungeonLayout.cells[x][y]` + doors/stairs/levers) → voxel dict. Maps `terrain_feature`→solidity/feature/floor_type; DoorData `type`+`is_secret`→door_state/door_type/door_detected; portcullis `wired_lever_position`→top-level `lever_links` + `feature:"lever"`; stairs→`stairs_<dir>_N` + `stair_target_col/row/level`; multi-floor via voxel `level = level_number-1`; `entry` = entrance floor's `entrance`. Emits ALL cells incl. solid walls (VoxelMapData treats absent cells as air).
+- `engine/subsystems/generation/dungeon_generator_v1/dungeon_fixture_service.gd` — `DungeonFixtureService.get_or_generate_voxel(entrance) -> String`: cache-hit on a `"cells"`/`"levels"` key; else reads the spec stub → builds `DungeonGeneratorRequestV1` (`dungeon_id = entrance.id`; stable seed `= abs(entrance.id.hash())`) → `generate(persist=true)` → serialize → `CampaignRepository.update_dungeon_entrance_data(id, voxel_json)`. Lazy + frozen once generated.
+- Wiring: `data/test_campaign_region.json` `dungeons_preview` entries gained kind/size/floors; `test_content_seeder._seed_avalon_dungeons()` now writes a `{"spec":{kind,tier,tier_min,tier_max,size,floors,entrance_floor_index}}` stub (no `"cells"` → triggers lazy gen); `hex_map_renderer._on_enter_dungeon_pressed()` injects get-or-generate when `dungeon_data` lacks `"cells"`/`"levels"` (legacy `test_dungeon` path unchanged).
+- 2 new test suites registered (ext_resource 392/393). Full suite: 386 suites passed / 19 failed (the 19 pre-existing; +2 new; net-zero new failures). Independently confirmed.
+
+**Decisions made:**
+- LAZY generation (matches settlement/lair convention + "permanent fixture"): stub at campaign seed; full generation on first entry, then cached in `dungeon_entrances.dungeon_data` permanently.
+- Spec stored in `dungeon_entrances.dungeon_data` JSON (no schema migration); `dungeon_id == dungeon_entrances.id` unifies the runtime fixture with the migration-132 structured persistence.
+- Emit-all-cells (absent cell == air in VoxelMapData, so walls must be explicit).
+- Stable per-dungeon seed `= abs(entrance_id.hash())` for reproducibility.
+- V1: any "kind" → Wizard's Dungeon (generator §7.1 fallback).
+
+**Interfaces defined or changed:**
+- `DungeonVoxelSerializer.to_voxel_dict(result: DungeonGeneratorResultV1) -> Dictionary`; `.to_voxel_json(result) -> String`.
+- `DungeonFixtureService.get_or_generate_voxel(entrance: Dictionary) -> String` (mutates `entrance["dungeon_data"]`; persists via `update_dungeon_entrance_data`).
+- Injection seam: `hex_map_renderer._on_enter_dungeon_pressed()` (lazy-gen block before the `dungeon_data` parse).
+- Spec stub: `{"spec":{"kind","tier","tier_min","tier_max","size","floors","entrance_floor_index"}}`.
+- No new signals/contracts in the runtime path — reuses `dungeon_entry_requested` + `entrance.dungeon_data`.
+
+**Database changes:** None — reused the existing `dungeon_entrances` table + its `dungeon_data` JSON column; structured persistence uses migration-132 tables keyed by `dungeon_id == dungeon_entrances.id`.
+
+**Tests added/updated:** `test_dungeon_voxel_serializer` (5; incl. round-trip through `VoxelMapData.from_dict`), `test_dungeon_fixture_service` (3; generate + cache idempotency). 386/19.
+
+**Known issues:**
+- Phase 2 not done: placed `monster_groups` / `treasure_hoards` / `key_items` are NOT yet spawned into the instantiated voxel dungeon. The SPATIAL map (cells/doors/stairs/levers) is fully playable; monster/treasure population is deferred and partly blocked on the treasure-data audit chip. `wandering_monster_table` left empty (runtime falls back to a level-based default).
+- The in-editor click-to-enter flow is verified at the DATA layer (serializer round-trip + fixture service through the real `VoxelMapData.from_dict`), NOT via a headless UI test; recommend a manual in-game check on an Avalon dungeon hex.
+- Stair compass suffix defaulted to "_N" (cosmetic; `stair_target_*` drives connectivity).
+
+**Next session should:**
+1. Manually verify the live enter-dungeon flow on an Avalon dungeon hex (Forgotten Fane / Sunken Citadel / Temple of M'kia) in the editor.
+2. Phase 2: spawn `monster_groups` + `treasure_hoards` into instantiated dungeons (after the treasure-data audit lands real item value/weight).
+3. Optionally populate `wandering_monster_table` from `floor_tier`.

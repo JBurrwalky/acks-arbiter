@@ -7430,7 +7430,10 @@
         "row": 3
       },
       "difficulty_tier_min": 1,
-      "difficulty_tier_max": 2
+      "difficulty_tier_max": 2,
+      "kind": "wizards_dungeon",
+      "size": "small",
+      "floors": 2
     },
     {
       "id": "dungeon_sunken_citadel",
@@ -7440,7 +7443,10 @@
         "row": 14
       },
       "difficulty_tier_min": 3,
-      "difficulty_tier_max": 4
+      "difficulty_tier_max": 4,
+      "kind": "wizards_dungeon",
+      "size": "medium",
+      "floors": 3
     },
     {
       "id": "dungeon_temple_of_mkia",
@@ -7450,7 +7456,10 @@
         "row": 17
       },
       "difficulty_tier_min": 5,
-      "difficulty_tier_max": 6
+      "difficulty_tier_max": 6,
+      "kind": "wizards_dungeon",
+      "size": "large",
+      "floors": 4
     }
   ]
 }
