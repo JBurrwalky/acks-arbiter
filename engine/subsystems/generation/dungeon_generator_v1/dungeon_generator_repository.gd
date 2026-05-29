@@ -341,18 +341,27 @@ static func _insert_monster_groups(dungeon_id: String, floor_id: String, groups:
 
 
 ## Insert all treasure hoards for a single floor. Caller holds the transaction.
+##
+## Migration 137 added cell_x/y/z + container_type + is_locked + is_trapped for
+## the cell-based treasure container model (gdd-treasure-item-backing.md §15).
+## Unplaced hoards (the placement service skipped them — empty room_cells) keep
+## the sentinel cell -1/-1/0 and NULL container_type.
 static func _insert_treasure_hoards(dungeon_id: String, floor_id: String, hoards: Array) -> bool:
 	var db = CampaignRepository.db
 	for h in hoards:
 		var hoard: TreasureHoardData = h
 		var pk: String = CampaignRepository.generate_id()
 		var ttl: Variant = null if hoard.treasure_type_letter.is_empty() else hoard.treasure_type_letter
+		# container_type "" → NULL (matches the schema's nullable column / CHECK
+		# enum semantics: an unplaced hoard has no container yet).
+		var ct: Variant = null if hoard.container_type.is_empty() else hoard.container_type
 		var ok: bool = db.query_with_bindings(
 			"""INSERT INTO treasure_hoards
 				(id, dungeon_id, floor_id, room_id, source, treasure_type_letter,
 				 copper, silver, electrum, gold, platinum,
-				 gems, jewelry, magic_items, total_gp_value, is_hidden)
-			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+				 gems, jewelry, magic_items, total_gp_value, is_hidden,
+				 cell_x, cell_y, cell_z, container_type, is_locked, is_trapped)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 			[
 				pk, dungeon_id, floor_id, str(hoard.room_id),
 				hoard.source, ttl,
@@ -360,6 +369,9 @@ static func _insert_treasure_hoards(dungeon_id: String, floor_id: String, hoards
 				JSON.stringify(hoard.gems), JSON.stringify(hoard.jewelry),
 				JSON.stringify(hoard.magic_items), hoard.total_gp_value,
 				1 if hoard.is_hidden else 0,
+				hoard.cell_x, hoard.cell_y, hoard.cell_z, ct,
+				1 if hoard.is_locked else 0,
+				1 if hoard.is_trapped else 0,
 			])
 		if not ok:
 			push_error("DungeonGeneratorRepository: treasure_hoards insert failed (floor %s, room %d)." % [floor_id, hoard.room_id])
@@ -507,6 +519,17 @@ static func _row_to_treasure_hoard(row: Dictionary, floor_index: int) -> Treasur
 	h.magic_items = mi_parsed if mi_parsed is Array else []
 	h.total_gp_value = int(row["total_gp_value"])
 	h.is_hidden = int(row["is_hidden"]) == 1
+	# Migration 137 — cell + container placement.
+	# Defensive .get() so a load from a pre-137 row (impossible in normal flow
+	# since migrations run before app code, but cheap safety) defaults to the
+	# in-memory "not placed" sentinels and falls through unchanged.
+	h.cell_x = int(row.get("cell_x", -1))
+	h.cell_y = int(row.get("cell_y", -1))
+	h.cell_z = int(row.get("cell_z", 0))
+	var ct_raw = row.get("container_type", null)
+	h.container_type = "" if ct_raw == null else str(ct_raw)
+	h.is_locked = int(row.get("is_locked", 0)) == 1
+	h.is_trapped = int(row.get("is_trapped", 0)) == 1
 	return h
 
 

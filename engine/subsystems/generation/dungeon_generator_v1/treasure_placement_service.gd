@@ -63,12 +63,35 @@ static func place_hoard(
 		push_warning("TreasurePlacementService.place_hoard: no room cells to place into — returning hoard unmodified (cell -1)")
 		return [hoard]
 
+	# Normalize to an UNTYPED Array[Vector3i] for internal use. Real-world
+	# inputs:
+	#   - DungeonStocker._place_hoards passes Array[Vector2i] (2D dungeon grid).
+	#   - The placement-service unit tests pass Array[Vector3i].
+	# Erase / duplicate on a typed array would reject the other type — flattening
+	# to Vector3i once here lets internal cell math (split-secondary's "pick a
+	# DIFFERENT cell" branch) work regardless of input typing.
+	var cells_3i: Array = []
+	for c in room_cells:
+		if c is Vector3i:
+			cells_3i.append(c)
+		elif c is Vector2i:
+			cells_3i.append(Vector3i(c.x, c.y, 0))
+		elif c is Dictionary:
+			cells_3i.append(Vector3i(int(c.get("x", 0)), int(c.get("y", 0)), int(c.get("z", 0))))
+		else:
+			push_warning("TreasurePlacementService: skipping unrecognized room-cell entry of type %s" % typeof(c))
+
+	if cells_3i.is_empty():
+		# All entries skipped — same handling as empty input.
+		push_warning("TreasurePlacementService.place_hoard: no usable room cells — returning hoard unmodified (cell -1)")
+		return [hoard]
+
 	# Branch by source.
 	match hoard.source:
 		TreasureHoardData.SOURCE_UNPROTECTED_TRAP:
 			# Whole hoard goes into ONE trapped (or locked-fallback) chest.
 			# The chest IS the trap; the trap room loses its purpose otherwise.
-			var cell: Vector3i = _pick_cell(room_cells, rng)
+			var cell: Vector3i = _pick_cell(cells_3i, rng)
 			var h: TreasureHoardData = hoard
 			h.cell_x = cell.x
 			h.cell_y = cell.y
@@ -94,7 +117,7 @@ static func place_hoard(
 				secondary = split_result["secondary"]
 
 			# Place the primary (visible) container.
-			var p_cell: Vector3i = _pick_cell(room_cells, rng)
+			var p_cell: Vector3i = _pick_cell(cells_3i, rng)
 			primary.cell_x = p_cell.x
 			primary.cell_y = p_cell.y
 			primary.cell_z = p_cell.z
@@ -108,10 +131,10 @@ static func place_hoard(
 
 			# Place the secondary (hidden / trapped) container.
 			# Pick a different cell if possible.
-			var remaining_cells: Array = room_cells.duplicate()
+			var remaining_cells: Array = cells_3i.duplicate()
 			remaining_cells.erase(p_cell)
 			if remaining_cells.is_empty():
-				remaining_cells = room_cells  # fallback: reuse if room has only one cell
+				remaining_cells = cells_3i  # fallback: reuse if room has only one cell
 			var s_cell: Vector3i = _pick_cell(remaining_cells, rng)
 			secondary.cell_x = s_cell.x
 			secondary.cell_y = s_cell.y
@@ -147,7 +170,7 @@ static func place_hoard(
 
 		_:
 			# Unprotected empty / unique placeholder: single visible container.
-			var cell2: Vector3i = _pick_cell(room_cells, rng)
+			var cell2: Vector3i = _pick_cell(cells_3i, rng)
 			var h2: TreasureHoardData = hoard
 			h2.cell_x = cell2.x
 			h2.cell_y = cell2.y

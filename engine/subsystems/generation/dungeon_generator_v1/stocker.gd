@@ -81,6 +81,14 @@ static func stock_floor(
 	# see neighbouring trap rooms and avoid double-gating a shared door.
 	_assign_trap_doors(layout, rng)
 
+	# Pass D — cell-based treasure placement (gdd-treasure-item-backing.md §15).
+	# Iterates every hoard in layout.treasure_hoards AFTER Pass B has folded in
+	# special-monster treasure (so the placement service sees the final coin /
+	# gem / jewelry / magic profile), then replaces each hoard with the 1-2
+	# placed hoards TreasurePlacementService returns (the 25% rule split case).
+	# Runs LAST so cell + container_type stamps survive every prior pass.
+	_place_hoards(layout, rng)
+
 
 # ---------------------------------------------------------------------------
 # Category dispatch helpers
@@ -480,3 +488,57 @@ static func _other_connected_trap_room(
 		if other != null and other.contents_kind == "trap_placeholder":
 			return other
 	return null
+
+
+# ---------------------------------------------------------------------------
+# Cell-based treasure placement (Pass D)
+# ---------------------------------------------------------------------------
+
+## Replace every hoard in layout.treasure_hoards with the placed 1-2-hoard result
+## from TreasurePlacementService, stamping cell_x/y/z + container_type +
+## is_locked / is_trapped / is_hidden per the placement rules
+## (gdd-treasure-item-backing.md §15).
+##
+## The original hoard objects are reused for the PRIMARY position (the service
+## mutates them in place), so room.treasure_hoard_id stays valid without rewiring.
+## SECONDARY hoards (the 25% rule split case) are brand-new objects that get a
+## freshly-generated `id`; they are appended to layout.treasure_hoards.
+##
+## V1: opts.traps_available = false (the traps subsystem doesn't exist yet).
+## The placement service emits would-be-trapped containers as locked-only under
+## the trap-fallback guardrail; auto-upgrades to trapped when traps land.
+static func _place_hoards(layout: DungeonLayout, rng: RandomNumberGenerator) -> void:
+	# Snapshot the pre-placement hoard list — the service may grow the list with
+	# secondaries, so iterating the live array would re-process secondaries.
+	var original_hoards: Array = layout.treasure_hoards.duplicate()
+	# Rebuild the array from scratch so the order is primaries-then-secondaries
+	# in document order (helps deterministic test inspection).
+	layout.treasure_hoards = []
+
+	var opts: Dictionary = {"traps_available": false}
+
+	for h in original_hoards:
+		var hoard: TreasureHoardData = h
+		var room: DungeonRoomData = layout.find_room(hoard.room_id)
+		# Defensive: if a hoard somehow points at an unknown room (shouldn't
+		# happen — stocker only creates room-anchored hoards), keep the hoard
+		# unplaced so persistence still records it.
+		if room == null or room.cells.is_empty():
+			push_warning("DungeonStocker._place_hoards: hoard for room_id %d has no resolvable cells; persisting unplaced." % hoard.room_id)
+			layout.treasure_hoards.append(hoard)
+			continue
+
+		var placed: Array[TreasureHoardData] = TreasurePlacementService.place_hoard(
+			hoard, room.cells, rng, opts)
+		# The primary's id is preserved (service mutates the same object); the
+		# secondary needs a fresh id since it's a brand-new object.
+		for idx in range(placed.size()):
+			var p: TreasureHoardData = placed[idx]
+			if p.id.is_empty():
+				p.id = CampaignRepository.generate_id()
+			layout.treasure_hoards.append(p)
+		# Re-point the room's back-link to the visible primary (placed[0]).
+		# In the no-split case this is the same id as before; in the split case
+		# this is still the original hoard's id (the primary).
+		if placed.size() > 0:
+			room.treasure_hoard_id = placed[0].id

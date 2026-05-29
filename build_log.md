@@ -28336,3 +28336,46 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **First-visit materialization**: create a `location_caches` row at each placed hoard's cell with the right `cache_variant`. For chests/barrels/sacks, create a backing `inventory_items` row (container catalog: name, encumbrance, lock state) and link via `location_caches.container_item_id`. For piles, `cache_variant = "loose"` with no container_item.
 3. **Per-cell interaction**: update `dungeon_handlers._resolve_loot` to identify the container at the cell, gate on `is_locked` (Pick Lock proficiency throw or key check) and `is_hidden` (Search proficiency throw to reveal), stub `is_trapped` with a clear TODO until traps land, then open the loot modal for THAT specific container's contents (via `TreasureInstantiator.hoard_to_loot`).
 4. **Retire `claim_room_hoards`**: once the cell-based path is wired end-to-end, remove the room-level claim service. The build-log noted it as deferred from Treasure Phase 1 — this whole arc replaces it.
+
+
+## Session 2026-05-29 — Cell-based treasure containers (Commit 2: DG-V1 integration)
+
+**Task:** Commit 2 of the cell-based-treasure-containers arc. Wire `TreasurePlacementService.place_hoard` into the dungeon generator so newly-generated dungeons emit cell-placed, container-typed hoards; round-trip the 6 new schema columns through `DungeonGeneratorRepository`. Net-zero new failures vs the 391/19 baseline from Commit 1.
+
+**Model used:** Opus.
+
+**Completed:**
+- **`DungeonStocker.stock_floor` → Pass D** (`engine/subsystems/generation/dungeon_generator_v1/stocker.gd`): new private `_place_hoards(layout, rng)` runs after Pass C (`_assign_trap_doors`). It snapshots `layout.treasure_hoards`, then iterates each hoard, calls `TreasurePlacementService.place_hoard(hoard, room.cells, rng, {"traps_available": false})`, and appends 1-2 placed hoards back into the array. The PRIMARY hoard keeps its existing id (service mutates the object in place); SECONDARIES from the 25%-rule split get a freshly-generated `CampaignRepository.generate_id()`. `room.treasure_hoard_id` is re-pointed at the visible primary. Pass D defensively keeps a hoard unplaced when its room has empty `cells` (warning emitted), so persistence still records something.
+- **`DungeonGeneratorRepository` persistence extension** (`engine/subsystems/generation/dungeon_generator_v1/dungeon_generator_repository.gd`): `_insert_treasure_hoards` now writes all 6 migration-137 columns (`cell_x`, `cell_y`, `cell_z`, `container_type`, `is_locked`, `is_trapped`). Empty `container_type` persists as SQL NULL. `_row_to_treasure_hoard` loads the 6 new fields with defensive `.get()` defaults so a pre-137 row (impossible in real flow but cheap insurance) reads as the in-memory "not placed" sentinels.
+- **`TreasurePlacementService` bug fix** (`engine/subsystems/generation/dungeon_generator_v1/treasure_placement_service.gd`): the service normalizes input `room_cells` to an internal **untyped** Array of Vector3i at the API boundary. Real-world callers pass `DungeonRoomData.cells` which is `Array[Vector2i]`; the unit-test suite passes `Array[Vector3i]`. Before this fix, `room_cells.duplicate()` preserved the typed array and `remaining_cells.erase(Vector3i)` failed type validation (370 ERROR lines per test run, non-fatal because Godot's typed-array assertion logs but continues — but silently left the secondary placed on the same cell as the primary). Normalization covers Vector3i, Vector2i, and Dictionary inputs; unrecognized entries warn and skip.
+- **Tests added/extended:**
+  - `tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_stocked_roundtrip.gd`: new `test_treasure_hoard_cell_and_container_roundtrip` (placed chest, trapped chest, unplaced sentinel with NULL container_type, coin pile with falsy lock/trap flags — all 6 new columns round-trip).
+  - `tests/subsystems/generation/dungeon_generator_v1/test_dungeon_stocker.gd`: 6 new Pass-D tests against the shared stocked layout — `test_all_placed_hoards_have_valid_cell`, `test_all_placed_hoards_have_valid_container_type`, `test_placed_hoards_cell_is_inside_room`, `test_trap_room_hoards_are_locked_chests`, `test_pile_hoards_are_never_locked_or_trapped`, `test_traps_unavailable_no_hoard_is_trapped` (the V1 trap-fallback guardrail invariant).
+- **GDD §15 updated** (`generation/gdd-treasure-item-backing.md`): Commit 2 marked landed; open-work list trimmed to materialization / per-cell interaction / claim_room_hoards retirement.
+
+**Decisions made:**
+- **Pass D timing — at end of `stock_floor`, after Pass C.** The placement service sees the FINAL hoard profile (coins + gems + jewelry + magic + any folded-in special-monster treasure from `_apply_special_treasure`). Running it earlier (during Pass B) would mean special-treasure mutations after placement invalidating the container-type pick (e.g. a coin_pile becoming a barrel after gold nuggets land).
+- **Empty `container_type` → SQL NULL.** Matches the schema's nullable column. An "unplaced" hoard is exactly the case where placement was skipped (empty room cells) — defaulting to NULL keeps the CHECK enum honest.
+- **Defensive `.get()` in `_row_to_treasure_hoard`.** Migration order means rows always carry the 6 new columns once 137 has run, but defensive `.get()` defaults make the loader robust against any future read-from-snapshot or migration-rollback scenario.
+- **Normalize at the service boundary, not at every call site.** The bug was the placement service's internal cell math being type-fragile, so the fix belongs in the service — one place, one normalization, callers stay simple. Vector2i (2D dungeon grid) is the dominant input today; the loop handles Vector3i / Dictionary too for future flexibility.
+- **`traps_available: false` hardcoded in stocker.** The V1 reality. When the traps subsystem lands, this turns into a real flag (probably read from `request.opts` or a generator-level setting); for now, the trap-fallback guardrail handles every "would-be trapped" branch by emitting locked.
+
+**Interfaces defined or changed:**
+- `treasure_hoards` columns persisted: `+cell_x / +cell_y / +cell_z / +container_type / +is_locked / +is_trapped`.
+- `DungeonStocker.stock_floor` post-condition: every `layout.treasure_hoards` entry has `cell_x >= 0` and a valid `container_type` (or warning + unchanged for the empty-room-cells defensive path).
+- `TreasurePlacementService.place_hoard` API unchanged; internal contract clarified — accepts `Array[Vector2i]`, `Array[Vector3i]`, or `Array[Dictionary]` interchangeably.
+
+**Database changes:** None (migration 137 already applied in Commit 1).
+
+**Tests added/updated:** see above. Full suite: 391 passed / 19 failed — net-zero NEW failures. ERROR line count dropped from 677 to 307 (the 370 Vector-type-mismatch errors are gone).
+
+**Known issues:**
+- First-visit materialization (Commit 3) still pending — `dungeon_handlers._resolve_loot` still calls the room-level `TreasureLootService.claim_room_hoards`; per-cell loot does not yet open.
+- Per-cell interaction (Commit 4) — lock/search/trap gates not yet wired into the UI.
+- `TreasureLootService.claim_room_hoards` (the deferred-from-Treasure-Phase-1 room-level service) is still in the codebase pending Commit 5.
+- Special-monster treasure (e.g. Giant Ant gold nuggets, narwhal horn) flows through Pass B and lands in the primary hoard cleanly; its placement happens in Pass D alongside other lair hoards. No regressions observed.
+
+**Next session should:**
+1. **Commit 3 — First-visit materialization.** Create a `materialize_hoard_cell(dungeon_id, floor_id, cell)` API that looks up the single `treasure_hoards` row at the cell, creates a `location_caches` row with the right `cache_variant` (pile → `loose`; container → `locked_container` or a new `container` variant), and for chest/barrel/sack creates a backing `inventory_items` row referenced via `location_caches.container_item_id`. Mark the hoard `is_looted = 1` after materialization. Idempotent (re-call short-circuits on the flag). See `~/.claude/projects/C--Users-jttau-acks-arbiter/memory/treasure_containers_resumption.md` for the spec.
+2. **Commit 4 — Per-cell interaction.** Rework `dungeon_handlers._resolve_loot(cell, dungeon_id)` to identify the container at that cell, gate on `is_locked` (Pick Lock proficiency throw or key) and `is_hidden` (Search proficiency throw to reveal), stub `is_trapped` with a TODO, and open the loot modal for THAT container only via `TreasureInstantiator.hoard_to_loot`.
+3. **Commit 5 — Retire `claim_room_hoards`.** Once the cell-based path is wired end-to-end, remove the room-level claim service + its plumbing.

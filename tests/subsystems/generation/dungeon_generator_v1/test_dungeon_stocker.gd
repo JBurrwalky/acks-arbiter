@@ -61,6 +61,13 @@ func run_all_tests() -> void:
 	test_special_treasure_noop_when_empty_or_zero_chance()
 	test_ant_giant_catalog_treasure_corrected()
 	test_animal_treasure_corrections()
+	# Cell-based treasure placement (Pass D) — gdd-treasure-item-backing.md §15.
+	test_all_placed_hoards_have_valid_cell()
+	test_all_placed_hoards_have_valid_container_type()
+	test_placed_hoards_cell_is_inside_room()
+	test_trap_room_hoards_are_locked_chests()
+	test_pile_hoards_are_never_locked_or_trapped()
+	test_traps_unavailable_no_hoard_is_trapped()
 
 	if not has_failures():
 		print("DungeonStocker: all tests passed.")
@@ -295,3 +302,80 @@ func test_animal_treasure_corrections() -> void:
 	for mid in _registry.get_all_monster_ids():
 		check(str(_registry.get_monster(mid).get("treasure_type", "")) != "U",
 			"no catalog entry may carry the bogus treasure type 'U' (found on '%s')" % mid)
+
+
+# ---------------------------------------------------------------------------
+# Cell-based treasure placement (Pass D) — gdd-treasure-item-backing.md §15.
+#
+# stock_floor runs Pass D after Pass C, so by the time the shared _layout in
+# run_all_tests is inspected every hoard should carry a cell + container_type
+# stamp from TreasurePlacementService.
+# ---------------------------------------------------------------------------
+
+## Every persisted hoard must have a real cell (x >= 0); the placement service
+## only skips placement when room_cells is empty (defensive path that should
+## not fire on a real generator output where every room has cells).
+func test_all_placed_hoards_have_valid_cell() -> void:
+	for hoard in _layout.treasure_hoards:
+		check(hoard.cell_x >= 0 and hoard.cell_y >= 0,
+			"hoard in room %d expected placed cell, got (%d, %d)"
+				% [hoard.room_id, hoard.cell_x, hoard.cell_y])
+
+
+## Every persisted hoard must have a non-empty container_type drawn from the
+## V1 catalog (see TreasureContainerTypes.VALID).
+func test_all_placed_hoards_have_valid_container_type() -> void:
+	for hoard in _layout.treasure_hoards:
+		check(hoard.container_type in TreasureContainerTypes.VALID,
+			"hoard in room %d has invalid container_type '%s'"
+				% [hoard.room_id, hoard.container_type])
+
+
+## The placed cell must be one of the hoard's room's interior cells.
+func test_placed_hoards_cell_is_inside_room() -> void:
+	for hoard in _layout.treasure_hoards:
+		var room: DungeonRoomData = _layout.find_room(hoard.room_id)
+		check(room != null, "hoard's room %d must exist in layout.rooms" % hoard.room_id)
+		if room == null:
+			continue
+		var placed_cell := Vector2i(hoard.cell_x, hoard.cell_y)
+		check(placed_cell in room.cells,
+			"hoard in room %d placed at %s should be one of the room's cells"
+				% [hoard.room_id, placed_cell])
+
+
+## Trap-room hoards must be locked chests — the chest IS the trap
+## (gdd-treasure-item-backing.md §15.5).
+func test_trap_room_hoards_are_locked_chests() -> void:
+	for hoard in _layout.treasure_hoards:
+		if hoard.source != TreasureHoardData.SOURCE_UNPROTECTED_TRAP:
+			continue
+		check(hoard.container_type == TreasureContainerTypes.CHEST,
+			"trap-room hoard in room %d should be a chest, got '%s'"
+				% [hoard.room_id, hoard.container_type])
+		check(hoard.is_locked == true,
+			"trap-room hoard in room %d should be locked" % hoard.room_id)
+
+
+## Pile types (coin_pile / gear_pile) are too loose to lock or trap; the
+## placement service guards on capability flags before setting either bit.
+func test_pile_hoards_are_never_locked_or_trapped() -> void:
+	for hoard in _layout.treasure_hoards:
+		if hoard.container_type != TreasureContainerTypes.COIN_PILE \
+				and hoard.container_type != TreasureContainerTypes.GEAR_PILE:
+			continue
+		check(hoard.is_locked == false,
+			"%s in room %d must not be locked" % [hoard.container_type, hoard.room_id])
+		check(hoard.is_trapped == false,
+			"%s in room %d must not be trapped" % [hoard.container_type, hoard.room_id])
+
+
+## Trap-fallback guardrail: stock_floor passes traps_available = false to the
+## placement service in V1, so no hoard should ever land with is_trapped = true.
+## When the traps subsystem ships, this assertion needs to relax; until then it
+## guards the "would-be-trapped becomes locked" invariant.
+func test_traps_unavailable_no_hoard_is_trapped() -> void:
+	for hoard in _layout.treasure_hoards:
+		check(hoard.is_trapped == false,
+			"with traps_available=false (V1), no hoard should emit is_trapped=true (room %d, container '%s')"
+				% [hoard.room_id, hoard.container_type])

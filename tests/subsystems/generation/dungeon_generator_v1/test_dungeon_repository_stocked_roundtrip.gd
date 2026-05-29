@@ -12,6 +12,7 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_monster_group_roundtrip()
 	test_treasure_hoard_roundtrip()
+	test_treasure_hoard_cell_and_container_roundtrip()
 	test_key_item_roundtrip()
 	test_null_treasure_type_letter()
 	test_json_arrays_survive()
@@ -148,6 +149,116 @@ func test_treasure_hoard_roundtrip() -> void:
 			check(r2.treasure_type_letter == "", "empty treasure_type_letter should round-trip as ''")
 			check(r2.is_hidden, "is_hidden true should round-trip")
 			check(r2.source == TreasureHoardData.SOURCE_UNPROTECTED_EMPTY, "source should round-trip")
+	DungeonGeneratorRepository.delete_dungeon_layout(dungeon_id)
+
+
+## Migration 137 — cell_x/y/z + container_type + is_locked + is_trapped must
+## survive a round-trip. Covers BOTH the placed-hoard case (all fields set) and
+## the legacy / unplaced case (sentinels), so we don't accidentally regress
+## either path.
+func test_treasure_hoard_cell_and_container_roundtrip() -> void:
+	var dungeon_id := _unique_id("th_cell")
+
+	# Placed hoard: chest in a specific cell, locked.
+	var h1 := TreasureHoardData.new()
+	h1.floor_index = 1
+	h1.room_id = 3
+	h1.source = TreasureHoardData.SOURCE_LAIR
+	h1.gold = 500
+	h1.total_gp_value = 500
+	h1.cell_x = 12
+	h1.cell_y = 7
+	h1.cell_z = 0
+	h1.container_type = "chest"
+	h1.is_locked = true
+	h1.is_trapped = false
+	h1.is_hidden = false
+
+	# Trapped chest (the trap-fallback guardrail can flip is_trapped on; verify
+	# both flags round-trip independently).
+	var h2 := TreasureHoardData.new()
+	h2.floor_index = 1
+	h2.room_id = 4
+	h2.source = TreasureHoardData.SOURCE_UNPROTECTED_TRAP
+	h2.gold = 300
+	h2.total_gp_value = 300
+	h2.cell_x = 4
+	h2.cell_y = 11
+	h2.cell_z = 0
+	h2.container_type = "chest"
+	h2.is_locked = true
+	h2.is_trapped = true
+
+	# Unplaced hoard (defensive — empty room_cells path): sentinels survive.
+	var h3 := TreasureHoardData.new()
+	h3.floor_index = 1
+	h3.room_id = 5
+	h3.source = TreasureHoardData.SOURCE_UNPROTECTED_EMPTY
+	# Leaves cell_x/y/z and container_type at constructor defaults.
+
+	# Coin pile (pile types are unlocked + untrapped by capability — verify the
+	# falsy round-trip on those flags).
+	var h4 := TreasureHoardData.new()
+	h4.floor_index = 1
+	h4.room_id = 6
+	h4.source = TreasureHoardData.SOURCE_LAIR
+	h4.copper = 50
+	h4.total_gp_value = 0
+	h4.cell_x = 0
+	h4.cell_y = 0
+	h4.cell_z = 0
+	h4.container_type = "coin_pile"
+	h4.is_locked = false
+	h4.is_trapped = false
+
+	var layout := _minimal_layout(1)
+	layout.treasure_hoards = [h1, h2, h3, h4]
+
+	DungeonGeneratorRepository.insert_dungeon_layout(dungeon_id, [layout])
+	var loaded := DungeonGeneratorRepository.get_dungeon_layout(dungeon_id)
+	check(loaded.size() == 1, "should reload 1 floor")
+	if loaded.size() == 1:
+		var hoards := loaded[0].treasure_hoards
+		check(hoards.size() == 4, "should have 4 treasure hoards, got %d" % hoards.size())
+		var by_room: Dictionary = {}
+		for h in hoards:
+			by_room[h.room_id] = h
+		# Placed chest with lock.
+		if by_room.has(3):
+			var r1: TreasureHoardData = by_room[3]
+			check(r1.cell_x == 12 and r1.cell_y == 7 and r1.cell_z == 0,
+				"placed chest cell should round-trip, got (%d, %d, %d)" % [r1.cell_x, r1.cell_y, r1.cell_z])
+			check(r1.container_type == "chest", "container_type 'chest' should round-trip, got '%s'" % r1.container_type)
+			check(r1.is_locked == true and r1.is_trapped == false,
+				"locked-but-not-trapped chest should round-trip (locked=%s trapped=%s)" % [r1.is_locked, r1.is_trapped])
+		else:
+			check(false, "hoard in room 3 missing")
+		# Trapped chest.
+		if by_room.has(4):
+			var r2: TreasureHoardData = by_room[4]
+			check(r2.container_type == "chest", "trapped container_type should round-trip")
+			check(r2.is_locked == true and r2.is_trapped == true,
+				"trapped chest should round-trip both flags (locked=%s trapped=%s)" % [r2.is_locked, r2.is_trapped])
+		else:
+			check(false, "hoard in room 4 missing")
+		# Unplaced hoard: NULL container_type comes back as "".
+		if by_room.has(5):
+			var r3: TreasureHoardData = by_room[5]
+			check(r3.cell_x == -1 and r3.cell_y == -1 and r3.cell_z == 0,
+				"unplaced sentinel cell should round-trip, got (%d, %d, %d)" % [r3.cell_x, r3.cell_y, r3.cell_z])
+			check(r3.container_type == "",
+				"NULL container_type should deserialize as empty string, got '%s'" % r3.container_type)
+			check(r3.is_locked == false and r3.is_trapped == false,
+				"unplaced hoard should have falsy lock/trap flags")
+		else:
+			check(false, "hoard in room 5 missing")
+		# Coin pile (capability flags = false).
+		if by_room.has(6):
+			var r4: TreasureHoardData = by_room[6]
+			check(r4.container_type == "coin_pile", "coin_pile container_type should round-trip")
+			check(r4.is_locked == false and r4.is_trapped == false,
+				"coin_pile is_locked / is_trapped should round-trip as false")
+
 	DungeonGeneratorRepository.delete_dungeon_layout(dungeon_id)
 
 
