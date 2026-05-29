@@ -406,6 +406,8 @@
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_invalid_dungeon_type_fallback.gd" id="391_scenario_invalid_dungeon_type_fallback"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_voxel_serializer.gd" id="392_dungeon_voxel_serializer_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_fixture_service.gd" id="393_dungeon_fixture_service_tests"]
+[ext_resource type="Script" path="res://tests/test_treasure_instantiator.gd" id="394_treasure_instantiator_tests"]
+[ext_resource type="Script" path="res://tests/test_magic_item_catalog.gd" id="395_magic_item_catalog_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1624,3 +1626,9 @@ script = ExtResource("392_dungeon_voxel_serializer_tests")
 
 [node name="DungeonFixtureServiceTests" type="Node" parent="."]
 script = ExtResource("393_dungeon_fixture_service_tests")
+
+[node name="TreasureInstantiatorTests" type="Node" parent="."]
+script = ExtResource("394_treasure_instantiator_tests")
+
+[node name="MagicItemCatalogTests" type="Node" parent="."]
+script = ExtResource("395_magic_item_catalog_tests")

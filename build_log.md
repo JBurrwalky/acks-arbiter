@@ -27862,3 +27862,175 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. Manually verify the live enter-dungeon flow on an Avalon dungeon hex (Forgotten Fane / Sunken Citadel / Temple of M'kia) in the editor.
 2. Phase 2: spawn `monster_groups` + `treasure_hoards` into instantiated dungeons (after the treasure-data audit lands real item value/weight).
 3. Optionally populate `wandering_monster_table` from `floor_tier`.
+
+
+## Session 2026-05-28 — Treasure Item Backing Phase 1 (value_cp + TreasureInstantiator)
+
+**Task:** Make dungeon-generator treasure (coins/gems/jewelry/magic) into real, encumbrance-tracked, sellable inventory items. Began as an audit + GDD proposal (`generation/gdd-treasure-item-backing.md`); Jedidiah approved "GO" → implemented Phase 1 (data model + hoard→inventory bridge + sell path).
+
+**Model used:** Opus (audit, RAW lookups, GDD authoring, implementation, debugging, verification).
+
+**Completed:**
+- Migration 134 (`db/migrations/134_inventory_item_value_cp.sql` + `db/schema.sql` canonical): `ALTER TABLE inventory_items ADD COLUMN value_cp INTEGER NOT NULL DEFAULT -1`. -1 = value by `item_key`→`EquipmentCatalog.cost_cp` (mundane equipment); ≥0 = authoritative per-item value in cp (gems/jewelry/trade goods). Non-destructive ADD COLUMN (pattern of migration 012); zero backfill.
+- `InventoryItem` (`engine/shared_types/inventory_item.gd`): added `var value_cp: int = -1`, carried in `from_dict`/`to_dict`, + `effective_value_cp(catalog) -> int` helper.
+- `CampaignRepository`: threaded `value_cp` through all 6 item-creating `inventory_items` INSERT paths — `add_inventory_item`, `split_item_for_equip`, `split_stack`, `save_character_inventory`, `add_party_inventory_item`, `add_creature_inventory_item`. (Transfers use UPDATE, so they preserve value_cp automatically.)
+- `TreasureInstantiator` (`engine/subsystems/inventory/treasure_instantiator.gd`, NEW; pure RefCounted/static): `hoard_to_loot(hoard) -> {coins_cp, items, magic_placeholders}`. Gems/jewelry → 1-enc-unit inventory-item templates with `value_cp = value_gp*100`; coins → aggregated `coins_cp`; magic items → carriable placeholder stubs (`is_magical`, value_cp -1, 167 units).
+- `ShopService.sell_item`/`get_sellable_items` (`engine/subsystems/commerce/shop_service.gd`): value by effective `value_cp` (fallback catalog `cost_cp`), accept `gem`/`jewelry`/`trade_good` categories, do not restock non-catalog valuables. Coins + magic items still excluded.
+
+**Decisions made:**
+- Jewelry encumbrance (genuine RAW gap — `acore_equipment.xml:582-588` names only "coins or gems"): Jedidiah ruled **1 enc unit** (1/1000 stone), same as coins/gems. Recorded as a project gap-fill in GDD §7/§13.
+- `value_cp` stored in copper (project CP-precision rule); sentinel -1 avoids backfilling existing rows and the ~130-item equipment JSON catalog. `value_gp*100` is exact (no rounding).
+- Magic items remain carriable-but-not-sellable (no magic-item market yet); sale economy deferred to Phase 3.
+
+**Interfaces defined or changed:**
+- DB: `inventory_items.value_cp INTEGER NOT NULL DEFAULT -1`.
+- `InventoryItem.value_cp` field + `InventoryItem.effective_value_cp(catalog) -> int`.
+- `TreasureInstantiator.hoard_to_loot(hoard: TreasureHoardData) -> Dictionary {coins_cp:int, items:Array, magic_placeholders:Array}`. `items`/`magic_placeholders` are `inventory_items`-shaped dicts WITHOUT an owner — caller stamps `character_id`/`party_id`/`creature_id` and inserts; coins go via `PartyWallet`/`add_coins_cp`. Also `TreasureInstantiator.coins_cp(hoard) -> int`.
+- item_category convention strings reserved: `gem`, `jewelry`, `trade_good`, `magic` (free TEXT column — no migration; do NOT reuse `treasure`, which is coins).
+
+**Database changes:**
+- Migration 134 adds `inventory_items.value_cp` (see above).
+
+**Tests added/updated:**
+- `tests/test_treasure_instantiator.gd` (NEW suite, registered LAST in test_runner): 8 pure-logic tests (coin aggregation, gem/jewelry item shape + value_cp + 1-unit weight, magic placeholders, null/empty) + 1 DB integration test (`test_shop_sells_gem_by_value_cp` — ShopService sells a non-catalog gem by value_cp; value_cp DB round-trip).
+- Full suite: 387 passed / 19 failed (git-stash baseline was 386/19 → +1 for the new suite, NET-ZERO new failures).
+
+**Known issues:**
+- Pre-existing ~19 carry-forward failures unchanged (proficiency UI, scheduler, ZoC/LOS, familiars, domain style, etc.). Not touched.
+- [FLAKY, pre-existing, NOT caused by this work] `test_shipping_contract_workflow.test_offer_accept_then_substrate_deliver_credits_fee` ("no suitable road offer for the wagon"): non-deterministic. Root cause — `CampaignRepository.generate_id()` draws from a module-level `_id_rng` that is `randomize()`d once at class-load, and `ShippingContractOfferRoller` seeds its RNG from generated IDs (party_id/settlement_id). So the offer roll varies per process AND is sensitive to how many IDs earlier suites consumed. Verified via git-stash baseline that it flips independent of this work. Mitigation applied: the treasure-backing DB test runs LAST (in `test_treasure_instantiator.gd`) so it perturbs nothing. A future pass should make that shipping test guarantee a fitting offer.
+- Phase 2 (found-magic-item catalog) and Phase 3 (special treasures + magic-item market) not started.
+
+**Next session should:**
+1. Runtime-consumer: call `TreasureInstantiator.hoard_to_loot()` when a party loots a persisted dungeon hoard — deposit `coins_cp` via `PartyWallet`, insert gem/jewelry/magic templates via `add_inventory_item` (or party pool / loot distributor), and mark the hoard consumed.
+2. Phase 2: extract `data/treasure/magic_item_catalog.json` from `acore_treasure_and_magic_items_rules.xml:197-240` (+ APC/Axioms full d00 tables) and resolve magic placeholders to real items.
+3. Optional: harden the flaky shipping-contract offer test (guarantee/retry a capacity-fitting road offer).
+
+
+## Session 2026-05-28 — Treasure Item Backing: runtime-consumer foundation (TreasureLootService)
+
+**Task:** Follow-on to the Phase 1 entry above (same session). Build the foundational, non-colliding slice of the dungeon runtime-consumer that turns generated treasure hoards into real lootable inventory. Chosen over Phase 2 (magic-item catalog) because Phase 2 is blocked on a RAW data gap (the full d00 magic-item tables are not in `rules/`). Deliberately did NOT edit the concurrently-owned dungeon-runtime files (`dungeon_handlers`/`dungeon_explore_state`) — provided a service they call instead.
+
+**Model used:** Opus.
+
+**Completed:**
+- Migration 135 (`db/migrations/135_treasure_hoard_is_looted.sql` + `db/schema.sql`): `ALTER TABLE treasure_hoards ADD COLUMN is_looted INTEGER NOT NULL DEFAULT 0`. Non-destructive (pattern of 012/134).
+- `DungeonGeneratorRepository` (`engine/subsystems/generation/dungeon_generator_v1/dungeon_generator_repository.gd`): added `get_unlooted_treasure_hoards_for_room(floor_id, room_id) -> Array[TreasureHoardData]` (filters `is_looted = 0`; sets each hoard's `id` pk so the caller can mark it) and `mark_hoard_looted(hoard_id) -> bool`.
+- `TreasureLootService` (`engine/subsystems/inventory/treasure_loot_service.gd`, NEW; RefCounted, static): `claim_room_hoards(dungeon_id, floor_id, room_id, cell)`. Loads a room's unlooted hoards → creates a dungeon loose cache (`LocationCacheManager.create_dungeon_loose_cache`) → inserts per-denomination coin rows + gem/jewelry/magic item rows (carrying `value_cp`) via `add_inventory_item` + `transfer_item_to_cache` → marks hoards looted. Idempotent; opens no UI, deposits no coins, awards no XP (the existing loot-modal / pick-up-all flow does those on the returned cache).
+
+**Decisions made:**
+- Scoped to a decoupled SERVICE rather than editing `_resolve_loot`, to avoid collision with the concurrently-owned dungeon-runtime session. The runtime calls `claim_room_hoards()` and opens the loot modal on the returned `cache_id`.
+- Coins materialised as per-denomination coin rows in the cache (from `hoard.copper/silver/electrum/gold/platinum`), matching the existing cache/coin convention, so the existing claim flow handles deposit + treasure XP uniformly.
+- Cache items use `character_id = ''` — FK enforcement is OFF (no `foreign_keys` pragma anywhere in `engine/`; same as `transfer_item_to_cache` / `add_party_inventory_item`).
+- Phase 2 deferred: BLOCKED on a RAW data gap (see Known issues).
+
+**Interfaces defined or changed:**
+- DB: `treasure_hoards.is_looted INTEGER NOT NULL DEFAULT 0`.
+- `DungeonGeneratorRepository.get_unlooted_treasure_hoards_for_room(floor_id: String, room_id: int) -> Array[TreasureHoardData]`; `DungeonGeneratorRepository.mark_hoard_looted(hoard_id: String) -> bool`.
+- `TreasureLootService.claim_room_hoards(dungeon_id: String, floor_id: String, room_id: int, cell: Vector3i) -> Dictionary {cache_id:String, hoard_count:int, coins_cp:int, item_count:int}`. cache_id "" / hoard_count 0 = room had no unlooted treasure.
+
+**Database changes:**
+- Migration 135 adds `treasure_hoards.is_looted`.
+
+**Tests added/updated:**
+- `tests/test_treasure_instantiator.gd` (last-running suite): +2 DB tests — `test_claim_room_hoards_creates_cache` (cache holds coin + gem + jewelry + magic placeholder; gem keeps `value_cp` through the cache; hoard marked looted) and `test_claim_room_hoards_idempotent_and_empty` (empty room → no cache; second claim is a no-op). Suite is now 11 tests (8 pure-logic + 3 DB).
+- Full suite: 387 passed / 19 failed (net-zero new; the flaky shipping test passed this run).
+
+**Known issues:**
+- Phase 2 (found-magic-item catalog) is BLOCKED: the full d00 magic-item generation tables are not in `rules/` (Core preserves only "core rows" per `acore_treasure_and_magic_items_rules.xml:209`; no APC/Axioms magic-item-table file). Needs Jedidiah to add the source tables. Found magic items remain carriable placeholders (works end-to-end via TreasureLootService).
+- `_resolve_pick_up_all` currently awards treasure XP for COINS only; gems/jewelry recovered should also grant XP (RAW: 1 XP per 1 gp of coin/gems/jewelry). A future XP-on-recovery pass can use `effective_value_cp` on the cached valuables now that they carry value.
+- The flaky shipping-contract test (Phase 1 entry + `coding_conventions §69` + a spawned chip) is unchanged.
+
+**Next session should:**
+1. (Dungeon-runtime session) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`, then open the loot modal on the returned `cache_id`.
+2. Escalate to Jedidiah for the full magic-item generation tables to unblock Phase 2.
+3. Extend treasure-recovery XP to gems/jewelry via `effective_value_cp`.
+
+
+## Session 2026-05-28 — Treasure Item Backing Phase 2: found-magic-item catalog
+
+**Task:** Build the found-magic-item catalog (Phase 2). Jedidiah confirmed Core's `acore_treasure_and_magic_items_rules.xml` is sufficient for the CATALOG (names + categories) at this juncture — per-item effects/usage are a separate session — superseding the earlier "Phase 2 blocked on a RAW data gap" note.
+
+**Model used:** Opus.
+
+**Completed:**
+- `tools/extract_magic_item_catalog.py` (NEW) + `data/treasure/magic_item_catalog.json` (NEW; 153 items, 8 categories): extracts `random_magic_type_table` (d100 → category) + per-category `random_item_tables` name lists from `rules/acore_treasure_and_magic_items_rules.xml:197-216`. The `<magic_items>` tag is ambiguous (also a treasure-row column cell), so the extractor anchors on the unique `random_magic_type_table` / `random_item_tables` tags. `weapons_table` is prose → sword/misc_weapon/armor entries hand-coded in the tool.
+- `MagicItemCatalog` (NEW; `engine/subsystems/inventory/magic_item_catalog.gd`): loads the JSON; `category_for_roll(d100)`, `random_item_in_category(cat, rng)`, `pick_for_token(token, rng)` (normalises treasure-table tokens like "sword, weapon or armor" / "any" → category → uniform item).
+- `TreasureInstantiator.hoard_to_loot(hoard, rng=null, magic_catalog=null)`: added optional rng + catalog params (backward-compatible). `_magic_placeholders` replaced by `_resolve_magic` — with rng + a loaded catalog, magic items resolve to real NAMED items (into `items`); otherwise carriable placeholders (into `magic_placeholders`) as before.
+- `TreasureLootService.claim_room_hoards`: now seeds a per-hoard RNG (`hash("treasure_loot|" + hoard.id)`) and passes a cached `MagicItemCatalog`, so looted magic items are real named catalog items, deterministic per hoard.
+
+**Decisions made:**
+- Resolution at INSTANTIATION (TreasureInstantiator), not the generator — keeps the DG-V1 resolver + its scenario/acceptance tests untouched (zero blast radius). The hoard still records the category at generation; the specific item is chosen (deterministically, seeded by hoard.id) when materialised.
+- V1 catalog scope (per Jedidiah): names + categories + magical_bonus + is_cursed + uniform 1-item encumbrance (167 units). Per-item effects / charges / identification + sale economy = a future magic-item usage session. Found magic items remain 0-XP, `value_cp -1`, non-sellable.
+- Selection is uniform within category (Core preserves item names, not full d00 per-item sub-ranges) — documented in the catalog `_note`.
+
+**Interfaces defined or changed:**
+- `MagicItemCatalog`: `category_for_roll(roll:int)->String`; `random_item_in_category(category:String, rng)->Dictionary`; `pick_for_token(token:String, rng)->Dictionary`; `get_item(item_key)->Dictionary`; `is_loaded()->bool`; `item_count()->int`.
+- `TreasureInstantiator.hoard_to_loot(hoard, rng=null, magic_catalog=null)` — signature extended (optional params; the old 1-arg call still yields placeholders).
+- `data/treasure/magic_item_catalog.json`: `{_source, _extracted_by, _note, type_table:[{roll_min,roll_max,category}], items:[{item_key,name,category,magical_bonus,is_cursed,encumbrance_units}]}`.
+
+**Database changes:** None (Phase 2 is data + logic only).
+
+**Tests added/updated:**
+- `tests/test_magic_item_catalog.gd` (NEW suite, 6 tests): load, `category_for_roll` boundaries, `random_item_in_category`, `pick_for_token` (potion / "sword, weapon or armor" / "any").
+- `tests/test_treasure_instantiator.gd`: +`test_magic_items_resolve_with_catalog` (catalog path → real item, not placeholder); updated `test_claim_room_hoards_creates_cache` to assert the cached magic item is a real catalog item.
+- Full suite: 388 passed / 19 failed (net-zero new; +1 for the new MagicItemCatalog suite; shipping flaky passed this run).
+
+**Known issues:**
+- Magic-item EFFECTS / charges / identification + a magic-item SALE economy are unbuilt — a dedicated usage session. Found magic items are carriable + 0-XP + non-sellable (`value_cp -1`) until then.
+- `_resolve_pick_up_all` still awards treasure XP for coins only (gems/jewelry recovery XP is a future pass; magic grants 0 XP by RAW regardless).
+- The flaky shipping-contract test (`coding_conventions §69` + spawned chip) is unchanged.
+
+**Next session should:**
+1. (Dungeon-runtime) wire `TreasureLootService.claim_room_hoards()` into `_resolve_loot`.
+2. Magic-item usage session: per-item effects / charges / identification + sale value, keyed off the catalog item_keys.
+3. Extend treasure-recovery XP to gems/jewelry via `effective_value_cp`.
+
+
+## Session 2026-05-29 — Treasure Item Backing Phase 2.5: magic-item sale prices
+
+**Task:** Give the 153-item found-magic-item catalog sale prices (and creation time) so magic items have a minimum-viable use as sellable loot, per the game creator's published price list (forum.autarch.co/t/magical-item-prices/3000/5). Build deliberately/methodically — runtime mistakes are hard to catch.
+
+**Model used:** Opus (cross-reference, pricing design, implementation, tests).
+
+**Completed:**
+- `tools/extract_magic_item_catalog.py`: added a curated `PRICE_MAP` (151 entries, inline forum units) + `RING_OF_PROTECTION_SUBROLL` (d100, 5 variants) + `SPELL_SCROLL_GENERATOR` (class d4 + arcane/divine level d00 tables) + **bidirectional validation** (every catalog key must have a price and vice-versa; a typo errors loudly). Emits `value_gp` + `creation_time_days` on every item, a top-level `generators` section, and the ring `sub_roll`. Regenerated `data/treasure/magic_item_catalog.json`: 142 priced, 8 cursed=0, 3 sentinel -1.
+- Prices = the game creator's forum list, cross-validated against the SACRED `magic_item_creation_table` + `sample_magic_items` (`acore-campaign-general-and-magic-research.xml:185-247`) and consistent with `magic_item_enchanting.gd`'s crafting-cost ladder (5,000/15,000/35,000). Times normalized to days (wk x7, mo x30).
+- `MagicItemCatalog` (`engine/subsystems/inventory/magic_item_catalog.gd`): loads `generators`; `random_item_in_category`/`pick_for_token` now MATERIALIZE the chosen item via new `_materialize` -> `_resolve_sub_roll` (d100 -> priced Ring of Protection variant) / `_generate_spell_scroll` (rolls class/count/levels; price = 500 x sum(levels)). Added `get_all_items()` + `get_generator(name)`.
+- `TreasureInstantiator._resolve_magic`: stamps `value_cp = value_gp x 100` (>=0) onto resolved magic items (was hardcoded -1); records scroll class/levels in notes via new `_magic_item_notes`.
+- `ShopService.sell_item` + `get_sellable_items`: narrowed the `is_magical` exclusion to `is_magical AND value_cp < 0` — priced found items sell at `value_cp`; crafted/quest magic (value_cp -1) and cursed (value_cp 0, dropped by the existing `<= 0` guard) stay non-sellable.
+- Follow-up corrections (same session, after Jedidiah provided the full RAW scrolls d100 table + corrections): spell-scroll count now weighted by the RAW "Spells (N)" sub-band (`SPELL_SCROLL_GENERATOR.count_roll`, rows 41-76; `_generate_spell_scroll` rolls in [41,76]; `_lookup_level` generalized to `_lookup_band`); Ring-of-Protection radius variants record `radius_effect` (save bonus to allies within 5', AC to wearer only); **Vorpal Sword corrected 60,000 -> 160,000gp** (16,000,000 cp).
+
+**Decisions made:**
+- Cursed/trap items (8: cursed sword/armor/shield/scroll, ring of delusion/weakness, potion of delusion, bag of devouring) -> value_gp 0, non-sellable (Jedidiah; Macris prices only craftable items). Malign-but-craftable items (potion of poison 2,000; helm of alignment changing 75,000) ARE priced and in the clean 140.
+- Ring of Protection -> split into 5 priced `sub_roll` variants selected by the RAW d100 chart (Jedidiah: each variant is a unique item). +2 5'-radius (roll 92) is DERIVED at 75,000 (forum left it unpriced; the 5' radius adds +1 effective spell level = +25,000). Radius semantics (Jedidiah 2026-05-29, recorded on the variant): the save bonus extends to allies within 5'; the AC bonus applies to the wearer only.
+- Spell Scroll -> `scroll_of_spells` generator; price = 500 x sum(spell levels) (one-use effect, L193). Count weighted by the RAW scrolls-d100 "Spells (N)" sub-band (rows 41-76; Jedidiah supplied the full scrolls table 2026-05-29 — count 1 ~42%, tapering to 7 ~3%). Binding specific named spells deferred to the usage session.
+- Vorpal Sword = 160,000gp (16,000,000 cp) (Jedidiah 2026-05-29; supersedes the earlier 60,000 1st-level-vorpal derivation). creation_time_days provisionally 190 (from the superseded derivation), pending a corrected time. Sweet Water = 500 (1st-level one-use). Treasure Map = -1 (non-merchandise).
+- Prices live in the EXTRACTOR (reproducible) not hand-edited JSON. value_gp 0 = worthless; -1 = no fixed price (sub_roll/generator parent or non-merchandise).
+- Market-class gating for high-value magic sales deferred to Phase 3; V1 sells full `value_cp` through ShopService, like gems/jewelry.
+
+**Interfaces defined or changed:**
+- `data/treasure/magic_item_catalog.json`: items gain `value_gp:int` + `creation_time_days:int`; new top-level `generators.scroll_of_spells` (`class_table`, `level_tables.{arcane,divine}`, `count_roll:{roll_min,roll_max,table:[{roll_min,roll_max,count}]}`, `price_per_spell_gp`, `days_per_spell_level`); `ring_of_protection` gains `sub_roll:{die, table:[{roll_min,roll_max,item_key,name,magical_bonus,value_gp,creation_time_days,(radius_ft,radius_effect)}]}`; `spell_scroll` gains `generator:"scroll_of_spells"`.
+- `MagicItemCatalog`: new `get_all_items()->Array`, `get_generator(name)->Dictionary`; `random_item_in_category(category,rng)` / `pick_for_token(token,rng)` now return MATERIALIZED items, so a returned `item_key` may NOT be a top-level catalog key (e.g. `ring_of_protection_1`).
+- `TreasureInstantiator.hoard_to_loot(...)` resolved magic items now carry `value_cp = value_gp*100` (>=0) instead of -1; scroll items carry `scroll_class` + `spell_levels` (in notes).
+- `ShopService`: magic items are sellable iff `value_cp >= 0`.
+
+**Database changes:** None (data + logic only; reuses migration 134 `inventory_items.value_cp`).
+
+**Tests added/updated:**
+- `tests/test_magic_item_catalog.gd`: 6 -> 12 tests. Fixed `test_pick_for_token_any` (materialized variants are not top-level keys). Added: every-item-has-price-fields (142/8/3 coverage), spot prices (healing 500, staff_of_wizardry 275000, sword_2 15000, vorpal 160000, cursed 0, treasure_map -1), ring-of-protection sub_roll data + materialization, spell-scroll generator data (incl. count_roll 41-76 band) + price = 500 x sum(levels).
+- `tests/test_treasure_instantiator.gd`: extended `test_magic_items_resolve_with_catalog` (resolved item carries value_cp >= 0); added DB `test_shop_sells_priced_magic_item` (priced wand sells at value_cp; cursed-0 and crafted--1 both rejected; sellable-list excludes both).
+- Full suite: 388 passed / 19 failed — net-zero new failures (baseline 388/19). MagicItemCatalog + TreasureInstantiator suites green.
+
+**Known issues:**
+- Treasure-map subtypes: the RAW scrolls d100 (rows 77-100, provided 2026-05-29) has 13 treasure-map variants leading to reward hoards (gp/gems/jewelry/magic); the catalog collapses them to one non-merchandise `treasure_map`. Generating those hoards + driving scroll TYPE selection off the full d100 are a deferred feature.
+- Vorpal Sword `creation_time_days` is provisionally 190 (from the superseded 60,000 derivation); the price is corrected to 160,000 but the time awaits Jedidiah's confirmation.
+- Magic items still grant 0 recovery XP (RAW) regardless of sale value; the future gem/jewelry recovery-XP pass must keep EXCLUDING magic items.
+- The flaky shipping-contract test (coding_conventions §69) is unchanged.
+- The magic catalog still lacks a §7.4.4 data-freshness test (pre-existing Phase-2 gap; the extractor's bidirectional validation covers typos but not hand-edits) — spawned as a follow-up task chip.
+
+**Next session should:**
+1. (Dungeon-runtime) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot` (still pending from Phase 1).
+2. Magic-item USAGE session: per-item effects / charges / identification + binding specific named spells to generated scrolls (keyed off catalog item_keys + the recorded scroll metadata); also apply the Ring-of-Protection radius semantics (`radius_effect`).
+3. Phase 3 magic-item market: market-class gating for high-value magic sales.
+4. Confirm the Vorpal Sword creation time for the revised 160,000gp price (provisionally 190d).
+5. (Optional/future) treasure-map subtypes: generate the reward hoards the RAW scrolls d100 (rows 77-100) point to, and drive scroll TYPE selection off the full d100.

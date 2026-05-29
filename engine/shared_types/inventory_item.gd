@@ -40,6 +40,13 @@ var material: String = ""             # "wood"|"metal"|"stone"|"leather"|"" (use
 ## Examples: torch = 6 turns, lantern oil = 24 turns, scroll = 1 charge.
 var uses_remaining: int = -1
 
+## Economic value — migration 134
+## -1 = no intrinsic value; value this item by item_key -> EquipmentCatalog.cost_cp
+## (mundane equipment). >= 0 = authoritative per-item value in copper pieces, for
+## rolled valuables (gems, jewelry, special-treasure trade goods, identified magic
+## items) whose value is not a fixed catalog price. See gdd-treasure-item-backing.md.
+var value_cp: int = -1
+
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
 var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
@@ -74,6 +81,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.damage_type = data.get("damage_type", "physical")
 	i.material = data.get("material", "")
 	i.uses_remaining = data.get("uses_remaining", -1)
+	i.value_cp = data.get("value_cp", -1)
 	return i
 
 
@@ -101,11 +109,24 @@ func to_dict() -> Dictionary:
 		"damage_type": damage_type,
 		"material": material,
 		"uses_remaining": uses_remaining,
+		"value_cp": value_cp,
 	}
 
 
 func encumbrance_stone() -> float:
 	return encumbrance_units / 1000.0
+
+
+func effective_value_cp(catalog) -> int:
+	## Authoritative monetary value of one unit, in copper pieces.
+	## value_cp >= 0 is intrinsic (rolled valuables: gems, jewelry, trade goods,
+	## identified magic items). value_cp < 0 means "value by catalog cost_cp"
+	## (mundane equipment). `catalog` is an EquipmentCatalog instance (or null).
+	if value_cp >= 0:
+		return value_cp
+	if catalog == null:
+		return 0
+	return int(catalog.get_item(item_key).get("cost_cp", 0))
 
 
 static func _str_or_empty(value) -> String:

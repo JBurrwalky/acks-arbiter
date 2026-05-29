@@ -1,0 +1,1785 @@
+{
+  "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",
+  "_price_source": "http://forum.autarch.co/t/magical-item-prices/3000/5 (game-creator price list); validated vs SACRED magic_item_creation_table + sample_magic_items in acore-campaign-general-and-magic-research.xml:185-247",
+  "_extracted_by": "tools/extract_magic_item_catalog.py",
+  "_note": "Found-magic-item catalog: names + categories + magical_bonus + 167-unit encumbrance (1/6 stone, RAW item-counting) + sale price (value_gp) and creation time (creation_time_days, normalized to days: wk x7, mo x30). value_gp 0 = cursed/worthless (non-sellable); value_gp -1 = no fixed price (sub_roll/generator parent or non-merchandise). Ring of Protection materializes one of 5 variants via its d100 sub_roll; Spell Scroll is built by the scroll_of_spells generator (price = 500 x sum of spell levels). Per-item EFFECTS / charges / identification + binding specific named spells remain deferred to the magic-item usage session. Magic items grant 0 recovery XP (RAW) regardless of sale value.",
+  "type_table": [
+    {
+      "roll_min": 1,
+      "roll_max": 20,
+      "category": "potion"
+    },
+    {
+      "roll_min": 21,
+      "roll_max": 25,
+      "category": "ring"
+    },
+    {
+      "roll_min": 26,
+      "roll_max": 56,
+      "category": "scroll"
+    },
+    {
+      "roll_min": 57,
+      "roll_max": 61,
+      "category": "rod_staff_wand"
+    },
+    {
+      "roll_min": 62,
+      "roll_max": 66,
+      "category": "misc_magic"
+    },
+    {
+      "roll_min": 67,
+      "roll_max": 87,
+      "category": "sword"
+    },
+    {
+      "roll_min": 88,
+      "roll_max": 92,
+      "category": "misc_weapon"
+    },
+    {
+      "roll_min": 93,
+      "roll_max": 100,
+      "category": "armor"
+    }
+  ],
+  "generators": {
+    "scroll_of_spells": {
+      "_source": "ACKS Core rulebook Scrolls d100 table (provided by Jedidiah 2026-05-29). Class roll + count corroborated SACRED at acore_treasure_and_magic_items_rules.xml:227-229 ('Roll 1d4; 1-3 Arcane, 4 Divine. The number in parentheses is the number of spells.').",
+      "class_die": "d4",
+      "class_table": [
+        {
+          "roll_min": 1,
+          "roll_max": 3,
+          "class": "arcane"
+        },
+        {
+          "roll_min": 4,
+          "roll_max": 4,
+          "class": "divine"
+        }
+      ],
+      "count_roll": {
+        "die": "d100",
+        "roll_min": 41,
+        "roll_max": 76,
+        "table": [
+          {
+            "roll_min": 41,
+            "roll_max": 55,
+            "count": 1
+          },
+          {
+            "roll_min": 56,
+            "roll_max": 66,
+            "count": 2
+          },
+          {
+            "roll_min": 67,
+            "roll_max": 69,
+            "count": 3
+          },
+          {
+            "roll_min": 70,
+            "roll_max": 72,
+            "count": 4
+          },
+          {
+            "roll_min": 73,
+            "roll_max": 74,
+            "count": 5
+          },
+          {
+            "roll_min": 75,
+            "roll_max": 75,
+            "count": 6
+          },
+          {
+            "roll_min": 76,
+            "roll_max": 76,
+            "count": 7
+          }
+        ]
+      },
+      "level_tables": {
+        "arcane": [
+          {
+            "roll_min": 1,
+            "roll_max": 25,
+            "level": 1
+          },
+          {
+            "roll_min": 26,
+            "roll_max": 50,
+            "level": 2
+          },
+          {
+            "roll_min": 51,
+            "roll_max": 70,
+            "level": 3
+          },
+          {
+            "roll_min": 71,
+            "roll_max": 85,
+            "level": 4
+          },
+          {
+            "roll_min": 86,
+            "roll_max": 95,
+            "level": 5
+          },
+          {
+            "roll_min": 96,
+            "roll_max": 97,
+            "level": 6
+          },
+          {
+            "roll_min": 98,
+            "roll_max": 98,
+            "level": 7
+          },
+          {
+            "roll_min": 99,
+            "roll_max": 99,
+            "level": 8
+          },
+          {
+            "roll_min": 100,
+            "roll_max": 100,
+            "level": 9
+          }
+        ],
+        "divine": [
+          {
+            "roll_min": 1,
+            "roll_max": 25,
+            "level": 1
+          },
+          {
+            "roll_min": 26,
+            "roll_max": 50,
+            "level": 2
+          },
+          {
+            "roll_min": 51,
+            "roll_max": 70,
+            "level": 3
+          },
+          {
+            "roll_min": 71,
+            "roll_max": 85,
+            "level": 4
+          },
+          {
+            "roll_min": 86,
+            "roll_max": 95,
+            "level": 5
+          },
+          {
+            "roll_min": 96,
+            "roll_max": 98,
+            "level": 6
+          },
+          {
+            "roll_min": 99,
+            "roll_max": 100,
+            "level": 7
+          }
+        ]
+      },
+      "price_per_spell_gp": 500,
+      "days_per_spell_level": 7
+    }
+  },
+  "items": [
+    {
+      "item_key": "potion_of_animal_control",
+      "name": "Potion of Animal Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2500,
+      "creation_time_days": 35
+    },
+    {
+      "item_key": "potion_of_clairaudience",
+      "name": "Potion of Clairaudience",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_clairvoyance",
+      "name": "Potion of Clairvoyance",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_climbing",
+      "name": "Potion of Climbing",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "potion_of_delusion",
+      "name": "Potion of Delusion",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "potion_of_diminution",
+      "name": "Potion of Diminution",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_dragon_control",
+      "name": "Potion of Dragon Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_esp",
+      "name": "Potion of ESP",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_extra_healing",
+      "name": "Potion of Extra-Healing",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2000,
+      "creation_time_days": 28
+    },
+    {
+      "item_key": "potion_of_fire_resistance",
+      "name": "Potion of Fire Resistance",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_flying",
+      "name": "Potion of Flying",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_gaseous_form",
+      "name": "Potion of Gaseous Form",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_giant_control",
+      "name": "Potion of Giant Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_giant_strength",
+      "name": "Potion of Giant Strength",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2000,
+      "creation_time_days": 28
+    },
+    {
+      "item_key": "potion_of_growth",
+      "name": "Potion of Growth",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_healing",
+      "name": "Potion of Healing",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "potion_of_heroism",
+      "name": "Potion of Heroism",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_human_control",
+      "name": "Potion of Human Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_invisibility",
+      "name": "Potion of Invisibility",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_invulnerability",
+      "name": "Potion of Invulnerability",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_levitation",
+      "name": "Potion of Levitation",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_longevity",
+      "name": "Potion of Longevity",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 3000,
+      "creation_time_days": 42
+    },
+    {
+      "item_key": "oil_of_sharpness",
+      "name": "Oil of Sharpness",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "oil_of_slipperiness",
+      "name": "Oil of Slipperiness",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "philter_of_love",
+      "name": "Philter of Love",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "potion_of_plant_control",
+      "name": "Potion of Plant Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 3000,
+      "creation_time_days": 42
+    },
+    {
+      "item_key": "potion_of_poison",
+      "name": "Potion of Poison",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2000,
+      "creation_time_days": 28
+    },
+    {
+      "item_key": "potion_of_polymorph",
+      "name": "Potion of Polymorph",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 3000,
+      "creation_time_days": 42
+    },
+    {
+      "item_key": "potion_of_speed",
+      "name": "Potion of Speed",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "potion_of_super_heroism",
+      "name": "Potion of Super-Heroism",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2500,
+      "creation_time_days": 35
+    },
+    {
+      "item_key": "potion_of_sweet_water",
+      "name": "Potion of Sweet Water",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "potion_of_treasure_finding",
+      "name": "Potion of Treasure Finding",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2000,
+      "creation_time_days": 28
+    },
+    {
+      "item_key": "potion_of_undead_control",
+      "name": "Potion of Undead Control",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2500,
+      "creation_time_days": 35
+    },
+    {
+      "item_key": "potion_of_water_breathing",
+      "name": "Potion of Water Breathing",
+      "category": "potion",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1500,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "ring_of_command_animal",
+      "name": "Ring of Command Animal",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 100000,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "ring_of_command_human",
+      "name": "Ring of Command Human",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "ring_of_command_plant",
+      "name": "Ring of Command Plant",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 100000,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "ring_of_delusion",
+      "name": "Ring of Delusion",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "ring_of_djinni_calling",
+      "name": "Ring of Djinni Calling",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 18000,
+      "creation_time_days": 180
+    },
+    {
+      "item_key": "ring_of_fire_resistance",
+      "name": "Ring of Fire Resistance",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "ring_of_invisibility",
+      "name": "Ring of Invisibility",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 33000,
+      "creation_time_days": 160
+    },
+    {
+      "item_key": "ring_of_protection",
+      "name": "Ring of Protection",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": -1,
+      "creation_time_days": -1,
+      "sub_roll": {
+        "_source": "ACKS Core rulebook (Ring of Protection variant table, d100)",
+        "die": "d100",
+        "table": [
+          {
+            "roll_min": 1,
+            "roll_max": 80,
+            "item_key": "ring_of_protection_1",
+            "name": "Ring of Protection +1",
+            "magical_bonus": 1,
+            "value_gp": 25000,
+            "creation_time_days": 100
+          },
+          {
+            "roll_min": 81,
+            "roll_max": 91,
+            "item_key": "ring_of_protection_2",
+            "name": "Ring of Protection +2",
+            "magical_bonus": 2,
+            "value_gp": 50000,
+            "creation_time_days": 200
+          },
+          {
+            "roll_min": 92,
+            "roll_max": 92,
+            "item_key": "ring_of_protection_2_radius",
+            "name": "Ring of Protection +2, 5' radius",
+            "magical_bonus": 2,
+            "radius_ft": 5,
+            "radius_effect": "saving-throw bonus applies to allied creatures within 5'; AC bonus applies to the wearer only (Jedidiah 2026-05-29)",
+            "value_gp": 75000,
+            "creation_time_days": 300,
+            "_value_note": "DERIVED (forum unpriced): +2 base 50,000 + 5' radius (+1 eff. level) = 75,000"
+          },
+          {
+            "roll_min": 93,
+            "roll_max": 99,
+            "item_key": "ring_of_protection_3",
+            "name": "Ring of Protection +3",
+            "magical_bonus": 3,
+            "value_gp": 75000,
+            "creation_time_days": 300
+          },
+          {
+            "roll_min": 100,
+            "roll_max": 100,
+            "item_key": "ring_of_protection_3_radius",
+            "name": "Ring of Protection +3, 5' radius",
+            "magical_bonus": 3,
+            "radius_ft": 5,
+            "radius_effect": "saving-throw bonus applies to allied creatures within 5'; AC bonus applies to the wearer only (Jedidiah 2026-05-29)",
+            "value_gp": 100000,
+            "creation_time_days": 400
+          }
+        ]
+      }
+    },
+    {
+      "item_key": "ring_of_regeneration",
+      "name": "Ring of Regeneration",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 150000,
+      "creation_time_days": 600
+    },
+    {
+      "item_key": "ring_of_spell_storing",
+      "name": "Ring of Spell Storing",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 100000,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "ring_of_spell_turning",
+      "name": "Ring of Spell Turning",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 42000,
+      "creation_time_days": 588
+    },
+    {
+      "item_key": "ring_of_telekinesis",
+      "name": "Ring of Telekinesis",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 500
+    },
+    {
+      "item_key": "ring_of_water_walking",
+      "name": "Ring of Water Walking",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "ring_of_weakness",
+      "name": "Ring of Weakness",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "ring_of_wishes",
+      "name": "Ring of Wishes",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 13500,
+      "creation_time_days": 189
+    },
+    {
+      "item_key": "ring_of_x_ray_vision",
+      "name": "Ring of X-Ray Vision",
+      "category": "ring",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 82500,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "cursed_scroll",
+      "name": "Cursed Scroll",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": true,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "scroll_of_warding_elementals",
+      "name": "Scroll of Warding (Elementals)",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "scroll_of_warding_lycanthropes",
+      "name": "Scroll of Warding (Lycanthropes)",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "scroll_of_warding_magic",
+      "name": "Scroll of Warding (Magic)",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 3000,
+      "creation_time_days": 42
+    },
+    {
+      "item_key": "scroll_of_warding_undead",
+      "name": "Scroll of Warding (Undead)",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 500,
+      "creation_time_days": 7
+    },
+    {
+      "item_key": "spell_scroll",
+      "name": "Spell Scroll",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": -1,
+      "creation_time_days": -1,
+      "generator": "scroll_of_spells"
+    },
+    {
+      "item_key": "treasure_map",
+      "name": "Treasure Map",
+      "category": "scroll",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": -1,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "rod_of_cancellation",
+      "name": "Rod of Cancellation",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 3500,
+      "creation_time_days": 49
+    },
+    {
+      "item_key": "rod_of_resurrection",
+      "name": "Rod of Resurrection",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 70000,
+      "creation_time_days": 980
+    },
+    {
+      "item_key": "staff_of_commanding",
+      "name": "Staff of Commanding",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "staff_of_healing",
+      "name": "Staff of Healing",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 22500,
+      "creation_time_days": 90
+    },
+    {
+      "item_key": "staff_of_power",
+      "name": "Staff of Power",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 500
+    },
+    {
+      "item_key": "staff_of_striking",
+      "name": "Staff of Striking",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 83
+    },
+    {
+      "item_key": "staff_of_withering",
+      "name": "Staff of Withering",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 1683
+    },
+    {
+      "item_key": "staff_of_wizardry",
+      "name": "Staff of Wizardry",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 275000,
+      "creation_time_days": 1100
+    },
+    {
+      "item_key": "staff_of_the_serpent",
+      "name": "Staff of the Serpent",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 105000,
+      "creation_time_days": 403
+    },
+    {
+      "item_key": "wand_of_cold",
+      "name": "Wand of Cold",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "wand_of_detecting_enemies",
+      "name": "Wand of Detecting Enemies",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 10000,
+      "creation_time_days": 40
+    },
+    {
+      "item_key": "wand_of_detecting_magic",
+      "name": "Wand of Detecting Magic",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 10000,
+      "creation_time_days": 40
+    },
+    {
+      "item_key": "wand_of_detecting_metals",
+      "name": "Wand of Detecting Metals",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 30000,
+      "creation_time_days": 120
+    },
+    {
+      "item_key": "wand_of_detecting_secret_doors",
+      "name": "Wand of Detecting Secret Doors",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 20000,
+      "creation_time_days": 80
+    },
+    {
+      "item_key": "wand_of_detecting_traps",
+      "name": "Wand of Detecting Traps",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 20000,
+      "creation_time_days": 80
+    },
+    {
+      "item_key": "wand_of_device_negation",
+      "name": "Wand of Device Negation",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 60000,
+      "creation_time_days": 240
+    },
+    {
+      "item_key": "wand_of_fear",
+      "name": "Wand of Fear",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 40000,
+      "creation_time_days": 160
+    },
+    {
+      "item_key": "wand_of_fire_balls",
+      "name": "Wand of Fire Balls",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 30000,
+      "creation_time_days": 120
+    },
+    {
+      "item_key": "wand_of_illusion",
+      "name": "Wand of Illusion",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 20000,
+      "creation_time_days": 80
+    },
+    {
+      "item_key": "wand_of_lightning_bolts",
+      "name": "Wand of Lightning Bolts",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 30000,
+      "creation_time_days": 120
+    },
+    {
+      "item_key": "wand_of_magic_missiles",
+      "name": "Wand of Magic Missiles",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 10000,
+      "creation_time_days": 40
+    },
+    {
+      "item_key": "wand_of_paralyzation",
+      "name": "Wand of Paralyzation",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "wand_of_polymorphing",
+      "name": "Wand of Polymorphing",
+      "category": "rod_staff_wand",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 60000,
+      "creation_time_days": 240
+    },
+    {
+      "item_key": "amulet_versus_crystal_balls_and_esp",
+      "name": "Amulet versus Crystal Balls and ESP",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "apparatus_of_the_crab",
+      "name": "Apparatus of the Crab",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 150000,
+      "creation_time_days": 600
+    },
+    {
+      "item_key": "bag_of_devouring",
+      "name": "Bag of Devouring",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "bag_of_holding",
+      "name": "Bag of Holding",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 500
+    },
+    {
+      "item_key": "boat_folding",
+      "name": "Boat, Folding",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 500
+    },
+    {
+      "item_key": "boots_of_levitation",
+      "name": "Boots of Levitation",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "boots_of_speed",
+      "name": "Boots of Speed",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "boots_of_traveling_and_springing",
+      "name": "Boots of Traveling and Springing",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "bowl_of_commanding_water_elementals",
+      "name": "Bowl of Commanding Water Elementals",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "bracers_of_armor",
+      "name": "Bracers of Armor",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 30
+    },
+    {
+      "item_key": "brazier_of_commanding_fire_elementals",
+      "name": "Brazier of Commanding Fire Elementals",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "brooch_of_shielding",
+      "name": "Brooch of Shielding",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 20
+    },
+    {
+      "item_key": "broom_of_flying",
+      "name": "Broom of Flying",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "censer_of_controlling_air_elementals",
+      "name": "Censer of Controlling Air Elementals",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "chime_of_opening",
+      "name": "Chime of Opening",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 80000,
+      "creation_time_days": 320
+    },
+    {
+      "item_key": "cloak_of_protection",
+      "name": "Cloak of Protection",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "crystal_ball",
+      "name": "Crystal Ball",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 24000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "crystal_ball_with_clairaudience",
+      "name": "Crystal Ball with Clairaudience",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 42000,
+      "creation_time_days": 350
+    },
+    {
+      "item_key": "crystal_ball_with_esp",
+      "name": "Crystal Ball with ESP",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 54000,
+      "creation_time_days": 450
+    },
+    {
+      "item_key": "cube_of_force",
+      "name": "Cube of Force",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 108000,
+      "creation_time_days": 432
+    },
+    {
+      "item_key": "cube_of_frost_resistance",
+      "name": "Cube of Frost Resistance",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 24000,
+      "creation_time_days": 180
+    },
+    {
+      "item_key": "decanter_of_endless_water",
+      "name": "Decanter of Endless Water",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 150000,
+      "creation_time_days": 600
+    },
+    {
+      "item_key": "displacer_cloak",
+      "name": "Displacer Cloak",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "drums_of_panic",
+      "name": "Drums of Panic",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 500
+    },
+    {
+      "item_key": "dust_of_appearance",
+      "name": "Dust of Appearance",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 1000,
+      "creation_time_days": 14
+    },
+    {
+      "item_key": "dust_of_disappearance",
+      "name": "Dust of Disappearance",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 2000,
+      "creation_time_days": 28
+    },
+    {
+      "item_key": "efreeti_bottle",
+      "name": "Efreeti Bottle",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 40000,
+      "creation_time_days": 280
+    },
+    {
+      "item_key": "elven_cloak",
+      "name": "Elven Cloak",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "elven_boots",
+      "name": "Elven Boots",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "eyes_of_charming",
+      "name": "Eyes of Charming",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "eyes_of_the_eagle",
+      "name": "Eyes of the Eagle",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "eyes_of_petrification",
+      "name": "Eyes of Petrification",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 150000,
+      "creation_time_days": 600
+    },
+    {
+      "item_key": "flying_carpet",
+      "name": "Flying Carpet",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 100000,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "gauntlets_of_ogre_power",
+      "name": "Gauntlets of Ogre Power",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 50000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "girdle_of_giant_strength",
+      "name": "Girdle of Giant Strength",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 100000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "helm_of_alignment_changing",
+      "name": "Helm of Alignment Changing",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "helm_of_comprehending_languages",
+      "name": "Helm of Comprehending Languages",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 100
+    },
+    {
+      "item_key": "helm_of_telepathy",
+      "name": "Helm of Telepathy",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 75000,
+      "creation_time_days": 300
+    },
+    {
+      "item_key": "helm_of_teleportation",
+      "name": "Helm of Teleportation",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 82500,
+      "creation_time_days": 350
+    },
+    {
+      "item_key": "horn_of_blasting",
+      "name": "Horn of Blasting",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 66000,
+      "creation_time_days": 320
+    },
+    {
+      "item_key": "medallion_of_esp",
+      "name": "Medallion of ESP",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 37500,
+      "creation_time_days": 150
+    },
+    {
+      "item_key": "medallion_of_esp_90",
+      "name": "Medallion of ESP (90')",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 62500,
+      "creation_time_days": 250
+    },
+    {
+      "item_key": "mirror_of_life_trapping",
+      "name": "Mirror of Life Trapping",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 148500,
+      "creation_time_days": 720
+    },
+    {
+      "item_key": "mirror_of_opposition",
+      "name": "Mirror of Opposition",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 200000,
+      "creation_time_days": 800
+    },
+    {
+      "item_key": "necklace_of_adaptation",
+      "name": "Necklace of Adaptation",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 125000,
+      "creation_time_days": 400
+    },
+    {
+      "item_key": "rope_of_climbing",
+      "name": "Rope of Climbing",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "scarab_of_protection",
+      "name": "Scarab of Protection",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 24000,
+      "creation_time_days": 96
+    },
+    {
+      "item_key": "stone_of_controlling_earth_elementals",
+      "name": "Stone of Controlling Earth Elementals",
+      "category": "misc_magic",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 25000,
+      "creation_time_days": 200
+    },
+    {
+      "item_key": "sword_1",
+      "name": "Sword +1",
+      "category": "sword",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 30
+    },
+    {
+      "item_key": "sword_2",
+      "name": "Sword +2",
+      "category": "sword",
+      "magical_bonus": 2,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 15000,
+      "creation_time_days": 60
+    },
+    {
+      "item_key": "sword_3",
+      "name": "Sword +3",
+      "category": "sword",
+      "magical_bonus": 3,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 35000,
+      "creation_time_days": 90
+    },
+    {
+      "item_key": "flame_tongue",
+      "name": "Flame Tongue",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 45000,
+      "creation_time_days": 190
+    },
+    {
+      "item_key": "life_drinker",
+      "name": "Life Drinker",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 41000,
+      "creation_time_days": 174
+    },
+    {
+      "item_key": "luck_blade",
+      "name": "Luck Blade",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 52500,
+      "creation_time_days": 220
+    },
+    {
+      "item_key": "frost_brand",
+      "name": "Frost Brand",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 145000,
+      "creation_time_days": 315
+    },
+    {
+      "item_key": "vorpal_sword",
+      "name": "Vorpal Sword",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 160000,
+      "creation_time_days": 190
+    },
+    {
+      "item_key": "cursed_sword",
+      "name": "Cursed Sword",
+      "category": "sword",
+      "magical_bonus": 0,
+      "is_cursed": true,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "magic_arrows_1",
+      "name": "Magic Arrows +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 30
+    },
+    {
+      "item_key": "magic_axe_1",
+      "name": "Magic Axe +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 21
+    },
+    {
+      "item_key": "magic_bow_1",
+      "name": "Magic Bow +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 120
+    },
+    {
+      "item_key": "magic_bolts_1",
+      "name": "Magic Bolts +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 30
+    },
+    {
+      "item_key": "magic_dagger_1",
+      "name": "Magic Dagger +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 9
+    },
+    {
+      "item_key": "magic_sling_1",
+      "name": "Magic Sling +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 6
+    },
+    {
+      "item_key": "magic_spear_1",
+      "name": "Magic Spear +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 6
+    },
+    {
+      "item_key": "magic_war_hammer_1",
+      "name": "Magic War Hammer +1",
+      "category": "misc_weapon",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 15
+    },
+    {
+      "item_key": "armor_1",
+      "name": "Armor +1",
+      "category": "armor",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 180
+    },
+    {
+      "item_key": "armor_2",
+      "name": "Armor +2",
+      "category": "armor",
+      "magical_bonus": 2,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 15000,
+      "creation_time_days": 210
+    },
+    {
+      "item_key": "armor_3",
+      "name": "Armor +3",
+      "category": "armor",
+      "magical_bonus": 3,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 35000,
+      "creation_time_days": 240
+    },
+    {
+      "item_key": "shield_1",
+      "name": "Shield +1",
+      "category": "armor",
+      "magical_bonus": 1,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 5000,
+      "creation_time_days": 30
+    },
+    {
+      "item_key": "shield_2",
+      "name": "Shield +2",
+      "category": "armor",
+      "magical_bonus": 2,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 15000,
+      "creation_time_days": 60
+    },
+    {
+      "item_key": "shield_3",
+      "name": "Shield +3",
+      "category": "armor",
+      "magical_bonus": 3,
+      "is_cursed": false,
+      "encumbrance_units": 167,
+      "value_gp": 35000,
+      "creation_time_days": 90
+    },
+    {
+      "item_key": "cursed_armor",
+      "name": "Cursed Armor",
+      "category": "armor",
+      "magical_bonus": 0,
+      "is_cursed": true,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    },
+    {
+      "item_key": "cursed_shield",
+      "name": "Cursed Shield",
+      "category": "armor",
+      "magical_bonus": 0,
+      "is_cursed": true,
+      "encumbrance_units": 167,
+      "value_gp": 0,
+      "creation_time_days": -1
+    }
+  ]
+}

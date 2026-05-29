@@ -424,7 +424,11 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- Migration 024 additions
     vehicle_id TEXT REFERENCES draft_vehicles(id) DEFAULT NULL,
     -- Migration 032 additions
-    location_cache_id TEXT REFERENCES location_caches(id) ON DELETE CASCADE DEFAULT NULL
+    location_cache_id TEXT REFERENCES location_caches(id) ON DELETE CASCADE DEFAULT NULL,
+    -- Migration 134 additions
+    -- -1 = value by item_key -> EquipmentCatalog.cost_cp (mundane equipment);
+    -- >= 0 = authoritative per-item value in cp (gems, jewelry, trade goods, etc.)
+    value_cp INTEGER NOT NULL DEFAULT -1
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).
@@ -3304,7 +3308,9 @@ CREATE TABLE IF NOT EXISTS treasure_hoards (
     jewelry              TEXT    NOT NULL DEFAULT '[]',
     magic_items          TEXT    NOT NULL DEFAULT '[]',
     total_gp_value       INTEGER NOT NULL DEFAULT 0,
-    is_hidden            INTEGER NOT NULL DEFAULT 0 CHECK(is_hidden IN (0, 1))
+    is_hidden            INTEGER NOT NULL DEFAULT 0 CHECK(is_hidden IN (0, 1)),
+    -- Migration 135: runtime loot-consumption flag (0 = unlooted, 1 = claimed)
+    is_looted            INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_treasure_hoards_dungeon ON treasure_hoards(dungeon_id);
 CREATE INDEX IF NOT EXISTS idx_treasure_hoards_floor ON treasure_hoards(floor_id);

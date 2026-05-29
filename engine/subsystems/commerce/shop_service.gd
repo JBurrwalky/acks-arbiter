@@ -149,18 +149,36 @@ func sell_item(
 
 	var item_key: String = target.get("item_key", "")
 
-	# Must be in the equipment catalog (mundane equipment only).
-	var catalog_item := _catalog.get_item(item_key)
-	if catalog_item.is_empty():
-		return {"success": false, "message": "This item cannot be sold here.", "wealth_remaining_cp": 0}
+	# Coins are wealth, not merchandise.
+	if Currency.is_coin(item_key):
+		return {"success": false, "message": "Coins cannot be sold.", "wealth_remaining_cp": 0}
 
-	# Magic items excluded.
-	if int(target.get("is_magical", 0)) == 1:
+	# Magic items are sellable only if they carry an authoritative value_cp
+	# (priced found items from the magic catalog). Crafted/quest magic items
+	# (value_cp -1) stay non-sellable until the magic-item market (Phase 3).
+	# gdd-treasure-item-backing.md §9/§11.1.
+	if int(target.get("is_magical", 0)) == 1 and int(target.get("value_cp", -1)) < 0:
 		return {"success": false, "message": "Magic items cannot be sold at this shop.", "wealth_remaining_cp": 0}
+
+	# Unit value: authoritative value_cp (rolled valuables — gems, jewelry, trade
+	# goods) if set, else the catalog price (mundane equipment). value_cp < 0 with
+	# no catalog entry means the item cannot be priced here.
+	# gdd-treasure-item-backing.md §11.1.
+	var catalog_item := _catalog.get_item(item_key)
+	var row_value_cp: int = int(target.get("value_cp", -1))
+	var unit_value_cp: int
+	if row_value_cp >= 0:
+		unit_value_cp = row_value_cp
+	elif not catalog_item.is_empty():
+		unit_value_cp = int(catalog_item.get("cost_cp", 0))
+	else:
+		return {"success": false, "message": "This item cannot be sold here.", "wealth_remaining_cp": 0}
+	if unit_value_cp <= 0:
+		return {"success": false, "message": "This item has no resale value.", "wealth_remaining_cp": 0}
 
 	var item_qty: int = int(target.get("quantity", 1))
 	var sell_qty: int = mini(quantity, item_qty)
-	var cost_cp: int = int(catalog_item.get("cost_cp", 0)) * sell_qty
+	var proceeds_cp: int = unit_value_cp * sell_qty
 
 	# Remove or decrement the item.
 	if sell_qty >= item_qty:
@@ -169,10 +187,12 @@ func sell_item(
 		CampaignRepository.update_inventory_item_quantity(item_id, item_qty - sell_qty)
 
 	# Add coins to character.
-	CampaignRepository.add_coins_cp(character_id, cost_cp)
+	CampaignRepository.add_coins_cp(character_id, proceeds_cp)
 
-	# Add item back to shop stock.
-	CampaignRepository.increment_shop_stock(campaign_id, poi_id, item_key, sell_qty)
+	# Return mundane catalog goods to shop stock; rolled valuables (gems, jewelry,
+	# trade goods) are not restockable catalog SKUs.
+	if not catalog_item.is_empty():
+		CampaignRepository.increment_shop_stock(campaign_id, poi_id, item_key, sell_qty)
 
 	var remaining := CampaignRepository.get_character_wealth_cp(character_id)
 
@@ -181,7 +201,7 @@ func sell_item(
 		"character_id": character_id,
 		"item_key": item_key,
 		"quantity": sell_qty,
-		"cost_cp": cost_cp,
+		"cost_cp": proceeds_cp,
 		"poi_id": poi_id,
 	})
 
@@ -194,7 +214,9 @@ func sell_item(
 
 ## Returns an array of sellable items from a character's inventory.
 ## Each entry: { "item_id", "item_key", "name", "quantity", "cost_cp", "item_category" }.
-## Excludes coins, magic items, and items not in the equipment catalog.
+## Excludes coins, unpriced/crafted magic items (value_cp < 0), and items with no
+## value_cp that are not in the equipment catalog. Priced found magic items (and
+## gems / jewelry / trade goods) carrying value_cp >= 0 ARE included.
 func get_sellable_items(character_id: String) -> Array[Dictionary]:
 	var items := CampaignRepository.get_inventory_items(character_id)
 	var result: Array[Dictionary] = []
@@ -203,22 +225,28 @@ func get_sellable_items(character_id: String) -> Array[Dictionary]:
 		# Skip coins.
 		if Currency.is_coin(item_key):
 			continue
-		# Skip magic items.
-		if int(item.get("is_magical", 0)) == 1:
+		# Magic items are sellable only if priced (authoritative value_cp >= 0);
+		# crafted/quest magic items (value_cp -1) stay non-sellable for now.
+		if int(item.get("is_magical", 0)) == 1 and int(item.get("value_cp", -1)) < 0:
 			continue
-		# Must be in equipment catalog.
+		# Value by authoritative value_cp (rolled valuables) if set, else catalog price.
 		var catalog_item := _catalog.get_item(item_key)
-		if catalog_item.is_empty():
-			continue
-		var cost_cp: int = int(catalog_item.get("cost_cp", 0))
-		if cost_cp <= 0:
+		var row_value_cp: int = int(item.get("value_cp", -1))
+		var unit_value_cp: int
+		if row_value_cp >= 0:
+			unit_value_cp = row_value_cp
+		elif not catalog_item.is_empty():
+			unit_value_cp = int(catalog_item.get("cost_cp", 0))
+		else:
+			continue  # not in catalog and no intrinsic value → not sellable here
+		if unit_value_cp <= 0:
 			continue
 		result.append({
 			"item_id": item.get("id", ""),
 			"item_key": item_key,
 			"name": item.get("name", ""),
 			"quantity": int(item.get("quantity", 1)),
-			"cost_cp": cost_cp,
+			"cost_cp": unit_value_cp,
 			"item_category": item.get("item_category", ""),
 		})
 	return result

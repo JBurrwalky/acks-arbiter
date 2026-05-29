@@ -15,6 +15,12 @@ extends "res://tests/test_suite_base.gd"
 ##   4. Party departs origin → VisitStateManager.on_party_departed_settlement
 ##      calls clear_for_party_at_settlement → remaining offers DELETEd.
 
+## Fixture wagon = 4 heavy horses = the wagon's structural max (load_max 640,
+## MAX_TEAM_EQUIV["wagon"] == 4.0). A Class III mixed-cargo offer rolls 3d4
+## loads × 70 stone = 210-840 stone, so offers above 9 loads (630 stone)
+## CANNOT be carried — the workflow tests must pick one that fits.
+const WAGON_CAPACITY_STONE := 640
+
 var _campaign_id: String = ""
 var _map_id: String = ""
 var _suffix: int = 0
@@ -32,6 +38,8 @@ func run_all_tests() -> void:
 
 
 func _setup() -> void:
+	# Defensive: ensure no deterministic seed salt leaked in from a prior suite.
+	ShippingContractOfferRoller.clear_test_seed()
 	_campaign_id = CampaignRepository.create_campaign("ShippingWorkflowTests", "World")
 	_map_id = CampaignRepository.generate_id()
 	CampaignRepository.db.query_with_bindings(
@@ -66,6 +74,52 @@ func _build_fixture() -> Dictionary:
 	""", [wagon_id, bundle["campaign_id"], bundle["party_id"]])
 	bundle["wagon_id"] = wagon_id
 	return bundle
+
+
+## Enters the settlement and rolls offers under a pinned deterministic seed,
+## retrying across salts until at least one road-mode offer fits the wagon.
+## Returns the picked offer (a live row in shipping_contract_offers), or {} if
+## none fits within the search budget — which should never happen given a
+## road trade route and ~84% per-offer fit rate (3d4 ≤ 9).
+##
+## Rationale: production seeds offers off party_id/settlement_id, which come
+## from CampaignRepository.generate_id()'s once-randomized _id_rng — so a real
+## visit's roll is non-deterministic per process and sensitive to how many IDs
+## earlier suites consumed (coding_conventions §69). set_test_seed pins the
+## salt so each attempt is reproducible; the loop guarantees a capacity fit.
+func _enter_and_pick_fitting_road_offer(fx: Dictionary) -> Dictionary:
+	var party_id: String = fx["party_id"]
+	var settlement_id: String = fx["origin_settlement_id"]
+	var day: int = Timekeeping.get_total_days()
+	var picked: Dictionary = {}
+	for attempt in 16:
+		# Process-stable salt (no volatile ids) → reproducible run-to-run.
+		ShippingContractOfferRoller.set_test_seed("swf-workflow|%d" % attempt)
+		if attempt == 0:
+			# Establishes the visit row (INSERT OR IGNORE) and rolls the batch.
+			VisitStateManager.on_party_entered_settlement(
+				party_id, settlement_id, fx["pc_id"], day)
+		else:
+			# Visit row persists; clear + re-roll under the next salt.
+			ShippingContractOfferRoller.clear_for_party_at_settlement(party_id, settlement_id)
+			ShippingContractOfferRoller.roll_for_visit(settlement_id, party_id, day)
+		picked = _first_fitting_road_offer(
+			ShippingContractOfferRoller.list_offers(party_id, settlement_id))
+		if not picked.is_empty():
+			break
+	ShippingContractOfferRoller.clear_test_seed()
+	return picked
+
+
+## Returns the first road-mode offer in [param offers] whose cargo fits the
+## wagon (loads_count × 70 ≤ WAGON_CAPACITY_STONE), or {} if none.
+func _first_fitting_road_offer(offers: Array) -> Dictionary:
+	for o in offers:
+		var od: Dictionary = o
+		if String(od.get("route_mode", "")) == "road" \
+				and int(od.get("loads_count", 0)) * 70 <= WAGON_CAPACITY_STONE:
+			return od
+	return {}
 
 
 # ---------------------------------------------------------------------------
@@ -113,18 +167,9 @@ func test_visit_state_clears_offers_on_departure() -> void:
 
 func test_offer_accept_then_substrate_deliver_credits_fee() -> void:
 	var fx: Dictionary = _build_fixture()
-	VisitStateManager.on_party_entered_settlement(
-		fx["party_id"], fx["origin_settlement_id"], fx["pc_id"],
-		Timekeeping.get_total_days())
-	var offers: Array = ShippingContractOfferRoller.list_offers(
-		fx["party_id"], fx["origin_settlement_id"])
-	# Find the first road-mode offer with loads_count * 70 ≤ 640 stone.
-	var picked: Dictionary = {}
-	for o in offers:
-		if String((o as Dictionary).get("route_mode", "")) == "road":
-			if int((o as Dictionary).get("loads_count", 0)) * 70 <= 640:
-				picked = o
-				break
+	# Enter + deterministically roll until a road offer fits the 640-stone
+	# wagon (guaranteed fit, reproducible run-to-run — see §69).
+	var picked: Dictionary = _enter_and_pick_fitting_road_offer(fx)
 	if picked.is_empty():
 		check(false, "no suitable road offer for the wagon (capacity 640 stone)")
 		return
@@ -178,22 +223,16 @@ func test_offer_accept_then_substrate_deliver_credits_fee() -> void:
 
 func test_remaining_offers_cleared_after_accept_one() -> void:
 	var fx: Dictionary = _build_fixture()
-	VisitStateManager.on_party_entered_settlement(
-		fx["party_id"], fx["origin_settlement_id"], fx["pc_id"],
-		Timekeeping.get_total_days())
-	var offers: Array = ShippingContractOfferRoller.list_offers(
-		fx["party_id"], fx["origin_settlement_id"])
-	var initial_count: int = offers.size()
-	# Accept one offer (if any fit).
-	var picked: Dictionary = {}
-	for o in offers:
-		if String((o as Dictionary).get("route_mode", "")) == "road":
-			if int((o as Dictionary).get("loads_count", 0)) * 70 <= 640:
-				picked = o
-				break
+	# Enter + deterministically roll until a road offer fits the wagon (§69).
+	var picked: Dictionary = _enter_and_pick_fitting_road_offer(fx)
 	if picked.is_empty():
 		check(false, "no suitable road offer to accept")
 		return
+	# Snapshot the committed batch (helper cleared the seam — this is a pure
+	# read of the live rows the final roll produced; picked is one of them).
+	var offers: Array = ShippingContractOfferRoller.list_offers(
+		fx["party_id"], fx["origin_settlement_id"])
+	var initial_count: int = offers.size()
 	var state := {
 		"character_id": fx["pc_id"],
 		"location_ref": fx["origin_settlement_id"],

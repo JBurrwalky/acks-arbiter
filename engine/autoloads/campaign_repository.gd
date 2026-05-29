@@ -2752,8 +2752,8 @@ func add_inventory_item(data: Dictionary) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
-			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -2772,6 +2772,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		1 if data.get("is_heavy", false) else 0,
 		data.get("container_id", ""),
 		int(data.get("uses_remaining", -1)),
+		int(data.get("value_cp", -1)),
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -2907,8 +2908,8 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining)
-		VALUES (?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+			 container_id, uses_remaining, value_cp)
+		VALUES (?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
 	""", [
 		new_id,
 		source.get("character_id", ""),
@@ -2926,6 +2927,7 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 		source.get("damage_type", "physical"),
 		source.get("material", ""),
 		uses_per_unit,
+		int(source.get("value_cp", -1)),
 	]):
 		db.query("ROLLBACK")
 		push_error("CampaignRepository.split_item_for_equip: failed inserting new item. source=%s" % item_id)
@@ -2965,8 +2967,8 @@ func split_stack(source_id: String, count: int) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 container_id, uses_remaining, value_cp)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		new_id,
 		source.get("character_id", ""),
@@ -2986,6 +2988,7 @@ func split_stack(source_id: String, count: int) -> String:
 		source.get("material", ""),
 		source.get("container_id", ""),
 		int(source.get("uses_remaining", -1)),
+		int(source.get("value_cp", -1)),
 	]):
 		db.query("ROLLBACK")
 		push_error("CampaignRepository.split_stack: failed inserting new item. source=%s" % source_id)
@@ -3478,8 +3481,8 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 				(id, character_id, item_key, name, quantity, encumbrance_units,
 				 slot, is_equipped, notes,
 				 item_category, is_magical, magical_bonus,
-				 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			item_id, character_id,
 			item.get("item_key", ""), item.get("name", ""),
@@ -3495,6 +3498,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 			1 if item.get("is_heavy", false) else 0,
 			item.get("container_id", ""),
 			int(item.get("uses_remaining", -1)),
+			int(item.get("value_cp", -1)),
 		]):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.save_character_inventory: insert failed. item=%s" % item.get("name", "?"))
@@ -4549,8 +4553,8 @@ func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
 			(id, character_id, party_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
-			 container_id, uses_remaining)
-		VALUES (?, '', ?, ?, ?, ?, ?, 'pack', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+			 container_id, uses_remaining, value_cp)
+		VALUES (?, '', ?, ?, ?, ?, ?, 'pack', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
 	""", [
 		id,
 		party_id,
@@ -4568,6 +4572,7 @@ func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
 		data.get("damage_type", "physical"),
 		data.get("material", ""),
 		data.get("uses_remaining", -1),
+		int(data.get("value_cp", -1)),
 	])
 	if not ok:
 		push_error("CampaignRepository.add_party_inventory_item: insert failed")
@@ -5024,8 +5029,8 @@ func add_creature_inventory_item(creature_id: String, data: Dictionary) -> Strin
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id,
-			 creature_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 creature_id, value_cp)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		"",
@@ -5044,6 +5049,7 @@ func add_creature_inventory_item(creature_id: String, data: Dictionary) -> Strin
 		1 if data.get("is_heavy", false) else 0,
 		data.get("container_id", ""),
 		creature_id,
+		int(data.get("value_cp", -1)),
 	]):
 		push_error("CampaignRepository.add_creature_inventory_item: failed. creature=%s item=%s" % [
 			creature_id, data.get("name", "?")])

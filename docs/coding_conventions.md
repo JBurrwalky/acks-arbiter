@@ -1293,6 +1293,15 @@ If a RAW table contains a documented error and the project has a corrected readi
 
 The convention precedent for this pattern is the Vagaries-of-Recruitment table (§35-equivalent entries in this file's later sections); the dungeon generator dataset is the second instance.
 
+#### 7.4.7 Hybrid extracted + curated catalogs, materialization, and value sentinels
+
+*(Added 2026-05-29, magic-item prices.)* Some datasets combine XML-extracted **structure** (names, categories) with **curated data from a non-XML authoritative source** — e.g. the magic-item catalog's sale prices come from the game creator's published price list, validated against the SACRED creation formula. Conventions for this hybrid case:
+
+- **Curated data lives in the extraction script**, never hand-edited into the JSON (a hand-edit is silently overwritten on the next run and fails the §7.4.4 freshness test). Add a provenance field naming the non-XML source (e.g. `_price_source`) alongside `_source`.
+- **Bidirectional validation.** When the script stamps a curated per-item map (e.g. prices) onto extracted items, it MUST assert a bijection — every extracted key has a curated entry and every curated key matches an extracted item — and error loudly otherwise. This catches the "mistyped an item_key / forgot a new item" data-entry failure that would otherwise ship a mis-valued item. (`extract_magic_item_catalog.py` is the precedent.)
+- **Materialization.** A catalog item may carry a `sub_roll` (a d100 variant table) or a named `generator`; the loader resolves the concrete item at *selection* time, deterministic given a seeded RNG. A materialized item's `item_key` may therefore NOT be a top-level catalog key (e.g. `ring_of_protection_1`), and its value-carrying fields (`value_gp`, `magical_bonus`) come from the variant/generator, not the parent. Read the price off the materialized item, never via a parent-key lookup.
+- **Value sentinels** (`value_gp` in a catalog; `value_cp` on an inventory row): `> 0` = the price; `0` = explicitly worthless / non-sellable (e.g. cursed items); `-1` = no fixed price (a sub_roll/generator parent, or non-merchandise). Sell paths gate magic items on `value_cp >= 0` and reject `unit_value_cp <= 0`.
+
 ---
 
 ## 8. Error Handling Patterns
@@ -3615,6 +3624,8 @@ Established during the post-Phase-11 cleanup pass. Conventions for distinguishin
   - Static-class state accumulators (rare in this project since most static classes are stateless).
 
   **Pattern:** when an assertion fails INCONSISTENTLY across runs, that's a real pollution flake. Investigate by isolating the suite (`--script test_X.gd`) — if it passes alone, it's pollution. The fix lives in the affected test's `_setup`/`_cleanup` or in a session-wide teardown registered in `test_runner.gd`. This is genuine test-infrastructure work — not a 5-minute assertion edit.
+
+- **Cross-suite RNG-seed coupling via generated IDs is a third flake class (added 2026-05-28).** `CampaignRepository.generate_id()` draws from a module-level `_id_rng` that is `randomize()`d once at class-load, so the ID stream is non-deterministic per process. Some suites seed their own RNG from generated IDs — e.g. `ShippingContractOfferRoller` seeds offers off `party_id`/`settlement_id` — making them BOTH non-deterministic per run AND sensitive to how many IDs earlier suites consumed. **Symptom:** adding a DB-mutating test to an early suite flips an *unrelated* later suite's pass/fail, because the added `add_inventory_item`/`add_*_item` calls shift the global ID stream. **Pattern:** put DB-mutating tests in late-running suites (registered near the end of `test_runner.gd`'s run array) so they can't perturb earlier RNG-seeded suites; and when a downstream suite asserts "a suitable random result always appears," make it guarantee/retry rather than trust a single roll. **Diagnosis:** a `git stash` baseline run — if the failing suite is unrelated to your change and flips when your change is stashed, it's this coupling, not your code. (Found during treasure-item-backing Phase 1: a gem-sell DB test added to `ShopServiceTests` flipped `test_shipping_contract_workflow`; relocating it to the last-running `test_treasure_instantiator.gd` returned the failure count to baseline.)
 
 - **The Phase-11-cleanup pass converted 6+ "flake" failures to passes** by recognizing them as stale-assertion drift rather than pollution: equipment catalog count, specialization registry counts (3 tests), monster registry counts (3 tests), torch/lantern radius (2 sites), location_key z-coord. Final battery improved from 24-25 failed to 20-21 failed — a 16-20% reduction. The remaining ~15 failures (signal/state-pollution variants) are genuine and need test-infrastructure work in a future session.
 

@@ -436,6 +436,32 @@ static func _load_treasure_hoards(floor_id: String, floor_index: int) -> Array[T
 	return out
 
 
+## Load a room's UNLOOTED treasure hoards for runtime loot consumption. Scoped by
+## floor_id + room_id (room_id is unique within a floor, not across a dungeon).
+## Sets the hoard primary key (`id`) on each returned object so the caller can
+## pass it to mark_hoard_looted(). Migration 135 adds the is_looted column.
+static func get_unlooted_treasure_hoards_for_room(floor_id: String, room_id: int) -> Array[TreasureHoardData]:
+	var out: Array[TreasureHoardData] = []
+	var db = CampaignRepository.db
+	if not db.query_with_bindings(
+			"SELECT * FROM treasure_hoards WHERE floor_id = ? AND room_id = ? AND is_looted = 0",
+			[floor_id, str(room_id)]):
+		return out
+	for row in db.query_result:
+		var h := _row_to_treasure_hoard(row, -1)
+		h.id = str(row.get("id", ""))
+		out.append(h)
+	return out
+
+
+## Mark a treasure hoard as claimed so it is not handed out again (Migration 135).
+static func mark_hoard_looted(hoard_id: String) -> bool:
+	if hoard_id.is_empty():
+		return false
+	return CampaignRepository.db.query_with_bindings(
+		"UPDATE treasure_hoards SET is_looted = 1 WHERE id = ?", [hoard_id])
+
+
 # ---------------------------------------------------------------------------
 # Row → object (DG-V1.D types)
 # ---------------------------------------------------------------------------

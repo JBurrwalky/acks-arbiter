@@ -1,0 +1,15 @@
+-- Migration 134: Add value_cp column to inventory_items for per-item
+-- authoritative monetary value (copper pieces).
+--
+--   value_cp = -1 (default): no intrinsic value; value this item by
+--     item_key -> EquipmentCatalog.cost_cp (all mundane equipment). This
+--     preserves existing behavior for every pre-existing row with zero backfill.
+--   value_cp >= 0: authoritative per-item value in cp, for rolled valuables
+--     (gems, jewelry, special-treasure trade goods, and later identified magic
+--     items) whose value is not a fixed catalog price.
+--
+-- Follows the single-column ADD COLUMN pattern of migration 012 (uses_remaining);
+-- _cp naming follows the migration 108-116 currency-precision convention.
+-- Non-destructive: SQLite stamps the default onto existing rows in place
+-- (no table rebuild). See generation/gdd-treasure-item-backing.md §4.1.
+ALTER TABLE inventory_items ADD COLUMN value_cp INTEGER NOT NULL DEFAULT -1;

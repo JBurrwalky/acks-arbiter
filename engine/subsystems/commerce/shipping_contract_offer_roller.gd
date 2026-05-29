@@ -93,7 +93,7 @@ static func roll_for_visit(settlement_id: String, party_id: String, current_day:
 	# Roll contract count via deterministic per-visit seed.
 	var count_dice: String = String(CONTRACT_COUNT_DICE.get(market_class, "1d3-1"))
 	var count_rng: RandomNumberGenerator = _seeded_rng(
-		"contract_count|%s|%s|%d" % [party_id, settlement_id, current_day])
+		_seed_key("contract_count", party_id, settlement_id, current_day))
 	var offer_count: int = maxi(0, _roll_dice_spec(count_dice, count_rng))
 	if offer_count == 0:
 		return []
@@ -108,7 +108,7 @@ static func roll_for_visit(settlement_id: String, party_id: String, current_day:
 	var rolled_ids: Array = []
 	for i in offer_count:
 		var offer_id: String = CampaignRepository.generate_id()
-		var offer_seed: String = "contract_offer|%s|%s|%d|%d" % [party_id, settlement_id, current_day, i]
+		var offer_seed: String = _seed_key("contract_offer", party_id, settlement_id, current_day, i)
 		var offer_rng: RandomNumberGenerator = _seeded_rng(offer_seed)
 
 		# Destination pick (uniform over reachable set).
@@ -194,6 +194,36 @@ static func get_offer(offer_id: String) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
+# Test seam — deterministic seeding (coding_conventions §69)
+# ---------------------------------------------------------------------------
+
+## When non-empty, the per-visit RNG seeds derive from this fixed salt instead
+## of the volatile (party_id, settlement_id) pair — see _seed_key. This makes
+## offer rolls reproducible across processes, which production seeds are NOT:
+## party_id/settlement_id come from CampaignRepository.generate_id(), whose
+## module-level _id_rng is randomize()d once at class-load, so a real visit's
+## roll is non-deterministic per process AND sensitive to how many IDs earlier
+## code consumed (the §69 cross-suite RNG-seed coupling flake class).
+##
+## PRODUCTION NEVER SETS THIS. It stays "" so each (party, settlement, day)
+## rolls independently and probabilities are unchanged. Tests set it
+## transiently via set_test_seed / clear_test_seed to pin a reproducible roll,
+## and MUST clear it afterward so determinism never leaks into a later suite.
+static var _test_seed_salt: String = ""
+
+
+## Pins the per-visit seed salt for deterministic, reproducible offer rolls.
+## Test-only — pair with clear_test_seed in the same test.
+static func set_test_seed(salt: String) -> void:
+	_test_seed_salt = salt
+
+
+## Restores production (id-derived) seeding. Test-only.
+static func clear_test_seed() -> void:
+	_test_seed_salt = ""
+
+
+# ---------------------------------------------------------------------------
 # Pure helpers (RAW formulas)
 # ---------------------------------------------------------------------------
 
@@ -275,6 +305,23 @@ static func _read_settlement(settlement_id: String) -> Dictionary:
 	if CampaignRepository.db.query_result.is_empty():
 		return {}
 	return CampaignRepository.db.query_result[0]
+
+
+## Builds the deterministic seed key for a per-visit roll. With a test seed
+## salt active (set_test_seed), the volatile (party_id, settlement_id) pair is
+## replaced by the fixed salt so the roll is reproducible; otherwise the real
+## ids keep each visit's roll independent. With salt == "" (production) the
+## returned string is byte-identical to the pre-seam inline seeds, so offer
+## probabilities are unchanged. [param index] >= 0 appends a per-offer suffix.
+static func _seed_key(kind: String, party_id: String, settlement_id: String,
+		current_day: int, index: int = -1) -> String:
+	var scope: String = _test_seed_salt
+	if scope.is_empty():
+		scope = "%s|%s" % [party_id, settlement_id]
+	var key: String = "%s|%s|%d" % [kind, scope, current_day]
+	if index >= 0:
+		key += "|%d" % index
+	return key
 
 
 static func _seeded_rng(seed_str: String) -> RandomNumberGenerator:

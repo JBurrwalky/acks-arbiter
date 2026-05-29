@@ -476,6 +476,9 @@ extends Node
 # 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
 @onready var _dungeon_voxel_serializer_tests = $DungeonVoxelSerializerTests
 @onready var _dungeon_fixture_service_tests = $DungeonFixtureServiceTests
+# 2026-05-28 — Treasure item backing (value_cp + hoard→inventory bridge)
+@onready var _treasure_instantiator_tests = $TreasureInstantiatorTests
+@onready var _magic_item_catalog_tests = $MagicItemCatalogTests
 
 
 func _ready() -> void:
@@ -947,7 +950,9 @@ func run() -> void:
 			_scenario_invalid_dungeon_type_fallback,
 			# 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
 			_dungeon_voxel_serializer_tests,
-			_dungeon_fixture_service_tests]:
+			_dungeon_fixture_service_tests,
+			_treasure_instantiator_tests,
+			_magic_item_catalog_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
