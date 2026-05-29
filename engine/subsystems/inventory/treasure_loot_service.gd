@@ -1,21 +1,28 @@
 class_name TreasureLootService
 extends RefCounted
 
-## Bridges generated dungeon treasure hoards into a lootable location cache.
+## Bridges placed dungeon treasure hoards into lootable location caches at
+## individual cells (gdd-treasure-item-backing.md §15).
 ##
-## Called by the DG-V1 runtime-consumer when a party claims a room's treasure:
-## loads the room's UNLOOTED hoards, materialises them into a dungeon loose cache
-## (coins as per-denomination coin rows; gems/jewelry/magic as inventory items
-## carrying value_cp), marks the hoards looted, and returns the cache_id for the
-## existing loot-modal / pick-up-all flow to consume via LocationCacheManager.
+## Called by the dungeon runtime when a party interacts with a cell that may
+## contain a placed treasure container: looks up the single UNLOOTED hoard at
+## the cell, materialises it into a `loose` cache (pile types) or a
+## `locked_container` cache backed by a real inventory_items row (chest /
+## barrel / sack), marks the hoard looted, and returns the cache_id (plus
+## container_item_id and lock/trap state) for the loot UI to consume via
+## LocationCacheManager.
 ##
-## Decoupled by design: this does NOT open UI and does NOT deposit coins or award
-## treasure XP — the caller's existing loot-modal / pick-up flow handles coin
-## deposit + XP exactly as it does for any other cache. The hoard's gems/jewelry
-## land in the cache as real, weighed, valued items (value_cp), so they can be
-## carried and sold. Magic items land as carriable placeholders (Phase 2 catalog
-## will upgrade them). See gdd-treasure-item-backing.md §5, §11; the contract is
-## consumed by the dungeon runtime (gdd-dungeon-generator-v1.md).
+## Decoupled by design: this does NOT open UI and does NOT deposit coins or
+## award treasure XP — the caller's existing loot-modal / pick-up flow handles
+## coin deposit + XP exactly as it does for any other cache. The hoard's
+## gems/jewelry land in the cache as real, weighed, valued items (value_cp),
+## so they can be carried and sold. Magic items resolve through the
+## MagicItemCatalog into real named items (or carriable placeholders for
+## catalog misses).
+##
+## History: an earlier room-level entry point (`claim_room_hoards`) was
+## retired in Commit 5 of the cell-based-treasure-containers arc once the
+## cell-based flow was wired end-to-end through DungeonHandlers._resolve_loot.
 
 
 ## Materialise a single PLACED hoard into runtime state at its cell. Lazy —
@@ -33,8 +40,7 @@ extends RefCounted
 ##   - No-op when no unlooted hoard sits at the cell. Returns the empty result
 ##     with cache_id "".
 ##   - For pile container types (coin_pile / gear_pile): creates a `loose`
-##     cache and drops coins + items into it (matches the existing
-##     claim_room_hoards behavior for pile-shaped loot).
+##     cache and drops coins + items into it (no backing container item).
 ##   - For backing-container types (chest / barrel / sack): creates a real
 ##     `inventory_items` row that IS the container — carrying the hoard's
 ##     is_locked + is_trapped flags forward (migration 138) — and a
@@ -133,8 +139,7 @@ static func materialize_hoard_cell(
 			dungeon_id, str(cell)])
 		return empty
 
-	# Coin + item materialization (same path as claim_room_hoards's per-hoard
-	# loop, scoped to this one hoard).
+	# Coin + item materialization for this hoard.
 	var coins_cp: int = _cache_coins(hoard, cache_id)
 	var item_rng := RandomNumberGenerator.new()
 	item_rng.seed = hash("treasure_loot|%s" % hoard.id)
@@ -184,54 +189,6 @@ static func _create_container_item(hoard: TreasureHoardData) -> String:
 		# pass may price them as mundane catalog items if players can move them.
 		"value_cp": 0,
 	})
-
-
-## Materialise a room's unlooted treasure hoards into a dungeon loose cache.
-##
-## [param dungeon_id] scopes the cache location_key; [param floor_id] + [param
-## room_id] identify the hoards; [param cell] is the voxel cell the cache sits in.
-##
-## Returns {cache_id:String, hoard_count:int, coins_cp:int, item_count:int}.
-## cache_id == "" with hoard_count 0 means the room had no unlooted treasure.
-## Idempotent: claimed hoards are flagged is_looted, so a second call is a no-op.
-##
-## DEPRECATED in favor of materialize_hoard_cell (per-cell). This will be
-## retired in Commit 5 of the cell-based treasure containers arc once all
-## callers migrate to materialize_hoard_cell.
-static func claim_room_hoards(
-		dungeon_id: String, floor_id: String, room_id: int, cell: Vector3i) -> Dictionary:
-	var empty := {"cache_id": "", "hoard_count": 0, "coins_cp": 0, "item_count": 0}
-
-	var hoards: Array = DungeonGeneratorRepository.get_unlooted_treasure_hoards_for_room(
-		floor_id, room_id)
-	if hoards.is_empty():
-		return empty
-
-	var cache_id: String = LocationCacheManager.create_dungeon_loose_cache(dungeon_id, cell)
-	if cache_id.is_empty():
-		push_error("TreasureLootService.claim_room_hoards: cache creation failed (dungeon=%s cell=%s)" % [
-			dungeon_id, str(cell)])
-		return empty
-
-	var total_coins_cp: int = 0
-	var item_count: int = 0
-	for h in hoards:
-		var hoard: TreasureHoardData = h
-		total_coins_cp += _cache_coins(hoard, cache_id)
-		# Per-hoard seeded RNG → deterministic specific magic-item selection.
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("treasure_loot|%s" % hoard.id)
-		var loot: Dictionary = TreasureInstantiator.hoard_to_loot(hoard, rng, _magic_catalog())
-		item_count += _cache_items(loot["items"], cache_id)
-		item_count += _cache_items(loot["magic_placeholders"], cache_id)
-		DungeonGeneratorRepository.mark_hoard_looted(hoard.id)
-
-	return {
-		"cache_id": cache_id,
-		"hoard_count": hoards.size(),
-		"coins_cp": total_coins_cp,
-		"item_count": item_count,
-	}
 
 
 # ---------------------------------------------------------------------------

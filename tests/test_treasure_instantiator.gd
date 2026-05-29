@@ -31,8 +31,6 @@ func run_all_tests() -> void:
 	test_empty_hoard_is_empty_plan()
 	test_shop_sells_gem_by_value_cp()
 	test_shop_sells_priced_magic_item()
-	test_claim_room_hoards_creates_cache()
-	test_claim_room_hoards_idempotent_and_empty()
 	# Cell-based materialization (Commit 3 of the cell-based treasure containers arc).
 	test_materialize_no_hoard_returns_empty()
 	test_materialize_pile_creates_loose_cache_without_container_item()
@@ -307,78 +305,6 @@ func test_shop_sells_priced_magic_item() -> void:
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM campaigns WHERE id = ?", [_DB_CAMPAIGN])
 	print("  shop_sells_priced_magic_item: OK")
-
-
-# ---------------------------------------------------------------------------
-# DB-backed: TreasureLootService materialises a room's hoards into a cache
-# ---------------------------------------------------------------------------
-
-func test_claim_room_hoards_creates_cache() -> void:
-	_loot_setup()
-	# A hoard: 5 gp + a 200gp gem + a 1000gp jewelry + 1 magic item.
-	_insert_hoard("test_hoard_1", _ROOM_ID, {
-		"gold": 5,
-		"gems": [{"value_gp": 200, "gem_class": "gem"}],
-		"jewelry": [{"value_gp": 1000, "jewelry_class": "jewelry"}],
-		"magic_items": [{"category": "any", "notes": "test"}],
-		"total_gp_value": 1700,
-	})
-
-	var result := TreasureLootService.claim_room_hoards(
-		_DUNGEON_ID, _FLOOR_ID, _ROOM_ID, Vector3i(2, 3, 0))
-	check(not str(result["cache_id"]).is_empty(), "claim should create a cache")
-	check(int(result["hoard_count"]) == 1, "one hoard claimed, got %d" % int(result["hoard_count"]))
-	check(int(result["coins_cp"]) == 500, "5gp = 500cp, got %d" % int(result["coins_cp"]))
-
-	# Cache holds 1 coin row (gp) + gem + jewelry + magic placeholder = 4 items.
-	var cache_items := CampaignRepository.list_items_in_cache(str(result["cache_id"]))
-	check(cache_items.size() == 4,
-		"cache should hold 4 items (coin + gem + jewelry + magic), got %d" % cache_items.size())
-
-	# The gem must carry its value_cp into the cache.
-	var found_gem := false
-	for ci in cache_items:
-		if str(ci.get("item_key", "")) == "gem_gem":
-			found_gem = true
-			check(int(ci.get("value_cp", -1)) == 20000,
-				"cached gem keeps value_cp 20000, got %d" % int(ci.get("value_cp", -1)))
-	check(found_gem, "cache should contain the gem")
-
-	# The magic item resolved to a real catalog item (not a placeholder), since
-	# TreasureLootService passes a seeded rng + the MagicItemCatalog.
-	var found_magic := false
-	for ci in cache_items:
-		if int(ci.get("is_magical", 0)) == 1:
-			found_magic = true
-			check(str(ci.get("item_key", "")) != "magic_placeholder",
-				"cached magic item should be a real catalog item, not a placeholder")
-	check(found_magic, "cache should contain a magic item")
-
-	# Hoard is marked looted: a fresh unlooted query returns nothing.
-	var remaining := DungeonGeneratorRepository.get_unlooted_treasure_hoards_for_room(_FLOOR_ID, _ROOM_ID)
-	check(remaining.is_empty(), "hoard should be marked looted after claim")
-
-	_loot_teardown()
-	print("  claim_room_hoards_creates_cache: OK")
-
-
-func test_claim_room_hoards_idempotent_and_empty() -> void:
-	_loot_setup()
-
-	# Empty room (no hoard) → no cache.
-	var empty := TreasureLootService.claim_room_hoards(_DUNGEON_ID, _FLOOR_ID, 99, Vector3i(0, 0, 0))
-	check(str(empty["cache_id"]).is_empty() and int(empty["hoard_count"]) == 0,
-		"empty room yields no cache")
-
-	# A hoard, claimed twice — second claim is a no-op.
-	_insert_hoard("test_hoard_2", _ROOM_ID, {"gold": 1, "total_gp_value": 1})
-	var first := TreasureLootService.claim_room_hoards(_DUNGEON_ID, _FLOOR_ID, _ROOM_ID, Vector3i(1, 1, 0))
-	check(int(first["hoard_count"]) == 1, "first claim gets the hoard")
-	var second := TreasureLootService.claim_room_hoards(_DUNGEON_ID, _FLOOR_ID, _ROOM_ID, Vector3i(1, 1, 0))
-	check(int(second["hoard_count"]) == 0, "second claim is a no-op (idempotent)")
-
-	_loot_teardown()
-	print("  claim_room_hoards_idempotent_and_empty: OK")
 
 
 # ---------------------------------------------------------------------------

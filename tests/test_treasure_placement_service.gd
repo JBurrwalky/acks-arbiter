@@ -1,7 +1,8 @@
 extends "res://tests/test_suite_base.gd"
 
 ## Unit tests for TreasurePlacementService (the cell-based treasure placement
-## that replaces the room-level claim_room_hoards model).
+## that drives the dungeon generator's container-stocking pass and feeds
+## TreasureLootService.materialize_hoard_cell at runtime).
 ##
 ## Key constraints (Jedidiah 2026-05-29):
 ##   - 25% rule: secondary hidden/trapped container holds <=25% of hoard gp.

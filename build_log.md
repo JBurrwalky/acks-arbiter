@@ -28512,3 +28512,50 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **Commit 5 — Retire `claim_room_hoards`.** Audit callers (probably just the dungeon runtime + tests). Migrate any production callers to `materialize_hoard_cell`. Delete `claim_room_hoards` + its dedicated tests. Update GDD §15 + the build_log + the resumption doc to mark the arc complete.
 2. **(Stretch — out-of-arc follow-up)** Add `pick_lock_container` + `search_container` action handlers + tests. Update `_resolve_pick_up_all` to use the 3D location_key.
 3. **(Stretch — out-of-arc)** Verify a multi-floor generated dungeon round-trips hoards correctly through the persistence layer + materialize path (the z fix needs an integration test against a 2-floor `DungeonGeneratorV1.generate` request).
+
+
+## Session 2026-05-29 — Cell-based treasure containers (Commit 5: retire claim_room_hoards)
+
+**Task:** Commit 5 of the cell-based-treasure-containers arc — the final commit. Delete the deprecated room-level `claim_room_hoards` service now that `materialize_hoard_cell` has taken over via `DungeonHandlers._resolve_loot` (Commit 4). Audit production callers (none expected) and remove the function + its 2 tests. Net-zero new failures vs the 392/19 baseline.
+
+**Model used:** Opus.
+
+**Completed:**
+- **`TreasureLootService.claim_room_hoards` deleted** (`engine/subsystems/inventory/treasure_loot_service.gd`): the deprecated room-level entry point that Commit 3 marked for retirement. Audit confirmed no production callers — only the 2 tests in `test_treasure_instantiator.gd` referenced it directly.
+- **`test_claim_room_hoards_creates_cache` + `test_claim_room_hoards_idempotent_and_empty` deleted** from `tests/test_treasure_instantiator.gd`. The cell-based equivalents (`test_materialize_chest_creates_container_item_and_cache`, `test_materialize_pile_creates_loose_cache_without_container_item`, `test_materialize_is_idempotent`, `test_materialize_no_hoard_returns_empty`, `test_materialize_marks_hoard_looted`, `test_materialize_trap_fallback_locked_chest`) cover the same behaviors at the cell scope.
+- **`TreasureLootService` top-of-file docstring rewritten** to describe the cell-based contract directly. No longer references the deprecated room-level entry except as one-line "History:" footnote.
+- **Private-helper comments updated** in `TreasureLootService`: `_cache_coins` / `_cache_items` docstrings retained (they're still used by `materialize_hoard_cell`); the inline comment in `materialize_hoard_cell` no longer cross-references the now-deleted `claim_room_hoards`'s loop.
+- **Comment cleanup**: `tests/test_treasure_placement_service.gd` top-of-file comment updated to drop the "replaces the room-level claim_room_hoards model" line — the placement service now stands on its own.
+- **GDD §15 marked COMPLETE.** Renamed the heading from "(in progress)" to "(complete)"; §15.7 lists Commits 1-5 as ✅ landed and flags two natural follow-ups (Pick Lock / Search container actions + `_resolve_pick_up_all` 3D location_key port) as out-of-arc.
+- **`MEMORY.md` updated** — the "ACTIVE WORK IN PROGRESS" section was retitled "Recent completed work" with the arc summary; the resumption pointer remains for any post-compact agent that needs the full record.
+- **Resumption doc (`treasure_containers_resumption.md`) updated** — Commit 5 row flipped to ✅, arc declared complete.
+
+**Decisions made:**
+- **Hard delete, not deprecation-pause.** The function had been marked DEPRECATED in Commit 3's docstring with the intent to retire here; keeping it as dead code would have invited drift. The audit confirmed no production callers, so removal is safe.
+- **Keep `_cache_coins` / `_cache_items` / `_magic_catalog` private helpers.** These are still used by `materialize_hoard_cell`. The arc's design (Commit 3) factored them out of `claim_room_hoards` precisely so the per-cell flow could reuse them.
+- **Don't touch the still-relevant `DungeonGeneratorRepository.get_unlooted_treasure_hoards_for_room`.** It's now unused by the cell-based flow, but it's a generally-useful read API (e.g. a "this room's loot status" inspector / debug overlay could call it) and the test_dungeon_repository_stocked_roundtrip suite verifies the room-scope query path. Removing it is a separate cleanup if it stays unused over the long term.
+- **Keep the migration 135 SQL comment that mentions `claim_room_hoards`.** It's a historical record of why the column was added; rewriting old migration SQL just to scrub names is churn for no value (migration SQL is immutable once applied).
+- **Out-of-arc follow-ups deferred deliberately.** Pick Lock + Search container action wiring + `_resolve_pick_up_all` 3D port are real work but separate concerns. Bundling them into Commit 5 would have ballooned scope; surfacing them as follow-ups keeps the arc tight.
+
+**Interfaces defined or changed:**
+- `TreasureLootService.claim_room_hoards` — REMOVED. The cell-based replacement is `materialize_hoard_cell(dungeon_id, floor_id, cell)`.
+- `TreasureLootService` top-of-file docstring — rewritten for the cell-based contract.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_treasure_instantiator.gd`: 2 deprecated tests deleted (`test_claim_room_hoards_creates_cache`, `test_claim_room_hoards_idempotent_and_empty`).
+- `tests/test_treasure_placement_service.gd`: top-of-file comment updated.
+- Full suite: 392 passed / 19 failed — net-zero NEW failures. The 2 removed tests are no longer in the count (they tested deleted behavior; the cell-based equivalents are already counted in the materialize tests added in Commit 3).
+
+**Known issues:**
+- **Pick Lock + Search container action handlers** still TODO (out-of-arc follow-up). The handler returns `open_loot_modal_locked` for locked containers and `"Nothing visible here."` for hidden hoards, so the UI can prompt for these actions without further handler changes. The action handlers themselves can mirror `_resolve_pick_lock` (for doors) but mutate `inventory_items.is_locked = 0` / `treasure_hoards.is_hidden = 0` instead.
+- **`_resolve_pick_up_all` still uses the legacy 2D location_key** (out-of-arc follow-up). Same pattern as the old `_resolve_loot`; the cell-based architecture is now uniform aside from this one call site.
+- **`DungeonGeneratorRepository.get_unlooted_treasure_hoards_for_room`** is now unused in production but kept for read-API symmetry. Removable if it stays unused over the long term.
+- **Trap firing** still stubbed in `_resolve_loot` — `is_trapped` propagates through to the locked presentation but the trap doesn't fire until the traps subsystem ships. Documented in the handler's TODO.
+
+**Next session should:**
+1. **(Stretch — out-of-arc)** Wire `pick_lock_container` + `search_container` action handlers. Mirror `_resolve_pick_lock` for doors: roll Pick Lock / Search via ThiefSkillResolver, on success update `inventory_items.is_locked = 0` (or `treasure_hoards.is_hidden = 0`), then re-fire `_resolve_loot`. Add tests.
+2. **(Stretch — out-of-arc)** Port `_resolve_pick_up_all` to the 3D location_key for symmetry with `_resolve_loot`.
+3. **(Stretch — out-of-arc)** Add a multi-floor integration test that generates a 2-floor dungeon via `DungeonGeneratorV1.generate` and verifies hoards on floor 2 round-trip correctly through the materialize path (validates the z-fix added in Commit 4 against the full pipeline).
+4. **(Whatever's next on the user's list.)** The cell-based-treasure-containers arc is closed; subsequent work is whatever Jedidiah directs.
