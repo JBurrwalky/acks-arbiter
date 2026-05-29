@@ -52,6 +52,17 @@ func resolve_melee_attack(
 	if damage_expression.is_empty():
 		damage_expression = _get_melee_damage_expression(attacker)
 
+	# RAW: rules/acore_combat_and_wounds.xml:402-407 (invulnerableMonsters) —
+	# some monsters can be harmed only by magical or silver weapons; weaker
+	# attackers without magical/silver weapons cannot harm them. Monsters with
+	# 5+ HD harm them through natural ferocity; such monsters can always harm
+	# each other. Abort BEFORE the d20 roll: no chance to hit means no roll.
+	if target.is_damaged_only_by_magic_or_silver() and not attacker.can_harm_invulnerable_target():
+		var harmless := _build_miss_result(attacker, target, 0, 0, damage_expression)
+		harmless["cant_harm"] = true
+		harmless["cant_harm_reason"] = "target can be harmed only by magical or silver weapons"
+		return harmless
+
 	# Calculate attack modifiers
 	var str_mod := attacker._get_ability_modifier("strength")
 	# Weapon Finesse: substitute DEX for STR on to-hit (not damage) when the

@@ -314,3 +314,31 @@ RAW §2.3: coins/gems/jewelry/special treasure grant 1 XP per 1 gp **when recove
 - **Vorpal Sword — RESOLVED 2026-05-29:** 160,000 gp / 590 d (the vorpal portion is a 5th-level Permanent/Unlimited effect, 125,000 gp / 500 d, atop the Sword +3 base 35,000 gp / 90 d).
 - **Magic-item catalog — RESOLVED 2026-05-28 (Jedidiah):** Core's `random_magic_type_table` + `random_item_tables` (`:197-216`) are sufficient for the V1 catalog (item NAMES + categories). The absent "full d00 distributions" only affect per-item *roll probabilities*, which V1 approximates with **uniform within-category selection** (documented in the catalog `_note`). Per-item **effects / charges / identification** are out of scope for the catalog and belong to a dedicated magic-item usage session; until then found magic items are carriable + 0-XP + non-sellable (`value_cp -1`). Built via `tools/extract_magic_item_catalog.py` → `data/treasure/magic_item_catalog.json` (§9).
 - **No banker's-rounding hazard in Phase 1:** gem/jewelry gp values are integers, so `value_cp = value_gp × 100` is exact. Any future fractional value (sale fractions, haggling) must use `XPAwardCalculator.bankers_round` per the project-wide convention.
+
+---
+
+## 14. Magic-item combat effects (status board)
+
+Per-item effects are landing incrementally as the magic-item-usage work continues. Status snapshot:
+
+| Effect | Path | Status |
+|---|---|---|
+| Weapon +N → attack throw | `attack_resolver.gd:67` `get_weapon_magical_bonus()` | ✅ wired (pre-existing); regression-locked 2026-05-29 |
+| Weapon +N → damage | `attack_resolver.gd:147/163-165` | ✅ wired (pre-existing); regression-locked 2026-05-29 |
+| Armor +N → AC | `CharacterAcCalculator.compute()` — `magical_bonus` term (§75) | ✅ landed 2026-05-29 (AC fix session) |
+| Shield +N → AC | same | ✅ landed 2026-05-29 |
+| Cursed (negative `magical_bonus`) → penalty | same +N paths above (signed math) | ⚠️ math is free; catalog cursed items still sit at `magical_bonus 0` (data gap); sticky-unequip handler not yet built |
+| Magic/silver required to harm "invulnerable" monsters | `Combatant.can_harm_invulnerable_target()` + pre-roll check in `attack_resolver` / `ranged_attack_resolver` | ✅ logic landed 2026-05-29; monster_catalog flag mechanism in place (`damaged_only_by_magic_or_silver: bool`); no monsters flagged yet (data follow-up) |
+| Magic ammo (e.g. Magic Arrows +1) counts toward magic-to-hit | `Combatant.get_ammo_magical_bonus()` | ✅ landed 2026-05-29 |
+| Ranged magic weapon +N → to-hit & damage | `ranged_attack_resolver.gd` (weapon + ammo `magical_bonus` added to both terms) | ✅ landed 2026-05-29 (Jedidiah: apply RAW uniformly — no split). Bow + ammo bonuses stack; thrown weapons see only the weapon's +N (no separate ammo). |
+| Ring of Protection — wearer-only AC + saves | (planned: `ModifierContainer` worn-item modifier per §75) | ⏳ deferred (next pass) |
+| Ring of Protection 5'-radius save bonus to allies | (planned: combat-geometry + save-time modifier) | ⏳ deferred (follow-up after wearer-only) |
+| Charged items (wands, staves, rods) — use / depletion | (planned: `uses_remaining` decrement on use) | ⏳ deferred |
+| Per-potion effects (drink → effect) | (planned: per-item resolvers) | ⏳ deferred |
+| Spell-scroll specific-spell binding | (planned: pick named spells from the spell catalog at instantiation) | ⏳ deferred |
+| Identification (sage / Magic Research / Loremastery) | (planned: `requires_identification` flag + identify subsystem) | ⏳ deferred (Phase 3) |
+| Magic-item market-class gating | (planned: gate high-value sales by settlement class) | ⏳ deferred (Phase 3) |
+
+**RAW anchors:** `acore_treasure_and_magic_items_rules.xml:231-235` (the +N rule); `acore_combat_and_wounds.xml:402-407` (invulnerable monsters); `acore-campaign-general-and-magic-research.xml:185-215` (creation cost formula backing the +N values).
+
+**Catalog-flag-driven combat rules pattern.** The invulnerable-monster work established the pattern: a boolean field on the monster catalog data → set as a flag in `_apply_monster_catalog_flags` → read via a `Combatant` helper → consumed by a pre-roll check in the resolver. Reusable for any future "this monster property modifies the to-hit/damage path" rule.

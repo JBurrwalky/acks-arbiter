@@ -28032,3 +28032,97 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. Magic-item USAGE session: per-item effects / charges / identification + binding specific named spells to generated scrolls (keyed off catalog item_keys + the recorded scroll metadata); also apply the Ring-of-Protection radius semantics (`radius_effect`).
 3. Phase 3 magic-item market: market-class gating for high-value magic sales.
 4. (Optional/future) treasure-map subtypes: generate the reward hoards the RAW scrolls d100 (rows 77-100) point to, and drive scroll TYPE selection off the full d100.
+
+
+## Session 2026-05-29 — Equipment-derived Armor Class (CharacterAcCalculator) — fixes PC/henchman AC always 0
+
+**Task:** Fix the confirmed bug that a PC's/henchman's Armor Class was never computed from equipped armor, shield, Dexterity, or magic bonuses — it defaulted to 0 and was only ever set by the GM override panel, polymorph, or hardcoded test fixtures. This blocked magic armor/shield +N (and any AC-affecting effect) and was a correctness bug on its own. Surfaced mid magic-item-effects work (gdd-treasure-item-backing.md).
+
+**Model used:** Opus 4.7 (RAW grounding, cross-subsystem design, implementation, tests).
+
+**Completed:**
+- New `CharacterAcCalculator` (`engine/subsystems/characters/character_ac_calculator.gd`): `compute(character, inventory_rows) -> int` (pure) and `recompute(character, inventory_rows) -> int` (writes `character.armor_class`). Composition = best equipped body-armor `armor_ac_bonus` + equipped shield `armor_ac_bonus` + DEX modifier (`CharacterData.ability_modifier` of effective DEX) + equipped armor/shield `magical_bonus`. Accepts InventoryItem objects OR DB-row/`to_dict()` dicts (dual-shape; mirrors EncumbranceCalculator/TrainedCreatureData).
+- `CampaignRepository.recompute_character_armor_class(character_id) -> int`: loads inventory + DEX, computes via the calculator, persists `characters.armor_class` (no `inventory_updated` emit, to avoid loops). Private helper `_recompute_ac_for_item(item_id)` resolves an item's owning character (no-op for creature/cache-owned items).
+- Wired the recompute into the equip-STATE chokepoints: `update_inventory_item_equip_state`, `merge_item_on_unequip`, `split_item_for_equip` (these funnel equip/unequip/remove-from-container/switch-weapon/class-sanitize), plus `sanitize_character_equipment` (unconditional party-load repair for legacy/stale saves).
+- `CharacterGenerator.generate_pc` + `generate_npc`: set the creation baseline AC (= DEX mod with empty inventory; runs after aging so DEX adjustments are reflected).
+- `Combatant.wire_equipment`: combat-start safety net — recomputes the in-memory `_character.armor_class` from the wired rows, guarded `if is_character and _character != null` (monsters/trained creatures derive AC elsewhere).
+- `HenchmanEquipmentKit.apply_kit_to_henchman`: recomputes AC after applying the kit (the kit inserts pre-equipped rows directly via `add_inventory_item`, bypassing the equip-state paths); guarded by `has_method` so the fake-repo test is unaffected.
+- `OverrideManager.override_character_stat`: recomputes AC after a `dexterity` override (an explicit `armor_class` override is left as the GM set it).
+
+**Decisions made:**
+- Stored `armor_class` = equipment-derived BASE; `get_effective_ac()` continues to layer ModifierContainer (spells/conditions/Shield/Ring of Protection) on top. Clean separation, and the existing hardcoded-AC + modifier-layering tests stay valid because the recompute fires only on real equip/attribute/combat paths, not on direct field-set fixtures. Per coding_conventions §12 "Effective getters are mandatory" (and new §75).
+- Targeted recompute on equip-STATE changes, NOT a broad `inventory_updated` signal hook. The signal fires on coin pickups/light depletion and would clobber polymorph (polymorph_self/other_resolver write the flat `armor_class` field, then restore from snapshot) and GM AC overrides. Equip-state changes are the only events that can change worn armor/shield AC.
+- DEX read as EFFECTIVE (`get_effective_ability_score("dexterity")`) so an active DEX effect / aging adjustment is reflected when a recompute fires; with no modifiers this equals the base score (the persisted-recompute path carries no runtime modifiers anyway).
+- Negative AC allowed (low-DEX unarmored): RAW treats AC as a modifier with no floor at 0.
+- A non-worn magic AC item (Ring of Protection) or any spell is NOT counted by the calculator — those layer via ModifierContainer. Only the worn armor/shield's own `magical_bonus` is the +N term here. Magic-armor WEIGHT reduction stays in EncumbranceCalculator.
+
+**Interfaces defined or changed:**
+- `CharacterAcCalculator.compute(character: CharacterData, inventory_rows: Array) -> int` (static).
+- `CharacterAcCalculator.recompute(character: CharacterData, inventory_rows: Array) -> int` (static; sets `character.armor_class`, returns it).
+- `CampaignRepository.recompute_character_armor_class(character_id: String) -> int` — persists `characters.armor_class`; does NOT emit `inventory_updated`.
+- No signal or schema changes. `armor_class` semantics clarified: BASE (equipment + DEX); effects layer via `get_effective_ac()`.
+
+**Database changes:** None (uses existing `characters.armor_class` and `inventory_items.armor_ac_bonus`/`magical_bonus`/`item_category`/`slot`/`is_equipped`).
+
+**Tests added/updated:**
+- New `tests/test_character_ac_calculator.gd` (17 tests; registered as `CharacterAcCalculatorTests`, ext_resource id `396`). Pure-calculator unit tests: unarmored = DEX mod incl. negative; leather +2; +1 leather +3; shield stacks; DEX adds; unequipped/non-armor/wrong-slot ignored; full loadout (+1 plate + shield + DEX 16 = 10); best-of-duplicate body armor; InventoryItem dual-shape; recompute writes field. DB integration: equip→AC, unequip→drops to DEX mod, shield stacks, magic +N, DEX-change recompute, sanitize repairs stale AC.
+- Full suite: 389 passed / 19 failed — net-zero NEW failures (baseline 388/19; the +1 is this suite). All touched suites green (CharacterGenerator, NPC Generation, AttackResolver, CombatController ×5, EquipPipeline, HenchmanEquipmentKit, ClassEquipRestrictionValidator, OverrideManager, CreatureEquipmentService).
+
+**Known issues:**
+- The ~19 pre-existing carry-forward failures (scheduler / ZoC / voxel-LOS / dungeon-session signals / domain-clanhold / proficiency-UI / light-torch / party split-merge signals) are unchanged and unrelated to this work.
+- Magic WEAPON +N was already wired (attack_resolver). With AC recompute in place, magic ARMOR/SHIELD +N now flows automatically as the `magical_bonus` term — this was the blocker for the magic-item-effects work.
+
+**Next session should:**
+1. Resume the magic-item USAGE session (gdd-treasure-item-backing.md): per-item effects / charges / identification + binding named spells to generated scrolls + Ring-of-Protection radius semantics. AC-affecting worn/ring magic now layers via ModifierContainer on top of the equipment-derived base.
+2. (Dungeon-runtime, still pending from Treasure Phase 1) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`.
+3. (Optional) surface the derived AC live in the character-sheet UI on `inventory_updated` — the DB is already kept current; the sheet just needs to reload from DB.
+
+
+## Session 2026-05-29 — Magic-item effects: invulnerable monsters + weapon +N regression locks
+
+**Task:** Resume magic-item-effects after the AC fix unblocked armor/shield +N. Two picks: (1) implement the "monsters harmed only by magical or silver weapons" rule (`acore_combat_and_wounds.xml:402-407`), and (2) lock the already-wired magic weapon +N (attack throw + damage) with regression tests so a future combat refactor can't silently regress it.
+
+**Model used:** Opus.
+
+**Completed:**
+- `engine/subsystems/combat/combatant.gd`: new helpers — `is_damaged_only_by_magic_or_silver()` (reads the new monster flag), `get_hit_dice_base()`, `get_ammo_magical_bonus()`, and `can_harm_invulnerable_target()` (encapsulates the RAW rule: PC uses magical/silver weapon or magic ammo; monster qualifies via HD>=5 ferocity OR own invulnerability). Extended `_apply_monster_catalog_flags` to set the `damaged_only_by_magic_or_silver` flag from monster_catalog data, mirroring the existing `ignores_cell_occupancy` / `no_zoc_*` pattern.
+- `engine/subsystems/combat/attack_resolver.gd`: pre-roll invulnerability check after the wound-block (mirrors the wound-block early-return pattern). When target is invulnerable and attacker can't harm, returns a miss-result with `cant_harm: true` + `cant_harm_reason`, aborting the d20 roll entirely (RAW: no chance to hit means no roll).
+- `engine/subsystems/combat/ranged_attack_resolver.gd`: same pre-roll check, placed after the wound-block / range-check / into-melee handler. Reuses `_build_blocked_result` as the base but overrides `into_melee_blocked` to false (the wrong reason) and adds `cant_harm` + `cant_harm_reason`.
+- Monster catalog data shape: the boolean field `damaged_only_by_magic_or_silver: true` on a `data/monsters/monster_catalog.json` entry now drives the flag. No catalog entries flagged yet — a follow-up data session can flag the canonical invulnerable monsters (wraith, shadow, gargoyle, lycanthrope, demon, devil, etc.) by surveying RAW phrasings ("Damaged only by magical or silver weapons", "May only be affected by magic and magical weapons", "May only be struck with magical weapons" — all canonicalize to this flag).
+
+**Decisions made:**
+- **Pre-roll abort, not "hit with 0 damage."** When the invulnerability rule blocks the attack, no d20 is rolled; the result is `hit: false, cant_harm: true, damage_total: 0`. Natural 20 doesn't fire because the d20 never rolls — the RAW rule is "cannot harm," not "still hits but bounces." Simpler and more RAW-faithful; revisit only if play surfaces a scenario where the distinction matters.
+- **Magic ammo qualifies as a magical weapon.** A mundane bow + Magic Arrows +1 can harm an invulnerable target. RAW: "A plus value adds to attack and damage for weapons" (`acore_treasure_and_magic_items_rules.xml:231-235`) — arrows are weapons. Implemented via the ammo `magical_bonus` check in `can_harm_invulnerable_target()`.
+- **Silver weapons recognized via `is_silvered: bool`** on the equipped weapon/ammo dict. No equipment catalog entries carry this yet — flagged as data follow-up. The check has no false positives until the data lands (returns false absent the flag); silver-weapon scenarios just default to "non-silver."
+- **Ferocity check uses BASE HD** (`hit_dice.base`), not the per-instance HP roll. RAW: "Monsters with 5 HD or more"; the listed HD is what matters.
+- **"Such monsters can always harm each other"** implemented as: an invulnerable attacker can always harm an invulnerable target. Skips the magic/HD checks for that case.
+- **No new `_build_harmless_result` helper.** Reused `_build_miss_result` (melee) / `_build_blocked_result` (ranged) with field overrides — keeps blast radius small and inherits future field additions automatically.
+- **L&E HD-tiered refinement deferred** (`le_monster_creation.xml:415-416`: <=4 HD → silver works; >=5 HD → only magical works). The core acore rule (magical OR silver works for all invulnerable monsters) is the V1 implementation. The tiered version is a future refinement once the data has the HD-tier flag.
+
+**Interfaces defined or changed:**
+- `Combatant.is_damaged_only_by_magic_or_silver() -> bool`
+- `Combatant.get_hit_dice_base() -> int`
+- `Combatant.get_ammo_magical_bonus() -> int`
+- `Combatant.can_harm_invulnerable_target() -> bool`
+- Monster catalog field: `damaged_only_by_magic_or_silver: bool` (optional, default false).
+- Attack-result keys: `cant_harm: bool` + `cant_harm_reason: String` (analogous to `wound_blocked` / `wound_block_reason`).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_combat_attack_resolver.gd`: +8 tests. 3 magic weapon +N regression locks (to-hit, damage delta = bonus, mundane no-bonus) + 5 invulnerable-monster tests (PC mundane immune; PC +1 weapon harms; 6 HD monster ferocity harms; 3 HD mundane monster can't harm; invulnerable-vs-invulnerable can harm). New helpers `_equip_weapon` (sets `_equipped_weapon` for to-hit/damage tests) + `_make_invulnerable_monster`.
+- `tests/test_ranged_attack_resolver.gd`: +6 tests. 1 invulnerable-monster test (mundane bow + no magic ammo → `cant_harm`; also asserts `into_melee_blocked == false` so callers can't misread the reason) + 5 ranged magic +N regression locks (magic bow +N to attack throw; magic arrows +N to damage; bow+arrows stack on both; thrown weapon +N to both via weapon only [no ammo]; mundane baseline). Tests use direct `_equipped_weapon`/`_equipped_ammo` field assignment.
+- Full suite: 389 passed / 19 failed — net-zero NEW failures (same baseline as the AC-fix session). Both AttackResolver and RangedAttackResolver suites green.
+
+**Follow-up landed same session — Ranged magic +N is now wired** (was a discovered gap mid-session; Jedidiah ruled "apply RAW as written — +N to both attack AND damage on everything"). `ranged_attack_resolver.gd`: for character attackers, the `to_hit_bonus` and `damage_total` now include `attacker.get_weapon_magical_bonus() + attacker.get_ammo_magical_bonus()` — mirroring `attack_resolver.gd:67/147/163-165`. RAW grounding: I searched for a ranged-specific split (magic bow=attack-only, magic ammo=damage-only) and could not find a citation; the only adjacent RAW is `acore_spell_catalog_k-w_summary.xml:601` ("Normal missiles fired from magic bows count as magical"). The general rule (`acore_treasure_and_magic_items_rules.xml:231-235`) says "A plus value adds to attack and damage" uniformly. Jedidiah chose to honor it as written — no split. Bow + ammo bonuses stack on both terms; thrown weapons see only the weapon's +N (their `_equipped_ammo` is empty by design).
+
+**Known issues:**
+- Monster catalog has the FLAG MECHANISM in place but no monsters carry it yet. Flagging the canonical invulnerable monsters per the RAW phrasings is a data follow-up.
+- Magic items still grant 0 recovery XP (RAW); the gem/jewelry recovery-XP pass (future) must keep EXCLUDING magic.
+- The flaky shipping-contract test (`coding_conventions §69`) is unchanged.
+
+**Next session should** (Jedidiah confirmed scope for the next pass — Cursed negatives + Ring of Protection wearer-only + invulnerable-monster data flagging):
+1. **Cursed negatives + sticky unequip.** Update the catalog's 8 cursed items to carry real negative `magical_bonus` values (math is already free — negative bonuses subtract via the same +N paths). Add the "cannot be discarded except by dispel evil or remove curse" stickiness on the equip-state path per RAW (`acore_treasure_and_magic_items_rules.xml:233-235`: "Cursed items cannot be discarded except by dispel evil or remove curse"; "The owner of a cursed item will not believe it is cursed and resists giving it up"; "The possessor of a cursed weapon prefers to use it over other weapons").
+2. **Ring of Protection — wearer-only effect.** Apply the worn ring as a `ModifierContainer` modifier per §75: +N to `armor_class` and +N to all saves. Five priced variants already in the catalog (the `sub_roll` table). Hook the apply/remove on the equip-state path. The 5'-radius save-to-allies effect (recorded as `radius_effect` on the radius variants) requires combat geometry and is deferred.
+3. **Flag invulnerable monsters in `monster_catalog.json`.** Survey RAW phrasings via `grep -rEn "only.{0,20}(magical|silver).{0,20}weapon" rules/acore_monster_catalog_*.xml rules/le_monster_*.xml` and set `damaged_only_by_magic_or_silver: true` on the canonical invulnerable monsters (wraith, shadow, gargoyle, lycanthropes, demon, devil, etc.). Makes the new logic actually fire in real combats.
+4. (Dungeon-runtime, still pending from Treasure Phase 1) wire `TreasureLootService.claim_room_hoards()` into `dungeon_handlers._resolve_loot`.

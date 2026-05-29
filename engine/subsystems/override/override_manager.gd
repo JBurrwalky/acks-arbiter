@@ -109,6 +109,10 @@ func override_character_stat(character_id: String, field: String, new_value) -> 
 	current[field] = new_value
 	if not CampaignRepository.save_character(current):
 		return false
+	# A Dexterity change shifts the DEX-to-AC modifier; re-derive equipment AC.
+	# (An explicit armor_class override is left as-is — the GM set it deliberately.)
+	if field == "dexterity":
+		CampaignRepository.recompute_character_armor_class(character_id)
 	_log_override("character_stat", character_id, field, str(old_value), str(new_value))
 	EventBus.override_applied.emit("character_stat", character_id, field)
 	return true

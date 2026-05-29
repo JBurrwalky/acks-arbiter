@@ -2796,7 +2796,43 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 	):
 		push_error("CampaignRepository.update_inventory_item_equip_state: failed. id=%s" % item_id)
 		return false
+	# Equipping/unequipping armor or a shield changes the owner's derived AC.
+	_recompute_ac_for_item(item_id)
 	return true
+
+
+## Refreshes the equipment-derived Armor Class of the character who owns the given
+## inventory item. No-op for items owned by a creature/cache rather than a character.
+func _recompute_ac_for_item(item_id: String) -> void:
+	if not db.query_with_bindings(
+		"SELECT character_id FROM inventory_items WHERE id = ?", [item_id]) \
+			or db.query_result.is_empty():
+		return
+	var cid: String = str(db.query_result[0].get("character_id", ""))
+	if not cid.is_empty():
+		recompute_character_armor_class(cid)
+
+
+## Recomputes a character's equipment-derived Armor Class from their current
+## inventory + Dexterity and persists it to the characters table. Returns the new
+## AC (0 if the character is unknown). Called from the equip-state write paths
+## (equip / unequip / split / merge), class-equipment sanitation, and after a
+## Dexterity override. Does NOT emit inventory_updated (avoids feedback loops).
+## See CharacterAcCalculator for the RAW composition.
+func recompute_character_armor_class(character_id: String) -> int:
+	if character_id.is_empty():
+		return 0
+	if not db.query_with_bindings("SELECT * FROM characters WHERE id = ?", [character_id]) \
+			or db.query_result.is_empty():
+		return 0
+	var character := CharacterData.from_dict(_sanitize_character_record(db.query_result[0]))
+	var inventory_rows := get_inventory_items(character_id)
+	var new_ac := CharacterAcCalculator.recompute(character, inventory_rows)
+	if not db.query_with_bindings(
+		"UPDATE characters SET armor_class = ?, updated_at = datetime('now') WHERE id = ?",
+		[new_ac, character_id]):
+		push_error("CampaignRepository.recompute_character_armor_class: update failed. id=%s" % character_id)
+	return new_ac
 
 
 ## Idempotently unequips any items the character's class is not permitted to use.
@@ -2839,6 +2875,9 @@ func sanitize_character_equipment(character_id: String) -> Array:
 				"item_name": str(item.get("name", item.get("item_key", "item"))),
 				"reason": String(check.get("reason", "")),
 			})
+	# Refresh derived AC after any class-illegal armor/shield was unequipped, and
+	# repair stale AC on legacy saves that predate equipment-derived AC.
+	recompute_character_armor_class(character_id)
 	return unequipped
 
 
@@ -2934,6 +2973,11 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 		return ""
 
 	db.query("COMMIT")
+	# Splitting one unit off to equip it (e.g. a single shield from a stack) can
+	# change the owner's derived AC.
+	var owner_id: String = str(source.get("character_id", ""))
+	if not owner_id.is_empty():
+		recompute_character_armor_class(owner_id)
 	return new_id
 
 
@@ -3050,6 +3094,9 @@ func merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool:
 			return false
 
 	db.query("COMMIT")
+	# Unequipping armor or a shield changes the owner's derived AC.
+	if not char_id.is_empty():
+		recompute_character_armor_class(char_id)
 	return true
 
 

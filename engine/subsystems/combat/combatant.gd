@@ -243,6 +243,63 @@ func has_ranged_capability() -> bool:
 func get_weapon_magical_bonus() -> int:
 	return int(_equipped_weapon.get("magical_bonus", 0))
 
+
+## Equipped-ammunition magical_bonus (e.g. "Magic Arrows +1"). 0 if no ammo
+## or non-magical. Used by the invulnerable-target check so that magic ammo
+## fired from a mundane bow still counts as a "magical weapon" attack per
+## RAW acore_treasure_and_magic_items_rules.xml:231-235 + acore_combat_and_wounds.xml:402-407.
+func get_ammo_magical_bonus() -> int:
+	return int(_equipped_ammo.get("magical_bonus", 0))
+
+
+## Base hit dice for monsters (the listed HD value before per-instance modifier).
+## 0 for player characters / trained creatures. Used by the natural-ferocity
+## exception in the invulnerable-target rule (acore_combat_and_wounds.xml:405).
+func get_hit_dice_base() -> int:
+	if is_character:
+		return 0
+	var hd: Dictionary = _monster_data.get("hit_dice", {})
+	return int(hd.get("base", 0))
+
+
+## True if this combatant can be harmed only by magical or silver weapons.
+## Catalog-flag-driven on monsters; never true for PCs / trained creatures.
+## RAW: rules/acore_combat_and_wounds.xml:402-407 (invulnerableMonsters).
+func is_damaged_only_by_magic_or_silver() -> bool:
+	if is_character or _trained_creature != null:
+		return false
+	if _monster_flags == null:
+		return false
+	return _monster_flags.has_flag("damaged_only_by_magic_or_silver")
+
+
+## Returns true if this attacker can harm a target flagged
+## `damaged_only_by_magic_or_silver`. Composition per
+## rules/acore_combat_and_wounds.xml:402-407:
+##   Character: equipped weapon OR ammo has magical_bonus >= 1, OR is silvered.
+##   Monster: HD >= 5 (natural ferocity), OR is itself invulnerable ("such
+##     monsters can always harm each other").
+## Silver weapons are recognized via an `is_silvered` flag on the equipped
+## weapon / ammo dict; no equipment catalog entries carry it yet (data
+## follow-up). When magical_bonus >= 1, that satisfies the rule regardless.
+func can_harm_invulnerable_target() -> bool:
+	if is_character:
+		if get_weapon_magical_bonus() >= 1:
+			return true
+		if get_ammo_magical_bonus() >= 1:
+			return true
+		if bool(_equipped_weapon.get("is_silvered", false)):
+			return true
+		if bool(_equipped_ammo.get("is_silvered", false)):
+			return true
+		return false
+	# Monster path:
+	if is_damaged_only_by_magic_or_silver():
+		return true  # such monsters always harm each other (RAW :404)
+	if get_hit_dice_base() >= 5:
+		return true  # natural ferocity (RAW :405)
+	return false
+
 func get_ammo_count() -> int:
 	## Returns current ammo quantity, or -1 if weapon needs no ammo.
 	if _equipped_ammo.is_empty():
@@ -385,6 +442,14 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 			_offhand_weapon_equipped = true
 		break
 
+	# Safety net: re-derive the character's equipment AC from the just-wired
+	# inventory so a combatant built from stale/transient CharacterData presents
+	# the correct base AC at combat start. The DB is kept current by the equip
+	# paths (CampaignRepository.recompute_character_armor_class); this only updates
+	# the in-memory CharacterData. Monsters and trained creatures derive AC elsewhere.
+	if is_character and _character != null:
+		CharacterAcCalculator.recompute(_character, inventory_rows)
+
 
 # ---------------------------------------------------------------------------
 # Factory methods
@@ -437,6 +502,13 @@ static func _apply_monster_catalog_flags(c: Combatant, monster_data: Dictionary)
 		c._monster_flags.set_flag("no_zoc_emission", source_id)
 	if bool(monster_data.get("no_zoc_obedience", false)):
 		c._monster_flags.set_flag("no_zoc_obedience", source_id)
+	# RAW: acore_combat_and_wounds.xml:402-407 — some monsters can be harmed only
+	# by magical or silver weapons. Phrasing in the monster catalog varies
+	# ("Damaged only by magical or silver weapons", "May only be affected by
+	# magic and magical weapons", "May only be struck with magical weapons");
+	# all extract to the single canonical flag below.
+	if bool(monster_data.get("damaged_only_by_magic_or_silver", false)):
+		c._monster_flags.set_flag("damaged_only_by_magic_or_silver", source_id)
 
 
 ## Create a Combatant from a TrainedCreatureData on the party's side.

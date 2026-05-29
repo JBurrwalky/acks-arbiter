@@ -479,6 +479,7 @@ extends Node
 # 2026-05-28 — Treasure item backing (value_cp + hoard→inventory bridge)
 @onready var _treasure_instantiator_tests = $TreasureInstantiatorTests
 @onready var _magic_item_catalog_tests = $MagicItemCatalogTests
+@onready var _character_ac_calculator_tests = $CharacterAcCalculatorTests
 
 
 func _ready() -> void:
@@ -952,7 +953,8 @@ func run() -> void:
 			_dungeon_voxel_serializer_tests,
 			_dungeon_fixture_service_tests,
 			_treasure_instantiator_tests,
-			_magic_item_catalog_tests]:
+			_magic_item_catalog_tests,
+			_character_ac_calculator_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

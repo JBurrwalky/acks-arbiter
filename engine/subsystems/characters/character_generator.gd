@@ -157,6 +157,12 @@ func generate_pc(class_id: String, scores: Dictionary,
 	character.current_age = _aging_system.roll_starting_age(class_id)
 	character.age_category = _aging_system.get_age_category(character.race, character.current_age)
 
+	# Equipment-derived AC baseline: with no inventory yet, this is just the
+	# Dexterity modifier (RAW: an unarmored character's AC is base 0 + DEX mod;
+	# acore_basics_and_characters.xml:150 "Record AC including Dexterity modifier").
+	# Recomputed whenever armor/shield is equipped.
+	CharacterAcCalculator.recompute(character, [])
+
 	return character
 
 
@@ -253,6 +259,11 @@ func generate_npc(class_id: String, level: int, campaign_id: String,
 	# Apply cumulative ability adjustments if starting category is beyond adult.
 	if character.age_category != "adult" and character.age_category != "youth":
 		_aging_system.apply_cumulative_adjustments(character, character.age_category)
+
+	# Equipment-derived AC baseline (DEX modifier only — no inventory yet). Picks
+	# up any aging DEX adjustment applied just above; recomputed on equip and when
+	# an NPC/henchman equipment kit is applied.
+	CharacterAcCalculator.recompute(character, [])
 
 	return character
 

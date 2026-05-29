@@ -84,6 +84,18 @@ func resolve_ranged_attack(
 			# Rank 1: -4, Rank 2: -2, Rank 3+: 0
 			into_melee_penalty = maxi(0, 4 - (ps_rank - 1) * 2)
 
+	# RAW: rules/acore_combat_and_wounds.xml:402-407 (invulnerableMonsters) —
+	# some monsters can be harmed only by magical or silver weapons. Magic ammo
+	# counts as a magical weapon (acore_treasure_and_magic_items_rules.xml:231-235:
+	# "A plus value adds to attack and damage for weapons"). Abort before the
+	# d20 roll: no weapon-side magic/silver means no chance to harm.
+	if target.is_damaged_only_by_magic_or_silver() and not attacker.can_harm_invulnerable_target():
+		var harmless := _build_blocked_result(attacker, target, "")
+		harmless["into_melee_blocked"] = false
+		harmless["cant_harm"] = true
+		harmless["cant_harm_reason"] = "target can be harmed only by magical or silver weapons"
+		return harmless
+
 	# --- DEX modifier (not STR for ranged) ---
 	var dex_mod := attacker._get_ability_modifier("dexterity")
 	var to_hit_bonus: int = dex_mod + range_penalty - into_melee_penalty + extra_attack_mod
@@ -92,6 +104,13 @@ func resolve_ranged_attack(
 	if not attacker.is_character:
 		to_hit_bonus += attacker.get_to_hit_modifier(0)
 	else:
+		# RAW: rules/acore_treasure_and_magic_items_rules.xml:231-235 — magic
+		# weapons add +N to attack and damage. For ranged we stack the weapon's
+		# magical_bonus (bow / crossbow / sling / thrown weapon) and the ammo's
+		# magical_bonus (e.g. Magic Arrows +1). Thrown weapons carry no separate
+		# ammo, so the ammo term is 0 and only the weapon's +N applies — handled
+		# by the same line. Parallels attack_resolver.gd:67 for melee.
+		to_hit_bonus += attacker.get_weapon_magical_bonus() + attacker.get_ammo_magical_bonus()
 		# Strenuous-day penalty per ax_campaign_play §effort_rules L166-172.
 		to_hit_bonus -= StrenuousAccountant.get_attack_throw_penalty(attacker.id)
 
@@ -180,8 +199,15 @@ func resolve_ranged_attack(
 		var strenuous_dmg: int = 0
 		if attacker.is_character:
 			strenuous_dmg = StrenuousAccountant.get_attack_throw_penalty(attacker.id)
+		# Magic +N (RAW :231-235): apply weapon + ammo magicalness to damage for
+		# characters. Same composition as the to-hit term above; thrown weapons
+		# see only the weapon's +N (ammo is empty for thrown). Parallels
+		# attack_resolver.gd:147/163-165 for melee.
+		var magic_dmg_bonus: int = 0
+		if attacker.is_character:
+			magic_dmg_bonus = attacker.get_weapon_magical_bonus() + attacker.get_ammo_magical_bonus()
 		damage_total = maxi(1, damage_roll.modified_total + bonus_damage \
-			+ prof_damage_mod + striking_bonus - strenuous_dmg)
+			+ prof_damage_mod + striking_bonus + magic_dmg_bonus - strenuous_dmg)
 
 		# Weapon Focus: unmodified natural 20 doubles damage when the character
 		# has Weapon Focus selected for the wielded weapon's family.

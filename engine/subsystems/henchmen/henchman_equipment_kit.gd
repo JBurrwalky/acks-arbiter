@@ -169,6 +169,12 @@ static func apply_kit_to_henchman(henchman_id: String, class_id: String,
 	if starting_coin_cp > 0 and actual_repo.has_method("add_coins_cp"):
 		actual_repo.add_coins_cp(henchman_id, starting_coin_cp)
 
+	# Refresh equipment-derived AC now that the kit's armor/shield (if any) are
+	# equipped — the kit inserts pre-equipped rows directly, bypassing the
+	# equip-state write paths. A fake repo (tests) without this method is skipped.
+	if actual_repo.has_method("recompute_character_armor_class"):
+		actual_repo.recompute_character_armor_class(henchman_id)
+
 	return true
 
 
