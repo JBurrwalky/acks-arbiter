@@ -446,6 +446,54 @@ SPELL_BINDING_MAP = {
         "default_charges": 30,
     },
 
+    # ---- Worn-triggered items (rings, boots, helms, brooms, etc.) ----
+    # Activated on demand while equipped — same spell_binding shape as wands,
+    # but with NO default_charges (V1: unlimited uses). The activator's
+    # `activate_worn_item` entry point enforces is_equipped=1 then delegates
+    # to the same _cast_via_binding pipeline as drink_potion and
+    # activate_charged_item. Per-day cooldowns / RAW per-item-charge limits
+    # land in a follow-up pass.
+    "ring_of_invisibility": {
+        "spell_key": "invisibility", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "boots_of_levitation": {
+        "spell_key": "levitate", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "broom_of_flying": {
+        "spell_key": "fly", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    "chime_of_opening": {
+        "spell_key": "knock", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "single_target",
+    },
+    "ring_of_telekinesis": {
+        "spell_key": "telekinesis", "tradition": "arcane",
+        "caster_level": 9, "target_mode": "single_target",
+    },
+    "helm_of_comprehending_languages": {
+        "spell_key": "read_languages", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "self",
+    },
+    "ring_of_command_human": {
+        "spell_key": "charm_person", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_creature",
+    },
+    "eyes_of_charming": {
+        "spell_key": "charm_person", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_creature",
+    },
+    "helm_of_telepathy": {
+        "spell_key": "esp", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "helm_of_teleportation": {
+        "spell_key": "teleport", "tradition": "arcane",
+        "caster_level": 9, "target_mode": "single_target",
+    },
+
     # WANDS / STAVES DELIBERATELY OMITTED — no clean spell mapping in V1:
     #   - Rod of Cancellation, Rod of Resurrection (no equivalent spell)
     #   - Staff of Commanding, Staff of Power, Staff of Wizardry (multi-effect

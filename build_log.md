@@ -28778,3 +28778,62 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **(UI plumbing)** Wire the activator entry points into an inventory "Use" action so players can actually use the magic items in-game. Adds presentation events for target-picker prompts on `single_creature` / `single_target` bindings.
 3. **(Jedidiah Qs)** Disambiguate the deferred items per `magic_item_bindings_deferred.md`. Highest priority: Cloak of Protection variant tiers, Bracers of Armor magnitudes, Ring of Invisibility's attack-break semantics.
 4. **(Stretch — refinement)** Damage-typing pass to make Ring of Fire Resistance's +2 save bonus apply only to fire blasts (not cold dragon breath etc.).
+
+
+## Session 2026-05-29 — Magic-item activation: worn-triggered items (Ring of Invisibility, Boots of Levitation, etc.)
+
+**Task:** Third entry point on `MagicItemActivator`. Wire 10 items that are used on demand while equipped — distinct from persistent-while-equipped items (`WornMagicEffectResolver`) and from consumable / charged items. Same `spell_binding` field; V1 = unlimited uses.
+
+**Model used:** Opus.
+
+**Completed:**
+- **10 worn-triggered bindings** added to `tools/extract_magic_item_catalog.py`'s `SPELL_BINDING_MAP`:
+  - **Rings:** Ring of Invisibility → `invisibility` (arcane L2, caster 3, self), Ring of Telekinesis → `telekinesis` (arcane L5, caster 9, single_target), Ring of Command Human → `charm_person` (arcane L1, caster 1, single_creature).
+  - **Boots / Broom:** Boots of Levitation → `levitate` (arcane L2, caster 3, self), Broom of Flying → `fly` (arcane L3, caster 5, self).
+  - **Helms:** Helm of Comprehending Languages → `read_languages` (arcane L1, caster 1, self), Helm of Telepathy → `esp` (arcane L2, caster 3, self), Helm of Teleportation → `teleport` (custom resolver, arcane L5, caster 9, single_target).
+  - **Other worn:** Chime of Opening → `knock` (arcane L2, caster 3, single_target with cell anchor), Eyes of Charming → `charm_person` (arcane L1, caster 1, single_creature).
+- **`MagicItemActivator.activate_worn_item(item_id, wielder, casting_resolver, magic_item_catalog, target_id?, target_entity?, target_cell?, map_context?, origin_cell?)`** (NEW):
+  - Lookup chain validation (inventory row → catalog entry → spell_binding).
+  - **Equipped-state gate** — `is_equipped != 1` fails with "not equipped" message; no cast, no consumption.
+  - Target validation via the shared `_validate_target` helper.
+  - Cast via the shared `_cast_via_binding` helper.
+  - **No consumption** — V1 unlimited uses. The row stays put with `uses_remaining` untouched (catalog default is -1 since worn-triggered bindings carry no `default_charges`).
+- **6 new tests** in `tests/test_magic_item_activator.gd` (suite now 20 total — 6 potion + 8 charged + 6 worn-triggered):
+  - `test_activate_worn_item_requires_equipped` — `is_equipped=0` fails cleanly with "not equipped" in the message.
+  - `test_activate_ring_of_invisibility_succeeds` — happy path; the ring row survives.
+  - `test_activate_worn_item_unlimited_uses_does_not_decrement` — 5 activations of Boots of Levitation; `uses_remaining` stays at -1; `is_magical` stays 1.
+  - `test_activate_ring_of_command_human_with_target` — single_creature without / with a target.
+  - `test_activate_chime_of_opening_with_target_cell` — single_target with cell anchor (the cell is the lock/door's location).
+  - `test_activate_worn_item_with_no_binding_fails` — Bag of Holding (no spell_binding) fails cleanly; row survives.
+- **GDD `gdd-treasure-item-backing.md` updated** — §14 status board row "Worn-triggered items" added (✅ landed for 10 items); §16 retitled and §16.2.2 added with the new bindings table; §16.4 documents the third entry point + the persistent vs. triggered distinction; §16.5 expands to 20 tests; §16.6 trims the "rings + boots + cloaks" follow-up bullet (now landed) and surfaces the per-day cooldown work as the natural next refinement.
+
+**Decisions made:**
+- **V1 = unlimited uses for worn-triggered items.** Letting a player spam-activate Ring of Invisibility every round isn't quite RAW-accurate but keeps the scope tight. Per-day cooldowns (Helm of Teleportation: 1/day; Chime of Opening: 10 total charges across its lifetime; Boots of Levitation: 3/day per RAW) belong to a follow-up pass adding `uses_per_day` to the binding + a `cooldown_until_day` column on `inventory_items` + a daily-reset hook in the Timekeeping subsystem.
+- **Equipped-state check.** Distinguishes triggered worn items from charged items (a wand can be activated without being equipped — you pick it up and use it; rings require wear). Matches the conceptual model.
+- **Same `spell_binding` shape** — no new field needed for worn-triggered items. They simply lack `default_charges` (which signals "not a charged item"). The activator branches on entry point, not on binding data, keeping the data model simple.
+- **Worn-triggered AND persistent-while-equipped can coexist on the same character.** A wearer with both Ring of Protection (persistent, +1 AC) and Ring of Invisibility (triggered, casts invisibility on activation) has both effects: the persistent ring's +1 AC is always on, and activating the invisibility ring fires a one-shot invisibility cast. The two mechanisms write to different storage layers (ModifierContainer / EntityFlags for persistent; in-flight spell effect via ActiveEffectTracker for triggered).
+- **Chime of Opening uses `single_target` with a cell anchor.** The wearer designates the cell containing the lock/door; the activator passes the cell through to the descriptor; the knock spell handles whatever is at that cell. The wielder's own cell is the origin (for range checks).
+- **Ring of Command Human + Eyes of Charming both bind to `charm_person`.** RAW is consistent: both items charm a humanoid as if the wearer cast Charm Person. Two items, one spell — the binding pattern handles this cleanly (each item gets its own spell_binding entry; both reference the same spell_key).
+
+**Interfaces defined or changed:**
+- `MagicItemActivator.activate_worn_item(item_id, wielder, casting_resolver, magic_item_catalog, target_id="", target_entity=null, target_cell=Vector3i.ZERO, map_context="combat_grid", origin_cell=Vector3i.ZERO) -> Dictionary{success, message, spell_key, casting_result}` (NEW).
+- `tools/extract_magic_item_catalog.py` `SPELL_BINDING_MAP` gained 10 worn-triggered entries (3 rings + 5 misc_magic helms/boots/broom + Chime of Opening + Eyes of Charming).
+
+**Database changes:** None — uses existing `inventory_items` columns.
+
+**Tests added/updated:**
+- `tests/test_magic_item_activator.gd` — 6 new tests; suite now 20 total.
+- Suite: 393 passed / 19 failed — same suite count (extended an existing suite); net-zero NEW failures.
+
+**Known issues:**
+- **Unlimited uses is a V1 simplification.** Add `uses_per_day` + `cooldown_until_day` for items with RAW per-day or per-charge limits.
+- **No UI plumbing.** The activator is API-only across all three entry points (`drink_potion`, `activate_charged_item`, `activate_worn_item`). A "Use" inventory action that routes to the right entry point based on item category / equip state is the next UI integration.
+- **Identification gate absent** — RAW :184-195. V1 assumes identified.
+- **No attack-break semantics for Ring of Invisibility.** RAW: invisibility breaks when the wearer attacks. The `invisibility` spell catalog entry may or may not implement this; either way it's spell-side concern, not activator concern.
+
+**Next session should:**
+1. **(UI plumbing)** Wire the three activator entry points into an inventory "Use" action so players can use the items in-game. The action dispatcher decides which entry point to call based on category: potion → drink_potion; rod_staff_wand → activate_charged_item; ring / misc_magic worn → activate_worn_item. Adds presentation events for target-picker prompts on `single_creature` / `single_target` bindings.
+2. **(Per-day cooldowns)** Add `uses_per_day` to the binding + `cooldown_until_day` column on inventory_items + a daily-reset hook (Timekeeping `day_changed` signal). Refine the V1 unlimited-uses simplification.
+3. **(Jedidiah Qs)** Disambiguate the items in `magic_item_bindings_deferred.md` so we can wire more cleanly.
+4. **(Stretch)** Found scrolls — bind specific named spells from the spell catalog at instantiation, then route through a `cast_from_scroll` entry point (consumed on cast like a potion).
+5. **(Stretch)** Save-by-element pass to make Ring of Fire Resistance's +2 save bonus apply only to fire blasts.

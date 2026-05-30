@@ -630,7 +630,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "spell_binding": {
+        "spell_key": "charm_person",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_creature"
+      }
     },
     {
       "item_key": "ring_of_command_plant",
@@ -680,7 +686,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 33000,
-      "creation_time_days": 160
+      "creation_time_days": 160,
+      "spell_binding": {
+        "spell_key": "invisibility",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "ring_of_protection",
@@ -786,7 +798,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 125000,
-      "creation_time_days": 500
+      "creation_time_days": 500,
+      "spell_binding": {
+        "spell_key": "telekinesis",
+        "tradition": "arcane",
+        "caster_level": 9,
+        "target_mode": "single_target"
+      }
     },
     {
       "item_key": "ring_of_water_walking",
@@ -1264,7 +1282,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "levitate",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "boots_of_speed",
@@ -1334,7 +1358,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "spell_binding": {
+        "spell_key": "fly",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "censer_of_controlling_air_elementals",
@@ -1354,7 +1384,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 80000,
-      "creation_time_days": 320
+      "creation_time_days": 320,
+      "spell_binding": {
+        "spell_key": "knock",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "single_target"
+      }
     },
     {
       "item_key": "cloak_of_protection",
@@ -1504,7 +1540,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100
+      "creation_time_days": 100,
+      "spell_binding": {
+        "spell_key": "charm_person",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_creature"
+      }
     },
     {
       "item_key": "eyes_of_the_eagle",
@@ -1574,7 +1616,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100
+      "creation_time_days": 100,
+      "spell_binding": {
+        "spell_key": "read_languages",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "helm_of_telepathy",
@@ -1584,7 +1632,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "spell_binding": {
+        "spell_key": "esp",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "helm_of_teleportation",
@@ -1594,7 +1648,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 82500,
-      "creation_time_days": 350
+      "creation_time_days": 350,
+      "spell_binding": {
+        "spell_key": "teleport",
+        "tradition": "arcane",
+        "caster_level": 9,
+        "target_mode": "single_target"
+      }
     },
     {
       "item_key": "horn_of_blasting",

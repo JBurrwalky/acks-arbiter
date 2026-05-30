@@ -5,7 +5,7 @@ extends RefCounted
 ## later "wear ring", etc.) into the existing spell-effect pipeline
 ## (`CastingResolver`).
 ##
-## V1 covers TWO consumption models, both keyed on the catalog's
+## V1 covers THREE consumption models, all keyed on the catalog's
 ## `spell_binding` field (`data/treasure/magic_item_catalog.json`):
 ##
 ##   1. **Potions** (one-shot, `drink_potion`): the bottle is deleted from
@@ -21,6 +21,16 @@ extends RefCounted
 ##      "An item with no charges remaining becomes useless and non-magical").
 ##      Initial charge count is the binding's `default_charges` (set on the
 ##      inventory_items row at treasure-instantiation time).
+##
+##   3. **Worn-triggered items — rings, helms, boots, brooms, etc.**
+##      (`activate_worn_item`): activated on demand while equipped. V1 thin
+##      slice = unlimited uses (no charge decrement); per-day cooldowns +
+##      RAW per-item-charge limits (e.g. Helm of Teleportation's once-per-day)
+##      land in a follow-up pass. Persistent-while-equipped items (Ring of
+##      Protection, Cloak of Protection, Ring of Water Walking, Ring of Fire
+##      Resistance) are a DIFFERENT mechanism — handled by
+##      `WornMagicEffectResolver` at equip-state change, not through this
+##      activator.
 ##
 ## Design — why this lives here:
 ##   - It's PURE composition of existing services: MagicItemCatalog +
@@ -296,8 +306,116 @@ static func activate_charged_item(
 	}
 
 
+## Activate a worn-triggered magic item (ring, helm, boots, broom, etc.).
+## The item must currently be equipped — if `is_equipped == 0` the activation
+## fails with a clear message (no consumption, no cast).
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     spell_key: String,
+##     casting_result: ResolutionResult
+##   }
+##
+## [param item_id]         the inventory_items.id of the worn item.
+## [param wielder]          the live CharacterData wearing the item. Becomes
+##                          caster_id + caster_name on the CasterContext.
+## [param target_id], [param target_entity]
+##                          for single_creature / single_target bindings — the
+##                          designated creature (and its live entity).
+## [param target_cell]      for single_target bindings whose spell takes a
+##                          cell anchor (Chime of Opening → knock at a cell;
+##                          Helm of Teleportation → destination cell).
+##
+## V1 = UNLIMITED USES. The activator does not decrement charges and the row
+## is not deleted on success. Per-day cooldowns + RAW per-item-charge limits
+## (e.g. Helm of Teleportation's once-per-day) are a follow-up — V1 keeps the
+## scope tight and lets the player spam-activate. A future pass can add
+## `uses_per_day` to the binding + a `cooldown_until_day` column on
+## inventory_items + a daily-reset hook.
+##
+## NOT to be confused with `WornMagicEffectResolver.refresh_for_character`,
+## which handles PERSISTENT-while-equipped effects (Ring of Protection,
+## Cloak of Protection, Ring of Water Walking, Ring of Fire Resistance).
+## Persistent items apply continuously while worn; worn-triggered items
+## are USED on demand.
+static func activate_worn_item(
+		item_id: String,
+		wielder: CharacterData,
+		casting_resolver: CastingResolver,
+		magic_item_catalog: MagicItemCatalog,
+		target_id: String = "",
+		target_entity = null,
+		target_cell: Vector3i = Vector3i.ZERO,
+		map_context: String = "combat_grid",
+		origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"spell_key": "",
+		"casting_result": null,
+	}
+
+	# 1. Lookup chain.
+	var item_row: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	if item_row.is_empty():
+		empty["message"] = "Worn item not found in inventory (id=%s)." % item_id
+		return empty
+	# 2. Equipped-state check — the wielder must be wearing the item to trigger it.
+	if int(item_row.get("is_equipped", 0)) != 1:
+		empty["message"] = "Worn item is not equipped — cannot activate."
+		return empty
+	var item_key: String = str(item_row.get("item_key", ""))
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(item_key)
+	if catalog_entry.is_empty():
+		empty["message"] = "Item '%s' has no catalog entry." % item_key
+		return empty
+	var binding_v: Variant = catalog_entry.get("spell_binding", null)
+	if not (binding_v is Dictionary):
+		empty["message"] = (
+			"Worn item '%s' has no spell_binding (effect not yet implemented)." % item_key)
+		return empty
+	var binding: Dictionary = binding_v
+	empty["spell_key"] = str(binding.get("spell_key", ""))
+
+	# 3. Validate target params against the binding's target_mode.
+	var target_v: Dictionary = _validate_target(
+		binding, "Worn item '%s'" % item_key, target_id, target_entity, target_cell)
+	if not bool(target_v["ok"]):
+		empty["message"] = str(target_v["message"])
+		return empty
+
+	# 4. Cast via the shared pipeline.
+	var result: ResolutionResult = _cast_via_binding(
+		binding, wielder, casting_resolver,
+		target_id, target_entity, target_cell,
+		map_context, origin_cell)
+
+	# 5. No consumption in V1 — worn items don't decrement.
+	var message: String = ""
+	if result != null and result.success:
+		message = "Activated '%s' — cast %s." % [
+			str(catalog_entry.get("name", item_key)),
+			binding.get("spell_key", ""),
+		]
+	else:
+		var failures: Array = result.failures if result != null else []
+		message = "Failed to activate '%s': %s" % [
+			str(catalog_entry.get("name", item_key)),
+			"; ".join(failures) if not failures.is_empty() else "unknown error"]
+
+	return {
+		"success": result != null and result.success,
+		"message": message,
+		"spell_key": binding.get("spell_key", ""),
+		"casting_result": result,
+	}
+
+
 # ---------------------------------------------------------------------------
-# Shared pipeline — used by drink_potion and activate_charged_item.
+# Shared pipeline — used by drink_potion, activate_charged_item, and
+# activate_worn_item.
 # ---------------------------------------------------------------------------
 
 ## Validate that target params match the binding's target_mode. Returns

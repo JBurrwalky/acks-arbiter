@@ -106,6 +106,13 @@ func run_all_tests() -> void:
 	test_activate_wand_with_target_cell_succeeds()
 	test_activate_staff_of_healing_on_ally_succeeds()
 	test_activate_charged_item_rejects_non_wand_category()
+	# Triggered worn items.
+	test_activate_worn_item_requires_equipped()
+	test_activate_ring_of_invisibility_succeeds()
+	test_activate_worn_item_unlimited_uses_does_not_decrement()
+	test_activate_ring_of_command_human_with_target()
+	test_activate_chime_of_opening_with_target_cell()
+	test_activate_worn_item_with_no_binding_fails()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -642,6 +649,234 @@ func test_activate_charged_item_rejects_non_wand_category() -> void:
 
 	_teardown()
 	print("  activate_charged_item_rejects_non_wand_category: OK")
+
+
+# ---------------------------------------------------------------------------
+# Triggered worn items (rings, helms, boots, broom, chime).
+# ---------------------------------------------------------------------------
+
+## A worn item that isn't equipped must fail with a clear "not equipped"
+## message. No cast, no consumption.
+func test_activate_worn_item_requires_equipped() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	# Insert Ring of Invisibility but NOT equipped.
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "ring_of_invisibility",
+		"name": "Ring of Invisibility",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": false,
+		"slot": "pack",
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == false,
+		"unequipped worn item must fail to activate")
+	check(str(result["message"]).contains("not equipped"),
+		"failure message should mention 'not equipped', got: %s" % str(result["message"]))
+
+	_teardown()
+	print("  activate_worn_item_requires_equipped: OK")
+
+
+## Ring of Invisibility (target_mode = self) — wearer becomes the target.
+## Cast succeeds; no consumption.
+func test_activate_ring_of_invisibility_succeeds() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "ring_of_invisibility",
+		"name": "Ring of Invisibility",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "accessory_1",
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == true,
+		"Ring of Invisibility should succeed; message: %s" % str(result["message"]))
+	check(str(result["spell_key"]) == "invisibility",
+		"should cast invisibility, got '%s'" % str(result["spell_key"]))
+
+	# The ring row must still exist (no consumption).
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(not post.is_empty(),
+		"worn-triggered item row must survive activation (no consumption)")
+	check(int(post.get("is_equipped", 0)) == 1,
+		"item is still equipped after activation")
+
+	_teardown()
+	print("  activate_ring_of_invisibility_succeeds: OK")
+
+
+## V1 unlimited uses: activate the same worn item 5 times in a row, verify it
+## still exists and is still equipped after each call. No `uses_remaining`
+## decrement on success.
+func test_activate_worn_item_unlimited_uses_does_not_decrement() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "boots_of_levitation",
+		"name": "Boots of Levitation",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "feet",
+	})
+
+	for activation in range(1, 6):
+		var res: Dictionary = MagicItemActivator.activate_worn_item(
+			item_id, wielder, harness.resolver, harness.catalog)
+		check(bool(res["success"]) == true,
+			"activation #%d should succeed, message: %s" % [activation, str(res["message"])])
+
+	# Post-condition: row still exists, uses_remaining still -1 (sentinel for
+	# unlimited / not-a-charged-item), is_magical still 1.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(not post.is_empty(), "boots survive 5 activations")
+	check(int(post.get("uses_remaining", -99)) == -1,
+		"uses_remaining stays at -1 sentinel (V1 unlimited uses), got %d"
+			% int(post.get("uses_remaining", -99)))
+	check(int(post.get("is_magical", 0)) == 1,
+		"item stays magical after unlimited uses")
+
+	_teardown()
+	print("  activate_worn_item_unlimited_uses_does_not_decrement: OK")
+
+
+## Ring of Command Human (target_mode = single_creature) — wearer designates
+## one creature to charm.
+func test_activate_ring_of_command_human_with_target() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "ring_of_command_human",
+		"name": "Ring of Command Human",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "accessory_1",
+	})
+
+	# Without a target → fail without consumption.
+	var no_target: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(no_target["success"]) == false,
+		"single_creature ring without a target must fail")
+	check(str(no_target["message"]).contains("target"),
+		"failure message should mention target, got: %s" % str(no_target["message"]))
+
+	# With a target → success.
+	var target := CharacterData.new()
+	target.id = "test_charm_target_ring"
+	target.name = "Human Mercenary"
+	target.character_class = "fighter"
+	target.level = 1
+	target.alignment = "neutral"
+	var with_target: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		target.id, target)
+	check(bool(with_target["success"]) == true,
+		"single_creature ring with target should succeed; message: %s" %
+			str(with_target["message"]))
+	check(str(with_target["spell_key"]) == "charm_person",
+		"should cast charm_person")
+
+	_teardown()
+	print("  activate_ring_of_command_human_with_target: OK")
+
+
+## Chime of Opening (target_mode = single_target with cell anchor) — wearer
+## designates a cell containing a lock/door. The activator passes the cell
+## through; the knock spell resolves against whatever's at that cell.
+func test_activate_chime_of_opening_with_target_cell() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "chime_of_opening",
+		"name": "Chime of Opening",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "accessory_1",
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		"", null, Vector3i(4, 4, 0))
+	check(bool(result["success"]) == true,
+		"chime of opening should succeed with a target cell; message: %s" %
+			str(result["message"]))
+	check(str(result["spell_key"]) == "knock",
+		"should cast knock")
+
+	_teardown()
+	print("  activate_chime_of_opening_with_target_cell: OK")
+
+
+## A worn item with no spell_binding (e.g. a generic magic item) must fail
+## cleanly. The row survives.
+func test_activate_worn_item_with_no_binding_fails() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	# Insert Bag of Holding (no spell binding in V1).
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "bag_of_holding",
+		"name": "Bag of Holding",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "accessory_1",
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == false,
+		"item without spell_binding must fail")
+	check(str(result["message"]).contains("spell_binding"),
+		"failure message should mention spell_binding, got: %s" % str(result["message"]))
+
+	# Row still exists.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(not post.is_empty(),
+		"the bag-of-holding row should not be deleted by a failed activation")
+
+	_teardown()
+	print("  activate_worn_item_with_no_binding_fails: OK")
 
 
 # ---------------------------------------------------------------------------

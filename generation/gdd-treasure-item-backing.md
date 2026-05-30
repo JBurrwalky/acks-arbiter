@@ -338,6 +338,7 @@ Per-item effects are landing incrementally as the magic-item-usage work continue
 | Ring of Water Walking — wearer-only `can_water_walk` flag | `WornMagicEffectResolver` sets the `can_water_walk` `EntityFlag` with a `worn_magic:<item_id>` source; the prefix-clear in `refresh_for_character` sweeps it on unequip alongside the ModifierContainer entries. | ✅ landed 2026-05-29; 2 new tests cover equip / unequip lifecycle |
 | Ring of Fire Resistance — +2 to fire saves | `WornMagicEffectResolver` adds a -2 modifier on `save_blast_breath` (saves are target numbers; lower = better). V1 simplification: applies to all blast/breath saves until the engine models save-by-element. The 1/die fire-damage reduction + ordinary-flame immunity from RAW are deferred to a damage-typing pass. | ✅ landed 2026-05-29 (V1); 1 new test pins the +2 save delta |
 | Charged items (wands, staves, rods) — use / depletion | `MagicItemActivator.activate_charged_item` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16); decrements `uses_remaining` on success; clears `is_magical` at 0 charges (RAW: "useless and non-magical") | ✅ landed 2026-05-29 for 11 wand/staff items; rest deferred until Jedidiah disambiguates the ACKS RAW item descriptions |
+| Worn-triggered items (rings, helms, boots, broom, chime) — activate on demand while equipped | `MagicItemActivator.activate_worn_item` — same `spell_binding` pipeline; equipped-state check + no consumption (V1 = unlimited uses). Per-day cooldowns + RAW per-item-charge limits are a follow-up. | ✅ landed 2026-05-29 for 10 items (Ring of Invisibility / Telekinesis / Command Human, Boots of Levitation, Broom of Flying, Chime of Opening, Eyes of Charming, Helm of Comprehending Languages / Telepathy / Teleportation) |
 | Per-potion effects (drink → effect) | `MagicItemActivator.drink_potion` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16) | ✅ landed 2026-05-29 for 13 V1 potions; rest deferred until Jedidiah disambiguates the ACKS RAW potion descriptions |
 | Spell-scroll specific-spell binding | (planned: pick named spells from the spell catalog at instantiation) | ⏳ deferred |
 | Identification (sage / Magic Research / Loremastery) | (planned: `requires_identification` flag + identify subsystem) | ⏳ deferred (Phase 3) |
@@ -421,9 +422,9 @@ Added to `treasure_hoards`:
 
 ## 16. Magic-item activation via spell binding
 
-**Status (2026-05-29):** ✅ landed for **24 items** — 13 potions (one-shot consumption) + 11 wand/staff items (charge-per-use consumption). Each item's ACKS Core description cleanly maps to a spell already implemented in the spell-effect system.
+**Status (2026-05-29):** ✅ landed for **34 items** — 13 potions (one-shot consumption) + 11 wand/staff items (charge-per-use) + 10 worn-triggered items (activate-on-demand while equipped). Each item's ACKS Core description cleanly maps to a spell already implemented in the spell-effect system.
 
-This section defines the **lightweight "item activates spell" bridge**: a magic item carries an optional spell_binding field that tells the runtime which existing spell to cast on its behalf. Coined to re-use the substantial spell-effect work in data/spells/spell_catalog.json + CastingResolver rather than write parallel per-item effect resolvers. V1 covers potions + charged-item wands/staves; rings / boots / cloaks (persistent worn) and found scrolls join in follow-on passes.
+This section defines the **lightweight "item activates spell" bridge**: a magic item carries an optional spell_binding field that tells the runtime which existing spell to cast on its behalf. Coined to re-use the substantial spell-effect work in data/spells/spell_catalog.json + CastingResolver rather than write parallel per-item effect resolvers. V1 covers potions + charged-item wands/staves + worn-triggered rings/helms/boots/etc.; found scrolls + per-day cooldowns join in follow-on passes.
 
 ### 16.1 Catalog field — `spell_binding`
 
@@ -491,6 +492,23 @@ All wands ship with **20 charges** at materialization (matches the RAW sample it
 | Staff of Striking | striking | divine | 5 | single_target | 30 |
 | Staff of Healing | cure_light_wounds | divine | 1 | single_creature | 30 |
 
+### 16.2.2 V1 worn-triggered bindings (10 items)
+
+Activated on demand while equipped. **V1 = unlimited uses** (no `default_charges`; no `uses_remaining` decrement on success). Per-day cooldowns + RAW per-item-charge limits (e.g. Helm of Teleportation's once-per-day) are a follow-on pass — add a `uses_per_day` field + a `cooldown_until_day` column on `inventory_items` + a daily-reset hook.
+
+| Item | Spell | Tradition | Caster Lvl | target_mode |
+|---|---|---|---|---|
+| Ring of Invisibility | invisibility | arcane | 3 | self |
+| Ring of Telekinesis | telekinesis | arcane | 9 | single_target |
+| Ring of Command Human | charm_person | arcane | 1 | single_creature |
+| Boots of Levitation | levitate | arcane | 3 | self |
+| Broom of Flying | fly | arcane | 5 | self |
+| Chime of Opening | knock | arcane | 3 | single_target |
+| Eyes of Charming | charm_person | arcane | 1 | single_creature |
+| Helm of Comprehending Languages | read_languages | arcane | 1 | self |
+| Helm of Telepathy | esp | arcane | 3 | self |
+| Helm of Teleportation | teleport (custom resolver) | arcane | 9 | single_target |
+
 ### 16.3 Deliberately omitted (need a Jedidiah ruling)
 
 The ACKS Core summary XML only carries item NAMES — the mechanical descriptions live in rulebook prose we don't have in the corpus. Per project rule (no importing D&D / Pathfinder conventions without a Jedidiah ruling), these mappings are deferred until disambiguated:
@@ -540,11 +558,21 @@ engine/subsystems/inventory/magic_item_activator.gd is a static service that com
 
 **Charge initialization at materialization.** `TreasureInstantiator.hoard_to_loot` reads `binding.default_charges` off the resolved catalog entry and stamps it onto the inventory_items row's `uses_remaining`. A wand newly looted from a hoard starts at full charge.
 
-**Why this is cheap to extend.** The activator's only job is the composition step; all the spell behavior lives in the existing pipeline. Adding a new bound potion / wand is a one-line change to the extractor's `SPELL_BINDING_MAP`.
+**`activate_worn_item(item_id, wielder, ..., target_id?, target_entity?, target_cell?)`** — worn-triggered activation:
+
+1. Lookup chain (inventory row → catalog entry → spell_binding).
+2. **Equipped-state gate:** `is_equipped != 1` → fail "not equipped"; no cast.
+3. Target validation via the shared `_validate_target` helper.
+4. Cast via the shared `_cast_via_binding` helper.
+5. **No consumption in V1** — worn-triggered items have unlimited uses. The row, equip state, and `uses_remaining` are unchanged regardless of cast outcome.
+
+The persistent-while-equipped path (`WornMagicEffectResolver`) is a DIFFERENT mechanism — those items apply continuously while worn (no activation event). Persistent (Ring of Protection, Cloak of Protection, Ring of Water Walking, Ring of Fire Resistance) and triggered (Ring of Invisibility, Boots of Levitation, etc.) coexist; an item is one or the other based on its data model entry.
+
+**Why this is cheap to extend.** The activator's only job is the composition step; all the spell behavior lives in the existing pipeline. Adding a new bound potion / wand / worn-triggered item is a one-line change to the extractor's `SPELL_BINDING_MAP`.
 
 ### 16.5 Tests
 
-tests/test_magic_item_activator.gd (suite id 400) — 14 DB-backed tests:
+tests/test_magic_item_activator.gd (suite id 400) — 20 DB-backed tests:
 
 **Potion branch (6):**
 
@@ -566,9 +594,18 @@ tests/test_magic_item_activator.gd (suite id 400) — 14 DB-backed tests:
 - test_activate_staff_of_healing_on_ally_succeeds — Staff of Healing on a designated ally (single_creature mode).
 - test_activate_charged_item_rejects_non_wand_category — sending a potion through the wand path is rejected; row survives.
 
+**Worn-triggered branch (6):**
+
+- test_activate_worn_item_requires_equipped — `is_equipped=0` fails with "not equipped" message; row unchanged.
+- test_activate_ring_of_invisibility_succeeds — happy path; row survives (no consumption).
+- test_activate_worn_item_unlimited_uses_does_not_decrement — 5 activations in a row; `uses_remaining` stays at -1; `is_magical` stays 1.
+- test_activate_ring_of_command_human_with_target — single_creature without/with a target.
+- test_activate_chime_of_opening_with_target_cell — single_target with cell anchor.
+- test_activate_worn_item_with_no_binding_fails — Bag of Holding (no spell_binding) fails cleanly; row survives.
+
 ### 16.6 Open follow-ups
 
-- **Rings + boots + cloaks (persistent-while-equipped)** — distinct mechanic; the worn item adds a modifier on equip (mirror the Ring of Protection pattern via WornMagicEffectResolver) rather than firing the cast each time. Candidates: Ring of Invisibility, Ring of Fire Resistance, Ring of Telekinesis, Ring of Water Walking, Ring of Command Human, Boots of Levitation, Boots of Speed, Broom of Flying, Chime of Opening.
+- **Per-day cooldowns + RAW per-item limits.** V1 worn-triggered items have unlimited uses; RAW for some (Helm of Teleportation 1/day, Chime of Opening 10 total charges, etc.) imposes specific limits. Add a `uses_per_day` field to the binding + a `cooldown_until_day` column on `inventory_items` + a daily-reset hook.
 - **Identification flow** (RAW :184-195) — the user doesn't know what a magic item does until tasted (potion), studied (scroll), or used (wand). V1 assumes identified; identification subsystem layers on top with no activator changes. RAW :identification_and_use confirms charge counts are similarly hidden ("Without Magic Research, a character does not know the number of remaining charges").
 - **Per-user casting-stat bonus** — `CasterContext.casting_stat_bonus` is set to 0 in V1. The user's own INT (arcane) or WIS (divine) bonus could be folded in if Jedidiah wants it to affect save DCs the item creates.
 - **Found scrolls** — spell scrolls already carry a list of bound spell levels (the scroll_of_spells generator); next step binds them to specific named spells from the spell catalog at instantiation, then routes through the same activator. Likely a new `cast_from_scroll` entry point that consumes the scroll like a potion.
