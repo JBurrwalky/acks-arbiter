@@ -51,6 +51,13 @@ extends RefCounted
 ##   - Identification gate: the drinker doesn't know what the potion does
 ##     until tasted (RAW :184-195). V1 assumes identified — the
 ##     identification subsystem layers on top.
+##
+##   4. **Applied oils (Oil of Slipperiness, future Oil of Sharpness,
+##      grease/oil spells)** — items in the catalog's `potion` category that
+##      are APPLIED (poured onto a surface or anointed onto a creature),
+##      not drunk. Routed through `apply_oil` → `SurfaceCoatResolver`,
+##      which composes the same "spec-driven mechanic" pattern used for
+##      future grease-like spells.
 
 
 # ---------------------------------------------------------------------------
@@ -411,6 +418,141 @@ static func activate_worn_item(
 		"spell_key": binding.get("spell_key", ""),
 		"casting_result": result,
 	}
+
+
+## Apply an oil to a creature or a cell (Oil of Slipperiness V1; future grease
+## spell and other oils plug into the same flow). Routes through
+## `SurfaceCoatResolver` with a coat_spec selected from the item's catalog
+## entry. The item must be in the inventory at the time of application; the
+## dose is consumed only on success.
+##
+## Oils belong to the catalog's `potion` category (the ACKS random magic
+## table groups them with potions), but you APPLY rather than DRINK them, so
+## they MUST NOT go through `drink_potion`. The router for "is this a drink
+## or an apply?" is the item_key: oils have an `oil_` prefix and are
+## detected here. (Future oils with non-prefixed item_keys can opt in via a
+## catalog field; V1 just uses the prefix because Oil of Slipperiness and
+## Oil of Sharpness — the two RAW oils — both start with "oil_".)
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     consumed: bool,
+##     mode: String,                  — "creature" | "cell"
+##     applied_flag_key: String,      — (creature mode) the EntityFlag set
+##     applied_condition_key: String, — (cell mode) the CellSurfaceConditions key
+##     effect_id: String,
+##     source_id: String,
+##     coated_cells: Array[Vector3i], — (cell mode only) the patch
+##   }
+##
+## [param item_id]              the inventory_items.id of the oil being applied.
+## [param magic_item_catalog]   a loaded MagicItemCatalog (for the catalog entry
+##                               lookup that selects the coat_spec).
+## [param effect_tracker]       ActiveEffectTracker for duration management.
+## [param mode]                  "creature" | "cell" — determines which spec is
+##                               selected and which path runs.
+## [param target_creature]       (creature mode) live entity (must expose .flags).
+## [param map_id]                (cell mode) runtime map identifier.
+## [param anchor_cell]           (cell mode) anchor Vector3i for the patch.
+## [param surface_conditions]   (cell mode) CellSurfaceConditions instance.
+static func apply_oil(
+		item_id: String,
+		magic_item_catalog: MagicItemCatalog,
+		effect_tracker: ActiveEffectTracker,
+		mode: String,
+		target_creature = null,
+		map_id: String = "",
+		anchor_cell: Vector3i = Vector3i.ZERO,
+		surface_conditions: CellSurfaceConditions = null) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"consumed": false,
+		"mode": mode,
+		"applied_flag_key": "",
+		"applied_condition_key": "",
+		"effect_id": "",
+		"source_id": "",
+		"coated_cells": [] as Array[Vector3i],
+	}
+
+	# 1. Look up the inventory row to confirm the item exists + get item_key.
+	var item_row: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	if item_row.is_empty():
+		empty["message"] = "Oil not found in inventory (id=%s)." % item_id
+		return empty
+	var item_key: String = str(item_row.get("item_key", ""))
+
+	# 2. Catalog entry check + oil-prefix routing. The category is "potion"
+	#    (catalog grouping) so we DON'T fail on that; we DO require the
+	#    item_key to start with "oil_" so the activator doesn't accidentally
+	#    apply a Potion of Healing.
+	if not item_key.begins_with("oil_"):
+		empty["message"] = (
+			"Item '%s' is not an oil (item_key must begin with 'oil_'). "
+			% item_key
+			+ "Use drink_potion for drinkable potions.")
+		return empty
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(item_key)
+	if catalog_entry.is_empty():
+		empty["message"] = "Item '%s' has no catalog entry." % item_key
+		return empty
+
+	# 3. Select the coat_spec based on item_key + mode.
+	var spec: Dictionary = _select_oil_coat_spec(item_key, mode)
+	if spec.is_empty():
+		empty["message"] = (
+			"Item '%s' has no coat_spec for mode '%s' (item not yet wired or "
+			% [item_key, mode]
+			+ "mode not supported by this item).")
+		return empty
+
+	# 4. Dispatch to the resolver.
+	match mode:
+		"creature":
+			var creature_result: Dictionary = SurfaceCoatResolver.apply_oil_to_creature(
+				item_id, target_creature, spec, effect_tracker)
+			creature_result["mode"] = "creature"
+			# Ensure result Dict carries the same shape regardless of mode.
+			if not creature_result.has("applied_condition_key"):
+				creature_result["applied_condition_key"] = ""
+			if not creature_result.has("coated_cells"):
+				creature_result["coated_cells"] = [] as Array[Vector3i]
+			return creature_result
+		"cell":
+			var cell_result: Dictionary = SurfaceCoatResolver.apply_oil_to_cell(
+				item_id, map_id, anchor_cell, int(spec.get("area_size_ft", 10)),
+				spec, effect_tracker, surface_conditions)
+			cell_result["mode"] = "cell"
+			if not cell_result.has("applied_flag_key"):
+				cell_result["applied_flag_key"] = ""
+			return cell_result
+		_:
+			empty["message"] = (
+				"apply_oil: unsupported mode '%s' (use 'creature' or 'cell')." % mode)
+			return empty
+
+
+## Pick the coat_spec for an oil item + application mode. Hard-coded for V1
+## (Oil of Slipperiness only); generalization candidates (a catalog
+## `oil_binding` field analogous to spell_binding) land when the second oil
+## arrives, so the shape settles after a real second consumer.
+static func _select_oil_coat_spec(item_key: String, mode: String) -> Dictionary:
+	match item_key:
+		"oil_of_slipperiness":
+			match mode:
+				"creature":
+					return SurfaceCoatResolver.oil_of_slipperiness_creature_spec()
+				"cell":
+					var spec: Dictionary = SurfaceCoatResolver.oil_of_slipperiness_cell_spec()
+					spec["area_size_ft"] = 10  # RAW: one 10' x 10' patch
+					return spec
+				_:
+					return {}
+		_:
+			return {}
 
 
 # ---------------------------------------------------------------------------

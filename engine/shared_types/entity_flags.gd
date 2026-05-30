@@ -53,6 +53,12 @@ extends RefCounted
 ##               "no_zoc_obedience" (set on swarms; consulted in
 ##                  movement_resolver.move_along_path to skip the ZoC-stop break;
 ##                  presence-based — absence means ZoC is respected normally)
+##   SurfaceCoats: "is_slippery_self" (Oil of Slipperiness creature-mode coat —
+##                  while active, cannot be grappled / restrained / grabbed by
+##                  grasping attacks per Slipperiness spell rules/pc_spell_catalog_f-u.xml:1048-1067).
+##                  Cleared on duration expiry via the SurfaceCoatResolver's
+##                  surface_coat: source_id prefix. Future coats (e.g. greased,
+##                  oiled_blade) will sit alongside this in the same family.
 
 # _flags: flag_key -> Array of { source_id, metadata }
 var _flags: Dictionary = {}
