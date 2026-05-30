@@ -1360,7 +1360,7 @@
       "item_key": "cloak_of_protection",
       "name": "Cloak of Protection",
       "category": "misc_magic",
-      "magical_bonus": 0,
+      "magical_bonus": 1,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,

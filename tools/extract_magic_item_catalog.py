@@ -278,6 +278,23 @@ CURSED_BONUS = {
 EXPLICIT_CURSED_KEYS = {"ring_of_delusion", "ring_of_weakness"}
 
 # ---------------------------------------------------------------------------
+# EXPLICIT_BONUS — magical_bonus override for items whose name doesn't carry
+# the "+N" suffix but RAW prose specifies a fixed magnitude. parse_bonus()
+# only catches "+N" patterns, so persistent-worn items with built-in tiers
+# (Cloak of Protection +1 etc.) need an explicit stamp.
+#
+# Used by the V1 persistent-worn-magic effects pass — WornMagicEffectResolver
+# reads magical_bonus to set the +N AC + saves modifier for each equipped
+# item. Cloak of Protection's RAW :264 mechanic is "+1 to AC + saving throws;
+# cumulative with ring of protection" — the magnitude is project-default +1
+# pending a Jedidiah ruling on whether higher-tier variants (+2/+3) exist in
+# ACKS Core. If variants land, this is replaced by a sub_roll table like the
+# existing Ring of Protection pattern.
+EXPLICIT_BONUS = {
+    "cloak_of_protection": 1,
+}
+
+# ---------------------------------------------------------------------------
 # SPELL_BINDING_MAP — per-item runtime activation binding (V1 thin slice:
 # potions only). Each entry routes "use this item" to the equivalent spell in
 # the existing spell-effect system (data/spells/spell_catalog.json +
@@ -711,6 +728,10 @@ def main() -> int:
         # doesn't literally include "cursed" (see EXPLICIT_CURSED_KEYS).
         if key in EXPLICIT_CURSED_KEYS:
             it["is_cursed"] = True
+        # Explicit bonus override for items with RAW-fixed magnitude (Cloak
+        # of Protection, etc.) whose name doesn't carry "+N" (see EXPLICIT_BONUS).
+        if key in EXPLICIT_BONUS:
+            it["magical_bonus"] = EXPLICIT_BONUS[key]
         # V1 magic-item activation binding (potions, thin slice). See
         # SPELL_BINDING_MAP. Wand / staff / ring bindings will join in
         # follow-on passes.

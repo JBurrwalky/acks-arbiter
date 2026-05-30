@@ -28718,3 +28718,63 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **(Stretch)** UI plumbing — wire `drink_potion` + `activate_charged_item` into an inventory action handler so the player can actually use the items. Adds presentations + target-picker prompts for `single_creature` / `single_target` bindings.
 3. **(Stretch)** Identification subsystem — gate activation on "this item has been identified" until the sip / sage / Magical Engineering / Magic Research flow lands. Hide charge counts until Magic Research per RAW.
 4. **(Jedidiah Qs)** Disambiguate the deferred items: Rod of Resurrection (Resurrect implementation?), Staff of Commanding / Power / Wizardry (multi-effect — own resolvers?), Staff of the Serpent (own mechanic?), Wand of Fear (Cause Fear implemented?), the Detecting wands (Enemies / Metals / Secret Doors — partial overlaps).
+
+
+## Session 2026-05-29 — Magic-item activation: persistent-while-equipped items V1
+
+**Task:** Jedidiah directed "rings, boots, cloaks and any other persistent-while-equipped items" after the wand/staff binding pass. Before starting, catalog the items deferred from the potion + wand passes to a memory-dir reference (auto-loaded; durable across compactions). Then extend `WornMagicEffectResolver` to apply persistent effects for items that simply "are on while equipped" — the natural extension of the existing Ring of Protection wearer-only pattern.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Deferred-items reference file** at `~/.claude/projects/C--Users-jttau-acks-arbiter/memory/magic_item_bindings_deferred.md` — mirrors `generation/gdd-treasure-item-backing.md` §16.3 + §16.6 so a fresh-context agent sees the full open-work list without re-reading the GDD. Added a pointer to it from `MEMORY.md` under "Future Direction".
+- **Cloak of Protection** wired into `WornMagicEffectResolver`:
+  - Catalog: `EXPLICIT_BONUS` map added to `tools/extract_magic_item_catalog.py` (parallel to `EXPLICIT_CURSED_KEYS`); stamps `cloak_of_protection` with `magical_bonus = 1` (project default — RAW summary doesn't enumerate variants; ACKS Core may have +2/+3 too, in which case a sub_roll table mirrors the Ring of Protection pattern later).
+  - Resolver: `_add_cloak_of_protection(character, item_id, bonus)` shares the new `_apply_ac_and_saves_bonus` helper with `_add_ring_of_protection`. Stacking_group `""` means both stack per RAW `acore_treasure_and_magic_items_rules.xml:264` ("cumulative with ring of protection").
+- **Ring of Water Walking** wired via the `EntityFlags` path:
+  - Resolver: `_add_ring_of_water_walking(character, item_id)` sets the canonical `can_water_walk` flag with a `worn_magic:<item_id>` source. The flag is keyed in `engine/shared_types/entity_flags.gd`'s Movement section.
+  - **Flags clear sweep on every refresh** — `refresh_for_character` now calls `character.flags.clear_all_from_source_prefix(SOURCE_PREFIX)` alongside the existing `character.modifiers.remove_all_with_source_prefix(SOURCE_PREFIX)`. Unequipping the ring + re-refreshing cleans the flag.
+- **Ring of Fire Resistance** wired with V1 simplification:
+  - Resolver: `_add_ring_of_fire_resistance(character, item_id)` adds a `-2` modifier on `save_blast_breath` (saves are target numbers; lower = better). RAW says "+2 to saving throws versus fire attacks"; V1 widens this to all blast/breath saves until the engine models save-by-element. The 1/die fire-damage reduction + ordinary-flame immunity from RAW are flagged for a follow-on damage-typing pass.
+- **6 new tests** in `tests/test_worn_magic_effect_resolver.gd` (suite now 13 total — 7 existing + 6 new):
+  - `test_cloak_of_protection_adds_ac_and_save_bonus` — basic application.
+  - `test_cloak_and_ring_of_protection_are_cumulative_per_raw` — explicitly pins the RAW :264 stack (cloak +1 + ring +2 → +3 effective AC + saves).
+  - `test_ring_of_water_walking_sets_can_water_walk_flag` — equipped ring sets the flag with the right source.
+  - `test_ring_of_water_walking_flag_cleared_on_unequip` — unequip + refresh clears via prefix-sweep.
+  - `test_ring_of_fire_resistance_grants_plus2_save_blast_breath` — save_blast_breath drops by 2; other saves unaffected.
+  - `test_flag_prefix_clear_does_not_touch_unrelated_flags` — a non-worn_magic-sourced flag (e.g. set by a spell with `spell:...` source) survives the worn-magic refresh sweep.
+- **GDD `gdd-treasure-item-backing.md` §14 status board updated** — 3 new rows for Cloak of Protection, Ring of Water Walking, and Ring of Fire Resistance, each ✅ landed. The existing Ring of Protection row clarified that the Cloak of Protection stack is now live (not "future").
+
+**Decisions made:**
+- **Persistent-worn pattern stays code-driven (per-item handlers in `WornMagicEffectResolver`) rather than catalog-driven (a new `worn_effect_binding` field).** The existing Ring of Protection pattern was already established this way; extending it is the smallest delta. A data-driven catalog binding is a possible Phase 2 enhancement once enough items justify the abstraction, but the immediate concern is breadth not flexibility — adding `_add_<item>` builders is 5-10 lines per item.
+- **Cloak of Protection magnitude = +1 as a project default** (stamped via the extractor). RAW summary XML doesn't disambiguate variant tiers. If Jedidiah confirms ACKS Core has +2/+3 cloaks too, the catalog moves to a sub_roll table (mirror the Ring of Protection 5-variant pattern) and the resolver path stays unchanged. Flagged in the source comment as project-default-pending-confirmation.
+- **Ring of Water Walking uses `EntityFlags` not `ModifierContainer`.** `can_water_walk` is canonically a boolean flag in `engine/shared_types/entity_flags.gd` — it's queried as "do I have this capability?" rather than "what's my modified value of this stat?". Using the right storage layer keeps consumers reading the right API (movement code checks `flags.has_flag("can_water_walk")`).
+- **`refresh_for_character` now clears BOTH `modifiers` AND `flags` by source-prefix.** The two storage layers are independent but the worn-magic refresh is a single conceptual operation. Two-line reset; one source-of-truth contract (anything sourced `worn_magic:*` is the resolver's responsibility).
+- **Ring of Fire Resistance V1 simplification (apply +2 to all blast/breath saves).** The save-by-element distinction isn't modeled yet. Over-granting against non-fire blasts is a known V1 imprecision; refining is a follow-on damage-typing pass. Documented in the resolver source so the next pass doesn't have to re-derive the constraint.
+- **Triggered worn items NOT in this pass.** Ring of Invisibility, Boots of Levitation, Broom of Flying, Chime of Opening, etc. are "use while wearing" not "active while wearing" — they need a separate `activate_worn_item` pattern (essentially `activate_charged_item` with infinite uses, or a per-day cooldown). Listed as a follow-up in the GDD.
+- **Bracers of Armor deferred for V1.** RAW summary doesn't disambiguate magnitude tiers (similar to Cloak of Protection but with the added complication of armor-replacement semantics rather than additive bonus). Needs a Jedidiah ruling on (a) the magnitudes and (b) whether bracers fail to function when worn with armor.
+
+**Interfaces defined or changed:**
+- `tools/extract_magic_item_catalog.py` — new `EXPLICIT_BONUS` dict (parallel to `EXPLICIT_CURSED_KEYS`); per-item magical_bonus override at item-dict build time.
+- `WornMagicEffectResolver.refresh_for_character` now also clears `character.flags` by source-prefix (alongside the existing `character.modifiers` prefix-clear).
+- New private helpers: `_apply_ac_and_saves_bonus` (shared by Ring + Cloak of Protection), `_add_cloak_of_protection`, `_add_ring_of_water_walking`, `_add_ring_of_fire_resistance`.
+- The existing `_add_ring_of_protection` is now a thin wrapper around `_apply_ac_and_saves_bonus`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_worn_magic_effect_resolver.gd`: 6 new tests; suite now 13 total.
+- Suite: 393 passed / 19 failed — same suite count as before (extended an existing suite); net-zero NEW failures.
+
+**Known issues:**
+- **Cloak of Protection +N variants beyond +1** — needs Jedidiah ruling on whether ACKS Core has tiers. If yes, switch the catalog from `EXPLICIT_BONUS` to a sub_roll table (mirror Ring of Protection's pattern). The resolver path is unchanged.
+- **Bracers of Armor** — RAW magnitudes + armor-conflict semantics need a ruling.
+- **Save-by-element** for Ring of Fire Resistance — V1 widens to all blast/breath. A follow-on damage-typing pass can refine.
+- **Triggered worn items** — Ring of Invisibility, Boots of Levitation/Speed, Broom of Flying, Chime of Opening, Eyes of Charming, Helm of Telepathy/Teleportation, etc. — need a separate `activate_worn_item` pattern. Probably a thin wrapper around `activate_charged_item` with `default_charges = -1` (unlimited) OR a per-day cooldown field.
+- **Identification gate** — RAW says items must be identified before the wearer benefits. V1 assumes identified; identification subsystem layers on top with no resolver changes.
+
+**Next session should:**
+1. **(Extend coverage — triggered worn items)** Build the `activate_worn_item` pattern. Targets: Ring of Invisibility (binds to `invisibility`), Boots of Levitation (binds to `levitate`), Broom of Flying (binds to `fly`), Chime of Opening (binds to `knock`), Helm of Telepathy (binds to `esp`), Helm of Teleportation (binds to `teleport`). Each is essentially an unlimited-charge wand worn rather than wielded.
+2. **(UI plumbing)** Wire the activator entry points into an inventory "Use" action so players can actually use the magic items in-game. Adds presentation events for target-picker prompts on `single_creature` / `single_target` bindings.
+3. **(Jedidiah Qs)** Disambiguate the deferred items per `magic_item_bindings_deferred.md`. Highest priority: Cloak of Protection variant tiers, Bracers of Armor magnitudes, Ring of Invisibility's attack-break semantics.
+4. **(Stretch — refinement)** Damage-typing pass to make Ring of Fire Resistance's +2 save bonus apply only to fire blasts (not cold dragon breath etc.).

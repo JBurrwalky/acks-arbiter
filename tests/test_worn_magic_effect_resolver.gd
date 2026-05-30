@@ -20,6 +20,14 @@ func run_all_tests() -> void:
 	test_negative_or_zero_bonus_is_not_applied()
 	test_refresh_idempotent_after_repeated_calls()
 	test_stacks_with_pre_existing_armor_class_modifier()
+	# Persistent-worn pass: Cloak of Protection + Ring of Water Walking +
+	# Ring of Fire Resistance.
+	test_cloak_of_protection_adds_ac_and_save_bonus()
+	test_cloak_and_ring_of_protection_are_cumulative_per_raw()
+	test_ring_of_water_walking_sets_can_water_walk_flag()
+	test_ring_of_water_walking_flag_cleared_on_unequip()
+	test_ring_of_fire_resistance_grants_plus2_save_blast_breath()
+	test_flag_prefix_clear_does_not_touch_unrelated_flags()
 	if not has_failures():
 		print("WornMagicEffectResolver: all tests passed.")
 
@@ -164,3 +172,156 @@ func test_stacks_with_pre_existing_armor_class_modifier() -> void:
 	WornMagicEffectResolver.refresh_for_character(cd, inv)
 	check(cd.get_effective_ac() == 7,
 		"AC 4 + cloak +1 + ring +2 = 7 (stacks), got %d" % cd.get_effective_ac())
+
+
+# ---------------------------------------------------------------------------
+# Cloak of Protection (RAW :264 — cumulative with Ring of Protection)
+# ---------------------------------------------------------------------------
+
+func _make_cloak_row(item_id: String, bonus: int = 1, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "cloak_of_protection",
+		"name": "Cloak of Protection",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": bonus,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "cloak",
+	}
+
+
+func test_cloak_of_protection_adds_ac_and_save_bonus() -> void:
+	# Cloak of Protection +1 -> +1 AC, +1 to all 5 saves (lower target by 1).
+	var cd := _make_fresh_pc()
+	cd.armor_class = 5
+	var saves_before := {
+		"save_petrification": cd.save_petrification,
+		"save_poison_death": cd.save_poison_death,
+		"save_blast_breath": cd.save_blast_breath,
+		"save_staffs_wands": cd.save_staffs_wands,
+		"save_spells": cd.save_spells,
+	}
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_cloak_row("c1")])
+	check(cd.get_effective_ac() == 6,
+		"AC base 5 + cloak +1 = 6, got %d" % cd.get_effective_ac())
+	for save_key in SAVE_KEYS:
+		var expected: int = int(saves_before[save_key]) - 1
+		check(cd.get_effective_save(save_key) == expected,
+			"%s with cloak +1: expected %d, got %d" % [save_key, expected, cd.get_effective_save(save_key)])
+
+
+func test_cloak_and_ring_of_protection_are_cumulative_per_raw() -> void:
+	# RAW acore_treasure_and_magic_items_rules.xml:264 — "Cloak of Protection ...
+	# cumulative with ring of protection." Both apply (empty stacking_group).
+	var cd := _make_fresh_pc()
+	cd.armor_class = 4
+	var inv := [
+		_make_cloak_row("c1", 1, true),
+		_make_ring_row("r1", "ring_of_protection_2", 2, true),
+	]
+	WornMagicEffectResolver.refresh_for_character(cd, inv)
+	check(cd.get_effective_ac() == 7,
+		"AC base 4 + cloak +1 + ring +2 = 7 (cumulative per RAW :264), got %d" % cd.get_effective_ac())
+	# Each save target should drop by 3 total (1 from cloak + 2 from ring).
+	for save_key in SAVE_KEYS:
+		var base_save: int = (
+			cd.save_petrification if save_key == "save_petrification" else
+			cd.save_poison_death if save_key == "save_poison_death" else
+			cd.save_blast_breath if save_key == "save_blast_breath" else
+			cd.save_staffs_wands if save_key == "save_staffs_wands" else
+			cd.save_spells
+		)
+		check(cd.get_effective_save(save_key) == base_save - 3,
+			"%s base %d - 3 = %d, got %d" % [save_key, base_save, base_save - 3, cd.get_effective_save(save_key)])
+
+
+# ---------------------------------------------------------------------------
+# Ring of Water Walking (EntityFlags-based persistent effect)
+# ---------------------------------------------------------------------------
+
+func _make_ring_of_water_walking_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "ring_of_water_walking",
+		"name": "Ring of Water Walking",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "accessory_1",
+	}
+
+
+func test_ring_of_water_walking_sets_can_water_walk_flag() -> void:
+	var cd := _make_fresh_pc()
+	check(not cd.flags.has_flag("can_water_walk"),
+		"baseline: no can_water_walk flag before equip")
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_ring_of_water_walking_row("rw1")])
+	check(cd.flags.has_flag("can_water_walk"),
+		"equipped ring of water walking should set can_water_walk")
+	# The flag should be sourced by the worn_magic: prefix so unequip cleans it.
+	var sources := cd.flags.get_flag_sources("can_water_walk")
+	check(sources.size() == 1 and sources[0] == "worn_magic:rw1",
+		"can_water_walk source should be worn_magic:rw1, got %s" % str(sources))
+
+
+func test_ring_of_water_walking_flag_cleared_on_unequip() -> void:
+	var cd := _make_fresh_pc()
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_ring_of_water_walking_row("rw1", true)])
+	check(cd.flags.has_flag("can_water_walk"), "equipped -> flag present")
+	# Unequip — refresh against an empty equipped list (the ring is in the row
+	# list but is_equipped=0).
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_ring_of_water_walking_row("rw1", false)])
+	check(not cd.flags.has_flag("can_water_walk"),
+		"unequipped -> flag cleared via prefix-clear in refresh_for_character")
+
+
+# ---------------------------------------------------------------------------
+# Ring of Fire Resistance (+2 save_blast_breath; other RAW effects deferred)
+# ---------------------------------------------------------------------------
+
+func _make_ring_of_fire_resistance_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "ring_of_fire_resistance",
+		"name": "Ring of Fire Resistance",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "accessory_1",
+	}
+
+
+func test_ring_of_fire_resistance_grants_plus2_save_blast_breath() -> void:
+	var cd := _make_fresh_pc()
+	var base_save: int = cd.save_blast_breath
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_ring_of_fire_resistance_row("rf1")])
+	check(cd.get_effective_save("save_blast_breath") == base_save - 2,
+		"save_blast_breath base %d + ring of fire resistance +2 = %d (target lower), got %d" % [
+			base_save, base_save - 2, cd.get_effective_save("save_blast_breath")])
+	# Other saves should be unaffected (V1 only touches blast/breath).
+	check(cd.get_effective_save("save_spells") == cd.save_spells,
+		"save_spells should be unchanged by ring of fire resistance")
+	check(cd.get_effective_save("save_poison_death") == cd.save_poison_death,
+		"save_poison_death should be unchanged by ring of fire resistance")
+
+
+# ---------------------------------------------------------------------------
+# Refresh idempotency for the new flag-based path
+# ---------------------------------------------------------------------------
+
+func test_flag_prefix_clear_does_not_touch_unrelated_flags() -> void:
+	# A non-worn-magic flag (e.g. set by a spell with source_id "spell:xxxxx")
+	# must survive a refresh. The resolver clears only worn_magic: prefixed flags.
+	var cd := _make_fresh_pc()
+	cd.flags.set_flag("can_fly", "spell:fly_for_pc", {})
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_ring_of_water_walking_row("rw1")])
+	check(cd.flags.has_flag("can_water_walk"),
+		"ring should set can_water_walk")
+	check(cd.flags.has_flag("can_fly"),
+		"non-worn_magic-sourced flag (spell:) must survive the refresh")

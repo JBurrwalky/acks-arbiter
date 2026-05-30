@@ -11,11 +11,25 @@ extends RefCounted
 ## `get_effective_save(save_key)`. This resolver populates and refreshes the
 ## worn-magic-item entries.
 ##
-## V1 scope: Ring of Protection wearer-only AC + saves. The radius variants'
-## save-bonus-to-allies-within-5' effect (recorded as `radius_effect` on the
-## catalog variant) needs combat-geometry resolution and is deferred. Other
-## worn-magic items (Cloak of Protection, Bracers of Armor, etc.) will be added
-## as they land in the magic-item-effects pass.
+## V1 scope (2026-05-29):
+##   - Ring of Protection (wearer-only AC + saves; 5 priced variants).
+##   - Cloak of Protection (+N AC + saves; RAW :264 cumulative with Ring of
+##     Protection — both apply together).
+##   - Ring of Water Walking (sets the can_water_walk EntityFlag while
+##     equipped; cleared on unequip via the source-prefix clear).
+##   - Ring of Fire Resistance (+2 to save_blast_breath; V1 simplification —
+##     applies to all blast/breath saves until the engine supports save-by-
+##     element. RAW also grants 1/die fire damage reduction + ordinary-flame
+##     immunity, deferred to a future damage-typing pass).
+##
+## Deferred:
+##   - Ring of Protection radius variants' save-bonus-to-allies-within-5'
+##     (needs combat-geometry resolution at save time).
+##   - Bracers of Armor (RAW magnitude unclear; project ruling needed).
+##   - Boots of Speed (movement-mode change; complex).
+##   - Triggered worn items (Ring of Invisibility, Boots of Levitation,
+##     Broom of Flying, Chime of Opening, etc.) — separate "activate_worn_item"
+##     pattern, not persistent-while-equipped.
 ##
 ## ACKS save model: saves are TARGET NUMBERS (lower is better — you roll d20
 ## and want to roll >= target). A "+N to saves" RAW bonus = LOWER target =
@@ -56,8 +70,12 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 	if character == null:
 		return
 	# Clear ALL prior worn-magic modifiers across every stat (AC + 5 saves +
-	# any future stats added by Cloak of Protection / Bracers of Armor / etc.).
+	# any future stats) AND any worn-magic flags (can_water_walk etc.). Both
+	# storage layers honour the worn_magic: source-prefix idempotency contract,
+	# so this two-line reset is sufficient regardless of which worn items the
+	# character had on the previous tick.
 	character.modifiers.remove_all_with_source_prefix(SOURCE_PREFIX)
+	character.flags.clear_all_from_source_prefix(SOURCE_PREFIX)
 	# Re-apply from currently equipped worn magic items.
 	for row in inventory_rows:
 		var equipped: bool = _row_int(row, "is_equipped", 0) == 1
@@ -74,19 +92,63 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		# effect is deferred. The wearer's own save bonus is the same +N either way.
 		if item_key.begins_with("ring_of_protection_") and bonus > 0:
 			_add_ring_of_protection(character, item_id, bonus)
+			continue
+		# --- Cloak of Protection (RAW :264 cumulative with Ring of Protection) ---
+		# Identical mechanic to Ring of Protection (+N AC, -N to all 5 save
+		# targets), and the stacking_group "" lets both apply. Project default
+		# magnitude is +1 (stamped on the catalog via EXPLICIT_BONUS); if RAW
+		# +2 / +3 variants surface, switch the catalog to a sub_roll and the
+		# resolver picks them up via the existing magical_bonus path.
+		if item_key == "cloak_of_protection" and bonus > 0:
+			_add_cloak_of_protection(character, item_id, bonus)
+			continue
+		# --- Ring of Water Walking ---
+		# RAW: while worn, the wearer walks on the surface of water (and other
+		# liquids) without sinking. Sets the can_water_walk EntityFlag via the
+		# worn_magic: source so the prefix-clear sweeps it on unequip.
+		if item_key == "ring_of_water_walking":
+			_add_ring_of_water_walking(character, item_id)
+			continue
+		# --- Ring of Fire Resistance ---
+		# RAW (acore_treasure_and_magic_items_rules.xml selected_item_mechanics
+		# fire_resistance_potion's ring analog): "+2 to saving throws versus
+		# fire attacks." V1 implementation applies the +2 to save_blast_breath
+		# generally (the engine doesn't yet model save-by-element). The +1/die
+		# fire-damage reduction and ordinary-flame immunity are deferred to a
+		# follow-on damage-typing pass.
+		if item_key == "ring_of_fire_resistance":
+			_add_ring_of_fire_resistance(character, item_id)
+			continue
 
 
 ## Apply a Ring of Protection +N modifier: +N to AC (ascending AC, so positive
 ## value) and +N to each save (target numbers, so negative value subtracts from
 ## the target — equivalent to +N on the d20 roll).
 static func _add_ring_of_protection(character: CharacterData, item_id: String, bonus: int) -> void:
+	_apply_ac_and_saves_bonus(character, item_id, bonus)
+
+
+## Apply a Cloak of Protection +N modifier — identical AC + saves mechanic to
+## the Ring of Protection. The two stack per RAW
+## acore_treasure_and_magic_items_rules.xml:264 ("cumulative with ring of
+## protection"); they share the empty stacking_group so both bonuses apply.
+static func _add_cloak_of_protection(character: CharacterData, item_id: String, bonus: int) -> void:
+	_apply_ac_and_saves_bonus(character, item_id, bonus)
+
+
+## Shared builder used by Ring of Protection and Cloak of Protection (and any
+## future +N-AC-+N-saves item). The source_id is per-instance via the item_id
+## suffix so each equipped item gets its own ModifierContainer entry — the
+## prefix-clear in `refresh_for_character` resets them as a group on equip
+## state changes.
+static func _apply_ac_and_saves_bonus(character: CharacterData, item_id: String, bonus: int) -> void:
 	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
 	character.modifiers.add_modifier("armor_class", {
 		"source_id": source_id,
 		"source_type": "worn_magic_item",
 		"operation": "add",
 		"value": bonus,
-		"stacking_group": "",  # stacks with Cloak of Protection per RAW :264
+		"stacking_group": "",  # stacks with peers per RAW :264
 		"priority": 0,
 	})
 	for save_key in ALL_SAVES:
@@ -98,6 +160,32 @@ static func _add_ring_of_protection(character: CharacterData, item_id: String, b
 			"stacking_group": "",
 			"priority": 0,
 		})
+
+
+## Apply Ring of Water Walking: sets the can_water_walk EntityFlag while
+## equipped, sourced by the item's worn_magic: id so unequip (via refresh →
+## prefix-clear) removes it.
+static func _add_ring_of_water_walking(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("can_water_walk", source_id, {"source_kind": "worn_magic_item"})
+
+
+## Apply Ring of Fire Resistance: +2 to save_blast_breath. RAW says "+2 to
+## saving throws versus fire attacks"; V1 simplification widens this to all
+## blast/breath saves because the engine doesn't yet model save-by-element.
+## Saves are target numbers (lower is better), so the modifier value is -2.
+## The +1/die fire damage reduction + ordinary-flame immunity from RAW are
+## deferred to a follow-on damage-typing pass.
+static func _add_ring_of_fire_resistance(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("save_blast_breath", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": -2,  # +2 on the d20 = -2 on the target number
+		"stacking_group": "",
+		"priority": 0,
+	})
 
 
 # --- Dual-shape helpers (mirror CharacterAcCalculator / EncumbranceCalculator) ---
