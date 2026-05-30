@@ -31,7 +31,9 @@ func run_all_tests() -> void:
 	# Tier 3 (2026-05-29): Bracers of Armor + Boots of Speed.
 	test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus()
 	test_bracers_stack_with_cloak_and_ring_of_protection()
-	test_boots_of_speed_adds_movement_rate_modifier()
+	test_bracers_of_armor_variant_keys_all_route_through_handler()
+	test_boots_of_speed_clamps_movement_to_at_least_80()
+	test_boots_of_speed_does_not_inflate_above_floor_for_fast_movers()
 	test_boots_of_speed_cleared_on_unequip()
 	if not has_failures():
 		print("WornMagicEffectResolver: all tests passed.")
@@ -337,11 +339,16 @@ func test_flag_prefix_clear_does_not_touch_unrelated_flags() -> void:
 # (Distinguished from Ring / Cloak of Protection which also boost saves.)
 # ---------------------------------------------------------------------------
 
-func _make_bracers_row(item_id: String, bonus: int = 1, equipped: bool = true) -> Dictionary:
+## RAW d100 sub_roll materializes one of 7 AC-tier variants
+## (bracers_of_armor_ac1 .. _ac7) or the cursed variant
+## (bracers_of_armor_cursed). The resolver matches by prefix so all
+## variants flow through one handler. Default test bonus = 3 (AC 3, a
+## mid-tier variant) unless overridden.
+func _make_bracers_row(item_id: String, bonus: int = 3, equipped: bool = true) -> Dictionary:
 	return {
 		"id": item_id,
-		"item_key": "bracers_of_armor",
-		"name": "Bracers of Armor",
+		"item_key": "bracers_of_armor_ac%d" % bonus,
+		"name": "Bracers of Armor (AC %d)" % bonus,
 		"quantity": 1,
 		"item_category": "magic",
 		"is_magical": 1,
@@ -352,15 +359,12 @@ func _make_bracers_row(item_id: String, bonus: int = 1, equipped: bool = true) -
 
 
 func test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus() -> void:
+	# AC 4 bracers materialized variant grants flat +4 AC, no save bonus.
 	var cd := _make_fresh_pc()
 	cd.armor_class = 3
-	var saves_before := {
-		"save_petrification": cd.save_petrification,
-		"save_spells": cd.save_spells,
-	}
-	WornMagicEffectResolver.refresh_for_character(cd, [_make_bracers_row("b1", 1)])
-	check(cd.get_effective_ac() == 4,
-		"AC 3 + bracers +1 = 4, got %d" % cd.get_effective_ac())
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_bracers_row("b1", 4)])
+	check(cd.get_effective_ac() == 7,
+		"AC 3 + bracers (AC 4 variant) = 7, got %d" % cd.get_effective_ac())
 	# Bracers of Armor DO NOT grant save bonuses.
 	for save_key in SAVE_KEYS:
 		var base: int = (
@@ -376,18 +380,19 @@ func test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus() -> void:
 
 
 func test_bracers_stack_with_cloak_and_ring_of_protection() -> void:
-	# Bracers + Cloak of Protection + Ring of Protection — all three apply.
+	# Bracers + Cloak of Protection + Ring of Protection — all three apply
+	# via empty stacking_group additive modifiers.
 	var cd := _make_fresh_pc()
-	cd.armor_class = 5
+	cd.armor_class = 0  # no armor (RAW recommends; V1 doesn't enforce)
 	var inv := [
-		_make_bracers_row("b1", 1, true),
-		_make_cloak_row("c1", 1, true),
+		_make_bracers_row("b1", 5, true),    # bracers AC 5 variant
+		_make_cloak_row("c1", 1, true),      # cloak of protection +1
 		_make_ring_row("r1", "ring_of_protection_2", 2, true),
 	]
 	WornMagicEffectResolver.refresh_for_character(cd, inv)
-	# AC: base 5 + bracers +1 + cloak +1 + ring +2 = 9.
-	check(cd.get_effective_ac() == 9,
-		"AC 5 + bracers +1 + cloak +1 + ring +2 = 9, got %d" % cd.get_effective_ac())
+	# AC: 0 + bracers(5) + cloak(1) + ring(2) = 8.
+	check(cd.get_effective_ac() == 8,
+		"AC 0 + bracers(5) + cloak(1) + ring(2) = 8, got %d" % cd.get_effective_ac())
 	# Saves: cloak gives -1, ring gives -2, bracers give 0 -> -3 total.
 	for save_key in SAVE_KEYS:
 		var base: int = (
@@ -420,20 +425,51 @@ func _make_boots_of_speed_row(item_id: String, equipped: bool = true) -> Diction
 	}
 
 
-func test_boots_of_speed_adds_movement_rate_modifier() -> void:
+func test_bracers_of_armor_variant_keys_all_route_through_handler() -> void:
+	# All AC variants (ac1..ac7) and the cursed variant share the
+	# `bracers_of_armor` prefix so a single resolver branch covers them.
+	# Confirms the prefix-match works for the full table.
+	for tier in range(1, 8):
+		var cd := _make_fresh_pc()
+		cd.armor_class = 0
+		WornMagicEffectResolver.refresh_for_character(cd, [_make_bracers_row("b%d" % tier, tier)])
+		check(cd.get_effective_ac() == tier,
+			"bracers AC %d variant: base 0 + bonus %d = %d, got %d" % [
+				tier, tier, tier, cd.get_effective_ac()])
+
+
+func test_boots_of_speed_clamps_movement_to_at_least_80() -> void:
+	# RAW: 240'/turn = 80'/round. set_floor at 80 means the effective
+	# movement is at least 80 regardless of encumbrance. Verify across
+	# typical base values: unencumbered 40, heavy 20, very heavy 10.
+	for base_move in [10, 20, 30, 40]:
+		var cd := _make_fresh_pc()
+		cd.base_movement = base_move
+		check(cd.get_effective_movement() == base_move,
+			"baseline base %d" % base_move)
+		WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1")])
+		check(cd.get_effective_movement() == 80,
+			"base %d + boots set_floor 80 = 80 (RAW 240'/turn), got %d" % [
+				base_move, cd.get_effective_movement()])
+
+
+func test_boots_of_speed_does_not_inflate_above_floor_for_fast_movers() -> void:
+	# set_floor semantics: if base > 80, boots don't clamp DOWN — the
+	# higher value wins. Verifies set_floor is a floor, not an override.
+	# (A monster with base move 120 keeps 120 while wearing the boots.)
 	var cd := _make_fresh_pc()
-	cd.base_movement = 40   # typical PC base move 40 ft/round
-	check(cd.get_effective_movement() == 40, "baseline: base move 40")
+	cd.base_movement = 120
 	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1")])
-	check(cd.get_effective_movement() == 70,
-		"40 + boots +30 = 70 ft/round, got %d" % cd.get_effective_movement())
+	check(cd.get_effective_movement() == 120,
+		"base 120 + boots set_floor 80 = 120 (floor does NOT clamp down), got %d" %
+			cd.get_effective_movement())
 
 
 func test_boots_of_speed_cleared_on_unequip() -> void:
 	var cd := _make_fresh_pc()
 	cd.base_movement = 40
 	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1", true)])
-	check(cd.get_effective_movement() == 70, "equipped: 40 + 30 = 70")
+	check(cd.get_effective_movement() == 80, "equipped: set_floor 80")
 	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1", false)])
 	check(cd.get_effective_movement() == 40,
 		"unequipped + refresh: movement back to base 40")

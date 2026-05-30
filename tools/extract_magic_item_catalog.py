@@ -173,7 +173,9 @@ PRICE_MAP = {
     "boots_of_speed":                      (50000, 200),
     "boots_of_traveling_and_springing":    (25000, 100),
     "bowl_of_commanding_water_elementals": (25000, 200),
-    "bracers_of_armor":                    (5000, 30),   # 1 mo (+1 base; "per point")
+    # bracers_of_armor moved to BRACERS_OF_ARMOR_SUBROLL (2026-05-29; RAW d100
+    # + 5% cursed). Parent gets value_gp -1 sentinel; variants carry their own
+    # prices on the 5,000-per-AC-point curve.
     "brazier_of_commanding_fire_elementals": (25000, 200),
     "brooch_of_shielding":                 (5000, 20),
     "broom_of_flying":                     (75000, 300),
@@ -250,7 +252,7 @@ PRICE_MAP = {
 }
 
 # Items materialized via a sub_roll / generator: their parent has no fixed price.
-PARENT_KEYS = {"ring_of_protection", "spell_scroll"}
+PARENT_KEYS = {"ring_of_protection", "spell_scroll", "bracers_of_armor"}
 
 # Cursed-item magnitude overrides. Project default 2026-05-29 — RAW
 # (acore_treasure_and_magic_items_rules.xml:233-237) says "A negative value is
@@ -423,13 +425,8 @@ DEFER_BUILD = {
 # existing Ring of Protection pattern.
 EXPLICIT_BONUS = {
     "cloak_of_protection": 1,
-    # Tier 3 (Jedidiah triage 2026-05-29): Bracers of Armor +1 as project
-    # default magnitude. RAW summary XML doesn't specify variant tiers; ACKS
-    # Core may have +2 / +3 cousins (similar to Ring of Protection's 5
-    # variants). If they exist, switch to a sub_roll table without changing
-    # the resolver path. WornMagicEffectResolver reads magical_bonus from
-    # this stamp.
-    "bracers_of_armor": 1,
+    # Bracers of Armor moved to a sub_roll table (RAW d100 + 5% cursed,
+    # 2026-05-29). See BRACERS_OF_ARMOR_SUBROLL.
 }
 
 # ---------------------------------------------------------------------------
@@ -727,6 +724,60 @@ RING_OF_PROTECTION_SUBROLL = {
 }
 
 # ---------------------------------------------------------------------------
+# Bracers of Armor d100 variant table (ACKS Core rulebook 2026-05-29 RAW).
+# RAW grants the wearer "AC as though wearing armor" with the value rolled
+# on a d100 (AC tiers 1 through 7), plus a 5% chance the bracers are cursed
+# (lowering wearer's AC to 0 + sticky-equip per RAW remove-curse-required).
+#
+# Distribution: the RAW d100 covers AC tiers 1-7. The 5% cursed roll is
+# taken off the top of d100 here (rolls 01-05) so the AC-tier rolls shift
+# to 06-100. Each AC tier's relative share matches RAW; the AC 7 tier gets
+# the 5% reduction (was 14%, now 9%) to accommodate the cursed band.
+#
+# Prices match the forum's "5,000 gp per AC point" curve (PRICE_MAP comment).
+# Cursed bracers are non-merchandise (value_gp 0, like other cursed items).
+# ---------------------------------------------------------------------------
+BRACERS_OF_ARMOR_SUBROLL = {
+    "_source": "ACKS Core rulebook (Bracers of Armor d100 + 5% cursed, RAW 2026-05-29)",
+    "die": "d100",
+    "table": [
+        # 5% cursed (RAW: "Some of these (5%) will be cursed, actually
+        # lowering the wearer's AC to 0"). V1 represents cursed bracers as
+        # magical_bonus 0 + is_cursed=true; the "lower AC to 0" mechanic
+        # needs the ModifierContainer "set" operation (deferred) — V1
+        # cursed bracers just don't grant a bonus + are sticky-equip.
+        {"roll_min": 1,   "roll_max": 5,   "item_key": "bracers_of_armor_cursed",
+         "name": "Cursed Bracers of Armor", "magical_bonus": 0,
+         "is_cursed": True,
+         "value_gp": 0, "creation_time_days": 0,
+         "_value_note": "non-merchandise; cursed items can't be sold"},
+        # AC tiers 1-7 (RAW d100 shifted by +5 to make room for cursed band).
+        {"roll_min": 6,   "roll_max": 11,  "item_key": "bracers_of_armor_ac1",
+         "name": "Bracers of Armor (AC 1)", "magical_bonus": 1,
+         "value_gp": 5000,  "creation_time_days": 30},
+        {"roll_min": 12,  "roll_max": 21,  "item_key": "bracers_of_armor_ac2",
+         "name": "Bracers of Armor (AC 2)", "magical_bonus": 2,
+         "value_gp": 10000, "creation_time_days": 60},
+        {"roll_min": 22,  "roll_max": 41,  "item_key": "bracers_of_armor_ac3",
+         "name": "Bracers of Armor (AC 3)", "magical_bonus": 3,
+         "value_gp": 15000, "creation_time_days": 90},
+        {"roll_min": 42,  "roll_max": 56,  "item_key": "bracers_of_armor_ac4",
+         "name": "Bracers of Armor (AC 4)", "magical_bonus": 4,
+         "value_gp": 20000, "creation_time_days": 120},
+        {"roll_min": 57,  "roll_max": 76,  "item_key": "bracers_of_armor_ac5",
+         "name": "Bracers of Armor (AC 5)", "magical_bonus": 5,
+         "value_gp": 25000, "creation_time_days": 150},
+        {"roll_min": 77,  "roll_max": 91,  "item_key": "bracers_of_armor_ac6",
+         "name": "Bracers of Armor (AC 6)", "magical_bonus": 6,
+         "value_gp": 30000, "creation_time_days": 180},
+        {"roll_min": 92,  "roll_max": 100, "item_key": "bracers_of_armor_ac7",
+         "name": "Bracers of Armor (AC 7)", "magical_bonus": 7,
+         "value_gp": 35000, "creation_time_days": 210},
+    ],
+}
+
+
+# ---------------------------------------------------------------------------
 # Scroll of Spells generator (ACKS Core rulebook excerpt + SACRED L227).
 # A found scroll rolls a class (d4: 1-3 arcane, 4 divine), a spell count
 # (1-7; see _count_note), and a level for each spell (d100 per the class table);
@@ -923,6 +974,10 @@ def main() -> int:
             it["value_gp"] = -1
             it["creation_time_days"] = -1
             it["sub_roll"] = RING_OF_PROTECTION_SUBROLL
+        elif key == "bracers_of_armor":
+            it["value_gp"] = -1
+            it["creation_time_days"] = -1
+            it["sub_roll"] = BRACERS_OF_ARMOR_SUBROLL
         elif key == "spell_scroll":
             it["value_gp"] = -1
             it["creation_time_days"] = -1

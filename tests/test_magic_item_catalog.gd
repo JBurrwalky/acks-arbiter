@@ -24,6 +24,10 @@ func run_all_tests() -> void:
 	test_defer_items_are_flagged_with_reason()
 	test_random_item_in_category_never_returns_cut_item()
 	test_defer_items_are_selectable_by_random_roll()
+	# Tier 3 (2026-05-29): Bracers of Armor d100 sub_roll table.
+	test_bracers_of_armor_sub_roll_data()
+	test_bracers_of_armor_materializes_to_variant_with_correct_bonus()
+	test_bracers_of_armor_cursed_variant_carries_is_cursed()
 	if not has_failures():
 		print("MagicItemCatalog: all tests passed.")
 
@@ -109,10 +113,11 @@ func test_every_item_has_price_fields() -> void:
 			worthless += 1
 		else:
 			sentinel += 1
-	check(priced == 142, "142 priced items (140 forum + sweet_water + vorpal), got %d" % priced)
+	check(priced == 141, "141 priced items (140 forum + sweet_water + vorpal - bracers_of_armor moved to sentinel), got %d" % priced)
 	check(worthless == 8, "8 cursed/worthless items (value_gp 0), got %d" % worthless)
-	# ring_of_protection + spell_scroll + treasure_map carry value_gp -1.
-	check(sentinel == 3, "3 sentinel (-1) items, got %d" % sentinel)
+	# ring_of_protection + spell_scroll + treasure_map + bracers_of_armor (Tier 3)
+	# all carry value_gp -1.
+	check(sentinel == 4, "4 sentinel (-1) items, got %d" % sentinel)
 
 
 func test_spot_prices() -> void:
@@ -333,3 +338,85 @@ func test_defer_items_are_selectable_by_random_roll() -> void:
 		check(found,
 			"defer item '%s' (category '%s') should be selectable by random roll"
 				% [key, cat])
+
+
+# ---------------------------------------------------------------------------
+# Tier 3 (2026-05-29): Bracers of Armor d100 sub_roll table.
+# RAW per ACKS Core: 7 AC tiers (1..7) + 5% cursed variant.
+# ---------------------------------------------------------------------------
+
+func test_bracers_of_armor_sub_roll_data() -> void:
+	var c := _cat()
+	var parent := c.get_item("bracers_of_armor")
+	check(int(parent.get("value_gp", 0)) == -1,
+		"bracers_of_armor parent has no fixed price (-1 sentinel)")
+	check(parent.has("sub_roll"), "bracers_of_armor carries a sub_roll table")
+	var table: Array = parent.get("sub_roll", {}).get("table", [])
+	check(table.size() == 8,
+		"8 variants (cursed + AC 1..7), got %d" % table.size())
+	# Deterministic checks: cursed band at 01-05; AC 1..7 occupy the rest.
+	var expected_at_roll := {
+		1: ["bracers_of_armor_cursed", 0],
+		3: ["bracers_of_armor_cursed", 0],
+		5: ["bracers_of_armor_cursed", 0],
+		6: ["bracers_of_armor_ac1", 1],
+		15: ["bracers_of_armor_ac2", 2],
+		30: ["bracers_of_armor_ac3", 3],
+		50: ["bracers_of_armor_ac4", 4],
+		65: ["bracers_of_armor_ac5", 5],
+		85: ["bracers_of_armor_ac6", 6],
+		100: ["bracers_of_armor_ac7", 7],
+	}
+	for roll: int in expected_at_roll:
+		var variant := _variant_for_roll(table, roll)
+		check(str(variant.get("item_key", "")) == expected_at_roll[roll][0],
+			"roll %d -> '%s', got '%s'" % [
+				roll, expected_at_roll[roll][0], str(variant.get("item_key", ""))])
+		check(int(variant.get("magical_bonus", -1)) == expected_at_roll[roll][1],
+			"roll %d -> magical_bonus %d, got %d" % [
+				roll, expected_at_roll[roll][1], int(variant.get("magical_bonus", -1))])
+
+
+func test_bracers_of_armor_materializes_to_variant_with_correct_bonus() -> void:
+	# Across 200 seeds, every materialized variant should be a bracers_of_armor_*
+	# key with magical_bonus matching the variant's AC tier (or 0 for cursed).
+	var c := _cat()
+	var parent := c.get_item("bracers_of_armor")
+	var seen := {}
+	for s in range(1, 201):
+		var v := c._resolve_sub_roll(parent, _rng(s))
+		var key: String = str(v.get("item_key", ""))
+		check(key.begins_with("bracers_of_armor"),
+			"materialized variant key should begin with bracers_of_armor, got '%s'" % key)
+		check(str(v.get("category", "")) == "misc_magic",
+			"variant is misc_magic, got '%s'" % str(v.get("category", "")))
+		check(int(v.get("magical_bonus", -1)) in [0, 1, 2, 3, 4, 5, 6, 7],
+			"magical_bonus is in 0..7, got %d" % int(v.get("magical_bonus", -1)))
+		check(int(v.get("value_gp", -1)) in [0, 5000, 10000, 15000, 20000, 25000, 30000, 35000],
+			"value_gp is a known tier price, got %d" % int(v.get("value_gp", -1)))
+		check(not v.has("sub_roll"), "materialized variant carries no nested sub_roll")
+		seen[key] = true
+	check(seen.size() >= 3,
+		"across 200 rolls, >= 3 distinct variants appear, got %d" % seen.size())
+
+
+func test_bracers_of_armor_cursed_variant_carries_is_cursed() -> void:
+	# Find a seed that lands on the cursed band (1..5). With 5% chance,
+	# expected ~10 hits in 200 seeds.
+	var c := _cat()
+	var parent := c.get_item("bracers_of_armor")
+	var found_cursed := false
+	for s in range(1, 500):
+		var v := c._resolve_sub_roll(parent, _rng(s))
+		if str(v.get("item_key", "")) == "bracers_of_armor_cursed":
+			found_cursed = true
+			check(bool(v.get("is_cursed", false)) == true,
+				"cursed bracers must carry is_cursed=true, got %s" % str(v.get("is_cursed")))
+			check(int(v.get("magical_bonus", -1)) == 0,
+				"cursed bracers have magical_bonus 0, got %d" % int(v.get("magical_bonus", -1)))
+			check(int(v.get("value_gp", -1)) == 0,
+				"cursed bracers have value_gp 0 (non-merchandise), got %d" %
+					int(v.get("value_gp", -1)))
+			break
+	check(found_cursed,
+		"across 500 seeds, at least one roll should land on the 5% cursed band")

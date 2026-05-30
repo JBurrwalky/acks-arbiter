@@ -120,21 +120,37 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 			_add_ring_of_fire_resistance(character, item_id)
 			continue
 		# --- Bracers of Armor (Tier 3, 2026-05-29) ---
-		# Project default magnitude +1 (stamped via EXPLICIT_BONUS in the
-		# extractor). RAW summary XML doesn't disambiguate variant tiers; if
-		# +2 / +3 cousins land later, switch the catalog to a sub_roll table
-		# and the resolver path is unchanged. Mechanic: flat AC bonus (no
-		# saving-throw bonus, distinguishing it from Cloak of Protection).
-		if item_key == "bracers_of_armor" and bonus > 0:
+		# Materializes from a d100 sub_roll table (BRACERS_OF_ARMOR_SUBROLL):
+		# 5% cursed (magical_bonus 0, is_cursed=true) + 7 AC tiers
+		# (magical_bonus 1..7), each carrying a unique item_key like
+		# `bracers_of_armor_ac3` or `bracers_of_armor_cursed`. The resolver
+		# matches by prefix so all variants flow through one path.
+		# Mechanic: flat AC bonus equal to magical_bonus (no save bonus,
+		# distinguishing from Cloak of Protection). Stacks with Ring +N and
+		# Cloak +N via the empty stacking_group.
+		# RAW V1 simplifications:
+		#   - "No other armor may be worn" — NOT enforced; player who stacks
+		#     armor + bracers gets extra AC. TODO: add equip-state
+		#     validation that refuses armor when bracers equipped.
+		#   - Cursed bracers' "lowers wearer's AC to 0" — V1 doesn't have a
+		#     ModifierContainer "set" op; cursed bracers just contribute 0
+		#     AC + are sticky-equip via is_cursed. The "lower to 0" mechanic
+		#     lands with the set op.
+		if item_key.begins_with("bracers_of_armor") and bonus > 0:
 			_add_bracers_of_armor(character, item_id, bonus)
 			continue
-		# --- Boots of Speed (Tier 3, 2026-05-29) ---
-		# Project default magnitude +30' per round (additive flat movement
-		# bonus). RAW summary XML says "Increase movement and related timing
-		# as described in item entry" without a numeric value; flagged for
-		# Jedidiah ruling (alternative interpretations: double base movement,
-		# or Haste-spell-equivalent). The +30' default keeps the boost
-		# noticeable without becoming game-breaking like a permanent Haste.
+		# --- Boots of Speed (Tier 3, 2026-05-29; RAW-corrected) ---
+		# RAW: "These boots allow the wearer to move 240' per turn for up to
+		# 12 hours. The wearer is exhausted after this activity, and is
+		# required to rest for a full day." 240'/turn = 80'/round.
+		# Implementation: set_floor on movement_rate at 80. set_floor
+		# behavior (per ModifierStack.calculate L88-94): the result cannot
+		# go below this value, regardless of base or adds. Works correctly
+		# for any encumbrance level (heavy 20 → 80, light 30 → 80, base 40
+		# → 80). Survives Haste's multiply since set_floor runs AFTER
+		# multiply (stack order: add → multiply → set_floor → set_ceiling).
+		# V1 deferred: the 12-hour duration limit + post-use exhaustion
+		# (no timer / fatigue subsystem).
 		if item_key == "boots_of_speed":
 			_add_boots_of_speed(character, item_id)
 			continue
@@ -223,20 +239,23 @@ static func _add_bracers_of_armor(character: CharacterData, item_id: String, bon
 	})
 
 
-## Apply Boots of Speed: +30' base movement (project default; RAW summary
-## doesn't specify a magnitude). Flows through `CharacterData.get_effective_
-## movement()` which reads `modifiers.get_effective_value("movement_rate", ...)`.
-## V1 explicitly avoids the "permanent Haste" interpretation (would double
-## attacks too) — boots boost movement only.
-const BOOTS_OF_SPEED_MOVEMENT_BONUS: int = 30  # feet/round
+## Apply Boots of Speed: set_floor at 80'/round = RAW 240' per turn.
+## Flows through `CharacterData.get_effective_movement()` which reads
+## `modifiers.get_effective_value("movement_rate", base_movement)`. set_floor
+## ensures the effective movement is at least 80 regardless of base or
+## encumbrance penalties (heavy = 20, light = 30, unencumbered = 40 — all
+## clamp to 80). Survives Haste's multiply because set_floor runs after
+## multiply in the ModifierStack evaluation order. V1 explicitly avoids
+## the "permanent Haste" interpretation; the boots boost movement only.
+const BOOTS_OF_SPEED_MOVEMENT_TARGET: int = 80  # feet/round (= RAW 240'/turn)
 
 static func _add_boots_of_speed(character: CharacterData, item_id: String) -> void:
 	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
 	character.modifiers.add_modifier("movement_rate", {
 		"source_id": source_id,
 		"source_type": "worn_magic_item",
-		"operation": "add",
-		"value": BOOTS_OF_SPEED_MOVEMENT_BONUS,
+		"operation": "set_floor",
+		"value": BOOTS_OF_SPEED_MOVEMENT_TARGET,
 		"stacking_group": "",
 		"priority": 0,
 	})

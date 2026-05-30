@@ -157,7 +157,11 @@ func _resolve_sub_roll(item: Dictionary, rng: RandomNumberGenerator) -> Dictiona
 		"name": str(chosen.get("name", item.get("name", ""))),
 		"category": str(item.get("category", "")),
 		"magical_bonus": int(chosen.get("magical_bonus", 0)),
-		"is_cursed": bool(item.get("is_cursed", false)),
+		# is_cursed: prefer chosen variant's flag, fall back to parent's.
+		# Lets a sub_roll table mark specific variants as cursed (e.g.
+		# Bracers of Armor's 5%-cursed band) while keeping the parent
+		# uncursed for the other 95% of rolls.
+		"is_cursed": bool(chosen.get("is_cursed", item.get("is_cursed", false))),
 		"encumbrance_units": int(item.get("encumbrance_units", 167)),
 		"value_gp": int(chosen.get("value_gp", -1)),
 		"creation_time_days": int(chosen.get("creation_time_days", -1)),

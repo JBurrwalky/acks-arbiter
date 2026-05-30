@@ -29148,3 +29148,63 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **(Special) Elemental Commanders (4 items).** Investigate whether `conjure_elemental` accepts an element parameter; if yes, 4 cheap bindings.
 3. **(Unblocker batch — highest leverage)** Pick ONE cluster blocker and ship it + the items it unblocks. Strongest candidate: **ModifierContainer "set" operation** → unblocks STR override family (3 items) immediately, also useful for future cleric spells / class abilities. ~30 lines in ModifierContainer + 50-80 in worn-magic handlers + tests. Could parallelize with Tier 4 customs in different agent worktrees since they're in different subsystems.
 4. **(Smaller unblockers)** `cause_fear` spell (unblocks Wand of Fear + Drums of Panic, ~30 min); `use_dust` activator entry point (unblocks 2 Dusts, ~30 min). Each takes ~30 minutes and flips 2 deferred items to shipped.
+
+
+## Session 2026-05-29 — Bracers of Armor + Boots of Speed RAW corrections
+
+**Task:** Jedidiah supplied ACKS Core RAW text for Bracers of Armor (d100 table with 7 AC tiers + 5% cursed band) and Boots of Speed (240'/turn = 80'/round, not the +30 I had projected). Fix both entries before moving on to the ModifierContainer "set" op.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Bracers of Armor redesigned as a sub_roll table** (mirrors `RING_OF_PROTECTION_SUBROLL`'s pattern):
+  - New `BRACERS_OF_ARMOR_SUBROLL` constant in `tools/extract_magic_item_catalog.py` — 8 variants total: 5% cursed band (`bracers_of_armor_cursed`, magical_bonus 0, is_cursed=true) + 7 AC tiers (`bracers_of_armor_ac1` through `bracers_of_armor_ac7`, magical_bonus 1..7).
+  - RAW d100 distribution preserved with a 5-roll shift to make room for the cursed band: AC tier %s match RAW (6/10/20/15/20/15) with AC 7 absorbing the 5% reduction (was 14% → now 9%).
+  - Prices follow the forum's "5,000 gp per AC point" curve (AC 1 = 5,000 / AC 7 = 35,000). Cursed = 0 gp (non-merchandise).
+  - `bracers_of_armor` added to `PARENT_KEYS`; removed from `PRICE_MAP` (now a -1 sentinel parent like Ring of Protection).
+  - Removed from `EXPLICIT_BONUS` (variants carry their own magnitude).
+- **`MagicItemCatalog._resolve_sub_roll` extended** to overlay `is_cursed` from the chosen variant (was reading parent only). Lets a sub_roll table mark specific variants as cursed (Bracers' 5% cursed band) while keeping the parent uncursed for the other 95%.
+- **`WornMagicEffectResolver` updated** for both items:
+  - Bracers handler now prefix-matches `item_key.begins_with("bracers_of_armor")` so all 8 variants route through `_add_bracers_of_armor`. The handler still uses the `add` operation (not `set_floor`) so Ring of Protection + Cloak of Protection stack additively per RAW (`set_floor` would absorb their +N because ModifierStack evaluation order is add → multiply → set_floor → set_ceiling).
+  - **Boots of Speed switched from `add: +30` to `set_floor: 80`.** RAW gives 240'/turn = 80'/round as a target value, not a bonus. `set_floor` clamps the effective movement to at least 80 regardless of encumbrance (heavy 20 → 80, light 30 → 80, base 40 → 80) AND survives Haste's multiply (multiply runs before set_floor in the stack order). New constant: `BOOTS_OF_SPEED_MOVEMENT_TARGET = 80` (replaces `BOOTS_OF_SPEED_MOVEMENT_BONUS = 30`).
+- **Tests updated** in `tests/test_worn_magic_effect_resolver.gd` and `tests/test_magic_item_catalog.gd`:
+  - `_make_bracers_row` updated to take an AC tier (1-7) and emit the matching variant item_key.
+  - `test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus` updated for AC 4 variant.
+  - `test_bracers_stack_with_cloak_and_ring_of_protection` updated to use AC 5 bracers + no base armor (matches RAW "no other armor").
+  - NEW `test_bracers_of_armor_variant_keys_all_route_through_handler` — sweeps all 7 AC tiers and confirms each variant's `bracers_of_armor_acN` key flows through the prefix-match handler with correct magnitude.
+  - REPLACED `test_boots_of_speed_adds_movement_rate_modifier` with `test_boots_of_speed_clamps_movement_to_at_least_80` (sweeps base movements 10/20/30/40 — all clamp to 80) and `test_boots_of_speed_does_not_inflate_above_floor_for_fast_movers` (base 120 stays 120; set_floor is a floor, not a ceiling).
+  - `test_boots_of_speed_cleared_on_unequip` updated for the new 80 target.
+  - 3 NEW catalog tests: `test_bracers_of_armor_sub_roll_data` (exact roll → variant + magnitude mapping for all 8 entries), `test_bracers_of_armor_materializes_to_variant_with_correct_bonus` (200-seed sweep), `test_bracers_of_armor_cursed_variant_carries_is_cursed` (cursed band carries flag through materialization).
+  - `test_every_item_has_price_fields` updated: priced 142 → 141, sentinel 3 → 4 (bracers parent joined the sentinel set).
+
+**Decisions made:**
+- **`add` for Bracers (not `set_floor`).** Tempting to use set_floor since RAW says "AC as though wearing armor of value X" implies a replacement mechanic. But ModifierStack evaluation order is **add → multiply → set_floor → set_ceiling**, so a `set_floor: 7` bracers + `add: +2` Ring would resolve as `(base + 2) → max with 7` = 7, absorbing the ring's +2. Using `add: 7` preserves the RAW stacking with Ring/Cloak of Protection. The cost: RAW "no other armor may be worn" is V1-deferred (player who stacks armor + bracers gets extra AC); a future equip-state validator can refuse armor when bracers are equipped.
+- **`set_floor` for Boots.** RAW gives 240'/turn as a target value, not a bonus. set_floor is the perfect semantic — works for any base movement, doesn't compound with armor / encumbrance modifications, and Haste-style multiply still applies (e.g. Haste'd PC with Boots: base 40 × 2 = 80, then floor 80 = 80 — Haste doesn't help; Haste'd Boots wearer with monster base 120: 120 × 2 = 240, floor 80 = 240, Haste does help). Matches RAW intent that the boots make you move AT 240'/turn.
+- **Cursed Bracers' "lowers AC to 0" deferred.** The cursed variant carries `magical_bonus 0` + `is_cursed=true`. The is_cursed flag triggers sticky-unequip (existing mechanism), so the wearer can't simply remove the bracers. The "lowers AC to 0" part needs the ModifierContainer "set" operation (NEXT commit) — the cursed bracers will then add a `set` modifier on `armor_class` with value 0. V1 ships with the sticky-equip behavior + zero bonus; the AC-set-to-0 mechanic lands with the set op.
+- **5% cursed allocation.** The cursed band was placed at d100 rolls 01-05 and the AC tiers shifted to 06-100. AC 7 absorbs the 5% reduction (was 87-00 = 14%, now 92-00 = 9%) since AC 7 is the rarest tier in RAW; preserves the relative rarity ordering.
+- **Sub_roll is_cursed overlay.** Without this change, sub_roll variants couldn't be selectively cursed (the parent's is_cursed propagated to all variants). The fix prefers chosen variant's is_cursed if set, falls back to parent's. Single-line change; matches the existing override pattern for other fields (item_key, name, magical_bonus, value_gp, creation_time_days).
+
+**Interfaces defined or changed:**
+- `BRACERS_OF_ARMOR_SUBROLL` constant in extractor.
+- `bracers_of_armor` joins `PARENT_KEYS`; removed from `PRICE_MAP` + `EXPLICIT_BONUS`.
+- `MagicItemCatalog._resolve_sub_roll` reads is_cursed from chosen variant.
+- `WornMagicEffectResolver._add_bracers_of_armor` matches by prefix (covers 7 AC variants + cursed).
+- `WornMagicEffectResolver._add_boots_of_speed` uses `set_floor` with `BOOTS_OF_SPEED_MOVEMENT_TARGET = 80` constant (replaces `BOOTS_OF_SPEED_MOVEMENT_BONUS = 30`).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_worn_magic_effect_resolver.gd`: 1 new test, 3 updated. Suite total 18 (was 17).
+- `tests/test_magic_item_catalog.gd`: 3 new tests. Suite extended.
+- Suite: 395 passed / 19 failed — baseline preserved.
+
+**Known issues:**
+- **Bracers "no other armor" rule not enforced.** A player wearing plate + bracers gets cumulative AC bonuses, which is RAW-incorrect. Lower priority — players who read the RAW know not to combine. A future equip-state validator can refuse armor equip when bracers are worn.
+- **Cursed Bracers' "AC to 0" mechanic deferred** until ModifierContainer "set" op lands (next commit).
+- **Boots of Speed's 12-hour duration + post-use exhaustion** — no timer or fatigue subsystem yet. The boots currently provide their bonus indefinitely while equipped.
+
+**Next session should:**
+1. **(NOW) Build the ModifierContainer "set" operation.** Adds a fourth op type to ModifierStack. Semantics: `set` runs AFTER add/multiply but BEFORE set_floor (or possibly AS a final overwrite — design question). When the set op lands, immediately wire it to:
+   - **STR override family (3 items):** Potion of Giant Strength, Gauntlets of Ogre Power, Girdle of Giant Strength.
+   - **Cursed Bracers:** add a `set: 0` modifier on `armor_class` when the cursed variant is equipped (alongside the existing is_cursed flag for sticky-equip).
+2. Each STR item needs a magnitude — RAW gives specific values per tier (Hill Giant 21, Stone Giant 22, etc.); Gauntlets of Ogre Power = STR 18 (project-default-pending-Jedidiah; RAW likely confirms).

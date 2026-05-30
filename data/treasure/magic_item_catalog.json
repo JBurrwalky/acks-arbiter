@@ -1367,11 +1367,91 @@
       "item_key": "bracers_of_armor",
       "name": "Bracers of Armor",
       "category": "misc_magic",
-      "magical_bonus": 1,
+      "magical_bonus": 0,
       "is_cursed": false,
       "encumbrance_units": 167,
-      "value_gp": 5000,
-      "creation_time_days": 30
+      "value_gp": -1,
+      "creation_time_days": -1,
+      "sub_roll": {
+        "_source": "ACKS Core rulebook (Bracers of Armor d100 + 5% cursed, RAW 2026-05-29)",
+        "die": "d100",
+        "table": [
+          {
+            "roll_min": 1,
+            "roll_max": 5,
+            "item_key": "bracers_of_armor_cursed",
+            "name": "Cursed Bracers of Armor",
+            "magical_bonus": 0,
+            "is_cursed": true,
+            "value_gp": 0,
+            "creation_time_days": 0,
+            "_value_note": "non-merchandise; cursed items can't be sold"
+          },
+          {
+            "roll_min": 6,
+            "roll_max": 11,
+            "item_key": "bracers_of_armor_ac1",
+            "name": "Bracers of Armor (AC 1)",
+            "magical_bonus": 1,
+            "value_gp": 5000,
+            "creation_time_days": 30
+          },
+          {
+            "roll_min": 12,
+            "roll_max": 21,
+            "item_key": "bracers_of_armor_ac2",
+            "name": "Bracers of Armor (AC 2)",
+            "magical_bonus": 2,
+            "value_gp": 10000,
+            "creation_time_days": 60
+          },
+          {
+            "roll_min": 22,
+            "roll_max": 41,
+            "item_key": "bracers_of_armor_ac3",
+            "name": "Bracers of Armor (AC 3)",
+            "magical_bonus": 3,
+            "value_gp": 15000,
+            "creation_time_days": 90
+          },
+          {
+            "roll_min": 42,
+            "roll_max": 56,
+            "item_key": "bracers_of_armor_ac4",
+            "name": "Bracers of Armor (AC 4)",
+            "magical_bonus": 4,
+            "value_gp": 20000,
+            "creation_time_days": 120
+          },
+          {
+            "roll_min": 57,
+            "roll_max": 76,
+            "item_key": "bracers_of_armor_ac5",
+            "name": "Bracers of Armor (AC 5)",
+            "magical_bonus": 5,
+            "value_gp": 25000,
+            "creation_time_days": 150
+          },
+          {
+            "roll_min": 77,
+            "roll_max": 91,
+            "item_key": "bracers_of_armor_ac6",
+            "name": "Bracers of Armor (AC 6)",
+            "magical_bonus": 6,
+            "value_gp": 30000,
+            "creation_time_days": 180
+          },
+          {
+            "roll_min": 92,
+            "roll_max": 100,
+            "item_key": "bracers_of_armor_ac7",
+            "name": "Bracers of Armor (AC 7)",
+            "magical_bonus": 7,
+            "value_gp": 35000,
+            "creation_time_days": 210
+          }
+        ]
+      }
     },
     {
       "item_key": "brazier_of_commanding_fire_elementals",
