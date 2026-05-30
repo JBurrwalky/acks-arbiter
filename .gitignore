@@ -29,3 +29,6 @@ Thumbs.db
 # SQLite runtime databases (generated at runtime in user://)
 # These live outside the project folder in the OS user data dir,
 # so nothing to ignore here — but keep this note for reference.
+
+# Agent worktrees (claude-code parallel runs)
+.claude/worktrees/
