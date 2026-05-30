@@ -6,13 +6,20 @@ extends RefCounted
 ## Each modifier is a Dictionary with keys:
 ##   source_id:      String  — unique ID of the source (effect_id, item_id, condition_key)
 ##   source_type:    String  — "spell" | "item" | "condition" | "proficiency" | "class_power"
-##   operation:      String  — "add" | "set_floor" | "set_ceiling" | "multiply"
-##   value:          Variant — int for add/floor/ceiling; float for multiply
+##   operation:      String  — "add" | "set_floor" | "set_ceiling" | "multiply" | "set"
+##   value:          Variant — int for add/floor/ceiling/set; float for multiply
 ##   stacking_group: String  — "" = stacks freely; named group = highest-value modifier only
-##   priority:       int     — evaluation order within a group (higher = applied later)
+##   priority:       int     — evaluation order within a group (higher = applied later);
+##                              for `set`, highest priority wins (ties = first-added)
 ##
 ## ACKS stacking rule: within a named stacking_group, only the highest ADD value applies.
-## "set_floor", "set_ceiling", and "multiply" operations always apply regardless of group.
+## "set_floor", "set_ceiling", "multiply", and "set" operations always apply regardless of group.
+##
+## `set` (added 2026-05-29) replaces the entire computed result, overriding all
+## other operations. Used by REPLACEMENT mechanics — Gauntlets of Ogre Power
+## (STR becomes 18), Cursed Bracers of Armor (AC drops to 0), etc. Multiple
+## `set` modifiers resolve by highest priority. Curse-style mechanics should
+## set high priority (e.g. 100) so they dominate ordinary item replacements.
 
 var _modifiers: Array = []  # Array of Dictionary
 
@@ -47,6 +54,8 @@ func calculate(base_value: Variant) -> Variant:
 	##   2. Apply MULTIPLY modifiers (all multiply, stacked multiplicatively).
 	##   3. Apply SET_FLOOR (result cannot go below this).
 	##   4. Apply SET_CEILING (result cannot go above this).
+	##   5. Apply SET (final overwrite — replaces the computed result entirely;
+	##      multiple sets resolve by highest priority).
 	## Priority within a stacking group selects which modifier wins a tie (higher priority wins).
 
 	var result: float = float(base_value)
@@ -101,6 +110,31 @@ func calculate(base_value: Variant) -> Variant:
 		ceiling_val = minf(ceiling_val, float(m.get("value", INF)))
 	if ceiling_val < INF:
 		result = minf(result, ceiling_val)
+
+	# --- Step 5: SET (final overwrite) ---
+	# `set` replaces the entire computed result. Used by items that REPLACE
+	# a stat wholesale (Gauntlets of Ogre Power: STR becomes 18; Cursed
+	# Bracers of Armor: AC drops to 0). Runs LAST so it dominates every
+	# other operation — RAW's "becomes X" / "lowered to Y" mechanics imply
+	# total replacement, not a layered modifier.
+	#
+	# Multiple `set` modifiers on the same stat resolve by **highest
+	# priority wins** (ties broken by insertion order — first-added wins,
+	# since the iteration is in `_modifiers` order). Curse-style mechanics
+	# should set high `priority` (e.g. 100); ordinary item replacements
+	# default to priority 0. The cap is `null`-sentinel: if no `set`
+	# modifier exists, the prior result is returned unchanged.
+	var set_winner: Variant = null   # the chosen set modifier
+	var set_priority: int = -1_000_000  # below any realistic priority
+	for m in _modifiers:
+		if m.get("operation", "") != "set":
+			continue
+		var prio: int = int(m.get("priority", 0))
+		if prio > set_priority:
+			set_priority = prio
+			set_winner = m
+	if set_winner != null:
+		result = float(set_winner.get("value", 0.0))
 
 	# Return same type as base_value
 	if base_value is int:

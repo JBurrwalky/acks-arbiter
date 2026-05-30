@@ -360,9 +360,11 @@ DEFER_BUILD = {
     # blanket override. Once that op lands, all 3 items get a small
     # WornMagicEffectResolver entry (Gauntlets/Girdle) or a temporary
     # modifier (Potion of Giant Strength) referencing it.
-    "potion_of_giant_strength": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
-    "gauntlets_of_ogre_power": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
-    "girdle_of_giant_strength": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
+    # Gauntlets of Ogre Power LANDED 2026-05-29 with the ModifierContainer
+    # `set` op + WornMagicEffectResolver._add_gauntlets_of_ogre_power
+    # (STR set to 18). The other two STR-override items remain deferred:
+    "potion_of_giant_strength": "needs temporary-duration effect mechanism (potions expire after a duration; persistent-worn items don't)",
+    "girdle_of_giant_strength": "needs sub_roll table for giant tiers (Hill/Stone/Frost/Fire/Cloud/Storm giant STR values) — separate work from the ogre-tier single-value case",
     # Level boost family — no "temporary effective-level bonus" mechanism in
     # CharacterData / Combatant. The level value used by combat throws is
     # `character.level` directly. Adding a `level_bonus` modifier read by

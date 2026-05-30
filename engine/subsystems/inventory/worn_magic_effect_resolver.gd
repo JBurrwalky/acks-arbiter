@@ -125,19 +125,31 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		# (magical_bonus 1..7), each carrying a unique item_key like
 		# `bracers_of_armor_ac3` or `bracers_of_armor_cursed`. The resolver
 		# matches by prefix so all variants flow through one path.
-		# Mechanic: flat AC bonus equal to magical_bonus (no save bonus,
-		# distinguishing from Cloak of Protection). Stacks with Ring +N and
-		# Cloak +N via the empty stacking_group.
-		# RAW V1 simplifications:
+		# - NORMAL variants (ac1..ac7): flat AC `add` modifier (stacks with
+		#   Ring/Cloak of Protection per RAW :264).
+		# - CURSED variant: `set: 0` on armor_class with priority 100 (curse
+		#   dominates other AC sources per RAW "lowers wearer's AC to 0
+		#   regardless of DEX modifiers or magical means of lowering AC").
+		#   The is_cursed flag on the inventory row also triggers
+		#   sticky-equip per the existing remove-curse mechanic.
+		# RAW V1 simplification still pending:
 		#   - "No other armor may be worn" — NOT enforced; player who stacks
 		#     armor + bracers gets extra AC. TODO: add equip-state
 		#     validation that refuses armor when bracers equipped.
-		#   - Cursed bracers' "lowers wearer's AC to 0" — V1 doesn't have a
-		#     ModifierContainer "set" op; cursed bracers just contribute 0
-		#     AC + are sticky-equip via is_cursed. The "lower to 0" mechanic
-		#     lands with the set op.
+		if item_key == "bracers_of_armor_cursed":
+			_add_cursed_bracers_of_armor(character, item_id)
+			continue
 		if item_key.begins_with("bracers_of_armor") and bonus > 0:
 			_add_bracers_of_armor(character, item_id, bonus)
+			continue
+		# --- Gauntlets of Ogre Power (Tier 3 set-op proof point, 2026-05-29) ---
+		# RAW: wearer's STR becomes 18 (the strength of an ogre), overriding
+		# the wearer's natural STR. Implementation: `set: 18` on the
+		# `strength` modifier key. Project default magnitude is 18 (the
+		# canonical "ogre power" value across editions); flagged for
+		# Jedidiah ruling on whether ACKS Core specifies a different value.
+		if item_key == "gauntlets_of_ogre_power":
+			_add_gauntlets_of_ogre_power(character, item_id)
 			continue
 		# --- Boots of Speed (Tier 3, 2026-05-29; RAW-corrected) ---
 		# RAW: "These boots allow the wearer to move 240' per turn for up to
@@ -236,6 +248,48 @@ static func _add_bracers_of_armor(character: CharacterData, item_id: String, bon
 		"value": bonus,
 		"stacking_group": "",  # stacks with other AC sources
 		"priority": 0,
+	})
+
+
+## Apply Cursed Bracers of Armor: SET armor_class to 0, regardless of any
+## other armor / Ring / Cloak / DEX modifier. RAW: "actually lowering the
+## wearer's AC to 0, regardless of DEX modifiers or magical means of
+## lowering AC." Uses the new `set` operation with priority 100 (curse
+## semantics — dominates any non-curse `set` on the same stat).
+##
+## The is_cursed flag on the inventory row also triggers sticky-equip per
+## the existing remove-curse mechanic — the wearer can't simply remove the
+## bracers; they need a Remove Curse spell. The dominant-set modifier
+## handles the in-game AC effect.
+const CURSE_PRIORITY: int = 100  # curse-mechanic set priority (vs default 0)
+
+static func _add_cursed_bracers_of_armor(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("armor_class", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "set",
+		"value": 0,
+		"stacking_group": "",
+		"priority": CURSE_PRIORITY,
+	})
+
+
+## Apply Gauntlets of Ogre Power: SET strength to 18 (ogre power),
+## overriding the wearer's natural STR. RAW: "the strength of an ogre".
+## Project default value 18 — canonical "ogre power" across editions;
+## ACKS Core may specify a slightly different number, flagged for Jedidiah.
+const GAUNTLETS_OF_OGRE_POWER_STR: int = 18
+
+static func _add_gauntlets_of_ogre_power(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("strength", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "set",
+		"value": GAUNTLETS_OF_OGRE_POWER_STR,
+		"stacking_group": "",
+		"priority": 0,  # ordinary item; curse-priority set would dominate
 	})
 
 

@@ -253,7 +253,7 @@ const EXPECTED_DEFER_KEYS := [
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,
 	# and persistent-worn stat-bonuses needing engine extensions.
-	"potion_of_giant_strength", "gauntlets_of_ogre_power", "girdle_of_giant_strength",
+	"potion_of_giant_strength", "girdle_of_giant_strength",
 	"potion_of_heroism", "potion_of_super_heroism", "potion_of_invulnerability",
 	"wand_of_detecting_enemies", "wand_of_detecting_metals",
 	"wand_of_detecting_secret_doors", "potion_of_treasure_finding",

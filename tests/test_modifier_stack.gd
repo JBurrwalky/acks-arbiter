@@ -19,6 +19,13 @@ func run_all_tests() -> void:
 	test_clear()
 	test_returns_int_for_int_base()
 	test_negative_add_modifier()
+	# `set` operation (2026-05-29 — for Gauntlets of Ogre Power, Cursed
+	# Bracers, and other RAW REPLACEMENT mechanics).
+	test_set_overrides_base_value()
+	test_set_overrides_add_modifiers()
+	test_set_overrides_multiply_and_floor()
+	test_set_multiple_highest_priority_wins()
+	test_set_curse_dominates_normal_set()
 	# ModifierContainer tests
 	test_container_add_and_get()
 	test_container_remove_all_from_source()
@@ -51,6 +58,14 @@ func _make_floor(source_id: String, value) -> Dictionary:
 func _make_ceil(source_id: String, value) -> Dictionary:
 	return { "source_id": source_id, "source_type": "spell", "operation": "set_ceiling",
 		"value": value, "stacking_group": "", "priority": 0 }
+
+
+## `set` operation — replaces the entire computed result. Multiple sets
+## resolve by highest priority. Used for replacement mechanics like
+## Gauntlets of Ogre Power (STR = 18) and Cursed Bracers (AC = 0).
+func _make_set(source_id: String, value, priority: int = 0) -> Dictionary:
+	return { "source_id": source_id, "source_type": "item", "operation": "set",
+		"value": value, "stacking_group": "", "priority": priority }
 
 
 func test_add_single_modifier() -> void:
@@ -169,6 +184,64 @@ func test_negative_add_modifier() -> void:
 	s.add_modifier(_make_add("bane", -1))
 	check(s.calculate(12) == 11,
 		"ModifierStack: -1 add on 12 should give 11, got %d" % s.calculate(12))
+
+
+# ---------------------------------------------------------------------------
+# `set` operation (2026-05-29)
+# ---------------------------------------------------------------------------
+
+func test_set_overrides_base_value() -> void:
+	# Gauntlets of Ogre Power: STR set to 18, regardless of base STR.
+	var s := ModifierStack.new()
+	s.add_modifier(_make_set("gauntlets_of_ogre_power", 18))
+	check(s.calculate(10) == 18, "base 10 + set 18 = 18, got %d" % s.calculate(10))
+	check(s.calculate(15) == 18, "base 15 + set 18 = 18, got %d" % s.calculate(15))
+
+
+func test_set_overrides_add_modifiers() -> void:
+	# `set` runs after ADD; ADD modifiers are overridden, not compounded.
+	var s := ModifierStack.new()
+	s.add_modifier(_make_add("buff_a", 5))    # +5
+	s.add_modifier(_make_add("buff_b", 3))    # +3
+	s.add_modifier(_make_set("gauntlets", 18))
+	# Without set: base 10 + 5 + 3 = 18 (would coincidentally equal set).
+	# Without set: base 20 + 5 + 3 = 28, but set forces 18.
+	check(s.calculate(20) == 18,
+		"set should override adds (base 20 + 5 + 3 set 18 = 18), got %d" % s.calculate(20))
+
+
+func test_set_overrides_multiply_and_floor() -> void:
+	# `set` is the last word — multiply, set_floor, set_ceiling all
+	# applied first, then `set` replaces the result.
+	var s := ModifierStack.new()
+	s.add_modifier(_make_mul("haste", 2.0))
+	s.add_modifier(_make_floor("min_speed", 100))
+	s.add_modifier(_make_set("cursed_slow", 5))   # AC dropped to 5 by a curse
+	# Without set: base 40 × 2 = 80, then floor 100 → 100.
+	# With set: 100 → replaced with 5.
+	check(s.calculate(40) == 5,
+		"set should win over multiply + floor (would be 100 without set), got %d" %
+			s.calculate(40))
+
+
+func test_set_multiple_highest_priority_wins() -> void:
+	# Two set modifiers — highest priority wins.
+	var s := ModifierStack.new()
+	s.add_modifier(_make_set("low_priority", 10, 0))
+	s.add_modifier(_make_set("high_priority", 99, 50))
+	check(s.calculate(5) == 99,
+		"priority 50 (99) should beat priority 0 (10), got %d" % s.calculate(5))
+
+
+func test_set_curse_dominates_normal_set() -> void:
+	# Real-world Cursed Bracers scenario: Gauntlets of Ogre Power set STR
+	# to 18 at default priority 0; a hypothetical Cursed Helm sets STR to
+	# 3 (mind-curse) at priority 100. The curse wins because higher prio.
+	var s := ModifierStack.new()
+	s.add_modifier(_make_set("gauntlets", 18, 0))         # normal set
+	s.add_modifier(_make_set("cursed_mind_warp", 3, 100)) # curse priority
+	check(s.calculate(14) == 3,
+		"curse (prio 100) should dominate normal set (prio 0), got %d" % s.calculate(14))
 
 
 # ---------------------------------------------------------------------------

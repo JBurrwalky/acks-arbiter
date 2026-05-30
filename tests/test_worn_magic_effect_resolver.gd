@@ -32,6 +32,10 @@ func run_all_tests() -> void:
 	test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus()
 	test_bracers_stack_with_cloak_and_ring_of_protection()
 	test_bracers_of_armor_variant_keys_all_route_through_handler()
+	test_cursed_bracers_set_armor_class_to_zero()
+	test_cursed_bracers_dominate_other_ac_sources()
+	test_gauntlets_of_ogre_power_set_strength_to_18()
+	test_gauntlets_unequip_restores_natural_strength()
 	test_boots_of_speed_clamps_movement_to_at_least_80()
 	test_boots_of_speed_does_not_inflate_above_floor_for_fast_movers()
 	test_boots_of_speed_cleared_on_unequip()
@@ -473,3 +477,90 @@ func test_boots_of_speed_cleared_on_unequip() -> void:
 	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1", false)])
 	check(cd.get_effective_movement() == 40,
 		"unequipped + refresh: movement back to base 40")
+
+
+# ---------------------------------------------------------------------------
+# Cursed Bracers of Armor — `set` op proof point (curse priority 100).
+# ---------------------------------------------------------------------------
+
+func _make_cursed_bracers_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "bracers_of_armor_cursed",
+		"name": "Cursed Bracers of Armor",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_cursed": 1,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "hands_worn",
+	}
+
+
+func test_cursed_bracers_set_armor_class_to_zero() -> void:
+	# RAW: "actually lowering the wearer's AC to 0, regardless of DEX
+	# modifiers or magical means of lowering AC."
+	var cd := _make_fresh_pc()
+	cd.armor_class = 6  # like wearing plate
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_cursed_bracers_row("b_curse")])
+	check(cd.get_effective_ac() == 0,
+		"AC 6 + cursed bracers (set 0) = 0 (curse overrides all), got %d" %
+			cd.get_effective_ac())
+
+
+func test_cursed_bracers_dominate_other_ac_sources() -> void:
+	# Wearer has plate (AC 6), Ring of Protection +2 (would add +2),
+	# Cloak of Protection +1 (would add +1), Bracers of Armor (cursed)
+	# — the curse dominates, AC drops to 0 regardless.
+	var cd := _make_fresh_pc()
+	cd.armor_class = 6
+	var inv := [
+		_make_cursed_bracers_row("b_curse"),
+		_make_cloak_row("c1", 1),
+		_make_ring_row("r1", "ring_of_protection_2", 2, true),
+	]
+	WornMagicEffectResolver.refresh_for_character(cd, inv)
+	check(cd.get_effective_ac() == 0,
+		"cursed bracers should dominate even with Cloak + Ring (got %d)" %
+			cd.get_effective_ac())
+
+
+# ---------------------------------------------------------------------------
+# Gauntlets of Ogre Power — `set` op proof point (STR set to 18).
+# ---------------------------------------------------------------------------
+
+func _make_gauntlets_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "gauntlets_of_ogre_power",
+		"name": "Gauntlets of Ogre Power",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "hands_worn",
+	}
+
+
+func test_gauntlets_of_ogre_power_set_strength_to_18() -> void:
+	# RAW: wearer's STR becomes 18 regardless of natural STR.
+	for natural_str in [8, 10, 14, 16, 18]:
+		var cd := _make_fresh_pc()
+		cd.strength = natural_str
+		WornMagicEffectResolver.refresh_for_character(cd, [_make_gauntlets_row("g1")])
+		var effective: int = cd.modifiers.get_effective_value("strength", cd.strength)
+		check(effective == 18,
+			"natural STR %d + gauntlets (set 18) = 18, got %d" % [natural_str, effective])
+
+
+func test_gauntlets_unequip_restores_natural_strength() -> void:
+	var cd := _make_fresh_pc()
+	cd.strength = 12
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_gauntlets_row("g1", true)])
+	check(cd.modifiers.get_effective_value("strength", cd.strength) == 18,
+		"equipped: STR set to 18")
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_gauntlets_row("g1", false)])
+	check(cd.modifiers.get_effective_value("strength", cd.strength) == 12,
+		"unequipped + refresh: STR back to natural 12")

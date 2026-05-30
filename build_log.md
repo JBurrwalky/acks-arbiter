@@ -29208,3 +29208,70 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
    - **STR override family (3 items):** Potion of Giant Strength, Gauntlets of Ogre Power, Girdle of Giant Strength.
    - **Cursed Bracers:** add a `set: 0` modifier on `armor_class` when the cursed variant is equipped (alongside the existing is_cursed flag for sticky-equip).
 2. Each STR item needs a magnitude — RAW gives specific values per tier (Hill Giant 21, Stone Giant 22, etc.); Gauntlets of Ogre Power = STR 18 (project-default-pending-Jedidiah; RAW likely confirms).
+
+
+## Session 2026-05-29 — ModifierContainer `set` op + Cursed Bracers + Gauntlets of Ogre Power
+
+**Task:** Add the `set` operation to ModifierStack (the missing modifier op identified as a Tier 3 cluster blocker). Wire it to two proof-point items: Cursed Bracers of Armor (AC set to 0 — RAW correction surfaced when Jedidiah supplied the bracers RAW text) and Gauntlets of Ogre Power (STR set to 18 — first STR-override family item to ship). Defer the remaining STR items (Potion of Giant Strength, Girdle of Giant Strength) with specific blocker descriptions.
+
+**Model used:** Opus.
+
+**Completed:**
+- **`ModifierStack.calculate()` extended with a 5th evaluation step: SET.** The new step runs AFTER `set_ceiling` and replaces the entire computed result. Multiple `set` modifiers on the same stat resolve by highest priority (ties broken by first-added in insertion order). The `set` op is the project's "REPLACEMENT" primitive — used by RAW mechanics that wholesale override a stat ("STR becomes 18", "AC drops to 0"). Evaluation order is now: **add → multiply → set_floor → set_ceiling → set**.
+- **`CURSE_PRIORITY = 100`** convention established in `WornMagicEffectResolver` for curse-mechanic `set` modifiers. Curses should dominate ordinary item replacements; the priority-100 default lets a hypothetical "Gauntlets + Cursed Mind Warp" combination resolve correctly (curse wins).
+- **5 new ModifierStack tests** in `tests/test_modifier_stack.gd` (suite expanded):
+  - `test_set_overrides_base_value` — `set: 18` on base 10 → 18; on base 15 → 18.
+  - `test_set_overrides_add_modifiers` — base 20 + add +5 + add +3 + set 18 → 18 (not 28).
+  - `test_set_overrides_multiply_and_floor` — base 40 × 2 + set_floor 100 + set 5 → 5 (set is the last word).
+  - `test_set_multiple_highest_priority_wins` — two sets, priority 50 (99) vs priority 0 (10) → 99.
+  - `test_set_curse_dominates_normal_set` — Gauntlets set STR 18 prio 0 + Curse set STR 3 prio 100 → 3.
+- **Cursed Bracers of Armor** wired in `WornMagicEffectResolver._add_cursed_bracers_of_armor`:
+  - Detects cursed variant by `item_key == "bracers_of_armor_cursed"` (checked BEFORE the normal bracers prefix branch so cursed bracers don't fall through to the AC-bonus path).
+  - Applies `set: 0` modifier on `armor_class` with `priority = CURSE_PRIORITY` (100).
+  - RAW satisfaction: "lowers wearer's AC to 0, regardless of DEX modifiers or magical means of lowering AC" — the dominant-priority set + is_cursed sticky-equip together deliver the full RAW behavior.
+- **Gauntlets of Ogre Power** wired in `WornMagicEffectResolver._add_gauntlets_of_ogre_power`:
+  - Applies `set: 18` modifier on `strength` with default priority 0.
+  - New constant `GAUNTLETS_OF_OGRE_POWER_STR = 18` (project default; flagged for Jedidiah ruling on the exact ACKS Core value).
+  - Removed from `DEFER_BUILD`; the remaining 2 STR-override items got refined defer_reason strings (Potion of Giant Strength → needs temporary-duration mechanism; Girdle of Giant Strength → needs sub_roll table for the 6 giant tiers).
+- **4 new tests** in `tests/test_worn_magic_effect_resolver.gd` (suite now 22 total):
+  - `test_cursed_bracers_set_armor_class_to_zero` — base AC 6 + cursed bracers → 0.
+  - `test_cursed_bracers_dominate_other_ac_sources` — base AC 6 + cursed bracers + Cloak +1 + Ring +2 → 0 (curse overrides all).
+  - `test_gauntlets_of_ogre_power_set_strength_to_18` — sweep natural STR 8/10/14/16/18 → all become 18.
+  - `test_gauntlets_unequip_restores_natural_strength` — equip → 18; unequip + refresh → back to natural 12.
+- **GDD §14 status board** updated — Boots of Speed row corrected (set_floor 80, not flat +30); Cursed Bracers + Gauntlets rows added.
+- **Memory file `magic_item_bindings_deferred.md`** updated — STR override cluster reduced from 3 items to 2 (Gauntlets shipped); remaining items have specific blockers.
+
+**Decisions made:**
+- **`set` runs LAST in the evaluation order.** RAW "becomes X" / "lowered to Y" mechanics imply total replacement — they should override every other source. Putting `set` after ceiling means it's the final word.
+- **Multiple `set` modifiers resolve by highest priority** (ties: first-added wins). This lets curse mechanics use `priority 100` to guarantee dominance over ordinary item replacements. Reserved `CURSE_PRIORITY = 100` as the project-wide constant for curse-mechanic sets.
+- **Cursed Bracers carry BOTH the dominant-set modifier AND the is_cursed sticky-equip flag.** The set handles the in-game AC effect; is_cursed handles the "can't remove without Remove Curse" RAW rule. Both are needed for full RAW satisfaction.
+- **Cursed Bracers branch placed BEFORE the normal bracers prefix branch** in `refresh_for_character`. The normal branch matches `item_key.begins_with("bracers_of_armor")` which would also catch the cursed variant; placing the cursed branch first ensures it wins the dispatch.
+- **Gauntlets default value 18.** ACKS Core might specify a slightly different value ("ogre power" can vary by edition — 18 is most common). Flagged for Jedidiah ruling; trivially changeable via the `GAUNTLETS_OF_OGRE_POWER_STR` constant.
+- **Potion of Giant Strength deferred separately.** Even with the set op available, potions are TEMPORARY (RAW: duration 1 hour). The set modifier persists until unequipped — appropriate for permanent worn items, wrong for potions. Needs ActiveEffectTracker / duration handling in MagicItemActivator's drink_potion path. Specific defer_reason now flags this.
+- **Girdle of Giant Strength deferred separately.** The girdle has 6 RAW tiers (Hill / Stone / Frost / Fire / Cloud / Storm giant — each with its own STR value). Needs a sub_roll table mirroring Ring of Protection's pattern, plus a tier-to-STR mapping. Specific defer_reason now flags this.
+
+**Interfaces defined or changed:**
+- `ModifierStack.calculate()` now supports `set` operation (5th evaluation step).
+- `ModifierStack` docstring documents the new op + priority semantics.
+- `WornMagicEffectResolver.CURSE_PRIORITY = 100` constant (curse-mechanic set priority).
+- `WornMagicEffectResolver._add_cursed_bracers_of_armor(character, item_id)` (NEW).
+- `WornMagicEffectResolver._add_gauntlets_of_ogre_power(character, item_id)` (NEW).
+- `WornMagicEffectResolver.GAUNTLETS_OF_OGRE_POWER_STR = 18` constant.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_modifier_stack.gd`: 5 new tests + 1 new helper `_make_set`.
+- `tests/test_worn_magic_effect_resolver.gd`: 4 new tests. Suite now 22.
+- `tests/test_magic_item_catalog.gd`: EXPECTED_DEFER_KEYS updated (gauntlets_of_ogre_power removed).
+- Suite: 395 passed / 19 failed — baseline preserved.
+
+**Known issues:**
+- **Gauntlets of Ogre Power: 18 is a project default** — needs Jedidiah confirmation of ACKS Core's exact value (could be 19/20 in some editions).
+- **Cursed Bracers AC-to-0 doesn't enforce "regardless of DEX modifiers"** in V1 — the set replaces the `armor_class` modifier stack's result, but DEX is added by the character data calculator UPSTREAM of the modifier stack. So a wearer with DEX +3 would still benefit from DEX adjusting their hit chance. The full RAW satisfaction requires either (a) moving DEX into a modifier on `armor_class`, or (b) treating the cursed bracers' set as a separate "set_armor_class_post_dex" modifier. Deferred to a follow-up pass.
+- **Potion of Giant Strength + Girdle of Giant Strength** remain deferred with specific blockers (temporary-duration mechanism + giant-tier sub_roll respectively).
+
+**Next session should:**
+1. **(Quick wins)** Use the now-available set op to wire Girdle of Giant Strength (needs sub_roll table for giant tiers — Hill / Stone / Frost / Fire / Cloud / Storm — each with RAW STR values). ~50 lines analogous to BRACERS_OF_ARMOR_SUBROLL.
+2. **(Infrastructure)** Build temporary-duration effects on potions (probably via ActiveEffectTracker hooks in drink_potion) — unblocks Potion of Giant Strength + future Potion of Heroism / Super-Heroism.
+3. **(Cluster unblockers)** Pick another Tier 3 cluster's blocker — ThiefSkillResolver consults ModifierContainer would unblock Elven Cloak + Boots; `cause_fear` spell unblocks Wand of Fear + Drums of Panic; etc.
