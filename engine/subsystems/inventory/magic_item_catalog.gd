@@ -61,14 +61,60 @@ func category_for_roll(roll: int) -> String:
 
 
 ## A random item dict from a category, or {} if the category is empty. Selection
-## is uniform; the chosen item is then materialized (sub_roll / generator items
-## resolve to a concrete, priced item — see _materialize).
+## is uniform within the category; the chosen item is then materialized
+## (sub_roll / generator items resolve to a concrete, priced item — see
+## `_materialize`).
+##
+## Items stamped with `cut_for_v1: true` are SKIPPED via re-roll
+## (gdd-treasure-item-backing.md §16.7, Jedidiah 2026-05-29). Each cut item
+## represents a whole subsystem the project intentionally deferred (vehicles,
+## extraplanar storage, force barriers, etc.); the random roller bounces past
+## them without losing the d100 table shape. After `MAX_REROLLS` consecutive
+## misses (vanishingly unlikely — the highest per-category cut rate is ~13%
+## so reaching 10 misses has probability < 1e-9) we fall back to the first
+## non-cut item in the category in document order, guaranteeing a return.
+##
+## `defer_reason` items (kept in the table but not yet activatable) ARE
+## selectable here — they're carriable / sellable carriables that just refuse
+## `MagicItemActivator.*` until their dependency lands.
 func random_item_in_category(category: String, rng: RandomNumberGenerator) -> Dictionary:
 	var pool: Array = _by_category.get(category, [])
 	if pool.is_empty():
 		return {}
-	var picked: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
+	const MAX_REROLLS: int = 10
+	var picked: Dictionary = {}
+	for _attempt in MAX_REROLLS:
+		var candidate: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
+		if not bool(candidate.get("cut_for_v1", false)):
+			picked = candidate
+			break
+	# Deterministic fallback — should only fire on a degenerate category where
+	# every item is cut_for_v1 (no such category exists today; defensive
+	# guarantee against future configuration drift).
+	if picked.is_empty():
+		for candidate in pool:
+			if not bool((candidate as Dictionary).get("cut_for_v1", false)):
+				picked = candidate
+				break
+	if picked.is_empty():
+		# Truly empty / all-cut category — return the first item as-is so the
+		# caller doesn't get an empty dict and crash downstream.
+		picked = pool[0]
 	return _materialize(picked, rng)
+
+
+## True iff [param item_key] is stamped `cut_for_v1` in the catalog. Used by
+## tests to assert the re-roll never lands on a cut item, and by tooling
+## (acks-build-log) that wants to enumerate skips.
+func is_cut(item_key: String) -> bool:
+	return bool(_items.get(item_key, {}).get("cut_for_v1", false))
+
+
+## Returns the defer_reason string for [param item_key] (the
+## "build-deferred-because" tag), or "" if the item is fully built / cut /
+## unknown.
+func defer_reason(item_key: String) -> String:
+	return str(_items.get(item_key, {}).get("defer_reason", ""))
 
 
 ## Generator spec by name (e.g. "scroll_of_spells"), or {} if absent.

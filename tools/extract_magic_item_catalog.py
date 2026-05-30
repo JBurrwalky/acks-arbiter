@@ -278,6 +278,51 @@ CURSED_BONUS = {
 EXPLICIT_CURSED_KEYS = {"ring_of_delusion", "ring_of_weakness"}
 
 # ---------------------------------------------------------------------------
+# CUT_FOR_V1 — items removed from the random-roll table.
+# Decided 2026-05-29 (Jedidiah): each requires building a whole subsystem
+# (vehicle, mirror-storage, force-barrier, etc.) for a single item, or
+# touches state (age, water purity, size category, alignment) that isn't
+# gameplay-affecting in the project model.
+#
+# Mechanically: items stamped with `cut_for_v1: true` are still present in
+# the catalog file (keeping the d100 ranges + their value_gp + cost figures
+# intact for accounting), but `MagicItemCatalog.random_item_in_category`
+# re-rolls when it lands on one. A future pass can flip a cut → defer (or →
+# bound) without changing the table shape.
+CUT_FOR_V1 = {
+    # Vehicles (each its own travel subsystem):
+    "apparatus_of_the_crab": "submersible vehicle subsystem out of scope for V1",
+    "boat_folding": "naval-travel subsystem out of scope for V1",
+    "flying_carpet": "multi-passenger flight transport subsystem out of scope for V1",
+    # Single-item subsystems:
+    "mirror_of_life_trapping": "extraplanar creature-storage micro-system; single-item payoff",
+    "mirror_of_opposition": "evil-clone combat-AI sync; single-item payoff",
+    "cube_of_force": "force-field state machine with per-side health + damage typing; single-item payoff",
+    "helm_of_alignment_changing": "alignment is not gameplay-affecting in the project model",
+    # Narrow narrative / unmodeled state:
+    "potion_of_sweet_water": "water purity is not modeled",
+    "potion_of_diminution": "size category (sub-Small) is not modeled",
+}
+
+# ---------------------------------------------------------------------------
+# DEFER_BUILD — items KEPT in the random-roll table but with no working
+# in-game effect yet. They appear as carriable, sellable (per value_gp),
+# identifiable items, but `MagicItemActivator.*` will refuse to activate them
+# until the noted dependency lands. Stamped with `defer_reason: "..."`.
+#
+# Distinguished from cut_for_v1: defer items ARE selectable (a player can
+# find one in a hoard), they just don't do anything yet. Cut items are gone
+# from the random table.
+DEFER_BUILD = {
+    "ring_of_wishes": "Wish needs a canned-list resolver — defer until that lands",
+    "potion_of_longevity": "age is not yet a gameplay-affecting stat",
+    "eyes_of_petrification": "gaze-attack subsystem (basilisk / medusa / cockatrice) not yet implemented",
+    "treasure_map": "quest-hook generation system not yet implemented",
+    # Other items will land here as we finish triaging — Bag of Devouring,
+    # Helm of Telepathy edge cases, etc.
+}
+
+# ---------------------------------------------------------------------------
 # EXPLICIT_BONUS — magical_bonus override for items whose name doesn't carry
 # the "+N" suffix but RAW prose specifies a fixed magnitude. parse_bonus()
 # only catches "+N" patterns, so persistent-worn items with built-in tiers
@@ -780,6 +825,13 @@ def main() -> int:
         # of Protection, etc.) whose name doesn't carry "+N" (see EXPLICIT_BONUS).
         if key in EXPLICIT_BONUS:
             it["magical_bonus"] = EXPLICIT_BONUS[key]
+        # Table-status flags: cuts (skipped by the random roller) and defers
+        # (still selectable but not yet activatable). See CUT_FOR_V1 / DEFER_BUILD.
+        if key in CUT_FOR_V1:
+            it["cut_for_v1"] = True
+            it["cut_reason"] = CUT_FOR_V1[key]
+        if key in DEFER_BUILD:
+            it["defer_reason"] = DEFER_BUILD[key]
         # V1 magic-item activation binding (potions, thin slice). See
         # SPELL_BINDING_MAP. Wand / staff / ring bindings will join in
         # follow-on passes.

@@ -606,6 +606,19 @@ tests/test_magic_item_activator.gd (suite id 400) — 20 DB-backed tests:
 ### 16.6 Open follow-ups
 
 - **Per-day cooldowns + RAW per-item limits.** V1 worn-triggered items have unlimited uses; RAW for some (Helm of Teleportation 1/day, Chime of Opening 10 total charges, etc.) imposes specific limits. Add a `uses_per_day` field to the binding + a `cooldown_until_day` column on `inventory_items` + a daily-reset hook.
+
+### 16.7 Table-status flags (cut_for_v1, defer_reason)
+
+Catalog-level flags for triaging items whose mechanics aren't going to land in V1. Decided 2026-05-29 (Jedidiah):
+
+- **`cut_for_v1: true` + `cut_reason: "<why>"`** — item is REMOVED from the random-roll table. `MagicItemCatalog.random_item_in_category` re-rolls when it lands on one (10-attempt cap, deterministic fallback to the first non-cut item in the category). The item still exists in the catalog file (preserves d100 ranges + value_gp for accounting); a future pass can flip the flag off when its subsystem lands.
+- **`defer_reason: "<why>"`** — item KEPT in the random-roll table (still findable in hoards) but has no working in-game effect. `MagicItemActivator.*` refuses to activate it until the noted dependency lands. Distinguished from cut: a player CAN find, identify, sell a defer item (per its value_gp), they just can't USE it.
+
+V1 cuts (9 items): Apparatus of the Crab, Boat/Folding, Flying Carpet (vehicle subsystems); Mirror of Life Trapping, Mirror of Opposition, Cube of Force, Helm of Alignment Changing (single-item subsystems); Potion of Sweet Water, Potion of Diminution (unmodeled state).
+
+V1 defers (4 items): Ring of Wishes (canned-list Wish resolver), Potion of Longevity (age stat), Eyes of Petrification (gaze-attack subsystem confirmed unwired in catalog data only), Treasure Map (quest-hook generation).
+
+The injection lives in `tools/extract_magic_item_catalog.py`'s `CUT_FOR_V1` / `DEFER_BUILD` dicts; helpers `MagicItemCatalog.is_cut(key)` + `defer_reason(key)` are the canonical read API.
 - **Identification flow** (RAW :184-195) — the user doesn't know what a magic item does until tasted (potion), studied (scroll), or used (wand). V1 assumes identified; identification subsystem layers on top with no activator changes. RAW :identification_and_use confirms charge counts are similarly hidden ("Without Magic Research, a character does not know the number of remaining charges").
 - **Per-user casting-stat bonus** — `CasterContext.casting_stat_bonus` is set to 0 in V1. The user's own INT (arcane) or WIS (divine) bonus could be folded in if Jedidiah wants it to affect save DCs the item creates.
 - **Found scrolls** — spell scrolls already carry a list of bound spell levels (the scroll_of_spells generator); next step binds them to specific named spells from the spell catalog at instantiation, then routes through the same activator. Likely a new `cast_from_scroll` entry point that consumes the scroll like a potion.

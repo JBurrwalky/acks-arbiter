@@ -19,6 +19,11 @@ func run_all_tests() -> void:
 	test_ring_of_protection_materializes()
 	test_spell_scroll_generator_data()
 	test_spell_scroll_materializes_and_prices()
+	# Table-status flags: cut_for_v1 + defer_reason (Jedidiah 2026-05-29).
+	test_cut_items_are_flagged_in_catalog()
+	test_defer_items_are_flagged_with_reason()
+	test_random_item_in_category_never_returns_cut_item()
+	test_defer_items_are_selectable_by_random_roll()
 	if not has_failures():
 		print("MagicItemCatalog: all tests passed.")
 
@@ -211,3 +216,98 @@ func test_spell_scroll_materializes_and_prices() -> void:
 		check(int(scroll.get("creation_time_days", -1)) == 7 * total,
 			"creation_time_days = 7 x sum(levels)")
 		check(int(scroll.get("value_gp", -1)) > 0, "a generated scroll has a positive price")
+
+
+# ---------------------------------------------------------------------------
+# Table-status flags — cut_for_v1 + defer_reason (Jedidiah 2026-05-29).
+# CUT items are removed from the random roll table via re-roll; DEFER items
+# stay selectable but have no working in-game effect yet (carriable/sellable
+# only). See generation/gdd-treasure-item-backing.md §16.7.
+# ---------------------------------------------------------------------------
+
+const EXPECTED_CUT_KEYS := [
+	"apparatus_of_the_crab", "boat_folding", "flying_carpet",
+	"mirror_of_life_trapping", "mirror_of_opposition", "cube_of_force",
+	"helm_of_alignment_changing",
+	"potion_of_sweet_water", "potion_of_diminution",
+]
+
+const EXPECTED_DEFER_KEYS := [
+	"ring_of_wishes", "potion_of_longevity",
+	"eyes_of_petrification", "treasure_map",
+]
+
+
+func test_cut_items_are_flagged_in_catalog() -> void:
+	# Every expected cut item must carry cut_for_v1=true and a non-empty
+	# cut_reason. is_cut() helper must agree.
+	var c := _cat()
+	for key in EXPECTED_CUT_KEYS:
+		var item: Dictionary = c.get_item(key)
+		check(not item.is_empty(),
+			"cut item '%s' should still exist in the catalog" % key)
+		check(bool(item.get("cut_for_v1", false)) == true,
+			"'%s' should be flagged cut_for_v1=true" % key)
+		check(not str(item.get("cut_reason", "")).is_empty(),
+			"'%s' must carry a non-empty cut_reason" % key)
+		check(c.is_cut(key), "MagicItemCatalog.is_cut('%s') should be true" % key)
+
+
+func test_defer_items_are_flagged_with_reason() -> void:
+	# Every expected defer item must carry a non-empty defer_reason but
+	# NOT cut_for_v1 (they're selectable, just inert).
+	var c := _cat()
+	for key in EXPECTED_DEFER_KEYS:
+		var item: Dictionary = c.get_item(key)
+		check(not item.is_empty(),
+			"defer item '%s' should exist in the catalog" % key)
+		check(bool(item.get("cut_for_v1", false)) == false,
+			"'%s' is deferred (selectable), NOT cut" % key)
+		check(not c.defer_reason(key).is_empty(),
+			"'%s' must carry a non-empty defer_reason" % key)
+
+
+func test_random_item_in_category_never_returns_cut_item() -> void:
+	# Across many seeds and every category that has at least one cut item,
+	# random_item_in_category must NEVER return a cut item. The re-roll loop
+	# inside random_item_in_category bounces past cuts; this test pins that
+	# invariant against future refactors.
+	var c := _cat()
+	# Categories that hold at least one cut: potion + misc_magic.
+	# (Sanity check: build the live category->cut mapping from the catalog
+	# rather than hardcoding it, so the test moves with the data.)
+	var categories_with_cuts: Dictionary = {}  # category -> true
+	for key in EXPECTED_CUT_KEYS:
+		var cat: String = str(c.get_item(key).get("category", ""))
+		if not cat.is_empty():
+			categories_with_cuts[cat] = true
+	for cat: String in categories_with_cuts.keys():
+		for seed_val in range(1, 200):
+			var picked: Dictionary = c.random_item_in_category(cat, _rng(seed_val))
+			var picked_key: String = str(picked.get("item_key", ""))
+			check(not c.is_cut(picked_key),
+				"category '%s' seed %d returned cut item '%s'"
+					% [cat, seed_val, picked_key])
+
+
+func test_defer_items_are_selectable_by_random_roll() -> void:
+	# Defer items remain selectable. Sweep seeds to confirm each defer key
+	# in a populous category gets picked at least once (probabilistic, but
+	# with 200 seeds the chance of missing a 1/N item is vanishingly low for
+	# the categories we have).
+	var c := _cat()
+	for key in EXPECTED_DEFER_KEYS:
+		var cat: String = str(c.get_item(key).get("category", ""))
+		if cat.is_empty():
+			continue
+		# Tiny categories (e.g. scroll has 7 items) need fewer seeds; bigger
+		# ones need more. 500 seeds is overkill for all of them but cheap.
+		var found := false
+		for seed_val in range(1, 500):
+			var picked: Dictionary = c.random_item_in_category(cat, _rng(seed_val))
+			if str(picked.get("item_key", "")) == key:
+				found = true
+				break
+		check(found,
+			"defer item '%s' (category '%s') should be selectable by random roll"
+				% [key, cat])
