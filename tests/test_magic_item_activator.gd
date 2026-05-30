@@ -113,6 +113,10 @@ func run_all_tests() -> void:
 	test_activate_ring_of_command_human_with_target()
 	test_activate_chime_of_opening_with_target_cell()
 	test_activate_worn_item_with_no_binding_fails()
+	# Tier 2 batch (2026-05-29): 6 new bindings — verify each catalog entry
+	# carries the expected binding + the bound spell has a working effect.
+	test_tier_2_bindings_are_wired_to_existing_spells()
+	test_activate_medallion_of_esp_routes_through_worn_activator()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -165,7 +169,9 @@ func test_drink_self_targeted_potion_succeeds_for_each_v1_binding() -> void:
 	var harness := _make_harness()
 	var drinker := _make_drinker()
 
-	# The 12 V1 self-targeted bindings (single_creature is tested separately).
+	# All V1 self-targeted potion bindings (single_creature is tested separately).
+	# Updated 2026-05-29 to include Tier 2 additions: dust_of_disappearance,
+	# dust_of_appearance, potion_of_polymorph (the consumable-powders + polymorph).
 	var self_potions := [
 		"potion_of_healing",
 		"potion_of_extra_healing",
@@ -179,6 +185,9 @@ func test_drink_self_targeted_potion_succeeds_for_each_v1_binding() -> void:
 		"potion_of_climbing",
 		"potion_of_fire_resistance",
 		"potion_of_speed",
+		# Tier 2 additions (potion category only; dusts deferred — they're
+		# misc_magic consumables needing a separate use_dust entry point).
+		"potion_of_polymorph",
 	]
 	for item_key in self_potions:
 		var item_id := CampaignRepository.add_inventory_item({
@@ -877,6 +886,97 @@ func test_activate_worn_item_with_no_binding_fails() -> void:
 
 	_teardown()
 	print("  activate_worn_item_with_no_binding_fails: OK")
+
+
+# ---------------------------------------------------------------------------
+# Tier 2 batch (2026-05-29).
+# ---------------------------------------------------------------------------
+
+## Catalog-shape check for the 6 Tier 2 bindings: each item carries the
+## expected spell_key + tradition + caster_level + target_mode, and the bound
+## spell has a working effect (i.e. CastingResolver won't immediately reject
+## a binding-driven cast as "spell not yet implemented").
+func test_tier_2_bindings_are_wired_to_existing_spells() -> void:
+	var harness := _make_harness()
+	var expected := {
+		"philter_of_love": {
+			"spell_key": "charm_person", "tradition": "arcane",
+			"caster_level": 1, "target_mode": "single_creature",
+		},
+		"potion_of_polymorph": {
+			"spell_key": "polymorph_self", "tradition": "arcane",
+			"caster_level": 7, "target_mode": "self",
+		},
+		"medallion_of_esp": {
+			"spell_key": "esp", "tradition": "arcane",
+			"caster_level": 3, "target_mode": "self",
+		},
+		"medallion_of_esp_90": {
+			"spell_key": "esp", "tradition": "arcane",
+			"caster_level": 3, "target_mode": "self",
+		},
+	}
+	for item_key in expected:
+		var entry: Dictionary = harness.catalog.get_item(item_key)
+		check(not entry.is_empty(), "'%s' should exist in the catalog" % item_key)
+		var binding_v: Variant = entry.get("spell_binding", null)
+		check(binding_v is Dictionary,
+			"'%s' should carry a spell_binding (Tier 2 batch); got %s" % [item_key, str(binding_v)])
+		if not (binding_v is Dictionary):
+			continue
+		var binding: Dictionary = binding_v
+		var exp: Dictionary = expected[item_key]
+		check(str(binding.get("spell_key", "")) == str(exp["spell_key"]),
+			"'%s' binding spell_key should be '%s', got '%s'"
+				% [item_key, exp["spell_key"], str(binding.get("spell_key", ""))])
+		check(str(binding.get("tradition", "")) == str(exp["tradition"]),
+			"'%s' binding tradition should be '%s'" % [item_key, exp["tradition"]])
+		check(int(binding.get("caster_level", -1)) == int(exp["caster_level"]),
+			"'%s' binding caster_level should be %d" % [item_key, int(exp["caster_level"])])
+		check(str(binding.get("target_mode", "")) == str(exp["target_mode"]),
+			"'%s' binding target_mode should be '%s'" % [item_key, exp["target_mode"]])
+		# The bound spell must have a working effect.
+		check(harness.effect_registry.has_effect(str(binding.get("spell_key", ""))),
+			"'%s' binds to '%s' which must have a working effect in spell_catalog"
+				% [item_key, str(binding.get("spell_key", ""))])
+
+
+## End-to-end runtime check for the medallions: equip Medallion of ESP, call
+## activate_worn_item, assert the cast succeeds + the item is NOT consumed
+## (worn-triggered semantics). One test covers both medallion variants since
+## they share the binding.
+func test_activate_medallion_of_esp_routes_through_worn_activator() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "medallion_of_esp",
+		"name": "Medallion of ESP",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"is_equipped": true,
+		"slot": "accessory_1",
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_worn_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == true,
+		"Medallion of ESP should successfully activate; message: %s" %
+			str(result["message"]))
+	check(str(result["spell_key"]) == "esp",
+		"should cast esp, got '%s'" % str(result["spell_key"]))
+
+	# Worn-triggered = no consumption. Row stays equipped.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(not post.is_empty(), "medallion row survives activation")
+	check(int(post.get("is_equipped", 0)) == 1, "still equipped after activation")
+
+	_teardown()
+	print("  activate_medallion_of_esp_routes_through_worn_activator: OK")
 
 
 # ---------------------------------------------------------------------------

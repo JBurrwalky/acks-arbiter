@@ -29016,3 +29016,68 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **(Build) Continue the magic-item BUILD queue.** Decanter is now landed. The next items per the 2026-05-29 triage were Decanter + Oil of Slipperiness (Oil is in flight on a parallel session). After that: Tier 2 spell bindings (~16 items: Philter of Love, Control potions, Command rings, Dust of Appearance / Disappearance, etc.).
 2. **(Tuning, blocked on Jedidiah) Confirm OUTPUT_PER_TICK_UNITS.** Once Jedidiah confirms 1 person-day/tick is the right shape, lift the [NEEDS-JEDIDIAH] tag in the GDD §14 row and the service file's header comment.
 3. **(Polish) Surface Decanter status in the party / inventory UI.** A small "auto-refilling" indicator on the inventory row would surface the passive effect to the player. Out of scope here.
+
+
+## Session 2026-05-29 — Tier 2 binding triage: 4 ships, 11 defers
+
+**Task:** Walk through the ~16 Tier 2 candidates (items potentially bindable to existing spells). After verifying spell availability + Jedidiah's per-group rulings, 4 items shipped as new bindings and 11 items moved to `DEFER_BUILD`. Sequential commit (parallel agents not appropriate for this scope — all binding work touches the central `SPELL_BINDING_MAP` + `MagicItemActivator` files).
+
+**Model used:** Opus.
+
+**Completed:**
+- **Spell-availability audit** across all Tier 2 binding candidates. Found:
+  - **Available with working effect:** `charm_person`, `charm_monster`, `invisibility`, `detect_invisible`, `esp`, `haste`, `polymorph_self`, `polymorph_other`, `speak_with_animals`, `speak_with_plants`.
+  - **NOT in spell catalog (blocks bindings):** `cause_fear` (blocks Wand of Fear + Drums of Panic), `animal_control` / `plant_control` / `dragon_control` / `giant_control` / `undead_control` (the Control series has no dedicated mechanic — `charm_monster` would overshoot RAW), `control_undead` / `turn_undead` (defined but no effect blocks).
+- **4 new SPELL_BINDING_MAP entries** in `tools/extract_magic_item_catalog.py`:
+  - **Philter of Love** → `charm_person` (caster level 1, single_creature). V1 project default: drinker is caster, designates target. Note that one RAW interpretation has the DRINKER becoming charmed by the first observed person; flagged in the binding's source comment for Jedidiah review if needed.
+  - **Potion of Polymorph** → `polymorph_self` (caster level 7, self). Project default per Jedidiah 2026-05-29 — RAW summary doesn't disambiguate Self vs Other; most-common interpretation is Self.
+  - **Medallion of ESP** → `esp` (caster level 3, self, worn-triggered). Wearer activates to read surface thoughts.
+  - **Medallion of ESP 90'** → `esp` (caster level 3, self, worn-triggered). Identical binding; the 90' range perk is documented as a known V1 simplification (the engine doesn't yet support per-item range modifiers on bound spells).
+- **11 new DEFER_BUILD entries** in the same extractor file:
+  - **Control series (4):** Potion of Animal / Dragon / Giant / Plant Control — RAW 'control' overshoots `charm_monster`; deferred until a custom-control resolver lands.
+  - **Command rings (2):** Ring of Command Animal / Plant — same overshoot reason.
+  - **Undead Control (1):** Potion of Undead Control — undead are immune to charm per RAW; needs a custom undead-control resolver.
+  - **Fear-blocked (2):** Wand of Fear + Drums of Panic — `cause_fear` is not yet in `spell_catalog.json`.
+  - **Dust consumables (2):** Dust of Disappearance + Dust of Appearance — these are in `misc_magic` catalog category, but `drink_potion` enforces `category=='potion'`. Defer until a `use_dust` (or similar) entry point on `MagicItemActivator` accepts misc_magic consumables. Their spell bindings (invisibility + detect_invisible) are noted in the defer reason for the future pass to pick up directly.
+- **2 new tests** in `tests/test_magic_item_activator.gd`:
+  - `test_tier_2_bindings_are_wired_to_existing_spells` — catalog-shape check for all 4 new bindings; verifies each item carries the expected `spell_key` + `tradition` + `caster_level` + `target_mode`, and the bound spell has a working effect in `SpellEffectRegistry`.
+  - `test_activate_medallion_of_esp_routes_through_worn_activator` — end-to-end runtime check: equip Medallion of ESP, call `activate_worn_item`, assert success + no consumption (worn-triggered semantics).
+- **Updated existing test `test_drink_self_targeted_potion_succeeds_for_each_v1_binding`** to include `potion_of_polymorph` in the sweep (the dusts were initially in this list too but moved out when they were deferred).
+- **Updated `EXPECTED_DEFER_KEYS`** in `tests/test_magic_item_catalog.gd` to include all 11 new defers (the existing `test_defer_items_are_flagged_with_reason` + `test_defer_items_are_selectable_by_random_roll` tests sweep these automatically).
+- **GDD `gdd-treasure-item-backing.md` §16 status updated** — 34 → 38 items (14 potions + 11 wand/staff + 12 worn-triggered + 1 special-targeted potion). Cumulative test count noted.
+- **Memory file `magic_item_bindings_deferred.md` updated** with Tier 2 deferrals grouped under their reasons.
+
+**Decisions made:**
+- **Sequential, not parallel.** Tier 2/3/4 binding batches all touch `SPELL_BINDING_MAP` + `MagicItemActivator` + `test_magic_item_activator.gd` + catalog JSON. Parallel agents would have hard merge conflicts. Sequential is faster overall here.
+- **Defer "control" items rather than overshoot to charm_monster.** Per Jedidiah's option (c) ruling: clean RAW separation. The catalog stays accurate; a future custom-control resolver lands without changing the binding map (just point at a new spell_key or set a `custom_resolver_id` field).
+- **Defer Undead Control specifically.** Charm immunity per RAW makes a `charm_monster` binding fizzle on use. Customs preserve the item's intent (commanding undead) while respecting the RAW immunity. Same defer pattern as the Control series.
+- **Polymorph → polymorph_self as project default.** Most-common interpretation; documented as project default in the binding's source comment. Jedidiah's prior ruling.
+- **Medallion of ESP 90' uses the same binding as Medallion of ESP.** The 90' range is an item-perk that the spell-effect system doesn't currently model. Documented as a known V1 simplification — both medallions have identical in-game effect until per-item range modifiers land.
+- **Dust deferral discovered during test-suite verification.** Initial impl bound the dusts to `drink_potion` (treating them as drinkable consumables); test failures surfaced the category mismatch (`misc_magic` vs `potion`). Two clean options: relax `drink_potion`'s category check OR add a new `use_dust` entry point. Chose the latter — preserves the semantic that `drink_potion` is for actual potions, leaves the dusts as a small follow-up. Pre-stated bindings + caster levels are recorded in their `defer_reason` strings so the future pass picks them up without re-investigating.
+- **Boots of Speed moved to Tier 3.** Persistent haste while equipped would be game-breaking (double attacks AND movement permanently). RAW is a flat movement-rate bonus only. Needs `WornMagicEffectResolver` extension (modifier-based persistent), not a spell binding. Out of scope for Tier 2.
+
+**Interfaces defined or changed:**
+- `SPELL_BINDING_MAP` gained 4 entries: `philter_of_love`, `potion_of_polymorph`, `medallion_of_esp`, `medallion_of_esp_90`.
+- `DEFER_BUILD` gained 11 entries (see above).
+- No new entry points on `MagicItemActivator` — existing `drink_potion` + `activate_worn_item` cover the 4 shipped items.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_magic_item_activator.gd`: 2 new tests (Tier 2 binding shape + Medallion runtime); 1 existing test extended (self-target sweep).
+- `tests/test_magic_item_catalog.gd`: `EXPECTED_DEFER_KEYS` extended (existing sweep tests pick up the new defers automatically).
+- Suite: 395 passed / 19 failed — baseline preserved (same suite count, net-zero NEW failures).
+
+**Known issues:**
+- **`cause_fear` blocker** is the highest-value unblocking work. Implementing it unlocks Wand of Fear + Drums of Panic immediately (one-line bindings). If it joins ACKS Core's L1 divine spell list with a fear save and an `EntityFlags`-keyed `is_feared` (or equivalent) flag, both wand items become Tier 2 work the next session.
+- **The Control series + Undead Control** all need a custom-control resolver. The shared mechanic is "designate target → controller dictates target's actions per RAW (more powerful than charm)". A future session can build this as a small new spell (`creature_control`) or as a `custom_resolver_id` field on the binding that dispatches to a dedicated resolver. The 6 deferred Control items become a single batch of bindings once the mechanic lands.
+- **The Dust consumables** are a single small entry point on `MagicItemActivator` away from working — the binding data is already noted in the defer reason. `use_dust(item_id, user, ...)` would accept `misc_magic` items + the same spell_binding shape + consume on success. ~30 minutes of work; could land in the same commit as a future small-misc-magic pass.
+- **Philter of Love RAW interpretation drift.** One reading has the DRINKER becoming infatuated with the first observed person (not the drinker designating a target). V1 binding uses the more-modern "drinker designates target" interpretation; flagged in the binding's source comment. If Jedidiah finds RAW prose supporting the other interpretation, the binding remaps to `self` target_mode with charm-self semantics.
+- **Medallion of ESP 90' range perk** discarded for V1. When per-item range modifiers land on bound spells, the 90' medallion gets a `range_override_ft: 90` field in its binding.
+
+**Next session should:**
+1. **(Triage) Tier 3 — shared resolvers.** STR override family (Potion of Giant Strength, Gauntlets of Ogre Power, Girdle of Giant Strength); Level boost (Potion of Heroism, Super-Heroism, Invulnerability); Detect family (Wand of Detecting Enemies / Metals / Secret Doors, Potion of Treasure Finding); Wards (4 Scrolls of Warding); Persistent-worn stat-bonuses (Eyes of the Eagle, Elven Cloak, Elven Boots, Necklace of Adaptation, Scarab of Protection, Brooch of Shielding, Cube of Frost Resistance, Bracers of Armor, Boots of Speed). ~20 items via 5 shared mechanisms.
+2. **(Triage) Tier 4 — per-item customs.** Bag of Holding, Bag of Devouring, Rod of Cancellation, Wand of Device Negation, Horn of Blasting, Rope of Climbing, Crystal Ball (+ 2 variants), Ring of Regeneration, Ring of Spell Storing, Staff of Withering, Displacer Cloak, Amulet vs Crystal Balls and ESP, Potion of Poison, Potion of Gaseous Form, Potion of Growth. ~17 items each ~50-100 lines.
+3. **(Special) Elemental Commanders.** Single investigation: does `conjure_elemental` accept an element parameter? If yes: 4 items = 4 bindings. If no: minimal element-typed summon (covers all 4 at once).
+4. **(Unblocker) Implement `cause_fear`.** Highest-leverage; flips 2 deferred items to shipped with a one-line catalog change.
+5. **(Unblocker) Add `use_dust` entry point.** Flips 2 deferred dust items to shipped; ~30 minutes.

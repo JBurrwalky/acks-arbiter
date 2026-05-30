@@ -233,8 +233,18 @@ const EXPECTED_CUT_KEYS := [
 ]
 
 const EXPECTED_DEFER_KEYS := [
+	# Tier 1 deferrals (2026-05-29 triage):
 	"ring_of_wishes", "potion_of_longevity",
 	"eyes_of_petrification", "treasure_map",
+	# Tier 2 deferrals (2026-05-29): Control + Command items overshoot
+	# charm_monster per RAW; cause_fear not yet in spell catalog; dusts
+	# need a separate use_dust activator entry point (misc_magic category).
+	"potion_of_animal_control", "potion_of_dragon_control",
+	"potion_of_giant_control", "potion_of_plant_control",
+	"potion_of_undead_control",
+	"ring_of_command_animal", "ring_of_command_plant",
+	"wand_of_fear", "drums_of_panic",
+	"dust_of_disappearance", "dust_of_appearance",
 ]
 
 

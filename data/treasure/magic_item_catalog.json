@@ -202,7 +202,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2500,
-      "creation_time_days": 35
+      "creation_time_days": 35,
+      "defer_reason": "RAW 'control' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "potion_of_clairaudience",
@@ -282,7 +283,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "defer_reason": "RAW 'control' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "potion_of_esp",
@@ -366,7 +368,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "defer_reason": "RAW 'control' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "potion_of_giant_strength",
@@ -511,7 +514,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "spell_binding": {
+        "spell_key": "charm_person",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_creature"
+      }
     },
     {
       "item_key": "potion_of_plant_control",
@@ -521,7 +530,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 3000,
-      "creation_time_days": 42
+      "creation_time_days": 42,
+      "defer_reason": "RAW 'control' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "potion_of_poison",
@@ -541,7 +551,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 3000,
-      "creation_time_days": 42
+      "creation_time_days": 42,
+      "spell_binding": {
+        "spell_key": "polymorph_self",
+        "tradition": "arcane",
+        "caster_level": 7,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_speed",
@@ -599,7 +615,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2500,
-      "creation_time_days": 35
+      "creation_time_days": 35,
+      "defer_reason": "undead are immune to charm per RAW; needs custom undead-control resolver"
     },
     {
       "item_key": "potion_of_water_breathing",
@@ -625,7 +642,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 100000,
-      "creation_time_days": 400
+      "creation_time_days": 400,
+      "defer_reason": "RAW 'command' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "ring_of_command_human",
@@ -651,7 +669,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 100000,
-      "creation_time_days": 400
+      "creation_time_days": 400,
+      "defer_reason": "RAW 'command' overshoots charm_monster; needs custom-control resolver"
     },
     {
       "item_key": "ring_of_delusion",
@@ -1127,7 +1146,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 40000,
-      "creation_time_days": 160
+      "creation_time_days": 160,
+      "defer_reason": "cause_fear not yet implemented in spell_catalog.json"
     },
     {
       "item_key": "wand_of_fire_balls",
@@ -1493,7 +1513,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 125000,
-      "creation_time_days": 500
+      "creation_time_days": 500,
+      "defer_reason": "cause_fear not yet implemented in spell_catalog.json"
     },
     {
       "item_key": "dust_of_appearance",
@@ -1503,7 +1524,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "defer_reason": "misc_magic consumable needs a `use_dust` activator entry point (binds to detect_invisible)"
     },
     {
       "item_key": "dust_of_disappearance",
@@ -1513,7 +1535,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2000,
-      "creation_time_days": 28
+      "creation_time_days": 28,
+      "defer_reason": "misc_magic consumable needs a `use_dust` activator entry point (binds to invisibility)"
     },
     {
       "item_key": "efreeti_bottle",
@@ -1692,7 +1715,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 37500,
-      "creation_time_days": 150
+      "creation_time_days": 150,
+      "spell_binding": {
+        "spell_key": "esp",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "medallion_of_esp_90",
@@ -1702,7 +1731,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 62500,
-      "creation_time_days": 250
+      "creation_time_days": 250,
+      "spell_binding": {
+        "spell_key": "esp",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "mirror_of_life_trapping",

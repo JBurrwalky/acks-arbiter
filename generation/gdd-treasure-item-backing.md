@@ -424,7 +424,7 @@ Added to `treasure_hoards`:
 
 ## 16. Magic-item activation via spell binding
 
-**Status (2026-05-29):** ✅ landed for **34 items** — 13 potions (one-shot consumption) + 11 wand/staff items (charge-per-use) + 10 worn-triggered items (activate-on-demand while equipped). Each item's ACKS Core description cleanly maps to a spell already implemented in the spell-effect system.
+**Status (2026-05-29):** ✅ landed for **38 items** — 14 potions (Philter of Love + Potion of Polymorph added in Tier 2; one-shot consumption) + 11 wand/staff items (charge-per-use) + 12 worn-triggered items (Medallion of ESP + Medallion of ESP 90' added in Tier 2; activate-on-demand while equipped). Each item's ACKS Core description cleanly maps to a spell already implemented in the spell-effect system.
 
 This section defines the **lightweight "item activates spell" bridge**: a magic item carries an optional spell_binding field that tells the runtime which existing spell to cast on its behalf. Coined to re-use the substantial spell-effect work in data/spells/spell_catalog.json + CastingResolver rather than write parallel per-item effect resolvers. V1 covers potions + charged-item wands/staves + worn-triggered rings/helms/boots/etc.; found scrolls + per-day cooldowns join in follow-on passes.
 

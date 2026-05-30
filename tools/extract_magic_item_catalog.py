@@ -318,6 +318,36 @@ DEFER_BUILD = {
     "potion_of_longevity": "age is not yet a gameplay-affecting stat",
     "eyes_of_petrification": "gaze-attack subsystem (basilisk / medusa / cockatrice) not yet implemented",
     "treasure_map": "quest-hook generation system not yet implemented",
+    # Tier 2 triage decisions (Jedidiah 2026-05-29):
+    # Control series — RAW 'control' is stronger than 'charm' (controller
+    # dictates target's actions vs charm's 'treat as ally'). Our spell catalog
+    # has no dedicated *_control spells; binding to charm_monster would
+    # overshoot RAW. Defer until a custom-control resolver lands; then a
+    # future pass converts these defers to bindings via a new spell or
+    # custom_resolver_id field.
+    "potion_of_animal_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
+    "potion_of_dragon_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
+    "potion_of_giant_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
+    "potion_of_plant_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
+    "ring_of_command_animal": "RAW 'command' overshoots charm_monster; needs custom-control resolver",
+    "ring_of_command_plant": "RAW 'command' overshoots charm_monster; needs custom-control resolver",
+    # Undead Control: charm immunity per RAW (undead are immune to charm and
+    # sleep), so a charm_monster binding would fizzle. Needs its own
+    # custom-undead-control resolver — typically "command N undead with
+    # turn-equivalent results" mechanic.
+    "potion_of_undead_control": "undead are immune to charm per RAW; needs custom undead-control resolver",
+    # cause_fear is missing from data/spells/spell_catalog.json (not yet
+    # implemented). Defer until that spell lands.
+    "wand_of_fear": "cause_fear not yet implemented in spell_catalog.json",
+    "drums_of_panic": "cause_fear not yet implemented in spell_catalog.json",
+    # Dusts: thrown-powder consumables that conceptually act like potions but
+    # live in the misc_magic catalog category. drink_potion enforces
+    # category=='potion'; a future pass adds a `use_dust` entry point on
+    # MagicItemActivator that accepts misc_magic consumables. Spell bindings
+    # would be invisibility (Disappearance) and detect_invisible (Appearance)
+    # when the entry point lands.
+    "dust_of_disappearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to invisibility)",
+    "dust_of_appearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to detect_invisible)",
     # Other items will land here as we finish triaging — Bag of Devouring,
     # Helm of Telepathy edge cases, etc.
 }
@@ -553,26 +583,50 @@ SPELL_BINDING_MAP = {
     #     — targets magic items rather than active spells)
     #   - Wand of Fear (RAW Cause Fear is a 1st-level divine spell; needs to
     #     verify that spell is implemented before binding)
-    # POTIONS DELIBERATELY OMITTED (ambiguous bindings — RAW excerpt only
-    # carries names, not mechanics; the rulebook prose disambiguates these
-    # and we'd need a Jedidiah ruling before binding):
-    #   - potion_of_polymorph: Self or Other? ACKS RAW doesn't disambiguate
-    #     in the summary XML.
-    #   - philter_of_love: charm_person equivalent or its own mechanic?
-    #   - potion_of_ventriloquism: doesn't exist in ACKS Core potions table.
-    #   - potion_of_animal_control / dragon_control / giant_control /
-    #     plant_control / undead_control: probably analogous to
-    #     charm_person but for different creature types; depends on
-    #     whether we treat them as charm_monster-with-restriction
-    #     (works) or as their own custom resolver (needed).
-    #   - potion_of_invulnerability: probably maps to
-    #     protection_from_normal_weapons but the RAW description may
-    #     specify a unique mechanic.
-    #   - Various non-spell potions (Treasure Finding, Heroism,
-    #     Super-Heroism, Longevity, Diminution, Gaseous Form, Growth,
-    #     Giant Strength, etc.) have no direct spell analog and need
-    #     their own resolvers.
-    # Deferred to a follow-up pass once Jedidiah clarifies the mechanics.
+    # Tier 2 batch (2026-05-29): 6 additional bindings landed after the
+    # spell-availability audit + Jedidiah triage rulings.
+    "philter_of_love": {
+        # RAW: drinker uses the philter on a target; target becomes
+        # infatuated. V1 project default treats this as charm_person where
+        # the drinker is the caster and designates a target. The "drinker
+        # becomes infatuated with first observed person" interpretation
+        # exists in some editions; we'd revisit if Jedidiah rules differently.
+        "spell_key": "charm_person", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_creature",
+    },
+    # DEFERRED: dust_of_disappearance + dust_of_appearance. The dusts are in
+    # the misc_magic catalog category but drink_potion enforces
+    # category=='potion'. A future pass adds a `use_dust` / `throw_powder`
+    # entry point on MagicItemActivator that accepts misc_magic consumables.
+    # Stamped via DEFER_BUILD below.
+    "potion_of_polymorph": {
+        # Jedidiah 2026-05-29: bind to polymorph_self as project default.
+        # ACKS RAW summary doesn't disambiguate Self vs Other; the more-
+        # common interpretation is Self (drinker transforms). Revisit if
+        # Jedidiah finds RAW prose specifying Other.
+        "spell_key": "polymorph_self", "tradition": "arcane",
+        "caster_level": 7, "target_mode": "self",
+    },
+    "medallion_of_esp": {
+        # Worn-triggered: wearer activates to read surface thoughts in a
+        # 30' area (the spell's standard range). Re-activate at will.
+        "spell_key": "esp", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "medallion_of_esp_90": {
+        # Identical mechanic to medallion_of_esp; the 90' range is an
+        # item-perk that the spell-effect system doesn't currently model.
+        # Documented as a known V1 simplification: the longer-range
+        # medallion has the same in-game effect until the engine supports
+        # per-item range modifiers on bound spells.
+        "spell_key": "esp", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    # All items beyond this point have either landed in DEFER_BUILD (see
+    # above for the per-item deferral reasons — control series, cause_fear
+    # blockers, Wishes, etc.) or are routed through `WornMagicEffectResolver`
+    # (persistent worn) / their own custom resolvers. New bindings land
+    # one batch at a time as Jedidiah rules on the open items.
 }
 
 # ---------------------------------------------------------------------------
