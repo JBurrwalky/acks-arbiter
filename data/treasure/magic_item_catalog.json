@@ -380,7 +380,7 @@
       "encumbrance_units": 167,
       "value_gp": 2000,
       "creation_time_days": 28,
-      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
+      "defer_reason": "needs temporary-duration effect mechanism (potions expire after a duration; persistent-worn items don't)"
     },
     {
       "item_key": "potion_of_growth",
@@ -1159,7 +1159,13 @@
       "encumbrance_units": 167,
       "value_gp": 40000,
       "creation_time_days": 160,
-      "defer_reason": "cause_fear not yet implemented in spell_catalog.json"
+      "spell_binding": {
+        "spell_key": "cause_fear",
+        "tradition": "divine",
+        "caster_level": 1,
+        "target_mode": "single_creature",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_fire_balls",
@@ -1608,7 +1614,7 @@
       "encumbrance_units": 167,
       "value_gp": 125000,
       "creation_time_days": 500,
-      "defer_reason": "cause_fear not yet implemented in spell_catalog.json"
+      "defer_reason": "misc_magic item needs `use_misc_magic_active` entry point (same gap as the dusts); cause_fear binding ready when entry point lands (would bind area_at_point centered on drummer)"
     },
     {
       "item_key": "dust_of_appearance",
@@ -1722,8 +1728,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,
-      "creation_time_days": 200,
-      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
+      "creation_time_days": 200
     },
     {
       "item_key": "girdle_of_giant_strength",
@@ -1733,8 +1738,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 100000,
-      "creation_time_days": 300,
-      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
+      "creation_time_days": 300
     },
     {
       "item_key": "helm_of_alignment_changing",

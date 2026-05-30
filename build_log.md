@@ -29275,3 +29275,59 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **(Quick wins)** Use the now-available set op to wire Girdle of Giant Strength (needs sub_roll table for giant tiers — Hill / Stone / Frost / Fire / Cloud / Storm — each with RAW STR values). ~50 lines analogous to BRACERS_OF_ARMOR_SUBROLL.
 2. **(Infrastructure)** Build temporary-duration effects on potions (probably via ActiveEffectTracker hooks in drink_potion) — unblocks Potion of Giant Strength + future Potion of Heroism / Super-Heroism.
 3. **(Cluster unblockers)** Pick another Tier 3 cluster's blocker — ThiefSkillResolver consults ModifierContainer would unblock Elven Cloak + Boots; `cause_fear` spell unblocks Wand of Fear + Drums of Panic; etc.
+
+
+## Session 2026-05-29 — Girdle of Giant Strength + Wand of Fear (Tier 3 unblocks)
+
+**Task:** Jedidiah supplied two Tier 3 unblocks: (1) the Girdle of Giant Strength RAW text (single hill-giant variant — I was wrong about the 6 giant tiers; it's just one), (2) confirmation that `cause_fear` is already accessible as the reversible form of Remove Fear. Ship both items, then move on to Tier 4.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Girdle of Giant Strength (V1 partial)** — RAW corrections + new resolver:
+  - **NOT** a 6-tier sub_roll like I'd projected. Per Jedidiah's RAW: "Confers the great strength of a hill giant" — one variant. The catalog stays with a single `girdle_of_giant_strength` entry; no sub_roll work needed.
+  - `WornMagicEffectResolver._add_girdle_of_giant_strength` applies `set_ceiling: 3` on `attack_throw`. The value 3 is the 8 HD monster attack-throw from `Combatant._monster_attack_throw_from_hd(8)` (verified by reading the ACKS monster attack-throw table in the engine). RAW: "wearer attacks as an 8 HD monster or as his own class and level, whichever is better" — set_ceiling captures this: `min(natural, 3)`.
+  - New constant `GIRDLE_OF_GIANT_STRENGTH_ATTACK_THROW = 3`.
+  - **V1 deferred RAW parts** (each needs new engine surface): damage doubling (no damage-multiplier hook in attack resolver), +16 bonus to force open doors (no force-doors stat), throw rocks 200' for 3d6 (new ability — granted ranged attack option).
+  - Removed from `DEFER_BUILD`.
+- **Wand of Fear** — `cause_fear` is the synthesized reverse of `remove_fear` (verified: `remove_fear` has `is_reversible=true`, `reverse_key="cause_fear"`, working effect block). SpellRegistry auto-redirects `cause_fear` lookups to the reverse-form entry.
+  - Added `wand_of_fear` to `SPELL_BINDING_MAP`: `{spell_key: "cause_fear", tradition: "divine", caster_level: 1, target_mode: "single_creature", default_charges: 20}`.
+  - Reuses existing `MagicItemActivator.activate_charged_item` (no new entry point needed).
+  - Removed from `DEFER_BUILD`.
+- **Drums of Panic** — kept deferred but with a refined `defer_reason`. `cause_fear` is now available; the remaining blocker is the misc_magic activator entry point (same gap as the dusts — `use_misc_magic_active` or similar). The binding shape would be `cause_fear`, `target_mode: area_at_point` centered on the drummer. When the entry point lands, drums binds in a one-line catalog change.
+- **Tests** — 3 new in `tests/test_worn_magic_effect_resolver.gd` for the Girdle (clamp-to-3 from natural 10+, no-worsening-better-throws from natural 2+, unequip restore). 1 new in `tests/test_magic_item_activator.gd` for Wand of Fear (binding shape + spell-effect registry availability + end-to-end activation with charge decrement). `EXPECTED_DEFER_KEYS` in catalog test updated (removed `wand_of_fear` + `girdle_of_giant_strength`, kept `drums_of_panic` + `potion_of_giant_strength`).
+- **GDD §14 status board** — Girdle + Wand of Fear rows added with their RAW-faithful descriptions and the deferred parts called out.
+- **Memory file `magic_item_bindings_deferred.md`** — STR cluster reduced from 2 items to 1 (Girdle shipped). Drums of Panic's defer reason refined.
+
+**Decisions made:**
+- **`set_ceiling` for the Girdle's attack throw** rather than `set` or `add`. The ceiling captures "whichever is better" exactly: it's a cap, not an override; if natural is already ≤3 (high-level fighter at 2+), the ceiling doesn't worsen them. `set` would force everyone to 3 even if their natural was better. `add` doesn't fit the "as an 8 HD monster" semantic at all.
+- **8 HD value (= 3) read from the engine's existing table**, not invented from D&D conventions. The `Combatant._monster_attack_throw_from_hd(8)` function exists with the full RAW-derived table; using its output guarantees RAW consistency.
+- **Defer the Girdle's other RAW mechanics** (damage doubling, force-doors, thrown rocks) rather than block on them. Each needs new engine surface (damage-multiplier modifier key, force-doors stat, granted-ability mechanic). The attack-throw bonus alone is substantial and player-noticeable; ship it now, refine later.
+- **`single_creature` target_mode for Wand of Fear** (not `area_at_point`). RAW wand convention: wielder picks ONE target. Drums of Panic would use area_at_point centered on drummer — different mechanic, different item. Recorded the area choice in the drums' defer reason so the future binding pass picks it up.
+- **20 default charges for Wand of Fear** matching the other Tier 2 wand bindings (Wand of Cold = 20, etc.). RAW doesn't specify; the project's convention is 20 for combat wands.
+- **Drums of Panic still deferred** even though `cause_fear` is now available. The blocker shifted from "no spell" to "no activator entry point for misc_magic actives" — same as the dusts. Refined the defer reason so the future `use_misc_magic_active` work flips drums + dusts together with all bindings pre-noted.
+
+**Interfaces defined or changed:**
+- `WornMagicEffectResolver._add_girdle_of_giant_strength(character, item_id)` (NEW).
+- `WornMagicEffectResolver.GIRDLE_OF_GIANT_STRENGTH_ATTACK_THROW = 3` (NEW const).
+- `SPELL_BINDING_MAP` gained `wand_of_fear`.
+- `DEFER_BUILD` removed `girdle_of_giant_strength` + `wand_of_fear`; refined `drums_of_panic`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_worn_magic_effect_resolver.gd`: 3 new tests. Suite now 25.
+- `tests/test_magic_item_activator.gd`: 1 new test. Suite extended.
+- `tests/test_magic_item_catalog.gd`: `EXPECTED_DEFER_KEYS` updated.
+- Suite: 395 passed / 19 failed — baseline preserved.
+
+**Known issues:**
+- **Girdle damage doubling not in V1.** Needs a `damage_multiplier` modifier key + a hook in `attack_resolver.gd` to read it and double the rolled damage. Probably 10-20 lines in the resolver + a new conventional stat key.
+- **Girdle +16 force-doors not in V1.** No force-doors stat in CharacterData / Combatant. Would need either a `force_doors` ability check (new stat) or an entry in the existing strength-checks pathway.
+- **Girdle thrown rocks not in V1.** New ability — granted ranged attack option (3d6 damage, 200' range). Probably needs a new "granted weapon" mechanism on `Combatant.get_attack_routines()` or similar.
+- **Drums of Panic remains deferred.** Needs `use_misc_magic_active` activator entry point (same gap as dusts).
+
+**Next session should:**
+1. **(Per user direction)** Move on to **Tier 4 — per-item customs (~17 items).** Bag of Holding, Bag of Devouring, Rod of Cancellation, Wand of Device Negation, Horn of Blasting, Rope of Climbing, Crystal Ball + 2 variants, Ring of Regeneration, Ring of Spell Storing, Staff of Withering, Displacer Cloak, Amulet vs Crystal Balls and ESP, Potion of Poison, Potion of Gaseous Form, Potion of Growth. Each is its own resolver (~50-100 lines). Several are parallelizable across different subsystems (Bag of Holding is inventory; Ring of Regeneration is HP tick; Crystal Ball is scrying; Horn of Blasting is combat damage).
+2. **(Quick unblocker — high leverage)** `use_misc_magic_active` activator entry point — flips Drums of Panic + Dust of Disappearance + Dust of Appearance to shipped (3 items, ~30 minutes).
+3. **(Smaller unblockers)** Damage-multiplier hook in attack resolver — unlocks Girdle's damage doubling + future damage-doubling items.

@@ -117,6 +117,8 @@ func run_all_tests() -> void:
 	# carries the expected binding + the bound spell has a working effect.
 	test_tier_2_bindings_are_wired_to_existing_spells()
 	test_activate_medallion_of_esp_routes_through_worn_activator()
+	# Tier 3 unblock (2026-05-29): cause_fear available via remove_fear reverse.
+	test_activate_wand_of_fear_routes_through_cause_fear()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -977,6 +979,72 @@ func test_activate_medallion_of_esp_routes_through_worn_activator() -> void:
 
 	_teardown()
 	print("  activate_medallion_of_esp_routes_through_worn_activator: OK")
+
+
+## Wand of Fear binds to `cause_fear` (synthesized reverse of `remove_fear`).
+## Confirms the activator can dispatch a cast via a reverse-form spell key
+## (the SpellRegistry redirects to the reverse-form entry automatically).
+## Tier 3 unblock — RAW Jedidiah ruling 2026-05-29: cause_fear IS available
+## as the reverse of remove_fear, no new spell needed.
+func test_activate_wand_of_fear_routes_through_cause_fear() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	# Verify the binding shape first.
+	var binding: Dictionary = harness.catalog.get_item("wand_of_fear").get("spell_binding", {})
+	check(str(binding.get("spell_key", "")) == "cause_fear",
+		"Wand of Fear binding spell_key should be 'cause_fear', got '%s'" %
+			str(binding.get("spell_key", "")))
+	check(str(binding.get("tradition", "")) == "divine",
+		"Wand of Fear is a divine binding (cause_fear is divine L1 reverse), got '%s'" %
+			str(binding.get("tradition", "")))
+	check(int(binding.get("caster_level", -1)) == 1,
+		"Wand of Fear caster_level should be 1 (divine L1 reverse), got %d" %
+			int(binding.get("caster_level", -1)))
+	check(int(binding.get("default_charges", -1)) == 20,
+		"Wand of Fear default_charges should be 20, got %d" %
+			int(binding.get("default_charges", -1)))
+
+	# Spell-availability: cause_fear must have a working effect in the
+	# spell-effect registry (via the reverse-form redirect from remove_fear).
+	check(harness.effect_registry.has_effect("cause_fear"),
+		"cause_fear must be available in the spell-effect registry " +
+		"(synthesized as reverse of remove_fear)")
+
+	# Insert a wand with charges + a target creature.
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_fear",
+		"name": "Wand of Fear",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 20,
+	})
+	var target := CharacterData.new()
+	target.id = "test_fear_target"
+	target.name = "Frightened Goblin"
+	target.character_class = "fighter"
+	target.level = 1
+	target.alignment = "neutral"
+
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		target.id, target)
+	check(bool(result["success"]) == true,
+		"Wand of Fear activation should succeed; message: %s" %
+			str(result["message"]))
+	check(str(result["spell_key"]) == "cause_fear",
+		"should cast cause_fear, got '%s'" % str(result["spell_key"]))
+	# Charge decrement: 20 → 19.
+	check(int(result["charges_remaining"]) == 19,
+		"Wand of Fear: 20 charges - 1 = 19 remaining, got %d" %
+			int(result["charges_remaining"]))
+
+	_teardown()
+	print("  activate_wand_of_fear_routes_through_cause_fear: OK")
 
 
 # ---------------------------------------------------------------------------

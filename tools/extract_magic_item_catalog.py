@@ -338,10 +338,15 @@ DEFER_BUILD = {
     # custom-undead-control resolver — typically "command N undead with
     # turn-equivalent results" mechanic.
     "potion_of_undead_control": "undead are immune to charm per RAW; needs custom undead-control resolver",
-    # cause_fear is missing from data/spells/spell_catalog.json (not yet
-    # implemented). Defer until that spell lands.
-    "wand_of_fear": "cause_fear not yet implemented in spell_catalog.json",
-    "drums_of_panic": "cause_fear not yet implemented in spell_catalog.json",
+    # cause_fear UNBLOCKED 2026-05-29 (Jedidiah confirmed it's the synthesized
+    # reverse of remove_fear in the spell catalog). Wand of Fear LANDED with
+    # the binding (rod_staff_wand, 20 charges, single_creature). Drums of
+    # Panic still deferred because it's a misc_magic category item without
+    # the worn-equip status that activate_worn_item enforces — needs the
+    # analogous `use_misc_magic_active` entry point (same gap as the dusts).
+    # When that entry point lands, drums binds to cause_fear with target_mode
+    # area_at_point (drummer designates a center; all listeners save).
+    "drums_of_panic": "misc_magic item needs `use_misc_magic_active` entry point (same gap as the dusts); cause_fear binding ready when entry point lands (would bind area_at_point centered on drummer)",
     # Dusts: thrown-powder consumables that conceptually act like potions but
     # live in the misc_magic catalog category. drink_potion enforces
     # category=='potion'; a future pass adds a `use_dust` entry point on
@@ -362,9 +367,10 @@ DEFER_BUILD = {
     # modifier (Potion of Giant Strength) referencing it.
     # Gauntlets of Ogre Power LANDED 2026-05-29 with the ModifierContainer
     # `set` op + WornMagicEffectResolver._add_gauntlets_of_ogre_power
-    # (STR set to 18). The other two STR-override items remain deferred:
+    # (STR set to 18). Girdle of Giant Strength LANDED 2026-05-29 (single
+    # hill-giant variant per RAW — set_ceiling 3 on attack_throw; deferred
+    # parts: damage-double, +16 force-doors, thrown rocks). Remaining:
     "potion_of_giant_strength": "needs temporary-duration effect mechanism (potions expire after a duration; persistent-worn items don't)",
-    "girdle_of_giant_strength": "needs sub_roll table for giant tiers (Hill/Stone/Frost/Fire/Cloud/Storm giant STR values) — separate work from the ogre-tier single-value case",
     # Level boost family — no "temporary effective-level bonus" mechanism in
     # CharacterData / Combatant. The level value used by combat throws is
     # `character.level` directly. Adding a `level_bonus` modifier read by
@@ -581,6 +587,16 @@ SPELL_BINDING_MAP = {
         "spell_key": "cure_light_wounds", "tradition": "divine",
         "caster_level": 1, "target_mode": "single_creature",
         "default_charges": 30,
+    },
+    # Tier 3 unblocker (2026-05-29): cause_fear is available in the spell
+    # catalog as the synthesized reverse of remove_fear (is_reversible=true,
+    # reverse_key="cause_fear"). MagicItemActivator's SpellChoice can target
+    # "cause_fear" directly — SpellRegistry redirects to the reverse-form
+    # entry. Divine L1 reverse → caster level 1.
+    "wand_of_fear": {
+        "spell_key": "cause_fear", "tradition": "divine",
+        "caster_level": 1, "target_mode": "single_creature",
+        "default_charges": 20,
     },
 
     # ---- Worn-triggered items (rings, boots, helms, brooms, etc.) ----

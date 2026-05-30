@@ -36,6 +36,9 @@ func run_all_tests() -> void:
 	test_cursed_bracers_dominate_other_ac_sources()
 	test_gauntlets_of_ogre_power_set_strength_to_18()
 	test_gauntlets_unequip_restores_natural_strength()
+	test_girdle_of_giant_strength_clamps_attack_throw_to_3()
+	test_girdle_does_not_worsen_better_natural_attack_throw()
+	test_girdle_unequip_restores_natural_attack_throw()
 	test_boots_of_speed_clamps_movement_to_at_least_80()
 	test_boots_of_speed_does_not_inflate_above_floor_for_fast_movers()
 	test_boots_of_speed_cleared_on_unequip()
@@ -564,3 +567,55 @@ func test_gauntlets_unequip_restores_natural_strength() -> void:
 	WornMagicEffectResolver.refresh_for_character(cd, [_make_gauntlets_row("g1", false)])
 	check(cd.modifiers.get_effective_value("strength", cd.strength) == 12,
 		"unequipped + refresh: STR back to natural 12")
+
+
+# ---------------------------------------------------------------------------
+# Girdle of Giant Strength — set_ceiling on attack_throw at 3 (8 HD value).
+# ---------------------------------------------------------------------------
+
+func _make_girdle_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "girdle_of_giant_strength",
+		"name": "Girdle of Giant Strength",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "belt",
+	}
+
+
+func test_girdle_of_giant_strength_clamps_attack_throw_to_3() -> void:
+	# RAW: "wearer attacks as an 8 HD monster OR own class/level, whichever
+	# is better." 8 HD monster attack throw = 3+. A level-1 fighter (10+)
+	# wearing the Girdle attacks at 3+.
+	var cd := _make_fresh_pc()
+	cd.attack_throw = 10  # level 1 fighter
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_girdle_row("g1")])
+	check(cd.get_effective_attack_throw() == 3,
+		"natural 10+ + girdle set_ceiling 3 = 3+, got %d" %
+			cd.get_effective_attack_throw())
+
+
+func test_girdle_does_not_worsen_better_natural_attack_throw() -> void:
+	# set_ceiling is a CAP, not an override. A fighter with natural 2+
+	# (level ~12+) wearing the girdle stays at 2+ — the girdle doesn't
+	# WORSEN their attack throw. Matches RAW "whichever is better."
+	var cd := _make_fresh_pc()
+	cd.attack_throw = 2
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_girdle_row("g1")])
+	check(cd.get_effective_attack_throw() == 2,
+		"natural 2+ + girdle set_ceiling 3 = 2+ (ceiling doesn't clamp DOWN), got %d" %
+			cd.get_effective_attack_throw())
+
+
+func test_girdle_unequip_restores_natural_attack_throw() -> void:
+	var cd := _make_fresh_pc()
+	cd.attack_throw = 10
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_girdle_row("g1", true)])
+	check(cd.get_effective_attack_throw() == 3, "equipped: girdle clamps to 3")
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_girdle_row("g1", false)])
+	check(cd.get_effective_attack_throw() == 10,
+		"unequipped + refresh: back to natural 10+")

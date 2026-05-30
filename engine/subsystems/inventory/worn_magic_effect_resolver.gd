@@ -151,6 +151,26 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "gauntlets_of_ogre_power":
 			_add_gauntlets_of_ogre_power(character, item_id)
 			continue
+		# --- Girdle of Giant Strength (Tier 3, 2026-05-29) ---
+		# RAW: "Confers the great strength of a hill giant. The wearer
+		# attacks as an 8 HD monster or as his own class and level,
+		# whichever is better." 8 HD attack throw target = 3+ (per
+		# Combatant._monster_attack_throw_from_hd(8)). V1 implementation:
+		# set_ceiling on attack_throw at 3 — wearer's effective attack
+		# target becomes min(natural, 3), matching the "whichever is
+		# better" RAW phrasing. set_ceiling runs AFTER add+multiply but
+		# BEFORE set in the stack order, so the wearer's natural STR
+		# bonus / penalty / class progression all apply first, then the
+		# Girdle clamps the target to at most 3.
+		# V1 deferred RAW mechanics (each needs new engine surface):
+		#   - Double normal damage (needs damage-multiplier hook in
+		#     attack resolver — no `damage_multiplier` modifier key today).
+		#   - +16 bonus to force open doors (no force-doors stat).
+		#   - Throw rocks 200' for 3d6 damage (new ability — granted
+		#     ranged attack option).
+		if item_key == "girdle_of_giant_strength":
+			_add_girdle_of_giant_strength(character, item_id)
+			continue
 		# --- Boots of Speed (Tier 3, 2026-05-29; RAW-corrected) ---
 		# RAW: "These boots allow the wearer to move 240' per turn for up to
 		# 12 hours. The wearer is exhausted after this activity, and is
@@ -272,6 +292,30 @@ static func _add_cursed_bracers_of_armor(character: CharacterData, item_id: Stri
 		"value": 0,
 		"stacking_group": "",
 		"priority": CURSE_PRIORITY,
+	})
+
+
+## Apply Girdle of Giant Strength: set_ceiling on attack_throw at 3 (the
+## 8-HD-monster attack throw value per ACKS table). set_ceiling means the
+## resolved target can't exceed 3, so the wearer attacks at 3+ unless
+## their natural class+level throw is already better (lower). RAW: "attacks
+## as an 8 HD monster or as his own class and level, whichever is better."
+##
+## V1 deferred RAW mechanics: double damage (needs damage_multiplier hook),
+## +16 force doors (no force-doors stat), thrown rocks (new ability). The
+## girdle's `has_giant_strength` flag is NOT set in V1 — future damage /
+## rocks consumers can check item ownership directly.
+const GIRDLE_OF_GIANT_STRENGTH_ATTACK_THROW: int = 3  # 8 HD monster value
+
+static func _add_girdle_of_giant_strength(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("attack_throw", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "set_ceiling",
+		"value": GIRDLE_OF_GIANT_STRENGTH_ATTACK_THROW,
+		"stacking_group": "",
+		"priority": 0,
 	})
 
 

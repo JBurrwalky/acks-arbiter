@@ -248,12 +248,13 @@ const EXPECTED_DEFER_KEYS := [
 	"potion_of_giant_control", "potion_of_plant_control",
 	"potion_of_undead_control",
 	"ring_of_command_animal", "ring_of_command_plant",
-	"wand_of_fear", "drums_of_panic",
+	"drums_of_panic",   # wand_of_fear shipped 2026-05-29 (cause_fear unblock)
 	"dust_of_disappearance", "dust_of_appearance",
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,
 	# and persistent-worn stat-bonuses needing engine extensions.
-	"potion_of_giant_strength", "girdle_of_giant_strength",
+	"potion_of_giant_strength",
+	# girdle_of_giant_strength shipped 2026-05-29 (set_ceiling 3 on attack_throw)
 	"potion_of_heroism", "potion_of_super_heroism", "potion_of_invulnerability",
 	"wand_of_detecting_enemies", "wand_of_detecting_metals",
 	"wand_of_detecting_secret_doors", "potion_of_treasure_finding",
