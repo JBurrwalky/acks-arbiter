@@ -119,6 +119,25 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "ring_of_fire_resistance":
 			_add_ring_of_fire_resistance(character, item_id)
 			continue
+		# --- Bracers of Armor (Tier 3, 2026-05-29) ---
+		# Project default magnitude +1 (stamped via EXPLICIT_BONUS in the
+		# extractor). RAW summary XML doesn't disambiguate variant tiers; if
+		# +2 / +3 cousins land later, switch the catalog to a sub_roll table
+		# and the resolver path is unchanged. Mechanic: flat AC bonus (no
+		# saving-throw bonus, distinguishing it from Cloak of Protection).
+		if item_key == "bracers_of_armor" and bonus > 0:
+			_add_bracers_of_armor(character, item_id, bonus)
+			continue
+		# --- Boots of Speed (Tier 3, 2026-05-29) ---
+		# Project default magnitude +30' per round (additive flat movement
+		# bonus). RAW summary XML says "Increase movement and related timing
+		# as described in item entry" without a numeric value; flagged for
+		# Jedidiah ruling (alternative interpretations: double base movement,
+		# or Haste-spell-equivalent). The +30' default keeps the boost
+		# noticeable without becoming game-breaking like a permanent Haste.
+		if item_key == "boots_of_speed":
+			_add_boots_of_speed(character, item_id)
+			continue
 
 
 ## Apply a Ring of Protection +N modifier: +N to AC (ascending AC, so positive
@@ -183,6 +202,41 @@ static func _add_ring_of_fire_resistance(character: CharacterData, item_id: Stri
 		"source_type": "worn_magic_item",
 		"operation": "add",
 		"value": -2,  # +2 on the d20 = -2 on the target number
+		"stacking_group": "",
+		"priority": 0,
+	})
+
+
+## Apply Bracers of Armor +N: flat AC bonus, no save bonus.
+## Distinguishes from Ring / Cloak of Protection which boost AC AND saves.
+## Stacks with Ring + Cloak (empty stacking_group). Project default magnitude
+## is +1, stamped on the catalog via the extractor's EXPLICIT_BONUS map.
+static func _add_bracers_of_armor(character: CharacterData, item_id: String, bonus: int) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("armor_class", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": bonus,
+		"stacking_group": "",  # stacks with other AC sources
+		"priority": 0,
+	})
+
+
+## Apply Boots of Speed: +30' base movement (project default; RAW summary
+## doesn't specify a magnitude). Flows through `CharacterData.get_effective_
+## movement()` which reads `modifiers.get_effective_value("movement_rate", ...)`.
+## V1 explicitly avoids the "permanent Haste" interpretation (would double
+## attacks too) — boots boost movement only.
+const BOOTS_OF_SPEED_MOVEMENT_BONUS: int = 30  # feet/round
+
+static func _add_boots_of_speed(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("movement_rate", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": BOOTS_OF_SPEED_MOVEMENT_BONUS,
 		"stacking_group": "",
 		"priority": 0,
 	})

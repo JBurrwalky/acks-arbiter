@@ -28,6 +28,11 @@ func run_all_tests() -> void:
 	test_ring_of_water_walking_flag_cleared_on_unequip()
 	test_ring_of_fire_resistance_grants_plus2_save_blast_breath()
 	test_flag_prefix_clear_does_not_touch_unrelated_flags()
+	# Tier 3 (2026-05-29): Bracers of Armor + Boots of Speed.
+	test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus()
+	test_bracers_stack_with_cloak_and_ring_of_protection()
+	test_boots_of_speed_adds_movement_rate_modifier()
+	test_boots_of_speed_cleared_on_unequip()
 	if not has_failures():
 		print("WornMagicEffectResolver: all tests passed.")
 
@@ -325,3 +330,110 @@ func test_flag_prefix_clear_does_not_touch_unrelated_flags() -> void:
 		"ring should set can_water_walk")
 	check(cd.flags.has_flag("can_fly"),
 		"non-worn_magic-sourced flag (spell:) must survive the refresh")
+
+
+# ---------------------------------------------------------------------------
+# Bracers of Armor — flat AC bonus, no save bonus.
+# (Distinguished from Ring / Cloak of Protection which also boost saves.)
+# ---------------------------------------------------------------------------
+
+func _make_bracers_row(item_id: String, bonus: int = 1, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "bracers_of_armor",
+		"name": "Bracers of Armor",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": bonus,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "hands_worn",
+	}
+
+
+func test_bracers_of_armor_adds_flat_ac_bonus_but_not_save_bonus() -> void:
+	var cd := _make_fresh_pc()
+	cd.armor_class = 3
+	var saves_before := {
+		"save_petrification": cd.save_petrification,
+		"save_spells": cd.save_spells,
+	}
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_bracers_row("b1", 1)])
+	check(cd.get_effective_ac() == 4,
+		"AC 3 + bracers +1 = 4, got %d" % cd.get_effective_ac())
+	# Bracers of Armor DO NOT grant save bonuses.
+	for save_key in SAVE_KEYS:
+		var base: int = (
+			cd.save_petrification if save_key == "save_petrification" else
+			cd.save_poison_death if save_key == "save_poison_death" else
+			cd.save_blast_breath if save_key == "save_blast_breath" else
+			cd.save_staffs_wands if save_key == "save_staffs_wands" else
+			cd.save_spells
+		)
+		check(cd.get_effective_save(save_key) == base,
+			"bracers do NOT grant save bonuses; %s should stay at %d, got %d"
+				% [save_key, base, cd.get_effective_save(save_key)])
+
+
+func test_bracers_stack_with_cloak_and_ring_of_protection() -> void:
+	# Bracers + Cloak of Protection + Ring of Protection — all three apply.
+	var cd := _make_fresh_pc()
+	cd.armor_class = 5
+	var inv := [
+		_make_bracers_row("b1", 1, true),
+		_make_cloak_row("c1", 1, true),
+		_make_ring_row("r1", "ring_of_protection_2", 2, true),
+	]
+	WornMagicEffectResolver.refresh_for_character(cd, inv)
+	# AC: base 5 + bracers +1 + cloak +1 + ring +2 = 9.
+	check(cd.get_effective_ac() == 9,
+		"AC 5 + bracers +1 + cloak +1 + ring +2 = 9, got %d" % cd.get_effective_ac())
+	# Saves: cloak gives -1, ring gives -2, bracers give 0 -> -3 total.
+	for save_key in SAVE_KEYS:
+		var base: int = (
+			cd.save_petrification if save_key == "save_petrification" else
+			cd.save_poison_death if save_key == "save_poison_death" else
+			cd.save_blast_breath if save_key == "save_blast_breath" else
+			cd.save_staffs_wands if save_key == "save_staffs_wands" else
+			cd.save_spells
+		)
+		check(cd.get_effective_save(save_key) == base - 3,
+			"%s base %d - 3 (cloak+ring; bracers contribute nothing) = %d, got %d"
+				% [save_key, base, base - 3, cd.get_effective_save(save_key)])
+
+
+# ---------------------------------------------------------------------------
+# Boots of Speed — +30' movement_rate modifier.
+# ---------------------------------------------------------------------------
+
+func _make_boots_of_speed_row(item_id: String, equipped: bool = true) -> Dictionary:
+	return {
+		"id": item_id,
+		"item_key": "boots_of_speed",
+		"name": "Boots of Speed",
+		"quantity": 1,
+		"item_category": "magic",
+		"is_magical": 1,
+		"magical_bonus": 0,
+		"is_equipped": 1 if equipped else 0,
+		"slot": "feet",
+	}
+
+
+func test_boots_of_speed_adds_movement_rate_modifier() -> void:
+	var cd := _make_fresh_pc()
+	cd.base_movement = 40   # typical PC base move 40 ft/round
+	check(cd.get_effective_movement() == 40, "baseline: base move 40")
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1")])
+	check(cd.get_effective_movement() == 70,
+		"40 + boots +30 = 70 ft/round, got %d" % cd.get_effective_movement())
+
+
+func test_boots_of_speed_cleared_on_unequip() -> void:
+	var cd := _make_fresh_pc()
+	cd.base_movement = 40
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1", true)])
+	check(cd.get_effective_movement() == 70, "equipped: 40 + 30 = 70")
+	WornMagicEffectResolver.refresh_for_character(cd, [_make_boots_of_speed_row("bs1", false)])
+	check(cd.get_effective_movement() == 40,
+		"unequipped + refresh: movement back to base 40")

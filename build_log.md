@@ -29081,3 +29081,70 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 3. **(Special) Elemental Commanders.** Single investigation: does `conjure_elemental` accept an element parameter? If yes: 4 items = 4 bindings. If no: minimal element-typed summon (covers all 4 at once).
 4. **(Unblocker) Implement `cause_fear`.** Highest-leverage; flips 2 deferred items to shipped with a one-line catalog change.
 5. **(Unblocker) Add `use_dust` entry point.** Flips 2 deferred dust items to shipped; ~30 minutes.
+
+
+## Session 2026-05-29 — Tier 3a triage: 2 persistent-worn ships, 21 defers across 5 clusters
+
+**Task:** Walk through Tier 3 (the ~22 items the original triage plan grouped into 5 shared-resolver mechanisms). After a focused engine-surface survey (delegated to an Explore agent), most items turned out to need new infrastructure — STR override operation, temporary-level mechanism, detection UI reveal, warded-against-creature-type flag, save-by-element typing, etc. **2 clean ships** land in this commit; the other 21 are stamped `defer_reason` with specific blocker descriptions so a future session can build the missing infrastructure and unblock entire clusters at once.
+
+**Model used:** Opus (+ Explore subagent for the recon survey).
+
+**Completed:**
+- **Engine-surface recon** via the Explore agent: mapped each Tier 3 candidate against current engine support — ModifierContainer ops, CharacterData stat fields, ThiefSkillResolver wiring, EntityFlags, spell catalog effect blocks. Identified 2 clean wins (Bracers of Armor, Boots of Speed) and 5 cluster-scale blockers.
+- **`Bracers of Armor` wired** in `WornMagicEffectResolver._add_bracers_of_armor`:
+  - Flat AC bonus, **no save bonus** (distinguishes from Ring / Cloak of Protection).
+  - Project default magnitude **+1**, stamped via `EXPLICIT_BONUS` map in the extractor. If RAW summary's `magnitude` gets confirmed at +2/+3 variants, switch to a sub_roll table without changing the resolver path.
+  - Stacks with Ring + Cloak (empty `stacking_group`).
+- **`Boots of Speed` wired** in `WornMagicEffectResolver._add_boots_of_speed`:
+  - Flat +30 ft/round additive modifier on `movement_rate` (flows through `CharacterData.get_effective_movement()`).
+  - Project default magnitude `BOOTS_OF_SPEED_MOVEMENT_BONUS = 30` (explicit constant for easy retuning).
+  - V1 explicitly avoids the "permanent Haste" interpretation — boots boost movement only, not attacks. Flagged for Jedidiah ruling on whether RAW intends doubling base move (would be +base_movement) or a specific value.
+- **21 new `DEFER_BUILD` entries** in `tools/extract_magic_item_catalog.py`:
+  - **STR override family (3):** Potion of Giant Strength, Gauntlets of Ogre Power, Girdle of Giant Strength — blocked by lack of "set/override" operation in ModifierContainer.
+  - **Level boost (2):** Potion of Heroism, Potion of Super-Heroism — blocked by lack of `level_bonus` modifier consulted by combat resolver.
+  - **Special (1):** Potion of Invulnerability — RAW ambiguity (D&D ancestor +2 AC+saves vs spells-blocker globe_of_invulnerability); Jedidiah ruling needed.
+  - **Detect family (4):** Wand of Detecting Enemies / Metals / Secret Doors + Potion of Treasure Finding — blocked by detection UI reveal subsystem (spells return empty results from query_game_state).
+  - **Wards family (4):** 4 Scrolls of Warding (Elementals / Lycanthropes / Magic / Undead) — blocked by `warded_against_creature_type` EntityFlag + attack/movement gating + new `read_scroll` entry point.
+  - **Persistent-worn leftovers (7):** Scarab of Protection (RAW magnitude unknown), Cube of Frost Resistance (save-by-element typing), Eyes of the Eagle (vision range), Necklace of Adaptation (env immunity), Brooch of Shielding (missile-type discrimination), Elven Cloak + Elven Boots (ThiefSkillResolver doesn't read ModifierContainer).
+- **4 new tests** in `tests/test_worn_magic_effect_resolver.gd` (suite now 17 total): Bracers AC bonus + no-save-bonus invariant, Bracers + Cloak + Ring cumulative stack (AC and saves both correct), Boots of Speed +30 movement, Boots of Speed unequip clear.
+- **Catalog test `EXPECTED_DEFER_KEYS`** extended to 33 keys (4 Tier 1 + 11 Tier 2 + 21 Tier 3 - 2 ships). Existing sweep tests (`test_defer_items_are_flagged_with_reason`, `test_defer_items_are_selectable_by_random_roll`) automatically cover the new defers.
+- **GDD §14 status board** gained 2 rows for Bracers and Boots.
+- **Memory file `magic_item_bindings_deferred.md`** updated with the Tier 3 deferrals grouped by cluster + blocker.
+
+**Decisions made:**
+- **Recon before implementing.** Tier 3 was originally proposed as "5 shared mechanisms covering ~20 items" — survey showed most clusters are gated on engine extensions that don't exist yet. Better to ship 2 clean items and stamp 21 with specific blocker descriptions than to inflate scope by building 5 new infrastructure pieces in one batch.
+- **Bracers of Armor magnitude project default +1.** RAW summary XML is silent on variant tiers; ACKS Core may have +1/+2/+3 cousins. The catalog gets a single +1 stamped via `EXPLICIT_BONUS`; future variants land via sub_roll (mirror Ring of Protection). Source comment explicitly notes the open question.
+- **Boots of Speed magnitude project default +30 ft/round.** RAW says "Increase movement and related timing as described in item entry" without a specific value. Common D&D interpretations: +30 ft, double base movement, or Haste-equivalent. Chose +30 as the cleanest middle ground that doesn't break combat balance. Constant `BOOTS_OF_SPEED_MOVEMENT_BONUS` allows easy retuning.
+- **Potion of Invulnerability deferred rather than mis-bound.** The Explore agent suggested binding to `globe_of_invulnerability` (which exists with a working effect). But Globe blocks SPELL LEVELS (≤4th/3rd) — completely different mechanic from the historical "+2 AC+saves vs weapons" Potion of Invulnerability. Without RAW prose to disambiguate, project-rule-respecting move is to defer until Jedidiah rules.
+- **Elven Cloak / Boots deferred.** ThiefSkillResolver doesn't consult ModifierContainer (the skill check is built from `bundle.character.proficiencies` and class progression, not modifiers). A worn-item bonus to hide_in_shadows or move_silently would need ThiefSkillResolver to read a `modifiers.get_effective_value("skill_<key>_bonus", 0)` term during skill-check assembly. Out of scope for this batch — defer until that wiring lands (probably ~30-50 lines in ThiefSkillResolver).
+- **All defers stamped with SPECIFIC blockers, not generic "deferred".** Each `defer_reason` names the missing engine surface (modifier op, stat field, subsystem, EntityFlag, etc.). A future session can grep for the blocker, build it, then flip a whole cluster from defer to ship in one commit.
+
+**Interfaces defined or changed:**
+- `EXPLICIT_BONUS` map gained `bracers_of_armor: 1`.
+- `DEFER_BUILD` map gained 21 entries (see above).
+- `WornMagicEffectResolver` gained `_add_bracers_of_armor(character, item_id, bonus)` and `_add_boots_of_speed(character, item_id)`. New constant `BOOTS_OF_SPEED_MOVEMENT_BONUS = 30`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_worn_magic_effect_resolver.gd`: 4 new tests; suite now 17 total.
+- `tests/test_magic_item_catalog.gd`: `EXPECTED_DEFER_KEYS` extended from 15 to 33.
+- Suite: 395 passed / 19 failed — baseline preserved, net-zero NEW failures. ERROR count unchanged at 307.
+
+**Known issues:**
+- **All 5 Tier 3 cluster blockers are unblocker tasks** (each lands an engine extension that flips multiple defers to ship):
+  - **ModifierContainer "set/override" op** → unblocks Cluster 1 (3 items).
+  - **`level_bonus` modifier key + combat resolver wiring** → unblocks 2 of Cluster 2's 3 items (Heroism, Super-Heroism).
+  - **Detection UI reveal subsystem** → unblocks Cluster 3 (4 items).
+  - **`warded_against_creature_type` flag + gating + `read_scroll` entry point** → unblocks Cluster 4 (4 items).
+  - **ThiefSkillResolver consults ModifierContainer** → unblocks Elven Cloak + Boots (2 items).
+  - **Save-by-element typing** → unblocks Cube of Frost Resistance + extends Ring of Fire Resistance to fire-only (refinement).
+  - **Vision range, env immunity, missile-type discrimination** are 3 smaller per-item unblockers (1 each).
+- **Bracers of Armor magnitude** — open question; needs Jedidiah confirmation of whether ACKS Core has +2/+3 variants.
+- **Boots of Speed magnitude** — open question; +30/round is the project default but RAW may specify a different value.
+
+**Next session should:**
+1. **(Triage) Tier 4 — per-item customs (~17 items).** Bag of Holding, Bag of Devouring, Rod of Cancellation, Wand of Device Negation, Horn of Blasting, Rope of Climbing, Crystal Ball (+ 2 variants), Ring of Regeneration, Ring of Spell Storing, Staff of Withering, Displacer Cloak, Amulet vs Crystal Balls and ESP, Potion of Poison, Potion of Gaseous Form, Potion of Growth. Each its own resolver (~50-100 lines). Several are parallelizable.
+2. **(Special) Elemental Commanders (4 items).** Investigate whether `conjure_elemental` accepts an element parameter; if yes, 4 cheap bindings.
+3. **(Unblocker batch — highest leverage)** Pick ONE cluster blocker and ship it + the items it unblocks. Strongest candidate: **ModifierContainer "set" operation** → unblocks STR override family (3 items) immediately, also useful for future cleric spells / class abilities. ~30 lines in ModifierContainer + 50-80 in worn-magic handlers + tests. Could parallelize with Tier 4 customs in different agent worktrees since they're in different subsystems.
+4. **(Smaller unblockers)** `cause_fear` spell (unblocks Wand of Fear + Drums of Panic, ~30 min); `use_dust` activator entry point (unblocks 2 Dusts, ~30 min). Each takes ~30 minutes and flips 2 deferred items to shipped.

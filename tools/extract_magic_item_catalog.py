@@ -348,6 +348,62 @@ DEFER_BUILD = {
     # when the entry point lands.
     "dust_of_disappearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to invisibility)",
     "dust_of_appearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to detect_invisible)",
+    # ----------------------------------------------------------------------
+    # Tier 3 deferrals (Jedidiah triage 2026-05-29):
+    # ----------------------------------------------------------------------
+    # STR override family — needs a new ModifierContainer operation type
+    # ("set" / "override") so STR can be replaced wholesale by an item-
+    # provided value (ogre 18, hill giant 21, etc.). ModifierContainer
+    # currently supports add / multiply / set_floor / set_ceiling but no
+    # blanket override. Once that op lands, all 3 items get a small
+    # WornMagicEffectResolver entry (Gauntlets/Girdle) or a temporary
+    # modifier (Potion of Giant Strength) referencing it.
+    "potion_of_giant_strength": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
+    "gauntlets_of_ogre_power": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
+    "girdle_of_giant_strength": "STR set/override operation not yet in ModifierContainer; needs new modifier op",
+    # Level boost family — no "temporary effective-level bonus" mechanism in
+    # CharacterData / Combatant. The level value used by combat throws is
+    # `character.level` directly. Adding a `level_bonus` modifier read by
+    # the combat resolver would unblock all three potions (Heroism,
+    # Super-Heroism, Invulnerability).
+    "potion_of_heroism": "temporary effective-level mechanism not yet in CharacterData",
+    "potion_of_super_heroism": "temporary effective-level mechanism not yet in CharacterData",
+    # Potion of Invulnerability: the historical D&D ancestor gives +2 AC +
+    # +2 saves vs normal weapons for a short duration. The ACKS catalog has
+    # `globe_of_invulnerability` (blocks SPELL levels — very different
+    # mechanic). RAW summary XML doesn't disambiguate. Defer until Jedidiah
+    # rules whether it's the weapon-AC+saves variant or the spell-blocker.
+    "potion_of_invulnerability": "RAW summary doesn't specify mechanic; needs Jedidiah ruling (weapon AC+saves vs spell-blocker)",
+    # Detect family — spells exist in catalog (`detect_evil`,
+    # `locate_object`, `find_traps`) but their `effect` blocks are
+    # query_game_state returning empty results. A "detection UI reveal"
+    # subsystem (dungeon-map highlight, wilderness-hex marker, notification)
+    # is needed before any detection wand or potion can produce useful
+    # gameplay output.
+    "wand_of_detecting_enemies": "detection UI reveal subsystem not yet implemented (spell returns empty results)",
+    "wand_of_detecting_metals": "detection UI reveal subsystem not yet implemented",
+    "wand_of_detecting_secret_doors": "detection UI reveal subsystem not yet implemented",
+    "potion_of_treasure_finding": "detection UI reveal subsystem not yet implemented",
+    # Wards family — RAW: 10' radius barrier centered on reader; named
+    # creature type cannot enter the protected area; ends if the reader
+    # attacks the warded type in melee. Needs a new EntityFlags entry
+    # (`warded_against_<creature_type>`) + gating in attack / spell
+    # resolution to refuse movement of the warded type into the area.
+    # New entry point on MagicItemActivator: read_scroll (consumable).
+    "scroll_of_warding_elementals": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
+    "scroll_of_warding_lycanthropes": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
+    "scroll_of_warding_magic": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
+    "scroll_of_warding_undead": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
+    # Cluster 5 leftover persistent-worn items — each blocked by missing
+    # engine support for the specific stat / mechanic. All extend
+    # WornMagicEffectResolver once their stat exists.
+    "scarab_of_protection": "save-bonus magnitude not in RAW summary XML; needs Jedidiah ruling",
+    "cube_of_frost_resistance": "save-by-element typing not yet in engine (analogous to Ring of Fire Resistance's deferred 1/die reduction)",
+    "eyes_of_the_eagle": "vision-range modifier not yet wired (no vision_range stat in CharacterData)",
+    "necklace_of_adaptation": "environmental-immunity subsystem not yet in EntityFlags (gas / drowning / etc.)",
+    "brooch_of_shielding": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)",
+    "elven_cloak": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension",
+    "elven_boots": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension",
     # Other items will land here as we finish triaging — Bag of Devouring,
     # Helm of Telepathy edge cases, etc.
 }
@@ -367,6 +423,13 @@ DEFER_BUILD = {
 # existing Ring of Protection pattern.
 EXPLICIT_BONUS = {
     "cloak_of_protection": 1,
+    # Tier 3 (Jedidiah triage 2026-05-29): Bracers of Armor +1 as project
+    # default magnitude. RAW summary XML doesn't specify variant tiers; ACKS
+    # Core may have +2 / +3 cousins (similar to Ring of Protection's 5
+    # variants). If they exist, switch to a sub_roll table without changing
+    # the resolver path. WornMagicEffectResolver reads magical_bonus from
+    # this stamp.
+    "bracers_of_armor": 1,
 }
 
 # ---------------------------------------------------------------------------

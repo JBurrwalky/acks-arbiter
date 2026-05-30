@@ -379,7 +379,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2000,
-      "creation_time_days": 28
+      "creation_time_days": 28,
+      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
     },
     {
       "item_key": "potion_of_growth",
@@ -415,7 +416,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "defer_reason": "temporary effective-level mechanism not yet in CharacterData"
     },
     {
       "item_key": "potion_of_human_control",
@@ -457,7 +459,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "defer_reason": "RAW summary doesn't specify mechanic; needs Jedidiah ruling (weapon AC+saves vs spell-blocker)"
     },
     {
       "item_key": "potion_of_levitation",
@@ -583,7 +586,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2500,
-      "creation_time_days": 35
+      "creation_time_days": 35,
+      "defer_reason": "temporary effective-level mechanism not yet in CharacterData"
     },
     {
       "item_key": "potion_of_sweet_water",
@@ -605,7 +609,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2000,
-      "creation_time_days": 28
+      "creation_time_days": 28,
+      "defer_reason": "detection UI reveal subsystem not yet implemented"
     },
     {
       "item_key": "potion_of_undead_control",
@@ -889,7 +894,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 500,
-      "creation_time_days": 7
+      "creation_time_days": 7,
+      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
     },
     {
       "item_key": "scroll_of_warding_lycanthropes",
@@ -899,7 +905,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 500,
-      "creation_time_days": 7
+      "creation_time_days": 7,
+      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
     },
     {
       "item_key": "scroll_of_warding_magic",
@@ -909,7 +916,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 3000,
-      "creation_time_days": 42
+      "creation_time_days": 42,
+      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
     },
     {
       "item_key": "scroll_of_warding_undead",
@@ -919,7 +927,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 500,
-      "creation_time_days": 7
+      "creation_time_days": 7,
+      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
     },
     {
       "item_key": "spell_scroll",
@@ -1072,7 +1081,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 10000,
-      "creation_time_days": 40
+      "creation_time_days": 40,
+      "defer_reason": "detection UI reveal subsystem not yet implemented (spell returns empty results)"
     },
     {
       "item_key": "wand_of_detecting_magic",
@@ -1099,7 +1109,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 30000,
-      "creation_time_days": 120
+      "creation_time_days": 120,
+      "defer_reason": "detection UI reveal subsystem not yet implemented"
     },
     {
       "item_key": "wand_of_detecting_secret_doors",
@@ -1109,7 +1120,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 20000,
-      "creation_time_days": 80
+      "creation_time_days": 80,
+      "defer_reason": "detection UI reveal subsystem not yet implemented"
     },
     {
       "item_key": "wand_of_detecting_traps",
@@ -1355,7 +1367,7 @@
       "item_key": "bracers_of_armor",
       "name": "Bracers of Armor",
       "category": "misc_magic",
-      "magical_bonus": 0,
+      "magical_bonus": 1,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 5000,
@@ -1379,7 +1391,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 5000,
-      "creation_time_days": 20
+      "creation_time_days": 20,
+      "defer_reason": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)"
     },
     {
       "item_key": "broom_of_flying",
@@ -1483,7 +1496,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 24000,
-      "creation_time_days": 180
+      "creation_time_days": 180,
+      "defer_reason": "save-by-element typing not yet in engine (analogous to Ring of Fire Resistance's deferred 1/die reduction)"
     },
     {
       "item_key": "decanter_of_endless_water",
@@ -1556,7 +1570,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100
+      "creation_time_days": 100,
+      "defer_reason": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension"
     },
     {
       "item_key": "elven_boots",
@@ -1566,7 +1581,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100
+      "creation_time_days": 100,
+      "defer_reason": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension"
     },
     {
       "item_key": "eyes_of_charming",
@@ -1592,7 +1608,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "defer_reason": "vision-range modifier not yet wired (no vision_range stat in CharacterData)"
     },
     {
       "item_key": "eyes_of_petrification",
@@ -1625,7 +1642,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
     },
     {
       "item_key": "girdle_of_giant_strength",
@@ -1635,7 +1653,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 100000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "defer_reason": "STR set/override operation not yet in ModifierContainer; needs new modifier op"
     },
     {
       "item_key": "helm_of_alignment_changing",
@@ -1771,7 +1790,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 125000,
-      "creation_time_days": 400
+      "creation_time_days": 400,
+      "defer_reason": "environmental-immunity subsystem not yet in EntityFlags (gas / drowning / etc.)"
     },
     {
       "item_key": "rope_of_climbing",
@@ -1791,7 +1811,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 24000,
-      "creation_time_days": 96
+      "creation_time_days": 96,
+      "defer_reason": "save-bonus magnitude not in RAW summary XML; needs Jedidiah ruling"
     },
     {
       "item_key": "stone_of_controlling_earth_elementals",
