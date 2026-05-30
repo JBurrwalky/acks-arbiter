@@ -359,6 +359,90 @@ SPELL_BINDING_MAP = {
         "spell_key": "charm_person", "tradition": "arcane",
         "caster_level": 1, "target_mode": "single_creature",
     },
+
+    # ---- Wands (charged items, 1 charge per cast) ----
+    # RAW sample (sample_magic_items L240): Wand of Fireball, 20 charges,
+    # 30,000 gp = 500 × spell_level × charges per the magic_item_creation_table
+    # "Charged Effect" row. V1 sets every wand to 20 default_charges; rulebook
+    # prose may vary per-item but the architecture handles it the same way.
+    # caster_level = minimum caster level able to cast the bound spell
+    # (lower-tradition wins).
+    "wand_of_cold": {
+        "spell_key": "cone_of_cold", "tradition": "arcane",
+        "caster_level": 9, "target_mode": "single_target",
+        "default_charges": 20,
+    },
+    "wand_of_detecting_magic": {
+        "spell_key": "detect_magic", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "self",
+        "default_charges": 20,
+    },
+    "wand_of_detecting_traps": {
+        "spell_key": "find_traps", "tradition": "divine",
+        "caster_level": 3, "target_mode": "self",
+        "default_charges": 20,
+    },
+    "wand_of_fire_balls": {
+        "spell_key": "fireball", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "default_charges": 20,
+    },
+    "wand_of_illusion": {
+        "spell_key": "phantasmal_force", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "single_target",
+        "default_charges": 20,
+    },
+    "wand_of_lightning_bolts": {
+        "spell_key": "lightning_bolt", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "default_charges": 20,
+    },
+    "wand_of_magic_missiles": {
+        "spell_key": "magic_missile", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_target",
+        "default_charges": 20,
+    },
+    "wand_of_paralyzation": {
+        "spell_key": "hold_monster", "tradition": "arcane",
+        "caster_level": 9, "target_mode": "single_creature",
+        "default_charges": 20,
+    },
+    "wand_of_polymorphing": {
+        "spell_key": "polymorph_other", "tradition": "arcane",
+        "caster_level": 7, "target_mode": "single_creature",
+        "default_charges": 20,
+    },
+
+    # ---- Staves ----
+    # RAW prose doesn't enumerate canonical staff charges (the cited sample
+    # item is the wand). V1 sets default_charges=30 as a reasonable starting
+    # point; per-staff overrides land later as rulebook prose surfaces. Caster
+    # levels follow the same minimum-to-cast rule.
+    "staff_of_striking": {
+        "spell_key": "striking", "tradition": "divine",
+        "caster_level": 5, "target_mode": "single_target",
+        "default_charges": 30,
+    },
+    "staff_of_healing": {
+        "spell_key": "cure_light_wounds", "tradition": "divine",
+        "caster_level": 1, "target_mode": "single_creature",
+        "default_charges": 30,
+    },
+
+    # WANDS / STAVES DELIBERATELY OMITTED — no clean spell mapping in V1:
+    #   - Rod of Cancellation, Rod of Resurrection (no equivalent spell)
+    #   - Staff of Commanding, Staff of Power, Staff of Wizardry (multi-effect
+    #     items; need a custom resolver per item)
+    #   - Staff of Withering (no equivalent spell)
+    #   - Staff of the Serpent (cleric staff that transforms into a serpent —
+    #     not the same mechanic as sticks_to_snakes; needs ruling)
+    #   - Wand of Detecting Enemies, Wand of Detecting Metals,
+    #     Wand of Detecting Secret Doors (no exact-match spell — partial
+    #     overlap with detect_evil / find_traps but distinct mechanics)
+    #   - Wand of Device Negation (different scope from dispel_magic per RAW
+    #     — targets magic items rather than active spells)
+    #   - Wand of Fear (RAW Cause Fear is a 1st-level divine spell; needs to
+    #     verify that spell is implemented before binding)
     # POTIONS DELIBERATELY OMITTED (ambiguous bindings — RAW excerpt only
     # carries names, not mechanics; the rulebook prose disambiguates these
     # and we'd need a Jedidiah ruling before binding):

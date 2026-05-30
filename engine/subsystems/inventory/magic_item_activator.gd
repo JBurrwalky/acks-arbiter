@@ -1,19 +1,26 @@
 class_name MagicItemActivator
 extends RefCounted
 
-## Bridges magic-item activation ("drink potion", later "use wand", "wear ring",
-## etc.) into the existing spell-effect pipeline (`CastingResolver`).
+## Bridges magic-item activation ("drink potion", "use wand", "tap staff",
+## later "wear ring", etc.) into the existing spell-effect pipeline
+## (`CastingResolver`).
 ##
-## V1 thin slice — POTIONS ONLY: a potion that carries a `spell_binding` field
-## in `data/treasure/magic_item_catalog.json` activates by routing through
-## CastingResolver.resolve() with the drinker as caster, the binding's
-## spell_key + caster_level + tradition stamped onto the CasterContext +
-## SpellChoice, and a TargetDescriptor built from the binding's target_mode
-## ("self" → drinker is the target; "single_creature" → caller supplies
-## target_id + target_entity). On a successful cast the potion is consumed
-## (deleted from inventory_items). On failure no consumption (the dose
-## survives, per RAW magic-item-use semantics — a spell failure doesn't drain
-## the bottle).
+## V1 covers TWO consumption models, both keyed on the catalog's
+## `spell_binding` field (`data/treasure/magic_item_catalog.json`):
+##
+##   1. **Potions** (one-shot, `drink_potion`): the bottle is deleted from
+##      inventory on a successful cast. A failed cast doesn't waste the dose
+##      (RAW item-activation interpretation: a magic-system failure shouldn't
+##      drain the bottle).
+##
+##   2. **Charged items — wands, staves, rods** (charge-per-use,
+##      `activate_charged_item`): one charge per cast via the
+##      `inventory_items.uses_remaining` column. When charges reach 0 the item
+##      becomes useless and non-magical
+##      (acore_treasure_and_magic_items_rules.xml identification_and_use:
+##      "An item with no charges remaining becomes useless and non-magical").
+##      Initial charge count is the binding's `default_charges` (set on the
+##      inventory_items row at treasure-instantiation time).
 ##
 ## Design — why this lives here:
 ##   - It's PURE composition of existing services: MagicItemCatalog +
@@ -108,47 +115,25 @@ static func drink_potion(
 	var binding: Dictionary = binding_v
 	empty["spell_key"] = str(binding.get("spell_key", ""))
 
-	# 3. Validate target params match the binding's target_mode.
-	var target_mode: String = str(binding.get("target_mode", "self"))
-	match target_mode:
-		"self":
-			# Drinker is both caster and target.
-			pass
-		"single_creature":
-			if target_id.is_empty() or target_entity == null:
-				empty["message"] = ("Potion '%s' requires a designated target (target_mode=%s)." %
-					[item_key, target_mode])
-				return empty
-		_:
-			empty["message"] = ("Potion '%s' has unsupported target_mode='%s'." %
-				[item_key, target_mode])
-			return empty
+	# 3. Validate target params + cast via the shared pipeline.
+	var target_v: Dictionary = _validate_target(
+		binding, "Potion '%s'" % item_key, target_id, target_entity, Vector3i.ZERO)
+	if not bool(target_v["ok"]):
+		empty["message"] = str(target_v["message"])
+		return empty
 
-	# 4. Build CasterContext / SpellChoice / TargetDescriptor.
-	var ctx: CasterContext = _build_caster_context(
-		drinker, binding, map_context, origin_cell)
-	var choice: SpellChoice = _build_spell_choice(binding)
-	var descriptor: TargetDescriptor = _build_target_descriptor(
-		binding, drinker, target_id, origin_cell)
-	var targets_by_id: Dictionary = {}
-	match target_mode:
-		"self":
-			# CharacterData.id is the canonical key.
-			targets_by_id[drinker.id] = drinker
-		"single_creature":
-			targets_by_id[target_id] = target_entity
+	var result: ResolutionResult = _cast_via_binding(
+		binding, drinker, casting_resolver,
+		target_id, target_entity, Vector3i.ZERO,
+		map_context, origin_cell)
 
-	# 5. Resolve the spell via the existing pipeline.
-	var result: ResolutionResult = casting_resolver.resolve(
-		ctx, choice, descriptor, drinker, targets_by_id)
-
-	# 6. Consume the potion ONLY on success. The hand-drained-bottle rule: a
+	# 4. Consume the potion ONLY on success. The hand-drained-bottle rule: a
 	# failed cast doesn't waste the dose. Consumed = inventory row deleted
 	# (quantity == 1 always for potions in V1; stacks not modeled).
 	var consumed: bool = false
 	var message: String = ""
 	if result != null and result.success:
-		consumed = _consume_potion(item_id, item_row)
+		consumed = CampaignRepository.remove_inventory_item(item_id)
 		message = "Drank '%s' — cast %s." % [str(catalog_entry.get("name", item_key)), binding.get("spell_key", "")]
 	else:
 		var failures: Array = result.failures if result != null else []
@@ -163,6 +148,221 @@ static func drink_potion(
 		"spell_key": binding.get("spell_key", ""),
 		"casting_result": result,
 	}
+
+
+## Use a charged item (wand, staff, rod). Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     charges_remaining: int,    — uses_remaining AFTER the activation
+##     became_inert: bool,        — true when charges reached 0 and the item
+##                                  was cleared of is_magical (RAW: "no
+##                                  charges remaining → useless and
+##                                  non-magical").
+##     spell_key: String,
+##     casting_result: ResolutionResult
+##   }
+##
+## [param item_id]         the inventory_items.id of the wand / staff / rod.
+## [param wielder]          the live CharacterData using the item. Becomes
+##                          caster_id + caster_name on the CasterContext.
+## [param target_id]        creature-target id (when target_mode is
+##                          "single_creature" or "single_target" with a
+##                          creature target).
+## [param target_entity]    the live entity for the creature target.
+## [param target_cell]      cell-target Vector3i (when target_mode is
+##                          "single_target" with an area / cell anchor —
+##                          fireball, lightning_bolt, etc.). Vector3i.ZERO
+##                          treated as "no cell supplied".
+## [param map_context]      "combat_grid" by default; pass the wielder's
+##                          current context so geometry dispatches correctly.
+## [param origin_cell]      wielder's voxel position (origin for area /
+##                          line spells).
+##
+## A wand with 0 charges remaining fails with "no charges remaining" and the
+## item is NOT activated. A failed cast does NOT decrement charges
+## (consistent with the potion "failure doesn't waste the dose" rule).
+static func activate_charged_item(
+		item_id: String,
+		wielder: CharacterData,
+		casting_resolver: CastingResolver,
+		magic_item_catalog: MagicItemCatalog,
+		target_id: String = "",
+		target_entity = null,
+		target_cell: Vector3i = Vector3i.ZERO,
+		map_context: String = "combat_grid",
+		origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"charges_remaining": -1,
+		"became_inert": false,
+		"spell_key": "",
+		"casting_result": null,
+	}
+
+	# 1. Lookup chain.
+	var item_row: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	if item_row.is_empty():
+		empty["message"] = "Charged item not found in inventory (id=%s)." % item_id
+		return empty
+	var item_key: String = str(item_row.get("item_key", ""))
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(item_key)
+	if catalog_entry.is_empty():
+		empty["message"] = "Item '%s' has no catalog entry." % item_key
+		return empty
+	if str(catalog_entry.get("category", "")) != "rod_staff_wand":
+		empty["message"] = "Item '%s' is not a wand / staff / rod (category=%s)." % [
+			item_key, catalog_entry.get("category", "?")]
+		return empty
+	var binding_v: Variant = catalog_entry.get("spell_binding", null)
+	if not (binding_v is Dictionary):
+		empty["message"] = (
+			"Charged item '%s' has no spell_binding (effect not yet implemented)." % item_key)
+		return empty
+	var binding: Dictionary = binding_v
+	empty["spell_key"] = str(binding.get("spell_key", ""))
+
+	# 2. Charge gate — RAW: an item with no charges is useless and non-magical.
+	# We treat -1 (catalog default for non-charged items) as "infinite uses"
+	# only if the item lacks default_charges; if default_charges WAS set on
+	# the binding and the row carries -1, that's a materialization bug and
+	# we refuse to fire.
+	var current_charges: int = int(item_row.get("uses_remaining", -1))
+	empty["charges_remaining"] = current_charges
+	if current_charges == 0:
+		empty["message"] = (
+			"'%s' has no charges remaining (item is useless and non-magical)." %
+			str(catalog_entry.get("name", item_key)))
+		return empty
+	if current_charges < 0 and binding.has("default_charges"):
+		empty["message"] = (
+			"'%s' is uncharged at the inventory layer (materialization didn't stamp default_charges)." %
+			item_key)
+		return empty
+
+	# 3. Validate target params against the binding's target_mode.
+	var target_v: Dictionary = _validate_target(
+		binding, "Charged item '%s'" % item_key, target_id, target_entity, target_cell)
+	if not bool(target_v["ok"]):
+		empty["message"] = str(target_v["message"])
+		return empty
+
+	# 4. Cast.
+	var result: ResolutionResult = _cast_via_binding(
+		binding, wielder, casting_resolver,
+		target_id, target_entity, target_cell,
+		map_context, origin_cell)
+
+	# 5. Charge accounting on success only.
+	var charges_after: int = current_charges
+	var became_inert: bool = false
+	var message: String = ""
+	if result != null and result.success:
+		# Decrement uses_remaining. -1 (unbounded) stays untouched (V1 doesn't
+		# yet have unbounded-charge items in the binding map, but defensive).
+		if current_charges > 0:
+			charges_after = current_charges - 1
+			CampaignRepository.db.query_with_bindings(
+				"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+				[charges_after, item_id])
+			if charges_after == 0:
+				# RAW: useless and non-magical. Clear is_magical so combat code
+				# stops treating the item as enchanted (the +N / magic-required
+				# checks read this column).
+				CampaignRepository.db.query_with_bindings(
+					"UPDATE inventory_items SET is_magical = 0 WHERE id = ?",
+					[item_id])
+				became_inert = true
+		message = "Used '%s' — cast %s (%d charge%s remaining)." % [
+			str(catalog_entry.get("name", item_key)),
+			binding.get("spell_key", ""),
+			charges_after,
+			"" if charges_after == 1 else "s",
+		]
+	else:
+		var failures: Array = result.failures if result != null else []
+		message = "Failed to activate '%s': %s" % [
+			str(catalog_entry.get("name", item_key)),
+			"; ".join(failures) if not failures.is_empty() else "unknown error"]
+
+	return {
+		"success": result != null and result.success,
+		"message": message,
+		"charges_remaining": charges_after,
+		"became_inert": became_inert,
+		"spell_key": binding.get("spell_key", ""),
+		"casting_result": result,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Shared pipeline — used by drink_potion and activate_charged_item.
+# ---------------------------------------------------------------------------
+
+## Validate that target params match the binding's target_mode. Returns
+## {ok: bool, message: String}. The shared validation lets both entry points
+## use a consistent failure mode for missing target_id / target_cell.
+static func _validate_target(
+		binding: Dictionary,
+		label: String,
+		target_id: String,
+		target_entity,
+		target_cell: Vector3i) -> Dictionary:
+	var target_mode: String = str(binding.get("target_mode", "self"))
+	match target_mode:
+		"self":
+			return {"ok": true, "message": ""}
+		"single_creature":
+			if target_id.is_empty() or target_entity == null:
+				return {"ok": false,
+					"message": "%s requires a designated creature target (target_mode=single_creature)." % label}
+			return {"ok": true, "message": ""}
+		"single_target":
+			# Wand-style: wielder picks one target which may be a creature
+			# (single-target spells like magic_missile, hold_monster) or a
+			# cell (area spells like fireball anchored at a point). At least
+			# one of target_id / target_cell must be supplied.
+			var has_creature: bool = (not target_id.is_empty()) and (target_entity != null)
+			var has_cell: bool = target_cell != Vector3i.ZERO
+			if not has_creature and not has_cell:
+				return {"ok": false,
+					"message": "%s requires a designated target (creature id or cell)." % label}
+			return {"ok": true, "message": ""}
+		_:
+			return {"ok": false,
+				"message": "%s has unsupported target_mode='%s'." % [label, target_mode]}
+
+
+## Build CasterContext + SpellChoice + TargetDescriptor + targets_by_id and
+## invoke CastingResolver.resolve. The caller is responsible for consumption
+## (potion delete / charge decrement) based on result.success.
+static func _cast_via_binding(
+		binding: Dictionary,
+		user: CharacterData,
+		casting_resolver: CastingResolver,
+		target_id: String,
+		target_entity,
+		target_cell: Vector3i,
+		map_context: String,
+		origin_cell: Vector3i) -> ResolutionResult:
+	var ctx: CasterContext = _build_caster_context(user, binding, map_context, origin_cell)
+	var choice: SpellChoice = _build_spell_choice(binding)
+	var descriptor: TargetDescriptor = _build_target_descriptor(
+		binding, user, target_id, target_cell, origin_cell)
+
+	var target_mode: String = str(binding.get("target_mode", "self"))
+	var targets_by_id: Dictionary = {}
+	match target_mode:
+		"self":
+			targets_by_id[user.id] = user
+		"single_creature":
+			targets_by_id[target_id] = target_entity
+		"single_target":
+			if not target_id.is_empty() and target_entity != null:
+				targets_by_id[target_id] = target_entity
+
+	return casting_resolver.resolve(ctx, choice, descriptor, user, targets_by_id)
 
 
 # ---------------------------------------------------------------------------
@@ -225,12 +425,14 @@ static func _build_spell_choice(binding: Dictionary) -> SpellChoice:
 ## TargetDescriptor — derived from the binding's target_mode. The spell's
 ## actual target_spec.kind (touch_creature / touch_ally / self / etc.) is
 ## set on the descriptor so the resolver routes mutations to the correct
-## entity. For self-targeted potions the drinker is the only target_id; for
-## single_creature the caller supplies it.
+## entity. For self-targeted potions the user is the only target_id; for
+## single_creature the caller supplies it; for single_target (wands) the
+## caller supplies a creature id OR a cell (or both for hybrid spells).
 static func _build_target_descriptor(
 		binding: Dictionary,
-		drinker: CharacterData,
+		user: CharacterData,
 		target_id: String,
+		target_cell: Vector3i,
 		origin_cell: Vector3i) -> TargetDescriptor:
 	var descriptor := TargetDescriptor.new()
 	descriptor.origin_cell = origin_cell
@@ -241,19 +443,20 @@ static func _build_target_descriptor(
 			# default the descriptor's kind to "self" but it's also valid for
 			# the resolver to overlay touch_creature / touch_ally.
 			descriptor.kind = "self"
-			descriptor.target_ids = [drinker.id]
+			descriptor.target_ids = [user.id]
 		"single_creature":
 			descriptor.kind = "single_creature"
 			descriptor.target_ids = [target_id]
+		"single_target":
+			# Wand-style hybrid: populate whichever side the caller supplied.
+			# The resolver picks what to use based on the spell's target_spec.
+			if not target_id.is_empty():
+				descriptor.target_ids = [target_id]
+			if target_cell != Vector3i.ZERO:
+				descriptor.target_cells = [target_cell]
+			# Generic kind — the registry/resolver overlays the spell's actual
+			# target_spec.kind during payload resolution.
+			descriptor.kind = "single_target"
 	return descriptor
 
 
-# ---------------------------------------------------------------------------
-# Consumption
-# ---------------------------------------------------------------------------
-
-## Consume one dose of a potion. V1 assumes quantity == 1 for any potion
-## (ACKS RAW doesn't model potion stacks). Returns true if the row was
-## successfully removed.
-static func _consume_potion(item_id: String, _item_row: Dictionary) -> bool:
-	return CampaignRepository.remove_inventory_item(item_id)

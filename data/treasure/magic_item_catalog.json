@@ -937,7 +937,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 22500,
-      "creation_time_days": 90
+      "creation_time_days": 90,
+      "spell_binding": {
+        "spell_key": "cure_light_wounds",
+        "tradition": "divine",
+        "caster_level": 1,
+        "target_mode": "single_creature",
+        "default_charges": 30
+      }
     },
     {
       "item_key": "staff_of_power",
@@ -957,7 +964,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 83
+      "creation_time_days": 83,
+      "spell_binding": {
+        "spell_key": "striking",
+        "tradition": "divine",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "default_charges": 30
+      }
     },
     {
       "item_key": "staff_of_withering",
@@ -997,7 +1011,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "cone_of_cold",
+        "tradition": "arcane",
+        "caster_level": 9,
+        "target_mode": "single_target",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_detecting_enemies",
@@ -1017,7 +1038,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 10000,
-      "creation_time_days": 40
+      "creation_time_days": 40,
+      "spell_binding": {
+        "spell_key": "detect_magic",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "self",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_detecting_metals",
@@ -1047,7 +1075,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 20000,
-      "creation_time_days": 80
+      "creation_time_days": 80,
+      "spell_binding": {
+        "spell_key": "find_traps",
+        "tradition": "divine",
+        "caster_level": 3,
+        "target_mode": "self",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_device_negation",
@@ -1077,7 +1112,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 30000,
-      "creation_time_days": 120
+      "creation_time_days": 120,
+      "spell_binding": {
+        "spell_key": "fireball",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_illusion",
@@ -1087,7 +1129,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 20000,
-      "creation_time_days": 80
+      "creation_time_days": 80,
+      "spell_binding": {
+        "spell_key": "phantasmal_force",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "single_target",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_lightning_bolts",
@@ -1097,7 +1146,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 30000,
-      "creation_time_days": 120
+      "creation_time_days": 120,
+      "spell_binding": {
+        "spell_key": "lightning_bolt",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_magic_missiles",
@@ -1107,7 +1163,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 10000,
-      "creation_time_days": 40
+      "creation_time_days": 40,
+      "spell_binding": {
+        "spell_key": "magic_missile",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_target",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_paralyzation",
@@ -1117,7 +1180,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "hold_monster",
+        "tradition": "arcane",
+        "caster_level": 9,
+        "target_mode": "single_creature",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "wand_of_polymorphing",
@@ -1127,7 +1197,14 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 60000,
-      "creation_time_days": 240
+      "creation_time_days": 240,
+      "spell_binding": {
+        "spell_key": "polymorph_other",
+        "tradition": "arcane",
+        "caster_level": 7,
+        "target_mode": "single_creature",
+        "default_charges": 20
+      }
     },
     {
       "item_key": "amulet_versus_crystal_balls_and_esp",

@@ -334,7 +334,7 @@ Per-item effects are landing incrementally as the magic-item-usage work continue
 | Ranged magic weapon +N → to-hit & damage | `ranged_attack_resolver.gd` (weapon + ammo `magical_bonus` added to both terms) | ✅ landed 2026-05-29 (Jedidiah: apply RAW uniformly — no split). Bow + ammo bonuses stack; thrown weapons see only the weapon's +N (no separate ammo). |
 | Ring of Protection — wearer-only AC + saves | `WornMagicEffectResolver` (`engine/subsystems/inventory/worn_magic_effect_resolver.gd`) applies a `worn_magic:<item_id>` modifier on each of `armor_class` (+N) and the 5 save keys (-N, because saves are target numbers — lower is better) when the ring is equipped; refresh fires at `Combatant.wire_equipment` (combat-start safety net). Stacks with future Cloak of Protection per RAW `:264`. | ✅ landed 2026-05-29 (7 tests in `test_worn_magic_effect_resolver`). |
 | Ring of Protection 5'-radius save bonus to allies | (planned: combat-geometry + save-time modifier; `radius_effect` already recorded on the catalog +2/+3 5'-radius variants) | ⏳ deferred (follow-up; needs ally-targeting at save resolution time) |
-| Charged items (wands, staves, rods) — use / depletion | (planned: `uses_remaining` decrement on use) | ⏳ deferred |
+| Charged items (wands, staves, rods) — use / depletion | `MagicItemActivator.activate_charged_item` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16); decrements `uses_remaining` on success; clears `is_magical` at 0 charges (RAW: "useless and non-magical") | ✅ landed 2026-05-29 for 11 wand/staff items; rest deferred until Jedidiah disambiguates the ACKS RAW item descriptions |
 | Per-potion effects (drink → effect) | `MagicItemActivator.drink_potion` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16) | ✅ landed 2026-05-29 for 13 V1 potions; rest deferred until Jedidiah disambiguates the ACKS RAW potion descriptions |
 | Spell-scroll specific-spell binding | (planned: pick named spells from the spell catalog at instantiation) | ⏳ deferred |
 | Identification (sage / Magic Research / Loremastery) | (planned: `requires_identification` flag + identify subsystem) | ⏳ deferred (Phase 3) |
@@ -416,11 +416,11 @@ Added to `treasure_hoards`:
 
 ---
 
-## 16. Magic-item activation via spell binding (V1 — potions thin slice)
+## 16. Magic-item activation via spell binding
 
-**Status (2026-05-29):** ✅ landed for 13 potions whose ACKS Core descriptions cleanly map to spells already implemented in the spell-effect system.
+**Status (2026-05-29):** ✅ landed for **24 items** — 13 potions (one-shot consumption) + 11 wand/staff items (charge-per-use consumption). Each item's ACKS Core description cleanly maps to a spell already implemented in the spell-effect system.
 
-This section defines the **lightweight "item activates spell" bridge**: a magic item carries an optional spell_binding field that tells the runtime which existing spell to cast on its behalf. Coined to re-use the substantial spell-effect work in data/spells/spell_catalog.json + CastingResolver rather than write parallel per-item effect resolvers. V1 covers potions only; wands / staves / rings / scrolls join in follow-on passes.
+This section defines the **lightweight "item activates spell" bridge**: a magic item carries an optional spell_binding field that tells the runtime which existing spell to cast on its behalf. Coined to re-use the substantial spell-effect work in data/spells/spell_catalog.json + CastingResolver rather than write parallel per-item effect resolvers. V1 covers potions + charged-item wands/staves; rings / boots / cloaks (persistent worn) and found scrolls join in follow-on passes.
 
 ### 16.1 Catalog field — `spell_binding`
 
@@ -428,14 +428,24 @@ Added to data/treasure/magic_item_catalog.json entries (extractor: tools/extract
 
 ```json
 "spell_binding": {
-  "spell_key":    "cure_light_wounds",   // matches data/spells/spell_catalog.json
-  "tradition":    "divine",              // "arcane" or "divine"
-  "caster_level": 1,                     // RAW minimum to cast the bound spell
-  "target_mode":  "self"                 // "self" or "single_creature"
+  "spell_key":       "cure_light_wounds",  // matches data/spells/spell_catalog.json
+  "tradition":       "divine",             // "arcane" or "divine"
+  "caster_level":    1,                    // RAW minimum to cast the bound spell
+  "target_mode":     "self",               // "self" | "single_creature" | "single_target"
+  "default_charges": 20                    // OPTIONAL — present for charged items
+                                            // (wand/staff); -1 / missing = one-shot
+                                            // (potions) or persistent.
 }
 ```
 
 **Tradition selection:** When a spell carries both arcane and divine classifications, the binding picks the **lower-caster-level** tradition (cheapest to brew — RAW magic_item_creation_table). Divine-only / arcane-only spells take their sole tradition.
+
+**target_mode:**
+- `self` — the user (drinker / wielder) is the target.
+- `single_creature` — the user designates one creature.
+- `single_target` — wand-style hybrid: the user designates a creature OR a cell (the resolver picks based on the spell's `target_spec`). Wand of Magic Missiles → creature; Wand of Fireballs → cell anchor.
+
+**Charged items.** When `default_charges` is set on a binding, the V1 materialization path (`TreasureInstantiator.hoard_to_loot`) stamps it onto the new inventory_items row's `uses_remaining`. The activator's `activate_charged_item` decrements `uses_remaining` on every successful cast. When charges reach 0, the activator clears `is_magical` per RAW `acore_treasure_and_magic_items_rules.xml` identification_and_use: "An item with no charges remaining becomes useless and non-magical."
 
 **target_mode:**
 - self — drinker (or future wand wielder) is the target. Most potions.
@@ -460,9 +470,29 @@ Added to data/treasure/magic_item_catalog.json entries (extractor: tools/extract
 | Potion of Speed | haste (custom resolver) | arcane | 5 | self |
 | Potion of Human Control | charm_person | arcane | 1 | single_creature |
 
+### 16.2.1 V1 wand / staff bindings (11 items)
+
+All wands ship with **20 charges** at materialization (matches the RAW sample item: "Wand of Fireball (20 charges) 30,000 gp"). All staves ship with **30 charges** as a reasonable V1 default; per-staff overrides land later as rulebook prose surfaces.
+
+| Item | Spell | Tradition | Caster Lvl | target_mode | Charges |
+|---|---|---|---|---|---|
+| Wand of Cold | cone_of_cold | arcane | 9 | single_target | 20 |
+| Wand of Detecting Magic | detect_magic | arcane | 1 | self | 20 |
+| Wand of Detecting Traps | find_traps | divine | 3 | self | 20 |
+| Wand of Fire Balls | fireball | arcane | 5 | single_target | 20 |
+| Wand of Illusion | phantasmal_force (custom resolver) | arcane | 3 | single_target | 20 |
+| Wand of Lightning Bolts | lightning_bolt | arcane | 5 | single_target | 20 |
+| Wand of Magic Missiles | magic_missile | arcane | 1 | single_target | 20 |
+| Wand of Paralyzation | hold_monster | arcane | 9 | single_creature | 20 |
+| Wand of Polymorphing | polymorph_other (custom resolver) | arcane | 7 | single_creature | 20 |
+| Staff of Striking | striking | divine | 5 | single_target | 30 |
+| Staff of Healing | cure_light_wounds | divine | 1 | single_creature | 30 |
+
 ### 16.3 Deliberately omitted (need a Jedidiah ruling)
 
 The ACKS Core summary XML only carries item NAMES — the mechanical descriptions live in rulebook prose we don't have in the corpus. Per project rule (no importing D&D / Pathfinder conventions without a Jedidiah ruling), these mappings are deferred until disambiguated:
+
+**Potions:**
 
 - **Potion of Polymorph** — Self or Other? (Self is the most-common convention but ACKS RAW summary doesn't say.)
 - **Philter of Love** — equivalent to charm_person, a unique romance-flavored mechanic, or something between?
@@ -470,9 +500,21 @@ The ACKS Core summary XML only carries item NAMES — the mechanical description
 - **Potion of Invulnerability** — does it map to protection_from_normal_weapons, or carry its own RAW mechanic?
 - Non-spell potions: **Treasure Finding**, **Heroism**, **Super-Heroism**, **Longevity**, **Diminution**, **Gaseous Form**, **Growth**, **Giant Strength**, **Gaseous Form**, **Oil of Sharpness / Slipperiness**, **Sweet Water**, **Delusion** (cursed) — these don't map to known spells and need their own custom resolvers.
 
-### 16.4 Runtime path — `MagicItemActivator.drink_potion`
+**Wands / staves / rods:**
 
-engine/subsystems/inventory/magic_item_activator.gd is a static service that composes existing pieces:
+- **Rod of Cancellation, Rod of Resurrection** — no equivalent spells in the catalog (Resurrect is a level 7 divine spell but not yet implemented).
+- **Staff of Commanding, Staff of Power, Staff of Wizardry** — multi-effect items; each needs its own custom resolver because a single spell_binding can't capture multiple bound spells.
+- **Staff of Withering** — no spell equivalent.
+- **Staff of the Serpent** — cleric staff that transforms into a serpent; not the same mechanic as sticks_to_snakes (which targets wooden objects). Needs a custom resolver or ruling.
+- **Wand of Detecting Enemies / Metals / Secret Doors** — no exact-match spell (partial overlap with detect_evil / find_traps but distinct mechanics).
+- **Wand of Device Negation** — different scope from dispel_magic (targets magic items rather than active spells).
+- **Wand of Fear** — RAW Cause Fear is a 1st-level divine spell; verify the spell catalog entry has an effect block before binding.
+
+### 16.4 Runtime path — `MagicItemActivator`
+
+engine/subsystems/inventory/magic_item_activator.gd is a static service that composes existing pieces. Two entry points:
+
+**`drink_potion(item_id, drinker, ...)`** — one-shot consumption:
 
 1. Look up the inventory_items row by id → get item_key.
 2. Look up the catalog entry → get spell_binding.
@@ -483,11 +525,25 @@ engine/subsystems/inventory/magic_item_activator.gd is a static service that com
 7. Call CastingResolver.resolve(ctx, choice, descriptor, drinker, targets_by_id).
 8. On success: consume the potion (CampaignRepository.remove_inventory_item(item_id)). On failure: the bottle survives (failure doesn't waste the dose — project interpretation of "item activation may fail without consumption").
 
-**Why this is cheap to extend.** The activator's only job is the composition step; all the spell behavior lives in the existing pipeline. Adding a new bound potion is a one-line change to the extractor's SPELL_BINDING_MAP.
+**`activate_charged_item(item_id, wielder, ..., target_id?, target_entity?, target_cell?)`** — wand / staff per-charge consumption:
+
+1. Lookup chain (inventory row → catalog entry → spell_binding); category must be `rod_staff_wand`.
+2. **Charge gate:** `uses_remaining == 0` → fail "no charges remaining"; the item stays inert. `uses_remaining < 0` AND binding has `default_charges` → materialization bug, fail explicitly.
+3. Target validation against `target_mode` (the new `single_target` mode accepts a creature id OR a cell).
+4. Build inputs via the shared `_cast_via_binding` helper (same CasterContext / SpellChoice / TargetDescriptor pipeline as potions).
+5. Call CastingResolver.resolve.
+6. **On success:** `uses_remaining -= 1`. When charges reach 0, **clear `is_magical`** per RAW (`identification_and_use`: "An item with no charges remaining becomes useless and non-magical"). Return `{success, charges_remaining, became_inert, ...}`.
+7. **On failure:** no charge decrement (same "failure doesn't waste the dose" rule as potions).
+
+**Charge initialization at materialization.** `TreasureInstantiator.hoard_to_loot` reads `binding.default_charges` off the resolved catalog entry and stamps it onto the inventory_items row's `uses_remaining`. A wand newly looted from a hoard starts at full charge.
+
+**Why this is cheap to extend.** The activator's only job is the composition step; all the spell behavior lives in the existing pipeline. Adding a new bound potion / wand is a one-line change to the extractor's `SPELL_BINDING_MAP`.
 
 ### 16.5 Tests
 
-tests/test_magic_item_activator.gd (suite id 400) — 6 DB-backed tests:
+tests/test_magic_item_activator.gd (suite id 400) — 14 DB-backed tests:
+
+**Potion branch (6):**
 
 - test_drink_potion_of_healing_succeeds_and_consumes — happy path end-to-end.
 - test_drink_self_targeted_potion_succeeds_for_each_v1_binding — sweeps all 12 self-targeted bindings.
@@ -496,11 +552,23 @@ tests/test_magic_item_activator.gd (suite id 400) — 6 DB-backed tests:
 - test_drink_nonexistent_item_fails — failure mode: bogus item_id.
 - test_drink_single_creature_potion_requires_target — Potion of Human Control without/with a designated target.
 
+**Charged-item branch (8):**
+
+- test_materialization_stamps_default_charges_for_wands — TreasureInstantiator pulls the binding's default_charges into uses_remaining.
+- test_activate_self_targeted_wand_decrements_charges — Wand of Detecting Magic: 1 cast → 20 charges → 19.
+- test_activate_wand_drains_to_zero_and_becomes_inert — drains 3 charges to 0; on the final cast became_inert=true AND is_magical flips to 0.
+- test_activate_charged_item_with_no_charges_fails_without_decrementing — uses_remaining=0 fails with "no charges" message; row unchanged.
+- test_activate_single_target_wand_requires_creature_or_cell — Wand of Magic Missiles without target_id and without target_cell fails; charges unchanged.
+- test_activate_wand_with_target_cell_succeeds — Wand of Fireballs with a target_cell (area anchor).
+- test_activate_staff_of_healing_on_ally_succeeds — Staff of Healing on a designated ally (single_creature mode).
+- test_activate_charged_item_rejects_non_wand_category — sending a potion through the wand path is rejected; row survives.
+
 ### 16.6 Open follow-ups
 
-- **Identification flow** (RAW :184-195) — the drinker doesn't know what a potion does until tasted. V1 assumes identified; identification subsystem layers on top with no activator changes.
-- **Per-drinker casting-stat bonus** — CasterContext.casting_stat_bonus is set to 0 in V1. The drinker's own INT (arcane) or WIS (divine) bonus could be folded in if Jedidiah wants it to affect save DCs the potion creates.
-- **Wands + staves (charged items)** — next category to wire. Reuses spell_binding plus a charge decrement on uses_remaining. Adds designated-target casting (most wands hit a target the wielder picks).
-- **Rings + boots + cloaks (persistent-while-equipped)** — distinct mechanic; the worn item adds a modifier on equip (mirror the Ring of Protection pattern via WornMagicEffectResolver) rather than firing the cast each time.
-- **Found scrolls** — spell scrolls already carry a list of bound spell levels (the scroll_of_spells generator); next step binds them to specific named spells from the spell catalog at instantiation, then routes through the same activator.
-- **UI plumbing** — the activator is API-level only in V1. A "Use" inventory action that calls it (and prompts for the target on single_creature bindings) is the next UI integration.
+- **Rings + boots + cloaks (persistent-while-equipped)** — distinct mechanic; the worn item adds a modifier on equip (mirror the Ring of Protection pattern via WornMagicEffectResolver) rather than firing the cast each time. Candidates: Ring of Invisibility, Ring of Fire Resistance, Ring of Telekinesis, Ring of Water Walking, Ring of Command Human, Boots of Levitation, Boots of Speed, Broom of Flying, Chime of Opening.
+- **Identification flow** (RAW :184-195) — the user doesn't know what a magic item does until tasted (potion), studied (scroll), or used (wand). V1 assumes identified; identification subsystem layers on top with no activator changes. RAW :identification_and_use confirms charge counts are similarly hidden ("Without Magic Research, a character does not know the number of remaining charges").
+- **Per-user casting-stat bonus** — `CasterContext.casting_stat_bonus` is set to 0 in V1. The user's own INT (arcane) or WIS (divine) bonus could be folded in if Jedidiah wants it to affect save DCs the item creates.
+- **Found scrolls** — spell scrolls already carry a list of bound spell levels (the scroll_of_spells generator); next step binds them to specific named spells from the spell catalog at instantiation, then routes through the same activator. Likely a new `cast_from_scroll` entry point that consumes the scroll like a potion.
+- **Recharge mechanic** — RAW prose hints that some items can be recharged through Magic Research. V1 doesn't model recharge; once `is_magical=0`, the row stays inert. A future pass can add a `recharge` API that bumps `uses_remaining` back up.
+- **Per-wand variable charges at materialization** — V1 stamps the binding's `default_charges` verbatim. RAW for some items uses rolled charges (e.g. Life Drinker "1d4+4 charges"). A future pass can add `charges_dice` (e.g. "1d10+10") to the binding and roll at materialization time.
+- **UI plumbing** — the activator is API-level only. A "Use" inventory action that calls into it (and prompts for the target on single_creature / single_target bindings) is the next UI integration.

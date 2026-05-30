@@ -129,6 +129,16 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 			# recovery XP by RAW regardless of sale value.
 			var rv_gp: int = int(resolved.get("value_gp", -1))
 			var rv_cp: int = (rv_gp * GP_TO_CP) if rv_gp >= 0 else -1
+			# Initial charges for charged items (wands, staves) — pulled from
+			# the catalog's spell_binding.default_charges per RAW: a freshly-
+			# materialized wand starts at full charge. -1 = not a charged item
+			# (potions, persistent rings, etc.). When the activator decrements
+			# uses_remaining to 0 the item becomes useless and non-magical
+			# (acore_treasure_and_magic_items_rules.xml identification_and_use).
+			var binding: Variant = resolved.get("spell_binding", null)
+			var initial_uses: int = -1
+			if binding is Dictionary:
+				initial_uses = int((binding as Dictionary).get("default_charges", -1))
 			real_items.append({
 				"item_key": str(resolved.get("item_key", "magic_item")),
 				"name": str(resolved.get("name", "Magic item")),
@@ -139,7 +149,7 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 				"is_magical": true,
 				"magical_bonus": int(resolved.get("magical_bonus", 0)),
 				"value_cp": rv_cp,
-				"uses_remaining": -1,
+				"uses_remaining": initial_uses,
 				"slot": "pack",
 				"notes": _magic_item_notes(resolved),
 				# RAW: acore_treasure_and_magic_items_rules.xml:233-237 — cursed

@@ -97,6 +97,15 @@ func run_all_tests() -> void:
 	test_drink_non_potion_fails()
 	test_drink_nonexistent_item_fails()
 	test_drink_single_creature_potion_requires_target()
+	# Wands + staves (charged-item branch).
+	test_materialization_stamps_default_charges_for_wands()
+	test_activate_self_targeted_wand_decrements_charges()
+	test_activate_wand_drains_to_zero_and_becomes_inert()
+	test_activate_charged_item_with_no_charges_fails_without_decrementing()
+	test_activate_single_target_wand_requires_creature_or_cell()
+	test_activate_wand_with_target_cell_succeeds()
+	test_activate_staff_of_healing_on_ally_succeeds()
+	test_activate_charged_item_rejects_non_wand_category()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -315,6 +324,324 @@ func test_drink_single_creature_potion_requires_target() -> void:
 
 	_teardown()
 	print("  drink_single_creature_potion_requires_target: OK")
+
+
+# ---------------------------------------------------------------------------
+# Wands + staves (charged-item branch)
+# ---------------------------------------------------------------------------
+
+## TreasureInstantiator's magic-item path must stamp the binding's
+## default_charges into the returned dict's uses_remaining when the catalog
+## entry carries one (wand / staff). Items without default_charges keep -1.
+func test_materialization_stamps_default_charges_for_wands() -> void:
+	_setup()
+	var catalog := MagicItemCatalog.new()
+	var rng := RandomNumberGenerator.new()
+
+	# Find a deterministic seed that resolves to a known wand. We brute-force
+	# the rod_staff_wand pool until pick_for_token returns one of our bound
+	# items; this keeps the test seed-agnostic against catalog ordering changes.
+	var found_wand: Dictionary = {}
+	for s in range(1, 60):
+		rng.seed = s
+		var picked: Dictionary = catalog.pick_for_token("rod_staff_wand", rng)
+		if picked.has("spell_binding") and int(picked["spell_binding"].get("default_charges", -1)) > 0:
+			found_wand = picked
+			break
+	check(not found_wand.is_empty(),
+		"the catalog should resolve at least one bound wand within 60 seeds")
+
+	# Hoard with one rod_staff_wand magic item indicated.
+	var hoard := TreasureHoardData.new()
+	hoard.id = "test_wand_hoard"
+	hoard.magic_items = [{"category": "rod_staff_wand"}]
+	var item_rng := RandomNumberGenerator.new()
+	# Find a seed that resolves to A bound rod_staff_wand item (any one).
+	var loot: Dictionary = {}
+	var picked_charges: int = -1
+	for s2 in range(1, 200):
+		item_rng.seed = s2
+		loot = TreasureInstantiator.hoard_to_loot(hoard, item_rng, catalog)
+		var items: Array = loot.get("items", [])
+		if items.is_empty():
+			continue
+		var ckey: String = str((items[0] as Dictionary).get("item_key", ""))
+		var centry: Dictionary = catalog.get_item(ckey)
+		var binding_v: Variant = centry.get("spell_binding", null)
+		if binding_v is Dictionary and int((binding_v as Dictionary).get("default_charges", -1)) > 0:
+			picked_charges = int((binding_v as Dictionary).get("default_charges"))
+			break
+	check(picked_charges > 0,
+		"should find a bound rod_staff_wand item within 200 seeds")
+	if picked_charges > 0:
+		var item_dict: Dictionary = loot["items"][0]
+		check(int(item_dict.get("uses_remaining", -1)) == picked_charges,
+			"materialized wand uses_remaining should equal binding.default_charges (%d), got %d"
+				% [picked_charges, int(item_dict.get("uses_remaining", -1))])
+
+	_teardown()
+	print("  materialization_stamps_default_charges_for_wands: OK")
+
+
+## Wand of Detecting Magic (target_mode=self) — wielder is the target.
+## After one cast: cast succeeded, charges decremented from 20 to 19.
+func test_activate_self_targeted_wand_decrements_charges() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+	wielder.character_class = "mage"  # for variety; doesn't affect the activation
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_detecting_magic",
+		"name": "Wand of Detecting Magic",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 20,
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == true,
+		"detect-magic wand should succeed; message: %s" % str(result["message"]))
+	check(int(result["charges_remaining"]) == 19,
+		"charges should drop to 19 after one cast, got %d" % int(result["charges_remaining"]))
+	check(bool(result["became_inert"]) == false,
+		"wand still has charges; should not be inert")
+
+	# DB-side verification.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(int(post.get("uses_remaining", -1)) == 19,
+		"DB row should reflect uses_remaining=19, got %d" % int(post.get("uses_remaining", -1)))
+	check(int(post.get("is_magical", 0)) == 1,
+		"wand still magical (charges > 0)")
+
+	_teardown()
+	print("  activate_self_targeted_wand_decrements_charges: OK")
+
+
+## Drain a wand from 3 charges to 0 across 3 casts. On the third (the one
+## that takes charges to 0): became_inert is true AND is_magical flips to 0
+## (RAW: useless and non-magical).
+func test_activate_wand_drains_to_zero_and_becomes_inert() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_detecting_magic",
+		"name": "Wand of Detecting Magic",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 3,
+	})
+
+	for use_n in range(1, 4):
+		var res: Dictionary = MagicItemActivator.activate_charged_item(
+			item_id, wielder, harness.resolver, harness.catalog)
+		check(bool(res["success"]) == true,
+			"use #%d should succeed, message: %s" % [use_n, str(res["message"])])
+		var expected_charges := 3 - use_n
+		check(int(res["charges_remaining"]) == expected_charges,
+			"after use #%d charges should be %d, got %d" % [
+				use_n, expected_charges, int(res["charges_remaining"])])
+		if use_n == 3:
+			check(bool(res["became_inert"]) == true,
+				"wand should be inert on the final draining cast")
+		else:
+			check(bool(res["became_inert"]) == false,
+				"use #%d shouldn't yet flip became_inert" % use_n)
+
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(int(post.get("is_magical", 1)) == 0,
+		"drained wand should have is_magical=0 (useless and non-magical per RAW)")
+	check(int(post.get("uses_remaining", -1)) == 0,
+		"drained wand uses_remaining should be 0")
+
+	_teardown()
+	print("  activate_wand_drains_to_zero_and_becomes_inert: OK")
+
+
+## A wand with uses_remaining=0 fails to activate (clear "no charges" message).
+## Charges stay at 0; the activator doesn't accidentally decrement past zero.
+func test_activate_charged_item_with_no_charges_fails_without_decrementing() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_magic_missiles",
+		"name": "Wand of Magic Missiles",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": false,  # already inert from a prior session
+		"uses_remaining": 0,
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		_DB_CHAR, wielder)  # dummy target — wand of MM needs one but won't get past charge gate
+	check(bool(result["success"]) == false, "drained wand should fail to activate")
+	check(int(result["charges_remaining"]) == 0,
+		"charges should still report 0 after a failed activation")
+	check(str(result["message"]).contains("no charges"),
+		"message should mention 'no charges', got: %s" % str(result["message"]))
+
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(int(post.get("uses_remaining", -99)) == 0,
+		"charges should stay at 0, got %d" % int(post.get("uses_remaining", -99)))
+
+	_teardown()
+	print("  activate_charged_item_with_no_charges_fails_without_decrementing: OK")
+
+
+## A single_target wand (Wand of Magic Missiles) without either a target_id
+## or a target_cell must fail with a clear message and not decrement.
+func test_activate_single_target_wand_requires_creature_or_cell() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_magic_missiles",
+		"name": "Wand of Magic Missiles",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 5,
+	})
+
+	# (a) No target supplied → fail without decrementing.
+	var no_target: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog)
+	check(bool(no_target["success"]) == false,
+		"single_target wand without a target must fail")
+	check(str(no_target["message"]).contains("target"),
+		"failure message should mention 'target', got: %s" % str(no_target["message"]))
+
+	# DB-side: charges unchanged.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	check(int(post.get("uses_remaining", -1)) == 5,
+		"failed activation should not decrement charges (still 5), got %d"
+			% int(post.get("uses_remaining", -1)))
+
+	_teardown()
+	print("  activate_single_target_wand_requires_creature_or_cell: OK")
+
+
+## Wand of Fireballs with a target_cell — the area-anchor side of
+## single_target mode. Cast succeeds; one charge consumed.
+func test_activate_wand_with_target_cell_succeeds() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "wand_of_fire_balls",
+		"name": "Wand of Fire Balls",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 10,
+	})
+
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		"", null, Vector3i(5, 5, 0))
+	check(bool(result["success"]) == true,
+		"wand of fireballs should succeed with a target_cell; message: %s" %
+			str(result["message"]))
+	check(int(result["charges_remaining"]) == 9,
+		"one charge consumed, got %d" % int(result["charges_remaining"]))
+
+	_teardown()
+	print("  activate_wand_with_target_cell_succeeds: OK")
+
+
+## Staff of Healing (target_mode = single_creature) on an ally.
+func test_activate_staff_of_healing_on_ally_succeeds() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+	wielder.character_class = "cleric"
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "staff_of_healing",
+		"name": "Staff of Healing",
+		"quantity": 1,
+		"encumbrance_units": 1000,
+		"item_category": "magic",
+		"is_magical": true,
+		"uses_remaining": 30,
+	})
+
+	var ally := CharacterData.new()
+	ally.id = "test_ally_staff_target"
+	ally.name = "Injured Ally"
+	ally.character_class = "fighter"
+	ally.level = 1
+	ally.hp_max = 8
+	ally.hp_current = 3
+	ally.alignment = "neutral"
+
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		item_id, wielder, harness.resolver, harness.catalog,
+		ally.id, ally)
+	check(bool(result["success"]) == true,
+		"staff of healing should succeed on a designated ally; message: %s" %
+			str(result["message"]))
+	check(int(result["charges_remaining"]) == 29,
+		"one staff charge consumed, got %d" % int(result["charges_remaining"]))
+	check(str(result["spell_key"]) == "cure_light_wounds",
+		"staff of healing should cast cure_light_wounds, got '%s'" %
+			str(result["spell_key"]))
+
+	_teardown()
+	print("  activate_staff_of_healing_on_ally_succeeds: OK")
+
+
+## activate_charged_item must reject items whose category isn't
+## rod_staff_wand — guards against accidentally draining a potion or sword.
+func test_activate_charged_item_rejects_non_wand_category() -> void:
+	_setup()
+	var harness := _make_harness()
+	var wielder := _make_drinker()
+
+	# A potion (category = potion) sent through the wand path.
+	var potion_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "potion_of_healing",
+		"name": "Potion of Healing",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+	})
+	var result: Dictionary = MagicItemActivator.activate_charged_item(
+		potion_id, wielder, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == false,
+		"potion sent through wand path must be rejected")
+	check(str(result["message"]).contains("wand"),
+		"failure message should mention 'wand', got: %s" % str(result["message"]))
+	# The potion row must survive.
+	var post: Dictionary = CampaignRepository.get_inventory_item_by_id(potion_id)
+	check(not post.is_empty(),
+		"the potion row should not be deleted by a failed wand activation")
+
+	_teardown()
+	print("  activate_charged_item_rejects_non_wand_category: OK")
 
 
 # ---------------------------------------------------------------------------
