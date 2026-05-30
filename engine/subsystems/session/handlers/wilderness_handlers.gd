@@ -736,6 +736,14 @@ func _handle_wilderness_noon_tick(event: ScheduledEvent) -> Dictionary:
 		# town as a free-flowing source, food still comes from the shop UI.
 		if terrain != null:
 			_refill_water_at_hex(party_data, terrain)
+		# Decanter of Endless Water (gdd-treasure-item-backing.md §14):
+		# any party member carrying a Decanter contributes its per-tick
+		# output toward the water counter, capped at party_size. Runs AFTER
+		# the river-hex check so a river hex AND a Decanter together still
+		# clamp at the same daily cap. The service is a no-op when no
+		# Decanters are carried (carries its own internal guards).
+		DecanterRefillService.refill_party_water(
+			party_data, CampaignRepository, EventBus)
 		# Persist counter mutations so a session reload after noon but
 		# before midnight doesn't lose the foraged units.
 		CampaignRepository.save_party_state(party_data.to_state_dict())

@@ -340,6 +340,8 @@ Per-item effects are landing incrementally as the magic-item-usage work continue
 | Charged items (wands, staves, rods) — use / depletion | `MagicItemActivator.activate_charged_item` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16); decrements `uses_remaining` on success; clears `is_magical` at 0 charges (RAW: "useless and non-magical") | ✅ landed 2026-05-29 for 11 wand/staff items; rest deferred until Jedidiah disambiguates the ACKS RAW item descriptions |
 | Worn-triggered items (rings, helms, boots, broom, chime) — activate on demand while equipped | `MagicItemActivator.activate_worn_item` — same `spell_binding` pipeline; equipped-state check + no consumption (V1 = unlimited uses). Per-day cooldowns + RAW per-item-charge limits are a follow-up. | ✅ landed 2026-05-29 for 10 items (Ring of Invisibility / Telekinesis / Command Human, Boots of Levitation, Broom of Flying, Chime of Opening, Eyes of Charming, Helm of Comprehending Languages / Telepathy / Teleportation) |
 | Per-potion effects (drink → effect) | `MagicItemActivator.drink_potion` — routes through `CastingResolver` via the catalog's `spell_binding` field (see §16) | ✅ landed 2026-05-29 for 13 V1 potions; rest deferred until Jedidiah disambiguates the ACKS RAW potion descriptions |
+| Decanter of Endless Water — wilderness water auto-refill | `DecanterRefillService.refill_party_water` (`engine/subsystems/inventory/decanter_refill_service.gd`) — called from `WildernessHandlers._handle_wilderness_noon_tick` after the river-hex refill. Mirrors `_refill_water_at_hex`: tops up `party.water_units` by OUTPUT_PER_TICK_UNITS × decanter_count per tick, clamped at `party_size` (one day's draw). Multiple decanters stack additively. Counts decanters in both per-character inventories AND the party shared pool. RAW project rules XML extract is silent on output rate; project default = 1 person-day per tick per decanter [NEEDS-JEDIDIAH] to confirm. | ✅ landed 2026-05-30 (8 tests in `test_decanter_of_endless_water`) |
+| Oil of Slipperiness — applied surface coat (creature OR 10' x 10' patch) | `SurfaceCoatResolver` (`engine/subsystems/inventory/surface_coat_resolver.gd`) — generic over a `coat_spec` Dictionary describing the coat mechanic. `MagicItemActivator.apply_oil(item_id, catalog, tracker, mode, target_creature?, map_id?, anchor_cell?, surface_conditions?)` routes oils (item_key prefix `oil_`) to the resolver. Creature mode sets the `is_slippery_self` `EntityFlag` (RAW: cannot be restrained / grabbed by grasping attacks per `rules/pc_spell_catalog_f-u.xml:1056-1067`). Cell mode applies the `slippery` condition to a 2x2 cell patch via the new `CellSurfaceConditions` runtime registry (RAW: proficiency throw 20+ each round or fall down). Duration 3 turns (matches the Slipperiness spell the oil derives from). Dose consumed on success only; failed application preserves the dose. Multi-source semantics: two oils on the same target keep distinct source_ids and both contribute to the flag boolean. The `coat_spec` shape is REUSABLE: a future Grease spell wires its mechanic by passing a different spec (different `flag_key` / `condition_key`, different duration) — the resolver itself is mechanic-agnostic. | ✅ landed 2026-05-30 (18 tests in `test_oil_of_slipperiness`). Object-mode application (Slipperiness spell's "20 arrows / 2 1H / 1 2H weapons" branch) is wired with a clear "not implemented" failure until the attack-throw consumer reads coat state. Movement-resolver hook for the per-cross save throw + grapple-resistance hook for the creature-mode flag are deferred to consumer integration. |
 | Spell-scroll specific-spell binding | (planned: pick named spells from the spell catalog at instantiation) | ⏳ deferred |
 | Identification (sage / Magic Research / Loremastery) | (planned: `requires_identification` flag + identify subsystem) | ⏳ deferred (Phase 3) |
 | Magic-item market-class gating | (planned: gate high-value sales by settlement class) | ⏳ deferred (Phase 3) |
@@ -625,3 +627,75 @@ The injection lives in `tools/extract_magic_item_catalog.py`'s `CUT_FOR_V1` / `D
 - **Recharge mechanic** — RAW prose hints that some items can be recharged through Magic Research. V1 doesn't model recharge; once `is_magical=0`, the row stays inert. A future pass can add a `recharge` API that bumps `uses_remaining` back up.
 - **Per-wand variable charges at materialization** — V1 stamps the binding's `default_charges` verbatim. RAW for some items uses rolled charges (e.g. Life Drinker "1d4+4 charges"). A future pass can add `charges_dice` (e.g. "1d10+10") to the binding and roll at materialization time.
 - **UI plumbing** — the activator is API-level only. A "Use" inventory action that calls into it (and prompts for the target on single_creature / single_target bindings) is the next UI integration.
+
+---
+
+## 17. Surface-coat resolver (Oil of Slipperiness + future grease/oil items)
+
+`engine/subsystems/inventory/surface_coat_resolver.gd` (`SurfaceCoatResolver`) is the shared service for items / spells that apply a surface coat to either a creature ("anointed with oil") or a 10' x 10' floor patch ("poured out"). Oil of Slipperiness is the first consumer (2026-05-30); future Grease spell, Oil of Sharpness, etc. plug into the same `coat_spec` API.
+
+**Why a shared resolver?** Per Jedidiah 2026-05-29: "there should be other oil items and grease/oil spells that need the same kind of surface coat resolver, so as long as its resolvers are re-usable it is worthwhile to build."
+
+### 17.1 API surface
+
+Three entry points on the resolver (all static):
+
+- `apply_oil_to_creature(item_id, target_creature, coat_spec, effect_tracker) -> Dictionary` — sets the spec's `flag_key` on the target's `EntityFlags` with source_id `"surface_coat:<item_id>:<target_id>"`; registers an entry in the supplied `ActiveEffectTracker` so duration-tick unwind works through the existing CastingResolver cleanup_callback (the `applied_flags` shape matches the spell-effect convention).
+- `apply_oil_to_cell(item_id, map_id, anchor_cell, area_size_ft, coat_spec, effect_tracker, surface_conditions) -> Dictionary` — applies the spec's `condition_key` to a (area_size_ft / 5)² patch of cells anchored at `anchor_cell` via the new `CellSurfaceConditions` runtime registry. Each cell gets its own source_id `"surface_coat:<item_id>:cell:x,y,z"` so a prefix-clear sweeps the whole patch.
+- `apply_oil_to_object(item_id, target_inventory_item_id, coat_spec, effect_tracker) -> Dictionary` — V1 returns "not implemented" until the attack-throw consumer reads coat state on weapon items.
+
+All three return a uniform result Dict: `{ success, message, consumed, applied_flag_key, applied_condition_key, effect_id, source_id, coated_cells }`.
+
+### 17.2 The `coat_spec` Dictionary
+
+Creature-mode shape:
+
+```gdscript
+{
+    "flag_key": "is_slippery_self",          # EntityFlag set on the target
+    "duration_type": "turns",                # tracker duration bucket
+    "duration_remaining": 3,
+    "caster_level": 1,                       # dispel-parity (mirrors spell_binding)
+    "spell_key": "slipperiness",             # diagnostic label
+}
+```
+
+Cell-mode shape:
+
+```gdscript
+{
+    "condition_key": "slippery",             # CellSurfaceConditions key
+    "duration_type": "turns",
+    "duration_remaining": 3,
+    "caster_level": 1,
+    "spell_key": "slipperiness",
+}
+```
+
+Future consumers (Grease spell, Oil of Sharpness on weapons, etc.) pass DIFFERENT specs — the resolver itself doesn't know about the coat mechanic. Tests `test_resolver_accepts_alternate_coat_spec_for_future_grease` + `test_resolver_accepts_alternate_cell_coat_spec_for_future_grease` lock the reusability contract by running the resolver with a mock `greased` spec and asserting the alternate flag / condition is what gets set.
+
+The resolver exposes two canonical-spec factories for Oil of Slipperiness: `oil_of_slipperiness_creature_spec()` and `oil_of_slipperiness_cell_spec()`. New oils add a factory and a one-line case in `MagicItemActivator._select_oil_coat_spec`.
+
+### 17.3 `CellSurfaceConditions`
+
+`engine/subsystems/spells/cell_surface_conditions.gd` (`CellSurfaceConditions`) — runtime registry of cell-level surface coats. Mirrors `EntityFlags`'s multi-source / source_id model, keyed on `(map_id, Vector3i)` pairs. Multiple sources can share the same `condition_key` on the same cell; the condition stays active until every source has been cleared.
+
+V1 scope = in-memory only. Save+reload during an oiled visit drops the coat (deferred). For the live-fire use case (mid-combat or mid-room), this is fine — coats are short-lived (3-turn RAW duration). A future pass can layer a `cell_surface_conditions` table on top with the same set / clear / has contract.
+
+### 17.4 MagicItemActivator dispatch
+
+`MagicItemActivator.apply_oil(item_id, catalog, tracker, mode, ...)` is the public entry point. The router:
+
+1. Looks up the inventory row → `item_key`.
+2. **Requires `item_key.begins_with("oil_")`** — guards `drink_potion`'s domain so a Potion of Healing can't be routed through the apply path by mistake. Both RAW oils (Slipperiness, Sharpness) have the `oil_` prefix.
+3. Picks the `coat_spec` via `_select_oil_coat_spec(item_key, mode)` (V1 = hard-coded for Oil of Slipperiness; a future catalog `oil_binding` field generalizes after the second consumer arrives).
+4. Dispatches to `SurfaceCoatResolver.apply_oil_to_creature` (mode="creature") or `apply_oil_to_cell` (mode="cell").
+
+### 17.5 Open follow-ups
+
+- **Movement-resolver hook for the per-cross save throw** — the cell condition is SET; consuming it for "make a proficiency throw of 20+ or fall down" when an entity moves into a slippery cell is the next integration (mirrors the `protected_from_normal_weapons` consumer in the attack resolver: read flag, compute, branch).
+- **Grapple-resistance hook for the creature-mode flag** — the flag is SET; the attack resolver's grapple / restrain branches need to read `is_slippery_self` and refuse to apply the grapple condition (or auto-succeed the slip-escape).
+- **Object mode** — `apply_oil_to_object` is wired with a clear failure. The RAW Slipperiness/Oil "20 arrows / 2 1H weapons / 1 two-handed weapon" branch lands when a weapon-attack-throw consumer reads coat state.
+- **Duration tick wiring through CastingResolver cleanup_callback** — the resolver registers `applied_flags` (creature mode) properly so the existing tracker → cleanup_callback unwind path will sweep the flag on expiry. For cell mode, the metadata carries `coated_cells` + `source_id_prefix` so a small cleanup_callback addition (detect `metadata["coat_mode"] == "cell"` → call `surface_conditions.clear_all_from_source_prefix`) will close the loop. V1 tests simulate the cleanup manually to lock the contract.
+- **Persistence** — coats live in memory only. Mid-visit save-load drops them. A `cell_surface_conditions` table (sparse, keyed by `(map_id, col, row, level, condition_key)` + source_id) would close this.
+- **Second oil** — Oil of Sharpness is the obvious second consumer; once Jedidiah disambiguates its mechanic (the deferred list flags it for ruling), the binding-by-prefix shape generalizes to a catalog `oil_binding` field analogous to `spell_binding`.

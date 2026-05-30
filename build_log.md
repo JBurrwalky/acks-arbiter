@@ -28900,3 +28900,119 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 3. **(Triage) Tier 2 bindings.** ~16 items that bind to existing spells. Cheapest implementation per item; same extractor + activator pattern as the wand/staff pass. Targets: Philter of Love (charm_person), 5 Control potions (charm_monster), 2 Command rings (charm_monster), Dust of Disappearance (invisibility), Dust of Appearance (detect_invisible), Potion of Polymorph (polymorph_self project-default), Wand of Fear + Drums of Panic (cause_fear), 2 Medallions of ESP (esp persistent-worn), Boots of Speed (haste persistent-worn).
 4. **(Triage) Tier 3 shared resolvers.** STR override family + Level boost + Detect family + Wards + Persistent-worn stat bonuses (~20 items across 5 mechanisms).
 5. **(Triage) Tier 4 customs.** Bag of Holding, Bag of Devouring, Rod of Cancellation, etc. — each its own resolver (~17 items).
+
+## Session 2026-05-30 — Oil of Slipperiness + reusable surface-coat resolver
+
+**Task:** Build a reusable surface-coat resolver as the foundation for Oil of Slipperiness (V1 consumer) and future Grease spell / Oil of Sharpness / other surface-coat items. Per Jedidiah 2026-05-29: "there should be other oil items and grease/oil spells that need the same kind of surface coat resolver, so as long as its resolvers are re-usable it is worthwhile to build."
+
+**Model used:** Opus (RAW lookup, resolver architecture, reusability tests).
+
+**Completed:**
+- `engine/subsystems/inventory/surface_coat_resolver.gd` (NEW, `SurfaceCoatResolver`) — static resolver class with three entry points: `apply_oil_to_creature(item_id, target, coat_spec, tracker)`, `apply_oil_to_cell(item_id, map_id, anchor_cell, area_size_ft, coat_spec, tracker, surface_conditions)`, and `apply_oil_to_object(...)` (V1 returns "not implemented"; deferred until weapon-coat consumer wires). Generic over the coat mechanic — the caller passes a `coat_spec` Dict (`flag_key` for creature mode, `condition_key` for cell mode, plus `duration_type` / `duration_remaining` / `caster_level` / `spell_key`). Exposes two canonical-spec factories for Oil of Slipperiness: `oil_of_slipperiness_creature_spec()` (3 turns, `is_slippery_self` flag) and `oil_of_slipperiness_cell_spec()` (3 turns, `slippery` condition).
+- `engine/subsystems/spells/cell_surface_conditions.gd` (NEW, `CellSurfaceConditions`) — runtime registry for cell-level surface coats. Mirrors `EntityFlags`' multi-source / source_id model keyed on `(map_id, Vector3i)`. Methods: `set_condition`, `clear_condition`, `clear_all_from_source_prefix`, `has_condition`, `get_condition_sources`, `get_condition_source_entries`, `get_cells_with_condition`, `clear`. V1 in-memory only (DB persistence deferred — coats are short-lived in the live use case).
+- `engine/subsystems/inventory/magic_item_activator.gd`: added `apply_oil(item_id, magic_item_catalog, effect_tracker, mode, target_creature?, map_id?, anchor_cell?, surface_conditions?)` entry point. Router requires `item_key.begins_with("oil_")` so a Potion of Healing can't accidentally route through the apply path. `_select_oil_coat_spec(item_key, mode)` picks the spec — hard-coded for V1 (Oil of Slipperiness only); generalization to a catalog `oil_binding` field lands when the second consumer arrives.
+- `engine/shared_types/entity_flags.gd`: documented the new `SurfaceCoats` flag family with `is_slippery_self` as the first canonical key. The header now lists the family alongside Movement, Visibility, Protection, etc.
+- `tests/test_oil_of_slipperiness.gd` (NEW) — 18 DB-backed tests covering creature mode (5: apply, consume, missing-target, missing-item, non-oil-rejection), refresh / multi-source semantics (2), duration tick (1), cell mode (4: apply 2x2 patch, consume, missing-map_id, duration-clear), activator dispatch (2: unsupported mode, oil-prefix routing), reusability (2: alternate creature spec, alternate cell spec — proves a future Grease spell wires by passing a different spec), object mode placeholder (1), and `CellSurfaceConditions` multi-source semantics (1).
+- Test runner registration: ext_resource id `402_oil_of_slipperiness_tests`, node `OilOfSlipperinessTests`, `@onready var _oil_of_slipperiness_tests` + run-loop entry.
+- `generation/gdd-treasure-item-backing.md`: §14 status board row for Oil of Slipperiness (✅ landed); new §17 (Surface-coat resolver) documents the API, the `coat_spec` shape (both modes), the `CellSurfaceConditions` registry, the activator dispatch contract, and the open follow-ups (movement-resolver hook, grapple-resistance hook, object mode, cleanup_callback wiring for cell mode, persistence, second oil).
+
+**Decisions made:**
+- **Duration = 3 turns**, matching the Slipperiness spell's RAW duration in `rules/pc_spell_catalog_f-u.xml:1056` (the spell the oil derives from per `<special><rule>Used to create oil of slipperiness.</rule></special>`). The task spec mentioned "typically 8 turns per RAW" but the actual ACKS Slipperiness duration is 3 turns; I used the RAW value.
+- **Item-key prefix routing** (`oil_`) for the activator dispatch. Catalog category for oils is "potion" (the random magic table groups them with potions), but oils are APPLIED not DRUNK, so prefix-based routing is the safest router until a catalog `oil_binding` field generalizes. Both RAW oils (Slipperiness, Sharpness) have the `oil_` prefix in our catalog.
+- **`coat_spec` generic shape over per-item dispatch.** The resolver itself is mechanic-agnostic; spec selection lives in the activator (`_select_oil_coat_spec`). This means a future Grease spell wires by calling the resolver directly with its own spec (no new resolver code). Tests `test_resolver_accepts_alternate_coat_spec_for_future_grease` + `test_resolver_accepts_alternate_cell_coat_spec_for_future_grease` lock the contract.
+- **CellSurfaceConditions as a sibling-to-EntityFlags pattern** rather than extending `VoxelCell`. Coats are short-lived runtime overlays; extending `VoxelCell` would mean serializing them with the cell to DB but coats expire on a duration tick. Keeping them on a sibling registry preserves `VoxelCell`'s single-purpose semantics. Same multi-source semantics as `EntityFlags` (two oils on the same cell each contribute; partial-clear leaves the condition active).
+- **Multi-source semantics for the creature-mode flag.** Two distinct oil bottles applied to the same target produce two distinct source_ids (the item_id is the source_id salt); both contribute to the flag boolean. Clearing one source leaves the flag on; clearing both clears it. Same semantics as the Cloak of Protection / Ring of Protection stacking pattern. Re-applying THE SAME inventory row (same item_id) refreshes — but in practice each oil is a separate inventory row so this case is rare.
+- **Dose consumed on success ONLY** (mirrors `drink_potion`'s "failure doesn't waste the dose" rule). Missing target, missing item_id, missing map_id, invalid spec all fail without consuming the oil.
+- **Object mode wired with explicit "not implemented" failure** rather than silently no-op'd. Makes the deferred follow-up obvious in failure messages.
+- **No DB schema changes** — the V1 scope keeps everything in memory (effect tracker + EntityFlags + CellSurfaceConditions). A future persistence pass adds a `cell_surface_conditions` table (sparse, keyed by `(map_id, col, row, level, condition_key)` + source_id) without changing the resolver API.
+
+**Interfaces defined or changed:**
+- `MagicItemActivator.apply_oil(item_id: String, magic_item_catalog: MagicItemCatalog, effect_tracker: ActiveEffectTracker, mode: String, target_creature = null, map_id: String = "", anchor_cell: Vector3i = Vector3i.ZERO, surface_conditions: CellSurfaceConditions = null) -> Dictionary`. Mode = `"creature"` | `"cell"`. Result Dict keys: `success, message, consumed, mode, applied_flag_key, applied_condition_key, effect_id, source_id, coated_cells`.
+- `SurfaceCoatResolver.apply_oil_to_creature(item_id, target_creature, coat_spec, effect_tracker) -> Dictionary`. Result keys: `success, message, consumed, applied_flag_key, effect_id, source_id`.
+- `SurfaceCoatResolver.apply_oil_to_cell(item_id, map_id, anchor_cell, area_size_ft, coat_spec, effect_tracker, surface_conditions) -> Dictionary`. Result keys: `success, message, consumed, applied_condition_key, effect_id, source_id, coated_cells (Array[Vector3i])`.
+- `SurfaceCoatResolver.apply_oil_to_object(item_id, target_inventory_item_id, coat_spec, effect_tracker) -> Dictionary` — V1 returns a `"not implemented"` failure for the deferred weapon-coat consumer.
+- `SurfaceCoatResolver.oil_of_slipperiness_creature_spec() -> Dictionary` + `oil_of_slipperiness_cell_spec() -> Dictionary` — canonical factories.
+- `CellSurfaceConditions` — new registry. Methods documented at file header. Source_id convention: `"surface_coat:<item_id>:<scope>"` where scope is the target_id (creature mode) or `"cell:x,y,z"` (cell mode), so a prefix-clear at `"surface_coat:<item_id>:"` sweeps every cell that effect touched.
+- New canonical `EntityFlag` key: `is_slippery_self`. Set when Oil of Slipperiness is applied to a creature. Future grapple / restrain resolvers should read this flag and refuse to apply the condition (RAW: "Affected characters cannot be restrained or grabbed by grasping attacks, including ropes, chains, cuffs, or constricting creatures, magical or otherwise."). Source_id format: `"surface_coat:<item_id>:<target_id>"`.
+- New canonical `CellSurfaceConditions` condition key: `"slippery"`. Cells carrying this condition apply the "proficiency throw 20+ or fall down" rule when entities cross. Movement-resolver consumer to follow.
+- `coat_spec` Dict contract — creature mode requires `flag_key` (String), `duration_type` (String — "turns" / "rounds" / "hours" / "days"), `duration_remaining` (int > 0), `caster_level` (int), `spell_key` (String, diagnostic). Cell mode replaces `flag_key` with `condition_key` (String). Empty `coat_spec` or missing required key fails the validation.
+
+**Database changes:** None (V1 in-memory only).
+
+**Tests added/updated:**
+- `tests/test_oil_of_slipperiness.gd`: 18 tests, all passing. Suite id 402.
+- Test runner registration: ext_resource `402_oil_of_slipperiness_tests`, node `OilOfSlipperinessTests`, `_oil_of_slipperiness_tests` in the `@onready var` block + run-loop array.
+- Full suite: **395 passed / 19 failed** — net +2 passing suites vs the 393/19 baseline (mine + the Decanter agent's parallel suite), ZERO new failures. The 19 failures are the carry-forward set (unchanged from the prior session's baseline).
+
+**Known issues:**
+- **Cleanup_callback wiring for cell mode** — the resolver registers the effect with `applied_flags` populated (creature mode) so the existing CastingResolver cleanup_callback will sweep the flag on expiry. For cell mode, the cleanup_callback would need a small addition (detect `effect.metadata["coat_mode"] == "cell"` → call `surface_conditions.clear_all_from_source_prefix(metadata["source_id_prefix"])`) to fully close the loop. V1 tests simulate the cleanup manually via `clear_all_from_source_prefix` to lock the contract. The cleanup_callback enhancement is straightforward but lands when the cell-coat consumer (movement resolver) is wired.
+- **Movement-resolver consumer not yet wired.** The cell carries the `slippery` condition; consuming it for "proficiency throw 20+ or fall down" requires hooking into movement-step resolution. Same shape as the cover-value consumer pattern.
+- **Grapple / restrain consumer not yet wired.** Combat resolver's grapple / restrain branch needs to read `is_slippery_self` on the target and refuse to apply.
+- **Object mode placeholder** — `apply_oil_to_object` returns explicit failure. The RAW "20 arrows / 2 1H / 1 2H weapons" branch lands when a weapon-attack-throw consumer reads coat state on items.
+- **Persistence** — coats are in-memory only. Mid-visit save-load drops them. A `cell_surface_conditions` table (sparse) closes this when needed.
+- **[NEEDS-JEDIDIAH] Stacking semantics for "second potion" rule.** RAW general_category_rules.potions says: "If a character drinks a second potion while one is active, the character is sickened and cannot act for 3 turns; neither potion has any other effect." Does the same rule apply to applying a SECOND OIL while a first oil is active on the same target? V1 currently allows oil-stacking (multi-source flag); a strict reading might invoke the sickening rule. Project default = allow stacking (treat as APPLY not DRINK).
+
+**Next session should:**
+1. Wire the cleanup_callback enhancement: in CastingResolver._on_tracker_removed_effect, detect `effect.metadata.coat_mode == "cell"` and call `surface_conditions.clear_all_from_source_prefix(metadata.source_id_prefix)`. This requires the resolver to hold a reference to the active `CellSurfaceConditions` instance — either via autoload registration or via the existing dependency-injection pattern (pass at construction).
+2. Wire the movement-resolver consumer for the cell-mode `slippery` condition (proficiency throw 20+ or fall down).
+3. Wire the combat-resolver consumer for the creature-mode `is_slippery_self` flag (refuse to apply grapple / restrain conditions, or auto-succeed the slip-escape).
+4. Continue the magic-item-activation triage: next oils + spells use the same SurfaceCoatResolver via fresh coat_specs. Oil of Sharpness is the natural second consumer once Jedidiah disambiguates its RAW mechanic (per `magic_item_bindings_deferred`).
+5. (Optional) UI integration — an "Apply Oil" inventory action that prompts the player for mode (creature vs cell) + target.
+
+## Session 2026-05-30 — Magic-item: Decanter of Endless Water wilderness water refill
+
+**Task:** Implement Decanter of Endless Water as a wilderness water auto-refill mechanism. While carried by any party member in wilderness, the Decanter tops up the party's `water_units` counter each daily noon tick — analogous to entering a river hex, but always-on, with a per-tick output cap. This is the first "passive carried-item effect" magic-item integration (distinct from the activator's drink/charge/worn-triggered patterns).
+
+**Model used:** Opus.
+
+**Completed:**
+- **`DecanterRefillService`** added at `engine/subsystems/inventory/decanter_refill_service.gd` (static class, follows the `TreasureLootService` / `TreasurePlacementService` pattern; not an autoload).
+  - `refill_party_water(party_data, campaign_repository, event_bus) -> Dictionary` — mutates `party.water_units` in place, persists via `save_party_state`, emits a notification toast through EventBus.
+  - `_count_carried_decanters(party_data, campaign_repository) -> int` — scans member individual inventories AND the party shared pool (`party_id` set, `character_id` empty) for `item_key == "decanter_of_endless_water"`. Multiple decanters stack additively.
+  - Returns a summary `{decanter_count, prior_units, final_units, refilled, emitted_notification}` for telemetry / UI.
+  - `OUTPUT_PER_TICK_UNITS = 1` (project default — see Decisions). Per-tick refill is `decanter_count * OUTPUT_PER_TICK_UNITS`, clamped at `party_size - prior_water` (mirrors `_refill_water_at_hex`'s "one day's draw" cap).
+- **Wilderness noon-tick integration** in `engine/subsystems/session/handlers/wilderness_handlers.gd:_handle_wilderness_noon_tick` — calls `DecanterRefillService.refill_party_water(...)` immediately after `_refill_water_at_hex`. Noon ordering means decanter water offsets the same day's midnight consumption (per coding_conventions §28 — forage / sustenance counter offset model).
+- **GDD §14 status board** row added for Decanter — links to the new service file with the design rationale + the RAW-gap [NEEDS-JEDIDIAH] flag.
+- **8 new tests** in `tests/test_decanter_of_endless_water.gd` (DB-backed; campaign + party + character rows seeded; uses CampaignRepository autoload):
+  - `test_no_decanter_no_refill` — baseline: no decanter, water_units stays at 0.
+  - `test_decanter_refills_thirsty_party` — single decanter over two ticks reaches party_size cap, water_units persists through `save_party_state`.
+  - `test_per_tick_cap_clamps_at_party_size` — 5 decanters in a solo party still cap at 1 person-day refill per tick.
+  - `test_already_full_no_refill` — refill is a no-op when water_units >= party_size (also no toast).
+  - `test_multiple_decanters_stack` — 2 decanters on 2 different members refill 2 person-days in one tick.
+  - `test_party_pool_decanter_counts` — decanter in `party_id`-only inventory row counts identically to member-held.
+  - `test_summary_records_decanter_count_and_delta` — pins the return Dictionary shape (decanter_count, prior_units, final_units, refilled, emitted_notification) + the toast payload (category="exploration", title contains "Decanter").
+  - `test_shop_sells_decanter_by_value_cp` — regression-locks the catalog price (150,000 gp = 15,000,000 cp) and the KEEP+BUILD disposition (no cut_for_v1 / defer_reason).
+- **Test runner registration** (the 4-edit pattern): `tests/test_runner.tscn` (ext_resource id 401 + node) + `tests/test_runner.gd` (@onready + run-loop array).
+
+**Decisions made:**
+- **Water stays a counter, not per-container.** Per `docs/coding_conventions.md §28`: `party.water_units` is the source of truth. The Decanter MUTATES the counter — it does not create / refill per-`waterskin` inventory rows. This matches `_refill_water_at_hex` exactly and avoids inventing a per-container fill state that doesn't exist anywhere else.
+- **Noon-tick integration (NOT per-leg of movement).** `_refill_water_at_hex` fires both per-leg AND at noon. The Decanter fires ONLY at noon — water consumption is daily (midnight tick), so one noon-tick refill per day is sufficient and avoids "infinite water from walking" semantics. A solo character with one decanter never runs dry; a 4-person party with one decanter still benefits but is bounded.
+- **Per-tick cap at `party_size`.** Mirrors river-hex semantics so the Decanter never over-fills into "surplus" units. Even if a future tuning raises OUTPUT_PER_TICK_UNITS above party_size, the cap clamps. The cap protects the "one day's draw" contract that the existing river-hex helper uses.
+- **Multiple decanters stack additively.** Project simplification: each decanter contributes its OUTPUT_PER_TICK_UNITS to the per-tick raw output. Whether the per-tick cap absorbs the extra depends on party_size. A party with 2 decanters and 1 member still only refills 1 person-day per tick (capped); a party with 2 decanters and 4 members refills 2 person-days per tick (below cap).
+- **Party-shared pool + per-character inventory both counted.** A decanter in `party_id`-only rows (e.g. picked up but not yet equipped) STILL benefits the party. This is the simpler model — the alternative (must be in a specific carry slot) imports inventory-slot complexity for no obvious gameplay benefit.
+- **Toast on refill > 0.** Same UX shape as the river-hex refill — info toast, category "exploration", 2.5-second duration. The body line includes the refill amount in person-days.
+- **No spell_binding / not through MagicItemActivator.** The Decanter doesn't activate, drink, or charge. It's a passive effect of being in someone's inventory — a different mechanism. Lives alongside the activator, not inside it.
+
+**Interfaces defined or changed:**
+- New static class: `DecanterRefillService` (engine/subsystems/inventory/decanter_refill_service.gd).
+- `DecanterRefillService.ITEM_KEY: String = "decanter_of_endless_water"` — public constant for cross-system reference.
+- `DecanterRefillService.OUTPUT_PER_TICK_UNITS: int = 1` — public constant (project default, [NEEDS-JEDIDIAH]).
+- `DecanterRefillService.refill_party_water(party_data: PartyData, campaign_repository, event_bus = null) -> Dictionary` — primary entry point. Repository/EventBus injected for testability; production calls pass the autoloads. event_bus may be null to skip toast emission (useful for batch / silent refills).
+- Summary Dictionary shape: `{decanter_count: int, prior_units: int, final_units: int, refilled: int, emitted_notification: bool}`.
+- `WildernessHandlers._handle_wilderness_noon_tick` — now calls `DecanterRefillService.refill_party_water(...)` after `_refill_water_at_hex`.
+
+**Database changes:** None. The Decanter rides on existing `inventory_items.item_key` lookups + the existing `party_state.water_units` column.
+
+**Tests added/updated:**
+- `tests/test_decanter_of_endless_water.gd` — 8 new tests (suite total 8). Stub EventBus class captures notification emissions for assertion without standing up the autoload.
+- Suite count: 394 passed / 19 failed (was 393 / 19; Decanter is the only new suite registered; the 19 failures are the pre-existing carry-forward set — no NEW failures attributable to this work).
+
+**Known issues:**
+- **[NEEDS-JEDIDIAH] Decanter output rate.** The project rules XML extract (`acore_treasure_and_magic_items_rules.xml:209-219`) lists Decanter of Endless Water in the miscellaneous-magic random table but is silent on the per-round / per-turn output value. The OD&D / AD&D ancestor item is 1d3 gallons/round in stream mode, but that does not map cleanly to the project's abstract person-day water counter. Project default chosen: 1 person-day per noon tick per decanter, clamped by party_size. Jedidiah to confirm this is not generous-enough-to-trivialize-expeditions or stingy-enough-to-make-the-item-worthless. Easy tuning knob: `DecanterRefillService.OUTPUT_PER_TICK_UNITS`.
+- **No stream / fountain / geyser mode distinction.** The traditional Decanter has three output modes (drinkable stream, gallon-per-round fountain, force-of-firehose geyser); the geyser is used as a weapon. V1 implements only the "passive refill" semantic. Combat / utility use of the geyser mode is a follow-up.
+- **No water-quality / poisoned-water interaction.** RAW is silent and the project does not model water purity (Potion of Sweet Water was cut for V1 per the 2026-05-29 triage). If water-purity becomes a thing, the Decanter should also produce pristine output.
+
+**Next session should:**
+1. **(Build) Continue the magic-item BUILD queue.** Decanter is now landed. The next items per the 2026-05-29 triage were Decanter + Oil of Slipperiness (Oil is in flight on a parallel session). After that: Tier 2 spell bindings (~16 items: Philter of Love, Control potions, Command rings, Dust of Appearance / Disappearance, etc.).
+2. **(Tuning, blocked on Jedidiah) Confirm OUTPUT_PER_TICK_UNITS.** Once Jedidiah confirms 1 person-day/tick is the right shape, lift the [NEEDS-JEDIDIAH] tag in the GDD §14 row and the service file's header comment.
+3. **(Polish) Surface Decanter status in the party / inventory UI.** A small "auto-refilling" indicator on the inventory row would surface the passive effect to the player. Out of scope here.
