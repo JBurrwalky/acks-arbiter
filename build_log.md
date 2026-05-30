@@ -28559,3 +28559,77 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **(Stretch — out-of-arc)** Port `_resolve_pick_up_all` to the 3D location_key for symmetry with `_resolve_loot`.
 3. **(Stretch — out-of-arc)** Add a multi-floor integration test that generates a 2-floor dungeon via `DungeonGeneratorV1.generate` and verifies hoards on floor 2 round-trip correctly through the materialize path (validates the z-fix added in Commit 4 against the full pipeline).
 4. **(Whatever's next on the user's list.)** The cell-based-treasure-containers arc is closed; subsequent work is whatever Jedidiah directs.
+
+
+## Session 2026-05-29 — Magic-item activation via spell binding (potions V1 thin slice)
+
+**Task:** Jedidiah pivoted to magic-item effects, focused on items that re-use spells already implemented. Build the foundation that bridges magic-item activation to the existing spell-effect pipeline (`CastingResolver`), wire up the 13 potions whose ACKS Core descriptions cleanly map to spells already implemented in `data/spells/spell_catalog.json`, and ship a test suite that proves the round-trip end-to-end. Scope: potions only (thin slice). Caster levels: RAW per `magic_item_creation_table`.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Catalog field — `spell_binding`** added to magic items via `tools/extract_magic_item_catalog.py` (`SPELL_BINDING_MAP` curated list + injection at item-dict build time). Shape: `{spell_key, tradition, caster_level, target_mode}`. Tradition picked as the lower-caster-level of the spell's classifications (matches magic-item-creation cost intuition). target_mode is `"self"` for drinker-targets-self potions, `"single_creature"` for drinker-designates-target potions.
+- **13 potion bindings wired** (the unambiguous V1 set):
+  - **Healing (divine):** Potion of Healing → `cure_light_wounds` (caster level 1); Potion of Extra-Healing → `cure_serious_wounds` (caster level 7).
+  - **Arcane self-buffs:** Invisibility, Levitation, Flying, Clairaudience, Clairvoyance, ESP, Water Breathing, Climbing → `invisibility` / `levitate` / `fly` / `clairaudience` / `clairvoyance` / `esp` / `water_breathing` / `spider_climb`.
+  - **Divine protection:** Fire Resistance → `resist_fire` (caster level 3).
+  - **Custom-resolver-backed:** Potion of Speed → `haste` (caster level 5).
+  - **Single-creature target:** Potion of Human Control → `charm_person` with `target_mode = "single_creature"`.
+- **`MagicItemActivator` service** (NEW, `engine/subsystems/inventory/magic_item_activator.gd`): static composition layer that does NO new game-rule logic — just stitches existing services together.
+  - `drink_potion(item_id, drinker, casting_resolver, magic_item_catalog, [target_id, target_entity, map_context, origin_cell]) → Dictionary`.
+  - Validates lookup chain: inventory_items.id → item_key → catalog entry → spell_binding.
+  - Builds `CasterContext` (drinker as caster; tradition + caster_level from binding; map_context + origin_cell from caller).
+  - Builds `SpellChoice` (spell_key from binding; level 1; no reverse; no disjunctive).
+  - Builds `TargetDescriptor` (drinker.id for self; designated id for single_creature).
+  - Calls `CastingResolver.resolve(...)` — the live spell pipeline does the work.
+  - Consumes the potion (deletes inventory row) ONLY on cast success. Failed cast → bottle survives.
+  - Failure modes return clear messages without consuming (no spell_binding, wrong category, missing item, missing target).
+- **6 DB-backed tests** in `tests/test_magic_item_activator.gd` (suite id 400):
+  - `test_drink_potion_of_healing_succeeds_and_consumes` — happy path; row deleted.
+  - `test_drink_self_targeted_potion_succeeds_for_each_v1_binding` — sweeps all 12 self-targeted bindings; cast succeeds + bottle consumed for each.
+  - `test_drink_potion_with_no_spell_binding_fails_without_consuming` — un-bound potion (Treasure Finding) errors cleanly; bottle survives.
+  - `test_drink_non_potion_fails` — drinking a sword is rejected.
+  - `test_drink_nonexistent_item_fails` — bogus item_id surfaces "not found".
+  - `test_drink_single_creature_potion_requires_target` — Potion of Human Control without/with target.
+- **GDD `gdd-treasure-item-backing.md` updated** — §14 status board row "Per-potion effects (drink → effect)" flipped to ✅ landed; new §16 "Magic-item activation via spell binding (V1 — potions thin slice)" carries the full design record (spell_binding shape, the 13 wired potions, the deliberately-omitted set with Jedidiah-ruling Qs, runtime path, tests, follow-ups).
+
+**Decisions made:**
+- **Compose existing services rather than build a parallel per-item resolver tree.** The spell-effect system (`CastingResolver` + 103 spells with `effect` blocks + 24 custom resolvers) is mature and exercised. A magic item that re-plays an existing spell gets its in-game behavior for free through the same code path a real caster uses. Saves writing 13 individual potion handlers and keeps a single source of truth for spell mechanics.
+- **`SPELL_BINDING_MAP` in the extractor** (Python) rather than a JSON sidecar. Matches the established pattern (`PRICE_MAP`, `CURSED_BONUS`, `EXPLICIT_CURSED_KEYS`); a typo in either side errors at extract time rather than shipping. Cross-validation is implicit (binding map key must match an existing catalog item_key).
+- **Tradition selection: lower-caster-level wins.** For spells in both arcane and divine spell lists (e.g. invisibility, levitate, fly, esp), pick the tradition that gives the lowest caster level. Matches the magic-item-creation cost model — a Potion of Invisibility brewed by a 3rd-level Mage is the canonical cheap baseline; a 5th-level Cleric brewing the same potion costs more. The drinker doesn't know or care; the math reflects the cheapest brew.
+- **RAW caster levels per spell, not per-item.** Choice #2 in the user's scope question was "RAW per magic_item_creation_table." Each binding uses the minimum caster level able to cast that spell-level (formula: `caster_level = 2 * spell_level - 1` for the picked tradition). Matches the prices already in the catalog.
+- **`single_creature` mode requires explicit target params.** Designating a target is the player's choice; auto-picking would mask UI bugs. Failure mode returns a clear message and the bottle isn't consumed.
+- **Failed cast doesn't consume the potion.** RAW item-activation interpretation: a magic-system failure (target invalid, wrong dimension, etc.) shouldn't waste the dose. Verified by the no-spell-binding + non-potion + missing-item tests.
+- **Catalog field added to extractor, not hand-edited into the JSON.** A future extractor re-run would have wiped a hand-edited JSON; injecting via the extractor is the durable approach.
+- **Catalog field added to extractor, not hand-edited into the JSON.** A future extractor re-run would have wiped a hand-edited JSON; injecting via the extractor is the durable approach.
+- **Activator is a static service, NOT an autoload.** Matches the `TreasureLootService` / `TreasurePlacementService` / `WornMagicEffectResolver` pattern in this codebase. Tests pass instances of `CastingResolver` + `MagicItemCatalog` as deps, so no autoload graph is needed in test mode.
+
+**Interfaces defined or changed:**
+- `magic_item_catalog.json` items can now carry an optional `spell_binding: {spell_key, tradition, caster_level, target_mode}` field. 13 V1 potions have it.
+- `MagicItemActivator.drink_potion(item_id, drinker, casting_resolver, magic_item_catalog, target_id="", target_entity=null, map_context="combat_grid", origin_cell=Vector3i.ZERO) → Dictionary{success, message, consumed, spell_key, casting_result}` (NEW).
+- `tools/extract_magic_item_catalog.py` — `SPELL_BINDING_MAP` constant + per-item injection step.
+
+**Database changes:** None (uses existing `inventory_items` schema).
+
+**Tests added/updated:**
+- `tests/test_magic_item_activator.gd` (NEW, 6 DB-backed tests; registered as `MagicItemActivatorTests` ext_resource id 400).
+- Test runner registration: 4-edit pattern (tscn + tscn node + runner @onready var + run-loop array entry).
+- Suite: 393 passed / 19 failed — +1 suite vs the previous 392/19 baseline; net-zero NEW failures.
+
+**Known issues:**
+- **Mechanical descriptions for the omitted potions live in rulebook prose we don't have in the corpus.** Items deferred until Jedidiah rules:
+  - **Potion of Polymorph** — Self or Other?
+  - **Philter of Love** — equivalent to `charm_person`?
+  - **Potion of Animal/Dragon/Giant/Plant/Undead Control** — `charm_monster` with creature filter, or distinct resolver?
+  - **Potion of Invulnerability** — `protection_from_normal_weapons` or unique mechanic?
+  - The remaining ~17 potions (Treasure Finding, Heroism, Super-Heroism, Longevity, Diminution, Gaseous Form, Growth, Giant Strength, Oil of Sharpness/Slipperiness, Sweet Water, Delusion etc.) don't map to existing spells and need their own custom resolvers.
+- **Identification gate not yet wired.** RAW :184-195 says the drinker doesn't know what a potion does until tasted. V1 assumes identified; the identification subsystem layers on top with no activator changes.
+- **`CasterContext.casting_stat_bonus` is set to 0 in V1.** The drinker's own INT (arcane) or WIS (divine) bonus could be folded in if Jedidiah wants the drinker's mod to affect save DCs the potion creates.
+- **No UI plumbing yet** — the activator is API-level only. A "Use" inventory action that calls it (and prompts for target on `single_creature` bindings) is the next UI integration.
+
+**Next session should:**
+1. **(User-facing UX)** Wire a "Use Potion" inventory action into the character sheet / inventory UI that calls `MagicItemActivator.drink_potion`. Adds an action-type entry to the dispatcher; the UI prompts for a target when `target_mode == "single_creature"`.
+2. **(Extend coverage)** Wand / staff bindings — same `spell_binding` field, plus charge tracking via `inventory_items.uses_remaining` decrement. Most wands map cleanly: Wand of Fireballs → `fireball`, Wand of Magic Missiles → `magic_missile`, Wand of Cold → `cone_of_cold`, etc.
+3. **(Extend coverage)** Persistent worn items — Ring of Invisibility, Ring of Fire Resistance, Boots of Levitation, Boots of Speed, Broom of Flying, etc. Reuse the `WornMagicEffectResolver` pattern but route to the spell-effect system for the actual buff application.
+4. **(Jedidiah Qs)** Disambiguate the deferred potions listed above and wire them into the binding map.
+5. **(Stretch)** Identification subsystem — gate `drink_potion` on "this potion has been identified" until the sip / sage / Magical Engineering flow lands.

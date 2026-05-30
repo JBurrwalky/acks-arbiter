@@ -2,7 +2,7 @@
   "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",
   "_price_source": "http://forum.autarch.co/t/magical-item-prices/3000/5 (game-creator price list); validated vs SACRED magic_item_creation_table + sample_magic_items in acore-campaign-general-and-magic-research.xml:185-247",
   "_extracted_by": "tools/extract_magic_item_catalog.py",
-  "_note": "Found-magic-item catalog: names + categories + magical_bonus + 167-unit encumbrance (1/6 stone, RAW item-counting) + sale price (value_gp) and creation time (creation_time_days, normalized to days: wk x7, mo x30). value_gp 0 = cursed/worthless (non-sellable); value_gp -1 = no fixed price (sub_roll/generator parent or non-merchandise). Ring of Protection materializes one of 5 variants via its d100 sub_roll; Spell Scroll is built by the scroll_of_spells generator (price = 500 x sum of spell levels). Per-item EFFECTS / charges / identification + binding specific named spells remain deferred to the magic-item usage session. Magic items grant 0 recovery XP (RAW) regardless of sale value.",
+  "_note": "Found-magic-item catalog: names + categories + magical_bonus + 167-unit encumbrance (1/6 stone, RAW item-counting) + sale price (value_gp) and creation time (creation_time_days, normalized to days: wk x7, mo x30). value_gp 0 = cursed/worthless (non-sellable); value_gp -1 = no fixed price (sub_roll/generator parent or non-merchandise). Ring of Protection materializes one of 5 variants via its d100 sub_roll; Spell Scroll is built by the scroll_of_spells generator (price = 500 x sum of spell levels). V1 spell_binding (potions only) routes drink-the-potion to CastingResolver via MagicItemActivator (spell_key / tradition / caster_level / target_mode). Wand / staff / ring bindings are a follow-up pass. Identification + per-spell-binding for found scrolls remain deferred. Magic items grant 0 recovery XP (RAW) regardless of sale value.",
   "type_table": [
     {
       "roll_min": 1,
@@ -212,7 +212,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "clairaudience",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_clairvoyance",
@@ -222,7 +228,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "clairvoyance",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_climbing",
@@ -232,7 +244,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 500,
-      "creation_time_days": 7
+      "creation_time_days": 7,
+      "spell_binding": {
+        "spell_key": "spider_climb",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_delusion",
@@ -272,7 +290,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "spell_binding": {
+        "spell_key": "esp",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_extra_healing",
@@ -282,7 +306,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2000,
-      "creation_time_days": 28
+      "creation_time_days": 28,
+      "spell_binding": {
+        "spell_key": "cure_serious_wounds",
+        "tradition": "divine",
+        "caster_level": 7,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_fire_resistance",
@@ -292,7 +322,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "spell_binding": {
+        "spell_key": "resist_fire",
+        "tradition": "divine",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_flying",
@@ -302,7 +338,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "fly",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_gaseous_form",
@@ -352,7 +394,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 500,
-      "creation_time_days": 7
+      "creation_time_days": 7,
+      "spell_binding": {
+        "spell_key": "cure_light_wounds",
+        "tradition": "divine",
+        "caster_level": 1,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_heroism",
@@ -372,7 +420,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "charm_person",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_creature"
+      }
     },
     {
       "item_key": "potion_of_invisibility",
@@ -382,7 +436,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "spell_binding": {
+        "spell_key": "invisibility",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_invulnerability",
@@ -402,7 +462,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1000,
-      "creation_time_days": 14
+      "creation_time_days": 14,
+      "spell_binding": {
+        "spell_key": "levitate",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_longevity",
@@ -482,7 +548,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "haste",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_super_heroism",
@@ -532,7 +604,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "water_breathing",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "ring_of_command_animal",

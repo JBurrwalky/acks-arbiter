@@ -412,6 +412,7 @@
 [ext_resource type="Script" path="res://tests/test_worn_magic_effect_resolver.gd" id="397_worn_magic_effect_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_treasure_placement_service.gd" id="398_treasure_placement_service_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_handlers_resolve_loot.gd" id="399_dungeon_handlers_resolve_loot_tests"]
+[ext_resource type="Script" path="res://tests/test_magic_item_activator.gd" id="400_magic_item_activator_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1648,3 +1649,6 @@ script = ExtResource("398_treasure_placement_service_tests")
 
 [node name="DungeonHandlersResolveLootTests" type="Node" parent="."]
 script = ExtResource("399_dungeon_handlers_resolve_loot_tests")
+
+[node name="MagicItemActivatorTests" type="Node" parent="."]
+script = ExtResource("400_magic_item_activator_tests")

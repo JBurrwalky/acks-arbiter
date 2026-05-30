@@ -278,6 +278,110 @@ CURSED_BONUS = {
 EXPLICIT_CURSED_KEYS = {"ring_of_delusion", "ring_of_weakness"}
 
 # ---------------------------------------------------------------------------
+# SPELL_BINDING_MAP — per-item runtime activation binding (V1 thin slice:
+# potions only). Each entry routes "use this item" to the equivalent spell in
+# the existing spell-effect system (data/spells/spell_catalog.json +
+# CastingResolver). The MagicItemActivator service consumes this binding to
+# build a CasterContext / SpellChoice / TargetDescriptor and invoke the live
+# spell pipeline — magic items that replay an existing spell get their
+# in-game effect for free.
+#
+# Caster level per spell binding follows RAW (the minimum caster level able
+# to cast the bound spell, which is also the level the magic-item creation
+# table assumes for potion pricing). When a spell has both an arcane and a
+# divine classification, the lower-caster-level tradition wins (cheaper to
+# brew → that's the "default" tradition the potion is assumed to use).
+#
+# target_mode:
+#   "self"             — drinker is the target (touch_creature/touch_ally/
+#                        self spells used as self-buffs).
+#   "single_creature"  — drinker designates one creature to affect (Potion
+#                        of Human Control's charm_person; the activator
+#                        prompts for the target_id at use time).
+#
+# Future categories (wands, rings, staves, scrolls) join this map in
+# separate passes; potion is the V1 thin slice.
+SPELL_BINDING_MAP = {
+    # Healing — divine, lowest available caster level for the spell.
+    "potion_of_healing": {
+        "spell_key": "cure_light_wounds", "tradition": "divine",
+        "caster_level": 1, "target_mode": "self",
+    },
+    "potion_of_extra_healing": {
+        "spell_key": "cure_serious_wounds", "tradition": "divine",
+        "caster_level": 7, "target_mode": "self",
+    },
+    # Arcane self-buffs.
+    "potion_of_invisibility": {
+        "spell_key": "invisibility", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "potion_of_levitation": {
+        "spell_key": "levitate", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "potion_of_flying": {
+        "spell_key": "fly", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    "potion_of_clairaudience": {
+        "spell_key": "clairaudience", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    "potion_of_clairvoyance": {
+        "spell_key": "clairvoyance", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    "potion_of_esp": {
+        "spell_key": "esp", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    "potion_of_water_breathing": {
+        "spell_key": "water_breathing", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    "potion_of_climbing": {
+        "spell_key": "spider_climb", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "self",
+    },
+    # Divine protection (resist_fire is divine-only).
+    "potion_of_fire_resistance": {
+        "spell_key": "resist_fire", "tradition": "divine",
+        "caster_level": 3, "target_mode": "self",
+    },
+    # Custom-resolver-backed spells (the resolver handles the heavy lifting).
+    "potion_of_speed": {
+        "spell_key": "haste", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    # Single-creature targeted (drinker designates one human to charm).
+    "potion_of_human_control": {
+        "spell_key": "charm_person", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_creature",
+    },
+    # POTIONS DELIBERATELY OMITTED (ambiguous bindings — RAW excerpt only
+    # carries names, not mechanics; the rulebook prose disambiguates these
+    # and we'd need a Jedidiah ruling before binding):
+    #   - potion_of_polymorph: Self or Other? ACKS RAW doesn't disambiguate
+    #     in the summary XML.
+    #   - philter_of_love: charm_person equivalent or its own mechanic?
+    #   - potion_of_ventriloquism: doesn't exist in ACKS Core potions table.
+    #   - potion_of_animal_control / dragon_control / giant_control /
+    #     plant_control / undead_control: probably analogous to
+    #     charm_person but for different creature types; depends on
+    #     whether we treat them as charm_monster-with-restriction
+    #     (works) or as their own custom resolver (needed).
+    #   - potion_of_invulnerability: probably maps to
+    #     protection_from_normal_weapons but the RAW description may
+    #     specify a unique mechanic.
+    #   - Various non-spell potions (Treasure Finding, Heroism,
+    #     Super-Heroism, Longevity, Diminution, Gaseous Form, Growth,
+    #     Giant Strength, etc.) have no direct spell analog and need
+    #     their own resolvers.
+    # Deferred to a follow-up pass once Jedidiah clarifies the mechanics.
+}
+
+# ---------------------------------------------------------------------------
 # Ring of Protection d100 variant table (ACKS Core rulebook excerpt).
 # Each variant is a unique item resolved at instantiation by a d100 roll.
 # value_gp from the forum, EXCEPT the +2 5'-radius variant, which the forum
@@ -523,6 +627,11 @@ def main() -> int:
         # doesn't literally include "cursed" (see EXPLICIT_CURSED_KEYS).
         if key in EXPLICIT_CURSED_KEYS:
             it["is_cursed"] = True
+        # V1 magic-item activation binding (potions, thin slice). See
+        # SPELL_BINDING_MAP. Wand / staff / ring bindings will join in
+        # follow-on passes.
+        if key in SPELL_BINDING_MAP:
+            it["spell_binding"] = SPELL_BINDING_MAP[key]
 
     catalog = {
         "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",
@@ -537,9 +646,11 @@ def main() -> int:
             "worthless (non-sellable); value_gp -1 = no fixed price (sub_roll/generator parent or "
             "non-merchandise). Ring of Protection materializes one of 5 variants via its d100 "
             "sub_roll; Spell Scroll is built by the scroll_of_spells generator (price = "
-            "500 x sum of spell levels). Per-item EFFECTS / charges / identification + binding "
-            "specific named spells remain deferred to the magic-item usage session. Magic items "
-            "grant 0 recovery XP (RAW) regardless of sale value."
+            "500 x sum of spell levels). V1 spell_binding (potions only) routes "
+            "drink-the-potion to CastingResolver via MagicItemActivator (spell_key / "
+            "tradition / caster_level / target_mode). Wand / staff / ring bindings are a "
+            "follow-up pass. Identification + per-spell-binding for found scrolls remain "
+            "deferred. Magic items grant 0 recovery XP (RAW) regardless of sale value."
         ),
         "type_table": type_table,
         "generators": {"scroll_of_spells": SPELL_SCROLL_GENERATOR},
