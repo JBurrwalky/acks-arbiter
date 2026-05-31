@@ -65,6 +65,15 @@ var is_cursed: bool = false
 var is_locked: bool = false
 var is_trapped: bool = false
 
+## Extradimensional container flag — migration 139 (container-as-sub-carrier
+## refactor 2026-05-31). When true on a container item, EncumbranceCalculator
+## treats the container's aggregate weight as its OWN weight only (contents
+## have no encumbrance contribution to the bearer regardless of their actual
+## weight). Set for Bag of Holding, Portable Hole, future Heward's Handy
+## Haversack, etc. Default false = mundane container (own weight + sum of
+## contents). For non-container items the flag is meaningless and stays false.
+var is_extradimensional: bool = false
+
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
 var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
@@ -103,6 +112,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.is_cursed = data.get("is_cursed", 0) == 1
 	i.is_locked = data.get("is_locked", 0) == 1
 	i.is_trapped = data.get("is_trapped", 0) == 1
+	i.is_extradimensional = data.get("is_extradimensional", 0) == 1
 	return i
 
 
@@ -134,6 +144,7 @@ func to_dict() -> Dictionary:
 		"is_cursed": 1 if is_cursed else 0,
 		"is_locked": 1 if is_locked else 0,
 		"is_trapped": 1 if is_trapped else 0,
+		"is_extradimensional": 1 if is_extradimensional else 0,
 	}
 
 

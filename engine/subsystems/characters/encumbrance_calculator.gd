@@ -13,14 +13,37 @@ extends RefCounted
 ##   <= 7 stone (<=7000 units): 90'/turn, 30'/round, 90'/round running
 ##   <= 10 stone (<=10000 units): 60'/turn, 20'/round, 60'/round running
 ##   <= 20 stone (<=20000 units): 30'/turn, 10'/round, 30'/round running
+##
+## ## Container-as-sub-carrier (2026-05-31)
+##
+## Containers (items with at least one other item pointing to them via
+## `container_id`) act as SUB-CARRIERS, not flat groupings:
+##   - Items inside a container do NOT contribute their individual weight
+##     to the bearer's total.
+##   - Instead, each container contributes its AGGREGATE weight, computed
+##     per its own rules.
+##   - Mundane container aggregate = own weight + sum(contents weights).
+##   - Extradimensional container aggregate = own weight ONLY (contents
+##     are weightless to the bearer regardless of how much is inside;
+##     migration-139 `is_extradimensional` flag).
+##   - Nesting is supported recursively (pouch in backpack in chest etc.).
+##
+## Previously, every inventory_items row owned by the character was summed
+## flat — containers were a UI grouping only. The new model matches RAW
+## (Bag of Holding fixed-weight regardless of contents, locked-chest carry
+## semantics, saddlebags as a mount's sub-carrier, etc.). Backward-compat
+## for inventories with NO containers (the common pre-refactor case):
+## identical totals to the old flat-sum behavior.
 
 
 static func calculate_encumbrance(inventory: Array) -> Dictionary:
 	## Takes an Array of InventoryItem (or Dictionaries with same fields).
 	## Returns encumbrance summary with movement rates.
-	var total_units: int = 0
-	for item in inventory:
-		total_units += calculate_item_encumbrance(item)
+	##
+	## Container-aware: items with a non-empty `container_id` are deferred
+	## from the top-level sum; their weight contributes only through the
+	## containing item's aggregate. See `_calculate_container_aggregate_weight`.
+	var total_units: int = _sum_with_containers(inventory)
 	var movement := get_movement_tier(total_units)
 	return {
 		"total_units": total_units,
@@ -32,11 +55,82 @@ static func calculate_encumbrance(inventory: Array) -> Dictionary:
 	}
 
 
+## Sum the bearer's effective encumbrance from a flat inventory list,
+## treating containers as sub-carriers. Two passes:
+##   1. Group items by `container_id`: loose items (no parent container) +
+##      a map of `parent_container_id -> Array[item]` for contents.
+##   2. For each loose item, compute its weight (or its container-aggregate
+##      weight if it has contents pointing at it). Container-aggregate
+##      recurses into nested containers via the same map.
+static func _sum_with_containers(inventory: Array) -> int:
+	var loose_items: Array = []
+	var contents_by_parent: Dictionary = {}  # parent_id -> Array of items
+	for item in inventory:
+		var parent_id: String = _container_id_of(item)
+		if parent_id.is_empty():
+			loose_items.append(item)
+		else:
+			if not contents_by_parent.has(parent_id):
+				contents_by_parent[parent_id] = []
+			contents_by_parent[parent_id].append(item)
+
+	var total: int = 0
+	for item in loose_items:
+		total += _weight_of_loose_or_container(item, contents_by_parent)
+	return total
+
+
+## Returns the encumbrance contribution of a top-level (loose) item to the
+## bearer. If the item has contents (anything in `contents_by_parent`
+## pointing at it), it's a container — compute its aggregate. Otherwise,
+## standard per-item weight.
+static func _weight_of_loose_or_container(item, contents_by_parent: Dictionary) -> int:
+	var id: String = _id_of(item)
+	if not id.is_empty() and contents_by_parent.has(id):
+		return _calculate_container_aggregate_weight(
+			item, contents_by_parent[id], contents_by_parent)
+	return calculate_item_encumbrance(item)
+
+
+## Compute the aggregate weight of a container (own weight + contents per
+## its rules):
+##   - Extradimensional container: own weight only (Bag of Holding etc.).
+##   - Mundane container: own weight + recursive aggregate of every content
+##     (each content may itself be a nested container).
+##
+## `contents` is the direct children of this container; deeper nesting is
+## resolved by passing `contents_by_parent` through to the recursive calls.
+static func _calculate_container_aggregate_weight(
+		container, contents: Array, contents_by_parent: Dictionary) -> int:
+	var own_weight: int = calculate_item_encumbrance(container)
+	if _is_extradimensional(container):
+		# Contents are weightless to the bearer regardless of total inside.
+		# UI may still display container-internal "X / Y stones used" via
+		# its own calculation (separate from bearer encumbrance).
+		return own_weight
+	var total: int = own_weight
+	for content in contents:
+		var content_id: String = _id_of(content)
+		if not content_id.is_empty() and contents_by_parent.has(content_id):
+			# Nested container — recurse.
+			total += _calculate_container_aggregate_weight(
+				content, contents_by_parent[content_id], contents_by_parent)
+		else:
+			# Leaf item — standard per-item weight.
+			total += calculate_item_encumbrance(content)
+	return total
+
+
 static func calculate_item_encumbrance(item) -> int:
 	## Returns effective encumbrance in units for one inventory item (quantity included).
 	## Equipped clothing and equipped accessories (accessory_N slots) weigh 0 — they are
 	## considered "worn" and do not encumber. Armor is always weighted even when worn.
 	## Accounts for magical armor/shield weight reduction (1000 units = 1 stone per bonus).
+	##
+	## Container-aware? NO — this function gives the SINGLE item's own weight.
+	## Container aggregate (own + contents) lives in
+	## `_calculate_container_aggregate_weight`. `calculate_encumbrance` orchestrates
+	## the two for a bearer-level total.
 	var units: int
 	var qty: int
 	if item is InventoryItem:
@@ -78,3 +172,37 @@ static func get_movement_tier(total_units: int) -> Dictionary:
 		return {"exploration": 60, "combat": 20, "running": 60}
 	# Up to max capacity (20 stone = 20000 units)
 	return {"exploration": 30, "combat": 10, "running": 30}
+
+
+# ---------------------------------------------------------------------------
+# Dual-shape helpers — item may be InventoryItem OR Dictionary (DB row).
+# Mirrors the pattern used in calculate_item_encumbrance above.
+# ---------------------------------------------------------------------------
+
+static func _id_of(item) -> String:
+	if item is InventoryItem:
+		return item.id
+	if item is Dictionary:
+		return str(item.get("id", ""))
+	return ""
+
+
+static func _container_id_of(item) -> String:
+	## The id of the container this item is INSIDE (i.e., the parent
+	## container in the sub-carrier model). Empty string = loose / top-level.
+	if item is InventoryItem:
+		return item.container_id
+	if item is Dictionary:
+		return str(item.get("container_id", ""))
+	return ""
+
+
+static func _is_extradimensional(item) -> bool:
+	if item is InventoryItem:
+		return item.is_extradimensional
+	if item is Dictionary:
+		var raw = item.get("is_extradimensional", 0)
+		if raw is bool:
+			return raw
+		return int(raw) == 1
+	return false

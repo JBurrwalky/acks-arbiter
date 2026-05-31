@@ -29331,3 +29331,68 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **(Per user direction)** Move on to **Tier 4 — per-item customs (~17 items).** Bag of Holding, Bag of Devouring, Rod of Cancellation, Wand of Device Negation, Horn of Blasting, Rope of Climbing, Crystal Ball + 2 variants, Ring of Regeneration, Ring of Spell Storing, Staff of Withering, Displacer Cloak, Amulet vs Crystal Balls and ESP, Potion of Poison, Potion of Gaseous Form, Potion of Growth. Each is its own resolver (~50-100 lines). Several are parallelizable across different subsystems (Bag of Holding is inventory; Ring of Regeneration is HP tick; Crystal Ball is scrying; Horn of Blasting is combat damage).
 2. **(Quick unblocker — high leverage)** `use_misc_magic_active` activator entry point — flips Drums of Panic + Dust of Disappearance + Dust of Appearance to shipped (3 items, ~30 minutes).
 3. **(Smaller unblockers)** Damage-multiplier hook in attack resolver — unlocks Girdle's damage doubling + future damage-doubling items.
+
+
+## Session 2026-05-31 — Container-as-sub-carrier refactor
+
+**Task:** Jedidiah suspected that the existing container code was a UI-grouping illusion — items inside containers still counted directly toward the carrier's encumbrance, instead of the carrier seeing only an aggregate container weight. Verify the claim by reading `EncumbranceCalculator` end-to-end; if confirmed, refactor before Bag of Holding / Bag of Devouring land. Refactor preserves backward compatibility for flat (no-container) inventories.
+
+**Model used:** Opus.
+
+**Verification:**
+- Read `engine/subsystems/characters/encumbrance_calculator.gd` end-to-end.
+- `calculate_encumbrance(inventory)` iterates the flat list summing `calculate_item_encumbrance(item)` per item; no `container_id` check anywhere.
+- Traced callers: `CampaignRepository.get_inventory_items(character_id)` returns ALL rows owned by the character (including container-nested items, since they still have `character_id = ?`). `travel_speed_calculator.gd:351` calls the calculator with that flat list.
+- **Verdict: claim confirmed.** Containers were a UI-only grouping. A character carrying a backpack with 10 daggers inside had the calculator sum the backpack weight + 10× dagger weights individually. Containers provided ZERO encumbrance abstraction.
+
+**Completed:**
+- **Migration 139** (`db/migrations/139_inventory_item_is_extradimensional.sql`): adds `is_extradimensional INTEGER NOT NULL DEFAULT 0 CHECK(is_extradimensional IN (0, 1))` to `inventory_items`. Non-destructive single-column ADD COLUMN (migration 012/134/135/136/137/138 pattern). Default 0 = mundane container. Schema.sql mirrors.
+- **`InventoryItem` shared type** (`engine/shared_types/inventory_item.gd`): added `is_extradimensional: bool` field; threaded through `from_dict` / `to_dict`.
+- **`CampaignRepository.add_inventory_item`** updated — canonical insert path threads the flag. Other 5 INSERT paths default to 0 via the schema default (consistent with how the Tier 1/2/3 flags were threaded — only the canonical path; magic-bag-carriable items don't flow through transfer/split/merge in V1).
+- **`EncumbranceCalculator` refactored** (`engine/subsystems/characters/encumbrance_calculator.gd`):
+  - New `_sum_with_containers(inventory) -> int` orchestrator: groups items by `container_id` (loose items vs. contents-by-parent dict), iterates loose items, computes per-item weight or per-container aggregate as appropriate.
+  - New `_calculate_container_aggregate_weight(container, contents, contents_by_parent) -> int` recursive helper: extradimensional → own weight only; mundane → own weight + recursive aggregate of each content (handles nesting).
+  - `calculate_item_encumbrance` UNCHANGED (single-item weight; orchestrator decides whether to call it directly or wrap it in an aggregate).
+  - Three new dual-shape helpers: `_id_of`, `_container_id_of`, `_is_extradimensional` (mirror the InventoryItem-or-Dictionary pattern used by the existing weight helpers).
+- **7 new tests** in `tests/test_encumbrance.gd` (suite now 16 total):
+  - `test_mundane_container_aggregates_own_weight_plus_contents` — backpack (167) + 3 daggers (1000 each) = 3167.
+  - `test_empty_container_just_own_weight` — empty pouch = 167.
+  - `test_extradimensional_container_contents_weightless` — Bag of Holding (6000) + 50 stones of contents = bearer sees 6000.
+  - `test_extradimensional_with_overweight_contents` — even 999999 units of contents → still 6000 (capacity enforcement is a separate UI/transfer concern).
+  - `test_nested_mundane_containers_recurse_correctly` — backpack + pouch inside + 5 coins = 339.
+  - `test_nested_extradimensional_in_mundane` — backpack containing Bag of Holding containing 50 stones = 6167 (Bag's contents weightless; backpack aggregates Bag's own weight only).
+  - `test_flat_inventory_no_containers_unchanged_behavior` — explicit backward-compat regression test: 3-item flat inventory sums identically to pre-refactor.
+- **GDD §14.1 "Container-as-sub-carrier architecture"** added documenting the new model, RAW backing (Bag of Holding "regardless of what is put into the bag, it weighs a maximum of 6 stone"), backward compatibility guarantee, and side-effect benefits (locked-chest carry semantics, saddlebag/pannier sub-carrier tracking).
+- **Memory file** `~/.claude/projects/.../memory/container_subcarrier_refactor.md` updated with verification + refactor-landed status.
+
+**Decisions made:**
+- **Refactor before bags.** Per Jedidiah: the proposed sub-carrier model is a precondition for clean magic-container implementations. Without it, every magic container becomes a one-off special case in EncumbranceCalculator. With it, magic bags are pure data (flag on catalog) + small per-flag rule.
+- **`is_extradimensional` flag at the inventory_items row level** (not catalog-only). Mirrors the migration-138 `is_locked` / `is_trapped` pattern — flag stamped at materialization from the catalog, fast runtime lookup without catalog dependency. EncumbranceCalculator reads directly from the row.
+- **Sum on the fly, not cached.** Each `calculate_encumbrance` call rebuilds the contents-by-parent grouping and computes aggregates fresh. Cached `current_encumbrance_units` field on container rows would be faster for hot paths but adds invariant-maintenance burden (every add/remove must update parent + nested parents). For V1, the cost is negligible — encumbrance calls are infrequent (UI refresh, travel-speed computation, etc.) and inventories are bounded (rarely > 50 items per character).
+- **Backward compatibility guarantee.** Flat inventories (no `container_id` set on any item) sum identically to pre-refactor. Every existing encumbrance test (which all use flat inventories per the codebase audit) keeps passing. The new tests cover the new behavior explicitly.
+- **Capacity enforcement is separate from encumbrance.** The refactor does NOT add capacity-overflow rejection (e.g., "can't put 200 stones into a 100-stone Bag of Holding"). That's a UI/transfer-layer concern. The UI already does this via `EquipmentContainerRow` for drag-drop; programmatic adds (treasure materialization, pickup, transfer) need a separate hook in `CampaignRepository.transfer_item_to_*` paths — landing alongside the bags themselves.
+- **Defer to follow-up:** Bag of Holding (RAW from Jedidiah: 100-stone capacity, weighs fixed 6 stone) + Bag of Devouring (RAW: 6+1d4 turns after closed, items vanish permanently). Both ride on this refactor cleanly via the `is_extradimensional` flag (Bag of Holding) and a new timer mechanic (Bag of Devouring, separate Timekeeping concern).
+
+**Interfaces defined or changed:**
+- `inventory_items.is_extradimensional INTEGER` (migration 139).
+- `InventoryItem.is_extradimensional: bool` (default false).
+- `CampaignRepository.add_inventory_item(data)` accepts `is_extradimensional` key (default false).
+- `EncumbranceCalculator.calculate_encumbrance(inventory)` — same signature, container-aware behavior. Old (flat) behavior preserved for inventories with no `container_id` set.
+- New private helpers in EncumbranceCalculator: `_sum_with_containers`, `_calculate_container_aggregate_weight`, `_id_of`, `_container_id_of`, `_is_extradimensional`.
+
+**Database changes:** Migration 139 (single-column ADD).
+
+**Tests added/updated:**
+- `tests/test_encumbrance.gd`: 7 new tests; suite now 16 total. Existing 9 tests unchanged (they all use flat inventories).
+- Suite: 395 passed / 19 failed — baseline preserved.
+
+**Known issues:**
+- **Capacity enforcement is not in scope of this commit.** A future commit needs to add overflow validation in `transfer_item_to_*` paths so programmatic adds can't exceed mundane container capacities. Extradimensional containers can still have catalog-level capacity (Bag of Holding = 100 stone), enforced at transfer time, distinct from encumbrance.
+- **Extradimensional-inside-extradimensional explosion (RAW Bag of Holding inside Bag of Holding = "small explosion, all items destroyed")** — out of V1 scope. Detected at transfer time; if both items have `is_extradimensional=true`, refuse the transfer + log. Lower priority than the bags themselves.
+- **Display "known weight" for sealed containers** (locked chest carry — wearer knows total weight, but contents are opaque). The refactor enables this naturally (the chest's aggregate includes contents weight even if UI doesn't list them), but a UI affordance for "show chest as a black-box with weight X" would be the cleaner player-facing presentation. Cosmetic enhancement; not blocking gameplay.
+
+**Next session should:**
+1. **(Bag of Holding)** Stamp `is_extradimensional: true` on `bag_of_holding` magic_item_catalog entry. Add a materializer path that creates the inventory_items row with the flag set + own `encumbrance_units = 6000` (6 stone fixed weight). Test: equip a Bag of Holding, drop in 100 stones of contents, confirm bearer encumbrance shows only the bag's 6 stone.
+2. **(Bag of Devouring)** Stamp `is_extradimensional: true` + a new `devouring_timer_turns` field (6+1d4 = 7-10 turns rolled per bag at instantiation). Add a Timekeeping subscription that fires at the timer mark + deletes all `inventory_items` rows where `container_id = bag_of_devouring.id`. "Must be fully closed" means a bag state field `is_closed: bool` — closed by default; player can open via UI; timer only fires when closed.
+3. **(Capacity enforcement)** Add overflow validation to `transfer_item_to_*` paths. Mundane container catalog capacity caps; extradimensional containers use their own catalog `capacity_units` (Bag of Holding = 100,000 units = 100 stone).
+4. **(Cluster A continuation)** With containers landed, ship the other 5 Cluster A items: Amulet vs Crystal Balls + ESP, Rod of Cancellation, Potion of Poison, Potion of Gaseous Form, Displacer Cloak (AC part).

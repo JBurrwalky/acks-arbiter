@@ -354,6 +354,26 @@ Per-item effects are landing incrementally as the magic-item-usage work continue
 
 **RAW anchors:** `acore_treasure_and_magic_items_rules.xml:231-235` (the +N rule); `acore_combat_and_wounds.xml:402-407` (invulnerable monsters); `acore-campaign-general-and-magic-research.xml:185-215` (creation cost formula backing the +N values).
 
+### 14.1 Container-as-sub-carrier architecture (2026-05-31)
+
+**Status: ✅ landed.** Prerequisite refactor for magic containers (Bag of Holding, Bag of Devouring, Portable Hole, future extradimensional items). Jedidiah 2026-05-31 verified that the prior container model was a UI-grouping illusion — every item with `character_id = X` summed flat into the bearer's encumbrance regardless of `container_id` nesting.
+
+**The new model:** containers are sub-carriers. `EncumbranceCalculator.calculate_encumbrance` filters items by `container_id` — loose items (top-level) contribute directly, and each container item contributes its aggregate weight per its own rules:
+- **Mundane container aggregate** = own weight + recursive sum of contents' aggregates (nested containers supported).
+- **Extradimensional container aggregate** = own weight ONLY (migration-139 `is_extradimensional` flag on `inventory_items`). Contents are weightless to the bearer regardless of how much is inside, matching RAW Bag of Holding semantics ("regardless of what is put into the bag, it weighs a maximum of 6 stone").
+
+**Backward compatibility:** flat inventories with NO containers behave identically to the pre-refactor flat sum. Every existing test in `test_encumbrance.gd` (which all use flat inventories) keeps passing.
+
+**Implementation files:**
+- `db/migrations/139_inventory_item_is_extradimensional.sql` — new column on `inventory_items`.
+- `engine/shared_types/inventory_item.gd` — `is_extradimensional` field + from_dict/to_dict threading.
+- `engine/autoloads/campaign_repository.gd` — `add_inventory_item` accepts the flag in the data dict.
+- `engine/subsystems/characters/encumbrance_calculator.gd` — `_sum_with_containers` orchestrator + `_calculate_container_aggregate_weight` recursive helper.
+
+**Tests:** 7 new in `tests/test_encumbrance.gd` covering mundane container + contents, empty container, extradimensional contents-weightless, extradimensional with overweight contents, nested mundane, nested extradimensional in mundane, flat-inventory backward-compat regression.
+
+**Side-effect benefits beyond magic bags:** locked chests can be carried out of a dungeon with known weight (RAW-correct hidden contents); saddlebags / panniers track their own load independently of the mount; pouches inside backpacks no longer get double-counted via the chest's container_id linkage from migration 138.
+
 **Catalog-flag-driven combat rules pattern.** The invulnerable-monster work established the pattern: a boolean field on the monster catalog data → set as a flag in `_apply_monster_catalog_flags` → read via a `Combatant` helper → consumed by a pre-roll check in the resolver. Reusable for any future "this monster property modifies the to-hit/damage path" rule.
 
 ---

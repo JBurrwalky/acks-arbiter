@@ -443,7 +443,14 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- layer can gate opening without re-reading the source treasure_hoards
     -- row (which is_looted=1 after materialization).
     is_locked INTEGER NOT NULL DEFAULT 0 CHECK(is_locked IN (0, 1)),
-    is_trapped INTEGER NOT NULL DEFAULT 0 CHECK(is_trapped IN (0, 1))
+    is_trapped INTEGER NOT NULL DEFAULT 0 CHECK(is_trapped IN (0, 1)),
+    -- Migration 139 additions
+    -- Extradimensional flag for magic containers (Bag of Holding etc.).
+    -- When set on a container item, EncumbranceCalculator computes the
+    -- container's aggregate weight as its OWN weight only (contents do not
+    -- contribute regardless of how heavy they are). Default 0 = mundane
+    -- container (aggregate = own weight + sum of contents).
+    is_extradimensional INTEGER NOT NULL DEFAULT 0 CHECK(is_extradimensional IN (0, 1))
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).

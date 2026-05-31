@@ -21,6 +21,14 @@ func run_all_tests() -> void:
 	test_magical_armor_reduction()
 	test_movement_tier_boundaries()
 	test_coin_encumbrance()
+	# Container-as-sub-carrier (Jedidiah refactor 2026-05-31).
+	test_mundane_container_aggregates_own_weight_plus_contents()
+	test_empty_container_just_own_weight()
+	test_extradimensional_container_contents_weightless()
+	test_extradimensional_with_overweight_contents()
+	test_nested_mundane_containers_recurse_correctly()
+	test_nested_extradimensional_in_mundane()
+	test_flat_inventory_no_containers_unchanged_behavior()
 	if not has_failures():
 		print("EncumbranceCalculator: all tests passed.")
 
@@ -231,3 +239,131 @@ func test_coin_encumbrance() -> void:
 	check(int(small_result.total_units) == 100,
 		"100 coins should be 100 units, got %d" % int(small_result.total_units))
 	print("  coin_encumbrance: OK")
+
+
+# ---------------------------------------------------------------------------
+# Container-as-sub-carrier (Jedidiah refactor 2026-05-31).
+# Containers (items with `container_id` pointing to them) act as sub-carriers:
+# loose items + per-container aggregate weights, instead of flat sum of all
+# items. Extradimensional containers (Bag of Holding, etc.) report their own
+# weight only — contents are weightless to the bearer.
+# ---------------------------------------------------------------------------
+
+func _make_container(id: String, item_name: String, units: int,
+		is_extradimensional: bool = false) -> InventoryItem:
+	var c := InventoryItem.new()
+	c.id = id
+	c.name = item_name
+	c.encumbrance_units = units
+	c.item_category = "container"
+	c.is_extradimensional = is_extradimensional
+	return c
+
+
+func _make_contained(item_name: String, units: int, parent_id: String,
+		category: String = "gear") -> InventoryItem:
+	var i := InventoryItem.new()
+	i.name = item_name
+	i.encumbrance_units = units
+	i.item_category = category
+	i.container_id = parent_id  # this item is INSIDE parent_id
+	return i
+
+
+func test_mundane_container_aggregates_own_weight_plus_contents() -> void:
+	# Mundane backpack (167 units = 0.167 stone) with 3 daggers
+	# (1000 units = 1 stone each) inside. Total = 167 + 3000 = 3167 units.
+	var backpack := _make_container("bp1", "Backpack", 167)
+	var d1 := _make_contained("Dagger", 1000, "bp1", "weapon")
+	var d2 := _make_contained("Dagger", 1000, "bp1", "weapon")
+	var d3 := _make_contained("Dagger", 1000, "bp1", "weapon")
+	var inv: Array = [backpack, d1, d2, d3]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 3167,
+		"backpack (167) + 3 daggers (1000 each) = 3167 total units, got %d" %
+			int(result.total_units))
+
+
+func test_empty_container_just_own_weight() -> void:
+	# A container with no contents weighs only its own listed weight.
+	var pouch := _make_container("p1", "Pouch", 167)
+	var inv: Array = [pouch]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 167,
+		"empty pouch alone = 167 units, got %d" % int(result.total_units))
+
+
+func test_extradimensional_container_contents_weightless() -> void:
+	# Bag of Holding (6000 units = 6 stone fixed) with 50 stones (50000 units)
+	# of contents. RAW: "regardless of what is put into the bag, it weighs a
+	# maximum of 6 stone." Bearer sees ONLY the 6000 own weight.
+	var bag := _make_container("boh1", "Bag of Holding", 6000, true)
+	var heavy1 := _make_contained("Stone Block", 25000, "boh1")
+	var heavy2 := _make_contained("Stone Block", 25000, "boh1")
+	var inv: Array = [bag, heavy1, heavy2]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 6000,
+		"Bag of Holding (6000) + 50000 units of contents = bearer sees 6000 only, got %d" %
+			int(result.total_units))
+
+
+func test_extradimensional_with_overweight_contents() -> void:
+	# Even if contents exceed the bag's RAW capacity (100 stone), the bearer
+	# still sees only the bag's own weight. Capacity enforcement is a
+	# separate concern from encumbrance — UI/transfer layer's job.
+	var bag := _make_container("boh1", "Bag of Holding", 6000, true)
+	var ridiculous := _make_contained("Way Too Heavy", 999999, "boh1")
+	var inv: Array = [bag, ridiculous]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 6000,
+		"extradimensional contributes own weight regardless of insane contents, got %d" %
+			int(result.total_units))
+
+
+func test_nested_mundane_containers_recurse_correctly() -> void:
+	# Backpack (167) containing Pouch (167) containing 5 coins (1 each).
+	# Total: 167 + 167 + 5 = 339.
+	var backpack := _make_container("bp1", "Backpack", 167)
+	var pouch := _make_container("p1", "Pouch", 167)
+	pouch.container_id = "bp1"  # pouch is INSIDE backpack
+	var coins := _make_contained("Coins", 1, "p1", "treasure")
+	coins.quantity = 5
+	var inv: Array = [backpack, pouch, coins]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 339,
+		"backpack (167) + pouch (167) + 5 coins (1 each) = 339, got %d" %
+			int(result.total_units))
+
+
+func test_nested_extradimensional_in_mundane() -> void:
+	# Backpack (167) containing Bag of Holding (6000) containing 50 stones
+	# of contents. Bag of Holding contributes ONLY its 6000; backpack
+	# aggregate = 167 + 6000 = 6167. Bearer total = 6167.
+	# (RAW interaction: putting extradimensional inside extradimensional
+	# explodes — out of V1 scope; this tests extradimensional INSIDE mundane.)
+	var backpack := _make_container("bp1", "Backpack", 167)
+	var bag := _make_container("boh1", "Bag of Holding", 6000, true)
+	bag.container_id = "bp1"  # bag is INSIDE backpack
+	var heavy := _make_contained("Stone Block", 50000, "boh1")
+	var inv: Array = [backpack, bag, heavy]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	check(int(result.total_units) == 6167,
+		"backpack (167) + Bag of Holding (6000, contents weightless) = 6167, got %d" %
+			int(result.total_units))
+
+
+func test_flat_inventory_no_containers_unchanged_behavior() -> void:
+	# Backward-compat regression: with no container_id set on any item,
+	# encumbrance sums flat (same as the pre-refactor behavior). This
+	# matches every existing test in this suite (which all use flat
+	# inventories) — they keep passing.
+	var sword := _make_item("Sword", 1000, "weapon")
+	var shield := _make_item("Shield", 1000, "shield")
+	var rations := _make_item("Rations", 167)
+	rations.quantity = 7
+	var inv: Array = [sword, shield, rations]
+	var result := EncumbranceCalculator.calculate_encumbrance(inv)
+	# Sword 1000 + Shield 1000 + 7 rations (167 each = 1169) = 3169.
+	check(int(result.total_units) == 3169,
+		"flat inventory: 1000 + 1000 + 7*167 = 3169, got %d" %
+			int(result.total_units))

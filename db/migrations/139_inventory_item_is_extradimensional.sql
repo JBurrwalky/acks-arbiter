@@ -1,0 +1,26 @@
+-- Migration 139: container-as-sub-carrier — extradimensional flag for magic
+-- containers (Bag of Holding, Portable Hole, etc.) whose contents do NOT
+-- contribute to the bearer's encumbrance regardless of total weight inside.
+--
+-- Per Jedidiah 2026-05-31 ruling: the existing container_id linkage was a
+-- UI-only grouping illusion — encumbrance summed every item with
+-- character_id=? regardless of container nesting. After this migration +
+-- the EncumbranceCalculator refactor, containers become true sub-carriers:
+-- loose items + container aggregate weights, with each container computing
+-- its aggregate per its own rules.
+--
+-- Mundane container aggregate = own weight + sum(contents weights).
+-- Extradimensional container aggregate = own weight ONLY (contents have no
+-- weight contribution; RAW: "Regardless of what is put into the bag, it
+-- weighs a maximum of 6 stone but holds up to 100 stone").
+--
+-- Stamped on the inventory_items row at materialization time from the magic
+-- item catalog's `is_extradimensional` flag (mirrors the migration 138
+-- pattern for is_locked/is_trapped which also flow from catalog → row).
+-- Default 0 for all existing items (no change in behavior for mundane).
+--
+-- Non-destructive single-column ADD COLUMN (migration 012 / 134 / 135 /
+-- 136 / 137 / 138 pattern). SQLite stamps the default onto every existing
+-- row in place.
+ALTER TABLE inventory_items ADD COLUMN is_extradimensional INTEGER NOT NULL DEFAULT 0
+    CHECK(is_extradimensional IN (0, 1));
