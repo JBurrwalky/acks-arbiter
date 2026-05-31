@@ -484,6 +484,7 @@ extends Node
 @onready var _treasure_placement_service_tests = $TreasurePlacementServiceTests
 @onready var _dungeon_handlers_resolve_loot_tests = $DungeonHandlersResolveLootTests
 @onready var _magic_item_activator_tests = $MagicItemActivatorTests
+@onready var _bag_of_devouring_service_tests = $BagOfDevouringServiceTests
 @onready var _decanter_of_endless_water_tests = $DecanterOfEndlessWaterTests
 @onready var _oil_of_slipperiness_tests = $OilOfSlipperinessTests
 
@@ -965,6 +966,7 @@ func run() -> void:
 			_treasure_placement_service_tests,
 			_dungeon_handlers_resolve_loot_tests,
 			_magic_item_activator_tests,
+			_bag_of_devouring_service_tests,
 			_decanter_of_endless_water_tests,
 			_oil_of_slipperiness_tests]:
 		if suite == null:

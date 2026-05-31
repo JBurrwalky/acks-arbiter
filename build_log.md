@@ -29396,3 +29396,74 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 2. **(Bag of Devouring)** Stamp `is_extradimensional: true` + a new `devouring_timer_turns` field (6+1d4 = 7-10 turns rolled per bag at instantiation). Add a Timekeeping subscription that fires at the timer mark + deletes all `inventory_items` rows where `container_id = bag_of_devouring.id`. "Must be fully closed" means a bag state field `is_closed: bool` — closed by default; player can open via UI; timer only fires when closed.
 3. **(Capacity enforcement)** Add overflow validation to `transfer_item_to_*` paths. Mundane container catalog capacity caps; extradimensional containers use their own catalog `capacity_units` (Bag of Holding = 100,000 units = 100 stone).
 4. **(Cluster A continuation)** With containers landed, ship the other 5 Cluster A items: Amulet vs Crystal Balls + ESP, Rod of Cancellation, Potion of Poison, Potion of Gaseous Form, Displacer Cloak (AC part).
+
+
+## Session 2026-05-31 — Bag of Holding + Bag of Devouring (Tier 4 customs)
+
+**Task:** With the container sub-carrier refactor (commit `767f72f`) landed, ship both magic bags in one focused commit. Jedidiah-supplied RAW: Bag of Holding "weighs a maximum of 6 stone but holds up to 100 stone (1,000 lb)"; Bag of Devouring "After 6+1d4 turns, all items placed in this bag vanish and are permanently lost." Project simplification on the timer: starts when any item is placed in the empty bag (no explicit "is closed" toggle). Dropped the D&D-convention "extradimensional explosion" idea — not in ACKS RAW per Jedidiah, per project rule on no D&D imports.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Migration 140** (`db/migrations/140_inventory_item_devouring_timer.sql`) — adds `devouring_at_turn INTEGER NOT NULL DEFAULT -1` to `inventory_items`. Sentinel `-1` = no active timer. Threaded through schema.sql + `CampaignRepository.add_inventory_item` (the canonical insert path; other 5 paths get default via schema, consistent with the migration-138/139 pattern).
+- **`CONTAINER_BEHAVIOR` map** in `tools/extract_magic_item_catalog.py` (parallel to `CUT_FOR_V1`, `DEFER_BUILD`, `EXPLICIT_BONUS`):
+  - `bag_of_holding`: `is_extradimensional=true`, `capacity_units=100,000` (100 stone), `own_weight_units=6,000` (6 stone fixed), `item_category="container"`.
+  - `bag_of_devouring`: identical shape PLUS `is_devouring=true` flag. The two bags are deliberately indistinguishable from outside per RAW ("seemingly identical to that of a bag of holding").
+  - Injection step: when a catalog item key is in the map, the extractor stamps `container_behavior` on the entry AND overrides `encumbrance_units` with the container's `own_weight_units` (so the bags' own weights match RAW even though the names-table pass sets a default 167 for generic magic items).
+- **`BagOfDevouringService`** (`engine/subsystems/inventory/bag_of_devouring_service.gd`, NEW; RefCounted with static methods, not an autoload):
+  - `is_bag_of_devouring(item_row) -> bool` — identifies by `item_key == "bag_of_devouring"` (avoids threading a separate column through every INSERT path).
+  - `start_timer_on_first_item(bag_id, current_turn, rng) -> bool` — when an item is placed into an EMPTY Bag of Devouring with no active timer, sets `devouring_at_turn = current_turn + 6 + rng.randi_range(1, 4)` (= 7-10 turns out). Idempotent / no-op when bag already has active timer or non-empty contents.
+  - `try_devour_if_expired(bag_id, current_turn) -> bool` — when `devouring_at_turn >= 0 AND current_turn >= devouring_at_turn`, deletes all items where `container_id = bag_id` + resets `devouring_at_turn = -1`. Returns true if devoured this call.
+  - `devour_contents(bag_id)` — internal: transactional `DELETE FROM inventory_items WHERE container_id = ?` + `UPDATE devouring_at_turn = -1`. Used by `try_devour_if_expired` and the tick handler.
+  - `reset_timer_on_empty(bag_id)` — called from the removal hook when the LAST item is removed from the bag; only resets if the bag is currently empty (idempotent).
+  - `find_expired_bags(campaign_id, current_turn) -> Array` — scans for active timers with expiration ≤ current turn, scoped by character.campaign_id linkage. Used by the per-turn tick handler.
+- **Timekeeping integration** in `LocationCacheManager._ready()`:
+  - Added `Timekeeping.turn_advanced.connect(_on_turn_advanced)` alongside the existing `day_changed` + `month_changed` subscriptions. Conceptually adjacent — LocationCacheManager already handles timer-driven inventory deletion (cache decay); bag-of-devouring expiration is the same pattern at a different cadence.
+  - `_on_turn_advanced(turns_elapsed)` reads the current turn from `Timekeeping.get_total_turns()`, calls `BagOfDevouringService.find_expired_bags(campaign_id, current_turn)`, and devours each expired bag's contents.
+- **Tests** in `tests/test_bag_of_devouring_service.gd` (NEW suite, 9 tests, registered as `BagOfDevouringServiceTests` ext_resource 401):
+  - `test_catalog_shape_for_both_bags` — pins both bags' encumbrance_units = 6,000 + container_behavior shape (is_extradimensional, capacity 100k, etc.). Includes the indistinguishable-from-outside invariant.
+  - `test_start_timer_on_first_item_into_empty_bag` — first item placed → devouring_at_turn set to current_turn + 7-10.
+  - `test_additional_items_do_not_reset_active_timer` — subsequent placements while timer active are no-ops on the timer.
+  - `test_removal_mid_cycle_does_not_reset_timer` — removing one of two items leaves the timer intact (the remaining item still vanishes at the original time).
+  - `test_try_devour_before_expiration_is_noop` — try_devour at current_turn < devouring_at_turn does nothing; contents survive.
+  - `test_try_devour_after_expiration_deletes_contents_and_resets` — at expiration, all contents deleted, bag itself survives, timer resets to -1, idempotent on re-call.
+  - `test_reset_timer_when_bag_goes_empty_via_removal` — `reset_timer_on_empty` clears the timer when last item is removed.
+  - `test_find_expired_bags_filters_correctly` — three turn-point sweep (105 < both, 115 between, 250 > both) confirms the query filters by expiration.
+  - `test_non_bag_of_devouring_items_unaffected_by_helpers` — Bag of Holding + plain daggers don't trigger the devouring path.
+- **GDD §14 status board** — Bag of Holding + Bag of Devouring rows added with full RAW + V1 mechanic notes.
+- **Memory file `container_subcarrier_refactor.md`** — bags shipped status recorded; retains follow-up scope (capacity enforcement, materializer wiring to TreasureInstantiator).
+
+**Decisions made:**
+- **Dropped the "extradimensional inside extradimensional explodes" check.** That's a D&D convention not present in ACKS RAW per Jedidiah's review. Per project rule on no D&D imports, the explosion logic doesn't ship. If/when Jedidiah confirms ACKS handles this case, we revisit.
+- **Identify Bag of Devouring by `item_key`, not a new column.** Avoids threading another flag through every INSERT path. The catalog still carries an `is_devouring` field for documentation, but runtime checks key off the item_key string.
+- **Subscribe in LocationCacheManager, not a new autoload.** The existing `LocationCacheManager` already wires Timekeeping subscriptions for cache decay (day_changed + month_changed). Bag of Devouring is conceptually a sibling timer mechanic — same lifecycle pattern — so reusing the autoload avoids spinning up a new singleton just for one item.
+- **`find_expired_bags` uses LEFT JOIN to characters.** Lets the query scope by campaign while ALSO including bags with `character_id = ''` (in a cache, dropped in dungeon, etc.). The OR clause keeps both code paths working.
+- **No capacity enforcement in this commit.** Per the sub-carrier refactor's deferred-work list. Capacity belongs to `transfer_item_to_*` paths; magnitude is the catalog's `capacity_units` (100,000 for both bags). Lands as a separate commit.
+- **No materializer wiring to TreasureInstantiator yet.** Bags can be created via direct `add_inventory_item` calls (tests do this); flowing them through hoard materialization requires the same is_extradimensional + devouring_at_turn=-1 stamping. Separate concern; doesn't block the bags' core mechanics.
+
+**Interfaces defined or changed:**
+- `inventory_items.devouring_at_turn INTEGER` (migration 140).
+- `CampaignRepository.add_inventory_item(data)` accepts `devouring_at_turn` key (default -1).
+- New `BagOfDevouringService` static class with the API described above.
+- `LocationCacheManager._on_turn_advanced(turns_elapsed)` (NEW) — handles per-turn bag-of-devouring tick.
+- Catalog item dict shape: optional `container_behavior` field carrying `{is_extradimensional, capacity_units, own_weight_units, item_category, is_devouring}`.
+- `tools/extract_magic_item_catalog.py` `CONTAINER_BEHAVIOR` map + injection step.
+
+**Database changes:** Migration 140 (single-column ADD).
+
+**Tests added/updated:**
+- `tests/test_bag_of_devouring_service.gd` (NEW; 9 tests).
+- Test runner registration: 4-edit pattern (tscn ext_resource + node, runner @onready + run-loop entry).
+- Suite: 396 passed / 19 failed — **+1 suite** vs the 395 baseline; net-zero NEW failures. ERROR count unchanged at 307.
+
+**Known issues / deferred follow-ups:**
+- **Capacity enforcement at transfer paths** — `transfer_item_to_*` should refuse overflows for mundane containers; for extradimensional containers, use the catalog `capacity_units` (Bag of Holding 100 stone). Lands separately.
+- **Materializer wiring** — when a Bag of Holding / Bag of Devouring materializes from a treasure hoard (via TreasureInstantiator → TreasureLootService), the inventory_items row needs `is_extradimensional=1` stamped from `container_behavior.is_extradimensional`. Currently the bags work mechanically when created via direct `add_inventory_item` calls, but the hoard materialization path doesn't yet read the catalog flag. Small follow-up commit (~20 lines + test).
+- **`is_devouring` stamping at materialization** — same as above; the bag of devouring needs `devouring_at_turn = -1` (which is the default) but the catalog-side `is_devouring` flag is currently informational only.
+- **UI affordance for "this bag is devouring soon"** — purely cosmetic; the player has no in-game way to know a Bag of Devouring is currently sitting on a timer. RAW says they don't know either (the bag looks identical to Bag of Holding until items vanish), so V1 hides this from the UI on purpose. A toggle for "I've identified this as a Bag of Devouring" could land later.
+- **First-item-into-bag hook into UI transfer path** — when the player drags an item into a Bag of Devouring via the inventory UI, the UI needs to call `BagOfDevouringService.start_timer_on_first_item` before/after the actual transfer. Currently the service is a clean API but doesn't have a UI integration. The hook lives in whatever resolver handles "drop into container" UI events.
+
+**Next session should:**
+1. **(Cluster A continuation)** Ship the other 5 Cluster A items now that the container infrastructure is in place: Amulet vs Crystal Balls + ESP (persistent worn flag), Rod of Cancellation (magic-item destruction), Potion of Poison (save-or-die drink, cursed potion), Potion of Gaseous Form (drink → `is_gaseous` flag), Displacer Cloak (+2 AC part). Each is independent of the others; could parallelize 2-3 via worktree agents.
+2. **(Container follow-ups)** Capacity enforcement + materializer wiring as separate small commits. Each ~30-40 lines + tests.
+3. **(UI drop-into-bag hook)** Wire the UI's "drop into container" resolver to call `BagOfDevouringService.start_timer_on_first_item` when the target container is a Bag of Devouring. Probably 5-10 lines in the inventory UI controller.

@@ -450,7 +450,13 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- container's aggregate weight as its OWN weight only (contents do not
     -- contribute regardless of how heavy they are). Default 0 = mundane
     -- container (aggregate = own weight + sum of contents).
-    is_extradimensional INTEGER NOT NULL DEFAULT 0 CHECK(is_extradimensional IN (0, 1))
+    is_extradimensional INTEGER NOT NULL DEFAULT 0 CHECK(is_extradimensional IN (0, 1)),
+    -- Migration 140 additions
+    -- Bag of Devouring timer state. -1 = no active timer; >= 0 = future turn
+    -- (per Timekeeping.get_total_turns()) at which contents are devoured.
+    -- Activates on first item placed in empty bag; resets when bag empties
+    -- (via removal or devour). See BagOfDevouringService for the mechanic.
+    devouring_at_turn INTEGER NOT NULL DEFAULT -1
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).

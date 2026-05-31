@@ -438,6 +438,55 @@ EXPLICIT_BONUS = {
 }
 
 # ---------------------------------------------------------------------------
+# CONTAINER_BEHAVIOR — per-item flags for magic containers.
+# Consumed by the inventory + encumbrance pipelines (migration 139's
+# `is_extradimensional` column lives on the inventory_items row; stamped from
+# this catalog metadata at materialization time).
+#
+# Field semantics:
+#   is_extradimensional: bool — EncumbranceCalculator treats this container's
+#     aggregate weight as its own weight only (contents are weightless to the
+#     bearer, regardless of how much is inside).
+#   capacity_units: int       — internal capacity limit (UI / transfer
+#     enforcement; separate from encumbrance). 100 stone = 100,000 units.
+#   own_weight_units: int     — the container's own encumbrance contribution
+#     to the bearer (overrides the default base equipment weight when set;
+#     Bag of Holding RAW: "weighs a maximum of 6 stone").
+#   item_category: str        — when materialized, the inventory_items row's
+#     item_category is set to this (overrides the default "magic"). Marking
+#     containers as "container" lets future code special-case them.
+#   is_devouring: bool        — when materialized, the bag of devouring
+#     timer machinery (BagOfDevouringService) treats this row as a target
+#     for the 6+1d4 turn cycle. RAW per Jedidiah 2026-05-31.
+CONTAINER_BEHAVIOR = {
+    "bag_of_holding": {
+        # RAW: "Large enough to fit an object that is 10' x 5' x 3'.
+        # Regardless of what is put into the bag, it weighs a maximum of
+        # 6 stone but holds up to 100 stone (1,000lb)."
+        "is_extradimensional": True,
+        "capacity_units": 100_000,    # 100 stone
+        "own_weight_units": 6_000,    # 6 stone fixed
+        "item_category": "container",
+    },
+    "bag_of_devouring": {
+        # RAW: "This magical bag is the size of a small sack. It opens into
+        # a nondimensional space, seemingly identical to that of a bag of
+        # holding. After 6+1d4 turns, all items placed in this bag vanish
+        # and are permanently lost." Jedidiah simplification: timer starts
+        # when item is placed in EMPTY bag; resets when bag goes empty.
+        # The bag is INDISTINGUISHABLE from Bag of Holding by external
+        # inspection — same own weight, same capacity, just the contents-
+        # destroying mechanic. The "is_devouring" flag is the
+        # distinguishing runtime trigger for BagOfDevouringService.
+        "is_extradimensional": True,
+        "capacity_units": 100_000,    # same as Bag of Holding
+        "own_weight_units": 6_000,    # same as Bag of Holding
+        "item_category": "container",
+        "is_devouring": True,
+    },
+}
+
+# ---------------------------------------------------------------------------
 # SPELL_BINDING_MAP — per-item runtime activation binding (V1 thin slice:
 # potions only). Each entry routes "use this item" to the equivalent spell in
 # the existing spell-effect system (data/spells/spell_catalog.json +
@@ -1022,6 +1071,18 @@ def main() -> int:
             it["cut_reason"] = CUT_FOR_V1[key]
         if key in DEFER_BUILD:
             it["defer_reason"] = DEFER_BUILD[key]
+        # Magic container metadata (Bag of Holding, Bag of Devouring; 2026-05-31).
+        # `container_behavior` carries the catalog-side configuration; the
+        # materializer (TreasureInstantiator / equivalent) stamps the
+        # is_extradimensional flag onto the inventory_items row + uses
+        # own_weight_units to override default encumbrance + sets
+        # item_category="container" + (for bag_of_devouring) initializes the
+        # devouring timer. See CONTAINER_BEHAVIOR.
+        if key in CONTAINER_BEHAVIOR:
+            it["container_behavior"] = CONTAINER_BEHAVIOR[key]
+            # Override the encumbrance_units stamped from the names table
+            # (167 = generic magic item) with the container's RAW own weight.
+            it["encumbrance_units"] = int(CONTAINER_BEHAVIOR[key]["own_weight_units"])
         # V1 magic-item activation binding (potions, thin slice). See
         # SPELL_BINDING_MAP. Wand / staff / ring bindings will join in
         # follow-on passes.

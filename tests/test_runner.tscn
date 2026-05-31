@@ -413,6 +413,7 @@
 [ext_resource type="Script" path="res://tests/test_treasure_placement_service.gd" id="398_treasure_placement_service_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_handlers_resolve_loot.gd" id="399_dungeon_handlers_resolve_loot_tests"]
 [ext_resource type="Script" path="res://tests/test_magic_item_activator.gd" id="400_magic_item_activator_tests"]
+[ext_resource type="Script" path="res://tests/test_bag_of_devouring_service.gd" id="401_bag_of_devouring_service_tests"]
 [ext_resource type="Script" path="res://tests/test_decanter_of_endless_water.gd" id="401_decanter_of_endless_water_tests"]
 [ext_resource type="Script" path="res://tests/test_oil_of_slipperiness.gd" id="402_oil_of_slipperiness_tests"]
 
@@ -1654,6 +1655,9 @@ script = ExtResource("399_dungeon_handlers_resolve_loot_tests")
 
 [node name="MagicItemActivatorTests" type="Node" parent="."]
 script = ExtResource("400_magic_item_activator_tests")
+
+[node name="BagOfDevouringServiceTests" type="Node" parent="."]
+script = ExtResource("401_bag_of_devouring_service_tests")
 
 [node name="DecanterOfEndlessWaterTests" type="Node" parent="."]
 script = ExtResource("401_decanter_of_endless_water_tests")

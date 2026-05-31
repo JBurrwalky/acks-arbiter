@@ -2768,8 +2768,8 @@ func add_inventory_item(data: Dictionary) -> String:
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp,
-			 is_cursed, is_locked, is_trapped, is_extradimensional)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 is_cursed, is_locked, is_trapped, is_extradimensional, devouring_at_turn)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -2793,6 +2793,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		1 if data.get("is_locked", false) else 0,
 		1 if data.get("is_trapped", false) else 0,
 		1 if data.get("is_extradimensional", false) else 0,
+		int(data.get("devouring_at_turn", -1)),
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")

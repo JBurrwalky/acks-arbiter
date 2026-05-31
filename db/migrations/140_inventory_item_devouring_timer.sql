@@ -1,0 +1,35 @@
+-- Migration 140: Bag of Devouring timer state.
+--
+-- RAW (ACKS Core, Bag of Devouring): "After 6+1d4 turns, all items placed
+-- in this bag vanish and are permanently lost. The bag must be fully closed
+-- for this effect to take place."
+--
+-- Project simplification (Jedidiah 2026-05-31): the timer begins ticking
+-- after any item is placed in the empty bag, whether empty due to acquisition
+-- or due to a prior devouring event. No explicit "is closed" toggle — V1
+-- assumes the bag is always closed when in inventory.
+--
+-- Field semantics:
+--   devouring_at_turn = -1     — no active timer (empty Bag of Devouring,
+--                                 or item is not a bag of devouring).
+--   devouring_at_turn >= 0     — future turn (per Timekeeping.get_total_turns())
+--                                 at which contents will be devoured.
+--
+-- Activation: when an item is placed in an EMPTY Bag of Devouring, the timer
+-- is set to `current_turn + 6 + 1d4`. Subsequent adds while the timer is
+-- active do NOT reset it (the original placement starts the cycle).
+-- Removals while the timer is active do NOT reset it either; the remaining
+-- items still vanish at the original time. When the bag goes empty (via
+-- removal OR via devouring), the timer resets to -1; the next placement
+-- starts a new cycle.
+--
+-- Tick: `BagOfDevouringService.try_devour_if_expired(bag_id, current_turn)`
+-- is invoked from `LocationCacheManager` on every `Timekeeping.turn_advanced`
+-- signal. When `current_turn >= devouring_at_turn`, contents are deleted via
+-- `DELETE FROM inventory_items WHERE container_id = bag_id` and timer resets.
+--
+-- Non-destructive single-column ADD COLUMN (the migration 012/134/135/136/
+-- 137/138/139 pattern). SQLite stamps the default onto every existing row in
+-- place. The -1 default is the "no active timer" sentinel — equivalent to
+-- the pre-migration state for every existing row.
+ALTER TABLE inventory_items ADD COLUMN devouring_at_turn INTEGER NOT NULL DEFAULT -1;

@@ -44,6 +44,24 @@ func _ready() -> void:
 		_catalog = equip_script.new()
 	Timekeeping.day_changed.connect(_on_day_changed)
 	Timekeeping.month_changed.connect(_on_month_changed)
+	# Bag of Devouring timer tick (2026-05-31). LocationCacheManager already
+	# wires Timekeeping subscriptions for cache decay; bag-of-devouring
+	# expiration is conceptually adjacent (timer-driven inventory deletion).
+	Timekeeping.turn_advanced.connect(_on_turn_advanced)
+
+
+## Tick handler for Bag of Devouring timers. On each turn advance, scan the
+## active campaign's inventory for bags with expired timers (devouring_at_turn
+## >= 0 AND devouring_at_turn <= current_turn) and devour their contents.
+## See BagOfDevouringService for the mechanic + RAW context.
+func _on_turn_advanced(_turns_elapsed: int) -> void:
+	var campaign_id := GameState.campaign_id
+	if campaign_id.is_empty():
+		return
+	var current_turn := Timekeeping.get_total_turns()
+	var expired_ids: Array = BagOfDevouringService.find_expired_bags(campaign_id, current_turn)
+	for bag_id in expired_ids:
+		BagOfDevouringService.devour_contents(str(bag_id))
 
 
 # ---------------------------------------------------------------------------

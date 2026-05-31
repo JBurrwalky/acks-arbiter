@@ -1297,9 +1297,16 @@
       "category": "misc_magic",
       "magical_bonus": 0,
       "is_cursed": false,
-      "encumbrance_units": 167,
+      "encumbrance_units": 6000,
       "value_gp": 0,
-      "creation_time_days": -1
+      "creation_time_days": -1,
+      "container_behavior": {
+        "is_extradimensional": true,
+        "capacity_units": 100000,
+        "own_weight_units": 6000,
+        "item_category": "container",
+        "is_devouring": true
+      }
     },
     {
       "item_key": "bag_of_holding",
@@ -1307,9 +1314,15 @@
       "category": "misc_magic",
       "magical_bonus": 0,
       "is_cursed": false,
-      "encumbrance_units": 167,
+      "encumbrance_units": 6000,
       "value_gp": 125000,
-      "creation_time_days": 500
+      "creation_time_days": 500,
+      "container_behavior": {
+        "is_extradimensional": true,
+        "capacity_units": 100000,
+        "own_weight_units": 6000,
+        "item_category": "container"
+      }
     },
     {
       "item_key": "boat_folding",
