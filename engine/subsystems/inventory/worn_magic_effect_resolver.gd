@@ -199,17 +199,17 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "amulet_versus_crystal_balls_and_esp":
 			_add_amulet_versus_crystal_balls_and_esp(character, item_id)
 			continue
-		# --- Displacer Cloak (Tier 4 Cluster A, 2026-06-01) ---
-		# RAW: acore_treasure_and_magic_items_rules.xml:266 — "Creates
-		# displacement effect making wearer harder to hit." Closest in-
-		# corpus mechanic: phase tiger's `phase_illusion` ability
-		# (acore_monster_catalog_owl-sco.xml:236-248): "Projects an
-		# illusion 3' from where it actually stands. All opponents suffer
-		# -2 to attack throws." Project default magnitude: 2 (mapped to
-		# +2 AC since ACKS AC is the modifier added to the attack-throw
-		# target). No save bonus — the +2 saves part of phase illusion is
-		# phase-tiger-specific. Stamped via EXPLICIT_BONUS = 2; resolver
-		# reads magical_bonus.
+		# --- Displacer Cloak (Tier 4 Cluster A, 2026-06-01; RAW confirmed
+		# by Jedidiah) ---
+		# RAW: "All opponents suffer a -2 penalty on attack throws against
+		# the wearer of the cloak. In addition, the wearer receives a
+		# bonus of +2 on all saving throws." -2 attack throws = +2 AC in
+		# ACKS (AC is the modifier added to the attack-throw target);
+		# +2 saves = -2 on all 5 save targets (saves are target numbers,
+		# lower is better). Mechanically identical to Cloak of Protection
+		# +2 — both halves are wired through the shared
+		# `_apply_ac_and_saves_bonus` helper. Magnitude 2 stamped via
+		# EXPLICIT_BONUS; resolver reads magical_bonus.
 		if item_key == "displacer_cloak" and bonus > 0:
 			_add_displacer_cloak(character, item_id, bonus)
 			continue
@@ -377,24 +377,17 @@ static func _add_amulet_versus_crystal_balls_and_esp(
 	character.flags.set_flag("is_nondetectable", source_id, {"source_kind": "worn_magic_item"})
 
 
-## Apply Displacer Cloak: +N AC modifier (no save bonus). RAW:
-## "Creates displacement effect making wearer harder to hit." Implementation
-## maps "harder to hit" to a +N AC bonus (ACKS AC is the modifier added to
-## the attack-throw target, so +AC = harder to hit). Magnitude 2 stamped via
-## EXPLICIT_BONUS based on the phase tiger phase_illusion analog (-2 attack
-## throws against the phase tiger). Stacks with other AC sources via empty
-## stacking_group (same convention as Bracers of Armor).
+## Apply Displacer Cloak: +N AC AND +N to all 5 saves. RAW per Jedidiah
+## ruling 2026-06-01: "All opponents suffer a -2 penalty on attack throws
+## against the wearer of the cloak. In addition, the wearer receives a
+## bonus of +2 on all saving throws." Mechanically identical to Cloak of
+## Protection +N — both halves wired through the shared
+## `_apply_ac_and_saves_bonus` helper. The cloak is priced differently
+## from a Cloak of Protection (the in-fiction source is light distortion,
+## not divine protection) but the engine effect is the same shape.
 static func _add_displacer_cloak(
 		character: CharacterData, item_id: String, bonus: int) -> void:
-	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
-	character.modifiers.add_modifier("armor_class", {
-		"source_id": source_id,
-		"source_type": "worn_magic_item",
-		"operation": "add",
-		"value": bonus,
-		"stacking_group": "",
-		"priority": 0,
-	})
+	_apply_ac_and_saves_bonus(character, item_id, bonus)
 
 
 ## Apply Boots of Speed: set_floor at 80'/round = RAW 240' per turn.

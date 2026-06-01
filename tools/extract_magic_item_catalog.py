@@ -443,19 +443,16 @@ EXPLICIT_BONUS = {
     # Bracers of Armor moved to a sub_roll table (RAW d100 + 5% cursed,
     # 2026-05-29). See BRACERS_OF_ARMOR_SUBROLL.
     #
-    # Displacer Cloak (Tier 4 Cluster A, 2026-06-01): RAW
-    # `acore_treasure_and_magic_items_rules.xml:266` says only "creates
-    # displacement effect making wearer harder to hit" — no magnitude.
-    # The closest in-corpus analog is the phase tiger's `phase_illusion`
-    # ability (`acore_monster_catalog_owl-sco.xml:236-248`,
-    # `le_monster_catalog_summary_3.xml:231-233`): "Projects an illusion
-    # 3' from where it actually stands. All opponents suffer -2 to attack
-    # throws." Project default magnitude: 2 (mapping -2 attack-throw
-    # penalty to +2 AC — equivalent in ACKS where AC is the modifier
-    # added to the attack-throw target). Saves are NOT boosted (the
-    # +2-saves part of phase illusion is phase-tiger-specific, not
-    # displacement per se). Flagged for Jedidiah confirmation; the
-    # WornMagicEffectResolver branch reads this magical_bonus.
+    # Displacer Cloak (Tier 4 Cluster A, 2026-06-01; RAW confirmed by
+    # Jedidiah): "appears to be a normal cloak, but when worn by a
+    # character its magical properties distort and warp light waves. All
+    # opponents suffer a -2 penalty on attack throws against the wearer
+    # of the cloak. In addition, the wearer receives a bonus of +2 on
+    # all saving throws." Magnitude 2 stamps both halves of the effect:
+    # WornMagicEffectResolver applies +2 AC AND +2 to all 5 saves
+    # (mechanically identical to a Cloak of Protection +2, but priced
+    # differently because the in-fiction source is light distortion
+    # rather than divine protection).
     "displacer_cloak": 2,
 }
 
@@ -526,20 +523,23 @@ DIRECT_POTION_EFFECTS = {
 #   mishap entries are the most explicit RAW we have: the rod drains a
 #   single magic item of all power on touch.
 #
-#   default_charges: 5 is a project default — RAW is silent on the rod's
-#   charge count. Closest in-corpus analog is Life Drinker (1d4+4 charges,
-#   `acore_treasure_and_magic_items_rules.xml:255`); midpoint of that range
-#   is ~6, project default 5 is conservative. Flagged for Jedidiah ruling.
+#   default_charges: 1 per Jedidiah ruling 2026-06-01: "Rod of Cancellation
+#   is usable once and may not be recharged." Single-use; rod becomes
+#   useless and non-magical immediately after the drain succeeds (same
+#   "useless and non-magical" mechanic as a wand at 0 charges per
+#   `acore_treasure_and_magic_items_rules.xml` identification_and_use).
+#   The "may not be recharged" half of the ruling is documentation-only
+#   in V1 — no recharge mechanism currently exists; future recharge
+#   features must check the catalog flag to exclude this rod.
 #
 #   Effect on touched item: is_magical -> 0, magical_bonus -> 0,
-#   uses_remaining -> 0, is_cursed -> 0. The item becomes mundane. The rod
-#   itself consumes one charge per successful use; when charges hit 0 the
-#   rod becomes useless and non-magical (same RAW as any other charged
-#   item, `acore_treasure_and_magic_items_rules.xml` identification_and_use).
+#   uses_remaining -> 0, is_cursed -> 0. The item becomes mundane.
 SPECIAL_CHARGED_EFFECTS = {
     "rod_of_cancellation": {
         "effect_kind": "cancel_magic_item",
-        "default_charges": 5,
+        "default_charges": 1,
+        # Documentation-only; future recharge features must consult.
+        "no_recharge": True,
     },
 }
 

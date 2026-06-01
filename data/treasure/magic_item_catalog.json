@@ -968,7 +968,7 @@
       "special_charged_effect": {
         "effect_kind": "cancel_magic_item"
       },
-      "default_charges": 5
+      "default_charges": 1
     },
     {
       "item_key": "rod_of_resurrection",

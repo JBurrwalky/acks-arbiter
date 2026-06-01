@@ -29630,3 +29630,42 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 2. Or pick up the cursed-item non-numeric effect pass: Cursed Scroll, Ring of Delusion, Ring of Weakness all have sticky-equip wired but the actual penalty is a stub.
 3. Or step into the spell-effect pass: 150 spells have empty effect blocks. Picking even one (e.g. gaseous_form, which would un-defer Potion of Gaseous Form) is a meaningful improvement.
 4. If a Jedidiah ruling lands on Rod of Cancellation charges or Displacer Cloak magnitude, both are one-line updates to the extractor + a test value bump.
+
+
+## Session 2026-06-01 — Tier 4 Cluster A: Jedidiah rulings (Rod of Cancellation single-use + Displacer Cloak full RAW)
+
+**Task:** Apply Jedidiah's two RAW rulings on the Tier 4 Cluster A items that landed with project defaults: (1) Rod of Cancellation is single-use and may not be recharged; (2) Displacer Cloak grants +2 AC AND +2 to all saving throws (the full RAW text was richer than the rules summary excerpt I had).
+**Model used:** Sonnet 4.6 for the catalog + resolver + test updates.
+**Completed:**
+- `tools/extract_magic_item_catalog.py:SPECIAL_CHARGED_EFFECTS["rod_of_cancellation"]` — `default_charges: 5 → 1`; added `no_recharge: True` flag (documentation-only; no recharge mechanism exists in V1). Updated the comment block to cite the Jedidiah ruling verbatim.
+- `tools/extract_magic_item_catalog.py:EXPLICIT_BONUS["displacer_cloak"]` — magnitude unchanged (still 2), but comment rewritten to cite the full RAW text Jedidiah supplied: "All opponents suffer a -2 penalty on attack throws against the wearer of the cloak. In addition, the wearer receives a bonus of +2 on all saving throws." Note that the magnitude stamp at 2 now drives BOTH the AC bonus AND the save bonus through the existing shared helper.
+- `engine/subsystems/inventory/worn_magic_effect_resolver.gd:_add_displacer_cloak` — refactored from a custom one-line AC-only modifier to a single call to the existing `_apply_ac_and_saves_bonus(character, item_id, bonus)` helper (the same builder Ring of Protection / Cloak of Protection use). Net effect: +2 AC AND +2 to all 5 saves. Mechanically identical to a Cloak of Protection +2; the cloaks differ only in price + in-fiction source.
+- `data/treasure/magic_item_catalog.json` regenerated; verified `rod_of_cancellation.default_charges == 1` post-regen.
+- `tests/test_tier4_cluster_a.gd` — three test updates: (a) catalog-shape assertion `default_charges == 5 → == 1`; (b) `test_rod_drains_target_magic_item` setup uses `uses_remaining: 1`; (c) `test_rod_decrements_charges` (multi-charge) → `test_rod_is_single_use_and_becomes_inert` (asserts the single use → 0 charges + is_magical=0 + target drained in one assertion block). Removed the now-redundant `test_rod_becomes_inert_at_zero_charges` (same scenario as the single-use test). Renamed `test_displacer_cloak_does_not_boost_saves` → `test_displacer_cloak_grants_plus_two_to_all_saves` (inverted: asserts -2 on each of the 5 save targets). Renamed `test_displacer_cloak_clears_ac_on_unequip` → `test_displacer_cloak_clears_ac_and_saves_on_unequip` (extended to verify all 5 save modifiers clear too). Total tests in the suite: 17 (down from 19 because two tests merged + one renamed); all pass.
+- `generation/gdd-treasure-item-backing.md` §14 — Rod row updated (single-use phrasing, Jedidiah ruling cited verbatim, test count 5); Displacer Cloak row updated (full RAW text quoted, mechanic-identical-to-Cloak-of-Protection note, test count 4).
+
+**Decisions made:**
+- **Reuse the existing `_apply_ac_and_saves_bonus` helper for Displacer Cloak** rather than write a parallel implementation. The Cloak of Protection already uses this exact helper at +1; Displacer Cloak just plugs in at +2. The shared helper handles the AC-positive-saves-negative sign math (saves are target numbers, lower is better, so +2 to saves = -2 on the target). Single source of truth; future +N items follow the same pattern.
+- **`no_recharge: true` is documentation-only in V1.** ACKS doesn't yet implement a generic magic-item recharge mechanism, so there's nothing to gate. The flag is there for future code: when a recharge subsystem lands (e.g., wizard re-enchanting wands), it must check this flag and refuse to recharge a Rod of Cancellation.
+- **Merge the two rod inert-at-zero tests** (`test_rod_decrements_charges` was multi-charge, `test_rod_becomes_inert_at_zero_charges` was final-charge → 0). After the single-use ruling, both tests collapse to the same scenario: rod has 1 charge, drains target, ends at 0 + inert. Keeping one test that asserts the full single-use lifecycle is cleaner than two near-duplicate tests.
+- **Resolved both prior `[NEEDS-JEDIDIAH-*]` flags from the Tier 4 Cluster A commit (`8acae4f`).** The earlier `[NEEDS-JEDIDIAH-RULING]` (rod charge count) and `[NEEDS-JEDIDIAH-CONFIRMATION]` (displacer magnitude + saves) are both now resolved by the RAW text Jedidiah supplied. Removed both flags from the GDD status board.
+
+**Interfaces defined or changed:**
+- `WornMagicEffectResolver._add_displacer_cloak(character, item_id, bonus)` — internal contract change: now delegates to `_apply_ac_and_saves_bonus` (was: standalone AC-only modifier). External signature unchanged. Test consumers see the additional save modifiers.
+- `Rod of Cancellation` catalog entry: `default_charges: 1` (was 5) + new `special_charged_effect.no_recharge: true` documentation flag.
+- `Displacer Cloak` catalog entry: unchanged in shape (magical_bonus: 2); the +2 now drives both AC and saves via the resolver branch.
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- `tests/test_tier4_cluster_a.gd` test set adjusted: 19 → 17 tests (two rod tests merged; two displacer tests renamed/inverted; all other tests unchanged). Full suite holds at **397 passed / 19 failed** — same baseline as the parent Cluster A commit; net-zero new failures.
+- Specifically: `test_rod_of_cancellation_catalog_carries_special_charged_effect` (catalog single-use); `test_rod_drains_target_magic_item` (target drain on the single use); `test_rod_is_single_use_and_becomes_inert` (the new merged test asserting full single-use lifecycle); `test_displacer_cloak_grants_plus_two_to_all_saves` (the inverted assertion); `test_displacer_cloak_clears_ac_and_saves_on_unequip` (extended cleanup assertion).
+
+**Known issues:**
+- None. Both prior open Jedidiah questions are now resolved by RAW.
+
+**Next session should:**
+1. Magic swords with named effects (Flame Tongue, Frost Brand, Life Drinker, Luck Blade, Vorpal Sword) — each needs its own resolver + a damage-type or status hook. Probably the largest remaining "clean" cluster.
+2. Cursed-item non-numeric effect pass: Cursed Scroll, Ring of Delusion, Ring of Weakness all have sticky-equip wired but the actual penalty is a stub.
+3. Spell-effect pass on the 150 spells with empty effect blocks — would un-defer Potion of Gaseous Form (and unblock several other deferred items).

@@ -34,8 +34,8 @@ func run_all_tests() -> void:
 	test_amulet_sets_is_nondetectable_flag_on_equip()
 	test_amulet_clears_is_nondetectable_flag_on_unequip()
 	test_displacer_cloak_grants_plus_two_ac()
-	test_displacer_cloak_does_not_boost_saves()
-	test_displacer_cloak_clears_ac_on_unequip()
+	test_displacer_cloak_grants_plus_two_to_all_saves()
+	test_displacer_cloak_clears_ac_and_saves_on_unequip()
 	# Potion of Gaseous Form — end-to-end via drink_potion.
 	test_drink_potion_of_gaseous_form_returns_deferred_message()
 	# Potion of Poison — save success / failure / consumption.
@@ -44,9 +44,8 @@ func run_all_tests() -> void:
 	test_potion_of_poison_consumed_on_both_outcomes()
 	# Rod of Cancellation.
 	test_rod_drains_target_magic_item()
-	test_rod_decrements_charges()
+	test_rod_is_single_use_and_becomes_inert()
 	test_rod_at_zero_charges_refuses_activation()
-	test_rod_becomes_inert_at_zero_charges()
 	test_rod_refuses_to_drain_non_magical_item()
 	test_rod_refuses_to_drain_itself()
 	if not has_failures():
@@ -117,8 +116,9 @@ func test_rod_of_cancellation_catalog_carries_special_charged_effect() -> void:
 	check(str(special.get("effect_kind", "")) == "cancel_magic_item",
 		"effect_kind should be 'cancel_magic_item', got '%s'" %
 			str(special.get("effect_kind", "")))
-	check(int(entry.get("default_charges", 0)) == 5,
-		"default_charges should be 5 (project default from Life Drinker 1d4+4 analog), got %d" %
+	# Jedidiah ruling 2026-06-01: "usable once and may not be recharged."
+	check(int(entry.get("default_charges", 0)) == 1,
+		"default_charges should be 1 (RAW single-use per Jedidiah ruling), got %d" %
 			int(entry.get("default_charges", 0)))
 
 
@@ -186,7 +186,11 @@ func test_displacer_cloak_grants_plus_two_ac() -> void:
 	_teardown()
 
 
-func test_displacer_cloak_does_not_boost_saves() -> void:
+func test_displacer_cloak_grants_plus_two_to_all_saves() -> void:
+	# RAW per Jedidiah ruling 2026-06-01: "the wearer receives a bonus of
+	# +2 on all saving throws." Saves are target numbers (lower is
+	# better), so +2 to saves = -2 on the target. Mechanically identical
+	# to Cloak of Protection +2's save bonus.
 	_setup()
 	var char_data := _make_character()
 	var cloak_id := CampaignRepository.add_inventory_item({
@@ -197,17 +201,17 @@ func test_displacer_cloak_does_not_boost_saves() -> void:
 	})
 	WornMagicEffectResolver.refresh_for_character(
 		char_data, [CampaignRepository.get_inventory_item_by_id(cloak_id)])
-	# Verify NONE of the 5 saves got modified — the +2 saves is phase-tiger-
-	# specific, not part of the displacement mechanic.
+	# Every one of the 5 saves should carry the -2 (= +2 on the d20).
 	for save_key in ["save_petrification", "save_poison_death", "save_blast_breath",
 			"save_staffs_wands", "save_spells"]:
 		var save_mod: int = char_data.modifiers.get_effective_value(save_key, 0)
-		check(save_mod == 0,
-			"Displacer Cloak should NOT modify '%s' (got %d)" % [save_key, save_mod])
+		check(save_mod == -2,
+			"Displacer Cloak should add -2 to '%s' target (= +2 on d20), got %d" %
+				[save_key, save_mod])
 	_teardown()
 
 
-func test_displacer_cloak_clears_ac_on_unequip() -> void:
+func test_displacer_cloak_clears_ac_and_saves_on_unequip() -> void:
 	_setup()
 	var char_data := _make_character()
 	var cloak_id := CampaignRepository.add_inventory_item({
@@ -220,12 +224,19 @@ func test_displacer_cloak_clears_ac_on_unequip() -> void:
 		char_data, [CampaignRepository.get_inventory_item_by_id(cloak_id)])
 	check(char_data.modifiers.get_effective_value("armor_class", 0) == 2,
 		"precondition: +2 AC on equip")
-	# Unequip + refresh — AC modifier should clear.
+	check(char_data.modifiers.get_effective_value("save_spells", 0) == -2,
+		"precondition: -2 save_spells target on equip")
+	# Unequip + refresh — both AC and saves modifiers should clear via
+	# the worn_magic: source-prefix sweep.
 	CampaignRepository.update_inventory_item_equip_state(cloak_id, false, "pack", "")
 	WornMagicEffectResolver.refresh_for_character(
 		char_data, [CampaignRepository.get_inventory_item_by_id(cloak_id)])
 	check(char_data.modifiers.get_effective_value("armor_class", 0) == 0,
-		"Displacer Cloak AC modifier should clear on unequip")
+		"AC modifier should clear on unequip")
+	for save_key in ["save_petrification", "save_poison_death", "save_blast_breath",
+			"save_staffs_wands", "save_spells"]:
+		check(char_data.modifiers.get_effective_value(save_key, 0) == 0,
+			"'%s' modifier should clear on unequip" % save_key)
 	_teardown()
 
 
@@ -351,7 +362,7 @@ func test_rod_drains_target_magic_item() -> void:
 		"character_id": _DB_CHAR, "item_key": "rod_of_cancellation",
 		"name": "Rod of Cancellation", "quantity": 1,
 		"item_category": "magic", "is_magical": true,
-		"uses_remaining": 5,
+		"uses_remaining": 1,  # RAW single-use per Jedidiah ruling
 	})
 	# Target: a +2 sword. Drain should clear magical state.
 	var sword_id := CampaignRepository.add_inventory_item({
@@ -373,13 +384,17 @@ func test_rod_drains_target_magic_item() -> void:
 	_teardown()
 
 
-func test_rod_decrements_charges() -> void:
+func test_rod_is_single_use_and_becomes_inert() -> void:
+	# Jedidiah ruling 2026-06-01: "Rod of Cancellation is usable once and
+	# may not be recharged." Default_charges = 1; on the single use the
+	# rod drops to 0 charges + is_magical = 0 (useless and non-magical,
+	# same RAW as any other charged item at 0).
 	_setup()
 	var wielder := _make_drinker()
 	var catalog := MagicItemCatalog.new()
 	var rod_id := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "rod_of_cancellation",
-		"name": "Rod of Cancellation", "is_magical": true, "uses_remaining": 5,
+		"name": "Rod of Cancellation", "is_magical": true, "uses_remaining": 1,
 	})
 	var target_id := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "ring_of_protection_1",
@@ -387,13 +402,20 @@ func test_rod_decrements_charges() -> void:
 	})
 	var result: Dictionary = MagicItemActivator.apply_rod_of_cancellation(
 		rod_id, wielder, target_id, catalog)
-	check(bool(result["success"]) == true, "drain should succeed")
-	check(int(result["charges_remaining"]) == 4,
-		"rod should drop from 5 to 4 charges, got %d" % int(result["charges_remaining"]))
-	check(bool(result["became_inert"]) == false, "rod with 4 charges remaining is not inert")
+	check(bool(result["success"]) == true, "single-use drain should succeed")
+	check(int(result["charges_remaining"]) == 0,
+		"rod should drop from 1 to 0 charges after its one use, got %d" %
+			int(result["charges_remaining"]))
+	check(bool(result["became_inert"]) == true, "rod should be inert after its one use")
+	# Rod itself becomes non-magical per RAW (useless and non-magical).
 	var rod_post: Dictionary = CampaignRepository.get_inventory_item_by_id(rod_id)
-	check(int(rod_post.get("uses_remaining", -1)) == 4, "rod row should reflect 4 charges")
-	check(int(rod_post.get("is_magical", 0)) == 1, "rod should still be magical at 4 charges")
+	check(int(rod_post.get("uses_remaining", -1)) == 0, "rod row should reflect 0 charges")
+	check(int(rod_post.get("is_magical", 1)) == 0,
+		"spent rod should have is_magical=0 (RAW: useless and non-magical)")
+	# Target was drained (defense-in-depth — the single-use path still drains).
+	var target_post: Dictionary = CampaignRepository.get_inventory_item_by_id(target_id)
+	check(int(target_post.get("is_magical", 1)) == 0, "target should be drained")
+	check(int(target_post.get("magical_bonus", 99)) == 0, "target magical_bonus should be 0")
 	_teardown()
 
 
@@ -418,30 +440,6 @@ func test_rod_at_zero_charges_refuses_activation() -> void:
 	# Target stays magical (no drain on a no-charge rod).
 	var sword_post: Dictionary = CampaignRepository.get_inventory_item_by_id(target_id)
 	check(int(sword_post.get("is_magical", 0)) == 1, "sword should remain magical")
-	_teardown()
-
-
-func test_rod_becomes_inert_at_zero_charges() -> void:
-	_setup()
-	var wielder := _make_drinker()
-	var catalog := MagicItemCatalog.new()
-	var rod_id := CampaignRepository.add_inventory_item({
-		"character_id": _DB_CHAR, "item_key": "rod_of_cancellation",
-		"name": "Rod of Cancellation", "is_magical": true, "uses_remaining": 1,
-	})
-	var target_id := CampaignRepository.add_inventory_item({
-		"character_id": _DB_CHAR, "item_key": "sword_1",
-		"name": "Sword +1", "is_magical": true, "magical_bonus": 1,
-	})
-	var result: Dictionary = MagicItemActivator.apply_rod_of_cancellation(
-		rod_id, wielder, target_id, catalog)
-	check(bool(result["success"]) == true, "final-use should succeed")
-	check(int(result["charges_remaining"]) == 0, "rod should drop to 0 charges")
-	check(bool(result["became_inert"]) == true, "rod hitting 0 charges should be inert")
-	# Rod itself becomes non-magical per RAW.
-	var rod_post: Dictionary = CampaignRepository.get_inventory_item_by_id(rod_id)
-	check(int(rod_post.get("is_magical", 1)) == 0,
-		"inert rod should have is_magical=0 (RAW: useless and non-magical)")
 	_teardown()
 
 
