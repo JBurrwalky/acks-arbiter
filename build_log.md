@@ -29467,3 +29467,59 @@ Why the earlier theories were wrong: the lock-cascade fix was real (restored the
 1. **(Cluster A continuation)** Ship the other 5 Cluster A items now that the container infrastructure is in place: Amulet vs Crystal Balls + ESP (persistent worn flag), Rod of Cancellation (magic-item destruction), Potion of Poison (save-or-die drink, cursed potion), Potion of Gaseous Form (drink → `is_gaseous` flag), Displacer Cloak (+2 AC part). Each is independent of the others; could parallelize 2-3 via worktree agents.
 2. **(Container follow-ups)** Capacity enforcement + materializer wiring as separate small commits. Each ~30-40 lines + tests.
 3. **(UI drop-into-bag hook)** Wire the UI's "drop into container" resolver to call `BagOfDevouringService.start_timer_on_first_item` when the target container is a Bag of Devouring. Probably 5-10 lines in the inventory UI controller.
+
+
+## Session 2026-05-31 — Container follow-ups: capacity + materializer + timer hook
+
+**Task:** Close out the three follow-ups flagged when Bag of Holding + Bag of Devouring landed (commit `a603411`):
+1. **Capacity enforcement** at `update_inventory_item_equip_state` (and any other transfer-into-container path).
+2. **TreasureInstantiator wiring** so a Bag of Holding / Bag of Devouring rolled from a hoard arrives in inventory with `is_extradimensional`, `item_category`, `capacity_units` correctly stamped.
+3. **UI drop-into-bag hook** so when the player drops an item into a Bag of Devouring via inventory UI, the timer activates without the UI needing to know about `BagOfDevouringService` directly.
+
+The three resolved to a SHARED integration point — `update_inventory_item_equip_state` — making this one focused commit rather than three.
+
+**Model used:** Opus.
+
+**Completed:**
+- **Migration 141** (`db/migrations/141_inventory_item_capacity_units.sql`): adds `capacity_units INTEGER NOT NULL DEFAULT 0` to inventory_items. Default 0 = unlimited (V1 mundane container default). Stamped via the catalog's `container_behavior.capacity_units` at materialization. Schema.sql mirrors. `add_inventory_item` threads the field (matches the migration-138/139/140 pattern).
+- **`TreasureInstantiator._resolve_magic` extended**: when the resolved catalog item carries a `container_behavior` block, the materialized inventory item dict overrides `item_category` to `"container"`, propagates `is_extradimensional`, and stamps `capacity_units`. Non-container magic items see no behavior change (defaults stay at 0/false). The Bag of Holding / Bag of Devouring catalog entries already carry the `container_behavior` block from the prior commit; this commit makes the materializer actually consume it.
+- **`update_inventory_item_equip_state` gains two new gates** when `container_id` is being set to a non-empty value (i.e. the item is being placed INTO a container):
+  - **Capacity gate** (`_check_container_capacity`): reads the target's `capacity_units`. If 0, short-circuits true (unlimited). Else sums current contents' OWN encumbrance_units (sub-carrier-aware — nested container contents stay in their parent's budget) + new item's weight; refuses transfer if total exceeds the cap. If the item is ALREADY inside this container (intra-container reorganization), short-circuits true.
+  - **Bag of Devouring timer hook** (`_maybe_start_bag_of_devouring_timer`): when the target container is a Bag of Devouring (identified by `BagOfDevouringService.is_bag_of_devouring`), invokes the service's `start_timer_on_first_item` with the current turn (from `Timekeeping.get_total_turns()`) and a fresh RNG. The service's internal guard short-circuits if the bag is non-empty, so this is safe to call on every transfer.
+- **5 new tests** in `tests/test_bag_of_devouring_service.gd` (suite now 14 total):
+  - `test_treasure_instantiator_stamps_container_behavior_on_bags` — sweeps 500 seeds to land on a bag; asserts the materialized item dict has `item_category="container"` + `is_extradimensional=true` + `capacity_units=100,000` + `encumbrance_units=6,000`.
+  - `test_capacity_enforcement_refuses_overflow` — capacity 1000-unit bag accepts a 500-unit item, refuses a subsequent 600-unit item that would total 1100. Refused item's `container_id` stays empty.
+  - `test_capacity_zero_means_unlimited` — backpack with capacity_units=0 accepts a 50,000-unit item without complaint.
+  - `test_transfer_into_empty_bag_of_devouring_activates_timer` — placing an item into an empty Bag of Devouring via the standard transfer path activates the timer (devouring_at_turn = current + 7-10).
+  - `test_transfer_into_non_devouring_bag_does_not_set_timer` — regression: transferring into a Bag of Holding doesn't set the timer.
+- **GDD §14 status board** — 3 new rows (Container capacity enforcement, TreasureInstantiator container stamping, Bag of Devouring transfer-hook timer).
+
+**Decisions made:**
+- **Single integration point** at `update_inventory_item_equip_state`. The three follow-ups all needed to fire when an item moves INTO a container — capacity check before the UPDATE, timer trigger before the UPDATE. Co-located both at the existing transfer path means UI drag-drop, programmatic transfers, and any future inventory mutation all hit the same gates. No separate "UI hook" needed.
+- **Capacity check uses item's OWN encumbrance**, not its recursive container aggregate. This is the sub-carrier-aware semantic: a Bag of Holding placed inside a backpack consumes only 6 stone of the backpack's budget (its own weight), regardless of what's inside the Bag of Holding. Each container manages its own budget; the carrier sees only top-level aggregates.
+- **`capacity_units = 0` means unlimited.** Migrating every mundane container in the catalog to an explicit capacity is out of scope for this commit; the V1 default of 0 (no enforcement) preserves backward-compat. Future per-item capacity authoring is a one-line catalog change per item.
+- **Self-move short-circuit.** When `_check_container_capacity` sees the item already inside the target (id match), it returns true. This catches the intra-container reorganization case (e.g. UI re-orders items in a backpack via a series of equip-state changes that all set the same `container_id`).
+- **Production RNG via `RandomNumberGenerator.new().randomize()`.** Tests inject seeded RNG directly via `BagOfDevouringService.start_timer_on_first_item(bag_id, current_turn, rng)`. Future improvement: integrate `DiceSystem.roll_digital(4, 1, 0, "bag_of_devouring_timer")` for the project's deterministic-seed pattern. Flagged in source.
+- **Capacity check is BEFORE the timer hook.** If capacity refuses, the timer doesn't fire. Order matters: capacity-fail = no transfer = no first-item-into-empty event.
+
+**Interfaces defined or changed:**
+- `inventory_items.capacity_units INTEGER` (migration 141).
+- `CampaignRepository.add_inventory_item(data)` accepts `capacity_units` key (default 0).
+- `CampaignRepository.update_inventory_item_equip_state(...)` now gates container-transfers on `_check_container_capacity` + fires `_maybe_start_bag_of_devouring_timer` when target is a Bag of Devouring.
+- `TreasureInstantiator._resolve_magic` reads `container_behavior` from catalog entries; non-containers untouched.
+
+**Database changes:** Migration 141 (single-column ADD).
+
+**Tests added/updated:**
+- `tests/test_bag_of_devouring_service.gd`: 5 new tests; suite now 14.
+- Suite: 396 passed / 19 failed — same as the post-bags baseline; net-zero NEW failures.
+
+**Known issues / deferred follow-ups:**
+- **Production RNG not yet via DiceSystem.** Each transfer-into-empty-bag uses a freshly-randomized RNG. Project convention prefers `DiceSystem.roll_digital` for deterministic-seed compatibility. Trivial swap when needed.
+- **No UI affordance for capacity refusal.** When a transfer fails because of capacity, the UI gets a `false` return from `update_inventory_item_equip_state` plus a `push_warning` log line. A user-facing notification ("Won't fit in the bag!") is UI work, not in scope here.
+- **Mundane container capacities are all 0.** Future authoring can add specific caps (backpack 4 stone, pouch 1 stone, etc.) by editing the equipment catalog or via a similar `CONTAINER_BEHAVIOR`-style map for mundane equipment.
+
+**Next session should:**
+1. **(Cluster A continuation)** Ship the other 4 Cluster A items: Amulet vs Crystal Balls + ESP (persistent worn flag), Rod of Cancellation (magic-item destruction touch), Potion of Poison (save-or-die drink, cursed potion), Displacer Cloak (+2 AC part). Potion of Gaseous Form needs `is_gaseous` flag wiring — separate small piece.
+2. **(Polish)** Integrate `DiceSystem.roll_digital` for the bag-of-devouring timer roll (project-convention deterministic seed).
+3. **(Polish)** Per-item mundane capacity authoring — backpack, pouch, saddlebags, etc. — when the wilderness/exploration team needs the constraint enforced.

@@ -2768,8 +2768,9 @@ func add_inventory_item(data: Dictionary) -> String:
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining, value_cp,
-			 is_cursed, is_locked, is_trapped, is_extradimensional, devouring_at_turn)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 is_cursed, is_locked, is_trapped, is_extradimensional, devouring_at_turn,
+			 capacity_units)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -2794,6 +2795,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		1 if data.get("is_trapped", false) else 0,
 		1 if data.get("is_extradimensional", false) else 0,
 		int(data.get("devouring_at_turn", -1)),
+		int(data.get("capacity_units", 0)),
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -2826,6 +2828,33 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 				push_warning(
 					"CampaignRepository.update_inventory_item_equip_state: cursed item refuses to be unequipped. id=%s" % item_id)
 				return false
+
+	# Container-transfer gates (container_id is being SET to a non-empty value).
+	# Two checks fire here, both for items moving INTO a container:
+	#   1. Capacity enforcement (migration 141): the target container's
+	#      `capacity_units` is the cap; if the new total contents weight would
+	#      exceed it, refuse the transfer. capacity_units = 0 means unlimited
+	#      (V1 default for mundane containers).
+	#   2. Bag of Devouring timer (BagOfDevouringService): if the target is a
+	#      Bag of Devouring AND it's currently empty, the timer activates on
+	#      THIS placement. Recorded BEFORE the actual UPDATE so a transactional
+	#      sequence works (the timer is set first via the service, then the
+	#      contents move via the UPDATE).
+	# Both gates only apply when container_id is non-empty (a real target).
+	if not container_id.is_empty():
+		var target_container: Dictionary = get_inventory_item_by_id(container_id)
+		if not target_container.is_empty():
+			# Capacity check first — refuses the transfer outright if exceeded.
+			if not _check_container_capacity(item_id, target_container):
+				push_warning(
+					"CampaignRepository.update_inventory_item_equip_state: container '%s' has insufficient capacity for item '%s'." %
+						[container_id, item_id])
+				return false
+			# Bag of Devouring timer trigger — fires only if target is a bag
+			# of devouring AND it's currently empty.
+			if BagOfDevouringService.is_bag_of_devouring(target_container):
+				_maybe_start_bag_of_devouring_timer(container_id, item_id)
+
 	if not db.query_with_bindings(
 		"UPDATE inventory_items SET is_equipped = ?, slot = ?, container_id = ? WHERE id = ?",
 		[1 if is_equipped else 0, slot, container_id, item_id]
@@ -2835,6 +2864,56 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 	# Equipping/unequipping armor or a shield changes the owner's derived AC.
 	_recompute_ac_for_item(item_id)
 	return true
+
+
+## Container capacity gate. Returns false if placing `item_id` into the given
+## `target_container` would exceed its `capacity_units`. capacity_units == 0
+## means unlimited (mundane containers; V1 default) — short-circuits true.
+##
+## The check uses each item's own `encumbrance_units` (not its recursive
+## container aggregate), so placing a Bag of Holding INSIDE a backpack adds
+## only the Bag's own weight (6 stone) to the backpack's contents budget —
+## the Bag of Holding's contents themselves are weightless to the backpack.
+## This matches the sub-carrier model: each container manages its own budget.
+##
+## If `item_id` is already inside `target_container`, the check is a no-op
+## (it's a within-container reorganization, not a new placement).
+func _check_container_capacity(item_id: String, target_container: Dictionary) -> bool:
+	var capacity_units: int = int(target_container.get("capacity_units", 0))
+	if capacity_units <= 0:
+		return true  # unlimited
+	var target_id: String = str(target_container.get("id", ""))
+	if target_id.is_empty():
+		return true  # defensive — no id, nothing to check against
+	# Sum current contents' OWN encumbrance_units (NOT recursive aggregate).
+	var current_total: int = 0
+	for content in get_items_in_container(target_id):
+		if str(content.get("id", "")) == item_id:
+			# Item is already in this container — moving within is fine.
+			return true
+		current_total += int(content.get("encumbrance_units", 0)) * int(content.get("quantity", 1))
+	# Add the new item's weight.
+	var item: Dictionary = get_inventory_item_by_id(item_id)
+	if item.is_empty():
+		return false  # defensive: unknown item can't fit
+	current_total += int(item.get("encumbrance_units", 0)) * int(item.get("quantity", 1))
+	return current_total <= capacity_units
+
+
+## Bag of Devouring timer trigger. Calls
+## `BagOfDevouringService.start_timer_on_first_item` if the target bag is
+## currently empty (post-check: the new item hasn't been UPDATEd into the
+## bag yet, so the bag's contents list is the pre-state). Uses a randomised
+## RNG for production; tests that need determinism call the service
+## directly with a seeded RNG.
+##
+## Future improvement: integrate `DiceSystem.roll_digital(4, 1, 0, "bag_of_devouring_timer")`
+## for project-wide deterministic-seed support. V1 uses fresh RNG per call.
+func _maybe_start_bag_of_devouring_timer(bag_id: String, _item_being_moved_id: String) -> void:
+	var current_turn: int = Timekeeping.get_total_turns()
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	BagOfDevouringService.start_timer_on_first_item(bag_id, current_turn, rng)
 
 
 ## Refreshes the equipment-derived Armor Class of the character who owns the given

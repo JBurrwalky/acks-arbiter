@@ -139,11 +139,26 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 			var initial_uses: int = -1
 			if binding is Dictionary:
 				initial_uses = int((binding as Dictionary).get("default_charges", -1))
+			# Magic containers (Bag of Holding, Bag of Devouring, future Portable
+			# Hole etc.) carry a `container_behavior` block on their catalog
+			# entry. When present, override item_category to "container",
+			# propagate is_extradimensional, and stamp capacity_units so the
+			# transfer-time capacity enforcement (update_inventory_item_equip_state)
+			# has a per-row cap. Sub-carrier refactor 2026-05-31 + bags 2026-05-31.
+			var container_behavior_v: Variant = resolved.get("container_behavior", null)
+			var item_category: String = "magic"
+			var is_extradimensional: bool = false
+			var capacity_units: int = 0
+			if container_behavior_v is Dictionary:
+				var cb: Dictionary = container_behavior_v
+				item_category = str(cb.get("item_category", item_category))
+				is_extradimensional = bool(cb.get("is_extradimensional", false))
+				capacity_units = int(cb.get("capacity_units", 0))
 			real_items.append({
 				"item_key": str(resolved.get("item_key", "magic_item")),
 				"name": str(resolved.get("name", "Magic item")),
 				"quantity": 1,
-				"item_category": "magic",
+				"item_category": item_category,
 				"encumbrance_units": int(resolved.get("encumbrance_units", MAGIC_PLACEHOLDER_ENC_UNITS)),
 				"is_heavy": false,
 				"is_magical": true,
@@ -156,6 +171,10 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 				# items propagate the catalog flag through to the inventory row;
 				# the equip-state path enforces the sticky-unequip rule.
 				"is_cursed": bool(resolved.get("is_cursed", false)),
+				# Container metadata (zero/false for non-containers, real values
+				# from container_behavior for Bag of Holding / Devouring / etc.).
+				"is_extradimensional": is_extradimensional,
+				"capacity_units": capacity_units,
 			})
 		else:
 			placeholders.append({

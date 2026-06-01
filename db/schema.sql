@@ -456,7 +456,14 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     -- (per Timekeeping.get_total_turns()) at which contents are devoured.
     -- Activates on first item placed in empty bag; resets when bag empties
     -- (via removal or devour). See BagOfDevouringService for the mechanic.
-    devouring_at_turn INTEGER NOT NULL DEFAULT -1
+    devouring_at_turn INTEGER NOT NULL DEFAULT -1,
+    -- Migration 141 additions
+    -- Container capacity in encumbrance units (1 unit = 1/1000 stone).
+    -- 0 = no enforcement (V1 default for mundane containers). >0 = transfer
+    -- paths refuse to add items that would push the container's total
+    -- contents weight over this limit. Stamped from magic item catalog's
+    -- container_behavior.capacity_units at materialization time.
+    capacity_units INTEGER NOT NULL DEFAULT 0
 );
 
 -- trained_creatures: companion animals (mounts, war animals, pack animals, etc.).

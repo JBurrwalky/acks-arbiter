@@ -1,0 +1,16 @@
+-- Migration 141: container capacity (in encumbrance units).
+--
+-- Used by `update_inventory_item_equip_state` to enforce container limits
+-- at transfer time (player drags an item into a container — refuse if it
+-- would overflow). Stamped at materialization time from the magic item
+-- catalog's `container_behavior.capacity_units` field (Bag of Holding /
+-- Bag of Devouring = 100,000 units = 100 stone). Mundane containers
+-- default to 0 (no enforcement) — capacity is purely an opt-in property.
+--
+-- Default 0 = unlimited (V1 simplification). Future mundane catalog
+-- entries (backpack, pouch, etc.) can opt in to capacity caps without
+-- changing the schema.
+--
+-- Non-destructive single-column ADD COLUMN. SQLite stamps the default
+-- onto every existing row in place.
+ALTER TABLE inventory_items ADD COLUMN capacity_units INTEGER NOT NULL DEFAULT 0;
