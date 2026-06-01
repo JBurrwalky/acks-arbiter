@@ -29523,3 +29523,50 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 1. **(Cluster A continuation)** Ship the other 4 Cluster A items: Amulet vs Crystal Balls + ESP (persistent worn flag), Rod of Cancellation (magic-item destruction touch), Potion of Poison (save-or-die drink, cursed potion), Displacer Cloak (+2 AC part). Potion of Gaseous Form needs `is_gaseous` flag wiring — separate small piece.
 2. **(Polish)** Integrate `DiceSystem.roll_digital` for the bag-of-devouring timer roll (project-convention deterministic seed).
 3. **(Polish)** Per-item mundane capacity authoring — backpack, pouch, saddlebags, etc. — when the wilderness/exploration team needs the constraint enforced.
+
+
+## Session 2026-06-01 — Container polish: DiceSystem timer + "Won't fit" notification + EquipmentCatalog capacity fallback
+
+**Task:** Land the three deferred container-system polish pieces so the user can stop tracking the status: (1) route the Bag of Devouring timer roll through `DiceSystem.roll_digital` for project-wide deterministic-seed support, (2) emit a UI "Won't fit" notification when a transfer is refused by the capacity gate, (3) make mundane container capacities (backpack 4 stone, pouch 1/2 stone, sacks, ironbound chest) enforced via an EquipmentCatalog fallback so the cap doesn't need to be duplicated on every inventory row.
+**Model used:** Sonnet 4.6 for implementation + tests; conversation continued from a prior session reset where the polish work was started but not finished (see §Branch + arc state in `~/.claude/projects/.../memory/container_subcarrier_refactor.md`).
+**Completed:**
+- `engine/subsystems/inventory/bag_of_devouring_service.gd` — added constant `DEVOURING_TIMER_ROLL_TYPE = "bag_of_devouring_timer"`; `start_timer_on_first_item(bag_id, current_turn)` signature changed (dropped the RNG argument). Implementation now calls `DiceSystem.roll_digital(DEVOURING_TIMER_DIE_SIZE, 1, DEVOURING_TIMER_BASE_TURNS, DEVOURING_TIMER_ROLL_TYPE)` and uses `roll.modified_total` (1d4 + 6 = 7..10).
+- `engine/autoloads/campaign_repository.gd` — `_maybe_start_bag_of_devouring_timer` updated to drop the RNG creation (delegates to the service which now uses DiceSystem internally).
+- `engine/autoloads/campaign_repository.gd` — added `_notify_capacity_refusal(item_id, target_container)` helper that emits `EventBus.notification_requested` with `{type:"warning", category:"encumbrance", title:"Won't fit", body:"<item> won't fit in <container>."}`. Called from `update_inventory_item_equip_state` before the engine-log `push_warning` on the capacity-refusal branch.
+- `engine/autoloads/campaign_repository.gd` — added `_equipment_catalog_cache: EquipmentCatalog` module-level var + `_get_equipment_catalog()` lazy accessor (catalog is RefCounted + immutable post-load, so safe to share across calls).
+- `engine/autoloads/campaign_repository.gd` — `_check_container_capacity` resolution order: (1) inventory row's `capacity_units`, (2) `EquipmentCatalog.get_container_capacity_units(item_key)` fallback for mundane containers, (3) 0 from both → unlimited. Behavior of magic containers (Bag of Holding / Devouring with row-level `capacity_units = 100000`) unchanged.
+- `tests/test_bag_of_devouring_service.gd` — updated all 9 existing tests to drop the `rng` argument from `start_timer_on_first_item` calls; added 3 new tests: `test_dice_override_forces_specific_timer_offset` (DiceSystem override path determinism), `test_capacity_refusal_emits_won_t_fit_notification` (signal shape + body content), `test_mundane_container_capacity_via_equipment_catalog` (backpack 4-stone + pouch 1/2-stone enforced via fallback). `_setup` / `_teardown` now clear `GameState.dice_overrides[DEVOURING_TIMER_ROLL_TYPE]` defensively to prevent cross-test bleed.
+- `generation/gdd-treasure-item-backing.md` §14 — replaced the "Future improvement noted: integrate DiceSystem" caveat on the Bag of Devouring transfer-hook row with the actual DiceSystem.roll_digital wire-up. Added two new rows: "Capacity-refusal Won't fit notification" + "Mundane container capacity via EquipmentCatalog fallback".
+
+**Decisions made:**
+- **Override value semantic:** `GameState.dice_overrides["bag_of_devouring_timer"] = N` forces N as the FINAL modified_total (raw 1d4 + 6 modifier), not the raw d4 result. So `= 9` means "timer fires 9 turns out", `= 7` means "fires 7 turns out" (minimum), `= 10` means "fires 10 turns out" (maximum). This matches the existing `dice_overrides` semantic across the codebase (override IS the final result, see `dice_system.gd:182-192`).
+- **EquipmentCatalog caching:** added a module-level cached `_equipment_catalog_cache` rather than `EquipmentCatalog.new()` per check. Catalog parses 3 JSON files at init (~165 items); on a transfer-heavy session that runs the capacity gate many times this matters. The catalog is immutable post-load so the cache is safe to share.
+- **Notification before push_warning:** the new `_notify_capacity_refusal` call fires BEFORE the existing `push_warning` line, not as a replacement. Engine-log warning is preserved for developer debugging; the notification is the new user-facing affordance.
+- **Cap resolution order doc:** the long docstring on `_check_container_capacity` now spells out (1) row → (2) EquipmentCatalog → (3) unlimited so future sessions don't accidentally invert the precedence.
+- **Test approach for notification:** subscribe a transient listener via `EventBus.notification_requested.connect(listener)`, capture into a local array, then `disconnect` in the same test. Avoids brittle assertions on NotificationManager internals while pinning the signal shape (category=encumbrance, type=warning, title=Won't fit, body mentions both item + container names).
+
+**Interfaces defined or changed:**
+- `BagOfDevouringService.start_timer_on_first_item(bag_id: String, current_turn: int) -> bool` — **signature changed**: dropped the trailing `RandomNumberGenerator` parameter. Callers that need deterministic timing now queue `GameState.dice_overrides[BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE] = N` before the call.
+- `BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE: String` — new constant exposing the roll_type string `"bag_of_devouring_timer"`. Tests reference via the constant to avoid string-literal drift.
+- `EventBus.notification_requested.emit({type:"warning", category:"encumbrance", title:"Won't fit", body:"...", duration:5.0})` — new emission site in `CampaignRepository._notify_capacity_refusal`. Category `"encumbrance"` joins the existing categories (`henchman`, `light`, etc.). NotificationManager already routes all categories — no changes there.
+- `CampaignRepository._check_container_capacity(item_id, target_container)` — internal contract clarified: capacity now resolved via (1) row, (2) catalog, (3) unlimited. External callers (only `update_inventory_item_equip_state`) unaffected.
+- `CampaignRepository._get_equipment_catalog() -> EquipmentCatalog` — new private accessor with lazy caching. Module-level `_equipment_catalog_cache: EquipmentCatalog` field.
+
+**Database changes:**
+- None. Polish pieces only modify GDScript + tests + one GDD section.
+
+**Tests added/updated:**
+- Updated 9 existing tests in `tests/test_bag_of_devouring_service.gd` to drop the `rng` argument.
+- Added `test_dice_override_forces_specific_timer_offset` — verifies `GameState.dice_overrides["bag_of_devouring_timer"] = 9` results in `devouring_at_turn = current_turn + 9` exactly, and that the override is consumed (erased from the dict).
+- Added `test_capacity_refusal_emits_won_t_fit_notification` — transient listener subscribes to `EventBus.notification_requested`, drives an overflow transfer, asserts category/type/title and that both names appear in body.
+- Added `test_mundane_container_capacity_via_equipment_catalog` — backpack with row `capacity_units=0` enforces the 4000-unit cap from base_equipment.json (3000 fits, 3000+1500 refuses); pouch with row `capacity_units=0` enforces 500-unit cap (600 refuses).
+- Updated `test_capacity_zero_means_unlimited` — switched `item_key` from `"backpack"` (which now has a catalog cap) to `"improvised_sling_bag"` (no catalog entry) so the test still exercises the "unlimited" branch.
+- Full suite: **396 passed / 19 failed** — net-zero new failures vs. the pre-polish baseline. The 19 failures are pre-existing carry-forwards (proficiency UI, scheduler, ZoC, charge timing, dice queue, ticking pacing) unrelated to this work.
+
+**Known issues:**
+- None for this polish commit. The arc is complete.
+
+**Next session should:**
+1. Resume the magic-item Tier 4 triage walkthrough (Cluster A had 7 clean ships remaining after the bags landed). Next targets per the prior cluster list: Amulet vs Crystal Balls + ESP, Rod of Cancellation, Potion of Poison, Potion of Gaseous Form, Displacer Cloak (AC part).
+2. Or: pick up the magic-item usage session work (effects/charges/identification + named-spell binding for spell scrolls) per the `project_treasure_item_backing_audit.md` follow-up list.
+3. Or: out-of-arc but adjacent — Pick Lock + Search container action handlers (mentioned in `treasure_containers_resumption.md` as remaining after the cell-based treasure arc).

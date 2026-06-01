@@ -11,6 +11,9 @@ extends "res://tests/test_suite_base.gd"
 ##   - try_devour_if_expired no-op before expiration
 ##   - find_expired_bags scopes by campaign + filters by expiration
 ##   - Catalog shape: both bags have container_behavior + is_extradimensional
+##   - DiceSystem.roll_digital integration via GameState.dice_overrides
+##   - Container polish (2026-05-31): capacity refusal notifications +
+##     EquipmentCatalog fallback for mundane container capacity.
 
 const _DB_CAMPAIGN := "test_bod_campaign"
 const _DB_CHAR := "test_bod_char"
@@ -19,6 +22,7 @@ const _DB_CHAR := "test_bod_char"
 func run_all_tests() -> void:
 	test_catalog_shape_for_both_bags()
 	test_start_timer_on_first_item_into_empty_bag()
+	test_dice_override_forces_specific_timer_offset()
 	test_additional_items_do_not_reset_active_timer()
 	test_removal_mid_cycle_does_not_reset_timer()
 	test_try_devour_before_expiration_is_noop()
@@ -32,6 +36,9 @@ func run_all_tests() -> void:
 	test_capacity_zero_means_unlimited()
 	test_transfer_into_empty_bag_of_devouring_activates_timer()
 	test_transfer_into_non_devouring_bag_does_not_set_timer()
+	# Container polish (2026-05-31): notifications + catalog fallback.
+	test_capacity_refusal_emits_won_t_fit_notification()
+	test_mundane_container_capacity_via_equipment_catalog()
 	if not has_failures():
 		print("BagOfDevouringService: all tests passed.")
 
@@ -92,11 +99,9 @@ func test_start_timer_on_first_item_into_empty_bag() -> void:
 			int(bag_pre.get("devouring_at_turn", 0)))
 
 	# Place an item in the empty bag and trigger the timer.
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 12345
 	var current_turn := 1000
 	var started: bool = BagOfDevouringService.start_timer_on_first_item(
-		bag_id, current_turn, rng)
+		bag_id, current_turn)
 	check(started, "first item into empty bag should start the timer")
 
 	var bag_post: Dictionary = CampaignRepository.get_inventory_item_by_id(bag_id)
@@ -108,17 +113,39 @@ func test_start_timer_on_first_item_into_empty_bag() -> void:
 	_teardown()
 
 
+func test_dice_override_forces_specific_timer_offset() -> void:
+	# DiceSystem.roll_digital integration: tests can force a deterministic
+	# timer value by queuing GameState.dice_overrides[DEVOURING_TIMER_ROLL_TYPE].
+	# The override value is the final modified_total (raw 1d4 + 6 modifier),
+	# so an override of 8 means "fires 8 turns after the placement".
+	_setup()
+	var bag_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
+		"name": "Bag of Devouring", "is_extradimensional": true,
+	})
+	# Force the timer roll to land on exactly 9 turns out.
+	GameState.dice_overrides[BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE] = 9
+	var started: bool = BagOfDevouringService.start_timer_on_first_item(bag_id, 500)
+	check(started, "override-driven start should succeed")
+	var bag_post: Dictionary = CampaignRepository.get_inventory_item_by_id(bag_id)
+	check(int(bag_post.get("devouring_at_turn", -1)) == 509,
+		"forced override 9 + current_turn 500 = 509; got %d" %
+			int(bag_post.get("devouring_at_turn", -1)))
+	# Confirm override was consumed (subsequent rolls would re-randomize).
+	check(not GameState.dice_overrides.has(BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE),
+		"override should be consumed after the roll")
+	_teardown()
+
+
 func test_additional_items_do_not_reset_active_timer() -> void:
 	_setup()
 	var bag_id := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "Bag of Devouring", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 42
 
 	# Start the timer manually (simulating first-item placement).
-	BagOfDevouringService.start_timer_on_first_item(bag_id, 100, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, 100)
 	var initial_fires_at: int = int(
 		CampaignRepository.get_inventory_item_by_id(bag_id).get("devouring_at_turn", -1))
 
@@ -132,7 +159,7 @@ func test_additional_items_do_not_reset_active_timer() -> void:
 	})
 	# Attempt to "restart" the timer with a different turn.
 	var started_again: bool = BagOfDevouringService.start_timer_on_first_item(
-		bag_id, 200, rng)
+		bag_id, 200)
 	check(not started_again,
 		"start_timer_on_first_item should be a no-op when bag has active timer")
 	var still_fires_at: int = int(
@@ -150,9 +177,7 @@ func test_removal_mid_cycle_does_not_reset_timer() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "Bag of Devouring", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	BagOfDevouringService.start_timer_on_first_item(bag_id, 50, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, 50)
 	var fires_at: int = int(
 		CampaignRepository.get_inventory_item_by_id(bag_id).get("devouring_at_turn", -1))
 
@@ -188,9 +213,7 @@ func test_try_devour_before_expiration_is_noop() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "Bag of Devouring", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
-	BagOfDevouringService.start_timer_on_first_item(bag_id, 100, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, 100)
 	var item_id := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "dagger", "name": "Dagger",
 		"container_id": bag_id,
@@ -213,9 +236,7 @@ func test_try_devour_after_expiration_deletes_contents_and_resets() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "Bag of Devouring", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 999
-	BagOfDevouringService.start_timer_on_first_item(bag_id, 50, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, 50)
 	var fires_at: int = int(
 		CampaignRepository.get_inventory_item_by_id(bag_id).get("devouring_at_turn", -1))
 
@@ -263,9 +284,7 @@ func test_reset_timer_when_bag_goes_empty_via_removal() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "Bag of Devouring", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	BagOfDevouringService.start_timer_on_first_item(bag_id, 0, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, 0)
 	var item := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "dagger", "name": "Lone Dagger",
 		"container_id": bag_id,
@@ -289,8 +308,6 @@ func test_reset_timer_when_bag_goes_empty_via_removal() -> void:
 
 func test_find_expired_bags_filters_correctly() -> void:
 	_setup()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3
 	# Two bags on the character.
 	var bag1 := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
@@ -300,8 +317,8 @@ func test_find_expired_bags_filters_correctly() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_devouring",
 		"name": "BoD 2", "is_extradimensional": true,
 	})
-	BagOfDevouringService.start_timer_on_first_item(bag1, 100, rng)  # fires 107-110
-	BagOfDevouringService.start_timer_on_first_item(bag2, 200, rng)  # fires 207-210
+	BagOfDevouringService.start_timer_on_first_item(bag1, 100)  # fires 107-110
+	BagOfDevouringService.start_timer_on_first_item(bag2, 200)  # fires 207-210
 
 	# At turn 105: neither has expired.
 	var expired_early: Array = BagOfDevouringService.find_expired_bags(_DB_CAMPAIGN, 105)
@@ -335,13 +352,11 @@ func test_non_bag_of_devouring_items_unaffected_by_helpers() -> void:
 		"character_id": _DB_CHAR, "item_key": "bag_of_holding",
 		"name": "Bag of Holding", "is_extradimensional": true,
 	})
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
 	check(not BagOfDevouringService.is_bag_of_devouring(
 		CampaignRepository.get_inventory_item_by_id(boh)),
 		"Bag of Holding must NOT be identified as Bag of Devouring")
 	# Attempting to start the timer must be a no-op.
-	check(not BagOfDevouringService.start_timer_on_first_item(boh, 100, rng),
+	check(not BagOfDevouringService.start_timer_on_first_item(boh, 100),
 		"start_timer_on_first_item must no-op for non-devouring bag")
 	# try_devour must be no-op.
 	check(not BagOfDevouringService.try_devour_if_expired(boh, 999),
@@ -372,6 +387,9 @@ func _setup() -> void:
 	GameState.campaign_id = _DB_CAMPAIGN
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM inventory_items WHERE character_id = ?", [_DB_CHAR])
+	# Defensive: clear any leftover dice override so tests don't poison
+	# each other when an earlier failure skipped consumption.
+	GameState.dice_overrides.erase(BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE)
 
 
 func _teardown() -> void:
@@ -381,6 +399,7 @@ func _teardown() -> void:
 		"DELETE FROM characters WHERE id = ?", [_DB_CHAR])
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM campaigns WHERE id = ?", [_DB_CAMPAIGN])
+	GameState.dice_overrides.erase(BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE)
 
 
 # ---------------------------------------------------------------------------
@@ -461,10 +480,11 @@ func test_capacity_enforcement_refuses_overflow() -> void:
 
 func test_capacity_zero_means_unlimited() -> void:
 	_setup()
-	# Mundane container with no capacity set (default 0 = unlimited).
+	# Container with no row-level capacity AND no EquipmentCatalog entry —
+	# unknown item_key falls through both lookups to "unlimited".
 	var bag := CampaignRepository.add_inventory_item({
-		"character_id": _DB_CHAR, "item_key": "backpack",
-		"name": "Backpack", "item_category": "container",
+		"character_id": _DB_CHAR, "item_key": "improvised_sling_bag",
+		"name": "Improvised Sling Bag", "item_category": "container",
 		"encumbrance_units": 167, "capacity_units": 0,
 	})
 	# Fit an absurdly large item — capacity check should short-circuit true.
@@ -474,7 +494,7 @@ func test_capacity_zero_means_unlimited() -> void:
 	})
 	var ok := CampaignRepository.update_inventory_item_equip_state(
 		huge, false, "pack", bag)
-	check(ok, "capacity_units=0 should allow any size (unlimited)")
+	check(ok, "capacity_units=0 with no catalog entry should allow any size (unlimited)")
 	_teardown()
 
 
@@ -534,4 +554,103 @@ func test_transfer_into_non_devouring_bag_does_not_set_timer() -> void:
 	check(int(post.get("devouring_at_turn", 0)) == -1,
 		"Bag of Holding must NOT have an active timer after transfer, got %d" %
 			int(post.get("devouring_at_turn", 0)))
+	_teardown()
+
+
+# ---------------------------------------------------------------------------
+# Container polish (2026-05-31): UI affordance + per-item mundane container
+# capacities via EquipmentCatalog fallback.
+# ---------------------------------------------------------------------------
+
+func test_capacity_refusal_emits_won_t_fit_notification() -> void:
+	# When a transfer is refused by the capacity gate, the repo emits an
+	# EventBus.notification_requested signal so the player sees why the drop
+	# was rejected (in addition to the engine-log push_warning).
+	_setup()
+	var bag := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "small_pouch",
+		"name": "Small Pouch", "item_category": "container",
+		"encumbrance_units": 100, "capacity_units": 500,
+	})
+	# Item too big to fit (700 > 500-unit cap).
+	var oversize := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "boulder", "name": "Boulder",
+		"encumbrance_units": 700,
+	})
+	# Subscribe a transient listener to capture the emitted notification.
+	var captured: Array[Dictionary] = []
+	var listener := func(data: Dictionary) -> void:
+		captured.append(data)
+	EventBus.notification_requested.connect(listener)
+
+	var moved := CampaignRepository.update_inventory_item_equip_state(
+		oversize, false, "pack", bag)
+
+	EventBus.notification_requested.disconnect(listener)
+	check(not moved, "transfer should be refused by capacity gate")
+	check(captured.size() >= 1,
+		"capacity refusal must emit at least one notification_requested; got %d" %
+			captured.size())
+	if captured.size() >= 1:
+		var n: Dictionary = captured[0]
+		check(str(n.get("category", "")) == "encumbrance",
+			"notification category should be 'encumbrance', got '%s'" %
+				str(n.get("category", "")))
+		check(str(n.get("type", "")) == "warning",
+			"notification type should be 'warning', got '%s'" %
+				str(n.get("type", "")))
+		check(str(n.get("title", "")) == "Won't fit",
+			"notification title should be \"Won't fit\", got '%s'" %
+				str(n.get("title", "")))
+		var body: String = str(n.get("body", ""))
+		check("Boulder" in body and "Small Pouch" in body,
+			"notification body should mention both item + container names, got '%s'" %
+				body)
+	_teardown()
+
+
+func test_mundane_container_capacity_via_equipment_catalog() -> void:
+	# A backpack inserted with capacity_units=0 (e.g. from a code path that
+	# doesn't know to look up the cap) must STILL enforce capacity by falling
+	# back to EquipmentCatalog. base_equipment.json declares backpack
+	# container_capacity_units = 4000 (4 stone).
+	_setup()
+	var backpack := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "backpack",
+		"name": "Backpack", "item_category": "container",
+		"encumbrance_units": 167, "capacity_units": 0,  # row cap unset
+	})
+	# 3000-unit item fits (within 4000 cap).
+	var ok_item := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "ok", "name": "OK Item",
+		"encumbrance_units": 3000,
+	})
+	var ok := CampaignRepository.update_inventory_item_equip_state(
+		ok_item, false, "pack", backpack)
+	check(ok, "3000-unit item should fit in backpack (cap 4000 from catalog)")
+
+	# 1500-unit item would overflow (3000 + 1500 = 4500 > 4000). Refuse.
+	var overflow_item := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "ovf", "name": "Overflow",
+		"encumbrance_units": 1500,
+	})
+	var overflow_ok := CampaignRepository.update_inventory_item_equip_state(
+		overflow_item, false, "pack", backpack)
+	check(not overflow_ok,
+		"3000+1500=4500 should refuse to fit in backpack (cap 4000 from catalog)")
+
+	# Pouch fallback: capacity 500 (1/2 stone). 600-unit item must refuse.
+	var pouch := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "pouch",
+		"name": "Pouch", "item_category": "container",
+		"encumbrance_units": 167, "capacity_units": 0,
+	})
+	var too_big_for_pouch := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "tbig", "name": "Too Big",
+		"encumbrance_units": 600,
+	})
+	var pouch_ok := CampaignRepository.update_inventory_item_equip_state(
+		too_big_for_pouch, false, "pack", pouch)
+	check(not pouch_ok,
+		"600-unit item should NOT fit in pouch (cap 500 from catalog)")
 	_teardown()

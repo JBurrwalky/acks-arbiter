@@ -42,9 +42,13 @@ extends RefCounted
 
 const BAG_OF_DEVOURING_ITEM_KEY := "bag_of_devouring"
 
-# RAW timer: 6 + 1d4 turns. Result range: 7 to 10 turns.
+# RAW timer: 6 + 1d4 turns. Result range: 7 to 10 turns. Rolled via
+# DiceSystem.roll_digital(4, 1, 6, "bag_of_devouring_timer") so tests can
+# force a specific result via GameState.dice_overrides + production runs
+# stay deterministic-seed compatible.
 const DEVOURING_TIMER_BASE_TURNS: int = 6
 const DEVOURING_TIMER_DIE_SIZE: int = 4
+const DEVOURING_TIMER_ROLL_TYPE := "bag_of_devouring_timer"
 
 
 # ---------------------------------------------------------------------------
@@ -64,12 +68,16 @@ static func is_bag_of_devouring(item_row: Dictionary) -> bool:
 ##
 ## [param bag_id] must be the id of a Bag of Devouring row.
 ## [param current_turn] from `Timekeeping.get_total_turns()`.
-## [param rng] supplied for deterministic timer-roll in tests.
+##
+## The 1d4 timer roll goes through `DiceSystem.roll_digital(4, 1, 6,
+## "bag_of_devouring_timer")` so tests can force a specific result by
+## queuing `GameState.dice_overrides[DEVOURING_TIMER_ROLL_TYPE] = N` (where
+## N is the final modified_total, e.g. 8 for "rolled a 2 + 6 modifier").
+## Production runs use the project's standard digital-dice path.
 ##
 ## Returns true if a new timer was started, false if no-op (bag already had
 ## active timer, or bag has existing contents from before the new item).
-static func start_timer_on_first_item(
-		bag_id: String, current_turn: int, rng: RandomNumberGenerator) -> bool:
+static func start_timer_on_first_item(bag_id: String, current_turn: int) -> bool:
 	if bag_id.is_empty():
 		return false
 	# Inspect bag row to confirm timer state.
@@ -85,9 +93,12 @@ static func start_timer_on_first_item(
 	var existing_contents: Array = CampaignRepository.get_items_in_container(bag_id)
 	if not existing_contents.is_empty():
 		return false
-	# Roll 6 + 1d4 turns and set the timer.
-	var duration: int = DEVOURING_TIMER_BASE_TURNS + rng.randi_range(1, DEVOURING_TIMER_DIE_SIZE)
-	var fires_at: int = current_turn + duration
+	# Roll 6 + 1d4 turns via DiceSystem. modified_total = raw + modifier
+	# = (1..4) + 6 = 7..10.
+	var roll: RollResult = DiceSystem.roll_digital(
+		DEVOURING_TIMER_DIE_SIZE, 1, DEVOURING_TIMER_BASE_TURNS,
+		DEVOURING_TIMER_ROLL_TYPE)
+	var fires_at: int = current_turn + roll.modified_total
 	return _set_devouring_at_turn(bag_id, fires_at)
 
 

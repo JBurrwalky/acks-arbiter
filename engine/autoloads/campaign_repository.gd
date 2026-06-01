@@ -19,6 +19,13 @@ const MIGRATIONS_RES_PATH := "res://db/migrations/"
 
 var db: SQLite
 
+# Lazily-cached EquipmentCatalog for capacity fallback. Populated on first
+# call to `_get_equipment_catalog` (used by `_check_container_capacity` when
+# the inventory row has capacity_units == 0 — i.e. mundane containers
+# whose capacity lives in `base_equipment.json` rather than the row).
+# Catalog itself is RefCounted + immutable post-load, so safe to share.
+var _equipment_catalog_cache: EquipmentCatalog = null
+
 
 func _ready() -> void:
 	db = SQLite.new()
@@ -2833,8 +2840,9 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 	# Two checks fire here, both for items moving INTO a container:
 	#   1. Capacity enforcement (migration 141): the target container's
 	#      `capacity_units` is the cap; if the new total contents weight would
-	#      exceed it, refuse the transfer. capacity_units = 0 means unlimited
-	#      (V1 default for mundane containers).
+	#      exceed it, refuse the transfer. capacity_units = 0 on the inventory
+	#      row falls back to EquipmentCatalog.get_container_capacity_units for
+	#      mundane containers (backpack, pouch, sacks, chest_ironbound).
 	#   2. Bag of Devouring timer (BagOfDevouringService): if the target is a
 	#      Bag of Devouring AND it's currently empty, the timer activates on
 	#      THIS placement. Recorded BEFORE the actual UPDATE so a transactional
@@ -2846,6 +2854,7 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 		if not target_container.is_empty():
 			# Capacity check first — refuses the transfer outright if exceeded.
 			if not _check_container_capacity(item_id, target_container):
+				_notify_capacity_refusal(item_id, target_container)
 				push_warning(
 					"CampaignRepository.update_inventory_item_equip_state: container '%s' has insufficient capacity for item '%s'." %
 						[container_id, item_id])
@@ -2867,8 +2876,18 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 
 
 ## Container capacity gate. Returns false if placing `item_id` into the given
-## `target_container` would exceed its `capacity_units`. capacity_units == 0
-## means unlimited (mundane containers; V1 default) — short-circuits true.
+## `target_container` would exceed its `capacity_units`.
+##
+## Resolution order for the cap:
+##   1. Inventory row's `capacity_units` column (magic containers stamp this
+##      at materialization time from MagicItemCatalog.container_behavior).
+##   2. EquipmentCatalog `container_capacity_units` keyed by item_key — mundane
+##      containers (backpack 4000, pouch 500, sack_small 2000, sack_large 6000,
+##      chest_ironbound 20000) carry their cap in `base_equipment.json` and
+##      do NOT need it duplicated on every inventory row.
+##   3. 0 from both -> unlimited (defensive — a non-container shouldn't be a
+##      container_id target, but if a caller addresses one anyway we don't
+##      hard-fail).
 ##
 ## The check uses each item's own `encumbrance_units` (not its recursive
 ## container aggregate), so placing a Bag of Holding INSIDE a backpack adds
@@ -2880,8 +2899,14 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 ## (it's a within-container reorganization, not a new placement).
 func _check_container_capacity(item_id: String, target_container: Dictionary) -> bool:
 	var capacity_units: int = int(target_container.get("capacity_units", 0))
+	# Fallback: mundane containers store capacity in EquipmentCatalog, not on
+	# the inventory row. Look it up by item_key when the row's cap is 0.
 	if capacity_units <= 0:
-		return true  # unlimited
+		var container_key: String = str(target_container.get("item_key", ""))
+		if not container_key.is_empty():
+			capacity_units = _get_equipment_catalog().get_container_capacity_units(container_key)
+	if capacity_units <= 0:
+		return true  # unlimited (or not a container at all)
 	var target_id: String = str(target_container.get("id", ""))
 	if target_id.is_empty():
 		return true  # defensive — no id, nothing to check against
@@ -2900,20 +2925,40 @@ func _check_container_capacity(item_id: String, target_container: Dictionary) ->
 	return current_total <= capacity_units
 
 
+## Lazy-loaded EquipmentCatalog accessor. Catalog parses 3 JSON files at init
+## (~165 items); cache amortizes that across every capacity check.
+func _get_equipment_catalog() -> EquipmentCatalog:
+	if _equipment_catalog_cache == null:
+		_equipment_catalog_cache = EquipmentCatalog.new()
+	return _equipment_catalog_cache
+
+
+## Emits a "Won't fit" notification when a transfer is refused by the
+## capacity gate. Caller (update_inventory_item_equip_state) still pushes a
+## warning to the engine log; this surfaces the refusal in the UI so the
+## player sees why their drag didn't land.
+func _notify_capacity_refusal(item_id: String, target_container: Dictionary) -> void:
+	var item_row: Dictionary = get_inventory_item_by_id(item_id)
+	var item_name: String = str(item_row.get("name", "Item"))
+	var container_name: String = str(target_container.get("name", "Container"))
+	EventBus.notification_requested.emit({
+		"type":     "warning",
+		"category": "encumbrance",
+		"title":    "Won't fit",
+		"body":     "%s won't fit in %s." % [item_name, container_name],
+		"duration": 5.0,
+	})
+
+
 ## Bag of Devouring timer trigger. Calls
 ## `BagOfDevouringService.start_timer_on_first_item` if the target bag is
 ## currently empty (post-check: the new item hasn't been UPDATEd into the
-## bag yet, so the bag's contents list is the pre-state). Uses a randomised
-## RNG for production; tests that need determinism call the service
-## directly with a seeded RNG.
-##
-## Future improvement: integrate `DiceSystem.roll_digital(4, 1, 0, "bag_of_devouring_timer")`
-## for project-wide deterministic-seed support. V1 uses fresh RNG per call.
+## bag yet, so the bag's contents list is the pre-state). The service rolls
+## via DiceSystem internally — tests force determinism via
+## `GameState.dice_overrides[BagOfDevouringService.DEVOURING_TIMER_ROLL_TYPE]`.
 func _maybe_start_bag_of_devouring_timer(bag_id: String, _item_being_moved_id: String) -> void:
 	var current_turn: int = Timekeeping.get_total_turns()
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	BagOfDevouringService.start_timer_on_first_item(bag_id, current_turn, rng)
+	BagOfDevouringService.start_timer_on_first_item(bag_id, current_turn)
 
 
 ## Refreshes the equipment-derived Armor Class of the character who owns the given
