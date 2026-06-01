@@ -135,10 +135,18 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 			# (potions, persistent rings, etc.). When the activator decrements
 			# uses_remaining to 0 the item becomes useless and non-magical
 			# (acore_treasure_and_magic_items_rules.xml identification_and_use).
+			#
+			# Tier 4 Cluster A (2026-06-01): charged items that DON'T bind to a
+			# spell (e.g. Rod of Cancellation — see SPECIAL_CHARGED_EFFECTS in
+			# tools/extract_magic_item_catalog.py) stamp `default_charges` at
+			# the TOP LEVEL of the catalog entry. Check the binding first, then
+			# fall back to the top-level field.
 			var binding: Variant = resolved.get("spell_binding", null)
 			var initial_uses: int = -1
 			if binding is Dictionary:
 				initial_uses = int((binding as Dictionary).get("default_charges", -1))
+			if initial_uses < 0 and resolved.has("default_charges"):
+				initial_uses = int(resolved.get("default_charges", -1))
 			# Magic containers (Bag of Holding, Bag of Devouring, future Portable
 			# Hole etc.) carry a `container_behavior` block on their catalog
 			# entry. When present, override item_category to "container",

@@ -358,7 +358,8 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "defer_reason": "gaseous_form spell effect not yet implemented (empty effect block); bind one-line when spell-effect pass lands the is_gaseous flag + AC 11 + movement 30'/round per RAW pc_spell_catalog_f-u.xml:90-126"
     },
     {
       "item_key": "potion_of_giant_control",
@@ -544,7 +545,10 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 2000,
-      "creation_time_days": 28
+      "creation_time_days": 28,
+      "direct_potion_effect": {
+        "effect_kind": "save_or_die_poison"
+      }
     },
     {
       "item_key": "potion_of_polymorph",
@@ -960,7 +964,11 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 3500,
-      "creation_time_days": 49
+      "creation_time_days": 49,
+      "special_charged_effect": {
+        "effect_kind": "cancel_magic_item"
+      },
+      "default_charges": 5
     },
     {
       "item_key": "rod_of_resurrection",
@@ -1277,7 +1285,10 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300
+      "creation_time_days": 300,
+      "worn_passive_flags": [
+        "is_nondetectable"
+      ]
     },
     {
       "item_key": "apparatus_of_the_crab",
@@ -1612,7 +1623,7 @@
       "item_key": "displacer_cloak",
       "name": "Displacer Cloak",
       "category": "misc_magic",
-      "magical_bonus": 0,
+      "magical_bonus": 2,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 50000,

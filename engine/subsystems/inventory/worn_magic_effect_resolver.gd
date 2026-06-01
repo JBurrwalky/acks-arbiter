@@ -186,6 +186,33 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "boots_of_speed":
 			_add_boots_of_speed(character, item_id)
 			continue
+		# --- Amulet versus Crystal Balls and ESP (Tier 4 Cluster A, 2026-06-01) ---
+		# RAW: daw_campaigning_armies.xml:478-488 — "If an officer is
+		# protected by amulet versus crystal balls and ESP or nondetection,
+		# that officer and units under his command cannot be scryed upon."
+		# Source spell: pc_spell_catalog_f-u.xml:556-571 Nondetection —
+		# "Protects the target from crystal balls and any type of ESP."
+		# Implementation: sets the existing `is_nondetectable` EntityFlag
+		# (declared at engine/shared_types/entity_flags.gd:26) while
+		# equipped. Forward-looking — no scrying-system consumer is wired
+		# yet, mirrors the Ring of Water Walking flag-set pattern.
+		if item_key == "amulet_versus_crystal_balls_and_esp":
+			_add_amulet_versus_crystal_balls_and_esp(character, item_id)
+			continue
+		# --- Displacer Cloak (Tier 4 Cluster A, 2026-06-01) ---
+		# RAW: acore_treasure_and_magic_items_rules.xml:266 — "Creates
+		# displacement effect making wearer harder to hit." Closest in-
+		# corpus mechanic: phase tiger's `phase_illusion` ability
+		# (acore_monster_catalog_owl-sco.xml:236-248): "Projects an
+		# illusion 3' from where it actually stands. All opponents suffer
+		# -2 to attack throws." Project default magnitude: 2 (mapped to
+		# +2 AC since ACKS AC is the modifier added to the attack-throw
+		# target). No save bonus — the +2 saves part of phase illusion is
+		# phase-tiger-specific. Stamped via EXPLICIT_BONUS = 2; resolver
+		# reads magical_bonus.
+		if item_key == "displacer_cloak" and bonus > 0:
+			_add_displacer_cloak(character, item_id, bonus)
+			continue
 
 
 ## Apply a Ring of Protection +N modifier: +N to AC (ascending AC, so positive
@@ -334,6 +361,39 @@ static func _add_gauntlets_of_ogre_power(character: CharacterData, item_id: Stri
 		"value": GAUNTLETS_OF_OGRE_POWER_STR,
 		"stacking_group": "",
 		"priority": 0,  # ordinary item; curse-priority set would dominate
+	})
+
+
+## Apply Amulet versus Crystal Balls and ESP: sets `is_nondetectable`
+## EntityFlag while equipped, sourced by the item's worn_magic: id. The
+## flag is forward-looking — no scrying-system consumer is wired in V1.
+## RAW source spell (Nondetection) protects the wearer from crystal balls
+## and ESP; the amulet replicates the spell continuously while worn.
+## Mirrors the Ring of Water Walking flag-set pattern (the flag exists,
+## consumer integration follows).
+static func _add_amulet_versus_crystal_balls_and_esp(
+		character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("is_nondetectable", source_id, {"source_kind": "worn_magic_item"})
+
+
+## Apply Displacer Cloak: +N AC modifier (no save bonus). RAW:
+## "Creates displacement effect making wearer harder to hit." Implementation
+## maps "harder to hit" to a +N AC bonus (ACKS AC is the modifier added to
+## the attack-throw target, so +AC = harder to hit). Magnitude 2 stamped via
+## EXPLICIT_BONUS based on the phase tiger phase_illusion analog (-2 attack
+## throws against the phase tiger). Stacks with other AC sources via empty
+## stacking_group (same convention as Bracers of Armor).
+static func _add_displacer_cloak(
+		character: CharacterData, item_id: String, bonus: int) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.modifiers.add_modifier("armor_class", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": bonus,
+		"stacking_group": "",
+		"priority": 0,
 	})
 
 

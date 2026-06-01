@@ -125,6 +125,14 @@ static func drink_potion(
 		empty["message"] = "Item '%s' is not a potion (category=%s)." % [
 			item_key, catalog_entry.get("category", "?")]
 		return empty
+	# Tier 4 Cluster A (2026-06-01): potions whose effect bypasses the spell
+	# pipeline (Potion of Poison). The catalog stamps `direct_potion_effect`
+	# with an `effect_kind` field; route to the per-effect resolver. Returns
+	# early — these never fall through to the spell_binding path.
+	var direct_v: Variant = catalog_entry.get("direct_potion_effect", null)
+	if direct_v is Dictionary:
+		return _resolve_direct_potion_effect(
+			item_id, item_key, catalog_entry, drinker, direct_v as Dictionary)
 	var binding_v: Variant = catalog_entry.get("spell_binding", null)
 	if not (binding_v is Dictionary):
 		empty["message"] = "Potion '%s' has no spell_binding (effect not yet implemented)." % item_key
@@ -533,6 +541,219 @@ static func apply_oil(
 			empty["message"] = (
 				"apply_oil: unsupported mode '%s' (use 'creature' or 'cell')." % mode)
 			return empty
+
+
+## Apply a Rod of Cancellation to a target magic item. The rod drains the
+## target of all magical power on touch — `is_magical` cleared, `magical_bonus`
+## zeroed, `uses_remaining` zeroed, `is_cursed` cleared (per RAW the curse
+## itself is magical and would be drained). The rod itself consumes one
+## charge on success; reaching 0 charges makes the rod useless and non-magical.
+##
+## RAW: `pc_magic_experimentation.xml:244-246, 327-329` describes the effect
+## as "Drain one magic item of all power, as if touched by a rod of
+## cancellation." `acore_treasure_and_magic_items_rules.xml:213` lists the
+## rod in the rods_staffs_wands table without a dedicated mechanic entry —
+## the mishap-table phrasing is the most explicit RAW we have.
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     charges_remaining: int,    — rod's uses_remaining AFTER the activation
+##     became_inert: bool,        — true if the rod hit 0 charges
+##     target_drained: bool,      — true if the target item was successfully drained
+##     target_id: String,
+##   }
+##
+## [param rod_id]      the inventory_items.id of the Rod of Cancellation.
+## [param wielder]     the live CharacterData using the rod (for logging /
+##                     future per-wielder constraints).
+## [param target_item_id] the inventory_items.id of the magic item to be
+##                     drained. Must be `is_magical = 1`; non-magical items
+##                     refuse the touch (no charge consumed).
+## [param magic_item_catalog] a loaded MagicItemCatalog (for the rod's
+##                     catalog entry lookup).
+static func apply_rod_of_cancellation(
+		rod_id: String,
+		wielder: CharacterData,
+		target_item_id: String,
+		magic_item_catalog: MagicItemCatalog) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"charges_remaining": -1,
+		"became_inert": false,
+		"target_drained": false,
+		"target_id": target_item_id,
+	}
+
+	# 1. Rod lookup.
+	var rod_row: Dictionary = CampaignRepository.get_inventory_item_by_id(rod_id)
+	if rod_row.is_empty():
+		empty["message"] = "Rod of Cancellation not found (id=%s)." % rod_id
+		return empty
+	var rod_key: String = str(rod_row.get("item_key", ""))
+	var rod_entry: Dictionary = magic_item_catalog.get_item(rod_key)
+	if rod_entry.is_empty():
+		empty["message"] = "Rod '%s' has no catalog entry." % rod_key
+		return empty
+	var special_v: Variant = rod_entry.get("special_charged_effect", null)
+	if not (special_v is Dictionary) \
+			or str((special_v as Dictionary).get("effect_kind", "")) != "cancel_magic_item":
+		empty["message"] = (
+			"Item '%s' is not a Rod of Cancellation (no cancel_magic_item effect)." % rod_key)
+		return empty
+
+	# 2. Rod charge gate — same semantics as activate_charged_item.
+	var current_charges: int = int(rod_row.get("uses_remaining", -1))
+	empty["charges_remaining"] = current_charges
+	if current_charges == 0:
+		empty["message"] = (
+			"'%s' has no charges remaining (item is useless and non-magical)." %
+				str(rod_entry.get("name", rod_key)))
+		return empty
+
+	# 3. Target lookup + validation.
+	if target_item_id.is_empty():
+		empty["message"] = "Rod of Cancellation requires a target magic item."
+		return empty
+	var target_row: Dictionary = CampaignRepository.get_inventory_item_by_id(target_item_id)
+	if target_row.is_empty():
+		empty["message"] = "Target item not found (id=%s)." % target_item_id
+		return empty
+	# A non-magical item refuses the touch — no charge consumed (the rod
+	# doesn't expend on a mundane object, per the RAW "drain magic item of
+	# all power" phrasing — there's no magic to drain).
+	if int(target_row.get("is_magical", 0)) != 1:
+		empty["message"] = (
+			"Target '%s' is not magical — Rod of Cancellation has no effect." %
+				str(target_row.get("name", target_item_id)))
+		return empty
+	if str(target_row.get("id", "")) == rod_id:
+		empty["message"] = "The Rod of Cancellation refuses to drain itself."
+		return empty
+
+	# 4. Drain target + decrement rod charges in one transaction.
+	# RAW (per mishap phrasing): "drain magic item of all power." Set
+	# is_magical = 0, magical_bonus = 0, uses_remaining = 0, is_cursed = 0
+	# (the curse mechanic IS magical; a fully-drained item shouldn't
+	# remain cursed).
+	CampaignRepository.db.query("BEGIN TRANSACTION")
+	CampaignRepository.db.query_with_bindings(
+		"""UPDATE inventory_items
+		   SET is_magical = 0, magical_bonus = 0, uses_remaining = 0, is_cursed = 0
+		   WHERE id = ?""",
+		[target_item_id])
+	var charges_after: int = current_charges - 1 if current_charges > 0 else current_charges
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+		[charges_after, rod_id])
+	var became_inert: bool = (current_charges > 0 and charges_after == 0)
+	if became_inert:
+		# Rod ran out of charges — clear is_magical per the same RAW that
+		# governs wands ("useless and non-magical").
+		CampaignRepository.db.query_with_bindings(
+			"UPDATE inventory_items SET is_magical = 0 WHERE id = ?", [rod_id])
+	CampaignRepository.db.query("COMMIT")
+
+	var message: String = "Drained '%s' with Rod of Cancellation (%d charge%s remaining)." % [
+		str(target_row.get("name", target_item_id)),
+		charges_after,
+		"" if charges_after == 1 else "s",
+	]
+	return {
+		"success": true,
+		"message": message,
+		"charges_remaining": charges_after,
+		"became_inert": became_inert,
+		"target_drained": true,
+		"target_id": target_item_id,
+	}
+
+
+## Resolve a direct-effect potion (Potion of Poison and future similar items).
+## Called from `drink_potion` when the catalog entry carries
+## `direct_potion_effect` instead of (or in addition to) a spell_binding.
+##
+## Returns the same shape as `drink_potion`. The potion is consumed in BOTH
+## success-saves-on-poison and failure-dies-on-poison outcomes (unlike spell-
+## binding potions, where a magic-system failure preserves the dose). The
+## rationale: by the time the drinker is rolling the save, the bottle is
+## empty.
+##
+## RAW: `acore_treasure_and_magic_items_rules.xml:253` poison_potion rule —
+## "Poison effect resolves according to the source potion description and
+## relevant saves." Project default for V1 Potion of Poison: save vs Poison
+## & Death; failure = drinker dies (HP set to negative max-HP per the
+## standard "instantly killed" interpretation), success = no effect. The
+## standard ACKS "save vs Poison or die" pattern appears across the corpus
+## (e.g. `acore_monster_catalog_a-dop.xml:258`).
+static func _resolve_direct_potion_effect(
+		item_id: String,
+		item_key: String,
+		catalog_entry: Dictionary,
+		drinker: CharacterData,
+		direct_cfg: Dictionary) -> Dictionary:
+	var effect_kind: String = str(direct_cfg.get("effect_kind", ""))
+	var name: String = str(catalog_entry.get("name", item_key))
+	var base := {
+		"success": false,
+		"message": "",
+		"consumed": false,
+		"spell_key": "",
+		"casting_result": null,
+	}
+	match effect_kind:
+		"save_or_die_poison":
+			# Roll save vs Poison & Death — drinker's effective save target,
+			# d20, no modifier (the save itself uses the entity's save value).
+			# DiceSystem patterns: lower is better, drinker wants
+			# `modified_total >= save_target`.
+			var save_target: int = int(drinker.get_effective_save("save_poison_death"))
+			var roll: RollResult = DiceSystem.roll_digital(
+				20, 1, 0, "save_vs_poison_potion")
+			var passed: bool = roll.modified_total >= save_target
+			# Consume the bottle in both cases — see docstring.
+			CampaignRepository.remove_inventory_item(item_id)
+			if passed:
+				return {
+					"success": true,
+					"message": "Drank '%s' — saved vs Poison (rolled %d vs target %d). No effect." %
+						[name, roll.modified_total, save_target],
+					"consumed": true,
+					"spell_key": "",
+					"casting_result": null,
+				}
+			else:
+				# Drinker dies. Standard ACKS "instantly killed" handling —
+				# set HP to -max_hp (well below the -10 mortal-wounds floor
+				# so the combat / mortal-wounds path treats this as
+				# "instantly killed"). RAW: ax_mortal_wounds_and_tampering.xml:396
+				# "state of the creature's body: -10 if instantly killed"
+				# — the magnitude marker on the mortal-wounds table for
+				# poison-deaths.
+				var max_hp: int = drinker.hp_max
+				var new_hp: int = -max_hp
+				var old_hp: int = drinker.hp_current
+				drinker.hp_current = new_hp
+				CampaignRepository.update_character_hp(drinker.id, new_hp)
+				EventBus.hp_changed.emit(drinker.id, old_hp, new_hp)
+				EventBus.damage_dealt.emit(
+					drinker.id, max(1, old_hp - new_hp),
+					"potion_of_poison", "potion_of_poison")
+				return {
+					"success": true,  # the potion resolved successfully — the drinker dies
+					"message": "Drank '%s' — failed save vs Poison (rolled %d vs target %d). Drinker dies." %
+						[name, roll.modified_total, save_target],
+					"consumed": true,
+					"spell_key": "",
+					"casting_result": null,
+				}
+		_:
+			base["message"] = "Unknown direct_potion_effect kind '%s' on '%s'." % [
+				effect_kind, item_key]
+			return base
+	return base  # unreachable; satisfies the type checker
 
 
 ## Pick the coat_spec for an oil item + application mode. Hard-coded for V1

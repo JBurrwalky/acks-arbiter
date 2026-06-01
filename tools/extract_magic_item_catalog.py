@@ -414,6 +414,13 @@ DEFER_BUILD = {
     "brooch_of_shielding": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)",
     "elven_cloak": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension",
     "elven_boots": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension",
+    # Tier 4 Cluster A (2026-06-01): gaseous_form spell has an empty
+    # `effect` block (one of 150 such in the catalog); CastingResolver
+    # refuses to cast spells without an effect_registry payload. The
+    # potion stays findable + sellable; binding lands when the
+    # gaseous_form spell-effect pass wires the is_gaseous flag + AC/
+    # movement overrides per RAW pc_spell_catalog_f-u.xml:90-126.
+    "potion_of_gaseous_form": "gaseous_form spell effect not yet implemented (empty effect block); bind one-line when spell-effect pass lands the is_gaseous flag + AC 11 + movement 30'/round per RAW pc_spell_catalog_f-u.xml:90-126",
     # Other items will land here as we finish triaging — Bag of Devouring,
     # Helm of Telepathy edge cases, etc.
 }
@@ -435,6 +442,105 @@ EXPLICIT_BONUS = {
     "cloak_of_protection": 1,
     # Bracers of Armor moved to a sub_roll table (RAW d100 + 5% cursed,
     # 2026-05-29). See BRACERS_OF_ARMOR_SUBROLL.
+    #
+    # Displacer Cloak (Tier 4 Cluster A, 2026-06-01): RAW
+    # `acore_treasure_and_magic_items_rules.xml:266` says only "creates
+    # displacement effect making wearer harder to hit" — no magnitude.
+    # The closest in-corpus analog is the phase tiger's `phase_illusion`
+    # ability (`acore_monster_catalog_owl-sco.xml:236-248`,
+    # `le_monster_catalog_summary_3.xml:231-233`): "Projects an illusion
+    # 3' from where it actually stands. All opponents suffer -2 to attack
+    # throws." Project default magnitude: 2 (mapping -2 attack-throw
+    # penalty to +2 AC — equivalent in ACKS where AC is the modifier
+    # added to the attack-throw target). Saves are NOT boosted (the
+    # +2-saves part of phase illusion is phase-tiger-specific, not
+    # displacement per se). Flagged for Jedidiah confirmation; the
+    # WornMagicEffectResolver branch reads this magical_bonus.
+    "displacer_cloak": 2,
+}
+
+
+# ---------------------------------------------------------------------------
+# WORN_PASSIVE_FLAGS — items whose effect while equipped is a forward-looking
+# EntityFlag rather than a stat modifier. Consumed by WornMagicEffectResolver
+# (which branches on item_key, not catalog data — this map exists for
+# documentation + test cross-reference).
+#
+# Tier 4 Cluster A (2026-06-01):
+#   amulet_versus_crystal_balls_and_esp — RAW
+#   `daw_campaigning_armies.xml:478-488`: "If an officer is protected by amulet
+#   versus crystal balls and ESP or nondetection, that officer and units under
+#   his command cannot be scryed upon." Spell that creates it:
+#   `pc_spell_catalog_f-u.xml:556-571` Nondetection: "Protects the target from
+#   crystal balls and any type of ESP. Protection also prevents a crystal ball
+#   from spying on items the recipient is wearing and on the recipient's
+#   present location. An attempt to spy reveals only that the target is
+#   magically protected."
+#
+#   Implementation: WornMagicEffectResolver sets `is_nondetectable`
+#   EntityFlag (already declared at engine/shared_types/entity_flags.gd:26)
+#   while equipped, cleared on unequip via the worn_magic: source-prefix
+#   sweep. The flag is forward-looking — when/if a scrying system is
+#   implemented at runtime, it queries this flag. Same pattern as Ring of
+#   Water Walking (can_water_walk set; no movement consumer wired yet).
+WORN_PASSIVE_FLAGS = {
+    "amulet_versus_crystal_balls_and_esp": {"flags": ["is_nondetectable"]},
+}
+
+
+# ---------------------------------------------------------------------------
+# DIRECT_POTION_EFFECTS — potions whose effect bypasses the spell_binding
+# pipeline because they don't replay a spell. Consumed by
+# MagicItemActivator.drink_potion's pre-spell-binding branch.
+#
+# Tier 4 Cluster A (2026-06-01):
+#   potion_of_poison — RAW
+#   `acore_treasure_and_magic_items_rules.xml:253`: "Poison effect resolves
+#   according to the source potion description and relevant saves." The
+#   relevant save in ACKS is `save_poison_death` (the Poison & Death save —
+#   one of the 5 named saves). Project default: save vs Poison & Death;
+#   failure = drinker dies; success = no effect. The potion is consumed
+#   regardless (the bottle was already drunk; success means the body
+#   resisted, not that the dose was preserved). Magnitude (poison potency)
+#   is RAW-silent within the rules summary corpus, so we use the standard
+#   ACKS poison pattern (save-or-die) per
+#   `acore_monster_catalog_a-dop.xml:258` "Target must save vs Poison or
+#   die" and similar across the corpus.
+DIRECT_POTION_EFFECTS = {
+    "potion_of_poison": {"effect_kind": "save_or_die_poison"},
+}
+
+
+# ---------------------------------------------------------------------------
+# SPECIAL_CHARGED_EFFECTS — charged items (rod_staff_wand category) whose
+# activation bypasses the spell pipeline because they don't replay a spell.
+# Consumed by MagicItemActivator.apply_rod_of_cancellation (and any future
+# similar direct-effect rods).
+#
+# Tier 4 Cluster A (2026-06-01):
+#   rod_of_cancellation — RAW `pc_magic_experimentation.xml:244-246, 327-329`
+#   uses the phrase "Drain one magic item of all power, as if touched by a rod
+#   of cancellation" in the construct-design / generic mishap tables. RAW
+#   for the rod itself: `acore_treasure_and_magic_items_rules.xml:213` lists
+#   it in the rods_staffs_wands table without a dedicated mechanic entry. The
+#   mishap entries are the most explicit RAW we have: the rod drains a
+#   single magic item of all power on touch.
+#
+#   default_charges: 5 is a project default — RAW is silent on the rod's
+#   charge count. Closest in-corpus analog is Life Drinker (1d4+4 charges,
+#   `acore_treasure_and_magic_items_rules.xml:255`); midpoint of that range
+#   is ~6, project default 5 is conservative. Flagged for Jedidiah ruling.
+#
+#   Effect on touched item: is_magical -> 0, magical_bonus -> 0,
+#   uses_remaining -> 0, is_cursed -> 0. The item becomes mundane. The rod
+#   itself consumes one charge per successful use; when charges hit 0 the
+#   rod becomes useless and non-magical (same RAW as any other charged
+#   item, `acore_treasure_and_magic_items_rules.xml` identification_and_use).
+SPECIAL_CHARGED_EFFECTS = {
+    "rod_of_cancellation": {
+        "effect_kind": "cancel_magic_item",
+        "default_charges": 5,
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -734,6 +840,16 @@ SPELL_BINDING_MAP = {
         "spell_key": "polymorph_self", "tradition": "arcane",
         "caster_level": 7, "target_mode": "self",
     },
+    # Tier 4 Cluster A (2026-06-01): potion_of_gaseous_form deferred
+    # pending the gaseous_form spell's effect block. RAW spell exists
+    # (pc_spell_catalog_f-u.xml:90-126, Arcane L3) but the catalog entry
+    # carries an empty `effect` block — CastingResolver refuses to cast
+    # spells with no effect_registry payload. Stamped via DEFER_BUILD with
+    # a clear "spell effect not yet implemented" reason; the binding
+    # entry can land in a one-line addition once the gaseous_form spell
+    # effect is implemented (sets is_gaseous flag, drops carried items,
+    # AC -> 11, movement -> 30'/round, immune to non-magical weapons per
+    # the RAW spell description).
     "medallion_of_esp": {
         # Worn-triggered: wearer activates to read surface thoughts in a
         # 30' area (the spell's standard range). Re-activate at will.
@@ -1088,6 +1204,27 @@ def main() -> int:
         # follow-on passes.
         if key in SPELL_BINDING_MAP:
             it["spell_binding"] = SPELL_BINDING_MAP[key]
+        # Tier 4 Cluster A (2026-06-01): non-spell-binding metadata stamps.
+        # Worn-passive flag-only items (Amulet versus Crystal Balls and ESP):
+        # `worn_passive_flags` documents which EntityFlags the
+        # WornMagicEffectResolver sets while equipped.
+        if key in WORN_PASSIVE_FLAGS:
+            it["worn_passive_flags"] = WORN_PASSIVE_FLAGS[key]["flags"]
+        # Direct-effect potions (Potion of Poison): `direct_potion_effect`
+        # routes through a pre-spell-binding branch in
+        # MagicItemActivator.drink_potion. effect_kind names the resolver.
+        if key in DIRECT_POTION_EFFECTS:
+            it["direct_potion_effect"] = DIRECT_POTION_EFFECTS[key]
+        # Special-effect charged items (Rod of Cancellation): bypass the
+        # spell pipeline and use a dedicated entry point. The
+        # `default_charges` here mirrors the spell-binding wand/staff
+        # convention so the materializer stamps the same field.
+        if key in SPECIAL_CHARGED_EFFECTS:
+            cfg = SPECIAL_CHARGED_EFFECTS[key]
+            it["special_charged_effect"] = {"effect_kind": cfg["effect_kind"]}
+            # Mirror the spell_binding charges idiom so the materializer
+            # picks up default_charges via the same uses_remaining path.
+            it["default_charges"] = int(cfg["default_charges"])
 
     catalog = {
         "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",
