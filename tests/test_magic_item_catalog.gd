@@ -242,14 +242,15 @@ const EXPECTED_DEFER_KEYS := [
 	"ring_of_wishes", "potion_of_longevity",
 	"eyes_of_petrification", "treasure_map",
 	# Tier 2 deferrals (2026-05-29): Control + Command items overshoot
-	# charm_monster per RAW; cause_fear not yet in spell catalog; dusts
-	# need a separate use_dust activator entry point (misc_magic category).
+	# charm_monster per RAW. wand_of_fear shipped 2026-05-29 (cause_fear).
+	# Dusts (Disappearance + Appearance) shipped 2026-06-01 via
+	# use_misc_magic_active entry point — removed from this list. Drums
+	# of Panic stays deferred pending the `panic` spell's effect block.
 	"potion_of_animal_control", "potion_of_dragon_control",
 	"potion_of_giant_control", "potion_of_plant_control",
 	"potion_of_undead_control",
 	"ring_of_command_animal", "ring_of_command_plant",
-	"drums_of_panic",   # wand_of_fear shipped 2026-05-29 (cause_fear unblock)
-	"dust_of_disappearance", "dust_of_appearance",
+	"drums_of_panic",   # panic spell effect not yet implemented; bind one-line when it lands
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,
 	# and persistent-worn stat-bonuses needing engine extensions.
@@ -263,6 +264,9 @@ const EXPECTED_DEFER_KEYS := [
 	"scarab_of_protection", "cube_of_frost_resistance",
 	"eyes_of_the_eagle", "necklace_of_adaptation", "brooch_of_shielding",
 	"elven_cloak", "elven_boots",
+	# Tier 4 Cluster A defer (2026-06-01): gaseous_form spell has empty
+	# effect block — Potion of Gaseous Form binding pending spell-effect pass.
+	"potion_of_gaseous_form",
 ]
 
 

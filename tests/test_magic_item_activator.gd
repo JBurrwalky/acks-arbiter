@@ -119,6 +119,12 @@ func run_all_tests() -> void:
 	test_activate_medallion_of_esp_routes_through_worn_activator()
 	# Tier 3 unblock (2026-05-29): cause_fear available via remove_fear reverse.
 	test_activate_wand_of_fear_routes_through_cause_fear()
+	# Misc-magic active entry point (2026-06-01): dusts + drums batch.
+	test_use_misc_magic_active_dust_of_disappearance_succeeds_and_consumes()
+	test_use_misc_magic_active_dust_of_appearance_succeeds_and_consumes()
+	test_use_misc_magic_active_rejects_non_misc_magic_category()
+	test_use_misc_magic_active_with_no_binding_fails_without_consuming()
+	test_drums_of_panic_remains_deferred_pending_panic_spell_effect()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -1045,6 +1051,169 @@ func test_activate_wand_of_fear_routes_through_cause_fear() -> void:
 
 	_teardown()
 	print("  activate_wand_of_fear_routes_through_cause_fear: OK")
+
+
+# ---------------------------------------------------------------------------
+# Misc-magic active entry point (2026-06-01)
+# ---------------------------------------------------------------------------
+
+## Dust of Disappearance — binds to invisibility (arcane L2, min caster L3,
+## target_mode self). The dust is sprinkled on the user; invisibility takes
+## hold. Dose consumed on success.
+func test_use_misc_magic_active_dust_of_disappearance_succeeds_and_consumes() -> void:
+	_setup()
+	var harness := _make_harness()
+	var user := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "dust_of_disappearance",
+		"name": "Dust of Disappearance",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+	})
+
+	var result: Dictionary = MagicItemActivator.use_misc_magic_active(
+		item_id, user, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == true,
+		"Dust of Disappearance use should succeed; message: %s" % str(result["message"]))
+	check(bool(result["consumed"]) == true,
+		"Dust of Disappearance should be consumed on success")
+	check(str(result["spell_key"]) == "invisibility",
+		"spell_key should be 'invisibility', got '%s'" % str(result["spell_key"]))
+	check(CampaignRepository.get_inventory_item_by_id(item_id).is_empty(),
+		"consumed dust row should be gone from inventory")
+
+	_teardown()
+	print("  use_misc_magic_active_dust_of_disappearance_succeeds_and_consumes: OK")
+
+
+## Dust of Appearance — binds to detect_invisible (arcane L2, min caster L3,
+## target_mode self). Similar mechanic to Dust of Disappearance but the
+## opposite effect.
+func test_use_misc_magic_active_dust_of_appearance_succeeds_and_consumes() -> void:
+	_setup()
+	var harness := _make_harness()
+	var user := _make_drinker()
+
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "dust_of_appearance",
+		"name": "Dust of Appearance",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+	})
+
+	var result: Dictionary = MagicItemActivator.use_misc_magic_active(
+		item_id, user, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == true,
+		"Dust of Appearance use should succeed; message: %s" % str(result["message"]))
+	check(bool(result["consumed"]) == true,
+		"Dust of Appearance should be consumed on success")
+	check(str(result["spell_key"]) == "detect_invisible",
+		"spell_key should be 'detect_invisible', got '%s'" % str(result["spell_key"]))
+	check(CampaignRepository.get_inventory_item_by_id(item_id).is_empty(),
+		"consumed dust row should be gone from inventory")
+
+	_teardown()
+	print("  use_misc_magic_active_dust_of_appearance_succeeds_and_consumes: OK")
+
+
+## Category gate — use_misc_magic_active refuses items that are NOT in the
+## misc_magic catalog category (defense against accidental cross-routing
+## from drink_potion / activate_charged_item / activate_worn_item callers).
+func test_use_misc_magic_active_rejects_non_misc_magic_category() -> void:
+	_setup()
+	var harness := _make_harness()
+	var user := _make_drinker()
+
+	# A potion (category != misc_magic) should be refused even though it has
+	# a working spell_binding.
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "potion_of_invisibility",
+		"name": "Potion of Invisibility",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+	})
+
+	var result: Dictionary = MagicItemActivator.use_misc_magic_active(
+		item_id, user, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == false,
+		"use_misc_magic_active should refuse a potion")
+	check(bool(result["consumed"]) == false,
+		"refused activation must not consume the item")
+	check(str(result["message"]).contains("misc_magic"),
+		"failure message should mention misc_magic, got: %s" % str(result["message"]))
+	check(not CampaignRepository.get_inventory_item_by_id(item_id).is_empty(),
+		"refused item should survive")
+
+	_teardown()
+	print("  use_misc_magic_active_rejects_non_misc_magic_category: OK")
+
+
+## A misc_magic item with no spell_binding (e.g. an unbacked / deferred item)
+## fails cleanly with the standard "no spell_binding" message and does NOT
+## consume the item (the failure-preserves-the-dose rule applies here too).
+func test_use_misc_magic_active_with_no_binding_fails_without_consuming() -> void:
+	_setup()
+	var harness := _make_harness()
+	var user := _make_drinker()
+
+	# Drums of Panic is currently deferred (panic spell empty effect) — no
+	# spell_binding on the catalog entry. Use it to exercise the no-binding
+	# path.
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR,
+		"item_key": "drums_of_panic",
+		"name": "Drums of Panic",
+		"quantity": 1,
+		"encumbrance_units": 167,
+		"item_category": "magic",
+		"is_magical": true,
+	})
+
+	var result: Dictionary = MagicItemActivator.use_misc_magic_active(
+		item_id, user, harness.resolver, harness.catalog)
+	check(bool(result["success"]) == false,
+		"deferred misc_magic item should fail to activate")
+	check(bool(result["consumed"]) == false,
+		"failed activation should not consume the item")
+	check(str(result["message"]).contains("spell_binding"),
+		"failure message should mention spell_binding, got: %s" % str(result["message"]))
+	check(not CampaignRepository.get_inventory_item_by_id(item_id).is_empty(),
+		"deferred item should remain in inventory")
+
+	_teardown()
+	print("  use_misc_magic_active_with_no_binding_fails_without_consuming: OK")
+
+
+## Documentation test — pins the project decision that Drums of Panic
+## remains DEFERRED pending the `panic` spell's effect block. Catalog
+## should carry a defer_reason and NOT a spell_binding; flipping this
+## test reminds the next maintainer to bind to `panic` (not cause_fear)
+## once the spell-effect pass implements the panic mechanic.
+func test_drums_of_panic_remains_deferred_pending_panic_spell_effect() -> void:
+	var catalog := MagicItemCatalog.new()
+	var entry: Dictionary = catalog.get_item("drums_of_panic")
+	check(not entry.is_empty(), "drums_of_panic must exist in catalog")
+	check(entry.has("defer_reason"),
+		"drums_of_panic should carry a defer_reason (panic spell effect not yet implemented)")
+	check(not entry.has("spell_binding"),
+		"drums_of_panic should NOT have spell_binding (deferred pending panic spell effect)")
+	# The defer reason should point at the correct binding target — the
+	# Panic spell, not cause_fear. This guards against the older project
+	# note that incorrectly aimed at cause_fear.
+	check(str(entry.get("defer_reason", "")).contains("panic"),
+		"defer_reason should mention panic spell; got: %s" % str(entry.get("defer_reason", "")))
+
+	print("  drums_of_panic_remains_deferred_pending_panic_spell_effect: OK")
 
 
 # ---------------------------------------------------------------------------

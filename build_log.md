@@ -29669,3 +29669,50 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 1. Magic swords with named effects (Flame Tongue, Frost Brand, Life Drinker, Luck Blade, Vorpal Sword) — each needs its own resolver + a damage-type or status hook. Probably the largest remaining "clean" cluster.
 2. Cursed-item non-numeric effect pass: Cursed Scroll, Ring of Delusion, Ring of Weakness all have sticky-equip wired but the actual penalty is a stub.
 3. Spell-effect pass on the 150 spells with empty effect blocks — would un-defer Potion of Gaseous Form (and unblock several other deferred items).
+
+
+## Session 2026-06-01 — use_misc_magic_active entry point + 2 dusts + Drums of Panic defer correction
+
+**Task:** Land the highest-leverage next batch: a new `use_misc_magic_active` entry point on `MagicItemActivator` that unblocks misc_magic category items pending a unified activation route. Three items in scope per the prior cluster review: Dust of Disappearance, Dust of Appearance, Drums of Panic.
+**Model used:** Sonnet 4.6 for RAW lookups + implementation + tests.
+**Completed:**
+- `engine/subsystems/inventory/magic_item_activator.gd:use_misc_magic_active(item_id, user, casting_resolver, magic_item_catalog, target_id, target_entity, target_cell, map_context, origin_cell) -> Dictionary` — new top-level entry point. Fourth such entry point on the activator alongside `drink_potion` / `activate_charged_item` / `activate_worn_item` / `apply_oil`. Lookup pattern mirrors the others: load inventory row → load catalog entry → gate on `category == "misc_magic"` → require `spell_binding` → validate target → cast via the shared `_cast_via_binding` pipeline → handle consumption.
+- **Consumption model:** default `consumed on success` (catalog opt-out via the new `misc_magic_consumable: false` flag for non-consumable misc_magic actives like Drums of Panic or future Horn of Blasting). V1 keeps the gating simple: consumables vanish on success; non-consumables don't decrement (= unlimited, mirroring activate_worn_item V1 behavior). A future pass can add per-day cooldowns / uses-remaining for non-consumables.
+- `tools/extract_magic_item_catalog.py:SPELL_BINDING_MAP` — two new entries:
+  - `dust_of_disappearance` → `invisibility` (arcane L2 spell; min caster level 3; target_mode self). Bound by project decision per the prior triage notes. RAW summary doesn't carry a dedicated mechanic for the dust; the binding to invisibility is the obvious counterpart to Dust of Appearance.
+  - `dust_of_appearance` → `detect_invisible` (arcane L2 spell, divine L3 witch; min caster level 3; target_mode self).
+- `tools/extract_magic_item_catalog.py:DEFER_BUILD` — Drums of Panic defer reason **CORRECTED**. The older note (2026-05-29) pointed the binding at `cause_fear` (the synthesized reverse of remove_fear used by Wand of Fear). RAW correction this session: the source spell for Drums of Panic is `panic` (`pc_spell_catalog_f-u.xml:621-637` — explicit `<special><rule>Used to create drums of panic.</rule></special>`). Panic is Arcane L5, area "all creatures within 240' except those inside a 10' radius safe zone," instantaneous, save vs Spells negates, failed targets flee at running speed for 30 rounds. `cause_fear` is L1 divine with a single-creature target — a completely different spell. The defer reason now correctly identifies `panic` as the binding target; binding is a one-line addition to SPELL_BINDING_MAP once the panic spell-effect pass implements the area-fear mechanic. Dusts removed from DEFER_BUILD (now bound, not deferred).
+- `tests/test_magic_item_catalog.gd:EXPECTED_DEFER_KEYS` — removed `dust_of_disappearance` + `dust_of_appearance` (now bound, not deferred); added `potion_of_gaseous_form` (which was added to DEFER_BUILD in the prior Cluster A commit but never reflected in the test's expected list).
+- `tests/test_magic_item_activator.gd` — 5 new tests in the existing suite: `test_use_misc_magic_active_dust_of_disappearance_succeeds_and_consumes`, `test_use_misc_magic_active_dust_of_appearance_succeeds_and_consumes`, `test_use_misc_magic_active_rejects_non_misc_magic_category` (defensive — refuses a potion item with a working binding so callers don't accidentally cross-route), `test_use_misc_magic_active_with_no_binding_fails_without_consuming` (uses Drums of Panic as the deferred-misc_magic exemplar), `test_drums_of_panic_remains_deferred_pending_panic_spell_effect` (documentation test pinning the defer state + asserting the defer_reason mentions `panic`, NOT cause_fear).
+- `generation/gdd-treasure-item-backing.md` §14 — appended new row for the entry point + 2 dust bindings + Drums of Panic defer correction.
+- Catalog regenerated; verified the 3 items' shapes post-regen (Dust of Disappearance binding to invisibility, Dust of Appearance binding to detect_invisible, Drums of Panic still deferred with the corrected reason).
+
+**Decisions made:**
+- **`use_misc_magic_active` as a fourth entry point, not a branch inside an existing one.** The misc_magic category covers a wide range of activation patterns (consume-once dusts, multi-use drums, future Horn of Blasting, etc.). A dedicated entry point lets each have its own consumption model + binding shape without overloading drink_potion / activate_charged_item / activate_worn_item. Pattern matches apply_oil's precedent (misc-category dispatch).
+- **Drums of Panic binds to `panic`, not `cause_fear`.** The RAW source spell for Drums of Panic is explicitly Panic (Arcane L5, area-effect) per `pc_spell_catalog_f-u.xml:621-637`. cause_fear (Divine L1, single-creature) is a different spell entirely — it's the source for Wand of Fear, NOT Drums of Panic. The older project note conflated them. Fixed in DEFER_BUILD this commit; the binding lands one-line when the panic spell effect block is implemented.
+- **Default consumable, opt-out non-consumable.** `misc_magic_consumable` defaults to true (the most common case — dusts, tossed powders); non-consumables (drums, future horns) set the flag to false. Keeps the catalog quiet for the common case + explicit for the unusual one.
+- **Category gate is mandatory.** `use_misc_magic_active` REFUSES items that aren't in the misc_magic catalog category, even if they have a working spell_binding. Defense against accidental cross-routing (UI calling the wrong entry point) — the same defensive gate exists in drink_potion / activate_charged_item / activate_worn_item.
+- **Removed potion_of_gaseous_form gap in EXPECTED_DEFER_KEYS.** That deferral landed in the Cluster A commit but the test's expected-list wasn't updated — the deferral worked at runtime but the test couldn't detect drift. Now it's pinned.
+
+**Interfaces defined or changed:**
+- `MagicItemActivator.use_misc_magic_active(item_id: String, user: CharacterData, casting_resolver: CastingResolver, magic_item_catalog: MagicItemCatalog, target_id: String = "", target_entity = null, target_cell: Vector3i = Vector3i.ZERO, map_context: String = "combat_grid", origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary` — new public entry point. Returns `{success, message, consumed, spell_key, casting_result}`.
+- New catalog field `misc_magic_consumable: bool` (default true; non-consumable misc_magic actives set false). Stamped via `MISC_MAGIC_NON_CONSUMABLE` (would be a future map; currently default-true with no opt-outs in the V1 binding set since Drums of Panic remains deferred — when it lands, the bind needs the false stamp).
+- New SPELL_BINDING_MAP entries: `dust_of_disappearance` (→ invisibility, arcane, caster_level 3, target_mode self) + `dust_of_appearance` (→ detect_invisible, arcane, caster_level 3, target_mode self).
+
+**Database changes:**
+- None. Pure code + catalog metadata + tests.
+
+**Tests added/updated:**
+- 5 new tests in `tests/test_magic_item_activator.gd` (within the existing suite, no new file needed): dust drink-equivalents, category gate, no-binding handling, Drums of Panic defer pin.
+- `tests/test_magic_item_catalog.gd:EXPECTED_DEFER_KEYS` updated: -2 entries (dusts removed) +1 entry (potion_of_gaseous_form added). Net -1 deferred item count.
+- Full suite: **397 passed / 19 failed** — same baseline as the prior Cluster A commit. Net-zero new failures.
+
+**Known issues:**
+- Drums of Panic still requires the `panic` spell's effect block. When that lands (set is_fleeing flag on each failed save target with 30-round duration; save vs Spells negates; area 240' radius minus 10' safe zone centered on drummer), Drums of Panic binds in a single SPELL_BINDING_MAP entry with `target_mode: area_at_point`, `misc_magic_consumable: false`, and possibly a `default_charges` if Jedidiah specifies a use limit (RAW is silent — drums are typically reusable).
+- The `misc_magic_consumable` flag is currently defined but has no false-valued entries in the catalog (dusts both default to true). When Drums of Panic / Horn of Blasting / similar land, they'll be the first to exercise the false branch — the test infrastructure for that branch is ready.
+
+**Next session should:**
+1. Magic swords cluster (Flame Tongue, Frost Brand — share damage typing; Life Drinker, Luck Blade, Vorpal Sword — each bespoke). Could be tackled as a sub-batch focused on damage typing + the 2 swords it unlocks, with the bespoke 3 as follow-up.
+2. Cursed-item non-numeric effect pass (Cursed Scroll, Ring of Delusion, Ring of Weakness — each needs different effect modeling).
+3. Spell-effect pass on at least one of the 150 empty-effect spells. Highest-leverage candidate: `panic` (un-defers Drums of Panic immediately) or `gaseous_form` (un-defers Potion of Gaseous Form). Both are well-defined RAW mechanics.
+4. Custom-control resolver for 7 deferred items (Animal/Dragon/Giant/Plant/Undead Control + 2 Command rings) — biggest single-batch leverage but needs careful design.

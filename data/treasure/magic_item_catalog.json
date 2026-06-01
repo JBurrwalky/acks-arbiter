@@ -1638,7 +1638,7 @@
       "encumbrance_units": 167,
       "value_gp": 125000,
       "creation_time_days": 500,
-      "defer_reason": "misc_magic item needs `use_misc_magic_active` entry point (same gap as the dusts); cause_fear binding ready when entry point lands (would bind area_at_point centered on drummer)"
+      "defer_reason": "use_misc_magic_active entry point LANDED 2026-06-01, but the RAW source spell `panic` (pc_spell_catalog_f-u.xml:621-637 \u2014 'Used to create drums of panic') has an empty effect block; CastingResolver refuses spells without an effect_registry payload. Bind one-line to panic (arcane L5, area within 240', save vs Spells negates, 30 rounds flee) once the panic spell-effect pass implements the cause-fear-area mechanic. Older project note incorrectly aimed at cause_fear \u2014 Panic is a distinct L5 arcane spell, not the L1 divine cause_fear used by Wand of Fear."
     },
     {
       "item_key": "dust_of_appearance",
@@ -1649,7 +1649,12 @@
       "encumbrance_units": 167,
       "value_gp": 1000,
       "creation_time_days": 14,
-      "defer_reason": "misc_magic consumable needs a `use_dust` activator entry point (binds to detect_invisible)"
+      "spell_binding": {
+        "spell_key": "detect_invisible",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "dust_of_disappearance",
@@ -1660,7 +1665,12 @@
       "encumbrance_units": 167,
       "value_gp": 2000,
       "creation_time_days": 28,
-      "defer_reason": "misc_magic consumable needs a `use_dust` activator entry point (binds to invisibility)"
+      "spell_binding": {
+        "spell_key": "invisibility",
+        "tradition": "arcane",
+        "caster_level": 3,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "efreeti_bottle",

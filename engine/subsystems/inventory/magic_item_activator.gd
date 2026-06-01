@@ -543,6 +543,131 @@ static func apply_oil(
 			return empty
 
 
+## Use a misc_magic active item (consumable or charged) that activates by
+## "you use it" — Dust of Disappearance (sprinkle on self → invisibility),
+## Dust of Appearance (toss into the air → detect_invisible area), Drums of
+## Panic (sound them → panic area), and future similar items.
+##
+## Routes through the same `spell_binding` pipeline as drink_potion /
+## activate_charged_item / activate_worn_item. Differs from drink_potion in
+## that the item lives in the misc_magic category (not "potion"), and
+## differs from activate_worn_item in that the item need NOT be equipped
+## (you toss / sprinkle / sound it; you don't wear it). Differs from
+## activate_charged_item in that the default consumption model here is
+## "consumed on success" (like a potion) rather than "decrement charges."
+## Per-item consumption is governed by the catalog flag `misc_magic_consumable`
+## stamped via MISC_MAGIC_ACTIVE_CONFIG (true for dusts; false for drums and
+## anything else that's a multi-use device).
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     consumed: bool,
+##     spell_key: String,
+##     casting_result: ResolutionResult,
+##   }
+##
+## [param item_id]            the inventory_items.id of the misc_magic active item.
+## [param user]                the live CharacterData using the item (caster_id +
+##                             caster_name on the CasterContext).
+## [param casting_resolver]    a constructed CastingResolver.
+## [param magic_item_catalog]  a loaded MagicItemCatalog.
+## [param target_id]           (single_creature target_mode only) entity id.
+## [param target_entity]       (single_creature target_mode only) live entity.
+## [param target_cell]         (area_at_point / single_target target_mode) cell anchor.
+## [param map_context]         defaults to "combat_grid".
+## [param origin_cell]         user's voxel position. For self-targeted / area-
+##                             centered-on-self items this is also the spell's origin.
+static func use_misc_magic_active(
+		item_id: String,
+		user: CharacterData,
+		casting_resolver: CastingResolver,
+		magic_item_catalog: MagicItemCatalog,
+		target_id: String = "",
+		target_entity = null,
+		target_cell: Vector3i = Vector3i.ZERO,
+		map_context: String = "combat_grid",
+		origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"consumed": false,
+		"spell_key": "",
+		"casting_result": null,
+	}
+
+	# 1. Lookup chain.
+	var item_row: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	if item_row.is_empty():
+		empty["message"] = "Misc-magic item not found in inventory (id=%s)." % item_id
+		return empty
+	var item_key: String = str(item_row.get("item_key", ""))
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(item_key)
+	if catalog_entry.is_empty():
+		empty["message"] = "Item '%s' has no catalog entry." % item_key
+		return empty
+	if str(catalog_entry.get("category", "")) != "misc_magic":
+		empty["message"] = (
+			"Item '%s' is not a misc_magic item (category=%s)." %
+			[item_key, catalog_entry.get("category", "?")])
+		return empty
+	var binding_v: Variant = catalog_entry.get("spell_binding", null)
+	if not (binding_v is Dictionary):
+		empty["message"] = (
+			"Misc-magic item '%s' has no spell_binding (effect not yet implemented)." % item_key)
+		return empty
+	var binding: Dictionary = binding_v
+	empty["spell_key"] = str(binding.get("spell_key", ""))
+
+	# 2. Validate target params against the binding's target_mode. Uses the
+	# shared validator; misc_magic actives can target "self" (dust on self),
+	# "area_at_point" (drums sound origin = user, or dust thrown to a cell),
+	# or "single_creature" / "single_target" depending on the binding.
+	var target_v: Dictionary = _validate_target(
+		binding, "Misc-magic item '%s'" % item_key, target_id, target_entity, target_cell)
+	if not bool(target_v["ok"]):
+		empty["message"] = str(target_v["message"])
+		return empty
+
+	# 3. Cast via the shared pipeline.
+	var result: ResolutionResult = _cast_via_binding(
+		binding, user, casting_resolver,
+		target_id, target_entity, target_cell,
+		map_context, origin_cell)
+
+	# 4. Consumption logic. By default: consume on success (matches potion
+	# semantics — a failed cast preserves the dose). Items that are NOT
+	# consumed on use carry `misc_magic_consumable: false` on the catalog
+	# entry (Drums of Panic, future Horn of Blasting, etc.) and instead
+	# decrement uses_remaining if a default_charges is set. V1 keeps the
+	# pattern simple: dusts consume; non-consumables don't decrement
+	# (= unlimited uses, mirroring activate_worn_item V1 behavior).
+	var consumed: bool = false
+	var message: String = ""
+	var is_consumable: bool = bool(catalog_entry.get("misc_magic_consumable", true))
+	if result != null and result.success:
+		if is_consumable:
+			consumed = CampaignRepository.remove_inventory_item(item_id)
+		message = "Used '%s' — cast %s." % [
+			str(catalog_entry.get("name", item_key)),
+			binding.get("spell_key", ""),
+		]
+	else:
+		var failures: Array = result.failures if result != null else []
+		message = "Failed to activate '%s': %s" % [
+			str(catalog_entry.get("name", item_key)),
+			"; ".join(failures) if not failures.is_empty() else "unknown error"]
+
+	return {
+		"success": result != null and result.success,
+		"message": message,
+		"consumed": consumed,
+		"spell_key": binding.get("spell_key", ""),
+		"casting_result": result,
+	}
+
+
 ## Apply a Rod of Cancellation to a target magic item. The rod drains the
 ## target of all magical power on touch — `is_magical` cleared, `magical_bonus`
 ## zeroed, `uses_remaining` zeroed, `is_cursed` cleared (per RAW the curse

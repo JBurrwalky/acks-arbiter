@@ -346,15 +346,13 @@ DEFER_BUILD = {
     # analogous `use_misc_magic_active` entry point (same gap as the dusts).
     # When that entry point lands, drums binds to cause_fear with target_mode
     # area_at_point (drummer designates a center; all listeners save).
-    "drums_of_panic": "misc_magic item needs `use_misc_magic_active` entry point (same gap as the dusts); cause_fear binding ready when entry point lands (would bind area_at_point centered on drummer)",
-    # Dusts: thrown-powder consumables that conceptually act like potions but
-    # live in the misc_magic catalog category. drink_potion enforces
-    # category=='potion'; a future pass adds a `use_dust` entry point on
-    # MagicItemActivator that accepts misc_magic consumables. Spell bindings
-    # would be invisibility (Disappearance) and detect_invisible (Appearance)
-    # when the entry point lands.
-    "dust_of_disappearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to invisibility)",
-    "dust_of_appearance": "misc_magic consumable needs a `use_dust` activator entry point (binds to detect_invisible)",
+    "drums_of_panic": "use_misc_magic_active entry point LANDED 2026-06-01, but the RAW source spell `panic` (pc_spell_catalog_f-u.xml:621-637 — 'Used to create drums of panic') has an empty effect block; CastingResolver refuses spells without an effect_registry payload. Bind one-line to panic (arcane L5, area within 240', save vs Spells negates, 30 rounds flee) once the panic spell-effect pass implements the cause-fear-area mechanic. Older project note incorrectly aimed at cause_fear — Panic is a distinct L5 arcane spell, not the L1 divine cause_fear used by Wand of Fear.",
+    # Dust of Disappearance + Dust of Appearance UNBLOCKED 2026-06-01: the
+    # use_misc_magic_active entry point on MagicItemActivator now routes
+    # misc_magic items with category=='misc_magic' through the same
+    # spell_binding pipeline as drink_potion / activate_charged_item /
+    # activate_worn_item. Bindings landed in SPELL_BINDING_MAP above
+    # (invisibility + detect_invisible respectively).
     # ----------------------------------------------------------------------
     # Tier 3 deferrals (Jedidiah triage 2026-05-29):
     # ----------------------------------------------------------------------
@@ -839,6 +837,27 @@ SPELL_BINDING_MAP = {
         # Jedidiah finds RAW prose specifying Other.
         "spell_key": "polymorph_self", "tradition": "arcane",
         "caster_level": 7, "target_mode": "self",
+    },
+    # Misc-magic active items (2026-06-01): routed through
+    # MagicItemActivator.use_misc_magic_active. The activator dispatches on
+    # category=="misc_magic" + spell_binding presence. Dusts are consumed
+    # on success (misc_magic_consumable defaults to true). Future
+    # non-consumable misc_magic actives (Horn of Blasting when its
+    # magnitude lands, etc.) stamp `misc_magic_consumable: false`.
+    # RAW: Dust of Disappearance — invisibility spell as source (project
+    # binding; RAW summary in `acore_treasure_and_magic_items_rules.xml`
+    # lists the dust in the misc_magic table without a dedicated mechanic
+    # entry). Arcane L2 minimum caster level = 3.
+    "dust_of_disappearance": {
+        "spell_key": "invisibility", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
+    },
+    # RAW: Dust of Appearance — detect_invisible as the obvious counterpart
+    # to Disappearance. Same situation: misc_magic table lists the item
+    # without dedicated mechanic prose. Arcane L2 min caster = 3.
+    "dust_of_appearance": {
+        "spell_key": "detect_invisible", "tradition": "arcane",
+        "caster_level": 3, "target_mode": "self",
     },
     # Tier 4 Cluster A (2026-06-01): potion_of_gaseous_form deferred
     # pending the gaseous_form spell's effect block. RAW spell exists
