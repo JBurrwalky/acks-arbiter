@@ -341,7 +341,11 @@ DEFER_BUILD = {
     # analogous `use_misc_magic_active` entry point (same gap as the dusts).
     # When that entry point lands, drums binds to cause_fear with target_mode
     # area_at_point (drummer designates a center; all listeners save).
-    "drums_of_panic": "use_misc_magic_active entry point LANDED 2026-06-01, but the RAW source spell `panic` (pc_spell_catalog_f-u.xml:621-637 — 'Used to create drums of panic') has an empty effect block; CastingResolver refuses spells without an effect_registry payload. Bind one-line to panic (arcane L5, area within 240', save vs Spells negates, 30 rounds flee) once the panic spell-effect pass implements the cause-fear-area mechanic. Older project note incorrectly aimed at cause_fear — Panic is a distinct L5 arcane spell, not the L1 divine cause_fear used by Wand of Fear.",
+    # Drums of Panic UNBLOCKED 2026-06-01: the panic spell effect block
+    # landed in data/spells/spell_catalog.json (area_at_point 240' sphere
+    # centered on caster, save vs Spells negates, apply frightened
+    # condition for 30 rounds). Drums of Panic now binds to `panic`
+    # via the existing use_misc_magic_active entry point.
     # Dust of Disappearance + Dust of Appearance UNBLOCKED 2026-06-01: the
     # use_misc_magic_active entry point on MagicItemActivator now routes
     # misc_magic items with category=='misc_magic' through the same
@@ -413,7 +417,14 @@ DEFER_BUILD = {
     # potion stays findable + sellable; binding lands when the
     # gaseous_form spell-effect pass wires the is_gaseous flag + AC/
     # movement overrides per RAW pc_spell_catalog_f-u.xml:90-126.
-    "potion_of_gaseous_form": "gaseous_form spell effect not yet implemented (empty effect block); bind one-line when spell-effect pass lands the is_gaseous flag + AC 11 + movement 30'/round per RAW pc_spell_catalog_f-u.xml:90-126",
+    # Potion of Gaseous Form UNBLOCKED 2026-06-01: the gaseous_form spell
+    # effect block landed (apply_flag is_gaseous with metadata carrying
+    # ac_override 11, movement_rate_override 30, drops_carried_items,
+    # immune_to_non_magical_weapons, passes_closed_doors_and_portcullis).
+    # The flag is set today; the portcullis-passability consumer is wired
+    # in MovementResolver._can_enter_3d. AC/movement/damage/drop-inventory
+    # consumer integration follows in a future pass; the flag metadata
+    # documents the contract.
     # Other items will land here as we finish triaging — Bag of Devouring,
     # Helm of Telepathy edge cases, etc.
 }
@@ -955,16 +966,24 @@ SPELL_BINDING_MAP = {
         "spell_key": "detect_invisible", "tradition": "arcane",
         "caster_level": 3, "target_mode": "self",
     },
-    # Tier 4 Cluster A (2026-06-01): potion_of_gaseous_form deferred
-    # pending the gaseous_form spell's effect block. RAW spell exists
-    # (pc_spell_catalog_f-u.xml:90-126, Arcane L3) but the catalog entry
-    # carries an empty `effect` block — CastingResolver refuses to cast
-    # spells with no effect_registry payload. Stamped via DEFER_BUILD with
-    # a clear "spell effect not yet implemented" reason; the binding
-    # entry can land in a one-line addition once the gaseous_form spell
-    # effect is implemented (sets is_gaseous flag, drops carried items,
-    # AC -> 11, movement -> 30'/round, immune to non-magical weapons per
-    # the RAW spell description).
+    # Tier 4 Cluster A (2026-06-01): potion_of_gaseous_form UNBLOCKED
+    # 2026-06-01 — the gaseous_form spell effect block landed (apply_flag
+    # is_gaseous with metadata carrying ac_override 11, movement 30'/round,
+    # drops_carried_items, immune_to_non_magical_weapons,
+    # passes_closed_doors_and_portcullis). Arcane L3, min caster = 5.
+    "potion_of_gaseous_form": {
+        "spell_key": "gaseous_form", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+    # Drums of Panic UNBLOCKED 2026-06-01 (sibling commit): the `panic`
+    # spell effect block landed (area sphere 240' centered on caster,
+    # save vs Spells negates, apply frightened condition for 30 rounds).
+    # Drums use the misc_magic category; activation routes via
+    # use_misc_magic_active. Arcane L5, min caster = 9.
+    "drums_of_panic": {
+        "spell_key": "panic", "tradition": "arcane",
+        "caster_level": 9, "target_mode": "self",
+    },
     "medallion_of_esp": {
         # Worn-triggered: wearer activates to read surface thoughts in a
         # 30' area (the spell's standard range). Re-activate at will.

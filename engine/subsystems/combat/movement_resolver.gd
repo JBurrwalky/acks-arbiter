@@ -794,6 +794,25 @@ func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
 	var cell := _voxel_map.get_cell(to_pos)
 	var level_diff: int = abs(to_pos.z - from_pos.z)
 
+	# Gaseous Form auto-detect (Tier 4 follow-up, 2026-06-01). A
+	# combatant carrying the is_gaseous EntityFlag (set by the
+	# Gaseous Form spell or Potion of Gaseous Form) moves in gas
+	# semantics — passes any air cell regardless of door_state +
+	# ignores support. Per RAW pc_spell_catalog_f-u.xml:90-126
+	# "can flow below doors and through small unsealed spaces."
+	# Auto-promotion happens here so existing callers (charging,
+	# pathfinding, AI movement) all get the bypass without each
+	# needing to detect is_gaseous and pass "gaseous" explicitly.
+	# NOTE: Combatants expose flags via get_flags() (which returns
+	# the character's flags for PCs and _monster_flags for monsters);
+	# we use that accessor — there's no public `flags` property.
+	if movement_type == "ground" and mover_id != "" and _roster != null:
+		var mover: Combatant = _roster.get_by_id(mover_id)
+		if mover != null:
+			var mover_flags: EntityFlags = mover.get_flags()
+			if mover_flags != null and mover_flags.has_flag("is_gaseous"):
+				movement_type = "gaseous"
+
 	match movement_type:
 		"ground":
 			var ground_passable: bool
@@ -813,6 +832,22 @@ func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
 
 		"flying":
 			return not cell.blocks_flight()
+
+		"gaseous":
+			# Gas flows through any air cell — closed/locked/stuck doors
+			# and closed portcullises don't block (RAW). Solid walls
+			# still block (gas can't pass solid matter). No support
+			# requirement (gas doesn't fall). Vertical movement: 1 level
+			# diff requires the same stair-connection check as ground
+			# walkers (gas needs a vertical opening); level diff 2+
+			# blocked (matches ground semantics — V1 simplification).
+			if not cell.is_passable_by_gaseous():
+				return false
+			if level_diff == 0:
+				return true
+			if level_diff == 1:
+				return _has_stair_connection(from_pos, to_pos)
+			return false
 
 		"tunnel_burrow", "earth_pass":
 			return not cell.blocks_burrow()

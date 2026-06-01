@@ -417,6 +417,7 @@
 [ext_resource type="Script" path="res://tests/test_decanter_of_endless_water.gd" id="401_decanter_of_endless_water_tests"]
 [ext_resource type="Script" path="res://tests/test_oil_of_slipperiness.gd" id="402_oil_of_slipperiness_tests"]
 [ext_resource type="Script" path="res://tests/test_tier4_cluster_a.gd" id="403_tier4_cluster_a_tests"]
+[ext_resource type="Script" path="res://tests/test_panic_gaseous_form.gd" id="404_panic_gaseous_form_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1668,3 +1669,6 @@ script = ExtResource("402_oil_of_slipperiness_tests")
 
 [node name="Tier4ClusterATests" type="Node" parent="."]
 script = ExtResource("403_tier4_cluster_a_tests")
+
+[node name="PanicGaseousFormTests" type="Node" parent="."]
+script = ExtResource("404_panic_gaseous_form_tests")

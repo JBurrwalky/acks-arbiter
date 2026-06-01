@@ -244,10 +244,9 @@ const EXPECTED_DEFER_KEYS := [
 	# Tier 2 deferrals (2026-05-29): wand_of_fear shipped 2026-05-29
 	# (cause_fear). Dusts (Disappearance + Appearance) shipped 2026-06-01
 	# via use_misc_magic_active entry point. 5 Control potions + 2
-	# Command rings shipped 2026-06-01 via the Control resolver
-	# (direct_potion_effect / direct_worn_active_effect). Drums of Panic
-	# stays deferred pending the `panic` spell's effect block.
-	"drums_of_panic",   # panic spell effect not yet implemented; bind one-line when it lands
+	# Command rings shipped 2026-06-01 via the Control resolver. Drums
+	# of Panic + Potion of Gaseous Form shipped 2026-06-01 via the
+	# panic + gaseous_form spell-effect pass.
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,
 	# and persistent-worn stat-bonuses needing engine extensions.
@@ -261,9 +260,6 @@ const EXPECTED_DEFER_KEYS := [
 	"scarab_of_protection", "cube_of_frost_resistance",
 	"eyes_of_the_eagle", "necklace_of_adaptation", "brooch_of_shielding",
 	"elven_cloak", "elven_boots",
-	# Tier 4 Cluster A defer (2026-06-01): gaseous_form spell has empty
-	# effect block — Potion of Gaseous Form binding pending spell-effect pass.
-	"potion_of_gaseous_form",
 ]
 
 

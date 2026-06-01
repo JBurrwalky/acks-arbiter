@@ -29823,3 +29823,63 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 3. **Spell-effect pass on `panic`** — un-defers Drums of Panic immediately.
 4. **Spell-effect pass on `gaseous_form`** — un-defers Potion of Gaseous Form immediately.
 5. **Spell-effect pass on `charm_animal`** — adds the side-flip step for parity with charm_person / charm_monster.
+
+
+## Session 2026-06-01 — Spell-effect pass: panic + gaseous_form (+ portcullis bypass polish)
+
+**Task:** Implement effect blocks for two spells whose items had already-wired-but-stalled bindings: `panic` (un-defers Drums of Panic) and `gaseous_form` (un-defers Potion of Gaseous Form). User-requested polish: gaseous entities pass through closed portcullises — included since the agent's exploration showed it was ~5-10 lines.
+**Model used:** Sonnet 4.6 for architectural exploration (Explore agent — mapped panic, gaseous_form, frightened condition, is_gaseous flag, portcullis handling, and spell-effect-block patterns) + implementation + tests.
+**Completed:**
+- **`data/spells/spell_catalog.json:panic`** effect block — Arcane L5; `area_at_point` sphere `radius_feet: 240` centered on caster; `save_spec` vs Spells negates; `duration_model` 30 rounds fixed; `resolution` applies the existing `frightened` condition (condition_catalog.json: prevents_attacking + prevents_casting + prevents_speech + flees_from_source + cowers_if_cant_flee). RAW source: `pc_spell_catalog_f-u.xml:621-637` — "Used to create drums of panic." V1 deferred: 10' safe-zone exclusion around caster (needs annulus target_spec support) + explicit "running speed" movement modifier (V1 leans on frightened condition's AI flee gating).
+- **`data/spells/spell_catalog.json:gaseous_form`** effect block — Arcane L3; `single_creature` target; `save_spec` vs Spells negates; `duration_model` 6 turns fixed; `resolution` applies the existing `is_gaseous` EntityFlag with consumer metadata documenting `ac_override: 11`, `movement_rate_override_feet_per_round: 30`, `drops_carried_items_on_apply: true`, `immune_to_non_magical_weapons: true`, `passes_closed_doors_and_portcullis: true`. RAW source: `pc_spell_catalog_f-u.xml:90-126` — "Used to create potions of gaseous form." V1 wires ONE consumer (portcullis bypass — see below); other consumer integrations follow the "set flag, consumer follows" pattern already used by Ring of Water Walking + Amulet vs Crystal Balls.
+- **`engine/shared_types/voxel_cell.gd:is_passable_by_gaseous()`** — new VoxelCell method returning true for any air cell regardless of `door_state` (closed/locked/stuck doors + closed portcullises don't block gas). RAW: gas flows below doors and through small unsealed spaces. Solid walls + liquid cells still block (gas can't pass solid matter; liquid V1 simplification).
+- **`engine/subsystems/combat/movement_resolver.gd:_can_enter_3d`** — new `"gaseous"` movement_type branch using `is_passable_by_gaseous()` + no support check (gas doesn't fall) + same stair connection check as ground for vertical moves. NEW auto-detection: when `movement_type == "ground"` AND the mover (via roster lookup by `mover_id`) carries the `is_gaseous` flag, movement_type promotes to "gaseous" automatically. Existing callers (charging, pathfinding, AI movement, exploration) all get the bypass without each needing to detect is_gaseous + pass it explicitly.
+- **Combatant flag accessor**: the auto-detect uses `mover.get_flags()` (the public accessor that returns the character's flags for PCs and `_monster_flags` for monsters); a first-cut attempt at `mover.flags` errored at runtime because Combatant doesn't expose `flags` as a public property — fixed before commit.
+- **`tools/extract_magic_item_catalog.py:SPELL_BINDING_MAP`** — 2 new bindings: `drums_of_panic → panic` (arcane caster_level 9 = min arcane L5 caster; target_mode self; activates via use_misc_magic_active path) and `potion_of_gaseous_form → gaseous_form` (arcane caster_level 5; target_mode self; activates via drink_potion). Removed both items from `DEFER_BUILD` with in-place comments explaining the unblock.
+- **Tests** — new file `tests/test_panic_gaseous_form.gd` (9 tests). Covers catalog bindings (Drums of Panic → panic; Potion of Gaseous Form → gaseous_form), panic mechanics (failed-save → frightened applied; succeeded-save → not applied; target_spec shape pinned), gaseous_form mechanics (failed-save → is_gaseous flag set; consumer-metadata keys pinned including portcullis bypass), portcullis bypass (gaseous passes closed portcullis; solid wall still blocks). The test stub `_FlagAndConditionTarget` exposes a `get_flags()` accessor for the spell-effect dispatcher's `_get_flags`.
+- **Existing tests updated to reflect un-deferred state**:
+  - `test_magic_item_activator.gd:test_drums_of_panic_remains_deferred_pending_panic_spell_effect` renamed + inverted to `test_drums_of_panic_binds_to_panic_after_spell_effect_landed` (now asserts the binding, not the defer).
+  - `test_magic_item_activator.gd:test_use_misc_magic_active_with_no_binding_fails_without_consuming` exemplar switched from Drums of Panic (now bound) to **Crystal Ball** (still deferred Cluster D — scrying UI not implemented).
+  - `test_tier4_cluster_a.gd:test_potion_of_gaseous_form_catalog_carries_defer_reason` renamed + inverted to `test_potion_of_gaseous_form_binds_to_gaseous_form_after_spell_effect_landed`.
+  - `test_tier4_cluster_a.gd:test_drink_potion_of_gaseous_form_returns_deferred_message` renamed + inverted to `test_drink_potion_of_gaseous_form_succeeds_via_spell_binding`.
+  - `test_tier4_cluster_a.gd:_make_potion_harness` updated to pass the autoload `DiceSystem` as the dice parameter (previously null; gaseous_form's `save_spec` requires a real dice system to roll the save).
+  - `test_magic_item_catalog.gd:EXPECTED_DEFER_KEYS` — both items removed.
+- **`data/treasure/magic_item_catalog.json`** regenerated; both items now stamp `spell_binding` (no `defer_reason`).
+- **`generation/gdd-treasure-item-backing.md`** §14 — new row capturing the spell-effect pass + portcullis bypass + V1 deferred consumer integrations.
+
+**Decisions made:**
+- **Skipped the 10' safe-zone exclusion** in panic's target_spec. The existing targeting layer supports sphere `area_at_point` but not annulus. V1 uses a flat 240' sphere centered on caster — allies within 10' would also be hit. Documented in the spell's notes + the GDD as a deferred polish. Follow-up: extend target_spec to support `inner_radius_feet` so any area effect can have a central exclusion.
+- **Did NOT wire AC/movement/damage/drop-inventory consumers for gaseous_form in V1.** Each one is a small integration into a different combat subsystem (AC lookup, movement budget, damage resolver, inventory mutation). Doing them all would inflate this commit substantially. The flag's metadata documents the contract — when each consumer integration lands as a follow-up, the gameplay effect manifests. This matches the established "set the flag, consumer follows" pattern (Ring of Water Walking, Amulet vs Crystal Balls).
+- **Auto-detect gaseous via `_can_enter_3d`** rather than threading "gaseous" through every caller. The auto-detection inside the central passability gate covers charging, pathfinding, AI movement, and exploration in one stroke — vs. modifying 4+ call sites individually.
+- **Portcullis polish included** because the agent's exploration confirmed it was 5-10 lines + no new infrastructure (portcullis was already modeled as `door_type = "portcullis"` on VoxelCell with `door_state` semantics matching other doors). The bypass slots into `_can_enter_3d`'s new gaseous branch.
+- **Drums of Panic binds to `panic`, not `cause_fear`.** Confirmed by the corrected defer reason from the prior commit (`12bfabf`) — the older project note had incorrectly aimed at cause_fear (which is the L1 divine spell used by Wand of Fear). Panic is the distinct L5 arcane RAW source spell per `pc_spell_catalog_f-u.xml:621-637`.
+- **Combatant flag access via `get_flags()`**, not a public `flags` property. The first-cut code errored because Combatant doesn't expose `flags` directly — it has `_monster_flags` (private) and a `get_flags()` getter that returns the right flags container (character.flags for PCs, `_monster_flags` for monsters). Fixed before commit; tests confirm the auto-detect now works correctly.
+
+**Interfaces defined or changed:**
+- New `VoxelCell.is_passable_by_gaseous() -> bool` — returns `solidity == "air"`.
+- New `"gaseous"` movement_type kind in `MovementResolver._can_enter_3d`. Existing kinds (`"ground"`, `"flying"`, `"tunnel_burrow"`, `"earth_pass"`, `"climbing"`) unchanged.
+- New auto-detect in `_can_enter_3d`: ground + roster + mover.is_gaseous → promote to "gaseous".
+- New spell-effect-block field: `is_gaseous` flag's metadata Dictionary carries `ac_override`, `movement_rate_override_feet_per_round`, `drops_carried_items_on_apply`, `immune_to_non_magical_weapons`, `passes_closed_doors_and_portcullis` — consumer contract for future integration work.
+- New SPELL_BINDING_MAP entries: `drums_of_panic` (panic; arcane caster_level 9; target_mode self) + `potion_of_gaseous_form` (gaseous_form; arcane caster_level 5; target_mode self).
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- New file `tests/test_panic_gaseous_form.gd` (9 tests; new `_FlagAndConditionTarget` stub class). All pass.
+- Test runner registered (4-edit pattern in `test_runner.tscn` + `test_runner.gd`).
+- Existing tests inverted/renamed: 4 in `test_magic_item_activator.gd` + `test_tier4_cluster_a.gd` (see Completed list).
+- Full suite: **398 passed / 19 failed** — **+1 new passing suite** vs. the 397/19 prior baseline. Net-zero new failures (the 19 are pre-existing carry-forwards — proficiency UI, scheduler, ZoC, charge timing, dice queue, ticking pacing — all unrelated).
+
+**Known issues:**
+- **Panic 10' safe-zone exclusion deferred.** The targeting layer doesn't yet support annulus shapes (sphere with inner exclusion radius). V1 uses a 240' sphere; allies near the caster also get hit. Follow-up: add `inner_radius_feet` to area_at_point sphere target_spec.
+- **Gaseous form consumer integrations deferred:** AC override to 11, movement rate override to 30'/round, immune to non-magical weapons in damage resolver, drops carried items on apply. Each is a small follow-up; the flag metadata documents the contract.
+- **Running-speed modifier for frightened+panic deferred.** V1 leans on the frightened condition's AI flee gating without modulating movement speed.
+- The is_gaseous auto-detect requires the mover to be in the roster (a Combatant lookup by `mover_id`). Out-of-combat movement (e.g., dungeon exploration where the party isn't yet in combat) doesn't have a roster — gaseous bypass won't fire there until the exploration code uses a similar lookup. Documented as a known limitation; combat use case works today.
+
+**Next session should:**
+1. **Migrate Control items to the effect-tracker pipeline** so duration-revert + dispel work end-to-end via the unified `_unwind_effect_state` chain (the follow-up I noted at the end of the Charm side-flip commit). The MagicItemActivator's `_apply_control_effect` does the side flip inline today; refactoring it to register an active effect with `applied_side_flips` + `applied_flags` records would unify Charm and Control behind one cleanup chain.
+2. **Magic swords cluster** (Flame Tongue + Frost Brand via damage typing; Life Drinker, Luck Blade, Vorpal Sword each bespoke).
+3. **Spell-effect pass on `charm_animal`** — adds the side-flip step for parity with charm_person / charm_monster.
+4. **Consumer integration follow-ups for gaseous_form:** AC override, movement rate, damage immunity, drop-inventory. Each is a small follow-up integration.
+5. **annulus `target_spec`** for area_at_point — adds the panic 10' safe-zone exclusion + future spells (e.g., a Fire Storm with a central caster zone).

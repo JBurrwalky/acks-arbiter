@@ -27,7 +27,7 @@ func run_all_tests() -> void:
 	# Catalog shape (no DB required).
 	test_amulet_catalog_carries_worn_passive_flag()
 	test_displacer_cloak_catalog_carries_magical_bonus_2()
-	test_potion_of_gaseous_form_catalog_carries_defer_reason()
+	test_potion_of_gaseous_form_binds_to_gaseous_form_after_spell_effect_landed()
 	test_potion_of_poison_catalog_carries_direct_effect()
 	test_rod_of_cancellation_catalog_carries_special_charged_effect()
 	# Worn-magic resolver (DB-backed for inventory rows).
@@ -37,7 +37,7 @@ func run_all_tests() -> void:
 	test_displacer_cloak_grants_plus_two_to_all_saves()
 	test_displacer_cloak_clears_ac_and_saves_on_unequip()
 	# Potion of Gaseous Form — end-to-end via drink_potion.
-	test_drink_potion_of_gaseous_form_returns_deferred_message()
+	test_drink_potion_of_gaseous_form_succeeds_via_spell_binding()
 	# Potion of Poison — save success / failure / consumption.
 	test_potion_of_poison_save_success_drinker_survives()
 	test_potion_of_poison_save_failure_drinker_dies()
@@ -75,23 +75,22 @@ func test_displacer_cloak_catalog_carries_magical_bonus_2() -> void:
 			int(entry.get("magical_bonus", 0)))
 
 
-func test_potion_of_gaseous_form_catalog_carries_defer_reason() -> void:
+func test_potion_of_gaseous_form_binds_to_gaseous_form_after_spell_effect_landed() -> void:
 	# RAW: Potion of Gaseous Form replays the Gaseous Form spell
 	# (pc_spell_catalog_f-u.xml:90-126; "Used to create potions of gaseous
-	# form"). The spell exists in the spell catalog but has an empty
-	# effect block — the CastingResolver guards against empty payloads
-	# and refuses to fire. Until the spell-effect pass wires
-	# is_gaseous + AC 11 + movement-30/round per RAW, the potion is
-	# deferred (findable + sellable, drinking returns the standard
-	# "no spell_binding" failure). The defer entry documents the
-	# one-line addition needed to flip on the binding.
+	# form"). The gaseous_form spell effect block landed 2026-06-01
+	# (apply_flag is_gaseous with consumer metadata for AC override,
+	# movement override, drops carried items, immune to non-magical,
+	# passes closed doors and portcullis). Potion now binds.
 	var catalog := MagicItemCatalog.new()
 	var entry: Dictionary = catalog.get_item("potion_of_gaseous_form")
 	check(not entry.is_empty(), "potion_of_gaseous_form must exist in catalog")
-	check(entry.has("defer_reason"),
-		"potion_of_gaseous_form should carry a defer_reason (gaseous_form spell effect not yet implemented)")
-	check(not entry.has("spell_binding"),
-		"potion_of_gaseous_form should NOT have spell_binding (deferred pending spell effect)")
+	check(not entry.has("defer_reason"),
+		"potion_of_gaseous_form should NOT carry a defer_reason after the spell effect landed")
+	var binding: Dictionary = entry.get("spell_binding", {})
+	check(str(binding.get("spell_key", "")) == "gaseous_form",
+		"binding spell_key should be 'gaseous_form'; got '%s'" %
+			str(binding.get("spell_key", "")))
 
 
 func test_potion_of_poison_catalog_carries_direct_effect() -> void:
@@ -244,12 +243,11 @@ func test_displacer_cloak_clears_ac_and_saves_on_unequip() -> void:
 # Potion of Gaseous Form (spell binding)
 # ---------------------------------------------------------------------------
 
-func test_drink_potion_of_gaseous_form_returns_deferred_message() -> void:
-	# Until the gaseous_form spell effect is implemented, drinking a
-	# Potion of Gaseous Form should fail cleanly with the standard
-	# no-spell-binding message — and NOT consume the bottle (the
-	# hand-drained-bottle rule: a magic-system failure preserves the
-	# dose).
+func test_drink_potion_of_gaseous_form_succeeds_via_spell_binding() -> void:
+	# With the gaseous_form spell effect landed 2026-06-01, drinking the
+	# potion now routes through the spell pipeline and succeeds. Bottle
+	# consumed on success (matches drink_potion's general "successful
+	# cast → consume the bottle" rule).
 	_setup()
 	var harness := _make_potion_harness()
 	var drinker := _make_drinker()
@@ -260,14 +258,13 @@ func test_drink_potion_of_gaseous_form_returns_deferred_message() -> void:
 	})
 	var result: Dictionary = MagicItemActivator.drink_potion(
 		item_id, drinker, harness.resolver, harness.catalog)
-	check(bool(result["success"]) == false,
-		"deferred potion should fail to drink (binding pending)")
-	check(bool(result["consumed"]) == false,
-		"failed deferred-potion drink should NOT consume the bottle")
-	check(str(result["message"]).contains("spell_binding"),
-		"failure message should mention spell_binding, got: %s" % str(result["message"]))
-	check(not CampaignRepository.get_inventory_item_by_id(item_id).is_empty(),
-		"bottle row should survive the failed attempt")
+	check(bool(result["success"]) == true,
+		"potion drink should succeed via spell_binding; message: %s" %
+			str(result["message"]))
+	check(bool(result["consumed"]) == true,
+		"successful drink consumes the bottle")
+	check(str(result["spell_key"]) == "gaseous_form",
+		"spell_key should be 'gaseous_form', got '%s'" % str(result["spell_key"]))
 	_teardown()
 
 
@@ -539,11 +536,11 @@ func _make_drinker() -> CharacterData:
 ## Mirrors the harness pattern in tests/test_magic_item_activator.gd —
 ## CastingResolver needs 9 dependencies; we wire minimal real instances
 ## (SpellRegistry + SpellEffectRegistry + ActiveEffectTracker +
-## ConditionCatalog + CustomResolverRegistry + null geometry + null repo +
-## null dice). The geometry/repo/dice nulls are fine because the V1
-## potion bindings we exercise (gaseous_form) target self and have empty
-## effect blocks — the resolve path succeeds without geometry calculations
-## or repository writes.
+## ConditionCatalog + CustomResolverRegistry + null geometry + null repo
+## + the autoload DiceSystem). The DiceSystem autoload is required for
+## potions whose spell has a save_spec (gaseous_form, post-2026-06-01).
+## Tests that need deterministic outcomes can pre-set
+## GameState.dice_overrides.
 func _make_potion_harness() -> Dictionary:
 	var sp_registry := SpellRegistry.new()
 	var ef_registry := SpellEffectRegistry.new(sp_registry)
@@ -551,7 +548,7 @@ func _make_potion_harness() -> Dictionary:
 	var cc := ConditionCatalog.new()
 	var cr := CustomResolverRegistry.new()
 	var resolver := CastingResolver.new(
-		sp_registry, ef_registry, tracker, cc, cr, null, null, null)
+		sp_registry, ef_registry, tracker, cc, cr, null, null, DiceSystem)
 	return {
 		"resolver": resolver,
 		"catalog": MagicItemCatalog.new(),

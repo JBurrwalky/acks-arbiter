@@ -2987,7 +2987,40 @@
     ],
     "range": "60'",
     "duration": "6 turns",
-    "summary": "Transforms the subject into a translucent cloud of gas that can pass through small openings."
+    "summary": "Transforms the subject into a translucent cloud of gas that can pass through small openings.",
+    "effect": {
+      "range_feet": 60,
+      "duration_model": {
+        "kind": "fixed",
+        "amount": 6,
+        "unit": "turns"
+      },
+      "target_spec": {
+        "kind": "single_creature",
+        "count": 1,
+        "creature_filter": {
+          "living_only": true
+        }
+      },
+      "save_spec": {
+        "category": "spells",
+        "on_success": "negate"
+      },
+      "resolution": [
+        {
+          "kind": "apply_flag",
+          "flag_key": "is_gaseous",
+          "metadata": {
+            "ac_override": 11,
+            "movement_rate_override_feet_per_round": 30,
+            "drops_carried_items_on_apply": true,
+            "immune_to_non_magical_weapons": true,
+            "passes_closed_doors_and_portcullis": true
+          }
+        }
+      ],
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:90-126; acore_treasure_and_magic_items_rules.xml gaseous_form_potion): 60' range, 6 turns duration, target 'one creature'. Subject transforms into translucent gas. All worn/carried items drop immediately. Cannot attack. Moves 30'/round; can flow below doors and through small unsealed spaces. AC 11. Immune to non-magical weapons. Save vs Spells negates (target only saves if unwilling — V1 simplification assumes self-cast or willing target). V1 implementation (2026-06-01): apply_flag is_gaseous + metadata carries the override values for future consumer integration. WIRED CONSUMERS: MovementResolver._can_enter_3d auto-detects is_gaseous and treats the mover as 'gaseous' movement type — passes any air cell including closed doors and portcullises (RAW 'flow below doors and through small unsealed spaces'). DEFERRED CONSUMERS (forward-looking; the flag metadata documents the contract): (a) AC override to 11 in combat AC lookup; (b) movement rate override to 30'/round in movement budget computation; (c) immune to non-magical weapons in damage resolver; (d) drop carried items on apply in inventory mutation. Each consumer integration is a small follow-up; the flag is set today so any code that wants to honor gaseous semantics can read it."
+    }
   },
   {
     "spell_key": "geas",
@@ -4826,7 +4859,34 @@
     ],
     "range": "0'",
     "duration": "instantaneous",
-    "summary": "Causes affected creatures to drop everything and flee in blind panic unless they save."
+    "summary": "Causes affected creatures to drop everything and flee in blind panic unless they save.",
+    "effect": {
+      "range_feet": 0,
+      "duration_model": {
+        "kind": "fixed",
+        "amount": 30,
+        "unit": "rounds"
+      },
+      "target_spec": {
+        "kind": "area_at_point",
+        "shape": "sphere",
+        "radius_feet": 240,
+        "creature_filter": {
+          "living_only": true
+        }
+      },
+      "save_spec": {
+        "category": "spells",
+        "on_success": "negate"
+      },
+      "resolution": [
+        {
+          "kind": "apply_condition",
+          "condition_key": "frightened"
+        }
+      ],
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:621-637): range 0' (centered on caster), area 'all creatures within 240' except those inside a 10' radius safe zone', instantaneous cast with 30-round fleeing duration on failed save vs Spells. Used to create drums of panic (acore_treasure_and_magic_items_rules.xml miscellaneous_magic_table). V1 implementation (2026-06-01): applies the existing `frightened` condition (condition_catalog.json: prevents_attacking + prevents_casting + prevents_speech + flees_from_source + cowers_if_cant_flee) for 30 rounds. DEFERRED RAW polish: (a) 10' safe zone exclusion around the caster — V1 uses a flat 240' sphere centered on caster; allies within 10' would also be hit until the targeting layer supports annulus shapes; (b) 'running speed' movement modifier — V1 relies on the frightened condition's AI gating (flee from source); the running-speed numerical bonus is a follow-up when ACKS movement modes mature."
+    }
   },
   {
     "spell_key": "pass_without_trace",

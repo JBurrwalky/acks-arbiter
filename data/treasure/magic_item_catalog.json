@@ -369,7 +369,12 @@
       "encumbrance_units": 167,
       "value_gp": 1500,
       "creation_time_days": 21,
-      "defer_reason": "gaseous_form spell effect not yet implemented (empty effect block); bind one-line when spell-effect pass lands the is_gaseous flag + AC 11 + movement 30'/round per RAW pc_spell_catalog_f-u.xml:90-126"
+      "spell_binding": {
+        "spell_key": "gaseous_form",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_giant_control",
@@ -1674,7 +1679,12 @@
       "encumbrance_units": 167,
       "value_gp": 125000,
       "creation_time_days": 500,
-      "defer_reason": "use_misc_magic_active entry point LANDED 2026-06-01, but the RAW source spell `panic` (pc_spell_catalog_f-u.xml:621-637 \u2014 'Used to create drums of panic') has an empty effect block; CastingResolver refuses spells without an effect_registry payload. Bind one-line to panic (arcane L5, area within 240', save vs Spells negates, 30 rounds flee) once the panic spell-effect pass implements the cause-fear-area mechanic. Older project note incorrectly aimed at cause_fear \u2014 Panic is a distinct L5 arcane spell, not the L1 divine cause_fear used by Wand of Fear."
+      "spell_binding": {
+        "spell_key": "panic",
+        "tradition": "arcane",
+        "caster_level": 9,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "dust_of_appearance",

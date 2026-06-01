@@ -118,6 +118,18 @@ func is_passable_by_walker() -> bool:
 	return true
 
 
+## Whether a creature in Gaseous Form (Arcane L3 Gaseous Form spell, Potion
+## of Gaseous Form) can occupy this cell. RAW (pc_spell_catalog_f-u.xml:
+## 90-126): "can flow below doors and through small unsealed spaces."
+## Implementation: gas passes any air cell, ignoring door_state — closed
+## doors, locked doors, stuck doors, AND closed portcullises don't block.
+## Solid walls and other solid terrain still block (gas can't pass solid
+## matter). Used by MovementResolver._can_enter_3d's "gaseous" branch
+## (and auto-detected for combatants carrying the is_gaseous flag).
+func is_passable_by_gaseous() -> bool:
+	return solidity == "air"
+
+
 ## Whether a door at this cell is impossible to open by simply pulling/pushing
 ## (i.e. not just "closed and unlocked"). Locked, stuck, undetected secret, and
 ## portcullis doors return true and block movement even when paired with the

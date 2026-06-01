@@ -158,7 +158,7 @@ func run_all_tests() -> void:
 	test_use_misc_magic_active_dust_of_appearance_succeeds_and_consumes()
 	test_use_misc_magic_active_rejects_non_misc_magic_category()
 	test_use_misc_magic_active_with_no_binding_fails_without_consuming()
-	test_drums_of_panic_remains_deferred_pending_panic_spell_effect()
+	test_drums_of_panic_binds_to_panic_after_spell_effect_landed()
 	# Tier 4 Control batch (2026-06-01): custom-control resolver +
 	# 5 Control potions + 2 Command rings via direct_potion_effect /
 	# direct_worn_active_effect.
@@ -1212,13 +1212,14 @@ func test_use_misc_magic_active_with_no_binding_fails_without_consuming() -> voi
 	var harness := _make_harness()
 	var user := _make_drinker()
 
-	# Drums of Panic is currently deferred (panic spell empty effect) — no
-	# spell_binding on the catalog entry. Use it to exercise the no-binding
-	# path.
+	# Crystal Ball is a misc_magic item that's currently deferred (Cluster D
+	# defer — scrying UI subsystem not yet implemented). Use it to exercise
+	# the no-binding path. Previously this test used Drums of Panic, but
+	# Drums got unblocked when the panic spell-effect pass landed.
 	var item_id := CampaignRepository.add_inventory_item({
 		"character_id": _DB_CHAR,
-		"item_key": "drums_of_panic",
-		"name": "Drums of Panic",
+		"item_key": "crystal_ball",
+		"name": "Crystal Ball",
 		"quantity": 1,
 		"encumbrance_units": 167,
 		"item_category": "magic",
@@ -1240,26 +1241,24 @@ func test_use_misc_magic_active_with_no_binding_fails_without_consuming() -> voi
 	print("  use_misc_magic_active_with_no_binding_fails_without_consuming: OK")
 
 
-## Documentation test — pins the project decision that Drums of Panic
-## remains DEFERRED pending the `panic` spell's effect block. Catalog
-## should carry a defer_reason and NOT a spell_binding; flipping this
-## test reminds the next maintainer to bind to `panic` (not cause_fear)
-## once the spell-effect pass implements the panic mechanic.
-func test_drums_of_panic_remains_deferred_pending_panic_spell_effect() -> void:
+## Documentation test — pins the project decision that Drums of Panic is
+## now bound to the `panic` spell (Arcane L5; the RAW source spell per
+## pc_spell_catalog_f-u.xml:621-637) since the spell-effect block landed.
+## NOT cause_fear (which is the L1 divine spell used by Wand of Fear).
+## Flipping this test reminds the next maintainer that the binding
+## target is intentionally panic, not cause_fear, and the unblock
+## came from the spell-effect pass (not a workaround binding).
+func test_drums_of_panic_binds_to_panic_after_spell_effect_landed() -> void:
 	var catalog := MagicItemCatalog.new()
 	var entry: Dictionary = catalog.get_item("drums_of_panic")
 	check(not entry.is_empty(), "drums_of_panic must exist in catalog")
-	check(entry.has("defer_reason"),
-		"drums_of_panic should carry a defer_reason (panic spell effect not yet implemented)")
-	check(not entry.has("spell_binding"),
-		"drums_of_panic should NOT have spell_binding (deferred pending panic spell effect)")
-	# The defer reason should point at the correct binding target — the
-	# Panic spell, not cause_fear. This guards against the older project
-	# note that incorrectly aimed at cause_fear.
-	check(str(entry.get("defer_reason", "")).contains("panic"),
-		"defer_reason should mention panic spell; got: %s" % str(entry.get("defer_reason", "")))
-
-	print("  drums_of_panic_remains_deferred_pending_panic_spell_effect: OK")
+	check(not entry.has("defer_reason"),
+		"drums_of_panic should NOT carry a defer_reason after the panic spell effect landed")
+	var binding: Dictionary = entry.get("spell_binding", {})
+	check(str(binding.get("spell_key", "")) == "panic",
+		"binding spell_key should be 'panic' (NOT cause_fear); got '%s'" %
+			str(binding.get("spell_key", "")))
+	print("  drums_of_panic_binds_to_panic_after_spell_effect_landed: OK")
 
 
 # ---------------------------------------------------------------------------
