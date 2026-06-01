@@ -165,7 +165,9 @@ func tick_and_cleanup(unit: String, n: int, target_lookup: Callable) -> Array:
 func _unwind_effect_state(effect: Dictionary, target_lookup: Callable) -> void:
 	## Strip modifiers / flags / damage_resistances applied by `effect` from
 	## each target's runtime state. Conditions are emitted as condition_changed
-	## (applied=false) so the condition manager can untrack.
+	## (applied=false) so the condition manager can untrack. Side flips
+	## (Charm side-flip introduced 2026-06-01) revert target.side to the
+	## original_side recorded at apply time.
 	for mod_rec in effect.get("applied_modifiers", []):
 		var entity = _resolve_target_entity(mod_rec, target_lookup)
 		var mods := _get_modifier_container(entity)
@@ -180,6 +182,20 @@ func _unwind_effect_state(effect: Dictionary, target_lookup: Callable) -> void:
 		var tid: String = String(cond_rec.get("character_id", ""))
 		var ckey: String = String(cond_rec.get("condition_key", ""))
 		EventBus.condition_changed.emit(tid, {"condition": ckey, "applied": false})
+	# Side-flip revert (Charm side-flip, Tier 4 follow-up 2026-06-01).
+	# Each record carries the original_side so cleanup can restore the
+	# pre-charm allegiance. Targets that no longer exist (lookup returns
+	# null) or no longer have a .side property no-op gracefully.
+	for side_rec in effect.get("applied_side_flips", []):
+		var entity = _resolve_target_entity(side_rec, target_lookup)
+		if entity == null:
+			continue
+		if not ("side" in entity):
+			continue
+		var orig_side: int = int(side_rec.get("original_side", -1))
+		if orig_side < 0:
+			continue
+		entity.side = orig_side
 
 
 func _resolve_target_entity(record: Dictionary, target_lookup: Callable) -> Variant:
@@ -346,6 +362,7 @@ func resolve(
 	var aggregated_modifiers: Array = []
 	var aggregated_flags: Array = []
 	var aggregated_conditions: Array = []
+	var aggregated_side_flips: Array = []  # Charm side-flip records (Tier 4, 2026-06-01)
 	var aggregated_item_modifiers: Dictionary = {}  # item_id → {item_attribute, value/value_dice, source_id}
 	var attack_hit_targets: Dictionary = {}  # target_id -> bool (set by attack_throw_vs_target)
 
@@ -373,6 +390,18 @@ func resolve(
 			"apply_condition":
 				outcome = _apply_condition(step, target_descriptor, targets_by_id, save_results, save_spec)
 				aggregated_conditions.append_array(outcome.get("records", []))
+			"flip_to_caster_team":
+				# Tier 4 follow-up (2026-06-01): Charm side-flip per Jedidiah
+				# ruling — Charmed creatures switch team allegiance to the
+				# caster's side while still under AI control. Distinguishes
+				# Charmed from Controlled (which adds direct-action UI on
+				# top, wired by magic-item Control items). The step honors
+				# save_spec.on_success == "negate" so a successful save
+				# leaves the target's side unchanged.
+				outcome = _flip_to_caster_team(
+					step, target_descriptor, targets_by_id, caster_entity,
+					save_results, save_spec)
+				aggregated_side_flips.append_array(outcome.get("records", []))
 			"remove_condition":
 				outcome = _remove_condition(step, target_descriptor, targets_by_id)
 			"remove_modifier":
@@ -452,7 +481,8 @@ func resolve(
 			duration_model,
 			aggregated_modifiers,
 			aggregated_flags,
-			aggregated_conditions)
+			aggregated_conditions,
+			aggregated_side_flips)
 		# Splice item-modifier outcomes into the active_effect metadata so
 		# SpellCombatHooks.get_item_attack_bonuses can consume Striking-style
 		# bonuses at attack-damage time. Keyed by item_id → array of per-step
@@ -820,6 +850,81 @@ func _apply_condition(
 		records.append({"character_id": tid, "condition_key": condition_key})
 		EventBus.condition_changed.emit(tid, {"condition": condition_key, "applied": true})
 		per_target[tid] = {"applied": true, "condition_key": condition_key}
+	return {"per_target": per_target, "records": records}
+
+
+## Flips each non-saved target's `.side` to the caster's side. Per Jedidiah
+## ruling 2026-06-01, this is the Charmed half of the Charmed/Controlled
+## distinction: Charmed switches team allegiance but leaves the target
+## under AI control. The Controlled mechanic (magic-item Control items)
+## does the same side flip + grants direct-action UI (V1 sets a flag for
+## the UI; UI wiring is a follow-up).
+##
+## Honors save_spec.on_success == "negate" — targets that succeeded their
+## save keep their original side. Targets without a `.side` property
+## (out-of-combat CharacterData, etc.) no-op gracefully.
+##
+## Each successful flip emits a record into the outcome's `records` array:
+## `{character_id, original_side, new_side, caster_id}`. The
+## CastingResolver's `_unwind_effect_state` reads `applied_side_flips` on
+## the effect dict and restores original_side on duration expiry / dispel
+## / concentration break.
+##
+## Wired by charm_person + charm_monster spell-effect blocks. Future
+## charm-like spells (charm_animal when its effect block lands, command
+## spells, etc.) reuse the same step kind.
+func _flip_to_caster_team(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		caster_entity: Variant,
+		save_results: Dictionary,
+		save_spec: Dictionary) -> Dictionary:
+	var on_save_negate: bool = String(save_spec.get("on_success", "")) == "negate"
+	# Determine caster's side. If the caster doesn't expose a `.side`
+	# property (e.g., out-of-combat cast), we can't compute a target side
+	# to flip to — return a no-op outcome.
+	var caster_side: int = -1
+	if caster_entity != null and ("side" in caster_entity):
+		caster_side = int(caster_entity.get("side"))
+	var per_target: Dictionary = {}
+	var records: Array = []
+	if caster_side < 0:
+		# Caster has no side — skip every target.
+		for tid in target_descriptor.target_ids:
+			per_target[tid] = {"applied": false, "reason": "caster has no side"}
+		return {"per_target": per_target, "records": records}
+	for tid in target_descriptor.target_ids:
+		# Save-negate gate.
+		if on_save_negate and bool((save_results.get(tid, {}) as Dictionary).get("succeeded", false)):
+			per_target[tid] = {"applied": false, "reason": "saved"}
+			continue
+		var entity = targets_by_id.get(tid, null)
+		if entity == null:
+			per_target[tid] = {"applied": false, "reason": "no entity"}
+			continue
+		if not ("side" in entity):
+			# Target can't be flipped (no side property).
+			per_target[tid] = {"applied": false, "reason": "target has no side"}
+			continue
+		var original_side: int = int(entity.get("side"))
+		if original_side == caster_side:
+			# Already on the caster's side — nothing to do, but record the
+			# no-op so the cleanup path doesn't accidentally revert.
+			per_target[tid] = {"applied": false, "reason": "already on caster's side"}
+			continue
+		# Flip!
+		entity.side = caster_side
+		records.append({
+			"character_id": tid,
+			"original_side": original_side,
+			"new_side": caster_side,
+		})
+		per_target[tid] = {
+			"applied": true,
+			"original_side": original_side,
+			"new_side": caster_side,
+		}
 	return {"per_target": per_target, "records": records}
 
 
@@ -1595,7 +1700,8 @@ func _build_active_effect(
 		duration_model: Dictionary,
 		modifier_records: Array,
 		flag_records: Array,
-		condition_records: Array) -> Dictionary:
+		condition_records: Array,
+		side_flip_records: Array = []) -> Dictionary:
 	var duration_type := _duration_kind_to_type(duration_model)
 	var duration_remaining: int = _resolve_duration_amount(duration_model, caster_context.caster_level)
 	var concentration_mode := String(duration_model.get("concentration_mode", "none"))
@@ -1612,6 +1718,10 @@ func _build_active_effect(
 		"applied_modifiers": modifier_records,
 		"applied_conditions": condition_records,
 		"applied_flags": flag_records,
+		# Charm side-flip records (Tier 4 follow-up, 2026-06-01). The
+		# cleanup callback restores target.side to original_side on
+		# duration expiry / dispel / concentration break.
+		"applied_side_flips": side_flip_records,
 		"duration_type": duration_type,
 		"duration_remaining": duration_remaining,
 		"requires_concentration": requires_concentration,

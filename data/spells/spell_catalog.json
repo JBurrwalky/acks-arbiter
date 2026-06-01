@@ -507,9 +507,12 @@
           "kind": "apply_condition",
           "condition_key": "charmed",
           "save_modifier": 0
+        },
+        {
+          "kind": "flip_to_caster_team"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, disjunctive: one creature >4 HD OR 3d6 HD of \u00e2\u2030\u00a44 HD creatures, undead invalid). Save vs Spells negates per RAW. Sub-1 HD creatures count as 1/2 HD; bonus HD count as flat amount; excess HD wasted. Repeat-save cadence (daily 7+1 HD, weekly 5-6 HD, monthly \u00e2\u2030\u00a44 HD; or charm person frequencies if INT 9+) is the same scheduled-event polish deferred from Charm Person Session 4. Caster picks targets first in mixed groups \u00e2\u20ac\u201d picker-side ordering."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, disjunctive: one creature >4 HD OR 3d6 HD of \u00e2\u2030\u00a44 HD creatures, undead invalid). Save vs Spells negates per RAW. Sub-1 HD creatures count as 1/2 HD; bonus HD count as flat amount; excess HD wasted. Repeat-save cadence (daily 7+1 HD, weekly 5-6 HD, monthly \u00e2\u2030\u00a44 HD; or charm person frequencies if INT 9+) is the same scheduled-event polish deferred from Charm Person Session 4. Caster picks targets first in mixed groups \u00e2\u20ac\u201d picker-side ordering. Charm side-flip step added 2026-06-01 per Jedidiah ruling: failed-save targets flip Combatant.side to the caster's side, remaining under AI control (vs. Controlled, which adds the direct-action UI on top). The casting_resolver's _unwind_effect_state reverts the side flip on duration expiry / dispel via the applied_side_flips records."
     }
   },
   {
@@ -562,9 +565,12 @@
           "kind": "apply_condition",
           "condition_key": "charmed",
           "save_modifier": 0
+        },
+        {
+          "kind": "flip_to_caster_team"
         }
       ],
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, save vs Spells negates, target must be humanoid no larger than ogre with 4 HD or less). Duration is 'special' \u2014 until dispel magic or repeat save (daily/weekly/monthly per target INT). Session 4 binds 'charmed' as a long-duration apply_condition; the daily-repeat-save mechanic is deferred to Session 18 stubs sweep when scheduled-event integration matures. The +5 save bonus when charmer is hostile is not yet wired (out-of-scope for the binding; will be added when monster AI consumes 'charmed' for trust mapping). Target_spec 'single_creature' is reused; creature_filter encodes the humanoid+HD restriction."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 60' range, special duration, save vs Spells negates, target must be humanoid no larger than ogre with 4 HD or less). Duration is 'special' \u2014 until dispel magic or repeat save (daily/weekly/monthly per target INT). Session 4 binds 'charmed' as a long-duration apply_condition; the daily-repeat-save mechanic is deferred to Session 18 stubs sweep when scheduled-event integration matures. The +5 save bonus when charmer is hostile is not yet wired (out-of-scope for the binding; will be added when monster AI consumes 'charmed' for trust mapping). Target_spec 'single_creature' is reused; creature_filter encodes the humanoid+HD restriction. Charm side-flip step added 2026-06-01 per Jedidiah ruling: failed-save targets flip Combatant.side to the caster's side, remaining under AI control (vs. Controlled, which adds the direct-action UI on top). The casting_resolver's _unwind_effect_state reverts the side flip on duration expiry / dispel via the applied_side_flips records."
     }
   },
   {

@@ -29774,3 +29774,52 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 3. **Spell-effect pass on `gaseous_form`** — un-defers Potion of Gaseous Form + adds the is_gaseous-flag + AC 11 + 30'/round-movement mechanic.
 4. **Magic swords cluster** (Flame Tongue, Frost Brand, Life Drinker, Luck Blade, Vorpal Sword) — 5 items, each bespoke.
 5. **Damage typing pass** — would unblock Flame Tongue + Frost Brand + several deferred fire/cold defenses (Ring of Fire Resistance damage reduction, Cube of Frost Resistance).
+
+
+## Session 2026-06-01 — Charm side-flip: new flip_to_caster_team effect step
+
+**Task:** Close the loop on the Charmed/Controlled distinction Jedidiah established earlier this session. Wire the side-flip half of Charm: failed-save targets of `charm_person` / `charm_monster` flip their `Combatant.side` to the caster's side, remaining under AI control (vs. the Control mechanic on magic-item Control items, which adds the direct-action UI on top). Reversion handled by the existing CastingResolver cleanup callback for duration expiry / dispel / concentration break.
+**Model used:** Sonnet 4.6 for implementation + tests.
+**Completed:**
+- `engine/subsystems/spells/casting_resolver.gd:_flip_to_caster_team(step, target_descriptor, targets_by_id, caster_entity, save_results, save_spec) -> Dictionary` — new effect step handler. Honors `save_spec.on_success == "negate"` (saved targets keep their original side). For each non-saved target with a `.side` property + caster with a `.side` property, writes `target.side = caster.side` and emits a `{character_id, original_side, new_side}` record. No-ops gracefully when (a) caster has no side (out-of-combat CharacterData), (b) target has no side (bare CharacterData / non-Combatant), or (c) target is already on the caster's side.
+- `engine/subsystems/spells/casting_resolver.gd` — dispatcher updated: new `"flip_to_caster_team"` branch in the resolution-step match block; new `aggregated_side_flips: Array` accumulator alongside aggregated_modifiers / aggregated_flags / aggregated_conditions.
+- `engine/subsystems/spells/casting_resolver.gd:_build_active_effect` — signature extended with `side_flip_records: Array = []` (default empty for backward compat); persists as `applied_side_flips` on the effect dict.
+- `engine/subsystems/spells/casting_resolver.gd:_unwind_effect_state` — new iteration over `applied_side_flips` records that restores each target's `.side` to its `original_side` on cleanup. Uses the same `target_lookup` callable as the modifier/flag cleanup paths.
+- `data/spells/spell_catalog.json` — `charm_person` and `charm_monster` `resolution` arrays each gain a `{kind: "flip_to_caster_team"}` step after the existing `apply_condition charmed` step. The step has no parameters — it reads caster_entity.side + targets_by_id[tid].side at resolution time. Notes on each spell updated to document the 2026-06-01 addition + the Charmed/Controlled architectural distinction.
+- `tests/test_casting_resolver.gd` — 6 new tests + 2 new test stub classes (`_SidedTarget` and `_SidedCaster`). Tests cover: flip-on-failed-save, save-success-no-flip, caster-without-side-no-op (existing CharacterData), target-without-side-no-op (existing _make_target), already-on-caster-side-no-op (no record emitted; cleanup doesn't accidentally revert), revert-on-unwind via manual `_unwind_effect_state` invocation.
+- `generation/gdd-treasure-item-backing.md` §14 — new row capturing the step + spell catalog updates + cleanup wiring + the Charmed/Controlled architectural distinction reaffirmed.
+
+**Decisions made:**
+- **Step name `flip_to_caster_team` (not `flip_to_caster_side`).** "Team" matches Jedidiah's red-team/blue-team framing in the ruling. The effect operates on `Combatant.side` field internally; the step kind name is the player-facing concept.
+- **Best-effort property introspection** for `.side` on both caster and target. Uses `"side" in entity` checks; missing properties no-op gracefully. This keeps the step useful across Combatant + CharacterData + future test stubs without a class-import dependency. Trade-off: out-of-combat charm (rare path) silently skips the flip — documented as expected.
+- **No record emitted when target is already on caster's side.** Avoids accidentally reverting an organic alignment when cleanup fires (e.g., if the target was already on PARTY side pre-charm for some reason).
+- **`charm_animal` skipped this commit.** The spell catalog entry has no `effect` block yet (one of the 150 empty spells). Adding the side-flip step would no-op anyway since CastingResolver guards against empty payloads. When the `charm_animal` spell-effect pass lands, the side-flip step adds in one line.
+- **Existing charm tests left untouched.** Their target stubs (`_Humanoid` in `test_spell_catalog_l1_arcane.gd`) lack a `.side` property — the new step is a no-op for them. No regression possible.
+- **Reused `_unwind_effect_state` for revert** rather than registering a parallel cleanup callback. The mod/flag/condition cleanup path is already invoked by both the dispel path (`_on_tracker_removed_effect`) and the duration-tick path (`tick_and_cleanup`); side flips ride along the same wiring for free.
+
+**Interfaces defined or changed:**
+- New effect step kind `flip_to_caster_team`. Reads `save_spec.on_success` from the spell's effect block; consumes no step-level parameters. Future charm-like spells (charm_animal when wired, command spells when wired) reuse the same step.
+- `CastingResolver._build_active_effect(... side_flip_records: Array = [])` — signature extended with optional new parameter (backward compat: default empty for non-charm spells).
+- New active-effect record key `applied_side_flips: Array[{character_id, original_side, new_side}]`. Persisted on the effect dict; consumed by `_unwind_effect_state` on cleanup.
+- `charm_person` + `charm_monster` spell catalog `resolution` arrays each gain a second step. External effect contract unchanged (still "charmed condition + save vs Spells negates"); the side flip is an additional side-effect of resolution.
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- 6 new tests in `tests/test_casting_resolver.gd` + 2 new test stub classes.
+- Existing charm tests in `tests/test_spell_catalog_l1_arcane.gd` and `tests/test_spell_catalog_l4_arcane.gd` keep passing unchanged (their target stubs lack `.side` so the new step no-ops for them).
+- Full suite: **397 passed / 19 failed** — same baseline as prior commits. Net-zero new failures.
+
+**Known issues:**
+- **`charm_animal` skipped** pending its spell-effect block. One-line addition when the spell-effect pass lands.
+- **Out-of-combat charm side-flip** is a silent no-op (caster has no side outside of combat). Documented; matches the Charmed semantic ("regards caster as friend" — meaningful in combat; in dialogue context, the social effect lives on the `charmed` condition + future dialogue system reads).
+- **`is_controlled_by_caster` flag for Control items** is durable; the magic-item Control mechanic from the prior commit (`e3db271`) does NOT yet use the new effect step infrastructure (it does the side flip inline in `MagicItemActivator._apply_control_effect`). A follow-up commit can migrate Control items to also register an active effect via the tracker so duration-revert + dispel work end-to-end via the same cleanup chain. The infrastructure is now in place — it's a refactor opportunity, not a new system.
+- The user originally chose "Recommended: Control + adjust Charm" as a single batch; this completes the second half. Both halves now landed across commits `e3db271` (Control) and this one.
+
+**Next session should:**
+1. **Migrate Control items to use the unified effect-tracker pipeline** so duration-revert + dispel work end-to-end. The MagicItemActivator's `_apply_control_effect` does the side flip inline today; refactoring it to register an active effect with `applied_side_flips` + `applied_flags` records would route through the same `_unwind_effect_state` chain that Charm now uses. Single source of truth.
+2. **Magic swords cluster** — Flame Tongue, Frost Brand, Life Drinker, Luck Blade, Vorpal Sword. 5 items; each bespoke; some share damage typing.
+3. **Spell-effect pass on `panic`** — un-defers Drums of Panic immediately.
+4. **Spell-effect pass on `gaseous_form`** — un-defers Potion of Gaseous Form immediately.
+5. **Spell-effect pass on `charm_animal`** — adds the side-flip step for parity with charm_person / charm_monster.

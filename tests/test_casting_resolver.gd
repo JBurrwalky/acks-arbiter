@@ -131,6 +131,16 @@ func run_all_tests() -> void:
 	test_active_effect_not_registered_for_instantaneous()
 	test_slot_expended_signal_fires()
 	test_e2e_smoke_magic_missile_then_rest_resets()
+	# Tier 4 Charm side-flip follow-up (2026-06-01) — new flip_to_caster_team
+	# effect step kind. Verifies the step flips target.side on failed save
+	# (charm_person resolution chain), no-ops on successful save, and the
+	# cleanup callback reverts side on dispel/expiry.
+	test_flip_to_caster_team_flips_side_on_failed_save()
+	test_flip_to_caster_team_skips_save_success()
+	test_flip_to_caster_team_no_ops_when_caster_has_no_side()
+	test_flip_to_caster_team_no_ops_when_target_has_no_side()
+	test_flip_to_caster_team_no_ops_when_already_on_caster_side()
+	test_charm_side_flip_reverts_on_unwind()
 	if not has_failures():
 		print("CastingResolver: all tests passed.")
 
@@ -493,3 +503,218 @@ func test_e2e_smoke_magic_missile_then_rest_resets() -> void:
 	check(_repo.get_expended_slots("smoke_mage").get(1, 0) == 0,
 		"E2E: full rest (12h) reset L1 slot to 0")
 	handler.dispose()
+
+
+# ---------------------------------------------------------------------------
+# Tier 4 follow-up (2026-06-01) — Charm side-flip via flip_to_caster_team
+# effect step. Charm spells (charm_person + charm_monster) now flip target
+# Combatant.side to the caster's side; cleanup reverts on dispel/expiry.
+# ---------------------------------------------------------------------------
+
+## A test stub that exposes the minimal surface flip_to_caster_team reads:
+## `side` (mutable int) + `flags` (EntityFlags) + `add_condition` /
+## `has_condition` methods. Used in place of a full Combatant for unit
+## tests so we don't have to spin up the combat roster + roster lookup.
+class _SidedTarget extends RefCounted:
+	var id: String = ""
+	var name: String = "Sided Target"
+	var side: int = 1  # default ENEMY side (the target being charmed)
+	var flags: EntityFlags = EntityFlags.new()
+	var creature_type: String = "humanoid"
+	var save_spells: int = 17
+	var hit_dice: int = 1
+	var _conditions: Array[String] = []
+
+	func get_effective_save(save_key: String) -> int:
+		match save_key:
+			"save_spells": return save_spells
+			_: return 20
+
+	func add_condition(key: String) -> void:
+		if key not in _conditions:
+			_conditions.append(key)
+
+	func has_condition(key: String) -> bool:
+		return key in _conditions
+
+
+## A test stub that wraps a CharacterData-like surface plus the `side`
+## property the flip step needs to read on the caster. Used as the
+## caster_entity in side-flip tests.
+class _SidedCaster extends RefCounted:
+	var id: String = "sided_caster"
+	var name: String = "Sided Caster"
+	var side: int = 0  # PARTY side
+
+
+func test_flip_to_caster_team_flips_side_on_failed_save() -> void:
+	# Charm Person: failed save → charmed condition applied AND target
+	# side flips to caster's side. Test specifies a caster on PARTY side
+	# (side=0) charming an ENEMY-side target (side=1) → target.side
+	# becomes 0.
+	_build_resolver()
+	var caster := _make_caster("sided_charm_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var target := _SidedTarget.new()
+	target.id = "sided_target_a"
+	target.side = 1
+	target.save_spells = 17
+
+	# Use a caster wrapper that exposes a side property; the resolver's
+	# caster_entity argument is what _flip_to_caster_team reads.
+	var caster_proxy := _SidedCaster.new()
+	caster_proxy.id = caster.id
+	caster_proxy.side = 0  # PARTY
+
+	# Force save FAILURE: dice fixed to 5 vs target 17.
+	_dice.set_fixed("spell_save_spells", 5)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	var result := _resolver.resolve(ctx, choice, td, caster_proxy, {target.id: target})
+	check(result.success, "Charm Person resolves successfully")
+	check(target.has_condition("charmed"),
+		"target gains charmed condition on failed save")
+	check(target.side == 0,
+		"target's side should flip to caster's side (0=PARTY); got %d" % target.side)
+
+
+func test_flip_to_caster_team_skips_save_success() -> void:
+	# Charm Person: successful save → no charmed condition AND no side flip.
+	_build_resolver()
+	var caster := _make_caster("sided_charm_save_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var target := _SidedTarget.new()
+	target.id = "sided_target_b"
+	target.side = 1
+	target.save_spells = 17
+	var caster_proxy := _SidedCaster.new()
+	caster_proxy.id = caster.id
+	caster_proxy.side = 0
+
+	# Force save SUCCESS: dice fixed to 20 vs target 17 → passes.
+	_dice.set_fixed("spell_save_spells", 20)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	_resolver.resolve(ctx, choice, td, caster_proxy, {target.id: target})
+	check(not target.has_condition("charmed"),
+		"saved target does NOT gain charmed condition")
+	check(target.side == 1,
+		"saved target keeps original side 1; got %d" % target.side)
+
+
+func test_flip_to_caster_team_no_ops_when_caster_has_no_side() -> void:
+	# If the caster_entity doesn't have a `.side` property (e.g., an
+	# out-of-combat CharacterData), the step no-ops gracefully — the
+	# condition still applies but no side flip is attempted.
+	_build_resolver()
+	var caster := _make_caster("no_side_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var target := _SidedTarget.new()
+	target.id = "sided_target_c"
+	target.side = 1
+	target.save_spells = 17
+	# Pass the bare CharacterData as caster_entity (no .side property).
+	_dice.set_fixed("spell_save_spells", 5)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	_resolver.resolve(ctx, choice, td, caster, {target.id: target})
+	check(target.has_condition("charmed"),
+		"condition still applied even when side flip is skipped")
+	check(target.side == 1,
+		"target side unchanged when caster has no side property; got %d" % target.side)
+
+
+func test_flip_to_caster_team_no_ops_when_target_has_no_side() -> void:
+	# If the target lacks a `.side` property (e.g., a bare CharacterData),
+	# the step no-ops gracefully for that target. Reuses the existing
+	# _Humanoid test stub which has no side property.
+	_build_resolver()
+	var caster := _make_caster("no_target_side_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var caster_proxy := _SidedCaster.new()
+	caster_proxy.id = caster.id
+	caster_proxy.side = 0
+	var target := _make_target("no_side_target", 8, 1)
+	_dice.set_fixed("spell_save_spells", 5)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	var result := _resolver.resolve(ctx, choice, td, caster_proxy, {target.id: target})
+	check(result.success, "resolution succeeds even when target has no side")
+
+
+func test_flip_to_caster_team_no_ops_when_already_on_caster_side() -> void:
+	# If the target is already on the caster's side, the step is a no-op
+	# (no record emitted; nothing to revert on cleanup).
+	_build_resolver()
+	var caster := _make_caster("same_side_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var target := _SidedTarget.new()
+	target.id = "same_side_target"
+	target.side = 0  # SAME as caster's intended side
+	target.save_spells = 17
+	var caster_proxy := _SidedCaster.new()
+	caster_proxy.id = caster.id
+	caster_proxy.side = 0
+	_dice.set_fixed("spell_save_spells", 5)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	_resolver.resolve(ctx, choice, td, caster_proxy, {target.id: target})
+	check(target.has_condition("charmed"),
+		"condition still applies — only the side flip step is a no-op")
+	check(target.side == 0,
+		"side stays 0 (already matched caster)")
+
+
+func test_charm_side_flip_reverts_on_unwind() -> void:
+	# Cast charm_person, capture the active_effect, then manually invoke
+	# _unwind_effect_state via the cleanup callback. Target side should
+	# revert to the original (pre-charm) side.
+	_build_resolver()
+	var caster := _make_caster("revert_caster", 1)
+	var ctx := _make_caster_context(caster)
+	var target := _SidedTarget.new()
+	target.id = "revert_target"
+	target.side = 1
+	target.save_spells = 17
+	var caster_proxy := _SidedCaster.new()
+	caster_proxy.id = caster.id
+	caster_proxy.side = 0
+
+	_dice.set_fixed("spell_save_spells", 5)
+	var choice := SpellChoice.new("charm_person", 1, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	var result := _resolver.resolve(ctx, choice, td, caster_proxy, {target.id: target})
+	check(result.success, "charm resolves successfully")
+	check(target.side == 0, "target side flipped to caster's (precondition)")
+
+	# Find the registered active effect.
+	check(result.active_effect_ids.size() == 1,
+		"charm_person registers one active effect")
+	var effect_id: String = result.active_effect_ids[0]
+	var effect: Dictionary = _effect_tracker.get_effect(effect_id)
+	check(not effect.is_empty(), "active effect should be retrievable")
+	check(effect.has("applied_side_flips"),
+		"effect dict should carry applied_side_flips records")
+	check((effect["applied_side_flips"] as Array).size() == 1,
+		"one side flip record expected, got %d" %
+			(effect["applied_side_flips"] as Array).size())
+
+	# Manually invoke the cleanup path. Use a target lookup that returns
+	# our test target.
+	var lookup: Callable = func(tid: String) -> Variant:
+		return target if tid == target.id else null
+	_resolver._unwind_effect_state(effect, lookup)
+	check(target.side == 1,
+		"target side reverted to original (1); got %d" % target.side)
