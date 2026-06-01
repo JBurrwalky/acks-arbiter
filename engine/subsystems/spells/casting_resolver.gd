@@ -826,7 +826,38 @@ func _apply_flag(
 		flags.set_flag(flag_key, source_id, meta)
 		records.append({"character_id": tid, "flag_key": flag_key, "source_id": source_id, "metadata": meta})
 		per_target[tid] = {"applied": true, "flag_key": flag_key}
+		# Side effect: drop carried items on apply (Tier 4 follow-up, 2026-06-01).
+		# Gaseous Form's RAW (pc_spell_catalog_f-u.xml:90-126): "All worn or
+		# carried items drop immediately." V1 simplification — items unequip
+		# (is_equipped → 0, slot → "pack", container_id → ""); they stay in
+		# the target's inventory rather than literally hitting the floor.
+		# Gameplay equivalence: the wielder loses access to equipped gear
+		# while gaseous. True ground-drop tracking is a follow-up.
+		# Gated on `drops_carried_items_on_apply: true` in the flag's
+		# metadata so future spells with the same semantic plug in without
+		# touching this method.
+		if bool(meta.get("drops_carried_items_on_apply", false)):
+			_drop_carried_items_for_target(tid)
 	return {"per_target": per_target, "records": records}
+
+
+## Unequips every equipped inventory item for the target character. Used
+## by spells whose flag metadata carries `drops_carried_items_on_apply: true`
+## (Gaseous Form V1). No-op for targets without a corresponding inventory
+## (monsters whose loot is on a creature row, not a character row — the
+## _campaign_repo lookup just returns nothing).
+func _drop_carried_items_for_target(target_id: String) -> void:
+	if _campaign_repo == null or not _campaign_repo.has_method("get_inventory_items"):
+		return
+	var items: Array = _campaign_repo.get_inventory_items(target_id)
+	for item in items:
+		if int(item.get("is_equipped", 0)) != 1:
+			continue
+		var iid: String = str(item.get("id", ""))
+		if iid.is_empty():
+			continue
+		if _campaign_repo.has_method("update_inventory_item_equip_state"):
+			_campaign_repo.update_inventory_item_equip_state(iid, false, "pack", "")
 
 
 func _apply_condition(

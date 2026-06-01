@@ -195,6 +195,29 @@ static func cells_in_radius(origin: Vector3i, radius_feet: int) -> Array:
 	return cells_in_sphere(origin, radius_feet * 2)
 
 
+static func cells_in_annulus(
+		origin: Vector3i,
+		outer_radius_feet: int,
+		inner_radius_feet: int) -> Array:
+	## Returns cells in a ring (annulus) — outside `inner_radius_feet` AND
+	## within `outer_radius_feet`. Used by spells with a central safe-zone
+	## around the caster (Panic: 240' radius minus a 10' inner exclusion
+	## per RAW pc_spell_catalog_f-u.xml:621-637 "10' radius safe zone").
+	## inner_radius_feet <= 0 degenerates to a plain sphere (no exclusion).
+	if inner_radius_feet <= 0:
+		return cells_in_radius(origin, outer_radius_feet)
+	var outer_cells: Array = cells_in_radius(origin, outer_radius_feet)
+	var inner_cells: Array = cells_in_radius(origin, inner_radius_feet)
+	var inner_set: Dictionary = {}
+	for c in inner_cells:
+		inner_set[c] = true
+	var out: Array = []
+	for c in outer_cells:
+		if not inner_set.has(c):
+			out.append(c)
+	return out
+
+
 static func cells_in_cone(
 		origin: Vector3i,
 		direction: Vector3i,

@@ -14,7 +14,12 @@ extends RefCounted
 ##               "can_spider_climb",
 ##               "can_breathe_water" (Water Breathing — 1 day),
 ##               "is_hasted" (Haste — 2x movement + attacks),
-##               "is_slowed" (Slow — 0.5x movement + attacks)
+##               "is_slowed" (Slow — 0.5x movement + attacks),
+##               "is_running_in_panic" (Panic spell / Drums of Panic —
+##                  metadata.movement_multiplier (RAW 2.0 = running speed) consumed
+##                  by Combatant._apply_movement_multipliers. Set alongside the
+##                  frightened condition for 30 rounds. Clears with the condition
+##                  via the spell's active_effect tracker.)
 ##               "is_invisible_aura" (Invisibility 10' Radius — center moves with recipient)
 ##   Visibility: "is_invisible", "is_improved_invisible", "is_faerie_fired",
 ##               "has_spell_infravision"

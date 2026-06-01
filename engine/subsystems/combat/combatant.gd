@@ -265,7 +265,19 @@ func get_hit_dice_base() -> int:
 ## True if this combatant can be harmed only by magical or silver weapons.
 ## Catalog-flag-driven on monsters; never true for PCs / trained creatures.
 ## RAW: rules/acore_combat_and_wounds.xml:402-407 (invulnerableMonsters).
+##
+## Tier 4 follow-up (2026-06-01): gaseous combatants are ALSO immune to
+## non-magical weapons per RAW pc_spell_catalog_f-u.xml:90-126 ("immune to
+## non-magical weapons"). The is_gaseous flag (set by Gaseous Form spell
+## or Potion of Gaseous Form) routes through the same invulnerability
+## gate; the existing `can_harm_invulnerable_target()` magic/silver test
+## on the attacker handles both source flags identically. Applies to PCs
+## AND monsters when gaseous (the spell can be cast on either).
 func is_damaged_only_by_magic_or_silver() -> bool:
+	# Gaseous Form: anyone in gaseous state has the immunity (PC or monster).
+	var f: EntityFlags = get_flags()
+	if f != null and f.has_flag("is_gaseous"):
+		return true
 	if is_character or _trained_creature != null:
 		return false
 	if _monster_flags == null:
@@ -587,11 +599,31 @@ func get_effective_ac_vs(attack_type: String) -> int:
 	## omnidirectional value when no directional modifier is set.
 	## Monsters (no Shield-style directional modifiers in v1) just return the
 	## omnidirectional value.
+	##
+	## Gaseous Form override (Tier 4 follow-up, 2026-06-01): if the combatant
+	## carries the `is_gaseous` flag, the flag's metadata `ac_override` (RAW: 11)
+	## REPLACES the computed AC entirely. Per RAW pc_spell_catalog_f-u.xml:90-126:
+	## "AC 11." Substitution happens here so both melee and missile paths get
+	## the override; no separate attack-resolver wiring needed.
+	var gaseous_ac: int = _get_gaseous_ac_override()
+	if gaseous_ac >= 0:
+		return gaseous_ac
 	if is_character:
 		var base := _character.get_effective_ac_vs(attack_type)
 		base += ProficiencyCombatHooks.aggregate_modifier(self, "armor_class", {"phase": "ac"})
 		return base
 	return get_effective_ac()
+
+
+## Returns the gaseous-form AC override (typically 11) when the combatant
+## is gaseous, else -1 (sentinel: no override). Centralized so both AC paths
+## (vs-attack-type and omnidirectional) share the check.
+func _get_gaseous_ac_override() -> int:
+	var f: EntityFlags = get_flags()
+	if f == null or not f.has_flag("is_gaseous"):
+		return -1
+	var meta: Dictionary = f.get_flag_metadata("is_gaseous")
+	return int(meta.get("ac_override", 11))
 
 
 func get_effective_attack_throw() -> int:
@@ -623,13 +655,63 @@ func get_effective_movement() -> int:
 
 func get_combat_movement() -> int:
 	## Returns combat movement in feet (exploration / 3).
+	##
+	## Flag consumer chain (Tier 4 follow-up, 2026-06-01):
+	##   1. Gaseous Form: if `is_gaseous` flag is set and its metadata
+	##      carries `movement_rate_override_feet_per_round`, that value
+	##      REPLACES the computed base (RAW: 30'/round). Highest priority —
+	##      runs first so the multiplier in step 2 doesn't multiply on top.
+	##   2. Movement multipliers from any flag's metadata (Panic's
+	##      `is_running_in_panic` carries `movement_multiplier: 2.0` for
+	##      RAW running speed; future Haste consumer integration plugs in
+	##      here too). Multiplies the rate after the gaseous override.
+	var base_rate: int = 0
 	if not is_character:
 		var movement: Dictionary = _monster_data.get("movement", {})
 		var land: Dictionary = movement.get("land", {})
 		var combat: int = int(land.get("combat", 0))
 		if combat > 0:
-			return combat
-	return get_effective_movement() / 3
+			base_rate = combat
+		else:
+			base_rate = get_effective_movement() / 3
+	else:
+		base_rate = get_effective_movement() / 3
+	# Gaseous override — absolute set; bypass base rate.
+	var override_rate: int = _get_gaseous_movement_override()
+	if override_rate >= 0:
+		base_rate = override_rate
+	# Movement multipliers from active flags (running-in-panic, future Haste).
+	base_rate = _apply_movement_multipliers(base_rate)
+	return base_rate
+
+
+## Gaseous Form movement override — returns the metadata value if the
+## flag is set, else -1 (sentinel: no override). RAW: 30'/round.
+func _get_gaseous_movement_override() -> int:
+	var f: EntityFlags = get_flags()
+	if f == null or not f.has_flag("is_gaseous"):
+		return -1
+	var meta: Dictionary = f.get_flag_metadata("is_gaseous")
+	if not meta.has("movement_rate_override_feet_per_round"):
+		return -1
+	return int(meta["movement_rate_override_feet_per_round"])
+
+
+## Applies any active flag-metadata `movement_multiplier` to the given
+## base rate. Multipliers compound (V1 simplification — Haste × 2 + Panic
+## running × 2 would stack to × 4). The first concrete consumer is
+## `is_running_in_panic` (Panic spell); Haste's metadata-based multiplier
+## will integrate here when the Haste consumer pass lands.
+func _apply_movement_multipliers(base_rate: int) -> int:
+	var f: EntityFlags = get_flags()
+	if f == null:
+		return base_rate
+	var result: float = float(base_rate)
+	for flag_key in f.get_all_flags():
+		var meta: Dictionary = f.get_flag_metadata(flag_key)
+		if meta.has("movement_multiplier"):
+			result *= float(meta["movement_multiplier"])
+	return int(result)
 
 
 func get_combat_movement_cells() -> int:

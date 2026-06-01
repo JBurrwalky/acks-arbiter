@@ -4871,6 +4871,7 @@
         "kind": "area_at_point",
         "shape": "sphere",
         "radius_feet": 240,
+        "inner_radius_feet": 10,
         "creature_filter": {
           "living_only": true
         }
@@ -4883,9 +4884,16 @@
         {
           "kind": "apply_condition",
           "condition_key": "frightened"
+        },
+        {
+          "kind": "apply_flag",
+          "flag_key": "is_running_in_panic",
+          "metadata": {
+            "movement_multiplier": 2.0
+          }
         }
       ],
-      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:621-637): range 0' (centered on caster), area 'all creatures within 240' except those inside a 10' radius safe zone', instantaneous cast with 30-round fleeing duration on failed save vs Spells. Used to create drums of panic (acore_treasure_and_magic_items_rules.xml miscellaneous_magic_table). V1 implementation (2026-06-01): applies the existing `frightened` condition (condition_catalog.json: prevents_attacking + prevents_casting + prevents_speech + flees_from_source + cowers_if_cant_flee) for 30 rounds. DEFERRED RAW polish: (a) 10' safe zone exclusion around the caster — V1 uses a flat 240' sphere centered on caster; allies within 10' would also be hit until the targeting layer supports annulus shapes; (b) 'running speed' movement modifier — V1 relies on the frightened condition's AI gating (flee from source); the running-speed numerical bonus is a follow-up when ACKS movement modes mature."
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:621-637): range 0' (centered on caster), area 'all creatures within 240' except those inside a 10' radius safe zone' (V1 wires the annulus via inner_radius_feet on the sphere — see CastingGeometry.cells_in_annulus), instantaneous cast with 30-round fleeing duration on failed save vs Spells. Used to create drums of panic (acore_treasure_and_magic_items_rules.xml miscellaneous_magic_table). V1 implementation (2026-06-01 bow-tie): applies the existing `frightened` condition (condition_catalog.json: prevents_attacking + prevents_casting + prevents_speech + flees_from_source + cowers_if_cant_flee) for 30 rounds AND sets the `is_running_in_panic` EntityFlag with metadata.movement_multiplier=2.0 consumed by Combatant._apply_movement_multipliers to give the panicked creature RAW running speed (movement × 2). On flag/condition cleanup (duration expiry / dispel) both the condition and the running-speed multiplier clear together."
     }
   },
   {

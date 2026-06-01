@@ -405,7 +405,16 @@ func _resolve_geometry_cells(origin: Vector3i) -> Array:
 	var shape := String(geom.get("shape", ""))
 	match shape:
 		"sphere":
+			# Optional `inner_radius_feet` flips the sphere to an annulus
+			# (Tier 4 follow-up, 2026-06-01). Used by Panic (240' sphere
+			# minus 10' safe zone around the caster per
+			# pc_spell_catalog_f-u.xml:621-637) and any future spell with a
+			# central exclusion zone.
+			var inner_radius: int = int(geom.get("inner_radius_feet", 0))
 			if geom.has("radius_feet"):
+				if inner_radius > 0:
+					return CastingGeometry.cells_in_annulus(
+						origin, int(geom["radius_feet"]), inner_radius)
 				return CastingGeometry.cells_in_radius(origin, int(geom["radius_feet"]))
 			if geom.has("diameter_feet"):
 				return CastingGeometry.cells_in_sphere(origin, int(geom["diameter_feet"]))

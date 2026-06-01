@@ -99,10 +99,25 @@ func remove_condition(
 
 ## Returns true if the combatant is allowed to perform the given action.
 ## [param action]: "attacking", "casting", "movement", "speech", "running", "charging".
+##
+## Flag-based gates layered on top of the condition catalog (Tier 4
+## follow-up, 2026-06-01): the `is_gaseous` EntityFlag (from Gaseous Form
+## spell / Potion of Gaseous Form) prevents BOTH attacking and casting
+## (gas can't manipulate weapons or perform spellcasting gestures).
+## Movement is still permitted (the whole point of gaseous form is
+## flowing past obstacles); speech, running, charging are also
+## permitted (V1 — running/charging while gaseous is degenerate; no RAW
+## constraint other than the 30'/round movement cap).
 func check_action_allowed(combatant: Combatant, action: String) -> bool:
 	for condition_key: String in combatant.conditions:
 		if _catalog.prevents_action(condition_key, action):
 			return false
+	# Gaseous Form flag-level prevention.
+	var f: EntityFlags = combatant.get_flags()
+	if f != null and f.has_flag("is_gaseous"):
+		match action:
+			"attacking", "casting":
+				return false
 	return true
 
 

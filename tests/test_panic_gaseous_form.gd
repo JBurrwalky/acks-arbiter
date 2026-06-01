@@ -129,6 +129,18 @@ func run_all_tests() -> void:
 	# Portcullis bypass (MovementResolver auto-detect via is_gaseous flag).
 	test_voxel_cell_is_passable_by_gaseous_through_closed_portcullis()
 	test_voxel_cell_is_passable_by_gaseous_blocked_by_solid_wall()
+	# Bow-tie consumer integrations (Tier 4 follow-up 2026-06-01).
+	test_panic_carries_inner_radius_safe_zone()
+	test_panic_resolution_includes_running_speed_flag_step()
+	test_gaseous_form_carries_drop_items_metadata()
+	test_cells_in_annulus_excludes_inner_zone()
+	test_cells_in_annulus_degenerates_to_sphere_when_inner_zero()
+	# Bow-tie Combatant consumer integrations.
+	test_gaseous_combatant_uses_ac_override_11()
+	test_gaseous_combatant_uses_movement_override_30()
+	test_panicked_combatant_movement_doubles_from_running_multiplier()
+	test_gaseous_combatant_is_damaged_only_by_magic_or_silver()
+	test_gaseous_combatant_cannot_attack_via_condition_manager()
 	if not has_failures():
 		print("PanicGaseousForm: all tests passed.")
 
@@ -337,3 +349,227 @@ func test_voxel_cell_is_passable_by_gaseous_blocked_by_solid_wall() -> void:
 	check(not cell.is_passable_by_gaseous(),
 		"liquid cell should block gaseous mover (V1: gas only enters air cells)")
 	print("  voxel_cell_is_passable_by_gaseous_blocked_by_solid_wall: OK")
+
+
+# ---------------------------------------------------------------------------
+# Bow-tie consumer integrations (Tier 4 follow-up, 2026-06-01)
+# ---------------------------------------------------------------------------
+
+func test_panic_carries_inner_radius_safe_zone() -> void:
+	# Panic's target_spec now declares inner_radius_feet: 10 — the
+	# 10' safe zone around the caster per RAW. The targeting controller
+	# routes sphere + inner_radius_feet through CastingGeometry's new
+	# cells_in_annulus helper.
+	var spell_registry := SpellRegistry.new()
+	var effect_registry := SpellEffectRegistry.new(spell_registry)
+	var payload := effect_registry.get_effect_payload("panic", false, -1)
+	var target_spec: Dictionary = payload.get("target_spec", {})
+	check(int(target_spec.get("inner_radius_feet", 0)) == 10,
+		"panic target_spec should carry inner_radius_feet=10 (10' safe zone), got %d" %
+			int(target_spec.get("inner_radius_feet", 0)))
+	print("  panic_carries_inner_radius_safe_zone: OK")
+
+
+func test_panic_resolution_includes_running_speed_flag_step() -> void:
+	# Panic now applies two resolution steps: (1) frightened condition,
+	# (2) is_running_in_panic flag with metadata.movement_multiplier = 2.0
+	# (RAW running speed). The Combatant._apply_movement_multipliers
+	# consumer reads the multiplier; on cleanup both clear together.
+	var spell_registry := SpellRegistry.new()
+	var effect_registry := SpellEffectRegistry.new(spell_registry)
+	var payload := effect_registry.get_effect_payload("panic", false, -1)
+	var resolution: Array = payload.get("resolution", [])
+	check(resolution.size() == 2,
+		"panic resolution should have 2 steps (condition + running-speed flag), got %d" %
+			resolution.size())
+	# Step 0: apply_condition frightened.
+	check(str((resolution[0] as Dictionary).get("kind", "")) == "apply_condition",
+		"resolution[0].kind should be 'apply_condition'")
+	check(str((resolution[0] as Dictionary).get("condition_key", "")) == "frightened",
+		"resolution[0].condition_key should be 'frightened'")
+	# Step 1: apply_flag is_running_in_panic, metadata.movement_multiplier = 2.0
+	var step1: Dictionary = resolution[1]
+	check(str(step1.get("kind", "")) == "apply_flag",
+		"resolution[1].kind should be 'apply_flag'")
+	check(str(step1.get("flag_key", "")) == "is_running_in_panic",
+		"resolution[1].flag_key should be 'is_running_in_panic'")
+	var meta: Dictionary = step1.get("metadata", {})
+	check(float(meta.get("movement_multiplier", 0)) == 2.0,
+		"movement_multiplier should be 2.0 (RAW running speed), got %.1f" %
+			float(meta.get("movement_multiplier", 0)))
+	print("  panic_resolution_includes_running_speed_flag_step: OK")
+
+
+func test_gaseous_form_carries_drop_items_metadata() -> void:
+	# Pin the drops_carried_items_on_apply flag-metadata key — consumed
+	# by CastingResolver._apply_flag's drop-items hook (which unequips
+	# every equipped item on the target at apply time).
+	var spell_registry := SpellRegistry.new()
+	var effect_registry := SpellEffectRegistry.new(spell_registry)
+	var payload := effect_registry.get_effect_payload("gaseous_form", false, -1)
+	var resolution: Array = payload.get("resolution", [])
+	var step0: Dictionary = resolution[0]
+	var meta: Dictionary = step0.get("metadata", {})
+	check(bool(meta.get("drops_carried_items_on_apply", false)) == true,
+		"gaseous_form step metadata should carry drops_carried_items_on_apply=true")
+	print("  gaseous_form_carries_drop_items_metadata: OK")
+
+
+func test_cells_in_annulus_excludes_inner_zone() -> void:
+	# Annulus: cells within outer radius BUT outside inner radius.
+	# Use small radii for fast iteration. 25' outer + 10' inner.
+	# At 5'/cell: outer_cells_radius = 2 (1 + 2 + 2 = 5 cells wide cube),
+	# inner_cells_radius = 1 (3 cells wide cube).
+	var origin := Vector3i(0, 0, 0)
+	var annulus: Array = CastingGeometry.cells_in_annulus(origin, 25, 10)
+	# Origin itself is within inner — must be excluded.
+	check(not (origin in annulus),
+		"origin (within 10' inner radius) must be excluded from annulus")
+	# A cell 1 step away (at 5') is still in the inner radius (1 cell
+	# = 5' Chebyshev). Excluded.
+	check(not (Vector3i(1, 0, 0) in annulus),
+		"cell 5' from origin (still within 10' inner) must be excluded")
+	# A cell 2 steps away (10' Chebyshev) — depends on rounding. The
+	# helper uses floor(diameter / 2 / 5); for inner_radius 10 →
+	# diameter 20 → floor(20/2/5) = 2 → inner cube radius 2 cells.
+	# So cells at Chebyshev distance 2 are INSIDE the inner zone.
+	check(not (Vector3i(2, 0, 0) in annulus),
+		"cell 10' from origin (at or inside 10' inner cube boundary) excluded")
+	# A cell 3 steps away (15') is outside the 10' inner exclusion but
+	# inside the 25' outer (25' diameter 50 → outer radius 5).
+	check(Vector3i(3, 0, 0) in annulus,
+		"cell 15' from origin (outside 10' inner, inside 25' outer) included")
+	# A cell 10 steps away (50') is outside both — excluded.
+	check(not (Vector3i(10, 0, 0) in annulus),
+		"cell 50' from origin (outside outer radius) excluded")
+	print("  cells_in_annulus_excludes_inner_zone: OK")
+
+
+func test_cells_in_annulus_degenerates_to_sphere_when_inner_zero() -> void:
+	# inner_radius_feet <= 0 → annulus collapses to a plain sphere; the
+	# origin and inner cells are included.
+	var origin := Vector3i(0, 0, 0)
+	var sphere := CastingGeometry.cells_in_radius(origin, 15)
+	var annulus_no_exclusion := CastingGeometry.cells_in_annulus(origin, 15, 0)
+	check(sphere.size() == annulus_no_exclusion.size(),
+		"annulus with inner_radius=0 should match the sphere; sphere has %d, annulus has %d" %
+			[sphere.size(), annulus_no_exclusion.size()])
+	check(origin in annulus_no_exclusion,
+		"annulus with inner_radius=0 should include the origin")
+	print("  cells_in_annulus_degenerates_to_sphere_when_inner_zero: OK")
+
+
+# ---------------------------------------------------------------------------
+# Combatant consumer integrations
+# ---------------------------------------------------------------------------
+
+## Build a minimal monster Combatant for consumer tests (AC, movement,
+## damage immunity, action gating). Goblin-stat baseline; tests then mutate
+## flags as needed.
+func _make_gaseous_test_monster(id: String) -> Combatant:
+	var monster_data := {
+		"id": id,
+		"name": id,
+		"hit_dice": {"base": 1, "modifier": 0},
+		"armor_class": 6,
+		"attack_routines": [{"sequence": [{"weapon": "claw", "damage": "1d6"}]}],
+		"movement": {"land": {"exploration": 120, "combat": 40}},
+		"morale": 0,
+		"save_as": {"class": "fighter", "level": 1},
+		"xp": 10,
+	}
+	return Combatant.from_monster(monster_data, 4, id, "test_group")
+
+
+func test_gaseous_combatant_uses_ac_override_11() -> void:
+	# A combatant with is_gaseous flag returns AC 11 from
+	# get_effective_ac_vs("melee") regardless of its base AC. The
+	# override comes from the flag's metadata.ac_override field.
+	var c := _make_gaseous_test_monster("gaseous_ac_test")
+	var pre_ac := c.get_effective_ac_vs("melee")
+	check(pre_ac == 6, "baseline goblin AC should be 6 (from monster_data), got %d" % pre_ac)
+	# Set is_gaseous flag with the standard metadata (mirrors spell apply).
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_gaseous", "test:gaseous_ac",
+		{"ac_override": 11, "movement_rate_override_feet_per_round": 30})
+	var post_ac := c.get_effective_ac_vs("melee")
+	check(post_ac == 11,
+		"gaseous combatant should have AC 11 (RAW override), got %d" % post_ac)
+	# Missiles too.
+	var missiles_ac := c.get_effective_ac_vs("missiles")
+	check(missiles_ac == 11,
+		"gaseous combatant should have AC 11 vs missiles too, got %d" % missiles_ac)
+	print("  gaseous_combatant_uses_ac_override_11: OK")
+
+
+func test_gaseous_combatant_uses_movement_override_30() -> void:
+	# Gaseous override sets combat movement to 30'/round regardless of
+	# the combatant's base. Goblin baseline combat movement is 40 (from
+	# the monster_data we built).
+	var c := _make_gaseous_test_monster("gaseous_movement_test")
+	var pre_move := c.get_combat_movement()
+	check(pre_move == 40, "baseline goblin combat movement should be 40, got %d" % pre_move)
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_gaseous", "test:gaseous_move",
+		{"ac_override": 11, "movement_rate_override_feet_per_round": 30})
+	var post_move := c.get_combat_movement()
+	check(post_move == 30,
+		"gaseous combatant should have 30'/round movement (RAW override), got %d" %
+			post_move)
+	print("  gaseous_combatant_uses_movement_override_30: OK")
+
+
+func test_panicked_combatant_movement_doubles_from_running_multiplier() -> void:
+	# Panic spell sets is_running_in_panic flag with metadata.movement_multiplier
+	# = 2.0. The Combatant._apply_movement_multipliers reads the flag and
+	# doubles the combat movement (RAW: "flee at running speed").
+	var c := _make_gaseous_test_monster("panicked_test")
+	var pre_move := c.get_combat_movement()
+	check(pre_move == 40, "baseline goblin combat movement should be 40, got %d" % pre_move)
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_running_in_panic", "test:panic_run",
+		{"movement_multiplier": 2.0})
+	var post_move := c.get_combat_movement()
+	check(post_move == 80,
+		"panicked combatant should have 80'/round movement (40 base × 2.0 running), got %d" %
+			post_move)
+	print("  panicked_combatant_movement_doubles_from_running_multiplier: OK")
+
+
+func test_gaseous_combatant_is_damaged_only_by_magic_or_silver() -> void:
+	# Gaseous combatants count as invulnerable for the magic/silver gate
+	# (Combatant.is_damaged_only_by_magic_or_silver returns true). This
+	# means the existing attack-resolver invulnerability check fires for
+	# gaseous targets — no separate wiring needed in attack_resolver.gd /
+	# ranged_attack_resolver.gd.
+	var c := _make_gaseous_test_monster("gaseous_immune_test")
+	check(c.is_damaged_only_by_magic_or_silver() == false,
+		"baseline goblin is NOT damaged-only-by-magic")
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_gaseous", "test:gaseous_immune", {})
+	check(c.is_damaged_only_by_magic_or_silver() == true,
+		"gaseous combatant should be damaged-only-by-magic (RAW immunity to non-magical weapons)")
+	print("  gaseous_combatant_is_damaged_only_by_magic_or_silver: OK")
+
+
+func test_gaseous_combatant_cannot_attack_via_condition_manager() -> void:
+	# ConditionManager.check_action_allowed now consults the is_gaseous
+	# flag and refuses "attacking" + "casting" actions. Other actions
+	# (movement, speech) remain permitted.
+	var c := _make_gaseous_test_monster("gaseous_action_test")
+	var mgr := CombatConditionManager.new(ConditionCatalog.new())
+	check(mgr.check_action_allowed(c, "attacking") == true,
+		"baseline combatant should be allowed to attack")
+	check(mgr.check_action_allowed(c, "casting") == true,
+		"baseline combatant should be allowed to cast")
+	check(mgr.check_action_allowed(c, "movement") == true,
+		"baseline combatant should be allowed to move")
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_gaseous", "test:gaseous_action", {})
+	check(mgr.check_action_allowed(c, "attacking") == false,
+		"gaseous combatant should NOT be allowed to attack")
+	check(mgr.check_action_allowed(c, "casting") == false,
+		"gaseous combatant should NOT be allowed to cast")
+	check(mgr.check_action_allowed(c, "movement") == true,
+		"gaseous combatant should still be allowed to move (the whole point)")
+	print("  gaseous_combatant_cannot_attack_via_condition_manager: OK")
