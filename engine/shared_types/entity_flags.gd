@@ -30,7 +30,15 @@ extends RefCounted
 ##               "is_petrified", "is_temporal_stasis",
 ##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain)
 ##   Scrying:    "wizard_eye_active" (Wizard Eye — concentration, 240' tether)
-##   Social:     "is_charmed", "is_commanded", "is_geased"
+##   Social:     "is_charmed", "is_commanded", "is_geased",
+##               "is_controlled_by_caster" (Control mechanic — Jedidiah ruling 2026-06-01:
+##                  Charmed switches team allegiance but leaves the target under AI
+##                  control; Controlled switches team AND grants the controller direct
+##                  action-selection over the target. Set by magic-item Control items
+##                  with source_id "magic_item:<item_id>:<caster_id>"; metadata carries
+##                  {caster_id, original_side, controller_kind: "player"|"ai"}. The
+##                  flag is durable across combat encounters; combat-spawn code reads
+##                  it to determine which side the controlled target spawns on.)
 ##   Knowledge:  "can_read_unknown_languages" (Read Languages, 2 turns),
 ##               "can_see_invisible" (Detect Invisible),
 ##               "has_infravision" (Infravision spell, 1 day, 60' dark sight),

@@ -320,24 +320,19 @@ DEFER_BUILD = {
     "potion_of_longevity": "age is not yet a gameplay-affecting stat",
     "eyes_of_petrification": "gaze-attack subsystem (basilisk / medusa / cockatrice) not yet implemented",
     "treasure_map": "quest-hook generation system not yet implemented",
-    # Tier 2 triage decisions (Jedidiah 2026-05-29):
-    # Control series — RAW 'control' is stronger than 'charm' (controller
-    # dictates target's actions vs charm's 'treat as ally'). Our spell catalog
-    # has no dedicated *_control spells; binding to charm_monster would
-    # overshoot RAW. Defer until a custom-control resolver lands; then a
-    # future pass converts these defers to bindings via a new spell or
-    # custom_resolver_id field.
-    "potion_of_animal_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
-    "potion_of_dragon_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
-    "potion_of_giant_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
-    "potion_of_plant_control": "RAW 'control' overshoots charm_monster; needs custom-control resolver",
-    "ring_of_command_animal": "RAW 'command' overshoots charm_monster; needs custom-control resolver",
-    "ring_of_command_plant": "RAW 'command' overshoots charm_monster; needs custom-control resolver",
-    # Undead Control: charm immunity per RAW (undead are immune to charm and
-    # sleep), so a charm_monster binding would fizzle. Needs its own
-    # custom-undead-control resolver — typically "command N undead with
-    # turn-equivalent results" mechanic.
-    "potion_of_undead_control": "undead are immune to charm per RAW; needs custom undead-control resolver",
+    # Control series UNBLOCKED 2026-06-01: custom-control resolver landed
+    # via DIRECT_POTION_EFFECTS / DIRECT_WORN_ACTIVE_EFFECTS maps with
+    # effect_kind="control_creature" + per-item creature_type_filter.
+    # The Charmed/Controlled distinction (Jedidiah ruling 2026-06-01):
+    # Charmed switches team allegiance but leaves AI in control;
+    # Controlled switches team AND grants the controller direct
+    # action-selection. V1 wires the team-switch + is_controlled_by_caster
+    # flag; the direct-action UI for the caster to pick the target's
+    # combat actions like a henchman is a follow-up. 5 potions + 2 rings
+    # all wire to the same Control resolver. Potion of Undead Control's
+    # RAW-specific "intelligent undead save, unintelligent undead don't"
+    # + HD cap + hostility-on-expiry are deferred to follow-up monster-
+    # catalog work; V1 treats all undead as save-required.
     # cause_fear UNBLOCKED 2026-05-29 (Jedidiah confirmed it's the synthesized
     # reverse of remove_fear in the spell catalog). Wand of Fear LANDED with
     # the binding (rod_staff_wand, 20 charges, single_creature). Drums of
@@ -503,6 +498,107 @@ WORN_PASSIVE_FLAGS = {
 #   die" and similar across the corpus.
 DIRECT_POTION_EFFECTS = {
     "potion_of_poison": {"effect_kind": "save_or_die_poison"},
+    # Tier 4 Control batch (2026-06-01): 5 Control potions wire to the
+    # `control_creature` direct-effect kind. Each carries a
+    # `creature_type_filter` that the resolver checks against the target's
+    # monster catalog `category` / `tags`. Per the Charmed/Controlled
+    # distinction (Jedidiah ruling 2026-06-01): Control flips target's
+    # Combatant.side to caster's side AND sets the is_controlled_by_caster
+    # flag (forward-looking marker for the direct-action-selection UI
+    # that's a follow-up). Save: vs Spells negates (standard ACKS save).
+    # Duration: 1d6+6 turns (project potion default per
+    # acore_treasure_and_magic_items_rules.xml:262 "default duration is
+    # 1d6+6 turns unless a specific potion says otherwise"). Roll seed:
+    # GameState.dice_overrides["potion_control_duration"].
+    "potion_of_animal_control": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "animal",
+        "save_kind": "spells",
+        "duration_turns": -1,  # roll 1d6+6 at activation time
+    },
+    "potion_of_dragon_control": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "dragon",
+        "save_kind": "spells",
+        "duration_turns": -1,
+    },
+    "potion_of_giant_control": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "giant",
+        "save_kind": "spells",
+        "duration_turns": -1,
+    },
+    "potion_of_plant_control": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "plant",
+        "save_kind": "spells",
+        "duration_turns": -1,
+    },
+    # Potion of Undead Control — RAW per Jedidiah 2026-06-01:
+    # "Normally, undead are immune to charm effects. However, when this
+    # potion is quaffed, the drinker is able to control up to 3d6 Hit
+    # Dice of undead of 4 HD or fewer, or one undead creature of more
+    # than 4 HD, as if using a charm monster spell. Intelligent undead
+    # may resist the effect with a saving throw versus Spells, but
+    # unintelligent undead receive no saving throw. Unintelligent
+    # undead will be completely under the drinker's control and will
+    # obey the user's will entirely. Intelligent undead can be given
+    # orders, subject to the normal limitations of charm monster.
+    # Controlled undead will be hostile when the control ends."
+    #
+    # V1 implements the save mechanic (intelligent undead save vs
+    # Spells; failure → controlled). Deferred to follow-up:
+    #   - HD cap (3d6 for ≤4HD vs 1 for >4HD) — needs monster catalog
+    #     work to enumerate matched undead in range
+    #   - Intelligent vs unintelligent distinction — needs a
+    #     `mindless_undead` flag on the monster catalog or an
+    #     intelligence-score threshold
+    #   - Hostility on duration expiry — needs the duration-cleanup
+    #     callback to flip side back AND set is_hostile_to_caster
+    # All three deferrals flagged in the build log; V1 treats every
+    # undead target as save-required (matches the 6 other Control
+    # items in the batch).
+    "potion_of_undead_control": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "undead",
+        "save_kind": "spells",
+        "duration_turns": -1,
+        "hostile_on_expiry": True,  # forward-looking flag for the cleanup
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# DIRECT_WORN_ACTIVE_EFFECTS — worn-item activations whose effect bypasses
+# the spell_binding pipeline because the mechanic isn't a replayed spell.
+# Consumed by MagicItemActivator.activate_worn_item's pre-spell-binding
+# branch. Mirrors DIRECT_POTION_EFFECTS but for the activate_worn_item
+# entry point.
+#
+# Tier 4 Control batch (2026-06-01):
+#   Ring of Command Animal / Ring of Command Plant — RAW: "command"
+#   semantics overshoot charm_monster per the project triage
+#   (cause_fear/Command series are distinct from charm). Per the
+#   Charmed/Controlled distinction, these rings IMPLEMENT Control,
+#   not Charm. Each ring carries a creature_type_filter.
+#   Save: vs Spells negates (standard).
+#   Duration: V1 = while the activator-issued effect is active +
+#   ring is equipped. Removing the ring clears the control.
+#   (Persistent-worn re-activation per encounter is a follow-up; V1
+#   treats each ring activation as a fresh control attempt.)
+DIRECT_WORN_ACTIVE_EFFECTS = {
+    "ring_of_command_animal": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "animal",
+        "save_kind": "spells",
+        "duration_turns": -1,  # persistent while ring equipped + activated
+    },
+    "ring_of_command_plant": {
+        "effect_kind": "control_creature",
+        "creature_type_filter": "plant",
+        "save_kind": "spells",
+        "duration_turns": -1,
+    },
 }
 
 
@@ -1234,6 +1330,13 @@ def main() -> int:
         # MagicItemActivator.drink_potion. effect_kind names the resolver.
         if key in DIRECT_POTION_EFFECTS:
             it["direct_potion_effect"] = DIRECT_POTION_EFFECTS[key]
+        # Tier 4 Control batch (2026-06-01): worn-active items whose
+        # effect bypasses the spell pipeline (Ring of Command Animal /
+        # Ring of Command Plant). Stamped on the catalog so the
+        # MagicItemActivator.activate_worn_item path can dispatch to
+        # the Control resolver before its spell_binding branch.
+        if key in DIRECT_WORN_ACTIVE_EFFECTS:
+            it["direct_worn_active_effect"] = DIRECT_WORN_ACTIVE_EFFECTS[key]
         # Special-effect charged items (Rod of Cancellation): bypass the
         # spell pipeline and use a dedicated entry point. The
         # `default_charges` here mirrors the spell-binding wand/staff

@@ -241,15 +241,12 @@ const EXPECTED_DEFER_KEYS := [
 	# Tier 1 deferrals (2026-05-29 triage):
 	"ring_of_wishes", "potion_of_longevity",
 	"eyes_of_petrification", "treasure_map",
-	# Tier 2 deferrals (2026-05-29): Control + Command items overshoot
-	# charm_monster per RAW. wand_of_fear shipped 2026-05-29 (cause_fear).
-	# Dusts (Disappearance + Appearance) shipped 2026-06-01 via
-	# use_misc_magic_active entry point — removed from this list. Drums
-	# of Panic stays deferred pending the `panic` spell's effect block.
-	"potion_of_animal_control", "potion_of_dragon_control",
-	"potion_of_giant_control", "potion_of_plant_control",
-	"potion_of_undead_control",
-	"ring_of_command_animal", "ring_of_command_plant",
+	# Tier 2 deferrals (2026-05-29): wand_of_fear shipped 2026-05-29
+	# (cause_fear). Dusts (Disappearance + Appearance) shipped 2026-06-01
+	# via use_misc_magic_active entry point. 5 Control potions + 2
+	# Command rings shipped 2026-06-01 via the Control resolver
+	# (direct_potion_effect / direct_worn_active_effect). Drums of Panic
+	# stays deferred pending the `panic` spell's effect block.
 	"drums_of_panic",   # panic spell effect not yet implemented; bind one-line when it lands
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,

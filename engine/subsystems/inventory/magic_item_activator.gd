@@ -126,13 +126,16 @@ static func drink_potion(
 			item_key, catalog_entry.get("category", "?")]
 		return empty
 	# Tier 4 Cluster A (2026-06-01): potions whose effect bypasses the spell
-	# pipeline (Potion of Poison). The catalog stamps `direct_potion_effect`
-	# with an `effect_kind` field; route to the per-effect resolver. Returns
-	# early — these never fall through to the spell_binding path.
+	# pipeline (Potion of Poison, Potion of *_Control). The catalog stamps
+	# `direct_potion_effect` with an `effect_kind` field; route to the
+	# per-effect resolver. Returns early — these never fall through to the
+	# spell_binding path. target_id + target_entity are forwarded for
+	# control-creature effects (the Control batch); poison ignores them.
 	var direct_v: Variant = catalog_entry.get("direct_potion_effect", null)
 	if direct_v is Dictionary:
 		return _resolve_direct_potion_effect(
-			item_id, item_key, catalog_entry, drinker, direct_v as Dictionary)
+			item_id, item_key, catalog_entry, drinker, direct_v as Dictionary,
+			target_id, target_entity)
 	var binding_v: Variant = catalog_entry.get("spell_binding", null)
 	if not (binding_v is Dictionary):
 		empty["message"] = "Potion '%s' has no spell_binding (effect not yet implemented)." % item_key
@@ -386,6 +389,19 @@ static func activate_worn_item(
 	if catalog_entry.is_empty():
 		empty["message"] = "Item '%s' has no catalog entry." % item_key
 		return empty
+	# Tier 4 Control batch (2026-06-01): worn-active items whose effect
+	# bypasses the spell pipeline (Ring of Command Animal/Plant). Routed
+	# through `_apply_control_effect`; returns the same shape as the
+	# spell-binding path (with `consumed: false` because rings are
+	# multi-use). Mirrors drink_potion's direct_potion_effect branch.
+	var direct_worn_v: Variant = catalog_entry.get("direct_worn_active_effect", null)
+	if direct_worn_v is Dictionary:
+		var control_outcome: Dictionary = _apply_control_effect(
+			wielder, target_id, target_entity,
+			direct_worn_v as Dictionary,
+			str(catalog_entry.get("name", item_key)),
+			item_id, "worn_active")
+		return control_outcome
 	var binding_v: Variant = catalog_entry.get("spell_binding", null)
 	if not (binding_v is Dictionary):
 		empty["message"] = (
@@ -818,7 +834,9 @@ static func _resolve_direct_potion_effect(
 		item_key: String,
 		catalog_entry: Dictionary,
 		drinker: CharacterData,
-		direct_cfg: Dictionary) -> Dictionary:
+		direct_cfg: Dictionary,
+		target_id: String = "",
+		target_entity = null) -> Dictionary:
 	var effect_kind: String = str(direct_cfg.get("effect_kind", ""))
 	var name: String = str(catalog_entry.get("name", item_key))
 	var base := {
@@ -829,6 +847,28 @@ static func _resolve_direct_potion_effect(
 		"casting_result": null,
 	}
 	match effect_kind:
+		"control_creature":
+			# Tier 4 Control batch (2026-06-01). RAW per Jedidiah ruling:
+			# Charmed switches team allegiance but leaves AI in control;
+			# Controlled switches team AND grants the controller direct
+			# action-selection over the target. V1 implementation: apply
+			# `controlled` condition + set is_controlled_by_caster flag on
+			# target + flip Combatant.side if the target supports it. The
+			# direct-action-selection UI is a follow-up. 5 potions
+			# (Animal/Dragon/Giant/Plant/Undead Control) all use this branch.
+			var control_outcome: Dictionary = _apply_control_effect(
+				drinker, target_id, target_entity,
+				direct_cfg, name, item_id, "potion")
+			# Potion is consumed on success only — the drinker drank the
+			# potion to attempt the control; failure means it didn't take
+			# hold but the dose is consumed (unlike spell-binding potions
+			# where a magic-system failure preserves the dose). Project
+			# decision: this matches Potion of Poison's "consumed in both
+			# outcomes" pattern since the drinker physically drank the
+			# liquid in both cases.
+			CampaignRepository.remove_inventory_item(item_id)
+			control_outcome["consumed"] = true
+			return control_outcome
 		"save_or_die_poison":
 			# Roll save vs Poison & Death — drinker's effective save target,
 			# d20, no modifier (the save itself uses the entity's save value).
@@ -879,6 +919,203 @@ static func _resolve_direct_potion_effect(
 				effect_kind, item_key]
 			return base
 	return base  # unreachable; satisfies the type checker
+
+
+## Shared Control resolver — applied by both potion (drink_potion) and worn-
+## active (activate_worn_item) entry points. Implements the Control mechanic
+## per Jedidiah ruling 2026-06-01:
+##   * Charmed (existing): switches team allegiance, target stays AI-controlled
+##   * Controlled (new):   switches team allegiance AND grants controller
+##                         direct action-selection over the target
+##
+## V1 implementation:
+##   1. Validate target presence + creature-type filter match.
+##   2. Roll save vs the configured save kind (default: spells). Lower is
+##      better — target wants `modified_total >= save_target`.
+##   3. On save success: no effect (control failed).
+##   4. On save failure:
+##      a. Apply the `controlled` condition to the target (if target supports
+##         add_condition — Combatants do; raw CharacterData doesn't).
+##      b. Set the `is_controlled_by_caster` EntityFlag on the target with
+##         source_id "magic_item:<item_id>:<caster_id>" + metadata recording
+##         {caster_id, original_side, controller_kind, creature_type_filter,
+##         duration_turns, hostile_on_expiry}.
+##      c. If the target has a `.side` property (Combatants), flip it to the
+##         caster's side. The flag's metadata preserves original_side so a
+##         future cleanup callback can revert.
+##
+## V1 deferred (documented in build_log):
+##   * Duration-based revert (on tick expiry, restore original_side + clear
+##     flag). The condition + flag are durable; combat-spawn code can read
+##     them. Cleanup callback wiring is a follow-up.
+##   * Direct-action UI (caster picks target's combat actions like a henchman).
+##   * Hostility-on-expiry (Undead Control specifically — hostile when control
+##     ends per Jedidiah-supplied RAW).
+##   * HD cap enforcement for Potion of Undead Control (3d6 for ≤4 HD vs 1
+##     for >4 HD — needs monster catalog enumeration in range).
+##   * Intelligent vs unintelligent undead distinction (unintelligent get no
+##     save — needs a `mindless_undead` flag on monster catalog).
+##
+## [param caster]              live CharacterData casting the effect (the
+##                              drinker / ring-wielder; becomes the controller).
+## [param target_id]            id of the target creature.
+## [param target_entity]        live Combatant or CharacterData for the target.
+##                              For combat use it should be a Combatant (has
+##                              .side property + add_condition method).
+## [param config]               the direct_potion_effect or
+##                              direct_worn_active_effect Dictionary from the
+##                              catalog (creature_type_filter, save_kind, etc.).
+## [param item_name]            human-readable name for log messages.
+## [param item_id]              source item id for flag.source_id uniqueness.
+## [param invocation_kind]      "potion" | "worn_active" — log discriminator.
+static func _apply_control_effect(
+		caster: CharacterData,
+		target_id: String,
+		target_entity,
+		config: Dictionary,
+		item_name: String,
+		item_id: String,
+		invocation_kind: String) -> Dictionary:
+	var base := {
+		"success": false,
+		"message": "",
+		"consumed": false,
+		"spell_key": "",
+		"casting_result": null,
+	}
+	# 1. Target presence check.
+	if target_id.is_empty() or target_entity == null:
+		base["message"] = "%s requires a target creature." % item_name
+		return base
+	# 2. Creature-type filter check. The target_entity may be a Combatant
+	#    (which exposes monster_type / category) or a CharacterData. V1 best-
+	#    effort: read a `creature_type` / `category` / `monster_type` property
+	#    if present; if absent, skip the filter (forward-compatible for when
+	#    the type is wired). The filter strings match common ACKS creature-
+	#    type categories ("animal", "dragon", "giant", "plant", "undead").
+	var creature_type_filter: String = str(config.get("creature_type_filter", ""))
+	if not creature_type_filter.is_empty():
+		var target_type: String = _get_target_creature_type(target_entity)
+		# If the engine doesn't yet expose creature_type on this target,
+		# we let it through (V1 forward-compat). Once monster catalog
+		# wires creature_type onto all combatants, this becomes a hard
+		# refusal. Documented in build_log as a [NEEDS-MONSTER-CATALOG-WORK]
+		# follow-up.
+		if not target_type.is_empty() and target_type != creature_type_filter:
+			base["message"] = (
+				"%s only controls %s creatures; target is %s." %
+				[item_name, creature_type_filter, target_type])
+			return base
+	# 3. Roll save against the configured save kind.
+	var save_kind: String = str(config.get("save_kind", "spells"))
+	var save_key: String = "save_%s" % save_kind  # e.g. save_spells
+	var save_target: int = _get_target_save(target_entity, save_key)
+	var roll: RollResult = DiceSystem.roll_digital(
+		20, 1, 0, "save_vs_control_effect")
+	var passed: bool = roll.modified_total >= save_target
+	if passed:
+		# Save succeeded — no effect.
+		return {
+			"success": true,  # the resolution ran successfully; the EFFECT was negated by save
+			"message": "%s — target saved (rolled %d vs %s target %d). No effect." %
+				[item_name, roll.modified_total, save_key, save_target],
+			"consumed": false,  # caller (drink_potion / activate_worn_item) sets this
+			"spell_key": "",
+			"casting_result": null,
+		}
+	# 4. Save failed — apply control.
+	#    (a) Condition.
+	if target_entity != null and target_entity.has_method("add_condition"):
+		target_entity.add_condition("controlled")
+	#    (b) Set is_controlled_by_caster flag with metadata.
+	var caster_id: String = caster.id if caster != null else ""
+	var source_id: String = "magic_item:%s:%s" % [item_id, caster_id]
+	var caster_side: int = _get_target_side(caster)  # caster's combat side
+	var original_target_side: int = _get_target_side(target_entity)
+	var metadata := {
+		"source_kind": "magic_item_control",
+		"caster_id": caster_id,
+		"item_id": item_id,
+		"item_name": item_name,
+		"invocation_kind": invocation_kind,
+		"creature_type_filter": str(config.get("creature_type_filter", "")),
+		"original_side": original_target_side,
+		"caster_side": caster_side,
+		"controller_kind": "player",  # V1 assumes the caster is the player; future: distinguish
+		"duration_turns": int(config.get("duration_turns", -1)),
+		"hostile_on_expiry": bool(config.get("hostile_on_expiry", false)),
+	}
+	var target_flags = _get_entity_flags(target_entity)
+	if target_flags != null:
+		target_flags.set_flag("is_controlled_by_caster", source_id, metadata)
+	#    (c) Flip target side if the target has a side and the caster has one.
+	var side_flipped: bool = false
+	if caster_side >= 0 and original_target_side >= 0 and caster_side != original_target_side:
+		if target_entity != null and ("side" in target_entity):
+			target_entity.side = caster_side
+			side_flipped = true
+	return {
+		"success": true,
+		"message": "%s — target FAILED save (rolled %d vs %s target %d). Target is now controlled%s." %
+			[item_name, roll.modified_total, save_key, save_target,
+			 " and switched to your side" if side_flipped else ""],
+		"consumed": false,
+		"spell_key": "",
+		"casting_result": null,
+	}
+
+
+## Best-effort read of a target's creature_type (e.g. "animal" / "undead" /
+## "giant" / "dragon" / "plant"). Combatants may expose `monster_type` or a
+## `category` field; CharacterData has no such field. V1 returns "" if no
+## type is available — the Control filter then lets the target through
+## (forward-compat).
+static func _get_target_creature_type(target_entity) -> String:
+	if target_entity == null:
+		return ""
+	# Try common property names in order of likelihood.
+	for prop in ["creature_type", "monster_type", "category", "type"]:
+		if prop in target_entity:
+			var v = target_entity.get(prop)
+			if v is String and not (v as String).is_empty():
+				return v
+	# Combatant may carry a monster catalog entry as `_monster_catalog_entry`
+	# (per the agent's exploration earlier in the project). V1 doesn't dig
+	# that deep; return "" and let the filter pass.
+	return ""
+
+
+## Best-effort read of a target's save target number. Combatants expose
+## get_effective_save(); CharacterData also exposes it. Returns 20 as a
+## conservative default (only a natural 20 saves) if no save is available.
+static func _get_target_save(target_entity, save_key: String) -> int:
+	if target_entity == null:
+		return 20
+	if target_entity.has_method("get_effective_save"):
+		return int(target_entity.get_effective_save(save_key))
+	if save_key in target_entity:
+		return int(target_entity.get(save_key))
+	return 20
+
+
+## Best-effort read of a target's combat side (PARTY=0, ENEMY=1). Returns
+## -1 if the target has no side (out-of-combat CharacterData, etc.).
+static func _get_target_side(target_entity) -> int:
+	if target_entity == null:
+		return -1
+	if "side" in target_entity:
+		return int(target_entity.get("side"))
+	return -1
+
+
+## Best-effort read of a target's EntityFlags container. Combatants /
+## CharacterData expose `flags`; returns null if absent.
+static func _get_entity_flags(target_entity):
+	if target_entity == null:
+		return null
+	if "flags" in target_entity:
+		return target_entity.get("flags")
+	return null
 
 
 ## Pick the coat_spec for an oil item + application mode. Hard-coded for V1
