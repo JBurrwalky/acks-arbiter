@@ -489,6 +489,7 @@ extends Node
 @onready var _oil_of_slipperiness_tests = $OilOfSlipperinessTests
 @onready var _tier4_cluster_a_tests = $Tier4ClusterATests
 @onready var _panic_gaseous_form_tests = $PanicGaseousFormTests
+@onready var _magic_swords_tests = $MagicSwordsTests
 
 
 func _ready() -> void:
@@ -972,7 +973,8 @@ func run() -> void:
 			_decanter_of_endless_water_tests,
 			_oil_of_slipperiness_tests,
 			_tier4_cluster_a_tests,
-			_panic_gaseous_form_tests]:
+			_panic_gaseous_form_tests,
+			_magic_swords_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

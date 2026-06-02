@@ -35,6 +35,15 @@ extends RefCounted
 ##               "is_petrified", "is_temporal_stasis",
 ##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain)
 ##   Scrying:    "wizard_eye_active" (Wizard Eye — concentration, 240' tether)
+##   Drain:      "is_energy_drained" (Life Drinker sword + future Wraith/Spectre
+##                  energy-drain attacks — RAW
+##                  acore_treasure_and_magic_items_rules.xml:274 Life Drinker
+##                  "drains 1 HD or 1 life level from any struck target."
+##                  Metadata carries {drained_levels: int, source_kind: String,
+##                  wielder_id: String}. Forward-looking flag in V1 — when the
+##                  energy-drain consumer integration lands (level reduction on
+##                  CharacterData / HD reduction on monster catalog row), the
+##                  flag's metadata documents the contract.)
 ##   Social:     "is_charmed", "is_commanded", "is_geased",
 ##               "is_controlled_by_caster" (Control mechanic — Jedidiah ruling 2026-06-01:
 ##                  Charmed switches team allegiance but leaves the target under AI

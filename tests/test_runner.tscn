@@ -418,6 +418,7 @@
 [ext_resource type="Script" path="res://tests/test_oil_of_slipperiness.gd" id="402_oil_of_slipperiness_tests"]
 [ext_resource type="Script" path="res://tests/test_tier4_cluster_a.gd" id="403_tier4_cluster_a_tests"]
 [ext_resource type="Script" path="res://tests/test_panic_gaseous_form.gd" id="404_panic_gaseous_form_tests"]
+[ext_resource type="Script" path="res://tests/test_magic_swords.gd" id="405_magic_swords_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1672,3 +1673,6 @@ script = ExtResource("403_tier4_cluster_a_tests")
 
 [node name="PanicGaseousFormTests" type="Node" parent="."]
 script = ExtResource("404_panic_gaseous_form_tests")
+
+[node name="MagicSwordsTests" type="Node" parent="."]
+script = ExtResource("405_magic_swords_tests")

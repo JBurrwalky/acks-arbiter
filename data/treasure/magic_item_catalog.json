@@ -2022,51 +2022,105 @@
       "item_key": "flame_tongue",
       "name": "Flame Tongue",
       "category": "sword",
-      "magical_bonus": 0,
+      "magical_bonus": 1,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 45000,
-      "creation_time_days": 190
+      "creation_time_days": 190,
+      "sword_metadata": {
+        "vs_creature_type_bonus": {
+          "regenerating": 2,
+          "avian": 2,
+          "undead": 3,
+          "plant_like": 3,
+          "_note": "RAW :273. Higher tier wins (avian undead = +3, not +5)."
+        },
+        "ignitable_on_command": true,
+        "light_radius_cells": 6,
+        "can_ignite_flammables": true
+      }
     },
     {
       "item_key": "life_drinker",
       "name": "Life Drinker",
       "category": "sword",
-      "magical_bonus": 0,
+      "magical_bonus": 1,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 41000,
-      "creation_time_days": 174
+      "creation_time_days": 174,
+      "sword_metadata": {
+        "drain_on_command": true,
+        "drain_levels": 1,
+        "default_charges": "1d4+4",
+        "remains_plus_one_after_charges": true
+      },
+      "default_charges": "1d4+4"
     },
     {
       "item_key": "luck_blade",
       "name": "Luck Blade",
       "category": "sword",
-      "magical_bonus": 0,
+      "magical_bonus": 1,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 52500,
-      "creation_time_days": 220
+      "creation_time_days": 220,
+      "sword_metadata": {
+        "passive_save_bonus": 1,
+        "wielded_slot_required": "hands_main",
+        "spell_binding": {
+          "spell_key": "wish",
+          "tradition": "arcane",
+          "caster_level": 17,
+          "target_mode": "self"
+        },
+        "default_charges": "1d4+1",
+        "remains_plus_one_after_charges": true,
+        "_note": "Wish consumer is deferred to the wish spell effect pass."
+      },
+      "default_charges": "1d4+1",
+      "spell_binding": {
+        "spell_key": "wish",
+        "tradition": "arcane",
+        "caster_level": 17,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "frost_brand",
       "name": "Frost Brand",
       "category": "sword",
-      "magical_bonus": 0,
+      "magical_bonus": 3,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 145000,
-      "creation_time_days": 315
+      "creation_time_days": 315,
+      "sword_metadata": {
+        "vs_creature_type_bonus": {
+          "hot_environment": 3,
+          "fire_based_attacks": 3,
+          "_note": "RAW :276. Frost Brand 'Functions as sword +6' \u2014 base +3 (EXPLICIT_BONUS) + this extra +3 = +6 total."
+        },
+        "wielder_fire_resistance": true,
+        "cold_weather_torchlight_threshold_f": 0,
+        "extinguishes_nonmagical_fire_radius_ft": 10
+      }
     },
     {
       "item_key": "vorpal_sword",
       "name": "Vorpal Sword",
       "category": "sword",
-      "magical_bonus": 0,
+      "magical_bonus": 3,
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 160000,
-      "creation_time_days": 590
+      "creation_time_days": 590,
+      "sword_metadata": {
+        "natural_20_decapitation": true,
+        "save_kind": "save_poison_death",
+        "_note": "RAW :277. Nat 20 \u2192 save vs Death; fail = instant kill, succeed = \u00d72 damage."
+      }
     },
     {
       "item_key": "cursed_sword",

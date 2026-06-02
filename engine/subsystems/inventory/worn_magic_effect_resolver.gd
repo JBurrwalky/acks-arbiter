@@ -213,6 +213,33 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "displacer_cloak" and bonus > 0:
 			_add_displacer_cloak(character, item_id, bonus)
 			continue
+		# --- Luck Blade (Tier 4 magic swords, 2026-06-01) ---
+		# RAW (acore_treasure_and_magic_items_rules.xml:275): "Grants +1 on
+		# all saving throws." Passive bonus AS LONG AS WIELDED — we check
+		# slot == "hands_main" in addition to is_equipped to enforce the
+		# "wielded" distinction (a Luck Blade in the off-hand or in pack
+		# doesn't grant the bonus). The wishes (1d4+1 charged via
+		# spell_binding to wish; consumer integration deferred to the Wish
+		# spell-effect pass) and the residual +1 sword status are
+		# orthogonal to this passive save bonus.
+		if item_key == "luck_blade":
+			var slot: String = _row_str(row, "slot", "")
+			if slot == "hands_main":
+				_add_luck_blade(character, item_id)
+			continue
+		# --- Frost Brand (Tier 4 magic swords, 2026-06-01) ---
+		# RAW (acore_treasure_and_magic_items_rules.xml:276): "Protects
+		# wielder from fire as a ring of fire resistance." Wielded gate
+		# (hands_main slot only). Reuses the Ring of Fire Resistance
+		# helper — same +2 to save_blast_breath (V1 simplification of
+		# the save-by-element note). The extinguish-fire-on-touch +
+		# cold-weather torchlight mechanics are deferred (flag metadata
+		# documents the contract).
+		if item_key == "frost_brand":
+			var slot: String = _row_str(row, "slot", "")
+			if slot == "hands_main":
+				_add_ring_of_fire_resistance(character, item_id)
+			continue
 
 
 ## Apply a Ring of Protection +N modifier: +N to AC (ascending AC, so positive
@@ -251,6 +278,28 @@ static func _apply_ac_and_saves_bonus(character: CharacterData, item_id: String,
 			"source_type": "worn_magic_item",
 			"operation": "add",
 			"value": -bonus,  # lower target = better save (saves are target numbers)
+			"stacking_group": "",
+			"priority": 0,
+		})
+
+
+## Apply Luck Blade's passive +1 saving-throw bonus. Distinct from
+## `_apply_ac_and_saves_bonus` (which also touches AC) — Luck Blade's
+## bonus is saves-ONLY. Per RAW: "Grants +1 on all saving throws."
+## Caller already gated on slot == "hands_main", so this only fires
+## when the sword is wielded in the main hand (off-hand or pack →
+## no bonus). The wielded-distinction extension is novel for this
+## resolver (which previously assumed any "is_equipped" wear).
+const LUCK_BLADE_SAVES_BONUS: int = 1
+
+static func _add_luck_blade(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	for save_key in ALL_SAVES:
+		character.modifiers.add_modifier(save_key, {
+			"source_id": source_id,
+			"source_type": "worn_magic_item",
+			"operation": "add",
+			"value": -LUCK_BLADE_SAVES_BONUS,  # lower target = better save
 			"stacking_group": "",
 			"priority": 0,
 		})

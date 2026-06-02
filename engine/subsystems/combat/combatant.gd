@@ -902,6 +902,108 @@ func get_special_abilities() -> Array:
 	return _monster_data.get("special_abilities", [])
 
 
+## Creature-type query helpers used by magic-item conditional bonuses
+## (Flame Tongue, Frost Brand) and other vs-creature-type mechanics
+## (Magic Sword's invulnerable-monster gate is a separate sibling check).
+## Each returns false for character combatants (PCs/henchmen have no
+## monster catalog data); monster combatants check the catalog row.
+
+## Is this monster of the given type (e.g. "undead", "animal", "elemental",
+## "fantastic_creature")? Checks monster_types array.
+func is_creature_type(type_id: String) -> bool:
+	if is_character:
+		return false
+	var types: Array = _monster_data.get("monster_types", [])
+	return type_id in types
+
+
+## Does this monster carry the given sub_type (e.g. "plant", "fire",
+## "incorporeal")? Checks sub_types array.
+func has_sub_type(sub_type: String) -> bool:
+	if is_character:
+		return false
+	var subs: Array = _monster_data.get("sub_types", [])
+	return sub_type in subs
+
+
+## Does this monster carry the given special_ability (e.g. "regeneration",
+## "energy_drain", "spit_acid")? Checks special_abilities array of dicts
+## for matching ability_id.
+func has_special_ability(ability_id: String) -> bool:
+	for ability in get_special_abilities():
+		if ability is Dictionary and str(ability.get("ability_id", "")) == ability_id:
+			return true
+	return false
+
+
+## RAW: Flame Tongue "+2 versus regenerating or avian monsters." Returns
+## true when this monster has the regeneration special ability per
+## monster catalog (troll, vampire, etc.).
+func has_regeneration() -> bool:
+	return has_special_ability("regeneration")
+
+
+## RAW: Flame Tongue "+2 versus regenerating or avian monsters." Detects
+## avian creatures (winged, flying). V1 checks `sub_types` for "avian"
+## OR known avian monster ids (harpy is the canonical example). Future
+## monster catalog passes should add "avian" to sub_types on bird-like
+## creatures so this check becomes purely sub_type-driven.
+func is_avian() -> bool:
+	if has_sub_type("avian"):
+		return true
+	# V1 fallback by monster id for the canonical examples.
+	var mid: String = str(_monster_data.get("id", ""))
+	return mid in ["harpy", "roc", "giant_eagle", "giant_hawk", "pegasus", "griffon", "hippogriff"]
+
+
+## RAW: Flame Tongue "+3 versus undead or plant-like monsters." Plant-like
+## detection — primary check is sub_types ("plant" is documented on
+## treant). Future per-monster passes extend this.
+func is_plant_like() -> bool:
+	return has_sub_type("plant")
+
+
+## RAW: Frost Brand "Functions as sword +6 versus creatures from hot
+## environments." V1 checks sub_types for "fire" (salamander_flame) +
+## known fire-dwelling monster ids. Future per-monster catalog passes
+## add a `hot_environment: true` flag on the relevant creatures.
+func is_from_hot_environment() -> bool:
+	if has_sub_type("fire"):
+		return true
+	if bool(_monster_data.get("hot_environment", false)):
+		return true
+	# V1 fallback by id for canonical examples.
+	var mid: String = str(_monster_data.get("id", ""))
+	return mid in [
+		"red_dragon", "salamander_flame", "fire_elemental",
+		"efreeti", "phoenix", "fire_giant", "hell_hound",
+	]
+
+
+## RAW: Frost Brand "Functions as sword +6 versus creatures ... with
+## fire-based attacks." Detects via special_abilities (any ability with
+## damage type fire) + breath_weapon damage type + known monster ids.
+func has_fire_based_attacks() -> bool:
+	# Check breath weapon damage type (red dragon etc.).
+	var breath: Dictionary = _monster_data.get("breath_weapon", {})
+	if str(breath.get("damage_type", "")).to_lower() == "fire":
+		return true
+	# Check special_abilities for fire-keyed effects.
+	for ability in get_special_abilities():
+		if not (ability is Dictionary):
+			continue
+		var effect: Dictionary = ability.get("effect", {})
+		if str(effect.get("damage_type", "")).to_lower() == "fire":
+			return true
+		var aid: String = str(ability.get("ability_id", "")).to_lower()
+		if "fire" in aid or "flame" in aid:
+			return true
+	# Explicit catalog flag override.
+	if bool(_monster_data.get("has_fire_based_attacks", false)):
+		return true
+	return false
+
+
 # ---------------------------------------------------------------------------
 # Modifier / flag / resistance accessors
 # ---------------------------------------------------------------------------

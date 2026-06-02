@@ -76,6 +76,10 @@ func resolve_melee_attack(
 	var to_hit_bonus := attack_ability_mod + extra_attack_mod
 	if attacker.is_character:
 		to_hit_bonus += attacker.get_weapon_magical_bonus()
+		# Magic swords with vs-creature-type conditional bonuses
+		# (Flame Tongue +2/+3, Frost Brand +6 via the +3 base). Applies
+		# both to-hit and damage per RAW. See _get_sword_bonus_vs_creature.
+		to_hit_bonus += _get_sword_bonus_vs_creature(attacker, target)
 		# Strenuous-day penalty per ax_campaign_play §effort_rules L166-172.
 		# Cumulative -1/day past the 6-day grace window applies to attack
 		# throws, damage, and proficiency throws until rest is taken.
@@ -156,6 +160,9 @@ func resolve_melee_attack(
 			damage_roll.modified_total = 4
 
 		var magic_dmg_bonus: int = attacker.get_weapon_magical_bonus() if attacker.is_character else 0
+		# Magic swords with vs-creature-type conditional damage bonus.
+		if attacker.is_character:
+			magic_dmg_bonus += _get_sword_bonus_vs_creature(attacker, target)
 		# Striking custom resolver (Session 9) writes damage_bonus_dice="1d6"
 		# and strikes_as_magical to the wielded weapon item via
 		# apply_modifier_to_item. Session 9.6 polish: consume those item-side
@@ -182,6 +189,37 @@ func resolve_melee_attack(
 			if weapon_family != "" and ProficiencyCombatHooks.has_active_enabler(
 					attacker, "natural_20_double_damage",
 					{"weapon_category": weapon_family}):
+				damage_total *= 2
+
+		# Vorpal Sword nat-20 hook (RAW
+		# acore_treasure_and_magic_items_rules.xml:277): "On a natural 20
+		# attack throw, decapitates a struck target unless it saves
+		# versus Death. If the save succeeds, or if the target has no
+		# head, the attack instead deals double normal damage." V1 implementation:
+		# nat-20 + attacker is wielding vorpal_sword → target rolls
+		# save_poison_death (the ACKS 'vs Death' save category); failure
+		# = instant kill (damage = current HP + 1 buffer to ensure death);
+		# success = damage doubled. Stacks multiplicatively with Weapon
+		# Focus if both fire (×4 on the rare nat-20 with a vorpal sword
+		# AND Weapon Focus on swords).
+		if is_natural_twenty and attacker.is_character \
+				and str(attacker.get_equipped_weapon().get("item_key", "")) == "vorpal_sword":
+			var save_target: int = target.get_effective_save("save_poison_death")
+			var save_roll_result: int = 20
+			if _dice_system != null:
+				var sr: RollResult = _dice_system.roll_digital(
+					20, 1, 0, "vorpal_save_vs_death")
+				save_roll_result = sr.modified_total
+			var passed: bool = save_roll_result >= save_target
+			if not passed:
+				# Instant kill: deal enough damage to drop the target.
+				damage_total = max(damage_total, int(target.hp_current) + 1)
+				EventBus.damage_dealt.emit(
+					target.id,
+					damage_total,
+					"vorpal_decapitation",
+					attacker.id)
+			else:
 				damage_total *= 2
 
 		# Warding-attack clamp: ordinary weapon attacks against a swarm replace
@@ -332,6 +370,53 @@ func resolve_monster_attack(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+## Returns extra to-hit AND damage bonus for magic swords whose RAW
+## bonus is conditional on the target's creature type. Called from both
+## the to-hit calculation and the damage calculation (the same bonus
+## applies to both per RAW: "Functions as sword +6" means +6 on both).
+##
+## V1 wired items (RAW citations from
+## `acore_treasure_and_magic_items_rules.xml:273-277`):
+##   - **flame_tongue** (`:273`): "+2 versus regenerating or avian monsters
+##     and +3 versus undead or plant-like monsters." Higher bonus wins when
+##     multiple categories match (avian undead = +3, not +5).
+##   - **frost_brand** (`:276`): "Functions as sword +6 versus creatures
+##     from hot environments or with fire-based attacks." Frost Brand's
+##     base is +3; +6 vs hot/fire is therefore an EXTRA +3 on those targets.
+##
+## The base `magical_bonus` is applied separately via
+## `get_weapon_magical_bonus()`; this helper returns only the EXTRA delta
+## on top of the base for the conditional cases. Returns 0 for any other
+## weapon (non-magical or non-matching magic sword).
+func _get_sword_bonus_vs_creature(attacker: Combatant, target: Combatant) -> int:
+	var weapon: Dictionary = attacker.get_equipped_weapon()
+	var item_key: String = str(weapon.get("item_key", ""))
+	if item_key.is_empty():
+		return 0
+	# Monster-only target checks — the helpers all return false for PCs.
+	# Even Vorpal isn't gated through here; only the conditional bonuses are.
+	if target.is_character:
+		return 0
+	match item_key:
+		"flame_tongue":
+			# Higher bonus wins (RAW silent on stacking; conservative).
+			# +3 categories: undead or plant-like.
+			if target.is_creature_type("undead") or target.is_plant_like():
+				return 3
+			# +2 categories: regenerating or avian.
+			if target.has_regeneration() or target.is_avian():
+				return 2
+			return 0
+		"frost_brand":
+			# +6 total vs hot environment or fire-based attacks; base is
+			# +3 (stamped via EXPLICIT_BONUS in the extractor); so extra +3.
+			if target.is_from_hot_environment() or target.has_fire_based_attacks():
+				return 3
+			return 0
+		_:
+			return 0
+
 
 func _get_melee_damage_expression(attacker: Combatant) -> String:
 	## Returns the damage expression for the attacker's melee weapon.

@@ -141,12 +141,20 @@ static func _resolve_magic(hoard: TreasureHoardData, rng, magic_catalog) -> Dict
 			# tools/extract_magic_item_catalog.py) stamp `default_charges` at
 			# the TOP LEVEL of the catalog entry. Check the binding first, then
 			# fall back to the top-level field.
+			#
+			# Tier 4 magic swords (2026-06-01): some items roll their charge
+			# count at materialization time (Life Drinker 1d4+4, Luck Blade
+			# 1d4+1) rather than starting at a fixed value. The catalog
+			# stamps the dice expression as a STRING (e.g. "1d4+4"); _roll_charges
+			# detects the string vs. int and rolls if needed using the supplied
+			# rng for determinism in tests.
 			var binding: Variant = resolved.get("spell_binding", null)
 			var initial_uses: int = -1
 			if binding is Dictionary:
-				initial_uses = int((binding as Dictionary).get("default_charges", -1))
+				initial_uses = _roll_charges(
+					(binding as Dictionary).get("default_charges", -1), rng)
 			if initial_uses < 0 and resolved.has("default_charges"):
-				initial_uses = int(resolved.get("default_charges", -1))
+				initial_uses = _roll_charges(resolved.get("default_charges", -1), rng)
 			# Magic containers (Bag of Holding, Bag of Devouring, future Portable
 			# Hole etc.) carry a `container_behavior` block on their catalog
 			# entry. When present, override item_category to "container",
@@ -213,3 +221,57 @@ static func _magic_item_notes(resolved: Dictionary) -> String:
 			str(resolved.get("spell_levels", [])),
 		]
 	return note
+
+
+## Resolve a default_charges field that may be either an int (fixed
+## charges, e.g. Rod of Cancellation = 1, Wand of Fireballs = 20) or a
+## dice expression string (e.g. Life Drinker = "1d4+4", Luck Blade =
+## "1d4+1"). Returns the rolled / fixed int. Returns -1 when the input
+## is null or an unparseable type (sentinel: "no charges set").
+##
+## Uses the supplied rng (the same rng caller-passed for hoard
+## randomization) so tests can seed the materializer for deterministic
+## charge counts.
+static func _roll_charges(value, rng: RandomNumberGenerator) -> int:
+	if value == null:
+		return -1
+	if value is int:
+		return int(value)
+	if value is float:
+		return int(value)
+	if value is String:
+		var s: String = value
+		if s.is_empty():
+			return -1
+		# Plain integer string.
+		if s.is_valid_int():
+			return s.to_int()
+		# Parse a simple dice expression: NdM+K / NdM-K / NdM (no modifier).
+		var lower: String = s.to_lower().strip_edges()
+		var modifier: int = 0
+		var dice_part: String = lower
+		# Strip the modifier suffix.
+		var plus_idx: int = lower.rfind("+")
+		var minus_idx: int = lower.rfind("-")
+		var sep_idx: int = maxi(plus_idx, minus_idx)
+		if sep_idx > 0:
+			var mod_str: String = lower.substr(sep_idx)
+			modifier = mod_str.to_int()
+			dice_part = lower.substr(0, sep_idx)
+		var d_idx: int = dice_part.find("d")
+		if d_idx <= 0:
+			return -1
+		var count: int = dice_part.substr(0, d_idx).to_int()
+		var sides: int = dice_part.substr(d_idx + 1).to_int()
+		if count <= 0 or sides <= 0:
+			return -1
+		var total: int = modifier
+		if rng != null:
+			for i in range(count):
+				total += rng.randi_range(1, sides)
+		else:
+			# No rng — return the average (rounded) so the catalog tests
+			# without an rng get a stable, reproducible value.
+			total += count * ((sides + 1) / 2)
+		return total
+	return -1

@@ -826,6 +826,107 @@ static func apply_rod_of_cancellation(
 	}
 
 
+## Apply a Life Drinker sword's level drain to a target struck in combat.
+## RAW (acore_treasure_and_magic_items_rules.xml:274): "On command drains
+## 1 HD or 1 life level from any struck target. Has 1d4+4 charges; each
+## drain uses 1 charge. After charges are spent it is a normal sword +1."
+##
+## V1 implementation: separate entry point (called by the combat
+## controller when the wielder issues the "drain" command on a hit).
+## The combat-side wiring (UI affordance + hit-time trigger) is the
+## consumer follow-up; this entry point lives here for unit testing +
+## eventual combat integration.
+##
+## Charge accounting mirrors `apply_rod_of_cancellation`: refuses on
+## zero charges (returns "no charges remaining"); decrements one charge
+## on success; at 0 charges the sword loses its drain ability but
+## remains a +1 magic sword (NOT cleared to non-magical, unlike Rod of
+## Cancellation — RAW explicitly preserves the +1 status).
+##
+## Level drain mechanic: V1 sets the `is_energy_drained` EntityFlag on
+## the target with metadata `{drained_levels: N, source: "life_drinker"}`.
+## Forward-looking — when the energy-drain consumer integration lands
+## (level reduction on CharacterData; HD reduction on monster catalog
+## row), the flag's metadata documents the contract.
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     charges_remaining: int,
+##     became_normal_plus_one: bool,  - true when charges hit 0; sword
+##                                      drops drain but stays +1
+##     levels_drained: int,
+##   }
+static func apply_life_drinker_drain(
+		sword_id: String,
+		wielder: CharacterData,
+		target_entity,
+		magic_item_catalog: MagicItemCatalog) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"charges_remaining": -1,
+		"became_normal_plus_one": false,
+		"levels_drained": 0,
+	}
+	# 1. Sword lookup.
+	var sword_row: Dictionary = CampaignRepository.get_inventory_item_by_id(sword_id)
+	if sword_row.is_empty():
+		empty["message"] = "Life Drinker sword not found (id=%s)." % sword_id
+		return empty
+	var key: String = str(sword_row.get("item_key", ""))
+	if key != "life_drinker":
+		empty["message"] = "Item '%s' is not a Life Drinker." % key
+		return empty
+	# 2. Charge gate.
+	var current_charges: int = int(sword_row.get("uses_remaining", -1))
+	empty["charges_remaining"] = current_charges
+	if current_charges == 0:
+		empty["message"] = "Life Drinker has no charges remaining — drain inert; still a Sword +1."
+		return empty
+	# 3. Target check + level-drain application.
+	if target_entity == null:
+		empty["message"] = "Life Drinker requires a struck target."
+		return empty
+	# Apply 1 drained level (RAW: 1 HD or 1 life level per use). Mark
+	# via flag for the future consumer to honor.
+	var levels_drained: int = 1
+	if target_entity != null and target_entity.has_method("get_flags"):
+		var t_flags = target_entity.get_flags()
+		if t_flags != null:
+			var source_id: String = "life_drinker:%s" % sword_id
+			# If the target was already drained by this same sword, stack
+			# the level count in metadata.
+			var existing_meta: Dictionary = t_flags.get_flag_metadata("is_energy_drained")
+			var prior_levels: int = int(existing_meta.get("drained_levels", 0))
+			t_flags.set_flag("is_energy_drained", source_id, {
+				"drained_levels": prior_levels + levels_drained,
+				"source_kind": "life_drinker",
+				"source_id": sword_id,
+				"wielder_id": wielder.id if wielder != null else "",
+			})
+	# 4. Decrement charges.
+	var charges_after: int = current_charges - 1
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+		[charges_after, sword_id])
+	var became_normal_plus_one: bool = (charges_after == 0)
+	# Note: NOT clearing is_magical here — RAW explicitly preserves the
+	# +1 status when charges are spent. The sword stays magical; only
+	# the drain ability is exhausted.
+	return {
+		"success": true,
+		"message": "Life Drinker drained 1 level from target (%d charge%s remaining)." % [
+			charges_after,
+			"" if charges_after == 1 else "s",
+		],
+		"charges_remaining": charges_after,
+		"became_normal_plus_one": became_normal_plus_one,
+		"levels_drained": levels_drained,
+	}
+
+
 ## Resolve a direct-effect potion (Potion of Poison and future similar items).
 ## Called from `drink_potion` when the catalog entry carries
 ## `direct_potion_effect` instead of (or in addition to) a spell_binding.

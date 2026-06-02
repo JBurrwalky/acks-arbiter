@@ -458,6 +458,20 @@ EXPLICIT_BONUS = {
     # differently because the in-fiction source is light distortion
     # rather than divine protection).
     "displacer_cloak": 2,
+    # Tier 4 magic swords (2026-06-01). RAW
+    # acore_treasure_and_magic_items_rules.xml:273-277 places them in the
+    # weapons_table along three tiers: Sword +1 group includes Flame
+    # Tongue, Life Drinker, Locate Objects, Luck Blade; Sword +2 group
+    # includes Charm Person; Sword +3 group includes Frost Brand, Vorpal.
+    # Each magic sword's BASE magical_bonus is stamped here; conditional
+    # bonuses (Flame Tongue +2/+3 vs creature type, Frost Brand +6 vs
+    # hot/fire) layer on TOP of this base via attack_resolver's
+    # _get_sword_bonus_vs_creature helper.
+    "flame_tongue": 1,
+    "life_drinker": 1,
+    "luck_blade": 1,
+    "frost_brand": 3,
+    "vorpal_sword": 3,
 }
 
 
@@ -645,6 +659,91 @@ SPECIAL_CHARGED_EFFECTS = {
         "default_charges": 1,
         # Documentation-only; future recharge features must consult.
         "no_recharge": True,
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# MAGIC_SWORD_METADATA — Tier 4 magic swords (2026-06-01). Stamps catalog
+# metadata that consumers in attack_resolver / worn_magic_effect_resolver /
+# magic_item_activator dispatch on (besides the BASE magical_bonus stamped
+# in EXPLICIT_BONUS). Each entry documents the RAW mechanic + which engine
+# consumer fires it.
+#
+# RAW source: acore_treasure_and_magic_items_rules.xml:273-277.
+#
+# Engine consumers (per item):
+#   flame_tongue: attack_resolver._get_sword_bonus_vs_creature (+2/+3 vs
+#     creature type); igniting/light_radius flagged via metadata for the
+#     future torchlight subsystem consumer.
+#   life_drinker: magic_item_activator.apply_life_drinker_drain (charge +
+#     level drain); default_charges "1d4+4" rolled at materialization via
+#     treasure_instantiator._roll_charges.
+#   luck_blade: worn_magic_effect_resolver._add_luck_blade (+1 saves while
+#     wielded in hands_main); spell_binding to wish (1d4+1 charges) is
+#     documented but the wish spell-effect is deferred.
+#   frost_brand: attack_resolver._get_sword_bonus_vs_creature (+6 total
+#     via base +3 + extra +3); worn_magic_effect_resolver branch reuses
+#     _add_ring_of_fire_resistance for the wielder. Cold-weather torchlight
+#     + non-magical-fire extinguish metadata documents the contract; the
+#     consumer integrations land in a follow-up lighting/ambient pass.
+#   vorpal_sword: attack_resolver Vorpal nat-20 hook (save vs Death; fail
+#     = instant kill, succeed = double damage). No metadata needed — the
+#     resolver matches by item_key.
+MAGIC_SWORD_METADATA = {
+    "flame_tongue": {
+        "vs_creature_type_bonus": {
+            "regenerating": 2,
+            "avian": 2,
+            "undead": 3,
+            "plant_like": 3,
+            "_note": "RAW :273. Higher tier wins (avian undead = +3, not +5).",
+        },
+        # Deferred: igniting/light_radius forward-looking metadata.
+        "ignitable_on_command": True,
+        "light_radius_cells": 6,  # standard torch radius (RAW: torchlight)
+        "can_ignite_flammables": True,
+    },
+    "life_drinker": {
+        "drain_on_command": True,
+        "drain_levels": 1,
+        "default_charges": "1d4+4",
+        "remains_plus_one_after_charges": True,
+    },
+    "luck_blade": {
+        "passive_save_bonus": 1,
+        "wielded_slot_required": "hands_main",
+        # Wish binding — Wish spell effect deferred; when it lands,
+        # MagicItemActivator.activate_charged_item handles dispatch via
+        # the existing rod_staff_wand pipeline (Luck Blade is in the
+        # `sword` category — needs a category gate adjustment or new
+        # activator entry point at integration time).
+        "spell_binding": {
+            "spell_key": "wish", "tradition": "arcane",
+            "caster_level": 17,  # wish is L9 arcane → minimum mage L17
+            "target_mode": "self",
+        },
+        "default_charges": "1d4+1",
+        "remains_plus_one_after_charges": True,
+        "_note": "Wish consumer is deferred to the wish spell effect pass.",
+    },
+    "frost_brand": {
+        "vs_creature_type_bonus": {
+            "hot_environment": 3,
+            "fire_based_attacks": 3,
+            "_note": "RAW :276. Frost Brand 'Functions as sword +6' — base +3 (EXPLICIT_BONUS) + this extra +3 = +6 total.",
+        },
+        "wielder_fire_resistance": True,
+        # Forward-looking metadata for the cold-weather + extinguish
+        # mechanics. The consumer integration (ambient temperature
+        # tracking + cell-flame interaction) is deferred.
+        "cold_weather_torchlight_threshold_f": 0,
+        "extinguishes_nonmagical_fire_radius_ft": 10,
+    },
+    "vorpal_sword": {
+        "natural_20_decapitation": True,
+        "save_kind": "save_poison_death",  # ACKS "vs Death" save category
+        "_note": "RAW :277. Nat 20 → save vs Death; fail = instant kill, succeed = ×2 damage.",
     },
 }
 
@@ -1366,6 +1465,19 @@ def main() -> int:
             # Mirror the spell_binding charges idiom so the materializer
             # picks up default_charges via the same uses_remaining path.
             it["default_charges"] = int(cfg["default_charges"])
+        # Tier 4 magic swords (2026-06-01): stamp the per-sword mechanics
+        # metadata + default_charges (dice string when applicable; the
+        # materializer's _roll_charges handles string vs int). The
+        # `spell_binding` for Luck Blade nests inside the metadata block so
+        # the future Wish-spell consumer can pick it up the same way
+        # other charged items do.
+        if key in MAGIC_SWORD_METADATA:
+            cfg = MAGIC_SWORD_METADATA[key]
+            it["sword_metadata"] = cfg
+            if "default_charges" in cfg:
+                it["default_charges"] = cfg["default_charges"]
+            if "spell_binding" in cfg:
+                it["spell_binding"] = cfg["spell_binding"]
 
     catalog = {
         "_source": "rules/acore_treasure_and_magic_items_rules.xml:197-216 (names/categories)",
