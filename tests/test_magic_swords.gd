@@ -60,6 +60,37 @@ func run_all_tests() -> void:
 	test_roll_charges_parses_1d4_plus_4()
 	test_roll_charges_parses_1d4_plus_1()
 	test_roll_charges_returns_minus_one_for_unparseable()
+	# Deferred-consumer wire-up (2026-06-01).
+	# Frost Brand environmental glow.
+	test_frost_brand_glow_in_tundra_in_winter()
+	test_frost_brand_glow_in_tundra_in_spring()
+	test_frost_brand_no_glow_in_tundra_in_summer()
+	test_frost_brand_glow_in_taiga_in_autumn()
+	test_frost_brand_glow_in_glacial_mountain_in_winter()
+	test_frost_brand_glow_in_grassland_in_winter()
+	test_frost_brand_no_glow_in_grassland_in_summer()
+	test_frost_brand_glow_in_forest_in_winter()
+	test_frost_brand_glow_in_dense_forest_in_winter()
+	test_frost_brand_glow_in_regular_mountain_in_winter()
+	test_frost_brand_no_glow_in_volcanic_mountain_in_winter()
+	test_frost_brand_no_glow_in_desert_in_winter()
+	test_frost_brand_no_glow_when_terrain_null()
+	test_frost_brand_update_sets_flag_when_wielded_and_conditions_met()
+	test_frost_brand_update_clears_flag_when_conditions_fail()
+	test_frost_brand_update_no_effect_when_unequipped()
+	# Flame Tongue ignite / douse.
+	test_flame_tongue_ignite_sets_wielding_flag()
+	test_flame_tongue_ignite_refuses_when_unequipped()
+	test_flame_tongue_ignite_refuses_wrong_item_key()
+	test_flame_tongue_douse_clears_flag()
+	# Life Drinker level reduction (consumer integration).
+	test_character_data_get_effective_level_no_drain()
+	test_character_data_get_effective_level_with_drain()
+	test_character_data_get_effective_level_floor_at_1()
+	test_character_data_get_effective_level_stacks_multiple_sources()
+	test_combatant_get_effective_level_or_hd_pc_path()
+	test_combatant_get_effective_level_or_hd_monster_path()
+	test_monster_attack_throw_uses_drained_hd()
 	if not has_failures():
 		print("MagicSwords: all tests passed.")
 
@@ -610,3 +641,365 @@ func _build_fighter_wielding(weapon_item_key: String) -> Combatant:
 		"magical_bonus": 1,
 	})
 	return c
+
+
+# ---------------------------------------------------------------------------
+# Deferred-consumer wire-up — Frost Brand environmental glow
+# ---------------------------------------------------------------------------
+
+func _make_terrain(biome: String, subtype: String, elevation: String = "flat") -> HexTerrainData:
+	var t := HexTerrainData.new()
+	t.biome = biome
+	t.biome_subtype = subtype
+	t.elevation = elevation
+	return t
+
+
+func test_frost_brand_glow_in_tundra_in_winter() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"tundra in winter: glow")
+	print("  frost_brand_glow_in_tundra_in_winter: OK")
+
+
+func test_frost_brand_glow_in_tundra_in_spring() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.SPRING) == true,
+		"tundra (always cold) in any non-summer season: glow")
+	print("  frost_brand_glow_in_tundra_in_spring: OK")
+
+
+func test_frost_brand_no_glow_in_tundra_in_summer() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.SUMMER) == false,
+		"tundra in summer: no glow (RAW excludes summer)")
+	print("  frost_brand_no_glow_in_tundra_in_summer: OK")
+
+
+func test_frost_brand_glow_in_taiga_in_autumn() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_WOODS, HexTerrainData.SUBTYPE_FOREST_TAIGA)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.AUTUMN) == true,
+		"taiga in autumn: glow")
+	print("  frost_brand_glow_in_taiga_in_autumn: OK")
+
+
+func test_frost_brand_glow_in_glacial_mountain_in_winter() -> void:
+	var t := _make_terrain(
+		HexTerrainData.BIOME_CLEAR,
+		HexTerrainData.SUBTYPE_MOUNTAINS_GLACIAL,
+		HexTerrainData.ELEVATION_MOUNTAINS)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"glacial mountain in winter: glow")
+	print("  frost_brand_glow_in_glacial_mountain_in_winter: OK")
+
+
+func test_frost_brand_glow_in_grassland_in_winter() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_GRASSLAND)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"grassland in winter: glow")
+	print("  frost_brand_glow_in_grassland_in_winter: OK")
+
+
+func test_frost_brand_no_glow_in_grassland_in_summer() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_GRASSLAND)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.SUMMER) == false,
+		"grassland in summer: no glow")
+	print("  frost_brand_no_glow_in_grassland_in_summer: OK")
+
+
+func test_frost_brand_glow_in_forest_in_winter() -> void:
+	# Plain forest = woods biome without a specific subtype.
+	var t := _make_terrain(HexTerrainData.BIOME_WOODS, "")
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"forest (woods biome, no subtype) in winter: glow")
+	print("  frost_brand_glow_in_forest_in_winter: OK")
+
+
+func test_frost_brand_glow_in_dense_forest_in_winter() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_WOODS, HexTerrainData.SUBTYPE_FOREST_DENSE)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"dense forest in winter: glow")
+	print("  frost_brand_glow_in_dense_forest_in_winter: OK")
+
+
+func test_frost_brand_glow_in_regular_mountain_in_winter() -> void:
+	# Non-volcanic, non-glacial mountain — just elevation=mountains, no subtype.
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, "", HexTerrainData.ELEVATION_MOUNTAINS)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == true,
+		"non-volcanic non-glacial mountain in winter: glow")
+	print("  frost_brand_glow_in_regular_mountain_in_winter: OK")
+
+
+func test_frost_brand_no_glow_in_volcanic_mountain_in_winter() -> void:
+	var t := _make_terrain(
+		HexTerrainData.BIOME_CLEAR,
+		HexTerrainData.SUBTYPE_MOUNTAINS_VOLCANIC,
+		HexTerrainData.ELEVATION_MOUNTAINS)
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == false,
+		"volcanic mountain in winter: no glow (RAW excludes volcanic)")
+	print("  frost_brand_no_glow_in_volcanic_mountain_in_winter: OK")
+
+
+func test_frost_brand_no_glow_in_desert_in_winter() -> void:
+	var t := _make_terrain(HexTerrainData.BIOME_DESERT, "")
+	check(FrostBrandEnvironment.frost_brand_should_glow(t, CalendarSeasons.WINTER) == false,
+		"desert in winter: no glow (not on the list)")
+	print("  frost_brand_no_glow_in_desert_in_winter: OK")
+
+
+func test_frost_brand_no_glow_when_terrain_null() -> void:
+	check(FrostBrandEnvironment.frost_brand_should_glow(null, CalendarSeasons.WINTER) == false,
+		"null terrain: no glow (defensive)")
+	print("  frost_brand_no_glow_when_terrain_null: OK")
+
+
+func test_frost_brand_update_sets_flag_when_wielded_and_conditions_met() -> void:
+	var char_data := _make_char()
+	char_data.flags = EntityFlags.new()
+	var inventory: Array = [{
+		"id": "fb_sword_1",
+		"item_key": "frost_brand",
+		"is_equipped": 1,
+		"slot": "hands_main",
+	}]
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	FrostBrandEnvironment.update_glow_state_for_character(
+		char_data, inventory, t, CalendarSeasons.WINTER)
+	check(char_data.flags.has_flag("wielding_glowing_frost_brand"),
+		"wielded Frost Brand in glow-conditions: flag set")
+	var meta: Dictionary = char_data.flags.get_flag_metadata("wielding_glowing_frost_brand")
+	check(int(meta.get("light_radius_cells", 0)) == 6,
+		"metadata.light_radius_cells = 6")
+	print("  frost_brand_update_sets_flag_when_wielded_and_conditions_met: OK")
+
+
+func test_frost_brand_update_clears_flag_when_conditions_fail() -> void:
+	var char_data := _make_char()
+	char_data.flags = EntityFlags.new()
+	var inventory: Array = [{
+		"id": "fb_sword_2",
+		"item_key": "frost_brand",
+		"is_equipped": 1,
+		"slot": "hands_main",
+	}]
+	# First: set the flag via glow conditions.
+	var cold_terrain := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	FrostBrandEnvironment.update_glow_state_for_character(
+		char_data, inventory, cold_terrain, CalendarSeasons.WINTER)
+	check(char_data.flags.has_flag("wielding_glowing_frost_brand"),
+		"precondition: flag set in cold terrain")
+	# Then: move to summer tundra — conditions fail; flag should clear.
+	FrostBrandEnvironment.update_glow_state_for_character(
+		char_data, inventory, cold_terrain, CalendarSeasons.SUMMER)
+	check(not char_data.flags.has_flag("wielding_glowing_frost_brand"),
+		"flag should clear when conditions fail (summer tundra)")
+	print("  frost_brand_update_clears_flag_when_conditions_fail: OK")
+
+
+func test_frost_brand_update_no_effect_when_unequipped() -> void:
+	var char_data := _make_char()
+	char_data.flags = EntityFlags.new()
+	var inventory: Array = [{
+		"id": "fb_sword_3",
+		"item_key": "frost_brand",
+		"is_equipped": 0,  # NOT equipped
+		"slot": "pack",
+	}]
+	var t := _make_terrain(HexTerrainData.BIOME_CLEAR, HexTerrainData.SUBTYPE_CLEAR_TUNDRA)
+	FrostBrandEnvironment.update_glow_state_for_character(
+		char_data, inventory, t, CalendarSeasons.WINTER)
+	check(not char_data.flags.has_flag("wielding_glowing_frost_brand"),
+		"unequipped Frost Brand: no flag even when conditions match")
+	print("  frost_brand_update_no_effect_when_unequipped: OK")
+
+
+# ---------------------------------------------------------------------------
+# Flame Tongue ignite / douse
+# ---------------------------------------------------------------------------
+
+func test_flame_tongue_ignite_sets_wielding_flag() -> void:
+	_setup()
+	var wielder := _make_char()
+	wielder.flags = EntityFlags.new()
+	var catalog := MagicItemCatalog.new()
+	var sword_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "flame_tongue",
+		"name": "Flame Tongue", "is_magical": true, "magical_bonus": 1,
+		"is_equipped": true, "slot": "hands_main",
+	})
+	var result: Dictionary = MagicItemActivator.apply_flame_tongue_ignite(
+		sword_id, wielder, catalog)
+	check(bool(result["success"]) == true,
+		"ignite succeeds; message: %s" % str(result["message"]))
+	check(bool(result["light_active"]) == true, "light_active = true")
+	check(int(result["light_radius_cells"]) == 6, "light_radius_cells = 6")
+	check(wielder.flags.has_flag("wielding_lit_flame_tongue"),
+		"wielder gains wielding_lit_flame_tongue flag")
+	_teardown()
+	print("  flame_tongue_ignite_sets_wielding_flag: OK")
+
+
+func test_flame_tongue_ignite_refuses_when_unequipped() -> void:
+	_setup()
+	var wielder := _make_char()
+	wielder.flags = EntityFlags.new()
+	var catalog := MagicItemCatalog.new()
+	var sword_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "flame_tongue",
+		"name": "Flame Tongue", "is_magical": true, "magical_bonus": 1,
+		"is_equipped": false, "slot": "pack",  # in pack
+	})
+	var result: Dictionary = MagicItemActivator.apply_flame_tongue_ignite(
+		sword_id, wielder, catalog)
+	check(bool(result["success"]) == false,
+		"unequipped Flame Tongue refuses ignite")
+	check(str(result["message"]).contains("wielded"),
+		"message mentions wielding requirement; got: %s" % str(result["message"]))
+	check(not wielder.flags.has_flag("wielding_lit_flame_tongue"),
+		"no flag set on refuse")
+	_teardown()
+	print("  flame_tongue_ignite_refuses_when_unequipped: OK")
+
+
+func test_flame_tongue_ignite_refuses_wrong_item_key() -> void:
+	_setup()
+	var wielder := _make_char()
+	wielder.flags = EntityFlags.new()
+	var catalog := MagicItemCatalog.new()
+	var sword_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "sword_1",
+		"name": "Sword +1", "is_magical": true, "magical_bonus": 1,
+		"is_equipped": true, "slot": "hands_main",
+	})
+	var result: Dictionary = MagicItemActivator.apply_flame_tongue_ignite(
+		sword_id, wielder, catalog)
+	check(bool(result["success"]) == false,
+		"non-Flame-Tongue refuses ignite")
+	check(str(result["message"]).contains("not a Flame Tongue"),
+		"message mentions wrong-item")
+	_teardown()
+	print("  flame_tongue_ignite_refuses_wrong_item_key: OK")
+
+
+func test_flame_tongue_douse_clears_flag() -> void:
+	_setup()
+	var wielder := _make_char()
+	wielder.flags = EntityFlags.new()
+	var catalog := MagicItemCatalog.new()
+	var sword_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "flame_tongue",
+		"name": "Flame Tongue", "is_magical": true, "magical_bonus": 1,
+		"is_equipped": true, "slot": "hands_main",
+	})
+	# Ignite first.
+	MagicItemActivator.apply_flame_tongue_ignite(sword_id, wielder, catalog)
+	check(wielder.flags.has_flag("wielding_lit_flame_tongue"),
+		"precondition: ignited")
+	# Douse.
+	var result: Dictionary = MagicItemActivator.apply_flame_tongue_douse(
+		sword_id, wielder)
+	check(bool(result["success"]) == true, "douse succeeds")
+	check(not wielder.flags.has_flag("wielding_lit_flame_tongue"),
+		"flag cleared after douse")
+	_teardown()
+	print("  flame_tongue_douse_clears_flag: OK")
+
+
+# ---------------------------------------------------------------------------
+# Life Drinker level reduction consumer
+# ---------------------------------------------------------------------------
+
+func test_character_data_get_effective_level_no_drain() -> void:
+	var cd := CharacterData.new()
+	cd.level = 5
+	cd.flags = EntityFlags.new()
+	check(cd.get_effective_level() == 5,
+		"no drain: effective_level == level")
+	print("  character_data_get_effective_level_no_drain: OK")
+
+
+func test_character_data_get_effective_level_with_drain() -> void:
+	var cd := CharacterData.new()
+	cd.level = 5
+	cd.flags = EntityFlags.new()
+	cd.flags.set_flag("is_energy_drained", "life_drinker:sword1", {
+		"drained_levels": 2,
+	})
+	check(cd.get_effective_level() == 3,
+		"5 - 2 = 3 effective level; got %d" % cd.get_effective_level())
+	print("  character_data_get_effective_level_with_drain: OK")
+
+
+func test_character_data_get_effective_level_floor_at_1() -> void:
+	var cd := CharacterData.new()
+	cd.level = 2
+	cd.flags = EntityFlags.new()
+	cd.flags.set_flag("is_energy_drained", "lots_of_wraiths", {
+		"drained_levels": 99,  # way more than character has
+	})
+	check(cd.get_effective_level() == 1,
+		"effective level floors at 1; got %d" % cd.get_effective_level())
+	print("  character_data_get_effective_level_floor_at_1: OK")
+
+
+func test_character_data_get_effective_level_stacks_multiple_sources() -> void:
+	# Multiple drain sources stack (Life Drinker + Wraith both hit you).
+	var cd := CharacterData.new()
+	cd.level = 10
+	cd.flags = EntityFlags.new()
+	cd.flags.set_flag("is_energy_drained", "life_drinker:sword1", {"drained_levels": 1})
+	cd.flags.set_flag("is_energy_drained", "wraith:enc1", {"drained_levels": 2})
+	check(cd.get_effective_level() == 7,
+		"10 - 1 - 2 = 7 effective level; got %d" % cd.get_effective_level())
+	print("  character_data_get_effective_level_stacks_multiple_sources: OK")
+
+
+func test_combatant_get_effective_level_or_hd_pc_path() -> void:
+	var cd := CharacterData.new()
+	cd.id = "pc_drain_test"
+	cd.level = 5
+	cd.flags = EntityFlags.new()
+	cd.flags.set_flag("is_energy_drained", "life_drinker:sword1", {"drained_levels": 2})
+	var c := Combatant.from_character(cd)
+	check(c.get_effective_level_or_hd() == 3,
+		"PC Combatant.get_effective_level_or_hd routes through character's drain; got %d" %
+			c.get_effective_level_or_hd())
+	# Base method still reports the un-drained value (caller chooses semantic).
+	check(c.get_level_or_hd() == 5,
+		"un-effective get_level_or_hd still returns base level (no auto-swap)")
+	print("  combatant_get_effective_level_or_hd_pc_path: OK")
+
+
+func test_combatant_get_effective_level_or_hd_monster_path() -> void:
+	# Build an 8 HD monster, apply 3 drained levels via _monster_flags.
+	var c := _build_monster("drain_test_monster", {
+		"monster_types": ["humanoid"],
+		"hit_dice": {"base": 8, "modifier": 0}, "armor_class": 5, "morale": 9,
+	})
+	check(c.get_effective_level_or_hd() == 8, "baseline 8 HD")
+	# Set the drain flag on the monster's _monster_flags via apply_life_drinker_drain.
+	var t_flags: EntityFlags = c.get_flags()
+	t_flags.set_flag("is_energy_drained", "test_source", {"drained_levels": 3})
+	check(c.get_effective_level_or_hd() == 5,
+		"8 HD - 3 drain = 5 effective; got %d" % c.get_effective_level_or_hd())
+	print("  combatant_get_effective_level_or_hd_monster_path: OK")
+
+
+func test_monster_attack_throw_uses_drained_hd() -> void:
+	# Pin the integration: monster attack throw uses get_effective_level_or_hd,
+	# so drain reduces the monster's attack capability.
+	var c := _build_monster("attack_drain_monster", {
+		"monster_types": ["humanoid"],
+		"hit_dice": {"base": 8, "modifier": 0}, "armor_class": 5, "morale": 9,
+	})
+	var pre_throw := c.get_effective_attack_throw()
+	# Drain 3 levels.
+	var t_flags: EntityFlags = c.get_flags()
+	t_flags.set_flag("is_energy_drained", "test_source", {"drained_levels": 3})
+	var post_throw := c.get_effective_attack_throw()
+	# 8 HD attack throw < 5 HD attack throw (higher HD = lower target = better).
+	# So drain → HIGHER target number = worse attack.
+	check(post_throw > pre_throw,
+		"drained monster attack throw target should be HIGHER (worse attack); pre=%d post=%d" %
+			[pre_throw, post_throw])
+	print("  monster_attack_throw_uses_drained_hd: OK")

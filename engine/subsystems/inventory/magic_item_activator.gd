@@ -927,6 +927,90 @@ static func apply_life_drinker_drain(
 	}
 
 
+## Ignite the Flame Tongue sword on command. RAW
+## (acore_treasure_and_magic_items_rules.xml:273): "On command it ignites,
+## sheds torchlight, and can ignite flammables." V1 wires the "sheds
+## torchlight" half — sets the `wielding_lit_flame_tongue` EntityFlag on
+## the wielder with metadata carrying the light radius (6 cells = 30',
+## matches torch radius per LightSourceTracker.LIGHT_SOURCES["torch"]
+## scaled to ACKS Core). The "can ignite flammables" half remains a
+## deferred consumer integration until cell-level fire state lands.
+##
+## The flag is set on the WIELDER (not the sword inventory row) so the
+## existing `worn_magic:` prefix-clear pattern doesn't accidentally
+## sweep it on unrelated equip-state changes. Source_id is keyed by
+## sword item_id so multiple Flame Tongues wielded simultaneously (a
+## dual-wielding fighter) each get their own flag entry.
+##
+## Returns:
+##   {
+##     success: bool,
+##     message: String,
+##     light_active: bool,
+##     light_radius_cells: int,
+##   }
+static func apply_flame_tongue_ignite(
+		sword_id: String,
+		wielder: CharacterData,
+		magic_item_catalog: MagicItemCatalog) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"light_active": false,
+		"light_radius_cells": 0,
+	}
+	# 1. Sword lookup.
+	var sword_row: Dictionary = CampaignRepository.get_inventory_item_by_id(sword_id)
+	if sword_row.is_empty():
+		empty["message"] = "Flame Tongue sword not found (id=%s)." % sword_id
+		return empty
+	var key: String = str(sword_row.get("item_key", ""))
+	if key != "flame_tongue":
+		empty["message"] = "Item '%s' is not a Flame Tongue." % key
+		return empty
+	# 2. Wielded gate — sword must be equipped in hands_main to ignite.
+	if int(sword_row.get("is_equipped", 0)) != 1 \
+			or str(sword_row.get("slot", "")) != "hands_main":
+		empty["message"] = "Flame Tongue must be wielded (hands_main) to ignite."
+		return empty
+	# 3. Read the catalog metadata for the light radius (V1 default 6 cells).
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(key)
+	var meta: Dictionary = catalog_entry.get("sword_metadata", {})
+	var radius_cells: int = int(meta.get("light_radius_cells", 6))
+	# 4. Set the flag on the wielder.
+	var source_id: String = "flame_tongue:%s" % sword_id
+	if wielder != null and wielder.flags != null:
+		wielder.flags.set_flag("wielding_lit_flame_tongue", source_id, {
+			"sword_id": sword_id,
+			"light_radius_cells": radius_cells,
+			"can_ignite_flammables": bool(meta.get("can_ignite_flammables", true)),
+		})
+	return {
+		"success": true,
+		"message": "Flame Tongue ignites — sheds torchlight (%d cells)." % radius_cells,
+		"light_active": true,
+		"light_radius_cells": radius_cells,
+	}
+
+
+## Douse (extinguish on command) a previously-ignited Flame Tongue. RAW
+## doesn't specify a douse command explicitly, but the "on command" phrasing
+## implies the wielder controls the ignite state. V1 clears the
+## `wielding_lit_flame_tongue` flag for this specific sword.
+static func apply_flame_tongue_douse(
+		sword_id: String,
+		wielder: CharacterData) -> Dictionary:
+	if wielder == null or wielder.flags == null:
+		return {"success": false, "message": "No wielder flags container.", "light_active": false}
+	var source_id: String = "flame_tongue:%s" % sword_id
+	wielder.flags.clear_flag("wielding_lit_flame_tongue", source_id)
+	return {
+		"success": true,
+		"message": "Flame Tongue is doused.",
+		"light_active": wielder.flags.has_flag("wielding_lit_flame_tongue"),
+	}
+
+
 ## Resolve a direct-effect potion (Potion of Poison and future similar items).
 ## Called from `drink_potion` when the catalog entry carries
 ## `direct_potion_effect` instead of (or in addition to) a spell_binding.

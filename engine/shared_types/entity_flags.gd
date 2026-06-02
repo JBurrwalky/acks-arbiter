@@ -35,6 +35,23 @@ extends RefCounted
 ##               "is_petrified", "is_temporal_stasis",
 ##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain)
 ##   Scrying:    "wizard_eye_active" (Wizard Eye — concentration, 240' tether)
+##   MagicSwordLight: "wielding_lit_flame_tongue" (Flame Tongue ignite-on-command
+##                  per RAW acore_treasure_and_magic_items_rules.xml:273. Set on
+##                  the wielder via MagicItemActivator.apply_flame_tongue_ignite;
+##                  cleared via apply_flame_tongue_douse. Metadata:
+##                  {sword_id: String, light_radius_cells: int,
+##                  can_ignite_flammables: bool}. Forward-looking — HUD
+##                  light-source consumer reads this flag alongside other
+##                  active light sources; cell-flame-ignition consumer is a
+##                  follow-up.)
+##                  "wielding_glowing_frost_brand" (Frost Brand environmental
+##                  glow per RAW :276 + V1 Jedidiah simplification 2026-06-01.
+##                  Set/cleared by FrostBrandEnvironment.update_glow_state_for_character
+##                  at hex_entered + season_changed signals. Metadata:
+##                  {sword_id, light_radius_cells: 6, source_kind: "frost_brand_environment"}.
+##                  Triggers when wielder is in tundra/taiga/glacial-mountain
+##                  hex (any non-summer) OR grassland/forest/dense-forest/
+##                  non-volcanic-mountain hex (winter only).)
 ##   Drain:      "is_energy_drained" (Life Drinker sword + future Wraith/Spectre
 ##                  energy-drain attacks — RAW
 ##                  acore_treasure_and_magic_items_rules.xml:274 Life Drinker

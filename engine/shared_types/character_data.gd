@@ -284,6 +284,31 @@ func get_effective_attack_throw() -> int:
 	return modifiers.get_effective_value("attack_throw", attack_throw)
 
 
+## Returns the character's EFFECTIVE level after applying any active level
+## drain (Life Drinker sword, future Wraith/Spectre energy_drain). Reads
+## the `is_energy_drained` EntityFlag's metadata.drained_levels and
+## subtracts from the base `level`. Never drops below 1 (RAW: level drain
+## reduces to 0, but the engine floors at 1 to avoid breaking level-
+## indexed lookups; full drain-to-death is a separate mortal-wounds path).
+##
+## Consumer integration site for the Life Drinker sword wired 2026-06-01.
+## Future systems that depend on character level (XP tables, class
+## progression checks, level-based hit dice) should call this instead of
+## reading `level` directly so the drain propagates.
+func get_effective_level() -> int:
+	if flags == null:
+		return level
+	if not flags.has_flag("is_energy_drained"):
+		return level
+	# Sum drained_levels across ALL sources (multiple swords / vampires
+	# can stack drains on the same target).
+	var total_drained: int = 0
+	for entry in flags.get_flag_source_entries("is_energy_drained"):
+		var meta: Dictionary = entry.get("metadata", {})
+		total_drained += int(meta.get("drained_levels", 0))
+	return max(1, level - total_drained)
+
+
 func get_effective_save(save_key: String) -> int:
 	## save_key: one of the five canonical ACKS save categories OR a tagged-save
 	## modifier-only axis. The five categories have base values rolled at

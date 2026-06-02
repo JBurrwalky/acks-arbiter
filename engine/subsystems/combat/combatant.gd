@@ -629,8 +629,10 @@ func _get_gaseous_ac_override() -> int:
 func get_effective_attack_throw() -> int:
 	if is_character:
 		return _character.get_effective_attack_throw()
-	# Monster attack throw from HD
-	var hd := _get_monster_hd_value()
+	# Monster attack throw from HD — uses the drain-aware HD so Life
+	# Drinker / Wraith / Spectre energy drain reduces the monster's
+	# attack capability. Wired 2026-06-01 for Life Drinker integration.
+	var hd := get_effective_level_or_hd()
 	var base := _monster_attack_throw_from_hd(hd)
 	return _monster_modifiers.get_effective_value("attack_throw", base)
 
@@ -760,9 +762,37 @@ func get_character_class() -> String:
 
 func get_level_or_hd() -> int:
 	## Returns character level for PCs, or effective HD for monsters.
+	## Use `get_effective_level_or_hd()` if you want energy-drain-aware
+	## semantics (Life Drinker sword + Wraith/Spectre attacks).
 	if is_character:
 		return _character.level
 	return _get_monster_hd_value()
+
+
+## Returns character level (PC) or HD (monster) AFTER applying any active
+## energy drain. Reads `is_energy_drained.metadata.drained_levels` (sums
+## across all sources — Life Drinker, future wraith/spectre attacks
+## stack). Floored at 1 to keep level-indexed lookups safe; full drain
+## to death is a separate mortal-wounds path.
+##
+## For PCs: routes through CharacterData.get_effective_level which adds
+## the same flag-aware logic.
+##
+## For monsters: subtracts drained_levels from the base HD value.
+func get_effective_level_or_hd() -> int:
+	if is_character:
+		if _character != null:
+			return _character.get_effective_level()
+		return 1
+	# Monster path: drain reads our _monster_flags.
+	var base: int = _get_monster_hd_value()
+	if _monster_flags == null or not _monster_flags.has_flag("is_energy_drained"):
+		return base
+	var total_drained: int = 0
+	for entry in _monster_flags.get_flag_source_entries("is_energy_drained"):
+		var meta: Dictionary = entry.get("metadata", {})
+		total_drained += int(meta.get("drained_levels", 0))
+	return max(1, base - total_drained)
 
 
 func get_attack_routines() -> Array:

@@ -30101,3 +30101,87 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 3. **Cursed-item non-numeric effects** (Cursed Scroll, Ring of Delusion, Ring of Weakness) — each has a different effect; deferred since the original Cursed-item commit.
 4. **Wish spell** — un-defers Luck Blade's wishes. Wish is a substantial standalone spell with its own design implications.
 5. **Damage typing pass** — would unblock Ring of Fire Resistance's deferred 1/die reduction + Cube of Frost Resistance + future fire/cold spells. User offered to design this — when a real consumer needs it.
+
+
+## Session 2026-06-01 — Magic swords deferred-consumer wire-up (Frost Brand glow + Flame Tongue ignite + Life Drinker level reduction)
+
+**Task:** Wire 3 of the 4 deferred consumer integrations from the magic-swords commit (`e8da184`). Per Jedidiah simplification, Frost Brand's RAW "below 0°F" trigger becomes a terrain+season rule. Flame Tongue ignite-on-command lights up; douse-on-command turns off. Life Drinker level drain actually reduces effective level/HD. **Frost Brand non-magical-fire extinguish** stays deferred — needs cell-level fire-state infrastructure that doesn't exist.
+**Model used:** Sonnet 4.6 for architectural mapping (Explore agent — feasibility map of terrain types, season tracking, party location, light source registration) + implementation + tests.
+
+**Completed:**
+
+- **`engine/subsystems/inventory/frost_brand_environment.gd`** (NEW file) — pure-function helper `FrostBrandEnvironment.frost_brand_should_glow(terrain: HexTerrainData, season: String) -> bool` encoding the V1 Jedidiah-simplified rule:
+  - Always-cold (any season except summer): tundra (`SUBTYPE_CLEAR_TUNDRA`), taiga (`SUBTYPE_FOREST_TAIGA`), glacial mountain (`SUBTYPE_MOUNTAINS_GLACIAL`).
+  - Winter-only: grassland (`SUBTYPE_CLEAR_GRASSLAND`), forest (`BIOME_WOODS` + non-taiga subtype OR no subtype), dense forest (`SUBTYPE_FOREST_DENSE`), non-volcanic/non-glacial mountains (`ELEVATION_MOUNTAINS` minus the always-cold/always-warm subtypes).
+  - Companion method `update_glow_state_for_character(character, inventory_rows, terrain, season)` iterates the character's inventory, finds each `frost_brand` in `hands_main`, and sets/clears the `wielding_glowing_frost_brand` flag with per-sword source_id keying. Metadata: `{sword_id, light_radius_cells: 6, source_kind}`.
+
+- **`engine/subsystems/inventory/magic_item_activator.gd`** — two new public static entry points:
+  - `apply_flame_tongue_ignite(sword_id, wielder, magic_item_catalog) -> Dictionary` — validates item_key + wielded gate (`is_equipped + slot == "hands_main"`); reads `light_radius_cells` from the catalog metadata (default 6); sets the `wielding_lit_flame_tongue` flag on the wielder with source_id `"flame_tongue:<sword_id>"` (per-sword keyed for dual-wielders).
+  - `apply_flame_tongue_douse(sword_id, wielder) -> Dictionary` — clears the same-keyed flag entry. Returns updated `light_active` for any remaining Flame Tongues in the wielder's flag list.
+
+- **`engine/shared_types/character_data.gd:get_effective_level()`** — new method that reads `is_energy_drained` flag's source entries, sums `drained_levels` across ALL sources (multi-source stacking — Life Drinker + Wraith both drain), subtracts from base `level`, floors at 1. Documented as the future PC consumer site for any level-indexed lookup.
+
+- **`engine/subsystems/combat/combatant.gd:get_effective_level_or_hd()`** — parallel for combatants:
+  - PCs route through `_character.get_effective_level()`.
+  - Monsters sum `drained_levels` across all sources from `_monster_flags.is_energy_drained` and subtract from the HD base.
+  - Floored at 1.
+- **`engine/subsystems/combat/combatant.gd:get_effective_attack_throw()`** — monster path now reads `get_effective_level_or_hd()` instead of `_get_monster_hd_value()` directly. Drained monsters get a worse attack throw target. PC path unchanged (attack_throw is a stored field; ModifierContainer integration is the follow-up).
+
+- **`engine/shared_types/entity_flags.gd`** — two new flag declarations in a new MagicSwordLight family: `wielding_lit_flame_tongue` (metadata: `{sword_id, light_radius_cells, can_ignite_flammables}`) + `wielding_glowing_frost_brand` (metadata: `{sword_id, light_radius_cells: 6, source_kind: "frost_brand_environment"}`).
+
+- **`tests/test_magic_swords.gd`** — 27 new tests:
+  - Frost Brand glow rule (13 terrain/season combinations): tundra winter/spring/summer; taiga autumn; glacial mountain winter; grassland winter/summer; forest winter; dense forest winter; regular mountain winter; volcanic mountain winter (no glow); desert winter (no glow); null terrain (defensive).
+  - Frost Brand update method (3): wielded + cold = flag set; wielded + warm = flag clears; unequipped = no flag.
+  - Flame Tongue ignite/douse (4): ignite-sets-flag; refuse-when-unequipped; refuse-wrong-item-key; douse-clears-flag.
+  - Life Drinker level reduction (7): no-drain; with-drain; floor-at-1; multi-source-stacking; PC Combatant path; monster Combatant path; monster attack throw uses drained HD.
+
+- **`generation/gdd-treasure-item-backing.md`** §14 — new row capturing the three integrations + the still-deferred items (fire extinguish, Wish, PC attack/save modifier for drain).
+
+**Decisions made:**
+
+- **Frost Brand glow stays a flag, not auto-management of LightSourceTracker.** The existing tracker is per-party single-source ("the party's active light source"). Adding sword glow as a SECOND simultaneous light source would conflict with the torch/lantern/continual-light model. Setting the flag + documenting the HUD-consumer-reads-it pattern matches the established "set the flag, consumer follows" convention used by Ring of Water Walking, Amulet vs Crystal Balls, Gaseous Form's deferred consumers, and others.
+- **Glow detection is a pure function that takes terrain + season** — no autoload, no signal subscriptions in this commit. The pure helper is callable from anywhere (tests, wilderness handlers, debug consoles). Wilderness-handler signal subscription is documented as a small follow-up (the integration is ~5 lines that listen to `EventBus.hex_entered` and `Timekeeping.season_changed`).
+- **Forest catches both "plain forest" and "dense forest"** in the winter glow rule. The user's spec listed them separately, but mechanically they're both "woods biome in winter" — V1 treats them as the same rule (any woods, except taiga which is already always-cold).
+- **Mountains check excludes BOTH volcanic AND glacial** in the winter rule. Volcanic is always-warm (RAW); glacial is already covered by the always-cold rule above (avoiding double-trigger semantics).
+- **Source_id keying per-sword** so a fighter wielding two Frost Brands (or a party with multiple Frost Brand bearers) doesn't clobber each other's flag state. Per-sword cleanup on conditions-fail honors this.
+- **Wielded gate enforces `slot == "hands_main"`** for both swords — sheathed or pack-stored Flame Tongue can't be ignited; pack-stored Frost Brand doesn't glow even in tundra. Matches the Luck Blade slot gate added in the prior commit.
+- **Energy drain stacks multi-source.** Life Drinker + Wraith both hitting the same target sum their drained_levels via the source-entries loop. Realistic in a campaign that has both energy-draining monsters AND a wielder with Life Drinker.
+- **PC consumer integration for drain is deferred.** CharacterData stores `attack_throw`, `save_*` as fields set at character creation; honoring drain requires either recomputing at flag-set time OR adding a ModifierContainer entry. Both are workable; deferred for a focused commit later. Monster path is wired today because monster attack throw is derived from HD per-call.
+- **No restoration mechanism implemented in this commit.** RAW recovery is via Restoration spell. Restoration's effect block isn't implemented yet; when it lands, the flag-clear is one line (clear `is_energy_drained` flag from target).
+- **`update_glow_state_for_character` is the integration entrypoint** rather than wiring directly to signals in this commit. Wilderness handlers can call it from their `hex_entered.emit(...)` site (after the emit so the location_key is current). Tests call it directly; the signal hookup is a small follow-up.
+
+**Interfaces defined or changed:**
+
+- New `FrostBrandEnvironment.frost_brand_should_glow(terrain: HexTerrainData, season: String) -> bool` — public static helper.
+- New `FrostBrandEnvironment.update_glow_state_for_character(character: CharacterData, inventory_rows: Array, terrain: HexTerrainData, season: String) -> void` — public static helper; sets/clears the flag.
+- New `MagicItemActivator.apply_flame_tongue_ignite(sword_id: String, wielder: CharacterData, magic_item_catalog: MagicItemCatalog) -> Dictionary` — public static entry point.
+- New `MagicItemActivator.apply_flame_tongue_douse(sword_id: String, wielder: CharacterData) -> Dictionary` — public static entry point.
+- New `CharacterData.get_effective_level() -> int` — public method.
+- New `Combatant.get_effective_level_or_hd() -> int` — public method.
+- `Combatant.get_effective_attack_throw()` internal behavior changed for monsters (now consumes the drain via `get_effective_level_or_hd()`).
+- Two new EntityFlag declarations: `wielding_lit_flame_tongue`, `wielding_glowing_frost_brand`.
+
+**Database changes:**
+
+- None.
+
+**Tests added/updated:**
+
+- 27 new tests in `tests/test_magic_swords.gd` (now 57 total in the suite). All pass.
+- Full suite: **399 passed / 19 failed** — same baseline; net-zero new failures.
+
+**Known issues:**
+
+- **Wilderness handler signal subscription not wired.** `FrostBrandEnvironment.update_glow_state_for_character` is implemented but no caller subscribes to `EventBus.hex_entered` / `Timekeeping.season_changed`. A follow-up adds the 5-line hook into `wilderness_handlers.gd` after the existing `hex_entered.emit(...)` call.
+- **Frost Brand non-magical-fire extinguish in 10' area** still deferred. Needs cell-level fire-state tracking. Would require either schema addition to `VoxelCell` or building a fire-state registry — neither is in scope.
+- **Luck Blade Wish spell** still deferred. The binding stamped on the catalog will route through `MagicItemActivator.activate_charged_item` automatically when Wish lands (Wish is currently a stub in `spell_catalog.json`).
+- **PC attack/save consumer for Life Drinker drain** not yet wired. Monster path works today (attack throw derives from HD per-call). PC attack/save targets are stored fields; future commit adds energy-drain modifiers to the ModifierContainer alongside the flag at apply time, OR exposes `CharacterData.get_effective_attack_throw()` to consult the drain.
+- **Light source registration via LightSourceTracker not auto-managed** by Flame Tongue/Frost Brand. The flag is set as a marker; HUD-side consumer reads it. The cleanest auto-management would extend `LightSourceTracker` to support multiple simultaneous sources with a priority system — that's a meaningful subsystem extension deferred for a focused light-source commit.
+
+**Next session should:**
+
+1. **Wilderness handler signal hook for Frost Brand** — subscribe to `EventBus.hex_entered` and `Timekeeping.season_changed`, call `FrostBrandEnvironment.update_glow_state_for_character` per party member. ~5-10 lines plus a test.
+2. **Cell-level fire-state infrastructure** — would unblock Frost Brand non-magical-fire extinguish + future flammable-door + future fire spell residual effects.
+3. **Restoration spell effect** — un-defers level-drain recovery. Restoration is L5 divine.
+4. **PC attack/save consumer for drain** — extend `is_energy_drained` flag's apply to also set ModifierContainer entries on `attack_throw` + the 5 save targets.
+5. **Light source priority system** — extend `LightSourceTracker` to support multiple simultaneous sources with priority/radius selection. Unblocks proper HUD wiring for Flame Tongue ignite + Frost Brand glow.
