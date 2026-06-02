@@ -432,7 +432,39 @@
     ],
     "range": "60'",
     "duration": "special",
-    "summary": "Charms an animal in a manner similar to charm person; lasts until removed by dispel magic or a successful saving throw."
+    "summary": "Charms an animal in a manner similar to charm person; lasts until removed by dispel magic or a successful saving throw.",
+    "effect": {
+      "range_feet": 60,
+      "duration_model": {
+        "kind": "fixed",
+        "amount": 9999,
+        "unit": "days"
+      },
+      "target_spec": {
+        "kind": "single_creature",
+        "count": 1,
+        "creature_filter": {
+          "requires_type": [
+            "animal"
+          ]
+        }
+      },
+      "save_spec": {
+        "category": "spells",
+        "on_success": "negate"
+      },
+      "resolution": [
+        {
+          "kind": "apply_condition",
+          "condition_key": "charmed",
+          "save_modifier": 0
+        },
+        {
+          "kind": "flip_to_caster_team"
+        }
+      ],
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml): Divine L2; 60' range; special duration (until dispel magic or a successful repeat save); target one animal. Functions identically to charm_person + charm_monster on the resolution side: save vs Spells negates; on failure the target gains the `charmed` condition AND flips to the caster's team (Tier 4 follow-up 2026-06-01 — the flip_to_caster_team effect step matches charm_person/charm_monster). Creature filter requires type 'animal' (Druids and similar divine casters target real animals; charm_person handles humanoids; charm_monster handles everything else)."
+    }
   },
   {
     "spell_key": "charm_monster",

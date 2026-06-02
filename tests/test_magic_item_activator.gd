@@ -70,6 +70,11 @@ class _ControlTarget extends RefCounted:
 		return true
 	func has_condition(condition_key: String) -> bool:
 		return condition_key in _conditions
+	## Mirrors the CharacterData / Combatant get_flags() accessor pattern.
+	## Required by CastingResolver._get_flags so the unwind chain can find
+	## the flags container when reverting on cleanup (Option 1 migration).
+	func get_flags() -> EntityFlags:
+		return flags
 	## Mirrors CharacterData.get_effective_save — returns the per-save target.
 	func get_effective_save(save_key: String) -> int:
 		match save_key:
@@ -171,6 +176,11 @@ func run_all_tests() -> void:
 	test_control_effect_consumes_potion_on_both_save_outcomes()
 	test_control_effect_does_not_consume_ring_on_either_outcome()
 	test_control_effect_creature_type_filter_lets_unknown_through()
+	# Option 1 migration (2026-06-01): Control items register with the
+	# casting resolver's effect tracker so duration-revert + dispel
+	# route through the unified cleanup chain.
+	test_control_effect_registers_active_effect_with_tracker()
+	test_control_effect_unwind_clears_flag()
 	if not has_failures():
 		print("MagicItemActivator: all tests passed.")
 
@@ -1607,6 +1617,83 @@ func test_control_effect_creature_type_filter_lets_unknown_through() -> void:
 
 	_teardown()
 	print("  control_effect_creature_type_filter_lets_unknown_through: OK")
+
+
+# ---------------------------------------------------------------------------
+# Option 1 migration (2026-06-01): Control items register with the casting
+# resolver's effect tracker. Cleanup via _unwind_effect_state reverts the
+# is_controlled_by_caster flag (+ side flip when caster has a .side; the
+# CharacterData drinker doesn't have one so V1 only exercises flag revert
+# here — the Charm side-flip revert test in test_casting_resolver.gd covers
+# the side-flip path with a sided caster).
+# ---------------------------------------------------------------------------
+
+func test_control_effect_registers_active_effect_with_tracker() -> void:
+	_setup()
+	var harness := _make_harness()
+	var drinker := _make_drinker()
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "potion_of_animal_control",
+		"name": "Potion of Animal Control", "is_magical": true,
+	})
+	var target := _ControlTarget.new()
+	target.id = "ctrl_tracker_target"
+	target.side = 1
+	target.creature_type = "animal"
+	target.save_spells = 17
+	GameState.dice_overrides["save_vs_control_effect"] = 1
+	MagicItemActivator.drink_potion(
+		item_id, drinker, harness.resolver, harness.catalog,
+		target.id, target)
+	var tracker: ActiveEffectTracker = harness.resolver.get_effect_tracker()
+	var effect_id: String = "magic_item_control:%s:%s" % [item_id, target.id]
+	check(tracker.has_effect(effect_id),
+		"tracker should hold control effect '%s'" % effect_id)
+	var effect: Dictionary = tracker.get_effect(effect_id)
+	# Records: applied_flags (is_controlled_by_caster) + applied_conditions
+	# (controlled). applied_side_flips is empty because the CharacterData
+	# drinker has no .side property (caster_side = -1 → side flip skipped).
+	check((effect.get("applied_flags", []) as Array).size() == 1,
+		"effect should record one applied flag (is_controlled_by_caster)")
+	check((effect.get("applied_conditions", []) as Array).size() == 1,
+		"effect should record one applied condition (controlled)")
+	_teardown()
+	print("  control_effect_registers_active_effect_with_tracker: OK")
+
+
+func test_control_effect_unwind_clears_flag() -> void:
+	# Manually invoke the unwind path (simulates dispel / duration expiry).
+	# The is_controlled_by_caster flag should clear via the unified
+	# CastingResolver._unwind_effect_state chain.
+	_setup()
+	var harness := _make_harness()
+	var drinker := _make_drinker()
+	var item_id := CampaignRepository.add_inventory_item({
+		"character_id": _DB_CHAR, "item_key": "potion_of_animal_control",
+		"name": "Potion of Animal Control", "is_magical": true,
+	})
+	var target := _ControlTarget.new()
+	target.id = "ctrl_unwind_target"
+	target.side = 1
+	target.creature_type = "animal"
+	target.save_spells = 17
+	GameState.dice_overrides["save_vs_control_effect"] = 1
+	MagicItemActivator.drink_potion(
+		item_id, drinker, harness.resolver, harness.catalog,
+		target.id, target)
+	check(target.flags.has_flag("is_controlled_by_caster"),
+		"precondition: is_controlled_by_caster flag set on target")
+	# Invoke the unwind.
+	var tracker: ActiveEffectTracker = harness.resolver.get_effect_tracker()
+	var effect_id: String = "magic_item_control:%s:%s" % [item_id, target.id]
+	var effect: Dictionary = tracker.get_effect(effect_id)
+	var lookup: Callable = func(tid: String) -> Variant:
+		return target if tid == target.id else null
+	harness.resolver._unwind_effect_state(effect, lookup)
+	check(not target.flags.has_flag("is_controlled_by_caster"),
+		"is_controlled_by_caster flag should clear after unwind (Option 1 migration)")
+	_teardown()
+	print("  control_effect_unwind_clears_flag: OK")
 
 
 # ---------------------------------------------------------------------------

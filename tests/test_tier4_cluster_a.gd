@@ -553,3 +553,5 @@ func _make_potion_harness() -> Dictionary:
 		"resolver": resolver,
 		"catalog": MagicItemCatalog.new(),
 	}
+
+

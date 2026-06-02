@@ -141,6 +141,10 @@ func run_all_tests() -> void:
 	test_panicked_combatant_movement_doubles_from_running_multiplier()
 	test_gaseous_combatant_is_damaged_only_by_magic_or_silver()
 	test_gaseous_combatant_cannot_attack_via_condition_manager()
+	# Haste consumer integration (Option 3, 2026-06-01).
+	test_hasted_combatant_movement_doubles_via_existing_haste_metadata()
+	test_slowed_combatant_movement_halves_via_existing_slow_metadata()
+	test_hasted_and_panicked_compound_multipliers()
 	if not has_failures():
 		print("PanicGaseousForm: all tests passed.")
 
@@ -573,3 +577,59 @@ func test_gaseous_combatant_cannot_attack_via_condition_manager() -> void:
 	check(mgr.check_action_allowed(c, "movement") == true,
 		"gaseous combatant should still be allowed to move (the whole point)")
 	print("  gaseous_combatant_cannot_attack_via_condition_manager: OK")
+
+
+# ---------------------------------------------------------------------------
+# Haste consumer integration (Option 3 — 2026-06-01)
+#
+# Haste's resolver already sets is_hasted with metadata.movement_multiplier =
+# 2.0 (and Slow's reverse branch sets is_slowed with multiplier 0.5). Until
+# this commit the multiplier was NOT consumed at runtime (combat-resolver
+# integration deferred per haste_resolver.gd notes). The new
+# Combatant._apply_movement_multipliers loop reads ANY flag with the
+# multiplier metadata key, so Haste plugs in for free — no haste_resolver
+# changes needed. These tests pin that flow.
+# ---------------------------------------------------------------------------
+
+func test_hasted_combatant_movement_doubles_via_existing_haste_metadata() -> void:
+	# Set is_hasted with the multiplier metadata Haste already produces.
+	# Combatant._apply_movement_multipliers picks it up automatically.
+	var c := _make_gaseous_test_monster("hasted_test")
+	check(c.get_combat_movement() == 40, "baseline goblin combat movement = 40")
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_hasted", "spell:haste:test", {"movement_multiplier": 2.0})
+	check(c.get_combat_movement() == 80,
+		"hasted combatant should have 80'/round (40 base × 2.0 multiplier), got %d" %
+			c.get_combat_movement())
+	print("  hasted_combatant_movement_doubles_via_existing_haste_metadata: OK")
+
+
+func test_slowed_combatant_movement_halves_via_existing_slow_metadata() -> void:
+	# Slow's reverse branch sets is_slowed with movement_multiplier = 0.5.
+	# Same generic loop applies; the multiplier compounds (here it halves).
+	var c := _make_gaseous_test_monster("slowed_test")
+	check(c.get_combat_movement() == 40, "baseline goblin combat movement = 40")
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_slowed", "spell:slow:test", {"movement_multiplier": 0.5})
+	check(c.get_combat_movement() == 20,
+		"slowed combatant should have 20'/round (40 base × 0.5 multiplier), got %d" %
+			c.get_combat_movement())
+	print("  slowed_combatant_movement_halves_via_existing_slow_metadata: OK")
+
+
+func test_hasted_and_panicked_compound_multipliers() -> void:
+	# Multiple flags with movement_multiplier compound (V1 simplification).
+	# Haste + panic running = ×2 × ×2 = ×4. A real player wouldn't
+	# typically stack these (Haste+Slow cancel per RAW), but the resolver
+	# doesn't enforce mutual exclusion — that's a per-spell concern
+	# (haste_resolver auto-dispels the opposite flag). When both are
+	# present, multipliers compound.
+	var c := _make_gaseous_test_monster("compound_test")
+	check(c.get_combat_movement() == 40, "baseline goblin combat movement = 40")
+	var flags: EntityFlags = c.get_flags()
+	flags.set_flag("is_hasted", "spell:haste:test", {"movement_multiplier": 2.0})
+	flags.set_flag("is_running_in_panic", "spell:panic:test", {"movement_multiplier": 2.0})
+	check(c.get_combat_movement() == 160,
+		"hasted + panicked combatant should have 160'/round (40 × 2 × 2), got %d" %
+			c.get_combat_movement())
+	print("  hasted_and_panicked_compound_multipliers: OK")

@@ -133,9 +133,14 @@ static func drink_potion(
 	# control-creature effects (the Control batch); poison ignores them.
 	var direct_v: Variant = catalog_entry.get("direct_potion_effect", null)
 	if direct_v is Dictionary:
+		# Thread the tracker through (Option 1 migration 2026-06-01) so the
+		# Control resolver can register with the unified cleanup chain.
+		var tracker: ActiveEffectTracker = null
+		if casting_resolver != null:
+			tracker = casting_resolver.get_effect_tracker()
 		return _resolve_direct_potion_effect(
 			item_id, item_key, catalog_entry, drinker, direct_v as Dictionary,
-			target_id, target_entity)
+			target_id, target_entity, tracker)
 	var binding_v: Variant = catalog_entry.get("spell_binding", null)
 	if not (binding_v is Dictionary):
 		empty["message"] = "Potion '%s' has no spell_binding (effect not yet implemented)." % item_key
@@ -396,11 +401,20 @@ static func activate_worn_item(
 	# multi-use). Mirrors drink_potion's direct_potion_effect branch.
 	var direct_worn_v: Variant = catalog_entry.get("direct_worn_active_effect", null)
 	if direct_worn_v is Dictionary:
+		# Pass the casting_resolver's tracker through so the Control effect
+		# registers with the unified cleanup chain (Option 1 migration,
+		# 2026-06-01). Cleanup on duration expiry / dispel reverts the
+		# side flip, clears the is_controlled_by_caster flag, and
+		# emits condition_changed(applied:false) via the existing
+		# CastingResolver._unwind_effect_state path.
+		var tracker: ActiveEffectTracker = null
+		if casting_resolver != null:
+			tracker = casting_resolver.get_effect_tracker()
 		var control_outcome: Dictionary = _apply_control_effect(
 			wielder, target_id, target_entity,
 			direct_worn_v as Dictionary,
 			str(catalog_entry.get("name", item_key)),
-			item_id, "worn_active")
+			item_id, "worn_active", tracker)
 		return control_outcome
 	var binding_v: Variant = catalog_entry.get("spell_binding", null)
 	if not (binding_v is Dictionary):
@@ -836,7 +850,8 @@ static func _resolve_direct_potion_effect(
 		drinker: CharacterData,
 		direct_cfg: Dictionary,
 		target_id: String = "",
-		target_entity = null) -> Dictionary:
+		target_entity = null,
+		effect_tracker: ActiveEffectTracker = null) -> Dictionary:
 	var effect_kind: String = str(direct_cfg.get("effect_kind", ""))
 	var name: String = str(catalog_entry.get("name", item_key))
 	var base := {
@@ -858,7 +873,7 @@ static func _resolve_direct_potion_effect(
 			# (Animal/Dragon/Giant/Plant/Undead Control) all use this branch.
 			var control_outcome: Dictionary = _apply_control_effect(
 				drinker, target_id, target_entity,
-				direct_cfg, name, item_id, "potion")
+				direct_cfg, name, item_id, "potion", effect_tracker)
 			# Potion is consumed on success only — the drinker drank the
 			# potion to attempt the control; failure means it didn't take
 			# hold but the dose is consumed (unlike spell-binding potions
@@ -975,7 +990,8 @@ static func _apply_control_effect(
 		config: Dictionary,
 		item_name: String,
 		item_id: String,
-		invocation_kind: String) -> Dictionary:
+		invocation_kind: String,
+		effect_tracker: ActiveEffectTracker = null) -> Dictionary:
 	var base := {
 		"success": false,
 		"message": "",
@@ -1054,6 +1070,60 @@ static func _apply_control_effect(
 		if target_entity != null and ("side" in target_entity):
 			target_entity.side = caster_side
 			side_flipped = true
+	#    (d) Register an active effect with the tracker (Option 1 migration,
+	#        2026-06-01). Mirrors the records the spell pipeline writes for
+	#        Charm — applied_conditions + applied_flags + applied_side_flips —
+	#        so CastingResolver._unwind_effect_state on duration expiry /
+	#        dispel reverts all three mutations through the unified cleanup
+	#        chain (no parallel cleanup logic in MagicItemActivator). The
+	#        tracker is optional (default null) so the helper still works
+	#        when called from a path without a tracker — in that case the
+	#        mutations persist until manually cleared (matches pre-migration
+	#        behavior for callers that don't pass it).
+	if effect_tracker != null:
+		var effect_id: String = "magic_item_control:%s:%s" % [item_id, target_id]
+		var duration_turns: int = int(config.get("duration_turns", -1))
+		# duration_turns == -1 means "indefinite (until dispel)" — V1 ring
+		# pattern. For potions the materializer rolls 1d6+6 turns at
+		# activation time and overrides config; for now we accept -1 as
+		# "no auto-expiry" and let the tracker hold the effect until dispel.
+		var duration_type: String = "turns" if duration_turns > 0 else "indefinite"
+		var duration_remaining: int = duration_turns if duration_turns > 0 else 9999
+		var effect_dict: Dictionary = {
+			"effect_id": effect_id,
+			"spell_key": "magic_item_control:%s" % item_id,
+			"caster_id": caster_id,
+			"caster_level": 1,
+			"target_ids": [target_id],
+			"effect_type": "control",
+			"applied_modifiers": [],
+			"applied_flags": [{
+				"character_id": target_id,
+				"flag_key": "is_controlled_by_caster",
+				"source_id": source_id,
+			}],
+			"applied_conditions": [{
+				"character_id": target_id,
+				"condition_key": "controlled",
+			}],
+			"applied_side_flips": ([] if not side_flipped else [{
+				"character_id": target_id,
+				"original_side": original_target_side,
+				"new_side": caster_side,
+			}]),
+			"duration_type": duration_type,
+			"duration_remaining": duration_remaining,
+			"requires_concentration": 0,
+			"is_active": 1,
+			"metadata": {
+				"source_kind": "magic_item_control",
+				"item_id": item_id,
+				"item_name": item_name,
+				"invocation_kind": invocation_kind,
+				"hostile_on_expiry": bool(config.get("hostile_on_expiry", false)),
+			},
+		}
+		effect_tracker.add_effect(effect_dict)
 	return {
 		"success": true,
 		"message": "%s — target FAILED save (rolled %d vs %s target %d). Target is now controlled%s." %

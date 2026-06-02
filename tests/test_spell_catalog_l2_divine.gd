@@ -84,6 +84,10 @@ func run_all_tests() -> void:
 	test_snake_charm_hd_budget_target_spec()
 	test_snake_charm_applies_charmed_to_each()
 	test_speak_with_animals_apply_flag_on_caster()
+	# charm_animal effect block (Option 2, 2026-06-01) — parity with
+	# charm_person + charm_monster: apply_condition charmed + flip_to_caster_team.
+	test_charm_animal_effect_block_shape()
+	test_charm_animal_applies_charmed_on_failed_save()
 	# Spiritual Weapon custom resolver
 	test_spiritual_weapon_l1_damage_bonus_zero()
 	test_spiritual_weapon_l3_damage_bonus_plus_one()
@@ -277,6 +281,67 @@ func test_speak_with_animals_apply_flag_on_caster() -> void:
 	harness.resolver.resolve(ctx, choice, td, caster, {caster.id: caster})
 	check(caster.flags.has_flag("can_speak_with_animals"),
 		"caster has can_speak_with_animals flag")
+
+
+# ---------------------------------------------------------------------------
+# Charm Animal (Option 2, 2026-06-01)
+#
+# Mirror of charm_person + charm_monster — same `apply_condition charmed` +
+# `flip_to_caster_team` resolution chain. Spell is Divine L2; targets a
+# single creature with creature_filter.requires_type = ["animal"].
+# ---------------------------------------------------------------------------
+
+func test_charm_animal_effect_block_shape() -> void:
+	# Verify the spell catalog effect block matches the charm_person /
+	# charm_monster pattern (apply_condition + flip_to_caster_team).
+	var spell_registry := SpellRegistry.new()
+	var effect_registry := SpellEffectRegistry.new(spell_registry)
+	check(effect_registry.has_effect("charm_animal"),
+		"charm_animal must have an effect_registry payload (spell effect implemented)")
+	var payload := effect_registry.get_effect_payload("charm_animal", false, -1)
+	var target_spec: Dictionary = payload.get("target_spec", {})
+	check(str(target_spec.get("kind", "")) == "single_creature",
+		"charm_animal target_spec.kind should be 'single_creature'")
+	var creature_filter: Dictionary = target_spec.get("creature_filter", {})
+	check("animal" in (creature_filter.get("requires_type", []) as Array),
+		"creature_filter should require type 'animal'")
+	var resolution: Array = payload.get("resolution", [])
+	check(resolution.size() == 2,
+		"charm_animal resolution should have 2 steps (condition + flip), got %d" %
+			resolution.size())
+	check(str((resolution[0] as Dictionary).get("kind", "")) == "apply_condition",
+		"resolution[0].kind should be 'apply_condition'")
+	check(str((resolution[0] as Dictionary).get("condition_key", "")) == "charmed",
+		"resolution[0].condition_key should be 'charmed'")
+	check(str((resolution[1] as Dictionary).get("kind", "")) == "flip_to_caster_team",
+		"resolution[1].kind should be 'flip_to_caster_team'")
+	print("  charm_animal_effect_block_shape: OK")
+
+
+func test_charm_animal_applies_charmed_on_failed_save() -> void:
+	# End-to-end: cast charm_animal on a target with creature_type=animal;
+	# force the save to fail; verify the charmed condition lands.
+	var harness := _make_harness()
+	var caster := _make_caster_cleric()
+	var target := _Snake.new()
+	target.id = "charm_animal_target"
+	target.hit_dice = 1
+	target.creature_type = "animal"
+	# Snake stub doesn't have save_spells; the resolver will treat as 20 default
+	# (only natural 20 saves). Force the save to fail via the harness's
+	# fake dice (direct dict access — this file's _FakeDice doesn't have a
+	# set_fixed method; the L2_divine pattern is direct dict assignment).
+	harness.dice.fixed["spell_save_spells"] = 5
+	var ctx := CasterContext.from_character_data(caster, "combat_grid", "divine", 2)
+	var choice := SpellChoice.new("charm_animal", 2, false, -1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	harness.resolver.resolve(ctx, choice, td, caster, {target.id: target})
+	check("charmed" in target.conditions,
+		"target gains charmed condition on failed save vs Spells; got %s" %
+			str(target.conditions))
+	print("  charm_animal_applies_charmed_on_failed_save: OK")
 
 
 # ---------------------------------------------------------------------------

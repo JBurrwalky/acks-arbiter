@@ -29947,3 +29947,51 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 3. **Spell-effect pass on `charm_animal`** — adds the side-flip step for parity with charm_person / charm_monster (one-line addition).
 4. **Wire Haste's existing metadata.movement_multiplier** through `_apply_movement_multipliers` (the consumer integration that's been documented but not yet wired; the loop is in place — Haste plugs in for free once it sets the multiplier).
 5. **Magic swords cluster** (Flame Tongue + Frost Brand via damage typing; Life Drinker, Luck Blade, Vorpal Sword each bespoke).
+
+
+## Session 2026-06-01 — Wire Haste multiplier + migrate Control items + charm_animal
+
+**Task:** Options 3, 1, and 2 (in that order, in parallel after Option 3 verified). Option 3: wire Haste's existing `metadata.movement_multiplier` through the new `_apply_movement_multipliers` loop introduced for Panic. Option 1: migrate Control items to register with the casting resolver's effect tracker so duration-revert + dispel route through the unified `_unwind_effect_state` cleanup chain (the standing follow-up from the original Control commit `e3db271`). Option 2: add an effect block to `charm_animal` so it has the same side-flip behavior as charm_person and charm_monster.
+**Model used:** Sonnet 4.6 for implementation + tests.
+
+**Completed:**
+- **Option 3 (Haste wiring; ZERO code changes needed)** — Verified that Haste's existing `is_hasted` / `is_slowed` flag setup in `haste_resolver.gd` already carries `metadata.movement_multiplier` (2.0 forward / 0.5 reverse). The new `Combatant._apply_movement_multipliers` loop introduced this morning iterates ALL flags and compounds any `movement_multiplier` metadata — Haste's metadata flows through automatically. Added 3 verification tests: `test_hasted_combatant_movement_doubles_via_existing_haste_metadata`, `test_slowed_combatant_movement_halves_via_existing_slow_metadata`, `test_hasted_and_panicked_compound_multipliers` (Haste × Panic compound to ×4). The Haste consumer-integration roadblock noted in `haste_resolver.gd` ("Combat-resolver consumption of the multipliers ... is a future polish") is now closed — the polish landed via Panic's bow-tie work.
+- **Option 1 (Control migration to effect tracker)** — `MagicItemActivator._apply_control_effect` signature gains optional `effect_tracker: ActiveEffectTracker = null` parameter; on a failed save (after inline condition + flag + side-flip mutations), the resolver builds a full active effect dict with `applied_flags`, `applied_conditions`, AND `applied_side_flips` records and registers it via `tracker.add_effect(...)`. Effect ID pattern: `"magic_item_control:<item_id>:<target_id>"`. Both callers (`drink_potion`'s `_resolve_direct_potion_effect` branch + `activate_worn_item`'s direct_worn_active_effect branch) extract the tracker from the supplied `casting_resolver.get_effect_tracker()` and thread it through. `_resolve_direct_potion_effect` signature also extended with optional `effect_tracker` so the tracker propagates from drink_potion to the helper. Cleanup on duration expiry / dispel routes through the existing `CastingResolver._unwind_effect_state` — reverts side flip, clears `is_controlled_by_caster` flag, emits `condition_changed(applied: false)`. Registration is gated on `tracker != null` so callers without a casting_resolver (rare) still work with pre-migration semantics (mutations persist; no auto-cleanup).
+- **Option 2 (charm_animal effect block)** — Added the effect block to `data/spells/spell_catalog.json:charm_animal` mirroring `charm_person` + `charm_monster`: Divine L2 spell; `target_spec.kind = single_creature` with `creature_filter.requires_type = ["animal"]`; `save_spec` vs Spells negates; `resolution` applies `charmed` condition AND `flip_to_caster_team` step. Same cleanup chain as the other charm spells.
+- **`_ControlTarget` test stub** — gained a `get_flags()` method (mirrors CharacterData/Combatant accessor) so `CastingResolver._get_flags(entity)` can find the flags container on the test target. Without this, the unwind chain silently no-oped because `entity.has_method("get_flags")` returned false. Surfaced via the Control migration test for `_unwind_effect_state`.
+- **5 new tests** across 3 test files: 3 Haste in `tests/test_panic_gaseous_form.gd` (+ those exist); 2 Control migration in `tests/test_magic_item_activator.gd`; 2 charm_animal in `tests/test_spell_catalog_l2_divine.gd`.
+
+**Decisions made:**
+- **Option 3 verification, not implementation.** The Haste multiplier consumer was already declared on the `is_hasted` flag — the consumer integration just hadn't existed. The new `_apply_movement_multipliers` loop introduced for Panic IS that consumer. Wiring Haste was zero LOC; the verification tests pin the behavior and document the cross-spell compound interaction.
+- **Multi-source flag risk for Control migration:** the existing inline mutation in `_apply_control_effect` already sets the flag with the proper source_id `"magic_item:<item_id>:<caster_id>"`; the same source_id is recorded on the `applied_flags` record so the cleanup `clear_flag(flag_key, source_id)` removes only this Control instance. Multiple controls on the same target (different items) would each register their own effect dict and clean up independently. (V1 doesn't restrict stacking.)
+- **`effect_tracker: null` fallback path preserved.** Callers without a casting_resolver still work with the inline mutations persisting until manually cleared. This matches the pre-migration behavior for any rare path that doesn't have a tracker. The tracker is the auto-cleanup mechanism, not a hard requirement.
+- **No new tests for "duration tick → cleanup fires"** in this commit. The full `tick_and_cleanup` path is already exercised by the existing CastingResolver tests; my Control migration tests verify the registration shape + manual unwind. The integration via tick_and_cleanup will work automatically because the effect dict carries the same shape Charm uses.
+- **charm_animal `creature_filter.requires_type = ["animal"]`.** Distinguishes from charm_person (humanoid) + charm_monster (any non-undead). The targeting layer's filter check refuses non-animal targets gracefully — Druids casting on a humanoid would see a "target type doesn't match" failure from the targeting controller, not a silent miss.
+- **No mutual exclusion for Haste + Panic** in V1. The compound test shows ×4 movement — that's degenerate, but realistic scenarios are rare (a panicked creature wouldn't typically also be Haste-targeted). RAW silence; revisit if Jedidiah finds it problematic.
+
+**Interfaces defined or changed:**
+- `MagicItemActivator._apply_control_effect(...)` — signature extended with optional `effect_tracker: ActiveEffectTracker = null` (default null preserves pre-migration semantics).
+- `MagicItemActivator._resolve_direct_potion_effect(...)` — signature extended with optional `effect_tracker: ActiveEffectTracker = null`.
+- New active effect dict key pattern: `"magic_item_control:<item_id>:<target_id>"`.
+- `_ControlTarget` test stub: `get_flags() -> EntityFlags` method added.
+- New `charm_animal.effect` block in `data/spells/spell_catalog.json`.
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- `tests/test_panic_gaseous_form.gd` — 3 new tests for Haste consumer integration.
+- `tests/test_magic_item_activator.gd` — 2 new tests for Control migration (effect registration shape + flag-clearing via unwind).
+- `tests/test_spell_catalog_l2_divine.gd` — 2 new tests for charm_animal (effect block shape + failed-save applies charmed).
+- `_ControlTarget` stub gained `get_flags()` method.
+- Full suite: **398 passed / 19 failed** — same as the prior baseline; net-zero new failures (the 19 are pre-existing carry-forwards).
+
+**Known issues:**
+- The Control migration path uses a `magic_item_control:<item_id>` synthesized "spell_key" on the effect dict (since Control items don't bind to a real spell). If something inspects `effect.spell_key` expecting a registered spell, it would miss the synthetic key. The cleanup chain doesn't care; this is documentation-only for any future spell-keyed lookups.
+- `_unwind_effect_state` cleanup happens on duration expiry via tick_and_cleanup OR on cleanup_callback (dispel/concentration break). For Control items, the duration_remaining defaults to 9999 turns when config.duration_turns == -1 (V1 indefinite). Realistic durations (e.g., 1d6+6 turns for potions) would need the materializer to override duration_turns at activation time; V1 defers that polish.
+
+**Next session should:**
+1. **Materializer-time duration rolls for Control potions** — generate a `duration_turns` value at potion materialization (RAW 1d6+6 for the standard potion default) so the auto-cleanup actually fires at a realistic time.
+2. **Magic swords cluster** (Flame Tongue + Frost Brand via damage typing; Life Drinker, Luck Blade, Vorpal Sword each bespoke).
+3. **Cursed-item non-numeric effect pass** (Cursed Scroll, Ring of Delusion, Ring of Weakness).
+4. **Spell-effect pass on Tier 3 detection items** (Wand of Detecting Enemies/Metals/Secret Doors, Potion of Treasure Finding) — needs the UI reveal subsystem first.
