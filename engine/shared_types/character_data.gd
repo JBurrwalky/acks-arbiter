@@ -84,6 +84,14 @@ var class_metadata: String = "{}"
 var is_dead: bool = false
 var is_active: bool = true
 var is_incapacitated: bool = false
+## Migration 142: day_of_death = absolute day from Timekeeping.get_total_days()
+## at finalize; -1 means never died. death_cause encodes the kind:
+## '' (untracked), 'old_age', 'lost_head', 'cremated', 'disintegrated',
+## 'combat'. Restore Life and Limb's days_dead_limit gate consumes
+## day_of_death; the spell rejects targets whose death_cause is in
+## {old_age, lost_head, cremated, disintegrated}.
+var day_of_death: int = -1
+var death_cause: String = ""
 
 ## Henchman fields (empty/"" for PCs and NPCs)
 var employer_id: String = ""
@@ -508,6 +516,8 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.is_dead = data.get("is_dead", 0) == 1
 	c.is_active = data.get("is_active", 1) == 1
 	c.is_incapacitated = data.get("is_incapacitated", 0) == 1
+	c.day_of_death = int(data.get("day_of_death", -1))
+	c.death_cause = String(data.get("death_cause", ""))
 	var _emp = data.get("employer_id")
 	c.employer_id = _emp if _emp != null else ""
 	var _loyalty = data.get("loyalty_score")
@@ -564,6 +574,8 @@ func to_dict() -> Dictionary:
 		"is_dead": 1 if is_dead else 0,
 		"is_active": 1 if is_active else 0,
 		"is_incapacitated": 1 if is_incapacitated else 0,
+		"day_of_death": day_of_death,
+		"death_cause": death_cause,
 		"employer_id": employer_id,
 		"loyalty_score": loyalty_score,
 		"wage_cp_per_month": wage_cp_per_month,

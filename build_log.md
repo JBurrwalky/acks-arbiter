@@ -30185,3 +30185,181 @@ The three resolved to a SHARED integration point — `update_inventory_item_equi
 3. **Restoration spell effect** — un-defers level-drain recovery. Restoration is L5 divine.
 4. **PC attack/save consumer for drain** — extend `is_energy_drained` flag's apply to also set ModifierContainer entries on `attack_throw` + the 5 save targets.
 5. **Light source priority system** — extend `LightSourceTracker` to support multiple simultaneous sources with priority/radius selection. Unblocks proper HUD wiring for Flame Tongue ignite + Frost Brand glow.
+
+
+## Session 2026-06-02 — Restore Life and Limb spell + reverse Finger of Death (Divine L5)
+
+**Task:** Land the SACRED-named Divine L5 spell most projects call "Restoration" — the Restore Life and Limb spell per `rules/acore_spell_catalog_k-w_summary.xml:669-707`. Per Jedidiah ("That is necessary"), and per the Life Drinker drain-recovery deferral noted in the prior commit's build-log entry. Reverse form (Finger of Death) + standalone shaman Finger of Death wired in the same resolver.
+**Model used:** Sonnet 4.6 (1M context). Phase: RAW search via acks-raw-lookup, infrastructure recon (dispel_evil resolver / reincarnate resolver as templates, CharacterData.is_dead / character_permanent_wounds / is_energy_drained recon), implementation, tests.
+
+**Completed:**
+
+- **`engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd`** (NEW file) — custom resolver. Handles BOTH the forward form and the reverse form (Finger of Death) + the standalone shaman-restricted Finger of Death via `resolver_args.forced_reversed: true`. Forward-form per-target dispatch:
+  - **vs undead** → save vs Death; on fail apply `dispel_destroyed` condition (proven destruction pattern from Dispel Evil), record `outcome: destroyed_as_undead`; on save → `outcome: undead_saved`, no condition applied.
+  - **vs construct / elemental** → record `invalid_target_kind` reason; per RAW these are invalid targets ("constructs, elementals, and other creatures not truly alive").
+  - **vs valid living/deceased** target → (a) clear ALL `is_energy_drained` flag sources (Jedidiah 2026-06-02 interpretation per `ax_mortal_wounds_and_tampering.xml:387`: drained levels qualify as a "permanent wound" of the life-force, falling within "If a creature suffers a permanent wound, repair permanent wound, restore life and limb, regeneration, a ring of regeneration, or similar magic can heal the wound"); (b) if target.is_dead = true → flip is_dead to false + restore hp_current to 1 (within the days_dead_limit window — day-of-death enforcement deferred); (c) roll Tampering with Mortality base d20 + d6 (modifiers + alignment-table side-effect application are consumer-side).
+  - **Days-dead limit formula** computed per caster level: `2 + (caster_level - 7) × 4`, floored at 2 (L7=2, L9=10, L12=22). Recorded in `persist_metadata.days_dead_limit_at_caster_level` for the consumer.
+
+- **Reverse form (Finger of Death)** — 120' range death ray; save vs Death negates. On save fail: set is_dead=true, hp_current=0, apply dispel_destroyed condition; outcome `slain_by_death_ray`. On save: outcome `saved`. Routed by `spell_choice.is_reversed` OR `resolver_args.forced_reversed: true` (the standalone shaman-restricted catalog entry uses the latter to route through the same code).
+
+- **`engine/subsystems/spells/casting_resolver.gd`:_dispatch_custom** — args dict now forwards `dice = _dice_system` so production-cast resolvers can roll against the live RNG. Tests still inject a fake dice via `step.resolver_args.dice` (resolvers prefer `resolver_args.dice` when present and fall back to `args.dice` otherwise). Backward-compatible: existing resolvers (dispel_evil, insect_plague, etc.) ignore unrecognized args keys.
+
+- **`data/spells/spell_catalog.json`** — two entries updated:
+  - `restore_life_and_limb` — was a summary-only catalog entry; gains a full effect block: `target_spec.kind: "touch_creature"` with `creature_filter.excludes_type: ["construct", "elemental"]`; `save_spec.category: "none"` (save lives inside the custom resolver, vs-undead branch); `resolution: [{ kind: "custom", resolver_id: "restore_life_and_limb" }]`. `range: "touch (120')"` per RAW notation.
+  - `finger_of_death` — was a `_stub: true` shaman L5 entry; gains a full effect block: `range_feet: 120`, `target_spec.kind: "single_creature"`, `save_spec.category: "poison_death"` + `on_success: "negate"`, `resolution: [{ kind: "custom", resolver_id: "restore_life_and_limb", resolver_args: { forced_reversed: true } }]`. Routes through the same resolver's reverse branch.
+
+- **`engine/subsystems/session/session_runner.gd`** — `restore_life_and_limb` resolver registered alongside dispel_evil / insect_plague in the Divine L5 block.
+
+- **`tests/test_restore_life_and_limb.gd`** (NEW file) — 20 tests:
+  - Catalog: restore_life_and_limb has effect block + uses custom resolver_id "restore_life_and_limb"; finger_of_death has effect block + range_feet=120 + resolver_args.forced_reversed=true.
+  - Forward valid: tampering_with_mortality d20+d6 base rolls recorded on per_target; tampering_with_mortality_pending + permanent_wounds_repair_pending consumer flags set.
+  - Forward energy drain: single source cleared; multi-source (Life Drinker + Wraith) all sources cleared.
+  - Forward raise: is_dead = true target flipped to false + hp_current restored to 1 + days_dead_limit_applied recorded.
+  - Forward no-op: living target with no drain still gets tampering rolls + applied=true (each use rolls the table per RAW).
+  - vs undead: save fail → dispel_destroyed condition + destroyed_as_undead outcome; save success → undead_saved outcome + no condition.
+  - Invalid targets: construct → invalid_target_kind reason; elemental → invalid_target_kind reason.
+  - Days-dead-limit formula: L7=2, L9=10, L12=22.
+  - Reverse (Finger of Death): save fail → is_dead=true + hp_current=0 + dispel_destroyed + slain_by_death_ray outcome; save success → no mutation + saved outcome.
+  - Standalone Finger of Death: `forced_reversed: true` in resolver_args routes through reverse branch even when spell_choice.is_reversed=false.
+  - persist_metadata records days_dead_limit_at_caster_level.
+  - was_dead state recording: per_target carries was_dead=false for living, true for dead.
+
+- **`generation/gdd-treasure-item-backing.md`** §14 — new row added immediately above the prior magic swords deferred-consumer wire-up row, capturing the V1 wiring + still-deferred follow-ups.
+
+**Decisions made:**
+
+- **Restore Life and Limb is the canonical "Restoration" spell.** Per RAW search, ACKS RAW does NOT have a spell explicitly named "Restoration" — the SACRED-named Divine L5 spell that performs the restoration role is **"Restore Life and Limb"**. The Finger of Death reverse form is L5 divine; the standalone Finger of Death entry is shaman-restricted L5 divine. The prior commit's build log called the deferred work "Restoration spell" colloquially; this commit lands it under the proper RAW name.
+- **Energy drain reversal = clear `is_energy_drained` flag.** Jedidiah's prior simplification framework (Life Drinker drain = level reduction via flag metadata) made the drained state recoverable by clearing the flag. The RAW anchor is `ax_mortal_wounds_and_tampering.xml:387` which lists "If a creature suffers a permanent wound, repair permanent wound, restore life and limb, regeneration, a ring of regeneration, or similar magic can heal the wound." Drained levels fall within this "permanent wound of the life-force" framing. The resolver clears ALL sources of the flag in one operation — multi-source drain (Life Drinker + Wraith both hitting a target) is fully restored.
+- **Tampering with Mortality is split RESOLVER (rolls) / CONSUMER (modifiers + table application).** The resolver rolls the base d20 + d6 per RAW; the consumer (character_subsystem) applies the alignment-specific modifiers (life span / spellcaster power / state of body / state of soul) and resolves the alignment-specific side-effect table. Reason: modifier inputs need entity-specific context (age band, alignment column, instantly_killed flag, side effects already suffered) that the resolver shouldn't pull mid-step. Recorded as `tampering_with_mortality_pending: true` on per_target with the raw d20+d6 values.
+- **Day-of-death tracking deferred.** The resolver computes the days_dead_limit at caster level + records it; whether the elapsed days exceed the limit isn't enforced at this layer. Once a character-state field for time-of-death lands, the resolver gates the raise-from-death step on it.
+- **PC raise direct-mutates is_dead + hp_current.** CharacterData stores is_dead + hp_current as fields; the resolver directly sets them. Reincarnate uses the "pending consumer" pattern because identity rebuild (class/HD/stat changes) is complex; raise-dead is simpler and safe to do inline.
+- **Finger of Death "lawful cleric vs Chaotic foes" is a roleplay constraint, not mechanical.** Per RAW: "Lawful clerics may only use finger of death in life-or-death situations against Chaotic foes." This is honor-system enforcement — the resolver doesn't block. Future LLM-narration layer flags the breach.
+- **`args.dice` forwarded from CastingResolver._dispatch_custom.** Existing custom resolvers (dispel_evil, reincarnate) read dice from `resolver_args.dice` which only worked in tests. Forwarding `args.dice = _dice_system` from the dispatch makes production casts roll against the live RNG. Backward-compatible (resolvers fall back to whatever they were doing before; the new restore_life_and_limb_resolver prefers resolver_args.dice when present and falls back to args.dice).
+- **Two catalog entries for Finger of Death.** RAW separates "Restore Life and Limb (reverses to Finger of Death)" and the standalone shaman L5 Finger of Death. Both route through the same resolver — the standalone uses `resolver_args.forced_reversed: true`. Tests verify both paths.
+
+**Interfaces defined or changed:**
+
+- New `RestoreLifeAndLimbResolver.resolve(args: Dictionary) -> Dictionary` — custom resolver.
+- New custom resolver_id `"restore_life_and_limb"` registered in session_runner.gd. Routes both `restore_life_and_limb` (forward + reverse) and standalone `finger_of_death` (forced_reversed) catalog entries.
+- `CastingResolver._dispatch_custom` args dict gains `"dice": _dice_system` forwarding. Backward-compatible.
+- New step-result fields on `per_target`: `applied`, `reason`, `target_id`, `outcome`, `save_roll`, `save_target`, `energy_drain_cleared`, `raised_from_death`, `was_dead`, `permanent_wounds_repair_pending`, `tampering_with_mortality_pending`, `tampering_with_mortality_d20`, `tampering_with_mortality_d6`, `days_dead_limit_applied`. New result-level field `days_dead_limit_at_caster_level` and `persist_metadata.days_dead_limit_at_caster_level`.
+
+**Database changes:**
+
+- None.
+
+**Tests added/updated:**
+
+- 20 new tests in `tests/test_restore_life_and_limb.gd`. Test suite wired into `tests/test_runner.tscn` + `tests/test_runner.gd` (ext_resource id `406_restore_life_and_limb_tests` + `RestoreLifeAndLimbTests` node).
+- Full suite: **400 passed / 19 failed** — same baseline (was 399/19 before this commit). One new suite added; net-zero new failures.
+
+**Known issues:**
+
+- **Day-of-death tracking not yet recorded** — when a character dies, the day-of-death is not persisted. Restore Life and Limb's days_dead_limit gate is therefore advisory at this layer (the resolver records the limit; the consumer's enforcement is the follow-up). Adding a `day_of_death` column to characters table + setting it in combat_finalizer would close the loop.
+- **Tampering with Mortality modifiers + table not applied.** The resolver records the base d20+d6 rolls; the alignment-specific side-effect table + the modifier set (life span / spellcaster power / state of body / state of soul) + multi-attempt penalties + bed-rest scheduling all need a dedicated subsystem. Documented as the largest follow-up.
+- **Bed-rest recovery scheduling.** condition_table outcomes (1 month / 14+1d20 days / 2 weeks / 1 week / no rest) need timekeeping integration to suspend a character from party action during the rest period.
+- **died-of-old-age / lost-head / cremated rejection.** RAW invalidates these three death causes; needs wound-cause tags on the death record.
+- **Lawful-cleric Finger of Death constraint.** Roleplay-only; defer to LLM-narration layer.
+- **PC energy-drain consumer cleanup.** When Restore Life and Limb clears the `is_energy_drained` flag, ModifierContainer entries (if/when energy drain stamps them) would need parallel cleanup. Currently the flag's level-reduction consumer is the Combatant monster-HD path only — PC attack/save modifier consumer is still deferred (same deferral as the magic-swords commit), so there's nothing to clean up on the PC side YET.
+
+**Next session should:**
+
+1. **Wilderness handler signal hook for Frost Brand** — outstanding from prior session. Subscribe to `EventBus.hex_entered` + `Timekeeping.season_changed`, call `FrostBrandEnvironment.update_glow_state_for_character` per party member. ~5-10 lines plus a test.
+2. **PC attack/save consumer for energy drain** — extend the `is_energy_drained` flag's apply path to also set ModifierContainer entries on attack_throw + the 5 save targets. Restore Life and Limb's flag-clear path would automatically remove those modifiers via the source-prefix cleanup.
+3. **Day-of-death column** + combat_finalizer set + restore-life-and-limb resolver gate enforcement.
+4. **Tampering with Mortality subsystem** — modifier computation + alignment-specific table application + condition_table bed-rest scheduling.
+5. **Cell-level fire-state infrastructure** — would unblock Frost Brand non-magical-fire extinguish + future flammable-door + fire-spell residual effects.
+
+
+
+## Session 2026-06-02 — Restore Life and Limb follow-up sweep (5 deferred items)
+
+**Task:** Land all five follow-ups documented as deferred in the prior Restore-Life-and-Limb commit: (1) day-of-death tracking + days_dead_limit enforcement, (2) PC energy-drain consumer (apply + auto-cleanup), (3) Lawful-cleric Finger of Death roleplay constraint, (4) Tampering with Mortality subsystem (modifiers + condition_table + alignment side-effect tables), (5) died-of-old-age / lost-head / cremated / disintegrated rejection. Per Jedidiah: "Hit all of the deferred items in the best order you can. Parallel where risk-free."
+**Model used:** Sonnet 4.6 (1M context). Sequential execution chosen over worktree-parallelism because 3 of 4 tasks edit the same resolver file in different branches; full sequence completed end-to-end in one pass.
+
+**Completed:**
+
+**(1) Day-of-death + death-cause tracking — Migration 142:**
+
+- **`db/migrations/142_character_death_metadata.sql`** (NEW) — adds two columns to `characters`: `day_of_death INT NOT NULL DEFAULT -1` (absolute day from Timekeeping.get_total_days() at finalize; -1 = never died) + `death_cause TEXT NOT NULL DEFAULT ''` (encodes kind: `''` untracked, `old_age`, `lost_head`, `cremated`, `disintegrated`, `combat`). Non-destructive ADD COLUMN pattern matching migrations 134-141.
+- **`db/schema.sql`** — schema reflection of the two new columns with documentation block.
+- **`engine/shared_types/character_data.gd`** — new fields `day_of_death: int = -1` + `death_cause: String = ""` with round-trip serialization through `from_dict` + `to_dict`.
+- **`engine/autoloads/campaign_repository.gd`** — INSERT + UPDATE statements wire the two new columns (47 binding params; preserves all existing field ordering).
+- **`engine/subsystems/combat/combat_finalizer.gd`** — `_mark_pc_dead` now takes `death_cause: String = "combat"` and stamps `day_of_death = Timekeeping.get_total_days()` alongside the existing `is_dead = true`. New helper `_infer_death_cause(mw, combatant_id, roster)`: inspects roster combatant's conditions first (`disintegrated` → `"disintegrated"`); then scans mortal-wound `wound_description` text (`"cremated"` substring → `"cremated"`; `"decapit"` → `"lost_head"`); else `"combat"`.
+- **`engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd`** — `_resolve_single_target` gates: (a) `REJECTED_DEATH_CAUSES` const list (`["old_age", "lost_head", "cremated", "disintegrated"]`) — entities with matching death_cause return `applied=false, reason="death_cause_rejected"`; (b) computes `days_dead = current_day - day_of_death` when both are recorded — returns `applied=false, reason="exceeded_days_dead_limit"` when days_dead > days_dead_limit. Untracked targets (`day_of_death = -1` from pre-migration saves) fall back to the prior "assume within window" behavior so legacy data still raises. `current_day` sourced from Timekeeping autoload via `_get_current_day` helper; tests inject via `resolver_args.current_day` for deterministic results.
+
+**(2) PC energy-drain consumer:**
+
+- **`engine/subsystems/inventory/energy_drain_consumer.gd`** (NEW) — `EnergyDrainConsumer` static helper. `refresh_modifiers(character)` clears all `energy_drain:` source-prefix modifiers across every stat, then re-derives entries from the current `is_energy_drained` flag state (sums `metadata.drained_levels` across all flag sources). Adds `+N` modifier to `attack_throw` AND each of the 5 save targets (worse = higher target per ACKS roll-high-or-equal save model). Idempotent — safe to call repeatedly.
+- **`engine/subsystems/inventory/magic_item_activator.gd:apply_life_drinker_drain`** — after the flag is set, calls `EnergyDrainConsumer.refresh_modifiers(target_entity)` gated on `target_entity is CharacterData` (monster path unchanged — Combatant.get_effective_level_or_hd already wired).
+- **`engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd:_clear_energy_drain`** — after clearing the flag, also calls `EnergyDrainConsumer.refresh_modifiers(entity)` gated on CharacterData. With the flag now empty, refresh removes all `energy_drain:` modifier entries via prefix-sweep. Closes the apply + cleanup loop end-to-end.
+
+**(3) Finger of Death roleplay constraint:**
+
+- **`engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd`** — `_resolve_finger_of_death` checks `caster.alignment` + `caster.caster_class`. Calls new `_check_finger_of_death_violation(caster_alignment, caster_class, target)` which returns `"lawful_finger_of_death_vs_non_chaotic"` when ALL of: caster is Lawful, caster_class ∈ {cleric, shaman, paladin, bishop, priestess}, target_alignment ≠ chaotic. Recorded on per_target as `roleplay_violation` for LLM-narration / future-divine-favor-tracker consumers. Non-Lawful casters and non-divine classes never trigger.
+- Slain target's `death_cause` is now stamped to `"combat"` + `day_of_death = current_day` so a follow-up Restore-Life-and-Limb cast honors the days_dead_limit window.
+
+**(4) Tampering with Mortality subsystem:**
+
+- **`engine/subsystems/spells/tampering_with_mortality_resolver.gd`** (NEW) — static `TamperingWithMortalityResolver` class. `compute_modifiers(ctx)` applies the four modifier classes per Axioms ch.6 `rules/ax_mortal_wounds_and_tampering.xml:395-403`:
+  - **life_span**: age_category → {youth: +2, adult: 0, middle_aged: -5, old: -10, ancient: -20} (RAW "youthful" = our "youth").
+  - **spellcaster_power**: `floor(caster_level / 2)`, plus +2 when `in_caster_god_temple = true`.
+  - **state_of_body**: -10 when death_cause ∈ {lost_head, cremated, disintegrated} (instant kill per RAW); 0 otherwise. V1 simplification — limb-by-limb / spine-severing enumeration deferred until wound-cause tags expand.
+  - **state_of_soul**: WIS modifier (3 → -3 through 18+ → +3 per ACKS table) - days_dead - side_effects_already_suffered.
+  - `resolve_tampering(ctx)` applies all four modifiers to d20_raw, looks up the `_CONDITION_TABLE` row (8 d20 ranges → condition + bed_rest_days; values: `spell_fails`, `restored_at_great_cost` (30d), `restored_with_lingering_effects` (14+1d20 days), `restoration_intense` (14d), `body_made_whole` (14d), `health_restored` (7d), `instantly_recovered` (0d)), then resolves the alignment-specific side-effect from `_ALIGNMENT_TABLES` (3 alignments × 6 d6 rows × 8 d20 bands = 144 RAW outcomes, transcribed from `ax_mortal_wounds_and_tampering.xml:440-690`).
+- **`engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd`** — after rolling the base d20+d6, calls `TamperingWithMortalityResolver.resolve_tampering(_build_tampering_ctx(...))` and stamps the resolved outcome (d20_total, modifiers, condition, bed_rest, side_effect, alignment_used) on `per_target.tampering_outcome`. The character-subsystem consumer reads this to apply the persistent side-effect (e.g. permanent stat changes, XP penalty, new conditions) and schedule the bed-rest suspension via Timekeeping (next follow-up).
+
+**(5) Cremated / lost-head / disintegrated rejection:**
+
+Folded into (1) — `REJECTED_DEATH_CAUSES` const + the resolver's death_cause gate handles all four causes (old_age, lost_head, cremated, disintegrated). The disintegrated case is recognized by `combat_finalizer._infer_death_cause` reading the `disintegrated` condition off the roster (which Disintegrate sets via `apply_condition`; `spell_combat_hooks._sweep_destroyed_entities` then drops HP).
+
+**Decisions made:**
+
+- **Migration over field-on-CombatantData-only.** day_of_death + death_cause persist across save/load and are useful for any future death-archaeology consumer (Speak with Dead, Animate Dead, etc.). Migration cost = one ALTER TABLE pair.
+- **death_cause inferred from existing wound_description text + condition flag.** Avoids requiring new tags on every damage source. The 3 substring matches (`cremated` / `decapit`) + 1 condition check (`disintegrated`) cover the four RAW rejection cases.
+- **Untracked day_of_death = -1 falls back to advisory.** Existing characters from before this migration have day_of_death = -1; the resolver lets them be raised without the days_dead_limit check. Avoids retroactive deaths becoming permanently unrestorable.
+- **EnergyDrainConsumer as a static helper, not an autoload.** Mirrors WornMagicEffectResolver pattern. Re-deriving from the flag state is cheap (one prefix-clear + N additions); idempotent + no event bookkeeping.
+- **+1 per drained level to attack_throw + saves, not class-progression rederivation.** V1 simplification per the existing flag metadata contract. ACKS combat progressions all improve by ~1 per level, so this approximates "effectively one level lower" cleanly. V2 could rederive from the class table at `(level - drained_levels)` if precision is needed.
+- **Tampering condition_table + alignment tables embedded as const Arrays/Dictionaries.** Single file ownership; no DB migration needed for static reference data. The full 144-cell alignment table is ~200 LOC of data + ~100 LOC of logic.
+- **Tampering modifier ctx is a Dictionary, not typed.** Allows test injection of arbitrary values (e.g. days_dead, side_effects_already_suffered) without requiring CharacterData/CasterContext fixtures. Production callers build the dict from CharacterData + CasterContext per the resolver's `_build_tampering_ctx`.
+- **Lawful FoD vow encoded as a "roleplay_violation" string, not a mechanical block.** Per RAW: "Lawful clerics MAY ONLY use against Chaotic foes" — but the spell still works. The recorded violation is for LLM narration + future divine-favor / alignment-tracker consumers. Casters of non-divine classes (mages) and non-Lawful casters never trigger.
+- **Tampering bed-rest scheduling deferred.** The resolver records `bed_rest = 30` (or `"14+1d20"` for the lingering row); Timekeeping-based suspension of the character from party actions is its own follow-up commit. The structured outcome makes that wiring trivial when it lands.
+
+**Interfaces defined or changed:**
+
+- **NEW** `EnergyDrainConsumer.refresh_modifiers(character: CharacterData) -> void`, `EnergyDrainConsumer.get_total_drained_levels(character) -> int` (static helpers).
+- **NEW** `TamperingWithMortalityResolver.compute_modifiers(ctx: Dictionary) -> Dictionary`, `lookup_condition(d20_total: int) -> Dictionary`, `lookup_side_effect(alignment: String, d6: int, d20_total: int) -> String`, `resolve_tampering(ctx: Dictionary) -> Dictionary` (static helpers).
+- `CharacterData.day_of_death: int = -1` + `CharacterData.death_cause: String = ""` (new public fields).
+- `CombatFinalizer._mark_pc_dead(party_data, combatant_id, death_cause = "combat")` (signature gains optional 3rd param).
+- `CombatFinalizer._infer_death_cause(mw, combatant_id, roster)` (new private helper).
+- `RestoreLifeAndLimbResolver._resolve_single_target` adds `injected_current_day` parameter (default -1); resolver result dict gains per_target keys `days_dead`, `tampering_outcome`, `death_cause`.
+- Resolver's reverse branch (`_resolve_finger_of_death`) records `roleplay_violation` on per_target when applicable; stamps `death_cause` + `day_of_death` on slain targets.
+
+**Database changes:**
+
+- Migration 142: ALTER TABLE characters ADD COLUMN day_of_death INTEGER NOT NULL DEFAULT -1 + ADD COLUMN death_cause TEXT NOT NULL DEFAULT ''.
+
+**Tests added/updated:**
+
+- **`tests/test_restore_life_and_limb.gd`** — 15 new tests: 8 for day-of-death + death-cause gates (within window raises, beyond window rejected, each rejected cause × 4, combat cause restores, untracked legacy fallback) + 7 for Finger of Death constraint matrix (lawful vs chaotic no-violation, vs neutral/lawful violations, neutral/chaotic casters never trigger, mage never triggers, slain target stamps cause + day).
+- **`tests/test_energy_drain_consumer.gd`** (NEW) — 9 tests covering no-drain no-modifiers, single-source apply to attack/saves, multi-source stacking, clear-flag-then-refresh removes modifiers, refresh idempotency, get_total_drained_levels helper, null-character safety, end-to-end through resolver clears modifiers.
+- **`tests/test_tampering_with_mortality.gd`** (NEW) — 30 tests covering all 5 life_span tiers, spellcaster_power formula + temple bonus, state_of_body for instant-kill causes + combat default, state_of_soul (WIS / days_dead / prior side effects), 8 condition_table rows + bed_rest_days for each, alignment side-effect spot-checks per row/band, integration through RestoreLifeAndLimbResolver (records tampering_outcome, passes age_category, passes alignment), d20 band boundaries.
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — registered 2 new ext_resources (407 energy_drain_consumer, 408 tampering) + 2 new nodes (EnergyDrainConsumerTests, TamperingWithMortalityTests) + added to the run loop.
+- Full suite: **402 passed / 19 failed** — was 400/19 before this commit; +2 new suites, net-zero new failures.
+
+**Known issues:**
+
+- **Aging-system death path → death_cause = "old_age" not wired.** `AgingSystem.apply_age_change` reports `death_save_required` + `death_save_trigger`, but no consumer actually marks the character dead today. When the aging-death UI/consumer lands, it should call `_mark_pc_dead(party_data, id, "old_age")` to land the rejection-on-restore.
+- **Bed-rest scheduling not integrated with Timekeeping.** Tampering `resolve_tampering` returns `bed_rest = 30` (or `"14+1d20"`); a future commit threads that into a Timekeeping suspension that prevents the character from acting until the rest period elapses.
+- **side_effects_already_suffered not persisted across casts.** V1 accepts the count via `resolver_args.side_effects_already_suffered`; persisting a counter on CharacterData (incremented each successful tampering roll) + reading it in `_build_tampering_ctx` is a 5-line follow-up once the consumer side lands.
+- **"In caster's god temple" bonus not detected.** Requires location-of-cast + temple-deity-lookup infrastructure that doesn't exist. The resolver accepts the +2 via `ctx.in_caster_god_temple = true`; the actual detection wiring is deferred.
+- **Wound-row state_of_body enumeration deferred.** RAW state_of_body breaks down by spine-severing (-5 each), limbs destroyed (-2 each), hands/feet/ears/eyes/tongue/genitalia destroyed (-1 each); V1 only stamps -10 for instant-kill death causes. Permanent-wounds-table integration is the future surface.
+
+**Next session should:**
+
+1. **Timekeeping-based bed-rest suspension** — read `tampering_outcome.bed_rest` and suspend the character from party actions for that duration. Threads into existing Timekeeping signals.
+2. **Aging-system death path** — wire a consumer for `death_save_required` that, on failed save, calls `_mark_pc_dead(...,"old_age")`.
+3. **side_effects_already_suffered persistence** — add a `tampering_attempts INTEGER NOT NULL DEFAULT 0` column to characters, increment each tampering roll, feed into `_build_tampering_ctx`.
+4. **Wilderness handler signal hook for Frost Brand** — outstanding from prior magic-swords commit.
+5. **Restoration spell narration layer hook** — LLM consumer reads `roleplay_violation` + `tampering_outcome.side_effect` to surface the alignment vow + restoration outcome to the player.
+

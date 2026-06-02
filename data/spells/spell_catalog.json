@@ -2776,11 +2776,33 @@
         ]
       }
     ],
-    "range": "TBD",
-    "duration": "TBD",
-    "description": "STUB ENTRY (Phase 10B.1g.2 ingestion): catalog placeholder added so the spell appears on the per-class research list. Mechanics (range, duration, effect text) need to be filled from the PDF spell-index section.",
-    "_stub": true,
-    "_added_in": "10B.1g.2 PDF ingestion"
+    "range": "120'",
+    "duration": "instantaneous",
+    "summary": "Creates a death ray against one creature; save vs Death negates death.",
+    "effect": {
+      "range_feet": 120,
+      "duration_model": {
+        "kind": "instantaneous"
+      },
+      "target_spec": {
+        "kind": "single_creature",
+        "count": 1
+      },
+      "save_spec": {
+        "category": "poison_death",
+        "on_success": "negate"
+      },
+      "resolution": [
+        {
+          "kind": "custom",
+          "resolver_id": "restore_life_and_limb",
+          "resolver_args": {
+            "forced_reversed": true
+          }
+        }
+      ],
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml:696-707 — reverse of Restore Life and Limb). 120' range death ray; save vs Death negates death. Equivalent to (and routes through) the restore_life_and_limb resolver's reverse-form branch when cast as the standalone shaman-restricted spell. Lawful clerics may only use against Chaotic foes in life-or-death situations (roleplay constraint; not mechanically enforced)."
+    }
   },
   {
     "spell_key": "fireball",
@@ -6132,9 +6154,35 @@
         "restricted_to": []
       }
     ],
-    "range": "touch",
+    "range": "touch (120')",
     "duration": "instantaneous",
-    "summary": "Restores life to the recently dead and repairs permanent bodily damage including lost limbs."
+    "summary": "Restores life to the recently dead and repairs permanent bodily damage including lost limbs.",
+    "effect": {
+      "range_feet": 0,
+      "duration_model": {
+        "kind": "instantaneous"
+      },
+      "target_spec": {
+        "kind": "touch_creature",
+        "creature_filter": {
+          "excludes_type": [
+            "construct",
+            "elemental"
+          ]
+        }
+      },
+      "save_spec": {
+        "category": "none"
+      },
+      "resolution": [
+        {
+          "kind": "custom",
+          "resolver_id": "restore_life_and_limb",
+          "resolver_args": {}
+        }
+      ],
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml:669-707; ax_mortal_wounds_and_tampering.xml:385-438 Tampering with Mortality). Restore Life and Limb is the SACRED-named spell most projects call 'Restoration' for short. RAW effects (V1 wired in custom resolver): (a) raises a creature dead no longer than 2 days at L7 + 4 days/level above L7 (resolver computes days_dead_limit_at_caster_level); (b) repairs lethal damage and permanent wounds (lost limbs, scars, shattered spines); (c) Tampering with Mortality d20+d6 roll (resolver records base rolls; character_subsystem applies state-of-body/-soul modifiers and resolves alignment-specific side-effect table); (d) if cast on undead: save vs Death or be instantly destroyed (dispel_destroyed condition). Invalid targets per RAW: constructs, elementals, and other creatures not truly alive. Energy drain reversal (Jedidiah 2026-06-02 — per ax_mortal_wounds_and_tampering.xml:387 'permanent wound … or similar magic can heal the wound'): drained levels qualify as a permanent wound of the life-force, so the resolver clears all is_energy_drained flag sources alongside the wound repair. Reverse form Finger of Death (also a standalone shaman L5 spell): 120' range death ray; save vs Death negates. Deferred follow-ups: day-of-death tracking (to enforce the days_dead_limit check), tampering modifier application + alignment-table side-effect rendering, bed-rest recovery scheduling per condition_table outcome, died-of-old-age / lost-head / cremated rejection (need wound-cause tags), lawful-cleric-vs-Chaotic-foes constraint on Finger of Death (roleplay)."
+    }
   },
   {
     "spell_key": "resurrection",

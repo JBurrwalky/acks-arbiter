@@ -31,7 +31,10 @@ func finalize(runner, result: Dictionary, party_data: PartyData, roster: CombatR
 			# Legacy path: mortal wound already resolved
 			var mw: Dictionary = entry.get("mortal_wound_result", {})
 			if mw.get("is_dead", false):
-				_mark_pc_dead(party_data, entry.get("combatant_id", ""))
+				var combatant_id: String = entry.get("combatant_id", "")
+				_mark_pc_dead(
+					party_data, combatant_id,
+					_infer_death_cause(mw, combatant_id, roster))
 
 	# 1b. Process creature casualties — sync HP and mark dead.
 	_process_creature_casualties(party_data, roster)
@@ -101,7 +104,8 @@ func _mark_pc_incapacitated(party_data: PartyData, combatant_id: String) -> void
 	char_data.hp_current = 0
 
 
-func _mark_pc_dead(party_data: PartyData, combatant_id: String) -> void:
+func _mark_pc_dead(party_data: PartyData, combatant_id: String,
+		death_cause: String = "combat") -> void:
 	if party_data == null or combatant_id.is_empty():
 		return
 	var char_data: CharacterData = party_data.get_member(combatant_id)
@@ -109,7 +113,37 @@ func _mark_pc_dead(party_data: PartyData, combatant_id: String) -> void:
 		return
 	char_data.is_dead = true
 	char_data.is_active = false
+	# Migration 142 (2026-06-02): stamp day_of_death + death_cause so
+	# Restore Life and Limb can enforce its RAW gates (days_dead_limit and
+	# {old_age, lost_head, cremated, disintegrated} rejection).
+	char_data.day_of_death = Timekeeping.get_total_days()
+	char_data.death_cause = death_cause
 	EventBus.character_died.emit(combatant_id)
+
+
+## Infer death_cause for Restore Life and Limb's RAW gates. Checks (in
+## order): condition tags on the combatant (disintegrated → can't restore;
+## dispel_destroyed → restorable as 'combat' since no body removal); then
+## the mortal-wound text (cremated alive, decapitation). Falls back to
+## "combat" for anything else.
+func _infer_death_cause(mw: Dictionary, combatant_id: String,
+		roster: CombatRoster) -> String:
+	# 1. Condition-tag inspection — handles spell-killed targets bypassing
+	#    the mortal-wounds path with body-destroying effects.
+	if roster != null and not combatant_id.is_empty():
+		var c: Combatant = roster.get_by_id(combatant_id)
+		if c != null and c.has_method("has_condition"):
+			if c.has_condition("disintegrated"):
+				return "disintegrated"
+	# 2. Mortal-wounds text scan — the structured wound payload from
+	#    MortalWoundsResolver contains free-form descriptions; we look for
+	#    cremation + decapitation signals that flag the RAW rejection cases.
+	var desc: String = String(mw.get("wound_description", "")).to_lower()
+	if desc.contains("cremated"):
+		return "cremated"
+	if desc.contains("decapit"):
+		return "lost_head"
+	return "combat"
 
 
 func _award_combat_xp(runner, result: Dictionary, party_data: PartyData) -> void:

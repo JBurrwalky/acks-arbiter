@@ -906,6 +906,14 @@ static func apply_life_drinker_drain(
 				"source_id": sword_id,
 				"wielder_id": wielder.id if wielder != null else "",
 			})
+			# 2026-06-02 — PC consumer: refresh attack/save modifiers from
+			# the flag state so the drain actually penalizes the PC's rolls
+			# (monster HD path was already wired via
+			# Combatant.get_effective_level_or_hd). Idempotent — re-derives
+			# from current flag total. CharacterData-only; monster targets
+			# don't have a modifier_container.
+			if target_entity is CharacterData:
+				EnergyDrainConsumer.refresh_modifiers(target_entity)
 	# 4. Decrement charges.
 	var charges_after: int = current_charges - 1
 	CampaignRepository.db.query_with_bindings(

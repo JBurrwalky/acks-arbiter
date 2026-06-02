@@ -491,10 +491,10 @@ func create_character(data: Dictionary) -> String:
 			 base_movement, hit_die_type, max_level,
 			 xp_for_next_level, xp_adjustment_percent, title, alignment,
 			 portrait_id, current_age, age_category, languages, personality,
-			 is_dead, is_active, is_incapacitated,
+			 is_dead, is_active, is_incapacitated, day_of_death, death_cause,
 			 employer_id, loyalty_score, wage_cp_per_month,
 			 sex, token_variant, class_metadata)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -519,6 +519,8 @@ func create_character(data: Dictionary) -> String:
 		1 if data.get("is_dead", false) else 0,
 		1 if data.get("is_active", true) else 0,
 		1 if data.get("is_incapacitated", false) else 0,
+		data.get("day_of_death", -1),
+		data.get("death_cause", ""),
 		data.get("employer_id", null),
 		data.get("loyalty_score", null),
 		data.get("wage_cp_per_month", null),
@@ -562,6 +564,7 @@ func save_character(data: Dictionary) -> bool:
 				current_age = ?, age_category = ?,
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
+				day_of_death = ?, death_cause = ?,
 				employer_id = ?, loyalty_score = ?, wage_cp_per_month = ?, sex = ?,
 				token_variant = ?, class_metadata = ?,
 				updated_at = datetime('now')
@@ -590,6 +593,8 @@ func save_character(data: Dictionary) -> bool:
 			1 if data.get("is_dead", false) else 0,
 			1 if data.get("is_active", true) else 0,
 			1 if data.get("is_incapacitated", false) else 0,
+			data.get("day_of_death", -1),
+			data.get("death_cause", ""),
 			data.get("employer_id", null),
 			data.get("loyalty_score", null),
 			data.get("wage_cp_per_month", null),

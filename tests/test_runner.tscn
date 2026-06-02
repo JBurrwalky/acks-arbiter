@@ -419,6 +419,9 @@
 [ext_resource type="Script" path="res://tests/test_tier4_cluster_a.gd" id="403_tier4_cluster_a_tests"]
 [ext_resource type="Script" path="res://tests/test_panic_gaseous_form.gd" id="404_panic_gaseous_form_tests"]
 [ext_resource type="Script" path="res://tests/test_magic_swords.gd" id="405_magic_swords_tests"]
+[ext_resource type="Script" path="res://tests/test_restore_life_and_limb.gd" id="406_restore_life_and_limb_tests"]
+[ext_resource type="Script" path="res://tests/test_energy_drain_consumer.gd" id="407_energy_drain_consumer_tests"]
+[ext_resource type="Script" path="res://tests/test_tampering_with_mortality.gd" id="408_tampering_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1676,3 +1679,12 @@ script = ExtResource("404_panic_gaseous_form_tests")
 
 [node name="MagicSwordsTests" type="Node" parent="."]
 script = ExtResource("405_magic_swords_tests")
+
+[node name="RestoreLifeAndLimbTests" type="Node" parent="."]
+script = ExtResource("406_restore_life_and_limb_tests")
+
+[node name="EnergyDrainConsumerTests" type="Node" parent="."]
+script = ExtResource("407_energy_drain_consumer_tests")
+
+[node name="TamperingWithMortalityTests" type="Node" parent="."]
+script = ExtResource("408_tampering_tests")

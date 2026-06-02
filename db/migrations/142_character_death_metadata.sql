@@ -1,0 +1,32 @@
+-- Migration 142: Add day_of_death + death_cause columns to characters.
+--
+-- These columns support Restore Life and Limb (Divine L5) RAW gates per
+-- rules/acore_spell_catalog_k-w_summary.xml:681-691:
+--   - Maximum time dead is 2 days at L7 and increases by 4 days per caster
+--     level above 7th. Without day_of_death tracking, the days-dead-limit
+--     gate is advisory; with it, the gate is enforceable.
+--   - Cannot restore a creature that died of old age, that lost its head,
+--     or whose body was cremated. The death_cause column makes the
+--     rejection mechanically deterministic.
+--
+-- day_of_death = -1 (default): never died (alive or never tracked).
+-- day_of_death >= 0: absolute day count from Timekeeping.get_total_days()
+--   at the moment death was finalized.
+--
+-- death_cause = '' (default): no recorded cause (alive or untracked).
+-- death_cause values used by V1:
+--   'old_age'     — Timekeeping age-roll death (rules/ax... aging tables).
+--   'lost_head'   — decapitation-level trauma (mortal wounds wound text
+--                   contains "decapitation").
+--   'cremated'    — body destroyed by fire (mortal wounds wound text
+--                   contains "cremated alive").
+--   'disintegrated' — Disintegrate spell apply path (no corpse remains).
+--   'combat'      — generic deaths in combat that don't match a special
+--                   cause; Restore Life and Limb fully recovers.
+--   ''            — untracked / pre-migration / NPC death without
+--                   structured cause; treated as 'combat' by the resolver.
+--
+-- Follows the single-column ADD COLUMN pattern of migrations 134-141.
+-- Non-destructive: SQLite stamps defaults onto existing rows in place.
+ALTER TABLE characters ADD COLUMN day_of_death INTEGER NOT NULL DEFAULT -1;
+ALTER TABLE characters ADD COLUMN death_cause TEXT NOT NULL DEFAULT '';

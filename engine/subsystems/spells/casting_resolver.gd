@@ -1538,6 +1538,13 @@ func _dispatch_custom(
 		# DispelMagicResolver can call dispel_check directly. Resolvers that
 		# don't need it can ignore.
 		"effect_tracker": _effect_tracker,
+		# Session 38 (2026-06-02): forward DiceSystem so resolvers that need
+		# to roll dice (Restore Life and Limb's vs-undead save vs Death and
+		# Tampering with Mortality d20+d6 roll) can do so against the live
+		# RNG in production. Test harnesses still inject a fake dice via
+		# step.resolver_args.dice (resolvers prefer resolver_args.dice when
+		# present and fall back to args.dice otherwise).
+		"dice": _dice_system,
 	}
 	if resolver.has_method("resolve"):
 		return resolver.resolve(args)

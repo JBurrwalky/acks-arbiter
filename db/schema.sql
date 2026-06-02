@@ -58,6 +58,15 @@ CREATE TABLE IF NOT EXISTS characters (
     armor_class INTEGER NOT NULL DEFAULT 0,
     attack_throw INTEGER NOT NULL DEFAULT 10,
     is_dead INTEGER NOT NULL DEFAULT 0 CHECK(is_dead IN (0, 1)),
+    -- Migration 142: day_of_death = absolute day-count from
+    -- Timekeeping.get_total_days() at the moment death was finalized;
+    -- -1 means never died. death_cause encodes the kind of death:
+    -- '' (unknown/combat), 'old_age', 'lost_head', 'cremated',
+    -- 'disintegrated', 'combat'. Restore Life and Limb's days_dead_limit
+    -- gate consumes day_of_death; the spell rejects targets whose
+    -- death_cause is in {old_age, lost_head, cremated, disintegrated}.
+    day_of_death INTEGER NOT NULL DEFAULT -1,
+    death_cause TEXT NOT NULL DEFAULT '',
     is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0, 1)),
     employer_id TEXT REFERENCES characters(id),
     loyalty_score INTEGER,

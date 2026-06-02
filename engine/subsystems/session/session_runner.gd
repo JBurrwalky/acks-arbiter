@@ -229,6 +229,11 @@ func _ready() -> void:
 		preload("res://engine/subsystems/spells/custom_resolvers/dispel_evil_resolver.gd").new())
 	_custom_resolvers.register("insect_plague",
 		preload("res://engine/subsystems/spells/custom_resolvers/insect_plague_resolver.gd").new())
+	# 2026-06-02 (Divine L5): Restore Life and Limb (+ reverse Finger of
+	# Death + standalone shaman Finger of Death routed through the same
+	# resolver's reverse branch via resolver_args.forced_reversed=true).
+	_custom_resolvers.register("restore_life_and_limb",
+		preload("res://engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd").new())
 	# Session 14 (Arcane L6):
 	_custom_resolvers.register("death_spell",
 		preload("res://engine/subsystems/spells/custom_resolvers/death_spell_resolver.gd").new())
