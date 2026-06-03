@@ -1971,7 +1971,15 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 66000,
-      "creation_time_days": 320
+      "creation_time_days": 320,
+      "spell_binding": {
+        "spell_key": "horn_blast",
+        "tradition": "arcane",
+        "caster_level": 1,
+        "target_mode": "single_target"
+      },
+      "misc_magic_consumable": false,
+      "default_charges": 1
     },
     {
       "item_key": "medallion_of_esp",

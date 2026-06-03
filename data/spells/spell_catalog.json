@@ -8404,5 +8404,45 @@
       ],
       "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:1709-1727): 60' range, concentration duration; sees through 30' of stone OR 60' of wood/low-density material; examines 10' square area each turn; secret doors, hidden recesses, and traps in the examined area are evident. Caster cannot move or take any other action (full concentration). Lead and gold BLOCK the vision. Used to create rings of x-ray vision. V1 sets the flag with metadata; vision/reveal subsystem consumer reads it (the reveal half — secret doors / traps surfaced to the player — needs the same dungeon-UI surface that wand_of_detecting_* depends on; that subsystem is the documented blocker). Concentration_mode=exclusive_focus per RAW (no move, no other action)."
     }
+  },
+  {
+    "spell_key": "horn_blast",
+    "spell_name": "Horn of Blasting (item ability)",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "100' cone",
+    "duration": "instantaneous",
+    "summary": "Item-only ability for Horn of Blasting (ACKS Core p.215+): 2d6 sonic damage in a 100' x 20'-at-end cone, save vs Blast negates deafening (2d6 rounds).",
+    "effect": {
+      "range_feet": 0,
+      "duration_model": {
+        "kind": "instantaneous"
+      },
+      "target_spec": {
+        "kind": "area_from_caster",
+        "shape": "cone",
+        "length_feet": 100,
+        "width_at_far_end_feet": 20
+      },
+      "save_spec": {
+        "category": "none"
+      },
+      "resolution": [
+        {
+          "kind": "custom",
+          "resolver_id": "horn_blast",
+          "resolver_args": {}
+        }
+      ],
+      "notes": "ACKS RAW (Core p.215+, Jedidiah-supplied 2026-06-02): 'When the instrument is played, once per turn it deals 2d6 points of damage to creatures within a cone 100' long and 20' wide at its termination point. The horn causes creatures to be deafened for 2d6 rounds (a saving throw versus Blast negates the deafening).' This entry is item-only — spell_catalog needs it so MagicItemActivator can bind to it, but no class lists it. Custom resolver handles the per-target damage (unsaveable per RAW) + per-target save vs Blast for deafening (on fail, applies deafened condition for 2d6 rounds). Once-per-turn limit enforced by Horn of Blasting catalog's default_charges=1 + misc_magic_consumable=false (V1 deferred: charge refills once daily-reset subsystem lands; ideally would refresh per-turn). Object damage (huts, walls) is Judge discretion per RAW and not enforced."
+    }
   }
 ]

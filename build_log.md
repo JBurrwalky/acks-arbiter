@@ -30611,3 +30611,79 @@ Each binding: `target_mode: "single_target"` (caller designates summon cell with
 4. **Crystal Ball trio (3 items)** — scrying UI subsystem.
 5. **Multi-effect staves (5 items)** — each its own resolver.
 
+
+
+## Session 2026-06-02 — Tier 4 batch 2 (Ring of Regen + Boots + Horn of Blasting)
+
+**Task:** Land the 3 Tier-4-classified items for which Jedidiah supplied full RAW from ACKS Core p.215+ (Ring of Regeneration, Boots of Traveling and Springing, Horn of Blasting). Ring of Spell Storing also got RAW but is deferred to its own focused session (materializer-time 1d6 spell selection + per-item stored-spell UI flow).
+**Model used:** Sonnet 4.6 (1M context).
+
+**Completed:**
+
+- **`engine/shared_types/entity_flags.gd`** — two new EntityFlag declarations:
+  - `has_ring_regeneration` — Metadata: `{hp_per_round: 1, blocked_damage_types: ["acid", "fire"], stops_at_or_below_hp: 0, regrow_small_part_days: 1, regrow_limb_days: 7, only_damage_taken_while_worn: true}`. Full RAW captured.
+  - `has_boots_traveling_springing` — Metadata: `{no_rest_during_ordinary_movement: true, spring_height_feet: 10, spring_distance_feet: 30, acrobatics_bonus: 10}`. Full RAW captured.
+
+- **`engine/subsystems/inventory/worn_magic_effect_resolver.gd`** — two new dispatch branches + helpers:
+  - `_add_ring_of_regeneration(character, item_id)` sets `has_ring_regeneration` with full metadata. Source: `worn_magic:<item_id>` for the prefix-clear sweep on unequip.
+  - `_add_boots_of_traveling_and_springing(character, item_id)` sets `has_boots_traveling_springing` with full metadata. Same source-prefix pattern.
+
+- **`engine/subsystems/spells/custom_resolvers/horn_of_blasting_resolver.gd`** (NEW file) — `HornOfBlastingResolver`. Per-target: rolls 2d6 damage (no save vs damage per RAW; damage is unsaveable), applies via `entity.apply_damage(amount, "sonic", "horn_of_blasting")`; then rolls save vs Blast/Breath; on fail applies `deafened` condition + records `deafen_duration_rounds` = 2d6. Returns structured `per_target` outcome `{damage_dealt, damage_type, deafening_save_roll, deafening_save_target, deafening_saved, deafened_applied, deafen_duration_rounds}` + `persist_metadata` with cone dimensions for the runtime log.
+
+- **`engine/subsystems/session/session_runner.gd`** — registered `horn_blast` resolver alongside `restore_life_and_limb`.
+
+- **`data/spells/spell_catalog.json`** — new `horn_blast` spell entry (item-only — no class lists it). target_spec `area_from_caster shape=cone length_feet=100 width_at_far_end_feet=20`; save_spec category=none (resolver does the save per-target); resolution dispatches to `horn_blast` custom resolver.
+
+- **`tools/extract_magic_item_catalog.py`** — 3 new entries:
+  - `ring_of_regeneration` — NOT in SPELL_BINDING_MAP (worn-passive only). The existing worn-magic dispatch matches on `item_key == "ring_of_regeneration"` so no extractor entry needed.
+  - `boots_of_traveling_and_springing` — same; worn-passive only.
+  - `horn_of_blasting` SPELL_BINDING_MAP entry: spell_key=horn_blast, tradition=arcane, caster_level=1, target_mode=single_target.
+  - New `ONCE_PER_PERIOD_MISC_MAGIC_KEYS` frozenset {`horn_of_blasting`}; stamping loop sets `misc_magic_consumable: false` + `default_charges: 1` (mirrors `ELEMENTAL_COMMANDER_KEYS` pattern).
+
+- **`tests/test_tier4_batch2.gd`** (NEW file) — 12 tests covering catalog binding + charge model + horn_blast spell entry geometry, WornMagicEffectResolver flag application + clear-on-unequip for both items, HornOfBlastingResolver damage (unsaveable) + deafening save success/failure + multi-target per_target outcome shape, EntityFlags regression for both new flags.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `412_tier4_batch2_tests` ext_resource + `Tier4Batch2Tests` node.
+
+**Decisions made:**
+
+- **Horn as item-only spell + custom resolver.** Could have routed Horn through a new direct_misc_magic_active dispatch (parallel to direct_potion_effect / direct_consumable_effect), but the existing spell-binding pipeline + custom resolver pattern is simpler: one new spell entry that no class can cast, one resolver, one binding. Future cone-damage items can bind to the same spell or new spells with the same pattern.
+- **Damage step inside the resolver, not as a separate spell-catalog step.** Considered using `damage` step + `apply_condition` step with separate save behavior, but the resolver already has access to dice + save handling, and separating the unsaveable damage from the save-gated condition is cleaner inline.
+- **Charge model: misc_magic_consumable=false + default_charges=1 (daily-reset) over a turn-reset model.** RAW says "once per turn" but the turn-reset subsystem doesn't exist. V1: once per daily-reset (matches Elemental Commanders). Documented as a known V1 simplification — turn-reset refinement is its own commit.
+- **Ring of Regeneration "only damage taken while worn" gate deferred.** The flag metadata records the contract (`only_damage_taken_while_worn: true`); the consumer side needs damage-source-timestamp + worn-window tracking before the gate is mechanically enforceable. V1 ships the regen rate (the round-tick consumer will read `hp_per_round` once it lands).
+- **Ring of Regen + acid/fire damage exclusion deferred.** Same reason — damage-type tracking on the wound record isn't enforced yet. The metadata's `blocked_damage_types: ["acid", "fire"]` array documents the future consumer contract.
+- **Boots flag-only.** All 3 Boots effects (no-rest, jump, +10 Acrobatics) need their own consumer subsystems (stamina/rest, jump-mechanic, ProficiencyResolver acrobatics-throw). The flag is set with full RAW metadata; consumers wire when their subsystems land.
+
+**Interfaces defined or changed:**
+
+- New EntityFlags: `has_ring_regeneration`, `has_boots_traveling_springing`.
+- New `HornOfBlastingResolver.resolve(args: Dictionary) -> Dictionary` — custom resolver.
+- New `WornMagicEffectResolver._add_ring_of_regeneration(character, item_id)` + `_add_boots_of_traveling_and_springing(character, item_id)`.
+- New `horn_blast` spell catalog entry (target_spec area_from_caster cone 100'×20'; resolves via `horn_blast` custom resolver).
+- New SPELL_BINDING_MAP entry: `horn_of_blasting`.
+- New `ONCE_PER_PERIOD_MISC_MAGIC_KEYS` frozenset in extractor; stamps `misc_magic_consumable: false` + `default_charges: 1`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 12 new tests in `tests/test_tier4_batch2.gd`.
+- Full suite: **406 passed / 19 failed** — was 405/19; +1 new suite, net-zero new failures.
+
+**Known issues:**
+
+- **Round-tick consumer for Ring of Regeneration not wired.** Flag is set with `hp_per_round: 1`; combat/exploration ticks need to read it and add hp. The `stops_at_or_below_hp: 0` gate also needs the consumer.
+- **Damage-source tracking for Ring of Regen (only-damage-while-worn + acid/fire exclusion) deferred.** Needs wound-source-timestamp + damage-type tagging on the wound record.
+- **Limb regrowth for Ring of Regen deferred.** Needs PermanentWoundsRepository to track wound severity classes (small piece vs limb).
+- **Boots consumer subsystems deferred** (3 separate ones — stamina/rest, jump, Acrobatics modifier).
+- **Horn turn-reset not implemented.** V1 charge model is once-per-daily-reset; RAW says once-per-turn. Turn-reset subsystem is its own commit.
+- **Ring of Spell Storing still deferred.** Jedidiah supplied full RAW (1d6 random spells of any level at materialization; recharge only with exact same spell; doesn't absorb cast-at-wearer). Implementation needs: materializer-time random spell rolling + per-item stored-spell list storage (likely on inventory_items.notes as JSON) + activate-from-stored-list UI flow. Its own focused session.
+
+**Next session should:**
+
+1. **Ring of Spell Storing** — full RAW supplied; needs materializer + storage + activation flow.
+2. **Scroll of Warding RAW alignment** — `acore_treasure_and_magic_items_rules.xml:268` has explicit RAW that differs from the V1 Jedidiah ruling shipped earlier today. Surface to Jedidiah.
+3. **Remaining Tier 4 items needing rulings:** `potion_of_delusion` (cursed, no RAW), `oil_of_sharpness` (needs object-coat infrastructure), `rope_of_climbing` (utility, no engine surface).
+4. **Tier 4 round-tick consumer for Ring of Regen** — read `has_ring_regeneration` metadata in the combat hp-tick + out-of-combat exploration tick, add `hp_per_round` while `hp_current > stops_at_or_below_hp`.
+5. **Crystal Ball trio (3 items)** — scrying UI subsystem.
+6. **Multi-effect staves (5 items)** — each its own resolver.
+

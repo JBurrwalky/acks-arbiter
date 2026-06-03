@@ -234,6 +234,10 @@ func _ready() -> void:
 	# resolver's reverse branch via resolver_args.forced_reversed=true).
 	_custom_resolvers.register("restore_life_and_limb",
 		preload("res://engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd").new())
+	# 2026-06-02 (Tier 4 batch 2): Horn of Blasting item-only "spell"
+	# that does 2d6 cone damage + per-target save-vs-Blast for deafening.
+	_custom_resolvers.register("horn_blast",
+		preload("res://engine/subsystems/spells/custom_resolvers/horn_of_blasting_resolver.gd").new())
 	# Session 14 (Arcane L6):
 	_custom_resolvers.register("death_spell",
 		preload("res://engine/subsystems/spells/custom_resolvers/death_spell_resolver.gd").new())

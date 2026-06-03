@@ -621,6 +621,14 @@ ELEMENTAL_COMMANDER_KEYS = frozenset({
     "stone_of_controlling_earth_elementals",
 })
 
+# Tier 4 batch 2 (2026-06-02). Once-per-X items that share the
+# misc_magic_consumable=false + default_charges=1 stamping with the
+# Elemental Commanders. Stamped via the same ELEMENTAL_COMMANDER_KEYS
+# stamping pattern in process_item().
+ONCE_PER_PERIOD_MISC_MAGIC_KEYS = frozenset({
+    "horn_of_blasting",
+})
+
 
 DIRECT_CONSUMABLE_EFFECTS = {
     "scroll_of_warding_elementals": {
@@ -1248,6 +1256,20 @@ SPELL_BINDING_MAP = {
         "spell_key": "x_ray_vision", "tradition": "arcane",
         "caster_level": 5, "target_mode": "self",
     },
+
+    # Horn of Blasting — RAW ACKS Core p.215+ (Jedidiah-supplied 2026-06-02):
+    # 2d6 sonic damage in 100' x 20'-at-end cone; save vs Blast negates
+    # 2d6 rounds of deafening. Once per turn. Bound to the item-only
+    # `horn_blast` spell entry which dispatches to HornOfBlastingResolver.
+    # use_misc_magic_active routes activation; charge model =
+    # misc_magic_consumable=false + default_charges=1 (matches Elemental
+    # Commanders pattern — daily-reset subsystem refills; the strict
+    # once-per-TURN limit would need a turn-reset subsystem that doesn't
+    # exist V1).
+    "horn_of_blasting": {
+        "spell_key": "horn_blast", "tradition": "arcane",
+        "caster_level": 1, "target_mode": "single_target",
+    },
     # All items beyond this point have either landed in DEFER_BUILD (see
     # above for the per-item deferral reasons — control series, cause_fear
     # blockers, Wishes, etc.) or are routed through `WornMagicEffectResolver`
@@ -1594,6 +1616,13 @@ def main() -> int:
         # until a future daily-reset subsystem refills misc_magic items
         # at sunrise.
         if key in ELEMENTAL_COMMANDER_KEYS:
+            it["misc_magic_consumable"] = False
+            it["default_charges"] = 1
+        # Horn of Blasting + future once-per-period items reuse the same
+        # charge stamping. RAW says "once per turn" for the horn; V1
+        # treats it as default_charges=1 with daily-reset as the V1
+        # refill cadence (a future turn-reset subsystem would tighten it).
+        if key in ONCE_PER_PERIOD_MISC_MAGIC_KEYS:
             it["misc_magic_consumable"] = False
             it["default_charges"] = 1
         # Tier 4 Cluster A (2026-06-01): non-spell-binding metadata stamps.

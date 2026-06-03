@@ -93,6 +93,35 @@ extends RefCounted
 ##               "can_see_invisible" (Detect Invisible),
 ##               "has_infravision" (Infravision spell, 1 day, 60' dark sight),
 ##               "has_true_seeing" (True Seeing — 120' radius, sees through illusions/invisibility/polymorph/disguise/darkness),
+##               "has_ring_regeneration" (Ring of Regeneration — ACKS Core
+##                  p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates
+##                  1 hp per round. Will also regenerate body parts lost
+##                  to injury — small pieces like fingers take 1 day to
+##                  grow back; larger pieces such as a limb may take
+##                  1 week. ONLY damage taken while the character was
+##                  wearing the ring can be regenerated. Will NOT
+##                  regenerate damage caused by acid or fire. Will NOT
+##                  function if the wearer's hit points drop to 0 or
+##                  less." Metadata: {hp_per_round: 1, blocked_damage_types:
+##                  ["acid", "fire"], stops_at_or_below_hp: 0,
+##                  regrow_small_part_days: 1, regrow_limb_days: 7,
+##                  only_damage_taken_while_worn: true}. Set on the wearer
+##                  via WornMagicEffectResolver while ring is equipped;
+##                  round-tick consumer adds hp_per_round. "Only damage
+##                  taken while worn" gate is the future damage-source-
+##                  tracking subsystem follow-up.),
+##               "has_boots_traveling_springing" (Boots of Traveling and
+##                  Springing — ACKS Core p.215+ Jedidiah-supplied RAW
+##                  2026-06-02: "While these boots are worn, the wearer
+##                  need not rest if engaged in ordinary movement. Further,
+##                  he may spring up to 10' high, and to a distance of 30'.
+##                  A character equipped with this item gains a +10 bonus
+##                  on any Acrobatics throws." Metadata: {no_rest_during_ordinary_movement:
+##                  true, spring_height_feet: 10, spring_distance_feet: 30,
+##                  acrobatics_bonus: 10}. Worn-passive while equipped. V1
+##                  flag-only; consumers (stamina/rest subsystem,
+##                  jump-mechanic, ProficiencyResolver) wire when each
+##                  subsystem lands.),
 ##               "has_x_ray_vision" (X-Ray Vision — Arcane L5, 60' range,
 ##                  concentration duration; per RAW pc_spell_catalog_f-u.xml:1709-1727:
 ##                  see through 30' of stone or 60' of wood / low-density

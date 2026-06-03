@@ -119,6 +119,40 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "ring_of_fire_resistance":
 			_add_ring_of_fire_resistance(character, item_id)
 			continue
+		# --- Ring of Regeneration (Tier 4 batch 2, 2026-06-02) ---
+		# RAW (ACKS Core p.215+, Jedidiah-supplied 2026-06-02): "Regenerates
+		# 1 hp per round. Will also regenerate body parts lost to injury —
+		# small pieces like fingers take 1 day to grow back; larger pieces
+		# such as a limb may take 1 week. Only damage taken while the
+		# character was wearing the ring can be regenerated. Will not
+		# regenerate damage caused by acid or fire. Will not function if
+		# the wearer's hit points drop to 0 or less."
+		# V1 sets has_ring_regeneration flag with full metadata; the
+		# round-tick consumer (combat-side hp tick + out-of-combat tick)
+		# reads hp_per_round and stops_at_or_below_hp from metadata.
+		# Deferred (each a documented follow-up):
+		#   - acid/fire damage-source exclusion (needs damage-type
+		#     tracking on the wound record).
+		#   - "only damage taken while worn" gate (needs damage-source
+		#     timestamp + worn-window tracking).
+		#   - Limb regrowth (1 day fingers / 1 week limbs) — needs the
+		#     PermanentWoundsRepository to track wound severity classes.
+		if item_key == "ring_of_regeneration":
+			_add_ring_of_regeneration(character, item_id)
+			continue
+		# --- Boots of Traveling and Springing (Tier 4 batch 2, 2026-06-02) ---
+		# RAW (ACKS Core p.215+, Jedidiah-supplied 2026-06-02): "While
+		# these boots are worn, the wearer need not rest if engaged in
+		# ordinary movement. Further, he may spring up to 10' high, and
+		# to a distance of 30'. A character equipped with this item gains
+		# a +10 bonus on any Acrobatics throws."
+		# V1 sets has_boots_traveling_springing flag with full metadata;
+		# consumers (stamina/rest subsystem, jump-mechanic, Acrobatics
+		# throw consumer in ProficiencyResolver) read the metadata when
+		# their respective subsystems land.
+		if item_key == "boots_of_traveling_and_springing":
+			_add_boots_of_traveling_and_springing(character, item_id)
+			continue
 		# --- Bracers of Armor (Tier 3, 2026-05-29) ---
 		# Materializes from a d100 sub_roll table (BRACERS_OF_ARMOR_SUBROLL):
 		# 5% cursed (magical_bonus 0, is_cursed=true) + 7 AC tiers
@@ -311,6 +345,38 @@ static func _add_luck_blade(character: CharacterData, item_id: String) -> void:
 static func _add_ring_of_water_walking(character: CharacterData, item_id: String) -> void:
 	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
 	character.flags.set_flag("can_water_walk", source_id, {"source_kind": "worn_magic_item"})
+
+
+## Apply Ring of Regeneration: sets has_ring_regeneration flag with full
+## RAW metadata. The round-tick consumer (combat hp tick + out-of-combat
+## tick) reads hp_per_round and stops_at_or_below_hp from metadata.
+## RAW anchor: ACKS Core p.215+ (Jedidiah-supplied 2026-06-02).
+static func _add_ring_of_regeneration(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_ring_regeneration", source_id, {
+		"source_kind": "worn_magic_item",
+		"hp_per_round": 1,
+		"blocked_damage_types": ["acid", "fire"],
+		"stops_at_or_below_hp": 0,
+		"regrow_small_part_days": 1,
+		"regrow_limb_days": 7,
+		"only_damage_taken_while_worn": true,
+	})
+
+
+## Apply Boots of Traveling and Springing: sets has_boots_traveling_springing
+## flag with full RAW metadata. V1 flag-only; consumers wire when their
+## respective subsystems land (stamina/rest, jump-mechanic, Acrobatics).
+## RAW anchor: ACKS Core p.215+ (Jedidiah-supplied 2026-06-02).
+static func _add_boots_of_traveling_and_springing(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_boots_traveling_springing", source_id, {
+		"source_kind": "worn_magic_item",
+		"no_rest_during_ordinary_movement": true,
+		"spring_height_feet": 10,
+		"spring_distance_feet": 30,
+		"acrobatics_bonus": 10,
+	})
 
 
 ## Apply Ring of Fire Resistance: +2 to save_blast_breath. RAW says "+2 to
