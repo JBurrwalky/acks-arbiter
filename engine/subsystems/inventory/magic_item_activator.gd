@@ -703,23 +703,25 @@ static func use_misc_magic_active(
 	# (uses_remaining = -1, the catalog default) and skip this gate.
 	#
 	# Refill subsystems (2026-06-03):
-	#   - Once-per-turn: Horn of Blasting refills at each Timekeeping.turn_advanced
-	#     via OncePerTurnRechargeService.recharge_for_campaign (called from
-	#     SessionRunner). RAW: "may be blown once per turn."
-	#   - Once-per-day: Elemental Commanders' daily-reset subsystem still
-	#     deferred V1 — they remain one-shot until that lands. Their RAW
-	#     is "once per day" (per ACore §item_mechanics) so daily-reset
-	#     covers them when wired.
+	#   - Once-per-turn: Horn of Blasting refills at each
+	#     Timekeeping.turn_advanced via
+	#     OncePerTurnRechargeService.recharge_for_campaign.
+	#   - Once-per-day: Elemental Commanders (Bowl/Brazier/Censer/Stone)
+	#     refill at each Timekeeping.day_changed via
+	#     OncePerDayRechargeService.recharge_for_campaign.
+	#   Both are wired from SessionRunner._ready.
 	var is_consumable: bool = bool(catalog_entry.get("misc_magic_consumable", true))
 	var has_default_charges: bool = catalog_entry.has("default_charges")
 	var current_charges: int = int(item_row.get("uses_remaining", -1))
 	if has_default_charges and not is_consumable and current_charges == 0:
 		# Refusal message hints at the refill period when known so the
 		# narration / UI layer can surface "try again next turn" vs
-		# "daily" without inspecting the catalog separately.
+		# "tomorrow at dawn" without inspecting the catalog separately.
 		var refill_hint: String = "refills when the period-reset subsystem fires"
 		if OncePerTurnRechargeService.is_rechargeable(item_key):
 			refill_hint = "refills next turn (10 minutes)"
+		elif OncePerDayRechargeService.is_rechargeable(item_key):
+			refill_hint = "refills tomorrow at dawn"
 		empty["message"] = "'%s' has no charges remaining — %s." % [
 			str(catalog_entry.get("name", item_key)), refill_hint]
 		return empty

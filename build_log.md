@@ -31895,3 +31895,92 @@ on-tick dispatch.
 3. **Tier 1 deferrals triage** (4 items: ring_of_wishes, potion_of_longevity, eyes_of_petrification, treasure_map) — Jedidiah subsystem rulings.
 4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 detect items + future detect spells).
 
+
+
+## Session 2026-06-03 — Elemental Commanders daily refill
+
+**Task:** Close out the last "shared charge model, deferred refill" item by building the twin of yesterday's `OncePerTurnRechargeService`. RAW: the four Elemental Commanders (Bowl / Brazier / Censer / Stone) summon + control one elemental "once per day." V1 wired them with `default_charges=1 + misc_magic_consumable=false` but the refill subsystem was deferred — effectively one-shot until that landed. This commit lands it.
+
+**Model used:** Sonnet 4.6.
+
+**Completed:**
+
+### New service
+
+- **`engine/subsystems/inventory/once_per_day_recharge_service.gd`** (NEW, ~130 LOC) — twin of `OncePerTurnRechargeService`, same shape, different time signal:
+  - `RECHARGEABLE_ITEM_KEYS: Array[String] = ["bowl_of_commanding_water_elementals", "brazier_of_commanding_fire_elementals", "censer_of_controlling_air_elementals", "stone_of_controlling_earth_elementals"]`. Mirrors `tools/extract_magic_item_catalog.py:ELEMENTAL_COMMANDER_KEYS`.
+  - `recharge_for_campaign(campaign_id) -> int` — single bulk UPDATE that resets `uses_remaining=1` for all once-per-day items where current charges `< 1 OR NULL`. Same SQL shape as the once-per-turn service.
+  - `is_rechargeable(item_key) -> bool` — exposed for tests + the activator's refusal-hint dispatch.
+  - V1 single-campaign-loaded-at-a-time scope; `campaign_id` parameter reserved for the multi-campaign future case.
+
+### Pipeline integration
+
+- **`engine/subsystems/session/session_runner.gd`**:
+  - `_ready()` adds a `Timekeeping.day_changed` subscriber: `_on_day_changed_for_once_per_day_recharge(_new_day, _new_month, _new_year)`. Parallel to the existing `turn_advanced` subscriber for the Horn refill. SessionRunner now wires both refill subsystems on `Timekeeping` boundaries.
+  - Handler calls `OncePerDayRechargeService.recharge_for_campaign(_campaign_id)`. No-op when no campaign is loaded.
+
+- **`engine/subsystems/inventory/magic_item_activator.gd:use_misc_magic_active`**:
+  - Charge-gate refusal-hint dispatch extended to cover once-per-day:
+    - If `OncePerTurnRechargeService.is_rechargeable(item_key)`: "refills next turn (10 minutes)."
+    - **NEW** else if `OncePerDayRechargeService.is_rechargeable(item_key)`: "refills tomorrow at dawn."
+    - Else: "refills when the period-reset subsystem fires." (generic fallback)
+  - Comment block updated: the prior "still deferred" hedge for the once-per-day items is removed; both refill subsystems are now live.
+
+### Docstring updates
+
+- **`tools/extract_magic_item_catalog.py:ELEMENTAL_COMMANDER_KEYS`** docstring updated: cites the live `OncePerDayRechargeService.recharge_for_campaign` wire-up (was: "refills when the daily-reset subsystem lands"). Also documents the sync-bug class — `RECHARGEABLE_ITEM_KEYS` and `ELEMENTAL_COMMANDER_KEYS` must stay in lockstep.
+
+### Tests
+
+- **`tests/test_elemental_commanders_daily_refill.gd`** (NEW) — 10 tests mirroring the Horn structure across 4 groups:
+  - **Predicate (2)**: All 4 commanders pass `is_rechargeable`; Horn (once-per-turn), potions, rings, and unknown keys return false.
+  - **Service-level bulk refill (6)**: All 4 refill from 0 to 1; already-charged commander not double-refilled (mixed-state setup); non-rechargeable items (Horn, potions) not touched; empty campaign_id no-op; no-rechargeable-items-in-DB no-op; NULL `uses_remaining` refilled.
+  - **Activator refusal hint (1)**: "tomorrow at dawn" appears in the refusal message for the Stone of Controlling.
+  - **Cross-service isolation (1)**: Horn isn't in the daily service; Stone isn't in the turn service. Regression-locks the separation of concerns.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `418_elemental_commanders_daily_refill_tests` ext_resource + node + @onready + run-loop entry.
+
+**Decisions made:**
+
+- **`Timekeeping.day_changed` (midnight rollover), not 24-hour rolling cooldown.** A Commander used at 11pm refills 1 hour later when the in-game clock crosses midnight, not 24 hours later. This matches RAW intent ("once per day," not "with a 24-hour cooldown") AND matches the Horn's "every turn boundary" model — refill is driven by the period-boundary signal, not a per-use timer. The conservative 24-hour rolling alternative would need per-item-row last-used timestamps + per-item comparison — strictly more state for V1 marginal benefit. Documented in the service header.
+
+- **`day_changed(_new_day, _new_month, _new_year)` handler ignores all three args.** The day's identity doesn't matter — the boundary itself is the trigger. Underscored param names per project convention.
+
+- **Identical SQL shape as the turn-reset service.** No `updated_at` column write (same as the turn service; the inventory_items table doesn't have that column). The `< 1 OR NULL` predicate handles both the post-use case AND the unstamped-at-materialization case.
+
+- **`is_rechargeable` exposed as a public static.** The activator's refusal-hint dispatch needs to ask "is this once-per-day?" without knowing the underlying item_key list. Both services expose this for symmetric dispatch.
+
+- **Cross-service isolation enforced by test.** A regression that adds the Horn to `OncePerDayRechargeService.RECHARGEABLE_ITEM_KEYS` (or vice versa) breaks `test_horn_and_commander_have_separate_refill_paths` — keeps the two services' responsibilities clean. The shared catalog-side `ONCE_PER_PERIOD_MISC_MAGIC_KEYS` + `ELEMENTAL_COMMANDER_KEYS` already enforce non-overlap at extractor stamp time; this test enforces it at the runtime layer.
+
+**Interfaces defined or changed:**
+
+- NEW `OncePerDayRechargeService` class (`engine/subsystems/inventory/`). Static methods:
+  - `recharge_for_campaign(campaign_id: String) -> int`
+  - `is_rechargeable(item_key: String) -> bool`
+  - Plus constants: `RECHARGEABLE_ITEM_KEYS: Array[String]` (4 commanders).
+- NEW SessionRunner method `_on_day_changed_for_once_per_day_recharge(_new_day, _new_month, _new_year) -> void`.
+- NEW SessionRunner subscription in `_ready()`: `Timekeeping.day_changed` (parallel to the existing `turn_advanced` subscription for the Horn).
+- Activator's charge-gate refusal-hint dispatch extended with a third branch (once-per-day).
+
+**Database changes:** None. The existing `uses_remaining` column on `inventory_items` is sufficient.
+
+**Tests added/updated:**
+
+- 10 new tests in `tests/test_elemental_commanders_daily_refill.gd`.
+- Full suite: **412 suites passed / 19 failed** — was 411/19; +1 new suite, net-zero new failures.
+
+**Known issues / V1 limitations:**
+
+- **Midnight refill, not 24-hour cooldown.** As above — design choice; documented. A Commander used at 11pm is available at midnight (1 hour later); same player using two commanders at 11pm and 1am have both refilled at the next midnight, not at the next 11pm/1am.
+- **Single-campaign scope.** V1 `recharge_for_campaign` ignores the `campaign_id` parameter — multi-campaign scenarios would need a JOIN against the owning character's `campaign_id`. Documented + reserved.
+- **No event emission on recharge.** A UI surface that wants to surface "your Commanders are ready" notifications would need a follow-up signal pass. V1 silent refill.
+
+**This wraps up the "shared charge model, deferred refill" item class.** All items in `default_charges=1 + misc_magic_consumable=false` are now properly refilled by either the turn-reset or day-reset service.
+
+**Next session should:**
+
+1. **Ring of Spell Storing** — Jedidiah RAW supplied earlier; net-new item; needs materializer-time 1d6 spell selection + per-item storage + activation UI flow. Concrete focused session.
+2. **Tier 1 deferrals triage** (4 items: ring_of_wishes, potion_of_longevity, eyes_of_petrification, treasure_map) — Jedidiah subsystem rulings.
+3. **Detection UI reveal subsystem** — biggest one-shot unblock (4 detect items + future detect spells).
+4. **Other consumer follow-ups** still blocked by missing subsystems: Necklace of Adaptation gas/breath, Scarab curse path, Girdle/Potion of Giant Strength sub-effects, Boots stamina/jump/Acrobatics, Ring of Regeneration body-part regrowth. Each is gated on an external subsystem not yet present.
+

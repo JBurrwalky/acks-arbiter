@@ -661,10 +661,12 @@ DIRECT_POTION_EFFECTS = {
 #   CastingResolver. Scroll caster_level default = 5 (RAW silent on
 #   minimum-caster-level for warding scrolls; project default mirrors
 #   the standard "scroll cast at minimum level" rule).
-# Elemental Commanders cluster (2026-06-02). RAW V1 "once per day"
-# semantic: 1 charge that decrements on use; refills when the daily-reset
-# subsystem lands. Stamped via misc_magic_consumable=false +
-# default_charges=1 in the process_item() loop.
+# Elemental Commanders cluster (2026-06-02). RAW "once per day" semantic:
+# 1 charge that decrements on use; refills at each Timekeeping.day_changed
+# via `OncePerDayRechargeService.recharge_for_campaign` (wired into
+# SessionRunner 2026-06-03). Stamped via misc_magic_consumable=false +
+# default_charges=1 in the process_item() loop. Must stay in sync with
+# `engine/subsystems/inventory/once_per_day_recharge_service.gd:RECHARGEABLE_ITEM_KEYS`.
 ELEMENTAL_COMMANDER_KEYS = frozenset({
     "bowl_of_commanding_water_elementals",
     "brazier_of_commanding_fire_elementals",

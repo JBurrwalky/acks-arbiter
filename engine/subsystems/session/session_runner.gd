@@ -320,6 +320,12 @@ func _ready() -> void:
 	# charges < 1 (V1: Horn of Blasting). Replaces the prior daily-reset
 	# V1 simplification.
 	Timekeeping.turn_advanced.connect(_on_turn_advanced_for_once_per_turn_recharge)
+	# Once-per-day misc-magic refill (2026-06-03). RAW: Elemental
+	# Commanders (Bowl/Brazier/Censer/Stone) summon + control "once per
+	# day." Single bulk UPDATE per day boundary resets uses_remaining=1
+	# on any once-per-day item with current charges < 1. Twin of the
+	# once-per-turn refactor — same shape, different time signal.
+	Timekeeping.day_changed.connect(_on_day_changed_for_once_per_day_recharge)
 
 	# Register all states
 	_register_states()
@@ -1209,6 +1215,26 @@ func _on_turn_advanced_for_frost_cube(_turns_elapsed: int) -> void:
 ## per 10-minute exploration turn).
 func _on_turn_advanced_for_once_per_turn_recharge(_turns_elapsed: int) -> void:
 	OncePerTurnRechargeService.recharge_for_campaign(_campaign_id)
+
+
+## Timekeeping.day_changed handler — refills once-per-day misc-magic
+## items at each midnight rollover. RAW: Elemental Commanders (Bowl /
+## Brazier / Censer / Stone) summon + control "once per day." Issues a
+## single bulk UPDATE that resets uses_remaining=1 for any once-per-day
+## item with current charges < 1. Campaign-scoped via `_campaign_id`.
+## No-op when no campaign is loaded.
+##
+## Twin of `_on_turn_advanced_for_once_per_turn_recharge` — same shape,
+## different time signal. V1 once-per-day items: 4 Elemental Commanders.
+## Future items extend `OncePerDayRechargeService.RECHARGEABLE_ITEM_KEYS`
+## (which must stay in sync with
+## `tools/extract_magic_item_catalog.py:ELEMENTAL_COMMANDER_KEYS`).
+##
+## Replaces the prior V1 deferral (the 4 Elemental Commanders were stuck
+## one-shot until the daily-reset subsystem landed).
+func _on_day_changed_for_once_per_day_recharge(
+		_new_day: int, _new_month: int, _new_year: int) -> void:
+	OncePerDayRechargeService.recharge_for_campaign(_campaign_id)
 
 
 ## Compute the party visibility bonus from the live party_data.character_data
