@@ -153,12 +153,12 @@ A placed lair persists indefinitely. The hex retains the lair record until the p
 "Cleared" means: the lair's occupants are reduced to 0 in combat AND the party loots or abandons the lair. On clear:
 
 - Set `lair.cleared_at_round = current_round`.
-- The record is retained for journaling and for the Land Surveying / Notebook tooltip showing "lairs discovered here."
+- The record is retained for journaling and for the Notebook tooltip showing "lairs discovered here."
 - Fire `EventBus.lair_cleared` (§9).
 
-Whether a cleared lair frees its slot in `hex.lairs_placed_count` is an open question — see §11.
+**V1 rule: cleared lairs hold their slot permanently.** A cleared lair still counts against `hex.lairs_placed_count`; the budget total does not decrement, and no new lair will emerge to replace the cleared one. Once a hex's `lair_budget` is reached and all placed lairs are cleared, the hex stays cleared for the campaign's lifetime. This keeps the "you cleared this hex" feeling intact and is naturally compatible with the Build Stronghold gating in §7.
 
-Re-occupation of a cleared lair by a different monster (or the same monster's kin moving in) is not modeled in v1 and is deferred.
+Re-occupation of cleared lairs over time — and the broader "refill" rules so the map doesn't become dead and razed domains become true wilderness — exist in RAW but are deferred. V1 functions fully without them.
 
 ---
 
@@ -382,9 +382,8 @@ Both were part of a more complicated hex-clearing workflow that is being dropped
 
 ## 11. Deferred / open items
 
-- **Cleared-lair budget accounting** (§3.4 open question). Does a cleared lair still count against `hex.lairs_placed_count`? Two options: (A) yes — cleared lairs hold their slot forever, capping the hex at the original budget for the campaign's lifetime; (B) no — clearing frees the slot, allowing a new emergent lair via subsequent wandering encounters. (A) is simpler, matches a "you cleared this hex" feeling, and is naturally compatible with the Build Stronghold gating in §7. (B) is more dynamic but risks lair density inflation over long campaigns and complicates §7. **Recommendation: (A).** Pending confirmation.
 - **Stronghold gating against unrevealed lairs** (§7 open question). Default Arbiter behavior is to gate only against placed-and-uncleared lairs; unrevealed budget slots do not block Build Stronghold. Strict RAW (L&E §judge_guidance L177–179) leaves this to Judge discretion. The current default permits player exploits (build a stronghold in a hex with high lair_budget but no Survey, then handle "surprise" lair pop-ups as stronghold events). Reconsider at play-test.
-- **Lair re-occupation after clearing.** v1 does not model re-occupation. A long-timer event that decrements `lairs_placed_count` for cleared lairs after N months would address this; deferred.
+- **Lair re-occupation and refill over time.** RAW includes rules so cleared lairs can be re-occupied and so the regional map doesn't become "dead" — razed domains naturally drift back toward true wilderness, fresh lairs emerge in long-quiet areas. V1 does not model this; cleared lairs stay cleared and slots stay closed per §3.4. Deferred.
 - **Specialist bonuses** (Pathfinder, Land Surveyor, Cartographer per `le_wilderness_lair_rules.xml §hirelings`). The `optional_specialist_bonus` parameter on resolvers stays; the Phase 6 specialist subsystem wires actual bonus values.
 - **Eager pre-rolling workflow.** L&E p.13's "How many monsters?" procedure for hexes the PCs intend to clear for a domain — pre-roll the full budget AND monster types AND specific lair listings up front — is deferred. The Survey path in §4.3 already eagerly rolls all unrevealed types on first success, which captures most of the same effect; an explicit "eager pre-roll on first hex visit" mode is not currently needed.
 - **Sub-party splitting** per RAW §splitting_up. Deferred.

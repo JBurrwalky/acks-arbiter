@@ -104,7 +104,7 @@ Lawful alignment is NOT egalitarian. Lawful alignment is NOT pacifist. Lawful al
 
 Lawful alignment is not an OCD personality template. Lawful alignment is not a blind zealotry. Lawful alignment is not inherently sneering and proud, nor inherently meek and humble.
 
-A lawful aligned character is not inherently good, and may well extract all he can from others within the most-strained understanding of the law that he can. A lawful aligned character may be a slaver, a loan-shark, a pimp, a mercenary, or he may be a liberator, an alms-giver, an advocate, a peacemaker; so long as it all comports with the customs and laws of his culture and that culture's laws and customs, and does not knowingly serve the gods Chaos, or knowingly offend or hinder the gods of Law.
+A lawful aligned character is not inherently good, and may well extract all he can from others within the most-strained understanding of the law that he can. A lawful aligned character may be a slaver, a loan-shark, a mercenary, or he may be a liberator, an alms-giver, an advocate, a peacemaker; so long as it all comports with the customs and laws of his culture and that culture's laws and customs, and does not knowingly serve the gods Chaos, or knowingly offend or hinder the gods of Law.
 
 #### 2.1.3c The Metaphysics of Law
 
@@ -112,23 +112,23 @@ In the Arbiter setting, Law is the governing principle by which the universe, th
 
 God created intermediary gods to administer the original cycles in ways incomprehensible to mortal minds. These gods are now the chief gods worshipped by mortals in the game world. Those that remain faithful to God's original purpose are gods of Law, and they and their followers strive (with varying amounts of zeal), to maintain as much of the harmony of the original state of the world.
 
-The more a mortal aligns with the purposes and strictures of the gods of law, the more he contributes to continuing and maintaining the cycles, and the more his own spiritual power grows as a result of being more perfectly aligned with the metaphysical harmonies underlying the universe. If sufficiently dedicated, his soul, upon death, will ascend to the same planes of exisitence as the gods themselves, and will continue to aid in their work free of the suffering of the world. Some may even become akin to lesser gods themselves. (THis is the in-world explanation of how characters grow in power as they gain levels.)
+The more a mortal aligns with the purposes and strictures of the gods of law, the more he contributes to continuing and maintaining the cycles, and the more his own spiritual power grows as a result of being more perfectly aligned with the metaphysical harmonies underlying the universe. If sufficiently dedicated, his soul, upon death, will ascend to the same planes of exisitence as the gods themselves, and will continue to aid in their work free of the suffering of the world, serving in the endless battle for creation against Chaos on the spiritual plane. Some may even become akin to lesser gods themselves. (This is the in-world explanation of how characters grow in power as they gain levels.)
 
 ### 2.1.4 Chaos/Chaotic
 
 #### 2.2.4a What Chaotic Alignment IS
 
-At its root, chaos is the ultimate expression of the notion of the "Will to Power" and might-makes-right. Chaos says: "The strong take what they will, and the weak suffer, and that is the way of things, anyone who says otherwise is a deceiver seeking their own power at your expense." Chaos is the philsophy of pure selfishness: whatever one desires one should seek to obtain at any cost to others.
+At its root, chaos is the ultimate expression of the notion of the "Will to Power" and might-makes-right. Chaos says: "The strong do as they will, and the weak suffer what they must, and that is the right way of things". Chaos is the philsophy of pure selfishness: whatever one desires one should seek to obtain at any cost to others if it be in their power.
 
 Chaos is the opposite of law. It is the governing philosophy and ethic of the gods of chaos, tyranny, hedonism, domination, deceit, death, and decay. The governing principle is to accumulate as much to oneself as possible. The chaos gods (truly demons) themselves are locked in constant cosmic power struggles with one another over who gets the lion's share of available power and resources, sometimes even consuming one another when they get the chance. Chaos never has true alliances or friendships, only tenuous parterships for a shared goal rife with risk of betrayal, and the deeper one goes the more lonely it becomes.
 
-It is the rule of undoing, of solve et coagula, disolving the order and harmony of Law so that the individual parts of the cosmic order may be absorbed and consumed, granting greater power to the one doing the consuming. In mortal terms, this means that Chaos often seeks to topple empires only so that a devotee of Chaos may create his own despotic rule on top of the ashes. Such dominions are extractive and oppressive, those who serve have as much taken from them as they take from others. While a Chaotic emperor may be generous to those who serve well, enticing them to further service, but he never knowingly allows them to become threats to his own power and is ever watchful for betrayal
+It is the rule of constant churning and upheaval, of solve et coagula, disolving the order and harmony of Law so that the individual parts of the cosmic order may be absorbed and consumed, granting greater power to the one doing the consuming. In mortal terms, this means that Chaos often seeks to topple empires only so that a devotee of Chaos may create his own despotic rule on top of the ashes. Such dominions are extractive and oppressive, those who serve have as much taken from them as they take from others. While a Chaotic emperor may be generous to those who serve well, enticing them to further service, but he never knowingly allows them to become threats to his own power and is ever watchful for betrayal
 
 Chaos is dishonest about its own ends, and many who fall into its embrace are self-deluded, believing they serve a cause of freedom and license, or pursue a path of hedonism for its own sake, but it is a freedom that enslaves one to vices or to literal pacts with demons. Chaos corrupts the one who partakes of it, and blinds them to the extent of their own evil, and slowly dulls them to the sufferings of others.
 
 Chaotic beings, being contentious, come in two broad types: the dominating and the pandering. The first seek power or wealth or status and believe themselves capable of obtaining it by their own strength. The second know they are incapable of contending with their betters and seek to avoid destruction while waiting for an opportunity to gain more power or wealth or status for themselves so they may finally become the one who rules. The same person may be both types in different settings: a cruel and vicious taskmaster who abuses slaves and underlings may grovel and bootlick and simper before his own lord or master.
 
-Chaotic gods delight in seeing law destroyed, and in seeing their devotees gain power, for they know that when such devotees die, the chaos god to whom they most closely aligned will get to consume their soul and obtain the power of the devotee entirely, and it deprives the gods of law of an agent. The gods of chaos, and their followers, reward cruelty, dominance, exploitation, extortion, fraud, hatred, excessive punishment for slights, unchecked aggression and conquest, sexual depravity, and all forms of destructive or self-destructive behavior.
+Chaotic gods delight in seeing law destroyed, and in seeing their devotees gain power, for they know that when such devotees die, the chaos god to whom they most closely aligned will gain total domination of that soul and may even consume their soul and obtain the power of the devotee entirely, or force it to serve their ends in the spiritual plane. It also deprives the gods of law of an agent. The gods of chaos, and their followers, reward cruelty, dominance, exploitation, extortion, fraud, hatred, excessive punishment for slights, unchecked aggression and conquest, sexual depravity, and all forms of destructive or self-destructive behavior.
 
 Chaos views all virtuous deeds and attitudes as mere means to the end of greater power and corruption, but views the virtues of law to be weaknesses or constraints.
 
@@ -147,17 +147,19 @@ What is known is that the Choas gods and their followers believe that, the ultim
 
 ## 2.2 Primal Energy: Magic Power, Divine Power, and XP.
 
-In Arbiter's setting, Magic Power and Divine Power are both the same Primal Energy of creation that enables all things to exist. Lower order things (rocks, plants) possess lesser amounts of it, higher order things possess greater amounts of it (animals, humans, spirits). Some objects contain unusually high amounts of such power in specific configurations, such things are magical ingredients or spell components. Some creatures are more naturally attuned to it, like Elves or certain magical animals or plants, and contain or channel amounts of such energy uncommon for creatures of their kind.
+In Arbiter's setting, Magic Power and Divine Power are both tied to the same Primal Energy of creation that enables all things to exist. Lower order things (rocks, plants) possess lesser amounts of it, higher order things possess greater amounts of it (animals, humans, spirits). Some objects contain unusually high amounts of such power in specific configurations, such things are magical ingredients or spell components. Some creatures are more naturally attuned to it, like Elves or certain magical animals or plants, and contain or channel amounts of such energy uncommon for creatures of their kind.
 
-The gods thrive on it, and are in some sense composed entirely of it, as are souls. Rational souls need more energy than non-rational souls. Everything that has individual substance has a soul composed of this energy, but thinks like rocks have very little, just enough to inform their physical characteristics, wherease plants require enough to inform their growth cycles, and animals require even more to inform their movement and behaviors, and rational creatures require yet more to be able to think and act freely.
+The gods possess immense degrees of it, and are composed entirely of it without material bodies. Souls of physical creatures are also composed of it. Rational souls need more energy than non-rational souls. Everything that has individual substance has a soul composed of this energy, but things like rocks have very little, just enough to inform their physical characteristics, wherease plants require enough to inform their growth cycles, and animals require even more to inform their movement and behaviors, and rational creatures require yet more to be able to think and act freely.
 
-Any creature that consumes or uses Primal Energy leaves a certain unique quality or mark to it when it leaves them, though it fades over time, and thus certain creatures body parts are useful for certain spells, and Primal Energy from a Lawful god is more naturally destructive to Chaotic creatures like Undead. It is also this property that allows a person's soul to be recaptured and reinfused into their body through a resurrection or restore life and limb spell, though sometimes other sources of Primal Energy are needed to supplement a soul's lost power, resulting in the oddities of the "tampering with mortality" tables.
+Any creature that consumes or uses Primal Energy leaves a certain unique quality or mark to it when it leaves them, though it fades over time, and thus certain creatures body parts are useful for certain spells, and Primal Energy from a Lawful god is more naturally destructive to Chaotic creatures like Undead. It is also this property that allows a person's soul to be recaptured and reinfused into their body through a resurrection or restore life and limb spell, though sometimes other sources of Primal Energy are needed to supplement a soul's lost power, resulting in the oddities of the "tampering with mortality" tables. It is this same "marking" that is partially responsible for spell signatures.
+
+It is important to note however, that Primal Energy is not merely "spiritual matter" or "rareified matter". It is pure potentia, metaphysical power, unrealized until it interacts with the physical world. How the gods and other spirits exist without matter is a mystery to all sages and hotly debated.
 
 ### 2.2.1 Divine Power
 
-Divine Power is this same energy locked into the Divine Economy, where gods or similar higher order entities posses great quantities of Pirmal Energy and share it back to their devotees and clerics in myraid forms, most visibly through spells and blessings, but also through good harvests, or good luck. The devotees then replenish the god's store of it by offering things from the physical world as sacrifices or offering aspects of themselves to the god by worship, praise, and behavior conformed to the god's mandates and sphere of influence.
+Divine Power is this same Primal Energy as it operates in the Divine Economy, where gods or similar higher order entities posses great quantities of Pirmal Energy and share it back to their devotees and clerics in myraid forms, most visibly through spells and blessings, but also through good harvests, or good luck. The devotees then replenish the god's store of it by offering things from the physical world as sacrifices or offering aspects of themselves to the god by worship, praise, and behavior conformed to the god's mandates and sphere of influence.
 
-The gods also naturally accumulate errant Primal Energy like a metaphysical gravity well. As said before, everything that uses Primal Energy leaves a certain quality to it, and the closer this quality is to a particular god's quality the faster and the more likely it is to be absorbed by that god. Thus being that are chaotic funnel energy toward the chaos gods and being that lawful funnel energy to the gods of law.
+The gods also naturally accumulate errant Primal Energy like a metaphysical gravity well. As said before, everything that uses Primal Energy leaves a certain quality to it, and the closer this quality is to a particular god's quality the faster and the more likely it is to be absorbed by that god. Thus beings that are chaotic funnel energy toward the chaos gods and being that lawful funnel energy to the gods of law.
 
 ### 2.2.2 Magic Power
 
@@ -180,7 +182,13 @@ Very few characters truly know how Primal Energy works (only Sages with 3 ranks 
 
 ### Heaven
 
+Heaven is the plane in which the gods of law dwell, free from all suffering save that of sorrowing for the mortal plane. The gods and lawful souls in heaven intervene in mortal affairs but never truly "leave" heaven, they project power outward from it into the mortal plane. Manifestations of lawful spirits in the mortal world are like avatars or puppets.
+
 ### Hell
+
+Hell
+
+### Limbo
 
 ### The World
 
@@ -204,18 +212,69 @@ Through some unknown event however, many of the gods left the service of the One
 
 # 4 Religions
 
+Religion in the Arbiter setting is, unlike the real world, all based on real or mostly real events in the shared history of the universe. There are debates about the particulars, of course, and various spins on the events, but overall the major entities and the events are shared in every cultures relgions, the divergences result from language drift, oral legend drift, cultural proclivities, alignment, and their diverging histories. Cultural symbolism for each can also drift significantly.
+
 ## 4.1 Underlying Entities
+
+All religions recognize the existence of the following beings, but whether they are viewed as gods or demons or both is dependant on the alignment. Their specific names also vary by culture, and each culture has its specific patrons and nemeses and saints or heroes as well. The names provided in the following section are the Agrippan names for the deities. They will need to be translated into other tongues.
+
+### 4.1.1 The Gods of Law
+
+The gods of Law are the stewards and guardians of all creation, created by the One God to govern his creation and shepherd mortals in the path of harmony and order and peace. These 12 are the chiefest, but there are countless others subservient to each one in a hierarchy not unlike feudal vassalage.
+
+| name | virtues | professions | action | socio-politcal | natural world | element |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Tulrius | Justice | Judges and Rulers | Ruling | Laws, Courts | Sun | Fire |
+| Argentus | Prudence | Merchants, Jewelers | Trade | Contracts, Markets, Money | Precious Metals and Gems | Earth |
+| Realta | Mercy, Love, Chastity | Healers and Clergy | Healing, Weddings, Childbirth | Marriages, Motherhood, Almsgiving | Spring, Gardens | Water |
+| Numeno | Wisdom | Magi, Scholars and Scribes | Knowledge, Writing | The Old, Archives, Memory | Time, History | Aether |
+| Lieta | Patience | Farmers | Growth, Crop Fertility | Agriculture, Harvests | Plants, Trees, Crops | Earth and Water |
+| Ventalius | Joy, Friendship | Herders, Entertainers, Leatherworkers | Festivities, Animal Fertility | Community, Festivals | Animals, Livestock | Air and Earth |
+| Delorum | Peace, Equanimity | Gravekeepers, Morticians | Death, Afterlife, Funerals | Inheritance, Ancestors | Ash, Dust, Amber | Fire or Earth |
+| Numia | Hope, Faith | Sailors, Navigators | Ocean Voyages, Courtship, Romance | Navigation, Exploration | Seas, Sea Weather Stars | Water and Air |
+| Fullus | Generosity, Steadfastness | Fishermen, Millers | Irrigation, Cleansing, Travel | Borders, Inland Travel | Rivers, Streams, Lakes, Rain | Water and Earth |
+| Gaiandus | Endurance, Stoicism, Contemplation | Mountaineers, Hunters, Miners, Hermits | Weathering, Mining, Meditation | Isolation, Exile, Mysticism | Wind, Mountains, Land Storms, Cold | Earth and Ice |
+| Orlandus | Honor, Loyalty, Fortitude, Courage | Soldiers, Knights, Smiths, Masons | Oaths, Fealty | Military, Treaties, Defense, Roads | Stone, Iron | Metal |
+| Noctiluna | Discretion, Vigilance | Watchmen, Spies | Concealment and Revelation | Secrets, Espionage | Night, Darkness, the Moon | Shadow, Death |
+
+### 4.1.2 The Gods of Chaos
+
+The gods of chaos govern the vices of excess and defect — the failures on either side of the virtuous mean, though they pronounce this to be liberation. Twelve of the thirteen are direct inversions of the gods of law; the thirteenth, Vacidus, has no counterpart among the 12 venerated Lawful powers, he is rather the chief architect of Chaos, and opposes the One True God directly. Lawful religions name all thirteen as demons or corruptors. Chaotic religions regard the gods of law as tyrants and jailers, and name their own powers as liberators and mentors. All but the most deeply initiated of their worshippers are blind to the true malice that the chaos gods harbor for mortals and all creation, and such sages are so far gone into villainy themselves they often share the sentiment.
+
+| name | vices | professions | action | socio-political | natural world | element |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Maraxus | Tyranny, Cruelty | Conquerors, Warlords, Slavers | Conquest, Subjugation, Purges | Tribute Systems, Absolute Rule, Military Dominance | Forge-fires, Victory Pyres, Scorched Earth, Ash Wastes | Fire |
+| Lusento | Avarice, Deceit | Prospectors, Merchants, Thieves | Discovery of Hidden Wealth, Trade Manipulation, Fraud | Lucrative Trade, Market Manipulation, Bribery | Rich Ore Seams, Hidden Deposits, Acid Springs, Slag | Acid |
+| Hirelia | Lust, Depravity, Cruelty | Lovers, Herbalists, Torturers | Wild Fertility Rites, Seduction, Violation | Passionate Alliances, Forbidden Unions, Corrupt Courts | Wild Blooms, Pollinating Swarms, Briar Thickets, Venomous Blossoms | Poison |
+| Dementus | Madness, Folly | Oracles, Heretics, Forbidden Scholars | Prophetic Divination, Spreading Madness, Burning Archives | Oracular Traditions, Forbidden Cults, Book-burning | Prophetic Storms, Shooting Stars, Unnatural Eclipses, Warped Skies | Lightning |
+| Metensia | Blight, Pestilence, Sloth | Breeders, Vermin-masters, Plague Bearers | Rapid Propagation, Pest-sending, Blighting Enemy Crops | Livestock Fertility, Famine as Weapon, Quarantine-breaking | Teeming Soil, Fast Rains, Locust Swarms, Crop Blight | Poison and Earth |
+| Raptis | Bloodlust, Massacre, Savagery | Hunters, Berserkers, Brigands | The Great Hunt, Raids, Blood Sacrifice | Warrior Prestige, Hunting Rights, Outlawry | Wild Game, Fierce Predators, Carrion Fields, Blood-soaked Ground | Fire and Death |
+| Irantius | Wrath, Discord, Implacability | War-priests, Necromancers, Revenge-seekers | Ancestral Defense, Blood Feuds, Raising the Dead | Clan Vendettas, Ancestral Defense, Undead Legions | Ancestral Mounds, Hallowed Battlefields, Restless Graves, Blighted Fields | Death |
+| Desoria | Despair, Nihilism | Deep-sea Fishermen, Storm-callers, Wreckers | Deep-sea Fishing, Storm-calling, Wrecking | Maritime Raiding, Wrecking Rights, Cults of the Drowned | Deep Sea Shoals, Storm Winds, Maelstroms, Drowning Fogs | Water and Cold |
+| Gerontinus | Famine, Drought, Obstruction | Provisioners, Toll-lords, Blockaders | Winter Preservation, Toll-taking, Blockades | Winter Provisioning, Toll Systems, Blockades | Frozen Roads, Preserved Stores, Dried Riverbeds, Frost-killed Crops | Cold and Earth |
+| Hestratus | Hubris, Recklessness, Catastrophic Overreach | Daring Commanders, Storm-callers, Overreachers | Daring Assaults, Storm-calling, Provoking Natural Disaster | Bold Campaigns, Daring Conquests, Overextension | Scouring Gales, Summit Lightning, Avalanches, Rockslides | Air and Lightning |
+| Inculcus | Treachery, Oathbreaking, Cowardice | Spies, Assassins, Traitors | Assassination of Enemies, Intelligence-gathering, Treaty-breaking | Espionage Networks, Political Betrayal, Coups | Concealing Shadows, Corroded Iron, Crumbling Fortifications, Treacherous Ground | Acid |
+| Caecida | Paranoia, Dangerous Exposure | Truth-seers, Witch-hunters, Blackmailers | Unmasking Enemies, Witch Hunts, Blinding Revelation | Inquisitions, Intelligence Networks, Blackmail | Revealing Light, Purifying Sun, Searing Wasteland, Blinding Mirages | Light |
+| Vacidus | Entropy, Annihilation, the Void | Nihilists, Worldbreakers | The Unmaking of All Things | Erasure of All Civilization | Dissolution of Old Powers, the Void, Dead Worlds, Final Silence | Acid and Death |
 
 ## 4.2 Alignment-Specific variations
 
+All Lawful religions are Henotheist, holding that there is one True God that created all things and the lesser gods are his angelic servants. The chiefest of them are venerated in temples and shrines, while the True God is unapproachable by mortals directly, though still honored in liturgies and speech, He is not directly petitioned.
+
+All chaotic religions are truly polytheistic, worshipping multiple gods, each in complex antagonistic alliance with the others, and they are invoked or served either singularly or in a complex pattern of invoking one to remove the others as befits the needs of the time. Thus the god of War in invoked during wartime but he brings with him the god of death and famine, so the god of fertility must soon be invoked to drive out death and famine and grow the crops, but she brings with her insect swarms and other fast breeding pests that spread plague, so the god of death must be invoked to kill the pests, but not so long that he can cause a famine. The god of trade must be invoked for good trading, but he is also a god of deceit and trickery, so the god of knowledge must also be invoked to dispel the lies, and both must be played against one another so that the truth is known but the supplicants own secrets are not revealed. It is complex, and dangerous. Furthermore, they acknowledge the existince of the True God after a fashion but claim he is not the greatest God but only the greatest deceiver and that His power can be challenged, which is why he hides from the world and does not interact directly. 
+
+All neutral religions profess a belief in the True God but claim he is neither for Law nor Chaos, but rather is watching all unfold for his own amusement. They will invoke gods of law or chaos or their own powerful ancestral heroes in supplication. Whether it is truly their ancestors that answer or a lawful or chaotic spirit in their guise to manipulate the supplicant is hotly debated.
+
 ## 4.3 Cultural Variations
+
+All religions share the same base pantheon, but each culture has its own lesser gods or venerated saints or heroes. Sometimes only in certain cities or regions, or sometimes in addition to greater gods for the same purpose, e.g. a local god of war is invoked alongside Tulras.
 
 ## 4.4 Major Departures/New Religions
 
 # 5 Cultures
 
 ## 5.1 Real-world analog sources
-What follows is a list of real world cultures, by name and time period/subculture, that serve as the basis for all cultures within Arbiter. Every culture, even the fantastical ones, will draw from one of these cultural archetypes, with the exception of beastman cultures which are so degenerate that no human culture maps to them. The numbered list is the canonical list and cultures can be referred to elsewhere by their list number, e.g Culture 1 means "Late Republican Rome". These serve as *LOOSE* cultural groundings for narrative styles, naming conventions, and eventually visual assets as well.
+What follows is a list of real world cultures, by name and time period/subculture, that serve as the basis for all cultures within Arbiter. Every culture, even the fantastical ones, will draw from one of these cultural archetypes, with the exception of beastman cultures which are so degenerate that no human culture maps to them. The numbered list is the canonical list and cultures can be referred to elsewhere by their list number, e.g Culture 1 means "Late Republican Rome". These serve as *LOOSE* cultural groundings for narrative styles, naming conventions, and eventually visual assets as well. Where two or more are present, the goal is an equal synthesis of language, culture, and aesthetics.
 
 1. Roman - 2nd century BC to 2nd century AD
 2. Greek - Classical Greece of Athens and Sparta
@@ -224,7 +283,7 @@ What follows is a list of real world cultures, by name and time period/subcultur
 5. Ancient Egyptian - anachronistic blend of Old Kingdom culture and architecture and New Kingdom military
 6. Germanic - Dark Ages Germanic triobes and early feudal states
 7. Celtic - Broad and loose coverage
-8. Norse - Late antiquity to early medieval
+8. Norse - Late antiquity to early medieval viking culture
 9. Chinese - Three Kingdoms period
 10. Japanese - Sengoku Jidai period
 11. Mayan
@@ -238,11 +297,71 @@ What follows is a list of real world cultures, by name and time period/subcultur
 19. Frankish Kingdoms - Merovingian and Carolingian era
 20. Iberian - Pre-Islamic Spain
 
+
 ## 5.2 Canonical Culture List
+| Number | Demonym | Toponym | Real World Inspirations by §5.1 number | Seed Biomes | Coastal Hex start? (Y)es/(N)o/(E)either | Race | Alignment options | civilization type: (civ)ilized vs. (clan)hold |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Agrippan | Agrippa | 1 | grassland, scrubland, hills | Y | Human | Lawful, Neutral | civ |
+| 2 | Achillean | Achillea | 2 | scrubland, grassland, hills, mountains | E | Human | Lawful, Neutral, Chaotic | civ |
+| 3 | Barcan | Barca | 3 | scrubland | Y | Human | Neutral, Chaotic | civ |
+| 4 | Hammuran | Hammur | 4 | scrubland, savanna, hills, mountains | E | Human | Lawful, Neutral, Chaotic | civ |
+| 5 | Apophan | Apopha | 5 | desert, scrubland, jungle | E | Human | Neutral, Chaotic | civ |
+| 6 | Sumset | Sumsa | 4, 5 | desert, jungle, hills, mountains | N | Human | Lawful, Neutral | civ |
+| 7 | Gundic | Gundar | 6, 7 | forest, grassland, dense forest, hills, mountains | E | Human | Neutral | civ |
+| 8 | Cuchulan | Cuchulei | 7 | forest, dense forest, hills | E | Human | Lawful, Neutral, Chaotic | clan |
+| 9 | Alani | Alania | 6 | forest, dense forest, grassland, hills, mountains | E | Human | Lawful, Chaotic | clan |
+| 10 | Vargari | Vargarheim | 8 | tundra, taiga, grassland, mountains, glacial mountains | Y | Human | Neutral, Chaotic | clan |
+| 11 | Cwealmingas | Cwealmingaham | 8, 18 | dense forest, forest, swamp, hills, mountains | E | Human | Chaotic | clan |
+| 12 | Jinxian | Jinxia | 9 | grassland, hills, forest | E | Human | Lawful, Neutral | civ |
+| 13 | Yamataian | Yamatai | 10 | forest, hills, mountains | Y | Human | Lawful, Chaotic | clan |
+| 14 | Ryujin | Ryujo | 9, 10 | forest, mountains, swamp | E | Human | Lawful, Neutral | civ |
+| 15 | Ixalan | Ixal | 11 | jungle, dense forest | N | Human | Neutral, Chaotic | civ |
+| 16 | Nahuan | Nahuatlan | 12 | jungle, hills, swamp | N | Human | Lawful, Chaotic | civ |
+| 17 | Tlanec | Tlan | 11, 12 | jungle, savanna | E | Human | Lawful, Neutral, Chaotic | civ |
+| 18 | Velesan | Velesia | 13 | taiga, forest, swamp, plains | N | Human | Neutral, Chaotic | clan |
+| 19 | Kypchan | Kypcha | 13, 17 | grassland, taiga | N | Human | Neutral, Chaotic | clan |
+| 20 | Orkhan | Orkha | 17 | grassland, scrubland | N | Human | Chaotic | clan |
+| 21 | Numinan | Numina | 15 | grassland, scrubland, savanna | N | Human | Neutral, Chaotic | clan |
+| 22 | Oronan | Oronoka | 16 | forest, dense forest, swamp | N | Human | Lawful, Neutral | clan |
+| 23 | Axumite | Axuma | 14 | savanna, hills, mountains | E | Human | Lawful, Neutral | civ |
+| 24 | Kemeti | Kemetar | 5, 14 | desert, savanna, hills | E | Human | Lawful, Neutral | civ |
+| 25 | Merovan | Merovia | 19 | grassland, forest, hills | E | Human | Lawful, Neutral | civ |
+| 26 | Cantabran | Cantabria | 20 | scrubland, hills, mountains | Y | Human | Neutral, Chaotic | clan |
+| 27 | Vascani | Vascony | 19, 20 | hills, mountains | Y | Human | Lawful, Neutral | civ |
+| 28 | Huitzilan | Huitzgard | 8, 12 | jungle, mountains, glacial mountains | Y | Human | Chaotic | clan |
+| 29 | Shidhean | Shidhe-Kyo | 7, 10 | forest, hills, mountains | E | Human | Lawful, Chaotic | clan |
+| 30 | Aethling | Aethal | 14, 18 | savanna, scrubland, hills | E | Human | Lawful, Neutral, Chaotic | civ |
+| 31 | Sargonid | Sargonia | 1, 4 | scrubland, desert, plains | E | Human | Lawful | civ |
+| 32 | Ptolan | Ptola | 2, 5 | desert, scrubland, coastal | Y | Human | Lawful, Neutral | civ |
+| 33 | Venedan | Venedia | 6, 13 | forest, taiga, swamp | Y | Human | Neutral, Chaotic | clan |
+| 34 | Karakan | Karak | 15, 17 | grassland, savanna | N | Human | Neutral, Chaotic | clan |
+| 35 | Xiongan | Xionga | 9, 17 | plains, hills, mountains | N | Human | Lawful, Neutral | civ |
+| 36 | Tartessan | Tartessa | 3, 20 | scrubland, hills | Y | Human | Neutral, Chaotic | civ |
+| 37 | Ostran | Ostraclia | 18, 19 | grassland, forest, hills | E | Human | Lawful, Neutral | civ |
+| 38 | Sabaean | Saba | 4, 14 | desert, mountains | Y | Human | Lawful, Neutral | civ |
+| 39 | Senecar | Senecari | 7, 16 | forest, dense forest, hills | N | Human | Neutral, Chaotic | clan |
+| 40 | Serican | Serica | 1, 9 | grassland, plains, hills | E | Human | Lawful, Neutral | civ |
+| 41 | Tikan | Tikala | 11, 16 | jungle, dense forest, mountains | N | Human | Lawful, Chaotic | civ |
+| 42 | Rovan | Rovia | 8, 13 | taiga, forest, tundra | E | Human | Lawful, Neutral, Chaotic | civ |
+| 43 | Alaman | Alama | 6, 19 | forest, hills | N | Human | Lawful, Neutral | clan |
+| 44 | Thracan | Thracia | 2, 15 | grassland, scrubland | N | Human | Lawful, Chaotic | clan |
+| 45 | Lusan | Lusia | 1, 20 | scrubland, mountains | Y | Human | Lawful, Neutral | civ |
 
 
+## 5.3 Culture rules and guidelines
 
-## 5.3 Culture specific rules and guidelines
+Every canonical culture has a number of aspects to it. Some are primarily for the initial setting generation to consumer, others are primarily or solely for the LLM narrator to consume, and others still are for NPC generation or other runtime systems. Numeric weights are assigned per Real World Analog, and the Canon cultures are the average of their inspirational cultures. 
+
+For languages, single-source cultures can use the real world language or a conlang that uses an identical phonemic palette for place names and people names. For multi-source cultures, the conlang should use a hybrid of the multiple phonemic palettes and should blend the phonemic palette. Characters will speak in English in their interactions with players if player characters and NPCs share at least one language. If they do not share a language the LLM interaction should provide only a description of how the NPCs speach sounds (lilting, consonental, nasal, lisping, etc.) without actually creating a new language to generate responses in.
+
+For character descriptions, the generator should generate descriptions using the physical phenotype features most commonly associated with the base culture. Where multiple cultures are used as the base, the phenotypes should be mixed according to specific elements, e.g. Shidhean is a blend of Japanese and Celtic, the people will have the blonde and reddish hair and light eyes of the celts, and the height and stature of celtic peoples, but the skin tone, epicanthic folds, and broader, flatter facial features common among Japanese. The reverse (Japanese hair and eye color and stature, with celtic facial structure features) should be excluded to avoid inconsistency.
+
+1. Agression - rate of expansion per generation
+2. Defensiveness - resistance to expansion per generation
+3. Subjugation/Genocide - degree to which expansion is merely a change in vassalage (subjugation) or a change in culture/religion (genocide).
+4. Military/Mercantile/Religious/Arcane weights - affects ruler class distribution and henchman class availability 
+5. Personality trait weighting - affects random NPC personality trait rolls
+6. Preferred troop types - determines which troop types the cultures armies predominantly field and what types of mercenaries are available in their cities.
 
 ## 5.4 Culture ID Code System
 
