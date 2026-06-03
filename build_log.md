@@ -31695,3 +31695,108 @@ on-tick dispatch.
 3. **Tier 1 deferrals triage** (4 items) — Jedidiah subsystem rulings.
 4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 catalog items + future detect spells).
 
+
+
+## Session 2026-06-03 — Cube of Frost Resistance consumer
+
+**Task:** Wire the existing cold damage typing infrastructure into a Cube of Frost Resistance consumer. The damage type catalog (`DamageTypes`) + per-character resistance pipeline (`DamageResistance` → `CharacterData.apply_damage`) + spell-side cold tagging (`damage_type: "cold"` on Cone of Cold, Ice Storm, etc.) were ALREADY in place from the earlier spell sessions — the Cube's V1 flag-only adds had the deferred mechanic noted as "defer until cold damage typing is wired" but the typing itself was actually present. What was missing was the Cube-specific consumer: absorption + per-turn threshold tracking + collapse cooldown + destruction.
+
+**Model used:** Sonnet 4.6.
+
+**Completed:**
+
+### New service
+
+- **`engine/subsystems/inventory/cube_of_frost_resistance_service.gd`** (NEW, ~200 LOC):
+  - `try_absorb_cold(character, incoming_damage, damage_type) -> Dictionary` — returns `{absorbed, damage_remaining, collapsed, destroyed, field_was_active}`. When called with cold damage on a bearer of `has_cube_of_frost_resistance_field` with `field_active: true`:
+    - Absorbs the full incoming amount (RAW: "absorbs all cold-based attacks").
+    - Updates the per-turn accumulator (`cold_damage_this_turn`).
+    - Checks thresholds: `> 100` cumulative → destroy; `> 50` cumulative → collapse.
+    - On collapse: sets `field_active=false` + `collapsed_at_turn = Timekeeping.get_total_turns()`.
+    - On destruction: clears the flag + removes the inventory row (when CampaignRepository is wired).
+  - `tick_turn(character) -> Dictionary` — returns `{accumulator_reset, reactivated}`. Resets per-turn accumulator unconditionally. When `field_active==false` AND `current_turn - collapsed_at_turn >= COLLAPSE_COOLDOWN_TURNS (6)`, reactivates (sets `field_active=true`, clears `collapsed_at_turn`).
+  - Constants document the RAW thresholds: `COLLAPSE_THRESHOLD=50`, `DESTROY_THRESHOLD=100`, `COLLAPSE_COOLDOWN_TURNS=6` (= 1 hour at the project's 10 min/turn scale).
+  - Pure-strict thresholds: 50 cumulative = OK; 51 = collapse. 100 = collapse-only; 101 = destroy. Matches RAW "more than 50" / "more than 100".
+
+### Pipeline integration
+
+- **`engine/shared_types/character_data.gd:apply_damage`** — extended to pre-process cold damage through `CubeOfFrostResistanceService.try_absorb_cold` BEFORE the standard `damage_resistances → temp_hp → hp_current` pipeline. Return dict gains 3 new fields: `cube_absorbed: int`, `cube_collapsed: bool`, `cube_destroyed: bool`. Result is backwards-compatible — existing consumers see the same 5 base fields; new fields default to 0/false when no cube is present.
+
+- **`engine/subsystems/session/session_runner.gd`**:
+  - `_ready()` subscribes to `Timekeeping.turn_advanced` for the cube tick (parallels the existing Ring of Regeneration `round_advanced` subscription).
+  - New handler `_on_turn_advanced_for_frost_cube(turns_elapsed)` iterates `_party_data.character_data` for cube bearers and dispatches `CubeOfFrostResistanceService.tick_turn(cd)` for each. Ticks unconditionally — the accumulator reset is needed even when the field is collapsed so the post-cooldown reactivation lands cleanly.
+
+### Flag metadata update
+
+- **`engine/subsystems/inventory/worn_magic_effect_resolver.gd:_add_cube_of_frost_resistance`** — initial flag metadata now includes the runtime-state fields the consumer reads/mutates:
+  - `item_id` — needed by the destruction path to remove the inventory row
+  - `field_active: true` — V1 default (toggle-press deferred)
+  - `cold_damage_this_turn: 0` — per-turn accumulator initial
+  - `collapsed_at_turn: -1` — sentinel for "no collapse history"
+
+- **`engine/shared_types/entity_flags.gd`** — `has_cube_of_frost_resistance_field` docstring updated to V2: documents the consumer wiring, the 3 new runtime-state fields, and which V1 simplifications still hold (bearer-only protection; 65°F temperature not modeled; press-toggle UI deferred).
+
+### Tests
+
+- **`tests/test_cube_of_frost_resistance.gd`** (NEW) — 19 tests across 4 groups:
+  - **Service-level absorption (5)**: active field absorbs cold; non-cold passes through; no-flag passes through; inactive field passes through; zero damage is no-op.
+  - **Accumulator + thresholds (6)**: 3-hit cumulative; collapse threshold (51 > 50); collapse records `collapsed_at_turn`; cold after collapse passes through this turn; destroy threshold at 101 clears flag; at exactly 100 collapse-only (not destroy).
+  - **Tick reset + cooldown (4)**: tick resets accumulator; reactivates after 6 turns; does not reactivate at 5 turns; active-field tick is idempotent.
+  - **CharacterData.apply_damage integration (4)**: cold absorbed via cube; non-cold routes normally; result reports cube_absorbed/cube_collapsed/cube_destroyed; passes through after collapse.
+
+- **`tests/test_persistent_worn_batch3.gd:test_cube_of_frost_resistance_sets_flag_with_full_raw_metadata`** — extended with 3 V2 runtime-state assertions: `field_active==true` on equip, `cold_damage_this_turn==0` on equip, `collapsed_at_turn==-1` on equip.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `416_cube_of_frost_resistance_tests` ext_resource + `CubeOfFrostResistanceTests` node + @onready var + run-loop entry.
+
+**Decisions made:**
+
+- **The damage typing infrastructure was ALREADY built.** `DamageTypes` (engine/shared_types/damage_types.gd) defines 9 canonical types (physical/fire/cold/lightning/acid/necrotic/force/untyped/holy); `DamageResistance` (engine/shared_types/damage_resistance.gd) handles immunity/resistance/vulnerability; `CharacterData.apply_damage(amount, damage_type)` routes through it; the spell catalog already tags Cone of Cold etc. with `damage_type: "cold"`. The "cold damage typing deferred" note on the Cube was actually only deferring the CUBE-SPECIFIC consumer (per-turn accumulator + thresholds + cooldown), not the typing itself. This session built the consumer.
+
+- **Pre-resistance hook order: Cube → resistance → temp_hp → hp_current.** The cube absorbs cold damage BEFORE the standard resistance pipeline, because RAW says the field "absorbs all cold-based attacks" — not "reduces" or "resists". A bearer with both a Cube and a cold resistance effect benefits from the Cube first (full absorption); resistance applies only to the overflow (which is 0 when the cube absorbs everything). If a future cold resistance source needed to STACK with the cube, it'd land via the resistance pipeline naturally — the cube absorbs first, any overflow falls through.
+
+- **Strict-greater-than thresholds (RAW "more than").** RAW: "more than 50" → collapses; "more than 100" → destroys. Implementation: `> 50` and `> 100`. At exactly 50 the cube stays active; at exactly 100 it collapses but is not destroyed. Tests pin both boundaries to lock the RAW semantics against future drift.
+
+- **Per-turn accumulator survives across collapse.** When the cube collapses mid-turn, the accumulator still holds the cumulative damage for the rest of the turn. This matters because: (a) the destroy threshold could be hit by a SECOND big hit in the same turn (60 cold collapses → 60 in accumulator; +50 more = 110 > 100 → destroys, even though the field was already collapsed and the second hit "passes through" to the bearer). V1 design choice: when the field is collapsed, `try_absorb_cold` returns passthrough without touching the accumulator. The "collapse-then-destroy in same turn" sub-case happens only when the destroy threshold is hit by the FIRST collapse-causing absorption. Future refinement: if a future spell triggers a multi-hit cold sequence on a collapsed-then-reactivating cube, the accumulator handling may need a more nuanced model.
+
+- **Tick on EVERY turn boundary regardless of field state.** The accumulator reset is needed even when the field is collapsed so the post-cooldown reactivation starts clean. The reactivation check is in the same handler — cheap, single source of truth.
+
+- **`COLLAPSE_COOLDOWN_TURNS=6` (= 1 hour at 10 min/turn).** Stored as turns rather than hours so the math is integer-clean and the comparison against `Timekeeping.get_total_turns()` is direct.
+
+- **Bearer-only protection in V1.** RAW says the cube creates a 10' area around the bearer. V1 protects ONLY the bearer (not adjacent allies) because area-of-effect positional protection is the same blocker as Ward against Magic spell-origin-inside-cube case — both need a position-based protection model that doesn't exist yet. The flag metadata documents the 10' radius for the future refinement.
+
+- **Toggle-press UI deferred.** RAW: cube is "activated/deactivated by pressing one side." V1 defaults to active while equipped (`field_active: true` on stamp). The item-action surface for manual toggle is a separate UI layer; the consumer reads `field_active` from metadata so the toggle can land without touching the consumer mechanic.
+
+**Interfaces defined or changed:**
+
+- NEW `CubeOfFrostResistanceService` class (`engine/subsystems/inventory/`). Static methods:
+  - `try_absorb_cold(character, incoming_damage: int, damage_type: String) -> Dictionary`
+  - `tick_turn(character) -> Dictionary`
+  - Plus constants: `FLAG_KEY`, `COLLAPSE_THRESHOLD`, `DESTROY_THRESHOLD`, `COLLAPSE_COOLDOWN_TURNS`, `COLD_DAMAGE_TYPE`.
+- `CharacterData.apply_damage(amount, damage_type)` return dict gains 3 new fields: `cube_absorbed: int`, `cube_collapsed: bool`, `cube_destroyed: bool`. Backwards-compatible.
+- NEW SessionRunner method `_on_turn_advanced_for_frost_cube(turns_elapsed) -> void`.
+- NEW SessionRunner Timekeeping subscription in `_ready()`: `turn_advanced` (parallel to existing `round_advanced` for Ring of Regeneration).
+- `has_cube_of_frost_resistance_field` metadata schema extended with 3 runtime-state fields: `field_active: bool`, `cold_damage_this_turn: int`, `collapsed_at_turn: int`. Plus `item_id` (was implicit via source_id parsing; now explicit for the destruction path).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 19 new tests in `tests/test_cube_of_frost_resistance.gd`.
+- 3 new assertions added to `test_cube_of_frost_resistance_sets_flag_with_full_raw_metadata` for the V2 runtime-state fields.
+- Full suite: **410 suites passed / 19 failed** — was 409/19; +1 new suite, net-zero new failures.
+
+**Known issues / V1 limitations:**
+
+- **Bearer-only protection.** RAW intends a 10' cube around the bearer; V1 protects only the bearer themselves. Adjacent allies inside the 10' radius take cold damage normally. Position-based area protection is a separate subsystem (would also benefit Ward against Magic + future positional items).
+- **65°F minimum temperature not modeled.** RAW: "the temperature within this area is always at least 65°F." The project doesn't yet simulate ambient cold environment against exposure. Future cold-environment subsystem can consult the flag.
+- **Press-to-toggle UI deferred.** RAW: "activated/deactivated by pressing one side." V1 defaults to active while equipped. Item-action UI for manual toggle lands as a separate UI follow-up; the consumer mechanic is ready.
+- **Multi-source cube semantics.** V1 assumes one cube per bearer (inventory slot enforces). Multi-source future case (e.g., spell + item granting frost resistance) would need an explicit combinator design.
+- **No event emission on cube state changes.** Collapse + destruction don't fire `EventBus` signals; UI surfaces that want to react would need to poll the flag metadata or land an event-emission pass.
+
+**Next session should:**
+
+1. **Horn of Blasting once-per-turn refactor** — last open consumer mechanic in the active follow-ups list; refactor `default_charges: 1` daily-reset to a turn-reset pattern.
+2. **Ring of Spell Storing** — RAW in hand; net-new item; concrete focused session.
+3. **Tier 1 deferrals triage** (4 items) — Jedidiah subsystem rulings.
+4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 catalog items + future detect spells).
+

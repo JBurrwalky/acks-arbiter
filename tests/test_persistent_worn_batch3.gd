@@ -154,6 +154,13 @@ func test_cube_of_frost_resistance_sets_flag_with_full_raw_metadata() -> void:
 		"collapse_cooldown=1 hour per RAW")
 	check(int(meta.get("destroy_threshold_cold_damage_per_turn", 0)) == 100,
 		"destroy_threshold=100 per RAW")
+	# 2026-06-03 V2 — runtime-state fields wired for the consumer.
+	check(bool(meta.get("field_active", false)) == true,
+		"field_active=true on equip (V1 default; toggle deferred)")
+	check(int(meta.get("cold_damage_this_turn", -1)) == 0,
+		"cold_damage_this_turn=0 on equip (per-turn accumulator)")
+	check(int(meta.get("collapsed_at_turn", 0)) == -1,
+		"collapsed_at_turn=-1 on equip (no collapse history)")
 
 
 func test_cube_clears_on_unequip() -> void:

@@ -123,17 +123,36 @@ extends RefCounted
 ##                  collapses into its portable form and cannot be
 ##                  reactivated for 1 hour. If the field absorbs more
 ##                  than 100 points of cold damage in a turn, the cube
-##                  is destroyed." Metadata: {absorbs_cold_attacks: true,
+##                  is destroyed." Metadata (V2 2026-06-03 wired):
+##                  {item_id, absorbs_cold_attacks: true,
 ##                  min_temperature_f: 65, area_cube_side_feet: 10,
 ##                  collapse_threshold_cold_damage_per_turn: 50,
 ##                  collapse_cooldown_hours: 1,
-##                  destroy_threshold_cold_damage_per_turn: 100}. V1
-##                  simplification — flag is default-active while item
-##                  is_equipped (toggle-press deferred until item-action
-##                  UI lands). Cold-damage absorption + threshold
-##                  tracking defer until cold damage typing is wired.
-##                  All consumers read this flag's metadata when their
-##                  subsystems land.),
+##                  destroy_threshold_cold_damage_per_turn: 100,
+##                  field_active: bool, cold_damage_this_turn: int,
+##                  collapsed_at_turn: int}.
+##                  Consumer wiring (2026-06-03):
+##                    - CharacterData.apply_damage routes cold-typed
+##                      damage through CubeOfFrostResistanceService.try_absorb_cold
+##                      BEFORE the standard resistance pipeline. The
+##                      cube's field absorbs the full incoming amount
+##                      and accumulates `cold_damage_this_turn`.
+##                    - Per RAW thresholds: > 50/turn collapses the field
+##                      (sets field_active=false + collapsed_at_turn);
+##                      > 100/turn destroys the cube (removes inventory
+##                      row + clears the flag).
+##                    - SessionRunner.subscribes to Timekeeping.turn_advanced
+##                      and calls CubeOfFrostResistanceService.tick_turn
+##                      on each bearer — resets per-turn accumulator AND
+##                      reactivates field after COLLAPSE_COOLDOWN_TURNS=6
+##                      turns (= 1 hour at 10 min/turn) since collapse.
+##                  V1 simplifications still in effect:
+##                    - Bearer-only protection (10' area-of-effect for
+##                      adjacent allies is a positional-protection
+##                      follow-up)
+##                    - 65°F minimum temperature documented but not
+##                      modeled (no cold-environment subsystem yet)
+##                    - Press-to-toggle UI deferred (defaults to active)),
 ##               "has_scarab_of_protection" (Scarab of Protection — ACKS
 ##                  Core p.215+ Jedidiah-supplied RAW 2026-06-03: "Silver
 ##                  medallion in the shape of a beetle. The scarab's

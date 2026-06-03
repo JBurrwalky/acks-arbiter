@@ -383,9 +383,30 @@ func is_invisible() -> bool:
 ## Combat methods
 
 func apply_damage(amount: int, damage_type: String = "physical") -> Dictionary:
-	## Applies damage through the full pipeline: resistance -> temp HP -> HP.
+	## Applies damage through the full pipeline:
+	## Cube of Frost Resistance absorb -> resistance -> temp HP -> HP.
 	## Returns { "resisted": int, "temp_hp_absorbed": int, "hp_damage": int,
-	##           "new_hp": int, "is_downed": bool }
+	##           "new_hp": int, "is_downed": bool,
+	##           "cube_absorbed": int, "cube_collapsed": bool, "cube_destroyed": bool }
+	##
+	## Cube of Frost Resistance consumer (2026-06-03): when the target
+	## carries an active has_cube_of_frost_resistance_field flag AND
+	## damage_type == "cold", the cube's field absorbs the full incoming
+	## amount BEFORE the resistance pipeline. The per-turn accumulator
+	## tracks for collapse (>50/turn) and destruction (>100/turn) thresholds
+	## per RAW; SessionRunner ticks the per-turn reset + cooldown
+	## reactivation on Timekeeping.turn_advanced.
+	var cube_absorbed: int = 0
+	var cube_collapsed: bool = false
+	var cube_destroyed: bool = false
+	if damage_type == "cold" and flags != null \
+			and flags.has_flag("has_cube_of_frost_resistance_field"):
+		var cube_result: Dictionary = CubeOfFrostResistanceService.try_absorb_cold(
+			self, amount, damage_type)
+		cube_absorbed = int(cube_result.get("absorbed", 0))
+		cube_collapsed = bool(cube_result.get("collapsed", false))
+		cube_destroyed = bool(cube_result.get("destroyed", false))
+		amount = int(cube_result.get("damage_remaining", amount))
 	var after_resistance := damage_resistances.apply_to_damage(amount, damage_type)
 	var resisted := amount - after_resistance
 	var temp_absorbed := mini(temp_hp, after_resistance)
@@ -398,6 +419,9 @@ func apply_damage(amount: int, damage_type: String = "physical") -> Dictionary:
 		"hp_damage": hp_damage,
 		"new_hp": hp_current,
 		"is_downed": hp_current <= 0,
+		"cube_absorbed": cube_absorbed,
+		"cube_collapsed": cube_collapsed,
+		"cube_destroyed": cube_destroyed,
 	}
 
 

@@ -410,20 +410,39 @@ static func _add_boots_of_traveling_and_springing(character: CharacterData, item
 
 ## Apply Cube of Frost Resistance: sets has_cube_of_frost_resistance_field
 ## flag with full RAW metadata (ACKS Core p.215+, Jedidiah-supplied
-## 2026-06-03). V1 simplification: flag is default-active while item is
-## is_equipped (the press-to-toggle UI is V1-deferred). Cold-damage
-## absorption + threshold tracking (50/turn collapse, 100/turn destroy)
-## defer until cold-damage typing is wired.
+## 2026-06-03). 2026-06-03 V2 wires the cold-damage absorption consumer
+## via CubeOfFrostResistanceService — the flag now carries the runtime
+## state fields the consumer + tick handler read/mutate:
+##   * `field_active: bool` — V1 default true (press-to-toggle deferred)
+##   * `cold_damage_this_turn: int` — per-turn accumulator; reset by
+##     SessionRunner on Timekeeping.turn_advanced
+##   * `collapsed_at_turn: int` — Timekeeping.get_total_turns() at the
+##     time the field collapsed (>50 cumulative cold damage in one turn);
+##     -1 when active
+##   * `item_id` — needed by the destruction path so the inventory row
+##     can be removed when the cube is destroyed (>100 cold damage in
+##     one turn)
+##
+## V1 simplifications (V2 only changes the consumer status):
+##   - Bearer-only protection (10' area protection is a future refinement)
+##   - 65°F minimum temperature is documented; cold-environment subsystem
+##     not yet present
+##   - Press-toggle UI deferred (defaults to active)
 static func _add_cube_of_frost_resistance(character: CharacterData, item_id: String) -> void:
 	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
 	character.flags.set_flag("has_cube_of_frost_resistance_field", source_id, {
 		"source_kind": "worn_magic_item",
+		"item_id": item_id,
 		"absorbs_cold_attacks": true,
 		"min_temperature_f": 65,
 		"area_cube_side_feet": 10,
 		"collapse_threshold_cold_damage_per_turn": 50,
 		"collapse_cooldown_hours": 1,
 		"destroy_threshold_cold_damage_per_turn": 100,
+		# 2026-06-03 V2 runtime-state fields for the consumer:
+		"field_active": true,
+		"cold_damage_this_turn": 0,
+		"collapsed_at_turn": -1,
 	})
 
 

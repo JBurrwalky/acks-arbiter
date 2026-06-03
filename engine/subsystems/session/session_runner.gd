@@ -308,6 +308,12 @@ func _ready() -> void:
 	# gated on hp_current > stops_at_or_below_hp). No-op when no party
 	# is loaded.
 	Timekeeping.round_advanced.connect(_on_round_advanced_for_regeneration)
+	# Cube of Frost Resistance turn-tick consumer (2026-06-03). Per ACKS
+	# Core p.215+ V2 Jedidiah-supplied RAW: per-turn cold damage accumulator
+	# resets at each turn boundary; collapsed-field cooldown reactivates
+	# after 6 turns (= 1 hour). Cheap (one dict mutation per bearer per
+	# turn). No-op when no party is loaded.
+	Timekeeping.turn_advanced.connect(_on_turn_advanced_for_frost_cube)
 
 	# Register all states
 	_register_states()
@@ -1157,6 +1163,29 @@ func _on_round_advanced_for_regeneration(rounds_elapsed: int) -> void:
 		if CampaignRepository != null and CampaignRepository.db != null:
 			CampaignRepository.update_character_hp(cd.id, cd.hp_current)
 		EventBus.hp_changed.emit(cd.id, old_hp, cd.hp_current)
+
+
+## Timekeeping.turn_advanced handler — drives the Cube of Frost Resistance
+## per-turn reset + cooldown reactivation. RAW: collapsed cube cannot be
+## reactivated for 1 hour (= 6 turns at the project's 10 minutes/turn
+## scale). The service handles the cooldown comparison internally;
+## SessionRunner just iterates the party and dispatches.
+##
+## Tick on EVERY turn boundary regardless of whether the field is currently
+## active — the per-turn accumulator needs the reset even when the field
+## is collapsed (so the next turn's damage starts clean once the cube
+## reactivates). Cheap: one dict mutation + one compare per bearer per turn.
+func _on_turn_advanced_for_frost_cube(_turns_elapsed: int) -> void:
+	if _party_data == null:
+		return
+	if _party_data.character_data == null:
+		return
+	for cd: CharacterData in _party_data.character_data:
+		if cd == null or cd.flags == null:
+			continue
+		if not cd.flags.has_flag("has_cube_of_frost_resistance_field"):
+			continue
+		CubeOfFrostResistanceService.tick_turn(cd)
 
 
 ## Compute the party visibility bonus from the live party_data.character_data
