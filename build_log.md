@@ -31570,3 +31570,128 @@ on-tick dispatch.
 4. **Cube / Necklace consumer wires** (cold absorption + gas immunity + breath-without-air) — flag-side metadata sitting ready; wires when each subsystem (cold damage typing, gas-attack resolver, underwater/vacuum exploration) lands.
 5. **Sickened action-selection consumer** — `is_sickened_by_potion` flag is set but action gating still deferred.
 
+
+
+## Session 2026-06-03 — Consumer mechanics polish batch (5 items)
+
+**Task:** Close out as many landed-item consumer follow-ups as the engine permits in one batch. Items in scope: Ring of Regeneration round-tick consumer; Brooch of Shielding spell_key absorption refinement; Heroism / Super-Heroism temp_hp dice roll; Potion of Invulnerability duration dice roll; `is_sickened_by_potion` action gate. Items deferred (blocked by missing subsystems): Cube of Frost Resistance cold absorption (needs cold damage typing); Necklace of Adaptation gas/breath (needs gas resolver + underwater); Scarab curse consumer (needs curse system); Giant Strength damage-multiplier / throw-rocks / +16-force-doors (multi-subsystem); Boots stamina/jump/Acrobatics (needs Acrobatics proficiency + jump subsystem + wilderness fatigue hook); Horn of Blasting once-per-turn refactor (medium scope; defers to its own focused session).
+
+**Model used:** Sonnet 4.6.
+
+**Completed:**
+
+### Sickened-by-potion action gate
+
+- **`engine/subsystems/combat/condition_manager.gd`** — `check_action_allowed` extended with a flag-level prevention block for `is_sickened_by_potion` (mirrors the existing `is_gaseous` Gaseous Form gate from the panic/gaseous_form bow-tie batch). When the flag is set, the combatant cannot perform `attacking`, `casting`, `movement`, `running`, or `charging`. Speech is permitted — RAW "cannot act for 3 turns" reads as volitional / physical action, not communication; party members can still coordinate around their sickened companion.
+
+### Heroism / Super-Heroism temp_hp dice roll
+
+- **`engine/subsystems/inventory/potion_duration_service.gd`** — `apply_combat_level_boost` replaces the deterministic `HIT_DIE_AVERAGE × extra_levels` calculation with a DiceSystem roll. New helper `_roll_heroism_hp(hd_size, extra_levels, item_key)` calls `DiceSystem.roll_digital(hd_size, extra_levels, 0, roll_type)` where `roll_type` is `"heroism_temp_hp"` (Heroism) or `"super_heroism_temp_hp"` (Super-Heroism). Tests force specific rolls via `GameState.dice_overrides[roll_type] = N`. Falls back to the floor-of-mean when DiceSystem is unavailable (defensive — keeps non-runtime test contexts working).
+- New helper `_hit_die_size(hit_die: String) -> int` — parses the integer die size from class definition strings like `"1d8"`. Default 8 for malformed input.
+
+### Potion of Invulnerability duration dice roll
+
+- **`engine/subsystems/inventory/potion_duration_service.gd`** — `apply_invulnerability`'s default duration computation switches from the deterministic 10-turn V1 to an actual 1d6+6 roll. New helper `_roll_invulnerability_duration()` calls `DiceSystem.roll_digital(6, 1, 6, "potion_invulnerability_duration")` and clamps the result to the `[7, 12]` range defensively. Tests force a specific duration via `GameState.dice_overrides["potion_invulnerability_duration"] = N`. The `duration_override_turns` parameter still wins over the dice override for tests that want a specific value without seeding the dice path.
+
+### Brooch of Shielding spell_key refinement
+
+- **`engine/subsystems/spells/casting_resolver.gd`** — `_brooch_absorb` gains an optional `spell_key: String = ""` parameter. When provided AND the brooch's metadata carries a non-empty `absorbs_spell_keys` array, the spell_key MUST appear in the array — otherwise the brooch passes through. When `spell_key` is empty OR the metadata has no `absorbs_spell_keys` array, falls back to the V1 `damage_type == "force"` check (backward-compatible for any future legacy call site).
+- `_apply_damage_per_level` gains an optional `spell_key: String = ""` parameter and forwards it to `_brooch_absorb`. The dispatch in `_resolve_resolution_steps` now passes `spell_choice.spell_key` through.
+- Effect: a future hypothetical force-damage spell like `force_lance` would NOT be absorbed by the brooch — only the spell_keys listed in `absorbs_spell_keys` (V1: `["magic_missile"]`) qualify. Magic missile itself still absorbs through both paths.
+
+### Ring of Regeneration round-tick consumer
+
+- **`engine/subsystems/session/session_runner.gd`**:
+  - `_ready()` subscribes to `Timekeeping.round_advanced` (`_on_round_advanced_for_regeneration(rounds_elapsed)`).
+  - Handler scans `_party_data.character_data` for `has_ring_regeneration` bearers. For each: read `hp_per_round` (default 1) + `stops_at_or_below_hp` (default 0) from flag metadata across all source entries (per-source sum for forward-stackers; max stop-threshold). When `hp_current > stop_threshold` AND `hp_current < hp_max`, increment HP by `hp_per_round × rounds_elapsed`, clamped at `hp_max`. Persists via `CampaignRepository.update_character_hp` when available; emits `EventBus.hp_changed`.
+  - No-ops cleanly when no party loaded, no character_data populated, rounds_elapsed ≤ 0, or DB unavailable (in-memory CharacterData change is still observable).
+
+### Tests
+
+- **`tests/test_combat_condition_manager.gd`** — 6 new tests covering the sickened gate:
+  - `test_sickened_by_potion_blocks_attacking` / `_blocks_casting` / `_blocks_movement` / `_blocks_running_and_charging`
+  - `test_sickened_by_potion_allows_speech` — RAW separation between "act" and communication
+  - `test_no_sickened_flag_allows_all_actions` — regression locks the gate to the flag (plain combatant unaffected)
+  - Plus helper `_make_sickened_fighter(id)` that stamps the flag with full RAW metadata
+- **`tests/test_level_boost_potions.gd`** — 5 new tests covering the dice rolls:
+  - `test_heroism_temp_hp_dice_roll_varies_with_dice_override` — locks the override path (max-roll force → exact 24 temp_hp for L1 fighter +3 levels)
+  - `test_super_heroism_temp_hp_uses_separate_roll_type` — verifies the per-item roll_type ("super_heroism_temp_hp") is separate from Heroism's
+  - `test_invulnerability_duration_uses_dice_roll` — low-bound force (7) → outcome.duration_turns == 7
+  - `test_invulnerability_duration_clamps_to_1d6_plus_6_range` — defensive: override 999 clamps to 12; override -3 clamps to 7
+  - `test_invulnerability_duration_respects_override_param` — `duration_override_turns` parameter wins over dice override
+  - Updated `test_heroism_grants_temp_hp_per_hd_average` to set `GameState.dice_overrides["heroism_temp_hp"] = 12` since the previous fixed-mean assertion no longer holds
+  - Updated `test_invulnerability_cleanup_on_turn_expire` to capture `outcome.duration_turns` and tick that many turns instead of `INVULNERABILITY_DURATION_TURNS_DEFAULT` (which is now only the dice-fallback default)
+- **`tests/test_engine_extension_batch.gd`** — 3 new tests covering the spell_key refinement:
+  - `test_brooch_absorbs_when_spell_key_matches_absorbs_array` — `spell_key="magic_missile"` matches → absorbs
+  - `test_brooch_does_not_absorb_when_spell_key_outside_array` — `spell_key="force_lance"` (hypothetical future force-damage spell not in the array) → passes through
+  - `test_brooch_falls_back_to_damage_type_when_no_spell_key` — empty `spell_key` + `damage_type="force"` → V1 fallback fires (backward-compatibility regression)
+- **`tests/test_session_runner.gd`** — 6 new tests covering Ring of Regeneration:
+  - `test_regeneration_no_party_no_op` (no crash without party)
+  - `test_regeneration_plain_party_no_change` (no ring → no HP change)
+  - `test_regeneration_ring_bearer_heals_one_hp_per_round` (basic +1 hp)
+  - `test_regeneration_clamps_at_hp_max` (already-full → no change; near-full → clamp overshoot)
+  - `test_regeneration_stops_at_zero_hp_per_raw` (0 hp → no regen; <0 hp → no regen; back above 0 → regen resumes)
+  - `test_regeneration_scales_with_rounds_elapsed` (multi-round elapsed → multi-hp grant)
+  - Plus helper `_make_ring_bearer(pc_id, hp_current, hp_max)` that stamps the full RAW metadata
+
+**Decisions made:**
+
+- **Sickened blocks 5 actions, allows speech.** RAW: "cannot act for 3 turns" → volitional / physical action only. Speech is communication. Lets a party coordinate around its incapacitated companion. Matches the spirit of the existing condition catalog (e.g. `paralyzed` blocks movement + attacking but doesn't muzzle the character).
+
+- **Heroism dice roll: `maxi(extra_levels, modified_total)`.** Edge guard — each level grants at least 1 hp even on bad rolls. RAW silent on the floor; project pattern follows the per-level-up HP roll behavior (rolls of 0 are bumped to the level's minimum).
+
+- **Invulnerability duration clamped to `[7, 12]`.** Dice overrides can legitimately produce values inside this range, but extreme overrides (or misconfigured dice mocks) shouldn't break the duration semantics. `1d6+6` math gives `[7, 12]` deterministically; clamp keeps the system honest.
+
+- **Brooch spell_key check is OPT-IN.** Existing call sites that don't pass a spell_key (or pass empty) keep the V1 behavior so the refactor is backward-compatible. Future spell paths that want the precise per-spell gate pass the spell_key. Today only `_apply_damage_per_level` is updated; future fixed-damage force spells can opt in by passing the spell_key when they wire.
+
+- **Ring of Regeneration multi-source sums hp_per_round.** Inventory layer prevents wearing two of the same ring, but a future stack (e.g. ring + Cleric's Regenerate spell) composes cleanly. Stop-threshold takes the MAX across sources — the most-restrictive source wins so a 0-hp stop from the ring still applies even if a future source set a -5 threshold.
+
+- **Round-tick on `Timekeeping.round_advanced`, not on combat-specific signal.** The ring regenerates outside combat too (exploration rounds, downtime, etc.). Combat advances Timekeeping per round, so the combat case is covered automatically. No need for a combat-side hook.
+
+- **Persist on each tick.** Calling `CampaignRepository.update_character_hp(...)` per ring per round is cheap (single UPDATE on a row that's already keyed by id). Skipping persist for in-memory-only would mean a save-then-reload mid-regen would lose progress.
+
+**Interfaces defined or changed:**
+
+- `CombatConditionManager.check_action_allowed(combatant, action)` extended — now consults `is_sickened_by_potion` flag and refuses 5 actions.
+- `CastingResolver._brooch_absorb(target_id, targets_by_id, incoming_damage, damage_type, spell_key="")` — new optional `spell_key` parameter (backward-compatible).
+- `CastingResolver._apply_damage_per_level(step, caster_context, target_descriptor, targets_by_id, save_spec, save_results, spell_key="")` — new optional `spell_key` parameter (backward-compatible).
+- NEW `PotionDurationService._roll_heroism_hp(hd_size, extra_levels, item_key) -> int` (static helper).
+- NEW `PotionDurationService._hit_die_size(hit_die_string) -> int` (static helper).
+- NEW `PotionDurationService._roll_invulnerability_duration() -> int` (static helper).
+- NEW `SessionRunner._on_round_advanced_for_regeneration(rounds_elapsed) -> void`.
+- NEW SessionRunner EventBus / Timekeeping subscription in `_ready()`: `Timekeeping.round_advanced`.
+- NEW dice roll types registered: `heroism_temp_hp`, `super_heroism_temp_hp`, `potion_invulnerability_duration`. Tests override via `GameState.dice_overrides[<type>] = N`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 20 new tests across 4 files (6 condition_manager + 5 level_boost + 3 engine_extension + 6 session_runner).
+- 2 existing tests updated for the dice-roll behavior change (`test_heroism_grants_temp_hp_per_hd_average` + `test_invulnerability_cleanup_on_turn_expire`).
+- Full suite: **409 suites passed / 19 failed** — was 409/19; net-zero new failures.
+
+**Known issues / V1 limitations:**
+
+- **Horn of Blasting once-per-turn refactor still deferred.** Current V1 daily-reset diverges from RAW once-per-turn. Refactor needs a turn-reset trigger parallel to the dawn/daily-reset wiring; medium scope; deferred to its own session.
+- **Brooch detection refinement is OPT-IN only.** The `_apply_damage` fixed-damage path (used by spells like Lightning Bolt) still uses the V1 damage_type=="force" path. No fixed-damage force spell exists in V1, so this is forward-looking; wires when the first such spell lands.
+- **Ring of Regeneration body-part regrowth not wired.** RAW: "Will also regenerate body parts lost to injury — small pieces like fingers take 1 day to grow back; larger pieces such as a limb may take a week." Metadata carries `regrow_small_part_days: 1` + `regrow_limb_days: 7`; the wound system would consume these. Deferred until the wound-system regrowth path lands.
+- **Ring of Regeneration `blocked_damage_types` not consumed.** RAW: "Only damage taken while worn regenerates; damage from acid or fire never regenerates" — would require tagging damage events with their type at apply-time AND tracking per-damage-type pools, which the project doesn't model yet. Metadata carries the array; consumer wires when damage-type tracking lands.
+
+**Items NOT in this batch (consumer follow-ups still open):**
+
+- Cube of Frost Resistance cold absorption / threshold tracking / activation toggle — needs cold damage typing
+- Necklace of Adaptation gas immunity / breath-without-air — needs gas-attack resolver + underwater/vacuum exploration
+- Scarab of Protection curse-system consumer — needs curse system
+- Brooch of Shielding `_apply_damage` fixed-damage path — no fixed-damage force spell exists yet (forward-looking)
+- Girdle / Potion of Giant Strength damage-multiplier / throw-rocks / +16-force-doors — multi-subsystem (damage hook + throw-rocks action + force-doors stat)
+- Boots of Traveling/Springing stamina/jump/Acrobatics — needs Acrobatics proficiency + jump mechanic + wilderness fatigue hook
+- Horn of Blasting once-per-turn reset — refactor scope (separate session)
+- Ring of Regeneration body-part regrowth + blocked_damage_types — needs wound system regrowth + damage-type tracking
+
+**Next session should:**
+
+1. **Horn of Blasting once-per-turn refactor** — cleanest of the still-open consumer follow-ups; isolated scope.
+2. **Ring of Spell Storing** — RAW in hand; net-new item; concrete focused session.
+3. **Tier 1 deferrals triage** (4 items) — Jedidiah subsystem rulings.
+4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 catalog items + future detect spells).
+

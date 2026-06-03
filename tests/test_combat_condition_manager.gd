@@ -16,6 +16,14 @@ func run_all_tests() -> void:
 	test_tick_conditions_decrements_and_expires()
 	test_tick_permanent_never_expires()
 	test_apply_duplicate_is_idempotent()
+	# Sickened-by-potion action gate (2026-06-03; RAW: ACore line 224
+	# "cannot act for 3 turns; neither potion has any other effect").
+	test_sickened_by_potion_blocks_attacking()
+	test_sickened_by_potion_blocks_casting()
+	test_sickened_by_potion_blocks_movement()
+	test_sickened_by_potion_blocks_running_and_charging()
+	test_sickened_by_potion_allows_speech()
+	test_no_sickened_flag_allows_all_actions()
 	if not has_failures():
 		print("CombatConditionManager: all tests passed.")
 
@@ -179,3 +187,77 @@ func _make_fighter(id: String) -> Combatant:
 	cd.armor_class = 0
 	cd.attack_throw = 10
 	return Combatant.from_character(cd)
+
+
+# ---------------------------------------------------------------------------
+# Sickened-by-potion action gate (Tier 4 follow-up, 2026-06-03)
+# ---------------------------------------------------------------------------
+#
+# RAW (ACore general_category_rules.potions line 224): "If a character
+# drinks a second potion while one is active, the character is sickened
+# and cannot act for 3 turns; neither potion has any other effect."
+# PotionDurationService stamps is_sickened_by_potion on the drinker;
+# CombatConditionManager.check_action_allowed refuses attacking, casting,
+# movement, running, and charging while the flag is present. Speech is
+# permitted (RAW "act" reads as volitional / physical action, not
+# communication for tactical coordination).
+
+func _make_sickened_fighter(id: String) -> Combatant:
+	var combatant := _make_fighter(id)
+	combatant._character.flags.set_flag("is_sickened_by_potion",
+		"potion_temporary_sickened:test", {
+			"expires_at_turn": 9999,
+			"source_item_id": "test_new_potion_id",
+			"active_potion_item_id": "test_active_potion_id",
+		})
+	return combatant
+
+
+func test_sickened_by_potion_blocks_attacking() -> void:
+	var mgr := _make_manager()
+	var combatant := _make_sickened_fighter("test")
+	check(mgr.check_action_allowed(combatant, "attacking") == false,
+		"sickened combatant cannot attack")
+
+
+func test_sickened_by_potion_blocks_casting() -> void:
+	var mgr := _make_manager()
+	var combatant := _make_sickened_fighter("test")
+	check(mgr.check_action_allowed(combatant, "casting") == false,
+		"sickened combatant cannot cast")
+
+
+func test_sickened_by_potion_blocks_movement() -> void:
+	var mgr := _make_manager()
+	var combatant := _make_sickened_fighter("test")
+	check(mgr.check_action_allowed(combatant, "movement") == false,
+		"sickened combatant cannot move")
+
+
+func test_sickened_by_potion_blocks_running_and_charging() -> void:
+	var mgr := _make_manager()
+	var combatant := _make_sickened_fighter("test")
+	check(mgr.check_action_allowed(combatant, "running") == false,
+		"sickened combatant cannot run")
+	check(mgr.check_action_allowed(combatant, "charging") == false,
+		"sickened combatant cannot charge")
+
+
+func test_sickened_by_potion_allows_speech() -> void:
+	# RAW: "cannot act for 3 turns" — speech is communication, not action,
+	# so the party can still coordinate around their sickened companion.
+	var mgr := _make_manager()
+	var combatant := _make_sickened_fighter("test")
+	check(mgr.check_action_allowed(combatant, "speech") == true,
+		"sickened combatant can still speak (tactical coordination)")
+
+
+func test_no_sickened_flag_allows_all_actions() -> void:
+	# Regression: a plain combatant (no sickened flag, no conditions)
+	# can perform all the gated actions. Locks the gate to the flag.
+	var mgr := _make_manager()
+	var combatant := _make_fighter("test")
+	for action in ["attacking", "casting", "movement", "running",
+			"charging", "speech"]:
+		check(mgr.check_action_allowed(combatant, action) == true,
+			"plain combatant should be allowed to '%s'" % action)

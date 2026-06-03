@@ -259,14 +259,15 @@ func _get_flags(entity: Variant) -> EntityFlags:
 ## hit 0 ("brooch melts and becomes useless"). When no brooch is
 ## present, returns the input damage unchanged.
 func _brooch_absorb(target_id: String, targets_by_id: Dictionary,
-		incoming_damage: int, damage_type: String) -> Dictionary:
+		incoming_damage: int, damage_type: String,
+		spell_key: String = "") -> Dictionary:
 	var passthrough: Dictionary = {
 		"damage_after_absorption": incoming_damage,
 		"absorbed": 0,
 		"charges_remaining": 0,
 		"destroyed": false,
 	}
-	if damage_type != "force" or incoming_damage <= 0:
+	if incoming_damage <= 0:
 		return passthrough
 	var entity = targets_by_id.get(target_id, null)
 	if entity == null:
@@ -279,6 +280,23 @@ func _brooch_absorb(target_id: String, targets_by_id: Dictionary,
 		return passthrough
 	var entry: Dictionary = entries[0]
 	var meta: Dictionary = entry.get("metadata", {})
+	# Brooch detection refinement (2026-06-03): the original V1 detection
+	# keyed off `damage_type == "force"` alone, which would absorb damage
+	# from any future force-typed spell. V2 also consults the metadata's
+	# `absorbs_spell_keys` array (set by WornMagicEffectResolver to
+	# ["magic_missile"]). When spell_key is provided AND non-empty AND the
+	# metadata has an absorbs_spell_keys array, the spell_key MUST be in
+	# the array — otherwise the brooch passes through. Backwards-compatible:
+	# legacy call sites without spell_key (or with empty string) fall back
+	# to the original damage_type-only check.
+	var absorbs_spell_keys: Array = meta.get("absorbs_spell_keys", [])
+	if not spell_key.is_empty() and not absorbs_spell_keys.is_empty():
+		if not (spell_key in absorbs_spell_keys):
+			return passthrough
+	elif damage_type != "force":
+		# Fallback path (no spell_key passed OR no absorbs_spell_keys
+		# metadata): keep the V1 damage_type=="force" guard.
+		return passthrough
 	var current: int = int(meta.get("charges_remaining", 0))
 	if current <= 0:
 		return passthrough
@@ -451,7 +469,7 @@ func resolve(
 			"damage":
 				outcome = _apply_damage(step, target_descriptor, targets_by_id, save_spec, save_results, attack_hit_targets, caster_context)
 			"damage_per_level":
-				outcome = _apply_damage_per_level(step, caster_context, target_descriptor, targets_by_id, save_spec, save_results)
+				outcome = _apply_damage_per_level(step, caster_context, target_descriptor, targets_by_id, save_spec, save_results, spell_choice.spell_key)
 			"heal":
 				outcome = _apply_heal(step, target_descriptor, targets_by_id, caster_entity, caster_context)
 			"heal_fixed":
@@ -714,7 +732,8 @@ func _apply_damage_per_level(
 		target_descriptor: TargetDescriptor,
 		targets_by_id: Dictionary,
 		save_spec: Dictionary,
-		save_results: Dictionary) -> Dictionary:
+		save_results: Dictionary,
+		spell_key: String = "") -> Dictionary:
 	var dice_per_level := String(step.get("dice_per_level", ""))
 	var damage_type := String(step.get("damage_type", "untyped"))
 	var max_level := int(step.get("max_level", 0))
@@ -751,7 +770,7 @@ func _apply_damage_per_level(
 		# Absorbed damage is consumed from the brooch's charges; target
 		# takes any remainder. When charges hit 0, the inventory row is
 		# removed ("brooch melts and becomes useless").
-		var brooch_result: Dictionary = _brooch_absorb(tid, targets_by_id, total_dmg, damage_type)
+		var brooch_result: Dictionary = _brooch_absorb(tid, targets_by_id, total_dmg, damage_type, spell_key)
 		total_dmg = int(brooch_result.get("damage_after_absorption", total_dmg))
 		_apply_damage_to_target(tid, targets_by_id, total_dmg, damage_type, "spell")
 		var entry: Dictionary = {"applied": true, "amount": total_dmg, "rolls": rolls_log, "saved": saved}

@@ -300,6 +300,14 @@ func _ready() -> void:
 	# spurious renderer refresh). Handlers no-op when no party is loaded.
 	EventBus.inventory_updated.connect(_on_inventory_updated_for_visibility)
 	EventBus.active_party_changed.connect(_on_active_party_changed_for_visibility)
+	# Ring of Regeneration round-tick consumer (2026-06-03). Per ACKS Core
+	# p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates 1 hp per round.
+	# Will not regenerate if reduced to 0 hp or less." The handler scans
+	# the active party for has_ring_regeneration bearers and increments
+	# hp_current by hp_per_round × rounds_elapsed (clamped at hp_max,
+	# gated on hp_current > stops_at_or_below_hp). No-op when no party
+	# is loaded.
+	Timekeeping.round_advanced.connect(_on_round_advanced_for_regeneration)
 
 	# Register all states
 	_register_states()
@@ -1102,6 +1110,53 @@ func _on_inventory_updated_for_visibility(_character_id: String) -> void:
 func _on_active_party_changed_for_visibility(
 		_previous_party_id: String, _new_party_id: String) -> void:
 	_refresh_party_visibility_bonus()
+
+
+## Timekeeping.round_advanced handler — drives the Ring of Regeneration
+## consumer for active-party bearers. RAW: 1 hp per round, never above
+## hp_max, stops while hp_current ≤ stops_at_or_below_hp (default 0).
+## V1 supports multiple rounds_elapsed by multiplying the per-round amount
+## (cheap for the simple +N hp pattern). No-op when no party loaded.
+func _on_round_advanced_for_regeneration(rounds_elapsed: int) -> void:
+	if _party_data == null or rounds_elapsed <= 0:
+		return
+	if _party_data.character_data == null:
+		return
+	for cd: CharacterData in _party_data.character_data:
+		if cd == null or cd.flags == null:
+			continue
+		if not cd.flags.has_flag("has_ring_regeneration"):
+			continue
+		# Per-source scan — multiple rings would in principle stack, but
+		# the inventory layer prevents wearing two of the same ring at
+		# once. We sum hp_per_round across sources for forward-
+		# compatibility (a future "ring + spell" combo would compose).
+		var per_round_total: int = 0
+		var stops_at: int = 0
+		for entry in cd.flags.get_flag_source_entries("has_ring_regeneration"):
+			var meta: Dictionary = entry.get("metadata", {})
+			per_round_total += int(meta.get("hp_per_round", 0))
+			# When multiple sources disagree on stop-threshold, use the
+			# largest (most-restrictive) value — RAW intent is the ring
+			# stops at its specific threshold.
+			stops_at = maxi(stops_at, int(meta.get("stops_at_or_below_hp", 0)))
+		if per_round_total <= 0:
+			continue
+		if cd.hp_current <= stops_at:
+			continue
+		if cd.hp_current >= cd.hp_max:
+			continue
+		var amount: int = per_round_total * rounds_elapsed
+		var old_hp: int = cd.hp_current
+		cd.hp_current = mini(cd.hp_current + amount, cd.hp_max)
+		if cd.hp_current == old_hp:
+			continue
+		# Persist if the campaign DB is available; in unit-test contexts
+		# the autoload may not be wired (the in-memory CharacterData
+		# change is still observable).
+		if CampaignRepository != null and CampaignRepository.db != null:
+			CampaignRepository.update_character_hp(cd.id, cd.hp_current)
+		EventBus.hp_changed.emit(cd.id, old_hp, cd.hp_current)
 
 
 ## Compute the party visibility bonus from the live party_data.character_data

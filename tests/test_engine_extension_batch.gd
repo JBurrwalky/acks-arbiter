@@ -37,6 +37,12 @@ func run_all_tests() -> void:
 	test_brooch_absorbs_force_damage_in_damage_per_level()
 	test_brooch_partial_absorption_when_damage_exceeds_charges()
 	test_brooch_ignores_non_force_damage()
+	# 2026-06-03 V2 — spell_key refinement (consumer takes spell_key arg and
+	# consults metadata.absorbs_spell_keys, with damage_type=="force" as
+	# the backward-compat fallback).
+	test_brooch_absorbs_when_spell_key_matches_absorbs_array()
+	test_brooch_does_not_absorb_when_spell_key_outside_array()
+	test_brooch_falls_back_to_damage_type_when_no_spell_key()
 	test_brooch_at_zero_charges_does_not_absorb()
 	# ThiefSkillResolver consumer
 	test_thief_skill_resolver_reads_magical_bonus()
@@ -279,6 +285,62 @@ func test_brooch_at_zero_charges_does_not_absorb() -> void:
 		"exhausted brooch does not absorb")
 	check(int(result.get("damage_after_absorption", -1)) == 10,
 		"target takes full damage when brooch exhausted")
+
+
+# ---------------------------------------------------------------------------
+# Brooch spell_key refinement tests (2026-06-03)
+# ---------------------------------------------------------------------------
+#
+# V1 detection keyed off `damage_type == "force"` alone — which would
+# absorb damage from any future force-typed spell, not just magic missile.
+# V2 adds an explicit spell_key check against metadata.absorbs_spell_keys
+# (currently ["magic_missile"]); when the caller provides a non-empty
+# spell_key AND the metadata has an absorbs_spell_keys array, the
+# spell_key MUST appear in the array. Backwards-compatible: a call site
+# without spell_key (empty default) keeps the V1 damage_type=="force"
+# behavior.
+
+func test_brooch_absorbs_when_spell_key_matches_absorbs_array() -> void:
+	var r := _make_resolver()
+	var tgt := _BroochTarget.new(); tgt.id = "brooch_v2_match"
+	_stamp_brooch(tgt, 50)
+	# spell_key="magic_missile" matches metadata.absorbs_spell_keys
+	# (["magic_missile"]) → brooch absorbs even if damage_type is something
+	# unexpected (the array is the authoritative gate when spell_key passed).
+	var result: Dictionary = r._brooch_absorb(
+		tgt.id, {tgt.id: tgt}, 10, "force", "magic_missile")
+	check(int(result.get("absorbed", 0)) == 10,
+		"brooch absorbs when spell_key matches absorbs_spell_keys array")
+
+
+func test_brooch_does_not_absorb_when_spell_key_outside_array() -> void:
+	var r := _make_resolver()
+	var tgt := _BroochTarget.new(); tgt.id = "brooch_v2_other"
+	_stamp_brooch(tgt, 50)
+	# A future hypothetical force-damage spell ("force_lance") shouldn't be
+	# absorbed by the brooch — only magic_missile is in absorbs_spell_keys.
+	# Pre-V2 this would have been absorbed (damage_type=="force").
+	var result: Dictionary = r._brooch_absorb(
+		tgt.id, {tgt.id: tgt}, 10, "force", "force_lance")
+	check(int(result.get("absorbed", 0)) == 0,
+		"brooch ignores force-typed non-magic_missile spell")
+	check(int(result.get("damage_after_absorption", -1)) == 10,
+		"target takes full 10 damage (no absorption)")
+
+
+func test_brooch_falls_back_to_damage_type_when_no_spell_key() -> void:
+	# Legacy call sites that haven't been updated to pass spell_key (or
+	# call from the `_apply_damage` fixed-damage path that doesn't have a
+	# clean spell_key context) keep the V1 damage_type=="force" behavior.
+	# Regression: existing magic_missile-style flows must still absorb.
+	var r := _make_resolver()
+	var tgt := _BroochTarget.new(); tgt.id = "brooch_v2_legacy"
+	_stamp_brooch(tgt, 50)
+	# Empty spell_key (default) + damage_type="force" → V1 fallback fires.
+	var result: Dictionary = r._brooch_absorb(
+		tgt.id, {tgt.id: tgt}, 10, "force", "")
+	check(int(result.get("absorbed", 0)) == 10,
+		"backward-compat fallback absorbs force damage with empty spell_key")
 
 
 # ---------------------------------------------------------------------------

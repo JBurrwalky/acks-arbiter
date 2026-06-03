@@ -60,6 +60,14 @@ func run_all_tests() -> void:
 	test_active_party_changed_signal_handler_refreshes_bonus()
 	test_end_session_resets_visibility_bonus()
 
+	# Ring of Regeneration round-tick (2026-06-03)
+	test_regeneration_no_party_no_op()
+	test_regeneration_plain_party_no_change()
+	test_regeneration_ring_bearer_heals_one_hp_per_round()
+	test_regeneration_clamps_at_hp_max()
+	test_regeneration_stops_at_zero_hp_per_raw()
+	test_regeneration_scales_with_rounds_elapsed()
+
 	if not has_failures():
 		print("SessionRunner: all tests passed.")
 
@@ -622,3 +630,128 @@ func test_end_session_resets_visibility_bonus() -> void:
 	runner._hex_controller.free()
 	_reset_game_state()
 	print("  end_session_resets_visibility_bonus: OK")
+
+
+# ---------------------------------------------------------------------------
+# Ring of Regeneration round-tick consumer (2026-06-03)
+# ---------------------------------------------------------------------------
+#
+# Per ACKS Core p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates 1 hp
+# per round. Will not regenerate if reduced to 0 hp or less." SessionRunner
+# subscribes to Timekeeping.round_advanced and scans party_data.character_data
+# for has_ring_regeneration bearers, granting hp_per_round × rounds_elapsed
+# hp (clamped at hp_max, gated on hp_current > stops_at_or_below_hp).
+
+func _make_ring_bearer(pc_id: String, hp_current: int, hp_max: int) -> CharacterData:
+	var cd := CharacterData.new()
+	cd.id = pc_id
+	cd.name = "Ring Bearer " + pc_id
+	cd.character_class = "fighter"
+	cd.combat_progression = "fighter"
+	cd.level = 1
+	cd.hp_max = hp_max
+	cd.hp_current = hp_current
+	cd.flags.set_flag("has_ring_regeneration", "worn_magic:ring_test", {
+		"source_kind": "worn_magic_item",
+		"hp_per_round": 1,
+		"blocked_damage_types": ["acid", "fire"],
+		"stops_at_or_below_hp": 0,
+		"regrow_small_part_days": 1,
+		"regrow_limb_days": 7,
+		"only_damage_taken_while_worn": true,
+	})
+	return cd
+
+
+func test_regeneration_no_party_no_op() -> void:
+	# Handler with no party loaded shouldn't crash.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = null
+	runner._on_round_advanced_for_regeneration(1)  # no-op
+	check(true, "no-party handler does not crash")
+	runner._hex_controller.free()
+	print("  regeneration_no_party_no_op: OK")
+
+
+func test_regeneration_plain_party_no_change() -> void:
+	# Party with no ring bearers should see no HP change.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	var plain := _make_plain_pc("plain_a")
+	plain.hp_current = 5
+	plain.hp_max = 10
+	runner._party_data.character_data = [plain]
+	runner._on_round_advanced_for_regeneration(1)
+	check(plain.hp_current == 5,
+		"plain PC hp_current unchanged by tick (5 → 5); got %d" % plain.hp_current)
+	runner._hex_controller.free()
+	print("  regeneration_plain_party_no_change: OK")
+
+
+func test_regeneration_ring_bearer_heals_one_hp_per_round() -> void:
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	var bearer := _make_ring_bearer("bearer_a", 5, 10)
+	runner._party_data.character_data = [bearer]
+	runner._on_round_advanced_for_regeneration(1)
+	check(bearer.hp_current == 6,
+		"ring bearer gains 1 hp per round (5 → 6); got %d" % bearer.hp_current)
+	runner._hex_controller.free()
+	print("  regeneration_ring_bearer_heals_one_hp_per_round: OK")
+
+
+func test_regeneration_clamps_at_hp_max() -> void:
+	# Already at full → no further regen.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	var bearer := _make_ring_bearer("bearer_b", 10, 10)
+	runner._party_data.character_data = [bearer]
+	runner._on_round_advanced_for_regeneration(1)
+	check(bearer.hp_current == 10,
+		"hp_current stays at hp_max (10); got %d" % bearer.hp_current)
+	# Near-full → only clamps the overshoot.
+	bearer.hp_current = 9
+	runner._on_round_advanced_for_regeneration(5)  # would gain 5 → clamp at 10
+	check(bearer.hp_current == 10,
+		"5 rounds elapsed from 9 hp clamps at hp_max=10; got %d"
+			% bearer.hp_current)
+	runner._hex_controller.free()
+	print("  regeneration_clamps_at_hp_max: OK")
+
+
+func test_regeneration_stops_at_zero_hp_per_raw() -> void:
+	# RAW: "Will not regenerate if reduced to 0 hp or less." Stop threshold
+	# default is 0; bearer at exactly 0 OR below should NOT regenerate.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	var bearer := _make_ring_bearer("bearer_c", 0, 10)
+	runner._party_data.character_data = [bearer]
+	runner._on_round_advanced_for_regeneration(1)
+	check(bearer.hp_current == 0,
+		"bearer at 0 hp does NOT regenerate; got %d" % bearer.hp_current)
+	bearer.hp_current = -3  # mortally wounded
+	runner._on_round_advanced_for_regeneration(1)
+	check(bearer.hp_current == -3,
+		"bearer below 0 hp does NOT regenerate (mortal-wounds territory); got %d"
+			% bearer.hp_current)
+	# Once above 0, regen resumes.
+	bearer.hp_current = 1
+	runner._on_round_advanced_for_regeneration(1)
+	check(bearer.hp_current == 2,
+		"bearer above stop_threshold resumes regen (1 → 2); got %d"
+			% bearer.hp_current)
+	runner._hex_controller.free()
+	print("  regeneration_stops_at_zero_hp_per_raw: OK")
+
+
+func test_regeneration_scales_with_rounds_elapsed() -> void:
+	# Multi-round elapsed → grants hp_per_round × rounds_elapsed.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	var bearer := _make_ring_bearer("bearer_d", 1, 100)
+	runner._party_data.character_data = [bearer]
+	runner._on_round_advanced_for_regeneration(7)
+	check(bearer.hp_current == 8,
+		"7 rounds elapsed from 1 hp → 1+7=8; got %d" % bearer.hp_current)
+	runner._hex_controller.free()
+	print("  regeneration_scales_with_rounds_elapsed: OK")

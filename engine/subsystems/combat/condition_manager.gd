@@ -108,16 +108,29 @@ func remove_condition(
 ## flowing past obstacles); speech, running, charging are also
 ## permitted (V1 — running/charging while gaseous is degenerate; no RAW
 ## constraint other than the 30'/round movement cap).
+##
+## Sickened-by-potion gate (2026-06-03): the `is_sickened_by_potion` flag
+## (set by PotionDurationService when a second potion is drunk while one
+## is active, per ACore general_category_rules.potions: "cannot act for
+## 3 turns") refuses attacking, casting, movement, running, and charging.
+## Speech is permitted (RAW only forbids "acting" — the natural reading
+## is volitional / physical action; communication is allowed for tactical
+## coordination by other party members).
 func check_action_allowed(combatant: Combatant, action: String) -> bool:
 	for condition_key: String in combatant.conditions:
 		if _catalog.prevents_action(condition_key, action):
 			return false
-	# Gaseous Form flag-level prevention.
+	# Flag-level prevention.
 	var f: EntityFlags = combatant.get_flags()
-	if f != null and f.has_flag("is_gaseous"):
-		match action:
-			"attacking", "casting":
-				return false
+	if f != null:
+		if f.has_flag("is_gaseous"):
+			match action:
+				"attacking", "casting":
+					return false
+		if f.has_flag("is_sickened_by_potion"):
+			match action:
+				"attacking", "casting", "movement", "running", "charging":
+					return false
 	return true
 
 

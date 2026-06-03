@@ -332,11 +332,18 @@ static func apply_combat_level_boost(
 	for sk in ["petrification", "poison_death", "blast_breath", "staffs_wands", "spells"]:
 		save_deltas[sk] = int(boosted_saves.get(sk, 0)) - int(current_saves.get(sk, 0))
 
-	# Compute temp_hp from hit_die_average × extra_levels.
+	# Compute temp_hp by rolling the drinker's class hit_die × extra_levels.
+	# RAW (Heroism / Super-Heroism): "Extra levels and their accompanied
+	# benefits to combat are temporarily granted..." includes per-level hp
+	# (the table's level grant scales hit dice). 2026-06-03 V2 rolls the
+	# dice instead of using the deterministic floor-of-mean — matches the
+	# project's per-level-up HP roll behavior. Falls back to the
+	# HIT_DIE_AVERAGE constant when DiceSystem is unavailable (unit-test
+	# contexts where the autoload isn't booted).
 	var class_def: Dictionary = class_registry.get_class_def(class_id)
 	var hit_die: String = str(class_def.get("hit_die", "1d8"))
-	var hd_average: int = int(HIT_DIE_AVERAGE.get(hit_die, 4))
-	var temp_hp_granted: int = hd_average * extra_levels
+	var hd_size: int = _hit_die_size(hit_die)
+	var temp_hp_granted: int = _roll_heroism_hp(hd_size, extra_levels, item_key)
 
 	var source_id := "%s%s" % [SOURCE_PREFIX, item_id]
 	var current_turn: int = _safe_get_total_turns()
@@ -608,8 +615,14 @@ static func apply_invulnerability(
 	# target). Likewise the inversion -2 PENALTY adds +2 to save targets.
 	var save_modifier_value: int = -save_delta  # ACKS lower-is-better axis
 
+	# Duration: 1d6+6 turns per ACore general_category_rules.potions default.
+	# 2026-06-03 V2 replaces the deterministic 10-turn V1 with an actual
+	# DiceSystem roll so duration varies (7-13 turns range, expected 9.5).
+	# Tests can override via `duration_override_turns` or via
+	# GameState.dice_overrides["potion_invulnerability_duration"] before
+	# calling apply_invulnerability.
 	var duration_turns: int = (duration_override_turns if duration_override_turns > 0
-		else INVULNERABILITY_DURATION_TURNS_DEFAULT)
+		else _roll_invulnerability_duration())
 	var expires_at_turn: int = current_turn + duration_turns
 
 	var source_id := "%s%s" % [SOURCE_PREFIX, item_id]
@@ -717,3 +730,58 @@ static func _safe_get_total_turns() -> int:
 ## Reads Timekeeping.get_total_days(). See `_safe_get_total_turns`.
 static func _safe_get_total_days() -> int:
 	return Timekeeping.get_total_days()
+
+
+## Parses the integer die size out of a hit_die string like "1d8" → 8.
+## Defaults to 8 (Fighter d8) when the input doesn't match the expected
+## "1dN" / "Nd<size>" form.
+static func _hit_die_size(hit_die: String) -> int:
+	var idx: int = hit_die.find("d")
+	if idx < 0 or idx == hit_die.length() - 1:
+		return 8
+	var tail: String = hit_die.substr(idx + 1)
+	if not tail.is_valid_int():
+		return 8
+	return maxi(1, int(tail))
+
+
+## Rolls Heroism / Super-Heroism temp_hp = N × hit_die where N =
+## extra_levels. Uses DiceSystem when available so the per-level variance
+## matches the project's per-level-up HP roll behavior. Roll type is
+## "heroism_temp_hp" / "super_heroism_temp_hp" so tests can override via
+## GameState.dice_overrides without disturbing other rolls.
+##
+## Fallback to HIT_DIE_AVERAGE × extra_levels when DiceSystem is null
+## (defensive — keeps tests that mock at a higher layer working).
+static func _roll_heroism_hp(hd_size: int, extra_levels: int, item_key: String) -> int:
+	if extra_levels <= 0:
+		return 0
+	var roll_type: String = "heroism_temp_hp"
+	if item_key == "potion_of_super_heroism":
+		roll_type = "super_heroism_temp_hp"
+	if typeof(DiceSystem) == TYPE_NIL or not DiceSystem.has_method("roll_digital"):
+		# Fallback to the floor-of-mean.
+		var avg_key: String = "1d%d" % hd_size
+		var avg: int = int(HIT_DIE_AVERAGE.get(avg_key, hd_size / 2))
+		return avg * extra_levels
+	var roll: RollResult = DiceSystem.roll_digital(
+		hd_size, extra_levels, 0, roll_type)
+	if roll == null:
+		return (hd_size / 2 + 1) * extra_levels  # rounded-up mean fallback
+	return maxi(extra_levels, int(roll.modified_total))
+
+
+## Rolls 1d6+6 for the Invulnerability duration (RAW: ACore default for
+## potions without a specific duration listed). Roll type is
+## "potion_invulnerability_duration" so tests can override via
+## GameState.dice_overrides. Falls back to
+## INVULNERABILITY_DURATION_TURNS_DEFAULT when DiceSystem is null.
+static func _roll_invulnerability_duration() -> int:
+	if typeof(DiceSystem) == TYPE_NIL or not DiceSystem.has_method("roll_digital"):
+		return INVULNERABILITY_DURATION_TURNS_DEFAULT
+	var roll: RollResult = DiceSystem.roll_digital(
+		6, 1, 6, "potion_invulnerability_duration")
+	if roll == null:
+		return INVULNERABILITY_DURATION_TURNS_DEFAULT
+	# Clamp to the 1d6+6 range [7, 12] defensively.
+	return clampi(int(roll.modified_total), 7, 12)

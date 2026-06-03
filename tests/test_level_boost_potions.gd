@@ -131,6 +131,8 @@ func run_all_tests() -> void:
 	test_heroism_applies_attack_throw_delta_on_fighter()
 	test_heroism_applies_save_deltas_on_fighter()
 	test_heroism_grants_temp_hp_per_hd_average()
+	test_heroism_temp_hp_dice_roll_varies_with_dice_override()
+	test_super_heroism_temp_hp_uses_separate_roll_type()
 	test_heroism_sets_has_active_potion_flag()
 	test_heroism_refused_for_non_fighter_progression()
 	test_heroism_refused_at_high_level()
@@ -141,6 +143,9 @@ func run_all_tests() -> void:
 	test_giant_strength_no_class_restriction()
 	# PotionDurationService — apply_invulnerability
 	test_invulnerability_first_quaff_applies_bonus()
+	test_invulnerability_duration_uses_dice_roll()
+	test_invulnerability_duration_clamps_to_1d6_plus_6_range()
+	test_invulnerability_duration_respects_override_param()
 	test_invulnerability_second_quaff_within_week_inverts()
 	test_invulnerability_quaff_after_week_normal()
 	test_invulnerability_updates_last_quaff_day_flag()
@@ -363,7 +368,13 @@ func test_heroism_applies_save_deltas_on_fighter() -> void:
 
 
 func test_heroism_grants_temp_hp_per_hd_average() -> void:
-	# Fighter hit_die="1d8" → average=4. L1 +3 levels = 4*3 = 12 temp_hp.
+	# 2026-06-03 V2: Heroism temp_hp = roll(N × hit_die) instead of
+	# deterministic average. Tests force the DiceSystem roll via
+	# GameState.dice_overrides["heroism_temp_hp"] so the assertion is
+	# stable. The mock sets each die to its mid-roll value: d8 mid = 4
+	# (post-modifier total), so L1 fighter +3 levels with override
+	# = exactly 3 × 4 = 12.
+	GameState.dice_overrides["heroism_temp_hp"] = 12
 	var cd := _make_drinker("fighter", "fighter", 1)
 	check(cd.temp_hp == 0, "baseline temp_hp=0")
 	var reg := _make_class_registry()
@@ -371,12 +382,49 @@ func test_heroism_grants_temp_hp_per_hd_average() -> void:
 	var outcome: Dictionary = PotionDurationService.apply_combat_level_boost(
 		cd, "potion_heroism_item_id", "potion_of_heroism", reg, tr)
 	check(int(outcome.get("temp_hp_granted", 0)) == 12,
-		"L1 fighter (d8) +3 levels = 4×3 = 12 temp_hp; got %d"
+		"L1 fighter (d8) +3 levels, forced d8 mid roll = 12 temp_hp; got %d"
 			% int(outcome.get("temp_hp_granted", 0)))
 	check(cd.temp_hp == 12, "drinker.temp_hp set to 12; got %d" % cd.temp_hp)
+	GameState.dice_overrides.erase("heroism_temp_hp")
+
+
+func test_heroism_temp_hp_dice_roll_varies_with_dice_override() -> void:
+	# Lock the d8 roll high to verify the override path actually drives
+	# the value (regression against silent fallback to the average).
+	GameState.dice_overrides["heroism_temp_hp"] = 24  # max per L1 fighter +3
+	var cd := _make_drinker("fighter", "fighter", 1)
+	var reg := _make_class_registry()
+	var tr := ActiveEffectTracker.new()
+	var outcome: Dictionary = PotionDurationService.apply_combat_level_boost(
+		cd, "potion_heroism_item_id", "potion_of_heroism", reg, tr)
+	check(int(outcome.get("temp_hp_granted", 0)) == 24,
+		"forced max roll → 24 temp_hp; got %d"
+			% int(outcome.get("temp_hp_granted", 0)))
+	check(cd.temp_hp == 24, "drinker.temp_hp matches roll")
+	GameState.dice_overrides.erase("heroism_temp_hp")
+
+
+func test_super_heroism_temp_hp_uses_separate_roll_type() -> void:
+	# super-heroism rolls "super_heroism_temp_hp" so test overrides don't
+	# accidentally swap between item types.
+	GameState.dice_overrides["super_heroism_temp_hp"] = 18
+	GameState.dice_overrides["heroism_temp_hp"] = 999  # MUST NOT be used
+	var cd := _make_drinker("fighter", "fighter", 1)
+	var reg := _make_class_registry()
+	var tr := ActiveEffectTracker.new()
+	var outcome: Dictionary = PotionDurationService.apply_combat_level_boost(
+		cd, "potion_sh_id", "potion_of_super_heroism", reg, tr)
+	check(int(outcome.get("temp_hp_granted", 0)) == 18,
+		"super-heroism temp_hp uses super_heroism_temp_hp roll; got %d"
+			% int(outcome.get("temp_hp_granted", 0)))
+	GameState.dice_overrides.erase("super_heroism_temp_hp")
+	GameState.dice_overrides.erase("heroism_temp_hp")
 
 
 func test_heroism_sets_has_active_potion_flag() -> void:
+	# Force the V2 heroism_temp_hp dice roll so the applied_temp_hp
+	# metadata assertion below is stable.
+	GameState.dice_overrides["heroism_temp_hp"] = 12
 	var cd := _make_drinker("fighter", "fighter", 1)
 	var reg := _make_class_registry()
 	var tr := ActiveEffectTracker.new()
@@ -391,6 +439,7 @@ func test_heroism_sets_has_active_potion_flag() -> void:
 		"metadata.effect_kind=temp_combat_levels")
 	check(int(meta.get("extra_levels", 0)) == 3, "metadata.extra_levels=3")
 	check(int(meta.get("applied_temp_hp", 0)) == 12, "metadata.applied_temp_hp=12")
+	GameState.dice_overrides.erase("heroism_temp_hp")
 
 
 func test_heroism_refused_for_non_fighter_progression() -> void:
@@ -510,6 +559,64 @@ func test_invulnerability_first_quaff_applies_bonus() -> void:
 	# Effective save_spells = base 17 - 2 = 15 (lower = better).
 	check(cd.get_effective_save("save_spells") == 15,
 		"effective save_spells = 17-2 = 15 (lower=better)")
+
+
+func test_invulnerability_duration_uses_dice_roll() -> void:
+	# 2026-06-03 V2: duration_turns from DiceSystem 1d6+6 roll instead of
+	# deterministic 10-turn V1 constant. Test forces the roll to 7 (low
+	# bound) and verifies the outcome reflects it.
+	Timekeeping._on_session_ended()
+	GameState.dice_overrides["potion_invulnerability_duration"] = 7
+	var cd := _make_drinker("fighter", "fighter", 5)
+	var tr := ActiveEffectTracker.new()
+	var outcome: Dictionary = PotionDurationService.apply_invulnerability(
+		cd, "inv_low_id", "potion_of_invulnerability", tr)
+	check(int(outcome.get("duration_turns", 0)) == 7,
+		"forced 1d6+6 = 7 → duration_turns=7; got %d"
+			% int(outcome.get("duration_turns", 0)))
+	GameState.dice_overrides.erase("potion_invulnerability_duration")
+
+
+func test_invulnerability_duration_clamps_to_1d6_plus_6_range() -> void:
+	# Defensive: a misconfigured dice override outside [7, 12] is clamped
+	# to the 1d6+6 range. RAW: "1d6+6 turns" → 7-12 turn range.
+	Timekeeping._on_session_ended()
+	var cd := _make_drinker("fighter", "fighter", 5)
+	var tr := ActiveEffectTracker.new()
+	GameState.dice_overrides["potion_invulnerability_duration"] = 999
+	var hi_outcome: Dictionary = PotionDurationService.apply_invulnerability(
+		cd, "inv_hi_id", "potion_of_invulnerability", tr)
+	check(int(hi_outcome.get("duration_turns", 0)) == 12,
+		"override 999 clamped to 12 (1d6+6 max); got %d"
+			% int(hi_outcome.get("duration_turns", 0)))
+	GameState.dice_overrides["potion_invulnerability_duration"] = -3
+	# Clear the active potion so a second quaff isn't gated by the first.
+	cd.flags.clear_all_from_source_prefix(PotionDurationService.SOURCE_PREFIX)
+	cd.modifiers.remove_all_from_source("%sinv_hi_id" % PotionDurationService.SOURCE_PREFIX)
+	var lo_outcome: Dictionary = PotionDurationService.apply_invulnerability(
+		cd, "inv_lo_id", "potion_of_invulnerability", tr)
+	check(int(lo_outcome.get("duration_turns", 0)) == 7,
+		"override -3 clamped to 7 (1d6+6 min); got %d"
+			% int(lo_outcome.get("duration_turns", 0)))
+	GameState.dice_overrides.erase("potion_invulnerability_duration")
+
+
+func test_invulnerability_duration_respects_override_param() -> void:
+	# When the apply_invulnerability call passes duration_override_turns,
+	# the override BYPASSES the dice roll entirely. Used by tests that
+	# need a specific duration without seeding the dice overrides.
+	Timekeeping._on_session_ended()
+	var cd := _make_drinker("fighter", "fighter", 5)
+	var tr := ActiveEffectTracker.new()
+	# Dice override would normally drive the duration — verify the param
+	# wins.
+	GameState.dice_overrides["potion_invulnerability_duration"] = 12
+	var outcome: Dictionary = PotionDurationService.apply_invulnerability(
+		cd, "inv_param_id", "potion_of_invulnerability", tr, 20)
+	check(int(outcome.get("duration_turns", 0)) == 20,
+		"duration_override_turns=20 wins over dice override; got %d"
+			% int(outcome.get("duration_turns", 0)))
+	GameState.dice_overrides.erase("potion_invulnerability_duration")
 
 
 func test_invulnerability_second_quaff_within_week_inverts() -> void:
@@ -788,6 +895,9 @@ func test_heroism_cleanup_on_day_expire() -> void:
 	# (bound to resolver._on_tracker_removed_effect) is invalidated when
 	# the resolver is RefCounted-freed. Production code holds the resolver
 	# persistently on SessionRunner, so this isn't a production concern.
+	# Force the V2 heroism_temp_hp roll to a known value so the temp_hp
+	# assertion below is stable (V2 rolls 3d8 for L1 fighter +3 levels).
+	GameState.dice_overrides["heroism_temp_hp"] = 12
 	Timekeeping._on_session_ended()
 	var cd := _make_drinker("fighter", "fighter", 1)
 	var tr := ActiveEffectTracker.new()
@@ -809,6 +919,7 @@ func test_heroism_cleanup_on_day_expire() -> void:
 		"temp_hp deducted on cleanup; should be 0 again, got %d" % cd.temp_hp)
 	check(not cd.flags.has_flag("has_active_potion"),
 		"has_active_potion flag cleared after expire")
+	GameState.dice_overrides.erase("heroism_temp_hp")
 
 
 func test_giant_strength_cleanup_on_turn_expire() -> void:
@@ -831,15 +942,21 @@ func test_giant_strength_cleanup_on_turn_expire() -> void:
 
 func test_invulnerability_cleanup_on_turn_expire() -> void:
 	Timekeeping._on_session_ended()
+	# Force the 2026-06-03 V2 duration dice roll to a known value so the
+	# tick_turns call below matches the actual rolled duration. Without
+	# the override, apply_invulnerability rolls 1d6+6 (7-13 turns).
+	GameState.dice_overrides["potion_invulnerability_duration"] = 10
 	var cd := _make_drinker("thief", "thief", 5)
 	var tr := ActiveEffectTracker.new()
 	var resolver: CastingResolver = _wire_resolver_with_tracker(tr, cd)
 	assert(resolver != null)  # keep resolver alive across tick
-	PotionDurationService.apply_invulnerability(
+	var outcome: Dictionary = PotionDurationService.apply_invulnerability(
 		cd, "potion_inv_item_id", "potion_of_invulnerability", tr)
+	check(int(outcome.get("duration_turns", 0)) == 10,
+		"forced dice override → duration_turns=10")
 	check(cd.modifiers.get_effective_value("armor_class", cd.armor_class) == 7,
 		"AC active during invulnerability")
-	tr.tick_turns(PotionDurationService.INVULNERABILITY_DURATION_TURNS_DEFAULT)
+	tr.tick_turns(int(outcome.get("duration_turns", 0)))
 	check(cd.modifiers.get_effective_value("armor_class", cd.armor_class) == 5,
 		"AC modifier swept; back to base 5")
 	check(cd.get_effective_save("save_spells") == 17,
@@ -850,6 +967,7 @@ func test_invulnerability_cleanup_on_turn_expire() -> void:
 	# (it's a long-term tracker, not part of the duration unwind).
 	check(cd.flags.has_flag("last_invulnerability_quaff_day"),
 		"last_invulnerability_quaff_day tracker remains after duration expires")
+	GameState.dice_overrides.erase("potion_invulnerability_duration")
 
 
 # ---------------------------------------------------------------------------
