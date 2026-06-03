@@ -30687,3 +30687,105 @@ Each binding: `target_mode: "single_target"` (caller designates summon cell with
 5. **Crystal Ball trio (3 items)** — scrying UI subsystem.
 6. **Multi-effect staves (5 items)** — each its own resolver.
 
+
+
+## Session 2026-06-03 — Scrolls of Warding RAW alignment refactor
+
+**Task:** Replace the Jedidiah 2026-06-02 V1 ruling (Protection-from-Evil scaled up with per-attacker save-vs-Spells cancel) with the actual RAW from `acore_treasure_and_magic_items_rules.xml:268-272`. The RAW gap was surfaced during the Tier 4 sweep on 2026-06-02 — the corpus DOES have explicit text for Scroll of Warding that's meaningfully different from what we shipped. Jedidiah ruling 2026-06-03: align to RAW.
+**Model used:** Sonnet 4.6.
+
+**RAW (canonical):**
+
+> "Any literate character can use it. Reading it creates a 10' radius protective barrier centered on the reader. The barrier moves with the reader. Protected creatures cannot enter but can still attack with missiles or spells. The protection lasts until dismissed or until anyone inside the area attempts melee against a protected creature type."
+
+**Key differences from the shipped V1:**
+
+| Aspect | Shipped V1 (Jedidiah 2026-06-02) | Actual RAW (this commit) |
+|---|---|---|
+| What's blocked | All attacks (per-attacker save vs Spells) | ENTRY only |
+| Attacks from outside | Cancelled on save fail | Missiles + spells STILL HIT |
+| Save mechanic | Per-attacker save | NONE (entry block is absolute) |
+| Duration | Fixed 1 turn × CL | "Until dismissed OR bearer-melee-out" |
+| Bearer dismissal | None | Bearer melee at warded type → ward cleared |
+| Magic ward | Bidirectional spell-cross block | Same entry-block, creature_type="magic" |
+
+**Completed:**
+
+- **`engine/shared_types/entity_flags.gd`** — `warded_against_creature_type` documentation re-written with the RAW-aligned semantics. The separate `warded_against_magic` flag declaration removed (consolidated).
+
+- **`engine/subsystems/inventory/magic_item_activator.gd`**:
+  - `_apply_ward_against_magic` now stamps `warded_against_creature_type` with `creature_types: ["magic"]` instead of the separate `warded_against_magic` flag. Same flag, different filter — keeps the unified consumer model.
+  - `_apply_ward_against_creature_type` docstring rewritten + message updated to mention "10' barrier; ends on melee-out at warded type".
+
+- **`engine/subsystems/combat/spell_combat_hooks.gd`**:
+  - REMOVED `_ward_creature_type_save_cache` declaration + `clear_caches()` clear.
+  - REMOVED the entire on_pre_attack save-vs-Spells cancel block (~25 lines).
+  - REMOVED `_ward_creature_type_resolve_save` helper (~25 lines).
+  - REMOVED `_attacker_matches_warded_types` (replaced by static `_target_matches_warded_types`).
+  - ADDED: on_pre_attack bearer-melee-out dismissal block. When ATTACKER carries `warded_against_creature_type` AND attack_type=="melee" AND target's creature_type matches one of the bearer's warded types, the matching ward source is cleared. Non-matching ward sources on the same bearer are preserved (multi-ward bearers only lose the matching one).
+  - Renamed `_attack_type` parameter to `attack_type` (now used).
+  - ADDED: static `_target_matches_warded_types` helper (used by both this hook and MovementResolver via copy).
+
+- **`engine/subsystems/combat/movement_resolver.gd`**:
+  - ADDED: ward entry-block gate at the top of `_can_enter_3d` (parallel to the gaseous-form auto-detect). Calls `_ward_blocks_entry(to_pos, mover_id)`.
+  - ADDED: `_ward_blocks_entry(to_pos, mover_id) -> bool` (~35 lines). Iterates `_roster.get_alive()`; for each bearer with `warded_against_creature_type` flag, checks if mover's creature_type matches any of the ward's `creature_types`; if yes, computes Chebyshev-distance (3D max-axis) cell distance from to_pos to bearer's `grid_position`; refuses move when distance ≤ `radius_feet / 5` cells. Bearer is exempt (skipped). Mover's creature_type lookup uses Combatant.is_creature_type() / creature_type field / tags array fallback.
+  - ADDED: `_mover_matches_warded_types(mover, warded_types) -> bool` (~15 lines). Mirrors SpellCombatHooks._target_matches_warded_types.
+
+- **`engine/subsystems/spells/casting_resolver.gd`**:
+  - REMOVED entire Stage 6a `_check_ward_against_magic_block` invocation (~32 lines).
+  - REMOVED `_check_ward_against_magic_block` function (~55 lines).
+  - Net removal: ~87 lines.
+
+- **`tests/test_wards_scrolls.gd`** — rewritten end-to-end. 15 tests:
+  - **Catalog (5)** — unchanged: each scroll has direct_consumable_effect; wards not in EXPECTED_DEFER_KEYS.
+  - **activate_consumable (5)** — magic ward test rewritten to verify the unified `warded_against_creature_type` flag with `creature_types: ["magic"]`; other 4 tests unchanged structurally.
+  - **Bearer-melee-out dismissal (5)** — replaces the prior save-vs-Spells cancel tests:
+    - Bearer melee at warded type clears the ward source
+    - Bearer melee at non-warded type leaves the ward
+    - Bearer ranged at warded type leaves the ward (RAW says only MELEE dismisses)
+    - Non-bearer attacker doesn't dismiss (target's ward not erroneously cleared)
+    - Multi-ward bearer: only the matching ward source cleared, non-matching preserved
+
+**Decisions made:**
+
+- **Movement-resolver gate over a "ward zone" cell-state subsystem.** Could have added the ward as a cell-state condition (parallel to slippery patches); chose to keep it as a flag on the bearer + per-move resolver scan because the barrier "moves with the reader" per RAW. Cell-state would need to be updated every move; flag-on-bearer is naturally mobile.
+- **Chebyshev (3D max-axis) cell distance** for the 10' radius check. Matches the existing combat-grid distance model. 10 feet / 5 feet per cell = 2 cell radius.
+- **No "dismiss" UI in V1.** RAW says "until dismissed OR until bearer-melee-out." The bearer-melee-out path is wired; the explicit dismiss UI is a future polish item (one-line action button calling `flags.clear_flag("warded_against_creature_type", source_id)`).
+- **No save anywhere.** Removed the cache + save resolver entirely. RAW makes the entry block automatic.
+- **"Magic" creature_type left undefined.** No current monster catalog rows carry this type. The Ward against Magic scroll is selectable + persists on the bearer per RAW, but is effectively inert in combat until consumer tagging happens. Documented limitation.
+- **Bearer-melee-out semantic is "matching ward source clears, not all wards"** — a bearer wearing both Ward vs Undead and Ward vs Lycanthrope who attacks an undead loses only the Undead ward. The Lycanthrope ward persists. RAW phrasing supports this: "the protection [singular] lasts until... attempts melee against A PROTECTED CREATURE TYPE" — refers to the specific ward that protects against that type.
+
+**Interfaces defined or changed:**
+
+- REMOVED `EntityFlags.warded_against_magic` (documentation only; flags are dictionary-keyed so no code break).
+- REMOVED `SpellCombatHooks._ward_creature_type_save_cache`.
+- REMOVED `SpellCombatHooks._ward_creature_type_resolve_save`.
+- REMOVED `SpellCombatHooks._attacker_matches_warded_types`.
+- REMOVED `CastingResolver._check_ward_against_magic_block`.
+- ADDED `MovementResolver._ward_blocks_entry(to_pos, mover_id) -> bool`.
+- ADDED `MovementResolver._mover_matches_warded_types(mover, warded_types) -> bool`.
+- ADDED `SpellCombatHooks._target_matches_warded_types(entity, warded_types) -> bool` (static).
+- CHANGED `SpellCombatHooks.on_pre_attack` parameter rename `_attack_type` → `attack_type`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_wards_scrolls.gd` fully rewritten: 5 catalog + 5 activate_consumable + 5 bearer-melee-out = 15 tests.
+- Full suite: **406 passed / 19 failed** (same as immediately before — refactor is net-zero on test count).
+
+**Known issues / V1 limitations:**
+
+- **No monster catalog rows have `creature_type: "magic"`.** Ward against Magic is effectively inert in combat until consumer tagging lands. Catalog selectable + flag set on bearer per RAW; mechanically nothing matches.
+- **No UI to voluntarily dismiss a ward.** Bearer-melee-out works; explicit dismiss is a one-line action button hook to be added when the UI surface lands.
+- **No multi-floor wards.** The 10' radius uses 3D Chebyshev distance, so vertical extent works mechanically, but a bearer on floor 1 with a ward and an enemy on floor 2 above would have the ward block entry if they're within 2 cells vertically + 2 horizontally. RAW is silent on multi-floor; the 3D extension is the project default.
+- **No engine consumer for the previous flag metadata.caster_level field.** The field is preserved for narration but doesn't affect mechanics anymore.
+
+**Next session should:**
+
+1. **Persistent-worn stat-bonus cluster (4 items)** — Scarab + Cube + Eagle + Adaptation. Per Jedidiah, ship as flag-only adds with full RAW metadata. Need ACKS Core PDF p.215+ text for each. Pattern matches Ring of Regen + Boots.
+2. **Engine-extension cluster (3 items)** — Brooch of Shielding (missile-type discrimination), Elven Cloak + Elven Boots (ThiefSkillResolver consults ModifierContainer).
+3. **Ring of Spell Storing** — Jedidiah supplied RAW; needs materializer + storage + activation flow. Own focused session.
+4. **Crystal Ball trio (3 items)** — scrying UI subsystem.
+5. **Tag existing monster catalog rows with `creature_type: "magic"`** where appropriate (constructs, enchanted creatures, etc.) — un-stalls Ward against Magic mechanically.
+

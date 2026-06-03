@@ -713,6 +713,70 @@ func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
 ## mover's path step. The mover's own cell never blocks itself; incapacitated
 ## occupants (dead, unconscious, paralyzed, sleeping) are treated as
 ## obstacle-free because PCs and monsters can step over downed bodies.
+## Scrolls of Warding entry-block check (2026-06-03 RAW-aligned). Scans
+## the roster for any combatant carrying the `warded_against_creature_type`
+## flag. For each bearer, if [param mover_id]'s combatant matches one of
+## the ward's `creature_types`, and [param to_pos] is within `radius_feet`
+## of the bearer's current cell, the move is refused. The bearer itself
+## is exempt (the bearer can move freely). Returns true if any active
+## ward blocks the move.
+func _ward_blocks_entry(to_pos: Vector3i, mover_id: String) -> bool:
+	var mover := _lookup_combatant(mover_id)
+	if mover == null:
+		return false
+	for bearer in _roster.get_alive():
+		if bearer == null:
+			continue
+		if String(bearer.id) == mover_id:
+			continue  # bearer exempt from their own ward
+		var b_flags: EntityFlags = bearer.get_flags() if bearer.has_method("get_flags") else null
+		if b_flags == null or not b_flags.has_flag("warded_against_creature_type"):
+			continue
+		var b_pos: Vector3i = bearer.grid_position
+		var ward_entries: Array = b_flags.get_flag_source_entries(
+			"warded_against_creature_type")
+		for entry in ward_entries:
+			var meta: Dictionary = entry.get("metadata", {})
+			var warded_types: Array = meta.get("creature_types", [])
+			if warded_types.is_empty():
+				continue
+			if not _mover_matches_warded_types(mover, warded_types):
+				continue
+			# Distance: ward radius is in FEET; one cell = 5 feet by ACKS
+			# convention. radius_feet / 5 = cell radius. Chebyshev distance
+			# (3D max-axis) matches the existing combat-grid distance model.
+			var radius_feet: int = int(meta.get("radius_feet", 10))
+			var radius_cells: int = int(radius_feet / 5)
+			var dx: int = abs(to_pos.x - b_pos.x)
+			var dy: int = abs(to_pos.y - b_pos.y)
+			var dz: int = abs(to_pos.z - b_pos.z)
+			var dist_cells: int = max(dx, max(dy, dz))
+			if dist_cells <= radius_cells:
+				return true
+	return false
+
+
+## Returns true if [param mover]'s creature_type matches any of
+## [param warded_types]. Mirrors SpellCombatHooks._target_matches_warded_types
+## but lives here for movement-resolver use.
+func _mover_matches_warded_types(mover: Variant, warded_types: Array) -> bool:
+	if mover == null:
+		return false
+	for t in warded_types:
+		var t_str: String = String(t).to_lower()
+		if mover.has_method("is_creature_type"):
+			if mover.is_creature_type(t_str):
+				return true
+		if "creature_type" in mover:
+			if String(mover.creature_type).to_lower() == t_str:
+				return true
+		if "tags" in mover:
+			var tags = mover.tags
+			if tags is Array and t_str in tags:
+				return true
+	return false
+
+
 func _is_blocking_occupant(pos: Vector3i, mover_id: String) -> bool:
 	if _voxel_map == null:
 		return false
@@ -791,6 +855,16 @@ func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
 		mover_id: String = "") -> bool:
 	if mover_id != "" and _is_blocking_occupant(to_pos, mover_id):
 		return false
+	# Scrolls of Warding entry-block (2026-06-03 RAW-aligned). Any
+	# bearer carrying the `warded_against_creature_type` flag projects
+	# a 10' barrier centered on themselves. A creature whose
+	# creature_type matches one of the bearer's warded_types CANNOT
+	# enter cells within radius_feet of the bearer. Per RAW
+	# acore_treasure_and_magic_items_rules.xml:268-272 — no save. The
+	# barrier moves with the bearer (re-evaluated each move).
+	if mover_id != "" and _roster != null:
+		if _ward_blocks_entry(to_pos, mover_id):
+			return false
 	var cell := _voxel_map.get_cell(to_pos)
 	var level_diff: int = abs(to_pos.z - from_pos.z)
 

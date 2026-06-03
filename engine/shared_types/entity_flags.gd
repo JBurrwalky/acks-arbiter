@@ -142,30 +142,45 @@ extends RefCounted
 ##   Protection (cont.): "protected_from_normal_weapons" (Protection from Normal Weapons L5)
 ##   Warding:    "cannot_be_targeted_by_attacks" (Sanctuary; per-attacker save vs Spells, cached per source_id),
 ##               "warded_against_creature_type" (Scrolls of Warding against
-##                  Elementals / Lycanthropes / Undead — RAW
-##                  acore_treasure_and_magic_items_rules.xml:212 lists the
-##                  scrolls in the random-item table; Jedidiah ruling 2026-06-02
-##                  scales up Protection-from-Evil pattern: 10' radius around
-##                  bearer, duration 1 turn × caster_level (default 10 turns at
-##                  CL5). Metadata: {creature_types: Array[String], radius_feet,
-##                  caster_level, ward_kind: "ward_against_X"}. Hook lives in
-##                  spell_combat_hooks.on_pre_attack alongside Sanctuary's
-##                  per-attacker save: when attacker's creature_type matches a
-##                  warded type AND the attacker has not yet saved against this
-##                  source_id, attacker rolls save vs Spells; on fail the
-##                  attack is cancelled. Save result cached per (attacker, source_id)),
-##               "warded_against_magic" (Scroll of Warding against Magic —
-##                  Jedidiah ruling 2026-06-02 extension of literal "Ward
-##                  against Magic": (a) spells/magic-item activations
-##                  TARGETING the bearer from outside the radius are blocked;
-##                  (b) spells/magic-item activations originating from the
-##                  bearer inside the radius are blocked when they target
-##                  outside the radius; (c) spells/magic-item activations
-##                  staying entirely inside OR entirely outside the radius
-##                  proceed normally. Metadata: {radius_feet: 10, caster_level,
-##                  bearer_id: String}. Gate in CastingResolver checks the
-##                  spell's caster cell + target cell vs the bearer's
-##                  current cell + radius_feet; blocks the cast on cross.)
+##                  Elementals / Lycanthropes / Magic / Undead — RAW
+##                  acore_treasure_and_magic_items_rules.xml:268-272
+##                  (re-aligned to actual RAW 2026-06-03 after the
+##                  previous Jedidiah ruling was found to over-power the
+##                  scrolls): "Any literate character can use it. Reading
+##                  it creates a 10' radius protective barrier centered
+##                  on the reader. The barrier moves with the reader.
+##                  Protected creatures cannot enter but can still attack
+##                  with missiles or spells. The protection lasts until
+##                  dismissed or until anyone inside the area attempts
+##                  melee against a protected creature type." Metadata:
+##                  {creature_types: Array[String], radius_feet: 10,
+##                  caster_level, ward_kind: "ward_against_X"}. Semantics
+##                  (V1):
+##                    (a) ENTRY BLOCK — MovementResolver._can_enter_3d
+##                        refuses any move that would put a creature
+##                        whose creature_type matches one of the warded
+##                        types into a cell within radius_feet of the
+##                        bearer. No save. The barrier moves with the
+##                        bearer (re-evaluated each move).
+##                    (b) NO ATTACK SAVE — warded creatures can still
+##                        attack the bearer with missiles or spells from
+##                        outside the radius (no engine gate). Per RAW.
+##                    (c) BEARER-MELEE-OUT DISMISSAL — when the bearer
+##                        attacks (melee) at a creature whose
+##                        creature_type matches a warded type, that ward
+##                        is cleared. Handled in
+##                        SpellCombatHooks.on_pre_attack.
+##                    (d) DURATION — "until dismissed" (V1: no UI to
+##                        dismiss yet; the ward lives until cleared by
+##                        bearer-melee-out OR until the inventory row is
+##                        removed). RAW duration model — no
+##                        caster-level-scaled turn count.
+##                  V1 limitation: "Ward against Magic" uses creature_type
+##                  "magic" but no existing monster catalog rows are tagged
+##                  with this type, so Magic-ward is effectively inert in
+##                  combat until creatures get the "magic" tag. The Magic
+##                  ward is still selectable + persists on the bearer per
+##                  RAW; consumer tagging is the documented follow-up.)
 ##   Outsider:   "blocks_enchanted_creature_melee" (Protection from Evil)
 ##   Defense:    "is_mirror_image_protected" (Mirror Image; figments absorb attacks)
 ##   Communication: "can_speak_with_animals" (Speak with Animals)

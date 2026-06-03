@@ -1691,16 +1691,22 @@ static func activate_consumable(
 	}
 
 
-## Apply a Scroll of Warding against Elementals/Lycanthropes/Undead. Sets
-## the `warded_against_creature_type` flag on the reader with metadata
-## carrying the creature_types filter, radius_feet, ward_kind, and
-## caster_level. Per-attacker save vs Spells is enforced by
-## SpellCombatHooks.on_pre_attack (Sanctuary-style cache).
+## Apply a Scroll of Warding against Elementals / Lycanthropes / Undead.
+## Sets the `warded_against_creature_type` flag on the reader with
+## metadata carrying the creature_types filter, radius_feet, ward_kind,
+## and caster_level. RAW-aligned semantics 2026-06-03:
+##   - ENTRY BLOCK: MovementResolver refuses moves that would put a
+##     creature of the warded type into a cell within radius_feet of bearer
+##   - NO ATTACK SAVE: warded creatures can still attack with missiles
+##     and spells from outside
+##   - BEARER-MELEE-OUT DISMISSAL: when bearer attacks (melee) at a
+##     warded creature type, the ward clears (SpellCombatHooks)
+##   - DURATION: "until dismissed" (V1: until cleared via bearer-melee-out
+##     or inventory removal; no UI dismiss yet)
 ##
-## RAW: `acore_treasure_and_magic_items_rules.xml:212` lists the scrolls;
-## Jedidiah ruling 2026-06-02 scales up Protection from Evil for V1:
-## 10' radius, 1 turn * caster_level duration (default 10 turns at CL5
-## for a scroll cast by a non-spellcaster reader).
+## RAW: `acore_treasure_and_magic_items_rules.xml:268-272`. Any literate
+## character can use it. caster_level is stamped for narration but does
+## not affect duration (RAW says "until dismissed").
 static func _apply_ward_against_creature_type(
 		item_id: String,
 		reader: CharacterData,
@@ -1714,8 +1720,6 @@ static func _apply_ward_against_creature_type(
 		}
 	var ward_kind: String = String(direct.get("ward_kind", "ward_against_creature_type"))
 	var radius_feet: int = int(direct.get("radius_feet", 10))
-	# Scrolls have a built-in caster_level (the cleric/mage who scribed it).
-	# V1 defers to a catalog-stamped caster_level (default 5 if missing).
 	var caster_level: int = int(direct.get("caster_level", max(5, reader.level)))
 	var source_id: String = "scroll_ward:%s:%s" % [ward_kind, item_id]
 	reader.flags.set_flag("warded_against_creature_type", source_id, {
@@ -1726,24 +1730,26 @@ static func _apply_ward_against_creature_type(
 	})
 	return {
 		"success": true,
-		"message": "Read '%s' - bearer warded against %s for %d turns." % [
+		"message": "Read '%s' - bearer warded against %s (10' barrier; ends on melee-out at warded type)." % [
 			str(catalog_entry.get("name", "Scroll")),
 			", ".join(creature_types),
-			caster_level,
 		],
 		"flag_set": "warded_against_creature_type",
 		"source_id": source_id,
 	}
 
 
-## Apply a Scroll of Warding against Magic. Per Jedidiah ruling 2026-06-02:
-## (a) spells targeting the bearer from outside the 10' radius are blocked;
-## (b) spells originating from the bearer inside the radius are blocked
-##     when they target outside the radius;
-## (c) spells staying entirely inside OR entirely outside proceed normally.
+## Apply a Scroll of Warding against Magic. RAW alignment 2026-06-03:
+## Magic-ward is now a creature_type="magic" entry block, same mechanic
+## as Elementals / Lycanthropes / Undead — RAW
+## `acore_treasure_and_magic_items_rules.xml:268-272` makes no
+## distinction between the 4 wards; each plugs a different creature_type
+## into the same 10' entry-block barrier. V1 limitation: no monster
+## catalog rows currently carry the "magic" creature_type, so Magic-ward
+## is effectively inert in combat until consumer tagging lands.
 ##
-## The bidirectional spell-cross check lives in CastingResolver via the
-## warded_against_magic flag's metadata.bearer_id + radius_feet.
+## (Consolidates the prior `warded_against_magic` flag into the unified
+## `warded_against_creature_type` family.)
 static func _apply_ward_against_magic(
 		item_id: String,
 		reader: CharacterData,
@@ -1752,18 +1758,17 @@ static func _apply_ward_against_magic(
 	var radius_feet: int = int(direct.get("radius_feet", 10))
 	var caster_level: int = int(direct.get("caster_level", max(5, reader.level)))
 	var source_id: String = "scroll_ward:ward_against_magic:%s" % item_id
-	reader.flags.set_flag("warded_against_magic", source_id, {
+	reader.flags.set_flag("warded_against_creature_type", source_id, {
+		"creature_types": ["magic"],
 		"radius_feet": radius_feet,
 		"caster_level": caster_level,
-		"bearer_id": reader.id,
 		"ward_kind": "ward_against_magic",
 	})
 	return {
 		"success": true,
-		"message": "Read '%s' - bearer warded against magic for %d turns." % [
+		"message": "Read '%s' - bearer warded against magic creatures (10' barrier)." % [
 			str(catalog_entry.get("name", "Scroll of Warding against Magic")),
-			caster_level,
 		],
-		"flag_set": "warded_against_magic",
+		"flag_set": "warded_against_creature_type",
 		"source_id": source_id,
 	}
