@@ -168,6 +168,20 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "necklace_of_adaptation":
 			_add_necklace_of_adaptation(character, item_id)
 			continue
+		# --- Engine-extension batch (2026-06-03) ---
+		# Brooch of Shielding: absorbs magic_missile damage up to 101 pts.
+		# Elven Cloak / Elven Boots: +8 to hide_in_shadows / move_silently
+		# + always succeed on 12+ (ceiling on the throw target). The
+		# ModifierContainer entries flow through ThiefSkillResolver._build_skill_check.
+		if item_key == "brooch_of_shielding":
+			_add_brooch_of_shielding(character, item_id, row)
+			continue
+		if item_key == "elven_cloak":
+			_add_elven_cloak(character, item_id)
+			continue
+		if item_key == "elven_boots":
+			_add_elven_boots(character, item_id)
+			continue
 		# --- Bracers of Armor (Tier 3, 2026-05-29) ---
 		# Materializes from a d100 sub_roll table (BRACERS_OF_ARMOR_SUBROLL):
 		# 5% cursed (magical_bonus 0, is_cursed=true) + 7 AC tiers
@@ -445,6 +459,85 @@ static func _add_eyes_of_the_eagle(character: CharacterData, item_id: String) ->
 		"vision_range_multiplier": 100,
 		"missile_medium_range_modifier": -1,
 		"missile_long_range_modifier": -2,
+	})
+
+
+## Apply Brooch of Shielding: sets has_brooch_of_shielding flag with full
+## RAW metadata (ACKS Core p.215+, Jedidiah-supplied 2026-06-03). Charge
+## count rolled at materialization (default_charges = 101 fixed). Consumer
+## in CastingResolver._apply_damage: when spell_key == "magic_missile" AND
+## target carries this flag, redirect damage from target to brooch's
+## charge counter; when counter hits 0, remove the inventory row.
+static func _add_brooch_of_shielding(
+		character: CharacterData, item_id: String, row: Variant) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	var charges: int = _row_int(row, "uses_remaining", -1)
+	character.flags.set_flag("has_brooch_of_shielding", source_id, {
+		"source_kind": "worn_magic_item",
+		"absorbs_spell_keys": ["magic_missile"],
+		"total_capacity": 101,
+		"charges_remaining": charges,
+		"item_id": item_id,
+	})
+
+
+## Apply Elven Cloak: +8 bonus on hide_in_shadows + always 12+ ceiling on
+## the throw target. ModifierContainer entries on `hide_in_shadows_magical_bonus`
+## (add +8) and `hide_in_shadows_ceiling_target` (set_ceiling 12) flow
+## through ThiefSkillResolver._build_skill_check at assembly time.
+## RAW: ACKS Core p.215+, Jedidiah-supplied 2026-06-03.
+static func _add_elven_cloak(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_elven_cloak", source_id, {
+		"source_kind": "worn_magic_item",
+		"skill_key": "hide_in_shadows",
+		"bonus": 8,
+		"ceiling_target": 12,
+	})
+	character.modifiers.add_modifier("hide_in_shadows_magical_bonus", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": 8,
+		"stacking_group": "elven_skill_bonus",
+		"priority": 0,
+	})
+	character.modifiers.add_modifier("hide_in_shadows_ceiling_target", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "set_ceiling",
+		"value": 12,
+		"stacking_group": "",
+		"priority": 0,
+	})
+
+
+## Apply Elven Boots: +8 bonus on move_silently + always 12+ ceiling.
+## Same mechanic as Elven Cloak, different skill key.
+## RAW: ACKS Core p.215+, Jedidiah-supplied 2026-06-03.
+static func _add_elven_boots(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_elven_boots", source_id, {
+		"source_kind": "worn_magic_item",
+		"skill_key": "move_silently",
+		"bonus": 8,
+		"ceiling_target": 12,
+	})
+	character.modifiers.add_modifier("move_silently_magical_bonus", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "add",
+		"value": 8,
+		"stacking_group": "elven_skill_bonus",
+		"priority": 0,
+	})
+	character.modifiers.add_modifier("move_silently_ceiling_target", {
+		"source_id": source_id,
+		"source_type": "worn_magic_item",
+		"operation": "set_ceiling",
+		"value": 12,
+		"stacking_group": "",
+		"priority": 0,
 	})
 
 

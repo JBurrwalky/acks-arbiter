@@ -36,6 +36,13 @@ func run_all_tests() -> void:
 	test_eyes_clears_on_unequip()
 	test_necklace_of_adaptation_sets_flag_with_full_raw_metadata()
 	test_necklace_clears_on_unequip()
+	# Scarab Finger of Death consumer (2026-06-03)
+	test_scarab_negates_finger_of_death()
+	test_scarab_decrements_charges_on_negation()
+	test_scarab_at_zero_charges_does_not_negate()
+	test_scarab_destroyed_at_zero_after_decrement()
+	test_scarab_no_save_rolled_on_negation()
+	test_scarab_roleplay_violation_still_recorded()
 	# EntityFlags regression
 	test_new_flags_documented()
 	if not has_failures():
@@ -235,6 +242,183 @@ func test_necklace_clears_on_unequip() -> void:
 	WornMagicEffectResolver.refresh_for_character(cd, [])
 	check(not cd.flags.has_flag("has_necklace_of_adaptation"),
 		"flag cleared after unequip")
+
+
+# ---------------------------------------------------------------------------
+# EntityFlags regression
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Scarab Finger of Death consumer tests (2026-06-03)
+# ---------------------------------------------------------------------------
+
+const RestoreLifeAndLimbResolverScript := preload(
+	"res://engine/subsystems/spells/custom_resolvers/restore_life_and_limb_resolver.gd")
+
+
+class _ScarabTarget extends RefCounted:
+	var id: String = ""
+	var hp_max: int = 20
+	var hp_current: int = 20
+	var is_dead: bool = false
+	var day_of_death: int = -1
+	var death_cause: String = ""
+	var alignment: String = "neutral"
+	var conditions: Array[String] = []
+	var flags: EntityFlags = EntityFlags.new()
+	func add_condition(k: String) -> void:
+		if k not in conditions: conditions.append(k)
+	func has_condition(k: String) -> bool: return k in conditions
+	func get_effective_save(_k: String) -> int: return 11
+	func get_flags() -> EntityFlags: return flags
+	func is_creature_type(_t: String) -> bool: return false
+
+
+class _ScarabFakeDice extends RefCounted:
+	var fixed: Dictionary = {}
+	func roll_digital(s: int, c: int = 1, m: int = 0, t: String = "") -> RollResult:
+		var r := RollResult.new()
+		r.modified_total = int(fixed.get(t, c * s)) + m
+		r.raw_total = r.modified_total - m
+		return r
+
+
+func _stamp_scarab(target: _ScarabTarget, charges: int, item_id: String = "scarab_x1") -> void:
+	target.flags.set_flag("has_scarab_of_protection",
+		"worn_magic:" + item_id,
+		{
+			"source_kind": "worn_magic_item",
+			"immune_to": ["curse", "finger_of_death"],
+			"charges_remaining": charges,
+			"item_id": item_id,
+		})
+
+
+func _make_caster(alignment: String = "chaotic") -> CharacterData:
+	var cd := CharacterData.new()
+	cd.id = "scarab_caster"
+	cd.character_class = "cleric"
+	cd.combat_progression = "cleric"
+	cd.level = 9
+	cd.hp_max = 24; cd.hp_current = 24
+	cd.alignment = alignment
+	return cd
+
+
+func _make_fod_args(caster: CharacterData, target: _ScarabTarget,
+		dice: _ScarabFakeDice) -> Dictionary:
+	var ctx := CasterContext.from_character_data(
+		caster, "combat_grid", "divine", 1)
+	var td := TargetDescriptor.new()
+	td.kind = "single_creature"
+	td.target_ids = [target.id]
+	return {
+		"caster_context": ctx,
+		"target_descriptor": td,
+		"targets_by_id": {target.id: target},
+		# Force-reverse to invoke the Finger of Death branch.
+		"spell_choice": SpellChoice.new("restore_life_and_limb", 5, true, -1),
+		"step_payload": {"resolver_args": {"dice": dice, "current_day": 50}},
+	}
+
+
+func test_scarab_negates_finger_of_death() -> void:
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("chaotic")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_1"
+	_stamp_scarab(tgt, 5, "scarab_n1")
+	var dice := _ScarabFakeDice.new()
+	# Force save fail so without scarab the target WOULD die.
+	dice.fixed["spell_save_finger_of_death"] = 1
+	var res: Dictionary = r.resolve(_make_fod_args(caster, tgt, dice))
+	var outcome: Dictionary = res.get("per_target", {}).get(tgt.id, {})
+	check(String(outcome.get("outcome", "")) == "negated_by_scarab",
+		"outcome=negated_by_scarab (Scarab absorbed the death)")
+	check(not tgt.is_dead, "target NOT dead (Scarab negated)")
+	check(tgt.hp_current == 20,
+		"target hp unchanged (Scarab fired before damage)")
+
+
+func test_scarab_decrements_charges_on_negation() -> void:
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("chaotic")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_2"
+	_stamp_scarab(tgt, 7, "scarab_n2")
+	var dice := _ScarabFakeDice.new()
+	dice.fixed["spell_save_finger_of_death"] = 1
+	r.resolve(_make_fod_args(caster, tgt, dice))
+	var meta: Dictionary = tgt.flags.get_flag_metadata("has_scarab_of_protection")
+	check(int(meta.get("charges_remaining", -1)) == 6,
+		"charges decremented 7 → 6 on negation")
+
+
+func test_scarab_at_zero_charges_does_not_negate() -> void:
+	# Scarab exhausted — flag present but charges=0. Finger of Death
+	# proceeds normally; target dies on save fail.
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("chaotic")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_3"
+	_stamp_scarab(tgt, 0, "scarab_n3")
+	var dice := _ScarabFakeDice.new()
+	dice.fixed["spell_save_finger_of_death"] = 1
+	var res: Dictionary = r.resolve(_make_fod_args(caster, tgt, dice))
+	var outcome: Dictionary = res.get("per_target", {}).get(tgt.id, {})
+	check(String(outcome.get("outcome", "")) == "slain_by_death_ray",
+		"exhausted scarab does NOT negate; target slain")
+	check(tgt.is_dead, "is_dead=true (Scarab didn't fire)")
+
+
+func test_scarab_destroyed_at_zero_after_decrement() -> void:
+	# Scarab at 1 charge gets absorbed → 0 charges → destroyed.
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("chaotic")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_4"
+	_stamp_scarab(tgt, 1, "scarab_n4")
+	var dice := _ScarabFakeDice.new()
+	dice.fixed["spell_save_finger_of_death"] = 1
+	var res: Dictionary = r.resolve(_make_fod_args(caster, tgt, dice))
+	var outcome: Dictionary = res.get("per_target", {}).get(tgt.id, {})
+	check(String(outcome.get("outcome", "")) == "negated_by_scarab",
+		"last-charge scarab still negates")
+	check(int(outcome.get("scarab_charges_remaining", -1)) == 0,
+		"scarab_charges_remaining=0 after the absorbing decrement")
+	check(bool(outcome.get("scarab_destroyed", false)) == true,
+		"scarab_destroyed=true on charges hitting 0")
+
+
+func test_scarab_no_save_rolled_on_negation() -> void:
+	# Scarab absorbs the attack INSTEAD of letting it roll a save. The
+	# per_target outcome should NOT carry save_roll / save_target fields.
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("chaotic")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_5"
+	_stamp_scarab(tgt, 3, "scarab_n5")
+	var dice := _ScarabFakeDice.new()
+	dice.fixed["spell_save_finger_of_death"] = 20  # would save anyway
+	var res: Dictionary = r.resolve(_make_fod_args(caster, tgt, dice))
+	var outcome: Dictionary = res.get("per_target", {}).get(tgt.id, {})
+	check(not outcome.has("save_roll"),
+		"no save_roll on Scarab-negated outcome (RAW: immunity, no save)")
+
+
+func test_scarab_roleplay_violation_still_recorded() -> void:
+	# Lawful cleric casts Finger of Death at Neutral target with Scarab.
+	# Scarab negates the death, but the alignment-vow violation still
+	# records on per_target for the LLM narration layer.
+	var r = RestoreLifeAndLimbResolverScript.new()
+	var caster := _make_caster("lawful")
+	var tgt := _ScarabTarget.new(); tgt.id = "fod_victim_6"
+	tgt.alignment = "neutral"
+	_stamp_scarab(tgt, 3, "scarab_n6")
+	var dice := _ScarabFakeDice.new()
+	dice.fixed["spell_save_finger_of_death"] = 1
+	var res: Dictionary = r.resolve(_make_fod_args(caster, tgt, dice))
+	var outcome: Dictionary = res.get("per_target", {}).get(tgt.id, {})
+	check(String(outcome.get("roleplay_violation", "")) ==
+			"lawful_finger_of_death_vs_non_chaotic",
+		"roleplay_violation recorded even when scarab negates the kill")
+	check(String(outcome.get("outcome", "")) == "negated_by_scarab",
+		"outcome still negated_by_scarab")
 
 
 # ---------------------------------------------------------------------------

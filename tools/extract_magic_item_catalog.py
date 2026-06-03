@@ -411,9 +411,13 @@ DEFER_BUILD = {
     # range modifier in attack_resolver, Finger of Death scarab consult)
     # are documented follow-ups. Scarab has default_charges="2d6" stamped
     # via the new SCARAB_CHARGES_DICE constant for materializer dice roll.
-    "brooch_of_shielding": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)",
-    "elven_cloak": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension",
-    "elven_boots": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension",
+    # 2026-06-03: Brooch + Elven Cloak + Elven Boots LANDED via the
+    # engine-extension batch. Brooch consumer in CastingResolver._brooch_absorb
+    # consults the has_brooch_of_shielding flag for force-damage spells
+    # (magic missile). Elven Cloak/Boots set ModifierContainer entries on
+    # <skill_key>_magical_bonus + <skill_key>_ceiling_target;
+    # ThiefSkillResolver._build_skill_check consumes both at assembly time.
+    # Brooch default_charges=101 stamped via FIXED_DEFAULT_CHARGES.
     # Tier 4 Cluster A (2026-06-01): gaseous_form spell has an empty
     # `effect` block (one of 150 such in the catalog); CastingResolver
     # refuses to cast spells without an effect_registry payload. The
@@ -641,6 +645,17 @@ ONCE_PER_PERIOD_MISC_MAGIC_KEYS = frozenset({
 # negation will decrement uses_remaining).
 DICE_DEFAULT_CHARGES = {
     "scarab_of_protection": "2d6",
+}
+
+# Items whose default_charges is a fixed integer at materialization.
+# Stamped via the same loop as DICE_DEFAULT_CHARGES; flows through
+# TreasureInstantiator's top-level default_charges path (no dice
+# evaluation — just an int).
+FIXED_DEFAULT_CHARGES = {
+    # Brooch of Shielding (2026-06-03): "Can absorb up to 101 points of
+    # damage from magic missiles before it melts and becomes useless."
+    # 101 = lifetime damage absorption capacity (not per-day).
+    "brooch_of_shielding": 101,
 }
 
 
@@ -1644,6 +1659,8 @@ def main() -> int:
         # Protection's "2d6 attacks absorbed" charge model lands here.
         if key in DICE_DEFAULT_CHARGES:
             it["default_charges"] = DICE_DEFAULT_CHARGES[key]
+        if key in FIXED_DEFAULT_CHARGES:
+            it["default_charges"] = FIXED_DEFAULT_CHARGES[key]
         # Tier 4 Cluster A (2026-06-01): non-spell-binding metadata stamps.
         # Worn-passive flag-only items (Amulet versus Crystal Balls and ESP):
         # `worn_passive_flags` documents which EntityFlags the

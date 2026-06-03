@@ -368,6 +368,31 @@ func _resolve_finger_of_death(
 		if entity == null:
 			per_target[tid] = {"applied": false, "reason": "target_not_found"}
 			continue
+		# Scarab of Protection consumer (2026-06-03). Per RAW ACKS Core
+		# p.215+: "Possessor gains immunity to any curse and finger of
+		# death spells or effects, regardless of source. Upon absorbing
+		# 2d6 such attacks, the scarab turns to powder and is destroyed."
+		# Scarab fires BEFORE the save (RAW grants immunity, no save
+		# rolled), consumes a charge, and (when charges hit 0) destroys
+		# the scarab item via inventory_items deletion. The roleplay
+		# violation check still fires — the FoD attempt happened, even
+		# though absorbed.
+		var scarab: Dictionary = _scarab_negate(entity, tid)
+		if bool(scarab.get("negated", false)):
+			var negated_outcome: Dictionary = {
+				"applied": true,
+				"target_id": tid,
+				"outcome": "negated_by_scarab",
+				"scarab_charges_remaining": int(scarab.get("charges_remaining", 0)),
+				"scarab_destroyed": bool(scarab.get("destroyed", false)),
+				"scarab_item_id": String(scarab.get("item_id", "")),
+			}
+			var rv: String = _check_finger_of_death_violation(
+				caster_alignment, caster_class, entity)
+			if not rv.is_empty():
+				negated_outcome["roleplay_violation"] = rv
+			per_target[tid] = negated_outcome
+			continue
 		var save_target: int = 17
 		if entity.has_method("get_effective_save"):
 			save_target = int(entity.get_effective_save("save_poison_death"))
@@ -562,3 +587,70 @@ func _roll_tampering_with_mortality(dice: Variant) -> Dictionary:
 		if r6 != null:
 			d6_raw = int(r6.modified_total)
 	return {"d20": d20_raw, "d6": d6_raw}
+
+
+
+## Scarab of Protection consumer (2026-06-03). Per RAW ACKS Core p.215+
+## (Jedidiah-supplied 2026-06-02): "Possessor gains immunity to any
+## curse and finger of death spells or effects, regardless of source.
+## Upon absorbing 2d6 such attacks, the scarab turns to powder and is
+## destroyed."
+##
+## Returns:
+##   {"negated": true, "charges_remaining": int, "destroyed": bool,
+##    "item_id": String}   when the target carries a scarab with charges
+##   {"negated": false}    when no scarab or charges exhausted
+##
+## Side effects on negation:
+##   - Decrements the flag metadata's charges_remaining.
+##   - Decrements the inventory_items.uses_remaining via
+##     CampaignRepository (when available); silently no-op in test
+##     contexts where the autoload isn't wired.
+##   - At 0 charges, deletes the inventory item ("turns to powder").
+##     The flag will clear naturally on the next WornMagicEffectResolver
+##     refresh once the row is gone.
+func _scarab_negate(entity: Variant, _target_id: String) -> Dictionary:
+	var flags: EntityFlags = _get_flags(entity)
+	if flags == null or not flags.has_flag("has_scarab_of_protection"):
+		return {"negated": false}
+	# Pull the source entry — V1 doesn't support multiple scarabs on the
+	# same wearer, so we operate on the first source.
+	var sources: Array = flags.get_flag_source_entries("has_scarab_of_protection")
+	if sources.is_empty():
+		return {"negated": false}
+	var entry: Dictionary = sources[0]
+	var meta: Dictionary = entry.get("metadata", {})
+	var current: int = int(meta.get("charges_remaining", 0))
+	if current <= 0:
+		# Scarab present but exhausted — no immunity. The flag stays
+		# until next refresh clears it (the item row was already removed
+		# at the prior 0-charge negation).
+		return {"negated": false}
+	var item_id: String = String(meta.get("item_id", ""))
+	var source_id: String = String(entry.get("source_id", ""))
+	var charges_after: int = current - 1
+	# Update the flag metadata in place.
+	meta["charges_remaining"] = charges_after
+	flags.set_flag("has_scarab_of_protection", source_id, meta)
+	var destroyed: bool = (charges_after <= 0)
+	# Persist the inventory row change so the charge survives save/load
+	# and so the next WornMagicEffectResolver refresh sees the new
+	# uses_remaining. Skip silently when CampaignRepository / db are
+	# unavailable (unit tests of the resolver without DB setup).
+	if not item_id.is_empty() and CampaignRepository != null \
+			and CampaignRepository.db != null:
+		if destroyed:
+			# RAW: scarab "turns to powder and is destroyed." Remove the
+			# inventory row entirely. The flag will clear on the next
+			# worn-magic refresh because the item is gone.
+			CampaignRepository.remove_inventory_item(item_id)
+		else:
+			CampaignRepository.db.query_with_bindings(
+				"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+				[charges_after, item_id])
+	return {
+		"negated": true,
+		"charges_remaining": charges_after,
+		"destroyed": destroyed,
+		"item_id": item_id,
+	}

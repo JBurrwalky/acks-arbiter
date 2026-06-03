@@ -233,6 +233,64 @@ func _get_flags(entity: Variant) -> EntityFlags:
 	return null
 
 
+## Brooch of Shielding consumer (2026-06-03). Returns a Dictionary
+## { damage_after_absorption, absorbed, charges_remaining, destroyed }
+## describing the brooch interaction. Brooch fires when damage_type
+## == "force" (RAW: brooch absorbs magic missiles, which deal force
+## damage); absorbs up to charges_remaining points; updates the flag
+## metadata + inventory row; removes the inventory row when charges
+## hit 0 ("brooch melts and becomes useless"). When no brooch is
+## present, returns the input damage unchanged.
+func _brooch_absorb(target_id: String, targets_by_id: Dictionary,
+		incoming_damage: int, damage_type: String) -> Dictionary:
+	var passthrough: Dictionary = {
+		"damage_after_absorption": incoming_damage,
+		"absorbed": 0,
+		"charges_remaining": 0,
+		"destroyed": false,
+	}
+	if damage_type != "force" or incoming_damage <= 0:
+		return passthrough
+	var entity = targets_by_id.get(target_id, null)
+	if entity == null:
+		return passthrough
+	var flags: EntityFlags = _get_flags(entity)
+	if flags == null or not flags.has_flag("has_brooch_of_shielding"):
+		return passthrough
+	var entries: Array = flags.get_flag_source_entries("has_brooch_of_shielding")
+	if entries.is_empty():
+		return passthrough
+	var entry: Dictionary = entries[0]
+	var meta: Dictionary = entry.get("metadata", {})
+	var current: int = int(meta.get("charges_remaining", 0))
+	if current <= 0:
+		return passthrough
+	var absorbed: int = min(incoming_damage, current)
+	var charges_after: int = current - absorbed
+	# Update flag metadata in place.
+	meta["charges_remaining"] = charges_after
+	var source_id: String = String(entry.get("source_id", ""))
+	flags.set_flag("has_brooch_of_shielding", source_id, meta)
+	var destroyed: bool = (charges_after <= 0)
+	# Persist to the inventory row when DB is available (skip silently in
+	# unit-test contexts where the autoload isn't wired).
+	var item_id: String = String(meta.get("item_id", ""))
+	if not item_id.is_empty() and _campaign_repo != null \
+			and _campaign_repo.db != null:
+		if destroyed:
+			_campaign_repo.remove_inventory_item(item_id)
+		else:
+			_campaign_repo.db.query_with_bindings(
+				"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+				[charges_after, item_id])
+	return {
+		"damage_after_absorption": incoming_damage - absorbed,
+		"absorbed": absorbed,
+		"charges_remaining": charges_after,
+		"destroyed": destroyed,
+	}
+
+
 func _get_damage_resistances(entity: Variant) -> DamageResistance:
 	if entity is CharacterData:
 		return entity.damage_resistances
@@ -669,8 +727,22 @@ func _apply_damage_per_level(
 		var saved := bool((save_results.get(tid, {}) as Dictionary).get("succeeded", false))
 		if saved and on_save_half:
 			total_dmg = int(round(float(total_dmg) / 2.0))
+		# Brooch of Shielding consumer (2026-06-03). Per RAW ACKS Core
+		# p.215+: brooch absorbs magic-missile-style spell damage up to
+		# 101 total points before it melts. V1 detection: damage_type
+		# == "force" AND target carries the has_brooch_of_shielding flag.
+		# Absorbed damage is consumed from the brooch's charges; target
+		# takes any remainder. When charges hit 0, the inventory row is
+		# removed ("brooch melts and becomes useless").
+		var brooch_result: Dictionary = _brooch_absorb(tid, targets_by_id, total_dmg, damage_type)
+		total_dmg = int(brooch_result.get("damage_after_absorption", total_dmg))
 		_apply_damage_to_target(tid, targets_by_id, total_dmg, damage_type, "spell")
-		per_target[tid] = {"applied": true, "amount": total_dmg, "rolls": rolls_log, "saved": saved}
+		var entry: Dictionary = {"applied": true, "amount": total_dmg, "rolls": rolls_log, "saved": saved}
+		if int(brooch_result.get("absorbed", 0)) > 0:
+			entry["brooch_absorbed"] = int(brooch_result["absorbed"])
+			entry["brooch_charges_remaining"] = int(brooch_result.get("charges_remaining", 0))
+			entry["brooch_destroyed"] = bool(brooch_result.get("destroyed", false))
+		per_target[tid] = entry
 	return {"per_target": per_target, "damage_type": damage_type, "roll_count": roll_count}
 
 

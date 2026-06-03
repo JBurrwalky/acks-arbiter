@@ -1612,7 +1612,7 @@
       "encumbrance_units": 167,
       "value_gp": 5000,
       "creation_time_days": 20,
-      "defer_reason": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)"
+      "default_charges": 101
     },
     {
       "item_key": "broom_of_flying",
@@ -1818,8 +1818,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100,
-      "defer_reason": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension"
+      "creation_time_days": 100
     },
     {
       "item_key": "elven_boots",
@@ -1829,8 +1828,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 100,
-      "defer_reason": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension"
+      "creation_time_days": 100
     },
     {
       "item_key": "eyes_of_charming",

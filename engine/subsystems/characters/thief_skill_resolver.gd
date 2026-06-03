@@ -305,13 +305,31 @@ func _build_skill_check(context: Dictionary, skill_key: String) -> Dictionary:
 		aggregated_proficiencies,
 		skill_key
 	)
-	var total_roll_modifier := strength_modifier + dex_modifier + encumbrance_modifier + proficiency_modifier
+	# 2026-06-03 (Engine-extension batch): worn-magic bonus on the skill.
+	# Elven Cloak / Elven Boots add an `<skill_key>_magical_bonus` add
+	# modifier to character.modifiers; we read it here. Other worn items
+	# can plug into the same stat key with their own source_id.
+	var magical_bonus: int = 0
+	if character.modifiers != null:
+		var bonus_key: String = "%s_magical_bonus" % skill_key
+		magical_bonus = int(character.modifiers.get_effective_value(bonus_key, 0))
+	var total_roll_modifier := strength_modifier + dex_modifier + encumbrance_modifier + proficiency_modifier + magical_bonus
 	var base_target = baseline.get("base_target", null)
 	var is_available: bool = bool(baseline.get("is_available", false))
 	var effective_target = null
 	var display_target := "NA"
 	if is_available and base_target != null:
 		effective_target = int(base_target) - total_roll_modifier
+		# 2026-06-03: ceiling on the throw target — Elven Cloak / Elven
+		# Boots make the wearer "always succeed on 12+" (the throw target
+		# is capped at 12). Read via `<skill_key>_ceiling_target` modifier
+		# stack. Default 99 = no ceiling. Lower target is better, so the
+		# ceiling is a min() clamp.
+		if character.modifiers != null:
+			var ceiling_key: String = "%s_ceiling_target" % skill_key
+			var ceiling: int = int(character.modifiers.get_effective_value(ceiling_key, 99))
+			if ceiling < 99:
+				effective_target = min(int(effective_target), ceiling)
 		display_target = _format_target(int(effective_target))
 
 	var result := {

@@ -263,8 +263,10 @@ const EXPECTED_DEFER_KEYS := [
 	# flag-only adds with full RAW from ACKS Core p.215+:
 	# scarab_of_protection, cube_of_frost_resistance, eyes_of_the_eagle,
 	# necklace_of_adaptation.
-	"brooch_of_shielding",
-	"elven_cloak", "elven_boots",
+	# 2026-06-03: engine-extension batch shipped — Brooch (CastingResolver
+	# magic-missile absorption), Elven Cloak + Elven Boots
+	# (ThiefSkillResolver consults ModifierContainer for
+	# <skill>_magical_bonus + <skill>_ceiling_target).
 ]
 
 
