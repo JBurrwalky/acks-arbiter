@@ -426,6 +426,7 @@
 [ext_resource type="Script" path="res://tests/test_elemental_commanders.gd" id="410_elemental_commanders_tests"]
 [ext_resource type="Script" path="res://tests/test_growth_xray_vision.gd" id="411_growth_xray_tests"]
 [ext_resource type="Script" path="res://tests/test_tier4_batch2.gd" id="412_tier4_batch2_tests"]
+[ext_resource type="Script" path="res://tests/test_persistent_worn_batch3.gd" id="413_persistent_worn_batch3_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1704,3 +1705,6 @@ script = ExtResource("411_growth_xray_tests")
 
 [node name="Tier4Batch2Tests" type="Node" parent="."]
 script = ExtResource("412_tier4_batch2_tests")
+
+[node name="PersistentWornBatch3Tests" type="Node" parent="."]
+script = ExtResource("413_persistent_worn_batch3_tests")

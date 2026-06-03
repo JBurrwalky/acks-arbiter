@@ -259,8 +259,11 @@ const EXPECTED_DEFER_KEYS := [
 	# + MagicItemActivator.activate_consumable + new EntityFlags
 	# warded_against_creature_type / warded_against_magic + Sanctuary-
 	# style attack hook + CastingResolver gate for Ward against Magic.
-	"scarab_of_protection", "cube_of_frost_resistance",
-	"eyes_of_the_eagle", "necklace_of_adaptation", "brooch_of_shielding",
+	# 2026-06-03: 4 persistent-worn items shipped via WornMagicEffectResolver
+	# flag-only adds with full RAW from ACKS Core p.215+:
+	# scarab_of_protection, cube_of_frost_resistance, eyes_of_the_eagle,
+	# necklace_of_adaptation.
+	"brooch_of_shielding",
 	"elven_cloak", "elven_boots",
 ]
 

@@ -153,6 +153,21 @@ static func refresh_for_character(character: CharacterData, inventory_rows: Arra
 		if item_key == "boots_of_traveling_and_springing":
 			_add_boots_of_traveling_and_springing(character, item_id)
 			continue
+		# --- Persistent-worn cluster (Tier 4 batch 3, 2026-06-03) ---
+		# Full RAW supplied by Jedidiah from ACKS Core p.215+.
+		# All V1 flag-only with consumer integrations documented.
+		if item_key == "cube_of_frost_resistance":
+			_add_cube_of_frost_resistance(character, item_id)
+			continue
+		if item_key == "scarab_of_protection":
+			_add_scarab_of_protection(character, item_id, row)
+			continue
+		if item_key == "eyes_of_the_eagle":
+			_add_eyes_of_the_eagle(character, item_id)
+			continue
+		if item_key == "necklace_of_adaptation":
+			_add_necklace_of_adaptation(character, item_id)
+			continue
 		# --- Bracers of Armor (Tier 3, 2026-05-29) ---
 		# Materializes from a d100 sub_roll table (BRACERS_OF_ARMOR_SUBROLL):
 		# 5% cursed (magical_bonus 0, is_cursed=true) + 7 AC tiers
@@ -376,6 +391,74 @@ static func _add_boots_of_traveling_and_springing(character: CharacterData, item
 		"spring_height_feet": 10,
 		"spring_distance_feet": 30,
 		"acrobatics_bonus": 10,
+	})
+
+
+## Apply Cube of Frost Resistance: sets has_cube_of_frost_resistance_field
+## flag with full RAW metadata (ACKS Core p.215+, Jedidiah-supplied
+## 2026-06-03). V1 simplification: flag is default-active while item is
+## is_equipped (the press-to-toggle UI is V1-deferred). Cold-damage
+## absorption + threshold tracking (50/turn collapse, 100/turn destroy)
+## defer until cold-damage typing is wired.
+static func _add_cube_of_frost_resistance(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_cube_of_frost_resistance_field", source_id, {
+		"source_kind": "worn_magic_item",
+		"absorbs_cold_attacks": true,
+		"min_temperature_f": 65,
+		"area_cube_side_feet": 10,
+		"collapse_threshold_cold_damage_per_turn": 50,
+		"collapse_cooldown_hours": 1,
+		"destroy_threshold_cold_damage_per_turn": 100,
+	})
+
+
+## Apply Scarab of Protection: sets has_scarab_of_protection flag with
+## full RAW metadata (ACKS Core p.215+, Jedidiah-supplied 2026-06-03).
+## Charge count was rolled at materialization (default_charges = "2d6")
+## and lives on the inventory row's uses_remaining. V1 flag-only;
+## consumer integration (Finger of Death resolver consults the flag
+## pre-effect; on hit decrements uses_remaining; at 0 destroys the
+## scarab) is documented follow-up.
+static func _add_scarab_of_protection(
+		character: CharacterData, item_id: String, row: Variant) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	var charges: int = _row_int(row, "uses_remaining", -1)
+	character.flags.set_flag("has_scarab_of_protection", source_id, {
+		"source_kind": "worn_magic_item",
+		"immune_to": ["curse", "finger_of_death"],
+		"charges_remaining": charges,
+		"item_id": item_id,
+	})
+
+
+## Apply Eyes of the Eagle: sets has_eyes_of_the_eagle flag with full
+## RAW metadata (ACKS Core p.215+, Jedidiah-supplied 2026-06-03). V1
+## assumes both lenses worn (default); single-lens-stun mechanic is
+## V1-deferred (would need has_used_single_lens_before state tracking
+## on the wearer). Missile-range modifier consumer in attack_resolver
+## reads metadata at range-modifier-application time.
+static func _add_eyes_of_the_eagle(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_eyes_of_the_eagle", source_id, {
+		"source_kind": "worn_magic_item",
+		"vision_range_multiplier": 100,
+		"missile_medium_range_modifier": -1,
+		"missile_long_range_modifier": -2,
+	})
+
+
+## Apply Necklace of Adaptation: sets has_necklace_of_adaptation flag
+## with full RAW metadata (ACKS Core p.215+, Jedidiah-supplied 2026-06-03).
+## V1 flag-only; consumer integration (gas-based attack resolvers
+## consult for immunity; underwater/vacuum exploration consults for
+## breath-holding extension) is documented follow-up.
+static func _add_necklace_of_adaptation(character: CharacterData, item_id: String) -> void:
+	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
+	character.flags.set_flag("has_necklace_of_adaptation", source_id, {
+		"source_kind": "worn_magic_item",
+		"immune_to_harmful_vapors_and_gases": true,
+		"survive_without_air_days": 7,
 	})
 
 

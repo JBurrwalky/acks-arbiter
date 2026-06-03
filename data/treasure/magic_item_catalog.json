@@ -1730,8 +1730,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 24000,
-      "creation_time_days": 180,
-      "defer_reason": "save-by-element typing not yet in engine (analogous to Ring of Fire Resistance's deferred 1/die reduction)"
+      "creation_time_days": 180
     },
     {
       "item_key": "decanter_of_endless_water",
@@ -1857,8 +1856,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 75000,
-      "creation_time_days": 300,
-      "defer_reason": "vision-range modifier not yet wired (no vision_range stat in CharacterData)"
+      "creation_time_days": 300
     },
     {
       "item_key": "eyes_of_petrification",
@@ -2045,8 +2043,7 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 125000,
-      "creation_time_days": 400,
-      "defer_reason": "environmental-immunity subsystem not yet in EntityFlags (gas / drowning / etc.)"
+      "creation_time_days": 400
     },
     {
       "item_key": "rope_of_climbing",
@@ -2067,7 +2064,7 @@
       "encumbrance_units": 167,
       "value_gp": 24000,
       "creation_time_days": 96,
-      "defer_reason": "save-bonus magnitude not in RAW summary XML; needs Jedidiah ruling"
+      "default_charges": "2d6"
     },
     {
       "item_key": "stone_of_controlling_earth_elementals",

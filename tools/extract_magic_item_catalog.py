@@ -405,10 +405,12 @@ DEFER_BUILD = {
     # Cluster 5 leftover persistent-worn items — each blocked by missing
     # engine support for the specific stat / mechanic. All extend
     # WornMagicEffectResolver once their stat exists.
-    "scarab_of_protection": "save-bonus magnitude not in RAW summary XML; needs Jedidiah ruling",
-    "cube_of_frost_resistance": "save-by-element typing not yet in engine (analogous to Ring of Fire Resistance's deferred 1/die reduction)",
-    "eyes_of_the_eagle": "vision-range modifier not yet wired (no vision_range stat in CharacterData)",
-    "necklace_of_adaptation": "environmental-immunity subsystem not yet in EntityFlags (gas / drowning / etc.)",
+    # 2026-06-03: 4 persistent-worn items LANDED via WornMagicEffectResolver
+    # flag-only adds with full RAW from ACKS Core p.215+ (Jedidiah-supplied).
+    # All consumer integrations (cold-damage typing, gas immunity, missile-
+    # range modifier in attack_resolver, Finger of Death scarab consult)
+    # are documented follow-ups. Scarab has default_charges="2d6" stamped
+    # via the new SCARAB_CHARGES_DICE constant for materializer dice roll.
     "brooch_of_shielding": "magic-missile-specific immunity not yet (only protected_from_normal_missiles exists; needs missile-type discrimination)",
     "elven_cloak": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to hide_in_shadows requires resolver extension",
     "elven_boots": "ThiefSkillResolver does not yet consult ModifierContainer; worn-item bonus to move_silently requires resolver extension",
@@ -628,6 +630,18 @@ ELEMENTAL_COMMANDER_KEYS = frozenset({
 ONCE_PER_PERIOD_MISC_MAGIC_KEYS = frozenset({
     "horn_of_blasting",
 })
+
+# Persistent-worn cluster (2026-06-03). Items whose default_charges is
+# a dice expression rolled at materialization (mirrors the MAGIC_SWORD
+# 1d4+4 / 1d4+1 pattern). The dice string flows through
+# TreasureInstantiator._roll_charges. Each entry: catalog stamping
+# default_charges = "<dice_expr>". Worn-passive flag is set by
+# WornMagicEffectResolver; the flag reads uses_remaining from the
+# inventory row for charge-aware consumers (Scarab finger-of-death
+# negation will decrement uses_remaining).
+DICE_DEFAULT_CHARGES = {
+    "scarab_of_protection": "2d6",
+}
 
 
 DIRECT_CONSUMABLE_EFFECTS = {
@@ -1625,6 +1639,11 @@ def main() -> int:
         if key in ONCE_PER_PERIOD_MISC_MAGIC_KEYS:
             it["misc_magic_consumable"] = False
             it["default_charges"] = 1
+        # Persistent-worn cluster (2026-06-03): dice-string
+        # default_charges rolled at materialization. Scarab of
+        # Protection's "2d6 attacks absorbed" charge model lands here.
+        if key in DICE_DEFAULT_CHARGES:
+            it["default_charges"] = DICE_DEFAULT_CHARGES[key]
         # Tier 4 Cluster A (2026-06-01): non-spell-binding metadata stamps.
         # Worn-passive flag-only items (Amulet versus Crystal Balls and ESP):
         # `worn_passive_flags` documents which EntityFlags the

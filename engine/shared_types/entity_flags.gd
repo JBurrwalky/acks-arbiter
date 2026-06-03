@@ -110,6 +110,76 @@ extends RefCounted
 ##                  round-tick consumer adds hp_per_round. "Only damage
 ##                  taken while worn" gate is the future damage-source-
 ##                  tracking subsystem follow-up.),
+##               "has_cube_of_frost_resistance_field" (Cube of Frost
+##                  Resistance — ACKS Core p.215+ Jedidiah-supplied RAW
+##                  2026-06-03: "Activated/deactivated by pressing one
+##                  side. When activated, creates a cube-shaped area 10'
+##                  on a side centered on the possessor (or on the cube
+##                  itself if placed on a surface). The temperature
+##                  within this area is always at least 65°F. The field
+##                  absorbs all cold-based attacks. However, if the
+##                  field is subjected to more than 50 points of cold
+##                  damage in 1 turn (from one or multiple attacks), it
+##                  collapses into its portable form and cannot be
+##                  reactivated for 1 hour. If the field absorbs more
+##                  than 100 points of cold damage in a turn, the cube
+##                  is destroyed." Metadata: {absorbs_cold_attacks: true,
+##                  min_temperature_f: 65, area_cube_side_feet: 10,
+##                  collapse_threshold_cold_damage_per_turn: 50,
+##                  collapse_cooldown_hours: 1,
+##                  destroy_threshold_cold_damage_per_turn: 100}. V1
+##                  simplification — flag is default-active while item
+##                  is_equipped (toggle-press deferred until item-action
+##                  UI lands). Cold-damage absorption + threshold
+##                  tracking defer until cold damage typing is wired.
+##                  All consumers read this flag's metadata when their
+##                  subsystems land.),
+##               "has_scarab_of_protection" (Scarab of Protection — ACKS
+##                  Core p.215+ Jedidiah-supplied RAW 2026-06-03: "Silver
+##                  medallion in the shape of a beetle. The scarab's
+##                  possessor gains immunity to any curse and finger of
+##                  death spells or effects, regardless of the source.
+##                  Upon absorbing 2d6 such attacks, the scarab turns to
+##                  powder and is destroyed." Metadata:
+##                  {immune_to: ["curse", "finger_of_death"],
+##                  charges_remaining_field: "uses_remaining"}.
+##                  Charge count rolled at materialization (default_charges
+##                  = "2d6"). Consumer integration (finger_of_death
+##                  resolver consults the flag pre-effect; on hit
+##                  decrements uses_remaining; at 0 the inventory row's
+##                  is_magical clears and item destroyed) is documented
+##                  follow-up; V1 sets the flag with metadata.
+##                  Curse system not wired yet.),
+##               "has_eyes_of_the_eagle" (Eyes of the Eagle — ACKS Core
+##                  p.215+ Jedidiah-supplied RAW 2026-06-03: "Crystal
+##                  lenses that fit over the eyes. Wearer sees 100 times
+##                  further than normal. Improved vision reduces missile
+##                  attack penalty at medium range to -1 and at long
+##                  range to -2. Wearing only one of the pair causes
+##                  dizziness (stunned 1 round). Thereafter, wearer can
+##                  use single lens without being stunned so long as
+##                  he covers his other eye." Metadata:
+##                  {vision_range_multiplier: 100,
+##                  missile_medium_range_modifier: -1,
+##                  missile_long_range_modifier: -2}. V1 assumes both
+##                  lenses worn (default); single-lens-stun mechanic
+##                  is V1-deferred (needs state tracking on the wearer
+##                  for has_used_single_lens_before). Missile-range
+##                  consumer in attack_resolver reads the modifier
+##                  metadata at range-modifier-application time.),
+##               "has_necklace_of_adaptation" (Necklace of Adaptation —
+##                  ACKS Core p.215+ Jedidiah-supplied RAW 2026-06-03:
+##                  "Heavy chain with platinum medallion. Wraps wearer
+##                  in a shell of fresh air, making him immune to all
+##                  harmful vapors and gases. The bubble can enable the
+##                  wearer to survive in an environment without air for
+##                  1 week." Metadata:
+##                  {immune_to_harmful_vapors_and_gases: true,
+##                  survive_without_air_days: 7}. Consumer: gas-based
+##                  attack resolvers consult the flag for immunity;
+##                  underwater/vacuum exploration consults for breath-
+##                  holding extension. Both consumer wirings are V1-
+##                  deferred — flag set with full RAW metadata.),
 ##               "has_boots_traveling_springing" (Boots of Traveling and
 ##                  Springing — ACKS Core p.215+ Jedidiah-supplied RAW
 ##                  2026-06-02: "While these boots are worn, the wearer

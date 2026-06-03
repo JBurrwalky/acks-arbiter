@@ -30789,3 +30789,83 @@ Each binding: `target_mode: "single_target"` (caller designates summon cell with
 4. **Crystal Ball trio (3 items)** — scrying UI subsystem.
 5. **Tag existing monster catalog rows with `creature_type: "magic"`** where appropriate (constructs, enchanted creatures, etc.) — un-stalls Ward against Magic mechanically.
 
+
+
+## Session 2026-06-03 — Persistent-worn batch 3 (Scarab + Cube + Eagle + Adaptation)
+
+**Task:** Land the 4 persistent-worn items for which Jedidiah supplied full RAW from ACKS Core p.215+ (Scarab of Protection, Cube of Frost Resistance, Eyes of the Eagle, Necklace of Adaptation). All 4 ship as worn-passive flag-only adds with full RAW metadata; consumer integrations are deferred per-item.
+**Model used:** Sonnet 4.6.
+
+**RAW (Jedidiah-supplied 2026-06-03):**
+
+- **Scarab of Protection**: "Silver medallion shaped like a beetle. Possessor gains immunity to any curse and finger of death spells or effects, regardless of source. Upon absorbing 2d6 such attacks, the scarab turns to powder and is destroyed."
+- **Cube of Frost Resistance**: "Activated/deactivated by pressing one side. When activated, creates a cube-shaped area 10' on a side centered on the possessor (or on the cube itself if placed on surface). Temperature within is always at least 65°F. Field absorbs all cold-based attacks. If subjected to more than 50 points of cold damage in 1 turn, it collapses into portable form and cannot be reactivated for 1 hour. If absorbs more than 100 points of cold damage in a turn, the cube is destroyed."
+- **Eyes of the Eagle**: "Crystal lenses fit over the eyes. Wearer sees 100 times further than normal. Improved vision reduces missile attack penalty at medium range to -1 and at long range to -2. Wearing only one of the pair causes dizziness (stunned 1 round). Thereafter, wearer can use single lens without being stunned so long as he covers his other eye."
+- **Necklace of Adaptation**: "Heavy chain with platinum medallion. Wraps wearer in shell of fresh air, immune to all harmful vapors and gases. Bubble can enable wearer to survive in an environment without air for 1 week."
+
+**Completed:**
+
+- **`engine/shared_types/entity_flags.gd`** — 4 new EntityFlag declarations with full RAW captured in metadata schema:
+  - `has_cube_of_frost_resistance_field` — metadata `{absorbs_cold_attacks, min_temperature_f: 65, area_cube_side_feet: 10, collapse_threshold_cold_damage_per_turn: 50, collapse_cooldown_hours: 1, destroy_threshold_cold_damage_per_turn: 100}`.
+  - `has_scarab_of_protection` — metadata `{immune_to: ["curse", "finger_of_death"], charges_remaining: <from row.uses_remaining>, item_id}`.
+  - `has_eyes_of_the_eagle` — metadata `{vision_range_multiplier: 100, missile_medium_range_modifier: -1, missile_long_range_modifier: -2}`.
+  - `has_necklace_of_adaptation` — metadata `{immune_to_harmful_vapors_and_gases: true, survive_without_air_days: 7}`.
+
+- **`engine/subsystems/inventory/worn_magic_effect_resolver.gd`** — 4 new dispatch branches + helpers:
+  - `_add_cube_of_frost_resistance(character, item_id)` — stamps cube flag with full metadata. V1 default-active while is_equipped (toggle UI deferred).
+  - `_add_scarab_of_protection(character, item_id, row)` — stamps scarab flag; reads `uses_remaining` from inventory row via existing `_row_int` helper to populate `charges_remaining`.
+  - `_add_eyes_of_the_eagle(character, item_id)` — stamps eyes flag. Single-lens-stun V1-deferred.
+  - `_add_necklace_of_adaptation(character, item_id)` — stamps necklace flag.
+
+- **`tools/extract_magic_item_catalog.py`**:
+  - 4 DEFER_BUILD entries cleared with a landed-on comment.
+  - New `DICE_DEFAULT_CHARGES` frozenset `{scarab_of_protection: "2d6"}` for items whose charges are rolled at materialization via TreasureInstantiator._roll_charges (mirrors MAGIC_SWORD_METADATA pattern).
+  - Stamping loop in process_item() applies the dice-string default_charges.
+
+- **`tests/test_magic_item_catalog.gd`** — EXPECTED_DEFER_KEYS shrunk: 4 persistent-worn keys removed with a "shipped 2026-06-03" comment. Remaining persistent-worn defers: Brooch of Shielding, Elven Cloak, Elven Boots (3 items needing actual engine extensions).
+
+- **`tests/test_persistent_worn_batch3.gd`** (NEW) — 15 tests covering catalog (Scarab dice charges + 4 items no defer_reason + 4 items removed from EXPECTED_DEFER_KEYS), WornMagicEffectResolver (each item's flag + metadata + clears on unequip + Scarab charges read from inventory row), EntityFlags regression (all 4 new flags documented).
+
+- **`tests/test_runner.tscn` + `tests/test_runner.gd`** — wired `413_persistent_worn_batch3_tests` ext_resource + `PersistentWornBatch3Tests` node.
+
+**Decisions made:**
+
+- **Cube of Frost Resistance: V1 default-active while is_equipped.** RAW says "activated/deactivated by pressing one side"; the press-toggle UI is V1-deferred. While equipped, the field is on. Players who want to deactivate can unequip (slot=pack). The 10' cube area + cold-damage absorption + 50/100 thresholds are all stamped in metadata; consumers wire when cold damage typing lands.
+- **Scarab charges via DICE_DEFAULT_CHARGES + uses_remaining.** Mirrors Life Drinker's 1d4+4 / Luck Blade's 1d4+1 pattern. The materializer rolls 2d6 once at item creation; the flag reads the result from the inventory row. Finger of Death resolver consults the flag pre-effect; on hit decrements; at 0 destroys scarab (consumer wires when Finger of Death gets the consult hook — small follow-up).
+- **Eyes single-lens-stun deferred.** RAW: "Wearing only one of the pair causes dizziness (stunned 1 round). Thereafter, wearer can use single lens without being stunned so long as he covers his other eye." Needs state tracking on the wearer (`has_used_single_lens_before` flag) + a stun-application hook on equip-state change. V1 assumes both lenses worn (default); polish item.
+- **Necklace breath-without-air interpretation: persistent-while-worn.** RAW says "The bubble can enable the wearer to survive in an environment without air for 1 week." V1: metadata stamps the duration; underwater/vacuum exploration consults at duration-tick time. Implementation when exploration subsystems land.
+- **No consumer integrations in this batch.** Per project pattern (Ring of Regen + Boots from yesterday), flag-only adds with full metadata are the V1 thin slice. Each consumer is its own focused follow-up — keeps PR scope manageable.
+
+**Interfaces defined or changed:**
+
+- 4 new EntityFlag declarations (full metadata schema documented).
+- 4 new `WornMagicEffectResolver._add_*` static helpers.
+- New `DICE_DEFAULT_CHARGES` frozenset in extractor; stamping loop applies dice-string default_charges.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 15 new tests in `tests/test_persistent_worn_batch3.gd`.
+- Full suite: **407 passed / 19 failed** — was 406/19; +1 new suite, net-zero new failures.
+
+**Known issues / V1 limitations:**
+
+- **Cube cold-damage absorption + threshold tracking deferred.** Needs cold-damage typing on the wound record; absorbs_cold_attacks metadata stamped for the consumer.
+- **Cube activation toggle deferred.** No UI; V1 default-active while equipped.
+- **Scarab Finger of Death negation consumer deferred.** ~10-line addition to `restore_life_and_limb_resolver.gd:_resolve_finger_of_death`: before damage step, check target for `has_scarab_of_protection`; if present, negate the death + decrement scarab charges; at 0 destroy scarab.
+- **Scarab curse system not wired.** RAW immunity includes "curse" spells/effects but no curse-application resolver exists yet.
+- **Eyes single-lens-stun deferred.** Needs `has_used_single_lens_before` state field + equip-state-change hook.
+- **Eyes missile-range modifier consumer deferred.** Attack resolver doesn't yet consult `has_eyes_of_the_eagle.missile_*_range_modifier` at range-modifier-application time.
+- **Eyes 100× vision range** is narrative — engine has no per-character vision_range stat for far-distance perception checks.
+- **Necklace gas immunity consumer deferred.** No gas-attack resolver currently consults the flag.
+- **Necklace breath-without-air deferred.** Underwater/vacuum exploration subsystems not yet wired.
+
+**Next session should:**
+
+1. **Scarab + Finger of Death consumer** — ~10 LOC to make the Scarab actually negate Finger of Death + decrement charges. Useful, focused.
+2. **Brooch of Shielding** — needs missile-type discrimination on `protected_from_normal_missiles` (Brooch blocks magic missile specifically). Small engine extension.
+3. **Elven Cloak + Elven Boots** — needs ThiefSkillResolver to consult ModifierContainer at skill-check assembly time. ~30-50 LOC.
+4. **Ring of Spell Storing** — Jedidiah supplied RAW yesterday; needs materializer + storage + activation flow.
+5. **Crystal Ball trio** — scrying UI subsystem.
+
