@@ -31372,3 +31372,100 @@ on-tick dispatch.
    modifier consumer**.
 8. **Necklace of Adaptation gas immunity + breath-without-air consumers**.
 
+
+
+## Session 2026-06-03 — Eyes of the Eagle V2: hex visibility extension
+
+**Task:** Revise Eyes of the Eagle per Jedidiah ruling. Drop the single-vs-pair lens mechanic entirely (no equip-slot granularity in the project's equipment system; the stun was tactically uninteresting). Keep the missile range penalty reductions. ADD a +1 hex visibility ring on the hexmap layer (party-wide while at least one member wears the item; non-stacking across multiple wearers).
+
+**Model used:** Sonnet 4.6.
+
+**Jedidiah ruling 2026-06-03:**
+
+> Eyes of the Eagle, we will remove the single vs. pair mechanic. We don't have equip slots for that level of granularity and its not very useful. They will just reduce the medium and long ranged penalties and will give the party an extra 1-hex ring of visibility on the hexmap layer.
+
+**Completed:**
+
+### Flag metadata revision
+
+- **`engine/shared_types/entity_flags.gd`** — `has_eyes_of_the_eagle` docstring rewritten for V2. The `vision_range_multiplier: 100` RAW key (which mapped the "sees 100x further" RAW to a no-op modifier) is REMOVED. The "see 100x further" RAW folds into the new `extra_hex_visibility` mechanic — at the project's 6-mile hex scale "see 100x further" naturally reads as "see one more hex." Kept the missile range modifiers. Added the consumer-wiring note for HexMapController.
+
+- **`engine/subsystems/inventory/worn_magic_effect_resolver.gd`** — `_add_eyes_of_the_eagle` now stamps metadata `{source_kind: "worn_magic_item", missile_medium_range_modifier: -1, missile_long_range_modifier: -2, extra_hex_visibility: 1}`. Docstring rewritten to describe V2 semantics.
+
+### HexMapController extension
+
+- **`engine/subsystems/exploration/hex_map_controller.gd`**:
+  - New field `var _party_visibility_bonus_hexes: int = 0` (default = no bonus).
+  - New method `set_party_visibility_bonus_hexes(n: int) -> void` — stores the clamped (max(0, n)) bonus and, if a map is loaded, immediately re-runs `_update_visibility(party_hex)` so the renderer picks up the wider radius without requiring party movement. Idempotent — equal value → no-op.
+  - New accessor `get_party_visibility_bonus_hexes() -> int`.
+  - New static helper `compute_party_visibility_bonus(party_characters: Array) -> int` — scans each character's `has_eyes_of_the_eagle` flag and returns the MAX `extra_hex_visibility` value across all members. RAW intent: multi-wearer does NOT stack (people don't see further if companions are also looking). Skips null members defensively. Future visibility items (telescope, crystal ball with clairvoyance) can extend the same scan loop.
+  - `_update_visibility(new_center)` now reveals rings 1..(1 + bonus) using the existing `get_hex_ring(center, radius)` static helper. Default behavior (bonus=0 → radius 1) unchanged — all prior tests continue to pass.
+
+### Tests
+
+- **`tests/test_persistent_worn_batch3.gd`** — `test_eyes_of_the_eagle_sets_flag_with_full_raw_metadata` updated for V2 metadata. Now checks the 3 V2 keys (missile_medium_range_modifier=-1, missile_long_range_modifier=-2, extra_hex_visibility=+1) AND has a regression assertion that the old `vision_range_multiplier` key is NOT present (so future drift back to V1 metadata gets caught).
+
+- **`tests/test_hex_map_controller.gd`** — 11 new tests covering the bonus mechanic:
+  - `test_default_visibility_radius_is_one` (regression-locks default behavior: ring 2 HIDDEN by default)
+  - `test_set_party_visibility_bonus_extends_radius_to_two` (with bonus=1, ring 2 VISIBLE; ring 1 still VISIBLE; ring 3 still HIDDEN)
+  - `test_set_party_visibility_bonus_re_runs_visibility_on_loaded_map` (setter fires `visibility_updated` signal + reveals hexes immediately without requiring party movement)
+  - `test_set_party_visibility_bonus_idempotent_no_redundant_emit` (re-setting same value is a no-op — cheap optimisation for the renderer)
+  - `test_set_party_visibility_bonus_clamps_negative_to_zero` (defensive: negative bonus would crash `get_hex_ring`)
+  - `test_set_party_visibility_bonus_no_map_loaded_does_not_crash` (setter before `load_map` stores the value; subsequent `load_map` honors it)
+  - `test_compute_party_visibility_bonus_empty_party_returns_zero`
+  - `test_compute_party_visibility_bonus_member_without_eagle_returns_zero`
+  - `test_compute_party_visibility_bonus_single_eagle_returns_one`
+  - `test_compute_party_visibility_bonus_multi_wearer_maxes_not_sums` (2 Eagle-eyed → bonus 1 not 2 — RAW semantics)
+  - `test_compute_party_visibility_bonus_skips_null_members` (defensive)
+
+**Decisions made:**
+
+- **MAX (not SUM) across multi-wearer.** RAW intent: "Crystal lenses that fit over the eyes; wearer sees 100 times further than normal." People don't see further because their companions are also looking — the bonus is about the wearer's improved perception, which doesn't compound across observers. Two Eagle-eyed members yield bonus 1, not 2. If a future item is explicitly stacking, it can land via a per-item `is_stacking` flag on the metadata; V1 takes the max for simplicity.
+
+- **"100x further" → +1 hex.** At the project's 6-mile hex scale, "100x normal vision" is a wide range — 6 miles × 100 = 600 miles. That's continental, not tactical. The RAW intent (better long-distance vision = see more of the surroundings) folds naturally into "see one more hex ring." This keeps the item useful at the play scale (extra wilderness travel safety / strategic positioning) without the absurdity of revealing the entire campaign map.
+
+- **Don't break `_update_visibility`'s existing semantics.** The default bonus (0) keeps the function's behavior IDENTICAL to before — ring 1 only. All prior hex-map tests pass without modification. The new behavior is OPT-IN via the setter; only when something calls `set_party_visibility_bonus_hexes(N)` does the radius expand.
+
+- **`set_party_visibility_bonus_hexes` clamps negative values to 0.** Defensive: a negative bonus would cause `get_hex_ring(center, 0)` to return only the center, OR `get_hex_ring(center, -1)` to potentially loop forever or produce empty rings. Clamping at 0 keeps the field in a sane range.
+
+- **Session-side refresh trigger deferred.** The natural wire-up point is `SessionRunner` (or a new `PartyVisibilityRefresher` service) subscribing to `EventBus.inventory_updated` + `active_party_changed` and calling `controller.set_party_visibility_bonus_hexes(compute_party_visibility_bonus(party_characters))`. V1 ships the controller-side mechanic + the static compute helper; the session-side trigger is a documented follow-up that lands when the next visibility-affecting item arrives OR when a session test exercises the full flow.
+
+- **Missile-range penalty consumer still deferred.** The flag carries the metadata; `attack_resolver` doesn't yet read it (same status as Cube of Frost Resistance / Necklace of Adaptation flag-side metadata). Wires when the ranged-attack range-modifier path needs it.
+
+**Interfaces defined or changed:**
+
+- NEW HexMapController field: `_party_visibility_bonus_hexes: int = 0`.
+- NEW HexMapController methods:
+  - `set_party_visibility_bonus_hexes(n: int) -> void` — clamped + idempotent + auto-refreshes loaded map.
+  - `get_party_visibility_bonus_hexes() -> int` — primarily test-facing.
+  - `static compute_party_visibility_bonus(party_characters: Array) -> int` — maxes across party.
+- `_update_visibility(center)` revised semantics: reveals rings 1..(1 + bonus) instead of fixed ring 1.
+- `has_eyes_of_the_eagle.metadata` schema revised:
+  - REMOVED: `vision_range_multiplier`
+  - KEPT: `missile_medium_range_modifier: -1`, `missile_long_range_modifier: -2`
+  - ADDED: `extra_hex_visibility: 1`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 11 new tests in `tests/test_hex_map_controller.gd`.
+- 1 test updated in `tests/test_persistent_worn_batch3.gd` (V2 metadata regression).
+- Full suite: **409 suites passed / 19 failed** — was 409/19; net-zero new failures (existing test counts preserved; the metadata-update was a same-suite swap; the 11 new HexMapController tests slot into the existing HexMapController suite).
+
+**Known issues / V1 limitations:**
+
+- **Session-side refresh trigger not wired.** Calling `controller.set_party_visibility_bonus_hexes(n)` works, but no V1 code path currently calls it during gameplay. The bonus takes effect only when:
+  - A test explicitly sets it (covered), OR
+  - A future session-side subscriber lands (documented follow-up).
+- **Missile-range penalty consumer not wired.** Same status as before V2 — `attack_resolver` doesn't yet read the missile_*_range_modifier metadata.
+- **Bonus is a flat per-party value.** Multi-party play (split parties on different maps) would need per-party bonus tracking. V1 single-party scope. Multi-party visibility lands when split-party UI does.
+
+**Next session should:**
+
+1. **Session-side refresh trigger for `set_party_visibility_bonus_hexes`.** Subscribe to `EventBus.inventory_updated` + `active_party_changed` in `SessionRunner` (or a new lightweight `PartyVisibilityRefresher` service) and call `set_party_visibility_bonus_hexes(compute_party_visibility_bonus(party_characters))`. Small (~30 LOC) but real wire-up.
+2. **Missile-range penalty consumer** in `attack_resolver` — read the missile_medium_range_modifier / missile_long_range_modifier from the wielder's `has_eyes_of_the_eagle` flag at range-modifier-application time. Parallel deferral cleared.
+3. **Tier 1 deferrals triage** (4 items) — needs Jedidiah rulings per item.
+4. **Detect family (4 items)** — needs the dungeon UI reveal subsystem.
+5. **Ring of Spell Storing** — Jedidiah RAW in hand.
+

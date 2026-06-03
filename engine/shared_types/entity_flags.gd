@@ -151,22 +151,40 @@ extends RefCounted
 ##                  follow-up; V1 sets the flag with metadata.
 ##                  Curse system not wired yet.),
 ##               "has_eyes_of_the_eagle" (Eyes of the Eagle — ACKS Core
-##                  p.215+ Jedidiah-supplied RAW 2026-06-03: "Crystal
-##                  lenses that fit over the eyes. Wearer sees 100 times
-##                  further than normal. Improved vision reduces missile
-##                  attack penalty at medium range to -1 and at long
-##                  range to -2. Wearing only one of the pair causes
-##                  dizziness (stunned 1 round). Thereafter, wearer can
-##                  use single lens without being stunned so long as
-##                  he covers his other eye." Metadata:
-##                  {vision_range_multiplier: 100,
-##                  missile_medium_range_modifier: -1,
-##                  missile_long_range_modifier: -2}. V1 assumes both
-##                  lenses worn (default); single-lens-stun mechanic
-##                  is V1-deferred (needs state tracking on the wearer
-##                  for has_used_single_lens_before). Missile-range
-##                  consumer in attack_resolver reads the modifier
-##                  metadata at range-modifier-application time.),
+##                  p.215+ V2 Jedidiah ruling 2026-06-03: the single-vs-
+##                  pair lens mechanic is REMOVED entirely (the project's
+##                  equipment system has no slot-granularity for left-eye-
+##                  only / right-eye-only, and the stun was tactically
+##                  uninteresting). V2 RAW slice = (a) reduced missile
+##                  attack penalty at medium range to -1 and at long range
+##                  to -2; (b) party gains an extra 1-hex ring of
+##                  visibility on the hexmap layer while at least one
+##                  party member wears the item. The "wearer sees 100x
+##                  further" RAW also folds into the hex visibility ring
+##                  extension — at the project's 6-mile hex scale "see
+##                  100x further" reads as "see one more hex." Metadata:
+##                  {missile_medium_range_modifier: -1,
+##                  missile_long_range_modifier: -2,
+##                  extra_hex_visibility: 1}.
+##                  Consumer wiring:
+##                    - HEX VISIBILITY — HexMapController exposes
+##                      `set_party_visibility_bonus_hexes(n)` and
+##                      `compute_party_visibility_bonus(party_characters)`
+##                      (max across party members; multiple eagle-eyed
+##                      wearers do not stack — RAW semantics: people don't
+##                      see further if other people are also looking).
+##                      `_update_visibility(center)` reveals rings 1..
+##                      (1 + bonus). Bonus refresh on map load / party
+##                      composition change / equip change wires through
+##                      session_runner subscribing to inventory_updated +
+##                      active_party_changed signals — V1 wire-up
+##                      deferred (controller-side mechanic is live and
+##                      tested; session-side trigger is a follow-up).
+##                    - MISSILE-RANGE PENALTIES — attack_resolver consumer
+##                      reads the modifier metadata at range-modifier-
+##                      application time. Still V1-deferred parallel to
+##                      Cube of Frost Resistance / Necklace of Adaptation
+##                      flag-side metadata.),
 ##               "has_brooch_of_shielding" (Brooch of Shielding — ACKS
 ##                  Core p.215+ Jedidiah-supplied RAW 2026-06-03: "Silver
 ##                  or gold jewelry used to fasten a cloak or cape. Can

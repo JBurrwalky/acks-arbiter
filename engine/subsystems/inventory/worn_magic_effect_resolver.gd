@@ -446,19 +446,30 @@ static func _add_scarab_of_protection(
 	})
 
 
-## Apply Eyes of the Eagle: sets has_eyes_of_the_eagle flag with full
-## RAW metadata (ACKS Core p.215+, Jedidiah-supplied 2026-06-03). V1
-## assumes both lenses worn (default); single-lens-stun mechanic is
-## V1-deferred (would need has_used_single_lens_before state tracking
-## on the wearer). Missile-range modifier consumer in attack_resolver
-## reads metadata at range-modifier-application time.
+## Apply Eyes of the Eagle: sets has_eyes_of_the_eagle flag with V2
+## metadata (Jedidiah ruling 2026-06-03). V2 drops the single-vs-pair
+## lens mechanic entirely (no equip-slot granularity, and stun was
+## tactically uninteresting). V2 keeps the missile range penalty
+## reductions and adds a +1 hex visibility ring on the hexmap layer
+## (party-wide while at least one member wears the item; non-stacking
+## across multiple wearers — see HexMapController.compute_party_visibility_bonus).
+##
+## Consumer wiring:
+##   - HEX VISIBILITY — HexMapController.set_party_visibility_bonus_hexes(n)
+##     drives `_update_visibility` to reveal rings 1..(1 + bonus).
+##     Refresh trigger from session_runner (on inventory_updated +
+##     active_party_changed) is V1-deferred; controller-side mechanic
+##     is live + tested.
+##   - MISSILE-RANGE PENALTIES — attack_resolver consumer is V1-deferred
+##     parallel to Cube of Frost Resistance + Necklace of Adaptation
+##     flag-side metadata.
 static func _add_eyes_of_the_eagle(character: CharacterData, item_id: String) -> void:
 	var source_id: String = "%s%s" % [SOURCE_PREFIX, item_id]
 	character.flags.set_flag("has_eyes_of_the_eagle", source_id, {
 		"source_kind": "worn_magic_item",
-		"vision_range_multiplier": 100,
 		"missile_medium_range_modifier": -1,
 		"missile_long_range_modifier": -2,
+		"extra_hex_visibility": 1,
 	})
 
 

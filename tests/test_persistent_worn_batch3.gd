@@ -199,17 +199,24 @@ func test_scarab_clears_on_unequip() -> void:
 # --- Eyes of the Eagle ---
 
 func test_eyes_of_the_eagle_sets_flag_with_full_raw_metadata() -> void:
+	# V2 (2026-06-03 Jedidiah ruling): single-vs-pair lens mechanic dropped;
+	# vision_range_multiplier collapses into extra_hex_visibility=+1 on the
+	# hexmap layer; missile range penalty reductions retained.
 	var cd := _make_character()
 	WornMagicEffectResolver.refresh_for_character(cd, [_equipped_row("eyes_of_the_eagle")])
 	check(cd.flags.has_flag("has_eyes_of_the_eagle"),
 		"wearer carries has_eyes_of_the_eagle flag")
 	var meta: Dictionary = cd.flags.get_flag_metadata("has_eyes_of_the_eagle")
-	check(int(meta.get("vision_range_multiplier", 0)) == 100,
-		"vision_range_multiplier=100 per RAW")
 	check(int(meta.get("missile_medium_range_modifier", 0)) == -1,
-		"missile_medium_range_modifier=-1 per RAW")
+		"V2 keeps missile_medium_range_modifier=-1 per RAW")
 	check(int(meta.get("missile_long_range_modifier", 0)) == -2,
-		"missile_long_range_modifier=-2 per RAW")
+		"V2 keeps missile_long_range_modifier=-2 per RAW")
+	check(int(meta.get("extra_hex_visibility", 0)) == 1,
+		"V2 adds extra_hex_visibility=+1 (party hex visibility ring extension)")
+	# V2 regression: the single-lens-stun-era vision_range_multiplier
+	# metadata key should NOT survive — it folded into extra_hex_visibility.
+	check(not meta.has("vision_range_multiplier"),
+		"V2 drops vision_range_multiplier metadata key (folded into extra_hex_visibility)")
 
 
 func test_eyes_clears_on_unequip() -> void:

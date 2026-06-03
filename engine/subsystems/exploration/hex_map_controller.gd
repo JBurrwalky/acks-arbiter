@@ -35,6 +35,21 @@ signal hex_overlay_updated(coord: Vector2i)
 
 var _map_data: HexMapData
 
+## Number of EXTRA hex rings (beyond the default 1) revealed around the
+## party each time visibility is updated. Default 0 → base radius 1 (center
+## + immediate neighbors). Set via `set_party_visibility_bonus_hexes` by
+## the party-equipment refresher; consumers don't read this field directly.
+##
+## Wired 2026-06-03 for Eyes of the Eagle V2 (Jedidiah ruling): the item's
+## flag carries `metadata.extra_hex_visibility: 1`, and the static helper
+## `compute_party_visibility_bonus(party_characters)` maxes across all party
+## members (multi-wearer doesn't stack — RAW semantics: people don't see
+## further if other people are also looking). The session-side refresh
+## trigger (subscribe to inventory_updated + active_party_changed) is a
+## documented V1 follow-up; this controller-side mechanic is live so the
+## bonus takes effect on map load / movement once a caller sets it.
+var _party_visibility_bonus_hexes: int = 0
+
 
 # ---------------------------------------------------------------------------
 # Static hex math
@@ -299,17 +314,23 @@ func reveal_around(center: Vector2i) -> void:
 
 
 ## Demotes previously VISIBLE hexes to EXPLORED, then marks the center and
-## all adjacent in-bounds hexes as VISIBLE. Emits hex_first_revealed for
-## any hex transitioning out of HIDDEN for the first time.
+## all hexes within `1 + _party_visibility_bonus_hexes` rings as VISIBLE.
+## Emits hex_first_revealed for any hex transitioning out of HIDDEN for the
+## first time. Default sight radius is 1 (center + immediate neighbors).
+## Each party visibility bonus point adds one more ring (e.g. Eyes of the
+## Eagle V2 = +1 → radius 2 = center + 6 neighbors + 12 next-ring hexes).
 func _update_visibility(new_center: Vector2i) -> void:
 	# Step 1: demote all currently visible hexes — they are no longer in sight range.
 	for coord in _map_data.fog.keys():
 		if _map_data.fog[coord] == HexMapData.FogState.VISIBLE:
 			_map_data.fog[coord] = HexMapData.FogState.EXPLORED
 
-	# Step 2: reveal center + immediate neighbors (1-hex sight radius).
+	# Step 2: reveal center + rings 1..(1 + bonus).
+	# Base radius is 1 (immediate neighbors). Each bonus hex extends one more ring.
 	var visible_set: Array[Vector2i] = [new_center]
-	visible_set.append_array(get_neighbors(new_center))
+	var max_ring: int = 1 + max(0, _party_visibility_bonus_hexes)
+	for ring_radius in range(1, max_ring + 1):
+		visible_set.append_array(get_hex_ring(new_center, ring_radius))
 
 	for coord in visible_set:
 		if _map_data.is_valid_coord(coord):
@@ -319,3 +340,72 @@ func _update_visibility(new_center: Vector2i) -> void:
 				hex_first_revealed.emit(coord)
 
 	visibility_updated.emit()
+
+
+# ---------------------------------------------------------------------------
+# Party visibility bonus (Eyes of the Eagle V2 + future visibility items)
+# ---------------------------------------------------------------------------
+
+## Sets the party's visibility bonus (extra hex rings beyond the default 1)
+## and, if a map is loaded, immediately re-runs `_update_visibility` from the
+## current party hex so the renderer picks up the new sight radius.
+##
+## Called by the party-equipment refresher (session-side wire-up) whenever
+## a party member equips/unequips an item that affects visibility, or when
+## party membership changes. Multiple call sites are valid — the setter is
+## idempotent for equal values.
+##
+## V1 wire-up callers: none yet (controller-side mechanic is live + tested;
+## session-side trigger is a documented follow-up).
+func set_party_visibility_bonus_hexes(n: int) -> void:
+	var clamped: int = max(0, n)
+	if clamped == _party_visibility_bonus_hexes:
+		return
+	_party_visibility_bonus_hexes = clamped
+	if _map_data != null:
+		_update_visibility(_map_data.party_hex)
+
+
+## Returns the currently-set party visibility bonus. Primarily used by
+## tests; runtime consumers go through `_update_visibility` indirectly.
+func get_party_visibility_bonus_hexes() -> int:
+	return _party_visibility_bonus_hexes
+
+
+## Sums (actually maxes — see below) the visibility bonus contributed by
+## each character in [param party_characters]. Multi-source semantics:
+## the bonus DOES NOT STACK across multiple wearers — RAW intent is that
+## people don't see further just because their companions are also looking.
+## Two party members each wearing Eyes of the Eagle yield bonus 1, not 2.
+## Future items that DO stack can land via a per-item is_stacking flag on
+## the metadata; V1 takes the max for simplicity.
+##
+## Reads `metadata.extra_hex_visibility` from any `has_eyes_of_the_eagle`
+## flag entry on each character. Forward-looking: other future visibility
+## flags (e.g. has_telescope, has_crystal_ball_with_clairvoyance) can be
+## added to the same scan loop as they land.
+##
+## [param party_characters] Array of CharacterData (or duck-typed objects
+## exposing `.flags`). Null members are skipped.
+static func compute_party_visibility_bonus(party_characters: Array) -> int:
+	var bonus: int = 0
+	for member in party_characters:
+		if member == null:
+			continue
+		var member_flags = null
+		if member is CharacterData:
+			member_flags = member.flags
+		elif "flags" in member:
+			member_flags = member.flags
+		if member_flags == null:
+			continue
+		# Eyes of the Eagle V2 — read max extra_hex_visibility across all
+		# source entries of this flag (a single character could in principle
+		# wear two paired items; max keeps the bonus stable at 1).
+		if member_flags.has_flag("has_eyes_of_the_eagle"):
+			for entry in member_flags.get_flag_source_entries("has_eyes_of_the_eagle"):
+				var meta: Dictionary = entry.get("metadata", {})
+				var member_bonus: int = int(meta.get("extra_hex_visibility", 0))
+				if member_bonus > bonus:
+					bonus = member_bonus
+	return bonus
