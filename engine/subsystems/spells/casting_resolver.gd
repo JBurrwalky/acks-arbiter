@@ -317,6 +317,42 @@ func resolve(
 		result.failures.append("disjunctive branch not chosen")
 		return result
 
+	# --- Stage 6a: Scroll of Warding against Magic gate (2026-06-02) ---
+	# Per Jedidiah ruling: the ward is a 10' radius around the bearer.
+	# Spells/magic-item activations crossing the boundary in either
+	# direction are blocked. V1 strict check: if caster has the ward and
+	# any target is a different entity → block (the ward bearer can only
+	# cast on themselves and on co-located bystanders, which V1 doesn't
+	# enumerate). If any target has the ward and the caster is a
+	# different entity → block (only the bearer or co-located allies can
+	# cast targeting them). Same-entity self-cast always passes.
+	#
+	# V1 strictness is conservative: spatial-cell distance checks (to
+	# allow co-located allies within the 10' sphere) are deferred until a
+	# scenario demands the tactical positioning case.
+	var ward_block: Dictionary = _check_ward_against_magic_block(
+		caster_entity, caster_context, target_descriptor, targets_by_id)
+	if not ward_block.is_empty():
+		result.success = false
+		result.slot_consumed = true
+		result.failures.append(
+			"blocked by Scroll of Warding against Magic (bearer=%s)" %
+			ward_block.get("bearer_id", "?"))
+		result.effects_applied = [{
+			"step_kind": "blocked_by_ward_against_magic",
+			"applied": false,
+			"reason": ward_block.get("reason", ""),
+			"bearer_id": ward_block.get("bearer_id", ""),
+			"source_id": ward_block.get("source_id", ""),
+		}]
+		# Slot is consumed even on block per ACKS (spell was started).
+		if _campaign_repo != null:
+			_campaign_repo.increment_expended_slot(caster_context.caster_id, spell_choice.level)
+			EventBus.spell_slot_expended.emit(
+				caster_context.caster_id, spell_choice.level,
+				_compute_remaining_slots(caster_context.caster_id, spell_choice.level))
+		return result
+
 	# --- Stage 6: anti-magic / globe-of-invulnerability pre-resolve gates ---
 	# Anti-Magic Shell (acore_spell_catalog_a-i_summary.xml: blocks spells +
 	# spell-like effects entering/leaving the shell). Globe of Invulnerability
@@ -1661,6 +1697,63 @@ func _get_entity_hd(entity: Variant) -> int:
 ## while the caster is the protected entity) is NOT blocked — RAW: "Self-range
 ## and touch-range spells used by the caster on himself are not blocked."
 ##
+## Scroll of Warding against Magic gate (2026-06-02). Returns a non-empty
+## Dictionary { bearer_id, source_id, reason } when the cast must be
+## blocked. Returns {} when the cast may proceed.
+##
+## V1 strict rules (Jedidiah ruling 2026-06-02):
+##   - If `caster_entity` has the `warded_against_magic` flag (= caster is
+##     a ward bearer) AND `target_descriptor.target_ids` includes any
+##     entity OTHER THAN the caster, the cast is blocked (we cannot
+##     verify whether the target is inside the bearer's 10' radius
+##     without scene-wide cell awareness).
+##   - If any entity in `targets_by_id` has the `warded_against_magic`
+##     flag (= target is a ward bearer) AND the caster is a different
+##     entity, the cast is blocked.
+##   - Same-entity self-cast (caster_id == target_id) always passes.
+##
+## Spatial-cell distance checks (to allow co-located allies within the
+## ward's 10' sphere to cast across the boundary) are deferred until a
+## tactical scenario demands it.
+func _check_ward_against_magic_block(
+		caster_entity: Variant,
+		caster_context: CasterContext,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary) -> Dictionary:
+	if caster_context == null:
+		return {}
+	var caster_id: String = String(caster_context.caster_id)
+	# Case 1: caster is the ward bearer. Any external target → block.
+	var caster_flags: EntityFlags = _get_flags(caster_entity)
+	if caster_flags != null and caster_flags.has_flag("warded_against_magic"):
+		for tid in target_descriptor.target_ids:
+			if String(tid) != caster_id:
+				var entries: Array = caster_flags.get_flag_source_entries(
+					"warded_against_magic")
+				var entry: Dictionary = entries[0] if not entries.is_empty() else {}
+				return {
+					"bearer_id": caster_id,
+					"source_id": String(entry.get("source_id", "")),
+					"reason": "caster_is_bearer_target_outside_ward",
+				}
+	# Case 2: any target is a ward bearer. Caster ≠ that target → block.
+	for tid in target_descriptor.target_ids:
+		if String(tid) == caster_id:
+			continue  # self-cast always exempt
+		var target = targets_by_id.get(tid, null)
+		var t_flags: EntityFlags = _get_flags(target)
+		if t_flags != null and t_flags.has_flag("warded_against_magic"):
+			var entries2: Array = t_flags.get_flag_source_entries(
+				"warded_against_magic")
+			var entry2: Dictionary = entries2[0] if not entries2.is_empty() else {}
+			return {
+				"bearer_id": String(tid),
+				"source_id": String(entry2.get("source_id", "")),
+				"reason": "target_is_bearer_caster_outside_ward",
+			}
+	return {}
+
+
 ## Anti-Magic Shell: any creature inside the shell is blocked unless caster ==
 ## target. (RAW: shell blocks spells entering OR leaving; self-on-self exempt.)
 ##

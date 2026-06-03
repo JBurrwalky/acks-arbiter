@@ -940,7 +940,15 @@
       "encumbrance_units": 167,
       "value_gp": 500,
       "creation_time_days": 7,
-      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
+      "direct_consumable_effect": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": [
+          "elemental"
+        ],
+        "ward_kind": "ward_against_elementals",
+        "radius_feet": 10,
+        "caster_level": 5
+      }
     },
     {
       "item_key": "scroll_of_warding_lycanthropes",
@@ -951,7 +959,15 @@
       "encumbrance_units": 167,
       "value_gp": 500,
       "creation_time_days": 7,
-      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
+      "direct_consumable_effect": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": [
+          "lycanthrope"
+        ],
+        "ward_kind": "ward_against_lycanthropes",
+        "radius_feet": 10,
+        "caster_level": 5
+      }
     },
     {
       "item_key": "scroll_of_warding_magic",
@@ -962,7 +978,12 @@
       "encumbrance_units": 167,
       "value_gp": 3000,
       "creation_time_days": 42,
-      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
+      "direct_consumable_effect": {
+        "effect_kind": "ward_against_magic",
+        "ward_kind": "ward_against_magic",
+        "radius_feet": 10,
+        "caster_level": 5
+      }
     },
     {
       "item_key": "scroll_of_warding_undead",
@@ -973,7 +994,15 @@
       "encumbrance_units": 167,
       "value_gp": 500,
       "creation_time_days": 7,
-      "defer_reason": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating"
+      "direct_consumable_effect": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": [
+          "undead"
+        ],
+        "ward_kind": "ward_against_undead",
+        "radius_feet": 10,
+        "caster_level": 5
+      }
     },
     {
       "item_key": "spell_scroll",

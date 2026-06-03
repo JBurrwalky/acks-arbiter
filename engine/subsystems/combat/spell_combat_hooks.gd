@@ -31,6 +31,14 @@ var _dice_system = null
 ## Shape: { attacker_id: { source_id: bool (true=saved, false=failed) } }
 var _sanctuary_save_cache: Dictionary = {}
 
+## Per-attacker, per-ward save cache for Scrolls of Warding against
+## Elementals / Lycanthropes / Undead (Jedidiah ruling 2026-06-02:
+## Protection-from-Evil pattern scaled up). Same shape + lifecycle as
+## _sanctuary_save_cache; consulted in on_pre_attack when the target
+## carries `warded_against_creature_type` AND the attacker's
+## creature_type matches the ward's filter.
+var _ward_creature_type_save_cache: Dictionary = {}
+
 ## Tracks whether we've connected EventBus.combatant_moved to _on_combatant_moved.
 ## CombatController calls connect_signals()/disconnect_signals() at combat
 ## start/end so the swarm cell-entry hook does not leak across encounters.
@@ -85,6 +93,7 @@ func disconnect_signals() -> void:
 ## Called once when combat begins, before the first round.
 func on_combat_start(roster: CombatRoster) -> void:
 	_sanctuary_save_cache.clear()
+	_ward_creature_type_save_cache.clear()
 
 
 ## Called at the start of each round, before declarations.
@@ -716,6 +725,36 @@ func on_pre_attack(
 				"figments_remaining": figment_count - 1,
 			}
 
+	# --- Scrolls of Warding against creature type (2026-06-02) ---
+	# Per Jedidiah ruling: Protection-from-Evil pattern scaled up. If the
+	# target carries a `warded_against_creature_type` flag AND the attacker's
+	# creature_type matches one of the ward's filtered types, the attacker
+	# rolls save vs Spells (cached per source_id like Sanctuary). Failed
+	# save → attack cancelled. Successful save → attacks normally for the
+	# rest of the duration (one save per ward per attacker per encounter).
+	if target_flags.has_flag("warded_against_creature_type"):
+		var ward_sources: Array = target_flags.get_flag_source_entries(
+			"warded_against_creature_type")
+		for entry in ward_sources:
+			var meta: Dictionary = entry.get("metadata", {})
+			var warded_types: Array = meta.get("creature_types", [])
+			if warded_types.is_empty():
+				continue
+			if not _attacker_matches_warded_types(attacker, warded_types):
+				continue
+			var source_id: String = String(entry.get("source_id", ""))
+			if source_id.is_empty():
+				continue
+			var saved: bool = _ward_creature_type_resolve_save(
+				attacker, source_id, entry)
+			if not saved:
+				return {
+					"cancel": true,
+					"cancelled_by": "ward_against_creature_type",
+					"source_id": source_id,
+					"warded_against": warded_types,
+				}
+
 	# --- Sanctuary (Session 5) ---
 	if not target_flags.has_flag("cannot_be_targeted_by_attacks"):
 		return {}
@@ -824,6 +863,56 @@ func _sanctuary_resolve_save(attacker: Variant, sanctuary_entry: Dictionary) -> 
 	if not _sanctuary_save_cache.has(attacker_id):
 		_sanctuary_save_cache[attacker_id] = {}
 	_sanctuary_save_cache[attacker_id][source_id] = saved
+	return saved
+
+
+## Returns true if [param attacker]'s creature_type matches any of
+## [param warded_types]. Uses Combatant.is_creature_type() when available,
+## falling back to direct field inspection for test fixtures.
+func _attacker_matches_warded_types(attacker: Variant, warded_types: Array) -> bool:
+	if attacker == null:
+		return false
+	for t in warded_types:
+		var t_str: String = String(t).to_lower()
+		if attacker.has_method("is_creature_type"):
+			if attacker.is_creature_type(t_str):
+				return true
+		# Test-fixture fallback: direct creature_type field.
+		if "creature_type" in attacker:
+			if String(attacker.creature_type).to_lower() == t_str:
+				return true
+		# Direct tag list (test fixtures or pre-Combatant entities).
+		if "tags" in attacker:
+			var tags = attacker.tags
+			if tags is Array and t_str in tags:
+				return true
+	return false
+
+
+## Per-attacker per-source save resolution for Ward against Creature Type.
+## Mirrors _sanctuary_resolve_save exactly; cached separately so Sanctuary
+## and Ward saves don't collide on the same source_id namespace.
+func _ward_creature_type_resolve_save(
+		attacker: Variant, source_id: String, ward_entry: Dictionary) -> bool:
+	var attacker_id: String = String(attacker.id)
+	var per_attacker: Dictionary = _ward_creature_type_save_cache.get(attacker_id, {})
+	if per_attacker.has(source_id):
+		return bool(per_attacker[source_id])
+
+	var save_target: int = 17
+	if attacker.has_method("get_effective_save"):
+		save_target = int(attacker.get_effective_save("save_spells"))
+	var roll_total: int
+	if _dice_system != null:
+		var roll = _dice_system.roll_digital(20, 1, 0, "save_spells_ward_creature_type")
+		roll_total = int(roll.modified_total) if roll != null else 10
+	else:
+		roll_total = 10
+	var saved: bool = roll_total >= save_target
+
+	if not _ward_creature_type_save_cache.has(attacker_id):
+		_ward_creature_type_save_cache[attacker_id] = {}
+	_ward_creature_type_save_cache[attacker_id][source_id] = saved
 	return saved
 
 

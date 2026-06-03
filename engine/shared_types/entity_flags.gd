@@ -79,7 +79,32 @@ extends RefCounted
 ##                  blocks attacks + spells while concentrating)
 ##   Repulsion:  "fleeing_dispel_evil" (Dispel Evil — undead/enchanted fleeing the area)
 ##   Protection (cont.): "protected_from_normal_weapons" (Protection from Normal Weapons L5)
-##   Warding:    "cannot_be_targeted_by_attacks" (Sanctuary; per-attacker save vs Spells, cached per source_id)
+##   Warding:    "cannot_be_targeted_by_attacks" (Sanctuary; per-attacker save vs Spells, cached per source_id),
+##               "warded_against_creature_type" (Scrolls of Warding against
+##                  Elementals / Lycanthropes / Undead — RAW
+##                  acore_treasure_and_magic_items_rules.xml:212 lists the
+##                  scrolls in the random-item table; Jedidiah ruling 2026-06-02
+##                  scales up Protection-from-Evil pattern: 10' radius around
+##                  bearer, duration 1 turn × caster_level (default 10 turns at
+##                  CL5). Metadata: {creature_types: Array[String], radius_feet,
+##                  caster_level, ward_kind: "ward_against_X"}. Hook lives in
+##                  spell_combat_hooks.on_pre_attack alongside Sanctuary's
+##                  per-attacker save: when attacker's creature_type matches a
+##                  warded type AND the attacker has not yet saved against this
+##                  source_id, attacker rolls save vs Spells; on fail the
+##                  attack is cancelled. Save result cached per (attacker, source_id)),
+##               "warded_against_magic" (Scroll of Warding against Magic —
+##                  Jedidiah ruling 2026-06-02 extension of literal "Ward
+##                  against Magic": (a) spells/magic-item activations
+##                  TARGETING the bearer from outside the radius are blocked;
+##                  (b) spells/magic-item activations originating from the
+##                  bearer inside the radius are blocked when they target
+##                  outside the radius; (c) spells/magic-item activations
+##                  staying entirely inside OR entirely outside the radius
+##                  proceed normally. Metadata: {radius_feet: 10, caster_level,
+##                  bearer_id: String}. Gate in CastingResolver checks the
+##                  spell's caster cell + target cell vs the bearer's
+##                  current cell + radius_feet; blocks the cast on cross.)
 ##   Outsider:   "blocks_enchanted_creature_melee" (Protection from Evil)
 ##   Defense:    "is_mirror_image_protected" (Mirror Image; figments absorb attacks)
 ##   Communication: "can_speak_with_animals" (Speak with Animals)

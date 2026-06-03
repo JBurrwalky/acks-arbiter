@@ -397,10 +397,11 @@ DEFER_BUILD = {
     # (`warded_against_<creature_type>`) + gating in attack / spell
     # resolution to refuse movement of the warded type into the area.
     # New entry point on MagicItemActivator: read_scroll (consumable).
-    "scroll_of_warding_elementals": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
-    "scroll_of_warding_lycanthropes": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
-    "scroll_of_warding_magic": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
-    "scroll_of_warding_undead": "warded_against_creature_type flag not yet in EntityFlags; needs new flag + attack/movement gating",
+    # 2026-06-02: 4 Scrolls of Warding LANDED via DIRECT_CONSUMABLE_EFFECTS
+    # below + MagicItemActivator.activate_consumable + new EntityFlags
+    # warded_against_creature_type / warded_against_magic + Sanctuary-
+    # style per-attacker save in SpellCombatHooks.on_pre_attack +
+    # CastingResolver gate for Ward against Magic. Deferral cleared.
     # Cluster 5 leftover persistent-worn items — each blocked by missing
     # engine support for the specific stat / mechanic. All extend
     # WornMagicEffectResolver once their stat exists.
@@ -589,6 +590,53 @@ DIRECT_POTION_EFFECTS = {
         "save_kind": "spells",
         "duration_turns": -1,
         "hostile_on_expiry": True,  # forward-looking flag for the cleanup
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# DIRECT_CONSUMABLE_EFFECTS — scroll-category items whose effect bypasses
+# the spell_binding pipeline. Consumed by
+# MagicItemActivator.activate_consumable. Mirrors DIRECT_POTION_EFFECTS
+# but for the activate_consumable entry point (scrolls + future
+# consumable categories).
+#
+# Wards Scrolls cluster (2026-06-02, Jedidiah ruling):
+#   Per the Protection-from-Evil pattern scaled up to 10' radius and
+#   1 turn × caster_level duration, three of the four scrolls share the
+#   `ward_against_creature_type` resolver with different creature_types
+#   filters. The fourth (Ward against Magic) uses
+#   `ward_against_magic` with bidirectional spell-cross checking in
+#   CastingResolver. Scroll caster_level default = 5 (RAW silent on
+#   minimum-caster-level for warding scrolls; project default mirrors
+#   the standard "scroll cast at minimum level" rule).
+DIRECT_CONSUMABLE_EFFECTS = {
+    "scroll_of_warding_elementals": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": ["elemental"],
+        "ward_kind": "ward_against_elementals",
+        "radius_feet": 10,
+        "caster_level": 5,
+    },
+    "scroll_of_warding_lycanthropes": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": ["lycanthrope"],
+        "ward_kind": "ward_against_lycanthropes",
+        "radius_feet": 10,
+        "caster_level": 5,
+    },
+    "scroll_of_warding_undead": {
+        "effect_kind": "ward_against_creature_type",
+        "creature_types": ["undead"],
+        "ward_kind": "ward_against_undead",
+        "radius_feet": 10,
+        "caster_level": 5,
+    },
+    "scroll_of_warding_magic": {
+        "effect_kind": "ward_against_magic",
+        "ward_kind": "ward_against_magic",
+        "radius_feet": 10,
+        "caster_level": 5,
     },
 }
 
@@ -1448,6 +1496,14 @@ def main() -> int:
         # MagicItemActivator.drink_potion. effect_kind names the resolver.
         if key in DIRECT_POTION_EFFECTS:
             it["direct_potion_effect"] = DIRECT_POTION_EFFECTS[key]
+        # Wards Scrolls (2026-06-02): scroll-category consumables with
+        # `direct_consumable_effect` routing through
+        # MagicItemActivator.activate_consumable. Per-effect dispatch
+        # by effect_kind ("ward_against_creature_type" or
+        # "ward_against_magic"). Cleared the EXPECTED_DEFER_KEYS rows
+        # in tests/test_magic_item_catalog.gd.
+        if key in DIRECT_CONSUMABLE_EFFECTS:
+            it["direct_consumable_effect"] = DIRECT_CONSUMABLE_EFFECTS[key]
         # Tier 4 Control batch (2026-06-01): worn-active items whose
         # effect bypasses the spell pipeline (Ring of Command Animal /
         # Ring of Command Plant). Stamped on the catalog so the

@@ -30363,3 +30363,89 @@ Folded into (1) — `REJECTED_DEATH_CAUSES` const + the resolver's death_cause g
 4. **Wilderness handler signal hook for Frost Brand** — outstanding from prior magic-swords commit.
 5. **Restoration spell narration layer hook** — LLM consumer reads `roleplay_violation` + `tampering_outcome.side_effect` to surface the alignment vow + restoration outcome to the player.
 
+
+
+## Session 2026-06-02 — Scrolls of Warding cluster (4 items)
+
+**Task:** Land all 4 deferred Scrolls of Warding (Elementals / Lycanthropes / Magic / Undead) per Jedidiah ruling 2026-06-02. RAW corpus (`rules/`) only lists the names in the random-item table (`acore_treasure_and_magic_items_rules.xml:212`) — mechanical text not present, escalated to Jedidiah for V1 ruling. Jedidiah's answer: "Protection from Evil pattern, scaled up" (creature-type wards) + extended literal "Ward against Magic" with bidirectional spell-cross block. Activator entry point: generic `activate_consumable`.
+**Model used:** Sonnet 4.6 (1M context). Phase: RAW gap escalation + Jedidiah ruling + implementation + tests.
+
+**Completed:**
+
+- **`engine/shared_types/entity_flags.gd`** — two new EntityFlag declarations in the Warding family:
+  - `warded_against_creature_type` — metadata `{creature_types: Array[String], radius_feet: int, caster_level: int, ward_kind: String}`. Covers the 3 creature-type wards (Elementals / Lycanthropes / Undead). Source-ID pattern: `scroll_ward:<ward_kind>:<scroll_id>` for per-scroll cleanup.
+  - `warded_against_magic` — metadata `{radius_feet: int, caster_level: int, bearer_id: String, ward_kind: "ward_against_magic"}`. Separate flag so the bidirectional spell-cross check has a clear key.
+
+- **`engine/subsystems/inventory/magic_item_activator.gd`** — new generic activate entry point:
+  - **`activate_consumable(item_id, reader, magic_item_catalog, origin_cell)`** — validates scroll category, dispatches by `direct_consumable_effect.effect_kind`, consumes scroll on success. Mirrors `drink_potion` / `apply_oil` / `use_misc_magic_active` pattern. Future consumable categories (food, bandages, etc.) can route through the same dispatch.
+  - **`_apply_ward_against_creature_type(item_id, reader, catalog_entry, direct)`** — sets `warded_against_creature_type` flag with metadata from the direct_consumable_effect payload (creature_types filter, radius_feet, caster_level, ward_kind). Returns structured result for the activator.
+  - **`_apply_ward_against_magic(item_id, reader, catalog_entry, direct)`** — sets `warded_against_magic` flag on the reader; bearer_id == reader.id; metadata + source_id keyed for the bidirectional gate.
+
+- **`engine/subsystems/combat/spell_combat_hooks.gd`** — extended `on_pre_attack`:
+  - **NEW** `_ward_creature_type_save_cache: Dictionary` (parallel to `_sanctuary_save_cache`). Cleared at combat end alongside the Sanctuary cache.
+  - **NEW** check ahead of Sanctuary: if target carries `warded_against_creature_type` flag AND attacker's creature_type matches any of the ward's `creature_types`, attacker rolls save vs Spells (cached per (attacker_id, source_id)); failed save → attack cancelled with `cancelled_by: "ward_against_creature_type"`.
+  - **NEW** helper `_attacker_matches_warded_types(attacker, warded_types) -> bool` (uses `is_creature_type` method when available; falls back to direct creature_type field + tags array for test fixtures).
+  - **NEW** helper `_ward_creature_type_resolve_save(attacker, source_id, ward_entry) -> bool` (mirrors `_sanctuary_resolve_save` exactly; cached separately).
+
+- **`engine/subsystems/spells/casting_resolver.gd`** — new Stage 6a gate before anti-magic / globe-of-invulnerability:
+  - **NEW** `_check_ward_against_magic_block(caster_entity, caster_context, target_descriptor, targets_by_id) -> Dictionary` — V1 strict semantic per Jedidiah ruling: (a) caster has the flag (= caster is bearer) AND any target_id ≠ caster_id → block (caster cannot cast outward at non-bearer targets); (b) any target has the flag (= target is bearer) AND caster_id ≠ target_id → block (caster cannot cast inward from outside); (c) same-entity self-cast (caster_id == target_id) always exempt. Blocked casts return non-empty Dictionary `{bearer_id, source_id, reason}`. Spatial-cell distance check (to allow co-located allies within the 10' sphere) is deferred to a follow-up tactical-positioning pass.
+  - Stage 6a result handling: result.success = false; slot_consumed = true (slot consumed per ACKS on any started cast); `effects_applied[0] = {step_kind: "blocked_by_ward_against_magic", applied: false, reason, bearer_id, source_id}`. Returns immediately before Stage 6/7.
+
+- **`tools/extract_magic_item_catalog.py`** — new `DIRECT_CONSUMABLE_EFFECTS` map (parallel to `DIRECT_POTION_EFFECTS`):
+  - 4 scrolls stamped: `scroll_of_warding_elementals` / `_lycanthropes` / `_undead` get `effect_kind: "ward_against_creature_type"` with their respective creature_types arrays; `scroll_of_warding_magic` gets `effect_kind: "ward_against_magic"`. All 4 set `radius_feet: 10` + `caster_level: 5` (V1 default per minimum-cast-level convention).
+  - Extractor stamping loop in `process_item()` adds `direct_consumable_effect` parallel to `direct_potion_effect`.
+  - Removed the 4 wards from `DEFER_BUILD` with a landed-on note. Re-ran the extractor; catalog JSON regenerated with 153 items, 4 now carrying the new field.
+
+- **`tests/test_magic_item_catalog.gd`** — `EXPECTED_DEFER_KEYS` array updated: 4 scroll keys removed with a "shipped 2026-06-02" comment in their place.
+
+- **`tests/test_wards_scrolls.gd`** (NEW file) — 18 tests:
+  - Catalog (5): each of 4 scrolls has `direct_consumable_effect` with correct `effect_kind` + (creature_types | ward_kind) + radius_feet + caster_level; bare wards NOT present as array members in `EXPECTED_DEFER_KEYS` (regression guard).
+  - activate_consumable behavior (5): creature-type ward applies flag with creature_types + radius metadata; magic ward applies separate flag with bearer_id; non-scroll category refused with descriptive message; missing direct_consumable_effect (e.g. spell_scroll generator) refused; metadata defaults are radius_feet=10 + caster_level=5 + ward_kind correctly stamped.
+  - Combat hook (4): matching creature_type cancels attack on save fail with `cancelled_by: "ward_against_creature_type"`; success → attack proceeds; non-matching creature_type ignored (ward doesn't fire); per-(attacker, source) cache holds the pass even when subsequent dice would fail.
+  - CastingResolver gate (4): caster-as-bearer with external target blocked; target-as-bearer with external caster blocked; self-cast exempt (no ward block); no-ward = no block.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `409_wards_scrolls_tests` ext_resource + `WardsScrollsTests` node into the run loop.
+
+**Decisions made:**
+
+- **Generic `activate_consumable` over scroll-specific entry point.** Per Jedidiah preference; mirrors the lesson learned from the misc_magic activation refactor (each new consumable category got its own entry point until we landed `use_misc_magic_active` as a generic). Future scrolls / dusts / food can route through the same dispatch.
+- **Two separate EntityFlags** (`warded_against_creature_type` vs `warded_against_magic`) rather than one with effect-kind metadata. Reason: the Ward-against-Magic gate lives in CastingResolver and needs a fast `has_flag` check; the creature-type ward gate lives in SpellCombatHooks.on_pre_attack and needs a different fast check. Two flags + two hooks is cleaner than one flag with branching on metadata.
+- **Scroll caster_level default = 5.** RAW silent on minimum-cast-level for scrolls of warding. Project convention: V1 picks the scroll's effective caster_level as the minimum that could scribe it (cleric L5 for divine scrolls is the typical minimum). Stamped on the catalog so a future scribed-by-higher-CL scroll system can override.
+- **V1 strict block over spatial-cell check** for Ward against Magic. The bidirectional gate works on entity-identity (is caster the bearer? is target the bearer? are caster + target the same?) rather than 3D cell distance. Pros: cheap O(1) check; no roster awareness; deterministic. Cons: over-blocks co-located allies who could legitimately cast across the boundary at each other. Tactical-positioning refinement deferred until a scenario actually demands it.
+- **Per-attacker save cached per source_id** for ward_against_creature_type — same pattern as Sanctuary. Once an attacker has saved against a particular ward source, they can attack normally for the rest of that ward's duration; the saved result persists across rounds. The cache lifecycle is combat-end (cleared alongside Sanctuary's).
+- **Slot consumed on blocked cast** for Ward against Magic. Per ACKS: a slot is consumed when a spell is *started* (declared + attempted), not when it succeeds. The ward blocks resolution but the cast was started, so the slot is gone.
+
+**Interfaces defined or changed:**
+
+- New `MagicItemActivator.activate_consumable(item_id: String, reader: CharacterData, magic_item_catalog: MagicItemCatalog, origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary` — public static entry point.
+- New `MagicItemActivator._apply_ward_against_creature_type` + `_apply_ward_against_magic` — private static dispatch targets.
+- New `SpellCombatHooks._ward_creature_type_save_cache: Dictionary` — runtime state cleared at combat end.
+- New `SpellCombatHooks._attacker_matches_warded_types` + `_ward_creature_type_resolve_save` private helpers.
+- New `CastingResolver._check_ward_against_magic_block(caster_entity, caster_context, target_descriptor, targets_by_id) -> Dictionary` — Stage 6a gate.
+- New `EntityFlags` declarations: `warded_against_creature_type`, `warded_against_magic`.
+- New `direct_consumable_effect` field on scroll-category catalog entries.
+
+**Database changes:**
+
+- None.
+
+**Tests added/updated:**
+
+- 18 new tests in `tests/test_wards_scrolls.gd` (categories: catalog 5 + activate_consumable 5 + combat hook 4 + casting gate 4).
+- Full suite: **403 passed / 19 failed** — was 402/19; +1 new suite, net-zero new failures.
+
+**Known issues:**
+
+- **Spatial-cell distance check deferred.** V1 over-blocks co-located allies within the 10' Magic-ward sphere who could legitimately cast across the boundary at each other. Tactical-positioning refinement (bearer position + ward radius + caster/target cell distance) is a follow-up if a scenario demands it.
+- **Bystander-ward case not covered.** If entity X casts at entity Y but a third entity Z holds a Magic ward whose 10' sphere intersects the X→Y path, the cast is not blocked. Requires roster-wide flag scan + cell-distance checks; defer until needed.
+- **Outbound aura visualization not wired.** A 10' radius ward should ideally render as a sphere indicator in the combat UI; visualization is out of scope for this commit.
+- **Charged-scroll variants not modeled.** RAW silent on whether warding scrolls can be re-read for multiple effects; V1 treats them as single-use consumables per the standard scroll model.
+
+**Next session should:**
+
+1. **Tier 4 cluster (Untriaged misc magic, ~10 items)** — `ring_of_regeneration`, `ring_of_spell_storing`, `ring_of_x_ray_vision`, `horn_of_blasting`, `rope_of_climbing`, `potion_of_growth`, `potion_of_delusion`, `oil_of_sharpness`, `boots_of_traveling_and_springing` — sweep the items that were classified Tier 4 in the 2026-05-29 triage but never landed.
+2. **Elemental Commanders cluster (4 items)** — `bowl_of_commanding_water_elementals` + 3 siblings; ship via one parameterized resolver that wires to `conjure_elemental` with an element parameter.
+3. **Crystal Ball trio (3 items)** — `crystal_ball` + `_with_clairaudience` + `_with_esp`; scrying UI subsystem + integration with see_invisible / detect_magic.
+4. **Multi-effect staves (5 items)** — `staff_of_commanding` / `staff_of_power` / `staff_of_serpent` / `staff_of_withering` / `staff_of_wizardry`; each has its own resolver with effect-selection UI; high effort per item.
+5. **Persistent-worn stat-bonus cluster (7 items)** — `scarab_of_protection`, `eyes_of_the_eagle`, etc. — each needs a different engine extension; would split into sub-clusters.
+

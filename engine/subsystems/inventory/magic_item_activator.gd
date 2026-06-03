@@ -1566,3 +1566,169 @@ static func _build_target_descriptor(
 	return descriptor
 
 
+
+
+# ---------------------------------------------------------------------------
+# Generic consumable activation (Wards scrolls + future scrolls/dusts/etc.)
+# ---------------------------------------------------------------------------
+
+## Activate a consumable magic item. V1 routes scroll-category items by
+## `direct_consumable_effect` to per-effect apply functions.
+##
+## Currently dispatches:
+##   - Scrolls of Warding (Elementals / Lycanthropes / Magic / Undead) per
+##     `direct_consumable_effect.effect_kind` ("ward_against_creature_type"
+##     or "ward_against_magic").
+##
+## Returns:
+##   { success: bool, message: String, consumed: bool, effect_kind: String,
+##     flag_set: String, source_id: String }
+static func activate_consumable(
+		item_id: String,
+		reader: CharacterData,
+		magic_item_catalog: MagicItemCatalog,
+		origin_cell: Vector3i = Vector3i.ZERO) -> Dictionary:
+	var empty := {
+		"success": false,
+		"message": "",
+		"consumed": false,
+		"effect_kind": "",
+		"flag_set": "",
+		"source_id": "",
+	}
+
+	# 1. Inventory + catalog lookup.
+	var item_row: Dictionary = CampaignRepository.get_inventory_item_by_id(item_id)
+	if item_row.is_empty():
+		empty["message"] = "Consumable not found in inventory (id=%s)." % item_id
+		return empty
+	var item_key: String = str(item_row.get("item_key", ""))
+	var catalog_entry: Dictionary = magic_item_catalog.get_item(item_key)
+	if catalog_entry.is_empty():
+		empty["message"] = "Item '%s' has no catalog entry." % item_key
+		return empty
+	var category: String = str(catalog_entry.get("category", ""))
+	if category != "scroll":
+		empty["message"] = "Item '%s' is not a consumable scroll (category=%s)." % [
+			item_key, category]
+		return empty
+
+	# 2. Direct-consumable-effect dispatch.
+	var direct_v: Variant = catalog_entry.get("direct_consumable_effect", null)
+	if not (direct_v is Dictionary):
+		empty["message"] = (
+			"Scroll '%s' has no direct_consumable_effect (effect not yet implemented)."
+			% item_key)
+		return empty
+	var direct: Dictionary = direct_v
+	var effect_kind: String = String(direct.get("effect_kind", ""))
+	empty["effect_kind"] = effect_kind
+
+	# 3. Reader gate.
+	if reader == null:
+		empty["message"] = "Consumable requires a reader."
+		return empty
+
+	# 4. Per-effect dispatch.
+	var apply_result: Dictionary
+	match effect_kind:
+		"ward_against_creature_type":
+			apply_result = _apply_ward_against_creature_type(
+				item_id, reader, catalog_entry, direct)
+		"ward_against_magic":
+			apply_result = _apply_ward_against_magic(
+				item_id, reader, catalog_entry, direct)
+		_:
+			empty["message"] = "Unknown direct_consumable_effect.effect_kind='%s'." % effect_kind
+			return empty
+
+	# 5. Consume on success (scrolls are single-use).
+	var consumed: bool = false
+	if bool(apply_result.get("success", false)):
+		consumed = CampaignRepository.remove_inventory_item(item_id)
+	return {
+		"success": bool(apply_result.get("success", false)),
+		"message": String(apply_result.get("message", "")),
+		"consumed": consumed,
+		"effect_kind": effect_kind,
+		"flag_set": String(apply_result.get("flag_set", "")),
+		"source_id": String(apply_result.get("source_id", "")),
+	}
+
+
+## Apply a Scroll of Warding against Elementals/Lycanthropes/Undead. Sets
+## the `warded_against_creature_type` flag on the reader with metadata
+## carrying the creature_types filter, radius_feet, ward_kind, and
+## caster_level. Per-attacker save vs Spells is enforced by
+## SpellCombatHooks.on_pre_attack (Sanctuary-style cache).
+##
+## RAW: `acore_treasure_and_magic_items_rules.xml:212` lists the scrolls;
+## Jedidiah ruling 2026-06-02 scales up Protection from Evil for V1:
+## 10' radius, 1 turn * caster_level duration (default 10 turns at CL5
+## for a scroll cast by a non-spellcaster reader).
+static func _apply_ward_against_creature_type(
+		item_id: String,
+		reader: CharacterData,
+		catalog_entry: Dictionary,
+		direct: Dictionary) -> Dictionary:
+	var creature_types: Array = direct.get("creature_types", [])
+	if creature_types.is_empty():
+		return {
+			"success": false,
+			"message": "Scroll missing creature_types filter.",
+		}
+	var ward_kind: String = String(direct.get("ward_kind", "ward_against_creature_type"))
+	var radius_feet: int = int(direct.get("radius_feet", 10))
+	# Scrolls have a built-in caster_level (the cleric/mage who scribed it).
+	# V1 defers to a catalog-stamped caster_level (default 5 if missing).
+	var caster_level: int = int(direct.get("caster_level", max(5, reader.level)))
+	var source_id: String = "scroll_ward:%s:%s" % [ward_kind, item_id]
+	reader.flags.set_flag("warded_against_creature_type", source_id, {
+		"creature_types": creature_types,
+		"radius_feet": radius_feet,
+		"caster_level": caster_level,
+		"ward_kind": ward_kind,
+	})
+	return {
+		"success": true,
+		"message": "Read '%s' - bearer warded against %s for %d turns." % [
+			str(catalog_entry.get("name", "Scroll")),
+			", ".join(creature_types),
+			caster_level,
+		],
+		"flag_set": "warded_against_creature_type",
+		"source_id": source_id,
+	}
+
+
+## Apply a Scroll of Warding against Magic. Per Jedidiah ruling 2026-06-02:
+## (a) spells targeting the bearer from outside the 10' radius are blocked;
+## (b) spells originating from the bearer inside the radius are blocked
+##     when they target outside the radius;
+## (c) spells staying entirely inside OR entirely outside proceed normally.
+##
+## The bidirectional spell-cross check lives in CastingResolver via the
+## warded_against_magic flag's metadata.bearer_id + radius_feet.
+static func _apply_ward_against_magic(
+		item_id: String,
+		reader: CharacterData,
+		catalog_entry: Dictionary,
+		direct: Dictionary) -> Dictionary:
+	var radius_feet: int = int(direct.get("radius_feet", 10))
+	var caster_level: int = int(direct.get("caster_level", max(5, reader.level)))
+	var source_id: String = "scroll_ward:ward_against_magic:%s" % item_id
+	reader.flags.set_flag("warded_against_magic", source_id, {
+		"radius_feet": radius_feet,
+		"caster_level": caster_level,
+		"bearer_id": reader.id,
+		"ward_kind": "ward_against_magic",
+	})
+	return {
+		"success": true,
+		"message": "Read '%s' - bearer warded against magic for %d turns." % [
+			str(catalog_entry.get("name", "Scroll of Warding against Magic")),
+			caster_level,
+		],
+		"flag_set": "warded_against_magic",
+		"source_id": source_id,
+	}

@@ -255,8 +255,10 @@ const EXPECTED_DEFER_KEYS := [
 	"potion_of_heroism", "potion_of_super_heroism", "potion_of_invulnerability",
 	"wand_of_detecting_enemies", "wand_of_detecting_metals",
 	"wand_of_detecting_secret_doors", "potion_of_treasure_finding",
-	"scroll_of_warding_elementals", "scroll_of_warding_lycanthropes",
-	"scroll_of_warding_magic", "scroll_of_warding_undead",
+	# 4 Scrolls of Warding shipped 2026-06-02 via DIRECT_CONSUMABLE_EFFECTS
+	# + MagicItemActivator.activate_consumable + new EntityFlags
+	# warded_against_creature_type / warded_against_magic + Sanctuary-
+	# style attack hook + CastingResolver gate for Ward against Magic.
 	"scarab_of_protection", "cube_of_frost_resistance",
 	"eyes_of_the_eagle", "necklace_of_adaptation", "brooch_of_shielding",
 	"elven_cloak", "elven_boots",
