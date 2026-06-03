@@ -52,6 +52,14 @@ func run_all_tests() -> void:
 	# game_day fix
 	test_dice_roll_logs_game_day()
 
+	# Eyes of the Eagle V2 visibility refresh (2026-06-03)
+	test_refresh_party_visibility_bonus_no_party_resets_to_zero()
+	test_refresh_party_visibility_bonus_plain_party_sets_zero()
+	test_refresh_party_visibility_bonus_eagle_eyed_member_sets_one()
+	test_inventory_updated_signal_handler_refreshes_bonus()
+	test_active_party_changed_signal_handler_refreshes_bonus()
+	test_end_session_resets_visibility_bonus()
+
 	if not has_failures():
 		print("SessionRunner: all tests passed.")
 
@@ -476,3 +484,141 @@ func test_dice_roll_logs_game_day() -> void:
 	GameState.end_session()
 	_reset_game_state()
 	print("  dice_roll_logs_game_day: OK")
+
+
+# ---------------------------------------------------------------------------
+# Eyes of the Eagle V2 — party visibility bonus refresh (2026-06-03)
+# ---------------------------------------------------------------------------
+#
+# SessionRunner subscribes to EventBus.inventory_updated +
+# active_party_changed and pushes the recomputed
+# compute_party_visibility_bonus(party_characters) value to its
+# HexMapController. _make_runner doesn't call _ready so signal connections
+# don't auto-wire — these tests exercise the handler methods + helper
+# directly, plus a focused signal-driven test that connects manually.
+
+func _make_runner_with_hex_controller() -> SessionRunner:
+	# Bare runner + a fresh HexMapController instance (NOT added to scene
+	# tree; tests work directly off the bonus accessor). Also stubs in the
+	# scheduler / handler-registry / scheduler-loop so the end_session
+	# clean-up path doesn't null-deref on them.
+	var runner := _make_runner()
+	runner._hex_controller = HexMapController.new()
+	runner._scheduler = EventScheduler.new()
+	runner._handler_registry = EventHandlerRegistry.new()
+	runner._scheduler_loop = SchedulerLoop.new()
+	return runner
+
+
+func _make_plain_pc(pc_id: String) -> CharacterData:
+	var cd := CharacterData.new()
+	cd.id = pc_id
+	cd.name = "Plain " + pc_id
+	cd.character_class = "fighter"
+	cd.combat_progression = "fighter"
+	cd.level = 1
+	cd.hp_max = 8; cd.hp_current = 8
+	return cd
+
+
+func _make_eagle_eyed_pc(pc_id: String) -> CharacterData:
+	var cd := _make_plain_pc(pc_id)
+	cd.flags.set_flag("has_eyes_of_the_eagle", "test_source_" + pc_id, {
+		"source_kind": "worn_magic_item",
+		"missile_medium_range_modifier": -1,
+		"missile_long_range_modifier": -2,
+		"extra_hex_visibility": 1,
+	})
+	return cd
+
+
+func test_refresh_party_visibility_bonus_no_party_resets_to_zero() -> void:
+	# When _party_data is null (no session loaded), the refresh helper
+	# resets the controller's bonus to 0 so a previous session's value
+	# doesn't leak into the next.
+	var runner := _make_runner_with_hex_controller()
+	# Pre-set a non-zero bonus to verify the reset happens.
+	runner._hex_controller.set_party_visibility_bonus_hexes(2)
+	runner._party_data = null
+	runner._refresh_party_visibility_bonus()
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 0,
+		"no party loaded → bonus reset to 0")
+	runner._hex_controller.free()
+	print("  refresh_party_visibility_bonus_no_party_resets_to_zero: OK")
+
+
+func test_refresh_party_visibility_bonus_plain_party_sets_zero() -> void:
+	# Party with no Eagle-eyed members → bonus 0.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	runner._party_data.character_data = [_make_plain_pc("plain_a"),
+		_make_plain_pc("plain_b")]
+	runner._refresh_party_visibility_bonus()
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 0,
+		"plain party → bonus 0")
+	runner._hex_controller.free()
+	print("  refresh_party_visibility_bonus_plain_party_sets_zero: OK")
+
+
+func test_refresh_party_visibility_bonus_eagle_eyed_member_sets_one() -> void:
+	# Single Eagle-eyed member in a 3-PC party → bonus 1.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	runner._party_data.character_data = [_make_plain_pc("plain_a"),
+		_make_eagle_eyed_pc("eagle_b"), _make_plain_pc("plain_c")]
+	runner._refresh_party_visibility_bonus()
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 1,
+		"1 Eagle-eyed member in 3-PC party → bonus 1")
+	runner._hex_controller.free()
+	print("  refresh_party_visibility_bonus_eagle_eyed_member_sets_one: OK")
+
+
+func test_inventory_updated_signal_handler_refreshes_bonus() -> void:
+	# Direct call into the EventBus.inventory_updated handler — should
+	# delegate to _refresh_party_visibility_bonus.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	runner._party_data.character_data = [_make_eagle_eyed_pc("eagle_a")]
+	# Before the signal handler runs, bonus is still 0 (no refresh yet).
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 0, "setup")
+	# Simulate the EventBus signal firing for any character id.
+	runner._on_inventory_updated_for_visibility("eagle_a")
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 1,
+		"inventory_updated handler refreshes bonus to 1")
+	runner._hex_controller.free()
+	print("  inventory_updated_signal_handler_refreshes_bonus: OK")
+
+
+func test_active_party_changed_signal_handler_refreshes_bonus() -> void:
+	# Direct call into the EventBus.active_party_changed handler.
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	runner._party_data.character_data = [_make_eagle_eyed_pc("eagle_a")]
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 0, "setup")
+	runner._on_active_party_changed_for_visibility("prev_party", "new_party")
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 1,
+		"active_party_changed handler refreshes bonus to 1")
+	runner._hex_controller.free()
+	print("  active_party_changed_signal_handler_refreshes_bonus: OK")
+
+
+func test_end_session_resets_visibility_bonus() -> void:
+	# end_session should reset the visibility bonus to 0 so the next session
+	# doesn't inherit it.
+	_reset_game_state()
+	var runner := _make_runner_with_hex_controller()
+	runner._party_data = PartyData.new()
+	runner._party_data.character_data = [_make_eagle_eyed_pc("eagle_a")]
+	runner._refresh_party_visibility_bonus()
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 1,
+		"setup: bonus is 1 from Eagle-eyed PC")
+	runner._campaign_id = "test_eotev2_c"
+	runner._party_id = "test_eotev2_p"
+	runner._effect_ticker.connect_signals()
+	runner.end_session()
+	check(runner._hex_controller.get_party_visibility_bonus_hexes() == 0,
+		"end_session resets bonus to 0; got %d"
+			% runner._hex_controller.get_party_visibility_bonus_hexes())
+	runner._hex_controller.free()
+	_reset_game_state()
+	print("  end_session_resets_visibility_bonus: OK")

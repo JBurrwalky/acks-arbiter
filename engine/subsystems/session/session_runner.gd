@@ -293,6 +293,13 @@ func _ready() -> void:
 	_handler_registry = EventHandlerRegistry.new()
 	_scheduler_loop = SchedulerLoop.new()
 	EventBus.clock_speed_requested.connect(_on_clock_speed_requested)
+	# Eyes of the Eagle V2 (2026-06-03) — refresh the party visibility bonus
+	# on the hexmap whenever an inventory change or party-membership change
+	# could affect a member's `has_eyes_of_the_eagle` flag. Cheap (single
+	# integer recompute + setter is idempotent for equal values, so no
+	# spurious renderer refresh). Handlers no-op when no party is loaded.
+	EventBus.inventory_updated.connect(_on_inventory_updated_for_visibility)
+	EventBus.active_party_changed.connect(_on_active_party_changed_for_visibility)
 
 	# Register all states
 	_register_states()
@@ -569,6 +576,15 @@ func load_session(campaign_id: String, party_id: String) -> void:
 			_party_data.creature_data.append(creature)
 		# Populate draft vehicles
 		_party_data.vehicle_data = CampaignRepository.get_draft_vehicles_for_party(party_id)
+
+	# 2.x. Eyes of the Eagle V2 (2026-06-03) — refresh the hexmap party
+	# visibility bonus from the freshly-loaded roster. Bonus is pushed to
+	# HexMapController.set_party_visibility_bonus_hexes; the controller's
+	# setter auto-re-runs _update_visibility(party_hex) if a map is loaded,
+	# so subsequent map loads pick up the right radius. Future inventory
+	# changes and party switches refresh via EventBus subscriptions wired
+	# in _ready.
+	_refresh_party_visibility_bonus()
 
 	# 3. Register party with Timekeeping (if not already)
 	Timekeeping.register_party(party_id)
@@ -863,6 +879,10 @@ func end_session() -> void:
 	_party_data = null
 	_campaign_id = ""
 	_party_id = ""
+	# Eyes of the Eagle V2: reset party visibility bonus so a new session
+	# doesn't inherit the prior party's bonus.
+	if _hex_controller != null:
+		_hex_controller.set_party_visibility_bonus_hexes(0)
 	GameState.end_session()  # triggers Timekeeping reset, DiceSystem clear
 
 
@@ -1063,6 +1083,51 @@ func advance_exploration_time(turns: int) -> void:
 ## Called at every state transition boundary.
 func cancel_pending_roll() -> void:
 	EventBus.player_roll_cancelled.emit()
+
+
+# ---------------------------------------------------------------------------
+# Party visibility bonus refresh (Eyes of the Eagle V2 — 2026-06-03)
+# ---------------------------------------------------------------------------
+
+## EventBus.inventory_updated handler. Any character's inventory change can
+## flip a `has_eyes_of_the_eagle` flag (equip / unequip / item added / item
+## removed). Refresh the bonus. Cheap — single integer recompute + setter
+## is idempotent for equal values.
+func _on_inventory_updated_for_visibility(_character_id: String) -> void:
+	_refresh_party_visibility_bonus()
+
+
+## EventBus.active_party_changed handler. Switching active parties means a
+## completely different roster — recompute from scratch.
+func _on_active_party_changed_for_visibility(
+		_previous_party_id: String, _new_party_id: String) -> void:
+	_refresh_party_visibility_bonus()
+
+
+## Compute the party visibility bonus from the live party_data.character_data
+## roster and push it to HexMapController. No-op when no party / map / hex-
+## controller is available (e.g. main menu, before session load, headless
+## tests without a session running).
+##
+## Called from:
+##   * `load_session` after `_party_data.character_data` is populated.
+##   * `_on_inventory_updated_for_visibility` (any inventory change).
+##   * `_on_active_party_changed_for_visibility` (party switch).
+##
+## V1 scope: single-party visibility. Multi-party (split-party UI) would
+## need a per-party HexMapController instance OR a per-party bonus override;
+## V1 currently routes all visibility through the singleton controller.
+func _refresh_party_visibility_bonus() -> void:
+	if _hex_controller == null:
+		return
+	if _party_data == null:
+		# No party loaded — reset to baseline so a previous session's
+		# bonus doesn't leak into the next.
+		_hex_controller.set_party_visibility_bonus_hexes(0)
+		return
+	var bonus: int = HexMapController.compute_party_visibility_bonus(
+		_party_data.character_data)
+	_hex_controller.set_party_visibility_bonus_hexes(bonus)
 
 
 # ---------------------------------------------------------------------------

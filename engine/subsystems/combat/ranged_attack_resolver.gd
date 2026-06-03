@@ -68,6 +68,12 @@ func resolve_ranged_attack(
 	var range_info := _determine_range_band(distance_ft, weapon_data)
 	if range_info["out_of_range"]:
 		return _build_out_of_range_result(attacker, target, distance_ft, weapon_data)
+	# Eyes of the Eagle V2 — reduced missile range penalties (medium and
+	# long bands only). See `_apply_eagle_eye_modifier` for the metadata
+	# contract. The wielder's `has_eyes_of_the_eagle` flag overrides the
+	# default -2/-5 band penalties with `missile_medium_range_modifier`
+	# / `missile_long_range_modifier` (V2 default -1 / -2).
+	range_info = _apply_eagle_eye_modifier(range_info, attacker)
 
 	var range_penalty: int = range_info["penalty"]
 
@@ -264,6 +270,7 @@ func resolve_ranged_attack(
 		"target_downed": damage_result.get("is_downed", false),
 		"range_band": range_info["band"],
 		"range_penalty": range_penalty,
+		"eagle_eye_applied": bool(range_info.get("eagle_eye_applied", false)),
 		"into_melee_penalty": into_melee_penalty,
 		"out_of_range": false,
 		"into_melee_blocked": false,
@@ -292,6 +299,64 @@ static func _determine_range_band(
 		return {"band": "long", "penalty": -5, "out_of_range": false}
 	else:
 		return {"band": "beyond", "penalty": 0, "out_of_range": true}
+
+
+## Eyes of the Eagle V2 missile-range penalty consumer (2026-06-03).
+##
+## RAW (ACKS Core p.215+, Jedidiah-supplied 2026-06-03 V2): Eyes of the
+## Eagle "reduces missile attack penalty at medium range to -1 and at long
+## range to -2." V2 drops the single-vs-pair lens mechanic; the wearer's
+## `has_eyes_of_the_eagle` flag metadata carries the per-band override:
+##   * missile_medium_range_modifier (default V2: -1, was RAW -2)
+##   * missile_long_range_modifier   (default V2: -2, was RAW -5)
+##
+## When the attacker carries the flag AND the range band is medium or long,
+## the override REPLACES the default penalty (not stacks). Short / beyond /
+## out_of_range bands pass through unchanged.
+##
+## Returns a NEW Dictionary; does not mutate `range_info`. When the
+## attacker has no Eagle flag, returns range_info unchanged.
+##
+## Forward-looking: other items / spells that adjust missile range
+## penalties can plug into the same hook by adding their own flag-metadata
+## checks; for V1 only Eyes of the Eagle uses this path.
+static func _apply_eagle_eye_modifier(
+		range_info: Dictionary, attacker: Combatant) -> Dictionary:
+	if attacker == null:
+		return range_info
+	var band: String = String(range_info.get("band", ""))
+	if band != "medium" and band != "long":
+		return range_info
+	var flags: EntityFlags = attacker.get_flags()
+	if flags == null or not flags.has_flag("has_eyes_of_the_eagle"):
+		return range_info
+	# Read the override across all source entries; pick the BEST (closest to
+	# zero / most-reduced penalty) when multiple sources are present. For V1
+	# only the worn-magic-item source exists, but the loop is robust to
+	# future stackers (spell + item, two items, etc.).
+	var meta_key: String = ("missile_medium_range_modifier" if band == "medium"
+		else "missile_long_range_modifier")
+	var default_penalty: int = int(range_info.get("penalty", 0))
+	var best_penalty: int = default_penalty  # most negative = worst
+	var found: bool = false
+	for entry in flags.get_flag_source_entries("has_eyes_of_the_eagle"):
+		var meta: Dictionary = entry.get("metadata", {})
+		if not meta.has(meta_key):
+			continue
+		var entry_penalty: int = int(meta[meta_key])
+		if not found or entry_penalty > best_penalty:
+			best_penalty = entry_penalty
+			found = true
+	if not found:
+		return range_info
+	# Defensive: don't allow the Eagle to *worsen* the band penalty if a
+	# misconfigured metadata value claims so. Take whichever is closer to
+	# zero (i.e. the actual RAW improvement).
+	var applied_penalty: int = best_penalty if best_penalty > default_penalty else default_penalty
+	var result: Dictionary = range_info.duplicate()
+	result["penalty"] = applied_penalty
+	result["eagle_eye_applied"] = (applied_penalty != default_penalty)
+	return result
 
 
 # ---------------------------------------------------------------------------
@@ -391,6 +456,7 @@ func _resolve_auto_hit(
 		"target_downed": damage_result.get("is_downed", false),
 		"range_band": range_info["band"],
 		"range_penalty": range_info["penalty"],
+		"eagle_eye_applied": bool(range_info.get("eagle_eye_applied", false)),
 		"into_melee_penalty": into_melee_penalty,
 		"out_of_range": false,
 		"into_melee_blocked": false,

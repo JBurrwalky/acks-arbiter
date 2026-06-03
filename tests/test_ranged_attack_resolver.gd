@@ -30,6 +30,13 @@ func run_all_tests() -> void:
 	test_magic_bow_and_magic_arrows_stack_on_both()
 	test_magic_thrown_weapon_adds_to_both_via_weapon()
 	test_mundane_ranged_attack_has_no_magic_bonus()
+	# Eyes of the Eagle V2 missile-range consumer (2026-06-03)
+	test_eagle_eye_reduces_medium_range_penalty()
+	test_eagle_eye_reduces_long_range_penalty()
+	test_eagle_eye_does_not_affect_short_range()
+	test_eagle_eye_does_not_apply_when_no_flag()
+	test_eagle_eye_does_not_worsen_penalty_defensive()
+	test_eagle_eye_result_carries_eagle_eye_applied_flag()
 	if not has_failures():
 		print("RangedAttackResolver: all tests passed.")
 
@@ -347,6 +354,122 @@ func _make_fighter_with_proficiency(
 		"specialization": "",
 	})
 	return c
+
+
+## Returns a fighter wielding the V2 Eyes of the Eagle metadata (lifted from
+## `WornMagicEffectResolver._add_eyes_of_the_eagle`). Used by missile-range
+## consumer tests.
+func _make_eagle_eyed_fighter(id: String) -> Combatant:
+	var c := _make_fighter(id)
+	c._character.flags.set_flag("has_eyes_of_the_eagle", "test_source_id", {
+		"source_kind": "worn_magic_item",
+		"missile_medium_range_modifier": -1,
+		"missile_long_range_modifier": -2,
+		"extra_hex_visibility": 1,
+	})
+	return c
+
+
+# ---------------------------------------------------------------------------
+# Eyes of the Eagle V2 missile-range penalty consumer tests (2026-06-03)
+# ---------------------------------------------------------------------------
+#
+# Per ACKS Core p.215+ (Jedidiah-supplied V2 2026-06-03): Eyes of the Eagle
+# "reduces missile attack penalty at medium range to -1 and at long range to
+# -2." V2 drops the single-vs-pair lens mechanic; the wearer's
+# has_eyes_of_the_eagle flag metadata carries `missile_medium_range_modifier:
+# -1` and `missile_long_range_modifier: -2`. Default ACKS missile penalties
+# (medium=-2, long=-5) are replaced by these when the attacker wears the
+# item. Short / beyond bands pass through unchanged.
+
+func test_eagle_eye_reduces_medium_range_penalty() -> void:
+	# Baseline: 80ft on shortbow (medium band, default penalty -2).
+	# With Eyes of the Eagle: penalty becomes -1.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_eagle_eyed_fighter("att")
+	var target := _make_fighter("def", 10, 0)
+	var result := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 80)
+	check(result["range_band"] == "medium",
+		"80ft is medium range; got %s" % result["range_band"])
+	check(result["range_penalty"] == -1,
+		"Eyes of the Eagle reduces medium range penalty to -1; got %d"
+			% result["range_penalty"])
+
+
+func test_eagle_eye_reduces_long_range_penalty() -> void:
+	# Baseline: 140ft on shortbow (long band, default penalty -5).
+	# With Eyes of the Eagle: penalty becomes -2.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_eagle_eyed_fighter("att")
+	var target := _make_fighter("def", 10, 0)
+	var result := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 140)
+	check(result["range_band"] == "long",
+		"140ft is long range; got %s" % result["range_band"])
+	check(result["range_penalty"] == -2,
+		"Eyes of the Eagle reduces long range penalty to -2; got %d"
+			% result["range_penalty"])
+
+
+func test_eagle_eye_does_not_affect_short_range() -> void:
+	# Short range has no default penalty; Eagle should leave it alone.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_eagle_eyed_fighter("att")
+	var target := _make_fighter("def", 10, 0)
+	var result := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 30)
+	check(result["range_band"] == "short", "30ft is short range")
+	check(result["range_penalty"] == 0,
+		"short range stays 0 even with Eagle; got %d" % result["range_penalty"])
+
+
+func test_eagle_eye_does_not_apply_when_no_flag() -> void:
+	# Regression: an attacker WITHOUT the Eagle flag keeps the default -2/-5.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_fighter("att")  # plain fighter, no Eagle flag
+	var target := _make_fighter("def", 10, 0)
+	var medium := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 80)
+	var long := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 140)
+	check(medium["range_penalty"] == -2,
+		"plain fighter medium penalty stays -2; got %d" % medium["range_penalty"])
+	check(long["range_penalty"] == -5,
+		"plain fighter long penalty stays -5; got %d" % long["range_penalty"])
+
+
+func test_eagle_eye_does_not_worsen_penalty_defensive() -> void:
+	# Defensive: if a misconfigured Eagle metadata claims `missile_medium_range_modifier: -5`
+	# (worse than the default -2), the consumer keeps the default. RAW intent
+	# is improvement; preventing worsening is a cheap guard against bad data.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_fighter("att")
+	attacker._character.flags.set_flag("has_eyes_of_the_eagle", "test_source_id", {
+		"source_kind": "worn_magic_item",
+		"missile_medium_range_modifier": -5,  # WORSE than default -2 (misconfig)
+		"missile_long_range_modifier": -8,    # WORSE than default -5 (misconfig)
+		"extra_hex_visibility": 1,
+	})
+	var target := _make_fighter("def", 10, 0)
+	var medium := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 80)
+	check(medium["range_penalty"] == -2,
+		"misconfigured -5 metadata can't worsen medium beyond -2; got %d"
+			% medium["range_penalty"])
+	var long := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 140)
+	check(long["range_penalty"] == -5,
+		"misconfigured -8 metadata can't worsen long beyond -5; got %d"
+			% long["range_penalty"])
+
+
+func test_eagle_eye_result_carries_eagle_eye_applied_flag() -> void:
+	# The result dict gains `eagle_eye_applied: true` when the consumer
+	# actually modified the penalty. UI / log surfaces use this to surface
+	# the bonus (vs the default penalty) in tooltips.
+	var resolver := RangedAttackResolver.new(_MockDice.new(15))
+	var attacker := _make_eagle_eyed_fighter("att")
+	var target := _make_fighter("def", 10, 0)
+	var medium := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 80)
+	check(bool(medium.get("eagle_eye_applied", false)),
+		"medium-band Eagle attack records eagle_eye_applied=true")
+	var short := resolver.resolve_ranged_attack(attacker, target, SHORTBOW, 30)
+	check(not bool(short.get("eagle_eye_applied", false)),
+		"short-band attack does NOT record eagle_eye_applied (default penalty was already 0)")
 
 
 # ---------------------------------------------------------------------------

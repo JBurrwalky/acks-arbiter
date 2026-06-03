@@ -31469,3 +31469,104 @@ on-tick dispatch.
 4. **Detect family (4 items)** — needs the dungeon UI reveal subsystem.
 5. **Ring of Spell Storing** — Jedidiah RAW in hand.
 
+
+
+## Session 2026-06-03 — Eyes of the Eagle V2 wire-ups (session-side refresh + missile-range consumer)
+
+**Task:** Close the two open V2 wire-ups documented in the prior session's "Next session should":
+1. Session-side refresh trigger — subscribe to `EventBus.inventory_updated` + `active_party_changed` in `SessionRunner` and push the recomputed `compute_party_visibility_bonus(party_characters)` to the HexMapController.
+2. Missile-range penalty consumer — `ranged_attack_resolver` reads the wielder's `has_eyes_of_the_eagle.metadata.missile_medium_range_modifier` / `missile_long_range_modifier` at range-modifier-application time and replaces the default -2/-5 band penalties.
+
+**Model used:** Sonnet 4.6.
+
+**Completed:**
+
+### Missile-range penalty consumer
+
+- **`engine/subsystems/combat/ranged_attack_resolver.gd`**:
+  - NEW static helper `_apply_eagle_eye_modifier(range_info, attacker)` — when the attacker carries the `has_eyes_of_the_eagle` flag AND the range band is `medium` or `long`, reads the band-specific modifier from the flag's metadata (per-source scan; max-improvement across multiple sources for forward-looking stackers) and REPLACES `range_info["penalty"]` with the better value. Returns a new dict; does not mutate `range_info`. Short / beyond / out_of_range bands pass through unchanged.
+  - Defensive guard: a misconfigured metadata value that claims a WORSE penalty (e.g. `missile_medium_range_modifier: -5` when default is -2) is ignored — RAW intent is improvement; the helper picks whichever value is closer to zero (less negative).
+  - Wired into `resolve_ranged_attack` right after `_determine_range_band` and before the `range_penalty` variable is extracted. The to-hit math (line 107) automatically picks up the modified penalty.
+  - Result dict now carries `eagle_eye_applied: bool` so UI / log surfaces can highlight the bonus in tooltips. Added to both result-building call sites: the standard hit/miss path AND the `_resolve_auto_hit` path (spell-hook auto-hit ranged attacks).
+
+### Session-side refresh trigger
+
+- **`engine/subsystems/session/session_runner.gd`**:
+  - NEW EventBus subscriptions in `_ready()`:
+    - `EventBus.inventory_updated.connect(_on_inventory_updated_for_visibility)`
+    - `EventBus.active_party_changed.connect(_on_active_party_changed_for_visibility)`
+  - NEW handler `_on_inventory_updated_for_visibility(_character_id)` — delegates to `_refresh_party_visibility_bonus`.
+  - NEW handler `_on_active_party_changed_for_visibility(_previous_party_id, _new_party_id)` — delegates to `_refresh_party_visibility_bonus`.
+  - NEW helper `_refresh_party_visibility_bonus()`:
+    - No-op when `_hex_controller == null` (out-of-session contexts).
+    - Resets bonus to 0 when `_party_data == null` (defensive — prevents prior session's value from leaking).
+    - Otherwise computes `HexMapController.compute_party_visibility_bonus(_party_data.character_data)` and calls `_hex_controller.set_party_visibility_bonus_hexes(bonus)`. The controller's setter is idempotent for equal values, so spurious refreshes (e.g. a junk inventory_updated for a non-Eagle item) are free.
+  - `load_session` calls `_refresh_party_visibility_bonus()` immediately after `_party_data.character_data` is populated so the bonus takes effect on the first map load.
+  - `end_session` resets the bonus to 0 explicitly (independent of the `_party_data == null` defensive reset) so the visibility-state on the controller is clean for the next session.
+
+### Tests
+
+- **`tests/test_ranged_attack_resolver.gd`** — 6 new tests:
+  - `test_eagle_eye_reduces_medium_range_penalty` — Eagle attacker at 80ft (shortbow medium band) → penalty -1 (was -2).
+  - `test_eagle_eye_reduces_long_range_penalty` — Eagle attacker at 140ft (shortbow long band) → penalty -2 (was -5).
+  - `test_eagle_eye_does_not_affect_short_range` — Eagle attacker at 30ft (short band) → penalty 0 (default).
+  - `test_eagle_eye_does_not_apply_when_no_flag` — regression: plain fighter keeps -2/-5 at medium/long.
+  - `test_eagle_eye_does_not_worsen_penalty_defensive` — misconfigured metadata `{missile_medium_range_modifier: -5}` can't worsen medium beyond -2 (RAW intent guard).
+  - `test_eagle_eye_result_carries_eagle_eye_applied_flag` — result dict surfaces `eagle_eye_applied: true` when the modifier fires; false for short-band attacks (no change to apply).
+
+- **`tests/test_session_runner.gd`** — 6 new tests:
+  - `test_refresh_party_visibility_bonus_no_party_resets_to_zero` — reset behaviour when no party loaded.
+  - `test_refresh_party_visibility_bonus_plain_party_sets_zero` — plain party → 0.
+  - `test_refresh_party_visibility_bonus_eagle_eyed_member_sets_one` — 1 Eagle-eyed PC in 3-PC party → 1.
+  - `test_inventory_updated_signal_handler_refreshes_bonus` — direct call into `_on_inventory_updated_for_visibility("any_id")` refreshes.
+  - `test_active_party_changed_signal_handler_refreshes_bonus` — direct call into `_on_active_party_changed_for_visibility("prev", "new")` refreshes.
+  - `test_end_session_resets_visibility_bonus` — end_session clears bonus to 0.
+  - Plus a new helper `_make_runner_with_hex_controller()` that stubs in `_scheduler` / `_handler_registry` / `_scheduler_loop` so `end_session`'s clean-up path doesn't null-deref. Pattern is reusable for future end_session-aware tests.
+
+**Decisions made:**
+
+- **Replace, don't stack: when Eagle's metadata sets a band penalty, it REPLACES the default rather than adding to it.** RAW: "reduces missile attack penalty at medium range to -1 and at long range to -2." The "-1" / "-2" are FINAL values, not deltas. Implementation reads the metadata value and uses it as the new `range_info["penalty"]`.
+
+- **Multi-source max-improvement (forward-looking).** The helper iterates `flags.get_flag_source_entries("has_eyes_of_the_eagle")` and picks the BEST (closest-to-zero / least-negative) penalty across sources. V1 only has one source (worn magic item), but a future stacking spell (e.g. a hypothetical Eagle Eye divine buff) lands cleanly: bonus from item + spell would pick the max-improvement.
+
+- **Defensive guard against worsening.** If metadata accidentally claims `missile_medium_range_modifier: -5` (worse than default -2), the helper keeps the default. Cheap protection against bad data; matches RAW intent (the item improves, never worsens).
+
+- **`eagle_eye_applied: bool` flag on the result dict.** Lets UI / log surfaces highlight the bonus in tooltips ("Hit at medium range — Eyes of the Eagle: -1 instead of -2"). Surfaced on both the standard hit/miss path and the `_resolve_auto_hit` path.
+
+- **`_refresh_party_visibility_bonus` is the single entry point.** All three call sites (signal handlers + `load_session` + `end_session` reset) route through it. Keeps the recompute logic in one place; future visibility-affecting items extend `HexMapController.compute_party_visibility_bonus` and the refresh helper's behaviour scales automatically.
+
+- **Stub `_scheduler` / `_handler_registry` / `_scheduler_loop` in the SessionRunner test helper.** `end_session` calls `.clear()` / `.pause()` on these; without stubs the test would null-deref before reaching the visibility-reset assertion. Pattern reused by `test_end_session_resets_visibility_bonus`.
+
+**Interfaces defined or changed:**
+
+- NEW `RangedAttackResolver._apply_eagle_eye_modifier(range_info: Dictionary, attacker: Combatant) -> Dictionary` (static, private). Returns modified `range_info` (penalty adjusted + `eagle_eye_applied` flag) or original.
+- NEW field on the `resolve_ranged_attack` result dict: `eagle_eye_applied: bool` (and on the `_resolve_auto_hit` result).
+- NEW SessionRunner methods:
+  - `_on_inventory_updated_for_visibility(_character_id: String) -> void`
+  - `_on_active_party_changed_for_visibility(_previous_party_id: String, _new_party_id: String) -> void`
+  - `_refresh_party_visibility_bonus() -> void`
+- NEW SessionRunner EventBus subscriptions in `_ready()`: `inventory_updated`, `active_party_changed`.
+- `end_session` extended to reset the HexMapController's party visibility bonus.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 6 new tests in `tests/test_ranged_attack_resolver.gd`.
+- 6 new tests in `tests/test_session_runner.gd` (plus a new helper).
+- Full suite: **409 suites passed / 19 failed** — was 409/19; net-zero new failures; the 12 new tests slot into existing suites without adding new ones.
+
+**Known issues / V1 limitations:**
+
+- **Single-party scope.** Multi-party play (split-party UI) would need either per-party HexMapController instances or a per-party bonus override. V1 routes all visibility through the singleton controller. Lands when split-party UI does.
+- **Refresh granularity.** Any `inventory_updated` (any character, any item) triggers a recompute. Cheap (single integer + idempotent setter), so this is acceptable; a future optimisation could filter to only character_ids in the active party + only item_keys that affect visibility.
+- **Spell-binding inventory_updated.** Effects that grant `has_eyes_of_the_eagle` via spells (none in V1) wouldn't trigger `inventory_updated` — they'd need their own trigger or a parallel signal. V1 only worn-item Eagle, so no gap.
+
+**Next session should:**
+
+1. **Tier 1 deferrals triage** (4 items) — `ring_of_wishes`, `potion_of_longevity`, `eyes_of_petrification`, `treasure_map`. Each needs a Jedidiah subsystem ruling.
+2. **Detect family (4 items)** — needs the dungeon UI reveal subsystem before the wands and potion can produce useful gameplay output.
+3. **Ring of Spell Storing** — Jedidiah RAW in hand; needs materializer-time 1d6 spell selection + per-item storage + activation flow.
+4. **Cube / Necklace consumer wires** (cold absorption + gas immunity + breath-without-air) — flag-side metadata sitting ready; wires when each subsystem (cold damage typing, gas-attack resolver, underwater/vacuum exploration) lands.
+5. **Sickened action-selection consumer** — `is_sickened_by_potion` flag is set but action gating still deferred.
+
