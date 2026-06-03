@@ -31800,3 +31800,98 @@ on-tick dispatch.
 3. **Tier 1 deferrals triage** (4 items) — Jedidiah subsystem rulings.
 4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 catalog items + future detect spells).
 
+
+
+## Session 2026-06-03 — Horn of Blasting once-per-turn refactor
+
+**Task:** Refactor Horn of Blasting from the V1 one-shot pattern (default_charges=1 + no refill mechanism) to RAW "once per turn" via a new `OncePerTurnRechargeService` wired to `Timekeeping.turn_advanced` in SessionRunner.
+
+**Model used:** Sonnet 4.6.
+
+**Completed:**
+
+### New service
+
+- **`engine/subsystems/inventory/once_per_turn_recharge_service.gd`** (NEW, ~120 LOC):
+  - `RECHARGEABLE_ITEM_KEYS: Array[String] = ["horn_of_blasting"]` — V1 covers only the Horn; future once-per-turn items extend the array. Mirrors `tools/extract_magic_item_catalog.py:ONCE_PER_PERIOD_MISC_MAGIC_KEYS` (out-of-sync between the two is a bug class — documented in the service header).
+  - `recharge_for_campaign(campaign_id) -> int` — single bulk UPDATE that resets uses_remaining=1 for all once-per-turn items with current charges < 1 OR NULL. Forward-compatible bindings build for the IN-clause.
+  - `is_rechargeable(item_key) -> bool` — exposed for tests + a potential future activator hook ("is this rechargeable next turn?" for UI tooltips).
+  - V1 single-campaign-loaded-at-a-time scope means the UPDATE doesn't yet need a campaign_id JOIN. The `campaign_id` parameter is reserved for the multi-campaign future case and documented as intentionally unused in V1.
+
+### Pipeline integration
+
+- **`engine/subsystems/session/session_runner.gd`**:
+  - `_ready()` adds a second `Timekeeping.turn_advanced` subscriber: `_on_turn_advanced_for_once_per_turn_recharge`. Parallel to the existing Cube of Frost Resistance turn-tick subscription.
+  - New handler issues `OncePerTurnRechargeService.recharge_for_campaign(_campaign_id)` on each tick. No-op when no campaign is loaded.
+
+- **`engine/subsystems/inventory/magic_item_activator.gd:use_misc_magic_active`**:
+  - Charge-gate refusal message updated. The prior V1 string was "refills when the daily-reset subsystem lands" — wrong for the Horn now that turn-reset is live, and ambiguous for the Elemental Commanders (still daily-deferred). V2:
+    - If `OncePerTurnRechargeService.is_rechargeable(item_key)`: "refills next turn (10 minutes)."
+    - Else: "refills when the period-reset subsystem fires." — same generic deferral hint for the still-pending daily-reset items.
+  - Activator comment block updated to enumerate the two refill subsystems (once-per-turn live; once-per-day still deferred).
+
+### Docstring updates
+
+- **`engine/subsystems/spells/custom_resolvers/horn_of_blasting_resolver.gd`** — resolver header "Once-per-turn limit" bullet now cites `OncePerTurnRechargeService.recharge_for_campaign` wired in `SessionRunner._ready` (2026-06-03). Replaces the prior "V1 deferred — turn-reset is too granular for now" comment.
+- **`tools/extract_magic_item_catalog.py`** — Horn of Blasting catalog comment updated to cite the live turn-reset subsystem instead of "doesn't exist V1." Also notes the Elemental Commanders share the same charge model but their daily-reset is still deferred.
+
+### Tests
+
+- **`tests/test_horn_of_blasting_once_per_turn.gd`** (NEW) — 9 tests across 3 groups:
+  - **Predicate (2)**: `is_rechargeable("horn_of_blasting")` true; returns false for unknown / non-rechargeable keys (Bowl of Commanding once-per-day, potions, rings).
+  - **Service-level bulk refill (6)**: restores horn to 1 charge; doesn't double-refill an already-charged horn; doesn't touch non-rechargeable items (Bowl of Commanding regression); empty campaign_id no-op; no-rechargeable-items-in-DB no-op; NULL uses_remaining is treated as <1 and refilled.
+  - **Activator gate refusal message (1)**: V2 hint mentions "next turn" for the Horn (vs the generic "period-reset" for daily-deferred items).
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `417_horn_of_blasting_once_per_turn_tests` ext_resource + node + @onready + run-loop entry.
+
+**Decisions made:**
+
+- **Reuse the existing charge model (no DB schema change).** The Horn already lives at `default_charges: 1 + misc_magic_consumable: false`. The activator's charge gate at line 709 refuses when `uses_remaining == 0`. After a successful blast, `uses_remaining` decrements to 0 and the next activation is refused. The refill problem was orthogonal: how to bring 0 back to 1 once a turn elapses. A new SQL column (`cooldown_until_turn`) was considered and rejected — it would have required a migration AND a parallel charge model. Simpler: keep the existing `uses_remaining` semantics and refill it.
+
+- **Bulk UPDATE in a single SQL call, not per-character iteration.** A Horn (and future once-per-turn items) could live in:
+  - The carrying character's personal inventory
+  - The party's shared_inventory
+  - A creature's inventory
+  - A container (Bag of Holding etc.)
+  All five resolve to the same `inventory_items` table via different foreign keys. A single SQL UPDATE finds them all without traversing five different in-memory roster structures. Performance: one SQL round-trip per turn, regardless of party size or inventory complexity.
+
+- **`< 1 OR NULL` predicate.** The natural case is `uses_remaining = 0` after a use, but a freshly-instantiated Horn from a treasure roll could have `uses_remaining = NULL` if the materializer didn't stamp default_charges (e.g., a manual `INSERT` in a test). Both paths refill to 1. Test `test_recharge_handles_null_uses_remaining` pins the NULL case.
+
+- **`RECHARGEABLE_ITEM_KEYS` mirrors `ONCE_PER_PERIOD_MISC_MAGIC_KEYS`.** The extractor (Python) stamps the catalog; the service (GDScript) refills. They reference the same item_keys but in different languages. Out-of-sync between them is a project-level bug class — documented in the service header so future once-per-turn items get added to BOTH places.
+
+- **Refusal message routes through `is_rechargeable`.** The activator's refusal hint reads `OncePerTurnRechargeService.is_rechargeable(item_key)` to decide between the "next turn" and "period-reset subsystem" wording. A small coupling that pays off in usability — players see "wait one turn" instead of "wait for some unspecified subsystem to land."
+
+- **Idempotent refill.** The WHERE clause guards against redundant writes on items already at full charge. SQLite UPDATE on a row with matching WHERE returns "0 rows affected" without modifying `updated_at`. Cheap, but the guard also prevents future audit-log writers from flooding on every turn boundary.
+
+- **Elemental Commanders stay one-shot.** Their RAW is once-per-day (per ACore item_mechanics). The shared `default_charges=1 + consumable=false` pattern means they'd be refilled by a parallel `OncePerDayRechargeService` once that lands. V1 keeps them at one-shot until the daily-reset subsystem ships — documented in both the activator comment + the Horn catalog entry's reference to the still-deferred daily case.
+
+**Interfaces defined or changed:**
+
+- NEW `OncePerTurnRechargeService` class (`engine/subsystems/inventory/`). Static methods:
+  - `recharge_for_campaign(campaign_id: String) -> int`
+  - `is_rechargeable(item_key: String) -> bool`
+  - Plus constants: `RECHARGEABLE_ITEM_KEYS: Array[String]`.
+- NEW SessionRunner method `_on_turn_advanced_for_once_per_turn_recharge(turns_elapsed: int) -> void`.
+- NEW SessionRunner subscription in `_ready()`: second consumer on `Timekeeping.turn_advanced` (now wires both Cube + once-per-turn refill).
+- Activator's charge-gate refusal message format changed (functionally same behavior — refusal — with a more informative wording).
+
+**Database changes:** None. The existing `uses_remaining` column on `inventory_items` is sufficient; no migration needed.
+
+**Tests added/updated:**
+
+- 9 new tests in `tests/test_horn_of_blasting_once_per_turn.gd`.
+- Full suite: **411 suites passed / 19 failed** — was 410/19; +1 new suite, net-zero new failures.
+
+**Known issues / V1 limitations:**
+
+- **Single-campaign scope.** V1 `recharge_for_campaign` ignores the `campaign_id` parameter — it issues an unconstrained UPDATE because only one campaign is loaded at a time. Multi-campaign-loaded scenarios would need to add a JOIN against the owning character's `campaign_id`. Documented + reserved.
+- **Elemental Commanders refill still deferred.** They share the charge model but need a once-per-day refill subsystem that doesn't exist yet. Parallels Cube's earlier "needs cold damage typing" gap before THAT subsystem landed — same pattern, different time signal.
+- **No event emission on recharge.** A UI surface that wants to surface "your Horn is ready again" notifications would need a follow-up signal pass (e.g., emit `EventBus.item_recharged(item_id)` from the UPDATE path). V1 silent refill — the player notices when they try to activate again.
+- **No combat-time turn alignment guard.** RAW says "once per turn" — combat rounds tick within turns. A combat that spans a turn boundary lets the Horn re-fire mid-combat, which IS RAW-correct but may feel surprising. No UI surfacing yet to clarify; the activator's "refills next turn" message gives the cue.
+
+**Next session should:**
+
+1. **Once-per-day recharge subsystem for Elemental Commanders** (4 items: Bowl/Brazier/Censer/Stone) — parallel pattern to this batch but keys off `Timekeeping.day_changed` instead of `turn_advanced`. Could land as `OncePerDayRechargeService` with the same shape as this service.
+2. **Ring of Spell Storing** — RAW in hand from earlier sessions; net-new item; needs materializer-time 1d6 spell selection + per-item storage + activation flow.
+3. **Tier 1 deferrals triage** (4 items: ring_of_wishes, potion_of_longevity, eyes_of_petrification, treasure_map) — Jedidiah subsystem rulings.
+4. **Detection UI reveal subsystem** — biggest one-shot unblock (4 detect items + future detect spells).
+

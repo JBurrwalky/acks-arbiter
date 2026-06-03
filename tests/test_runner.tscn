@@ -430,6 +430,7 @@
 [ext_resource type="Script" path="res://tests/test_engine_extension_batch.gd" id="414_engine_extension_batch_tests"]
 [ext_resource type="Script" path="res://tests/test_level_boost_potions.gd" id="415_level_boost_potions_tests"]
 [ext_resource type="Script" path="res://tests/test_cube_of_frost_resistance.gd" id="416_cube_of_frost_resistance_tests"]
+[ext_resource type="Script" path="res://tests/test_horn_of_blasting_once_per_turn.gd" id="417_horn_of_blasting_once_per_turn_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1720,3 +1721,6 @@ script = ExtResource("415_level_boost_potions_tests")
 
 [node name="CubeOfFrostResistanceTests" type="Node" parent="."]
 script = ExtResource("416_cube_of_frost_resistance_tests")
+
+[node name="HornOfBlastingOncePerTurnTests" type="Node" parent="."]
+script = ExtResource("417_horn_of_blasting_once_per_turn_tests")

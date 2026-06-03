@@ -314,6 +314,12 @@ func _ready() -> void:
 	# after 6 turns (= 1 hour). Cheap (one dict mutation per bearer per
 	# turn). No-op when no party is loaded.
 	Timekeeping.turn_advanced.connect(_on_turn_advanced_for_frost_cube)
+	# Once-per-turn misc-magic refill (2026-06-03). RAW: Horn of Blasting
+	# "may be blown once per turn." Single bulk UPDATE per turn boundary
+	# resets uses_remaining=1 on any once-per-turn item with current
+	# charges < 1 (V1: Horn of Blasting). Replaces the prior daily-reset
+	# V1 simplification.
+	Timekeeping.turn_advanced.connect(_on_turn_advanced_for_once_per_turn_recharge)
 
 	# Register all states
 	_register_states()
@@ -1186,6 +1192,23 @@ func _on_turn_advanced_for_frost_cube(_turns_elapsed: int) -> void:
 		if not cd.flags.has_flag("has_cube_of_frost_resistance_field"):
 			continue
 		CubeOfFrostResistanceService.tick_turn(cd)
+
+
+## Timekeeping.turn_advanced handler — refills once-per-turn misc-magic
+## items per RAW (Horn of Blasting "may be blown once per turn"). Issues a
+## single bulk UPDATE inside the service that resets uses_remaining=1 for
+## any once-per-turn item with current charges < 1. Campaign-scoped via
+## `_campaign_id`. No-op when no campaign is loaded.
+##
+## V1 once-per-turn items: Horn of Blasting only. Future items extend
+## `OncePerTurnRechargeService.RECHARGEABLE_ITEM_KEYS` (which must stay
+## in sync with `tools/extract_magic_item_catalog.py:ONCE_PER_PERIOD_MISC_MAGIC_KEYS`).
+##
+## Replaces the prior V1 deferral (Horn was stuck at one-shot until a
+## "daily-reset subsystem" landed — too restrictive; RAW intent is once
+## per 10-minute exploration turn).
+func _on_turn_advanced_for_once_per_turn_recharge(_turns_elapsed: int) -> void:
+	OncePerTurnRechargeService.recharge_for_campaign(_campaign_id)
 
 
 ## Compute the party visibility bonus from the live party_data.character_data

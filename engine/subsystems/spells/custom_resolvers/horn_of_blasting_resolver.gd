@@ -21,8 +21,12 @@ extends RefCounted
 ##     `deafened` condition for 2d6 rounds; on SUCCESS no deafening.
 ##   - Object damage is Judge discretion and not enforced here.
 ##   - Once-per-turn limit is enforced by the catalog's default_charges=1
-##     + misc_magic_consumable=false; refresh is the daily-reset
-##     subsystem (V1 deferred — turn-reset is too granular for now).
+##     + misc_magic_consumable=false; refill fires from
+##     `OncePerTurnRechargeService.recharge_for_campaign` on each
+##     Timekeeping.turn_advanced (wired in SessionRunner._ready, 2026-06-03).
+##     After one blast the Horn refuses subsequent activations until the
+##     next 10-minute turn boundary; tests cover the round-trip use →
+##     refused → tick → re-use.
 ##
 ## The cone target geometry (100' long × 20' wide at end) lives in the
 ## spell catalog's target_spec; the resolver receives the resolved

@@ -697,19 +697,31 @@ static func use_misc_magic_active(
 
 	# 2a. Charge gate (2026-06-02 — Elemental Commanders cluster). An item
 	# that has `default_charges` stamped AND `misc_magic_consumable: false`
-	# is a reusable-with-charges item (e.g. Elemental Commanders'
-	# once-per-day model V1: 1 charge that exhausts until a future
-	# daily-reset subsystem refills misc_magic items at sunrise). Refuse
-	# activation when charges are 0. Items WITHOUT default_charges are
-	# unlimited-use (uses_remaining = -1, the catalog default) and skip
-	# this gate entirely.
+	# is a reusable-with-charges item: 1 charge that exhausts until a
+	# period-based refill subsystem restores it. Refuse activation when
+	# charges are 0. Items WITHOUT default_charges are unlimited-use
+	# (uses_remaining = -1, the catalog default) and skip this gate.
+	#
+	# Refill subsystems (2026-06-03):
+	#   - Once-per-turn: Horn of Blasting refills at each Timekeeping.turn_advanced
+	#     via OncePerTurnRechargeService.recharge_for_campaign (called from
+	#     SessionRunner). RAW: "may be blown once per turn."
+	#   - Once-per-day: Elemental Commanders' daily-reset subsystem still
+	#     deferred V1 — they remain one-shot until that lands. Their RAW
+	#     is "once per day" (per ACore §item_mechanics) so daily-reset
+	#     covers them when wired.
 	var is_consumable: bool = bool(catalog_entry.get("misc_magic_consumable", true))
 	var has_default_charges: bool = catalog_entry.has("default_charges")
 	var current_charges: int = int(item_row.get("uses_remaining", -1))
 	if has_default_charges and not is_consumable and current_charges == 0:
-		empty["message"] = (
-			"'%s' has no charges remaining (refills when the daily-reset subsystem lands)." %
-			str(catalog_entry.get("name", item_key)))
+		# Refusal message hints at the refill period when known so the
+		# narration / UI layer can surface "try again next turn" vs
+		# "daily" without inspecting the catalog separately.
+		var refill_hint: String = "refills when the period-reset subsystem fires"
+		if OncePerTurnRechargeService.is_rechargeable(item_key):
+			refill_hint = "refills next turn (10 minutes)"
+		empty["message"] = "'%s' has no charges remaining — %s." % [
+			str(catalog_entry.get("name", item_key)), refill_hint]
 		return empty
 
 	# 3. Cast via the shared pipeline.

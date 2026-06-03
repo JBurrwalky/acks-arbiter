@@ -1336,10 +1336,12 @@ SPELL_BINDING_MAP = {
     # 2d6 rounds of deafening. Once per turn. Bound to the item-only
     # `horn_blast` spell entry which dispatches to HornOfBlastingResolver.
     # use_misc_magic_active routes activation; charge model =
-    # misc_magic_consumable=false + default_charges=1 (matches Elemental
-    # Commanders pattern — daily-reset subsystem refills; the strict
-    # once-per-TURN limit would need a turn-reset subsystem that doesn't
-    # exist V1).
+    # misc_magic_consumable=false + default_charges=1. Per RAW "may be
+    # blown once per turn" — refill fires from OncePerTurnRechargeService
+    # on each Timekeeping.turn_advanced (wired into SessionRunner
+    # 2026-06-03). The Elemental Commanders cluster also uses the same
+    # default_charges=1 + consumable=false pattern but with once-per-DAY
+    # RAW; their refill is the still-deferred daily-reset subsystem.
     "horn_of_blasting": {
         "spell_key": "horn_blast", "tradition": "arcane",
         "caster_level": 1, "target_mode": "single_target",
