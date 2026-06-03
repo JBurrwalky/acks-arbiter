@@ -495,6 +495,7 @@ extends Node
 @onready var _tampering_with_mortality_tests = $TamperingWithMortalityTests
 @onready var _wards_scrolls_tests = $WardsScrollsTests
 @onready var _elemental_commanders_tests = $ElementalCommandersTests
+@onready var _growth_xray_tests = $GrowthXRayTests
 
 
 func _ready() -> void:
@@ -984,7 +985,8 @@ func run() -> void:
 			_energy_drain_consumer_tests,
 			_tampering_with_mortality_tests,
 			_wards_scrolls_tests,
-			_elemental_commanders_tests]:
+			_elemental_commanders_tests,
+			_growth_xray_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

@@ -30529,3 +30529,85 @@ Each binding: `target_mode: "single_target"` (caller designates summon cell with
 4. **Persistent-worn stat-bonus cluster (7 items)** — each needs different engine extension.
 5. **Daily-reset subsystem for misc_magic charged items** — refills `uses_remaining` to `default_charges` at sunrise. Unblocks Elemental Commanders' actual once-per-day semantic.
 
+
+
+## Session 2026-06-02 — Tier 4 sweep partial (Growth + X-Ray Vision spells + 2 items)
+
+**Task:** Sweep the Tier-4 untriaged items. Ship items with explicit RAW; escalate items with RAW gaps to Jedidiah.
+**Model used:** Sonnet 4.6 (1M context). Phase: RAW audit per-item, spell+binding implementation for the RAW-grounded subset, _apply_flag save-gate fix, Telekinesis test patch, escalation list for remaining items.
+
+**RAW audit of the original 9-item batch:**
+
+| Item | RAW status |
+|---|---|
+| `oil_of_sharpness` | RAW present (`acore_treasure_and_magic_items_rules.xml:264`: "+3 to attack and damage when applied to weapon or 20 missiles"). Requires object-coat infrastructure (SurfaceCoatResolver.apply_oil_to_object is a stub). Deferred. |
+| `potion_of_growth` | RAW present (`pc_spell_catalog_f-u.xml:218-219`: "Used to create potions of growth"). Growth spell mechanics fully spec'd (touch, 12 turns, doubles size + damage + force-doors). **LANDED.** |
+| `ring_of_x_ray_vision` | RAW present (`pc_spell_catalog_f-u.xml:1726`: "Used to create rings of x-ray vision"). X-Ray Vision spell mechanics fully spec'd (60', concentration, 30' stone / 60' wood, blocks lead+gold, reveals secret doors/traps). **LANDED.** |
+| `ring_of_regeneration` | RAW absent (only referenced as a generic wound-healer in tampering text). Needs Jedidiah ruling on rate. |
+| `ring_of_spell_storing` | RAW present but generic (`acore_...:262`: "Stores spells and releases them later"). Needs ruling on capacity / spell-level limits / release mechanic. |
+| `horn_of_blasting` | RAW present but generic (`acore_...:275`: "destructive sonic effect"). Needs ruling on damage / area / save / charges. |
+| `rope_of_climbing` | RAW present (`acore_...:275`: "Moves and ties itself on command"). Utility — no current engine surface consumes climb-aiding ropes. Deferred. |
+| `potion_of_delusion` | RAW absent (cursed). Needs ruling. |
+| `boots_of_traveling_and_springing` | RAW absent. Needs ruling on movement bonus + jump distance. |
+
+**Completed:**
+
+- **`data/spells/spell_catalog.json`** — two new effect blocks:
+  - **Growth** (Arcane L3): `apply_flag is_growth_enlarged` with metadata `{size_multiplier: 2.0, damage_multiplier: 2.0, force_doors_bonus: 16, blocks_other_magical_strength: true, cancels_if_diminution: true}`. 12 turn fixed duration, touch_creature target. Reverse Diminution: `apply_flag is_diminution_shrunk` with metadata `{size_multiplier: 0.05, hide_motionless_throw_target: 3, damage_only_vs_tiny: true, larger_opponent_damage_floor: 1, cancels_if_growth: true}`. Save vs Spells `applies_only_to_unwilling: true` per RAW.
+  - **X-Ray Vision** (Arcane L5): `apply_flag has_x_ray_vision` with metadata `{vision_range_feet: 60, max_stone_feet: 30, max_low_density_feet: 60, examined_area_feet: 10, requires_concentration: true, blocked_by: ["lead", "gold"], reveals: ["secret_doors", "hidden_recesses", "traps"]}`. concentration_mode=exclusive_focus per RAW (no move, no other action). self target_spec.
+
+- **`tools/extract_magic_item_catalog.py`** — two new SPELL_BINDING_MAP entries:
+  - `potion_of_growth` → growth + tradition=arcane + caster_level=5 + target_mode=self.
+  - `ring_of_x_ray_vision` → x_ray_vision + tradition=arcane + caster_level=5 + target_mode=self.
+
+- **`engine/shared_types/entity_flags.gd`** — three new EntityFlag declarations: `is_growth_enlarged` (Growth metadata), `is_diminution_shrunk` (Diminution metadata), `has_x_ray_vision` (X-Ray Vision metadata).
+
+- **`engine/subsystems/spells/casting_resolver.gd:_apply_flag`** — now honors `save_results` + `save_spec.on_success="negate"` the same way `_apply_condition` does. Backward-compatible: existing apply_flag callers without save_results pass `{}` (no-op). Saved targets get `per_target[tid] = {applied: false, reason: "saved"}` instead of the flag.
+
+- **`tests/test_spell_catalog_l5_arcane.gd`** — Telekinesis test updated to force a save fail (`spell_save_spells = 1`). Belt-and-suspenders comment notes the picker-layer convention for `applies_only_to_unwilling_creature_or_carrier`.
+
+- **`tests/test_growth_xray_vision.gd`** (NEW file) — 9 tests:
+  - Catalog (5): Growth effect block + reverse Diminution branch with save_spec; X-Ray Vision effect block; potion_of_growth binding; ring_of_x_ray_vision binding.
+  - Spell cast (3): Growth applies full metadata; Diminution save vs Spells negates for unwilling target via the new _apply_flag gate; X-Ray Vision applies full metadata on self-cast.
+  - EntityFlags regression guard (1): all 3 new flags documented in entity_flags.gd.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `411_growth_xray_tests` ext_resource + `GrowthXRayTests` node.
+
+**Decisions made:**
+
+- **_apply_flag save gate is the right V1 fix.** The prior behavior (flag applied regardless of save) was technically a bug — Diminution's reverse save was silently ignored. The fix mirrors `_apply_condition`. Per Dimension Door's existing catalog note ("picker layer determines willingness; resolver runs the save unconditionally and the picker can skip willing-target saves"), the resolver always honors save_results when present; the picker pre-filters willing targets.
+- **Growth+Diminution mutual cancellation deferred to consumer.** The metadata records `cancels_if_diminution` / `cancels_if_growth`; the flag-stack consumer (or _apply_flag's "is opposite already present?" check) is the future site. V1: flags can stack until a consumer reads them.
+- **Damage-doubling + force-doors consumer deferred.** The flag carries `damage_multiplier: 2.0` + `force_doors_bonus: 16`; attack-resolver consumer reads the multiplier at damage-computation time; door-forcing consumer reads the bonus at force-doors check time. Both are flag-metadata reads in their respective resolvers (no new resolver kinds).
+- **X-Ray Vision reveal consumer deferred.** The reveal half (surface secret doors / traps in the examined 10' area) blocks on the same dungeon-UI reveal subsystem that wand_of_detecting_* needs. Flag is set; consumer wires when that subsystem lands.
+- **Concentration_mode=exclusive_focus on X-Ray Vision per RAW.** "Caster cannot move or take any other action" — the strictest concentration class. Consumer at concentration-tracker layer.
+
+**Interfaces defined or changed:**
+
+- `CastingResolver._apply_flag(step, spell_choice, target_descriptor, targets_by_id, caster_entity, caster_context, save_results = {}, save_spec = {})` — new signature with backward-compatible defaults.
+- 3 new EntityFlag declarations: `is_growth_enlarged`, `is_diminution_shrunk`, `has_x_ray_vision`.
+- 2 new spell_catalog effect blocks: `growth` (with reverse Diminution branch) + `x_ray_vision`.
+- 2 new SPELL_BINDING_MAP entries: `potion_of_growth` + `ring_of_x_ray_vision`.
+
+**Database changes:**
+
+- None.
+
+**Tests added/updated:**
+
+- 9 new tests in `tests/test_growth_xray_vision.gd`.
+- 1 patched test in `tests/test_spell_catalog_l5_arcane.gd` (Telekinesis save-fail injection).
+- Full suite: **405 passed / 19 failed** — was 404/19; +1 new suite, net-zero new failures.
+
+**Known issues / RAW gaps surfaced:**
+
+- **Scroll of Warding RAW found during this audit** (`acore_treasure_and_magic_items_rules.xml:268`): "Any literate character can use it. Reading it creates a 10' radius protective barrier centered on the reader. The barrier moves with the reader. Protected creatures cannot enter but can still attack with missiles or spells. The protection lasts until dismissed or until anyone inside the area attempts melee against a protected creature type." This is meaningfully different from the "Protection from Evil pattern, scaled up" we shipped in the wards cluster (Jedidiah ruling 2026-06-02). The shipped version blocks attacks via per-attacker save; RAW blocks ENTRY only and lets the warded creature still attack with missiles/spells. Surface this to Jedidiah next session — either we align with the RAW (V2 refactor) or document the divergence as an intentional Jedidiah variant.
+- **6 Tier-4 items deferred pending Jedidiah ruling** (each summary above): `ring_of_regeneration`, `ring_of_spell_storing`, `horn_of_blasting`, `potion_of_delusion`, `boots_of_traveling_and_springing`, plus `oil_of_sharpness` (object-coat infrastructure) and `rope_of_climbing` (utility item, no current consumer surface).
+
+**Next session should:**
+
+1. **Escalate the 6+ Tier 4 RAW-gap items to Jedidiah** with proposed V1 rulings per item. Single batched ruling session unblocks ~6 items.
+2. **Scroll of Warding RAW alignment** — surface the gap between shipped Jedidiah ruling and the explicit `acore_...:268` text; pick alignment vs documented variant.
+3. **Object-coat infrastructure** in SurfaceCoatResolver — unblocks oil_of_sharpness + future weapon-oil items (and the deferred Slipperiness "Objects" mode).
+4. **Crystal Ball trio (3 items)** — scrying UI subsystem.
+5. **Multi-effect staves (5 items)** — each its own resolver.
+

@@ -411,7 +411,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 1500,
-      "creation_time_days": 21
+      "creation_time_days": 21,
+      "spell_binding": {
+        "spell_key": "growth",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "potion_of_healing",
@@ -919,7 +925,13 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 82500,
-      "creation_time_days": 400
+      "creation_time_days": 400,
+      "spell_binding": {
+        "spell_key": "x_ray_vision",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "self"
+      }
     },
     {
       "item_key": "cursed_scroll",

@@ -33,7 +33,26 @@ extends RefCounted
 ##   Form:       "is_gaseous", "is_polymorphed", "is_polymorphed_self" (Polymorph Self),
 ##               "is_polymorphed_other" (Polymorph Other — permanent),
 ##               "is_petrified", "is_temporal_stasis",
-##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain)
+##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain),
+##               "is_growth_enlarged" (Growth — Arcane L3, 12 turns; recipient
+##                  doubles in size. Per RAW pc_spell_catalog_f-u.xml:186-220:
+##                  recipient deals double normal damage with attacks, +16 to
+##                  force open doors, attack throws unchanged. Strength bonus
+##                  does NOT combine with other magical Strength effects.
+##                  Metadata: {size_multiplier: 2.0, damage_multiplier: 2.0,
+##                  force_doors_bonus: 16, blocks_other_magical_strength: true}.
+##                  Cancelled if subject is also Diminution'd (per RAW
+##                  interaction). V1 sets the flag with metadata; combat-side
+##                  damage-doubling + door-forcing consumers read it; magical
+##                  Str interaction handled at strength-modifier-stack
+##                  combination time.),
+##               "is_diminution_shrunk" (Diminution — reversed Growth; recipient
+##                  shrinks to 6 inches tall. Per RAW: motionless 3+ on 1d20 to
+##                  avoid being spotted; deals normal damage only vs <1' opponents,
+##                  larger opponents take only 1 point per hit. Save vs Spells if
+##                  unwilling. Metadata: {hide_motionless_throw_target: 3,
+##                  damage_only_vs_tiny: true, larger_opponent_damage_floor: 1}.
+##                  Cancelled if subject is also Growth'd.)
 ##   Scrying:    "wizard_eye_active" (Wizard Eye — concentration, 240' tether)
 ##   MagicSwordLight: "wielding_lit_flame_tongue" (Flame Tongue ignite-on-command
 ##                  per RAW acore_treasure_and_magic_items_rules.xml:273. Set on
@@ -73,7 +92,20 @@ extends RefCounted
 ##   Knowledge:  "can_read_unknown_languages" (Read Languages, 2 turns),
 ##               "can_see_invisible" (Detect Invisible),
 ##               "has_infravision" (Infravision spell, 1 day, 60' dark sight),
-##               "has_true_seeing" (True Seeing — 120' radius, sees through illusions/invisibility/polymorph/disguise/darkness)
+##               "has_true_seeing" (True Seeing — 120' radius, sees through illusions/invisibility/polymorph/disguise/darkness),
+##               "has_x_ray_vision" (X-Ray Vision — Arcane L5, 60' range,
+##                  concentration duration; per RAW pc_spell_catalog_f-u.xml:1709-1727:
+##                  see through 30' of stone or 60' of wood / low-density
+##                  material, examines 10' square area each turn, detects
+##                  secret doors / hidden recesses / traps. Caster cannot
+##                  move or take other action. Lead and gold block the
+##                  vision. Metadata: {vision_range_feet: 60,
+##                  max_stone_feet: 30, max_low_density_feet: 60,
+##                  examined_area_feet: 10, requires_concentration: true,
+##                  blocked_by: ["lead", "gold"], reveals: ["secret_doors",
+##                  "hidden_recesses", "traps"]}. V1 sets the flag; vision/
+##                  reveal subsystem consumer reads it. Concentration-loss
+##                  cleanup handled by the standard concentration tracker.)
 ##   Holding:    "is_telekinetically_held" (Telekinesis — moved by caster concentration),
 ##               "is_telekinesis_caster" (Telekinesis — caster-side constraint flag,
 ##                  blocks attacks + spells while concentrating)

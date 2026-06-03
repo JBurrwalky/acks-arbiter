@@ -421,7 +421,7 @@ func resolve(
 				outcome = _apply_modifier(step, spell_choice, target_descriptor, targets_by_id, caster_entity, caster_context, save_results, save_spec)
 				aggregated_modifiers.append_array(outcome.get("records", []))
 			"apply_flag":
-				outcome = _apply_flag(step, spell_choice, target_descriptor, targets_by_id, caster_entity, caster_context)
+				outcome = _apply_flag(step, spell_choice, target_descriptor, targets_by_id, caster_entity, caster_context, save_results, save_spec)
 				aggregated_flags.append_array(outcome.get("records", []))
 			"apply_condition":
 				outcome = _apply_condition(step, target_descriptor, targets_by_id, save_results, save_spec)
@@ -833,11 +833,23 @@ func _apply_flag(
 		target_descriptor: TargetDescriptor,
 		targets_by_id: Dictionary,
 		caster_entity: Variant,
-		caster_context: CasterContext) -> Dictionary:
+		caster_context: CasterContext,
+		save_results: Dictionary = {},
+		save_spec: Dictionary = {}) -> Dictionary:
 	var flag_key := String(step.get("flag_key", ""))
 	var source_id := _make_modifier_source_id(spell_choice.spell_key, caster_context.caster_id)
 	var records: Array = []
 	var per_target: Dictionary = {}
+	# 2026-06-02 (Tier 4 sweep — Growth/Diminution reverse): save-vs-X negate
+	# now gates apply_flag the same way it gates apply_condition. When
+	# save_spec.on_success == "negate" AND the target rolled a saved=true,
+	# the flag application is skipped for that target. Backward-compatible:
+	# spells with save_spec.category=="none" pass an empty save_results
+	# dictionary, so the gate is a no-op for them. For spells whose
+	# save_spec carries `applies_only_to_unwilling*` flags, the convention
+	# is that the PICKER LAYER filters out willing targets before calling
+	# resolve(); the resolver always honors save_results when present.
+	var on_save_negate: bool = String(save_spec.get("on_success", "")) == "negate"
 	# `target_caster_only: true` overrides target_descriptor.target_ids and
 	# applies the flag to caster_entity. Used by spells that need to set a
 	# constraint flag on the caster (e.g. Telekinesis sets is_telekinesis_caster
@@ -846,6 +858,9 @@ func _apply_flag(
 	if bool(step.get("target_caster_only", false)) and caster_context != null:
 		ids_to_walk = [caster_context.caster_id]
 	for tid in ids_to_walk:
+		if on_save_negate and bool(save_results.get(tid, {}).get("succeeded", false)):
+			per_target[tid] = {"applied": false, "reason": "saved"}
+			continue
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
 		var flags := _get_flags(entity)
 		if flags == null:

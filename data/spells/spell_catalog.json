@@ -3284,7 +3284,60 @@
     ],
     "range": "touch",
     "duration": "12 turns",
-    "summary": "Doubles the recipient's size, increasing strength, reach, and weapon damage."
+    "summary": "Doubles the recipient's size, increasing strength, reach, and weapon damage.",
+    "effect": {
+      "range_feet": 0,
+      "duration_model": {
+        "kind": "fixed",
+        "amount": 12,
+        "unit": "turns"
+      },
+      "target_spec": {
+        "kind": "touch_creature"
+      },
+      "save_spec": {
+        "category": "none"
+      },
+      "resolution": [
+        {
+          "kind": "apply_flag",
+          "flag_key": "is_growth_enlarged",
+          "value": true,
+          "metadata": {
+            "size_multiplier": 2.0,
+            "damage_multiplier": 2.0,
+            "force_doors_bonus": 16,
+            "blocks_other_magical_strength": true,
+            "cancels_if_diminution": true
+          }
+        }
+      ],
+      "reverse": {
+        "target_spec": {
+          "kind": "touch_creature"
+        },
+        "save_spec": {
+          "category": "spells",
+          "on_success": "negate",
+          "applies_only_to_unwilling": true
+        },
+        "resolution": [
+          {
+            "kind": "apply_flag",
+            "flag_key": "is_diminution_shrunk",
+            "value": true,
+            "metadata": {
+              "size_multiplier": 0.05,
+              "hide_motionless_throw_target": 3,
+              "damage_only_vs_tiny": true,
+              "larger_opponent_damage_floor": 1,
+              "cancels_if_growth": true
+            }
+          }
+        ]
+      },
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:186-220): touch range, 12 turns duration; recipient doubles in size, deals double normal damage, +16 to force open doors, attack throws unchanged (giant-size unfamiliarity). Strength bonus does NOT combine with other magical Strength effects. Stacks with normal Str bonus/penalty. Cancellation: if Growth target is also subjected to Diminution (or vice versa), BOTH spells are cancelled. Reverse Diminution: shrinks target + everything carried to 6 inches tall; motionless 3+ on 1d20 to avoid being spotted; damage only normal vs <1' opponents (larger opponents take only 1 hp/hit). Reverse allows save vs Spells when target unwilling. V1 sets the flag with metadata; combat-side damage-doubling + door-forcing + hide-motionless consumers read it; Growth+Diminution mutual cancellation is the flag-stack consumer's job (defer to apply-time check). Used to create potions of growth + potions of diminution (the latter is CUT for V1 since size category <Small isn't modeled)."
+    }
   },
   {
     "spell_key": "growth_of_animals",
@@ -8320,6 +8373,36 @@
     ],
     "range": "60'",
     "duration": "concentration",
-    "summary": "Allows the caster to see through solid material up to 10' thick while concentrating."
+    "summary": "Allows the caster to see through solid material up to 10' thick while concentrating.",
+    "effect": {
+      "range_feet": 60,
+      "duration_model": {
+        "kind": "concentration",
+        "concentration_mode": "exclusive_focus"
+      },
+      "target_spec": {
+        "kind": "self"
+      },
+      "save_spec": {
+        "category": "none"
+      },
+      "resolution": [
+        {
+          "kind": "apply_flag",
+          "flag_key": "has_x_ray_vision",
+          "value": true,
+          "metadata": {
+            "vision_range_feet": 60,
+            "max_stone_feet": 30,
+            "max_low_density_feet": 60,
+            "examined_area_feet": 10,
+            "requires_concentration": true,
+            "blocked_by": ["lead", "gold"],
+            "reveals": ["secret_doors", "hidden_recesses", "traps"]
+          }
+        }
+      ],
+      "notes": "ACKS RAW (pc_spell_catalog_f-u.xml:1709-1727): 60' range, concentration duration; sees through 30' of stone OR 60' of wood/low-density material; examines 10' square area each turn; secret doors, hidden recesses, and traps in the examined area are evident. Caster cannot move or take any other action (full concentration). Lead and gold BLOCK the vision. Used to create rings of x-ray vision. V1 sets the flag with metadata; vision/reveal subsystem consumer reads it (the reveal half — secret doors / traps surfaced to the player — needs the same dungeon-UI surface that wand_of_detecting_* depends on; that subsystem is the documented blocker). Concentration_mode=exclusive_focus per RAW (no move, no other action)."
+    }
   }
 ]

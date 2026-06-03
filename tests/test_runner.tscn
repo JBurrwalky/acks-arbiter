@@ -424,6 +424,7 @@
 [ext_resource type="Script" path="res://tests/test_tampering_with_mortality.gd" id="408_tampering_tests"]
 [ext_resource type="Script" path="res://tests/test_wards_scrolls.gd" id="409_wards_scrolls_tests"]
 [ext_resource type="Script" path="res://tests/test_elemental_commanders.gd" id="410_elemental_commanders_tests"]
+[ext_resource type="Script" path="res://tests/test_growth_xray_vision.gd" id="411_growth_xray_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1696,3 +1697,6 @@ script = ExtResource("409_wards_scrolls_tests")
 
 [node name="ElementalCommandersTests" type="Node" parent="."]
 script = ExtResource("410_elemental_commanders_tests")
+
+[node name="GrowthXRayTests" type="Node" parent="."]
+script = ExtResource("411_growth_xray_tests")

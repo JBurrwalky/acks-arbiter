@@ -289,6 +289,12 @@ func test_telekinesis_apply_flag_with_constraint_metadata() -> void:
 	caster.level = 5
 	var obj := CharacterData.new()
 	obj.id = "obj_tk"; obj.hp_max = 1; obj.hp_current = 1
+	# 2026-06-02: CastingResolver._apply_flag now gates on save_results
+	# the same way _apply_condition does. Telekinesis' save_spec carries
+	# `applies_only_to_unwilling_creature_or_carrier: true` so the gate
+	# skips the save check; explicit save-fail injection is belt-and-
+	# suspenders for any future save_spec refactor that drops the hint.
+	harness.dice.fixed["spell_save_spells"] = 1  # force fail (target=17)
 	var ctx := CasterContext.from_character_data(caster, "combat_grid", "arcane", 0)
 	var choice := SpellChoice.new("telekinesis", 5, false, -1)
 	var td := TargetDescriptor.new()

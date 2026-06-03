@@ -1219,6 +1219,35 @@ SPELL_BINDING_MAP = {
             "conjure_elemental": {"elemental_type": "earth", "tier": "12hd"},
         },
     },
+
+    # ---- Tier 4 untriaged sweep (2026-06-02): items with explicit RAW ----
+    # Potion of Growth — RAW pc_spell_catalog_f-u.xml:218-219 explicitly
+    # documents "Used to create potions of growth." Bind to the Growth
+    # spell (Arcane L3, 12 turns, doubles recipient size). drink_potion
+    # routes through the spell pipeline; the new effect block in
+    # data/spells/spell_catalog.json sets is_growth_enlarged with
+    # size/damage/force-doors metadata. Consumer integrations
+    # (damage-doubling in attack resolver, door-forcing bonus) are
+    # forward-looking — flag set today, consumer wired when the combat
+    # pass that reads the multiplier metadata lands.
+    "potion_of_growth": {
+        "spell_key": "growth", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
+
+    # Ring of X-Ray Vision — RAW pc_spell_catalog_f-u.xml:1726 explicitly
+    # documents "Used to create rings of x-ray vision." Bind to the
+    # X-Ray Vision spell (Arcane L5, 60' range, concentration). Ring
+    # uses activate_worn_item path; the spell-binding sets the
+    # has_x_ray_vision flag with vision-range / blocking-material /
+    # reveals metadata. The reveal consumer (surface secret doors /
+    # traps in the examined 10' area) is blocked on the same dungeon-UI
+    # reveal subsystem as wand_of_detecting_*; documented as the
+    # consumer follow-up.
+    "ring_of_x_ray_vision": {
+        "spell_key": "x_ray_vision", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "self",
+    },
     # All items beyond this point have either landed in DEFER_BUILD (see
     # above for the per-item deferral reasons — control series, cause_fear
     # blockers, Wishes, etc.) or are routed through `WornMagicEffectResolver`
