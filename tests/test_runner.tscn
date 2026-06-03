@@ -423,6 +423,7 @@
 [ext_resource type="Script" path="res://tests/test_energy_drain_consumer.gd" id="407_energy_drain_consumer_tests"]
 [ext_resource type="Script" path="res://tests/test_tampering_with_mortality.gd" id="408_tampering_tests"]
 [ext_resource type="Script" path="res://tests/test_wards_scrolls.gd" id="409_wards_scrolls_tests"]
+[ext_resource type="Script" path="res://tests/test_elemental_commanders.gd" id="410_elemental_commanders_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1692,3 +1693,6 @@ script = ExtResource("408_tampering_tests")
 
 [node name="WardsScrollsTests" type="Node" parent="."]
 script = ExtResource("409_wards_scrolls_tests")
+
+[node name="ElementalCommandersTests" type="Node" parent="."]
+script = ExtResource("410_elemental_commanders_tests")

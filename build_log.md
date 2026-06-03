@@ -30449,3 +30449,83 @@ Folded into (1) — `REJECTED_DEATH_CAUSES` const + the resolver's death_cause g
 4. **Multi-effect staves (5 items)** — `staff_of_commanding` / `staff_of_power` / `staff_of_serpent` / `staff_of_withering` / `staff_of_wizardry`; each has its own resolver with effect-selection UI; high effort per item.
 5. **Persistent-worn stat-bonus cluster (7 items)** — `scarab_of_protection`, `eyes_of_the_eagle`, etc. — each needs a different engine extension; would split into sub-clusters.
 
+
+
+## Session 2026-06-02 — Elemental Commanders cluster (4 items)
+
+**Task:** Land all 4 Elemental Commander items (Bowl of Commanding Water Elementals / Brazier of Commanding Fire Elementals / Censer of Controlling Air Elementals / Stone of Controlling Earth Elementals) via one parameterized binding pattern that reuses the existing `conjure_elemental` custom resolver with per-item elemental_type + tier overrides.
+**Model used:** Sonnet 4.6 (1M context). Phase: RAW lookup (found explicit text for stone in `acore_treasure_and_magic_items_rules.xml:272`; parallel naming/placement implies same mechanic for the other 3), architectural decision (extend SpellChoice with per-resolver overrides vs duplicate the spell), implementation, tests.
+
+**Completed:**
+
+**Architecture extension** — per-cast resolver_args overrides:
+
+- **`engine/shared_types/spell_choice.gd`** — new field `resolver_args_overrides: Dictionary` (default empty). Keyed by `resolver_id` (e.g. "conjure_elemental"); values are arg-name → value dicts. Documents the Elemental Commanders use case + the shallow-merge contract.
+- **`engine/subsystems/spells/casting_resolver.gd:_dispatch_custom`** — checks `spell_choice.resolver_args_overrides` at dispatch time. If an entry exists for the current step's `resolver_id`, duplicates the step (deep-copy) and shallow-merges the override values into `step.resolver_args` (override values win). Pure-spell casts leave the field empty so the catalog default passes through unchanged. Backward-compatible: existing resolvers see no change.
+- **`engine/subsystems/inventory/magic_item_activator.gd:_build_spell_choice`** — when the binding carries `resolver_args_override` (Dictionary), propagates it to the SpellChoice. Empty for all existing bindings (no override).
+
+**4 Elemental Commander bindings:**
+
+- `bowl_of_commanding_water_elementals` → `conjure_elemental` + `{elemental_type: "water", tier: "12hd"}`
+- `brazier_of_commanding_fire_elementals` → `conjure_elemental` + `{elemental_type: "fire", tier: "12hd"}`
+- `censer_of_controlling_air_elementals` → `conjure_elemental` + `{elemental_type: "air", tier: "12hd"}`
+- `stone_of_controlling_earth_elementals` → `conjure_elemental` + `{elemental_type: "earth", tier: "12hd"}`
+
+Each binding: `target_mode: "single_target"` (caller designates summon cell within the spell's 240' range), `caster_level: 5` (Conjure Elemental is Arcane L5; minimum knowable level). Tier "12hd" reflects ACKS three-tier elemental power: staff = 8HD, **miscellaneous magic item = 12HD**, spell = 16HD.
+
+**Charge model V1 "once per day":**
+
+- **`engine/subsystems/inventory/magic_item_activator.gd:use_misc_magic_active`** — extended with a charge gate at Step 2a (before cast) AND a charge-decrement branch at Step 4. Items with `default_charges` stamped + `misc_magic_consumable: false` decrement `uses_remaining` on successful activation; refuse further activation at 0 charges with "(refills when the daily-reset subsystem lands)" message. Unlimited-use items (no `default_charges`) are unchanged — no decrement.
+- **`tools/extract_magic_item_catalog.py`** — new `ELEMENTAL_COMMANDER_KEYS` frozenset; stamping loop sets `misc_magic_consumable: false` + `default_charges: 1` on each of the 4 keys. `default_charges: 1` flows through `TreasureInstantiator` (existing top-level `default_charges` fallback at line 156) to materialize items at full charge.
+
+**Tests:**
+
+- **`tests/test_elemental_commanders.gd`** (NEW file) — 12 tests:
+  - **Catalog (5)**: each of 4 items has correct spell_binding (spell_key=conjure_elemental, target_mode=single_target, caster_level=5, resolver_args_override with per-item elemental_type + tier="12hd"); regression guard that all 4 share misc_magic_consumable=false + default_charges=1.
+  - **SpellChoice override (2)**: field carries the override dict; defaults empty when not set.
+  - **Resolver merge (3)**: water + fire overrides reach ConjureElementalResolver via the merge path; default earth/16hd passes through when no override.
+  - **Charge gate (2)**: 0-charge item refuses activation with the daily-reset message; item not removed from inventory on refusal.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`** — wired `410_elemental_commanders_tests` ext_resource + `ElementalCommandersTests` node into the run loop.
+
+**Decisions made:**
+
+- **Resolver_args overrides via SpellChoice over per-element spell duplication.** Could have created `conjure_elemental_water` / `_fire` / `_air` / `_earth` catalog entries — but that duplicates the resolution payload 4 times and forces the registry / picker to know about magic-item-only spell variants. Per-cast override is cleaner: one spell entry, 4 magic-item bindings, per-item args.
+- **Shallow merge, override wins.** The override map is keyed by resolver_id (not deeply nested), so a shallow merge into step.resolver_args is sufficient. Future overrides for nested fields can deepen the merge as needed.
+- **`misc_magic_consumable: false` + `default_charges: 1` over a new "daily" flag.** The existing charge infrastructure (uses_remaining + decrement) already models "1 use, refills later." Adding a `is_daily_use: true` field would duplicate the same semantic; instead, V1 reuses the charge model with the understanding that daily-reset will refill these via the same `uses_remaining` field.
+- **Tier "12hd" stamped on the catalog rather than inferred at resolver-args level.** Could have made `tier` always "12hd" for magic-item-driven casts, but explicit-in-the-binding is more discoverable. Future magic-item Conjure Elemental variants can override differently.
+- **1-turn-ritual + 1-round-summoning prep time deferred.** Per RAW the user "must ready the item and perform 1 turn of rituals before summoning" then "the summoning itself takes 1 round." V1 fires immediately on activation. EventScheduler integration for the prep period is a follow-up (the same infrastructure that will gate spell casting time once Initiative-vs-Spell-Phase is wired).
+
+**Interfaces defined or changed:**
+
+- New `SpellChoice.resolver_args_overrides: Dictionary` — public field, defaults empty.
+- `CastingResolver._dispatch_custom` now consults `spell_choice.resolver_args_overrides` and merges into the step payload before invoking the custom resolver. Backward-compatible.
+- `MagicItemActivator._build_spell_choice(binding)` now reads `binding.resolver_args_override` and propagates to the SpellChoice.
+- `MagicItemActivator.use_misc_magic_active` now refuses activation when `default_charges` is set, `misc_magic_consumable` is false, and `uses_remaining` is 0. Returns `charges_remaining` in the result.
+- 4 new entries in `tools/extract_magic_item_catalog.py:SPELL_BINDING_MAP` with `resolver_args_override` field.
+- New `ELEMENTAL_COMMANDER_KEYS` frozenset in the extractor; stamps `misc_magic_consumable: false` + `default_charges: 1` on the 4 keys.
+
+**Database changes:**
+
+- None.
+
+**Tests added/updated:**
+
+- 12 new tests in `tests/test_elemental_commanders.gd`.
+- Full suite: **404 passed / 19 failed** — was 403/19; +1 new suite, net-zero new failures.
+
+**Known issues:**
+
+- **Daily-reset subsystem not implemented.** Once a player uses an Elemental Commander, it stays at 0 charges until refilled. A future daily-reset subsystem (likely sunrise-triggered via Timekeeping) needs to walk all misc_magic items with `default_charges` set + `misc_magic_consumable: false` and reset `uses_remaining = default_charges`.
+- **Prep-time gate (1 turn ritual + 1 round summoning) not enforced.** V1 fires immediately; the prep window is the future EventScheduler integration that will also gate other time-cost spells.
+- **Concentration loss → hostile elemental.** The existing `ConjureElementalResolver` already records `becomes_hostile_on_concentration_break: true` in the spawn_profile. The hostility-flip consumer in `SpellCombatHooks` is the same code path for Conjure Elemental casts and Elemental Commander invocations — no separate wiring needed.
+- **Daily-cap-per-type interaction.** The resolver records `daily_cap_per_type: 1` in the spawn_profile; the magic-item activation respects the catalog `default_charges: 1` independently. If a caster has both Conjure Elemental memorized AND a Stone of Controlling Earth Elementals, V1 lets them summon two earth elementals in one day (one via spell, one via item). The cap is per-type-per-caster regardless of source — a future polish pass.
+
+**Next session should:**
+
+1. **Tier 4 cluster (untriaged misc magic, ~10 items)** — `ring_of_regeneration`, `ring_of_spell_storing`, `ring_of_x_ray_vision`, `horn_of_blasting`, `rope_of_climbing`, `potion_of_growth`, `potion_of_delusion`, `oil_of_sharpness`, `boots_of_traveling_and_springing` — sweep the Tier-4-classified items that haven't landed.
+2. **Crystal Ball trio (3 items)** — needs scrying UI subsystem + integration with see_invisible / detect_magic.
+3. **Multi-effect staves (5 items)** — high effort per item; each its own resolver + effect-selection UI.
+4. **Persistent-worn stat-bonus cluster (7 items)** — each needs different engine extension.
+5. **Daily-reset subsystem for misc_magic charged items** — refills `uses_remaining` to `default_charges` at sunrise. Unblocks Elemental Commanders' actual once-per-day semantic.
+

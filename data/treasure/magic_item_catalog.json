@@ -1461,7 +1461,21 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "conjure_elemental",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "resolver_args_override": {
+          "conjure_elemental": {
+            "elemental_type": "water",
+            "tier": "12hd"
+          }
+        }
+      },
+      "misc_magic_consumable": false,
+      "default_charges": 1
     },
     {
       "item_key": "bracers_of_armor",
@@ -1561,7 +1575,21 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "conjure_elemental",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "resolver_args_override": {
+          "conjure_elemental": {
+            "elemental_type": "fire",
+            "tier": "12hd"
+          }
+        }
+      },
+      "misc_magic_consumable": false,
+      "default_charges": 1
     },
     {
       "item_key": "brooch_of_shielding",
@@ -1598,7 +1626,21 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "conjure_elemental",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "resolver_args_override": {
+          "conjure_elemental": {
+            "elemental_type": "air",
+            "tier": "12hd"
+          }
+        }
+      },
+      "misc_magic_consumable": false,
+      "default_charges": 1
     },
     {
       "item_key": "chime_of_opening",
@@ -2015,7 +2057,21 @@
       "is_cursed": false,
       "encumbrance_units": 167,
       "value_gp": 25000,
-      "creation_time_days": 200
+      "creation_time_days": 200,
+      "spell_binding": {
+        "spell_key": "conjure_elemental",
+        "tradition": "arcane",
+        "caster_level": 5,
+        "target_mode": "single_target",
+        "resolver_args_override": {
+          "conjure_elemental": {
+            "elemental_type": "earth",
+            "tier": "12hd"
+          }
+        }
+      },
+      "misc_magic_consumable": false,
+      "default_charges": 1
     },
     {
       "item_key": "sword_1",

@@ -1563,13 +1563,33 @@ func _dispatch_custom(
 	if not _custom_resolvers.has_resolver(resolver_id):
 		return {"applied": false, "reason": "no custom resolver registered for '%s'" % resolver_id}
 	var resolver := _custom_resolvers.get_resolver(resolver_id)
+	# 2026-06-02 (Elemental Commanders cluster): SpellChoice carries
+	# per-resolver resolver_args overrides for magic items that reuse a
+	# spell catalog entry but supply different per-item resolver_args
+	# (Bowl/Brazier/Censer/Stone of <element>-elementals reuse
+	# conjure_elemental but supply per-item elemental_type + tier). When
+	# the SpellChoice's resolver_args_overrides has an entry for THIS
+	# resolver_id, we shallow-merge it into the step's resolver_args
+	# (override values win). Pure-spell casts leave overrides empty so
+	# the catalog's resolver_args pass through unchanged.
+	var effective_step: Dictionary = step
+	if spell_choice != null and not spell_choice.resolver_args_overrides.is_empty():
+		var override_for_resolver: Variant = spell_choice.resolver_args_overrides.get(
+			resolver_id, null)
+		if override_for_resolver is Dictionary:
+			effective_step = step.duplicate(true)
+			var existing_args: Dictionary = effective_step.get("resolver_args", {})
+			# Shallow-merge: override keys win.
+			for k in (override_for_resolver as Dictionary).keys():
+				existing_args[k] = (override_for_resolver as Dictionary)[k]
+			effective_step["resolver_args"] = existing_args
 	var args: Dictionary = {
 		"caster_context": caster_context,
 		"spell_choice": spell_choice,
 		"target_descriptor": target_descriptor,
 		"targets_by_id": targets_by_id,
 		"caster_entity": caster_entity,
-		"step_payload": step,
+		"step_payload": effective_step,
 		# Session 8: pass the active_effect tracker so resolvers like
 		# DispelMagicResolver can call dispel_check directly. Resolvers that
 		# don't need it can ignore.

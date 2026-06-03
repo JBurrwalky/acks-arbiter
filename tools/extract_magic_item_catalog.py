@@ -610,6 +610,18 @@ DIRECT_POTION_EFFECTS = {
 #   CastingResolver. Scroll caster_level default = 5 (RAW silent on
 #   minimum-caster-level for warding scrolls; project default mirrors
 #   the standard "scroll cast at minimum level" rule).
+# Elemental Commanders cluster (2026-06-02). RAW V1 "once per day"
+# semantic: 1 charge that decrements on use; refills when the daily-reset
+# subsystem lands. Stamped via misc_magic_consumable=false +
+# default_charges=1 in the process_item() loop.
+ELEMENTAL_COMMANDER_KEYS = frozenset({
+    "bowl_of_commanding_water_elementals",
+    "brazier_of_commanding_fire_elementals",
+    "censer_of_controlling_air_elementals",
+    "stone_of_controlling_earth_elementals",
+})
+
+
 DIRECT_CONSUMABLE_EFFECTS = {
     "scroll_of_warding_elementals": {
         "effect_kind": "ward_against_creature_type",
@@ -1146,6 +1158,67 @@ SPELL_BINDING_MAP = {
         "spell_key": "esp", "tradition": "arcane",
         "caster_level": 3, "target_mode": "self",
     },
+
+    # ---- Elemental Commanders (2026-06-02) ----
+    # Bowl of Commanding Water Elementals; Brazier of Commanding Fire
+    # Elementals; Censer of Controlling Air Elementals; Stone of
+    # Controlling Earth Elementals.
+    #
+    # RAW (acore_treasure_and_magic_items_rules.xml:272, explicit for
+    # stone_of_controlling_earth_elementals; parallel naming + parallel
+    # placement in the random-item table implies the same mechanic for
+    # the other 3):
+    #   "Once per day summons and controls one X elemental as conjure
+    #    elemental. User must ready the item and perform 1 turn of
+    #    rituals before summoning. The summoning itself takes 1 round.
+    #    Continuous concentration is required to command the elemental."
+    #
+    # Implementation: each binding reuses the existing conjure_elemental
+    # spell + custom resolver but supplies a per-item elemental_type +
+    # tier override via the new `resolver_args_override` field. Tier
+    # is "12hd" (miscellaneous magic item per ACKS three-tier elemental
+    # power: staff=8HD, misc magic item=12HD, spell=16HD).
+    #
+    # caster_level = 5 (Conjure Elemental is Arcane L5; minimum caster
+    # level to know the spell). target_mode "single_target" so the
+    # caller designates a summon cell within the spell's 240' range.
+    #
+    # V1 deferrals (documented in the GDD §14 row + build log):
+    #   - "Once per day" daily-reset semantics: V1 ships
+    #     `default_charges = 1` and decrements on use; the item exhausts
+    #     after one use until a future daily-reset subsystem refills
+    #     misc_magic items at sunrise.
+    #   - 1-turn-ritual + 1-round-summoning prep time: V1 fires
+    #     immediately on activation; the prep-time gate is a future
+    #     EventScheduler integration.
+    "bowl_of_commanding_water_elementals": {
+        "spell_key": "conjure_elemental", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "resolver_args_override": {
+            "conjure_elemental": {"elemental_type": "water", "tier": "12hd"},
+        },
+    },
+    "brazier_of_commanding_fire_elementals": {
+        "spell_key": "conjure_elemental", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "resolver_args_override": {
+            "conjure_elemental": {"elemental_type": "fire", "tier": "12hd"},
+        },
+    },
+    "censer_of_controlling_air_elementals": {
+        "spell_key": "conjure_elemental", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "resolver_args_override": {
+            "conjure_elemental": {"elemental_type": "air", "tier": "12hd"},
+        },
+    },
+    "stone_of_controlling_earth_elementals": {
+        "spell_key": "conjure_elemental", "tradition": "arcane",
+        "caster_level": 5, "target_mode": "single_target",
+        "resolver_args_override": {
+            "conjure_elemental": {"elemental_type": "earth", "tier": "12hd"},
+        },
+    },
     # All items beyond this point have either landed in DEFER_BUILD (see
     # above for the per-item deferral reasons — control series, cause_fear
     # blockers, Wishes, etc.) or are routed through `WornMagicEffectResolver`
@@ -1485,6 +1558,15 @@ def main() -> int:
         # follow-on passes.
         if key in SPELL_BINDING_MAP:
             it["spell_binding"] = SPELL_BINDING_MAP[key]
+        # Elemental Commanders (2026-06-02) — RAW "once per day" V1
+        # semantic: misc_magic_consumable=false (item is not removed on
+        # use) + default_charges=1 (one daily use that decrements). When
+        # charges hit 0, use_misc_magic_active refuses further activation
+        # until a future daily-reset subsystem refills misc_magic items
+        # at sunrise.
+        if key in ELEMENTAL_COMMANDER_KEYS:
+            it["misc_magic_consumable"] = False
+            it["default_charges"] = 1
         # Tier 4 Cluster A (2026-06-01): non-spell-binding metadata stamps.
         # Worn-passive flag-only items (Amulet versus Crystal Balls and ESP):
         # `worn_passive_flags` documents which EntityFlags the

@@ -15,6 +15,18 @@ var level: int = 1
 var is_reversed: bool = false
 var chosen_disjunctive_index: int = -1
 
+## 2026-06-02 (Elemental Commanders cluster) — per-cast resolver_args
+## overrides keyed by resolver_id. When CastingResolver dispatches a
+## custom step whose resolver_id matches a key here, the per-step
+## resolver_args from the catalog are SHALLOW-MERGED with this override
+## map (override values win). Used by Elemental Commander magic items to
+## reuse the conjure_elemental spell catalog entry but supply per-item
+## elemental_type + tier. Empty by default — pure-spell casts don't
+## populate this.
+##
+## Shape: { resolver_id: { arg_name: value, ... }, ... }
+var resolver_args_overrides: Dictionary = {}
+
 
 func _init(
         key: String = "",

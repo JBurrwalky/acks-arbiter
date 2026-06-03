@@ -660,25 +660,49 @@ static func use_misc_magic_active(
 		empty["message"] = str(target_v["message"])
 		return empty
 
+	# 2a. Charge gate (2026-06-02 — Elemental Commanders cluster). An item
+	# that has `default_charges` stamped AND `misc_magic_consumable: false`
+	# is a reusable-with-charges item (e.g. Elemental Commanders'
+	# once-per-day model V1: 1 charge that exhausts until a future
+	# daily-reset subsystem refills misc_magic items at sunrise). Refuse
+	# activation when charges are 0. Items WITHOUT default_charges are
+	# unlimited-use (uses_remaining = -1, the catalog default) and skip
+	# this gate entirely.
+	var is_consumable: bool = bool(catalog_entry.get("misc_magic_consumable", true))
+	var has_default_charges: bool = catalog_entry.has("default_charges")
+	var current_charges: int = int(item_row.get("uses_remaining", -1))
+	if has_default_charges and not is_consumable and current_charges == 0:
+		empty["message"] = (
+			"'%s' has no charges remaining (refills when the daily-reset subsystem lands)." %
+			str(catalog_entry.get("name", item_key)))
+		return empty
+
 	# 3. Cast via the shared pipeline.
 	var result: ResolutionResult = _cast_via_binding(
 		binding, user, casting_resolver,
 		target_id, target_entity, target_cell,
 		map_context, origin_cell)
 
-	# 4. Consumption logic. By default: consume on success (matches potion
-	# semantics — a failed cast preserves the dose). Items that are NOT
-	# consumed on use carry `misc_magic_consumable: false` on the catalog
-	# entry (Drums of Panic, future Horn of Blasting, etc.) and instead
-	# decrement uses_remaining if a default_charges is set. V1 keeps the
-	# pattern simple: dusts consume; non-consumables don't decrement
-	# (= unlimited uses, mirroring activate_worn_item V1 behavior).
+	# 4. Consumption / charge accounting. Three modes:
+	#   - misc_magic_consumable = true (default) → remove from inventory on
+	#     success (dusts; matches potion semantics).
+	#   - misc_magic_consumable = false + has default_charges → decrement
+	#     uses_remaining on success. Reaching 0 charges refuses subsequent
+	#     activations until daily-reset (no is_magical clear — RAW for
+	#     once-per-day items doesn't strip the magic itself).
+	#   - misc_magic_consumable = false + no default_charges → unlimited
+	#     uses (Drums of Panic, Medallions of ESP).
 	var consumed: bool = false
+	var charges_after: int = current_charges
 	var message: String = ""
-	var is_consumable: bool = bool(catalog_entry.get("misc_magic_consumable", true))
 	if result != null and result.success:
 		if is_consumable:
 			consumed = CampaignRepository.remove_inventory_item(item_id)
+		elif has_default_charges and current_charges > 0:
+			charges_after = current_charges - 1
+			CampaignRepository.db.query_with_bindings(
+				"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+				[charges_after, item_id])
 		message = "Used '%s' — cast %s." % [
 			str(catalog_entry.get("name", item_key)),
 			binding.get("spell_key", ""),
@@ -693,6 +717,7 @@ static func use_misc_magic_active(
 		"success": result != null and result.success,
 		"message": message,
 		"consumed": consumed,
+		"charges_remaining": charges_after,
 		"spell_key": binding.get("spell_key", ""),
 		"casting_result": result,
 	}
@@ -1516,8 +1541,14 @@ static func _build_caster_context(
 ## disjunctive branch in V1). All current bindings are non-disjunctive single-
 ## branch spells, so chosen_disjunctive_index stays -1 (the resolver accepts
 ## -1 for non-disjunctive entries).
+##
+## 2026-06-02 (Elemental Commanders cluster) — if the binding carries a
+## `resolver_args_override` dict, propagate it to SpellChoice so the
+## CastingResolver._dispatch_custom merge picks it up at dispatch time.
+## Each entry's key is a resolver_id (e.g. "conjure_elemental"); the
+## value is the override args dict.
 static func _build_spell_choice(binding: Dictionary) -> SpellChoice:
-	return SpellChoice.new(
+	var choice := SpellChoice.new(
 		str(binding.get("spell_key", "")),
 		1,      # spell_choice.level: a potion's effective spell-level is fixed
 		        # at the binding's caster_level on CasterContext. The SpellChoice.level
@@ -1526,6 +1557,10 @@ static func _build_spell_choice(binding: Dictionary) -> SpellChoice:
 		false,  # is_reversed — no reversed-form potions in the V1 binding map.
 		-1)     # chosen_disjunctive_index — none of the V1 bound spells are
 		        # disjunctive.
+	var overrides: Variant = binding.get("resolver_args_override", null)
+	if overrides is Dictionary:
+		choice.resolver_args_overrides = overrides
+	return choice
 
 
 ## TargetDescriptor — derived from the binding's target_mode. The spell's
