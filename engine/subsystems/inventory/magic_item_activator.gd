@@ -125,6 +125,41 @@ static func drink_potion(
 		empty["message"] = "Item '%s' is not a potion (category=%s)." % [
 			item_key, catalog_entry.get("category", "?")]
 		return empty
+	# Two-potion sickened gate (2026-06-03). RAW (ACore
+	# general_category_rules.potions): "If a character drinks a second potion
+	# while one is active, the character is sickened and cannot act for 3
+	# turns; neither potion has any other effect." Fires when `has_active_potion`
+	# flag is already set (one of the temp-duration potions is in effect).
+	# Both the NEW potion's effect AND the ACTIVE potion's effect are
+	# considered "no effect" per RAW — we refuse the new dose's mechanic but
+	# CONSUME the dose (drinker physically drank it). The active potion
+	# remains in place until its own scheduled expiry; the engine does not
+	# proactively suppress its modifiers per RAW's specific wording (the
+	# pre-existing modifier sweep doesn't fire on the same-turn quaff). The
+	# sickened flag (`is_sickened_by_potion`) is durable for 3 turns and
+	# read by action-selection consumers (V1: flag set with full metadata;
+	# action gating wires when the consumer integration lands).
+	if drinker != null and PotionDurationService.has_active_potion(drinker):
+		var tracker_for_sickened: ActiveEffectTracker = null
+		if casting_resolver != null:
+			tracker_for_sickened = casting_resolver.get_effect_tracker()
+		var sickened_outcome: Dictionary = PotionDurationService.apply_sickened(
+			drinker, item_id, item_key, tracker_for_sickened)
+		var consumed_dose: bool = CampaignRepository.remove_inventory_item(item_id)
+		return {
+			"success": false,
+			"message": "Drank '%s' while another potion was active — sickened for %d turns; neither potion has any other effect." % [
+				str(catalog_entry.get("name", item_key)),
+				PotionDurationService.SICKENED_DURATION_TURNS,
+			],
+			"consumed": consumed_dose,
+			"spell_key": "",
+			"casting_result": null,
+			"sickened_applied": bool(sickened_outcome.get("applied", false)),
+			"sickened_expires_at_turn": int(sickened_outcome.get("expires_at_turn", 0)),
+			"active_potion_item_id": str(sickened_outcome.get("active_potion_item_id", "")),
+		}
+
 	# Tier 4 Cluster A (2026-06-01): potions whose effect bypasses the spell
 	# pipeline (Potion of Poison, Potion of *_Control). The catalog stamps
 	# `direct_potion_effect` with an `effect_kind` field; route to the
@@ -1147,6 +1182,100 @@ static func _resolve_direct_potion_effect(
 					"spell_key": "",
 					"casting_result": null,
 				}
+		"temp_combat_levels":
+			# Heroism + Super-Heroism (2026-06-03). Both gate on
+			# combat_progression == "fighter" per Jedidiah ruling. Level
+			# bonus + save bonus + HP bonus per ACKS Core p.215+ tables.
+			# Class registry passed via Combatant's static cache (matches
+			# the existing pattern used by combat resolution).
+			var class_registry: ClassRegistry = Combatant.get_class_registry()
+			var combat_outcome: Dictionary = PotionDurationService.apply_combat_level_boost(
+				drinker, item_id, item_key, class_registry, effect_tracker)
+			# Consume the bottle in all outcomes — the drinker physically
+			# drank it (matches Poison + Control behavior).
+			CampaignRepository.remove_inventory_item(item_id)
+			var combat_consumed: bool = true
+			if not bool(combat_outcome.get("applied", false)):
+				var reason: String = str(combat_outcome.get("refused_reason", ""))
+				var refused_msg := ""
+				match reason:
+					"class_restricted":
+						refused_msg = "Drank '%s' — but %s is not of a fighter-progression class; potion has no effect." % [
+							name, drinker.name if drinker != null else "?"]
+					"no_bonus_at_level":
+						refused_msg = "Drank '%s' — but %s is too high-level (%d) to benefit; potion has no effect." % [
+							name, drinker.name if drinker != null else "?", drinker.level if drinker != null else 0]
+					_:
+						refused_msg = "Drank '%s' — refused (%s)." % [name, reason]
+				return {
+					"success": true,  # the potion resolved (just no effect)
+					"message": refused_msg,
+					"consumed": combat_consumed,
+					"spell_key": "",
+					"casting_result": null,
+					"refused_reason": reason,
+					"effect_outcome": combat_outcome,
+				}
+			return {
+				"success": true,
+				"message": "Drank '%s' — granted +%d combat levels for %d day(s); +%d temp HP." % [
+					name, int(combat_outcome.get("extra_levels", 0)),
+					int(combat_outcome.get("duration_days", 0)),
+					int(combat_outcome.get("temp_hp_granted", 0)),
+				],
+				"consumed": combat_consumed,
+				"spell_key": "",
+				"casting_result": null,
+				"effect_outcome": combat_outcome,
+			}
+		"giant_strength":
+			# Potion of Giant Strength (2026-06-03). Reuses the Girdle of
+			# Giant Strength modifier pattern: set_ceiling 3 on attack_throw
+			# (8-HD monster value) with the standard
+			# potion_temporary:<item_id> source_id for tick-expire cleanup.
+			# 3-turn duration per spell catalog Giant Strength duration.
+			var gs_outcome: Dictionary = PotionDurationService.apply_giant_strength(
+				drinker, item_id, item_key, effect_tracker)
+			CampaignRepository.remove_inventory_item(item_id)
+			return {
+				"success": true,
+				"message": "Drank '%s' — gained hill-giant strength for %d turn(s)." % [
+					name, int(gs_outcome.get("duration_turns", 0))],
+				"consumed": true,
+				"spell_key": "",
+				"casting_result": null,
+				"effect_outcome": gs_outcome,
+			}
+		"weekly_invulnerability":
+			# Potion of Invulnerability (2026-06-03). +2 AC and +2 to all
+			# saves, OR INVERTED -2/-2 if quaffed within 7 days of a previous
+			# Invulnerability quaff. Tracks last-quaff day via the persistent
+			# `last_invulnerability_quaff_day` flag.
+			var inv_outcome: Dictionary = PotionDurationService.apply_invulnerability(
+				drinker, item_id, item_key, effect_tracker)
+			CampaignRepository.remove_inventory_item(item_id)
+			var inv_message: String
+			if bool(inv_outcome.get("inverted", false)):
+				inv_message = ("Drank '%s' — but the potion was quaffed too recently and INVERTED: "
+					+ "-%d AC and -%d to all saves for %d turn(s).") % [
+						name, abs(int(inv_outcome.get("ac_delta", 0))),
+						abs(int(inv_outcome.get("save_delta", 0))),
+						int(inv_outcome.get("duration_turns", 0)),
+					]
+			else:
+				inv_message = "Drank '%s' — +%d AC and +%d to all saves for %d turn(s)." % [
+					name, int(inv_outcome.get("ac_delta", 0)),
+					int(inv_outcome.get("save_delta", 0)),
+					int(inv_outcome.get("duration_turns", 0)),
+				]
+			return {
+				"success": true,
+				"message": inv_message,
+				"consumed": true,
+				"spell_key": "",
+				"casting_result": null,
+				"effect_outcome": inv_outcome,
+			}
 		_:
 			base["message"] = "Unknown direct_potion_effect kind '%s' on '%s'." % [
 				effect_kind, item_key]

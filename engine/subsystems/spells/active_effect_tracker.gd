@@ -29,6 +29,20 @@ extends RefCounted
 ##   requires_concentration: bool
 ##   is_active:            bool
 ##   metadata:             Dictionary  — spell-specific extras (mirror_images, etc.)
+##   dispatch_cleanup_on_tick: bool   — OPT-IN: when true, on tick-expiry the
+##                                       cleanup_callback fires with
+##                                       cause="tick_expired" before erasure,
+##                                       so applied modifiers/flags are unwound.
+##                                       Defaults false for backward compat with
+##                                       legacy spells whose cleanup is wired
+##                                       elsewhere (e.g. via EventBus listeners
+##                                       on spell_effect_removed). Added 2026-06-03
+##                                       for the level-boost / Giant-Strength /
+##                                       Invulnerability potion batch — those
+##                                       potions stamp modifiers via the cleanup
+##                                       callback's standard `_unwind_effect_state`
+##                                       so they need this wired to clean up on
+##                                       turn/day boundary expiry.
 
 # _effects: effect_id -> Dictionary
 var _effects: Dictionary = {}
@@ -222,6 +236,36 @@ func _tick_duration(duration_type: String, n: int) -> Array[String]:
 			expired.append(effect_id)
 		else:
 			_effects[effect_id]["duration_remaining"] = remaining
+	# Snapshot opt-in cleanup-dispatch effects BEFORE erasure so the cleanup
+	# callback can unwind applied modifiers/flags/conditions. Effects without
+	# `dispatch_cleanup_on_tick: true` keep the legacy direct-erase behavior
+	# (their cleanup, if any, fires via EventBus.spell_effect_removed
+	# subscribers on the EffectTicker side). The opt-in field was added
+	# 2026-06-03 for the level-boost / Giant Strength / Invulnerability potion
+	# batch so their modifier sweep fires on turn/day-boundary expiry, parallel
+	# to the concentration_broken / dispelled paths.
+	#
+	# The cleanup callback (CastingResolver._on_tracker_removed_effect) fires
+	# EventBus.spell_effect_removed itself, so we strip cleanup-dispatched ids
+	# from the returned array to keep EffectTicker's legacy emit from firing
+	# the same signal twice for the same effect_id.
+	var cleanup_snapshots: Array[Dictionary] = []
+	var cleanup_dispatched_ids: Dictionary = {}  # effect_id -> true (set semantics)
+	for eid in expired:
+		var effect: Dictionary = _effects[eid]
+		if bool(effect.get("dispatch_cleanup_on_tick", false)):
+			cleanup_snapshots.append(effect)
+			cleanup_dispatched_ids[eid] = true
+	for snapshot in cleanup_snapshots:
+		if _cleanup_callback.is_valid():
+			_cleanup_callback.call(snapshot, "tick_expired")
 	for eid in expired:
 		_effects.erase(eid)
-	return expired
+	# Filter out cleanup-dispatched ids so EffectTicker doesn't double-emit.
+	if cleanup_dispatched_ids.is_empty():
+		return expired
+	var legacy_only: Array[String] = []
+	for eid in expired:
+		if not cleanup_dispatched_ids.has(eid):
+			legacy_only.append(eid)
+	return legacy_only

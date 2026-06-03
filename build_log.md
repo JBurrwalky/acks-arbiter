@@ -30985,3 +30985,390 @@ Each binding: `target_mode: "single_target"` (caller designates summon cell with
 4. **Crystal Ball trio (3 items)** — scrying UI subsystem.
 5. **Multi-effect staves (5 items)** — each its own resolver.
 
+
+
+## Session 2026-06-03 — Level-boost potions + Giant Strength + Invulnerability
+
+**Task:** Land all four temp-duration potions:
+1. Potion of Heroism (Fighter-only, level-table boost + temp_hp, 1 day duration)
+2. Potion of Super-Heroism (Fighter-only, bigger boost table, 1 day duration)
+3. Potion of Giant Strength (no class gate, 8-HD attack throw + flag-side
+   doubled-damage / throw-rocks / +16 force-doors metadata, 3 turn duration)
+4. Potion of Invulnerability (+2 AC and +2 saves OR INVERTED to -2/-2 if
+   quaffed within 7 days; 10 turn V1 default duration)
+
+Plus: foundational infrastructure for temp-duration potions — `PotionDurationService`,
+the two-potion sickened-rule gate, and `ActiveEffectTracker`'s opt-in cleanup-
+on-tick dispatch.
+
+**Model used:** Sonnet 4.6.
+
+**RAW supplied (Jedidiah 2026-06-03 from ACKS Core p.215+):**
+
+- **Giant Strength**: "Functions as hill giant strength. Attack as 8 HD
+  monster or own class and level, whichever is better. Deal double normal
+  damage. Can throw rocks to 200' for 3d6 damage. +16 to force open doors.
+  The strength bonuses of this potion may not be combined with any other
+  magical effects that influence strength, but it does stack with the
+  character's normal bonus or penalty from Strength." Spell duration: 3 turns.
+
+- **Heroism**: "Only an assassin, dwarven vaultguard, elven spellsword,
+  explorer, or fighter may use this potion. Extra levels and their
+  accompanied benefits to combat are temporarily granted to the imbiber,
+  determined by his experience level as shown in this table. Note that
+  extra hit points granted due to the level increase are subtracted first
+  when the character is wounded."
+  Table: 0 → +4 (Fighter), 1-3 → +3, 4-7 → +2, 8-10 → +1, 11+ → +0.
+
+- **Super-Heroism**: "Only assassins, dwarven vaultguards, elven
+  spellswords, explorers, and fighters may use this potion. Extra levels
+  and their accompanied benefits to combat are temporarily granted... In
+  all other respects this potion is identical to heroism."
+  Table: 0 → +6, 1-3 → +5, 4-7 → +4, 8-10 → +3, 11-12 → +2.
+
+- **Invulnerability**: "An invulnerability potion gives the drinker a
+  bonus of +2 to all saving throws and Armor Class. However, if a potion
+  of invulnerability is quaffed more than once per week, the potion has
+  the opposite effect, causing a penalty of -2 to saving throws and Armor
+  Class!" (Resolves the prior "needs Jedidiah ruling" deferral.)
+
+- **Default potion rules**: "Default duration is 1d6+6 turns unless a
+  specific potion says otherwise." "If a character drinks a second potion
+  while one is active, the character is sickened and cannot act for 3
+  turns; neither potion has any other effect."
+
+**Jedidiah rulings 2026-06-03:**
+
+- **Class restriction = combat_progression gate.** Heroism / Super-Heroism
+  RAW lists "assassin, dwarven vaultguard, elven spellsword, explorer, or
+  fighter." Project implementation: gate on `combat_progression == "fighter"`,
+  not on class_id whitelist. This makes Barbarian, Paladin, Ruinguard,
+  Anti-Paladin, Dwarven Fury, Elven Ranger — and any future fighter-
+  progression class — plug-and-play.
+- **Refuse + notify on class restriction; consume the dose anyway.** The
+  drinker physically drank the bottle, so the inventory row is removed
+  on refusal too. The effect-outcome dict carries `refused_reason:
+  "class_restricted"` for the narration layer.
+- **Two-potion sickened rule: enforce now.** Adds the gate to `drink_potion`
+  before either direct_potion_effect or spell_binding dispatch. The
+  sickened flag is durable for 3 turns; the 1st potion's effects remain
+  in place per RAW's specific wording (we don't proactively strip them).
+
+**Completed:**
+
+### New infrastructure
+
+- **`engine/subsystems/inventory/potion_duration_service.gd`** (NEW class,
+  ~430 LOC). Static helpers:
+  - `has_active_potion(drinker)` / `is_sickened(drinker)` / `is_eligible_for_heroism_family(drinker)` predicates.
+  - `levels_granted_for(item_key, drinker_level)` — Heroism/Super-Heroism
+    table lookup.
+  - `apply_combat_level_boost(drinker, item_id, item_key, class_registry, tracker)`
+    — class-restricted; computes attack_throw + save deltas from the
+    drinker's class table at (level + extra_levels); grants temp_hp =
+    extra_levels × hit_die_average; registers tracker effect with
+    `dispatch_cleanup_on_tick: true` and `duration_type: "days"`.
+  - `apply_giant_strength(drinker, item_id, item_key, tracker)` — set_ceiling 3
+    on attack_throw (Girdle pattern); flag metadata carries
+    damage_multiplier / throw_rocks / force_doors_bonus for future consumers.
+  - `apply_invulnerability(drinker, item_id, item_key, tracker, duration_override_turns)`
+    — consults `last_invulnerability_quaff_day` flag; inverts +2 → -2 if
+    within 7 days; always updates the tracker flag to the current day.
+    Applies `armor_class` add (ascending axis) + per-save add (lower-is-
+    better axis: positive delta → negative modifier value).
+  - `apply_sickened(drinker, new_item_id, new_item_key, tracker)` — stamps
+    `is_sickened_by_potion` flag for 3 turns; registers tracker effect with
+    cleanup callback for automatic flag-clear on expire.
+
+- **`engine/subsystems/spells/active_effect_tracker.gd`**:
+  - **NEW `dispatch_cleanup_on_tick: bool` opt-in field** in effect dict.
+    When true, on tick-expiry the cleanup_callback fires with cause
+    `"tick_expired"` BEFORE erasure so applied modifiers/flags get unwound.
+    Without this field, behavior unchanged (legacy `EventBus.spell_effect_removed`
+    path).
+  - **`_tick_duration` returns ONLY legacy-path expired_ids.** Effects with
+    `dispatch_cleanup_on_tick: true` are filtered out of the returned array
+    so `EffectTicker._emit_expired` doesn't double-emit
+    `spell_effect_removed` (the cleanup callback already emits it).
+  - Net effect: pre-existing behavior preserved for all existing spells;
+    opt-in extension cleanly wires for the 4 potions in this batch +
+    any future temp-duration spell.
+
+- **`engine/subsystems/spells/casting_resolver.gd:_unwind_effect_state`**:
+  - NEW `applied_temp_hp` record handling. Each record is
+    `{character_id, amount}` — on cleanup, `entity.temp_hp` is reduced by
+    `amount` and clamped at 0. RAW match: Heroism "extra hit points granted
+    are subtracted first when the character is wounded" — CharacterData's
+    existing apply_damage already prioritises temp_hp first, so the buff
+    pool absorbs damage during the duration; on expire we deduct only what
+    remains.
+
+- **`engine/shared_types/entity_flags.gd`** — 3 new EntityFlag entries
+  with full docstring metadata schemas:
+  - `has_active_potion` — gate for the two-potion sickened rule. Metadata
+    `{item_id, item_key, effect_id, expires_at_turn, effect_kind,
+    applied_temp_hp, applied_modifier_keys, plus per-effect_kind extras}`.
+  - `is_sickened_by_potion` — 3-turn durable per RAW. Metadata
+    `{expires_at_turn, source_item_id, active_potion_item_id}`.
+  - `last_invulnerability_quaff_day` — persistent across campaign for the
+    weekly-inversion check. Metadata `{day_number, item_id, item_key}`.
+
+### Catalog + activator integration
+
+- **`tools/extract_magic_item_catalog.py`** `DIRECT_POTION_EFFECTS`:
+  - 4 new entries with documentation of the RAW source and project rulings.
+  - Cleared 4 `DEFER_BUILD` entries (heroism, super-heroism, giant_strength,
+    invulnerability).
+
+- **`engine/subsystems/inventory/magic_item_activator.gd`**:
+  - **NEW two-potion sickened gate** in `drink_potion` BEFORE the
+    direct_potion_effect / spell_binding dispatch. Fires when
+    `PotionDurationService.has_active_potion(drinker)` returns true.
+    Consumes the dose, applies sickened, returns refusal payload with
+    `sickened_applied: true` + `sickened_expires_at_turn` + the original
+    potion's item_id.
+  - **3 new direct_potion_effect kinds** in `_resolve_direct_potion_effect`:
+    - `temp_combat_levels` (Heroism + Super-Heroism) — calls
+      `PotionDurationService.apply_combat_level_boost` with a ClassRegistry
+      (via `Combatant.get_class_registry()` static cache).
+    - `giant_strength` — calls `PotionDurationService.apply_giant_strength`.
+    - `weekly_invulnerability` — calls `PotionDurationService.apply_invulnerability`.
+  - Refused outcomes return `success: true, refused_reason: "class_restricted"`
+    or `"no_bonus_at_level"`. The bottle is consumed (RAW: drinker drank it).
+
+### Test infrastructure
+
+- **`tests/test_level_boost_potions.gd`** (NEW) — 33 tests covering:
+  - **Catalog (5)**: each item has direct_potion_effect with correct
+    effect_kind; defer_reason cleared; not in EXPECTED_DEFER_KEYS array.
+  - **Table + eligibility (4)**: full Heroism + Super-Heroism table
+    lookups (all rows incl. boundary cases); fighter-progression pass;
+    mage/cleric/thief fail.
+  - **apply_combat_level_boost (7)**: attack_throw delta on L1 fighter
+    (10→8 = -2); per-save deltas (5 saves); temp_hp granted (12 = 4×3
+    for d8 hit_die); has_active_potion flag metadata; non-fighter
+    refused; high-level refused; super-heroism uses bigger table.
+  - **apply_giant_strength (3)**: set_ceiling 3 on attack_throw;
+    full metadata (damage_multiplier=2.0, throw_rocks_range=200,
+    force_doors_bonus=16, blocks_other_magical_strength=true); no
+    class restriction.
+  - **apply_invulnerability (4)**: first quaff applies +2/+2; second
+    quaff within 7 days inverts to -2/-2; quaff after 7 days normal;
+    last_invulnerability_quaff_day flag updates each quaff.
+  - **apply_sickened (2)**: flag metadata; 3-turn expiry.
+  - **drink_potion integration (5)**: heroism full flow (DB row delete);
+    Giant Strength on mage (no gate); Invulnerability on thief; second
+    potion triggers sickened gate (both consumed, neither effects);
+    refused heroism still consumes bottle.
+  - **Cleanup-on-tick (3)**: heroism cleanup on day-expire (modifiers
+    swept + temp_hp deducted + flag cleared); Giant Strength turn-expire;
+    Invulnerability turn-expire (the persistent
+    last_invulnerability_quaff_day tracker stays in place).
+  - **EntityFlags regression (1)**: all 3 new flags documented.
+
+- **`tests/test_runner.tscn`** + **`tests/test_runner.gd`**: wired
+  `415_level_boost_potions_tests` ext_resource + `LevelBoostPotionsTests`
+  node + @onready + run-loop entry.
+
+- **`tests/test_magic_item_catalog.gd`** `EXPECTED_DEFER_KEYS`: 4 items
+  removed (heroism, super-heroism, giant_strength, invulnerability) with
+  landed-on comment. Now 8 deferred items remain (4 Tier 1 + 4 detect family).
+
+**Decisions made:**
+
+- **Use ActiveEffectTracker for duration tracking, NOT a separate per-
+  service registry.** Single source of truth for active effects; existing
+  EffectTicker already wires turn/day boundaries to the tracker. Cleanup
+  composition reuses the established `_unwind_effect_state` path so
+  modifier sweep is uniform across spell / potion / future effect families.
+  The trade-off: required the new `dispatch_cleanup_on_tick` opt-in field;
+  the alternative (a per-service registry like Bag of Devouring) sidesteps
+  ActiveEffectTracker but proliferates duration-tracking surfaces.
+
+- **`dispatch_cleanup_on_tick` is opt-in (defaults false).** Backwards-
+  compatible with every existing spell. Existing tests pass unchanged.
+  Only my 4 potions + the sickened effect set it to true. Future temp-
+  duration spells can opt in as they land.
+
+- **Filter cleanup-dispatched ids out of `_tick_duration`'s return array.**
+  The cleanup callback (`CastingResolver._on_tracker_removed_effect`) fires
+  `EventBus.spell_effect_removed` itself; if `_tick_duration` returned the
+  same id, `EffectTicker._emit_expired` would double-emit. The filter
+  preserves single-emit semantics across both paths.
+
+- **Heroism modifier path = compute deltas from ClassRegistry, apply as
+  ADD operations**, rather than extending CharacterData.level. The "extra
+  levels" RAW phrase refers ONLY to combat benefits (attack throw + saves
+  + HP), NOT to XP, max-HP-formula, or proficiency throws. Computing the
+  AT-(level+boost) values via ClassRegistry then applying the delta as
+  numeric modifiers gives the right combat result without polluting the
+  effective_level helper (which the Life Drinker / energy-drain
+  integration relies on).
+
+- **Heroism temp_hp = extra_levels × hit_die_average** (deterministic
+  floor of the mean: d4→2, d6→3, d8→4, d10→5, d12→6). RAW silent on
+  rolled vs averaged; deterministic floor keeps tests stable and avoids
+  needing a fresh DiceSystem roll in the potion path. Future refinement:
+  roll N hit dice with DiceSystem if the design wants the variance.
+
+- **Heroism uses `duration_type: "days"` and `duration_remaining: 1`.**
+  Tampering with Mortality references "gain Heroism potion benefits for
+  1 day" — RAW-supported duration. Tracker's day-boundary tick handles
+  expiry on the next Timekeeping.day_changed signal.
+
+- **Giant Strength uses the Girdle's `set_ceiling 3 on attack_throw`
+  pattern** — proven 2026-05-29 wire-up. The "double damage / throw
+  rocks 200' 3d6 / +16 force doors" sub-effects ride on the
+  has_active_potion flag metadata, parallel to the Girdle's own deferral
+  (same status: V1 flag-only with full RAW metadata; combat-side
+  consumers wire when each subsystem lands).
+
+- **Giant Strength has NO class restriction.** RAW Giant Strength is
+  silent on user class (unlike Heroism). A mage can drink it; the
+  attack_throw set_ceiling 3 helps less for a low-throw mage but the
+  damage / rocks / force-doors metadata still applies.
+
+- **Invulnerability AC modifier on ascending axis; save modifier on
+  lower-is-better axis.** ACKS AC is ascending (5→7 with +2). ACKS save
+  targets are lower-is-better (17→15 with +2 "improvement", so the
+  ModifierContainer entry is `add: -2`). The service stores the user-
+  facing delta (+2/-2) in `ac_delta` / `save_delta` for narration; the
+  per-axis flip lives in apply_invulnerability.
+
+- **Invulnerability weekly tracker stays past duration expire.** The
+  `last_invulnerability_quaff_day` flag isn't a duration effect — it's
+  a long-term cumulative tracker for the next inversion check. Cleanup-
+  on-expire only removes the temp `has_active_potion` flag + the
+  modifier source_id, leaving the tracker.
+
+- **Invulnerability week = "more than once per week" → strict <7 days
+  inverts; >=7 days normal.** Tested at day 3 (inverts) and day 7
+  (normal again).
+
+- **Two-potion gate fires for ALL potions, not just my 4.** Even drinking
+  a Healing potion while Heroism is active would trigger sickened —
+  RAW reads "second potion while one is active" without qualifying
+  "duration potion." Implementation places the check at top of
+  `drink_potion` BEFORE direct_potion_effect / spell_binding dispatch.
+  V1 limitation: only my 4 potions set has_active_potion, so today
+  the gate effectively fires only when stacking my 4 with another
+  potion (any type). Future temp-duration potions / spell-effect
+  potions that should also gate the next quaff can set
+  has_active_potion via the same source_id pattern.
+
+- **Sickened flag durable per RAW; action gating deferred.** The flag
+  is set with `{expires_at_turn, source_item_id, active_potion_item_id}`
+  metadata. RAW "cannot act for 3 turns" — V1 sets the flag; consumer
+  wiring (action-selection refusal) is a follow-up parallel to the
+  panic / charmed flag-set-then-consumer-wire pattern from prior
+  batches.
+
+**Interfaces defined or changed:**
+
+- NEW `PotionDurationService` class (`engine/subsystems/inventory/`).
+  Static methods only. Constants: `SOURCE_PREFIX`,
+  `INVULNERABILITY_TRACKER_SOURCE`, `SICKENED_SOURCE_PREFIX`,
+  `SICKENED_DURATION_TURNS`, `GIANT_STRENGTH_DURATION_TURNS`,
+  `HEROISM_DURATION_DAYS`, `INVULNERABILITY_DURATION_TURNS_DEFAULT`,
+  `INVULNERABILITY_WEEK_DAYS`, `INVULNERABILITY_BONUS`,
+  `INVULNERABILITY_PENALTY`, `GIANT_STRENGTH_ATTACK_THROW_CEILING`,
+  `HIT_DIE_AVERAGE`, `HEROISM_TABLE`, `SUPER_HEROISM_TABLE`,
+  `FIGHTER_COMBAT_PROGRESSION`, `SAVE_KEYS`.
+- NEW EntityFlags: `has_active_potion`, `is_sickened_by_potion`,
+  `last_invulnerability_quaff_day` (documented in entity_flags.gd
+  docstring).
+- NEW ActiveEffectTracker effect-dict field `dispatch_cleanup_on_tick: bool`
+  (default false). Per-effect opt-in.
+- NEW cleanup-callback cause string: `"tick_expired"` (joins
+  `"concentration_broken"` and `"dispelled"`).
+- NEW `_unwind_effect_state` record type: `applied_temp_hp` array of
+  `{character_id, amount}`.
+- NEW direct_potion_effect kinds: `temp_combat_levels`, `giant_strength`,
+  `weekly_invulnerability`.
+- New flag metadata schema: `has_active_potion.metadata.effect_kind`
+  enumerates `{"temp_combat_levels", "giant_strength", "invulnerability"}`
+  for V1; future potions extend this enum.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 33 new tests in `tests/test_level_boost_potions.gd`.
+- Full suite: **409 suites passed / 19 failed** — was 408/19; +1 new
+  suite, +33 net new tests, net-zero new failures.
+
+**Gotcha discovered + fixed in-session:**
+
+- **Callable-lifetime in test fixtures.** When a test constructs a
+  CastingResolver locally and lets it go out of scope, the cleanup-
+  callback Callable bound to `resolver._on_tracker_removed_effect`
+  becomes invalid even though the tracker still holds the Callable.
+  The `_wire_resolver_with_tracker` helper returns the resolver; the
+  3 cleanup-on-tick tests CAPTURE it into a local
+  `var resolver: CastingResolver = ...` (with `assert(resolver != null)`
+  to silence the unused-var warning) so it stays alive for the
+  duration of the test. Production code path is unaffected
+  (SessionRunner holds the resolver persistently).
+
+**Known issues / V1 limitations:**
+
+- **Sickened consumer NOT wired.** The `is_sickened_by_potion` flag is
+  set with metadata but action-selection consumers don't yet refuse
+  actions when the flag is present. Same status as the Panic / Charmed
+  flag pattern from prior batches — flag set first, consumer wired
+  when the action-selection refusal layer needs it.
+- **Heroism temp_hp uses hit_die average (floor of mean).** RAW silent
+  on rolled vs averaged. Future refinement: roll the dice via
+  DiceSystem for the bonus HP per Fighter level. Tests would need to
+  override the roll.
+- **Heroism "applied_modifier_keys" not stamped in active_potion
+  metadata.** The cleanup callback iterates effect.applied_modifiers
+  array (the tracker side), so the flag-side metadata field isn't
+  used for cleanup. It's documented in entity_flags.gd as
+  forward-looking for UI tooltips / serialisation. Setting it would
+  need to be added to apply_combat_level_boost; today the metadata
+  carries the computed values (deltas + temp_hp) instead.
+- **Giant Strength damage_multiplier / throw_rocks / +16 force-doors
+  consumers NOT wired.** Same V1 status as the Girdle — the flag
+  carries the metadata; damage / rocks / door consumers wire when the
+  combat / encounter mechanics need them.
+- **Invulnerability V1 duration is deterministic 10 turns** (potion
+  default 1d6+6 midpoint). Future: roll the dice via DiceSystem
+  per-quaff for variance. The `duration_override_turns` parameter on
+  `apply_invulnerability` is the hook point.
+- **Two-potion gate only fires when has_active_potion is set.** All
+  V1 duration potions set it; future temp-duration potions / spell-
+  binding potions whose effects "are active" in RAW's sense should
+  set it too. Currently this is documented in the docstring; an
+  automatic gate based on `direct_potion_effect.effect_kind in
+  {temp_combat_levels, giant_strength, weekly_invulnerability}` is a
+  follow-up cleanup.
+- **Invulnerability quaff at day 0 → second at day 0 within same-day
+  test setup.** The day-boundary granularity means two quaffs in the
+  same calendar day both register at day_number=0; the inversion check
+  fires (`0 - 0 < 7` = true). This matches the intuitive "drank two in
+  one day → second inverts" but is worth knowing for narrative purposes.
+
+**Next session should:**
+
+1. **Sickened action-selection consumer** — refuse actions when
+   `is_sickened_by_potion` is set. Parallel to the Panic / Charmed
+   action refusal patterns. Touches the action-selection layer.
+2. **Heroism temp_hp roll** — replace hit_die_average with
+   `DiceSystem.roll_digital(hit_die_size, extra_levels, 0, "heroism_temp_hp")`
+   so the buff matches per-level HD roll variance. Tests would override
+   via fixed dice.
+3. **Tier 1 deferrals triage** — `ring_of_wishes` (Wish spell),
+   `potion_of_longevity` (age tracking), `eyes_of_petrification`
+   (gaze attack subsystem), `treasure_map` (quest hook generator).
+4. **Detect family (4 items)** — needs dungeon UI reveal subsystem.
+5. **Ring of Spell Storing** — Jedidiah supplied RAW earlier; needs
+   materializer-time 1d6 spell selection + per-item storage + activation
+   flow.
+6. **Cube of Frost Resistance consumer** — flag is set + metadata
+   captured; needs cold damage absorption + threshold tracking +
+   activation toggle.
+7. **Eyes of the Eagle single-lens-stun mechanic + missile-range
+   modifier consumer**.
+8. **Necklace of Adaptation gas immunity + breath-without-air consumers**.
+

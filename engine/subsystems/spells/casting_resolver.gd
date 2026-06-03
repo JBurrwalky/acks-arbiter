@@ -196,6 +196,23 @@ func _unwind_effect_state(effect: Dictionary, target_lookup: Callable) -> void:
 		if orig_side < 0:
 			continue
 		entity.side = orig_side
+	# Temp HP unwind (Heroism / Super-Heroism potion grant — added 2026-06-03).
+	# Each record:  { character_id, amount }. On expiry the granted amount is
+	# subtracted from temp_hp, clamped at 0. RAW (ACKS Core p.215+ Heroism):
+	# "extra hit points granted due to the level increase are subtracted first
+	# when the character is wounded." The damage path already deducts from
+	# temp_hp first (CharacterData.apply_damage), so by expiry the remaining
+	# bonus pool may be less than the granted amount — we subtract only what's
+	# still there. Hit-die damage taken during the buff stays on hp_current
+	# naturally (it never came off real HP because the buff absorbed it first).
+	for hp_rec in effect.get("applied_temp_hp", []):
+		var entity = _resolve_target_entity(hp_rec, target_lookup)
+		if entity == null:
+			continue
+		if not ("temp_hp" in entity):
+			continue
+		var amount: int = int(hp_rec.get("amount", 0))
+		entity.temp_hp = maxi(0, int(entity.temp_hp) - amount)
 
 
 func _resolve_target_entity(record: Dictionary, target_lookup: Callable) -> Variant:

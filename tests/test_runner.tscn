@@ -428,6 +428,7 @@
 [ext_resource type="Script" path="res://tests/test_tier4_batch2.gd" id="412_tier4_batch2_tests"]
 [ext_resource type="Script" path="res://tests/test_persistent_worn_batch3.gd" id="413_persistent_worn_batch3_tests"]
 [ext_resource type="Script" path="res://tests/test_engine_extension_batch.gd" id="414_engine_extension_batch_tests"]
+[ext_resource type="Script" path="res://tests/test_level_boost_potions.gd" id="415_level_boost_potions_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1712,3 +1713,6 @@ script = ExtResource("413_persistent_worn_batch3_tests")
 
 [node name="EngineExtensionBatchTests" type="Node" parent="."]
 script = ExtResource("414_engine_extension_batch_tests")
+
+[node name="LevelBoostPotionsTests" type="Node" parent="."]
+script = ExtResource("415_level_boost_potions_tests")

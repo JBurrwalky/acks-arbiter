@@ -304,6 +304,46 @@ extends RefCounted
 ##                  Cleared on duration expiry via the SurfaceCoatResolver's
 ##                  surface_coat: source_id prefix. Future coats (e.g. greased,
 ##                  oiled_blade) will sit alongside this in the same family.
+##   PotionTimers: "has_active_potion" (ANY temp-duration potion is currently
+##                  in effect. Set by PotionDurationService.apply_potion_effect
+##                  on the drinker; cleared on the effect's tick-expiry via
+##                  CastingResolver._on_tracker_removed_effect cleanup callback.
+##                  Source_id is "potion_temporary:<item_id>". Metadata:
+##                  {item_id, item_key, effect_id, expires_at_turn,
+##                  effect_kind, applied_temp_hp: int, applied_modifier_keys:
+##                  Array[String]}. Consumer:
+##                  MagicItemActivator.drink_potion's pre-resolve gate checks
+##                  this flag — if present, the second-potion RAW per ACore
+##                  general_category_rules.potions: "If a character drinks a
+##                  second potion while one is active, the character is
+##                  sickened and cannot act for 3 turns; neither potion has
+##                  any other effect." The second-potion case applies
+##                  is_sickened_by_potion + refuses both effects. The active
+##                  potion's effect remains in place until its own
+##                  expires_at_turn.),
+##                "is_sickened_by_potion" (Per ACore RAW above — applied when
+##                  drinker quaffs a second potion while has_active_potion is
+##                  set. Source_id is "potion_temporary_sickened:<expires_at_turn>".
+##                  Metadata: {expires_at_turn: int, source_item_id: String,
+##                  active_potion_item_id: String}. Duration: 3 turns. Effect
+##                  consumer: combat / action-selection layers refuse actions
+##                  while flag is present (consumer wiring V1-deferred; flag
+##                  set with full RAW metadata so the consumer integration
+##                  lands cleanly when actions gate on it). Cleared on
+##                  expiry via the standard tick-expiry cleanup path.),
+##                "last_invulnerability_quaff_day" (Tracks the most-recent day
+##                  the wearer drank a Potion of Invulnerability for the
+##                  once-per-week inversion check per ACKS Core p.215+ RAW
+##                  Jedidiah-supplied 2026-06-03: "An invulnerability potion
+##                  gives the drinker a bonus of +2 to all saving throws and
+##                  Armor Class. However, if a potion of invulnerability is
+##                  quaffed more than once per week, the potion has the
+##                  opposite effect, causing a penalty of -2 to saving throws
+##                  and Armor Class!" Metadata: {day_number: int} —
+##                  Timekeeping.get_total_days() reading at quaff time.
+##                  Source_id: "potion_invulnerability_tracker". Persistent
+##                  across the campaign; never auto-cleared on expiry (it's a
+##                  cumulative-tracker, not a duration flag).)
 
 # _flags: flag_key -> Array of { source_id, metadata }
 var _flags: Dictionary = {}

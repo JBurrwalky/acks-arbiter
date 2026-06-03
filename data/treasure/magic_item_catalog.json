@@ -401,7 +401,10 @@
       "encumbrance_units": 167,
       "value_gp": 2000,
       "creation_time_days": 28,
-      "defer_reason": "needs temporary-duration effect mechanism (potions expire after a duration; persistent-worn items don't)"
+      "direct_potion_effect": {
+        "effect_kind": "giant_strength",
+        "duration_turns": 3
+      }
     },
     {
       "item_key": "potion_of_growth",
@@ -444,7 +447,12 @@
       "encumbrance_units": 167,
       "value_gp": 1500,
       "creation_time_days": 21,
-      "defer_reason": "temporary effective-level mechanism not yet in CharacterData"
+      "direct_potion_effect": {
+        "effect_kind": "temp_combat_levels",
+        "boost_table": "heroism",
+        "duration_days": 1,
+        "fighter_only": true
+      }
     },
     {
       "item_key": "potion_of_human_control",
@@ -487,7 +495,13 @@
       "encumbrance_units": 167,
       "value_gp": 1000,
       "creation_time_days": 14,
-      "defer_reason": "RAW summary doesn't specify mechanic; needs Jedidiah ruling (weapon AC+saves vs spell-blocker)"
+      "direct_potion_effect": {
+        "effect_kind": "weekly_invulnerability",
+        "duration_turns": -1,
+        "weekly_window_days": 7,
+        "bonus": 2,
+        "inverted_penalty": -2
+      }
     },
     {
       "item_key": "potion_of_levitation",
@@ -622,7 +636,12 @@
       "encumbrance_units": 167,
       "value_gp": 2500,
       "creation_time_days": 35,
-      "defer_reason": "temporary effective-level mechanism not yet in CharacterData"
+      "direct_potion_effect": {
+        "effect_kind": "temp_combat_levels",
+        "boost_table": "super_heroism",
+        "duration_days": 1,
+        "fighter_only": true
+      }
     },
     {
       "item_key": "potion_of_sweet_water",

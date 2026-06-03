@@ -366,21 +366,26 @@ DEFER_BUILD = {
     # `set` op + WornMagicEffectResolver._add_gauntlets_of_ogre_power
     # (STR set to 18). Girdle of Giant Strength LANDED 2026-05-29 (single
     # hill-giant variant per RAW — set_ceiling 3 on attack_throw; deferred
-    # parts: damage-double, +16 force-doors, thrown rocks). Remaining:
-    "potion_of_giant_strength": "needs temporary-duration effect mechanism (potions expire after a duration; persistent-worn items don't)",
-    # Level boost family — no "temporary effective-level bonus" mechanism in
-    # CharacterData / Combatant. The level value used by combat throws is
-    # `character.level` directly. Adding a `level_bonus` modifier read by
-    # the combat resolver would unblock all three potions (Heroism,
-    # Super-Heroism, Invulnerability).
-    "potion_of_heroism": "temporary effective-level mechanism not yet in CharacterData",
-    "potion_of_super_heroism": "temporary effective-level mechanism not yet in CharacterData",
-    # Potion of Invulnerability: the historical D&D ancestor gives +2 AC +
-    # +2 saves vs normal weapons for a short duration. The ACKS catalog has
-    # `globe_of_invulnerability` (blocks SPELL levels — very different
-    # mechanic). RAW summary XML doesn't disambiguate. Defer until Jedidiah
-    # rules whether it's the weapon-AC+saves variant or the spell-blocker.
-    "potion_of_invulnerability": "RAW summary doesn't specify mechanic; needs Jedidiah ruling (weapon AC+saves vs spell-blocker)",
+    # parts: damage-double, +16 force-doors, thrown rocks).
+    # 2026-06-03: 4 temp-duration potions LANDED via PotionDurationService +
+    # DIRECT_POTION_EFFECTS below:
+    #   * potion_of_giant_strength — Girdle attack_throw set_ceiling 3 +
+    #     3-turn duration (Giant Strength spell duration).
+    #   * potion_of_heroism / potion_of_super_heroism — level-table-derived
+    #     attack_throw + save modifiers + hit_die_avg × extra_levels temp_hp;
+    #     1 day duration; class-restricted (combat_progression == "fighter"
+    #     per Jedidiah ruling, so Barbarian/Paladin/Ruinguard/Vaultguard/
+    #     Spellsword/Explorer/Anti-Paladin all qualify).
+    #   * potion_of_invulnerability — Jedidiah RAW resolved from ACKS Core
+    #     p.215+: "+2 to all saving throws and Armor Class. However, if
+    #     quaffed more than once per week, the potion has the opposite
+    #     effect, causing a penalty of -2 to saving throws and Armor Class!"
+    #     V1 tracks last-quaff via the persistent
+    #     last_invulnerability_quaff_day flag and inverts within the 7-day
+    #     window. 10-turn V1 default duration (1d6+6 deterministic mid).
+    # Routes through ActiveEffectTracker with dispatch_cleanup_on_tick: true
+    # so the standard CastingResolver._on_tracker_removed_effect cleanup
+    # callback unwinds modifiers/flags/temp_hp at turn/day-boundary expiry.
     # Detect family — spells exist in catalog (`detect_evil`,
     # `locate_object`, `find_traps`) but their `effect` blocks are
     # query_game_state returning empty results. A "detection UI reveal"
@@ -596,6 +601,46 @@ DIRECT_POTION_EFFECTS = {
         "save_kind": "spells",
         "duration_turns": -1,
         "hostile_on_expiry": True,  # forward-looking flag for the cleanup
+    },
+    # Level-boost potions cluster (2026-06-03). Heroism + Super-Heroism +
+    # Giant Strength + Invulnerability. Each routes through
+    # PotionDurationService via its own effect_kind. RAW (ACKS Core p.215+)
+    # documented in PotionDurationService docstring.
+    #
+    # Heroism + Super-Heroism: gate on combat_progression == "fighter"
+    # (Jedidiah ruling 2026-06-03 — covers Barbarian, Paladin, Ruinguard,
+    # Vaultguard, Spellsword, Explorer, Anti-Paladin, etc., and any future
+    # fighter-progression class plug-and-play). Levels-granted scales by
+    # drinker level per the source tables.
+    # Duration: 1 day (per Tampering with Mortality references).
+    "potion_of_heroism": {
+        "effect_kind": "temp_combat_levels",
+        "boost_table": "heroism",  # documentation; lookup is in PotionDurationService
+        "duration_days": 1,
+        "fighter_only": True,
+    },
+    "potion_of_super_heroism": {
+        "effect_kind": "temp_combat_levels",
+        "boost_table": "super_heroism",
+        "duration_days": 1,
+        "fighter_only": True,
+    },
+    # Giant Strength: reuses Girdle pattern (attack_throw set_ceiling 3 =
+    # 8 HD value). Duration: 3 turns (Giant Strength spell duration).
+    # No class restriction.
+    "potion_of_giant_strength": {
+        "effect_kind": "giant_strength",
+        "duration_turns": 3,
+    },
+    # Invulnerability: +2 AC and +2 saves, OR INVERTED to -2/-2 if quaffed
+    # within 7 days of a prior Invulnerability quaff. Duration uses the
+    # potion default (1d6+6 turns; V1 deterministic = 10 turns).
+    "potion_of_invulnerability": {
+        "effect_kind": "weekly_invulnerability",
+        "duration_turns": -1,  # V1 default; future: roll 1d6+6
+        "weekly_window_days": 7,
+        "bonus": 2,
+        "inverted_penalty": -2,
     },
 }
 

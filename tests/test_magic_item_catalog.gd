@@ -250,9 +250,13 @@ const EXPECTED_DEFER_KEYS := [
 	# Tier 3 deferrals (2026-05-29): cluster-by-cluster blockers — STR
 	# override, level boost, detect UI reveal, wards-against-creature-type,
 	# and persistent-worn stat-bonuses needing engine extensions.
-	"potion_of_giant_strength",
-	# girdle_of_giant_strength shipped 2026-05-29 (set_ceiling 3 on attack_throw)
-	"potion_of_heroism", "potion_of_super_heroism", "potion_of_invulnerability",
+	# girdle_of_giant_strength shipped 2026-05-29 (set_ceiling 3 on attack_throw).
+	# 2026-06-03: 4 temp-duration potions shipped (potion_of_giant_strength,
+	# potion_of_heroism, potion_of_super_heroism, potion_of_invulnerability)
+	# via PotionDurationService + DIRECT_POTION_EFFECTS. Heroism family gates
+	# on combat_progression == "fighter"; Invulnerability resolves the
+	# prior "needs Jedidiah ruling" deferral with the +2/-2 weekly-inversion
+	# mechanic from ACKS Core p.215+.
 	"wand_of_detecting_enemies", "wand_of_detecting_metals",
 	"wand_of_detecting_secret_doors", "potion_of_treasure_finding",
 	# 4 Scrolls of Warding shipped 2026-06-02 via DIRECT_CONSUMABLE_EFFECTS
