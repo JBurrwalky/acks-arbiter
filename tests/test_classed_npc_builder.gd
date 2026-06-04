@@ -69,6 +69,8 @@ func run_all_tests() -> void:
 	test_hundred_random_henchmen_coherent()
 	test_template_proficiencies_applied()
 	test_persist_drives_repository()
+	test_int_adjustment_mundane()
+	test_int_adjustment_arcane()
 	if not has_failures():
 		print("ClassedNpcBuilder: all tests passed.")
 
@@ -144,8 +146,8 @@ func test_hundred_random_henchmen_coherent() -> void:
 
 func test_template_proficiencies_applied() -> void:
 	# fighter @15 = Heavy Infantry: Fighting Style (weapon and shield) [class] +
-	# Siege Engineering [general].
-	var b := _builder.build_classed_npc("fighter", {"forced_roll": 15})
+	# Siege Engineering [general]. INT 12 -> no bonus generals, exactly 2 records.
+	var b := _builder.build_classed_npc("fighter", {"forced_roll": 15, "force_int": 12})
 	check(bool(b["ok"]), "fighter@15 build failed: %s" % String(b.get("error", "")))
 	check(String(b["template_id"]) == "fighter_15_16", "expected fighter_15_16, got %s" % String(b["template_id"]))
 	var profs: Array = b["proficiencies"]
@@ -167,7 +169,8 @@ func test_template_proficiencies_applied() -> void:
 
 func test_persist_drives_repository() -> void:
 	var fake := _FakeRepo.new()
-	var b := _builder.build_classed_npc("fighter", {"forced_roll": 15, "campaign_id": "camp_test"})
+	var b := _builder.build_classed_npc("fighter",
+		{"forced_roll": 15, "campaign_id": "camp_test", "force_int": 12})
 	check(bool(b["ok"]), "fighter@15 build failed")
 	var new_id := _builder.persist(b, fake)
 	check(new_id != "", "persist returned empty id")
@@ -187,3 +190,51 @@ func test_persist_drives_repository() -> void:
 	check(fake.coins_added.get(new_id, 0) == 3000,
 		"expected 3000cp starting coin, got %d" % int(fake.coins_added.get(new_id, 0)))
 	check(fake.ac_recomputed.has(new_id), "AC was not recomputed after equipping")
+
+
+func test_int_adjustment_mundane() -> void:
+	# fighter @15 = 2 template profs; INT adds general proficiencies = the ACKS INT
+	# modifier floored at 0 (§8.1): INT 8 -> +0, 12 -> +0, 13 -> +1, 16 -> +2, 18 -> +3.
+	for case in [[8, 2], [12, 2], [13, 3], [16, 4], [18, 5]]:
+		var b := _builder.build_classed_npc("fighter", {"forced_roll": 15, "force_int": case[0]})
+		check(bool(b["ok"]), "fighter INT %d build failed" % case[0])
+		check((b["proficiencies"] as Array).size() == case[1],
+			"fighter INT %d should have %d proficiencies, got %d" % [
+				case[0], case[1], (b["proficiencies"] as Array).size()])
+		check(not bool((b["int_adjustment"] as Dictionary)["is_arcane"]), "fighter is mundane")
+		check(int(b["extra_spells_to_roll"]) == 0, "mundane class rolls no extra spells")
+		for p: Dictionary in b["proficiencies"]:
+			check(String(p["proficiency_key"]) != "", "INT-bonus general has a key")
+
+
+func test_int_adjustment_arcane() -> void:
+	# mage @15 = Warmage: Battle Magic [class], Military Strategy [general],
+	# Siege Engineering [arcane_bonus]; bonus_spell "shield".
+	# INT <= 12 culls the arcane_bonus + drops the bonus spell.
+	var lo := _builder.build_classed_npc("mage", {"forced_roll": 15, "force_int": 12})
+	check(bool(lo["ok"]), "mage INT 12 build failed")
+	check(bool((lo["int_adjustment"] as Dictionary)["is_arcane"]), "mage is arcane")
+	check(bool((lo["int_adjustment"] as Dictionary)["cull_arcane_bonus"]), "mage INT 12 culls arcane bonus")
+	check((lo["proficiencies"] as Array).size() == 2,
+		"mage INT 12 -> 2 proficiencies (arcane bonus culled), got %d" % (lo["proficiencies"] as Array).size())
+	check(not _keys(lo["proficiencies"]).has("siege_engineering"), "mage INT 12 drops the arcane_bonus")
+	check(String(lo["bonus_spell"]) == "", "mage INT 12 drops the bonus spell")
+	check(int(lo["extra_spells_to_roll"]) == 0, "mage INT 12 rolls no extra spells")
+	# INT 13-15: as written.
+	var mid := _builder.build_classed_npc("mage", {"forced_roll": 15, "force_int": 14})
+	check((mid["proficiencies"] as Array).size() == 3, "mage INT 14 keeps all 3 proficiencies")
+	check(String(mid["bonus_spell"]) == "shield", "mage INT 14 keeps the bonus spell")
+	check(int(mid["extra_spells_to_roll"]) == 0, "mage INT 14 rolls no extra spells")
+	# INT 18: +2 general proficiencies + 2 rolled spells.
+	var hi := _builder.build_classed_npc("mage", {"forced_roll": 15, "force_int": 18})
+	check((hi["proficiencies"] as Array).size() == 5,
+		"mage INT 18 -> 5 proficiencies (3 + 2 extra), got %d" % (hi["proficiencies"] as Array).size())
+	check(int(hi["extra_spells_to_roll"]) == 2, "mage INT 18 rolls 2 extra spells")
+	check(String(hi["bonus_spell"]) == "shield", "mage INT 18 keeps the bonus spell")
+
+
+func _keys(profs: Array) -> Array:
+	var out: Array = []
+	for p: Dictionary in profs:
+		out.append(String(p["proficiency_key"]))
+	return out

@@ -22,6 +22,7 @@ extends RefCounted
 var _template_repo: ClassTemplateRepository
 var _character_generator: CharacterGenerator
 var _class_registry: ClassRegistry
+var _proficiency_registry: ProficiencyRegistry
 var _catalog: EquipmentCatalog
 
 
@@ -32,12 +33,12 @@ func _init(p_template_repo: ClassTemplateRepository = null,
 		p_proficiency_registry: ProficiencyRegistry = null,
 		p_catalog: EquipmentCatalog = null) -> void:
 	_class_registry = p_class_registry if p_class_registry != null else ClassRegistry.new()
+	_proficiency_registry = p_proficiency_registry if p_proficiency_registry != null else ProficiencyRegistry.new()
 	if p_character_generator != null:
 		_character_generator = p_character_generator
 	else:
 		var power_reg: PowerRegistry = p_power_registry if p_power_registry != null else PowerRegistry.new()
-		var prof_reg: ProficiencyRegistry = p_proficiency_registry if p_proficiency_registry != null else ProficiencyRegistry.new()
-		_character_generator = CharacterGenerator.new(_class_registry, power_reg, prof_reg)
+		_character_generator = CharacterGenerator.new(_class_registry, power_reg, _proficiency_registry)
 	_template_repo = p_template_repo if p_template_repo != null else ClassTemplateRepository.new()
 	_catalog = p_catalog if p_catalog != null else EquipmentCatalog.new()
 
@@ -74,7 +75,8 @@ func build_classed_npc(class_id: String, opts: Dictionary = {}) -> Dictionary:
 		"ok": false, "error": "", "character": null, "template_id": "",
 		"display_label": "", "tradition": "", "roll": 0,
 		"proficiencies": [], "equipment": [], "non_catalog_items": [],
-		"starting_money_cp": 0, "advancement_pending": false,
+		"starting_money_cp": 0, "starting_spells": [], "bonus_spell": "",
+		"extra_spells_to_roll": 0, "int_adjustment": {}, "advancement_pending": false,
 	}
 
 	if _template_repo.get_templates_for_class(class_id).is_empty():
@@ -108,15 +110,41 @@ func build_classed_npc(class_id: String, opts: Dictionary = {}) -> Dictionary:
 		character.loyalty_score = int(opts.get("morale_base", 0))
 		character.wage_cp_per_month = HenchmanTables.monthly_wage(level)
 
-	var equip := _equipment_records(template)
+	# INT adjustment (§8). Templates assume INT <= 12: INT 13+ adds general
+	# proficiencies (mundane), while arcane templates cull the baked-in bonus at
+	# INT <= 12 / add extras at 16+. NPCs auto-fill the extra general slots (engine
+	# policy); a test or caller can pin the score with opts.force_int.
+	var force_int: int = int(opts.get("force_int", -1))
+	if force_int >= 3:
+		character.intelligence = force_int
+	var plan := TemplateIntAdjuster.compute_adjustment(class_id, character.intelligence)
+
+	var kept_profs := TemplateIntAdjuster.cull_proficiencies(template.proficiencies, plan)
+	var prof_records := proficiency_records(kept_profs)
+	var held_keys: Array = []
+	for r: Dictionary in prof_records:
+		held_keys.append(String(r["proficiency_key"]))
+	for k in TemplateIntAdjuster.pick_extra_general_keys(
+			int(plan["extra_general_proficiencies"]), held_keys,
+			_proficiency_registry.get_general_proficiency_list(), "npc_int_extra_%s" % class_id):
+		prof_records.append({"proficiency_key": String(k), "rank": 1,
+			"slot_type": "general", "selections_count": 1, "specialization": ""})
+
+	var spell_info := TemplateIntAdjuster.adjust_spells(template, plan)
+	var equip := equipment_records(template, _catalog)
+
 	result["character"] = character
 	result["template_id"] = template.template_id
 	result["display_label"] = template.display_label
 	result["tradition"] = template.tradition
-	result["proficiencies"] = _proficiency_records(template)
+	result["proficiencies"] = prof_records
 	result["equipment"] = equip["equipment"]
 	result["non_catalog_items"] = equip["non_catalog"]
 	result["starting_money_cp"] = template.starting_money_cp
+	result["starting_spells"] = spell_info["starting_spells"]
+	result["bonus_spell"] = spell_info["bonus_spell"]
+	result["extra_spells_to_roll"] = spell_info["extra_spells_to_roll"]
+	result["int_adjustment"] = plan
 	result["advancement_pending"] = level > 1  # §7.4 / §10 step 10
 	result["ok"] = true
 	return result
@@ -178,43 +206,34 @@ func build_and_persist(class_id: String, campaign_id: String,
 
 
 # ---------------------------------------------------------------------------
-# Template -> record conversion
+# Template -> record conversion (static; shared with PcTemplateCreationFlow)
 # ---------------------------------------------------------------------------
 
-## Template proficiencies -> character_proficiencies records (the shape
-## save_character_proficiencies expects). The template's class-slot proficiency
-## maps to slot_type "class"; general / natural / tradition / arcane_bonus all map
-## to "general" (the natural/tradition/arcane-bonus distinction is a template-
-## editor concern per §4.2.1, not a persisted proficiency-row property). Entries
-## with an unresolved proficiency_key (only "Sensing Good", a proficiency-catalog
-## gap) are skipped.
-func _proficiency_records(template: ClassTemplate) -> Array:
+## Convert a list of TemplateProficiency (already INT-culled) to
+## character_proficiencies records via TemplateProficiency.to_record(), skipping
+## unresolved keys (the lone "Sensing Good" proficiency-catalog gap). The class
+## slot maps to slot_type "class"; everything else to "general" (§4.2.1).
+static func proficiency_records(profs: Array) -> Array:
 	var records: Array = []
-	for p: TemplateProficiency in template.proficiencies:
+	for p: TemplateProficiency in profs:
 		if p.proficiency_key == "":
 			continue
-		records.append({
-			"proficiency_key": p.proficiency_key,
-			"rank": p.rank,
-			"slot_type": "class" if p.proficiency_kind == "class" else "general",
-			"selections_count": p.rank,
-			"specialization": _normalize_specialization(p.flavor),
-		})
+		records.append(p.to_record())
 	return records
 
 
 ## Template equipment -> {equipment: [add_data], non_catalog: [entry]}. Catalog
-## entries become add_inventory_item payloads (denormalized from EquipmentCatalog,
+## entries become add_inventory_item payloads (denormalized from [param catalog],
 ## stowed in "pack"; auto-equipping defensible defaults per §5.4 is a follow-on).
 ## Non-catalog entries (familiars, totem animals, mounts, jewelry-by-value,
 ## flagged catalog gaps) are surfaced separately for the caller's subsystems
 ## (familiar / mount / treasure) to route — they are not inventory rows here.
-func _equipment_records(template: ClassTemplate) -> Dictionary:
+static func equipment_records(template: ClassTemplate, catalog: EquipmentCatalog) -> Dictionary:
 	var equipment: Array = []
 	var non_catalog: Array = []
 	for e: TemplateEquipmentEntry in template.starting_equipment:
 		if e.is_catalog_item():
-			var entry: Dictionary = _catalog.get_item(e.base_item_id)
+			var entry: Dictionary = catalog.get_item(e.base_item_id)
 			if entry.is_empty():
 				push_warning("ClassedNpcBuilder: template %s item_key '%s' not in EquipmentCatalog" % [
 					template.template_id, e.base_item_id])
@@ -240,9 +259,3 @@ func _equipment_records(template: ClassTemplate) -> Dictionary:
 				"metadata": e.metadata,
 			})
 	return {"equipment": equipment, "non_catalog": non_catalog}
-
-
-func _normalize_specialization(flavor: String) -> String:
-	if flavor == "":
-		return ""
-	return flavor.to_lower().replace("/", "_").replace(" ", "_")

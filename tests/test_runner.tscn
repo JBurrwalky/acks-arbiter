@@ -439,6 +439,8 @@
 [ext_resource type="Script" path="res://tests/test_class_templates.gd" id="423_class_templates_tests"]
 [ext_resource type="Script" path="res://tests/data_integrity/test_class_templates_data_freshness.gd" id="424_class_templates_data_freshness_tests"]
 [ext_resource type="Script" path="res://tests/test_classed_npc_builder.gd" id="425_classed_npc_builder_tests"]
+[ext_resource type="Script" path="res://tests/test_template_int_adjuster.gd" id="426_template_int_adjuster_tests"]
+[ext_resource type="Script" path="res://tests/test_pc_template_creation_flow.gd" id="427_pc_template_creation_flow_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1756,3 +1758,9 @@ script = ExtResource("424_class_templates_data_freshness_tests")
 
 [node name="ClassedNpcBuilderTests" type="Node" parent="."]
 script = ExtResource("425_classed_npc_builder_tests")
+
+[node name="TemplateIntAdjusterTests" type="Node" parent="."]
+script = ExtResource("426_template_int_adjuster_tests")
+
+[node name="PcTemplateCreationFlowTests" type="Node" parent="."]
+script = ExtResource("427_pc_template_creation_flow_tests")

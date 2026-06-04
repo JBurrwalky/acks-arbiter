@@ -32,3 +32,28 @@ static func from_dict(d: Dictionary) -> TemplateProficiency:
 ## §4.2.1): the regional/totem natural, the witch tradition bonus.
 func is_locked() -> bool:
 	return proficiency_kind in ["natural", "tradition"]
+
+
+## Convert to a character_proficiencies persistence record (the shape
+## CampaignRepository.save_character_proficiencies expects). proficiency_kind
+## "class" maps to the class slot; general / natural / tradition / arcane_bonus
+## all map to "general" (the locked-vs-editable distinction is a template-editor
+## concern §4.2.1, not a persisted row property). The parenthetical flavor becomes
+## the specialization, normalized to snake_case.
+func to_record() -> Dictionary:
+	return {
+		"proficiency_key": proficiency_key,
+		"rank": rank,
+		"slot_type": "class" if proficiency_kind == "class" else "general",
+		"selections_count": rank,
+		"specialization": normalize_specialization(flavor),
+	}
+
+
+## Normalize a template flavor ("weapon and shield", "swords/daggers", "fire") to
+## a snake_case specialization id. Best-effort: a few weapon-category specs may
+## not match registry ids exactly (a documented v1 polish item).
+static func normalize_specialization(flavor: String) -> String:
+	if flavor == "":
+		return ""
+	return flavor.to_lower().replace("/", "_").replace(" ", "_")

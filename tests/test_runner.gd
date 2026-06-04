@@ -512,6 +512,9 @@ extends Node
 @onready var _class_templates_data_freshness_tests = $ClassTemplatesDataFreshnessTests
 # 2026-06-04 — Class templates §10 step 5: L1 NPC builder hook
 @onready var _classed_npc_builder_tests = $ClassedNpcBuilderTests
+# 2026-06-04 — Class templates §10 steps 6-7: PC creation flow + INT adjustment
+@onready var _template_int_adjuster_tests = $TemplateIntAdjusterTests
+@onready var _pc_template_creation_flow_tests = $PcTemplateCreationFlowTests
 
 
 func _ready() -> void:
@@ -1018,7 +1021,10 @@ func run() -> void:
 			_class_templates_tests,
 			_class_templates_data_freshness_tests,
 			# 2026-06-04 — Class templates §10 step 5: L1 NPC builder hook
-			_classed_npc_builder_tests]:
+			_classed_npc_builder_tests,
+			# 2026-06-04 — Class templates §10 steps 6-7: PC creation flow + INT adjustment
+			_template_int_adjuster_tests,
+			_pc_template_creation_flow_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
