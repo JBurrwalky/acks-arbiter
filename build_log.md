@@ -32208,3 +32208,34 @@ on-tick dispatch.
 2. **§10 step 10 — higher-level NPC composition** (§7.4 advancement on the L1 floor + §7.5 magic-item progression by combat-progression type). `advancement_pending` already flags level>1 builds.
 3. **§10 step 11 — arcane spell repertoire picker** — fulfill `extra_spells_to_roll` + push the template's starting_spells / bonus_spell into the spellbook (gdd-spell-system.md).
 4. **Polish / Jedidiah:** PC-flow proficiency swaps; auto-equip defensible defaults (§5.4); correct the gdd §8.1 formula text; add `sensing_good` to `proficiency_catalog.json`; the equipment-catalog gaps + label IP-review from step 1-4.
+
+
+## Session 2026-06-04 — Class Templates §10 step 8: wealth-target sanity sweep
+
+**Task:** Implement `generation/gdd-class-templates.md` §10 step 8 — formalize the wealth sweep: for each in-scope template, compute resolved gp vs the `3d6 x 10` band target and surface > 40% deviations for review. The importer already computed `resolved_gp_value` + an ephemeral stderr deviation list; this turns the sweep into a checked-in reviewable artifact + a runtime service + a regression-guarded test.
+**Model used:** Opus 4.8 (1M context) — entire session.
+**Completed:**
+- **Importer** now emits `data/templates/wealth_sweep.md` — a deterministic, human-reviewable report (resolved gp vs band target for all 216 templates; the 15 deviations over 40% flagged with their top gp drivers). `--check` now gates BOTH `class_templates.json` AND `wealth_sweep.md` (byte-identical freshness). New `compute_sweep`, `_top_drivers`, `generate_wealth_sweep_md`; `_print_report` + `main` updated; the dead `reports["wealth"]` accumulation removed.
+- **`TemplateWealthSweep`** (`engine/subsystems/characters/template_wealth_sweep.gd`, pure static) — `band_target_gp`, `deviation_fraction`, `is_flagged`, `recompute_gp` (from the runtime `EquipmentCatalog`), `sweep_entry`, `sweep(repo)`.
+- **Test** `tests/test_template_wealth_sweep.gd` + extended the data-freshness test; registration (ext_resource 428). conventions §78 extended.
+**Decisions made:**
+- **The sweep flag uses the STORED `resolved_gp_value` + a pure-float `> 0.40` threshold** (no rounding), so the importer, the markdown report, and the runtime service flag the IDENTICAL set — avoids a Python-banker's-round vs GDScript-away-from-zero disagreement at the 40% boundary.
+- **`wealth_sweep.md` is markdown, not JSON** — the deviations are for Jedidiah (a designer, not a programmer) to review; a readable table with gp drivers beats a JSON dump. It is a derived REPORT (no `_source` field — a provenance line instead) gated by `--check`.
+- **The runtime `recompute_gp` validates importer↔catalog consistency** — the test asserts the importer's stored gp equals what the live `EquipmentCatalog` computes for all 216 templates (catches build-time-cost-map drift). This is the real invariant the sweep adds beyond the stderr report.
+- **The 15 flagged templates are catalog-granularity artifacts, NOT bugs** (gdd §5.1): driven by the single 25gp `holy_symbol`, 6gp/week `rations_iron_week`, 6 weeks of dwarven jerky (dwarven_fury_3_4 +94%), and the 20gp `spell_book_blank` on low-band casters. The flagged SET is pinned in the test.
+**Interfaces defined or changed:**
+- `TemplateWealthSweep.{band_target_gp(low,high)->float, deviation_fraction(template)->float, is_flagged(template)->bool, recompute_gp(template,catalog)->float, sweep_entry(template)->Dictionary, sweep(repo)->{entries,flagged}}` (all static); `FLAG_THRESHOLD=0.40`.
+- Importer: `compute_sweep(templates)`, `generate_wealth_sweep_md(templates,cost)`; `--check` validates `class_templates.json` + `wealth_sweep.md`; new output file `data/templates/wealth_sweep.md`.
+**Database changes:** None.
+**Tests added/updated:**
+- New `tests/test_template_wealth_sweep.gd` (4 methods): band targets (3-4→35 … 17-18→175); the sweep covers all 216 templates; **recompute matches stored** `resolved_gp_value` for all 216 (the importer↔runtime-catalog drift guard); the flagged set equals the 15 expected template_ids (+ per-template `is_flagged` matches).
+- `tests/data_integrity/test_class_templates_data_freshness.gd`: asserts `wealth_sweep.md` exists + has the expected header / flagged section; the `--check` call now gates both artifacts.
+**Test suite result:**
+- **422 suites passed / 19 failed.** The 19 are the unchanged pre-existing carry-forward baseline (steps 6-7 left it at 421/19; +1 = this session's new suite). Net-zero NEW failures; all six class-template suites green. `class_templates.json` is byte-unchanged this session (resolved_gp_value already present) — only `wealth_sweep.md` is new.
+**Known issues:**
+- **The 15 flagged deviations await Jedidiah's review** (gdd §5.1) — all catalog-granularity (see `data/templates/wealth_sweep.md` drivers). A cheap "wooden holy symbol" catalog entry + a cheaper iron-rations tier would clear most of the 3-4 band; that is a catalog DECISION, not an importer fix.
+- The `deviation_pct` displayed in `wealth_sweep.md` (Python `round`) and in `TemplateWealthSweep.sweep_entry` (GDScript `round`) can differ by 1 at an exact x.5 boundary — DISPLAY only; the FLAG uses the unrounded fraction, so the flagged set is identical (and tested).
+**Next session should:**
+1. **§10 step 10 — higher-level NPC composition** (§7.4 advancement on the L1 floor + §7.5 magic-item progression by combat-progression type). `advancement_pending` already flags level>1 builds.
+2. **§10 step 11 — arcane spell repertoire picker** — fulfill `extra_spells_to_roll` + push the template's starting_spells / bonus_spell into the spellbook (gdd-spell-system.md).
+3. **Jedidiah review:** the 15 wealth deviations (`wealth_sweep.md`) + the cheap-holy-symbol question; correct the gdd §8.1 formula text; add `sensing_good` to `proficiency_catalog.json`; the equipment-catalog gaps + label IP-review (step 1-4).

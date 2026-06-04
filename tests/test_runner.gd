@@ -515,6 +515,8 @@ extends Node
 # 2026-06-04 — Class templates §10 steps 6-7: PC creation flow + INT adjustment
 @onready var _template_int_adjuster_tests = $TemplateIntAdjusterTests
 @onready var _pc_template_creation_flow_tests = $PcTemplateCreationFlowTests
+# 2026-06-04 — Class templates §10 step 8: wealth-target sanity sweep
+@onready var _template_wealth_sweep_tests = $TemplateWealthSweepTests
 
 
 func _ready() -> void:
@@ -1024,7 +1026,9 @@ func run() -> void:
 			_classed_npc_builder_tests,
 			# 2026-06-04 — Class templates §10 steps 6-7: PC creation flow + INT adjustment
 			_template_int_adjuster_tests,
-			_pc_template_creation_flow_tests]:
+			_pc_template_creation_flow_tests,
+			# 2026-06-04 — Class templates §10 step 8: wealth-target sanity sweep
+			_template_wealth_sweep_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

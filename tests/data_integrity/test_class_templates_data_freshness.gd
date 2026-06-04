@@ -14,14 +14,32 @@ extends "res://tests/test_suite_base.gd"
 
 const SCRIPT_REL_PATH := "res://tools/import_class_templates.py"
 const JSON_REL_PATH := "res://data/templates/class_templates.json"
+const WEALTH_SWEEP_REL_PATH := "res://data/templates/wealth_sweep.md"
 
 
 func run_all_tests() -> void:
 	test_file_exists_and_has_source()
 	test_template_count()
+	test_wealth_sweep_artifact()
 	test_import_script_check_mode_passes()
 	if not has_failures():
 		print("ClassTemplatesDataFreshness: all tests passed.")
+
+
+func test_wealth_sweep_artifact() -> void:
+	# The §10 step 8 wealth-sweep report is emitted alongside class_templates.json;
+	# its staleness is gated by `--check` (test_import_script_check_mode_passes).
+	check(FileAccess.file_exists(WEALTH_SWEEP_REL_PATH),
+		"wealth_sweep.md missing. Run `python tools/import_class_templates.py`.")
+	if not FileAccess.file_exists(WEALTH_SWEEP_REL_PATH):
+		return
+	var f := FileAccess.open(WEALTH_SWEEP_REL_PATH, FileAccess.READ)
+	var text := f.get_as_text()
+	f.close()
+	check(text.begins_with("# Class Template Wealth Sweep"),
+		"wealth_sweep.md has an unexpected header")
+	check(text.contains("Flagged deviations"),
+		"wealth_sweep.md is missing the flagged-deviations section")
 
 
 func test_file_exists_and_has_source() -> void:
