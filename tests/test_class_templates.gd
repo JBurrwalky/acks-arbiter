@@ -45,8 +45,26 @@ func run_all_tests() -> void:
 	test_all_proficiencies_have_kind()
 	test_path_b_eligibility_query()
 	test_arcane_int_cull_structure()
+	test_sensing_good_resolved()
 	if not has_failures():
 		print("ClassTemplates: all tests passed.")
+
+
+func test_sensing_good_resolved() -> void:
+	# darkblood_ruinguard Avenger's class proficiency is "Sensing Good", which was
+	# a proficiency-catalog gap (resolved 2026-06-04 — added to proficiency_catalog
+	# .json as the Chaotic counterpart of Sensing Evil). It must now resolve to a
+	# non-empty key and remain the class-slot proficiency.
+	var t := _repo.get_template("darkblood_ruinguard_9_10")
+	check(t != null, "darkblood_ruinguard_9_10 exists")
+	if t == null:
+		return
+	var class_prof := t.class_proficiency()
+	check(class_prof != null, "Avenger should have a class proficiency")
+	if class_prof != null:
+		check(class_prof.proficiency_key == "sensing_good",
+			"Avenger class prof should resolve to sensing_good, got '%s'" % class_prof.proficiency_key)
+		check(class_prof.name == "Sensing Good", "source name preserved")
 
 
 func test_repository_loads() -> void:

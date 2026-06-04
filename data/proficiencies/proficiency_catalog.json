@@ -2942,6 +2942,29 @@
       "full_description": "At will, the character can detect evil (as the spell) up to 60' away by concentrating. Each use takes a turn."
     },
     {
+      "proficiency_key": "sensing_good",
+      "proficiency_name": "Sensing Good",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "At will, detect good as the spell within 60 feet by concentrating for 1 turn. The Chaotic counterpart to Sensing Evil.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [
+          {
+            "action": "detect_good_at_will",
+            "range_ft": 60,
+            "concentration_turns": 1
+          }
+        ]
+      },
+      "full_description": "At will, the character can detect good (as the spell) up to 60' away by concentrating. Each use takes a turn. Sensing Good is the Chaotic counterpart to Sensing Evil, available to the Zaharan Ruinguard (rules/pc_classes_5.xml:317); its mechanic mirrors Sensing Evil (rules/acore_proficiencies_rules_and_catalog.xml:947) with good in place of evil."
+    },
+    {
       "proficiency_key": "sensing_power",
       "proficiency_name": "Sensing Power",
       "type": "class",

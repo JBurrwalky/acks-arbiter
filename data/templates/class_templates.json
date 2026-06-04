@@ -2427,7 +2427,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
+            "noncatalog_kind": "flavor_tool",
             "tag": "disguise_kit"
           },
           "quantity": 1,
@@ -4788,7 +4788,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
+            "noncatalog_kind": "flavor_tool",
             "tag": "disguise_kit"
           },
           "quantity": 1,
@@ -13668,8 +13668,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
-            "tag": "crystal_ball",
+            "noncatalog_kind": "valuable",
             "value_gp": 20
           },
           "quantity": 1,
@@ -20974,7 +20973,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
+            "noncatalog_kind": "flavor_tool",
             "tag": "medicine_bag"
           },
           "quantity": 1,
@@ -21110,8 +21109,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
-            "tag": "crystal_ball",
+            "noncatalog_kind": "valuable",
             "value_gp": 20
           },
           "quantity": 1,
@@ -22234,8 +22232,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
-            "tag": "crystal_ball",
+            "noncatalog_kind": "valuable",
             "value_gp": 20
           },
           "quantity": 1,
@@ -29429,7 +29426,7 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
-            "noncatalog_kind": "catalog_gap",
+            "noncatalog_kind": "flavor_tool",
             "tag": "medicine_bag"
           },
           "quantity": 1,
@@ -32096,7 +32093,7 @@
           "flavor": "",
           "list_order": 1,
           "name": "Sensing Good",
-          "proficiency_key": "",
+          "proficiency_key": "sensing_good",
           "proficiency_kind": "class",
           "rank": 1
         },

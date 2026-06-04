@@ -153,8 +153,10 @@ PROF_ALIASES = {
     "black lore of zahar": "black_lore_of_chaos",   # Zahar->Chaos rebrand
 }
 # Proficiencies present in the source but ABSENT from the proficiency catalog.
-# Reported as gaps; name kept, key left "".
-PROF_KNOWN_GAPS = {"sensing good"}
+# Reported as gaps; name kept, key left "". Empty since 2026-06-04: sensing_good
+# (the Zaharan Ruinguard's class proficiency, rules/pc_classes_5.xml:317) was the
+# last known gap and is now in data/proficiencies/proficiency_catalog.json.
+PROF_KNOWN_GAPS = set()
 
 
 def load_json(path: Path):
@@ -493,9 +495,15 @@ PHRASE_RULES = [(re.compile(pat), key) for pat, key in PHRASE_RULES]
 # Non-catalog phrases recognised but with NO runtime catalog item. kind drives
 # the report grouping. value-bearing jewelry is handled separately (valuable).
 NONCATALOG_RULES = [
-    (re.compile(r"crystal ball"), "catalog_gap", "crystal_ball"),
-    (re.compile(r"medicine bag"), "catalog_gap", "medicine_bag"),
-    (re.compile(r"disguise kit"), "catalog_gap", "disguise_kit"),
+    # 'ornamental crystal ball (20gp value)' has NO RAW mundane-equipment entry
+    # (a crystal ball is a magic item in ACKS); the template's prop is a 20gp
+    # valuable, resolved by the value-bearing branch below — NOT a catalog gap.
+    # 'disguise kit' / 'medicine bag' likewise have no RAW equipment entry (the
+    # Disguise / Healing proficiencies provide the capability without a kit), so
+    # they resolve as flavor, not gaps. (Verified absent 2026-06-04 from
+    # rules/acore_equipment.xml + rules/pc_equipment_catalog.xml.)
+    (re.compile(r"medicine bag"), "flavor_tool", "medicine_bag"),
+    (re.compile(r"disguise kit"), "flavor_tool", "disguise_kit"),
     (re.compile(r"centipede poison|\bpoison\b"), "separate_catalog", "poison"),
     (re.compile(r"amphora of oil"), "flavor_consumable", "body_oil"),
     (re.compile(r"carving knife"), "flavor_tool", "carving_knife"),

@@ -32239,3 +32239,36 @@ on-tick dispatch.
 1. **§10 step 10 — higher-level NPC composition** (§7.4 advancement on the L1 floor + §7.5 magic-item progression by combat-progression type). `advancement_pending` already flags level>1 builds.
 2. **§10 step 11 — arcane spell repertoire picker** — fulfill `extra_spells_to_roll` + push the template's starting_spells / bonus_spell into the spellbook (gdd-spell-system.md).
 3. **Jedidiah review:** the 15 wealth deviations (`wealth_sweep.md`) + the cheap-holy-symbol question; correct the gdd §8.1 formula text; add `sensing_good` to `proficiency_catalog.json`; the equipment-catalog gaps + label IP-review (step 1-4).
+
+
+## Session 2026-06-04 — Class Templates review-pass: close the accumulated Jedidiah-review items
+
+**Task:** Clear the "flag for Jedidiah" backlog accumulated across §10 steps 1-8 (the proficiency-catalog gap, the equipment "catalog gaps", the §8.1 GDD formula bug, the wealth deviations, the label IP-review) before it grew further. Resolve each against RAW: faithfully fix what the SACRED XML supports; confirm-and-document what it does not.
+**Model used:** Opus 4.8 (1M context) — entire session (RAW investigation via acks-raw-lookup + grep, fixes, tests, verification).
+**Completed:**
+- **`sensing_good` ADDED** to `data/proficiencies/proficiency_catalog.json` — RAW-confirmed real (Zaharan Ruinguard class proficiency, `rules/pc_classes_5.xml:317`; the Chaotic mirror of Sensing Evil, `rules/acore_proficiencies_rules_and_catalog.xml:947`). Mirrors `sensing_evil`: detect good at will, 60 ft, 1-turn concentration; enabler `detect_good_at_will`. The importer's `PROF_KNOWN_GAPS` is now empty; the darkblood_ruinguard Avenger (band 9-10) now resolves its class proficiency (it was the lone unresolved key). `ProficiencyRegistry` now loads 107 (was 106).
+- **Equipment "catalog gaps" reclassified, NOT added** (RAW-verified ABSENT from `acore_equipment.xml` + `pc_equipment_catalog.xml`): ornamental crystal ball → a 20gp `valuable` (a crystal ball is a magic item in ACKS; the template prop is decorative); disguise kit + medicine bag → `flavor_tool` (the Disguise / Healing proficiencies need no kit). The importer's "catalog gaps to flag" list is now empty.
+- **GDD §8.1 formula CORRECTED** — `generation/gdd-class-templates.md` §8.1's `max(0, floor((INT-11)/2))` (wrong: 2 at INT 15, 3 at INT 17) replaced with `max(0, ability_modifier(INT))` + a dated correction note pointing at the authoritative table and the regression test.
+- **Wealth deviations confirmed RAW-FAITHFUL** — ACKS Core has a single 25gp holy symbol (`acore_equipment.xml:115`), no cheaper "wooden" tier; the 15 flagged low-band deviations stand as informational (`data/templates/wealth_sweep.md`), not fixable.
+- **Label IP-review** — the 2 GDD-named institution substitutions (Legionary → Heavy Infantry, Housecarl → Noble Retainer) are in `label_overrides.json`; the importer auto-strips region / tradition parentheticals; no other in-setting-institution template names were found. The label set reads clean; the remaining review is a Jedidiah spot-check.
+- Test `test_class_templates.test_sensing_good_resolved`; conventions §78 review-pass bullet + the §8.1-note fix; re-imported `class_templates.json` (+ `wealth_sweep.md`, byte-unchanged).
+**Decisions made:**
+- **A "catalog gap" is only real if the item / rule EXISTS in a SACRED `rules/*.xml` and the extraction missed it.** Verified each flagged item: sensing_good IS RAW (add it); crystal ball / disguise kit / medicine bag are NOT (reclassify as flavor / valuable — never invent prices). This is the general rule going forward (now in conventions §78).
+- **`sensing_good` mechanic mirrors `sensing_evil`** (detect good in place of evil) — the RAW names it in the Zaharan class list but the effect block lives only on Sensing Evil; the mirror is the faithful reading. `source` "ACKS Core" to parallel sensing_evil; the `detect_good_at_will` enabler is inert data until a detection subsystem exists (same as `detect_evil_at_will`).
+- **The §8.1 formula was a GDD BUG, not a design choice** — fixed in place (Layer 2, within authority) with a dated note; the engine already implemented the correct table (`TemplateIntAdjuster`).
+**Interfaces defined or changed:**
+- `data/proficiencies/proficiency_catalog.json` gains `sensing_good` (key / name / type=class / enabler `detect_good_at_will`). Consumers iterating the catalog now see 107 entries.
+- Importer: `PROF_KNOWN_GAPS = set()`; `NONCATALOG_RULES` drops the crystal-ball rule (→ valuable) and retags medicine_bag / disguise_kit as `flavor_tool`. No output-schema change; `class_templates.json` changes only the darkblood Avenger's class-proficiency key + the 3 reclassified entries' `metadata.noncatalog_kind`. `resolved_gp_value` is unchanged everywhere, so `wealth_sweep.md` is byte-identical.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_class_templates.gd`: `test_sensing_good_resolved` (darkblood_ruinguard_9_10 class prof == `sensing_good`, source name preserved).
+- All six class-template suites re-run green; the importer `--check` gates both regenerated artifacts.
+**Test suite result:**
+- **422 suites passed / 19 failed.** Unchanged totals (no new suite — a method added to the existing ClassTemplates suite). The 19 are the pre-existing carry-forward baseline; net-zero new failures. `ProficiencyRegistry` loads 107 proficiencies cleanly (no parse error).
+**Known issues:**
+- Label IP-neutrality is a Jedidiah spot-check (no other institution names found, but the full 216-name confirmation is his call).
+- The 15 wealth deviations remain flagged-for-info (RAW-faithful) in `wealth_sweep.md`.
+**Next session should:**
+1. **§10 step 10** — higher-level NPC composition (§7.4 advancement on the L1 floor + §7.5 magic-item progression by combat-progression type). `advancement_pending` already flags level>1.
+2. **§10 step 11** — arcane spell repertoire picker (fulfill `extra_spells_to_roll` + the template spells into the spellbook).
+3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection (the template data already carries these tags).

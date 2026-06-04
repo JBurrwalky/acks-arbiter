@@ -372,13 +372,16 @@ The v1 progression is intentionally crude. It produces a defensible kit at every
 For any class that is not Mage, Warlock, Nobiran Wonderworker, Elven Enchanter, or Elven Spellsword:
 
 ```
-extra_proficiencies = max(0, floor((INT - 11) / 2))   # 13-15 → 1, 16-17 → 2, 18 → 3
-                                                       # explicit table check:
-                                                       #   INT 12 or less → 0
-                                                       #   INT 13-15      → 1
-                                                       #   INT 16-17      → 2
-                                                       #   INT 18         → 3
+# extra_proficiencies = the ACKS Intelligence ability modifier, floored at 0.
+# This is a TABLE lookup, NOT a linear formula:
+#   INT 12 or less → 0
+#   INT 13-15      → 1
+#   INT 16-17      → 2
+#   INT 18         → 3
+extra_proficiencies = max(0, ability_modifier(INT))
 ```
+
+**Correction (2026-06-04):** an earlier draft of this block read `max(0, floor((INT - 11) / 2))`. That formula is **wrong** — it yields 2 at INT 15 and 3 at INT 17, contradicting the table directly above it. The table is authoritative (it is the ACKS ability-modifier table, `rules/acore_proficiencies_rules_and_catalog.xml` INT-bonus rule, floored at 0). The engine implements `max(0, CharacterData.ability_modifier(INT))` in `TemplateIntAdjuster.compute_adjustment`, and `tests/test_template_int_adjuster.gd` pins INT 15 → 1 and INT 17 → 2 so the formula can never silently regress.
 
 These extras are general proficiencies, player-chosen for PCs and engine-chosen for NPCs (per the proficiency-selection algorithm in [`gdd-henchman-class-selection.md`](gdd-henchman-class-selection.md) extended to general NPC building).
 
