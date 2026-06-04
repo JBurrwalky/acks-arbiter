@@ -23,6 +23,7 @@ const _SYNDICATE_UPDATE_FIELDS := [
 	"syndicate_size_max",
 	"current_size",
 	"status",
+	"hideout_id",  # Migration 143: source-of-truth FK to the hideouts table.
 ]
 
 const _MEMBER_UPDATE_FIELDS := [
@@ -70,8 +71,9 @@ static func create_syndicate(data: Dictionary) -> String:
 	var sql := """
 		INSERT INTO syndicates
 			(id, campaign_id, boss_character_id, hideout_stronghold_id,
-			 base_settlement_entrance_id, syndicate_size_max, current_size, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			 base_settlement_entrance_id, syndicate_size_max, current_size, status,
+			 hideout_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	"""
 	var bindings: Array = [
 		id,
@@ -82,6 +84,10 @@ static func create_syndicate(data: Dictionary) -> String:
 		int(data.get("syndicate_size_max", 0)),
 		int(data.get("current_size", 0)),
 		str(data.get("status", "active")),
+		# Migration 143 (Thief→Syndicate): source-of-truth FK to the hideout.
+		# Existing callers omit it → binds NULL (the hideout-stronghold_id stays
+		# the vestigial column).
+		_nullable_str(data.get("hideout_id", null)),
 	]
 	if not CampaignRepository.db.query_with_bindings(sql, bindings):
 		push_error("SyndicateRepository.create_syndicate failed: %s" % data)

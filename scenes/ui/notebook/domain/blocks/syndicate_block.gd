@@ -129,7 +129,11 @@ func _render_overview() -> void:
 		var size_max: int = int(syndicate.get("syndicate_size_max", 0))
 		var current: int = int(syndicate.get("current_size", 0))
 		# hideout_stronghold_id is nullable — defensive coercion.
-		var hideout_id := _str_or_empty(syndicate.get("hideout_stronghold_id"))
+		# Migration 143: prefer the hideout's own table (hideout_id); fall back to
+		# the vestigial hideout_stronghold_id for any legacy rows.
+		var hideout_id := _str_or_empty(syndicate.get("hideout_id"))
+		if hideout_id.is_empty():
+			hideout_id = _str_or_empty(syndicate.get("hideout_stronghold_id"))
 		var status := _str_or_empty(syndicate.get("status"))
 		if status.is_empty():
 			status = "active"

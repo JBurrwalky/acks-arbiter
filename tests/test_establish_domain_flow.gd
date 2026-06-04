@@ -28,6 +28,10 @@ func run_all_tests() -> void:
 	test_dwarven_in_own_race_allowed()
 	test_dwarven_in_wilderness_always_allowed()
 	test_elven_outside_own_race_blocked()
+	# Thief→Syndicate refactor: syndicate classes hard-blocked from domains
+	test_syndicate_class_blocked_from_domains()
+	test_syndicate_classes_have_no_paths()
+	test_nightblade_blocked_from_domains()
 	# Chaotic-aligned paths
 	test_chaotic_method_requires_chaotic_alignment()
 	test_chaotic_aligned_can_annex_clanhold()
@@ -211,6 +215,47 @@ func test_clanhold_annex_forces_clanhold_domain_style() -> void:
 
 
 # ----- Validation -----
+
+func test_syndicate_class_blocked_from_domains() -> void:
+	# Thief→Syndicate refactor: the three syndicate classes may not run domains.
+	var thief := {"character_class": "thief", "alignment": "neutral"}
+	var errors := EstablishDomainFlow.validate_establishment({
+		"campaign_id": _campaign_id,
+		"owner_character_id": "char_thief",
+		"character": thief,
+		"name": "Thieves' Den",
+		"territory_type": "civilized",
+		"establishment_method": "grant",
+	})
+	check(errors.has(EstablishDomainFlow.ERR_SYNDICATE_CLASS_NO_DOMAIN),
+		"thief blocked from running a domain, errors=%s" % str(errors))
+
+
+func test_syndicate_classes_have_no_paths() -> void:
+	for class_id in ["thief", "assassin", "elven_nightblade"]:
+		var character := {"character_class": class_id, "alignment": "neutral"}
+		var civ := EstablishDomainFlow.available_paths(character, EstablishDomainFlow.CIVILIZED)
+		var wild := EstablishDomainFlow.available_paths(character, EstablishDomainFlow.WILDERNESS)
+		check(civ.is_empty() and wild.is_empty(),
+			"%s has no domain-acquisition paths (civ=%s wild=%s)" % [class_id, str(civ), str(wild)])
+
+
+func test_nightblade_blocked_from_domains() -> void:
+	# Regression: the Elven Nightblade must found a SYNDICATE, not an elven
+	# fastness. It was previously in ELVEN_CLASS_IDS and got elven own-race
+	# domain paths; the syndicate-class guard now supersedes.
+	var nightblade := {"character_class": "elven_nightblade", "alignment": "neutral"}
+	var errors := EstablishDomainFlow.validate_establishment({
+		"campaign_id": _campaign_id,
+		"owner_character_id": "char_nb",
+		"character": nightblade,
+		"name": "Shadow Cabal",
+		"territory_type": "wilderness",
+		"establishment_method": "clear",
+	})
+	check(errors.has(EstablishDomainFlow.ERR_SYNDICATE_CLASS_NO_DOMAIN),
+		"elven_nightblade blocked from domains (founds a syndicate, not a fastness), errors=%s" % str(errors))
+
 
 func test_validate_missing_campaign() -> void:
 	var errors := EstablishDomainFlow.validate_establishment({

@@ -109,6 +109,19 @@ static func start_commission(
 			gp_committed, engineers_assigned):
 		errors.append("insufficient_engineers")
 
+	# Thief→Syndicate refactor: the three syndicate classes (thief / assassin /
+	# elven nightblade) cannot build a domain-securing stronghold. A thief's
+	# hideout is its own structure (HideoutRepository), never a strongholds row.
+	# Belt-and-suspenders engine guard; the UI hides the commission path for them.
+	# owner_character_id may be a literal null (nullable FK) — guard String(null).
+	var owner_value: Variant = stronghold_data.get("owner_character_id", "")
+	var owner_id: String = String(owner_value) if owner_value != null else ""
+	if not owner_id.is_empty():
+		var owner_class: String = String(
+			CampaignRepository.get_character(owner_id).get("character_class", ""))
+		if ClassBucketResolver.is_syndicate_class(owner_class):
+			errors.append("syndicate_class_cannot_build_stronghold")
+
 	if not errors.is_empty():
 		return {
 			"stronghold_id": "",

@@ -16,6 +16,7 @@ func run_all_tests() -> void:
 	test_start_commission_inserts_rows_and_emits_signal()
 	test_start_commission_rejects_on_engineer_shortage()
 	test_start_commission_rejects_on_explorer_in_civilized()
+	test_start_commission_rejects_syndicate_class()
 	test_advance_commission_progresses_gp()
 	test_advance_commission_fires_halfway_signal()
 	test_advance_commission_fires_completed_signal()
@@ -128,6 +129,34 @@ func test_start_commission_rejects_on_explorer_in_civilized() -> void:
 		"civilized", "human", false)
 	check(result["errors"].has("explorer_borderlands_or_wilderness_only"),
 		"explorer-in-civilized rejected, got %s" % str(result["errors"]))
+
+
+func _create_thief() -> String:
+	var id: String = CampaignRepository.generate_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters
+			(id, campaign_id, name, character_type, persistence_tier, race,
+			 character_class, level, strength, intelligence, wisdom,
+			 dexterity, constitution, charisma, hp_max, hp_current)
+		VALUES (?, ?, ?, 'pc', 'full', 'human', 'thief', 9,
+			10, 10, 10, 13, 10, 10, 20, 20)
+	""", [id, _campaign_id, "Test Thief"])
+	return id
+
+
+func test_start_commission_rejects_syndicate_class() -> void:
+	# Thief→Syndicate refactor: a thief owner cannot commission a domain-securing
+	# stronghold. The guard resolves the owner's class from owner_character_id.
+	var domain_id := _make_test_domain()
+	var thief_id := _create_thief()
+	var sh_data := _baseline_stronghold_data(domain_id)
+	sh_data["owner_character_id"] = thief_id
+	var cost := _baseline_cost_breakdown(5000, 500)
+	var result := CommissionPipeline.start_commission(sh_data, cost, 0)
+	check(result["errors"].has("syndicate_class_cannot_build_stronghold"),
+		"thief blocked from commissioning a stronghold, got %s" % str(result["errors"]))
+	check(result["stronghold_id"].is_empty(),
+		"no stronghold inserted for a blocked syndicate class")
 
 
 # ----- Advance commission -----

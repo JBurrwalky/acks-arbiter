@@ -38,6 +38,10 @@ const ClassSpecificSubTabScript := preload("res://scenes/ui/notebook/domain/sub_
 const PlaceholderSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/placeholder_sub_tab.gd")
 const EstablishDomainDialogScript := preload("res://scenes/ui/notebook/domain/establish_domain_dialog.gd")
 const _DomainEmptyStatePageScript := preload("res://scenes/ui/components/empty_state_page.gd")
+# Thief→Syndicate refactor: syndicate classes (thief/assassin/elven nightblade)
+# run a syndicate, not a domain. This tab renders a syndicate surface for them.
+const FoundSyndicateDialogScript := preload("res://scenes/ui/notebook/domain/found_syndicate_dialog.gd")
+const SyndicateBlockScript := preload("res://scenes/ui/notebook/domain/blocks/syndicate_block.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +92,10 @@ var _sub_tab_bar: TabBar = null
 var _content_holder: Control = null
 var _empty_state: Control = null
 var _establish_dialog: AcceptDialog = null
+var _found_syndicate_dialog: AcceptDialog = null
+## Recreated per syndicate render (not pooled like the domain sub-tab pages) so
+## its EventBus subscriptions stay fresh; freed on every content re-render.
+var _syndicate_block = null
 
 var _active_entity_type: String = TYPE_PCS
 var _active_entity_id: String = ""
@@ -112,6 +120,7 @@ func _build_content() -> void:
 	_build_sub_tab_bar()
 	_build_content_holder()
 	_build_establish_dialog()
+	_build_found_syndicate_dialog()
 	_connect_signals()
 	_restore_substate_and_refresh()
 
@@ -163,6 +172,12 @@ func _build_establish_dialog() -> void:
 	_establish_dialog = EstablishDomainDialogScript.new()
 	_establish_dialog.domain_established_requested.connect(_on_domain_established)
 	add_child(_establish_dialog)
+
+
+func _build_found_syndicate_dialog() -> void:
+	_found_syndicate_dialog = FoundSyndicateDialogScript.new()
+	_found_syndicate_dialog.syndicate_founded_requested.connect(_on_syndicate_founded)
+	add_child(_found_syndicate_dialog)
 
 
 func _connect_signals() -> void:
@@ -443,11 +458,27 @@ func _render_active_content() -> void:
 	if _empty_state != null and is_instance_valid(_empty_state):
 		_empty_state.queue_free()
 		_empty_state = null
+	# Thief→Syndicate refactor: free the cached syndicate block (the removal loop
+	# above only detaches children; this block is recreated fresh per render).
+	if _syndicate_block != null and is_instance_valid(_syndicate_block):
+		_syndicate_block.queue_free()
+		_syndicate_block = null
 	# If the active entity owns no domain, render the empty-state page across
 	# the full content area (sub-tab strip stays visible but inert).
 	if _active_entity_id.is_empty():
+		_sub_tab_bar.visible = true
 		_render_no_entity_state()
 		return
+	# Thief→Syndicate refactor: syndicate classes (thief/assassin/elven
+	# nightblade) run a syndicate, not a domain. Bypass the domain sub-tab
+	# machinery entirely — hide the domain sub-tab strip and render the
+	# syndicate surface (found-syndicate prompt or the SyndicateBlock).
+	if _active_entity_is_syndicate_class():
+		_sub_tab_bar.visible = false
+		_status_header.display({})
+		_render_syndicate_view()
+		return
+	_sub_tab_bar.visible = true
 	var domain := _resolve_domain_for_active_entity()
 	if domain.is_empty():
 		_render_acquisition_empty_state()
@@ -513,6 +544,65 @@ func _acquisition_guidance_text() -> String:
 		lines.append("  • Chaotic alignment unlocks clanhold annexation and recruit-chieftain paths.")
 	lines.append("")
 	lines.append("Press Establish a domain… to begin.")
+	return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Syndicate surface (Thief→Syndicate refactor)
+# ---------------------------------------------------------------------------
+
+## True when the active entity is one of the three syndicate classes
+## (thief / assassin / elven nightblade), which run a syndicate rather than a
+## domain. Drives the syndicate-surface branch in _render_active_content().
+func _active_entity_is_syndicate_class() -> bool:
+	if _active_entity_id.is_empty():
+		return false
+	return ClassBucketResolver.has_bucket(_active_entity_id, "syndicate")
+
+
+## Renders the syndicate surface for a syndicate-class entity: a Found-a-Syndicate
+## prompt when they have none, or the SyndicateBlock once founded.
+func _render_syndicate_view() -> void:
+	var syndicates: Array = SyndicateRepository.list_syndicates_for_boss(_active_entity_id)
+	if syndicates.is_empty():
+		_render_found_syndicate_empty_state()
+		return
+	_syndicate_block = SyndicateBlockScript.new()
+	_content_holder.add_child(_syndicate_block)
+	# domain_id is "" — the SyndicateBlock reads everything from the boss id.
+	_syndicate_block.bind(_active_entity_id, "", _resolve_party_id())
+
+
+func _render_found_syndicate_empty_state() -> void:
+	_empty_state = _DomainEmptyStatePageScript.new()
+	_empty_state.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_empty_state.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content_holder.add_child(_empty_state)
+	_empty_state.configure(
+		"No syndicate yet",
+		_syndicate_guidance_text(),
+		[{"text": "Found a syndicate…", "id": "found_syndicate"}],
+		null)
+	_empty_state.link_activated.connect(_on_empty_state_link)
+
+
+func _syndicate_guidance_text() -> String:
+	var character := _resolve_active_character()
+	var class_id := String(character.get("character_class", "")).to_lower()
+	var lines: Array[String] = []
+	lines.append("Your class runs a syndicate (a thieves' guild), not a domain.")
+	lines.append("")
+	lines.append("Plant a hideout in an urban settlement — a secret base that secures no")
+	lines.append("land, attracts no peasants, and pays no tithes. From it your guild runs")
+	lines.append("hijinks (stealing, smuggling, spying, assassination, and more) for profit.")
+	lines.append("")
+	if class_id == "assassin":
+		lines.append("Your hideout is the operational base for your assassination contracts.")
+	elif class_id == "elven_nightblade":
+		lines.append("Note: at least one of your apprentices is an infiltrator for local rivals.")
+	lines.append("At level 9 you gain 2d6 1st-level followers of your class to staff it.")
+	lines.append("")
+	lines.append("Press Found a syndicate… to begin.")
 	return "\n".join(lines)
 
 
@@ -620,6 +710,8 @@ func _on_active_party_changed(_old: String, _new: String) -> void:
 func _on_empty_state_link(link_id: String) -> void:
 	if link_id == "establish_domain":
 		_open_establish_dialog()
+	elif link_id == "found_syndicate":
+		_open_found_syndicate_dialog()
 
 
 func _open_establish_dialog() -> void:
@@ -639,6 +731,25 @@ func _open_establish_dialog() -> void:
 
 func _on_domain_established(_domain_id: String) -> void:
 	# Refresh the Domain tab so the new domain renders.
+	_render_active_content()
+
+
+func _open_found_syndicate_dialog() -> void:
+	var character := _resolve_active_character()
+	if character.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "system",
+			"title": "Select an entity first",
+			"body": "Pick a PC or humanoid henchman from the entity strip before founding a syndicate.",
+		})
+		return
+	_found_syndicate_dialog.setup(GameState.campaign_id, character)
+	_found_syndicate_dialog.popup_centered(Vector2(560, 420))
+
+
+func _on_syndicate_founded(_syndicate_id: String) -> void:
+	# Refresh the Domain tab so the new syndicate renders.
 	_render_active_content()
 
 

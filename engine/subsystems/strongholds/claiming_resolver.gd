@@ -51,6 +51,12 @@ static func claim_existing(
 	var valid_sources := ["dungeon", "ruin", "conquest", "inheritance", "purchase", "grant"]
 	if not valid_sources.has(source):
 		errors.append("invalid_source")
+	# Thief→Syndicate refactor: syndicate classes (thief / assassin / elven
+	# nightblade) cannot claim a domain-securing stronghold. Their hideout is its
+	# own structure (HideoutRepository), never a strongholds row. Belt-and-
+	# suspenders engine guard; the UI hides the claim path for these classes.
+	if ClassBucketResolver.is_syndicate_class(ruler_class_id):
+		errors.append("syndicate_class_cannot_build_stronghold")
 	if not errors.is_empty():
 		return {"stronghold_id": "", "sufficiency_changed": false, "errors": errors}
 

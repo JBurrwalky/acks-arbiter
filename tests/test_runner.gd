@@ -503,6 +503,8 @@ extends Node
 @onready var _cube_of_frost_resistance_tests = $CubeOfFrostResistanceTests
 @onready var _horn_of_blasting_once_per_turn_tests = $HornOfBlastingOncePerTurnTests
 @onready var _elemental_commanders_daily_refill_tests = $ElementalCommandersDailyRefillTests
+@onready var _hideout_cost_table_tests = $HideoutCostTableTests
+@onready var _found_syndicate_flow_tests = $FoundSyndicateFlowTests
 
 
 func _ready() -> void:
@@ -1000,7 +1002,9 @@ func run() -> void:
 			_level_boost_potions_tests,
 			_cube_of_frost_resistance_tests,
 			_horn_of_blasting_once_per_turn_tests,
-			_elemental_commanders_daily_refill_tests]:
+			_elemental_commanders_daily_refill_tests,
+			_hideout_cost_table_tests,
+			_found_syndicate_flow_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

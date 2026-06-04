@@ -99,6 +99,12 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	var commerce_results: Dictionary = CommerceMonthlyResolver.process_for_campaign(
 		_campaign_id, calendar_day, current_year, commerce_rng)
 
+	# Thief→Syndicate refactor: syndicate bosses own no domain, so the
+	# domain-only resolution below never reaches them. Run the monthly syndicate
+	# fast-path (net L1-8 income + L9+ wage upkeep, both on the boss's PERSONAL
+	# wallet) for EVERY syndicate in the campaign, regardless of domain presence.
+	var syndicate_results: Array = NpcSyndicateMonthlyResolver.process_campaign_month(_campaign_id)
+
 	# Always reschedule for next month — commerce alone is reason enough to
 	# keep ticking.
 	var next_month_rounds: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
@@ -118,6 +124,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		return {
 			"next_events": next_events,
 			"commerce_results": commerce_results,
+			"syndicate_results": syndicate_results,
 		}
 
 	var domain_results: Array = []
@@ -157,6 +164,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			"domain_results": domain_results,
 		},
 		"commerce_results": commerce_results,
+		"syndicate_results": syndicate_results,
 	}
 
 

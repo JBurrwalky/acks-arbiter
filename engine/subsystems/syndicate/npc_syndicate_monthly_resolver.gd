@@ -31,6 +31,24 @@ const MONTHLY_HIJINK_INCOME_GP_BY_LEVEL := {
 	8: 2000,
 }
 
+# RAW henchman monthly wages (data/equipment/provisions_services.json
+# `henchman_monthly_gp`, from the ACKS hireling tables). Used for the EXPENSE
+# side of the syndicate month (Thief→Syndicate refactor): a syndicate's
+# followers "must be paid" (RAW ax_thief_skill_update.xml:51). L1-8 wages are
+# already netted into MONTHLY_HIJINK_INCOME_GP_BY_LEVEL (RAW L523 — the income
+# table "already factors in wages, attorneys, bribes, fines, and healing"), so
+# charging them again here would DOUBLE-COUNT. Only L9+ members — who are NOT in
+# the net income table (they roll hijinks individually per RAW L522) — are paid
+# from this table.
+const HENCHMAN_MONTHLY_WAGE_GP_BY_LEVEL := {
+	9: 7250,
+	10: 12000,
+	11: 32000,
+	12: 50000,
+	13: 135000,
+	14: 350000,
+}
+
 
 # ---------------------------------------------------------------------------
 # Resolution
@@ -60,12 +78,19 @@ static func process_syndicate_month(syndicate_id: String) -> Dictionary:
 
 	var members: Array = SyndicateRepository.list_members(syndicate_id, true)
 	var total_cp: int = 0
+	var upkeep_cp: int = 0
 	var by_level: Dictionary = {}
 	var skipped_l9_plus: int = 0
 	for member: Dictionary in members:
 		var level: int = int(member.get("level", 0))
 		if level >= 9:
+			# L9+ earn via individually-rolled hijinks (NOT the net income table,
+			# per RAW L522), so they are not auto-paid income here — but they
+			# still "must be paid" wages (RAW ax_thief_skill_update.xml:51). This
+			# is the only wage charged on the fast path; L1-8 wages are already
+			# netted into the income table (RAW L523).
 			skipped_l9_plus += 1
+			upkeep_cp += int(HENCHMAN_MONTHLY_WAGE_GP_BY_LEVEL.get(level, 0)) * 100
 			continue
 		var gp_per_member: int = int(MONTHLY_HIJINK_INCOME_GP_BY_LEVEL.get(level, 0))
 		if gp_per_member <= 0:
@@ -74,14 +99,24 @@ static func process_syndicate_month(syndicate_id: String) -> Dictionary:
 		total_cp += cp_per_member
 		by_level[level] = int(by_level.get(level, 0)) + 1
 
+	# Income first (net L1-8), then the L9+ wage upkeep. Net effect on the boss's
+	# PERSONAL wallet = +income - L9+ wages. If the boss can't cover wages,
+	# pay_from_character returns ok=false (no partial deduct); v1 records that and
+	# the morale/desertion fallout is a documented follow-up.
 	if total_cp > 0:
 		PartyWallet.deposit_to_character(boss_id, total_cp)
+	var upkeep_paid := true
+	if upkeep_cp > 0:
+		upkeep_paid = bool(PartyWallet.pay_from_character(boss_id, upkeep_cp).get("ok", false))
 
 	return {
-		"summary": "NPC monthly syndicate income: %s deposited to boss" % Currency.format_cost(total_cp),
+		"summary": "Monthly syndicate: +%s income, -%s L9+ wages" % [
+			Currency.format_cost(total_cp), Currency.format_cost(upkeep_cp)],
 		"syndicate_id": syndicate_id,
 		"boss_character_id": boss_id,
 		"total_cp": total_cp,
+		"upkeep_cp": upkeep_cp,
+		"upkeep_paid": upkeep_paid,
 		"member_counts_by_level": by_level,
 		"skipped_l9_plus_members": skipped_l9_plus,
 	}
@@ -106,4 +141,18 @@ static func compute_monthly_total_cp(member_levels: Array) -> int:
 		if lvl >= 9 or lvl < 0:
 			continue
 		total += int(MONTHLY_HIJINK_INCOME_GP_BY_LEVEL.get(lvl, 0)) * 100
+	return total
+
+
+## Pure-function helper for tests: total monthly UPKEEP cp for a member-level
+## list. Wages are charged ONLY for L9+ members — L1-8 wages are already netted
+## into the income table (RAW L523), so charging them here would double-count.
+## No side effects.
+static func compute_monthly_upkeep_cp(member_levels: Array) -> int:
+	var total: int = 0
+	for lvl_v in member_levels:
+		var lvl: int = int(lvl_v)
+		if lvl < 9:
+			continue
+		total += int(HENCHMAN_MONTHLY_WAGE_GP_BY_LEVEL.get(lvl, 0)) * 100
 	return total

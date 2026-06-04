@@ -62,6 +62,10 @@ func run_all_tests() -> void:
 	test_label_normal_man_is_empty()
 	test_label_fighter_is_empty()  # Q14: fighter has no buckets now
 
+	# is_syndicate_class predicate (class-string form of the syndicate bucket).
+	test_is_syndicate_class_true_for_syndicate_classes()
+	test_is_syndicate_class_false_for_non_syndicate_classes()
+
 	# Bucket-order stability: result follows BUCKET_IDS unless override.
 	test_bucket_order_stable_lightblessed()
 	test_bucket_order_stable_cleric()
@@ -568,3 +572,37 @@ func test_bucket_order_stable_cleric() -> void:
 		buckets.size() >= 2 and buckets[0] == "magical_research" and buckets[1] == "faith",
 		"cleric bucket order: expected [magical_research, faith], got " + str(buckets)
 	)
+
+
+# ---------------------------------------------------------------------------
+# is_syndicate_class predicate (Thief→Syndicate refactor)
+# ---------------------------------------------------------------------------
+
+func test_is_syndicate_class_true_for_syndicate_classes() -> void:
+	# The three RAW hideout/hijink classes (acore-campaign-hijinks.xml
+	# §hijinks-eligibility). These are the classes blocked from domains /
+	# domain-securing strongholds and redirected to syndicate founding.
+	check(ClassBucketResolver.is_syndicate_class("thief"), "thief should be a syndicate class")
+	check(ClassBucketResolver.is_syndicate_class("assassin"), "assassin should be a syndicate class")
+	check(
+		ClassBucketResolver.is_syndicate_class("elven_nightblade"),
+		"elven_nightblade should be a syndicate class (founds a syndicate, NOT an elven fastness)"
+	)
+	check(ClassBucketResolver.is_syndicate_class("Thief"), "is_syndicate_class should be case-insensitive")
+
+
+func test_is_syndicate_class_false_for_non_syndicate_classes() -> void:
+	# dwarven_delver is the key trap: thief combat-progression + thief skills,
+	# but it secures a REAL domain via a vault — NOT a syndicate class. It must
+	# keep its domain (do not redirect it to syndicate founding).
+	check(
+		not ClassBucketResolver.is_syndicate_class("dwarven_delver"),
+		"dwarven_delver is a vault-domain class, NOT a syndicate class"
+	)
+	check(
+		not ClassBucketResolver.is_syndicate_class("venturer"),
+		"venturer runs a mercantile venture (separate, out of scope), not a syndicate"
+	)
+	check(not ClassBucketResolver.is_syndicate_class("bard"), "bard is not hijink-eligible")
+	check(not ClassBucketResolver.is_syndicate_class("fighter"), "fighter is not a syndicate class")
+	check(not ClassBucketResolver.is_syndicate_class(""), "empty class id is not a syndicate class")

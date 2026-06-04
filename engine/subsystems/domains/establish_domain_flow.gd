@@ -71,9 +71,12 @@ const DWARVEN_CLASS_IDS := [
 
 ## Elven classes — fastness "must blend seamlessly with nature"; wilderness OK,
 ## civilized/borderlands require own-race areas per `acore_demihuman_classes`.
+## NOTE: `elven_nightblade` is intentionally NOT in this list — it is a syndicate
+## class (Thief→Syndicate refactor) and is hard-blocked from ALL domain
+## establishment below; it founds a syndicate, not an elven fastness.
 const ELVEN_CLASS_IDS := [
 	"elven_spellsword", "elven_courtier", "elven_ranger",
-	"elven_nightblade", "elven_enchanter",
+	"elven_enchanter",
 ]
 
 ## Error codes returned to UI / tests.
@@ -87,6 +90,11 @@ const ERR_CHAOTIC_REQUIRED := "chaotic_alignment_required"
 const ERR_OWNER_REQUIRED := "owner_character_id_required"
 const ERR_CAMPAIGN_REQUIRED := "campaign_id_required"
 const ERR_NAME_REQUIRED := "name_required"
+## Thief→Syndicate refactor: the three syndicate classes (thief / assassin /
+## elven nightblade) may NOT run domains at all. They operate a syndicate from a
+## hideout planted inside someone else's domain (RAW `ax_thief_skill_update.xml`:50
+## "Hideouts are secret strongholds; do not secure domains"). See FoundSyndicateFlow.
+const ERR_SYNDICATE_CLASS_NO_DOMAIN := "syndicate_class_cannot_run_domain"
 # Phase 11D.4 (gdd-domain-style-and-alignment.md §7.6):
 # Eligibility-matrix error codes that gate the new (style × alignment × method)
 # axis. ERR_BEASTMAN_BLOCKED_FOR_LAWFUL_NEUTRAL: a lawful or neutral PC
@@ -126,6 +134,10 @@ static func available_paths(
 	if not VALID_CLASSIFICATIONS.has(classification):
 		return []
 	var class_id: String = String(character.get("character_class", "")).to_lower()
+	# Thief→Syndicate refactor: syndicate classes have no domain-acquisition
+	# paths — the empty list drives the UI to the Found-a-Syndicate surface.
+	if ClassBucketResolver.is_syndicate_class(class_id):
+		return []
 	var alignment: String = String(character.get("alignment", "neutral")).to_lower()
 	var paths: Array = []
 	for method in _methods_for_classification(classification):
@@ -181,6 +193,14 @@ static func validate_establishment(params: Dictionary) -> Array:
 		errors.append(ERR_OWNER_REQUIRED)
 	if String(params.get("name", "")).is_empty():
 		errors.append(ERR_NAME_REQUIRED)
+	# Thief→Syndicate refactor: syndicate classes are hard-blocked from running
+	# domains. Early-return a single clear reason instead of classification/
+	# method noise. Their late-game path is FoundSyndicateFlow.
+	var syndicate_class_id: String = String((params.get("character", {}) as Dictionary)
+		.get("character_class", "")).to_lower()
+	if ClassBucketResolver.is_syndicate_class(syndicate_class_id):
+		errors.append(ERR_SYNDICATE_CLASS_NO_DOMAIN)
+		return errors
 	var classification: String = String(params.get("territory_type", "")).to_lower()
 	if not VALID_CLASSIFICATIONS.has(classification):
 		errors.append(ERR_INVALID_CLASSIFICATION)

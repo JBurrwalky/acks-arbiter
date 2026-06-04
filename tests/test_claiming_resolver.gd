@@ -17,6 +17,7 @@ func run_all_tests() -> void:
 	test_claim_rejects_zero_or_negative_value()
 	test_claim_rejects_invalid_source()
 	test_claim_rejects_unknown_archetype()
+	test_claim_rejects_syndicate_class()
 	test_archetype_conforming_fighter_to_castle()
 	test_archetype_conforming_fighter_to_sanctum()
 	test_archetype_conforming_mage_to_sanctum()
@@ -115,6 +116,20 @@ func test_claim_rejects_unknown_archetype() -> void:
 		25000, "ruin", 0, 0, "")
 	check(result["errors"].has("unknown_archetype"),
 		"unknown archetype rejected, got %s" % str(result["errors"]))
+
+
+func test_claim_rejects_syndicate_class() -> void:
+	# Thief→Syndicate refactor: syndicate classes cannot claim a domain-securing
+	# stronghold. Their hideout is its own structure (HideoutRepository), never a
+	# strongholds row. ruler_class_id="thief" trips the engine guard.
+	var domain_id := _make_test_domain()
+	var result := ClaimingResolver.claim_existing(
+		domain_id, "char_thief", "hideout", "stronghold_hideout",
+		25000, "ruin", 0, 0, "", "thief")
+	check(result["errors"].has("syndicate_class_cannot_build_stronghold"),
+		"thief blocked from claiming a stronghold, got %s" % str(result["errors"]))
+	check(result["stronghold_id"].is_empty(),
+		"no stronghold inserted for a blocked syndicate class")
 
 
 # ----- is_archetype_conforming_to_class matrix -----

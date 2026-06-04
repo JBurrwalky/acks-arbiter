@@ -31984,3 +31984,58 @@ on-tick dispatch.
 3. **Detection UI reveal subsystem** — biggest one-shot unblock (4 detect items + future detect spells).
 4. **Other consumer follow-ups** still blocked by missing subsystems: Necklace of Adaptation gas/breath, Scarab curse path, Girdle/Potion of Giant Strength sub-effects, Boots stamina/jump/Acrobatics, Ring of Regeneration body-part regrowth. Each is gated on an external subsystem not yet present.
 
+
+## Session 2026-06-03 — Thief→Syndicate Refactor (decouple syndicate classes from domains)
+
+**Task:** Refactor the three syndicate classes (Thief, Assassin, Elven Nightblade) so they no longer run domains. Per RAW (`ax_thief_skill_update.xml`:50 — "Hideouts are secret strongholds; do not secure domains or attract families"), they run a SYNDICATE (thieves' guild) from a HIDEOUT planted inside someone else's settlement. For the initial release they may NOT create domains or domain-securing strongholds at all (Jedidiah's call — running a realm and a syndicate side by side is hard to debug). 8-commit plan, fully landed.
+
+**Model used:** Opus 4.8 (1M context) for all phases — plan-mode research (+ Plan subagent), implementation, and verification.
+
+**Completed:**
+- **Commit 1 — `is_syndicate_class` predicate.** `ClassBucketResolver.is_syndicate_class(class_id)` (routes through `SYNDICATE_CLASS_IDS = [thief, assassin, elven_nightblade]`). Refreshed the stale §49 convention (it still described the removed `garrison_training` bucket + old `stronghold_hideout AND combat_progression` detection).
+- **Commit 2 — Block domains/strongholds.** `establish_domain_flow.gd`: `ERR_SYNDICATE_CLASS_NO_DOMAIN` early-return in `validate_establishment` + `[]` from `available_paths` for syndicate classes; removed `elven_nightblade` from `ELVEN_CLASS_IDS` (it must found a syndicate, not an elven fastness). `commission_pipeline.gd` `start_commission` + `claiming_resolver.gd` `claim_existing` reject syndicate-class owners (`"syndicate_class_cannot_build_stronghold"`; null-safe owner read).
+- **Commit 3 — Migration 143.** `143_hideouts_schema.sql`: new `hideouts` table + `syndicates.hideout_id`. `db/schema.sql` updated (incl. the `hideout_stronghold_id` VESTIGIAL note); "Last migration applied" bumped 107→143.
+- **Commit 4 — Hideout engine.** `engine/subsystems/syndicate/hideout_repository.gd` (static CRUD, whitelist UPDATE + `_nullable_str`/`_nullable_int`, mirrors `SyndicateRepository`) + `hideout_cost_table.gd` (pure RAW market-class table: Class VI=5,000gp/25 … Class I=600,000gp/3,000).
+- **Commit 5 — `FoundSyndicateFlow`.** `engine/subsystems/syndicate/found_syndicate_flow.gd` (mirrors `EstablishDomainFlow`): `validate_founding` (L9+ gate, host settlement in same/adjacent 6-mile hex, no existing syndicate) + `found_syndicate` (atomic funds via `PartyWallet.pay_from_character`, creates hideout + syndicate, spawns 2d6 L1 members of the boss's class, emits `syndicate_founded`). Extended `SyndicateRepository.create_syndicate` with `hideout_id`.
+- **Commit 6 — Monthly income + upkeep + schedule.** `NpcSyndicateMonthlyResolver`: added `HENCHMAN_MONTHLY_WAGE_GP_BY_LEVEL` (L9-14) + `compute_monthly_upkeep_cp`; `process_syndicate_month` now deducts L9+ wages (L1-8 wages are already netted into the income table per RAW :523 — no double-count). Scheduled `process_campaign_month` in `domain_handlers._handle_monthly_tick`, AFTER commerce and BEFORE the `domains.is_empty()` early-return; `syndicate_results` rides in both return dicts.
+- **Commit 7 — Domain tab UI reframe.** `domain_tab_page.gd`: `_active_entity_is_syndicate_class()` → for syndicate classes hide the domain sub-tab strip and render a syndicate surface (a "Found a syndicate…" empty-state, or the `SyndicateBlock` once founded; block recreated-and-freed per render for fresh EventBus subscriptions). New `scenes/ui/notebook/domain/found_syndicate_dialog.gd` (lists campaign settlements, previews RAW cost/size, calls the flow). `syndicate_block.gd` overview reads the new `hideout_id` (fallback `hideout_stronghold_id`).
+- **Commit 8 — E2E.** found_syndicate → `NpcSyndicateMonthlyResolver.process_syndicate_month` → net L1 income for the 2d6 members.
+
+**Decisions made:**
+- **Hideout = its own entity, NOT a `strongholds` row** (Jedidiah's call). Avoids re-introducing the domain-securing coupling; `syndicates.hideout_stronghold_id` left vestigial (non-destructive migration).
+- **Scope = core decoupling only.** Vassal/underboss multi-base syndicates deferred to a follow-up.
+- **Block (don't merely neuter) thief domains/strongholds** — hard guards are less code and more debuggable than leaving the generic path open and zeroing the hideout's power downstream.
+- **Hideout siting = 6-mile-hex adjacency** (`hex_distance <= 1`), not real-distance math (per Jedidiah).
+- **L9+-only wage upkeep** to avoid double-counting the net L1-8 income table (RAW :523).
+- Funding = lump-sum-at-founding at the market-class minimum; the dialog lists all campaign settlements (no party-proximity filter) — both noted as v1 simplifications.
+
+**Interfaces defined or changed:**
+- `ClassBucketResolver.is_syndicate_class(class_id: String) -> bool`
+- `EstablishDomainFlow.ERR_SYNDICATE_CLASS_NO_DOMAIN`; stronghold guards reject `"syndicate_class_cannot_build_stronghold"`
+- `HideoutRepository.{create_hideout, get_hideout, get_hideout_for_syndicate, list_hideouts_for_owner, update_hideout}`
+- `HideoutCostTable.{is_valid_market_class, minimum_cost_gp_for_market_class, minimum_cost_cp_for_market_class, max_syndicate_for_market_class}` (market_class INTEGER 1..6; 6=Class VI)
+- `FoundSyndicateFlow.validate_founding(params) -> Array[String]` + `found_syndicate(params) -> {syndicate_id, hideout_id, follower_count, errors}` + ERR_* constants
+- `SyndicateRepository.create_syndicate` now accepts `hideout_id` (added to `_SYNDICATE_UPDATE_FIELDS`)
+- `NpcSyndicateMonthlyResolver.compute_monthly_upkeep_cp(member_levels)`; `process_syndicate_month` result now carries `upkeep_cp` + `upkeep_paid`
+- `domain_handlers` monthly-tick return dicts now include `syndicate_results`
+- `found_syndicate_dialog.gd` signal `syndicate_founded_requested(syndicate_id)`
+
+**Database changes:**
+- Migration 143: `hideouts` table + `syndicates.hideout_id`. `hideout_stronghold_id` left VESTIGIAL (non-destructive; read `hideout_id` first).
+
+**Tests added/updated:**
+- New suites: `test_hideout_cost_table.gd` (id 419), `test_found_syndicate_flow.gd` (id 420) — registered in `test_runner.{tscn,gd}`.
+- Extended: `test_class_bucket_resolver` (is_syndicate_class + the `dwarven_delver` trap), `test_establish_domain_flow` (syndicate-class block + nightblade regression), `test_commission_pipeline` + `test_claiming_resolver` (stronghold reject), `test_phase_10b3` (L9+ upkeep pure + debit). E2E founding→income in `test_found_syndicate_flow`.
+
+**Test suite result:**
+- **414 suites passed / 19 failed** — net-zero NEW failures vs the 412/19 baseline (+2 new suites; the 19 are pre-existing carry-forward, e.g. `test_establish_domain_flow::test_clanhold_annex_forces_clanhold_domain_style`, unchanged by this work). Verified incrementally: Commits 1-2 at 412/19, Commits 3-5 at 414/19, Commits 6-8 at 414/19. Post-change `--import` is clean (no parse errors in any new/edited file).
+
+**Known issues:**
+- Vassal/underboss multi-base syndicates deferred (follow-up). Per-level follower growth deferred. Hideout upgrade/relocation + incremental funding deferred. Found-syndicate dialog has no party-proximity filter (lists all campaign settlements; hideout placed at the settlement hex). L9+ wage non-payment records `upkeep_paid=false` but the morale/desertion fallout is deferred.
+- The **Venturer** "mercantile venture" has the same domain-coupling problem (out of scope here) — recommend a mirror refactor.
+- `ClassEmptyStateGuidance.THIEF_PROGRESSION_CLASSES` (dormant Phase-11F, unwired) conflates `dwarven_delver` (a vault-DOMAIN dwarf); left untouched — the syndicate UI branch is driven by `is_syndicate_class` so the delver keeps its domain.
+
+**Next session should:**
+- Wire the remaining syndicate activity launchers (`bribe_magistrate` / `hire_attorney` / `interplead`) from the syndicate surface (carry-forward `[WAVE-10B.3-UI-POLISH]`).
+- Vassal/underboss syndicates (the deferred multi-base layer).
+- Consider the parallel Venturer mercantile-venture decoupling.

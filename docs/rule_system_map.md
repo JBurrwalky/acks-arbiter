@@ -167,10 +167,12 @@ When working on system X:
 - **Depends on:** All gameplay systems, Combat Maps & Tactical Terrain, Asset Architecture, Navigation Stack
 - **Depended on by:** (end-system)
 
-### Thief Skills & Hijinks
+### Thief Skills & Hijinks (+ Syndicates / Hideouts)
 - **Rule files:** `acore-campaign-hijinks`, `ax_thief_skill_update`
-- **Depends on:** Characters (thief class), Proficiencies, Urban context (settlement market class)
-- **Depended on by:** (end-system)
+- **Thief→Syndicate decoupling (2026-06-03):** The three syndicate classes (thief / assassin / elven nightblade) do NOT run domains — they run a **syndicate** (thieves' guild) from a **hideout** planted inside someone else's settlement (RAW `ax_thief_skill_update`:50 "Hideouts are secret strongholds; do not secure domains"). For the initial release they may not create domains or domain-securing strongholds at all.
+- **Engine code:** `engine/subsystems/syndicate/` — `found_syndicate_flow` (founding path, mirrors `EstablishDomainFlow`), `hideout_repository` + `hideout_cost_table` (RAW market-class cost/size), `syndicate_repository`, hijink resolvers, `npc_syndicate_monthly_resolver` (net L1-8 income + L9+ wage upkeep). Migration 143 (`hideouts` table + `syndicates.hideout_id`). Blocking lives in `establish_domain_flow` + `commission_pipeline` + `claiming_resolver` via `ClassBucketResolver.is_syndicate_class`. UI: `domain_tab_page` renders a syndicate surface (`found_syndicate_dialog` + `syndicate_block`) for these classes.
+- **Depends on:** Characters (thief class + level ≥ 9 gate), Proficiencies (hijink throws), Urban context (host settlement market class → hideout cost + syndicate size cap), Commerce (`PartyWallet` for hideout funding + hijink/monthly income)
+- **Depended on by:** Domain Play (the monthly tick resolves syndicates alongside domains, for domain-less bosses)
 
 ---
 

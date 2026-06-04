@@ -50,6 +50,8 @@ func run_all_tests() -> void:
 	test_npc_monthly_compute_total_pure_function()
 	test_npc_monthly_skips_level_9_plus()
 	test_npc_monthly_process_syndicate_credits_boss()
+	test_npc_monthly_upkeep_pure_function()
+	test_npc_monthly_upkeep_deducts_l9_wages()
 	test_end_to_end_thief_smuggling_flow()
 	# UI polish wave (2026-05-19): 8 thin activity handlers + SyndicateLauncher.
 	test_order_hijink_handler_creates_row()
@@ -620,6 +622,37 @@ func test_npc_monthly_process_syndicate_credits_boss() -> void:
 	check(int(result.get("total_cp", 0)) == 12_000, "4 × L2 = 12,000cp")
 	var after: int = _read_character_coin_total_cp(_boss_id)
 	check(after - before == 12_000, "boss wallet credited 12,000cp; delta=%d" % (after - before))
+
+
+func test_npc_monthly_upkeep_pure_function() -> void:
+	# Thief→Syndicate refactor: L1-8 wages are already netted into the income
+	# table (RAW L523), so they incur NO separate upkeep (no double-count).
+	check(NpcSyndicateMonthlyResolver.compute_monthly_upkeep_cp([1, 2, 8]) == 0,
+		"L1-8 members incur no separate upkeep (already netted)")
+	# L9 = 7,250 gp = 725,000 cp.
+	check(NpcSyndicateMonthlyResolver.compute_monthly_upkeep_cp([9]) == 725_000,
+		"L9 upkeep = 725,000cp")
+	# L9 + L10 = (7,250 + 12,000) × 100 = 1,925,000 cp.
+	check(NpcSyndicateMonthlyResolver.compute_monthly_upkeep_cp([9, 10]) == 1_925_000,
+		"L9+L10 upkeep = 1,925,000cp")
+
+
+func test_npc_monthly_upkeep_deducts_l9_wages() -> void:
+	# A lone L9 member earns no net-table income (rolled individually per RAW
+	# L522) but must be paid wages (RAW :51). Net effect = -725,000cp.
+	var sid := _make_syndicate(_boss_id)
+	SyndicateRepository.create_member({
+		"syndicate_id": sid, "level": 9, "follower_kind": "thief", "status": "active",
+	})
+	CampaignRepository.add_coins_cp(_boss_id, 1_000_000)  # ensure wages affordable
+	var before: int = _read_character_coin_total_cp(_boss_id)
+	var result := NpcSyndicateMonthlyResolver.process_syndicate_month(sid)
+	check(int(result.get("total_cp", 0)) == 0, "L9-only syndicate has 0 net income")
+	check(int(result.get("upkeep_cp", 0)) == 725_000,
+		"L9 member upkeep = 725,000cp; got %d" % int(result.get("upkeep_cp", 0)))
+	check(bool(result.get("upkeep_paid", false)), "upkeep paid (boss had funds)")
+	var after: int = _read_character_coin_total_cp(_boss_id)
+	check(before - after == 725_000, "boss charged 725,000cp wages; delta=%d" % (before - after))
 
 
 func _read_character_coin_total_cp(character_id: String) -> int:

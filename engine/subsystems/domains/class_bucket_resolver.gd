@@ -204,6 +204,20 @@ static func has_bucket(character_id: String, bucket_id: String) -> bool:
 	return bucket_id in buckets_for(character_id)
 
 
+## Returns true if [param class_id] is one of the three syndicate classes
+## (thief / assassin / elven nightblade) per RAW
+## `acore-campaign-hijinks.xml` §hijinks-eligibility. This is the class-STRING
+## form of the syndicate-bucket check — for engine validators that already hold
+## a class id (or a character dict) and must block syndicate classes from
+## running domains / building domain-securing strongholds (a thief's hideout is
+## NOT a domain-securing stronghold; per `ax_thief_skill_update.xml`:50
+## "Hideouts are secret strongholds; do not secure domains"). UI surfaces that
+## hold a `character_id` should prefer `has_bucket(id, "syndicate")`. Both route
+## through the single `SYNDICATE_CLASS_IDS` allowlist, preserving the §49 rule.
+static func is_syndicate_class(class_id: String) -> bool:
+	return class_id.to_lower() in SYNDICATE_CLASS_IDS
+
+
 ## Returns the bucket id whose card should be expanded by default in the
 ## stacked-block sub-tab. "" if the character has no buckets.
 static func primary_bucket_for(character_id: String) -> String:
