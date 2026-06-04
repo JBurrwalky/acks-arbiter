@@ -1,0 +1,7 @@
+{
+  "_comment": "Curated IP-neutral display-label overrides for tools/import_class_templates.py (gdd-class-templates.md §6.6). Key = '<class_id>_<roll_band_low>_<roll_band_high>' (the template_id); value = the IP-neutral display_label to use instead of the source markdown's name. The importer emits a DRAFT of suggested labels to stderr on each run for Jedidiah to review; confirmed substitutions live here. The importer NEVER writes this file (curated INPUT, per coding_conventions §7.4.7). When a template_id is absent here, the importer derives display_label by stripping any parenthetical (region/tradition) from the source name. NOTE: this seed contains only the two in-setting-institution substitutions the GDD names explicitly; the full IP-neutrality review is Jedidiah's pass (gdd §11 'Display label IP-neutrality review').",
+  "labels": {
+    "fighter_15_16": "Heavy Infantry",
+    "barbarian_15_16": "Noble Retainer"
+  }
+}

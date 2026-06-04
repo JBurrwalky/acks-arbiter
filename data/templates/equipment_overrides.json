@@ -1,0 +1,4 @@
+{
+  "_comment": "Curated equipment-phrase overrides for tools/import_class_templates.py (gdd-class-templates.md §5.3). Each key is a normalized phrase fragment (lowercased, value-annotations stripped); each value maps it to a runtime base_item_id from data/equipment/*.json plus optional metadata. The importer consults this table only when its built-in PHRASE_RULES fail to resolve a phrase. Reviewed by Jedidiah; the importer NEVER writes this file (it is a curated INPUT, per coding_conventions §7.4.7). resolution_status on the emitted entry is set to 'override' when a phrase resolves here. Use base_item_id '' with kind 'non_catalog' to mark a phrase as an intentional non-catalog item (familiar/totem/valuable/separate-catalog) rather than a real catalog miss.",
+  "overrides": {}
+}

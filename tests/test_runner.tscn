@@ -436,6 +436,9 @@
 [ext_resource type="Script" path="res://tests/test_found_syndicate_flow.gd" id="420_found_syndicate_flow_tests"]
 [ext_resource type="Script" path="res://tests/test_found_guildhouse_flow.gd" id="421_found_guildhouse_flow_tests"]
 [ext_resource type="Script" path="res://tests/test_venture_monthly_resolver.gd" id="422_venture_monthly_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_class_templates.gd" id="423_class_templates_tests"]
+[ext_resource type="Script" path="res://tests/data_integrity/test_class_templates_data_freshness.gd" id="424_class_templates_data_freshness_tests"]
+[ext_resource type="Script" path="res://tests/test_classed_npc_builder.gd" id="425_classed_npc_builder_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1744,3 +1747,12 @@ script = ExtResource("421_found_guildhouse_flow_tests")
 
 [node name="VentureMonthlyResolverTests" type="Node" parent="."]
 script = ExtResource("422_venture_monthly_resolver_tests")
+
+[node name="ClassTemplatesTests" type="Node" parent="."]
+script = ExtResource("423_class_templates_tests")
+
+[node name="ClassTemplatesDataFreshnessTests" type="Node" parent="."]
+script = ExtResource("424_class_templates_data_freshness_tests")
+
+[node name="ClassedNpcBuilderTests" type="Node" parent="."]
+script = ExtResource("425_classed_npc_builder_tests")

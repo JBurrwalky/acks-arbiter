@@ -507,6 +507,11 @@ extends Node
 @onready var _found_syndicate_flow_tests = $FoundSyndicateFlowTests
 @onready var _found_guildhouse_flow_tests = $FoundGuildhouseFlowTests
 @onready var _venture_monthly_resolver_tests = $VentureMonthlyResolverTests
+# 2026-06-03 — Class templates import (gdd-class-templates.md §10 steps 1-4)
+@onready var _class_templates_tests = $ClassTemplatesTests
+@onready var _class_templates_data_freshness_tests = $ClassTemplatesDataFreshnessTests
+# 2026-06-04 — Class templates §10 step 5: L1 NPC builder hook
+@onready var _classed_npc_builder_tests = $ClassedNpcBuilderTests
 
 
 func _ready() -> void:
@@ -1008,7 +1013,12 @@ func run() -> void:
 			_hideout_cost_table_tests,
 			_found_syndicate_flow_tests,
 			_found_guildhouse_flow_tests,
-			_venture_monthly_resolver_tests]:
+			_venture_monthly_resolver_tests,
+			# 2026-06-03 — Class templates import (gdd-class-templates.md §10 steps 1-4)
+			_class_templates_tests,
+			_class_templates_data_freshness_tests,
+			# 2026-06-04 — Class templates §10 step 5: L1 NPC builder hook
+			_classed_npc_builder_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
