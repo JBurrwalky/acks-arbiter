@@ -32039,3 +32039,54 @@ on-tick dispatch.
 - Wire the remaining syndicate activity launchers (`bribe_magistrate` / `hire_attorney` / `interplead`) from the syndicate surface (carry-forward `[WAVE-10B.3-UI-POLISH]`).
 - Vassal/underboss syndicates (the deferred multi-base layer).
 - Consider the parallel Venturer mercantile-venture decoupling.
+
+## Session 2026-06-03 — Venturer→Guildhouse Refactor (decouple the Venturer from domains)
+
+**Task:** Mirror the Thief→Syndicate refactor for the Venturer. Per RAW (`ax_venturer_class.xml`): the Venturer's guildhouse "follows the rules for hideouts" (L9: 2d6 apprentices, ruffian wages, market-class cost, secures no domain); the L12 `monopoly_power` earns 1gp/urban-family/month WITHOUT ruling the domain. Block the Venturer from domains/strongholds; make the guildhouse its own entity; build the founding flow + monopoly-revenue hook + a guildhouse UI surface. Built on top of the committed thief work (commit b9ea8f5). Scope = decoupling + monopoly income; the full Trade Block deferred.
+
+**Model used:** Opus 4.8 (1M context) — plan-mode research (+ a Plan subagent + a follower-landscape Explore agent), implementation, verification.
+
+**Completed:**
+- **Step 0** — committed the thief→syndicate refactor (27 files, commit b9ea8f5; excluded 2 concurrent-session GDDs).
+- **V-C1** — `ClassBucketResolver.is_venturer_class` (`VENTURER_CLASS_IDS=["venturer"]`) + test.
+- **V-C2** — blocked the Venturer at the three guards (`establish_domain_flow` `ERR_VENTURER_CLASS_NO_DOMAIN`; `commission_pipeline` + `claiming_resolver` `"venturer_class_cannot_build_stronghold"`; removed venturer from the hideout conforming list). Reject tests in all three suites.
+- **V-C3** — Migration 144 `guildhouses` table (+ `db/schema.sql`, marker→144); EventBus `guildhouse_founded` + `venturer_monopoly_seized`.
+- **V-C4** — `GuildhouseRepository` (`engine/subsystems/venturer/`) mirroring `HideoutRepository`.
+- **V-C5** — `FoundGuildhouseFlow` (validate / found / `seize_monopoly`). **Apprentices = individual `followers` rows** (`source_kind='venturer_apprentice'` — the pre-designed unified roster; level-able, henchman-recruitable via `promote_follower_to_henchman`, future NPCs), spawned via `create_follower`. Reuses `HideoutCostTable`. `test_found_guildhouse_flow.gd` (421).
+- **V-C6** — `VentureMonthlyResolver`: L12 monopoly revenue (1gp × urban_families) + apprentice ruffian-wage upkeep (charged directly; NO net table → NOT a §76 double-count). Wired into `domain_handlers` monthly tick (`venture_results` in both dicts). `test_venture_monthly_resolver.gd` (422).
+- **V-C7** — `domain_tab_page` venturer dual-mode (keyed on the "trade" bucket) → guildhouse surface; `found_guildhouse_dialog.gd`; `guildhouse_block.gd` (overview + apprentice roster + monopoly status + L12 "Seize monopoly" button).
+- **V-C8** — conventions §77 + §49 touch; `rule_system_map` Venturer section; this entry.
+
+**Decisions made:**
+- **Apprentices in the unified `followers` table, NOT a bespoke table** (Jedidiah: track them like all followers — they level up, are recruited as henchmen, become full NPCs). The `venturer_apprentice` `source_kind` pre-existed (Q25 / §51). Apprentice hijinks / leveling / auto-promotion deferred to the full NPC system; the data model already supports them.
+- Separate `is_venturer_class` predicate (not a generalized "domainless" umbrella) — the two economies differ (own Flow/Repository/monthly-resolver/UI).
+- L12 settlement monopoly = a `guildhouses.monopoly_seized` flag, DISTINCT from the per-merchandise `monopoly_holdings`/`MonopolyRegistry`; one-venturer-per-settlement enforced at seize.
+- Block the Venturer from domains entirely for v1 (RAW allows a Venturer domain, but the project disallows non-conforming strongholds; the guildhouse secures nothing).
+
+**Interfaces defined or changed:**
+- `ClassBucketResolver.is_venturer_class(class_id) -> bool`; `EstablishDomainFlow.ERR_VENTURER_CLASS_NO_DOMAIN`; stronghold guards reject `"venturer_class_cannot_build_stronghold"`.
+- `GuildhouseRepository.{create_guildhouse, get_guildhouse, get_guildhouse_for_owner, list_guildhouses_for_owner, list_guildhouses_for_campaign, list_guildhouses_for_settlement, update_guildhouse}`.
+- `FoundGuildhouseFlow.{validate_founding(params)->Array, found_guildhouse(params)->{guildhouse_id,apprentice_count,errors}, seize_monopoly(params)->{ok,errors}}` + ERR_* constants.
+- `VentureMonthlyResolver.{process_guildhouse_month, process_campaign_month, compute_monthly_revenue_cp(urban_families,monopoly_active), compute_monthly_upkeep_cp(apprentice_levels)}`.
+- EventBus `guildhouse_founded(guildhouse_id, owner_character_id)` + `venturer_monopoly_seized(guildhouse_id, settlement_entrance_id)`.
+- `domain_handlers` monthly-tick return dicts now include `venture_results`.
+- Venturer apprentices stored as `followers` rows (`source_kind='venturer_apprentice'`, `stronghold_id` NULL, owner-linked).
+
+**Database changes:**
+- Migration 144: `guildhouses` table. (No `followers` migration — its `source_kind` enum already had `venturer_apprentice`.)
+
+**Tests added/updated:**
+- New: `test_found_guildhouse_flow.gd` (421), `test_venture_monthly_resolver.gd` (422).
+- Extended: `test_class_bucket_resolver` (is_venturer_class), `test_establish_domain_flow` + `test_commission_pipeline` + `test_claiming_resolver` (venturer reject).
+
+**Test suite result:**
+- **416 suites passed / 19 failed** — net-zero NEW failures vs the 414/19 post-thief baseline (+2 new suites; the 19 are pre-existing carry-forward). Engine commits verified at 416/19; final `--import` parse-clean for the UI.
+
+**Known issues:**
+- Deferred: the full Trade Block (mercantile activity launchers + commerce wiring) — Phase 10B.2; apprentice hijinks / leveling / auto-promotion (the full NPC system); multi-guildhouse venturers; RAW's "rival venturers agree to distribute monopoly"; unfunded-upkeep desertion fallout. Pre-L12 a guildhouse is a small net cost (apprentice wages, no income until the L12 monopoly / the deferred trade activities) — by design.
+- Branch `thief-syndicate-decouple`: thief = commit b9ea8f5; the Venturer change is a second commit on top.
+
+**Next session should:**
+- The full Trade Block (Phase 10B.2): wire buy/sell/persuade/solicit/locate/shipping into the guildhouse surface.
+- Apprentice lifecycle with the full NPC system (a `followers`↔hijink bridge, leveling, auto-promotion).
+- Consider unifying `syndicate_members` into the `followers` table.

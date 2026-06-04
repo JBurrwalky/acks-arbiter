@@ -105,6 +105,11 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	# wallet) for EVERY syndicate in the campaign, regardless of domain presence.
 	var syndicate_results: Array = NpcSyndicateMonthlyResolver.process_campaign_month(_campaign_id)
 
+	# Venturer→Guildhouse refactor: venturers own no domain either — process every
+	# guildhouse's monopoly revenue + apprentice wage upkeep (on the venturer's
+	# personal wallet), regardless of domain presence.
+	var venture_results: Array = VentureMonthlyResolver.process_campaign_month(_campaign_id)
+
 	# Always reschedule for next month — commerce alone is reason enough to
 	# keep ticking.
 	var next_month_rounds: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
@@ -125,6 +130,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			"next_events": next_events,
 			"commerce_results": commerce_results,
 			"syndicate_results": syndicate_results,
+			"venture_results": venture_results,
 		}
 
 	var domain_results: Array = []
@@ -165,6 +171,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		},
 		"commerce_results": commerce_results,
 		"syndicate_results": syndicate_results,
+		"venture_results": venture_results,
 	}
 
 

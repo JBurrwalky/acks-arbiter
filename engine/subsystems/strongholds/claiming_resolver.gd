@@ -17,7 +17,7 @@ extends RefCounted
 const _ARCHETYPE_TO_CONFORMING_CLASSES := {
 	"fortress":  ["fighter", "cleric", "bladedancer", "paladin", "ranger", "barbarian", "bard"],
 	"sanctum":   ["mage", "elf_spellsword", "lightblessed_wonderworker"],
-	"hideout":   ["thief", "assassin", "elf_nightblade", "venturer"],
+	"hideout":   ["thief", "assassin", "elf_nightblade"],
 	"fastness":  ["elf_spellsword"],
 	"vault":     ["dwarven_craftpriest", "dwarven_vaultguard", "dwarven_delver", "dwarven_fury"],
 	"clanhold":  ["beastman"],
@@ -57,6 +57,10 @@ static func claim_existing(
 	# suspenders engine guard; the UI hides the claim path for these classes.
 	if ClassBucketResolver.is_syndicate_class(ruler_class_id):
 		errors.append("syndicate_class_cannot_build_stronghold")
+	elif ClassBucketResolver.is_venturer_class(ruler_class_id):
+		# Venturer→Guildhouse refactor: a Venturer's guildhouse is its own entity
+		# (GuildhouseRepository), never a domain-securing stronghold.
+		errors.append("venturer_class_cannot_build_stronghold")
 	if not errors.is_empty():
 		return {"stronghold_id": "", "sufficiency_changed": false, "errors": errors}
 

@@ -65,6 +65,8 @@ func run_all_tests() -> void:
 	# is_syndicate_class predicate (class-string form of the syndicate bucket).
 	test_is_syndicate_class_true_for_syndicate_classes()
 	test_is_syndicate_class_false_for_non_syndicate_classes()
+	# is_venturer_class predicate (class-string form of the trade bucket).
+	test_is_venturer_class_predicate()
 
 	# Bucket-order stability: result follows BUCKET_IDS unless override.
 	test_bucket_order_stable_lightblessed()
@@ -606,3 +608,15 @@ func test_is_syndicate_class_false_for_non_syndicate_classes() -> void:
 	check(not ClassBucketResolver.is_syndicate_class("bard"), "bard is not hijink-eligible")
 	check(not ClassBucketResolver.is_syndicate_class("fighter"), "fighter is not a syndicate class")
 	check(not ClassBucketResolver.is_syndicate_class(""), "empty class id is not a syndicate class")
+
+
+func test_is_venturer_class_predicate() -> void:
+	# The Venturer runs a guildhouse + monopoly, not a domain. is_venturer_class
+	# is the class-string gate for blocking it from domains/strongholds.
+	check(ClassBucketResolver.is_venturer_class("venturer"), "venturer is a venturer class")
+	check(ClassBucketResolver.is_venturer_class("Venturer"), "is_venturer_class is case-insensitive")
+	check(not ClassBucketResolver.is_venturer_class("thief"), "thief is not a venturer class")
+	check(not ClassBucketResolver.is_venturer_class("fighter"), "fighter is not a venturer class")
+	check(not ClassBucketResolver.is_venturer_class(""), "empty class id is not a venturer class")
+	# Distinct economies: a Venturer is NOT a syndicate class and vice-versa.
+	check(not ClassBucketResolver.is_syndicate_class("venturer"), "venturer is not a syndicate class")

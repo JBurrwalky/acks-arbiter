@@ -434,6 +434,8 @@
 [ext_resource type="Script" path="res://tests/test_elemental_commanders_daily_refill.gd" id="418_elemental_commanders_daily_refill_tests"]
 [ext_resource type="Script" path="res://tests/test_hideout_cost_table.gd" id="419_hideout_cost_table_tests"]
 [ext_resource type="Script" path="res://tests/test_found_syndicate_flow.gd" id="420_found_syndicate_flow_tests"]
+[ext_resource type="Script" path="res://tests/test_found_guildhouse_flow.gd" id="421_found_guildhouse_flow_tests"]
+[ext_resource type="Script" path="res://tests/test_venture_monthly_resolver.gd" id="422_venture_monthly_resolver_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1736,3 +1738,9 @@ script = ExtResource("419_hideout_cost_table_tests")
 
 [node name="FoundSyndicateFlowTests" type="Node" parent="."]
 script = ExtResource("420_found_syndicate_flow_tests")
+
+[node name="FoundGuildhouseFlowTests" type="Node" parent="."]
+script = ExtResource("421_found_guildhouse_flow_tests")
+
+[node name="VentureMonthlyResolverTests" type="Node" parent="."]
+script = ExtResource("422_venture_monthly_resolver_tests")

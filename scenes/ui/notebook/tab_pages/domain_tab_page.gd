@@ -42,6 +42,9 @@ const _DomainEmptyStatePageScript := preload("res://scenes/ui/components/empty_s
 # run a syndicate, not a domain. This tab renders a syndicate surface for them.
 const FoundSyndicateDialogScript := preload("res://scenes/ui/notebook/domain/found_syndicate_dialog.gd")
 const SyndicateBlockScript := preload("res://scenes/ui/notebook/domain/blocks/syndicate_block.gd")
+# Venturer→Guildhouse refactor: the venturer mercantile surface.
+const FoundGuildhouseDialogScript := preload("res://scenes/ui/notebook/domain/found_guildhouse_dialog.gd")
+const GuildhouseBlockScript := preload("res://scenes/ui/notebook/domain/blocks/guildhouse_block.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +99,9 @@ var _found_syndicate_dialog: AcceptDialog = null
 ## Recreated per syndicate render (not pooled like the domain sub-tab pages) so
 ## its EventBus subscriptions stay fresh; freed on every content re-render.
 var _syndicate_block = null
+var _found_guildhouse_dialog: AcceptDialog = null
+## Recreated per venture render (not pooled), freed on every content re-render.
+var _guildhouse_block = null
 
 var _active_entity_type: String = TYPE_PCS
 var _active_entity_id: String = ""
@@ -121,6 +127,7 @@ func _build_content() -> void:
 	_build_content_holder()
 	_build_establish_dialog()
 	_build_found_syndicate_dialog()
+	_build_found_guildhouse_dialog()
 	_connect_signals()
 	_restore_substate_and_refresh()
 
@@ -178,6 +185,12 @@ func _build_found_syndicate_dialog() -> void:
 	_found_syndicate_dialog = FoundSyndicateDialogScript.new()
 	_found_syndicate_dialog.syndicate_founded_requested.connect(_on_syndicate_founded)
 	add_child(_found_syndicate_dialog)
+
+
+func _build_found_guildhouse_dialog() -> void:
+	_found_guildhouse_dialog = FoundGuildhouseDialogScript.new()
+	_found_guildhouse_dialog.guildhouse_founded_requested.connect(_on_guildhouse_founded)
+	add_child(_found_guildhouse_dialog)
 
 
 func _connect_signals() -> void:
@@ -463,6 +476,10 @@ func _render_active_content() -> void:
 	if _syndicate_block != null and is_instance_valid(_syndicate_block):
 		_syndicate_block.queue_free()
 		_syndicate_block = null
+	# Venturer→Guildhouse refactor: same for the cached guildhouse block.
+	if _guildhouse_block != null and is_instance_valid(_guildhouse_block):
+		_guildhouse_block.queue_free()
+		_guildhouse_block = null
 	# If the active entity owns no domain, render the empty-state page across
 	# the full content area (sub-tab strip stays visible but inert).
 	if _active_entity_id.is_empty():
@@ -477,6 +494,13 @@ func _render_active_content() -> void:
 		_sub_tab_bar.visible = false
 		_status_header.display({})
 		_render_syndicate_view()
+		return
+	# Venturer→Guildhouse refactor: the Venturer runs a guildhouse + monopoly, not
+	# a domain. Same dual-mode treatment as the syndicate surface.
+	if _active_entity_is_venturer_class():
+		_sub_tab_bar.visible = false
+		_status_header.display({})
+		_render_venture_view()
 		return
 	_sub_tab_bar.visible = true
 	var domain := _resolve_domain_for_active_entity()
@@ -606,6 +630,57 @@ func _syndicate_guidance_text() -> String:
 	return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# Venture surface (Venturer→Guildhouse refactor)
+# ---------------------------------------------------------------------------
+
+## True when the active entity is a Venturer (the "trade" bucket), which runs a
+## guildhouse + monopoly rather than a domain.
+func _active_entity_is_venturer_class() -> bool:
+	if _active_entity_id.is_empty():
+		return false
+	return ClassBucketResolver.has_bucket(_active_entity_id, "trade")
+
+
+## Renders the venture surface: a Found-a-Guildhouse prompt when the venturer has
+## none, or the GuildhouseBlock once founded.
+func _render_venture_view() -> void:
+	var guildhouses: Array = GuildhouseRepository.list_guildhouses_for_owner(_active_entity_id)
+	if guildhouses.is_empty():
+		_render_found_guildhouse_empty_state()
+		return
+	_guildhouse_block = GuildhouseBlockScript.new()
+	_content_holder.add_child(_guildhouse_block)
+	_guildhouse_block.bind(_active_entity_id, "", _resolve_party_id())
+
+
+func _render_found_guildhouse_empty_state() -> void:
+	_empty_state = _DomainEmptyStatePageScript.new()
+	_empty_state.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_empty_state.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content_holder.add_child(_empty_state)
+	_empty_state.configure(
+		"No guildhouse yet",
+		_venture_guidance_text(),
+		[{"text": "Found a guildhouse…", "id": "found_guildhouse"}],
+		null)
+	_empty_state.link_activated.connect(_on_empty_state_link)
+
+
+func _venture_guidance_text() -> String:
+	var lines: Array[String] = []
+	lines.append("Your class runs a mercantile venture (a guildhouse + monopoly), not a domain.")
+	lines.append("")
+	lines.append("Found a guildhouse in an urban settlement — a base that follows hideout")
+	lines.append("rules and secures no land. You gain 2d6 1st-level apprentices.")
+	lines.append("")
+	lines.append("At level 12 you may seize settlement monopoly power, earning 1 gp per")
+	lines.append("urban family each month — without ruling the domain.")
+	lines.append("")
+	lines.append("Press Found a guildhouse… to begin.")
+	return "\n".join(lines)
+
+
 func _resolve_domain_for_active_entity() -> Dictionary:
 	if _active_entity_id.is_empty():
 		return {}
@@ -712,6 +787,8 @@ func _on_empty_state_link(link_id: String) -> void:
 		_open_establish_dialog()
 	elif link_id == "found_syndicate":
 		_open_found_syndicate_dialog()
+	elif link_id == "found_guildhouse":
+		_open_found_guildhouse_dialog()
 
 
 func _open_establish_dialog() -> void:
@@ -750,6 +827,25 @@ func _open_found_syndicate_dialog() -> void:
 
 func _on_syndicate_founded(_syndicate_id: String) -> void:
 	# Refresh the Domain tab so the new syndicate renders.
+	_render_active_content()
+
+
+func _open_found_guildhouse_dialog() -> void:
+	var character := _resolve_active_character()
+	if character.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "system",
+			"title": "Select an entity first",
+			"body": "Pick a PC or humanoid henchman from the entity strip before founding a guildhouse.",
+		})
+		return
+	_found_guildhouse_dialog.setup(GameState.campaign_id, character)
+	_found_guildhouse_dialog.popup_centered(Vector2(560, 420))
+
+
+func _on_guildhouse_founded(_guildhouse_id: String) -> void:
+	# Refresh the Domain tab so the new guildhouse renders.
 	_render_active_content()
 
 

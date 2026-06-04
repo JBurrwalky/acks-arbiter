@@ -157,6 +157,15 @@ const SYNDICATE_CLASS_IDS: Array[String] = [
 	"elven_nightblade",
 ]
 
+## Class ids that run a mercantile venture (a guildhouse + monopoly) instead of a
+## domain — currently just the Venturer. Parallel to SYNDICATE_CLASS_IDS; the
+## class-string form is is_venturer_class(), used by the same domain/stronghold
+## guard sites (Venturer→Guildhouse refactor). A Venturer's guildhouse "follows
+## the rules for hideouts" (RAW ax_venturer_class.xml) and secures no domain.
+const VENTURER_CLASS_IDS: Array[String] = [
+	"venturer",
+]
+
 
 # ---------------------------------------------------------------------------
 # ClassRegistry singleton
@@ -216,6 +225,16 @@ static func has_bucket(character_id: String, bucket_id: String) -> bool:
 ## through the single `SYNDICATE_CLASS_IDS` allowlist, preserving the §49 rule.
 static func is_syndicate_class(class_id: String) -> bool:
 	return class_id.to_lower() in SYNDICATE_CLASS_IDS
+
+
+## Returns true if [param class_id] runs a mercantile venture (a guildhouse +
+## L12 monopoly) rather than a domain — currently the Venturer. The class-STRING
+## analogue of the "trade" bucket, for engine validators (establish_domain_flow,
+## commission_pipeline, claiming_resolver) that block domain-class economies. UI
+## surfaces holding a character_id should prefer has_bucket(id, "trade"). Both
+## route through the single VENTURER_CLASS_IDS allowlist.
+static func is_venturer_class(class_id: String) -> bool:
+	return class_id.to_lower() in VENTURER_CLASS_IDS
 
 
 ## Returns the bucket id whose card should be expanded by default in the

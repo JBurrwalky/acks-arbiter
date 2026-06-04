@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	test_claim_rejects_invalid_source()
 	test_claim_rejects_unknown_archetype()
 	test_claim_rejects_syndicate_class()
+	test_claim_rejects_venturer_class()
 	test_archetype_conforming_fighter_to_castle()
 	test_archetype_conforming_fighter_to_sanctum()
 	test_archetype_conforming_mage_to_sanctum()
@@ -130,6 +131,19 @@ func test_claim_rejects_syndicate_class() -> void:
 		"thief blocked from claiming a stronghold, got %s" % str(result["errors"]))
 	check(result["stronghold_id"].is_empty(),
 		"no stronghold inserted for a blocked syndicate class")
+
+
+func test_claim_rejects_venturer_class() -> void:
+	# Venturer→Guildhouse refactor: a Venturer cannot claim a domain-securing
+	# stronghold. ruler_class_id="venturer" trips the engine guard.
+	var domain_id := _make_test_domain()
+	var result := ClaimingResolver.claim_existing(
+		domain_id, "char_venturer", "fortress", "stronghold_castle",
+		25000, "ruin", 0, 0, "", "venturer")
+	check(result["errors"].has("venturer_class_cannot_build_stronghold"),
+		"venturer blocked from claiming a stronghold, got %s" % str(result["errors"]))
+	check(result["stronghold_id"].is_empty(),
+		"no stronghold inserted for a blocked venturer")
 
 
 # ----- is_archetype_conforming_to_class matrix -----

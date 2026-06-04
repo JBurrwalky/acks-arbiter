@@ -174,6 +174,14 @@ When working on system X:
 - **Depends on:** Characters (thief class + level ≥ 9 gate), Proficiencies (hijink throws), Urban context (host settlement market class → hideout cost + syndicate size cap), Commerce (`PartyWallet` for hideout funding + hijink/monthly income)
 - **Depended on by:** Domain Play (the monthly tick resolves syndicates alongside domains, for domain-less bosses)
 
+### Venturer / Guildhouse / Monopoly
+- **Rule files:** `ax_venturer_class`, `ax_campaign_play` (mercantile activities)
+- **Venturer→Guildhouse decoupling (2026-06-03):** The Venturer does NOT run a domain — it runs a **guildhouse** (a mercantile base that RAW says "follows hideout rules") in an urban settlement, plus an L12 **settlement monopoly** (1gp/urban-family/month, without ruling the domain). Blocked from domains/strongholds for the initial release.
+- **Engine code:** `engine/subsystems/venturer/` — `found_guildhouse_flow` (founding + L12 `seize_monopoly`), `guildhouse_repository`, `venture_monthly_resolver` (monopoly revenue + apprentice wage upkeep). Migration 144 (`guildhouses` table; reuses `HideoutCostTable`). Blocking via `ClassBucketResolver.is_venturer_class` at the same three guard sites. **Apprentices are individual `followers` rows** (`source_kind='venturer_apprentice'`) — level-able, henchman-recruitable, future NPCs. UI: `domain_tab_page` renders a guildhouse surface (`found_guildhouse_dialog` + `guildhouse_block`).
+- **Depends on:** Characters (venturer class + level gates 9/12), Followers/NPC roster (apprentices), Urban context (settlement market class + `urban_families`), Commerce (`PartyWallet`). NOTE: the L12 monopoly is DISTINCT from `monopoly_holdings`/`MonopolyRegistry` (the per-merchandise buy/sell trade advantage).
+- **Depended on by:** Domain Play (the monthly tick resolves guildhouses alongside domains/syndicates)
+- **Deferred:** the full Trade Block (buy/sell/trade-route activity launchers) — Phase 10B.2.
+
 ---
 
 ## File -> System Cross-Reference (High-Traffic Files)

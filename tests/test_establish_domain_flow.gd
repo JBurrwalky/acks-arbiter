@@ -32,6 +32,8 @@ func run_all_tests() -> void:
 	test_syndicate_class_blocked_from_domains()
 	test_syndicate_classes_have_no_paths()
 	test_nightblade_blocked_from_domains()
+	# Venturer→Guildhouse refactor: venturer hard-blocked from domains
+	test_venturer_class_blocked_from_domains()
 	# Chaotic-aligned paths
 	test_chaotic_method_requires_chaotic_alignment()
 	test_chaotic_aligned_can_annex_clanhold()
@@ -255,6 +257,24 @@ func test_nightblade_blocked_from_domains() -> void:
 	})
 	check(errors.has(EstablishDomainFlow.ERR_SYNDICATE_CLASS_NO_DOMAIN),
 		"elven_nightblade blocked from domains (founds a syndicate, not a fastness), errors=%s" % str(errors))
+
+
+func test_venturer_class_blocked_from_domains() -> void:
+	# Venturer→Guildhouse refactor: a Venturer runs a guildhouse + monopoly, not a
+	# domain. Blocked from establishment + has no acquisition paths.
+	var venturer := {"character_class": "venturer", "alignment": "neutral"}
+	var errors := EstablishDomainFlow.validate_establishment({
+		"campaign_id": _campaign_id,
+		"owner_character_id": "char_venturer",
+		"character": venturer,
+		"name": "Trade House",
+		"territory_type": "civilized",
+		"establishment_method": "grant",
+	})
+	check(errors.has(EstablishDomainFlow.ERR_VENTURER_CLASS_NO_DOMAIN),
+		"venturer blocked from running a domain, errors=%s" % str(errors))
+	var civ := EstablishDomainFlow.available_paths(venturer, EstablishDomainFlow.CIVILIZED)
+	check(civ.is_empty(), "venturer has no domain-acquisition paths, got %s" % str(civ))
 
 
 func test_validate_missing_campaign() -> void:

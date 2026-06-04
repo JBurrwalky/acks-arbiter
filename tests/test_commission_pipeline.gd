@@ -17,6 +17,7 @@ func run_all_tests() -> void:
 	test_start_commission_rejects_on_engineer_shortage()
 	test_start_commission_rejects_on_explorer_in_civilized()
 	test_start_commission_rejects_syndicate_class()
+	test_start_commission_rejects_venturer_class()
 	test_advance_commission_progresses_gp()
 	test_advance_commission_fires_halfway_signal()
 	test_advance_commission_fires_completed_signal()
@@ -157,6 +158,34 @@ func test_start_commission_rejects_syndicate_class() -> void:
 		"thief blocked from commissioning a stronghold, got %s" % str(result["errors"]))
 	check(result["stronghold_id"].is_empty(),
 		"no stronghold inserted for a blocked syndicate class")
+
+
+func _create_venturer() -> String:
+	var id: String = CampaignRepository.generate_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO characters
+			(id, campaign_id, name, character_type, persistence_tier, race,
+			 character_class, level, strength, intelligence, wisdom,
+			 dexterity, constitution, charisma, hp_max, hp_current)
+		VALUES (?, ?, ?, 'pc', 'full', 'human', 'venturer', 9,
+			10, 10, 10, 10, 10, 13, 20, 20)
+	""", [id, _campaign_id, "Test Venturer"])
+	return id
+
+
+func test_start_commission_rejects_venturer_class() -> void:
+	# Venturer→Guildhouse refactor: a venturer owner cannot commission a
+	# domain-securing stronghold (their guildhouse is its own entity).
+	var domain_id := _make_test_domain()
+	var venturer_id := _create_venturer()
+	var sh_data := _baseline_stronghold_data(domain_id)
+	sh_data["owner_character_id"] = venturer_id
+	var cost := _baseline_cost_breakdown(5000, 500)
+	var result := CommissionPipeline.start_commission(sh_data, cost, 0)
+	check(result["errors"].has("venturer_class_cannot_build_stronghold"),
+		"venturer blocked from commissioning a stronghold, got %s" % str(result["errors"]))
+	check(result["stronghold_id"].is_empty(),
+		"no stronghold inserted for a blocked venturer")
 
 
 # ----- Advance commission -----

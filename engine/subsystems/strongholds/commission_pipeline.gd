@@ -121,6 +121,10 @@ static func start_commission(
 			CampaignRepository.get_character(owner_id).get("character_class", ""))
 		if ClassBucketResolver.is_syndicate_class(owner_class):
 			errors.append("syndicate_class_cannot_build_stronghold")
+		elif ClassBucketResolver.is_venturer_class(owner_class):
+			# Venturer→Guildhouse refactor: a Venturer's guildhouse is its own
+			# entity (GuildhouseRepository), never a domain-securing stronghold.
+			errors.append("venturer_class_cannot_build_stronghold")
 
 	if not errors.is_empty():
 		return {

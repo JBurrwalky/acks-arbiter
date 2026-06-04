@@ -1845,6 +1845,13 @@ signal commerce_monthly_tick_completed(campaign_id: String, results: Dictionary)
 ## A new syndicate has been founded by [param boss_character_id].
 signal syndicate_founded(syndicate_id: String, boss_character_id: String)
 
+## Venturer→Guildhouse refactor: a Venturer founded a guildhouse (their mercantile
+## base). guildhouse_id + owner_character_id.
+signal guildhouse_founded(guildhouse_id: String, owner_character_id: String)
+
+## A Venturer seized L12 settlement monopoly power from their guildhouse.
+signal venturer_monopoly_seized(guildhouse_id: String, settlement_entrance_id: String)
+
 ## A character has joined a syndicate (as either a named member or unnamed bulk).
 signal syndicate_member_joined(syndicate_id: String, character_id: String)
 
