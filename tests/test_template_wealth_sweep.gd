@@ -7,14 +7,15 @@ extends "res://tests/test_suite_base.gd"
 ## matches the reviewed expectation (so a NEW deviation introduced by a future
 ## override / catalog change surfaces loudly).
 
-# After re-pricing iron rations to the abundant-market end of the RAW 1gp-6gp
-# range (2026-06-04, base_equipment.json), the ONLY template over the 40%
-# threshold is dwarven_fury_15_16 — and it is UNDER target (-60%) by RAW class
-# design: dwarven furies wear no armor, so their high-band template lacks the
-# plate a fighter 15-16 carries. (Before the re-pricing, 15 templates flagged,
-# ~14 of them just iron-ration pricing noise.) See data/templates/wealth_sweep.md.
-# Update this set only alongside a deliberate catalog / override change.
-const EXPECTED_FLAGGED := ["dwarven_fury_15_16"]
+# ZERO templates over the 40% threshold. The sweep paid off end-to-end (2026-06-04):
+#   (1) re-pricing iron rations to the abundant-market end of the RAW 1gp-6gp range
+#       cleared ~14 pricing-noise flags; then
+#   (2) the lone remaining flag, dwarven_fury_15_16 at -60%, turned out to be a
+#       PUBLISHED RAW TYPO — the Bloodboiler's "10gp" residual coin is a dropped
+#       zero for "100gp" — now patched in the importer (RAW_TEMPLATE_PATCHES, §7.4.6).
+# Every in-scope template now sits within 40% of its band target. Update this set
+# only alongside a deliberate catalog / override / RAW-patch change.
+const EXPECTED_FLAGGED: Array = []
 
 var _repo: ClassTemplateRepository
 var _catalog: EquipmentCatalog

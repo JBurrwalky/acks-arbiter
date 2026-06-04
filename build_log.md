@@ -32300,3 +32300,30 @@ on-tick dispatch.
 1. **§10 step 10** — higher-level NPC composition (§7.4 advancement on the L1 floor + §7.5 magic-item progression).
 2. **§10 step 11** — arcane spell repertoire picker.
 3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection.
+
+
+## Session 2026-06-04 — RAW typo patch: Bloodboiler "10gp" → "100gp" (wealth sweep now flags ZERO)
+
+**Task:** The wealth sweep's lone remaining flag after the rations re-pricing was `dwarven_fury_15_16` (Bloodboiler, -60% under target). Jedidiah's hypothesis: if it is ~90gp undervalued, the published "10gp" residual coin is a typo for "100gp" (a dropped zero). Confirm the magnitude; if it fits, apply the correction.
+**Model used:** Opus 4.8 (1M context).
+**Completed:**
+- **Confirmed the magnitude:** `dwarven_fury_15_16` resolves to 62gp vs a 155gp band target — undervalued by **93gp** (matches the ~90gp hypothesis). Restoring "100gp" yields 152gp (-2%, on target). Corroborated by the cash-rich dwarven-fury residual pattern (the class wears no armor → more coin): the adjacent 13-14 / 17-18 bands hold 41gp / 85gp residuals, so a 10gp 15-16 residual is anomalous and 100gp fits the ascending pattern.
+- **Applied a §7.4.6 RAW PATCH** in the importer (`RAW_TEMPLATE_PATCHES = {"dwarven_fury_15_16": {"add_money_cp": 9000}}` — `10gp → 100gp`). The SACRED source `rules/pc_class_templates.md` is NOT edited; the correction carries the source-line citation (`:147`) + the project-decision date, and the extracted JSON carries the corrected value (locked by the data-freshness gate).
+- **Re-imported.** Bloodboiler now `starting_gp 100` / `starting_money_cp 10000` / `resolved_gp_value 152.0`. **The wealth sweep now flags ZERO templates** — every in-scope template sits within 40% of its band target. Updated `TemplateWealthSweep` test `EXPECTED_FLAGGED = []`; conventions §78 + the regenerated `wealth_sweep.md`.
+**Decisions made:**
+- **Treated "10gp" as a published typo and patched it** (per Jedidiah's confirmed diagnosis). §7.4.6 is the right mechanism: a documented RAW errata with a corrected reading, patched in the extraction script (NEVER the SACRED markdown), with citation + decision date. `RAW_TEMPLATE_PATCHES` is now the home for any future published-errata corrections.
+- **The wealth sweep earned its keep.** Built in step 8, it ended up catching BOTH a systematic catalog mispricing (iron rations stored at the wrong end of a RAW range) AND a genuine published source typo — bringing the whole 216-template catalog into calibration (0 deviations). Good argument for keeping calibration sweeps on derived data.
+**Interfaces defined or changed:**
+- Importer: new `RAW_TEMPLATE_PATCHES` dict (template_id → {add_money_cp}), applied in `build()` right after money aggregation. `class_templates.json`: `dwarven_fury_15_16.starting_money_cp` 1000 → 10000, `starting_gp` 10 → 100, `resolved_gp_value` 62.0 → 152.0.
+- `TemplateWealthSweep` test `EXPECTED_FLAGGED = []`.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_template_wealth_sweep.gd`: `EXPECTED_FLAGGED = []` (zero deviations) + the full-arc rationale comment. The recompute-consistency + freshness tests still hold (importer + runtime catalog agree).
+**Test suite result:**
+- **422 suites passed / 19 failed.** Unchanged pre-existing baseline; net-zero new failures. All six class-template suites green; importer `--check` idempotent for both artifacts.
+**Known issues:**
+- None for the wealth sweep — it is fully clean (0 flagged). The class-template wealth calibration is complete.
+**Next session should:**
+1. **§10 step 10** — higher-level NPC composition (§7.4 + §7.5 magic-item progression).
+2. **§10 step 11** — arcane spell repertoire picker.
+3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection.

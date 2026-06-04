@@ -10804,7 +10804,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 62.0,
+      "resolved_gp_value": 152.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -10939,8 +10939,8 @@
           "resolution_status": "auto"
         }
       ],
-      "starting_gp": 10,
-      "starting_money_cp": 1000,
+      "starting_gp": 100,
+      "starting_money_cp": 10000,
       "starting_spells": [],
       "template_id": "dwarven_fury_15_16",
       "tradition": ""

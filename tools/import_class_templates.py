@@ -158,6 +158,24 @@ PROF_ALIASES = {
 # last known gap and is now in data/proficiencies/proficiency_catalog.json.
 PROF_KNOWN_GAPS = set()
 
+# RAW PATCH lock-ins (coding_conventions.md §7.4.6): documented errata in the
+# published template tables. The SACRED source (rules/pc_class_templates.md) is
+# NEVER edited; the correction lives here, with the source line + project-decision
+# date, and the extracted JSON carries the corrected value (the data-freshness
+# gate then locks it in).
+#
+# dwarven_fury_15_16 (Bloodboiler): the published residual coin "10gp" is a typo
+# for "100gp" (a dropped zero). Evidence: the template resolves to 62gp vs a 155gp
+# band target (-60%, by far the largest deviation in the wealth sweep); restoring
+# 100gp yields ~152gp (-2%, on target). Corroborated by the cash-rich dwarven fury
+# pattern (the class wears no armor, so its templates carry more coin) — the
+# adjacent 13-14 / 17-18 bands hold 41gp / 85gp residuals, so a 10gp 15-16 residual
+# is anomalous and 100gp fits the ascending pattern. [Jedidiah 2026-06-04; RAW
+# rules/pc_class_templates.md:147.]
+RAW_TEMPLATE_PATCHES = {
+    "dwarven_fury_15_16": {"add_money_cp": 9000},  # 10gp -> 100gp
+}
+
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
@@ -953,6 +971,10 @@ def build(report=True):
                 resolve_equipment_cell(equip_cell, class_id, source_name,
                                        overrides, cost, valid_keys, bundle_idx,
                                        reports)
+            # RAW PATCH lock-ins (§7.4.6): published-errata corrections.
+            patch = RAW_TEMPLATE_PATCHES.get(template_id)
+            if patch:
+                money_cp += int(patch.get("add_money_cp", 0))
             total_gp = gp_value + money_cp / 100.0
             label, tradition = derive_label(source_name, template_id, label_overrides)
             reports["label_drafts"].append((template_id, source_name, label))
