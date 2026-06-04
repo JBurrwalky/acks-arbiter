@@ -267,7 +267,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -370,7 +370,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 48.0,
+      "resolved_gp_value": 38.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -488,7 +488,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.0,
+      "resolved_gp_value": 80.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -609,7 +609,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 100.6,
+      "resolved_gp_value": 95.6,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -757,7 +757,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 123.0,
+      "resolved_gp_value": 118.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -878,7 +878,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 142.6,
+      "resolved_gp_value": 132.6,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -1230,7 +1230,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 185.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -1369,7 +1369,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -1523,7 +1523,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -1695,7 +1695,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 84.4,
+      "resolved_gp_value": 79.4,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -1849,7 +1849,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 118.5,
+      "resolved_gp_value": 108.5,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -1985,7 +1985,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 127.4,
+      "resolved_gp_value": 117.4,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -2157,7 +2157,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 95.0,
+      "resolved_gp_value": 90.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -2314,7 +2314,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 145.0,
+      "resolved_gp_value": 135.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -2471,7 +2471,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.4,
+      "resolved_gp_value": 180.4,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -2663,7 +2663,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -2798,7 +2798,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -2906,7 +2906,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 82.3,
+      "resolved_gp_value": 77.3,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -3077,7 +3077,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 108.0,
+      "resolved_gp_value": 98.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -3203,7 +3203,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 126.3,
+      "resolved_gp_value": 116.3,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -3359,7 +3359,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 149.7,
+      "resolved_gp_value": 139.7,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -3497,7 +3497,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 165.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -3692,7 +3692,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 187.0,
+      "resolved_gp_value": 177.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -3827,7 +3827,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -3935,7 +3935,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 65.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -4090,7 +4090,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 84.4,
+      "resolved_gp_value": 79.4,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -4252,7 +4252,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 107.6,
+      "resolved_gp_value": 97.6,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -4387,7 +4387,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 112.6,
+      "resolved_gp_value": 107.6,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -4531,7 +4531,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 103.0,
+      "resolved_gp_value": 93.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -4684,7 +4684,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 135.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -4858,7 +4858,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 184.4,
+      "resolved_gp_value": 179.4,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -5012,7 +5012,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -5133,7 +5133,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 65.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -5245,7 +5245,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.6,
+      "resolved_gp_value": 80.6,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -5375,7 +5375,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -5516,7 +5516,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 145.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -5639,7 +5639,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 160.0,
+      "resolved_gp_value": 150.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -5799,7 +5799,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -5934,7 +5934,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 210.0,
+      "resolved_gp_value": 200.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -6093,7 +6093,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -6196,7 +6196,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 67.0,
+      "resolved_gp_value": 57.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -6326,7 +6326,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.0,
+      "resolved_gp_value": 80.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -6447,7 +6447,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 104.4,
+      "resolved_gp_value": 99.4,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -6586,7 +6586,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 124.4,
+      "resolved_gp_value": 119.4,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -6725,7 +6725,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -6900,7 +6900,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 165.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -7066,7 +7066,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 185.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -7213,7 +7213,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 45.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -7342,7 +7342,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 67.0,
+      "resolved_gp_value": 57.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -7462,7 +7462,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 85.0,
+      "resolved_gp_value": 75.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -7582,7 +7582,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 92.4,
+      "resolved_gp_value": 87.4,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -7729,7 +7729,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -7840,7 +7840,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 148.0,
+      "resolved_gp_value": 138.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -7987,7 +7987,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 163.0,
+      "resolved_gp_value": 153.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -8161,7 +8161,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 193.0,
+      "resolved_gp_value": 188.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -8318,7 +8318,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 44.0,
+      "resolved_gp_value": 39.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -8463,7 +8463,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 61.0,
+      "resolved_gp_value": 56.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -8653,7 +8653,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 84.8,
+      "resolved_gp_value": 79.8,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -8852,7 +8852,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -9069,7 +9069,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -9295,7 +9295,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -9533,7 +9533,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 114.8,
+      "resolved_gp_value": 109.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -9744,7 +9744,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 184.8,
+      "resolved_gp_value": 179.8,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -9934,7 +9934,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 38.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -10052,7 +10052,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 52.0,
+      "resolved_gp_value": 42.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -10224,7 +10224,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 72.0,
+      "resolved_gp_value": 62.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -10360,7 +10360,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 87.0,
+      "resolved_gp_value": 82.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -10496,7 +10496,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 88.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -10632,7 +10632,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 102.0,
+      "resolved_gp_value": 97.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -10804,7 +10804,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 67.0,
+      "resolved_gp_value": 62.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -10967,7 +10967,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 180.0,
+      "resolved_gp_value": 175.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -11133,7 +11133,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 43.0,
+      "resolved_gp_value": 38.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -11260,7 +11260,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 62.0,
+      "resolved_gp_value": 57.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -11396,7 +11396,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 88.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -11532,7 +11532,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 83.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -11668,7 +11668,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 128.0,
+      "resolved_gp_value": 118.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -11840,7 +11840,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 143.0,
+      "resolved_gp_value": 138.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -12015,7 +12015,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 168.0,
+      "resolved_gp_value": 158.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -12205,7 +12205,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 183.0,
+      "resolved_gp_value": 178.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -12385,7 +12385,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 43.5,
+      "resolved_gp_value": 38.5,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -12511,7 +12511,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -12646,7 +12646,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.6,
+      "resolved_gp_value": 80.6,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -12781,7 +12781,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 98.0,
+      "resolved_gp_value": 88.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -12907,7 +12907,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -13024,7 +13024,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 149.0,
+      "resolved_gp_value": 144.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -13300,7 +13300,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -13453,7 +13453,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 49.7,
+      "resolved_gp_value": 39.7,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -13559,7 +13559,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 65.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -13722,7 +13722,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 89.8,
+      "resolved_gp_value": 79.8,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -13855,7 +13855,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -13988,7 +13988,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -14121,7 +14121,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 147.0,
+      "resolved_gp_value": 137.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -14296,7 +14296,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 164.8,
+      "resolved_gp_value": 159.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -14447,7 +14447,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 172.8,
+      "resolved_gp_value": 167.8,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -14619,7 +14619,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -14755,7 +14755,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -14918,7 +14918,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 88.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -15072,7 +15072,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 116.8,
+      "resolved_gp_value": 106.8,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -15226,7 +15226,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 123.0,
+      "resolved_gp_value": 118.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -15425,7 +15425,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 145.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -15572,7 +15572,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 145.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -15726,7 +15726,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 185.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -15853,7 +15853,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -16007,7 +16007,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 60.0,
+      "resolved_gp_value": 50.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -16170,7 +16170,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.6,
+      "resolved_gp_value": 80.6,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -16333,7 +16333,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 105.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -16550,7 +16550,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 118.0,
+      "resolved_gp_value": 108.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -16722,7 +16722,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 142.0,
+      "resolved_gp_value": 137.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -16894,7 +16894,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 170.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -17084,7 +17084,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -17228,7 +17228,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -17370,7 +17370,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 63.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -17530,7 +17530,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 88.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -17690,7 +17690,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 99.0,
+      "resolved_gp_value": 89.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -17832,7 +17832,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 127.0,
+      "resolved_gp_value": 122.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -18143,7 +18143,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 170.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -18303,7 +18303,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 185.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -18458,7 +18458,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -18612,7 +18612,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -18784,7 +18784,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.6,
+      "resolved_gp_value": 80.6,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -18947,7 +18947,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 105.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -19164,7 +19164,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 118.0,
+      "resolved_gp_value": 108.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -19363,7 +19363,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 142.0,
+      "resolved_gp_value": 137.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -19535,7 +19535,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 168.0,
+      "resolved_gp_value": 158.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -19734,7 +19734,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -19870,7 +19870,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -19988,7 +19988,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 64.3,
+      "resolved_gp_value": 59.3,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -20115,7 +20115,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 84.4,
+      "resolved_gp_value": 79.4,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -20269,7 +20269,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 114.6,
+      "resolved_gp_value": 109.6,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -20396,7 +20396,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 126.6,
+      "resolved_gp_value": 116.6,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -20514,7 +20514,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 135.7,
+      "resolved_gp_value": 125.7,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -20626,7 +20626,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 170.2,
+      "resolved_gp_value": 160.2,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -20771,7 +20771,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 185.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -20906,7 +20906,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 49.4,
+      "resolved_gp_value": 39.4,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -21036,7 +21036,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -21172,7 +21172,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 89.8,
+      "resolved_gp_value": 79.8,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -21332,7 +21332,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -21465,7 +21465,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -21589,7 +21589,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -21722,7 +21722,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 169.8,
+      "resolved_gp_value": 159.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -21864,7 +21864,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 172.8,
+      "resolved_gp_value": 167.8,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -22044,7 +22044,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 51.9,
+      "resolved_gp_value": 41.9,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -22159,7 +22159,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -22295,7 +22295,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 89.8,
+      "resolved_gp_value": 79.8,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -22440,7 +22440,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -22594,7 +22594,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -22748,7 +22748,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 155.0,
+      "resolved_gp_value": 145.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -22893,7 +22893,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 169.8,
+      "resolved_gp_value": 159.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -23056,7 +23056,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 186.8,
+      "resolved_gp_value": 181.8,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -23222,7 +23222,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 50.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -23316,7 +23316,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 72.0,
+      "resolved_gp_value": 62.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -23428,7 +23428,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.0,
+      "resolved_gp_value": 80.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -23558,7 +23558,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 106.0,
+      "resolved_gp_value": 101.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -23679,7 +23679,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 115.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -23827,7 +23827,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 161.0,
+      "resolved_gp_value": 156.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -23966,7 +23966,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 165.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -24132,7 +24132,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 185.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -24271,7 +24271,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -24392,7 +24392,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 69.9,
+      "resolved_gp_value": 59.9,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -24495,7 +24495,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.6,
+      "resolved_gp_value": 80.6,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -24610,7 +24610,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -24733,7 +24733,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -24881,7 +24881,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -25035,7 +25035,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -25167,7 +25167,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 210.0,
+      "resolved_gp_value": 200.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -25307,7 +25307,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.0,
+      "resolved_gp_value": 40.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -25431,7 +25431,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -25564,7 +25564,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 115.0,
+      "resolved_gp_value": 105.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -25724,7 +25724,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 106.0,
+      "resolved_gp_value": 96.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -25896,7 +25896,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 130.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -26083,7 +26083,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 147.0,
+      "resolved_gp_value": 142.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -26261,7 +26261,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 161.0,
+      "resolved_gp_value": 156.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -26439,7 +26439,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 187.8,
+      "resolved_gp_value": 177.8,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -26618,7 +26618,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 46.0,
+      "resolved_gp_value": 41.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -26754,7 +26754,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -26890,7 +26890,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 84.4,
+      "resolved_gp_value": 79.4,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -27044,7 +27044,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 132.0,
+      "resolved_gp_value": 122.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -27270,7 +27270,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 123.0,
+      "resolved_gp_value": 118.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -27496,7 +27496,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 145.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -27713,7 +27713,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 155.0,
+      "resolved_gp_value": 150.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -27932,7 +27932,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 187.0,
+      "resolved_gp_value": 182.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -28068,7 +28068,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 45.5,
+      "resolved_gp_value": 40.5,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -28186,7 +28186,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 61.0,
+      "resolved_gp_value": 56.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -28340,7 +28340,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.0,
+      "resolved_gp_value": 80.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -28494,7 +28494,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 109.0,
+      "resolved_gp_value": 99.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -28702,7 +28702,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -28859,7 +28859,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 149.4,
+      "resolved_gp_value": 139.4,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -29058,7 +29058,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 165.0,
+      "resolved_gp_value": 160.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -29194,7 +29194,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -29359,7 +29359,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 49.4,
+      "resolved_gp_value": 39.4,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -29489,7 +29489,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 70.0,
+      "resolved_gp_value": 60.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -29643,7 +29643,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 90.8,
+      "resolved_gp_value": 80.8,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -29815,7 +29815,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -29960,7 +29960,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 125.0,
+      "resolved_gp_value": 120.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -30105,7 +30105,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 144.8,
+      "resolved_gp_value": 139.8,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -30268,7 +30268,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 164.8,
+      "resolved_gp_value": 159.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -30431,7 +30431,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 174.0,
+      "resolved_gp_value": 169.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -30614,7 +30614,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 44.9,
+      "resolved_gp_value": 39.9,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -30725,7 +30725,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 69.9,
+      "resolved_gp_value": 59.9,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -30838,7 +30838,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 76.0,
+      "resolved_gp_value": 66.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -31006,7 +31006,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 110.0,
+      "resolved_gp_value": 100.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -31138,7 +31138,7 @@
           "rank": 2
         }
       ],
-      "resolved_gp_value": 129.8,
+      "resolved_gp_value": 119.8,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -31303,7 +31303,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 150.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -31486,7 +31486,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 160.0,
+      "resolved_gp_value": 150.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -31647,7 +31647,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 210.0,
+      "resolved_gp_value": 200.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [
@@ -31779,7 +31779,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 53.0,
+      "resolved_gp_value": 38.0,
       "roll_band_high": 4,
       "roll_band_low": 3,
       "source_lines": [
@@ -31888,7 +31888,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 68.0,
+      "resolved_gp_value": 58.0,
       "roll_band_high": 6,
       "roll_band_low": 5,
       "source_lines": [
@@ -31988,7 +31988,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 83.0,
+      "resolved_gp_value": 78.0,
       "roll_band_high": 8,
       "roll_band_low": 7,
       "source_lines": [
@@ -32106,7 +32106,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 103.0,
+      "resolved_gp_value": 98.0,
       "roll_band_high": 10,
       "roll_band_low": 9,
       "source_lines": [
@@ -32224,7 +32224,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 123.0,
+      "resolved_gp_value": 118.0,
       "roll_band_high": 12,
       "roll_band_low": 11,
       "source_lines": [
@@ -32342,7 +32342,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 142.0,
+      "resolved_gp_value": 132.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -32505,7 +32505,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 180.0,
+      "resolved_gp_value": 170.0,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -32637,7 +32637,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 190.0,
+      "resolved_gp_value": 180.0,
       "roll_band_high": 18,
       "roll_band_low": 17,
       "source_lines": [

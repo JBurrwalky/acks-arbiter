@@ -32272,3 +32272,31 @@ on-tick dispatch.
 1. **§10 step 10** — higher-level NPC composition (§7.4 advancement on the L1 floor + §7.5 magic-item progression by combat-progression type). `advancement_pending` already flags level>1.
 2. **§10 step 11** — arcane spell repertoire picker (fulfill `extra_spells_to_roll` + the template spells into the spellbook).
 3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection (the template data already carries these tags).
+
+
+## Session 2026-06-04 — Wealth deviations resolved: re-price iron/standard rations to the RAW range's abundant end
+
+**Task:** Decide whether the 15 wealth-sweep deviations (§10 step 8) needed action. Investigation showed ~14/15 were driven by ONE catalog price: iron rations stored at 6gp/week, the TOP of the RAW `1gp-6gp` availability range (`rules/acore_equipment.xml:125`), times the 1-6 weeks each template carries. Per Jedidiah's call, re-price rations to the abundant-market (low) end of the RAW range.
+**Model used:** Opus 4.8 (1M context).
+**Completed:**
+- **`data/equipment/base_equipment.json`:** `rations_iron_week` cost_cp 600 → 100 (6gp → 1gp); `rations_standard_week` cost_cp 300 → 30 (3gp → 3sp). Both are the low end of their RAW availability ranges (iron 1gp-6gp; standard 3sp-3gp); the `notes` now cite the range + the chosen end.
+- **Re-imported** `class_templates.json` + `wealth_sweep.md`. The flagged-deviation set collapsed **15 → 1**: only `dwarven_fury_15_16` remains (UNDER target at -60%, a RAW class trait — dwarven furies wear no armor, so their high-band template lacks the plate a fighter 15-16 carries). Updated the importer's wealth-sweep intro text + `TemplateWealthSweep` test `EXPECTED_FLAGGED`; conventions §78 calibration-outcome note.
+**Decisions made:**
+- **The deviations were a price-calibration artifact, not template richness or importer bugs.** The dominant driver across 14/15 flags was iron rations at 6gp/week. ACKS prices rations as a RANGE (1gp-6gp by availability); the catalog had stored the scarce-market TOP. Re-pricing to the abundant end (1gp) is RAW-legal and clears the noise, leaving the sweep to flag only genuine over / under-EQUIPPING — which is its §5.1 purpose.
+- **Chose 1gp (iron) / 3sp (standard), the low end.** That is the value that actually clears the template deviations (3gp would leave dwarven_fury_3_4 + shaman_7_8 flagged) and is a reasonable abundant-market food price. Scarce-market pricing (up to 6gp) is a market-class adjustment applied elsewhere, not the catalog base.
+- **The one remaining flag (dwarven_fury_15_16, -60%) is correct + meaningful** — it surfaces that the dwarven fury's high-band template is genuinely under-equipped by class design (no armor). That is exactly the signal the sweep is FOR; left flagged-for-info.
+**Interfaces defined or changed:**
+- `base_equipment.json`: `rations_iron_week.cost_cp = 100`, `rations_standard_week.cost_cp = 30`. Game-wide effect: rations are cheaper to buy (shop / starting-wealth shopping), and template / henchman-kit rations contribute less gp value. No schema change.
+- `TemplateWealthSweep` EXPECTED_FLAGGED (test) = `["dwarven_fury_15_16"]`.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_template_wealth_sweep.gd`: `EXPECTED_FLAGGED` → `["dwarven_fury_15_16"]` + rationale comment. The `recompute_gp` consistency test still holds (the importer and the runtime catalog both read the new 1gp price, so stored == recomputed for all 216).
+**Test suite result:**
+- **422 suites passed / 19 failed.** Unchanged totals; net-zero new failures — the rations re-pricing broke no shop / kit / sustenance test (those use counts / encumbrance / person-days, not cost). All six class-template suites green; importer `--check` idempotent for both artifacts.
+**Known issues:**
+- `dwarven_fury_15_16` stays flagged-for-info in `wealth_sweep.md` (RAW class design, not fixable).
+- The new rations prices affect the live shop economy (cheaper food) — intended + RAW-legal, but a visible game-balance change to be aware of.
+**Next session should:**
+1. **§10 step 10** — higher-level NPC composition (§7.4 advancement on the L1 floor + §7.5 magic-item progression).
+2. **§10 step 11** — arcane spell repertoire picker.
+3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection.

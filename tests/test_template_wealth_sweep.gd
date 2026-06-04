@@ -7,18 +7,14 @@ extends "res://tests/test_suite_base.gd"
 ## matches the reviewed expectation (so a NEW deviation introduced by a future
 ## override / catalog change surfaces loudly).
 
-# The 15 templates currently over the 40% threshold (see data/templates/
-# wealth_sweep.md). All are catalog-granularity artifacts (the single 25gp holy
-# symbol, 6gp/week iron rations, 6 weeks of dwarven jerky, the 20gp spellbook on
-# low-band casters), flagged for Jedidiah — NOT engine bugs. Update this set only
-# alongside a deliberate catalog / override change.
-const EXPECTED_FLAGGED := [
-	"anti_paladin_3_4", "assassin_3_4", "darkblood_ruinguard_3_4",
-	"dwarven_craftpriest_3_4", "dwarven_fury_3_4", "dwarven_fury_15_16",
-	"elven_enchanter_3_4", "elven_nightblade_3_4", "elven_ranger_3_4",
-	"explorer_3_4", "lightblessed_wonderworker_3_4", "mage_3_4", "paladin_3_4",
-	"shaman_7_8", "warlock_3_4",
-]
+# After re-pricing iron rations to the abundant-market end of the RAW 1gp-6gp
+# range (2026-06-04, base_equipment.json), the ONLY template over the 40%
+# threshold is dwarven_fury_15_16 — and it is UNDER target (-60%) by RAW class
+# design: dwarven furies wear no armor, so their high-band template lacks the
+# plate a fighter 15-16 carries. (Before the re-pricing, 15 templates flagged,
+# ~14 of them just iron-ration pricing noise.) See data/templates/wealth_sweep.md.
+# Update this set only alongside a deliberate catalog / override change.
+const EXPECTED_FLAGGED := ["dwarven_fury_15_16"]
 
 var _repo: ClassTemplateRepository
 var _catalog: EquipmentCatalog
