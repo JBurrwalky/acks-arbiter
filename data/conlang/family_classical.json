@@ -1,0 +1,63 @@
+{
+  "kit_id": "classical",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Classical / Mediterranean",
+  "_schema": "gdd-naming-conventions.md §2.6 (family base kit)",
+  "_note": "Loose family: members share STRUCTURE, the lexicon concept-inventory, and the title-ladder pattern, but each realizes phonology per sub-palette. Mutual intelligibility is moderate (shared civic/feature roots; divergent endings).",
+  "sources_5_1": [1, 2, 20],
+  "sub_palettes": ["latinate", "hellenic", "iberian"],
+  "member_cultures": {
+    "clean": ["agrippan", "achillean", "cantabran", "lusan"],
+    "blends_partly_classical": ["vascani", "sargonid", "ptolan", "tartessan", "serican", "thracan"]
+  },
+  "phonology": {
+    "palette": "Mediterranean: vowel-rich (a e i o u), liquids l/r, sibilant s, stops p t k b d g, f/v; moderate onset clusters (st tr pr kl sp); generally open syllables.",
+    "sub_palette_notes": {
+      "latinate": "-us/-a/-um/-ius endings; penultimate stress; c=k.",
+      "hellenic": "-os/-on/-e/-eus endings; aspirates th/ph/kh; patronymic -id-.",
+      "iberian": "Latinate with Celtic substrate; endings -briga/-ica/-o; harder c, occasional -nt-."
+    },
+    "phonotactics": "CV / CVC; vowel-final preferred; clusters limited to st/tr/pr/kl/sp; geminates allowed.",
+    "transparent_ratio_default": 0.4
+  },
+  "lexicon_concepts": {
+    "_note": "Concept inventory; cultures realize each per sub-palette in their own kit.lexicon.",
+    "feature_words": ["river", "stream", "lake", "sea", "ocean", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "colony", "citadel"],
+    "kinship": ["son", "daughter", "house/clan", "father", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "low", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "silver", "gold", "wine", "oil", "grain", "marble", "fish", "purple-dye"],
+    "directional": ["upper", "lower", "north", "south", "inner", "outer", "near", "far"]
+  },
+  "shared_roots": {
+    "_note": "A few civic/feature roots recognizable family-wide as cognates, giving the moderate mutual intelligibility.",
+    "city": "-pol- / -urb-",
+    "fort": "-castr-",
+    "colony": "-coloni-",
+    "market": "-for- / -empor-",
+    "sea": "mar- / thalass-"
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "settlement = [feature | founder | deity] + civic suffix; suffix set per sub-palette (latinate -um/-ia/-polis; hellenic -os/-eia/-polis; iberian -briga/-ica).",
+    "patronymic_form": "inherited clan/gens name as a binomial or trinomial element; not a prefix-patronymic.",
+    "gendered_endings": "male/female vowel endings per sub-palette (latinate -us/-a; hellenic -os/-e; iberian -o/-a).",
+    "diminutive_form": "suffix -ul- / -ill- (latinate) or per sub-palette.",
+    "compounding_rule": "[adjective|resource](stem) + feature-word, eliding before a vowel; OR feature-word + civic suffix; linking vowel where needed."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS domain tiers; ruler and domain titles RHYME (shared stem + ruler-suffix / domain-suffix). Tier -> ruler-level mapping pending the ACKS lookup (gdd-history-simulation §17).",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "rhyme_rule": "ruler = stem + ruler-suffix; domain = stem + domain-suffix (e.g. Rex / Regnum).",
+    "government_modeled": ["feudal (civ cultures)", "clanhold (clan cultures)"], "_government_note": "Only feudal and clanhold governments are mechanically modeled; republics/oligarchies/theocracies are narrative flavor only."
+  },
+  "conventions": {
+    "people_name_default": "personal + inherited clan + optional earned cognomen/agnomen; order personal-first.",
+    "settlement_named_after": ["founder", "feature", "patron_deity", "function"],
+    "transparent_vs_opaque": "moderate; civic and feature names often transparent, ancient/sacred names opaque.",
+    "no_exonyms": true
+  },
+  "seed_shared": {
+    "epithet_concepts": ["the Great", "the Elder", "the Bold", "the Just", "the Iron", "the Fair", "the Wise", "the Stern"]
+  }
+}

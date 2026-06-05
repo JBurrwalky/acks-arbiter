@@ -1,0 +1,81 @@
+{
+  "kit_id": "sabaean",
+  "tier": "culture",
+  "inherits": "near_eastern",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 38,
+  "sub_palette": "geez+akkadian (intra-family blend)",
+  "synthesis_sources": [4, 14],
+  "homeland": "Saba",
+  "blend": { "backbone": "geez", "overlay": "akkadian" },
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Neutral"],
+  "_note": "Intra-Near-Eastern blend (Ethiopian + Mesopotamian): a South-Arabian / Sabaean incense kingdom of the desert-mountains. Backbone = Ge'ez/South-Semitic (phonology, amba/debr features, the mlk root); overlay = Akkadian (an astral cult of sun, moon, and the dawn-star; -u endings; mar-filiation; ziggurat-temple flavor). South-Arabian rank titles (Mukarrib, Qayl, Malik) are the real Sabaic register (allowed, catalog 5.3). civ = feudal. Even split Lawful/Neutral. DEITY names are SECOND-ORDER phoneme-morphs: the Agrippan canon as morphed into Punic (Barcan) trade-forms, then drifted again through South-Semitic phonology — the shared Punic-cognate ancestor of the family; never real South-Arabian gods.",
+  "phonology": {
+    "palette": "Ge'ez/South-Semitic backbone (emphatics t'/s'/q'; gutturals h/h./kh/'; -a endings; triconsonantal roots) with Akkadian overlay touches (-u/-tu endings on some names, mar-filiation); theophoric stems are second-order morphs of the Punic forms (Talrish-, Arganu-, Warlanu-, Riyalat-).",
+    "phonotactics": "CVC; emphatics and gutturals frequent; gemination; the South-Arabian particle dhu- (he of); stress varies.",
+    "transparent_ratio": 0.35
+  },
+  "lexicon": {
+    "feature_words": { "river": "wadi", "stream": "weyba", "lake": "hayq", "sea": "bahr", "ocean": "abiy-bahr", "bay": "meraf", "cape": "ras", "isle": "deset", "mountain": "debr / amba", "hill": "guba", "ridge": "sensel", "forest": "chaka", "desert": "baraha", "plain": "meda", "marsh": "chaqa", "ford": "mashagar", "pass": "gedel", "vale": "shellaqo", "oasis": "ayn", "coast": "sefaf" },
+    "settlement_words": { "hamlet": "gota", "village": "mender", "town": "ketema / alu", "city": "hagar", "fort": "amba", "port": "marsa / kar", "market": "gebeya", "temple_town": "mahram", "citadel": "negest-amba" },
+    "kinship": { "son": "weld / bin / mar", "daughter": "welatt / bint", "house": "bet / bit", "father": "ab", "ancestor": "abew" },
+    "adjectives": { "great": "abiy", "little": "ne'us", "old": "biluy", "new": "hadis", "black": "tselim", "white": "tse'eda", "red": "qeyih", "golden": "werq", "iron": "biret", "high": "le'ul", "far": "rehuq", "sacred": "qiddus", "fair": "tsega" },
+    "resources": { "salt": "tsew", "iron": "biret", "bronze": "nehas", "silver": "birur", "gold": "werq", "incense": "lubban", "myrrh": "qurban", "grain": "ehil", "lapis": "sefir", "fish": "asa", "purple_dye": "qirmiz" },
+    "directional": { "upper": "lay", "lower": "taht", "north": "semen", "south": "debub", "inner": "wist", "outer": "wich", "near": "qerib", "far": "rehuq" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["Beta- (house of)", "Mahram- (sacred precinct of)", "Hagara- (city of)", "Bir- (well/oasis of)", "Amba-"],
+    "patronymic_form": "patronymic 'bin-X' (son of) or the South-Arabian 'dhu-X' (he of [clan/house]); Ge'ez 'walda-X' and Akkadian 'mar-X' as secondary forms; theophoric given names on morphed god-stems; nobles a bet/clan house.",
+    "gendered_endings": { "male": "(consonant) / -u / -an / -a", "female": "-at / -it / -a" },
+    "diminutive_form": "-an / -ko",
+    "compounding_rule": "construct: Beta-[deity] (house of), Mahram-[deity] (sacred-precinct of), Bir-[name] (well of); dhu-[clan] (he of); resource + feature: Bir-Lubban (incense-well)."
+  },
+  "title_ladder": {
+    "government": "feudal (South-Arabian backbone; the federator priest-kingship and qayl clan-assemblies are narrative flavor, with Ge'ez Ras and Akkadian astral-temple offices as overlay color)",
+    "tiers": {
+      "barony": { "ruler": "Kabir", "domain": "Kabirat" },
+      "march": { "ruler": "Maqtawi", "domain": "Maqtawiyat" },
+      "county": { "ruler": "Qayl", "domain": "Qaylat" },
+      "duchy": { "ruler": "Ras", "domain": "Rasat" },
+      "principality": { "ruler": "Mukarrib", "domain": "Mukarribat" },
+      "kingdom": { "ruler": "Malik", "domain": "Mamlakat" },
+      "empire": { "ruler": "Malik-Malikan", "domain": "Mamlakat-Kubra" }
+    },
+    "_tiers_note": "South-Arabian/Sabaic backbone, ascending, on the shared mlk root: Malik/Mamlakat (king/kingdom), Malik-Malikan (king of kings) over the Mamlakat-Kubra. Kabir (chief) barony; Maqtawi (warden-officer) march; Qayl (clan-prince) county; Mukarrib (federator priest-prince) principality. Ge'ez overlay: the highland duchy is styled Ras (head). (Rank titles are the real Sabaic/Ge'ez register, allowed.)",
+    "female_forms": { "Malik-Malikan": "Malikat-Malikan", "Malik": "Malikat", "Mukarrib": "Mukarribat", "Ras": "Rasit", "Qayl": "Qaylat", "Maqtawi": "Maqtawiyat", "Kabir": "Kabirat" },
+    "heir": "Walad-Malik (king's son) / Bin-Malik",
+    "honorifics": { "lord": "Mara' (lord)", "lady": "Mara'at", "knight": "Faris (horseman)", "your_grace": "Mara'i (my lord)", "your_majesty": "Malki" },
+    "vassalage": { "liege": "Mara'", "vassal": "Abd (servant)", "fealty": "Mithaq / Mehala (oath)", "tribute": "Maqtu / Gibr" }
+  },
+  "people_name_convention": {
+    "order": "given (often theophoric) + dhu-clan or bin-X patronymic; the renowned earn a caravan/deed epithet.",
+    "surname_source": ["clan (dhu-X = he of X)", "patronymic (bin / mar / walda)", "theophoric given (Abd-Talrish = servant-of-Talrish)", "caravan/deed epithet"],
+    "dual_register": "the qayl nobility carry a dhu-clan name; commoners a bin-patronymic.",
+    "theophoric": "given names from the morphed deity-names + a Semitic element: Abd-X (servant-of), Wahab-X (gift-of), Amat-X (handmaid-of, f), or the Ge'ez Walda-X overlay. e.g. Abd-Talrish, Wahab-Arganu, Amat-Riyalat.",
+    "diminutive": "-an / -ko"
+  },
+  "religion": {
+    "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted through South-Semitic (Ge'ez-kin) phonology with an Akkadian astral coloring — never real South-Arabian gods. Lawful/Neutral; an incense-temple and astral cult (the sun-power, the moon as His lamp, and the dawn-star) layered over saint/ancestor veneration.",
+    "the_one": "Atyaran (< Punic Atharon < Aeternus; God Most High, lord of the high heaven)",
+    "sample_deity_renames": { "Tulrius": "Talrish (the sun-power)", "Orlandus": "Warlanu (iron-sworn)", "Argentus": "Arganu (trade and the caravan-city)", "Realta": "Riyalat (the mother / mercy)" },
+    "demon_epithet_pattern": "each opposing power (the Chaotic 13 for this Lawful-leaning realm) keeps its morphed name + its own portfolio epithet (distinct per power): Maraxus -> Marakash the Devourer; Lusanto -> Lusantan the Coin-Serpent; Vacidus -> Wakidan the Void.",
+    "clergy_ladder": { "1": "Rashw (temple-servant)", "3": "Kahin (priest)", "5": "Afkal (diviner-priest)", "7": "Kabir-Kahin (high priest)", "9": "Resh-Kahin (head of priests)" },
+    "religious_orders_pattern": "the Bet (temple) or Mahram (sacred precinct) of [power]: 'the Mahram of Talrish'.",
+    "saints_pattern": "the blessed dead and incense-lords, venerated at the Mahram and at pillar-tombs; 'the blessed [name]'.",
+    "holy_symbol_motifs": { "Talrish": "a sun-disc between a crescent moon and the dawn-star", "Riyalat": "a bull's-head above an incense-altar" }
+  },
+  "banks_patterns": {
+    "ships": "incense-caravan and Red-Sea trader names: 'Bringer of Lubban', 'Star of the Bahr', 'the Crescent of Saba'",
+    "military_units": "the [clan] Spears / the [god] Host: 'the Host of Warlanu'",
+    "taverns": "'The [Adjective] [Noun]': 'The Myrrh Cup', 'The Caravan-Rest'",
+    "dungeons_ruins": "ruined mahram-precincts and dam-cities of the desert: 'the Mahram of [name]', 'the Sunken Bir of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Abd-Talrish", "Dhu-Arganu", "Wahab-Warlanu", "Yada-Talrish", "Sumhu-Arganu", "Abd-Atyaran", "Bin-Warlanu", "Hawf-Talrish", "Yatha-Arganu", "Wahab-Talrish", "Maadi-Warlanu", "Abd-Arganu", "Yada-Warlanu", "Sumhu-Talrish", "Dhu-Talrish", "Walda-Arganu"],
+    "personal_f": ["Amat-Talrish", "Amat-Riyalat", "Bint-Arganu", "Riyalat-um", "Amat-Atyaran", "Bint-Talrish", "Talrish-amat", "Amat-Warlanu", "Bint-Riyalat", "Walatta-Talrish", "Amat-Arganu", "Riyalat-it", "Bint-Warlanu", "Hiruta", "Amat-Gayan", "Sabiyat"],
+    "clan_houses": ["Dhu-Talrish", "Dhu-Arganu", "Dhu-Warlanu", "Dhu-Riyalat", "Bet-Talrish", "Bet-Arganu", "Bet-Atyaran", "Bayt-Warlanu", "Dhu-Mukarrib", "Bet-Kabir", "Dhu-Afkal", "Bet-Riyalat"],
+    "epithets_cognomina": ["the Incense-lord", "Caravan-master", "the Far-trader", "Gold-of-Saba", "the Devout", "Star-reader", "the Mountain-holder", "Myrrh-bearer"],
+    "flagship_settlements": ["Saba (the capital)", "Mahram-Talrish (the great temple-precinct)", "Marsa-Lubban (the incense-port)", "Hagara-Mukarrib (the federator's city)", "Amba-Atyaran (the high fortress)", "Bir-Ayn (the oasis-wells)"]
+  }
+}

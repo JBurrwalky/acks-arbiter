@@ -1,0 +1,79 @@
+{
+  "kit_id": "achillean",
+  "tier": "culture",
+  "inherits": "classical",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 2,
+  "sub_palette": "hellenic",
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Neutral", "Chaotic"],
+  "_note": "Single-source (Classical Greek, Athens/Sparta). Hellenic sub-palette of the Classical family; polis city-states. Even alignment split across all three. Seed names are Hellenic-flavored coinages, not historical figures.",
+  "phonology": {
+    "palette": "Hellenic: a e i o u + long e/o; aspirates th/ph/kh; endings -os/-on/-es/-eus/-e; s, l, r, n.",
+    "phonotactics": "CV / CVC; clusters kt/pt/st/ph/th/kh/ps; -os/-on common; vowel-final frequent.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "potamos", "stream": "rhoos", "lake": "limne", "sea": "thalassa", "bay": "kolpos", "cape": "akra", "isle": "nesos", "mountain": "oros", "hill": "lophos", "ridge": "rhachis", "forest": "hyle", "wood": "drymos", "plain": "pedion", "marsh": "helos", "ford": "poros", "pass": "kleisoura", "vale": "nape", "coast": "akte" },
+    "settlement_words": { "hamlet": "kome", "village": "demos", "town": "asty", "city": "polis", "fort": "phrourion", "port": "limen", "market": "agora", "colony": "apoikia", "citadel": "akropolis" },
+    "kinship": { "son": "-ides / huios", "daughter": "-is / thygater", "house": "oikos", "ancestor": "progonos" },
+    "adjectives": { "great": "megas", "little": "mikros", "old": "palaios", "new": "neos", "black": "melas", "white": "leukos", "red": "erythros", "golden": "chryseos", "iron": "sidereos", "high": "hypselos", "far": "tele", "sacred": "hieros", "fair": "kalos" },
+    "resources": { "salt": "halas", "iron": "sideros", "silver": "argyros", "gold": "chrysos", "wine": "oinos", "oil": "elaion", "grain": "sitos", "marble": "marmaros", "fish": "ichthys", "purple_dye": "porphyra" },
+    "directional": { "upper": "ano", "lower": "kato", "north": "boreas", "south": "notos", "inner": "eso", "outer": "exo", "near": "engys", "far": "tele" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-os", "-on", "-eia", "-ia", "-polis", "-oupolis"],
+    "patronymic_form": "patronymic suffix -ides / -ades (son of); plus deme/polis demonym of origin.",
+    "gendered_endings": { "male": "-os / -es / -eus", "female": "-e / -a / -is" },
+    "diminutive_form": "-ion / -iskos",
+    "compounding_rule": "[adjective|resource](stem) + feature-word with linking -o-: melas + oros -> Melanoros; or Nea + Polis -> Neapolis."
+  },
+  "title_ladder": {
+    "government": "feudal (a Hellenic feudal monarchy; polis/republican forms are aesthetic flavor, not modeled)",
+    "tiers": {
+      "barony": { "ruler": "Toparch", "domain": "Toparchy" },
+      "march": { "ruler": "Phrourarch", "domain": "Phrourarchia" },
+      "county": { "ruler": "Eparch", "domain": "Eparchy" },
+      "duchy": { "ruler": "Strategos", "domain": "Strategia" },
+      "principality": { "ruler": "Dynastes", "domain": "Dynasteia" },
+      "kingdom": { "ruler": "Basileus", "domain": "Basileia" },
+      "empire": { "ruler": "Autokrator", "domain": "Autokratoria" }
+    },
+    "_tiers_note": "Hellenic, ascending (barony, march, county, duchy, principality, kingdom, empire). -arch/-archy rhyme the lower tiers; Basileus/Basileia and Autokrator/Autokratoria the high. The march renders as a garrison command (Phrourarch).",
+    "female_forms": { "Basileus": "Basilissa", "Autokrator": "Autokrateira", "Dynastes": "Dynastissa", "Strategos": "Strategissa", "Eparch": "Eparchissa", "Phrourarch": "Phrourarchissa", "Toparch": "Toparchissa" },
+    "heir": "Diadochos (successor-designate)",
+    "_government_note": "Polis/republican institutions (Boule, Ekklesia) are narrative flavor only; mechanically Achillea is a feudal realm.",
+    "honorifics": { "lord": "Kyrios", "lady": "Kyria", "knight": "Hippeus", "your_grace": "Megistos", "your_majesty": "Megas Basileus" },
+    "vassalage": { "liege": "Hegemon", "vassal": "Symmachos (ally)", "fealty": "Horkos (oath)", "tribute": "Phoros" }
+  },
+  "people_name_convention": {
+    "order": "personal + patronymic (-ides) + polis/deme demonym; often just personal + patronymic.",
+    "surname_source": ["patronymic (son-of, -ides)", "polis/deme of origin (locational)"],
+    "dual_register": "citizens use personal + patronymic + deme; the renowned earn a descriptive epithet (ho Megas).",
+    "theophoric": "names from the morphed deity-names (e.g. Tulrio-, Numeno-, Orlandro-).",
+    "diminutive": "-ion / -iskos"
+  },
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Hellenic phonology (-os/-on/-es; th/ph/kh) — recognizably the same powers, never real Greek gods.",
+    "the_one": "Aiternos (< Aeternus; the One, unknowable source, honored not petitioned)",
+    "sample_deity_renames": { "Tulrius": "Tulrios (sun-justice)", "Orlandus": "Orlandros (iron-sworn)", "Numeno": "Numenos (wisdom-lord)", "Numia": "Numios (of the sea)" },
+    "demon_epithet_pattern": "each opposing power keeps its morphed name + a portfolio epithet (the suffix -daimon may mark a demon), distinct per power: Maraxus -> Maraxos the Tyrant-Flame; Dementus -> Dementhos the Mad; Desoria -> Desorios the Drowner.",
+    "clergy_ladder": { "1": "Neokoros (temple-keeper)", "3": "Hiereus (priest)", "5": "Archiereus (high priest)", "7": "Hierophant", "9": "Megas Hierophant" },
+    "religious_orders_pattern": "the Mysteria/Temenos of [power]: 'the Mysteries of Numenos'.",
+    "saints_pattern": "Heros [name] (deified hero/founder), venerated at a heroon (tomb-shrine).",
+    "holy_symbol_motifs": { "Tulrios": "radiate sun above olive-branch and scales", "Orlandros": "iron spear crossed with an oath-ring" }
+  },
+  "banks_patterns": {
+    "ships": "feminine -is, virtue & sea names: 'Nike', 'Thalassa', 'Pride of Achillea'",
+    "military_units": "the [Adjective] Phalanx / Lochos: 'the Bronze Phalanx'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Bronze Helm'",
+    "dungeons_ruins": "'[Tomb/Labyrinth/Sanctum] of [name]': 'the Labyrinth of Heros Theron'"
+  },
+  "seed_names": {
+    "personal_m": ["Theron", "Damon", "Stratos", "Hieron", "Charax", "Phaedros", "Kallias", "Menelos", "Ariston", "Eumenes", "Telamon", "Diokles", "Lysandros", "Kleitos", "Nikandros", "Pelias", "Leontos", "Demetrios", "Eurymachos", "Aristos"],
+    "personal_f": ["Theodora", "Daphne", "Arete", "Thalia", "Phaidra", "Kallisto", "Stratonike", "Eudora", "Pelagia", "Demetria", "Leontia", "Melaina", "Charixene", "Nikaia", "Aristea", "Hiera", "Lysandra", "Eirene", "Xanthe", "Kleia"],
+    "clan_gens": ["Theronides", "Damonides", "Stratides", "Hieronides", "Phaedrides", "Kalliades", "Aristides", "Eumenides", "Telamonides", "Dioklides", "Lysandrides", "Nikandrides", "Peliades", "Leontides", "Eurymachides", "Charaxides"],
+    "epithets_cognomina": ["ho Megas (the Great)", "ho Sophos (the Wise)", "ho Andreios (the Brave)", "Chrysous (Golden)", "ho Dikaios (the Just)", "Sideros (Iron)", "ho Tachys (the Swift)", "Nikephoros (Victory-bearer)"],
+    "flagship_settlements": ["Achillea (chief polis)", "Neapolis", "Thalassopolis", "Akra Leuke (the white cape)", "Sidereon"]
+  }
+}

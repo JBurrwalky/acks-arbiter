@@ -1,0 +1,434 @@
+# ACKS Arbiter master palette - gdd-art-direction.md S5.4
+# 256 colors, hex format
+# Hand-curated v2 — empirical training-set extraction (~145 mundane colors retained)
+# augmented with vibrant magic colors (74) and cool-environment colors (30) to fill
+# the §5.1 80-95% saturation band and cold-biome coverage that the character-heavy
+# training set did not provide.
+#
+# Per S5.3: pure black (#000000) and pure white (#FFFFFF) are BANNED.
+# This palette uses #0d0a08 (warm umber-black) and #f5ebd6 (warm cream) instead.
+#
+# Edit this file freely, then run:
+#     python scripts/extract_palette.py --from-hex assets/style_refs/palette_master.txt --output assets/style_refs/palette_master.png
+# to rebuild the PNG.
+#
+# ============================================
+# SECTION 1 - S5.3 CANONICAL ANCHORS (8)
+# ============================================
+# Outline color, dark cloth shadow, cool deep shadow, warm umber-black,
+# cool umber-black, warm cream, vellum-cream, pale cream highlight.
+#
+#0d0a08
+#1a1218
+#050c1e
+#1f0805
+#0d1408
+#f5ebd6
+#e8d8b8
+#f9f7ea
+#
+# ============================================
+# SECTION 2 - NEUTRAL GREYS (24)
+# ============================================
+# Cool greys, warm greys, mid greys, light greys, pale greys.
+# Consolidated from ~30 near-black variants in the empirical extraction.
+#
+#171919
+#252c39
+#2c3543
+#2d2c25
+#3c3c46
+#47473f
+#4c5045
+#4c5053
+#525a63
+#595751
+#696b5c
+#646461
+#6b7984
+#7d7d75
+#7f766a
+#827e73
+#818686
+#888f8d
+#8e9a9d
+#97928b
+#a8aba9
+#aaa49b
+#b4ab9a
+#d5d8d8
+#
+# ============================================
+# SECTION 3 - SKIN AND TAN RANGE (26)
+# ============================================
+# Dark to light, warm bronze register for human and humanoid characters.
+#
+#291d17
+#3e362d
+#3d271d
+#553d2e
+#5a4837
+#5b5140
+#71412e
+#73574b
+#755438
+#7e695a
+#836742
+#857d61
+#8b523b
+#a36752
+#a47547
+#a58e73
+#a68453
+#c17d48
+#cd9069
+#d8a178
+#dbc7af
+#b4a06e
+#ebb591
+#e6d7ba
+#dcd4c3
+#e7e5e1
+#
+# ============================================
+# SECTION 4 - BROWNS / EARTH / WOOD (18)
+# ============================================
+# Dark to mid warm browns for leather, wood, dirt, fur, environment props.
+#
+#2b251d
+#3a0500
+#392814
+#472711
+#54342d
+#59321b
+#5e3a20
+#5e2512
+#6f3a1f
+#705024
+#76451d
+#7e3213
+#893d1d
+#8b4f2c
+#8f4532
+#95462f
+#986330
+#985937
+#
+# ============================================
+# SECTION 5 - REDS AND WINE (18)
+# ============================================
+# Bright heroic reds, dark blood reds, deep wines for cloth, blood, banners.
+#
+#c11c18
+#a82c2c
+#a21f25
+#902e27
+#7a1d28
+#733028
+#68250f
+#68161d
+#4c1a0e
+#5c271d
+#510604
+#522a28
+#8c5449
+#732f43
+#531b2d
+#714248
+#543d3f
+#590d19
+#
+# ============================================
+# SECTION 6 - ORANGES (10)
+# ============================================
+# Mid to bright warm oranges, peach skin highlights, rust tones.
+#
+#ed801a
+#eea038
+#bc6b28
+#c96920
+#a04d25
+#a54c1d
+#bd502e
+#de8f51
+#cd8e48
+#a07d8a
+#
+# ============================================
+# SECTION 7 - YELLOWS / GOLD (mundane, 6)
+# ============================================
+# Mid to bright golds. Vibrant divine and magic yellows are in section 15.
+#
+#fac626
+#f4d969
+#e9b63c
+#d5a14f
+#f9f2cb
+#f0e6c1
+#
+# ============================================
+# SECTION 8 - OLIVE / LIME / YELLOW-GREEN (6)
+# ============================================
+# Olive cloth, dried grass, mundane plant material.
+#
+#b3cb43
+#6f6536
+#45381f
+#403119
+#685725
+#bebfac
+#
+# ============================================
+# SECTION 9 - GREENS (mundane, 10)
+# ============================================
+# Forest, grass, sage, moss. Vibrant nature magic in section 21.
+#
+#608646
+#4b8450
+#5d9d59
+#549948
+#6c9a79
+#142c1e
+#0b5829
+#416663
+#1e4c40
+#eae6bc
+#
+# ============================================
+# SECTION 10 - TEALS (mundane, 4)
+# ============================================
+# Muted teals, water tints. Vibrant ice/water magic in section 16.
+#
+#71b3b9
+#83939d
+#8aa1a5
+#bfcbcf
+#
+# ============================================
+# SECTION 11 - MUTED BLUES (8)
+# ============================================
+# Cloth, faded denim, twilight sky.
+#
+#819baa
+#8ba5ae
+#3f5667
+#5d7a92
+#6e8a9c
+#4d6a82
+#92a8b5
+#acb9c2
+#
+# ============================================
+# SECTION 12 - COOL BLUES (mundane vibrant, 8)
+# ============================================
+# Bright but mundane blues — sky, water, fabric. Magic ice/electric in 16/17.
+#
+#264580
+#111c39
+#112d5b
+#0d1d4d
+#125693
+#0b7dd6
+#181e4d
+#221d35
+#
+# ============================================
+# SECTION 13 - PURPLES / MAUVES (mundane, 6)
+# ============================================
+# Muted royal purples for fabric and ornament. Vibrant magic purples in 18/19.
+#
+#4a2d82
+#1e114d
+#3f2a39
+#6a5476
+#5c4068
+#846a7d
+#
+# ============================================
+# SECTION 14 - MAGIC: FLAME / FIRE (12)
+# ============================================
+# Deep ember to bright candle. Use for fireball, dragon breath, torch glow,
+# fire elementals, lava, burning oil. §5.1 vibrant band 80-95%.
+#
+#5a1000
+#931d00
+#c83400
+#ff1100
+#ff4d1a
+#ff5c00
+#ff7a1a
+#ffa01f
+#ffaa66
+#ffce26
+#ffd97a
+#ffe680
+#
+# ============================================
+# SECTION 15 - MAGIC: HOLY / DIVINE (6)
+# ============================================
+# Sun gold, divine radiance, healing light, blessing auras. §5.1 vibrant band.
+#
+#f0a800
+#ffbf2e
+#ffd14d
+#ffe88a
+#fff5b3
+#fff7d4
+#
+# ============================================
+# SECTION 16 - MAGIC: ICE / WATER (14)
+# ============================================
+# Cold cyan to ice-white. Ice spells, cold breath, water magic, frost effects,
+# enchanted streams. §5.1 vibrant band 80-95%.
+#
+#0a4d6e
+#0d3a4a
+#0e7ab0
+#008a86
+#00bfb3
+#1ca8e0
+#2a8ab0
+#4dd4ff
+#5ec8d4
+#66e0f5
+#88c4d6
+#8de2ff
+#b3e5f8
+#d4f5ff
+#
+# ============================================
+# SECTION 17 - MAGIC: ELECTRIC / LIGHTNING (6)
+# ============================================
+# Lightning, electric arc, force-magic plasma. §5.1 vibrant band.
+#
+#2980ff
+#55c4ff
+#aaeeff
+#e0f0ff
+#8a5cff
+#b88aff
+#
+# ============================================
+# SECTION 18 - MAGIC: NECROMANTIC (8)
+# ============================================
+# Death magic, undead auras, necrotic glow. Sickly violet + sickly green pair.
+# §5.1 vibrant band 75-90%.
+#
+#2a0c40
+#3d0066
+#5a2469
+#6a1a8a
+#9933cc
+#c266ff
+#5cb845
+#aaff8a
+#
+# ============================================
+# SECTION 19 - MAGIC: ELDRITCH / COSMIC (6)
+# ============================================
+# Cosmic indigo, void, eldritch glow. §5.1 vibrant band.
+#
+#1a1140
+#2d2670
+#5566cc
+#6347b8
+#8a7eff
+#aabbff
+#
+# ============================================
+# SECTION 20 - MAGIC: FEY / CHARM (6)
+# ============================================
+# Fey magic, enchantment, charm effects. Vivid pinks and magentas.
+# §5.1 vibrant band 75-90%.
+#
+#a02180
+#cc3399
+#f06be0
+#ff66cc
+#ee99dd
+#ffb3ee
+#
+# ============================================
+# SECTION 21 - MAGIC: POISON / NATURE (10)
+# ============================================
+# Toxic clouds, acid, vibrant nature magic, druidic glow.
+# §5.1 vibrant band 75-90%.
+#
+#0d4d22
+#006619
+#28a042
+#44dd44
+#66bb00
+#66ee00
+#88dd00
+#aaff66
+#b3ff7a
+#c2ff00
+#
+# ============================================
+# SECTION 22 - MAGIC: ARCANE / FORCE (6)
+# ============================================
+# Generic arcane magic, force effects, wizardly auras. Violet-indigo register.
+# §5.1 vibrant band.
+#
+#382670
+#4d2eaa
+#6a55cc
+#aa88ff
+#c8a0ff
+#d4baff
+#
+# ============================================
+# SECTION 23 - COOL ENV: TUNDRA / SNOW (10)
+# ============================================
+# Snow highlights, frost shadows, cold air, ice tints.
+# §5.1 environment band 40-60% sat for exterior.
+#
+#f5f8fa
+#f0f5f8
+#e6eef2
+#cbe6e8
+#d6e0e6
+#c0d2db
+#b3c4d1
+#a4c5cf
+#8aa1b3
+#6a8294
+#
+# ============================================
+# SECTION 24 - COOL ENV: TWILIGHT / DUSK (6)
+# ============================================
+# Twilight purple wash for wilderness scenes. §7.5 atmospheric color wash.
+#
+#2a1f4d
+#3d2a5e
+#4d3a6e
+#5a4080
+#8a6fa8
+#b39ec8
+#
+# ============================================
+# SECTION 25 - COOL ENV: STORM / RAIN (6)
+# ============================================
+# Storm cloud greys, rain mid-tones, overcast sky.
+#
+#1a2028
+#2e3640
+#444c54
+#4a5560
+#6a7888
+#99a3ad
+#
+# ============================================
+# SECTION 26 - COOL ENV: SEA / DEEP WATER (8)
+# ============================================
+# Harbor, deep sea, abyssal depths. Distinct from magic-ice/water cyans.
+#
+#052238
+#0c1e3d
+#15394d
+#1a3a5c
+#1f4d70
+#2d567a
+#336688
+#4d80a8

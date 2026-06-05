@@ -1,5 +1,7 @@
 # GDD: Name Generation
 
+> **SUPERSEDED (2026-06-03) by `gdd-naming-conventions.md`.** The generative-kit model, per-family inheritance, expanded categories, and naming conventions now live there; this document's 16-category element inventory and JSON bank format were carried forward into it. Retained for historical reference only.
+
 **Authority:** PROJECT-DESIGNED.
 **Status:** Draft
 **Depends on project GDDs:** `gdd-setting-generation.md` (cultural groups, religions, political entities), `gdd-settlement-layout.md` (settlement POIs, districts), `gdd-npc-personality.md` (NPC cultural identity)

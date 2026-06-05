@@ -224,18 +224,18 @@ The gods of Law are the stewards and guardians of all creation, created by the O
 
 | name | virtues | professions | action | socio-politcal | natural world | element |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Tulrius | Justice | Judges and Rulers | Ruling | Laws, Courts | Sun | Fire |
+| Tulrius | Justice | Judges and Rulers | Ruling, Judgment | Laws, Courts, Judgment of Chaos-cults | Sun | Fire and Light |
 | Argentus | Prudence | Merchants, Jewelers | Trade | Contracts, Markets, Money | Precious Metals and Gems | Earth |
 | Realta | Mercy, Love, Chastity | Healers and Clergy | Healing, Weddings, Childbirth | Marriages, Motherhood, Almsgiving | Spring, Gardens | Water |
-| Numeno | Wisdom | Magi, Scholars and Scribes | Knowledge, Writing | The Old, Archives, Memory | Time, History | Aether |
+| Numeno | Wisdom | Magi, Scholars and Scribes | Knowledge, Writing | The Old, Archives, Memory | Time, History | Air and Lightning |
 | Lieta | Patience | Farmers | Growth, Crop Fertility | Agriculture, Harvests | Plants, Trees, Crops | Earth and Water |
 | Ventalius | Joy, Friendship | Herders, Entertainers, Leatherworkers | Festivities, Animal Fertility | Community, Festivals | Animals, Livestock | Air and Earth |
 | Delorum | Peace, Equanimity | Gravekeepers, Morticians | Death, Afterlife, Funerals | Inheritance, Ancestors | Ash, Dust, Amber | Fire or Earth |
 | Numia | Hope, Faith | Sailors, Navigators | Ocean Voyages, Courtship, Romance | Navigation, Exploration | Seas, Sea Weather Stars | Water and Air |
 | Fullus | Generosity, Steadfastness | Fishermen, Millers | Irrigation, Cleansing, Travel | Borders, Inland Travel | Rivers, Streams, Lakes, Rain | Water and Earth |
-| Gaiandus | Endurance, Stoicism, Contemplation | Mountaineers, Hunters, Miners, Hermits | Weathering, Mining, Meditation | Isolation, Exile, Mysticism | Wind, Mountains, Land Storms, Cold | Earth and Ice |
-| Orlandus | Honor, Loyalty, Fortitude, Courage | Soldiers, Knights, Smiths, Masons | Oaths, Fealty | Military, Treaties, Defense, Roads | Stone, Iron | Metal |
-| Noctiluna | Discretion, Vigilance | Watchmen, Spies | Concealment and Revelation | Secrets, Espionage | Night, Darkness, the Moon | Shadow, Death |
+| Gaiandus | Endurance, Stoicism, Contemplation | Mountaineers, Hunters, Miners, Hermits | Weathering, Mining, Meditation | Isolation, Exile, Mysticism | Wind, Mountains, Land Storms, Cold | Earth and Cold |
+| Orlandus | Honor, Loyalty, Fortitude, Courage | Soldiers, Knights, Smiths, Masons | Oaths, Fealty | Military, Treaties, Defense, Roads | Stone, Iron | Earth |
+| Noctiluna | Discretion, Vigilance | Watchmen, Spies, Witch-finders | Concealment, Revelation of Hidden Chaos | Secrets, Espionage, Inquisition (uncovering cults) | Night, Darkness, the Moon | Death and Light |
 
 ### 4.1.2 The Gods of Chaos
 
@@ -246,7 +246,7 @@ The gods of chaos govern the vices of excess and defect — the failures on eith
 | Maraxus | Tyranny, Cruelty | Conquerors, Warlords, Slavers | Conquest, Subjugation, Purges | Tribute Systems, Absolute Rule, Military Dominance | Forge-fires, Victory Pyres, Scorched Earth, Ash Wastes | Fire |
 | Lusento | Avarice, Deceit | Prospectors, Merchants, Thieves | Discovery of Hidden Wealth, Trade Manipulation, Fraud | Lucrative Trade, Market Manipulation, Bribery | Rich Ore Seams, Hidden Deposits, Acid Springs, Slag | Acid |
 | Hirelia | Lust, Depravity, Cruelty | Lovers, Herbalists, Torturers | Wild Fertility Rites, Seduction, Violation | Passionate Alliances, Forbidden Unions, Corrupt Courts | Wild Blooms, Pollinating Swarms, Briar Thickets, Venomous Blossoms | Poison |
-| Dementus | Madness, Folly | Oracles, Heretics, Forbidden Scholars | Prophetic Divination, Spreading Madness, Burning Archives | Oracular Traditions, Forbidden Cults, Book-burning | Prophetic Storms, Shooting Stars, Unnatural Eclipses, Warped Skies | Lightning |
+| Dementus | Madness, Folly | Oracles, Heretics, Forbidden Scholars | Prophetic Divination, Spreading Madness, Burning Archives | Oracular Traditions, Forbidden Cults, Book-burning | Prophetic Storms, Shooting Stars, Unnatural Eclipses, Warped Skies | Air and Lightning |
 | Metensia | Blight, Pestilence, Sloth | Breeders, Vermin-masters, Plague Bearers | Rapid Propagation, Pest-sending, Blighting Enemy Crops | Livestock Fertility, Famine as Weapon, Quarantine-breaking | Teeming Soil, Fast Rains, Locust Swarms, Crop Blight | Poison and Earth |
 | Raptis | Bloodlust, Massacre, Savagery | Hunters, Berserkers, Brigands | The Great Hunt, Raids, Blood Sacrifice | Warrior Prestige, Hunting Rights, Outlawry | Wild Game, Fierce Predators, Carrion Fields, Blood-soaked Ground | Fire and Death |
 | Irantius | Wrath, Discord, Implacability | War-priests, Necromancers, Revenge-seekers | Ancestral Defense, Blood Feuds, Raising the Dead | Clan Vendettas, Ancestral Defense, Undead Legions | Ancestral Mounds, Hallowed Battlefields, Restless Graves, Blighted Fields | Death |
@@ -254,7 +254,7 @@ The gods of chaos govern the vices of excess and defect — the failures on eith
 | Gerontinus | Famine, Drought, Obstruction | Provisioners, Toll-lords, Blockaders | Winter Preservation, Toll-taking, Blockades | Winter Provisioning, Toll Systems, Blockades | Frozen Roads, Preserved Stores, Dried Riverbeds, Frost-killed Crops | Cold and Earth |
 | Hestratus | Hubris, Recklessness, Catastrophic Overreach | Daring Commanders, Storm-callers, Overreachers | Daring Assaults, Storm-calling, Provoking Natural Disaster | Bold Campaigns, Daring Conquests, Overextension | Scouring Gales, Summit Lightning, Avalanches, Rockslides | Air and Lightning |
 | Inculcus | Treachery, Oathbreaking, Cowardice | Spies, Assassins, Traitors | Assassination of Enemies, Intelligence-gathering, Treaty-breaking | Espionage Networks, Political Betrayal, Coups | Concealing Shadows, Corroded Iron, Crumbling Fortifications, Treacherous Ground | Acid |
-| Caecida | Paranoia, Dangerous Exposure | Truth-seers, Witch-hunters, Blackmailers | Unmasking Enemies, Witch Hunts, Blinding Revelation | Inquisitions, Intelligence Networks, Blackmail | Revealing Light, Purifying Sun, Searing Wasteland, Blinding Mirages | Light |
+| Caecida | Paranoia, Calumny | False-accusers, Slanderers, Blackmailers, Demagogues | False Accusation, Persecution of the Innocent, Blinding Revelation | Show-trials, Scapegoating, Surveillance, Blackmail | Searing Sun, Blinding Glare, Mirages, Scorched Wastes | Light |
 | Vacidus | Entropy, Annihilation, the Void | Nihilists, Worldbreakers | The Unmaking of All Things | Erasure of All Civilization | Dissolution of Old Powers, the Void, Dead Worlds, Final Silence | Acid and Death |
 
 ## 4.2 Alignment-Specific variations
@@ -305,7 +305,7 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 2 | Achillean | Achillea | 2 | scrubland, grassland, hills, mountains | E | Human | Lawful, Neutral, Chaotic | civ |
 | 3 | Barcan | Barca | 3 | scrubland | Y | Human | Neutral, Chaotic | civ |
 | 4 | Hammuran | Hammur | 4 | scrubland, savanna, hills, mountains | E | Human | Lawful, Neutral, Chaotic | civ |
-| 5 | Apophan | Apopha | 5 | desert, scrubland, jungle | E | Human | Neutral, Chaotic | civ |
+| 5 | Abydosian | Abydos | 5 | desert, scrubland, jungle | E | Human | Neutral, Chaotic | civ |
 | 6 | Sumset | Sumsa | 4, 5 | desert, jungle, hills, mountains | N | Human | Lawful, Neutral | civ |
 | 7 | Gundic | Gundar | 6, 7 | forest, grassland, dense forest, hills, mountains | E | Human | Neutral | civ |
 | 8 | Cuchulan | Cuchulei | 7 | forest, dense forest, hills | E | Human | Lawful, Neutral, Chaotic | clan |
@@ -359,7 +359,7 @@ For character descriptions, the generator should generate descriptions using the
 1. Agression - rate of expansion per generation
 2. Defensiveness - resistance to expansion per generation
 3. Subjugation/Genocide - degree to which expansion is merely a change in vassalage (subjugation) or a change in culture/religion (genocide).
-4. Military/Mercantile/Religious/Arcane weights - affects ruler class distribution and henchman class availability 
+4. Military/Religious/Arcane weights - affects ruler class distribution and henchman class availability 
 5. Personality trait weighting - affects random NPC personality trait rolls
 6. Preferred troop types - determines which troop types the cultures armies predominantly field and what types of mercenaries are available in their cities.
 

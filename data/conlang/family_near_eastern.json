@@ -1,0 +1,61 @@
+{
+  "kit_id": "near_eastern",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Near-Eastern (Semitic / Afro-Asiatic)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "Loose family. The Semitic members (Punic, Akkadian, Ge'ez, Sabaean) share real cognate roots (mlk=king, baal=lord, qart=city); the Egyptian (Afro-Asiatic) sub-palette is related but distinct. All members are civ (feudal government). Base provides the concept inventory, morphology template, Semitic title roots, and sub-palette notes; each culture realizes its own phonology.",
+  "sources_5_1": [3, 4, 5, 14],
+  "sub_palettes": ["punic", "akkadian", "egyptian", "geez"],
+  "member_cultures": {
+    "clean": ["barcan", "hammuran", "abydosian", "axumite"],
+    "intra_family_blends": ["sumset (4+5)", "kemeti (5+14)", "sabaean (4+14)"]
+  },
+  "phonology": {
+    "palette": "Near-Eastern: emphatic and guttural consonants (q, kh, h, ', sh, ts), triconsonantal roots, a/i/u vowels; Egyptian adds dj/tj and -aa/-et.",
+    "sub_palette_notes": {
+      "punic": "Phoenician-Punic: b/d/g, ', sh, t; -t feminine; common/title roots melek/baal/qart (theophoric built on morphed canon-stems, never real theonyms).",
+      "akkadian": "Assyrian-Babylonian: sh, ', kh; -u/-tu endings; common/title roots sharru/bel/alu (theophoric built on morphed canon-stems, never real theonyms).",
+      "egyptian": "Old/New Kingdom: dj, tj, kh; -aa/-et endings; common/title roots per/nesut/heqa (theophoric built on morphed canon-stems, never real theonyms).",
+      "geez": "Ge'ez/Ethiopic: emphatics, -a endings; roots negus/ras/shum."
+    },
+    "phonotactics": "CVC common; triconsonantal stems; gutturals frequent; stress varies.",
+    "transparent_ratio_default": 0.35
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the Classical base; realized per sub-palette in each culture kit.",
+    "feature_words": ["river", "stream", "lake", "sea", "ocean", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "desert", "plain", "marsh", "ford", "pass", "vale", "oasis", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house/clan", "father", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "bronze", "silver", "gold", "incense", "grain", "lapis", "fish", "purple-dye"],
+    "directional": ["upper", "lower", "north", "south", "inner", "outer", "near", "far"]
+  },
+  "shared_roots": {
+    "_note": "Semitic cognates recognizable across the Semitic members (not Egyptian).",
+    "king": "mlk (melek / malik)",
+    "lord": "baal / bel / adon",
+    "city": "qart / kiryat / alu",
+    "house_temple": "beth / bit / per",
+    "god": "el / il / ilu",
+    "great": "rab / rabbu"
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "settlement = theophoric construct (Qart-X = city-of-X), or feature/founder + sub-palette suffix.",
+    "patronymic_form": "patronymic particle (bin/bar/ben = son-of; Akkadian mar; Egyptian sa) or theophoric construct; clan/house for nobility.",
+    "gendered_endings": "feminine -t (Semitic) / -et (Egyptian); per sub-palette.",
+    "diminutive_form": "per sub-palette.",
+    "compounding_rule": "construct chains: [feature|house]-of-[deity|name]; e.g. Qart-Hadasht (new-city), Bit-Tulrishu (house-of-a-morphed-canon-power)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, feudal, rhyming ruler/domain. The Semitic members share the mlk root at the kingdom tier (melek/sharru/negus); Egyptian uses per-aa (pharaoh = the Great House). Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["feudal (every member is civ)"]
+  },
+  "conventions": {
+    "people_name_default": "given name + patronymic (bin/bar/mar/sa) or theophoric construct; clan/house for nobility; order given-first.",
+    "settlement_named_after": ["deity (theophoric: Qart-X / Bit-X / Per-X)", "founder", "feature", "function"],
+    "transparent_vs_opaque": "low-moderate; many names are opaque theophoric constructs.",
+    "no_exonyms": true
+  }
+}
