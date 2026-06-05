@@ -32,6 +32,8 @@ class _FakeRepo extends RefCounted:
 	var items_added: Array = []
 	var coins_added: Dictionary = {}
 	var ac_recomputed: Array = []
+	var familiars_created: Array = []
+	var creatures_created: Array = []
 	var _counter: int = 0
 
 	func create_character(data: Dictionary) -> String:
@@ -39,6 +41,14 @@ class _FakeRepo extends RefCounted:
 		var id := "fake_char_%d" % _counter
 		created.append(data)
 		return id
+
+	func create_familiar(data: Dictionary) -> String:
+		familiars_created.append(data)
+		return "fake_familiar_%d" % familiars_created.size()
+
+	func create_trained_creature(data: Dictionary) -> String:
+		creatures_created.append(data)
+		return "fake_creature_%d" % creatures_created.size()
 
 	func save_character_powers(id: String, p: Array) -> bool:
 		powers_saved[id] = p
@@ -71,6 +81,14 @@ func run_all_tests() -> void:
 	test_persist_drives_repository()
 	test_int_adjustment_mundane()
 	test_int_adjustment_arcane()
+	test_origin_template_id_stamped_and_roundtrips()
+	test_non_template_character_has_empty_origin()
+	test_familiar_template_grants_familiar()
+	test_totem_template_creates_trained_creature()
+	test_totem_without_party_is_not_created()
+	test_valuable_template_creates_value_backed_row()
+	test_poison_template_adds_placeholder_dose()
+	test_flavor_items_are_intentionally_inert()
 	if not has_failures():
 		print("ClassedNpcBuilder: all tests passed.")
 
@@ -231,6 +249,206 @@ func test_int_adjustment_arcane() -> void:
 		"mage INT 18 -> 5 proficiencies (3 + 2 extra), got %d" % (hi["proficiencies"] as Array).size())
 	check(int(hi["extra_spells_to_roll"]) == 2, "mage INT 18 rolls 2 extra spells")
 	check(String(hi["bonus_spell"]) == "shield", "mage INT 18 keeps the bonus spell")
+
+
+func test_origin_template_id_stamped_and_roundtrips() -> void:
+	# §6.4: persist() stamps origin_template_id from the bundle's template_id onto
+	# the row it writes, and the field round-trips through to_dict()/from_dict().
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("fighter",
+		{"forced_roll": 15, "campaign_id": "camp_test", "force_int": 12})
+	check(bool(b["ok"]), "fighter@15 build failed")
+	var template_id := String(b["template_id"])
+	check(template_id == "fighter_15_16", "expected fighter_15_16 template_id, got %s" % template_id)
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist returned empty id")
+	# the row written to the repository carries origin_template_id
+	check(fake.created.size() == 1, "expected exactly one created character")
+	if fake.created.size() == 1:
+		check(String((fake.created[0] as Dictionary).get("origin_template_id", "<missing>")) == template_id,
+			"created row origin_template_id should be %s" % template_id)
+	# the in-memory character was stamped
+	var character: CharacterData = b["character"]
+	check(character.origin_template_id == template_id, "character.origin_template_id not stamped")
+	# round-trips through to_dict() / from_dict()
+	var restored := CharacterData.from_dict(character.to_dict())
+	check(restored.origin_template_id == template_id, "origin_template_id did not round-trip")
+
+
+func test_non_template_character_has_empty_origin() -> void:
+	# A character built outside the template system (Path A / generic) leaves
+	# origin_template_id "" and round-trips as "", with DB NULL mapping to "".
+	var c := CharacterData.new()
+	check(c.origin_template_id == "", "fresh CharacterData should have empty origin_template_id")
+	var restored := CharacterData.from_dict(c.to_dict())
+	check(restored.origin_template_id == "", "empty origin_template_id should round-trip as empty")
+	# DB NULL ↔ "" (the migration's DEFAULT NULL surfaces for pre-stamp rows)
+	check(CharacterData.from_dict({"origin_template_id": null}).origin_template_id == "",
+		"DB NULL origin_template_id should map to empty string")
+	# an absent key defaults to "" as well
+	check(CharacterData.from_dict({}).origin_template_id == "",
+		"absent origin_template_id should default to empty string")
+
+
+# ---------------------------------------------------------------------------
+# Non-catalog item routing (gdd §5.2 / §9.1) — persist() materializes the four
+# metadata kinds (familiar / totem / valuable / poison) to their subsystems.
+# ---------------------------------------------------------------------------
+
+func test_familiar_template_grants_familiar() -> void:
+	# warlock @3 grants a cat familiar (a 1:1 species->form match).
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("warlock",
+		{"forced_roll": 3, "campaign_id": "camp_fam", "force_int": 12})
+	check(bool(b["ok"]), "warlock@3 build failed: %s" % String(b.get("error", "")))
+	var fam_items := _non_catalog_of_kind(b, "companion_kind", "familiar")
+	check(fam_items.size() == 1, "warlock@3 should surface one familiar item, got %d" % fam_items.size())
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist returned empty id")
+	check(fake.familiars_created.size() == 1,
+		"persist should create exactly one familiar, got %d" % fake.familiars_created.size())
+	if fake.familiars_created.size() == 1:
+		var f: Dictionary = fake.familiars_created[0]
+		check(String(f.get("master_character_id", "")) == new_id,
+			"familiar not bound to the new character")
+		check(String(f.get("form_key", "")) == "cat",
+			"cat familiar should resolve to form 'cat', got '%s'" % String(f.get("form_key", "")))
+		check(String(f.get("cosmetic_species", "")) == "Cat",
+			"familiar cosmetic_species should preserve flavor 'Cat'")
+		check(bool(f.get("is_alive", false)), "granted familiar should be alive")
+
+	# mage @3 grants an owl familiar — a bird that collapses to the 'hawk' form
+	# while preserving the owl flavor (exercises the species->form mapping).
+	var fake2 := _FakeRepo.new()
+	var b2 := _builder.build_classed_npc("mage",
+		{"forced_roll": 3, "campaign_id": "camp_fam", "force_int": 12})
+	check(bool(b2["ok"]), "mage@3 build failed")
+	var nid2 := _builder.persist(b2, fake2)
+	check(fake2.familiars_created.size() == 1, "mage@3 should create one familiar")
+	if fake2.familiars_created.size() == 1:
+		var f2: Dictionary = fake2.familiars_created[0]
+		check(String(f2.get("form_key", "")) == "hawk",
+			"owl familiar should map to form 'hawk', got '%s'" % String(f2.get("form_key", "")))
+		check(String(f2.get("cosmetic_species", "")) == "Owl",
+			"owl familiar should preserve flavor 'Owl', got '%s'" % String(f2.get("cosmetic_species", "")))
+		check(String(f2.get("master_character_id", "")) == nid2, "mage familiar bound to new char")
+
+
+func test_totem_template_creates_trained_creature() -> void:
+	# shaman @9 grants a wolf totem (a clean catalog match).
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("shaman",
+		{"forced_roll": 9, "campaign_id": "camp_totem", "party_id": "party_test", "force_int": 12})
+	check(bool(b["ok"]), "shaman@9 build failed: %s" % String(b.get("error", "")))
+	check(String(b["party_id"]) == "party_test", "bundle should carry party_id from opts")
+	var totem_items := _non_catalog_of_kind(b, "companion_kind", "totem")
+	check(totem_items.size() == 1, "shaman@9 should surface one totem item, got %d" % totem_items.size())
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist returned empty id")
+	check(fake.creatures_created.size() == 1,
+		"persist should create exactly one trained creature, got %d" % fake.creatures_created.size())
+	if fake.creatures_created.size() == 1:
+		var c: Dictionary = fake.creatures_created[0]
+		check(String(c.get("party_id", "")) == "party_test", "totem not bound to the party")
+		check(String(c.get("handler_id", "")) == new_id, "totem handler should be the new character")
+		check(String(c.get("species_id", "")) == "wolf",
+			"wolf totem should resolve species_id 'wolf', got '%s'" % String(c.get("species_id", "")))
+		# placeholder flag + flavor species preserved for the future totem subsystem
+		check(String(c.get("purchase_item_key", "")) == "totem_placeholder:wolf",
+			"totem placeholder marker missing, got '%s'" % String(c.get("purchase_item_key", "")))
+		check(int(c.get("hp_max", 0)) >= 1, "totem should roll a positive HP from the catalog")
+
+
+func test_totem_without_party_is_not_created() -> void:
+	# Without a party_id the totem cannot be materialized (trained_creatures.party_id
+	# is a required FK). It must NOT be created — but persist must not crash, and the
+	# rest of the build (character, equipment, coin) still persists.
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("shaman",
+		{"forced_roll": 9, "campaign_id": "camp_totem", "force_int": 12})
+	check(bool(b["ok"]), "shaman@9 (no party) build failed")
+	check(String(b["party_id"]) == "", "bundle party_id should default to empty")
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist should still succeed without a party")
+	check(fake.creatures_created.is_empty(),
+		"no party_id -> totem should not be created, got %d" % fake.creatures_created.size())
+
+
+func test_valuable_template_creates_value_backed_row() -> void:
+	# barbarian @11 carries a 25gp valuable -> a value_cp-backed inventory row.
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("barbarian",
+		{"forced_roll": 11, "campaign_id": "camp_val", "force_int": 12})
+	check(bool(b["ok"]), "barbarian@11 build failed: %s" % String(b.get("error", "")))
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist returned empty id")
+	var valuables: Array = []
+	for item: Dictionary in fake.items_added:
+		if String(item.get("item_key", "")) == "valuables":
+			valuables.append(item)
+	check(valuables.size() == 1, "expected one valuables row, got %d" % valuables.size())
+	if valuables.size() == 1:
+		var v: Dictionary = valuables[0]
+		check(String(v.get("character_id", "")) == new_id, "valuable not tagged with character id")
+		check(int(v.get("value_cp", -1)) == 2500,
+			"25gp valuable should be 2500 value_cp, got %d" % int(v.get("value_cp", -1)))
+		check(int(v.get("value_cp", -1)) >= 0, "valuable must carry an authoritative value_cp (sellable)")
+
+
+func test_poison_template_adds_placeholder_dose() -> void:
+	# assassin @13 carries a separate-catalog poison. The poison catalog is not
+	# wired to inventory yet, so persist() adds a flagged placeholder dose rather
+	# than silently dropping the grant (gdd §5.2).
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("assassin",
+		{"forced_roll": 13, "campaign_id": "camp_psn", "force_int": 12})
+	check(bool(b["ok"]), "assassin@13 build failed: %s" % String(b.get("error", "")))
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist returned empty id")
+	var doses: Array = []
+	for item: Dictionary in fake.items_added:
+		if String(item.get("item_key", "")) == "poison_dose":
+			doses.append(item)
+	check(doses.size() == 1, "expected one placeholder poison dose, got %d" % doses.size())
+	if doses.size() == 1:
+		check(String(doses[0].get("character_id", "")) == new_id, "poison dose not tagged with char id")
+
+
+func test_flavor_items_are_intentionally_inert() -> void:
+	# The data has two non-catalog kinds beyond the four with dedicated subsystems:
+	# flavor_consumable (body_oil) and flavor_tool (disguise_kit / medicine_bag /
+	# carving_knife). Per gdd §5.2 + coding_conventions §78 these were deliberately
+	# classified as flavor — the governing proficiency provides the capability — so
+	# persist() must SKIP them cleanly (no inventory row, no crash), not back them.
+	var fake := _FakeRepo.new()
+	var b := _builder.build_classed_npc("barbarian",
+		{"forced_roll": 13, "campaign_id": "camp_flavor", "force_int": 12})
+	check(bool(b["ok"]), "barbarian@13 build failed: %s" % String(b.get("error", "")))
+	var new_id := _builder.persist(b, fake)
+	check(new_id != "", "persist should succeed despite a flavor_consumable item")
+	for item: Dictionary in fake.items_added:
+		check(String(item.get("item_key", "")) != "body_oil",
+			"flavor_consumable (body_oil) should NOT create an inventory row")
+
+	# assassin @15 carries a flavor_tool (disguise_kit) — likewise no row.
+	var fake2 := _FakeRepo.new()
+	var b2 := _builder.build_classed_npc("assassin",
+		{"forced_roll": 15, "campaign_id": "camp_flavor", "force_int": 12})
+	check(bool(b2["ok"]), "assassin@15 build failed")
+	check(_builder.persist(b2, fake2) != "", "persist should succeed despite a flavor_tool item")
+	for item: Dictionary in fake2.items_added:
+		check(String(item.get("item_key", "")) != "disguise_kit",
+			"flavor_tool (disguise_kit) should NOT create an inventory row")
+
+
+## Returns the non_catalog_items entries whose metadata[key] == value.
+func _non_catalog_of_kind(bundle: Dictionary, key: String, value: String) -> Array:
+	var out: Array = []
+	for entry: Dictionary in bundle.get("non_catalog_items", []):
+		var md: Dictionary = entry.get("metadata", {})
+		if String(md.get(key, "")) == value:
+			out.append(entry)
+	return out
 
 
 func _keys(profs: Array) -> Array:

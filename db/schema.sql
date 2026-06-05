@@ -109,7 +109,11 @@ CREATE TABLE IF NOT EXISTS characters (
         CHECK(npc_role IN (
             'player', 'henchman', 'specialist', 'baseline_placeholder',
             'stocked', 'named_npc', 'on_demand'
-        ))
+        )),
+    -- Migration 145 (gdd-class-templates.md §6.4): which class template this
+    -- character was created from. NULL for Path A picks, non-template builds,
+    -- and generic NPCs. Reference-only (narration / inspection / analytics).
+    origin_template_id TEXT DEFAULT NULL
 );
 
 -- Migration 120: structured permanent-wound records (Phase 10B.3 #6).

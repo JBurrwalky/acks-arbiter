@@ -517,6 +517,9 @@ extends Node
 @onready var _pc_template_creation_flow_tests = $PcTemplateCreationFlowTests
 # 2026-06-04 — Class templates §10 step 8: wealth-target sanity sweep
 @onready var _template_wealth_sweep_tests = $TemplateWealthSweepTests
+@onready var _template_class_metadata_tests = $TemplateClassMetadataTests
+@onready var _template_magic_item_progression_tests = $TemplateMagicItemProgressionTests
+@onready var _template_spell_repertoire_tests = $TemplateSpellRepertoireTests
 
 
 func _ready() -> void:
@@ -1028,7 +1031,10 @@ func run() -> void:
 			_template_int_adjuster_tests,
 			_pc_template_creation_flow_tests,
 			# 2026-06-04 — Class templates §10 step 8: wealth-target sanity sweep
-			_template_wealth_sweep_tests]:
+			_template_wealth_sweep_tests,
+			_template_class_metadata_tests,
+			_template_magic_item_progression_tests,
+			_template_spell_repertoire_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

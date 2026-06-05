@@ -32327,3 +32327,125 @@ on-tick dispatch.
 1. **§10 step 10** — higher-level NPC composition (§7.4 + §7.5 magic-item progression).
 2. **§10 step 11** — arcane spell repertoire picker.
 3. (Optional) **§10 step 9** — wire witch-tradition / barbarian-natural / shaman-totem onto the character record at selection.
+
+## Session 2026-06-04 — Class Templates §10 steps 9-11 (class_metadata locking + magic-item progression + spell repertoire)
+
+**Task:** Implement the remaining `generation/gdd-class-templates.md` §10 steps in sequence, validating with the full test suite between each: step 9 (witch-tradition / barbarian-natural / shaman-totem locking onto the character record), step 10 (higher-level NPC §7.5 magic-item progression), step 11 (arcane spell-repertoire picker).
+**Model used:** Opus 4.8 (1M context) for the whole arc (cross-subsystem integration — class templates × character record × magic-item catalog × spell repertoire).
+**Completed:**
+- **Step 9 — `TemplateClassMetadata`** (`engine/subsystems/characters/template_class_metadata.gd`, pure static). Derives the class_metadata a template locks at selection: witch → `{"witch_tradition": tradition.to_lower()}`, barbarian → `{"regional_origin": <region>}`, shaman → `{"shaman_totem": species, "shaman_totem_placeholder": "1"}`. Barbarian region recovered by reverse-mapping the natural prof against `barbarian.json regional_origins[*].bonus_proficiency` (climbing→jutland, precise_shooting→skysostan, running→ivory_kingdoms) — data-driven, no hard-coded IP. Added string-valued `CharacterData.get_class_metadata_value` / `set_class_metadata_value` (the existing `*_flag` helpers are boolean-only). Wired into `ClassedNpcBuilder.build_classed_npc` (stamps onto CharacterData; `class_metadata_locked` in bundle; round-trips through to_dict) and `PcTemplateCreationFlow.choose_path_b` (surfaced for the wizard).
+- **Step 10 — `TemplateMagicItemProgression`** (`engine/subsystems/characters/template_magic_item_progression.gd`, static). v1 §7.5 ladder on the L1 template floor, keyed off the class's `combat_progression` field (NOT spellcasting status — Elven Spellsword takes the fighter ladder). Pure math: `weapon_armor_plus` (fighter/thief +1/3 levels, cleric +1/4, cap +3), `scroll_wand_counts` (cleric divine scroll @L5/L7; mage arcane scroll @L3/L7/L14 + wand @L5/L9), `has_any_grant`. `compute()` picks the highest-`cost_cp` weapon + body armor (else shield fallback) and materializes placeholder scrolls/wands from `MagicItemCatalog` (`scroll` / `rod_staff_wand` categories). Wired into the builder (level>1 → `magic_item_progression` in bundle); `persist()` stamps `is_magical=1`/`magical_bonus=N` on one weapon + one armor row (Migration 005 columns) and adds the scroll/wand rows. Deterministic `make_rng(class_id, level, roll)`.
+- **Step 11 — `TemplateSpellRepertoire`** (`engine/subsystems/characters/template_spell_repertoire.gd`, deps injectable). Bridges curated template spells with `RepertoireEngine` growth. `name_to_key` resolves the importer's lowercase prose names (incl. `darkness` as Light's synthetic reverse); `build_repertoire` returns `character_spells` rows: template spells + INT-kept bonus, then L1 §8.2 INT extras (dedup-no-reroll) OR level>1 capacity-fill (subsumes the L1 extras — no double-count). Builder lazily constructs it on first arcane build (avoids the 254-spell SpellRegistry load for mundane builds), attaches `repertoire_spells`; `persist()` → `save_character_spells`. `PcTemplateCreationFlow.build_repertoire` is the PC parity hook.
+**Decisions made:**
+- **`combat_progression` is the §7.5 routing key** — already a first-class `data/classes/*.json` field (fighter/cleric/thief/mage); the GDD's "read it from the class XML" is satisfied without a hard-coded map. Confirmed elven_spellsword=fighter, warlock=mage, shaman=cleric.
+- **Barbarian region is a mechanical fact, not IP-stripped data.** The §6.6 IP-strip applies to template *labels*; the character's `regional_origin` (which drives weapon permissions) is the existing Migration-040 barbarian mechanic, and the GDD §4.4 explicitly says template selection sets it. Recovered from the natural prof, so no IP name is reintroduced into template data.
+- **Weapon/armor +N uses the existing Migration-005 inventory columns** (`is_magical`/`magical_bonus`) — no schema change; the §7.5 enchantment is a real, mechanically-live bonus, not a metadata note.
+- **The §8 INT design is internally consistent with RepertoireEngine capacity** (template + bonus + extras = capacity[0] at every INT band), so the level>1 capacity-fill cleanly subsumes the L1 INT extras without double-counting.
+- **Scroll/wand pickers are uniform-from-category placeholders** per §7.5/§11 (the real arcane/divine split + proper wand selection await the magic-item generator GDD).
+**Interfaces defined or changed:**
+- `CharacterData.get_class_metadata_value(key, default="")` / `set_class_metadata_value(key, value)` — new string-valued class_metadata accessors.
+- `ClassedNpcBuilder._init` gains `p_magic_item_catalog` (7th param); `build_classed_npc` bundle gains `class_metadata_locked`, `magic_item_progression`, `repertoire_spells`, `repertoire_detail`; `persist()` now stamps enchantments, adds scroll/wand rows, and calls `save_character_spells`.
+- `PcTemplateCreationFlow._init` gains `p_class_registry` (4th param); `choose_path_b` result gains `class_metadata_locked`; new `build_repertoire(class_id, template_id, int_score)`.
+- `TemplateMagicItemProgression`: `weapon_armor_plus(prog, level)→{weapon,armor}`, `scroll_wand_counts(prog, level)→{divine_scrolls,arcane_scrolls,wand_rod_staff}`, `has_any_grant`, `compute(template, prog, level, catalog, magic_item_catalog, rng)→{...,magic_items:[{item_key,name,category,value_cp,source}]}`, `make_rng`.
+- `TemplateSpellRepertoire`: `name_to_key(name)` (static), `build_repertoire(class_id, level, int, starting_spells, bonus_spell, extra_spells_to_roll, rng_label)→{spells,resolved,unresolved,rolled,grown}`.
+- `TemplateClassMetadata`: `derive(template, class_registry)`, `apply_to_character(...)`, `barbarian_region_for_natural_prof(prof_key, class_registry)`.
+**Database changes:** None — uses existing columns (`characters.class_metadata` M040, `inventory_items.is_magical`/`magical_bonus` M005, `character_spells` M001).
+**Tests added/updated:**
+- `tests/test_template_class_metadata.gd` (7 tests, id 429), `tests/test_template_magic_item_progression.gd` (9 tests, id 430), `tests/test_template_spell_repertoire.gd` (9 tests, id 431). Registered in test_runner.{tscn,gd}.
+**Test suite result:**
+- **425 suites passed / 19 failed.** Baseline was 422/19; +3 new suites, all green; net-zero new failures (the 19 are the pre-existing proficiency-UI / scheduler / narration carry-forward).
+**Known issues:**
+- Magic-item scroll/wand selection is a uniform-category placeholder (§7.5.2 / §11 open concern) — awaits the magic-item generator GDD for the real arcane/divine split and treasure-budget allocation.
+- §7.4 full level-advancement (HP/attack/save/proficiency growth past L1) remains owned by `level_up_engine` / class XML; step 10 only layers the §7.5 magic-item floor on top of whatever `CharacterGenerator.generate_npc` produces at the requested level.
+**Next session should:**
+1. (If desired) Commit + push steps 9-11 — NOT yet committed this session (the task was "run the steps", no commit instruction given).
+2. §10 step 12 (full PC creation UI) is deferred to its own GDD (§9.3) — the headless flow is complete.
+3. When the magic-item generator GDD lands, replace the §7.5 placeholder pickers with the real arcane/divine scroll split + proper wand/rod/staff selection.
+
+## Session 2026-06-04 — Class templates §6.4: origin_template_id character field
+
+**Task:** Implement the `origin_template_id` character-persistence field called for by `generation/gdd-class-templates.md` §6.4 — the last outstanding character-record piece of the class-templates work. Add the SQLite column, the `CharacterData` field, stamp it where a template is applied (NPC builder + PC Path B), and test it. Bar: net-zero new test failures over the 425/19 baseline; no commit.
+
+**Model used:** Opus 4.8 (1M context) for the whole session (implementation + verification).
+
+**Completed:**
+- Migration `db/migrations/145_origin_template_id.sql`: `ALTER TABLE characters ADD COLUMN origin_template_id TEXT DEFAULT NULL`. Auto-discovered + applied by `CampaignRepository._run_migrations()` (confirmed in the test-run log: "Applied migration 145").
+- `db/schema.sql`: added the `origin_template_id TEXT DEFAULT NULL` column to the canonical `characters` table (after `npc_role`, in migration order).
+- `engine/shared_types/character_data.gd`: new `var origin_template_id: String = ""`; wired into `from_dict()` (DB NULL ↔ "" via the same null-coalescing as `employer_id`) and `to_dict()`.
+- `engine/autoloads/campaign_repository.gd`: added `origin_template_id` to the explicit column list + bind array in BOTH `create_character()` (now 49 columns/placeholders/binds — manually + grep-verified) and `save_character()` (UPDATE SET). Without this the `to_dict()` key is silently dropped — the explicit INSERT/UPDATE lists don't auto-pick up new dict keys.
+- `engine/subsystems/characters/classed_npc_builder.gd` `persist()`: stamps `character.origin_template_id = String(bundle.get("template_id", ""))` before `create_character(character.to_dict())`, so every template-built NPC records its origin.
+- `engine/subsystems/characters/pc_template_creation_flow.gd` `choose_path_b()`: documented that its already-returned `template_id` is the value the (deferred) creation wizard stamps onto `origin_template_id`; Path A omits `template_id` so a Path-A PC stays "".
+
+**Decisions made:**
+- DB NULL ↔ "" in memory, mirroring the existing `employer_id` nullable-field pattern (null-coalescing read in `from_dict`; bind via `data.get(key, null)`). Non-template / Path-A / generic characters carry "" (and NULL for pre-stamp rows via the column's `DEFAULT NULL`). Reference-only field — no gameplay logic reads it (per GDD §6.4: narration / save inspection / analytics).
+- Wired the real `create_character`/`save_character` SQL (not just `to_dict` + the test FakeRepo) so the field actually round-trips to SQLite in production. GDD §6.4 explicitly places this column on "the character row in SQLite," so the persistence path — not just the data shape — had to change.
+- Extended the existing `test_classed_npc_builder.gd` + `test_pc_template_creation_flow.gd` suites instead of registering a new suite (the task allowed this as "cleaner") — avoids the 4-edit `.tscn`/`.gd` suite registration and the `--import` step entirely.
+
+**Interfaces defined or changed:**
+- `CharacterData.origin_template_id: String` (in-memory; "" when none). Present in the `CharacterData.to_dict()` / `from_dict()` round-trip.
+- `characters.origin_template_id TEXT` column (nullable).
+- `ClassedNpcBuilder.persist()` now sets `character.origin_template_id` from `bundle["template_id"]`.
+- `PcTemplateCreationFlow.choose_path_b()` return dict's `template_id` is the documented origin-stamp source; `choose_path_a()` deliberately omits it.
+
+**Database changes:**
+- Migration 145 — new column `origin_template_id TEXT DEFAULT NULL` on `characters`. Non-destructive, additive. `schema.sql` updated to match.
+
+**Tests added/updated:**
+- `tests/test_classed_npc_builder.gd`: `test_origin_template_id_stamped_and_roundtrips()` (a template NPC's persisted row + in-memory character carry the template_id, and it survives `to_dict()`→`from_dict()`); `test_non_template_character_has_empty_origin()` ("" round-trips as "", DB NULL→"", absent key→"").
+- `tests/test_pc_template_creation_flow.gd`: `test_path_b_surfaces_template_id_for_origin_stamping()` (Path B exposes `template_id`; Path A omits it).
+- Full headless suite: **425 passed / 19 failed** — exactly the pre-existing baseline; both touched suites print "all tests passed"; no new failures, no `no such column` errors, `CharacterPersistence` (real-DB round trip) still green.
+
+**Known issues:**
+- None introduced. The 19 failing suites are the long-standing pre-existing baseline (proficiency UI / scheduler / ZoC etc.), unrelated to this change.
+- No PC creation *wizard* exists yet (§9.3 deferred), so the PC-side stamp is contract-only: `choose_path_b` surfaces `template_id` and is documented + tested, but nothing yet constructs/persists a PC from it. When that UI lands it must set `character.origin_template_id` from the Path-B `template_id`.
+
+**Next session should:**
+1. (If desired) Commit — these changes are NOT yet committed (no commit instruction was given this session).
+2. When the PC creation wizard (§9.3) is built, wire its finalize step to stamp `origin_template_id` from `choose_path_b`'s `template_id` (Path A leaves it "").
+
+
+## Session 2026-06-04 — Class Templates §5.2/§9.1: non-catalog item routing (ClassedNpcBuilder.persist)
+
+**Task:** Wire `ClassedNpcBuilder.persist()` to materialize the build bundle's `non_catalog_items` — which `equipment_records()` surfaces but `persist()` previously ignored, so template-granted familiars / shaman totems / jewelry / poisons produced nothing. Route each metadata kind to its owning subsystem (gdd-class-templates.md §5.2 + §9.1; gdd-familiars.md).
+**Model used:** Opus 4.8 (1M context) — entire session (interface reading, design, implementation, tests, and the §78-driven flavor-handling correction).
+**Completed:**
+- **`ClassedNpcBuilder._route_non_catalog_items(bundle, character_id, repo)`** + per-kind helpers (`engine/subsystems/characters/classed_npc_builder.gd`), called from `persist()` after the character/equipment/coin rows exist. Dispatches each `non_catalog_items` entry by `metadata`:
+  - **familiar** (`companion_kind:"familiar"`, 13 templates) → `_grant_familiar` → `CampaignRepository.create_familiar`, GRANTED at creation bypassing the bind ritual; HD/HP/INT/save derived from the master via `FamiliarData.compute_progression_for_master_level` + banker's-halved HP (mirrors `CharacterCreationScreen` finalize). Flavor species → `form_key` via the curated `FAMILIAR_SPECIES_TO_FORM`; true species kept as `cosmetic_species`.
+  - **totem** (`companion_kind:"totem"`, 8 shaman bands) → `_grant_totem` → `create_trained_creature` as a v1 companion animal. `species_id` from `TOTEM_SPECIES_TO_SPECIES_ID` (real MonsterRegistry ids → v1 stats + a deterministic seeded HP roll); placeholder flag + true species preserved in `purchase_item_key = "totem_placeholder:<species>"`; `handler_id` = new char.
+  - **valuable** (`noncatalog_kind:"valuable"`, 24) → `_grant_valuable` → `add_inventory_item` with `value_cp = value_gp*100` (item_key `"valuables"`, category `"treasure"`), ShopService-sellable.
+  - **poison** (`noncatalog_kind:"separate_catalog", tag:"poison"`, 2) → `_grant_poison` → generic `poison_dose` placeholder row + `push_warning` TODO (poisons.json has no inventory bridge; template gives no specific key).
+  - **flavor_tool / flavor_consumable** (7) → intentionally skipped (see Decisions).
+  - unknown kind → `push_warning` (never silent).
+- **`build_classed_npc` now carries `party_id`** in the bundle (from `opts.party_id`) so `persist()` can satisfy the trained_creatures party FK for totems.
+- **Lazy `_ensure_monster_registry()`** (mirrors `_ensure_spell_repertoire`) — MonsterRegistry built only on the first totem grant.
+- **`tests/test_classed_npc_builder.gd`** extended: `_FakeRepo` gained `create_familiar` / `create_trained_creature` (+ `familiars_created` / `creatures_created` records); 6 new test methods.
+- **`docs/coding_conventions.md` §78** — new "Non-catalog item routing" bullet; amended the prior "never as inventory" phrase to cross-reference it.
+**Decisions made:**
+- **flavor_tool / flavor_consumable are INTENTIONALLY inert — no inventory row.** I first backed them with placeholder rows (consistent with the poison), but `acks-conventions §78` (2026-06-04 review-pass) records that disguise_kit / medicine_bag were DELIBERATELY reclassified as flavor "because the Disguise / Healing proficiencies need no kit." So for flavor_tool (disguise_kit/medicine_bag/carving_knife) + flavor_consumable (body_oil), producing nothing IS the design, not the bug — they are explicitly recognized and skipped (no row, no warning). The "don't silently drop" rule applies to grants that SHOULD back an item (familiar/totem/valuable/poison), not to deliberate flavor.
+- **Familiar species → form mapping is curated and lossless on flavor.** The 12 template species don't 1:1 map to the 7 catalog forms; `FAMILIAR_SPECIES_TO_FORM` collapses birds→hawk (whose cosmetic_variants already list Owl/Raven/Eagle), serpents+lizard→snake_small, dog→cat, and preserves the true species as `cosmetic_species`. The familiars table stores `form_key` (mechanics) + `cosmetic_species` (flavor) separately, so nothing is lost.
+- **Totem species_id is a v1 STAT stand-in; the true species rides in purchase_item_key.** owl/raven have no MonsterRegistry entry (eagle/rat only have larger/giant variants); they borrow the nearest catalog animal for STATS so the placeholder is mechanically real, while `purchase_item_key = "totem_placeholder:<species>"` carries the flag + true species for the future totem subsystem to find (`LIKE 'totem_placeholder:%'`) and upgrade. No schema change needed (purchase_item_key is pure denormalized provenance, read nowhere for logic — verified).
+- **Totem requires a party_id (FK); warn-and-skip when absent.** A standalone classed NPC has no party. `party_id` is threaded `opts → bundle → persist`; if empty the totem is not created and a clear `push_warning` names the cause. Real limitation, flagged below.
+- **Defensive, fake-repo-friendly.** New cross-subsystem repo calls are `has_method()`-guarded (tests pass a DB-free fake repo). Registries are lazy. Extended the existing registered suite (ext_resource 425) instead of adding a redundant new one — reuses `_FakeRepo`/`_builder` fixtures, so no new test_runner registration was needed.
+**Interfaces defined or changed:**
+- `ClassedNpcBuilder.build_classed_npc(class_id, opts)` bundle gains `party_id` (String, from `opts.party_id`, default "").
+- New opts key: `party_id` (String) — required for a shaman totem to materialize.
+- `ClassedNpcBuilder` new consts: `FAMILIAR_SPECIES_TO_FORM`, `TOTEM_SPECIES_TO_SPECIES_ID`, `TOTEM_PLACEHOLDER_PREFIX = "totem_placeholder:"`.
+- New methods: `_route_non_catalog_items`, `_grant_familiar`, `_grant_totem`, `_grant_valuable`, `_grant_poison`, `_familiar_form_for_species`, `_totem_species_id_for`, `_ensure_monster_registry`, static `_sum_selections`.
+- `_init` signature UNCHANGED (MonsterRegistry is lazy, not injected).
+- Repo methods consumed (all pre-existing): `create_familiar(data)`, `create_trained_creature(data)`, `add_inventory_item(data)`.
+- Totem provenance contract: `trained_creatures.purchase_item_key = "totem_placeholder:<species>"` marks a v1 totem placeholder, queryable by the future totem subsystem.
+**Database changes:**
+- None. All routing uses existing tables (familiars, trained_creatures, inventory_items) + existing repo methods.
+**Tests added/updated:**
+- `tests/test_classed_npc_builder.gd`: `_FakeRepo` + `create_familiar` / `create_trained_creature` (+ record arrays). New methods: `test_familiar_template_grants_familiar` (warlock@3 cat→form `cat` + master-binding; mage@3 owl→form `hawk`, flavor preserved); `test_totem_template_creates_trained_creature` (shaman@9 wolf: party-bound, handler=new char, species_id `wolf`, `purchase_item_key`=`totem_placeholder:wolf`, HP≥1); `test_totem_without_party_is_not_created` (no party → no creature, persist still succeeds); `test_valuable_template_creates_value_backed_row` (barbarian@11 25gp → value_cp 2500); `test_poison_template_adds_placeholder_dose` (assassin@13 → one `poison_dose`); `test_flavor_items_are_intentionally_inert` (barbarian@13 body_oil + assassin@15 disguise_kit → NO rows).
+**Test suite result:**
+- **425 suites passed / 19 failed.** Net-zero NEW failures over the green baseline (the 19 are the unchanged pre-existing carry-forward; all occur in suites BEFORE ClassedNpcBuilder). "ClassedNpcBuilder: all tests passed." Ran `--import` first (no new class_names, but safe). Only two ClassedNpcBuilder warnings remain in the log — both intentional (the no-party totem test + the poison TODO).
+**Known issues:**
+- **Totem needs `opts.party_id`.** A party-less classed NPC's totem is skipped (with a warning). Whoever builds shaman NPCs must pass the NPC's party. [Design note for Jedidiah — confirm warn-and-skip is acceptable until the totem subsystem lands.]
+- **Totem stat species are stand-ins.** owl/raven→hawk_ordinary, eagle→hawk_giant, rat→varmint_giant_rat. The flavor species is preserved in `purchase_item_key`; the future shaman-totem subsystem should re-resolve real stats. No catalog entry exists for a plain owl/raven/eagle/rat.
+- **Poison is a generic placeholder.** Template tags "poison" with no specific key, and `data/equipment/poisons.json` has no inventory bridge. `_grant_poison` adds a `poison_dose` stub + TODO; the specific poison + mechanics await the poison subsystem.
+- **flavor_tool/flavor_consumable produce nothing by design.** If Jedidiah later wants these as real items, add them to the equipment catalog at import (they would then resolve as catalog items, not non_catalog).
+**Next session should:**
+1. **Wire totem `party_id` at call sites** that build shaman NPCs (rulers/henchmen), or confirm the warn-and-skip is acceptable until the totem subsystem lands.
+2. **Auto-equip defensible defaults (§5.4)** — still the open §10-step-5 polish (armor/shield/main weapon); `HenchmanEquipmentKit` is the porting precedent.
+3. **Poison + flavor catalog**: decide whether the assassin/dwarven-delver poison gets a real poisons.json→inventory bridge, and whether any flavor_tool should graduate to a real catalog item.

@@ -23,14 +23,20 @@ extends RefCounted
 var _template_repo: ClassTemplateRepository
 var _proficiency_registry: ProficiencyRegistry
 var _catalog: EquipmentCatalog
+var _class_registry: ClassRegistry
+## Lazily built on first arcane repertoire request (avoids the SpellRegistry load
+## for mundane PCs). See build_repertoire().
+var _spell_repertoire: TemplateSpellRepertoire = null
 
 
 func _init(p_template_repo: ClassTemplateRepository = null,
 		p_proficiency_registry: ProficiencyRegistry = null,
-		p_catalog: EquipmentCatalog = null) -> void:
+		p_catalog: EquipmentCatalog = null,
+		p_class_registry: ClassRegistry = null) -> void:
 	_template_repo = p_template_repo if p_template_repo != null else ClassTemplateRepository.new()
 	_proficiency_registry = p_proficiency_registry if p_proficiency_registry != null else ProficiencyRegistry.new()
 	_catalog = p_catalog if p_catalog != null else EquipmentCatalog.new()
+	_class_registry = p_class_registry if p_class_registry != null else ClassRegistry.new()
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +78,10 @@ func choose_path_a(roll: int) -> Dictionary:
 ## template + §8 INT adjustments and returns the §4.2.1 editor state plus the
 ## loadout. Eligibility (band <= cap) is the caller's gate. Path B does NOT award
 ## STARTING_GP — the template's listed wealth IS the starting funds (§4.1).
+##
+## The returned `template_id` is the value the creation wizard stamps onto the new
+## character's `origin_template_id` (gdd §6.4). Path A (choose_path_a) returns no
+## `template_id`, so a Path-A character leaves origin_template_id "" (→ DB NULL).
 func choose_path_b(class_id: String, template_id: String, int_score: int) -> Dictionary:
 	var template: ClassTemplate = _template_repo.get_template(template_id)
 	if template == null or template.class_id != class_id:
@@ -80,6 +90,7 @@ func choose_path_b(class_id: String, template_id: String, int_score: int) -> Dic
 	var equip := ClassedNpcBuilder.equipment_records(template, _catalog)
 	return {
 		"ok": true, "path": "B",
+		# Stamped onto the character's origin_template_id by the wizard (gdd §6.4).
 		"template_id": template_id,
 		"display_label": template.display_label,
 		"tradition": template.tradition,
@@ -92,6 +103,10 @@ func choose_path_b(class_id: String, template_id: String, int_score: int) -> Dic
 		"starting_spells": template.starting_spells.duplicate(),
 		"bonus_spell": "" if bool(plan["drop_bonus_spell"]) else template.bonus_spell,
 		"extra_spells_to_roll": int(plan["extra_spells_to_roll"]),
+		# Class-specific selections this template locks in (gdd §4.4, §9.1; §10
+		# step 9) — witch tradition / barbarian region / shaman totem. The creation
+		# wizard stamps these onto the new character's class_metadata at finalize.
+		"class_metadata_locked": TemplateClassMetadata.derive(template, _class_registry),
 	}
 
 
@@ -179,6 +194,33 @@ func finalize_proficiencies(template: ClassTemplate, int_score: int,
 		records.append({"proficiency_key": String(k), "rank": 1,
 			"slot_type": "general", "selections_count": 1, "specialization": ""})
 	return records
+
+
+# ---------------------------------------------------------------------------
+# §7.5.1 / §8.2 arcane spell repertoire (§10 step 11)
+# ---------------------------------------------------------------------------
+
+## Build the baseline arcane repertoire a Path B template grants the PC (gdd §7.5.1,
+## §8.2), applying the §8 INT adjustment (bonus spell dropped at INT <= 12, extras
+## rolled at INT 16+). Mirrors the NPC builder's repertoire path so PC and NPC
+## template application stay identical (§4.2.1). The player may then edit their
+## spell picks in the (deferred) creation UI; this is the auto-generated starting
+## point. Returns the TemplateSpellRepertoire detail dict ({spells, resolved, …}),
+## or {} for a non-arcane class / unknown template.
+func build_repertoire(class_id: String, template_id: String, int_score: int) -> Dictionary:
+	var template: ClassTemplate = _template_repo.get_template(template_id)
+	if template == null or template.class_id != class_id:
+		return {}
+	if not TemplateIntAdjuster.is_arcane_class(class_id):
+		return {}
+	var plan := TemplateIntAdjuster.compute_adjustment(class_id, int_score)
+	var spell_info := TemplateIntAdjuster.adjust_spells(template, plan)
+	if _spell_repertoire == null:
+		_spell_repertoire = TemplateSpellRepertoire.new(null, _class_registry)
+	return _spell_repertoire.build_repertoire(
+		class_id, 1, int_score,
+		spell_info["starting_spells"], String(spell_info["bonus_spell"]),
+		int(spell_info["extra_spells_to_roll"]), "pc_rep_%s" % template_id)
 
 
 # ---------------------------------------------------------------------------

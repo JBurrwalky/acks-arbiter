@@ -80,6 +80,14 @@ var personality: String = "{}"
 ## `determined_by_regional_origin` weapon-permission sentinel.
 var class_metadata: String = "{}"
 
+## Provenance: the class template this character was built from
+## (gdd-class-templates.md §6.4). "" (↔ DB NULL) for Path A picks, characters
+## built outside the template system, and generic / Normal-Man NPCs. Reference-
+## only — useful for narration, save-game inspection, and future analytics; no
+## gameplay logic reads it. Stamped by ClassedNpcBuilder.persist(); for PCs the
+## Path B creation flow surfaces it for the wizard to stamp.
+var origin_template_id: String = ""
+
 ## Status
 var is_dead: bool = false
 var is_active: bool = true
@@ -164,6 +172,32 @@ func has_class_metadata_flag(key: String) -> bool:
 
 
 func set_class_metadata_flag(key: String, value: bool) -> void:
+	var dict: Dictionary = {}
+	if not class_metadata.is_empty():
+		var parsed: Variant = JSON.parse_string(class_metadata)
+		if parsed is Dictionary:
+			dict = parsed
+	dict[key] = value
+	class_metadata = JSON.stringify(dict)
+
+
+## String-valued class_metadata accessors. Distinct from the boolean flag helpers
+## above: these store/read the non-boolean class sub-selections (regional_origin,
+## witch_tradition, shaman_totem, voudon_craft_choice). [param default] is returned
+## when the key is absent or class_metadata is empty/malformed.
+func get_class_metadata_value(key: String, default: String = "") -> String:
+	if class_metadata.is_empty():
+		return default
+	var parsed: Variant = JSON.parse_string(class_metadata)
+	if not (parsed is Dictionary):
+		return default
+	var dict := parsed as Dictionary
+	if not dict.has(key):
+		return default
+	return str(dict[key])
+
+
+func set_class_metadata_value(key: String, value: String) -> void:
 	var dict: Dictionary = {}
 	if not class_metadata.is_empty():
 		var parsed: Variant = JSON.parse_string(class_metadata)
@@ -536,6 +570,9 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.languages = sanitize_languages_json(data.get("languages", "[]"))
 	c.personality = data.get("personality", "{}")
 	c.class_metadata = data.get("class_metadata", "{}")
+	# Nullable TEXT: DB NULL ↔ "" in memory (same pattern as employer_id below).
+	var _origin = data.get("origin_template_id")
+	c.origin_template_id = _origin if _origin != null else ""
 	# Boolean DB fields are stored as INTEGER (0/1) — convert on read
 	c.is_dead = data.get("is_dead", 0) == 1
 	c.is_active = data.get("is_active", 1) == 1
@@ -595,6 +632,7 @@ func to_dict() -> Dictionary:
 		"languages": sanitize_languages_json(languages),
 		"personality": personality,
 		"class_metadata": class_metadata,
+		"origin_template_id": origin_template_id,
 		"is_dead": 1 if is_dead else 0,
 		"is_active": 1 if is_active else 0,
 		"is_incapacitated": 1 if is_incapacitated else 0,

@@ -442,6 +442,9 @@
 [ext_resource type="Script" path="res://tests/test_template_int_adjuster.gd" id="426_template_int_adjuster_tests"]
 [ext_resource type="Script" path="res://tests/test_pc_template_creation_flow.gd" id="427_pc_template_creation_flow_tests"]
 [ext_resource type="Script" path="res://tests/test_template_wealth_sweep.gd" id="428_template_wealth_sweep_tests"]
+[ext_resource type="Script" path="res://tests/test_template_class_metadata.gd" id="429_template_class_metadata_tests"]
+[ext_resource type="Script" path="res://tests/test_template_magic_item_progression.gd" id="430_template_magic_item_progression_tests"]
+[ext_resource type="Script" path="res://tests/test_template_spell_repertoire.gd" id="431_template_spell_repertoire_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1768,3 +1771,12 @@ script = ExtResource("427_pc_template_creation_flow_tests")
 
 [node name="TemplateWealthSweepTests" type="Node" parent="."]
 script = ExtResource("428_template_wealth_sweep_tests")
+
+[node name="TemplateClassMetadataTests" type="Node" parent="."]
+script = ExtResource("429_template_class_metadata_tests")
+
+[node name="TemplateMagicItemProgressionTests" type="Node" parent="."]
+script = ExtResource("430_template_magic_item_progression_tests")
+
+[node name="TemplateSpellRepertoireTests" type="Node" parent="."]
+script = ExtResource("431_template_spell_repertoire_tests")

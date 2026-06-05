@@ -493,8 +493,8 @@ func create_character(data: Dictionary) -> String:
 			 portrait_id, current_age, age_category, languages, personality,
 			 is_dead, is_active, is_incapacitated, day_of_death, death_cause,
 			 employer_id, loyalty_score, wage_cp_per_month,
-			 sex, token_variant, class_metadata)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 sex, token_variant, class_metadata, origin_template_id)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -527,6 +527,7 @@ func create_character(data: Dictionary) -> String:
 		data.get("sex", "male"),
 		data.get("token_variant", ""),
 		data.get("class_metadata", "{}"),
+		data.get("origin_template_id", null),
 	]):
 		push_error("CampaignRepository.create_character: failed. name=%s" % data.get("name", "?"))
 		return ""
@@ -567,6 +568,7 @@ func save_character(data: Dictionary) -> bool:
 				day_of_death = ?, death_cause = ?,
 				employer_id = ?, loyalty_score = ?, wage_cp_per_month = ?, sex = ?,
 				token_variant = ?, class_metadata = ?,
+				origin_template_id = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
 		""", [
@@ -601,6 +603,7 @@ func save_character(data: Dictionary) -> bool:
 			data.get("sex", "male"),
 			data.get("token_variant", ""),
 			data.get("class_metadata", "{}"),
+			data.get("origin_template_id", null),
 			id
 		])
 	else:

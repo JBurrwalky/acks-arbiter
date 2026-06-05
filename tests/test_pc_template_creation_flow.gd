@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	test_editor_state_locks_and_cull()
 	test_finalize_fills_int_extras()
 	test_finalize_arcane_cull()
+	test_path_b_surfaces_template_id_for_origin_stamping()
 	if not has_failures():
 		print("PcTemplateCreationFlow: all tests passed.")
 
@@ -102,6 +103,18 @@ func test_finalize_fills_int_extras() -> void:
 		keys.append(String(r["proficiency_key"]))
 	check(keys.has("healing"), "player's chosen extra general is included")
 	check(chosen.size() == 3, "fighter INT 13 -> 3 proficiencies (2 + 1 extra)")
+
+
+func test_path_b_surfaces_template_id_for_origin_stamping() -> void:
+	# §6.4: the creation wizard stamps origin_template_id from choose_path_b's
+	# template_id; choose_path_a omits it so a Path-A character leaves it "".
+	var b := _flow.choose_path_b("fighter", "fighter_15_16", 12)
+	check(bool(b["ok"]), "path B ok")
+	check(String(b.get("template_id", "")) == "fighter_15_16",
+		"path B surfaces the template_id for the wizard to stamp onto origin_template_id")
+	var a := _flow.choose_path_a(14)
+	check(not a.has("template_id"),
+		"path A omits template_id (origin_template_id stays \"\")")
 
 
 func test_finalize_arcane_cull() -> void:
