@@ -1,0 +1,81 @@
+{
+  "kit_id": "alaman",
+  "tier": "culture",
+  "inherits": "germanic",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 43,
+  "sub_palette": "gothic+frankish (intra-family blend)",
+  "synthesis_sources": [6, 19],
+  "homeland": "Alama",
+  "blend": { "backbone": "gothic", "overlay": "frankish" },
+  "government": "clanhold",
+  "alignment_allowed": ["Lawful", "Neutral"],
+  "_note": "Intra-Germanic blend (continental Germanic + Frankish): an Alemannic confederation of forest-and-hill cantons, kin-reiks bound by the thing, pressed against the Frankish world. Backbone = Gothic/continental Germanic (phonology, reiks/thiudans clan ladder); overlay = Frankish/OHG (the High-German shift in some words, the Herizogo dukes, -ingen lineages, vineyards). clan = clanhold. Even split Lawful/Neutral. Common-word lexicon and rank titles use the real Gothic/Frankish register (allowed, catalog 5.3); DEITY names are the Gothic-branch reflexes (with Frankish-overlay variants) of the common-Germanic theonym ancestors (family_germanic.json), phoneme-morphs of the Agrippan canon, never real Germanic gods.",
+  "phonology": {
+    "palette": "Gothic/continental Germanic backbone (masc -s/-a, fem -o; th/dh, w; ai/au) with Frankish/OHG overlay touches (High German shift in some words, -ingen lineages); theophoric stems are the Gothic reflexes (Thulrs-, Erlanda-, Numins-) with Frankish variants (Dulro-, Erlant-).",
+    "phonotactics": "CVC and clusters (st, sk, hl, hr, hw, br); root-initial stress; ablaut.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "feature_words": { "river": "ahwa", "stream": "bah", "lake": "saiws", "sea": "marei", "bay": "wiks", "cape": "nasja", "isle": "awja", "mountain": "berg", "hill": "buhil", "ridge": "hruggs", "forest": "wald", "wood": "holz", "plain": "feld", "marsh": "muor", "ford": "furds", "pass": "skards", "vale": "tal", "coast": "staths", "heath": "haithi" },
+    "settlement_words": { "hamlet": "haims", "village": "dorf", "town": "stads", "city": "baurgs", "fort": "burg", "port": "hafa", "market": "markat", "temple_town": "alhs", "citadel": "hohburgs" },
+    "kinship": { "son": "sunus", "daughter": "dauhtar", "house": "gards", "kin": "kuni / kunni", "ancestor": "fadrein" },
+    "adjectives": { "great": "mikils", "little": "leitils", "old": "alths", "new": "niujis", "black": "swarts", "white": "hweits", "red": "rauds", "golden": "gultheins", "iron": "isarn", "high": "hauhs", "far": "fairra", "sacred": "weihs", "fair": "skauns" },
+    "resources": { "salt": "salt", "iron": "isarn", "bronze": "aiz", "silver": "silubr", "gold": "gulth", "amber": "glesum", "grain": "kaurn", "wine": "win", "honey": "milith", "horse": "marah" },
+    "directional": { "upper": "iup", "lower": "dalath", "north": "naurth", "south": "sauth", "inner": "innana", "outer": "utana", "east": "ost", "west": "west" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-haims (home)", "-dorf (steading, Frankish overlay)", "-burg (fort)", "-ingen (people of, Frankish overlay)", "-stads (place)"],
+    "patronymic_form": "patronymic -sunus / -ing (descendant of); kin (kuni) for nobility; Frankish-overlay -ingen lineages for the duke-houses.",
+    "gendered_endings": { "male": "-s / -o", "female": "-o / -a" },
+    "diminutive_form": "-ila / -ilo",
+    "compounding_rule": "[adjective|resource|animal](stem) + feature: Swarta-wald (black-forest), Isarna-burg (iron-fort); kin + -ingos / -ingen."
+  },
+  "title_ladder": {
+    "government": "clanhold (an Alemannic confederation of kin-reiks and cantons; the thing/gemot binds the dukes, with Frankish herizogo/grafio forms as overlay)",
+    "tiers": {
+      "barony": { "ruler": "Gardings", "domain": "Gardingi" },
+      "march": { "ruler": "Markareiks", "domain": "Marka" },
+      "county": { "ruler": "Grafio", "domain": "Grafskaf" },
+      "duchy": { "ruler": "Herizogo", "domain": "Herizogi" },
+      "principality": { "ruler": "Reiks", "domain": "Reiki" },
+      "kingdom": { "ruler": "Thiudans", "domain": "Thiudangardi" },
+      "empire": { "ruler": "Mikilthiudans", "domain": "Miklathiudangardi" }
+    },
+    "_tiers_note": "Gothic clanhold backbone, ascending, with Frankish overlay at the count/duke tiers (the Alemannic Herizogo). Gardings (household-lord) barony; Markareiks (march-ruler) march; Grafio (count, Frankish) county; Herizogo (duke, Frankish) duchy; Reiks (great ruler) principality; Thiudans (people-king) kingdom. A confederation rarely rises past the duchy in practice. (Rank titles are the real Gothic/Frankish register, allowed.)",
+    "female_forms": { "Thiudans": "Thiudini", "Mikilthiudans": "Mikilthiudini", "Reiks": "Reikis", "Herizogo": "Herizogin", "Grafio": "Gravin", "Markareiks": "Markareikis", "Gardings": "Gardingi" },
+    "heir": "Thiudans-sunus / Erbo (heir, Frankish overlay)",
+    "honorifics": { "lord": "Frauja / Herro", "lady": "Fraujo / Frouwa", "champion": "Wigands (warrior)", "your_grace": "Reiks", "elder": "Sineigs" },
+    "vassalage": { "liege": "Frauja", "vassal": "Skalks (servant)", "fealty": "Aiths / Treuwa (oath)", "tribute": "Gild / Zins" }
+  },
+  "people_name_convention": {
+    "order": "personal + -sunus patronymic or kin (kuni); Frankish-overlay -ingen lineages for the duke-houses; deed-bynames.",
+    "surname_source": ["patronymic (-sunus / -ing)", "kin/clan (kuni / -ingen)", "deed/animal byname"],
+    "dual_register": "the reiks- and herizogo-houses carry a lineage name; commoners a patronymic.",
+    "theophoric": "names from the Gothic deity-reflexes (with Frankish-overlay variants) + an element: -mers (famous), -reiks (ruler), -berht (bright, Frankish overlay): e.g. Thulra-mers, Erlanda-berht.",
+    "diminutive": "-ila"
+  },
+  "religion": {
+    "_note": "Deity-names are the Gothic-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json), with Frankish-overlay variants - phoneme-morphs of the Agrippan canon, never real Germanic gods. Lawful/Neutral henotheist: the One above His ministers; Neutral kin keep the Anses (ancestral dead) and the saints at the grove and the minster.",
+    "the_one": "Aiterns (< *Aiternaz < Aeternus; the high All-Father; the Frankish-touched say Aiterno)",
+    "sample_deity_renames": { "Tulrius": "Thulrs (sun and judgment; Frk. Dulro)", "Orlandus": "Erlands (the iron-oath, war; Frk. Erlant)", "Gaiandus": "Gauands (the enduring earth)", "Realta": "Riala (the mother, mercy)" },
+    "demon_epithet_pattern": "the opposing powers keep their Gothic reflexes + a portfolio epithet (distinct per power): Maraxus -> Marahs the War-Fire (Frk. Marach); Vacidus -> Wakiths the Unmaker; Lusanto -> Lusanths the Hoard-Worm.",
+    "clergy_ladder": { "1": "Gudja-magus (priest-novice)", "3": "Gudja (priest)", "5": "Auhuma-gudja (high priest)", "7": "Weiha (sanctifier)", "9": "Reiks-gudja (priest-lord)" },
+    "religious_orders_pattern": "the Alhs (sacred grove) or Munstar (minster, Frankish overlay) of [power]: 'the Alhs of Erlands'.",
+    "saints_pattern": "the Anses (deified forebears) at the grave-howe and grove; the Frankish-touched keep saints (Wih [name]) at the minster.",
+    "holy_symbol_motifs": { "Erlands": "an iron spear crossed with an oath-ring", "Thulrs": "a rayed sun-wheel above the scales" }
+  },
+  "banks_patterns": {
+    "ships": "(inland confederation) river-craft and wagon-names: 'the Aurochs', 'Boar of the Ahwa'",
+    "military_units": "the [kin] War-band (harjis) / the [canton] Spears: 'the Forest-Spears', 'the Wolf-harjis'",
+    "taverns": "'The [Adjective] [Noun]': 'The Aurochs Horn', 'The Vine and Boar'",
+    "dungeons_ruins": "fallen kin-burgs and grove-howes: 'the Howe of [name]', 'the broken Burg of [kin]'"
+  },
+  "seed_names": {
+    "personal_m": ["Gundmers", "Theudmers", "Hrothawulf", "Wiljareiks", "Eburwulf", "Bernhard", "Adalward", "Gerwald", "Hartmund", "Sigiwald", "Aliwulf", "Frithareiks", "Gardawulf", "Hildemers", "Reginhard", "Wolfhard", "Berngar", "Folkward", "Ansila", "Warinhard"],
+    "personal_f": ["Gundila", "Hildila", "Swanahild", "Wiljo", "Theudila", "Hildegard", "Gerlind", "Reginlind", "Adallinda", "Bertlind", "Frithila", "Ansigo", "Reikila", "Eburhild", "Sigilind", "Hartburg", "Wolflind", "Gardila", "Hildegund", "Frowlind"],
+    "clan_kin": ["Gundingos", "Theudingos", "Hrothingos", "Wiljingos", "Eburingos", "Bernlingen", "Gerlingen", "Reginlingen", "Adallingen", "Wolfingen", "Hartingen", "Alamingen"],
+    "epithets_cognomina": ["the Wolf", "Iron-hand", "the Oath-keeper", "Boar-helm", "the Vine-lord", "the Just", "the Unbowed", "Forest-warden"],
+    "flagship_settlements": ["Alama (the confederation seat)", "Isarnaburg (iron-fort)", "Swartawald (the black-forest hold)", "Herizogesdorf (the duke's-village)", "Thiudangards (the king's-garth)", "Markareiki (the march-hold)"]
+  }
+}

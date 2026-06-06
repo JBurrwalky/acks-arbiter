@@ -1,0 +1,80 @@
+{
+  "kit_id": "velesan",
+  "tier": "culture",
+  "inherits": "slavic",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 18,
+  "sub_palette": "slavic",
+  "synthesis_sources": [13],
+  "homeland": "Velesia",
+  "government": "clanhold",
+  "alignment_allowed": ["Neutral", "Chaotic"],
+  "_note": "Single-source (early-medieval Slavic, pre-Christian/pagan). Slavic sub-palette; forest-and-swamp clans of taiga, wood, bog and plain, ruled by knyaz and veche, served by the volkhv at the kapishche. clan = clanhold. Even split Neutral/Chaotic. Common-word lexicon and rank titles use the real Slavic register (allowed, catalog 5.3); DEITY names are phoneme-morphs of the Agrippan canon through Slavic phonology (family_slavic.json theonym_set), never real Slavic gods (the culture-name Velesan/Velesia is a traditional proper name only, not a worshipped deity).",
+  "phonology": {
+    "palette": "Slavic: palatalization (soft/hard); sibilants sh/zh/ch/shch; clusters; vowels a e i o u y; dithematic glory-names; theophoric stems are the Slavic morphs (Tulor-, Orlon-, Numir-, Relata-).",
+    "phonotactics": "CV/CVC and heavy clusters (str, zdr, vl, mn, sht); mobile stress.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "feature_words": { "river": "reka", "stream": "potok", "lake": "ozero", "sea": "more", "bay": "zaliv", "cape": "mys", "isle": "ostrov", "mountain": "gora", "hill": "holm", "ridge": "hrebet", "forest": "les", "wood": "bor", "plain": "pole", "marsh": "boloto", "ford": "brod", "pass": "sedlo", "vale": "dol", "coast": "breg", "glade": "polyana" },
+    "settlement_words": { "hamlet": "ves", "village": "selo", "town": "gorod", "city": "stolgrad", "fort": "ostrog", "port": "pristan", "market": "torg", "temple_town": "kapishche", "citadel": "detinets" },
+    "kinship": { "son": "syn", "daughter": "dochi", "house": "dom", "kin": "rod", "ancestor": "ded" },
+    "adjectives": { "great": "velik", "little": "mal", "old": "star", "new": "nov", "black": "chorn", "white": "bel", "red": "chervlen", "golden": "zlat", "iron": "zhelezo", "high": "vysok", "far": "dalek", "sacred": "svyat", "fair": "lep" },
+    "resources": { "salt": "sol", "iron": "zhelezo", "silver": "srebro", "gold": "zlato", "amber": "yantar", "fur": "meh", "honey": "med", "wax": "vosk", "grain": "zhito", "flax": "len" },
+    "directional": { "upper": "verh", "lower": "niz", "north": "sever", "south": "yug", "east": "vostok", "west": "zapad", "inner": "vnutr", "outer": "vne" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-grad / -gorod (town)", "-ov / -ev (of)", "-ichi (people of)", "-sk (place)", "Bel- / Chorn- (white-/black-)", "-polye (field)"],
+    "patronymic_form": "patronymic -ov / -ev / -ich (son of); the rod (kin-clan) name + -ichi; the Dedy (ancestral spirits) honored.",
+    "gendered_endings": { "male": "-slav / -mir / -o", "female": "-a / -slava / -mira" },
+    "diminutive_form": "-ko / -ets / -ka",
+    "compounding_rule": "dithematic clan-names (-slav glory, -mir peace/world, -volod rule): Velislav, Borimir; toponyms quality + feature: Chorn-boloto (black-swamp), Bel-gorod (white-town)."
+  },
+  "title_ladder": {
+    "government": "clanhold (knyaz and the veche folk-assembly; the voevoda leads the druzhina, the volkhv reads the gods' will)",
+    "tiers": {
+      "barony": { "ruler": "Boyar", "domain": "Boyarstvo" },
+      "march": { "ruler": "Krainik", "domain": "Kraina" },
+      "county": { "ruler": "Zhupan", "domain": "Zhupa" },
+      "duchy": { "ruler": "Voevoda", "domain": "Voevodstvo" },
+      "principality": { "ruler": "Knyaz", "domain": "Knyazhestvo" },
+      "kingdom": { "ruler": "Velik Knyaz", "domain": "Velikoe Knyazhestvo" },
+      "empire": { "ruler": "Kagan", "domain": "Kaganat" }
+    },
+    "_tiers_note": "Slavic clanhold, ascending. Built on knyaz (prince) and the rod-clans: Knyaz (prince) principality, Velik Knyaz (grand prince) kingdom, Kagan (over-king of many princes) empire over the Kaganat. Boyar (noble) barony; Krainik (border-warden) march; Zhupan (district chief) county; Voevoda (war-leader) duchy. The veche checks the knyaz; a clan culture rarely rises past the knyaz. (Rank titles are the real Slavic register, allowed.)",
+    "female_forms": { "Kagan": "Kaganya", "Velik Knyaz": "Velikaya Knyaginya", "Knyaz": "Knyaginya", "Voevoda": "Voevodina", "Zhupan": "Zhupanya", "Krainik": "Krainitsa", "Boyar": "Boyarynya" },
+    "heir": "Knyazhich (the prince's son)",
+    "honorifics": { "lord": "Gospodin", "lady": "Gospozha", "champion": "Bogatyr (hero-warrior)", "your_grace": "Knyazhe", "elder": "Starets" },
+    "vassalage": { "liege": "Gospodin", "vassal": "Druzhinnik (retainer)", "fealty": "Rota (oath)", "tribute": "Dan" }
+  },
+  "people_name_convention": {
+    "order": "personal (often dithematic -slav/-mir) + patronymic -ov/-ich; the rod (clan) name; a deed/nature byname for the renowned.",
+    "surname_source": ["patronymic (-ov / -ev / -ich)", "rod (clan, -ichi)", "deed/nature byname"],
+    "dual_register": "the knyaz- and boyar-rods carry dithematic glory-names; commoners a single name + patronymic.",
+    "theophoric": "names invoking the morphed powers + a Slavic element: -slav (glory-of), Bog- / Bogu- (god-), -dar (gift-of): e.g. Tuloslav, Bogudar, Numirslav.",
+    "diminutive": "-ko / -ka"
+  },
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the Agrippan canon through Slavic phonology (family_slavic.json theonym_set) - never real Slavic gods (no Perun/Veles/Svarog/Mokosh/Lada/Morana). Neutral and Chaotic: Neutral clans honor the Dedy (ancestral dead), the rod-spirits and the land-powers; Chaotic war-bands swear by the storm and the wild-hunt powers. The volkhv mediates at the kapishche.",
+    "the_one": "Oterun (< Aeternus; the distant Heaven-Father, seldom petitioned)",
+    "sample_deity_renames": { "Tulrius": "Tulor (the sun, the just light)", "Numeno": "Numir (the sky-thunder, the storm-word)", "Gaiandus": "Goyan (the enduring earth)", "Realta": "Relata (the mother, mercy)" },
+    "demon_epithet_pattern": "the wild and grasping powers keep their Slavic morphs + a portfolio epithet (distinct per power): Maraxus -> Marakh the War-Fire; Vacidus -> Vakid the Unmaker; Lusanto -> Lusan the Hoard-Serpent.",
+    "clergy_ladder": { "1": "Vedun (diviner-novice)", "3": "Zhrets (sacrificer-priest)", "5": "Volkhv (priest-sorcerer)", "7": "Starshy Volkhv (high priest)", "9": "Verhovny Volkhv (supreme priest)" },
+    "religious_orders_pattern": "the Kapishche (idol-shrine) of [power]: 'the Kapishche of Tulor', set with carved idoly in the sacred grove.",
+    "saints_pattern": "the Dedy (ancestral dead) and the rod-spirits honored at the kurgan (grave-mound) and the hearth; the Lawful-leaning add 'the Blessed [name]'.",
+    "holy_symbol_motifs": { "Tulor": "a six-spoked sun-wheel over a hearth-flame", "Numir": "an axe and thunder-mark above an oak", "Relata": "the spinning-distaff above grain-sheaves" }
+  },
+  "banks_patterns": {
+    "ships": "river-trade ladya boats: 'the Grey Wolf', 'Swan of the Reka', 'the Far-rower'",
+    "military_units": "the [knyaz] Druzhina (war-band) / the [animal] spears: 'the Wolf-Druzhina', 'the Bear-spears'",
+    "taverns": "'The [Adjective] [Noun]': 'The Honey-Cup', 'The Bear and Bee'",
+    "dungeons_ruins": "abandoned kapishcha and barrow-kurgans: 'the Kapishche of [name]', 'the Kurgan of [knyaz]'"
+  },
+  "seed_names": {
+    "personal_m": ["Velislav", "Borimir", "Radomir", "Stanimir", "Volodar", "Miroslav", "Yaromir", "Bogdan", "Dobromir", "Ratibor", "Svetozar", "Tihomir", "Branimir", "Mstislav", "Goyislav", "Putyata", "Zvonimir", "Lubomir", "Chestimir", "Dragomir"],
+    "personal_f": ["Velislava", "Borislava", "Radmila", "Miroslava", "Bogdana", "Dobrava", "Lyudmila", "Vesna", "Zlata", "Milena", "Dragana", "Svetlana", "Yaromira", "Branislava", "Lubava", "Vlasta", "Chestislava", "Goluba", "Krasimira", "Rusava"],
+    "clan_rod": ["Rod Velislavichi", "Rod Borimirichi", "Rod Radomirichi", "Rod Miroslavichi", "Rod Ratiborichi", "Rod Dobromirichi", "Rod Branimirichi", "Rod Goyislavichi", "Rod Putyatichi", "Rod Zvonimirichi", "Rod Dragomirichi", "Rod Volodarichi"],
+    "epithets_cognomina": ["the Wolf (Volk)", "the Bear (Medved)", "the Black (Chorny)", "Iron-hand", "Oath-sworn", "the Far-rower", "the Wise (Mudry)", "the Red (Chervlen)"],
+    "flagship_settlements": ["Velesia (the chief gorod)", "Belgorod (the white-town)", "Chorn-boloto (the black-swamp hold)", "Yantar-pristan (the amber-port)", "Tulor-kapishche (the sun-shrine)", "Medved-ostrog (the bear-fort)"]
+  }
+}

@@ -315,8 +315,8 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 12 | Jinxian | Jinxia | 9 | grassland, hills, forest | E | Human | Lawful, Neutral | civ |
 | 13 | Yamataian | Yamatai | 10 | forest, hills, mountains | Y | Human | Lawful, Chaotic | clan |
 | 14 | Ryujin | Ryujo | 9, 10 | forest, mountains, swamp | E | Human | Lawful, Neutral | civ |
-| 15 | Ixalan | Ixal | 11 | jungle, dense forest | N | Human | Neutral, Chaotic | civ |
-| 16 | Nahuan | Nahuatlan | 12 | jungle, hills, swamp | N | Human | Lawful, Chaotic | civ |
+| 15 | Ixalan | Ixal | 11 | jungle, dense forest | N | Human | Lawful, Neutral | civ |
+| 16 | Nahuan | Nahuatlan | 12 | jungle, hills, swamp | N | Human | Chaotic | civ |
 | 17 | Tlanec | Tlan | 11, 12 | jungle, savanna | E | Human | Lawful, Neutral, Chaotic | civ |
 | 18 | Velesan | Velesia | 13 | taiga, forest, swamp, plains | N | Human | Neutral, Chaotic | clan |
 | 19 | Kypchan | Kypcha | 13, 17 | grassland, taiga | N | Human | Neutral, Chaotic | clan |
@@ -329,7 +329,7 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 26 | Cantabran | Cantabria | 20 | scrubland, hills, mountains | Y | Human | Neutral, Chaotic | clan |
 | 27 | Vascani | Vascony | 19, 20 | hills, mountains | Y | Human | Lawful, Neutral | civ |
 | 28 | Huitzilan | Huitzgard | 8, 12 | jungle, mountains, glacial mountains | Y | Human | Chaotic | clan |
-| 29 | Shidhean | Shidhe-Kyo | 7, 10 | forest, hills, mountains | E | Human | Lawful, Chaotic | clan |
+| 29 | Shidhean | Shidara | 7, 10 | forest, hills, mountains | E | Human | Lawful, Chaotic | civ |
 | 30 | Aethling | Aethal | 14, 18 | savanna, scrubland, hills | E | Human | Lawful, Neutral, Chaotic | civ |
 | 31 | Sargonid | Sargonia | 1, 4 | scrubland, desert, plains | E | Human | Lawful | civ |
 | 32 | Ptolan | Ptola | 2, 5 | desert, scrubland, coastal | Y | Human | Lawful, Neutral | civ |
@@ -346,6 +346,8 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 43 | Alaman | Alama | 6, 19 | forest, hills | N | Human | Lawful, Neutral | clan |
 | 44 | Thracan | Thracia | 2, 15 | grassland, scrubland | N | Human | Lawful, Chaotic | clan |
 | 45 | Lusan | Lusia | 1, 20 | scrubland, mountains | Y | Human | Lawful, Neutral | civ |
+| 46 | Erainn | Eriu | 7 | forest, dense forest, hills, swamp | E | Human | Lawful, Neutral | civ |
+| 47 | Kyivan | Kyivgrad | 13 | forest, plains, grassland, hills | E | Human | Lawful, Neutral | civ |
 
 
 ## 5.3 Culture rules and guidelines

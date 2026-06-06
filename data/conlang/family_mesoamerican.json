@@ -1,0 +1,91 @@
+{
+  "kit_id": "mesoamerican",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Mesoamerican (Mayan / Nahuatl)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "An AREAL family (the Mesoamerican sprachbund), not a genetic one: Mayan and Nahuatl are unrelated tongues sharing a cultural sphere (the 260-day calendar, vigesimal counting, the pyramid-temple, the ballgame, the feathered-serpent kingship). Members: Ixalan (Mayan, civ), Nahuan (Aztec/Nahuatl, civ), and the Toltec-style fusion Tlanec (civ). DEITY MODEL = independent morph-sets per tongue (as for East Asian): the shared pantheon already means same gods / different names (the real pan-Mesoamerican case: the feathered serpent is Kukulkan to the Maya, Quetzalcoatl to the Nahua). Tlanec bridges both registers. Base provides the concept inventory, morphology template, the areal (calque) shared roots, the civ title structures, and BOTH theonym sets. RELIGION STANCE is alignment-driven per culture (see each kit's worship_by_alignment). Orthography is ASCII (x = sh; glottal ' kept for Mayan; -tl/-tli for Nahuatl).",
+  "sources_5_1": [11, 12],
+  "sub_palettes": ["mayan", "nahuatl"],
+  "member_cultures": {
+    "clean": ["ixalan (mayan, civ)", "nahuan (nahuatl/aztec, civ)"],
+    "intra_family_blends": ["tlanec (11+12, toltec-style maya-nahua fusion, civ)"],
+    "cross_family_uses": ["tikan (11+16 Mayan x N.American/Woodland)", "huitzilan (8+12 Norse x Aztec)"]
+  },
+  "phonology": {
+    "palette": "Two unrelated phonologies under one areal roof.",
+    "sub_palette_notes": {
+      "mayan": "Classic/Yucatec Maya: glottalized b'/t'/k'/tz'/ch'; x = sh; aspirated; vowel length + glottal stop; endings -aj/-il/-an/-tun/-ab; the agentive prefixes aj- (he of) / ix- (she of); CVC.",
+      "nahuatl": "Nahuatl (Aztec): the absolutive -tl/-tli and reverential -tzin; consonants tl, tz, ch, x (sh), hu/uh (w), ku; place-suffixes -tlan/-titlan/-tepec/-co; CV(C)."
+    },
+    "phonotactics": "Mayan: CVC, glottalization, final glottal stop. Nahuatl: CV(C), the -tl cluster, vowel-final absolutives.",
+    "transparent_ratio_default": 0.4
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized separately per sub-palette (the two tongues do NOT share vocabulary - any parallels are areal calques, same concept / own word). Mesoamerican-specific wealth: jade, cacao, maize, obsidian, quetzal-feather.",
+    "feature_words": ["river", "stream", "lake", "sea", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "cenote", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron/metal", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "metal", "silver", "gold", "jade", "cacao", "maize", "obsidian", "feather", "honey/turquoise"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "AREAL/calque, not genetic: the two tongues share concepts and culture, NOT vocabulary. Same idea, each language's own word (the pan-Mesoamerican calque pattern).",
+    "city-state": "k'uhul-kah (Maya) / altepetl 'water-mountain' (Nahuatl)",
+    "lord/king": "ajaw (Maya) / tlatoani-tecuhtli (Nahuatl)",
+    "high-king/overlord": "kalomte' (Maya) / hueyi tlatoani (Nahuatl)",
+    "pyramid-temple": "k'uh-nah / witz (Maya) / teocalli (Nahuatl)",
+    "god/sacred": "k'uh / k'uhul (Maya) / teotl / teoyo (Nahuatl)",
+    "ward/lineage": "ch'ib'al (Maya) / calpolli (Nahuatl)"
+  },
+  "theonym_sets": {
+    "_note": "TWO INDEPENDENT sets (the tongues are unrelated). mayan = canon morphed into Maya forms (used by Ixalan, the Maya side of Tlanec, and cross-blend Tikan). nahuatl = canon morphed into Nahuatl forms (used by Nahuan, the Nahua side of Tlanec, and cross-blend Huitzilan). Same shared pantheon; different names. None are real Maya/Nahua gods. Worship vs demonization is assigned at runtime by each culture's CURRENT alignment.",
+    "mayan": {
+      "Aeternus (the One)": "Aj Ternaj",
+      "Tulrius (sun, justice)": "Tulax",
+      "Orlandus (iron, oath, war)": "Orlanab",
+      "Gaiandus (earth, endurance)": "Kayanab",
+      "Numeno (air, sky-wisdom)": "Numench",
+      "Realta (mother, mercy)": "Ix Rialtaj",
+      "Delorum (death, the dead)": "Aj Delor",
+      "Noctiluna (moon, night)": "Ix Noktal",
+      "Raptis (the hunt)": "Aj Raptaj",
+      "Maraxus (war-fire)": "Marakab",
+      "Vacidus (the void)": "Wakix",
+      "Lusanto (the hoard-serpent)": "Lusankaan"
+    },
+    "nahuatl": {
+      "Aeternus (the One)": "Aiternatl",
+      "Tulrius (sun, justice)": "Tolratl",
+      "Orlandus (iron, oath, war)": "Orlantzin",
+      "Gaiandus (earth, endurance)": "Gaiantli",
+      "Numeno (air, sky-wisdom)": "Numenatl",
+      "Realta (mother, mercy)": "Rialtzin",
+      "Delorum (death, the dead)": "Deloratl",
+      "Noctiluna (moon, night)": "Notlatl",
+      "Raptis (the hunt)": "Raptzin",
+      "Maraxus (war-fire)": "Marakatl",
+      "Vacidus (the void)": "Wakitl",
+      "Lusanto (the hoard-serpent)": "Lusankoatl"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "Mayan: -kah (town), -witz (pyramid), -ha' (water), -peten (isle/region), Noh- (great). Nahuatl: -tlan/-titlan (place of), -tepec (mountain-of), -co (at), -apan (river-of).",
+    "patronymic_form": "Mayan: ch'ib'al (lineage) + aj-/ix- + calendar-day name. Nahuatl: calpolli (ward) + calendar-day name + earned deed/war-name; nobles trace the tecuhtli line.",
+    "gendered_endings": "Mayan: Aj- (he of) / Ix- (she of). Nahuatl: -tzin reverential / Cihua- (woman).",
+    "diminutive_form": "Mayan Chan- (small). Nahuatl -ton / -tzin.",
+    "compounding_rule": "Mayan [color|quality] + feature: Chak-witz (red-pyramid). Nahuatl [quality|feature] + place-suffix: Huei-tepec (great-mountain), Cuauh-tlan (eagle-place)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, all members civ (feudal). Mayan: ajaw (lord) > k'uhul ajaw (holy lord) > kalomte' (overlord). Nahuatl: tecuhtli (lord) > tlatoani (city-king) > hueyi tlatoani (great speaker) > cem-anahuac tlatoani (ruler of all). Tlanec uses the Nahuatl ladder with Maya overlay styles. Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["feudal (Ixalan, Nahuan, Tlanec)"]
+  },
+  "conventions": {
+    "people_name_default": "Mayan: aj-/ix- + calendar-day name + ch'ib'al. Nahuatl: day-name + deed/war-name + calpolli/lineage. Order varies; lineage/ward identifies the house.",
+    "settlement_named_after": ["feature + color/quality", "the patron power's pyramid-temple", "founder-dynasty"],
+    "transparent_vs_opaque": "moderate; many names are transparent calendar/animal/color compounds.",
+    "no_exonyms": true
+  }
+}

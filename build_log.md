@@ -32449,3 +32449,46 @@ on-tick dispatch.
 1. **Wire totem `party_id` at call sites** that build shaman NPCs (rulers/henchmen), or confirm the warn-and-skip is acceptable until the totem subsystem lands.
 2. **Auto-equip defensible defaults (§5.4)** — still the open §10-step-5 polish (armor/shield/main weapon); `HenchmanEquipmentKit` is the porting precedent.
 3. **Poison + flavor catalog**: decide whether the assassin/dwarven-delver poison gets a real poisons.json→inventory bridge, and whether any flavor_tool should graduate to a real catalog item.
+
+
+## Session 2026-06-06 — Class templates §10 step 12 (PC creation template UI)
+
+**Task:** Implement §10 step 12 of `gdd-class-templates.md` — the PC-creation "Wealth & Template" choice point (§4.2 Path A/B fork + §4.2.1 full proficiency editor), integrated into the existing 13-step `CharacterCreationScreen`. Designed in plan mode (no permanent GDD, per Jedidiah).
+
+**Model used:** Opus 4.8 (1M context) — planning, integration design, implementation, tests.
+
+**Completed:**
+- Extended `PcTemplateCreationFlow.finalize_proficiencies` (`engine/subsystems/characters/pc_template_creation_flow.gd`) with `class_swap_key` + `general_swaps` (kind-aware via a `match`; locked natural/tradition never swapped; builds fresh records rather than mutating the repo-cached `TemplateProficiency`; invalid keys defensively ignored). Added `swap_options(template)` + private `_class_proficiency_keys`/`_general_proficiency_keys`/`_swap_record`.
+- New `scenes/ui/character_creation/class_template_panel.gd` (`ClassTemplatePanel`): two-phase fork panel — wealth roll → Path A/B + template card grid → §4.2.1 full editor (class-prof swap, general swaps, cull-override, extra-general pickers) with a live preview that reuses `finalize_proficiencies`. Writes `creation_state` for both paths.
+- Integrated into `scenes/ui/character_creation/character_creation_screen.gd`: enum 13→14 (insert `CLASS_TEMPLATE` after `HP_ROLL`; moved `CLASS_CUSTOMIZATION` after it); `STEP_LABELS`; `_template_repo` registry; `_reset_state` keys + `_invalidate_from` rewrite with the step-ownership model + new `_clear_template_outputs`; skip predicates (`_should_skip_template`/`_proficiencies`/`_equipment` + updated `_should_skip_customization`/`_should_skip_spells`); `_build_panels`/`_setup_panel`; `_finalize_character` stamps `origin_template_id` + merges `template_class_metadata`.
+
+**Decisions made:**
+- (Jedidiah) "Pick after template": `CLASS_CUSTOMIZATION` (barbarian region / witch tradition) moved AFTER the template step; Path B locks origin/tradition (step skipped), Path A keeps it for barbarian/witch only.
+- (Jedidiah) "Full editor": class-prof + general swaps surfaced, not just cull/extras.
+- Step-ownership invalidation model: the `CLASS_TEMPLATE` step OWNS `wealth_roll` + the Path A/B choice + (Path B) the template-derived proficiencies/spells/inventory/loose-coin; steps after it never wipe template-owned fields, only reset own output + un-spend gold (`gold_remaining_cp → starting_gold_cp`). Documented in `coding_conventions.md` §78.
+- Path A reconciliation: set `starting_gold_cp` so `EquipmentShopPanel` skips its own roll (§4.1 — the wealth die is consumed by one path, never both).
+- DEVIATION from the approved plan: PC-side valuable/totem/poison non-catalog routing was DEFERRED (logged via `push_warning`, not routed to inventory) — the value-backed inventory shape was unconfirmed for the PC finalize path and a silent-but-wrong row is worse than a logged deferral. Familiars ARE handled (via the existing FAMILIAR_ACQUISITION bonding step; the panel drops the non-catalog familiar to avoid double-create).
+
+**Interfaces defined or changed:**
+- `PcTemplateCreationFlow.finalize_proficiencies(template, int_score, choices)` — `choices` now accepts `class_swap_key: String` + `general_swaps: {from_key: to_key}` (both optional; empty = no-op, NPC path unaffected).
+- `PcTemplateCreationFlow.swap_options(template) -> {class_options: [String], general_options: [String]}` (new; `general_options` excludes every key the template already grants).
+- `ClassTemplatePanel.setup(state, template_repo, proficiency_registry, catalog, class_registry)` + `is_complete()` — the standard panel contract.
+- `CharacterCreationScreen.Step` enum renumbered to 14: `CLASS_TEMPLATE=4`, `CLASS_CUSTOMIZATION=5`, … `FINALIZE=13`. The enum is private (the screen has no `class_name`); only `character_creation_screen.gd` references it (verified repo-wide).
+- `creation_state` new keys: `wealth_roll`, `template_path` ("" / "A" / "B"), `template_id`, `origin_template_id`, `template_class_metadata`. Path B writes `proficiencies`/`spells`/`inventory`/`gold_remaining_cp` from the flow; `_finalize_character` consumes `origin_template_id` + merges `template_class_metadata` into `class_metadata`.
+
+**Database changes:**
+- None. (`characters.origin_template_id` already existed — Migration 145 from the prior chip; `create_character`/`save_character` already persist it.)
+
+**Tests added/updated:**
+- Extended `tests/test_pc_template_creation_flow.gd` with 6 swap tests: `swap_options` excludes held; class swap replaces + resets rank/spec; invalid class swap ignored; general swap replaces; locked (tradition) prof not swappable; `build_repertoire` arcane-gate. No new suite/registration (extended an existing registered suite).
+- Full headless suite: **425 suites passed / 19 failed — exactly the pre-existing baseline (net-zero new failures).** The 19 are documented carry-forward (EventScheduler, SchedulerLoop, ZoC, combat, proficiency-UI/language tests in `test_cs_tab_advancement`/`test_language_cleanup`/`test_phase_9c`); none in touched files. `PcTemplateCreationFlow: all tests passed.`
+
+**Known issues:**
+- PC-side valuable/totem/poison non-catalog routing deferred (logged, not routed) — follow-up: confirm the value-backed inventory shape and reuse `ClassedNpcBuilder._route_non_catalog_items` for PCs.
+- Path B equipment lands in "pack" unequipped (no auto-equip of weapon/armor to slots) — honoring `TemplateEquipmentEntry.default_slot` is a polish follow-up (gdd §4.2 defers equip toggles).
+- Spell-repertoire editing on Path B is read-only (the repertoire is deterministic from template + INT; the SPELLS step is skipped on arcane Path B).
+- UI not exercised by headless tests (programmatic panels, per §13). Manual verification remains: Mage Path B (swap a general → confirm → verify PROFICIENCIES/SPELLS/EQUIPMENT skipped → finalize → inspect the DB row for `origin_template_id`, the swapped proficiency, repertoire spells, inventory, `class_metadata`); Path A (EQUIPMENT opens pre-funded, no 2nd gold roll); Barbarian (CLASS_CUSTOMIZATION now appears AFTER the template step; skipped on Path B with the region set from the template).
+
+**Next session should:**
+- Manually verify the wizard end-to-end (the bullets above), then commit/push when Jedidiah approves (branch first if on `main`).
+- (Optional follow-ups, in priority order) PC non-catalog valuable routing; Path-B auto-equip of the template's weapon/armor; spell-repertoire editing on Path B.

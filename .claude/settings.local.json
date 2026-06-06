@@ -74,7 +74,11 @@
       "Bash(Select-Object -ExpandProperty Name)",
       "Bash(Get-ChildItem *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jttau\\\\acks-arbiter\" -Recurse -Force)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(python .claude/skills/acks-build-log/scripts/build_log_index.py --search \"template UI\")",
+      "Bash(export PYTHONIOENCODING=utf-8)",
+      "Bash(python .claude/skills/acks-conventions/scripts/conventions_lookup.py --for-task \"build a PC creation template picker UI scene with signals\")",
+      "Bash(python .claude/skills/acks-build-log/scripts/build_log_index.py --search \"creation wizard\")"
     ]
   }
 }

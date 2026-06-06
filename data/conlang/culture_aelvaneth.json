@@ -1,0 +1,84 @@
+{
+  "kit_id": "aelvaneth",
+  "tier": "culture",
+  "inherits": ["elvish"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "race": "elf",
+  "demihuman_tier": true,
+  "sub_palette": "aelvaneth (Proto-Elvish, smooth/forest branch)",
+  "synthesis_sources": [],
+  "homeland": "Aelvanar",
+  "branch": { "biome": "forest-and-river", "register": "smooth/lilting (high-elf)", "ancestral_to": ["germanic", "celtic", "slavic"], "model": "a deep PIE-like ancestor of the European IE human families" },
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Chaotic", "Neutral"],
+  "alignment_weights": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 },
+  "_note": "Elvish demihuman culture, the forest-and-river branch of the Vaneth (family_elvish.json). Smooth, lilting high-elven speech (soft -ath/-eth, flowing l/r/n/th). An ancient woodland realm of elder-houses, golden-age now mostly fallen to forest-fastness enclaves. As the deep PIE-like ancestor, its deity- and concept-roots prefigure the human Germanic/Celtic/Slavic forms (Aiternath -> Aiterns/Eternan/Oterun; Tulorath -> Thulrs/Toran/Tulor). Pulled to the poles: weights {Lawful 0.40, Chaotic 0.40, Neutral 0.20}. DEITY names are the Aelvaneth reflexes of the Proto-Elvish theonym roots (morphs of the Agrippan canon), never real gods.",
+  "phonology": {
+    "palette": "Aelvaneth: smooth and lilting; soft endings -ath/-eth/-a/-ion/-iel; flowing l/r/n/th; ablaut e/o; open syllables, no harsh stops; the SMOOTH branch-law on the Proto-Elvish roots.",
+    "phonotactics": "CV/CVC, vowel-rich and open; liquids and nasals frequent; no glottalization.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "feature_words": { "river": "sireth", "stream": "sirneth", "lake": "linnath", "sea": "aelarath", "bay": "camath", "cape": "rinneth", "isle": "innath", "mountain": "oronnath", "hill": "tornath", "ridge": "drumath", "forest": "galenath", "wood": "tawarath", "glade": "lalaneth", "plain": "lannath", "marsh": "moineth", "ford": "athveth", "pass": "belnath", "vale": "glenneth", "grove": "neloreth" },
+    "settlement_words": { "hamlet": "trevath", "village": "baleth", "town": "carath", "city": "carnath", "fort": "dunath", "port": "loneth", "market": "aeneth", "temple_town": "neloreth", "citadel": "tarnath" },
+    "kinship": { "son": "ionath", "daughter": "ielath", "house": "talath", "kin": "noreth", "ancestor": "edhrath" },
+    "adjectives": { "great": "moreth", "little": "pinneth", "old": "iorath", "new": "vinneth", "black": "dulath", "white": "kelarath", "red": "naroth", "golden": "malath", "iron": "angrath", "high": "tarath", "far": "haeleth", "sacred": "aireth", "fair": "vanyath" },
+    "resources": { "salt": "saleth", "iron": "angrath", "silver": "kelvath", "gold": "maldath", "amber": "brennath", "leaf": "lasseth", "timber": "orneth", "honey": "medath", "hart": "araveth", "wine": "gwineth" },
+    "directional": { "upper": "amrath", "lower": "nuath", "north": "forneth", "south": "harneth", "east": "rhuneth", "west": "annureth", "inner": "mineth", "outer": "ereth" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-aneth (realm of)", "-sireth (river)", "-galenath (forest)", "-oronnath (mountain)", "Kelar- / Galar- (silver-/light-)", "-anar (home-seat)"],
+    "patronymic_form": "the elven house (noreth) by an elder-line; -ion (son of) / -iel (daughter of); a use-name given freely, a true-name kept private.",
+    "gendered_endings": { "male": "-ion / -as", "female": "-iel / -eth" },
+    "diminutive_form": "-eth / -in",
+    "compounding_rule": "[quality|root](stem) + feature/realm: Kelar-sireth (silver-river), Galar-galenath (light-forest); -aneth for the realm, -anar for the seat."
+  },
+  "title_ladder": {
+    "government": "feudal (an ancient woodland realm of elder-houses, now mostly forest-fastnesses; the Tharan over the elven lords, the song-keepers and the warden-archers)",
+    "tiers": {
+      "barony": { "ruler": "Veluth", "domain": "Veluthaneth" },
+      "march": { "ruler": "Maeron", "domain": "Maeronaneth" },
+      "county": { "ruler": "Eskel", "domain": "Eskelaneth" },
+      "duchy": { "ruler": "Thalion", "domain": "Thalionaneth" },
+      "principality": { "ruler": "Aranel", "domain": "Aranelaneth" },
+      "kingdom": { "ruler": "Tharan", "domain": "Tharananeth" },
+      "empire": { "ruler": "Tar-Tharan", "domain": "Tar-Tharananeth" }
+    },
+    "_tiers_note": "Smooth Aelvaneth reflexes of the Proto-Elvish title ladder, ascending. Veluth (lord) barony; Maeron (march-warden) march; Eskel (vale-lord) county; Thalion (great-lord) duchy; Aranel (sovereign-lord) principality; Tharan (king) kingdom; Tar-Tharan (high-king) empire. A golden-age realm, mostly fallen to fastness-enclaves. (These title-roots are the elder ancestors of the human Germanic/Celtic/Slavic lord/king terms.)",
+    "female_forms": { "Tar-Tharan": "Tar-Tharniel", "Tharan": "Tharniel", "Aranel": "Araniel", "Thalion": "Thaliel", "Eskel": "Eskeliel", "Maeron": "Maeriel", "Veluth": "Veluthiel" },
+    "heir": "Aranion (the sovereign's heir)",
+    "honorifics": { "lord": "Veluth", "lady": "Veluthiel", "champion": "Maethor (warrior)", "your_grace": "Aranel", "elder": "Iorath" },
+    "vassalage": { "liege": "Aranel", "vassal": "Gwador (sworn companion)", "fealty": "Gweth (the oath-bond)", "tribute": "Anneth (gift-due)" }
+  },
+  "people_name_convention": {
+    "order": "a use-name (given freely) + the house (noreth); a true-name kept private; -ion/-iel; lilting two-element names.",
+    "surname_source": ["elven house (noreth)", "-ion/-iel patronymic", "deed/nature use-name"],
+    "dual_register": "the elder-houses carry an ancient house-name; a use-name is given freely, a true-name guarded.",
+    "theophoric": "names weave the powers' Aelvaneth forms + soft elements: -dil (devotee), Galad-/Kelar- (light/silver): e.g. Tulora-dil, Galad-orlann.",
+    "diminutive": "-eth / -in"
+  },
+  "religion": {
+    "_note": "Deity-names are the Aelvaneth (smooth) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real gods. The Aelvaneth are pulled to the poles (weights L40/C40/N20); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment). The nemreth (star-grove) under the silver trees is the altar; the edhrath (ancestral dead) and the forest-spirits are ever-honored.",
+    "the_one": "Aiternath (< Proto-Elvish AtyarnA < Aeternus; the Star-Kindler, the Eldest; revered when Lawful, set aside when Neutral, named the Long-Tyrant when Chaotic)",
+    "sample_deity_renames": { "Tulrius": "Tulorath (the sun and just light; Lawful power)", "Gaiandus": "Gaiannath (the enduring forest-earth; Lawful power)", "Realta": "Realtath (the mother, the mercy-star; Neutral-honored)", "Maraxus": "Marakhath (the war-fire, the ruin; Chaotic power)" },
+    "worship_by_alignment": { "Lawful": "the high-elven court reveres the One (Aiternath) and the Lawful powers (Tulorath, Orlannath, Gaiannath, Numenath), demonize the Chaotic powers", "Chaotic": "the fallen houses venerate the Chaotic powers (Marakhath the war-fire, Wakidath the void, Lusanath), demonize the Lawful powers and the One", "Neutral": "both sets ambivalent; foreground the edhrath (ancestral dead), the star-light and the forest-spirits" },
+    "demon_epithet_pattern": "the demonized set (by current alignment) take epithets: when Lawful - Maraxus -> Marakhath the Ruin; when Chaotic - Tulrius -> Tulorath the Cold-Star, Aeternus -> Aiternath the Long-Tyrant.",
+    "clergy_ladder": { "1": "Edhel-dil (novice-devotee)", "3": "Galadhron (grove-keeper)", "5": "Linthir (song-and-lore keeper)", "7": "Airedhel (high keeper)", "9": "Tar-Linthir (the realm's high song-keeper)" },
+    "religious_orders_pattern": "the Nemreth (star-grove) of [power]: 'the Nemreth of Tulorath', under the silver trees.",
+    "saints_pattern": "the elder-fathers and song-makers of the houses (the edhrath), honored at the grove and the white-stone.",
+    "holy_symbol_motifs": { "Tulorath": "a rayed star above the silver leaf", "Gaiannath": "a great tree rooted in the green earth", "Realtath": "a moon-star above the healing-spring" }
+  },
+  "banks_patterns": {
+    "ships": "river and forest-mere craft, swan-prowed: 'the Silver Leaf', 'Star-on-the-Water', 'the Swan of Sireth'",
+    "military_units": "the warden-archers and house-companies: 'the Green Wardens', 'the Star-Archers of [house]'",
+    "taverns": "the song-hall (elves keep halls, not taverns): 'the Hall of the Silver Harp', 'the Mead of Stars'",
+    "dungeons_ruins": "fallen elven fastnesses and grown-over groves: 'the lost Fastness of [house]', 'the Drowned Nemreth of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Aelindor", "Tulorion", "Orlannion", "Aerandir", "Sirethion", "Faelar", "Tharion", "Eredhion", "Lasselar", "Gwathion", "Araneth", "Brennion", "Iorlas", "Vanyaron", "Edhelron", "Malduin", "Kelvron", "Naerdor", "Galarion", "Oronnir"],
+    "personal_f": ["Aelwen", "Tuloriel", "Sirethiel", "Faelwen", "Elwenneth", "Lasseliel", "Galariel", "Vanyeth", "Naereth", "Kelviel", "Brenneth", "Iorelle", "Maeliel", "Oroniel", "Edhelwen", "Tarniel", "Linthiel", "Aniriel", "Nelariel", "Realtiel"],
+    "clan_houses": ["Noreth Galenath (forest-house)", "Noreth Kelvath (silver-house)", "Noreth Sireth (river-house)", "Noreth Tulorath (sun-house)", "Noreth Oronnath (mountain-house)", "Noreth Lasseth (leaf-house)", "Noreth Elenath (star-house)", "Noreth Brennath (amber-house)", "Noreth Araveth (hart-house)", "Noreth Linthath (song-house)", "Noreth Nelarath (moon-house)", "Noreth Aelarath (sea-house)"],
+    "epithets_cognomina": ["the Star-eyed", "the Silver-voiced", "the Green-warden", "the Far-seeing", "of the Silver Grove", "the Swift-arrow", "the Song-maker", "the Long-lived"],
+    "flagship_settlements": ["Aelvanar (the realm-seat)", "Kelar-sireth (the silver-river city)", "Galar-galenath (the light-forest hold)", "Tulorath-neloreth (the sun-grove)", "Oronnath-tar (the mountain-fastness)", "Elenath-anar (the star-home)"]
+  }
+}

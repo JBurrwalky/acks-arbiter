@@ -1,0 +1,82 @@
+{
+  "kit_id": "tartessan",
+  "tier": "culture",
+  "inherits": ["classical", "near_eastern"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 36,
+  "sub_palette": "iberian + punic-overlay (cross-family blend)",
+  "synthesis_sources": [3, 20],
+  "homeland": "Tartessa",
+  "blend": { "backbone": "iberian (classical, via Cantabran)", "overlay": "punic (near_eastern, via Barcan)" },
+  "government": "feudal",
+  "alignment_allowed": ["Neutral", "Chaotic"],
+  "_note": "Cross-family blend (Carthaginian + Iberian): a silver-rich native trade-kingdom (a Tartessos) acculturated by Punic commerce - the Iberian substrate enriched and overlaid by Phoenician-Punic trade, letters and cult. Backbone = Iberian (classical family, the Cantabran register: -briga place-names, Celtiberian roots); overlay = Punic (near_eastern, the Barcan register: Qart-/Mahoz- trade-toponyms, the suffete-magistracy, the silver trade). civ = feudal (a mercantile monarchy; merchant-magistrates as flavor). Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles use the real Iberian/Punic registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Iberian primary, Punic variant), never real gods.",
+  "phonology": {
+    "palette": "Iberian backbone (Latinate vowels over a Celtic substrate; hard c/k; -o/-a/-briga/-ica endings; clusters br/gr/nt) with a Punic overlay (the construct chain Qart-/Mahoz-/Beth-, feminine -t, the trade register); theophoric on the Iberian morphs (Caiandos-, Orlanno-) with Punic variants (Arganz-, Tulrish-).",
+    "phonotactics": "CV/CVC; clusters br/gr/nt/mb/st; penultimate stress; Punic construct chains in trade-names.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "nava", "stream": "regato", "lake": "lacuna", "sea": "mar", "bay": "abra", "cape": "promo", "isle": "isla", "mountain": "monte", "hill": "briga", "ridge": "serra", "forest": "silua", "wood": "saltu", "plain": "campa", "marsh": "tremedal", "ford": "vado", "pass": "porto", "vale": "valle", "anchorage": "marsa", "coast": "ora" },
+    "settlement_words": { "hamlet": "casal", "village": "vicu", "town": "oppido", "city": "urbe", "fort": "castro", "port": "mahoz", "market": "mercatu", "trade_city": "qart", "citadel": "arce" },
+    "kinship": { "son": "-iz / fillu", "daughter": "-a / filla", "house": "gens", "kin": "clan", "ancestor": "avo" },
+    "adjectives": { "great": "magno", "little": "parvo", "old": "vetu", "new": "novo", "black": "atro", "white": "albo", "red": "rubio", "golden": "aureo", "silver": "argento", "iron": "ferro", "high": "alto", "far": "longo", "sacred": "sacro", "fair": "bello" },
+    "resources": { "salt": "sale", "iron": "ferro", "silver": "argento", "gold": "auro", "tin": "stannu", "copper": "aramen", "wine": "vino", "grain": "grano", "fish": "pesce", "purple_dye": "purpura" },
+    "directional": { "upper": "supra", "lower": "infra", "north": "borea", "south": "austro", "inner": "intro", "outer": "extro", "near": "propo", "far": "longe" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-briga (hillfort)", "-ica", "Qart- (trade-city, Punic overlay)", "Mahoz- (port, Punic overlay)", "-ipo / -uba (Tartessian)", "Argento- (silver-)"],
+    "patronymic_form": "Iberian patronymic -iz; clan/gens for the nobility; the Punic overlay adds bin-X among the merchant-houses and theophoric trade-names.",
+    "gendered_endings": { "male": "-o / -on / -iz", "female": "-a / -ica / -t (Punic)" },
+    "diminutive_form": "-ino / -ella",
+    "compounding_rule": "[adjective|resource](stem) + feature, or feature + -briga; Argento-briga (silver-fort); the Punic overlay yields Qart-[name] and Mahoz-[resource] (Mahoz-Argento = silver-port)."
+  },
+  "title_ladder": {
+    "government": "feudal (a silver-kingdom; the king over hillfort-lords and the Punic-styled merchant-magistracy of the great ports)",
+    "tiers": {
+      "barony": { "ruler": "Brigant", "domain": "Brigantia" },
+      "march": { "ruler": "Limigant", "domain": "Limigantia" },
+      "county": { "ruler": "Tigern", "domain": "Tigernia" },
+      "duchy": { "ruler": "Shophet", "domain": "Shophetia" },
+      "principality": { "ruler": "Vergobret", "domain": "Vergobretia" },
+      "kingdom": { "ruler": "Rix", "domain": "Rigon" },
+      "empire": { "ruler": "Argantho-Rix", "domain": "Ardrigon" }
+    },
+    "_tiers_note": "Iberian/Celtiberian backbone, ascending, with a Punic overlay at the trade-tiers. Brigant (hillfort-lord) barony; Limigant (border-warden) march; Tigern (lord) county; Shophet (suffete - the Punic merchant-magistrate, here a ducal office over the great ports) duchy; Vergobret (high magistrate) principality; Rix (king) kingdom; Argantho-Rix (the Silver-King, after the silver wealth) over the realm. The merchant-houses of the qart-ports rival the hillfort-lords. (Rank titles are the real Iberian/Punic register, allowed.)",
+    "female_forms": { "Argantho-Rix": "Argantho-Rigana", "Rix": "Rigana", "Vergobret": "Vergobreta", "Shophet": "Shophetat", "Tigern": "Tigerna", "Limigant": "Limiganta", "Brigant": "Briganta" },
+    "heir": "Tanixt (heir-elect)",
+    "honorifics": { "lord": "Tigerno", "lady": "Tigerna", "merchant_prince": "Rab-Tagar (great merchant, Punic)", "your_grace": "Magno", "elder": "Senix" },
+    "vassalage": { "liege": "Rix", "vassal": "Cliento", "fealty": "Sacramento (oath)", "tribute": "Tributo / Mas (Punic)" }
+  },
+  "people_name_convention": {
+    "order": "personal + patronymic (-iz) + clan; the merchant-houses of the ports add a Punic theophoric trade-name (abd-X) or a bin-X patronymic.",
+    "surname_source": ["patronymic (-iz)", "clan/gens", "Punic merchant-house (bin-X / abd-X)", "deed/locational"],
+    "dual_register": "the hillfort nobility keep Iberian names; the port merchant-houses use Punic trade-names.",
+    "theophoric": "Iberian devotional names on the morphed deity-stems; the Punic merchant-houses use abd-X (servant-of) on the trade-power: e.g. Caiando-iz, Abd-Arganz.",
+    "diminutive": "-ino / -ella"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Iberian primary, from the Cantabran register; Punic variant, from the Barcan register), never real Iberian/Phoenician gods. The silver-trade exalts the commerce-power above all. Tartessan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The hillfort grove and the Punic port-tophet keep the rites.",
+    "the_one": "Aiternos (< Aeternus; Punic variant Atharon) - the One, the high maker; acknowledged when Neutral, reviled as the far tyrant when Chaotic; petitioned by neither",
+    "sample_deity_renames": { "Argentus": "Arganz (Punic) / Arganno (Iberian) - trade, silver and the city; exalted by the silver-kingdom", "Gaiandus": "Caiandos - the enduring earth (and its silver veins); Lawful power", "Realta": "Rialath (Punic) / Rialta (Iberian) - the mother; Neutral-honored", "Maraxus": "Maraxos (Iberian) / Maraksh (Punic) - the war-fire; Chaotic power" },
+    "worship_by_alignment": { "Chaotic": "venerate the Chaotic powers (Maraxos, Desoryos, Lusanto the coin-serpent), demonize the Lawful powers and the One", "Neutral": "all powers ambivalent - the commerce-power (Arganz) foremost; the ancestral dead and the hillfort/port spirits honored" },
+    "demon_epithet_pattern": "the demonized set take dread epithets: Maraxus -> Maraxos the Burning (Punic Maraksh the Devourer); Vacidus -> Bacaid the Unmaker; Lusanto -> Lusanto the Coin-Serpent (the trader's curse).",
+    "clergy_ladder": { "1": "Aruspex (diviner-acolyte)", "3": "Sacron (priest)", "5": "Kohen (priest, Punic port-cult)", "7": "Gutuater (high priest)", "9": "Rab-Kohen (high priest of the great port)" },
+    "religious_orders_pattern": "the Nemeton (sacred grove) of [power] on the hillforts, and the Beth (temple) of [power] in the ports: 'the Nemeton of Caiandos', 'the Beth of Arganz'.",
+    "saints_pattern": "ancestral hillfort-heroes (the [name] of [briga]) and deified founder-merchants of the ports (the Blessed [name]).",
+    "holy_symbol_motifs": { "Arganz": "scales and a silver ingot over a trading-ship", "Caiandos": "a grey peak threaded with silver veins", "Rialta": "a triangle beneath a disc and crescent" }
+  },
+  "banks_patterns": {
+    "ships": "silver-trade ship names: 'Bringer of Argento', 'the Silver Star', 'Wave of Arganz'",
+    "military_units": "the [clan] Spears / the [port] Sacred Band: 'the Iron Spears of [briga]', 'the Sacred Band of Mahoz-Argento'",
+    "taverns": "'O/A [Adjective] [Noun]': 'A Ancora de Prata' (the silver anchor), 'O Touro Negro' (the black bull)",
+    "dungeons_ruins": "drowned silver-ports and ruined castros: 'as Ruinas de [name]', 'the Tophet of Qart-[name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Argantonio", "Viriaco", "Tongio", "Aulo", "Reburo", "Camalo", "Boutio", "Arcio", "Maelo", "Abd-Arganz", "Bod-Tulrish", "Habis", "Gargor", "Norax", "Cilio", "Bin-Mahoz", "Docio", "Severo", "Caturo", "Arganto-iz"],
+    "personal_f": ["Argantona", "Aurelia", "Tongina", "Camala", "Arcea", "Boutia", "Maela", "Amat-Arganz", "Rialath-it", "Albina", "Severina", "Bath-Arganz", "Vibia", "Cilea", "Reburrina", "Tancina", "Docquira", "Pintamia", "Bodat", "Argantica"],
+    "clan_houses": ["gens Argantia", "gens Cassia", "gens Tongia", "gens Camalia", "Bet-Arganz (Punic house)", "gens Boutia", "gens Maelia", "Bet-Tulrish (Punic house)", "gens Arcia", "gens Caturia", "Bet-Mahoz (Punic house)", "gens Reburria"],
+    "epithets_cognomina": ["o Argenteo (the Silver)", "o Magno (the Great)", "Ferro (Iron)", "o Mercador (the Trader)", "o Bravo (the Bold)", "Aureo (Golden)", "the Far-trader", "o Touro (the Bull)"],
+    "flagship_settlements": ["Tartessa (the silver-capital)", "Argento-briga (the silver-fort)", "Mahoz-Argento (the silver-port)", "Qart-Tartessa (the trade-city)", "Lusobriga", "Atrobriga (the black-fort)"]
+  }
+}

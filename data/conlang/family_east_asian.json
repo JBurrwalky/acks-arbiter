@@ -1,0 +1,91 @@
+{
+  "kit_id": "east_asian",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "East Asian (Sinitic / Japonic)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "An AREAL family (the Sinosphere), not a genetic one: Sinitic (Chinese) and Japonic (Japanese) are unrelated tongues that share a cultural/writing sphere. Members: Jinxian (Chinese, civ), Yamataian (Japanese, clan), and the Sino-Japanese blend Ryujin (civ). DEITY MODEL = independent (user choice C): Chinese morphs the canon into Sinitic celestial names; Japanese keeps wholly NATIVE kami, unrelated to the Chinese forms; the blend Ryujin syncretizes both (honji-suijaku: one power, two faces). Base provides the concept inventory, morphology template, the (areal/borrowed) shared roots, both title-ladder structures, and BOTH theonym sets. Orthography is ASCII romanization (pinyin-style for Sinitic; Hepburn-style for Japonic; tones/macrons dropped).",
+  "sources_5_1": [9, 10],
+  "sub_palettes": ["sinitic", "japonic"],
+  "member_cultures": {
+    "clean": ["jinxian (sinitic / Chinese, civ)", "yamataian (japonic / Japanese, clan)"],
+    "intra_family_blends": ["ryujin (9+10, sino-japanese, civ, syncretic)"],
+    "cross_family_uses": ["serican (1+9 Roman x Chinese)", "shidhean (7+10 Celtic x Japanese)", "xiongan (9+17 Chinese x Steppe)"]
+  },
+  "phonology": {
+    "palette": "Two distinct phonologies under one areal roof.",
+    "sub_palette_notes": {
+      "sinitic": "Chinese: monosyllabic morphemes; syllable (C)(G)V(C) with only -n/-ng codas; tones (unmarked in data); NO consonant clusters; surname(1) + given(1-2); celestial titles -di (emperor), -jun (lord), -wang (king).",
+      "japonic": "Japanese: open CV moras (only coda -n); five vowels a i u e o; pitch accent; no clusters; rendaku (sequential voicing) in compounds; clan(-shi/uji) + given; kami honorifics -no-kami, -no-mikoto, -hime."
+    },
+    "phonotactics": "Sinitic: tight monosyllables, no clusters. Japonic: strict CV moras, vowel-final.",
+    "transparent_ratio_default": 0.4
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized separately per sub-palette (the two tongues do NOT share vocabulary except where Japanese borrowed Sino-readings).",
+    "feature_words": ["river", "stream", "lake", "sea", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "bronze", "silver", "gold", "jade", "silk", "grain/rice", "tea", "horse"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "AREAL, not genetic: these are Sino-Japanese BORROWINGS (one written glyph, a Chinese reading and a Japanese on'yomi reading). They are the only cross-tongue link in the family.",
+    "heaven": "tian (Ch) / ten (Jp)",
+    "mountain": "shan (Ch) / san (Jp)",
+    "great": "da (Ch) / dai (Jp)",
+    "king": "wang (Ch) / o (Jp)",
+    "emperor": "di (Ch) / tei (Jp)",
+    "spirit/god": "shen (Ch) / shin (Jp); native Japanese kami"
+  },
+  "theonym_sets": {
+    "_note": "TWO INDEPENDENT sets (user choice C). Sinitic = canon morphed into Chinese celestial names (used by Jinxian, the Chinese side of Ryujin, and cross-blends Serican/Xiongan). Japonic = wholly native kami, NOT borrowed from the Chinese (used by Yamataian, the Japanese side of Ryujin, and cross-blend Shidhean). Ryujin (the blend) identifies the two as one power under two faces (honji-suijaku). None are real Chinese/Japanese gods.",
+    "sinitic": {
+      "Aeternus (the One)": "Aiteng",
+      "Tulrius (sun, justice)": "Tuli",
+      "Orlandus (iron, oath, war)": "Aolan",
+      "Gaiandus (earth, endurance)": "Gaidun",
+      "Numeno (air, sky-wisdom)": "Numeng",
+      "Realta (mother, mercy)": "Lianta",
+      "Delorum (death, the dead)": "Delu",
+      "Noctiluna (moon, night)": "Nuolan",
+      "Raptis (the hunt)": "Labi",
+      "Maraxus (war-fire)": "Maluo",
+      "Vacidus (the void)": "Wuci",
+      "Lusanto (the hoard-serpent)": "Lusan"
+    },
+    "japonic": {
+      "Aeternus (the One)": "Takami-no-kami",
+      "Tulrius (sun, justice)": "Terashi-no-kami",
+      "Orlandus (iron, oath, war)": "Hagane-no-kami",
+      "Gaiandus (earth, endurance)": "Iwane-no-kami",
+      "Numeno (air, sky-wisdom)": "Amatsukaze-no-kami",
+      "Realta (mother, mercy)": "Megumi-hime",
+      "Delorum (death, the dead)": "Yomine-no-kami",
+      "Noctiluna (moon, night)": "Tsukikage-no-kami",
+      "Raptis (the hunt)": "Akagari-no-kami",
+      "Maraxus (war-fire)": "Takebi-no-kami",
+      "Vacidus (the void)": "Utsuro-no-kami",
+      "Lusanto (the hoard-serpent)": "Kogane-Orochi"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "Sinitic: -cheng (city), -shan (mtn), -jiang (river), -guan (pass). Japonic: -jo/-shiro (castle), -machi (town), -yama (mtn), -gawa (river).",
+    "patronymic_form": "Sinitic: surname(xing)-first, no patronymic particle; lineage (zu). Japonic: clan(uji/-shi)-first, X-no-Y linking; house (-ke).",
+    "gendered_endings": "Sinitic: by auspicious meaning, no grammatical gender. Japonic: m -ro/-suke/-maru, f -ko/-e/-hime.",
+    "diminutive_form": "Sinitic Xiao- (little). Japonic -maru/-chan.",
+    "compounding_rule": "feature/quality + type; Sinitic Jin-cheng (golden-city), Japonic Kuro-yama (black-mountain, rendaku -> -gawa etc.)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, two modes. Sinitic civ (Jinxian, Ryujin): the five peerages (gong/hou/bo/zi/nan) under wang (king) and huangdi (emperor), Mandate of Heaven. Japonic clanhold (Yamataian): daimyo houses under shogun and the reigning tenno. Ryujin uses sinicized Sino-Japanese court titles (o = king, tei = emperor). Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["feudal (Jinxian, Ryujin)", "clanhold (Yamataian)"]
+  },
+  "conventions": {
+    "people_name_default": "Sinitic: surname + given (+ courtesy-name zi). Japonic: clan + given (+ adult/art name). Order family-first in both.",
+    "settlement_named_after": ["quality + type (Jin-cheng, Kuro-shiro)", "founder/clan", "feature", "temple/shrine"],
+    "transparent_vs_opaque": "moderate; many names are transparent meaning-compounds.",
+    "no_exonyms": true
+  }
+}

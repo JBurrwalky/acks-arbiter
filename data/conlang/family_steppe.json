@@ -1,0 +1,78 @@
+{
+  "kit_id": "steppe",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Steppe / Central Asian",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "A small, standalone family: Mongol-Turkic horse-nomads of the open steppe. Only one clean member (Orkhan); Steppe otherwise appears in CROSS-family blends authored with their partner families: Kypchan (13+17 Slavic x Steppe), Xiongan (9+17 Chinese x Steppe), Karakan (15+17 N.American x Steppe). Those blends should reflex their Steppe component from the theonym_set below. Base provides the concept inventory, morphology template, shared roots, the clanhold (decimal-host) title structure, and the Steppe theonym morph-set. Orthography is ASCII (kh/gh/ch/sh/ng; o/u for o-umlaut/u-umlaut).",
+  "sources_5_1": [17],
+  "sub_palettes": ["mongol_turkic"],
+  "member_cultures": {
+    "clean": ["orkhan (pre-Mongol-Empire steppe nomads)"],
+    "intra_family_blends": [],
+    "cross_family_uses": ["kypchan (13+17 Slavic x Steppe)", "xiongan (9+17 Chinese x Steppe)", "karakan (15+17 N.American x Steppe)"]
+  },
+  "phonology": {
+    "palette": "Mongol-Turkic: vowel harmony (back a/o/u vs front e/i); consonants kh, gh, ch, sh, ng, q, ts; diphthongs -ai/-ei; agglutinative suffixes -tai/-dai (having), -chi (doer), -khan, -gha; no initial consonant clusters.",
+    "sub_palette_notes": {
+      "mongol_turkic": "Steppe register: khan/khagan/noyan/baatar; the ovog (clan) and the decimal war-host (arban 10, zuun 100, mingghan 1000, tumen 10000); the ordu (mobile royal camp) and the ulus (nation/realm); shaman (bo) religion at the ovoo (sacred cairn)."
+    },
+    "phonotactics": "CV/CVC, no initial clusters; vowel harmony; -ai/-ei diphthongs; final -n/-g/-r common.",
+    "transparent_ratio_default": 0.45
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized in the culture kit (with steppe-specific terms: steppe, gobi, herd, felt, airag).",
+    "feature_words": ["river", "stream", "lake", "sea", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "steppe", "marsh", "ford", "pass", "vale", "gobi", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "bronze", "silver", "gold", "horse", "herd", "felt", "leather", "airag"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "Common Mongol-Turkic roots (common words and titles, allowed; theophoric built only on the morphed canon-forms below, never real steppe gods).",
+    "ruler": "khan (king) / khagan (khan of khans)",
+    "lord": "noyan / ezen",
+    "clan": "ovog",
+    "horde/royal-camp": "ordu",
+    "nation/realm": "ulus",
+    "hero-champion": "baatar / baghatur",
+    "oath": "tangarag"
+  },
+  "theonym_set": {
+    "_note": "Steppe morphs of the Agrippan canon: phoneme-morphs through Mongol-Turkic phonology (vowel harmony; -ai/-tai endings; v>b). These are NOT real steppe gods (no Tengri, Erlik, Ulgen, Umai, Qormusta). Orkhan realizes them directly (Chaotically: DEMONIZING the One (Eterun) as the Tyrant-Sky and reviling the Lawful powers, while revering the Chaotic powers - supreme among them the Wild Storm-Sky, Tamendei); cross-family Steppe blends (Kypchan/Xiongan/Karakan) reflex their Steppe component from here, framed by their own alignments (a Lawful-leaning steppe realm such as Xiongan would instead revere Eterun as the ordered Eternal Heaven).",
+    "forms": {
+      "Aeternus (the One)": "Eterun",
+      "Tulrius (sun, justice)": "Tulai",
+      "Orlandus (iron, oath, war)": "Orloch",
+      "Gaiandus (earth, endurance)": "Gajan",
+      "Numeno (air, sky-wisdom)": "Nomon",
+      "Realta (mother, mercy)": "Erelta",
+      "Delorum (death, the dead)": "Delur",
+      "Noctiluna (moon, night)": "Notulan",
+      "Raptis (the wild hunt)": "Rabtai",
+      "Dementus (storm-sky, lightning-madness)": "Tamendei",
+      "Maraxus (war-fire, the conqueror)": "Marakhai",
+      "Vacidus (the void)": "Bachid",
+      "Lusanto (the plunder-serpent)": "Lusantai"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "feature-named: -uul (mtn), -gol (river), -nuur (lake), -tal (steppe); the camp named for its khan ([khan]-yn Ordu); quality prefix Har-/Tsagaan- (black-/white-).",
+    "patronymic_form": "father's name + -in (of); ovog (clan) name; animal/deed byname; -tai/-dai (having) and -chi (doer).",
+    "gendered_endings": "masc -tai/-dai/-baatar; fem -jin/-lun/-maa.",
+    "diminutive_form": "-hai / -gan.",
+    "compounding_rule": "[quality|animal](stem) + feature: Har-uul (black-mountain), Altan-gol (golden-river); horde = [khan]-yn Ordu."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, clanhold. Built on khan: khan (king) at kingdom, khagan (khan of khans) at empire over the Yeke Ulus (Great Nation); the decimal host (zuun/mingghan/tumen) supplies the middle tiers; the khural (chiefs' assembly) raises the khan. Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["clanhold (Orkhan)"]
+  },
+  "conventions": {
+    "people_name_default": "personal name + patronymic (father + -in) + ovog (clan); deed/animal byname or Baatar (hero) honor; order given-first.",
+    "settlement_named_after": ["feature + quality (Har-uul)", "the khan's camp ([khan]-yn Ordu)", "muster-ground / ovoo (sacred cairn)"],
+    "transparent_vs_opaque": "moderate-high; many names are transparent compounds.",
+    "no_exonyms": true
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "kit_id": "elvish",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Elvish (the Vaneth, three branches of one people)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit; demihuman tier)",
+  "_note": "The elvish tier: one people (the Vaneth) in three branches descended from a shared Proto-Elvish tongue, VANETHIR ('the Old Speech'). DESIGN: every human pantheon-name is a morph of one 25-power canon, so the human families already share consonant SKELETONS (Tulrius = Thulr/Toran/Tulor/Tolratl/Tulax/Tulrios/Tulrish, all T-L-R). Those skeletons ARE the Vanethir root-stock. Each elvish branch applies a consistent sound-law to the proto-roots (consonants preserved; vowels/endings/allophones shift) and is tuned to the phonology of the human cluster it is the deep ancestor of - so cognates are recognizable across the three branches AND each branch prefigures its human descendants. AESTHETIC: Aelvaneth and Thalvaneth render the roots SMOOTH and lilting (the high-elf trope; soft -ath/-ash/-eth, l/r/n/th); Xilvaneth renders them HARSH and guttural (the dark-elf stand-in; glottal k'/t', tz, x, -tl). Demihuman tier (race elf): golden-age->enclave arc, alignment weights per branch (catalog 5.2). DEITY names are morphs of the Agrippan canon, never real gods; the Vanethir forms are framed in flavor as the eldest in the world, but the data-canon key stays Agrippan.",
+  "sources_5_1": [],
+  "race": "elf",
+  "tier_note": "demihuman; up to 3 elf seed points per campaign (catalog 5.2); end_state enclave.",
+  "branches": {
+    "aelvaneth": { "biome": "forest-and-river", "register": "smooth/lilting (high-elf)", "ancestral_to": ["germanic", "celtic", "slavic"], "model": "a deep PIE-like ancestor of the European IE human families", "weights": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 } },
+    "xilvaneth": { "biome": "jungle-and-river", "register": "harsh/guttural (dark-elf stand-in)", "ancestral_to": ["mesoamerican"], "model": "a deep ancestor of the Mesoamerican families (Nahuatl/Maya); Andean/Quechua phonological tilt as flavor", "weights": { "Lawful": 0.10, "Neutral": 0.10, "Chaotic": 0.80 } },
+    "thalvaneth": { "biome": "sea-and-isle (coastal)", "register": "smooth/lilting (sea-elf)", "ancestral_to": ["classical", "near_eastern (punic)"], "model": "a deep Mediterranean ancestor of the Latinate/Hellenic and Punic families", "weights": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 } }
+  },
+  "branch_laws": {
+    "_note": "Applied to the Proto-Elvish roots; the consonant SKELETON is preserved, so cognates stay recognizable across branches.",
+    "aelvaneth": "SMOOTH: soft endings -ath/-ash/-eth/-a/-en/-el; voiced/aspirate softening (no harsh -az); ablaut e/o; flowing l/r/n/th; lilting open syllables.",
+    "xilvaneth": "HARSH: glottalization k'/t'/p'; the affricate tz and x (sh); incipient -tl/-' endings; vowels reduce toward a/i/u; clipped, guttural.",
+    "thalvaneth": "SMOOTH (Mediterranean): vowel-rich endings -os/-a/-e/-eth; sibilants s/sh; a light guttural/pharyngeal touch (the Punic descendant); flowing."
+  },
+  "theonym_set": {
+    "_note": "The 25-power canon as Proto-Elvish skeletons, each with the three branch reflexes. Read across a row = obvious cognates; read past the reflex = the human descendants each branch prefigures. Representative set (the build assembles the full 25).",
+    "powers": {
+      "Aeternus (the One; skel '-T-R-N)": { "proto": "Atyarnā", "aelvaneth": "Aiternath", "xilvaneth": "Atyarnatl", "thalvaneth": "Aiternos", "human_descendants": "Ael->Aiterns/Eternan/Oterun; Xil->Aiternatl/Aj Ternaj; Thal->Aeternus/Aiternos/Atharon" },
+      "Tulrius (sun, light, justice; T-L-R)": { "proto": "Tulurā", "aelvaneth": "Tulorath", "xilvaneth": "Tul'aratl", "thalvaneth": "Tulros", "human_descendants": "Ael->Thulrs/Toran/Tulor; Xil->Tolratl/Tulax; Thal->Tulrios/Tulrish" },
+      "Orlandus (iron, oath, war; R-L-N)": { "proto": "Orlandū", "aelvaneth": "Orlannath", "xilvaneth": "Orlantl", "thalvaneth": "Orlandos", "human_descendants": "Ael->Orlund/Orlann/Orlon; Xil->Orlantzin/Orlanab; Thal->Orlandros/Orlanz" },
+      "Gaiandus (earth, endurance; G-N-D)": { "proto": "Gayandū", "aelvaneth": "Gaiannath", "xilvaneth": "K'ayantl", "thalvaneth": "Gaiandos" },
+      "Numeno (air, sky-wisdom; N-M-N)": { "proto": "Numenā", "aelvaneth": "Numenath", "xilvaneth": "Numentl", "thalvaneth": "Numenos" },
+      "Realta (mother, mercy; R-L-T)": { "proto": "Reyaltā", "aelvaneth": "Realtath", "xilvaneth": "Riyaltl", "thalvaneth": "Rialtos" },
+      "Delorum (death, the dead; D-L-R)": { "proto": "Delorū", "aelvaneth": "Delorath", "xilvaneth": "Delok'tl", "thalvaneth": "Deloros" },
+      "Noctiluna (moon, night; N-K-L)": { "proto": "Noktilunā", "aelvaneth": "Nochlunath", "xilvaneth": "Nok'tilutl", "thalvaneth": "Noktilunos" },
+      "Raptis (the hunt; R-P-T)": { "proto": "Raptī", "aelvaneth": "Raptath", "xilvaneth": "Rap'itl", "thalvaneth": "Raptos" },
+      "Maraxus (war-fire; M-R-X)": { "proto": "Maraksū", "aelvaneth": "Marakhath", "xilvaneth": "Marak'tl", "thalvaneth": "Maraksos" },
+      "Vacidus (the void; V-K-D)": { "proto": "Wakidū", "aelvaneth": "Wakidath", "xilvaneth": "Wak'idtl", "thalvaneth": "Wakidos" },
+      "Lusanto (the hoard-serpent; L-S-N)": { "proto": "Lusantā", "aelvaneth": "Lusanath", "xilvaneth": "Lusan'tl", "thalvaneth": "Lusantos" },
+      "Dementus (storm-madness; D-M-N)": { "proto": "Dementū", "aelvaneth": "Dementhath", "xilvaneth": "Dement'l", "thalvaneth": "Dementos" }
+    }
+  },
+  "proto_roots": {
+    "_note": "Proto-Elvish core-concept roots (skeleton) with the three branch reflexes; realized per culture's lexicon. Cognate across branches.",
+    "star (E-L-N; the elf-light)": { "proto": "elenā", "aelvaneth": "elenath", "xilvaneth": "elentl", "thalvaneth": "elenos" },
+    "people/elf-folk (V-N-TH)": { "proto": "vanethā", "aelvaneth": "vaneth", "xilvaneth": "wanetl", "thalvaneth": "vanethos" },
+    "water/river (S-R)": { "proto": "sirā", "aelvaneth": "sireth", "xilvaneth": "sirtl", "thalvaneth": "siros" },
+    "tree/wood (T-W-R)": { "proto": "tawarā", "aelvaneth": "tawarath", "xilvaneth": "tawak'tl", "thalvaneth": "tawaros" },
+    "forest (G-L-N)": { "proto": "galenā", "aelvaneth": "galenath", "xilvaneth": "galen'tl", "thalvaneth": "galenos" },
+    "sea (E-L-R)": { "proto": "aelarā", "aelvaneth": "aelarath", "xilvaneth": "aelartl", "thalvaneth": "aelaros" },
+    "mountain (R-N-T)": { "proto": "orontā", "aelvaneth": "oronnath", "xilvaneth": "oront'l", "thalvaneth": "orontos" },
+    "moon (N-L-R)": { "proto": "nelarā", "aelvaneth": "nelarath", "xilvaneth": "nelartl", "thalvaneth": "nelaros" },
+    "light (G-L-R)": { "proto": "galarā", "aelvaneth": "galarath", "xilvaneth": "galak'tl", "thalvaneth": "galaros" },
+    "song/lore (L-N-TH)": { "proto": "linthā", "aelvaneth": "linthath", "xilvaneth": "lin'tl", "thalvaneth": "linthos" },
+    "silver/white (K-L-R)": { "proto": "kelarā", "aelvaneth": "kelarath", "xilvaneth": "k'elartl", "thalvaneth": "kelaros" },
+    "high/holy (T-R)": { "proto": "tarā", "aelvaneth": "tarath", "xilvaneth": "t'artl", "thalvaneth": "taros" },
+    "shadow (D-L)": { "proto": "dulā", "aelvaneth": "dulath", "xilvaneth": "dul'tl", "thalvaneth": "dulos" }
+  },
+  "title_skeleton": {
+    "_note": "ACKS 7 tiers; one proto ladder, three branch reflexes. Elven realms are ancient (golden-age kingdoms now mostly fallen to enclaves); civ government.",
+    "tiers": {
+      "barony": { "proto": "veluth (lord)", "aelvaneth": "Veluth", "xilvaneth": "Wel'utl", "thalvaneth": "Velos" },
+      "march": { "proto": "maeron (march-warden)", "aelvaneth": "Maeron", "xilvaneth": "Maek'on", "thalvaneth": "Maeros" },
+      "county": { "proto": "eskel (glen/vale-lord)", "aelvaneth": "Eskel", "xilvaneth": "Esk'etl", "thalvaneth": "Eskelos" },
+      "duchy": { "proto": "thalion (great-lord)", "aelvaneth": "Thalion", "xilvaneth": "Tal'iotl", "thalvaneth": "Thalios" },
+      "principality": { "proto": "aranel (sovereign-lord)", "aelvaneth": "Aranel", "xilvaneth": "Aran'etl", "thalvaneth": "Aranelos" },
+      "kingdom": { "proto": "tharan (king)", "aelvaneth": "Tharan", "xilvaneth": "T'aran", "thalvaneth": "Tharos" },
+      "empire": { "proto": "tar-tharan (high-king)", "aelvaneth": "Tar-Tharan", "xilvaneth": "T'ar-T'aran", "thalvaneth": "Tar-Tharos" }
+    },
+    "government_modeled": ["feudal (all three elvish branches are ancient civ realms)"]
+  },
+  "elf_canon": {
+    "alignment_default": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 },
+    "xilvaneth_override": { "Lawful": 0.10, "Neutral": 0.10, "Chaotic": 0.80 },
+    "lifecycle": "high peak_strength, high collapse_proneness, end_state enclave (golden age -> hard collapse to fastness-enclaves).",
+    "seed_biomes": "Aelvaneth forest+river; Xilvaneth jungle+river; Thalvaneth coastal/sea+isle.",
+    "conquest": "in-biome genocide, out-of-biome vassalize, always-genocide vs other demihumans (catalog 5.2)."
+  },
+  "conventions": {
+    "people_name_default": "given name from the branch root-stock + a lineage (the elven houses, -iel/-ion-style soft for Ael/Thal, -tl/-' for Xil); the smooth branches lilting, Xilvaneth clipped and harsh.",
+    "settlement_named_after": ["the branch's realized roots: star/tree/sea/river + -aneth/-anar realm-suffix", "an elder-house", "a fastness (the enclave end-state)"],
+    "transparent_vs_opaque": "moderate; the roots are transparent across branches once the laws are known.",
+    "no_exonyms": true
+  }
+}

@@ -19,6 +19,12 @@ func run_all_tests() -> void:
 	test_finalize_fills_int_extras()
 	test_finalize_arcane_cull()
 	test_path_b_surfaces_template_id_for_origin_stamping()
+	test_swap_options_excludes_held()
+	test_class_swap_replaces_class_proficiency()
+	test_invalid_class_swap_ignored()
+	test_general_swap_replaces_general()
+	test_locked_proficiency_not_swappable()
+	test_build_repertoire_arcane_gate()
 	if not has_failures():
 		print("PcTemplateCreationFlow: all tests passed.")
 
@@ -133,3 +139,98 @@ func test_finalize_arcane_cull() -> void:
 		okeys.append(String(r["proficiency_key"]))
 	check(not okeys.has("military_strategy"), "override culls the chosen general")
 	check(okeys.has("siege_engineering"), "override keeps the arcane bonus")
+
+
+# ---------------------------------------------------------------------------
+# §4.2.1 full editor — proficiency swaps (§10 step 12)
+# ---------------------------------------------------------------------------
+
+func test_swap_options_excludes_held() -> void:
+	# Editor dropdowns: general_options must exclude every proficiency the template
+	# already grants (so a swap target is always net-new). mage_3_4 holds familiar
+	# [class], healing [general], animal_husbandry [arcane_bonus].
+	var t := _repo.get_template("mage_3_4")
+	check(t != null, "mage_3_4 exists")
+	if t == null:
+		return
+	var opts := _flow.swap_options(t)
+	var gen_opts: Array = opts["general_options"]
+	check(not gen_opts.has("healing"), "held general excluded from general_options")
+	check(not gen_opts.has("animal_husbandry"), "held arcane_bonus excluded from general_options")
+	check(not gen_opts.has("familiar"), "held class prof excluded from general_options")
+	check((opts["class_options"] as Array).size() >= 1, "class_options non-empty")
+
+
+func test_class_swap_replaces_class_proficiency() -> void:
+	# The class proficiency is swappable (a flagged departure). The swapped record
+	# carries the new key at rank 1 with no specialization.
+	var t := _repo.get_template("fighter_15_16")
+	var cur := String((_flow.build_editor_state(t, 12)["class_proficiency"] as Dictionary)["proficiency_key"])
+	var swap_to := ""
+	for k in _flow.swap_options(t)["class_options"]:
+		if String(k) != cur:
+			swap_to = String(k)
+			break
+	check(swap_to != "", "fighter has an alternative class proficiency to swap to")
+	var recs := _flow.finalize_proficiencies(t, 12, {"class_swap_key": swap_to})
+	var class_rec: Dictionary = {}
+	for r: Dictionary in recs:
+		if String(r["slot_type"]) == "class":
+			class_rec = r
+	check(String(class_rec.get("proficiency_key", "")) == swap_to, "class proficiency swapped")
+	check(int(class_rec.get("rank", -1)) == 1, "swapped class prof at rank 1")
+	check(String(class_rec.get("specialization", "x")) == "", "swapped class prof has no specialization")
+
+
+func test_invalid_class_swap_ignored() -> void:
+	# An invalid / unknown class_swap_key is ignored — finalize never trusts the
+	# caller (the UI offers only valid options, but defends regardless).
+	var t := _repo.get_template("fighter_15_16")
+	var cur := String((_flow.build_editor_state(t, 12)["class_proficiency"] as Dictionary)["proficiency_key"])
+	var recs := _flow.finalize_proficiencies(t, 12, {"class_swap_key": "totally_bogus_key"})
+	var class_key := ""
+	for r: Dictionary in recs:
+		if String(r["slot_type"]) == "class":
+			class_key = String(r["proficiency_key"])
+	check(class_key == cur, "invalid class swap ignored — template's class prof kept")
+
+
+func test_general_swap_replaces_general() -> void:
+	var t := _repo.get_template("fighter_15_16")
+	var gens: Array = _flow.build_editor_state(t, 12)["general_proficiencies"]
+	check(gens.size() >= 1, "fighter_15_16 has a swappable general")
+	if gens.is_empty():
+		return
+	var from_key := String((gens[0] as Dictionary)["proficiency_key"])
+	var to_key := String((_flow.swap_options(t)["general_options"] as Array)[0])
+	var recs := _flow.finalize_proficiencies(t, 12, {"general_swaps": {from_key: to_key}})
+	var keys: Array = []
+	for r: Dictionary in recs:
+		keys.append(String(r["proficiency_key"]))
+	check(keys.has(to_key), "general swapped in (%s)" % to_key)
+	check(not keys.has(from_key), "original general swapped out (%s)" % from_key)
+
+
+func test_locked_proficiency_not_swappable() -> void:
+	# witch_3_4: Healing is the tradition (locked). A general_swaps entry keyed on it
+	# is ignored — locked natural/tradition profs are never swapped (§4.2.1).
+	var t := _repo.get_template("witch_3_4")
+	check(t != null, "witch_3_4 exists")
+	if t == null:
+		return
+	var to_key := String((_flow.swap_options(t)["general_options"] as Array)[0])
+	var recs := _flow.finalize_proficiencies(t, 12, {"general_swaps": {"healing": to_key}})
+	var keys: Array = []
+	for r: Dictionary in recs:
+		keys.append(String(r["proficiency_key"]))
+	check(keys.has("healing"), "locked tradition proficiency retained")
+	check(not keys.has(to_key), "swap targeting a locked proficiency is ignored")
+
+
+func test_build_repertoire_arcane_gate() -> void:
+	# Repertoire is arcane-only; a mundane class returns {} (gdd §7.5.1 / §8.2).
+	check((_flow.build_repertoire("fighter", "fighter_3_4", 12) as Dictionary).is_empty(),
+		"fighter has no template repertoire")
+	var rep := _flow.build_repertoire("mage", "mage_3_4", 12)
+	check(not (rep as Dictionary).is_empty(), "mage builds a repertoire")
+	check((rep.get("spells", []) as Array).size() >= 1, "mage repertoire has spells")

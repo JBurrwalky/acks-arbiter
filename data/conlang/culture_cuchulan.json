@@ -1,0 +1,80 @@
+{
+  "kit_id": "cuchulan",
+  "tier": "culture",
+  "inherits": "celtic",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 8,
+  "sub_palette": "goidelic",
+  "synthesis_sources": [7],
+  "homeland": "Cuchulei",
+  "government": "clanhold",
+  "alignment_allowed": ["Lawful", "Neutral", "Chaotic"],
+  "_note": "Single-source (broad Insular Celtic, Goidelic-leaning: Irish/Gaelic with Brythonic flavor). Goidelic sub-palette of the Celtic family; cattle-raiding hero-clans of forest and hill, bound by the fian war-band and the brithem's law. clan = clanhold (ri-tuaithe and the oenach assembly). Even split across all three alignments. Common-word lexicon and rank titles use the real Gaelic register (allowed, catalog 5.3); DEITY names are phoneme-morphs of the Agrippan canon through Insular-Celtic phonology (family_celtic.json theonym_set), never real Celtic gods. Kept distinct from the Latinate-Celtic Cantabran (Cantabran uses -briga/Nemeton/Drux; Cuchulan uses Dun-Rath/Nemed/Drui).",
+  "phonology": {
+    "palette": "Insular Celtic (Goidelic): initial mutation (lenition c>ch, b>bh, t>th, d>dh); broad vs slender consonants; vowels a e i o u (long marks dropped); theophoric stems are the Celtic morphs (Toran-, Orlann-, Realtan-, Gaian-).",
+    "phonotactics": "CV/CVC; mutation-driven clusters; root-initial stress.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "abann", "stream": "sruth", "lake": "loch", "sea": "muir", "bay": "camas", "cape": "rinn", "isle": "inis", "mountain": "sliabh", "hill": "cnoc", "ridge": "druim", "forest": "coill", "wood": "doire", "plain": "mag", "marsh": "currach", "ford": "ath", "pass": "bealach", "vale": "glenn", "coast": "cladach", "bog": "moin" },
+    "settlement_words": { "hamlet": "clachan", "village": "baile", "town": "baile-mor", "city": "cathair", "fort": "dun", "port": "cuan", "market": "aonach", "temple_town": "nemed", "citadel": "caiseal" },
+    "kinship": { "son": "mac", "daughter": "ingen", "house": "tech", "kin": "fine", "ancestor": "sinser" },
+    "adjectives": { "great": "mor", "little": "becc", "old": "sen", "new": "nua", "black": "dub", "white": "find", "red": "derg", "golden": "orda", "iron": "iarn", "high": "ard", "far": "cian", "sacred": "noib", "fair": "caem" },
+    "resources": { "salt": "salann", "iron": "iarn", "bronze": "uma", "silver": "argat", "gold": "or", "cattle": "bo", "grain": "arbar", "wool": "olann", "mead": "mid", "horse": "ech" },
+    "directional": { "upper": "uachtar", "lower": "iochtar", "north": "tuaiscert", "south": "deiscert", "east": "airther", "west": "iarthar", "inner": "inmedon", "outer": "immechtrach" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["Dun- (fort)", "Rath- (ringfort)", "Baile- (settlement)", "Cill- (church/cell)", "Ard- (height)", "Mag- (plain)"],
+    "patronymic_form": "patronymic Mac- (son of) / O / Ua (grandson/descendant of); the kin-group is the fine, the wider clan the cland; praise- and deed-epithets common.",
+    "gendered_endings": { "male": "-an / -ach", "female": "-in / -nat" },
+    "diminutive_form": "-an / -in",
+    "compounding_rule": "[quality|saint|feature](stem) + element: Dun-derg (red-fort), Ard-mor (great-height), Cill-[name] (church of); patronymic Mac-[father], O-[ancestor]."
+  },
+  "title_ladder": {
+    "government": "clanhold (ri-tuaithe and the oenach assembly; the brithem judges and the fili sings the king's right)",
+    "tiers": {
+      "barony": { "ruler": "Aire", "domain": "Airecht" },
+      "march": { "ruler": "Maor", "domain": "Maoracht" },
+      "county": { "ruler": "Toisech", "domain": "Toisecht" },
+      "duchy": { "ruler": "Flaith", "domain": "Flaithes" },
+      "principality": { "ruler": "Ri Tuaithe", "domain": "Tuath" },
+      "kingdom": { "ruler": "Ruiri", "domain": "Morthuath" },
+      "empire": { "ruler": "Ard-ri", "domain": "Ard-rige" }
+    },
+    "_tiers_note": "Insular Celtic (Gaelic) clanhold, ascending. Built on ri (king) and tuath (petty kingdom): Ri Tuaithe (king of a tuath) principality, Ruiri (over-king) kingdom, Ard-ri (high king) empire over the Ard-rige. Aire (noble) barony; Maor (warden) march; Toisech (sept-chief) county; Flaith (lord) duchy. A clan culture rarely rises past the ri-tuaithe. The brithem (judge) and fili (poet-seer) stand outside the ladder. (Rank titles are the real Gaelic register, allowed.)",
+    "female_forms": { "Ard-ri": "Ard-rigan", "Ruiri": "Ruirigan", "Ri Tuaithe": "Rigan", "Flaith": "Banflaith", "Toisech": "Bantoisech", "Maor": "Banmaor", "Aire": "Banaire" },
+    "heir": "Tanaiste (the heir-elect / second)",
+    "honorifics": { "lord": "Triath", "lady": "Bantriath", "champion": "Caur (hero)", "your_grace": "A Ri", "elder": "Sruith" },
+    "vassalage": { "liege": "Flaith", "vassal": "Ceile (client)", "fealty": "Giall (pledge-hostage)", "tribute": "Cis" }
+  },
+  "people_name_convention": {
+    "order": "personal + Mac-[father] / O-[ancestor] patronymic; the fine (kin) and a deed/animal epithet for the renowned (the Hound, the Red).",
+    "surname_source": ["patronymic (Mac- son-of, O/Ua descendant-of)", "kin (fine) / clan (cland)", "deed/animal epithet"],
+    "dual_register": "the ri-kin carry a cland name and a praise-epithet from the fili; commoners a patronymic.",
+    "theophoric": "names from the Celtic deity-morphs + an element: Mael- (devotee/tonsured-of), Gilla- (servant-of), Cu- (hound/champion-of): e.g. Mael-Toran, Gilla-Realtan, Cu-Orlann.",
+    "diminutive": "-an / -in"
+  },
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the Agrippan canon through Insular-Celtic phonology (family_celtic.json theonym_set) - never real Celtic gods. All three alignments: Lawful kin keep the sun-and-oath powers; Neutral the ancestral dead, the land and the nature-powers; Chaotic the war-fury and raven powers. Druidic: the drui and the fili mediate; the Tuath-de are the god-kin.",
+    "the_one": "Eternan (< Aeternus; the Ancient One beyond the god-kin, seldom petitioned)",
+    "sample_deity_renames": { "Tulrius": "Toran (the sun, the just brightness)", "Orlandus": "Orlann (the iron-oath, battle)", "Realta": "Realtan (the mother, the mercy-star)", "Gaiandus": "Gaian (the enduring land)" },
+    "demon_epithet_pattern": "the opposing powers keep their Celtic morphs + a portfolio epithet (distinct per power): Maraxus -> Maragan the War-Fire; Vacidus -> Faicid the Unmaker; Lusanto -> Losand the Hoard-Worm.",
+    "clergy_ladder": { "1": "Drui-dalta (druid-novice)", "3": "Drui (druid)", "5": "Faith (seer-priest)", "7": "Ard-drui (arch-druid)", "9": "Ollam (supreme sage)" },
+    "religious_orders_pattern": "the Nemed (sacred grove) of [power]: 'the Nemed of Toran'.",
+    "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the fine, honored at the cairn and the holy well; the Lawful add 'Naomh [name]' (saint).",
+    "holy_symbol_motifs": { "Toran": "a triskele sun-wheel over crossed oak", "Orlann": "an iron spear crossed with a torc (oath-ring)", "Realtan": "a star above a healing-well" }
+  },
+  "banks_patterns": {
+    "ships": "curach river-boats and chariot-names (the Cuchulan are inland forest-folk): 'the Grey Hound', 'Raven of the Glenn'",
+    "military_units": "the [cland] Fian (warrior-band) / the [animal] spears: 'the Fian of the Red Branch', 'the Hound-spears'",
+    "taverns": "'The [Adjective] [Noun]': 'The Salmon of Wisdom', 'The Boar and Cauldron'",
+    "dungeons_ruins": "fallen raths and sidhe-mounds: 'the Rath of [name]', 'the Sidhe of [hill]'"
+  },
+  "seed_names": {
+    "personal_m": ["Conall", "Cormac", "Diarmait", "Eogan", "Fergal", "Lugaid", "Niall", "Ronan", "Aedan", "Brendan", "Caolan", "Donnchad", "Eochaid", "Fiachra", "Lorcan", "Murchad", "Ruadan", "Senan", "Tuathal", "Cathal"],
+    "personal_f": ["Affraic", "Bebinn", "Ciara", "Damhnait", "Eithne", "Fionnuala", "Gormlaith", "Lasair", "Mor", "Nessa", "Orlaith", "Ronnat", "Sadb", "Tuathla", "Aoife", "Blathnat", "Caoimhe", "Deirbhile", "Ailbhe", "Muirenn"],
+    "clan_cland": ["Cland Conaill", "Cland Cormaic", "Ui Eogain", "Ui Niad", "Cland Fergusa", "Ui Lugdach", "Cland Ronain", "Ui Echach", "Cland Murchada", "Ui Cathail", "Cland Lorcain", "Ui Ruadain"],
+    "epithets_cognomina": ["the Hound (Cu)", "the Red (Ruad)", "the Fair (Find)", "Battle-victor (Cathbuaid)", "of the Glen", "the Swift", "Oath-bound", "the Black (Dub)"],
+    "flagship_settlements": ["Cuchulei (the chief dun)", "Dun Derg (the red fort)", "Rath Mor (the great ringfort)", "Ard Toran (the sun-height)", "Cill Realtan (the star-shrine)", "Loch Glas (the grey lake)"]
+  }
+}

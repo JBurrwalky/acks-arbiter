@@ -1,0 +1,80 @@
+{
+  "kit_id": "erainn",
+  "tier": "culture",
+  "inherits": "celtic",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 46,
+  "sub_palette": "goidelic",
+  "synthesis_sources": [7],
+  "homeland": "Eriu",
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Neutral"],
+  "_note": "Single-source (archaic Old Irish; the Erainn, an old Goidelic stock). Goidelic sub-palette of the Celtic family, in its most archaic register; a law-bound druidic HIGH-KINGSHIP - the Ard Ri at Temair over the province-kings, the noble grades (grad flatha) and the brithem's law below. civ = feudal. Even split Lawful/Neutral. Distinct from the heroic-raider clan Cuchulan: Erainn is settled, archaic and royal (older Old-Irish forms; aub/fid/glend; the ri-coicid provincial kingship). Common-word lexicon and rank titles use the real Old Irish register (allowed, catalog 5.3); DEITY names are the Celtic morphs of the Agrippan canon (family_celtic.json theonym_set), never real Celtic gods.",
+  "phonology": {
+    "palette": "Archaic Old Irish (Goidelic): older forms with retained -as/-os endings; initial mutation (lenition c>ch, t>th, d>dh); broad vs slender consonants; the Ogham register; theophoric stems are the Celtic morphs (Toran-, Orlann-, Eternan-, Gaian-).",
+    "phonotactics": "CV/CVC; mutation-driven clusters; root-initial stress; archaic vocalism.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "aub", "stream": "sruth", "lake": "loch", "sea": "muir", "bay": "camas", "cape": "rind", "isle": "inis", "mountain": "sliab", "hill": "cnocc", "ridge": "druim", "forest": "fid", "wood": "caill", "plain": "mag", "marsh": "moin", "ford": "ath", "pass": "belach", "vale": "glend", "coast": "tracht", "bog": "currech" },
+    "settlement_words": { "hamlet": "treb", "village": "baile", "town": "dun", "city": "cathir", "fort": "rath", "port": "longphort", "market": "oenach", "temple_town": "nemed", "citadel": "dunard" },
+    "kinship": { "son": "macc", "daughter": "ingen", "house": "tech", "kin": "fine", "ancestor": "senathir" },
+    "adjectives": { "great": "mor", "little": "becc", "old": "sen", "new": "nue", "black": "dub", "white": "find", "red": "derg", "golden": "orda", "iron": "iarn", "high": "ard", "far": "cian", "sacred": "noeb", "fair": "caem" },
+    "resources": { "salt": "salann", "iron": "iarn", "bronze": "umae", "silver": "argat", "gold": "or", "cattle": "bo", "grain": "ith", "wool": "olann", "mead": "mid", "horse": "ech" },
+    "directional": { "upper": "uas", "lower": "is", "north": "tuaid", "south": "tess", "east": "airther", "west": "iarthar", "inner": "medon", "outer": "immechtrach" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["Dun- (fort)", "Rath- (ringfort)", "Cathair- (stone-city)", "Temair- (royal seat)", "Mag- (plain)", "Nemed- (sanctuary)"],
+    "patronymic_form": "patronymic maccu / moccu (of the kindred of) and macc (son of); the fine (kin) and the tuath; the noble grades (grad flatha) order the lords.",
+    "gendered_endings": { "male": "-an / -as / -ach", "female": "-nat / -seach" },
+    "diminutive_form": "-an / -ine",
+    "compounding_rule": "[quality|feature|saint](stem) + element: Dun-derg (red-fort), Mag-mor (great-plain), Temair-[name] (royal seat of); maccu-[ancestor] (of the kindred of)."
+  },
+  "title_ladder": {
+    "government": "feudal (an archaic Gaelic high-kingship: the Ard Ri at Temair over the province-kings, the noble grades (grad flatha) below, the brithem's law binding all)",
+    "tiers": {
+      "barony": { "ruler": "Bo-aire", "domain": "Bo-airecht" },
+      "march": { "ruler": "Aire Echta", "domain": "Crich" },
+      "county": { "ruler": "Tigerna", "domain": "Tigernas" },
+      "duchy": { "ruler": "Ri Tuaithe", "domain": "Tuath" },
+      "principality": { "ruler": "Ruiri", "domain": "Mortuath" },
+      "kingdom": { "ruler": "Ri Coicid", "domain": "Coiced" },
+      "empire": { "ruler": "Ard Ri", "domain": "Ard-rige" }
+    },
+    "_tiers_note": "Archaic Goidelic high-kingship, ascending. Built on the ri-hierarchy: Ri Tuaithe (king of a tuath) duchy; Ruiri (over-king of tuatha) principality; Ri Coicid (king of a fifth/province) kingdom; Ard Ri (high king at Temair) empire over the Ard-rige. Bo-aire (cattle-lord, propertied noble) barony; Aire Echta (border-avenger lord) march; Tigerna (lord) county. The brithem (judge) and ollam (sage) stand outside the ladder. (Rank titles are the real Old Irish register, allowed.)",
+    "female_forms": { "Ard Ri": "Ard Rigan", "Ri Coicid": "Rigan Coicid", "Ruiri": "Ruirigan", "Ri Tuaithe": "Rigan Tuaithe", "Tigerna": "Bantigerna", "Aire Echta": "Ban-aire", "Bo-aire": "Ban-bo-aire" },
+    "heir": "Tanaiste (the tanist, designated successor)",
+    "honorifics": { "lord": "Tiarna", "lady": "Bantiarna", "champion": "Caur (hero)", "your_grace": "A Ardri", "elder": "Sruith" },
+    "vassalage": { "liege": "Ri", "vassal": "Ceile (client)", "fealty": "Giallnae (clientship)", "tribute": "Cis" }
+  },
+  "people_name_convention": {
+    "order": "personal + maccu-/macc- (of the kindred of / son of); the fine and a praise-name from the fili; the high-born take a royal style.",
+    "surname_source": ["kindred (maccu/moccu/macc)", "fine", "praise/deed epithet"],
+    "dual_register": "the ri-grades carry a fine-name and a fili's praise-name; commoners a patronymic.",
+    "theophoric": "names from the Celtic deity-morphs + Mael- (devotee-of) / Gilla- (servant-of) / Cu- (hound-of): e.g. Mael-Toran, Gilla-Eternan, Cu-Orlann.",
+    "diminutive": "-an / -ine"
+  },
+  "religion": {
+    "_note": "Deity-names are the Celtic morphs of the Agrippan canon (family_celtic.json theonym_set) in archaic Old Irish form - never real Celtic gods. Lawful/Neutral: an ordered, law-bound druidic high-kingship. The Lawful keep the sun-and-oath powers and the One above them as the sanction of kingship; the Neutral the Tuath-de (god-kin), the ancestral dead and the sovereignty of the land. The brithem's law and the drui-orders mediate.",
+    "the_one": "Eternan (< Aeternus; the Ancient One above the god-kin, source of the kingship's right)",
+    "sample_deity_renames": { "Tulrius": "Toran (the sun, the just brightness, sanction of kings)", "Gaiandus": "Gaian (the enduring land, sovereignty of the soil)", "Orlandus": "Orlann (the iron-oath, battle)", "Realta": "Realtan (the mother, the mercy-star)" },
+    "demon_epithet_pattern": "the opposing powers keep their Celtic morphs + a portfolio epithet (distinct per power): Maraxus -> Maragan the War-Fire; Vacidus -> Faicid the Unmaker; Lusanto -> Losand the Hoard-Worm.",
+    "clergy_ladder": { "1": "Mac-legind (student of lore)", "3": "Drui (druid)", "5": "Fili (poet-seer)", "7": "Ard-drui (arch-druid)", "9": "Ollam Rig (the king's supreme sage)" },
+    "religious_orders_pattern": "the Nemed (sanctuary-grove) of [power]: 'the Nemed of Toran'; the high-king's great nemed at Temair.",
+    "saints_pattern": "the Tuath-de (god-kin) and the deified ancestors of the ri-line, honored at the royal cairn and the holy well; the Lawful add 'Noeb [name]'.",
+    "holy_symbol_motifs": { "Toran": "a sun-wheel above the Lia Fail (the king-stone)", "Gaian": "the sovereignty-cup above green earth", "Orlann": "an iron spear crossed with a torc" }
+  },
+  "banks_patterns": {
+    "ships": "curach river-craft and royal chariot-names (the Erainn are an inland high-kingship): 'the Grey Steed', 'the Wave-Sweeper', 'the Salmon'",
+    "military_units": "the [fine] Fian (warrior-band) / the king's Comlann (champions): 'the Fian of Temair', 'the Red-Branch Comlann'",
+    "taverns": "'The [Adjective] [Noun]': 'The Salmon of Wisdom', 'The Cauldron of Plenty'",
+    "dungeons_ruins": "abandoned raths and royal sidhe-mounds: 'the Rath of [name]', 'the Sidhe of [hill]'"
+  },
+  "seed_names": {
+    "personal_m": ["Aed", "Diarmait", "Domnall", "Flann", "Muirchertach", "Cathal", "Loegaire", "Suibne", "Fergus", "Conaire", "Eochu", "Crimthann", "Cormac", "Ailill", "Tuathal", "Dunchad", "Cellach", "Senan", "Colman", "Ronan"],
+    "personal_f": ["Mor", "Ethne", "Findabair", "Gormlaith", "Mugain", "Sadb", "Deirbail", "Becfola", "Ailbe", "Lassar", "Muirenn", "Orlaith", "Dervila", "Sodelb", "Caintigern", "Ronnat", "Affraic", "Tuathla", "Bebinn", "Cacht"],
+    "clan_fine": ["Cenel Aedo", "Dal Fergusa", "Ui Diarmata", "Mocu Cathail", "Cenel Loegairi", "Ui Conaire", "Dal Crimthainn", "Mocu Eochach", "Ui Domnaill", "Cenel Cormaic", "Dal Ailella", "Ui Cellaig"],
+    "epithets_cognomina": ["the Hound (Cu)", "the Fair (Find)", "of the Battles (na Cath)", "the Wise (Ecnaid)", "the Red (Ruad)", "of Temair", "Oath-bound", "the Pious (Craibdech)"],
+    "flagship_settlements": ["Eriu (the chief seat)", "Temair (the high-king's royal hill)", "Cathir Mor (the great stone-city)", "Rath Ard (the high ringfort)", "Dun Toran (the sun-fort)", "Nemed Eternan (the great sanctuary)"]
+  }
+}

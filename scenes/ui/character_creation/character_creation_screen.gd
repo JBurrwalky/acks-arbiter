@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-## CharacterCreationScreen — 9-step character creation wizard.
+## CharacterCreationScreen — 14-step character creation wizard.
 ##
 ## Manages the full PC creation flow as a CanvasLayer (layer 32), sitting above
 ## normal game content but below DicePrompt (64) and OverridePanel (128).
@@ -21,33 +21,35 @@ extends CanvasLayer
 enum Step {
 	ABILITY_ROLL         = 0,  ## Roll 3d6 in order for STR/INT/WIS/DEX/CON/CHA
 	CLASS_SELECTION      = 1,  ## Choose character class (25 options)
-	CLASS_CUSTOMIZATION  = 2,  ## Barbarian origin / Witch tradition (skipped for other classes)
-	ABILITY_TRADE        = 3,  ## Optionally trade ability points into prime reqs
-	HP_ROLL              = 4,  ## Roll hit die + CON modifier
-	PROFICIENCIES        = 5,  ## Pick class + general proficiency slots
-	FAMILIAR_ACQUISITION = 6,  ## Bond a familiar (skipped if Familiar proficiency not picked)
-	SPELLS               = 7,  ## Starting spell selection (casters only; skipped otherwise)
-	EQUIPMENT            = 8,  ## Starting gold roll + equipment shop
-	PORTRAIT             = 9,  ## Choose character portrait
-	TOKEN_SELECTION      = 10, ## Choose 3D combat token (skipped if class has no GLBs)
-	LANGUAGES            = 11, ## Language selection (skipped if INT modifier <= 0)
-	FINALIZE             = 12, ## Name, alignment, description, character sheet preview
+	ABILITY_TRADE        = 2,  ## Optionally trade ability points into prime reqs
+	HP_ROLL              = 3,  ## Roll hit die + CON modifier (generates the CharacterData)
+	CLASS_TEMPLATE       = 4,  ## §4 wealth roll: keep gold (Path A) or take a template (Path B)
+	CLASS_CUSTOMIZATION  = 5,  ## Barbarian origin / Witch tradition (Path A only; B locks it)
+	PROFICIENCIES        = 6,  ## Pick class + general proficiency slots (Path A; B prefills)
+	FAMILIAR_ACQUISITION = 7,  ## Bond a familiar (skipped if Familiar proficiency not picked)
+	SPELLS               = 8,  ## Starting spell selection (casters; B-arcane prefills + skips)
+	EQUIPMENT            = 9,  ## Starting gold roll + equipment shop (Path A; B is the loadout)
+	PORTRAIT             = 10, ## Choose character portrait
+	TOKEN_SELECTION      = 11, ## Choose 3D combat token (skipped if class has no GLBs)
+	LANGUAGES            = 12, ## Language selection (skipped if INT modifier <= 0)
+	FINALIZE             = 13, ## Name, alignment, description, character sheet preview
 }
 
 const STEP_LABELS: Array[String] = [
-	"Step 1 of 13 — Ability Scores",
-	"Step 2 of 13 — Class",
-	"Step 3 of 13 — Origin / Tradition",
-	"Step 4 of 13 — Ability Trading",
-	"Step 5 of 13 — Hit Points",
-	"Step 6 of 13 — Proficiencies",
-	"Step 7 of 13 — Bond Familiar",
-	"Step 8 of 13 — Starting Spells",
-	"Step 9 of 13 — Equipment",
-	"Step 10 of 13 — Portrait",
-	"Step 11 of 13 — Combat Token",
-	"Step 12 of 13 — Languages",
-	"Step 13 of 13 — Finalize",
+	"Step 1 of 14 — Ability Scores",
+	"Step 2 of 14 — Class",
+	"Step 3 of 14 — Ability Trading",
+	"Step 4 of 14 — Hit Points",
+	"Step 5 of 14 — Wealth & Template",
+	"Step 6 of 14 — Origin / Tradition",
+	"Step 7 of 14 — Proficiencies",
+	"Step 8 of 14 — Bond Familiar",
+	"Step 9 of 14 — Starting Spells",
+	"Step 10 of 14 — Equipment",
+	"Step 11 of 14 — Portrait",
+	"Step 12 of 14 — Combat Token",
+	"Step 13 of 14 — Languages",
+	"Step 14 of 14 — Finalize",
 ]
 
 
@@ -92,6 +94,7 @@ var _spell_registry: SpellRegistry
 var _repertoire_engine: RepertoireEngine
 var _generator: CharacterGenerator
 var _catalog: EquipmentCatalog
+var _template_repo: ClassTemplateRepository
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +131,7 @@ func _init_registries() -> void:
 	_generator          = CharacterGenerator.new(_class_registry, _power_registry,
 		_proficiency_registry)
 	_catalog            = EquipmentCatalog.new()
+	_template_repo      = ClassTemplateRepository.new()
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +167,11 @@ func _reset_state() -> void:
 		"barbarian_origin": "",
 		"witch_tradition": "",
 		"voudon_craft_choice": "",
+		"wealth_roll": 0,
+		"template_path": "",
+		"template_id": "",
+		"origin_template_id": "",
+		"template_class_metadata": {},
 		"bonus_proficiencies": [],
 		"traded_scores": {},
 		"character": null,
@@ -187,7 +196,12 @@ func _reset_state() -> void:
 
 func _invalidate_from(step: int) -> void:
 	## Clear creation_state fields that are downstream of the given step.
-	## Called when the player navigates back.
+	## Called when the player navigates back. Fields produced by the CLASS_TEMPLATE
+	## step (the wealth roll, the Path A/B choice, and on Path B the template-derived
+	## proficiencies / spells / inventory / loose coin) are OWNED by that step: steps
+	## after it never wipe them — they only reset their own outputs and un-spend gold
+	## (gold_remaining → starting). Steps at or before it wipe them via
+	## _clear_template_outputs(), so the wealth/template choice is redone from scratch.
 	match step:
 		Step.ABILITY_ROLL:
 			# Full reset — going back to step 1 clears everything
@@ -195,75 +209,84 @@ func _invalidate_from(step: int) -> void:
 		Step.CLASS_SELECTION:
 			creation_state["class_id"] = ""
 			creation_state["race"] = "human"
+			creation_state["traded_scores"] = {}
+			creation_state["character"] = null
+			creation_state["starting_age"] = 0
 			creation_state["barbarian_origin"] = ""
 			creation_state["witch_tradition"] = ""
 			creation_state["voudon_craft_choice"] = ""
 			creation_state["bonus_proficiencies"] = []
-			creation_state["traded_scores"] = {}
-			creation_state["character"] = null
-			creation_state["starting_age"] = 0
-			creation_state["proficiencies"] = []
 			creation_state["familiar"] = {}
-			creation_state["spells"] = []
-			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
 			creation_state["portrait_id"] = ""
 			creation_state["token_variant"] = ""
 			creation_state["language_bonus_picks"] = []
+			_clear_template_outputs()
+		Step.ABILITY_TRADE:
+			creation_state["traded_scores"] = {}
+			creation_state["character"] = null
+			creation_state["barbarian_origin"] = ""
+			creation_state["witch_tradition"] = ""
+			creation_state["voudon_craft_choice"] = ""
+			creation_state["familiar"] = {}
+			creation_state["language_bonus_picks"] = []
+			_clear_template_outputs()
+		Step.HP_ROLL:
+			creation_state.erase("hp_rolled")
+			creation_state.erase("hp_raw_roll")
+			creation_state["max_hp_override"] = false
+			creation_state["barbarian_origin"] = ""
+			creation_state["witch_tradition"] = ""
+			creation_state["voudon_craft_choice"] = ""
+			creation_state["familiar"] = {}
+			creation_state["language_bonus_picks"] = []
+			_clear_template_outputs()
+		Step.CLASS_TEMPLATE:
+			creation_state["barbarian_origin"] = ""
+			creation_state["witch_tradition"] = ""
+			creation_state["voudon_craft_choice"] = ""
+			creation_state["familiar"] = {}
+			creation_state["language_bonus_picks"] = []
+			_clear_template_outputs()
 		Step.CLASS_CUSTOMIZATION:
 			creation_state["barbarian_origin"] = ""
 			creation_state["witch_tradition"] = ""
 			creation_state["voudon_craft_choice"] = ""
 			creation_state["bonus_proficiencies"] = []
-			creation_state["traded_scores"] = {}
-			creation_state["character"] = null
 			creation_state["proficiencies"] = []
 			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
-			creation_state["portrait_id"] = ""
-			creation_state["token_variant"] = ""
+			creation_state["gold_remaining_cp"] = int(creation_state.get("starting_gold_cp", 0))
 			creation_state["language_bonus_picks"] = []
-		Step.ABILITY_TRADE:
-			creation_state["traded_scores"] = {}
-			creation_state["character"] = null
-			creation_state["proficiencies"] = []
-			creation_state["familiar"] = {}
-			creation_state["spells"] = []
-			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
-			creation_state["language_bonus_picks"] = []
-		Step.HP_ROLL:
-			creation_state.erase("hp_rolled")
-			creation_state.erase("hp_raw_roll")
-			creation_state["max_hp_override"] = false
 		Step.PROFICIENCIES:
 			creation_state["proficiencies"] = []
 			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
+			creation_state["gold_remaining_cp"] = int(creation_state.get("starting_gold_cp", 0))
 			creation_state["language_bonus_picks"] = []
 		Step.FAMILIAR_ACQUISITION:
 			creation_state["familiar"] = {}
-			creation_state["spells"] = []
-			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
+			if String(creation_state.get("template_path", "")) != "B":
+				creation_state["spells"] = []
+				creation_state["inventory"] = []
+				creation_state["gold_remaining_cp"] = int(creation_state.get("starting_gold_cp", 0))
+			creation_state["language_bonus_picks"] = []
 		Step.SPELLS:
 			creation_state["spells"] = []
-			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
+			if String(creation_state.get("template_path", "")) != "B":
+				creation_state["inventory"] = []
+				creation_state["gold_remaining_cp"] = int(creation_state.get("starting_gold_cp", 0))
+			creation_state["language_bonus_picks"] = []
 		Step.EQUIPMENT:
 			creation_state["inventory"] = []
-			creation_state["starting_gold_cp"] = 0
-			creation_state["gold_remaining_cp"] = 0
+			if String(creation_state.get("template_path", "")) == "":
+				# No-template class: EQUIPMENT owns the gold roll → allow a fresh roll.
+				creation_state["starting_gold_cp"] = 0
+				creation_state["gold_remaining_cp"] = 0
+			else:
+				creation_state["gold_remaining_cp"] = int(creation_state.get("starting_gold_cp", 0))
+			creation_state["language_bonus_picks"] = []
 		Step.PORTRAIT:
 			creation_state["portrait_id"] = ""
 			creation_state["token_variant"] = ""
@@ -277,6 +300,22 @@ func _invalidate_from(step: int) -> void:
 			creation_state["name"] = ""
 			creation_state["alignment"] = "neutral"
 			creation_state["description"] = ""
+
+
+func _clear_template_outputs() -> void:
+	## Wipe everything the CLASS_TEMPLATE step produces — the wealth roll, the Path
+	## A/B choice, and the template-derived proficiencies / spells / inventory / loose
+	## coin. Called when invalidating at or before that step (choice redone fresh).
+	creation_state["wealth_roll"] = 0
+	creation_state["template_path"] = ""
+	creation_state["template_id"] = ""
+	creation_state["origin_template_id"] = ""
+	creation_state["template_class_metadata"] = {}
+	creation_state["starting_gold_cp"] = 0
+	creation_state["gold_remaining_cp"] = 0
+	creation_state["proficiencies"] = []
+	creation_state["spells"] = []
+	creation_state["inventory"] = []
 
 
 # ---------------------------------------------------------------------------
@@ -346,14 +385,18 @@ func _next_valid_step(from_step: int) -> int:
 	## Familiar proficiency, SPELLS for non-casters, TOKEN_SELECTION when the
 	## class has no GLBs, and LANGUAGES when no INT bonus.
 	var next := from_step + 1
+	if next == Step.CLASS_TEMPLATE and _should_skip_template():
+		next += 1
 	if next == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
+		next += 1
+	if next == Step.PROFICIENCIES and _should_skip_proficiencies():
 		next += 1
 	if next == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
 		next += 1
-	if next == Step.SPELLS:
-		var class_id: String = creation_state.get("class_id", "")
-		if not _is_caster(class_id):
-			next += 1
+	if next == Step.SPELLS and _should_skip_spells():
+		next += 1
+	if next == Step.EQUIPMENT and _should_skip_equipment():
+		next += 1
 	if next == Step.TOKEN_SELECTION and _should_skip_token_selection():
 		next += 1
 	if next == Step.LANGUAGES and _should_skip_languages():
@@ -369,13 +412,17 @@ func _prev_valid_step(from_step: int) -> int:
 		prev -= 1
 	if prev == Step.TOKEN_SELECTION and _should_skip_token_selection():
 		prev -= 1
-	if prev == Step.SPELLS:
-		var class_id: String = creation_state.get("class_id", "")
-		if not _is_caster(class_id):
-			prev -= 1
+	if prev == Step.EQUIPMENT and _should_skip_equipment():
+		prev -= 1
+	if prev == Step.SPELLS and _should_skip_spells():
+		prev -= 1
 	if prev == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
 		prev -= 1
+	if prev == Step.PROFICIENCIES and _should_skip_proficiencies():
+		prev -= 1
 	if prev == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
+		prev -= 1
+	if prev == Step.CLASS_TEMPLATE and _should_skip_template():
 		prev -= 1
 	return maxi(prev, Step.ABILITY_ROLL)
 
@@ -396,11 +443,47 @@ func _is_caster(class_id: String) -> bool:
 	return not _class_registry.get_casting_power(class_id).is_empty()
 
 
+func _should_skip_template() -> bool:
+	## Skip the wealth/template step for classes with no templates (the importer
+	## skips a few out-of-scope classes); those roll starting gold at EQUIPMENT.
+	var class_id: String = creation_state.get("class_id", "")
+	if class_id.is_empty():
+		return true
+	return _template_repo.get_templates_for_class(class_id).is_empty()
+
+
 func _should_skip_customization() -> bool:
-	## Returns true if the CLASS_CUSTOMIZATION step should be skipped.
-	## Currently only Barbarian (regional origin) and Witch (tradition) use it.
+	## Skip CLASS_CUSTOMIZATION when a Path B template already locked origin/tradition
+	## (gdd §10 step 12 — "pick after template"), or for classes that never customize.
+	## Only Barbarian (regional origin) and Witch (tradition) use this step on Path A.
+	if String(creation_state.get("template_path", "")) == "B":
+		return true
 	var class_id: String = creation_state.get("class_id", "")
 	return class_id != "barbarian" and class_id != "witch"
+
+
+func _should_skip_proficiencies() -> bool:
+	## Path B templates supply the proficiencies (edited in the template step's
+	## §4.2.1 editor), so the standalone proficiency picker is skipped.
+	return String(creation_state.get("template_path", "")) == "B"
+
+
+func _should_skip_equipment() -> bool:
+	## Path B templates ARE the loadout — no shopping step.
+	return String(creation_state.get("template_path", "")) == "B"
+
+
+func _should_skip_spells() -> bool:
+	## Skip SPELLS for non-casters, and for Path B arcane casters whose template
+	## already filled the repertoire (creation_state["spells"] non-empty). Divine
+	## Path B casters keep the normal SPELLS step (no template repertoire).
+	var class_id: String = creation_state.get("class_id", "")
+	if not _is_caster(class_id):
+		return true
+	if String(creation_state.get("template_path", "")) == "B" \
+			and not (creation_state.get("spells", []) as Array).is_empty():
+		return true
+	return false
 
 
 func _should_skip_token_selection() -> bool:
@@ -465,6 +548,8 @@ func _finalize_character() -> void:
 	character.alignment = creation_state.get("alignment", "neutral")
 	character.portrait_id = creation_state.get("portrait_id", "")
 	character.token_variant = creation_state.get("token_variant", "")
+	# Path B records which template the PC came from (gdd §6.4); "" on Path A → DB NULL.
+	character.origin_template_id = creation_state.get("origin_template_id", "")
 
 	# Apply final HP from step 4 roll.
 	var hp_max: int = creation_state.get("hp_rolled", character.hp_max)
@@ -496,6 +581,12 @@ func _finalize_character() -> void:
 	var voudon_craft: String = creation_state.get("voudon_craft_choice", "")
 	if not voudon_craft.is_empty():
 		class_meta["voudon_craft_choice"] = voudon_craft
+	# Path B: merge the template's locked class_metadata (regional_origin /
+	# witch_tradition / shaman_totem + placeholder). Empty on Path A, where the
+	# CLASS_CUSTOMIZATION reads above supply origin/tradition (gdd §10 step 12).
+	var template_meta: Dictionary = creation_state.get("template_class_metadata", {})
+	for k in template_meta:
+		class_meta[k] = template_meta[k]
 	character.class_metadata = JSON.stringify(class_meta)
 
 	# Persist character record (languages now included in to_dict()).
@@ -737,7 +828,7 @@ func _build_ui() -> void:
 	UiSurfaceStyles.apply_framed_window_chrome(_content_area)
 	vbox.add_child(_content_area)
 
-	# Build and add all 9 step panels
+	# Build and add all 14 step panels
 	_build_panels()
 
 	vbox.add_child(HSeparator.new())
@@ -763,9 +854,9 @@ func _build_ui() -> void:
 
 
 func _build_panels() -> void:
-	## Instantiate all 13 step panels and add them to the content area.
+	## Instantiate all 14 step panels and add them to the content area.
 	## Each panel is hidden by default; _show_step() reveals the active one.
-	_panels.resize(13)
+	_panels.resize(14)
 
 	var ability_roll := AbilityRollPanel.new()
 	ability_roll.hide()
@@ -791,6 +882,11 @@ func _build_panels() -> void:
 	hp_roll.hide()
 	_content_area.add_child(hp_roll)
 	_panels[Step.HP_ROLL] = hp_roll
+
+	var class_template := ClassTemplatePanel.new()
+	class_template.hide()
+	_content_area.add_child(class_template)
+	_panels[Step.CLASS_TEMPLATE] = class_template
 
 	var profs := ProficiencySelectionPanel.new()
 	profs.hide()
@@ -838,7 +934,7 @@ func _build_panels() -> void:
 func _setup_panel(step: int) -> void:
 	## Call setup() on the panel for the given step, passing current state and registries.
 	## Called from _show_step() just before the panel becomes visible.
-	if _panels.size() < 13 or _panels[step] == null:
+	if _panels.size() < 14 or _panels[step] == null:
 		return
 	match step:
 		Step.ABILITY_ROLL:
@@ -854,6 +950,9 @@ func _setup_panel(step: int) -> void:
 				_generator, _class_registry)
 		Step.HP_ROLL:
 			(_panels[Step.HP_ROLL] as HpRollPanel).setup(creation_state, _class_registry)
+		Step.CLASS_TEMPLATE:
+			(_panels[Step.CLASS_TEMPLATE] as ClassTemplatePanel).setup(creation_state,
+				_template_repo, _proficiency_registry, _catalog, _class_registry)
 		Step.PROFICIENCIES:
 			(_panels[Step.PROFICIENCIES] as ProficiencySelectionPanel).setup(creation_state,
 				_class_registry, _proficiency_registry)

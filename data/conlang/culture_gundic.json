@@ -1,0 +1,82 @@
+{
+  "kit_id": "gundic",
+  "tier": "culture",
+  "inherits": ["celtic", "germanic"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 7,
+  "sub_palette": "celtic + germanic-overlay (cross-family blend, Celtic-leaning)",
+  "synthesis_sources": [6, 7],
+  "homeland": "Gundar",
+  "blend": { "backbone": "celtic (goidelic)", "overlay": "germanic (gothic)", "lean": "Celtic-heavy - a Germanic ruling house (Gund-) Celticized among a Celtic land and people" },
+  "government": "feudal",
+  "alignment_allowed": ["Neutral"],
+  "_note": "Cross-family blend (Germanic + Celtic), leaning Celtic: a Celto-Germanic frontier realm - a Germanic warrior house (the Gund-) settled among a Celtic populace and largely Celticized. Backbone = Celtic (goidelic: phonology, the dun-and-rath land, druidic religion); overlay = Germanic (gothic: the ruling-house titles and war-band veneer). civ = feudal. NEUTRAL ALONE (a settled, custom-bound frontier folk). Common-word lexicon and rank titles use the real Gaelic/Gothic registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Celtic primary, Germanic variant), never real gods.",
+  "phonology": {
+    "palette": "Insular Celtic (Goidelic) backbone (initial mutation; broad/slender consonants; -aj/-an endings) with a Germanic overlay (the Gund- dithematic ruling-names, -burg/-reiks); theophoric on the Celtic morphs (Toran-, Orlann-) with Germanic variants (Thulrs-, Erlands-).",
+    "phonotactics": "CV/CVC; Celtic mutation-clusters; the Germanic overlay adds dithematic compounds and -burg.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "aub", "stream": "sruth", "lake": "loch", "sea": "muir", "bay": "camas", "cape": "rind", "isle": "inis", "mountain": "sliab", "hill": "cnocc", "ridge": "druim", "forest": "fid", "wood": "caill", "plain": "mag", "marsh": "moin", "ford": "ath", "pass": "belach", "vale": "glend", "march": "marca", "coast": "tracht" },
+    "settlement_words": { "hamlet": "treb", "village": "baile", "town": "dun", "city": "cathir", "fort": "rath", "port": "longphort", "market": "oenach", "temple_town": "nemed", "citadel": "dun-burg" },
+    "kinship": { "son": "macc", "daughter": "ingen", "house": "tech", "kin": "fine / kuni", "ancestor": "senathir" },
+    "adjectives": { "great": "mor", "little": "becc", "old": "sen", "new": "nue", "black": "dub", "white": "find", "red": "derg", "golden": "orda", "iron": "iarn", "high": "ard", "far": "cian", "sacred": "noeb", "fair": "caem" },
+    "resources": { "salt": "salann", "iron": "iarn", "bronze": "umae", "silver": "argat", "gold": "or", "amber": "glesum", "cattle": "bo", "grain": "ith", "mead": "mid", "horse": "ech" },
+    "directional": { "upper": "uas", "lower": "is", "north": "tuaid", "south": "tess", "east": "airther", "west": "iarthar", "inner": "medon", "outer": "immechtrach" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["Dun- (fort)", "Rath- (ringfort)", "Cathair- (stone-city)", "-burg (Germanic overlay)", "-haim (Germanic overlay)", "Mag- (plain)"],
+    "patronymic_form": "Celtic patronymic Mac- (son of) / O- (descendant of) and the fine (kin); the ruling Gund- house keeps a Germanic dithematic lineage (-ingos).",
+    "gendered_endings": { "male": "-an / -ach (Celtic); -reiks / -mers (Germanic ruling)", "female": "-nat / -seach (Celtic); -hild (Germanic)" },
+    "diminutive_form": "-an / -ila",
+    "compounding_rule": "[quality|feature](stem) + element: Dun-derg (red-fort), Mag-mor (great-plain); the Germanic overlay yields Gund-burg and the -ingos ruling lineages."
+  },
+  "title_ladder": {
+    "government": "feudal (a Celto-Germanic realm: the Gund- ruling house over Celtic tigerns and flaiths; the brithem's custom-law binds, the war-band serves)",
+    "tiers": {
+      "barony": { "ruler": "Bo-aire", "domain": "Bo-airecht" },
+      "march": { "ruler": "Marca-tigern", "domain": "Crich" },
+      "county": { "ruler": "Tigern", "domain": "Tigernas" },
+      "duchy": { "ruler": "Flaith", "domain": "Flaithes" },
+      "principality": { "ruler": "Ri-Tuaithe", "domain": "Tuath" },
+      "kingdom": { "ruler": "Ri-Reiks", "domain": "Rigon" },
+      "empire": { "ruler": "Ard-Reiks", "domain": "Ard-rige" }
+    },
+    "_tiers_note": "Celtic-leaning ladder, ascending, with the Germanic ruling-house at the crown. Bo-aire (cattle-lord) barony; Marca-tigern (march-lord; Germanic marca + Celtic tigern) march; Tigern (lord) county; Flaith (prince-lord) duchy; Ri-Tuaithe (king of a tuath) principality; Ri-Reiks (the Gund- king; Celtic ri + Germanic reiks) kingdom; Ard-Reiks (high-king) empire. The brithem (judge) and the drui (druid) stand outside the ladder. (Rank titles fuse the real Gaelic/Gothic register, allowed.)",
+    "female_forms": { "Ard-Reiks": "Ard-Rigan", "Ri-Reiks": "Rigan-Reiks", "Ri-Tuaithe": "Rigan-Tuaithe", "Flaith": "Banflaith", "Tigern": "Tigerna", "Marca-tigern": "Marca-tigerna", "Bo-aire": "Ban-bo-aire" },
+    "heir": "Tanaiste (the heir-elect)",
+    "honorifics": { "lord": "Tiarna", "lady": "Bantiarna", "champion": "Caur (hero) / Wigands (Germanic)", "your_grace": "A Ri", "elder": "Sruith" },
+    "vassalage": { "liege": "Flaith", "vassal": "Ceile (client)", "fealty": "Giall (pledge-hostage)", "tribute": "Cis" }
+  },
+  "people_name_convention": {
+    "order": "Celtic personal + Mac-/O- + fine (kin); the ruling Gund- house carry a Germanic dithematic name and -ingos lineage; deed/animal epithets.",
+    "surname_source": ["fine (Celtic kin)", "Mac-/O- patronymic", "Germanic ruling lineage (-ingos)", "deed/animal epithet"],
+    "dual_register": "the Celtic populace keep Gaelic names; the Gund- ruling house Germanic dithematic names.",
+    "theophoric": "Celtic devotional names on the morphed stems (Mael- devotee, Gilla- servant): Mael-Toran, Gilla-Gaian; the ruling house adds Germanic -mers (Thulra-mers).",
+    "diminutive": "-an / -ila"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Celtic primary, from family_celtic theonym_set; Germanic variant, from family_germanic reflexes), never real Celtic/Germanic gods. Gundic is Neutral alone: both power-sets are ambivalent - somewhat honored, somewhat feared - and largely set aside for the Tuath-de (god-kin), the Anses (deified ancestors) and the spirits of grove and place. The drui keep the nemed-grove; the Gund- house keep an alhs-grove for their forebears.",
+    "the_one": "Eternan (< Aeternus; Germanic variant Aiterns) - the Ancient One above the god-kin; acknowledged and set aside (Neutral)",
+    "sample_deity_renames": { "Tulrius": "Toran (Gmc Thulrs) - the sun, the just brightness", "Gaiandus": "Gaian (Gmc Gauands) - the enduring land", "Realta": "Realtan (Gmc Riala) - the mother, the mercy-star", "Orlandus": "Orlann (Gmc Erlands) - the iron-oath, battle" },
+    "worship_by_alignment": { "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the Tuath-de (god-kin), the Anses/ancestral dead, and the spirits of grove, well and hearth" },
+    "demon_epithet_pattern": "the wild Chaotic powers, feared and warded rather than worshipped, keep their morphs + an epithet: Maraxus -> Maragan the War-Fire (Gmc Marahs); Vacidus -> Faicid the Unmaker; Lusanto -> Losand the Hoard-Worm.",
+    "clergy_ladder": { "1": "Drui-dalta (druid-novice)", "3": "Drui (druid)", "5": "Faith (seer-priest)", "7": "Ard-drui (arch-druid)", "9": "Ollam (supreme sage)" },
+    "religious_orders_pattern": "the Nemed (sacred grove) of [power] and the Gund- alhs-grove: 'the Nemed of Toran', 'the Alhs of the Gundings'.",
+    "saints_pattern": "the Tuath-de and the ancestral heroes of the fine, plus the Gund- forebears (the Anses), honored at the cairn, the holy well and the grove.",
+    "holy_symbol_motifs": { "Toran": "a sun-wheel over crossed oak", "Gaian": "the green earth beneath the standing stones", "Orlann": "an iron spear crossed with a torc" }
+  },
+  "banks_patterns": {
+    "ships": "river-curach and the Gund- war-wagons: 'the Grey Hound', 'the Iron Boar', 'Raven of the Glend'",
+    "military_units": "the [fine] Fian (warrior-band) / the Gund- harjis (war-band): 'the Fian of Gundar', 'the Boar-shields'",
+    "taverns": "'The [Adjective] [Noun]': 'The Salmon of Wisdom', 'The Boar and Cauldron'",
+    "dungeons_ruins": "fallen raths and grove-howes: 'the Rath of [name]', 'the Howe of the Gundings'"
+  },
+  "seed_names": {
+    "personal_m": ["Conall", "Cormac", "Diarmait", "Eogan", "Fergal", "Lugaid", "Ronan", "Cathal", "Gundmers", "Theudmers", "Hrothawulf", "Eburwulf", "Senan", "Lorcan", "Wiljareiks", "Donnchad", "Aedan", "Gundoric", "Tuathal", "Hildemers"],
+    "personal_f": ["Mor", "Ethne", "Findabair", "Gormlaith", "Sadb", "Muirenn", "Gundila", "Swanahild", "Aoife", "Orlaith", "Hildegund", "Caoimhe", "Affraic", "Reikila", "Bebinn", "Frithila", "Ailbhe", "Eburhild", "Tuathla", "Gundlind"],
+    "clan_houses": ["Cland Conaill", "Ui Eogain", "Cland Cormaic", "Gundingos (ruling house)", "Ui Lugdach", "Cland Fergusa", "Hrothingos", "Ui Cathail", "Cland Ronain", "Eburingos", "Ui Niad", "Theudingos"],
+    "epithets_cognomina": ["the Hound (Cu)", "the Boar-helm", "the Fair (Find)", "of the Battles", "Iron-hand", "of Gundar", "the Oath-keeper", "the Red (Ruad)"],
+    "flagship_settlements": ["Gundar (the chief seat)", "Dun-derg (the red fort)", "Rath Mor (the great ringfort)", "Gund-burg (the ruling-house fort)", "Cathir Fid (the forest stone-city)", "Loch Glas (the grey lake)"]
+  }
+}

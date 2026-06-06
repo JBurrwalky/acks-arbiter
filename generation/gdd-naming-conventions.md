@@ -47,7 +47,7 @@ language_family base kit  ──(inherit)──▶  culture kit (overrides + add
 
 Language families are clustered from the cultures' `synthesis_sources` (§5.1) by real-world linguistic/phonemic kinship. The proposed roster (§2.1.1) is the authoring anchor; the catalog's `language_family` field records each culture's assignment.
 
-### 2.1.1 Language families & culture assignment (LOCKED 2026-06-03)
+### 2.1.1 Language families & culture assignment (LOCKED 2026-06-03; amended 2026-06-05)
 
 Nine human families over the 20 §5.1 sources, plus demihuman families. A culture whose `synthesis_sources` all fall in one family is a **clean** member; a culture spanning two families is a **blend** that inherits both bases and is hand-blended (`gdd-culture-catalog.md` §4.8). Numbers are §5.2 catalog numbers; parenthetical numbers are each culture's `synthesis_sources`.
 
@@ -56,8 +56,8 @@ Nine human families over the 20 §5.1 sources, plus demihuman families. A cultur
 | F1 **Classical / Mediterranean** (Latinate · Hellenic · Iberian) | 1 Roman, 2 Greek, 20 Iberian | Agrippan(1), Achillean(2), Cantabran(20), Lusan(1,20) |
 | F2 **Near-Eastern** (Semitic · Afro-Asiatic) | 3 Carthaginian, 4 Mesopotamian, 5 Egyptian, 14 Ethiopian | Barcan(3), Hammuran(4), Abydosian(5), Sumset(4,5), Axumite(14), Kemeti(5,14), Sabaean(4,14) |
 | F3 **Germanic** | 6 Germanic, 8 Norse, 18 Anglo-Saxon, 19 Frankish | Alani(6), Vargari(8), Cwealmingas(8,18), Merovan(19), Ostran(18,19), Alaman(6,19) |
-| F4 **Celtic** | 7 Celtic | Cuchulan(7) |
-| F5 **Slavic** | 13 Slavic | Velesan(13) |
+| F4 **Celtic** | 7 Celtic | Cuchulan(7), Erainn(7) |
+| F5 **Slavic** | 13 Slavic | Velesan(13), Kyivan(13) |
 | F6 **East Asian** (Sinitic · Japonic) | 9 Chinese, 10 Japanese | Jinxian(9), Yamataian(10), Ryujin(9,10) |
 | F7 **Steppe / Central Asian** | 17 Mongolian | Orkhan(17) |
 | F8 **Mesoamerican** | 11 Mayan, 12 Aztec | Ixalan(11), Nahuan(12), Tlanec(11,12) |
@@ -70,7 +70,7 @@ Nine human families over the 20 §5.1 sources, plus demihuman families. A cultur
 
 **Demihuman & beastman families:** **Elvish** (flowing vowels; soft l/r/n/th) and **Dwarven** (hard stops; heavy consonants) base kits per the catalog §5.2 demihuman tier; the **beastman** tier uses the stripped orc/goblin/gnoll naming conventions rather than a full kit.
 
-**Tally:** 28 of 45 cultures are clean single-family members; 17 are cross-family blends, of which 6 are the phonemically-extreme combinations. Several blends are deliberately evocative — Ptolan = Ptolemaic (Greek×Egyptian), Serican = *Serica*, Rome's name for China (Roman×Chinese), Rovan = the Rus (Norse×Slavic), Xiongan = the Xiongnu (Chinese×steppe), Tartessan = Tartessos (Punic×Iberian).
+**Tally:** 30 of 47 cultures are clean single-family members; 17 are cross-family blends, of which 6 are the phonemically-extreme combinations. Several blends are deliberately evocative — Ptolan = Ptolemaic (Greek×Egyptian), Serican = *Serica*, Rome's name for China (Roman×Chinese), Rovan = the Rus (Norse×Slavic), Xiongan = the Xiongnu (Chinese×steppe), Tartessan = Tartessos (Punic×Iberian).
 
 ### 2.2 Phonology
 
@@ -331,6 +331,7 @@ assembled examples:
 
 ## 18. Revision History
 
+- **2026-06-05 (rev 4):** Roster amended by request to add two civ members: **Erainn**(7, Celtic civ — an archaic Old-Irish high-kingship) as §5.2 #46, and **Kyivan**(13, Slavic civ — a Kievan-Rus river-princedom with a Byzantine/Hellenic overlay) as §5.2 #47. Tally 45->47 cultures; clean single-family members 28->30. Both reflex their family's existing theonym morph-set (Erainn the Celtic forms, Kyivan the Slavic forms with a Greek -ios/-ia overlay).
 - **2026-06-03 (rev 3):** Language-family roster signed off and **locked** (§2.1.1) — Carthaginian confirmed in Near-Eastern, Iberian in Classical, Chinese+Japanese clustered, Celtic/Slavic/Steppe standalone.
 - **2026-06-03 (rev 2):** Added the proposed language-family roster and full 45-culture assignment (§2.1.1): 9 human families (Classical, Near-Eastern, Germanic, Celtic, Slavic, East Asian, Steppe, Mesoamerican, North American) + Elvish/Dwarven, derived from §5.1 sources; 28 clean single-family cultures, 17 cross-family blends (6 phonemically extreme). Pending sign-off.
 - **2026-06-03:** Initial draft. Established the generative-kit model (phonology + lexicon + morphology + seed stock) with per-family base + culture-override inheritance; locked conventions (no exonyms / endonym-only; theophoric names on; multilingual naming reserved for shared natural features). Full category coverage: people names, settlements, religion names, the title ladder (ACKS tier × government × culture, rhyming ruler/domain), geographic/region names, calendar, military/maritime/establishments/groups/adventure-site/currency/language banks, history-generated names, and dialogue flavor. Runtime assembly, validation, authoring plan, and an Agrippan prototype kit. Supersedes `gdd-name-generation.md`. Flagged the ACKS tier-table lookup and the full language-family assignment as prerequisites.

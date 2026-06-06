@@ -1,0 +1,82 @@
+{
+  "kit_id": "ptolan",
+  "tier": "culture",
+  "inherits": ["classical", "near_eastern"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 32,
+  "sub_palette": "hellenic + egyptian-overlay (cross-family blend)",
+  "synthesis_sources": [2, 5],
+  "homeland": "Ptola",
+  "blend": { "backbone": "hellenic (classical)", "overlay": "egyptian (near_eastern)" },
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Neutral"],
+  "_note": "Cross-family blend (Greek + Egyptian): a Ptolemaic realm - a Hellenic ruling dynasty over an Egyptian land, the two religions fused in the temple-cult. Backbone = Hellenic (classical: phonology, the polis-forms, the Basileus ladder); overlay = Egyptian (near_eastern: the river-and-desert land, Per-/Niut- toponyms, the double-crown kingship, the Egyptian temple-substrate). civ = feudal. Seeds/shifts Lawful or Neutral. Common-word lexicon and rank titles use the real Greek/Egyptian registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Hellenic primary, Egyptian variant), never real gods.",
+  "phonology": {
+    "palette": "Hellenic backbone (a e i o u + long e/o; th/ph/kh; endings -os/-on/-es/-eus) with an Egyptian overlay (dj/tj touches, -aa/-et in the substrate, Per-/Niut- toponyms); theophoric on the Hellenic morphs (Tulrios-, Numenos-) with Egyptian variants.",
+    "phonotactics": "CV/CVC; Greek clusters kt/pt/st/ph/th/kh/ps; the Egyptian overlay adds dj/tj and long -aa.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "potamos", "stream": "rhoos", "lake": "limne", "sea": "thalassa", "bay": "kolpos", "cape": "akra", "isle": "nesos", "mountain": "oros", "hill": "lophos", "ridge": "rhachis", "forest": "hyle", "desert": "eremos", "plain": "pedion", "marsh": "helos", "ford": "poros", "pass": "kleisoura", "vale": "nape", "oasis": "wehat", "coast": "akte" },
+    "settlement_words": { "hamlet": "kome", "village": "demos", "town": "asty", "city": "polis", "fort": "phrourion", "port": "limen", "market": "agora", "temple_town": "per-netjer", "citadel": "akropolis" },
+    "kinship": { "son": "huios", "daughter": "thygater", "house": "oikos", "kin": "genos", "ancestor": "progonos" },
+    "adjectives": { "great": "megas", "little": "mikros", "old": "palaios", "new": "neos", "black": "melas", "white": "leukos", "red": "erythros", "golden": "chryseos", "iron": "sidereos", "high": "hypselos", "far": "tele", "sacred": "hieros", "fair": "kalos" },
+    "resources": { "salt": "halas", "iron": "sideros", "silver": "argyros", "gold": "chrysos", "wine": "oinos", "grain": "sitos", "papyrus": "papyros", "linen": "othone", "incense": "senetjer", "purple_dye": "porphyra" },
+    "directional": { "upper": "ano (Thebaid/south)", "lower": "kato (Delta/north)", "north": "boreas", "south": "notos", "east": "anatole", "west": "dysis", "inner": "eso", "outer": "exo" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-polis / -oupolis (city)", "Per- (house of, Egy overlay)", "Niut- (city of, Egy overlay)", "-eia / -ia", "Ptole- (dynastic)", "-on"],
+    "patronymic_form": "patronymic -ides / -ou (son of) + polis demonym; the Egyptian substrate keeps filiation sa-X; the royal house traces the Ptole- dynastic line.",
+    "gendered_endings": { "male": "-os / -es / -eus", "female": "-e / -a / -is" },
+    "diminutive_form": "-ion / -iskos",
+    "compounding_rule": "[adjective|resource](stem) + feature with linking -o-; Nea-Polis (new-city); the Egyptian overlay yields Per-[god] and Niut-[god]."
+  },
+  "title_ladder": {
+    "government": "feudal (a Hellenistic kingdom over an Egyptian land: the Basileus wears the double crown, styled Per-aa to the native temples; the Greek polis-magistracy over the Egyptian nome-substrate)",
+    "tiers": {
+      "barony": { "ruler": "Toparch", "domain": "Toparchy" },
+      "march": { "ruler": "Phrourarch", "domain": "Phrourarchia" },
+      "county": { "ruler": "Nomarch", "domain": "Nomos" },
+      "duchy": { "ruler": "Strategos", "domain": "Strategia" },
+      "principality": { "ruler": "Dynastes", "domain": "Dynasteia" },
+      "kingdom": { "ruler": "Basileus", "domain": "Basileia" },
+      "empire": { "ruler": "Basileus Megas (Per-aa)", "domain": "Autokratoria" }
+    },
+    "_tiers_note": "Hellenic backbone, ascending, with an Egyptian overlay at the nome and the crown. Toparch barony; Phrourarch (garrison-commander) march; Nomarch (governor of an Egyptian nome) county; Strategos (general-governor) duchy; Dynastes (prince) principality; Basileus (king) kingdom; Basileus Megas, styled Per-aa (Pharaoh) to the native temples, over the realm. The Greek court and the Egyptian priesthood share the rule. (Rank titles are the real Greek/Egyptian register, allowed.)",
+    "female_forms": { "Basileus Megas (Per-aa)": "Basilissa Megale (Per-aat)", "Basileus": "Basilissa", "Dynastes": "Dynastissa", "Strategos": "Strategissa", "Nomarch": "Nomarchissa", "Phrourarch": "Phrourarchissa", "Toparch": "Toparchissa" },
+    "heir": "Diadochos (successor-designate)",
+    "honorifics": { "lord": "Kyrios", "lady": "Kyria", "knight": "Hippeus", "your_grace": "Megistos", "your_majesty": "Basileu / Per-aa" },
+    "vassalage": { "liege": "Hegemon", "vassal": "Hypekoos (subject)", "fealty": "Horkos (oath)", "tribute": "Phoros" }
+  },
+  "people_name_convention": {
+    "order": "Greek personal + patronymic (-ides) + polis demonym for the court; the Egyptian substrate keeps theophoric given + filiation (sa-X); the royal line the Ptole- dynastic name.",
+    "surname_source": ["patronymic (-ides)", "polis/deme demonym", "Ptole- dynastic (royal)", "Egyptian filiation (sa-X, substrate)"],
+    "dual_register": "the Greek court uses Hellenic names; the Egyptian commons keep theophoric Egyptian names.",
+    "theophoric": "Greek names invoke the powers' domains (-machos for war, Sopho- for wisdom); the Egyptian substrate uses X-hotep (X-is-content) on the morphed stems. e.g. Tulrio-doros, Tjuraa-hotep.",
+    "diminutive": "-ion / -iskos"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Hellenic primary, from classical theonym treatment; Egyptian variant from near_eastern theonym_sets), never real Greek/Egyptian gods. The Ptolan fuse the two cults (a Serapis-style syncretism): each power has a Hellenic court-name and an Egyptian temple-name, held to be one. Ptolan seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). The polis-temple and the Egyptian Per-netjer keep the rites together.",
+    "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral",
+    "sample_deity_renames": { "Tulrius": "Tulrios (Egy. Tjuraa) - sun and right-order; Lawful", "Numeno": "Numenos - sky-wisdom; Lawful", "Realta": "Realta (Egy. Riaret) - the mother; Neutral-honored", "Maraxus": "Maraxos (Egy. Marakhu) - the war-fire; Chaotic, demonized" },
+    "worship_by_alignment": { "Lawful": "revere the One (Aiternos/Atjernaa) and the Lawful powers (Tulrios, Orlandros, Numenos, Gauandos), demonize the Chaotic powers", "Neutral": "all powers ambivalent; foreground the deified ancestors (the justified dead) and the local temple-cults of place" },
+    "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Maraxos the Tyrant-Flame (Egy. Marakhu the City-Burner); Vacidus -> Wakedjet the Devourer; Lusanto -> Lusandros the Coin-Serpent.",
+    "clergy_ladder": { "1": "Neokoros (temple-keeper)", "3": "Hiereus (priest)", "5": "Archiereus (high priest)", "7": "Hem-netjer Tepy (first prophet, Egy overlay)", "9": "Megas Hierophant" },
+    "religious_orders_pattern": "the Temenos (sacred precinct) or Per-netjer (god's-house) of [power]: 'the Temenos of Tulrios', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "deified kings and founder-heroes (Greek Heros [name]; Egyptian the justified dead, maa-kheru), venerated at the temple and the royal tomb.",
+    "holy_symbol_motifs": { "Tulrios": "a radiate sun above the double crown", "Realta": "a sheltering mother-goddess over the lotus", "Aiternos": "the winged disc above the polis-eagle" }
+  },
+  "banks_patterns": {
+    "ships": "grain-fleet and war-galley names: 'Nike', 'Pride of Ptola', 'Barque of Tjuraa'",
+    "military_units": "the [Adjective] Phalanx / the [nome] Companies: 'the Bronze Phalanx', 'the Delta Companies'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Golden Lotus'",
+    "dungeons_ruins": "drowned Greek poleis and Egyptian tomb-temples: 'the Labyrinth of Heros [name]', 'the Sunken Per-netjer'"
+  },
+  "seed_names": {
+    "personal_m": ["Theron", "Ptolemaios", "Kallias", "Ariston", "Lysandros", "Demetrios", "Apollodoros", "Nikandros", "Tulrio-doros", "Menelos", "Diokles", "Tjuraa-hotep", "Sa-Riaret", "Eumenes", "Kleitos", "Sostratos", "Numenios", "Mery-Tjuraa", "Aristos", "Berenikos"],
+    "personal_f": ["Berenike", "Arsinoe", "Kleia", "Theodora", "Daphne", "Arete", "Kallisto", "Riaret-nefru", "Stratonike", "Eirene", "Demetria", "Sat-Tjuraa", "Pheronike", "Eudora", "Thalia", "Mery-Riaret", "Nikaia", "Xanthe", "Aristea", "Kleopatris"],
+    "clan_houses": ["Genos Theronides", "Genos Lysandrides", "the Ptolemaioi (royal house)", "Genos Kalliades", "per-Tjuraa (Egy substrate)", "Genos Aristides", "Genos Nikandrides", "per-Riaret (Egy substrate)", "Genos Dioklides", "Genos Eumenides", "per-Atjernaa (Egy substrate)", "Genos Sostratides"],
+    "epithets_cognomina": ["ho Soter (the Saviour)", "ho Megas (the Great)", "Philadelphos (sibling-loving)", "Euergetes (benefactor)", "ho Sophos (the Wise)", "maa-kheru (the justified, Egy)", "Chrysous (Golden)", "ho Dikaios (the Just)"],
+    "flagship_settlements": ["Ptola (the royal capital)", "Neapolis (the new city)", "Per-Tjuraa (the sun-temple city)", "Akra Leuke (the white cape)", "Niut-aat (the great Egyptian city)", "Limen Megas (the great harbor)"]
+  }
+}

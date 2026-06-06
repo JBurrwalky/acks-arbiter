@@ -1,0 +1,82 @@
+{
+  "kit_id": "kypchan",
+  "tier": "culture",
+  "inherits": ["steppe", "slavic"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 19,
+  "sub_palette": "mongol_turkic + slavic-overlay (cross-family blend)",
+  "synthesis_sources": [13, 17],
+  "homeland": "Kypcha",
+  "blend": { "backbone": "mongol_turkic (steppe)", "overlay": "slavic" },
+  "government": "clanhold",
+  "alignment_allowed": ["Neutral", "Chaotic"],
+  "_note": "Cross-family blend (Slavic + Steppe): a Slavicized Turkic steppe people - the Tatar/Cossack stamp, horse-nomad hordes of grassland and taiga who took on a Slavic settled veneer. Backbone = Mongol-Turkic (steppe: phonology, the ovog hordes, the Khan ladder); overlay = Slavic (the stanitsa settlements, the Ataman/Voevoda host-leaders, forest-edge towns). clan = clanhold. Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles use the real Mongol-Turkic/Slavic registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Steppe primary, Slavic variant), never real gods.",
+  "phonology": {
+    "palette": "Mongol-Turkic backbone (vowel harmony; kh, gh, ch, sh, ng, q; -ai/-tai; agglutinative -chi/-khan) with a Slavic overlay (the sibilants, -ov/-ich patronymics, stanitsa/gorod settled register); theophoric on the Steppe morphs (Marakhai-, Tamendei-) with Slavic variants (Marakh-, Tulor-).",
+    "phonotactics": "CV/CVC, no initial clusters; vowel harmony; the Slavic overlay adds -ov/-ich and heavier clusters in town-names.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "feature_words": { "river": "gol", "stream": "jilga", "lake": "nuur", "sea": "dalai", "taiga": "tayga", "forest": "les", "cape": "hoshuu", "isle": "aral", "mountain": "uul", "hill": "tolgoi", "ridge": "nuruu", "steppe": "kheer", "plain": "tal", "marsh": "boloto", "ford": "gatlaga", "pass": "davaa", "vale": "hondii", "grove": "polyana", "coast": "ergi" },
+    "settlement_words": { "hamlet": "ail", "village": "stanitsa", "town": "gorod", "city": "balgas-hot", "fort": "ostrog", "camp": "ordu", "market": "torg", "temple_town": "ovoo", "citadel": "sich" },
+    "kinship": { "son": "huu", "daughter": "ohin", "house": "ger", "kin": "ovog / rod", "ancestor": "deedes" },
+    "adjectives": { "great": "ih", "little": "baga", "old": "huuchin", "new": "shine", "black": "har", "white": "tsagaan", "red": "ulaan", "golden": "altan", "iron": "tomor", "high": "ondor", "far": "hol", "sacred": "ariun", "fair": "saihan" },
+    "resources": { "salt": "davs", "iron": "tomor", "silver": "mongo", "gold": "alt", "horse": "mori", "herd": "mal", "felt": "esgii", "fur": "meh", "grain": "zhito", "airag": "airag" },
+    "directional": { "upper": "deed", "lower": "dood", "north": "hoid", "south": "omno", "east": "zuun", "west": "baruun", "inner": "dotor", "outer": "gadaad" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-uul (mountain)", "-gol (river)", "-kheer (steppe)", "-stanitsa (Cossack settlement, Slavic overlay)", "-gorod (town, Slavic overlay)", "Har-/Tsagaan- (black-/white-)"],
+    "patronymic_form": "patronymic father + -in (steppe) or Slavic -ov/-ich among the settled; the ovog (clan); a deed- or animal-byname.",
+    "gendered_endings": { "male": "-tai / -bek / -ov", "female": "-jin / -gul / -ovna" },
+    "diminutive_form": "-hai / -ko",
+    "compounding_rule": "[quality|animal](stem) + feature: Har-uul (black-mountain), Altan-gol (golden-river); the horde named for its khan; Slavic-overlay -stanitsa/-gorod for the settled holds."
+  },
+  "title_ladder": {
+    "government": "clanhold (a horse-nomad horde with a Slavic settled veneer: the Khan and the ovog-clans, the Ataman host-leaders and the stanitsa garrisons; the khural raises the khan)",
+    "tiers": {
+      "barony": { "ruler": "Noyan", "domain": "Nutag" },
+      "march": { "ruler": "Tarkhan", "domain": "Kraina" },
+      "county": { "ruler": "Ataman", "domain": "Stanitsa" },
+      "duchy": { "ruler": "Voevoda", "domain": "Voevodstvo" },
+      "principality": { "ruler": "Beki", "domain": "Aimag" },
+      "kingdom": { "ruler": "Khan", "domain": "Khanlig" },
+      "empire": { "ruler": "Khagan", "domain": "Yeke Ulus" }
+    },
+    "_tiers_note": "Mongol-Turkic backbone, ascending, with a Slavic overlay at the settled tiers. Noyan (noble) barony; Tarkhan (privileged border-lord) march, over a Slavic Kraina (frontier); Ataman (Cossack host-chief, overlay) county, over a Stanitsa; Voevoda (Slavic war-leader) duchy; Beki (great chief) principality; Khan (king) kingdom; Khagan (khan of khans), also hailed Velikii Khan, over the Yeke Ulus. (Rank titles are the real Mongol-Turkic/Slavic register, allowed.)",
+    "female_forms": { "Khagan": "Yeke-Khatun", "Khan": "Khatun", "Beki": "Bekhi", "Voevoda": "Voevodina", "Ataman": "Atamansha", "Tarkhan": "Tarkhan-Khatun", "Noyan": "Noyan-Khatun" },
+    "heir": "Jinong (the heir-prince)",
+    "honorifics": { "lord": "Noyan", "lady": "Khatun", "champion": "Baatar (hero)", "your_grace": "Khan", "elder": "Aksakal" },
+    "vassalage": { "liege": "Ezen", "vassal": "Nokor (sworn companion)", "fealty": "Tangarag (oath)", "tribute": "Alba / Dan (Slavic)" }
+  },
+  "people_name_convention": {
+    "order": "personal + father's name (-in, steppe) or -ov/-ich (Slavic, among the settled); the ovog (clan); a deed/animal byname or the honor Baatar.",
+    "surname_source": ["ovog (clan)", "patronymic (-in / -ov / -ich)", "deed/animal byname", "Baatar honor-title"],
+    "dual_register": "the horde-kin carry an ovog and steppe byname; the stanitsa-settled use Slavic -ov/-ich names.",
+    "theophoric": "names invoke the Eternal Sky and the war-powers + an element: Munke- (eternal), -baatar (hero), Tomor- (iron); the settled add Slavic Bog- (god) / -slav. e.g. Munke-baatar, Tulor-slav.",
+    "diminutive": "-hai / -ko"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Steppe primary, from family_steppe theonym_set; Slavic variant, from family_slavic theonym_set), never real steppe/Slavic gods. Kypchan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The ovoo (sacred cairn) and the open sky are the steppe altars; the settled keep the Dedy (ancestral dead) and the kapishche-grove.",
+    "the_one": "Eterun (< Aeternus; Slavic variant Oterun) - the Eternal Sky; reviled as the cold sky-tyrant when Chaotic, acknowledged as the distant Heaven-Father when Neutral",
+    "sample_deity_renames": { "Maraxus": "Marakhai (Slav. Marakh) - the war-fire, the raider; Chaotic power", "Dementus": "Tamendei - the storm-sky; Chaotic power", "Realta": "Erelta (Slav. Relata) - the mother; Neutral-honored", "Gaiandus": "Gajan (Slav. Goyan) - the enduring earth; Lawful power" },
+    "worship_by_alignment": { "Chaotic": "venerate the Chaotic powers (Marakhai the war-fire, Tamendei the storm, Lusantai the plunder-serpent), demonize the Lawful powers and the One (Eterun)", "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the Dedy (ancestral dead), the animal-spirits and the powers of place" },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Tulai the Soft-Sun; Orlandus -> Orloch the Oath-Chain; Aeternus -> Eterun the Sky-Tyrant.",
+    "clergy_ladder": { "1": "Bo-shavi (shaman-novice)", "3": "Bo (shaman)", "5": "Idugan (shamaness)", "7": "Volkhv (priest-sorcerer, Slavic overlay)", "9": "Ulu-Boge (high shaman)" },
+    "religious_orders_pattern": "the Ovoo (sacred cairn) of [power] on a high place, and among the settled the Kapishche (idol-grove): 'the Ovoo of Marakhai', 'the Kapishche of Tamendei'.",
+    "saints_pattern": "the great khans and hero-baatars become sky-riders among the storm; the settled honor the Dedy at the kurgan.",
+    "holy_symbol_motifs": { "Marakhai": "a red horsetail war-standard (tug) beneath a black storm", "Tamendei": "forked lightning over the open steppe", "Eterun": "the open blue circle of the bare sky" }
+  },
+  "banks_patterns": {
+    "ships": "river-craft of the great rivers and the horse-standards: 'the Black Tug', 'Storm of the Gol', 'the Wind-Eater' (a famed steed)",
+    "military_units": "the decimal host and the Cossack bands: the [khan] Tumen (10,000) / the [ataman] Sotnia (hundred): 'the Wolf Tumen', 'the Black Sotnia'",
+    "taverns": "the airag-tent and the stanitsa hall: 'the Khan's Airag-tent', 'the Red Stanitsa-Hall'",
+    "dungeons_ruins": "abandoned ordu-camps, burned stanitsas and kurgan barrow-tombs: 'the Kurgan of [khan]', 'the dead Stanitsa of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Batyr", "Toqta", "Edige", "Kara-Bek", "Temir", "Aydar", "Bulat", "Nogai", "Munke", "Chuluun", "Sube", "Taras", "Bohdan", "Ostap", "Danylo", "Petro-bek", "Altan", "Sukhe", "Baatar", "Mergen"],
+    "personal_f": ["Altyn", "Gulnara", "Saran", "Bayan", "Oksana", "Marusya", "Tuya", "Altantsetseg", "Naran", "Sarnai", "Bayarmaa", "Daryna", "Yaryna", "Suvd", "Enkhtuya", "Khanum", "Gulzhan", "Odval", "Solongo", "Halyna"],
+    "clan_ovog": ["Har-ovog (black-clan)", "Tsagaan-ovog (white-clan)", "Chono-ovog (wolf-clan)", "Burgud-ovog (eagle-clan)", "Nogai-ovog", "Kypchak-ovog", "Sich-rod", "Don-rod (river-clan)", "Altan-ovog", "Salhi-ovog", "Tomor-ovog", "Kara-rod" ],
+    "epithets_cognomina": ["Baatar (the Hero)", "Kara (the Black)", "the Wolf (Chono)", "the Eagle (Burgud)", "Storm-rider", "the Ataman", "Horse-eater", "Sabre-arm"],
+    "flagship_settlements": ["Kypcha (the great horde-camp)", "Har-uul (the black-mountain ovoo)", "Altan-gol (the golden-river camp)", "Velikii-Sich (the great stronghold)", "Tsagaan-stanitsa (the white settlement)", "Ih-kheer (the great steppe muster)"]
+  }
+}

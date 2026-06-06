@@ -1,0 +1,83 @@
+{
+  "kit_id": "germanic",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Germanic",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "The Germanic family: continental Germanic/Gothic, Norse, Anglo-Saxon, and Frankish/OHG branches of one tongue. Members split between clanhold (Alani, Vargari, Cwealmingas, Alaman) and feudal (Merovan, Ostran) government. Base provides the concept inventory, morphology template, shared roots, both title-ladder structures, and the common-Germanic theonym ancestor set; each culture realizes its branch's phonology and its reflexes of the shared theonyms. Orthography in the data is ASCII: write the thorn as 'th', eth as 'dh', ash as 'ae', o-with-umlaut as 'o' (a renderer may prettify).",
+  "sources_5_1": [6, 8, 18, 19],
+  "sub_palettes": ["gothic", "norse", "anglo_saxon", "frankish"],
+  "member_cultures": {
+    "clean": ["alani (gothic)", "vargari (norse)", "merovan (frankish)"],
+    "intra_family_blends": ["cwealmingas (8+18 norse x anglo-saxon)", "ostran (18+19 anglo-saxon x frankish)", "alaman (6+19 gothic x frankish)"]
+  },
+  "phonology": {
+    "palette": "Germanic: voiceless and voiced stops p/t/k b/d/g, the dental fricatives th/dh, w, h, j; strong stress on the root syllable; ablaut; dithematic compounding.",
+    "sub_palette_notes": {
+      "gothic": "Continental/East Germanic (Alani): conservative; masc -s/-az, fem -o; th and w retained; ai/au diphthongs kept; reiks/thiudans register.",
+      "norse": "Old Norse (Vargari): nominative -r; initial w- lost before round vowels (Wod- > Od-); ai>ei, au>ey/au; th/dh; i- and u-umlaut; -son/-dottir.",
+      "anglo_saxon": "Old English (Anglo-Saxon component of Cwealmingas/Ostran): retain w-; au>ea, ai>a; th retained; weak -a endings; cyning/ealdor register.",
+      "frankish": "Frankish/Old High German (Merovan): High German consonant shift th>d, d>t, k>ch/hh; w>w/wu; endings -o/-i; comes/herizogo register."
+    },
+    "phonotactics": "CVC and clusters (st, sk, sp, br, kn, hl, hr, hw); root-initial stress; dithematic names.",
+    "transparent_ratio_default": 0.45
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized per branch in each culture kit.",
+    "feature_words": ["river", "stream", "lake", "sea", "fjord", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "coast", "glacier"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "hall/temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "silver", "gold", "amber", "fur", "grain", "honey", "horse", "mead/wine"],
+    "directional": ["upper", "lower", "north", "south", "inner", "outer", "east", "west"]
+  },
+  "shared_roots": {
+    "_note": "Common-Germanic cognates recognizable across the branches (common words and titles, allowed; theophoric built only on the morphed canon-reflexes below, never real Germanic gods).",
+    "king": "*kuningaz (Goth. thiudans, ON konungr, OE cyning, Frk. kuning)",
+    "lord": "*fraujon / *druhtinaz (Goth. frauja, ON drottinn, OE dryhten, Frk. truhtin)",
+    "noble/free": "*athalaz (OE aetheling, Frk. adal), *frijaz (free)",
+    "war-leader": "*harja-tugon (OE heretoga, Frk. herizogo)",
+    "march/border": "*marko (mark)",
+    "assembly": "*thenga- (ON thing, OE gemot)",
+    "home/settlement": "*haimaz (-heim / -ham), *thurpa- (thorp/dorf)"
+  },
+  "theonym_ancestors": {
+    "_note": "Common-Germanic ancestral theonyms: phoneme-morphs of the Agrippan canon into a reconstructed proto-Germanic form. These are NOT real Germanic gods; they are the shared root from which each branch derives its own reflex (the *Wodanaz > Odin/Woden/Wotan model). Each culture kit lists the reflexes for its branch. ASCII: th=thorn, dh=eth, ae=ash.",
+    "reflex_rules": {
+      "gothic": "conservative: -az>-s, retain th and w, keep ai/au (e.g. *Erlanthaz > Erlands).",
+      "norse": "-az>-r; lose initial w- before round vowels; ai>ei; i-umlaut (e.g. *Numinaz > Nymir).",
+      "anglo_saxon": "-az>-a/zero; retain w-; au>ea (e.g. *Gauandaz > Geand).",
+      "frankish": "High German shift th>d, d>t; w>wu/w; -az>-o (e.g. *Thulraz > Dulro)."
+    },
+    "ancestors": {
+      "Aeternus (the One)": { "proto": "*Aiternaz", "gothic": "Aiterns", "norse": "Eitnir", "anglo_saxon": "Aetern", "frankish": "Aiterno" },
+      "Tulrius (sun, fire, light, justice)": { "proto": "*Thulraz", "gothic": "Thulrs", "norse": "Thulr", "anglo_saxon": "Thulor", "frankish": "Dulro" },
+      "Orlandus (iron, oath, war)": { "proto": "*Erlanthaz", "gothic": "Erlands", "norse": "Orlund", "anglo_saxon": "Eorland", "frankish": "Erlant" },
+      "Gaiandus (earth, cold, endurance)": { "proto": "*Gauandaz", "gothic": "Gauands", "norse": "Geyandr", "anglo_saxon": "Geand", "frankish": "Giando" },
+      "Numeno (air, lightning, sky-wisdom)": { "proto": "*Numinaz", "gothic": "Numins", "norse": "Nymir", "anglo_saxon": "Numen", "frankish": "Numino" },
+      "Realta (mother, mercy, healing)": { "proto": "*Realtho", "gothic": "Riala", "norse": "Rjalta", "anglo_saxon": "Realda", "frankish": "Rialda" },
+      "Noctiluna (moon, night, death-light)": { "proto": "*Nahtiluno", "gothic": "Nahtiluna", "norse": "Nottlun", "anglo_saxon": "Nihtlune", "frankish": "Nahtluno" },
+      "Maraxus (war-fire, the burning conqueror)": { "proto": "*Marahsaz", "gothic": "Marahs", "norse": "Marhr", "anglo_saxon": "Mearox", "frankish": "Marach" },
+      "Vacidus (the void, the unmaking)": { "proto": "*Wakithaz", "gothic": "Wakiths", "norse": "Vakr", "anglo_saxon": "Waecid", "frankish": "Wachid" },
+      "Lusanto (the hoard-worm, greed)": { "proto": "*Lusanthaz", "gothic": "Lusanths", "norse": "Lusandr", "anglo_saxon": "Lusand", "frankish": "Lusando" }
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "settlement = -haim/-ham/-heim (home), -thorp/-dorf (steading), -burg (fort), -by/-stat (place); feature-compound common.",
+    "patronymic_form": "patronymic -sunus/-son/-ing (descendant of); kin/lineage name for nobility; matronymic rare.",
+    "gendered_endings": "masc -s/-r/-o, fem -a/-o/-lind; per branch.",
+    "diminutive_form": "-ila / -i / -ilo per branch.",
+    "compounding_rule": "dithematic: [quality|animal|resource](stem) + feature/element; Swarta-widus (black-forest), Eisarna-burgs (iron-fort)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers. Two government modes present in the family: clanhold (Alani, Vargari, Cwealmingas, Alaman) and feudal (Merovan, Ostran). Both share the kuning (king) and harja-tugon (war-leader/duke) roots; clan ladders top out at konungr/thiudans, feudal ladders run to keisar (emperor < Caesar). Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["clanhold (Alani, Vargari, Cwealmingas, Alaman)", "feudal (Merovan, Ostran)"]
+  },
+  "conventions": {
+    "people_name_default": "dithematic personal name + patronymic (-sunus/-son/-ing) or lineage; bynames (animal/deed/trait) for the renowned; order given-first.",
+    "settlement_named_after": ["founder/lineage (-ingen, -ingas)", "feature", "quality", "function (-burg, -market)"],
+    "transparent_vs_opaque": "moderate-high; many names are transparent dithematic compounds.",
+    "no_exonyms": true
+  }
+}

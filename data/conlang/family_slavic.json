@@ -1,0 +1,77 @@
+{
+  "kit_id": "slavic",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Slavic",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "A small, standalone family: broad early-medieval Slavic (East/West/South variants). Only one clean member (Velesan); Slavic otherwise appears in CROSS-family blends authored with their partner families: Venedan (6+13 Germanic x Slavic), Rovan (8+13 Norse x Slavic, the Rus), Kypchan (13+17 Slavic x Steppe). Those blends should reflex their Slavic component from the theonym_set below. Base provides the concept inventory, morphology template, shared roots, the clanhold title structure, and the Slavic theonym morph-set. Orthography is ASCII (sh/zh/ch/shch for the sibilants; soft signs dropped).",
+  "sources_5_1": [13],
+  "sub_palettes": ["slavic"],
+  "member_cultures": {
+    "clean": ["velesan (early-medieval pagan Slav, clan)", "kyivan (Kievan-Rus with a Hellenic overlay, civ)"],
+    "intra_family_blends": [],
+    "cross_family_uses": ["venedan (6+13)", "rovan (8+13, the Rus)", "kypchan (13+17)"]
+  },
+  "phonology": {
+    "palette": "Slavic: palatalization (soft/hard consonants); the sibilants sh/zh/ch/shch; consonant clusters; vowels a e i o u y; dithematic glory-names (-slav, -mir, -volod); endings -ov/-ev/-ich, -grad, -a; stress mobile.",
+    "sub_palette_notes": {
+      "slavic": "Broad early-medieval Slavic: knyaz/voevoda/boyar register; rod (clan) and druzhina (war-band); -ov/-ich patronymics; grad/gorod towns; the volkhv priesthood and kapishche idol-shrines."
+    },
+    "phonotactics": "CV/CVC and heavy clusters (str, zdr, sht, vl, mn); palatalized pairs; mobile stress.",
+    "transparent_ratio_default": 0.45
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized in the culture kit.",
+    "feature_words": ["river", "stream", "lake", "sea", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "coast", "glade"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "silver", "gold", "amber", "fur", "honey", "wax", "grain", "flax"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "Common Slavic roots (common words and titles, allowed; theophoric built only on the morphed canon-forms below, never real Slavic gods).",
+    "prince/king": "*kunengu (knyaz; velik knyaz = grand prince)",
+    "lord": "*gospodi (gospodin)",
+    "town/fort": "*gordu (grad / gorod; ostrog = palisade-fort)",
+    "kin/clan": "*rodu (rod; -ichi = the sons of)",
+    "war-band": "*druzina (druzhina)",
+    "god": "*bogu (bog; Bog- / Bogu- in names)",
+    "oath": "*rota (rota)"
+  },
+  "theonym_set": {
+    "_note": "Slavic morphs of the Agrippan canon: phoneme-morphs through Slavic phonology (v>b/v; -us>-u/-on; sibilant shifts). These are NOT real Slavic gods (no Perun, Veles, Svarog, Dazhbog, Mokosh, Stribog, Lada, Morana). The culture-name Velesan/Velesia is a traditional proper name only. Velesan realizes these directly; cross-family Slavic blends (Venedan/Rovan/Kypchan) reflex their Slavic component from here.",
+    "forms": {
+      "Aeternus (the One)": "Oterun",
+      "Tulrius (sun, fire, light, justice)": "Tulor",
+      "Orlandus (iron, oath, war)": "Orlon",
+      "Gaiandus (earth, cold, endurance)": "Goyan",
+      "Numeno (air, lightning, sky-thunder)": "Numir",
+      "Realta (mother, mercy, healing)": "Relata",
+      "Delorum (death, rest of the dead)": "Dolor",
+      "Noctiluna (moon, night, death-light)": "Nochlun",
+      "Raptis (the wild hunt, the hunter)": "Raptan",
+      "Maraxus (war-fire, the burning conqueror)": "Marakh",
+      "Vacidus (the void, the unmaking)": "Vakid",
+      "Lusanto (the hoard-serpent, greed)": "Lusan"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "settlement = -grad/-gorod (town), -ov/-ev (of), -ichi (people of), -sk (place); quality + feature (Bel-gorod = white-town).",
+    "patronymic_form": "patronymic -ov/-ev/-ich (son of); rod (clan) name + -ichi; the Dedy (ancestral spirits) honored.",
+    "gendered_endings": "masc -slav/-mir/-o, fem -a/-slava/-mira.",
+    "diminutive_form": "-ko / -ets / -ka.",
+    "compounding_rule": "dithematic glory-names (-slav glory, -mir peace/world, -volod rule): Velislav, Borimir; toponyms quality + feature: Chorn-boloto (black-swamp)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, clanhold. Built on knyaz (prince): knyaz at principality, velik knyaz (grand prince) at kingdom, kagan (over-king of many princes) at empire. The veche (folk-assembly) checks the knyaz; the volkhv (priest) stands outside the ladder. Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["clanhold (Velesan)"]
+  },
+  "conventions": {
+    "people_name_default": "dithematic glory-name (-slav/-mir) + patronymic -ov/-ich or rod; deed/nature byname for the renowned; order given-first.",
+    "settlement_named_after": ["quality + fort/town (Bel-gorod)", "founder/rod (-ichi, -ov)", "feature", "shrine (kapishche)"],
+    "transparent_vs_opaque": "moderate-high; many names are transparent compounds.",
+    "no_exonyms": true
+  }
+}

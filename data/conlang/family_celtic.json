@@ -1,0 +1,78 @@
+{
+  "kit_id": "celtic",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Celtic (Insular)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "A small, standalone family: broad Insular Celtic, Goidelic-leaning (Gaelic) with a Brythonic sub-palette available. Only one clean member (Cuchulan); Celtic otherwise appears in CROSS-family blends authored with their partner families: Gundic (6+7 Germanic x Celtic), Shidhean (7+10 Celtic x Japanese), Senecar (7+16 Celtic x Woodland). Those blends should reflex their Celtic component from the theonym_set below. Base provides the concept inventory, morphology template, shared roots, the clanhold title structure, and the Celtic theonym morph-set. Orthography in the data is ASCII (the fada/long-mark is dropped: i for i-fada, etc.).",
+  "sources_5_1": [7],
+  "sub_palettes": ["goidelic", "brythonic"],
+  "member_cultures": {
+    "clean": ["cuchulan (goidelic-leaning Insular Celtic, clan)", "erainn (archaic Old Irish high-kingship, civ)"],
+    "intra_family_blends": [],
+    "cross_family_uses": ["gundic (6+7)", "shidhean (7+10)", "senecar (7+16)"]
+  },
+  "phonology": {
+    "palette": "Insular Celtic: initial consonant mutation (lenition c>ch, b>bh/v, m>mh/v, t>th, d>dh; nasalization); broad vs slender consonants; vowels a e i o u (long marks dropped in data); stress usually root-initial.",
+    "sub_palette_notes": {
+      "goidelic": "Gaelic (Irish/Scots): mac/ua patronymics; -an/-in diminutives; roots ri/tuath/dun/rath/cland/fine; the c/ch and broad-slender contrast.",
+      "brythonic": "Brittonic (Welsh/Cumbric): ap/ferch patronymics; -wy/-ydd/-og endings; roots brenin/teyrn/caer/llan/pen; p where Goidelic has c (Brythonic *pen vs Goidelic *cenn)."
+    },
+    "phonotactics": "CV/CVC; mutation-driven clusters; root-initial stress.",
+    "transparent_ratio_default": 0.4
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized per sub-palette in each culture kit.",
+    "feature_words": ["river", "stream", "lake", "sea", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "coast", "bog"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron", "high", "far", "sacred", "fair"],
+    "resources": ["salt", "iron", "bronze", "silver", "gold", "cattle", "grain", "wool", "mead", "horse"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "Common Celtic cognates (common words and titles, allowed; theophoric built only on the morphed canon-forms below, never real Celtic gods).",
+    "king": "*rigs (Goid. ri, Bryth. rhi/brenin)",
+    "lord": "*flaith / *tigernos (Goid. flaith, tigerna; Bryth. teyrn)",
+    "people/tribe": "*touta (Goid. tuath; Bryth. tud)",
+    "fort": "*dunon / *ratis (dun, rath; Bryth. din, caer)",
+    "kin/clan": "*wenya (Goid. fine, cland)",
+    "sacred grove": "*nemeton (Goid. nemed; Bryth. nyfed)",
+    "hound/champion": "*kuon (Goid. cu, caur)"
+  },
+  "theonym_set": {
+    "_note": "Celtic morphs of the Agrippan canon: phoneme-morphs through Insular-Celtic phonology (lenition; -an/-id endings; v>b/f). These are NOT real Celtic gods. Cuchulan realizes them directly; cross-family Celtic blends (Gundic/Shidhean/Senecar) reflex their Celtic component from here. Distinct from the Celtiberian forms in culture_cantabran.json (which are Latinate-Celtic).",
+    "forms": {
+      "Aeternus (the One)": "Eternan",
+      "Tulrius (sun, fire, light, justice)": "Toran",
+      "Orlandus (iron, oath, war)": "Orlann",
+      "Gaiandus (earth, cold, endurance)": "Gaian",
+      "Numeno (air, lightning, sky-wisdom)": "Numan",
+      "Realta (mother, mercy, healing)": "Realtan",
+      "Delorum (death, rest of the dead)": "Dolar",
+      "Noctiluna (moon, night, death-light)": "Nochtluan",
+      "Raptis (the red hunt, the hunter)": "Raithan",
+      "Maraxus (war-fire, the burning conqueror)": "Maragan",
+      "Vacidus (the void, the unmaking)": "Faicid",
+      "Lusanto (the hoard-worm, greed)": "Losand"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "settlement = Dun-/Rath- (fort), Baile- (stead), Cill- (church/cell), Ard- (height), Mag- (plain); feature-compound common.",
+    "patronymic_form": "Goidelic Mac- (son of) / O-Ua (descendant of); Brythonic ap-/ferch; kin-group = fine, wider clan = cland.",
+    "gendered_endings": "masc -an/-ach, fem -in/-nat (Goid.); -wy/-es (Bryth.).",
+    "diminutive_form": "-an / -in.",
+    "compounding_rule": "[quality|feature|saint](stem) + element: Dun-derg (red-fort), Ard-mor (great-height), Cill-[name] (church of)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, clanhold. Built on ri (king) and tuath (petty kingdom): ri-tuaithe (king of a tuath) at principality, ruiri (over-king) at kingdom, ard-ri (high king) at empire. The brithem (judge) and fili/ollam (poet-sage) stand outside the ladder. Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["clanhold (Cuchulan)"]
+  },
+  "conventions": {
+    "people_name_default": "personal name + Mac-/O- patronymic or fine/cland; deed or animal epithet (the Hound, the Red) for the renowned; order given-first.",
+    "settlement_named_after": ["fort-type + quality (Dun-derg)", "founder/cland", "feature", "sacred site (Cill-, Nemed-)"],
+    "transparent_vs_opaque": "moderate; many names are transparent compounds.",
+    "no_exonyms": true
+  }
+}

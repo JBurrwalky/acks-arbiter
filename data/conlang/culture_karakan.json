@@ -1,0 +1,82 @@
+{
+  "kit_id": "karakan",
+  "tier": "culture",
+  "inherits": ["north_american", "steppe"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 34,
+  "sub_palette": "plains-steppe deep fusion (cross-family blend)",
+  "synthesis_sources": [15, 17],
+  "homeland": "Karak",
+  "blend": { "type": "deep fusion / common-ancestor", "parents": ["plains (north_american)", "mongol_turkic (steppe)"], "note": "NOT backbone+overlay - a single fused tongue, as if Plains and Steppe descended from one trans-Beringian ancestor. Models the real Dene-Yeniseian hypothesis (Vajda) linking Na-Dene/Apache to Siberian Yeniseian, plus the demographic Beringian migration. Roots, titles and theonyms are blended forms sitting between the two parents (agglutinative, vowel-harmonic, open CV)." },
+  "government": "clanhold",
+  "alignment_allowed": ["Neutral", "Chaotic"],
+  "_note": "Cross-family DEEP BLEND (Plains horse-nomads + Steppe horse-nomads): a single people whose tongue reads like the common ancestor of both - mounted herders of grassland and savanna who share the steppe's hordes-and-khans and the plains' bands-and-vision-quests. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused forms. clan = clanhold. Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles fuse the real Plains (Comanche-leaning) and Mongol-Turkic registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon (sitting between the Plains and Steppe sets), never real gods.",
+  "phonology": {
+    "palette": "Fused Plains-Steppe: open CV syllables; vowel harmony (back a/o/u vs front e/i); consonants p t k s sh h m n w y, kh, ng, glottal stop '; agglutinative suffixes shared by both parents (-tai/-ta, -na, -ai); the fused theonym/lexicon roots sit between Comanche and Mongol forms.",
+    "phonotactics": "CV/CVC; open vowels; vowel harmony; agglutination; glottal stops.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": { "river": "pagol", "stream": "jilpa", "lake": "naapu", "sea": "dalpaa", "cape": "hoshu", "isle": "aralpa", "mountain": "toyul", "hill": "tolwi", "ridge": "naruka", "forest": "oysa", "plain": "talso", "grass": "sona", "marsh": "namapo", "ford": "pagol-mia", "pass": "davai", "vale": "hondu", "savanna": "talso-sona", "coast": "pagol-naki" },
+    "settlement_words": { "hamlet": "gerni", "village": "gernila", "town": "balwi", "city": "ih-balwi", "fort": "kheram", "camp": "ordu", "market": "naruma", "temple_town": "tunawa", "citadel": "ordu-naika" },
+    "kinship": { "son": "tuga", "daughter": "petai", "house": "gerni", "kin": "ovonu (band-clan)", "ancestor": "deeda-numu (the old ones)" },
+    "adjectives": { "great": "ih", "little": "bagtu", "old": "kuhtu", "new": "shini", "black": "kara", "white": "tsana", "red": "ulesa", "golden": "altu", "iron": "tomwi", "high": "wai", "far": "holaku", "sacred": "puhar", "fair": "saitsu" },
+    "resources": { "salt": "davsa", "iron": "tomwi", "silver": "mongsa", "horse": "morku", "bison": "kutsa", "herd": "malsu", "hide": "sarwi", "feather": "wuyai", "bow": "etka", "drymeat": "tunapu" },
+    "directional": { "upper": "deewi", "lower": "doota", "north": "konalta", "south": "talohi", "east": "tana-miaru (sunrise)", "west": "tana-yaa (sunset)", "inner": "dotwi", "outer": "gadwa" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["toyul- (mountain)", "pagol- (river)", "talso- (plain)", "-ordu (camp)", "Kara-/Tsana- (black-/white-)", "-naika (great/head)"],
+    "patronymic_form": "father's name + -in/-tu; the ovonu (band-clan, named for an animal or food); a deed- or vision-name earned at coming-of-age; the honor Baatu (hero).",
+    "gendered_endings": { "male": "-tai / -tu / -bek", "female": "-na / -petai / -gul" },
+    "diminutive_form": "-hai / -tsi",
+    "compounding_rule": "[quality|animal](stem) + feature: Kara-toyul (black-mountain), Kutsa-talso (bison-plain); the horde/band named for its khan or its food; -ordu for the moving camp."
+  },
+  "title_ladder": {
+    "government": "clanhold (a fusion of plains bands and steppe hordes: the ovonu-clans and their khans, the war-societies and the vision-chiefs; the khural-council raises the head-khan; the camp moves with the herds)",
+    "tiers": {
+      "barony": { "ruler": "Noytan", "domain": "Noytan-nutag" },
+      "march": { "ruler": "Tarkwan", "domain": "Saraa" },
+      "county": { "ruler": "Paranoy", "domain": "Ovonu" },
+      "duchy": { "ruler": "Mingbo", "domain": "Mingbo-zuun" },
+      "principality": { "ruler": "Bekibo", "domain": "Aimal" },
+      "kingdom": { "ruler": "Naikhan", "domain": "Naikhan-ulus" },
+      "empire": { "ruler": "Khanaika", "domain": "Karak-Ulus" }
+    },
+    "_tiers_note": "Fused Plains-Steppe clanhold, ascending; the titles are blended forms (plains nantan/paraibo/naika + steppe noyan/khan/khagan). Noytan (band-lord) barony; Tarkwan (border war-warden) march; Paranoy (band-chief) county; Mingbo (thousand war-chief) duchy; Bekibo (great chief of several bands) principality; Naikhan (head-khan) kingdom; Khanaika (grand head-khan) empire over the Karak-Ulus (the great-nation). The khural-council and the war-societies check the khans. (Rank titles fuse the real Plains/Mongol registers, allowed.)",
+    "female_forms": { "Khanaika": "Khatun-Naika", "Naikhan": "Naikhatun", "Bekibo": "Bekhibo", "Mingbo": "Mingkhatun", "Paranoy": "Paranoy-na", "Tarkwan": "Tarkwan-na", "Noytan": "Noytan-na" },
+    "heir": "Naikhan-tuga (the head-khan's son)",
+    "honorifics": { "lord": "Noytan", "lady": "Khatun", "champion": "Baatu (hero-brave)", "your_grace": "Naikhan", "elder": "Deeda (elder)" },
+    "vassalage": { "liege": "Ezenoy", "vassal": "Nokwa (sworn companion)", "fealty": "Tangra (oath)", "tribute": "Albanu (the gift-due)" }
+  },
+  "people_name_convention": {
+    "order": "a child-name, replaced at coming-of-age by a deed- or vision-name; the ovonu (band-clan); an animal+quality byname or the honor Baatu.",
+    "surname_source": ["ovonu (band-clan)", "deed/vision-name", "animal+quality byname", "Baatu honor-title"],
+    "dual_register": "khans and braves bear deed-names and society-honors; others a band-name + given name.",
+    "theophoric": "names invoke the sky and war-powers + a fused element: Munka- (eternal), -baatu (hero), Tomwi- (iron): e.g. Munka-baatu, names sworn under Maraksai.",
+    "diminutive": "-hai / -tsi"
+  },
+  "religion": {
+    "_note": "Deity-names are FUSED morphs of the Agrippan canon - single forms sitting between the Plains and Steppe theonym sets (Maraxus: Plains Maraksa / Steppe Marakhai -> fused Maraksai), never real gods. Karakan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met through the vision-quest and at the sacred cairn on the open horizon; there are no built temples.",
+    "the_one": "Eteruna (< Aeternus; fused of Plains Ateruna / Steppe Eterun) - the Eternal Sky-Above; reviled as the cold sky-tyrant when Chaotic, acknowledged as the distant maker when Neutral",
+    "sample_deity_renames": { "Maraxus": "Maraksai (fused Maraksa/Marakhai) - the war-fire, the raider; Chaotic power", "Dementus": "Tamendai (fused Tamawi/Tamendei) - the storm-sky; Chaotic power", "Realta": "Reelta (fused Reawina/Erelta) - the mother, the life-giver; Neutral-honored", "Gaiandus": "Gayanta (fused Kayanta/Gajan) - the enduring earth; Lawful power" },
+    "worship_by_alignment": { "Chaotic": "venerate the Chaotic powers (Maraksai the war-fire, Tamendai the storm, Lusantai the plunder-serpent), demonize the Lawful powers and the One (Eteruna)", "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the deeda-numu (ancestral dead), the animal-spirits and the powers of place" },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Toralai the Cold-Sun; Orlandus -> Orlanga the Oath-Chain; Aeternus -> Eteruna the Sky-Tyrant.",
+    "clergy_ladder": { "1": "Bukatu-tuga (vision-novice)", "3": "Bukatu (shaman / medicine-seer)", "5": "Ih-bukatu (great medicine-seer)", "7": "Ovonu-bukatu (the band's high seer)", "9": "Naika-bukatu (the council's great seer)" },
+    "religious_orders_pattern": "no built temples - the sacred cairn (tunawa) of [power] on a high horizon: 'the Tunawa of Maraksai', and the vision-hill.",
+    "saints_pattern": "the great khans and vision-seers who became sky- and animal-spirits; honored at the burial-scaffold and the sacred cairn.",
+    "holy_symbol_motifs": { "Maraksai": "a red war-lance and horsetail-standard beneath a black storm", "Tamendai": "forked lightning over the open grass", "Reelta": "a life-giving rain over the green plain" }
+  },
+  "banks_patterns": {
+    "ships": "landlocked riders name war-lances, standards and great horses: 'Storm-Runner', 'the Black Lance', 'Wind-Eater' (a famed steed)",
+    "military_units": "the war-societies and the decimal host: the [animal] society / the [khan] Tumen: 'the Wolf-society', 'the Storm Tumen'",
+    "taverns": "camps, not taverns: the council-tent / the [adjective] gerni: 'the Great Council-Tent', 'the Red Gerni'",
+    "dungeons_ruins": "old burial-scaffolds, abandoned ordu-camps and spirit-haunted buttes: 'the Cairn of [khan]', 'the Ghost-Butte of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Kara-baatu", "Tem-morku", "Naranoy", "Bektai", "Storm-Rider", "Holaku-tai", "Sona-bek", "Maraksai-tu", "Konawi-khan", "Wolf-Khan", "Altu-bek", "Tsana-noy", "Iron-Lance", "Bagtu", "Deeda-mori", "Ulesa-tai", "Sky-Runner", "Munka-baatu", "Tarkwan-tu", "Kutsa-noy"],
+    "personal_f": ["Reelta-na", "Sona-gul", "Altu-na", "Saran-petai", "Morning-Rain", "Tsana-na", "Naran-gul", "Reawina", "Bayan-na", "Holawi-na", "Sweet-Grass", "Ulesa-na", "Konela", "Tuya-na", "Star-Woman", "Suvd-na", "Deeda-na", "Wuyai-na", "Bird-Woman", "Saitsu-na"],
+    "clan_ovonu": ["Ovonu Kutsa (bison-band)", "Ovonu Morku (horse-band)", "Ovonu Chono (wolf-band)", "Ovonu Burgu (eagle-band)", "Ovonu Kara (black-band)", "Ovonu Tsana (white-band)", "Ovonu Maraksai (war-band)", "Ovonu Sona (grass-band)", "Ovonu Tamendai (storm-band)", "Ovonu Altu (gold-band)", "Ovonu Naran (sun-band)", "Ovonu Tomwi (iron-band)"],
+    "epithets_cognomina": ["Baatu (the Hero)", "Kara (the Black)", "the Storm-rider", "Bison-heart", "the Far-rider", "Iron-Lance", "Wolf-friend", "the Sky-favored"],
+    "flagship_settlements": ["Karak (the great muster-camp)", "Kara-toyul (the black-mountain cairn)", "Kutsa-talso (the bison-plain)", "Altan-pagol (the golden-river camp)", "Maraksai-tunawa (the war-cairn)", "Ih-kheer (the great steppe muster)"]
+  }
+}

@@ -166,15 +166,52 @@ func build_editor_state(template: ClassTemplate, int_score: int,
 ##   {
 ##     cull_key: String,             # which general to cull (override; default = arcane_bonus)
 ##     extra_general_keys: [String], # the player's INT-bonus general picks
+##     class_swap_key: String,       # §4.2.1: replace the class proficiency (a meaningful
+##                                   #   departure from template intent); "" keeps the
+##                                   #   template's. Validated against the class proficiency
+##                                   #   list; an invalid / unknown key is ignored.
+##     general_swaps: {from_key: to_key}, # §4.2.1: swap a granted general / arcane_bonus
+##                                   #   proficiency for another qualified general. natural /
+##                                   #   tradition proficiencies are LOCKED (never swapped).
+##                                   #   Invalid targets are ignored.
 ##   }
-## Any INT-bonus slots the player left unfilled are auto-filled (engine default),
-## so the result always has exactly the right proficiency count.
+## Swaps build fresh records rather than mutating the shared (repo-cached)
+## TemplateProficiency objects. Any INT-bonus slots the player left unfilled are
+## auto-filled (engine default), so the result always has exactly the right count.
+## Use swap_options() to populate the editor's dropdowns with valid candidates.
 func finalize_proficiencies(template: ClassTemplate, int_score: int,
 		choices: Dictionary = {}) -> Array:
 	var plan := TemplateIntAdjuster.compute_adjustment(template.class_id, int_score)
 	var kept := TemplateIntAdjuster.cull_proficiencies(
 		template.proficiencies, plan, String(choices.get("cull_key", "")))
-	var records := ClassedNpcBuilder.proficiency_records(kept)
+
+	var class_swap_key := String(choices.get("class_swap_key", ""))
+	var general_swaps: Dictionary = choices.get("general_swaps", {})
+	var valid_class := _class_proficiency_keys(template.class_id)
+	var valid_general := _general_proficiency_keys()
+
+	# Build base records from the (culled) template proficiencies, applying the
+	# player's §4.2.1 swaps. Mirrors ClassedNpcBuilder.proficiency_records (skip
+	# unresolved keys) but is kind-aware so locked profs are protected and a swap may
+	# fill an unresolved class slot the player explicitly re-picked.
+	var records: Array = []
+	for p: TemplateProficiency in kept:
+		match p.proficiency_kind:
+			"class":
+				if class_swap_key != "" and class_swap_key != p.proficiency_key \
+						and class_swap_key in valid_class:
+					records.append(_swap_record(class_swap_key, "class"))
+				elif p.proficiency_key != "":
+					records.append(p.to_record())
+			"natural", "tradition":
+				if p.proficiency_key != "":
+					records.append(p.to_record())  # locked — never swapped
+			_:  # general / arcane_bonus — freely swappable
+				var to_key := String(general_swaps.get(p.proficiency_key, ""))
+				if to_key != "" and to_key != p.proficiency_key and to_key in valid_general:
+					records.append(_swap_record(to_key, "general"))
+				elif p.proficiency_key != "":
+					records.append(p.to_record())
 
 	var want: int = int(plan["extra_general_proficiencies"])
 	var chosen: Array = []
@@ -244,3 +281,59 @@ func _briefs(profs: Array) -> Array:
 	for p: TemplateProficiency in profs:
 		out.append(_brief(p))
 	return out
+
+
+# ---------------------------------------------------------------------------
+# §4.2.1 proficiency-swap support (full editor — §10 step 12)
+# ---------------------------------------------------------------------------
+
+## Candidate proficiency keys for the editor's swap dropdowns (gdd §4.2.1):
+##   {
+##     class_options: [String],   # the class's full class-proficiency list (the editor shows
+##                                #   the template's pick as the default selection)
+##     general_options: [String], # general keys NOT already granted by the template, so a swap
+##                                #   target is always net-new (avoids duplicate proficiency rows)
+##   }
+func swap_options(template: ClassTemplate) -> Dictionary:
+	var held := {}
+	for p: TemplateProficiency in template.proficiencies:
+		if p.proficiency_key != "":
+			held[p.proficiency_key] = true
+	var general_options: Array = []
+	for k in _general_proficiency_keys():
+		if not held.has(k):
+			general_options.append(k)
+	return {
+		"class_options": _class_proficiency_keys(template.class_id),
+		"general_options": general_options,
+	}
+
+
+## The class-proficiency key list for [param class_id] (the same source the
+## ProficiencySelectionPanel uses for its class tab).
+func _class_proficiency_keys(class_id: String) -> Array:
+	var out: Array = []
+	for k in _class_registry.get_class_def(class_id).get("class_proficiency_list", []):
+		out.append(String(k))
+	return out
+
+
+## The general-proficiency key list, excluding the auto-granted "adventuring".
+func _general_proficiency_keys() -> Array:
+	var out: Array = []
+	for k in _proficiency_registry.get_general_proficiency_list():
+		if String(k) != "adventuring":
+			out.append(String(k))
+	return out
+
+
+## A fresh character_proficiencies record for a swapped proficiency (rank resets to
+## 1 — a different proficiency starts at journeyman with no carried specialization).
+func _swap_record(key: String, slot_type: String) -> Dictionary:
+	return {
+		"proficiency_key": key,
+		"rank": 1,
+		"slot_type": slot_type,
+		"selections_count": 1,
+		"specialization": "",
+	}

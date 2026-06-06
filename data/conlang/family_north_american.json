@@ -1,0 +1,90 @@
+{
+  "kit_id": "north_american",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "North American Indigenous (Plains / Woodland)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit)",
+  "_note": "An areal family of two culture-areas: Plains horse-nomads (Numinan, drawing on Comanche/Apache/Cheyenne) and Eastern Woodland longhouse-confederacy (Oronan, drawing on the Iroquois/Haudenosaunee). Common-word lexicon and rank titles use the real Plains and Iroquois registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon, never real gods. The two sub-palettes are unrelated tongues, so the two theonym sets are independent. No intra-family blend (both members are clean). Worship vs demonization is alignment-driven per culture (worship_by_alignment). ASCII orthography (ʉ->u; glottal stops kept).",
+  "sources_5_1": [15, 16],
+  "sub_palettes": ["plains (Comanche/Apache/Cheyenne)", "woodland (Iroquois/Haudenosaunee)"],
+  "member_cultures": {
+    "clean": ["numinan (plains horse-nomads, clan)", "oronan (woodland longhouse-confederacy, clan)"],
+    "intra_family_blends": [],
+    "cross_family_uses": ["karakan (15+17 Plains x Steppe)", "senecar (7+16 Celtic x Woodland)", "tikan (11+16 Mayan x Woodland)"]
+  },
+  "phonology": {
+    "palette": "Two distinct registers from real source languages.",
+    "sub_palette_notes": {
+      "plains": "Plains (Comanche-leaning, with Apache and Cheyenne): Comanche roots (paa water, toya mountain, huupi tree, soni grass, taabe sun, mua moon, puuku horse, numu people), -pu/-bo endings, vowel u (written for the barred-u); Apache nantan (chief); pan-Plains akicita (warrior-society); descriptive deed-names rendered in the usual way (Ten Bears, Iron Shirt).",
+      "woodland": "Woodland (Iroquois/Haudenosaunee): Mohawk-Iroquoian register, which genuinely lacks labials (no p/b/m/f); roots kanata (town), kanonhsa (longhouse), ononta (hill), kahyonha (river), kaniatare (lake), ohwachira (matrilineal family); titles royaner/hoyaneh (sachem), rotiskenrakehte (war chief), tadodaho (presiding firekeeper); the clan-mothers (Iakoia:ner) hold the titles."
+    },
+    "phonotactics": "Plains: CV(C), glottal stops, the barred-u vowel. Woodland: CV(C), NO labials, glottal stops, long polysynthetic compounds.",
+    "transparent_ratio_default": 0.4
+  },
+  "lexicon_concepts": {
+    "_note": "Same concept inventory as the other family bases; realized in the real register per sub-palette (the two are unrelated and share nothing).",
+    "feature_words": ["river", "stream", "lake", "sea", "bay", "cape", "isle", "mountain", "hill", "ridge", "forest", "wood", "plain", "marsh", "ford", "pass", "vale", "grove", "coast"],
+    "settlement_words": ["hamlet", "village", "town", "city", "fort", "port", "market", "temple-town", "citadel"],
+    "kinship": ["son", "daughter", "house", "kin/clan", "ancestor"],
+    "adjectives": ["great", "little", "old", "new", "black", "white", "red", "golden", "iron/metal", "high", "far", "sacred", "fair"],
+    "resources": ["salt/maize", "metal/bean", "secondary", "tertiary", "hide/squash", "horse/tobacco", "bison/deer", "feather/shell", "drymeat/maple", "ochre/flint"],
+    "directional": ["upper", "lower", "north", "south", "east", "west", "inner", "outer"]
+  },
+  "shared_roots": {
+    "_note": "Areal grouping only; the two registers are unrelated languages. Parallels are at the culture-CONCEPT level.",
+    "social-unit": "Plains: band/division (Comanche e.g. Kwahada, Penateka) | Woodland: ohwachira (matrilineal clan)",
+    "dwelling": "Plains: tipi (hide lodge) | Woodland: kanonhsa (longhouse)",
+    "leadership": "Plains: paraibo (peace-chief), tekwuniwap (war chief), nantan (Apache chief) | Woodland: royaner/hoyaneh (sachem), chosen and deposed by the clan-mothers",
+    "council": "Plains: the chiefs' council and warrior-societies | Woodland: the Grand Council of the Haudenosaunee under the Tadodaho"
+  },
+  "theonym_sets": {
+    "_note": "TWO INDEPENDENT sets (unrelated tongues); morphs of the Agrippan canon, never real Plains/Woodland gods. plains (used by Numinan and the Plains side of Karakan); woodland (used by Oronan and the Woodland side of Senecar and Tikan; labial-free, matching real Iroquoian phonology). Same shared pantheon; different names. Worship vs demonization assigned at runtime by each culture's CURRENT alignment.",
+    "plains": {
+      "Aeternus (the One)": "Ateruna",
+      "Tulrius (sun, justice)": "Torawi",
+      "Orlandus (iron, oath, war)": "Olanta",
+      "Gaiandus (earth, endurance)": "Kayanta",
+      "Numeno (air, sky-wisdom)": "Nimawi",
+      "Realta (mother, mercy)": "Reawina",
+      "Delorum (death, the dead)": "Dolawa",
+      "Noctiluna (moon, night)": "Nochila",
+      "Raptis (the hunt)": "Rapita",
+      "Dementus (storm, lightning-fury)": "Tamawi",
+      "Maraxus (war-fire)": "Maraksa",
+      "Vacidus (the void)": "Vachita",
+      "Lusanto (the hoard-serpent)": "Lusanta"
+    },
+    "woodland": {
+      "Aeternus (the One)": "Aterhonon",
+      "Tulrius (sun, justice)": "Tularonon",
+      "Orlandus (iron, oath, war)": "Oranhonon",
+      "Gaiandus (earth, endurance)": "Kayanonon",
+      "Numeno (air, sky-wisdom)": "Nunaronon",
+      "Realta (mother, mercy)": "Realwenne",
+      "Delorum (death, the dead)": "Teloronon",
+      "Noctiluna (moon, night)": "Notilwenne",
+      "Raptis (the hunt)": "Rakwaronon",
+      "Maraxus (war-fire)": "Waraksonon",
+      "Vacidus (the void)": "Wasidonon",
+      "Lusanto (the hoard-serpent)": "Rusanonon"
+    }
+  },
+  "morphology_template": {
+    "toponymic_suffixes": "Plains: feature + Comanche root (toya- mtn, paa- water, soni- grass). Woodland: kanata- (town), -ononta (hill), kahyonha- (river), karhakon- (forest).",
+    "patronymic_form": "Plains: band/division (Comanche) + an earned deed/vision-name. Woodland: ohwachira (matrilineal clan, by animal-totem) + a clan-held name bestowed by the clan-mother.",
+    "gendered_endings": "Plains: descriptive (deed-names), Comanche -pu/-bo for some. Woodland: m ra-/ro-/-ronon, f ka-/io-/-wenne.",
+    "diminutive_form": "Plains -tsi/-sa. Woodland -sa/-en'a.",
+    "compounding_rule": "Plains [quality|animal] + feature (descriptive deed/place names). Woodland long compounds [quality|feature] + place (Onekwenhtara-karhakon, red-forest)."
+  },
+  "title_ladder_structure": {
+    "_note": "ACKS 7 tiers, both members clanhold. Plains: chiefs-by-deed (paraibo/nantan), war chiefs (tekwuniwap), warrior-societies (akicita), a head-chief over a confederation. Woodland: sachems (royaner/hoyaneh) chosen and deposed by the clan-mothers, the Grand Council under the Tadodaho (presiding firekeeper); the Confederacy has no monarch - the tiers map ACKS levels onto the real council hierarchy. Tier->ruler-level mapping pending the ACKS lookup.",
+    "tiers": ["barony", "march", "county", "duchy", "principality", "kingdom", "empire"],
+    "government_modeled": ["clanhold (Numinan, Oronan)"]
+  },
+  "conventions": {
+    "people_name_default": "Plains: an earned deed/vision-name + band/division. Woodland: a clan-held name (or hereditary sachem title-name) + ohwachira (matrilineal clan).",
+    "settlement_named_after": ["feature + quality (Plains)", "the band's chief or range (Plains)", "the council-seat / castle (Woodland)"],
+    "transparent_vs_opaque": "moderate; many names are descriptive (deed/animal/feature).",
+    "no_exonyms": true
+  }
+}
