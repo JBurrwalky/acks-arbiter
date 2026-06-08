@@ -106,7 +106,7 @@ func _make_character(class_id: String = "fighter", sex: String = "male") -> Char
 	character.sex = sex
 	character.hp_current = 4
 	character.hp_max = 4
-	character.portrait_id = "portrait_fighter_01"
+	character.portrait_id = "asian_fighter_male_01"
 	return character
 
 

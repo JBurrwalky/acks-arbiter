@@ -60,8 +60,57 @@ func enter(runner, context: Dictionary) -> void:
 	# Load map into controller
 	controller.load_map(map_data)
 
-	# Auto-transition to wilderness
-	runner.transition_to_state("wilderness")
+	# Context-aware restore (gdd-savegame-system.md §5.6): return the party to the
+	# context it was saved in, not always wilderness. The hex map is loaded above
+	# regardless, so exiting a restored dungeon/settlement returns to the right hex.
+	var pd: PartyData = runner.get_party_data()
+	var loc_type: String = pd.current_location_type if pd != null else "wilderness"
+	match loc_type:
+		"dungeon":
+			if not _restore_into_dungeon(runner, campaign_id, pd):
+				runner.transition_to_state("wilderness")
+		"settlement":
+			if not _restore_into_settlement(runner, pd):
+				runner.transition_to_state("wilderness")
+		_:
+			runner.transition_to_state("wilderness")
+
+
+## Rebuilds the dungeon context for a party saved inside a dungeon and transitions
+## into it; DungeonExploreState then restores each entity's exact cell from the
+## per-entity store. Returns false (caller falls back to wilderness) if the
+## dungeon entrance can no longer be resolved (e.g. a stale/old save).
+func _restore_into_dungeon(runner, campaign_id: String, pd: PartyData) -> bool:
+	if pd == null or pd.dungeon_id.is_empty():
+		return false
+	var entrance: Dictionary = CampaignRepository.get_dungeon_entrance_for_dungeon_id(
+		campaign_id, pd.dungeon_id)
+	if entrance.is_empty():
+		push_warning("SessionLoadState: cannot resolve dungeon '%s' for restore; falling back to wilderness" % pd.dungeon_id)
+		return false
+	var positions: Dictionary = CampaignRepository.load_dungeon_entity_positions(pd.id)
+	runner.transition_to_state("dungeon", {
+		"entrance": entrance,
+		"spawn_cell": Vector2i(pd.dungeon_col, pd.dungeon_row),
+		"restore_positions": positions,
+	})
+	return true
+
+
+## Rebuilds the settlement context for a party saved in a settlement and
+## transitions into it at the saved POI. Returns false on an unresolvable entrance.
+func _restore_into_settlement(runner, pd: PartyData) -> bool:
+	if pd == null or pd.settlement_id.is_empty():
+		return false
+	var entrance: Dictionary = CampaignRepository.get_settlement_entrance(pd.settlement_id)
+	if entrance.is_empty():
+		push_warning("SessionLoadState: cannot resolve settlement '%s' for restore; falling back to wilderness" % pd.settlement_id)
+		return false
+	runner.transition_to_state("settlement", {
+		"entrance": entrance,
+		"entry_poi_id": pd.settlement_node_id,
+	})
+	return true
 
 
 func _backfill_party_heraldry(campaign_id: String) -> void:

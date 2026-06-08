@@ -5,7 +5,7 @@
 **Depends on ACKS rules:** `acore_core_classes.xml` (cleric class, turn undead, spell access), `acore-setting-construction-rules.xml` and `acore_axioms_strongholds_and_domains.xml` (domain economics, stronghold types), `acore-setting-construction-rules.xml` (NPC demographics)
 **Depends on project GDDs:** `gdd-setting-generation.md` (cultural group placement, religious tradition placement), `gdd-npc-personality.md` (personality trait axes — culture provides weight biases), `gdd-name-generation.md` (name banks keyed to culture_id), `gdd-settlement-layout.md` (architecture tags, district flavor)
 **Modifiable by Claude Code:** Yes.
-**Last updated:** 2026-03-24
+**Last updated:** 2026-06-08
 
 ---
 
@@ -62,52 +62,18 @@ A culture file is a single JSON object representing one human or demi-human cult
   },
 
   "personality_weight_biases": {
-    "temperament": {
-      "stoic": "float — modifier, -0.3 to +0.3, applied to base NPC generation weights",
-      "jovial": "float",
-      "nervous": "float",
-      "aggressive": "float",
-      "melancholic": "float",
-      "cunning": "float",
-      "passionate": "float",
-      "serene": "float",
-      "paranoid": "float",
-      "gregarious": "float"
-    },
-    "motivation": {
-      "wealth": "float",
-      "power": "float",
-      "knowledge": "float",
-      "security": "float",
-      "revenge": "float",
-      "faith": "float",
-      "legacy": "float",
-      "freedom": "float",
-      "pleasure": "float",
-      "duty": "float",
-      "survival": "float",
-      "redemption": "float"
-    },
-    "social_style": {
-      "formal": "float",
-      "blunt": "float",
-      "flattering": "float",
-      "laconic": "float",
-      "verbose": "float",
-      "evasive": "float",
-      "warm": "float",
-      "intimidating": "float",
-      "scholarly": "float",
-      "streetwise": "float"
-    },
-    "moral_compass": {
-      "righteous": "float",
-      "honorable": "float",
-      "pragmatic": "float",
-      "opportunistic": "float",
-      "ruthless": "float",
-      "conflicted": "float"
-    }
+    "epistemic_curiosity": "float — mean-shift, -2.0 to +2.0, on the 1-10 axis (Dogmatic↔Inquisitive)",
+    "societal_orthodoxy": "float — -2.0 to +2.0 (Iconoclast↔Traditionalist)",
+    "affective_compassion": "float — -2.0 to +2.0 (Callous↔Self-Sacrificing)",
+    "stress_reactivity": "float — -2.0 to +2.0 (Unflappable↔Volatile)",
+    "self_interest": "float — -2.0 to +2.0 (Opportunistic↔Principled)",
+    "in_group_loyalty": "float — -2.0 to +2.0 (Mercenary↔Zealot)",
+    "mysticism": "float — -2.0 to +2.0 (Materialist↔Fanatical)",
+    "expressiveness": "float — -2.0 to +2.0 (Laconic↔Theatrical)",
+    "civility": "float — -2.0 to +2.0 (Vulgar↔Exquisitely Courteous)",
+    "jocularity": "float — -2.0 to +2.0 (Grim↔Frivolous)",
+    "amorousness": "float — -2.0 to +2.0 (Prudish↔Shameless)",
+    "epicureanism": "float — -2.0 to +2.0 (Ascetic↔Decadent)"
   },
 
   "military_tradition": {
@@ -150,13 +116,35 @@ A culture file is a single JSON object representing one human or demi-human cult
 
 ### 2.1 Personality Weight Bias Rules
 
-Every value in `personality_weight_biases` is a **modifier**, not an absolute weight. Range: -0.3 to +0.3. These are added to the base NPC generation weights from `gdd-npc-personality.md` §4.1.
+`personality_weight_biases` is a **flat map of twelve mean-shifts**, one per dispositional axis defined in `gdd-npc-personality.md` §3.2. Each value is a **mean-shift on the 1–10 axis scale**, in the range **−2.0 to +2.0**. These are applied during NPC generation as the **cultural** mean-shift in the fixed bias stack (`gdd-npc-personality.md` §4.1: sample → ability → **culture** → faction → alignment → clamp). Motivation is **not** biased here — Motivation is biased by alignment per `gdd-npc-personality.md` §3.3; the culture's other fields (`core_values`, `alignment_tendency`, etc.) continue to feed downstream systems directly and are not subsumed by these biases.
 
 **Constraints the LLM must follow when generating biases:**
-- The sum of all modifiers within each axis should be approximately zero (culture shifts the distribution, doesn't inflate it)
-- At least 2 traits per axis should have a positive modifier, at least 2 should have a negative modifier
-- No single modifier should exceed +0.3 or fall below -0.3
-- The biases should be consistent with `core_values` and `alignment_tendency` (a martial honor-culture shouldn't bias toward `nervous` and `evasive`)
+- Each value is a single float per axis in [−2.0, +2.0]. There is no per-axis "sum to zero" rule — these are direct mean-shifts, not a redistribution within a tag table.
+- Most axes should be near 0.0; a culture is defined by a handful of strong shifts (typically 3–6 axes shifted by ≥ |1.0|), not by nudging all twelve.
+- The bias profile must be internally consistent with the culture's `core_values`, `alignment_tendency`, `attitude_toward_outsiders`, and `military_tradition`. Examples of consistent profiles:
+  - A **martial honor-culture** shifts Stress Reactivity **negative** (toward Unflappable), In-Group Loyalty **positive**, Civility **positive**, Self-Interest **positive** (toward Principled).
+  - A **mercantile cosmopolitan culture** shifts Epistemic Curiosity **positive**, Self-Interest **negative** (toward Opportunistic), Mysticism **negative**.
+
+**Worked example (`personality_weight_biases` for a steppe horse-nomad raiding culture):**
+```json
+"personality_weight_biases": {
+  "epistemic_curiosity": 0.0,
+  "societal_orthodoxy": -0.5,
+  "affective_compassion": -1.0,
+  "stress_reactivity": 1.0,
+  "self_interest": -0.5,
+  "in_group_loyalty": 1.5,
+  "mysticism": 0.5,
+  "expressiveness": 0.5,
+  "civility": -1.0,
+  "jocularity": 0.0,
+  "amorousness": 0.0,
+  "epicureanism": -1.0
+}
+```
+This reads as: fiercely loyal to the clan (In-Group Loyalty +1.5), quick-tempered and aggressive (Stress Reactivity +1.0), callous toward outsiders (Affective Compassion −1.0), blunt and rough-mannered (Civility −1.0), spurning luxury (Epicureanism −1.0), with a streak of opportunism (Self-Interest −0.5) and totemic spirituality (Mysticism +0.5).
+
+> **Migration note.** This schema replaces the retired four-axis tag schema (`temperament` / `motivation` / `social_style` / `moral_compass` sub-objects of `personality_weight_biases`). **Any pre-generated culture JSON files under `data/cultures/` that use the old schema must be regenerated** against this twelve-axis schema. Do **not** attempt to migrate old files automatically — regenerate them with the §9.1 culture prompt and re-validate per §10.1.
 
 ---
 
@@ -377,7 +365,7 @@ Runtime linkage:
 
 | System | What It Consumes | Example |
 |---|---|---|
-| NPC personality generation | `personality_weight_biases` | Steppe nomad culture biases toward `aggressive`, `laconic`, `freedom` |
+| NPC personality generation | `personality_weight_biases` | Steppe nomad culture biases Stress Reactivity +1.0, In-Group Loyalty +1.5, Civility −1.0, Epicureanism −1.0 |
 | Settlement rendering | `architecture_style` | Mudbrick + ornate + "onion domes" → visual style tags for settlement display |
 | Domain ruler AI | `values.core_values` + `military_tradition` | Honor-culture ruler with shock_charge tradition → high expansion + military weights |
 | Encounter narration (LLM) | `flavor_text.one_paragraph` + `values` + `magic_attitude` | LLM knows this culture fears arcane magic and values hospitality |
@@ -419,8 +407,11 @@ Parameters:
 
 Constraints:
   - All enum values must be from the allowed lists (provided below)
-  - personality_weight_biases modifiers range -0.3 to +0.3
-  - Modifiers within each personality axis must sum to approximately 0.0
+  - personality_weight_biases: a flat map of the twelve dispositional axes
+    (gdd-npc-personality.md §3.2); each value a mean-shift in [-2.0, +2.0]
+  - Most axes near 0.0; define the culture with a handful of strong shifts
+    (typically 3-6 axes at >= |1.0|), consistent with core_values, alignment,
+    attitude_toward_outsiders, and military_tradition
   - core_values: exactly 3, from the allowed enum
   - taboos: 1-3 entries, max 60 chars each
   - trade_goods: 2-4 entries, max 30 chars each
@@ -507,8 +498,9 @@ After LLM generation, validate each file programmatically:
 - alignment_tendency.secondary (if present) differs from dominant
 - core_values has exactly 3 entries, all from the allowed enum
 - taboos has 1-3 entries, each ≤60 chars
-- All personality_weight_biases values are floats in [-0.3, +0.3]
-- Each personality axis's modifiers sum to approximately 0.0 (±0.1 tolerance)
+- personality_weight_biases has exactly the twelve axis keys (gdd-npc-personality.md §3.2),
+  each a float in [-2.0, +2.0]; no `temperament`/`social_style`/`moral_compass`/`motivation`
+  sub-objects (those belonged to the retired four-axis tag schema)
 - preferred_troop_types has 2-3 entries from the allowed enum
 - trade_goods has 2-4 entries, each ≤30 chars
 - All flavor_text fields are within char limits
@@ -659,3 +651,4 @@ data/schemas/
 - **2026-03-19:** Initial draft. Full culture data structure with 13 top-level sections. Full religion data structure with pantheon, clergy, practices, and political role. Personality weight biases feeding NPC generation. Downstream system integration mapped. LLM generation prompts with batch support. Validation rules. Pre-loaded default set requirements.
 - **2026-03-19 (rev 2):** Added alignment coherence as a hard constraint. Culture dominant alignment must be ≥40% of distribution. Culture's primary religion must match its dominant alignment. Opposing-alignment religions capped at ≤15% of cultural distribution. Added cosmology section to religion schema with deity/demon duality rules — Lawful religions regard Chaotic beings as demons and vice versa, Neutral religions may view both as valid or both as false. Cross-religion deity mapping documented. Alignment coherence validation rules added.
 - **2026-03-24:** Established 1:1 culture-religion seeding model — each culture generates exactly one religion at creation time; religions may spread during setting generation but start tied to their origin culture. Expanded pre-loaded default sets from 8 human + 3 non-human + 5 religions to 20 human + 3 elf + 3 dwarf cultures (26 total), each with a paired religion (26 religions). Coverage matrix: 7 terrain affinities × 3 alignments with one gap (swamp-Lawful). Added fallback selection algorithm for LLM-free operation. Removed halfling as standalone culture (halflings use regional human culture per ACKS convention).
+- **2026-06-08:** Reworked `personality_weight_biases` from the retired four-axis tag schema (temperament/motivation/social_style/moral_compass tag tables, modifiers −0.3..+0.3 summing to ~0 per axis) to the **flat twelve-axis mean-shift schema** matching the `gdd-npc-personality.md` twelve continuous dispositional axes; range widened to −2.0..+2.0 mean-shifts on the 1–10 axis scale, applied as the **cultural** step in the NPC generation bias stack. Motivation is no longer biased here (Motivation is alignment-biased in `gdd-npc-personality.md` §3.3). Rewrote §2.1 bias rules and added a twelve-axis worked example (steppe horse-nomad). Updated the §6 downstream NPC-personality row, the §9.1 culture-prompt constraints, and the §10.1 culture validation rules to the new schema. Added a migration note: pre-generated culture JSON using the old schema must be regenerated, not auto-migrated.

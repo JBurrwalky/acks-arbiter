@@ -445,6 +445,8 @@
 [ext_resource type="Script" path="res://tests/test_template_class_metadata.gd" id="429_template_class_metadata_tests"]
 [ext_resource type="Script" path="res://tests/test_template_magic_item_progression.gd" id="430_template_magic_item_progression_tests"]
 [ext_resource type="Script" path="res://tests/test_template_spell_repertoire.gd" id="431_template_spell_repertoire_tests"]
+[ext_resource type="Script" path="res://tests/test_savegame_location.gd" id="432_savegame_location_tests"]
+[ext_resource type="Script" path="res://tests/test_savegame_snapshot.gd" id="433_savegame_snapshot_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1780,3 +1782,9 @@ script = ExtResource("430_template_magic_item_progression_tests")
 
 [node name="TemplateSpellRepertoireTests" type="Node" parent="."]
 script = ExtResource("431_template_spell_repertoire_tests")
+
+[node name="SavegameLocationTests" type="Node" parent="."]
+script = ExtResource("432_savegame_location_tests")
+
+[node name="SavegameSnapshotTests" type="Node" parent="."]
+script = ExtResource("433_savegame_snapshot_tests")

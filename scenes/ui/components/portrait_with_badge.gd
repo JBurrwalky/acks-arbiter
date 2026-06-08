@@ -82,12 +82,12 @@ func _build() -> void:
 
 	_texture_rect = TextureRect.new()
 	_texture_rect.custom_minimum_size = _portrait_size
-	_texture_rect.size = _portrait_size
 	_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Add to parent first so PRESET_FULL_RECT resolves offsets against a live parent rect.
 	_btn.add_child(_texture_rect)
+	_texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	_badge = Label.new()
 	_badge.name = "Badge"

@@ -1,0 +1,85 @@
+{
+  "kit_id": "thalvaneth",
+  "tier": "culture",
+  "inherits": ["elvish"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 50,
+  "race": "elf",
+  "demihuman_tier": true,
+  "sub_palette": "thalvaneth (Proto-Elvish, smooth/sea branch)",
+  "synthesis_sources": [],
+  "homeland": "Thalvanar",
+  "branch": { "biome": "coastal forest (forest/dense_forest/jungle/taiga that is also coastal, any elevation)", "register": "smooth/lilting (sea-elf, Mediterranean)", "ancestral_to": ["classical", "near_eastern (punic)"], "model": "a deep Mediterranean ancestor of the Latinate/Hellenic and Punic families" },
+  "government": "feudal",
+  "alignment_allowed": ["Neutral", "Lawful", "Chaotic"],
+  "alignment_weights": { "Lawful": 0.20, "Neutral": 0.60, "Chaotic": 0.20 },
+  "_note": "Elvish demihuman culture, the sea-and-coastal-forest branch of the Vaneth (family_elvish.json). Smooth, lilting Mediterranean speech (vowel-rich -os/-a/-eth, sibilants s/sh, a light Punic pharyngeal touch); the SMOOTH branch-law on the Proto-Elvish roots. An ancient thalassocratic realm of elder-houses, golden-age now mostly fallen to island- and headland-fastnesses. Predominantly Neutral (the worldly, trade-minded coast): weights {Lawful 0.20, Neutral 0.60, Chaotic 0.20}, though a realm can seed or drift to either pole. Seeds only where forest meets the sea: coastal forest/dense_forest/jungle/taiga, any elevation (setting-lore 5.2 #50). As the deep Mediterranean ancestor, its deity- and concept-roots prefigure the human Latinate/Hellenic/Punic forms (Aiternaros -> Aeternus/Aiternos/Atharon; Tularos -> Tulrios/Tulrish). DEITY names take the Thalvaneth SACRED GENDERED ending -aros (masc) / -aressa (fem) - the divine class, distinct from mortal -os/-ios/-a and the common-noun -os; never real Greek/Roman/Punic gods. Common-word lexicon and rank register may use the real Mediterranean register (nesos, oinos, porphyros, kedros) per catalog 5.3.",
+  "phonology": {
+    "palette": "Thalvaneth: smooth and lilting (Mediterranean sea-elf); vowel-rich endings -os/-a/-e/-eth; sibilants s/sh; a light guttural/pharyngeal touch (the Punic descendant); flowing open syllables; the SMOOTH branch-law on the Proto-Elvish roots.",
+    "phonotactics": "CV/CVC, vowel-rich and open; sibilants and liquids frequent; no glottalization.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "feature_words": { "river": "siros", "stream": "sirenos", "lake": "limnos", "sea": "aelaros", "shore": "thalos", "bay": "kolpos", "cape": "akros", "isle": "nesos", "mountain": "orontos", "hill": "tornos", "ridge": "drumos", "forest": "galenos", "wood": "tawaros", "glade": "lalanos", "plain": "lannos", "marsh": "helos", "ford": "athyros", "pass": "belnos", "vale": "glennos", "grove": "alseos" },
+    "settlement_words": { "hamlet": "trevos", "village": "balos", "town": "karos", "city": "karnos", "fort": "dunos", "port": "portos", "market": "agoros", "temple_town": "naoros", "citadel": "tarnos" },
+    "kinship": { "son": "-ios", "daughter": "-a / -essa", "house": "oikos", "kin": "genos", "ancestor": "edhros" },
+    "adjectives": { "great": "megos", "little": "pinos", "old": "ioros", "new": "vinos", "black": "dulos", "white": "kelaros", "red": "naros", "golden": "chrysos", "bronze": "chalkos", "high": "taros", "far": "makros", "sacred": "hieros", "fair": "vanyos" },
+    "resources": { "salt": "salos", "bronze": "chalkos", "silver": "kelaros", "gold": "chrysos", "purple": "porphyros", "olive": "elaios", "wine": "oinos", "cedar": "kedros", "glass": "hyalos", "pearl": "margaros" },
+    "directional": { "upper": "anos", "lower": "katos", "north": "boros", "south": "notos", "east": "anatos", "west": "hesperos", "inner": "esos", "outer": "exos" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-anos / -aneth (realm of)", "-siros (river)", "-thalos (sea/shore)", "-nesos (isle)", "Kelar- / Galar- (silver-/light-)", "-anar (seat)"],
+    "patronymic_form": "the elven house (genos/oikos) by an elder-line; -ios (son of) / -a (daughter of); a use-name given freely, a true-name kept private.",
+    "gendered_endings": { "male": "-os / -ios", "female": "-a / -essa" },
+    "diminutive_form": "-is / -ion",
+    "compounding_rule": "[quality|root](stem) + feature/realm: Kelar-siros (silver-river), Thalo-nesos (sea-isle); -anos for the realm, -anar for the seat."
+  },
+  "title_ladder": {
+    "government": "feudal (an ancient thalassocratic realm of elder-houses, now mostly island- and headland-fastnesses; the Tharos over the elven lords, the lore-singers and the marine-archers)",
+    "tiers": {
+      "barony": { "ruler": "Velos", "domain": "Velanos" },
+      "march": { "ruler": "Maeros", "domain": "Maeranos" },
+      "county": { "ruler": "Eskelos", "domain": "Eskelanos" },
+      "duchy": { "ruler": "Thalios", "domain": "Thalianos" },
+      "principality": { "ruler": "Aranelos", "domain": "Aranelanos" },
+      "kingdom": { "ruler": "Tharos", "domain": "Tharanos" },
+      "empire": { "ruler": "Tar-Tharos", "domain": "Tar-Tharanos" }
+    },
+    "_tiers_note": "Smooth Mediterranean Thalvaneth reflexes of the Proto-Elvish title ladder, ascending - the same seven ACKS tiers as the Aelvaneth, with -os endings. A golden-age thalassocracy, now fallen to island/headland-fastness enclaves. (These title-roots are the elder ancestors of the human Latinate/Hellenic/Punic lord/king terms.)",
+    "female_forms": { "Tar-Tharos": "Tar-Tharessa", "Tharos": "Tharessa", "Aranelos": "Aranelessa", "Thalios": "Thaliessa", "Eskelos": "Eskelessa", "Maeros": "Maeressa", "Velos": "Velessa" },
+    "heir": "Aranelion (the sovereign's heir)",
+    "honorifics": { "lord": "Velos", "lady": "Velessa", "champion": "Maethros (warrior)", "your_grace": "Aranelos", "elder": "Ioros" },
+    "vassalage": { "liege": "Aranelos", "vassal": "Gwadros (sworn companion)", "fealty": "Gwethos (the oath-bond)", "tribute": "Anelos (gift-due)" }
+  },
+  "people_name_convention": {
+    "order": "a use-name (given freely) + the house (genos/oikos); a true-name kept private; -ios/-a; lilting two-element names.",
+    "surname_source": ["elven house (genos/oikos)", "-ios/-a patronymic", "deed/nature use-name"],
+    "dual_register": "the elder-houses carry an ancient house-name; a use-name is given freely, a true-name guarded.",
+    "theophoric": "mortal theophorics weave the power's ROOT (never the divine -aros/-aressa ending) + soft elements: -dios (devotee), Galar-/Kelar- (light/silver): e.g. Tular-dios (devotee of Tularos), Galar-rialt.",
+    "diminutive": "-is / -ion"
+  },
+  "religion": {
+    "_note": "Deity-names are the Thalvaneth (smooth Mediterranean) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real Greek/Roman/Punic gods; they carry the sacred GENDERED ending -aros (masc) / -aressa (fem) - the divine class, distinct from mortal -os/-ios/-a and common-noun -os. The Thalvaneth are predominantly Neutral (weights L20/N60/C20); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment), but the cultural default is the worldly Neutral coast - the genos-ancestors, the sea-spirits and the sea-mother foremost. The alseos (sea-grove shrine) above the harbor is the altar.",
+    "the_one": "Aiternaros (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -aros; the distant Star-Father; among the predominantly Neutral Thalvaneth honored from afar but rarely central; revered when Lawful, named the Sky-Tyrant when Chaotic)",
+    "sample_deity_renames": { "Realta": "Rialtaressa (the mother, mercy, patroness of safe voyage; Neutral-honored, fem.)", "Tulrius": "Tularos (the sun and just light; Lawful power, masc.)", "Numeno": "Numenaros (sky-wisdom and navigation; Lawful power, masc.)", "Maraxus": "Maraksaros (the storm-war, the corsair's ruin; Chaotic power, masc.)" },
+    "worship_by_alignment": { "Neutral": "the worldly majority are ambivalent toward both poles; they foreground the genos-ancestors (the edhros), the sea-spirits and the sea-mother Numyaressa, and the local lore-saints, honoring the One only distantly", "Lawful": "the high-court reveres the One (Aiternaros) and the Lawful powers (Tularos, Orlandaros, Gaianaros, Numenaros), demonize the Chaotic powers", "Chaotic": "the corsair-houses venerate the Chaotic powers (Maraksaros the storm-war, Wakidaros the void, the drowning-powers), demonize the Lawful powers and the One" },
+    "demon_epithet_pattern": "the demonized set (by current alignment): when Lawful - Maraxus -> Maraksaros the Ruin; when Chaotic - Aeternus -> Aiternaros the Sky-Tyrant, Tulrius -> Tularos the Cruel-Sun.",
+    "clergy_ladder": { "1": "Edhel-dios (novice-devotee)", "3": "Alseros (sea-grove keeper)", "5": "Linthros (lore-singer/priest)", "7": "Hieros (high keeper)", "9": "Tar-Linthros (the realm's high lore-singer)" },
+    "religious_orders_pattern": "the Alseos (sea-grove shrine) of [power]: 'the Alseos of Rialtaressa', above the harbor.",
+    "saints_pattern": "the elder-navigators and lore-singers of the houses (the edhros), honored at the shore-shrine and the white headland.",
+    "holy_symbol_motifs": { "Rialtaressa": "a moon-star above a calm sea", "Tularos": "a rayed sun over a silver wave", "Numyaressa": "a pearl cradled in a cresting wave" }
+  },
+  "banks_patterns": {
+    "ships": "sea-galleys and coast-craft, dolphin-prowed: 'the Silver Wave', 'Star-of-the-Deep', 'the Swan of Thalos'",
+    "military_units": "the marine-archers and house-galleys: 'the Sea Wardens', 'the Pearl-Archers of [house]'",
+    "taverns": "the harbor-hall (elves keep halls, not taverns): 'the Hall of the Silver Wave', 'the Wine of Stars'",
+    "dungeons_ruins": "drowned elven sea-halls and sunken headland-fastnesses: 'the sunken Hall of [house]', 'the Drowned Alseos of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Aelaros", "Tularios", "Orlandios", "Aerandios", "Sirethos", "Faelaros", "Tharios", "Eredhios", "Linthros", "Gwathios", "Aranos", "Brennios", "Ioros", "Vanyaros", "Edhelros", "Kelvros", "Naeros", "Galarios", "Oronnos", "Nesios"],
+    "personal_f": ["Aelessa", "Tularessa", "Sirethessa", "Faelessa", "Elwenessa", "Lassessa", "Galaressa", "Vanyessa", "Naeressa", "Kelvessa", "Brennessa", "Ioressa", "Maeressa", "Oronessa", "Edhelessa", "Tharessa", "Linthessa", "Aniressa", "Nelaressa", "Rialtessa"],
+    "clan_houses": ["Genos Galenos (forest-house)", "Genos Kelaros (silver-house)", "Genos Thalos (sea-house)", "Genos Siros (river-house)", "Genos Tularos (sun-house)", "Genos Orontos (mountain-house)", "Genos Nesos (isle-house)", "Genos Porphyros (purple-house)", "Genos Margaros (pearl-house)", "Genos Linthos (lore-house)", "Genos Nelaros (moon-house)", "Genos Aelaros (deep-sea house)"],
+    "epithets_cognomina": ["the Sea-eyed", "the Silver-voiced", "the Wave-rider", "the Far-faring", "of the Pearl Isle", "the Storm-braver", "the Lore-singer", "the Long-lived"],
+    "flagship_settlements": ["Thalvanar (the realm-seat)", "Kelar-siros (the silver-river city)", "Thalo-nesos (the sea-isle hold)", "Tularos-naoros (the sun-temple town)", "Orontos-tarnos (the headland-citadel)", "Aelaros-anar (the deep-sea home)"]
+  }
+}

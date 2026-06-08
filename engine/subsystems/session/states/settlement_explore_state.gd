@@ -24,6 +24,7 @@ var _settlement_hud: CanvasLayer = null
 var _menu: SettlementMenu = null
 var _activity_panel: SettlementActivityPanel = null
 var _settlement_id: String = ""
+var _entrance_id: String = ""  # settlement_entrances.id — stored for savegame position
 var _campaign_id: String = ""
 
 
@@ -38,6 +39,7 @@ func enter(runner, context: Dictionary) -> void:
 	# bridge. Otherwise fall back to parsing settlement_entrances.settlement_data
 	# (legacy hand-authored Ashford Vale + any campaigns that predate the stocker).
 	var entrance_id: String = String(entrance.get("id", ""))
+	_entrance_id = entrance_id
 	var settlement_dict: Variant = null
 	if SettlementDictBuilder.has_relational_pois(entrance_id):
 		settlement_dict = SettlementDictBuilder.build_from_pois(entrance_id, entrance)
@@ -60,6 +62,12 @@ func enter(runner, context: Dictionary) -> void:
 	runner.add_child(_controller)
 	_controller.load_settlement(settlement_dict, entry_poi_id)
 	_settlement_id = _controller.get_settlement_id()
+
+	# Savegame: persist that the party is in this settlement at its current POI
+	# (gdd-savegame-system.md §5.2). entry_poi_id may be "" → the controller
+	# resolves a default POI, which get_current_poi_id() then reflects.
+	CampaignRepository.update_party_settlement_position(
+		runner.get_party_id(), _entrance_id, _controller.get_current_poi_id())
 
 	# Register settlement event handlers with the scheduler.
 	_handlers = SettlementHandlers.new(runner)
@@ -107,6 +115,12 @@ func exit(runner) -> void:
 	# the visit row. Fires party_departed_settlement.
 	_notify_visit_state_departed()
 
+	# Savegame: the party has left the settlement — clear its stored position so a
+	# later save in another context can't leave a stale settlement node. The next
+	# transition resets current_location_type regardless; this is hygiene
+	# (gdd-savegame-system.md §5.2).
+	CampaignRepository.clear_party_settlement_position(runner.get_party_id())
+
 	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.disconnect(_on_scheduler_event_resolved)
 	if EventBus.active_party_changed.is_connected(_on_active_party_changed):
@@ -146,6 +160,15 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 		"end_session":
 			return "session_end"
 	return ""
+
+
+## Savegame flush (gdd-savegame-system.md §5.3): persist the current POI so a
+## reload restores the party at the same settlement node.
+func flush_to_db(runner) -> void:
+	if _controller == null or _entrance_id.is_empty():
+		return
+	CampaignRepository.update_party_settlement_position(
+		runner.get_party_id(), _entrance_id, _controller.get_current_poi_id())
 
 
 # ---------------------------------------------------------------------------
@@ -446,6 +469,11 @@ func _on_arrival(data: Dictionary) -> void:
 	var poi_id: String = dest_poi.get("id", "")
 	if not poi_id.is_empty():
 		_controller.set_current_poi(poi_id)
+		# Savegame: keep the persisted POI current as the party moves around town
+		# (gdd-savegame-system.md §5.2).
+		if _runner != null and not _entrance_id.is_empty():
+			CampaignRepository.update_party_settlement_position(
+				_runner.get_party_id(), _entrance_id, poi_id)
 
 	# Surface the activity panel for the arrived-at PoI. Menu does NOT auto-
 	# reopen — player explicitly reopens via party-token click.

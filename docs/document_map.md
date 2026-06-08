@@ -197,6 +197,12 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 |------|----------|--------|------------------|
 | `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
 
+### Persistence & Save System
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-savegame-system.md` | True/accurate savegame. S-1: completes write-through persistence (restores dungeon/settlement context + per-member position, not just wilderness). S-2: named multi-slot saves = whole-DB capture (VACUUM INTO) + per-campaign-isolated restore (ATTACH + scope map, completeness-tested). S-3: Save/Load panel + `save_to_slot`/`load_slot`. Phases S-1–S-3 landed 2026-06-07 | Draft v1.4 | `gdd-realtime-scheduler`, `gdd-dungeon-map-ui`, `gdd-settlement-exploration-ui`, `acks_arbiter_design_brief_v11`, CampaignRepository, SessionRunner |
+
 ### UI Architecture & Shared Services
 
 | File | Contents | Status | Key Dependencies |

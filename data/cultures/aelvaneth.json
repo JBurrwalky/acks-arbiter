@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": { "culture_id": "aelvaneth", "catalog_number": 48, "demonym": "Aelvaneth", "toponym": "Aelvanar",
+      "tier": "demihuman", "race": "elf", "civ_or_clan": "civ", "synthesis_sources": [] },
+    "alignment": { "allowed": ["Lawful", "Neutral", "Chaotic"], "weights": { "Lawful": 0.70, "Neutral": 0.20, "Chaotic": 0.10 }, "rigidity": 0.85 },
+    "terrain": { "seed_biomes": ["forest", "dense_forest"], "affinity_secondary": ["hills", "river_valley"],
+      "avoided": ["desert", "scrubland", "tundra", "volcanic_mountains"], "coastal_start": "E" },
+    "expansion": { "aggression": 0.7, "defense": 0.9, "size_exponent_bias": 0.0 },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.2,
+      "modifiers": [
+        { "when": "target_in_my_seed_biome", "set": 0.9 },
+        { "when": "target_is_demihuman", "set": 1.0 },
+        { "when": "target_same_alignment", "adjust": -0.2 }
+      ]
+    },
+    "lifecycle": { "peak_strength": 0.9, "collapse_proneness": 0.85, "end_state": "enclave" },
+    "infrastructure": { "road_propensity": 0.3 },
+    "rulership": {
+      "sphere_weights": { "military": 0.30, "mercantile": 0.05, "religious": 0.30, "arcane": 0.35 },
+      "preferred_troop_types": ["archers", "light_infantry", "light_cavalry"] },
+    "npc": { "personality_weight_biases": "stress_reactivity -1.5, societal_orthodoxy +1.0, epistemic_curiosity +1.0, mysticism +0.5, expressiveness -0.5" }
+  },
+  "flavor": {
+    "name_bank_key": "aelvaneth",
+    "phonemic_palette": "smooth/lilting high-elf: soft -ath/-eth/-a, flowing l/r/n/th, mortal -ion/-iel, divine -aron/-arien (data/conlang/family_elvish.json, aelvaneth branch)",
+    "phenotype_notes": "tall, slender, fair, ageless — per the demihuman art canon (elf)",
+    "language": { "language_name": "Aelvaneth", "language_family": "Elvish (Vanethir)", "script": "own_script" },
+    "social_structure": "caste",
+    "values": { "core_values": ["tradition", "knowledge", "law"], "taboos": ["defiling a star-grove", "suffering the Xilvaneth to live in the wood"], "attitude_toward_outsiders": "xenophobic" },
+    "magic_attitude": { "arcane": "revered", "divine": "respected", "notes": "Arcane mastery is the elven birthright; the law-bound star-courts keep the old rites" },
+    "architecture_style": { "primary_material": "living_wood", "aesthetic": "elegant", "signature_feature": "silver-leaf halls and star-groves grown from living trees" },
+    "religion_hooks": { "alignment_lens": "resolved per chosen alignment (predominantly Lawful; the high-elven court reveres the One and the Lawful powers - setting-lore §4.2)", "local_saint_slots": 3,
+      "patron_powers": ["light", "knowledge", "nature"] },
+    "flavor_text": { "one_line": "Law-bound high-elves of the forest-and-river, lords of a fallen golden age guarding the last star-groves.",
+      "one_paragraph": "The Aelvaneth were the morning-lords of the deep woods, an ancient star-court realm of elder-houses whose golden age long predates the rise of Men. Pulled hardest of all elves toward Law, they keep the old rites and the arcane birthright in silver-leaf halls grown from living trees. Their fall was steep: where they once ruled whole forests they now hold scattered fastnesses, jealous of every glade, exterminating any who would take the wood - rival elves and the hated Xilvaneth above all." }
+  }
+}

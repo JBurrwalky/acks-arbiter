@@ -933,13 +933,20 @@ CREATE TABLE IF NOT EXISTS override_log (
     new_value TEXT NOT NULL DEFAULT ''
 );
 
--- game_snapshots: capped at 10 per campaign (oldest auto-pruned on 11th save).
+-- game_snapshots: savegame slot METADATA (Phase S-2, gdd-savegame-system.md §6).
+-- Each row is a named save slot; the actual game state is a whole-DB file at
+-- user://saves/<id>.db (VACUUM INTO), so a slot is structurally complete.
+-- snapshot_data now holds a small manifest (legacy JSON-blob rows predate this).
+-- slot_kind / schema_version / location_label added by migration 147.
 CREATE TABLE IF NOT EXISTS game_snapshots (
     id TEXT PRIMARY KEY,
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
     label TEXT NOT NULL,
     snapshot_data TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    slot_kind TEXT NOT NULL DEFAULT 'manual',
+    schema_version INTEGER NOT NULL DEFAULT 0,
+    location_label TEXT NOT NULL DEFAULT ''
 );
 
 -- dungeon_entrances: hex placement record; dungeon_data populated by layout generator.
@@ -1020,6 +1027,21 @@ CREATE TABLE IF NOT EXISTS active_effects (
 -- parties.settlement_id, settlement_node_id added by migration 019.
 -- The original dungeon_map_cells table (migration 017) was dropped by migration 039
 -- after the 12b cleanup — all voxel dungeon state lives in voxel_map_cells below.
+
+-- Migration 146: per-entity live dungeon positions for full-fidelity savegame
+-- restore (gdd-savegame-system.md §5.2). One row per party entity while in a
+-- dungeon; written on save, DELETEd on dungeon exit.
+CREATE TABLE IF NOT EXISTS dungeon_entity_positions (
+    party_id    TEXT    NOT NULL REFERENCES parties(id),
+    entity_id   TEXT    NOT NULL,
+    dungeon_id  TEXT    NOT NULL,
+    col         INTEGER NOT NULL,
+    row         INTEGER NOT NULL,
+    level       INTEGER NOT NULL,
+    PRIMARY KEY (party_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_entity_positions_party
+    ON dungeon_entity_positions(party_id);
 
 -- Migration 036: Voxel grid cell storage (3D cube-cell model)
 -- Sparse storage: one row per non-default voxel cell.

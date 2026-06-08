@@ -1,0 +1,85 @@
+{
+  "kit_id": "xilvaneth",
+  "tier": "culture",
+  "inherits": ["elvish"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 49,
+  "race": "elf",
+  "demihuman_tier": true,
+  "sub_palette": "xilvaneth (Proto-Elvish, harsh/jungle branch)",
+  "synthesis_sources": [],
+  "homeland": "Xilvanar",
+  "branch": { "biome": "jungle-and-river", "register": "harsh/guttural (dark-elf stand-in)", "ancestral_to": ["mesoamerican"], "model": "a deep ancestor of the Mesoamerican families (Nahuatl/Maya); Andean/Quechua phonological tilt as flavor" },
+  "government": "feudal",
+  "alignment_allowed": ["Chaotic", "Neutral", "Lawful"],
+  "alignment_weights": { "Chaotic": 0.80, "Neutral": 0.10, "Lawful": 0.10 },
+  "_note": "Elvish demihuman culture, the jungle-and-river branch of the Vaneth (family_elvish.json) and the setting's nearest 'dark-elf' analog. Harsh, guttural, clipped speech (glottal k'/t'/p', affricate tz, x = sh, -tl/-' finals); the HARSH branch-law on the Proto-Elvish roots. A fallen golden-age jungle theocracy of blood-temples, overwhelmingly Chaotic: weights {Chaotic 0.80, Neutral 0.10, Lawful 0.10}, though a realm can seed or drift to Neutral or Lawful. As the deep ancestor of the Mesoamerican human families, its deity- and concept-roots prefigure the human Maya/Nahua forms (Atyarnak'on -> Aiternatl/Aj Ternaj; Marak'on -> Tolratl/Tulax line). DEITY names take the Xilvaneth SACRED GENDERED ending -ak'on (masc) / -ak'el (fem) - the divine class, distinct from mortal -tl/-tzin/ix- and from the common-noun -tl; never real Maya/Nahua gods. Common-word lexicon and rank register may use the real Mesoamerican register (balam jaguar, itztli obsidian, cacao, centli maize, ihuitl feather) per catalog 5.3.",
+  "phonology": {
+    "palette": "Xilvaneth: harsh and guttural (the dark-elf branch); glottalization k'/t'/p'; the affricate tz and x (sh); -tl/-' finals; vowels reduce toward a/i/u; clipped syllables; the HARSH branch-law on the Proto-Elvish roots. Nahua/Maya and Andean/Quechua phonological tilt as flavor.",
+    "phonotactics": "CVC and clipped clusters; frequent glottal stops; -tl/-tz finals; reduced vowels.",
+    "transparent_ratio": 0.40
+  },
+  "lexicon": {
+    "feature_words": { "river": "sirtl", "stream": "sirin'tl", "lake": "ak'altl", "sea": "aelartl", "bay": "k'amatl", "cape": "rin'tl", "isle": "in'tl", "mountain": "oront'l", "hill": "tonk'tl", "ridge": "drumtl", "jungle": "xilwatl", "forest": "galen'tl", "wood": "tawak'tl", "glade": "lalan'tl", "savanna": "lan'tl", "swamp": "moin'tl", "ford": "atavtl", "pass": "beln'tl", "ravine": "glen'tl", "grove": "nelok'tl" },
+    "settlement_words": { "hamlet": "trevtl", "village": "baltl", "town": "k'aratl", "city": "k'arnatl", "fort": "duntl", "port": "lontl", "market": "aentl", "temple_town": "nelok'tl", "citadel": "tark'tl" },
+    "kinship": { "son": "k'altzin", "daughter": "ix-k'el", "house": "wak'tl", "kin": "ek'wak'tl", "ancestor": "ek'tl" },
+    "adjectives": { "great": "mok'tl", "little": "pik'tl", "old": "iok'tl", "new": "vintl", "black": "dul'tl", "white": "k'elartl", "red": "nak'tl", "golden": "maltl", "obsidian": "itztl", "high": "t'artl", "far": "hek'tl", "sacred": "ait'tl", "fierce": "xak'tl" },
+    "resources": { "salt": "saltl", "obsidian": "itztl", "jade": "xiwtl", "gold": "maltl", "cacao": "kakawtl", "feather": "ihuitl", "maize": "sentl", "blood": "estl", "jaguar": "balamtl", "venom": "k'oxtl" },
+    "directional": { "upper": "amtl", "lower": "nuk'tl", "north": "fortl", "south": "hartl", "east": "rhuntl", "west": "an'tl", "inner": "mintl", "outer": "ertl" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-van'tl / -anetl (realm of)", "-sirtl (river)", "-xilwatl (jungle)", "-oront'l (mountain)", "Itz- / Estl- (obsidian-/blood-)", "-anak (seat)"],
+    "patronymic_form": "the blood-house (wak'tl) by a blood-line; -tzin/-tl (of the line); ix- marks the feminine; a clipped use-name, a true-name hidden from enemies and demons alike.",
+    "gendered_endings": { "male": "-tl / -tzin", "female": "ix- / -k'el" },
+    "diminutive_form": "-in / -tl",
+    "compounding_rule": "[quality](harsh stem) + feature/realm: Itz-sirtl (obsidian-river), Xak-xilwatl (fierce-jungle); -van'tl for the realm, -anak for the seat."
+  },
+  "title_ladder": {
+    "government": "feudal (a harsh jungle theocracy of blood-temples, now fallen to canopy-fastnesses; the T'aran over the elven blood-lords, the obsidian priesthood and the jaguar war-captains)",
+    "tiers": {
+      "barony": { "ruler": "Wel'utl", "domain": "Wel'utlanetl" },
+      "march": { "ruler": "Maek'on", "domain": "Maek'onanetl" },
+      "county": { "ruler": "Esk'etl", "domain": "Esk'etlanetl" },
+      "duchy": { "ruler": "Tal'iotl", "domain": "Tal'iotlanetl" },
+      "principality": { "ruler": "Aran'etl", "domain": "Aran'etlanetl" },
+      "kingdom": { "ruler": "T'aran", "domain": "T'arananetl" },
+      "empire": { "ruler": "T'ar-T'aran", "domain": "T'ar-T'arananetl" }
+    },
+    "_tiers_note": "Harsh Xilvaneth reflexes of the Proto-Elvish title ladder, ascending - the same seven ACKS tiers as the smooth branches, glottalized and clipped. A fallen golden-age theocracy, now canopy-fastness enclaves. (These title-roots are ancestral to the human Mesoamerican lordly terms.)",
+    "female_forms": { "T'ar-T'aran": "Ix-T'ar-T'aran", "T'aran": "Ix-T'aran", "Aran'etl": "Ix-Aran'etl", "Tal'iotl": "Ix-Tal'iotl", "Esk'etl": "Ix-Esk'etl", "Maek'on": "Ix-Maek'on", "Wel'utl": "Ix-Wel'utl" },
+    "heir": "Aran'etzin (the sovereign's blood-heir)",
+    "honorifics": { "lord": "Wel'utl", "lady": "Ix-Wel'utl", "champion": "Xak'tli (flayer-warrior)", "your_grace": "Aran'etl", "elder": "Iok'tli" },
+    "vassalage": { "liege": "Aran'etl", "vassal": "Xak'tli (sworn flayer)", "fealty": "K'oxtl (the blood-oath)", "tribute": "Estl-tl (the blood-due)" }
+  },
+  "people_name_convention": {
+    "order": "a clipped use-name + the house (wak'tl); a true-name hidden; ix- for the feminine; harsh two-element names.",
+    "surname_source": ["the blood-house (wak'tl)", "-tzin/-tl line-marker", "deed/cruelty use-name"],
+    "dual_register": "the blood-houses carry an ancient house-name; a use-name is given, a true-name hidden from foes and demons alike.",
+    "theophoric": "mortal theophorics weave the venerated Chaotic power's ROOT (never the divine -ak'on/-ak'el ending) + harsh elements: -tzin (devotee), Itz-/Estl- (obsidian/blood): e.g. Marak-tzin (devotee of Marak'on), Rap'-ixel.",
+    "diminutive": "-in / -tl"
+  },
+  "religion": {
+    "_note": "Deity-names are the Xilvaneth (harsh) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real Maya/Nahua gods; they carry the sacred GENDERED ending -ak'on (masc) / -ak'el (fem) - the divine class, distinct from mortal -tl/-tzin/ix- and common-noun -tl. The Xilvaneth are overwhelmingly Chaotic (weights C80/N10/L10); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment), but the cultural default is the Chaotic blood-cult. The nelok'tl (pyramid-grove), its steps dark with offering, is the altar; the ek'tl (devouring ancestors) are fed there.",
+    "the_one": "Atyarnak'on (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -ak'on; among the overwhelmingly Chaotic Xilvaneth the One is the DEMONIZED enemy - 'the Sun-Jailer', the cold tyrant of the high sky who would cage the wild; revered only by the rare Lawful minority)",
+    "sample_deity_renames": { "Maraxus": "Marak'on (the war-fire and conquest; chief venerated power, masc.)", "Raptis": "Rap'ak'el (the blood-hunt, the Huntress; venerated, fem.)", "Vacidus": "Wakidak'on (the devouring void; venerated, masc.)", "Tulrius": "Tul'ak'on (the sun and law; DEMONIZED as the Burning-Eye, masc.)" },
+    "worship_by_alignment": { "Chaotic": "the overwhelming majority venerate the Chaotic powers (Marak'on the war-fire, Rap'ak'el the blood-hunt, Wakidak'on the void, Lusanak'on the hoard-serpent, Dementak'on the storm-madness), and demonize the One (Atyarnak'on the Sun-Jailer) and the Lawful powers (Tul'ak'on, Orlanak'on)", "Lawful": "a rare fallen-from-grace minority reveres the One and the Lawful powers and demonizes the Chaotic powers - hunted as heretics by the blood-temples", "Neutral": "ambivalent; the ek'tl (ancestral dead), the jungle-spirits, the jaguar and the serpent foremost" },
+    "demon_epithet_pattern": "the demonized set (by current alignment): when Chaotic (the norm) - Aeternus -> Atyarnak'on the Sun-Jailer, Tulrius -> Tul'ak'on the Burning-Eye, Orlandus -> Orlanak'on the Iron-Chain; when Lawful - Maraxus -> Marak'on the Ruin.",
+    "clergy_ladder": { "1": "Itz-tlan (novice, the obsidian-bearer)", "3": "K'oxtli (venom-priest)", "5": "Estl-tlan (blood-priest)", "7": "Xak'tli (the high flayer)", "9": "T'ar-Estl (the realm's high blood-priest)" },
+    "religious_orders_pattern": "the Nelok'tl (pyramid-grove) of [power]: 'the Nelok'tl of Marak'on', its steps dark with offering.",
+    "saints_pattern": "the devouring ancestors and war-captains of the houses (the ek'tl), fed at the pyramid and the obsidian-stone.",
+    "holy_symbol_motifs": { "Marak'on": "an obsidian blade over a victory-pyre", "Rap'ak'el": "a jaguar's fang above a blood-drop", "Wakidak'on": "a black void-maw swallowing a star" }
+  },
+  "banks_patterns": {
+    "ships": "jungle river war-canoes, serpent-prowed: 'the Black Sirtl', 'Fang-of-the-River', 'the Obsidian Serpent'",
+    "military_units": "the jaguar-knights and blood-companies: 'the Obsidian Fangs', 'the Jaguar-cloaks of [house]'",
+    "taverns": "the blood-feast hall (elves keep halls, not taverns): 'the Hall of the Red Pyramid', 'the Cacao of Skulls'",
+    "dungeons_ruins": "fallen jungle blood-temples swallowed by the canopy: 'the sunken Nelok'tl of [house]', 'the Drowned Pyramid of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Xak'tlan", "Itzaron", "Marak'tzin", "Balamtl", "Oront'lak", "Tlak'on", "K'ayan", "Wak'itz", "Esk'el", "Dul'tzin", "Rap'tlan", "Sirak'tl", "Galak'tzin", "Nok'tlan", "Aran'etz", "T'arak", "Xiwtzin", "Maek'tl", "Orlan'tz", "Itzak'on"],
+    "personal_f": ["Ix-Riyal", "Ix-Nok'la", "Rap'ixel", "Xiwk'el", "Ix-Marak", "Nelak'el", "Ix-Sirtl", "K'elaxel", "Ix-Lan'tl", "Rap'k'el", "Ix-Dul", "Itzixel", "Ix-Oron", "Lin'k'el", "Ix-Galak", "Wak'ixel", "Ix-Tlan", "Estl-ixel", "Ix-Aelar", "Ix-Wakid"],
+    "clan_houses": ["Wak'tl Xilwatl (jungle-house)", "Wak'tl Itztl (obsidian-house)", "Wak'tl Balamtl (jaguar-house)", "Wak'tl Estl (blood-house)", "Wak'tl Sirtl (river-house)", "Wak'tl Marak'on (the war-fire house)", "Wak'tl Oront'l (mountain-house)", "Wak'tl Nelartl (moon-house)", "Wak'tl Xiwtl (jade-house)", "Wak'tl Rap'ak'el (the blood-hunt house)", "Wak'tl Dul'tl (shadow-house)", "Wak'tl K'elartl (silver-house)"],
+    "epithets_cognomina": ["the Obsidian-eyed", "the Blood-drinker", "of the Sunless Canopy", "the Flayer", "the Serpent-tongued", "the Jaguar-cloaked", "the Star-hating", "the Long-fanged"],
+    "flagship_settlements": ["Xilvanar (the realm-seat)", "Itz-sirtl (the obsidian-river city)", "Marak'on-nelok'tl (the war-fire pyramid)", "Balam-xilwatl (the jaguar-jungle hold)", "Oront'l-tark'tl (the mountain-citadel)", "Estl-anak (the blood-seat)"]
+  }
+}

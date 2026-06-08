@@ -249,12 +249,29 @@ func _build_portrait_zone() -> Control:
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.clip_contents = true
 
+	# VBox with expanding spacers above/below forces the HBox to its minimum
+	# height and centers it vertically — avoids relying on SIZE_SHRINK_CENTER
+	# in an HBoxContainer child, which Godot 4.6 doesn't reliably apply.
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 0)
+
+	var top_spacer := Control.new()
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(top_spacer)
+
 	_portraits_hbox = HBoxContainer.new()
 	_portraits_hbox.add_theme_constant_override("separation", 4)
 	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_portraits_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_portraits_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(_portraits_hbox)
+	vbox.add_child(_portraits_hbox)
+
+	var bottom_spacer := Control.new()
+	bottom_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(bottom_spacer)
+
+	panel.add_child(vbox)
 	return panel
 
 

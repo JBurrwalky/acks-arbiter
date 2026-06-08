@@ -32492,3 +32492,150 @@ on-tick dispatch.
 **Next session should:**
 - Manually verify the wizard end-to-end (the bullets above), then commit/push when Jedidiah approves (branch first if on `main`).
 - (Optional follow-ups, in priority order) PC non-catalog valuable routing; Path-B auto-equip of the template's weapon/armor; spell-repertoire editing on Path B.
+
+
+## Session 2026-06-06 — Character portrait art-set swap: ethnicity_class_gender_number convention + class-filtered picker
+
+**Task:** Replace the old `portrait_{class}_{nn}` portrait art set (128 files) with the new 405-file transparent-PNG set named `ethnicity_class_gender_number`, rework portrait loading to parse the new convention and default to the lowest-numbered class-appropriate portrait, and load ONLY the selected class's portraits in the picker so the 400+ image set does not lag the step.
+**Model used:** Sonnet 4.6 for the full implementation, migration scripting, and verification.
+**Completed:**
+- Copied 405 new transparent PNGs from `C:/Users/jttau/OneDrive/Documents/Arbiter/bgremoved` into `assets/portraits/`; deleted the 128 old `portrait_*.png` (+`.import`) files. Reimported via `--import` to regen `.import`/`.uid`.
+- Added `tools/migrate_portraits.py` (re-runnable): copies files, deletes old set, regenerates both manifests, and remaps premade-party portrait_ids. Handles the two parsing wrinkles: `greco_roman` is a TWO-token ethnicity prefix; class token is normalized `anti-paladin` -> `anti_paladin` to match class_id.
+- Regenerated `data/portrait_manifest.json` to v2 schema: each entry now `{id, class, sex, ethnicity, number, path}`. `id` == filename stem, so every display site that builds `res://assets/portraits/{portrait_id}.png` (character sheet, biography tab, HUD status bar, roster, premade detail, entity strip) keeps working unchanged.
+- Rewrote the `portrait` section of `data/asset_manifest.json` (keyed by new filename stems → res:// paths).
+- Reworked `scenes/ui/character_creation/portrait_picker_panel.gd`:
+  - Added `_parse_portrait_stem(stem) -> {class, sex, number}` — parses new convention with single-token vs `greco_roman` two-token ethnicity handling; legacy `portrait_{class}_{nn}` fallback for old-style user portraits.
+  - `_load_manifest()` / `_scan_user_portraits()` now carry `sex` and `number`.
+  - Added `_portraits_for_class(class_id) -> Array` — returns shipped portraits matching the class (sorted by number) + ALL user portraits; falls back to all shipped if a class has no art so the grid is never empty.
+  - `_populate_grid()` now only builds thumbnails for the class-filtered set (fixes the lag with 400+ images).
+  - `_auto_select_class_default()` now selects the lowest-numbered shipped portrait of the class, preferring the current `sex` (fallback: lowest of class any sex, then first candidate).
+- Remapped 12 premade-party `portrait_id`s in `data/premade_parties/brave_companions.json` and `moonsworn_band.json` to the lowest-numbered new portrait of each character's class + sex (e.g. `portrait_fighter_01` → `asian_fighter_male_01`, `portrait_mage_02`(f) → `asian_mage_female_08`).
+**Decisions made:**
+- `portrait_id` continues to equal the PNG filename stem (no separate id scheme), so the change stays localized to the picker + manifests and no display-site code needed touching.
+- The picker now restricts the grid to the selected class (deliberate behavior change requested by Jedidiah, replacing the prior "show all classes, class-first ordering"). User-added portraits are still always shown so custom art is never hidden by the class filter.
+- Class token normalization (hyphen→underscore) lives in both the migration script and the runtime parser so the manifest `class` field matches `class_id` (`anti_paladin`, not `anti-paladin`). The PNG filenames keep the hyphen; only the parsed/stored class is normalized.
+- Default-pick prefers `sex` even though the PORTRAIT step (10) precedes where `sex` is finalized (TOKEN_SELECTION 11 / FINALIZE 13); `sex` defaults to "male" in creation_state, so the default is sensible and the player can re-pick after changing sex. Witch (female-only art) correctly falls back to `asian_witch_female_34`.
+**Interfaces defined or changed:**
+- `data/portrait_manifest.json` v2 entry shape: `{"id","class","sex","ethnicity","number","path"}` (was `{"id","class","path"}`).
+- `PortraitPickerPanel._parse_portrait_stem(stem: String) -> Dictionary` (keys: class, sex, number; {} on no match).
+- `PortraitPickerPanel._portraits_for_class(class_id: String) -> Array`.
+- `_portraits` entry dicts now carry `sex: String` and `number: int` in addition to `id/class/path/is_user`.
+- `portrait_id` value format is now `ethnicity_class_gender_number` (e.g. `asian_fighter_male_01`); persisted on characters and in premade-party JSON.
+**Database changes:** None (portrait_id is a free-form string column; no schema change).
+**Tests added/updated:**
+- `tests/test_asset_registry.gd`: replaced `test_all_portrait_classes_have_variant_01()` with `test_all_portrait_classes_present_in_manifests()` — reads `portrait_manifest.json`, asserts each of the 27/expected classes has ≥1 portrait whose path is registered in `asset_manifest` (keeps the two manifests in sync). Updated `test_portrait_paths_are_res_scheme` to `portrait.asian_fighter_male_01`.
+- `tests/test_portrait_display_sizing.gd`: hardcoded id `portrait_fighter_01` → `asian_fighter_male_01`.
+- Full suite: 425 suites passed / 19 failed. The 19 are the documented pre-existing baseline (hex_map_controller, proficiency/language finalize, EventScheduler, SchedulerLoop, ZoC/LOS, combat trickery, cascade). Net-zero NEW failures. AssetRegistry, PortraitDisplaySizing, FinalizePanel all pass.
+**Known issues:**
+- 27 portrait classes vs 28 class JSONs: `normal_man` has no portrait art (expected — not a player-creatable class). If `normal_man` ever needs a portrait the `_portraits_for_class` fallback shows all shipped art.
+- `witch` has only female portraits (female-only class); default correctly falls back to female. No male witch art exists by design.
+**Next session should:**
+1. (Optional) Consider whether the picker should also offer an ethnicity filter/sort now that ethnicity is in the manifest — currently ethnicity is parsed but unused in the UI.
+2. (Optional) Spot-check a few in-game screens (creation finalize, HUD, roster) visually to confirm the new transparent-background portraits render correctly against existing backdrops.
+
+## Session 2026-06-07 — Savegame system: GDD + Phase S-1 (location/context persistence)
+
+**Task:** Investigate why the save system records party status/inventory but not location on the hexmap or in dungeons; design and (Phase S-1) implement a true & accurate savegame system.
+**Model used:** Opus 4.8 (1M context) throughout — investigation, GDD authoring, design rulings, implementation, test, verification.
+**Completed:**
+- **Diagnosis.** The DB *is* the save (write-through + `SessionRunner.save_session()` flush on pause-menu Save / quit). Wilderness hex position already round-trips correctly. The gap: (1) dungeon position written only on entry, never read; (2) settlement position never written (no fn, no call site); (3) `current_location_type` effectively dead (only a party-copy helper wrote it); (4) `SessionLoadState` always booted to wilderness; (5) dungeon explored-state (`voxel_map_cells`) was write-only — `load_dungeon()` never read it back, so re-entry showed a pristine map. The location columns already existed (migrations 017/019), so the core fix needed almost no schema.
+- **GDD authored.** `generation/gdd-savegame-system.md` (Draft v1.2) — two-layer model (continuous autosave = the live DB; named multi-slot snapshots), full §1-12. Registered in `docs/document_map.md` under a new "Persistence & Save System" section.
+- **Phase S-1 implemented** (faithful continuous save):
+  - Migration `146_dungeon_entity_positions.sql` (+ schema.sql) — per-entity live dungeon cell store.
+  - `CampaignRepository`: `update_party_location_type`, `update_party_settlement_position` + `clear_party_settlement_position`, `save_/load_/clear_dungeon_entity_positions`, `get_dungeon_entrance_for_dungeon_id` (entrance lookup by parsing dungeon_data JSON, since dungeon_id is not a column).
+  - `PartyData`: added dungeon_id/level/col/row + settlement_id/node_id fields, read in `from_db()`.
+  - `SessionState` base: new `flush_to_db(runner)` + `is_in_combat()` virtuals (additive, default no-op/false).
+  - `SessionRunner.transition_to_state()`: writes `current_location_type` for primary-location states only (wilderness/dungeon/settlement). `save_session()`: combat guard + dispatches `_current_state.flush_to_db(self)` (replaces the old wilderness-only hex-map block). Added `is_in_combat()` accessor.
+  - State overrides: wilderness flush → save hex map; dungeon flush → voxel cells + per-entity positions + party-level dungeon pos; settlement flush → current POI. Dungeon `enter()` restores exact per-entity cells when `context.restore_positions` present; `exit()` also clears per-entity positions. Settlement writes position on enter / POI-change / flush and clears on exit. Dungeon `is_in_combat()` returns `_in_combat`.
+  - `DungeonMapController`: `_merge_persisted_cell_state()` (overlay saved fog/door on load — closes the write-only gap) + `restore_entity_positions()` (exact per-member placement, mirrors `teleport_party_to` refresh; NO re-scatter).
+  - `SessionLoadState`: context-aware loader — branches on `current_location_type` to re-enter dungeon (at exact per-member cells) / settlement (at saved POI) / wilderness; falls back to wilderness + warning on unresolvable refs.
+  - `pause_menu_overlay`: "Cannot Save During Combat" guard.
+- **Coding conventions:** added §79 (Savegame persistence patterns).
+**Decisions made:**
+- Jedidiah rulings: full-fidelity dungeon restore; **per-member exact-cell restore, never re-scatter**; "Both" save models (continuous autosave + named slots); best-effort slot migration + warn on schema skew (S-2); **fold the GM Override snapshot into one unified save system** (GM/Player distinction retired); mid-combat save disallowed for now.
+- Per-entity dungeon positions live in a dedicated table (not columns on `party_members`) so non-character entities (e.g. trained creatures) are covered uniformly via the controller `entity_id` model.
+- `flush_to_db` hook chosen over the wilderness-only `if` so each context owns its dirty-state flush — also fixes "saving inside a dungeon loses the explored map."
+**Interfaces defined or changed:**
+- New `SessionState` virtuals: `flush_to_db(runner) -> void` (default no-op), `is_in_combat() -> bool` (default false). Overridden in wilderness/dungeon/settlement (+ dungeon for is_in_combat).
+- New `SessionRunner.is_in_combat() -> bool`.
+- New `CampaignRepository` fns: `update_party_location_type(party_id, type)`, `update_party_settlement_position(party_id, entrance_id, node_id)`, `clear_party_settlement_position(party_id)`, `save_dungeon_entity_positions(party_id, dungeon_id, positions:{entity_id->Vector3i})`, `load_dungeon_entity_positions(party_id) -> {entity_id->Vector3i}`, `clear_dungeon_entity_positions(party_id)`, `get_dungeon_entrance_for_dungeon_id(campaign_id, dungeon_id) -> Dictionary`.
+- New `DungeonMapController.restore_entity_positions(positions:{entity_id->Vector3i}) -> bool`.
+- `PartyData` gains dungeon_id/dungeon_level/dungeon_col/dungeon_row/settlement_id/settlement_node_id (populated in `from_db`).
+- Dungeon context dict (loader → DungeonExploreState) gains optional `restore_positions` key.
+**Database changes:**
+- Migration 146: `dungeon_entity_positions (party_id, entity_id, dungeon_id, col, row, level, PK(party_id,entity_id))` + index. schema.sql updated.
+**Tests added/updated:**
+- New suite `tests/test_savegame_location.gd` (registered, 4 edits) — covers location_type round-trip, settlement position round-trip, per-entity dungeon position save/load/clear (multi-level Vector3i + replace semantics), `get_dungeon_entrance_for_dungeon_id`, and `PartyData.from_db` location fields. Passes.
+- Suite total **426 pass / 19 fail**; baseline (changes stashed) was **425 / 19** with a **byte-identical failure set** — net-zero new failures, +1 new passing suite.
+**Known issues:**
+- The 19 pre-existing failures are unrelated (proficiency UI, scheduler tiebreaker/timescale, ZoC/LOS, combat trickery, henchman split/merge, session_runner cluster, etc.) — present in baseline, untouched by S-1.
+- `flush_to_db` hooks + context-aware loader are validated by data-layer unit tests + (pending) Jedidiah in-game acceptance; no headless SessionRunner *integration* test yet (harness can't spin up controllers headlessly).
+- Settlement restore assumes `parties.settlement_id` holds the settlement_entrances.id (stored from `entrance.id` in settlement enter) — verify in-game.
+**Next session should:**
+1. **Jedidiah in-game acceptance:** save inside a dungeon at cell X (multi-member, ideally level >1) → quit → reload → confirm every member is on their exact cell/level with explored map intact; same for settlements (saved POI); confirm Save is blocked in combat.
+2. **Phase S-2:** complete the snapshot serializer — `CAMPAIGN_SCOPED_TABLES` registry + `test_save_snapshot_completeness` (introspect sqlite_master); retire/redirect the Override-panel snapshot wrappers into the unified API; add `game_snapshots` slot metadata migration (slot_kind / schema_version / location_label).
+3. **Phase S-3:** player-facing Save/Load screen (named multi-slot) + autosave wiring + best-effort slot-migration-on-load warning.
+
+## Session 2026-06-07 — Savegame Phases S-2 + S-3 (whole-DB file slots + Save/Load UI)
+
+**Task:** Implement S-2 (complete snapshot serializer + fold in the GM snapshot) and S-3 (multi-slot Save/Load UI + autosave wiring) from `generation/gdd-savegame-system.md`, test and fix.
+**Model used:** Opus 4.8 (1M context) throughout — architecture decision, implementation, in-environment SQLite probe, tests, verification.
+**Completed:**
+- **ARCHITECTURE DECISION (deviation from the approved GDD, flagged):** named save slots are now **whole-database file snapshots**, NOT the per-table `CAMPAIGN_SCOPED_TABLES` registry the GDD originally specified. Reason: of 135 tables, the dungeon-layout tables (`dungeon_floors/rooms/doors`, `monster_groups`, `treasure_hoards`, `key_items`, `voxel_map_cells`) key off a `dungeon_id` buried in `dungeon_entrances.dungeon_data` JSON — there is NO SQL predicate that scopes them to a campaign, so a registry would silently drop them (the exact "true & accurate" failure to avoid). Whole-DB capture is structurally complete. The GDD pre-named this alternative under "revisit if the registry burden proves heavy." Trade-off accepted: **whole-DB restore reverts ALL campaigns**, not one (§6.4). Recorded in GDD §6.2 + §12 + Status.
+- **De-risked first:** one-shot `--script` SceneTree probe confirmed SQLite 3.51.0 + `VACUUM INTO` + `ATTACH` + schema-qualified `PRAGMA main./slot.` all work.
+- **S-2 data layer (`campaign_repository.gd`):** rewrote `save_snapshot` (= `VACUUM INTO user://saves/<id>.db` + metadata row) and `restore_snapshot` (= `ATTACH` slot + `_restore_from_attached_slot()` per-table DELETE+INSERT driven by `slot.sqlite_master`, column-intersection via `_shared_columns()`, excluding `game_snapshots` so the slot list survives; no DB reopen; transactional; best-effort `_run_migrations()` + version-skew `push_warning`). New `get_snapshot`; `list_snapshots` returns new metadata; `delete_snapshot`/`prune_oldest_snapshots` now remove FILES + rows. Added `SAVES_DIR`, `MAX_SLOTS_PER_CAMPAIGN=20`, `_ensure_saves_dir`, `_slot_file_path`/`_slot_abs_path`, `_current_schema_version`, `_wipe_save_slot_files` (called from `wipe_for_tests` so test runs don't orphan files).
+- **S-3 integration (`session_runner.gd`):** `save_to_slot(label)` (flush live state → `save_snapshot(..., "manual", location_label)`), `load_slot(id)` (`end_session` → `restore_snapshot` → `transition_to_state("session_load", {campaign_id})` — reuses S-1's context-aware loader), `_current_location_label()`. Both guard combat via existing `is_in_combat()`.
+- **S-3 UI:** new `scenes/ui/saveload/save_load_panel.gd` (`class_name SaveLoadPanel`, programmatic per §13.2) — lists slots (label/location/timestamp) with Load + Delete, a name field + Save New Slot. Pause menu gained a "Save / Load…" entry (`_on_save_load`) that instantiates it.
+- **GM fold-in:** no code change — `OverrideManager.save/restore/list_session_snapshot` already delegate to the unified `CampaignRepository` API (now producing file slots). GM/Player distinction retired in the GDD.
+- **Migration 147** (`game_snapshots` += `slot_kind`/`schema_version`/`location_label`) + schema.sql updated. **Coding conventions §79** extended with the whole-DB-slot patterns (no-reopen/ATTACH, file-cleanup hooks, "don't reintroduce the registry").
+**Decisions made:**
+- Whole-DB-file over registry (above). Restore via ATTACH on the live connection (NOT close/reopen — godot-sqlite mishandles reopen per `wipe_for_tests`).
+- `game_snapshots` kept as slot METADATA; `snapshot_data` holds a manifest, not rows. Legacy JSON-blob snapshots are not restorable (pre-release; DB wiped on test runs).
+- Load reuses `session_load`; the pre-restore `end_session` save is harmless (immediately overwritten by the whole-DB restore).
+**Interfaces defined or changed:**
+- `CampaignRepository.save_snapshot(campaign_id, label, slot_kind:="manual", location_label:="") -> String` (signature extended w/ defaults — old 2-arg callers still work). `restore_snapshot(id) -> bool` (behavior now whole-DB file). New `get_snapshot(id) -> Dictionary`. `list_snapshots` rows now include `slot_kind/schema_version/location_label`. `delete_snapshot`/`prune_oldest_snapshots` remove files.
+- `SessionRunner.save_to_slot(label) -> String`, `SessionRunner.load_slot(snapshot_id) -> bool`.
+- `SaveLoadPanel.setup(runner)` (new UI).
+- Save-slot files: `user://saves/<snapshot_id>.db`.
+**Database changes:**
+- Migration 147: `game_snapshots` += `slot_kind` / `schema_version` / `location_label`. schema.sql updated.
+**Tests added/updated:**
+- New `tests/test_savegame_snapshot.gd` (registered): round-trips data through registry-hard tables (`voxel_map_cells` map_id-keyed, `dungeon_entity_positions` party-FK) — save→delete→restore→assert restored; asserts the slot file captures the full table set + metadata; delete removes the file.
+- Suite total **427 pass / 19 fail** (S-1 added 1, S-2 added 1 over the 425 baseline). Failure set **byte-identical to baseline** — net-zero new failures. Saves dir confirmed empty after a run (no orphan accumulation).
+**Known issues:**
+- **Whole-DB restore reverts all campaigns** (documented trade-off). Add per-campaign isolation only if Jedidiah needs it.
+- Main-menu named-slot Load not wired (only the pause menu); `load_slot` already supports a fresh-boot load — small follow-up.
+- The `flush_to_db` hooks, context-aware loader, and `save_to_slot`/`load_slot` re-entry are validated by data-layer tests + (pending) in-game acceptance, not an automated SessionRunner integration test (harness can't spin up controllers headlessly).
+- Deleting a slot immediately after restoring it can occasionally fail to remove the file on Windows (handle not released post-DETACH); the row is still deleted; `wipe_for_tests` clears the dir.
+**Next session should:**
+1. **Jedidiah in-game acceptance:** pause → "Save / Load…" → Save New Slot; move/descend; Load the slot → confirm the party returns to the exact saved context (dungeon cell/level, settlement POI, hex) with explored map intact; Delete a slot; confirm Save is blocked in combat.
+2. Decide whether whole-DB restore semantics are acceptable or per-campaign slot isolation is needed.
+3. Wire named-slot Load into the main menu (reuse `SessionRunner.load_slot`).
+4. (Optional) periodic autosave-to-file using the reserved `slot_kind='autosave'`.
+
+## Session 2026-06-07 — Savegame S-2 rework: per-campaign restore isolation
+
+**Task:** Jedidiah ruled saves must be **per-campaign isolated** (loading one adventure must not roll back another). Rework the S-2 whole-DB restore (which reverted ALL campaigns) into a per-campaign-scoped restore, keeping it structurally complete; test and fix.
+**Model used:** Opus 4.8 (1M context) — design, scope-map enumeration, implementation, test, verification.
+**Completed:**
+- **Restore is now per-campaign (`campaign_repository.gd`).** `save_snapshot` unchanged (VACUUM INTO whole-DB file = complete capture). `restore_snapshot` now calls new `_restore_campaign_from_slot(campaign_id)`: ATTACH slot, then per-table `DELETE FROM main.<t> WHERE <campaign-scope>` + `INSERT … SELECT … FROM slot.<t> WHERE <campaign-scope>`. Only the slot's campaign is replaced; all other campaigns are left intact. Dropped the post-restore `_run_migrations()` (main schema is never downgraded by a scoped insert; column-intersection handles drift; version-skew still warns).
+- **The scope map (`_campaign_scope_entries`) classifies all 135 tables:** 64 direct (`campaign_id = ?`), `campaigns` (`id = ?`), ~60 FK-children via subquery to their campaign-scoped parent (incl. multi-hop `settlement_poi_spell_offers`/`stronghold_*` and multi-parent OR `inventory_items`/`strongholds`/`reconnaissance_cooldowns`/`call_to_arms_state`/`party_heraldry`), the 7 dungeon-content tables, and 4 excluded (`SNAPSHOT_EXCLUDED_TABLES`). The dungeon-content tables (`dungeon_floors/rooms/doors`, `monster_groups`, `treasure_hoards`, `key_items`, `voxel_map_cells`) key off a `dungeon_id` buried in `dungeon_entrances.dungeon_data` JSON, so they are scoped by a computed dungeon-id list (`_dungeon_ids_for_campaign`).
+- **DELETE ordering:** scope list is emitted deepest-child-first so a child's parent-subquery still resolves before the parent is deleted; INSERT (from the read-only slot) is order-agnostic. Helpers added: `_table_exists`, `_quote_cols`, `_placeholders`, `_dungeon_ids_for_campaign`, `_via`, `_via_stronghold_child`.
+- **Docs:** GDD →v1.4 (§6.2/§6.4/§10/§12/Status rewritten for capture-complete + restore-isolated); coding_conventions §79 updated (registry IS maintained + completeness-tested; deepest-first DELETE rule); document_map →v1.4.
+**Decisions made:**
+- Keep whole-DB VACUUM for SAVE (complete, simple); enforce isolation at RESTORE via the scope map. Best of both: capture can't miss a table; restore can't touch another campaign.
+- The scope map IS the per-campaign registry I earlier avoided — now REQUIRED for isolation and made safe by the completeness test (a missing table fails the suite, never a silent loss). The JSON-keyed dungeon tables are handled by the computed id-list, the gap that originally killed the registry idea.
+**Interfaces defined or changed:**
+- `CampaignRepository._restore_campaign_from_slot(campaign_id) -> bool` (replaces `_restore_from_attached_slot`). New `_campaign_scope_entries() -> Array`, `const SNAPSHOT_EXCLUDED_TABLES`, `_dungeon_ids_for_campaign(schema, campaign_id)`, `_table_exists`/`_quote_cols`/`_placeholders`. `save_snapshot`/`restore_snapshot`/`get_snapshot`/`delete_snapshot`/`list_snapshots`/`prune` signatures unchanged.
+**Database changes:** None this rework (migration 147 from the prior S-2 entry still applies).
+**Tests added/updated:**
+- `tests/test_savegame_snapshot.gd` rewritten: `test_scope_map_covers_all_tables` (the completeness GUARANTEE — `scope ∪ excluded == all tables`), `test_restore_is_campaign_isolated` (seed A+B, save A, mutate B, restore A → A restored AND B untouched), plus the round-trip + full-table-set capture tests; `_seed` now registers a real dungeon entrance so `voxel_map_cells` is properly dungeon-scoped; per-test `_cleanup` (seeds reuse ids).
+- Suite **427 pass / 19 fail**, failure set **byte-identical to baseline** — net-zero new failures. Saves dir clean after the run.
+**Known issues:**
+- Slot FILE is still a whole-DB copy (restore reads back only the relevant campaign), so each slot is full-DB size (~MBs). Fine for desktop; revisit only if it matters.
+- A genuinely NEW table added later must be classified in `_campaign_scope_entries` or `SNAPSHOT_EXCLUDED_TABLES` — the completeness test enforces this (fails until done).
+- Multi-parent scope clauses assume their owner columns exist in an older slot; a very old slot missing such a column would error on that table (best-effort; pre-release).
+**Next session should:**
+1. **Jedidiah in-game acceptance** (unchanged from S-3): pause → Save/Load → save, play, load → confirm exact-context restore; ALSO verify isolation in-game if two campaigns exist.
+2. Wire named-slot Load into the main menu (reuse `load_slot`).
+3. (Optional) periodic autosave-to-file via reserved `slot_kind='autosave'`.

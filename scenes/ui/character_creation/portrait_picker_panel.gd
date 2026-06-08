@@ -7,9 +7,17 @@ extends VBoxContainer
 ##   Shipped:   data/portrait_manifest.json → res://assets/portraits/*.png
 ##   User-added: user://portraits/*.png (DirAccess scan; works in all builds)
 ##
-## Class-matching portraits shown first, then all others.
+## Shipped portraits use the naming convention ethnicity_class_gender_number
+## (ethnicity may be the two-token "greco_roman"); the manifest carries the
+## parsed class/sex/number alongside each entry.
+##
+## Only portraits whose class matches the selected class are loaded into the grid
+## (the full set is 400+ images — building a thumbnail for every one lags the
+## step). User-added portraits are always shown so custom art is never hidden.
+## The default selection is the lowest-numbered portrait of the selected class,
+## preferring the current sex.
 ## Selected portrait highlighted; preview shown at 256×256.
-## No class restrictions — any portrait may be chosen for any class.
+## No class restrictions on manual choice — any shown portrait may be chosen.
 
 
 const MANIFEST_PATH  := "res://data/portrait_manifest.json"
@@ -19,7 +27,7 @@ const PREVIEW_SIZE   := Vector2i(256, 256)
 
 var _state: Dictionary = {}
 
-var _portraits: Array = []           # Array of {id, class, path, is_user}
+var _portraits: Array = []           # Array of {id, class, sex, number, path, is_user}
 var _thumb_cache: Dictionary = {}    # portrait_id -> ImageTexture
 
 var _grid: GridContainer
@@ -91,6 +99,8 @@ func _load_manifest() -> Array:
 		result.append({
 			"id":      entry.get("id", ""),
 			"class":   entry.get("class", ""),
+			"sex":     entry.get("sex", ""),
+			"number":  int(entry.get("number", 0)),
 			"path":    entry.get("path", ""),
 			"is_user": false,
 		})
@@ -112,24 +122,71 @@ func _scan_user_portraits() -> Array:
 	while not filename.is_empty():
 		if not dir.current_is_dir() and filename.ends_with(".png"):
 			var portrait_id := filename.trim_suffix(".png")
-			# Parse class from naming convention portrait_{class}_{nn}
-			var parts := portrait_id.split("_")
-			var cls_str := ""
-			if parts.size() >= 2:
-				# Everything between "portrait_" prefix and final number segment
-				var class_parts: Array = []
-				for i in range(1, parts.size() - 1):
-					class_parts.append(parts[i])
-				cls_str = "_".join(class_parts)
+			var meta := _parse_portrait_stem(portrait_id)
 			result.append({
 				"id":      portrait_id,
-				"class":   cls_str,
+				"class":   meta.get("class", ""),
+				"sex":     meta.get("sex", ""),
+				"number":  int(meta.get("number", 0)),
 				"path":    "%s/%s" % [USER_DIR, filename],
 				"is_user": true,
 			})
 		filename = dir.get_next()
 	dir.list_dir_end()
 	return result
+
+
+## Single-token ethnicity prefixes (the only two-token prefix, "greco_roman", is
+## handled inline). Used to locate the class span in a portrait filename stem.
+const _ETH_SINGLE := {
+	"asian": true, "chaotic": true, "egyptian": true, "english": true,
+	"germanic": true, "lawful": true, "mesopotamian": true, "neutral": true,
+	"nubian": true,
+}
+
+
+## Parse a portrait filename stem into {class, sex, number}.
+## Primary convention: ethnicity_class_gender_number (ethnicity may be the
+## two-token "greco_roman"; class may itself be multi-token). The class token is
+## normalized to match class_id (hyphens -> underscores, e.g. anti-paladin ->
+## anti_paladin). Falls back to the legacy portrait_{class}_{nn} form for any
+## user-supplied portraits still using the old naming. Returns {} on no match.
+func _parse_portrait_stem(stem: String) -> Dictionary:
+	var parts := stem.split("_")
+	if parts.size() >= 4:
+		var last: String = parts[parts.size() - 1]
+		var sex: String = parts[parts.size() - 2]
+		if (sex == "male" or sex == "female") and last.is_valid_int():
+			var head: String = parts[0]
+			var class_start := -1
+			if head == "greco" and parts.size() >= 5 and parts[1] == "roman":
+				class_start = 2
+			elif _ETH_SINGLE.has(head):
+				class_start = 1
+			if class_start != -1:
+				var class_parts: Array = []
+				for i in range(class_start, parts.size() - 2):
+					class_parts.append(parts[i])
+				if not class_parts.is_empty():
+					return {
+						"class":  "_".join(class_parts).replace("-", "_"),
+						"sex":    sex,
+						"number": last.to_int(),
+					}
+	# Legacy fallback: portrait_{class}_{nn}
+	if parts.size() >= 3 and parts[0] == "portrait":
+		var legacy_last: String = parts[parts.size() - 1]
+		if legacy_last.is_valid_int():
+			var legacy_parts: Array = []
+			for i in range(1, parts.size() - 1):
+				legacy_parts.append(parts[i])
+			if not legacy_parts.is_empty():
+				return {
+					"class":  "_".join(legacy_parts).replace("-", "_"),
+					"sex":    "",
+					"number": legacy_last.to_int(),
+				}
+	return {}
 
 
 func _portrait_exists(portrait_id: String) -> bool:
@@ -148,18 +205,10 @@ func _populate_grid() -> void:
 		child.queue_free()
 
 	var class_id: String = _state.get("class_id", "")
-	# Sort: class-matching portraits first, then all others, alphabetically within each group
-	var matching: Array = []
-	var others: Array = []
-	for p in _portraits:
-		if p.get("class", "") == class_id:
-			matching.append(p)
-		else:
-			others.append(p)
-
-	var ordered: Array = []
-	ordered.append_array(matching)
-	ordered.append_array(others)
+	# Only load portraits for the selected class — the full set is 400+ images and
+	# building a thumbnail for every one lags the step. User portraits are always
+	# shown so custom art is never hidden by the class filter.
+	var ordered := _portraits_for_class(class_id)
 
 	for p in ordered:
 		var portrait_id: String = p.get("id", "")
@@ -175,6 +224,32 @@ func _populate_grid() -> void:
 		btn.name = portrait_id
 		btn.pressed.connect(_on_portrait_selected.bind(portrait_id))
 		_grid.add_child(btn)
+
+
+## Shipped portraits whose class matches [param class_id] (sorted by number),
+## followed by every user portrait. If no shipped portrait matches the class
+## (e.g. a class with no art yet), falls back to showing all shipped portraits so
+## the player is never left with an empty grid.
+func _portraits_for_class(class_id: String) -> Array:
+	var shipped_match: Array = []
+	var user_all: Array = []
+	for p in _portraits:
+		if p.get("is_user", false):
+			user_all.append(p)
+		elif p.get("class", "") == class_id:
+			shipped_match.append(p)
+	shipped_match.sort_custom(func(a, b): return int(a.get("number", 0)) < int(b.get("number", 0)))
+
+	var ordered: Array = []
+	if shipped_match.is_empty():
+		# Fallback: no class-specific art — show everything shipped.
+		for p in _portraits:
+			if not p.get("is_user", false):
+				ordered.append(p)
+	else:
+		ordered.append_array(shipped_match)
+	ordered.append_array(user_all)
+	return ordered
 
 
 func _get_thumbnail(portrait_entry: Dictionary) -> ImageTexture:
@@ -207,11 +282,32 @@ func _get_thumbnail(portrait_entry: Dictionary) -> ImageTexture:
 
 func _auto_select_class_default() -> void:
 	var class_id: String = _state.get("class_id", "")
-	var default_id := "portrait_%s_01" % class_id
-	if _portrait_exists(default_id):
-		_select_portrait(default_id)
-	elif not _portraits.is_empty():
-		_select_portrait(_portraits[0].get("id", ""))
+	var sex: String = _state.get("sex", "")
+	var candidates := _portraits_for_class(class_id)
+	if candidates.is_empty():
+		return
+
+	# Prefer the lowest-numbered shipped portrait of this class matching the
+	# current sex; fall back to the lowest-numbered of the class regardless of
+	# sex; finally fall back to the first candidate (covers the no-art fallback
+	# grid and user-only situations).
+	var best_sex := {}
+	var best_any := {}
+	for p in candidates:
+		if p.get("is_user", false):
+			continue
+		if not best_any.has("id") or int(p.get("number", 0)) < int(best_any.get("number", 0)):
+			best_any = p
+		if not sex.is_empty() and p.get("sex", "") == sex:
+			if not best_sex.has("id") or int(p.get("number", 0)) < int(best_sex.get("number", 0)):
+				best_sex = p
+
+	if best_sex.has("id"):
+		_select_portrait(best_sex.get("id", ""))
+	elif best_any.has("id"):
+		_select_portrait(best_any.get("id", ""))
+	else:
+		_select_portrait(candidates[0].get("id", ""))
 
 
 func _on_portrait_selected(portrait_id: String) -> void:

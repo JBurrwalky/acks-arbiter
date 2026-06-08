@@ -1,0 +1,67 @@
+{
+  "kit_id": "troglodyte",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "troglodyte",
+  "sub_palette": "troglodyte (Kazhur regressed - hisses + clicks)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (foul caves, stink-pits, foul-water deeps)",
+  "branch": { "regression": "hisses + clicks (s/sh/ts -> long hiss sss, t -> tch-click, q -> click, suffix -ssk/-tk/-isss)", "nature": "primitive reptile cave-dwellers; foul-smelling, blind-crawling, savage", "model": "Kazhur rotted into a troglodyte's hiss and click" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: TROGLODYTES, primitive reptile cave-dwellers - Kazhur rotted into hisses and clicks (qatal 'kill' -> Tch'atass-k). Foul-reeking, savage, blind in the deep dark. ALWAYS CHAOTIC; totemic shamanism (race-totem the Reek / the Blind Crawler). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Troglodyte (Kazhur, hiss-click regression): s/sh/ts -> long hiss (sss), t -> tch-click, q -> click, suffixes -ssk/-tk/-isss; foul, sibilant, primitive.",
+    "phonotactics": "hiss-heavy CVC with click onsets; low primitive hiss.",
+    "transparent_ratio": 0.23
+  },
+  "lexicon": {
+    "concepts": { "blood": "dahsss", "flesh_meat": "bahsssk", "bone": "atsssk", "kill": "tch'atassk", "devour": "akhssk", "fire": "esssk", "dark": "khasssk", "raid_plunder": "shalssk", "strong": "gibtk", "great": "rabssk", "small": "qatk", "beast": "behtk", "horde": "amssk", "lair": "metk", "spirit_totem": "ruasssk", "fang": "sssentk", "claw": "tsiptk", "horn": "qartk", "hunt": "tsaytk", "war": "milktk", "death": "mavtk", "night": "laylssk", "shaman": "kasssk" },
+    "feature_words": { "mountain": "hartk", "cave": "metk", "pit": "bortk", "swamp": "bitsssk", "waste": "midbtk", "crag": "tsurssk", "gorge": "gaytk", "dark_forest": "ya'ssk" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], hissed: Dahsss-sssentk (blood-fang); clan = [Totem]-amssk.",
+    "naming_marker": "named with a hiss by the kasssk; a foul hiss-click name.",
+    "plural": "-ssk-im or a hissing many"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / cave-clan (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rosssk", "scope": "chief of a single clanhold (cave-clan)" },
+      "march": { "ruler": "Milktk-Rosssk", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabssk-Rosssk", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Amssk-Rosssk", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Maltk", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabssk-Maltk", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabssk-Amssk-Maltk", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafssk (the runt/slave)", "warrior": "Gibtk (the cave-fighter)" },
+    "shaman_line": { "shaman": "Kasssk (the totem-hisser)", "high_shaman": "Rab-Kasssk (great-shaman of the clan-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Reek / the Blind Crawler. The Kasssk hisses to the totem and the Gul-spirits in the foul dark; foremost Gul-Metensu the Rot/Reek (the trog's foul stink is sacred); the One and the sun demonized (cave-blind, they hate the light).",
+    "race_totem": "the Reek (Khasssk-reek) / the Blind Crawler",
+    "venerated": { "Metensia (rot, reek, filth)": "Gul-Metensu (the Rot-Spirit; the sacred stink; supreme)", "Noctiluna (the cave-dark)": "Gul-Naktilu (the Blind-Dark)", "Vacidus (the devouring deep)": "Gul-Waqidu (the Devouring-Dark)", "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit)" },
+    "demonized": { "Tulrius (the sun, light)": "Tarul the Burning-Eye (the light that blinds and burns)", "Aeternus (the One)": "Aternu the Sky-Tyrant" },
+    "tribal_totem_pattern": "[Khasssk-/Dahsss-/Reek-] + [reptile or filth]: Khasssk-behtk (Dark-Beast), Dahsss-tsiptk (Blood-Claw).",
+    "shaman_rites": "hiss-chants in the stink-pit; the marking with foul musk; the blind-crawl rite.",
+    "holy_symbol_motifs": { "Reek": "a wavering stink-haze over a coiled crawler", "Gul-Metensu": "a rotting carcass crawling with vermin" }
+  },
+  "banks_patterns": {
+    "war_bands": "the hiss-named clans: 'the Reek', 'the Blind-crawlers', 'the Scale-backs of [chief]'",
+    "lairs_dungeons": "foul caves, stink-pits, and foul-water deeps: 'the Reek-cave of [clan]', 'the Stink-pit of [chief]', 'the Foul-deep of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Tch'atassk", "Dahsss", "Sssentk", "Rosssk", "Esssk", "Gibtk", "Khasssk", "Bortk", "Milktk", "Ruasssk", "Vrasssk", "Naztk", "Grumssk", "Dratk", "Skarssk", "Vurtk", "Bhaktk", "Matk", "Throgtk", "Hisssk"],
+    "personal_f": ["Dahssa", "Sssenta", "Rossska", "Esssa", "Gibta", "Khassska", "Borta", "Milkta", "Ruassa", "Vrassa", "Nazta", "Grumssa", "Drata", "Skarssa", "Vurta", "Bhakta", "Mata", "Throgta", "Hisssa", "Lelssa"],
+    "tribes_hordes": ["the Reek (Gul-Metensu) clan", "the Blind Crawler clan", "the Cave-deep (Metk) band", "the Stink-pit tribe", "the Foul-water clan", "the Scale-back tribe", "the Dark-crawl band", "the Many-hiss horde"],
+    "epithets_cognomina": ["the Foul", "the Blind-crawler", "the Stinking", "the Scale-back", "the Wall-clinger", "the Reeker", "the Cave-lurker", "the Cold-blooded"],
+    "flagship_lairs": ["the Reek-cave (Metk)", "Bortk-pit (the foul pit)", "Bitsssk-mire (the swamp-warren)", "the Stink-deep", "the Foul-water hold of [chief]", "Ya'ssk-crawl (the dark-forest lair)"]
+  }
+}

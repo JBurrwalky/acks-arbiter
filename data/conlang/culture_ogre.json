@@ -1,0 +1,67 @@
+{
+  "kit_id": "ogre",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "ogre",
+  "sub_palette": "ogre (Kazhur regressed - deep booming bellows + grunts)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (boulder-caves, bone-pits, mires)",
+  "branch": { "regression": "deep booming bellows + grunts (simple CVC only, booming b/g/d/m, vowels low o/u, suffix -og/-grub/-mog)", "nature": "huge dim brutes; man-eaters and skull-smashers; few, heavy words", "model": "Kazhur rotted into an ogre's booming grunt" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: OGRES, huge dim brutes - Kazhur rotted into deep booming bellows and grunts (qatal 'kill' -> Gatog). Man-eaters and skull-smashers; the fewest, heaviest words. ALWAYS CHAOTIC; totemic shamanism (race-totem the Great Gut / the Boulder-Fist). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Ogre (Kazhur, boom-grunt regression): simple CVC only, booming voiced b/g/d/m, vowels low o/u, suffixes -og/-grub/-mog; few, heavy, bellowed words.",
+    "phonotactics": "heavy CVC; booming low stress; minimal vocabulary.",
+    "transparent_ratio": 0.20
+  },
+  "lexicon": {
+    "concepts": { "blood": "damog", "flesh_meat": "bashog", "bone": "atsog", "kill": "gatog", "devour": "akhog", "fire": "eshog", "dark": "gashog", "raid_plunder": "shalog", "strong": "gibog", "great": "rabog", "small": "qatog", "beast": "bemog", "horde": "amog", "lair": "memog", "spirit_totem": "rugog", "fang": "shenog", "claw": "tsipog", "horn": "qarog", "hunt": "tsayog", "war": "milgog", "death": "mamog", "night": "laylog", "shaman": "gashob" },
+    "feature_words": { "mountain": "harog", "cave": "memog", "pit": "borog", "swamp": "bidog", "waste": "midbog", "crag": "surog", "gorge": "gayog", "dark_forest": "yaog" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], boomed: Damog-shenog (blood-fang); band = [Totem]-amog.",
+    "naming_marker": "named with a bellow by the gashob; a heavy grunt-name.",
+    "plural": "boomed -og; mostly uncounted (few)"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / ogre-band - small, brutal (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rogog", "scope": "chief of a single clanhold (band)" },
+      "march": { "ruler": "Milgog-Rogog", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabog-Rogog", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Amog-Rogog", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malog", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabog-Malog", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabog-Amog-Malog", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafog (the small one/slave)", "warrior": "Gibog (the smasher)" },
+    "shaman_line": { "shaman": "Gashob (the totem-bellower)", "high_shaman": "Rab-Gashob (great-shaman of the band-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic, and simple. Race-totem the Great Gut / the Boulder-Fist. The Gashob bellows to the totem and the Gul-spirits over the bone-pit; foremost Gul-Maraqus the War-Spirit (the smash) and Gul-Waqidu (the endless gut). The One and the sun demonized. Few gods, few words.",
+    "race_totem": "the Great Gut (Rabog-bemog) / the Boulder-Fist (Surog-mog)",
+    "venerated": { "Maraxus (the smash, war)": "Gul-Maraqus (the War-Spirit; the smash)", "Vacidus (the endless gut)": "Gul-Waqidu (the Devouring-Dark; the never-full)", "Lusanto (eat and take)": "Gul-Lusanu (the Take-Spirit)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Tulrius (the sun)": "Tarul the Burning-Eye" },
+    "tribal_totem_pattern": "[Rabog-/Damog-/Boulder-] + [big-beast or fist]: Rabog-bemog (Great-Beast), Surog-mog (Boulder-Fist).",
+    "shaman_rites": "bellow-chants over the bone-pit; the cracking of skulls for the totem; the eating-feast.",
+    "holy_symbol_motifs": { "Great Gut": "a vast belly over cracked bones", "Boulder-Fist": "a great fist crushing a skull" }
+  },
+  "banks_patterns": {
+    "war_bands": "the boom-named bands: 'the Skull-smashers', 'the Man-eaters', 'the Boulder-fists of [chief]'",
+    "lairs_dungeons": "boulder-caves, bone-pits, and mires: 'the Smash-cave of [band]', 'the Bone-pit of [chief]', 'the Man-eater's cave of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Gatog", "Damog", "Shenog", "Rogog", "Eshog", "Gibog", "Gashog", "Borog", "Milgog", "Rugog", "Vrogog", "Nargog", "Grumog", "Drogog", "Skarog", "Vurog", "Bhakog", "Mamog", "Throgog", "Grubog"],
+    "personal_f": ["Damoga", "Shenoga", "Rogoga", "Eshoga", "Giboga", "Gashoga", "Boroga", "Milgoga", "Rugoga", "Vrogoga", "Nargoga", "Grumoga", "Drogoga", "Skaroga", "Vuroga", "Bhakoga", "Mamoga", "Throgoga", "Gruboga", "Leloga"],
+    "tribes_hordes": ["the Great Gut (Rabog-bemog) tribe", "the Boulder-Fist clan", "the Skull-smash band", "the Man-eater tribe", "the Club (Drok) band", "the Big-belly clan", "the Smash horde", "the Bone-club tribe"],
+    "epithets_cognomina": ["the Skull-smasher", "the Man-eater", "the Boulder-fist", "the Big-belly", "the Club", "the Bone-breaker", "the Slow", "the Never-full"],
+    "flagship_lairs": ["the Smash-cave (Memog)", "Borog-pit (the bone-pit)", "Bidog-mire (the swamp-lair)", "the Man-eater's cave", "the Bone-club hold of [chief]", "Harog-cave (the mountain-cave)"]
+  }
+}

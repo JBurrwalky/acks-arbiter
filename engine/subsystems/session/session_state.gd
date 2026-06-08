@@ -25,6 +25,23 @@ func exit(runner) -> void:
 	pass
 
 
+## Called by SessionRunner.save_session() to persist this context's live,
+## in-memory-only state to the DB (gdd-savegame-system.md §5.3). Each primary
+## exploration state overrides this to flush what it owns: wilderness saves the
+## hex map (fog/survey), dungeon saves voxel cells + per-entity positions,
+## settlement saves the current POI. Default is a no-op for overlay/meta states.
+func flush_to_db(runner) -> void:
+	pass
+
+
+## Returns true if this state is currently resolving turn-based combat. Used to
+## block saving mid-combat (gdd-savegame-system.md §5.7). The dedicated "combat"
+## state is always in combat; dungeon combat runs in-place inside
+## DungeonExploreState, so it overrides this to report its live combat flag.
+func is_in_combat() -> bool:
+	return false
+
+
 ## Called by SessionRunner to process a validated game action.
 ## Returns the next state key (String) if a transition is warranted, or "" to stay.
 ## Actions come from either UI interactions or LLM interpretation — the state

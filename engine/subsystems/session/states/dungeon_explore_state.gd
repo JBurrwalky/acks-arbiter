@@ -186,6 +186,20 @@ func enter(runner, context: Dictionary) -> void:
 	# Seed recurring dungeon events (wandering monster checks, light ticks).
 	_handlers.seed_dungeon_events(runner.get_scheduler(), runner.get_party_id())
 
+	# Savegame restore (gdd-savegame-system.md §5.2): if we entered via the
+	# context-aware loader, place each entity on its exact saved cell/level
+	# (overriding the entry scatter) and sync the party-level dungeon position.
+	var restore_positions: Dictionary = context.get("restore_positions", {})
+	if not restore_positions.is_empty():
+		if _controller.restore_entity_positions(restore_positions):
+			var vmap_r: VoxelMapData = _controller.get_voxel_map()
+			var ids_r: Array = _controller.get_entity_ids()
+			if vmap_r != null and not ids_r.is_empty():
+				var lead_r: Vector3i = vmap_r.get_entity_pos(ids_r[0])
+				CampaignRepository.update_party_dungeon_position(
+					runner.get_party_id(), _controller.get_dungeon_id(),
+					lead_r.z, lead_r.x, lead_r.y)
+
 	# Scheduler starts paused — player issues orders, then unpauses.
 
 
@@ -246,6 +260,9 @@ func exit(runner) -> void:
 	_session_state = null
 
 	CampaignRepository.clear_party_dungeon_position(runner.get_party_id())
+	# Drop the per-entity restore rows — the party has left this dungeon
+	# (gdd-savegame-system.md §5.2).
+	CampaignRepository.clear_dungeon_entity_positions(runner.get_party_id())
 
 	# Check party time lock (dungeon may have advanced party clock ahead).
 	runner.check_party_time_lock()
@@ -317,6 +334,35 @@ func _save_dungeon_cell_states() -> void:
 			cells_to_save.append(save_cell)
 	if not cells_to_save.is_empty():
 		CampaignRepository.save_voxel_cells_batch(dungeon_id, cells_to_save)
+
+
+## Savegame flush (gdd-savegame-system.md §5.3): persist explored cells, each
+## entity's exact cell, and the party-level dungeon position (leader cell/level).
+func flush_to_db(runner) -> void:
+	if _controller == null:
+		return
+	var dungeon_id: String = _controller.get_dungeon_id()
+	if dungeon_id.is_empty():
+		return
+	_save_dungeon_cell_states()
+	var vmap: VoxelMapData = _controller.get_voxel_map()
+	if vmap == null:
+		return
+	var entity_ids: Array = _controller.get_entity_ids()
+	var positions: Dictionary = {}
+	for eid in entity_ids:
+		positions[eid] = vmap.get_entity_pos(eid)
+	var party_id: String = runner.get_party_id()
+	CampaignRepository.save_dungeon_entity_positions(party_id, dungeon_id, positions)
+	if not entity_ids.is_empty():
+		var lead: Vector3i = vmap.get_entity_pos(entity_ids[0])
+		CampaignRepository.update_party_dungeon_position(party_id, dungeon_id, lead.z, lead.x, lead.y)
+
+
+## Combat in a dungeon runs in-place (no separate "combat" state), so report the
+## live flag to block mid-combat saves (gdd-savegame-system.md §5.7).
+func is_in_combat() -> bool:
+	return _in_combat
 
 
 ## Cancel any pending timed actions (search, listen, etc.).

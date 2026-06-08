@@ -1,0 +1,67 @@
+{
+  "kit_id": "gnoll",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "gnoll",
+  "sub_palette": "gnoll (Kazhur regressed - cackling laughs + yips)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (hunting-grounds, bone-cracker dens, carrion-fields)",
+  "branch": { "regression": "cackling laughs + yips (insert laugh-syllables hya/hag, h -> hyena-laugh, vowels yip-high, suffix -yip/-hag/-hyak)", "nature": "hyena-folk; manic hunters and scavengers; pack-killers", "model": "Kazhur rotted into a hyena's cackle" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: GNOLLS, hyena-folk - Kazhur rotted into cackling laughs and yips (qatal 'kill' -> Qatak-hyag). Manic pack-hunters and carrion-eaters. ALWAYS CHAOTIC; totemic shamanism (race-totem the Laughing Pack / the Carrion-Hyena). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Gnoll (Kazhur, cackle-yip regression): inserted laugh-syllables (hya/hag), h -> hyena-laugh, vowels yip-high, suffixes -yip/-hag/-hyak; manic, barking, laughing.",
+    "phonotactics": "CVC broken by laugh-syllables; rising manic intonation.",
+    "transparent_ratio": 0.27
+  },
+  "lexicon": {
+    "concepts": { "blood": "damhya", "flesh_meat": "bashag", "bone": "atshag", "kill": "qatak-hyag", "devour": "akhhag", "fire": "eshhag", "dark": "khashhag", "raid_plunder": "shalhag", "strong": "gibhag", "great": "rabhag", "small": "qathag", "beast": "behag", "horde": "amhag", "lair": "me'hag", "spirit_totem": "ruahag", "fang": "shenyip", "claw": "tsiphag", "horn": "qarhag", "hunt": "tsayhag", "war": "milkhag", "death": "mavhag", "night": "laylhag", "shaman": "kashhag" },
+    "feature_words": { "mountain": "harhag", "cave": "me'hag", "pit": "borhag", "swamp": "bitshag", "waste": "midbhag", "crag": "tsurhag", "gorge": "gayhag", "dark_forest": "ya'hag" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], cackled: Damhya-shenyip (blood-fang); pack = [Totem]-amhag.",
+    "naming_marker": "named by the kashhag amid laughter at a kill; a cackle-name.",
+    "plural": "-hag-im or a laughing pack-many"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / hunting-pack (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Roshag", "scope": "chief of a single clanhold (pack)" },
+      "march": { "ruler": "Milkhag-Roshag", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabhag-Roshag", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Amhag-Roshag", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malhag", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabhag-Malhag", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabhag-Amhag-Malhag", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafyip (the runt/slave)", "warrior": "Gibhag (the pack-hunter)" },
+    "shaman_line": { "shaman": "Kashhag (the totem-cackler)", "high_shaman": "Rab-Kashhag (great-shaman of the pack-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Laughing Pack / the Carrion-Hyena. The Kashhag cackles to the totem and the Gul-spirits over the carrion-field; foremost Gul-Raptu the Blood-Hunt (gnolls live to hunt and scavenge); the One and the sun demonized.",
+    "race_totem": "the Carrion-Hyena (Mavhag-behag) / the Laughing Pack",
+    "venerated": { "Raptis (the blood-hunt)": "Gul-Raptu (the Blood-Hunt-Spirit; supreme)", "Maraxus (slaughter)": "Gul-Maraqus (the War-Spirit)", "Metensia (carrion, rot)": "Gul-Metensu (the Carrion-Spirit)", "Noctiluna (the night-hunt)": "Gul-Naktilu (the Night-Hunt)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Tulrius (the sun)": "Tarul the Burning-Eye" },
+    "tribal_totem_pattern": "[Mavhag-/Damhya-/Tsay-] + [hyena or carrion]: Mavhag-behag (Carrion-Beast), Damhya-shenyip (Blood-Fang).",
+    "shaman_rites": "cackle-chants over the carrion-field and bone-cracker pit; the donning of the hyena-hide; laughter at the kill.",
+    "holy_symbol_motifs": { "Carrion-Hyena": "a laughing hyena-skull over cracked bones", "Gul-Raptu": "a bloodied paw-print" }
+  },
+  "banks_patterns": {
+    "war_bands": "the cackle-named packs: 'the Laughing Pack', 'the Bone-crackers', 'the Flesh-renders of [chief]'",
+    "lairs_dungeons": "hunting-grounds, bone-cracker dens, carrion-fields: 'the Den of [pack]', 'the Carrion-field of [chief]', 'the Bone-pit of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Qatak-hyag", "Damhya", "Shenyip", "Roshag", "Eshhag", "Gibhag", "Khashhag", "Borhag", "Milkhag", "Ruahag", "Vraghag", "Nazhag", "Grumhyak", "Draghya", "Skarhag", "Vurhag", "Bhakhag", "Maghya", "Throghag", "Yelphag"],
+    "personal_f": ["Damhyya", "Shenyipa", "Roshhya", "Eshhya", "Gibhya", "Khashya", "Borhya", "Milkhya", "Ruahya", "Vraghya", "Nazhya", "Grumhya", "Skarhya", "Vurhya", "Bhakhya", "Maghya", "Throghya", "Yelphya", "Lelhya", "Snaghya"],
+    "tribes_hordes": ["the Laughing Pack", "the Carrion-Hyena (Mavhag-behag) pack", "the Blood-hunt (Gul-Raptu) pack", "the Bone-cracker pack", "the Night-howl pack", "the Flesh-render pack", "the Cackle horde", "the Gnaw-pack"],
+    "epithets_cognomina": ["the Cackler", "the Bone-cracker", "the Flesh-render", "the Carrion-eater", "the Pack-leader", "the Mad-laugh", "the Hunter", "the Gnawer"],
+    "flagship_lairs": ["the Hunting-ground (Tsayhag-me'hag)", "the Bone-cracker den", "the Carrion-fields", "Borhag-den (the pit-den)", "the Skull-laugh camp of [chief]", "Ya'hag-pack (the dark-forest pack)"]
+  }
+}

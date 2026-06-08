@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "_tier_note": "Beastman STRIPPED record per gdd-culture-catalog §5.3 / §11: identity + alignment + expansion + preferred_troop_types + personality + name_bank_key + flavor_text only. NO sphere_weights / conquest / lifecycle / road / architecture / religion fields. Always Chaotic. Full demographics, placement, and population caps come from ax_domains_of_chaos.xml; totemic naming/flavor lives in data/conlang/culture_orc.json + family_beastman.json.",
+  "mechanical": {
+    "identity": { "culture_id": "orc", "catalog_number": null, "demonym": "Orc", "toponym": null,
+      "tier": "beastman", "race": "orc", "civ_or_clan": "clan", "synthesis_sources": [] },
+    "alignment": { "allowed": ["Chaotic"], "rigidity": 0.2 },
+    "expansion": { "aggression": 0.8, "defense": 0.4, "size_exponent_bias": 0.1 },
+    "preferred_troop_types": ["light_infantry", "heavy_infantry", "berserkers"],
+    "npc": { "personality_weight_biases": "affective_compassion -1.5, stress_reactivity +1.5, civility -1.5, self_interest -1.0, societal_orthodoxy -0.5" }
+  },
+  "flavor": {
+    "name_bank_key": "orc",
+    "phonemic_palette": "Kazhur (the sorcerers' maker-tongue) regressed to deep guttural growls (q->ghr/khr, -gur/-rakh); data/conlang/culture_orc.json",
+    "language": { "language_name": "Orcish (regressed Kazhur)", "language_family": "Kazhur (beastman)", "script": "none" },
+    "flavor_text": { "one_line": "Brutal raider-soldiers bred from men and beasts, who live to slaughter for the war-spirit.",
+      "one_paragraph": "Orcs are the archetypal beastman: war-bred from men and beasts by the long-dead sorcerers, and the most numerous of the made-races. They swarm from mountain warrens and wandering hordes under the totem of the Red Maw, the shaman (khashagh) feeding the skull-heap to Gul-Maraqus the War-Spirit. Always Chaotic, they raid, breed, and slaughter; their warlords carve brief domains from the ruin of better folk before the next horde devours them." }
+  }
+}

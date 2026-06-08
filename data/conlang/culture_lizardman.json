@@ -1,0 +1,67 @@
+{
+  "kit_id": "lizardman",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "lizardman",
+  "sub_palette": "lizardman (Kazhur regressed - smooth sustained hisses + sibilants)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (marsh-deeps, sunken temples, water-mounds)",
+  "branch": { "regression": "smooth sustained hisses + sibilants (sh/s/z/ss prominent and drawn, cold and even, suffix -ssa/-isk/-aza)", "nature": "cold reptile-folk; ancient, patient, and the most articulate reptile; marsh-lords", "model": "Kazhur rotted into a lizardman's cold even hiss" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: LIZARDMEN, cold reptile-folk - Kazhur rotted into smooth, sustained hisses and sibilants (qatal 'kill' -> Khatazza). Ancient, patient marsh-lords; the most articulate of the reptile beastmen. ALWAYS CHAOTIC; totemic shamanism (race-totem the Old Serpent / the Cold Coil). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Lizardman (Kazhur, smooth-hiss regression): sh/s/z/ss prominent and drawn out, cold and even (not foul like the trog), suffixes -ssa/-isk/-aza; sustained, sibilant, articulate.",
+    "phonotactics": "CV(s)sa with long sibilants; cold even stress.",
+    "transparent_ratio": 0.30
+  },
+  "lexicon": {
+    "concepts": { "blood": "dazza", "flesh_meat": "bashaza", "bone": "atsaza", "kill": "khatazza", "devour": "akhaza", "fire": "esisk", "dark": "khashaza", "raid_plunder": "shalaza", "strong": "gibazza", "great": "rabaza", "small": "qatissa", "beast": "behaza", "horde": "amazza", "lair": "mezza", "spirit_totem": "ruazza", "fang": "shenssa", "claw": "tsipaza", "horn": "qarisk", "hunt": "tsayssa", "war": "milkaza", "death": "mazza", "night": "laylaza", "serpent": "nakhazza", "shaman": "kashazza", "water": "mayzza" },
+    "feature_words": { "mountain": "harisk", "cave": "mezza", "pit": "borisk", "marsh": "bitsazza", "waste": "midbisk", "crag": "tsurisk", "gorge": "gayssa", "dark_forest": "ya'zza" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], hissed smooth: Dazza-shenssa (blood-fang); clan = [Totem]-amazza.",
+    "naming_marker": "named in a cold hiss by the kashazza; a sibilant lineage-name (lizardmen keep long egg-clutch lines).",
+    "plural": "-azza/-isk; the clutch counts its own"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief (clutch-head) of one clanhold (lowest governing leader), empire = the great horde-lord (Scale-Overlord) over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / clutch-clan - the most settled beastmen, marsh-mound holds (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rozza", "scope": "chief of a single clanhold (clutch)" },
+      "march": { "ruler": "Milkaza-Rozza", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabaza-Rozza", "scope": "great scale-chief over a few clanholds" },
+      "duchy": { "ruler": "Amazza-Rozza", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malazza (the Scale-King)", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabaza-Malazza", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabaza-Amazza-Malazza", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafissa (the hatchling/runt)", "warrior": "Gibazza (the scaled fighter)" },
+    "shaman_line": { "shaman": "Kashazza (the serpent-speaker)", "high_shaman": "Rab-Kashazza (great-shaman of the Old Serpent)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic, and ancient. Race-totem the OLD SERPENT (Rab-Nakhazza) / the Cold Coil. More totem-bound than the other beastmen - the Old Serpent is venerated above the distant Gul-spirits. The Kashazza hisses to the serpent at the sunken temple; the One and the Lawful sun demonized (though the cold-blood grudgingly basks in the sun's warmth).",
+    "race_totem": "the Old Serpent (Rab-Nakhazza) / the Cold Coil",
+    "venerated": { "Vacidus (the cold ancient void)": "Gul-Waqidu (the Old-Dark)", "Noctiluna (the marsh-night)": "Gul-Naktilu (the Cold-Night)", "Maraxus (war)": "Gul-Maraqus (the War-Spirit)", "Raptis (the cold hunt)": "Gul-Raptu (the Patient-Hunt)" },
+    "demonized": { "Tulrius (the Lawful sun)": "Tarul the Burning-Eye (the judge-sun; basked in, never bowed to)", "Aeternus (the One)": "Aternu the Sky-Tyrant", "Orlandus (law)": "Orlanu the Chainer" },
+    "tribal_totem_pattern": "[Rab-Nakhazza-/Dazza-/Cold-] + [serpent or scale]: Rab-Nakhazza (the Old Serpent), Dazza-tsipaza (Blood-Claw).",
+    "shaman_rites": "cold hiss-chants at the sunken temple and the serpent-mound; the egg-clutch blessing; the shedding-rite.",
+    "holy_symbol_motifs": { "Old Serpent": "a great coiled serpent swallowing the sun", "Gul-Waqidu": "a cold spiral into the dark" }
+  },
+  "banks_patterns": {
+    "war_bands": "the hiss-named clutches: 'the Old Serpent', 'the Cold Coils', 'the Scale-lords of [chief]'",
+    "lairs_dungeons": "marsh-deeps, sunken temples, and water-mounds: 'the Sunken Temple of [clan]', 'the Serpent-mound of [chief]', 'the Marsh-deep of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Khatazza", "Dazza", "Shenssa", "Rozza", "Esisk", "Gibazza", "Khashaza", "Borisk", "Milkaza", "Ruazza", "Nakhazza", "Nazisk", "Sszaka", "Drazza", "Skarisk", "Vurisk", "Bhakaza", "Mazza", "Throgaza", "Hissaza"],
+    "personal_f": ["Dazzia", "Shenssia", "Rozzia", "Esiska", "Gibaza", "Khashaza", "Boriska", "Milkaza", "Ruazzia", "Nakhazzia", "Naziska", "Sszakia", "Drazzia", "Skariska", "Vuriska", "Bhakaza", "Mazzia", "Throgaza", "Hissazia", "Lelaza"],
+    "tribes_hordes": ["the Old Serpent (Rab-Nakhazza) clan", "the Cold Coil clan", "the Marsh-deep (Bitsazza) tribe", "the Scale-lord clan", "the Swamp-king tribe", "the Sunken-temple clan", "the Cold-blood horde", "the Many-scale tribe"],
+    "epithets_cognomina": ["the Cold-blooded", "the Scale-lord", "the Marsh-king", "the Old-one", "the Sunken", "the Coil", "the Patient", "the Many-scaled"],
+    "flagship_lairs": ["the Marsh-deep (Bitsazza-mezza)", "the Sunken Temple", "Borisk-mire (the mire-pit)", "the Scale-king's mound", "the Cold-water hold of [chief]", "Mayzza-deep (the water-deep)"]
+  }
+}

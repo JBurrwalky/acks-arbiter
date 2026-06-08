@@ -5,7 +5,7 @@
 **Depends on ACKS rule summaries:** `acore_axioms_strongholds_and_domains.xml` (market class, settlement demographics, specialist availability, NPC demographics by market class), `acore_equipment.xml` (equipment prices, availability by market class, hireling availability, wages), `acore_core_classes.xml` / `acore_demihuman_classes.xml` / `acore_campaign_classes.xml` (class list, level progression, combat progression types)
 **Depends on project GDDs:** `gdd-settlement-layout.md` (block graph, street network, district assignment, POI slots, vertical layers), `gdd-npc-personality.md` (NPC personality generation for developed NPCs), `gdd-cultural-religious-generation.md` (culture data: `architecture_style`, `economy`, `values`, class availability per culture), `gdd-name-generation.md` (name banks keyed to `culture_id`), `gdd-dungeon-factions.md` (undercity faction structure)
 **Modifiable by Claude Code:** Yes — all generation algorithms, table weights, encounter designs, and scaling parameters are engineering decisions.
-**Last updated:** 2026-03-23
+**Last updated:** 2026-06-08
 
 ---
 
@@ -1044,7 +1044,7 @@ This section catalogs every point where the LLM narrative layer is invoked durin
 | Religious encounter | Deity from settlement pantheon, proselytizer occupation | Religious speech, blessing flavor text, theological talking points |
 | Criminal encounter | Syndicate name, territory, signature style | Faction-appropriate dialogue, threats, negotiation style |
 
-**Cultural adaptation instruction:** For every LLM call, the culture's `architecture_style`, `values.core_values`, `personality_weight_biases.social_style`, and `flavor_text.one_paragraph` are included in the prompt context. This ensures a steppe-nomad settlement feels different from a maritime republic, even when the mechanical encounter is identical.
+**Cultural adaptation instruction:** For every LLM call, the culture's `architecture_style`, `values.core_values`, `personality_weight_biases` (especially the expressive axes — `expressiveness`, `civility`, `jocularity` — per `gdd-npc-personality.md` §3.2), and `flavor_text.one_paragraph` are included in the prompt context. This ensures a steppe-nomad settlement feels different from a maritime republic, even when the mechanical encounter is identical.
 
 ---
 
@@ -1096,3 +1096,4 @@ Not every system in this GDD applies to every settlement. The engine activates s
 ## 13. Revision History
 
 - **2026-03-23:** Initial draft. Reverse-engineered from a published city generation system for a Market Class III Roman-themed settlement, generalized to be culture-agnostic and scalable across all market classes. Building generation pipeline, occupant tables, city encounter system, commerce integration, and undercity stocking system. All open questions resolved in initial review.
+- **2026-06-08:** Updated the §10 cultural-adaptation prompt instruction to reference the reworked twelve-axis `personality_weight_biases` (the now-removed `.social_style` sub-key belonged to the retired four-axis tag schema); now points to the expressive axes (`expressiveness`, `civility`, `jocularity`) per `gdd-npc-personality.md` §3.2. No stocking logic changed.

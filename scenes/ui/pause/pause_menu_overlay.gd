@@ -112,6 +112,7 @@ func _build_ui() -> void:
 
 	_add_button(vbox, "Resume", _on_resume)
 	_add_button(vbox, "Save", _on_save)
+	_add_button(vbox, "Save / Load…", _on_save_load)
 	_add_button(vbox, "Settings", _on_settings)
 	_add_button(vbox, "Quit to Menu", _on_quit)
 
@@ -147,6 +148,16 @@ func _on_save() -> void:
 	if main:
 		var runner := main.get_node_or_null("SessionRunner")
 		if runner and runner.has_method("save_session"):
+			# Saving during combat is disallowed (gdd-savegame-system.md §5.7) —
+			# surface a message rather than silently no-op inside save_session().
+			if runner.has_method("is_in_combat") and runner.is_in_combat():
+				EventBus.notification_requested.emit({
+					"type": "warning",
+					"category": "system",
+					"title": "Cannot Save During Combat",
+					"duration": 3.0,
+				})
+				return
 			runner.save_session()
 			EventBus.notification_requested.emit({
 				"type": "success",
@@ -154,6 +165,21 @@ func _on_save() -> void:
 				"title": "Game Saved",
 				"duration": 3.0,
 			})
+
+
+func _on_save_load() -> void:
+	# Open the unified Save/Load slot panel (Phase S-3). It overlays the pause
+	# menu and is freed on close; loading a slot tears the session down and
+	# re-enters via the context-aware loader.
+	var main := get_parent()
+	if main == null:
+		return
+	var runner := main.get_node_or_null("SessionRunner")
+	if runner == null:
+		return
+	var panel = preload("res://scenes/ui/saveload/save_load_panel.gd").new()
+	panel.setup(runner)
+	main.add_child(panel)
 
 
 func _on_settings() -> void:

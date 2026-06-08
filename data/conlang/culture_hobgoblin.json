@@ -1,0 +1,67 @@
+{
+  "kit_id": "hobgoblin",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "hobgoblin",
+  "sub_palette": "hobgoblin (Kazhur regressed - clipped barked commands)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (war-camps, fortresses, and drill-yards)",
+  "branch": { "regression": "clipped barked commands (orc-guttural but ORDERED and geminated; hard doubled stops, sharp clipped finals -rok/-thar/-kk, little growl-drawl)", "nature": "disciplined martial goblinoids; the LEAST-rotted, most drill-like Kazhur; soldiers and conquerors", "model": "Kazhur rotted least of all - kept hard and ordered for command" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: HOBGOBLINS, disciplined martial goblinoids - the LEAST-rotted Kazhur, kept hard, clipped, and ordered for barked command (qatal 'kill' -> Qattar-rok). A chaotic MOCKERY of order: tyrant-discipline, legions, the lash. ALWAYS CHAOTIC; totemic shamanism (race-totem the Iron Order / the War-Banner Beast). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Hobgoblin (Kazhur, clipped-command regression): orc-guttural but ORDERED - hard geminated stops (-kk/-tt), sharp clipped finals -rok/-thar/-tark, minimal growl-drawl; barked, drill-like. The least-rotted beastman tongue.",
+    "phonotactics": "tight CVC/CVCC with geminate codas; sharp clipped stress; commanding.",
+    "transparent_ratio": 0.40
+  },
+  "lexicon": {
+    "concepts": { "blood": "dammar", "flesh_meat": "bashtar", "bone": "atsmar", "kill": "qattar-rok", "devour": "akhtar", "fire": "eshtark", "dark": "khashtak", "raid_plunder": "shaltar", "strong": "gibtark", "great": "rabtar", "small": "qattan", "beast": "behtark", "horde": "amtark", "lair": "me'tark", "spirit_totem": "ruakk", "fang": "shentar", "claw": "tsiptar", "horn": "qartar", "hunt": "tsaytar", "war": "milkkar", "death": "mavtar", "night": "layltar", "shaman": "kashtar" },
+    "feature_words": { "mountain": "hartark", "cave": "mekkar", "pit": "borrok", "war_camp": "dungtark", "fort": "tsurfort", "waste": "midbtark", "crag": "tsurrok", "gorge": "gaytark", "dark_forest": "ya'tark" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], clipped: Dammar-shentar (blood-fang), Milkkar-behtark (war-beast); legion = [Standard]-amtark.",
+    "naming_marker": "named by rank and the kashtar at a blooding; a hard rank-name.",
+    "plural": "-tark-im; counted in companies and legions"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief (commander) of one clanhold (lowest governing leader), empire = the great horde-lord (Iron Overlord) over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / legion-host - the most ordered of beastmen (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Roshtar (commander)", "scope": "chief of a single clanhold-company" },
+      "march": { "ruler": "Milkkar-Roshtar", "scope": "war-commander of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabtar-Roshtar", "scope": "high commander over a few clanholds" },
+      "duchy": { "ruler": "Amtark-Roshtar", "scope": "host-commander over many clanholds" },
+      "principality": { "ruler": "Malkkar (the Iron King)", "scope": "warlord-king over a great host" },
+      "kingdom": { "ruler": "Rabtar-Malkkar", "scope": "great warlord-king over many hosts" },
+      "empire": { "ruler": "Rabtar-Amtark-Malkkar (the Iron Overlord)", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shaftar (the conscript/slave)", "warrior": "Gibtark (the soldier)" },
+    "shaman_line": { "shaman": "Kashtar (the war-totem speaker)", "high_shaman": "Rab-Kashtar (high war-shaman of the host-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic - a chaotic MOCKERY of order. Race-totem the Iron Order / the War-Banner Beast. The Kashtar serves the war-totem and, foremost, Gul-Maraqus the great War-Spirit (hobgoblins are the war-race); the One and - tellingly - Orlanu the Chainer (Lawful order) are demonized: their discipline serves Chaos, not Law.",
+    "race_totem": "the War-Banner Beast (Milkkar-behtark) / the Iron Order",
+    "venerated": { "Maraxus (war, conquest)": "Gul-Maraqus (the great War-Spirit; supreme)", "Raptis (the disciplined hunt)": "Gul-Raptu (the Conquest-Hunt)", "Vacidus (the void)": "Gul-Waqidu (the Devouring-Dark)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Orlandus (Lawful order, the oath)": "Orlanu the Chainer (true order, which their tyranny mocks)" },
+    "tribal_totem_pattern": "[Milkkar-/Dammar-/Iron-] + [war-beast or weapon]: Milkkar-behtark (War-Beast), Dammar-shentar (Blood-Fang Standard).",
+    "shaman_rites": "war-rites at the standard and the skull-helm; the drilling of the host before the totem; blood on the banner.",
+    "holy_symbol_motifs": { "War-Banner Beast": "a fanged beast on an iron standard", "Gul-Maraqus": "a notched cleaver crossed with a banner-pole" }
+  },
+  "banks_patterns": {
+    "war_bands": "named legions and companies: 'the Iron Order', 'the Red Standard', 'the Black Spear legion of [warlord]'",
+    "lairs_dungeons": "war-camps, fortresses, and drill-yards: 'the War-camp of [host]', 'the Fortress of [warlord]', 'the Iron Barracks of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Qattar", "Dammar", "Shentar", "Roshtar", "Eshtark", "Gibtark", "Khashtak", "Bortok", "Milkkar", "Ruakk", "Vargrok", "Nazktar", "Grumtar", "Dragtok", "Skartar", "Vurtok", "Bhaktar", "Maktok", "Throktar", "Braktok"],
+    "personal_f": ["Qattra", "Dammra", "Shentra", "Roshtra", "Eshtra", "Gibtra", "Khashtra", "Bortra", "Milkra", "Ruakra", "Vargra", "Nazktra", "Grumtra", "Dragtra", "Skartra", "Vurtra", "Bhaktra", "Maktra", "Throktra", "Braktra"],
+    "tribes_hordes": ["the Iron Order legion", "the War-Banner (Milkkar) host", "the Red Standard company", "the Skull-helm legion", "the Gul-Maraqus chosen (the war-host)", "the Iron Fist company", "the Black Spear legion", "the Chain-and-Lash host"],
+    "epithets_cognomina": ["the Iron-handed", "the Banner-bearer", "the Drillmaster", "the Lash", "the War-captain", "the Helm-splitter", "the Relentless", "the Oath-mocker"],
+    "flagship_lairs": ["the War-camp (Milkkar-dungtark)", "Hartark-fort (the mountain fortress)", "the Iron Barracks", "the Drill-yards of [warlord]", "Tsurrok-fort (the crag-fort)", "the Black Standard camp"]
+  }
+}

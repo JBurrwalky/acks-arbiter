@@ -102,14 +102,22 @@ func _resolve_int_score() -> int:
 
 
 func _restore_from_state() -> void:
-	## Rehydrate after back-navigation (§13.3 — full reset, recompute from state).
+	## Rehydrate after back-navigation AND across characters (§13.3 — setup() is a
+	## full UI rehydration, never a delta: the screen reuses ONE panel instance for
+	## every PC, so recompute disabled state + clear cached templates from scratch).
 	_wealth_roll = int(_state.get("wealth_roll", 0))
 	_selected_template = null
 	_editor_state = {}
 	_committed = false
+	_path_b_templates = []
 	_clear_editor_widgets()
 	_editor_box.visible = false
 	_status_label.text = ""
+	# The roll button is only ever transiently disabled while the dice prompt is
+	# open (_on_roll_wealth); a fresh setup must always re-enable it. Without this,
+	# a prior character's successful roll left it disabled-but-hidden, so the next
+	# character saw it visible-but-greyed.
+	_roll_btn.disabled = false
 
 	if _wealth_roll <= 0:
 		# Not yet rolled — fresh entry.

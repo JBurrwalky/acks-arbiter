@@ -1,0 +1,91 @@
+{
+  "kit_id": "dwarven",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Dwarven (the Durn, three dialects of one tongue)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit; demihuman tier)",
+  "_note": "The dwarven tier: one people (the Durn, 'the deep-folk') speaking one tongue, DURNKAD ('the deep-speech'), in three DIALECTS - not deep branches. DESIGN CONTRAST WITH THE ELVES: the elvish branches drifted far apart (each its own sound-law, its own sacred ending, each the deep ancestor of a human language cluster). The dwarves are insular, clannish, and fiercely traditional, so their speech barely drifts: the three dialects differ only by small allophony in the ROOT (Gormdurn hardens and geminates; Khraaldurn lengthens its vowels) and SHARE everything else - the same lexicon, the same titles, the same divine ending. Dwarven is a self-contained ISOLATE: it is NOT ancestral to any human family (unlike Vanethir). AESTHETIC (the sound): hard consonant frames (k/g/d/t/b/p, clusters dr/br/gr/kr/thr/rd/rg/rk/nd, geminates kk/gg/dd/mm/nn) around soft open vowels (a/o/u, some e/i); short, heavy CVC syllables with initial stress - rhythmic, like hammer-strokes on the anvil, the soft vowels rolling a lilt between the hard beats. Demihuman tier (race dwarf): golden-age->enclave arc, alignment weights per branch (catalog 5.2). DEITY names are morphs of the Agrippan canon, never real gods (no Tolkien/Norse/Warhammer dwarf-gods); they take the shared divine ending -drumm (m) / -drumma (f), the 'anvil-named' suffix - the hammer-beat by which the gods are honored.",
+  "sources_5_1": [],
+  "race": "dwarf",
+  "tier_note": "demihuman; up to 3 dwarf seed points per campaign (catalog 5.2); end_state enclave.",
+  "branches": {
+    "khordurn": { "biome": "any mountain except glacial and volcanic", "register": "hard/throaty (central dialect, the standard)", "ancestral_to": [], "model": "the dwarven isolate; no human analog", "weights": { "Lawful": 0.30, "Neutral": 0.60, "Chaotic": 0.10 } },
+    "gormdurn": { "biome": "volcanic mountain only", "register": "hard/throaty (fire-dialect; hardened, geminated)", "ancestral_to": [], "model": "the dwarven isolate; no human analog", "weights": { "Lawful": 0.10, "Neutral": 0.60, "Chaotic": 0.30 } },
+    "khraaldurn": { "biome": "glacial mountains or tundra hills only", "register": "hard/throaty (frost-dialect; long, rounded vowels)", "ancestral_to": [], "model": "the dwarven isolate; no human analog", "weights": { "Lawful": 0.10, "Neutral": 0.80, "Chaotic": 0.10 } }
+  },
+  "branch_laws": {
+    "_note": "SMALL drift only - these are dialects, not branches. The consonant skeleton and the whole word are shared; only minor allophony separates them, so a word is recognizably the same across all three.",
+    "khordurn": "CENTRAL (the standard): hard frames + soft a/o/u; short CVC; clusters and geminates as written. The baseline against which the other two are measured.",
+    "gormdurn": "FIRE-dialect: a slight hardening - final and medial stops geminate (-un -> -unn, -ak -> -akk), o tends to u; a crackling, clipped edge. Otherwise identical to Khordurn.",
+    "khraaldurn": "FROST-dialect: a slight lengthening - root vowels draw out and round (-un -> -uun, a -> aa), final stops soften a touch; a slow, cold roll. Otherwise identical to Khordurn."
+  },
+  "theonym_set": {
+    "_note": "The 25-power canon as Dwarven forms (morphs of the Agrippan canon), each with the three DIALECT reflexes. Read across a row = the SAME word with tiny drift (dialects, not branches): Gormdurn geminates, Khraaldurn lengthens. DEITY names take the shared SACRED GENDERED ending -drumm (m) / -drumma (f) - the 'anvil-named' suffix - NOT the mortal endings or the bare common-noun root. Gender is read off the Agrippan canon: -us/-o/-um = masculine, -a/-ia = feminine; the One is supreme masculine. Representative set (the build assembles the full 25). The forge (Orlundrumm) and the mine/mountain (Gundundrumm) are the most-honored gods; the dead (Delrundrumm) underwrite the ancestor-cult.",
+    "_endings": {
+      "_note": "THREE ending-classes keep gods, mortals, and common nouns distinct, and (unlike the elves) the divine ending is SHARED across all three dialects - dwarven drifts too little to split it. (1) DIVINE = -drumm (m) / -drumma (f), the anvil-named suffix, NO parentage sense. (2) mortal personal = -un/-ar/-ok (m), -a/-na/-ra (f), with clan-lineage (Kron [X]) and an optional patronymic -kun (son of) / -ketta (daughter of). (3) common-noun/place = the bare nominal root (-un/-ar/-ak/-grund).",
+      "divine": { "masculine": "-drumm", "feminine": "-drumma" },
+      "dialect_note": "all three dialects share -drumm/-drumma; the drift shows only in the root (Gormdurn geminates, Khraaldurn lengthens)."
+    },
+    "powers": {
+      "Aeternus (the One; skel '-T-R-N)": { "gender": "m (supreme)", "khordurn": "Atrundrumm", "gormdurn": "Atrunndrumm", "khraaldurn": "Atruundrumm" },
+      "Tulrius (sun, fire, light, justice; T-L-R)": { "gender": "m", "khordurn": "Tulrundrumm", "gormdurn": "Tulrunndrumm", "khraaldurn": "Tulruundrumm" },
+      "Orlandus (the FORGE - smith, iron, oath, war; R-L-N)": { "gender": "m", "khordurn": "Orlundrumm", "gormdurn": "Orlunndrumm", "khraaldurn": "Orluundrumm" },
+      "Gaiandus (the MINE/MOUNTAIN - earth, endurance; G-N-D)": { "gender": "m", "khordurn": "Gundundrumm", "gormdurn": "Gundunndrumm", "khraaldurn": "Gunduundrumm" },
+      "Numeno (air, sky-wisdom; N-M-N)": { "gender": "m", "khordurn": "Numundrumm", "gormdurn": "Numunndrumm", "khraaldurn": "Numuundrumm" },
+      "Realta (hearth-mother, mercy; R-L-T)": { "gender": "f", "khordurn": "Reltadrumma", "gormdurn": "Reltaddrumma", "khraaldurn": "Reltaadrumma" },
+      "Delorum (death, the honored dead; D-L-R)": { "gender": "m", "khordurn": "Delrundrumm", "gormdurn": "Delrunndrumm", "khraaldurn": "Delruundrumm" },
+      "Noctiluna (moon, night, deep-dark; N-K-L)": { "gender": "f", "khordurn": "Nokladrumma", "gormdurn": "Nokladdrumma", "khraaldurn": "Noklaadrumma" },
+      "Raptis (the hunt, blood-offering; R-P-T)": { "gender": "f (the Huntress)", "khordurn": "Raptadrumma", "gormdurn": "Raptaddrumma", "khraaldurn": "Raptaadrumma" },
+      "Maraxus (the FORGE-FIRE/VOLCANO - war-fire, pyre; M-R-X)": { "gender": "m", "khordurn": "Marakadrumm", "gormdurn": "Marakkadrumm", "khraaldurn": "Maraakadrumm" },
+      "Vacidus (the void, the unmaking; V-K-D)": { "gender": "m", "khordurn": "Vakundrumm", "gormdurn": "Vakunndrumm", "khraaldurn": "Vakuundrumm" },
+      "Lusanto (the hoard-greed, the gold-sickness; L-S-N)": { "gender": "m", "khordurn": "Lusundrumm", "gormdurn": "Lusunndrumm", "khraaldurn": "Lusuundrumm" },
+      "Dementus (storm-madness; D-M-N)": { "gender": "m", "khordurn": "Demundrumm", "gormdurn": "Demunndrumm", "khraaldurn": "Demuundrumm" }
+    }
+  },
+  "proto_roots": {
+    "_note": "Dwarven core-concept roots (hard frame, soft vowel, short), shared across the three dialects with only the small drift (Gormdurn geminates, Khraaldurn lengthens). Realized per culture's lexicon.",
+    "mountain/peak (KH-R)": { "khordurn": "khorun", "gormdurn": "khorunn", "khraaldurn": "khoruun" },
+    "stone/rock (K-D)": { "khordurn": "kadar", "gormdurn": "kadarr", "khraaldurn": "kadaar" },
+    "deep/under (D-R-N)": { "khordurn": "durnak", "gormdurn": "durnakk", "khraaldurn": "durnaak" },
+    "hall/vault (G-R-N-D)": { "khordurn": "grundar", "gormdurn": "grundarr", "khraaldurn": "grundaar" },
+    "forge (B-R-L)": { "khordurn": "bralun", "gormdurn": "bralunn", "khraaldurn": "braluun" },
+    "fire/forge-fire (G-R-M)": { "khordurn": "gormar", "gormdurn": "gormarr", "khraaldurn": "gormaar" },
+    "mine/delf (G-R-D)": { "khordurn": "gradun", "gormdurn": "gradunn", "khraaldurn": "graduun" },
+    "gold (G-L-D)": { "khordurn": "galdar", "gormdurn": "galdarr", "khraaldurn": "galdaar" },
+    "iron (K-R-N)": { "khordurn": "kronar", "gormdurn": "kronarr", "khraaldurn": "kronaar" },
+    "gem/bright-stone (B-R-L-K)": { "khordurn": "brilkad", "gormdurn": "brilkadd", "khraaldurn": "brilkaad" },
+    "gate/door (D-R)": { "khordurn": "dorun", "gormdurn": "dorunn", "khraaldurn": "doruun" },
+    "hammer (D-R-K)": { "khordurn": "drokun", "gormdurn": "drokunn", "khraaldurn": "drokuun" },
+    "forefather/ancestor (F-D-R)": { "khordurn": "fadrun", "gormdurn": "fadrunn", "khraaldurn": "fadruun" },
+    "honored-dead (D-R-N-D)": { "khordurn": "durnad", "gormdurn": "durnadd", "khraaldurn": "durnaad" },
+    "frost/rime (KH-R-L)": { "khordurn": "khralun", "gormdurn": "khralunn", "khraaldurn": "khraaluun" }
+  },
+  "title_skeleton": {
+    "_note": "ACKS 7 tiers; one ladder, three near-identical dialect reflexes (small drift). Dwarven realms are ancient vault-kingdoms (golden-age, now mostly fallen to fastness-holds); civ government with clan-based nobility.",
+    "tiers": {
+      "barony": { "gloss": "clan-lord", "khordurn": "Borkun", "gormdurn": "Borkunn", "khraaldurn": "Borkuun" },
+      "march": { "gloss": "gate-warden", "khordurn": "Vardrun", "gormdurn": "Vardrunn", "khraaldurn": "Vardruun" },
+      "county": { "gloss": "delf-lord", "khordurn": "Grundar", "gormdurn": "Grundarr", "khraaldurn": "Grundaar" },
+      "duchy": { "gloss": "great-lord", "khordurn": "Dramnar", "gormdurn": "Dramnarr", "khraaldurn": "Dramnaar" },
+      "principality": { "gloss": "high-lord", "khordurn": "Brakkun", "gormdurn": "Brakkunn", "khraaldurn": "Brakkuun" },
+      "kingdom": { "gloss": "king under the mountain", "khordurn": "Korrun", "gormdurn": "Korrunn", "khraaldurn": "Korruun" },
+      "empire": { "gloss": "over-king", "khordurn": "Dur-Korrun", "gormdurn": "Dur-Korrunn", "khraaldurn": "Dur-Korruun" }
+    },
+    "female_suffix": "-a (Borka, Grunda, Korra, Dur-Korra ...)",
+    "government_modeled": ["civ (the dwarven vault-kingdoms; clan-based nobility)"]
+  },
+  "dwarf_canon": {
+    "alignment_weights_by_branch": { "khordurn": { "Lawful": 0.30, "Neutral": 0.60, "Chaotic": 0.10 }, "gormdurn": { "Lawful": 0.10, "Neutral": 0.60, "Chaotic": 0.30 }, "khraaldurn": { "Lawful": 0.10, "Neutral": 0.80, "Chaotic": 0.10 } },
+    "_alignment_note": "Dwarves lean Neutral across the board (setting-lore 5.2 #51-53). Khordurn the most law-touched (the orderly vault-kingdoms); Gormdurn the most chaos-touched (the fire-cult, human sacrifice); Khraaldurn the most purely Neutral (the hard, withdrawn frost-holds). Each kit's alignment_allowed lists the seed/shift options; these weights set the dominant seed.",
+    "lifecycle": "high peak_strength, high collapse_proneness, end_state enclave (golden-age vault-kingdoms -> hard collapse to fastness-holds; dwarves are strong domain-builders, so their fallen holds are deep and ruin-rich).",
+    "seed_biomes": "Khordurn any mountain EXCEPT glacial and volcanic; Gormdurn volcanic mountain only; Khraaldurn glacial mountains or tundra hills only.",
+    "conquest": "in-biome genocide, out-of-biome vassalize, always-genocide vs other demihumans (catalog 5.2).",
+    "religion": "ANCESTOR-CENTRIC: daily liturgy and prayer go to the honored dead (the durnad) and clan-fathers (fadrun) at the tomb-hall; the gods are honored at yearly/seasonal FESTIVALS, foremost the forge (Orlundrumm) and the mine/mountain (Gundundrumm) - the powers of fire and earth. The Gormdurn (volcanic) lean hardest into fire: Marakadrumm the forge-fire, with human sacrifice cast into the volcanoes."
+  },
+  "conventions": {
+    "people_name_default": "MORTAL naming: a hard-soft-short given name (m -un/-ar/-ok, f -a/-na/-ra) + the clan (Kron [X]); dwarves identify by clan and forefather, with an optional patronymic -kun (son of) / -ketta (daughter of). A mortal named FOR a Power uses the power's ROOT + a mortal ending (Orlun+ar = Orlunar, a smith named for the forge-god), never the divine -drumm/-drumma (which belongs to the Power alone).",
+    "settlement_named_after": ["the deep-holds (grund) + a biome/forge/mine root", "an honored clan or forefather", "a fastness (the enclave end-state)"],
+    "transparent_vs_opaque": "high; dwarves are literal and traditional - most names transparently name stone, forge, clan, or ancestor.",
+    "no_exonyms": true
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "kit_id": "khordurn",
+  "tier": "culture",
+  "inherits": ["dwarven"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 51,
+  "race": "dwarf",
+  "demihuman_tier": true,
+  "sub_palette": "khordurn (Durnkad, central mountain dialect)",
+  "synthesis_sources": [],
+  "homeland": "Khorgrund",
+  "branch": { "biome": "any mountain except glacial and volcanic", "register": "hard/throaty (central dialect, the standard)", "ancestral_to": [], "model": "the dwarven isolate; no human analog" },
+  "government": "feudal",
+  "alignment_allowed": ["Lawful", "Neutral", "Chaotic"],
+  "alignment_weights": { "Lawful": 0.30, "Neutral": 0.60, "Chaotic": 0.10 },
+  "_note": "Dwarven demihuman culture, the central mountain dialect of the Durn (family_dwarven.json) - the standard against which the fire (Gormdurn) and frost (Khraaldurn) dialects are measured. Hard, throaty, short-syllabled speech with a hammer-on-anvil rhythm (hard consonant frames, soft a/o/u vowels, geminates for the beat). An ancient vault-kingdom of clan-holds, golden-age now mostly fallen to fastness-holds. Predominantly Neutral, with a strong law-touch (the orderly vault-kingdoms): weights {Lawful 0.30, Neutral 0.60, Chaotic 0.10}. Seeds in any Mountain hex EXCEPT Glacial and Volcanic. Dwarven is an ISOLATE (not ancestral to any human family); the three dwarven cultures are DIALECTS with only small drift, so Khordurn's words are near-identical to Gormdurn's and Khraaldurn's. DEITY names are the Dwarven morphs of the Agrippan canon (never real Tolkien/Norse/Warhammer dwarf-gods); they take the shared sacred GENDERED ending -drumm (m) / -drumma (f) - the anvil-named suffix - distinct from mortal -un/-ar/-ok / -a/-na/-ra and the bare common-noun root.",
+  "phonology": {
+    "palette": "Khordurn (Durnkad central dialect): hard consonant frames (k/g/d/t/b/p, clusters dr/br/gr/kr/thr/rd/rg/rk/nd, geminates kk/gg/dd/mm/nn) around soft open vowels (a/o/u, some e/i); short, heavy CVC syllables with initial stress - rhythmic, like hammer-strokes, the soft vowels rolling a lilt between the hard beats.",
+    "phonotactics": "CVC and short clusters; initial heavy stress; final stops and geminates carry the beat; few long vowels (those mark the Khraaldurn dialect).",
+    "transparent_ratio": 0.55
+  },
+  "lexicon": {
+    "feature_words": { "river": "varnak", "stream": "varnin", "cavern_lake": "kalun", "far_water": "drangar", "cave": "kavun", "chasm": "klundak", "mountain": "khorun", "hill": "tordun", "ridge": "drangun", "hall": "grundar", "mine": "gradun", "deep": "durnak", "forge_hall": "bralgrund", "ore_vein": "kronvar", "gate": "dorun", "bridge": "brakun", "stair": "tregun", "tunnel": "dragun", "well": "varnkad" },
+    "settlement_words": { "hamlet": "trevdun", "village": "baldun", "town": "kardun", "city": "karngrund", "fort": "dungrund", "gate_town": "dorgar", "market": "kaupun", "festival_hall": "drumgrund", "citadel": "tarngrund" },
+    "kinship": { "son": "kun", "daughter": "ketta", "clan": "kron", "kin": "durnkin", "forefather": "fadrun", "honored_dead": "durnad" },
+    "adjectives": { "great": "dramm", "little": "pikun", "old": "ordun", "new": "vandun", "black": "kruvun", "white": "vidun", "red": "ragdun", "golden": "galdun", "iron": "kronun", "deep": "durnun", "high": "torun", "sacred": "haldun", "strong": "stronk" },
+    "resources": { "salt": "salun", "iron": "kronar", "gold": "galdar", "silver": "tringar", "gem": "brilkad", "copper": "kopar", "star_metal": "starkad", "coal": "gormkol", "stone": "kadar", "ale": "olun" },
+    "directional": { "upper": "uprak", "lower": "nidrak", "north": "kordun", "south": "nardun", "east": "ostun", "west": "vendun", "inner": "indrak", "outer": "utrak" }
+  },
+  "morphology": {
+    "toponymic_suffixes": ["-grund (deep-hold)", "-durnak (deep)", "-khorun (mountain)", "-gradun (mine)", "Bral- / Galdar- (forge-/gold-)", "Kron- (clan of)"],
+    "patronymic_form": "clan-primary: the clan (Kron [X]) by an ancestral line; an optional patronymic [parent]-kun (son of) / -ketta (daughter of); the forefather is named at every hearth.",
+    "gendered_endings": { "male": "-un / -ar / -ok", "female": "-a / -na / -ra" },
+    "diminutive_form": "-in / -ki",
+    "compounding_rule": "[material|quality](hard root) + feature/hold: Galdar-grund (gold-hold), Bral-grundar (forge-hall); -grund for the hold, Kron- for the clan."
+  },
+  "title_ladder": {
+    "government": "feudal (an ancient vault-kingdom of clan-holds, now mostly fastness-holds; the Korrun under the mountain over the clan-lords, the rune-wardens and the hammer-companies)",
+    "tiers": {
+      "barony": { "ruler": "Borkun", "domain": "Borkungrund" },
+      "march": { "ruler": "Vardrun", "domain": "Vardrungrund" },
+      "county": { "ruler": "Grundar", "domain": "Grundargrund" },
+      "duchy": { "ruler": "Dramnar", "domain": "Dramnargrund" },
+      "principality": { "ruler": "Brakkun", "domain": "Brakkungrund" },
+      "kingdom": { "ruler": "Korrun", "domain": "Korrungrund" },
+      "empire": { "ruler": "Dur-Korrun", "domain": "Dur-Korrungrund" }
+    },
+    "_tiers_note": "Khordurn (central-dialect) reflexes of the Durnkad title ladder, ascending - the same seven ACKS tiers the Gormdurn and Khraaldurn share with only tiny drift. Borkun (clan-lord) barony; Vardrun (gate-warden) march; Grundar (delf-lord) county; Dramnar (great-lord) duchy; Brakkun (high-lord) principality; Korrun (king under the mountain) kingdom; Dur-Korrun (over-king) empire. A golden-age vault-kingdom, now fastness-holds.",
+    "female_forms": { "Dur-Korrun": "Dur-Korra", "Korrun": "Korra", "Brakkun": "Brakka", "Dramnar": "Dramna", "Grundar": "Grunda", "Vardrun": "Vardra", "Borkun": "Borka" },
+    "heir": "Korr-kun (the king's heir, the heir-under-the-mountain)",
+    "honorifics": { "lord": "Borkun", "lady": "Borka", "champion": "Drok-thane (hammer-thane)", "your_grace": "Korrun", "elder": "Ordun-fadrun (the old forefather)" },
+    "vassalage": { "liege": "Korrun", "vassal": "Drok-thane (sworn hammer)", "fealty": "Durnoath (the deep-oath, sworn on the ancestors)", "tribute": "Galdar-due (the gold-due)" }
+  },
+  "people_name_convention": {
+    "order": "a hard-short given name + the clan (Kron [X]); dwarves are named by clan and forefather; an optional patronymic -kun/-ketta.",
+    "surname_source": ["the clan (Kron [X])", "-kun/-ketta patronymic", "a craft or deed by-name"],
+    "dual_register": "every dwarf carries a clan-name and a forefather; the given name is plain and the clan is the pride.",
+    "theophoric": "mortal theophorics weave the honored power's ROOT (never the divine -drumm/-drumma ending) + a mortal ending: Orlun-ar (a smith named for the forge-god Orlundrumm), Gundun-a (a daughter named for the mountain-god).",
+    "diminutive": "-in / -ki"
+  },
+  "religion": {
+    "_note": "Deity-names are the Khordurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real Tolkien/Norse/Warhammer dwarf-gods; they take the sacred GENDERED ending -drumm (masc) / -drumma (fem) - the anvil-named class, distinct from mortal -un/-ar/-ok / -a/-na/-ra and the common-noun root. ANCESTOR-CENTRIC: daily liturgy and prayer go to the honored dead (the durnad) and clan-fathers (fadrun) at the tomb-hall; the gods are honored at yearly/seasonal FESTIVALS, foremost the forge (Orlundrumm) and the mine/mountain (Gundundrumm). The drumgrund (festival-hall), loud with hammers on the feast-days, is where the gods are sung.",
+    "the_one": "Atrundrumm (< Aeternus; sacred-masculine ending -drumm; the Stone-Father, the First Shaper; honored at the great festivals but distant from the daily ancestor-prayers; revered most when Lawful)",
+    "sample_deity_renames": { "Orlandus": "Orlundrumm (the forge, the smith, oaths and iron; the most honored god, masc.)", "Gaiandus": "Gundundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)", "Realta": "Reltadrumma (the hearth-mother, mercy; honored, fem.)", "Delorum": "Delrundrumm (death and the honored dead; the ancestor-warden, masc.)" },
+    "worship_by_alignment": { "Neutral": "the dwarven norm: daily prayer to the honored dead (the durnad) and clan-fathers (fadrun) at the tomb-hall; the gods honored at yearly/seasonal festivals, foremost the forge (Orlundrumm) and the mountain/mine (Gundundrumm), the powers of fire and earth; the One and the rest acknowledged distantly", "Lawful": "revere the One (Atrundrumm) and the Lawful powers (Orlundrumm the smith, Gundundrumm the mountain, Numundrumm), demonize the Chaotic powers", "Chaotic": "venerate the Chaotic fire- and greed-powers (Marakadrumm the forge-fire, Lusundrumm the gold-sickness), demonize the Lawful powers and the One" },
+    "demon_epithet_pattern": "the demonized set (by current alignment): when Lawful - Maraxus -> Marakadrumm the Wrack, Lusanto -> Lusundrumm the Gold-Sickness; when Chaotic - Aeternus -> Atrundrumm the Cold-Vault.",
+    "clergy_ladder": { "1": "Drok-kun (novice, the hammer-bearer)", "3": "Fadrun-warden (keeper of the ancestor-tombs)", "5": "Bral-drumm (forge-priest)", "7": "Grund-drumm (high hold-priest)", "9": "Dur-Drumm (the realm's high priest)" },
+    "religious_orders_pattern": "the Drumgrund (festival-hall) of [power]: 'the Drumgrund of Orlundrumm', loud with hammers on the feast-days.",
+    "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), named at every hearth and tomb.",
+    "holy_symbol_motifs": { "Orlundrumm": "a hammer crossed over an anvil", "Gundundrumm": "a peak above crossed picks", "Reltadrumma": "a hearth-flame in cupped hands" }
+  },
+  "banks_patterns": {
+    "ships": "(dwarves are no sailors) deep-barges and ore-rafts on the underflow: 'the Stone Keel', 'Hammer-of-the-Deep'",
+    "military_units": "the hold-wardens and hammer-companies: 'the Anvil Guard', 'the Iron-beards of [clan]'",
+    "taverns": "the ale-hall: 'the Hall of the Deep Ale', 'the Golden Tankard'",
+    "dungeons_ruins": "fallen dwarf-holds and flooded delfs: 'the lost Hold of [clan]', 'the Drowned Delf of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Burok", "Khadar", "Drokun", "Grundok", "Kadrun", "Bralun", "Korvak", "Gordak", "Galdun", "Kronak", "Vardok", "Khorvar", "Durnak", "Bramun", "Torrun", "Nudrok", "Gradun", "Karvun", "Brakun", "Dolgrun"],
+    "personal_f": ["Gormla", "Khada", "Drokna", "Gralda", "Kadra", "Tringa", "Borla", "Korra", "Grunna", "Reltka", "Norra", "Galda", "Khrala", "Khorra", "Durna", "Bramna", "Kronna", "Varna", "Brakka", "Dolna"],
+    "clan_houses": ["Kron Kadar (stone-clan)", "Kron Bralun (forge-clan)", "Kron Galdar (gold-clan)", "Kron Kronar (iron-clan)", "Kron Khorun (mountain-clan)", "Kron Durnak (deep-clan)", "Kron Brilkad (gem-clan)", "Kron Gradun (delf-clan)", "Kron Drokun (hammer-clan)", "Kron Tringar (silver-clan)", "Kron Bramun (beard-clan)", "Kron Dorun (gate-clan)"],
+    "epithets_cognomina": ["the Stone-handed", "the Deep-delver", "the Anvil-armed", "the Gold-counter", "the Iron-bearded", "the Oath-keeper", "the Grudge-holder", "the Long-memoried"],
+    "flagship_settlements": ["Khorgrund (the realm-seat / great hold)", "Bral-grundar (the forge-hall city)", "Gradun-durnak (the deep-delf hold)", "Galdar-grund (the gold-hold)", "Khorun-tarngrund (the mountain-citadel)", "Dorun-kardun (the gate-town)"]
+  }
+}

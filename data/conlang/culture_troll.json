@@ -1,0 +1,67 @@
+{
+  "kit_id": "troll",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "troll",
+  "sub_palette": "troll (Kazhur regressed - deep slow groans, long vowels)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (deep caves, mires, and boulder-fields)",
+  "branch": { "regression": "deep slow groans (vowels lengthen to oo/uu, consonants soften to deep voiced g/d/b/m, drawn-out, suffix -oom/-rugg/-uum)", "nature": "huge, dim, regenerating; ponderous and ever-hungry; the simplest concepts", "model": "Kazhur rotted into a troll's slow deep groan" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: TROLLS, huge dim regenerating brutes - Kazhur rotted into deep slow groans and drawn-out vowels (qatal 'kill' -> Gadool-uum). The simplest concepts of any beastman. ALWAYS CHAOTIC; totemic shamanism (race-totem the Stone-Belly / the Ever-Mending). Trolls especially demonize fire (their bane). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Troll (Kazhur, slow-groan regression): vowels lengthen to oo/uu, consonants soften to deep voiced g/d/b/m, drawn-out, suffixes -oom/-rugg/-uum; ponderous, deep, slow.",
+    "phonotactics": "long-vowel CVVC; deep voiced codas; slow heavy stress.",
+    "transparent_ratio": 0.22
+  },
+  "lexicon": {
+    "concepts": { "blood": "daamog", "flesh_meat": "boomar", "bone": "atsoom", "kill": "gadool", "devour": "akhoom", "fire": "eshoom", "dark": "gashuum", "raid_plunder": "shaloom", "strong": "giboom", "great": "raboom", "small": "qatoom", "beast": "behoom", "horde": "amoom", "lair": "meeroom", "spirit_totem": "roogug", "fang": "shoonug", "claw": "tsipoom", "horn": "qaroom", "hunt": "tsayoom", "war": "milgoom", "death": "maroom", "night": "layloom", "shaman": "gashoob" },
+    "feature_words": { "mountain": "harrug", "cave": "meeroom", "pit": "boorug", "swamp": "bidoom", "waste": "midboom", "crag": "soorug", "gorge": "gaayoom", "dark_forest": "yaaroom" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], groaned: Daamog-shoonug (blood-fang); band = [Totem]-amoom.",
+    "naming_marker": "named slowly by the gashoob; a deep groan-name.",
+    "plural": "drawn-out -oom; mostly uncounted (few)"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds (rare for trolls, who are few and scattered). thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / troll-band - small, scattered (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rooshoom", "scope": "chief of a single clanhold (band)" },
+      "march": { "ruler": "Milgoom-Rooshoom", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Raboom-Rooshoom", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Amoom-Rooshoom", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Maloom", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Raboom-Maloom", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Raboom-Amoom-Maloom", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafoom (the small one/slave)", "warrior": "Giboom (the smasher)" },
+    "shaman_line": { "shaman": "Gashoob (the totem-groaner)", "high_shaman": "Raab-Gashoob (great-shaman of the band-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic, and simple. Race-totem the Stone-Belly / the Ever-Mending (trolls regenerate). The Gashoob groans to the totem and the Gul-spirits in the deep cave; foremost Gul-Waqidu the Devouring-Dark (the endless gut). Trolls demonize Tarul the Burning-Eye above all - FIRE stops their mending, and is their dread.",
+    "race_totem": "the Stone-Belly (Atsoom-behoom) / the Ever-Mending",
+    "venerated": { "Vacidus (the endless devouring)": "Gul-Waqidu (the Devouring-Dark; the never-full gut)", "Maraxus (the smash)": "Gul-Maraqus (the War-Spirit)", "Noctiluna (the cave-dark)": "Gul-Naktilu (the Deep-Dark)" },
+    "demonized": { "Tulrius (the sun, fire)": "Tarul the Burning-Eye (FIRE, the troll's bane - dreaded above all)", "Aeternus (the One)": "Aternu the Sky-Tyrant" },
+    "tribal_totem_pattern": "[Atsoom-/Daamog-/Stone-] + [deep-beast or stone]: Atsoom-behoom (Stone-Belly), Daamog-shoonug (Blood-Fang).",
+    "shaman_rites": "slow groan-chants in the deep cave; the gnawing of bones; the dread and shunning of fire.",
+    "holy_symbol_motifs": { "Stone-Belly": "a great round gut over a boulder", "Gul-Waqidu": "an open, never-full maw" }
+  },
+  "banks_patterns": {
+    "war_bands": "the groan-named bands: 'the Stone-Bellies', 'the Bone-grinders', 'the Boulder-throws of [chief]'",
+    "lairs_dungeons": "deep caves, mires, and boulder-fields: 'the Deep-cave of [band]', 'the Bone-grind of [chief]', 'the Boulder-deep of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Gadool", "Daamog", "Shoonug", "Rooshoom", "Eshoom", "Giboom", "Gashuum", "Boorug", "Milgoom", "Roogug", "Vroomug", "Naazoom", "Grumoom", "Droomug", "Skaaroom", "Vuroom", "Bhakoom", "Maaroom", "Throomug", "Goomrug"],
+    "personal_f": ["Daamoga", "Shoonuga", "Rooshuma", "Eshooma", "Gibooma", "Gashuuma", "Boruga", "Milgooma", "Rooguma", "Vroomuga", "Naazooma", "Grumooma", "Droomuga", "Skaarooma", "Vurooma", "Bhakooma", "Maarooma", "Throomuga", "Goomruga", "Lelooma"],
+    "tribes_hordes": ["the Stone-Belly (Atsoom-behoom) tribe", "the Ever-Mending tribe", "the Cave-deep (Meeroom) band", "the Bone-grind tribe", "the Boulder-throw band", "the Gut (Gul-Waqidu) tribe", "the Slow-doom band", "the Stone-troll clan"],
+    "epithets_cognomina": ["the Stone-belly", "the Ever-mending", "the Bone-grinder", "the Boulder-throw", "the Slow-doom", "the Gut", "the Mountain-deep", "the Never-full"],
+    "flagship_lairs": ["the Deep-cave (Meeroom)", "Boorug-deep (the pit-deep)", "Bidoom-mire (the swamp-deep)", "the Bone-grind cave", "the Boulder-deep of [chief]", "Harrug-cave (the mountain-cave)"]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "kit_id": "bugbear",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "bugbear",
+  "sub_palette": "bugbear (Kazhur regressed - low growl-whispers)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (ambush-warrens and silent dens)",
+  "branch": { "regression": "low growl-whispers (voiced and breathy with a sibilant whisper, h-breath, suffix -hrr/-mbu/-vurr)", "nature": "large hairy stealth-goblinoids; silent ambushers and throat-cutters", "model": "Kazhur rotted into a bugbear's menacing whisper" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: BUGBEARS, large hairy stealth-goblinoids - Kazhur rotted into low growl-whispers (qatal 'kill' -> khatabh-hrr). Silent ambushers; they kill from the dark. ALWAYS CHAOTIC; totemic shamanism (race-totem the Hush / the Night-Hand). Deity-morphs Gul- prefixed. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Bugbear (Kazhur, growl-whisper regression): voiced and breathy with a sibilant whisper, h-breath after stops, suffixes -hrr/-mbu/-vurr; menacing, soft, low.",
+    "phonotactics": "CVC with breathy/whispered codas; low menacing stress.",
+    "transparent_ratio": 0.27
+  },
+  "lexicon": {
+    "concepts": { "blood": "dhamvurr", "flesh_meat": "bashvurr", "bone": "atsmbu", "kill": "khatabh-hrr", "devour": "akhvurr", "fire": "eshhrr", "dark": "khashhrr", "raid_plunder": "shalvurr", "strong": "gibvurr", "great": "rabvurr", "small": "qatmbu", "beast": "behmbu", "horde": "ammbu", "lair": "membu", "spirit_totem": "ruahvurr", "fang": "shembu", "claw": "tsipvurr", "horn": "qarvurr", "hunt": "tsayvurr", "war": "milkvurr", "death": "mavurr", "night": "laylvurr", "shaman": "kashvurr" },
+    "feature_words": { "mountain": "harvurr", "cave": "membu", "pit": "borvurr", "swamp": "bitsvurr", "waste": "midbvurr", "crag": "tsurvurr", "gorge": "gayvurr", "dark_forest": "ya'vurr" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], whispered: Dhamvurr-shembu (blood-fang); band = [Totem]-ammbu.",
+    "naming_marker": "named in a whisper by the kashvurr; a hush-name.",
+    "plural": "-mbu/-vurr; mostly a creeping few"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / ambush-band (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Roshmbu", "scope": "chief of a single clanhold (ambush-band)" },
+      "march": { "ruler": "Milkvurr-Roshmbu", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabvurr-Roshmbu", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Ammbu-Roshmbu", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malmbu", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabvurr-Malmbu", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabvurr-Ammbu-Malmbu", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shafvurr (the runt/slave)", "warrior": "Gibvurr (the stalker-fighter)" },
+    "shaman_line": { "shaman": "Kashvurr (the totem-whisperer)", "high_shaman": "Rab-Kashvurr (great-shaman of the band-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Hush / the Night-Hand. The Kashvurr whispers to the totem and the Gul-spirits in the silent dark; foremost Gul-Naktilu the Dark (cover for the kill); the One and the sun demonized (light reveals them).",
+    "race_totem": "the Night-Hand (Laylvurr-tsipvurr) / the Hush",
+    "venerated": { "Noctiluna (the hush-dark)": "Gul-Naktilu (the Dark that hides the kill; supreme)", "Raptis (the ambush-hunt)": "Gul-Raptu (the Stalk-Hunt)", "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit)", "Vacidus (the silence)": "Gul-Waqidu (the Devouring-Dark)" },
+    "demonized": { "Tulrius (the sun, light)": "Tarul the Burning-Eye (light that reveals the hush)", "Aeternus (the One)": "Aternu the Sky-Tyrant" },
+    "tribal_totem_pattern": "[Laylvurr-/Khashhrr-/Hush-] + [stalking-beast or hand]: Laylvurr-tsipvurr (Night-Claw), Khashhrr-behmbu (Dark-Beast).",
+    "shaman_rites": "whisper-chants in the silent dark; the throat-offering; the donning of the shadow-hide.",
+    "holy_symbol_motifs": { "Night-Hand": "a black hand over a closed eye", "Gul-Naktilu": "a covering shadow" }
+  },
+  "banks_patterns": {
+    "war_bands": "the whisper-named bands: 'the Hush', 'the Throat-cutters', 'the Night-hands of [chief]'",
+    "lairs_dungeons": "ambush-warrens and silent dens: 'the Creep-warren of [band]', 'the Silent hold of [chief]', 'the Throat-cutter den of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Khatabh", "Dhamvurr", "Shembu", "Roshmbu", "Eshhrr", "Gibvurr", "Khashhrr", "Borvurr", "Milkvurr", "Ruahvurr", "Vragvurr", "Nazmbu", "Grumvurr", "Dragmbu", "Skarvurr", "Vurmbu", "Bhakvurr", "Mavurr", "Throgvurr", "Hushmbu"],
+    "personal_f": ["Dhamvra", "Shembra", "Roshmba", "Eshhra", "Gibvra", "Khashra", "Borvra", "Milkvra", "Ruahvra", "Vragvra", "Nazmba", "Grumvra", "Dragmba", "Skarvra", "Vurmba", "Bhakvra", "Mavra", "Throgvra", "Hushmba", "Lelvra"],
+    "tribes_hordes": ["the Hush (Khashhrr) band", "the Night-Hand band", "the Ambush (Gul-Naktilu) band", "the Throat-cutter band", "the Silent-stalk tribe", "the Black-hand band", "the Whisper horde", "the Night-creep tribe"],
+    "epithets_cognomina": ["the Silent", "the Throat-cutter", "the Night-hand", "the Stalker", "the Whisper", "the Black-furred", "the Ambusher", "the Unseen"],
+    "flagship_lairs": ["the Ambush-warren (Membu)", "Borvurr-creep (the pit-lair)", "Ya'vurr-stalk (the dark-forest lair)", "the Throat-cutter den", "the Silent hold of [chief]", "Tsurvurr-cave (the crag-lair)"]
+  }
+}

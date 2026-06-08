@@ -1,0 +1,67 @@
+{
+  "kit_id": "kobold",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "kobold",
+  "sub_palette": "kobold (Kazhur regressed - yips + high clicks)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (tunnel-warrens and trap-riddled dens)",
+  "branch": { "regression": "yips + high clicks (q -> k' click, k -> tk', sh -> ts', drop/clip finals, vowels raise i/e, diminutive -ik/-ek)", "nature": "small reptile-dog vermin; the most degraded and simple; trap-makers and tunnelers", "model": "Kazhur rotted into a kobold's yipping throat" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: KOBOLDS, small reptile-dog vermin - the most degraded beastman tongue, shrill yips and high clicks (qatal 'kill' -> k'atik). Cowardly, numerous, trap-cunning. ALWAYS CHAOTIC; totemic shamanism (race-totem the Little Gnasher / the Trap-Lizard). Deity-morphs Gul- prefixed (no gendered ending); totems descriptive Kazhur. Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Kobold (Kazhur, yip-click regression): q -> k' (click), k -> tk', sh -> ts', finals dropped/clipped, vowels raise to i/e, diminutive -ik/-ek; shrill, quick, high.",
+    "phonotactics": "short CV(C) with clicks and glottal stops; high pitch; clipped.",
+    "transparent_ratio": 0.25
+  },
+  "lexicon": {
+    "concepts": { "blood": "dimik", "flesh_meat": "bits'ek", "bone": "ts'imik", "kill": "k'atik", "devour": "ak'ik", "fire": "ets'ik", "dark": "k'ats'ik", "raid_plunder": "ts'alik", "strong": "gibik", "great": "rebik", "small": "k'itik", "beast": "bekik", "horde": "emik", "lair": "me'ik", "spirit_totem": "ru'ik", "fang": "ts'enik", "claw": "ts'ipik", "horn": "k'arik", "hunt": "ts'idik", "war": "milk'ik", "death": "mevik", "night": "lelik", "shaman": "k'ats'ep" },
+    "feature_words": { "mountain": "harik", "cave": "kavik", "pit": "borik", "swamp": "bits'ik", "waste": "midbik", "crag": "ts'urik", "gorge": "gayik", "dark_forest": "ya'ik" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], yipped: K'itik-ts'enik (little-fang); warren = [Totem]-emik.",
+    "naming_marker": "named by the k'ats'ep at a blooding; a quick yip-name.",
+    "plural": "k'-doubling or -ik-im; mostly a swarming uncounted many"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / tunnel-warren (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rots'", "scope": "chief of a single clanhold (warren)" },
+      "march": { "ruler": "Milk'ik-Rots'", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rebik-Rots'", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Emik-Rots'", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malik", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rebik-Malik", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rebik-Emik-Malik", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Ts'aflik (the runt/slave)", "warrior": "Gibik (the trap-fighter)" },
+    "shaman_line": { "shaman": "K'ats'ep (the totem-yipper)", "high_shaman": "Rebik-k'ats'ep (great-shaman of the warren-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Little Gnasher / the Trap-Lizard. The k'ats'ep yips to the totem and the Gul-spirits over trap-pits and bone-piles; the One and the sun are demonized (kobolds shun the light).",
+    "race_totem": "the Little Gnasher (K'itik-ts'enik) / the Trap-Lizard",
+    "venerated": { "Noctiluna (the hiding dark)": "Gul-Naktilu (the dark that hides the warren)", "Lusanto (the hoard/trap-greed)": "Gul-Lusanu (the Hoard-Spirit; trap and steal)", "Vacidus (the devouring dark)": "Gul-Waqidu (the Devouring-Dark)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Tulrius (the sun)": "Tarul the Burning-Eye (the light that finds them)" },
+    "tribal_totem_pattern": "[K'itik-/Dimik-/k'ats'ik-] + [small-beast or trap]: K'itik-ts'enik (Little Fang), Dimik-ts'ipik (Blood-Claw).",
+    "shaman_rites": "yip-chants over trap-pits, bone-piles, and stolen-hoards; the totem's little skull on a stick.",
+    "holy_symbol_motifs": { "Little Gnasher": "a tiny gnashing jaw over a snare", "Gul-Lusanu": "a heap of stolen teeth and coins" }
+  },
+  "banks_patterns": {
+    "war_bands": "the yip-named swarms: 'the Sharp-teeth', 'the Trap-setters', 'the Tunnel-rats of [chief]'",
+    "lairs_dungeons": "trap-riddled tunnel-warrens and bone-piles: 'the Warren of [tribe]', 'the Trap-tunnels of [chief]', 'the Bone-pile of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["K'atik", "Dimik", "Ts'enik", "Bits'ek", "Ru'ik", "Gibik", "K'arik", "Borik", "Ts'ipik", "Vekik", "Snikik", "Yipik", "Tk'ek", "Rebik", "Milk'ik", "Ts'idik", "Kavik", "Dremik", "Skritik", "Chik'ek"],
+    "personal_f": ["Dimki", "Ts'enki", "Bitska", "Ru'ki", "Gibki", "K'arki", "Yipka", "Snikka", "Vekki", "Reblik", "Milka", "Ts'idka", "Kavka", "Dremki", "Skritka", "Chika", "Lelka", "Ts'ipka", "Tk'eka", "Mavki"],
+    "tribes_hordes": ["the Little Gnasher (K'itik-ts'enik) warren", "the Trap-Lizard tribe", "the Skulk (K'ats'ik) warren", "the Yip-pack", "the Hoard (Gul-Lusanu) warren", "the Bone-pile tribe", "the Tunnel-rats", "the Sharp-tooth warren"],
+    "epithets_cognomina": ["the Sharp-tooth", "the Trap-setter", "the Skitterer", "the Tunnel-rat", "the Bone-picker", "the Quick-yip", "the Hidden-claw", "the Many"],
+    "flagship_lairs": ["the Warren (K'atik-me'ik)", "Borik-kavik (the pit-cave warren)", "the Bone-pile", "Midbik-warren (the waste-warren)", "the Trap-tunnels of [chief]", "Ts'urik-kavik (the crag-warren)"]
+  }
+}

@@ -159,6 +159,11 @@ func _load_dungeon_voxel(dungeon_dict: Dictionary, spawn_pos: Vector2i) -> void:
 		push_error("DungeonMapController._load_dungeon_voxel: no cells in dungeon '%s'" % _dungeon_id)
 		return
 
+	# Savegame: overlay persisted explored-state (fog + door state) from a prior
+	# visit. voxel_map_cells is sparse and empty on first entry, so this no-ops
+	# for a fresh dungeon (gdd-savegame-system.md §5.4).
+	_merge_persisted_cell_state()
+
 	# Determine entry position
 	var entry_3d: Vector3i
 	if spawn_pos != Vector2i(-1, -1):
@@ -485,6 +490,62 @@ func teleport_party_to(target_pos: Vector3i) -> bool:
 	_update_visibility_on_move(old_pos, target_pos)
 	party_moved.emit(old_pos, target_pos)
 	return true
+
+
+## Restores each party entity to its exact saved voxel cell/level (savegame
+## load). Unlike teleport_party_to(), entities are placed individually rather
+## than scattered around an anchor, so the party reloads exactly where it was
+## (gdd-savegame-system.md §5.2). [param positions] maps entity_id -> Vector3i.
+## Sets the active level to the leader's level and refreshes fog + renderer.
+func restore_entity_positions(positions: Dictionary) -> bool:
+	if _voxel_map == null or _party_entity_ids.is_empty():
+		return false
+	var old_pos := get_party_position_3d()
+	var placed_any := false
+	var leader_level := _current_level
+	for eid in _party_entity_ids:
+		if not positions.has(eid):
+			continue
+		var p: Vector3i = positions[eid]
+		if not _voxel_map.has_cell(p):
+			push_warning("DungeonMapController.restore_entity_positions: no cell at %s for %s" % [str(p), eid])
+			continue
+		_voxel_map.set_entity_pos(eid, p)
+		placed_any = true
+		if eid == _party_entity_ids[0]:
+			leader_level = p.z
+	if not placed_any:
+		return false
+	_current_level = leader_level
+	var new_pos := get_party_position_3d()
+	for eid in _party_entity_ids:
+		entity_moved.emit(eid, old_pos, _voxel_map.get_entity_pos(eid))
+	if old_pos.z != leader_level:
+		level_changed.emit(old_pos.z, leader_level)
+	_update_visibility_on_move(old_pos, new_pos)
+	party_moved.emit(old_pos, new_pos)
+	return true
+
+
+## Overlays persisted dungeon cell state (fog + door state) from voxel_map_cells
+## onto the freshly-built layout. Structural fields stay from the layout; only
+## dynamic state is restored. No-op when nothing was saved (gdd-savegame-system.md §5.4).
+func _merge_persisted_cell_state() -> void:
+	if _voxel_map == null or _dungeon_id.is_empty():
+		return
+	var saved: Array = CampaignRepository.load_voxel_cells_for_map(_dungeon_id)
+	for sc: VoxelCell in saved:
+		var pos := Vector3i(sc.col, sc.row, sc.level)
+		if not _voxel_map.has_cell(pos):
+			continue
+		var live: VoxelCell = _voxel_map.get_cell(pos)
+		if live == null:
+			continue
+		live.fog_state = sc.fog_state
+		live.door_state = sc.door_state
+		live.door_type = sc.door_type
+		live.door_detected = sc.door_detected
+		_voxel_map.set_cell(pos, live)
 
 
 # ---------------------------------------------------------------------------

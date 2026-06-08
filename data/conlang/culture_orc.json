@@ -1,0 +1,73 @@
+{
+  "kit_id": "orc",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - NOT in setting-lore §5.2 (the human/demihuman culture list); beastman demographics, placement, and caps come from ax_domains_of_chaos.xml (catalog 5.3). This kit supplies naming + totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "orc",
+  "sub_palette": "orc (Kazhur regressed - deep guttural growls)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (wandering hordes and mountain/cave warrens)",
+  "branch": { "regression": "deep guttural growls (q -> ghr/khr, kh -> KHR, gr/rk/gh emphasis, drawn-out growl; suffix -gur/-rakh/-gor)", "nature": "brutal raider-soldiers; the archetypal beastman", "model": "Kazhur (the maker-tongue) rotted into an orc's throat" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: ORCS, the brutal raider-soldiers and the archetypal beastman. Their speech is KAZHUR (the sorcerers' maker-tongue, family_beastman.json) rotted into deep guttural GROWLS - q -> ghr/khr, kh -> KHR, heavy gr/rk/gh, drawn-out growl, suffixes -gur/-rakh/-gor - over a faint, still-recognizable Kazhur skeleton (qatal 'kill' -> Khatakhgur). Concepts are few and brutal (blood, meat, kill, fire, dark, totem). ALWAYS CHAOTIC. Faith is TOTEMIC shamanism: the race-totem is the Red Maw / the Tusked War-Boar; the kashap (shaman) serves it and, above all the served Chaos-Spirits, Gul-Maraqus the great War-Spirit, by blood-offering on the skull-heap; the One (Aternu the Sky-Tyrant) and the Lawful powers are demonized. DEITY names are harsh Kazhur morphs of the Agrippan canon prefixed Gul- (never real gods), no gendered ending (degraded); totem-spirits are descriptive bestial Kazhur, not canon-morphs. Mechanically the beastman tier stays stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Orc (Kazhur, deep-growl regression): q -> ghr/khr, kh -> KHR, heavy clusters gr/rk/gh/khr, drawn-out guttural growl, suffixes -gur/-rakh/-gor; the Kazhur triliteral root stays faintly under the growl. Brutal, loud, throaty.",
+    "phonotactics": "CVC/CVCC with heavy guttural clusters and growled codas; root stress, growled length.",
+    "transparent_ratio": 0.30
+  },
+  "lexicon": {
+    "concepts": { "blood": "dhamr", "flesh_meat": "bhakhar", "bone": "akhsam", "kill": "khatakhgur", "devour": "akhrakh", "fire": "ishakh", "dark": "khashagh", "raid_plunder": "shalrakh", "strong": "gibgur", "great": "rakh", "small": "khatak", "beast": "behgur", "horde": "ghamgur", "lair": "megargh", "spirit_totem": "rukhgur", "fang": "shengur", "claw": "tsibgar", "horn": "khargan", "hunt": "tsaydgur", "war": "milkhargh", "death": "magor", "night": "laylgur", "shaman": "khashagh" },
+    "feature_words": { "mountain": "hargur", "cave": "megargh", "pit": "borgh", "swamp": "bitsgar", "waste": "midbargh", "crag": "tsurgh", "gorge": "gaygor", "dark_forest": "yaghar" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], growled: Dhamr-shengur (blood-fang), Rakh-khatakhgur (great-kill); horde = [Totem]-ghamgur.",
+    "naming_marker": "named by the kashap at a blooding; a deed or trait, growled.",
+    "plural": "growled repetition or -gur-im; mostly uncounted"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / wandering horde (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Ghrosh", "scope": "chief of a single clanhold (tribe)" },
+      "march": { "ruler": "Milkhargh-Ghrosh", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rakh-Ghrosh", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Ghamgur-Ghrosh", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malghur", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rakh-Malghur", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rakh-Ghamgur-Malghur", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafgul (the runt/slave)",
+      "warrior": "Gibgur (the blooded fighter)"
+    },
+    "shaman_line": {
+      "shaman": "Khashagh (the totem-speaker)",
+      "high_shaman": "Rakh-Khashagh (great-shaman; keeper of the horde's great-totem)"
+    }
+  },
+  "religion": {
+    "_note": "CHAOTIC only. TOTEMIC shamanism: the orc race-totem is the RED MAW / the Tusked War-Boar; tribes also take totems. The kashap serves the totem and the Chaos-Spirits (the Gul-spirits) by blood-offering on the skull-heap; above all Gul-Maraqus the great War-Spirit (orcs are made for slaughter). The One and the Lawful are demonized and feared. Deity-morphs take the Gul- prefix and no gendered ending (degraded); totems are descriptive bestial Kazhur, not canon-morphs.",
+    "race_totem": "the Red Maw (Dhamr-Megargh, the red devouring jaws) / the Tusked War-Boar (Khargan-Behgur)",
+    "venerated": { "Maraxus (war-fire, slaughter)": "Gul-Maraqus (the great War-Spirit; served above all)", "Raptis (the blood-hunt)": "Gul-Raptu (the Blood-Hunt-Spirit)", "Vacidus (the devouring void)": "Gul-Waqidu (the Devouring-Dark)", "Noctiluna (the night-cover)": "Gul-Naktilu (the Dark that hides the horde)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Tulrius (the sun, law)": "Tarul the Burning-Eye", "Orlandus (iron, law)": "Orlanu the Chainer" },
+    "tribal_totem_pattern": "[Rakh-/Dhamr-/Khashak-/color] + [beast or body-part]: Rakh-Shengur (the Great Fang), Dhamr-Tsibgar (the Blood-Claw), Khashak-Behgur (the Dark-Beast).",
+    "shaman_rites": "blood-offering on the skull-heap, the totem-pole and the boar-skull standard, the donning of the totem's hide; the Rakh-Khashagh keeps the horde's great-totem.",
+    "holy_symbol_motifs": { "Red Maw": "a red, tusked, gaping jaw", "Gul-Maraqus": "a notched cleaver over a skull-heap" }
+  },
+  "banks_patterns": {
+    "war_bands": "the growl-named warbands and hordes: 'the Red Maw', 'the Skull-takers', 'the Throat-renders of [chief]'",
+    "lairs_dungeons": "mountain warrens, sacked holds, and skull-heaps: 'the Warren of [horde]', 'the Skull-heap of [warlord]', 'the Sacked Hold of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Khatakhgur", "Dhamshen", "Shalrakh", "Milkhargh", "Tsaydgur", "Akhrakh", "Gibgur", "Magor", "Khargan", "Ishakh", "Bhakhar", "Tsibgar", "Drogkhar", "Vurgakh", "Behgur", "Grukhmar", "Vughrakh", "Skarghor", "Throgmar", "Murgakh"],
+    "personal_f": ["Dhamna", "Ghrazna", "Mokhra", "Brughna", "Khargna", "Ghorna", "Skarna", "Vurgna", "Vughna", "Maghra", "Throgna", "Grukhna", "Bhakna", "Ghazna", "Shengna", "Rakhna", "Murgna", "Vushkna", "Drogna", "Ulghna"],
+    "tribes_hordes": ["the Red Maw (Dhamr-Maw) horde", "the Great Fang (Rakh-Shengur) tribe", "the Blood-Claw (Tsibgar) tribe", "the Dark (Khashagh) horde", "the War-Beast (Milkhargh-Behgur) horde", "the Skull-heap horde", "the Tusked (Khargan) tribe", "the Carrion (Magor) horde"],
+    "epithets_cognomina": ["the Skull-taker", "the Blood-drinker", "the Tusked", "the One-eye", "the Throat-render", "the War-howl", "the Red-handed", "the Gut-eater"],
+    "flagship_lairs": ["the Red Maw (Dhamr-Maw, the great horde-lair)", "Hargur-Megargh (the mountain-cave warren)", "Borgh-Khashagh (the dark pit)", "Yaghar-ghamgur (the dark-forest horde)", "the Skull-heap of [warlord]", "Bitsgar-megargh (the swamp-warren)"]
+  }
+}

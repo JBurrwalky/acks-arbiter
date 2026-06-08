@@ -520,6 +520,10 @@ extends Node
 @onready var _template_class_metadata_tests = $TemplateClassMetadataTests
 @onready var _template_magic_item_progression_tests = $TemplateMagicItemProgressionTests
 @onready var _template_spell_repertoire_tests = $TemplateSpellRepertoireTests
+# 2026-06-07 — Savegame Phase S-1: location/context persistence (gdd-savegame-system.md §5)
+@onready var _savegame_location_tests = $SavegameLocationTests
+# 2026-06-07 — Savegame Phase S-2: whole-DB snapshot round-trip
+@onready var _savegame_snapshot_tests = $SavegameSnapshotTests
 
 
 func _ready() -> void:
@@ -1034,7 +1038,11 @@ func run() -> void:
 			_template_wealth_sweep_tests,
 			_template_class_metadata_tests,
 			_template_magic_item_progression_tests,
-			_template_spell_repertoire_tests]:
+			_template_spell_repertoire_tests,
+			# 2026-06-07 — Savegame Phase S-1: location/context persistence
+			_savegame_location_tests,
+			# 2026-06-07 — Savegame Phase S-2: whole-DB snapshot round-trip
+			_savegame_snapshot_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

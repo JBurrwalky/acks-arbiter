@@ -481,6 +481,19 @@ func _on_map_view_mode_changed(_from_mode: int, to_mode: int) -> void:
 	controller.load_map(loaded)
 
 
+## Persists the hex map's mutable state (fog-of-war, survey progress) on save.
+## gdd-savegame-system.md §5.3 — this replaces the old wilderness-only block in
+## SessionRunner.save_session(). Party hex position is written incrementally by
+## WildernessHandlers on each travel leg, so it is not re-saved here.
+func flush_to_db(runner) -> void:
+	var controller: HexMapController = runner.get_hex_map_controller()
+	if controller == null:
+		return
+	var map_data: HexMapData = controller.get_map()
+	if map_data != null:
+		CampaignRepository.save_hex_map(map_data, GameState.campaign_id)
+
+
 ## Set [param loaded].party_hex to the active party's actual coordinate on
 ## that map (if directly on it), or to the parent_anchor of the party's
 ## child map (if [param loaded] is the parent / ancestor of the party's

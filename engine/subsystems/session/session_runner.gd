@@ -401,6 +401,12 @@ func transition_to_state(state_key: String, context: Dictionary = {}) -> void:
 		GameState.current_location_key = "none"
 	elif state_key in ["wilderness", "dungeon", "settlement"]:
 		GameState.current_location_key = _current_state.get_location_key_for_character("")
+		# Persist the party's exploration context so the savegame loader can
+		# restore it instead of always booting to wilderness. Sub-context states
+		# (combat / camp / encounter) are NOT in this list, so they leave
+		# current_location_type untouched (gdd-savegame-system.md §5.1).
+		if not _party_id.is_empty():
+			CampaignRepository.update_party_location_type(_party_id, state_key)
 
 	_sync_game_state(state_key)
 	state_transitioned.emit(old_key, state_key)
@@ -523,6 +529,12 @@ func get_class_registry() -> ClassRegistry:
 
 func get_current_state_key() -> String:
 	return _current_state_key
+
+## True if the session is currently resolving combat — the dedicated "combat"
+## state, or in-place dungeon combat (DungeonExploreState.is_in_combat()). Used
+## to block mid-combat saves (gdd-savegame-system.md §5.7).
+func is_in_combat() -> bool:
+	return _current_state_key == "combat" or (_current_state != null and _current_state.is_in_combat())
 
 func get_scheduler() -> EventScheduler:
 	return _scheduler
@@ -826,15 +838,25 @@ func save_session() -> void:
 	if _campaign_id.is_empty():
 		return
 
+	# Saving during combat is disallowed (gdd-savegame-system.md §5.7): combat is
+	# a turn-based sub-game with the scheduler globally paused, so there is no
+	# clean mid-combat state to serialize. The pause-menu Save guards this too and
+	# shows the player a message; this is the defensive backstop.
+	if is_in_combat():
+		push_warning("SessionRunner.save_session: ignored — cannot save during combat")
+		return
+
 	# Party state
 	if _party_data != null:
 		CampaignRepository.save_party_state(_party_data.to_state_dict())
 
-	# Hex map (if currently in wilderness, save map state)
-	if _current_state_key == "wilderness":
-		var map_data: HexMapData = _hex_controller.get_map()
-		if map_data != null:
-			CampaignRepository.save_hex_map(map_data, _campaign_id)
+	# Per-context live state: each primary exploration state flushes what it owns
+	# (wilderness → hex fog/survey; dungeon → voxel cells + per-entity positions;
+	# settlement → current POI). Replaces the old wilderness-only hex save so that
+	# saving inside a dungeon/settlement no longer loses that context
+	# (gdd-savegame-system.md §5.3).
+	if _current_state != null:
+		_current_state.flush_to_db(self)
 
 	# Active effects — clear and re-persist all
 	CampaignRepository.clear_active_effects(_campaign_id)
@@ -910,6 +932,55 @@ func end_session() -> void:
 	if _hex_controller != null:
 		_hex_controller.set_party_visibility_bonus_hexes(0)
 	GameState.end_session()  # triggers Timekeeping reset, DiceSystem clear
+
+
+## Saves the current campaign to a NEW named slot (whole-DB snapshot). Flushes
+## the live (autosave) state first so the slot captures the current moment.
+## Returns the slot id, or "" on failure / during combat. gdd-savegame-system.md §6.3.
+func save_to_slot(label: String) -> String:
+	if _campaign_id.is_empty():
+		return ""
+	if is_in_combat():
+		push_warning("SessionRunner.save_to_slot: ignored — cannot save during combat")
+		return ""
+	save_session()  # flush live state so the slot is current
+	return CampaignRepository.save_snapshot(_campaign_id, label, "manual", _current_location_label())
+
+
+## Loads a named slot: restores its whole-DB state, then re-enters the session at
+## the saved context via the context-aware loader. Works both mid-session (tears
+## the current session down first) and from a fresh boot. Returns false on
+## failure. gdd-savegame-system.md §6.4.
+func load_slot(snapshot_id: String) -> bool:
+	var meta := CampaignRepository.get_snapshot(snapshot_id)
+	var slot_campaign := String(meta.get("campaign_id", ""))
+	if slot_campaign.is_empty():
+		push_error("SessionRunner.load_slot: unknown slot %s" % snapshot_id)
+		return false
+	if not _campaign_id.is_empty():
+		end_session()  # saves current (harmless — about to be overwritten) + tears down
+	if not CampaignRepository.restore_snapshot(snapshot_id):
+		push_error("SessionRunner.load_slot: restore failed for %s" % snapshot_id)
+		return false
+	transition_to_state("session_load", {"campaign_id": slot_campaign})
+	return true
+
+
+## Human-readable label for the party's current context, denormalized into the
+## slot list (gdd-savegame-system.md §6.5).
+func _current_location_label() -> String:
+	match _current_state_key:
+		"dungeon":
+			return "Dungeon"
+		"settlement":
+			return "Settlement"
+		"wilderness":
+			return "Wilderness"
+		"combat":
+			return "Combat"
+		"camp":
+			return "Camp"
+	return _current_state_key.capitalize()
 
 
 # ---------------------------------------------------------------------------

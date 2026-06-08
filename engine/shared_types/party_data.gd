@@ -56,6 +56,20 @@ var current_hex_q: int = 0
 var current_hex_r: int = 0
 var current_location_type: String = "wilderness"  # "wilderness" | "dungeon" | "settlement" | "sea"
 
+# Dungeon position (parties table, migration 017). Populated from the DB on load
+# so the savegame loader can restore the party into the right dungeon/level.
+# The authoritative PER-MEMBER cells live in dungeon_entity_positions
+# (migration 146); these party-level fields are the dungeon id, the active level,
+# and the leader/camera-focus cell. See gdd-savegame-system.md §5.2.
+var dungeon_id: String = ""
+var dungeon_level: int = 1
+var dungeon_col: int = 0
+var dungeon_row: int = 0
+
+# Settlement position (parties table, migration 019).
+var settlement_id: String = ""       # settlement_entrances.id
+var settlement_node_id: String = ""  # current POI id
+
 # ---------------------------------------------------------------------------
 # Members & Formation
 # ---------------------------------------------------------------------------
@@ -425,6 +439,14 @@ static func from_db(party_row: Dictionary, member_rows: Array, state_row: Dictio
 	pd.current_hex_q = _int(party_row, "current_hex_q")
 	pd.current_hex_r = _int(party_row, "current_hex_r")
 	pd.current_location_type = _str(party_row, "current_location_type", "wilderness")
+	# Dungeon position (migration 017) + settlement position (migration 019).
+	# Columns added by migration; absent on very old rows → helpers fall back.
+	pd.dungeon_id = _str(party_row, "dungeon_id")
+	pd.dungeon_level = _int(party_row, "dungeon_level", 1)
+	pd.dungeon_col = _int(party_row, "dungeon_col")
+	pd.dungeon_row = _int(party_row, "dungeon_row")
+	pd.settlement_id = _str(party_row, "settlement_id")
+	pd.settlement_node_id = _str(party_row, "settlement_node_id")
 
 	pd.members = []
 	for row: Dictionary in member_rows:

@@ -1,0 +1,67 @@
+{
+  "kit_id": "goblin",
+  "tier": "culture",
+  "inherits": ["beastman"],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "_catalog_note": "Beastman tier - not in setting-lore §5.2; demographics from ax_domains_of_chaos.xml (catalog 5.3). Naming/totemic flavor only.",
+  "race": "beastman",
+  "beastman_race": "goblin",
+  "sub_palette": "goblin (Kazhur regressed - nasal snickers + barks)",
+  "synthesis_sources": [],
+  "homeland": "no fixed homeland (warrens, sacked cellars, and dark holes)",
+  "branch": { "regression": "nasal snickers + barks (gh -> gn, kh -> k'k, vowels nasalize, spiteful suffix -snik/-gik)", "nature": "small, sneaking, spiteful; cowardly in the open, vicious in the dark", "model": "Kazhur rotted into a goblin's whining sneer" },
+  "government": "clanhold",
+  "alignment_allowed": ["Chaotic"],
+  "alignment_weights": { "Chaotic": 1.0 },
+  "_note": "Beastman culture: GOBLINS, small, sneaking, spiteful - Kazhur rotted into nasal snickers and barks (qatal 'kill' -> gatak-snik). ALWAYS CHAOTIC; totemic shamanism (race-totem the Gnawing Dark / the Skulking Rat). Deity-morphs Gul- prefixed (no gendered ending). Mechanically stripped (catalog 5.3).",
+  "phonology": {
+    "palette": "Goblin (Kazhur, nasal-bark regression): gh -> gn, kh -> k'k, vowels nasalize, spiteful suffixes -snik/-gik/-nik; whiny, sneering, barked.",
+    "phonotactics": "CVC with nasal codas and bark-clusters; sneering intonation.",
+    "transparent_ratio": 0.28
+  },
+  "lexicon": {
+    "concepts": { "blood": "damnik", "flesh_meat": "bashnik", "bone": "atsnik", "kill": "gatak-snik", "devour": "akhnik", "fire": "eshnik", "dark": "khashnik", "raid_plunder": "shalnik", "strong": "gibnik", "great": "rabnik", "small": "qatnik", "beast": "behnik", "horde": "amnik", "lair": "me'gik", "spirit_totem": "ruaknik", "fang": "shennik", "claw": "tsipnik", "horn": "qarnik", "hunt": "tsaynik", "war": "milknik", "death": "mavnik", "night": "laylnik", "shaman": "kashnik" },
+    "feature_words": { "mountain": "harnik", "cave": "me'gik", "pit": "borgik", "swamp": "bitsnik", "waste": "midbnik", "crag": "tsurgik", "gorge": "gaynik", "dark_forest": "ya'gik" }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], snickered: Damnik-shennik (blood-fang); tribe = [Totem]-amnik.",
+    "naming_marker": "named by the kashnik with a sneer; a spiteful bark-name.",
+    "plural": "-snik-im or a jeering many"
+  },
+  "title_ladder": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / warren (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Gnash", "scope": "chief of a single clanhold (warren)" },
+      "march": { "ruler": "Milknik-Gnash", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rabnik-Gnash", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Amnik-Gnash", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malgnik", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rabnik-Malgnik", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rabnik-Amnik-Malgnik", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": { "thrall_whelp": "Shaflik (the runt/slave)", "warrior": "Gibnik (the dark-fighter)" },
+    "shaman_line": { "shaman": "Kashnik (the totem-snicker)", "high_shaman": "Rab-kashnik (great-shaman of the horde-totem)" }
+  },
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Gnawing Dark / the Skulking Rat. The kashnik snickers to the totem and the Gul-spirits over loot-piles in the dark; the One and the sun demonized.",
+    "race_totem": "the Gnawing Dark (Akhnik-khashnik) / the Skulking Rat",
+    "venerated": { "Noctiluna (the dark)": "Gul-Naktilu (the dark to skulk in)", "Lusanto (loot-greed)": "Gul-Lusanu (the Loot-Spirit)", "Metensia (filth, rot)": "Gul-Metensu (the Filth-Spirit)", "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit, served dimly)" },
+    "demonized": { "Aeternus (the One)": "Aternu the Sky-Tyrant", "Tulrius (the sun)": "Tarul the Burning-Eye" },
+    "tribal_totem_pattern": "[Khashnik-/Damnik-/Snik-] + [vermin or body-part]: Khashnik-shennik (Dark-Fang), Snik-tsipnik (Sneak-Claw).",
+    "shaman_rites": "snicker-chants over loot-piles and the totem's rat-skull; spiteful curses.",
+    "holy_symbol_motifs": { "Gnawing Dark": "a black hole full of teeth", "Gul-Lusanu": "a snatched and gnawed coin" }
+  },
+  "banks_patterns": {
+    "war_bands": "the snicker-named mobs: 'the Sneaks', 'the Loot-snatchers', 'the Backstabbers of [chief]'",
+    "lairs_dungeons": "warrens, sacked cellars, and loot-piles: 'the Warren of [tribe]', 'the Gnaw-tunnels of [chief]', 'the Loot-pile of [name]'"
+  },
+  "seed_names": {
+    "personal_m": ["Gatak-snik", "Snikgik", "Damnik", "Shennik", "Gnashek", "Eshnik", "Gibnik", "Khashnik", "Borgik", "Milknik", "Ruaknik", "Yibnik", "Skritnik", "Vargik", "Naznik", "Grubnik", "Wikgik", "Snigak", "Drennik", "Mognik"],
+    "personal_f": ["Snikka", "Damnika", "Shennika", "Gnashka", "Eshnika", "Gibnika", "Khashka", "Yibka", "Naznika", "Grubka", "Wikka", "Snigka", "Drennika", "Mogka", "Skritka", "Vargka", "Ruakka", "Borgika", "Lelnika", "Mavnika"],
+    "tribes_hordes": ["the Gnawing Dark (Akhnik-khashnik) tribe", "the Skulking Rat warren", "the Loot-snatchers (Gul-Lusanu)", "the Sneak (Snik) tribe", "the Filth (Gul-Metensu) horde", "the Bone-gnawer warren", "the Night-yip tribe", "the Many-snik horde"],
+    "epithets_cognomina": ["the Sneak", "the Loot-snatcher", "the Backstabber", "the Squealer", "the Filth-eater", "the Skulker", "the Many", "the Quick-knife"],
+    "flagship_lairs": ["the Skulk-warren (Snik-me'gik)", "Borgik-warren (the pit-warren)", "Bitsnik-me'gik (the swamp-warren)", "the Loot-pile", "the Gnaw-tunnels of [chief]", "Tsurgik-warren (the crag-warren)"]
+  }
+}

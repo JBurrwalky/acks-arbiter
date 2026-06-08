@@ -9,7 +9,7 @@
 **Replaces:** the LLM-generated culture model in `gdd-cultural-religious-generation.md` §2 (culture data structure), §4 (1:1 culture-religion seeding), and §11 (pre-loaded LLM stock). See §1.3.
 **Blocks:** `gdd-setting-generation.md` (Layer 4 rewrite), `gdd-history-simulation.md` (future), `gdd-region-painting.md` (future).
 **Modifiable by Claude Code:** Schema and algorithms — yes. Canonical identity fields and allowed-alignment sets — only in sync with `gdd-setting-lore.md` §5.
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-08
 
 ---
 
@@ -128,7 +128,7 @@ Each canonical culture is one record with two top-level objects: `mechanical` (d
     },
 
     "npc": {
-      "personality_weight_biases": "object — per-axis modifiers, schema and axes per gdd-npc-personality.md; each axis sums ≈ 0, each modifier in [-0.3, +0.3]"
+      "personality_weight_biases": "object — flat twelve-axis mean-shift map per gdd-npc-personality.md §3.2 (epistemic_curiosity, societal_orthodoxy, affective_compassion, stress_reactivity, self_interest, in_group_loyalty, mysticism, expressiveness, civility, jocularity, amorousness, epicureanism); each value a mean-shift in [-2.0, +2.0]"
     }
   }
 }
@@ -214,7 +214,7 @@ The `alignment.allowed` list is **not ranked**. For human cultures it simply nam
 1 allowed  -> always that alignment
 ```
 
-**Override — `alignment.weights`.** A culture that genuinely leans specifies an explicit prevalence map, which replaces the even split. Used by the demihumans: dwarves `{Neutral 0.50, Lawful 0.30, Chaotic 0.20}`, elves `{Lawful 0.40, Chaotic 0.40, Neutral 0.20}`. Human cultures normally omit `weights` and take the even split.
+**Override — `alignment.weights`.** A culture that genuinely leans specifies an explicit prevalence map, which replaces the even split. Used by the demihumans, authored per-branch: the three elf branches (Aelvaneth/Xilvaneth/Thalvaneth) and three dwarf dialects (Khordurn/Gormdurn/Khraaldurn) each carry their own weights (setting-lore §5.2 #48–53; detailed in §5.2 here). Human cultures normally omit `weights` and take the even split.
 
 A culture's *individual NPCs* still vary regardless — a dominant-Lawful polity produces occasional Neutral or (if allowed) Chaotic individuals via the demographic weight floor in `gdd-setting-generation.md` §7.3. The alignment drawn here is the **starting** dominant; the history sim may shift it on collapse, bounded by §4.5.
 
@@ -292,8 +292,8 @@ The 45 human cultures of `gdd-setting-lore.md` §5.2 are the human tier, one rec
 
 Demihumans use the same schema with `tier: "demihuman"`. Per the locked decision they are **capped sim participants** — but with a deliberate **divergence from ACKS's default flavor** (see §8.3): rather than being a perpetually-declining elder race, elves and dwarves **begin the historical simulation strong and ascendant, then collapse hard into the defensive enclaves** the present-day ACKS rules describe. The catalog encodes that arc, not a steady decline.
 
-- **Seed biomes.** Elves seed in `forest`, `jungle`, and `coastal`/`sea`; dwarves in `hills` and `mountains`. The three elvish cultures are the forest-and-river **Aelvaneth**, the jungle-and-river **Xilvaneth**, and the sea-dwelling **Thalvaneth** — three branches of one people descended from a shared Proto-Elvish tongue ("Vanethir"; see the conlang `family_elvish.json`, where each branch is built as a deep ancestor of a cluster of the human language families: Aelvaneth->Germanic/Celtic/Slavic, Xilvaneth->Mesoamerican, Thalvaneth->Latinate/Hellenic/Punic). Their homelands originate in wilderness — as do **all** cultures' (the universal wilderness-seeding model, §6.3); this is not demihuman-specific.
-- **Alignment.** Both races are open to all three and both use an explicit `weights` map (the even-split default is for humans, §4.2). **Dwarves preference Neutral:** `weights: {Neutral: 0.50, Lawful: 0.30, Chaotic: 0.20}` (Lawful over Chaotic by dwarven tradition). **Elves split equally between Law and Chaos with Neutral a minority:** `weights: {Lawful: 0.40, Chaotic: 0.40, Neutral: 0.20}` — a people pulled to the poles, rarely content in the middle. The Aelvaneth and Thalvaneth take this default; the jungle **Xilvaneth** (the setting's nearest 'dark-elf' analog — harsh of tongue and cruel of custom) override to `weights: {Lawful: 0.10, Neutral: 0.10, Chaotic: 0.80}`, overwhelmingly Chaotic.
+- **Seed biomes (per branch).** The three elvish cultures are the forest-and-river **Aelvaneth** (`forest`, `dense_forest`), the jungle-and-river **Xilvaneth** (`jungle`, `dense_forest`), and the coastal sea-elven **Thalvaneth** (`forest`/`dense_forest`/`jungle`/`taiga` that is **also coastal**, at any elevation — where forest meets the sea); the three dwarven cultures are the mountain **Khordurn** (any `mountains` except glacial/volcanic), the volcanic **Gormdurn** (`volcanic mountains` only), and the glacial **Khraaldurn** (`glacial mountains` or `tundra hills` only). The three are branches of one people descended from a shared Proto-Elvish tongue ("Vanethir"; see the conlang `family_elvish.json`, where each branch is built as a deep ancestor of a cluster of the human language families: Aelvaneth->Germanic/Celtic/Slavic, Xilvaneth->Mesoamerican, Thalvaneth->Latinate/Hellenic/Punic). Their homelands originate in wilderness — as do **all** cultures' (the universal wilderness-seeding model, §6.3); this is not demihuman-specific.
+- **Alignment.** Both races are open to all three and both use an explicit `weights` map (the even-split default is for humans, §4.2). **The three dwarf dialects each lean Neutral, differently** (setting-lore §5.2 #51–53): **Khordurn** `{Neutral: 0.60, Lawful: 0.30, Chaotic: 0.10}` (the orderly vault-kingdoms); **Gormdurn** `{Neutral: 0.60, Chaotic: 0.30, Lawful: 0.10}` (the volcanic fire-cult, human sacrifice); **Khraaldurn** `{Neutral: 0.80, Lawful: 0.10, Chaotic: 0.10}` (the withdrawn frost-holds). **The three elf branches each lean differently** (setting-lore §5.2 #48–50): the high-elven **Aelvaneth** are predominantly Lawful — `weights: {Lawful: 0.70, Neutral: 0.20, Chaotic: 0.10}` (the law-bound star-courts); the sea-elven **Thalvaneth** are predominantly Neutral — `weights: {Lawful: 0.20, Neutral: 0.60, Chaotic: 0.20}` (the worldly, trade-minded coast); and the jungle **Xilvaneth** (the setting's nearest 'dark-elf' analog — harsh of tongue and cruel of custom) are overwhelmingly Chaotic — `weights: {Lawful: 0.10, Neutral: 0.10, Chaotic: 0.80}`.
 - **Seed-point cap.** Up to **3 seed points per race per campaign** (≤3 elf homelands + ≤3 dwarf homelands), versus ~10 for humans (§6.1).
 - **Lifecycle (the arc).** Author **high `peak_strength`** and **high `collapse_proneness`** with `end_state: "enclave"`. During their golden age `expansion.aggression` is **high** (elf and dwarf both strong; elves somewhat slower expanders, dwarves stronger domain-builders); the hard collapse, not a low growth rate, is what leaves them as scattered enclaves by game-start. Their fallen realms are prime sources of ruins and dungeons for the history log.
 - **Conquest (biome- and race-conditional).** In their strong years demihumans behave very differently by target, expressed through `conquest.modifiers`:
@@ -306,7 +306,7 @@ Demihumans use the same schema with `tier: "demihuman"`. Per the locked decision
 
 ### 5.3 Beastman tier (stripped)
 
-Beastmen (`tier: "beastman"`: orc, goblin, gnoll, etc.) use a **reduced** schema: `identity`, `expansion` (for clanhold spread), `preferred_troop_types`/tribal-warrior availability, `personality_weight_biases`, `name_bank_key`, and `flavor_text` only. They have **no** `rulership.sphere_weights`, `conquest`, `road_propensity`, `architecture`, or `religion_hooks` — setting-lore §5.1 states no human culture maps to them and they are too degenerate for the full model. Their demographics, placement, and population caps come entirely from `ax_domains_of_chaos.xml` (always wilderness; ≤125 families per 6-mile hex; ≤2,000 per 24-mile hex; per-race clanhold demographics table) and are not re-authored here. Beastman records exist to drive NPC generation in clanhold encounters and the beastman repopulation outcome of polity collapse (`gdd-history-simulation.md`, future).
+Beastmen (`tier: "beastman"`: orc, goblin, gnoll, etc.) use a **reduced** schema: `identity`, `expansion` (for clanhold spread), `preferred_troop_types`/tribal-warrior availability, `personality_weight_biases`, `name_bank_key`, and `flavor_text` only. They have **no** `rulership.sphere_weights`, `conquest`, `road_propensity`, `architecture`, or `religion_hooks` — setting-lore §5.1 states no human culture maps to them and they are too degenerate for the full model. Their demographics, placement, and population caps come entirely from `ax_domains_of_chaos.xml` (always wilderness; ≤125 families per 6-mile hex; ≤2,000 per 24-mile hex; per-race clanhold demographics table) and are not re-authored here. Beastman records exist to drive NPC generation in clanhold encounters and the beastman repopulation outcome of polity collapse (`gdd-history-simulation.md`, future). NAMING/FLAVOR for beastmen now lives in a dedicated conlang kit (`data/conlang/family_beastman.json` "Kazhur" + 10 race kits: kobold/goblin/orc/hobgoblin/gnoll/troll/bugbear/troglodyte/lizardman/ogre): a harsh Old-Semitic sorcerer-tongue regressed per race into bestial sounds, with Chaotic totemic-shamanist flavor (race-totems; the Chaotic powers as Gul- prefixed morphs). This is the `name_bank_key` source and runtime naming/flavor ONLY — it does NOT add `religion_hooks` or any other mechanical field to the stripped beastman schema above.
 
 ---
 
@@ -440,7 +440,7 @@ Three records illustrating the full schema across the range: a settled lawful ci
     "rulership": {
       "sphere_weights": { "military": 0.45, "mercantile": 0.25, "religious": 0.20, "arcane": 0.10 },
       "preferred_troop_types": ["heavy_infantry", "light_infantry", "archers"] },
-    "npc": { "personality_weight_biases": "see gdd-npc-personality.md axes — bias: +duty, +law, +honor; -freedom, -nervous" }
+    "npc": { "personality_weight_biases": "see gdd-npc-personality.md §3.2 — societal_orthodoxy +1.5, self_interest +0.5, in_group_loyalty +1.0, civility +0.5, stress_reactivity -0.5" }
   },
   "flavor": {
     "name_bank_key": "agrippan", "phonemic_palette": "Latinate; hard c/t, -us/-a/-um endings, penultimate stress",
@@ -478,7 +478,7 @@ Reading the record: high `road_propensity` (0.95) + civ gives a dense named-high
     "rulership": {
       "sphere_weights": { "military": 0.6, "mercantile": 0.2, "religious": 0.15, "arcane": 0.05 },
       "preferred_troop_types": ["heavy_infantry", "berserkers", "marines"] },
-    "npc": { "personality_weight_biases": "bias: +aggressive, +strength, +glory, +freedom; -serene, -formal" }
+    "npc": { "personality_weight_biases": "stress_reactivity +1.0, in_group_loyalty +1.0, civility -1.0, affective_compassion -0.5, epicureanism -0.5" }
   },
   "flavor": {
     "name_bank_key": "vargari", "phonemic_palette": "Norse; thorn/eth, -r/-vid/-heim endings, initial stress",
@@ -516,7 +516,7 @@ Reading the record: high `aggression` (0.85) but modest `defense` (0.5) and a po
     "rulership": {
       "sphere_weights": { "military": 0.4, "mercantile": 0.1, "religious": 0.3, "arcane": 0.2 },
       "preferred_troop_types": ["light_infantry", "archers", "light_cavalry"] },
-    "npc": { "personality_weight_biases": "bias: +honor, +tradition, +cunning; -gregarious, -blunt" }
+    "npc": { "personality_weight_biases": "societal_orthodoxy +1.0, self_interest +0.5, civility +1.0, expressiveness -1.0" }
   },
   "flavor": {
     "name_bank_key": "shidhean",
@@ -564,7 +564,7 @@ Demonstrates the demihuman arc and the conditional conquest model. Numbers illus
     "rulership": {
       "sphere_weights": { "military": 0.30, "mercantile": 0.10, "religious": 0.25, "arcane": 0.35 },
       "preferred_troop_types": ["archers", "light_infantry", "light_cavalry"] },
-    "npc": { "personality_weight_biases": "bias: +serene, +knowledge, +tradition; -gregarious, -aggressive" }
+    "npc": { "personality_weight_biases": "stress_reactivity -1.5, epistemic_curiosity +1.0, societal_orthodoxy +0.5, expressiveness -0.5" }
   },
   "flavor": {
     "name_bank_key": "elf_sylvan", "phonemic_palette": "flowing vowels, soft l/r/n/th, long names (name-gen §6)",
@@ -614,7 +614,7 @@ Per record, programmatically:
 - sphere_weights are non-negative and normalize to 1.0 (±0.01)
 - preferred_troop_types: 2–4 entries, all valid enum, all ACKS-fieldable for the culture's terrain/tech
 - seed_biomes are valid gdd-terrain-system.md tags; coastal_start in {Y,N,E}
-- personality_weight_biases conform to gdd-npc-personality.md (each axis sums ≈0, each in [-0.3,+0.3])
+- personality_weight_biases conform to gdd-npc-personality.md §3.2 (flat twelve-axis mean-shift map; each axis a mean-shift in [-2.0,+2.0]; no temperament/social_style/moral_compass/motivation sub-objects)
 - core_values: exactly 3 from the values enum; taboos 1–3
 - flavor char limits respected; name_bank_key references an existing bank
 - multi-source records (|synthesis_sources|>1): phonemic_palette and phenotype_notes are authored blends, and phenotype_notes states an explicit blend rule
@@ -642,6 +642,7 @@ Cross-record:
 
 ## 13. Revision History
 
+- **2026-06-08:** Updated `personality_weight_biases` to the reworked twelve-axis schema in `gdd-npc-personality.md` §3.2. The record-schema description (§3.x), the four worked culture examples (Agrippan, Vargari, Shidhean, Sylvan Elf `npc` blocks), and the §10 validation rule were converted from the retired four-axis tag vocabulary (`+duty/+honor/-nervous/-serene/-aggressive/-formal/-blunt/-gregarious/+cunning`, modifiers −0.3..+0.3 summing to ~0) to flat twelve-axis mean-shifts in [−2.0, +2.0] (e.g. `societal_orthodoxy`, `stress_reactivity`, `in_group_loyalty`, `civility`, `expressiveness`). No mechanical-core or canonical-identity fields changed.
 - **2026-06-03 (rev 6):** Per Jedidiah, the setting-lore §5.2 alignment lists are **not ranked** — human cultures take an **even/uniform split** across the alignments in their row (§4.2 default rewritten). `alignment.weights` is now the explicit override for cultures that lean; dwarves moved onto an explicit weight `{Neutral 0.50, Lawful 0.30, Chaotic 0.20}` accordingly (§3.1, §4.2, §5.2, §9.1 worked example).
 - **2026-06-03 (rev 5):** Demihuman alignment spreads set per Jedidiah: dwarves preference Neutral (default list-order weighting, allowed [Neutral, Lawful, Chaotic]); elves split equally Lawful/Chaotic with Neutral 20%, via a new optional `alignment.weights` override (§3.1, §4.2, §5.2, §9.4, §11).
 - **2026-06-03 (rev 4):** Corrected per Jedidiah's notes. (1) Reframed the Lawful/Chaotic pantheons as **distinct beings** whose inversion is *aggregate* not 1:1 — nemeses where provenance overlaps, enemies throughout (§3.4); religion fields (§3.2/§3.4) marked **provisional** pending the religion rework, which will own per-culture canonical deity names and holy symbols (§12). (2) Reframed wilderness-start as the **universal** seeding model — all cultures seed in wilderness and grow polities/cities/vassals by expansion; the ACKS "own-race" rule is a game-time constraint on demihumans converting human domains, not a special founding penalty (§6.3, §8.3, §5.2). (3) Conformed all worked examples to the new conquest/lifecycle schema and concept-based `patron_powers`; swapped Vargari/Shidhean saint counts to match the Neutral-prominence rule; added a Sylvan Elf worked example (§9.4) demonstrating conditional conquest and the golden-age→enclave arc.

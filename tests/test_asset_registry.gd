@@ -12,7 +12,7 @@ func run_all_tests() -> void:
 	test_register_and_retrieve()
 	test_has_asset_true_after_register()
 	test_register_overwrites()
-	test_all_portrait_classes_have_variant_01()
+	test_all_portrait_classes_present_in_manifests()
 	test_terrain_atlas_registered()
 	test_ui_bg_registered()
 	test_portrait_paths_are_res_scheme()
@@ -54,7 +54,10 @@ func test_register_overwrites() -> void:
 		"second register() should overwrite first, got '%s'" % result)
 
 
-func test_all_portrait_classes_have_variant_01() -> void:
+func test_all_portrait_classes_present_in_manifests() -> void:
+	# Portraits use the ethnicity_class_gender_number convention (data/portrait_manifest.json
+	# carries the parsed class). Verify each expected class has at least one portrait and
+	# that its path is registered in the asset_manifest (the two manifests stay in sync).
 	var classes := [
 		"fighter", "assassin", "bard", "thief", "dwarven_vaultguard",
 		"explorer", "dwarven_fury", "venturer",
@@ -63,10 +66,28 @@ func test_all_portrait_classes_have_variant_01() -> void:
 		"witch", "priestess", "paladin",
 		"darkblood_ruinguard", "lightblessed_wonderworker"
 	]
+	var by_class := {}            # class -> Array of entries
+	var file := FileAccess.open("res://data/portrait_manifest.json", FileAccess.READ)
+	check(file != null, "portrait_manifest.json should be readable")
+	if file == null:
+		return
+	var json := JSON.new()
+	check(json.parse(file.get_as_text()) == OK, "portrait_manifest.json should parse")
+	file.close()
+	for entry in (json.data as Dictionary).get("portraits", []):
+		var cls: String = entry.get("class", "")
+		if not by_class.has(cls):
+			by_class[cls] = []
+		by_class[cls].append(entry)
+
 	for cls in classes:
-		var id := "portrait.%s_01" % cls
-		check(AssetRegistry.has_asset(id),
-			"portrait id '%s' should be registered" % id)
+		check(by_class.has(cls) and not (by_class[cls] as Array).is_empty(),
+			"class '%s' should have at least one portrait in the manifest" % cls)
+		if by_class.has(cls):
+			var first: Dictionary = (by_class[cls] as Array)[0]
+			var id := "portrait.%s" % first.get("id", "")
+			check(AssetRegistry.has_asset(id),
+				"portrait id '%s' should be registered in asset_manifest" % id)
 
 
 func test_terrain_atlas_registered() -> void:
@@ -82,7 +103,7 @@ func test_ui_bg_registered() -> void:
 
 
 func test_portrait_paths_are_res_scheme() -> void:
-	var path := AssetRegistry.get_asset_path("portrait.fighter_01")
+	var path := AssetRegistry.get_asset_path("portrait.asian_fighter_male_01")
 	check(path.begins_with("res://"),
 		"portrait path should start with res://, got '%s'" % path)
 

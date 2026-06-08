@@ -4,14 +4,14 @@
   "inherits": null,
   "display_name": "Elvish (the Vaneth, three branches of one people)",
   "_schema": "gdd-naming-conventions.md 2.6 (family base kit; demihuman tier)",
-  "_note": "The elvish tier: one people (the Vaneth) in three branches descended from a shared Proto-Elvish tongue, VANETHIR ('the Old Speech'). DESIGN: every human pantheon-name is a morph of one 25-power canon, so the human families already share consonant SKELETONS (Tulrius = Thulr/Toran/Tulor/Tolratl/Tulax/Tulrios/Tulrish, all T-L-R). Those skeletons ARE the Vanethir root-stock. Each elvish branch applies a consistent sound-law to the proto-roots (consonants preserved; vowels/endings/allophones shift) and is tuned to the phonology of the human cluster it is the deep ancestor of - so cognates are recognizable across the three branches AND each branch prefigures its human descendants. AESTHETIC: Aelvaneth and Thalvaneth render the roots SMOOTH and lilting (the high-elf trope; soft -ath/-ash/-eth, l/r/n/th); Xilvaneth renders them HARSH and guttural (the dark-elf stand-in; glottal k'/t', tz, x, -tl). Demihuman tier (race elf): golden-age->enclave arc, alignment weights per branch (catalog 5.2). DEITY names are morphs of the Agrippan canon, never real gods; the Vanethir forms are framed in flavor as the eldest in the world, but the data-canon key stays Agrippan.",
+  "_note": "The elvish tier: one people (the Vaneth) in three branches descended from a shared Proto-Elvish tongue, VANETHIR ('the Old Speech'). DESIGN: every human pantheon-name is a morph of one 25-power canon, so the human families already share consonant SKELETONS (Tulrius = Thulr/Toran/Tulor/Tolratl/Tulax/Tulrios/Tulrish, all T-L-R). Those skeletons ARE the Vanethir root-stock. Each elvish branch applies a consistent sound-law to the proto-roots (consonants preserved; vowels/endings/allophones shift) and is tuned to the phonology of the human cluster it is the deep ancestor of - so cognates are recognizable across the three branches AND each branch prefigures its human descendants. AESTHETIC: Aelvaneth and Thalvaneth render the roots SMOOTH and lilting (the high-elf trope; soft -ath/-ash/-eth, l/r/n/th); Xilvaneth renders them HARSH and guttural (the dark-elf stand-in; glottal k'/t', tz, x, -tl). Demihuman tier (race elf): golden-age->enclave arc, alignment weights per branch (catalog 5.2). DEITY names are morphs of the Agrippan canon, never real gods; the Vanethir forms are framed in flavor as the eldest in the world, but the data-canon key stays Agrippan. ENDINGS: three classes are kept distinct (theonym_set._endings) - DIVINE names take a sacred GENDERED ending (Ael -aron m / -arien f), mortal names take the personal patronymics (-ion/-iel, 'son/daughter of'), common nouns and places take the generic nominal ending (-ath etc.). The cognate lives in the consonant skeleton (the root), so the ending is free to mark these classes; a god therefore never sounds like a person or a place.",
   "sources_5_1": [],
   "race": "elf",
   "tier_note": "demihuman; up to 3 elf seed points per campaign (catalog 5.2); end_state enclave.",
   "branches": {
-    "aelvaneth": { "biome": "forest-and-river", "register": "smooth/lilting (high-elf)", "ancestral_to": ["germanic", "celtic", "slavic"], "model": "a deep PIE-like ancestor of the European IE human families", "weights": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 } },
+    "aelvaneth": { "biome": "forest-and-river", "register": "smooth/lilting (high-elf)", "ancestral_to": ["germanic", "celtic", "slavic"], "model": "a deep PIE-like ancestor of the European IE human families", "weights": { "Lawful": 0.70, "Neutral": 0.20, "Chaotic": 0.10 } },
     "xilvaneth": { "biome": "jungle-and-river", "register": "harsh/guttural (dark-elf stand-in)", "ancestral_to": ["mesoamerican"], "model": "a deep ancestor of the Mesoamerican families (Nahuatl/Maya); Andean/Quechua phonological tilt as flavor", "weights": { "Lawful": 0.10, "Neutral": 0.10, "Chaotic": 0.80 } },
-    "thalvaneth": { "biome": "sea-and-isle (coastal)", "register": "smooth/lilting (sea-elf)", "ancestral_to": ["classical", "near_eastern (punic)"], "model": "a deep Mediterranean ancestor of the Latinate/Hellenic and Punic families", "weights": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 } }
+    "thalvaneth": { "biome": "coastal forest (forest/dense_forest/jungle/taiga that is also coastal, any elevation)", "register": "smooth/lilting (sea-elf)", "ancestral_to": ["classical", "near_eastern (punic)"], "model": "a deep Mediterranean ancestor of the Latinate/Hellenic and Punic families", "weights": { "Lawful": 0.20, "Neutral": 0.60, "Chaotic": 0.20 } }
   },
   "branch_laws": {
     "_note": "Applied to the Proto-Elvish roots; the consonant SKELETON is preserved, so cognates stay recognizable across branches.",
@@ -20,21 +20,28 @@
     "thalvaneth": "SMOOTH (Mediterranean): vowel-rich endings -os/-a/-e/-eth; sibilants s/sh; a light guttural/pharyngeal touch (the Punic descendant); flowing."
   },
   "theonym_set": {
-    "_note": "The 25-power canon as Proto-Elvish skeletons, each with the three branch reflexes. Read across a row = obvious cognates; read past the reflex = the human descendants each branch prefigures. Representative set (the build assembles the full 25).",
+    "_note": "The 25-power canon as Proto-Elvish skeletons, each with the three branch reflexes. DEITY names take the SACRED GENDERED ending class (see _endings), NOT the generic common-noun/toponym ending (-ath/-tl/-os) - so a god never sounds like a person or a place. The cognate lives in the CONSONANT SKELETON (the root), so the gendered ending is free to vary: read across a row = obvious cognates; read past the reflex = the human descendants each branch prefigures (which mostly eroded or fossilized the archaic sacred ending). Representative set (the build assembles the full 25). Gender per power is read straight off the Agrippan canon ending: -us/-o/-um = masculine, -a/-ia = feminine; the One is supreme masculine.",
+    "_endings": {
+      "_note": "THREE ending-classes keep gods, mortals, and common nouns distinct. (1) DIVINE = sacred + gendered, NO parentage sense (a Power has no sire). (2) mortal personal = -ion/-as (m) / -iel/-eth (f), the 'son/daughter of' patronymics, PEOPLE ONLY. (3) common-noun/toponym = -ath/-eth (Ael), -tl/-' (Xil), -os/-a (Thal). The divine ending descends from a Proto-Elvish sacred suffix -āron (m) / -ārien (f); each branch shifts it by the same sound-law that shapes the rest of that branch (Ael keeps the smooth r; Xil glottalizes r -> k'; Thal leans the ending to -s).",
+      "proto": { "masculine": "-āron", "feminine": "-ārien" },
+      "aelvaneth": { "masculine": "-aron", "feminine": "-arien" },
+      "xilvaneth": { "masculine": "-ak'on", "feminine": "-ak'el" },
+      "thalvaneth": { "masculine": "-aros", "feminine": "-aressa" }
+    },
     "powers": {
-      "Aeternus (the One; skel '-T-R-N)": { "proto": "Atyarnā", "aelvaneth": "Aiternath", "xilvaneth": "Atyarnatl", "thalvaneth": "Aiternos", "human_descendants": "Ael->Aiterns/Eternan/Oterun; Xil->Aiternatl/Aj Ternaj; Thal->Aeternus/Aiternos/Atharon" },
-      "Tulrius (sun, light, justice; T-L-R)": { "proto": "Tulurā", "aelvaneth": "Tulorath", "xilvaneth": "Tul'aratl", "thalvaneth": "Tulros", "human_descendants": "Ael->Thulrs/Toran/Tulor; Xil->Tolratl/Tulax; Thal->Tulrios/Tulrish" },
-      "Orlandus (iron, oath, war; R-L-N)": { "proto": "Orlandū", "aelvaneth": "Orlannath", "xilvaneth": "Orlantl", "thalvaneth": "Orlandos", "human_descendants": "Ael->Orlund/Orlann/Orlon; Xil->Orlantzin/Orlanab; Thal->Orlandros/Orlanz" },
-      "Gaiandus (earth, endurance; G-N-D)": { "proto": "Gayandū", "aelvaneth": "Gaiannath", "xilvaneth": "K'ayantl", "thalvaneth": "Gaiandos" },
-      "Numeno (air, sky-wisdom; N-M-N)": { "proto": "Numenā", "aelvaneth": "Numenath", "xilvaneth": "Numentl", "thalvaneth": "Numenos" },
-      "Realta (mother, mercy; R-L-T)": { "proto": "Reyaltā", "aelvaneth": "Realtath", "xilvaneth": "Riyaltl", "thalvaneth": "Rialtos" },
-      "Delorum (death, the dead; D-L-R)": { "proto": "Delorū", "aelvaneth": "Delorath", "xilvaneth": "Delok'tl", "thalvaneth": "Deloros" },
-      "Noctiluna (moon, night; N-K-L)": { "proto": "Noktilunā", "aelvaneth": "Nochlunath", "xilvaneth": "Nok'tilutl", "thalvaneth": "Noktilunos" },
-      "Raptis (the hunt; R-P-T)": { "proto": "Raptī", "aelvaneth": "Raptath", "xilvaneth": "Rap'itl", "thalvaneth": "Raptos" },
-      "Maraxus (war-fire; M-R-X)": { "proto": "Maraksū", "aelvaneth": "Marakhath", "xilvaneth": "Marak'tl", "thalvaneth": "Maraksos" },
-      "Vacidus (the void; V-K-D)": { "proto": "Wakidū", "aelvaneth": "Wakidath", "xilvaneth": "Wak'idtl", "thalvaneth": "Wakidos" },
-      "Lusanto (the hoard-serpent; L-S-N)": { "proto": "Lusantā", "aelvaneth": "Lusanath", "xilvaneth": "Lusan'tl", "thalvaneth": "Lusantos" },
-      "Dementus (storm-madness; D-M-N)": { "proto": "Dementū", "aelvaneth": "Dementhath", "xilvaneth": "Dement'l", "thalvaneth": "Dementos" }
+      "Aeternus (the One; skel '-T-R-N)": { "gender": "m (supreme)", "proto": "Atyarnāron", "aelvaneth": "Aiternaron", "xilvaneth": "Atyarnak'on", "thalvaneth": "Aiternaros", "human_descendants": "Ael->Aiterns/Eternan/Oterun; Xil->Aiternatl/Aj Ternaj; Thal->Aeternus/Aiternos/Atharon (the archaic sacred ending eroded or fossilized in the human lines)" },
+      "Tulrius (sun, light, justice; T-L-R)": { "gender": "m", "proto": "Tulurāron", "aelvaneth": "Tularon", "xilvaneth": "Tul'ak'on", "thalvaneth": "Tularos", "human_descendants": "Ael->Thulrs/Toran/Tulor; Xil->Tolratl/Tulax; Thal->Tulrios/Tulrish" },
+      "Orlandus (iron, oath, war; R-L-N)": { "gender": "m", "proto": "Orlandāron", "aelvaneth": "Orlandaron", "xilvaneth": "Orlanak'on", "thalvaneth": "Orlandaros", "human_descendants": "Ael->Orlund/Orlann/Orlon; Xil->Orlantzin/Orlanab; Thal->Orlandros/Orlanz" },
+      "Gaiandus (earth, endurance; G-N-D)": { "gender": "m", "proto": "Gayandāron", "aelvaneth": "Gaianaron", "xilvaneth": "K'ayanak'on", "thalvaneth": "Gaianaros" },
+      "Numeno (air, sky-wisdom; N-M-N)": { "gender": "m", "proto": "Numenāron", "aelvaneth": "Numenaron", "xilvaneth": "Numenak'on", "thalvaneth": "Numenaros" },
+      "Realta (mother, mercy; R-L-T)": { "gender": "f", "proto": "Reyaltārien", "aelvaneth": "Realtarien", "xilvaneth": "Riyaltak'el", "thalvaneth": "Rialtaressa" },
+      "Delorum (death, the dead; D-L-R)": { "gender": "m", "proto": "Delorāron", "aelvaneth": "Deloraron", "xilvaneth": "Delak'on", "thalvaneth": "Delaros" },
+      "Noctiluna (moon, night; N-K-L)": { "gender": "f", "proto": "Noktilārien", "aelvaneth": "Nochlarien", "xilvaneth": "Nok'lak'el", "thalvaneth": "Noktilaressa" },
+      "Raptis (the hunt; R-P-T)": { "gender": "f (the Huntress)", "proto": "Raptārien", "aelvaneth": "Raptarien", "xilvaneth": "Rap'ak'el", "thalvaneth": "Raptaressa" },
+      "Maraxus (war-fire; M-R-X)": { "gender": "m", "proto": "Maraksāron", "aelvaneth": "Marakharon", "xilvaneth": "Marak'on", "thalvaneth": "Maraksaros" },
+      "Vacidus (the void; V-K-D)": { "gender": "m", "proto": "Wakidāron", "aelvaneth": "Wakidaron", "xilvaneth": "Wakidak'on", "thalvaneth": "Wakidaros" },
+      "Lusanto (the hoard-serpent; L-S-N)": { "gender": "m", "proto": "Lusanāron", "aelvaneth": "Lusanaron", "xilvaneth": "Lusanak'on", "thalvaneth": "Lusanaros" },
+      "Dementus (storm-madness; D-M-N)": { "gender": "m", "proto": "Dementāron", "aelvaneth": "Dementaron", "xilvaneth": "Dementak'on", "thalvaneth": "Dementaros" }
     }
   },
   "proto_roots": {
@@ -67,14 +74,14 @@
     "government_modeled": ["feudal (all three elvish branches are ancient civ realms)"]
   },
   "elf_canon": {
-    "alignment_default": { "Lawful": 0.40, "Chaotic": 0.40, "Neutral": 0.20 },
-    "xilvaneth_override": { "Lawful": 0.10, "Neutral": 0.10, "Chaotic": 0.80 },
+    "alignment_weights_by_branch": { "aelvaneth": { "Lawful": 0.70, "Neutral": 0.20, "Chaotic": 0.10 }, "xilvaneth": { "Lawful": 0.10, "Neutral": 0.10, "Chaotic": 0.80 }, "thalvaneth": { "Lawful": 0.20, "Neutral": 0.60, "Chaotic": 0.20 } },
+    "_alignment_note": "Per-branch starting weights (setting-lore 5.2 #48-50): Aelvaneth predominantly Lawful (the high-elven law-bound star-courts), Thalvaneth predominantly Neutral (the worldly trade-coast), Xilvaneth overwhelmingly Chaotic (the dark-elf stand-in). Each kit's alignment_allowed lists the seed/shift options; these weights set the dominant seed.",
     "lifecycle": "high peak_strength, high collapse_proneness, end_state enclave (golden age -> hard collapse to fastness-enclaves).",
-    "seed_biomes": "Aelvaneth forest+river; Xilvaneth jungle+river; Thalvaneth coastal/sea+isle.",
+    "seed_biomes": "Aelvaneth forest+dense_forest (forest-and-river); Xilvaneth jungle+dense_forest (jungle-and-river); Thalvaneth coastal forest/dense_forest/jungle/taiga (must be coastal), any elevation.",
     "conquest": "in-biome genocide, out-of-biome vassalize, always-genocide vs other demihumans (catalog 5.2)."
   },
   "conventions": {
-    "people_name_default": "given name from the branch root-stock + a lineage (the elven houses, -iel/-ion-style soft for Ael/Thal, -tl/-' for Xil); the smooth branches lilting, Xilvaneth clipped and harsh.",
+    "people_name_default": "MORTAL naming only: given name from the branch root-stock + a lineage (the elven houses, -iel/-ion-style soft for Ael/Thal, -tl/-' for Xil); the smooth branches lilting, Xilvaneth clipped and harsh. A mortal named FOR a Power uses the power's root + a mortal ending (Realt+iel = Realtiel, a woman), never the divine -aron/-arien ending (which belongs to the Power alone).",
     "settlement_named_after": ["the branch's realized roots: star/tree/sea/river + -aneth/-anar realm-suffix", "an elder-house", "a fastness (the enclave end-state)"],
     "transparent_vs_opaque": "moderate; the roots are transparent across branches once the laws are known.",
     "no_exonyms": true

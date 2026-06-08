@@ -1,70 +1,3246 @@
 {
-  "version": 1,
-  "description": "Index of shipped portrait assets in res://assets/portraits/. Used by the portrait picker to resolve portraits in exported builds where DirAccess cannot scan res://. User portraits are additionally scanned from user://portraits/ at runtime.",
+  "version": 2,
+  "description": "Index of shipped portrait assets in res://assets/portraits/. Naming: ethnicity_class_gender_number (ethnicity may be the two-token 'greco_roman'). 'class' is normalized to match class_id (hyphens -> underscores). Used by the portrait picker to resolve and filter portraits by class in exported builds where DirAccess cannot scan res://. User portraits are additionally scanned from user://portraits/ at runtime.",
   "portraits": [
-    {"id": "portrait_darkblood_ruinguard_01", "class": "darkblood_ruinguard", "path": "res://assets/portraits/portrait_darkblood_ruinguard_01.png"},
-    {"id": "portrait_darkblood_ruinguard_02", "class": "darkblood_ruinguard", "path": "res://assets/portraits/portrait_darkblood_ruinguard_02.png"},
-    {"id": "portrait_darkblood_ruinguard_03", "class": "darkblood_ruinguard", "path": "res://assets/portraits/portrait_darkblood_ruinguard_03.png"},
-    {"id": "portrait_darkblood_ruinguard_04", "class": "darkblood_ruinguard", "path": "res://assets/portraits/portrait_darkblood_ruinguard_04.png"},
-    {"id": "portrait_assassin_01", "class": "assassin", "path": "res://assets/portraits/portrait_assassin_01.png"},
-    {"id": "portrait_assassin_02", "class": "assassin", "path": "res://assets/portraits/portrait_assassin_02.png"},
-    {"id": "portrait_barbarian_01", "class": "barbarian", "path": "res://assets/portraits/portrait_barbarian_01.png"},
-    {"id": "portrait_barbarian_02", "class": "barbarian", "path": "res://assets/portraits/portrait_barbarian_02.png"},
-    {"id": "portrait_barbarian_03", "class": "barbarian", "path": "res://assets/portraits/portrait_barbarian_03.png"},
-    {"id": "portrait_barbarian_04", "class": "barbarian", "path": "res://assets/portraits/portrait_barbarian_04.png"},
-    {"id": "portrait_bard_01", "class": "bard", "path": "res://assets/portraits/portrait_bard_01.png"},
-    {"id": "portrait_bard_02", "class": "bard", "path": "res://assets/portraits/portrait_bard_02.png"},
-    {"id": "portrait_bladedancer_01", "class": "bladedancer", "path": "res://assets/portraits/portrait_bladedancer_01.png"},
-    {"id": "portrait_bladedancer_02", "class": "bladedancer", "path": "res://assets/portraits/portrait_bladedancer_02.png"},
-    {"id": "portrait_bladedancer_03", "class": "bladedancer", "path": "res://assets/portraits/portrait_bladedancer_03.png"},
-    {"id": "portrait_bladedancer_04", "class": "bladedancer", "path": "res://assets/portraits/portrait_bladedancer_04.png"},
-    {"id": "portrait_cleric_01", "class": "cleric", "path": "res://assets/portraits/portrait_cleric_01.png"},
-    {"id": "portrait_lightblessed_wonderworker_01", "class": "lightblessed_wonderworker", "path": "res://assets/portraits/portrait_lightblessed_wonderworker_01.png"},
-    {"id": "portrait_dwarven_craftpriest_01", "class": "dwarven_craftpriest", "path": "res://assets/portraits/portrait_dwarven_craftpriest_01.png"},
-    {"id": "portrait_dwarven_craftpriest_02", "class": "dwarven_craftpriest", "path": "res://assets/portraits/portrait_dwarven_craftpriest_02.png"},
-    {"id": "portrait_dwarven_craftpriest_03", "class": "dwarven_craftpriest", "path": "res://assets/portraits/portrait_dwarven_craftpriest_03.png"},
-    {"id": "portrait_dwarven_vaultguard_01", "class": "dwarven_vaultguard", "path": "res://assets/portraits/portrait_dwarven_vaultguard_01.png"},
-    {"id": "portrait_dwarven_vaultguard_02", "class": "dwarven_vaultguard", "path": "res://assets/portraits/portrait_dwarven_vaultguard_02.png"},
-    {"id": "portrait_dwarven_vaultguard_03", "class": "dwarven_vaultguard", "path": "res://assets/portraits/portrait_dwarven_vaultguard_03.png"},
-    {"id": "portrait_dwarven_fury_01", "class": "dwarven_fury", "path": "res://assets/portraits/portrait_dwarven_fury_01.png"},
-    {"id": "portrait_dwarven_fury_02", "class": "dwarven_fury", "path": "res://assets/portraits/portrait_dwarven_fury_02.png"},
-    {"id": "portrait_elven_nightblade_01", "class": "elven_nightblade", "path": "res://assets/portraits/portrait_elven_nightblade_01.png"},
-    {"id": "portrait_elven_nightblade_02", "class": "elven_nightblade", "path": "res://assets/portraits/portrait_elven_nightblade_02.png"},
-    {"id": "portrait_elven_spellsword_01", "class": "elven_spellsword", "path": "res://assets/portraits/portrait_elven_spellsword_01.png"},
-    {"id": "portrait_elven_spellsword_02", "class": "elven_spellsword", "path": "res://assets/portraits/portrait_elven_spellsword_02.png"},
-    {"id": "portrait_elven_enchanter_01", "class": "elven_enchanter", "path": "res://assets/portraits/portrait_elven_enchanter_01.png"},
-    {"id": "portrait_elven_enchanter_02", "class": "elven_enchanter", "path": "res://assets/portraits/portrait_elven_enchanter_02.png"},
-    {"id": "portrait_elven_enchanter_03", "class": "elven_enchanter", "path": "res://assets/portraits/portrait_elven_enchanter_03.png"},
-    {"id": "portrait_elven_enchanter_04", "class": "elven_enchanter", "path": "res://assets/portraits/portrait_elven_enchanter_04.png"},
-    {"id": "portrait_elven_enchanter_05", "class": "elven_enchanter", "path": "res://assets/portraits/portrait_elven_enchanter_05.png"},
-    {"id": "portrait_elven_ranger_01", "class": "elven_ranger", "path": "res://assets/portraits/portrait_elven_ranger_01.png"},
-    {"id": "portrait_elven_ranger_02", "class": "elven_ranger", "path": "res://assets/portraits/portrait_elven_ranger_02.png"},
-    {"id": "portrait_explorer_01", "class": "explorer", "path": "res://assets/portraits/portrait_explorer_01.png"},
-    {"id": "portrait_explorer_02", "class": "explorer", "path": "res://assets/portraits/portrait_explorer_02.png"},
-    {"id": "portrait_fighter_01", "class": "fighter", "path": "res://assets/portraits/portrait_fighter_01.png"},
-    {"id": "portrait_fighter_02", "class": "fighter", "path": "res://assets/portraits/portrait_fighter_02.png"},
-    {"id": "portrait_fighter_03", "class": "fighter", "path": "res://assets/portraits/portrait_fighter_03.png"},
-    {"id": "portrait_fighter_04", "class": "fighter", "path": "res://assets/portraits/portrait_fighter_04.png"},
-    {"id": "portrait_mage_01", "class": "mage", "path": "res://assets/portraits/portrait_mage_01.png"},
-    {"id": "portrait_mage_02", "class": "mage", "path": "res://assets/portraits/portrait_mage_02.png"},
-    {"id": "portrait_paladin_01", "class": "paladin", "path": "res://assets/portraits/portrait_paladin_01.png"},
-    {"id": "portrait_paladin_02", "class": "paladin", "path": "res://assets/portraits/portrait_paladin_02.png"},
-    {"id": "portrait_paladin_03", "class": "paladin", "path": "res://assets/portraits/portrait_paladin_03.png"},
-    {"id": "portrait_paladin_04", "class": "paladin", "path": "res://assets/portraits/portrait_paladin_04.png"},
-    {"id": "portrait_priestess_01", "class": "priestess", "path": "res://assets/portraits/portrait_priestess_01.png"},
-    {"id": "portrait_priestess_02", "class": "priestess", "path": "res://assets/portraits/portrait_priestess_02.png"},
-    {"id": "portrait_priestess_03", "class": "priestess", "path": "res://assets/portraits/portrait_priestess_03.png"},
-    {"id": "portrait_shaman_01", "class": "shaman", "path": "res://assets/portraits/portrait_shaman_01.png"},
-    {"id": "portrait_shaman_02", "class": "shaman", "path": "res://assets/portraits/portrait_shaman_02.png"},
-    {"id": "portrait_shaman_03", "class": "shaman", "path": "res://assets/portraits/portrait_shaman_03.png"},
-    {"id": "portrait_shaman_04", "class": "shaman", "path": "res://assets/portraits/portrait_shaman_04.png"},
-    {"id": "portrait_thief_01", "class": "thief", "path": "res://assets/portraits/portrait_thief_01.png"},
-    {"id": "portrait_thief_02", "class": "thief", "path": "res://assets/portraits/portrait_thief_02.png"},
-    {"id": "portrait_venturer_01", "class": "venturer", "path": "res://assets/portraits/portrait_venturer_01.png"},
-    {"id": "portrait_venturer_02", "class": "venturer", "path": "res://assets/portraits/portrait_venturer_02.png"},
-    {"id": "portrait_witch_01", "class": "witch", "path": "res://assets/portraits/portrait_witch_01.png"},
-    {"id": "portrait_witch_02", "class": "witch", "path": "res://assets/portraits/portrait_witch_02.png"},
-    {"id": "portrait_witch_03", "class": "witch", "path": "res://assets/portraits/portrait_witch_03.png"},
-    {"id": "portrait_witch_04", "class": "witch", "path": "res://assets/portraits/portrait_witch_04.png"}
+    {
+      "id": "asian_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 19,
+      "path": "res://assets/portraits/asian_anti-paladin_male_19.png"
+    },
+    {
+      "id": "egyptian_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 19,
+      "path": "res://assets/portraits/egyptian_anti-paladin_male_19.png"
+    },
+    {
+      "id": "english_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 19,
+      "path": "res://assets/portraits/english_anti-paladin_male_19.png"
+    },
+    {
+      "id": "germanic_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 19,
+      "path": "res://assets/portraits/germanic_anti-paladin_male_19.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 19,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_male_19.png"
+    },
+    {
+      "id": "mesopotamian_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 19,
+      "path": "res://assets/portraits/mesopotamian_anti-paladin_male_19.png"
+    },
+    {
+      "id": "nubian_anti-paladin_male_19",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 19,
+      "path": "res://assets/portraits/nubian_anti-paladin_male_19.png"
+    },
+    {
+      "id": "asian_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 20,
+      "path": "res://assets/portraits/asian_anti-paladin_female_20.png"
+    },
+    {
+      "id": "egyptian_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 20,
+      "path": "res://assets/portraits/egyptian_anti-paladin_female_20.png"
+    },
+    {
+      "id": "english_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 20,
+      "path": "res://assets/portraits/english_anti-paladin_female_20.png"
+    },
+    {
+      "id": "germanic_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 20,
+      "path": "res://assets/portraits/germanic_anti-paladin_female_20.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 20,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_female_20.png"
+    },
+    {
+      "id": "mesopotamian_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 20,
+      "path": "res://assets/portraits/mesopotamian_anti-paladin_female_20.png"
+    },
+    {
+      "id": "nubian_anti-paladin_female_20",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 20,
+      "path": "res://assets/portraits/nubian_anti-paladin_female_20.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_male_89",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 89,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_male_89.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_male_90",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 90,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_male_90.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_male_91",
+      "class": "anti_paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 91,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_male_91.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_female_92",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 92,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_female_92.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_female_93",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 93,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_female_93.png"
+    },
+    {
+      "id": "greco_roman_anti-paladin_female_94",
+      "class": "anti_paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 94,
+      "path": "res://assets/portraits/greco_roman_anti-paladin_female_94.png"
+    },
+    {
+      "id": "asian_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 9,
+      "path": "res://assets/portraits/asian_assassin_male_09.png"
+    },
+    {
+      "id": "egyptian_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 9,
+      "path": "res://assets/portraits/egyptian_assassin_male_09.png"
+    },
+    {
+      "id": "english_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 9,
+      "path": "res://assets/portraits/english_assassin_male_09.png"
+    },
+    {
+      "id": "germanic_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 9,
+      "path": "res://assets/portraits/germanic_assassin_male_09.png"
+    },
+    {
+      "id": "greco_roman_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 9,
+      "path": "res://assets/portraits/greco_roman_assassin_male_09.png"
+    },
+    {
+      "id": "mesopotamian_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 9,
+      "path": "res://assets/portraits/mesopotamian_assassin_male_09.png"
+    },
+    {
+      "id": "nubian_assassin_male_09",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 9,
+      "path": "res://assets/portraits/nubian_assassin_male_09.png"
+    },
+    {
+      "id": "asian_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 10,
+      "path": "res://assets/portraits/asian_assassin_female_10.png"
+    },
+    {
+      "id": "egyptian_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 10,
+      "path": "res://assets/portraits/egyptian_assassin_female_10.png"
+    },
+    {
+      "id": "english_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 10,
+      "path": "res://assets/portraits/english_assassin_female_10.png"
+    },
+    {
+      "id": "germanic_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 10,
+      "path": "res://assets/portraits/germanic_assassin_female_10.png"
+    },
+    {
+      "id": "greco_roman_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 10,
+      "path": "res://assets/portraits/greco_roman_assassin_female_10.png"
+    },
+    {
+      "id": "mesopotamian_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 10,
+      "path": "res://assets/portraits/mesopotamian_assassin_female_10.png"
+    },
+    {
+      "id": "nubian_assassin_female_10",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 10,
+      "path": "res://assets/portraits/nubian_assassin_female_10.png"
+    },
+    {
+      "id": "germanic_assassin_male_59",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 59,
+      "path": "res://assets/portraits/germanic_assassin_male_59.png"
+    },
+    {
+      "id": "greco_roman_assassin_male_59",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 59,
+      "path": "res://assets/portraits/greco_roman_assassin_male_59.png"
+    },
+    {
+      "id": "germanic_assassin_male_60",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 60,
+      "path": "res://assets/portraits/germanic_assassin_male_60.png"
+    },
+    {
+      "id": "greco_roman_assassin_male_60",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 60,
+      "path": "res://assets/portraits/greco_roman_assassin_male_60.png"
+    },
+    {
+      "id": "germanic_assassin_male_61",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 61,
+      "path": "res://assets/portraits/germanic_assassin_male_61.png"
+    },
+    {
+      "id": "greco_roman_assassin_male_61",
+      "class": "assassin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 61,
+      "path": "res://assets/portraits/greco_roman_assassin_male_61.png"
+    },
+    {
+      "id": "germanic_assassin_female_62",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 62,
+      "path": "res://assets/portraits/germanic_assassin_female_62.png"
+    },
+    {
+      "id": "greco_roman_assassin_female_62",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 62,
+      "path": "res://assets/portraits/greco_roman_assassin_female_62.png"
+    },
+    {
+      "id": "greco_roman_assassin_female_63",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 63,
+      "path": "res://assets/portraits/greco_roman_assassin_female_63.png"
+    },
+    {
+      "id": "greco_roman_assassin_female_64",
+      "class": "assassin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 64,
+      "path": "res://assets/portraits/greco_roman_assassin_female_64.png"
+    },
+    {
+      "id": "asian_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 13,
+      "path": "res://assets/portraits/asian_barbarian_male_13.png"
+    },
+    {
+      "id": "egyptian_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 13,
+      "path": "res://assets/portraits/egyptian_barbarian_male_13.png"
+    },
+    {
+      "id": "english_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 13,
+      "path": "res://assets/portraits/english_barbarian_male_13.png"
+    },
+    {
+      "id": "germanic_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 13,
+      "path": "res://assets/portraits/germanic_barbarian_male_13.png"
+    },
+    {
+      "id": "greco_roman_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 13,
+      "path": "res://assets/portraits/greco_roman_barbarian_male_13.png"
+    },
+    {
+      "id": "mesopotamian_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 13,
+      "path": "res://assets/portraits/mesopotamian_barbarian_male_13.png"
+    },
+    {
+      "id": "nubian_barbarian_male_13",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 13,
+      "path": "res://assets/portraits/nubian_barbarian_male_13.png"
+    },
+    {
+      "id": "asian_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 14,
+      "path": "res://assets/portraits/asian_barbarian_female_14.png"
+    },
+    {
+      "id": "egyptian_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 14,
+      "path": "res://assets/portraits/egyptian_barbarian_female_14.png"
+    },
+    {
+      "id": "english_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 14,
+      "path": "res://assets/portraits/english_barbarian_female_14.png"
+    },
+    {
+      "id": "germanic_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 14,
+      "path": "res://assets/portraits/germanic_barbarian_female_14.png"
+    },
+    {
+      "id": "greco_roman_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 14,
+      "path": "res://assets/portraits/greco_roman_barbarian_female_14.png"
+    },
+    {
+      "id": "mesopotamian_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 14,
+      "path": "res://assets/portraits/mesopotamian_barbarian_female_14.png"
+    },
+    {
+      "id": "nubian_barbarian_female_14",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 14,
+      "path": "res://assets/portraits/nubian_barbarian_female_14.png"
+    },
+    {
+      "id": "greco_roman_barbarian_male_71",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 71,
+      "path": "res://assets/portraits/greco_roman_barbarian_male_71.png"
+    },
+    {
+      "id": "greco_roman_barbarian_male_72",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 72,
+      "path": "res://assets/portraits/greco_roman_barbarian_male_72.png"
+    },
+    {
+      "id": "greco_roman_barbarian_male_73",
+      "class": "barbarian",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 73,
+      "path": "res://assets/portraits/greco_roman_barbarian_male_73.png"
+    },
+    {
+      "id": "greco_roman_barbarian_female_74",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 74,
+      "path": "res://assets/portraits/greco_roman_barbarian_female_74.png"
+    },
+    {
+      "id": "greco_roman_barbarian_female_75",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 75,
+      "path": "res://assets/portraits/greco_roman_barbarian_female_75.png"
+    },
+    {
+      "id": "greco_roman_barbarian_female_76",
+      "class": "barbarian",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 76,
+      "path": "res://assets/portraits/greco_roman_barbarian_female_76.png"
+    },
+    {
+      "id": "asian_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 11,
+      "path": "res://assets/portraits/asian_bard_male_11.png"
+    },
+    {
+      "id": "egyptian_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 11,
+      "path": "res://assets/portraits/egyptian_bard_male_11.png"
+    },
+    {
+      "id": "english_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 11,
+      "path": "res://assets/portraits/english_bard_male_11.png"
+    },
+    {
+      "id": "germanic_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 11,
+      "path": "res://assets/portraits/germanic_bard_male_11.png"
+    },
+    {
+      "id": "greco_roman_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 11,
+      "path": "res://assets/portraits/greco_roman_bard_male_11.png"
+    },
+    {
+      "id": "mesopotamian_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 11,
+      "path": "res://assets/portraits/mesopotamian_bard_male_11.png"
+    },
+    {
+      "id": "nubian_bard_male_11",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 11,
+      "path": "res://assets/portraits/nubian_bard_male_11.png"
+    },
+    {
+      "id": "asian_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 12,
+      "path": "res://assets/portraits/asian_bard_female_12.png"
+    },
+    {
+      "id": "egyptian_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 12,
+      "path": "res://assets/portraits/egyptian_bard_female_12.png"
+    },
+    {
+      "id": "english_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 12,
+      "path": "res://assets/portraits/english_bard_female_12.png"
+    },
+    {
+      "id": "germanic_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 12,
+      "path": "res://assets/portraits/germanic_bard_female_12.png"
+    },
+    {
+      "id": "greco_roman_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 12,
+      "path": "res://assets/portraits/greco_roman_bard_female_12.png"
+    },
+    {
+      "id": "mesopotamian_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 12,
+      "path": "res://assets/portraits/mesopotamian_bard_female_12.png"
+    },
+    {
+      "id": "nubian_bard_female_12",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 12,
+      "path": "res://assets/portraits/nubian_bard_female_12.png"
+    },
+    {
+      "id": "greco_roman_bard_male_65",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 65,
+      "path": "res://assets/portraits/greco_roman_bard_male_65.png"
+    },
+    {
+      "id": "greco_roman_bard_male_66",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 66,
+      "path": "res://assets/portraits/greco_roman_bard_male_66.png"
+    },
+    {
+      "id": "greco_roman_bard_male_67",
+      "class": "bard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 67,
+      "path": "res://assets/portraits/greco_roman_bard_male_67.png"
+    },
+    {
+      "id": "greco_roman_bard_female_68",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 68,
+      "path": "res://assets/portraits/greco_roman_bard_female_68.png"
+    },
+    {
+      "id": "greco_roman_bard_female_69",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 69,
+      "path": "res://assets/portraits/greco_roman_bard_female_69.png"
+    },
+    {
+      "id": "greco_roman_bard_female_70",
+      "class": "bard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 70,
+      "path": "res://assets/portraits/greco_roman_bard_female_70.png"
+    },
+    {
+      "id": "asian_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 33,
+      "path": "res://assets/portraits/asian_bladedancer_female_33.png"
+    },
+    {
+      "id": "egyptian_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 33,
+      "path": "res://assets/portraits/egyptian_bladedancer_female_33.png"
+    },
+    {
+      "id": "english_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 33,
+      "path": "res://assets/portraits/english_bladedancer_female_33.png"
+    },
+    {
+      "id": "germanic_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 33,
+      "path": "res://assets/portraits/germanic_bladedancer_female_33.png"
+    },
+    {
+      "id": "greco_roman_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 33,
+      "path": "res://assets/portraits/greco_roman_bladedancer_female_33.png"
+    },
+    {
+      "id": "mesopotamian_bladedancer_female_33",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 33,
+      "path": "res://assets/portraits/mesopotamian_bladedancer_female_33.png"
+    },
+    {
+      "id": "greco_roman_bladedancer_female_131",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 131,
+      "path": "res://assets/portraits/greco_roman_bladedancer_female_131.png"
+    },
+    {
+      "id": "greco_roman_bladedancer_female_132",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 132,
+      "path": "res://assets/portraits/greco_roman_bladedancer_female_132.png"
+    },
+    {
+      "id": "greco_roman_bladedancer_female_133",
+      "class": "bladedancer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 133,
+      "path": "res://assets/portraits/greco_roman_bladedancer_female_133.png"
+    },
+    {
+      "id": "asian_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 3,
+      "path": "res://assets/portraits/asian_cleric_male_03.png"
+    },
+    {
+      "id": "egyptian_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 3,
+      "path": "res://assets/portraits/egyptian_cleric_male_03.png"
+    },
+    {
+      "id": "english_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 3,
+      "path": "res://assets/portraits/english_cleric_male_03.png"
+    },
+    {
+      "id": "germanic_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 3,
+      "path": "res://assets/portraits/germanic_cleric_male_03.png"
+    },
+    {
+      "id": "greco_roman_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 3,
+      "path": "res://assets/portraits/greco_roman_cleric_male_03.png"
+    },
+    {
+      "id": "mesopotamian_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 3,
+      "path": "res://assets/portraits/mesopotamian_cleric_male_03.png"
+    },
+    {
+      "id": "nubian_cleric_male_03",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 3,
+      "path": "res://assets/portraits/nubian_cleric_male_03.png"
+    },
+    {
+      "id": "asian_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 4,
+      "path": "res://assets/portraits/asian_cleric_female_04.png"
+    },
+    {
+      "id": "egyptian_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 4,
+      "path": "res://assets/portraits/egyptian_cleric_female_04.png"
+    },
+    {
+      "id": "english_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 4,
+      "path": "res://assets/portraits/english_cleric_female_04.png"
+    },
+    {
+      "id": "germanic_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 4,
+      "path": "res://assets/portraits/germanic_cleric_female_04.png"
+    },
+    {
+      "id": "greco_roman_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 4,
+      "path": "res://assets/portraits/greco_roman_cleric_female_04.png"
+    },
+    {
+      "id": "mesopotamian_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 4,
+      "path": "res://assets/portraits/mesopotamian_cleric_female_04.png"
+    },
+    {
+      "id": "nubian_cleric_female_04",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 4,
+      "path": "res://assets/portraits/nubian_cleric_female_04.png"
+    },
+    {
+      "id": "germanic_cleric_male_41",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 41,
+      "path": "res://assets/portraits/germanic_cleric_male_41.png"
+    },
+    {
+      "id": "greco_roman_cleric_male_41",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 41,
+      "path": "res://assets/portraits/greco_roman_cleric_male_41.png"
+    },
+    {
+      "id": "germanic_cleric_male_42",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 42,
+      "path": "res://assets/portraits/germanic_cleric_male_42.png"
+    },
+    {
+      "id": "greco_roman_cleric_male_42",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 42,
+      "path": "res://assets/portraits/greco_roman_cleric_male_42.png"
+    },
+    {
+      "id": "germanic_cleric_male_43",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 43,
+      "path": "res://assets/portraits/germanic_cleric_male_43.png"
+    },
+    {
+      "id": "greco_roman_cleric_male_43",
+      "class": "cleric",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 43,
+      "path": "res://assets/portraits/greco_roman_cleric_male_43.png"
+    },
+    {
+      "id": "germanic_cleric_female_44",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 44,
+      "path": "res://assets/portraits/germanic_cleric_female_44.png"
+    },
+    {
+      "id": "greco_roman_cleric_female_44",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 44,
+      "path": "res://assets/portraits/greco_roman_cleric_female_44.png"
+    },
+    {
+      "id": "germanic_cleric_female_45",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 45,
+      "path": "res://assets/portraits/germanic_cleric_female_45.png"
+    },
+    {
+      "id": "greco_roman_cleric_female_45",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 45,
+      "path": "res://assets/portraits/greco_roman_cleric_female_45.png"
+    },
+    {
+      "id": "germanic_cleric_female_46",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 46,
+      "path": "res://assets/portraits/germanic_cleric_female_46.png"
+    },
+    {
+      "id": "greco_roman_cleric_female_46",
+      "class": "cleric",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 46,
+      "path": "res://assets/portraits/greco_roman_cleric_female_46.png"
+    },
+    {
+      "id": "asian_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 29,
+      "path": "res://assets/portraits/asian_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "egyptian_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 29,
+      "path": "res://assets/portraits/egyptian_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "english_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 29,
+      "path": "res://assets/portraits/english_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "germanic_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 29,
+      "path": "res://assets/portraits/germanic_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 29,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "mesopotamian_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 29,
+      "path": "res://assets/portraits/mesopotamian_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "nubian_darkblood_ruinguard_male_29",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 29,
+      "path": "res://assets/portraits/nubian_darkblood_ruinguard_male_29.png"
+    },
+    {
+      "id": "asian_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 30,
+      "path": "res://assets/portraits/asian_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "egyptian_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 30,
+      "path": "res://assets/portraits/egyptian_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "english_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 30,
+      "path": "res://assets/portraits/english_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "germanic_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 30,
+      "path": "res://assets/portraits/germanic_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 30,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "mesopotamian_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 30,
+      "path": "res://assets/portraits/mesopotamian_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "nubian_darkblood_ruinguard_female_30",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 30,
+      "path": "res://assets/portraits/nubian_darkblood_ruinguard_female_30.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_male_119",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 119,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_male_119.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_male_120",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 120,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_male_120.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_male_121",
+      "class": "darkblood_ruinguard",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 121,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_male_121.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_female_122",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 122,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_female_122.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_female_123",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 123,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_female_123.png"
+    },
+    {
+      "id": "greco_roman_darkblood_ruinguard_female_124",
+      "class": "darkblood_ruinguard",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 124,
+      "path": "res://assets/portraits/greco_roman_darkblood_ruinguard_female_124.png"
+    },
+    {
+      "id": "chaotic_dwarven_craftpriest_male_01",
+      "class": "dwarven_craftpriest",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 1,
+      "path": "res://assets/portraits/chaotic_dwarven_craftpriest_male_01.png"
+    },
+    {
+      "id": "lawful_dwarven_craftpriest_male_01",
+      "class": "dwarven_craftpriest",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 1,
+      "path": "res://assets/portraits/lawful_dwarven_craftpriest_male_01.png"
+    },
+    {
+      "id": "neutral_dwarven_craftpriest_male_01",
+      "class": "dwarven_craftpriest",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 1,
+      "path": "res://assets/portraits/neutral_dwarven_craftpriest_male_01.png"
+    },
+    {
+      "id": "chaotic_dwarven_delver_male_02",
+      "class": "dwarven_delver",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 2,
+      "path": "res://assets/portraits/chaotic_dwarven_delver_male_02.png"
+    },
+    {
+      "id": "lawful_dwarven_delver_male_02",
+      "class": "dwarven_delver",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 2,
+      "path": "res://assets/portraits/lawful_dwarven_delver_male_02.png"
+    },
+    {
+      "id": "neutral_dwarven_delver_male_02",
+      "class": "dwarven_delver",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 2,
+      "path": "res://assets/portraits/neutral_dwarven_delver_male_02.png"
+    },
+    {
+      "id": "chaotic_dwarven_fury_male_03",
+      "class": "dwarven_fury",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 3,
+      "path": "res://assets/portraits/chaotic_dwarven_fury_male_03.png"
+    },
+    {
+      "id": "lawful_dwarven_fury_male_03",
+      "class": "dwarven_fury",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 3,
+      "path": "res://assets/portraits/lawful_dwarven_fury_male_03.png"
+    },
+    {
+      "id": "neutral_dwarven_fury_male_03",
+      "class": "dwarven_fury",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 3,
+      "path": "res://assets/portraits/neutral_dwarven_fury_male_03.png"
+    },
+    {
+      "id": "chaotic_dwarven_vaultguard_male_04",
+      "class": "dwarven_vaultguard",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 4,
+      "path": "res://assets/portraits/chaotic_dwarven_vaultguard_male_04.png"
+    },
+    {
+      "id": "lawful_dwarven_vaultguard_male_04",
+      "class": "dwarven_vaultguard",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 4,
+      "path": "res://assets/portraits/lawful_dwarven_vaultguard_male_04.png"
+    },
+    {
+      "id": "neutral_dwarven_vaultguard_male_04",
+      "class": "dwarven_vaultguard",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 4,
+      "path": "res://assets/portraits/neutral_dwarven_vaultguard_male_04.png"
+    },
+    {
+      "id": "chaotic_elven_courtier_male_05",
+      "class": "elven_courtier",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 5,
+      "path": "res://assets/portraits/chaotic_elven_courtier_male_05.png"
+    },
+    {
+      "id": "lawful_elven_courtier_male_05",
+      "class": "elven_courtier",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 5,
+      "path": "res://assets/portraits/lawful_elven_courtier_male_05.png"
+    },
+    {
+      "id": "neutral_elven_courtier_male_05",
+      "class": "elven_courtier",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 5,
+      "path": "res://assets/portraits/neutral_elven_courtier_male_05.png"
+    },
+    {
+      "id": "chaotic_elven_courtier_female_06",
+      "class": "elven_courtier",
+      "sex": "female",
+      "ethnicity": "chaotic",
+      "number": 6,
+      "path": "res://assets/portraits/chaotic_elven_courtier_female_06.png"
+    },
+    {
+      "id": "lawful_elven_courtier_female_06",
+      "class": "elven_courtier",
+      "sex": "female",
+      "ethnicity": "lawful",
+      "number": 6,
+      "path": "res://assets/portraits/lawful_elven_courtier_female_06.png"
+    },
+    {
+      "id": "neutral_elven_courtier_female_06",
+      "class": "elven_courtier",
+      "sex": "female",
+      "ethnicity": "neutral",
+      "number": 6,
+      "path": "res://assets/portraits/neutral_elven_courtier_female_06.png"
+    },
+    {
+      "id": "chaotic_elven_enchanter_male_07",
+      "class": "elven_enchanter",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 7,
+      "path": "res://assets/portraits/chaotic_elven_enchanter_male_07.png"
+    },
+    {
+      "id": "lawful_elven_enchanter_male_07",
+      "class": "elven_enchanter",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 7,
+      "path": "res://assets/portraits/lawful_elven_enchanter_male_07.png"
+    },
+    {
+      "id": "neutral_elven_enchanter_male_07",
+      "class": "elven_enchanter",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 7,
+      "path": "res://assets/portraits/neutral_elven_enchanter_male_07.png"
+    },
+    {
+      "id": "lawful_elven_enchanter_female_08",
+      "class": "elven_enchanter",
+      "sex": "female",
+      "ethnicity": "lawful",
+      "number": 8,
+      "path": "res://assets/portraits/lawful_elven_enchanter_female_08.png"
+    },
+    {
+      "id": "neutral_elven_enchanter_female_08",
+      "class": "elven_enchanter",
+      "sex": "female",
+      "ethnicity": "neutral",
+      "number": 8,
+      "path": "res://assets/portraits/neutral_elven_enchanter_female_08.png"
+    },
+    {
+      "id": "chaotic_elven_nightblade_male_09",
+      "class": "elven_nightblade",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 9,
+      "path": "res://assets/portraits/chaotic_elven_nightblade_male_09.png"
+    },
+    {
+      "id": "neutral_elven_nightblade_male_09",
+      "class": "elven_nightblade",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 9,
+      "path": "res://assets/portraits/neutral_elven_nightblade_male_09.png"
+    },
+    {
+      "id": "chaotic_elven_nightblade_female_10",
+      "class": "elven_nightblade",
+      "sex": "female",
+      "ethnicity": "chaotic",
+      "number": 10,
+      "path": "res://assets/portraits/chaotic_elven_nightblade_female_10.png"
+    },
+    {
+      "id": "lawful_elven_nightblade_female_10",
+      "class": "elven_nightblade",
+      "sex": "female",
+      "ethnicity": "lawful",
+      "number": 10,
+      "path": "res://assets/portraits/lawful_elven_nightblade_female_10.png"
+    },
+    {
+      "id": "neutral_elven_nightblade_female_10",
+      "class": "elven_nightblade",
+      "sex": "female",
+      "ethnicity": "neutral",
+      "number": 10,
+      "path": "res://assets/portraits/neutral_elven_nightblade_female_10.png"
+    },
+    {
+      "id": "chaotic_elven_ranger_male_11",
+      "class": "elven_ranger",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 11,
+      "path": "res://assets/portraits/chaotic_elven_ranger_male_11.png"
+    },
+    {
+      "id": "lawful_elven_ranger_male_11",
+      "class": "elven_ranger",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 11,
+      "path": "res://assets/portraits/lawful_elven_ranger_male_11.png"
+    },
+    {
+      "id": "neutral_elven_ranger_male_11",
+      "class": "elven_ranger",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 11,
+      "path": "res://assets/portraits/neutral_elven_ranger_male_11.png"
+    },
+    {
+      "id": "chaotic_elven_ranger_female_12",
+      "class": "elven_ranger",
+      "sex": "female",
+      "ethnicity": "chaotic",
+      "number": 12,
+      "path": "res://assets/portraits/chaotic_elven_ranger_female_12.png"
+    },
+    {
+      "id": "lawful_elven_ranger_female_12",
+      "class": "elven_ranger",
+      "sex": "female",
+      "ethnicity": "lawful",
+      "number": 12,
+      "path": "res://assets/portraits/lawful_elven_ranger_female_12.png"
+    },
+    {
+      "id": "neutral_elven_ranger_female_12",
+      "class": "elven_ranger",
+      "sex": "female",
+      "ethnicity": "neutral",
+      "number": 12,
+      "path": "res://assets/portraits/neutral_elven_ranger_female_12.png"
+    },
+    {
+      "id": "chaotic_elven_spellsword_male_13",
+      "class": "elven_spellsword",
+      "sex": "male",
+      "ethnicity": "chaotic",
+      "number": 13,
+      "path": "res://assets/portraits/chaotic_elven_spellsword_male_13.png"
+    },
+    {
+      "id": "lawful_elven_spellsword_male_13",
+      "class": "elven_spellsword",
+      "sex": "male",
+      "ethnicity": "lawful",
+      "number": 13,
+      "path": "res://assets/portraits/lawful_elven_spellsword_male_13.png"
+    },
+    {
+      "id": "neutral_elven_spellsword_male_13",
+      "class": "elven_spellsword",
+      "sex": "male",
+      "ethnicity": "neutral",
+      "number": 13,
+      "path": "res://assets/portraits/neutral_elven_spellsword_male_13.png"
+    },
+    {
+      "id": "chaotic_elven_spellsword_female_14",
+      "class": "elven_spellsword",
+      "sex": "female",
+      "ethnicity": "chaotic",
+      "number": 14,
+      "path": "res://assets/portraits/chaotic_elven_spellsword_female_14.png"
+    },
+    {
+      "id": "lawful_elven_spellsword_female_14",
+      "class": "elven_spellsword",
+      "sex": "female",
+      "ethnicity": "lawful",
+      "number": 14,
+      "path": "res://assets/portraits/lawful_elven_spellsword_female_14.png"
+    },
+    {
+      "id": "neutral_elven_spellsword_female_14",
+      "class": "elven_spellsword",
+      "sex": "female",
+      "ethnicity": "neutral",
+      "number": 14,
+      "path": "res://assets/portraits/neutral_elven_spellsword_female_14.png"
+    },
+    {
+      "id": "asian_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 15,
+      "path": "res://assets/portraits/asian_explorer_male_15.png"
+    },
+    {
+      "id": "egyptian_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 15,
+      "path": "res://assets/portraits/egyptian_explorer_male_15.png"
+    },
+    {
+      "id": "english_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 15,
+      "path": "res://assets/portraits/english_explorer_male_15.png"
+    },
+    {
+      "id": "germanic_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 15,
+      "path": "res://assets/portraits/germanic_explorer_male_15.png"
+    },
+    {
+      "id": "greco_roman_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 15,
+      "path": "res://assets/portraits/greco_roman_explorer_male_15.png"
+    },
+    {
+      "id": "mesopotamian_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 15,
+      "path": "res://assets/portraits/mesopotamian_explorer_male_15.png"
+    },
+    {
+      "id": "nubian_explorer_male_15",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 15,
+      "path": "res://assets/portraits/nubian_explorer_male_15.png"
+    },
+    {
+      "id": "asian_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 16,
+      "path": "res://assets/portraits/asian_explorer_female_16.png"
+    },
+    {
+      "id": "egyptian_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 16,
+      "path": "res://assets/portraits/egyptian_explorer_female_16.png"
+    },
+    {
+      "id": "english_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 16,
+      "path": "res://assets/portraits/english_explorer_female_16.png"
+    },
+    {
+      "id": "germanic_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 16,
+      "path": "res://assets/portraits/germanic_explorer_female_16.png"
+    },
+    {
+      "id": "greco_roman_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 16,
+      "path": "res://assets/portraits/greco_roman_explorer_female_16.png"
+    },
+    {
+      "id": "mesopotamian_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 16,
+      "path": "res://assets/portraits/mesopotamian_explorer_female_16.png"
+    },
+    {
+      "id": "nubian_explorer_female_16",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 16,
+      "path": "res://assets/portraits/nubian_explorer_female_16.png"
+    },
+    {
+      "id": "greco_roman_explorer_male_77",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 77,
+      "path": "res://assets/portraits/greco_roman_explorer_male_77.png"
+    },
+    {
+      "id": "greco_roman_explorer_male_78",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 78,
+      "path": "res://assets/portraits/greco_roman_explorer_male_78.png"
+    },
+    {
+      "id": "greco_roman_explorer_male_79",
+      "class": "explorer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 79,
+      "path": "res://assets/portraits/greco_roman_explorer_male_79.png"
+    },
+    {
+      "id": "greco_roman_explorer_female_80",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 80,
+      "path": "res://assets/portraits/greco_roman_explorer_female_80.png"
+    },
+    {
+      "id": "greco_roman_explorer_female_81",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 81,
+      "path": "res://assets/portraits/greco_roman_explorer_female_81.png"
+    },
+    {
+      "id": "greco_roman_explorer_female_82",
+      "class": "explorer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 82,
+      "path": "res://assets/portraits/greco_roman_explorer_female_82.png"
+    },
+    {
+      "id": "asian_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 1,
+      "path": "res://assets/portraits/asian_fighter_male_01.png"
+    },
+    {
+      "id": "egyptian_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 1,
+      "path": "res://assets/portraits/egyptian_fighter_male_01.png"
+    },
+    {
+      "id": "germanic_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 1,
+      "path": "res://assets/portraits/germanic_fighter_male_01.png"
+    },
+    {
+      "id": "greco_roman_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 1,
+      "path": "res://assets/portraits/greco_roman_fighter_male_01.png"
+    },
+    {
+      "id": "mesopotamian_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 1,
+      "path": "res://assets/portraits/mesopotamian_fighter_male_01.png"
+    },
+    {
+      "id": "nubian_fighter_male_01",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 1,
+      "path": "res://assets/portraits/nubian_fighter_male_01.png"
+    },
+    {
+      "id": "asian_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 2,
+      "path": "res://assets/portraits/asian_fighter_female_02.png"
+    },
+    {
+      "id": "egyptian_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 2,
+      "path": "res://assets/portraits/egyptian_fighter_female_02.png"
+    },
+    {
+      "id": "english_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 2,
+      "path": "res://assets/portraits/english_fighter_female_02.png"
+    },
+    {
+      "id": "germanic_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 2,
+      "path": "res://assets/portraits/germanic_fighter_female_02.png"
+    },
+    {
+      "id": "greco_roman_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 2,
+      "path": "res://assets/portraits/greco_roman_fighter_female_02.png"
+    },
+    {
+      "id": "mesopotamian_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 2,
+      "path": "res://assets/portraits/mesopotamian_fighter_female_02.png"
+    },
+    {
+      "id": "nubian_fighter_female_02",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 2,
+      "path": "res://assets/portraits/nubian_fighter_female_02.png"
+    },
+    {
+      "id": "germanic_fighter_male_35",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 35,
+      "path": "res://assets/portraits/germanic_fighter_male_35.png"
+    },
+    {
+      "id": "greco_roman_fighter_male_35",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 35,
+      "path": "res://assets/portraits/greco_roman_fighter_male_35.png"
+    },
+    {
+      "id": "germanic_fighter_male_36",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 36,
+      "path": "res://assets/portraits/germanic_fighter_male_36.png"
+    },
+    {
+      "id": "greco_roman_fighter_male_36",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 36,
+      "path": "res://assets/portraits/greco_roman_fighter_male_36.png"
+    },
+    {
+      "id": "germanic_fighter_male_37",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 37,
+      "path": "res://assets/portraits/germanic_fighter_male_37.png"
+    },
+    {
+      "id": "greco_roman_fighter_male_37",
+      "class": "fighter",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 37,
+      "path": "res://assets/portraits/greco_roman_fighter_male_37.png"
+    },
+    {
+      "id": "germanic_fighter_female_38",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 38,
+      "path": "res://assets/portraits/germanic_fighter_female_38.png"
+    },
+    {
+      "id": "greco_roman_fighter_female_38",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 38,
+      "path": "res://assets/portraits/greco_roman_fighter_female_38.png"
+    },
+    {
+      "id": "germanic_fighter_female_39",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 39,
+      "path": "res://assets/portraits/germanic_fighter_female_39.png"
+    },
+    {
+      "id": "greco_roman_fighter_female_39",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 39,
+      "path": "res://assets/portraits/greco_roman_fighter_female_39.png"
+    },
+    {
+      "id": "germanic_fighter_female_40",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 40,
+      "path": "res://assets/portraits/germanic_fighter_female_40.png"
+    },
+    {
+      "id": "greco_roman_fighter_female_40",
+      "class": "fighter",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 40,
+      "path": "res://assets/portraits/greco_roman_fighter_female_40.png"
+    },
+    {
+      "id": "asian_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 31,
+      "path": "res://assets/portraits/asian_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "egyptian_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 31,
+      "path": "res://assets/portraits/egyptian_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "english_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 31,
+      "path": "res://assets/portraits/english_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "germanic_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 31,
+      "path": "res://assets/portraits/germanic_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 31,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "mesopotamian_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 31,
+      "path": "res://assets/portraits/mesopotamian_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "nubian_lightblessed_wonderworker_male_31",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 31,
+      "path": "res://assets/portraits/nubian_lightblessed_wonderworker_male_31.png"
+    },
+    {
+      "id": "asian_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 32,
+      "path": "res://assets/portraits/asian_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "egyptian_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 32,
+      "path": "res://assets/portraits/egyptian_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "english_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 32,
+      "path": "res://assets/portraits/english_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "germanic_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 32,
+      "path": "res://assets/portraits/germanic_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 32,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "mesopotamian_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 32,
+      "path": "res://assets/portraits/mesopotamian_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "nubian_lightblessed_wonderworker_female_32",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 32,
+      "path": "res://assets/portraits/nubian_lightblessed_wonderworker_female_32.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_male_125",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 125,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_male_125.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_male_126",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 126,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_male_126.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_male_127",
+      "class": "lightblessed_wonderworker",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 127,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_male_127.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_female_128",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 128,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_female_128.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_female_129",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 129,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_female_129.png"
+    },
+    {
+      "id": "greco_roman_lightblessed_wonderworker_female_130",
+      "class": "lightblessed_wonderworker",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 130,
+      "path": "res://assets/portraits/greco_roman_lightblessed_wonderworker_female_130.png"
+    },
+    {
+      "id": "asian_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 7,
+      "path": "res://assets/portraits/asian_mage_male_07.png"
+    },
+    {
+      "id": "egyptian_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 7,
+      "path": "res://assets/portraits/egyptian_mage_male_07.png"
+    },
+    {
+      "id": "english_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 7,
+      "path": "res://assets/portraits/english_mage_male_07.png"
+    },
+    {
+      "id": "germanic_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 7,
+      "path": "res://assets/portraits/germanic_mage_male_07.png"
+    },
+    {
+      "id": "greco_roman_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 7,
+      "path": "res://assets/portraits/greco_roman_mage_male_07.png"
+    },
+    {
+      "id": "mesopotamian_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 7,
+      "path": "res://assets/portraits/mesopotamian_mage_male_07.png"
+    },
+    {
+      "id": "nubian_mage_male_07",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 7,
+      "path": "res://assets/portraits/nubian_mage_male_07.png"
+    },
+    {
+      "id": "asian_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 8,
+      "path": "res://assets/portraits/asian_mage_female_08.png"
+    },
+    {
+      "id": "egyptian_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 8,
+      "path": "res://assets/portraits/egyptian_mage_female_08.png"
+    },
+    {
+      "id": "english_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 8,
+      "path": "res://assets/portraits/english_mage_female_08.png"
+    },
+    {
+      "id": "germanic_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 8,
+      "path": "res://assets/portraits/germanic_mage_female_08.png"
+    },
+    {
+      "id": "greco_roman_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 8,
+      "path": "res://assets/portraits/greco_roman_mage_female_08.png"
+    },
+    {
+      "id": "mesopotamian_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 8,
+      "path": "res://assets/portraits/mesopotamian_mage_female_08.png"
+    },
+    {
+      "id": "nubian_mage_female_08",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 8,
+      "path": "res://assets/portraits/nubian_mage_female_08.png"
+    },
+    {
+      "id": "germanic_mage_male_53",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 53,
+      "path": "res://assets/portraits/germanic_mage_male_53.png"
+    },
+    {
+      "id": "greco_roman_mage_male_53",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 53,
+      "path": "res://assets/portraits/greco_roman_mage_male_53.png"
+    },
+    {
+      "id": "germanic_mage_male_54",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 54,
+      "path": "res://assets/portraits/germanic_mage_male_54.png"
+    },
+    {
+      "id": "greco_roman_mage_male_54",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 54,
+      "path": "res://assets/portraits/greco_roman_mage_male_54.png"
+    },
+    {
+      "id": "germanic_mage_male_55",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 55,
+      "path": "res://assets/portraits/germanic_mage_male_55.png"
+    },
+    {
+      "id": "greco_roman_mage_male_55",
+      "class": "mage",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 55,
+      "path": "res://assets/portraits/greco_roman_mage_male_55.png"
+    },
+    {
+      "id": "germanic_mage_female_56",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 56,
+      "path": "res://assets/portraits/germanic_mage_female_56.png"
+    },
+    {
+      "id": "greco_roman_mage_female_56",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 56,
+      "path": "res://assets/portraits/greco_roman_mage_female_56.png"
+    },
+    {
+      "id": "germanic_mage_female_57",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 57,
+      "path": "res://assets/portraits/germanic_mage_female_57.png"
+    },
+    {
+      "id": "greco_roman_mage_female_57",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 57,
+      "path": "res://assets/portraits/greco_roman_mage_female_57.png"
+    },
+    {
+      "id": "germanic_mage_female_58",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 58,
+      "path": "res://assets/portraits/germanic_mage_female_58.png"
+    },
+    {
+      "id": "greco_roman_mage_female_58",
+      "class": "mage",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 58,
+      "path": "res://assets/portraits/greco_roman_mage_female_58.png"
+    },
+    {
+      "id": "asian_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 17,
+      "path": "res://assets/portraits/asian_paladin_male_17.png"
+    },
+    {
+      "id": "egyptian_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 17,
+      "path": "res://assets/portraits/egyptian_paladin_male_17.png"
+    },
+    {
+      "id": "english_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 17,
+      "path": "res://assets/portraits/english_paladin_male_17.png"
+    },
+    {
+      "id": "germanic_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 17,
+      "path": "res://assets/portraits/germanic_paladin_male_17.png"
+    },
+    {
+      "id": "greco_roman_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 17,
+      "path": "res://assets/portraits/greco_roman_paladin_male_17.png"
+    },
+    {
+      "id": "mesopotamian_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 17,
+      "path": "res://assets/portraits/mesopotamian_paladin_male_17.png"
+    },
+    {
+      "id": "nubian_paladin_male_17",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 17,
+      "path": "res://assets/portraits/nubian_paladin_male_17.png"
+    },
+    {
+      "id": "asian_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 18,
+      "path": "res://assets/portraits/asian_paladin_female_18.png"
+    },
+    {
+      "id": "egyptian_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 18,
+      "path": "res://assets/portraits/egyptian_paladin_female_18.png"
+    },
+    {
+      "id": "english_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 18,
+      "path": "res://assets/portraits/english_paladin_female_18.png"
+    },
+    {
+      "id": "germanic_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 18,
+      "path": "res://assets/portraits/germanic_paladin_female_18.png"
+    },
+    {
+      "id": "greco_roman_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 18,
+      "path": "res://assets/portraits/greco_roman_paladin_female_18.png"
+    },
+    {
+      "id": "mesopotamian_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 18,
+      "path": "res://assets/portraits/mesopotamian_paladin_female_18.png"
+    },
+    {
+      "id": "nubian_paladin_female_18",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 18,
+      "path": "res://assets/portraits/nubian_paladin_female_18.png"
+    },
+    {
+      "id": "greco_roman_paladin_male_83",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 83,
+      "path": "res://assets/portraits/greco_roman_paladin_male_83.png"
+    },
+    {
+      "id": "greco_roman_paladin_male_84",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 84,
+      "path": "res://assets/portraits/greco_roman_paladin_male_84.png"
+    },
+    {
+      "id": "greco_roman_paladin_male_85",
+      "class": "paladin",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 85,
+      "path": "res://assets/portraits/greco_roman_paladin_male_85.png"
+    },
+    {
+      "id": "greco_roman_paladin_female_86",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 86,
+      "path": "res://assets/portraits/greco_roman_paladin_female_86.png"
+    },
+    {
+      "id": "greco_roman_paladin_female_87",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 87,
+      "path": "res://assets/portraits/greco_roman_paladin_female_87.png"
+    },
+    {
+      "id": "greco_roman_paladin_female_88",
+      "class": "paladin",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 88,
+      "path": "res://assets/portraits/greco_roman_paladin_female_88.png"
+    },
+    {
+      "id": "asian_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 27,
+      "path": "res://assets/portraits/asian_priestess_male_27.png"
+    },
+    {
+      "id": "egyptian_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 27,
+      "path": "res://assets/portraits/egyptian_priestess_male_27.png"
+    },
+    {
+      "id": "english_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 27,
+      "path": "res://assets/portraits/english_priestess_male_27.png"
+    },
+    {
+      "id": "greco_roman_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 27,
+      "path": "res://assets/portraits/greco_roman_priestess_male_27.png"
+    },
+    {
+      "id": "mesopotamian_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 27,
+      "path": "res://assets/portraits/mesopotamian_priestess_male_27.png"
+    },
+    {
+      "id": "nubian_priestess_male_27",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 27,
+      "path": "res://assets/portraits/nubian_priestess_male_27.png"
+    },
+    {
+      "id": "asian_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 28,
+      "path": "res://assets/portraits/asian_priestess_female_28.png"
+    },
+    {
+      "id": "egyptian_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 28,
+      "path": "res://assets/portraits/egyptian_priestess_female_28.png"
+    },
+    {
+      "id": "english_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 28,
+      "path": "res://assets/portraits/english_priestess_female_28.png"
+    },
+    {
+      "id": "germanic_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 28,
+      "path": "res://assets/portraits/germanic_priestess_female_28.png"
+    },
+    {
+      "id": "greco_roman_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 28,
+      "path": "res://assets/portraits/greco_roman_priestess_female_28.png"
+    },
+    {
+      "id": "mesopotamian_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 28,
+      "path": "res://assets/portraits/mesopotamian_priestess_female_28.png"
+    },
+    {
+      "id": "nubian_priestess_female_28",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 28,
+      "path": "res://assets/portraits/nubian_priestess_female_28.png"
+    },
+    {
+      "id": "greco_roman_priestess_male_113",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 113,
+      "path": "res://assets/portraits/greco_roman_priestess_male_113.png"
+    },
+    {
+      "id": "greco_roman_priestess_male_114",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 114,
+      "path": "res://assets/portraits/greco_roman_priestess_male_114.png"
+    },
+    {
+      "id": "greco_roman_priestess_male_115",
+      "class": "priestess",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 115,
+      "path": "res://assets/portraits/greco_roman_priestess_male_115.png"
+    },
+    {
+      "id": "greco_roman_priestess_female_116",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 116,
+      "path": "res://assets/portraits/greco_roman_priestess_female_116.png"
+    },
+    {
+      "id": "greco_roman_priestess_female_117",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 117,
+      "path": "res://assets/portraits/greco_roman_priestess_female_117.png"
+    },
+    {
+      "id": "greco_roman_priestess_female_118",
+      "class": "priestess",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 118,
+      "path": "res://assets/portraits/greco_roman_priestess_female_118.png"
+    },
+    {
+      "id": "asian_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 25,
+      "path": "res://assets/portraits/asian_shaman_male_25.png"
+    },
+    {
+      "id": "egyptian_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 25,
+      "path": "res://assets/portraits/egyptian_shaman_male_25.png"
+    },
+    {
+      "id": "english_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 25,
+      "path": "res://assets/portraits/english_shaman_male_25.png"
+    },
+    {
+      "id": "germanic_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 25,
+      "path": "res://assets/portraits/germanic_shaman_male_25.png"
+    },
+    {
+      "id": "greco_roman_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 25,
+      "path": "res://assets/portraits/greco_roman_shaman_male_25.png"
+    },
+    {
+      "id": "mesopotamian_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 25,
+      "path": "res://assets/portraits/mesopotamian_shaman_male_25.png"
+    },
+    {
+      "id": "nubian_shaman_male_25",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 25,
+      "path": "res://assets/portraits/nubian_shaman_male_25.png"
+    },
+    {
+      "id": "asian_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 26,
+      "path": "res://assets/portraits/asian_shaman_female_26.png"
+    },
+    {
+      "id": "egyptian_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 26,
+      "path": "res://assets/portraits/egyptian_shaman_female_26.png"
+    },
+    {
+      "id": "english_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 26,
+      "path": "res://assets/portraits/english_shaman_female_26.png"
+    },
+    {
+      "id": "germanic_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 26,
+      "path": "res://assets/portraits/germanic_shaman_female_26.png"
+    },
+    {
+      "id": "greco_roman_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 26,
+      "path": "res://assets/portraits/greco_roman_shaman_female_26.png"
+    },
+    {
+      "id": "mesopotamian_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 26,
+      "path": "res://assets/portraits/mesopotamian_shaman_female_26.png"
+    },
+    {
+      "id": "nubian_shaman_female_26",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 26,
+      "path": "res://assets/portraits/nubian_shaman_female_26.png"
+    },
+    {
+      "id": "greco_roman_shaman_male_107",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 107,
+      "path": "res://assets/portraits/greco_roman_shaman_male_107.png"
+    },
+    {
+      "id": "greco_roman_shaman_male_108",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 108,
+      "path": "res://assets/portraits/greco_roman_shaman_male_108.png"
+    },
+    {
+      "id": "greco_roman_shaman_male_109",
+      "class": "shaman",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 109,
+      "path": "res://assets/portraits/greco_roman_shaman_male_109.png"
+    },
+    {
+      "id": "greco_roman_shaman_female_110",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 110,
+      "path": "res://assets/portraits/greco_roman_shaman_female_110.png"
+    },
+    {
+      "id": "greco_roman_shaman_female_111",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 111,
+      "path": "res://assets/portraits/greco_roman_shaman_female_111.png"
+    },
+    {
+      "id": "greco_roman_shaman_female_112",
+      "class": "shaman",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 112,
+      "path": "res://assets/portraits/greco_roman_shaman_female_112.png"
+    },
+    {
+      "id": "asian_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 5,
+      "path": "res://assets/portraits/asian_thief_male_05.png"
+    },
+    {
+      "id": "egyptian_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 5,
+      "path": "res://assets/portraits/egyptian_thief_male_05.png"
+    },
+    {
+      "id": "english_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 5,
+      "path": "res://assets/portraits/english_thief_male_05.png"
+    },
+    {
+      "id": "germanic_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 5,
+      "path": "res://assets/portraits/germanic_thief_male_05.png"
+    },
+    {
+      "id": "greco_roman_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 5,
+      "path": "res://assets/portraits/greco_roman_thief_male_05.png"
+    },
+    {
+      "id": "mesopotamian_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 5,
+      "path": "res://assets/portraits/mesopotamian_thief_male_05.png"
+    },
+    {
+      "id": "nubian_thief_male_05",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 5,
+      "path": "res://assets/portraits/nubian_thief_male_05.png"
+    },
+    {
+      "id": "asian_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 6,
+      "path": "res://assets/portraits/asian_thief_female_06.png"
+    },
+    {
+      "id": "egyptian_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 6,
+      "path": "res://assets/portraits/egyptian_thief_female_06.png"
+    },
+    {
+      "id": "english_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 6,
+      "path": "res://assets/portraits/english_thief_female_06.png"
+    },
+    {
+      "id": "germanic_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 6,
+      "path": "res://assets/portraits/germanic_thief_female_06.png"
+    },
+    {
+      "id": "greco_roman_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 6,
+      "path": "res://assets/portraits/greco_roman_thief_female_06.png"
+    },
+    {
+      "id": "mesopotamian_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 6,
+      "path": "res://assets/portraits/mesopotamian_thief_female_06.png"
+    },
+    {
+      "id": "nubian_thief_female_06",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 6,
+      "path": "res://assets/portraits/nubian_thief_female_06.png"
+    },
+    {
+      "id": "germanic_thief_male_47",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 47,
+      "path": "res://assets/portraits/germanic_thief_male_47.png"
+    },
+    {
+      "id": "greco_roman_thief_male_47",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 47,
+      "path": "res://assets/portraits/greco_roman_thief_male_47.png"
+    },
+    {
+      "id": "germanic_thief_male_48",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 48,
+      "path": "res://assets/portraits/germanic_thief_male_48.png"
+    },
+    {
+      "id": "greco_roman_thief_male_48",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 48,
+      "path": "res://assets/portraits/greco_roman_thief_male_48.png"
+    },
+    {
+      "id": "germanic_thief_male_49",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 49,
+      "path": "res://assets/portraits/germanic_thief_male_49.png"
+    },
+    {
+      "id": "greco_roman_thief_male_49",
+      "class": "thief",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 49,
+      "path": "res://assets/portraits/greco_roman_thief_male_49.png"
+    },
+    {
+      "id": "germanic_thief_female_50",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 50,
+      "path": "res://assets/portraits/germanic_thief_female_50.png"
+    },
+    {
+      "id": "greco_roman_thief_female_50",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 50,
+      "path": "res://assets/portraits/greco_roman_thief_female_50.png"
+    },
+    {
+      "id": "germanic_thief_female_51",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 51,
+      "path": "res://assets/portraits/germanic_thief_female_51.png"
+    },
+    {
+      "id": "greco_roman_thief_female_51",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 51,
+      "path": "res://assets/portraits/greco_roman_thief_female_51.png"
+    },
+    {
+      "id": "germanic_thief_female_52",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 52,
+      "path": "res://assets/portraits/germanic_thief_female_52.png"
+    },
+    {
+      "id": "greco_roman_thief_female_52",
+      "class": "thief",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 52,
+      "path": "res://assets/portraits/greco_roman_thief_female_52.png"
+    },
+    {
+      "id": "asian_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 23,
+      "path": "res://assets/portraits/asian_venturer_male_23.png"
+    },
+    {
+      "id": "egyptian_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 23,
+      "path": "res://assets/portraits/egyptian_venturer_male_23.png"
+    },
+    {
+      "id": "english_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 23,
+      "path": "res://assets/portraits/english_venturer_male_23.png"
+    },
+    {
+      "id": "germanic_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 23,
+      "path": "res://assets/portraits/germanic_venturer_male_23.png"
+    },
+    {
+      "id": "greco_roman_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 23,
+      "path": "res://assets/portraits/greco_roman_venturer_male_23.png"
+    },
+    {
+      "id": "mesopotamian_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 23,
+      "path": "res://assets/portraits/mesopotamian_venturer_male_23.png"
+    },
+    {
+      "id": "nubian_venturer_male_23",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 23,
+      "path": "res://assets/portraits/nubian_venturer_male_23.png"
+    },
+    {
+      "id": "asian_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 24,
+      "path": "res://assets/portraits/asian_venturer_female_24.png"
+    },
+    {
+      "id": "egyptian_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 24,
+      "path": "res://assets/portraits/egyptian_venturer_female_24.png"
+    },
+    {
+      "id": "english_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 24,
+      "path": "res://assets/portraits/english_venturer_female_24.png"
+    },
+    {
+      "id": "germanic_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 24,
+      "path": "res://assets/portraits/germanic_venturer_female_24.png"
+    },
+    {
+      "id": "greco_roman_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 24,
+      "path": "res://assets/portraits/greco_roman_venturer_female_24.png"
+    },
+    {
+      "id": "mesopotamian_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 24,
+      "path": "res://assets/portraits/mesopotamian_venturer_female_24.png"
+    },
+    {
+      "id": "nubian_venturer_female_24",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 24,
+      "path": "res://assets/portraits/nubian_venturer_female_24.png"
+    },
+    {
+      "id": "greco_roman_venturer_male_101",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 101,
+      "path": "res://assets/portraits/greco_roman_venturer_male_101.png"
+    },
+    {
+      "id": "greco_roman_venturer_male_102",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 102,
+      "path": "res://assets/portraits/greco_roman_venturer_male_102.png"
+    },
+    {
+      "id": "greco_roman_venturer_male_103",
+      "class": "venturer",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 103,
+      "path": "res://assets/portraits/greco_roman_venturer_male_103.png"
+    },
+    {
+      "id": "greco_roman_venturer_female_104",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 104,
+      "path": "res://assets/portraits/greco_roman_venturer_female_104.png"
+    },
+    {
+      "id": "greco_roman_venturer_female_105",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 105,
+      "path": "res://assets/portraits/greco_roman_venturer_female_105.png"
+    },
+    {
+      "id": "greco_roman_venturer_female_106",
+      "class": "venturer",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 106,
+      "path": "res://assets/portraits/greco_roman_venturer_female_106.png"
+    },
+    {
+      "id": "asian_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "asian",
+      "number": 21,
+      "path": "res://assets/portraits/asian_warlock_male_21.png"
+    },
+    {
+      "id": "egyptian_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "egyptian",
+      "number": 21,
+      "path": "res://assets/portraits/egyptian_warlock_male_21.png"
+    },
+    {
+      "id": "english_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "english",
+      "number": 21,
+      "path": "res://assets/portraits/english_warlock_male_21.png"
+    },
+    {
+      "id": "germanic_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "germanic",
+      "number": 21,
+      "path": "res://assets/portraits/germanic_warlock_male_21.png"
+    },
+    {
+      "id": "greco_roman_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 21,
+      "path": "res://assets/portraits/greco_roman_warlock_male_21.png"
+    },
+    {
+      "id": "mesopotamian_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "mesopotamian",
+      "number": 21,
+      "path": "res://assets/portraits/mesopotamian_warlock_male_21.png"
+    },
+    {
+      "id": "nubian_warlock_male_21",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "nubian",
+      "number": 21,
+      "path": "res://assets/portraits/nubian_warlock_male_21.png"
+    },
+    {
+      "id": "asian_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 22,
+      "path": "res://assets/portraits/asian_warlock_female_22.png"
+    },
+    {
+      "id": "egyptian_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 22,
+      "path": "res://assets/portraits/egyptian_warlock_female_22.png"
+    },
+    {
+      "id": "english_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 22,
+      "path": "res://assets/portraits/english_warlock_female_22.png"
+    },
+    {
+      "id": "germanic_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 22,
+      "path": "res://assets/portraits/germanic_warlock_female_22.png"
+    },
+    {
+      "id": "greco_roman_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 22,
+      "path": "res://assets/portraits/greco_roman_warlock_female_22.png"
+    },
+    {
+      "id": "mesopotamian_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 22,
+      "path": "res://assets/portraits/mesopotamian_warlock_female_22.png"
+    },
+    {
+      "id": "nubian_warlock_female_22",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 22,
+      "path": "res://assets/portraits/nubian_warlock_female_22.png"
+    },
+    {
+      "id": "greco_roman_warlock_male_95",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 95,
+      "path": "res://assets/portraits/greco_roman_warlock_male_95.png"
+    },
+    {
+      "id": "greco_roman_warlock_male_96",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 96,
+      "path": "res://assets/portraits/greco_roman_warlock_male_96.png"
+    },
+    {
+      "id": "greco_roman_warlock_male_97",
+      "class": "warlock",
+      "sex": "male",
+      "ethnicity": "greco_roman",
+      "number": 97,
+      "path": "res://assets/portraits/greco_roman_warlock_male_97.png"
+    },
+    {
+      "id": "greco_roman_warlock_female_98",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 98,
+      "path": "res://assets/portraits/greco_roman_warlock_female_98.png"
+    },
+    {
+      "id": "greco_roman_warlock_female_99",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 99,
+      "path": "res://assets/portraits/greco_roman_warlock_female_99.png"
+    },
+    {
+      "id": "greco_roman_warlock_female_100",
+      "class": "warlock",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 100,
+      "path": "res://assets/portraits/greco_roman_warlock_female_100.png"
+    },
+    {
+      "id": "asian_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "asian",
+      "number": 34,
+      "path": "res://assets/portraits/asian_witch_female_34.png"
+    },
+    {
+      "id": "egyptian_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "egyptian",
+      "number": 34,
+      "path": "res://assets/portraits/egyptian_witch_female_34.png"
+    },
+    {
+      "id": "english_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "english",
+      "number": 34,
+      "path": "res://assets/portraits/english_witch_female_34.png"
+    },
+    {
+      "id": "germanic_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "germanic",
+      "number": 34,
+      "path": "res://assets/portraits/germanic_witch_female_34.png"
+    },
+    {
+      "id": "greco_roman_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 34,
+      "path": "res://assets/portraits/greco_roman_witch_female_34.png"
+    },
+    {
+      "id": "mesopotamian_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "mesopotamian",
+      "number": 34,
+      "path": "res://assets/portraits/mesopotamian_witch_female_34.png"
+    },
+    {
+      "id": "nubian_witch_female_34",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "nubian",
+      "number": 34,
+      "path": "res://assets/portraits/nubian_witch_female_34.png"
+    },
+    {
+      "id": "greco_roman_witch_female_134",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 134,
+      "path": "res://assets/portraits/greco_roman_witch_female_134.png"
+    },
+    {
+      "id": "greco_roman_witch_female_135",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 135,
+      "path": "res://assets/portraits/greco_roman_witch_female_135.png"
+    },
+    {
+      "id": "greco_roman_witch_female_136",
+      "class": "witch",
+      "sex": "female",
+      "ethnicity": "greco_roman",
+      "number": 136,
+      "path": "res://assets/portraits/greco_roman_witch_female_136.png"
+    }
   ]
 }

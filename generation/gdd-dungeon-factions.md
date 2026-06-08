@@ -5,7 +5,7 @@
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (stocking procedure, room contents), `le_monster_characteristics_stats.xml` and `acore_monster_catalog_*.xml` (monster intelligence, alignment, organization), `acore_adventures_and_encounters.xml` (wandering monster tables, encounter frequency)
 **Depends on project GDDs:** `gdd-dungeon-layout.md` (room graph, corridor connectivity, doors, chokepoints), `gdd-npc-personality.md` (faction leader personality for intelligent factions)
 **Modifiable by Claude Code:** Yes — all grouping rules, territory algorithms, and relationship generation are engineering decisions.
-**Last updated:** 2026-03-19
+**Last updated:** 2026-06-08
 
 ---
 
@@ -33,6 +33,42 @@ A faction is a group of monsters within a single dungeon level (or spanning conn
 - **Solitary monsters** that occupy a single room with no organizational ties are not factions. A troll squatting in room 22 is an independent threat.
 - **Traps and dungeon features** are not factions.
 - **Undead without a controller** are not a faction (they're mindless hazards), but undead commanded by a necromancer or vampire ARE a faction under that controller.
+
+### 2.2 Faction Personality Biases (Member NPC Generation)
+
+When the personality generator (`gdd-npc-personality.md`) creates the personality of any **intelligent** faction member or faction leader (Tier B+ NPCs — faction leaders are generated at faction-stocking time per §10.1 of the personality GDD), the faction contributes a **twelve-axis mean-shift** applied as the **faction step** of the generation bias stack:
+
+```
+sample → ability → culture → FACTION → alignment → clamp   (gdd-npc-personality.md §4.1)
+```
+
+This is a **second mean-shift on top of the cultural mean-shift** (cultural biases come from `gdd-cultural-religious-generation.md` §2; faction biases stack on top). It uses the **same flat twelve-axis schema and the same −2.0..+2.0 range** as cultural biases:
+
+```
+personality_weight_biases: {
+  epistemic_curiosity: float,   # all twelve axes from gdd-npc-personality.md §3.2
+  societal_orthodoxy: float,
+  affective_compassion: float,
+  stress_reactivity: float,
+  self_interest: float,
+  in_group_loyalty: float,
+  mysticism: float,
+  expressiveness: float,
+  civility: float,
+  jocularity: float,
+  amorousness: float,
+  epicureanism: float
+}                               # each value a mean-shift in [-2.0, +2.0]
+```
+
+The profile should be consistent with `faction_type` and `alignment`. Examples:
+- A **military** faction (`faction_type: "military"`, e.g. a disciplined orc warband): In-Group Loyalty **+1.5**, Stress Reactivity **−1.0** (drilled to stay steady), Societal Orthodoxy **+1.0** (chain of command), Civility **−0.5**.
+- A **cult** faction (`faction_type: "cult"`, e.g. a necromancer's circle): Mysticism **+2.0**, In-Group Loyalty **+1.0**, Affective Compassion **−1.0**, Self-Interest **−0.5** (toward Opportunistic).
+- A **tribal** faction (`faction_type: "tribal"`, e.g. a goblin tribe): In-Group Loyalty **+1.0**, Stress Reactivity **+1.0** (excitable), Self-Interest **−1.0** (toward Opportunistic), Civility **−1.0**.
+
+Most faction members are Tier C transients (three sampled axes + Motivation per the personality GDD §4.2); the faction bias is applied to whichever axes are sampled. The faction leader is the primary consumer, since intelligent-faction leaders get full twelve-axis generation.
+
+> **Note (rework history):** this GDD never used the retired four-axis tag vocabulary (`stoic`, `aggressive`, `evasive`, `righteous`, `pragmatic`, etc.) — it had no `personality_weight_biases` field at all before this rework. The twelve-axis faction bias above is **added** to fulfill the "faction biases apply as a second mean-shift after cultural biases" design, not converted from old tags.
 
 ---
 
@@ -397,6 +433,11 @@ DungeonFaction:
   # Behavioral (from combat_behavior_tags on the monster profile)
   alert_state: string             # "unaware", "cautious", "alerted", "mobilized"
   default_reaction_modifier: int  # Applied to reaction rolls with this faction
+
+  # Personality biasing for member NPC generation (twelve-axis, see §2.2)
+  personality_weight_biases: Dictionary  # { axis_name: float } — twelve-axis mean-shifts
+                                  # (gdd-npc-personality.md §3.2), each in [-2.0, +2.0];
+                                  # applied as the FACTION step (second mean-shift, after culture)
   
   # Morale tracking
   morale_modifier: int            # Cumulative modifier from losses, leader death, etc.
@@ -725,3 +766,4 @@ Faction identification and territory assignment for a 30-room dungeon level with
 
 - **2026-03-19:** Initial draft. Same-species faction grouping with intelligence filter. Lair-centered territory expansion with chokepoint boundaries. Contested and unclaimed territory. Five-type relationship system. Faction-aware wandering monsters with depletion tracking. Alert propagation through faction territory. Multi-level considerations. Full worked example.
 - **2026-03-19 (rev 2):** Simplified patrol model — wandering patrols draw directly from stocked room population (no separate patrol pool). Added ACKS-compatible replenishment: 1d6 members per week up to starting max, only while faction holds its lair. Faction wipeout removes them from wandering monster table entirely.
+- **2026-06-08:** Added faction-level **twelve-axis `personality_weight_biases`** (new §2.2 and a field on the `DungeonFaction` record) consistent with the `gdd-npc-personality.md` rework. Faction biases apply as a **second mean-shift on top of cultural biases** (stack order: sample → ability → culture → faction → alignment → clamp), using the same flat twelve-axis schema and −2.0..+2.0 range as cultural biases. Documented `faction_type`-consistent example profiles (military / cult / tribal). Audit note: this GDD never used the retired four-axis tag vocabulary and had no personality bias field previously, so this is an addition rather than a tag conversion.

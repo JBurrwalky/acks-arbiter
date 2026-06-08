@@ -44,7 +44,7 @@
         "languages": "[\"common\",\"dwarvish\",\"goblin\",\"gnome\",\"kobold\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_dwarven_fury_02",
+        "portrait_id": "chaotic_dwarven_fury_male_03",
         "sex": "male",
         "token_variant": ""
       },
@@ -409,7 +409,7 @@
         "languages": "[\"common\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_fighter_01",
+        "portrait_id": "asian_fighter_male_01",
         "sex": "male",
         "token_variant": ""
       },
@@ -688,7 +688,7 @@
         "languages": "[\"common\",\"elvish\",\"draconic\",\"dwarvish\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_mage_02",
+        "portrait_id": "asian_mage_female_08",
         "sex": "female",
         "token_variant": ""
       },
@@ -1173,7 +1173,7 @@
         "languages": "[\"common\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_thief_01",
+        "portrait_id": "asian_thief_male_05",
         "sex": "male",
         "token_variant": ""
       },
@@ -1645,7 +1645,7 @@
         "languages": "[\"common\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_cleric_01",
+        "portrait_id": "asian_cleric_male_03",
         "sex": "male",
         "token_variant": ""
       },
@@ -1995,7 +1995,7 @@
         "languages": "[\"common\",\"elvish\",\"gnoll\",\"hobgoblin\",\"orc\",\"goblin\",\"ogre\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_elven_nightblade_02",
+        "portrait_id": "chaotic_elven_nightblade_male_09",
         "sex": "male",
         "token_variant": ""
       },

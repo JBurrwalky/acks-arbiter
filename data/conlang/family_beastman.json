@@ -1,0 +1,106 @@
+{
+  "kit_id": "beastman",
+  "tier": "family",
+  "inherits": null,
+  "display_name": "Beastman (Kazhur, the maker-tongue, regressed per race)",
+  "_schema": "gdd-naming-conventions.md 2.6 (family base kit; beastman tier)",
+  "_note": "The beastman tier: ten made-races that all speak a ROTTED form of one tongue, KAZHUR ('the maker-tongue'), the harsh Old-Semitic speech of the Chaotic sorcerers (the kashaphim) who bred the beastmen from men and beasts by binding-magic in the deep past. DESIGN: Kazhur is the root - a hard, throaty, ancient Semitic-style tongue (triliteral consonant roots, emphatics q/ts/t', gutturals '/kh/gh/h, sibilants sh/s/ts/z/zh, three vowels a/i/u, plurals -im/-uth). Each beastman race speaks Kazhur REGRESSED toward its animal nature: the sorcerers' phonemes decay into bestial sounds (glottal stops, clicks, hisses, growls, barks, yelps) and the concepts SIMPLIFY (the made-beasts lost the makers' learning - they keep words for blood, meat, kill, fire, dark, totem, and little else). So the Kazhur roots stay faintly recognizable ACROSS the races, but each race sounds like its beast. ALL beastmen are CHAOTIC. Theology is SHAMANIST and TOTEMIC: the kashap (shaman, degraded heir of the sorcerers) communes with BEAST-TOTEM-SPIRITS through blood-offering, and dimly serves the great Chaos-Spirits (the Chaotic powers of the canon, morphed harshly into Kazhur and prefixed Gul-), while the One and the Lawful powers are demonized and feared. NAMING: totem-spirits and most names are descriptive bestial Kazhur words (NOT canon-morphs); where the canon powers are named, they are harsh Kazhur morphs of the Agrippan canon (never real gods). MECHANICALLY the beastman tier stays STRIPPED (catalog 5.3: no full rulership/conquest/architecture/religion_hooks; demographics and caps from ax_domains_of_chaos.xml) - this kit supplies NAMING and totemic flavor ONLY.",
+  "sources_5_1": [],
+  "race": "beastman",
+  "tier_note": "beastman tier; CHAOTIC only; clanhold / wandering horde (wilderness); demographics, placement, and population caps from ax_domains_of_chaos.xml (catalog 5.3). NOT in the human/demihuman feudal model - no 7-tier title ladder; a tribal hierarchy and a shaman line only.",
+  "origin_lore": "The kashaphim - Chaotic human sorcerers of the deep past - bred the ten beast-races from men and animals by binding-magic, as slave-soldiers and as a mockery of the One's making. Kazhur was the sorcerers' tongue of command and curse. When the sorcerer-masters fell, the made-beasts kept the tongue but let it rot, each race's mouth reshaping it to its animal throat. The shamans (kashap) are what is left of the sorcerers: keepers of the broken words and the totem-rites.",
+  "races": {
+    "kobold": "small reptile-dog vermin; yipping, clicking; the most degraded and simple",
+    "goblin": "small, sneaking, spiteful; nasal snickers and barks",
+    "orc": "brutal raider-soldiers; deep guttural growls; the archetypal beastman",
+    "hobgoblin": "disciplined martial goblinoids; clipped, barked commands; the most ORDERED Kazhur (least rotted)",
+    "gnoll": "hyena-folk; cackling laughs, yips, barks",
+    "troll": "huge, dim, regenerating; deep slow groans, drawn-out vowels; the simplest concepts",
+    "bugbear": "large hairy stealth-goblinoids; low growl-whispers",
+    "troglodyte": "primitive reptile cave-dwellers; hisses and clicks; foul",
+    "lizardman": "cold reptile-folk; smooth sustained hisses and sibilants; the most articulate reptile",
+    "ogre": "huge dim brutes; deep booming bellows and grunts; few words"
+  },
+  "phonology": {
+    "palette": "Kazhur (root, the sorcerers' tongue): harsh Old-Semitic - triliteral consonant roots (D-M blood, Q-T-L kill, B-SH-R flesh); emphatic q/ts and t'; gutturals ' (glottal), kh, gh, h; sibilants sh/s/ts/z/zh; trilled r; three vowels a/i/u (long aa/ii/uu); plurals -im (m) / -uth (f); throaty, ancient, percussive.",
+    "phonotactics": "CVC and CVCC around triliteral roots; heavy gutturals and emphatics; initial or root stress.",
+    "transparent_ratio": 0.30,
+    "regression_note": "Each race REPLACES Kazhur phonemes with bestial sounds (see regression_laws) and keeps only simple concepts; cognates stay faintly recognizable across races but the surface sound is bestial and race-specific."
+  },
+  "regression_laws": {
+    "_note": "How each race rots Kazhur into its own bestial speech. The triliteral root is dimly preserved; the listed substitutions + a simplified vocabulary give each race its sound. Realized fully in each culture kit; example shows root 'qatal' (to kill).",
+    "kobold": "YIPS + high CLICKS: q -> k' (click), k -> tk', sh -> ts', drop or clip finals, vowels raise to i/e, diminutive -ik/-ek; shrill and quick. (qatal -> k'atik)",
+    "goblin": "NASAL SNICKERS + BARKS: gh -> gn, kh -> k'k, vowels nasalize, spiteful suffix -snik/-gik; whiny, sneering. (qatal -> gatak-snik)",
+    "orc": "deep guttural GROWLS: q -> ghr/khr, kh -> KHR, emphasis on gr/rk/gh, drawn-out growl, suffix -gur/-rakh/-gor. (qatal -> Khatakh-gur)",
+    "hobgoblin": "clipped BARKED COMMANDS: orc-guttural but ORDERED and geminated - hard doubled stops, sharp clipped finals -rok/-thar/-kk, little growl-drawl; the LEAST-rotted, most drill-like Kazhur. (qatal -> Qattar-rok)",
+    "gnoll": "cackling LAUGHS + YIPS: insert laugh-syllables (hya/hag), h -> hyena-laugh, vowels yip-high, suffix -yip/-hag/-hyak; manic. (qatal -> Qatak-hyag)",
+    "troll": "deep slow GROANS: vowels lengthen to oo/uu, consonants soften to deep voiced g/d/b/m, drawn-out, suffix -oom/-rugg/-uum; ponderous, simplest. (qatal -> Gadool-uum)",
+    "bugbear": "low GROWL-WHISPERS: voiced and breathy with a sibilant whisper, h-breath, suffix -hrr/-mbu/-vurr; menacing and soft. (qatal -> khatabh-hrr)",
+    "troglodyte": "HISSES + CLICKS (reptile): s/sh/ts -> long hiss (sss), t -> tch-click, q -> click, suffix -ssk/-tk/-isss; foul, primitive. (qatal -> Tch'atass-k)",
+    "lizardman": "smooth sustained HISSES + SIBILANTS (reptile): sh/s/z/ss prominent and drawn, cold and even, suffix -ssa/-isk/-aza; the most articulate reptile. (qatal -> Khatazza)",
+    "ogre": "deep booming BELLOWS + GRUNTS: simple CVC only, booming b/g/d/m, vowels low o/u, suffix -og/-grub/-mog; few, heavy words. (qatal -> Gatog)"
+  },
+  "lexicon": {
+    "_note": "The SIMPLE concept-core of Kazhur (root forms). The made-beasts keep little more than this. Each race regresses these per regression_laws.",
+    "concepts": { "blood": "dam", "flesh_meat": "bashar", "bone": "atsam", "kill": "qatal", "devour": "akhal", "fire": "eshar", "dark": "khashak", "raid_plunder": "shalal", "strong": "gibar", "great": "rab", "small": "qatan", "beast": "behem", "horde_people": "am", "lair_den": "me'ar", "spirit_totem": "ruakh", "fang": "shen", "claw": "tsipar", "horn": "qaran", "hunt": "tsayid", "war": "milkham", "death": "maveth", "night": "laylah", "pain": "ka'ab", "maker_sorcerer": "kashap" },
+    "feature_words": { "mountain": "har", "cave": "me'ar", "pit": "bor", "swamp": "bitsah", "waste": "midbar", "crag": "tsur", "gorge": "gay", "dark_forest": "ya'ar" }
+  },
+  "morphology": {
+    "_note": "Kazhur builds on triliteral roots; the beastmen mostly compound bare roots (blood + fang, great + kill). Plurals -im/-uth in the root tongue; the races often just repeat or grunt the plural.",
+    "compounding_rule": "[trait|deed|totem] + [root]: Dam-shen (blood-fang), Rab-qatal (great-kill); horde/tribe = [Totem]-am.",
+    "naming_marker": "named by the kashap at a blooding-rite; a name is a deed, a trait, or a totem-element, regressed into the race's sounds.",
+    "plural": "-im (m) / -uth (f) in root Kazhur; degraded per race"
+  },
+  "title_ladder": {
+    "_note": "The governing ladder maps to the ACKS 7 tiers the civs use (per Jedidiah: not a perfect fit, but the shared system until revised). Beastmen are clanhold/horde, so the tiers are graded by HOW MANY CLANHOLDS a leader rules: barony = chief of ONE clanhold (the lowest governing leader); empire = the great horde-lord over HUNDREDS of clanholds. Realized in each race's bestial sounds. thrall and warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / horde (mapped to the civ 7-tier ladder by number of clanholds ruled)",
+    "tiers": {
+      "barony": { "ruler": "Rosh", "scope": "chief of a single clanhold (lowest governing leader)" },
+      "march": { "ruler": "Milk-Rosh", "scope": "war-chief of a frontier / raiding clanhold" },
+      "county": { "ruler": "Rab-Rosh", "scope": "great-chief over a few clanholds" },
+      "duchy": { "ruler": "Am-Rosh", "scope": "horde-chief over many clanholds" },
+      "principality": { "ruler": "Malku", "scope": "warlord-king over a great horde" },
+      "kingdom": { "ruler": "Rab-Malku", "scope": "great warlord-king over many hordes" },
+      "empire": { "ruler": "Rab-Am-Malku", "scope": "the great horde-lord over hundreds of clanholds" }
+    },
+    "non_governing_ranks": {
+      "thrall_whelp": "shafal (the low; weakling, slave, runt - NOT a governing role)",
+      "warrior": "gibar (the mighty; a blooded fighter - NOT a governing role)"
+    },
+    "shaman_line": {
+      "shaman": "kashap (the totem-speaker; degraded heir of the sorcerers)",
+      "high_shaman": "rab-kashap (great-sorcerer; keeper of the horde's great-totem)"
+    }
+  },
+  "theonym_set": {
+    "_note": "Beastmen are CHAOTIC shamanists - their real cult is TOTEMIC (see totem_system); they only DIMLY name the canon powers as the great Chaos-Spirits the sorcerers served. Those names are harsh Kazhur morphs of the Agrippan canon (never real gods), prefixed GUL- ('dread/great-spirit') and, being degraded, carrying NO gendered sacred ending (contrast the elves' -aron/-arien and the dwarves' -drumm). The VENERATED set is the Chaotic powers; the One and the Lawful powers are DEMONIZED and feared.",
+    "divine_marker": "Gul- (prefix: 'the dread great-spirit of'); no gendered ending (degraded).",
+    "venerated_chaotic": {
+      "Maraxus (war-fire, slaughter)": "Gul-Maraqus (the great War-Spirit; chief of the served powers)",
+      "Raptis (the blood-hunt)": "Gul-Raptu (the Blood-Hunt-Spirit)",
+      "Vacidus (the devouring void)": "Gul-Waqidu (the Devouring-Dark)",
+      "Metensia (pestilence, rot)": "Gul-Metensu (the Rot-Spirit)",
+      "Lusanto (the hoard-greed)": "Gul-Lusanu (the Hoard-Spirit)",
+      "Dementus (storm-madness)": "Gul-Damantu (the Mad-Storm-Spirit)",
+      "Noctiluna (the dark, the night-cover)": "Gul-Naktilu (the Dark-Mother; the night that hides the horde)"
+    },
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant (the maker-god the sorcerers defied; the chain on the sky)",
+      "Tulrius (the sun, law, light)": "Tarul the Burning-Eye (the hated sun)",
+      "Orlandus (iron, oath, law)": "Orlanu the Chainer (law and the iron yoke)"
+    }
+  },
+  "totem_system": {
+    "_note": "The HEART of beastman faith. Day to day the beastmen serve BEAST-TOTEM-SPIRITS, not the distant Gul-spirits. Each RACE has a great race-totem (its archetypal beast-spirit); each TRIBE/horde also takes a totem. Totem names are DESCRIPTIVE bestial Kazhur (NOT canon-morphs): [great/color/body-part] + [beast]. The kashap communes by blood-offering at the totem-pole, fetish, and skull-heap.",
+    "race_totem_examples": { "orc": "the Iron Tusk / the Red Maw (boar/wolf war-totem)", "goblin": "the Gnawing Dark / the Skulking Rat", "gnoll": "the Laughing Pack / the Carrion-Hyena", "kobold": "the Little Gnasher / the Trap-Lizard", "troll": "the Stone-Belly / the Ever-Mending", "lizardman": "the Old Serpent / the Cold Coil", "troglodyte": "the Reek / the Blind Crawler", "bugbear": "the Hush / the Night-Hand", "hobgoblin": "the Iron Order / the War-Banner Beast", "ogre": "the Great Gut / the Boulder-Fist" },
+    "totem_name_pattern": "[Rab-/Dam-/Khashak-/color] + [beast or body-part]: Rab-Shen (the Great Fang), Dam-Tsipar (the Blood-Claw), Khashak-Anaph (the Carrion-Wing).",
+    "shaman_rites": "blood-offering, totem-poles and skull-heaps, beast-fetishes, the donning of the totem's hide/skull; the rab-kashap keeps the horde's great-totem.",
+    "worship_summary": "CHAOTIC only: the race-totem and tribal totems foremost (daily), the Gul-spirits served dimly through them (Gul-Maraqus the war-spirit above all), the One (Aternu the Sky-Tyrant) and the Lawful (Tarul the Burning-Eye, Orlanu the Chainer) demonized and feared."
+  },
+  "conventions": {
+    "people_name_default": "a beastman is named by the kashap at a blooding: a deed, a trait, or a totem-element in the race's bestial sounds (Orc Khatakh-gur 'kill-growl'; Goblin Snik 'the sneak'). No clan-houses; a beastman belongs to a TRIBE/horde named for its totem ([Totem]-am).",
+    "settlement_named_after": ["the lair-feature (har/me'ar/bor/bitsah) + a totem or a warlord", "the horde's totem", "a battle or a slaughter"],
+    "transparent_vs_opaque": "low surface (bestial sounds) over a faint shared Kazhur skeleton; concepts few and brutal.",
+    "no_exonyms": true
+  }
+}

@@ -54,7 +54,7 @@
         "languages": "[\"common\",\"elvish\",\"gnoll\",\"hobgoblin\",\"orc\",\"goblin\",\"kobold\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_elven_spellsword_01",
+        "portrait_id": "chaotic_elven_spellsword_male_13",
         "sex": "male",
         "token_variant": "alt1"
       },
@@ -451,7 +451,7 @@
         "languages": "[\"common\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_priestess_02",
+        "portrait_id": "asian_priestess_female_28",
         "sex": "female",
         "token_variant": ""
       },
@@ -688,7 +688,7 @@
           "encumbrance_units": 167,
           "slot": "pack",
           "is_equipped": 0,
-          "notes": "Bundle of 5 darts. Bundle weighs 1/6 stone. uses_remaining tracks darts left in the bundle (5 \u2192 0).",
+          "notes": "Bundle of 5 darts. Bundle weighs 1/6 stone. uses_remaining tracks darts left in the bundle (5 → 0).",
           "item_category": "ammunition",
           "is_magical": 0,
           "magical_bonus": 0,
@@ -965,7 +965,7 @@
         "languages": "[\"common\",\"orc\",\"gnoll\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_darkblood_ruinguard_04",
+        "portrait_id": "asian_darkblood_ruinguard_male_29",
         "sex": "male",
         "token_variant": ""
       },
@@ -1361,7 +1361,7 @@
         "languages": "[\"common\",\"bugbear\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_shaman_03",
+        "portrait_id": "asian_shaman_male_25",
         "sex": "male",
         "token_variant": ""
       },
@@ -1806,7 +1806,7 @@
         "languages": "[\"common\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_thief_02",
+        "portrait_id": "asian_thief_male_05",
         "sex": "male",
         "token_variant": "def"
       },
@@ -2182,7 +2182,7 @@
         "languages": "[\"common\",\"elvish\",\"dwarvish\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_mage_02",
+        "portrait_id": "asian_mage_female_08",
         "sex": "female",
         "token_variant": "def"
       },

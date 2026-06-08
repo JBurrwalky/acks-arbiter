@@ -61,7 +61,27 @@ func wipe_for_tests() -> void:
 			continue
 		db.query("DELETE FROM \"%s\"" % t)
 	db.query("COMMIT")
+	# Also clear whole-DB save-slot files (Phase S-2) so they don't accumulate
+	# across test runs — wiping game_snapshots rows alone would orphan the files.
+	_wipe_save_slot_files()
 	print("CampaignRepository: wiped %d tables for test run" % (tables.size() - PRESERVE.size()))
+
+
+## Removes every *.db file under SAVES_DIR. Test-hygiene helper for wipe_for_tests.
+func _wipe_save_slot_files() -> void:
+	var saves_abs := ProjectSettings.globalize_path(SAVES_DIR)
+	if not DirAccess.dir_exists_absolute(saves_abs):
+		return
+	var d := DirAccess.open(saves_abs)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var fname := d.get_next()
+	while fname != "":
+		if not d.current_is_dir() and fname.ends_with(".db"):
+			d.remove(fname)
+		fname = d.get_next()
+	d.list_dir_end()
 
 
 func _run_data_sweeps() -> void:
@@ -738,6 +758,21 @@ func update_party_position(party_id: String, map_id: String, q: int, r: int) -> 
 		[map_id, q, r, party_id]
 	):
 		push_error("CampaignRepository.update_party_position: failed. party_id=%s" % party_id)
+
+
+## Persists which exploration context the party is currently in. Written by
+## SessionRunner.transition_to_state() on entry to a primary-location state
+## (wilderness / dungeon / settlement) so the loader can restore that context
+## instead of always booting to wilderness (gdd-savegame-system.md §5.1).
+## [param location_type] must be one of 'wilderness' | 'dungeon' | 'settlement' | 'sea'.
+func update_party_location_type(party_id: String, location_type: String) -> void:
+	if not db.query_with_bindings(
+		"UPDATE parties SET current_location_type = ? WHERE id = ?",
+		[location_type, party_id]
+	):
+		push_error("CampaignRepository.update_party_location_type: failed. party_id=%s type=%s" % [
+			party_id, location_type
+		])
 
 
 ## Atomically move a party from one hex map to another. Used by cross-scale
@@ -4070,6 +4105,30 @@ func get_dungeon_entrance(entrance_id: String) -> Dictionary:
 	return db.query_result[0].duplicate()
 
 
+## Finds the dungeon entrance whose dungeon_data carries [param dungeon_id]
+## (the dungeon's internal id, == voxel_map_cells.map_id and parties.dungeon_id).
+## The id lives inside the JSON blob, not in a column, so we scan the campaign's
+## entrances and parse. Campaigns have few dungeons, so the cost is negligible.
+## Used by the savegame loader to rebuild dungeon context on restore
+## (gdd-savegame-system.md §5.6). Returns {} if no match.
+func get_dungeon_entrance_for_dungeon_id(campaign_id: String, dungeon_id: String) -> Dictionary:
+	if dungeon_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]
+	):
+		return {}
+	var rows: Array = db.query_result.duplicate()
+	for row: Dictionary in rows:
+		var data_json: String = String(row.get("dungeon_data", ""))
+		if data_json.is_empty():
+			continue
+		var parsed: Variant = JSON.parse_string(data_json)
+		if parsed is Dictionary and String(parsed.get("id", "")) == dungeon_id:
+			return row.duplicate()
+	return {}
+
+
 ## Updates the dungeon_data JSON blob for an entrance.
 func update_dungeon_entrance_data(entrance_id: String, dungeon_data_json: String) -> bool:
 	return db.query_with_bindings(
@@ -4596,6 +4655,80 @@ func clear_party_dungeon_position(party_id: String) -> void:
 	)
 
 
+## Persists the party's settlement position (settlement entrance id + current
+## POI/node) so the loader can restore the party inside that settlement at the
+## same POI (gdd-savegame-system.md §5.2). [param settlement_entrance_id] is the
+## settlement_entrances.id; [param node_id] is the current POI id.
+func update_party_settlement_position(party_id: String, settlement_entrance_id: String,
+		node_id: String) -> void:
+	db.query_with_bindings(
+		"UPDATE parties SET settlement_id = ?, settlement_node_id = ? WHERE id = ?",
+		[settlement_entrance_id, node_id, party_id]
+	)
+
+
+## Clears the party's settlement position (party has left the settlement).
+func clear_party_settlement_position(party_id: String) -> void:
+	db.query_with_bindings(
+		"UPDATE parties SET settlement_id = '', settlement_node_id = '' WHERE id = ?",
+		[party_id]
+	)
+
+
+# ---------------------------------------------------------------------------
+# Per-entity dungeon positions (migration 146) — full-fidelity savegame restore
+# ---------------------------------------------------------------------------
+
+## Replaces the stored per-entity dungeon positions for [param party_id].
+## [param positions] maps entity_id (String) -> Vector3i(col, row, level).
+## DELETE-then-INSERT in one transaction; no SELECT, so it is safe under the
+## §6.9 same-table-write rules. Written on save (DungeonExploreState.flush_to_db).
+func save_dungeon_entity_positions(party_id: String, dungeon_id: String,
+		positions: Dictionary) -> bool:
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM dungeon_entity_positions WHERE party_id = ?", [party_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.save_dungeon_entity_positions: delete failed. party_id=%s" % party_id)
+		return false
+	for entity_id in positions:
+		var p: Vector3i = positions[entity_id]
+		if not db.query_with_bindings("""
+			INSERT INTO dungeon_entity_positions
+				(party_id, entity_id, dungeon_id, col, row, level)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [party_id, String(entity_id), dungeon_id, p.x, p.y, p.z]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.save_dungeon_entity_positions: insert failed. entity_id=%s" % str(entity_id))
+			return false
+	db.query("COMMIT")
+	return true
+
+
+## Loads the per-entity dungeon positions for [param party_id].
+## Returns a Dictionary mapping entity_id (String) -> Vector3i(col, row, level).
+func load_dungeon_entity_positions(party_id: String) -> Dictionary:
+	var out: Dictionary = {}
+	if not db.query_with_bindings(
+		"SELECT entity_id, col, row, level FROM dungeon_entity_positions WHERE party_id = ?",
+		[party_id]
+	):
+		return out
+	for row: Dictionary in db.query_result:
+		out[String(row.get("entity_id", ""))] = Vector3i(
+			int(row.get("col", 0)), int(row.get("row", 0)), int(row.get("level", 0))
+		)
+	return out
+
+
+## Clears the per-entity dungeon positions for [param party_id] (dungeon exit).
+func clear_dungeon_entity_positions(party_id: String) -> void:
+	db.query_with_bindings(
+		"DELETE FROM dungeon_entity_positions WHERE party_id = ?", [party_id]
+	)
+
+
 # ---------------------------------------------------------------------------
 # Party state (migration 021)
 # ---------------------------------------------------------------------------
@@ -4844,164 +4977,373 @@ func transfer_item_to_character(item_id: String, character_id: String) -> bool:
 # Snapshot management (used by OverrideManager)
 # ---------------------------------------------------------------------------
 
-## Serialise all mutable campaign-scoped rows to a JSON blob and store it.
-## Returns the new snapshot id, or "" on failure.
-func save_snapshot(campaign_id: String, label: String) -> String:
-	var snap := {
-		"snapshot_version": 1,
-		"campaign_id": campaign_id,
-		"captured_at": Time.get_datetime_string_from_system(),
-		"characters":               _query_rows("SELECT * FROM characters WHERE campaign_id = ?", [campaign_id]),
-		"character_conditions":     _query_rows("""
-			SELECT cc.* FROM character_conditions cc
-			INNER JOIN characters c ON c.id = cc.character_id
-			WHERE c.campaign_id = ?
-		""", [campaign_id]),
-		"character_proficiencies":  _query_rows("""
-			SELECT cp.* FROM character_proficiencies cp
-			INNER JOIN characters c ON c.id = cp.character_id
-			WHERE c.campaign_id = ?
-		""", [campaign_id]),
-		"inventory_items":          _query_rows("""
-			SELECT ii.* FROM inventory_items ii
-			INNER JOIN characters c ON c.id = ii.character_id
-			WHERE c.campaign_id = ?
-		""", [campaign_id]),
-		"character_spells":         _query_rows("""
-			SELECT cs.* FROM character_spells cs
-			INNER JOIN characters c ON c.id = cs.character_id
-			WHERE c.campaign_id = ?
-		""", [campaign_id]),
-		"parties":                  _query_rows("SELECT * FROM parties WHERE campaign_id = ?", [campaign_id]),
-		"party_members":            _query_rows("""
-			SELECT pm.* FROM party_members pm
-			INNER JOIN parties p ON p.id = pm.party_id
-			WHERE p.campaign_id = ?
-		""", [campaign_id]),
-		"hex_maps":                 _query_rows("SELECT * FROM hex_maps WHERE campaign_id = ?", [campaign_id]),
-		"hex_cells":                _query_rows("""
-			SELECT hc.* FROM hex_cells hc
-			INNER JOIN hex_maps hm ON hm.id = hc.map_id
-			WHERE hm.campaign_id = ?
-		""", [campaign_id]),
-		"domains":                  _query_rows("SELECT * FROM domains WHERE campaign_id = ?", [campaign_id]),
-		"dungeon_entrances":        _query_rows("SELECT * FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]),
-		"settlement_entrances":     _query_rows("SELECT * FROM settlement_entrances WHERE campaign_id = ?", [campaign_id]),
-	}
+## Directory holding whole-DB save-slot files.
+const SAVES_DIR := "user://saves"
+## Default cap on retained slots per campaign (oldest auto-pruned).
+const MAX_SLOTS_PER_CAMPAIGN := 20
 
+func _ensure_saves_dir() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVES_DIR))
+
+func _slot_file_path(snapshot_id: String) -> String:
+	return "%s/%s.db" % [SAVES_DIR, snapshot_id]
+
+func _slot_abs_path(snapshot_id: String) -> String:
+	return ProjectSettings.globalize_path(_slot_file_path(snapshot_id))
+
+## Highest applied migration version (the slot's schema_version stamp).
+func _current_schema_version() -> int:
+	db.query("SELECT MAX(version) AS v FROM schema_migrations")
+	if db.query_result.is_empty():
+		return 0
+	var v = db.query_result[0].get("v", 0)
+	return int(v) if v != null else 0
+
+
+## Saves a named slot as a COMPLETE whole-database file snapshot (VACUUM INTO
+## user://saves/<id>.db) plus a metadata row in game_snapshots. Whole-DB capture
+## is structurally complete — it cannot miss a table — which is why S-2 abandoned
+## the per-table JSON-blob registry (gdd-savegame-system.md §6). [param slot_kind]
+## is 'manual' for player slots; [param location_label] is a denormalized place
+## label for the slot list. Returns the new snapshot id, or "" on failure.
+func save_snapshot(campaign_id: String, label: String, slot_kind: String = "manual",
+		location_label: String = "") -> String:
+	_ensure_saves_dir()
 	var id := generate_id()
-	var json_str := JSON.stringify(snap)
-	if not db.query_with_bindings(
-		"INSERT INTO game_snapshots (id, campaign_id, label, snapshot_data) VALUES (?, ?, ?, ?)",
-		[id, campaign_id, label, json_str]
-	):
-		push_error("CampaignRepository.save_snapshot: insert failed. campaign=%s label=%s" % [
+	var abs := _slot_abs_path(id)
+	# VACUUM INTO requires the target file to not already exist.
+	if FileAccess.file_exists(abs):
+		DirAccess.remove_absolute(abs)
+	var escaped := abs.replace("'", "''")
+	if not db.query("VACUUM INTO '%s'" % escaped):
+		push_error("CampaignRepository.save_snapshot: VACUUM INTO failed -> %s" % abs)
+		return ""
+	var manifest := JSON.stringify({"format": "db_file_v1", "file": "%s.db" % id})
+	if not db.query_with_bindings("""
+		INSERT INTO game_snapshots
+			(id, campaign_id, label, snapshot_data, slot_kind, schema_version, location_label)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	""", [id, campaign_id, label, manifest, slot_kind, _current_schema_version(), location_label]):
+		push_error("CampaignRepository.save_snapshot: metadata insert failed. campaign=%s label=%s" % [
 			campaign_id, label
 		])
+		if FileAccess.file_exists(abs):
+			DirAccess.remove_absolute(abs)
 		return ""
-	prune_oldest_snapshots(campaign_id, 10)
+	prune_oldest_snapshots(campaign_id, MAX_SLOTS_PER_CAMPAIGN)
 	return id
 
 
-## Restore a snapshot: replaces all campaign-scoped rows with snapshot data.
-## Runs inside a transaction; rolls back on any failure.
+## Restores a save slot: replaces the live database with the slot's whole-DB
+## file via ATTACH + per-table copy driven by sqlite_master — no connection
+## reopen (which godot-sqlite mishandles, see wipe_for_tests), and no static
+## registry, so it is structurally complete. Whole-DB semantics: ALL campaigns
+## revert to the slot's state. The caller re-enters the session via the
+## context-aware loader using the slot's campaign_id. Returns false on failure
+## (the live DB is left untouched). gdd-savegame-system.md §6.4.
 func restore_snapshot(snapshot_id: String) -> bool:
 	if not db.query_with_bindings(
 		"SELECT * FROM game_snapshots WHERE id = ?", [snapshot_id]
 	) or db.query_result.is_empty():
 		push_error("CampaignRepository.restore_snapshot: not found. id=%s" % snapshot_id)
 		return false
-
-	var snap_row: Dictionary = db.query_result[0]
-	var campaign_id: String = snap_row["campaign_id"]
-	var parsed = JSON.parse_string(snap_row["snapshot_data"])
-	if parsed == null:
-		push_error("CampaignRepository.restore_snapshot: JSON parse failed. id=%s" % snapshot_id)
+	var meta: Dictionary = db.query_result[0].duplicate()
+	var campaign_id := String(meta.get("campaign_id", ""))
+	if campaign_id.is_empty():
+		push_error("CampaignRepository.restore_snapshot: slot %s has no campaign_id" % snapshot_id)
 		return false
-	var snap: Dictionary = parsed
+	var abs := _slot_abs_path(snapshot_id)
+	if not FileAccess.file_exists(abs):
+		push_error("CampaignRepository.restore_snapshot: slot file missing -> %s (legacy JSON-blob snapshots are not restorable)" % abs)
+		return false
+	var escaped := abs.replace("'", "''")
+	if not db.query("ATTACH DATABASE '%s' AS slot" % escaped):
+		push_error("CampaignRepository.restore_snapshot: ATTACH failed -> %s" % abs)
+		return false
+	var ok := _restore_campaign_from_slot(campaign_id)
+	db.query("DETACH DATABASE slot")
+	if not ok:
+		return false
+	# Per-campaign restore inserts the slot's rows into main's CURRENT schema via
+	# column intersection, so main is never downgraded — no migration needed. Warn
+	# only if the slot predates the current schema (its data may lack newer fields).
+	var slot_ver := int(meta.get("schema_version", 0))
+	var cur_ver := _current_schema_version()
+	if slot_ver != 0 and slot_ver < cur_ver:
+		push_warning("CampaignRepository.restore_snapshot: slot %s predates the current schema (v%d < v%d); restored best-effort — the save may be incomplete or unstable." % [
+			snapshot_id, slot_ver, cur_ver])
+	return true
 
+
+## Restores ONLY [param campaign_id]'s rows from the ATTACHed `slot` into `main`,
+## leaving every OTHER campaign untouched (per-campaign isolation — loading one
+## adventure never affects another, gdd-savegame-system.md §6.4). For each scoped
+## table: DELETE main's rows for this campaign, then INSERT the slot's rows for
+## this campaign (column intersection for schema-drift safety). Transactional.
+##
+## DELETE order matters: a child's scope reads its parent's rows, so children must
+## be deleted before parents (the scope list is ordered deepest-first). INSERT
+## reads from the read-only `slot`, so it is order-independent.
+func _restore_campaign_from_slot(campaign_id: String) -> bool:
 	db.query("BEGIN TRANSACTION")
-
-	# Delete order: leaf tables first, then root tables
-	var delete_steps := [
-		["DELETE FROM party_members WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM character_conditions WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM character_proficiencies WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM inventory_items WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id]],
-		["DELETE FROM parties WHERE campaign_id = ?", [campaign_id]],
-		["DELETE FROM characters WHERE campaign_id = ?", [campaign_id]],
-		["DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id]],
-		["DELETE FROM domains WHERE campaign_id = ?", [campaign_id]],
-		["DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]],
-		["DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id]],
-	]
-	for step in delete_steps:
-		if not db.query_with_bindings(step[0], step[1]):
-			push_error("CampaignRepository.restore_snapshot: delete step failed")
-			db.query("ROLLBACK")
-			return false
-
-	# Insert order: root tables first, then leaves
-	var insert_steps := [
-		["characters",              snap.get("characters", [])],
-		["hex_maps",                snap.get("hex_maps", [])],
-		["parties",                 snap.get("parties", [])],
-		["domains",                 snap.get("domains", [])],
-		["dungeon_entrances",       snap.get("dungeon_entrances", [])],
-		["settlement_entrances",    snap.get("settlement_entrances", [])],
-		["party_members",           snap.get("party_members", [])],
-		["character_conditions",    snap.get("character_conditions", [])],
-		["character_proficiencies", snap.get("character_proficiencies", [])],
-		["inventory_items",         snap.get("inventory_items", [])],
-		["character_spells",        snap.get("character_spells", [])],
-		["hex_cells",               snap.get("hex_cells", [])],
-	]
-	for step in insert_steps:
-		if not _insert_rows(step[0], step[1]):
-			push_error("CampaignRepository.restore_snapshot: insert failed for table '%s'" % step[0])
-			db.query("ROLLBACK")
-			return false
-
+	for entry: Dictionary in _campaign_scope_entries():
+		var t: String = entry["table"]
+		if not _table_exists("main", t) or not _table_exists("slot", t):
+			continue
+		var shared: Array = _shared_columns(t)
+		if shared.is_empty():
+			continue
+		var collist := _quote_cols(shared)
+		var where_main := ""
+		var where_slot := ""
+		var del_params: Array = []
+		var ins_params: Array = []
+		if entry.get("dungeon_scoped", false):
+			var id_col: String = entry.get("id_col", "dungeon_id")
+			var main_ids := _dungeon_ids_for_campaign("main", campaign_id)
+			var slot_ids := _dungeon_ids_for_campaign("slot", campaign_id)
+			where_main = ("%s IN (%s)" % [id_col, _placeholders(main_ids.size())]) if main_ids.size() > 0 else "0"
+			where_slot = ("%s IN (%s)" % [id_col, _placeholders(slot_ids.size())]) if slot_ids.size() > 0 else "0"
+			del_params = main_ids
+			ins_params = slot_ids
+		else:
+			var clause: String = entry["via"]
+			where_main = clause.replace("{s}", "main")
+			where_slot = clause.replace("{s}", "slot")
+			var n := clause.count("?")
+			for i in n:
+				del_params.append(campaign_id)
+				ins_params.append(campaign_id)
+		if where_main != "0":
+			if not db.query_with_bindings("DELETE FROM main.\"%s\" WHERE %s" % [t, where_main], del_params):
+				db.query("ROLLBACK")
+				push_error("CampaignRepository._restore_campaign_from_slot: delete failed for %s" % t)
+				return false
+		if where_slot != "0":
+			if not db.query_with_bindings(
+				"INSERT INTO main.\"%s\" (%s) SELECT %s FROM slot.\"%s\" WHERE %s" % [t, collist, collist, t, where_slot],
+				ins_params):
+				db.query("ROLLBACK")
+				push_error("CampaignRepository._restore_campaign_from_slot: copy failed for %s" % t)
+				return false
 	db.query("COMMIT")
 	return true
 
 
+# ---------------------------------------------------------------------------
+# Per-campaign snapshot scope map (Phase S-2 isolation). See §6 of the GDD.
+# Keep EXHAUSTIVE: test_savegame_snapshot asserts (scope map ∪ excluded) == all
+# tables, so a NEW table fails the suite until it is classified here or excluded.
+# ---------------------------------------------------------------------------
+
+## Global / infra / transient tables that are NOT part of a campaign snapshot.
+const SNAPSHOT_EXCLUDED_TABLES := [
+	"schema_migrations", "schema_sweep_markers", "dice_rolls", "game_snapshots",
+]
+
+const _SCOPE_DIRECT_CAMPAIGN := [
+	"active_effects", "activity_state", "armies", "auto_pause_config", "campaign_clock",
+	"cargo_holds", "characters", "commissions", "construct_designs", "construct_instances",
+	"crafted_magic_items", "crossbreed_instances", "crossbreed_species", "domain_departure_log",
+	"domain_religion_conversion", "domain_threats", "domains", "draft_vehicles", "dungeon_entrances",
+	"factions", "familiars", "field_battles", "followers", "guildhouses", "henchman_pools",
+	"hex_maps", "hideouts", "laboratories", "lairs", "libraries", "location_caches",
+	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
+	"override_log", "parties", "party_clocks", "pois", "pursuit_states", "realm_relations",
+	"realms", "reputation_entries", "restricted_cooldowns", "scheduled_events", "settlement_entrances",
+	"shipping_contract_offers", "shipping_contracts", "ships", "shop_inventory", "sieges",
+	"social_groups", "specialists", "survey_progress", "syndicates", "tracking_sessions",
+	"trade_routes", "trained_creatures", "troop_units", "vassal_assignments", "visited_pois",
+	"weather_states", "workshops", "xp_awards",
+]
+const _SCOPE_VIA_CHARACTER := [
+	"character_activity_state", "character_conditions", "character_divine_power",
+	"character_legal_status", "character_permanent_wounds", "character_powers",
+	"character_preferences", "character_proficiencies", "character_spell_formulas",
+	"character_spell_slots_expended", "character_spells", "caught_perpetrators",
+	"consecrated_altars", "henchman_state", "lay_low_state", "abandoned_characters",
+	"congregants", "pending_divine_effects", "henchman_pool_members",
+]
+const _SCOPE_VIA_PARTY := [
+	"party_members", "party_state", "party_sustenance_log", "party_visit_state",
+	"journal_bookmarks", "narrative_entries", "notebook_state", "player_notes",
+	"game_log_entries", "dungeon_entity_positions",
+]
+const _SCOPE_VIA_DOMAIN := [
+	"active_adventuring_log", "domain_followers", "follower_arrivals", "ledger_entries", "domain_hexes",
+]
+const _SCOPE_VIA_HEXMAP := ["hex_cells", "hex_overlays", "hex_river_edges"]
+const _SCOPE_VIA_ARMY := ["army_officers", "army_supply_state", "army_unit_assignments"]
+const _SCOPE_VIA_BATTLE := ["battle_log", "battle_unit_states"]
+const _SCOPE_VIA_SIEGE := ["siege_actions", "siege_artillery", "siege_mines"]
+const _SCOPE_VIA_SYNDICATE := ["syndicate_members", "hijink_assignments"]
+
+
+func _via(from_col: String, parent: String) -> String:
+	return "%s IN (SELECT id FROM {s}.%s WHERE campaign_id = ?)" % [from_col, parent]
+
+
+func _via_stronghold_child() -> String:
+	return "stronghold_id IN (SELECT id FROM {s}.strongholds WHERE domain_id IN (SELECT id FROM {s}.domains WHERE campaign_id = ?) OR owner_character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?))"
+
+
+## The full per-campaign scope map, ordered DEEPEST-FIRST so DELETE never reads a
+## parent it already removed. INSERT (from the read-only slot) is order-agnostic.
+func _campaign_scope_entries() -> Array:
+	var e: Array = []
+	# Depth 3 — scope through a depth-2 child.
+	e.append({"table": "settlement_poi_spell_offers",
+		"via": "poi_id IN (SELECT id FROM {s}.settlement_pois WHERE settlement_id IN (SELECT id FROM {s}.settlement_entrances WHERE campaign_id = ?))"})
+	e.append({"table": "stronghold_accessories", "via": _via_stronghold_child()})
+	e.append({"table": "stronghold_commissions", "via": _via_stronghold_child()})
+	# Depth 2 — scope through a direct (campaign_id) parent.
+	for t in _SCOPE_VIA_CHARACTER:
+		e.append({"table": t, "via": _via("character_id", "characters")})
+	for t in _SCOPE_VIA_PARTY:
+		e.append({"table": t, "via": _via("party_id", "parties")})
+	for t in _SCOPE_VIA_DOMAIN:
+		e.append({"table": t, "via": _via("domain_id", "domains")})
+	for t in _SCOPE_VIA_HEXMAP:
+		e.append({"table": t, "via": _via("map_id", "hex_maps")})
+	for t in _SCOPE_VIA_ARMY:
+		e.append({"table": t, "via": _via("army_id", "armies")})
+	for t in _SCOPE_VIA_BATTLE:
+		e.append({"table": t, "via": _via("battle_id", "field_battles")})
+	for t in _SCOPE_VIA_SIEGE:
+		e.append({"table": t, "via": _via("siege_id", "sieges")})
+	for t in _SCOPE_VIA_SYNDICATE:
+		e.append({"table": t, "via": _via("syndicate_id", "syndicates")})
+	e.append({"table": "faction_memberships", "via": _via("faction_id", "factions")})
+	e.append({"table": "vassal_obligations", "via": _via("vassal_assignment_id", "vassal_assignments")})
+	e.append({"table": "settlement_pois", "via": _via("settlement_id", "settlement_entrances")})
+	e.append({"table": "settlement_merchandise_demand", "via": _via("settlement_entrance_id", "settlement_entrances")})
+	e.append({"table": "party_heraldry",
+		"via": "heraldry_id IN (SELECT heraldry_id FROM {s}.parties WHERE campaign_id = ?)"})
+	e.append({"table": "inventory_items",
+		"via": "(character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?) OR party_id IN (SELECT id FROM {s}.parties WHERE campaign_id = ?) OR creature_id IN (SELECT id FROM {s}.trained_creatures WHERE campaign_id = ?) OR vehicle_id IN (SELECT id FROM {s}.draft_vehicles WHERE campaign_id = ?) OR location_cache_id IN (SELECT id FROM {s}.location_caches WHERE campaign_id = ?))"})
+	e.append({"table": "strongholds",
+		"via": "(domain_id IN (SELECT id FROM {s}.domains WHERE campaign_id = ?) OR owner_character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?))"})
+	e.append({"table": "reconnaissance_cooldowns",
+		"via": "(observer_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR observed_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?))"})
+	e.append({"table": "call_to_arms_state",
+		"via": "(lord_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR vassal_character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?))"})
+	# Dungeon-content tables: dungeon_id is buried in dungeon_entrances.dungeon_data
+	# JSON, so scope by the campaign's computed dungeon-id list. Processed before
+	# dungeon_entrances (a depth-1 parent) so the id list is still resolvable.
+	for t in ["dungeon_floors", "dungeon_rooms", "dungeon_doors", "monster_groups", "treasure_hoards", "key_items"]:
+		e.append({"table": t, "dungeon_scoped": true, "id_col": "dungeon_id"})
+	e.append({"table": "voxel_map_cells", "dungeon_scoped": true, "id_col": "map_id"})
+	# Depth 1 — direct campaign_id parents (deleted last); campaigns very last.
+	for t in _SCOPE_DIRECT_CAMPAIGN:
+		e.append({"table": t, "via": "campaign_id = ?"})
+	e.append({"table": "campaigns", "via": "id = ?"})
+	return e
+
+
+func _table_exists(schema: String, t: String) -> bool:
+	db.query_with_bindings("SELECT 1 FROM %s.sqlite_master WHERE type='table' AND name = ?" % schema, [t])
+	return not db.query_result.is_empty()
+
+
+func _quote_cols(cols: Array) -> String:
+	var out := ""
+	for i in cols.size():
+		out += ("" if i == 0 else ", ") + "\"%s\"" % cols[i]
+	return out
+
+
+func _placeholders(n: int) -> String:
+	var out := ""
+	for i in n:
+		out += ("" if i == 0 else ", ") + "?"
+	return out
+
+
+## The campaign's dungeon ids (parsed from dungeon_entrances.dungeon_data) in the
+## given [param schema] ("main" or "slot"). The dungeon-content tables key off a
+## dungeon_id buried in JSON with no SQL path to a campaign, so they are scoped
+## by this computed id list.
+func _dungeon_ids_for_campaign(schema: String, campaign_id: String) -> Array:
+	var ids: Array = []
+	db.query_with_bindings("SELECT dungeon_data FROM %s.dungeon_entrances WHERE campaign_id = ?" % schema, [campaign_id])
+	for r: Dictionary in db.query_result.duplicate():
+		var dj := String(r.get("dungeon_data", ""))
+		if dj.is_empty():
+			continue
+		var parsed: Variant = JSON.parse_string(dj)
+		if parsed is Dictionary:
+			var did := String(parsed.get("id", ""))
+			if not did.is_empty():
+				ids.append(did)
+	return ids
+
+
+## Columns present in BOTH main.<t> and slot.<t>, in main's column order.
+func _shared_columns(t: String) -> Array:
+	db.query("PRAGMA main.table_info(\"%s\")" % t)
+	var main_cols: Array = []
+	for r: Dictionary in db.query_result:
+		main_cols.append(str(r.get("name", "")))
+	db.query("PRAGMA slot.table_info(\"%s\")" % t)
+	var slot_set: Dictionary = {}
+	for r: Dictionary in db.query_result:
+		slot_set[str(r.get("name", ""))] = true
+	var shared: Array = []
+	for c in main_cols:
+		if slot_set.has(c):
+			shared.append(c)
+	return shared
+
+
+## Returns a single save-slot metadata row, or {} if not found.
+func get_snapshot(snapshot_id: String) -> Dictionary:
+	db.query_with_bindings("SELECT * FROM game_snapshots WHERE id = ?", [snapshot_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Lists save slots for a campaign, newest first, with metadata for the UI.
 func list_snapshots(campaign_id: String) -> Array:
 	db.query_with_bindings(
-		"SELECT id, campaign_id, label, created_at FROM game_snapshots WHERE campaign_id = ? ORDER BY created_at DESC",
+		"SELECT id, campaign_id, label, created_at, slot_kind, schema_version, location_label FROM game_snapshots WHERE campaign_id = ? ORDER BY created_at DESC",
 		[campaign_id]
 	)
 	return db.query_result.duplicate()
 
 
+## Deletes a slot: its whole-DB file and its metadata row.
 func delete_snapshot(snapshot_id: String) -> bool:
+	var abs := _slot_abs_path(snapshot_id)
+	if FileAccess.file_exists(abs):
+		DirAccess.remove_absolute(abs)
 	if not db.query_with_bindings("DELETE FROM game_snapshots WHERE id = ?", [snapshot_id]):
 		push_error("CampaignRepository.delete_snapshot: failed. id=%s" % snapshot_id)
 		return false
 	return true
 
 
-## Delete oldest snapshots so at most [param max_count] remain for this campaign.
+## Deletes oldest slots (file + row) so at most [param max_count] remain for this
+## campaign. The slot FILES must be removed too, not just the metadata rows.
 func prune_oldest_snapshots(campaign_id: String, max_count: int) -> void:
 	db.query_with_bindings(
-		"SELECT COUNT(*) AS cnt FROM game_snapshots WHERE campaign_id = ?",
+		"SELECT id FROM game_snapshots WHERE campaign_id = ? ORDER BY created_at ASC",
 		[campaign_id]
 	)
-	if db.query_result.is_empty():
-		return
-	var count: int = db.query_result[0]["cnt"] as int
-	var excess := count - max_count
+	var ids: Array = []
+	for r: Dictionary in db.query_result:
+		ids.append(str(r.get("id", "")))
+	var excess := ids.size() - max_count
 	if excess <= 0:
 		return
-	db.query_with_bindings("""
-		DELETE FROM game_snapshots WHERE id IN (
-			SELECT id FROM game_snapshots WHERE campaign_id = ?
-			ORDER BY created_at ASC
-			LIMIT ?
-		)
-	""", [campaign_id, excess])
+	for i in excess:
+		var sid: String = ids[i]
+		if sid.is_empty():
+			continue
+		var abs := _slot_abs_path(sid)
+		if FileAccess.file_exists(abs):
+			DirAccess.remove_absolute(abs)
+		db.query_with_bindings("DELETE FROM game_snapshots WHERE id = ?", [sid])
 
 
 # ---------------------------------------------------------------------------
