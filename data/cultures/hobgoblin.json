@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "hobgoblin",
+      "catalog_number": null,
+      "demonym": "Hobgoblin",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "hobgoblin",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "hills",
+        "mountains",
+        "grassland"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.65,
+      "size_exponent_bias": 0.05
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "archers",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.0,
+        "in_group_loyalty": 1.0,
+        "affective_compassion": -1.0,
+        "stress_reactivity": 0.5,
+        "self_interest": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "hobgoblin",
+    "phonemic_palette": "Hobgoblin (Kazhur, clipped-command regression): orc-guttural but ORDERED - hard geminated stops (-kk/-tt), sharp clipped finals -rok/-thar/-tark, minimal growl-drawl; barked, drill-like. The least-rotted beastman tongue.",
+    "phenotype_notes": "Features of the Hobgoblin analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Hobgoblin",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Hobgoblin register; deity-morphs in name_bank 'hobgoblin'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone warrens of the Hobgoblin"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Hobgoblin — xenophobic clan confederation of the hills; survival.",
+      "one_paragraph": "The Hobgoblin are a Chaotic beastman race; aggression 0.85, organized as clan confederation. Their tongue is a regressed form (see name_bank 'hobgoblin'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

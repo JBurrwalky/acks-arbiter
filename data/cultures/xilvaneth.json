@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "xilvaneth",
+      "catalog_number": 49,
+      "demonym": "Xilvaneth",
+      "toponym": "Xilvanar",
+      "tier": "demihuman",
+      "race": "elf",
+      "civ_or_clan": "civ",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.1,
+        "Neutral": 0.1,
+        "Chaotic": 0.8
+      },
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "jungle",
+        "dense forest"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.85,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.85,
+      "modifiers": [
+        {
+          "when": "target_in_my_seed_biome",
+          "set": 0.95
+        },
+        {
+          "when": "target_is_demihuman",
+          "set": 1.0
+        },
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.85,
+      "collapse_proneness": 0.8,
+      "end_state": "enclave"
+    },
+    "infrastructure": {
+      "road_propensity": 0.15
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.35,
+        "mercantile": 0.05,
+        "religious": 0.3,
+        "arcane": 0.3
+      },
+      "preferred_troop_types": [
+        "archers",
+        "light_infantry",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "mysticism": 1.0,
+        "self_interest": -1.0,
+        "societal_orthodoxy": 0.5,
+        "epicureanism": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "xilvaneth",
+    "phonemic_palette": "Xilvaneth: harsh and guttural (the dark-elf branch); glottalization k'/t'/p'; the affricate tz and x (sh); -tl/-' finals; vowels reduce toward a/i/u; clipped syllables; the HARSH branch-law on the Proto-Elvish roots. Nahua/Maya and Andean/Quechua phonological tilt as flavor.",
+    "phenotype_notes": "Features of the Elf analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Xilvaneth",
+      "language_family": "elvish",
+      "script": "own_script"
+    },
+    "social_structure": "theocratic",
+    "values": {
+      "core_values": [
+        "freedom",
+        "cunning",
+        "strength"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "being outwitted and shamed"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "revered",
+      "divine": "revered",
+      "notes": "Elf register; deity-morphs in name_bank 'xilvaneth'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "sacral",
+      "signature_feature": "timber halls of the Xilvaneth"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 2,
+      "patron_powers": [
+        "night",
+        "death",
+        "war"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Xilvaneth — xenophobic theocratic of the jungle; freedom, cunning.",
+      "one_paragraph": "The Xilvaneth (Elf) are a expansionist theocratic people seeded in jungle, dense forest. They prize freedom, cunning, strength, lean toward the military sphere, and field archers, light_infantry, light_cavalry. Outsiders are met as xenophobic; their patrons touch night, death, war."
+    }
+  }
+}

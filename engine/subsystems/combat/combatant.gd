@@ -428,11 +428,13 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 		})
 		break  # Use first available ammo stack
 
-	# Find equipped body armor material (for brawl reflection check)
+	# Find equipped body armor material (for brawl reflection check).
+	# Body armor lives in the 'armor' slot (gdd-character-tab.md §3.4, migration
+	# 151); the category guard keeps creature barding (slot 'body') out.
 	for row in inventory_rows:
 		if int(row.get("is_equipped", 0)) != 1:
 			continue
-		if row.get("slot", "") != "body":
+		if row.get("slot", "") != "armor":
 			continue
 		if row.get("item_category", "") != "armor":
 			continue

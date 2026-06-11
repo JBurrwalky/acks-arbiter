@@ -95,10 +95,10 @@ func test_apply_kit_normal_man_l0() -> void:
 	check(ok, "apply_kit should return true on success")
 	check(repo.inventory.size() >= 5,
 		"NM kit should add at least 5 inventory items, got %d" % repo.inventory.size())
-	# Tunic should be equipped on body.
+	# Tunic should be equipped in the torso clothing slot (migration 151).
 	var tunic := _find_item(repo.inventory, "tunic_serf")
 	check(tunic.has("slot"), "tunic_serf should be present in inventory")
-	check(tunic.get("slot") == "body", "tunic should be in body slot, got %s" % tunic.get("slot"))
+	check(tunic.get("slot") == "torso_clothing", "tunic should be in torso_clothing slot, got %s" % tunic.get("slot"))
 	check(tunic.get("is_equipped"), "tunic should be equipped")
 	# Club should be equipped on hands_main.
 	var club := _find_item(repo.inventory, "club")
@@ -117,8 +117,8 @@ func test_apply_kit_fighter_l1() -> void:
 	check(repo.inventory.size() == 7,
 		"fighter L1 kit should add 7 items, got %d" % repo.inventory.size())
 	var leather := _find_item(repo.inventory, "leather_armor")
-	check(leather.get("slot") == "body" and leather.get("is_equipped"),
-		"leather_armor should be equipped on body")
+	check(leather.get("slot") == "armor" and leather.get("is_equipped"),
+		"leather_armor should be equipped in the armor slot")
 	var shield := _find_item(repo.inventory, "shield")
 	check(shield.get("slot") == "hands_off" and shield.get("is_equipped"),
 		"shield should be equipped in hands_off (fighters can use shields)")

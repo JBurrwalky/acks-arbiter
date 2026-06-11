@@ -1,7 +1,7 @@
 # GDD: Lair Placement and Discovery
 
 **Authority:** SACRED for the placement trigger (RAW `le_wilderness_lair_rules.xml §dynamic_points_of_interest.placement_procedure`), the per-hex budget cap (RAW §securing_land.lair_generation_procedure / lairs_per_hex), the dedicated search activity (RAW §searching_for_lairs.abstract_search_procedure), and the Land Surveying activity (RAW §searching_for_lairs.land_surveying, plus the Campaign Play Surveying entry). One documented divergence from strict RAW: monster-type commitment for a lair happens at discovery time (lazy) rather than at hex creation (eager) — see §5.3.
-**Status:** Redesign in progress (2026-05-27). Supersedes the Phase 4 v1 implementation, which built two project-designed extensions (per-leg passive lair-spot; eager world-gen placement) that are being removed. See §10 for the migration note and the build-agent punch list.
+**Status:** IMPLEMENTED (2026-06-10, migration 152). The §10 punch list is complete: passive lair-spot and eager world-gen placement removed; lazy placement live via wandering substitution + search; Survey eager-fills the hidden type queue; UI surfaces (Lairs X/Y, Enter Lair buttons, Build Stronghold gate) shipped. The Lair Generator itself remains a stub (`engine/subsystems/exploration/lair_generator.gd`) pending its own GDD — the Enter Lair button surfaces but explains that interiors are not yet implemented. Per-hex state lives in the `hex_lair_state` TABLE (not columns on the hex table — see §8 note).
 **Depends on ACKS rules:** `le_wilderness_lair_rules.xml` (full file), `acore-monster-stocking-rules.xml §wilderness_wandering_monsters.procedure` (step 3, % In Lair), `acore_proficiencies_rules_and_catalog.xml` (Tracking, Land Surveying entries).
 **Depends on project GDDs:** `gdd-realtime-scheduler.md` §4.1 (wilderness encounter check on travel_leg), `gdd-terrain-system.md` (hex terrain tags driving lair_per_hex lookup).
 **Pending external dependencies:** Lair Generator GDD (forthcoming — defines the placement service this GDD calls into). The L&E eager pre-rolling workflow for hexes PCs intend to clear for a domain (L&E p.13 "How many monsters?") is deferred; this GDD covers the lazy/dynamic-POI mode only.
@@ -174,6 +174,7 @@ Land Surveying is a **strenuous minor activity** per the Campaign Play Surveying
 
 Per `le_wilderness_lair_rules.xml §land_surveying.procedure` and the Campaign Play Surveying entry:
 
+- **Eligibility (ruling 2026-06-10):** a party member with the Land Surveying proficiency makes the throw; when no member is proficient, a **hired Land Surveyor specialist** attached to the party makes it instead (per §hirelings L191-195, "Can be hired to assess the number of lairs in a hex"). A proficient member always takes precedence — hired surveyors then assist (+4 via the specialist-bonus hook). A specialist who is the thrower does not self-assist (additional hired surveyors still stack their +4s), and takes no strenuous penalty (non-adventuring hire, no activity state).
 - **Roll:** 1d20 (rolled secretly on the surveyor's behalf).
 - **Base target:** 18+.
 - **Cumulative +4 bonus** for each successful **search** (§5) the party has conducted in this hex up to this point. Successful surveys do not stack — only search successes do.
@@ -304,36 +305,42 @@ When a lair is cleared (per §3.4), the hex tooltip and Status Bar update immedi
 
 ## 7. Stronghold construction gating
 
-Per `le_wilderness_lair_rules.xml §securing_land.hex_definition` L31 ("Before peasants can settle a hex, the hex must be cleared of monster lairs present within it"), stronghold construction is gated on the lair-clear state of the target hex:
+Per `le_wilderness_lair_rules.xml §securing_land.hex_definition` L31 ("Before peasants can settle a hex, the hex must be cleared of monster lairs present within it") and §judge_guidance L177–179 ("the Judge decides whether an undiscovered lair prevents the hex from being considered secured"), stronghold construction on raw land is gated on the securing-land diligence. **Ruling (Jedidiah, 2026-06-10): un-surveyed land is also blocked** — closing the original open question's exploit (build before surveying, treat surprise lairs as stronghold events).
 
-- **Rule:** if any lair in the hex has `cleared_at_round == null` (i.e., uncleared), the `Build Stronghold` menu option is **hidden** from the hex's context menu and from any UI surface that would otherwise expose it.
-- The hidden option does not appear with a "blocked" tooltip — it is removed entirely, per the user's instruction. The player learns the gating only by clearing lairs and seeing the option appear.
-- Once all placed lairs in the hex are cleared, the `Build Stronghold` option becomes available.
-- **Open question:** what about unrevealed lairs (`unrevealed_lair_types` non-empty, or `lairs_placed_count < lair_budget` but no Survey has happened)? Strict RAW reading: undiscovered lairs may disrupt settlement (per §judge_guidance L177–179 — "the Judge decides whether an undiscovered lair prevents the hex from being considered secured"). For the Arbiter, **default behavior: only placed/discovered uncleared lairs gate the option.** An unrevealed lair-budget slot does not block stronghold construction. The player can build a stronghold that later "discovers" an angry monster as the lair populates — surfaced narratively or as a stronghold disruption event. This decision is flagged for review in §11.
+- **Rule:** the `Build Stronghold` menu option appears only when ALL THREE hold:
+  1. the hex has been **Surveyed** — a Land Surveying assessment has revealed a total (`surveyed_total` set; a §4.4 false reading counts as surveyed),
+  2. **no placed lair is uncleared** (`cleared_at_round == null` on any row hides the option),
+  3. the **cleared count covers the surveyed total** (`count_cleared >= surveyed_total`) — the player has cleared everything the survey told them about.
+- The hidden option does not appear with a "blocked" tooltip — it is removed entirely, per the user's instruction. The player learns the gating only by doing the securing-land work and seeing the option appear.
+- **False-reading interplay (§4.4):** the gate compares against the *displayed* total — the player acts on their belief. A false-LOW reading lets the stronghold go up with an undiscovered lair remaining (surfaced later, narratively or as a stronghold disruption event — exactly the RAW judge-guidance flavor). A false-HIGH reading blocks until a corrective re-survey overwrites `surveyed_total` (search-to-exhaustion grants cumulative +4s, so the correction loop is natural play).
+- **Consequence:** surveying capability is a hard prerequisite for raw-land strongholds — satisfied by a proficient party member OR a hired Land Surveyor specialist (ruling 2026-06-10; see §4.2 eligibility). The engine-side hire/dismiss/wage lifecycle exists (`SpecialistHireManager`, migration 053, party-attached so the surveyor travels with the party abstractly); the player-facing hire flow at settlement guild PoIs is not yet wired (§11).
+- **Boundary:** the gate guards the wilderness "Build Stronghold" action (establishing on raw land). `CommissionWizard` → `CommissionPipeline.start_commission` from the Domain notebook commissions additional structures at an *existing domain's seat hex* — post-settlement construction, not gated. `ClaimingResolver` (claiming an existing structure via conquest/purchase/grant) is likewise not gated.
 
-Implementation: a single helper `HexLairState.has_uncleared_placed_lair(hex_q, hex_r) -> bool` consulted by the context-menu builder. The "Build Stronghold" entry is conditionally appended only when this returns false.
+Implementation: `HexLairState.is_stronghold_buildable(campaign_id, map_id, hex_q, hex_r) -> bool` consulted by the context-menu builder (permissive when campaign/map context is absent, for unit-test fixtures). `has_uncleared_placed_lair` remains as the condition-2 helper. The future real build flow in `wilderness_handlers.gd` must re-validate the predicate engine-side (comment placed at the activity branch).
 
 ---
 
 ## 8. Implementation Map
 
-This map reflects the corrected design. Items marked **CHANGE** require build-agent work to align the implementation with this GDD.
+This map reflects the AS-BUILT state (2026-06-10, migration 152).
 
-| Concern | File | Action |
+| Concern | File | Status |
 |---|---|---|
-| Per-hex lair budget roll + cache | (new) `engine/subsystems/exploration/lair_budget_resolver.gd` | **CREATE** — wraps lairs_per_hex table |
-| Per-hex unrevealed lair-type queue | (new) `engine/subsystems/exploration/lair_type_resolver.gd` | **CREATE** — wraps the Wilderness Encounters by Terrain roll plus the `% In Lair > 0` re-roll loop |
-| Wandering substitution → Lair Generator call | `wilderness_handlers.gd` `_handle_wilderness_encounter_check` (or successor) | **CHANGE** — add in-lair branch that rolls budget if needed, calls LairGenerator with wandered creature, pops one entry from `unrevealed_lair_types` per §3.2 |
-| Lair Generator service | (new) `engine/subsystems/exploration/lair_generator.gd` | **CREATE** per the forthcoming Lair Generator GDD |
-| Passive 1d20-per-leg lair check | `wilderness_handlers.gd` `_passive_lair_check` | **REMOVE** — no longer part of the model |
-| Dedicated search activity wiring | `wilderness_handlers.gd` `_resolve_lair_search_activity`, `wilderness_context_menu_builder.gd` | **REWIRE** per §5 — success pops from `unrevealed_lair_types` (or lazy-rolls one type if empty), calls LairGenerator with that creature; duration drops from 8-hour block to 1-hour minor activity |
-| Land Surveying assess | `surveying_resolver.gd` | **CHANGE** — on success, lazily roll `lair_budget` if needed, then eagerly roll all remaining lair types into `unrevealed_lair_types` per §4.3, then reveal `lair_budget` to player. Keep false-reading dice but use false value only for display, not state. |
-| Hex tooltip + Status Bar "Lairs: X/Y" | `hex_map_renderer.gd` (tooltip), `session_status_bar.gd` (info box) | **CHANGE** — display `cleared / displayed_total` per §6.1 visibility rules. The `displayed_total` is `hex.lair_budget` if Surveyed (with false-value override on a 1) else `lairs_placed_count`. |
-| "Enter {Type} Lair" button | `wilderness_context_menu_builder.gd`, `hex_action_panel.gd` | **NEW** — surface a button per placed lair record. Append `1..N` ordinal when multiple of same type exist in the hex. Stable numbering per §6.2. |
-| "Build Stronghold" gating | `wilderness_context_menu_builder.gd` (and any other surface that exposes Build Stronghold) | **NEW** — call `HexLairState.has_uncleared_placed_lair(hex_q, hex_r)`; if true, omit the entry entirely (hidden, not greyed) per §7. |
-| Lair persistence | `campaign_repository.gd` — `create_lair`, `count_lairs_in_hex`, `list_lairs_in_hex` (no discovered filter — all placed lairs are discovered), `count_cleared_lairs_in_hex` | Keep most; add `cleared_at_round` writes per §3.4; remove `count_undiscovered_lairs` and `reveal_one_lair` (no longer meaningful — placement IS discovery). |
-| Hex lair state persistence | `hexes` table — new columns `lair_budget`, `lair_budget_rolled_at_round`, `lairs_placed_count`, `unrevealed_lair_types` (JSON array of creature_ids), `surveyed_total` (the displayed total — equals `lair_budget` on a true reading or a false value on an unmodified-1) | **MIGRATE** — schema change |
-| DB schema | `db/migrations/050_poi_discovery.sql` (review), new migration for the hex columns above | **MIGRATE** |
+| Per-hex lair budget roll | `engine/subsystems/exploration/lair_budget_resolver.gd` | **DONE** — pure resolver wrapping the lairs_per_hex table; terrain-row mapping mirrors `HexTerrainData.movement_cost_category()` precedence |
+| Per-hex lazy state service | `engine/subsystems/exploration/hex_lair_state.gd` | **DONE** — DB-backed facade: `get_or_roll_budget`, FIFO `unrevealed_lair_types` ops, `lairs_placed_count`, `surveyed_total`, `format_lairs_line` (§6.1), `has_uncleared_placed_lair` (§7) |
+| Lair-type roll (`% In Lair > 0` re-roll) | `engine/subsystems/exploration/lair_type_resolver.gd` | **DONE** — `roll_type` / `roll_types_for_remaining_slots`; reuses EncounterTerrainResolver + MonsterRegistry; bounded re-roll with lairing-pool fallback |
+| Wandering substitution → Lair Generator | `wilderness_handlers.gd::_apply_lair_substitution` | **DONE** — called at all five wilderness trigger sites (travel_leg, standalone check, hunt, search hour, camp deferred encounter); §3.2 budget-cap branch resolves as "group at home" without a record |
+| Lair Generator service | `engine/subsystems/exploration/lair_generator.gd` | **STUB** — honors the call contract (record shape, in-lair population roll, layout seed, treasure_type carry); layout/hoard/hierarchy are the forthcoming Lair Generator GDD's scope |
+| Passive 1d20-per-leg lair check | `wilderness_handlers.gd` | **REMOVED** (also `LairSearchResolver.passive_check`) |
+| Eager world-gen placement | `test_content_seeder.gd::_seed_avalon_lairs` | **REMOVED** — the seeder places no lairs; `data/test_campaign_lairs.json` retained as reference for the deferred eager pre-roll workflow |
+| Dedicated search activity | `wilderness_handlers.gd::_resolve_lair_search_hour` | **DONE** — 1-hour strenuous minor activity (scheduled completion event); success pops the queue or lazy-rolls; cap surfaces the soft "no further lairs"; wandering check resolves first per §5.4 |
+| Land Surveying assess | `wilderness_handlers.gd::_resolve_survey_activity` (resolver unchanged) | **DONE** — 1-hour activity; on success/nat-1: budget roll, eager type fill, `surveyed_total` reveal; false value is display-only |
+| Hex tooltip + Status Bar "Lairs: X/Y" | `hex_map_renderer.gd::_lair_tooltip_line`, `session_status_bar.gd::_format_hex_info` | **DONE** — both delegate to `HexLairState.format_lairs_line`; status bar refreshes on lair_placed / lair_cleared / survey_completed |
+| "Enter {Type} Lair" button | `wilderness_context_menu_builder.gd::_build_enter_lair_options`, `wilderness_explore_state.gd::_on_enter_lair_requested` | **DONE** — stable 1..N ordinals, `Re-enter … (cleared)` variant; the click surfaces a Lair-Generator-pending notification until interiors exist |
+| "Build Stronghold" gating | `wilderness_context_menu_builder.gd` | **DONE** — entry appended only when `HexLairState.is_stronghold_buildable` (surveyed + no uncleared + cleared ≥ surveyed total; ruling 2026-06-10) |
+| Lair persistence | `campaign_repository.gd` | **DONE** — `create_lair` / `get_lair` / `get_lairs_in_hex` (creation order) / `count_lairs_in_hex` / `count_cleared_lairs_in_hex` / `count_uncleared_lairs_in_hex` / `mark_lair_cleared`; `count_undiscovered_lairs`, `reveal_one_lair`, `list_discovered_lairs` removed |
+| Hex lair state persistence | **`hex_lair_state` table** (migration 152), NOT columns on `hex_cells` | **DONE** — `save_hex_map()` INSERT-OR-REPLACEs every `hex_cells` row on each fog save (every travel leg), which would clobber handler-written lair state; a keyed side-table (same key shape as `survey_progress`, minus party_id) is the safe equivalent of the original column plan |
+| DB schema | `db/migrations/152_lair_lazy_placement.sql` | **DONE** — `hex_lair_state` created; `lairs` rebuilt (drop `discovered`, `discovered_via`→`placed_via` with new vocabulary, add `created_at_round` / `cleared_at_round` / `treasure_type` / `treasure_hoard_json` / `lair_layout_seed`); legacy rows preserved with `placed_via='legacy'` |
 
 ---
 
@@ -353,7 +360,9 @@ The previously-implemented `lair_discovered` signal is replaced by `lair_placed`
 
 ---
 
-## 10. Migration note (2026-05-27)
+## 10. Migration note (2026-05-27; completed 2026-06-10)
+
+**The punch list below was executed in full on 2026-06-10 (migration 152).** It is retained as the design record of what changed and why. Two as-built notes: per-hex state landed in the `hex_lair_state` table rather than hex columns (see §8), and the Survey budget roll commits at attempt time rather than success time (observationally identical — the value stays hidden unless revealed; documented in `_resolve_survey_activity`).
 
 This GDD supersedes the Phase 4 v1 lair-discovery implementation. The old design built two project-designed extensions on top of RAW:
 
@@ -382,7 +391,9 @@ Both were part of a more complicated hex-clearing workflow that is being dropped
 
 ## 11. Deferred / open items
 
-- **Stronghold gating against unrevealed lairs** (§7 open question). Default Arbiter behavior is to gate only against placed-and-uncleared lairs; unrevealed budget slots do not block Build Stronghold. Strict RAW (L&E §judge_guidance L177–179) leaves this to Judge discretion. The current default permits player exploits (build a stronghold in a hex with high lair_budget but no Survey, then handle "surprise" lair pop-ups as stronghold events). Reconsider at play-test.
+- **Stronghold gating against unrevealed lairs — RESOLVED 2026-06-10 (Jedidiah ruling).** Un-surveyed land blocks Build Stronghold; the full gate is survey + clear-everything-the-survey-revealed (§7).
+- **Hired-surveyor eligibility — RESOLVED 2026-06-10 (Jedidiah ruling).** A hired Land Surveyor satisfies Survey eligibility on their own (§4.2). Remaining gap: the **player-facing hire flow is not wired** — the settlement guild PoI lists a "Hire Specialists" activity but no handler implements it; `SpecialistHireManager.hire` has no production caller, specialist monthly wages aren't on the monthly tick, RAW availability-by-settlement-size ("same numbers as navigators") is unmodeled, and no Notebook surface lists/dismisses hired specialists. Until that lands, hired surveyors exist engine-side only (tests / future UI).
+- **Commission/claiming paths unguarded by design** (§7 boundary note): commissioning at an existing domain seat and claiming existing structures bypass the gate. If play-test shows domain seats on never-secured seeded hexes feel wrong, gate `CommissionPipeline.start_commission` with a grandfather policy for seeded domains.
 - **Lair re-occupation and refill over time.** RAW includes rules so cleared lairs can be re-occupied and so the regional map doesn't become "dead" — razed domains naturally drift back toward true wilderness, fresh lairs emerge in long-quiet areas. V1 does not model this; cleared lairs stay cleared and slots stay closed per §3.4. Deferred.
 - **Specialist bonuses** (Pathfinder, Land Surveyor, Cartographer per `le_wilderness_lair_rules.xml §hirelings`). The `optional_specialist_bonus` parameter on resolvers stays; the Phase 6 specialist subsystem wires actual bonus values.
 - **Eager pre-rolling workflow.** L&E p.13's "How many monsters?" procedure for hexes the PCs intend to clear for a domain — pre-roll the full budget AND monster types AND specific lair listings up front — is deferred. The Survey path in §4.3 already eagerly rolls all unrevealed types on first success, which captures most of the same effect; an explicit "eager pre-roll on first hex visit" mode is not currently needed.

@@ -296,6 +296,8 @@ What follows is a list of real world cultures, by name and time period/subcultur
 18. English - Early Medieval pre-norman Conquest Anglo-Saxon culture (Angelcynn)
 19. Frankish Kingdoms - Merovingian and Carolingian era
 20. Iberian - Pre-Islamic Spain
+21. Persian - Achaemenid Empire; the tolerant satrapal empire, Old Persian register
+22. Zulu - Southern African Nguni/Bantu, Shakan era
 
 
 ## 5.2 Canonical Culture List
@@ -344,7 +346,7 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 41 | Tikan | Tikala | 11, 16 | jungle, dense forest, mountains | N | Human | Lawful, Chaotic | civ |
 | 42 | Rovan | Rovia | 8, 13 | taiga, forest, tundra | E | Human | Lawful, Neutral, Chaotic | civ |
 | 43 | Alaman | Alama | 6, 19 | forest, hills | N | Human | Lawful, Neutral | clan |
-| 44 | Thracan | Thracia | 2, 15 | grassland, scrubland | N | Human | Lawful, Chaotic | clan |
+| 44 | Thracan | Thracia | 2, 15 | grassland, scrubland | N | Human | Lawful, Chaotic | civ |
 | 45 | Lusan | Lusia | 1, 20 | scrubland, mountains | Y | Human | Lawful, Neutral | civ |
 | 46 | Erainn | Eriu | 7 | forest, dense forest, grassland, hills | E | Human | Lawful, Neutral | civ |
 | 47 | Kyivan | Kyivgrad | 13 | forest, taiga, grassland, hills | E | Human | Lawful, Neutral | civ |
@@ -354,8 +356,12 @@ What follows is a list of real world cultures, by name and time period/subcultur
 | 51 | Khordurn | Khorgrund | — | mountains (not glacial/volcanic) | E | Dwarf | Neutral (0.60), Lawful (0.30), Chaotic (0.10) | civ |
 | 52 | Gormdurn | Gormgrund | — | volcanic mountains | E | Dwarf | Neutral (0.60), Chaotic (0.30), Lawful (0.10) | civ |
 | 53 | Khraaldurn | Khraalgrund | — | glacial mountains, tundra hills | E | Dwarf | Neutral (0.80), Lawful (0.10), Chaotic (0.10) | civ |
+| 54 | Axsatran | Axsatra | 21 | hills, mountains, grassland (forested uplands & steppe) | E | Human | Lawful (0.55), Neutral (0.45) | civ |
+| 55 | Shaka | Shakara | 22 | savanna, jungle | N | Human | Chaotic | clan |
 
 **Demihuman notes (§5.2):** The three Elf cultures (#48–50) are branches of one people (the Vaneth) descended from a shared Proto-Elvish tongue (`data/conlang/family_elvish.json`); each is the deep ancestor of a cluster of human families — Aelvaneth → Germanic/Celtic/Slavic (§5.1 6/7/13), Xilvaneth → Mesoamerican (11/12), Thalvaneth → Latinate/Hellenic/Punic (1/2/3). Per §4.2 demihumans carry explicit alignment **weights** (shown in their rows) rather than the human even-split. **Thalvaneth** seeds only on **Coastal** hexes that are also Forest / Dense Forest / Jungle / Taiga, at **any elevation** — the sea-elves dwell where forest meets the sea. The three Dwarf cultures (#51–53) are DIALECTS of one self-contained isolate tongue (Durnkad; `data/conlang/family_dwarven.json`), not ancestral to any human family, differing only by small drift: **Khordurn** (any mountain but glacial/volcanic), **Gormdurn** (volcanic mountains; the fire-cult, leaning into human sacrifice in the volcanoes), and **Khraaldurn** (glacial mountains or tundra hills; the most withdrawn and Neutral). Their faith is ancestor-first — the gods, forge and mountain foremost, honored at festivals.
+
+**Culture notes (§5.2):** **Thracan (#44)** is a settled **Civ** with a still-developing civic ethos ("Plains horse-folk who read Plato and Herodotus and built cities"), but retains **clanhold class-availability weights** — applied per-culture when class weights are authored, not via a separate field. **Axsatran (#54)** and **Shaka (#55)** are later additions filling a Persian-empire and an African-clanhold gap respectively; their **§5.1 source-analog entries** (21 = Persian, 22 = Zulu) and **conlang naming kits** (`data/conlang/culture_axsatran.json`, `culture_shaka.json`) are now authored. Axsatran carries an explicit Lawful-lean weight (0.55/0.45); its cardinal virtue of honesty is expressed through canon values (honor, duty) plus NPC personality weighting (self_interest +1.0 / Principled), not a new value-enum entry.
 
 ## 5.3 Culture rules and guidelines
 

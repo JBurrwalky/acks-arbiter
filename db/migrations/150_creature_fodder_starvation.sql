@@ -1,0 +1,14 @@
+-- Migration 150: per-animal fodder-starvation counter for the provisions system.
+--
+-- Phase 3 of the rations / water / fodder consumption system
+-- (gdd-rations-foodstuffs.md). Each trained creature that goes a day without
+-- fodder AND without grazing/hunting accrues a day on this counter; once it
+-- passes the 2-day grace it loses 1 hp/day, mirroring the PC starvation curve
+-- (Jedidiah's 2026-06-08 ruling — "HP loss, same curve"). Reset to 0 on any day
+-- the animal is fed or grazes.
+--
+-- RAW: le_monster_training_rules.xml:415 establishes the grazing waiver
+-- ("herbivores grazing on a pasture, and carnivores hunting on a range require
+-- no supplied provisions"); the field-starvation consequence itself is
+-- project-designed (RAW covers upkeep cost, not adventuring-mount starvation).
+ALTER TABLE trained_creatures ADD COLUMN fodder_starvation_days INTEGER NOT NULL DEFAULT 0;

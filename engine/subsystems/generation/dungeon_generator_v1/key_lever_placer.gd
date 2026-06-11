@@ -8,6 +8,29 @@ extends RefCounted
 ## locked doors that received keys.  Portcullis levers are embedded directly
 ## in DungeonDoorData.wired_lever_position (no KeyItem).
 ##
+## ALGORITHM (rewritten 2026-06-10 — discovery-order placement):
+## A single multi-floor fixpoint BFS from the dungeon entrance, using the SAME
+## door-passability model as DungeonNavigabilityValidator.validate_solvability.
+## When the frontier hits a gated door (locked/trapped stone-metal, any
+## secret+locked/trapped, or a portcullis), its key/lever is placed in a room
+## that is ALREADY fully discovered — so every key is reachable before its door
+## by construction and circular key dependencies (key A behind door B whose key
+## is behind door A) cannot occur. The previous implementation computed a
+## per-door "outside region" that treated all OTHER locked doors as passable,
+## which allowed those circles; the solvability fixpoint then failed and the
+## orchestrator burned its stocking/dungeon retries re-rolling placements
+## (observed at ~15-20% of attempts, and ~90% of total generation CPU went to
+## the per-door BFS sweeps). This rewrite is one BFS total and deadlock-free.
+##
+## §10.4 downgrades are preserved: a gated door hit before ANY candidate room
+## exists is on the sole entrance path and downgrades to plain unlocked wood.
+## Additionally, if after the fixpoint some stair/room remains unreached and a
+## frontier secret+unlocked door is what blocks it (those doors are
+## model-impassable and carry no key), that door's is_secret flag is cleared —
+## the same §10.4 philosophy applied to the one door class the key system
+## cannot otherwise repair. Optional pockets behind secret doors that the BFS
+## can reach another way keep their secret doors untouched.
+##
 ## finalize_key_placements() converts each key's PLACED_LOOSE placement into
 ## a specific sub-type (monster inventory, treasure hoard, or a forced hoard)
 ## per §5 step 7.
@@ -19,9 +42,9 @@ extends RefCounted
 # §10  place()
 # ---------------------------------------------------------------------------
 
-## Main entry point.  For every locked-stone/metal door and every portcullis
-## across all floors, computes the §10.2 outside region and either assigns a
-## key/lever or applies the §10.4 downgrade.
+## Main entry point.  Walks the dungeon from the entrance in one fixpoint BFS,
+## assigning keys/levers to gated doors as the frontier reaches them, applying
+## the §10.4 downgrade when no candidate room exists.
 ##
 ## Returns Array[KeyItemData] — keys only (levers live on DoorData).
 static func place(
@@ -30,103 +53,88 @@ static func place(
 		rng: RandomNumberGenerator) -> Array[KeyItemData]:
 
 	var keys: Array[KeyItemData] = []
+	if floors.is_empty() or entrance_floor_index < 1 or entrance_floor_index > floors.size():
+		return keys
 
-	# Collect entrance room id for filtering (§10.2 — drop entrance room from candidates).
 	var entrance_room_id: int = _find_entrance_room_id(floors, entrance_floor_index)
 
-	# Iterate every floor, every door.
-	for floor_idx: int in range(1, floors.size() + 1):
-		var layout: DungeonLayout = floors[floor_idx - 1]
-		for door: DungeonDoorData in layout.doors:
-			var needs_key: bool = _is_lockable_door(door)
-			var is_portcullis: bool = door.type == DungeonDoorData.TYPE_PORTCULLIS
+	# Per-room index + cell totals ("fi:room_id" -> room / total), built once.
+	var room_index: Dictionary = {}
+	for fi: int in range(1, floors.size() + 1):
+		for room: DungeonRoomData in floors[fi - 1].rooms:
+			room_index["%d:%d" % [fi, room.id]] = room
 
-			if not needs_key and not is_portcullis:
+	# Discovery state. All dictionaries key on _cell_key(fi, pos).
+	var st: Dictionary = {
+		"reachable": {},          # cell key -> true
+		"queue": [],              # [{floor_idx, pos}]
+		"pending": [],            # [{floor_idx, door}] gated doors awaiting key/lever, hit order
+		"pending_set": {},        # cell key -> true
+		"secret_blockers": [],    # [{floor_idx, door}] secret+unlocked doors, hit order
+		"secret_blocker_set": {}, # cell key -> true
+		"room_reached": {},       # "fi:room_id" -> reached cell count
+		"full_rooms": [],         # [{room, floor_idx}] fully-discovered rooms, discovery order
+		"full_room_set": {},      # "fi:room_id" -> true
+		"room_index": room_index,
+	}
+
+	# Seed from the entrance cell (or the entrance floor's first stair as a
+	# fallback, mirroring the pre-stocking connectivity guard's seeding).
+	var entrance_floor: DungeonLayout = floors[entrance_floor_index - 1]
+	var start: Vector2i = entrance_floor.entrance
+	if start == Vector2i(-1, -1) or entrance_floor.get_cell_at(start) == null:
+		if entrance_floor.stairs.size() > 0:
+			start = (entrance_floor.stairs[0] as DungeonStairData).position
+		else:
+			push_warning("DungeonKeyLeverPlacer: no entrance or stair cell to seed placement BFS — skipping key placement.")
+			return keys
+	_mark_reached(floors, entrance_floor_index, start, st)
+
+	# Fixpoint: drain the frontier, then resolve or downgrade gated doors,
+	# repeat until full coverage or no repair is possible. Each outer iteration
+	# permanently opens at least one door or ends the loop, so iterations are
+	# bounded by the dungeon's total door count.
+	while true:
+		_drain(floors, st)
+
+		if not (st["pending"] as Array).is_empty():
+			var candidates: Array = _candidate_rooms(st, entrance_room_id, entrance_floor_index)
+			if candidates.is_empty():
+				# §10.4 — a gated door hit before any room has been discovered
+				# sits on the sole entrance path. Downgrade ONLY the first one,
+				# then re-drain: the opened door may reveal rooms that let the
+				# remaining gated doors keep their keys/levers.
+				var first: Dictionary = (st["pending"] as Array).pop_front()
+				var ffi: int = first["floor_idx"]
+				var fdoor: DungeonDoorData = first["door"]
+				(st["pending_set"] as Dictionary).erase(_cell_key(ffi, fdoor.position))
+				_downgrade_gated_door(floors[ffi - 1], fdoor, ffi)
+				_mark_reached(floors, ffi, fdoor.position, st)
 				continue
+			for entry in st["pending"]:
+				var fi: int = entry["floor_idx"]
+				var door: DungeonDoorData = entry["door"]
+				if door.type == DungeonDoorData.TYPE_PORTCULLIS:
+					_wire_lever(floors, fi, door, candidates, entrance_floor_index, rng)
+				else:
+					keys.append(_make_key(fi, door, candidates, entrance_floor_index, rng))
+				# The door is now model-passable — walk through it.
+				_mark_reached(floors, fi, door.position, st)
+			(st["pending"] as Array).clear()
+			st["pending_set"] = {}
+			continue
 
-			# §10.2: compute outside region with this door permanently blocked,
-			# all other doors treated as passable (including secret/locked/portcullis).
-			var outside: Dictionary = _compute_outside_region(
-					floors, entrance_floor_index, floor_idx, door.position)
-
-			# Check whether any candidate rooms exist (rooms entirely in outside,
-			# excluding entrance room). _pick_weighted_room_full does this check
-			# internally; pre-check here for the §10.4 downgrade guard.
-			var probe_rooms: Array[DungeonRoomData] = []
-			var probe_floors: Array = []
-			_candidate_rooms_with_floors(floors, outside, entrance_room_id,
-					entrance_floor_index, probe_rooms, probe_floors)
-
-			if probe_rooms.is_empty():
-				# §10.4 downgrade: no outside region usable.
-				if needs_key:
-					push_warning("DungeonKeyLeverPlacer: no outside region for locked door at floor %d %s — downgrading to unlocked wood_standard." % [floor_idx, door.position])
-					# Change type, material, AND clear secret flag. A downgraded door
-					# becomes an ordinary unlocked wood door — no key needed, not secret.
-					# Keeping type=LOCKED with no key OR keeping is_secret=true would
-					# make solvability treat the door as permanently blocking.
-					door.door_material = DungeonDoorData.MATERIAL_WOOD_STANDARD
-					door.type = DungeonDoorData.TYPE_UNLOCKED
-					door.is_secret = false
-					# If this door was the qualifying secret+locked door for a
-					# trap_placeholder room, that room's trap mechanism no longer
-					# exists — demote it to "empty" so Hard Test 6 stays consistent.
-					for connected_room_id: int in door.connects:
-						if connected_room_id < 0:
-							continue
-						var connected_room: DungeonRoomData = layout.find_room(connected_room_id)
-						if connected_room == null or connected_room.contents_kind != "trap_placeholder":
-							continue
-						# Count remaining qualifying doors on this room after downgrade.
-						var remaining_qualifying := 0
-						for rd: DungeonDoorData in connected_room.doors:
-							if rd.is_secret and (
-								rd.type == DungeonDoorData.TYPE_LOCKED
-								or rd.type == DungeonDoorData.TYPE_TRAPPED
-							):
-								remaining_qualifying += 1
-						if remaining_qualifying == 0:
-							connected_room.contents_kind = "empty"
-							connected_room.current_purpose = connected_room.original_purpose
-				elif is_portcullis:
-					push_warning("DungeonKeyLeverPlacer: no outside region for portcullis at floor %d %s — downgrading to unlocked." % [floor_idx, door.position])
-					door.type = DungeonDoorData.TYPE_UNLOCKED
-					door.door_material = DungeonDoorData.MATERIAL_WOOD_STANDARD
-				continue
-
-			# Pick one room weighted by floor proximity to the door's floor.
-			var pick: Dictionary = _pick_weighted_room_full(
-					floors, outside, entrance_room_id, entrance_floor_index, floor_idx, rng)
-			var chosen_room: DungeonRoomData = pick["room"]
-			var chosen_floor_idx: int = pick["floor_idx"]
-
-			if chosen_room == null:
-				# Should not happen if candidates is non-empty, but guard.
-				continue
-
-			if needs_key:
-				# Create KeyItemData.
-				var k: KeyItemData = KeyItemData.new()
-				k.id = CampaignRepository.generate_id()
-				k.opens_door_floor_index = floor_idx
-				k.opens_door_position = door.position
-				k.placed_on_floor_index = chosen_floor_idx
-				k.placed_in_room_id = chosen_room.id
-				k.placed_in = KeyItemData.PLACED_LOOSE  # finalized later
-				keys.append(k)
-
-			elif is_portcullis:
-				# Place lever: pick an adjacent-to-wall cell in the chosen room.
-				var lever_pos: Vector2i = _pick_lever_cell(chosen_room, chosen_floor_idx, floors)
-				if lever_pos != Vector2i(-1, -1):
-					door.wired_lever_position = lever_pos
-					# Stamp terrain_feature on the cell.
-					var lever_layout: DungeonLayout = floors[chosen_floor_idx - 1]
-					var lever_cell: DungeonCellData = lever_layout.get_cell_at(lever_pos)
-					if lever_cell != null:
-						lever_cell.terrain_feature = "lever_portcullis_%d_%d" % [door.position.x, door.position.y]
-				# If no suitable cell found, leave wired_lever_position at (-1,-1)
-				# (portcullis becomes forceable per §9.2 convention).
+		# Frontier exhausted, nothing gated left. Done — unless mandatory
+		# content (a stair or an entire room) is still unreached behind a
+		# secret+unlocked door, which carries no key and is model-impassable.
+		if _coverage_complete(floors, st):
+			break
+		if not _downgrade_one_blocking_secret(floors, st):
+			# No secret door borders the unreached region either: structural
+			# disconnection. The orchestrator's §9.1 carving / retry path owns
+			# this case; solvability will flag it.
+			push_warning("DungeonKeyLeverPlacer: unreached cells remain and no blocking secret door found — layout is structurally disconnected.")
+			break
 
 	return keys
 
@@ -176,108 +184,326 @@ static func finalize_key_placements(
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# Discovery BFS internals
 # ---------------------------------------------------------------------------
 
-## True for locked or trapped doors that require a key.
-##
-## Non-secret wood doors: bashable (§10 preamble) → no key needed.
-## Secret locked/trapped doors: the solvability BFS blocks on is_secret even for
-## wood; a key ensures the fixed-point BFS can eventually unlock them.
-## Non-bashable (stone / metal) doors always need a key.
-static func _is_lockable_door(door: DungeonDoorData) -> bool:
-	if door.type != DungeonDoorData.TYPE_LOCKED and door.type != DungeonDoorData.TYPE_TRAPPED:
-		return false
-	# Secret doors: always require a key regardless of material.
-	# (Without a key, solvability BFS permanently blocks on is_secret.)
-	if door.is_secret:
-		return true
-	# Non-secret: only stone/metal need a key (wood is bashable).
-	return (door.door_material == DungeonDoorData.MATERIAL_STONE
-		or door.door_material == DungeonDoorData.MATERIAL_METAL)
-
-
-## BFS from the dungeon entrance across all floors with `target_door` permanently
-## blocked.  All other doors (including secret, locked, portcullis) are treated
-## as passable.  Stairs followed normally.
-##
-## Returns a Dictionary of encoded cell keys that are reachable:
-##   "floor_idx:x:y" -> true.
-static func _compute_outside_region(
+## Mark (fi, pos) reached: update the reachable set, the per-room discovery
+## counts (promoting rooms to full when their last cell is reached), enqueue
+## the cell for neighbour expansion, and follow stairs to the adjacent floor.
+static func _mark_reached(
 		floors: Array[DungeonLayout],
-		entrance_floor_index: int,
-		target_door_floor: int,
-		target_door_pos: Vector2i) -> Dictionary:
+		fi: int,
+		pos: Vector2i,
+		st: Dictionary) -> void:
+	var ck: String = _cell_key(fi, pos)
+	if (st["reachable"] as Dictionary).has(ck):
+		return
+	st["reachable"][ck] = true
+	(st["queue"] as Array).append({"floor_idx": fi, "pos": pos})
 
-	var reachable: Dictionary = {}
-	if entrance_floor_index < 1 or entrance_floor_index > floors.size():
-		return reachable
+	var layout: DungeonLayout = floors[fi - 1]
+	var cell: DungeonCellData = layout.get_cell_at(pos)
+	if cell == null:
+		return
 
-	var entrance_floor: DungeonLayout = floors[entrance_floor_index - 1]
-	var start: Vector2i = entrance_floor.entrance
+	# Room discovery bookkeeping.
+	if cell.room_id >= 0:
+		var rk: String = "%d:%d" % [fi, cell.room_id]
+		var count: int = int((st["room_reached"] as Dictionary).get(rk, 0)) + 1
+		st["room_reached"][rk] = count
+		var room: DungeonRoomData = (st["room_index"] as Dictionary).get(rk, null)
+		if room != null and count >= room.cells.size() and not (st["full_room_set"] as Dictionary).has(rk):
+			st["full_room_set"][rk] = true
+			(st["full_rooms"] as Array).append({"room": room, "floor_idx": fi})
 
-	var queue: Array = []  # {floor_idx:int, pos:Vector2i}
-	var start_key: String = _cell_key(entrance_floor_index, start)
-	reachable[start_key] = true
-	queue.append({"floor_idx": entrance_floor_index, "pos": start})
+	# Stair: the matching stair on the adjacent floor joins the frontier
+	# (same convention as DungeonNavigabilityValidator._expand_stair).
+	if cell.is_stair():
+		var stair_data: DungeonStairData = null
+		for s: DungeonStairData in layout.stairs:
+			if s.position == pos:
+				stair_data = s
+				break
+		if stair_data != null:
+			var dest_fi: int
+			if stair_data.connects_to_level > 0:
+				dest_fi = stair_data.connects_to_level
+			elif stair_data.direction == DungeonStairData.DIRECTION_DOWN:
+				dest_fi = fi + 1
+			else:
+				dest_fi = fi - 1
+			if dest_fi >= 1 and dest_fi <= floors.size():
+				var dest_cell: DungeonCellData = (floors[dest_fi - 1] as DungeonLayout).get_cell_at(pos)
+				if dest_cell != null and dest_cell.is_stair():
+					_mark_reached(floors, dest_fi, pos, st)
 
-	while queue.size() > 0:
+
+## Drain the BFS queue. Walkable neighbours are marked reached; gated doors
+## (key/lever required) are recorded in `pending`; secret+unlocked doors are
+## recorded in `secret_blockers`; walls are skipped.
+static func _drain(floors: Array[DungeonLayout], st: Dictionary) -> void:
+	var queue: Array = st["queue"]
+	while not queue.is_empty():
 		var item: Dictionary = queue.pop_front()
 		var fi: int = item["floor_idx"]
 		var pos: Vector2i = item["pos"]
 		var layout: DungeonLayout = floors[fi - 1]
 
-		# Stair expansion.
-		var cell: DungeonCellData = layout.get_cell_at(pos)
-		if cell != null and cell.is_stair():
-			var stair_data: DungeonStairData = null
-			for s: DungeonStairData in layout.stairs:
-				if s.position == pos:
-					stair_data = s
-					break
-			if stair_data != null:
-				var dest_fi: int
-				if stair_data.connects_to_level > 0:
-					dest_fi = stair_data.connects_to_level
-				elif stair_data.direction == DungeonStairData.DIRECTION_DOWN:
-					dest_fi = fi + 1
-				else:
-					dest_fi = fi - 1
-				if dest_fi >= 1 and dest_fi <= floors.size():
-					var dest_key: String = _cell_key(dest_fi, pos)
-					if not reachable.has(dest_key):
-						reachable[dest_key] = true
-						queue.append({"floor_idx": dest_fi, "pos": pos})
-
-		# 4-neighbours.
 		for nb: Vector2i in _neighbours(pos):
 			if nb.x < 0 or nb.y < 0 or nb.x >= layout.grid_width or nb.y >= layout.grid_height:
 				continue
 			var nb_key: String = _cell_key(fi, nb)
-			if reachable.has(nb_key):
+			if (st["reachable"] as Dictionary).has(nb_key):
 				continue
 			var nb_cell: DungeonCellData = layout.get_cell_at(nb)
 			if nb_cell == null:
 				continue
-			# The target door is permanently blocked.
-			if fi == target_door_floor and nb == target_door_pos:
-				continue
-			# Solid walls / rock: not traversable.
-			if not nb_cell.passable and not nb_cell.is_door() and not nb_cell.is_stair():
-				continue
-			# Secret doors are treated as IMPASSABLE (same as solvability §9.2).
-			# This prevents keys from being placed in rooms only accessible via
-			# other secret doors, which would create circular key dependencies that
-			# the solvability fixed-point BFS cannot resolve.
+
 			if nb_cell.is_door():
-				var nb_door: DungeonDoorData = (floors[fi - 1] as DungeonLayout).find_door_at(nb)
-				if nb_door != null and nb_door.is_secret:
-					continue
-			reachable[nb_key] = true
-			queue.append({"floor_idx": fi, "pos": nb})
+				var door: DungeonDoorData = layout.find_door_at(nb)
+				if door == null:
+					# Door cell with no DoorData — treat as passable (mirrors
+					# validate_solvability's fallthrough).
+					_mark_reached(floors, fi, nb, st)
+				elif _door_initially_passable(door):
+					_mark_reached(floors, fi, nb, st)
+				elif door.is_secret and not _needs_key(door):
+					# Secret+unlocked: model-impassable, carries no key. Record
+					# for the coverage repair; do not traverse.
+					if not (st["secret_blocker_set"] as Dictionary).has(nb_key):
+						st["secret_blocker_set"][nb_key] = true
+						(st["secret_blockers"] as Array).append({"floor_idx": fi, "door": door})
+				else:
+					# Gated: locked/trapped needing a key, or a portcullis
+					# awaiting a lever. Queue for placement.
+					if not (st["pending_set"] as Dictionary).has(nb_key):
+						st["pending_set"][nb_key] = true
+						(st["pending"] as Array).append({"floor_idx": fi, "door": door})
+			elif nb_cell.passable or nb_cell.is_stair():
+				_mark_reached(floors, fi, nb, st)
+			# else: wall / rock — skip.
 
-	return reachable
 
+## A door the player can pass in its INITIAL state with no key/lever placed:
+## arches, curtains, plain unlocked doors, bashable (wood) non-secret
+## locked/trapped doors. Portcullises and key-needing doors return false (the
+## placer wires/keys them when the frontier arrives). Secret doors return
+## false in all cases (handled by the caller's secret/gated branches).
+static func _door_initially_passable(door: DungeonDoorData) -> bool:
+	if door.is_secret:
+		return false
+	if door.type == DungeonDoorData.TYPE_ARCH or DungeonDoorData.is_curtain(door.door_material):
+		return true
+	if door.type == DungeonDoorData.TYPE_UNLOCKED:
+		return true
+	if door.type == DungeonDoorData.TYPE_LOCKED or door.type == DungeonDoorData.TYPE_TRAPPED:
+		return DungeonDoorData.is_bashable(door.door_material)
+	return false
+
+
+## True for doors that require a placed key (mirrors the §10.1 inventory rule):
+## locked/trapped AND (secret OR stone/metal material).
+static func _needs_key(door: DungeonDoorData) -> bool:
+	if door.type != DungeonDoorData.TYPE_LOCKED and door.type != DungeonDoorData.TYPE_TRAPPED:
+		return false
+	if door.is_secret:
+		return true
+	return (door.door_material == DungeonDoorData.MATERIAL_STONE
+		or door.door_material == DungeonDoorData.MATERIAL_METAL)
+
+
+# ---------------------------------------------------------------------------
+# Key / lever resolution against discovered rooms
+# ---------------------------------------------------------------------------
+
+## Candidate rooms for key/lever placement: rooms whose every cell has been
+## discovered (fully outside all still-closed doors), excluding the entrance
+## room per §10.3 step 2. Returned in discovery order (deterministic).
+static func _candidate_rooms(
+		st: Dictionary,
+		entrance_room_id: int,
+		entrance_floor_index: int) -> Array:
+	var out: Array = []
+	for entry in st["full_rooms"]:
+		var room: DungeonRoomData = entry["room"]
+		var fi: int = entry["floor_idx"]
+		if fi == entrance_floor_index and room.id == entrance_room_id:
+			continue
+		if room.cells.is_empty():
+			continue
+		out.append(entry)
+	return out
+
+
+## Create the KeyItemData for a gated door, choosing the key room from the
+## candidates weighted by floor proximity (§10.3 step 3: same floor 5,
+## adjacent floor 2, further 1).
+static func _make_key(
+		door_floor_idx: int,
+		door: DungeonDoorData,
+		candidates: Array,
+		_entrance_floor_index: int,
+		rng: RandomNumberGenerator) -> KeyItemData:
+	var pick: Dictionary = _pick_weighted_candidate(candidates, door_floor_idx, rng)
+	var k: KeyItemData = KeyItemData.new()
+	k.id = CampaignRepository.generate_id()
+	k.opens_door_floor_index = door_floor_idx
+	k.opens_door_position = door.position
+	k.placed_on_floor_index = pick["floor_idx"]
+	k.placed_in_room_id = (pick["room"] as DungeonRoomData).id
+	k.placed_in = KeyItemData.PLACED_LOOSE  # finalized later
+	return k
+
+
+## Wire a portcullis to a lever cell in a discovered room (§10.3 step 6).
+## If the chosen room yields no usable cell the portcullis is left unwired —
+## forceable per §9.2, a soft acceptance warning only.
+static func _wire_lever(
+		floors: Array[DungeonLayout],
+		door_floor_idx: int,
+		door: DungeonDoorData,
+		candidates: Array,
+		_entrance_floor_index: int,
+		rng: RandomNumberGenerator) -> void:
+	var pick: Dictionary = _pick_weighted_candidate(candidates, door_floor_idx, rng)
+	var chosen_room: DungeonRoomData = pick["room"]
+	var chosen_floor_idx: int = pick["floor_idx"]
+	var lever_pos: Vector2i = _pick_lever_cell(chosen_room, chosen_floor_idx, floors)
+	if lever_pos == Vector2i(-1, -1):
+		return  # unwired portcullis: forceable per §9.2
+	door.wired_lever_position = lever_pos
+	var lever_layout: DungeonLayout = floors[chosen_floor_idx - 1]
+	var lever_cell: DungeonCellData = lever_layout.get_cell_at(lever_pos)
+	if lever_cell != null:
+		lever_cell.terrain_feature = "lever_portcullis_%d_%d" % [door.position.x, door.position.y]
+
+
+## Weighted pick among candidate rooms by floor proximity to the door.
+## Weights: same floor = 5, |Δfloor| == 1 = 2, else 1.
+static func _pick_weighted_candidate(
+		candidates: Array,
+		door_floor_idx: int,
+		rng: RandomNumberGenerator) -> Dictionary:
+	var weights: Array[int] = []
+	var total_weight := 0
+	for entry in candidates:
+		var fi: int = entry["floor_idx"]
+		var delta: int = absi(fi - door_floor_idx)
+		var w: int
+		if delta == 0:
+			w = 5
+		elif delta == 1:
+			w = 2
+		else:
+			w = 1
+		weights.append(w)
+		total_weight += w
+	var roll: int = rng.randi_range(0, total_weight - 1)
+	var acc := 0
+	for i: int in range(candidates.size()):
+		acc += weights[i]
+		if roll < acc:
+			return candidates[i]
+	return candidates[candidates.size() - 1]
+
+
+# ---------------------------------------------------------------------------
+# §10.4 downgrades and secret-door coverage repair
+# ---------------------------------------------------------------------------
+
+## §10.4: a gated door hit before any candidate room exists sits on the sole
+## entrance path. Downgrade it to a plain unlocked wood door (no key, not
+## secret). A downgraded trap-room gate demotes the room to "empty" when it
+## was the room's only qualifying door, keeping Hard Test 6 consistent.
+static func _downgrade_gated_door(
+		layout: DungeonLayout,
+		door: DungeonDoorData,
+		floor_idx: int) -> void:
+	push_warning("DungeonKeyLeverPlacer: no candidate room for %s door at floor %d %s — downgrading to unlocked wood_standard." % [door.type, floor_idx, door.position])
+	var was_qualifying: bool = door.is_secret and (
+		door.type == DungeonDoorData.TYPE_LOCKED or door.type == DungeonDoorData.TYPE_TRAPPED)
+	door.type = DungeonDoorData.TYPE_UNLOCKED
+	door.door_material = DungeonDoorData.MATERIAL_WOOD_STANDARD
+	door.is_secret = false
+	door.wired_lever_position = Vector2i(-1, -1)
+	if was_qualifying:
+		_demote_ungated_trap_rooms(layout, door)
+
+
+## If `door` was a trap room's qualifying gate, demote any connected
+## trap_placeholder room that now has zero qualifying doors to "empty"
+## (mirrors the §10.4 / §11.4 consistency rule).
+static func _demote_ungated_trap_rooms(layout: DungeonLayout, door: DungeonDoorData) -> void:
+	for connected_room_id: int in door.connects:
+		if connected_room_id < 0:
+			continue
+		var connected_room: DungeonRoomData = layout.find_room(connected_room_id)
+		if connected_room == null or connected_room.contents_kind != "trap_placeholder":
+			continue
+		var remaining_qualifying := 0
+		for rd: DungeonDoorData in connected_room.doors:
+			if rd.is_secret and (
+				rd.type == DungeonDoorData.TYPE_LOCKED
+				or rd.type == DungeonDoorData.TYPE_TRAPPED
+			):
+				remaining_qualifying += 1
+		if remaining_qualifying == 0:
+			connected_room.contents_kind = "empty"
+			connected_room.current_purpose = connected_room.original_purpose
+
+
+## True when every stair and every room (>= 1 cell) on every floor has been
+## reached — the same criteria validate_solvability enforces.
+static func _coverage_complete(floors: Array[DungeonLayout], st: Dictionary) -> bool:
+	var reachable: Dictionary = st["reachable"]
+	for fi: int in range(1, floors.size() + 1):
+		var layout: DungeonLayout = floors[fi - 1]
+		for stair: DungeonStairData in layout.stairs:
+			if not reachable.has(_cell_key(fi, stair.position)):
+				return false
+		for room: DungeonRoomData in layout.rooms:
+			var any_reached := false
+			for rc: Vector2i in room.cells:
+				if reachable.has(_cell_key(fi, rc)):
+					any_reached = true
+					break
+			if not any_reached and not room.cells.is_empty():
+				return false
+	return true
+
+
+## Open ONE recorded secret+unlocked frontier door whose far side is still
+## unreached (clear is_secret; type stays unlocked, material stays wood per
+## §8.3 step 2). Returns true if a door was opened (the caller re-drains).
+## Doors guarding pockets the BFS already reached another way are left secret.
+static func _downgrade_one_blocking_secret(floors: Array[DungeonLayout], st: Dictionary) -> bool:
+	var reachable: Dictionary = st["reachable"]
+	for entry in st["secret_blockers"]:
+		var fi: int = entry["floor_idx"]
+		var door: DungeonDoorData = entry["door"]
+		if not door.is_secret:
+			continue  # already opened by an earlier repair pass
+		var layout: DungeonLayout = floors[fi - 1]
+		var blocks_unreached := false
+		for nb: Vector2i in _neighbours(door.position):
+			if reachable.has(_cell_key(fi, nb)):
+				continue
+			var nb_cell: DungeonCellData = layout.get_cell_at(nb)
+			if nb_cell != null and (nb_cell.passable or nb_cell.is_door() or nb_cell.is_stair()):
+				blocks_unreached = true
+				break
+		if not blocks_unreached:
+			continue
+		push_warning("DungeonKeyLeverPlacer: secret door at floor %d %s gates mandatory content with no key path — clearing is_secret (§10.4 repair)." % [fi, door.position])
+		door.is_secret = false
+		_mark_reached(floors, fi, door.position, st)
+		return true
+	return false
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
 ## Find the room id on the entrance floor that contains the entrance cell (or
 ## is adjacent to it).  Returns -1 if not determinable.
@@ -296,79 +522,6 @@ static func _find_entrance_room_id(
 		if nb_cell != null and nb_cell.room_id >= 0:
 			return nb_cell.room_id
 	return -1
-
-
-## Fills both `rooms_out` and `floor_idxs_out` in lockstep so callers can
-## retrieve the floor index for each room.
-static func _candidate_rooms_with_floors(
-		floors: Array[DungeonLayout],
-		outside: Dictionary,
-		entrance_room_id: int,
-		entrance_floor_index: int,
-		rooms_out: Array[DungeonRoomData],
-		floor_idxs_out: Array) -> void:
-	for floor_idx: int in range(1, floors.size() + 1):
-		var layout: DungeonLayout = floors[floor_idx - 1]
-		for room: DungeonRoomData in layout.rooms:
-			# Drop the entrance room.
-			if floor_idx == entrance_floor_index and room.id == entrance_room_id:
-				continue
-			# All room cells must be in outside region.
-			var all_in := true
-			for rc: Vector2i in room.cells:
-				if not outside.has(_cell_key(floor_idx, rc)):
-					all_in = false
-					break
-			if all_in and room.cells.size() > 0:
-				rooms_out.append(room)
-				floor_idxs_out.append(floor_idx)
-
-
-## Selects one room from the outside region weighted by floor proximity.
-## Returns {room, floor_idx} or {room:null, floor_idx:-1}.
-## Weights: same floor as door = 5, |Δfloor|==1 = 2, else = 1.
-static func _pick_weighted_room_full(
-		floors: Array[DungeonLayout],
-		outside: Dictionary,
-		entrance_room_id: int,
-		entrance_floor_index: int,
-		door_floor_idx: int,
-		rng: RandomNumberGenerator) -> Dictionary:
-	var rooms: Array[DungeonRoomData] = []
-	var floor_idxs: Array = []
-	_candidate_rooms_with_floors(floors, outside, entrance_room_id,
-			entrance_floor_index, rooms, floor_idxs)
-
-	if rooms.is_empty():
-		return {"room": null, "floor_idx": -1}
-
-	# Compute weights.
-	var weights: Array[int] = []
-	var total_weight := 0
-	for i: int in range(rooms.size()):
-		var fi: int = floor_idxs[i]
-		var delta: int = absi(fi - door_floor_idx)
-		var w: int
-		if delta == 0:
-			w = 5
-		elif delta == 1:
-			w = 2
-		else:
-			w = 1
-		weights.append(w)
-		total_weight += w
-
-	if total_weight <= 0:
-		return {"room": null, "floor_idx": -1}
-
-	var roll: int = rng.randi_range(0, total_weight - 1)
-	var acc := 0
-	for i: int in range(rooms.size()):
-		acc += weights[i]
-		if roll < acc:
-			return {"room": rooms[i], "floor_idx": floor_idxs[i]}
-
-	return {"room": rooms[rooms.size() - 1], "floor_idx": floor_idxs[floor_idxs.size() - 1]}
 
 
 ## Pick a cell in the chosen room that is adjacent to an impassable/wall cell.

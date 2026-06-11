@@ -261,6 +261,61 @@ func build_repertoire(class_id: String, template_id: String, int_score: int) -> 
 
 
 # ---------------------------------------------------------------------------
+# §10 step 12 — seed the reused Proficiencies / Spells steps (Path B)
+# ---------------------------------------------------------------------------
+
+## The editable + locked proficiency split a Path B template seeds into the reused
+## Proficiencies step (gdd §4.2.1 — the player then edits with the full picker:
+## multi-rank, specialization, swaps, and INT-bonus fills). The §8 INT cull (default
+## = the arcane_bonus at INT <= 12) is applied here so the seeded count matches the
+## picker's slot math (1 class + 1 general + INT-mod generals); INT-bonus extras are
+## NOT auto-filled — the player fills those empty slots. Returns:
+##   { selected: [record],  # slot_type class/general — creation_state.proficiencies
+##     locked:   [record] }  # natural/tradition — creation_state.bonus_proficiencies
+func template_base_proficiencies(template: ClassTemplate, int_score: int) -> Dictionary:
+	var plan := TemplateIntAdjuster.compute_adjustment(template.class_id, int_score)
+	var kept := TemplateIntAdjuster.cull_proficiencies(template.proficiencies, plan, "")
+	var selected: Array = []
+	var locked: Array = []
+	for p: TemplateProficiency in kept:
+		if p.proficiency_key == "":
+			continue
+		if p.is_locked():
+			locked.append(p.to_record())  # natural / tradition — non-removable grant
+		else:
+			selected.append(p.to_record())
+	return {"selected": selected, "locked": locked}
+
+
+## The BASE arcane repertoire a Path B template grants, BEFORE the §8.2 INT extras —
+## those are rolled by the player in the reused Spells step (gdd §4.2.1 "rolls the
+## bonus spell here"). Same as build_repertoire but with 0 auto-rolled extras, plus
+## the extra count for the Spells panel to drive its roll. Returns:
+##   { spells: [character_spells row], extra_spells_to_roll: int, arcane: true }
+## or {} for a non-arcane / unknown template (the normal divine Spells step handles
+## divine Path B casters).
+func template_base_repertoire(class_id: String, template_id: String, int_score: int) -> Dictionary:
+	var template: ClassTemplate = _template_repo.get_template(template_id)
+	if template == null or template.class_id != class_id:
+		return {}
+	if not TemplateIntAdjuster.is_arcane_class(class_id):
+		return {}
+	var plan := TemplateIntAdjuster.compute_adjustment(class_id, int_score)
+	var spell_info := TemplateIntAdjuster.adjust_spells(template, plan)
+	if _spell_repertoire == null:
+		_spell_repertoire = TemplateSpellRepertoire.new(null, _class_registry)
+	var base := _spell_repertoire.build_repertoire(
+		class_id, 1, int_score,
+		spell_info["starting_spells"], String(spell_info["bonus_spell"]),
+		0, "pc_rep_%s" % template_id)   # 0 → do NOT auto-roll the §8.2 extras
+	return {
+		"spells": base.get("spells", []),
+		"extra_spells_to_roll": int(spell_info["extra_spells_to_roll"]),
+		"arcane": true,
+	}
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

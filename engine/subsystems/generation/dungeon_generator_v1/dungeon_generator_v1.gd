@@ -81,6 +81,7 @@ static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResu
 	# single-shot result whenever that result was already solvable.
 	# ---------------------------------------------------------------------------
 	const MAX_DUNGEON_ATTEMPTS := 4
+	var _gen_t0: int = Time.get_ticks_msec()
 	for dungeon_attempt in range(MAX_DUNGEON_ATTEMPTS):
 		var master_seed: int = base_seed + dungeon_attempt * 1000000007
 		result = _generate_attempt(request, master_seed, dungeon_id, loader, registry)
@@ -89,6 +90,10 @@ static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResu
 		if dungeon_attempt < MAX_DUNGEON_ATTEMPTS - 1:
 			push_warning("DungeonGeneratorV1: dungeon attempt %d not solvable/acceptable — regenerating with a fresh seed. (%s)"
 				% [dungeon_attempt + 1, str(result.errors).substr(0, 100)])
+	var _gen_elapsed: int = Time.get_ticks_msec() - _gen_t0
+	if _gen_elapsed > 15000:
+		push_warning("DungeonGeneratorV1: generate took %d ms (seed %d, %s %s, %d floors) — slow-generation telemetry, investigate if recurring."
+			% [_gen_elapsed, base_seed, request.dungeon_type, request.dungeon_size, request.floor_count])
 
 	# ---------------------------------------------------------------------------
 	# Step 13 — persist (optional; once, on the accepted result)
@@ -194,9 +199,18 @@ static func _generate_attempt(
 					fixed = true
 					break
 			if not fixed:
-				result.warnings.append(
-					"DungeonGeneratorV1: floor %d layout connectivity issue after retries: %s"
-					% [floor_index, nav["message"]])
+				# GDD §9.1 post-hoc carving: connect the unreachable rooms to
+				# the reachable component directly rather than shipping a
+				# structurally disconnected floor (which no stocking retry or
+				# key placement can ever repair).
+				if _carve_unreachable_rooms(layout):
+					result.warnings.append(
+						"DungeonGeneratorV1: floor %d connectivity repaired by §9.1 post-hoc carving."
+						% floor_index)
+				else:
+					result.warnings.append(
+						"DungeonGeneratorV1: floor %d layout connectivity issue after retries (carving failed): %s"
+						% [floor_index, nav["message"]])
 
 		# Stair-to-stair reachability check WITHOUT secret doors (pre-stocking guard).
 		# If all stairs cannot reach each other ignoring secret doors, solvability will
@@ -451,6 +465,110 @@ static func _stairs_all_mutually_reachable_no_secrets(layout: DungeonLayout) -> 
 			return false
 
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Helper — §9.1 post-hoc carving for structurally disconnected floors
+# ---------------------------------------------------------------------------
+## GDD §9.1: when a floor still has unreachable rooms after the layout retry
+## budget, carve a 2-cell-wide L-shaped corridor from each disconnected room to
+## the nearest reachable cell (doors-as-passable model) instead of shipping a
+## floor that no downstream retry can fix. Mutates layout.cells in place; rooms,
+## doors, and stairs are untouched. Returns true when every room is reachable
+## after carving.
+static func _carve_unreachable_rooms(layout: DungeonLayout) -> bool:
+	# Each pass connects at least one room, so passes are bounded by room count.
+	for _pass in range(layout.rooms.size() + 1):
+		# Doors-as-passable BFS from the same seed validate_layout uses.
+		var seed_pos := Vector2i(-1, -1)
+		if layout.is_entrance_floor and layout.entrance != Vector2i(-1, -1):
+			seed_pos = layout.entrance
+		elif layout.stairs.size() > 0:
+			seed_pos = (layout.stairs[0] as DungeonStairData).position
+		elif not layout.rooms.is_empty() and not (layout.rooms[0] as DungeonRoomData).cells.is_empty():
+			seed_pos = (layout.rooms[0] as DungeonRoomData).cells[0]
+		if seed_pos == Vector2i(-1, -1):
+			return false
+
+		var visited: Dictionary = {}
+		var visited_list: Array[Vector2i] = []
+		var queue: Array[Vector2i] = [seed_pos]
+		visited[seed_pos] = true
+		visited_list.append(seed_pos)
+		while not queue.is_empty():
+			var cur: Vector2i = queue.pop_front()
+			for nb in [Vector2i(cur.x - 1, cur.y), Vector2i(cur.x + 1, cur.y),
+					Vector2i(cur.x, cur.y - 1), Vector2i(cur.x, cur.y + 1)]:
+				if visited.has(nb):
+					continue
+				if nb.x < 0 or nb.y < 0 or nb.x >= layout.grid_width or nb.y >= layout.grid_height:
+					continue
+				var cell: DungeonCellData = layout.get_cell_at(nb)
+				if cell == null:
+					continue
+				if not cell.passable and not cell.is_door():
+					continue
+				visited[nb] = true
+				visited_list.append(nb)
+				queue.append(nb)
+
+		# First room with no reached cell; none -> floor fully connected.
+		var target_room: DungeonRoomData = null
+		for r in layout.rooms:
+			var room: DungeonRoomData = r
+			if room.cells.is_empty():
+				continue
+			var reached := false
+			for rc: Vector2i in room.cells:
+				if visited.has(rc):
+					reached = true
+					break
+			if not reached:
+				target_room = room
+				break
+		if target_room == null:
+			return true
+
+		# Carve toward the nearest reachable cell (Manhattan distance).
+		var from: Vector2i = target_room.cells[0]
+		var best: Vector2i = visited_list[0]
+		var best_d: int = absi(from.x - best.x) + absi(from.y - best.y)
+		for v in visited_list:
+			var d: int = absi(from.x - v.x) + absi(from.y - v.y)
+			if d < best_d:
+				best_d = d
+				best = v
+		_carve_l_path(layout, from, best)
+	return false
+
+
+## Carve an L-shaped 2-cell-wide corridor: horizontal leg from `from` to
+## (to.x, from.y), then vertical leg to `to`. Only wall/rock cells are
+## converted to open corridor; existing passable cells, doors, and stairs are
+## left untouched.
+static func _carve_l_path(layout: DungeonLayout, from: Vector2i, to: Vector2i) -> void:
+	var x_step: int = 1 if to.x >= from.x else -1
+	for x in range(from.x, to.x + x_step, x_step):
+		_carve_cell(layout, Vector2i(x, from.y))
+		_carve_cell(layout, Vector2i(x, from.y + (1 if from.y + 1 < layout.grid_height else -1)))
+	var y_step: int = 1 if to.y >= from.y else -1
+	for y in range(from.y, to.y + y_step, y_step):
+		_carve_cell(layout, Vector2i(to.x, y))
+		_carve_cell(layout, Vector2i(to.x + (1 if to.x + 1 < layout.grid_width else -1), y))
+
+
+## Convert one wall/rock cell to open corridor. No-op for cells that are
+## already passable or hold a door / stair (their data objects stay valid).
+static func _carve_cell(layout: DungeonLayout, pos: Vector2i) -> void:
+	var cell: DungeonCellData = layout.get_cell_at(pos)
+	if cell == null:
+		return
+	if cell.passable or cell.is_door() or cell.is_stair():
+		return
+	cell.terrain_feature = DungeonCellData.FEATURE_OPEN
+	cell.passable = true
+	cell.blocks_los = false
+	cell.is_corridor = true
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "troglodyte",
+      "catalog_number": null,
+      "demonym": "Troglodyte",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "troglodyte",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.35
+    },
+    "terrain": {
+      "seed_biomes": [
+        "mountains",
+        "swamp"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.7,
+      "defense": 0.6,
+      "size_exponent_bias": 0
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "light_infantry",
+        "archers",
+        "berserkers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "civility": -1.5,
+        "mysticism": 0.5,
+        "stress_reactivity": 0.5,
+        "self_interest": -0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "troglodyte",
+    "phonemic_palette": "Troglodyte (Kazhur, hiss-click regression): s/sh/ts -> long hiss (sss), t -> tch-click, q -> click, suffixes -ssk/-tk/-isss; foul, sibilant, primitive.",
+    "phenotype_notes": "Features of the Troglodyte analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Troglodyte",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Troglodyte register; deity-morphs in name_bank 'troglodyte'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone warrens of the Troglodyte"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Troglodyte — xenophobic tribal of the mountains; survival.",
+      "one_paragraph": "The Troglodyte are a Chaotic beastman race; aggression 0.7, organized as tribal. Their tongue is a regressed form (see name_bank 'troglodyte'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

@@ -44,9 +44,38 @@ var _latest_forage_summary_by_party: Dictionary = {}
 
 var _runner = null  # SessionRunner (untyped to avoid circular ref)
 
+## Lazily-built provisions plumbing (gdd-rations-foodstuffs.md). The catalog
+## loads 3 JSON files; cache it across the daily ticks rather than rebuild it.
+var _equipment_catalog: EquipmentCatalog = null
+var _provisions_service: ProvisionsService = null
+## MonsterRegistry for hydrating trained-creature monster_data (size/diet) in
+## the fodder tick. Cached like the catalog.
+var _monster_registry: MonsterRegistry = null
+
 
 func _init(runner) -> void:
 	_runner = runner
+
+
+## Lazy EquipmentCatalog shared by the provisions derive/writeback path.
+func _ensure_equipment_catalog() -> EquipmentCatalog:
+	if _equipment_catalog == null:
+		_equipment_catalog = EquipmentCatalog.new()
+	return _equipment_catalog
+
+
+## Lazy ProvisionsService bound to the live CampaignRepository.
+func _ensure_provisions_service() -> ProvisionsService:
+	if _provisions_service == null:
+		_provisions_service = ProvisionsService.new(
+			CampaignRepository, _ensure_equipment_catalog())
+	return _provisions_service
+
+
+func _ensure_monster_registry() -> MonsterRegistry:
+	if _monster_registry == null:
+		_monster_registry = MonsterRegistry.new()
+	return _monster_registry
 
 
 # ---------------------------------------------------------------------------
@@ -318,12 +347,11 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if map_data != null:
 		CampaignRepository.save_hex_map(map_data, _runner.get_campaign_id())
 
-	# Phase 4: passive lair-spot check. Fires before the encounter check so
-	# that even an interrupted travel leg leaves the player with the lair
-	# discovery (a soft notification — does not halt travel by itself).
+	# (The v1 per-leg passive lair-spot that fired here was removed 2026-06-10
+	# per gdd-lair-discovery.md §10 — lairs are placed lazily by wandering
+	# substitution / search only; there is nothing pre-placed to spot.)
 	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
 	if terrain != null:
-		_passive_lair_check(party_data, coord, terrain)
 		# Phase 5 polish (2026-05-05): water refill on free-flowing or
 		# standing water hexes. Settlement hexes are treated as having a
 		# water source per design (see _refill_water_at_hex). Mirrors the
@@ -352,6 +380,11 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 			# any wilderness encounter trigger marks today's day_index, which
 			# gates subsequent same-day camp throws.
 			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(moving_pid))
+
+			# Lair substitution (gdd-lair-discovery.md §3.2): roll the
+			# creature's % In Lair; on success place a lair lazily and resolve
+			# the encounter as the lair occupants.
+			_apply_lair_substitution(party_data, enc, coord, terrain)
 
 			# Phase 5 polish (2026-05-05): every encounter halts travel and
 			# surfaces an EncounterDecisionPrompt — the player picks how to
@@ -420,6 +453,9 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 		# Hybrid encounter-gate stamp (§4.3.3).
 		_stamp_encounter_gate(party_data, Timekeeping.get_party_time(event.owner_id))
+
+		# Lair substitution (gdd-lair-discovery.md §3.2).
+		_apply_lair_substitution(party_data, enc, coord, terrain)
 
 		# Phase 5 polish (2026-05-05): standalone encounter checks also route
 		# through the EncounterDecisionPrompt — same flow as travel-leg
@@ -578,6 +614,10 @@ func _handle_wilderness_activity(event: ScheduledEvent) -> Dictionary:
 				"pause_reason": "Arrived at cache",
 			}
 		"explore", "build_stronghold":
+			# When the real build_stronghold flow lands, it MUST re-validate
+			# HexLairState.is_stronghold_buildable(...) here — the context
+			# menu hides the gated option, but the handler is the engine-side
+			# boundary (gdd-lair-discovery.md §7, ruling 2026-06-10).
 			var label := _activity_label(activity_type)
 			EventBus.notification_requested.emit({
 				"type": "info",
@@ -596,14 +636,32 @@ func _handle_wilderness_activity(event: ScheduledEvent) -> Dictionary:
 			# 14+ on 1d20 (+4 Survival), success = 2d6 person-feeds, with one
 			# wandering monster check during the day. Travel halts for the day.
 			return _resolve_hunt_activity(party_id, hex_q, hex_r)
-		"survey":
-			# Phase 4: Land Surveying assessment per
-			# le_wilderness_lair_rules.xml §land_surveying.
-			return _resolve_survey_activity(party_id, hex_q, hex_r)
-		"search_lair":
-			# Phase 4: dedicated full-day lair search per
-			# le_wilderness_lair_rules.xml §searching_for_lairs.
-			return _resolve_lair_search_activity(party_id, hex_q, hex_r)
+		"survey", "search_lair":
+			# Strenuous minor activities (~1 hour) per the Campaign Play
+			# Surveying / Searching entries (gdd-lair-discovery.md §4.1 / §5.1).
+			# The hour passes on the scheduler clock; resolution fires at the
+			# completion event (mirrors place_loot_cache). A party that wants
+			# multiple search throws launches the activity multiple times.
+			EventBus.notification_requested.emit({
+				"type": "info",
+				"category": "exploration",
+				"title": _activity_label(activity_type),
+				"body": "%s in progress (1 hour)." % _activity_label(activity_type),
+				"duration": 3.0,
+			})
+			var lair_completion_data := event.data.duplicate()
+			var lair_fire_time: int = Timekeeping.get_party_time(party_id) \
+				+ Timekeeping.ROUNDS_PER_HOUR
+			EventBus.order_queued.emit(party_id, ACTIVITY_COMPLETE_EVENT, lair_fire_time)
+			return {
+				"next_events": [{
+					"event_type": ACTIVITY_COMPLETE_EVENT,
+					"fire_time": lair_fire_time,
+					"owner_id": party_id,
+					"data": lair_completion_data,
+					"priority": ScheduledEvent.PRIORITY_ARRIVAL,
+				}]
+			}
 		_:
 			push_warning("WildernessHandlers: unknown activity_type '%s'" % activity_type)
 			return {
@@ -656,8 +714,25 @@ func _handle_wilderness_day_tick(event: ScheduledEvent) -> Dictionary:
 	var sustenance_summary: Dictionary = {}
 	if _is_wilderness_location(party_data):
 		_load_member_proficiencies(party_data)
+		# Option B (gdd-rations-foodstuffs.md §4): fold carried rations into the
+		# ration_units counter (foraged surplus + carried food), run the SACRED
+		# SustenanceResolver unchanged, then write the consumption back to real
+		# inventory (foraged-first, then perishable → standard → iron rations).
+		var provisions: ProvisionsService = _ensure_provisions_service()
+		var food_ctx: Dictionary = provisions.derive_food_into_counter(party_data)
+		# Phase 2: when the party carries water containers (waterskins / barrels),
+		# water_units is derived from their fill; a container-less party keeps the
+		# legacy abstract counter (derive/writeback are no-ops there).
+		var water_ctx: Dictionary = provisions.derive_water_into_counter(party_data)
 		sustenance_summary = SustenanceResolver.apply_daily(party_data, DiceSystem)
+		provisions.writeback_food(
+			party_data, int(sustenance_summary.get("food_consumed", 0)), food_ctx)
+		provisions.writeback_water(
+			party_data, int(sustenance_summary.get("water_consumed", 0)), water_ctx)
 		_apply_sustenance_hp_loss(sustenance_summary)
+		# Phase 3: feed trained animals from carried fodder, honoring the
+		# per-species × terrain grazing/hunting waiver.
+		_apply_animal_fodder(party_data, provisions)
 		_emit_sustenance_signals(moving_pid_str, sustenance_summary)
 		_log_sustenance_day(
 			moving_pid_str, day_index, forage_summary, sustenance_summary)
@@ -986,6 +1061,10 @@ func _handle_wilderness_encounter(event: ScheduledEvent) -> Dictionary:
 	enc["watch_index"] = surprise_ctx.get("watch_index", -1)
 	enc["trigger_source"] = "camp"
 
+	# Lair substitution (gdd-lair-discovery.md §3.2) — camp-sourced wilderness
+	# encounters roll % In Lair like any other trigger site.
+	_apply_lair_substitution(party_data, enc, coord, terrain)
+
 	# Route through the existing player-decision modal (per §27 of
 	# coding_conventions.md). The state-tier listener
 	# (WildernessExploreState._on_encounter_decision_required) opens the
@@ -1097,12 +1176,13 @@ func _stamp_encounter_gate(party_data: PartyData, fire_time: int) -> void:
 	CampaignRepository.save_party_state(party_data.to_state_dict())
 
 
-## Timed wilderness activity resolves. Today this only handles place_loot_cache;
-## other activity types drop here only if more timed activities are added later.
+## Timed wilderness activity resolves (place_loot_cache, and the 1-hour
+## survey / search_lair completions per gdd-lair-discovery.md §4.1/§5.1).
 func _handle_wilderness_activity_complete(event: ScheduledEvent) -> Dictionary:
 	var activity_type: String = str(event.data.get("activity_type", ""))
 	var hex_q: int = int(event.data.get("hex_q", 0))
 	var hex_r: int = int(event.data.get("hex_r", 0))
+	var party_id: String = event.owner_id
 
 	match activity_type:
 		"place_loot_cache":
@@ -1125,6 +1205,14 @@ func _handle_wilderness_activity_complete(event: ScheduledEvent) -> Dictionary:
 				"duration": 4.0,
 			})
 			return {"auto_pause": true, "pause_reason": "Cache placed"}
+		"survey":
+			# Land Surveying assessment per le_wilderness_lair_rules.xml
+			# §land_surveying, resolved after the 1-hour activity window.
+			return _resolve_survey_activity(party_id, hex_q, hex_r)
+		"search_lair":
+			# One search hour per le_wilderness_lair_rules.xml
+			# §searching_for_lairs.abstract_search_procedure.
+			return _resolve_lair_search_hour(party_id, hex_q, hex_r)
 		_:
 			push_warning("WildernessHandlers: no completion for activity_type '%s'" % activity_type)
 			return {"auto_pause": true, "pause_reason": "Activity complete"}
@@ -1238,6 +1326,8 @@ func _resolve_hunt_activity(party_id: String, hex_q: int, hex_r: int) -> Diction
 				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
 			# Hybrid encounter-gate stamp (§4.3.3).
 			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(party_id))
+			# Lair substitution (gdd-lair-discovery.md §3.2).
+			_apply_lair_substitution(party_data, enc, Vector2i(hex_q, hex_r), terrain)
 			var enc_label: String = _format_encounter_label(enc)
 			EventBus.encounter_decision_required.emit(party_id, enc)
 			return {
@@ -1256,13 +1346,24 @@ func _resolve_hunt_activity(party_id: String, hex_q: int, hex_r: int) -> Diction
 	}
 
 
-## Phase 4: resolve a Survey activity at the party's current hex. Per
-## le_wilderness_lair_rules.xml §land_surveying — a Land Surveying member
+## Resolve a Land Surveying assessment per le_wilderness_lair_rules.xml
+## §land_surveying and gdd-lair-discovery.md §4.3. A Land Surveying member
 ## may attempt one assessment on first arrival in the hex, and one
 ## additional assessment each time the hex is searched. Survey itself does
 ## NOT count as a search for the cumulative bonus (only successful lair
-## searches do, per RAW: "Apply a cumulative +4 bonus for each successful
-## search the party has conducted").
+## searches do, per RAW L167: "Apply a cumulative +4 bonus for each
+## successful search the party has conducted").
+##
+## §4.3 success sequence: roll the hex's lair budget if needed, eagerly roll
+## all remaining lair types into the hidden unrevealed-types queue, reveal
+## the total to the player (surveyed_total). On an unmodified-1 (§4.4) the
+## queue still fills against the REAL budget; only the player-displayed
+## total is the false value.
+##
+## Note on roll order: the budget commits before the throw resolves — the
+## assessment is against the real total, so the lazy roll's "first need" is
+## the Survey attempt itself, not its success. Observationally identical
+## (the value stays hidden unless the throw reveals it).
 func _resolve_survey_activity(party_id: String, hex_q: int, hex_r: int) -> Dictionary:
 	var party_data: PartyData = _resolve_party_data_by_id(party_id)
 	if party_data == null:
@@ -1274,40 +1375,80 @@ func _resolve_survey_activity(party_id: String, hex_q: int, hex_r: int) -> Dicti
 	if campaign_id.is_empty() or map_id.is_empty():
 		return {"auto_pause": true, "pause_reason": "Survey failed: no map context"}
 
-	var actual_lairs: int = CampaignRepository.count_lairs_in_hex(
-		campaign_id, map_id, hex_q, hex_r)
+	var coord := Vector2i(hex_q, hex_r)
+	var controller: HexMapController = _runner.get_hex_map_controller() if _runner != null else null
+	var map_data: HexMapData = controller.get_map() if controller != null else null
+	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
+	if terrain == null:
+		return {"auto_pause": true, "pause_reason": "Survey failed: no terrain data"}
+
+	var at_round: int = Timekeeping.get_party_time(party_id)
+	var budget: int = HexLairState.get_or_roll_budget(
+		campaign_id, map_id, hex_q, hex_r, terrain, DiceSystem, at_round)
+
 	var progress: Dictionary = CampaignRepository.get_survey_progress(
 		campaign_id, map_id, party_id, hex_q, hex_r)
 	var prior_searches: int = int(progress.get("successful_searches", 0))
 
-	# Phase 6: Land Surveyor specialist bonus.
-	var specialist_bonus: int = SpecialistBonusResolver.bonus_for(
-		campaign_id, party_id, SpecialistCatalog.KIND_SURVEYING)
+	# Phase 6 / ruling 2026-06-10: a hired Land Surveyor can make the throw
+	# when no party member has the proficiency (le_wilderness_lair_rules.xml
+	# §hirelings L191-195). When the specialist IS the thrower, their own +4
+	# is excluded from the assist bonus (additional surveyors still assist).
+	var specialist_rows: Array = CampaignRepository.list_active_specialists(
+		campaign_id, party_id)
+	var hired_surveyor: Dictionary = {}
+	for spec_row: Dictionary in specialist_rows:
+		if str(spec_row.get("kind", "")) == SpecialistCatalog.LAND_SURVEYOR:
+			hired_surveyor = spec_row
+			break
+	var member_has_proficiency: bool = false
+	for cd: CharacterData in party_data.character_data:
+		if cd.has_proficiency(SurveyingResolver.PROFICIENCY_KEY):
+			member_has_proficiency = true
+			break
+	var assist_rows: Array = specialist_rows
+	if not member_has_proficiency and not hired_surveyor.is_empty():
+		assist_rows = []
+		var thrower_excluded: bool = false
+		for spec_row: Dictionary in specialist_rows:
+			if not thrower_excluded and spec_row.get("specialist_id") == hired_surveyor.get("specialist_id"):
+				thrower_excluded = true
+				continue
+			assist_rows.append(spec_row)
+	var specialist_bonus: int = SpecialistBonusResolver.bonus_from_rows(
+		assist_rows, SpecialistCatalog.KIND_SURVEYING)
 	var result: Dictionary = SurveyingResolver.assess(
-		party_data, prior_searches, actual_lairs, DiceSystem, specialist_bonus)
+		party_data, prior_searches, budget, DiceSystem, specialist_bonus,
+		hired_surveyor)
 
-	# Persist the new estimate when the throw produced one (success OR
-	# false-reading). Inconclusive failures leave the prior estimate intact.
-	if int(result.get("estimate", -1)) >= 0:
-		var row := {
-			"campaign_id": campaign_id,
-			"map_id": map_id,
-			"party_id": party_id,
-			"hex_q": hex_q,
-			"hex_r": hex_r,
-			"successful_searches": prior_searches,
-			"last_search_round": int(progress.get("last_search_round", -1)),
-			"last_estimate": int(result.get("estimate", -1)),
-			"last_estimate_correct": bool(result.get("estimate_correct", true)),
-		}
-		CampaignRepository.upsert_survey_progress(row)
+	var revealed: bool = bool(result.get("succeeded", false)) \
+		or bool(result.get("natural_one", false))
+	if revealed:
+		# §4.3 step 2: eagerly roll the remaining lair types into the hidden
+		# queue against the REAL budget (even on a §4.4 false reading).
+		var state: Dictionary = HexLairState.get_state(campaign_id, map_id, hex_q, hex_r)
+		var queue: Array[String] = state["unrevealed_lair_types"]
+		var needed: int = budget - int(state["lairs_placed_count"]) - queue.size()
+		if needed > 0:
+			var rolled_types: Array[String] = LairTypeResolver.roll_types_for_remaining_slots(
+				terrain, _ensure_monster_registry(), needed)
+			HexLairState.append_unrevealed_types(
+				campaign_id, map_id, hex_q, hex_r, rolled_types)
+		# §4.3 step 4 / §4.4: reveal the displayed total (true budget on a
+		# normal success, the false value on an unmodified-1).
+		HexLairState.set_surveyed_total(
+			campaign_id, map_id, hex_q, hex_r, int(result.get("estimate", 0)))
 
+	result["displayed_total"] = int(result.get("estimate", -1))
+	result["was_false_reading"] = revealed and not bool(result.get("estimate_correct", true))
+	result["hex_q"] = hex_q
+	result["hex_r"] = hex_r
 	EventBus.survey_completed.emit(party_id, result)
 
 	var toast_type: String = "info"
 	if not bool(result.get("eligible", false)):
 		toast_type = "warning"
-	elif not bool(result.get("succeeded", false)) and not bool(result.get("natural_one", false)):
+	elif not revealed:
 		toast_type = "warning"
 	EventBus.notification_requested.emit({
 		"type": toast_type,
@@ -1324,19 +1465,26 @@ func _resolve_survey_activity(party_id: String, hex_q: int, hex_r: int) -> Dicti
 	}
 
 
-## Phase 4: resolve a full-day dedicated lair search at the party's current
-## hex. Per le_wilderness_lair_rules.xml §searching_for_lairs.abstract_search_procedure:
-##   "For each hour of searching, equal to six turns, make one secret
-##    searching throw on behalf of the party using 1d20."
-##   "Adventurers searching a hex are subject to one wandering encounter
-##    throw per hour while searching."
+## Resolve one hour of dedicated lair searching (gdd-lair-discovery.md §5).
+## Per le_wilderness_lair_rules.xml §searching_for_lairs:
+##   abstract_search_procedure L105 — "For each hour of searching, equal to
+##     six turns, make one secret searching throw on behalf of the party
+##     using 1d20."
+##   wandering_monsters L148 — "Adventurers searching a hex are subject to
+##     one wandering encounter throw per hour while searching."
 ##
-## v1 collapses the 8 hours into a synchronous block: roll search → encounter
-## per hour, exit early on first lair found OR first encounter triggered. The
-## party clock does not auto-advance (mirroring Hunt's deliberate-day model);
-## the next day-tick fires on schedule. If an encounter triggers we route
-## through the combat path identically to a travel-leg encounter.
-func _resolve_lair_search_activity(party_id: String, hex_q: int, hex_r: int) -> Dictionary:
+## Each activity launch = one hour = one search throw + one wandering check
+## (the v1 8-hour collapsed block is gone). On a successful throw, a lair is
+## PLACED via the Lair Generator (§5.3): pop the front of the unrevealed-
+## types queue (filled eagerly by Survey), or lazy-roll one type when the
+## queue is empty (Search-first). At budget cap, the throw succeeds but
+## surfaces a soft "no further lairs" notification.
+##
+## §5.4 ordering: the wandering encounter resolves FIRST (it may itself
+## place a lair via substitution and consume budget); the hour's search
+## result still resolves afterward — a find surfaces as a toast beneath the
+## encounter modal rather than being lost ("held over" per the GDD).
+func _resolve_lair_search_hour(party_id: String, hex_q: int, hex_r: int) -> Dictionary:
 	var party_data: PartyData = _resolve_party_data_by_id(party_id)
 	if party_data == null:
 		return {"auto_pause": true, "pause_reason": "Lair search failed: party not found"}
@@ -1351,114 +1499,121 @@ func _resolve_lair_search_activity(party_id: String, hex_q: int, hex_r: int) -> 
 	var controller: HexMapController = _runner.get_hex_map_controller() if _runner != null else null
 	var map_data: HexMapData = controller.get_map() if controller != null else null
 	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
+	var at_round: int = Timekeeping.get_party_time(party_id)
 
-	const SEARCH_HOURS := 8
-	var hours_spent: int = 0
-	var lair_found_id: String = ""
-	var search_results: Array = []
+	# --- Wandering encounter check (resolved first per §5.4) ---------------
 	var routed_encounter: Dictionary = {}
+	if terrain != null:
+		var encounter: Dictionary = _runner.do_encounter_check(terrain)
+		if encounter.get("triggered", false):
+			var enc: Dictionary = encounter["encounter_data"]
+			var weather: WeatherStateData = _weather_for_hex(terrain, coord, at_round)
+			if weather != null:
+				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
+			# Hybrid encounter-gate stamp (§4.3.3).
+			_stamp_encounter_gate(party_data, at_round)
+			# Lair substitution (§3.2) — an in-lair wandering roll during the
+			# search places a lair and consumes budget before the search
+			# throw resolves below.
+			_apply_lair_substitution(party_data, enc, coord, terrain)
+			EventBus.encounter_decision_required.emit(party_id, enc)
+			routed_encounter = {
+				"auto_pause": true,
+				"pause_reason": "Search interrupted — %s" % _format_encounter_label(enc),
+				"presentation": {
+					"type": "encounter_decision",
+					"encounter_data": enc,
+				},
+			}
 
-	for hour in range(SEARCH_HOURS):
-		hours_spent = hour + 1
-		var undiscovered: int = CampaignRepository.count_undiscovered_lairs(
-			campaign_id, map_id, hex_q, hex_r)
-		# RAW: "Determine the target value from the party's daily movement
-		# rate through the hex." Dedicated search → daily_miles = 0
-		# (party isn't traveling), which lands on the 18+ row of the table.
-		# Phase 6: Pathfinder specialist bonus.
-		var specialist_bonus: int = SpecialistBonusResolver.bonus_for(
-			campaign_id, party_id, SpecialistCatalog.KIND_LAIR_SEARCH)
-		var search_result: Dictionary = LairSearchResolver.search_hour(
-			party_data, 0, undiscovered, DiceSystem, specialist_bonus)
-		search_results.append(search_result)
+	# --- Search throw -------------------------------------------------------
+	# RAW: "Determine the target value from the party's daily movement rate."
+	# Dedicated search → daily_miles = 0 (party isn't traveling) → the 18+
+	# row. The resolver's undiscovered_lair_count parameter predates lazy
+	# placement — whether a lair is actually found is decided AFTER the throw
+	# against the hex budget, so we pass 1 ("unknown, possible") and consume
+	# only `succeeded`. Phase 6: Pathfinder specialist bonus.
+	var specialist_bonus: int = SpecialistBonusResolver.bonus_for(
+		campaign_id, party_id, SpecialistCatalog.KIND_LAIR_SEARCH)
+	var search_result: Dictionary = LairSearchResolver.search_hour(
+		party_data, 0, 1, DiceSystem, specialist_bonus)
 
-		if bool(search_result.get("lair_found", false)):
-			var revealed_at_round: int = Timekeeping.get_party_time(party_id)
-			lair_found_id = CampaignRepository.reveal_one_lair(
-				campaign_id, map_id, hex_q, hex_r, revealed_at_round, "search")
-			break
-
-		# Wandering encounter check this hour. Phase 5 polish (2026-05-05):
-		# every encounter halts the search and surfaces the
-		# EncounterDecisionPrompt — the player picks the response.
-		if terrain != null:
-			var encounter: Dictionary = _runner.do_encounter_check(terrain)
-			if encounter.get("triggered", false):
-				var enc: Dictionary = encounter["encounter_data"]
-				var weather: WeatherStateData = _weather_for_hex(
-					terrain, coord, Timekeeping.get_party_time(party_id))
-				if weather != null:
-					enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
-				# Hybrid encounter-gate stamp (§4.3.3).
-				_stamp_encounter_gate(party_data, Timekeeping.get_party_time(party_id))
-				EventBus.encounter_decision_required.emit(party_id, enc)
-				routed_encounter = {
-					"auto_pause": true,
-					"pause_reason": "Search interrupted — %s" % _format_encounter_label(enc),
-					"presentation": {
-						"type": "encounter_decision",
-						"encounter_data": enc,
-					},
-				}
-				break
-
-	# Persist a successful-search bump to survey_progress when at least one
-	# search throw succeeded (per RAW that's the trigger for the +4 cumulative
-	# Land Surveying bonus). Reveal-or-not, success counts.
-	var any_success: bool = false
-	for sr: Dictionary in search_results:
-		if bool(sr.get("succeeded", false)):
-			any_success = true
-			break
-	if any_success:
+	var placed_lair_id: String = ""
+	var budget_exhausted: bool = false
+	if bool(search_result.get("succeeded", false)):
+		# RAW L167: every successful search bumps the cumulative +4 Land
+		# Surveying bonus — placement or not.
 		var prior: Dictionary = CampaignRepository.get_survey_progress(
 			campaign_id, map_id, party_id, hex_q, hex_r)
-		var row := {
+		CampaignRepository.upsert_survey_progress({
 			"campaign_id": campaign_id,
 			"map_id": map_id,
 			"party_id": party_id,
 			"hex_q": hex_q,
 			"hex_r": hex_r,
 			"successful_searches": int(prior.get("successful_searches", 0)) + 1,
-			"last_search_round": Timekeeping.get_party_time(party_id),
+			"last_search_round": at_round,
 			"last_estimate": int(prior.get("last_estimate", -1)),
 			"last_estimate_correct": bool(prior.get("last_estimate_correct", true)),
-		}
-		CampaignRepository.upsert_survey_progress(row)
-
-	if not lair_found_id.is_empty():
-		var reveal_result := {
-			"lair_id": lair_found_id,
-			"hex_q": hex_q,
-			"hex_r": hex_r,
-			"via": "search",
-			"round": Timekeeping.get_party_time(party_id),
-			"hours_spent": hours_spent,
-		}
-		EventBus.lair_discovered.emit(party_id, reveal_result)
-		EventBus.notification_requested.emit({
-			"type": "success",
-			"category": "exploration",
-			"title": "Lair Discovered",
-			"body": "Search succeeded after %d hour(s)." % hours_spent,
-			"duration": 5.0,
 		})
 
-	if not routed_encounter.is_empty():
-		# Re-stamp the pause_reason with the hour count for log clarity, but
-		# keep the existing presentation (encounter_decision) so the state
-		# opens the modal.
-		var existing_reason: String = String(routed_encounter.get("pause_reason", ""))
-		var encounter_override: Dictionary = routed_encounter.duplicate()
-		encounter_override["pause_reason"] = "%s (hour %d)" % [existing_reason, hours_spent]
-		return encounter_override
+		if terrain != null:
+			var budget: int = HexLairState.get_or_roll_budget(
+				campaign_id, map_id, hex_q, hex_r, terrain, DiceSystem, at_round)
+			var state: Dictionary = HexLairState.get_state(campaign_id, map_id, hex_q, hex_r)
+			if int(state["lairs_placed_count"]) >= budget:
+				# §5.3 step 2: hex thoroughly searched — soft notification.
+				budget_exhausted = true
+				EventBus.notification_requested.emit({
+					"type": "info",
+					"category": "exploration",
+					"title": "Search Complete",
+					"body": "You find no further lairs in this hex.",
+					"duration": 4.0,
+				})
+			else:
+				# §5.3 step 3: pop the pre-rolled type (post-Survey), else
+				# lazy-roll one (Search-first).
+				var creature_id: String = HexLairState.pop_unrevealed_type(
+					campaign_id, map_id, hex_q, hex_r)
+				if creature_id.is_empty():
+					creature_id = LairTypeResolver.roll_type(
+						terrain, _ensure_monster_registry())
+				if not creature_id.is_empty():
+					var record: Dictionary = LairGenerator.generate(
+						campaign_id, map_id, hex_q, hex_r, creature_id,
+						_ensure_monster_registry(), DiceSystem, at_round)
+					record["placed_via"] = "search"
+					placed_lair_id = CampaignRepository.create_lair(record)
+					if not placed_lair_id.is_empty():
+						HexLairState.increment_placed_count(
+							campaign_id, map_id, hex_q, hex_r)
+						EventBus.lair_placed.emit(party_id, {
+							"lair_id": placed_lair_id,
+							"hex_q": hex_q,
+							"hex_r": hex_r,
+							"monster_group": creature_id,
+							"monster_count": int(record.get("monster_count", 1)),
+							"via": "search",
+							"round": at_round,
+						})
+						EventBus.notification_requested.emit({
+							"type": "success",
+							"category": "exploration",
+							"title": "Lair Discovered",
+							"body": "The search uncovered a %s lair." % _creature_label(creature_id),
+							"duration": 5.0,
+						})
 
-	if lair_found_id.is_empty():
+	if not routed_encounter.is_empty():
+		return routed_encounter
+
+	if placed_lair_id.is_empty() and not budget_exhausted:
 		EventBus.notification_requested.emit({
 			"type": "info",
 			"category": "exploration",
 			"title": "Search Complete",
-			"body": "No lair found after %d hour(s) of searching." % hours_spent,
+			"body": "No lair found this hour.",
 			"duration": 4.0,
 		})
 
@@ -1467,9 +1622,9 @@ func _resolve_lair_search_activity(party_id: String, hex_q: int, hex_r: int) -> 
 		"pause_reason": "Lair search complete",
 		"presentation": {
 			"type": "lair_search_complete",
-			"hours_spent": hours_spent,
-			"lair_found_id": lair_found_id,
-			"hourly_results": search_results,
+			"lair_found_id": placed_lair_id,
+			"budget_exhausted": budget_exhausted,
+			"search_result": search_result,
 		},
 	}
 
@@ -1487,61 +1642,134 @@ func _map_id() -> String:
 	return map_data.id
 
 
-## Phase 4 helper: passive lair-spot check on a travel_leg arrival. Project-
-## designed elaboration of le_wilderness_lair_rules.xml §wandering_monsters
-## "If the party accidentally wanders into a lair…". Skipped when no
-## campaign / map context, when the hex has no undiscovered lairs, or when
-## the moving party is unknown. Returns "" on no-spot, otherwise the
-## revealed lair_id (signal + toast already fired).
-func _passive_lair_check(party_data: PartyData, coord: Vector2i, terrain: HexTerrainData) -> String:
-	if party_data == null or terrain == null or _runner == null:
-		return ""
+## Lair substitution branch (gdd-lair-discovery.md §3.2). Called at every
+## wilderness encounter trigger site after encounter_data resolves to a
+## creature: rolls the creature's % In Lair per
+## acore-monster-stocking-rules.xml §wilderness_wandering_monsters.procedure
+## step 3 L154 ("roll against its % In Lair to determine whether it is in
+## its lair"). On success, the lazy placement flow runs:
+##   * roll the hex's lair budget on first need (§3.1),
+##   * under budget → place a lair via the Lair Generator stub, persist it,
+##     consume one unrevealed-types slot (RAW substitution rule,
+##     le_wilderness_lair_rules.xml §searching_for_lairs.wandering_monsters
+##     L150), fire EventBus.lair_placed(via="wandering_substitution"),
+##   * at budget → the encounter still resolves as a "creature group at
+##     home" with lair-population numbers, but no record is created.
+##
+## Mutates [param enc] in place: is_lair, lair_id (when placed), number
+## (lair-population units), occupant_unit, at_budget_cap.
+func _apply_lair_substitution(
+	party_data: PartyData,
+	enc: Dictionary,
+	coord: Vector2i,
+	terrain: HexTerrainData,
+) -> void:
+	if party_data == null or enc.is_empty() or terrain == null or _runner == null:
+		return
 	var campaign_id: String = _runner.get_campaign_id()
 	var map_id: String = _map_id()
 	if campaign_id.is_empty() or map_id.is_empty():
-		return ""
+		return
 
-	var undiscovered: int = CampaignRepository.count_undiscovered_lairs(
-		campaign_id, map_id, coord.x, coord.y)
-	if undiscovered <= 0:
-		return ""
-
-	# Daily-movement target value from the party's actual on-hex speed.
-	var terrain_cat: String = terrain.movement_cost_category()
-	var on_road: bool = terrain.has_road() if terrain.has_method("has_road") else false
-	var miles_per_day: float = TravelSpeedCalculator.get_miles_per_day(
-		party_data, terrain_cat, on_road, null)
-	var daily_miles: int = int(round(miles_per_day))
-
-	# Phase 6: Pathfinder specialist bonus on passive throws too.
-	var specialist_bonus: int = SpecialistBonusResolver.bonus_for(
-		campaign_id, party_data.id, SpecialistCatalog.KIND_LAIR_SEARCH_PASSIVE)
-	var result: Dictionary = LairSearchResolver.passive_check(
-		party_data, daily_miles, undiscovered, DiceSystem, specialist_bonus)
-	if not bool(result.get("succeeded", false)):
-		return ""
+	var registry := _ensure_monster_registry()
+	var creature_id: String = String(enc.get("monster_group", ""))
+	var entry: Dictionary = registry.get_monster(creature_id)
+	if entry.is_empty():
+		return
+	# percent_in_lair is explicitly null for non-lairing catalog entries;
+	# coerce null/missing to 0 (never lairing) per the established pattern.
+	var pct_raw: Variant = entry.get("percent_in_lair", 0)
+	var pct: int = int(pct_raw) if pct_raw != null else 0
+	if pct <= 0:
+		return
+	var roll: RollResult = DiceSystem.roll_digital(100, 1, 0, "lair_substitution_check")
+	if roll.modified_total > pct:
+		return  # Not in its lair — the encounter resolves normally.
 
 	var at_round: int = Timekeeping.get_party_time(party_data.id)
-	var lair_id: String = CampaignRepository.reveal_one_lair(
-		campaign_id, map_id, coord.x, coord.y, at_round, "passive")
-	if lair_id.is_empty():
-		return ""
+	var budget: int = HexLairState.get_or_roll_budget(
+		campaign_id, map_id, coord.x, coord.y, terrain, DiceSystem, at_round)
+	var state: Dictionary = HexLairState.get_state(campaign_id, map_id, coord.x, coord.y)
+	var placed: int = int(state["lairs_placed_count"])
 
-	EventBus.lair_discovered.emit(party_data.id, {
+	enc["is_lair"] = true
+	if placed < budget:
+		var record: Dictionary = LairGenerator.generate(
+			campaign_id, map_id, coord.x, coord.y, creature_id,
+			registry, DiceSystem, at_round)
+		record["placed_via"] = "wandering_substitution"
+		var lair_id: String = CampaignRepository.create_lair(record)
+		if lair_id.is_empty():
+			return
+		HexLairState.increment_placed_count(campaign_id, map_id, coord.x, coord.y)
+		# RAW substitution rule consumes one unrevealed slot when Survey has
+		# pre-rolled types (the wandered creature takes that slot's place).
+		HexLairState.pop_unrevealed_type(campaign_id, map_id, coord.x, coord.y)
+		enc["lair_id"] = lair_id
+		enc["number"] = int(record.get("monster_count", 1))
+		enc["occupant_unit"] = String(record.get("occupant_unit", ""))
+		EventBus.lair_placed.emit(party_data.id, {
+			"lair_id": lair_id,
+			"hex_q": coord.x,
+			"hex_r": coord.y,
+			"monster_group": creature_id,
+			"monster_count": int(record.get("monster_count", 1)),
+			"via": "wandering_substitution",
+			"round": at_round,
+		})
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "exploration",
+			"title": "Lair Found",
+			"body": "The party has stumbled into a %s lair." % _creature_label(creature_id),
+			"duration": 4.0,
+		})
+	else:
+		# Budget exhausted: transient "another nesting group" fight, no
+		# persistent record (§3.2). Still uses lair-population numbers.
+		var population: Dictionary = LairGenerator.roll_lair_population(entry, DiceSystem)
+		enc["at_budget_cap"] = true
+		enc["number"] = int(population.get("count", 1))
+		enc["occupant_unit"] = String(population.get("unit", ""))
+
+
+## Marks a placed lair cleared (§3.4) and fires EventBus.lair_cleared.
+## Called by the combat-resolution / party-action path once the lair-combat
+## loop exists; until the Lair Generator subsystem lands this is the public
+## write seam (also exercised directly by tests). Idempotent.
+func mark_lair_cleared(party_id: String, lair_id: String) -> bool:
+	var row: Dictionary = CampaignRepository.get_lair(lair_id)
+	if row.is_empty():
+		return false
+	if row.get("cleared_at_round") != null:
+		return true  # Already cleared — keep the original round, no re-emit.
+	var at_round: int = Timekeeping.get_party_time(party_id)
+	if not CampaignRepository.mark_lair_cleared(lair_id, at_round):
+		return false
+	EventBus.lair_cleared.emit(party_id, {
 		"lair_id": lair_id,
-		"hex_q": coord.x,
-		"hex_r": coord.y,
-		"via": "passive",
+		"hex_q": int(row.get("hex_q", 0)),
+		"hex_r": int(row.get("hex_r", 0)),
+		"monster_group": String(row.get("monster_group", "")),
 		"round": at_round,
 	})
 	EventBus.notification_requested.emit({
-		"type": "info",
+		"type": "success",
 		"category": "exploration",
-		"title": "Lair Spotted",
-		"body": "Your party catches sight of a lair while passing through.",
+		"title": "Lair Cleared",
+		"body": "The %s lair has been cleared." % _creature_label(
+			String(row.get("monster_group", ""))),
 		"duration": 4.0,
 	})
-	return lair_id
+	return true
+
+
+## Prettifies a catalog creature_id for player-facing text
+## ("dire_wolf" → "Dire Wolf").
+static func _creature_label(creature_id: String) -> String:
+	if creature_id.is_empty():
+		return "monster"
+	return creature_id.capitalize()
 
 
 ## Phase 3 helper: resolve PartyData by id, primary path first then DB load.
@@ -1635,6 +1863,25 @@ func _refill_water_at_hex(party_data: PartyData, terrain: HexTerrainData) -> voi
 	var party_size: int = party_data.character_data.size()
 	if party_size <= 0:
 		return
+	# Phase 2 (gdd-rations-foodstuffs.md §5.2): if the party carries water
+	# containers, fill them all to capacity and derive the counter from their
+	# fill. A container-less party keeps the legacy behavior — top the abstract
+	# counter to one day's draw (they drink directly at the source).
+	var provisions: ProvisionsService = _ensure_provisions_service()
+	if provisions.has_water_containers(party_data):
+		var filled: int = provisions.fill_water_containers(party_data)
+		party_data.water_units = provisions.carried_water_days(party_data)
+		if filled > 0:
+			CampaignRepository.save_party_state(party_data.to_state_dict())
+			EventBus.notification_requested.emit({
+				"type": "info",
+				"category": "exploration",
+				"title": "Waterskins Refilled",
+				"body": "Filled %d day%s of water at the source." % [
+					filled, "" if filled == 1 else "s"],
+				"duration": 2.5,
+			})
+		return
 	var prior: int = party_data.water_units
 	party_data.water_units = maxi(party_data.water_units, party_size)
 	if party_data.water_units > prior:
@@ -1651,11 +1898,17 @@ func _refill_water_at_hex(party_data: PartyData, terrain: HexTerrainData) -> voi
 ## Format an encounter for surfacing in toasts and modal titles.
 ## Pluralizes the monster name with a simple "s" suffix when count > 1
 ## (good enough for v1 — proper pluralization tables can land later).
+## Lair-substitution encounters carry an `occupant_unit` (e.g. "warbands")
+## when the catalog's in-lair listing counts units rather than individuals —
+## the label says so ("3× goblin warbands") rather than understating.
 func _format_encounter_label(enc: Dictionary) -> String:
 	var count: int = int(enc.get("number", 1))
 	var monster: String = String(enc.get("monster_group", "unknown"))
 	if monster.is_empty():
 		monster = "unknown"
+	var unit: String = String(enc.get("occupant_unit", ""))
+	if not unit.is_empty():
+		return "%d× %s %s" % [count, monster, unit]
 	var label: String = monster
 	if count > 1 and not monster.ends_with("s"):
 		label = monster + "s"
@@ -1716,6 +1969,63 @@ func _apply_sustenance_hp_loss(sustenance: Dictionary) -> void:
 			EventBus.damage_dealt.emit(
 				char_id, dehydration_loss, "dehydration", "")
 		EventBus.hp_changed.emit(char_id, current_hp, new_hp)
+
+
+## Provisions Phase 3: feed the party's trained creatures from carried fodder,
+## with the per-species × terrain grazing/hunting waiver
+## (gdd-rations-foodstuffs.md §5.3). Animals that can't graze and have no fodder
+## starve on the same HP curve as PCs; the counter persists per-animal.
+func _apply_animal_fodder(party_data: PartyData, provisions: ProvisionsService) -> void:
+	var creatures: Array = _load_party_creatures_with_data(party_data)
+	if creatures.is_empty():
+		return
+	var biome: String = ""
+	var subtype: String = ""
+	var terrain := _terrain_for_party(party_data)
+	if terrain != null:
+		biome = terrain.biome
+		subtype = terrain.biome_subtype
+	var fodder_available: int = provisions.carried_fodder_days(party_data)
+	var result: Dictionary = AnimalSustenanceResolver.apply_daily(
+		creatures, biome, subtype, fodder_available)
+
+	var consumed: int = int(result.get("fodder_consumed", 0))
+	if consumed > 0:
+		provisions.consume_fodder(party_data, consumed)
+
+	var hp_loss: Dictionary = result.get("hp_loss_per_creature", {})
+	for creature: TrainedCreatureData in creatures:
+		# Persist the per-animal fodder-starvation counter (mutated in place).
+		CampaignRepository.update_trained_creature(
+			creature.id, {"fodder_starvation_days": creature.fodder_starvation_days})
+		if not hp_loss.has(creature.id):
+			continue
+		var loss: int = int(hp_loss[creature.id])
+		if loss <= 0:
+			continue
+		var old_hp: int = creature.hp_current
+		var new_hp: int = maxi(0, old_hp - loss)
+		CampaignRepository.update_creature_hp(creature.id, new_hp)
+		if new_hp <= 0:
+			# A mount that runs out can die (Jedidiah's ruling). Load-drop and
+			# removal are follow-ups; mark it dead so it stops eating.
+			CampaignRepository.update_trained_creature(creature.id, {"is_alive": 0})
+		EventBus.damage_dealt.emit(creature.id, loss, "starvation", "")
+		EventBus.hp_changed.emit(creature.id, old_hp, new_hp)
+
+
+## Loads the party's trained creatures with their monster_data hydrated (for
+## size category + diet classification). Returns Array[TrainedCreatureData].
+func _load_party_creatures_with_data(party_data: PartyData) -> Array:
+	var creatures: Array = []
+	if party_data == null or party_data.id.is_empty():
+		return creatures
+	var registry := _ensure_monster_registry()
+	for row: Dictionary in CampaignRepository.get_trained_creatures_for_party(party_data.id):
+		var creature := TrainedCreatureData.from_db(row)
+		creature.monster_data = registry.get_monster(creature.species_id)
+		creatures.append(creature)
+	return creatures
 
 
 ## Phase 3: route foraging EventBus signals + a NotificationManager toast.

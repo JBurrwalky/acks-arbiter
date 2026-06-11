@@ -35,6 +35,17 @@ func _build() -> void:
 	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(hbox)
 
+	# Per-item icon (assets/icons/equipment_icons/<item_key>.png), 28×28.
+	var icon: Texture2D = CSTabEquipment.resolve_item_icon(_item)
+	if icon != null:
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = icon
+		icon_rect.custom_minimum_size = Vector2(28, 28)
+		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hbox.add_child(icon_rect)
+
 	var name_label := Label.new()
 	var qty: int = int(_item.get("quantity", 1))
 	var display_name: String = _item.get("name", "Unknown")

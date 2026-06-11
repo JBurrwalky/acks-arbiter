@@ -132,10 +132,33 @@ func setup_cache(cache_id: String, cache_data: Dictionary = {}) -> void:
 
 ## Refresh all item rows / capacity display. Called after any transfer.
 func refresh() -> void:
+	_reload_carrier_name()
 	_load_items()
 	_render_items()
 	_update_encumbrance()
 	_update_gold()
+	_update_header()
+
+
+## Re-reads the carrier's display name from the DB so a rename made elsewhere
+## (e.g. the Character tab's creature/vehicle detail panels) propagates to this
+## column header on the next refresh. Only the name is refreshed in-place; the
+## rest of `_carrier_data` (monster_data, hitched_creatures_data, capacity
+## inputs) is preserved so the transfer validator still receives complete data.
+## PC/henchman headers read fresh from the DB inside `_update_header`, so they
+## need no in-place reload here.
+func _reload_carrier_name() -> void:
+	match _variant:
+		Variant.CREATURE:
+			if _carrier_data != null:
+				var row: Dictionary = CampaignRepository.get_trained_creature(_carrier_id)
+				if not row.is_empty():
+					_carrier_data.name = str(row.get("name", _carrier_data.name))
+		Variant.VEHICLE:
+			if _carrier_data is Dictionary:
+				var row: Dictionary = CampaignRepository.get_draft_vehicle(_carrier_id)
+				if not row.is_empty():
+					_carrier_data["name"] = str(row.get("name", _carrier_data.get("name", "")))
 
 
 ## Filter display by category.

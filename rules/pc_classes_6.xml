@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Supplemental extraction from the ACKS Player's Companion (Jedidiah's licensed
+  PDF, Order #28817627), provided 2026-06-11 to fill two gaps in the original
+  pc_classes_1..5 extractions:
+    1. The Mystic class writeup (PC pp.30-31) was absent entirely.
+    2. The Warlock spell progression table and class proficiency list
+       (PC pp.46-48) — pc_classes_4.xml notes the source excerpt's progression
+       table was malformed; this file carries the verified values.
+  Same authority as the sibling pc_*.xml files: SACRED, never modify.
+-->
+<class_catalog title="ACKS Players Companion - Mystic + Warlock supplement" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Mystic">
+    <identity>
+      <name>Mystic</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>ACKS Players Companion pp.30-31</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>martial_artist</tag>
+        <tag>ascetic</tag>
+        <tag>unarmored_combatant</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>graceful_fighting</tag>
+        <tag>meditative_focus</tag>
+        <tag>immunities</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+        <ability>DEX</ability>
+        <ability>CON</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <entry_restrictions/>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter">Advances in attack throws and saving throws by two points every three levels of experience (the same progression as fighters).</attack_throw_progression>
+      <damage_bonus_progression family="fighter">Base damage from successful missile and melee attacks increases by +1 at 1st level and by an additional +1 at 3rd, 6th, 9th, and 12th level.</damage_bonus_progression>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Aspirant</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +2 hit points per level (9d6+2 at 10th through 9d6+10 at 14th). Hit point modifiers from Constitution are ignored after 9th level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>Attack throw starts at 10+ against an unarmored foe (AC 0) at 1st level.</rule>
+        <rule>May use any magic item usable by fighters.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None. May not wear armor.</armor>
+        <shields>May not use shields.</shields>
+        <weapons>
+          <rule>Permitted weapons: flail, longbow, pole arm, spear, dagger, sword, short sword, dart, staff, whip.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight wielding a weapon two-handed or wielding a weapon in each hand, as desired.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot wear armor or use shields.</restriction>
+      </restrictions>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="graceful_fighting" level="1">
+        <summary>Graceful fighting style focusing on fluidity and freedom of movement.</summary>
+        <rules>
+          <rule>So long as the mystic can move freely, he gains a +1 bonus to armor class at 1st level, and an additional +1 at 7th and 13th level.</rule>
+          <rule>May not wear armor and may not use shields.</rule>
+        </rules>
+      </ability>
+
+      <ability name="mindful" level="1">
+        <summary>Trained to be mindful of all things.</summary>
+        <rules>
+          <rule>+4 bonus on any proficiency throws to hear noises and detect secret doors.</rule>
+          <rule>With a proficiency throw of 18+ he can notice secret doors with just casual observation.</rule>
+          <rule>+1 bonus to avoid surprise.</rule>
+        </rules>
+      </ability>
+
+      <ability name="meditative_focus" level="1">
+        <summary>Enter a state of meditative focus with hyperaware body and mind.</summary>
+        <rules>
+          <rule>Entering into focus does not require an action.</rule>
+          <rule>While in focus, the mystic gains a +1 bonus to armor class, attack throws, proficiency throws, saving throws, and initiative rolls.</rule>
+          <rule>Meditative focus lasts for 1 turn (10 minutes).</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per day per level of experience.</limit>
+        </limits>
+      </ability>
+
+      <ability name="strength_of_spirit" level="2">
+        <summary>Immune to fear.</summary>
+        <rules>
+          <rule>Immune to normal and magical fear effects.</rule>
+        </rules>
+      </ability>
+
+      <ability name="speed_of_thought" level="3">
+        <summary>Near super-human speed of thought.</summary>
+        <rules>
+          <rule>+1 bonus to all initiative rolls and a further +1 bonus to surprise rolls.</rule>
+        </rules>
+      </ability>
+
+      <ability name="probability_trance" level="4">
+        <summary>Probability trance guiding actions toward favorable paths.</summary>
+        <procedure>
+          <step order="1">Spend 1 turn (10 minutes) of undisturbed meditation.</step>
+          <step order="2">Receive useful information regarding a question concerning a specific goal, event, or activity that is to occur within one week.</step>
+        </procedure>
+        <rules>
+          <rule>The future is ever-changing; if the mystic does not act on the information, it quickly becomes useless.</rule>
+          <rule>Base chance of a successful probability trance is 60%, +1% per level above 4th.</rule>
+        </rules>
+        <limits>
+          <limit>No more than once per day, with a night's rest required in between.</limit>
+        </limits>
+      </ability>
+
+      <ability name="purity_of_body_and_soul" level="5">
+        <summary>Immune to disease.</summary>
+        <rules>
+          <rule>Immune to all forms of disease, including magical diseases caused by spells, mummies, and lycanthropes.</rule>
+        </rules>
+      </ability>
+
+      <ability name="command_of_voice" level="6">
+        <summary>Command of voice that undisciplined minds find irresistible.</summary>
+        <rules>
+          <rule>+2 bonus to reaction rolls with creatures he speaks to.</rule>
+          <rule>If this bonus results in a total of 12 or more, the subjects act as if charmed while in his presence.</rule>
+          <rule>Creatures with a WIS greater than the mystic's CHA are immune to this power (and the mystic will know they are immune).</rule>
+        </rules>
+      </ability>
+
+      <ability name="wholeness_of_body" level="7">
+        <summary>Immune to poison.</summary>
+        <rules>
+          <rule>Immune to all forms of poison, including magical poisons.</rule>
+        </rules>
+      </ability>
+
+      <ability name="perception_of_intention" level="8">
+        <summary>Perceive intentions by detecting tiny variations in body language, vocal inflection, and nervous response.</summary>
+        <rules>
+          <rule>Always knows the exact reaction result (Hostile, Unfriendly, etc.) of creatures he interacts with, even if the creatures attempt to lie or conceal their reactions.</rule>
+          <rule>Creatures with a CHA greater than the mystic's WIS are immune to this power (and the mystic will know they are immune).</rule>
+        </rules>
+      </ability>
+
+      <ability name="monastery" level="9">
+        <summary>May establish a monastery and assume a place of temporal power.</summary>
+        <rules>
+          <rule>Up to 5d6x10 0th level soldiers and 1d6 mystics of 1st-3rd level will come to serve the Enlightened Master.</rule>
+          <rule>Followers are completely loyal (morale +4).</rule>
+          <rule>While in the mystic's service, followers must be provided food and lodging, but need not be paid wages.</rule>
+          <rule>Mystics' monasteries are otherwise identical to clerics' fortified churches, as detailed in the Campaign chapter of the ACKS Rulebook.</rule>
+        </rules>
+      </ability>
+
+      <ability name="harmony_of_spirit" level="10">
+        <summary>Lives in balance with the steady rhythms of the universe.</summary>
+        <rules>
+          <rule>+2 bonus to all saving throws.</rule>
+          <rule>These adjustments are already factored into the saving throws on the class table.</rule>
+        </rules>
+      </ability>
+
+      <ability name="perfection_of_body" level="14">
+        <summary>Ultimate perfection of body.</summary>
+        <rules>
+          <rule>His body becomes ageless, and he enjoys a lifespan three times longer than normal.</rule>
+          <rule>Immune to ghoul paralysis.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <proficiencies>
+      <rule>Mystic Proficiency List: Acrobatics, Arcane Dabbling, Beast Friendship, Blind Fighting, Climbing, Combat Trickery (force back, incapacitate, knock down, overrun, wrestle), Command, Contortionism, Eavesdropping, Endurance, Fighting Style, Illusion Resistance, Laying on Hands, Lip Reading, Passing Without Trace, Performance, Precise Shooting, Running, Skirmishing, Swashbuckling, Unarmed Fighting, Wakefulness, Weapon Finesse, Weapon Focus.</rule>
+    </proficiencies>
+
+    <level_progression>
+      <entry level="1"><xp_required>0</xp_required><title>Aspirant</title><hit_dice>1d6</hit_dice><damage_bonus>+1</damage_bonus><features_gained><feature_ref>graceful_fighting</feature_ref><feature_ref>meditative_focus</feature_ref><feature_ref>mindful</feature_ref></features_gained></entry>
+      <entry level="2"><xp_required>2,450</xp_required><title>Novice</title><hit_dice>2d6</hit_dice><damage_bonus>+1</damage_bonus><features_gained><feature_ref>strength_of_spirit</feature_ref></features_gained></entry>
+      <entry level="3"><xp_required>4,900</xp_required><title>Initiate</title><hit_dice>3d6</hit_dice><damage_bonus>+2</damage_bonus><features_gained><feature_ref>speed_of_thought</feature_ref></features_gained></entry>
+      <entry level="4"><xp_required>9,800</xp_required><title>Disciple</title><hit_dice>4d6</hit_dice><damage_bonus>+2</damage_bonus><features_gained><feature_ref>probability_trance</feature_ref></features_gained></entry>
+      <entry level="5"><xp_required>19,600</xp_required><title>Immaculate</title><hit_dice>5d6</hit_dice><damage_bonus>+2</damage_bonus><features_gained><feature_ref>purity_of_body_and_soul</feature_ref></features_gained></entry>
+      <entry level="6"><xp_required>39,200</xp_required><title>Preceptor</title><hit_dice>6d6</hit_dice><damage_bonus>+3</damage_bonus><features_gained><feature_ref>command_of_voice</feature_ref></features_gained></entry>
+      <entry level="7"><xp_required>80,000</xp_required><title>Master</title><hit_dice>7d6</hit_dice><damage_bonus>+3</damage_bonus><features_gained><feature_ref>wholeness_of_body</feature_ref></features_gained></entry>
+      <entry level="8"><xp_required>160,000</xp_required><title>Superior Master</title><hit_dice>8d6</hit_dice><damage_bonus>+3</damage_bonus><features_gained><feature_ref>perception_of_intention</feature_ref></features_gained></entry>
+      <entry level="9"><xp_required>280,000</xp_required><title>Enlightened Master</title><hit_dice>9d6</hit_dice><damage_bonus>+4</damage_bonus><features_gained><feature_ref>monastery</feature_ref></features_gained></entry>
+      <entry level="10"><xp_required>400,000</xp_required><title>Enlightened Master, 10th level</title><hit_dice>9d6+2</hit_dice><damage_bonus>+4</damage_bonus><features_gained><feature_ref>harmony_of_spirit</feature_ref></features_gained></entry>
+      <entry level="11"><xp_required>520,000</xp_required><title>Enlightened Master, 11th level</title><hit_dice>9d6+4</hit_dice><damage_bonus>+4</damage_bonus></entry>
+      <entry level="12"><xp_required>640,000</xp_required><title>Enlightened Master, 12th level</title><hit_dice>9d6+6</hit_dice><damage_bonus>+5</damage_bonus></entry>
+      <entry level="13"><xp_required>760,000</xp_required><title>Enlightened Master, 13th level</title><hit_dice>9d6+8</hit_dice><damage_bonus>+5</damage_bonus></entry>
+      <entry level="14"><xp_required>880,000</xp_required><title>Hierophant</title><hit_dice>9d6+10</hit_dice><damage_bonus>+5</damage_bonus><features_gained><feature_ref>perfection_of_body</feature_ref></features_gained></entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+          <column>attack_throw</column>
+        </columns>
+        <row><value name="level_range">1</value><value name="petrification_paralysis">15+</value><value name="poison_death">14+</value><value name="blast_breath">16+</value><value name="staffs_wands">16+</value><value name="spells">17+</value><value name="attack_throw">10+</value></row>
+        <row><value name="level_range">2-3</value><value name="petrification_paralysis">14+</value><value name="poison_death">13+</value><value name="blast_breath">15+</value><value name="staffs_wands">15+</value><value name="spells">16+</value><value name="attack_throw">9+</value></row>
+        <row><value name="level_range">4</value><value name="petrification_paralysis">13+</value><value name="poison_death">12+</value><value name="blast_breath">14+</value><value name="staffs_wands">14+</value><value name="spells">15+</value><value name="attack_throw">8+</value></row>
+        <row><value name="level_range">5-6</value><value name="petrification_paralysis">12+</value><value name="poison_death">11+</value><value name="blast_breath">13+</value><value name="staffs_wands">13+</value><value name="spells">14+</value><value name="attack_throw">7+</value></row>
+        <row><value name="level_range">7</value><value name="petrification_paralysis">11+</value><value name="poison_death">10+</value><value name="blast_breath">12+</value><value name="staffs_wands">12+</value><value name="spells">13+</value><value name="attack_throw">6+</value></row>
+        <row><value name="level_range">8-9</value><value name="petrification_paralysis">10+</value><value name="poison_death">9+</value><value name="blast_breath">11+</value><value name="staffs_wands">11+</value><value name="spells">12+</value><value name="attack_throw">5+</value></row>
+        <row><value name="level_range">10</value><value name="petrification_paralysis">7+</value><value name="poison_death">6+</value><value name="blast_breath">8+</value><value name="staffs_wands">8+</value><value name="spells">9+</value><value name="attack_throw">4+</value></row>
+        <row><value name="level_range">11-12</value><value name="petrification_paralysis">6+</value><value name="poison_death">5+</value><value name="blast_breath">7+</value><value name="staffs_wands">7+</value><value name="spells">8+</value><value name="attack_throw">3+</value></row>
+        <row><value name="level_range">13</value><value name="petrification_paralysis">5+</value><value name="poison_death">4+</value><value name="blast_breath">6+</value><value name="staffs_wands">6+</value><value name="spells">7+</value><value name="attack_throw">2+</value></row>
+        <row><value name="level_range">14</value><value name="petrification_paralysis">4+</value><value name="poison_death">3+</value><value name="blast_breath">5+</value><value name="staffs_wands">5+</value><value name="spells">6+</value><value name="attack_throw">1+</value></row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>monastery</structure_type>
+      <acquisition_rules>
+        <rule>Upon reaching 9th level (Enlightened Master), a mystic can establish a monastery and assume a place of temporal power in society.</rule>
+        <rule>Mystics' monasteries are otherwise identical to clerics' fortified churches.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="soldiers_0th_level" number="5d6x10"/>
+        <follower type="mystics_1st_to_3rd_level" number="1d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers are completely loyal (morale +4).</rule>
+        <rule>Followers must be provided food and lodging but need not be paid wages.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"/>
+      <general_rule_reference type="fighter_magic_items"/>
+      <general_rule_reference type="cleric_fortified_church"/>
+    </references>
+  </class>
+
+  <!-- Warlock supplement: the two pieces missing/malformed in pc_classes_4.xml.
+       The full Warlock class writeup remains in pc_classes_4.xml. -->
+  <class_supplement for="Warlock">
+    <identity>
+      <name>Warlock</name>
+      <source_label>ACKS Players Companion pp.46-48</source_label>
+    </identity>
+
+    <proficiencies>
+      <rule>Warlock Proficiency List: Alchemy, Battle Magic, Beast Friendship, Collegiate Wizardry, Contemplation, Craft, Diplomacy, Divine Blessing, Elementalism, Elven Bloodline, Engineering, Healing, Illusion Resistance, Knowledge, Language, Loremastery, Magical Engineering, Mapping, Mystic Aura, Naturalism, Performance, Prestidigitation, Profession, Quiet Magic, Sensing Power, Soothsaying, Transmogrification, Unflappable Casting.</rule>
+    </proficiencies>
+
+    <derived_tables>
+      <table name="spell_progression">
+        <note>Spells per day by warlock class level and spell level. Verified against the published table (PC p.48); resolves the malformed-excerpt caveat in pc_classes_4.xml. The printed level-9 special-abilities cell reads "Coven"; the body text uses "coterie".</note>
+        <columns>
+          <column>class_level</column>
+          <column>spell_level_1</column>
+          <column>spell_level_2</column>
+          <column>spell_level_3</column>
+          <column>spell_level_4</column>
+          <column>spell_level_5</column>
+        </columns>
+        <row><value name="class_level">1</value><value name="spell_level_1">1</value><value name="spell_level_2">-</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">2</value><value name="spell_level_1">1</value><value name="spell_level_2">-</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">3</value><value name="spell_level_1">2</value><value name="spell_level_2">-</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">4</value><value name="spell_level_1">2</value><value name="spell_level_2">1</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">5</value><value name="spell_level_1">2</value><value name="spell_level_2">1</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">6</value><value name="spell_level_1">2</value><value name="spell_level_2">2</value><value name="spell_level_3">-</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">7</value><value name="spell_level_1">2</value><value name="spell_level_2">2</value><value name="spell_level_3">1</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">8</value><value name="spell_level_1">2</value><value name="spell_level_2">2</value><value name="spell_level_3">1</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">9</value><value name="spell_level_1">2</value><value name="spell_level_2">2</value><value name="spell_level_3">2</value><value name="spell_level_4">-</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">10</value><value name="spell_level_1">3</value><value name="spell_level_2">2</value><value name="spell_level_3">2</value><value name="spell_level_4">1</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">11</value><value name="spell_level_1">3</value><value name="spell_level_2">2</value><value name="spell_level_3">2</value><value name="spell_level_4">1</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">12</value><value name="spell_level_1">3</value><value name="spell_level_2">3</value><value name="spell_level_3">2</value><value name="spell_level_4">2</value><value name="spell_level_5">-</value></row>
+        <row><value name="class_level">13</value><value name="spell_level_1">3</value><value name="spell_level_2">3</value><value name="spell_level_3">3</value><value name="spell_level_4">2</value><value name="spell_level_5">1</value></row>
+        <row><value name="class_level">14</value><value name="spell_level_1">3</value><value name="spell_level_2">3</value><value name="spell_level_3">3</value><value name="spell_level_4">2</value><value name="spell_level_5">1</value></row>
+      </table>
+    </derived_tables>
+  </class_supplement>
+</class_catalog>

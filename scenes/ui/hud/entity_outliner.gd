@@ -19,8 +19,26 @@ const FONT_SIZE := 11
 const HEADING_FONT_SIZE := 13
 const PANEL_WIDTH := 220
 
+## Background / infrastructure scheduler events that are NOT player-issued
+## orders and must never appear in the Orders pane. The stronghold construction
+## tick is a global daily heartbeat (owner "stronghold_global") that reschedules
+## itself every day — without this filter it shows as a perpetual "Stronghold
+## Construction" order that resets its 24h countdown forever. Add other global
+## heartbeats here as they surface.
+const BACKGROUND_EVENT_TYPES := ["stronghold_construction_daily_tick"]
+const BACKGROUND_OWNER_IDS := ["stronghold_global"]
+
+## How often (seconds) to repaint the live ETA countdowns. The scheduler clock
+## advances continuously while orders are pending; without a periodic repaint the
+## displayed ETAs freeze until the next order/event signal forces a rebuild.
+const ETA_REFRESH_INTERVAL := 0.5
+
 var _vbox: VBoxContainer = null
 var _entity_rows: Dictionary = {}  # { entity_id: HBoxContainer }
+## Live ETA tracking: { entity_id: {"label": Label, "fire_time": int} }. Used by
+## _process to repaint countdowns without rebuilding rows.
+var _eta_state: Dictionary = {}
+var _eta_refresh_accum: float = 0.0
 var _scheduler_ref: EventScheduler = null
 
 
@@ -78,6 +96,8 @@ func set_scheduler(scheduler: EventScheduler) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_order_queued(entity_id: String, event_type: String, fire_time: int) -> void:
+	if _is_background(entity_id, event_type):
+		return
 	_upsert_row(entity_id, event_type, fire_time)
 
 
@@ -89,6 +109,28 @@ func _on_order_cancelled(entity_id: String, event_type: String) -> void:
 func _on_event_resolved(event_type: String, _event_data: Dictionary) -> void:
 	# An event resolved — refresh to remove completed orders.
 	_refresh()
+
+
+# ---------------------------------------------------------------------------
+# Live countdown repaint
+# ---------------------------------------------------------------------------
+
+## Repaint each pending order's ETA against the live scheduler clock. Throttled
+## to ETA_REFRESH_INTERVAL so we don't recompute every frame. Without this the
+## displayed countdowns freeze between scheduler signals (the clock keeps
+## advancing, so a later signal makes them appear to "jump ahead").
+func _process(delta: float) -> void:
+	if _eta_state.is_empty() or not is_visible_in_tree():
+		return
+	_eta_refresh_accum += delta
+	if _eta_refresh_accum < ETA_REFRESH_INTERVAL:
+		return
+	_eta_refresh_accum = 0.0
+	for entity_id in _eta_state:
+		var entry: Dictionary = _eta_state[entity_id]
+		var label = entry.get("label")
+		if label is Label and is_instance_valid(label):
+			label.text = _format_eta(int(entry.get("fire_time", 0)))
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +171,7 @@ func _upsert_row(entity_id: String, activity: String, fire_time: int) -> void:
 
 	_vbox.add_child(row)
 	_entity_rows[entity_id] = row
+	_eta_state[entity_id] = {"label": eta_label, "fire_time": fire_time}
 
 
 func _remove_row(entity_id: String) -> void:
@@ -137,6 +180,7 @@ func _remove_row(entity_id: String) -> void:
 		if is_instance_valid(row):
 			row.queue_free()
 		_entity_rows.erase(entity_id)
+	_eta_state.erase(entity_id)
 
 
 ## Rebuild all rows from the current scheduler state.
@@ -148,13 +192,23 @@ func _refresh() -> void:
 	if _scheduler_ref == null:
 		return
 
-	# Group events by owner_id, show the earliest per owner.
+	# Group events by owner_id, show the earliest per owner. Background /
+	# infrastructure heartbeats (e.g. the global stronghold construction tick)
+	# are not player orders and are skipped entirely.
 	var seen: Dictionary = {}
 	for event in _scheduler_ref.get_all_events():
+		if _is_background(event.owner_id, event.event_type):
+			continue
 		if seen.has(event.owner_id):
 			continue
 		seen[event.owner_id] = true
 		_upsert_row(event.owner_id, event.event_type, event.fire_time)
+
+
+## True when an event is a background heartbeat rather than a player-issued
+## order, by either its owner_id or event_type. Such events are never shown.
+func _is_background(owner_id: String, event_type: String) -> bool:
+	return owner_id in BACKGROUND_OWNER_IDS or event_type in BACKGROUND_EVENT_TYPES
 
 
 # ---------------------------------------------------------------------------

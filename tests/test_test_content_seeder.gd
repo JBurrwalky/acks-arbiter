@@ -8,8 +8,8 @@ extends "res://tests/test_suite_base.gd"
 ##   * seed_legacy_ashford_vale produces the same content the inlined seeder
 ##     in SessionLoadState used to produce.
 ##   * Both seeders are idempotent at the campaign level.
-##   * All 118 Avalon lairs land on wilderness hexes (no civilized/borderlands
-##     placements bled through from the generator).
+##   * The seeder places NO lairs (eager lair seeding removed 2026-06-10 per
+##     gdd-lair-discovery.md §10 — lairs are placed lazily at runtime).
 
 
 const AVALON_CAMPAIGN := "test_seeder_avalon_campaign"
@@ -21,7 +21,6 @@ const LEGACY_MAP_ID := "test_region_001"
 func run_all_tests() -> void:
 	_cleanup_all()
 	test_avalon_seed_produces_expected_row_counts()
-	test_avalon_lairs_only_on_wilderness_hexes()
 	test_avalon_seed_idempotent()
 	test_legacy_seed_produces_expected_row_counts()
 	test_legacy_seed_idempotent()
@@ -60,38 +59,22 @@ func test_avalon_seed_produces_expected_row_counts() -> void:
 		"abstracted domains: expected 360")
 	check(_count("SELECT COUNT(*) AS n FROM domain_hexes WHERE map_id = ?", [AVALON_MAP_ID]) == 84,
 		"domain_hexes: expected 84")
-	check(_count("SELECT COUNT(*) AS n FROM lairs WHERE campaign_id = ?", [AVALON_CAMPAIGN]) == 118,
-		"lairs: expected 118")
+	# Lazy lair model (gdd-lair-discovery.md §10): world-gen places NO lairs.
+	check(_count("SELECT COUNT(*) AS n FROM lairs WHERE campaign_id = ?", [AVALON_CAMPAIGN]) == 0,
+		"lairs: expected 0 (eager seeding removed)")
 	print("  avalon_seed_produces_expected_row_counts: OK")
-
-
-func test_avalon_lairs_only_on_wilderness_hexes() -> void:
-	# Run on the same data the previous test seeded; if it short-circuits via
-	# the idempotency guard, the count is still correct.
-	if not _campaign_has_hex_map(AVALON_CAMPAIGN):
-		_make_campaign_row(AVALON_CAMPAIGN, "Avalon Seed Test")
-		TestContentSeeder.seed_avalon_test_campaign(AVALON_CAMPAIGN)
-	var non_wild: int = _count("""
-		SELECT COUNT(*) AS n
-		FROM lairs l
-		JOIN hex_cells c ON c.map_id = l.map_id AND c.q = l.hex_q AND c.r = l.hex_r
-		WHERE l.campaign_id = ? AND c.civilization != 'wilderness'
-	""", [AVALON_CAMPAIGN])
-	check(non_wild == 0,
-		"expected 0 non-wilderness lairs; got %d" % non_wild)
-	print("  avalon_lairs_only_on_wilderness_hexes: OK")
 
 
 func test_avalon_seed_idempotent() -> void:
 	if not _campaign_has_hex_map(AVALON_CAMPAIGN):
 		_make_campaign_row(AVALON_CAMPAIGN, "Avalon Seed Test")
 		TestContentSeeder.seed_avalon_test_campaign(AVALON_CAMPAIGN)
-	var before_lairs: int = _count("SELECT COUNT(*) AS n FROM lairs WHERE campaign_id = ?", [AVALON_CAMPAIGN])
+	var before_domains: int = _count("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ?", [AVALON_CAMPAIGN])
 	var ok := TestContentSeeder.seed_avalon_test_campaign(AVALON_CAMPAIGN)
 	check(ok, "second call returned false")
-	var after_lairs: int = _count("SELECT COUNT(*) AS n FROM lairs WHERE campaign_id = ?", [AVALON_CAMPAIGN])
-	check(before_lairs == after_lairs,
-		"second seed call mutated state: lairs %d → %d" % [before_lairs, after_lairs])
+	var after_domains: int = _count("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ?", [AVALON_CAMPAIGN])
+	check(before_domains == after_domains,
+		"second seed call mutated state: domains %d → %d" % [before_domains, after_domains])
 	print("  avalon_seed_idempotent: OK")
 
 

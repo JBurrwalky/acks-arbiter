@@ -29,6 +29,19 @@ func run_all_tests() -> void:
 	test_find_path_routes_around_impassable()
 	test_find_path_no_path_returns_empty()
 	test_find_path_target_impassable_returns_empty()
+	# River-edge crossing gate (2026-06-08 — rivers block land travel except
+	# at bridges/fords/ferries; boats not yet implemented)
+	test_can_cross_river_edge_no_river_allows()
+	test_can_move_to_blocked_by_uncrossable_river()
+	test_can_move_to_allowed_over_bridge()
+	test_move_party_blocked_by_river_does_not_move()
+	test_find_path_routes_around_river()
+	test_find_path_river_encircled_hex_unreachable()
+	test_find_path_reaches_hex_through_bridge_in_river_ring()
+	# Roads imply crossings (2026-06-08 Jedidiah ruling)
+	test_road_on_owner_side_implies_crossing()
+	test_road_on_neighbor_side_implies_crossing()
+	test_road_off_the_river_edge_does_not_imply_crossing()
 	# Party visibility bonus (Eyes of the Eagle V2 — 2026-06-03)
 	test_default_visibility_radius_is_one()
 	test_set_party_visibility_bonus_extends_radius_to_two()
@@ -268,6 +281,166 @@ func test_find_path_target_impassable_returns_empty() -> void:
 	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
 	check(path.is_empty(),
 		"path to an impassable goal should be empty; got %s" % str(path))
+	controller.free()
+
+
+# ---------------------------------------------------------------------------
+# River-edge crossing gate (added 2026-06-08)
+# ---------------------------------------------------------------------------
+#
+# Rivers run along hex EDGES. Until the boat system exists, a river edge whose
+# `crossing` is "none" blocks land movement between the two hexes it separates;
+# bridge/ford/ferry crossings remain passable (GDD §3.6.5). Edge index 2 (SE)
+# from (0,0) is the neighbour (1,0).
+
+func _add_river_edge(map: HexMapData, q: int, r: int, edge: int, crossing: String) -> void:
+	var e := HexRiverEdgeData.new()
+	e.hex_q = q
+	e.hex_r = r
+	e.edge = edge
+	e.crossing = crossing
+	map.river_edges.append(e)
+
+
+func test_can_cross_river_edge_no_river_allows() -> void:
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"no river on the shared edge → crossing allowed")
+	controller.free()
+
+
+func test_can_move_to_blocked_by_uncrossable_river() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(not controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"uncrossable river edge blocks crossing in both orientations")
+	check(not controller.can_cross_river_edge(Vector2i(1, 0), Vector2i(0, 0)),
+		"...including the reverse direction")
+	check(not controller.can_move_to(Vector2i(1, 0)),
+		"can_move_to must reject a step across an uncrossable river")
+	controller.free()
+
+
+func test_can_move_to_allowed_over_bridge() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_BRIDGE)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a bridge crossing is passable")
+	check(controller.can_move_to(Vector2i(1, 0)),
+		"can_move_to allows a step across a bridged river")
+	controller.free()
+
+
+func test_move_party_blocked_by_river_does_not_move() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)
+	controller.load_map(map)
+	check(controller.move_party(Vector2i(1, 0)) == false,
+		"move_party returns false across an uncrossable river")
+	check(map.party_hex == Vector2i(0, 0), "party stays put when the move is blocked")
+	controller.free()
+
+
+func test_find_path_routes_around_river() -> void:
+	# A single river edge between (0,0) and (1,0) must not strand the party —
+	# the pathfinder reaches (1,0) via a non-river edge and never takes the
+	# blocked direct step.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(not path.is_empty(), "a detour around one river edge should exist")
+	# The blocked direct step (0,0)→(1,0) must never appear consecutively.
+	for i in range(path.size() - 1):
+		var blocked := path[i] == Vector2i(0, 0) and path[i + 1] == Vector2i(1, 0)
+		check(not blocked, "path must not cross the (0,0)-(1,0) river edge directly: %s" % str(path))
+	controller.free()
+
+
+func test_find_path_river_encircled_hex_unreachable() -> void:
+	# Surround (2,0) with uncrossable river on all six edges → no land path in.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	for edge in range(6):
+		_add_river_edge(map, 2, 0, edge, HexRiverEdgeData.CROSSING_NONE)
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(path.is_empty(),
+		"a hex ringed by uncrossable rivers is unreachable on foot; got %s" % str(path))
+	controller.free()
+
+
+func _add_road(map: HexMapData, q: int, r: int, edge: int) -> void:
+	var terrain: HexTerrainData = map.get_hex(Vector2i(q, r))
+	if terrain == null:
+		return
+	if terrain.overlay == null:
+		terrain.overlay = HexOverlayData.new()
+	if not (edge in terrain.overlay.road_edges):
+		terrain.overlay.road_edges.append(edge)
+
+
+func test_road_on_owner_side_implies_crossing() -> void:
+	# River on (0,0)-(1,0) with NO authored crossing, but a road spoke on the
+	# owner side (edge 2 = SE) bridges it.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)
+	_add_road(map, 0, 0, 2)
+	controller.load_map(map)
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a road bridging the river edge (owner side) makes it crossable")
+	check(controller.can_move_to(Vector2i(1, 0)),
+		"can_move_to allows the road-bridged crossing")
+	controller.free()
+
+
+func test_road_on_neighbor_side_implies_crossing() -> void:
+	# Same river edge, but the road spoke is authored on the neighbour hex
+	# (1,0) edge 5 = NW, which points back at (0,0). Opposite-edge lookup must
+	# still recognise the crossing.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)
+	_add_road(map, 1, 0, 5)
+	controller.load_map(map)
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a road on the neighbour's side of the river edge also bridges it")
+	controller.free()
+
+
+func test_road_off_the_river_edge_does_not_imply_crossing() -> void:
+	# A road that touches a DIFFERENT edge of the hex must not make the river
+	# edge crossable.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_river_edge(map, 0, 0, 2, HexRiverEdgeData.CROSSING_NONE)  # (0,0)-(1,0)
+	_add_road(map, 0, 0, 0)  # road on the N edge, unrelated to the river
+	controller.load_map(map)
+	check(not controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a road on an unrelated edge does not bridge the river")
+	controller.free()
+
+
+func test_find_path_reaches_hex_through_bridge_in_river_ring() -> void:
+	# Same ring, but the (2,0)-(1,0) edge (index 5 = NW) is a bridge — the path
+	# must thread through it.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	for edge in range(6):
+		var crossing := HexRiverEdgeData.CROSSING_BRIDGE if edge == 5 else HexRiverEdgeData.CROSSING_NONE
+		_add_river_edge(map, 2, 0, edge, crossing)
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(not path.is_empty(), "the bridge in the river ring makes (2,0) reachable")
+	check(path[path.size() - 1] == Vector2i(2, 0), "path ends at the bridged hex")
 	controller.free()
 
 

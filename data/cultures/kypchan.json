@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "kypchan",
+      "catalog_number": 19,
+      "demonym": "Kypchan",
+      "toponym": "Kypcha",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        13,
+        17
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "taiga"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.75,
+      "defense": 0.6,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.45,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.5,
+      "collapse_proneness": 0.55,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.2
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.6,
+        "mercantile": 0.2,
+        "religious": 0.1,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "horse_archers",
+        "light_cavalry",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": -1.0,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0,
+        "self_interest": -0.5,
+        "civility": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "kypchan",
+    "phonemic_palette": "Mongol-Turkic backbone (vowel harmony; kh, gh, ch, sh, ng, q; -ai/-tai; agglutinative -chi/-khan) with a Slavic overlay (the sibilants, -ov/-ich patronymics, stanitsa/gorod settled register); theophoric on the Steppe morphs (Marakhai-, Tamendei-) with Slavic variants (Marakh-, Tulor-).",
+    "phenotype_notes": "Synthesis of Slavic + Steppe-Mongol per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Mongol Turkic + Slavic-Overlay",
+      "language_family": "steppe, slavic",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "freedom",
+        "strength",
+        "glory"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "showing weakness"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Slavic + Steppe-Mongol register; deity-morphs in name_bank 'kypchan'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "rugged",
+      "signature_feature": "timber halls of the Kypchan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 3,
+      "patron_powers": [
+        "war",
+        "storms",
+        "plunder"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Kypchan — wary clan confederation of the grassland; freedom, strength.",
+      "one_paragraph": "The Kypchan (Slavic + Steppe-Mongol) are a expansionist clan confederation people seeded in grassland, taiga. They prize freedom, strength, glory, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as wary; their patrons touch war, storms, plunder."
+    }
+  }
+}

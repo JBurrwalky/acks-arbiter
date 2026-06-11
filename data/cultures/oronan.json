@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "oronan",
+      "catalog_number": 22,
+      "demonym": "Oronan",
+      "toponym": "Oronoka",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        16
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral"
+      ],
+      "rigidity": 0.7
+    },
+    "terrain": {
+      "seed_biomes": [
+        "forest",
+        "dense forest",
+        "swamp"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.45,
+      "defense": 0.55,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.3,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.45,
+      "collapse_proneness": 0.45,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.3
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.45,
+        "mercantile": 0.2,
+        "religious": 0.2,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "light_infantry",
+        "archers",
+        "militia"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.0,
+        "in_group_loyalty": 1.0,
+        "expressiveness": 0.5,
+        "self_interest": 0.5,
+        "affective_compassion": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "oronan",
+    "phonemic_palette": "Mohawk-Iroquoian: NO labials (no p/b/m/f); consonants t k s h n r w y, ts, kw, hr, glottal stop '; vowels a e i o u with nasalization (en/on); long polysynthetic compounds; roots kanata (town), kanonhsa (longhouse), ononta (hill), kahyonha (river), ohwachira (clan).",
+    "phenotype_notes": "Features of the Woodland analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Woodland",
+      "language_family": "north_american",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "tradition",
+        "family",
+        "honor"
+      ],
+      "taboos": [
+        "defying the ancestors",
+        "kinslaying"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Woodland register; deity-morphs in name_bank 'oronan'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "rugged",
+      "signature_feature": "timber halls of the Oronan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "nature",
+        "harvest",
+        "war"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Oronan — wary clan confederation of the forest; tradition, family.",
+      "one_paragraph": "The Oronan (Woodland) are a defensive clan confederation people seeded in forest, dense forest, swamp. They prize tradition, family, honor, lean toward the military sphere, and field light_infantry, archers, militia. Outsiders are met as wary; their patrons touch nature, harvest, war."
+    }
+  }
+}

@@ -225,31 +225,54 @@ signal starvation_tick(character_id: String, hp_lost: int)
 ## of damage is rolled.
 signal dehydration_tick(character_id: String, hp_lost: int)
 
-## A wilderness lair was discovered (Phase 4, 2026-05-04). Per
-## le_wilderness_lair_rules.xml — fires when an undiscovered lair record's
-## `discovered` flag flips to 1, regardless of the discovery method
-## (deliberate search, passive travel-leg spotting, or aerial recon).
+## A wilderness lair was PLACED (gdd-lair-discovery.md §9, 2026-06-10 —
+## replaces the v1 `lair_discovered`: in the lazy model placement IS
+## discovery). Fires when the Lair Generator places a lair record via a
+## wandering-encounter substitution (§3.2) or a successful dedicated search
+## (§5.3). Listeners: NotificationManager toast, hex map renderer
+## (re-tooltip), Status Bar, context-menu builder (Enter Lair button),
+## Notebook history.
 ## [param result] keys:
-##   lair_id:      String
-##   hex_q, hex_r: int
+##   lair_id:       String
+##   hex_q, hex_r:  int
+##   monster_group: String — catalog creature_id of the occupant
+##   monster_count: int    — stub: top-level lair-population units
+##   via:           String — "wandering_substitution" | "search"
+##   round:         int    — game-round of placement
+signal lair_placed(party_id: String, result: Dictionary)
+
+## A placed lair was cleared (gdd-lair-discovery.md §3.4 / §9, 2026-06-10).
+## Fired by WildernessHandlers.mark_lair_cleared once combat resolution +
+## the party-action handler stamp cleared_at_round. Cleared lairs hold their
+## budget slot permanently in v1. Listeners: NotificationManager toast, hex
+## map renderer, Status Bar, context-menu builder (re-build — may now expose
+## Build Stronghold), Notebook history.
+## [param result] keys:
+##   lair_id:       String
+##   hex_q, hex_r:  int
 ##   monster_group: String
-##   via:           String — "search" | "passive" | "encounter" | "aerial"
-##   round:         int    — game-round of discovery
-signal lair_discovered(party_id: String, result: Dictionary)
+##   round:         int — game-round of clearing
+signal lair_cleared(party_id: String, result: Dictionary)
 
 ## A wilderness POI was discovered (Phase 4 schema; resolver wiring in a
 ## later phase that integrates gdd-poi-generation.md). Listeners: hex map
 ## renderer (marker), Notebook (history), NotificationManager (toast).
 signal poi_discovered(party_id: String, result: Dictionary)
 
-## A Land Surveying assessment was resolved (Phase 4, 2026-05-04). Fires
-## whether the assessment succeeded, failed, or returned a false reading
-## from a natural 1.
+## A Land Surveying assessment was resolved. Fires whether the assessment
+## succeeded, failed, or returned a false reading from a natural 1.
+## (Payload updated 2026-06-10 per gdd-lair-discovery.md §9.)
 ## [param result] keys:
-##   surveyor_id, surveyor_name: String
-##   roll, target, search_bonus: int
-##   succeeded, natural_one:     bool
-##   estimate, estimate_correct: int / bool — `-1` when no estimate produced
+##   surveyor_id, surveyor_name:   String
+##   roll, target, search_bonus:   int
+##   succeeded, natural_one:       bool
+##   estimate, estimate_correct:   int / bool — `-1` when no estimate produced
+##   displayed_total:              int  — value shown to the player (the true
+##                                  budget on success, the false value on an
+##                                  unmodified-1); -1 when nothing revealed
+##   was_false_reading:            bool — debug overlays only; never surfaced
+##                                  to the player
+##   hex_q, hex_r:                 int
 signal survey_completed(party_id: String, result: Dictionary)
 
 ## A wilderness encounter triggered and is awaiting a player decision
@@ -311,6 +334,21 @@ signal specialist_dismissed(party_id: String, data: Dictionary)
 ## [param summary] keys: total_deducted_gp, unpaid_specialists,
 ## dismissed_specialists.
 signal specialist_wages_processed(party_id: String, summary: Dictionary)
+
+## A specialist service was commissioned at a settlement guild
+## (gdd-specialists.md §5, dual-path 2026-06-11). The specialist does NOT
+## join the party; the work completes at completes_at_round and is collected
+## in the origin settlement. Listeners: Specialists tab, GameLog, toast.
+## [param data] keys: commission_id, kind, service_id, service_label,
+## subject, settlement_id, cost_cp, completes_at_round.
+signal specialist_commissioned(party_id: String, data: Dictionary)
+
+## A completed specialist commission was collected (gdd-specialists.md §5.1
+## step 4). Deliverable already granted (report shown + journaled, or item
+## added to inventory). Listeners: Specialists tab, GameLog, toast, Journal.
+## [param data] keys: commission_id, kind, service_id, service_label,
+## subject, settlement_id, result_kind ("report"|"item"), result_payload.
+signal specialist_commission_collected(party_id: String, data: Dictionary)
 
 ## Weather rolled over on the wilderness_day_tick for [param party_id]'s
 ## current hex. Phase 2 of the wilderness closure roadmap.

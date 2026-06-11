@@ -3,7 +3,7 @@ extends "res://tests/test_suite_base.gd"
 ## Tests for the wealth-target sanity sweep (gdd-class-templates.md §5.1, §10
 ## step 8). Validates the band-target math, that the importer's stored
 ## resolved_gp_value matches what the runtime EquipmentCatalog computes (drift
-## guard), the sweep covers all 216 templates, and the flagged-deviation set
+## guard), the sweep covers all 224 templates, and the flagged-deviation set
 ## matches the reviewed expectation (so a NEW deviation introduced by a future
 ## override / catalog change surfaces loudly).
 
@@ -15,6 +15,11 @@ extends "res://tests/test_suite_base.gd"
 #       zero for "100gp" — now patched in the importer (RAW_TEMPLATE_PATCHES, §7.4.6).
 # Every in-scope template now sits within 40% of its band target. Update this set
 # only alongside a deliberate catalog / override / RAW-patch change.
+# (2026-06-11: the Mystic moved in-scope at 224 templates. Its Cultist band
+# initially flagged at -66% — the common driver was un-priced poison doses; the
+# importer now prices venoms/toxins from data/equipment/poisons.json, which put
+# the Cultist AND the two pre-existing poison carriers (assassin_13_14,
+# dwarven_delver_15_16) within ~8% of target. The set stays empty.)
 const EXPECTED_FLAGGED: Array = []
 
 var _repo: ClassTemplateRepository
@@ -41,8 +46,8 @@ func test_band_targets() -> void:
 
 func test_sweep_covers_all() -> void:
 	var result := TemplateWealthSweep.sweep(_repo)
-	check((result["entries"] as Array).size() == 216,
-		"sweep should cover all 216 templates, got %d" % (result["entries"] as Array).size())
+	check((result["entries"] as Array).size() == 224,
+		"sweep should cover all 224 templates, got %d" % (result["entries"] as Array).size())
 
 
 func test_recompute_matches_stored() -> void:

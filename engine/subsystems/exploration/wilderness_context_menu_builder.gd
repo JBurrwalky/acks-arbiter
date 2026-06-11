@@ -89,14 +89,24 @@ static func build_menu(
 		"category": "universal",
 		"action_data": _action(base_data, "wilderness_explore_hex"),
 	})
-	options.append({
-		"id": "build_stronghold",
-		"label": "Build Stronghold",
-		"enabled": activity_enabled,
-		"tooltip": "",
-		"category": "universal",
-		"action_data": _action(base_data, "wilderness_build_stronghold"),
-	})
+	# Build Stronghold gating (gdd-lair-discovery.md §7, per
+	# le_wilderness_lair_rules.xml §securing_land.hex_definition L31 and the
+	# 2026-06-10 ruling): the entry is HIDDEN entirely — not greyed — until
+	# the hex has been Surveyed AND every lair the survey accounted for is
+	# cleared. The player learns the gate by doing the securing-land work
+	# and seeing the option appear.
+	var lair_campaign_id: String = GameState.campaign_id if typeof(GameState) != TYPE_NIL else ""
+	var lair_map_id: String = map_data.id if map_data != null else ""
+	if HexLairState.is_stronghold_buildable(
+			lair_campaign_id, lair_map_id, target_hex.x, target_hex.y):
+		options.append({
+			"id": "build_stronghold",
+			"label": "Build Stronghold",
+			"enabled": activity_enabled,
+			"tooltip": "",
+			"category": "universal",
+			"action_data": _action(base_data, "wilderness_build_stronghold"),
+		})
 	options.append({
 		"id": "place_loot_cache",
 		"label": "Place Loot Cache",
@@ -151,6 +161,14 @@ static func build_menu(
 		"action_data": _action(base_data, "wilderness_hunt"),
 	})
 
+	# Enter {Type} Lair buttons (gdd-lair-discovery.md §6.2) — one per placed
+	# lair in the hex, in creation order. Same-type duplicates get a stable
+	# 1..N ordinal that survives clearing (no label thrash). Cleared lairs
+	# get a visually-distinct "Re-enter ... (cleared)" variant.
+	for lair_option in _build_enter_lair_options(
+			lair_campaign_id, lair_map_id, target_hex, activity_enabled):
+		options.append(lair_option)
+
 	options.append({
 		"id": "cancel",
 		"label": "Cancel",
@@ -161,6 +179,67 @@ static func build_menu(
 	})
 
 	return options
+
+
+## Builds the per-lair Enter/Re-enter options for [param target_hex] per
+## gdd-lair-discovery.md §6.2. Returns [] when the hex has no placed lairs
+## (or no campaign/map context — unit-test fixtures without a DB).
+static func _build_enter_lair_options(
+	campaign_id: String,
+	map_id: String,
+	target_hex: Vector2i,
+	activity_enabled: bool,
+) -> Array[Dictionary]:
+	var lair_options: Array[Dictionary] = []
+	if campaign_id.is_empty() or map_id.is_empty():
+		return lair_options
+	var rows: Array = CampaignRepository.get_lairs_in_hex(
+		campaign_id, map_id, target_hex.x, target_hex.y)
+	if rows.is_empty():
+		return lair_options
+
+	# Stable ordinals: position among same-type lairs in creation order
+	# (get_lairs_in_hex orders by created_at_round, lair_id). Cleared lairs
+	# keep their number, so "Goblin Lair 2" stays 2 after 1 is cleared.
+	var type_totals: Dictionary = {}
+	for row: Dictionary in rows:
+		var mg: String = String(row.get("monster_group", ""))
+		type_totals[mg] = int(type_totals.get(mg, 0)) + 1
+	var type_ordinals: Dictionary = {}
+
+	for row: Dictionary in rows:
+		var mg: String = String(row.get("monster_group", ""))
+		type_ordinals[mg] = int(type_ordinals.get(mg, 0)) + 1
+		var type_label: String = mg.capitalize() if not mg.is_empty() else "Monster"
+		var name_core: String = "%s Lair" % type_label
+		if int(type_totals.get(mg, 0)) > 1:
+			name_core += " %d" % int(type_ordinals[mg])
+		var is_cleared: bool = row.get("cleared_at_round") != null
+		var label: String
+		var tooltip: String
+		if is_cleared:
+			label = "Re-enter %s (cleared)" % name_core
+			tooltip = "This lair has been cleared. Re-enter the empty site."
+		else:
+			label = "Enter %s" % name_core
+			tooltip = "Enter the lair as a dungeon."
+		var lair_id: String = String(row.get("lair_id", ""))
+		var data := {
+			"hex_q": target_hex.x,
+			"hex_r": target_hex.y,
+			"lair_id": lair_id,
+			"action_type": "wilderness_enter_lair",
+		}
+		lair_options.append({
+			"id": "enter_lair_%s" % lair_id,
+			"label": label,
+			"enabled": activity_enabled,
+			"tooltip": tooltip,
+			"category": "lair",
+			"cleared": is_cleared,
+			"action_data": data,
+		})
+	return lair_options
 
 
 static func _action(base: Dictionary, action_type: String) -> Dictionary:

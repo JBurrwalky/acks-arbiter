@@ -702,6 +702,14 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_wilderness_global_handlers = WildernessHandlers.new(self)
 	_wilderness_global_handlers.register_global(_handler_registry)
 
+	# 7b-ii. Specialist payday (gdd-specialists.md §6.3): retained-specialist
+	#     wages debit on every calendar month boundary, for every party in the
+	#     campaign with active specialists. (Henchman payday remains unwired
+	#     project-wide — flagged in the GDD §10; this listener is the natural
+	#     future home for it.)
+	if not Timekeeping.month_changed.is_connected(_on_specialist_payday):
+		Timekeeping.month_changed.connect(_on_specialist_payday)
+
 	# 7c. Register global spell handlers (Session 3, 2026-05-05). Owns the
 	#     spell_cast_complete sentinel and spell_cast_encounter_check one-off
 	#     scheduled by OutOfCombatCastFlow after every successful cast.
@@ -875,6 +883,29 @@ func save_session() -> void:
 	EventBus.campaign_saved.emit(_campaign_id)
 
 
+## Specialist payday (gdd-specialists.md §6.3). Fires on every calendar
+## month boundary while a session is loaded: processes retained-specialist
+## wages for every party in the campaign that has active specialists.
+## Employer (the purse the wages draw against, v1 of payroll attribution) =
+## the party's first listed member.
+func _on_specialist_payday(_new_month: int, _new_year: int) -> void:
+	var campaign_id: String = get_campaign_id()
+	if campaign_id.is_empty():
+		return
+	var manager := SpecialistHireManager.new(CampaignRepository, EventBus)
+	for party_row: Dictionary in CampaignRepository.list_parties_for_campaign(campaign_id):
+		var pid: String = str(party_row.get("id", ""))
+		if pid.is_empty():
+			continue
+		if CampaignRepository.list_active_specialists(campaign_id, pid).is_empty():
+			continue
+		var employer_id: String = ""
+		var members: Array = CampaignRepository.list_party_characters(pid)
+		if not members.is_empty():
+			employer_id = str(members[0].get("id", ""))
+		manager.process_monthly_wages(pid, employer_id, Timekeeping.get_party_time(pid))
+
+
 ## Ends the current session: saves, disconnects, resets.
 func end_session() -> void:
 	cancel_pending_roll()
@@ -899,6 +930,8 @@ func end_session() -> void:
 	if _wilderness_global_handlers != null:
 		_wilderness_global_handlers.unregister_global(_handler_registry)
 		_wilderness_global_handlers = null
+	if Timekeeping.month_changed.is_connected(_on_specialist_payday):
+		Timekeeping.month_changed.disconnect(_on_specialist_payday)
 	if _spell_handlers != null:
 		_spell_handlers.unregister(_handler_registry)
 		_spell_handlers = null

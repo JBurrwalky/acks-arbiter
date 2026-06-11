@@ -18,8 +18,11 @@ var name: String = ""
 var quantity: int = 1
 var encumbrance_units: int = 0      # weight in 1/1000-stone units
 var slot: String = "pack"
-	# "hands_main"|"hands_off"|"body"|"head"|"belt"|"feet"|"hands_worn"|"cloak"
-	# |"accessory_1"–"accessory_5"|"pack"|"mount"
+	# Paper-doll slots (gdd-character-tab.md §3.4, migration 151):
+	# "hands_main"|"hands_off"|"head"|"neck"|"arms"|"armor"|"torso_clothing"
+	# |"legs_clothing"|"belt"|"feet"|"hands_worn"|"cloak"|"ring_l"|"ring_r"|"quiver"
+	# |"pack"|"mount". Legacy: "body" (now creature barding only),
+	# "accessory_1"–"accessory_5" (retained for back-compat; not in the UI).
 var is_equipped: bool = false
 var notes: String = ""
 
@@ -74,6 +77,16 @@ var is_trapped: bool = false
 ## contents). For non-container items the flag is meaningless and stays false.
 var is_extradimensional: bool = false
 
+## Consumable depletion state — migration 149 (provisions system,
+## gdd-rations-foodstuffs.md). Person-days of the consumable currently left in
+## this row. -1 = uninitialized: the ProvisionsLedger treats an uninitialized
+## food / water / fodder row as FULL (quantity x catalog.consumable_person_days).
+## Food / fodder rows are deleted at 0 (eaten); water containers persist empty
+## at 0 (refilled at a source). -1 for non-consumables. Distinct from
+## uses_remaining (torch turns / scroll charges) so the two depletion concepts
+## never collide.
+var consumable_units_remaining: int = -1
+
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
 var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
@@ -113,6 +126,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.is_locked = data.get("is_locked", 0) == 1
 	i.is_trapped = data.get("is_trapped", 0) == 1
 	i.is_extradimensional = data.get("is_extradimensional", 0) == 1
+	i.consumable_units_remaining = int(data.get("consumable_units_remaining", -1))
 	return i
 
 
@@ -145,6 +159,7 @@ func to_dict() -> Dictionary:
 		"is_locked": 1 if is_locked else 0,
 		"is_trapped": 1 if is_trapped else 0,
 		"is_extradimensional": 1 if is_extradimensional else 0,
+		"consumable_units_remaining": consumable_units_remaining,
 	}
 
 

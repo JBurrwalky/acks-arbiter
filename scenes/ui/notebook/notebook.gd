@@ -30,6 +30,7 @@ const TAB_PAGE_SCRIPTS := {
 	"inventory": preload("res://scenes/ui/notebook/tab_pages/inventory_tab_page.gd"),
 	"party":     preload("res://scenes/ui/notebook/tab_pages/party_tab_page.gd"),
 	"henchmen":  preload("res://scenes/ui/notebook/tab_pages/henchmen_tab_page.gd"),
+	"specialists": preload("res://scenes/ui/notebook/tab_pages/specialists_tab_page.gd"),
 	"troops":    preload("res://scenes/ui/notebook/tab_pages/troops_tab_page.gd"),
 	"domain":    preload("res://scenes/ui/notebook/tab_pages/domain_tab_page.gd"),
 	"journal":   preload("res://scenes/ui/notebook/tab_pages/journal_tab_page.gd"),

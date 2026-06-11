@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "khordurn",
+      "catalog_number": 51,
+      "demonym": "Khordurn",
+      "toponym": "Khorgrund",
+      "tier": "demihuman",
+      "race": "dwarf",
+      "civ_or_clan": "civ",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.3,
+        "Neutral": 0.6,
+        "Chaotic": 0.1
+      },
+      "rigidity": 0.75
+    },
+    "terrain": {
+      "seed_biomes": [
+        "mountains"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.45,
+      "defense": 0.9,
+      "size_exponent_bias": -0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_in_my_seed_biome",
+          "set": 0.85
+        },
+        {
+          "when": "target_is_demihuman",
+          "set": 0.9
+        },
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.8,
+      "end_state": "enclave"
+    },
+    "infrastructure": {
+      "road_propensity": 0.55
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.35,
+        "mercantile": 0.35,
+        "religious": 0.2,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "crossbowmen",
+        "pikemen"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.5,
+        "in_group_loyalty": 1.5,
+        "self_interest": 1.0,
+        "stress_reactivity": -0.5,
+        "civility": -0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "khordurn",
+    "phonemic_palette": "Khordurn (Durnkad central dialect): hard consonant frames (k/g/d/t/b/p, clusters dr/br/gr/kr/thr/rd/rg/rk/nd, geminates kk/gg/dd/mm/nn) around soft open vowels (a/o/u, some e/i); short, heavy CVC syllables with initial stress - rhythmic, like hammer-strokes, the soft vowels rolling a lilt between the hard beats.",
+    "phenotype_notes": "Features of the Dwarf analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Khordurn",
+      "language_family": "dwarven",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "honor",
+        "tradition",
+        "wealth"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "defying the ancestors"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "respected",
+      "notes": "Dwarf register; deity-morphs in name_bank 'khordurn'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone halls of the Khordurn"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 5,
+      "patron_powers": [
+        "mountains",
+        "war",
+        "trade"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Khordurn — wary clan confederation of the mountains (not glacial/volcanic); honor, tradition.",
+      "one_paragraph": "The Khordurn (Dwarf) are a defensive clan confederation people seeded in mountains (not glacial/volcanic). They prize honor, tradition, wealth, lean toward the military sphere, and field heavy_infantry, crossbowmen, pikemen. Outsiders are met as wary; their patrons touch mountains, war, trade."
+    }
+  }
+}

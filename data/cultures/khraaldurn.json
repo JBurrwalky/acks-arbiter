@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "khraaldurn",
+      "catalog_number": 53,
+      "demonym": "Khraaldurn",
+      "toponym": "Khraalgrund",
+      "tier": "demihuman",
+      "race": "dwarf",
+      "civ_or_clan": "civ",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.1,
+        "Neutral": 0.8,
+        "Chaotic": 0.1
+      },
+      "rigidity": 0.75
+    },
+    "terrain": {
+      "seed_biomes": [
+        "glacial mountains",
+        "tundra hills"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.4,
+      "defense": 0.9,
+      "size_exponent_bias": -0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_in_my_seed_biome",
+          "set": 0.85
+        },
+        {
+          "when": "target_is_demihuman",
+          "set": 0.9
+        },
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.75,
+      "collapse_proneness": 0.7,
+      "end_state": "enclave"
+    },
+    "infrastructure": {
+      "road_propensity": 0.4
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.35,
+        "mercantile": 0.25,
+        "religious": 0.25,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "crossbowmen",
+        "pikemen"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "stress_reactivity": -1.5,
+        "societal_orthodoxy": 1.5,
+        "in_group_loyalty": 1.0,
+        "self_interest": 1.0,
+        "civility": -0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "khraaldurn",
+    "phonemic_palette": "Khraaldurn (Durnkad frost-dialect): the shared hard-frame/soft-vowel/short-syllable Durnkad, with the frost-dialect drift - root vowels DRAW OUT and round (-un -> -uun, a -> aa, o -> oo) and final stops soften a touch, a slow, cold, rolling weight. The common-word stock is the shared Durnkad (one tongue); the lengthening shows in speech and in the marked forms (titles, deities, the realm's own name).",
+    "phenotype_notes": "Features of the Dwarf analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Khraaldurn",
+      "language_family": "dwarven",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "tradition",
+        "honor",
+        "family"
+      ],
+      "taboos": [
+        "defying the ancestors",
+        "breaking a sworn oath"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered",
+      "notes": "Dwarf register; deity-morphs in name_bank 'khraaldurn'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone halls of the Khraaldurn"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "mountains",
+        "night",
+        "death"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Khraaldurn — wary clan confederation of the glacial mountains; tradition, honor.",
+      "one_paragraph": "The Khraaldurn (Dwarf) are a defensive clan confederation people seeded in glacial mountains, tundra hills. They prize tradition, honor, family, lean toward the military sphere, and field heavy_infantry, crossbowmen, pikemen. Outsiders are met as wary; their patrons touch mountains, night, death."
+    }
+  }
+}

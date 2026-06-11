@@ -335,6 +335,8 @@ Two passes, both BFS.
 
 After layout generation for each floor, run BFS from the floor's entrance cell (for the entrance floor) or from each stair cell (for non-entrance floors), treating every door cell as **passable regardless of type or state**. Every passable cell with a `room_id` must be reachable. If any room is unreachable, the layout is invalid; retry up to 3 times before applying post-hoc carving: identify the disconnected room(s) and carve a 2-cell-wide corridor from each one to the nearest reachable corridor/room. Re-run BFS to confirm. If the post-hoc carving still leaves anything unreachable (this is essentially impossible given the algorithm), abort generation and log the seed as ungenerable.
 
+**Status (2026-06-10):** the post-hoc carving is implemented as `DungeonGeneratorV1._carve_unreachable_rooms` — an L-shaped 2-cell-wide carve from each disconnected room to the nearest reachable cell, looped until the floor is connected (bounded by room count). It runs only after the 3 layout retries fail, replacing the earlier warn-and-continue behavior that shipped structurally disconnected floors no downstream retry could repair.
+
 This is a structural check: it confirms the layout's connectivity graph is sound before the key/lever puzzle layer is applied.
 
 ### 9.2 Solvability navigability (post-key-placement and stocking)
@@ -378,29 +380,24 @@ Door material and type are determined by the layout GDD §8 + the new §8.3 mate
 
 Wooden locked doors are not in this list: per `gdd-dungeon-map-ui.md` §4.2.1, any wooden door can be bashed by a party member carrying an axe (1 turn). Wooden locked doors do not need keys placed (though §10.6 may still place one in stocking if a natural opportunity arises). They have `door_state = "locked"` initially; the player can either find a matching key (if rolled in stocking inventory) or bash.
 
-Locked+Secret doors created by §11.4's trap-placeholder fallback are processed the same way — if the underlying material is iron/stone they go into the LockedDoor list; if wood, they remain bash-able. The is_secret overlay does not affect key placement logic.
+Locked+Secret doors created by §11.4's trap-placeholder fallback are processed the same way, with one refinement (implemented; supersedes the original "is_secret does not affect key placement" wording): a secret Locked/Trapped door **always** receives a key regardless of material. The §9.2 solvability model blocks on `is_secret` even for wood (the player must Search before bashing is an option), so a keyless secret wood door would read as permanently blocking; the key guarantees the fixed-point BFS can resolve it (Search, then key).
 
-### 10.2 Outside-region computation per door
+### 10.2 Key/lever region — discovery-order placement (rev 2026-06-10)
 
-For each `LockedDoor` and `PortcullisDoor`, compute its **outside region**:
+**Superseded approach (pre-2026-06-10):** a per-door "outside region" BFS that blocked only the door in question and treated **all other locked doors as passable**. That model had a correctness hole — key A could be placed behind locked door B while key B sat behind door A (a circular dependency the §9.2 fixed-point BFS correctly rejects but placement could not avoid; observed in ~15-20% of multi-floor attempts, where it burned the full stocking/dungeon retry budget) — and a cost problem (one multi-floor BFS **per gated door** was ~90% of total generation CPU; worst observed: 47 s for a 6-floor medium dungeon).
 
-```
-outside_region(door):
-    Run BFS from the dungeon entrance cell across all floors with this single door
-    treated as PERMANENTLY BLOCKED. All other doors are treated as passable for this
-    BFS (the question is "where can the player reach in the absence of this one door's
-    key/lever?"). Secret doors are also treated as passable for this BFS — we assume
-    the player will eventually find them.
-    Return the set of cells visited.
-```
+**Current approach:** one multi-floor fixpoint BFS from the dungeon entrance, using the **same door-passability model as §9.2 solvability**. When the frontier reaches a gated door (Locked/Trapped iron-stone, any secret Locked/Trapped, or a Portcullis), its key/lever is placed immediately in a room that is **already fully discovered**, the door becomes passable, and the BFS continues. Because every key/lever lands in a region provably reachable before its door opens, the placement graph is a dependency DAG by construction — circular key dependencies are impossible, and the §9.2 acceptance pass succeeds for the door layer on the first attempt. Cost is one BFS total (measured: 1745 ms → 45 ms on the 3-floor-medium reference seed).
 
-If the door is "before" any junction on the entrance path, its outside region may be empty or contain only the entrance cell. This is the trap case (§10.4).
+Two repair rules ride on the same pass:
+
+- A gated door reached before **any** room has been fully discovered sits on the sole entrance path — the §10.4 downgrade applies (first such door only; the BFS then re-drains, since the opened door may reveal candidate rooms for the rest).
+- If the fixpoint completes with a stair or room still unreached, and a frontier **secret+unlocked** door is what blocks it (such doors carry no key and are model-impassable), that door's `is_secret` flag is cleared — §10.4's philosophy applied to the one door class the key system cannot otherwise resolve. Secret doors guarding pockets the BFS reached another way are never touched, so optional secret content survives.
 
 ### 10.3 Key/lever room selection
 
-For each door with a non-trivial outside region:
+For each gated door, when the frontier reaches it:
 
-1. Enumerate rooms whose cells lie entirely within the outside region (i.e., rooms reachable without the door).
+1. Enumerate rooms whose cells have all been discovered (i.e., rooms fully reachable without the door — the discovery-order equivalent of "entirely within the outside region").
 2. Filter out the dungeon entrance room (keys/levers in the entrance room would be too obvious).
 3. Weight remaining rooms by floor — prefer placing the key on the same floor as the door (weight 5), then on an adjacent floor (weight 2), then on a more distant floor (weight 1).
 4. Randomly select one room from the weighted candidates.

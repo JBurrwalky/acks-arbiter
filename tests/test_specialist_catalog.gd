@@ -23,10 +23,13 @@ func run_all_tests() -> void:
 
 
 func test_list_kinds_returns_pathfinder_and_land_surveyor() -> void:
+	# v2 dual-path (gdd-specialists.md §4, 2026-06-11): scouts + sage + alchemist.
 	var kinds := SpecialistCatalog.list_kinds()
-	check(kinds.size() == 2, "v1 has 2 specialist kinds; got %d" % kinds.size())
+	check(kinds.size() == 4, "v2 has 4 specialist kinds; got %d" % kinds.size())
 	check("pathfinder" in kinds, "pathfinder kind present")
 	check("land_surveyor" in kinds, "land_surveyor kind present")
+	check("sage" in kinds, "sage kind present")
+	check("alchemist" in kinds, "alchemist kind present")
 
 
 func test_pathfinder_wage_25gp() -> void:
@@ -70,11 +73,13 @@ func test_land_surveyor_bonuses() -> void:
 
 
 func test_unknown_kind_returns_safe_defaults() -> void:
-	check(not SpecialistCatalog.is_known_kind("alchemist"),
-		"alchemist is not a v1 wilderness specialist")
-	check(SpecialistCatalog.monthly_wage_cp("alchemist") == 0,
+	# "alchemist" became a real kind in v2 (dual-path) — probe with a kind
+	# that stays unknown.
+	check(not SpecialistCatalog.is_known_kind("astrologer"),
+		"astrologer is not a defined specialist kind")
+	check(SpecialistCatalog.monthly_wage_cp("astrologer") == 0,
 		"unknown kind wage = 0")
-	check(SpecialistCatalog.bonus_for_resolver("alchemist",
+	check(SpecialistCatalog.bonus_for_resolver("astrologer",
 		SpecialistCatalog.KIND_LAIR_SEARCH) == 0,
 		"unknown kind bonus = 0")
 

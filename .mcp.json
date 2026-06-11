@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "scenario": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.scenario.com/mcp"]
+    }
+  }
+}

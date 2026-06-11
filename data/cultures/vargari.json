@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "vargari",
+      "catalog_number": 10,
+      "demonym": "Vargari",
+      "toponym": "Vargarheim",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        8
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.45
+    },
+    "terrain": {
+      "seed_biomes": [
+        "tundra",
+        "taiga",
+        "grassland",
+        "mountains",
+        "glacial mountains"
+      ],
+      "coastal_start": "Y"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.5,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.6,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.6,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.2
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.6,
+        "mercantile": 0.2,
+        "religious": 0.15,
+        "arcane": 0.05
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "berserkers",
+        "marines"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "stress_reactivity": 1.0,
+        "in_group_loyalty": 1.0,
+        "civility": -1.0,
+        "affective_compassion": -0.5,
+        "epicureanism": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "vargari",
+    "phonemic_palette": "Old Norse: nominative -r; initial w- lost before round vowels; ai>ei, au>ey; th/dh; i- and u-umlaut; -son/-dottir; theophoric stems are the Norse reflexes (Thulr-, Orlund-, Nymir-, Rjalta-).",
+    "phenotype_notes": "Features of the Norse analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Norse",
+      "language_family": "germanic",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "strength",
+        "freedom",
+        "glory"
+      ],
+      "taboos": [
+        "showing weakness",
+        "submitting to a tyrant"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "respected",
+      "notes": "Norse register; deity-morphs in name_bank 'vargari'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone halls of the Vargari"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 5,
+      "patron_powers": [
+        "sea",
+        "war",
+        "storms"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Vargari — wary clan confederation of the tundra; strength, freedom.",
+      "one_paragraph": "The Vargari (Norse) are a expansionist clan confederation people seeded in tundra, taiga, grassland. They prize strength, freedom, glory, lean toward the military sphere, and field heavy_infantry, berserkers, marines. Outsiders are met as wary; their patrons touch sea, war, storms."
+    }
+  }
+}

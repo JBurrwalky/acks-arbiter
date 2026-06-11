@@ -61,6 +61,7 @@
     "barbarian":       "14+1d8",
     "priestess":       "17+1d6",
     "shaman":          "17+1d6",
+    "mystic":          "17+3d6",
     "warlock":         "17+3d6",
     "witch":           "17+1d6",
     "lightblessed_wonderworker": "17+3d6",

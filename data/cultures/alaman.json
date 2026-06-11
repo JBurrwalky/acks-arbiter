@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "alaman",
+      "catalog_number": 43,
+      "demonym": "Alaman",
+      "toponym": "Alama",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        6,
+        19
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral"
+      ],
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "forest",
+        "hills"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.65,
+      "defense": 0.7,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.5,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.3
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.5,
+        "mercantile": 0.15,
+        "religious": 0.2,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_cavalry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.0,
+        "self_interest": 0.5,
+        "stress_reactivity": 0.5,
+        "societal_orthodoxy": -0.5,
+        "civility": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "alaman",
+    "phonemic_palette": "Gothic/continental Germanic backbone (masc -s/-a, fem -o; th/dh, w; ai/au) with Frankish/OHG overlay touches (High German shift in some words, -ingen lineages); theophoric stems are the Gothic reflexes (Thulrs-, Erlanda-, Numins-) with Frankish variants (Dulro-, Erlant-).",
+    "phenotype_notes": "Synthesis of Germanic + Frankish per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Gothic+Frankish",
+      "language_family": "germanic",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "honor",
+        "freedom",
+        "family"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "submitting to a tyrant"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Germanic + Frankish register; deity-morphs in name_bank 'alaman'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "rugged",
+      "signature_feature": "timber halls of the Alaman"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "nature",
+        "storms"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Alaman — wary clan confederation of the forest; honor, freedom.",
+      "one_paragraph": "The Alaman (Germanic + Frankish) are a assertive clan confederation people seeded in forest, hills. They prize honor, freedom, family, lean toward the military sphere, and field heavy_infantry, light_cavalry, archers. Outsiders are met as wary; their patrons touch war, nature, storms."
+    }
+  }
+}

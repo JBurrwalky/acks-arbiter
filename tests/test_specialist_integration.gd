@@ -40,7 +40,6 @@ class _FixedDice:
 
 func run_all_tests() -> void:
 	test_lair_search_with_pathfinder_beats_without()
-	test_passive_lair_check_with_pathfinder_beats_without()
 	test_surveying_with_land_surveyor_beats_without()
 	test_tracking_with_pathfinder_beats_without()
 	test_zero_specialist_bonus_matches_legacy_behavior()
@@ -86,21 +85,10 @@ func test_lair_search_with_pathfinder_beats_without() -> void:
 		"specialist_bonus stored in result")
 
 
-func test_passive_lair_check_with_pathfinder_beats_without() -> void:
-	# 24 mi/day → target 16+. Roll 12, +4 specialist = 16 → success.
-	var party := _make_party(4)
-	var dice := _FixedDice.new(12)
-	var without := LairSearchResolver.passive_check(party, 24, 1, dice, 0)
-	check(not bool(without["succeeded"]), "no Pathfinder passive: 12 < 16")
-
-	var dice2 := _FixedDice.new(12)
-	var bonus: int = SpecialistCatalog.bonus_for_resolver(
-		"pathfinder", SpecialistCatalog.KIND_LAIR_SEARCH_PASSIVE)
-	var with_pf := LairSearchResolver.passive_check(party, 24, 1, dice2, bonus)
-	check(bool(with_pf["succeeded"]),
-		"with Pathfinder passive: 12 + 4 = 16 succeeds")
-	check(bool(with_pf["lair_found"]),
-		"successful passive with lairs present → lair_found")
+# (The passive lair-check specialist test was removed 2026-06-10 along with
+# LairSearchResolver.passive_check — the per-leg passive spot is gone per
+# gdd-lair-discovery.md §10. The Pathfinder bonus on dedicated searches is
+# covered by test_lair_search_with_pathfinder_beats_without above.)
 
 
 func test_surveying_with_land_surveyor_beats_without() -> void:

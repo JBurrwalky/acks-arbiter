@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "alani",
+      "catalog_number": 9,
+      "demonym": "Alani",
+      "toponym": "Alania",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        6
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Chaotic"
+      ],
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "forest",
+        "dense forest",
+        "grassland",
+        "hills",
+        "mountains"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.55,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.6,
+      "collapse_proneness": 0.6,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.2
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.6,
+        "mercantile": 0.15,
+        "religious": 0.15,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "heavy_cavalry",
+        "heavy_infantry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "self_interest": 0.5,
+        "stress_reactivity": 0.5,
+        "societal_orthodoxy": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "alani",
+    "phonemic_palette": "Gothic/continental Germanic: stops + th/dh, w, h; masc -s/-a, fem -o; ai/au diphthongs; dithematic compounds; theophoric stems are the Gothic reflexes (Thulrs-, Erlanda-, Numins-, Gauanda-).",
+    "phenotype_notes": "Features of the Germanic analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Gothic",
+      "language_family": "germanic",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "honor",
+        "glory",
+        "family"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "cowardice in battle"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "respected",
+      "notes": "Germanic register; deity-morphs in name_bank 'alani'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone halls of the Alani"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 3,
+      "patron_powers": [
+        "war",
+        "storms",
+        "death"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Alani — wary clan confederation of the forest; honor, glory.",
+      "one_paragraph": "The Alani (Germanic) are a expansionist clan confederation people seeded in forest, dense forest, grassland. They prize honor, glory, family, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as wary; their patrons touch war, storms, death."
+    }
+  }
+}

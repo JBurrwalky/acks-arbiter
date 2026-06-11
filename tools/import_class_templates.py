@@ -11,12 +11,13 @@ Implements:
 
 Design summary
 --------------
-The source is a markdown document of 31 per-class tables. Four classes are NOT
+The source is a markdown document of 31 per-class tables. Three classes are NOT
 implemented by ACKS Arbiter and are skipped at ingestion (Dwarven Machinist,
-Gnomish Trickster, Mystic, Thrassian Gladiator — gdd §2 "Class scope"). The
-remaining 27 classes map to the runtime class_ids in data/classes/*.json; two
-are project rebrands (Zaharan Ruinguard -> darkblood_ruinguard, Nobiran
-Wonderworker -> lightblessed_wonderworker; "Black Lore of Zahar" proficiency ->
+Gnomish Trickster, Thrassian Gladiator — gdd §2 "Class scope"; the Mystic moved
+in-scope 2026-06-11 when data/classes/mystic.json landed). The remaining 28
+classes map to the runtime class_ids in data/classes/*.json; two are project
+rebrands (Zaharan Ruinguard -> darkblood_ruinguard, Nobiran Wonderworker ->
+lightblessed_wonderworker; "Black Lore of Zahar" proficiency ->
 black_lore_of_chaos).
 
 Each class table is anchored by a trailing "<Class> Notes:" line, which is used
@@ -85,6 +86,7 @@ RULES_MD = REPO_ROOT / "rules" / "pc_class_templates.md"
 EQUIP_BASE = REPO_ROOT / "data" / "equipment" / "base_equipment.json"
 EQUIP_TRANSPORT = REPO_ROOT / "data" / "equipment" / "transport.json"
 EQUIP_PROVISIONS = REPO_ROOT / "data" / "equipment" / "provisions_services.json"
+EQUIP_POISONS = REPO_ROOT / "data" / "equipment" / "poisons.json"
 PROF_CATALOG = REPO_ROOT / "data" / "proficiencies" / "proficiency_catalog.json"
 CLASSES_DIR = REPO_ROOT / "data" / "classes"
 EQUIP_OVERRIDES = REPO_ROOT / "data" / "templates" / "equipment_overrides.json"
@@ -96,7 +98,7 @@ SOURCE_NAME = ("rules/pc_class_templates.md (ACKS Player's Companion class "
                "templates; entire file)")
 
 # Source class display name -> runtime class_id (data/classes/<id>.json).
-# Four classes are intentionally absent (skipped at ingestion, gdd §2).
+# Three classes are intentionally absent (skipped at ingestion, gdd §2).
 SOURCE_NAME_TO_CLASS_ID = {
     "Anti-Paladin": "anti_paladin",
     "Assassin": "assassin",
@@ -116,6 +118,7 @@ SOURCE_NAME_TO_CLASS_ID = {
     "Explorer": "explorer",
     "Fighter": "fighter",
     "Mage": "mage",
+    "Mystic": "mystic",
     "Nobiran Wonderworker": "lightblessed_wonderworker",
     "Paladin": "paladin",
     "Priestess": "priestess",
@@ -127,7 +130,7 @@ SOURCE_NAME_TO_CLASS_ID = {
     "Zaharan Ruinguard": "darkblood_ruinguard",
 }
 SKIP_CLASSES = {
-    "Dwarven Machinist", "Gnomish Trickster", "Mystic", "Thrassian Gladiator",
+    "Dwarven Machinist", "Gnomish Trickster", "Thrassian Gladiator",
 }
 
 # Arcane spellcaster templates: position-3 proficiency = arcane_bonus (gdd §8.2).
@@ -212,6 +215,34 @@ def build_equipment_index():
                 keys.add(k)
                 cost[k] = int(item.get("cost_cp", 0))
     return cost, keys, bundle
+
+
+_POISON_INDEX = None
+
+
+def poison_index():
+    """Lazy normalized-name -> (poison_key, cost_cp_per_dose) from poisons.json.
+
+    Names are lowercased with a trailing ' venom' / ' toxin' stripped, so
+    'Giant Centipede Venom' matches the template phrase '... giant centipede
+    poison'. Longest names first so the most specific entry wins.
+    """
+    global _POISON_INDEX
+    if _POISON_INDEX is None:
+        data = load_json(EQUIP_POISONS)
+        idx = {}
+        for group in ("monster_venoms", "plant_toxins"):
+            for p in data.get(group, []):
+                if not isinstance(p, dict):
+                    continue
+                name = str(p.get("name", "")).lower()
+                name = re.sub(r"\s+(venom|toxin)$", "", name).strip()
+                key = p.get("poison_key", "")
+                cost = int(p.get("cost_cp_per_dose", 0))
+                if name and key and cost > 0:
+                    idx[name] = (key, cost)
+        _POISON_INDEX = sorted(idx.items(), key=lambda kv: -len(kv[0]))
+    return _POISON_INDEX
 
 
 def build_prof_vocab():
@@ -341,6 +372,16 @@ def assign_prof_kinds(profs, class_id):
 # (gdd §5.4); the 15-slot model in gdd-character-tab.md is authoritative.
 PHRASE_RULES = [
     # --- type-of equivalences (footnotes) ---
+    # Mystic exotic weapons (rules/pc_class_templates.md Mystic Notes bullets):
+    (r"\bwar rings?\b", "dart"),                      # chakram: "Treat as a dart"
+    (r"elephant trunk blade", "pole_arm"),            # xiang bi dao: pole arm
+    (r"coiling blade", "whip"),                       # chuttuval: whip
+    (r"double[- ]bladed daggers?", "short_sword"),    # haladie: short sword
+    (r"tiger'?s claws", "dagger"),                    # bagh nakh: dagger
+    (r"\btulwars?\b", "short_sword"),                 # tulwar: short sword
+    (r"\bkhandas?\b", "sword"),                       # khanda: sword
+    # (bamboo longbow / double-ended flail fall through to the generic
+    #  longbow / flail rules below, matching their "treat as" footnotes.)
     (r"\blong bearded axe\b", "great_axe"),
     (r"\bbearded axe\b", "battle_axe"),
     (r"\bfrancisca\b", "hand_axe"),
@@ -724,9 +765,28 @@ def classify_phrase(clean, value_gp, overrides, static):
     for rx, kind, tag in NONCATALOG_RULES:
         if rx.search(clean):
             meta = {"noncatalog_kind": kind, "tag": tag}
+            gp = float(value_gp)
+            if tag == "poison":
+                # Price recognized venoms / toxins from data/equipment/poisons.json
+                # (cost_cp_per_dose x dose count) so the wealth sweep counts them.
+                # The poison_key / doses ride in metadata for future runtime
+                # routing; value_gp is summed by TemplateWealthSweep.recompute_gp.
+                # (2026-06-11: un-priced poison was the common driver of the
+                # mystic_13_14 / assassin_13_14 / dwarven_delver_15_16 wealth
+                # deficits — pricing it puts all three within ~8% of target.)
+                for pname, (pkey, cost_cp) in poison_index():
+                    if pname in clean:
+                        doses, _w, _f = parse_count(clean)
+                        total_cp = cost_cp * doses
+                        meta["poison_key"] = pkey
+                        meta["doses"] = doses
+                        meta["value_gp"] = (total_cp // 100 if total_cp % 100 == 0
+                                            else total_cp / 100.0)
+                        gp = float(total_cp) / 100.0
+                        break
             if value_gp:
                 meta["value_gp"] = value_gp
-            return {"kind": "entry", "gp": value_gp, "tally": tag,
+            return {"kind": "entry", "gp": gp, "tally": tag,
                     "gap": kind == "catalog_gap",
                     "entry": make_entry("", 1, "non_catalog", valid, meta)}
 

@@ -10,10 +10,11 @@ extends "res://tests/test_suite_base.gd"
 ##   * Aerial reconnaissance doubles daily movement before the table lookup.
 ##
 ## PROJECT-DESIGNED tests:
-##   * `passive_check` short-circuits when undiscovered_lair_count == 0
-##     (no roll consumed).
-##   * `optional_specialist_bonus` is additive on both search_hour and
-##     passive_check (Phase 6 wires Pathfinder bonus through this hook).
+##   * `optional_specialist_bonus` is additive on search_hour (Phase 6 wires
+##     the Pathfinder bonus through this hook).
+##
+## (The v1 `passive_check` entry point and its tests were removed 2026-06-10
+## per gdd-lair-discovery.md §10 — lazy placement has nothing to spot.)
 
 
 # ---------------------------------------------------------------------------
@@ -53,9 +54,6 @@ func run_all_tests() -> void:
 	test_search_hour_failure_no_reveal()
 	test_search_hour_tracking_bonus_applied()
 	test_search_hour_specialist_bonus_pass_through()
-	test_passive_check_no_undiscovered_short_circuits()
-	test_passive_check_no_tracking_bonus()
-	test_passive_check_specialist_bonus_helps()
 	if not has_failures():
 		print("LairSearchResolver: all tests passed.")
 
@@ -173,38 +171,5 @@ func test_search_hour_specialist_bonus_pass_through() -> void:
 	check(bool(r["succeeded"]), "specialist bonus carries the throw to 18+")
 
 
-# ---------------------------------------------------------------------------
-# passive_check — travel_leg
-# ---------------------------------------------------------------------------
-
-func test_passive_check_no_undiscovered_short_circuits() -> void:
-	# Project-designed: passive throw skips entirely when no undiscovered
-	# lairs exist (no roll consumed, deterministic no-op).
-	var party := _make_party(2)
-	var dice := _FixedDice.new(20)
-	var r := LairSearchResolver.passive_check(party, 24, 0, dice)
-	check(not bool(r["succeeded"]), "no roll → not succeeded")
-	check(not bool(r["lair_found"]), "no roll → no find")
-	check(int(r["roll"]) == 0, "no roll happened")
-
-
-func test_passive_check_no_tracking_bonus() -> void:
-	# Project-designed: Tracking does NOT apply to passive throws (the
-	# party isn't deliberately searching).
-	var party_tracking := _make_party(2, true)
-	# 14 + 0 (no tracking applied) + 0 specialist = 14, target 16 (24 mi) → fail
-	var dice := _FixedDice.new(14)
-	var r := LairSearchResolver.passive_check(party_tracking, 24, 1, dice)
-	check(int(r["target"]) == 16, "24 mi → 16+ target")
-	check(not bool(r["succeeded"]), "tracking doesn't help on passive: 14 < 16")
-
-
-func test_passive_check_specialist_bonus_helps() -> void:
-	# Phase 6 hook again: specialist bonus DOES apply on passive (Pathfinder
-	# is deliberately scouting even during travel).
-	var party := _make_party(2)
-	var dice := _FixedDice.new(14)
-	var r := LairSearchResolver.passive_check(party, 24, 1, dice, 2)
-	check(int(r["total"]) == 16, "14 + 2 = 16")
-	check(bool(r["succeeded"]), "specialist bonus carries to target")
-	check(bool(r["lair_found"]), "specialist-driven success → lair_found")
+# (passive_check tests removed 2026-06-10 with the entry point itself —
+# see the class docs note and gdd-lair-discovery.md §10.)

@@ -180,6 +180,11 @@
       "notes": "Mage Notes: Most characters of this class have above average Intelligence, and the templates above reflect that. Each template assumes that the character has an INT ability score of between 13 and 15, qualifying him for one bonus proficiency and one bonus spell. The bonus proficiency and bonus spell that each template begins with are noted last. For characters with INT of less than 13 or greater than 15, see the Intelligence Scores of Arcane Spellcasters section earlier in this Chapter.",
       "type_of_equivalences": []
     },
+    "mystic": {
+      "class_id": "mystic",
+      "notes": "Mystic Notes: The mystic templates above use weapons drawn from Indian and Chinese martial arts.",
+      "type_of_equivalences": []
+    },
     "paladin": {
       "class_id": "paladin",
       "notes": "Paladin Notes: The vanguard's glaive is a type of pole arm. The inquisitor's ball-and-chain is a type of flail.",
@@ -2157,7 +2162,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 90.0,
+      "resolved_gp_value": 140.0,
       "roll_band_high": 14,
       "roll_band_low": 13,
       "source_lines": [
@@ -2261,8 +2266,11 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
+            "doses": 1,
             "noncatalog_kind": "separate_catalog",
-            "tag": "poison"
+            "poison_key": "venom_giant_centipede",
+            "tag": "poison",
+            "value_gp": 50
           },
           "quantity": 1,
           "resolution_status": "non_catalog"
@@ -9533,7 +9541,7 @@
           "rank": 1
         }
       ],
-      "resolved_gp_value": 109.8,
+      "resolved_gp_value": 159.8,
       "roll_band_high": 16,
       "roll_band_low": 15,
       "source_lines": [
@@ -9700,8 +9708,11 @@
           "contents": [],
           "default_slot": "",
           "metadata": {
+            "doses": 1,
             "noncatalog_kind": "separate_catalog",
-            "tag": "poison"
+            "poison_key": "venom_giant_centipede",
+            "tag": "poison",
+            "value_gp": 50
           },
           "quantity": 1,
           "resolution_status": "non_catalog"
@@ -22012,6 +22023,992 @@
         "charm person"
       ],
       "template_id": "mage_17_18",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Ascetic",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Wakefulness",
+          "proficiency_key": "wakefulness",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "",
+          "list_order": 2,
+          "name": "Survival",
+          "proficiency_key": "survival",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 39.8,
+      "roll_band_high": 4,
+      "roll_band_low": 3,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "quarterstaff",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "hat_armiger",
+          "container": "",
+          "contents": [],
+          "default_slot": "head",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "tunic_serf",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 30,
+      "starting_money_cp": 3000,
+      "starting_spells": [],
+      "template_id": "mystic_3_4",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Yogi",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Contortionism",
+          "proficiency_key": "contortionism",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "yoga",
+          "list_order": 2,
+          "name": "Performance",
+          "proficiency_key": "performance",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 59.8,
+      "roll_band_high": 6,
+      "roll_band_low": 5,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "pole_arm",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "hat_armiger",
+          "container": "",
+          "contents": [],
+          "default_slot": "head",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 40,
+      "starting_money_cp": 4000,
+      "starting_spells": [],
+      "template_id": "mystic_5_6",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Temple Guard",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Precise Shooting",
+          "proficiency_key": "precise_shooting",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "",
+          "list_order": 2,
+          "name": "Manual of Arms",
+          "proficiency_key": "manual_of_arms",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 79.8,
+      "roll_band_high": 8,
+      "roll_band_low": 7,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "longbow",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "arrows_20",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 40,
+      "starting_money_cp": 4000,
+      "starting_spells": [],
+      "template_id": "mystic_7_8",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Enlightened Mind",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Illusion Resistance",
+          "proficiency_key": "illusion_resistance",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "",
+          "list_order": 2,
+          "name": "Theology",
+          "proficiency_key": "theology",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 100.8,
+      "roll_band_high": 10,
+      "roll_band_low": 9,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "flail",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "hat_armiger",
+          "container": "",
+          "contents": [],
+          "default_slot": "head",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 63,
+      "starting_money_cp": 6300,
+      "starting_spells": [],
+      "template_id": "mystic_9_10",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Warrior Monk",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Swashbuckling",
+          "proficiency_key": "swashbuckling",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "chanting",
+          "list_order": 2,
+          "name": "Performance",
+          "proficiency_key": "performance",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 119.8,
+      "roll_band_high": 12,
+      "roll_band_low": 11,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "pole_arm",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 80,
+      "starting_money_cp": 8000,
+      "starting_spells": [],
+      "template_id": "mystic_11_12",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Cultist",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Arcane Dabbling",
+          "proficiency_key": "arcane_dabbling",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "occult",
+          "list_order": 2,
+          "name": "Knowledge",
+          "proficiency_key": "knowledge",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 146.0,
+      "roll_band_high": 14,
+      "roll_band_low": 13,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "whip",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "short_sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dagger",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "boots_low",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {
+            "doses": 2,
+            "noncatalog_kind": "separate_catalog",
+            "poison_key": "venom_giant_centipede",
+            "tag": "poison",
+            "value_gp": 100
+          },
+          "quantity": 1,
+          "resolution_status": "non_catalog"
+        }
+      ],
+      "starting_gp": 10,
+      "starting_money_cp": 1000,
+      "starting_spells": [],
+      "template_id": "mystic_13_14",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Faith Healer",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Laying on Hands",
+          "proficiency_key": "laying_on_hands",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "",
+          "list_order": 2,
+          "name": "Healing",
+          "proficiency_key": "healing",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 167.8,
+      "roll_band_high": 16,
+      "roll_band_low": 15,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "spear",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "short_sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "hat_armiger",
+          "container": "",
+          "contents": [],
+          "default_slot": "head",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_leather",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sandals",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "birthwort",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "comfrey",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "goldenrod",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "woundwart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 60,
+      "starting_money_cp": 6000,
+      "starting_spells": [],
+      "template_id": "mystic_15_16",
+      "tradition": ""
+    },
+    {
+      "bonus_spell": "",
+      "class_id": "mystic",
+      "display_label": "Noble Philosopher",
+      "proficiencies": [
+        {
+          "flavor": "",
+          "list_order": 1,
+          "name": "Command",
+          "proficiency_key": "command",
+          "proficiency_kind": "class",
+          "rank": 1
+        },
+        {
+          "flavor": "",
+          "list_order": 2,
+          "name": "Diplomacy",
+          "proficiency_key": "diplomacy",
+          "proficiency_kind": "general",
+          "rank": 1
+        }
+      ],
+      "resolved_gp_value": 166.0,
+      "roll_band_high": 18,
+      "roll_band_low": 17,
+      "source_lines": [
+        319,
+        331
+      ],
+      "starting_equipment": [
+        {
+          "base_item_id": "longbow",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "arrows_20",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "pole_arm",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "sword",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 2,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "dart",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "robe",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "belt_silk",
+          "container": "",
+          "contents": [],
+          "default_slot": "waist",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "boots_high",
+          "container": "",
+          "contents": [],
+          "default_slot": "feet",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "backpack",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "light_riding_horse",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "saddle_riding",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "saddlebags",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        },
+        {
+          "base_item_id": "rations_iron_week",
+          "container": "",
+          "contents": [],
+          "default_slot": "",
+          "metadata": {},
+          "quantity": 1,
+          "resolution_status": "auto"
+        }
+      ],
+      "starting_gp": 26,
+      "starting_money_cp": 2600,
+      "starting_spells": [],
+      "template_id": "mystic_17_18",
       "tradition": ""
     },
     {

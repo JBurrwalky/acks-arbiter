@@ -32,6 +32,7 @@ const TAB_ORDER := [
 	["inventory", "Inventory"],
 	["party", "Party"],
 	["henchmen", "Henchmen"],
+	["specialists", "Specialists"],
 	["troops", "Troops"],
 	["domain", "Domain"],
 	["journal", "Journal"],

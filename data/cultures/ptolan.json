@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "ptolan",
+      "catalog_number": 32,
+      "demonym": "Ptolan",
+      "toponym": "Ptola",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        2,
+        5
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral"
+      ],
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "desert",
+        "scrubland",
+        "coastal"
+      ],
+      "coastal_start": "Y"
+    },
+    "expansion": {
+      "aggression": 0.55,
+      "defense": 0.6,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.4,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.5
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.3,
+        "mercantile": 0.35,
+        "religious": 0.2,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "pikemen",
+        "war_elephants",
+        "marines"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "epistemic_curiosity": 1.0,
+        "societal_orthodoxy": 1.0,
+        "mysticism": 0.5,
+        "civility": 1.0,
+        "self_interest": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "ptolan",
+    "phonemic_palette": "Hellenic backbone (a e i o u + long e/o; th/ph/kh; endings -os/-on/-es/-eus) with an Egyptian overlay (dj/tj touches, -aa/-et in the substrate, Per-/Niut- toponyms); theophoric on the Hellenic morphs (Tulrios-, Numenos-) with Egyptian variants.",
+    "phenotype_notes": "Synthesis of Greek + Egyptian per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Hellenic + Egyptian-Overlay",
+      "language_family": "classical, near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "imperial_bureaucracy",
+    "values": {
+      "core_values": [
+        "knowledge",
+        "wealth",
+        "tradition"
+      ],
+      "taboos": [
+        "destroying lore",
+        "theft from kin"
+      ],
+      "attitude_toward_outsiders": "cosmopolitan"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Greek + Egyptian register; deity-morphs in name_bank 'ptolan'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "mudbrick halls of the Ptolan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "knowledge",
+        "trade",
+        "harvest"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Ptolan — cosmopolitan imperial bureaucracy of the desert; knowledge, wealth.",
+      "one_paragraph": "The Ptolan (Greek + Egyptian) are a assertive imperial bureaucracy people seeded in desert, scrubland, coastal. They prize knowledge, wealth, tradition, lean toward the mercantile sphere, and field pikemen, war_elephants, marines. Outsiders are met as cosmopolitan; their patrons touch knowledge, trade, harvest."
+    }
+  }
+}

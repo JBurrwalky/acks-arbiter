@@ -44,7 +44,10 @@ const SPEEDS_ZONE_WIDTH := 200
 const LOG_ZONE_WIDTH := 360
 const DRAG_HANDLE_HEIGHT := 6
 
-const PORTRAIT_SIZE := Vector2(56, 56)
+## Enlarged 2026-06-11 so a 6-PC party fills the 540px portrait zone's row
+## (was 56 → tiny, left half of the box empty). 6 × (78 + 2*4 slot padding) +
+## 5 × 4 separation = 536 ≤ PORTRAIT_ZONE_WIDTH.
+const PORTRAIT_SIZE := Vector2(78, 96)
 const PORTRAIT_SLOT_PADDING := 2
 
 const FONT_SIZE := 12
@@ -92,6 +95,7 @@ var _is_dragging: bool = false
 
 var _portrait_zone: Control = null
 const PortraitWithBadgeScript := preload("res://scenes/ui/components/portrait_with_badge.gd")
+const PortraitTextures := preload("res://engine/subsystems/assets/portrait_textures.gd")
 
 # Level-badge tinting palette per the prior γ.4 inline builder. Bright color
 # = off-focus level (draws the eye); muted = on-focus level (de-emphasised
@@ -102,10 +106,6 @@ const LEVEL_BADGE_TINT_OFF_FOCUS := Color(1.0, 0.95, 0.55, 1.0)
 const LEVEL_BADGE_TINT_ON_FOCUS := Color(0.55, 0.52, 0.40, 1.0)
 
 var _portraits_hbox: HBoxContainer = null
-## Texture cache keyed by portrait_id (not by character_id) — multiple
-## characters may share a portrait. Lifetime is the autoload session;
-## invalidated on EventBus.session_ended (γ.4 cleanup).
-static var _portrait_cache: Dictionary = {}
 var _party_levels: Dictionary = {}
 var _current_focus_level: int = -9999
 ## Per-character widget cache. Replaces γ.4's `_portrait_badges` Label dict;
@@ -132,6 +132,10 @@ var _rations_label: Label = null
 var _water_label: Label = null
 var _hex_info_panel: PanelContainer = null
 var _hex_info_label: Label = null
+
+## Lazy provisions plumbing — reads real carried food-days for the rations
+## readout (gdd-rations-foodstuffs.md; replaces the dead rations_days_remaining).
+var _provisions_service: ProvisionsService = null
 
 # Row 3
 var _camp_btn: Button = null
@@ -628,6 +632,11 @@ func _connect_signals() -> void:
 	# party's map + the current view mode.
 	EventBus.map_view_mode_changed.connect(_on_map_view_mode_changed)
 	EventBus.party_map_changed.connect(_on_party_map_changed)
+	# gdd-lair-discovery.md §6.1/§6.3 — the hex info box's "Lairs: X/Y" line
+	# refreshes immediately on placement / clearing / survey reveal.
+	EventBus.lair_placed.connect(_on_lair_state_changed)
+	EventBus.lair_cleared.connect(_on_lair_state_changed)
+	EventBus.survey_completed.connect(_on_lair_state_changed)
 	_refresh_party_portraits(GameState.active_party_id)
 	_refresh_party_status(GameState.active_party_id)
 	_refresh_notebook_btn_state()
@@ -669,7 +678,7 @@ func _on_notification_requested(payload: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_session_ended() -> void:
-	_portrait_cache.clear()
+	PortraitTextures.clear_cache()  # invalidate shared portrait cache at session end
 	# Item 4 — flush widget cache too. The portraits HBox is rebuilt on the
 	# next _refresh_party_portraits, but the dict reference can dangle past
 	# session boundaries if a widget queue_free races the next refresh.
@@ -792,23 +801,9 @@ func _refresh_party_portraits(party_id: String) -> void:
 
 
 func _resolve_portrait(portrait_id: String) -> Texture2D:
-	if portrait_id.is_empty():
-		return null
-	if _portrait_cache.has(portrait_id):
-		return _portrait_cache[portrait_id]
-	var texture: Texture2D = null
-	var user_path := "user://portraits/%s.png" % portrait_id
-	if FileAccess.file_exists(user_path):
-		var img := Image.load_from_file(user_path)
-		if img != null:
-			texture = ImageTexture.create_from_image(img)
-	if texture == null:
-		var res_path := "res://assets/portraits/%s.png" % portrait_id
-		if ResourceLoader.exists(res_path):
-			texture = load(res_path) as Texture2D
-	if texture != null:
-		_portrait_cache[portrait_id] = texture
-	return texture
+	# Shared loader: downscaled + mipmapped so the larger row portraits don't
+	# alias (PortraitWithBadge sets the TextureRect's mipmap texture_filter).
+	return PortraitTextures.resolve(portrait_id)
 
 
 # ---------------------------------------------------------------------------
@@ -913,6 +908,14 @@ func _on_scheduler_resumed() -> void:
 # Rations / travel speed sub-panels
 # ---------------------------------------------------------------------------
 
+## Lazy ProvisionsService for the rations readout (carries its own catalog).
+func _ensure_provisions_service() -> ProvisionsService:
+	if _provisions_service == null:
+		_provisions_service = ProvisionsService.new(
+			CampaignRepository, EquipmentCatalog.new())
+	return _provisions_service
+
+
 func _refresh_party_status(party_id: String) -> void:
 	if _rations_panel == null or _speeds_zone == null:
 		return
@@ -939,16 +942,25 @@ func _refresh_party_status(party_id: String) -> void:
 	# Rations + Water (1 unit/character/day for each per ACKS).
 	var party_size: int = party_data.character_data.size()
 	var ration_consumption: int = CampManager.compute_ration_consumption(party_size)
-	var rations_days: int = party_data.rations_days_remaining
+	# Real food-days = foraged surplus (ration_units) + carried inventory
+	# rations, in person-days, divided by the daily party draw. Replaces the
+	# orphaned rations_days_remaining field (gdd-rations-foodstuffs.md BUG 5).
+	var food_person_days: int = (
+		party_data.ration_units + _ensure_provisions_service().carried_food_days(party_data))
+	var rations_days: int = (
+		food_person_days / ration_consumption if ration_consumption > 0 else food_person_days)
 	_rations_label.text = "%d days  −%d/day" % [rations_days, ration_consumption]
 	_rations_label.add_theme_color_override("font_color",
 		_sustenance_color(rations_days, ration_consumption))
 
 	var water_consumption: int = party_size
+	# Container parties carry water in waterskins/barrels (read their fill); a
+	# container-less party still shows the legacy abstract counter.
+	var water_person_days: int = party_data.water_units
+	if _ensure_provisions_service().has_water_containers(party_data):
+		water_person_days = _ensure_provisions_service().carried_water_days(party_data)
 	var water_days: int = (
-		party_data.water_units / water_consumption
-		if water_consumption > 0 else 0
-	)
+		water_person_days / water_consumption if water_consumption > 0 else 0)
 	_water_label.text = "%d days  −%d/day" % [water_days, water_consumption]
 	_water_label.add_theme_color_override("font_color",
 		_sustenance_color(water_days, water_consumption))
@@ -998,11 +1010,11 @@ func _refresh_hex_info(party_data: PartyData) -> void:
 	if terrain == null:
 		_hex_info_panel.visible = false
 		return
-	_hex_info_label.text = _format_hex_info(coord, terrain)
+	_hex_info_label.text = _format_hex_info(coord, terrain, map_id)
 	_hex_info_panel.visible = true
 
 
-func _format_hex_info(coord: Vector2i, terrain: HexTerrainData) -> String:
+func _format_hex_info(coord: Vector2i, terrain: HexTerrainData, map_id: String = "") -> String:
 	var water_str := terrain.water if not terrain.water.is_empty() else "none"
 	var has_settlement := terrain.has_city
 	var lines := PackedStringArray([
@@ -1019,7 +1031,18 @@ func _format_hex_info(coord: Vector2i, terrain: HexTerrainData) -> String:
 		lines.append("River: yes")
 	if terrain.overlay != null and terrain.overlay.has_road():
 		lines.append("Road: yes")
+	# "Lairs: X/Y" per gdd-lair-discovery.md §6.1 — hidden until a lair is
+	# placed or a Survey reveals a total; mirrors the hexmap hover tooltip.
+	if not map_id.is_empty():
+		var lairs_line: String = HexLairState.format_lairs_line(
+			GameState.campaign_id, map_id, coord.x, coord.y)
+		if not lairs_line.is_empty():
+			lines.append("Lairs: %s" % lairs_line)
 	return "\n".join(lines)
+
+
+func _on_lair_state_changed(_party_id: String, _result: Dictionary) -> void:
+	_refresh_party_status(GameState.active_party_id)
 
 
 func _compute_base_exploration_speed(party_data: PartyData) -> int:

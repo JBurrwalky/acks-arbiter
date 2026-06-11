@@ -50,6 +50,27 @@ func enter(runner, context: Dictionary) -> void:
 		runner.transition_to_state("campaign_select")
 		return
 
+	# Seed party_hex on map_data before the first map_loaded signal fires.
+	# Without this, two bugs appear:
+	#   1. Fresh party (NULL current_map_id): _resolve_party_render_position()
+	#      returns {} (map id mismatch) and the token is never rendered until
+	#      the first scheduler event writes a DB position.
+	#   2. Existing party on the primary map: _rebuild_party_tokens() overrides
+	#      coord with _map_data.party_hex (Vector2i.ZERO default), placing the
+	#      token at (0,0) instead of the saved hex.
+	var pd_init: PartyData = runner.get_party_data()
+	if pd_init != null:
+		if pd_init.current_map_id.is_empty():
+			# New party: write a default position so the renderer can match map ids.
+			CampaignRepository.update_party_position(party_id, primary_map_id, 0, 0)
+			map_data.party_hex = Vector2i.ZERO
+		elif pd_init.current_map_id == primary_map_id:
+			# Existing party on the primary map: restore saved hex into map_data.
+			map_data.party_hex = Vector2i(pd_init.current_hex_q, pd_init.current_hex_r)
+		# If the party is on a child/inset map, _resolve_party_render_position()
+		# projects it via the ancestor-walk (on_rendered_map=false), so the
+		# _map_data.party_hex override in _rebuild_party_tokens is skipped.
+
 	# Wire hex map renderer to controller (first time only)
 	var renderer: Node = runner.get_hex_map_renderer()
 	var controller: HexMapController = runner.get_hex_map_controller()

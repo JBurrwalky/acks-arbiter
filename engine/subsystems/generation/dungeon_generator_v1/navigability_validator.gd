@@ -150,8 +150,20 @@ static func validate_solvability(
 	# or levers became accessible, potentially unlocking previously blocked doors),
 	# we reseed from the full reachable set and run another pass.  Terminates
 	# because reachable is monotonically growing and bounded by grid size.
+	# A hard pass cap guards against non-terminating regressions: every genuine
+	# pass is caused by a delayed unlock event, so passes can never legitimately
+	# exceed the dungeon's total door + stair count. Exceeding the cap logs an
+	# error and bails with the partial result (fail fast, never spin).
+	var max_passes: int = 2
+	for f: DungeonLayout in floors:
+		max_passes += f.doors.size() + f.stairs.size()
+	var passes: int = 0
 	var prev_size := 0
 	while reachable.size() > prev_size:
+		passes += 1
+		if passes > max_passes:
+			push_error("DungeonNavigabilityValidator.validate_solvability: fixed-point exceeded %d passes — aborting with partial reachability (guard against non-terminating regressions)." % max_passes)
+			break
 		prev_size = reachable.size()
 
 		while queue.size() > 0:

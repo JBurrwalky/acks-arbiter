@@ -15,6 +15,9 @@ signal activity_requested(activity_type: String, poi: Dictionary)
 signal exit_settlement_requested()
 signal shop_requested(poi: Dictionary)
 signal hiring_requested(poi: Dictionary)
+## Routes the guild "Hire Specialists" activity to the specialist hire panel
+## (gdd-specialists.md §6.2 — dual-path retain / commission flows).
+signal specialist_hiring_requested(poi: Dictionary)
 # Phase 10B.2 Wave 2: routes mercantile activity launchers (the six market /
 # town_square trade activities) to SettlementExploreState's mercantile_panel.
 signal mercantile_requested(activity_id: String, poi: Dictionary)
@@ -217,6 +220,8 @@ func _on_activity_pressed(activity_id: String) -> void:
 			shop_requested.emit(_poi)
 		"hire_henchmen":
 			hiring_requested.emit(_poi)
+		"hire_specialists":
+			specialist_hiring_requested.emit(_poi)
 		_:
 			# Phase 10B.2 Wave 2: route mercantile launchers to the trade panel.
 			if activity_id in MERCANTILE_ACTIVITY_IDS:

@@ -447,6 +447,12 @@
 [ext_resource type="Script" path="res://tests/test_template_spell_repertoire.gd" id="431_template_spell_repertoire_tests"]
 [ext_resource type="Script" path="res://tests/test_savegame_location.gd" id="432_savegame_location_tests"]
 [ext_resource type="Script" path="res://tests/test_savegame_snapshot.gd" id="433_savegame_snapshot_tests"]
+[ext_resource type="Script" path="res://tests/test_provisions_ledger.gd" id="434_provisions_ledger_tests"]
+[ext_resource type="Script" path="res://tests/test_provisions_service.gd" id="435_provisions_service_tests"]
+[ext_resource type="Script" path="res://tests/test_grazing_rules.gd" id="436_grazing_rules_tests"]
+[ext_resource type="Script" path="res://tests/test_animal_sustenance_resolver.gd" id="437_animal_sustenance_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_lair_placement.gd" id="438_lair_placement_tests"]
+[ext_resource type="Script" path="res://tests/test_specialist_dual_path.gd" id="439_specialist_dual_path_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1788,3 +1794,21 @@ script = ExtResource("432_savegame_location_tests")
 
 [node name="SavegameSnapshotTests" type="Node" parent="."]
 script = ExtResource("433_savegame_snapshot_tests")
+
+[node name="ProvisionsLedgerTests" type="Node" parent="."]
+script = ExtResource("434_provisions_ledger_tests")
+
+[node name="ProvisionsServiceTests" type="Node" parent="."]
+script = ExtResource("435_provisions_service_tests")
+
+[node name="GrazingRulesTests" type="Node" parent="."]
+script = ExtResource("436_grazing_rules_tests")
+
+[node name="AnimalSustenanceResolverTests" type="Node" parent="."]
+script = ExtResource("437_animal_sustenance_resolver_tests")
+
+[node name="LairPlacementTests" type="Node" parent="."]
+script = ExtResource("438_lair_placement_tests")
+
+[node name="SpecialistDualPathTests" type="Node" parent="."]
+script = ExtResource("439_specialist_dual_path_tests")

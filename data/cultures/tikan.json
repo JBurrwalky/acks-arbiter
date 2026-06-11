@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "tikan",
+      "catalog_number": 41,
+      "demonym": "Tikan",
+      "toponym": "Tikala",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        11,
+        16
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Chaotic"
+      ],
+      "rigidity": 0.75
+    },
+    "terrain": {
+      "seed_biomes": [
+        "jungle",
+        "dense forest",
+        "mountains"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.25,
+      "defense": 0.5,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.4,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.15
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.38,
+        "mercantile": 0.17,
+        "religious": 0.28,
+        "arcane": 0.17
+      },
+      "preferred_troop_types": [
+        "light_infantry",
+        "archers",
+        "militia"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.0,
+        "mysticism": 1.0,
+        "in_group_loyalty": 1.0,
+        "epistemic_curiosity": 0.5,
+        "affective_compassion": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.7,
+      "primitive": 0.3
+    }
+  },
+  "flavor": {
+    "name_bank_key": "tikan",
+    "phonemic_palette": "Classic Maya backbone (glottalized b'/t'/k'/tz'/ch'; x = sh; aj-/ix- agentives; -aj/-ab endings) with a Woodland overlay (the labial-free Iroquoian register; long -onon/-wenne compounds in the forest substrate); theophoric on the Maya morphs (Tulax-, Marakab-) with Woodland variants (Tularonon-, Waraksonon-).",
+    "phenotype_notes": "Synthesis of Mayan + Woodland per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Mayan + Woodland-Overlay",
+      "language_family": "mesoamerican, north_american",
+      "script": "own_script"
+    },
+    "social_structure": "theocratic",
+    "values": {
+      "core_values": [
+        "tradition",
+        "knowledge",
+        "piety"
+      ],
+      "taboos": [
+        "defying the ancestors",
+        "destroying lore"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered",
+      "notes": "Mayan + Woodland register; deity-morphs in name_bank 'tikan'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "sacral",
+      "signature_feature": "stone halls of the Tikan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "harvest",
+        "wisdom",
+        "nature"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Tikan — wary theocratic of the jungle; tradition, knowledge.",
+      "one_paragraph": "The Tikan (Mayan + Woodland) are a defensive theocratic people seeded in jungle, dense forest, mountains. They prize tradition, knowledge, piety, lean toward the military sphere, and field light_infantry, archers, militia. Outsiders are met as wary; their patrons touch harvest, wisdom, nature."
+    }
+  }
+}

@@ -422,6 +422,8 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM tracking_sessions WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM pursuit_states WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM specialists WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM specialist_commissions WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_lair_state WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM trained_creatures WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM draft_vehicles WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id])
@@ -3115,6 +3117,20 @@ func update_inventory_item_uses(item_id: String, new_uses: int) -> bool:
 	return true
 
 
+func update_inventory_item_consumable_remaining(item_id: String, remaining: int) -> bool:
+	## Update consumable_units_remaining (person-days) for a provisions row —
+	## rations / water / fodder per the provisions system (migration 149,
+	## gdd-rations-foodstuffs.md). Food / fodder rows that hit 0 are removed by
+	## the caller (ProvisionsService); water containers persist empty at 0.
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET consumable_units_remaining = ? WHERE id = ?",
+		[remaining, item_id]
+	):
+		push_error("CampaignRepository.update_inventory_item_consumable_remaining: failed. id=%s" % item_id)
+		return false
+	return true
+
+
 func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> String:
 	## Split one unit from a stacked item into an equipped single-unit item.
 	## Returns the new item's id, or "" on failure.
@@ -5147,7 +5163,8 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"crafted_magic_items", "crossbreed_instances", "crossbreed_species", "domain_departure_log",
 	"domain_religion_conversion", "domain_threats", "domains", "draft_vehicles", "dungeon_entrances",
 	"factions", "familiars", "field_battles", "followers", "guildhouses", "henchman_pools",
-	"hex_maps", "hideouts", "laboratories", "lairs", "libraries", "location_caches",
+	"hex_lair_state", "hex_maps", "hideouts", "laboratories", "lairs", "libraries", "location_caches",
+	"specialist_commissions",
 	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
 	"override_log", "parties", "party_clocks", "pois", "pursuit_states", "realm_relations",
 	"realms", "reputation_entries", "restricted_cooldowns", "scheduled_events", "settlement_entrances",
@@ -5529,6 +5546,7 @@ func update_trained_creature(creature_id: String, data: Dictionary) -> bool:
 		"handler_id", "introduced_handlers",
 		"hp_current", "hp_max", "training_complete", "is_alive",
 		"formation_col", "formation_row", "party_id",
+		"fodder_starvation_days",
 	]
 	var sets: Array = []
 	var values: Array = []
@@ -6871,24 +6889,32 @@ func clear_familiar_death_save(familiar_id: String) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Wilderness POI / Lair discovery (migrations 050 / 051) — Phase 4
+# Wilderness lairs (migration 152) + POIs (migration 050)
 # ---------------------------------------------------------------------------
-# Per le_wilderness_lair_rules.xml. Lairs and POIs are placed eagerly during
-# world-gen (or on first lair-encounter substitution) and revealed lazily via
-# the abstract search procedure. The renderer / Notebook / quest hooks read
-# rows where `discovered = 1` and treat the rest as fog-of-war content.
+# Per le_wilderness_lair_rules.xml and gdd-lair-discovery.md (2026-05-27
+# redesign). Lairs are placed LAZILY — a row exists only after a wandering-
+# encounter substitution (§3.2) or a successful dedicated search (§5.3)
+# places it via the Lair Generator. Placement IS discovery; every row is
+# player-known. cleared_at_round NULL = uncleared (gates Build Stronghold).
+# Per-hex budget bookkeeping lives in hex_lair_state (see HexLairState).
 
-## Insert a lair record. Returns the lair_id passed in (or generated).
+## Insert a placed-lair record (LairRecord shape per LairGenerator.generate).
+## Returns the lair_id passed in (or generated).
 func create_lair(data: Dictionary) -> String:
 	var lid: String = str(data.get("lair_id", ""))
 	if lid.is_empty():
 		lid = generate_id()
+	var cleared_raw: Variant = data.get("cleared_at_round")
+	var cleared_at: Variant = null
+	if cleared_raw != null:
+		cleared_at = int(cleared_raw)
 	var ok: bool = db.query_with_bindings("""
 		INSERT INTO lairs
 			(lair_id, campaign_id, map_id, hex_q, hex_r,
-			 monster_group, monster_count, discovered,
-			 discovered_at_round, discovered_via)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 monster_group, monster_count, placed_via, created_at_round,
+			 cleared_at_round, treasure_type, treasure_hoard_json,
+			 lair_layout_seed)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		lid,
 		str(data.get("campaign_id", "")),
@@ -6897,9 +6923,12 @@ func create_lair(data: Dictionary) -> String:
 		int(data.get("hex_r", 0)),
 		str(data.get("monster_group", "")),
 		int(data.get("monster_count", 0)),
-		1 if bool(data.get("discovered", false)) else 0,
-		int(data.get("discovered_at_round", 0)),
-		str(data.get("discovered_via", "")),
+		str(data.get("placed_via", "")),
+		int(data.get("created_at_round", 0)),
+		cleared_at,
+		str(data.get("treasure_type", "")),
+		str(data.get("treasure_hoard_json", "{}")),
+		int(data.get("lair_layout_seed", 0)),
 	])
 	if not ok:
 		push_error("CampaignRepository.create_lair: insert failed for id=%s" % lid)
@@ -6907,34 +6936,31 @@ func create_lair(data: Dictionary) -> String:
 	return lid
 
 
-## Returns all lair rows in [param map_id] at hex (q,r). Caller filters by
-## `discovered`. Result rows have keys lair_id, monster_group, monster_count,
-## discovered, discovered_at_round, discovered_via.
+## Returns one lair row by id, or {} when absent.
+func get_lair(lair_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM lairs WHERE lair_id = ?", [lair_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Returns all placed-lair rows in [param map_id] at hex (q,r), in creation
+## order (created_at_round, then lair_id as a stable tiebreak). All placed
+## lairs are discovered in the lazy model — there is no visibility filter.
 func get_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> Array:
 	db.query_with_bindings("""
-		SELECT lair_id, monster_group, monster_count,
-		       discovered, discovered_at_round, discovered_via
+		SELECT lair_id, monster_group, monster_count, placed_via,
+		       created_at_round, cleared_at_round, treasure_type,
+		       lair_layout_seed
 		FROM lairs
 		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+		ORDER BY created_at_round, lair_id
 	""", [campaign_id, map_id, q, r])
 	return db.query_result.duplicate()
 
 
-## Returns just the count of placed-but-undiscovered lairs in a hex. Single
-## index lookup — used per travel_leg for the passive-check gate.
-func count_undiscovered_lairs(campaign_id: String, map_id: String, q: int, r: int) -> int:
-	db.query_with_bindings("""
-		SELECT COUNT(*) AS n FROM lairs
-		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
-		  AND discovered = 0
-	""", [campaign_id, map_id, q, r])
-	if db.query_result.is_empty():
-		return 0
-	return int(db.query_result[0].get("n", 0))
-
-
-## Returns total lair count in a hex (discovered + undiscovered). Used by
-## SurveyingResolver as the truth value for an assessment.
+## Returns total placed-lair count in a hex.
 func count_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> int:
 	db.query_with_bindings("""
 		SELECT COUNT(*) AS n FROM lairs
@@ -6945,45 +6971,94 @@ func count_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> 
 	return int(db.query_result[0].get("n", 0))
 
 
-## Reveal one undiscovered lair in [param hex]. Picks the first by lair_id
-## (stable tiebreak). [param at_round] is stamped onto discovered_at_round;
-## [param via] is one of "search" / "passive" / "encounter" / "aerial".
-## Returns the revealed lair_id, or "" when no undiscovered lairs remained.
-func reveal_one_lair(
-	campaign_id: String, map_id: String, q: int, r: int,
-	at_round: int, via: String,
-) -> String:
+## Returns the count of placed lairs in a hex whose cleared_at_round is set —
+## the numerator of the "Lairs: X/Y" display (gdd-lair-discovery.md §6.1).
+func count_cleared_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> int:
 	db.query_with_bindings("""
-		SELECT lair_id FROM lairs
+		SELECT COUNT(*) AS n FROM lairs
 		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
-		  AND discovered = 0
-		ORDER BY lair_id
-		LIMIT 1
+		  AND cleared_at_round IS NOT NULL
 	""", [campaign_id, map_id, q, r])
 	if db.query_result.is_empty():
-		return ""
-	var lid: String = str(db.query_result[0].get("lair_id", ""))
-	if lid.is_empty():
-		return ""
-	if not db.query_with_bindings("""
-		UPDATE lairs SET discovered = 1, discovered_at_round = ?, discovered_via = ?
-		WHERE lair_id = ?
-	""", [at_round, via, lid]):
-		push_error("CampaignRepository.reveal_one_lair: update failed for %s" % lid)
-		return ""
-	return lid
+		return 0
+	return int(db.query_result[0].get("n", 0))
 
 
-## List discovered lairs across a whole map. Used by the renderer to draw
-## markers for revealed lairs.
-func list_discovered_lairs(campaign_id: String, map_id: String) -> Array:
+## Returns the count of placed-and-uncleared lairs in a hex. Non-zero gates
+## Build Stronghold (gdd-lair-discovery.md §7).
+func count_uncleared_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> int:
 	db.query_with_bindings("""
-		SELECT lair_id, hex_q, hex_r, monster_group, monster_count,
-		       discovered_at_round, discovered_via
-		FROM lairs
-		WHERE campaign_id = ? AND map_id = ? AND discovered = 1
-	""", [campaign_id, map_id])
-	return db.query_result.duplicate()
+		SELECT COUNT(*) AS n FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+		  AND cleared_at_round IS NULL
+	""", [campaign_id, map_id, q, r])
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("n", 0))
+
+
+## Stamps cleared_at_round on a placed lair (§3.4 — combat victory + loot/
+## abandon). Idempotent: re-clearing keeps the original round. Returns false
+## when the lair does not exist or the write fails.
+func mark_lair_cleared(lair_id: String, at_round: int) -> bool:
+	var row := get_lair(lair_id)
+	if row.is_empty():
+		push_error("CampaignRepository.mark_lair_cleared: unknown lair %s" % lair_id)
+		return false
+	if row.get("cleared_at_round") != null:
+		return true
+	if not db.query_with_bindings("""
+		UPDATE lairs SET cleared_at_round = ? WHERE lair_id = ?
+	""", [at_round, lair_id]):
+		push_error("CampaignRepository.mark_lair_cleared: update failed for %s" % lair_id)
+		return false
+	return true
+
+
+# --- Per-hex lazy lair state (hex_lair_state, migration 152) ----------------
+
+## Returns the hex_lair_state row for a hex, or {} when the hex has never
+## rolled lair state. NULL columns come back as null Variants — HexLairState
+## normalizes them; most callers should go through that service.
+func get_hex_lair_state(campaign_id: String, map_id: String, q: int, r: int) -> Dictionary:
+	db.query_with_bindings("""
+		SELECT campaign_id, map_id, hex_q, hex_r,
+		       lair_budget, lair_budget_rolled_at_round,
+		       lairs_placed_count, unrevealed_lair_types, surveyed_total
+		FROM hex_lair_state
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+	""", [campaign_id, map_id, q, r])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Upserts a hex_lair_state row. Expects the full-row Dictionary shape (the
+## HexLairState service composes it). lair_budget / lair_budget_rolled_at_round
+## / surveyed_total may be null Variants (= unrolled / never surveyed).
+func upsert_hex_lair_state(row: Dictionary) -> bool:
+	var ok: bool = db.query_with_bindings("""
+		INSERT OR REPLACE INTO hex_lair_state
+			(campaign_id, map_id, hex_q, hex_r,
+			 lair_budget, lair_budget_rolled_at_round,
+			 lairs_placed_count, unrevealed_lair_types, surveyed_total)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		str(row.get("campaign_id", "")),
+		str(row.get("map_id", "")),
+		int(row.get("hex_q", 0)),
+		int(row.get("hex_r", 0)),
+		row.get("lair_budget"),
+		row.get("lair_budget_rolled_at_round"),
+		int(row.get("lairs_placed_count", 0)),
+		str(row.get("unrevealed_lair_types", "[]")),
+		row.get("surveyed_total"),
+	])
+	if not ok:
+		push_error("CampaignRepository.upsert_hex_lair_state: upsert failed at (%s, %s, %d, %d)" % [
+			str(row.get("campaign_id", "")), str(row.get("map_id", "")),
+			int(row.get("hex_q", 0)), int(row.get("hex_r", 0))])
+	return ok
 
 
 # --- POIs --------------------------------------------------------------------
@@ -7273,6 +7348,103 @@ func close_specialist(specialist_id: String, reason: String) -> bool:
 		SET closed = 1, closed_reason = ?
 		WHERE specialist_id = ?
 	""", [reason, specialist_id])
+
+
+# --- Specialist commissions (migration 153, gdd-specialists.md §5) -----------
+
+## Insert a specialist-commission row. Returns the commission_id (generated
+## when absent), or "" on failure.
+func open_specialist_commission(data: Dictionary) -> String:
+	var cid: String = str(data.get("commission_id", ""))
+	if cid.is_empty():
+		cid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO specialist_commissions
+			(commission_id, campaign_id, party_id, settlement_id,
+			 kind, service_id, service_label, subject, cost_cp,
+			 commissioned_at_round, completes_at_round,
+			 result_kind, result_payload, collected, collected_at_round)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+	""", [
+		cid,
+		str(data.get("campaign_id", "")),
+		str(data.get("party_id", "")),
+		str(data.get("settlement_id", "")),
+		str(data.get("kind", "")),
+		str(data.get("service_id", "")),
+		str(data.get("service_label", "")),
+		str(data.get("subject", "")),
+		int(data.get("cost_cp", 0)),
+		int(data.get("commissioned_at_round", 0)),
+		int(data.get("completes_at_round", 0)),
+		str(data.get("result_kind", "report")),
+		str(data.get("result_payload", "")),
+	])
+	if not ok:
+		push_error("CampaignRepository.open_specialist_commission: insert failed for %s" % cid)
+		return ""
+	return cid
+
+
+## All commission rows for [param party_id], newest first. Includes collected
+## rows (the tab shows history); callers filter as needed.
+func list_specialist_commissions(campaign_id: String, party_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT commission_id, settlement_id, kind, service_id, service_label,
+		       subject, cost_cp, commissioned_at_round, completes_at_round,
+		       result_kind, result_payload, collected, collected_at_round
+		FROM specialist_commissions
+		WHERE campaign_id = ? AND party_id = ?
+		ORDER BY commissioned_at_round DESC, commission_id
+	""", [campaign_id, party_id])
+	return db.query_result.duplicate()
+
+
+func get_specialist_commission(commission_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM specialist_commissions WHERE commission_id = ?",
+		[commission_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Stamps a commission collected. Returns false when missing or already
+## collected (callers treat re-collection as a no-op failure).
+func mark_specialist_commission_collected(commission_id: String, at_round: int) -> bool:
+	var row := get_specialist_commission(commission_id)
+	if row.is_empty() or int(row.get("collected", 0)) == 1:
+		return false
+	return db.query_with_bindings("""
+		UPDATE specialist_commissions
+		SET collected = 1, collected_at_round = ?
+		WHERE commission_id = ?
+	""", [at_round, commission_id])
+
+
+## Count of retains + commissions made at [param settlement_id] this calendar
+## month — subtracted from the §6.1 gross availability roll.
+func count_specialist_engagements_this_month(
+	campaign_id: String, settlement_id: String, kind: String,
+	month_start_round: int, month_end_round: int,
+) -> int:
+	db.query_with_bindings("""
+		SELECT
+			(SELECT COUNT(*) FROM specialists
+			 WHERE campaign_id = ? AND settlement_id = ? AND kind = ?
+			   AND hired_at_round >= ? AND hired_at_round < ?)
+			+
+			(SELECT COUNT(*) FROM specialist_commissions
+			 WHERE campaign_id = ? AND settlement_id = ? AND kind = ?
+			   AND commissioned_at_round >= ? AND commissioned_at_round < ?)
+			AS n
+	""", [
+		campaign_id, settlement_id, kind, month_start_round, month_end_round,
+		campaign_id, settlement_id, kind, month_start_round, month_end_round,
+	])
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("n", 0))
 
 
 # --- Survey progress ---------------------------------------------------------

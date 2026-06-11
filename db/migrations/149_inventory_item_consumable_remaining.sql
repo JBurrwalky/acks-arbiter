@@ -1,0 +1,22 @@
+-- Migration 149: per-row consumable depletion state for the provisions system.
+--
+-- Backs the rations / water / fodder consumption system (gdd-rations-foodstuffs.md).
+-- Reverses the old coding_conventions §28 model ("the abstract counter is the
+-- source of truth; inventory is purely descriptive"): under Option B the carried
+-- INVENTORY is the source of truth, and the PartyData ration_units / water_units
+-- counters become per-tick derived scratch values.
+--
+-- Semantics of consumable_units_remaining:
+--   -1  = uninitialized / not a tracked consumable. The ProvisionsLedger treats
+--         an uninitialized FOOD / WATER / FODDER row as FULL: remaining person-days
+--         = quantity x catalog.consumable_person_days. (A ration in your pack is
+--         full of food; a waterskin is assumed filled when acquired.)
+--   >=0 = explicit person-days of the consumable currently left in THIS row.
+--         Food / fodder rows are DELETED when this reaches 0 (the provisions were
+--         eaten). Water containers (waterskin / barrel) PERSIST empty at 0 — they
+--         are refilled at a water source.
+--
+-- The column is meaningless for non-consumable items (stays -1) and never
+-- collides with uses_remaining (migration 012 — torch turns / scroll charges),
+-- which keeps the two depletion concepts cleanly separated.
+ALTER TABLE inventory_items ADD COLUMN consumable_units_remaining INTEGER NOT NULL DEFAULT -1;

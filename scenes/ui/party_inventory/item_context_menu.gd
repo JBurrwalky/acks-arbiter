@@ -153,7 +153,7 @@ func _equip_item() -> void:
 		"weapon":
 			slot = "hands_main"
 		"armor":
-			slot = "body"
+			slot = "armor"  # dedicated paper-doll armor slot (migration 151)
 		"shield":
 			slot = "hands_off"
 		"ammunition":

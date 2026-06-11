@@ -1,0 +1,143 @@
+{
+  "class_id": "mystic",
+  "class_name": "Mystic",
+  "source": "Player's Companion",
+  "race": "human",
+  "prime_requisites": ["WIS", "DEX", "CON", "CHA"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "fighter",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 9, "3": 9, "4": 8, "5": 7, "6": 7, "7": 6, "8": 5, "9": 5, "10": 4, "11": 3, "12": 3, "13": 2, "14": 1
+  },
+  "saving_throws": {
+    "1":  {"petrification": 15, "poison_death": 14, "blast_breath": 16, "staffs_wands": 16, "spells": 17},
+    "2":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "3":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "4":  {"petrification": 13, "poison_death": 12, "blast_breath": 14, "staffs_wands": 14, "spells": 15},
+    "5":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "6":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "7":  {"petrification": 11, "poison_death": 10, "blast_breath": 12, "staffs_wands": 12, "spells": 13},
+    "8":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "10": {"petrification":  7, "poison_death":  6, "blast_breath":  8, "staffs_wands":  8, "spells":  9},
+    "11": {"petrification":  6, "poison_death":  5, "blast_breath":  7, "staffs_wands":  7, "spells":  8},
+    "12": {"petrification":  6, "poison_death":  5, "blast_breath":  7, "staffs_wands":  7, "spells":  8},
+    "13": {"petrification":  5, "poison_death":  4, "blast_breath":  6, "staffs_wands":  6, "spells":  7},
+    "14": {"petrification":  4, "poison_death":  3, "blast_breath":  5, "staffs_wands":  5, "spells":  6}
+  },
+  "xp_table": [0, 2450, 4900, 9800, 19600, 39200, 80000, 160000, 280000, 400000, 520000, 640000, 760000, 880000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+2", "9d6+4", "9d6+6", "9d6+8", "9d6+10"],
+  "weapon_permissions": [
+    "dagger", "dart", "flail", "longbow", "pole_arm",
+    "quarterstaff", "short_sword", "spear", "sword", "whip"
+  ],
+  "weapon_restrictions": [],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": ["two_handed", "dual_wield"],
+  "class_proficiency_list": [
+    "acrobatics", "arcane_dabbling", "beast_friendship", "blind_fighting",
+    "climbing", "combat_trickery_force_back", "combat_trickery_incapacitate",
+    "combat_trickery_knock_down", "combat_trickery_overrun",
+    "combat_trickery_wrestle", "command", "contortionism", "eavesdropping",
+    "endurance", "fighting_style", "illusion_resistance", "laying_on_hands",
+    "lip_reading", "passing_without_trace", "performance", "precise_shooting",
+    "running", "skirmishing", "swashbuckling", "unarmed_fighting",
+    "wakefulness", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 3, 6, 9, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Aspirant", "Novice", "Initiate", "Disciple", "Immaculate",
+    "Preceptor", "Master", "Superior Master", "Enlightened Master",
+    "Enlightened Master, 10th lvl", "Enlightened Master, 11th lvl",
+    "Enlightened Master, 12th lvl", "Enlightened Master, 13th lvl",
+    "Hierophant"
+  ],
+  "class_powers": [
+    {
+      "power_id": "fighter_damage_bonus",
+      "unlock_level": 1,
+      "progression": {"1": 1, "2": 1, "3": 2, "4": 2, "5": 2, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 5, "13": 5, "14": 5}
+    },
+    {
+      "power_id": "cleave",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "graceful_fighting",
+      "unlock_level": 1,
+      "description": "+1 bonus to armor class at 1st level, +2 at 7th, +3 at 13th, so long as the mystic can move freely. May not wear armor or use shields.",
+      "ac_bonus_progression": {"1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 2, "8": 2, "9": 2, "10": 2, "11": 2, "12": 2, "13": 3, "14": 3}
+    },
+    {
+      "power_id": "mindful",
+      "unlock_level": 1,
+      "description": "+4 bonus on proficiency throws to hear noises and detect secret doors; notices secret doors on a proficiency throw of 18+ with casual observation; +1 bonus to avoid surprise."
+    },
+    {
+      "power_id": "meditative_focus",
+      "unlock_level": 1,
+      "description": "Enter a state of meditative focus (does not require an action): +1 to armor class, attack throws, proficiency throws, saving throws, and initiative rolls for 1 turn (10 minutes). Usable once per day per level of experience."
+    },
+    {
+      "power_id": "strength_of_spirit",
+      "unlock_level": 2,
+      "description": "Immune to normal and magical fear effects."
+    },
+    {
+      "power_id": "speed_of_thought",
+      "unlock_level": 3,
+      "description": "+1 bonus to all initiative rolls and a further +1 bonus to surprise rolls."
+    },
+    {
+      "power_id": "probability_trance",
+      "unlock_level": 4,
+      "description": "1 turn of undisturbed meditation yields useful information regarding a question concerning a specific goal, event, or activity occurring within one week. Base chance 60%, +1% per level above 4th. Once per day, with a night's rest required in between."
+    },
+    {
+      "power_id": "purity_of_body_and_soul",
+      "unlock_level": 5,
+      "description": "Immune to all forms of disease, including magical diseases caused by spells, mummies, and lycanthropes."
+    },
+    {
+      "power_id": "command_of_voice",
+      "unlock_level": 6,
+      "description": "+2 bonus to reaction rolls with creatures spoken to. If the bonus results in a total of 12 or more, subjects act as if charmed while in the mystic's presence. Creatures with WIS greater than the mystic's CHA are immune (and the mystic knows they are immune)."
+    },
+    {
+      "power_id": "wholeness_of_body",
+      "unlock_level": 7,
+      "description": "Immune to all forms of poison, including magical poisons."
+    },
+    {
+      "power_id": "perception_of_intention",
+      "unlock_level": 8,
+      "description": "Always knows the exact reaction result (Hostile, Unfriendly, etc.) of creatures interacted with, even if they attempt to lie or conceal their reactions. Creatures with CHA greater than the mystic's WIS are immune (and the mystic knows they are immune)."
+    },
+    {
+      "power_id": "stronghold_monastery",
+      "unlock_level": 9,
+      "description": "May establish a monastery: up to 5d6x10 0th-level soldiers and 1d6 mystics of 1st-3rd level come to serve, completely loyal (morale +4). Followers must be provided food and lodging but need not be paid wages. Otherwise identical to a cleric's fortified church."
+    },
+    {
+      "power_id": "harmony_of_spirit",
+      "unlock_level": 10,
+      "description": "+2 bonus to all saving throws. This bonus is already factored into the saving_throws table at levels 10-14."
+    },
+    {
+      "power_id": "perfection_of_body",
+      "unlock_level": 14,
+      "description": "Body becomes ageless; lifespan three times longer than normal. Immune to ghoul paralysis."
+    }
+  ],
+  "notes": "Extracted 2026-06-11 from ACKS Player's Companion pp.30-31 (Jedidiah's PDF). Saving throws at levels 10-14 include the harmony of spirit +2 (printed table values used verbatim). proficiency_progression.class [1,3,6,9,12] was inferred from the project-wide pattern for non-caster fighter-progression classes (fighter, assassin, paladin, anti-paladin, barbarian, explorer); the schedule is not stated in the class writeup. RULED CONFIRMED by Jedidiah 2026-06-11."
+}

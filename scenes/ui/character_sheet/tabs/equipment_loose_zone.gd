@@ -9,6 +9,7 @@ extends PanelContainer
 
 var _character_id: String
 var _items_box: VBoxContainer
+var _unequip_callback: Callable = Callable()
 
 var _bg_style: StyleBoxFlat
 
@@ -16,8 +17,9 @@ const _COLOR_NORMAL := Color(0.84, 0.90, 0.97, 1.0)
 const _COLOR_DROP_OK := Color(0.78, 0.90, 0.80, 1.0)
 
 
-func setup(loose_items: Array, character_id: String, remove_callback: Callable, equip_fn: Callable = Callable(), split_fn: Callable = Callable()) -> void:
+func setup(loose_items: Array, character_id: String, remove_callback: Callable, equip_fn: Callable = Callable(), split_fn: Callable = Callable(), unequip_callback: Callable = Callable()) -> void:
 	_character_id = character_id
+	_unequip_callback = unequip_callback
 
 	_bg_style = StyleBoxFlat.new()
 	_bg_style.bg_color = _COLOR_NORMAL
@@ -63,15 +65,24 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 		return false
 	var item: Dictionary = data.get("item", {})
 	var has_container: bool = not item.get("container_id", "").is_empty()
+	# A drag that originated in a paper-doll slot carries from_slot — dropping it
+	# here unequips the item (slot -> personal inventory, §3.4.4).
+	var from_slot: String = str(data.get("from_slot", ""))
+	var droppable: bool = has_container or not from_slot.is_empty()
 
-	_bg_style.bg_color = _COLOR_DROP_OK if has_container else _COLOR_NORMAL
+	_bg_style.bg_color = _COLOR_DROP_OK if droppable else _COLOR_NORMAL
 	add_theme_stylebox_override("panel", _bg_style)
-	return has_container
+	return droppable
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	_reset_style()
 	var item_id: String = data.get("item_id", "")
+	var from_slot: String = str(data.get("from_slot", ""))
+	if not from_slot.is_empty() and _unequip_callback.is_valid():
+		# Unequip via the tab's handler so stacked thrown weapons merge correctly.
+		_unequip_callback.call(item_id)
+		return
 	CampaignRepository.update_inventory_item_equip_state(item_id, false, "pack", "")
 	EventBus.inventory_updated.emit(_character_id)
 

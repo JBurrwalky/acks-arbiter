@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "bugbear",
+      "catalog_number": null,
+      "demonym": "Bugbear",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "bugbear",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.35
+    },
+    "terrain": {
+      "seed_biomes": [
+        "dense forest",
+        "hills",
+        "mountains"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.55,
+      "size_exponent_bias": 0
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "berserkers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "self_interest": -1.0,
+        "civility": -1.0,
+        "stress_reactivity": 0.5,
+        "in_group_loyalty": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "bugbear",
+    "phonemic_palette": "Bugbear (Kazhur, growl-whisper regression): voiced and breathy with a sibilant whisper, h-breath after stops, suffixes -hrr/-mbu/-vurr; menacing, soft, low.",
+    "phenotype_notes": "Features of the Bugbear analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Bugbear",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Bugbear register; deity-morphs in name_bank 'bugbear'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone warrens of the Bugbear"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Bugbear — xenophobic tribal of the dense forest; survival.",
+      "one_paragraph": "The Bugbear are a Chaotic beastman race; aggression 0.8, organized as tribal. Their tongue is a regressed form (see name_bank 'bugbear'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

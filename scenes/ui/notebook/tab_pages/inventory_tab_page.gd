@@ -519,22 +519,26 @@ func _update_footer() -> void:
 
 
 func _count_rations() -> int:
-	var total := 0
+	## Real food-days the party can eat = (foraged surplus + carried rations, in
+	## person-days) ÷ humanoid count. Replaces the old item-count that reported a
+	## 1-week ration block as "1 day" (gdd-rations-foodstuffs.md BUG, Phase 1).
 	var pid: String = _resolve_party_id()
+	if pid.is_empty():
+		return 0
+	var party_data: PartyData = CampaignRepository.load_party_data(pid)
+	if party_data == null:
+		return 0
+	party_data.character_data = []
 	for c in CampaignRepository.list_party_characters(pid):
-		var items: Array = CampaignRepository.get_inventory_items(str(c.get("id", "")))
-		for item in items:
-			var key: String = ""
-			var qty: int = 1
-			if item is Dictionary:
-				key = str(item.get("item_key", ""))
-				qty = int(item.get("quantity", 1))
-			elif item is InventoryItem:
-				key = item.item_key
-				qty = item.quantity
-			if key.begins_with("rations") or key == "iron_rations" or key == "standard_rations":
-				total += qty
-	return total
+		party_data.character_data.append(CharacterData.from_dict(c))
+	var service := ProvisionsService.new(CampaignRepository, _catalog)
+	var food_person_days: int = party_data.ration_units + service.carried_food_days(party_data)
+	var humanoids: int = ProvisionsLedger.humanoid_count(party_data)
+	if humanoids <= 0:
+		return food_person_days
+	@warning_ignore("integer_division")
+	var days: int = food_person_days / humanoids
+	return days
 
 
 # ---------------------------------------------------------------------------

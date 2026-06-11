@@ -224,6 +224,13 @@ func _on_context_action(action_data: Dictionary) -> void:
 	if action_type == "" or action_type == "cancel":
 		return
 
+	# Enter Lair (gdd-lair-discovery.md §6.2). The dungeon-entry flow needs
+	# the Lair Generator's tactical layout, which is a stubbed future
+	# subsystem — surface the placeholder rather than a broken transition.
+	if action_type == "wilderness_enter_lair":
+		_on_enter_lair_requested(str(action_data.get("lair_id", "")))
+		return
+
 	var target_hex := Vector2i(
 		int(action_data.get("hex_q", 0)),
 		int(action_data.get("hex_r", 0)))
@@ -324,6 +331,25 @@ func _activity_type_for_action(action_type: String) -> String:
 		"wilderness_hunt":             return "hunt"
 		"wilderness_search_lair":      return "search_lair"
 		_:                              return ""
+
+
+## Enter {Type} Lair (gdd-lair-discovery.md §6.2). TODO(lair-generator-gdd):
+## once the Lair Generator subsystem produces a tactical layout from
+## lairs.lair_layout_seed, route through the existing dungeon-entry flow
+## (transition_to_state("dungeon", {entrance, spawn_cell}) — see
+## _on_dungeon_entry). Until then the button surfaces and explains itself.
+func _on_enter_lair_requested(lair_id: String) -> void:
+	var row: Dictionary = CampaignRepository.get_lair(lair_id)
+	if row.is_empty():
+		return
+	var type_label: String = String(row.get("monster_group", "")).capitalize()
+	EventBus.notification_requested.emit({
+		"type": "info",
+		"category": "exploration",
+		"title": "%s Lair" % type_label,
+		"body": "Lair interiors arrive with the Lair Generator — entering is not yet implemented.",
+		"duration": 4.0,
+	})
 
 
 ## Returns the id of the party that should receive context-menu orders.

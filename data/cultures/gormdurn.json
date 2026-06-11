@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "gormdurn",
+      "catalog_number": 52,
+      "demonym": "Gormdurn",
+      "toponym": "Gormgrund",
+      "tier": "demihuman",
+      "race": "dwarf",
+      "civ_or_clan": "civ",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.1,
+        "Neutral": 0.6,
+        "Chaotic": 0.3
+      },
+      "rigidity": 0.7
+    },
+    "terrain": {
+      "seed_biomes": [
+        "volcanic mountains"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.85,
+      "size_exponent_bias": -0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.7,
+      "modifiers": [
+        {
+          "when": "target_in_my_seed_biome",
+          "set": 0.85
+        },
+        {
+          "when": "target_is_demihuman",
+          "set": 0.9
+        },
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.75,
+      "collapse_proneness": 0.8,
+      "end_state": "enclave"
+    },
+    "infrastructure": {
+      "road_propensity": 0.45
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.35,
+        "mercantile": 0.15,
+        "religious": 0.35,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "crossbowmen",
+        "berserkers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "mysticism": 1.5,
+        "in_group_loyalty": 1.5,
+        "affective_compassion": -1.0,
+        "societal_orthodoxy": 1.0,
+        "stress_reactivity": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "gormdurn",
+    "phonemic_palette": "Gormdurn (Durnkad fire-dialect): the shared hard-frame/soft-vowel/short-syllable Durnkad, with the fire-dialect drift - word-final and medial stops GEMINATE (-un -> -unn, -ak -> -akk), o raises toward u, and the whole has a crackling, clipped, anvil-loud edge. The common-word stock is the shared Durnkad (one tongue); the gemination shows in speech and in the marked forms (titles, deities, the realm's own name).",
+    "phenotype_notes": "Features of the Dwarf analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Gormdurn",
+      "language_family": "dwarven",
+      "script": "own_script"
+    },
+    "social_structure": "theocratic",
+    "values": {
+      "core_values": [
+        "piety",
+        "honor",
+        "strength"
+      ],
+      "taboos": [
+        "blasphemy and sacrilege",
+        "breaking a sworn oath"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered",
+      "notes": "Dwarf register; deity-morphs in name_bank 'gormdurn'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "sacral",
+      "signature_feature": "stone halls of the Gormdurn"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 3,
+      "patron_powers": [
+        "fire",
+        "death",
+        "mountains"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Gormdurn — xenophobic theocratic of the volcanic mountains; piety, honor.",
+      "one_paragraph": "The Gormdurn (Dwarf) are a assertive theocratic people seeded in volcanic mountains. They prize piety, honor, strength, lean toward the military sphere, and field heavy_infantry, crossbowmen, berserkers. Outsiders are met as xenophobic; their patrons touch fire, death, mountains."
+    }
+  }
+}

@@ -465,7 +465,7 @@ func _on_auto_equip() -> void:
 				best_ac = ac
 				best_armor_idx = i
 	if best_armor_idx >= 0:
-		_equip_one_in_cart(inventory, best_armor_idx, "body")
+		_equip_one_in_cart(inventory, best_armor_idx, "armor")  # paper-doll armor slot (migration 151)
 
 	# Best weapon (highest avg damage, naive: sort by weapon_damage string length as proxy)
 	var best_weapon_idx := -1
@@ -595,11 +595,15 @@ func _refresh_cart() -> void:
 		var name_lbl := Label.new()
 		var slot_tag := ""
 		match slot:
-			"body":    slot_tag = "[body] "
-			"hands_main": slot_tag = "[main] "
-			"hands_off":  slot_tag = "[off]  "
-			"belt":    slot_tag = "[belt] "
-			_:         slot_tag = "[pack] "
+			"armor":          slot_tag = "[armor]"
+			"torso_clothing", "legs_clothing": slot_tag = "[worn] "
+			"hands_main":     slot_tag = "[main] "
+			"hands_off":      slot_tag = "[off]  "
+			"head", "neck", "arms", "cloak", "feet", "hands_worn": slot_tag = "[worn] "
+			"belt":           slot_tag = "[belt] "
+			"ring_l", "ring_r": slot_tag = "[ring] "
+			"quiver":         slot_tag = "[ammo] "
+			_:                slot_tag = "[pack] "
 		name_lbl.text = slot_tag + name_str + (" ×%d" % qty if qty > 1 else "")
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_lbl)

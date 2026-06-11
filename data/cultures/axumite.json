@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "axumite",
+      "catalog_number": 23,
+      "demonym": "Axumite",
+      "toponym": "Axuma",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        14
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral"
+      ],
+      "rigidity": 0.65
+    },
+    "terrain": {
+      "seed_biomes": [
+        "savanna",
+        "hills",
+        "mountains"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.55,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.4,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.3
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.2
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.6,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.5
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.3,
+        "mercantile": 0.3,
+        "religious": 0.3,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "archers",
+        "war_elephants"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.0,
+        "mysticism": 1.0,
+        "self_interest": 0.5,
+        "civility": 0.5,
+        "in_group_loyalty": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "axumite",
+    "phonemic_palette": "Ge'ez/Ethiosemitic (South Semitic): emphatics t'/s'/q'/p'; gutturals h/h./kh/'; vowels a e i o u (plus central a/i); gemination distinctive; triconsonantal roots; endings -a/-os/-ay; theophoric stems are morphed canon-names (Talros-, Numanos-, Warlandos-, Gayandos-).",
+    "phenotype_notes": "Features of the Ethiopian analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Geez",
+      "language_family": "near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "theocratic",
+    "values": {
+      "core_values": [
+        "piety",
+        "tradition",
+        "wealth"
+      ],
+      "taboos": [
+        "blasphemy and sacrilege",
+        "defying the ancestors"
+      ],
+      "attitude_toward_outsiders": "tolerant"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "revered",
+      "notes": "Ethiopian register; deity-morphs in name_bank 'axumite'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "sacral",
+      "signature_feature": "stone halls of the Axumite"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "trade",
+        "law",
+        "light"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Axumite — tolerant theocratic of the savanna; piety, tradition.",
+      "one_paragraph": "The Axumite (Ethiopian) are a assertive theocratic people seeded in savanna, hills, mountains. They prize piety, tradition, wealth, lean toward the military sphere, and field heavy_infantry, archers, war_elephants. Outsiders are met as tolerant; their patrons touch trade, law, light."
+    }
+  }
+}

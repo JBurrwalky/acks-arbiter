@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "troll",
+      "catalog_number": null,
+      "demonym": "Troll",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "troll",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.2
+    },
+    "terrain": {
+      "seed_biomes": [
+        "mountains",
+        "swamp",
+        "dense forest"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.55,
+      "size_exponent_bias": -0.1
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "berserkers",
+        "heavy_infantry",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "civility": -2.0,
+        "stress_reactivity": 1.0,
+        "epistemic_curiosity": -1.0,
+        "self_interest": -1.0
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "troll",
+    "phonemic_palette": "Troll (Kazhur, slow-groan regression): vowels lengthen to oo/uu, consonants soften to deep voiced g/d/b/m, drawn-out, suffixes -oom/-rugg/-uum; ponderous, deep, slow.",
+    "phenotype_notes": "Features of the Troll analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Troll",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Troll register; deity-morphs in name_bank 'troll'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone warrens of the Troll"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Troll — xenophobic tribal of the mountains; survival.",
+      "one_paragraph": "The Troll are a Chaotic beastman race; aggression 0.85, organized as tribal. Their tongue is a regressed form (see name_bank 'troll'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

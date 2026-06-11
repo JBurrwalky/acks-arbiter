@@ -200,7 +200,7 @@ func test_equipment_catalog_consumable_tags() -> void:
 		["rations_iron_week",     "food",  7],
 		["rations_standard_week", "food",  7],
 		["waterskin",             "water", 1],
-		["bread_white",           "food",  4],
+		["bread_white",           "food",  1],
 		["cheese",                "food",  1],
 		["wine_cheap",            "water", 0.5],
 	]:
@@ -227,9 +227,10 @@ func test_accumulate_resource_items_uses_catalog_tags() -> void:
 		{"item_key": "bread_white",       "quantity": 1},
 	]
 	var got: Dictionary = page._accumulate_resource_items(items)
-	# Food: 2 * 7 days * (1/6 stone/day) + 1 * 4 days * (1/6) = (14 + 4)/6 = 3.0
-	check(abs(got["food"] - 3.0) < 0.01,
-		"food total should be 3.0 stones (got %.3f)" % got["food"])
+	# Food: 2 * 7 days * (1/6 stone/day) + 1 * 1 day * (1/6) = (14 + 1)/6 = 2.5
+	# (bread_white is now a 2-lb = 1-ration unit per the provisions normalization).
+	check(abs(got["food"] - 2.5) < 0.01,
+		"food total should be 2.5 stones (got %.3f)" % got["food"])
 	# Water: 3 waterskins * 1 day = 3.0
 	check(abs(got["water"] - 3.0) < 0.01,
 		"water total should be 3.0 (got %.3f)" % got["water"])

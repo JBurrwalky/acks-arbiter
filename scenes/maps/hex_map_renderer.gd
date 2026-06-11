@@ -1163,10 +1163,37 @@ func _draw_river_edge(edge_data: HexRiverEdgeData) -> void:
 	var upstream: Vector2 = ccw_vertex if edge_data.flow_clockwise else cw_vertex
 	_draw_river_arrowhead(upstream, downstream)
 
-	if edge_data.crossing != HexRiverEdgeData.CROSSING_NONE:
+	# Effective crossing: an authored crossing wins; otherwise a road that
+	# bridges this edge implies a bridge ("roads imply crossings" — Jedidiah
+	# ruling 2026-06-08). Deriving the marker from the road position guarantees
+	# the bridge lines up with the road that crosses the river.
+	var effective_crossing: String = edge_data.crossing
+	if effective_crossing == HexRiverEdgeData.CROSSING_NONE \
+			and _edge_has_road(owner_coord, edge_data.edge):
+		effective_crossing = HexRiverEdgeData.CROSSING_BRIDGE
+	if effective_crossing != HexRiverEdgeData.CROSSING_NONE:
 		_draw_river_crossing_icon(
 			(cw_vertex + ccw_vertex) * 0.5,
-			edge_data.crossing)
+			effective_crossing)
+
+
+## Returns true if a road runs across edge `edge` of `owner_coord` — checked
+## from either adjacent hex. Mirrors HexMapController._edge_has_road so the
+## rendered bridge marker and the movement-passability rule stay in lockstep.
+func _edge_has_road(owner_coord: Vector2i, edge: int) -> bool:
+	if _map_data == null:
+		return false
+	var owner_terrain: HexTerrainData = _map_data.get_hex(owner_coord)
+	if owner_terrain != null and owner_terrain.overlay != null \
+			and edge in owner_terrain.overlay.road_edges:
+		return true
+	var neighbor_coord: Vector2i = owner_coord + HexRiverEdgeData.neighbor_offset(edge)
+	var neighbor_terrain: HexTerrainData = _map_data.get_hex(neighbor_coord)
+	var opp: int = HexOverlayData.opposite_edge(edge)
+	if neighbor_terrain != null and neighbor_terrain.overlay != null \
+			and opp in neighbor_terrain.overlay.road_edges:
+		return true
+	return false
 
 
 func _draw_river_arrowhead(upstream: Vector2, downstream: Vector2) -> void:
@@ -1358,21 +1385,19 @@ func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
 	var weather_line: String = _weather_tooltip_line(coord, terrain)
 	if not weather_line.is_empty():
 		text += "\nWeather: %s" % weather_line
-	# Phase 4: lair / survey hover lines. Show the count of revealed lairs
-	# in this hex (independent of party — every player sees them once
-	# discovered) and the active party's most recent Land Surveying estimate.
+	# Lair hover line per gdd-lair-discovery.md §6.1: "Lairs: cleared/total".
+	# Hidden before any placement or Survey; pre-Survey the denominator is
+	# the placed count; post-Survey it is the surveyed total (which may be a
+	# false reading from an unmodified-1 — never disclosed). Replaces the v1
+	# revealed-count + per-party survey-estimate lines (2026-06-10).
 	var lair_line: String = _lair_tooltip_line(coord)
 	if not lair_line.is_empty():
 		text += "\nLairs: %s" % lair_line
-	var estimate_line: String = _survey_estimate_tooltip_line(coord)
-	if not estimate_line.is_empty():
-		text += "\nSurvey: %s" % estimate_line
 	return text
 
 
-## Phase 4 helper: returns "N revealed" when at least one lair on this hex
-## has been discovered, else empty string. Counts only `discovered = 1`
-## rows — undiscovered lairs are fog-of-war.
+## Returns the §6.1 "cleared / total" lair fragment for this hex, or ""
+## when the line is hidden (player knows of no lairs here).
 func _lair_tooltip_line(coord: Vector2i) -> String:
 	if _map_data == null or _map_data.id.is_empty():
 		return ""
@@ -1381,40 +1406,8 @@ func _lair_tooltip_line(coord: Vector2i) -> String:
 		campaign_id = GameState.campaign_id
 	if campaign_id.is_empty():
 		return ""
-	var rows: Array = CampaignRepository.get_lairs_in_hex(
+	return HexLairState.format_lairs_line(
 		campaign_id, _map_data.id, coord.x, coord.y)
-	var revealed: int = 0
-	for row: Dictionary in rows:
-		if int(row.get("discovered", 0)) == 1:
-			revealed += 1
-	if revealed <= 0:
-		return ""
-	return "%d revealed" % revealed
-
-
-## Phase 4 helper: returns a short string describing the active party's
-## most recent Land Surveying estimate for this hex. Empty when no estimate
-## has ever been made or no active party is present.
-func _survey_estimate_tooltip_line(coord: Vector2i) -> String:
-	if _map_data == null or _map_data.id.is_empty():
-		return ""
-	var campaign_id: String = ""
-	var party_id: String = ""
-	if typeof(GameState) != TYPE_NIL:
-		campaign_id = GameState.campaign_id
-		party_id = GameState.active_party_id
-	if campaign_id.is_empty() or party_id.is_empty():
-		return ""
-	var row: Dictionary = CampaignRepository.get_survey_progress(
-		campaign_id, _map_data.id, party_id, coord.x, coord.y)
-	if row.is_empty():
-		return ""
-	var estimate: int = int(row.get("last_estimate", -1))
-	if estimate < 0:
-		return ""
-	# Show the estimate; never reveal whether it was a false reading from a
-	# natural-1 (player only finds out after additional searches).
-	return "estimated %d lair(s)" % estimate
 
 
 ## Phase 2 helper: formats the current day's weather for a hex into a short

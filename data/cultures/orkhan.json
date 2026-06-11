@@ -1,32 +1,128 @@
 {
   "schema_version": 1,
   "mechanical": {
-    "identity": { "culture_id": "orkhan", "catalog_number": 20, "demonym": "Orkhan", "toponym": "Orkha",
-      "tier": "human", "race": "human", "civ_or_clan": "clan", "synthesis_sources": [17] },
-    "alignment": { "allowed": ["Chaotic"], "rigidity": 0.4 },
-    "terrain": { "seed_biomes": ["grassland", "scrubland"], "affinity_secondary": ["savanna", "hills"],
-      "avoided": ["jungle", "dense_forest", "swamp"], "coastal_start": "N" },
-    "expansion": { "aggression": 0.9, "defense": 0.4, "size_exponent_bias": 0.15 },
-    "conquest": { "base_subjugation_vs_genocide": 0.7, "modifiers": [] },
-    "lifecycle": { "peak_strength": 0.85, "collapse_proneness": 0.7, "end_state": "enduring" },
-    "infrastructure": { "road_propensity": 0.1 },
+    "identity": {
+      "culture_id": "orkhan",
+      "catalog_number": 20,
+      "demonym": "Orkhan",
+      "toponym": "Orkha",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        17
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "scrubland"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.9,
+      "defense": 0.4,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.7,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.85,
+      "collapse_proneness": 0.7,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.1
+    },
     "rulership": {
-      "sphere_weights": { "military": 0.70, "mercantile": 0.15, "religious": 0.10, "arcane": 0.05 },
-      "preferred_troop_types": ["horse_archers", "light_cavalry", "heavy_cavalry"] },
-    "npc": { "personality_weight_biases": "societal_orthodoxy -1.0, in_group_loyalty +1.0, stress_reactivity +1.0, civility -1.0, self_interest -0.5" }
+      "sphere_weights": {
+        "military": 0.7,
+        "mercantile": 0.15,
+        "religious": 0.1,
+        "arcane": 0.05
+      },
+      "preferred_troop_types": [
+        "horse_archers",
+        "light_cavalry",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": -1.0,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0,
+        "civility": -1.0,
+        "self_interest": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
   },
   "flavor": {
     "name_bank_key": "orkhan",
-    "phonemic_palette": "Turko-Mongolic steppe: back vowels, vowel harmony, -gh/-kh, harsh stops (data/conlang/family_steppe.json)",
-    "phenotype_notes": "Central Asian steppe; weathered medium skin, dark hair, epicanthic folds, wiry stature",
-    "language": { "language_name": "Orkhan", "language_family": "Steppe", "script": "runic" },
+    "phonemic_palette": "Mongol-Turkic: vowel harmony; kh, gh, ch, sh, ng, q, ts; -ai/-ei diphthongs; agglutinative suffixes -tai/-dai/-chi/-khan; no initial clusters; theophoric on the morphed war- and sky-powers (Marakhai-, Tamendei-).",
+    "phenotype_notes": "Features of the Steppe-Mongol analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Mongol Turkic",
+      "language_family": "steppe",
+      "script": "own_script"
+    },
     "social_structure": "clan_confederation",
-    "values": { "core_values": ["freedom", "strength", "glory"], "taboos": ["breaking the sky-oath", "harming a guest under one's roof"], "attitude_toward_outsiders": "wary" },
-    "magic_attitude": { "arcane": "feared", "divine": "respected", "notes": "Sky-shamans honored; settled sorcery distrusted as a soft-land curse" },
-    "architecture_style": { "primary_material": "hide", "aesthetic": "mobile", "signature_feature": "felt yurts and royal tumulus-mounds" },
-    "religion_hooks": { "alignment_lens": "resolved per chosen alignment (Chaotic): venerate the wild storm/war/plunder powers, name the Lawful sky-tyrant a demon (setting-lore §4.2)", "local_saint_slots": 2,
-      "patron_powers": ["war", "storms", "plunder"] },
-    "flavor_text": { "one_line": "Horse-nomad raiders of the open steppe who explode into empires and scatter just as fast.",
-      "one_paragraph": "The Orkhan ride the great grass-sea in clans bound by the sky-oath, despising walls and the soft folk behind them. A single uniting khan can fuse the clans into a horde that floods outward in a generation, taking tribute and torch alike; but the same fractiousness that births the horde shatters it when the khan dies. They leave few roads and fewer cities, only burial-mounds and the memory of thunder on the horizon." }
+    "values": {
+      "core_values": [
+        "freedom",
+        "strength",
+        "glory"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "showing weakness"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Steppe-Mongol register; deity-morphs in name_bank 'orkhan'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "rugged",
+      "signature_feature": "mudbrick halls of the Orkhan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 2,
+      "patron_powers": [
+        "war",
+        "storms",
+        "plunder"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Orkhan — wary clan confederation of the grassland; freedom, strength.",
+      "one_paragraph": "The Orkhan (Steppe-Mongol) are a expansionist clan confederation people seeded in grassland, scrubland. They prize freedom, strength, glory, lean toward the military sphere, and field horse_archers, light_cavalry, heavy_cavalry. Outsiders are met as wary; their patrons touch war, storms, plunder."
+    }
   }
 }

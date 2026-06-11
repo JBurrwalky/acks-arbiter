@@ -172,6 +172,7 @@ func _reset_state() -> void:
 		"template_id": "",
 		"origin_template_id": "",
 		"template_class_metadata": {},
+		"template_extra_spells": 0,
 		"bonus_proficiencies": [],
 		"traded_scores": {},
 		"character": null,
@@ -314,8 +315,10 @@ func _clear_template_outputs() -> void:
 	creation_state["starting_gold_cp"] = 0
 	creation_state["gold_remaining_cp"] = 0
 	creation_state["proficiencies"] = []
+	creation_state["bonus_proficiencies"] = []
 	creation_state["spells"] = []
 	creation_state["inventory"] = []
+	creation_state["template_extra_spells"] = 0
 
 
 # ---------------------------------------------------------------------------
@@ -389,8 +392,6 @@ func _next_valid_step(from_step: int) -> int:
 		next += 1
 	if next == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
 		next += 1
-	if next == Step.PROFICIENCIES and _should_skip_proficiencies():
-		next += 1
 	if next == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
 		next += 1
 	if next == Step.SPELLS and _should_skip_spells():
@@ -417,8 +418,6 @@ func _prev_valid_step(from_step: int) -> int:
 	if prev == Step.SPELLS and _should_skip_spells():
 		prev -= 1
 	if prev == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
-		prev -= 1
-	if prev == Step.PROFICIENCIES and _should_skip_proficiencies():
 		prev -= 1
 	if prev == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
 		prev -= 1
@@ -462,25 +461,22 @@ func _should_skip_customization() -> bool:
 	return class_id != "barbarian" and class_id != "witch"
 
 
-func _should_skip_proficiencies() -> bool:
-	## Path B templates supply the proficiencies (edited in the template step's
-	## §4.2.1 editor), so the standalone proficiency picker is skipped.
-	return String(creation_state.get("template_path", "")) == "B"
-
-
 func _should_skip_equipment() -> bool:
 	## Path B templates ARE the loadout — no shopping step.
 	return String(creation_state.get("template_path", "")) == "B"
 
 
 func _should_skip_spells() -> bool:
-	## Skip SPELLS for non-casters, and for Path B arcane casters whose template
-	## already filled the repertoire (creation_state["spells"] non-empty). Divine
-	## Path B casters keep the normal SPELLS step (no template repertoire).
+	## Skip SPELLS for non-casters. Path B casters now flow THROUGH the Spells step
+	## (gdd §10 step 12 — reuse the full picker): arcane Path B shows the granted
+	## repertoire + the §8.2 bonus-spell roll; divine Path B runs the normal divine
+	## grant. The one no-input case — a Path B arcane caster with the repertoire
+	## already seeded AND no §8.2 extras to roll — is skipped (nothing to do).
 	var class_id: String = creation_state.get("class_id", "")
 	if not _is_caster(class_id):
 		return true
 	if String(creation_state.get("template_path", "")) == "B" \
+			and int(creation_state.get("template_extra_spells", 0)) <= 0 \
 			and not (creation_state.get("spells", []) as Array).is_empty():
 		return true
 	return false

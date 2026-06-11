@@ -51,16 +51,28 @@ const PROFICIENCY_KEY := "land_surveying"
 ## [param actual_lair_count] real lairs (queried by caller from `lairs`
 ## table — both discovered and undiscovered count toward the assessment).
 ##
-## [param optional_specialist_bonus] — Phase 6 hook for the Land Surveyor
-## specialist (`SpecialistCatalog.LAND_SURVEYOR`). Phase 4 always passed 0;
-## Phase 6 wires the value via `SpecialistBonusResolver.bonus_for(...)`
-## inside the wilderness handler call site.
+## [param optional_specialist_bonus] — Phase 6 hook for ASSISTING Land
+## Surveyor specialists. The wilderness handler computes it via
+## `SpecialistBonusResolver`; when a hired specialist is the THROWER (see
+## below) the handler excludes that specialist's own +4 from this value
+## (a professional does not assist themselves).
+##
+## [param hired_surveyor] — an active `specialists` row of kind
+## land_surveyor, or {}. Eligibility (Jedidiah ruling 2026-06-10, per
+## le_wilderness_lair_rules.xml §hirelings L191-195 "Can be hired to assess
+## the number of lairs in a hex"): when NO party member has the proficiency
+## but a hired Land Surveyor is attached to the party, the specialist makes
+## the throw. A proficient party member always takes precedence (the
+## specialist then assists via optional_specialist_bonus). Specialists are
+## non-adventuring hires with no activity state, so no strenuous penalty
+## applies to their throw. (v1 had read RAW as a character-only ability;
+## superseded by the ruling.)
 ##
 ## Returns Dictionary:
-##   eligible: bool             — at least one party member has Land Surveying
-##                                (specialists alone do NOT make the throw —
-##                                 RAW reads as a character ability)
-##   surveyor_id: String        — id of the surveying member ("" if ineligible)
+##   eligible: bool             — a proficient member OR a hired Land
+##                                Surveyor can make the throw
+##   surveyor_id: String        — character id or specialist_id ("" if ineligible)
+##   surveyor_is_specialist: bool
 ##   roll: int                  — 1d20 result
 ##   target: int                — base 18 minus search bonus
 ##   search_bonus: int          — 4 × successful_searches_so_far
@@ -76,19 +88,34 @@ static func assess(
 	actual_lair_count: int,
 	dice,
 	optional_specialist_bonus: int = 0,
+	hired_surveyor: Dictionary = {},
 ) -> Dictionary:
 	if party == null or party.character_data.is_empty():
 		return _empty_result()
 
 	var surveyor: CharacterData = _pick_surveyor(party)
-	if surveyor == null:
+	var surveyor_is_specialist: bool = false
+	var surveyor_id: String = ""
+	var surveyor_name: String = ""
+	if surveyor != null:
+		surveyor_id = surveyor.id
+		surveyor_name = surveyor.name
+	elif not hired_surveyor.is_empty() \
+			and str(hired_surveyor.get("kind", "")) == SpecialistCatalog.LAND_SURVEYOR:
+		surveyor_is_specialist = true
+		surveyor_id = str(hired_surveyor.get("specialist_id", ""))
+		surveyor_name = str(hired_surveyor.get("name", "Land Surveyor"))
+	else:
 		return _empty_result()
 
 	var search_bonus: int = SEARCH_BONUS_PER_SUCCESS * max(0, successful_searches_so_far)
 	var effective_target: int = BASE_TARGET - search_bonus
 	# RAW §effort_rules L168: strenuous penalty applies to proficiency throws.
-	# Land Surveying is the Land Surveying proficiency throw.
-	var strenuous_penalty: int = StrenuousAccountant.get_proficiency_throw_penalty(surveyor.id)
+	# Land Surveying is the Land Surveying proficiency throw. Hired
+	# specialists carry no character_activity_state — no penalty.
+	var strenuous_penalty: int = 0
+	if not surveyor_is_specialist:
+		strenuous_penalty = StrenuousAccountant.get_proficiency_throw_penalty(surveyor_id)
 	var roll: RollResult = dice.roll_digital(20, 1, 0, "land_surveying")
 	var raw: int = roll.modified_total
 	var total: int = raw + optional_specialist_bonus - strenuous_penalty
@@ -119,8 +146,9 @@ static func assess(
 
 	return {
 		"eligible": true,
-		"surveyor_id": surveyor.id,
-		"surveyor_name": surveyor.name,
+		"surveyor_id": surveyor_id,
+		"surveyor_name": surveyor_name,
+		"surveyor_is_specialist": surveyor_is_specialist,
 		"roll": raw,
 		"target": effective_target,
 		"search_bonus": search_bonus,
@@ -151,6 +179,7 @@ static func _empty_result() -> Dictionary:
 		"eligible": false,
 		"surveyor_id": "",
 		"surveyor_name": "",
+		"surveyor_is_specialist": false,
 		"roll": 0,
 		"target": BASE_TARGET,
 		"search_bonus": 0,
@@ -160,5 +189,5 @@ static func _empty_result() -> Dictionary:
 		"natural_one": false,
 		"estimate": -1,
 		"estimate_correct": true,
-		"notes": "no Land Surveying proficiency in party",
+		"notes": "no Land Surveying proficiency in party and no hired Land Surveyor",
 	}

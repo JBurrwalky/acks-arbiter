@@ -16,6 +16,10 @@ func run_all_tests() -> void:
 	test_place_10_4_downgrade_stone_door_no_outside_region()
 	test_place_10_4_downgrade_portcullis_no_outside_region()
 	test_place_key_lands_in_outside_region()
+	# --- discovery-order placement (§10.2 rev 2026-06-10) ---
+	test_place_series_doors_never_circular()
+	test_place_secret_unlocked_blocking_stair_is_opened()
+	test_place_secret_unlocked_optional_pocket_stays_secret()
 
 	if not has_failures():
 		print("DungeonKeyLeverPlacer: all tests passed.")
@@ -142,6 +146,118 @@ func test_place_key_lands_in_outside_region() -> void:
 			"Key must be placed in room 0 (outside region), not behind door; got room %d" % keys[0].placed_in_room_id)
 
 
+## §10.2 discovery-order placement: two locked stone doors in SERIES must get
+## keys that respect the dependency order — key 1 entrance-side of door 1, key
+## 2 entrance-side of door 2 — so the solvability fixpoint always resolves.
+## (The superseded outside-region model could cross-place them: key 1 behind
+## door 2 AND key 2 behind door 1, an unsolvable circle.)
+func test_place_series_doors_never_circular() -> void:
+	# 10×1: entrance(0,0) corridor(1-2) [room0(3)] DOOR1(4) [room1(5,6)] DOOR2(7) [room2(8,9)]
+	var layout: DungeonLayout = _make_open_corridor(10)
+	layout.is_entrance_floor = true
+	layout.entrance = Vector2i(0, 0)
+	layout.level_number = 1
+	_set_door_cell(layout, Vector2i(4, 0), DungeonDoorData.TYPE_LOCKED, DungeonDoorData.MATERIAL_STONE, false)
+	_set_door_cell(layout, Vector2i(7, 0), DungeonDoorData.TYPE_LOCKED, DungeonDoorData.MATERIAL_STONE, false)
+	var room0: DungeonRoomData = _make_room(0, [Vector2i(3, 0)])
+	var room1: DungeonRoomData = _make_room(1, [Vector2i(5, 0), Vector2i(6, 0)])
+	var room2: DungeonRoomData = _make_room(2, [Vector2i(8, 0), Vector2i(9, 0)])
+	layout.get_cell_at(Vector2i(3, 0)).room_id = 0
+	layout.get_cell_at(Vector2i(5, 0)).room_id = 1
+	layout.get_cell_at(Vector2i(6, 0)).room_id = 1
+	layout.get_cell_at(Vector2i(8, 0)).room_id = 2
+	layout.get_cell_at(Vector2i(9, 0)).room_id = 2
+	layout.rooms = [room0, room1, room2]
+	var floors: Array[DungeonLayout] = [layout]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 48
+
+	var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.place(floors, 1, rng)
+
+	check(keys.size() == 2, "Two locked stone doors should produce two keys; got %d" % keys.size())
+	for k: KeyItemData in keys:
+		if k.opens_door_position == Vector2i(4, 0):
+			check(k.placed_in_room_id == 0,
+				"Key for door 1 must be in room 0 (the only room before it); got room %d" % k.placed_in_room_id)
+		elif k.opens_door_position == Vector2i(7, 0):
+			check(k.placed_in_room_id == 0 or k.placed_in_room_id == 1,
+				"Key for door 2 must be entrance-side of door 2 (room 0 or 1); got room %d" % k.placed_in_room_id)
+	# The whole point: the solvability fixpoint must resolve the chain.
+	var solv: Dictionary = DungeonNavigabilityValidator.validate_solvability(floors, keys, 1)
+	check(solv["ok"], "Series-door layout must be solvable after placement: %s" % str(solv["failures"]))
+
+
+## A secret+unlocked door (no key concept, model-impassable) that gates a STAIR
+## must be opened by the coverage repair (is_secret cleared), or the dungeon
+## can never pass §9.2.
+func test_place_secret_unlocked_blocking_stair_is_opened() -> void:
+	# 7×1: entrance(0,0) corridor(1,2) [room0(3)] SECRET-UNLOCKED(4) [room1(5)] stair(6)
+	var layout: DungeonLayout = _make_open_corridor(7)
+	layout.is_entrance_floor = true
+	layout.entrance = Vector2i(0, 0)
+	layout.level_number = 1
+	_set_door_cell(layout, Vector2i(4, 0), DungeonDoorData.TYPE_UNLOCKED, DungeonDoorData.MATERIAL_WOOD_STANDARD, true)
+	var room0: DungeonRoomData = _make_room(0, [Vector2i(3, 0)])
+	var room1: DungeonRoomData = _make_room(1, [Vector2i(5, 0)])
+	layout.get_cell_at(Vector2i(3, 0)).room_id = 0
+	layout.get_cell_at(Vector2i(5, 0)).room_id = 1
+	layout.rooms = [room0, room1]
+	_set_stair_cell(layout, Vector2i(6, 0))
+	var floors: Array[DungeonLayout] = [layout]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 49
+
+	var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.place(floors, 1, rng)
+
+	check(keys.is_empty(), "Secret+unlocked door carries no key; got %d" % keys.size())
+	check(not layout.doors[0].is_secret,
+		"Secret+unlocked door gating a stair must have is_secret cleared by the coverage repair")
+	var solv: Dictionary = DungeonNavigabilityValidator.validate_solvability(floors, keys, 1)
+	check(solv["ok"], "Layout must be solvable after the secret-door repair: %s" % str(solv["failures"]))
+
+
+## A secret+unlocked door guarding a room the BFS reaches ANOTHER way must be
+## left secret — optional secret content survives the coverage repair.
+func test_place_secret_unlocked_optional_pocket_stays_secret() -> void:
+	# 7×2 grid. Row 0 is an open corridor (entrance at (0,0)). Room 1 spans
+	# (5,1)-(6,1) with TWO ways in: a secret+unlocked door at (4,1) and a plain
+	# open cell adjacency at (6,0)->(6,1). Room 0 at (3,1) keeps a candidate
+	# room available.
+	var layout: DungeonLayout = _make_open_grid(7, 2)
+	layout.is_entrance_floor = true
+	layout.entrance = Vector2i(0, 0)
+	layout.level_number = 1
+	# Row 1 starts as rock except the cells we open explicitly.
+	for x: int in range(7):
+		var cell: DungeonCellData = layout.get_cell_at(Vector2i(x, 1))
+		cell.passable = false
+		cell.terrain_feature = DungeonCellData.FEATURE_ROCK
+		cell.blocks_los = true
+	for pos: Vector2i in [Vector2i(3, 1), Vector2i(5, 1), Vector2i(6, 1)]:
+		var cell: DungeonCellData = layout.get_cell_at(pos)
+		cell.passable = true
+		cell.terrain_feature = DungeonCellData.FEATURE_OPEN
+		cell.blocks_los = false
+	_set_door_cell(layout, Vector2i(4, 1), DungeonDoorData.TYPE_UNLOCKED, DungeonDoorData.MATERIAL_WOOD_STANDARD, true)
+	var room0: DungeonRoomData = _make_room(0, [Vector2i(3, 1)])
+	var room1: DungeonRoomData = _make_room(1, [Vector2i(5, 1), Vector2i(6, 1)])
+	layout.get_cell_at(Vector2i(3, 1)).room_id = 0
+	layout.get_cell_at(Vector2i(5, 1)).room_id = 1
+	layout.get_cell_at(Vector2i(6, 1)).room_id = 1
+	layout.rooms = [room0, room1]
+	var floors: Array[DungeonLayout] = [layout]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 50
+
+	var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.place(floors, 1, rng)
+
+	check(keys.is_empty(), "No gated doors here; got %d keys" % keys.size())
+	check(layout.doors[0].is_secret,
+		"Secret door to an otherwise-reachable room must STAY secret (optional content)")
+	var solv: Dictionary = DungeonNavigabilityValidator.validate_solvability(floors, keys, 1)
+	check(solv["ok"], "Loop layout must be solvable without touching the secret door: %s" % str(solv["failures"]))
+
+
 # ===========================================================================
 # Layout construction helpers
 # ===========================================================================
@@ -255,20 +371,38 @@ func _make_portcullis_on_only_path() -> DungeonLayout:
 
 ## Create a 1×N passable open corridor (y=0 throughout).
 func _make_open_corridor(width: int) -> DungeonLayout:
+	return _make_open_grid(width, 1)
+
+
+## Create a W×H grid of passable open cells.
+func _make_open_grid(width: int, height: int) -> DungeonLayout:
 	var layout: DungeonLayout = DungeonLayout.new()
 	layout.grid_width = width
-	layout.grid_height = 1
+	layout.grid_height = height
 	layout.cells = []
 	for x: int in range(width):
 		var col: Array = []
-		var cell: DungeonCellData = DungeonCellData.new()
-		cell.terrain_feature = DungeonCellData.FEATURE_OPEN
-		cell.passable = true
-		cell.blocks_los = false
-		cell.room_id = -1
-		col.append(cell)
+		for y: int in range(height):
+			var cell: DungeonCellData = DungeonCellData.new()
+			cell.terrain_feature = DungeonCellData.FEATURE_OPEN
+			cell.passable = true
+			cell.blocks_los = false
+			cell.room_id = -1
+			col.append(cell)
 		layout.cells.append(col)
 	return layout
+
+
+## Convert a cell to a down-stair and register the matching DungeonStairData.
+func _set_stair_cell(layout: DungeonLayout, pos: Vector2i) -> void:
+	var cell: DungeonCellData = layout.get_cell_at(pos)
+	cell.terrain_feature = DungeonCellData.FEATURE_STAIRS_DOWN
+	cell.passable = true
+	cell.blocks_los = false
+	var stair: DungeonStairData = DungeonStairData.new()
+	stair.position = pos
+	stair.direction = DungeonStairData.DIRECTION_DOWN
+	layout.stairs.append(stair)
 
 
 ## Convert a cell in the layout to a door, add DoorData to layout.doors.

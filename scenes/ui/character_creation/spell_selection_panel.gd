@@ -26,6 +26,13 @@ var _judge_selected_key: String = ""
 var _bonus_roll_results: Array = []           # roll indices from INT bonus
 var _rolling: bool = false
 
+# Template mode (Path B): the template grants the base repertoire; the player rolls
+# only the §8.2 INT extras here (gdd §4.2.1 / §10 step 12).
+var _template_mode: bool = false
+var _template_extra: int = 0
+var _template_extras_done: bool = false
+var _template_base_spells: Array = []
+
 # UI refs
 var _main_content: VBoxContainer
 var _roll_bonus_btn: Button
@@ -45,7 +52,12 @@ func setup(state: Dictionary, class_registry: ClassRegistry,
 
 
 func is_complete() -> bool:
-	return _state.has("spells")
+	if not _state.has("spells"):
+		return false
+	# Path B template with §8.2 INT extras: require the player to roll + confirm them.
+	if _template_mode and _template_extra > 0 and not _template_extras_done:
+		return false
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +67,10 @@ func is_complete() -> bool:
 func _initialize_panel() -> void:
 	for child in _main_content.get_children():
 		child.queue_free()
+	_template_mode = false
+	_template_extra = 0
+	_template_extras_done = false
+	_template_base_spells = []
 
 	var class_id: String = _state.get("class_id", "")
 	var tradition := _spell_registry.get_class_tradition(class_id, _class_registry)
@@ -81,6 +97,12 @@ func _setup_arcane(class_id: String, has_l1_slots: bool) -> void:
 		_setup_notice("This class gains spell slots at a higher level. No starting spells.")
 		if not _state.has("spells"):
 			_state["spells"] = []
+		return
+
+	# Path B: the template granted the repertoire; the player rolls only the §8.2
+	# INT extras here (gdd §10 step 12). The normal judge-pick flow is bypassed.
+	if String(_state.get("template_path", "")) == "B":
+		_setup_arcane_template(class_id)
 		return
 
 	_arcane_spell_list = []
@@ -268,6 +290,90 @@ func _show_final_repertoire() -> void:
 		var entry_lbl := Label.new()
 		entry_lbl.text = "  • %s" % display
 		vbox.add_child(entry_lbl)
+	_main_content.add_child(vbox)
+
+
+# ---------------------------------------------------------------------------
+# Template mode — Path B arcane (gdd §4.2.1 / §10 step 12)
+# ---------------------------------------------------------------------------
+
+func _setup_arcane_template(class_id: String) -> void:
+	_template_mode = true
+	_template_extra = int(_state.get("template_extra_spells", 0))
+	_template_base_spells = (_state.get("spells", []) as Array).duplicate(true)
+	_template_extras_done = (_template_extra <= 0)
+
+	var header := Label.new()
+	header.text = "Your template grants this starting repertoire:"
+	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_main_content.add_child(header)
+	_show_granted_list(_template_base_spells)
+
+	if _template_extra <= 0:
+		return  # nothing to roll — the repertoire is fixed (is_complete already true)
+
+	var bonus_lbl := Label.new()
+	bonus_lbl.text = "Your high Intelligence grants %d additional rolled spell%s. Roll, then Confirm." % [
+		_template_extra, "s" if _template_extra > 1 else ""]
+	bonus_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_main_content.add_child(bonus_lbl)
+
+	_roll_bonus_btn = Button.new()
+	_roll_bonus_btn.text = "Roll Bonus Spell%s" % ("s" if _template_extra > 1 else "")
+	_roll_bonus_btn.pressed.connect(_on_roll_bonus_pressed.bind(class_id, _template_extra))
+	_main_content.add_child(_roll_bonus_btn)
+
+	_status_label = Label.new()
+	_status_label.text = ""
+	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_main_content.add_child(_status_label)
+
+	_confirm_btn = Button.new()
+	_confirm_btn.text = "Confirm Spell Selection"
+	_confirm_btn.pressed.connect(_on_confirm_template)
+	_main_content.add_child(_confirm_btn)
+
+	if _template_extras_done:
+		_show_final_repertoire()  # returning after a prior confirm
+
+
+func _on_confirm_template() -> void:
+	if _template_extra > 0 and _bonus_roll_results.is_empty():
+		if _status_label != null:
+			_status_label.text = "Roll your bonus spell%s first." % (
+				"s" if _template_extra > 1 else "")
+		return
+	# Final repertoire = the template base + the rolled §8.2 extras (deduped).
+	var spells: Array = _template_base_spells.duplicate(true)
+	var known: Dictionary = {}
+	for s in spells:
+		known[String(s.get("spell_key", ""))] = true
+	for idx in _bonus_roll_results:
+		var key := _spell_registry.get_arcane_index_spell(1, idx)
+		if key.is_empty() or known.has(key) or not _spell_registry.has_spell(key):
+			continue
+		spells.append({
+			"spell_key": key,
+			"spell_level": 1,
+			"is_in_repertoire": true,
+			"is_memorized": false,
+			"memorized_slots": 0,
+		})
+		known[key] = true
+	_state["spells"] = spells
+	_template_extras_done = true
+	_show_final_repertoire()
+
+
+func _show_granted_list(spells: Array) -> void:
+	var vbox := VBoxContainer.new()
+	for s in spells:
+		var key: String = s.get("spell_key", "")
+		var def := _spell_registry.get_spell(key)
+		var display: String = def.get("spell_name", key.replace("_", " ").capitalize())
+		var lbl := Label.new()
+		lbl.text = "  • %s" % display
+		vbox.add_child(lbl)
 	_main_content.add_child(vbox)
 
 

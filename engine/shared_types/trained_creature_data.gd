@@ -26,6 +26,11 @@ var is_alive: bool = true
 var formation_col: int = -1
 var formation_row: int = -1
 
+## Days without fodder AND without grazing/hunting (migration 150, provisions
+## system). Mirrors the PC starvation curve: 0-2 grace, then 1 hp/day. Reset to
+## 0 on any fed or grazing day. See AnimalSustenanceResolver.
+var fodder_starvation_days: int = 0
+
 # --- Runtime-only fields (not persisted) ---
 
 ## Full species entry from monster catalog, populated via MonsterRegistry.
@@ -68,6 +73,7 @@ static func from_db(row: Dictionary) -> TrainedCreatureData:
 	c.is_alive = row.get("is_alive", 1) == 1
 	c.formation_col = row.get("formation_col", -1)
 	c.formation_row = row.get("formation_row", -1)
+	c.fodder_starvation_days = row.get("fodder_starvation_days", 0)
 
 	# JSON array fields
 	var tricks_raw = row.get("tricks_known", "[]")
@@ -107,6 +113,7 @@ func to_dict() -> Dictionary:
 		"is_alive": 1 if is_alive else 0,
 		"formation_col": formation_col,
 		"formation_row": formation_row,
+		"fodder_starvation_days": fodder_starvation_days,
 	}
 
 

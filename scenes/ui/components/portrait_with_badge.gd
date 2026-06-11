@@ -84,6 +84,9 @@ func _build() -> void:
 	_texture_rect.custom_minimum_size = _portrait_size
 	_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	# Use the portrait's mip chain (callers pass mipmapped PortraitTextures) so
+	# the bust minifies smoothly to the slot size instead of aliasing.
+	_texture_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Add to parent first so PRESET_FULL_RECT resolves offsets against a live parent rect.
 	_btn.add_child(_texture_rect)

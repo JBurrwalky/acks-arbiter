@@ -41,7 +41,6 @@ const _LEGACY_REGION_PARENT_HEX := Vector2i(0, 0)
 const _AVALON_REGION_JSON := "res://data/test_campaign_region.json"
 const _AVALON_OVERLAYS_JSON := "res://data/test_campaign_overlays.json"
 const _AVALON_DOMAINS_JSON := "res://data/test_campaign_domains.json"
-const _AVALON_LAIRS_JSON := "res://data/test_campaign_lairs.json"
 const _AVALON_MAP_ID := "test_campaign_region"
 
 
@@ -134,11 +133,13 @@ func seed_avalon_test_campaign(campaign_id: String) -> bool:
 	if not _seed_avalon_domains(campaign_id):
 		return false
 
-	# 6. Lairs (118 wilderness clanholds).
-	if not _seed_avalon_lairs(campaign_id):
-		return false
+	# (Step 6, eager lair seeding — 118 wilderness clanholds — was removed
+	# 2026-06-10 per gdd-lair-discovery.md §10: the lazy-placement model has
+	# no world-gen lair pre-population; lairs enter play only via wandering
+	# substitution or search success. data/test_campaign_lairs.json is
+	# retained as reference data for the future eager pre-roll workflow.)
 
-	# 7. NPC rulers for on-map + politically important domains (Prince + 3 Dukes),
+	# 6. NPC rulers for on-map + politically important domains (Prince + 3 Dukes),
 	#    plus tribute_out_owed populated on all 376 domains via per-title flat
 	#    rates for abstract domains. MUST run before step 8 because
 	#    troop_units.owner_character_id has a NOT NULL FK to characters(id);
@@ -147,7 +148,7 @@ func seed_avalon_test_campaign(campaign_id: String) -> bool:
 	var ruler_gen := NpcRulerGenerator.new()
 	ruler_gen.stock_rulers_and_tribute(campaign_id)
 
-	# 8. Strongholds + garrisons + market demand modifiers for on-map domains
+	# 7. Strongholds + garrisons + market demand modifiers for on-map domains
 	#    and settlement_entrances. Idempotent at the row level.
 	DomainStocker.stock_domain_infrastructure(campaign_id)
 
@@ -471,42 +472,9 @@ func _seed_avalon_domains(campaign_id: String) -> bool:
 	return true
 
 
-func _seed_avalon_lairs(campaign_id: String) -> bool:
-	var data: Dictionary = _parse_json(_AVALON_LAIRS_JSON)
-	if data.is_empty():
-		return false
-	var lairs: Array = data.get("lairs", [])
-	CampaignRepository.db.query("BEGIN TRANSACTION")
-	for entry_v in lairs:
-		var entry: Dictionary = entry_v
-		var hex_field: Dictionary = entry.get("hex", {})
-		var qr: Dictionary = HexMapData._offset_to_axial_dict(
-			int(hex_field.get("col", 0)), int(hex_field.get("row", 0)))
-		# INSERT OR REPLACE so partial re-runs don't collide on fixed JSON IDs.
-		# Schema: monster_group is TEXT (race name), monster_count is INTEGER
-		# (families). family_multiplier and average_families_raw are audit
-		# metadata that the schema does not currently store.
-		var lid: String = str(entry.get("id", ""))
-		if lid.is_empty():
-			lid = CampaignRepository.generate_id()
-		if not CampaignRepository.db.query_with_bindings("""
-			INSERT OR REPLACE INTO lairs
-				(lair_id, campaign_id, map_id, hex_q, hex_r,
-				 monster_group, monster_count, discovered,
-				 discovered_at_round, discovered_via)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		""", [
-			lid, campaign_id, _AVALON_MAP_ID,
-			int(qr["q"]), int(qr["r"]),
-			str(entry.get("race", "")),
-			int(entry.get("families", 0)),
-			0, 0, "",
-		]):
-			push_error("TestContentSeeder._seed_avalon_lairs: insert failed for id=%s" % lid)
-			CampaignRepository.db.query("ROLLBACK")
-			return false
-	CampaignRepository.db.query("COMMIT")
-	return true
+# (_seed_avalon_lairs removed 2026-06-10 — eager world-gen lair placement is
+# gone per gdd-lair-discovery.md §10. Lairs are placed lazily at runtime by
+# the wandering-substitution / search triggers in WildernessHandlers.)
 
 
 # ---------------------------------------------------------------------------

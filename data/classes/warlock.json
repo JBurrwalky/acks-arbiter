@@ -1,6 +1,6 @@
 {
   "class_id": "warlock",
-  "enabled": false,
+  "enabled": true,
   "class_name": "Warlock",
   "source": "Player's Companion",
   "race": "human",
@@ -35,7 +35,7 @@
   },
   "xp_table": [0, 2075, 4150, 8300, 16600, 33200, 65000, 130000, 280000, 430000, 580000, 730000, 880000, 1030000],
   "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
-  "weapon_permissions": ["dagger", "dart", "staff", "whip"],
+  "weapon_permissions": ["dagger", "dart", "quarterstaff", "whip"],
   "weapon_restrictions": [],
   "armor_permissions": [],
   "shield_permitted": false,
@@ -63,8 +63,25 @@
       "unlock_level": 1,
       "tradition": "arcane",
       "spell_list": "arcane",
-      "description": "Casts arcane spells as a mage of two-thirds class level. Spell slots from warlock progression table. Source XML notes the spell progression table is malformed in the excerpt.",
-      "notes": "INCOMPLETE: The source XML explicitly states 'The spell progression table in the provided source excerpt is malformed, so individual slot values cannot be recovered from the excerpt with confidence.' Slot values need to be verified against the published Player's Companion book."
+      "caster_level_rule": "two_thirds",
+      "description": "Casts arcane spells as a mage of two-thirds class level. Spell slots from the Warlock spell progression table. Repertoire limited to the number and level of spells listed for class level, increased by INT bonus.",
+      "progression": {
+        "1":  [1, 0, 0, 0, 0],
+        "2":  [1, 0, 0, 0, 0],
+        "3":  [2, 0, 0, 0, 0],
+        "4":  [2, 1, 0, 0, 0],
+        "5":  [2, 1, 0, 0, 0],
+        "6":  [2, 2, 0, 0, 0],
+        "7":  [2, 2, 1, 0, 0],
+        "8":  [2, 2, 1, 0, 0],
+        "9":  [2, 2, 2, 0, 0],
+        "10": [3, 2, 2, 1, 0],
+        "11": [3, 2, 2, 1, 0],
+        "12": [3, 3, 2, 2, 0],
+        "13": [3, 3, 3, 2, 1],
+        "14": [3, 3, 3, 2, 1]
+      },
+      "notes": "Slot values verified 2026-06-11 against ACKS Player's Companion p.48 (Jedidiah's PDF). The table equals the mage progression at round-to-nearest(2/3 x class level); 2/3 multiples never land on exactly .5, so banker's rounding is never engaged."
     },
     {
       "power_id": "familiar",
@@ -124,5 +141,5 @@
       "unlock_level": 9
     }
   ],
-  "notes": "Class proficiency list not provided in source XML. Warlock spell progression table was explicitly noted as malformed in the source XML extract. Spell slot values need verification against the published Player's Companion."
+  "notes": "Spell progression table and class proficiency list verified 2026-06-11 against ACKS Player's Companion pp.46-48 (Jedidiah's PDF); the prior 'malformed source table' caveat is resolved. See also rules/pc_classes_6.xml for the supplemental extraction. The printed level-9 progression-table ability cell reads 'Coven' but the body text says coterie; coterie is used. sex_restriction (male) and alignment_restriction (non-lawful) are not stated on the PDF pages — RULED CONFIRMED as project decisions by Jedidiah 2026-06-11."
 }

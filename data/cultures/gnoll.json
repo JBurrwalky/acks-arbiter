@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "gnoll",
+      "catalog_number": null,
+      "demonym": "Gnoll",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "gnoll",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.3
+    },
+    "terrain": {
+      "seed_biomes": [
+        "savanna",
+        "grassland",
+        "scrubland"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.9,
+      "defense": 0.45,
+      "size_exponent_bias": 0.05
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "light_infantry",
+        "berserkers",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -2.0,
+        "stress_reactivity": 1.5,
+        "civility": -1.5,
+        "self_interest": -0.5,
+        "in_group_loyalty": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "gnoll",
+    "phonemic_palette": "Gnoll (Kazhur, cackle-yip regression): inserted laugh-syllables (hya/hag), h -> hyena-laugh, vowels yip-high, suffixes -yip/-hag/-hyak; manic, barking, laughing.",
+    "phenotype_notes": "Features of the Gnoll analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Gnoll",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Gnoll register; deity-morphs in name_bank 'gnoll'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "rugged",
+      "signature_feature": "mudbrick warrens of the Gnoll"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Gnoll — xenophobic tribal of the savanna; survival.",
+      "one_paragraph": "The Gnoll are a Chaotic beastman race; aggression 0.9, organized as tribal. Their tongue is a regressed form (see name_bank 'gnoll'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

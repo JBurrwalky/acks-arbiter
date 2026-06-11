@@ -5,7 +5,7 @@
   "race": "human",
   "prime_requisites": ["STR", "INT"],
   "minimum_abilities": {"INT": 9, "WIS": 9, "CHA": 9},
-  "alignment_restriction": "",
+  "alignment_restriction": "chaotic",
   "hit_die": "1d6",
   "hp_after_max_hd": "+2",
   "max_hd_count": 9,

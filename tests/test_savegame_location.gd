@@ -22,6 +22,7 @@ func run_all_tests() -> void:
 	_cleanup()
 	test_location_type_round_trip()
 	test_settlement_position_round_trip()
+	test_fresh_party_settlement_node_id_default()
 	test_dungeon_entity_positions_round_trip()
 	test_dungeon_entrance_lookup_by_dungeon_id()
 	test_party_data_reads_location_fields()
@@ -54,6 +55,27 @@ func test_settlement_position_round_trip() -> void:
 	check(String(row.get("settlement_id", "")) == "", "settlement_id cleared")
 	check(String(row.get("settlement_node_id", "")) == "", "settlement_node_id cleared")
 	print("  settlement_position_round_trip: OK")
+
+
+func test_fresh_party_settlement_node_id_default() -> void:
+	# REGRESSION (the loader-crash bug): a party that never entered a settlement reads
+	# settlement_node_id from the column DEFAULT. Migration 148 made that default ''
+	# (TEXT, string POI id); before it was INTEGER -1, which crashed PartyData.from_db
+	# — a `-> String` helper returning int -1. The other settlement tests always WRITE
+	# a position first, so they never exercised the bare default.
+	var pid := _make_party()
+	var pd: PartyData = CampaignRepository.load_party_data(pid)
+	check(pd != null, "load_party_data did not crash on a fresh party")
+	if pd == null:
+		return
+	check(pd.settlement_node_id == "", "fresh party settlement_node_id reads '' (not int -1)")
+	check(pd.settlement_id == "", "fresh party settlement_id reads ''")
+	# Validate migration 148 specifically: the RAW column (no _str coercion) is now a
+	# String. Pre-148 this was int -1 (TYPE_INT) — the root cause behind the crash.
+	var raw := CampaignRepository.get_party(pid)
+	check(typeof(raw.get("settlement_node_id")) == TYPE_STRING,
+		"settlement_node_id column reads back as String (migration 148 TEXT realignment)")
+	print("  fresh_party_settlement_node_id_default: OK")
 
 
 func test_dungeon_entity_positions_round_trip() -> void:

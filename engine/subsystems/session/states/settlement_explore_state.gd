@@ -200,6 +200,7 @@ func _create_settlement_hud() -> void:
 	_activity_panel.exit_settlement_requested.connect(_on_exit_requested)
 	_activity_panel.shop_requested.connect(_on_shop_requested)
 	_activity_panel.hiring_requested.connect(_on_hiring_requested)
+	_activity_panel.specialist_hiring_requested.connect(_on_specialist_hiring_requested)
 	_activity_panel.activity_requested.connect(_on_activity_requested)
 	# Phase 10B.2 Wave 2: route mercantile activity launchers to mercantile_panel.
 	_activity_panel.mercantile_requested.connect(_on_mercantile_requested)
@@ -387,6 +388,41 @@ func _on_hiring_requested(poi: Dictionary) -> void:
 			"title": "Henchman Hired",
 			"body": "A new henchman has joined the party.",
 		})
+	)
+
+
+## Opens the dual-path specialist hire panel (gdd-specialists.md §6.2) from
+## the guild PoI's "Hire Specialists" activity. Mirrors _on_hiring_requested.
+func _on_specialist_hiring_requested(_poi: Dictionary) -> void:
+	if _runner == null or _controller == null:
+		return
+	var party_data = _runner.get_party_data()
+	if party_data == null:
+		return
+	var payer: CharacterData = null
+	for cd in party_data.character_data:
+		if not cd.is_dead and cd.is_active:
+			payer = cd
+			break
+	if payer == null:
+		return
+	var map_data: SettlementMapData = _controller.get_map()
+	var market_class: int = map_data.market_class if map_data != null else 6
+
+	var panel := SpecialistHirePanel.new()
+	panel.setup(
+		_campaign_id,
+		_runner.get_party_id(),
+		_settlement_id,
+		market_class,
+		payer.id,
+	)
+	if _activity_panel != null:
+		_activity_panel.visible = false
+	_settlement_hud.add_child(panel)
+	panel.closed.connect(func():
+		panel.queue_free()
+		_restore_navigation_ui()
 	)
 
 

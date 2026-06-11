@@ -14,6 +14,7 @@ extends Control
 ## The Character tab page connects this to NotebookState + EventBus.
 
 const EntityTabScript := preload("res://scenes/ui/components/entity_tab.gd")
+const PortraitTextures := preload("res://engine/subsystems/assets/portrait_textures.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +78,9 @@ func _ready() -> void:
 func _ensure_built() -> void:
 	if _type_dropdown != null:
 		return
-	custom_minimum_size = Vector2(0, 64)
+	# Tall enough for the 104px portrait tile (EntityTab.TILE_SIZE) + chrome.
+	custom_minimum_size = Vector2(0, 120)
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_build_ui()
 
 
@@ -89,6 +92,7 @@ func _build_ui() -> void:
 
 	_type_dropdown = OptionButton.new()
 	_type_dropdown.custom_minimum_size = Vector2(180, 0)
+	_type_dropdown.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for t in TYPE_ORDER:
 		_type_dropdown.add_item(TYPE_LABELS[t])
 	_type_dropdown.selected = 0
@@ -103,7 +107,8 @@ func _build_ui() -> void:
 	hbox.add_child(_scroll)
 
 	_tabs_hbox = HBoxContainer.new()
-	_tabs_hbox.add_theme_constant_override("separation", 4)
+	_tabs_hbox.add_theme_constant_override("separation", 8)
+	_tabs_hbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_scroll.add_child(_tabs_hbox)
 
 
@@ -171,6 +176,7 @@ func _load_entities(party_id: String, entity_type: String) -> Array:
 					"id":            str(row.get("id", "")),
 					"display_name":  str(row.get("name", "(unnamed)")),
 					"portrait_id":   str(row.get("portrait_id", "")),
+					"level":         int(row.get("level", 0)),
 				})
 		TYPE_HENCHMEN:
 			var seen := {}
@@ -185,6 +191,7 @@ func _load_entities(party_id: String, entity_type: String) -> Array:
 						"id":           hid,
 						"display_name": str(h.get("name", "(henchman)")),
 						"portrait_id":  str(h.get("portrait_id", "")),
+						"level":        int(h.get("level", 0)),
 					})
 		TYPE_MERC_OFFICERS:
 			# v1: mercenary officer roster lives under the Troops system; the
@@ -218,27 +225,20 @@ func _load_entities(party_id: String, entity_type: String) -> Array:
 func _add_entity_tab(entry: Dictionary) -> void:
 	var tab: EntityTab = EntityTabScript.new()
 	_tabs_hbox.add_child(tab)
-	tab.setup(entry["id"], _make_portrait_texture(entry.get("portrait_id", "")), entry["display_name"], false)
+	tab.setup(
+		entry["id"],
+		_make_portrait_texture(entry.get("portrait_id", "")),
+		entry["display_name"],
+		int(entry.get("level", 0)),
+		false)
 	tab.entity_clicked.connect(_on_entity_clicked)
 	_entity_tabs.append(tab)
 
 
 func _make_portrait_texture(portrait_id: String) -> Texture2D:
-	if portrait_id.is_empty():
-		return null
-	# Mirror the resolution path SessionStatusBar / CharacterSheetOverlay
-	# already use: try user:// first (player-imported), then res://.
-	var user_path := "user://portraits/%s" % portrait_id
-	if FileAccess.file_exists(user_path):
-		var img := Image.new()
-		if img.load(user_path) == OK:
-			return ImageTexture.create_from_image(img)
-	var res_path := "res://assets/portraits/%s" % portrait_id
-	if ResourceLoader.exists(res_path):
-		var tex := load(res_path)
-		if tex is Texture2D:
-			return tex
-	return null
+	# Shared loader builds a downscaled + mipmapped texture (EntityTab sets the
+	# portrait's texture_filter to a mipmap mode). De-aliases the small tile.
+	return PortraitTextures.resolve(portrait_id)
 
 
 func _clear_entity_tabs() -> void:

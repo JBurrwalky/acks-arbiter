@@ -12,11 +12,13 @@ extends RefCounted
 ## per-party tick, capped at the party's normal one-day draw (party_size).
 ## Multiple decanters stack additively (each adds OUTPUT_PER_TICK_UNITS).
 ##
-## Per `docs/coding_conventions.md §28`: water is an abstract integer counter
-## on `PartyData.water_units` (NOT per-container inventory). The Decanter
-## refill MUTATES the counter directly, identical to `_refill_water_at_hex`.
-## The visible `holds_water` flag on waterskin/barrel is UI-only and does not
-## load-bear here.
+## Per `docs/coding_conventions.md §28` (revised for the provisions system,
+## gdd-rations-foodstuffs.md Option B): inventory is the source of truth and
+## `PartyData.water_units` is per-tick derived scratch. When the party holds
+## water containers (waterskin / barrel), the Decanter fills them to capacity
+## via ProvisionsService — the `holds_water` flag is now load-bearing. A
+## container-less party falls back to the legacy abstract-counter top-off below,
+## identical to the original `_refill_water_at_hex` behavior.
 ##
 ## All static methods; not an autoload. Tests pass deps explicitly.
 ##
@@ -76,6 +78,33 @@ static func refill_party_water(
 	var decanter_count: int = _count_carried_decanters(party_data, campaign_repository)
 	summary["decanter_count"] = decanter_count
 	if decanter_count <= 0:
+		return summary
+
+	# Phase 2 (gdd-rations-foodstuffs.md §5.2): a carried Decanter is a portable
+	# water source. When the party holds water containers, fill them ALL to
+	# capacity (endless water) — otherwise the midnight container-derive would
+	# overwrite a mere counter bump. Container-less parties fall through to the
+	# legacy per-tick counter top-off below (preserves the original semantics +
+	# the Decanter test fixtures, which carry no waterskins/barrels).
+	var provisions := ProvisionsService.new(campaign_repository, EquipmentCatalog.new())
+	if provisions.has_water_containers(party_data):
+		var container_filled: int = provisions.fill_water_containers(party_data)
+		party_data.water_units = provisions.carried_water_days(party_data)
+		summary["final_units"] = party_data.water_units
+		summary["refilled"] = container_filled
+		if container_filled > 0:
+			if campaign_repository != null:
+				campaign_repository.save_party_state(party_data.to_state_dict())
+			if event_bus != null:
+				event_bus.notification_requested.emit({
+					"type": "info",
+					"category": "exploration",
+					"title": "Decanter of Endless Water",
+					"body": "Filled %d day%s of water." % [
+						container_filled, "" if container_filled == 1 else "s"],
+					"duration": 2.5,
+				})
+				summary["emitted_notification"] = true
 		return summary
 
 	# Cap the per-tick output at party_size (one day's draw) so the Decanter

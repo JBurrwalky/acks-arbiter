@@ -141,6 +141,7 @@ func run_all_tests() -> void:
 	test_flip_to_caster_team_no_ops_when_target_has_no_side()
 	test_flip_to_caster_team_no_ops_when_already_on_caster_side()
 	test_charm_side_flip_reverts_on_unwind()
+	test_warlock_effective_caster_level()
 	if not has_failures():
 		print("CastingResolver: all tests passed.")
 
@@ -718,3 +719,33 @@ func test_charm_side_flip_reverts_on_unwind() -> void:
 	_resolver._unwind_effect_state(effect, lookup)
 	check(target.side == 1,
 		"target side reverted to original (1); got %d" % target.side)
+
+
+# ---------------------------------------------------------------------------
+# Warlock 2/3 caster level (CasterContext.effective_caster_level, 2026-06-11)
+# ---------------------------------------------------------------------------
+
+func test_warlock_effective_caster_level() -> void:
+	# ACKS PC p.47: the warlock casts arcane spells as a mage of two thirds
+	# class level. Round-to-nearest reproduces the printed slot table
+	# (= mage slots at round(2/3 x level)); 2/3 multiples never land on .5.
+	var expected := {1: 1, 2: 1, 3: 2, 4: 3, 5: 3, 6: 4, 7: 5, 8: 5,
+		9: 6, 10: 7, 11: 7, 12: 8, 13: 9, 14: 9}
+	for lvl: int in expected.keys():
+		var got := CasterContext.effective_caster_level("warlock", lvl)
+		check(got == int(expected[lvl]),
+			"warlock L%d should cast at caster level %d, got %d"
+			% [lvl, int(expected[lvl]), got])
+	# Full-level classes are untouched.
+	check(CasterContext.effective_caster_level("mage", 7) == 7,
+		"mage caster level should equal class level")
+	# from_character_data applies the rule.
+	var cd := CharacterData.new()
+	cd.id = "wl_ctx_test"
+	cd.name = "Test Warlock"
+	cd.character_class = "warlock"
+	cd.level = 5
+	var ctx := CasterContext.from_character_data(cd, "dungeon_grid", "arcane", 1)
+	check(ctx.caster_level == 3,
+		"L5 warlock CasterContext.caster_level should be 3, got %d" % ctx.caster_level)
+	print("  warlock_effective_caster_level: OK")

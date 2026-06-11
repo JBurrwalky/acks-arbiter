@@ -36,7 +36,6 @@ const CAM_BACKWARD := Vector3(0.0, 0.5774, 0.8165)
 
 signal cell_clicked(pos: Vector3i)
 signal entity_clicked(entity_id: String)
-signal right_click_cancel()
 signal cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2)
 
 

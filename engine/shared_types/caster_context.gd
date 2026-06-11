@@ -28,6 +28,16 @@ var map_context: String = "combat_grid"
 var active_proficiencies: Array = []     # Array[String] of proficiency_keys
 var is_in_combat: bool = false
 
+## Classes that cast at a fraction of class level (ACKS PC p.47: the warlock
+## "learns and casts arcane spells as a mage of two thirds class level").
+## Mirrors the `caster_level_rule` field on the class's casting power in
+## data/classes/<id>.json; duplicated as a const because this shared type has
+## no registry access (same pattern as _detect_tradition's class lists in the
+## casting flows). Rounded to nearest — 2/3 multiples never land on exactly
+## .5, so banker's rounding is never engaged; nearest-rounding reproduces the
+## printed warlock slot table (= mage slots at round(2/3 x class level)).
+const CASTER_LEVEL_RULES := {"warlock": "two_thirds"}
+
 # Disruption-relevant state at cast time. Read by validation step 4.
 var is_prone: bool = false
 var can_move_hands: bool = true
@@ -47,7 +57,7 @@ static func from_character_data(
     var ctx := CasterContext.new()
     ctx.caster_id = cd.id
     ctx.caster_name = cd.name
-    ctx.caster_level = cd.level
+    ctx.caster_level = effective_caster_level(cd.character_class, cd.level)
     ctx.caster_class = cd.character_class
     ctx.tradition = tradition_str
     ctx.casting_stat_bonus = casting_stat_bonus_value
@@ -58,3 +68,13 @@ static func from_character_data(
         prof_keys.append(p.get("proficiency_key", ""))
     ctx.active_proficiencies = prof_keys
     return ctx
+
+
+## Effective caster level for spell resolution (range/duration/damage scaling,
+## dispel contests, active-effect rows). Equals class level except for classes
+## listed in CASTER_LEVEL_RULES.
+static func effective_caster_level(class_id: String, level: int) -> int:
+    match String(CASTER_LEVEL_RULES.get(class_id, "")):
+        "two_thirds":
+            return int(roundf(level * 2.0 / 3.0))
+    return level

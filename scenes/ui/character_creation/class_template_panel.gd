@@ -1,7 +1,7 @@
 class_name ClassTemplatePanel
 extends VBoxContainer
 
-## Step 5 — Wealth & Class Template (gdd-class-templates.md §4, §4.2, §4.2.1; §10 step 12).
+## Step 5 — Wealth & Class Template (gdd-class-templates.md §4, §4.2; §10 step 12).
 ##
 ## The PC-creation choice point. After the wealth die is rolled (3d6 → ×10 gp OR a
 ## template cap), the player takes one of two paths (§4.1 — the roll is consumed by
@@ -9,35 +9,31 @@ extends VBoxContainer
 ##
 ##   Path A — keep the gold: write starting_gold_cp and continue the normal flow
 ##            (the later EQUIPMENT step opens pre-funded; PROFICIENCIES / SPELLS run).
-##   Path B — take a template at or below the rolled band: the template supplies
-##            proficiencies (editable here via the §4.2.1 editor), equipment, spells,
-##            origin/tradition, and loose coin. The downstream steps it covers are
-##            skipped by the wizard (CharacterCreationScreen skip predicates).
+##   Path B — take a template at or below the rolled band: the template SEEDS the
+##            character's proficiencies (editable) + locked natural/tradition profs,
+##            equipment, loose coin, origin/tradition, and base arcane repertoire,
+##            then the wizard flows through the SAME full Proficiencies and Spells
+##            pickers (pre-filled) so the player edits with multi-rank, specialization,
+##            swaps, and the §8.2 bonus-spell roll (gdd §4.2.1). EQUIPMENT is skipped
+##            (the template IS the loadout); CLASS_CUSTOMIZATION is skipped (the
+##            template locks origin/tradition).
 ##
 ## All game logic lives in PcTemplateCreationFlow; this panel only renders its dict
-## outputs and feeds the player's choices back into creation_state. Built
-## programmatically per coding_conventions §13.2; no editor-authored layout.
+## outputs and seeds creation_state. Built programmatically per §13.2.
 
 var _state: Dictionary = {}
 var _flow: PcTemplateCreationFlow
 var _template_repo: ClassTemplateRepository
 var _catalog: EquipmentCatalog
+var _class_registry: ClassRegistry
 
-# Derived from creation_state at setup().
 var _class_id: String = ""
 var _int_score: int = 10
-
-# Phase-1 fork state.
 var _wealth_roll: int = 0
 var _path_b_templates: Array = []          # [ClassTemplate]
-
-# Phase-2 editor state (Path B).
-var _selected_template: ClassTemplate = null
-var _editor_state: Dictionary = {}
-var _swap_opts: Dictionary = {}
 var _committed: bool = false
 
-# UI refs — Phase 1
+# UI refs
 var _roll_btn: Button
 var _roll_label: RichTextLabel
 var _fork_box: VBoxContainer
@@ -45,20 +41,6 @@ var _path_a_btn: Button
 var _cards_scroll: ScrollContainer
 var _cards_box: VBoxContainer
 var _status_label: Label
-
-# UI refs — Phase 2 editor
-var _editor_box: VBoxContainer
-var _editor_body: VBoxContainer
-var _preview_label: RichTextLabel
-var _validation_label: Label
-var _confirm_btn: Button
-
-# Editor widgets (rebuilt per template selection)
-var _class_swap_option: OptionButton = null
-var _class_swap_warn: Label = null
-var _cull_option: OptionButton = null
-var _general_swap_rows: Array = []          # [{from_key: String, option: OptionButton}]
-var _extra_options: Array = []              # [OptionButton]
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +55,7 @@ func setup(state: Dictionary, template_repo: ClassTemplateRepository,
 		catalog, class_registry)
 	_template_repo = template_repo
 	_catalog = catalog
+	_class_registry = class_registry
 	_class_id = String(_state.get("class_id", ""))
 	_int_score = _resolve_int_score()
 	if get_child_count() == 0:
@@ -81,7 +64,7 @@ func setup(state: Dictionary, template_repo: ClassTemplateRepository,
 
 
 func is_complete() -> bool:
-	## A path must be committed: Path A chosen, or a Path B template confirmed.
+	## A path must be committed: Path A chosen, or a Path B template applied.
 	return _committed
 
 
@@ -102,21 +85,14 @@ func _resolve_int_score() -> int:
 
 
 func _restore_from_state() -> void:
-	## Rehydrate after back-navigation AND across characters (§13.3 — setup() is a
-	## full UI rehydration, never a delta: the screen reuses ONE panel instance for
-	## every PC, so recompute disabled state + clear cached templates from scratch).
+	## Full rehydration (§13.3) — the screen reuses ONE panel instance per PC, so
+	## recompute everything from creation_state (never a delta update).
 	_wealth_roll = int(_state.get("wealth_roll", 0))
-	_selected_template = null
-	_editor_state = {}
-	_committed = false
 	_path_b_templates = []
-	_clear_editor_widgets()
-	_editor_box.visible = false
+	_committed = false
 	_status_label.text = ""
-	# The roll button is only ever transiently disabled while the dice prompt is
-	# open (_on_roll_wealth); a fresh setup must always re-enable it. Without this,
-	# a prior character's successful roll left it disabled-but-hidden, so the next
-	# character saw it visible-but-greyed.
+	# The roll button is only transiently disabled during the dice prompt; a fresh
+	# setup must always re-enable it (else a prior character left it greyed-out).
 	_roll_btn.disabled = false
 
 	if _wealth_roll <= 0:
@@ -132,17 +108,18 @@ func _restore_from_state() -> void:
 	_build_cards()
 	_fork_box.visible = true
 
+	# A committed path persists in creation_state; reflect it without RE-seeding
+	# (the player may have since edited proficiencies/spells downstream).
 	var path: String = String(_state.get("template_path", ""))
 	if path == "A":
 		_committed = true
 		_status_label.text = "Kept the gold — click Next to shop, or pick a template below."
 	elif path == "B":
 		_committed = true
-		var tid: String = String(_state.get("template_id", ""))
-		var t: ClassTemplate = _template_repo.get_template(tid)
+		var t: ClassTemplate = _template_repo.get_template(String(_state.get("template_id", "")))
 		if t != null:
-			_open_editor_for(t)
-			_status_label.text = "Template saved — click Next to continue, or adjust and re-confirm."
+			_status_label.text = "%s%s applied — click Next to customise, or pick again below." % [
+				_template_label(t), _origin_suffix(t)]
 
 
 # ---------------------------------------------------------------------------
@@ -203,14 +180,9 @@ func _make_template_card(t: ClassTemplate) -> PanelContainer:
 	margin.add_child(box)
 
 	var title := Label.new()
-	title.text = t.display_label if t.display_label != "" else t.template_id
+	title.text = _template_label(t) + _origin_suffix(t)
 	title.add_theme_font_size_override("font_size", 16)
 	box.add_child(title)
-
-	if t.tradition != "":
-		var trad := Label.new()
-		trad.text = "Tradition: %s" % t.tradition.capitalize()
-		box.add_child(trad)
 
 	var profs := Label.new()
 	profs.text = "Proficiencies: " + _proficiency_summary(t)
@@ -237,6 +209,10 @@ func _make_template_card(t: ClassTemplate) -> PanelContainer:
 	pick.pressed.connect(_on_card_selected.bind(t))
 	box.add_child(pick)
 	return card
+
+
+func _template_label(t: ClassTemplate) -> String:
+	return t.display_label if t.display_label != "" else t.template_id
 
 
 func _proficiency_summary(t: ClassTemplate) -> String:
@@ -276,8 +252,25 @@ func _spell_summary(t: ClassTemplate) -> String:
 	return ", ".join(parts)
 
 
+func _origin_suffix(t: ClassTemplate) -> String:
+	## The IP-stripped background a template locks (gdd §6.6 / §9.1) — barbarian
+	## region / witch tradition / shaman totem — shown as a parenthetical after the
+	## template title (the display label itself omits it). "" when nothing is locked.
+	var meta := TemplateClassMetadata.derive(t, _class_registry)
+	if meta.has("regional_origin"):
+		return " (%s)" % String(meta["regional_origin"]).capitalize()
+	if meta.has("witch_tradition"):
+		return " (%s)" % String(meta["witch_tradition"]).capitalize()
+	if meta.has("shaman_totem"):
+		return " (%s totem)" % String(meta["shaman_totem"]).capitalize()
+	return ""
+
+
+# ---------------------------------------------------------------------------
+# Path A — keep the gold (§4.1)
+# ---------------------------------------------------------------------------
+
 func _on_path_a() -> void:
-	# §4.1 — the rolled wealth becomes starting gold; no template.
 	_state["template_path"] = "A"
 	_state["template_id"] = ""
 	_state["origin_template_id"] = ""
@@ -285,259 +278,76 @@ func _on_path_a() -> void:
 	var cp: int = _wealth_roll * 10 * 100   # gp → cp
 	_state["starting_gold_cp"] = cp
 	_state["gold_remaining_cp"] = cp
-	# Clear any Path-B prefills (in case the player switched paths).
+	# Clear any Path-B seeds (in case the player switched paths). On Path A the later
+	# CLASS_CUSTOMIZATION + PROFICIENCIES + SPELLS + EQUIPMENT steps fill these.
 	_clear_path_b_prefills()
-	_editor_box.visible = false
 	_committed = true
-	_status_label.text = "Kept %d gp — click Next to shop." % (_wealth_roll * 10)
+	_status_label.text = "Kept %d gp — click Next to continue." % (_wealth_roll * 10)
 
 
 # ---------------------------------------------------------------------------
-# Phase 2 — §4.2.1 full proficiency editor (Path B)
+# Path B — apply the template and SEED the reused pickers (gdd §4.2.1, §10 step 12)
 # ---------------------------------------------------------------------------
 
 func _on_card_selected(t: ClassTemplate) -> void:
-	_open_editor_for(t)
-	_status_label.text = ""
+	_apply_template(t)
 
 
-func _open_editor_for(t: ClassTemplate) -> void:
-	var result := _flow.choose_path_b(_class_id, t.template_id, _int_score)
-	if not bool(result.get("ok", false)):
-		_status_label.text = "Could not load template: %s" % String(result.get("error", "?"))
-		return
-	_selected_template = t
-	_editor_state = result.get("editor", {})
-	_swap_opts = _flow.swap_options(t)
-	_build_editor(result)
-	_editor_box.visible = true
-	_refresh_preview()
-
-
-func _build_editor(path_b: Dictionary) -> void:
-	_clear_editor_widgets()
-	for child in _editor_body.get_children():
-		child.queue_free()
-
-	var header := Label.new()
-	header.text = "Editing: %s" % String(path_b.get("display_label", _selected_template.template_id))
-	header.add_theme_font_size_override("font_size", 16)
-	_editor_body.add_child(header)
-
-	# --- Class proficiency (locked by default, swappable — flagged §4.2.1) ---
-	var cls_brief: Dictionary = _editor_state.get("class_proficiency", {})
-	if not cls_brief.is_empty():
-		var row := HBoxContainer.new()
-		var lbl := Label.new()
-		lbl.text = "Class proficiency:"
-		row.add_child(lbl)
-		_class_swap_option = OptionButton.new()
-		var cur_key: String = String(cls_brief.get("proficiency_key", ""))
-		_populate_option(_class_swap_option, _swap_opts.get("class_options", []), cur_key, false)
-		_class_swap_option.item_selected.connect(_refresh_preview.unbind(1))
-		row.add_child(_class_swap_option)
-		_editor_body.add_child(row)
-		_class_swap_warn = Label.new()
-		_class_swap_warn.add_theme_color_override("font_color", Color(0.7, 0.4, 0.1))
-		_class_swap_warn.visible = false
-		_class_swap_warn.text = "  ⚠ Departs from the template's intended build."
-		_editor_body.add_child(_class_swap_warn)
-
-	# --- Locked proficiencies (natural / tradition — read-only) ---
-	for b in _editor_state.get("locked_proficiencies", []):
-		var ll := Label.new()
-		ll.text = "  • %s (locked)" % String(b.get("name", b.get("proficiency_key", "?")))
-		_editor_body.add_child(ll)
-
-	# --- Cull override (arcane INT ≤ 12) ---
-	var cull: Dictionary = _editor_state.get("cull", {})
-	if bool(cull.get("needed", false)):
-		var crow := HBoxContainer.new()
-		var clbl := Label.new()
-		clbl.text = "Drop one (INT too low for all):"
-		crow.add_child(clbl)
-		_cull_option = OptionButton.new()
-		var opts: Array = cull.get("options", [])
-		_populate_option(_cull_option, opts, String(cull.get("default_key", "")), false)
-		_cull_option.item_selected.connect(_refresh_preview.unbind(1))
-		crow.add_child(_cull_option)
-		_editor_body.add_child(crow)
-
-	# --- General proficiencies (each swappable) ---
-	_general_swap_rows.clear()
-	for b in _editor_state.get("general_proficiencies", []):
-		var from_key: String = String(b.get("proficiency_key", ""))
-		if from_key == "":
-			continue
-		var grow := HBoxContainer.new()
-		var glbl := Label.new()
-		glbl.text = "General:"
-		grow.add_child(glbl)
-		var opt := OptionButton.new()
-		# Options = the current key plus every net-new general option.
-		var pool: Array = [from_key]
-		for k in _swap_opts.get("general_options", []):
-			if k != from_key:
-				pool.append(k)
-		_populate_option(opt, pool, from_key, false)
-		opt.item_selected.connect(_refresh_preview.unbind(1))
-		grow.add_child(opt)
-		_editor_body.add_child(grow)
-		_general_swap_rows.append({"from_key": from_key, "option": opt})
-
-	# --- Extra INT-bonus general picks ---
-	_extra_options.clear()
-	var extra_slots: int = int(_editor_state.get("extra_general_slots", 0))
-	for i in extra_slots:
-		var erow := HBoxContainer.new()
-		var elbl := Label.new()
-		elbl.text = "Bonus general %d:" % (i + 1)
-		erow.add_child(elbl)
-		var eopt := OptionButton.new()
-		_populate_option(eopt, _swap_opts.get("general_options", []), "", true)
-		eopt.item_selected.connect(_refresh_preview.unbind(1))
-		erow.add_child(eopt)
-		_editor_body.add_child(erow)
-		_extra_options.append(eopt)
-
-	# --- Read-only loadout / spell review ---
-	var review := Label.new()
-	review.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var equip_txt := "Equipment: " + _equipment_summary(_selected_template)
-	var rcoin := int(path_b.get("starting_money_cp", 0))
-	equip_txt += "\nLoose coin: %d gp" % (rcoin / 100)
-	if TemplateIntAdjuster.is_arcane_class(_class_id):
-		equip_txt += "\nSpells: " + _spell_summary(_selected_template)
-		var extra_spells: int = int(_editor_state.get("extra_spells_to_roll", 0))
-		if extra_spells > 0:
-			equip_txt += " (+%d rolled at INT %d)" % [extra_spells, _int_score]
-	review.text = equip_txt
-	_editor_body.add_child(HSeparator.new())
-	_editor_body.add_child(review)
-
-
-func _populate_option(opt: OptionButton, keys: Array, selected_key: String,
-		with_blank: bool) -> void:
-	opt.clear()
-	var idx := 0
-	if with_blank:
-		opt.add_item("— pick —")
-		opt.set_item_metadata(idx, "")
-		idx += 1
-	var sel_idx := 0
-	for k in keys:
-		var key := String(k)
-		opt.add_item(key.capitalize())
-		opt.set_item_metadata(idx, key)
-		if key == selected_key:
-			sel_idx = idx
-		idx += 1
-	opt.select(sel_idx)
-
-
-func _refresh_preview() -> void:
-	if _selected_template == null:
-		return
-	# Class-swap departure warning.
-	if _class_swap_warn != null and _class_swap_option != null:
-		var cur: String = String(_editor_state.get("class_proficiency", {}).get("proficiency_key", ""))
-		var chosen: String = String(_class_swap_option.get_selected_metadata())
-		_class_swap_warn.visible = (chosen != "" and chosen != cur)
-
-	var choices := _gather_choices()
-	var records: Array = _flow.finalize_proficiencies(_selected_template, _int_score, choices)
-
-	# Build the preview text + duplicate detection.
-	var keys: Array = []
-	var dup := ""
-	var names: Array = []
-	for r: Dictionary in records:
-		var k: String = String(r.get("proficiency_key", ""))
-		if k in keys and dup == "":
-			dup = k
-		keys.append(k)
-		var tag: String = "[C]" if String(r.get("slot_type", "")) == "class" else "[G]"
-		names.append("%s %s" % [k.capitalize(), tag])
-	_preview_label.text = "[b]Resulting proficiencies:[/b] " + ", ".join(names)
-
-	# Validate: no duplicate extra picks / swap collisions.
-	var validation := ""
-	if dup != "":
-		validation = "Duplicate proficiency: %s — change a swap or bonus pick." % dup.capitalize()
-	_validation_label.text = validation
-	_confirm_btn.disabled = (validation != "")
-
-
-func _gather_choices() -> Dictionary:
-	var choices: Dictionary = {}
-	# Class swap.
-	if _class_swap_option != null:
-		var cur: String = String(_editor_state.get("class_proficiency", {}).get("proficiency_key", ""))
-		var chosen: String = String(_class_swap_option.get_selected_metadata())
-		if chosen != "" and chosen != cur:
-			choices["class_swap_key"] = chosen
-	# Cull override.
-	if _cull_option != null:
-		choices["cull_key"] = String(_cull_option.get_selected_metadata())
-	# General swaps.
-	var swaps: Dictionary = {}
-	for row in _general_swap_rows:
-		var from_key: String = String(row["from_key"])
-		var to_key: String = String((row["option"] as OptionButton).get_selected_metadata())
-		if to_key != "" and to_key != from_key:
-			swaps[from_key] = to_key
-	if not swaps.is_empty():
-		choices["general_swaps"] = swaps
-	# Extra-general picks.
-	var extras: Array = []
-	for opt in _extra_options:
-		var k: String = String((opt as OptionButton).get_selected_metadata())
-		if k != "":
-			extras.append(k)
-	if not extras.is_empty():
-		choices["extra_general_keys"] = extras
-	return choices
-
-
-func _on_confirm_template() -> void:
-	if _selected_template == null:
-		return
-	var choices := _gather_choices()
-	var records: Array = _flow.finalize_proficiencies(_selected_template, _int_score, choices)
-	var path_b := _flow.choose_path_b(_class_id, _selected_template.template_id, _int_score)
+func _apply_template(t: ClassTemplate) -> void:
+	var path_b := _flow.choose_path_b(_class_id, t.template_id, _int_score)
 	if not bool(path_b.get("ok", false)):
-		_status_label.text = "Template error: %s" % String(path_b.get("error", "?"))
+		_status_label.text = "Could not apply template: %s" % String(path_b.get("error", "?"))
 		return
 
 	_state["template_path"] = "B"
-	_state["template_id"] = _selected_template.template_id
-	_state["origin_template_id"] = _selected_template.template_id
-	_state["proficiencies"] = records
-	_state["template_class_metadata"] = path_b.get("class_metadata_locked", {})
+	_state["template_id"] = t.template_id
+	_state["origin_template_id"] = t.template_id
 
-	# Loose coin the template grants (§4.1 — template wealth IS the starting funds).
+	# Proficiencies: editable (class/general, INT-cull applied) + locked
+	# (natural/tradition) → seeded into the reused Proficiencies step, where the
+	# player edits with the full picker (multi-rank, specialization, swaps, fills).
+	var prof := _flow.template_base_proficiencies(t, _int_score)
+	_state["proficiencies"] = prof["selected"]
+	_state["bonus_proficiencies"] = prof["locked"]
+
+	# Locked origin/tradition → the metadata merge (finalize) AND the creation_state
+	# keys intermediate steps read directly (divine Spells tradition bonus, the
+	# equip-restriction validator).
+	var meta: Dictionary = path_b.get("class_metadata_locked", {})
+	_state["template_class_metadata"] = meta
+	_state["barbarian_origin"] = String(meta.get("regional_origin", ""))
+	_state["witch_tradition"] = String(meta.get("witch_tradition", ""))
+
+	# Loose coin (§4.1 — the template wealth IS the funds) + equipment loadout.
 	var coin_cp: int = int(path_b.get("starting_money_cp", 0))
 	_state["starting_gold_cp"] = coin_cp
 	_state["gold_remaining_cp"] = coin_cp
-
-	# Inventory = the template's catalog equipment. Non-catalog routing below.
-	var equip: Array = path_b.get("equipment", [])
 	var inventory: Array = []
-	for item in equip:
+	for item in path_b.get("equipment", []):
 		inventory.append((item as Dictionary).duplicate(true))
 	_route_non_catalog(path_b.get("non_catalog_items", []), inventory)
 	_state["inventory"] = inventory
 
-	# Arcane repertoire (empty for divine / mundane).
-	var rep := _flow.build_repertoire(_class_id, _selected_template.template_id, _int_score)
-	_state["spells"] = rep.get("spells", []) if rep is Dictionary else []
+	# Arcane BASE repertoire — the §8.2 INT extras are rolled by the player in the
+	# reused Spells step. Divine/mundane → empty (the normal Spells step handles
+	# divine Path B casters).
+	var rep := _flow.template_base_repertoire(_class_id, t.template_id, _int_score)
+	if rep.is_empty():
+		_state["spells"] = []
+		_state["template_extra_spells"] = 0
+	else:
+		_state["spells"] = rep["spells"]
+		_state["template_extra_spells"] = int(rep["extra_spells_to_roll"])
 
 	_committed = true
-	_status_label.text = "Template applied — click Next to continue."
+	var extra: int = int(_state.get("template_extra_spells", 0))
+	var tail: String = " and roll bonus spells" if extra > 0 else ""
+	_status_label.text = "%s%s applied — click Next to customise proficiencies%s." % [
+		_template_label(t), _origin_suffix(t), tail]
 
 
-func _route_non_catalog(entries: Array, inventory: Array) -> void:
-	## Path B non-catalog items (gdd §4.2 / §10 step 12 plan §E):
+func _route_non_catalog(entries: Array, _inventory: Array) -> void:
+	## Path B non-catalog items (gdd §4.2 / §10 step 12):
 	##   familiar → dropped (the FAMILIAR_ACQUISITION step bonds + persists it; the
 	##              template's "familiar" proficiency makes that step appear).
 	##   valuable / totem / poison → deferred for v1; logged so nothing is lost
@@ -545,8 +355,7 @@ func _route_non_catalog(entries: Array, inventory: Array) -> void:
 	var deferred: Array = []
 	for nc in entries:
 		var meta: Dictionary = (nc as Dictionary).get("metadata", {})
-		var companion: String = String(meta.get("companion_kind", ""))
-		if companion == "familiar":
+		if String(meta.get("companion_kind", "")) == "familiar":
 			continue  # handled by the familiar bonding step
 		var label := _non_catalog_label(nc)
 		if label != "":
@@ -563,8 +372,7 @@ func _non_catalog_label(nc: Dictionary) -> String:
 		return "familiar (%s)" % String(meta.get("species", "?"))
 	if companion == "totem":
 		return "totem (%s)" % String(meta.get("species", "?"))
-	var nckind: String = String(meta.get("noncatalog_kind", ""))
-	match nckind:
+	match String(meta.get("noncatalog_kind", "")):
 		"valuable": return "valuables (%d gp)" % int(meta.get("value_gp", 0))
 		"separate_catalog": return String(meta.get("tag", "item"))
 		_: return ""
@@ -581,17 +389,13 @@ func _query_templates() -> Array:
 
 func _clear_path_b_prefills() -> void:
 	_state["proficiencies"] = []
+	_state["bonus_proficiencies"] = []
 	_state["spells"] = []
 	_state["inventory"] = []
 	_state["template_class_metadata"] = {}
-
-
-func _clear_editor_widgets() -> void:
-	_class_swap_option = null
-	_class_swap_warn = null
-	_cull_option = null
-	_general_swap_rows = []
-	_extra_options = []
+	_state["template_extra_spells"] = 0
+	_state["barbarian_origin"] = ""
+	_state["witch_tradition"] = ""
 
 
 # ---------------------------------------------------------------------------
@@ -631,7 +435,8 @@ func _build_ui() -> void:
 	fork_row.add_child(_path_a_btn)
 
 	var b_lbl := Label.new()
-	b_lbl.text = "Path B — take a template:"
+	b_lbl.text = "Path B — take a template (you'll customise proficiencies & spells next):"
+	b_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_fork_box.add_child(b_lbl)
 
 	_cards_scroll = ScrollContainer.new()
@@ -642,40 +447,6 @@ func _build_ui() -> void:
 	_cards_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cards_box.add_theme_constant_override("separation", 6)
 	_cards_scroll.add_child(_cards_box)
-
-	# --- Editor (hidden until a card is picked) ---
-	_editor_box = VBoxContainer.new()
-	_editor_box.visible = false
-	add_child(_editor_box)
-	_editor_box.add_child(HSeparator.new())
-
-	var editor_scroll := ScrollContainer.new()
-	editor_scroll.custom_minimum_size = Vector2(0, 220)
-	editor_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_editor_box.add_child(editor_scroll)
-	_editor_body = VBoxContainer.new()
-	_editor_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	editor_scroll.add_child(_editor_body)
-
-	_preview_label = _make_bb_label("")
-	_editor_box.add_child(_preview_label)
-	_validation_label = Label.new()
-	_validation_label.add_theme_color_override("font_color", Color(0.7, 0.15, 0.15))
-	_editor_box.add_child(_validation_label)
-
-	var confirm_row := HBoxContainer.new()
-	_editor_box.add_child(confirm_row)
-	var back_btn := Button.new()
-	back_btn.text = "← Back to templates"
-	back_btn.pressed.connect(_on_back_to_cards)
-	confirm_row.add_child(back_btn)
-	var sp := Control.new()
-	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	confirm_row.add_child(sp)
-	_confirm_btn = Button.new()
-	_confirm_btn.text = "Confirm Template"
-	_confirm_btn.pressed.connect(_on_confirm_template)
-	confirm_row.add_child(_confirm_btn)
 
 	# --- Status line ---
 	_status_label = Label.new()
@@ -691,10 +462,3 @@ func _make_bb_label(text: String) -> RichTextLabel:
 	rt.text = text
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return rt
-
-
-func _on_back_to_cards() -> void:
-	_editor_box.visible = false
-	_selected_template = null
-	if _committed and String(_state.get("template_path", "")) == "B":
-		_committed = false  # re-opening the editor un-commits until re-confirmed

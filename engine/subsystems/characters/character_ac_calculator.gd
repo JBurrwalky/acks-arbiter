@@ -44,8 +44,10 @@ static func compute(character: CharacterData, inventory_rows: Array) -> int:
 	if character == null:
 		return 0
 	# Best equipped body armor and shield, each as (armor_ac_bonus + magical_bonus).
-	# Only one body / off-hand slot is normally occupied, but maxi() guards against
-	# duplicate equipped rows in malformed data.
+	# Body armor lives in the dedicated 'armor' slot (gdd-character-tab.md §3.4,
+	# migration 151 — distinct from the 'torso_clothing' slot it now coexists
+	# with). Only one armor / off-hand slot is normally occupied, but maxi()
+	# guards against duplicate equipped rows in malformed data.
 	var body_ac := 0
 	var shield_ac := 0
 	for item in inventory_rows:
@@ -70,7 +72,7 @@ static func compute(character: CharacterData, inventory_rows: Array) -> int:
 			continue
 		if not equipped:
 			continue
-		if category == "armor" and slot == "body":
+		if category == "armor" and slot == "armor":
 			body_ac = maxi(body_ac, ac_bonus + magic)
 		elif category == "shield" and slot == "hands_off":
 			shield_ac = maxi(shield_ac, ac_bonus + magic)

@@ -65,6 +65,7 @@ Axioms (ax_) > HFH excerpted > Player's Companion (pc_) > Lairs & Encounters (le
 | `pc_classes_2.xml` | Dwarven Delver: thief skills, backstab, trap detection, subterranean nav | delver, dwarf, thief skills |
 | `pc_classes_3.xml` | Paladin: fighter magic items, lay on hands, detect evil, disease immunity | paladin, fighter, divine |
 | `pc_classes_4.xml` | Elven Courtier: arcane casting, inspiring courage, performance magic | courtier, elf, arcane, social |
+| `pc_classes_6.xml` | Mystic: full class writeup (PC pp.30-31); Warlock supplement: spell progression table + proficiency list (PC pp.46-48) | mystic, martial artist, warlock, spell slots |
 
 ### Systems
 

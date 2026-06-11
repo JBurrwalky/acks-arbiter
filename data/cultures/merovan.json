@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "merovan",
+      "catalog_number": 25,
+      "demonym": "Merovan",
+      "toponym": "Merovia",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        19
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral"
+      ],
+      "rigidity": 0.55
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "hills"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.5,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.3
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.2
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.6,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.5
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.45,
+        "mercantile": 0.15,
+        "religious": 0.25,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "heavy_cavalry",
+        "heavy_infantry",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.0,
+        "societal_orthodoxy": 0.5,
+        "mysticism": 0.5,
+        "stress_reactivity": 0.5,
+        "civility": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "merovan",
+    "phonemic_palette": "Frankish/Old High German: the High German shift (th>d, d>t, k>ch/hh); w>w/wu; endings -o/-i; dithematic compounds; theophoric stems are the Frankish reflexes (Dulro-, Erlant-, Giando-, Rialda-).",
+    "phenotype_notes": "Features of the Frankish analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Frankish",
+      "language_family": "germanic",
+      "script": "own_script"
+    },
+    "social_structure": "feudal",
+    "values": {
+      "core_values": [
+        "honor",
+        "duty",
+        "piety"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "shirking one's duty"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered",
+      "notes": "Frankish register; deity-morphs in name_bank 'merovan'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "fortified",
+      "signature_feature": "timber halls of the Merovan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law",
+        "light"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Merovan — wary feudal of the grassland; honor, duty.",
+      "one_paragraph": "The Merovan (Frankish) are a assertive feudal people seeded in grassland, forest, hills. They prize honor, duty, piety, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, light_cavalry. Outsiders are met as wary; their patrons touch war, law, light."
+    }
+  }
+}

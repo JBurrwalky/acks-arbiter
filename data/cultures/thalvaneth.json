@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "thalvaneth",
+      "catalog_number": 50,
+      "demonym": "Thalvaneth",
+      "toponym": "Thalvanar",
+      "tier": "demihuman",
+      "race": "elf",
+      "civ_or_clan": "civ",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.2,
+        "Neutral": 0.6,
+        "Chaotic": 0.2
+      },
+      "rigidity": 0.55
+    },
+    "terrain": {
+      "seed_biomes": [
+        "forest",
+        "dense forest",
+        "jungle",
+        "taiga"
+      ],
+      "coastal_start": "Y"
+    },
+    "expansion": {
+      "aggression": 0.5,
+      "defense": 0.8,
+      "size_exponent_bias": -0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.4,
+      "modifiers": [
+        {
+          "when": "target_in_my_seed_biome",
+          "set": 0.8
+        },
+        {
+          "when": "target_is_demihuman",
+          "set": 0.9
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.2
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.75,
+      "end_state": "enclave"
+    },
+    "infrastructure": {
+      "road_propensity": 0.25
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.3,
+        "mercantile": 0.25,
+        "religious": 0.2,
+        "arcane": 0.25
+      },
+      "preferred_troop_types": [
+        "marines",
+        "archers",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "stress_reactivity": -1.0,
+        "epistemic_curiosity": 1.0,
+        "affective_compassion": 0.5,
+        "mysticism": 0.5,
+        "self_interest": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "thalvaneth",
+    "phonemic_palette": "Thalvaneth: smooth and lilting (Mediterranean sea-elf); vowel-rich endings -os/-a/-e/-eth; sibilants s/sh; a light guttural/pharyngeal touch (the Punic descendant); flowing open syllables; the SMOOTH branch-law on the Proto-Elvish roots.",
+    "phenotype_notes": "Features of the Elf analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Thalvaneth",
+      "language_family": "elvish",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "freedom",
+        "knowledge",
+        "hospitality"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "destroying lore"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "revered",
+      "divine": "respected",
+      "notes": "Elf register; deity-morphs in name_bank 'thalvaneth'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "rugged",
+      "signature_feature": "timber halls of the Thalvaneth"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "sea",
+        "nature",
+        "knowledge"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Thalvaneth — wary clan confederation of the forest; freedom, knowledge.",
+      "one_paragraph": "The Thalvaneth (Elf) are a defensive clan confederation people seeded in forest, dense forest, jungle. They prize freedom, knowledge, hospitality, lean toward the military sphere, and field marines, archers, light_infantry. Outsiders are met as wary; their patrons touch sea, nature, knowledge."
+    }
+  }
+}

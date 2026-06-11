@@ -23,17 +23,14 @@ extends RefCounted
 ##      mounts wired).
 ##
 ## PROJECT-DESIGNED:
-##   * Passive lair-spotting on travel_leg. RAW addresses dedicated search
-##     and incidental wandering (the "substitute one of the previously
-##     generated lairs" rule). We treat each travel_leg as an opportunity for
-##     a single passive throw against the daily-movement target value, with
-##     no Tracking bonus and no wandering encounter rolled (the leg already
-##     fired its own encounter check). This produces the "fast travel
-##     occasionally surfaces a lair" feel the rule hints at without
-##     duplicating the encounter pipeline.
 ##   * `optional_specialist_bonus` parameter on every entry point. Phase 4
-##     always passes 0; Phase 6 wires the Pathfinder specialist bonus into
+##     always passed 0; Phase 6 wires the Pathfinder specialist bonus into
 ##     this hook without changing the resolver's signature.
+##
+## (The v1 passive lair-spotting entry point that rolled on every travel_leg
+## was removed 2026-06-10 per gdd-lair-discovery.md §10 — the lazy-placement
+## redesign has no pre-placed lairs to spot. Wandering substitution and the
+## dedicated search are the only discovery paths.)
 ##
 ## All randomness flows through the injected `dice` (DiceSystem-like) so
 ## tests can substitute a scripted roller.
@@ -160,42 +157,6 @@ static func search_hour(
 
 
 # ---------------------------------------------------------------------------
-# Public API — passive throw on travel_leg
-# ---------------------------------------------------------------------------
-
-## One passive throw made when a travel_leg ends in a hex containing
-## undiscovered lairs. Project-designed elaboration of the RAW substitution
-## rule. Tracking bonus does NOT apply (the party isn't deliberately
-## searching). The specialist bonus DOES apply (Pathfinders wired in
-## Phase 6 are deliberately scouting).
-static func passive_check(
-	party: PartyData,
-	daily_miles: int,
-	undiscovered_lair_count: int,
-	dice,
-	optional_specialist_bonus: int = 0,
-) -> Dictionary:
-	if party == null or undiscovered_lair_count <= 0:
-		return _empty_passive_result(undiscovered_lair_count)
-
-	var roll: RollResult = dice.roll_digital(20, 1, 0, "lair_search_passive")
-	var total: int = roll.modified_total + optional_specialist_bonus
-	var target: int = compute_target_value(daily_miles, false)
-	var succeeded: bool = total >= target
-
-	return {
-		"roll": roll.modified_total,
-		"specialist_bonus": optional_specialist_bonus,
-		"total": total,
-		"target": target,
-		"succeeded": succeeded,
-		"lair_found": succeeded,
-		"undiscovered_lairs_at_throw": undiscovered_lair_count,
-		"notes": "Lair spotted in passing." if succeeded else "",
-	}
-
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -219,17 +180,4 @@ static func _empty_search_result() -> Dictionary:
 		"lair_found": false,
 		"undiscovered_lairs_at_throw": 0,
 		"notes": "no party",
-	}
-
-
-static func _empty_passive_result(undiscovered_lair_count: int) -> Dictionary:
-	return {
-		"roll": 0,
-		"specialist_bonus": 0,
-		"total": 0,
-		"target": 18,
-		"succeeded": false,
-		"lair_found": false,
-		"undiscovered_lairs_at_throw": undiscovered_lair_count,
-		"notes": "",
 	}

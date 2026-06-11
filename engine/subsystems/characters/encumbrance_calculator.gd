@@ -121,11 +121,42 @@ static func _calculate_container_aggregate_weight(
 	return total
 
 
+## Slots whose occupant is weightless when WORN regardless of item_category —
+## the ornamentation + ring slots from gdd-character-tab.md §3.4.6. Clothing-
+## category items (tunics, robes, hats, shoes, belts, cloaks) are handled by
+## the category test in `_is_worn_weightless`; these slots additionally cover
+## non-clothing ornamentation (holy symbol / amulet on `neck`, a magic cloak,
+## and rings, which RAW treats as negligible weight).
+const WORN_WEIGHTLESS_SLOTS := ["neck", "cloak", "ring_l", "ring_r"]
+
+
+## gdd-character-tab.md §3.4.6 clothing-vs-armor stacking rule. An EQUIPPED item
+## contributes zero stone when it is non-armor clothing/ornamentation:
+##   - any `item_category == "clothing"` item (worn tunic/robe/hat/shoes/belt —
+##     full weight only when carried in the pack), OR
+##   - any item in an ornamentation/ring slot (neck, cloak, ring_l, ring_r), OR
+##   - any legacy `accessory_N` slot occupant (pre-migration-151 saves).
+## Armor (slot `armor`), weapons, gauntlets (`hands_worn`), bracers (`arms`),
+## helmets (`head`, armor category), and quivered ammo keep their full stone
+## whether worn or carried — they fall through to the standard weight path.
+static func _is_worn_weightless(is_equipped: bool, category: String, slot: String) -> bool:
+	if not is_equipped:
+		return false
+	if category == "clothing":
+		return true
+	if slot in WORN_WEIGHTLESS_SLOTS:
+		return true
+	if slot.begins_with("accessory"):
+		return true
+	return false
+
+
 static func calculate_item_encumbrance(item) -> int:
 	## Returns effective encumbrance in units for one inventory item (quantity included).
-	## Equipped clothing and equipped accessories (accessory_N slots) weigh 0 — they are
-	## considered "worn" and do not encumber. Armor is always weighted even when worn.
-	## Accounts for magical armor/shield weight reduction (1000 units = 1 stone per bonus).
+	## Worn clothing/ornamentation/rings weigh 0 per §3.4.6 (see `_is_worn_weightless`);
+	## armor is always weighted even when worn (it now lives in its own `armor` slot,
+	## coexisting with `torso_clothing`). Accounts for magical armor/shield weight
+	## reduction (1000 units = 1 stone per bonus).
 	##
 	## Container-aware? NO — this function gives the SINGLE item's own weight.
 	## Container aggregate (own + contents) lives in
@@ -134,11 +165,7 @@ static func calculate_item_encumbrance(item) -> int:
 	var units: int
 	var qty: int
 	if item is InventoryItem:
-		# Worn clothing/accessories are weightless
-		if item.is_equipped and (
-			item.item_category == "clothing"
-			or item.slot.begins_with("accessory")
-		):
+		if _is_worn_weightless(item.is_equipped, item.item_category, item.slot):
 			return 0
 		units = item.encumbrance_units
 		qty = item.quantity
@@ -150,8 +177,7 @@ static func calculate_item_encumbrance(item) -> int:
 		var is_equipped: bool = int(item.get("is_equipped", 0)) == 1
 		var category: String = item.get("item_category", "gear")
 		var slot: String = item.get("slot", "pack")
-		# Worn clothing/accessories are weightless
-		if is_equipped and (category == "clothing" or slot.begins_with("accessory")):
+		if _is_worn_weightless(is_equipped, category, slot):
 			return 0
 		units = int(item.get("encumbrance_units", 0))
 		qty = int(item.get("quantity", 1))

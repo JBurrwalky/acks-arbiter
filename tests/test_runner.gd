@@ -178,6 +178,7 @@ extends Node
 @onready var _lair_search_resolver_tests = $LairSearchResolverTests
 @onready var _surveying_resolver_tests = $SurveyingResolverTests
 @onready var _lair_discovery_tests = $LairDiscoveryTests
+@onready var _lair_placement_tests = $LairPlacementTests
 @onready var _tracking_resolver_tests = $TrackingResolverTests
 @onready var _evasion_resolver_tests = $EvasionResolverTests
 @onready var _wilderness_reaction_router_tests = $WildernessReactionRouterTests
@@ -187,6 +188,7 @@ extends Node
 @onready var _specialist_bonus_resolver_tests = $SpecialistBonusResolverTests
 @onready var _specialist_hire_manager_tests = $SpecialistHireManagerTests
 @onready var _specialist_integration_tests = $SpecialistIntegrationTests
+@onready var _specialist_dual_path_tests = $SpecialistDualPathTests
 @onready var _casting_geometry_tests = $CastingGeometryTests
 @onready var _casting_resolver_tests = $CastingResolverTests
 @onready var _spell_slot_reset_tests = $SpellSlotResetTests
@@ -524,6 +526,10 @@ extends Node
 @onready var _savegame_location_tests = $SavegameLocationTests
 # 2026-06-07 — Savegame Phase S-2: whole-DB snapshot round-trip
 @onready var _savegame_snapshot_tests = $SavegameSnapshotTests
+@onready var _provisions_ledger_tests = $ProvisionsLedgerTests
+@onready var _provisions_service_tests = $ProvisionsServiceTests
+@onready var _grazing_rules_tests = $GrazingRulesTests
+@onready var _animal_sustenance_resolver_tests = $AnimalSustenanceResolverTests
 
 
 func _ready() -> void:
@@ -688,6 +694,7 @@ func run() -> void:
 			_lair_search_resolver_tests,
 			_surveying_resolver_tests,
 			_lair_discovery_tests,
+			_lair_placement_tests,
 			_tracking_resolver_tests,
 			_evasion_resolver_tests,
 			_wilderness_reaction_router_tests,
@@ -697,6 +704,7 @@ func run() -> void:
 			_specialist_bonus_resolver_tests,
 			_specialist_hire_manager_tests,
 			_specialist_integration_tests,
+			_specialist_dual_path_tests,
 			_casting_geometry_tests,
 			_casting_resolver_tests,
 			_spell_slot_reset_tests,
@@ -1042,7 +1050,12 @@ func run() -> void:
 			# 2026-06-07 — Savegame Phase S-1: location/context persistence
 			_savegame_location_tests,
 			# 2026-06-07 — Savegame Phase S-2: whole-DB snapshot round-trip
-			_savegame_snapshot_tests]:
+			_savegame_snapshot_tests,
+			# 2026-06-08 — Provisions consumption system (food / water / fodder)
+			_provisions_ledger_tests,
+			_provisions_service_tests,
+			_grazing_rules_tests,
+			_animal_sustenance_resolver_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

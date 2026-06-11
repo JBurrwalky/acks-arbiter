@@ -75,31 +75,31 @@ func test_unarmored_ac_is_dex_mod() -> void:
 
 
 func test_leather_armor_adds_2() -> void:
-	var rows := [_row("armor", "body", 2)]
+	var rows := [_row("armor", "armor", 2)]
 	check(CharacterAcCalculator.compute(_char(10), rows) == 2,
 		"leather (AC 2) + dex 10 → AC 2")
 
 
 func test_magic_leather_plus_one_adds_3() -> void:
-	var rows := [_row("armor", "body", 2, 1)]  # +1 leather
+	var rows := [_row("armor", "armor", 2, 1)]  # +1 leather
 	check(CharacterAcCalculator.compute(_char(10), rows) == 3,
 		"+1 leather (2 + magic 1) + dex 10 → AC 3")
 
 
 func test_shield_adds() -> void:
-	var rows := [_row("armor", "body", 2), _row("shield", "hands_off", 1)]
+	var rows := [_row("armor", "armor", 2), _row("shield", "hands_off", 1)]
 	check(CharacterAcCalculator.compute(_char(10), rows) == 3,
 		"leather (2) + shield (1) + dex 10 → AC 3")
 
 
 func test_dexterity_modifier_adds() -> void:
-	var rows := [_row("armor", "body", 2)]
+	var rows := [_row("armor", "armor", 2)]
 	check(CharacterAcCalculator.compute(_char(13), rows) == 3,
 		"leather (2) + dex 13 (mod +1) → AC 3")
 
 
 func test_unequipped_armor_ignored() -> void:
-	var rows := [_row("armor", "body", 2, 0, false)]  # leather, NOT equipped
+	var rows := [_row("armor", "armor", 2, 0, false)]  # leather, NOT equipped
 	check(CharacterAcCalculator.compute(_char(10), rows) == 0,
 		"unequipped leather contributes nothing → AC 0 (dex 10)")
 
@@ -108,7 +108,7 @@ func test_non_armor_items_ignored() -> void:
 	var rows := [
 		_row("weapon", "hands_main", 0),       # equipped sword (no AC)
 		_row("gear", "hands_off", 0),          # equipped torch (no AC)
-		_row("armor", "body", 2),              # leather (counts)
+		_row("armor", "armor", 2),              # leather (counts)
 	]
 	check(CharacterAcCalculator.compute(_char(10), rows) == 2,
 		"only body armor contributes; weapon/gear ignored → AC 2")
@@ -123,7 +123,7 @@ func test_shield_must_be_hands_off() -> void:
 
 func test_full_loadout() -> void:
 	var rows := [
-		_row("armor", "body", 6, 1),       # +1 plate → 7
+		_row("armor", "armor", 6, 1),       # +1 plate → 7
 		_row("shield", "hands_off", 1),    # shield → 1
 	]
 	check(CharacterAcCalculator.compute(_char(16), rows) == 10,
@@ -132,7 +132,7 @@ func test_full_loadout() -> void:
 
 func test_best_of_duplicate_body_armor() -> void:
 	# Defensive: if malformed data has two equipped body suits, take the best.
-	var rows := [_row("armor", "body", 2), _row("armor", "body", 6)]
+	var rows := [_row("armor", "armor", 2), _row("armor", "armor", 6)]
 	check(CharacterAcCalculator.compute(_char(10), rows) == 6,
 		"two equipped body armors → best (plate 6), not sum → AC 6")
 
@@ -140,7 +140,7 @@ func test_best_of_duplicate_body_armor() -> void:
 func test_accepts_inventory_item_objects() -> void:
 	# The dual-shape contract: InventoryItem objects work as well as dicts.
 	var leather := InventoryItem.from_dict({
-		"item_category": "armor", "slot": "body",
+		"item_category": "armor", "slot": "armor",
 		"is_equipped": 1, "armor_ac_bonus": 2, "magical_bonus": 0,
 	})
 	var shield := InventoryItem.from_dict({
@@ -154,7 +154,7 @@ func test_accepts_inventory_item_objects() -> void:
 func test_recompute_writes_field() -> void:
 	var c := _char(13)
 	c.armor_class = 99  # stale value
-	var result := CharacterAcCalculator.recompute(c, [_row("armor", "body", 4)])
+	var result := CharacterAcCalculator.recompute(c, [_row("armor", "armor", 4)])
 	check(result == 5, "recompute returns chain (4) + dex 13 (+1) → 5")
 	check(c.armor_class == 5, "recompute writes armor_class field → 5")
 
@@ -213,7 +213,7 @@ func test_db_equip_and_unequip_armor() -> void:
 	_setup(10)
 	var item_id := _add_armor("leather_armor", "armor", 2)
 	check(_db_ac() == 0, "before equip: AC 0 (dex 10, nothing worn)")
-	CampaignRepository.update_inventory_item_equip_state(item_id, true, "body")
+	CampaignRepository.update_inventory_item_equip_state(item_id, true, "armor")
 	check(_db_ac() == 2, "after equipping leather: DB AC 2")
 	CampaignRepository.update_inventory_item_equip_state(item_id, false, "pack")
 	check(_db_ac() == 0, "after unequipping leather: DB AC back to 0")
@@ -224,7 +224,7 @@ func test_db_equip_shield_stacks_with_armor() -> void:
 	_setup(10)
 	var leather := _add_armor("leather_armor", "armor", 2)
 	var shield := _add_armor("shield", "shield", 1)
-	CampaignRepository.update_inventory_item_equip_state(leather, true, "body")
+	CampaignRepository.update_inventory_item_equip_state(leather, true, "armor")
 	CampaignRepository.update_inventory_item_equip_state(shield, true, "hands_off")
 	check(_db_ac() == 3, "leather (2) + shield (1) + dex 10 → DB AC 3")
 	_cleanup()
@@ -233,7 +233,7 @@ func test_db_equip_shield_stacks_with_armor() -> void:
 func test_db_magic_armor_bonus() -> void:
 	_setup(10)
 	var item_id := _add_armor("leather_armor_plus_1", "armor", 2, 1)
-	CampaignRepository.update_inventory_item_equip_state(item_id, true, "body")
+	CampaignRepository.update_inventory_item_equip_state(item_id, true, "armor")
 	check(_db_ac() == 3, "+1 leather (2 + magic 1) + dex 10 → DB AC 3")
 	_cleanup()
 
@@ -241,7 +241,7 @@ func test_db_magic_armor_bonus() -> void:
 func test_db_dexterity_change_recomputes() -> void:
 	_setup(10)
 	var item_id := _add_armor("leather_armor", "armor", 2)
-	CampaignRepository.update_inventory_item_equip_state(item_id, true, "body")
+	CampaignRepository.update_inventory_item_equip_state(item_id, true, "armor")
 	check(_db_ac() == 2, "leather + dex 10 → AC 2")
 	# Simulate a Dexterity change (as the GM-override path does), then recompute.
 	CampaignRepository.db.query_with_bindings(
@@ -256,7 +256,7 @@ func test_db_sanitize_repairs_stale_ac() -> void:
 	# sanitize_character_equipment leaves the (legal) leather equipped and the
 	# end-of-function recompute repairs the AC.
 	_setup(10)
-	var item_id := _add_armor("leather_armor", "armor", 2, 0, true, "body")
+	var item_id := _add_armor("leather_armor", "armor", 2, 0, true, "armor")
 	CampaignRepository.db.query_with_bindings(
 		"UPDATE characters SET armor_class = ? WHERE id = ?", [0, TEST_CHAR])
 	check(_db_ac() == 0, "precondition: stale AC 0 with leather equipped")

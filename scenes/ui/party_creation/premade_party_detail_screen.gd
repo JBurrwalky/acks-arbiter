@@ -14,6 +14,7 @@ extends CanvasLayer
 
 const PORTRAIT_SIZE := Vector2(64, 64)
 const ROW_BG_COLOR := Color(0.94, 0.89, 0.78, 0.42)
+const PortraitTextures := preload("res://engine/subsystems/assets/portrait_textures.gd")
 const ROW_BORDER_COLOR := Color(0.44, 0.31, 0.18, 0.88)
 
 const ABILITY_KEYS: Array[String] = ["STR", "INT", "WIS", "DEX", "CON", "CHA"]
@@ -252,6 +253,7 @@ func _make_character_row(c: Dictionary) -> PanelContainer:
 	portrait_rect.custom_minimum_size = PORTRAIT_SIZE
 	portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	portrait_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var portrait_id: String = c.get("portrait_id", "")
 	if not portrait_id.is_empty():
@@ -314,15 +316,8 @@ func _make_character_row(c: Dictionary) -> PanelContainer:
 # ---------------------------------------------------------------------------
 
 func _load_portrait(portrait_id: String) -> Texture2D:
-	var user_path := "user://portraits/%s.png" % portrait_id
-	if FileAccess.file_exists(user_path):
-		var img := Image.load_from_file(user_path)
-		if img != null:
-			return ImageTexture.create_from_image(img)
-	var res_path := "res://assets/portraits/%s.png" % portrait_id
-	if ResourceLoader.exists(res_path):
-		return load(res_path) as Texture2D
-	return null
+	# Shared loader: downscaled + mipmapped so the 64px thumbnail doesn't alias.
+	return PortraitTextures.resolve(portrait_id)
 
 
 # ---------------------------------------------------------------------------

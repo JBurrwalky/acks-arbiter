@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "ogre",
+      "catalog_number": null,
+      "demonym": "Ogre",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "ogre",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.25
+    },
+    "terrain": {
+      "seed_biomes": [
+        "hills",
+        "mountains",
+        "dense forest"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.5,
+      "size_exponent_bias": -0.05
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "berserkers",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "civility": -2.0,
+        "self_interest": -1.0,
+        "epistemic_curiosity": -1.0,
+        "stress_reactivity": 0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "ogre",
+    "phonemic_palette": "Ogre (Kazhur, boom-grunt regression): simple CVC only, booming voiced b/g/d/m, vowels low o/u, suffixes -og/-grub/-mog; few, heavy, bellowed words.",
+    "phenotype_notes": "Features of the Ogre analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Ogre",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Ogre register; deity-morphs in name_bank 'ogre'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone warrens of the Ogre"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Ogre — xenophobic tribal of the hills; survival.",
+      "one_paragraph": "The Ogre are a Chaotic beastman race; aggression 0.85, organized as tribal. Their tongue is a regressed form (see name_bank 'ogre'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

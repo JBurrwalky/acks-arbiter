@@ -48,6 +48,8 @@ func run_all_tests() -> void:
 	test_failure_inconclusive_no_estimate()
 	test_natural_one_returns_false_reading()
 	test_estimate_clamped_at_zero()
+	test_hired_surveyor_makes_the_throw_without_proficient_member()
+	test_proficient_member_takes_precedence_over_hired_surveyor()
 	if not has_failures():
 		print("SurveyingResolver: all tests passed.")
 
@@ -80,8 +82,51 @@ func test_no_surveyor_in_party_returns_ineligible() -> void:
 	var party := _make_party(3, false)
 	var dice := _ScriptedDice.new()
 	var r := SurveyingResolver.assess(party, 0, 5, dice)
-	check(not bool(r["eligible"]), "no Land Surveying → ineligible")
+	check(not bool(r["eligible"]), "no Land Surveying and no hired surveyor → ineligible")
 	check(int(r["estimate"]) == -1, "no estimate when ineligible")
+
+
+## Ruling 2026-06-10 per le_wilderness_lair_rules.xml §hirelings L191-195
+## ("Can be hired to assess the number of lairs in a hex"): a hired Land
+## Surveyor makes the throw when no party member has the proficiency.
+func test_hired_surveyor_makes_the_throw_without_proficient_member() -> void:
+	var party := _make_party(3, false)
+	var dice := _ScriptedDice.new()
+	dice.scripts = {"land_surveying": [18]}
+	var hired := {
+		"specialist_id": "spec_ls_1",
+		"kind": "land_surveyor",
+		"name": "Hired Surveyor",
+	}
+	var r := SurveyingResolver.assess(party, 0, 5, dice, 0, hired)
+	check(bool(r["eligible"]), "hired Land Surveyor satisfies eligibility")
+	check(bool(r["surveyor_is_specialist"]), "thrower flagged as specialist")
+	check(String(r["surveyor_id"]) == "spec_ls_1", "specialist_id carried as surveyor_id")
+	check(int(r["strenuous_penalty"]) == 0,
+		"non-adventuring specialist takes no strenuous penalty")
+	check(bool(r["succeeded"]), "18 >= 18 — specialist throws at base, no self-assist")
+	check(int(r["estimate"]) == 5, "success reveals the actual count")
+
+	# A pathfinder row does NOT satisfy surveying eligibility.
+	var wrong_kind := {"specialist_id": "spec_pf", "kind": "pathfinder", "name": "Scout"}
+	var r2 := SurveyingResolver.assess(party, 0, 5, dice, 0, wrong_kind)
+	check(not bool(r2["eligible"]), "pathfinder cannot make the surveying throw")
+
+
+func test_proficient_member_takes_precedence_over_hired_surveyor() -> void:
+	var party := _make_party(2, true)
+	var dice := _ScriptedDice.new()
+	dice.scripts = {"land_surveying": [14]}
+	var hired := {
+		"specialist_id": "spec_ls_1",
+		"kind": "land_surveyor",
+		"name": "Hired Surveyor",
+	}
+	# Member throws; the hired surveyor assists via the +4 bonus param.
+	var r := SurveyingResolver.assess(party, 0, 5, dice, 4, hired)
+	check(not bool(r["surveyor_is_specialist"]), "proficient member makes the throw")
+	check(String(r["surveyor_id"]) == "pc_0", "member id carried as surveyor_id")
+	check(bool(r["succeeded"]), "14 + 4 assist = 18 succeeds")
 
 
 func test_first_attempt_target_is_18() -> void:

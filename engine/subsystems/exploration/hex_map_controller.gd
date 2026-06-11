@@ -188,7 +188,53 @@ func can_move_to(target: Vector2i) -> bool:
 		_map_data != null
 		and _map_data.is_valid_coord(target)
 		and is_adjacent(_map_data.party_hex, target)
+		and can_cross_river_edge(_map_data.party_hex, target)
 	)
+
+
+## Returns true if the party may cross the edge between two adjacent hexes.
+##
+## A river edge whose `crossing` is "none" blocks land movement — until the boat
+## system exists, rivers may only be crossed where a bridge, ford, or ferry is
+## declared on the edge, OR where a road bridges the river ("roads imply
+## crossings" — Jedidiah ruling 2026-06-08; GDD §3.6.5). Returns true when the
+## two hexes are not adjacent, when no river runs along their shared edge, or
+## when no map is loaded. River edges are stored canonically (lex-lower hex owns
+## the entry), so this checks the edge in both orientations.
+func can_cross_river_edge(from_hex: Vector2i, to_hex: Vector2i) -> bool:
+	if _map_data == null:
+		return true
+	for edge_data in _map_data.river_edges:
+		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var neighbor: Vector2i = owner + HexRiverEdgeData.neighbor_offset(edge_data.edge)
+		if (owner == from_hex and neighbor == to_hex) \
+				or (owner == to_hex and neighbor == from_hex):
+			if edge_data.crossing != HexRiverEdgeData.CROSSING_NONE:
+				return true
+			# Roads imply a crossing: a road that bridges this edge makes it
+			# passable even without an authored crossing.
+			return _edge_has_road(owner, edge_data.edge)
+	return true
+
+
+## Returns true if a road runs across the edge `edge` of `owner_coord` — i.e.
+## the owning hex has that edge in its road overlay, or the neighbour across it
+## has the opposite edge. A road touching a river edge from either side is taken
+## to bridge it ("roads imply crossings").
+func _edge_has_road(owner_coord: Vector2i, edge: int) -> bool:
+	if _map_data == null:
+		return false
+	var owner_terrain: HexTerrainData = _map_data.get_hex(owner_coord)
+	if owner_terrain != null and owner_terrain.overlay != null \
+			and edge in owner_terrain.overlay.road_edges:
+		return true
+	var neighbor_coord: Vector2i = owner_coord + HexRiverEdgeData.neighbor_offset(edge)
+	var neighbor_terrain: HexTerrainData = _map_data.get_hex(neighbor_coord)
+	var opp: int = HexOverlayData.opposite_edge(edge)
+	if neighbor_terrain != null and neighbor_terrain.overlay != null \
+			and opp in neighbor_terrain.overlay.road_edges:
+		return true
+	return false
 
 
 ## Returns true if [param coord] is a hex the party may traverse.
@@ -240,6 +286,11 @@ func find_path(from_hex: Vector2i, to_hex: Vector2i) -> Array[Vector2i]:
 			# Allow the goal to be the only "blocked" cell we'd ever want to
 			# walk into — but is_hex_passable already approved the goal above.
 			if not is_hex_passable(n):
+				continue
+			# Rivers without a bridge/ford/ferry block the step between two
+			# adjacent hexes (no boats yet — GDD §3.6.5). Pathfinding routes
+			# around them, threading through declared crossings.
+			if not can_cross_river_edge(current, n):
 				continue
 			var tentative: int = current_g + 1
 			if not g_score.has(n) or tentative < int(g_score[n]):

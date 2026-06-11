@@ -61,8 +61,8 @@ func test_template_count() -> void:
 	if not (payload is Dictionary):
 		return
 	var templates: Array = (payload as Dictionary).get("templates", [])
-	check(templates.size() == 216,
-		"expected 216 templates in class_templates.json, got %d" % templates.size())
+	check(templates.size() == 224,
+		"expected 224 templates in class_templates.json, got %d" % templates.size())
 
 
 func test_import_script_check_mode_passes() -> void:

@@ -25,6 +25,8 @@ func run_all_tests() -> void:
 	test_general_swap_replaces_general()
 	test_locked_proficiency_not_swappable()
 	test_build_repertoire_arcane_gate()
+	test_template_base_proficiencies_split()
+	test_template_base_repertoire_base_and_extras()
 	if not has_failures():
 		print("PcTemplateCreationFlow: all tests passed.")
 
@@ -234,3 +236,52 @@ func test_build_repertoire_arcane_gate() -> void:
 	var rep := _flow.build_repertoire("mage", "mage_3_4", 12)
 	check(not (rep as Dictionary).is_empty(), "mage builds a repertoire")
 	check((rep.get("spells", []) as Array).size() >= 1, "mage repertoire has spells")
+
+
+# ---------------------------------------------------------------------------
+# §10 step 12 — reused-picker seeding (template_base_proficiencies / _repertoire)
+# ---------------------------------------------------------------------------
+
+func test_template_base_proficiencies_split() -> void:
+	# witch_3_4: Contemplation [class] + Survival [general] → editable; Healing
+	# [tradition] → locked (bonus_proficiencies). NO INT-bonus auto-fill (the player
+	# fills those in the reused picker).
+	var w := _repo.get_template("witch_3_4")
+	var split := _flow.template_base_proficiencies(w, 12)
+	var sel_keys: Array = []
+	var has_class := false
+	for r: Dictionary in split["selected"]:
+		sel_keys.append(String(r["proficiency_key"]))
+		if String(r["slot_type"]) == "class":
+			has_class = true
+	var lock_keys: Array = []
+	for r: Dictionary in split["locked"]:
+		lock_keys.append(String(r["proficiency_key"]))
+	check(sel_keys.has("contemplation") and sel_keys.has("survival"), "witch class+general editable")
+	check(has_class, "selected keeps the class slot")
+	check(lock_keys == ["healing"], "witch tradition (healing) locked, got %s" % str(lock_keys))
+	check(split["selected"].size() == 2, "no auto-fill at INT 12, got %d" % split["selected"].size())
+
+	# mage_15_16 arcane INT 12: the arcane_bonus is culled out of the editable set.
+	var m := _repo.get_template("mage_15_16")
+	var msel: Array = []
+	for r: Dictionary in _flow.template_base_proficiencies(m, 12)["selected"]:
+		msel.append(String(r["proficiency_key"]))
+	check(not msel.has("siege_engineering"), "arcane_bonus culled from the seeded set at INT 12")
+
+
+func test_template_base_repertoire_base_and_extras() -> void:
+	# mage_3_4: starting [slipperiness], bonus ventriloquism. INT 12 → bonus dropped,
+	# 0 extras to roll; the base is just the starting spell.
+	var lo := _flow.template_base_repertoire("mage", "mage_3_4", 12)
+	check(not lo.is_empty(), "mage base repertoire exists")
+	check(int(lo["extra_spells_to_roll"]) == 0, "INT 12 → 0 extras to roll")
+	check((lo["spells"] as Array).size() >= 1, "base has the starting spell")
+	# INT 18 → bonus kept + 2 extras to roll; base is starting + bonus, NOT pre-rolled.
+	var hi := _flow.template_base_repertoire("mage", "mage_3_4", 18)
+	check(int(hi["extra_spells_to_roll"]) == 2,
+		"INT 18 → 2 extras to roll, got %d" % int(hi["extra_spells_to_roll"]))
+	check((hi["spells"] as Array).size() == 2,
+		"base = starting + bonus (2), extras NOT pre-rolled, got %d" % (hi["spells"] as Array).size())
+	check(_flow.template_base_repertoire("fighter", "fighter_3_4", 12).is_empty(),
+		"fighter has no template repertoire")

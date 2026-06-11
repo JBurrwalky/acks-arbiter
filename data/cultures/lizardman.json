@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "lizardman",
+      "catalog_number": null,
+      "demonym": "Lizardman",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "lizardman",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "swamp",
+        "jungle"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.7,
+      "size_exponent_bias": 0
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": -0.5,
+        "mysticism": 0.5,
+        "societal_orthodoxy": 0.5,
+        "affective_compassion": -0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "lizardman",
+    "phonemic_palette": "Lizardman (Kazhur, smooth-hiss regression): sh/s/z/ss prominent and drawn out, cold and even (not foul like the trog), suffixes -ssa/-isk/-aza; sustained, sibilant, articulate.",
+    "phenotype_notes": "Features of the Lizardman analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Lizardman",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [
+        "dishonoring the dead"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Lizardman register; deity-morphs in name_bank 'lizardman'."
+    },
+    "architecture_style": {
+      "primary_material": "living_wood",
+      "aesthetic": "rugged",
+      "signature_feature": "living_wood warrens of the Lizardman"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally."
+    },
+    "flavor_text": {
+      "one_line": "Lizardman — wary tribal of the swamp; survival.",
+      "one_paragraph": "The Lizardman are a Chaotic beastman race; aggression 0.6, organized as tribal. Their tongue is a regressed form (see name_bank 'lizardman'). Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

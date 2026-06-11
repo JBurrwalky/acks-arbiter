@@ -514,8 +514,12 @@ func to_state_dict() -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func _str(d: Dictionary, key: String, fallback: String = "") -> String:
+	# A `-> String` helper must never return a non-String. A genuine string is used
+	# as-is; NULL or a non-string DB value falls back. (settlement_node_id is an
+	# INTEGER column — migration 019, -1 = "not positioned" — so its default reads
+	# back as int -1 here and must map to the fallback, not crash the loader.)
 	var v = d.get(key, fallback)
-	return v if v != null else fallback
+	return v if v is String else fallback
 
 
 static func _int(d: Dictionary, key: String, fallback: int = 0) -> int:

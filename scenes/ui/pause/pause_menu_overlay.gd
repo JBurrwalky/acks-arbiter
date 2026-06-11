@@ -143,28 +143,44 @@ func _on_resume() -> void:
 
 
 func _on_save() -> void:
-	# Find SessionRunner and call save.
+	# Find SessionRunner and quick-save to a loadable slot.
 	var main := get_parent()
-	if main:
-		var runner := main.get_node_or_null("SessionRunner")
-		if runner and runner.has_method("save_session"):
-			# Saving during combat is disallowed (gdd-savegame-system.md §5.7) —
-			# surface a message rather than silently no-op inside save_session().
-			if runner.has_method("is_in_combat") and runner.is_in_combat():
-				EventBus.notification_requested.emit({
-					"type": "warning",
-					"category": "system",
-					"title": "Cannot Save During Combat",
-					"duration": 3.0,
-				})
-				return
-			runner.save_session()
-			EventBus.notification_requested.emit({
-				"type": "success",
-				"category": "system",
-				"title": "Game Saved",
-				"duration": 3.0,
-			})
+	if main == null:
+		return
+	var runner := main.get_node_or_null("SessionRunner")
+	if runner == null or not runner.has_method("save_to_slot"):
+		return
+	# Saving during combat is disallowed (gdd-savegame-system.md §5.7) —
+	# surface a message rather than silently no-op inside save_to_slot().
+	if runner.has_method("is_in_combat") and runner.is_in_combat():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Cannot Save During Combat",
+			"duration": 3.0,
+		})
+		return
+	# Quick "Save" creates a named snapshot slot so it actually appears in the
+	# Save / Load list. Previously this called save_session() (live-DB autosave
+	# only), which wrote nothing to game_snapshots — the player saw "Game Saved"
+	# but Load showed no slots. save_to_slot() flushes the live state AND records
+	# a restorable snapshot; the 20-slot prune keeps quick-saves from piling up.
+	var label := "Quicksave %s" % Time.get_datetime_string_from_system(false, true)
+	var sid: String = runner.save_to_slot(label)
+	if sid.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Save Failed",
+			"duration": 3.0,
+		})
+		return
+	EventBus.notification_requested.emit({
+		"type": "success",
+		"category": "system",
+		"title": "Game Saved",
+		"duration": 3.0,
+	})
 
 
 func _on_save_load() -> void:
@@ -196,7 +212,23 @@ func _on_quit() -> void:
 		"Make sure you have saved your progress.",
 		func():
 			_hide()
-			GameState.end_session(),
+			# Tear the session down through the state machine, not GameState
+			# directly. transition_to_state("session_end") exits the current
+			# exploration state (popping its scene off the nav stack), runs the
+			# full end_session() teardown, then enters campaign_select — which
+			# pushes the main-menu screen. Calling GameState.end_session() alone
+			# only flipped the GameState enum to MAIN_MENU: the exploration scene
+			# was never torn down and the menu never rebuilt, so the game kept
+			# running in place.
+			var main := get_parent()
+			var runner = main.get_node_or_null("SessionRunner") if main != null else null
+			if runner != null and runner.has_method("transition_to_state"):
+				# Leave PAUSED so the new state isn't entered under a stale pause.
+				GameState.resume()
+				EventBus.scheduler_resumed.emit()
+				runner.transition_to_state("session_end")
+			else:
+				GameState.end_session(),
 		Callable(),
 		false
 	)

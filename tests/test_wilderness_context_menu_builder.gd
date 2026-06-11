@@ -28,6 +28,8 @@ func run_all_tests() -> void:
 	test_current_hex_menu_includes_survey()
 	test_non_adjacent_hex_move_here_enabled()
 	test_impassable_hex_move_here_disabled()
+	test_enter_lair_buttons_with_stable_ordinals()
+	test_build_stronghold_gated_by_survey_and_clearance()
 	if not has_failures():
 		print("WildernessContextMenuBuilder: all tests passed.")
 
@@ -214,3 +216,130 @@ func test_impassable_hex_move_here_disabled() -> void:
 				"move_here should be disabled on impassable (ocean) terrain")
 			return
 	check(false, "move_here option not found")
+
+
+# ---------------------------------------------------------------------------
+# Lair surfaces (gdd-lair-discovery.md §6.2 / §7) — DB-backed
+# ---------------------------------------------------------------------------
+
+const LAIR_CAMPAIGN_ID := "test_wcmb_lair_campaign"
+const LAIR_MAP_ID := "test_wcmb_lair_map"
+const LAIR_HEX := Vector2i(3, -2)
+
+
+func _setup_lair_fixture() -> void:
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"DELETE FROM lairs WHERE campaign_id = ?", [LAIR_CAMPAIGN_ID])
+	db.query_with_bindings(
+		"DELETE FROM hex_lair_state WHERE campaign_id = ?", [LAIR_CAMPAIGN_ID])
+	db.query_with_bindings(
+		"DELETE FROM hex_maps WHERE id = ?", [LAIR_MAP_ID])
+	db.query_with_bindings(
+		"INSERT OR IGNORE INTO campaigns (id, name) VALUES (?, ?)",
+		[LAIR_CAMPAIGN_ID, "test wcmb lair"])
+	db.query_with_bindings(
+		"INSERT OR IGNORE INTO hex_maps (id, campaign_id, name, scale) " +
+		"VALUES (?, ?, ?, ?)",
+		[LAIR_MAP_ID, LAIR_CAMPAIGN_ID, "test_map", "regional_6mi"])
+	GameState.campaign_id = LAIR_CAMPAIGN_ID
+
+
+func _teardown_lair_fixture() -> void:
+	GameState.campaign_id = ""
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"DELETE FROM lairs WHERE campaign_id = ?", [LAIR_CAMPAIGN_ID])
+	db.query_with_bindings(
+		"DELETE FROM hex_lair_state WHERE campaign_id = ?", [LAIR_CAMPAIGN_ID])
+	db.query_with_bindings(
+		"DELETE FROM hex_maps WHERE id = ?", [LAIR_MAP_ID])
+
+
+func _place_fixture_lair(suffix: String, monster: String, created_at: int,
+		cleared_at: Variant = null) -> String:
+	return CampaignRepository.create_lair({
+		"lair_id": "test_wcmb_lair_" + suffix,
+		"campaign_id": LAIR_CAMPAIGN_ID,
+		"map_id": LAIR_MAP_ID,
+		"hex_q": LAIR_HEX.x,
+		"hex_r": LAIR_HEX.y,
+		"monster_group": monster,
+		"monster_count": 4,
+		"placed_via": "search",
+		"created_at_round": created_at,
+		"cleared_at_round": cleared_at,
+	})
+
+
+func _lair_map() -> HexMapData:
+	var m := HexMapData.new()
+	m.id = LAIR_MAP_ID
+	m.party_hex = CURRENT_HEX
+	m.hexes[CURRENT_HEX] = HexTerrainData.new()
+	m.hexes[LAIR_HEX] = HexTerrainData.new()
+	return m
+
+
+func test_enter_lair_buttons_with_stable_ordinals() -> void:
+	_setup_lair_fixture()
+	_place_fixture_lair("g1", "goblin", 10)
+	_place_fixture_lair("g2", "goblin", 20)
+	_place_fixture_lair("o1", "orc", 30)
+
+	var options := _build_with_map(_lair_map(), LAIR_HEX, CURRENT_HEX)
+	var labels: Array = []
+	for opt in options:
+		if String(opt.get("id", "")).begins_with("enter_lair_"):
+			labels.append(opt.get("label", ""))
+			var ad: Dictionary = opt.get("action_data", {})
+			check(ad.get("action_type", "") == "wilderness_enter_lair",
+				"lair option dispatches wilderness_enter_lair")
+			check(not String(ad.get("lair_id", "")).is_empty(),
+				"lair option carries its lair_id")
+	check(labels == ["Enter Goblin Lair 1", "Enter Goblin Lair 2", "Enter Orc Lair"],
+		"same-type lairs get 1..N ordinals; singletons get none — got %s" % str(labels))
+
+	# Clearing #1 retains #2's number and restyles #1 as Re-enter.
+	CampaignRepository.mark_lair_cleared("test_wcmb_lair_g1", 100)
+	options = _build_with_map(_lair_map(), LAIR_HEX, CURRENT_HEX)
+	labels = []
+	for opt in options:
+		if String(opt.get("id", "")).begins_with("enter_lair_"):
+			labels.append(opt.get("label", ""))
+	check(labels == ["Re-enter Goblin Lair 1 (cleared)", "Enter Goblin Lair 2",
+		"Enter Orc Lair"],
+		"cleared lair keeps its ordinal; survivors keep theirs — got %s" % str(labels))
+
+	_teardown_lair_fixture()
+
+
+func test_build_stronghold_gated_by_survey_and_clearance() -> void:
+	_setup_lair_fixture()
+
+	# Un-surveyed land blocks even with NO lairs placed (ruling 2026-06-10).
+	check(not ("build_stronghold" in _menu_ids()),
+		"Build Stronghold hidden on un-surveyed land")
+
+	# Surveyed (total 1) but the placed lair is uncleared → still hidden.
+	HexLairState.set_surveyed_total(
+		LAIR_CAMPAIGN_ID, LAIR_MAP_ID, LAIR_HEX.x, LAIR_HEX.y, 1)
+	HexLairState.increment_placed_count(
+		LAIR_CAMPAIGN_ID, LAIR_MAP_ID, LAIR_HEX.x, LAIR_HEX.y)
+	var lid := _place_fixture_lair("gate", "ogre", 10)
+	check(not ("build_stronghold" in _menu_ids()),
+		"Build Stronghold hidden while a placed lair is uncleared")
+
+	# Cleared the surveyed total → option appears.
+	CampaignRepository.mark_lair_cleared(lid, 100)
+	check("build_stronghold" in _menu_ids(),
+		"Build Stronghold appears once surveyed and all surveyed lairs cleared")
+
+	_teardown_lair_fixture()
+
+
+func _menu_ids() -> Array:
+	var ids: Array = []
+	for opt in _build_with_map(_lair_map(), LAIR_HEX, CURRENT_HEX):
+		ids.append(opt.get("id", ""))
+	return ids

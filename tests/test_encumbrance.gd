@@ -21,6 +21,12 @@ func run_all_tests() -> void:
 	test_magical_armor_reduction()
 	test_movement_tier_boundaries()
 	test_coin_encumbrance()
+	# Clothing-vs-armor coexistence (gdd-character-tab.md §3.4.6).
+	test_worn_clothing_is_weightless()
+	test_carried_clothing_keeps_weight()
+	test_worn_armor_keeps_full_weight()
+	test_clothing_and_armor_coexist()
+	test_worn_ornament_and_ring_weightless()
 	# Container-as-sub-carrier (Jedidiah refactor 2026-05-31).
 	test_mundane_container_aggregates_own_weight_plus_contents()
 	test_empty_container_just_own_weight()
@@ -239,6 +245,77 @@ func test_coin_encumbrance() -> void:
 	check(int(small_result.total_units) == 100,
 		"100 coins should be 100 units, got %d" % int(small_result.total_units))
 	print("  coin_encumbrance: OK")
+
+
+# ---------------------------------------------------------------------------
+# Clothing-vs-armor coexistence (gdd-character-tab.md §3.4.6).
+# Worn clothing/ornamentation/rings are weightless; armor is full-weight even
+# when worn; clothing and armor coexist (separate paper-doll slots, migration 151).
+# ---------------------------------------------------------------------------
+
+func _worn(units: int, category: String, slot: String) -> InventoryItem:
+	var i := InventoryItem.new()
+	i.encumbrance_units = units
+	i.item_category = category
+	i.slot = slot
+	i.is_equipped = true
+	return i
+
+
+func test_worn_clothing_is_weightless() -> void:
+	# An equipped tunic (167 units) contributes 0 stone while worn.
+	var tunic := _worn(167, "clothing", "torso_clothing")
+	var result := EncumbranceCalculator.calculate_encumbrance([tunic])
+	check(int(result.total_units) == 0,
+		"worn torso clothing should weigh 0, got %d" % int(result.total_units))
+	# Legs clothing too.
+	var hose := _worn(167, "clothing", "legs_clothing")
+	check(EncumbranceCalculator.calculate_item_encumbrance(hose) == 0,
+		"worn legs clothing should weigh 0")
+	print("  worn_clothing_is_weightless: OK")
+
+
+func test_carried_clothing_keeps_weight() -> void:
+	# The SAME tunic carried in the pack (not equipped) weighs its full 167.
+	var tunic := _make_item("Tunic", 167, "clothing")  # is_equipped defaults false
+	tunic.slot = "pack"
+	var result := EncumbranceCalculator.calculate_encumbrance([tunic])
+	check(int(result.total_units) == 167,
+		"carried (unequipped) clothing keeps full weight, got %d" % int(result.total_units))
+	print("  carried_clothing_keeps_weight: OK")
+
+
+func test_worn_armor_keeps_full_weight() -> void:
+	# Equipped chain mail (4000 units) in the dedicated 'armor' slot stays full.
+	var chain := _worn(4000, "armor", "armor")
+	var result := EncumbranceCalculator.calculate_encumbrance([chain])
+	check(int(result.total_units) == 4000,
+		"worn armor keeps full weight, got %d" % int(result.total_units))
+	print("  worn_armor_keeps_full_weight: OK")
+
+
+func test_clothing_and_armor_coexist() -> void:
+	# A character wears clothing AND armor at once (§3.4.6). The clothing is
+	# weightless; only the armor's 4000 units count.
+	var tunic := _worn(167, "clothing", "torso_clothing")
+	var hose := _worn(167, "clothing", "legs_clothing")
+	var chain := _worn(4000, "armor", "armor")
+	var result := EncumbranceCalculator.calculate_encumbrance([tunic, hose, chain])
+	check(int(result.total_units) == 4000,
+		"clothing weightless + armor full = 4000, got %d" % int(result.total_units))
+	print("  clothing_and_armor_coexist: OK")
+
+
+func test_worn_ornament_and_ring_weightless() -> void:
+	# Non-clothing-category ornamentation in the neck/cloak/ring slots is also
+	# weightless when worn (holy symbol = gear, ring = gear), per §3.4.6.
+	var holy := _worn(100, "gear", "neck")
+	var ring := _worn(50, "gear", "ring_l")
+	var cloak := _worn(167, "gear", "cloak")
+	var result := EncumbranceCalculator.calculate_encumbrance([holy, ring, cloak])
+	check(int(result.total_units) == 0,
+		"worn neck/ring/cloak ornamentation should weigh 0, got %d" % int(result.total_units))
+	print("  worn_ornament_and_ring_weightless: OK")
 
 
 # ---------------------------------------------------------------------------

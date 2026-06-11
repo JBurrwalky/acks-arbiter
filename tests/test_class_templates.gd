@@ -3,7 +3,7 @@ extends "res://tests/test_suite_base.gd"
 ## Sanity tests for the class-template import (gdd-class-templates.md §10 step 4).
 ##
 ## Verifies ClassTemplateRepository loads data/templates/class_templates.json and
-## that: the 27 in-scope classes / 216 templates are present; the 4 out-of-scope
+## that: the 28 in-scope classes / 224 templates are present; the 3 out-of-scope
 ## classes are absent; every class has exactly 8 templates with non-overlapping
 ## 3d6 bands covering 3-18; spot-checked templates resolve every equipment entry
 ## to a real EquipmentCatalog item with no leaked flavor descriptor and every
@@ -16,11 +16,11 @@ const IN_SCOPE_CLASSES := [
 	"dwarven_craftpriest", "dwarven_delver", "dwarven_fury", "dwarven_vaultguard",
 	"elven_courtier", "elven_enchanter", "elven_nightblade", "elven_ranger",
 	"elven_spellsword", "explorer", "fighter", "mage", "lightblessed_wonderworker",
-	"paladin", "priestess", "shaman", "thief", "venturer", "warlock", "witch",
-	"darkblood_ruinguard",
+	"mystic", "paladin", "priestess", "shaman", "thief", "venturer", "warlock",
+	"witch", "darkblood_ruinguard",
 ]
 const OUT_OF_SCOPE_CLASSES := [
-	"dwarven_machinist", "gnomish_trickster", "mystic", "thrassian_gladiator",
+	"dwarven_machinist", "gnomish_trickster", "thrassian_gladiator",
 ]
 const ARCANE_CLASSES := [
 	"mage", "warlock", "elven_enchanter", "elven_spellsword",
@@ -70,10 +70,10 @@ func test_sensing_good_resolved() -> void:
 func test_repository_loads() -> void:
 	check(_repo.is_loaded(),
 		"repository failed to load: %s" % _repo.get_load_error())
-	check(_repo.template_count() == 216,
-		"expected 216 templates, got %d" % _repo.template_count())
-	check(_repo.get_class_ids().size() == 27,
-		"expected 27 classes, got %d" % _repo.get_class_ids().size())
+	check(_repo.template_count() == 224,
+		"expected 224 templates, got %d" % _repo.template_count())
+	check(_repo.get_class_ids().size() == 28,
+		"expected 28 classes, got %d" % _repo.get_class_ids().size())
 
 
 func test_all_in_scope_classes_present() -> void:

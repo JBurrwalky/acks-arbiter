@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "velesan",
+      "catalog_number": 18,
+      "demonym": "Velesan",
+      "toponym": "Velesia",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "synthesis_sources": [
+        13
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "taiga",
+        "forest",
+        "swamp",
+        "plains"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.5,
+      "defense": 0.5,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.2,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.5,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.2
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.4,
+        "mercantile": 0.2,
+        "religious": 0.25,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "light_infantry",
+        "light_cavalry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.0,
+        "mysticism": 0.5,
+        "affective_compassion": 0.5,
+        "societal_orthodoxy": -0.5,
+        "stress_reactivity": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "velesan",
+    "phonemic_palette": "Slavic: palatalization (soft/hard); sibilants sh/zh/ch/shch; clusters; vowels a e i o u y; dithematic glory-names; theophoric stems are the Slavic morphs (Tulor-, Orlon-, Numir-, Relata-).",
+    "phenotype_notes": "Features of the Slavic analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Slavic",
+      "language_family": "slavic",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [
+        "freedom",
+        "family",
+        "hospitality"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "kinslaying"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered",
+      "notes": "Slavic register; deity-morphs in name_bank 'velesan'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "rugged",
+      "signature_feature": "timber halls of the Velesan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 5,
+      "patron_powers": [
+        "storms",
+        "nature",
+        "harvest"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Velesan — wary tribal of the taiga; freedom, family.",
+      "one_paragraph": "The Velesan (Slavic) are a defensive tribal people seeded in taiga, forest, swamp. They prize freedom, family, hospitality, lean toward the military sphere, and field light_infantry, light_cavalry, archers. Outsiders are met as wary; their patrons touch storms, nature, harvest."
+    }
+  }
+}

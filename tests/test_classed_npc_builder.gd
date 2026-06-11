@@ -15,8 +15,8 @@ const IN_SCOPE_CLASSES := [
 	"dwarven_craftpriest", "dwarven_delver", "dwarven_fury", "dwarven_vaultguard",
 	"elven_courtier", "elven_enchanter", "elven_nightblade", "elven_ranger",
 	"elven_spellsword", "explorer", "fighter", "mage", "lightblessed_wonderworker",
-	"paladin", "priestess", "shaman", "thief", "venturer", "warlock", "witch",
-	"darkblood_ruinguard",
+	"mystic", "paladin", "priestess", "shaman", "thief", "venturer", "warlock",
+	"witch", "darkblood_ruinguard",
 ]
 
 var _builder: ClassedNpcBuilder
@@ -111,7 +111,8 @@ func test_selection_lands_in_band() -> void:
 
 
 func test_out_of_scope_class_errors() -> void:
-	for cid in ["mystic", "thrassian_gladiator", "dwarven_machinist", "gnomish_trickster"]:
+	# (Mystic moved in-scope 2026-06-11 — it now builds like any other class.)
+	for cid in ["thrassian_gladiator", "dwarven_machinist", "gnomish_trickster"]:
 		var b := _builder.build_classed_npc(cid)
 		check(not bool(b["ok"]), "out-of-scope class %s should not build" % cid)
 		check(b["character"] == null, "out-of-scope class %s should return no character" % cid)
