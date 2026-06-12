@@ -65,7 +65,6 @@ func _setup_party_4() -> void:
 	for id in [PC_A, PC_B, PC_C, PC_D]:
 		_create_character(id)
 		CampaignRepository.add_party_member(TEST_PARTY, id)
-	Timekeeping.register_party(TEST_PARTY)
 
 
 func _create_character(id: String) -> void:
@@ -92,7 +91,6 @@ func _create_character(id: String) -> void:
 func _cleanup() -> void:
 	# Remove any dynamically-created parties
 	for pid in _created_party_ids:
-		Timekeeping.unregister_party(pid)
 		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM party_state WHERE party_id = ?", [pid])
 		CampaignRepository.db.query_with_bindings(
@@ -107,7 +105,6 @@ func _cleanup() -> void:
 			"DELETE FROM parties WHERE id = ?", [pid])
 	_created_party_ids.clear()
 
-	Timekeeping.unregister_party(TEST_PARTY)
 	# Clean up test creatures and vehicles
 	for cid in [CREATURE_A, CREATURE_B]:
 		CampaignRepository.db.query_with_bindings(

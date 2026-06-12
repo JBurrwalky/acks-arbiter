@@ -921,11 +921,17 @@ func test_p4_apply_disease_schedules_cure_tick_with_scheduler() -> void:
 	check(int(result.get("units_diseased", 0)) >= 1, "at least 1 unit diseased")
 	# Verify a disease_cure_weekly_tick event was scheduled for this army.
 	var found_cure_tick := false
+	var cure_tick_fire := -1
 	for ev in scheduler.get_events_for_owner(army):
 		if String(ev.event_type) == "disease_cure_weekly_tick":
 			found_cure_tick = true
+			cure_tick_fire = ev.fire_time
 			break
 	check(found_cure_tick, "expected a scheduled disease_cure_weekly_tick for army")
+	# Batch B regression pin: fire_time is ROUNDS (midnight one week after the
+	# day-0 infection), not a raw day serial.
+	check(cure_tick_fire == Timekeeping.calendar_day_to_rounds(0 + 7),
+		"cure tick fire_time should be rounds at midnight of day 7, got %d" % cure_tick_fire)
 
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ extends Node
 ## ── Calendar ─────────────────────────────────────────────────────────────────
 ##   Custom 13-month calendar, 28 days per month = 364 days/year (no leap year).
 ##   Standard sub-day units: 7-day weeks, 24-hour days, 60-minute hours,
-##   60-second minutes, 6-second rounds (10 rounds per minute).
+##   60-second minutes, 10-second rounds (6 rounds per minute).
 ##
 ## ── Granularities (from smallest to largest) ─────────────────────────────────
 ##   Round  = 10 seconds   (combat, fine dungeon actions)           [ACKS core rule]
@@ -21,14 +21,20 @@ extends Node
 ##   The clock NEVER ticks autonomously. Advance it by calling advance_*() methods.
 ##   The session runner owns advance calls; Timekeeping just tracks the result.
 ##
-## ── Multi-party ──────────────────────────────────────────────────────────────
-##   _elapsed_rounds always equals the leading party's time.
-##   Boundary signals fire against the global clock only.
-##   Use register_party / advance_party_* / sync_parties for split-party play.
+## ── Single shared timeline (Jedidiah rulings 2026-06-11/12) ─────────────────
+##   There is ONE world clock; all parties live on it. get_total_rounds() is
+##   the canonical "now" for every consumer, including event fire_time math.
+##   Per-party clocks were removed (the per-party API and the party_clocks
+##   table are gone). There is no order-lock either: a new order supersedes a
+##   party's in-progress travel/activity (the order surfaces cancel its
+##   pending events via cancel_all_for_owner before scheduling replacements).
 ##
 ## ── Persistence ──────────────────────────────────────────────────────────────
-##   Eager save: every advance_* call writes to campaign_clock / party_clocks.
-##   No-ops if no campaign is loaded (_campaign_id is empty) or DB is not ready.
+##   Debounced (2026-06-12; was eager-per-advance): advance_* calls mark the
+##   clock dirty; flush() writes campaign_clock at SessionRunner's choke points
+##   (scheduler pause, day boundary, save_session) atomically with the event
+##   queue. The in-memory clock is authoritative between flushes.
+##   All writes no-op if no campaign is loaded (_campaign_id empty) or DB not ready.
 ##
 ## Registered as autoload "Timekeeping" in project.godot.
 
@@ -75,10 +81,6 @@ const _SEASON_NAMES: Array = ["spring", "summer", "autumn", "winter"]
 ## [param rounds_elapsed] is the number of rounds just advanced.
 signal round_advanced(rounds_elapsed: int)
 
-## Emitted when one or more minute boundaries are crossed.
-## [param minutes_elapsed] is the total number of minute boundaries crossed.
-signal minute_advanced(minutes_elapsed: int)
-
 ## Emitted when one or more turn (10-minute) boundaries are crossed.
 signal turn_advanced(turns_elapsed: int)
 
@@ -122,13 +124,13 @@ var _dawn_hour: int = 6
 ## Dusk hour (0–23). Configurable per campaign. Default 20 = 20:00.
 var _dusk_hour: int = 20
 
-## Party clock registry: party_id (String) → elapsed_rounds (int).
-## _elapsed_rounds always equals max(values) when parties are registered.
-var _party_clocks: Dictionary = {}
-
-## Campaign ID stored after load_state(). Used for eager saves after advances.
+## Campaign ID stored after load_state(). Used by flush()/_auto_save().
 ## Empty when no campaign is loaded — saves are no-ops in that case.
 var _campaign_id: String = ""
+
+## True when the in-memory clock has advances not yet written to campaign_clock.
+## Set by advance_rounds; cleared by flush()/save_state()/load_state().
+var _dirty: bool = false
 
 
 # ---------------------------------------------------------------------------
@@ -152,8 +154,8 @@ func _on_session_ended() -> void:
 	_elapsed_rounds = 0
 	_dawn_hour = 6
 	_dusk_hour = 20
-	_party_clocks.clear()
 	_campaign_id = ""
+	_dirty = false
 
 
 func _on_year_changed(_new_year: int) -> void:
@@ -207,6 +209,13 @@ func get_dusk_hour() -> int:
 	return _dusk_hour
 
 
+## Total rounds elapsed since campaign start. The canonical "now" — use this
+## for event fire_time computation, gating, ETA display, and persistence
+## timestamps. (Single shared timeline; see header.)
+func get_total_rounds() -> int:
+	return _elapsed_rounds
+
+
 ## Total calendar days elapsed since campaign start (0 = Day 1, Month 1, Year 1).
 func get_total_days() -> int:
 	return _elapsed_rounds / ROUNDS_PER_DAY
@@ -256,6 +265,33 @@ func get_day_of_year() -> int:
 	return (_elapsed_rounds / ROUNDS_PER_DAY) % DAYS_PER_YEAR + 1
 
 
+## Canonical 1-based calendar-day serial (== get_total_days() + 1).
+## THE day-serial coordinate system for persisted day stamps (conventions §6.8):
+## Y1 M1 D1 = 1, Y1 M13 D1 = 337, Y2 M1 D1 = 365. The per-subsystem
+## _calendar_day() helpers delegate here (deduplicated 2026-06-12).
+func get_calendar_day() -> int:
+	return get_total_days() + 1
+
+
+## Canonical 1-based day serial for an arbitrary date dict ({year, month, day},
+## all 1-based — the get_date() shape). Same coordinate system as
+## get_calendar_day(); use for dates other than "today" (e.g. ledger stamps
+## computed at month boundaries).
+func calendar_day_from_date(date: Dictionary) -> int:
+	var year: int = int(date.get("year", 1))
+	var month: int = int(date.get("month", 1))
+	var day: int = int(date.get("day", 1))
+	return ((year - 1) * MONTHS_PER_YEAR + (month - 1)) * DAYS_PER_MONTH + day
+
+
+## Rounds timestamp for the START (midnight) of calendar-day serial
+## [param day_serial]. Use this when converting day-serial bookkeeping into
+## EventScheduler fire_times — the queue's time axis is ROUNDS, never days.
+## calendar_day_to_rounds(get_calendar_day()) == midnight of the current day.
+func calendar_day_to_rounds(day_serial: int) -> int:
+	return (day_serial - 1) * ROUNDS_PER_DAY
+
+
 # ---------------------------------------------------------------------------
 # Advance Methods — Global Clock
 # ---------------------------------------------------------------------------
@@ -268,8 +304,12 @@ func advance_rounds(n: int) -> void:
 		return
 	var old := _elapsed_rounds
 	_elapsed_rounds += n
+	# Debounced persistence: mark dirty; flush() writes at the choke points
+	# (was an eager save_state here — ~30 fsync'd transactions/sec while the
+	# wilderness clock ran). NOTE: dirty is set BEFORE the boundary signals so
+	# the day-boundary flush listener sees the new time as unsaved.
+	_dirty = true
 	_emit_boundary_signals(old, _elapsed_rounds)
-	_auto_save()
 
 
 ## Advance by [param n] minutes (n × 6 rounds internally).
@@ -330,92 +370,22 @@ func advance_to_next_day() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Multi-Party Time Tracking
-# ---------------------------------------------------------------------------
-
-## Register [param party_id] for independent time tracking.
-## Initialises the party's clock to the current global time.
-## No-op if the party is already registered.
-func register_party(party_id: String) -> void:
-	if _party_clocks.has(party_id):
-		return
-	_party_clocks[party_id] = _elapsed_rounds
-	_save_party_clock(party_id)
-
-
-## Unregister [param party_id] and discard its clock.
-func unregister_party(party_id: String) -> void:
-	_party_clocks.erase(party_id)
-	_delete_party_clock(party_id)
-
-
-## Returns the elapsed rounds for [param party_id].
-## Falls back to the global clock and logs an error if the party is unknown.
-func get_party_time(party_id: String) -> int:
-	if not _party_clocks.has(party_id):
-		push_error("Timekeeping.get_party_time: unknown party '%s'" % party_id)
-		return _elapsed_rounds
-	return _party_clocks[party_id]
-
-
-## Advance [param party_id]'s clock by [param n] rounds.
-## If this party becomes the furthest-ahead party, the global clock advances
-## accordingly and boundary signals fire.
-func advance_party_rounds(party_id: String, n: int) -> void:
-	assert(n >= 0, "Timekeeping.advance_party_rounds: n must be >= 0")
-	if not _party_clocks.has(party_id):
-		push_error("Timekeeping.advance_party_rounds: unknown party '%s'" % party_id)
-		return
-	_party_clocks[party_id] += n
-	_sync_global_to_leader()
-	_save_party_clock(party_id)
-
-
-## Advance [param party_id]'s clock by [param n] minutes.
-func advance_party_minutes(party_id: String, n: int) -> void:
-	advance_party_rounds(party_id, n * ROUNDS_PER_MINUTE)
-
-
-## Advance [param party_id]'s clock by [param n] turns.
-func advance_party_turns(party_id: String, n: int) -> void:
-	advance_party_rounds(party_id, n * ROUNDS_PER_TURN)
-
-
-## Advance [param party_id]'s clock by [param n] hours.
-func advance_party_hours(party_id: String, n: int) -> void:
-	advance_party_rounds(party_id, n * ROUNDS_PER_HOUR)
-
-
-## Advance all lagging parties to match the leading party's time.
-## Call at end-of-day reconciliation (session runner responsibility).
-func sync_parties() -> void:
-	for party_id in _party_clocks:
-		_party_clocks[party_id] = _elapsed_rounds
-	_save_all_party_clocks()
-
-
-## Returns the party_id of the furthest-ahead party, or "" if no parties are registered.
-func get_leading_party() -> String:
-	var max_time := -1
-	var leader   := ""
-	for party_id in _party_clocks:
-		if _party_clocks[party_id] > max_time:
-			max_time = _party_clocks[party_id]
-			leader   = party_id
-	return leader
-
-
-## Returns the absolute round difference between two parties (always non-negative).
-func get_time_gap(party_a: String, party_b: String) -> int:
-	return abs(get_party_time(party_a) - get_party_time(party_b))
-
-
-# ---------------------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------------------
 
-## Persist the global clock and all party clocks to the database.
-## Can be called explicitly; also called automatically after every advance.
+## Write the clock to campaign_clock if it has unsaved advances. Called from
+## SessionRunner.flush_clock_and_queue() at the persistence choke points
+## (scheduler pause, day boundary, save_session) — NOT after every advance.
+## Returns true if a write happened.
+func flush() -> bool:
+	if not _dirty or _campaign_id.is_empty() or CampaignRepository.db == null:
+		return false
+	save_state(_campaign_id)
+	return true
+
+
+## Persist the clock to the database. Explicit-write helper used by flush(),
+## set_day_cycle(), and tests; routine advances mark dirty instead (see flush).
 func save_state(campaign_id: String) -> void:
 	if CampaignRepository.db == null:
 		return
@@ -423,17 +393,15 @@ func save_state(campaign_id: String) -> void:
 		INSERT OR REPLACE INTO campaign_clock (campaign_id, elapsed_rounds, dawn_hour, dusk_hour)
 		VALUES (?, ?, ?, ?)
 	""", [campaign_id, _elapsed_rounds, _dawn_hour, _dusk_hour])
-	for party_id in _party_clocks:
-		CampaignRepository.db.query_with_bindings("""
-			INSERT OR REPLACE INTO party_clocks (campaign_id, party_id, elapsed_rounds)
-			VALUES (?, ?, ?)
-		""", [campaign_id, party_id, _party_clocks[party_id]])
+	if campaign_id == _campaign_id:
+		_dirty = false
 
 
 ## Restore the clock state from the database for [param campaign_id].
 ## Stores the campaign_id internally to enable eager saves after future advances.
 func load_state(campaign_id: String) -> void:
 	_campaign_id = campaign_id
+	_dirty = false
 	if CampaignRepository.db == null:
 		return
 
@@ -447,14 +415,6 @@ func load_state(campaign_id: String) -> void:
 		_dawn_hour      = row["dawn_hour"] as int
 		_dusk_hour      = row["dusk_hour"] as int
 
-	# Restore party clocks
-	_party_clocks.clear()
-	CampaignRepository.db.query_with_bindings(
-		"SELECT * FROM party_clocks WHERE campaign_id = ?", [campaign_id]
-	)
-	for row in CampaignRepository.db.query_result:
-		_party_clocks[row["party_id"] as String] = row["elapsed_rounds"] as int
-
 
 # ---------------------------------------------------------------------------
 # Private — Boundary signal emission
@@ -466,11 +426,9 @@ func _emit_boundary_signals(old_elapsed: int, new_elapsed: int) -> void:
 	# Round: always fired; carries the delta.
 	round_advanced.emit(new_elapsed - old_elapsed)
 
-	# Minute boundaries
-	var old_minutes := old_elapsed / ROUNDS_PER_MINUTE
-	var new_minutes := new_elapsed / ROUNDS_PER_MINUTE
-	if new_minutes > old_minutes:
-		minute_advanced.emit(new_minutes - old_minutes)
+	# (No minute signal: minute_advanced had zero subscribers and was removed
+	# 2026-06-12 — effect durations tick on round/turn granularity. Reintroduce
+	# only with a real consumer.)
 
 	# Turn boundaries (10 minutes each)
 	var old_turns := old_elapsed / ROUNDS_PER_TURN
@@ -510,20 +468,6 @@ func _emit_boundary_signals(old_elapsed: int, new_elapsed: int) -> void:
 		var season_idx := _SEASON_STARTS.find(day_in_year)
 		if season_idx != -1:
 			season_changed.emit(_SEASON_NAMES[season_idx])
-
-
-## Update the global clock to match the furthest-ahead party.
-## Emits boundary signals if the global clock is advanced.
-func _sync_global_to_leader() -> void:
-	var max_time := _elapsed_rounds
-	for party_id in _party_clocks:
-		if _party_clocks[party_id] > max_time:
-			max_time = _party_clocks[party_id]
-	if max_time > _elapsed_rounds:
-		var old := _elapsed_rounds
-		_elapsed_rounds = max_time
-		_emit_boundary_signals(old, _elapsed_rounds)
-		_auto_save()
 
 
 # ---------------------------------------------------------------------------
@@ -590,35 +534,8 @@ func _age_campaign_characters_one_year() -> void:
 # Private — Persistence helpers
 # ---------------------------------------------------------------------------
 
-## Write current global clock to DB if a campaign is loaded.
+## Immediate clock write if a campaign is loaded. Used only by rare one-off
+## config changes (set_day_cycle); routine advances use _dirty + flush().
 func _auto_save() -> void:
 	if not _campaign_id.is_empty():
 		save_state(_campaign_id)
-
-
-## Upsert a single party clock row.
-func _save_party_clock(party_id: String) -> void:
-	if _campaign_id.is_empty() or CampaignRepository.db == null:
-		return
-	CampaignRepository.db.query_with_bindings("""
-		INSERT OR REPLACE INTO party_clocks (campaign_id, party_id, elapsed_rounds)
-		VALUES (?, ?, ?)
-	""", [_campaign_id, party_id, _party_clocks.get(party_id, 0)])
-
-
-## Delete a party clock row (called on unregister).
-func _delete_party_clock(party_id: String) -> void:
-	if _campaign_id.is_empty() or CampaignRepository.db == null:
-		return
-	CampaignRepository.db.query_with_bindings(
-		"DELETE FROM party_clocks WHERE campaign_id = ? AND party_id = ?",
-		[_campaign_id, party_id]
-	)
-
-
-## Upsert all registered party clocks (called by sync_parties).
-func _save_all_party_clocks() -> void:
-	if _campaign_id.is_empty() or CampaignRepository.db == null:
-		return
-	for party_id in _party_clocks:
-		_save_party_clock(party_id)

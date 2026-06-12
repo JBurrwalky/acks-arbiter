@@ -150,9 +150,11 @@ static func start_simplified_siege(
 		[besieging_army_id]
 	)
 	# Schedule conclusion event if we have a valid duration AND a scheduler.
+	# expected_end stays a day serial for the expected_end_calendar_day column;
+	# the scheduler's fire_time axis is ROUNDS (midnight of that day).
 	if duration_days > 0 and scheduler != null:
 		scheduler.schedule_at(
-			expected_end,
+			Timekeeping.calendar_day_to_rounds(expected_end),
 			"siege_simplified_concluded",
 			siege_id,
 			{"siege_id": siege_id},

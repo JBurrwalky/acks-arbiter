@@ -53,7 +53,7 @@ func seed_construction_tick(scheduler: EventScheduler, party_id: String) -> void
 	var fire_time: int = _rounds_until_next_day()
 	if fire_time <= 0:
 		fire_time = Timekeeping.ROUNDS_PER_DAY
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	scheduler.schedule_at(
 		current_time + fire_time,
 		"stronghold_construction_daily_tick",
@@ -421,7 +421,4 @@ func _rounds_until_next_day() -> int:
 
 
 func _calendar_day_from_date(date: Dictionary) -> int:
-	var year: int = int(date.get("year", 1))
-	var month: int = int(date.get("month", 1))
-	var day: int = int(date.get("day", 1))
-	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+	return Timekeeping.calendar_day_from_date(date)

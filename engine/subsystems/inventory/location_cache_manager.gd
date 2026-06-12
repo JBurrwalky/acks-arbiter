@@ -275,9 +275,9 @@ func pick_up_item(item_id: String, target_carrier_id: String, carrier_type: Stri
 
 ## Hides items at a wilderness hex. Costs 1 hour (6 turns) of party time.
 ## No proficiency check required. Returns the cache_id.
-func hide_and_memorize_wilderness_cache(hex_qr: Vector2i, party_id: String) -> String:
+func hide_and_memorize_wilderness_cache(hex_qr: Vector2i, _party_id: String) -> String:
 	# 1 hour = 6 turns of 10 minutes each
-	Timekeeping.advance_party_turns(party_id, 6)
+	Timekeeping.advance_turns(6)
 	return create_wilderness_hidden_cache(hex_qr)
 
 

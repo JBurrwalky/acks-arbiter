@@ -160,7 +160,7 @@ func test_travel_leg_blocks_cast_and_emits_block_signal() -> void:
 	# Schedule a travel_leg event for the party — this is how WildernessHandlers
 	# represents an in-progress hex crossing.
 	harness.scheduler.schedule_at(
-		Timekeeping.get_party_time(harness.runner.party_id) + 5,
+		Timekeeping.get_total_rounds() + 5,
 		"travel_leg", harness.runner.party_id, {}, ScheduledEvent.PRIORITY_ARRIVAL)
 
 	var caster := _make_caster_cleric()
@@ -184,7 +184,7 @@ func test_travel_leg_blocked_in_dungeon_does_not_apply() -> void:
 	var harness := _make_harness()
 	harness.runner.state_key = "dungeon"
 	harness.scheduler.schedule_at(
-		Timekeeping.get_party_time(harness.runner.party_id) + 5,
+		Timekeeping.get_total_rounds() + 5,
 		"travel_leg", harness.runner.party_id, {}, ScheduledEvent.PRIORITY_ARRIVAL)
 
 	var caster := _make_caster_cleric()
@@ -211,7 +211,7 @@ func test_scheduler_receives_spell_cast_complete() -> void:
 	td.kind = "self"
 	td.target_ids = [caster.id]
 
-	var t0: int = Timekeeping.get_party_time(harness.runner.party_id)
+	var t0: int = Timekeeping.get_total_rounds()
 	var flow = OutOfCombatCastFlowScript.new(harness.runner)
 	flow.commit_with_descriptor(caster, choice, td, {caster.id: caster})
 
@@ -236,7 +236,7 @@ func test_scheduler_receives_encounter_check_one_round_later() -> void:
 	td.kind = "self"
 	td.target_ids = [caster.id]
 
-	var t0: int = Timekeeping.get_party_time(harness.runner.party_id)
+	var t0: int = Timekeeping.get_total_rounds()
 	var flow = OutOfCombatCastFlowScript.new(harness.runner)
 	flow.commit_with_descriptor(caster, choice, td, {caster.id: caster})
 
@@ -381,8 +381,6 @@ func _make_harness() -> _Harness:
 	runner.scheduler = h.scheduler
 	runner.state_key = "dungeon"
 	runner.party_data = _PartyDataStub.new()
-	# Register the party with Timekeeping so get_party_time returns a real value.
-	Timekeeping.register_party(runner.party_id)
 	h.runner = runner
 	return h
 

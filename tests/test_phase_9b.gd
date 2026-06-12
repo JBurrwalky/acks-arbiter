@@ -86,6 +86,7 @@ func run_all_tests() -> void:
 	test_reconstruct_state_50pct_at_halfway()
 	test_reconstruct_state_full_at_zero_elapsed()
 	test_escalate_to_full_cancels_simplified_event()
+	test_reconcile_ticks_reseeds_live_siege()
 	# Group 8: supply tracker
 	test_default_stored_supplies_cp()
 	test_prep_supplies_capped_at_max()
@@ -528,6 +529,51 @@ func test_escalate_to_full_cancels_simplified_event() -> void:
 			still_pending = true
 			break
 	check(not still_pending, "simplified conclusion event should have been cancelled")
+	# Batch B regression pin: the full-mode ticks must be scheduled on the
+	# ROUNDS axis (midnight of day-serial N), not raw day serials.
+	var daily_fire := -1
+	var weekly_fire := -1
+	for ev in scheduler.get_all_events():
+		if ev.event_type == "siege_daily_tick":
+			daily_fire = ev.fire_time
+		elif ev.event_type == "siege_weekly_tick":
+			weekly_fire = ev.fire_time
+	check(daily_fire == Timekeeping.calendar_day_to_rounds(5 + 1),
+		"siege_daily_tick fire_time should be rounds at midnight of day 6, got %d" % daily_fire)
+	check(weekly_fire == Timekeeping.calendar_day_to_rounds(5 + 7),
+		"siege_weekly_tick fire_time should be rounds at midnight of day 12, got %d" % weekly_fire)
+
+
+func test_reconcile_ticks_reseeds_live_siege() -> void:
+	# Batch E: a live siege whose tick events were lost (crash before a queue
+	# flush, or started with a null scheduler — the historical UI-dispatch bug)
+	# must get its tick chain reseeded at session load. Idempotent per siege.
+	var scheduler := EventScheduler.new()
+	var owner := _make_character("ReseedOwner", "npc")
+	var besieger := _make_character("ReseedBes", "npc")
+	var stronghold := _make_stronghold(owner, 4000)
+	var def_army := _make_army(owner)
+	var bes_army := _make_army(besieger)
+	# Null scheduler at start — no tick events exist, the stall shape.
+	var sid := SiegeResolver.start_full_siege(bes_army, stronghold, def_army, 1, null)
+	check(not sid.is_empty(), "siege created without a scheduler")
+	check(scheduler.get_events_for_owner(sid).is_empty(), "no ticks before reconcile")
+
+	SiegeResolver.reconcile_ticks_on_session_load(scheduler, _campaign_id)
+	var types: Dictionary = {}
+	for ev in scheduler.get_events_for_owner(sid):
+		types[String(ev.event_type)] = ev.fire_time
+	check(types.has("siege_daily_tick"), "reconcile seeds the daily tick")
+	check(types.has("siege_weekly_tick"), "reconcile seeds the weekly tick")
+	var today: int = Timekeeping.get_calendar_day()
+	check(int(types.get("siege_daily_tick", -1)) == Timekeeping.calendar_day_to_rounds(today + 1),
+		"reseeded daily tick fires at midnight tomorrow (rounds axis)")
+
+	# Idempotent: a second reconcile adds nothing for this siege.
+	var before: int = scheduler.get_events_for_owner(sid).size()
+	SiegeResolver.reconcile_ticks_on_session_load(scheduler, _campaign_id)
+	check(scheduler.get_events_for_owner(sid).size() == before,
+		"second reconcile is a no-op for an already-seeded siege")
 
 
 # ---------------------------------------------------------------------------

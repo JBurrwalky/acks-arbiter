@@ -24,6 +24,21 @@ var _queue: Array[ScheduledEvent] = []
 ## Fast lookup: event_id → ScheduledEvent for O(1) cancel.
 var _id_index: Dictionary = {}  # { String: ScheduledEvent }
 
+## Monotonic counter stamped onto events at schedule() time as the final FIFO
+## tiebreaker. Events loaded without a sequence (DB rows carry none) are stamped
+## in load order, which equals saved queue order — campaign_repository orders by
+## (fire_time, rowid) — so tie order survives save/load round-trips.
+var _next_sequence: int = 0
+
+## Events that came due with no registered handler (park-don't-consume,
+## 2026-06-12). Previously such events were popped and silently destroyed —
+## killing e.g. commission_ready notifications fired outside a settlement.
+## Parked events are OUT of the fireable queue but still pending obligations:
+## they appear in to_dicts()/size()/owner queries, are reachable by
+## cancel_all_for_owner, and release_parked() re-injects them when a handler
+## for their type registers (wired via EventHandlerRegistry.register).
+var _parked: Array[ScheduledEvent] = []
+
 
 # ---------------------------------------------------------------------------
 # Scheduling
@@ -31,8 +46,20 @@ var _id_index: Dictionary = {}  # { String: ScheduledEvent }
 
 ## Insert an event into the queue. Returns the event's id.
 func schedule(event: ScheduledEvent) -> String:
+	# Tripwire for the day-axis bug class: fire_time is ROUNDS (8,640 per day).
+	# A fire_time far in the past usually means a caller scheduled a calendar-day
+	# serial (~hundreds) onto the rounds axis — convert via
+	# Timekeeping.calendar_day_to_rounds(). Legitimate catch-up chains can trip
+	# this after large GM time skips, so it warns rather than asserts.
+	if event.fire_time < Timekeeping.get_total_rounds() - 2 * Timekeeping.ROUNDS_PER_DAY:
+		push_warning(
+			"EventScheduler.schedule: '%s' fire_time %d is >2 days in the past (now %d) — day-axis value scheduled as rounds?"
+			% [event.event_type, event.fire_time, Timekeeping.get_total_rounds()])
 	if event.event_id.is_empty():
 		event.event_id = CampaignRepository.generate_id()
+	if event.sequence < 0:
+		event.sequence = _next_sequence
+	_next_sequence = maxi(_next_sequence, event.sequence) + 1
 	_id_index[event.event_id] = event
 	_insert_sorted(event)
 	return event.event_id
@@ -75,7 +102,7 @@ func cancel(event_id: String) -> bool:
 	return true
 
 
-## Cancel all events owned by [param owner_id].
+## Cancel all events owned by [param owner_id] — queued AND parked.
 ## If [param event_type] is non-empty, only cancel events of that type.
 func cancel_all_for_owner(owner_id: String, event_type: String = "") -> int:
 	var count := 0
@@ -88,7 +115,50 @@ func cancel_all_for_owner(owner_id: String, event_type: String = "") -> int:
 			continue
 		event.cancelled = true
 		count += 1
+	for event in _parked:
+		if event.cancelled:
+			continue
+		if event.owner_id != owner_id:
+			continue
+		if not event_type.is_empty() and event.event_type != event_type:
+			continue
+		event.cancelled = true
+		count += 1
 	return count
+
+
+# ---------------------------------------------------------------------------
+# Parking (unhandled-event deferral)
+# ---------------------------------------------------------------------------
+
+## Park an event that came due with no registered handler (called by
+## SchedulerLoop after popping it). The event stays a pending obligation;
+## release_parked() re-queues it when its handler registers.
+func park(event: ScheduledEvent) -> void:
+	if event == null or event.cancelled:
+		return
+	_parked.append(event)
+	_id_index[event.event_id] = event
+
+
+## Re-inject all parked events of [param event_type] into the queue. Their
+## fire_times are typically in the past, so they resolve on the next tick.
+## Returns the number of events released. Called by
+## EventHandlerRegistry.register() when a handler for the type appears.
+func release_parked(event_type: String) -> int:
+	var released := 0
+	var remaining: Array[ScheduledEvent] = []
+	for event in _parked:
+		if event.cancelled:
+			_id_index.erase(event.event_id)
+			continue
+		if event.event_type == event_type:
+			schedule(event)
+			released += 1
+		else:
+			remaining.append(event)
+	_parked = remaining
+	return released
 
 
 # ---------------------------------------------------------------------------
@@ -114,53 +184,86 @@ func pop() -> ScheduledEvent:
 	return event
 
 
-## True if no non-cancelled events remain.
+## True if no non-cancelled FIREABLE events remain. Parked events do not
+## count — they cannot fire until a handler registers, so e.g. MAX speed
+## correctly auto-pauses on a queue that holds only parked events.
 func is_empty() -> bool:
 	_skip_cancelled()
 	return _queue.is_empty()
 
 
-## Number of non-cancelled events in the queue.
+## Number of non-cancelled pending events (queued + parked).
 func size() -> int:
 	var count := 0
 	for event in _queue:
 		if not event.cancelled:
 			count += 1
+	for event in _parked:
+		if not event.cancelled:
+			count += 1
 	return count
 
 
-## Return all non-cancelled events for [param owner_id], sorted by fire_time.
+## True if a non-cancelled event of [param event_type] (queued or parked) is
+## pending for [param owner_id]. THE idempotency check for "schedule X unless
+## one is already pending" — use this instead of hand-rolled
+## get_events_for_owner scans.
+func has_event_for_owner(owner_id: String, event_type: String) -> bool:
+	for event in _queue:
+		if not event.cancelled and event.owner_id == owner_id and event.event_type == event_type:
+			return true
+	for event in _parked:
+		if not event.cancelled and event.owner_id == owner_id and event.event_type == event_type:
+			return true
+	return false
+
+
+## Return all non-cancelled events for [param owner_id] (queued + parked),
+## queue order first. Parked events count as pending for idempotency checks.
 func get_events_for_owner(owner_id: String) -> Array[ScheduledEvent]:
 	var result: Array[ScheduledEvent] = []
 	for event in _queue:
 		if not event.cancelled and event.owner_id == owner_id:
 			result.append(event)
+	for event in _parked:
+		if not event.cancelled and event.owner_id == owner_id:
+			result.append(event)
 	return result
 
 
-## Return all non-cancelled events, sorted by fire_time.
+## Return all non-cancelled events (queued + parked), queue order first.
 func get_all_events() -> Array[ScheduledEvent]:
 	var result: Array[ScheduledEvent] = []
 	for event in _queue:
 		if not event.cancelled:
 			result.append(event)
+	for event in _parked:
+		if not event.cancelled:
+			result.append(event)
 	return result
 
 
-## Remove all events from the queue.
+## Remove all events from the queue (parked included).
 func clear() -> void:
 	_queue.clear()
+	_parked.clear()
 	_id_index.clear()
+	_next_sequence = 0
 
 
 # ---------------------------------------------------------------------------
 # Persistence helpers
 # ---------------------------------------------------------------------------
 
-## Serialize all non-cancelled events for DB storage.
+## Serialize all non-cancelled events for DB storage (parked included —
+## they are pending obligations; on load they re-enter the queue and re-park
+## if their handler is still absent).
 func to_dicts() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for event in _queue:
+		if not event.cancelled:
+			result.append(event.to_dict())
+	for event in _parked:
 		if not event.cancelled:
 			result.append(event.to_dict())
 	return result

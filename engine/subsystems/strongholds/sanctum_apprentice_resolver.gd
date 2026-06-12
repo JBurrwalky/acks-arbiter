@@ -41,8 +41,12 @@ const SANCTUM_CLASSES: Array[String] = [
 ## L9+ ownership requirement per acore_axioms §before_ninth_level L117-123.
 const MIN_OWNER_LEVEL: int = 9
 
-## Promotion timer per Q20 (4 months × DAYS_PER_MONTH).
-const PROMOTION_DELAY_DAYS: int = 120
+## Promotion timer per Q20: exactly 4 months (expected-value collapse of
+## RAW's 1d6-month study period). Days are derived at the use site from
+## Timekeeping.DAYS_PER_MONTH — a const initializer can't reference an
+## autoload, and a hardcoded day count went stale once already (the original
+## 120 assumed 30-day months on this 13×28 calendar; 4 months = 112 days).
+const PROMOTION_DELAY_MONTHS: int = 4
 
 ## INT/WIS floor for Lightblessed aspirants per Q20.
 const LIGHTBLESSED_ABILITY_FLOOR: int = 9
@@ -271,7 +275,7 @@ static func _spawn_aspirant(
 		"hp_current": 4,
 		"status": "aspirant_in_training",
 		"joined_calendar_day": calendar_day,
-		"promotion_eligible_day": calendar_day + PROMOTION_DELAY_DAYS,
+		"promotion_eligible_day": calendar_day + PROMOTION_DELAY_MONTHS * Timekeeping.DAYS_PER_MONTH,
 	})
 
 
@@ -394,11 +398,7 @@ static func _get_character(character_id: String) -> Dictionary:
 
 
 static func _calendar_day() -> int:
-	var date: Dictionary = Timekeeping.get_date()
-	var year: int = int(date.get("year", 1))
-	var month: int = int(date.get("month", 1))
-	var day: int = int(date.get("day", 1))
-	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+	return Timekeeping.get_calendar_day()
 
 
 static func _ability_mod(score: int) -> int:

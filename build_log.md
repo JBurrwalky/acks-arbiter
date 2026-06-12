@@ -33255,3 +33255,449 @@ on-tick dispatch.
 **Next session should:**
 1. **Layer 4 — History Simulation** (`gdd-history-simulation.md`): the direct consumer of the culture catalog. Resolve the §17 open questions in priority order — (a) ruler-level → domain-tier ACKS table lookup from `acore_axioms_strongholds_and_domains.xml`/`acore-setting-construction-rules.xml` (needed before any handoff implementation); (b) functional-form tuning (`G`, `N0`, `α`, `f_size`/`f_age`, contest factors, severity bands); (c) economy/garrison constants in §7.5.1 (`frontier_mult`, `target_coverage` curve, `MIN_RATE_FRACTION`, `w1`/`w2`); (d) successor-count `K` distribution. Confirm the `fading` mechanic just added to the catalog is wired into §7.5/§10.
 2. (BUILD AGENT) re-enable `anti_paladin.json`; add `alignment_restriction` to `darkblood_ruinguard.json`/`lightblessed_wonderworker.json`.
+
+## Session 2026-06-11 — Single shared timeline: per-party clocks removed, order-lock replaces time-lock (migration 154)
+
+**Task:** Resolve the multi-party time mechanism per `docs/handoff_multi_party_time.md` (the 2026-06-11 audit): present the §8 rulings to Jedidiah, implement the chosen posture, land the §7 point fixes, amend the authoritative documents.
+**Model used:** Fable 5 (Opus-class) for the whole session — rulings presentation, implementation, verification, doc amendments.
+**Completed:**
+- **Jedidiah rulings (2026-06-11):** (1) **Option A — single shared timeline**; the async per-party vision is KILLED outright ("Async should die") — no dormant async GDD, no A+ seam preservation beyond event `owner_id` discipline. (2) The order-lock gates **ALL orders** for a committed party; follow-up ruling: **travel stays steerable** (a new Move order cancels and replaces the journey). (3) Combat turn-rounding advances the **world** clock; background parties' due events firing during the skip is acceptable ("the world keeps moving"). (5) Any future "busy party" need is expressed as a world-clock lock, never a persistent per-party clock.
+- **Timekeeping (`engine/autoloads/timekeeping.gd`):** removed the entire per-party API (`register_party`, `unregister_party`, `get_party_time`, `advance_party_rounds/minutes/turns/hours`, `sync_parties`, `get_leading_party`, `get_time_gap`, `_party_clocks`, `_sync_global_to_leader`, party-clock persistence). Added `get_total_rounds()` as the canonical "now". Boundary signals now fire on every advance — the lagging-party-no-sunrise bug class is dead.
+- **SchedulerLoop:** advances the world clock (`advance_rounds`/`get_total_rounds` at all six clock sites); deleted dead `set_party_id`; `_party_id` retained only as the session-loaded tick guard (documented).
+- **CombatFinalizer:** single world-clock lump-sum advance — `rounds_fought` then round up to the turn boundary (ACKS RAW preserved, sacred); the party/global dual path collapsed.
+- **Order-lock:** new `SessionRunner.is_party_order_locked(party_id)`, queue-derived from `ORDER_LOCK_EVENT_TYPES` = [`wilderness_activity_complete`, `settlement_activity`, `dungeon_action_complete`, `camp_rest_complete`]. Replaces `check_party_time_lock`/`is_party_locked`/`unlock_party`/`_locked_parties` (the time-lock's set-branch was mathematically unreachable — handoff §2.3). Wired at the wilderness context-menu open and settlement PoI click (the previous lock sites); notifications retitled "Party Committed".
+- **§7 point fixes:** #1 cast-flow drift and #2 override-panel divergence dissolve under one timeline (the global advances are now correct by definition); #3+#5 merge handling — new `SessionRunner._on_party_merged_for_scheduler` (EventBus.party_merged) cancels the dissolved party's queued events via `cancel_all_for_owner`, re-points `_party_id`/`_party_data`/GameState at the survivor when the primary is merged away, and reloads the roster when the primary absorbs a detachment; #4 split seeding — new `_on_party_split_for_scheduler` (EventBus.party_split) seeds the new party's day/noon ticks immediately; #6 `dungeon_handlers._handle_light_action` uses `event.owner_id` (owner discipline); #7 dead API deleted incl. `SessionRunner.advance_exploration_time`; #8 `Timekeeping.get_total_rounds()` added + `activity_time_cost_executor._get_time` guard/private-read deleted; #9 `entity_outliner._format_eta` uses the world clock.
+- **~45-site mechanical sweep:** every `get_party_time(x)` → `get_total_rounds()` and every `advance_party_*` → global advance across the handlers (wilderness/dungeon/settlement/domain/camp), states (wilderness/dungeon/settlement/camp), commission_pipeline, out_of_combat_cast_flow, location_cache_manager, and the shop/specialist-hire/specialists-tab/entity-outliner UI. `CampaignRepository.split_party`/`merge_parties` no longer touch Timekeeping.
+- Extracted `SessionRunner._load_party_data_for_session(party_id)` from `load_session` (reused by the merge re-point).
+- **Docs amended per the ruling:** Brief §8.3 ("no single global clock" → single shared timeline + order-lock, async permanently out of scope), §10.3, §16.1; `gdd-realtime-scheduler.md` §1 / §1.2 (rewritten) / §4.4 / §6.8 / §6.9 / §6.11 (no-bubble multi-party note replaced) / status table; `gdd-savegame-system.md` §3 clock invariants + §6 table + §9 (time-lock promises voided — the order-lock round-trips for free via `scheduled_events`); `gdd-settlement-exploration-ui.md` + `gdd-spell-system.md` wording; conventions §6.8 (rewritten), §12 split/merge row, §19.1, §19.5 (rewritten). Handoff doc status header updated to RESOLVED (retained as the audit record).
+**Decisions made:**
+- **Lock registry excludes travel** (`travel_leg`, `city_travel_arrival`) per the steerable ruling, AND excludes queued-behind-travel `wilderness_activity` (the activity has not started; a re-order supersedes it — matches the existing context-menu cancel flow at wilderness_explore_state.gd). Character-owned `activity_complete` (ActivityTimeCostExecutor downtime) is not a party commitment.
+- **`party_clocks` DROPPED** (migration 154) rather than kept vestigial — with async dead there is no "later" to migrate back for; the rows were fully derivable (old invariant: global = max of party clocks), so no player data is lost.
+- **Dungeon time IS world time** — corrected Jedidiah's pause-and-catch-up mental model in the rulings exchange: while one party delves, other parties' events fire in real time with auto-pause, which satisfies his "react with a separate party mid-delve" requirement natively; combat remains the only paused granular mode.
+**Interfaces defined or changed:**
+- NEW `Timekeeping.get_total_rounds() -> int` — the canonical now() for fire_time computation, gating, ETA display, persistence stamps.
+- REMOVED the Timekeeping per-party API (full list above) — future callers use the global clock; reintroduction is prohibited by conventions §6.8.
+- NEW `SessionRunner.is_party_order_locked(party_id) -> bool` + `SessionRunner.ORDER_LOCK_EVENT_TYPES: Array[String]`; REMOVED `SessionRunner.check_party_time_lock`/`is_party_locked`/`unlock_party`/`advance_exploration_time`.
+- REMOVED `SchedulerLoop.set_party_id` (zero callers); `setup()` signature unchanged.
+- `SessionRunner` now subscribes to `EventBus.party_split` (tick seeding) and `EventBus.party_merged` (event cleanup + primary re-point + roster reload).
+**Database changes:**
+- Migration 154 (`154_drop_party_clocks.sql`): `DROP TABLE IF EXISTS party_clocks`. `db/schema.sql` block removed with a tombstone comment; snapshot scope map (`_campaign_scope_entries`) and `delete_campaign` updated in campaign_repository.gd.
+**Tests added/updated:**
+- `test_timekeeping`: multi-party section (3 tests) → `test_single_timeline_get_total_rounds`; `_reset` no longer touches `_party_clocks`.
+- `test_session_runner`: `test_advance_exploration_time` → `test_is_party_order_locked` (no-events/empty-id unlocked, travel_leg non-blocking, activity blocks, per-party isolation, cancel unlocks); `_wipe_campaign_clock` party_clocks DELETE removed.
+- Fixture sweeps in `test_scheduler_loop` (no `_party_clocks` poke), `test_camp_encounter_gate`, `test_wilderness_day_tick`, `test_out_of_combat_casting`, `test_settlement_handlers_v2` (empty `_ensure_party_registered` removed — it caused a transient parse error caught on the first run), `test_location_cache_manager`, `test_party_membership_invariants`, `test_party_split_merge`, `test_lair_placement`.
+- **Result: 432 passed / 20 failed, verified net-zero by stash-and-measure** — the pre-session committed tree itself measures 432/20 (second consecutive fresh-DB run), with byte-identical assertion-failure sets and script-error counts vs. the post-change runs. The recorded 433/19 baseline had already drifted before this session: commit `cabf171` re-enabled `anti_paladin.json` (a confirmed Jedidiah instruction) while the class-roster test still asserts it is hidden. **Carry-forward baseline: 432/20** (becomes 433/19 again once that test is updated).
+**Known issues:**
+- Class-roster test asserts anti_paladin is hidden, but the class is now (correctly per Jedidiah) enabled — the TEST needs updating, not the data (pre-existing drift from `cabf171`, not this session).
+- Order-lock is wired at the wilderness and settlement order surfaces (where the old dead lock was wired); the dungeon context menu and Notebook-side surfaces (inventory trades, casting panels) do not yet consult it — follow-up wiring needed for full "all orders" coverage per ruling #2.
+- `activity_time_cost_executor._calendar_day()` multiplies `(year-1) * 12` but the project calendar has 13 months — cross-year cooldowns drift one month per elapsed year (pre-existing; spotted during the sweep).
+- `settlement_explore_state._is_nighttime()` hardcodes 18:00/06:00 instead of Timekeeping dawn/dusk (pre-existing; handoff §3.1).
+- `party_selector_tabs.gd` HUD widget remains built-but-never-instantiated (dead scene; handoff §3.4).
+**Next session should:**
+1. Update the class-roster test for enabled anti_paladin and add `alignment_restriction` to `darkblood_ruinguard.json`/`lightblessed_wonderworker.json` (carry-forward BUILD-AGENT items) — restores the passing count.
+2. Wire `is_party_order_locked` into the dungeon context menu and remaining order surfaces (full all-orders coverage per ruling #2).
+3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority from the culture-catalog session).
+
+## Session 2026-06-12 — Settlement _is_nighttime() delegated to Timekeeping.is_daylight() (handoff §3.1 fix)
+
+**Task:** Fix the confirmed bug from `docs/handoff_multi_party_time.md` §3.1 (carried in the 2026-06-11 entry's Known issues): `SettlementExploreState._is_nighttime()` approximated night as 18:00–06:00 via hardcoded fractions of `ROUNDS_PER_DAY` instead of using Timekeeping's real, season-adjustable dawn/dusk day cycle.
+**Model used:** Fable 5 for the whole session (small targeted fix + regression test).
+**Completed:**
+- `engine/subsystems/session/states/settlement_explore_state.gd` — `_is_nighttime()` now returns `not Timekeeping.is_daylight()` (null-runner guard preserved). The hand-rolled 3/4–1/4 day-fraction math is gone. Night now follows the campaign day cycle (default dawn=6/dusk=20, adjustable via `set_day_cycle()`), so hours 18–19 are correctly daytime under defaults; the boundary moves with future seasonal changes automatically.
+- Audited the flag's consumers: `_is_nighttime()` is the sole source of the `is_night` arg to `SettlementHandlers.schedule_travel()`, which threads it into `city_encounter_check` event payloads and the encounter presentation dict (the +30 after-dark modifier per `gdd-settlement-stocking.md`). No other call sites; no test pinned the old 18:00 boundary (all `schedule_travel` tests pass `is_night` as a literal).
+**Decisions made:**
+- Added the regression test to the existing `tests/test_settlement_handlers_v2.gd` (topical home of the `is_night` contract) rather than a new suite — avoids the 4-edit runner registration for one test.
+- The test assigns `Timekeeping._dawn_hour`/`_dusk_hour`/`_elapsed_rounds` directly (the `test_timekeeping.gd` `_reset()` pattern) instead of calling `set_day_cycle()`, because `set_day_cycle()` → `_auto_save()` would persist a transient test day-cycle into whatever campaign the test DB has loaded. All three are saved and restored around the test.
+**Interfaces defined or changed:**
+- None. `_is_nighttime() -> bool` and `schedule_travel(..., is_night: bool)` signatures unchanged.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_settlement_handlers_v2.gd` — new `test_is_nighttime_follows_timekeeping_day_cycle()`: under defaults, hour 19 is daytime (the regression hour — old math called 18–19 night), hour 20 night, hour 5 night, hour 6 daytime; seasonal dusk=16 flips hour 17 to night; null `_runner` returns false.
+- Suite run twice headless. Shared `user://campaign.db` was lock-contended by a concurrent session's Godot runs (thousands of "database is locked" lines, garbage counts), so both measurement runs used an isolated user dir via `APPDATA='C:\Users\jttau\AppData\Local\Temp\acks_test_appdata' godot --headless ...` — Godot derives `user://` from `%APPDATA%`, giving a private fresh DB. Run 1 = 399/53 (known fresh-DB FK noise), run 2 = **433 passed / 19 failed = exact current baseline** (anti_paladin test fix already landed by a parallel session). Net-zero new failures; `SettlementHandlersV2` and `Timekeeping` suites green.
+**Known issues:**
+- None new. The handoff §3.1 nighttime bug is resolved; `party_selector_tabs.gd` dead-scene item (handoff §3.4) still outstanding.
+**Next session should:**
+1. Wire `is_party_order_locked` into the dungeon context menu and remaining order surfaces (carry-forward from 2026-06-11, full all-orders coverage per ruling #2).
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Order-lock rescinded (new-order-supersedes); background-party event-loss gap identified
+
+**Task:** Follow-up to the 2026-06-11 single-timeline session. Jedidiah clarified that the order-lock's rationale belonged to his abandoned catch-up-time model — under one timeline "nothing really needs to be locked"; wilderness orders should be cancellable by issuing a new order. He also asked how the player transitions dungeon→hexmap to deal with another party's events mid-delve, which surfaced a real plumbing gap.
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **Order-lock removed** (one day after it was built): deleted `SessionRunner.is_party_order_locked` + `ORDER_LOCK_EVENT_TYPES` and the gating at `wilderness_explore_state._on_hex_context_menu_requested` and `settlement_explore_state._on_poi_clicked`; deleted `test_is_party_order_locked`. The model is now **new-order-supersedes**: order surfaces cancel the party's pending travel AND in-progress activity events before scheduling replacements. Wilderness `_on_context_action` already cancelled `travel_leg` + `wilderness_activity` + `wilderness_activity_complete`; settlement `_on_poi_clicked` already cancelled travel and NOW also cancels pending `settlement_activity` (with `order_cancelled` emit). Time already spent is spent; a cancelled activity yields nothing.
+- **Docs re-amended:** Brief §8.3 (order-lock sentence → new-order-supersedes), conventions §19.5, gdd-realtime-scheduler.md §1.2 + status table, gdd-savegame-system.md §3/§9, timekeeping.gd header, handoff doc status line, project memory.
+- **Verified the mid-delve background-party behavior for Jedidiah's question** (load-bearing finding): `EventHandlerRegistry.resolve` returns `{}` with a push_warning for unregistered event types, and `SchedulerLoop._resolve_next_event` pops unconditionally — so **a context-scoped event that comes due while its handler is unregistered is consumed and lost**. Travel/activity/encounter handlers are state-scoped (only registered while their exploration state is active), so with split parties, party B's `travel_leg`/`wilderness_activity_complete` chain dies silently while the player is in a dungeon/settlement with party A. Only global handlers (wilderness day/noon tick, domain tick, paydays) resolve across contexts. Single-party play is unaffected (your own context's handlers are always the registered ones).
+**Decisions made:**
+- Lock removal applies everywhere (wilderness/settlement/dungeon/camp) — Jedidiah: the only thing that ever needed locking was the dungeon delve under the old catch-up model, which no longer exists. Documented in conventions §19.5: do not reintroduce a lock; an uninterruptible future activity should use an explicit confirm dialog at its own order surface.
+- The background-party event-loss fix and the dungeon↔hexmap context-switch UI were NOT built — they need a Jedidiah ruling on the model (options presented in-session: (1) party-context switching driven by active-party change, suspending the dungeon state without its exit-cleanup and restoring via the savegame context-aware loader path; (2) global registration of the owner-correct wilderness handlers + decision modals over any context; (3) hold-don't-consume unhandled events and burst-resolve on context re-entry). Note for (1): `DungeonExploreState.exit()` clears party/entity dungeon positions — a context SWITCH needs a suspend path that flushes without clearing.
+**Interfaces defined or changed:**
+- REMOVED `SessionRunner.is_party_order_locked(party_id)` + `SessionRunner.ORDER_LOCK_EVENT_TYPES` (existed for one day; zero external consumers besides the two gates).
+- Settlement `_on_poi_clicked` now cancels `settlement_activity` events for the party alongside travel (emits `order_cancelled(party_id, "settlement_activity")`).
+**Database changes:** None.
+**Tests added/updated:**
+- Removed `test_is_party_order_locked` (test_session_runner).
+- **Result: 433 passed / 19 failed on two consecutive runs.** The +1 vs yesterday's 432/20 comes from Jedidiah running yesterday's three task chips concurrently (anti_paladin roster test updated + alignment_restriction added to darkblood_ruinguard/lightblessed_wonderworker; `_calendar_day` 13-month fix in activity_time_cost_executor + domain_handlers with regression tests; `_is_nighttime` → `not Timekeeping.is_daylight()`). Failure-set diff vs yesterday confirms only the anti_paladin assertion left the set; lock removal itself is net-zero. (One intermittent extra assertion inside the already-failing phase_9c suite — "d100=1 should produce is_lingering=true" — appeared on one run; flaky within a pre-existing failing suite, total unchanged.)
+**Known issues:**
+- **Background-party event loss (split parties only):** context-scoped events owned by a non-active-context party are destroyed when due (see Completed). Blocked on the context-switch ruling; documented in gdd-realtime-scheduler.md §1.2 known-gap note.
+- **No dungeon↔hexmap UI transition without an exit node** — the question that surfaced all of this; awaiting Jedidiah's pick among the three options.
+- phase_9c contains an intermittent lingering-roll assertion (flaky d100 seed dependence) — pre-existing failing suite either way.
+**Next session should:**
+1. Get Jedidiah's ruling on the multi-party context model (options 1/2/3 above) and draft the GDD for the chosen one (acks-gdd-author); the savegame S-1 per-entity persistence + context-aware loader are the building blocks for option 1.
+2. Whichever option is chosen, fix the unhandled-event consumption (hold or globally register) — it is the data-loss half of the gap and is needed under every option.
+3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Calendar-day serial fix: 13-month year in 48 copy-pasted helpers + UI variant
+
+**Task:** Fix `activity_time_cost_executor._calendar_day()` computing day serials with `(year - 1) * 12` on the project's 13-month calendar (the Known Issue flagged 2026-06-11), sweep the codebase for every other instance of the same bug, add a focused regression test, and verify net-zero new failures.
+**Model used:** Fable 5 (Opus-class) for the whole session — audit, mechanical sweep, test, verification.
+**Completed:**
+- **The bug:** `((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day` on a 13-month calendar makes Year 2 Month 1 COLLIDE with Year 1 Month 13 (both = 336 + day) — cross-year elapsed-day math sees zero days at the year boundary and drifts one month per elapsed year. Found via grep: the identical line was copy-pasted into **48 .gd files** (the executor, `domain_handlers._calendar_day_from_date`, `strenuous_accountant`, `commission_pipeline`, `sanctum_apprentice_resolver`, `follower_arrival_resolver`, `army_marcher`, `army_supply_tracker`, `monthly_recruitment_vagary_ticker`, all 25 activity handlers under `engine/subsystems/activities/handlers/` (incl. faith/, magical_research/, bardic/), and 10 UI files under `scenes/ui/` (troops dialogs, domain sub-tabs, faith_block)).
+- **The fix:** mechanical replace in all 48 files — `(year - 1) * 12` → `(year - 1) * Timekeeping.MONTHS_PER_YEAR` (no hardcoded 13). The canonical serial is 1-based and equals `Timekeeping.get_total_days() + 1` for the current date. Stored-value compatibility: all Year-1 stamps are identical under both formulas (the `(year-1)` term is 0), and Year-2+ stamps were colliding/wrong anyway, so no migration is needed.
+- **49th site, different variant:** `encounters_threats_sub_tab._calendar_day_today()` used UNSHIFTED `year * DAYS_PER_YEAR + month * DAYS_PER_MONTH + day` — 392 days ahead of the canonical serial that producers stamp into `started_calendar_day`, so siege "elapsed days" display was wrong from day one. Rewritten to the canonical formula with a comment pinning it to the producers.
+- Updated the stale doc comment on `domain_handlers._calendar_day_from_date` (it described the 12-month formula).
+- **Conventions §6.8:** added a "Calendar-day serial" convention block — canonical formula, the two BAD variants (hardcoded 12, unshifted year/month) with their failure modes, and the rule that all persisted day-serial columns share one coordinate system.
+**Decisions made:**
+- **Fix in place, no dedup:** kept the 48 (now-correct) copies rather than extracting a shared `Timekeeping.get_calendar_day()` helper — an autoload interface addition is out of scope for a bug-fix session and the convention now documents the canonical formula. Dedup flagged as a follow-up.
+- **No data migration:** Year-1 serials are bit-identical under old and new formulas; any Year-2+ campaign stamps were already broken (collisions), and shifting interpretation forward only makes old cooldowns expire no later than intended once, in the player's favor.
+- `PROMOTION_DELAY_DAYS = 120` in `sanctum_apprentice_resolver.gd` claims "4 months × DAYS_PER_MONTH" but 4 × 28 = 112 (computed with 30-day months) — NOT changed (gameplay value needing the Q20 ruling wording checked); spawned as a background task.
+**Interfaces defined or changed:**
+- None. All 49 helpers keep their names/signatures; only the arithmetic changed. The calendar-day serial coordinate system is now formally documented in conventions §6.8: 1-based, `((year-1) * MONTHS_PER_YEAR + (month-1)) * DAYS_PER_MONTH + day` == `get_total_days() + 1`.
+**Database changes:**
+- None (see no-migration decision above).
+**Tests added/updated:**
+- `tests/test_activity_time_cost_executor.gd`: +2 tests. `test_calendar_day_uses_thirteen_month_year` — pins Y1M1D1→1, Y1M13D1→337, Y2M1D1→365 (the buggy formula returned 337 here — the collision), monotonicity across the year boundary, and the `get_total_days() + 1` identity over a sweep of dates. `test_domain_handlers_calendar_day_from_date_thirteen_months` — same pins for `DomainHandlers._calendar_day_from_date` via a `_StubRunner` inner class (DomainHandlers._init requires `runner.get_campaign_id()`).
+- **Result: 433 passed / 19 failed, twice consecutively, zero "database is locked" lines, identical failure fingerprints between runs.** Baseline context: the concurrent "Fix class-roster test" session landed the anti_paladin roster-test fix mid-day, restoring the documented 432/20 → 433/19. Net-zero new failures.
+**Known issues:**
+- Three early suite runs were poisoned by a concurrent Claude Code session's test runs (9,711 and 5,773 lock lines; counts swung 267/185 → 312/140). Resolved by waiting for a 120-second quiet window (`Get-Process *odot*`) before the two measurement runs — reconfirms the documented zombie/concurrent-Godot gotcha.
+- `PROMOTION_DELAY_DAYS` 120-vs-112 discrepancy (see Decisions) — background task spawned.
+- Old Year-2+ persisted day-serial stamps (if any campaign has crossed a year boundary) are in the old broken coordinate system; elapsed-day math against them reads long by 28 days/year once, after which all new stamps are consistent. Accepted, not migrated.
+**Next session should:**
+1. (Optional cleanup) Extract the 48 duplicate `_calendar_day()` helpers into a single `Timekeeping.get_calendar_day()` — interface addition, needs the usual autoload-change care.
+2. Resolve `PROMOTION_DELAY_DAYS` 120 vs 112 against the Q20 ruling wording.
+3. Wire `is_party_order_locked` into the dungeon context menu and remaining order surfaces (carry-forward from 2026-06-11).
+
+## Session 2026-06-12 — Class-roster test updated for enabled anti_paladin; baseline restored to 433/19
+
+**Task:** Restore the test baseline after commit `cabf171` re-enabled `anti_paladin` (confirmed Jedidiah instruction) while `test_class_selection_panel.gd` still asserted it hidden; complete the paired carry-forward item adding `alignment_restriction` to `darkblood_ruinguard.json` / `lightblessed_wonderworker.json`. (This session was one of three task chips Jedidiah ran concurrently off the 2026-06-11 known-issues list, alongside the calendar-day 13-month fix and the `_is_nighttime` delegation sessions, plus the order-lock-rescission session.)
+**Model used:** Fable 5 (Opus-class) throughout.
+**Completed:**
+- `tests/test_class_selection_panel.gd` `test_disabled_classes_are_hidden_from_roster`: `anti_paladin` removed from the hidden-roster assertion list (now `["elven_ranger", "elven_courtier", "dwarven_delver"]` — all verified still `"enabled": false`) and added to the must-appear list alongside `warlock`/`mystic`, with the comment updated to cite the `cabf171` re-enable.
+- Verified the paired data item is **already done — no edit needed**: `data/classes/darkblood_ruinguard.json` line 8 has `"alignment_restriction": "chaotic"` and `lightblessed_wonderworker.json` line 8 has `"alignment_restriction": "lawful"`, matching the `paladin`/`anti_paladin` field pattern; both landed in commit `cabf171` itself (confirmed via `git log` — the carry-forward note predated noticing the commit included them).
+**Decisions made:**
+- None — mechanical test alignment to an existing Jedidiah ruling.
+**Interfaces defined or changed:**
+- None.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `test_class_selection_panel.gd` updated as above. **Result: 433 passed / 19 failed on two consecutive clean runs** (zero `database is locked` lines; failure set is the known pre-existing carry-forward list). Baseline restored from 432/20, matching the order-lock-rescission session's independent measurement of the same combined tree.
+**Known issues:**
+- **New gotcha — concurrent sessions collide on `/tmp` test-log filenames.** Three to four sessions ran suites in this repo simultaneously this morning; `/tmp/test_run1.log` was silently overwritten by another session between my write and a later read, and mid-morning suite measurements swung to 348/104 and 274/178 with 6,000–10,000 `database is locked` lines. Use session-unique log names and require a sustained (3+ min) Godot-process-quiet window before trusting any count; a 60-second quiet check is too short — it lands in another session's between-runs gap.
+**Next session should:**
+1. Unchanged from the order-lock-rescission entry (the latest ruling state): Jedidiah's multi-party context-model ruling (options 1/2/3) + the unhandled-event consumption fix. Note the calendar-day entry above (and the 2026-06-11 entry) still list "wire `is_party_order_locked`" as a carry-forward — the rescission voided that item; do not resurrect it.
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Q20 promotion timer corrected: 4 months = 112 days, not 120
+
+**Task:** Resolve the `PROMOTION_DELAY_DAYS = 120` vs. 112 discrepancy in `sanctum_apprentice_resolver.gd` flagged during the calendar-day-serial session: determine whether Q20's intent was "4 months" (→ 112 on the 13×28 calendar) or a flat 120 days, then make the constant, its comment, and every doc agree.
+**Model used:** Fable 5 (Opus-class) — ruling archaeology, fix, verification.
+**Completed:**
+- **Ruling determination (unambiguous, no Jedidiah escalation needed):** Q20's unit is MONTHS in every authoritative statement — the lock-in ("After exactly 4 months", build_log 10B.1a session), the decision rationale ("1d6 months average = 3.5, rounded to 4" — the whole derivation is in months), and `gdd-domain-tab.md` §12.7 ("after 4 months of joining... equal to the average of the standard sanctum's 1d6-month variability"). The "+120" was an arithmetic gloss using 30-day months — the GDD even showed its work: "(4 × 30 days)". The 13×28 calendar predates Q20 by six weeks. Verdict: translation error, not a flat-120 design; 4 months = 112 days.
+- **`engine/subsystems/strongholds/sanctum_apprentice_resolver.gd`:** `const PROMOTION_DELAY_DAYS: int = 120` replaced with `const PROMOTION_DELAY_MONTHS: int = 4`; the single use site now computes `calendar_day + PROMOTION_DELAY_MONTHS * Timekeeping.DAYS_PER_MONTH` (a const initializer can't reference an autoload, so days are derived at use site — this is what "do not hardcode" looks like in GDScript).
+- **Practical effect:** with +120, eligibility landed 8 days into month 5, so the monthly-tick promotion roll actually fired at the month-5 tick — a real one-month delay versus the ruling. With +112 it lands exactly on the 4-month boundary.
+- **Doc sweep (all 30-day-month glosses corrected with dated annotations, ruling text otherwise preserved):** `docs/coding_conventions.md` §51 (promotion_eligible_day bullet), `generation/gdd-domain-tab.md` §12.7 line "(4 × 30 days)", `docs/phase-10-plan.md` Q20 entry + §10B.1 Lightblessed integration bullet, `docs/phase-10b-1-handoff.md` §4 rule list + schema line, and the stale "+120" comment above `_resolve_magic_research_month` in `domain_handlers.gd`.
+- **Conventions §6.8 addendum:** "Durations ruled in months stay in months" — declare month counts, convert at use site via `Timekeeping.DAYS_PER_MONTH`, never pre-multiply into a hardcoded day count (with the Q20 GOOD/BAD example).
+**Decisions made:**
+- **No migration / no escalation:** aspirants persisted with `promotion_eligible_day = joined + 120` keep their stamp (they promote 8 days late, once; only new aspirants get 112). The ruling unit was judged unambiguous per the three independent months-denominated statements above — recorded here rather than silently changed.
+- **Renamed the constant** (PROMOTION_DELAY_DAYS → PROMOTION_DELAY_MONTHS) rather than keeping a misleadingly-named day constant: the only code consumer was the resolver's own use site; the test now references the new name.
+**Interfaces defined or changed:**
+- `SanctumApprenticeResolver.PROMOTION_DELAY_DAYS` (const, 120) REMOVED → `SanctumApprenticeResolver.PROMOTION_DELAY_MONTHS` (const, 4). Only internal + test consumers existed.
+**Database changes:**
+- None. Pre-existing `followers.promotion_eligible_day` stamps unchanged by design.
+**Tests added/updated:**
+- `tests/test_phase_10b1d.gd`: `test_mage_aspirants_have_promotion_eligible_day_120_days_out` → `test_mage_aspirants_have_promotion_eligible_day_4_months_out`; now pins `PROMOTION_DELAY_MONTHS * Timekeeping.DAYS_PER_MONTH == 112` explicitly (so a calendar-constant change surfaces here) and asserts each aspirant's eligible day = joined + 112.
+- **Result: 433 passed / 19 failed, twice consecutively, zero "database is locked" lines, identical failing-suite sets between runs; Phase10B1d green both runs.** Net-zero vs. the 433/19 baseline. (The task prompt's 432/20 baseline was already restored to 433/19 by the roster-test fix earlier today.)
+**Known issues:**
+- **[NEEDS-OPUS-REVIEW] `_resolve_magic_research_month` advances `days_completed` by 30 per monthly tick** (`advance_magic_research_projects_for_character(owner, 30)`) — same 30-day-month family: the tick spans 28 real days, AND the magical-research activity handlers stamp days in real days (7 × spell level etc.), AND the +30 stub predates the 10B.1b/c activity-driven completion flow so it may now double-credit. Spawned as a background task (audit whether to change 30 → DAYS_PER_MONTH, delete the stub advance, or document why it stands).
+**Next session should:**
+1. Audit the magic-research monthly +30 advance (background task spawned; see Known issues).
+2. Wire `is_party_order_locked` into the dungeon context menu and remaining order surfaces (carry-forward from 2026-06-11).
+3. (Optional cleanup) Extract the 48 duplicate `_calendar_day()` helpers into a single `Timekeeping.get_calendar_day()` (carry-forward from the calendar-serial session).
+
+## Session 2026-06-12 — Magic-research monthly +30 advance removed as dead code
+
+**Task:** Audit `_resolve_magic_research_month`'s `advance_magic_research_projects_for_character(owner, 30)` — the [NEEDS-OPUS-REVIEW] flag from the Q20 timer session: is the +30/month advance unit-wrong (28-day months), double-crediting on top of the 10B.1b/c activity-driven flow, or the sole progress mechanism for unattended projects?
+**Model used:** Fable 5 (Opus-class) — archaeology, audit, removal, verification.
+**Completed:**
+- **Audit verdict: neither over-crediting nor sole-mechanism — the advance was PROVABLY DEAD.** The chain: (1) the advance UPDATE targets `WHERE status = 'in_progress'`; (2) every `create_magic_research_project` call in the codebase (research_magic.gd ×4, rewrite_spell.gd, replace_spell.gd, scribe_spell.gd) stamps the row terminal at creation — `status = 'completed'|'failed'` with `days_completed = days_total` — because the 10B.1b/c handlers create project rows at activity COMPLETION as historical records; (3) no UI launcher or any other code path creates an in_progress row; (4) the call site was even gated on `if not before.is_empty():` where `before` lists in_progress rows — so the helper was never invoked at runtime. Real research pacing lives entirely in the ActivityTimeCostExecutor tick system (`ticks_required` from duration formulas like 14 × spell_level; 1 tick = 1 real day), which is calendar-correct by construction.
+- **Removed:** the stub-advance block in `domain_handlers._resolve_magic_research_month` (incl. `projects_advanced` from the return dict — zero consumers; `magic_research_summary` is written into the monthly result dict but nothing reads it), and `CampaignRepository.advance_magic_research_projects_for_character` (dead API, per the established deletion precedent). Function/call-site doc comments rewritten to record the removal rationale and the future-wave rule (month-paced projects advance by `Timekeeping.DAYS_PER_MONTH`, never 30).
+- **`docs/coding_conventions.md` §51** — the "monthly tick advances days_completed" bullet was describing a pattern that never shipped; rewritten: `magic_research_projects` rows are terminal historical records; the executor tick system owns research pacing; `in_progress`/`abandoned` stay in the status CHECK enum for future waves.
+- **Kept:** `list_magic_research_projects_for_character` (live consumer: `magical_research_block.gd` project-history list), `update_magic_research_project` (used by research_magic.gd idempotent-completion paths), the status enum, and the aspirant-promotion half of `_resolve_magic_research_month` (live, Q20).
+**Decisions made:**
+- **Delete, not re-unit to 28:** changing 30 → DAYS_PER_MONTH would have kept dead code alive with a corrected constant — worse than removal. No Jedidiah escalation needed: zero behavior change is provable (the gated call never executed against any row in any reachable state), so this is dead-code removal, not a gameplay-pacing decision.
+- **No save-data risk:** 10B.1a (stub) and 10B.1b (terminal-row handlers) landed the same day (2026-05-11); no player-reachable flow ever created an in_progress row, so no campaign DB can contain one outside hand-built test fixtures.
+**Interfaces defined or changed:**
+- REMOVED `CampaignRepository.advance_magic_research_projects_for_character(character_id, day_delta)` — callers were the dead stub and its own unit test only.
+- `_resolve_magic_research_month` return dict no longer carries `projects_advanced` (keys now: `aspirants_promoted`, `aspirants_departed`). The `magic_research_summary` entry in the monthly-tick result keeps the same producer path; no consumers existed for the removed key.
+**Database changes:**
+- None. `magic_research_projects` schema unchanged; `in_progress` remains a valid status for future waves.
+**Tests added/updated:**
+- `tests/test_phase_10b1a.gd`: removed `test_advance_magic_research_projects_for_character_increments_days` (it tested the deleted helper in isolation with a hand-built in_progress fixture) — replaced with a tombstone comment recording why. Suite still passes (Phase10B1a green both runs).
+- **Result: 433 passed / 19 failed, twice consecutively, zero "database is locked" lines, identical failing-suite sets between runs.** Net-zero vs. the 433/19 baseline. Measured after a 180-second sustained Godot-quiet window per the concurrent-session gotcha.
+**Known issues:**
+- The divine-caster research branch and `project_kind` magic_item/construct/monster waves (10B.1c/e/f follow-ups) remain the future surface most likely to want month-paced in_progress projects — the conventions §51 note and the function doc comment both point them at `Timekeeping.DAYS_PER_MONTH`.
+**Next session should:**
+1. Wire `is_party_order_locked` into the dungeon context menu and remaining order surfaces (carry-forward from 2026-06-11).
+2. (Optional cleanup) Extract the 48 duplicate `_calendar_day()` helpers into a single `Timekeeping.get_calendar_day()` (carry-forward from the calendar-serial session).
+
+## Session 2026-06-12 — Option 2: background-party resolution (all wilderness handlers global); Option 1 handoff drafted
+
+**Task:** Implement Option 2 from the morning's design exchange — background parties' wilderness events must resolve while the player is in another context, with outcomes surfaced over any UI — and write the deferred-build handoff for Option 1 (party-context switching), per Jedidiah: "Let's do option 2 now, and then you can give me a handoff for option 1."
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **All wilderness handlers are now globally registered** (`WildernessHandlers.register_global` covers travel_leg, wilderness_encounter_check, getting_lost_check, forced_march_check, wilderness_activity, wilderness_activity_complete, day/noon ticks, tracking/pursuit/encounter events). `register_state_scoped`/`unregister_state_scoped` deleted; `register`/`unregister` are aliases of the global pair. SessionRunner's session-lifetime `_wilderness_global_handlers` instance owns everything; new accessor `SessionRunner.get_wilderness_handlers()`; `WildernessExploreState` borrows that instance (no more per-enter instance, no unregistration on exit). Side benefit: handler-internal state (forage summaries, pursuit bookkeeping) now lives on ONE instance instead of being split between a state-scoped and a global copy.
+- **Background-party policy** (new `_is_wilderness_ui_active()` + `_notify_background()` helpers): when the wilderness UI is NOT the active context — (1) triggered encounters HALT the journey (cancel movement+activity, `order_cancelled`, auto-pause, toast "holding position awaiting orders") and the encounter is dropped (no decision surface exists outside the wilderness state — Option 1 upgrades this); (2) final-leg arrival auto-pauses + toasts (previously keyed to active-party only); (3) getting-lost and forced-march halts auto-pause + toast. NotificationManager is global, so toasts render over dungeon/settlement/camp. `_is_wilderness_ui_active` has a has_method guard so duck-typed test FakeRunners stay on the modal path.
+- **Effect:** the event-loss bug from this morning's entry is dead for wilderness — party B's travel/activity chains resolve to completion during party A's delve, and the player is paused+notified at every decision point. Dungeon/settlement/camp handlers stay state-scoped (background parties cannot occupy those contexts in v1 — split is wilderness-only).
+- **`docs/handoff_party_context_switching.md` (NEW, DEFERRED):** the Option 1 build spec — goal, verified building blocks (Option 2, savegame S-1 per-entity dungeon persistence + context-aware loader, active_party_changed plumbing, dead party_selector_tabs widget), the four blockers (destructive `DungeonExploreState.exit()`, no transition driver, primary-vs-watched call sites, state-local encounter modal), design sketch (suspend≠exit split, `go_to_party()`, switch-first encounter flow replacing halt-and-drop), §5 open rulings (active==watched?, suspend/exit split sign-off, does an unwatched delve tick?, notification action buttons), acceptance checklist, file map.
+- Docs: gdd-realtime-scheduler.md §1.2 known-gap note rewritten (Option 2 landed; remaining gap = context-switch UI); conventions §19.3 handler table + registration-scope rule rewritten (state-scoped only if events can never be owned by an out-of-context party; wilderness = canonical global example, test pattern named).
+**Decisions made:**
+- **Background encounters halt-and-drop (v1):** the party breaks off, halts, and waits; the encounter evaporates. Chosen over (a) suppressing background encounter rolls entirely (loses the "world interrupts you" beat Jedidiah explicitly wants) and (b) presenting the decision modal over foreign contexts (wrong frame; the modal/listener is wilderness-state UI). Option 1's switch-first flow is the designed upgrade.
+- Background arrival/lost/halt AUTO-PAUSE even though the watched party is elsewhere — that is the point (the player must be able to react); pause reason + toast identify the party.
+**Interfaces defined or changed:**
+- `WildernessHandlers.register_global(registry)` now registers ALL wilderness events; `register_state_scoped`/`unregister_state_scoped` REMOVED; `register`/`unregister` = global aliases.
+- NEW `SessionRunner.get_wilderness_handlers() -> WildernessHandlers` (null before load_session).
+- `WildernessExploreState._handlers` is a borrowed reference to the runner's instance — states must NOT instantiate WildernessHandlers.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_wilderness_day_tick.test_all_wilderness_handlers_register_globally` — pins that every wilderness event type is covered by register_global/unregister_global (the regression that would silently revive the event-loss bug).
+- **Result: 433 passed / 19 failed on two consecutive runs** — matches the current baseline (433/19, post anti_paladin-test fix). Failure-set diff vs the pre-change runs shows only the known intermittent phase_9c d100-lingering assertion (intra-suite RNG flake; suite fails either way).
+**Known issues:**
+- Background encounters evaporate (by design, v1) — upgrade path specified in the Option 1 handoff §4.4.
+- An unwatched dungeon delve's recurring events (light ticks) remain state-scoped — moot until Option 1 makes "watching B while A delves" reachable; flagged as Option 1 ruling §5.3 (recommended: hold the delve + lazy light reconciliation).
+- Non-primary-party encounter hex_id annotation drift in `do_encounter_check` (pre-existing, noted in the handler comment).
+**Next session should:**
+1. (When Jedidiah schedules it) Option 1 per `docs/handoff_party_context_switching.md` — get the §5 rulings first.
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Batch A scheduler-core fixes: FIFO ties, delta clamp, due-event gate, pause-signal contract
+
+**Task:** Implement "Batch A" from the 2026-06-11 event-scheduler review (reassessed against post-single-timeline code earlier this session): the scheduler-core mechanical fixes — sequence-number FIFO tiebreaker, frame-delta clamp, due-event accumulator gate, pause(reason)/set_speed signal protocol, UI scheduler_resumed spoof removal, dungeon `_tick_scheduled` stuck flag, header doc drift, and the legacy test-suite timescale error.
+**Model used:** Fable 5 (Opus-class) for the whole session — review reassessment, implementation, verification.
+**Completed:**
+- **FIFO tie ordering (`scheduled_event.gd` + `event_scheduler.gd`):** new `ScheduledEvent.sequence` field (monotonic, stamped by `EventScheduler.schedule()`; -1 = unstamped) as the final `is_before` tiebreaker after (fire_time, priority, owner_id). Fixes ties resolving LIFO and REVERSING on every save/load round-trip (lower-bound binary insert placed re-loaded equals in front). `clear()` resets the counter; preloaded sequences bump it past their max. `to_dict`/`from_dict` carry the stamp for in-memory round-trips.
+- **Tie order across save/load (`campaign_repository.gd`):** `get_scheduled_events` now orders by `(fire_time, rowid)` — rows are inserted in queue order by save_session, so sequence-less DB rows are re-stamped in saved resolution order. No schema change needed.
+- **Frame-delta clamp (`scheduler_loop.gd`):** new `MAX_TICK_DELTA := 0.25`; `_tick_normal` clamps real_delta so a window-drag/IO hitch cannot fast-forward hours of game time + a boundary-signal storm in one frame (wilderness VERY_FAST: 10s hitch was 1,500 rounds; now <= 37).
+- **Due-event gate (`scheduler_loop.gd`):** tick loop condition is now `(_accumulated_rounds >= 1.0 or _is_head_due())` — already-due events (fire_time <= now) cost zero rounds and no longer strand behind the accumulator (was up to 2.0s real-time dead air at dungeon NORMAL after every auto-pause resume; also stranded the second of two same-round events to the next full round).
+- **Pause-signal protocol (`scheduler_loop.gd`):** `pause(reason: String = "")` — the reason is a parameter, stored in auto_pause_reason and broadcast in the same call, so a stale reason can never be replayed (the old pattern pre-set the field then called pause(), and only resume() ever cleared it). `set_speed()` now delegates to pause()/resume() at the pause boundary, so toolbar pause/unpause (the ONLY player path, via clock_speed_requested) always emits scheduler_paused/scheduler_resumed and always clears stale auto-pause/combat/transition state. `_tick_max_speed` empty-queue branch sets reason BEFORE the signal (was emitting "paused"/stale instead of "No events scheduled").
+- **UI spoof removal:** deleted the three direct `EventBus.scheduler_resumed.emit()` calls in `pause_menu_overlay.gd` (Escape-close + quit-to-menu) and `save_load_panel.gd` (load) — UI emitting producer-owned lifecycle signals desynced the status bar/GameLog/outliner from the actual loop state. SchedulerLoop is now the only emitter.
+- **Dungeon movement stuck flag (`dungeon_handlers.gd`):** `cancel_all_moves()` resets `_tick_scheduled` — previously the guard stayed latched true after `DungeonExploreState._cancel_all_movement` cancelled the queued `dungeon_movement_tick`, so `_ensure_movement_tick` refused to schedule a new tick until dungeon re-entry (MAX-speed movement permanently dead after any cancel).
+- **Header drift:** `scheduler_loop.gd` header rewritten to the C1 band-multiplier semantics (was pre-C1 "1 real second = 1 round"); `timekeeping.gd` calendar line fixed ("10-second rounds (6 rounds per minute)" — was inverted vs the constants and ACKS RAW).
+- **Test timescale fix (`test_scheduler_loop.gd`):** `_setup` pins `set_timescale(TIMESCALE_DUNGEON)` — legacy tests computed rounds/sec assuming timescale 1.0 but ran at the wilderness default (60), making 2 of the 19 baseline failures pure test-math error and leaving NORMAL-speed behavior untested. Legacy tests now feed 0.25s frames (respecting the clamp).
+- **Docs:** conventions §19.1 (speed & pause signal contract block) + §19.4 (sequence tiebreaker); gdd-realtime-scheduler.md §2.2 field list + §2.3 tie rules.
+**Decisions made:**
+- **No DB column for `sequence`:** save order + `ORDER BY fire_time, rowid` + load-order re-stamping preserves tie order with zero schema change; the stamp lives in to_dict for in-memory round-trips only.
+- **Clamp drops excess real time** (rather than spreading it over frames) — matches the existing "auto-pause discards the remaining accumulator" behavior; bounded loss, no catch-up burst.
+- **Pause-menu close leaves the scheduler paused** (matching the Resume button's documented contract) rather than auto-restoring the pre-menu speed — auto-restore is a UX design call for Jedidiah, noted as a possible follow-up, not silently introduced.
+- **owner_id stays a tiebreaker** ahead of sequence (GDD §2.3 semantics preserved); sequence only breaks full ties.
+**Interfaces defined or changed:**
+- `ScheduledEvent.sequence: int` (new field; in to_dict/from_dict as "sequence").
+- `SchedulerLoop.pause(reason: String = "")` — signature extended (backward-compatible); reason is broadcast in `scheduler_paused` and stored in `auto_pause_reason`. Producers must pass the reason here, never pre-set the field.
+- `SchedulerLoop.set_speed()` now emits scheduler_paused/scheduler_resumed at pause-boundary transitions (previously only scheduler_speed_changed).
+- `SchedulerLoop.MAX_TICK_DELTA` (new const, 0.25).
+- UI rule: only SchedulerLoop may emit scheduler_paused/scheduler_resumed/scheduler_speed_changed (conventions §19.1).
+**Database changes:**
+- None. (`get_scheduled_events` query gained `, rowid` to its ORDER BY — no schema change.)
+**Tests added/updated:**
+- `test_scheduler_loop.gd`: +6 tests — due-event-resolves-without-full-accumulation, same-time-events-resolve-in-one-pass (FIFO order), delta-clamp-bounds-time-jump, set_speed-emits-pause/resume-signals, stale-pause-reason-not-replayed, max-speed-empty-queue-signal-reason. Legacy normal/fast/fractional tests rewritten for the dungeon timescale pin + clamp-sized frames.
+- `test_event_scheduler.gd`: +1 test — tie-order-survives-round-trip (with-sequence and sequence-stripped DB-row paths).
+- **Result: 435 passed / 17 failed on two consecutive runs, identical failure fingerprints, zero "database is locked" lines.** Baseline was 433/19 — net −2: the "EventScheduler FIFO tie-break" and "SchedulerLoop fractional-accumulation" carry-forward failures now pass. **New carry-forward baseline: 435/17.**
+**Known issues:**
+- Remaining review batches (reassessed list, this session): B — day-axis fire_times on the rounds queue (call_to_arms_handler.gd:119 LIVE, siege/disease latent) + a schedule_at sanity assert; C — persistence policy (WAL/synchronous pragma, debounced clock save, transactional queue flush; clock still eager-saves ~30 fsync'd tx/sec at wilderness NORMAL); D — load_slot exit-after-restore corruption + zombie-on-failure, session_load location-key clobber; E — registry hold-don't-consume + commission_ready scope + siege-tick load reseed.
+- Possible UX follow-up for Jedidiah: should closing the pause menu auto-restore the pre-menu clock speed? (Currently stays paused by design; the removed spoof emit had falsely signaled a resume.)
+- Latent (verified, untriggered): duplicate event_id desyncs queue/_id_index; no fire_time<=now guard at pop; ScheduledEvent.data shared by live reference through the resolved-signal emit; _emit_boundary_signals not re-entrancy safe.
+**Next session should:**
+1. Batch B — convert call_to_arms/siege/disease scheduling to the rounds axis + add the fire_time sanity assert in EventScheduler.schedule_at (top remaining correctness bug; vassal tranches currently all arrive ~instantly).
+2. Batch C — persistence policy (single transactional flush choke point; WAL + synchronous NORMAL pragma).
+3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Batch B: day-axis fire_times converted to rounds; schedule() tripwire; calendar-serial unification
+
+**Task:** Implement "Batch B" from the event-scheduler review: convert every scheduler fire_time computed on the calendar-DAY axis (call-to-arms tranches LIVE; siege daily/weekly ticks and disease recovery/cure ticks latent) to the ROUNDS axis, add a tripwire in EventScheduler.schedule() so day-axis values can never silently enter the queue again, and unify the two remaining unshifted calendar-day serial producers with the canonical coordinate system.
+**Model used:** Fable 5 (Opus-class) throughout.
+**Completed:**
+- **New Timekeeping helpers:** `get_calendar_day() -> int` (canonical 1-based day serial == get_total_days() + 1 — the dedup target the calendar-serial session flagged; per-subsystem `_calendar_day()` copies can migrate to it incrementally) and `calendar_day_to_rounds(day_serial) -> int` ((day_serial − 1) × ROUNDS_PER_DAY = midnight of that day — THE conversion for day-granular systems scheduling onto the rounds queue).
+- **Seven scheduling sites converted** (each keeps its day-serial bookkeeping for DB stamps; only the fire_time converts): `call_to_arms_handler.gd` issue_call tranches (the LIVE bug — all three vassal tranches arrived ~instantly in any campaign older than an hour; now they land at midnight of issue + period_days × tranche, restoring RAW muster-period pacing); `siege_resolver.gd` start_full_siege daily+weekly seeds, tick_daily reschedule, tick_weekly reschedule; `siege_resolver_simplified.gd` siege_simplified_concluded at expected_end; `siege_intervention_handler.gd` escalate_to_full daily+weekly seeds; `disease_resolver.gd` disease_recovery_check at recovery_day + `_schedule_cure_tick_if_absent` weekly seed (the SiegeHandlers cure-tick reschedule was already rounds-axis — the chain is now consistent end to end).
+- **Calendar-serial unification:** `siege_handlers.gd::_calendar_day()` and `session_runner.gd`'s disease-reconcile `_today_day` were the last two producers on the UNSHIFTED `year*DAYS_PER_YEAR + month*DAYS_PER_MONTH + day` variant (392 days ahead of canonical — a cross-coordinate mismatch with the UI fixed in the calendar-serial session). Both now use `Timekeeping.get_calendar_day()`.
+- **Tripwire:** `EventScheduler.schedule()` push_warns when a fire_time lands more than 2 days in the past — the signature of a day-serial scheduled as rounds. Warning, not assert: legitimate catch-up chains (self-rescheduling ticks after a large GM time skip) can trip it.
+- **Docs:** conventions §6.8 calendar-day block extended ("Day serials never enter the EventScheduler" + the two new helpers); §19.5 gains the "fire_time is always ROUNDS" bullet.
+**Decisions made:**
+- **Midnight anchoring:** day-granular events fire at the START (midnight) of their target day-serial, matching the systems' RAW day granularity and the reconcile logic's day-serial comparisons; "now + N×ROUNDS_PER_DAY" drift-from-start-time was rejected to keep tick times aligned with the day-serial bookkeeping.
+- **No data migration:** sieges/disease ticks never ran in production (their schedulers were null at the only reachable call sites), and queued call_to_arms events in existing saves were already firing immediately under the old bug — converting forward loses nothing.
+- **Tripwire is past-bound only** (no far-future bound): the 2-day grace keeps normal overdue-resolution quiet; the message names the day-axis hypothesis and the GM-skip false-positive case.
+**Interfaces defined or changed:**
+- NEW `Timekeeping.get_calendar_day() -> int` and `Timekeeping.calendar_day_to_rounds(day_serial: int) -> int`.
+- `CallToArmsMuster.issue_call` / `SiegeResolver.start_full_siege`/`tick_daily`/`tick_weekly` / `SiegeResolverSimplified.start_simplified_siege` / `SiegeInterventionHandler.escalate_to_full` / `DiseaseResolver.apply_disease_to_army`/`_schedule_cure_tick_if_absent` keep their signatures (calendar_day params remain day serials); only the fire_times they emit changed axis.
+**Database changes:**
+- None. Day-serial columns (started_calendar_day, disease_recovery_calendar_day, expected_end_calendar_day, ledgers) unchanged and now coordinate-consistent across all producers.
+**Tests added/updated:**
+- `test_phase_9b.gd` (passing suite): escalation test now pins the rescheduled siege_daily_tick/siege_weekly_tick fire_times to `calendar_day_to_rounds(5+1)` / `(5+7)` — 80 → 82 checks, all green.
+- `test_phase_9c.gd` (pre-existing failing suite): the cure-tick scheduling test additionally pins fire_time == `calendar_day_to_rounds(0+7)`; the new check passes (suite still fails on its unrelated carry-forward assertions).
+- **Result: 435 passed / 17 failed on two consecutive runs, zero "database is locked" lines, zero day-axis tripwire warnings.** Failure fingerprint identical to the Batch A baseline except one intra-suite flake: `test_loot_auto_distributor.test_band_worsening_skipped` wobbled 1↔2 failed assertions between runs — an already-failing suite in every fingerprint compared (same class as the documented phase_9c d100 flake; loot distribution is untouched by this session). Net-zero vs the 435/17 baseline.
+**Known issues:**
+- Sieges remain UNREACHABLE in live play: the only production dispatch sites still pass a null scheduler (encounters_threats_sub_tab.gd:604), so UI-started sieges schedule no ticks at all — and siege ticks have no load_session reseed (an in-progress siege whose events were never persisted stalls after a crash). Both belong to Batch E (registry/reseed hardening).
+- `test_loot_auto_distributor` contains an intermittent RNG-dependent assertion (band-worsening roll) — pre-existing failing suite either way; flagged here so future fingerprint diffs expect the 1↔2 wobble.
+- Remaining review batches: C — persistence policy (WAL/synchronous pragma, debounced clock save, transactional queue flush; the clock still eager-saves ~30 fsync'd tx/sec at wilderness NORMAL); D — load_slot exit-after-restore corruption + zombie-on-failure, session_load location-key clobber; E — registry hold-don't-consume + commission_ready scope + siege-tick load reseed.
+**Next session should:**
+1. Batch C — persistence policy: WAL + synchronous NORMAL pragma at DB open, dirty-flag debounced clock save, queue+clock flushed together in one transaction at pause/day-boundary/save choke points.
+2. Batch D — load_slot lifecycle ordering (exit the state BEFORE restore_snapshot; transition to campaign_select on restore failure) + session_load location-key postamble fix.
+3. (Optional cleanup carry-forward) Migrate the ~48 per-subsystem `_calendar_day()` copies to `Timekeeping.get_calendar_day()` now that the canonical accessor exists.
+
+## Session 2026-06-12 — Batch C: persistence policy — WAL pragmas, debounced clock, atomic clock+queue flush
+
+**Task:** Implement "Batch C" from the event-scheduler review: replace the per-advance eager clock save (~30 fsync'd implicit transactions/sec at wilderness NORMAL) and the manual-save-only queue persistence with one coherent policy — WAL + synchronous NORMAL at DB open, a dirty-flag debounced clock, and clock + scheduled-event queue flushed together in one transaction at the quiesce points (every scheduler pause, every day boundary, save_session). Also wrap save_session's clear-then-insert loops in a transaction (was N+M+2 implicit transactions and a crash between clear and re-insert could lose the whole set).
+**Model used:** Fable 5 (Opus-class) throughout.
+**Completed:**
+- **`campaign_repository.gd::_ready`:** `PRAGMA journal_mode=WAL` + `PRAGMA synchronous=NORMAL` immediately after open_db(). Defaults (DELETE journal + synchronous FULL) fsync ~2× per statement-level implicit transaction; WAL appends commits to a side log (fsync at checkpoints) — right mode for a single-writer desktop app. VACUUM INTO snapshots and the ATTACH-based restore are WAL-compatible; sidecar -wal/-shm files vanish on clean close.
+- **`timekeeping.gd`:** `advance_rounds` now sets a `_dirty` flag instead of calling `_auto_save()` (dirty is set BEFORE boundary signals so the day-boundary flush listener sees the new time as unsaved). New `flush() -> bool` writes campaign_clock only when dirty + campaign loaded. `save_state` clears dirty when writing the loaded campaign; `load_state`/`_on_session_ended` reset it. `_auto_save` survives only for `set_day_cycle` (rare config change, still immediate). Header Persistence section rewritten.
+- **`session_runner.gd`:** new `flush_clock_and_queue()` — one transaction containing `Timekeeping.flush()` + `clear_scheduled_events` + per-event `save_scheduled_event` — wired in `_ready` to `EventBus.scheduler_paused` and `Timekeeping.day_changed`. Uses the guarded-BEGIN pattern (`var own_txn := db.query("BEGIN TRANSACTION")` … `if own_txn: COMMIT`) because signal handlers can fire inside an enclosing transaction — an unguarded COMMIT would commit the outer transaction prematurely.
+- **`save_session`:** clock + active_effects + scheduled_events now share ONE guarded transaction. The party/per-context `flush_to_db` writes stay OUTSIDE it deliberately — those callees contain their own BEGIN/COMMIT (e.g. save_voxel_cells_batch) and would commit an enclosing transaction early.
+- **end_session teardown ordering fix (hazard caught during implementation):** `_scheduler.clear()` ran BEFORE `_scheduler_loop.pause()` while `_campaign_id` was still set — the new pause-triggered flush would have persisted an EMPTY queue over the rows save_session had just written, silently destroying the saved queue on every quit-to-menu. Reordered to pause-then-clear (pause no-ops if already paused → no flush; if running, the flush sees the intact queue).
+- **Docs:** conventions §6.8 gains the "Clock & event-queue persistence policy" block (pragmas, choke points, the two in-transaction rules, the teardown-ordering rule); §19.5 gains the "Clock persistence is debounced" bullet.
+**Decisions made:**
+- **Flush cadence = pause + day boundary + save:** RTwP pauses constantly (every auto-pause event), so crash exposure is bounded by the current running stretch — at most one game day of clock/queue drift during uninterrupted fast-forward. Always rewrites the queue at a choke point (no queue dirty-flag; choke points are infrequent and the write is one delete + tens of inserts under WAL).
+- **Guarded-BEGIN over repository helper methods:** matches the existing inline `db.query("BEGIN TRANSACTION")` pattern (30+ sites) rather than introducing begin/commit wrappers mid-bugfix.
+- **`set_day_cycle` stays eager** — rare one-off config change whose docstring promises immediate persistence.
+**Interfaces defined or changed:**
+- NEW `Timekeeping.flush() -> bool` (write-if-dirty; returns whether a write happened). `Timekeeping.save_state` keeps its signature; now also clears the dirty flag for the loaded campaign.
+- NEW `SessionRunner.flush_clock_and_queue()` — the persistence choke point; safe to call any time a campaign is loaded (combat included — it touches only clock + queue).
+- CONTRACT: per-advance clock persistence no longer exists; anything needing the DB clock row current must run after a choke point or call `Timekeeping.flush()` itself (only the snapshot path needed this, and save_session covers it).
+**Database changes:**
+- None schema-wise. Connection-level: journal_mode=WAL + synchronous=NORMAL (persisted in the DB header by SQLite; set idempotently at every open).
+**Tests added/updated:**
+- `test_timekeeping.gd`: +1 test `test_clock_persistence_debounced_until_flush` — pins WAL mode (PRAGMA journal_mode == "wal"), advance-does-NOT-write-before-flush, flush-persists-and-reports, second-flush-no-ops.
+- **Result: 435 passed / 17 failed on two consecutive runs, IDENTICAL failure fingerprints between runs, zero "database is locked" lines.** vs the Batch B baseline the only diff is the documented test_loot_auto_distributor intra-suite RNG wobble (2→1 assertions in an already-failing suite). Net-zero.
+**Known issues:**
+- Remaining review batches: D — load_slot exit-after-restore corruption + zombie-on-failure, session_load location-key clobber; E — registry hold-don't-consume + commission_ready scope + siege-tick load reseed + null-scheduler siege dispatch.
+- WAL note for the concurrent-session gotcha: lock-contention symptoms between concurrent Godot processes may present differently under WAL (readers no longer block on the writer); the "database is locked" tripwire in the test-measurement procedure still applies to write-write conflicts.
+**Next session should:**
+1. Batch D — load_slot lifecycle ordering (exit the state BEFORE restore_snapshot; transition to campaign_select on restore failure) + the session_load location-key postamble fix.
+2. Batch E — registry hold-don't-consume for unhandled events + commission_ready scope + siege-tick load reseed.
+3. (Optional cleanup carry-forward) Migrate the ~48 per-subsystem `_calendar_day()` copies to `Timekeeping.get_calendar_day()`.
+
+## Session 2026-06-12 — Batch D: load_slot lifecycle ordering + transition re-entrancy guard
+
+**Task:** Implement "Batch D" from the event-scheduler review: (1) load_slot ran the old exploration state's exit() AFTER restore_snapshot — DungeonExploreState.exit → _save_dungeon_cell_states stomped the freshly restored save's fog/door cells with pre-restore memory on every load-while-in-a-dungeon; (2) load_slot's restore-failure path returned false after end_session teardown with no transition, leaving a zombie (GameState=MAIN_MENU, dead scheduler, old exploration scene still live); (3) transition_to_state's postamble was not re-entrancy safe — SessionLoadState.enter() nests the real transition, then the outer frame clobbered GameState.current_location_key back to "none" and emitted a stale →session_load signal last (concrete damage: drop-to-ground answered "Cannot drop items in this location" for an entire dungeon stay after loading a dungeon save; GameLog recorded transitions in inverted order).
+**Model used:** Fable 5 (Opus-class) throughout.
+**Completed:**
+- **`session_runner.gd::transition_to_state`** — re-entrancy guard after `enter()` returns: if `_current_state_key` no longer equals this frame's `state_key`, a nested transition superseded us and already ran the full postamble for the REAL destination — return without touching the location key, party location type, GameState sync, or signals. Fixes ALL nested-transition paths at one altitude (session_load routing, dungeon-enter error bails to wilderness), not just the load case.
+- **`session_runner.gd::load_slot`** — after end_session(), the live exploration state is now exited BEFORE restore_snapshot (its per-context DB writes land in the pre-restore DB as harmless duplicates of save_session; scene popped from the nav stack; `_current_state`/`_current_state_key` nulled so the later session_load transition has nothing stale to exit). Safe against the Batch C pause-flush: end_session already paused the loop, so the exit's `loop.pause()` no-ops, and its event cancellations hit the already-cleared queue.
+- **`load_slot` failure recovery** — restore_snapshot failure now transitions to `campaign_select` instead of returning into a zombie session. (Failure is reachable: get_snapshot only checks the metadata row; restore independently fails on a missing/legacy slot file or ATTACH error.) Fresh-boot failure path re-enters campaign_select (pop+repush of the main menu — acceptable).
+**Decisions made:**
+- **Guard by key comparison, not a re-entrancy counter:** `_current_state_key != state_key` after enter() is exactly the "superseded" condition; an enter() that chains back to the SAME key would re-run a harmless idempotent postamble (no such path exists today).
+- **The transition INTO session_load is no longer announced** when enter() chains away synchronously (previously consumers saw both the real transition AND the stale outer one, in inverted order; now only the real one, with old_key="session_load"). GameLog was the only consumer of the ephemeral routing-state signal; truthful ordering wins.
+- **Exit-before-restore lives in load_slot, not end_session:** end_session is also called from SessionEndState.enter mid-transition, where exiting `_current_state` (= SessionEndState itself) would corrupt the state machine. load_slot is the only path where teardown and the next transition are separated by a DB restore.
+**Interfaces defined or changed:**
+- `transition_to_state` contract addition: when enter() nests a transition, the outer call's postamble (location key, party location type, GameState sync, transition signals) is skipped — the nested call owns it.
+- No signatures changed.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_session_runner.gd`: +1 test `test_nested_transition_skips_stale_postamble` with a `ChainingStubState` inner class (enter() chains to a stubbed "wilderness") — pins final state key = the nested destination, location key NOT clobbered to "none", and (signal-conditional, per the bare-runner harness limitation) the last transition signal being the real destination. Resets GameState afterwards (the nested stub flips it to EXPLORATION via _sync_game_state).
+- **Result: 435 passed / 17 failed on two consecutive runs, zero "database is locked" lines; new test green.** Only fingerprint diff vs the Batch C baseline is the documented test_loot_auto_distributor intra-suite RNG wobble (1↔2 assertions in an already-failing suite). Net-zero.
+**Known issues:**
+- Batch E remains (last review batch): EventHandlerRegistry hold-don't-consume for unhandled events, commission_ready settlement-scoped handler (notification lost when the event fires outside a settlement), siege-tick load_session reseed, and the null-scheduler siege dispatch (UI-started sieges schedule no ticks).
+- The pause-menu auto-restore UX question (close menu → restore pre-menu clock speed?) is still parked awaiting Jedidiah.
+**Next session should:**
+1. Batch E — registry hardening: park-don't-consume unhandled events (re-inject on handler registration), commission_ready scope fix, siege-tick reseed in load_session, wire the siege dispatch scheduler.
+2. (Optional cleanup carry-forwards) Migrate the ~48 `_calendar_day()` copies to `Timekeeping.get_calendar_day()`; extract the duplicated drain blocks in SchedulerLoop._tick_normal.
+3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Batch E: park-don't-consume for unhandled events; siege tick reseed + live dispatch (scheduler review arc COMPLETE)
+
+**Task:** Implement "Batch E", the final batch from the 2026-06-11 event-scheduler review: (1) the registry/loop destroyed any event that came due with no registered handler (the data-loss half of the context-scoped-handler gap, flagged "needed under every option" in the morning's Option-2 session); (2) commission_ready notifications were lost when the event fired outside a settlement; (3) in-progress sieges had no load-time tick reseed (one lost tick chain = siege stalled forever); (4) the Notebook siege dispatches passed a null scheduler, so UI-started sieges never scheduled ticks at all.
+**Model used:** Fable 5 (Opus-class) throughout.
+**Completed:**
+- **Park-don't-consume (`event_scheduler.gd` + `event_handler_registry.gd` + `scheduler_loop.gd`):** `SchedulerLoop._resolve_next_event` now checks `has_handler` after popping — an unhandled event is parked (`EventScheduler.park`) instead of resolved-as-{}. Parked events live in a side store: OUT of the fireable queue (`is_empty()` stays queue-only, so MAX speed still auto-pauses correctly) but still pending obligations — included in `to_dicts()` (they persist; on load they re-enter the queue and re-park if still unhandled), `size()`, and `get_events_for_owner` (idempotency checks see them), and reachable by `cancel_all_for_owner` (merge cleanup covers parked events). `EventHandlerRegistry.register()` releases parked events of the registering type back into the queue (`release_parked`) — fire_times are past, so they resolve next tick in the registering context. Wiring: `EventHandlerRegistry.set_scheduler(_scheduler)` in SessionRunner._ready; null-scheduler registries (lightweight test harnesses) skip release.
+- **commission_ready:** covered by the park mechanism with NO scope change — the event fires mid-wilderness, parks, and is delivered (auto-pause + notification) as the player next enters a settlement, which is when they can act on it. Verified collateral-free: exactly ONE park warning in the full suite run (the new test's own).
+- **Siege tick reseed (`siege_resolver.gd::reconcile_ticks_on_session_load`):** mirrors DiseaseResolver's reconcile — for every non-concluded siege in the campaign with no pending tick events, reseeds siege_daily_tick (midnight tomorrow) + siege_weekly_tick (+7d) for full mode, or siege_simplified_concluded at max(expected_end, now) for simplified (clamped so an overdue conclusion resolves immediately without tripping the day-axis warning; skipped when expected_end <= 0, the degenerate no-duration case). Called from `SessionRunner.load_session` after the disease reconcile. Idempotent via get_events_for_owner.
+- **Live siege dispatch (`encounters_threats_sub_tab.gd`):** both `SiegeDispatcher.dispatch_new_siege` calls (bandit siege + challenger siege) now pass `_live_scheduler()` — the same `get_tree().root.get_node_or_null("SessionRunner")` lookup garrison_sub_tab uses — instead of null. UI-started sieges tick immediately; the load-time reseed remains as the no-session fallback.
+- **Conventions §19.3 registration-scope rule rewritten:** an unhandled event is parked, not destroyed — scope is now a LATENCY decision (global = resolve promptly out of context, e.g. wilderness background parties; state-scoped = deferred delivery on context entry is correct UX, e.g. commission_ready), not a data-safety one.
+**Decisions made:**
+- **Park store lives in EventScheduler, not the registry:** the scheduler is the single source of truth for events, so persistence, owner queries, and cancel semantics extend to parked events with no second bookkeeping surface. The registry only holds the release hook (scheduler reference).
+- **commission_ready stays settlement-scoped** (park = delivery on next settlement entry) rather than going global for immediate toasts — zero extra code, and the notification arrives exactly when the player can act. If immediate "your sword is ready" toasts are wanted later, register the handler globally via a session-lifetime instance (the SiegeHandlers pattern).
+- **Released events keep their original fire_time and sequence** — recurrence chains that reschedule relative to event.fire_time (cure ticks) keep their cadence and catch up correctly; FIFO order among same-type parked events is preserved by their original sequence stamps.
+- **`registry.resolve()`'s missing-handler branch survives as a defensive backstop** (now unreachable via the loop) rather than being deleted.
+**Interfaces defined or changed:**
+- NEW `EventScheduler.park(event)` / `release_parked(event_type) -> int`. CHANGED semantics: `size()`/`get_events_for_owner()`/`get_all_events()`/`to_dicts()`/`cancel_all_for_owner()` now include parked events; `is_empty()` deliberately stays fireable-queue-only (documented).
+- NEW `EventHandlerRegistry.set_scheduler(scheduler)`; `register()` now releases parked events of the registered type.
+- NEW `SiegeResolver.reconcile_ticks_on_session_load(scheduler, campaign_id) -> {sieges_reconciled, events_seeded}`.
+- `SchedulerLoop._resolve_next_event` returns false (not resolved, no scheduler_event_resolved emission, no next_events) for parked events.
+**Database changes:**
+- None. Parked events persist as ordinary scheduled_events rows via the existing to_dicts path.
+**Tests added/updated:**
+- `test_event_scheduler.gd`: +2 tests — park_and_release (queue/size/owner/to_dicts visibility + release round-trip), cancel_reaches_parked. 90 → 101 checks.
+- `test_scheduler_loop.gd`: +1 test — unhandled_event_parks_and_resolves_on_register (MAX-speed park, then register → released → resolves); `_setup` now wires `set_scheduler` like production. 58 → 63 checks.
+- `test_phase_9b.gd`: +1 test — reconcile_ticks_reseeds_live_siege (null-scheduler siege start → reconcile seeds daily at midnight-tomorrow rounds + weekly; second reconcile is a no-op). 82 → 88 checks.
+- **Result: 435 passed / 17 failed on two consecutive runs, IDENTICAL fingerprints between runs, zero "database is locked" lines; exactly one park warning in the whole run (the new test's own — no existing suite hits the park path).** Only diff vs the Batch D baseline is the documented test_loot_auto_distributor RNG wobble (2→1 assertions in an already-failing suite). Net-zero.
+**Known issues:**
+- **The 2026-06-11 scheduler review arc is COMPLETE** — all five batches landed (A: FIFO ties/clamp/due-gate/pause-signal protocol; B: day-axis→rounds conversion + tripwire; C: WAL + debounced clock + atomic clock/queue flush; D: load_slot ordering + transition re-entrancy guard; E: park-don't-consume + siege reseed + live dispatch). Remaining items from the review are cleanup-grade carry-forwards only.
+- Parked events whose handler never registers again accumulate (bounded by real content; visible in size()/outliner). Acceptable; revisit if a never-registered type appears.
+- Parked-event re-injection of long-parked events logs the >2-days-past tripwire warning once per event on release/load — informative, not a defect.
+- Still parked for Jedidiah: the pause-menu auto-restore UX question (close menu → restore pre-menu clock speed?).
+**Next session should:**
+1. (Optional cleanup carry-forwards) Migrate the ~48 `_calendar_day()` copies to `Timekeeping.get_calendar_day()`; merge the duplicated drain blocks in SchedulerLoop._tick_normal; delete dead `minute_advanced` signal + `auto_pause_triggered` external contract if still unconsumed.
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+3. Multi-party context-switch Option 1 (docs/handoff_party_context_switching.md) awaits its §5 rulings.
+
+## Session 2026-06-12 — Pause menu auto-restores pre-menu clock speed (Jedidiah ruling)
+
+**Task:** Implement Jedidiah's ruling on the question parked since Batch A: closing the pause menu SHOULD auto-restore the clock speed that was running when it opened. (The pre-Batch-A code only *pretended* to do this via a spoofed scheduler_resumed emit; Batch A removed the spoof and left both close paths as stay-paused pending this ruling.)
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **`scenes/ui/pause/pause_menu_overlay.gd`:** on open, `_toggle_pause` captures the loop state (`_was_running_before_menu` + `_speed_before_menu` via a `_scheduler_loop()` runner lookup) BEFORE emitting the pause request. New `_close_and_restore_clock()` — shared by the Escape-close path and the Resume button (previously inconsistent contracts) — hides the menu, resumes GameState, and re-emits `clock_speed_requested(_speed_before_menu)` when the clock was running at open time. The restore routes through SchedulerLoop.set_speed → resume(), which emits the REAL scheduler_resumed and clears stale auto-pause state (Batch A's delegation) — UI still never emits scheduler signals directly (conventions §19.1).
+- **Edge cases (deliberate):** menu opened while already paused (manual pause, combat) → close leaves the clock paused; Settings path unchanged (world stays paused under the settings screen); Quit path unchanged (session teardown); MAX speed (-1) restores correctly through resume(-1); no-session lookup failure captures "not running" → no restore.
+**Decisions made:**
+- Restore is keyed to the OPEN-time capture, not a signal-tracked shadow speed — direct `loop.is_paused()/get_speed()` reads via the established `get_node_or_null("SessionRunner")` pattern (no stale-subscription risk).
+- Settings deliberately does NOT restore: the game must not advance unseen beneath the settings screen; the player returns to a paused world.
+**Interfaces defined or changed:**
+- None engine-side. UI behavior change: both pause-menu close paths now restore the pre-menu clock speed.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None (the overlay is never instantiated in headless suites; behavior verified by code trace). **Suite run: 435 passed / 17 failed, zero "database is locked" lines, failure fingerprint IDENTICAL to the Batch E baseline** — parse-clean, net-zero.
+**Known issues:**
+- If the player unpauses via keyboard shortcuts while the menu is open (backdrop blocks mouse but not key input), close re-applies the captured speed over their choice — harmless retune, noted for completeness.
+**Next session should:**
+1. (Optional cleanup carry-forwards) Migrate the ~48 `_calendar_day()` copies to `Timekeeping.get_calendar_day()`; merge the duplicated drain blocks in SchedulerLoop._tick_normal.
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+3. Multi-party context-switch Option 1 (docs/handoff_party_context_switching.md) awaits its §5 rulings.
+
+## Session 2026-06-12 — Cleanup carry-forwards: calendar-day dedup (49 sites), drain-block merge, has_event_for_owner, dead code
+
+**Task:** Land the cleanup carry-forwards from the scheduler review arc: deduplicate the ~49 copy-pasted `_calendar_day()` helpers into the canonical Timekeeping accessors, merge the duplicated drain blocks in `SchedulerLoop._tick_normal`, add the `EventScheduler.has_event_for_owner` idempotency helper (5 call sites hand-rolled it), and clear the small dead-code items (zero-subscriber `minute_advanced` signal, dead camp `start_watch` local, the lying `auto_pause_triggered` doc comment).
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **Calendar-day serial dedup (49 sites → 2 canonical functions):** new `Timekeeping.calendar_day_from_date(date)` joins `get_calendar_day()` (Batch B) as the only homes of the day-serial formula. A scripted sweep replaced the identical 5-line body in 46 files (25 activity handlers, strenuous_accountant, activity_time_cost_executor, army_marcher/supply_tracker/vagary_ticker, sanctum_apprentice_resolver, follower_arrival_resolver, 10 UI dialogs/sub-tabs/blocks) with `return Timekeeping.get_calendar_day()`; 3 manual variants — `domain_handlers._calendar_day_from_date` and `commission_pipeline._calendar_day_from_date` delegate to `calendar_day_from_date(date)`, `encounters_threats_sub_tab._calendar_day_today` delegates to `get_calendar_day()`. Helper names/signatures unchanged (zero call-site churn). Repo-wide grep confirms the formula now exists ONLY in timekeeping.gd.
+- **`EventScheduler.has_event_for_owner(owner_id, event_type) -> bool`** — covers queued AND parked events; converted the 5 hand-rolled scans (wilderness day/noon tick guards, dungeon light-tick guard, disease cure-tick guard incl. its duck-type has_method shape, out_of_combat_cast_flow travel check) plus the Batch E siege reconcile's pending-dict idiom.
+- **`SchedulerLoop._tick_normal` drain merge:** the two identical 4-line drain-accumulated-and-break blocks (queue-empty arm and event-beyond-reach arm) are now one shared block behind `next_event == null or rounds_to_event > accumulated`; rounds_to_event computed once with `maxi(0, ...)`. Behavior identical (suite-verified).
+- **Dead code:** `Timekeeping.minute_advanced` signal deleted (zero subscribers anywhere; tombstone comment in `_emit_boundary_signals` notes effect durations tick on round/turn granularity); camp_state's unused `start_watch` local removed and replaced with a comment documenting that the resume-from-combat watch index is deliberately un-threaded (the combat return path routes to wilderness — a mid-rest resume is unreachable; schedule_watches needs a start-watch param if ever wired); `auto_pause_triggered`/`auto_pause_reason` doc comment corrected (claimed "SessionRunner reads and clears" — it never did; they are test/debug diagnostics, the reason travels in scheduler_paused via pause(reason)).
+- **Conventions:** §6.8 calendar block GOOD example now shows the two delegation forms ("never re-inline the formula"); §19.5 gains the idempotent-scheduling bullet (has_event_for_owner, never hand-rolled scans).
+**Decisions made:**
+- **Delegation over deletion:** the 49 helpers keep their names and call sites; only bodies became one-line delegations — minimal diff, zero behavioral risk, and subsystem code keeps reading naturally.
+- **NOT done (deliberately out of scope):** the context-enum refactor for `_speed_table_for_timescale` and a shared `next_event_dict` builder (larger refactors, not carried forward); `party_selector_tabs.gd` dead widget retained (documented building block in docs/handoff_party_context_switching.md).
+**Interfaces defined or changed:**
+- NEW `Timekeeping.calendar_day_from_date(date: Dictionary) -> int`; NEW `EventScheduler.has_event_for_owner(owner_id, event_type) -> bool`.
+- REMOVED `Timekeeping.minute_advanced` signal (zero consumers existed; reintroduce only with a real consumer).
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None added — pure refactor; the existing calendar-serial regression tests (test_activity_time_cost_executor pins get_total_days()+1 identity), the day/noon-tick idempotency tests, and the Batch E park/reseed tests pin all touched behavior.
+- **Result: 435 passed / 17 failed on two consecutive runs, fingerprints IDENTICAL to each other AND to the Batch E baseline (no flake wobble this time), zero "database is locked" lines, script-error set byte-identical to baseline.** Net-zero across a 50-file sweep.
+**Known issues:**
+- None new. Remaining nice-to-haves (not carried forward as tasks): context-enum for the speed-table dispatch; shared next_events dict builder; dungeon_map_renderer_3d still reads DUNGEON_SPEEDS directly (pinned to dungeon context — divergence risk only if bands retune).
+**Next session should:**
+1. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+2. Multi-party context-switch Option 1 (docs/handoff_party_context_switching.md) awaits its §5 rulings.
+3. Note: today's full arc (single timeline through cleanup) is uncommitted working-tree state — a git commit checkpoint would be prudent before the next feature wave.

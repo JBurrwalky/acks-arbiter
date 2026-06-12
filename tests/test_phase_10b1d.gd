@@ -16,7 +16,8 @@ extends "res://tests/test_suite_base.gd"
 ##     - Mage aspirant with INT 17 → high modifier → almost always promotes
 ##     - Cleric aspirant uses WIS not INT
 ##     - Failed throw sets status='failed_promotion'
-##   - Aspirant promotion_eligible_day = joined_day + 120 per Q20.
+##   - Aspirant promotion_eligible_day = joined_day + 4 months per Q20
+##     (112 days on the 13×28 calendar).
 
 
 var _campaign_id: String = ""
@@ -39,7 +40,7 @@ func run_all_tests() -> void:
 
 	# Spawn paths
 	test_mage_sanctum_spawns_apprentices_and_aspirants()
-	test_mage_aspirants_have_promotion_eligible_day_120_days_out()
+	test_mage_aspirants_have_promotion_eligible_day_4_months_out()
 	test_witch_sanctum_intended_class_is_witch()
 	test_lightblessed_50_50_split()
 	test_lightblessed_cleric_aspirants_get_wis_floor_of_9()
@@ -194,7 +195,13 @@ func test_mage_sanctum_spawns_apprentices_and_aspirants() -> void:
 	check(aspirant_rows == aspirant_count, "aspirant row count mismatch")
 
 
-func test_mage_aspirants_have_promotion_eligible_day_120_days_out() -> void:
+func test_mage_aspirants_have_promotion_eligible_day_4_months_out() -> void:
+	# Q20: exactly 4 months. On the 13-month × 28-day calendar that is 112
+	# days — the original constant said 120 (a 30-day-month slip).
+	var expected_delay: int = SanctumApprenticeResolver.PROMOTION_DELAY_MONTHS \
+		* Timekeeping.DAYS_PER_MONTH
+	check(expected_delay == 112,
+		"Q20 4-month timer should be 112 days on the 13x28 calendar, got %d" % expected_delay)
 	_purge_followers_for(_mage_l9_id)
 	var sanctum_id := _create_sanctum_for(_mage_l9_id)
 	var resolver := SanctumApprenticeResolver.new()
@@ -205,8 +212,8 @@ func test_mage_aspirants_have_promotion_eligible_day_120_days_out() -> void:
 		var ad: Dictionary = a
 		var joined: int = int(ad.get("joined_calendar_day", 0))
 		var eligible: int = int(ad.get("promotion_eligible_day", 0))
-		check(eligible == joined + 120,
-			"aspirant promotion_eligible_day should be joined_day + 120 (Q20); got %d - %d = %d" % [
+		check(eligible == joined + expected_delay,
+			"aspirant promotion_eligible_day should be joined_day + 112 (Q20, 4 months); got %d - %d = %d" % [
 				eligible, joined, eligible - joined,
 			])
 

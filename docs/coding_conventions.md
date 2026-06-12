@@ -764,7 +764,7 @@ db/migrations/
 ├── 001_initial_schema.sql           # Tier 1 tables: campaigns, characters, parties, hex_maps, etc.
 ├── 002_override_log.sql             # override_log, game_snapshots, dungeon_entrances
 ├── 003_dice_roll_log.sql            # dice_rolls (session-only, capped at 200 rows)
-├── 004_timekeeping.sql              # campaign_clock, party_clocks (Timekeeping autoload)
+├── 004_timekeeping.sql              # campaign_clock, party_clocks (party_clocks dropped by 154)
 ├── 005_characters_expanded.sql      # saves, movement, alignment, aging, languages, personality, powers
 ├── 006_spell_hook_infrastructure.sql # active_effects table; inventory_items.damage_type + material
 ```
@@ -884,27 +884,28 @@ func load_settings() -> void:
 
 ### 6.8 Timekeeping Patterns
 
-<!-- Added 2026-03-27 after Timekeeping autoload build; updated 2026-04-14 for scheduler-driven advancement -->
+<!-- Added 2026-03-27 after Timekeeping autoload build; updated 2026-04-14 for scheduler-driven advancement; rewritten 2026-06-11 for the single-shared-timeline ruling; calendar-day serial convention added 2026-06-12 -->
 
-**Passive clock:** `Timekeeping` never ticks on its own. The EventScheduler (via `SchedulerLoop`) advances it by calling `Timekeeping.advance_party_rounds()` as the clock reaches each event's timestamp. No background timer, no `_process()`. Direct `advance_hours()` calls from the session runner are superseded by scheduler-driven advancement — see §19 (Event Scheduler Conventions) for the full pattern.
+**Single shared timeline (Jedidiah ruling 2026-06-11):** there is ONE world clock. `Timekeeping.get_total_rounds()` is the canonical "now" for fire_time computation, gating, ETA display, and persistence timestamps. `Timekeeping.advance_rounds(n)` (and the minute/turn/hour/day wrappers) is the only advancement API. The per-party clock API (`get_party_time`, `advance_party_*`, `register_party`, `sync_parties`, `get_leading_party`, `get_time_gap`) and the `party_clocks` table were REMOVED (migration 154) — do not reintroduce them. "This party is busy" is expressed via the order-lock (§19.5), never via clock divergence. See `docs/handoff_multi_party_time.md` for the audit and ruling.
+
+**Passive clock:** `Timekeeping` never ticks on its own. The EventScheduler (via `SchedulerLoop`) advances it by calling `Timekeeping.advance_rounds()` as the clock reaches each event's timestamp. No background timer, no `_process()`.
 
 **Advance methods emit boundary signals automatically:**
 
 ```gdscript
 # GOOD — scheduler advances time to the next event timestamp
-# (SchedulerLoop handles this automatically via advance_party_rounds)
-var delta = next_event.fire_time - Timekeeping.get_party_rounds(party_id)
-Timekeeping.advance_party_rounds(party_id, delta)
+# (SchedulerLoop handles this automatically via advance_rounds)
+var delta = next_event.fire_time - Timekeeping.get_total_rounds()
+Timekeeping.advance_rounds(delta)
 # Boundary signals (day_changed, month_changed, dawn, dusk) fire automatically
-
-# BAD — direct advance_hours() bypasses the scheduler
-Timekeeping.advance_hours(8)  # only acceptable in test setup, not game code
 
 # BAD — manually tracking time to decide whether to emit signals
 _elapsed_hours += 8
 if _elapsed_hours % 24 == 0:
     emit_signal("day_changed")   # reinventing what Timekeeping already does
 ```
+
+Direct `advance_hours()`-style calls outside the scheduler are reserved for lump-sum absorptions that are part of the design: `CombatFinalizer` (combat rounds rounded up to the turn boundary, ACKS RAW), town rest (`camp_state.gd`), hide-and-memorize (`location_cache_manager.gd`), and the GM override panel. Anything else should schedule events instead.
 
 **Boundary signals fire once per crossing, even for large advances:**
 
@@ -914,17 +915,6 @@ if _elapsed_hours % 24 == 0:
 #   → 1 × month_changed (at day 29 = month 2)
 #   → 0 × year_changed (no full year crossed)
 #   → 2-3 × dawn / dusk per day depending on start position
-```
-
-**Multi-party split:** `_elapsed_rounds` always equals the furthest-ahead party. Global boundary signals fire against this global clock, not per-party clocks.
-
-```gdscript
-# Correct split-party pattern
-Timekeeping.register_party("alpha")
-Timekeeping.register_party("beta")
-Timekeeping.advance_party_hours("alpha", 3)   # global clock = 3h
-Timekeeping.advance_party_hours("beta", 5)    # global clock = 5h, boundary signals for hours 4–5
-Timekeeping.sync_parties()                    # alpha brought up to 5h (global); no new signals
 ```
 
 **Eager DB save:** Every `advance_*()` call automatically writes to `campaign_clock` via `_auto_save()` if a campaign is loaded. The session runner does NOT need to call `save_state()` explicitly after each advance — only when explicitly restoring from a snapshot.
@@ -970,6 +960,47 @@ func _on_day_changed(_d, _m, _y) -> void:
     if season != _last_season:  # manually tracking transitions the signal already handles
         _update_agricultural_phase(season)
         _last_season = season
+```
+
+**Calendar-day serial (`calendar_day` / `started_calendar_day` columns):** the canonical day-of-campaign integer is **1-based** and uses the project's 13-month calendar:
+
+```gdscript
+# GOOD — delegate to the canonical helpers; since 2026-06-12 the formula lives
+# ONLY in Timekeeping (the 49 per-subsystem copies were deduplicated):
+return Timekeeping.get_calendar_day()            # "today"
+return Timekeeping.calendar_day_from_date(date)  # arbitrary {year, month, day} dict
+
+# The formula itself, for reference (equals get_total_days() + 1 for today):
+return ((year - 1) * Timekeeping.MONTHS_PER_YEAR + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+
+# BAD — hardcoded 12-month year: Year 2 Month 1 collides with Year 1 Month 13
+# (both = 336 + day), so cross-year elapsed-day math sees zero days at the
+# year boundary and drifts one month per elapsed year. 48 copy-pasted helpers
+# carried this bug until 2026-06-12.
+return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+
+# BAD — unshifted year/month (no -1): runs 392 days ahead of the canonical
+# serial, so elapsed = today - started_calendar_day breaks when producer and
+# consumer disagree (the pre-2026-06-12 encounters_threats_sub_tab bug).
+return year * Timekeeping.DAYS_PER_YEAR + month * Timekeeping.DAYS_PER_MONTH + day
+```
+
+Never re-inline the formula or hardcode `12`/`13` in calendar math — delegate to `Timekeeping.get_calendar_day()` / `calendar_day_from_date()`. All persisted day-serial columns (`activity_states`, `stronghold_commissions`, sieges, ledgers, `domain_religion_conversion`, etc.) share this coordinate system; a new producer or consumer MUST go through the canonical helpers or elapsed-day arithmetic silently breaks.
+
+**Day serials never enter the EventScheduler.** The scheduler's `fire_time` axis is ROUNDS (8,640 per day) — scheduling a day serial directly makes the event ~immediately past-due once the campaign is more than an hour old (the pre-2026-06-12 call-to-arms/siege/disease bug). Convert at the scheduling boundary with `Timekeeping.calendar_day_to_rounds(day_serial)` (midnight of that day); keep the day serial for DB stamps. `EventScheduler.schedule()` push_warns when a fire_time lands >2 days in the past as a tripwire for this class.
+
+**Clock & event-queue persistence policy (2026-06-12):** the DB opens with `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL` (CampaignRepository._ready) — never revert to the DELETE/FULL defaults; they fsync per implicit transaction and the per-frame write paths become a disk-hammer. The world clock does NOT persist per advance: `Timekeeping.advance_*` marks a dirty flag, and `SessionRunner.flush_clock_and_queue()` writes clock + scheduled_events together in ONE transaction at the choke points — every scheduler pause, every day boundary, and `save_session` (which also wraps active_effects in the same transaction). The in-memory clock is authoritative between flushes; crash exposure is bounded by the current running stretch. Two rules for code inside these transactions: only single-statement repository helpers (a callee with its own BEGIN/COMMIT commits the enclosing transaction prematurely), and signal-handler flushes must use the guarded-BEGIN pattern (`var own_txn := db.query("BEGIN TRANSACTION")` … `if own_txn: COMMIT`) since they can fire inside an enclosing transaction. Teardown ordering: pause the loop BEFORE clearing the scheduler, or the pause-flush persists an empty queue (see SessionRunner.end_session).
+
+**Durations ruled in months stay in months.** A const initializer cannot reference an autoload, so a duration that a ruling expresses in months is declared as a month count and converted at the use site — never pre-multiplied into a hardcoded day count:
+
+```gdscript
+# GOOD — sanctum_apprentice_resolver.gd (Q20: "exactly 4 months")
+const PROMOTION_DELAY_MONTHS: int = 4
+...
+"promotion_eligible_day": calendar_day + PROMOTION_DELAY_MONTHS * Timekeeping.DAYS_PER_MONTH,
+
+# BAD — pre-multiplied with the wrong month length; sat wrong for a month
+const PROMOTION_DELAY_DAYS: int = 120   # "4 months" × 30-day months on a 28-day calendar
 ```
 
 ### 6.9 Avoid SELECT-then-write on the same table inside a tight loop
@@ -1657,9 +1688,9 @@ These are not coding style — they are mechanical rules that must be followed i
 | Gold float display | `GP: 242.35` summary format using `total_cp / 100.0`. PP and EP fold into the float at ACKS rates. Breakdown format `PP: 4 | GP: 200 | EP: 0 | SP: 20 | CP: 35` ordered by value descending. | GDD §3.2 |
 | Encumbrance bands | Character: green ≤5000, yellow 5001–7000, orange 7001–10000, red 10001–max, flashing red over max (max = 20000 + STR_mod × 1000). Creature: green ≤ normal, red overload, rejected past max. | GDD §5 |
 | Location caches | Ephemeral variants (dungeon/wilderness/settlement loose) decay per 1d7 days or 1d4 weeks. Persistent variants (locked container, hidden-memorized) don't decay. Hidden wilderness caches gain +1% monthly raid risk; raids use 2d4 curve (25%–75% value) and reset the modifier. | `gdd-party-inventory.md` §8 |
-| Hide-and-memorize cost | 1 hour party time (6 turns via `Timekeeping.advance_party_turns`). No proficiency check. | GDD §8.3 |
+| Hide-and-memorize cost | 1 hour of world-clock time (6 turns via `Timekeeping.advance_turns`). No proficiency check. | GDD §8.3 |
 | Transfer validation | All inventory transfers route through `PartyInventoryTransferValidator` (RefCounted, `class_name`). Returns `{ok, reason, warnings, resolved_slot}`. Coin transfers are blocked ("use Transfer Gold modal"). Equipped clothing is immovable. Cross-location transfers rejected. Draft-saddle creatures reject cargo (explicit check — `CreatureEquipmentService` doesn't catch this). Dungeon adjacency and combat trade action are stubs for v1. | `gdd-party-inventory.md` §4 |
-| Party split/merge | Splits create a new party at the same hex via `CampaignRepository.split_party()`. Merges require co-location (same hex, same map) via `CampaignRepository.merge_parties()`. Timekeeping is synced on merge via `sync_parties()`. `GameState.active_party_id` tracks which party the player controls; switch via `GameState.set_active_party()`. Wilderness-only for v1. | `coding_conventions.md` §15.5, 2026-04-18 |
+| Party split/merge | Splits create a new party at the same hex via `CampaignRepository.split_party()`; `SessionRunner` seeds the new party's day/noon ticks on the `party_split` signal. Merges require co-location (same hex, same map) via `CampaignRepository.merge_parties()`; on `party_merged`, `SessionRunner` cancels the dissolved party's queued events and re-points the session if the primary was merged away (single-timeline rework 2026-06-11 — `sync_parties()` no longer exists). `GameState.active_party_id` tracks which party the player controls; switch via `GameState.set_active_party()`. Wilderness-only for v1. | `coding_conventions.md` §15.5/§19.5, 2026-06-11 |
 | Treasure XP | 1 XP per 1 GP of recovered coins, gems, jewelry, or special treasure. Awarded at the moment of distribution (modal Apply or Pick Up All). Equipment excluded until sell-for-XP system exists. Wired via `XPAwardCalculator.award_adventure_xp(monster_xp=0, treasure_xp=N, members)`. v1 simplification: XP awards on pickup, not "return to civilization." | `acore_adventures_and_encounters.xml`, 2026-04-18 |
 | Dungeon loot placement | Defeated dungeon monsters' treasure lands in a `location_cache` at the leader's death cell (variant `"loose"`, `location_type = "dungeon_cell"`). Cache decay rules per GDD §8.2 apply. The cell flag `has_ground_items` enables the existing Loot/Pick Up All context menu options. The dungeon Loot action opens `LootDistributionModal.open_from_cache()`. | `gdd-party-inventory.md` §8, `gdd-dungeon-map-ui.md` §3.4, 2026-04-18 |
 | Fractional caster level | The warlock casts "as a mage of two thirds class level" (PC p.47). Effective caster level = `round(2/3 × class level)` to NEAREST — 2/3 multiples never land on exactly .5, so banker's rounding is never engaged; nearest-rounding reproduces the printed slot table (= mage slots at that level). Implemented at the single choke point `CasterContext.effective_caster_level()` (`CASTER_LEVEL_RULES` const mirrors the `caster_level_rule` field on the class's casting power in `data/classes/<id>.json`); every spell resolution, dispel contest, and active-effect row inherits it. SLOTS still come from the class's own printed progression table, not from the mage table at runtime. | `rules/pc_classes_6.xml`, `caster_context.gd`, 2026-06-11 |
@@ -2305,7 +2336,7 @@ Reputation modifiers, proficiency bonuses, and the sacred ACKS modifier categori
 
 ### 19.1 Architecture Overview
 
-The game operates on a **real-time-with-pause** model. An `EventScheduler` priority queue holds future events keyed to absolute game-time timestamps (elapsed rounds). A `SchedulerLoop` ticks every frame during active gameplay, advances the party clock to the next event, resolves it via an `EventHandlerRegistry`, and repeats. The player controls clock speed (Pause/1x/2x/5x/Max).
+The game operates on a **real-time-with-pause** model. An `EventScheduler` priority queue holds future events keyed to absolute game-time timestamps (elapsed rounds). A `SchedulerLoop` ticks every frame during active gameplay, advances the world clock to the next event, resolves it via an `EventHandlerRegistry`, and repeats. The player controls clock speed (Pause/1x/2x/5x/Max).
 
 **Core classes (all `RefCounted`, owned by SessionRunner — NOT autoloads):**
 
@@ -2315,6 +2346,8 @@ The game operates on a **real-time-with-pause** model. An `EventScheduler` prior
 | `EventScheduler` | `engine/subsystems/session/event_scheduler.gd` | Sorted priority queue |
 | `EventHandlerRegistry` | `engine/subsystems/session/event_handler_registry.gd` | Maps event_type → handler Callable |
 | `SchedulerLoop` | `engine/subsystems/session/scheduler_loop.gd` | Frame-tick driver, speed control, auto-pause |
+
+**Speed & pause signal contract (2026-06-12):** `SchedulerLoop` is the ONLY emitter of `scheduler_paused` / `scheduler_resumed` / `scheduler_speed_changed` — UI must never emit these on EventBus directly (it desyncs every listener from the actual loop state; the pause-menu/save-panel spoof emits were removed). `set_speed()` delegates to `pause()` / `resume()` at the pause boundary, so toolbar pauses and unpauses always broadcast and always clear stale auto-pause state. Pass the pause reason as the `pause(reason)` parameter — never pre-set `auto_pause_reason` and then call `pause()`; the parameter is what the signal carries, so a stale reason can never be replayed. Frame deltas are clamped to `MAX_TICK_DELTA` (0.25s) inside `_tick_normal` so a window-drag hitch cannot fast-forward the world; already-due events (fire_time <= now) resolve immediately regardless of the fractional-round accumulator.
 
 ### 19.2 Event Handler Contract
 
@@ -2338,15 +2371,15 @@ Each exploration context has a handler class in `engine/subsystems/session/handl
 
 | File | Events handled |
 |---|---|
-| `wilderness_handlers.gd` | state-scoped: `travel_leg`, `wilderness_encounter_check`, `getting_lost_check`, `forced_march_check`, `wilderness_activity`, `wilderness_activity_complete`. global: `wilderness_day_tick`. |
-| `dungeon_handlers.gd` | `dungeon_movement_tick`, `dungeon_encounter_check`, `dungeon_light_tick`, `dungeon_action_complete` |
-| `settlement_handlers.gd` | `settlement_move`, `settlement_activity`, `settlement_encounter` |
-| `camp_handlers.gd` | `camp_watch`, `camp_rest_complete` |
-| `domain_handlers.gd` | `domain_monthly_tick` |
+| `wilderness_handlers.gd` | ALL GLOBAL (Option 2, 2026-06-12): `travel_leg`, `wilderness_encounter_check`, `getting_lost_check`, `forced_march_check`, `wilderness_activity`, `wilderness_activity_complete`, `wilderness_day_tick`, `wilderness_noon_tick`, tracking/pursuit/encounter events. Registered for the whole session by `SessionRunner.load_session`; background parties' chains resolve in every context. |
+| `dungeon_handlers.gd` | state-scoped: `dungeon_movement_tick`, `dungeon_encounter_check`, `dungeon_light_tick`, `dungeon_action_complete` |
+| `settlement_handlers.gd` | state-scoped: `settlement_move`, `settlement_activity`, `settlement_encounter` |
+| `camp_handlers.gd` | state-scoped: `camp_watch`, `camp_rest_complete` |
+| `domain_handlers.gd` | global: `domain_monthly_tick` |
 
-Handler classes are `RefCounted`, take a `runner` (SessionRunner) in `_init()`, and expose `register(registry)` / `unregister(registry)` methods. State objects create and own their handler instance.
+Handler classes are `RefCounted`, take a `runner` (SessionRunner) in `_init()`, and expose `register(registry)` / `unregister(registry)` methods. Dungeon/settlement/camp states create and own their handler instance; the wilderness instance is session-lifetime, owned by SessionRunner and borrowed by `WildernessExploreState` via `runner.get_wilderness_handlers()`.
 
-**Global vs state-scoped split (Phase 3, 2026-05-04):** When a handler class owns BOTH state-scoped events (only valid in one exploration state) AND global events (must fire across state transitions, like daily housekeeping), split the registration into `register_state_scoped` / `register_global` methods. `register` / `unregister` keep the all-in-one shape for tests and small handlers; `WildernessHandlers` is the canonical example — `wilderness_day_tick` is registered globally by `SessionRunner.load_session` (alongside `DomainHandlers`) so sustenance and weather rollover survive a transition to camp/dungeon/settlement, while `travel_leg`/`wilderness_encounter_check`/etc. remain state-scoped under `WildernessExploreState.enter`/`exit`.
+**Registration scope rule (amended again 2026-06-12 — park-don't-consume):** an event coming due with no registered handler is no longer destroyed — `SchedulerLoop` parks it (`EventScheduler.park`) and `EventHandlerRegistry.register()` re-injects it when a handler for its type appears, so it resolves on the next tick in the registering context. Parked events stay pending obligations: they persist via `to_dicts()`, count in `size()`/owner queries (idempotency checks see them), and are reachable by `cancel_all_for_owner`. Scope guidance therefore becomes a LATENCY decision, not a data-safety one: register globally when the event must resolve PROMPTLY regardless of the player's context (`WildernessHandlers` — background parties act in real time; Option 2), and state-scoped when deferred delivery on context entry is correct UX (`commission_ready` fires mid-wilderness, parks, and is delivered as you next enter a settlement). Dungeon/settlement/camp handlers stay state-scoped (a background party cannot occupy those contexts in v1; split/merge is wilderness-only, §12). `test_all_wilderness_handlers_register_globally` pins the global set. Background-decision policy: see `_is_wilderness_ui_active` in `wilderness_handlers.gd` (halt-and-drop) and `docs/handoff_party_context_switching.md` (the Option 1 upgrade).
 
 ### 19.4 Priority Tiebreaker Rules
 
@@ -2359,14 +2392,20 @@ When multiple events share the same timestamp, resolve in this order (lower numb
 | 20 | `PRIORITY_ARRIVAL` | Travel arrival, search complete, construction done |
 | 30 | `PRIORITY_CONSEQUENCE` | Combat start, trap trigger, domain event |
 
-Within the same priority tier, alphabetical `owner_id` breaks ties.
+Within the same priority tier, alphabetical `owner_id` breaks ties; events still tied after that resolve in **scheduling order (FIFO)** via the monotonic `sequence` stamp that `EventScheduler.schedule()` writes onto every event (added 2026-06-12). Tie order survives save/load: `get_scheduled_events` orders by `(fire_time, rowid)` and the scheduler re-stamps sequences in load order. Never construct ordering-sensitive logic on raw insertion position — the sequence stamp is the contract.
 
 ### 19.5 Time Advancement Rules
 
-- **Always use the party clock:** `Timekeeping.advance_party_rounds(party_id, n)`, not global `advance_rounds()`.
-- **Combat rounds up to the next turn:** After combat, `CombatFinalizer` advances the party clock by rounds fought, then rounds up to the next turn boundary (ACKS RAW: combat < 1 turn consumes a full turn).
-- **Party locking:** If a party's clock is ahead of the global clock (e.g., after combat rounding or dungeon exit), the party is locked from new orders until the world catches up. `SessionRunner.is_party_locked(party_id)` checks this.
-- **Dungeon time is independent:** The dungeon party's clock runs asynchronously from the overworld. On dungeon exit, the party may be time-locked.
+<!-- Rewritten 2026-06-11 for the single-shared-timeline ruling (docs/handoff_multi_party_time.md) -->
+
+- **One world clock:** `Timekeeping.get_total_rounds()` is "now"; `Timekeeping.advance_rounds(n)` advances. The per-party clock API no longer exists (§6.8). Event `owner_id` discipline is still mandatory — every scheduled event belongs to the party (or world owner like `"domain_global"`) it concerns, for cancellation and lock semantics.
+- **fire_time is always ROUNDS:** day-granular systems (sieges, disease, call-to-arms) keep their day-serial bookkeeping but convert at the scheduling boundary via `Timekeeping.calendar_day_to_rounds(day_serial)` — see the §6.8 calendar-day block.
+- **Clock persistence is debounced:** advances mark the clock dirty; `SessionRunner.flush_clock_and_queue()` persists clock + queue atomically on pause / day boundary / save (§6.8 persistence policy). Never reintroduce a per-advance save.
+- **Idempotent scheduling:** "schedule X unless one is already pending" uses `EventScheduler.has_event_for_owner(owner_id, event_type)` (covers queued AND parked events) — never a hand-rolled `get_events_for_owner` scan.
+- **Combat rounds up to the next turn:** After combat, `CombatFinalizer` advances the world clock by rounds fought, then rounds up to the next turn boundary (ACKS RAW, sacred: combat < 1 turn consumes a full turn). Background parties' events due inside the rounded window fire during the skip — ruled acceptable 2026-06-11 ("the world keeps moving").
+- **No order-lock (ruled 2026-06-12, superseding the 2026-06-11 order-lock):** under the single timeline nothing needs locking — the lock concept belonged to the abandoned catch-up-time model. **A new order supersedes the old one.** Order surfaces cancel the party's pending travel AND in-progress activity events via `cancel_all_for_owner` before scheduling replacements (wilderness: `_on_context_action`; settlement: `_on_poi_clicked` cancels `city_travel_arrival`/`city_encounter_check`/`settlement_activity`). Time already spent is spent — the world clock moved; a cancelled activity yields nothing. Do not reintroduce a lock; if a future activity must be uninterruptible, gate it at its own order surface with an explicit confirm dialog instead.
+- **Dungeon time is world time:** dungeon exploration advances the same clock as everything else; there is no async dungeon timeframe and no time-lock on exit.
+- **Party lifecycle hooks:** on `party_split`, `SessionRunner` seeds the new party's day/noon ticks immediately; on `party_merged`, it cancels the dissolved party's queued events (`cancel_all_for_owner`) and re-points the session at the survivor if the primary was merged away.
 
 ### 19.6 Dungeon Real-Time-With-Pause Model
 
@@ -3255,7 +3294,7 @@ Phase 9C polish round 7's second half wires up the runtime resolver that consume
   - **source_kind enum** (extensible): `aspirant | class_follower | race_follower | bardic_recruit | venturer_apprentice | syndicate_member | generic`. Encodes ORIGIN, never changes after creation.
   - **status enum**: `aspirant_in_training | present | on_adventure | departed | promoted_to_henchman | failed_promotion`. Encodes lifecycle state.
   - **intended_class** (TEXT, nullable): aspirants only. Set at creation (mage / cleric / witch / warlock / elven_enchanter); used by the promotion-throw resolver to pick INT-mod (mage flavor) vs. WIS-mod (cleric flavor).
-  - **promotion_eligible_day** (INTEGER, nullable): for aspirants only. Set at `joined_calendar_day + 120` (4 months × 30 days). The monthly-tick resolver in 10B.1d fires the d20 + ability_mod 14+ throw when this day is reached.
+  - **promotion_eligible_day** (INTEGER, nullable): for aspirants only. Set at `joined_calendar_day + 112` — exactly 4 months per Q20, computed as `PROMOTION_DELAY_MONTHS * Timekeeping.DAYS_PER_MONTH` on the 13×28 calendar. (Corrected 2026-06-12: the original 120 was a 30-day-month slip; rows persisted before the fix keep their +120 stamp.) The monthly-tick resolver in 10B.1d fires the d20 + ability_mod 14+ throw when this day is reached.
   - **0-level mercenaries stay in `troop_units`, not `followers`.** Hirelings paid wages without XP / treasure-share entitlement are mass-bookkept; followers are individually tracked persistent NPCs.
 
   Pattern: when the project's domain-of-discourse has a class of NPC that doesn't fit cleanly as "PC / henchman / NPC / hireling," introduce a distinct table rather than overloading existing types. Resist the temptation to make `characters.character_type` exhaustive — discriminator-overload makes lookups expensive and constraints brittle.
@@ -3264,7 +3303,7 @@ Phase 9C polish round 7's second half wires up the runtime resolver that consume
 
 - **Aspirant promotion uses a single fixed 4-month timer (per Q20 [RESOLVED 2026-05-11]).** The standard sanctum's RAW 1d6-month variability (acore-campaign-hijinks.xml §sanctums L534-538) is collapsed to fixed 4 months (the expected value of 1d6, rounded to 4). Universal across Mage / Witch / Warlock / Elven Enchanter / Lightblessed Wonderworker. The Lightblessed-specific bits are: 50/50 mage/cleric split (per Q2), cleric branch uses WIS modifier, and INT/WIS gets boosted to 9 at aspirant creation if rolled lower. Pattern: when RAW prescribes a randomized timeline but the expected-value collapse simplifies UX without changing outcomes meaningfully, prefer the fixed-value approach. Document the simplification inline so future Q's can revisit.
 
-- **`magic_research_projects` carries days_total / days_completed; monthly tick advances days_completed.** Per the Phase 10A.2 / 10B.1 pattern, in-progress research is a status-discriminated row (status='in_progress' → status='completed'|'failed'|'abandoned'). The monthly-tick stub in `domain_handlers.gd::_resolve_magic_research_month` advances `days_completed += 30` for in_progress rows; completion-throw + completion effects ship in 10B.1b/c. Pattern: long-running ACKS activities that span multiple months should encode their progress as a day-counter on the row, not as a schedule of separate "completion event" entries — keeps the monthly tick a pure UPDATE pass and avoids scheduler bloat.
+- **`magic_research_projects` rows are terminal historical records, not live progress trackers.** (Corrected 2026-06-12.) The 10B.1b/c handlers run research through the ActivityTimeCostExecutor tick system (`activity_states.ticks_accumulated` / `ticks_required`, 1 tick = 1 real day) and insert the `magic_research_projects` row only at completion, already stamped `status='completed'|'failed'` with `days_completed = days_total`. The 10B.1a monthly-tick stub that advanced `days_completed += 30` on in_progress rows was REMOVED 2026-06-12 as dead code (no producer of in_progress rows ever shipped) and unit-wrong (30-day month on the 13×28 calendar). The status enum keeps `in_progress`/`abandoned` for future waves; if a wave introduces genuinely month-paced projects, advance by `Timekeeping.DAYS_PER_MONTH`, never a hardcoded 30 (see §6.8 calendar conventions).
 
 - **Libraries and workshops reuse stronghold_id rather than spinning their own construction activity (per Q22).** Sub-structures of sanctums (libraries) and towers (workshops) reference an existing `strongholds(id)` FK. No new `construct_library` / `construct_workshop` Ongoing activity. Pattern: when RAW describes a sub-structure-of-a-stronghold construction relationship, model it as a foreign key into the parent stronghold's row and put the construction lifecycle on a `status` enum (building / operational / damaged / destroyed) rather than a separate construction-progress table. The actual gp-build-up happens via the existing stronghold-construction system; the sub-structure row gets stamped operational on completion.
 

@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-The game runs on a continuously advancing per-party in-game clock that the player can pause, slow, or accelerate. Parties, armies, construction projects, domain ticks, NPC missions, and other long-duration activities operate concurrently as scheduled events on a shared event scheduler. The player issues orders to their entities, the clock advances, and events resolve when their scheduled timestamps arrive. The game auto-pauses when something requires player attention.
+The game runs on a continuously advancing in-game world clock that the player can pause, slow, or accelerate. Parties, armies, construction projects, domain ticks, NPC missions, and other long-duration activities operate concurrently as scheduled events on a shared event scheduler. The player issues orders to their entities, the clock advances, and events resolve when their scheduled timestamps arrive. The game auto-pauses when something requires player attention.
 
 The model is inspired by Paradox grand strategy games: a living world clock with queued orders and interrupt-on-event. It replaces the previous simultaneous-declaration turn-based model where all parties declared activities and then resolved in sequence.
 
@@ -25,11 +25,15 @@ The architecture has **three cooperating layers**:
 
 3. **Dungeon movement layer (renderer-tween-driven)** — when a player-controlled entity is exploring a dungeon, movement orders are converted to BFS paths and handed to the renderer (`dungeon_map_renderer_3d.gd`). The renderer animates each token cell-by-cell with tweens whose duration scales with clock speed and the entity's movement rate. As each tween completes, a `movement_cell_reached` signal updates the logical position in `voxel_map.entity_positions`, runs mechanical checks (passability, occupancy, encounter proximity), and starts the next cell tween. This is the "RTS-style continuous movement" — visual smoothness comes from tweens, logical granularity is per-cell.
 
-Combat is a turn-based sub-game. When combat triggers, the SchedulerLoop pauses globally and combat resolves in its own loop. On combat end, `Timekeeping.advance_party_rounds(party_id, rounds_fought)` advances the clock by combat's elapsed duration; the scheduler resumes and any past-due scheduled events resolve immediately on the next tick.
+Combat is a turn-based sub-game. When combat triggers, the SchedulerLoop pauses globally and combat resolves in its own loop. On combat end, `CombatFinalizer` advances the world clock by combat's elapsed rounds rounded up to the next turn boundary (ACKS RAW: combat shorter than a turn consumes a full turn); the scheduler resumes and any past-due scheduled events resolve immediately on the next tick.
 
-### 1.2 Per-Party Clocks
+### 1.2 Single Shared Timeline (Jedidiah ruling 2026-06-11)
 
-Time is tracked per-party via `Timekeeping.advance_party_rounds(party_id, n)`. Each party has an independent timestamp. SchedulerLoop is configured for the active party at any moment. Multi-party concurrency is therefore a function of how the session runner switches active context between parties — not a single global clock.
+There is ONE world clock. `Timekeeping.get_total_rounds()` is the canonical "now" for all fire_time computation, gating, display, and persistence; `Timekeeping.advance_rounds(n)` (and its minute/turn/hour/day wrappers) is the only advancement API. Per-party clocks were removed — the 2026-06-11 audit (`docs/handoff_multi_party_time.md`) found the per-party mechanism half-built (the loop only ever advanced one frozen clock, boundary signals fired only on the leader, the time-lock's trigger was mathematically unreachable) and Jedidiah ruled asynchronous per-party timelines permanently out of scope ("async should die").
+
+Multi-party concurrency is a function of event ownership, not clocks: every party's orders are events in the shared queue owned by that `party_id`, and they resolve as the world clock passes their fire_times — PROVIDED a handler for the event type is registered (see the caveat below). There is **no order-lock** (ruled 2026-06-12): a new order supersedes the old one — order surfaces cancel the party's pending travel and activity events (`cancel_all_for_owner`) before scheduling replacements. Time already spent is spent; a cancelled activity yields nothing.
+
+**Background-party resolution (Option 2, landed 2026-06-12):** ALL wilderness handlers (travel, encounters, getting-lost, forced-march, activities, ticks) are globally registered for the session (`WildernessHandlers.register_global`, owned by SessionRunner) — background parties' chains keep resolving while the player is in a dungeon/settlement/camp. Background outcomes auto-pause and toast (arrival, lost, forced-march halt). **Background encounters halt-and-drop:** a triggered encounter for a party outside the active wilderness context cancels its journey, pauses, and toasts "holding position" — the encounter itself is dropped because the decision modal only exists in the wilderness state (`WildernessHandlers._is_wilderness_ui_active`). Caution: an unhandled event type is still popped-and-destroyed by design (`event_handler_registry.gd::resolve` returns `{}`); `test_all_wilderness_handlers_register_globally` pins full wilderness coverage. Remaining gap: no UI exists to switch dungeon↔hexmap contexts without walking to an exit — Option 1 (party-context switching), see `docs/handoff_party_context_switching.md`.
 
 ### 1.3 Session Runner Model
 
@@ -53,6 +57,7 @@ Each `ScheduledEvent` contains:
 - **`owner_id: String`** — the entity this event belongs to (party_id, character_id, domain_id, etc.)
 - **`data: Dictionary`** — event-specific payload
 - **`priority: int`** — tiebreaker for events at the same `fire_time` (lower resolves first)
+- **`sequence: int`** — monotonic FIFO stamp written by `EventScheduler.schedule()`; final tiebreaker for fully-tied events
 - **`cancelled: bool`** — soft-delete flag for lazy queue cleanup
 
 Persistence: events serialize to and from `Dictionary` via `to_dict()` / `from_dict()` so the queue survives save/load.
@@ -66,7 +71,7 @@ When multiple events share the same `fire_time`, resolve in this order (constant
 3. `PRIORITY_ARRIVAL = 20` — travel arrivals, search/lockpick/listen completions, construction milestones (default)
 4. `PRIORITY_CONSEQUENCE = 30` — combat triggers, trap fires, domain encounters
 
-Within the same priority tier, `ScheduledEvent.is_before(other)` resolves by `owner_id` alphabetically — deterministic, arbitrary, consistent. Determinism matters for replay and save/load.
+Within the same priority tier, `ScheduledEvent.is_before(other)` resolves by `owner_id` alphabetically, and events still tied after that resolve in scheduling order via the monotonic `sequence` stamp — deterministic, consistent, FIFO. Determinism matters for replay and save/load: tie order also survives persistence round-trips (rows reload in saved queue order and are re-stamped).
 
 ### 2.4 Scheduler Interface
 
@@ -280,7 +285,7 @@ Per-party midnight rollover housekeeping event (`wilderness_day_tick`, `priority
 
 **Lifecycle:**
 
-- `WildernessExploreState.enter` calls `WildernessHandlers.schedule_day_tick(scheduler, party_id)` for every party in the campaign. The helper is queue-idempotent — re-entering the wilderness state from combat/dungeon does not double-schedule. Fire time is the next midnight on the party's clock (`party_time + (ROUNDS_PER_DAY - party_time % ROUNDS_PER_DAY)`); a party sitting exactly at midnight schedules 24h out, not 0 rounds out.
+- `WildernessExploreState.enter` calls `WildernessHandlers.schedule_day_tick(scheduler, party_id)` for every party in the campaign; `SessionRunner` also seeds the day/noon ticks for a newly split-off party at split time (`_on_party_split_for_scheduler`, 2026-06-11) so sustenance starts immediately rather than at the next wilderness re-enter. The helper is queue-idempotent — re-entering the wilderness state from combat/dungeon does not double-schedule. Fire time is the next midnight on the world clock (`now + (ROUNDS_PER_DAY - now % ROUNDS_PER_DAY)`); a party sitting exactly at midnight schedules 24h out, not 0 rounds out.
 - `_handle_wilderness_day_tick` stamps `party_state.last_day_tick_round` (durable idempotency guard against a session reload double-firing the same tick), persists, emits `EventBus.wilderness_day_ticked(party_id, summary)`, **rolls today's weather for the party's hex via `WeatherCache.get_or_generate` and fires `EventBus.weather_changed` + a NotificationManager toast on severe transitions** (Phase 2), and self-reschedules at `event.fire_time + ROUNDS_PER_DAY` via the `next_events` return contract.
 - The handler does NOT auto-pause — day-tick is housekeeping. Phase 3 routes threshold-crossing toasts (`sustenance_threshold_crossed`) through `NotificationManager`; only the toast system surfaces it to the player.
 
@@ -504,11 +509,11 @@ When combat starts (`_start_dungeon_combat`):
 5. **Surprise and encounter distance** per `acore_adventures_and_encounters.xml`.
 6. **Combat plays out** in the turn-based combat sub-game on the same voxel grid (`combat_state.gd`, `combat_controller.gd`). Initiative, movement, attacks, spells, morale, conditions — all per ACKS combat rules.
 7. **Combat ends** when one side is eliminated, flees, or surrenders.
-8. **Resume the SchedulerLoop.** `combat_finalizer.gd:50` calls `Timekeeping.advance_party_rounds(party_id, rounds_fought)` — combat duration is added to the party's clock. SchedulerLoop resumes; on its next tick, any past-due scheduled events resolve immediately (`scheduler_loop.gd:258-260` handles `rounds_to_event < 0` by resolving in priority order).
+8. **Resume the SchedulerLoop.** `CombatFinalizer` advances the world clock by `rounds_fought` rounded up to the next turn boundary (ACKS RAW). SchedulerLoop resumes; on its next tick, any past-due scheduled events — including background parties' events that fell due inside the rounded window — resolve immediately (`scheduler_loop.gd` handles `rounds_to_event < 0` by resolving in priority order). Ruling 2026-06-11: the world keeps moving through the combat skip.
 
 ### 6.9 Action Timer Carve-Out
 
-A consequence of the combat resume model in §6.8: **non-combatant scheduled action timers progress through combat naturally.** A search, lockpick, listen, force-door, construction, research, or henchman-mission scheduled event was created with an absolute `fire_time`. When `Timekeeping.advance_party_rounds(party_id, rounds_fought)` advances the clock past that `fire_time` on combat resume, the next scheduler tick sees the event as past-due and resolves it immediately in priority order before normal ticking continues. Player sees the result presented after the combat outcome (e.g., "While combat raged in the next room, Bran finished picking the lock").
+A consequence of the combat resume model in §6.8: **non-combatant scheduled action timers progress through combat naturally.** A search, lockpick, listen, force-door, construction, research, or henchman-mission scheduled event was created with an absolute `fire_time`. When the world clock advances past that `fire_time` on combat resume, the next scheduler tick sees the event as past-due and resolves it immediately in priority order before normal ticking continues. Player sees the result presented after the combat outcome (e.g., "While combat raged in the next room, Bran finished picking the lock").
 
 What does NOT progress during combat is dungeon unit movement. The renderer tween layer is paused (movement orders cancelled at combat enter, §6.8 step 2). Non-combatant unit positions are unchanged at combat end.
 
@@ -520,9 +525,9 @@ Torches (6 turns), lanterns (24 turns per flask of oil), and other light sources
 
 A dungeon is attached to a hex or settlement node. The party enters by choosing to enter from the overworld or city layer. From inside, the party can exit at any cell flagged as an entrance/exit (typically a `feature: stairs_up_*` cell connecting to the surface, or any cell flagged as exit by the dungeon generator).
 
-**Time reconciliation on exit.** The dungeon consumes real game time tracked by `Timekeeping` throughout exploration. When the party exits, their per-party timestamp is wherever Timekeeping says. No bubble.
+**Time reconciliation on exit.** The dungeon consumes real game time tracked by `Timekeeping` throughout exploration — dungeon time IS world time. When the party exits, the clock is wherever Timekeeping says. No bubble.
 
-**Multi-party note.** Each party has its own `Timekeeping.party_time`. SchedulerLoop is configured for the active party; switching context to a different party reconfigures the loop. Cross-party time desync can happen (one party in a long dungeon while another travels the wilderness) and is acceptable — the model is "each party advances on its own clock; cross-party physical interactions resolve when their cells align in space and time." Combat pauses the active party's SchedulerLoop (and visually freezes other parties since they're not the active context).
+**Multi-party note (amended per ruling 2026-06-11).** All parties live on the single shared timeline; there is no cross-party time desync. While one party delves, the world clock advances for everyone — another party's scheduled events (travel arrivals, day ticks) fire as their times arrive, auto-pausing for player attention as needed. Combat pauses the SchedulerLoop globally for its duration and feeds its elapsed time back as a world-clock advance on exit (§1.2, §6.8). The earlier "each party advances on its own clock" async model was removed; see `docs/handoff_multi_party_time.md` for the audit and ruling.
 
 ---
 
@@ -568,7 +573,7 @@ This section summarizes the implementation status of design items in this GDD. U
 | EventScheduler (priority queue, soft-delete, persistence) | Implemented | `event_scheduler.gd`, `scheduled_event.gd` |
 | SchedulerLoop with pause/resume, per-context speed bands | Implemented | `scheduler_loop.gd` (C1 work landed 2026-04-27) |
 | EventHandlerRegistry + per-context handler registration | Implemented | `event_handler_registry.gd`, `handlers/*` |
-| Per-party Timekeeping clocks | Implemented | `Timekeeping.advance_party_rounds(party_id, n)` |
+| Single shared timeline, new-order-supersedes (no lock) | Implemented (2026-06-11/12, replaced per-party clocks + time-lock) | `Timekeeping.get_total_rounds()` / `advance_rounds(n)`; order surfaces cancel via `cancel_all_for_owner` |
 | Renderer-tween dungeon movement (§3) | Implemented | `dungeon_map_renderer_3d.gd:402-498` |
 | Wilderness `travel_leg` events + per-hex encounter checks | Implemented | `wilderness_handlers.gd` |
 | Wilderness `wilderness_day_tick` (per-party midnight rollover) | Implemented (Phase 1, 2026-05-04) | `wilderness_handlers.gd::_handle_wilderness_day_tick`. Self-rescheduling +24hr at `PRIORITY_ENVIRONMENTAL`. Idempotency via `party_state.last_day_tick_round`; queue-level idempotency via `WildernessHandlers.schedule_day_tick`. Phase 2 hooks weather rollover here; Phase 3 hooks SustenanceResolver per `acore_adventures_and_encounters.xml`. |

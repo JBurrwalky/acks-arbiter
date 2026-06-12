@@ -323,7 +323,7 @@ The PoI list shows Open/Closed status. Travel to a closed PoI is allowed; the ac
 | Commission equipment | Insert `commission_ready` event | Scheduler + SQLite |
 | Hire henchman | Add henchman, deduct currency | Yes (SQLite) |
 | Gather information | Mark rumor as heard | Yes (SQLite) |
-| Long Rest | Advance party clock, heal | Yes (SQLite) |
+| Long Rest | Advance world clock, heal | Yes (SQLite) |
 | Exit Settlement | Transition state, close menu/activity panel | Yes (SQLite) |
 
 ### 11.3 Removed in V1

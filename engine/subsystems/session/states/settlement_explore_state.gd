@@ -99,9 +99,6 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.connect(_on_scheduler_event_resolved)
 
-	# Check party time lock (returning from combat/dungeon in settlement).
-	runner.check_party_time_lock()
-
 	# Phase 10B.2 Wave 2: signal entry to VisitStateManager for the trade
 	# block's per-visit state (entry toll first-fire bookkeeping + Wave 4
 	# shipping-offer roll). Picks the first active PC as the active character;
@@ -216,15 +213,6 @@ func _on_poi_clicked(poi: Dictionary) -> void:
 
 	var party_id: String = _runner.get_party_id()
 
-	if _runner.is_party_locked(party_id):
-		EventBus.notification_requested.emit({
-			"type": "warning",
-			"category": "system",
-			"title": "Party Locked",
-			"body": "This party is committed to an activity.",
-		})
-		return
-
 	var poi_id: String = poi.get("id", "")
 	if poi_id.is_empty():
 		return
@@ -236,8 +224,14 @@ func _on_poi_clicked(poi: Dictionary) -> void:
 			_activity_panel.show_for_poi(poi)
 		return
 
-	# Cancel any pending travel.
+	# Cancel any pending travel AND any in-progress timed activity — a new
+	# order supersedes the old one (Jedidiah ruling 2026-06-12: no order-lock;
+	# orders are cancellable by issuing a new order).
 	_handlers.cancel_travel(_runner.get_scheduler(), party_id)
+	var cancelled_activities: int = _runner.get_scheduler().cancel_all_for_owner(
+		party_id, "settlement_activity")
+	if cancelled_activities > 0:
+		EventBus.order_cancelled.emit(party_id, "settlement_activity")
 
 	# Schedule travel.
 	var result := _handlers.schedule_travel(
@@ -318,7 +312,7 @@ func _on_shop_requested(poi: Dictionary) -> void:
 	var campaign_id: String = GameState.campaign_id
 
 	var service := ShopService.new()
-	var current_round: int = Timekeeping.get_party_time(_runner.get_party_id())
+	var current_round: int = Timekeeping.get_total_rounds()
 	var shop_data := service.open_shop(poi, market_class, settlement_id, campaign_id, current_round)
 
 	var panel := preload("res://scenes/ui/settlement/shop_panel.tscn").instantiate()
@@ -542,13 +536,7 @@ func _restore_navigation_ui() -> void:
 func _is_nighttime() -> bool:
 	if _runner == null:
 		return false
-	var party_id: String = _runner.get_party_id()
-	var elapsed: int = Timekeeping.get_party_time(party_id)
-	var time_of_day: int = elapsed % Timekeeping.ROUNDS_PER_DAY
-	# Approximation: night = 18:00 to 06:00 (3/4 to 1/4 of the day).
-	var dusk_rounds: int = Timekeeping.ROUNDS_PER_DAY * 3 / 4
-	var dawn_rounds: int = Timekeeping.ROUNDS_PER_DAY / 4
-	return time_of_day >= dusk_rounds or time_of_day < dawn_rounds
+	return not Timekeeping.is_daylight()
 
 
 func _connect(obj: Node, sig_name: String, method: Callable) -> void:

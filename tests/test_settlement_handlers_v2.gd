@@ -7,6 +7,8 @@ extends "res://tests/test_suite_base.gd"
 ##   - cross-district travel = 1 hour (360 rounds) + 2 encounter checks
 ##   - encounter checks are tagged with the right district_id
 ##   - cancel_travel removes both arrival and encounter check events
+##   - SettlementExploreState._is_nighttime() (the is_night source for
+##     schedule_travel) follows Timekeeping's dawn/dusk day cycle
 ##
 ## See gdd-settlement-exploration-ui.md v2 §5.
 
@@ -23,6 +25,7 @@ func run_all_tests() -> void:
 	test_unknown_destination_returns_empty()
 	test_cancel_travel_removes_all_pending_events()
 	test_district_encounter_modifier_changes_threshold()
+	test_is_nighttime_follows_timekeeping_day_cycle()
 	if not has_failures():
 		print("SettlementHandlersV2: all tests passed.")
 
@@ -72,20 +75,15 @@ func _make_scheduler() -> EventScheduler:
 	return EventScheduler.new()
 
 
-func _ensure_party_registered() -> void:
-	Timekeeping.register_party(PARTY_ID)
-
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 
 func test_same_district_one_turn_one_encounter_check() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
-	var start_time: int = Timekeeping.get_party_time(PARTY_ID)
+	var start_time: int = Timekeeping.get_total_rounds()
 
 	var result := handlers.schedule_travel(
 		settlement, "origin_poi", "origin_neighbor",
@@ -117,11 +115,10 @@ func test_same_district_one_turn_one_encounter_check() -> void:
 
 
 func test_cross_district_one_hour_two_encounter_checks() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
-	var start_time: int = Timekeeping.get_party_time(PARTY_ID)
+	var start_time: int = Timekeeping.get_total_rounds()
 
 	var result := handlers.schedule_travel(
 		settlement, "origin_poi", "dest_poi",
@@ -156,7 +153,6 @@ func test_cross_district_one_hour_two_encounter_checks() -> void:
 
 
 func test_same_district_destination_same_as_origin_returns_empty() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
@@ -171,7 +167,6 @@ func test_same_district_destination_same_as_origin_returns_empty() -> void:
 
 
 func test_unknown_destination_returns_empty() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
@@ -186,7 +181,6 @@ func test_unknown_destination_returns_empty() -> void:
 
 
 func test_cancel_travel_removes_all_pending_events() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
@@ -210,7 +204,6 @@ func test_cancel_travel_removes_all_pending_events() -> void:
 
 
 func test_district_encounter_modifier_changes_threshold() -> void:
-	_ensure_party_registered()
 	var settlement := _make_settlement()
 	var handlers := _make_handlers()
 	var scheduler := _make_scheduler()
@@ -235,3 +228,45 @@ func test_district_encounter_modifier_changes_threshold() -> void:
 				"d_dest (high-crime) threshold = %d, got %d" %
 				[SettlementHandlers.ENCOUNTER_THRESHOLD_HIGH_CRIME, threshold])
 	print("  district_encounter_modifier_changes_threshold: OK")
+
+
+func test_is_nighttime_follows_timekeeping_day_cycle() -> void:
+	# _is_nighttime() must delegate to Timekeeping.is_daylight() — dawn/dusk
+	# driven, season-adjustable — not the old hardcoded 18:00–06:00
+	# approximation (handoff_multi_party_time.md §3.1, fixed 2026-06-12).
+	# Private vars are assigned directly (test_timekeeping.gd pattern) so no
+	# transient day cycle is persisted to the loaded campaign.
+	var saved_rounds: int = Timekeeping._elapsed_rounds
+	var saved_dawn: int = Timekeeping._dawn_hour
+	var saved_dusk: int = Timekeeping._dusk_hour
+
+	var state := SettlementExploreState.new()
+	state._runner = RefCounted.new()  # non-null; _is_nighttime only null-checks it
+
+	# Default cycle (dawn=6, dusk=20). Hours 18–19 are the regression hours:
+	# the old approximation called them night.
+	Timekeeping._dawn_hour = 6
+	Timekeeping._dusk_hour = 20
+	Timekeeping._elapsed_rounds = 19 * Timekeeping.ROUNDS_PER_HOUR
+	check(state._is_nighttime() == false, "hour 19 is daytime with default dusk=20")
+	Timekeeping._elapsed_rounds = 20 * Timekeeping.ROUNDS_PER_HOUR
+	check(state._is_nighttime() == true, "hour 20 is night with default dusk=20")
+	Timekeeping._elapsed_rounds = 5 * Timekeeping.ROUNDS_PER_HOUR
+	check(state._is_nighttime() == true, "hour 5 is night with default dawn=6")
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_HOUR
+	check(state._is_nighttime() == false, "hour 6 is daytime with default dawn=6")
+
+	# Seasonal short day (dawn=8, dusk=16): hour 17 flips to night.
+	Timekeeping._dawn_hour = 8
+	Timekeeping._dusk_hour = 16
+	Timekeeping._elapsed_rounds = 17 * Timekeeping.ROUNDS_PER_HOUR
+	check(state._is_nighttime() == true, "hour 17 is night with seasonal dusk=16")
+
+	# Null-runner guard preserved.
+	state._runner = null
+	check(state._is_nighttime() == false, "null runner returns false (guard)")
+
+	Timekeeping._dawn_hour = saved_dawn
+	Timekeeping._dusk_hour = saved_dusk
+	Timekeeping._elapsed_rounds = saved_rounds
+	print("  is_nighttime_follows_timekeeping_day_cycle: OK")

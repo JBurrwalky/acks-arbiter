@@ -28,14 +28,31 @@ extends RefCounted
 ## { event_type (String) : handler (Callable) }
 var _handlers: Dictionary = {}
 
+## Scheduler reference for parked-event re-injection (set by SessionRunner).
+## When a handler registers for a type that has parked events, those events
+## are re-queued and resolve on the next tick — e.g. a commission_ready that
+## fired in the wilderness is delivered on the next settlement entry. Null in
+## lightweight test harnesses; release is simply skipped then.
+var _scheduler: EventScheduler = null
+
+
+func set_scheduler(scheduler: EventScheduler) -> void:
+	_scheduler = scheduler
+
 
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
 ## Register a handler for [param event_type]. Overwrites any existing handler.
+## Re-injects any events of this type that were parked while no handler existed.
 func register(event_type: String, handler: Callable) -> void:
 	_handlers[event_type] = handler
+	if _scheduler != null:
+		var released := _scheduler.release_parked(event_type)
+		if released > 0:
+			print("EventHandlerRegistry: released %d parked '%s' event(s) on handler registration"
+				% [released, event_type])
 
 
 ## Unregister the handler for [param event_type].
@@ -59,6 +76,8 @@ func has_handler(event_type: String) -> bool:
 
 ## Dispatch [param event] to its registered handler.
 ## Returns the handler's result Dictionary, or an empty dict if unhandled.
+## NOTE: SchedulerLoop checks has_handler() BEFORE popping and parks unhandled
+## events — the missing-handler branch below is a defensive backstop only.
 func resolve(event: ScheduledEvent) -> Dictionary:
 	if not _handlers.has(event.event_type):
 		push_warning("EventHandlerRegistry: no handler for event_type '%s'" % event.event_type)

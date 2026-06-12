@@ -60,7 +60,7 @@ func schedule_watches(
 	scheduler: EventScheduler,
 	party_id: String,
 ) -> void:
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	var camp_end_time: int = current_time + (CampManager.TOTAL_REST_HOURS * Timekeeping.ROUNDS_PER_HOUR)
 
 	# Stamp the camp window + watch schedule on PartyData so the globally-

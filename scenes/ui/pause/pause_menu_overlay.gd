@@ -14,6 +14,13 @@ var _backdrop: ColorRect = null
 var _panel: PanelContainer = null
 var _confirm_dialog: ConfirmationPrompt = null
 
+## Clock state captured when the menu opens, restored on close (Jedidiah
+## ruling 2026-06-12: closing the pause menu auto-restores the pre-menu
+## clock speed). False when the scheduler was already paused at open time —
+## closing then leaves it paused.
+var _was_running_before_menu: bool = false
+var _speed_before_menu: int = SchedulerLoop.SPEED_NORMAL
+
 
 func _ready() -> void:
 	layer = 160
@@ -35,20 +42,46 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _toggle_pause() -> void:
 	if GameState.current_state == GameState.State.PAUSED:
-		_hide()
-		GameState.resume()
-		# Resume the scheduler if it was running before the menu opened.
-		EventBus.scheduler_resumed.emit()
+		_close_and_restore_clock()
 	elif GameState.current_state in [
 		GameState.State.EXPLORATION,
 		GameState.State.COMBAT,
 		GameState.State.DOWNTIME,
 		GameState.State.DOMAIN,
 	]:
-		# Pause the scheduler along with the game state.
+		# Capture the running clock state, then pause the scheduler along
+		# with the game state. The capture feeds the close-time restore.
+		var loop := _scheduler_loop()
+		_was_running_before_menu = loop != null and not loop.is_paused()
+		_speed_before_menu = loop.get_speed() if _was_running_before_menu \
+			else SchedulerLoop.SPEED_NORMAL
 		EventBus.clock_speed_requested.emit(SchedulerLoop.SPEED_PAUSED)
 		GameState.pause()
 		_show()
+
+
+## Close the menu and restore the clock speed captured at open time (Jedidiah
+## ruling 2026-06-12). Routed through clock_speed_requested → SchedulerLoop
+## .set_speed, which delegates to resume() and emits the real
+## scheduler_resumed — UI never emits scheduler signals directly (conventions
+## §19.1). If the scheduler was already paused when the menu opened, closing
+## leaves it paused.
+func _close_and_restore_clock() -> void:
+	_hide()
+	GameState.resume()
+	if _was_running_before_menu:
+		EventBus.clock_speed_requested.emit(_speed_before_menu)
+	_was_running_before_menu = false
+
+
+## SchedulerLoop lookup for the open-time speed capture. Null when no session
+## is mounted — capture then records "not running" and close restores nothing.
+func _scheduler_loop():
+	var main := get_parent()
+	var runner = main.get_node_or_null("SessionRunner") if main != null else null
+	if runner == null or not runner.has_method("get_scheduler_loop"):
+		return null
+	return runner.get_scheduler_loop()
 
 
 func _show() -> void:
@@ -136,10 +169,10 @@ func _add_button(parent: Control, text: String, callback: Callable) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_resume() -> void:
-	_hide()
-	GameState.resume()
-	# Scheduler remains in whatever speed state it was in before the menu.
-	# The player uses the clock speed controls to unpause the scheduler.
+	# Same contract as Escape-close: restore the pre-menu clock speed
+	# (Jedidiah ruling 2026-06-12 — previously this left the scheduler paused
+	# and the player had to unpause via the clock controls).
+	_close_and_restore_clock()
 
 
 func _on_save() -> void:
@@ -223,9 +256,10 @@ func _on_quit() -> void:
 			var main := get_parent()
 			var runner = main.get_node_or_null("SessionRunner") if main != null else null
 			if runner != null and runner.has_method("transition_to_state"):
-				# Leave PAUSED so the new state isn't entered under a stale pause.
+				# Leave the PAUSED GameState so the new state isn't entered under
+				# a stale pause. The scheduler needs no signal here — end_session
+				# tears the loop down.
 				GameState.resume()
-				EventBus.scheduler_resumed.emit()
 				runner.transition_to_state("session_end")
 			else:
 				GameState.end_session(),

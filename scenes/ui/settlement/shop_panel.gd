@@ -326,7 +326,7 @@ func _populate_pending_tab() -> void:
 
 	var current_round: int = 0
 	if _runner != null:
-		current_round = Timekeeping.get_party_time(_runner.get_party_id())
+		current_round = Timekeeping.get_total_rounds()
 
 	for commission in commissions:
 		var row := _create_pending_row(commission, current_round)
@@ -525,7 +525,7 @@ func _on_commission_pressed(item_key: String) -> void:
 	var poi: Dictionary = _shop_data.get("poi", {})
 	var scheduler = _runner.get_scheduler()
 	var party_id: String = _runner.get_party_id()
-	var current_round: int = Timekeeping.get_party_time(party_id)
+	var current_round: int = Timekeeping.get_total_rounds()
 
 	var result := _service.commission_item(
 		_selected_character_id, item_key, 1, poi, settlement_id,
@@ -542,7 +542,7 @@ func _on_commission_pressed(item_key: String) -> void:
 func _on_pickup_pressed(commission_id: String) -> void:
 	if _service == null or _selected_character_id.is_empty() or _runner == null:
 		return
-	var current_round: int = Timekeeping.get_party_time(_runner.get_party_id())
+	var current_round: int = Timekeeping.get_total_rounds()
 	var result := _service.pickup_commission(commission_id, _selected_character_id, current_round)
 	if result["success"]:
 		_status_label.text = "Picked up!"

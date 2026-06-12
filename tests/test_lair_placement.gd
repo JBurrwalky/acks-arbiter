@@ -118,7 +118,6 @@ func _setup() -> void:
 	db.query_with_bindings(
 		"INSERT INTO parties (id, campaign_id, name) VALUES (?, ?, ?)",
 		[PARTY_ID, CAMPAIGN_ID, "Test Lair Placement Party"])
-	Timekeeping.register_party(PARTY_ID)
 
 	_terrain = HexTerrainData.new()
 	_terrain.biome = HexTerrainData.BIOME_WOODS
@@ -154,7 +153,6 @@ func _teardown() -> void:
 		_runner.controller.free()
 	_runner = null
 	_handlers = null
-	Timekeeping.unregister_party(PARTY_ID)
 	var db = CampaignRepository.db
 	db.query_with_bindings(
 		"DELETE FROM specialists WHERE campaign_id = ?", [CAMPAIGN_ID])

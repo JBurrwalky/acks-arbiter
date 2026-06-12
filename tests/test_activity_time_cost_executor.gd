@@ -32,6 +32,8 @@ func run_all_tests() -> void:
 	test_ongoing_absence_increments_when_away()
 	test_ongoing_tick_tolerance_forfeits_when_absence_exceeds_ticks()
 	test_ongoing_completion_after_required_ticks()
+	test_calendar_day_uses_thirteen_month_year()
+	test_domain_handlers_calendar_day_from_date_thirteen_months()
 	if not has_failures():
 		print("ActivityTimeCostExecutor: all tests passed.")
 
@@ -240,3 +242,59 @@ func test_ongoing_completion_after_required_ticks() -> void:
 	var state := CampaignRepository.get_activity_state(state_id)
 	check(String(state.get("status", "")) == "completed",
 		"oversee_investment with 1 required tick should complete on first session, got status=%s" % state.get("status", "?"))
+
+
+# ---------------------------------------------------------------------------
+# Calendar-day serial (13-month calendar regression)
+# ---------------------------------------------------------------------------
+
+## _calendar_day() must use the project's 13-month calendar
+## (Timekeeping.MONTHS_PER_YEAR). The old (year - 1) * 12 formula made
+## Year 2 Month 1 collide with Year 1 Month 13 (both = 336 + day), so any
+## cross-year started_calendar_day / last_session_day arithmetic saw zero
+## elapsed days at the year boundary and drifted a month per elapsed year.
+func test_calendar_day_uses_thirteen_month_year() -> void:
+	var saved_rounds: int = Timekeeping._elapsed_rounds
+
+	# Year 1 Month 1 Day 1 → day-serial 1.
+	Timekeeping._elapsed_rounds = 0
+	check(_executor._calendar_day() == 1,
+		"Y1 M1 D1 should be day 1, got %d" % _executor._calendar_day())
+
+	# Year 1 Month 13 Day 1 (total_days = 336) → 337.
+	Timekeeping._elapsed_rounds = 336 * Timekeeping.ROUNDS_PER_DAY
+	var month13_day: int = _executor._calendar_day()
+	check(month13_day == 337,
+		"Y1 M13 D1 should be day 337, got %d" % month13_day)
+
+	# Year 2 Month 1 Day 1 (total_days = 364) → 365. The buggy 12-month
+	# formula returned 337 here — a collision with Y1 M13 D1.
+	Timekeeping._elapsed_rounds = 364 * Timekeeping.ROUNDS_PER_DAY
+	var year2_day: int = _executor._calendar_day()
+	check(year2_day == 365,
+		"Y2 M1 D1 should be day 365, got %d" % year2_day)
+	check(year2_day > month13_day,
+		"day serial must stay monotonic across the year boundary")
+
+	# Identity: the serial equals Timekeeping.get_total_days() + 1 at any date.
+	for total_days in [0, 27, 28, 363, 364, 391, 728, 1000]:
+		Timekeeping._elapsed_rounds = total_days * Timekeeping.ROUNDS_PER_DAY
+		check(_executor._calendar_day() == Timekeeping.get_total_days() + 1,
+			"serial should equal get_total_days()+1 at total_days=%d" % total_days)
+
+	Timekeeping._elapsed_rounds = saved_rounds
+
+
+## DomainHandlers._calendar_day_from_date stamps siege/ledger calendar days
+## with the same (formerly copy-pasted-buggy) formula; pin it too.
+func test_domain_handlers_calendar_day_from_date_thirteen_months() -> void:
+	var handlers := DomainHandlers.new(_StubRunner.new())
+	check(handlers._calendar_day_from_date({"year": 1, "month": 13, "day": 28}) == 364,
+		"Y1 M13 D28 should be day 364, got %d" % handlers._calendar_day_from_date({"year": 1, "month": 13, "day": 28}))
+	check(handlers._calendar_day_from_date({"year": 2, "month": 1, "day": 1}) == 365,
+		"Y2 M1 D1 should be day 365 (old 12-month formula collided at 337), got %d" % handlers._calendar_day_from_date({"year": 2, "month": 1, "day": 1}))
+
+
+class _StubRunner:
+	func get_campaign_id() -> String:
+		return ""

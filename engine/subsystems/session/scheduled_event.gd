@@ -5,7 +5,8 @@ extends RefCounted
 ##
 ## Events are keyed to an absolute game-time timestamp (elapsed rounds from
 ## Timekeeping). The scheduler pops events in fire_time order, resolving
-## ties by priority (lower first), then owner_id (alphabetical).
+## ties by priority (lower first), then owner_id (alphabetical), then
+## scheduling order (FIFO via the sequence stamp).
 ##
 ## Priority tiers (per GDD §2.3):
 ##   0  — Environmental / world (weather, dawn/dusk, season)
@@ -46,6 +47,12 @@ var data: Dictionary = {}
 ## Tiebreaker for events at the same fire_time. Lower resolves first.
 var priority: int = PRIORITY_ARRIVAL
 
+## Final FIFO tiebreaker, stamped by EventScheduler.schedule(). Events fully
+## tied on (fire_time, priority, owner_id) resolve in scheduling order; without
+## this, the lower-bound binary insert made ties resolve LIFO and reverse on
+## every save/load round-trip. -1 = not yet stamped.
+var sequence: int = -1
+
 ## Lazily marked true on cancellation (soft delete from queue).
 var cancelled: bool = false
 
@@ -83,6 +90,7 @@ func to_dict() -> Dictionary:
 		"owner_id": owner_id,
 		"data": data,
 		"priority": priority,
+		"sequence": sequence,
 		"cancelled": cancelled,
 	}
 
@@ -95,6 +103,7 @@ static func from_dict(d: Dictionary) -> ScheduledEvent:
 	e.owner_id = d.get("owner_id", "")
 	e.data = d.get("data", {})
 	e.priority = int(d.get("priority", PRIORITY_ARRIVAL))
+	e.sequence = int(d.get("sequence", -1))
 	e.cancelled = d.get("cancelled", false)
 	return e
 
@@ -109,4 +118,6 @@ func is_before(other: ScheduledEvent) -> bool:
 		return fire_time < other.fire_time
 	if priority != other.priority:
 		return priority < other.priority
-	return owner_id < other.owner_id
+	if owner_id != other.owner_id:
+		return owner_id < other.owner_id
+	return sequence < other.sequence

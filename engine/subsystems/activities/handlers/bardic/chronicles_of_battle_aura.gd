@@ -60,7 +60,7 @@ static func compute_aura_bonus(
 		return {"morale_delta": 0, "bard_character_id": ""}
 
 	# Query: any bard character at this location (via party_members ←→
-	# party_clocks/parties location). The simpler heuristic for v1 is to
+	# parties location). The simpler heuristic for v1 is to
 	# check the owner's party position — if a bard is in the same party,
 	# they're at the same hex.
 	if not CampaignRepository.db.query_with_bindings("""

@@ -15,6 +15,7 @@ func run_all_tests() -> void:
 	test_state_registry_has_all_states()
 	test_transition_changes_key()
 	test_transition_emits_signal()
+	test_nested_transition_skips_stale_postamble()
 	test_unknown_state_errors()
 	test_sync_game_state_wilderness()
 	test_sync_game_state_dungeon()
@@ -36,7 +37,6 @@ func run_all_tests() -> void:
 	test_weighted_pick_empty_uniform_when_zero_weights()
 
 	# Time advance
-	test_advance_exploration_time()
 
 	# EffectTicker
 	test_effect_ticker_connect_disconnect()
@@ -113,9 +113,6 @@ func _wipe_campaign_clock(campaign_id: String) -> void:
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id]
 	)
-	CampaignRepository.db.query_with_bindings(
-		"DELETE FROM party_clocks WHERE campaign_id = ?", [campaign_id]
-	)
 
 
 # ---------------------------------------------------------------------------
@@ -162,6 +159,53 @@ func test_transition_emits_signal() -> void:
 	check(from_val == "old", "from_key = old")
 	check(to_val == "new_state", "to_key = new_state")
 	print("  transition_emits_signal: OK")
+
+
+## Stub state whose enter() immediately chains to another state — models
+## SessionLoadState routing to the real destination context.
+class ChainingStubState extends SessionState:
+	var chain_target: String = ""
+	func enter(runner, _context: Dictionary) -> void:
+		if not chain_target.is_empty():
+			runner.transition_to_state(chain_target)
+
+
+func test_nested_transition_skips_stale_postamble() -> void:
+	# Re-entrancy guard (Batch D, 2026-06-12): when enter() nests a transition
+	# (SessionLoadState -> wilderness/dungeon/settlement), the OUTER frame must
+	# skip its postamble. Previously it clobbered GameState.current_location_key
+	# back to "none" (breaking location-gated actions like drop-to-ground until
+	# the next real transition) and emitted a stale ->session_load signal last.
+	var runner := _make_runner()
+	runner._current_state_key = "origin"
+	runner._current_state = SessionState.new()
+	# Stub both keys: "session_load" chains to "wilderness"; the wilderness stub
+	# is a base SessionState (location key "unknown" — anything but "none").
+	runner._state_registry["wilderness"] = func() -> SessionState: return SessionState.new()
+	runner._state_registry["session_load"] = func() -> SessionState:
+		var s := ChainingStubState.new()
+		s.chain_target = "wilderness"
+		return s
+	var sigs: Array = []
+	runner.state_transitioned.connect(func(f: String, t: String): sigs.append([f, t]))
+	GameState.current_location_key = "sentinel"
+
+	runner.transition_to_state("session_load")
+
+	check(runner._current_state_key == "wilderness",
+		"nested transition should win the final state (got '%s')" % runner._current_state_key)
+	check(GameState.current_location_key != "none",
+		"outer postamble must not clobber the location key to 'none' (got '%s')"
+		% GameState.current_location_key)
+	if not sigs.is_empty():
+		var last: Array = sigs[sigs.size() - 1]
+		check(String(last[1]) == "wilderness",
+			"last transition signal must be the real destination, got %s" % str(last))
+	# Clean up autoload state for later suites (the nested stub transition
+	# flipped GameState to EXPLORATION via _sync_game_state).
+	GameState.current_location_key = "none"
+	_reset_game_state()
+	print("  nested_transition_skips_stale_postamble: OK")
 
 
 func test_unknown_state_errors() -> void:
@@ -346,25 +390,6 @@ func test_weighted_pick_empty_uniform_when_zero_weights() -> void:
 	check(key in ["goblin", "kobold"],
 		"zero-weight table falls back to uniform pick over entries")
 	print("  weighted_pick_zero_weights: OK")
-
-
-# ---------------------------------------------------------------------------
-# Time advance test
-# ---------------------------------------------------------------------------
-
-func test_advance_exploration_time() -> void:
-	_reset_game_state()
-	_wipe_campaign_clock("test_session_c")
-	# Start a minimal session so Timekeeping has state
-	GameState.start_session("test_session_c", "test_session_p")
-	var runner := _make_runner()
-	var before_turns: int = Timekeeping.get_total_turns()
-	runner.advance_exploration_time(3)
-	var after_turns: int = Timekeeping.get_total_turns()
-	check(after_turns == before_turns + 3, "3 turns advanced, got %d → %d" % [before_turns, after_turns])
-	GameState.end_session()
-	_reset_game_state()
-	print("  advance_exploration_time: OK")
 
 
 # ---------------------------------------------------------------------------

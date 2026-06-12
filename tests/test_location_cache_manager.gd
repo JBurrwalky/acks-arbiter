@@ -517,12 +517,11 @@ func _verify_raid_loss(forced_loss_roll: int, expected_loss_pct: int) -> void:
 
 func test_hide_and_memorize_advances_time() -> void:
 	_setup()
-	Timekeeping.register_party(TEST_PARTY)
-	var before := Timekeeping.get_party_time(TEST_PARTY)
+	var before := Timekeeping.get_total_rounds()
 
 	LocationCacheManager.hide_and_memorize_wilderness_cache(Vector2i(5, 3), TEST_PARTY)
 
-	var after := Timekeeping.get_party_time(TEST_PARTY)
+	var after := Timekeeping.get_total_rounds()
 	# 6 turns × 60 rounds/turn = 360 rounds
 	check(after - before == 360,
 		"hide_and_memorize should advance 6 turns (360 rounds), got %d" % (after - before))
@@ -531,7 +530,6 @@ func test_hide_and_memorize_advances_time() -> void:
 
 func test_hide_and_memorize_creates_persistent_cache() -> void:
 	_setup()
-	Timekeeping.register_party(TEST_PARTY)
 
 	var cache_id := LocationCacheManager.hide_and_memorize_wilderness_cache(
 		Vector2i(5, 3), TEST_PARTY)

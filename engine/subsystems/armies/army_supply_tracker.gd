@@ -184,11 +184,7 @@ func run_supply_tick(army_id: String, calendar_day: int) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 func _calendar_day() -> int:
-	var date: Dictionary = Timekeeping.get_date()
-	var year: int = int(date.get("year", 1))
-	var month: int = int(date.get("month", 1))
-	var day: int = int(date.get("day", 1))
-	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+	return Timekeeping.get_calendar_day()
 
 
 func _safe_string(v: Variant, default_value: String = "") -> String:

@@ -211,7 +211,7 @@ func _advance_time_and_check(caster: CharacterData) -> void:
 		Timekeeping.advance_rounds(CAST_ROUND_DELAY)
 		return
 
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	scheduler.schedule_at(
 		current_time + CAST_ROUND_DELAY,
 		"spell_cast_complete",
@@ -253,10 +253,7 @@ func _is_blocked_by_travel_leg() -> bool:
 	var scheduler: EventScheduler = _runner.get_scheduler()
 	if party_id.is_empty() or scheduler == null:
 		return false
-	for ev in scheduler.get_events_for_owner(party_id):
-		if ev.event_type == "travel_leg":
-			return true
-	return false
+	return scheduler.has_event_for_owner(party_id, "travel_leg")
 
 
 func _emit_block_toast(body: String) -> void:

@@ -140,10 +140,12 @@ static func apply_disease_to_army(army_id: String, calendar_day: int, dice = nul
 			""", [result.disease_type, recovery_day, failed_by, roll_d20, unit_id])
 			outcome["duration_days"] = duration_days
 			outcome["recovery_day"] = recovery_day
-			# Schedule the recovery-check event.
+			# Schedule the recovery-check event. recovery_day stays a day serial
+			# for the disease_recovery_calendar_day column; the scheduler's
+			# fire_time axis is ROUNDS (midnight of the recovery day).
 			if scheduler != null:
 				scheduler.schedule_at(
-					recovery_day,
+					Timekeeping.calendar_day_to_rounds(recovery_day),
 					"disease_recovery_check",
 					unit_id,
 					{"unit_id": unit_id},
@@ -205,13 +207,15 @@ static func reconcile_cure_ticks_on_session_load(scheduler, calendar_day: int) -
 static func _schedule_cure_tick_if_absent(army_id: String, calendar_day: int, scheduler) -> void:
 	if scheduler == null or army_id.is_empty():
 		return
-	# Check if a cure tick is already pending for this army.
-	if scheduler.has_method("get_events_for_owner"):
-		for ev in scheduler.get_events_for_owner(army_id):
-			if ev != null and not ev.cancelled and String(ev.event_type) == "disease_cure_weekly_tick":
-				return
+	# Check if a cure tick is already pending for this army (has_method guard:
+	# tests may pass duck-typed stub schedulers).
+	if scheduler.has_method("has_event_for_owner") \
+			and scheduler.has_event_for_owner(army_id, "disease_cure_weekly_tick"):
+		return
+	# fire_time is ROUNDS (midnight, one week out); the SiegeHandlers reschedule
+	# continues the chain at event.fire_time + 7 * ROUNDS_PER_DAY.
 	scheduler.schedule_at(
-		calendar_day + 7,
+		Timekeeping.calendar_day_to_rounds(calendar_day + 7),
 		"disease_cure_weekly_tick",
 		army_id,
 		{"army_id": army_id},

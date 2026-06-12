@@ -34,7 +34,6 @@ func run_all_tests() -> void:
 	# magic_research_projects
 	test_create_magic_research_project_round_trip()
 	test_magic_research_project_status_enum_rejects_bad_value()
-	test_advance_magic_research_projects_for_character_increments_days()
 
 	# libraries / workshops
 	test_create_library_and_list_for_owner()
@@ -154,30 +153,11 @@ func test_magic_research_project_status_enum_rejects_bad_value() -> void:
 		"create_magic_research_project with invalid status should fail CHECK constraint and return ''")
 
 
-func test_advance_magic_research_projects_for_character_increments_days() -> void:
-	var project_id := CampaignRepository.create_magic_research_project({
-		"campaign_id": _campaign_id,
-		"character_id": _mage_id,
-		"project_kind": "spell",
-		"target_spell_key": "test_spell",
-		"target_spell_level": 1,
-		"cp_committed": 20000,
-		"days_total": 30,
-		"days_completed": 0,
-		"target_value": 14,
-		"status": "in_progress",
-		"started_calendar_day": 1,
-	})
-	check(not project_id.is_empty(), "fixture project should be created")
-	var before := CampaignRepository.get_magic_research_project(project_id)
-	var before_days: int = int(before.get("days_completed", 0))
-
-	CampaignRepository.advance_magic_research_projects_for_character(_mage_id, 30)
-
-	var after := CampaignRepository.get_magic_research_project(project_id)
-	var after_days: int = int(after.get("days_completed", 0))
-	check(after_days == before_days + 30,
-		"advance_magic_research_projects_for_character should bump days_completed by 30 (was %d, now %d)" % [before_days, after_days])
+# advance_magic_research_projects_for_character and its test were REMOVED
+# 2026-06-12: the 10B.1a monthly "+30 days" stub advance was dead code (no
+# code path ever creates an in_progress magic_research_projects row — the
+# 10B.1b/c handlers insert rows already terminal) and unit-wrong (30-day
+# month on the 13×28 calendar).
 
 
 # ---------------------------------------------------------------------------

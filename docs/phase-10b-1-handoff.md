@@ -163,10 +163,10 @@ The 1d6/month-for-6-months attrition mechanic is **fully scrapped** in favor of 
 1. Every 0-level aspirant is created as a Normal Man.
 2. For Lightblessed sanctums, the 50/50 mage/cleric split (Q2) determines `intended_class`. Mage aspirants get INT boosted to 9 if rolled lower; cleric aspirants get WIS boosted to 9 if rolled lower.
 3. For standard Mage / Witch / Warlock / Elven Enchanter sanctums, all aspirants share the caster's class intent (no ability-floor adjustment).
-4. After **exactly 4 months** (joined_calendar_day + 120), each aspirant rolls a single d20 + ability_mod (INT for mage intent, WIS for cleric intent). 14+ promotes to 1st level of intended_class; 13 or less leaves the sanctum.
+4. After **exactly 4 months** (joined_calendar_day + 112; corrected 2026-06-12 — the original +120 gloss used 30-day months on the 13 × 28 calendar), each aspirant rolls a single d20 + ability_mod (INT for mage intent, WIS for cleric intent). 14+ promotes to 1st level of intended_class; 13 or less leaves the sanctum.
 5. **No monthly attrition rolls.** The 4-month promotion throw is the sole attrition check.
 
-Schema: aspirants live in the `followers` table with source_kind='aspirant', character_class='normal_man', level=0, intended_class set, status='aspirant_in_training', promotion_eligible_day = joined_calendar_day + 120. The monthly-tick resolver in 10B.1d fires the promotion roll for due rows.
+Schema: aspirants live in the `followers` table with source_kind='aspirant', character_class='normal_man', level=0, intended_class set, status='aspirant_in_training', promotion_eligible_day = joined_calendar_day + 112 (corrected 2026-06-12, see above). The monthly-tick resolver in 10B.1d fires the promotion roll for due rows.
 
 ### Q21. Library/workshop residency requirement
 

@@ -106,12 +106,13 @@ func test_disabled_classes_are_hidden_from_roster() -> void:
 	var panel := ClassSelectionPanel.new()
 	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
 
-	for disabled_id in ["anti_paladin", "elven_ranger", "elven_courtier", "dwarven_delver"]:
+	for disabled_id in ["elven_ranger", "elven_courtier", "dwarven_delver"]:
 		check(not panel._class_buttons.has(disabled_id),
 			"%s is disabled and must not appear as a selectable class button" % disabled_id)
-	# Warlock and mystic were enabled 2026-06-11 (Player's Companion data
-	# landed) and must now appear for qualifying scores.
-	for enabled_id in ["warlock", "mystic"]:
+	# Warlock, mystic, and anti-paladin were enabled 2026-06-11 (Player's
+	# Companion data landed; anti_paladin re-enabled per Jedidiah in cabf171)
+	# and must now appear for qualifying scores.
+	for enabled_id in ["warlock", "mystic", "anti_paladin"]:
 		check(panel._class_buttons.has(enabled_id),
 			"%s is enabled and should appear as a selectable class button" % enabled_id)
 	print("  disabled_classes_are_hidden_from_roster: OK")

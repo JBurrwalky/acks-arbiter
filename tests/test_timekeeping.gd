@@ -77,7 +77,6 @@ func _reset() -> void:
 	Timekeeping._elapsed_rounds = 0
 	Timekeeping._dawn_hour      = 6
 	Timekeeping._dusk_hour      = 20
-	Timekeeping._party_clocks.clear()
 	Timekeeping._campaign_id    = ""
 	_day_count   = 0
 	_last_day    = []
@@ -128,10 +127,8 @@ func run_all_tests() -> void:
 	test_is_daylight_false_at_hour_5()
 	test_is_daylight_false_at_hour_20()
 
-	# 7. Multi-party sync
-	test_multi_party_global_tracks_leader()
-	test_multi_party_sync_equalizes_all_parties()
-	test_multi_party_get_time_gap()
+	# 7. Single shared timeline (Jedidiah ruling 2026-06-11)
+	test_single_timeline_get_total_rounds()
 
 	# 8. Day-cycle configuration
 	test_set_day_cycle_changes_is_daylight()
@@ -140,6 +137,7 @@ func run_all_tests() -> void:
 
 	# 9. Persistence round-trip
 	test_persistence_round_trip()
+	test_clock_persistence_debounced_until_flush()
 
 	# 10. get_day_of_year
 	test_get_day_of_year_first_day()
@@ -362,62 +360,25 @@ func test_is_daylight_false_at_hour_20() -> void:
 
 
 # ---------------------------------------------------------------------------
-# 7. Multi-party sync
+# 7. Single shared timeline (Jedidiah ruling 2026-06-11)
 # ---------------------------------------------------------------------------
 
-func test_multi_party_global_tracks_leader() -> void:
+func test_single_timeline_get_total_rounds() -> void:
 	_reset()
-	Timekeeping.register_party("alpha")
-	Timekeeping.register_party("beta")
+	check(Timekeeping.get_total_rounds() == 0,
+		"get_total_rounds should be 0 after reset")
 
-	# Advance alpha 3 hours — global should follow
-	Timekeeping.advance_party_hours("alpha", 3)
-	check(Timekeeping._elapsed_rounds == 3 * Timekeeping.ROUNDS_PER_HOUR,
-		"global clock should match alpha (3 hours)")
-	check(Timekeeping.get_leading_party() == "alpha",
-		"alpha should be leading party")
+	# get_total_rounds is the canonical "now" — every advance moves it.
+	Timekeeping.advance_rounds(5)
+	check(Timekeeping.get_total_rounds() == 5,
+		"get_total_rounds should reflect advance_rounds")
 
-	# Advance beta 5 hours — global should now follow beta
-	Timekeeping.advance_party_hours("beta", 5)
-	check(Timekeeping._elapsed_rounds == 5 * Timekeeping.ROUNDS_PER_HOUR,
-		"global clock should match beta (5 hours)")
-	check(Timekeeping.get_leading_party() == "beta",
-		"beta should now be leading party")
+	Timekeeping.advance_hours(3)
+	check(Timekeeping.get_total_rounds() == 5 + 3 * Timekeeping.ROUNDS_PER_HOUR,
+		"get_total_rounds should reflect advance_hours")
 
-	# Alpha is still at 3 hours
-	check(Timekeeping.get_party_time("alpha") == 3 * Timekeeping.ROUNDS_PER_HOUR,
-		"alpha's clock should still be 3 hours")
-
-
-func test_multi_party_sync_equalizes_all_parties() -> void:
-	_reset()
-	Timekeeping.register_party("alpha")
-	Timekeeping.register_party("beta")
-
-	Timekeeping.advance_party_hours("alpha", 3)
-	Timekeeping.advance_party_hours("beta", 5)
-
-	# Beta leads at 5 hours; alpha is at 3 hours; global is 5 hours
-	Timekeeping.sync_parties()
-
-	# After sync, both parties should match the global clock
-	check(Timekeeping.get_party_time("alpha") == 5 * Timekeeping.ROUNDS_PER_HOUR,
-		"alpha should match global after sync_parties()")
-	check(Timekeeping.get_party_time("beta") == 5 * Timekeeping.ROUNDS_PER_HOUR,
-		"beta should match global after sync_parties()")
-
-
-func test_multi_party_get_time_gap() -> void:
-	_reset()
-	Timekeeping.register_party("alpha")
-	Timekeeping.register_party("beta")
-
-	Timekeeping.advance_party_hours("alpha", 3)
-	Timekeeping.advance_party_hours("beta", 5)
-
-	var gap := Timekeeping.get_time_gap("alpha", "beta")
-	check(gap == 2 * Timekeeping.ROUNDS_PER_HOUR,
-		"gap between alpha(3h) and beta(5h) should be 2 hours in rounds")
+	check(Timekeeping.get_total_rounds() == Timekeeping._elapsed_rounds,
+		"get_total_rounds should equal the internal clock")
 
 
 # ---------------------------------------------------------------------------
@@ -502,6 +463,38 @@ func test_persistence_round_trip() -> void:
 
 	# Clean up — reset campaign_id so future tests don't auto-save
 	Timekeeping._campaign_id = ""
+
+
+func test_clock_persistence_debounced_until_flush() -> void:
+	_reset()
+	const TEST_CAMPAIGN := "test_timekeeping_debounce"
+	# Batch C persistence policy: the DB runs in WAL mode...
+	CampaignRepository.db.query("PRAGMA journal_mode")
+	var mode: String = ""
+	if not CampaignRepository.db.query_result.is_empty():
+		mode = String(CampaignRepository.db.query_result[0].values()[0]).to_lower()
+	check(mode == "wal", "DB should be in WAL journal mode, got '%s'" % mode)
+
+	# ...and advances mark the clock dirty instead of writing per-advance.
+	Timekeeping.save_state(TEST_CAMPAIGN)        # seed the row at 0
+	Timekeeping._campaign_id = TEST_CAMPAIGN     # simulate a loaded session
+	Timekeeping.advance_rounds(500)
+	CampaignRepository.db.query_with_bindings(
+		"SELECT elapsed_rounds FROM campaign_clock WHERE campaign_id = ?", [TEST_CAMPAIGN])
+	var persisted := int(CampaignRepository.db.query_result[0].get("elapsed_rounds", -1))
+	check(persisted == 0,
+		"advance must NOT write campaign_clock before flush (got %d)" % persisted)
+
+	check(Timekeeping.flush(), "flush should report a write when the clock is dirty")
+	CampaignRepository.db.query_with_bindings(
+		"SELECT elapsed_rounds FROM campaign_clock WHERE campaign_id = ?", [TEST_CAMPAIGN])
+	persisted = int(CampaignRepository.db.query_result[0].get("elapsed_rounds", -1))
+	check(persisted == 500, "flush should persist the advanced clock (got %d)" % persisted)
+	check(not Timekeeping.flush(), "second flush with no new advances should no-op")
+
+	# Clean up — reset campaign_id + dirty so future tests don't flush
+	Timekeeping._campaign_id = ""
+	Timekeeping._dirty = false
 
 
 # ---------------------------------------------------------------------------

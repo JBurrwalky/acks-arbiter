@@ -13,7 +13,7 @@ extends RefCounted
 
 ## Process the end of combat: mark dead PCs/creatures, award XP on victory,
 ## advance time by rounds fought.
-## [param runner]: SessionRunner (provides get_class_registry(), advance_exploration_time()).
+## [param runner]: SessionRunner (provides get_class_registry()).
 ## [param result]: Dictionary from CombatController.advance() on combat_over.
 ## [param party_data]: PartyData for the active party.
 ## [param roster]: CombatRoster — optional, used to sync creature HP/death state.
@@ -44,22 +44,16 @@ func finalize(runner, result: Dictionary, party_data: PartyData, roster: CombatR
 		_award_combat_xp(runner, result, party_data)
 
 	# 3. Advance timekeeping by combat rounds, then round up to next turn boundary.
-	#    Per ACKS RAW, combat lasting less than a turn ticks forward to the end of
-	#    the next full turn. Uses the party clock (not global) for async tracking.
+	#    Per ACKS RAW (sacred), combat lasting less than a turn consumes a full
+	#    turn. The single world clock absorbs the advance (Jedidiah ruling
+	#    2026-06-11): background parties' events due inside the rounded window
+	#    fire during the skip — the world keeps moving.
 	var rounds_fought: int = result.get("rounds", 0)
 	if rounds_fought > 0:
-		var party_id: String = runner.get_party_id()
-		if not party_id.is_empty():
-			Timekeeping.advance_party_rounds(party_id, rounds_fought)
-			# Round up to next turn boundary
-			var party_time: int = Timekeeping.get_party_time(party_id)
-			var remainder: int = party_time % Timekeeping.ROUNDS_PER_TURN
-			if remainder > 0:
-				var round_up: int = Timekeeping.ROUNDS_PER_TURN - remainder
-				Timekeeping.advance_party_rounds(party_id, round_up)
-		else:
-			# Fallback: no party registered, use global clock
-			Timekeeping.advance_rounds(rounds_fought)
+		Timekeeping.advance_rounds(rounds_fought)
+		var remainder: int = Timekeeping.get_total_rounds() % Timekeeping.ROUNDS_PER_TURN
+		if remainder > 0:
+			Timekeeping.advance_rounds(Timekeeping.ROUNDS_PER_TURN - remainder)
 
 	# 4. Persist updated character data (HP, XP, is_dead, etc.) to database.
 	_persist_party(party_data)

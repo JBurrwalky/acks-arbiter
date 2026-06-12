@@ -7,10 +7,12 @@ extends RefCounted
 ## DiseaseResolver:
 ##   "siege_daily_tick"            — daily; owner=siege_id; full sieges only
 ##   "siege_weekly_tick"           — weekly; owner=siege_id; full sieges only
-##   "siege_simplified_concluded"  — one-shot at started_day + duration_days;
-##                                    owner=siege_id; simplified sieges only
+##   "siege_simplified_concluded"  — one-shot at started_day + duration_days
+##                                    (fire_time in ROUNDS via
+##                                    calendar_day_to_rounds); simplified only
 ##   "disease_recovery_check"      — Phase 9C; one-shot at the diseased unit's
-##                                    recovery_calendar_day; owner=troop_unit_id
+##                                    recovery_calendar_day (ROUNDS axis);
+##                                    owner=troop_unit_id
 ##
 ## Registered by SessionRunner at session load. Survives state transitions
 ## (sieges and disease state may persist across travel/dungeon/settlement
@@ -156,8 +158,9 @@ func _handle_call_to_arms_tranche(event: ScheduledEvent) -> Dictionary:
 # Internals
 # ---------------------------------------------------------------------------
 
+## Canonical 1-based day serial (conventions §6.8). This previously used the
+## UNSHIFTED year*DAYS_PER_YEAR + month*DAYS_PER_MONTH + day variant, which sat
+## 392 days ahead of the canonical serial every other producer stamps — siege
+## ledger/disease day stamps now share one coordinate system.
 func _calendar_day() -> int:
-	var date: Dictionary = Timekeeping.get_date()
-	return int(date.get("year", 0)) * Timekeeping.DAYS_PER_YEAR \
-		+ int(date.get("month", 0)) * Timekeeping.DAYS_PER_MONTH \
-		+ int(date.get("day", 0))
+	return Timekeeping.get_calendar_day()

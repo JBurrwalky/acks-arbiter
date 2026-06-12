@@ -49,6 +49,9 @@ func run_all_tests() -> void:
 	test_schedule_at()
 	test_schedule_after()
 	test_persistence_round_trip()
+	test_tie_order_survives_round_trip()
+	test_park_and_release()
+	test_cancel_reaches_parked()
 	test_bulk_ordering()
 
 	print("  EventScheduler: %d checks, %d failures" % [test_count(), fail_count()])
@@ -277,6 +280,64 @@ func test_persistence_round_trip() -> void:
 	check(first.fire_time == 100, "restored first event fire_time")
 	check(first.event_type == "travel_leg", "restored first event type")
 	check(first.data.get("hex") == "0305", "restored first event data")
+
+
+func test_tie_order_survives_round_trip() -> void:
+	_setup()
+	# Two events fully tied on (fire_time, priority, owner_id) — FIFO order must
+	# survive serialization. Before the sequence stamp, each round-trip REVERSED
+	# tie order (lower-bound insert placed re-loaded equals in front).
+	var id1 := _scheduler.schedule_at(100, "type_a", "owner_z", {}, 20)
+	var id2 := _scheduler.schedule_at(100, "type_b", "owner_z", {}, 20)
+
+	var restored := EventScheduler.new()
+	restored.load_from_dicts(_scheduler.to_dicts())
+	check(restored.pop().event_id == id1, "first-scheduled tie should still pop first after a round-trip")
+	check(restored.pop().event_id == id2, "second-scheduled tie should still pop second after a round-trip")
+
+	# DB rows carry no sequence column — sequence-less dicts must be re-stamped
+	# in load order (get_scheduled_events returns saved queue order).
+	var stripped: Array = []
+	for d in _scheduler.to_dicts():
+		var c: Dictionary = d.duplicate()
+		c.erase("sequence")
+		stripped.append(c)
+	var restamped := EventScheduler.new()
+	restamped.load_from_dicts(stripped)
+	check(restamped.pop().event_id == id1, "sequence-less dicts (DB rows) should keep saved order")
+	check(restamped.pop().event_id == id2, "sequence-less dicts (DB rows) keep saved order for the second event")
+
+
+func test_park_and_release() -> void:
+	_setup()
+	# Park-don't-consume (Batch E): an event popped with no handler is parked —
+	# out of the fireable queue but still a pending obligation — and released
+	# back into the queue when its handler type registers.
+	var id := _scheduler.schedule_at(100, "orphan_type", "owner_p")
+	var ev := _scheduler.pop()
+	check(ev != null and ev.event_id == id, "popped the event")
+	_scheduler.park(ev)
+	check(_scheduler.is_empty(), "parked event is not in the fireable queue")
+	check(_scheduler.size() == 1, "parked event still counts as pending")
+	check(_scheduler.get_events_for_owner("owner_p").size() == 1,
+		"parked event visible to owner queries (idempotency checks)")
+	check(_scheduler.to_dicts().size() == 1, "parked event persists via to_dicts")
+	var released := _scheduler.release_parked("orphan_type")
+	check(released == 1, "release re-queues the parked event")
+	check(not _scheduler.is_empty(), "released event is fireable again")
+	var popped := _scheduler.pop()
+	check(popped != null and popped.event_id == id, "released event pops with its original id")
+
+
+func test_cancel_reaches_parked() -> void:
+	_setup()
+	_scheduler.schedule_at(100, "orphan_type", "owner_q")
+	_scheduler.park(_scheduler.pop())
+	var n := _scheduler.cancel_all_for_owner("owner_q")
+	check(n == 1, "cancel_all_for_owner reaches parked events")
+	check(_scheduler.release_parked("orphan_type") == 0,
+		"cancelled parked events are not released")
+	check(_scheduler.size() == 0, "cancelled parked events do not count as pending")
 
 
 func test_bulk_ordering() -> void:

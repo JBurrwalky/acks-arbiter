@@ -264,9 +264,6 @@ func exit(runner) -> void:
 	# (gdd-savegame-system.md §5.2).
 	CampaignRepository.clear_dungeon_entity_positions(runner.get_party_id())
 
-	# Check party time lock (dungeon may have advanced party clock ahead).
-	runner.check_party_time_lock()
-
 
 func handle_action(runner, action: String, payload: Dictionary) -> String:
 	match action:
@@ -402,7 +399,7 @@ func _light_source(runner, payload: Dictionary) -> void:
 	var scheduler: EventScheduler = runner.get_scheduler()
 	var party_id: String = runner.get_party_id()
 	scheduler.schedule_at(
-		Timekeeping.get_party_time(party_id) + 1,
+		Timekeeping.get_total_rounds() + 1,
 		"dungeon_light_action",
 		party_id,
 		{
@@ -791,7 +788,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 				# TODO (voxel migration): extend location_key to include level coordinate
 				# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
 				# becomes 3D (col,row,level) when the voxel schema lands.
-				var current_time: int = Timekeeping.get_party_time(party_id)
+				var current_time: int = Timekeeping.get_total_rounds()
 				scheduler.schedule_at(
 					current_time + DungeonHandlers.TURN_ROUNDS,
 					"dungeon_action_complete", party_id,
@@ -806,7 +803,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 				# TODO (voxel migration): extend location_key to include level coordinate
 				# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
 				# becomes 3D (col,row,level) when the voxel schema lands.
-				var current_time: int = Timekeeping.get_party_time(party_id)
+				var current_time: int = Timekeeping.get_total_rounds()
 				scheduler.schedule_at(
 					current_time + DungeonHandlers.TURN_ROUNDS,
 					"dungeon_action_complete", party_id,
@@ -1387,8 +1384,7 @@ func _record_abandoned_characters() -> void:
 	var party_data: PartyData = _runner.get_party_data()
 	if party_data == null:
 		return
-	var party_id: String = _runner.get_party_id()
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	var map = _controller.get_voxel_map()
 	if map == null:
 		return

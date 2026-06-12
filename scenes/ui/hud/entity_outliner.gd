@@ -238,7 +238,7 @@ func _format_activity(event_type: String) -> String:
 
 
 func _format_eta(fire_time: int) -> String:
-	var current := Timekeeping.get_party_time(GameState.party_id) if not GameState.party_id.is_empty() else 0
+	var current := Timekeeping.get_total_rounds()
 	var delta: int = fire_time - current
 	if delta <= 0:
 		return "now"

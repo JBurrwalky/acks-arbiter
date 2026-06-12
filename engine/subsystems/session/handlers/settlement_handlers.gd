@@ -96,7 +96,7 @@ func schedule_travel(
 	var dest_district_id: String = dest_poi.get("district_id", "")
 	var is_same_district: bool = origin_district_id == dest_district_id
 
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	var rounds_per_turn: int = Timekeeping.ROUNDS_PER_TURN
 
 	var total_rounds: int
@@ -185,7 +185,7 @@ func schedule_activity(
 	scheduler: EventScheduler,
 	party_id: String,
 ) -> String:
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	var duration_rounds: int = duration_turns * Timekeeping.ROUNDS_PER_TURN
 
 	var event_id := scheduler.schedule_at(

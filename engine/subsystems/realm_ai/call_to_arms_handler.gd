@@ -113,11 +113,13 @@ static func issue_call(
 	]):
 		push_error("CallToArmsHandler.issue_call: failed to insert call_to_arms_state")
 		return ""
-	# 6. Schedule three tranche events.
+	# 6. Schedule three tranche events. The scheduler's time axis is ROUNDS —
+	# convert the day-serial arithmetic via calendar_day_to_rounds (each tranche
+	# arrives at midnight of its muster-period day).
 	if scheduler != null:
 		for tranche in [1, 2, 3]:
 			scheduler.schedule_at(
-				calendar_day + period_days * tranche,
+				Timekeeping.calendar_day_to_rounds(calendar_day + period_days * tranche),
 				"call_to_arms_tranche_arrival",
 				state_id,
 				{"call_to_arms_state_id": state_id, "tranche": tranche},

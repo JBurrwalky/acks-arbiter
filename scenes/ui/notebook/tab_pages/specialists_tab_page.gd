@@ -102,7 +102,7 @@ func _refresh() -> void:
 
 	var retained: Array = CampaignRepository.list_active_specialists(campaign_id, party_id)
 	var commissions: Array = CampaignRepository.list_specialist_commissions(campaign_id, party_id)
-	var now: int = Timekeeping.get_party_time(party_id)
+	var now: int = Timekeeping.get_total_rounds()
 
 	var wages_cp: int = 0
 	for row: Dictionary in retained:
@@ -252,7 +252,7 @@ func _on_collect_pressed(commission_id: String) -> void:
 	var collector: String = _first_party_member_id(party_id)
 	var result: Dictionary = _commission_manager.collect(
 		commission_id, collector, _current_settlement_id(),
-		Timekeeping.get_party_time(party_id))
+		Timekeeping.get_total_rounds())
 	if not bool(result.get("ok", false)):
 		EventBus.notification_requested.emit({
 			"type": "warning",

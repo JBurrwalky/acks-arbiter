@@ -49,8 +49,6 @@ func _setup_two_parties() -> void:
 		_create_character(id)
 	CampaignRepository.add_party_member(TEST_PARTY_A, PC_A)
 	CampaignRepository.add_party_member(TEST_PARTY_A, PC_B)
-	Timekeeping.register_party(TEST_PARTY_A)
-	Timekeeping.register_party(TEST_PARTY_B)
 
 
 func _create_character(id: String) -> void:
@@ -75,8 +73,6 @@ func _create_character(id: String) -> void:
 
 
 func _cleanup() -> void:
-	Timekeeping.unregister_party(TEST_PARTY_A)
-	Timekeeping.unregister_party(TEST_PARTY_B)
 	for char_id in [PC_A, PC_B, PC_C]:
 		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM party_members WHERE character_id = ?", [char_id])
@@ -279,7 +275,6 @@ func test_split_preserves_invariant() -> void:
 		"PC_C should still be in PARTY_A")
 
 	# Clean up the dynamically-created party.
-	Timekeeping.unregister_party(new_pid)
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM party_members WHERE party_id = ?", [new_pid])
 	CampaignRepository.db.query_with_bindings(

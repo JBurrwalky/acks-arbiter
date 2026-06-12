@@ -82,47 +82,40 @@ func _ensure_monster_registry() -> MonsterRegistry:
 # Registration
 # ---------------------------------------------------------------------------
 
-## Register all wilderness event handlers with the registry. Convenience that
-## calls both `register_state_scoped` and `register_global`. Mostly used by
-## tests; production splits the two lifetimes (see `register_global`).
+## Register all wilderness event handlers. Alias of `register_global` — as of
+## Option 2 (background-party resolution, 2026-06-12) every wilderness event
+## is globally registered, so there is exactly one lifetime.
 func register(registry: EventHandlerRegistry) -> void:
-	register_state_scoped(registry)
 	register_global(registry)
 
 
 ## Unregister all wilderness event handlers. Mirrors `register`.
 func unregister(registry: EventHandlerRegistry) -> void:
-	unregister_state_scoped(registry)
 	unregister_global(registry)
 
 
-## Register the state-scoped subset — events that only make sense while the
-## party is in WildernessExploreState (travel, encounters, activities). The
-## state's enter/exit owns this lifetime.
-func register_state_scoped(registry: EventHandlerRegistry) -> void:
+## Register ALL wilderness event handlers globally. Owned by
+## SessionRunner.load_session (like DomainHandlers) so they survive state
+## transitions.
+##
+## Option 2 — background-party resolution (Jedidiah ruling 2026-06-12):
+## travel/encounter/getting-lost/forced-march/activity handlers used to be
+## state-scoped to WildernessExploreState. Any of their events that came due
+## while another context was active (party B's travel leg during party A's
+## dungeon delve) was popped UNHANDLED and silently destroyed — the journey
+## chain died. All handlers are multi-party correct (they resolve by
+## event.owner_id, mutate the DB directly for non-primary parties, and key UI
+## side effects on the active party), so they are now registered for the whole
+## session and background parties' chains keep resolving in every context.
+## Decision-grade interrupts (encounters) for background parties are halted
+## and dropped instead of presented — see `_is_wilderness_ui_active`.
+func register_global(registry: EventHandlerRegistry) -> void:
 	registry.register("travel_leg", _handle_travel_leg)
 	registry.register("wilderness_encounter_check", _handle_encounter_check)
 	registry.register("getting_lost_check", _handle_getting_lost_check)
 	registry.register("forced_march_check", _handle_forced_march_check)
 	registry.register(ACTIVITY_EVENT, _handle_wilderness_activity)
 	registry.register(ACTIVITY_COMPLETE_EVENT, _handle_wilderness_activity_complete)
-
-
-func unregister_state_scoped(registry: EventHandlerRegistry) -> void:
-	registry.unregister("travel_leg")
-	registry.unregister("wilderness_encounter_check")
-	registry.unregister("getting_lost_check")
-	registry.unregister("forced_march_check")
-	registry.unregister(ACTIVITY_EVENT)
-	registry.unregister(ACTIVITY_COMPLETE_EVENT)
-
-
-## Register the global subset — events that must keep firing across state
-## transitions (day-tick housekeeping for sustenance/weather rollover, and
-## Phase 5 daily tracking + pursuit checks). Owned by SessionRunner.load_session,
-## like DomainHandlers, so a party that camps or enters a dungeon mid-day
-## still ticks at midnight.
-func register_global(registry: EventHandlerRegistry) -> void:
 	registry.register(DAY_TICK_EVENT, _handle_wilderness_day_tick)
 	registry.register(NOON_TICK_EVENT, _handle_wilderness_noon_tick)
 	registry.register(TRACKING_CHECK_EVENT, _handle_tracking_check)
@@ -131,11 +124,45 @@ func register_global(registry: EventHandlerRegistry) -> void:
 
 
 func unregister_global(registry: EventHandlerRegistry) -> void:
+	registry.unregister("travel_leg")
+	registry.unregister("wilderness_encounter_check")
+	registry.unregister("getting_lost_check")
+	registry.unregister("forced_march_check")
+	registry.unregister(ACTIVITY_EVENT)
+	registry.unregister(ACTIVITY_COMPLETE_EVENT)
 	registry.unregister(DAY_TICK_EVENT)
 	registry.unregister(NOON_TICK_EVENT)
 	registry.unregister(TRACKING_CHECK_EVENT)
 	registry.unregister(PURSUIT_CATCHUP_EVENT)
 	registry.unregister(WILDERNESS_ENCOUNTER_EVENT)
+
+
+## True while the wilderness UI state is the active session context — the
+## state that can present the encounter-decision modal and hexmap feedback.
+## Background-party policy (Option 2, 2026-06-12): when this is false, a
+## background party's triggered encounter HALTS its journey (cancel + pause +
+## toast) but the encounter itself is dropped — there is no surface to decide
+## it on. Option 1 (party-context switching) upgrades this to a real decision;
+## see docs/handoff_party_context_switching.md.
+## The has_method guard keeps duck-typed test FakeRunners (which predate this
+## call) on the modal path.
+func _is_wilderness_ui_active() -> bool:
+	if _runner == null or not _runner.has_method("get_current_state_key"):
+		return true
+	return _runner.get_current_state_key() == "wilderness"
+
+
+## Toast for background-party outcomes — NotificationManager is global, so
+## these render over any context (dungeon, settlement, camp).
+func _notify_background(party_data: PartyData, title: String, body: String) -> void:
+	var party_name: String = party_data.name if party_data != null else "A party"
+	EventBus.notification_requested.emit({
+		"type": "info",
+		"category": "exploration",
+		"title": title,
+		"body": "%s: %s" % [party_name, body],
+		"duration": 5.0,
+	})
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +195,7 @@ func schedule_travel_path(
 	# fire "now" — return current_time as arrival_time so the caller's
 	# schedule_at(arrival_time, ...) lands at the next scheduler tick.
 	if path.is_empty():
-		var now: int = Timekeeping.get_party_time(party.id)
+		var now: int = Timekeeping.get_total_rounds()
 		return {
 			"event_ids": [] as Array[String],
 			"arrival_time": now,
@@ -176,7 +203,7 @@ func schedule_travel_path(
 		}
 
 	var party_id: String = party.id
-	var start_time: int = Timekeeping.get_party_time(party_id)
+	var start_time: int = Timekeeping.get_total_rounds()
 	var current_time: int = start_time
 	var event_ids: Array[String] = []
 
@@ -235,10 +262,9 @@ func schedule_travel_path(
 func schedule_day_tick(scheduler: EventScheduler, party_id: String) -> String:
 	if scheduler == null or party_id.is_empty():
 		return ""
-	for event: ScheduledEvent in scheduler.get_events_for_owner(party_id):
-		if event.event_type == DAY_TICK_EVENT:
-			return ""
-	var party_time: int = Timekeeping.get_party_time(party_id)
+	if scheduler.has_event_for_owner(party_id, DAY_TICK_EVENT):
+		return ""
+	var party_time: int = Timekeeping.get_total_rounds()
 	var rounds_into_day: int = party_time % Timekeeping.ROUNDS_PER_DAY
 	var rounds_to_midnight: int = Timekeeping.ROUNDS_PER_DAY - rounds_into_day
 	var fire_time: int = party_time + rounds_to_midnight
@@ -258,10 +284,9 @@ func schedule_day_tick(scheduler: EventScheduler, party_id: String) -> String:
 func schedule_noon_tick(scheduler: EventScheduler, party_id: String) -> String:
 	if scheduler == null or party_id.is_empty():
 		return ""
-	for event: ScheduledEvent in scheduler.get_events_for_owner(party_id):
-		if event.event_type == NOON_TICK_EVENT:
-			return ""
-	var party_time: int = Timekeeping.get_party_time(party_id)
+	if scheduler.has_event_for_owner(party_id, NOON_TICK_EVENT):
+		return ""
+	var party_time: int = Timekeeping.get_total_rounds()
 	var rounds_into_day: int = party_time % Timekeeping.ROUNDS_PER_DAY
 	@warning_ignore("integer_division")
 	var noon_round: int = Timekeeping.ROUNDS_PER_DAY / 2
@@ -366,20 +391,31 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if terrain != null:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
+			if not _is_wilderness_ui_active():
+				# Background party — halt the journey and drop the encounter
+				# (no surface to decide it on; see _is_wilderness_ui_active).
+				_cancel_party_movement_and_activity(moving_pid)
+				EventBus.order_cancelled.emit(moving_pid, "travel_leg")
+				_notify_background(party_data, "Journey Interrupted",
+					"their journey was interrupted at %s — they hold position awaiting orders." % str(coord))
+				return {
+					"auto_pause": true,
+					"pause_reason": "Background party interrupted — holding position",
+				}
 			var enc: Dictionary = encounter["encounter_data"]
 			# Phase 2: stamp encounter context with weather visibility so
 			# CombatState shrinks the spawn distance when fog/rain/snow are
 			# active. acore_adventures_and_encounters.xml §encounter_distance
 			# + DaW §severe_weather_effects (reconnaissance penalties).
 			var weather: WeatherStateData = _weather_for_hex(
-				terrain, coord, Timekeeping.get_party_time(moving_pid))
+				terrain, coord, Timekeeping.get_total_rounds())
 			if weather != null:
 				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
 
 			# Hybrid encounter-gate stamp (gdd-realtime-scheduler.md §4.3.3):
 			# any wilderness encounter trigger marks today's day_index, which
 			# gates subsequent same-day camp throws.
-			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(moving_pid))
+			_stamp_encounter_gate(party_data, Timekeeping.get_total_rounds())
 
 			# Lair substitution (gdd-lair-discovery.md §3.2): roll the
 			# creature's % In Lair; on success place a lair lazily and resolve
@@ -413,13 +449,19 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if is_active:
 		GameState.current_location_key = "hex:%d,%d" % [coord.x, coord.y]
 
-	# Check if this is the last leg — auto-pause on arrival at destination
-	# only when the arriving party is the one the player is watching.
+	# Check if this is the last leg — auto-pause on arrival when the arriving
+	# party is the one the player is watching, OR when the player is in
+	# another context entirely (Option 2: a background party's arrival is
+	# exactly the kind of world event the player must be told about).
 	var path_index: int = event.data.get("path_index", 0)
 	var path_total: int = event.data.get("path_total", 1)
 	if path_index == path_total - 1:
+		var background: bool = not _is_wilderness_ui_active()
+		if background:
+			_notify_background(party_data, "Party Arrived",
+				"arrived at %s and holds position awaiting orders." % str(coord))
 		return {
-			"auto_pause": is_active,
+			"auto_pause": is_active or background,
 			"pause_reason": "Arrived at destination",
 			"presentation": {"type": "arrival", "hex": str(coord)},
 		}
@@ -444,15 +486,25 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 	var encounter: Dictionary = _runner.do_encounter_check(terrain)
 	if encounter.get("triggered", false):
+		if not _is_wilderness_ui_active():
+			# Background party — halt and drop (see _is_wilderness_ui_active).
+			_cancel_party_movement_and_activity(event.owner_id)
+			EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
+			_notify_background(party_data, "Journey Interrupted",
+				"was interrupted at %s — they hold position awaiting orders." % str(coord))
+			return {
+				"auto_pause": true,
+				"pause_reason": "Background party interrupted — holding position",
+			}
 		var enc: Dictionary = encounter["encounter_data"]
 		# Phase 2: same visibility stamp as the travel-leg path.
 		var weather: WeatherStateData = _weather_for_hex(
-			terrain, coord, Timekeeping.get_party_time(event.owner_id))
+			terrain, coord, Timekeeping.get_total_rounds())
 		if weather != null:
 			enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
 
 		# Hybrid encounter-gate stamp (§4.3.3).
-		_stamp_encounter_gate(party_data, Timekeeping.get_party_time(event.owner_id))
+		_stamp_encounter_gate(party_data, Timekeeping.get_total_rounds())
 
 		# Lair substitution (gdd-lair-discovery.md §3.2).
 		_apply_lair_substitution(party_data, enc, coord, terrain)
@@ -506,8 +558,12 @@ func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
 		if not is_primary:
 			CampaignRepository.save_party_state(party_data.to_state_dict())
 
+		var lost_in_background: bool = not _is_wilderness_ui_active()
+		if lost_in_background:
+			_notify_background(party_data, "Party Lost",
+				"has gotten lost — they halt and await new orders.")
 		return {
-			"auto_pause": (moving_pid == GameState.active_party_id),
+			"auto_pause": (moving_pid == GameState.active_party_id) or lost_in_background,
 			"pause_reason": "Party is lost!",
 			"presentation": {"type": "getting_lost", "result": result},
 		}
@@ -529,8 +585,12 @@ func _handle_forced_march_check(event: ScheduledEvent) -> Dictionary:
 		# normal travel day and any queued follow-up activity.
 		_cancel_party_movement_and_activity(moving_pid)
 		EventBus.order_cancelled.emit(moving_pid, "travel_leg")
+		var halted_in_background: bool = not _is_wilderness_ui_active()
+		if halted_in_background:
+			_notify_background(party_data, "Forced March Halted",
+				"must rest — they halt and await new orders.")
 		return {
-			"auto_pause": (moving_pid == GameState.active_party_id),
+			"auto_pause": (moving_pid == GameState.active_party_id) or halted_in_background,
 			"pause_reason": "Party must rest — forced march limit reached",
 			"presentation": {"type": "forced_march_exhausted", "result": eligibility},
 		}
@@ -584,7 +644,7 @@ func _handle_wilderness_activity(event: ScheduledEvent) -> Dictionary:
 				"duration": 3.0,
 			})
 			var completion_data := event.data.duplicate()
-			var fire_time: int = Timekeeping.get_party_time(party_id) + Timekeeping.ROUNDS_PER_HOUR
+			var fire_time: int = Timekeeping.get_total_rounds() + Timekeeping.ROUNDS_PER_HOUR
 			EventBus.order_queued.emit(party_id, ACTIVITY_COMPLETE_EVENT, fire_time)
 			return {
 				"next_events": [{
@@ -650,7 +710,7 @@ func _handle_wilderness_activity(event: ScheduledEvent) -> Dictionary:
 				"duration": 3.0,
 			})
 			var lair_completion_data := event.data.duplicate()
-			var lair_fire_time: int = Timekeeping.get_party_time(party_id) \
+			var lair_fire_time: int = Timekeeping.get_total_rounds() \
 				+ Timekeeping.ROUNDS_PER_HOUR
 			EventBus.order_queued.emit(party_id, ACTIVITY_COMPLETE_EVENT, lair_fire_time)
 			return {
@@ -1321,11 +1381,11 @@ func _resolve_hunt_activity(party_id: String, hex_q: int, hex_r: int) -> Diction
 		if encounter.get("triggered", false):
 			var enc: Dictionary = encounter["encounter_data"]
 			var weather: WeatherStateData = _weather_for_hex(
-				terrain, Vector2i(hex_q, hex_r), Timekeeping.get_party_time(party_id))
+				terrain, Vector2i(hex_q, hex_r), Timekeeping.get_total_rounds())
 			if weather != null:
 				enc["visibility_multiplier"] = weather.encounter_visibility_multiplier()
 			# Hybrid encounter-gate stamp (§4.3.3).
-			_stamp_encounter_gate(party_data, Timekeeping.get_party_time(party_id))
+			_stamp_encounter_gate(party_data, Timekeeping.get_total_rounds())
 			# Lair substitution (gdd-lair-discovery.md §3.2).
 			_apply_lair_substitution(party_data, enc, Vector2i(hex_q, hex_r), terrain)
 			var enc_label: String = _format_encounter_label(enc)
@@ -1382,7 +1442,7 @@ func _resolve_survey_activity(party_id: String, hex_q: int, hex_r: int) -> Dicti
 	if terrain == null:
 		return {"auto_pause": true, "pause_reason": "Survey failed: no terrain data"}
 
-	var at_round: int = Timekeeping.get_party_time(party_id)
+	var at_round: int = Timekeeping.get_total_rounds()
 	var budget: int = HexLairState.get_or_roll_budget(
 		campaign_id, map_id, hex_q, hex_r, terrain, DiceSystem, at_round)
 
@@ -1499,7 +1559,7 @@ func _resolve_lair_search_hour(party_id: String, hex_q: int, hex_r: int) -> Dict
 	var controller: HexMapController = _runner.get_hex_map_controller() if _runner != null else null
 	var map_data: HexMapData = controller.get_map() if controller != null else null
 	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
-	var at_round: int = Timekeeping.get_party_time(party_id)
+	var at_round: int = Timekeeping.get_total_rounds()
 
 	# --- Wandering encounter check (resolved first per §5.4) ---------------
 	var routed_encounter: Dictionary = {}
@@ -1686,7 +1746,7 @@ func _apply_lair_substitution(
 	if roll.modified_total > pct:
 		return  # Not in its lair — the encounter resolves normally.
 
-	var at_round: int = Timekeeping.get_party_time(party_data.id)
+	var at_round: int = Timekeeping.get_total_rounds()
 	var budget: int = HexLairState.get_or_roll_budget(
 		campaign_id, map_id, coord.x, coord.y, terrain, DiceSystem, at_round)
 	var state: Dictionary = HexLairState.get_state(campaign_id, map_id, coord.x, coord.y)
@@ -1743,7 +1803,7 @@ func mark_lair_cleared(party_id: String, lair_id: String) -> bool:
 		return false
 	if row.get("cleared_at_round") != null:
 		return true  # Already cleared — keep the original round, no re-emit.
-	var at_round: int = Timekeeping.get_party_time(party_id)
+	var at_round: int = Timekeeping.get_total_rounds()
 	if not CampaignRepository.mark_lair_cleared(lair_id, at_round):
 		return false
 	EventBus.lair_cleared.emit(party_id, {
@@ -2270,7 +2330,7 @@ func attempt_evasion(party_id: String, encounter_data: Dictionary) -> Dictionary
 		# Open a pursuit_states row and schedule the first catch-up check.
 		var campaign_id: String = _runner.get_campaign_id() if _runner != null else ""
 		if not campaign_id.is_empty():
-			var now_round: int = Timekeeping.get_party_time(party_id)
+			var now_round: int = Timekeeping.get_total_rounds()
 			var pursuit_id: String = CampaignRepository.open_pursuit_state({
 				"campaign_id": campaign_id,
 				"party_id": party_id,

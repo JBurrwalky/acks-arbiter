@@ -104,16 +104,17 @@ static func escalate_to_full(siege_id: String, current_calendar_day: int, schedu
 	# Cancel any pending simplified-conclusion events for this siege.
 	if scheduler != null:
 		scheduler.cancel_all_for_owner(siege_id, "siege_simplified_concluded")
-		# Schedule full-mode ticks from tomorrow.
+		# Schedule full-mode ticks from tomorrow (fire_time is ROUNDS — the
+		# day-serial arithmetic converts via calendar_day_to_rounds).
 		scheduler.schedule_at(
-			current_calendar_day + 1,
+			Timekeeping.calendar_day_to_rounds(current_calendar_day + 1),
 			"siege_daily_tick",
 			siege_id,
 			{"siege_id": siege_id},
 			ScheduledEvent.PRIORITY_CONSEQUENCE
 		)
 		scheduler.schedule_at(
-			current_calendar_day + 7,
+			Timekeeping.calendar_day_to_rounds(current_calendar_day + 7),
 			"siege_weekly_tick",
 			siege_id,
 			{"siege_id": siege_id},

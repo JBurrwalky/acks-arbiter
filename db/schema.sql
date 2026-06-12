@@ -1054,22 +1054,16 @@ CREATE TABLE IF NOT EXISTS dice_rolls (
 
 -- Migration 004: Timekeeping tables
 
--- campaign_clock: global clock per campaign. Not FK'd to campaigns table so
--- it can be seeded in tests and pre-campaign setup without a campaigns row.
+-- campaign_clock: the single shared world clock per campaign. Not FK'd to
+-- campaigns table so it can be seeded in tests and pre-campaign setup without
+-- a campaigns row.
+-- (party_clocks, the per-party time offsets from migration 004, was dropped
+-- by migration 154 — single-shared-timeline ruling 2026-06-11.)
 CREATE TABLE IF NOT EXISTS campaign_clock (
     campaign_id    TEXT    PRIMARY KEY,
     elapsed_rounds INTEGER NOT NULL DEFAULT 0,
     dawn_hour      INTEGER NOT NULL DEFAULT 6,
     dusk_hour      INTEGER NOT NULL DEFAULT 20
-);
-
--- party_clocks: per-party time offset for split-party synchronisation.
-CREATE TABLE IF NOT EXISTS party_clocks (
-    campaign_id    TEXT    NOT NULL,
-    party_id       TEXT    NOT NULL,
-    elapsed_rounds INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (campaign_id, party_id),
-    FOREIGN KEY (campaign_id) REFERENCES campaign_clock(campaign_id)
 );
 
 -- Migration 006: Active spell effects

@@ -51,8 +51,39 @@ func run_all_tests() -> void:
 	test_handler_idempotent_on_same_fire_time()
 	test_handler_persists_last_tick_round()
 	test_handler_returns_empty_when_party_unknown()
+	test_all_wilderness_handlers_register_globally()
 	if not has_failures():
 		print("WildernessDayTick: all tests passed.")
+
+
+## Option 2 — background-party resolution (2026-06-12): EVERY wilderness event
+## type must be globally registered. If any of these goes unregistered, an
+## event of that type coming due in another context (dungeon/settlement/camp)
+## is popped unhandled and silently destroyed — a background party's travel or
+## activity chain dies. This pins the full coverage.
+func test_all_wilderness_handlers_register_globally() -> void:
+	var handlers := _make_handlers(_FakeRunner.new())
+	var registry := EventHandlerRegistry.new()
+	handlers.register_global(registry)
+	for event_type: String in [
+		"travel_leg",
+		"wilderness_encounter_check",
+		"getting_lost_check",
+		"forced_march_check",
+		WildernessHandlers.ACTIVITY_EVENT,
+		WildernessHandlers.ACTIVITY_COMPLETE_EVENT,
+		WildernessHandlers.DAY_TICK_EVENT,
+		WildernessHandlers.NOON_TICK_EVENT,
+		WildernessHandlers.TRACKING_CHECK_EVENT,
+		WildernessHandlers.PURSUIT_CATCHUP_EVENT,
+		WildernessHandlers.WILDERNESS_ENCOUNTER_EVENT,
+	]:
+		check(registry.has_handler(event_type),
+			"register_global must cover '%s'" % event_type)
+	handlers.unregister_global(registry)
+	check(not registry.has_handler("travel_leg"),
+		"unregister_global must remove travel_leg")
+	print("  all_wilderness_handlers_register_globally: OK")
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +110,6 @@ func _ensure_party_row(party_id: String) -> void:
 
 
 func _cleanup_party(party_id: String) -> void:
-	Timekeeping.unregister_party(party_id)
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM party_state WHERE party_id = ?", [party_id])
 	CampaignRepository.db.query_with_bindings(
@@ -106,10 +136,8 @@ func _make_handlers(runner: _FakeRunner) -> WildernessHandlers:
 func test_schedule_at_start_of_day() -> void:
 	var pid := _make_party_id("start")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
-	var party_time: int = Timekeeping.get_party_time(pid)
+	var party_time: int = Timekeeping.get_total_rounds()
 	var rounds_into_day: int = party_time % Timekeeping.ROUNDS_PER_DAY
 	var expected_fire: int = party_time + (Timekeeping.ROUNDS_PER_DAY - rounds_into_day)
 
@@ -140,13 +168,11 @@ func test_schedule_at_start_of_day() -> void:
 func test_schedule_mid_day() -> void:
 	var pid := _make_party_id("midday")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	# Advance the party 6 hours into the day so we're decidedly mid-day.
 	var advance_rounds: int = 6 * Timekeeping.ROUNDS_PER_HOUR
-	Timekeeping.advance_party_rounds(pid, advance_rounds)
-	var party_time: int = Timekeeping.get_party_time(pid)
+	Timekeeping.advance_rounds(advance_rounds)
+	var party_time: int = Timekeeping.get_total_rounds()
 	var rounds_into_day: int = party_time % Timekeeping.ROUNDS_PER_DAY
 	var expected_fire: int = party_time + (Timekeeping.ROUNDS_PER_DAY - rounds_into_day)
 
@@ -172,19 +198,17 @@ func test_schedule_mid_day() -> void:
 func test_schedule_at_exact_midnight_skips_to_next() -> void:
 	var pid := _make_party_id("midnight")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
-	# register_party initialises to current global clock — which earlier tests
-	# may have advanced by an arbitrary offset. Advance just enough to land on
-	# the next midnight boundary. The tick must then fire 24h from there, not
-	# 0 rounds (the day-tick represents the rollover INTO the upcoming day).
-	var initial_time: int = Timekeeping.get_party_time(pid)
+	# Earlier tests may have advanced the world clock by an arbitrary offset.
+	# Advance just enough to land on the next midnight boundary. The tick must
+	# then fire 24h from there, not 0 rounds (the day-tick represents the
+	# rollover INTO the upcoming day).
+	var initial_time: int = Timekeeping.get_total_rounds()
 	var rounds_to_midnight: int = (Timekeeping.ROUNDS_PER_DAY -
 		(initial_time % Timekeeping.ROUNDS_PER_DAY)) % Timekeeping.ROUNDS_PER_DAY
 	if rounds_to_midnight > 0:
-		Timekeeping.advance_party_rounds(pid, rounds_to_midnight)
-	var party_time: int = Timekeeping.get_party_time(pid)
+		Timekeeping.advance_rounds(rounds_to_midnight)
+	var party_time: int = Timekeeping.get_total_rounds()
 	check(party_time % Timekeeping.ROUNDS_PER_DAY == 0,
 		"sanity: party sits at exact midnight, got %d" %
 		(party_time % Timekeeping.ROUNDS_PER_DAY))
@@ -208,8 +232,6 @@ func test_schedule_at_exact_midnight_skips_to_next() -> void:
 func test_schedule_idempotent() -> void:
 	var pid := _make_party_id("idempotent")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -235,8 +257,6 @@ func test_schedule_idempotent() -> void:
 func test_handler_emits_and_reschedules() -> void:
 	var pid := _make_party_id("handler_emit")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -292,8 +312,6 @@ func test_handler_emits_and_reschedules() -> void:
 func test_handler_idempotent_on_same_fire_time() -> void:
 	var pid := _make_party_id("handler_idem")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -327,8 +345,6 @@ func test_handler_idempotent_on_same_fire_time() -> void:
 func test_handler_persists_last_tick_round() -> void:
 	var pid := _make_party_id("handler_persist")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid

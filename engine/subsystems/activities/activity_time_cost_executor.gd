@@ -506,16 +506,9 @@ func _record_absence(state: Dictionary, scheduler: EventScheduler) -> void:
 	})
 
 
-func _get_time(party_id: String) -> int:
-	if not party_id.is_empty():
-		return Timekeeping.get_party_time(party_id)
-	return Timekeeping.get_total_rounds() if Timekeeping.has_method("get_total_rounds") \
-		else Timekeeping._elapsed_rounds
+func _get_time(_party_id: String) -> int:
+	return Timekeeping.get_total_rounds()
 
 
 func _calendar_day() -> int:
-	var date: Dictionary = Timekeeping.get_date()
-	var year: int = int(date.get("year", 1))
-	var month: int = int(date.get("month", 1))
-	var day: int = int(date.get("day", 1))
-	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+	return Timekeeping.get_calendar_day()

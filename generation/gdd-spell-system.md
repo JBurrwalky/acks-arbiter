@@ -192,7 +192,7 @@ Every cast flows through these stages. The UI surface determines how the player 
     counters, and any narration tier 0 templates.
 
 (11) Time Cost (out of combat only)
-    scheduler event advances party clock by 1 round (10 s)
+    scheduler event advances world clock by 1 round (10 s)
     wandering-monster encounter check fires for the active map context
 ```
 

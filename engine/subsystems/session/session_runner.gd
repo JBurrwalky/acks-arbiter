@@ -71,10 +71,12 @@ var _baseline_npc_stocker: BaselineNpcStocker = null
 ## religious_site (tier='shrine' per Q-UGS-30). Other stronghold archetypes
 ## leave registered_settlement_poi_id NULL.
 var _stronghold_poi_registrar: StrongholdPoiRegistrar = null
-## Long-lived WildernessHandlers instance owning the global day-tick handler
-## (Phase 3, 2026-05-04). State-scoped registration still lives in
-## WildernessExploreState.enter; this instance only holds the cross-state
-## day-tick.
+## Long-lived WildernessHandlers instance owning ALL wilderness event handlers
+## (Option 2 — background-party resolution, 2026-06-12; previously only the
+## cross-state day-tick lived here and travel/encounter/activity handlers were
+## state-scoped, which silently destroyed background parties' events in other
+## contexts). WildernessExploreState borrows this instance for its scheduling
+## helpers via get_wilderness_handlers().
 var _wilderness_global_handlers: WildernessHandlers = null
 ## Global SpellHandlers — registers spell_cast_complete and
 ## spell_cast_encounter_check handlers used by OutOfCombatCastFlow (Session 3).
@@ -115,11 +117,12 @@ var _entity_outliner_layer: CanvasLayer = null
 ## State keys where the scheduler loop should tick.
 const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "encounter", "downtime"]
 
-## Parties whose time is ahead of the global clock (post-combat rounding,
-## post-dungeon exit). A locked party cannot receive new movement or activity
-## orders until the world clock catches up. The UI should gray out controls.
-## Keys: party_id (String), values: true.
-var _locked_parties: Dictionary = {}
+# Order-lock removed 2026-06-12 (Jedidiah ruling): under the single shared
+# timeline nothing needs locking — the lock's rationale belonged to the
+# abandoned catch-up-time model. Orders are cancellable by issuing a new
+# order: order surfaces cancel the party's pending travel/activity events
+# (`cancel_all_for_owner`) before scheduling the replacement. Time already
+# spent is spent (the world clock moved); a cancelled activity yields nothing.
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +294,9 @@ func _ready() -> void:
 	# Initialize event scheduler subsystem
 	_scheduler = EventScheduler.new()
 	_handler_registry = EventHandlerRegistry.new()
+	# Park-don't-consume wiring (2026-06-12): registering a handler re-injects
+	# any events of that type parked while no handler existed.
+	_handler_registry.set_scheduler(_scheduler)
 	_scheduler_loop = SchedulerLoop.new()
 	EventBus.clock_speed_requested.connect(_on_clock_speed_requested)
 	# Eyes of the Eagle V2 (2026-06-03) — refresh the party visibility bonus
@@ -300,6 +306,12 @@ func _ready() -> void:
 	# spurious renderer refresh). Handlers no-op when no party is loaded.
 	EventBus.inventory_updated.connect(_on_inventory_updated_for_visibility)
 	EventBus.active_party_changed.connect(_on_active_party_changed_for_visibility)
+	# Multi-party lifecycle (single-timeline rework, 2026-06-11): seed the
+	# split-off party's daily ticks at split time; on merge, cancel the
+	# dissolved party's queued events and re-point the session if the
+	# primary was merged away.
+	EventBus.party_split.connect(_on_party_split_for_scheduler)
+	EventBus.party_merged.connect(_on_party_merged_for_scheduler)
 	# Ring of Regeneration round-tick consumer (2026-06-03). Per ACKS Core
 	# p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates 1 hp per round.
 	# Will not regenerate if reduced to 0 hp or less." The handler scans
@@ -326,6 +338,12 @@ func _ready() -> void:
 	# on any once-per-day item with current charges < 1. Twin of the
 	# once-per-turn refactor — same shape, different time signal.
 	Timekeeping.day_changed.connect(_on_day_changed_for_once_per_day_recharge)
+	# Persistence choke points (2026-06-12): flush clock + event queue together
+	# at every scheduler pause and day boundary (save_session covers explicit
+	# saves). Replaces Timekeeping's per-advance eager save; bounds crash loss
+	# to the current running stretch. Handlers no-op when no campaign is loaded.
+	EventBus.scheduler_paused.connect(_on_scheduler_paused_for_flush)
+	Timekeeping.day_changed.connect(_on_day_changed_for_flush)
 
 	# Register all states
 	_register_states()
@@ -393,6 +411,16 @@ func transition_to_state(state_key: String, context: Dictionary = {}) -> void:
 	_current_state_key = state_key
 	_current_state = _state_registry[state_key].call()
 	_current_state.enter(self, context)
+
+	# Re-entrancy guard (2026-06-12): enter() may itself transition —
+	# SessionLoadState routes to wilderness/dungeon/settlement, and error paths
+	# (e.g. dungeon enter failing) bail to wilderness. The nested call has
+	# already run the full postamble for the REAL destination; running ours now
+	# would clobber GameState.current_location_key with this frame's stale
+	# state_key (the "drop-to-ground broken after loading into a dungeon" bug)
+	# and emit the transition signals in inverted order.
+	if _current_state_key != state_key:
+		return
 
 	# Update GameState.current_location_key for autoload consumers.
 	# Only exploration states return real keys; overlay states return "unknown"
@@ -542,6 +570,12 @@ func get_scheduler() -> EventScheduler:
 func get_handler_registry() -> EventHandlerRegistry:
 	return _handler_registry
 
+## The session-lifetime WildernessHandlers instance (all wilderness events are
+## globally registered — Option 2, 2026-06-12). WildernessExploreState borrows
+## it for scheduling helpers; null before load_session.
+func get_wilderness_handlers() -> WildernessHandlers:
+	return _wilderness_global_handlers
+
 func get_scheduler_loop() -> SchedulerLoop:
 	return _scheduler_loop
 
@@ -582,38 +616,7 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	GameState.start_session(campaign_id, party_id)
 
 	# 2. Load party data
-	_party_data = CampaignRepository.load_party_data(party_id)
-	if _party_data != null:
-		# Populate character_data
-		_party_data.character_data = []
-		var char_rows: Array = CampaignRepository.list_party_characters(party_id)
-		for row: Dictionary in char_rows:
-			var loaded_character := CharacterData.from_dict(row)
-			_party_data.character_data.append(loaded_character)
-			# Stage 2.x — restore the Familiar proficiency proximity bonus on the
-			# live CharacterData. Modifiers + flags are runtime-only fields, so
-			# they're cleared on save/load round-trip; this rehydrates the
-			# bonus for any master with a living familiar in the DB. No-op for
-			# masters without a familiar.
-			FamiliarController.apply_proximity_for_master(loaded_character)
-		# Populate shared inventory
-		var inv_rows: Array = CampaignRepository.get_party_inventory(party_id)
-		_party_data.shared_inventory = []
-		for row: Dictionary in inv_rows:
-			_party_data.shared_inventory.append(InventoryItem.from_dict(row))
-		# Populate trained creatures
-		_party_data.creature_data = []
-		var creature_rows: Array = CampaignRepository.get_trained_creatures_for_party(party_id)
-		for row: Dictionary in creature_rows:
-			var creature := TrainedCreatureData.from_db(row)
-			creature.monster_data = _monster_registry.get_monster(creature.species_id)
-			var creature_inv := CampaignRepository.get_creature_inventory(creature.id)
-			creature.inventory = []
-			for inv_row: Dictionary in creature_inv:
-				creature.inventory.append(InventoryItem.from_dict(inv_row))
-			_party_data.creature_data.append(creature)
-		# Populate draft vehicles
-		_party_data.vehicle_data = CampaignRepository.get_draft_vehicles_for_party(party_id)
+	_load_party_data_for_session(party_id)
 
 	# 2.x. Eyes of the Eagle V2 (2026-06-03) — refresh the hexmap party
 	# visibility bonus from the freshly-loaded roster. Bonus is pushed to
@@ -623,9 +626,6 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# changes and party switches refresh via EventBus subscriptions wired
 	# in _ready.
 	_refresh_party_visibility_bonus()
-
-	# 3. Register party with Timekeeping (if not already)
-	Timekeeping.register_party(party_id)
 
 	# 4. Load active effects
 	_active_effects.clear()
@@ -752,11 +752,15 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# but the disease_cure_weekly_tick events live only in-memory on the
 	# scheduler. Re-seed one tick per army with diseased units (idempotent
 	# via _schedule_cure_tick_if_absent's get_events_for_owner check).
-	var _today_date: Dictionary = Timekeeping.get_date()
-	var _today_day: int = int(_today_date.get("year", 0)) * Timekeeping.DAYS_PER_YEAR \
-		+ int(_today_date.get("month", 0)) * Timekeeping.DAYS_PER_MONTH \
-		+ int(_today_date.get("day", 0))
-	DiseaseResolver.reconcile_cure_ticks_on_session_load(_scheduler, _today_day)
+	DiseaseResolver.reconcile_cure_ticks_on_session_load(
+		_scheduler, Timekeeping.get_calendar_day())
+
+	# Batch E (2026-06-12): reseed siege tick events for in-progress sieges.
+	# Ticks are seeded only when a siege starts and live in the scheduler
+	# queue; a crash before a queue flush (or a save from before the flush
+	# choke points existed) leaves a live siege with no tick chain — it would
+	# stall forever. Idempotent per siege via get_events_for_owner.
+	SiegeResolver.reconcile_ticks_on_session_load(_scheduler, campaign_id)
 
 	# 7e. Register activity executor + strenuous accountant (Domain Phase 3,
 	#     2026-05-07). Owns "activity_complete" and "ongoing_session_complete"
@@ -866,6 +870,16 @@ func save_session() -> void:
 	if _current_state != null:
 		_current_state.flush_to_db(self)
 
+	# Clock + active effects + scheduled events in ONE transaction (2026-06-12):
+	# previously each row was its own implicit fsync'd transaction, and a crash
+	# between a clear and its re-insert loop could lose the whole set. Only
+	# single-statement repository helpers may run inside this block — callees
+	# with their own BEGIN/COMMIT (like the per-context flush_to_db above)
+	# would commit it prematurely.
+	var own_txn: bool = CampaignRepository.db.query("BEGIN TRANSACTION")
+
+	Timekeeping.flush()
+
 	# Active effects — clear and re-persist all
 	CampaignRepository.clear_active_effects(_campaign_id)
 	for effect: Dictionary in _active_effects.get_all_effects():
@@ -879,8 +893,116 @@ func save_session() -> void:
 		for event_dict: Dictionary in _scheduler.to_dicts():
 			CampaignRepository.save_scheduled_event(_campaign_id, event_dict)
 
+	if own_txn:
+		CampaignRepository.db.query("COMMIT")
+
 	session_saved.emit(_campaign_id)
 	EventBus.campaign_saved.emit(_campaign_id)
+
+
+## Persistence choke point (2026-06-12): flush the world clock and the
+## scheduled-event queue together, atomically, so the persisted clock can never
+## outrun the persisted queue — a crash previously restored a current clock
+## with a stale queue (lost arrivals, re-fired stale events, dead recurrence
+## chains). Wired to every scheduler pause and every day boundary; save_session
+## covers the explicit-save path. Cheap: one transaction, one clock upsert
+## (skipped when clean), one delete + tens of inserts under WAL.
+func flush_clock_and_queue() -> void:
+	if _campaign_id.is_empty() or CampaignRepository.db == null:
+		return
+	# Guarded BEGIN: this runs from signal handlers, so an enclosing transaction
+	# is possible — in that case the writes join it and ITS owner commits.
+	var own_txn: bool = CampaignRepository.db.query("BEGIN TRANSACTION")
+	Timekeeping.flush()
+	if _scheduler != null:
+		CampaignRepository.clear_scheduled_events(_campaign_id)
+		for event_dict: Dictionary in _scheduler.to_dicts():
+			CampaignRepository.save_scheduled_event(_campaign_id, event_dict)
+	if own_txn:
+		CampaignRepository.db.query("COMMIT")
+
+
+func _on_scheduler_paused_for_flush(_reason: String) -> void:
+	flush_clock_and_queue()
+
+
+func _on_day_changed_for_flush(_day: int, _month: int, _year: int) -> void:
+	flush_clock_and_queue()
+
+
+## Loads [param party_id]'s full PartyData (roster, shared inventory, trained
+## creatures, draft vehicles) into _party_data. Used by load_session and by
+## the merge re-point handler (_on_party_merged_for_scheduler).
+func _load_party_data_for_session(party_id: String) -> void:
+	_party_data = CampaignRepository.load_party_data(party_id)
+	if _party_data == null:
+		return
+	# Populate character_data
+	_party_data.character_data = []
+	var char_rows: Array = CampaignRepository.list_party_characters(party_id)
+	for row: Dictionary in char_rows:
+		var loaded_character := CharacterData.from_dict(row)
+		_party_data.character_data.append(loaded_character)
+		# Stage 2.x — restore the Familiar proficiency proximity bonus on the
+		# live CharacterData. Modifiers + flags are runtime-only fields, so
+		# they're cleared on save/load round-trip; this rehydrates the
+		# bonus for any master with a living familiar in the DB. No-op for
+		# masters without a familiar.
+		FamiliarController.apply_proximity_for_master(loaded_character)
+	# Populate shared inventory
+	var inv_rows: Array = CampaignRepository.get_party_inventory(party_id)
+	_party_data.shared_inventory = []
+	for row: Dictionary in inv_rows:
+		_party_data.shared_inventory.append(InventoryItem.from_dict(row))
+	# Populate trained creatures
+	_party_data.creature_data = []
+	var creature_rows: Array = CampaignRepository.get_trained_creatures_for_party(party_id)
+	for row: Dictionary in creature_rows:
+		var creature := TrainedCreatureData.from_db(row)
+		creature.monster_data = _monster_registry.get_monster(creature.species_id)
+		var creature_inv := CampaignRepository.get_creature_inventory(creature.id)
+		creature.inventory = []
+		for inv_row: Dictionary in creature_inv:
+			creature.inventory.append(InventoryItem.from_dict(inv_row))
+		_party_data.creature_data.append(creature)
+	# Populate draft vehicles
+	_party_data.vehicle_data = CampaignRepository.get_draft_vehicles_for_party(party_id)
+
+
+## EventBus.party_split handler (single-timeline rework, 2026-06-11). Seeds the
+## new party's wilderness day/noon ticks immediately so sustenance, foraging,
+## and weather fire from the moment of the split — previously the detachment
+## got no daily ticks until wilderness was next re-entered.
+func _on_party_split_for_scheduler(_original_party_id: String, new_party_id: String) -> void:
+	if _campaign_id.is_empty() or _scheduler == null or _wilderness_global_handlers == null:
+		return
+	_wilderness_global_handlers.schedule_day_tick(_scheduler, new_party_id)
+	_wilderness_global_handlers.schedule_noon_tick(_scheduler, new_party_id)
+
+
+## EventBus.party_merged handler (single-timeline rework, 2026-06-11).
+## 1. Cancels queued events owned by the dissolved party — otherwise they fire
+##    later, fail to resolve a PartyData, and silently no-op.
+## 2. Merge-primary guard: if the session primary was merged away, re-points
+##    the session (_party_id, _party_data, GameState) at the survivor —
+##    previously this left every session pointer at a deleted party.
+## 3. If the primary absorbed the dissolved party, reloads _party_data so the
+##    live roster includes the merged-in members.
+func _on_party_merged_for_scheduler(surviving_party_id: String, dissolved_party_id: String) -> void:
+	if _campaign_id.is_empty():
+		return
+	if _scheduler != null:
+		_scheduler.cancel_all_for_owner(dissolved_party_id)
+	if dissolved_party_id == _party_id:
+		_party_id = surviving_party_id
+		GameState.party_id = surviving_party_id
+		_load_party_data_for_session(surviving_party_id)
+		if GameState.active_party_id == dissolved_party_id:
+			GameState.set_active_party(surviving_party_id)
+		_refresh_party_visibility_bonus()
+	elif surviving_party_id == _party_id:
+		_load_party_data_for_session(_party_id)
+		_refresh_party_visibility_bonus()
 
 
 ## Specialist payday (gdd-specialists.md §6.3). Fires on every calendar
@@ -903,7 +1025,7 @@ func _on_specialist_payday(_new_month: int, _new_year: int) -> void:
 		var members: Array = CampaignRepository.list_party_characters(pid)
 		if not members.is_empty():
 			employer_id = str(members[0].get("id", ""))
-		manager.process_monthly_wages(pid, employer_id, Timekeeping.get_party_time(pid))
+		manager.process_monthly_wages(pid, employer_id, Timekeeping.get_total_rounds())
 
 
 ## Ends the current session: saves, disconnects, resets.
@@ -954,9 +1076,13 @@ func end_session() -> void:
 	_activity_handler_registry = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
+	# Pause BEFORE clearing the scheduler: pause() triggers the
+	# flush-clock-and-queue choke point, which must see the real queue (or
+	# no-op if already paused) — pausing after clear() would persist an empty
+	# queue over the rows save_session just wrote.
+	_scheduler_loop.pause()
 	_scheduler.clear()
 	_handler_registry.clear()
-	_scheduler_loop.pause()
 	_party_data = null
 	_campaign_id = ""
 	_party_id = ""
@@ -992,8 +1118,21 @@ func load_slot(snapshot_id: String) -> bool:
 		return false
 	if not _campaign_id.is_empty():
 		end_session()  # saves current (harmless — about to be overwritten) + tears down
+		# Exit the live exploration state BEFORE restoring (2026-06-12). It
+		# normally exits inside the session_load transition below — i.e. AFTER
+		# restore_snapshot — and exploration exit() handlers write per-context
+		# DB state (dungeon fog/door cells), stomping the freshly restored save
+		# with pre-restore memory. Exiting here lands those writes in the
+		# pre-restore DB, where they are harmless duplicates of save_session.
+		if _current_state != null:
+			_current_state.exit(self)
+			_current_state = null
+			_current_state_key = ""
 	if not CampaignRepository.restore_snapshot(snapshot_id):
 		push_error("SessionRunner.load_slot: restore failed for %s" % snapshot_id)
+		# The old session (if any) is already torn down — land somewhere real
+		# instead of leaving a zombie (no campaign, dead scheduler, old scene).
+		transition_to_state("campaign_select")
 		return false
 	transition_to_state("session_load", {"campaign_id": slot_campaign})
 	return true
@@ -1201,14 +1340,6 @@ static func _reaction_to_disposition(total: int) -> String:
 		return "friendly"
 
 
-## Advances game time by the given number of exploration turns.
-## EffectTicker automatically handles ActiveEffectTracker tick-down.
-func advance_exploration_time(turns: int) -> void:
-	if turns <= 0:
-		return
-	Timekeeping.advance_turns(turns)
-
-
 ## Cancels any pending player_roll() coroutine by emitting the cancellation signal.
 ## Called at every state transition boundary.
 func cancel_pending_roll() -> void:
@@ -1380,31 +1511,3 @@ func _on_clock_speed_requested(speed: int) -> void:
 	_scheduler_loop.set_speed(speed)
 
 
-## Check whether the active party's clock is ahead of the global clock
-## (e.g., after combat turn-rounding or dungeon exit). If so, mark it locked.
-## Called by exploration states on re-entry after combat or dungeon exit.
-func check_party_time_lock() -> void:
-	if _party_id.is_empty():
-		return
-	var party_time: int = Timekeeping.get_party_time(_party_id)
-	var leading: String = Timekeeping.get_leading_party()
-	if leading.is_empty() or leading == _party_id:
-		# Single party or this party IS the leader — no lock needed.
-		_locked_parties.erase(_party_id)
-		return
-	var leader_time: int = Timekeeping.get_party_time(leading)
-	if party_time > leader_time:
-		# Party is ahead — lock it until the world catches up.
-		_locked_parties[_party_id] = true
-	else:
-		_locked_parties.erase(_party_id)
-
-
-## Returns true if [param party_id] is time-locked (ahead of the global clock).
-func is_party_locked(party_id: String) -> bool:
-	return _locked_parties.get(party_id, false)
-
-
-## Unlock a party (called when the global clock catches up).
-func unlock_party(party_id: String) -> void:
-	_locked_parties.erase(party_id)

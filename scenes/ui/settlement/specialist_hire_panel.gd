@@ -191,7 +191,7 @@ func _build_kind_block(kind: String) -> Control:
 # ---------------------------------------------------------------------------
 
 func _on_retain_pressed(kind: String) -> void:
-	var now: int = Timekeeping.get_party_time(_party_id)
+	var now: int = Timekeeping.get_total_rounds()
 	var sid: String = _hire_manager.hire(
 		_campaign_id, _party_id, _settlement_id, kind, "", now)
 	if sid.is_empty():
@@ -205,7 +205,7 @@ func _on_service_pressed(kind: String, service_id: String) -> void:
 	var subject: String = ""
 	if _subject_edits.has(kind):
 		subject = (_subject_edits[kind] as LineEdit).text
-	var now: int = Timekeeping.get_party_time(_party_id)
+	var now: int = Timekeeping.get_total_rounds()
 	var result: Dictionary = _commission_manager.commission(
 		_campaign_id, _party_id, _settlement_id, kind, service_id,
 		subject, _payer_character_id, now)
@@ -226,7 +226,7 @@ const ROUNDS_PER_MONTH := Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DA
 
 
 func _net_availability(kind: String) -> int:
-	var now: int = Timekeeping.get_party_time(_party_id)
+	var now: int = Timekeeping.get_total_rounds()
 	@warning_ignore("integer_division")
 	var month_index: int = now / ROUNDS_PER_MONTH
 	var month_start: int = month_index * ROUNDS_PER_MONTH

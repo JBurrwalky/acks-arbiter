@@ -61,13 +61,13 @@ func unregister(registry: EventHandlerRegistry) -> void:
 
 ## Schedule the first domain_monthly_tick at the start of the next month.
 ## Should be called once during session load if the campaign has domains.
-func seed_monthly_tick(scheduler: EventScheduler, party_id: String) -> void:
+func seed_monthly_tick(scheduler: EventScheduler, _party_id: String) -> void:
 	var fire_time: int = _rounds_until_next_month()
 	if fire_time <= 0:
 		# Already at the start of a month — schedule for next month.
 		fire_time = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
 	# Use absolute time (current + delta).
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	scheduler.schedule_at(
 		current_time + fire_time,
 		"domain_monthly_tick",
@@ -357,12 +357,11 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	# semantically correct "consecutive months without" reading.
 	_tick_tribal_warrior_retention(domain_id, calendar_day)
 
-	# Phase 10B.1a: Magical Research monthly-tick stub. Advances
-	# days_completed by 30 on every in_progress magic_research_projects row
-	# owned by this domain's ruler. Completion-throw resolution + library/
-	# workshop bonuses land in 10B.1b; aspirant promotion roll lands in
-	# 10B.1d (per Q20 [RESOLVED 2026-05-11]: universal d20+ability_mod 14+
-	# throw at joined_calendar_day + 120).
+	# Aspirant promotion rolls (10B.1d, per Q20 [RESOLVED 2026-05-11]:
+	# universal d20+ability_mod 14+ throw at joined_calendar_day + 112 —
+	# exactly 4 months on the 13×28 calendar; corrected 2026-06-12 from the
+	# 30-day-month +120 gloss). The 10B.1a "+30 days_completed" stub advance
+	# was removed 2026-06-12 as dead code — see _resolve_magic_research_month.
 	var mr_summary: Dictionary = _resolve_magic_research_month(
 		_str_field(domain_data, "owner_character_id"), calendar_day)
 
@@ -448,29 +447,23 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	}
 
 
-## Phase 10B.1a stub + 10B.1d aspirant promotion. Advances days_completed
-## on every in_progress magic_research_projects row owned by the given
-## character by 30 (one month), and fires aspirant promotion throws for
-## every aspirant_in_training follower whose promotion_eligible_day has
-## come due (Q20 [RESOLVED 2026-05-11]).
+## 10B.1d aspirant promotion: fires the promotion throw for every
+## aspirant_in_training follower whose promotion_eligible_day has come due
+## (Q20 [RESOLVED 2026-05-11]) via SanctumApprenticeResolver.
 ##
-## v1 scope: completion logic + library/workshop bonuses for magic_research
-## projects land in 10B.1b/c handlers (this stub just ages the timer).
-## Aspirant promotion roll is fully wired here via
-## SanctumApprenticeResolver.resolve_promotion_throw.
+## The 10B.1a "+30 days_completed per month" stub advance was REMOVED
+## 2026-06-12 as provably dead: it only touched status='in_progress' rows,
+## but no code path ever creates one — the 10B.1b/c handlers run research
+## through the ActivityTimeCostExecutor tick system (real days, 1 tick =
+## 1 day) and insert magic_research_projects rows already terminal
+## (completed/failed) as historical records. The stub was also unit-wrong
+## (30-day month on the 13×28 calendar). If a future wave introduces
+## genuinely month-paced in_progress projects, advance by
+## Timekeeping.DAYS_PER_MONTH, not 30.
 func _resolve_magic_research_month(
 	owner_character_id: String,
 	calendar_day: int,
 ) -> Dictionary:
-	var projects_advanced: int = 0
-	if not owner_character_id.is_empty():
-		var before: Array = CampaignRepository.list_magic_research_projects_for_character(
-			owner_character_id, "in_progress")
-		if not before.is_empty():
-			CampaignRepository.advance_magic_research_projects_for_character(
-				owner_character_id, 30)
-			projects_advanced = before.size()
-
 	# Aspirant promotion throws (Q20). list_aspirants_due_for_promotion is
 	# global across all owners — we filter to this owner's aspirants since
 	# the monthly tick fires per domain. (Future polish: a dedicated
@@ -490,7 +483,6 @@ func _resolve_magic_research_month(
 				aspirants_departed += 1
 
 	return {
-		"projects_advanced": projects_advanced,
 		"aspirants_promoted": aspirants_promoted,
 		"aspirants_departed": aspirants_departed,
 	}
@@ -1204,12 +1196,9 @@ func _resolve_settlement_growth_for_domain(
 
 
 ## Convert a Timekeeping date dict into a single integer day-of-campaign for
-## ledger entries (year × 12 × DAYS_PER_MONTH + month-1 × DAYS_PER_MONTH + day).
+## ledger entries (canonical 1-based day serial, conventions §6.8).
 func _calendar_day_from_date(date: Dictionary) -> int:
-	var year: int = int(date.get("year", 1))
-	var month: int = int(date.get("month", 1))
-	var day: int = int(date.get("day", 1))
-	return ((year - 1) * 12 + (month - 1)) * Timekeeping.DAYS_PER_MONTH + day
+	return Timekeeping.calendar_day_from_date(date)
 
 
 # ---------------------------------------------------------------------------

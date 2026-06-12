@@ -151,7 +151,7 @@ func cells_per_round(base_movement: int, mode: float = -1.0) -> float:
 
 ## Schedule the initial recurring events when entering a dungeon.
 func seed_dungeon_events(scheduler: EventScheduler, party_id: String) -> void:
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 
 	# Wandering monster check every 2 turns
 	scheduler.schedule_at(
@@ -389,10 +389,15 @@ func cancel_move(entity_id: String) -> bool:
 	return _movement_orders.erase(entity_id)
 
 
-## Cancel all movement orders.
+## Cancel all movement orders. Callers that also cancel the queued
+## dungeon_movement_tick event (DungeonExploreState._cancel_all_movement does)
+## rely on the flag reset below — without it the guard stayed latched true with
+## no tick in the queue, and _ensure_movement_tick refused to schedule a new
+## one until dungeon re-entry (MAX-speed movement permanently dead).
 func cancel_all_moves() -> void:
 	_movement_orders.clear()
 	_renderer_animated.clear()
+	_tick_scheduled = false
 
 
 ## Returns true if any entity currently has a movement order.
@@ -560,7 +565,7 @@ func schedule_action(
 		data["cell_z"] = cell.z
 		data["cell_is_3d"] = true
 
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	return scheduler.schedule_at(
 		current_time + duration_rounds,
 		"dungeon_action_complete",
@@ -1688,17 +1693,13 @@ func _handle_light_action(event: ScheduledEvent) -> Dictionary:
 	var succeeded: bool = result_dict.get("success", false)
 
 	# If we just lit something and no light tick is scheduled, start one.
+	# Owner discipline: the tick belongs to the EVENT's party, not the
+	# runner primary (matches the wilderness handlers' owner_id pattern).
 	if succeeded and action != "douse":
 		var scheduler: EventScheduler = _runner.get_scheduler()
-		var party_id: String = _runner.get_party_id()
-		# Check if a light tick is already scheduled.
-		var has_tick := false
-		for ev in scheduler.get_events_for_owner(party_id):
-			if ev.event_type == "dungeon_light_tick":
-				has_tick = true
-				break
-		if not has_tick:
-			var current_time: int = Timekeeping.get_party_time(party_id)
+		var party_id: String = event.owner_id
+		if not scheduler.has_event_for_owner(party_id, "dungeon_light_tick"):
+			var current_time: int = Timekeeping.get_total_rounds()
 			scheduler.schedule_at(
 				current_time + TURN_ROUNDS,
 				"dungeon_light_tick",
@@ -1734,7 +1735,7 @@ func _handle_light_action(event: ScheduledEvent) -> Dictionary:
 func _ensure_movement_tick(scheduler: EventScheduler, party_id: String) -> void:
 	if _tick_scheduled:
 		return
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = Timekeeping.get_total_rounds()
 	scheduler.schedule_at(
 		current_time + 1,
 		"dungeon_movement_tick",

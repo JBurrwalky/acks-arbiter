@@ -180,10 +180,11 @@ func _on_load_pressed(snapshot_id: String) -> void:
 	if _runner == null or not _runner.has_method("load_slot"):
 		return
 	# Loading tears down the current session and re-enters from scratch — close
-	# this panel and unpause first so the reloaded session is interactive.
+	# this panel and unpause GameState first so the reloaded session is
+	# interactive. The scheduler is re-setup paused by load_session; emitting
+	# scheduler_resumed from UI would desync listeners from the actual loop.
 	_close()
 	GameState.resume()
-	EventBus.scheduler_resumed.emit()
 	if not _runner.load_slot(snapshot_id):
 		EventBus.notification_requested.emit({
 			"type": "error", "category": "system",

@@ -31,6 +31,16 @@ func _ready() -> void:
 	db = SQLite.new()
 	db.path = DB_PATH
 	db.open_db()
+	# Persistence policy (2026-06-12): WAL journal + synchronous NORMAL.
+	# SQLite's defaults (DELETE journal, synchronous FULL) fsync roughly twice
+	# per statement-level implicit transaction, which made the per-frame write
+	# paths a sustained disk-hammer. WAL appends commits to a side log (fsync
+	# only at checkpoints) and is the right mode for this single-writer desktop
+	# app; NORMAL keeps WAL durable at checkpoint granularity — worst case on
+	# power loss is the last few commits, no worse than the debounced
+	# clock/queue flush window (SessionRunner.flush_clock_and_queue).
+	db.query("PRAGMA journal_mode=WAL")
+	db.query("PRAGMA synchronous=NORMAL")
 	_run_migrations()
 	_run_data_sweeps()
 
@@ -432,7 +442,6 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM party_clocks WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM active_effects WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM trade_routes WHERE campaign_id = ?", [campaign_id])
@@ -1031,14 +1040,15 @@ func split_party(source_party_id: String, new_party_name: String,
 
 	db.query("COMMIT")
 
-	Timekeeping.register_party(new_party_id)
 	EventBus.party_split.emit(source_party_id, new_party_id)
 	return new_party_id
 
 
 ## Merges two parties. Moves all members from source into target, transfers
-## owned creatures/vehicles/inventory, syncs time, deletes source.
+## owned creatures/vehicles/inventory, deletes source.
 ## Both parties must be at the same hex / location. Returns true on success.
+## SessionRunner listens for party_merged to cancel the dissolved party's
+## queued events and to re-point the session if the primary was merged away.
 func merge_parties(target_party_id: String, source_party_id: String) -> bool:
 	var target := get_party(target_party_id)
 	var source := get_party(source_party_id)
@@ -1058,9 +1068,6 @@ func merge_parties(target_party_id: String, source_party_id: String) -> bool:
 			source.current_map_id, source.current_hex_q, source.current_hex_r
 		])
 		return false
-
-	# Sync time first
-	Timekeeping.sync_parties()
 
 	db.query("BEGIN TRANSACTION")
 
@@ -1106,7 +1113,6 @@ func merge_parties(target_party_id: String, source_party_id: String) -> bool:
 
 	db.query("COMMIT")
 
-	Timekeeping.unregister_party(source_party_id)
 	EventBus.party_merged.emit(target_party_id, source_party_id)
 	return true
 
@@ -5166,7 +5172,7 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"hex_lair_state", "hex_maps", "hideouts", "laboratories", "lairs", "libraries", "location_caches",
 	"specialist_commissions",
 	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
-	"override_log", "parties", "party_clocks", "pois", "pursuit_states", "realm_relations",
+	"override_log", "parties", "pois", "pursuit_states", "realm_relations",
 	"realms", "reputation_entries", "restricted_cooldowns", "scheduled_events", "settlement_entrances",
 	"shipping_contract_offers", "shipping_contracts", "ships", "shop_inventory", "sieges",
 	"social_groups", "specialists", "survey_progress", "syndicates", "tracking_sessions",
@@ -6190,11 +6196,14 @@ func save_scheduled_event(campaign_id: String, event_dict: Dictionary) -> bool:
 	])
 
 
-## Return all non-cancelled scheduled events for [param campaign_id],
-## ordered by fire_time. Each row's data_json is parsed back to a Dictionary.
+## Return all non-cancelled scheduled events for [param campaign_id], ordered
+## by fire_time with ties in insertion order (rowid). save_session inserts rows
+## in queue order, so equal-key events keep their FIFO resolution order across
+## save/load — EventScheduler re-stamps sequence numbers in this order on load.
+## Each row's data_json is parsed back to a Dictionary.
 func get_scheduled_events(campaign_id: String) -> Array:
 	var rows := _query_rows(
-		"SELECT * FROM scheduled_events WHERE campaign_id = ? AND cancelled = 0 ORDER BY fire_time",
+		"SELECT * FROM scheduled_events WHERE campaign_id = ? AND cancelled = 0 ORDER BY fire_time, rowid",
 		[campaign_id])
 	var result: Array = []
 	for row in rows:
@@ -8345,24 +8354,6 @@ func update_magic_research_project(project_id: String, fields: Dictionary) -> bo
 	values.append(project_id)
 	var sql := "UPDATE magic_research_projects SET %s WHERE id = ?" % ", ".join(set_clauses)
 	return db.query_with_bindings(sql, values)
-
-
-## Monthly-tick helper: advances days_completed by the given delta on every
-## in_progress project for the character. Used by the monthly-tick stub in
-## domain_handlers.gd::_resolve_magic_research_month.
-func advance_magic_research_projects_for_character(character_id: String, day_delta: int) -> int:
-	if character_id.is_empty():
-		return 0
-	if day_delta <= 0:
-		return 0
-	if not db.query_with_bindings("""
-		UPDATE magic_research_projects
-		SET days_completed = days_completed + ?,
-		    updated_at = datetime('now')
-		WHERE character_id = ? AND status = 'in_progress'
-	""", [day_delta, character_id]):
-		return 0
-	return 1
 
 
 # libraries -------------------------------------------------------------------

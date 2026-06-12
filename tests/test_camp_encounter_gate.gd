@@ -95,7 +95,6 @@ func _ensure_party_row(party_id: String) -> void:
 
 
 func _cleanup_party(party_id: String) -> void:
-	Timekeeping.unregister_party(party_id)
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM party_state WHERE party_id = ?", [party_id])
 	CampaignRepository.db.query_with_bindings(
@@ -131,8 +130,6 @@ func _three_watch_assignments() -> Array:
 func test_schedule_watches_stamps_camp_state_on_party_data() -> void:
 	var pid := _make_party_id("stamp")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -144,7 +141,7 @@ func test_schedule_watches_stamps_camp_state_on_party_data() -> void:
 	DiceTestHarness.force_roll("camp_encounter_check", 6)
 
 	var handlers := CampHandlers.new(runner)
-	var camp_start: int = Timekeeping.get_party_time(pid)
+	var camp_start: int = Timekeeping.get_total_rounds()
 	handlers.schedule_watches(_three_watch_assignments(), [], runner._scheduler, pid)
 
 	var pd := runner._party_data
@@ -180,8 +177,6 @@ func test_schedule_watches_stamps_camp_state_on_party_data() -> void:
 func test_schedule_watches_runs_camp_throw_on_positive_roll() -> void:
 	var pid := _make_party_id("throw_pos")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -193,7 +188,7 @@ func test_schedule_watches_runs_camp_throw_on_positive_roll() -> void:
 	DiceTestHarness.force_roll("camp_encounter_hour", 3)
 
 	var handlers := CampHandlers.new(runner)
-	var camp_start: int = Timekeeping.get_party_time(pid)
+	var camp_start: int = Timekeeping.get_total_rounds()
 	handlers.schedule_watches(_three_watch_assignments(), [], runner._scheduler, pid)
 
 	var events: Array[ScheduledEvent] = runner._scheduler.get_events_for_owner(pid)
@@ -217,8 +212,6 @@ func test_schedule_watches_runs_camp_throw_on_positive_roll() -> void:
 func test_schedule_watches_skips_throw_on_negative_roll() -> void:
 	var pid := _make_party_id("throw_neg")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -251,8 +244,6 @@ func test_schedule_watches_skips_throw_on_negative_roll() -> void:
 func test_camp_throw_gated_when_encounter_already_triggered_today() -> void:
 	var pid := _make_party_id("gated")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -261,7 +252,7 @@ func test_camp_throw_gated_when_encounter_already_triggered_today() -> void:
 
 	# Pre-stamp the gate to today.
 	@warning_ignore("integer_division")
-	var today_index: int = Timekeeping.get_party_time(pid) / Timekeeping.ROUNDS_PER_DAY
+	var today_index: int = Timekeeping.get_total_rounds() / Timekeeping.ROUNDS_PER_DAY
 	runner._party_data.last_encounter_trigger_day = today_index
 
 	# Even with a forced positive throw, the gate must suppress it. Setting
@@ -286,8 +277,6 @@ func test_camp_throw_gated_when_encounter_already_triggered_today() -> void:
 func test_camp_throw_stamps_gate_on_positive_trigger() -> void:
 	var pid := _make_party_id("stamp_gate")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -299,7 +288,7 @@ func test_camp_throw_stamps_gate_on_positive_trigger() -> void:
 
 	var handlers := CampHandlers.new(runner)
 	@warning_ignore("integer_division")
-	var expected_day: int = Timekeeping.get_party_time(pid) / Timekeeping.ROUNDS_PER_DAY
+	var expected_day: int = Timekeeping.get_total_rounds() / Timekeeping.ROUNDS_PER_DAY
 	handlers.schedule_watches(_three_watch_assignments(), [], runner._scheduler, pid)
 
 	check(runner._party_data.last_encounter_trigger_day == expected_day,
@@ -343,8 +332,6 @@ func test_handle_camp_watch_is_state_ux_only() -> void:
 func test_clear_camp_state_cancels_pending_wilderness_encounter() -> void:
 	var pid := _make_party_id("clear")
 	_ensure_party_row(pid)
-	Timekeeping.unregister_party(pid)
-	Timekeeping.register_party(pid)
 
 	var runner := _FakeRunner.new()
 	runner._party_id = pid
@@ -354,14 +341,14 @@ func test_clear_camp_state_cancels_pending_wilderness_encounter() -> void:
 	# Manually schedule a wilderness_encounter to simulate a pending camp
 	# encounter from an earlier camp_setup.
 	runner._scheduler.schedule_at(
-		Timekeeping.get_party_time(pid) + 4 * Timekeeping.ROUNDS_PER_HOUR,
+		Timekeeping.get_total_rounds() + 4 * Timekeeping.ROUNDS_PER_HOUR,
 		WildernessHandlers.WILDERNESS_ENCOUNTER_EVENT,
 		pid,
 		{"trigger_source": "camp"},
 		ScheduledEvent.PRIORITY_SCHEDULED_CHECK,
 	)
 	runner._party_data.is_camping = true
-	runner._party_data.camp_start_round = Timekeeping.get_party_time(pid)
+	runner._party_data.camp_start_round = Timekeeping.get_total_rounds()
 	runner._party_data.camp_end_round = runner._party_data.camp_start_round + 12 * Timekeeping.ROUNDS_PER_HOUR
 	runner._party_data.camp_watch_assignments_json = JSON.stringify(_three_watch_assignments())
 

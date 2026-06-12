@@ -98,11 +98,10 @@ func _on_watches_confirmed(runner, assignments: Array, armed_sleepers: Array) ->
 
 	if _is_town:
 		# Town rest: no watches, no encounters — advance time directly.
-		Timekeeping.advance_party_rounds(
-			party_id,
+		Timekeeping.advance_rounds(
 			CampManager.TOTAL_REST_HOURS * Timekeeping.ROUNDS_PER_HOUR)
 		# Schedule just the rest_complete for immediate resolution.
-		var current_time: int = Timekeeping.get_party_time(party_id)
+		var current_time: int = Timekeeping.get_total_rounds()
 		scheduler.schedule_at(
 			current_time,
 			"camp_rest_complete",
@@ -111,8 +110,12 @@ func _on_watches_confirmed(runner, assignments: Array, armed_sleepers: Array) ->
 			ScheduledEvent.PRIORITY_ARRIVAL,
 		)
 	else:
-		# Wilderness camp: schedule watch events via the handler.
-		var start_watch: int = _resume_watch if _resume_watch >= 0 else 0
+		# Wilderness camp: schedule watch events via the handler. NOTE: the
+		# resume-from-combat watch index (_resume_watch) is NOT threaded into
+		# schedule_watches — the combat return path routes to wilderness, not
+		# back here, so a mid-rest resume is currently unreachable. If that
+		# path is ever wired, schedule_watches needs a start-watch parameter
+		# (a fresh full-rest schedule would double-charge the night).
 		_handlers.schedule_watches(assignments, armed_sleepers, scheduler, party_id)
 
 	# Start the clock to resolve watches.

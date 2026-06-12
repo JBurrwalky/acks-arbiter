@@ -89,19 +89,70 @@ static func start_full_siege(
 		"UPDATE armies SET state = 'besieging' WHERE id = ?",
 		[besieging_army_id]
 	)
-	# Schedule tick events.
+	# Schedule tick events. fire_time is ROUNDS (midnight of the target day) —
+	# the day-serial bookkeeping converts via calendar_day_to_rounds.
 	if scheduler != null:
 		scheduler.schedule_at(
-			calendar_day + 1, "siege_daily_tick", siege_id,
+			Timekeeping.calendar_day_to_rounds(calendar_day + 1), "siege_daily_tick", siege_id,
 			{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE
 		)
 		scheduler.schedule_at(
-			calendar_day + 7, "siege_weekly_tick", siege_id,
+			Timekeeping.calendar_day_to_rounds(calendar_day + 7), "siege_weekly_tick", siege_id,
 			{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE
 		)
 	if EventBus.has_signal("siege_started"):
 		EventBus.emit_signal("siege_started", siege_id, stronghold_id, besieging_army_id)
 	return siege_id
+
+
+## Reseed tick events for every non-concluded siege that has none pending.
+## Mirrors DiseaseResolver.reconcile_cure_ticks_on_session_load: tick events
+## are seeded only at siege start and live in the scheduler queue, so a crash
+## before a queue flush (or a pre-flush-era save) leaves a live siege with no
+## tick chain — it would stall forever. Idempotent: pending events per
+## siege_id are checked before seeding. Returns
+## {sieges_reconciled: int, events_seeded: int}.
+static func reconcile_ticks_on_session_load(scheduler, campaign_id: String) -> Dictionary:
+	var result: Dictionary = {"sieges_reconciled": 0, "events_seeded": 0}
+	if scheduler == null or campaign_id.is_empty():
+		return result
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT id, resolution_mode, expected_end_calendar_day
+		FROM sieges
+		WHERE campaign_id = ? AND current_phase != 'concluded'
+	""", [campaign_id]):
+		return result
+	var today: int = Timekeeping.get_calendar_day()
+	var now: int = Timekeeping.get_total_rounds()
+	for row in CampaignRepository.db.query_result.duplicate():
+		var siege_id: String = str(row.get("id", ""))
+		if siege_id.is_empty():
+			continue
+		result.sieges_reconciled += 1
+		if str(row.get("resolution_mode", "full")) == "simplified":
+			var expected: int = int(row.get("expected_end_calendar_day", 0))
+			if expected > 0 and not scheduler.has_event_for_owner(siege_id, "siege_simplified_concluded"):
+				# Clamp to now: an overdue conclusion resolves immediately
+				# (handlers stamp today's calendar day themselves).
+				scheduler.schedule_at(
+					maxi(Timekeeping.calendar_day_to_rounds(expected), now),
+					"siege_simplified_concluded", siege_id,
+					{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE)
+				result.events_seeded += 1
+		else:
+			if not scheduler.has_event_for_owner(siege_id, "siege_daily_tick"):
+				scheduler.schedule_at(
+					Timekeeping.calendar_day_to_rounds(today + 1),
+					"siege_daily_tick", siege_id,
+					{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE)
+				result.events_seeded += 1
+			if not scheduler.has_event_for_owner(siege_id, "siege_weekly_tick"):
+				scheduler.schedule_at(
+					Timekeeping.calendar_day_to_rounds(today + 7),
+					"siege_weekly_tick", siege_id,
+					{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE)
+				result.events_seeded += 1
+	return result
 
 
 # ---------------------------------------------------------------------------
@@ -167,10 +218,10 @@ static func tick_daily(siege_id: String, calendar_day: int, dice_roller: Callabl
 	if not end.is_empty():
 		conclude_siege(siege_id, end, calendar_day, scheduler)
 		summary.siege_concluded = true
-	# 8. Reschedule next daily tick.
+	# 8. Reschedule next daily tick (rounds axis — midnight of tomorrow).
 	if not summary.siege_concluded and scheduler != null:
 		scheduler.schedule_at(
-			calendar_day + 1, "siege_daily_tick", siege_id,
+			Timekeeping.calendar_day_to_rounds(calendar_day + 1), "siege_daily_tick", siege_id,
 			{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE
 		)
 	# Emit state-changed signal for UI.
@@ -200,7 +251,7 @@ static func tick_weekly(siege_id: String, calendar_day: int, dice_roller: Callab
 	summary.newly_detected_mines = SiegeMiningResolver.defender_reconnaissance_roll(siege_id, calendar_day, dice_roller)
 	if scheduler != null:
 		scheduler.schedule_at(
-			calendar_day + 7, "siege_weekly_tick", siege_id,
+			Timekeeping.calendar_day_to_rounds(calendar_day + 7), "siege_weekly_tick", siege_id,
 			{"siege_id": siege_id}, ScheduledEvent.PRIORITY_CONSEQUENCE
 		)
 	return summary

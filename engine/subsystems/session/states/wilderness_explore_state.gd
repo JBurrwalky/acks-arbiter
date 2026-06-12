@@ -60,16 +60,14 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.party_map_changed.is_connected(_on_party_map_changed):
 		EventBus.party_map_changed.connect(_on_party_map_changed)
 
-	# Ensure all parties in the campaign are registered with Timekeeping
 	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
-	for p in all_parties:
-		Timekeeping.register_party(p.id)
 
-	# Register state-scoped wilderness handlers (travel, encounters, activities).
-	# The day-tick handler is registered globally by SessionRunner.load_session
-	# so it survives transitions to camp/dungeon/settlement (Phase 3, 2026-05-04).
-	_handlers = WildernessHandlers.new(runner)
-	_handlers.register_state_scoped(runner.get_handler_registry())
+	# All wilderness handlers are globally registered by
+	# SessionRunner.load_session (Option 2 — background-party resolution,
+	# 2026-06-12): travel/activity chains keep resolving while the player is
+	# in another context. The state borrows the runner's shared instance for
+	# its scheduling helpers (schedule_travel_path, day/noon ticks, evasion).
+	_handlers = runner.get_wilderness_handlers()
 
 	# Ensure each registered party has a pending wilderness_day_tick. Idempotent
 	# against the scheduler queue — schedule_day_tick no-ops when one is already
@@ -82,10 +80,6 @@ func enter(runner, context: Dictionary) -> void:
 
 	# Set wilderness time scale — 1x feels like watching the day advance.
 	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
-
-	# Check if the party is time-locked (returning from combat/dungeon
-	# with time ahead of the global clock).
-	runner.check_party_time_lock()
 
 	# Start the scheduler paused — player issues orders, then unpauses.
 	# (If the scheduler was already running and we returned from combat,
@@ -118,12 +112,10 @@ func exit(runner) -> void:
 	_close_context_menu()
 	_close_encounter_prompt()
 
-	# Unregister state-scoped handlers only — the day-tick handler stays
-	# globally registered by SessionRunner so sustenance/weather still tick
-	# while the party is in camp/dungeon/settlement.
-	if _handlers != null:
-		_handlers.unregister_state_scoped(runner.get_handler_registry())
-		_handlers = null
+	# Handlers stay globally registered (SessionRunner owns the lifetime) —
+	# background parties' travel/activity chains keep resolving after the
+	# player leaves the wilderness context. Just drop our borrowed reference.
+	_handlers = null
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
 	# but safe to always do — re-shown on enter)
@@ -180,14 +172,6 @@ func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> voi
 
 	var party_id: String = _resolve_active_party_id()
 	if party_id.is_empty():
-		return
-	if _runner.is_party_locked(party_id):
-		EventBus.notification_requested.emit({
-			"type": "warning",
-			"category": "system",
-			"title": "Party Locked",
-			"body": "This party is committed to an activity. Wait for the world clock to catch up.",
-		})
 		return
 
 	var controller: HexMapController = _runner.get_hex_map_controller()

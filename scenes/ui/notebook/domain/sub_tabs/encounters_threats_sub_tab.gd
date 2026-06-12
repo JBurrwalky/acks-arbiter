@@ -569,10 +569,9 @@ func _find_active_siege_for_domain() -> Dictionary:
 
 
 func _calendar_day_today() -> int:
-	var d: Dictionary = Timekeeping.get_date()
-	return int(d.get("year", 0)) * Timekeeping.DAYS_PER_YEAR \
-		+ int(d.get("month", 0)) * Timekeeping.DAYS_PER_MONTH \
-		+ int(d.get("day", 0))
+	# Canonical day serial — matches every producer that stamps
+	# started_calendar_day (conventions §6.8).
+	return Timekeeping.get_calendar_day()
 
 
 # ---------------------------------------------------------------------------
@@ -602,7 +601,7 @@ func _on_defeat_bandits_pressed(threat_id: String) -> void:
 			_calendar_day_today())
 		return
 	SiegeDispatcher.dispatch_new_siege(army_id, stronghold_id, garrison_id,
-		_calendar_day_today(), null)
+		_calendar_day_today(), _live_scheduler())
 	_render_siege()
 	_render_bandit()
 
@@ -635,9 +634,21 @@ func _on_offer_battle_to_challenger_pressed(threat_id: String) -> void:
 			_calendar_day_today())
 		return
 	SiegeDispatcher.dispatch_new_siege(army_id, stronghold_id, garrison_id,
-		_calendar_day_today(), null)
+		_calendar_day_today(), _live_scheduler())
 	_render_siege()
 	_render_challenger()
+
+
+## Live EventScheduler for siege tick scheduling — same runner lookup as
+## garrison_sub_tab. Previously these dispatches passed null, so UI-started
+## sieges never scheduled their daily/weekly ticks at all (they only recovered
+## via the load-time reseed). Null when no session is mounted (headless
+## tests): the reseed in SessionRunner.load_session covers that case.
+func _live_scheduler():
+	var session_runner = get_tree().root.get_node_or_null("SessionRunner") if get_tree() else null
+	if session_runner == null or not session_runner.has_method("get_scheduler"):
+		return null
+	return session_runner.get_scheduler()
 
 
 func _stronghold_for_domain(domain_id: String) -> String:
