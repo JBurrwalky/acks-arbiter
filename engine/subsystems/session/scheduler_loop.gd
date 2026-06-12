@@ -41,37 +41,33 @@ const SECONDS_PER_ROUND := 2.0
 ## saves in one frame. Excess real time beyond the clamp is simply dropped.
 const MAX_TICK_DELTA := 0.25
 
-## Context-dependent time scale. Multiplies the base tick rate so that
-## wilderness 1x feels like watching the day advance, not individual rounds.
-## Set by the exploration state on enter.
-##   Dungeon:    1.0 (round-level granularity — 1 round per 2s at 1x)
-##   Settlement: 6.0 (turn-level — 1 turn per ~10s at 1x)
-##   Wilderness: 60.0 (hour-level — 1 hour per ~12s at 1x)
-##   Camp:       use MAX speed (resolved instantly)
-const TIMESCALE_DUNGEON := 1.0
-const TIMESCALE_SETTLEMENT := 6.0
-const TIMESCALE_WILDERNESS := 60.0
+## Exploration contexts the loop can be configured for. States declare their
+## context explicitly via set_context() on enter — the context is NEVER
+## inferred from a timescale value (the old float-matching dispatch silently
+## fell back to the wilderness table for any unrecognized timescale).
+enum TimeContext { DUNGEON, SETTLEMENT, WILDERNESS }
 
-## Per-context speed multipliers. Keyed by SPEED_NORMAL/FAST/VERY_FAST.
+## Speed-band tables: player-facing speed ordinal → per-context multiplier.
 ## C1 decoupling: dungeon Fast = 6 rounds (1 minute) per 2 real seconds, Very
-## Fast = 30 rounds (5 minutes) per 2 real seconds. Wilderness/settlement keep
-## the prior 1×/2×/5× because their TIMESCALE_* multipliers (60, 6) already
-## advance large stretches of game time at the same band — bumping the band
-## multipliers there would push wilderness Very Fast to 9000× real-time.
-const DUNGEON_SPEEDS := {
-	SPEED_NORMAL: 1,
-	SPEED_FAST: 6,
-	SPEED_VERY_FAST: 30,
-}
-const WILDERNESS_SPEEDS := {
-	SPEED_NORMAL: 1,
-	SPEED_FAST: 2,
-	SPEED_VERY_FAST: 5,
-}
-const SETTLEMENT_SPEEDS := {
-	SPEED_NORMAL: 1,
-	SPEED_FAST: 2,
-	SPEED_VERY_FAST: 5,
+## Fast = 30 rounds (5 minutes). Wilderness/settlement share the standard
+## 1×/2×/5× because their timescales (60, 6) already advance large stretches
+## of game time at the same band — bumping those bands would push wilderness
+## Very Fast to 9000× real-time.
+const _BANDS_DUNGEON := { SPEED_NORMAL: 1, SPEED_FAST: 6, SPEED_VERY_FAST: 30 }
+const _BANDS_STANDARD := { SPEED_NORMAL: 1, SPEED_FAST: 2, SPEED_VERY_FAST: 5 }
+
+## Per-context configuration — THE single authority for timescale + speed
+## bands. timescale multiplies the base tick rate so that wilderness 1× feels
+## like watching the day advance, not individual rounds:
+##   Dungeon:    1.0 (round-level granularity — 1 round per 2s at 1×)
+##   Settlement: 6.0 (turn-level — 1 turn per ~10s at 1×)
+##   Wilderness: 60.0 (hour-level — 1 hour per ~12s at 1×)
+##   Camp:       no profile — camp resolves at MAX speed under wilderness.
+## Adding a context = ONE entry here (plus its TimeContext enum value).
+const CONTEXT_PROFILES := {
+	TimeContext.DUNGEON: {"timescale": 1.0, "bands": _BANDS_DUNGEON},
+	TimeContext.SETTLEMENT: {"timescale": 6.0, "bands": _BANDS_STANDARD},
+	TimeContext.WILDERNESS: {"timescale": 60.0, "bands": _BANDS_STANDARD},
 }
 
 
@@ -91,8 +87,11 @@ var _party_id: String = ""
 var _speed: int = SPEED_PAUSED
 var _paused: bool = true
 
-## Context-dependent time scale (see TIMESCALE_* constants).
-var _timescale: float = TIMESCALE_WILDERNESS
+## Active exploration context (see CONTEXT_PROFILES). Wilderness by default.
+var _context: TimeContext = TimeContext.WILDERNESS
+
+## Time scale derived from the active context; cached for per-frame tick math.
+var _timescale: float = CONTEXT_PROFILES[TimeContext.WILDERNESS]["timescale"]
 
 ## Fractional rounds accumulated between frames (avoids drift at low speeds).
 var _accumulated_rounds: float = 0.0
@@ -132,35 +131,36 @@ func setup(scheduler: EventScheduler, registry: EventHandlerRegistry, party_id: 
 	_accumulated_rounds = 0.0
 
 
-## Set the time scale for the current exploration context.
-## Higher values make the clock tick faster at the same speed setting.
-func set_timescale(scale: float) -> void:
-	_timescale = maxf(1.0, scale)
+## Configure the loop for an exploration context: the timescale and speed-band
+## table come from CONTEXT_PROFILES together, and the fractional accumulator
+## resets. States call this in enter(); party-context switching (Option 1)
+## will call it on every watched-context change. Replaces set_timescale() —
+## the context is explicit now, never inferred from a float.
+func set_context(context: TimeContext) -> void:
+	assert(CONTEXT_PROFILES.has(context),
+		"SchedulerLoop.set_context: no profile for context %d" % context)
+	_context = context
+	_timescale = float(CONTEXT_PROFILES[context]["timescale"])
 	_accumulated_rounds = 0.0
+
+
+func get_context() -> TimeContext:
+	return _context
 
 
 func get_timescale() -> float:
 	return _timescale
 
 
-## Returns the per-context multiplier for the currently-set speed band.
+## Returns the active context's multiplier for the current speed band.
 ## Internal tick math and external consumers (e.g. the dungeon renderer's
-## tween-speed computation) both go through this so the two stay in sync.
+## tween-speed computation) both derive from CONTEXT_PROFILES, so the visual
+## pace and the logical clock cannot drift apart.
 func get_effective_multiplier() -> float:
 	if _speed == SPEED_PAUSED or _speed == SPEED_MAX:
 		return float(_speed)
-	var table: Dictionary = _speed_table_for_timescale()
-	return float(table.get(_speed, _speed))
-
-
-## Picks the per-context speed table by inspecting the current `_timescale`
-## (set on state enter). Falls back to wilderness for unknown values.
-func _speed_table_for_timescale() -> Dictionary:
-	if is_equal_approx(_timescale, TIMESCALE_DUNGEON):
-		return DUNGEON_SPEEDS
-	if is_equal_approx(_timescale, TIMESCALE_SETTLEMENT):
-		return SETTLEMENT_SPEEDS
-	return WILDERNESS_SPEEDS
+	var bands: Dictionary = CONTEXT_PROFILES[_context]["bands"]
+	return float(bands.get(_speed, _speed))
 
 
 # ---------------------------------------------------------------------------

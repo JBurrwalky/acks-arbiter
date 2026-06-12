@@ -78,8 +78,25 @@ func enter(runner, context: Dictionary) -> void:
 		_handlers.schedule_day_tick(scheduler, p.id)
 		_handlers.schedule_noon_tick(scheduler, p.id)
 
-	# Set wilderness time scale — 1x feels like watching the day advance.
-	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
+	# Declare the wilderness context — 1x feels like watching the day advance.
+	runner.get_scheduler_loop().set_context(SchedulerLoop.TimeContext.WILDERNESS)
+
+	# Switch-first encounter flow (Option 1, 2026-06-12): if the focused party
+	# acquired a deferred encounter while backgrounded, present it now that
+	# the decision listener is connected. Fire-and-clear — once presented, the
+	# stored copy is spent (the prompt forces a choice; if the player somehow
+	# dismisses it, the encounter is gone, matching the pre-deferral fiction
+	# of a broken-off contact).
+	var focus_pid: String = runner.get_party_id()
+	if not focus_pid.is_empty():
+		var pending: String = CampaignRepository.get_party_pending_encounter(focus_pid)
+		if not pending.is_empty():
+			CampaignRepository.set_party_pending_encounter(focus_pid, "")
+			var enc = str_to_var(pending)
+			if enc is Dictionary and not (enc as Dictionary).is_empty():
+				# call_deferred so enter() finishes first — the prompt parents
+				# onto the renderer this frame is still wiring up.
+				EventBus.encounter_decision_required.emit.call_deferred(focus_pid, enc)
 
 	# Start the scheduler paused — player issues orders, then unpauses.
 	# (If the scheduler was already running and we returned from combat,
@@ -290,8 +307,12 @@ func _on_context_action(action_data: Dictionary) -> void:
 		)
 		EventBus.order_queued.emit(party_id, WildernessHandlers.ACTIVITY_EVENT, arrival_time)
 
+	# Focus-coupled clock (Option 1 ruling 2026-06-12): orders queue fine, but
+	# the clock may not run on the hexmap while a party is in a dungeon — the
+	# queued orders execute when the player returns to the dungeon layer.
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
-	if loop != null and loop.is_paused():
+	if loop != null and loop.is_paused() \
+			and _runner.get_clock_lock_reason().is_empty():
 		loop.resume(SchedulerLoop.SPEED_NORMAL)
 
 
@@ -377,6 +398,18 @@ func _on_wilderness_cache_visit_requested(_cache_id: String, _hex: Vector2i) -> 
 
 func _on_camp_requested() -> void:
 	if _runner == null:
+		return
+	# Focus-coupled clock (Option 1 ruling 2026-06-12): camping needs the
+	# clock to run (watches resolve at MAX speed), which is forbidden while a
+	# party is in a dungeon. Block camp entry rather than hanging at pause.
+	var lock_reason: String = _runner.get_clock_lock_reason()
+	if not lock_reason.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Cannot Camp Now",
+			"body": lock_reason,
+		})
 		return
 	# Pause the scheduler before transitioning
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
@@ -680,6 +713,9 @@ func _close_encounter_prompt() -> void:
 
 func _resume_scheduler() -> void:
 	if _runner == null:
+		return
+	# Focus-coupled clock: no hexmap-side resume while a party is below.
+	if not _runner.get_clock_lock_reason().is_empty():
 		return
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
 	if loop != null and loop.is_paused():

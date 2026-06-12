@@ -81,9 +81,9 @@ func enter(runner, context: Dictionary) -> void:
 	if loop != null and not loop.is_paused():
 		loop.pause()
 
-	# Set settlement time scale for when activities/travel resume the clock.
+	# Declare the settlement context for when activities/travel resume the clock.
 	if loop != null:
-		loop.set_timescale(SchedulerLoop.TIMESCALE_SETTLEMENT)
+		loop.set_context(SchedulerLoop.TimeContext.SETTLEMENT)
 
 	# Listen for left-clicks on our party token (reopens the menu after a
 	# travel commit closes it). The hex map remains visible and clickable.
@@ -255,12 +255,15 @@ func _on_poi_clicked(poi: Dictionary) -> void:
 		return
 
 	# Hide menu and activity panel; resume the scheduler so travel ticks down.
+	# Focus-coupled clock (Option 1, 2026-06-12): no settlement-side resume
+	# while a party is in a dungeon — the order queues and executes later.
 	if _menu != null:
 		_menu.visible = false
 	if _activity_panel != null:
 		_activity_panel.visible = false
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
-	if loop != null and loop.is_paused():
+	if loop != null and loop.is_paused() \
+			and _runner.get_clock_lock_reason().is_empty():
 		loop.resume(SchedulerLoop.SPEED_NORMAL)
 
 
@@ -440,12 +443,15 @@ func _on_activity_requested(activity_type: String, poi: Dictionary) -> void:
 			activity_type, poi, duration_turns,
 			_runner.get_scheduler(), _runner.get_party_id())
 		# Hide panels and resume the scheduler for the activity to tick.
+		# Focus-coupled clock (Option 1, 2026-06-12): no settlement-side
+		# resume while a party is in a dungeon.
 		if _menu != null:
 			_menu.visible = false
 		if _activity_panel != null:
 			_activity_panel.visible = false
 		var loop: SchedulerLoop = _runner.get_scheduler_loop()
-		if loop != null and loop.is_paused():
+		if loop != null and loop.is_paused() \
+				and _runner.get_clock_lock_reason().is_empty():
 			loop.resume(SchedulerLoop.SPEED_NORMAL)
 	else:
 		EventBus.notification_requested.emit({

@@ -312,6 +312,12 @@ func _ready() -> void:
 	# primary was merged away.
 	EventBus.party_split.connect(_on_party_split_for_scheduler)
 	EventBus.party_merged.connect(_on_party_merged_for_scheduler)
+	# Party-context switching (Option 1, 2026-06-12): every active-party
+	# change is a full focus switch (re-point the watched party + transition
+	# the UI to its persisted context); toast actions request focus via
+	# party_focus_requested.
+	EventBus.active_party_changed.connect(_on_active_party_changed_for_context)
+	EventBus.party_focus_requested.connect(go_to_party)
 	# Ring of Regeneration round-tick consumer (2026-06-03). Per ACKS Core
 	# p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates 1 hp per round.
 	# Will not regenerate if reduced to 0 hp or less." The handler scans
@@ -437,6 +443,9 @@ func transition_to_state(state_key: String, context: Dictionary = {}) -> void:
 			CampaignRepository.update_party_location_type(_party_id, state_key)
 
 	_sync_game_state(state_key)
+	# Focus-coupled clock: entering/leaving the dungeon layer (or a real
+	# dungeon exit changing parties' location types) can flip the lock.
+	_refresh_clock_lock()
 	state_transitioned.emit(old_key, state_key)
 	EventBus.session_state_transitioned.emit(old_key, state_key)
 
@@ -842,6 +851,12 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_entity_outliner.set_scheduler(_scheduler)
 	_entity_outliner.visible = true
 
+	# Party-context switching (Option 1): record the watched party for the
+	# loader's next pick, and seed the focus-coupled clock lock (a save with
+	# a suspended dungeon party loaded into wilderness starts locked).
+	CampaignRepository.set_last_active_party(campaign_id, party_id)
+	_refresh_clock_lock()
+
 	session_loaded.emit(campaign_id)
 
 
@@ -983,26 +998,204 @@ func _on_party_split_for_scheduler(_original_party_id: String, new_party_id: Str
 ## EventBus.party_merged handler (single-timeline rework, 2026-06-11).
 ## 1. Cancels queued events owned by the dissolved party — otherwise they fire
 ##    later, fail to resolve a PartyData, and silently no-op.
-## 2. Merge-primary guard: if the session primary was merged away, re-points
-##    the session (_party_id, _party_data, GameState) at the survivor —
-##    previously this left every session pointer at a deleted party.
-## 3. If the primary absorbed the dissolved party, reloads _party_data so the
-##    live roster includes the merged-in members.
+## 2. Merge-primary guard: if the watched party was merged away, re-points the
+##    session at the survivor — previously this left every session pointer at
+##    a deleted party.
+## 3. If the watched party absorbed the dissolved party, reloads _party_data
+##    so the live roster includes the merged-in members.
 func _on_party_merged_for_scheduler(surviving_party_id: String, dissolved_party_id: String) -> void:
 	if _campaign_id.is_empty():
 		return
 	if _scheduler != null:
 		_scheduler.cancel_all_for_owner(dissolved_party_id)
 	if dissolved_party_id == _party_id:
-		_party_id = surviving_party_id
-		GameState.party_id = surviving_party_id
-		_load_party_data_for_session(surviving_party_id)
+		_repoint_watched_party(surviving_party_id)
 		if GameState.active_party_id == dissolved_party_id:
 			GameState.set_active_party(surviving_party_id)
-		_refresh_party_visibility_bonus()
 	elif surviving_party_id == _party_id:
 		_load_party_data_for_session(_party_id)
 		_refresh_party_visibility_bonus()
+
+
+# ---------------------------------------------------------------------------
+# Party-context switching (Option 1 — docs/handoff_party_context_switching.md,
+# rulings closed 2026-06-12: active = watched = selected; focus-coupled clock)
+# ---------------------------------------------------------------------------
+
+## States from which the player may switch the watched party. Combat and
+## overlay/meta states block switching (their UIs already prevent it; this is
+## the engine-side guard). Camp is excluded: the camp UI is watched-party
+## furniture — finish or break camp before switching.
+const _SWITCHABLE_STATES := ["wilderness", "dungeon", "settlement"]
+
+## Re-entrancy flag for reverting a blocked active-party change.
+var _reverting_active_party: bool = false
+
+## Re-points the session's watched-party trio (_party_id, GameState.party_id,
+## _party_data) at [param party_id] and refreshes derived state. The watched
+## party IS the session primary (active = watched = selected). Records the
+## choice so the session loader reopens on the same party.
+func _repoint_watched_party(party_id: String) -> void:
+	_party_id = party_id
+	GameState.party_id = party_id
+	_load_party_data_for_session(party_id)
+	_refresh_party_visibility_bonus()
+	if not _campaign_id.is_empty():
+		CampaignRepository.set_last_active_party(_campaign_id, party_id)
+
+
+## Public entry point: focus [param party_id] — switch the watched party AND
+## transition the UI to its context (hexmap for wilderness, dungeon layer for
+## a suspended delve, settlement menu for a town visit). Wired to
+## EventBus.party_focus_requested (toast actions) and driven indirectly by
+## every GameState.set_active_party caller via active_party_changed.
+func go_to_party(party_id: String) -> void:
+	if party_id.is_empty() or _campaign_id.is_empty():
+		return
+	if GameState.active_party_id == party_id:
+		# Already the active party (e.g. toast tapped twice) — still make sure
+		# the context matches.
+		_apply_party_focus(party_id)
+	else:
+		GameState.set_active_party(party_id)  # handler performs the focus
+
+
+## EventBus.active_party_changed handler: every active-party switch is a full
+## focus switch (active = watched = selected).
+func _on_active_party_changed_for_context(_previous_party_id: String, new_party_id: String) -> void:
+	if _reverting_active_party:
+		return
+	if _campaign_id.is_empty() or new_party_id.is_empty():
+		return
+	_apply_party_focus(new_party_id)
+
+
+## Performs the focus switch: re-point the watched-party trio, then transition
+## the UI to the party's persisted context. Mirrors the savegame loader's
+## context-aware restore (session_load_state.gd) — a suspended dungeon party
+## resumes via the same entrance/spawn_cell/restore_positions path a save
+## made mid-dungeon uses.
+func _apply_party_focus(party_id: String) -> void:
+	# Blocked contexts: combat/camp/menu states, and dungeon IN-PLACE combat
+	# (the dungeon state stays current and reports is_in_combat — same flag
+	# that blocks mid-combat saves, gdd-savegame-system.md §5.7).
+	var blocked: bool = _current_state_key not in _SWITCHABLE_STATES
+	if not blocked and _current_state != null \
+			and _current_state.has_method("is_in_combat") and _current_state.is_in_combat():
+		blocked = true
+	if blocked:
+		# Revert the selection so the active = watched invariant holds, and
+		# tell the player why.
+		if GameState.active_party_id != _party_id and not _party_id.is_empty():
+			_reverting_active_party = true
+			GameState.set_active_party(_party_id)
+			_reverting_active_party = false
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "system",
+				"title": "Cannot Switch Parties",
+				"body": "Finish what this party is doing first (%s)." % _current_state_key,
+			})
+		return
+
+	if party_id != _party_id:
+		_repoint_watched_party(party_id)
+	if _party_data == null:
+		return
+
+	var target_key := "wilderness"
+	var context: Dictionary = {}
+	match _party_data.current_location_type:
+		"dungeon":
+			context = _build_dungeon_focus_context(_party_data)
+			if not context.is_empty():
+				target_key = "dungeon"
+		"settlement":
+			context = _build_settlement_focus_context(_party_data)
+			if not context.is_empty():
+				target_key = "settlement"
+
+	if target_key == _current_state_key:
+		# Same-context switch (wilderness→wilderness is the common case): no
+		# transition — the states' own active_party_changed listeners handle
+		# camera recenter and UI refresh.
+		return
+
+	transition_to_state(target_key, context)
+
+	# Landing on the hexmap: center on the focused party. (The wilderness
+	# state's own recenter listener was not yet connected when the
+	# active-party signal fired.)
+	if target_key == "wilderness" and _hex_renderer != null \
+			and _hex_renderer.has_method("center_on_hex"):
+		_hex_renderer.center_on_hex(Vector2i(
+			_party_data.current_hex_q, _party_data.current_hex_r))
+
+
+## Builds the dungeon enter() context for focusing a suspended dungeon party.
+## Mirrors SessionLoadState._restore_into_dungeon — keep the two in sync.
+## Returns {} when the dungeon cannot be resolved (caller falls back to
+## wilderness, matching the loader's behavior).
+func _build_dungeon_focus_context(pd: PartyData) -> Dictionary:
+	if pd == null or pd.dungeon_id.is_empty():
+		return {}
+	var entrance: Dictionary = CampaignRepository.get_dungeon_entrance_for_dungeon_id(
+		_campaign_id, pd.dungeon_id)
+	if entrance.is_empty():
+		push_warning("SessionRunner: cannot resolve dungeon '%s' for party focus; falling back to wilderness" % pd.dungeon_id)
+		return {}
+	return {
+		"entrance": entrance,
+		"spawn_cell": Vector2i(pd.dungeon_col, pd.dungeon_row),
+		"restore_positions": CampaignRepository.load_dungeon_entity_positions(pd.id),
+	}
+
+
+## Builds the settlement enter() context for focusing a party inside a
+## settlement. Mirrors SessionLoadState._restore_into_settlement — keep the
+## two in sync. Returns {} when the settlement cannot be resolved.
+func _build_settlement_focus_context(pd: PartyData) -> Dictionary:
+	if pd == null or pd.settlement_id.is_empty():
+		return {}
+	var entrance: Dictionary = CampaignRepository.get_settlement_entrance(pd.settlement_id)
+	if entrance.is_empty():
+		push_warning("SessionRunner: cannot resolve settlement '%s' for party focus; falling back to wilderness" % pd.settlement_id)
+		return {}
+	return {
+		"entrance": entrance,
+		"entry_poi_id": pd.settlement_node_id,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Focus-coupled clock (Option 1 ruling 2026-06-12, Jedidiah's "Option C"):
+# while any party is inside a dungeon, the world clock advances ONLY while the
+# dungeon layer has focus. Other layers may resolve modals and queue orders,
+# but cannot resume the clock.
+# ---------------------------------------------------------------------------
+
+## Cached lock reason so clock_lock_changed only fires on actual changes.
+var _clock_lock_reason_cache: String = ""
+
+## Returns "" when the clock may run in the current context, else the
+## human-readable reason it is locked.
+func get_clock_lock_reason() -> String:
+	if _campaign_id.is_empty():
+		return ""
+	if _current_state_key == "dungeon":
+		return ""
+	if CampaignRepository.any_party_in_dungeon(_campaign_id):
+		return "Time advances in the dungeon. Switch to the delving party to run the clock."
+	return ""
+
+
+## Recomputes the lock and broadcasts clock_lock_changed on change. Called
+## after every state transition and at session load/end.
+func _refresh_clock_lock() -> void:
+	var reason := get_clock_lock_reason()
+	if reason != _clock_lock_reason_cache:
+		_clock_lock_reason_cache = reason
+		EventBus.clock_lock_changed.emit(reason)
 
 
 ## Specialist payday (gdd-specialists.md §6.3). Fires on every calendar
@@ -1090,6 +1283,10 @@ func end_session() -> void:
 	# doesn't inherit the prior party's bonus.
 	if _hex_controller != null:
 		_hex_controller.set_party_visibility_bonus_hexes(0)
+	# Focus-coupled clock: clear the lock for the menu / next session.
+	if not _clock_lock_reason_cache.is_empty():
+		_clock_lock_reason_cache = ""
+		EventBus.clock_lock_changed.emit("")
 	GameState.end_session()  # triggers Timekeeping reset, DiceSystem clear
 
 
@@ -1508,6 +1705,19 @@ func _on_clock_speed_requested(speed: int) -> void:
 		return
 	if _current_state_key not in _SCHEDULER_STATES:
 		return
+	# Focus-coupled clock (Option 1 ruling 2026-06-12): pausing is always
+	# allowed; running the clock outside the dungeon layer is not while a
+	# party is below.
+	if speed != SchedulerLoop.SPEED_PAUSED:
+		var lock_reason := get_clock_lock_reason()
+		if not lock_reason.is_empty():
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "system",
+				"title": "Clock Locked",
+				"body": lock_reason,
+			})
+			return
 	_scheduler_loop.set_speed(speed)
 
 

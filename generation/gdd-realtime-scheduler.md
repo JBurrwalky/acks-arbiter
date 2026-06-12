@@ -33,7 +33,9 @@ There is ONE world clock. `Timekeeping.get_total_rounds()` is the canonical "now
 
 Multi-party concurrency is a function of event ownership, not clocks: every party's orders are events in the shared queue owned by that `party_id`, and they resolve as the world clock passes their fire_times — PROVIDED a handler for the event type is registered (see the caveat below). There is **no order-lock** (ruled 2026-06-12): a new order supersedes the old one — order surfaces cancel the party's pending travel and activity events (`cancel_all_for_owner`) before scheduling replacements. Time already spent is spent; a cancelled activity yields nothing.
 
-**Background-party resolution (Option 2, landed 2026-06-12):** ALL wilderness handlers (travel, encounters, getting-lost, forced-march, activities, ticks) are globally registered for the session (`WildernessHandlers.register_global`, owned by SessionRunner) — background parties' chains keep resolving while the player is in a dungeon/settlement/camp. Background outcomes auto-pause and toast (arrival, lost, forced-march halt). **Background encounters halt-and-drop:** a triggered encounter for a party outside the active wilderness context cancels its journey, pauses, and toasts "holding position" — the encounter itself is dropped because the decision modal only exists in the wilderness state (`WildernessHandlers._is_wilderness_ui_active`). Caution: an unhandled event type is still popped-and-destroyed by design (`event_handler_registry.gd::resolve` returns `{}`); `test_all_wilderness_handlers_register_globally` pins full wilderness coverage. Remaining gap: no UI exists to switch dungeon↔hexmap contexts without walking to an exit — Option 1 (party-context switching), see `docs/handoff_party_context_switching.md`.
+**Background-party resolution (Option 2, landed 2026-06-12):** ALL wilderness handlers (travel, encounters, getting-lost, forced-march, activities, ticks) are globally registered for the session (`WildernessHandlers.register_global`, owned by SessionRunner) — background parties' chains keep resolving while the player is in a dungeon/settlement/camp. Background outcomes auto-pause and surface tap-to-act toasts (arrival, lost, forced-march halt) that focus the party. `test_all_wilderness_handlers_register_globally` pins full wilderness handler coverage (an event type with no registered handler is parked, not destroyed — Batch B — but parked means delayed; wilderness must resolve live).
+
+**Party-context switching (Option 1, landed 2026-06-12 — `docs/handoff_party_context_switching.md`):** active = watched = selected. Switching the active party re-points the session and transitions the UI to that party's persisted context; a dungeon party left behind is SUSPENDED (positions, picked locks, fog, and queued events intact — `DungeonExploreState` suspend ≠ exit) and resumes via the savegame restore path. **Focus-coupled clock (Jedidiah's "Option C"):** while any party is inside a dungeon, the world clock advances ONLY while the dungeon layer has focus — other layers resolve modals and queue orders against a locked clock (`SessionRunner.get_clock_lock_reason`; speed buttons disable via `EventBus.clock_lock_changed`; camp entry is gated). Combat's RAW lump-sum advance is the one piercing case; the resulting past-due burst resolves in (fire_time, priority, FIFO-sequence) order on resume (`test_past_due_burst_resolves_in_order`). **Switch-first encounters:** a background party's triggered encounter is fully formed, persisted (`party_state.pending_encounter`), and presented through the normal EncounterDecisionPrompt when the player focuses that party.
 
 ### 1.3 Session Runner Model
 
@@ -118,9 +120,9 @@ These are mapped to actual game-time-per-real-second multipliers via per-context
 | Wilderness | 1× | 2× | 5× |
 | Settlement | 1× | 2× | 5× |
 
-The dungeon context uses larger multipliers because its base TIMESCALE is round-level (~2 real seconds = 1 game round); a 30× multiplier advances ~5 minutes of game time per 2 real seconds. Wilderness and settlement keep 1×/2×/5× because their base timescales (`TIMESCALE_WILDERNESS = 60.0`, `TIMESCALE_SETTLEMENT = 6.0`) already amplify each band.
+The dungeon context uses larger multipliers because its base timescale is round-level (~2 real seconds = 1 game round); a 30× multiplier advances ~5 minutes of game time per 2 real seconds. Wilderness and settlement keep 1×/2×/5× because their base timescales (60.0 and 6.0 per `CONTEXT_PROFILES`) already amplify each band.
 
-`SchedulerLoop.get_effective_multiplier()` is the single source of truth for the active multiplier; the dungeon renderer reads from `DUNGEON_SPEEDS` directly so tween playback stays synchronized with logical advancement.
+States declare their context explicitly via `SchedulerLoop.set_context(TimeContext)`; timescale + speed bands come from the single `CONTEXT_PROFILES` table (context-enum refactor 2026-06-12 — the context is never inferred from a timescale value). `get_effective_multiplier()` is the single source of truth for the active multiplier; the dungeon renderer reads the DUNGEON profile row from the same table so tween playback stays synchronized with logical advancement.
 
 Spacebar toggles pause via `toggle_pause(resume_speed)`. The default keybindings 1/2/3 set NORMAL/FAST/VERY_FAST; MAX is bound to a separate key.
 
@@ -131,7 +133,7 @@ The scheduler handles discrete events with known timestamps: travel arrivals, ac
 The dungeon layer additionally needs continuous-feeling unit movement. The implementation splits this into:
 
 - **Logical state:** voxel-snapped positions in `voxel_map.entity_positions`, updated per cell as the unit traverses its path.
-- **Visual state:** renderer tweens (`dungeon_map_renderer_3d.gd._active_movements`) animate tokens smoothly between cells. Tween duration is `SECONDS_PER_ROUND / cells_per_round`, scaled by `_compute_speed_scale()` so the visual pace tracks `DUNGEON_SPEEDS`.
+- **Visual state:** renderer tweens (`dungeon_map_renderer_3d.gd._active_movements`) animate tokens smoothly between cells. Tween duration is `SECONDS_PER_ROUND / cells_per_round`, scaled by `_compute_speed_scale()` so the visual pace tracks the dungeon profile's speed bands.
 
 The cell-arrival signal (`movement_cell_reached`) is the seam: when a tween finishes a cell-hop, it fires the signal; the mechanical layer (`DungeonExploreState`/`DungeonHandlers`) updates `voxel_map.entity_positions`, runs occupancy/passability/encounter-proximity checks, and starts the next cell tween or stops the path.
 
@@ -159,7 +161,7 @@ When the player issues a Move Here order:
 
 ### 3.2 Speed Scaling
 
-Tween playback speed scales with the active `DUNGEON_SPEEDS` multiplier. At Normal (1×), one cell takes ~2 real seconds at exploration speed. At Fast (6×), ~0.33 real seconds. At Very Fast (30×), ~0.067 real seconds — at this speed the visual is rapid but readable. At MAX, the renderer skips animation entirely; logical positions update via direct scheduler-driven advancement.
+Tween playback speed scales with the active dungeon-profile band multiplier. At Normal (1×), one cell takes ~2 real seconds at exploration speed. At Fast (6×), ~0.33 real seconds. At Very Fast (30×), ~0.067 real seconds — at this speed the visual is rapid but readable. At MAX, the renderer skips animation entirely; logical positions update via direct scheduler-driven advancement.
 
 ### 3.3 Cancellation
 
@@ -687,10 +689,11 @@ loop.set_speed(SchedulerLoop.SPEED_MAX)       # = -1
 # Active multiplier (read-only, depends on band + context):
 loop.get_effective_multiplier()               # → 1.0, 2.0, 5.0, 6.0, 30.0, etc.
 
-# Set context timescale on state enter:
-loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)     # = 1.0
-loop.set_timescale(SchedulerLoop.TIMESCALE_SETTLEMENT)  # = 6.0
-loop.set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)  # = 60.0
+# Declare the exploration context on state enter (sets timescale + speed
+# bands together from CONTEXT_PROFILES):
+loop.set_context(SchedulerLoop.TimeContext.DUNGEON)     # timescale 1.0
+loop.set_context(SchedulerLoop.TimeContext.SETTLEMENT)  # timescale 6.0
+loop.set_context(SchedulerLoop.TimeContext.WILDERNESS)  # timescale 60.0
 
 # Pause/resume:
 loop.pause()

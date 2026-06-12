@@ -189,6 +189,7 @@ extends Node
 @onready var _specialist_hire_manager_tests = $SpecialistHireManagerTests
 @onready var _specialist_integration_tests = $SpecialistIntegrationTests
 @onready var _specialist_dual_path_tests = $SpecialistDualPathTests
+@onready var _party_context_switching_tests = $PartyContextSwitchingTests
 @onready var _casting_geometry_tests = $CastingGeometryTests
 @onready var _casting_resolver_tests = $CastingResolverTests
 @onready var _spell_slot_reset_tests = $SpellSlotResetTests
@@ -705,6 +706,8 @@ func run() -> void:
 			_specialist_hire_manager_tests,
 			_specialist_integration_tests,
 			_specialist_dual_path_tests,
+			# 2026-06-12 — Option 1 party-context switching (migration 155)
+			_party_context_switching_tests,
 			_casting_geometry_tests,
 			_casting_resolver_tests,
 			_spell_slot_reset_tests,

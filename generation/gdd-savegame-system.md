@@ -110,7 +110,7 @@ When the new state is a primary-location state, write the type via a new `Campai
 **Dungeon (full fidelity — "Exact cell", per member).** Persist **each party entity's exact live voxel cell** `(col, row, level)`, not a single anchor (Jedidiah 2026-06-07: re-scattering from an anchor could yank members across large distances on reload — unexpected and disruptive). At the party level, keep `parties.dungeon_id` + `parties.dungeon_level` (for the loader and camera focus); the authoritative *placement* data is per entity.
 - Storage: a small dedicated table keyed by entity (§7), populated from `_voxel_map.get_entity_pos(entity_id)` for every party entity id. A per-entity table (rather than columns on `party_members`) covers PCs, henchmen, **and** any trained creatures that entered the dungeon, matching the controller's `entity_id` model.
 - Update `parties.dungeon_level` on ascend/descend.
-- Write positions on **scheduler pause** (the game is real-time-*with-pause*; the player saves while paused, so pause-time writes capture live cells cheaply) and again inside the `flush_to_db()` save path (§5.3). Clear them on dungeon exit (mirror `clear_party_dungeon_position`).
+- Write positions on **scheduler pause** (the game is real-time-*with-pause*; the player saves while paused, so pause-time writes capture live cells cheaply) and again inside the `flush_to_db()` save path (§5.3). Clear them on REAL dungeon departure only (mirror `clear_party_dungeon_position`) — a SUSPEND (party-context switch, Option 1 2026-06-12) flushes and keeps them; the suspended delve resumes through this same restore path.
 - On restore, after `load_dungeon()` builds the map and merges explored state (§5.4), set **each** entity's position from the stored cells — `_voxel_map.set_entity_pos(entity_id, Vector3i(col,row,level))` — so the party stands exactly where it was. `_scatter_party_at_entry` is used **only** as the fresh-entry path (no stored positions) or as a fallback for an entity with no stored cell.
 
 **Settlement.** Persist `settlement_id` + the current POI as `settlement_node_id`. Settlements expose `get_current_poi_id()` / `set_current_poi()`, which map directly onto the unused `settlement_node_id` column. New repo fn `update_party_settlement_position(party_id, settlement_id, node_id)`, called on settlement enter and on each `set_current_poi`. Clear on exit (mirror `clear_party_dungeon_position`).
@@ -242,7 +242,7 @@ dungeon_entity_positions          -- live voxel cell per party entity, while in 
   PRIMARY KEY (party_id, entity_id)
 ```
 
-Rows are written on pause / flush and **deleted on dungeon exit**. (Final table/column names are an engineering detail; a dedicated table is preferred over columns on `party_members` so non-character entities are covered.)
+Rows are written on pause / flush and **deleted on real dungeon departure** (NOT on suspend — a party-context switch keeps them so the delve resumes; Option 1 2026-06-12). (Final table/column names are an engineering detail; a dedicated table is preferred over columns on `party_members` so non-character entities are covered.)
 
 **Part B: migration 147** makes `game_snapshots` slot metadata (the actual state is a whole-DB file at `user://saves/<id>.db`):
 

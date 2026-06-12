@@ -154,6 +154,18 @@ func _backfill_party_heraldry(campaign_id: String) -> void:
 
 
 func _get_or_create_party(campaign_id: String) -> String:
+	# Prefer the party the player was watching at last save (migration 155,
+	# party-context switching) — a save made while watching party B with
+	# party A suspended mid-dungeon reopens watching B. Validate it still
+	# exists in this campaign before trusting it.
+	var last_active: String = CampaignRepository.get_last_active_party(campaign_id)
+	if not last_active.is_empty():
+		CampaignRepository.db.query_with_bindings(
+			"SELECT id FROM parties WHERE id = ? AND campaign_id = ?",
+			[last_active, campaign_id]
+		)
+		if not CampaignRepository.db.query_result.is_empty():
+			return last_active
 	CampaignRepository.db.query_with_bindings(
 		"SELECT id FROM parties WHERE campaign_id = ? LIMIT 1",
 		[campaign_id]

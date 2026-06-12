@@ -46,9 +46,9 @@ func _setup() -> void:
 	_loop.setup(_scheduler, _registry, TEST_PARTY)
 
 	# The legacy tests below compute rounds/sec assuming timescale 1.0. The
-	# loop's default is TIMESCALE_WILDERNESS (60), which silently ran them 60×
-	# fast — pin the dungeon timescale; C1 tests override per-test as needed.
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	# loop's default context is WILDERNESS (timescale 60), which silently ran
+	# them 60× fast — pin the dungeon context; C1 tests override per-test.
+	_loop.set_context(SchedulerLoop.TimeContext.DUNGEON)
 
 	# Connect signals for verification
 	if not EventBus.scheduler_speed_changed.is_connected(_on_speed_changed):
@@ -123,9 +123,11 @@ func run_all_tests() -> void:
 	test_set_speed_emits_pause_resume_signals()
 	test_stale_pause_reason_not_replayed()
 	test_max_speed_empty_queue_signal_reason()
+	test_set_context_applies_profile()
 	test_c1_dungeon_normal_multiplier()
 	test_c1_dungeon_fast_multiplier()
 	test_c1_dungeon_very_fast_multiplier()
+	test_past_due_burst_resolves_in_order()
 	test_c1_wilderness_speeds_unchanged()
 	test_c1_settlement_speeds_unchanged()
 
@@ -341,7 +343,7 @@ func test_unhandled_event_parks_and_resolves_on_register() -> void:
 
 func test_delta_clamp_bounds_time_jump() -> void:
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
+	_loop.set_context(SchedulerLoop.TimeContext.WILDERNESS)
 	_loop.set_speed(SchedulerLoop.SPEED_VERY_FAST)
 
 	# Wilderness VERY_FAST = 5 × 60 / 2.0 = 150 rounds/sec. A 10s frame hitch
@@ -415,9 +417,24 @@ func test_max_speed_empty_queue_signal_reason() -> void:
 # C1 — Per-context speed bands
 # ---------------------------------------------------------------------------
 
+func test_set_context_applies_profile() -> void:
+	# Context refactor (2026-06-12): states declare an explicit TimeContext;
+	# timescale + speed bands come from CONTEXT_PROFILES together. The old
+	# float-matching dispatch silently fell back to the wilderness table for
+	# any unrecognized timescale.
+	_setup()
+	_loop.set_context(SchedulerLoop.TimeContext.SETTLEMENT)
+	check(_loop.get_context() == SchedulerLoop.TimeContext.SETTLEMENT, "context recorded")
+	check(_loop.get_timescale() == 6.0, "settlement timescale comes from the profile")
+	_loop.set_context(SchedulerLoop.TimeContext.WILDERNESS)
+	check(_loop.get_timescale() == 60.0, "wilderness timescale comes from the profile")
+	_loop.set_context(SchedulerLoop.TimeContext.DUNGEON)
+	check(_loop.get_timescale() == 1.0, "dungeon timescale comes from the profile")
+
+
 func test_c1_dungeon_normal_multiplier() -> void:
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_context(SchedulerLoop.TimeContext.DUNGEON)
 	_loop.set_speed(SchedulerLoop.SPEED_NORMAL)
 	check(_loop.get_effective_multiplier() == 1.0,
 		"dungeon Normal should resolve to 1×, got %.1f" % _loop.get_effective_multiplier())
@@ -428,7 +445,7 @@ func test_c1_dungeon_fast_multiplier() -> void:
 	# real seconds. With SECONDS_PER_ROUND=2 and timescale=1, that's
 	# multiplier = 6 → rounds/sec = 3.
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_context(SchedulerLoop.TimeContext.DUNGEON)
 	_loop.set_speed(SchedulerLoop.SPEED_FAST)
 	check(_loop.get_effective_multiplier() == 6.0,
 		"dungeon Fast should resolve to 6×, got %.1f" % _loop.get_effective_multiplier())
@@ -437,18 +454,18 @@ func test_c1_dungeon_fast_multiplier() -> void:
 func test_c1_dungeon_very_fast_multiplier() -> void:
 	# Dungeon Very Fast = 30 rounds (5 minutes) per 2 real seconds.
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_context(SchedulerLoop.TimeContext.DUNGEON)
 	_loop.set_speed(SchedulerLoop.SPEED_VERY_FAST)
 	check(_loop.get_effective_multiplier() == 30.0,
 		"dungeon Very Fast should resolve to 30×, got %.1f" % _loop.get_effective_multiplier())
 
 
 func test_c1_wilderness_speeds_unchanged() -> void:
-	# Wilderness keeps the prior 1×/2×/5× because TIMESCALE_WILDERNESS=60
+	# Wilderness keeps the prior 1×/2×/5× because its timescale (60)
 	# already amplifies the band — bumping wilderness Very Fast to 30 would
 	# push it to 9000× real time.
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
+	_loop.set_context(SchedulerLoop.TimeContext.WILDERNESS)
 	_loop.set_speed(SchedulerLoop.SPEED_NORMAL)
 	check(_loop.get_effective_multiplier() == 1.0, "wilderness Normal = 1×")
 	_loop.set_speed(SchedulerLoop.SPEED_FAST)
@@ -459,7 +476,41 @@ func test_c1_wilderness_speeds_unchanged() -> void:
 
 func test_c1_settlement_speeds_unchanged() -> void:
 	_setup()
-	_loop.set_timescale(SchedulerLoop.TIMESCALE_SETTLEMENT)
+	_loop.set_context(SchedulerLoop.TimeContext.SETTLEMENT)
 	_loop.set_speed(SchedulerLoop.SPEED_FAST)
 	check(_loop.get_effective_multiplier() == 2.0,
 		"settlement Fast keeps prior 2×, got %.1f" % _loop.get_effective_multiplier())
+
+
+## Option 1 acceptance (docs/handoff_party_context_switching.md s5.3a-ii):
+## past-due events that accumulated while the loop could not run (e.g.
+## combat's RAW lump-sum clock advance during a suspended delve) resolve in
+## (fire_time, then priority tier, then FIFO sequence) order on resume.
+func test_past_due_burst_resolves_in_order() -> void:
+	_setup()
+	_registry.register("burst_a", _simple_handler)
+	_registry.register("burst_b", _simple_handler)
+	_registry.register("burst_c", _simple_handler)
+	_registry.register("burst_d", _simple_handler)
+
+	# Scheduled deliberately out of resolution order:
+	#   t=30 arrival       (burst_c) -> fourth (latest time, lower priority)
+	#   t=10 arrival #1    (burst_a) -> first  (earliest fire_time)
+	#   t=10 arrival #2    (burst_b) -> second (same time+priority: FIFO)
+	#   t=30 environmental (burst_d) -> third  (beats burst_c on priority)
+	_scheduler.schedule_at(30, "burst_c", TEST_PARTY, {}, ScheduledEvent.PRIORITY_ARRIVAL)
+	_scheduler.schedule_at(10, "burst_a", TEST_PARTY, {}, ScheduledEvent.PRIORITY_ARRIVAL)
+	_scheduler.schedule_at(10, "burst_b", TEST_PARTY, {}, ScheduledEvent.PRIORITY_ARRIVAL)
+	_scheduler.schedule_at(30, "burst_d", TEST_PARTY, {}, ScheduledEvent.PRIORITY_ENVIRONMENTAL)
+
+	# Combat-style lump-sum advance past every fire_time while the loop sits
+	# paused (the focus-coupled clock's one piercing case).
+	Timekeeping.advance_rounds(60)
+
+	_loop.set_speed(SchedulerLoop.SPEED_MAX)
+	for _i in range(8):
+		_loop.tick(0.016)
+
+	check(_resolved_events == ["burst_a", "burst_b", "burst_d", "burst_c"],
+		"past-due burst resolves in (fire_time, priority, FIFO) order, got %s" % str(_resolved_events))
+	_cleanup()

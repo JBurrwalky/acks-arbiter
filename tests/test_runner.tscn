@@ -453,6 +453,7 @@
 [ext_resource type="Script" path="res://tests/test_animal_sustenance_resolver.gd" id="437_animal_sustenance_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_lair_placement.gd" id="438_lair_placement_tests"]
 [ext_resource type="Script" path="res://tests/test_specialist_dual_path.gd" id="439_specialist_dual_path_tests"]
+[ext_resource type="Script" path="res://tests/test_party_context_switching.gd" id="440_party_context_switching_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1812,3 +1813,6 @@ script = ExtResource("438_lair_placement_tests")
 
 [node name="SpecialistDualPathTests" type="Node" parent="."]
 script = ExtResource("439_specialist_dual_path_tests")
+
+[node name="PartyContextSwitchingTests" type="Node" parent="."]
+script = ExtResource("440_party_context_switching_tests")

@@ -152,17 +152,48 @@ func _is_wilderness_ui_active() -> bool:
 	return _runner.get_current_state_key() == "wilderness"
 
 
-## Toast for background-party outcomes — NotificationManager is global, so
-## these render over any context (dungeon, settlement, camp).
-func _notify_background(party_data: PartyData, title: String, body: String) -> void:
+## Switch-first encounter flow (Option 1, ruling 2026-06-12): a BACKGROUND
+## party's triggered encounter is fully formed (weather stamp, gate stamp,
+## lair substitution already applied by the caller), then DEFERRED — persisted
+## to party_state.pending_encounter and surfaced as a tap-to-act toast that
+## focuses the party. WildernessExploreState presents the stored encounter
+## through the normal EncounterDecisionPrompt when the party is next focused.
+## var_to_str (not JSON) preserves Godot types in the encounter dict.
+func _defer_background_encounter(party_id: String, party_data: PartyData,
+		enc: Dictionary, enc_label: String) -> Dictionary:
+	CampaignRepository.set_party_pending_encounter(party_id, var_to_str(enc))
 	var party_name: String = party_data.name if party_data != null else "A party"
 	EventBus.notification_requested.emit({
+		"type": "warning",
+		"category": "exploration",
+		"title": "Encounter — %s" % enc_label,
+		"body": "%s has run into something. Tap to take command." % party_name,
+		"duration": 0.0,  # sticky — a deferred decision should not fade away
+		"action": func() -> void: EventBus.party_focus_requested.emit(party_id),
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "%s: encounter — switch to them to respond" % party_name,
+	}
+
+
+## Toast for background-party outcomes — NotificationManager is global, so
+## these render over any context (dungeon, settlement, camp). When
+## [param focus_party_id] is non-empty the toast is tap-to-act: clicking it
+## focuses that party (Option 1 ruling 2026-06-12).
+func _notify_background(party_data: PartyData, title: String, body: String,
+		focus_party_id: String = "") -> void:
+	var party_name: String = party_data.name if party_data != null else "A party"
+	var payload := {
 		"type": "info",
 		"category": "exploration",
 		"title": title,
 		"body": "%s: %s" % [party_name, body],
 		"duration": 5.0,
-	})
+	}
+	if not focus_party_id.is_empty():
+		payload["action"] = func() -> void: EventBus.party_focus_requested.emit(focus_party_id)
+	EventBus.notification_requested.emit(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -391,17 +422,6 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if terrain != null:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
-			if not _is_wilderness_ui_active():
-				# Background party — halt the journey and drop the encounter
-				# (no surface to decide it on; see _is_wilderness_ui_active).
-				_cancel_party_movement_and_activity(moving_pid)
-				EventBus.order_cancelled.emit(moving_pid, "travel_leg")
-				_notify_background(party_data, "Journey Interrupted",
-					"their journey was interrupted at %s — they hold position awaiting orders." % str(coord))
-				return {
-					"auto_pause": true,
-					"pause_reason": "Background party interrupted — holding position",
-				}
 			var enc: Dictionary = encounter["encounter_data"]
 			# Phase 2: stamp encounter context with weather visibility so
 			# CombatState shrinks the spawn distance when fog/rain/snow are
@@ -424,13 +444,16 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 
 			# Phase 5 polish (2026-05-05): every encounter halts travel and
 			# surfaces an EncounterDecisionPrompt — the player picks how to
-			# respond (fight, evade, engage, parley, continue). The reaction
-			# router still tags the disposition for the modal's button matrix
-			# and flavor text, but the routing decision has moved up to the
-			# state-level UI listener (WildernessExploreState).
+			# respond (fight, evade, engage, parley, continue). For a
+			# BACKGROUND party (player in another context), the fully-formed
+			# encounter is deferred instead: persisted to party_state and
+			# presented when the player focuses the party (switch-first flow,
+			# Option 1 2026-06-12).
 			_cancel_party_movement_and_activity(moving_pid)
 			EventBus.order_cancelled.emit(moving_pid, "travel_leg")
 			var enc_label: String = _format_encounter_label(enc)
+			if not _is_wilderness_ui_active():
+				return _defer_background_encounter(moving_pid, party_data, enc, enc_label)
 			EventBus.encounter_decision_required.emit(moving_pid, enc)
 			return {
 				"auto_pause": true,
@@ -459,7 +482,8 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 		var background: bool = not _is_wilderness_ui_active()
 		if background:
 			_notify_background(party_data, "Party Arrived",
-				"arrived at %s and holds position awaiting orders." % str(coord))
+				"arrived at %s and holds position awaiting orders." % str(coord),
+				moving_pid)
 		return {
 			"auto_pause": is_active or background,
 			"pause_reason": "Arrived at destination",
@@ -486,16 +510,6 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 	var encounter: Dictionary = _runner.do_encounter_check(terrain)
 	if encounter.get("triggered", false):
-		if not _is_wilderness_ui_active():
-			# Background party — halt and drop (see _is_wilderness_ui_active).
-			_cancel_party_movement_and_activity(event.owner_id)
-			EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
-			_notify_background(party_data, "Journey Interrupted",
-				"was interrupted at %s — they hold position awaiting orders." % str(coord))
-			return {
-				"auto_pause": true,
-				"pause_reason": "Background party interrupted — holding position",
-			}
 		var enc: Dictionary = encounter["encounter_data"]
 		# Phase 2: same visibility stamp as the travel-leg path.
 		var weather: WeatherStateData = _weather_for_hex(
@@ -511,8 +525,13 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 		# Phase 5 polish (2026-05-05): standalone encounter checks also route
 		# through the EncounterDecisionPrompt — same flow as travel-leg
-		# encounters. The state-level listener interprets the choice.
+		# encounters. Background parties defer instead (switch-first flow):
+		# halt the journey, persist the encounter, prompt the player to focus.
 		var enc_label: String = _format_encounter_label(enc)
+		if not _is_wilderness_ui_active():
+			_cancel_party_movement_and_activity(event.owner_id)
+			EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
+			return _defer_background_encounter(event.owner_id, party_data, enc, enc_label)
 		EventBus.encounter_decision_required.emit(event.owner_id, enc)
 		return {
 			"auto_pause": true,
@@ -561,7 +580,7 @@ func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
 		var lost_in_background: bool = not _is_wilderness_ui_active()
 		if lost_in_background:
 			_notify_background(party_data, "Party Lost",
-				"has gotten lost — they halt and await new orders.")
+				"has gotten lost — they halt and await new orders.", moving_pid)
 		return {
 			"auto_pause": (moving_pid == GameState.active_party_id) or lost_in_background,
 			"pause_reason": "Party is lost!",
@@ -588,7 +607,7 @@ func _handle_forced_march_check(event: ScheduledEvent) -> Dictionary:
 		var halted_in_background: bool = not _is_wilderness_ui_active()
 		if halted_in_background:
 			_notify_background(party_data, "Forced March Halted",
-				"must rest — they halt and await new orders.")
+				"must rest — they halt and await new orders.", moving_pid)
 		return {
 			"auto_pause": (moving_pid == GameState.active_party_id) or halted_in_background,
 			"pause_reason": "Party must rest — forced march limit reached",

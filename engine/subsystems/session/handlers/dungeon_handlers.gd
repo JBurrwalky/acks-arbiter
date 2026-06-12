@@ -150,20 +150,25 @@ func cells_per_round(base_movement: int, mode: float = -1.0) -> float:
 # ---------------------------------------------------------------------------
 
 ## Schedule the initial recurring events when entering a dungeon.
+## Idempotent against the queue: resuming a suspended delve (party-context
+## switch, Option 1 2026-06-12) keeps the cadence events queued — re-entering
+## must not double-schedule them.
 func seed_dungeon_events(scheduler: EventScheduler, party_id: String) -> void:
 	var current_time: int = Timekeeping.get_total_rounds()
 
 	# Wandering monster check every 2 turns
-	scheduler.schedule_at(
-		current_time + ENCOUNTER_CHECK_INTERVAL,
-		"dungeon_encounter_check",
-		party_id,
-		{},
-		ScheduledEvent.PRIORITY_SCHEDULED_CHECK,
-	)
+	if not scheduler.has_event_for_owner(party_id, "dungeon_encounter_check"):
+		scheduler.schedule_at(
+			current_time + ENCOUNTER_CHECK_INTERVAL,
+			"dungeon_encounter_check",
+			party_id,
+			{},
+			ScheduledEvent.PRIORITY_SCHEDULED_CHECK,
+		)
 
 	# Light source tick every turn (if any entity has active light)
-	if _light_manager.has_any_light():
+	if _light_manager.has_any_light() \
+			and not scheduler.has_event_for_owner(party_id, "dungeon_light_tick"):
 		scheduler.schedule_at(
 			current_time + TURN_ROUNDS,
 			"dungeon_light_tick",

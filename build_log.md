@@ -33701,3 +33701,87 @@ on-tick dispatch.
 1. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
 2. Multi-party context-switch Option 1 (docs/handoff_party_context_switching.md) awaits its §5 rulings.
 3. Note: today's full arc (single timeline through cleanup) is uncommitted working-tree state — a git commit checkpoint would be prudent before the next feature wave.
+
+## Session 2026-06-12 — Context-enum refactor: explicit TimeContext replaces float-inferred speed tables (Option 1 precursor)
+
+**Task:** Replace SchedulerLoop's float-matching context inference (`_speed_table_for_timescale` is_equal_approx'd `_timescale` against three constants and silently fell back to the wilderness table for anything unrecognized) with an explicit context declaration — sequenced ahead of the Option 1 party-context-switching build, which will reconfigure the loop's context on every watched-party switch and should land on the clean API rather than baking in more magic-float call sites.
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **`scheduler_loop.gd`:** new `enum TimeContext { DUNGEON, SETTLEMENT, WILDERNESS }` + `CONTEXT_PROFILES` — THE single authority mapping each context to `{timescale, bands}` (`_BANDS_DUNGEON` ×1/×6/×30, `_BANDS_STANDARD` ×1/×2/×5 shared by settlement/wilderness — the two byte-identical tables are now one const). New `set_context(context)` sets timescale + band table together, asserts on unknown contexts, and resets the fractional accumulator; `get_context()` added; `get_effective_multiplier()` reads the active profile's bands. REMOVED: `set_timescale()`, `_speed_table_for_timescale()`, `TIMESCALE_DUNGEON/SETTLEMENT/WILDERNESS`, `DUNGEON_SPEEDS/WILDERNESS_SPEEDS/SETTLEMENT_SPEEDS`. Default context: WILDERNESS (matches the old default timescale 60).
+- **States:** wilderness/settlement/dungeon `enter()` now call `set_context(SchedulerLoop.TimeContext.X)` (one line each). Camp unchanged — no profile by design (resolves at MAX speed under the wilderness context).
+- **`dungeon_map_renderer_3d.gd::_compute_speed_scale`:** the hand-copied DUNGEON_SPEEDS read (the divergence-risk site its own docstring warned about) now reads the DUNGEON row of `CONTEXT_PROFILES` — deliberately pinned (it is the dungeon renderer) but synced by construction with the loop's table; the timescale factor comes from the same profile instead of a separate constant.
+- **Docs:** conventions §25 rewritten (profile table, "the context is never inferred", adding a context = one enum value + one profile row, pinned consumers read the profile row never a hand-copied table); gdd-realtime-scheduler.md §2.5 prose + the §interface example (`set_timescale` → `set_context`) + two DUNGEON_SPEEDS prose mentions updated.
+**Decisions made:**
+- **Enum + profile-table shape** over a parallel-constants shape: adding a fourth context (sea travel, siege observation — and Option 1's switching machinery) is one enum value + one table row, with no dispatch function to forget.
+- **Clean break, no set_timescale shim:** all 14 call sites (3 states, renderer, 8 test calls + fixture comment) converted in-session; a compatibility wrapper would have preserved exactly the float-typed API the refactor exists to kill.
+- **Renderer stays statically pinned to the DUNGEON profile** rather than taking a loop reference — it is context-specific by nature; the bug class was the duplicated table, which is gone.
+**Interfaces defined or changed:**
+- NEW `SchedulerLoop.TimeContext` enum, `SchedulerLoop.CONTEXT_PROFILES` const, `set_context(TimeContext)`, `get_context()`.
+- REMOVED `SchedulerLoop.set_timescale(float)`, `TIMESCALE_*` constants, `*_SPEEDS` constants, `_speed_table_for_timescale()`. `get_timescale()` and `get_effective_multiplier()` keep their signatures.
+- Contract for Option 1: every watched-context change calls `set_context()`; suspended contexts restore via the same call on switch-back.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `test_scheduler_loop.gd`: all 8 `set_timescale` calls converted to `set_context`; +1 test `test_set_context_applies_profile` (context recorded; settlement/wilderness/dungeon timescales come from the profile). 63 → 67 checks.
+- **Result: 435 passed / 17 failed on two consecutive runs, fingerprints identical to each other AND to the cleanup-session baseline, zero "database is locked" lines.** Net-zero.
+**Known issues:**
+- None new. Repo-wide grep confirms zero references to the removed symbols outside one explanatory doc comment.
+**Next session should:**
+1. **Option 1 — party-context switching** (docs/handoff_party_context_switching.md): open with the §5 rulings (active==watched?, suspend/exit split sign-off, unwatched-delve ticking, notification action buttons), then build on the new set_context API. A commit checkpoint of this refactor first would be prudent (the prior checkpoint predates it).
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Rulings addendum: Option 1 (party-context switching) fully ruled, handoff now build-ready
+
+**Task:** Close the §5 open rulings in `docs/handoff_party_context_switching.md` with Jedidiah (design exchange, no code).
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- All four §5 rulings answered and recorded in the handoff (status: DEFERRED but BUILD-READY):
+  1. **Active = watched = selected** — one selector, one concept.
+  2. **Suspend/exit split approved** (dungeon position-clearing moves from `DungeonExploreState.exit()` to the explicit leave-the-dungeon flow).
+  3. **Focus-coupled clock (Jedidiah's "Option C", supersedes both options I proposed):** while any party is inside a dungeon, the world clock advances ONLY while the dungeon layer has focus; the hexmap layer is force-paused (modals + order queuing allowed, no ticking). Kills the unwatched-dungeon problem outright — no lazy torch reconciliation, no dungeon-handler globalization, dungeon handlers stay state-scoped. Implementation is a derived gate (no new persisted state).
+  4. **Tap-to-act required** — toast action button if NotificationManager supports it, else the modal route (the overworld Fight/Ignore encounter prompt is the existing pattern and the §4.4 switch-first target).
+- §5.3a consequence sign-offs CONFIRMED: (i) long fast-forwards impossible while anyone is in a dungeon = intended friction (walk out first; loitering in dungeons should be dangerous); (ii) combat's RAW lump-sum clock advance pierces the force-pause = acceptable, **with the requirement that the past-due burst on dungeon return resolves in proper order** (fire_time → priority → FIFO sequence; the sorted-queue invariant + Batch A's sequence stamp already guarantee it; the handoff acceptance checklist pins it with an explicit ordering test).
+**Decisions made:** All captured in the handoff §5 (the authoritative record for the future build session).
+**Interfaces defined or changed:** None (design-only session).
+**Database changes:** None.
+**Tests added/updated:** None this session; the handoff checklist adds two future items (focus-coupled clock gate behavior; burst-ordering test).
+**Known issues:** Unchanged from the Option 2 entry.
+**Next session should:**
+1. Option 1 build per `docs/handoff_party_context_switching.md` (whenever Jedidiah schedules it — all rulings closed, no blockers).
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Option 1 LANDED: party-context switching, focus-coupled clock, switch-first encounters (migration 155)
+
+**Task:** Build Option 1 per `docs/handoff_party_context_switching.md` (all §5 rulings closed same day: active=watched=selected; suspend/exit split approved; focus-coupled clock per Jedidiah's "Option C"; tap-to-act required; burst-ordering requirement).
+**Model used:** Fable 5 (Opus-class); a 7-agent parallel Explore workflow mapped the loader/dungeon-lifecycle/party-plumbing/notifications/clock-surfaces/schema/state-contract subsystems before implementation.
+**Completed:**
+- **Migration 155:** `campaigns.last_active_party_id` (loader prefers it over the unordered LIMIT-1 pick — a save made watching party B reopens watching B) + `party_state.pending_encounter` (deferred background-encounter storage, var_to_str-serialized). schema.sql updated. Repository helpers: `set/get_last_active_party`, `set/get_party_pending_encounter` (UPSERT — fresh split detachments have no party_state row), `any_party_in_dungeon`.
+- **Active = watched = selected (`session_runner.gd`):** every `GameState.set_active_party` is now a full focus switch. `_on_active_party_changed_for_context` → `_apply_party_focus`: re-points the watched-party trio via the extracted `_repoint_watched_party` (also used by the merge guard; records last_active), then transitions the UI to the party's persisted `current_location_type` using loader-mirror context builders `_build_dungeon_focus_context` / `_build_settlement_focus_context` (kept in sync with `SessionLoadState._restore_into_*`; unresolvable ids fall back to wilderness, loader-parity). Same-context switches skip the transition (states' own listeners recenter). Blocked contexts (combat state, camp, menus, dungeon IN-PLACE combat via `is_in_combat()`) revert the selection under a re-entrancy flag + toast. Public `go_to_party(party_id)`; `EventBus.party_focus_requested` (toast actions) wired to it. Landing on the hexmap recenters the camera on the focused party.
+- **Suspend ≠ exit (`dungeon_explore_state.gd`):** new `_departing` flag — ONLY the two real-departure sites (`_on_exit_requested`, `_on_all_party_resolved`) set it. Departure keeps today's behavior (revert picked locks, save cells, cancel the 4 dungeon event types, clear party+entity positions). SUSPEND instead calls `flush_to_db` (cells + per-entity positions + party-level position) and keeps locks, positions, and queued dungeon events (focus-coupled clock prevents them coming due; park-don't-consume catches the combat lump-sum exception and re-injects on resume in order). **Captured `_owning_party_id` at enter()** — flush/cancel/clear persist against the visit's owner, NOT `runner.get_party_id()`, which on suspend is already re-pointed at the new focus party (bug caught in trace before it shipped). `DungeonHandlers.seed_dungeon_events` made queue-idempotent (`has_event_for_owner`) so resume doesn't double-schedule cadence.
+- **Focus-coupled clock (Jedidiah's "Option C"):** `SessionRunner.get_clock_lock_reason()` ("" unless a party has `current_location_type='dungeon'` AND the current state isn't "dungeon") + `_refresh_clock_lock()` emitting new `EventBus.clock_lock_changed` (after every transition, at load, cleared at end_session). Gates: `_on_clock_speed_requested` refuses non-pause speeds with a toast; wilderness/settlement `loop.resume()` sites skip silently (orders queue, execute on dungeon return); wilderness camp entry blocked with reason (camping needs MAX-speed watches). `clock_speed_controls.gd` disables non-pause buttons with the reason as tooltip (LOCKED_COLOR dim; pause always enabled; SessionRunner stays the authoritative gate for keyboard requests).
+- **Switch-first encounters (replaces Option 2's halt-and-drop):** background encounter branches in `wilderness_handlers.gd` now fully form the encounter FIRST (weather visibility stamp, encounter-gate stamp, lair substitution) then `_defer_background_encounter`: persist via var_to_str (encounter dicts carry Godot types JSON would mangle), sticky (duration 0) tap-to-act toast → `party_focus_requested`. `WildernessExploreState.enter` presents the focused party's pending encounter through the normal `EncounterDecisionPrompt` (fire-and-clear, `call_deferred` so the listener/renderer finish wiring). Arrival/lost/forced-march background toasts also got tap-to-act focus actions.
+- **Loader:** `SessionLoadState._get_or_create_party` prefers a validated `last_active_party_id`; `load_session` records it + seeds the clock lock (a save with a suspended delve loads locked).
+**Decisions made:**
+- The §4.3 "primary vs watched call-site migration" was collapsed by design: the watched party IS the session primary, re-pointed on switch (the merge guard had already established the re-point pattern) — zero get_party_id call-site edits, no divergence window. The 7-agent exploration's classification table confirmed no site needs a stable original-primary.
+- Camp is non-switchable (camp UI is watched-party furniture; finish/break camp first) — blocked with revert+toast, same as combat.
+- Pending encounters are fire-and-clear at presentation; staleness is accepted ("the standoff held until you arrived" fiction).
+**Interfaces defined or changed:**
+- NEW `EventBus.party_focus_requested(party_id)` and `EventBus.clock_lock_changed(reason)` signals.
+- NEW `SessionRunner.go_to_party(party_id)`, `get_clock_lock_reason() -> String`, `_repoint_watched_party`, `_apply_party_focus`, context builders; `_SWITCHABLE_STATES` const.
+- NEW `CampaignRepository.set/get_last_active_party`, `set/get_party_pending_encounter`, `any_party_in_dungeon`.
+- `DungeonExploreState`: `_departing` + `_owning_party_id` contract (see conventions §19.5); `flush_to_db` persists against the captured owner.
+- CONTRACT: any new `loop.resume()` call site outside the dungeon layer MUST consult `get_clock_lock_reason()` (conventions §19.5).
+**Database changes:** Migration 155 (`155_party_context_switching.sql`): `campaigns.last_active_party_id TEXT DEFAULT ''`, `party_state.pending_encounter TEXT DEFAULT ''`.
+**Tests added/updated:**
+- NEW suite `tests/test_party_context_switching.gd` (registered, 4-edit recipe): last-active round-trip; pending-encounter var_to_str round-trip incl. Vector2i; upsert-without-party_state-row; `any_party_in_dungeon` flips with location_type; `get_clock_lock_reason` matrix (wilderness/settlement locked, dungeon never, cleared on leave, no-session); focus-context builder fallbacks (empty/unresolvable/null → {} wilderness fallback).
+- `test_scheduler_loop.test_past_due_burst_resolves_in_order` — the §5.3a-ii acceptance pin: lump-sum advance past 4 mixed events → resolve in (fire_time, priority, FIFO-sequence) order.
+- **Result: 436 passed / 17 failed on two consecutive runs** vs the 435/17 baseline = net-zero (+1 new passing suite); zero lock lines; SchedulerLoop suite 68 checks 0 failures.
+**Known issues:**
+- **PartySelectorTabs HUD widget still unmounted** — the class is switch-ready (`party_selected` signal, `set_switching_disabled(reason)`); functional affordances today are the Notebook dropdown, wilderness token clicks, and tap-to-act toasts. Visual mounting needs in-editor verification (follow-up chip spawned).
+- **In-game smoke test needed (Jedidiah):** (1) split a party, walk A into a dungeon, switch to B via Notebook — dungeon suspends, hexmap shows B, speed buttons disabled with the reason; (2) order B somewhere, switch back to A — delve intact (positions/fog/picked locks), clock runs, B's travel resolves while delving; (3) let B hit an encounter mid-delve — sticky toast, tap it, encounter prompt presents on the hexmap; (4) walk A out via an exit node — positions cleared, clock unlocks; (5) save while suspended, reload — reopens watching the same party, delve still resumable.
+- Settlement visit-state (entry-toll bookkeeping) resets on switch-away/switch-back (it is per-visit by design); acceptable, noted.
+- Switching during combat is blocked at the engine; the Notebook is already disabled in combat so the revert path is belt-and-suspenders.
+**Next session should:**
+1. Jedidiah runs the smoke test above; fix anything it surfaces.
+2. Mount PartySelectorTabs in the HUD (chip) — wire `party_selected` → `EventBus.party_focus_requested`, `set_switching_disabled` on combat/camp, group `hud_party_selector_tabs` already honored by HudVisibilityController.
+3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).

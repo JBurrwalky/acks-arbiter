@@ -17,6 +17,7 @@ extends HBoxContainer
 const ACTIVE_COLOR := Color(0.95, 0.85, 0.55, 1.0)  # Gold highlight
 const INACTIVE_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const PAUSED_COLOR := Color(0.85, 0.35, 0.30, 1.0)   # Red-ish for pause
+const LOCKED_COLOR := Color(0.40, 0.36, 0.30, 1.0)   # Dimmed for clock lock
 const FONT_SIZE := 11
 const BTN_MIN_WIDTH := 32
 
@@ -24,12 +25,17 @@ var _buttons: Array[Button] = []
 var _speed_map: Array[int] = []  # parallel to _buttons: speed value per button
 var _current_speed: int = 0  # SchedulerLoop.SPEED_PAUSED
 var _last_nonpause_speed: int = 1  # For toggle-pause resume
+## Focus-coupled clock (Option 1 ruling 2026-06-12): while a party is in a
+## dungeon, time advances only on the dungeon layer. Non-empty = the non-pause
+## buttons are disabled and the reason shows as their tooltip.
+var _lock_reason: String = ""
 
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 2)
 	_build_buttons()
 	EventBus.scheduler_speed_changed.connect(_on_speed_changed)
+	EventBus.clock_lock_changed.connect(_on_clock_lock_changed)
 	_highlight_active()
 
 
@@ -112,11 +118,37 @@ func _on_speed_changed(new_speed: int) -> void:
 	_highlight_active()
 
 
+## Disable/enable the non-pause buttons per the focus-coupled clock lock.
+## Pause stays enabled (pausing is always allowed). SessionRunner remains the
+## authoritative gate — this is presentation; keyboard requests that slip
+## through are refused (with a toast) by SessionRunner._on_clock_speed_requested.
+func _on_clock_lock_changed(reason: String) -> void:
+	_lock_reason = reason
+	for i in range(_buttons.size()):
+		var btn: Button = _buttons[i]
+		if _speed_map[i] == SchedulerLoop.SPEED_PAUSED:
+			continue
+		btn.disabled = not reason.is_empty()
+		btn.tooltip_text = reason if not reason.is_empty() else _default_tooltip(i)
+	_highlight_active()
+
+
+func _default_tooltip(index: int) -> String:
+	match _speed_map[index]:
+		SchedulerLoop.SPEED_NORMAL: return "Normal speed (1)"
+		SchedulerLoop.SPEED_FAST: return "Fast (2)"
+		SchedulerLoop.SPEED_VERY_FAST: return "Very fast (3)"
+		SchedulerLoop.SPEED_MAX: return "Max speed (4)"
+	return "Pause (Space)"
+
+
 func _highlight_active() -> void:
 	for i in range(_buttons.size()):
 		var btn: Button = _buttons[i]
 		var spd: int = _speed_map[i]
-		if spd == _current_speed:
+		if btn.disabled:
+			btn.add_theme_color_override("font_color", LOCKED_COLOR)
+		elif spd == _current_speed:
 			if spd == SchedulerLoop.SPEED_PAUSED:
 				btn.add_theme_color_override("font_color", PAUSED_COLOR)
 			else:

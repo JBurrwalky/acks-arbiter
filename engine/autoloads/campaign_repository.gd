@@ -771,6 +771,70 @@ func update_party_position(party_id: String, map_id: String, q: int, r: int) -> 
 		push_error("CampaignRepository.update_party_position: failed. party_id=%s" % party_id)
 
 
+## Migration 155 (party-context switching): remember which party the player
+## was watching so the session loader can prefer it over the unordered
+## LIMIT-1 pick. Written on every watched-party change and at session load.
+func set_last_active_party(campaign_id: String, party_id: String) -> void:
+	if not db.query_with_bindings(
+		"UPDATE campaigns SET last_active_party_id = ? WHERE id = ?",
+		[party_id, campaign_id]
+	):
+		push_error("CampaignRepository.set_last_active_party: failed. campaign=%s party=%s" % [
+			campaign_id, party_id])
+
+
+## Returns the last watched party id for [param campaign_id], or "" if none
+## was recorded (pre-155 saves) — callers fall back to their legacy pick.
+func get_last_active_party(campaign_id: String) -> String:
+	if not db.query_with_bindings(
+		"SELECT last_active_party_id FROM campaigns WHERE id = ?", [campaign_id]
+	):
+		return ""
+	if db.query_result.is_empty():
+		return ""
+	var v = db.query_result[0].get("last_active_party_id", "")
+	return str(v) if v != null else ""
+
+
+## True if any party in [param campaign_id] is currently inside a dungeon.
+## Drives the focus-coupled clock (Option 1 ruling 2026-06-12): while a party
+## is below, the world clock may only run while the dungeon layer has focus.
+func any_party_in_dungeon(campaign_id: String) -> bool:
+	if not db.query_with_bindings(
+		"SELECT 1 FROM parties WHERE campaign_id = ? AND current_location_type = 'dungeon' LIMIT 1",
+		[campaign_id]
+	):
+		return false
+	return not db.query_result.is_empty()
+
+
+## Migration 155 (switch-first encounter flow): store/clear a background
+## party's deferred encounter decision. [param serialized] is a var_to_str
+## Dictionary ('' clears). Presented and cleared when the player focuses the
+## party in the wilderness state.
+func set_party_pending_encounter(party_id: String, serialized: String) -> void:
+	# Upsert — a freshly split party may not have a party_state row yet;
+	# the table's NOT NULL DEFAULTs fill the remaining columns.
+	if not db.query_with_bindings("""
+		INSERT INTO party_state (party_id, pending_encounter) VALUES (?, ?)
+		ON CONFLICT(party_id) DO UPDATE SET pending_encounter = excluded.pending_encounter
+	""", [party_id, serialized]):
+		push_error("CampaignRepository.set_party_pending_encounter: failed. party=%s" % party_id)
+
+
+## Returns the var_to_str-serialized pending encounter for [param party_id],
+## or "" when none is stored.
+func get_party_pending_encounter(party_id: String) -> String:
+	if not db.query_with_bindings(
+		"SELECT pending_encounter FROM party_state WHERE party_id = ?", [party_id]
+	):
+		return ""
+	if db.query_result.is_empty():
+		return ""
+	var v = db.query_result[0].get("pending_encounter", "")
+	return str(v) if v != null else ""
+
+
 ## Persists which exploration context the party is currently in. Written by
 ## SessionRunner.transition_to_state() on entry to a primary-location state
 ## (wilderness / dungeon / settlement) so the loader can restore that context

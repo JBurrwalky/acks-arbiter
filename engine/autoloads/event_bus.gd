@@ -131,6 +131,17 @@ signal party_split(original_party_id: String, new_party_id: String)
 ## Two parties were merged into one.
 signal party_merged(surviving_party_id: String, dissolved_party_id: String)
 
+## Request to focus a party: switch the watched party AND its UI context
+## (Option 1 party-context switching, 2026-06-12). Emitted by toast actions
+## and any switch affordance; consumed by SessionRunner.go_to_party.
+signal party_focus_requested(party_id: String)
+
+## The focus-coupled clock lock changed (Option 1 ruling 2026-06-12: while a
+## party is in a dungeon, time advances only on the dungeon layer).
+## [param reason] is "" when unlocked, else the human-readable lock reason
+## shown on the disabled speed controls.
+signal clock_lock_changed(reason: String)
+
 ## A character joined a party.
 signal party_member_joined(party_id: String, character_id: String)
 

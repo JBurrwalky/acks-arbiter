@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS campaigns (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0, 1)),
     -- Migration 097: customs annual roll year-marker (§8.4).
-    last_customs_roll_year INTEGER NOT NULL DEFAULT 0
+    last_customs_roll_year INTEGER NOT NULL DEFAULT 0,
+    -- Migration 155: the party the player was watching at last save; the
+    -- session loader prefers it over the unordered LIMIT-1 pick. '' = none.
+    last_active_party_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS characters (
@@ -201,6 +204,9 @@ CREATE TABLE IF NOT EXISTS party_state (
     camp_watch_assignments_json TEXT NOT NULL DEFAULT '[]',
     camp_armed_sleepers_json TEXT NOT NULL DEFAULT '[]',
     last_encounter_trigger_day INTEGER NOT NULL DEFAULT -1,
+    -- Migration 155: deferred encounter decision for a background party
+    -- (switch-first flow). var_to_str-serialized Dictionary; '' = none.
+    pending_encounter TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

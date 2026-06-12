@@ -11,8 +11,11 @@ extends SessionState
 ## Combat transitions to turn-based on the same map grid. All other
 ## dungeon activity (movement, searching, listening) is real-time.
 ##
-## The dungeon operates on the party clock independently from the overworld.
-## On dungeon exit, the party may be time-locked until the world catches up.
+## Dungeon time IS world time (single shared timeline, ruling 2026-06-11),
+## with the focus-coupled clock (Option 1 ruling 2026-06-12): while a party is
+## in a dungeon, the clock advances only while this layer has focus. The
+## player may suspend the delve by focusing another party (exit() without
+## `_departing`); the delve resumes via the savegame restore path.
 
 const DungeonSessionState := preload("res://engine/subsystems/exploration/dungeon_session_state.gd")
 const ContextMenuBuilder := preload("res://engine/subsystems/exploration/dungeon_context_menu_builder.gd")
@@ -43,6 +46,18 @@ var _roaming_monsters: Dictionary = {}
 ## Per-dungeon-visit in-memory state (control groups, idle behaviors, etc.).
 var _session_state: RefCounted = null  # DungeonSessionState
 
+## True while a REAL dungeon departure is in progress (walk-out via exit node
+## or all-party-resolved). Set by the departure call sites just before the
+## wilderness transition; exit() branches on it (suspend ≠ exit, Option 1).
+var _departing: bool = false
+
+## The party this dungeon visit belongs to, captured at enter(). exit() and
+## flush_to_db() persist against THIS id, not runner.get_party_id(): on a
+## SUSPEND the session has already been re-pointed at the newly focused party
+## when exit() runs — using the live watched id would file this dungeon's
+## positions under the wrong party.
+var _owning_party_id: String = ""
+
 ## Active context menu popup (if any).
 var _context_menu: PanelContainer = null
 
@@ -61,6 +76,7 @@ var _minimap: PanelContainer = null
 
 func enter(runner, context: Dictionary) -> void:
 	_runner = runner
+	_owning_party_id = runner.get_party_id()
 	var entrance: Dictionary = context.get("entrance", {})
 	var spawn_cell: Vector2i = context.get("spawn_cell", Vector2i(-1, -1))
 
@@ -165,8 +181,8 @@ func enter(runner, context: Dictionary) -> void:
 	_handlers.set_session_state(_session_state)
 	_handlers.register(runner.get_handler_registry())
 
-	# Set dungeon time scale — round-level granularity.
-	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	# Declare the dungeon context — round-level granularity.
+	runner.get_scheduler_loop().set_context(SchedulerLoop.TimeContext.DUNGEON)
 
 	# Set dungeon light manager on the controller for per-entity fog.
 	_controller.set_light_manager(_handlers.get_light_manager())
@@ -203,19 +219,32 @@ func enter(runner, context: Dictionary) -> void:
 	# Scheduler starts paused — player issues orders, then unpauses.
 
 
+## Suspend ≠ exit (Option 1 party-context switching, ruling 2026-06-12):
+## exit() runs for BOTH a real dungeon departure (walk out via an exit node /
+## all party members resolved) and a SUSPEND (the player focuses another
+## party; the delve stays exactly where it is). The two real-departure call
+## sites set `_departing` just before transitioning; everything position-
+## clearing, lock-reverting, or event-cancelling happens only on departure.
 func exit(runner) -> void:
 	runner.get_nav_stack().pop()
 
-	# Revert picked locks before saving (locks reset on dungeon exit).
-	if _session_state != null and _controller != null and _controller.get_voxel_map() != null:
-		var vmap: VoxelMapData = _controller.get_voxel_map()
-		for pos in _session_state.get_picked_locks():
-			if vmap.get_door_state(pos) in ["closed", "open"]:
-				vmap.set_door_state(pos, "locked")
-				vmap.set_cell_field(pos, "door_type", "locked")
-
-	# Save dungeon cell states (door + fog) for all loaded levels.
-	_save_dungeon_cell_states()
+	if _departing:
+		# Revert picked locks before saving (locks reset when the party
+		# actually leaves the dungeon).
+		if _session_state != null and _controller != null and _controller.get_voxel_map() != null:
+			var vmap: VoxelMapData = _controller.get_voxel_map()
+			for pos in _session_state.get_picked_locks():
+				if vmap.get_door_state(pos) in ["closed", "open"]:
+					vmap.set_door_state(pos, "locked")
+					vmap.set_cell_field(pos, "door_type", "locked")
+		# Save dungeon cell states (door + fog) for all loaded levels.
+		_save_dungeon_cell_states()
+	else:
+		# Suspend: persist cell states + every entity's exact cell + the
+		# party-level position so the delve resumes via the savegame restore
+		# path (entrance / spawn_cell / restore_positions). Picked locks stay
+		# picked — the party never left.
+		flush_to_db(runner)
 
 	# Disconnect scheduler event listener.
 	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
@@ -229,17 +258,25 @@ func exit(runner) -> void:
 
 	# Drop any roaming monsters that never reached attack range — leaving the
 	# dungeon level unloads them. Their tokens go away with the scene.
+	# (Suspend parity with save/load: roaming monsters are transient and
+	# re-rolled on the next check — gdd-savegame-system.md §6.)
 	_roaming_monsters.clear()
 
-	# Unregister dungeon event handlers and cancel dungeon events.
+	# Unregister dungeon event handlers; cancel dungeon events only on a real
+	# departure. On suspend the queued events stay: the focus-coupled clock
+	# keeps them from coming due while suspended (combat's RAW lump-sum
+	# advance is the one exception), and park-don't-consume holds any that do
+	# until handler re-registration on resume re-injects them in order.
 	if _handlers != null:
 		_handlers.cancel_all_moves()
 		_handlers.unregister(runner.get_handler_registry())
-		var party_id: String = runner.get_party_id()
-		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_movement_tick")
-		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_encounter_check")
-		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_light_tick")
-		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_action_complete")
+		if _departing:
+			var party_id: String = _owning_party_id if not _owning_party_id.is_empty() \
+					else runner.get_party_id()
+			runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_movement_tick")
+			runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_encounter_check")
+			runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_light_tick")
+			runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_action_complete")
 		_handlers = null
 
 	# Pause scheduler when leaving dungeon.
@@ -259,10 +296,15 @@ func exit(runner) -> void:
 	_runner = null
 	_session_state = null
 
-	CampaignRepository.clear_party_dungeon_position(runner.get_party_id())
-	# Drop the per-entity restore rows — the party has left this dungeon
-	# (gdd-savegame-system.md §5.2).
-	CampaignRepository.clear_dungeon_entity_positions(runner.get_party_id())
+	if _departing:
+		var departed_pid: String = _owning_party_id if not _owning_party_id.is_empty() \
+				else runner.get_party_id()
+		CampaignRepository.clear_party_dungeon_position(departed_pid)
+		# Drop the per-entity restore rows — the party has left this dungeon
+		# (gdd-savegame-system.md §5.2).
+		CampaignRepository.clear_dungeon_entity_positions(departed_pid)
+	_departing = false
+	_owning_party_id = ""
 
 
 func handle_action(runner, action: String, payload: Dictionary) -> String:
@@ -349,7 +391,10 @@ func flush_to_db(runner) -> void:
 	var positions: Dictionary = {}
 	for eid in entity_ids:
 		positions[eid] = vmap.get_entity_pos(eid)
-	var party_id: String = runner.get_party_id()
+	# Persist against the visit's OWNING party (captured at enter) — on a
+	# suspend the runner has already been re-pointed at the new focus party.
+	var party_id: String = _owning_party_id if not _owning_party_id.is_empty() \
+			else runner.get_party_id()
 	CampaignRepository.save_dungeon_entity_positions(party_id, dungeon_id, positions)
 	if not entity_ids.is_empty():
 		var lead: Vector3i = vmap.get_entity_pos(entity_ids[0])
@@ -1364,6 +1409,7 @@ func _issue_door_toggle(
 
 func _on_exit_requested() -> void:
 	if _runner != null:
+		_departing = true  # real departure — exit() clears positions etc.
 		_runner.transition_to_state("wilderness")
 
 
@@ -1372,6 +1418,7 @@ func _on_all_party_resolved() -> void:
 	if _runner == null:
 		return
 	_record_abandoned_characters()
+	_departing = true  # real departure — exit() clears positions etc.
 	_runner.transition_to_state("wilderness")
 
 

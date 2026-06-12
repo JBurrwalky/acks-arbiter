@@ -2406,6 +2406,10 @@ Within the same priority tier, alphabetical `owner_id` breaks ties; events still
 - **No order-lock (ruled 2026-06-12, superseding the 2026-06-11 order-lock):** under the single timeline nothing needs locking — the lock concept belonged to the abandoned catch-up-time model. **A new order supersedes the old one.** Order surfaces cancel the party's pending travel AND in-progress activity events via `cancel_all_for_owner` before scheduling replacements (wilderness: `_on_context_action`; settlement: `_on_poi_clicked` cancels `city_travel_arrival`/`city_encounter_check`/`settlement_activity`). Time already spent is spent — the world clock moved; a cancelled activity yields nothing. Do not reintroduce a lock; if a future activity must be uninterruptible, gate it at its own order surface with an explicit confirm dialog instead.
 - **Dungeon time is world time:** dungeon exploration advances the same clock as everything else; there is no async dungeon timeframe and no time-lock on exit.
 - **Party lifecycle hooks:** on `party_split`, `SessionRunner` seeds the new party's day/noon ticks immediately; on `party_merged`, it cancels the dissolved party's queued events (`cancel_all_for_owner`) and re-points the session at the survivor if the primary was merged away.
+- **Party-context switching (Option 1, 2026-06-12):** active = watched = selected. Every `GameState.set_active_party` is a full focus switch: `SessionRunner._apply_party_focus` re-points the watched-party trio (`_party_id`, `GameState.party_id`, `_party_data` via `_repoint_watched_party`) and transitions the UI to the party's persisted `current_location_type` context (loader-mirror builders `_build_dungeon_focus_context` / `_build_settlement_focus_context` — keep in sync with `SessionLoadState`). Switching is blocked (selection reverted + toast) in combat, camp, menus, and dungeon in-place combat (`is_in_combat()`). Toast actions focus a party via `EventBus.party_focus_requested` → `SessionRunner.go_to_party`.
+- **Suspend ≠ exit (dungeon):** `DungeonExploreState.exit()` without `_departing` is a SUSPEND — it flushes positions/cells against the visit's captured `_owning_party_id` (NOT `runner.get_party_id()`, which is already re-pointed) and keeps picked locks, persisted positions, and queued dungeon events (the focus-coupled clock keeps them from coming due; park-don't-consume catches the combat lump-sum exception). Only the two real-departure sites (`_on_exit_requested`, `_on_all_party_resolved`) set `_departing`, which reverts locks, cancels dungeon events, and clears positions. `seed_dungeon_events` is queue-idempotent for resume.
+- **Focus-coupled clock (Jedidiah's "Option C", 2026-06-12):** while ANY party has `current_location_type == 'dungeon'`, the world clock runs only while the dungeon layer has focus. `SessionRunner.get_clock_lock_reason()` ("" = unlocked) is the authority: consulted by `_on_clock_speed_requested` (toast + refuse), by every state-side `loop.resume()` call outside the dungeon, and by the wilderness camp-entry gate. `EventBus.clock_lock_changed` drives the disabled speed buttons. Pausing is always allowed. New `loop.resume()` call sites outside the dungeon layer MUST check the lock.
+- **Switch-first encounters:** a background party's triggered encounter is fully formed (weather/gate/lair work included), then persisted to `party_state.pending_encounter` (`var_to_str`, never JSON — encounter dicts carry Godot types) with a sticky tap-to-act toast; `WildernessExploreState.enter` presents it through the normal `EncounterDecisionPrompt` (fire-and-clear, `call_deferred`).
 
 ### 19.6 Dungeon Real-Time-With-Pause Model
 
@@ -2611,21 +2615,26 @@ Implementation:
 
 Room data structures (`get_room_at`, `get_room_cells`, `get_room_boundary_cells`) remain canonical for B6 leftover-cache placement and other room-scoped concerns. Only the fog-reveal hook moves to light + LOS.
 
-## 25. Per-context scheduler speed tables (2026-04-27)
+## 25. Per-context scheduler speed profiles (2026-04-27; context-enum refactor 2026-06-12)
 
-The scheduler's three speed bands (`SPEED_NORMAL`, `SPEED_FAST`, `SPEED_VERY_FAST`) are **caller-facing ordinals**, not multipliers. The actual rounds-per-real-second depends on the current exploration context, looked up via three const dictionaries on `SchedulerLoop`:
+The scheduler's three speed bands (`SPEED_NORMAL`, `SPEED_FAST`, `SPEED_VERY_FAST`) are **caller-facing ordinals**, not multipliers. The actual rounds-per-real-second depends on the current exploration context, declared EXPLICITLY by states via `SchedulerLoop.set_context(TimeContext)` and looked up in the single profile table:
 
 ```gdscript
-const DUNGEON_SPEEDS    := { SPEED_NORMAL: 1, SPEED_FAST: 6,  SPEED_VERY_FAST: 30 }
-const WILDERNESS_SPEEDS := { SPEED_NORMAL: 1, SPEED_FAST: 2,  SPEED_VERY_FAST: 5 }
-const SETTLEMENT_SPEEDS := { SPEED_NORMAL: 1, SPEED_FAST: 2,  SPEED_VERY_FAST: 5 }
+enum TimeContext { DUNGEON, SETTLEMENT, WILDERNESS }
+const CONTEXT_PROFILES := {
+	TimeContext.DUNGEON:    {"timescale": 1.0,  "bands": _BANDS_DUNGEON},   # ×1/×6/×30
+	TimeContext.SETTLEMENT: {"timescale": 6.0,  "bands": _BANDS_STANDARD},  # ×1/×2/×5
+	TimeContext.WILDERNESS: {"timescale": 60.0, "bands": _BANDS_STANDARD},  # ×1/×2/×5
+}
 ```
 
-Why context-coupled: the per-context `TIMESCALE_*` already amplifies the band (wilderness = 60×, settlement = 6×). Reusing one global multiplier across contexts means dungeon Fast and wilderness Fast are wildly different in felt pace. The tables let dungeon get a tighter band (1 round = 1 round) while wilderness keeps its hour-jumping behaviour at the same UI button.
+Why context-coupled: the per-context timescale already amplifies the band (wilderness = 60×, settlement = 6×). Reusing one global multiplier across contexts means dungeon Fast and wilderness Fast are wildly different in felt pace. The profiles let dungeon get a tighter band (1 round = 1 round) while wilderness keeps its hour-jumping behaviour at the same UI button.
 
-Anything that needs the live multiplier should call `SchedulerLoop.get_effective_multiplier()` rather than reading `_speed` directly. The dungeon renderer's tween-speed computation is the canonical example — without going through the getter, tween playback would lag the clock at the larger dungeon bands. New consumers should follow the same pattern.
+**The context is never inferred.** The pre-2026-06-12 implementation matched the float timescale against known constants and silently fell back to the wilderness table for anything unrecognized — any timescale tuning or new context would have changed speed bands with no error. `set_context()` sets timescale + bands together and asserts on unknown contexts. `set_timescale()` no longer exists.
 
-Adding a new exploration context: introduce a new `TIMESCALE_<context>` constant, a matching `<CONTEXT>_SPEEDS` dictionary, and an entry in `_speed_table_for_timescale()`. Don't try to share an existing context's table — that's how the wilderness/dungeon coupling bug came about in the first place.
+Anything that needs the live multiplier should call `SchedulerLoop.get_effective_multiplier()` rather than reading `_speed` directly; consumers that must be pinned to a specific context (the dungeon renderer's tween-speed computation) read that context's row from `CONTEXT_PROFILES` — never a hand-copied table.
+
+Adding a new exploration context: ONE `TimeContext` enum value + ONE `CONTEXT_PROFILES` row. States declare it in `enter()`; Option 1 party-context switching declares it on every watched-context change.
 
 ## 26. Static-helper autoload access (2026-04-27)
 
