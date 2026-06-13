@@ -33987,3 +33987,59 @@ on-tick dispatch.
 2. Then **4c** (economy/garrison ledger — pure functions, unit-tested against hand-computed examples; wires `readiness` back into 4b's contest), **4d** (wars + vassalage/secession), **4e** (stability/collapse/severity/fading/epoch bias), **4f** (migration + beastman repopulation), **4g** (event log + present-day handoff: ruler levels/classes, seeded morale, the §12.1 tables — **and re-check the stronghold-value discrepancy with Jedidiah here**).
 3. Build the §9.3 calibration harness (≥20 seeds × Large) after 4e/4f; report `[NEEDS-REVIEW]`, do NOT self-tune.
 4. Keep the §9.1 determinism hash + full-pipeline determinism green; once 4b adds RNG, ensure all draws go through WorldGenRng streams.
+
+## Session 2026-06-12 (cont.) — Setting generation Stage 4b (history sim: expansion + border contest)
+
+**Task:** Stage 4b of the history simulation — the expansion + border-contest phase (history-sim §7.2-7.3).
+**Model used:** Claude Opus 4.8.
+**Completed:**
+- **`HistorySimulator._phase_expansion`** (§7.2-7.3): each polity accrues a size-exponent expansion budget (`aggression_eff × G × (N0/(N+N0))^α`, with `aggression_eff = aggression × ascendancy × fade × ruler_expansion`), banked fractionally across ticks in a per-polity accumulator (spend integer, keep remainder). It spends the budget on its frontier — land hexes it doesn't own — ranked by the culture's per-terrain multiplier (`_terrain_mult`: 1.5 seed-biome / 1.15 affinity / 0.5 avoided / 1.0 neutral): settle wilderness (claim + 500 families + seed substrate) or contest an enemy hex. Border contest (§7.3): `atk = aggression_eff × terrain_mult × power_factor × readiness`, `def = defense × fade × terrain_mult × home_factor × readiness`, seeded `p_win = atk/(atk+def)`; on win the hex flips (a polity reduced to 0 hexes dies), on loss both sides take `+0.005` attrition (capped `+0.05`/tick) into the per-tick collapse-risk accumulator (consumed by 4e). `power_factor = clamp((N_P/N_Q)^0.3, 0.7, 1.5)`; `home_factor = 1.75/1.4/1.2/1.0` by capital distance; `readiness = 0.5 + 0.5×garrison_coverage` (neutral 0.5 until the 4c ledger populates coverage). Polities processed in sorted-id order; contests seeded by `(seed,"contest",tick,"P>q,r")`.
+- **`CultureSeeder`:** culture instances now carry `affinity_secondary` + `avoided` terrain; `_beastman_instance` builds a lightweight per-campaign instance for each placed beastman culture (stripped §5.3 schema → aggression/defense/seed_biomes jittered, svg 0.8 raider default, tier "beastman"), so the sim reads expansion fields uniformly for every polity. `run()` ensures every placed culture (incl. beastmen) has an instance.
+- **Beastman identification** in the sim switched from "no instance" to `instance.tier == "beastman"` (defensive: empty instance also counts as beastman). Per-tick collapse-risk accumulator reset added to `_tick`.
+**Decisions made:**
+- **After 4b the reachable land fills completely** — expansion is monotonic and depopulation→wilderness only lands in 4e (§7.6). The fully-owned intermediate map is expected, not a bug; the ~50% wilderness target (§11.1) holds only once collapse is built. 4b's integration test asserts multiple-realms-coexist + multi-hex realms, NOT wilderness-remains.
+- **Beastman raider svg = 0.8** ([PROVISIONAL]) — the stripped beastman schema has no conquest block; Chaotic raiders impose/destroy, so a high default. Balance pass owns the value.
+- Beastman expansion uses the full §7.2 formula (no special-casing) — dense clanholds expand and contest, consolidating via conquest as the GDD intends; balance is the calibration harness's call.
+**Interfaces defined or changed:**
+- `HistorySimulator` new factor methods: `_expansion_pressure`, `_aggression_eff`, `_ascendancy`, `_ruler_expansion`, `_terrain_mult`, `_power_factor`, `_readiness`, `_home_factor`, `_resolve_contest`, `_settle_wilderness`, `_flip_hex`, `_compute_frontier`, `_inst`. Contest RNG stream key `(campaign_seed, "contest", tick, "<attacker_id>><q>,<r>")`.
+- Culture instance shape extended (`affinity_secondary`, `avoided`); beastman cultures now appear in `ctx["culture_instances"]`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_stage4b.gd` (235 checks: expansion-pressure falls with size, terrain multiplier, settling claims wilderness, multi-tick expansion into wilderness, certain win/loss contests, attrition on loss; integration: realms span >5 hexes, ≥3 realms coexist, owned hexes populated, full-pipeline determinism).
+- Stage 4a perf test now prints the Large sim time and uses a soft 12s budget.
+- **Baseline 445/17** (was 444/17; +1 suite Stage4b, zero new failures; 17 pre-existing carry-forwards incl. the dungeon terrain_category one).
+**Known issues:**
+- **Perf: the 160-tick Large sim is 7.2s** (was instant pre-sim). Expansion recomputes each polity's full frontier every tick. Acceptable for now (runs once behind the progress bar) but will grow with 4c-4f; a dedicated perf pass is planned after 4f (cache/incremental frontiers, reduce per-contest RNG allocation).
+- 4b fills the map (no wilderness) until 4e depopulation lands — see Decisions.
+- `readiness` is neutral until the 4c garrison ledger; `fade_factor` still 1.0 until 4e.
+- `[NEEDS-OPUS-REVIEW]` carry-forward: rules-XML stronghold-value discrepancy, deferred to 4g handoff (re-check with Jedidiah then).
+**Next session should:**
+1. **Stage 4c — realm economy/garrison ledger** (history-sim §7.5.1): pure functions over a realm's hexes computing income (land_value + services 4 + taxes 2 per family + tribute), overhead (3/family), garrison need (2/3/4 gp by class × frontier_mult), garrison policy (target_coverage by militarism + ruler), and `f_overextension`/solvency vs the RAW 2gp floor. Unit-test against hand-computed examples. Wire `garrison_coverage` back so 4b's `readiness` differentiates.
+2. Then 4d (wars + vassalage/secession), 4e (stability/collapse/severity/fading/epoch bias — restores wilderness via depopulation), 4f (migration + beastman repopulation), 4g (event log + present-day handoff — **re-check stronghold values with Jedidiah**).
+3. After 4f: the §9.3 calibration harness (≥20 seeds × Large) + a sim perf pass.
+
+## Session 2026-06-13 — Setting generation Stage 4c (history sim: economy/garrison ledger)
+
+**Task:** Stage 4c of the history simulation — the realm economy/garrison ledger (history-sim §7.5.1), the overextension inputs that feed §7.5 stability and §7.3 contest readiness.
+**Model used:** Claude Opus 4.8 (implementation + hand-computed test derivation); a background Workflow of 3 Explore agents adversarially cross-checked the formulas / test expecteds / phase-wiring against the GDD.
+**Completed:**
+- **`HistorySimulator._phase_economy` + `_compute_ledger`** (§7.5.1, gp-value aggregate accounting, NOT unit simulation): per realm per tick — income = Σ families×(land_value + services 4 + taxes 2) + tribute_in − tribute_out; overhead = Σ families×3; garrison_need = Σ families×base_rate(civ 2/border 3/wild 4)×frontier_mult; target_coverage = clamp(0.7 + 0.6×military + ruler_delta(±0.1), 0.5, 1.2); garrison_spent = min(need×target_coverage, max(income−overhead, 0)); garrison_coverage = spent/need; min_garrison = Σ families×2 (RAW floor); solvency = income−overhead−min_garrison; f_overextension = clamp(1 + 1.0·max(0,1−coverage) + 2.0·max(0,−solvency)/need, 1.0, 3.0). `_frontier_mult` (1 + 0.5·borders-rival + 0.25·capital-dist>6, cap 1.75), `_borders_rival`, `_ruler_delta`, `_tribute_for` (18×families^0.6, §12.1D).
+- **Phase wiring:** `_phase_economy` runs after expansion/war/migration and before stability, so a fast-expanding realm's garrison need spikes the same tick its coverage drops (the GDD's "bit off more than it can hold" effect). `garrison_coverage` + `f_overextension` stored on each polity; coverage feeds the next tick's §7.3 contest `readiness` (1-tick lag, acceptable); f_overextension awaits 4e stability. Tribute computed from a liege→vassals map (0 until 4d sets liege relationships, but wired).
+- `SimConstants`: added `tribute_base` 18 / `tribute_exponent` 0.6.
+**Decisions made:**
+- **Economy is a distinct 9th phase** (the §3 loop lists 8) placed between migration and stability — the §7.5.1 ledger is "the overextension inputs" to §7.5; a dedicated phase keeps it pure and clearly ordered. Documented.
+- **Realms are solvent on land revenue alone in 4c** (income/family = land_value+6 ≥ 9, overhead 3 + min_garrison 2 = 5) — insolvency only emerges with heavy tribute_out, which needs vassalage (4d). So the w2 insolvency term is dormant until 4d; the w1 under-garrison term is the live driver. This is per the GDD design (tribute is modest).
+**Interfaces defined or changed:**
+- `HistorySimulator._compute_ledger(pol, tribute_in, tribute_out) -> Dictionary` ({income, overhead, garrison_need, garrison_coverage, f_overextension, total_families}); `_phase_economy`, `_frontier_mult`, `_borders_rival`, `_ruler_delta`, `_tribute_for`. Polity now carries `f_overextension` (init 1.0).
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_stage4c.gd` (38 checks: a fully hand-computed solvent-realm ledger (income 17000 / need 3500 / coverage 0.85 / f_overext 1.15), frontier-multiplier garrison-need delta, forced-insolvency → coverage 0 + f_overext capped 3.0, tribute formula, ruler+military shifting coverage, zero-garrison-need safety; integration: present-day coverage in [0,1.2], coverage varies across realms, determinism).
+- **Baseline 446/17** (was 445/17; +1 suite Stage4c, zero new failures).
+**Known issues:**
+- **Perf: Large sim now 8.1s** (4a 7.2 → 4b → 4c +~0.9s for the per-tick ledger pass). Trending up; dedicated perf pass still planned after 4f.
+- `f_overextension` is computed but unconsumed until 4e stability; tribute paths are dormant until 4d vassalage.
+- `[NEEDS-OPUS-REVIEW]` carry-forward: rules-XML stronghold-value discrepancy, deferred to 4g (re-check with Jedidiah).
+**Next session should:**
+1. **Stage 4d — wars + vassalage/secession** (§7.3.1, §7.4) in `_phase_war`: escalate sustained hex friction to one-tick realm-scale wars (strength = garrison_spent × scalars; margin ladder defender-holds/border/decisive/crushing; svg-driven vassalize/annex/pillage); vassal secession; internal vassal-domain organization (CORE_MAX 3). This activates tribute (liege_id set) and the insolvency term.
+2. Then 4e (stability/collapse/severity/fading/epoch bias — restores wilderness via depopulation, consumes f_overextension + collapse_risk_tick), 4f (migration + beastman repopulation), 4g (event log + handoff — **re-check stronghold values with Jedidiah**).
+3. After 4f: §9.3 calibration harness + sim perf pass.

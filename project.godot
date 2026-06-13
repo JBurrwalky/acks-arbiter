@@ -38,10 +38,11 @@ FamiliarController="*res://engine/autoloads/familiar_controller.gd"
 HenchmanCalamityWatcher="*res://engine/autoloads/henchman_calamity_watcher.gd"
 TradeRouteTriggerHandlers="*res://engine/subsystems/commerce/trade_route_trigger_handlers.gd"
 TestContentSeeder="*res://engine/autoloads/test_content_seeder.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg", "res://addons/godot_ai/plugin.cfg")
 
 [gui]
 

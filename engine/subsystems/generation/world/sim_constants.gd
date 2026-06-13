@@ -70,6 +70,9 @@ var income_services_per_family: int = 4
 var income_taxes_per_family: int = 2
 var overhead_per_family: int = 3      # liturgies + maintenance + tithes
 var min_garrison_per_family: int = 2  # RAW 2gp floor (axioms line 226)
+# Tribute a vassal pays its liege (§12.1D optional formula 18gp × families^0.6).
+var tribute_base: float = 18.0
+var tribute_exponent: float = 0.6
 
 # --- Collapse outcomes / severity (§7.6) ------------------------------------
 var severity_tier_weight: float = 0.3

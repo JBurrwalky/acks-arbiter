@@ -77,10 +77,16 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 
 
 func _tick(tick: int) -> void:
+	# Per-tick collapse-risk accumulator (war weariness from §7.3 contests /
+	# §7.3.1 war shock) resets each generation; the stability phase (4e)
+	# consumes it.
+	for pid in _polities:
+		_polities[pid]["collapse_risk_tick"] = 0.0
 	_phase_expansion(tick)    # 4b
 	_phase_war(tick)          # 4d
 	_phase_migration(tick)    # 4f
-	_phase_stability(tick)    # 4e
+	_phase_economy(tick)      # 4c — ledger: garrison_coverage + f_overextension
+	_phase_stability(tick)    # 4e (consumes f_overextension)
 	_phase_collapse(tick)     # 4e
 	_phase_substrate(tick)    # 4a
 	_phase_demography(tick)   # 4a
@@ -146,13 +152,14 @@ func _init_polities(seed_polities: Array) -> void:
 		pol["alive"] = true
 		pol["collapse_risk_tick"] = 0.0
 		pol["garrison_coverage"] = float(pol.get("garrison_coverage", 0.0))
+		pol["f_overextension"] = 1.0
 		pol["garrison_spent"] = 0.0
 		pol["expansion_accumulator"] = 0.0
-		# Beastman polities reference a beastman culture_id with no jittered
-		# instance (only human/demihuman cultures get one). Their clanholds are
-		# always wilderness, ≤2,000 families per 24-mile hex (ax_domains_of_chaos),
-		# so they never advance classification.
-		pol["is_beastman"] = not _culture_instances.has(str(pol["culture_id"]))
+		# Beastman polities (instance tier "beastman", or no instance at all —
+		# defensive) keep their clanholds wilderness, ≤2,000 families per 24-mile
+		# hex (ax_domains_of_chaos), so they never advance classification.
+		var inst: Dictionary = _culture_instances.get(str(pol["culture_id"]), {})
+		pol["is_beastman"] = inst.is_empty() or str(inst.get("tier", "")) == "beastman"
 		_polities[str(pol["id"])] = pol
 	for key in _ordered_keys:
 		var owner := str(_grid[key]["owner_polity_id"])
@@ -357,12 +364,340 @@ func _maybe_emerge_settlement(pol: Dictionary, key: Vector2i, urban_families: in
 
 
 # ---------------------------------------------------------------------------
-# Stubbed phases (4b–4f)
+# 4b — Expansion + border contest (§7.2-7.3)
 # ---------------------------------------------------------------------------
 
-func _phase_expansion(_tick: int) -> void:
-	pass
+## Each polity accrues an expansion budget (size-exponent pressure, banked
+## fractionally across ticks) and spends it on its frontier — settling
+## wilderness or contesting enemy hexes — ranked by the culture's per-terrain
+## multiplier. Polities are processed in sorted-id order for determinism.
+func _phase_expansion(tick: int) -> void:
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		pol["expansion_accumulator"] = float(pol["expansion_accumulator"]) \
+				+ _expansion_pressure(pol, tick)
+		var budget := int(floor(float(pol["expansion_accumulator"])))
+		if budget <= 0:
+			continue
+		pol["expansion_accumulator"] = float(pol["expansion_accumulator"]) - float(budget)
+		_expand_polity(pol, budget, tick)
 
+
+func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
+	var frontier := _compute_frontier(pol)   # Array of {hex, mult}
+	if frontier.is_empty():
+		return
+	frontier.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["mult"] != b["mult"]:
+			return float(a["mult"]) > float(b["mult"])
+		return _canonical_less(a["hex"], b["hex"]))
+	var spent := 0
+	for entry in frontier:
+		if spent >= budget:
+			break
+		var key: Vector2i = entry["hex"]
+		var owner := str(_grid[key]["owner_polity_id"])
+		if owner == "":
+			_settle_wilderness(pol, key)
+			spent += 1
+		elif owner != str(pol["id"]) and _polities.has(owner) and _polities[owner]["alive"]:
+			spent += 1   # the attempt consumes budget whether it wins or loses
+			if _resolve_contest(pol, _polities[owner], key, tick):
+				_flip_hex(key, _polities[owner], pol)
+
+
+## Frontier = land hexes adjacent to the polity's holdings that it does not
+## already own (wilderness to settle, enemy to contest).
+func _compute_frontier(pol: Dictionary) -> Array:
+	var pid := str(pol["id"])
+	var seen := {}
+	var out: Array = []
+	for key in pol["hexes"]:
+		for off in _OFF:
+			var n: Vector2i = key + off
+			if not _grid.has(n) or _grid[n]["water"] != "" or seen.has(n):
+				continue
+			if str(_grid[n]["owner_polity_id"]) == pid:
+				continue
+			seen[n] = true
+			out.append({"hex": n, "mult": _terrain_mult(pol, n)})
+	return out
+
+
+func _settle_wilderness(pol: Dictionary, key: Vector2i) -> void:
+	_grid[key]["owner_polity_id"] = str(pol["id"])
+	_grid[key]["population_band"] = _c.settle_start_families
+	pol["hexes"].append(key)
+	_culture_w[key] = {str(pol["culture_id"]): 1.0}
+	_alignment_w[key] = {str(pol["alignment"]): 1.0}
+
+
+func _flip_hex(key: Vector2i, loser: Dictionary, winner: Dictionary) -> void:
+	_grid[key]["owner_polity_id"] = str(winner["id"])
+	loser["hexes"].erase(key)
+	winner["hexes"].append(key)
+	# Substrate stays the loser's culture; assimilation (this tick's substrate
+	# phase) begins rewriting it toward the winner per its svg.
+	if loser["hexes"].is_empty():
+		loser["alive"] = false
+
+
+## Seeded border contest (§7.3). Returns true if P takes the hex from Q.
+func _resolve_contest(p: Dictionary, q: Dictionary, key: Vector2i, tick: int) -> bool:
+	var atk := _aggression_eff(p, tick) * _terrain_mult(p, key) \
+			* _power_factor(p, q) * _readiness(p)
+	var def := _defense_of(q) * _fade_factor(q, tick) * _terrain_mult(q, key) \
+			* _home_factor(q, key) * _readiness(q)
+	if atk + def <= 0.0:
+		return false
+	var p_win := atk / (atk + def)
+	var roll := WorldGenRng.stream(_campaign_seed, "contest", tick,
+			"%s>%d,%d" % [str(p["id"]), key.x, key.y]).randf()
+	if roll < p_win:
+		return true
+	_add_attrition(p)
+	_add_attrition(q)
+	return false
+
+
+func _add_attrition(pol: Dictionary) -> void:
+	pol["collapse_risk_tick"] = minf(
+			float(pol["collapse_risk_tick"]) + _c.contest_attrition, _c.contest_attrition_cap)
+
+
+# --- Expansion / contest factors --------------------------------------------
+
+func _expansion_pressure(pol: Dictionary, tick: int) -> float:
+	var inst := _inst(pol)
+	var n := float(pol["hexes"].size())
+	var alpha := 1.0 + float(inst.get("size_exponent_bias", 0.0))
+	var size_term: float = _c.expansion_G * pow(_c.expansion_N0 / (n + _c.expansion_N0), alpha)
+	return _aggression_eff(pol, tick) * size_term
+
+
+## aggression × ascendancy × fade × ruler_expansion (§7.2).
+func _aggression_eff(pol: Dictionary, tick: int) -> float:
+	var inst := _inst(pol)
+	return float(inst.get("aggression", 0.5)) * _ascendancy(pol, tick) \
+			* _fade_factor(pol, tick) * _ruler_expansion(pol)
+
+
+## 1 + peak_strength during ascendancy, else 1.0. Demihuman-tier polities stay
+## ascendant through the deep-history epoch (tick < epoch_bias_start × N_TICKS);
+## others for A_PEAK ticks after founding (§7.2, §9).
+func _ascendancy(pol: Dictionary, tick: int) -> float:
+	var inst := _inst(pol)
+	var peak := float(inst.get("peak_strength", 0.5))
+	if str(inst.get("tier", "")) == "demihuman":
+		if tick < int(_c.epoch_bias_start_frac * _n_ticks):
+			return 1.0 + peak
+		return 1.0
+	if tick - int(pol.get("founded_tick", 0)) <= _c.a_peak_ticks:
+		return 1.0 + peak
+	return 1.0
+
+
+func _ruler_expansion(pol: Dictionary) -> float:
+	match str(pol.get("ruler_quality", "average")):
+		"strong":
+			return _c.ruler_expansion_strong
+		"weak":
+			return _c.ruler_expansion_weak
+	return 1.0
+
+
+func _defense_of(pol: Dictionary) -> float:
+	return float(_inst(pol).get("defense", 0.5))
+
+
+## clamp((N_P / N_Q)^0.3, 0.7, 1.5) — size advantage with strong diminishing
+## returns (§7.3).
+func _power_factor(p: Dictionary, q: Dictionary) -> float:
+	var nq := maxf(float(q["hexes"].size()), 1.0)
+	var ratio := float(p["hexes"].size()) / nq
+	return clampf(pow(ratio, _c.power_exponent), _c.power_clamp_min, _c.power_clamp_max)
+
+
+## 0.5 + 0.5 × garrison_coverage (§7.3). Coverage is 0 until the 4c ledger
+## populates it, so readiness is a neutral 0.5 (it cancels in the atk/def ratio).
+func _readiness(pol: Dictionary) -> float:
+	return 0.5 + 0.5 * float(pol.get("garrison_coverage", 0.0))
+
+
+## home_factor (§7.3): 1.75 at the capital, 1.4 within 2 hexes, 1.2 within 4,
+## else 1.0.
+func _home_factor(pol: Dictionary, key: Vector2i) -> float:
+	var d := _hex_distance(key, Vector2i(int(pol["capital_q"]), int(pol["capital_r"])))
+	if d == 0:
+		return _c.home_capital
+	if d <= 2:
+		return _c.home_near
+	if d <= 4:
+		return _c.home_mid
+	return _c.home_far
+
+
+## The polity's culture's per-terrain expansion/defense multiplier (catalog
+## §4.1): 1.5 seed biome / 1.15 affinity / 0.5 avoided / 1.0 neutral.
+func _terrain_mult(pol: Dictionary, key: Vector2i) -> float:
+	var inst := _inst(pol)
+	var hex: Dictionary = _grid[key]
+	for term in inst.get("seed_biomes", []):
+		if CultureSeeder._hex_matches_term(hex, str(term)):
+			return _c.terrain_mult_seed
+	for term in inst.get("affinity_secondary", []):
+		if CultureSeeder._hex_matches_term(hex, str(term)):
+			return _c.terrain_mult_secondary
+	for term in inst.get("avoided", []):
+		if CultureSeeder._hex_matches_term(hex, str(term)):
+			return _c.terrain_mult_avoided
+	return _c.terrain_mult_neutral
+
+
+func _inst(pol: Dictionary) -> Dictionary:
+	return _culture_instances.get(str(pol["culture_id"]), {})
+
+
+func _hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var dq := b.x - a.x
+	var dr := b.y - a.y
+	return (absi(dq) + absi(dr) + absi(dq + dr)) / 2
+
+
+# ---------------------------------------------------------------------------
+# 4c — Realm economy / garrison ledger (§7.5.1)
+# ---------------------------------------------------------------------------
+
+## Compute each realm's gp-value ledger and store `garrison_coverage` (read by
+## the next tick's §7.3 contest readiness) and `f_overextension` (consumed by
+## §7.5 stability, 4e). Runs after territorial change (expansion/war/migration)
+## so a fast-expanding realm's garrison need spikes the same tick its coverage
+## drops — the "bit off more than it can hold" failure mode emerges unscripted.
+func _phase_economy(_tick: int) -> void:
+	# One pass for total families + the liege→vassals map (tribute is
+	# O(vassal-edges); empty until 4d sets liege relationships).
+	var families := {}
+	var vassals_of := {}
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		families[pid] = _total_families(pol)
+		var liege := str(pol.get("liege_id", ""))
+		if liege != "":
+			if not vassals_of.has(liege):
+				vassals_of[liege] = []
+			vassals_of[liege].append(pid)
+
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		var tribute_in := 0.0
+		for vid in vassals_of.get(pid, []):
+			tribute_in += _tribute_for(int(families.get(vid, 0)))
+		var tribute_out := 0.0
+		if str(pol.get("liege_id", "")) != "":
+			tribute_out = _tribute_for(int(families.get(pid, 0)))
+		var ledger := _compute_ledger(pol, tribute_in, tribute_out)
+		pol["garrison_coverage"] = ledger["garrison_coverage"]
+		pol["f_overextension"] = ledger["f_overextension"]
+
+
+## Pure §7.5.1 ledger for one realm. Returns income / overhead / garrison_need /
+## garrison_spent / garrison_coverage / solvency / f_overextension.
+func _compute_ledger(pol: Dictionary, tribute_in: float, tribute_out: float) -> Dictionary:
+	var inst := _inst(pol)
+	var capital := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+	var pid := str(pol["id"])
+	var land_revenue := 0.0     # Σ families × (land_value + services 4 + taxes 2)
+	var total_families := 0
+	var garrison_need := 0.0
+	for key in pol["hexes"]:
+		var hex: Dictionary = _grid[key]
+		var fam := int(hex["population_band"])
+		if fam <= 0:
+			continue
+		total_families += fam
+		land_revenue += float(fam) * float(int(hex["land_value"])
+				+ _c.income_services_per_family + _c.income_taxes_per_family)
+		garrison_need += float(fam) * float(_c.garrison_rate_for(str(hex["territory_class"]))) \
+				* _frontier_mult(key, pid, capital)
+
+	var income := land_revenue + tribute_in - tribute_out
+	var overhead := float(total_families * _c.overhead_per_family)
+	var affordable := income - overhead
+
+	var military := float(inst.get("sphere_weights", {}).get("military", 0.0))
+	var target_coverage := clampf(
+			_c.target_coverage_base + _c.target_coverage_military_weight * military
+				+ _ruler_delta(pol),
+			_c.target_coverage_min, _c.target_coverage_max)
+
+	var garrison_coverage := 1.0
+	var f_overextension := 1.0
+	if garrison_need > 0.0:
+		var garrison_spent := minf(garrison_need * target_coverage, maxf(affordable, 0.0))
+		garrison_coverage = garrison_spent / garrison_need
+		var min_garrison := float(total_families * _c.min_garrison_per_family)
+		var solvency := income - overhead - min_garrison
+		f_overextension = clampf(
+				1.0 + _c.overext_w1 * maxf(0.0, 1.0 - garrison_coverage)
+					+ _c.overext_w2 * maxf(0.0, -solvency) / garrison_need,
+				1.0, _c.overext_cap)
+
+	return {
+		"income": income, "overhead": overhead, "garrison_need": garrison_need,
+		"garrison_coverage": garrison_coverage, "f_overextension": f_overextension,
+		"total_families": total_families,
+	}
+
+
+## frontier_mult (§7.5.1): 1 + 0.5·(borders a rival polity) + 0.25·(capital
+## distance > 6 hexes), capped at 1.75.
+func _frontier_mult(key: Vector2i, owner_pid: String, capital: Vector2i) -> float:
+	var mult := 1.0
+	if _borders_rival(key, owner_pid):
+		mult += _c.frontier_rival_bonus
+	if _hex_distance(key, capital) > _c.frontier_distance_threshold:
+		mult += _c.frontier_distance_bonus
+	return minf(mult, _c.frontier_mult_cap)
+
+
+## True if any neighbor is held by a different polity (beastman-held wilderness
+## included — they are just another owner).
+func _borders_rival(key: Vector2i, owner_pid: String) -> bool:
+	for off in _OFF:
+		var n: Vector2i = key + off
+		if not _grid.has(n):
+			continue
+		var o := str(_grid[n]["owner_polity_id"])
+		if o != "" and o != owner_pid:
+			return true
+	return false
+
+
+func _ruler_delta(pol: Dictionary) -> float:
+	match str(pol.get("ruler_quality", "average")):
+		"strong":
+			return _c.target_coverage_ruler_delta
+		"weak":
+			return -_c.target_coverage_ruler_delta
+	return 0.0
+
+
+## Tribute a realm of [param families] owes its liege (§12.1D: 18gp × families^0.6).
+func _tribute_for(families: int) -> float:
+	if families <= 0:
+		return 0.0
+	return _c.tribute_base * pow(float(families), _c.tribute_exponent)
+
+
+# ---------------------------------------------------------------------------
+# Stubbed phases (4d–4f)
+# ---------------------------------------------------------------------------
 
 func _phase_war(_tick: int) -> void:
 	pass

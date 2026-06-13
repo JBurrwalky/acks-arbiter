@@ -87,6 +87,13 @@ static func run(ctx: Dictionary) -> bool:
 	var beastman_polities := _place_beastmen(
 			grid, width, height, params, campaign_seed, occupied, seed_polities.size())
 
+	# Every placed culture needs a sim instance — beastman cultures get a
+	# lightweight one (the history sim reads aggression/terrain/svg from it).
+	for p in beastman_polities:
+		var bcid: String = p["culture_id"]
+		if not instances.has(bcid) and catalog.has(bcid):
+			instances[bcid] = _beastman_instance(catalog[bcid], campaign_seed)
+
 	ctx["seed_polities"] = seed_polities + beastman_polities
 	return true
 
@@ -325,8 +332,42 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		"end_state": str(lifecycle.get("end_state", "enduring")),
 		"sphere_weights": _jitter_spheres(CultureCatalogLoader.sphere_weights(record), rng),
 		"seed_biomes": CultureCatalogLoader.seed_biomes(record),
+		"affinity_secondary": mech.get("terrain", {}).get("affinity_secondary", []),
+		"avoided": mech.get("terrain", {}).get("avoided", []),
 	}
 	return inst
+
+
+## A lightweight per-campaign instance for a beastman culture (stripped schema,
+## §5.3 — no conquest/lifecycle/rulership blocks). Beastmen expand and raid; the
+## history sim reads these fields the same way it reads human/demihuman ones.
+static func _beastman_instance(record: Dictionary, campaign_seed: int) -> Dictionary:
+	var cid := CultureCatalogLoader.culture_id(record)
+	var rng := WorldGenRng.stream(campaign_seed, "beastman_jitter", 0, cid)
+	var expansion: Dictionary = CultureCatalogLoader.mechanical(record).get("expansion", {})
+	return {
+		"culture_id": cid,
+		"tier": "beastman",
+		"race": CultureCatalogLoader.race(record),
+		"civ_or_clan": "clan",
+		"toponym": CultureCatalogLoader.toponym(record),
+		"aggression": _jitter_scalar(float(expansion.get("aggression", 0.7)), rng),
+		"defense": _jitter_scalar(float(expansion.get("defense", 0.45)), rng),
+		"size_exponent_bias": float(expansion.get("size_exponent_bias", 0.0)),
+		"rigidity": 0.5,
+		# Chaotic raiders impose/destroy rather than vassalize (no catalog value
+		# for the stripped beastman schema; high svg, [PROVISIONAL] balance pass).
+		"base_subjugation_vs_genocide": 0.8,
+		"conquest_modifiers": [],
+		"road_propensity": 0.1,
+		"peak_strength": 0.3,
+		"collapse_proneness": 0.5,
+		"end_state": "enduring",
+		"sphere_weights": {},
+		"seed_biomes": CultureCatalogLoader.seed_biomes(record),
+		"affinity_secondary": [],
+		"avoided": [],
+	}
 
 
 static func _jitter_scalar(s: float, rng: RandomNumberGenerator) -> float:
