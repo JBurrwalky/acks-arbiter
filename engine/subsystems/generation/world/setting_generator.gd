@@ -145,10 +145,31 @@ func _run_culture_seeding(ctx: Dictionary) -> bool:
 	return SettingRepository.save_polities(campaign_id, ctx.get("seed_polities", []))
 
 
-func _run_history_sim(_ctx: Dictionary) -> bool:
-	# Stage 4: history_simulator.gd (gdd-history-simulation.md v0.5 — emits
-	# the §7.2 sim output contract incl. replay frames).
-	return true
+func _run_history_sim(ctx: Dictionary) -> bool:
+	# Layer 4 (gdd-history-simulation.md v0.5): run the tick-0 seed state
+	# forward to the present day, then re-persist the §7.2 contract over the
+	# Layer-3 seed rows.
+	if not HistorySimulator.new().run(ctx):
+		return false
+	var campaign_id: String = ctx["campaign_id"]
+	if not SettingRepository.clear_sim_output(campaign_id):
+		return false
+	# Substrate was mutated in place — re-save the hex grid.
+	if not _persist_hexes(ctx):
+		return false
+	if not SettingRepository.save_polities(campaign_id, ctx.get("sim_polities", [])):
+		return false
+	if not SettingRepository.save_settlements(campaign_id, ctx.get("sim_settlements", [])):
+		return false
+	if not SettingRepository.save_events(campaign_id, ctx.get("sim_events", [])):
+		return false
+	if not SettingRepository.save_ruin_seeds(campaign_id, ctx.get("sim_ruin_seeds", [])):
+		return false
+	if not SettingRepository.save_fallen_polities(campaign_id, ctx.get("sim_fallen_polities", [])):
+		return false
+	if not SettingRepository.save_replay_frames(campaign_id, ctx.get("sim_replay_frames", [])):
+		return false
+	return SettingRepository.save_replay_palette(campaign_id, ctx.get("sim_replay_palette", []))
 
 
 func _run_naming(_ctx: Dictionary) -> bool:

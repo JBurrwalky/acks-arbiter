@@ -8,14 +8,18 @@ extends "res://tests/test_suite_base.gd"
 ## deterministic. (When Stage 4 lands, setting_polities becomes the present-day
 ## state; these seed-state assertions move to a seed-only checkpoint.)
 
-var _cid: String = ""
-var _polities: Array = []
-var _hexes_by_qr: Dictionary = {}
+var _polities: Array = []        # SEED polities (in-memory, Layers 1-3)
+var _hexes_by_qr: Dictionary = {} # SEED hex grid (in-memory, Layers 1-3)
 var _catalog: Dictionary = {}
 
 
 func run_all_tests() -> void:
-	_generate("medium", 42)
+	# Seed-state assertions run on the IN-MEMORY seed ctx (Layers 1-3 only).
+	# The full generate() now also runs Layer 4 (the history sim), which mutates
+	# population, classification, and substrate — so the canonical setting_*
+	# tables hold the PRESENT-DAY state, not the seed state. The pipeline-level
+	# determinism test below still exercises the full generate()+DB.
+	_load_seed_state("medium", 42)
 	test_seed_polities_exist()
 	test_homelands_satisfy_seed_biomes()
 	test_alignments_in_allowed_set()
@@ -30,18 +34,25 @@ func run_all_tests() -> void:
 	print("SettingStage3Tests: all tests passed (%d checks)" % test_count())
 
 
-func _generate(map_size: String, seed_value: int) -> void:
+## Build the tick-0 SEED state in memory (Layers 1-3, no Layer-4 sim, no DB).
+func _load_seed_state(map_size: String, seed_value: int) -> void:
 	CultureCatalogLoader.clear_cache()
 	BeastmanDistributionLoader.clear_cache()
 	_catalog = CultureCatalogLoader.load_all()
-	_cid = CampaignRepository.create_campaign("Stage3 %s %d" % [map_size, seed_value], "w")
+	var ctx := _build_seed_ctx(map_size, seed_value)
+	_polities = ctx["seed_polities"]
+	_hexes_by_qr = ctx["hex_grid"]
+
+
+func _build_seed_ctx(map_size: String, seed_value: int) -> Dictionary:
 	var params := SettingParameters.new()
 	params.map_size = map_size
-	check(SettingGenerator.new().generate(_cid, seed_value, params), "generate() failed")
-	_polities = SettingRepository.list_polities(_cid)
-	_hexes_by_qr = {}
-	for hex in SettingRepository.list_hexes(_cid):
-		_hexes_by_qr[Vector2i(int(hex.q), int(hex.r))] = hex
+	var ctx := {"campaign_id": "_inmem_", "campaign_seed": seed_value, "params": params}
+	HeightmapGenerator.run(ctx)
+	ClimateGenerator.run(ctx)
+	RegionPainter.run_phase1(ctx)
+	CultureSeeder.run(ctx)
+	return ctx
 
 
 func _tier_of(culture_id: String) -> String:
@@ -189,7 +200,7 @@ func test_phonemic_adjacency_best_effort() -> void:
 
 func test_culture_instances_jittered_within_bounds() -> void:
 	# Re-run via the in-memory ctx path to inspect culture_instances directly.
-	var ctx := _build_ctx_through_seeding("medium", 42)
+	var ctx := _build_seed_ctx("medium", 42)
 	var instances: Dictionary = ctx.get("culture_instances", {})
 	check(instances.size() > 0, "no culture instances produced")
 	for cid in instances:
@@ -221,15 +232,19 @@ func test_beastman_density_zero_yields_none() -> void:
 
 
 func test_determinism_same_seed() -> void:
-	var cid2 := CampaignRepository.create_campaign("Stage3 Det B", "w")
-	var params := SettingParameters.new()
-	check(SettingGenerator.new().generate(cid2, 42, params), "second generate() failed")
-	var subs_a := SettingDatasetHasher.compute_sub_hashes(_cid)
-	var subs_b := SettingDatasetHasher.compute_sub_hashes(cid2)
+	# Pipeline-level: two full generates of the same seed produce identical
+	# present-day polities + hex substrate (the seed stage is deterministic and
+	# so is everything downstream of it).
+	var cid_a := CampaignRepository.create_campaign("Stage3 Det A", "w")
+	var cid_b := CampaignRepository.create_campaign("Stage3 Det B", "w")
+	check(SettingGenerator.new().generate(cid_a, 42, SettingParameters.new()), "generate A failed")
+	check(SettingGenerator.new().generate(cid_b, 42, SettingParameters.new()), "generate B failed")
+	var subs_a := SettingDatasetHasher.compute_sub_hashes(cid_a)
+	var subs_b := SettingDatasetHasher.compute_sub_hashes(cid_b)
 	check(subs_a["setting_polities"] == subs_b["setting_polities"],
-		"polity seeding not deterministic for the same seed")
+		"polities not deterministic for the same seed")
 	check(subs_a["setting_hexes"] == subs_b["setting_hexes"],
-		"hex substrate seeding not deterministic for the same seed")
+		"hex substrate not deterministic for the same seed")
 
 
 # --- Helpers ----------------------------------------------------------------
@@ -252,18 +267,3 @@ func _coastal_set() -> Dictionary:
 	return coastal
 
 
-## Run Layers 1-3 against an in-memory ctx (no DB) to inspect the seed state's
-## transient products (culture_instances) the canonical tables don't persist.
-func _build_ctx_through_seeding(map_size: String, seed_value: int) -> Dictionary:
-	var params := SettingParameters.new()
-	params.map_size = map_size
-	var ctx := {
-		"campaign_id": "_inmem_",
-		"campaign_seed": seed_value,
-		"params": params,
-	}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
-	RegionPainter.run_phase1(ctx)
-	CultureSeeder.run(ctx)
-	return ctx

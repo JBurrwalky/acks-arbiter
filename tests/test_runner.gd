@@ -538,6 +538,7 @@ extends Node
 @onready var _setting_stage3_tests = $SettingStage3Tests
 @onready var _setting_generation_data_freshness_tests = $SettingGenerationDataFreshnessTests
 @onready var _setting_stage4_foundation_tests = $SettingStage4FoundationTests
+@onready var _setting_stage4a_tests = $SettingStage4aTests
 
 
 func _ready() -> void:
@@ -1078,7 +1079,9 @@ func run() -> void:
 			_setting_stage3_tests,
 			_setting_generation_data_freshness_tests,
 			# 2026-06-12 — Setting generation Stage 4 foundation (SimConstants + tier table)
-			_setting_stage4_foundation_tests]:
+			_setting_stage4_foundation_tests,
+			# 2026-06-12 — Setting generation Stage 4a (history sim: substrate + demography)
+			_setting_stage4a_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

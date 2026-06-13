@@ -116,6 +116,34 @@ static func lock_setting(campaign_id: String, world_hash: String) -> bool:
 	return ok
 
 
+# Sim-produced tables (Layer 4 output) — cleared before the sim re-persists its
+# present-day result over the Layer-3 seed polities (setting_hexes is NOT here:
+# the sim mutates substrate in place and re-saves it via the hex upsert).
+const _SIM_OUTPUT_TABLES := [
+	"setting_polities", "setting_settlements", "setting_events",
+	"setting_ruin_seeds", "setting_fallen_polities",
+	"setting_replay_frames", "setting_replay_palette",
+]
+
+
+## Clear the sim-output tables so Layer 4 can re-persist its present-day result
+## (the Layer-3 seed polities are replaced, not appended to). Refused post-lock.
+static func clear_sim_output(campaign_id: String) -> bool:
+	if _reject_if_locked(campaign_id, "clear_sim_output"):
+		return false
+	var db = CampaignRepository.db
+	db.query("BEGIN TRANSACTION")
+	for table in _SIM_OUTPUT_TABLES:
+		if not db.query_with_bindings(
+				"DELETE FROM %s WHERE campaign_id = ?" % table, [campaign_id]):
+			push_error("SettingRepository.clear_sim_output: DELETE %s failed. campaign=%s"
+					% [table, campaign_id])
+			db.query("ROLLBACK")
+			return false
+	db.query("COMMIT")
+	return true
+
+
 ## Wipe all setting data for a campaign (the regenerate-whole-world path).
 ## Refused after the lock.
 static func delete_setting(campaign_id: String) -> bool:

@@ -133,12 +133,19 @@ var cap_civilized: int = 12480
 var urban_fraction: float = 0.10      # of realm pop
 var urban_capital_share: float = 0.20 # of the urban allocation
 var minority_floor: float = 0.001     # SettingParameters.minority_weight_floor default
+# Smallest urban settlement that "counts" — RAW dissolution floor (a settlement
+# below 75 urban families dissolves, axioms:686-689). Used as the §6 urban-
+# emergence trigger; Layer 6 (§9.1) assigns the actual market class.
+var settlement_min_urban_families: int = 75
 
-# --- Classification advancement (limits-of-growth, 24-mi families) ----------
-# A 24-mile hex advances when families cross these (16× the 6-mile thresholds
-# 125/250; advancement also needs the urban thresholds the sim approximates).
-var advance_to_borderlands: int = 2000  # 125 × 16
-var advance_to_civilized: int = 4000    # 250 × 16
+# --- Classification advancement (limits-of-growth, RAW axioms:165-176) -------
+# A 24-mile hex (= 16 6-mile hexes) advances when it FILLS its current class
+# (to_borderlands: every 6-mile hex at wilderness max 125 = 2,000/24-mi hex;
+# to_civilized: every 6-mile hex at borderlands max 250 = 4,000/24-mi hex).
+# Logistic growth approaches the cap asymptotically, so the sim triggers
+# advancement at this fraction of the current class cap (the hex is "full").
+# The RAW urban-settlement / proximity gates are refined at Layer 6 (§9.6).
+var classification_advance_fraction: float = 0.90
 
 # --- Migration (§8) ---------------------------------------------------------
 var migrant_fraction: float = 0.30

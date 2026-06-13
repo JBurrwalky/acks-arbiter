@@ -216,16 +216,18 @@ func test_land_value_table_unit() -> void:
 
 
 func test_large_map_performance() -> void:
-	var cid := CampaignRepository.create_campaign("Stage1 Large Perf", "w")
+	# Measure Layers 1-2 in ISOLATION (the full generate() now also runs culture
+	# seeding + the 160-tick history sim, which have their own budgets). This is
+	# Stage 1's exit criterion: heightmap + hydrology + climate on a Large map.
 	var params := SettingParameters.new()
 	params.map_size = "large"
+	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 7, "params": params}
 	var start := Time.get_ticks_msec()
-	var ok := SettingGenerator.new().generate(cid, 7, params)
+	HeightmapGenerator.run(ctx)
+	ClimateGenerator.run(ctx)
 	var elapsed := Time.get_ticks_msec() - start
-	check(ok, "large-map generate() failed")
-	check(elapsed < 5000,
-		"Layers 1-2 on Large took %d ms (budget: well under 5s incl. DB writes)" % elapsed)
-	check(SettingRepository.list_hexes(cid).size() == 40 * 30, "large map should have 1200 hexes")
+	check(elapsed < 5000, "Layers 1-2 on Large took %d ms (budget: well under 5s)" % elapsed)
+	check(ctx["hex_grid"].size() == 40 * 30, "large map should have 1200 hexes")
 
 
 # --- Helpers ------------------------------------------------------------------
