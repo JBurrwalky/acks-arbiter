@@ -49,6 +49,14 @@ var _settlements: Array = []     # emerged settlement records
 var _events: Array = []          # §11 event log
 var _replay_frames: Array = []   # {tick, owner_by_hex}
 var _next_settlement_seq: int = 1
+var _next_event_seq: int = 1
+
+# Per-tick scratch (rebuilt each tick): directed border-contest counts from the
+# expansion phase (key "P>Q" -> int), feeding §7.3.1 war escalation; and each
+# alive polity's hex count at tick start (pre-expansion), for the §7.3.1
+# "Q reduced below half its pre-war size" crushing gate.
+var _contest_counts: Dictionary = {}
+var _tick_start_size: Dictionary = {}
 
 
 func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
@@ -79,9 +87,17 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 func _tick(tick: int) -> void:
 	# Per-tick collapse-risk accumulator (war weariness from §7.3 contests /
 	# §7.3.1 war shock) resets each generation; the stability phase (4e)
-	# consumes it.
+	# consumes it. We also snapshot each realm's pre-expansion size (for the
+	# §7.3.1 crushing gate) and promote last tick's pillage credit so the §7.3.1
+	# "+0.5 × Q income next tick" lands in this tick's ledger, not the same tick.
+	_tick_start_size = {}
 	for pid in _polities:
-		_polities[pid]["collapse_risk_tick"] = 0.0
+		var pol: Dictionary = _polities[pid]
+		pol["collapse_risk_tick"] = 0.0
+		pol["pillage_credit_active"] = float(pol.get("pillage_credit_pending", 0.0))
+		pol["pillage_credit_pending"] = 0.0
+		if pol["alive"]:
+			_tick_start_size[pid] = int(pol["hexes"].size())
 	_phase_expansion(tick)    # 4b
 	_phase_war(tick)          # 4d
 	_phase_migration(tick)    # 4f
@@ -153,7 +169,12 @@ func _init_polities(seed_polities: Array) -> void:
 		pol["collapse_risk_tick"] = 0.0
 		pol["garrison_coverage"] = float(pol.get("garrison_coverage", 0.0))
 		pol["f_overextension"] = 1.0
-		pol["garrison_spent"] = 0.0
+		pol["garrison_spent"] = 0.0          # last tick's §7.5.1 spend; war strength reads it
+		pol["last_income"] = 0.0             # last tick's ledger income; pillage credit reads it
+		pol["collapse_risk"] = 0.0           # last tick's §7.5 stability risk (4e); secession reads it
+		pol["pillage_credit_pending"] = 0.0  # booked this tick, paid next (§7.3.1 pillage)
+		pol["pillage_credit_active"] = 0.0   # promoted at tick start, consumed by the ledger
+		pol["last_expansion_budget"] = 0     # this tick's expansion budget; deep-raid sizing
 		pol["expansion_accumulator"] = 0.0
 		# Beastman polities (instance tier "beastman", or no instance at all —
 		# defensive) keep their clanholds wilderness, ≤2,000 families per 24-mile
@@ -237,10 +258,12 @@ static func _canonical_less(a: Vector2i, b: Vector2i) -> bool:
 	return a.y < b.y or (a.y == b.y and a.x < b.x)
 
 
-## Conquest rewrite (§6): each held hex lerps its culture/alignment weights
-## toward the owner at effective_svg × ASSIMILATION_STEP. No-op for a pure
-## homeland; bites on conquered hexes of a different culture (4d). effective_svg
-## uses the culture's base svg for now — §4.4 conditional modifiers land in 4d.
+## Conquest rewrite (§6 / §4.4): each held hex lerps its culture/alignment
+## weights toward the owner at effective_svg × ASSIMILATION_STEP. A pure homeland
+## (no foreign culture present) uses the base svg and is a no-op; a conquered hex
+## of a different culture rewrites at the §4.4 effective_svg for THAT target —
+## so a demihuman annexing humans in its own seed biome converts fast (genocide,
+## svg→0.9) while the same people merely vassalize lands outside it (svg low).
 func _assimilate_held_hexes() -> void:
 	for pid in _sorted_polity_ids():
 		var pol: Dictionary = _polities[pid]
@@ -248,10 +271,19 @@ func _assimilate_held_hexes() -> void:
 			continue
 		var culture_id := str(pol["culture_id"])
 		var alignment := str(pol["alignment"])
-		var rate := clampf(_base_svg(culture_id) * _c.assimilation_step, 0.0, 1.0)
-		if rate <= 0.0:
-			continue
 		for key in pol["hexes"]:
+			# A hex already converged to the owner's culture lerps to a no-op, so
+			# skip the §4.4 effective_svg evaluation for it entirely (the bulk of
+			# held hexes are settled homelands — this keeps the per-tick cost on
+			# the conquered frontier, not the whole realm). Culture and alignment
+			# assimilate in lockstep (same rate), so culture convergence implies
+			# alignment convergence; diffusion can later nudge it back below the
+			# threshold, which re-arms assimilation next tick.
+			if float(_culture_w.get(key, {}).get(culture_id, 0.0)) >= 0.999:
+				continue
+			var rate := clampf(_effective_svg_for_hex(pol, key) * _c.assimilation_step, 0.0, 1.0)
+			if rate <= 0.0:
+				continue
 			_culture_w[key] = _lerp_toward(_culture_w[key], culture_id, rate)
 			_alignment_w[key] = _lerp_toward(_alignment_w[key], alignment, rate)
 
@@ -372,15 +404,18 @@ func _maybe_emerge_settlement(pol: Dictionary, key: Vector2i, urban_families: in
 ## wilderness or contesting enemy hexes — ranked by the culture's per-terrain
 ## multiplier. Polities are processed in sorted-id order for determinism.
 func _phase_expansion(tick: int) -> void:
+	_contest_counts = {}   # rebuilt each tick; read by §7.3.1 war escalation
 	for pid in _sorted_polity_ids():
 		var pol: Dictionary = _polities[pid]
 		if not pol["alive"]:
 			continue
+		pol["last_expansion_budget"] = 0
 		pol["expansion_accumulator"] = float(pol["expansion_accumulator"]) \
 				+ _expansion_pressure(pol, tick)
 		var budget := int(floor(float(pol["expansion_accumulator"])))
 		if budget <= 0:
 			continue
+		pol["last_expansion_budget"] = budget
 		pol["expansion_accumulator"] = float(pol["expansion_accumulator"]) - float(budget)
 		_expand_polity(pol, budget, tick)
 
@@ -404,6 +439,10 @@ func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
 			spent += 1
 		elif owner != str(pol["id"]) and _polities.has(owner) and _polities[owner]["alive"]:
 			spent += 1   # the attempt consumes budget whether it wins or loses
+			# Record the directed contest so §7.3.1 can escalate a sustained
+			# campaign (≥ WAR_THRESHOLD contests P→Q this tick) into a war.
+			var ck := "%s>%s" % [str(pol["id"]), owner]
+			_contest_counts[ck] = int(_contest_counts.get(ck, 0)) + 1
 			if _resolve_contest(pol, _polities[owner], key, tick):
 				_flip_hex(key, _polities[owner], pol)
 
@@ -463,8 +502,14 @@ func _resolve_contest(p: Dictionary, q: Dictionary, key: Vector2i, tick: int) ->
 
 
 func _add_attrition(pol: Dictionary) -> void:
+	_add_collapse_risk(pol, _c.contest_attrition)
+
+
+## Accumulate per-tick collapse risk (contest attrition + §7.3.1 war shock),
+## capped at CONTEST_ATTRITION_CAP per polity per tick. Consumed by §7.5 (4e).
+func _add_collapse_risk(pol: Dictionary, amount: float) -> void:
 	pol["collapse_risk_tick"] = minf(
-			float(pol["collapse_risk_tick"]) + _c.contest_attrition, _c.contest_attrition_cap)
+			float(pol["collapse_risk_tick"]) + amount, _c.contest_attrition_cap)
 
 
 # --- Expansion / contest factors --------------------------------------------
@@ -595,7 +640,7 @@ func _phase_economy(_tick: int) -> void:
 		var pol: Dictionary = _polities[pid]
 		if not pol["alive"]:
 			continue
-		var tribute_in := 0.0
+		var tribute_in := float(pol.get("pillage_credit_active", 0.0))  # §7.3.1 pillage loot
 		for vid in vassals_of.get(pid, []):
 			tribute_in += _tribute_for(int(families.get(vid, 0)))
 		var tribute_out := 0.0
@@ -604,6 +649,10 @@ func _phase_economy(_tick: int) -> void:
 		var ledger := _compute_ledger(pol, tribute_in, tribute_out)
 		pol["garrison_coverage"] = ledger["garrison_coverage"]
 		pol["f_overextension"] = ledger["f_overextension"]
+		# Stored for next tick's §7.3.1 war resolution (the prev-tick coupling,
+		# like garrison_coverage feeding §7.3 readiness).
+		pol["garrison_spent"] = ledger["garrison_spent"]
+		pol["last_income"] = ledger["income"]
 
 
 ## Pure §7.5.1 ledger for one realm. Returns income / overhead / garrison_need /
@@ -638,8 +687,9 @@ func _compute_ledger(pol: Dictionary, tribute_in: float, tribute_out: float) -> 
 
 	var garrison_coverage := 1.0
 	var f_overextension := 1.0
+	var garrison_spent := 0.0
 	if garrison_need > 0.0:
-		var garrison_spent := minf(garrison_need * target_coverage, maxf(affordable, 0.0))
+		garrison_spent = minf(garrison_need * target_coverage, maxf(affordable, 0.0))
 		garrison_coverage = garrison_spent / garrison_need
 		var min_garrison := float(total_families * _c.min_garrison_per_family)
 		var solvency := income - overhead - min_garrison
@@ -651,7 +701,7 @@ func _compute_ledger(pol: Dictionary, tribute_in: float, tribute_out: float) -> 
 	return {
 		"income": income, "overhead": overhead, "garrison_need": garrison_need,
 		"garrison_coverage": garrison_coverage, "f_overextension": f_overextension,
-		"total_families": total_families,
+		"garrison_spent": garrison_spent, "total_families": total_families,
 	}
 
 
@@ -696,12 +746,569 @@ func _tribute_for(families: int) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Stubbed phases (4d–4f)
+# 4d — War escalation + realm-scale resolution (§7.3.1) and vassalage/secession
+#      (§7.4). A tick is 25 years, long enough to contain a whole war, so wars
+#      escalate, resolve, and conclude within the tick. No units are simulated:
+#      garrison_spent (the §7.5.1 gp-value army budget, from last tick's ledger)
+#      IS the army size. Runs after expansion (so this tick's contests can
+#      escalate) and before the economy ledger (so a war's territorial swing
+#      spikes garrison need the same tick).
 # ---------------------------------------------------------------------------
 
-func _phase_war(_tick: int) -> void:
-	pass
+func _phase_war(tick: int) -> void:
+	var wars := _build_war_set(tick)
+	if wars.is_empty():
+		return
+	# multi_war (§7.3.1): a polity fighting several wars at once fights each at a
+	# discount. Count appearances across the whole decided set BEFORE resolving,
+	# so a realm that falls mid-tick doesn't change another war's strength.
+	var war_count := {}
+	for w in wars:
+		war_count[w["attacker"]] = int(war_count.get(w["attacker"], 0)) + 1
+		war_count[w["defender"]] = int(war_count.get(w["defender"], 0)) + 1
+	var lost_war := {}   # liege id -> true; feeds §7.4 secession weakness
+	for w in wars:
+		_resolve_war(w, war_count, tick, lost_war)
+	_run_secessions(tick, lost_war)
 
+
+## Decide the tick's wars: at most one per adjacent hostile (different-realm)
+## pair. Returns [{attacker, defender, front:Array[Vector2i]}], front = the
+## defender's hexes on the shared border (what the attacker fights over).
+func _build_war_set(tick: int) -> Array:
+	var fronts := _compute_fronts()   # "A>D" -> Array of D's hexes facing A
+	# Collect unordered adjacent pairs (both directions appear in `fronts`).
+	var pair_seen := {}
+	var pairs: Array = []
+	for fkey in fronts:
+		var parts: PackedStringArray = fkey.split(">")
+		var a: String = parts[0]
+		var b: String = parts[1]
+		var pkey := "%s|%s" % [a, b] if a < b else "%s|%s" % [b, a]
+		if not pair_seen.has(pkey):
+			pair_seen[pkey] = true
+			pairs.append(pkey)
+	pairs.sort()   # deterministic decision order
+	var wars: Array = []
+	for pkey in pairs:
+		var ab: PackedStringArray = pkey.split("|")
+		var attacker := _war_attacker(ab[0], ab[1], tick)
+		if attacker == "":
+			continue
+		var defender: String = ab[1] if attacker == ab[0] else ab[0]
+		var front: Array = fronts.get("%s>%s" % [attacker, defender], [])
+		if front.is_empty():
+			continue
+		wars.append({"attacker": attacker, "defender": defender, "front": front})
+	return wars
+
+
+## Build the directed border fronts in one canonical pass: for every owned hex
+## H (owner A) bordering a hex N owned by a different, non-same-realm living
+## polity D, N is part of the front for "A attacks D" (A could take N). A
+## defender hex that borders several attacker hexes is recorded once; the
+## per-front hex sets are returned as canonical-ordered arrays.
+func _compute_fronts() -> Dictionary:
+	var sets := {}   # "A>D" -> {Vector2i: true}
+	for key in _ordered_keys:
+		var a := str(_grid[key]["owner_polity_id"])
+		if a == "" or not _is_alive(a):
+			continue
+		for off in _OFF:
+			var n: Vector2i = key + off
+			if not _grid.has(n):
+				continue
+			var d := str(_grid[n]["owner_polity_id"])
+			if d == "" or d == a or not _is_alive(d) or _same_realm(a, d):
+				continue
+			var fkey := "%s>%s" % [a, d]
+			if not sets.has(fkey):
+				sets[fkey] = {}
+			sets[fkey][n] = true
+	var fronts := {}
+	for fkey in sets:
+		# Deterministic first-encounter order over the canonical attacker sweep.
+		# Consumers either average over the front, re-sort it (deep raid), or
+		# canonicalize before persisting (_emit_event), so the order is immaterial.
+		fronts[fkey] = sets[fkey].keys()
+	return fronts
+
+
+## Who (if anyone) attacks in the unordered pair (a < b) this tick. A sustained
+## campaign (≥ WAR_THRESHOLD directed contests, §7.3.1a) escalates; otherwise a
+## seeded roll per direction (§7.3.1b, ×1.5 for opposed alignment). The more
+## aggressive side wins ties; same aggression breaks to the lower id (a).
+func _war_attacker(a: String, b: String, tick: int) -> String:
+	var c_ab := int(_contest_counts.get("%s>%s" % [a, b], 0))
+	var c_ba := int(_contest_counts.get("%s>%s" % [b, a], 0))
+	if maxi(c_ab, c_ba) >= _c.war_threshold:
+		if c_ab != c_ba:
+			return a if c_ab > c_ba else b
+		return _more_aggressive(a, b)
+	var opp := _c.war_opposed_alignment_mult if _alignments_opposed(
+			str(_polities[a]["alignment"]), str(_polities[b]["alignment"])) else 1.0
+	var fire_a := WorldGenRng.stream(_campaign_seed, "war_escalate", tick, "%s>%s" % [a, b]).randf() \
+			< _c.war_base * _aggression(a) * opp
+	var fire_b := WorldGenRng.stream(_campaign_seed, "war_escalate", tick, "%s>%s" % [b, a]).randf() \
+			< _c.war_base * _aggression(b) * opp
+	if fire_a and fire_b:
+		return _more_aggressive(a, b)
+	if fire_a:
+		return a
+	if fire_b:
+		return b
+	return ""
+
+
+func _more_aggressive(a: String, b: String) -> String:
+	return a if _aggression(a) >= _aggression(b) else b
+
+
+## Resolve one escalated war (§7.3.1 strength/margin + outcome ladder). Guards
+## re-check live state, since an earlier war this tick may have changed it.
+func _resolve_war(w: Dictionary, war_count: Dictionary, tick: int, lost_war: Dictionary) -> void:
+	var p_id: String = w["attacker"]
+	var q_id: String = w["defender"]
+	if not _is_alive(p_id) or not _is_alive(q_id) or _same_realm(p_id, q_id):
+		return
+	var p: Dictionary = _polities[p_id]
+	var q: Dictionary = _polities[q_id]
+	var gs_p := float(p.get("garrison_spent", 0.0))
+	if gs_p <= 0.0:
+		return   # no army budget (e.g. tick 0, pre-ledger) — only skirmishes happen
+	# Front may have shrunk since the set was built (an earlier war flipped hexes);
+	# keep only hexes the defender still holds.
+	var front: Array = []
+	for h in w["front"]:
+		if str(_grid[h]["owner_polity_id"]) == q_id:
+			front.append(h)
+	if front.is_empty():
+		return
+
+	var faf := _front_attack_factor(p, front)
+	var fdf := _front_defense_factor(q, front)
+	var mw_p: float = pow(_c.multi_war_factor, maxi(0, int(war_count.get(p_id, 1)) - 1))
+	var mw_q: float = pow(_c.multi_war_factor, maxi(0, int(war_count.get(q_id, 1)) - 1))
+	var str_p := gs_p * (_c.war_atk_aggression_base + _aggression(p_id)) * _ruler_war(p) \
+			* _ascendancy(p, tick) * _fade_factor(p, tick) * faf * mw_p
+	var str_q := float(q.get("garrison_spent", 0.0)) * (_c.war_def_defense_base + _defense_of(q)) \
+			* _ruler_war(q) * _ascendancy(q, tick) * _fade_factor(q, tick) * fdf * mw_q
+	if str_p + str_q <= 0.0:
+		return
+	var jitter := WorldGenRng.stream(_campaign_seed, "war_margin", tick,
+			"%s>%s" % [p_id, q_id]).randf_range(-_c.war_margin_jitter, _c.war_margin_jitter)
+	var v := clampf(str_p / (str_p + str_q) + jitter, 0.0, 1.0)
+
+	_emit_event(tick, "war", [p_id, q_id], [str(p["culture_id"]), str(q["culture_id"])],
+			front, v, "war.declared")
+
+	var loser := q_id
+	var winner := p_id
+	if v < _c.war_band_border:
+		# Defender holds: the attacker's campaign fails. The tick's skirmishes
+		# (§7.3 expansion contests) stand as border friction; no escalation.
+		loser = p_id
+		winner = q_id
+	elif v < _c.war_band_decisive:
+		pass   # Border victory: the expansion-phase flips stand; nothing extra.
+	elif v >= _c.war_band_crushing and _capital_reach(q, front):
+		_resolve_crushing(p, q, front, tick)
+	else:
+		_resolve_decisive(p, q, front, tick)
+	lost_war[loser] = true
+	_add_collapse_risk(_polities[loser], _c.war_shock_loser)
+	_add_collapse_risk(_polities[winner], _c.war_shock_winner)
+
+
+## Decisive victory (§7.3.1): border result plus 1d3 of the defender's vassal
+## polities transfer whole to the attacker (liege_id flip, nearest/least-
+## assimilated first). If the defender has no vassal polities, the attacker
+## instead takes a deep raid of up to double its expansion budget in front hexes.
+func _resolve_decisive(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
+	var vassals := _vassal_polities_of(str(q["id"]))
+	if vassals.is_empty():
+		var raid: int = maxi(2 * int(p.get("last_expansion_budget", 0)), 1)
+		_deep_raid(p, q, front, raid)
+		return
+	var p_cap := Vector2i(int(p["capital_q"]), int(p["capital_r"]))
+	vassals.sort_custom(func(va: String, vb: String) -> bool:
+		var da := _polity_distance_to(va, p_cap)
+		var db := _polity_distance_to(vb, p_cap)
+		if da != db:
+			return da < db
+		var aa := _assimilation_of(_polities[va], str(p["culture_id"]))
+		var ab := _assimilation_of(_polities[vb], str(p["culture_id"]))
+		if not is_equal_approx(aa, ab):
+			return aa < ab
+		return va < vb)
+	var n: int = WorldGenRng.stream(_campaign_seed, "war_transfer", tick,
+			"%s>%s" % [str(p["id"]), str(q["id"])]).randi_range(1, 3)
+	for i in range(mini(n, vassals.size())):
+		var v: Dictionary = _polities[vassals[i]]
+		v["liege_id"] = str(p["id"])
+		v["vassalized_by_war"] = 1
+		_emit_event(tick, "vassalage", [str(p["id"]), str(v["id"])],
+				[str(p["culture_id"]), str(v["culture_id"])],
+				[Vector2i(int(v["capital_q"]), int(v["capital_r"]))], 0.7, "war.vassal_transfer")
+
+
+## Crushing victory (§7.3.1): the whole defender falls. Disposition is driven by
+## effective_svg(P→Q) — vassalize (≤0.35, also the 0.35–0.65 middle), annex
+## (≥0.65), with a raider pillage override (aggression ≥0.7, svg ≤0.3, clan).
+func _resolve_crushing(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
+	var svg := _effective_svg(p, q)
+	if _is_raider(p) and svg <= _c.pillage_svg_gate:
+		var roll := WorldGenRng.stream(_campaign_seed, "war_pillage", tick,
+				"%s>%s" % [str(p["id"]), str(q["id"])]).randf()
+		if roll < _c.pillage_chance:
+			_pillage(p, q, front, tick)
+			return
+	if svg >= _c.svg_annex_min:
+		_annex(p, q, tick)
+	else:
+		_vassalize(p, q, tick)
+
+
+## Wholesale vassalization: Q becomes P's vassal intact (§7.3.1 svg ≤ 0.35 / the
+## 0.35–0.65 middle). Q keeps culture, substrate, and any vassals; tribute then
+## flows through the §7.5.1 ledger. "The conquered remain themselves."
+func _vassalize(p: Dictionary, q: Dictionary, tick: int) -> void:
+	q["liege_id"] = str(p["id"])
+	q["vassalized_by_war"] = 1
+	_emit_event(tick, "vassalage", [str(p["id"]), str(q["id"])],
+			[str(p["culture_id"]), str(q["culture_id"])],
+			[Vector2i(int(q["capital_q"]), int(q["capital_r"]))], 0.85, "war.vassalage")
+
+
+## Annexation (§7.3.1 svg ≥ 0.65): Q dissolves; its hexes join P and rewrite at
+## effective_svg via this tick's substrate phase. Q's own war-vassals are freed
+## (their liege is gone). The demihuman extinction-war case.
+func _annex(p: Dictionary, q: Dictionary, tick: int) -> void:
+	var former: Array = q["hexes"].duplicate()
+	for key in former:
+		_flip_hex(key, q, p)   # sets owner, moves hex lists, kills Q when it empties
+	q["alive"] = false
+	q["fell_tick"] = tick
+	for vid in _vassal_polities_of(str(q["id"])):
+		_polities[vid]["liege_id"] = ""
+		_polities[vid]["vassalized_by_war"] = 0
+	_emit_event(tick, "conquest", [str(p["id"]), str(q["id"])],
+			[str(p["culture_id"]), str(q["culture_id"])],
+			[Vector2i(int(q["capital_q"]), int(q["capital_r"]))], 1.0, "war.conquest")
+
+
+## Pillage override (§7.3.1, the steppe/raider signature): no territory or fealty
+## changes; Q loses 20% population in the front-region hexes and P books a
+## one-time tribute credit of 0.5 × Q's income, paid into next tick's ledger.
+## Q's income is its last-computed ledger income: war runs before the economy
+## phase (so a war's territorial swing spikes garrison need the same tick), so
+## the freshest figure available is the previous tick's — the same prev-tick
+## coupling war strength uses for garrison_spent. [PROVISIONAL — §7.8 balance.]
+func _pillage(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
+	for key in front:
+		var hex: Dictionary = _grid[key]
+		var pop := int(hex["population_band"])
+		if pop > 0:
+			hex["population_band"] = maxi(0, pop - XPAwardCalculator.bankers_round(
+					float(pop) * _c.pillage_pop_loss))
+	p["pillage_credit_pending"] = float(p.get("pillage_credit_pending", 0.0)) \
+			+ _c.pillage_income_credit * float(q.get("last_income", 0.0))
+	_emit_event(tick, "pillage", [str(p["id"]), str(q["id"])],
+			[str(p["culture_id"]), str(q["culture_id"])], front, 0.8, "war.pillage")
+
+
+## Deep raid (decisive victory with no vassals to take): flip up to `count` of
+## the defender's still-held front hexes to the attacker, best-terrain/nearest
+## first. The §7.3 contests already grabbed the immediate border; this is the
+## "never crawl hex-by-hex through a beaten rival" swath.
+func _deep_raid(p: Dictionary, q: Dictionary, front: Array, count: int) -> void:
+	var p_cap := Vector2i(int(p["capital_q"]), int(p["capital_r"]))
+	var takeable: Array = front.duplicate()
+	takeable.sort_custom(func(ha: Vector2i, hb: Vector2i) -> bool:
+		var ma := _terrain_mult(p, ha)
+		var mb := _terrain_mult(p, hb)
+		if not is_equal_approx(ma, mb):
+			return ma > mb
+		var da := _hex_distance(ha, p_cap)
+		var db := _hex_distance(hb, p_cap)
+		if da != db:
+			return da < db
+		return _canonical_less(ha, hb))
+	var taken := 0
+	for key in takeable:
+		if taken >= count:
+			break
+		if str(_grid[key]["owner_polity_id"]) != str(q["id"]):
+			continue
+		_flip_hex(key, q, p)
+		taken += 1
+
+
+# --- War factors / predicates -----------------------------------------------
+
+## Average attacker terrain multiplier over the contested front (§7.3.1).
+func _front_attack_factor(p: Dictionary, front: Array) -> float:
+	var sum := 0.0
+	for h in front:
+		sum += _terrain_mult(p, h)
+	return sum / float(front.size())
+
+
+## Average defender (terrain × home_factor) over the contested front (§7.3.1).
+func _front_defense_factor(q: Dictionary, front: Array) -> float:
+	var sum := 0.0
+	for h in front:
+		sum += _terrain_mult(q, h) * _home_factor(q, h)
+	return sum / float(front.size())
+
+
+func _ruler_war(pol: Dictionary) -> float:
+	match str(pol.get("ruler_quality", "average")):
+		"strong":
+			return _c.ruler_war_strong
+		"weak":
+			return _c.ruler_war_weak
+	return 1.0
+
+
+## Capital reach (§7.3.1): Q's capital within CAPITAL_REACH of the war front, or
+## Q already cut below half its pre-war (tick-start) size.
+func _capital_reach(q: Dictionary, front: Array) -> bool:
+	var cap := Vector2i(int(q["capital_q"]), int(q["capital_r"]))
+	for h in front:
+		if _hex_distance(h, cap) <= _c.capital_reach:
+			return true
+	var start := int(_tick_start_size.get(str(q["id"]), q["hexes"].size()))
+	return float(q["hexes"].size()) < 0.5 * float(start)
+
+
+## A raider polity for the pillage gate (§7.3.1): aggressive (≥0.7) clan culture.
+func _is_raider(pol: Dictionary) -> bool:
+	var inst := _inst(pol)
+	return _aggression(str(pol["id"])) >= _c.pillage_aggression_gate \
+			and str(inst.get("civ_or_clan", "civ")) == "clan"
+
+
+func _aggression(pid: String) -> float:
+	return float(_culture_instances.get(str(_polities[pid]["culture_id"]), {}).get("aggression", 0.5))
+
+
+# --- Vassalage / secession (§7.4) -------------------------------------------
+
+## §7.4: war-acquired or culture-distinct vassals secede when their liege shows
+## weakness (weak ruler, lost a war this tick, or collapse_risk > threshold).
+## Same-culture internally-spawned vassals never run this check (they leave only
+## through §7.6 collapse), so healthy realms don't fray at random.
+func _run_secessions(tick: int, lost_war: Dictionary) -> void:
+	for pid in _sorted_polity_ids():
+		var v: Dictionary = _polities[pid]
+		if not v["alive"]:
+			continue
+		var liege_id := str(v.get("liege_id", ""))
+		if liege_id == "" or not _polities.has(liege_id):
+			continue
+		var l: Dictionary = _polities[liege_id]
+		if not l["alive"]:
+			continue
+		if int(v.get("vassalized_by_war", 0)) == 0 \
+				and str(v["culture_id"]) == str(l["culture_id"]):
+			continue   # same-culture, non-war vassal: §7.6 only
+		var weak := str(l.get("ruler_quality", "average")) == "weak" \
+				or bool(lost_war.get(liege_id, false)) \
+				or float(l.get("collapse_risk", 0.0)) > _c.liege_weakness_risk
+		if not weak:
+			continue
+		var mismatch := 1.0 if str(v["alignment"]) != str(l["alignment"]) else 0.0
+		var assim := _assimilation_of(v, str(l["culture_id"]))
+		var p_secede := _c.base_secede * (1.0 + mismatch) * (1.0 - assim)
+		if WorldGenRng.stream(_campaign_seed, "secede", tick, pid).randf() < p_secede:
+			v["liege_id"] = ""
+			v["vassalized_by_war"] = 0
+			_emit_event(tick, "secession", [pid, liege_id],
+					[str(v["culture_id"]), str(l["culture_id"])],
+					[Vector2i(int(v["capital_q"]), int(v["capital_r"]))], 0.0, "secession")
+
+
+## Living polities whose liege is [param liege_id] (the war-vassal chain).
+func _vassal_polities_of(liege_id: String) -> Array:
+	var out: Array = []
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if pol["alive"] and str(pol.get("liege_id", "")) == liege_id:
+			out.append(pid)
+	return out
+
+
+## Average weight of [param culture_id] across a polity's hexes (its assimilation
+## toward that culture); 0.0 for a landless polity.
+func _assimilation_of(pol: Dictionary, culture_id: String) -> float:
+	var hexes: Array = pol["hexes"]
+	if hexes.is_empty():
+		return 0.0
+	var sum := 0.0
+	for key in hexes:
+		sum += float(_culture_w.get(key, {}).get(culture_id, 0.0))
+	return sum / float(hexes.size())
+
+
+func _polity_distance_to(pid: String, target: Vector2i) -> int:
+	var pol: Dictionary = _polities[pid]
+	return _hex_distance(Vector2i(int(pol["capital_q"]), int(pol["capital_r"])), target)
+
+
+func _is_alive(pid: String) -> bool:
+	return _polities.has(pid) and bool(_polities[pid]["alive"])
+
+
+## Two polities are in the same realm (not war candidates) when one is the
+## other's liege, or they share a liege.
+func _same_realm(a: String, b: String) -> bool:
+	var la := str(_polities[a].get("liege_id", ""))
+	var lb := str(_polities[b].get("liege_id", ""))
+	return la == b or lb == a or (la != "" and la == lb)
+
+
+func _alignments_opposed(a: String, b: String) -> bool:
+	return (a == "lawful" and b == "chaotic") or (a == "chaotic" and b == "lawful")
+
+
+# --- effective_svg (§4.4 conquest behavior) ---------------------------------
+
+## effective_svg(P → Q) for the whole defender, evaluated at Q's capital hex —
+## the §4.4 disposition driver for a crushing victory.
+func _effective_svg(p: Dictionary, q: Dictionary) -> float:
+	var inst := _inst(p)
+	var base := float(inst.get("base_subjugation_vs_genocide", 0.5))
+	var mods: Array = inst.get("conquest_modifiers", [])
+	if mods.is_empty():
+		return base
+	var cap := Vector2i(int(q["capital_q"]), int(q["capital_r"]))
+	return _apply_svg_modifiers(base, mods, str(p["alignment"]), inst.get("seed_biomes", []),
+			str(q["alignment"]), str(_inst(q).get("tier", "")), _grid.get(cap, {}))
+
+
+## effective_svg for one held hex's substrate rewrite (§4.4): the target is the
+## hex's dominant non-owner culture. A pure homeland (no foreign culture) uses
+## the base svg — modifiers describe conquest, and a homeland conquers no one.
+func _effective_svg_for_hex(owner: Dictionary, key: Vector2i) -> float:
+	var inst := _inst(owner)
+	var base := float(inst.get("base_subjugation_vs_genocide", 0.5))
+	var mods: Array = inst.get("conquest_modifiers", [])
+	if mods.is_empty():
+		return base
+	var target_cid := _dominant_other_culture(_culture_w.get(key, {}), str(owner["culture_id"]))
+	if target_cid == "":
+		return base
+	return _apply_svg_modifiers(base, mods, str(owner["alignment"]), inst.get("seed_biomes", []),
+			_dominant_key(_alignment_w.get(key, {})),
+			str(_culture_instances.get(target_cid, {}).get("tier", "")), _grid[key])
+
+
+## §4.4 evaluation: 'set' modifiers first (first match wins, an override), then
+## all matching 'adjust' modifiers accumulate; result clamped to [0, 1].
+func _apply_svg_modifiers(base: float, mods: Array, attacker_align: String,
+		seed_biomes: Array, target_align: String, target_tier: String,
+		target_hex: Dictionary) -> float:
+	var svg := base
+	for m in mods:
+		if m.has("set") and _svg_condition(str(m.get("when", "")), attacker_align,
+				seed_biomes, target_align, target_tier, target_hex):
+			svg = float(m["set"])
+			break
+	for m in mods:
+		if m.has("adjust") and _svg_condition(str(m.get("when", "")), attacker_align,
+				seed_biomes, target_align, target_tier, target_hex):
+			svg += float(m["adjust"])
+	return clampf(svg, 0.0, 1.0)
+
+
+func _svg_condition(when: String, attacker_align: String, seed_biomes: Array,
+		target_align: String, target_tier: String, target_hex: Dictionary) -> bool:
+	match when:
+		"target_same_alignment":
+			return target_align == attacker_align
+		"target_opposite_alignment":
+			return _alignments_opposed(attacker_align, target_align)
+		"target_is_demihuman":
+			return target_tier == "demihuman"
+		"target_in_my_seed_biome":
+			return _hex_in_seed_biomes(target_hex, seed_biomes)
+		"target_outside_my_seed_biome":
+			return not _hex_in_seed_biomes(target_hex, seed_biomes)
+	return false
+
+
+func _hex_in_seed_biomes(hex: Dictionary, seed_biomes: Array) -> bool:
+	if hex.is_empty():
+		return false
+	for term in seed_biomes:
+		if CultureSeeder._hex_matches_term(hex, str(term)):
+			return true
+	return false
+
+
+## The highest-weight culture in [param weights] that is not [param exclude],
+## tie-broken by sorted key for determinism; "" if none.
+func _dominant_other_culture(weights: Dictionary, exclude: String) -> String:
+	var best := ""
+	var best_w := 0.0
+	var keys := weights.keys()
+	keys.sort()
+	for k in keys:
+		if str(k) == exclude:
+			continue
+		var w := float(weights[k])
+		if w > best_w:
+			best_w = w
+			best = str(k)
+	return best
+
+
+## The highest-weight key in [param weights], tie-broken by sorted key; "" if empty.
+func _dominant_key(weights: Dictionary) -> String:
+	var best := ""
+	var best_w := -1.0
+	var keys := weights.keys()
+	keys.sort()
+	for k in keys:
+		var w := float(weights[k])
+		if w > best_w:
+			best_w = w
+			best = str(k)
+	return best
+
+
+# --- Event emission (§11) ---------------------------------------------------
+
+## Append a §11 event row, fully populated for persistence (all EVENT_COLUMNS).
+## significance is scored at 4g; region_hint is filled at naming (Layer 5/6).
+## Hexes are stored canonically as [[q, r], ...] so the row hashes stably.
+func _emit_event(tick: int, type: String, polity_ids: Array, culture_ids: Array,
+		hexes: Array, severity: float, summary_key: String) -> void:
+	var sorted_hexes: Array = hexes.duplicate()
+	sorted_hexes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var pairs: Array = []
+	for h in sorted_hexes:
+		pairs.append([h.x, h.y])
+	_events.append({
+		"id": "evt_%06d" % _next_event_seq,
+		"tick": tick,
+		"year_before_start": (_n_ticks - tick) * _c.tick_years,
+		"type": type,
+		"polity_ids": JSON.stringify(polity_ids),
+		"culture_ids": JSON.stringify(culture_ids),
+		"hexes": JSON.stringify(pairs),
+		"region_hint": "",
+		"severity": severity,
+		"significance": 0.0,
+		"summary_key": summary_key,
+	})
+	_next_event_seq += 1
+
+
+# ---------------------------------------------------------------------------
+# Stubbed phases (4e–4f)
+# ---------------------------------------------------------------------------
 
 func _phase_migration(_tick: int) -> void:
 	pass

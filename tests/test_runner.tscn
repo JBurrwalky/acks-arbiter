@@ -464,6 +464,7 @@
 [ext_resource type="Script" path="res://tests/test_setting_stage4a.gd" id="448_setting_stage4a_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage4b.gd" id="449_setting_stage4b_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage4c.gd" id="450_setting_stage4c_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage4d.gd" id="451_setting_stage4d_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1856,3 +1857,6 @@ script = ExtResource("449_setting_stage4b_tests")
 
 [node name="SettingStage4cTests" type="Node" parent="."]
 script = ExtResource("450_setting_stage4c_tests")
+
+[node name="SettingStage4dTests" type="Node" parent="."]
+script = ExtResource("451_setting_stage4d_tests")
