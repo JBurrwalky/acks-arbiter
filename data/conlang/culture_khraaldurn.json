@@ -1,7 +1,9 @@
 {
   "kit_id": "khraaldurn",
   "tier": "culture",
-  "inherits": ["dwarven"],
+  "inherits": [
+    "dwarven"
+  ],
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 53,
   "race": "dwarf",
@@ -9,10 +11,23 @@
   "sub_palette": "khraaldurn (Durnkad, glacial frost-dialect; long, rounded vowels)",
   "synthesis_sources": [],
   "homeland": "Khraalgrund",
-  "branch": { "biome": "glacial mountains or tundra hills only", "register": "hard/throaty (frost-dialect; long, rounded vowels)", "ancestral_to": [], "model": "the dwarven isolate; no human analog" },
+  "branch": {
+    "biome": "glacial mountains or tundra hills only",
+    "register": "hard/throaty (frost-dialect; long, rounded vowels)",
+    "ancestral_to": [],
+    "model": "the dwarven isolate; no human analog"
+  },
   "government": "feudal",
-  "alignment_allowed": ["Neutral", "Lawful", "Chaotic"],
-  "alignment_weights": { "Lawful": 0.10, "Neutral": 0.80, "Chaotic": 0.10 },
+  "alignment_allowed": [
+    "Neutral",
+    "Lawful",
+    "Chaotic"
+  ],
+  "alignment_weights": {
+    "Lawful": 0.1,
+    "Neutral": 0.8,
+    "Chaotic": 0.1
+  },
   "_note": "Dwarven demihuman culture, the GLACIAL frost-dialect of the Durn (family_dwarven.json). The same tongue as Khordurn with only SMALL drift - the frost-dialect LENGTHENS and rounds its root vowels (Orlundrumm -> Orluundrumm, khorun -> khoorun) and softens final stops, a slow cold roll - so a word is plainly the same as the mountain or fire dialect. Root khraal = rime / the deep-cold; Khraaldurn = 'the rime-folk' (its own name carries the long-vowel drift). The withdrawn, hard, traditional frost-holds of the glacier and the tundra-hill: the most purely Neutral of all dwarves and the deepest in the ancestor-cult - weights {Lawful 0.10, Neutral 0.80, Chaotic 0.10}. Seeds in GLACIAL mountains or TUNDRA HILLS only. Dwarven is an ISOLATE (not ancestral to any human family). DEITY names are the Dwarven morphs of the Agrippan canon (never real Tolkien/Norse/Warhammer dwarf-gods); they take the shared sacred GENDERED ending -drumm (m) / -drumma (f) - distinct from mortal -un/-ar/-ok / -a/-na/-ra and the bare common-noun root.",
   "phonology": {
     "palette": "Khraaldurn (Durnkad frost-dialect): the shared hard-frame/soft-vowel/short-syllable Durnkad, with the frost-dialect drift - root vowels DRAW OUT and round (-un -> -uun, a -> aa, o -> oo) and final stops soften a touch, a slow, cold, rolling weight. The common-word stock is the shared Durnkad (one tongue); the lengthening shows in speech and in the marked forms (titles, deities, the realm's own name).",
@@ -20,40 +35,171 @@
     "transparent_ratio": 0.55
   },
   "lexicon": {
-    "feature_words": { "frozen_river": "khraalvar", "glacier": "khraalun", "ice_cave": "iskkavun", "crevasse": "klundaak", "frost_mountain": "khoorun", "tundra_hill": "torduun", "snowfield": "nivun", "ridge": "drangaar", "hall": "grundaar", "mine": "graduun", "deep": "durnaak", "frost_vault": "khraalgrund", "ore_vein": "kronvaar", "gate": "doruun", "rime_field": "khraalkad", "frozen_deep": "khraaldurnak", "tunnel": "draguun", "frozen_well": "varnkaad", "bridge": "brakuun" },
-    "settlement_words": { "hamlet": "trevduun", "village": "balduun", "town": "karduun", "city": "karngrund", "fort": "dungrund", "tomb_hall": "durngrund", "market": "kaupuun", "festival_hall": "drumgrund", "citadel": "tarngrund" },
-    "kinship": { "son": "kuun", "daughter": "ketta", "clan": "kron", "kin": "durnkin", "forefather": "fadruun", "honored_dead": "durnaad" },
-    "adjectives": { "great": "draamm", "little": "pikuun", "old": "orduun", "new": "vanduun", "black": "kruvuun", "white": "viduun", "red": "ragduun", "golden": "galduun", "iron": "kronuun", "deep": "durnuun", "high": "toruun", "sacred": "halduun", "cold": "khraalun" },
-    "resources": { "salt": "saluun", "iron": "kronaar", "gold": "galdaar", "silver": "tringaar", "gem": "brilkaad", "copper": "kopaar", "star_metal": "starkaad", "ice": "iskun", "stone": "kadaar", "ale": "oluun" },
-    "directional": { "upper": "upraak", "lower": "nidraak", "north": "korduun", "south": "narduun", "east": "ostuun", "west": "venduun", "inner": "indraak", "outer": "utraak" }
+    "feature_words": {
+      "frozen_river": "khraalvar",
+      "glacier": "khraalun",
+      "ice_cave": "iskkavun",
+      "crevasse": "klundaak",
+      "frost_mountain": "khoorun",
+      "tundra_hill": "torduun",
+      "snowfield": "nivun",
+      "ridge": "drangaar",
+      "hall": "grundaar",
+      "mine": "graduun",
+      "deep": "durnaak",
+      "frost_vault": "khraalgrund",
+      "ore_vein": "kronvaar",
+      "gate": "doruun",
+      "rime_field": "khraalkad",
+      "frozen_deep": "khraaldurnak",
+      "tunnel": "draguun",
+      "frozen_well": "varnkaad",
+      "bridge": "brakuun",
+      "neck": "koornak",
+      "narrows": "thraang",
+      "waste": "skaarn",
+      "road": "khaald",
+      "way": "gaatun",
+      "track": "stiik"
+    },
+    "settlement_words": {
+      "hamlet": "trevduun",
+      "village": "balduun",
+      "town": "karduun",
+      "city": "karngrund",
+      "fort": "dungrund",
+      "tomb_hall": "durngrund",
+      "market": "kaupuun",
+      "festival_hall": "drumgrund",
+      "citadel": "tarngrund"
+    },
+    "kinship": {
+      "son": "kuun",
+      "daughter": "ketta",
+      "clan": "kron",
+      "kin": "durnkin",
+      "forefather": "fadruun",
+      "honored_dead": "durnaad"
+    },
+    "adjectives": {
+      "great": "draamm",
+      "little": "pikuun",
+      "old": "orduun",
+      "new": "vanduun",
+      "black": "kruvuun",
+      "white": "viduun",
+      "red": "ragduun",
+      "golden": "galduun",
+      "iron": "kronuun",
+      "deep": "durnuun",
+      "high": "toruun",
+      "sacred": "halduun",
+      "cold": "khraalun"
+    },
+    "resources": {
+      "salt": "saluun",
+      "iron": "kronaar",
+      "gold": "galdaar",
+      "silver": "tringaar",
+      "gem": "brilkaad",
+      "copper": "kopaar",
+      "star_metal": "starkaad",
+      "ice": "iskun",
+      "stone": "kadaar",
+      "ale": "oluun"
+    },
+    "directional": {
+      "upper": "upraak",
+      "lower": "nidraak",
+      "north": "korduun",
+      "south": "narduun",
+      "east": "ostuun",
+      "west": "venduun",
+      "inner": "indraak",
+      "outer": "utraak"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-grund (deep-hold)", "-khraalun (glacier)", "-khraaldurnak (frozen-deep)", "-graduun (mine)", "Khraal- / Isk- (rime-/ice-)", "Kron- (clan of)"],
+    "toponymic_suffixes": [
+      "-grund (deep-hold)",
+      "-khraalun (glacier)",
+      "-khraaldurnak (frozen-deep)",
+      "-graduun (mine)",
+      "Khraal- / Isk- (rime-/ice-)",
+      "Kron- (clan of)"
+    ],
     "patronymic_form": "clan-primary: the clan (Kron [X]) by an ancestral line; an optional patronymic [parent]-kuun (son of) / -ketta (daughter of); the forefather is named at every hearth and every cairn.",
-    "gendered_endings": { "male": "-un / -ar / -ok", "female": "-a / -na / -ra" },
+    "gendered_endings": {
+      "male": "-un / -ar / -ok",
+      "female": "-a / -na / -ra"
+    },
     "diminutive_form": "-in / -ki",
     "compounding_rule": "[material|quality](long-vowel root) + feature/hold: Khraal-grund (rime-hold), Isk-durnak (ice-deep); -grund for the hold, Kron- for the clan."
   },
   "title_ladder": {
     "government": "feudal (a withdrawn glacial vault-kingdom of cairn-clans, now mostly fastness-holds; the Korruun over the clan-lords, the cairn-wardens and the rime-companies)",
     "tiers": {
-      "barony": { "ruler": "Borkuun", "domain": "Borkuungrund" },
-      "march": { "ruler": "Vardruun", "domain": "Vardruungrund" },
-      "county": { "ruler": "Grundaar", "domain": "Grundaargrund" },
-      "duchy": { "ruler": "Dramnaar", "domain": "Dramnaargrund" },
-      "principality": { "ruler": "Brakkuun", "domain": "Brakkuungrund" },
-      "kingdom": { "ruler": "Korruun", "domain": "Korruungrund" },
-      "empire": { "ruler": "Dur-Korruun", "domain": "Dur-Korruungrund" }
+      "barony": {
+        "ruler": "Borkuun",
+        "domain": "Borkuungrund"
+      },
+      "march": {
+        "ruler": "Vardruun",
+        "domain": "Vardruungrund"
+      },
+      "county": {
+        "ruler": "Grundaar",
+        "domain": "Grundaargrund"
+      },
+      "duchy": {
+        "ruler": "Dramnaar",
+        "domain": "Dramnaargrund"
+      },
+      "principality": {
+        "ruler": "Brakkuun",
+        "domain": "Brakkuungrund"
+      },
+      "kingdom": {
+        "ruler": "Korruun",
+        "domain": "Korruungrund"
+      },
+      "empire": {
+        "ruler": "Dur-Korruun",
+        "domain": "Dur-Korruungrund"
+      }
     },
     "_tiers_note": "Khraaldurn (frost-dialect) reflexes of the Durnkad title ladder - the same seven ACKS tiers as Khordurn and Gormdurn, with the long frost-vowel (Korrun -> Korruun). A golden-age glacial vault-kingdom, now withdrawn fastness-holds.",
-    "female_forms": { "Dur-Korruun": "Dur-Korra", "Korruun": "Korra", "Brakkuun": "Brakka", "Dramnaar": "Dramna", "Grundaar": "Grunda", "Vardruun": "Vardra", "Borkuun": "Borka" },
+    "female_forms": {
+      "Dur-Korruun": "Dur-Korra",
+      "Korruun": "Korra",
+      "Brakkuun": "Brakka",
+      "Dramnaar": "Dramna",
+      "Grundaar": "Grunda",
+      "Vardruun": "Vardra",
+      "Borkuun": "Borka"
+    },
     "heir": "Korr-kun (the king's heir, the heir-under-the-glacier)",
-    "honorifics": { "lord": "Borkuun", "lady": "Borka", "champion": "Drok-thane (hammer-thane)", "your_grace": "Korruun", "elder": "Orduun-fadruun (the old forefather)" },
-    "vassalage": { "liege": "Korruun", "vassal": "Drok-thane (sworn hammer)", "fealty": "Durnoath (the deep-oath, sworn on the ancestors)", "tribute": "Galdaar-due (the gold-due)" }
+    "honorifics": {
+      "lord": "Borkuun",
+      "lady": "Borka",
+      "champion": "Drok-thane (hammer-thane)",
+      "your_grace": "Korruun",
+      "elder": "Orduun-fadruun (the old forefather)"
+    },
+    "vassalage": {
+      "liege": "Korruun",
+      "vassal": "Drok-thane (sworn hammer)",
+      "fealty": "Durnoath (the deep-oath, sworn on the ancestors)",
+      "tribute": "Galdaar-due (the gold-due)"
+    }
   },
   "people_name_convention": {
     "order": "a hard, long-voweled given name + the clan (Kron [X]); dwarves are named by clan and forefather; an optional patronymic -kuun/-ketta.",
-    "surname_source": ["the clan (Kron [X])", "-kuun/-ketta patronymic", "a craft or cairn-deed by-name"],
+    "surname_source": [
+      "the clan (Kron [X])",
+      "-kuun/-ketta patronymic",
+      "a craft or cairn-deed by-name"
+    ],
     "dual_register": "every dwarf carries a clan-name and a forefather; the frost-holds keep the longest ancestor-rolls of any dwarves.",
     "theophoric": "mortal theophorics weave the honored power's ROOT (never the divine -drumm/-drumma ending) + a mortal ending: Orluun-ar (a smith named for the forge-god Orluundrumm), Gunduun-a (a daughter named for the mountain-god).",
     "diminutive": "-in / -ki"
@@ -61,13 +207,32 @@
   "religion": {
     "_note": "Deity-names are the Khraaldurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real dwarf-gods; sacred ending -drumm (masc) / -drumma (fem). The MOST ancestor-centric of all dwarves: in the long dark the durnad (honored dead) and fadruun (clan-fathers) are nearly all of daily faith, kept on the longest ancestor-rolls and cairns; the gods are honored only at the great seasonal festivals, foremost the forge (Orluundrumm) and the mountain/mine (Gunduundrumm). Withdrawn, traditional, and overwhelmingly Neutral.",
     "the_one": "Atruundrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at the great festivals, most distant of all from the daily cairn-prayers)",
-    "sample_deity_renames": { "Orlandus": "Orluundrumm (the forge, the smith, oaths and iron; most honored god, masc.)", "Gaiandus": "Gunduundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)", "Delorum": "Delruundrumm (death and the honored dead; the ancestor-warden, central here, masc.)", "Realta": "Reltaadrumma (the hearth-mother, mercy; honored, fem.)" },
-    "worship_by_alignment": { "Neutral": "the dwarven norm at its deepest: daily prayer to the honored dead (durnad) and clan-fathers (fadruun) at the cairn and tomb-hall, kept on the longest ancestor-rolls; the gods honored only at the great seasonal festivals, foremost the forge (Orluundrumm) and the mountain/mine (Gunduundrumm); the long-dark moon (Noklaadrumma) watched and respected", "Lawful": "the orderly minority revere the One (Atruundrumm) and the Lawful powers (Orluundrumm the smith, Gunduundrumm the mountain), demonize the Chaotic powers", "Chaotic": "the rare few venerate the Chaotic greed- and fire-powers (Lusuundrumm the gold-sickness, Maraakadrumm the forge-fire), demonize the Lawful powers and the One" },
+    "sample_deity_renames": {
+      "Orlandus": "Orluundrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
+      "Gaiandus": "Gunduundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)",
+      "Delorum": "Delruundrumm (death and the honored dead; the ancestor-warden, central here, masc.)",
+      "Realta": "Reltaadrumma (the hearth-mother, mercy; honored, fem.)"
+    },
+    "worship_by_alignment": {
+      "Neutral": "the dwarven norm at its deepest: daily prayer to the honored dead (durnad) and clan-fathers (fadruun) at the cairn and tomb-hall, kept on the longest ancestor-rolls; the gods honored only at the great seasonal festivals, foremost the forge (Orluundrumm) and the mountain/mine (Gunduundrumm); the long-dark moon (Noklaadrumma) watched and respected",
+      "Lawful": "the orderly minority revere the One (Atruundrumm) and the Lawful powers (Orluundrumm the smith, Gunduundrumm the mountain), demonize the Chaotic powers",
+      "Chaotic": "the rare few venerate the Chaotic greed- and fire-powers (Lusuundrumm the gold-sickness, Maraakadrumm the forge-fire), demonize the Lawful powers and the One"
+    },
     "demon_epithet_pattern": "the demonized set (by current alignment): when Lawful - Lusanto -> Lusuundrumm the Gold-Sickness, Maraxus -> Maraakadrumm the Wrack; when Chaotic - Aeternus -> Atruundrumm the Cold-Vault.",
-    "clergy_ladder": { "1": "Drok-kun (novice, the hammer-bearer)", "3": "Fadruun-warden (keeper of the cairns and ancestor-rolls)", "5": "Bral-drumm (forge-priest)", "7": "Grund-drumm (high hold-priest)", "9": "Dur-Drumm (the realm's high priest)" },
+    "clergy_ladder": {
+      "1": "Drok-kun (novice, the hammer-bearer)",
+      "3": "Fadruun-warden (keeper of the cairns and ancestor-rolls)",
+      "5": "Bral-drumm (forge-priest)",
+      "7": "Grund-drumm (high hold-priest)",
+      "9": "Dur-Drumm (the realm's high priest)"
+    },
     "religious_orders_pattern": "the Drumgrund (festival-hall) of [power]: 'the Drumgrund of Orluundrumm', and the cairn-rolls of the ancestors kept beside it.",
     "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), kept on the longest ancestor-rolls of any dwarves, named at every cairn.",
-    "holy_symbol_motifs": { "Orluundrumm": "a hammer crossed over an anvil", "Gunduundrumm": "a peak above crossed picks", "Delruundrumm": "a cairn-stone over crossed bones" }
+    "holy_symbol_motifs": {
+      "Orluundrumm": "a hammer crossed over an anvil",
+      "Gunduundrumm": "a peak above crossed picks",
+      "Delruundrumm": "a cairn-stone over crossed bones"
+    }
   },
   "banks_patterns": {
     "ships": "(dwarves are no sailors) ice-barges and ore-sledges on the frozen underflow: 'the Frost Keel', 'Cairn-of-the-Deep'",
@@ -76,10 +241,81 @@
     "dungeons_ruins": "fallen frost-holds and ice-locked delfs: 'the frozen Hold of [clan]', 'the Ice-locked Delf of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Khralok", "Khraadok", "Vethok", "Khorvaar", "Druun", "Kralduun", "Khralvak", "Nuvok", "Kronak", "Iskor", "Braluun", "Durnaak", "Khraalvak", "Gormok", "Torruun", "Nudrok", "Graduun", "Karvuun", "Brakuun", "Dolgruun"],
-    "personal_f": ["Khrala", "Khraana", "Vetha", "Khorra", "Nuvra", "Kralna", "Gralda", "Norra", "Iskna", "Druna", "Bralna", "Khralda", "Tringa", "Khorna", "Durna", "Gramna", "Kronna", "Varna", "Nivra", "Dolna"],
-    "clan_houses": ["Kron Khraalun (rime-clan)", "Kron Iskun (ice-clan)", "Kron Khorun (mountain-clan)", "Kron Durnak (deep-clan)", "Kron Kronar (iron-clan)", "Kron Nivun (snow-clan)", "Kron Brilkad (gem-clan)", "Kron Gradun (delf-clan)", "Kron Drokun (hammer-clan)", "Kron Galdar (gold-clan)", "Kron Bramun (beard-clan)", "Kron Vethkad (frost-stone clan)"],
-    "epithets_cognomina": ["the Rime-bearded", "the Deep-cairned", "the Frost-handed", "the Long-rolled (of the ancestor-rolls)", "the Ice-eyed", "the Glacier-born", "the Cold-patient", "the Oldest-memoried"],
-    "flagship_settlements": ["Khraalgrund (the realm-seat / great frost-hold)", "Khraalun-durnak (the glacier-deep hold)", "Isk-grundaar (the ice-hall city)", "Khorun-tarngrund (the frost-mountain citadel)", "Druun-karduun (the tundra-town)", "Durngrund (the great cairn-hall)"]
+    "personal_m": [
+      "Khralok",
+      "Khraadok",
+      "Vethok",
+      "Khorvaar",
+      "Druun",
+      "Kralduun",
+      "Khralvak",
+      "Nuvok",
+      "Kronak",
+      "Iskor",
+      "Braluun",
+      "Durnaak",
+      "Khraalvak",
+      "Gormok",
+      "Torruun",
+      "Nudrok",
+      "Graduun",
+      "Karvuun",
+      "Brakuun",
+      "Dolgruun"
+    ],
+    "personal_f": [
+      "Khrala",
+      "Khraana",
+      "Vetha",
+      "Khorra",
+      "Nuvra",
+      "Kralna",
+      "Gralda",
+      "Norra",
+      "Iskna",
+      "Druna",
+      "Bralna",
+      "Khralda",
+      "Tringa",
+      "Khorna",
+      "Durna",
+      "Gramna",
+      "Kronna",
+      "Varna",
+      "Nivra",
+      "Dolna"
+    ],
+    "clan_houses": [
+      "Kron Khraalun (rime-clan)",
+      "Kron Iskun (ice-clan)",
+      "Kron Khorun (mountain-clan)",
+      "Kron Durnak (deep-clan)",
+      "Kron Kronar (iron-clan)",
+      "Kron Nivun (snow-clan)",
+      "Kron Brilkad (gem-clan)",
+      "Kron Gradun (delf-clan)",
+      "Kron Drokun (hammer-clan)",
+      "Kron Galdar (gold-clan)",
+      "Kron Bramun (beard-clan)",
+      "Kron Vethkad (frost-stone clan)"
+    ],
+    "epithets_cognomina": [
+      "the Rime-bearded",
+      "the Deep-cairned",
+      "the Frost-handed",
+      "the Long-rolled (of the ancestor-rolls)",
+      "the Ice-eyed",
+      "the Glacier-born",
+      "the Cold-patient",
+      "the Oldest-memoried"
+    ],
+    "flagship_settlements": [
+      "Khraalgrund (the realm-seat / great frost-hold)",
+      "Khraalun-durnak (the glacier-deep hold)",
+      "Isk-grundaar (the ice-hall city)",
+      "Khorun-tarngrund (the frost-mountain citadel)",
+      "Druun-karduun (the tundra-town)",
+      "Durngrund (the great cairn-hall)"
+    ]
   }
 }

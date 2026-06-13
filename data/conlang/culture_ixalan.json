@@ -5,10 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 15,
   "sub_palette": "mayan",
-  "synthesis_sources": [11],
+  "synthesis_sources": [
+    11
+  ],
   "homeland": "Ixal",
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Single-source (Classic Maya). Mayan sub-palette of the Mesoamerican family; jungle city-states of pyramid-acropolis and stela, the k'uhul ajaw (holy lord) and the Long-Count calendar, bloodletting and the ballgame. civ = feudal. Seeds/shifts Lawful or Neutral. Common-word lexicon and rank titles use the real Maya register (allowed, catalog 5.3); DEITY names are the Mayan morphs of the Agrippan canon (family_mesoamerican.json theonym_sets.mayan), never real Maya gods.",
   "phonology": {
     "palette": "Classic/Yucatec Maya: glottalized b'/t'/k'/tz'/ch'; x = sh; vowel length + glottal stop; endings -aj/-il/-an/-tun/-ab; agentive aj- (he of) / ix- (she of); CVC.",
@@ -16,40 +21,171 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "ha'", "stream": "yok'ha'", "lake": "nahb", "sea": "k'ak'nab", "bay": "kaap", "cape": "ni'", "isle": "peten", "mountain": "witz", "hill": "mul", "ridge": "puuk", "forest": "k'aax", "wood": "che'", "plain": "chakan", "marsh": "ak'alche'", "ford": "bejha'", "pass": "bej", "vale": "jom", "cenote": "tz'onot", "coast": "pachk'ak'nab" },
-    "settlement_words": { "hamlet": "otoch", "village": "kah", "town": "noh-kah", "city": "k'uhul-kah", "fort": "paa'", "port": "ho'", "market": "k'iwik", "temple_town": "k'uh-nah", "citadel": "nohol-paa'" },
-    "kinship": { "son": "mehen", "daughter": "al", "house": "nah", "kin": "ch'ib'al", "ancestor": "uchben" },
-    "adjectives": { "great": "noh", "little": "chan", "old": "labaj", "new": "tuumben", "black": "ek'", "white": "sak", "red": "chak", "golden": "k'an", "iron": "took'", "high": "ka'anal", "far": "naach", "sacred": "k'uhul", "fair": "kiichpan" },
-    "resources": { "salt": "taab", "metal": "maaskab", "silver": "sakmaaskab", "gold": "takin", "jade": "yaaxtun", "cacao": "kakaw", "maize": "ixim", "obsidian": "taj", "feather": "k'uk'", "honey": "kab" },
-    "directional": { "upper": "yok'ol", "lower": "kab'al", "north": "xaman", "south": "nohol", "east": "lak'in", "west": "chik'in", "inner": "ich", "outer": "pach" }
+    "feature_words": {
+      "river": "ha'",
+      "stream": "yok'ha'",
+      "lake": "nahb",
+      "sea": "k'ak'nab",
+      "bay": "kaap",
+      "cape": "ni'",
+      "isle": "peten",
+      "mountain": "witz",
+      "hill": "mul",
+      "ridge": "puuk",
+      "forest": "k'aax",
+      "wood": "che'",
+      "plain": "chakan",
+      "marsh": "ak'alche'",
+      "ford": "bejha'",
+      "pass": "bej",
+      "vale": "jom",
+      "cenote": "tz'onot",
+      "coast": "pachk'ak'nab",
+      "neck": "kal",
+      "narrows": "halab",
+      "waste": "chaltun",
+      "road": "sacbe",
+      "way": "beel",
+      "track": "xokbil"
+    },
+    "settlement_words": {
+      "hamlet": "otoch",
+      "village": "kah",
+      "town": "noh-kah",
+      "city": "k'uhul-kah",
+      "fort": "paa'",
+      "port": "ho'",
+      "market": "k'iwik",
+      "temple_town": "k'uh-nah",
+      "citadel": "nohol-paa'"
+    },
+    "kinship": {
+      "son": "mehen",
+      "daughter": "al",
+      "house": "nah",
+      "kin": "ch'ib'al",
+      "ancestor": "uchben"
+    },
+    "adjectives": {
+      "great": "noh",
+      "little": "chan",
+      "old": "labaj",
+      "new": "tuumben",
+      "black": "ek'",
+      "white": "sak",
+      "red": "chak",
+      "golden": "k'an",
+      "iron": "took'",
+      "high": "ka'anal",
+      "far": "naach",
+      "sacred": "k'uhul",
+      "fair": "kiichpan"
+    },
+    "resources": {
+      "salt": "taab",
+      "metal": "maaskab",
+      "silver": "sakmaaskab",
+      "gold": "takin",
+      "jade": "yaaxtun",
+      "cacao": "kakaw",
+      "maize": "ixim",
+      "obsidian": "taj",
+      "feather": "k'uk'",
+      "honey": "kab"
+    },
+    "directional": {
+      "upper": "yok'ol",
+      "lower": "kab'al",
+      "north": "xaman",
+      "south": "nohol",
+      "east": "lak'in",
+      "west": "chik'in",
+      "inner": "ich",
+      "outer": "pach"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-kah (town)", "-witz (pyramid-mountain)", "-ha' (water/river)", "-peten (island/region)", "Noh- (great-)", "Chak- / Ek'- (red-/black-)"],
+    "toponymic_suffixes": [
+      "-kah (town)",
+      "-witz (pyramid-mountain)",
+      "-ha' (water/river)",
+      "-peten (island/region)",
+      "Noh- (great-)",
+      "Chak- / Ek'- (red-/black-)"
+    ],
     "patronymic_form": "the ch'ib'al (lineage) name; aj- (he of) / ix- (she of) prefixes; the k'uhul ajaw line traces its dynasty; calendar-day birth-names.",
-    "gendered_endings": { "male": "Aj- (he of)", "female": "Ix- (she of)" },
+    "gendered_endings": {
+      "male": "Aj- (he of)",
+      "female": "Ix- (she of)"
+    },
     "diminutive_form": "Chan- (small) prefix",
     "compounding_rule": "[quality|color](stem) + feature: Chak-witz (red-pyramid), Ek'-nahb (black-lake), Noh-kah (great-town); aj-/ix- + name."
   },
   "title_ladder": {
     "government": "feudal (Classic Maya city-states: the k'uhul ajaw (holy lord) over the ajaw nobility and the sajal governors; jungle polities war and ally in shifting hegemonies)",
     "tiers": {
-      "barony": { "ruler": "Batab'", "domain": "Batab'il" },
-      "march": { "ruler": "Nakom", "domain": "Nakomil" },
-      "county": { "ruler": "Sajal", "domain": "Sajalil" },
-      "duchy": { "ruler": "Ajaw", "domain": "Ajawil" },
-      "principality": { "ruler": "K'uhul Ajaw", "domain": "K'uhul-Ajawil" },
-      "kingdom": { "ruler": "Kalomte'", "domain": "Kalomte'il" },
-      "empire": { "ruler": "Noh-Kalomte'", "domain": "Noh-Kalomte'il" }
+      "barony": {
+        "ruler": "Batab'",
+        "domain": "Batab'il"
+      },
+      "march": {
+        "ruler": "Nakom",
+        "domain": "Nakomil"
+      },
+      "county": {
+        "ruler": "Sajal",
+        "domain": "Sajalil"
+      },
+      "duchy": {
+        "ruler": "Ajaw",
+        "domain": "Ajawil"
+      },
+      "principality": {
+        "ruler": "K'uhul Ajaw",
+        "domain": "K'uhul-Ajawil"
+      },
+      "kingdom": {
+        "ruler": "Kalomte'",
+        "domain": "Kalomte'il"
+      },
+      "empire": {
+        "ruler": "Noh-Kalomte'",
+        "domain": "Noh-Kalomte'il"
+      }
     },
     "_tiers_note": "Maya civ, ascending. Built on ajaw (lord): Ajaw (town-king) duchy; K'uhul Ajaw (holy/divine lord) principality; Kalomte' (overlord/high king) kingdom; Noh-Kalomte' (great overlord) empire. Batab' (local chief) barony; Nakom (war-captain) march; Sajal (subordinate governor) county. The ah-k'in priests and the Long-Count calendar order the realm. (Rank titles are the real Maya register, allowed.)",
-    "female_forms": { "Noh-Kalomte'": "Ix-Noh-Kalomte'", "Kalomte'": "Ix-Kalomte'", "K'uhul Ajaw": "Ix-K'uhul-Ajaw", "Ajaw": "Ix-Ajaw", "Sajal": "Ix-Sajal", "Nakom": "Ix-Nakom", "Batab'": "Ix-Batab'" },
+    "female_forms": {
+      "Noh-Kalomte'": "Ix-Noh-Kalomte'",
+      "Kalomte'": "Ix-Kalomte'",
+      "K'uhul Ajaw": "Ix-K'uhul-Ajaw",
+      "Ajaw": "Ix-Ajaw",
+      "Sajal": "Ix-Sajal",
+      "Nakom": "Ix-Nakom",
+      "Batab'": "Ix-Batab'"
+    },
     "heir": "Baah-ch'ok (head-youth, the heir-apparent)",
-    "honorifics": { "lord": "Ajaw", "lady": "Ix-Ajaw", "warrior": "Holkan", "your_grace": "K'uhul", "elder": "Chilam" },
-    "vassalage": { "liege": "Kalomte'", "vassal": "Yajaw (under-lord)", "fealty": "Patan-t'an (oath of service)", "tribute": "Patan" }
+    "honorifics": {
+      "lord": "Ajaw",
+      "lady": "Ix-Ajaw",
+      "warrior": "Holkan",
+      "your_grace": "K'uhul",
+      "elder": "Chilam"
+    },
+    "vassalage": {
+      "liege": "Kalomte'",
+      "vassal": "Yajaw (under-lord)",
+      "fealty": "Patan-t'an (oath of service)",
+      "tribute": "Patan"
+    }
   },
   "people_name_convention": {
     "order": "given/calendar-day name + ch'ib'al (lineage); aj-/ix- prefix; the dynastic count for the k'uhul ajaw line; a deed- or war-name.",
-    "surname_source": ["ch'ib'al (lineage)", "calendar-day name", "deed/war-name", "Aj-/Ix- + place"],
+    "surname_source": [
+      "ch'ib'al (lineage)",
+      "calendar-day name",
+      "deed/war-name",
+      "Aj-/Ix- + place"
+    ],
     "dual_register": "the ajaw-lineages carry a dynastic name and divine titles; commoners a day-name + lineage.",
     "theophoric": "names invoke the powers (Ixalan's names) + aj-/ix-: e.g. Aj-Tulax, Ix-Rialtaj; calendar-day-and-power names.",
     "diminutive": "Chan- (small) prefix"
@@ -57,13 +193,31 @@
   "religion": {
     "_note": "Deity-names are the Mayan morphs of the Agrippan canon (family_mesoamerican.json theonym_sets.mayan) - never real Maya gods (no Itzamna, Kukulkan, Chaac, Ix Chel, Kinich Ahau). Shared pantheon, Maya names. Ixalan seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). The Long-Count calendar and the bloodletting-rite bind the k'uhul ajaw to the powers; the witz (pyramid) is the altar.",
     "the_one": "Aj Ternaj (< Aeternus; the One - revered as the supreme maker and sky-most-high when Lawful, acknowledged but set aside when Neutral)",
-    "sample_deity_renames": { "Tulrius": "Tulax (sun and right-order; Lawful power)", "Numeno": "Numench (sky-wisdom; Lawful power)", "Realta": "Ix Rialtaj (the mother; Neutral-honored)", "Maraxus": "Marakab (the war-fire, the conqueror; Chaotic power, demonized)" },
-    "worship_by_alignment": { "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)", "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the uchben (ancestral dead), the day-lords and local k'uh (spirits)" },
+    "sample_deity_renames": {
+      "Tulrius": "Tulax (sun and right-order; Lawful power)",
+      "Numeno": "Numench (sky-wisdom; Lawful power)",
+      "Realta": "Ix Rialtaj (the mother; Neutral-honored)",
+      "Maraxus": "Marakab (the war-fire, the conqueror; Chaotic power, demonized)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the uchben (ancestral dead), the day-lords and local k'uh (spirits)"
+    },
     "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Marakab the War-Fire; Vacidus -> Wakix the Devourer; Lusanto -> Lusankaan the Hoard-Serpent.",
-    "clergy_ladder": { "1": "Ah-miatz (novice-scribe)", "3": "Ah-k'in (sun-priest, day-keeper)", "5": "Ah-k'uhun (god-keeper priest)", "7": "Nakom-k'in (sacrificer-priest)", "9": "Ah-k'in Mai (high priest)" },
+    "clergy_ladder": {
+      "1": "Ah-miatz (novice-scribe)",
+      "3": "Ah-k'in (sun-priest, day-keeper)",
+      "5": "Ah-k'uhun (god-keeper priest)",
+      "7": "Nakom-k'in (sacrificer-priest)",
+      "9": "Ah-k'in Mai (high priest)"
+    },
     "religious_orders_pattern": "the K'uh-nah (god-house) atop the witz (pyramid) of [power]: 'the K'uh-nah of Tulax'.",
     "saints_pattern": "the deified k'uhul ajaw ancestors (the uchben) and the day-lords, honored at the pyramid-tomb and the carved stela.",
-    "holy_symbol_motifs": { "Tulax": "a sun-glyph above the bloodletting-stela", "Numench": "a sky-band over the open codex", "Ix Rialtaj": "the moon-rabbit cradling maize" }
+    "holy_symbol_motifs": {
+      "Tulax": "a sun-glyph above the bloodletting-stela",
+      "Numench": "a sky-band over the open codex",
+      "Ix Rialtaj": "the moon-rabbit cradling maize"
+    }
   },
   "banks_patterns": {
     "ships": "riverine and coastal trade-canoes (the great seagoing canoe): 'the Jade Canoe', 'the Quetzal of the Ha''",
@@ -72,10 +226,81 @@
     "dungeons_ruins": "vine-choked pyramids and abandoned k'uhul-kah: 'the lost Witz of [ajaw]', 'the Sunken Cenote of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Aj-Balam", "Aj-K'uk'", "Aj-Chan", "Aj-Kan", "Aj-Sak-Mo'", "Aj-Bolon", "Aj-Took'", "Aj-Chak-Ek'", "Aj-Muwan", "Aj-Tz'ikin", "Aj-Kab'", "Aj-Nik", "Aj-Ho'", "Aj-Yax", "Aj-Ich'aak", "Aj-Kawak", "Aj-Imix", "Aj-Men", "Aj-Etz'nab", "Aj-Chakat" ],
-    "personal_f": ["Ix-Chan", "Ix-K'uk'", "Ix-Sak-Nik", "Ix-Bolon", "Ix-Kan", "Ix-Chak", "Ix-Ek'", "Ix-Nik", "Ix-Muwan", "Ix-Kab'", "Ix-Yax", "Ix-Ho'", "Ix-Imix", "Ix-Men", "Ix-Kawak", "Ix-Tz'ikin", "Ix-Balam", "Ix-Ich'aak", "Ix-Sak-K'uk'", "Ix-Chakat"],
-    "clan_chibal": ["Ch'ib'al Balam", "Ch'ib'al K'uk'", "Ch'ib'al Kan", "Ch'ib'al Chan", "Ch'ib'al Mo'", "Ch'ib'al Took'", "Ch'ib'al Muwan", "Ch'ib'al Tz'ikin", "Ch'ib'al Yax", "Ch'ib'al Chak-Ek'", "Ch'ib'al Bolon", "Ch'ib'al Nik"],
-    "epithets_cognomina": ["Balam (the Jaguar)", "the Holy (K'uhul)", "Flint-hand", "the Star-born", "of the Cenote", "the Sun-faced", "Quetzal-plumed", "the Blood-giver"],
-    "flagship_settlements": ["Ixal (the holy capital)", "Noh-Witz (the great pyramid-city)", "Chak-Ha' (the red-river town)", "Ek'-Nahb (the black-lake city)", "Tulax-K'uhnah (the sun-temple seat)", "Yaaxtun-Peten (the jade-island)"]
+    "personal_m": [
+      "Aj-Balam",
+      "Aj-K'uk'",
+      "Aj-Chan",
+      "Aj-Kan",
+      "Aj-Sak-Mo'",
+      "Aj-Bolon",
+      "Aj-Took'",
+      "Aj-Chak-Ek'",
+      "Aj-Muwan",
+      "Aj-Tz'ikin",
+      "Aj-Kab'",
+      "Aj-Nik",
+      "Aj-Ho'",
+      "Aj-Yax",
+      "Aj-Ich'aak",
+      "Aj-Kawak",
+      "Aj-Imix",
+      "Aj-Men",
+      "Aj-Etz'nab",
+      "Aj-Chakat"
+    ],
+    "personal_f": [
+      "Ix-Chan",
+      "Ix-K'uk'",
+      "Ix-Sak-Nik",
+      "Ix-Bolon",
+      "Ix-Kan",
+      "Ix-Chak",
+      "Ix-Ek'",
+      "Ix-Nik",
+      "Ix-Muwan",
+      "Ix-Kab'",
+      "Ix-Yax",
+      "Ix-Ho'",
+      "Ix-Imix",
+      "Ix-Men",
+      "Ix-Kawak",
+      "Ix-Tz'ikin",
+      "Ix-Balam",
+      "Ix-Ich'aak",
+      "Ix-Sak-K'uk'",
+      "Ix-Chakat"
+    ],
+    "clan_chibal": [
+      "Ch'ib'al Balam",
+      "Ch'ib'al K'uk'",
+      "Ch'ib'al Kan",
+      "Ch'ib'al Chan",
+      "Ch'ib'al Mo'",
+      "Ch'ib'al Took'",
+      "Ch'ib'al Muwan",
+      "Ch'ib'al Tz'ikin",
+      "Ch'ib'al Yax",
+      "Ch'ib'al Chak-Ek'",
+      "Ch'ib'al Bolon",
+      "Ch'ib'al Nik"
+    ],
+    "epithets_cognomina": [
+      "Balam (the Jaguar)",
+      "the Holy (K'uhul)",
+      "Flint-hand",
+      "the Star-born",
+      "of the Cenote",
+      "the Sun-faced",
+      "Quetzal-plumed",
+      "the Blood-giver"
+    ],
+    "flagship_settlements": [
+      "Ixal (the holy capital)",
+      "Noh-Witz (the great pyramid-city)",
+      "Chak-Ha' (the red-river town)",
+      "Ek'-Nahb (the black-lake city)",
+      "Tulax-K'uhnah (the sun-temple seat)",
+      "Yaaxtun-Peten (the jade-island)"
+    ]
   }
 }

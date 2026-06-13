@@ -40,13 +40,17 @@ func _init(catalog: RefCounted = null) -> void:
 ## Returns carrier_ids reachable from the anchor via strict 3D adjacency
 ## (Chebyshev distance exactly 1), plus the anchor itself. Anchors or carriers
 ## missing from `carrier_positions` are excluded. Used by the overlay to dim
-## non-adjacent columns and by the loot modal to filter the participant list.
+## non-reachable columns and by the loot modal to filter the participant list.
 ##
-## Same-cell is impossible in live play (ACKS movement forbids two entities on
-## one cell), so only the anchor's own entry is included at the anchor's
-## position.
+## Same-cell is normally NOT adjacent (ACKS forbids two characters on one cell),
+## but trained creatures and hitched vehicles share their handler's cell (see
+## InventoryTabPage._compute_carrier_positions). Any carrier_id passed in
+## `co_located_reachable_ids` is therefore admitted at distance 0 too, so an
+## animal you lead — sitting on your cell — is reachable. Defaults to empty, so
+## existing callers keep the strict exactly-1 behavior.
 static func collect_adjacent_carrier_ids(anchor_id: String,
-		carrier_positions: Dictionary) -> Array:
+		carrier_positions: Dictionary,
+		co_located_reachable_ids: Array = []) -> Array:
 	var result: Array = []
 	if anchor_id.is_empty() or not carrier_positions.has(anchor_id):
 		return result
@@ -57,6 +61,8 @@ static func collect_adjacent_carrier_ids(anchor_id: String,
 			continue
 		var pos: Vector3i = carrier_positions[cid]
 		if VoxelGrid.is_adjacent(anchor_pos, pos):
+			result.append(cid)
+		elif pos == anchor_pos and co_located_reachable_ids.has(cid):
 			result.append(cid)
 	return result
 
@@ -162,9 +168,13 @@ func _check_context_friction(source: Dictionary, target: Dictionary,
 	return _ok()
 
 
-## Checks that source and target carriers are at strict 3D adjacency
-## (Chebyshev distance exactly 1). Same-cell is rejected — ACKS movement
-## rules forbid two entities on one cell outside of a movement step.
+## Checks that source and target carriers are reachable: strict 3D adjacency
+## (Chebyshev distance exactly 1), OR same-cell when a creature/vehicle is
+## involved. Trained creatures and hitched vehicles share their handler's cell
+## (InventoryTabPage._compute_carrier_positions), so an animal you lead sits at
+## distance 0 from you and you must still be able to hand it gear. Two characters
+## at the same cell stays rejected — ACKS forbids it, and the guard surfaces a
+## stacking bug rather than silently allowing the move.
 ## Requires context["carrier_positions"]: Dictionary mapping carrier_id -> Vector3i.
 ## If positions are not supplied, rejects — the caller must populate this key.
 func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
@@ -178,7 +188,16 @@ func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
 	var tgt_pos: Vector3i = positions[tgt_id]
 	if VoxelGrid.is_adjacent(src_pos, tgt_pos):
 		return _ok()
+	if src_pos == tgt_pos and (_is_mobile_carrier(source) or _is_mobile_carrier(target)):
+		return _ok()
 	return _reject("Carriers are not adjacent")
+
+
+## True when the carrier is a trained creature or hitched vehicle — entities that
+## legitimately occupy their handler's cell (so same-cell is reachable for them).
+func _is_mobile_carrier(carrier: Dictionary) -> bool:
+	var t: String = str(carrier.get("carrier_type", ""))
+	return t == "creature" or t == "vehicle"
 
 
 ## Checks that the active character has a combat action available, then adjacency.

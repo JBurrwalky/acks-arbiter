@@ -179,6 +179,10 @@ func _on_name_submitted(new_name: String) -> void:
 		return
 	CampaignRepository.update_trained_creature(_creature.id, {"name": new_name})
 	_creature.name = new_name
+	# Refresh other surfaces that show this creature's name (notably the Inventory
+	# tab's carrier column, which re-reads the name on this signal). Mirrors the
+	# vehicle rename emitting vehicle_changed in cs_vehicle_detail_panel.gd.
+	EventBus.creature_inventory_updated.emit(_creature.id)
 
 
 # ---------------------------------------------------------------------------

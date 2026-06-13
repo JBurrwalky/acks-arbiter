@@ -5,9 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 45,
   "sub_palette": "latinate+iberian (intra-family blend)",
-  "synthesis_sources": [1, 20],
+  "synthesis_sources": [
+    1,
+    20
+  ],
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Roman + Iberian (a Lusitania analog): a Romanized-Iberian civ. Intra-Classical-family blend — Latinate/Romance structure over a Celtiberian substrate (-briga/-ica place-suffixes, Celtic-rooted rural names). Even split Lawful/Neutral. Seed names are coinages; no historical figures or real places.",
   "phonology": {
     "palette": "Latinate with Iberian substrate: -us/-a/-o endings; hard c; Celtic clusters br/nt; place-suffixes -briga/-ica beside Latinate -ia/-um.",
@@ -15,40 +21,167 @@
     "transparent_ratio": 0.45
   },
   "lexicon": {
-    "feature_words": { "river": "amne", "stream": "rivo", "lake": "lago", "sea": "mar", "bay": "sino", "cape": "promo", "isle": "insa", "mountain": "monte", "hill": "briga", "ridge": "serra", "forest": "silva", "wood": "saltu", "plain": "campo", "marsh": "paule", "ford": "vado", "pass": "porto", "vale": "valle", "coast": "ora" },
-    "settlement_words": { "hamlet": "vicello", "village": "vico", "town": "oppido", "city": "urbe", "fort": "castro", "port": "porto", "market": "foro", "colony": "colonia", "citadel": "arce" },
-    "kinship": { "son": "-iz / filio", "daughter": "-a / filia", "house": "gens", "ancestor": "avo" },
-    "adjectives": { "great": "magno", "little": "parvo", "old": "veto", "new": "novo", "black": "atro", "white": "albo", "red": "rubro", "golden": "aureo", "iron": "ferro", "high": "alto", "far": "longo", "sacred": "sacro", "fair": "belo" },
-    "resources": { "salt": "sale", "iron": "ferro", "silver": "argento", "gold": "auro", "wine": "vino", "oil": "oleo", "grain": "grano", "marble": "marmo", "fish": "pesce", "purple_dye": "purpura" },
-    "directional": { "upper": "supra", "lower": "infra", "north": "borea", "south": "austro", "inner": "intro", "outer": "extro", "near": "propo", "far": "longe" }
+    "feature_words": {
+      "river": "amne",
+      "stream": "rivo",
+      "lake": "lago",
+      "sea": "mar",
+      "bay": "sino",
+      "cape": "promo",
+      "isle": "insa",
+      "mountain": "monte",
+      "hill": "briga",
+      "ridge": "serra",
+      "forest": "silva",
+      "wood": "saltu",
+      "plain": "campo",
+      "marsh": "paule",
+      "ford": "vado",
+      "pass": "porto",
+      "vale": "valle",
+      "coast": "ora",
+      "neck": "collo",
+      "narrows": "freta",
+      "waste": "ermo",
+      "road": "via",
+      "way": "camin",
+      "track": "senda"
+    },
+    "settlement_words": {
+      "hamlet": "vicello",
+      "village": "vico",
+      "town": "oppido",
+      "city": "urbe",
+      "fort": "castro",
+      "port": "porto",
+      "market": "foro",
+      "colony": "colonia",
+      "citadel": "arce"
+    },
+    "kinship": {
+      "son": "-iz / filio",
+      "daughter": "-a / filia",
+      "house": "gens",
+      "ancestor": "avo"
+    },
+    "adjectives": {
+      "great": "magno",
+      "little": "parvo",
+      "old": "veto",
+      "new": "novo",
+      "black": "atro",
+      "white": "albo",
+      "red": "rubro",
+      "golden": "aureo",
+      "iron": "ferro",
+      "high": "alto",
+      "far": "longo",
+      "sacred": "sacro",
+      "fair": "belo"
+    },
+    "resources": {
+      "salt": "sale",
+      "iron": "ferro",
+      "silver": "argento",
+      "gold": "auro",
+      "wine": "vino",
+      "oil": "oleo",
+      "grain": "grano",
+      "marble": "marmo",
+      "fish": "pesce",
+      "purple_dye": "purpura"
+    },
+    "directional": {
+      "upper": "supra",
+      "lower": "infra",
+      "north": "borea",
+      "south": "austro",
+      "inner": "intro",
+      "outer": "extro",
+      "near": "propo",
+      "far": "longe"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-briga", "-ica", "-ia", "-um", "-castro"],
+    "toponymic_suffixes": [
+      "-briga",
+      "-ica",
+      "-ia",
+      "-um",
+      "-castro"
+    ],
     "patronymic_form": "Latinate gens (clan) for nobility; commoners patronymic -iz; Celtiberian roots in older rural names.",
-    "gendered_endings": { "male": "-o / -us", "female": "-a / -ia" },
+    "gendered_endings": {
+      "male": "-o / -us",
+      "female": "-a / -ia"
+    },
     "diminutive_form": "-ino / -ella",
     "compounding_rule": "[adjective|resource](stem) + feature-word, or feature + -briga (Ferrobriga = iron-fort); Latinate -ia/-um for cities."
   },
   "title_ladder": {
     "government": "feudal (Romanized provincial nobility over hillfort clans)",
     "tiers": {
-      "barony": { "ruler": "Castellano", "domain": "Castellania" },
-      "march": { "ruler": "Limitano", "domain": "Limitania" },
-      "county": { "ruler": "Conde", "domain": "Condado" },
-      "duchy": { "ruler": "Duque", "domain": "Ducado" },
-      "principality": { "ruler": "Principe", "domain": "Principado" },
-      "kingdom": { "ruler": "Rege", "domain": "Regno" },
-      "empire": { "ruler": "Imperante", "domain": "Imperio" }
+      "barony": {
+        "ruler": "Castellano",
+        "domain": "Castellania"
+      },
+      "march": {
+        "ruler": "Limitano",
+        "domain": "Limitania"
+      },
+      "county": {
+        "ruler": "Conde",
+        "domain": "Condado"
+      },
+      "duchy": {
+        "ruler": "Duque",
+        "domain": "Ducado"
+      },
+      "principality": {
+        "ruler": "Principe",
+        "domain": "Principado"
+      },
+      "kingdom": {
+        "ruler": "Rege",
+        "domain": "Regno"
+      },
+      "empire": {
+        "ruler": "Imperante",
+        "domain": "Imperio"
+      }
     },
     "_tiers_note": "Romanized-Iberian: a Latinate ladder shifted toward Romance/Iberian forms (Conde/Condado, Duque/Ducado, Rege/Regno), distinguishing Lusan from the pure-Latinate Agrippan. Ascending barony..empire; march = Limitano (frontier).",
-    "female_forms": { "Rege": "Regina", "Imperante": "Imperatriz", "Principe": "Principesa", "Duque": "Duquesa", "Conde": "Condesa", "Castellano": "Castellana", "Limitano": "Limitana" },
+    "female_forms": {
+      "Rege": "Regina",
+      "Imperante": "Imperatriz",
+      "Principe": "Principesa",
+      "Duque": "Duquesa",
+      "Conde": "Condesa",
+      "Castellano": "Castellana",
+      "Limitano": "Limitana"
+    },
     "heir": "Infante (heir to the Rege)",
-    "honorifics": { "lord": "Domno", "lady": "Domna", "knight": "Cavalero", "your_grace": "Eminencia", "your_majesty": "Maestade" },
-    "vassalage": { "liege": "Senior", "vassal": "Vasso", "fealty": "Fide", "tribute": "Tributo" }
+    "honorifics": {
+      "lord": "Domno",
+      "lady": "Domna",
+      "knight": "Cavalero",
+      "your_grace": "Eminencia",
+      "your_majesty": "Maestade"
+    },
+    "vassalage": {
+      "liege": "Senior",
+      "vassal": "Vasso",
+      "fealty": "Fide",
+      "tribute": "Tributo"
+    }
   },
   "people_name_convention": {
     "order": "personal + gens (Latinate noble) OR personal + patronymic -iz (commoner/rural Iberian); optional cognomen.",
-    "surname_source": ["inherited gens (noble)", "patronymic -iz (commoner)", "locational (de [briga])"],
+    "surname_source": [
+      "inherited gens (noble)",
+      "patronymic -iz (commoner)",
+      "locational (de [briga])"
+    ],
     "dual_register": "Romanized nobility use Latinate gens; rural clans keep Celtiberian patronymics.",
     "theophoric": "Latinate-Iberian devotional praenomina from the morphed deity-names (Tulrio-, Orlando-, Gaiando-).",
     "diminutive": "-ino / -ella"
@@ -56,12 +189,26 @@
   "religion": {
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Latinate-Iberian phonology (-o/-us endings, Romance shifts) — recognizably the same powers, never real Iberian gods. Lawful/Neutral; Roman state-cult forms over Iberian ancestral/mountain veneration.",
     "the_one": "Aeterno (< Aeternus; the One, honored not petitioned)",
-    "sample_deity_renames": { "Tulrius": "Tulrio (sun-justice)", "Orlandus": "Orlando (iron-sworn)", "Gaiandus": "Gaiando (the enduring mountain)", "Realta": "Rialda (mercy/healing)" },
+    "sample_deity_renames": {
+      "Tulrius": "Tulrio (sun-justice)",
+      "Orlandus": "Orlando (iron-sworn)",
+      "Gaiandus": "Gaiando (the enduring mountain)",
+      "Realta": "Rialda (mercy/healing)"
+    },
     "demon_epithet_pattern": "each opposing power keeps its morphed name + a portfolio epithet (prefix 'o falso' or suffix '-tyranno'), distinct per power: Maraxus -> Maraxo the Burning Tyrant; Lusento -> Lusento the Coin-Serpent; Irantius -> Irancio the Restless.",
-    "clergy_ladder": { "1": "Cultor (acolyte)", "3": "Sacerdote (priest)", "5": "Flamine", "7": "Pontifice (high priest)", "9": "Pontifice Maximo" },
+    "clergy_ladder": {
+      "1": "Cultor (acolyte)",
+      "3": "Sacerdote (priest)",
+      "5": "Flamine",
+      "7": "Pontifice (high priest)",
+      "9": "Pontifice Maximo"
+    },
     "religious_orders_pattern": "the Collegio/Order of [power]: 'the Collegio of Tulrio'.",
     "saints_pattern": "Divo/Diva [name]; rural cults venerate ancestral heroes at hillfort shrines.",
-    "holy_symbol_motifs": { "Tulrio": "sun-disc over a balance", "Orlando": "iron ring on a hillfort-tower" }
+    "holy_symbol_motifs": {
+      "Tulrio": "sun-disc over a balance",
+      "Orlando": "iron ring on a hillfort-tower"
+    }
   },
   "banks_patterns": {
     "ships": "'o [virtue/saint]' / star-of-the-sea names: 'Victrice', 'Estrela do Mar'",
@@ -70,10 +217,86 @@
     "dungeons_ruins": "'as Ruinas de [name]': ruined castros and old Romanized villas"
   },
   "seed_names": {
-    "personal_m": ["Viriaco", "Tongio", "Aulo", "Marco", "Lucio", "Reburo", "Camalo", "Tancino", "Boutio", "Arcio", "Celio", "Maelo", "Docio", "Albino", "Severo", "Caturo", "Vibio", "Cilio", "Manlio", "Pintamo"],
-    "personal_f": ["Aurelia", "Tongina", "Camala", "Arcea", "Boutia", "Celia", "Maela", "Docquira", "Albina", "Severina", "Catura", "Vibia", "Cilea", "Manilia", "Reburrina", "Tancina", "Pintamia", "Marcia", "Veturia", "Lucina"],
-    "clan_gens": ["Cassius", "Valerius", "Tongius", "Camalius", "Boutius", "Arcius", "Maelius", "Albinius", "Severius", "Caturius", "Vibius", "Manlius", "Cilius", "Reburrius", "Docius", "Pintanius"],
-    "epithets_cognomina": ["o Magno (the Great)", "o Justo (the Just)", "Ferro (Iron)", "o Pio (the Dutiful)", "o Bravo (the Bold)", "Aureo (Golden)", "o Forte (the Strong)", "Montano (of the Mountain)"],
-    "flagship_settlements": ["Lusobriga (the capital)", "Aurelia", "Ferrobriga", "Montobriga", "Atrobriga", "Portu Magno", "Castro Severo"]
+    "personal_m": [
+      "Viriaco",
+      "Tongio",
+      "Aulo",
+      "Marco",
+      "Lucio",
+      "Reburo",
+      "Camalo",
+      "Tancino",
+      "Boutio",
+      "Arcio",
+      "Celio",
+      "Maelo",
+      "Docio",
+      "Albino",
+      "Severo",
+      "Caturo",
+      "Vibio",
+      "Cilio",
+      "Manlio",
+      "Pintamo"
+    ],
+    "personal_f": [
+      "Aurelia",
+      "Tongina",
+      "Camala",
+      "Arcea",
+      "Boutia",
+      "Celia",
+      "Maela",
+      "Docquira",
+      "Albina",
+      "Severina",
+      "Catura",
+      "Vibia",
+      "Cilea",
+      "Manilia",
+      "Reburrina",
+      "Tancina",
+      "Pintamia",
+      "Marcia",
+      "Veturia",
+      "Lucina"
+    ],
+    "clan_gens": [
+      "Cassius",
+      "Valerius",
+      "Tongius",
+      "Camalius",
+      "Boutius",
+      "Arcius",
+      "Maelius",
+      "Albinius",
+      "Severius",
+      "Caturius",
+      "Vibius",
+      "Manlius",
+      "Cilius",
+      "Reburrius",
+      "Docius",
+      "Pintanius"
+    ],
+    "epithets_cognomina": [
+      "o Magno (the Great)",
+      "o Justo (the Just)",
+      "Ferro (Iron)",
+      "o Pio (the Dutiful)",
+      "o Bravo (the Bold)",
+      "Aureo (Golden)",
+      "o Forte (the Strong)",
+      "Montano (of the Mountain)"
+    ],
+    "flagship_settlements": [
+      "Lusobriga (the capital)",
+      "Aurelia",
+      "Ferrobriga",
+      "Montobriga",
+      "Atrobriga",
+      "Portu Magno",
+      "Castro Severo"
+    ]
   }
 }

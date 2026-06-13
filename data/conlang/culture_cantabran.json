@@ -6,7 +6,10 @@
   "catalog_number": 26,
   "sub_palette": "iberian",
   "government": "clanhold",
-  "alignment_allowed": ["Neutral", "Chaotic"],
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
   "_note": "Single-source (Iberian, pre-Islamic Spain). Iberian sub-palette: Latinate base over a Celtic (Celtiberian) substrate. Fierce coastal/mountain hillfort clans. Even split Neutral/Chaotic. Seed names are Celtiberian-flavored coinages, not real ethnonyms or historical figures.",
   "phonology": {
     "palette": "Iberian/Celtiberian: Latinate vowels + Celtic substrate; hard c/k; endings -o/-a/-briga/-ica; clusters br/gr/nt/mb; rolled r.",
@@ -14,40 +17,167 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "nava", "stream": "regato", "lake": "lacuna", "sea": "mar", "bay": "abra", "cape": "promo", "isle": "isla", "mountain": "monte", "hill": "briga", "ridge": "serra", "forest": "silua", "wood": "saltu", "plain": "campa", "marsh": "tremedal", "ford": "vado", "pass": "porto", "vale": "valle", "coast": "ora" },
-    "settlement_words": { "hamlet": "casal", "village": "vicu", "town": "oppido", "city": "urbe", "fort": "castro", "port": "portu", "market": "mercatu", "colony": "colonia", "citadel": "arce" },
-    "kinship": { "son": "-iz / fillu", "daughter": "-a / filla", "house": "gens / clan", "ancestor": "avo" },
-    "adjectives": { "great": "magno", "little": "parvo", "old": "vetu", "new": "novo", "black": "atro", "white": "albo", "red": "rubio", "golden": "aureo", "iron": "ferro", "high": "alto", "far": "longo", "sacred": "sacro", "fair": "bello" },
-    "resources": { "salt": "sale", "iron": "ferro", "silver": "argento", "gold": "auro", "wine": "vino", "oil": "oleo", "grain": "grano", "marble": "marmore", "fish": "pesce", "purple_dye": "purpura" },
-    "directional": { "upper": "supra", "lower": "infra", "north": "borea", "south": "austro", "inner": "intro", "outer": "extro", "near": "propo", "far": "longe" }
+    "feature_words": {
+      "river": "nava",
+      "stream": "regato",
+      "lake": "lacuna",
+      "sea": "mar",
+      "bay": "abra",
+      "cape": "promo",
+      "isle": "isla",
+      "mountain": "monte",
+      "hill": "briga",
+      "ridge": "serra",
+      "forest": "silua",
+      "wood": "saltu",
+      "plain": "campa",
+      "marsh": "tremedal",
+      "ford": "vado",
+      "pass": "porto",
+      "vale": "valle",
+      "coast": "ora",
+      "neck": "collo",
+      "narrows": "freu",
+      "waste": "ermo",
+      "road": "calzada",
+      "way": "camin",
+      "track": "senda"
+    },
+    "settlement_words": {
+      "hamlet": "casal",
+      "village": "vicu",
+      "town": "oppido",
+      "city": "urbe",
+      "fort": "castro",
+      "port": "portu",
+      "market": "mercatu",
+      "colony": "colonia",
+      "citadel": "arce"
+    },
+    "kinship": {
+      "son": "-iz / fillu",
+      "daughter": "-a / filla",
+      "house": "gens / clan",
+      "ancestor": "avo"
+    },
+    "adjectives": {
+      "great": "magno",
+      "little": "parvo",
+      "old": "vetu",
+      "new": "novo",
+      "black": "atro",
+      "white": "albo",
+      "red": "rubio",
+      "golden": "aureo",
+      "iron": "ferro",
+      "high": "alto",
+      "far": "longo",
+      "sacred": "sacro",
+      "fair": "bello"
+    },
+    "resources": {
+      "salt": "sale",
+      "iron": "ferro",
+      "silver": "argento",
+      "gold": "auro",
+      "wine": "vino",
+      "oil": "oleo",
+      "grain": "grano",
+      "marble": "marmore",
+      "fish": "pesce",
+      "purple_dye": "purpura"
+    },
+    "directional": {
+      "upper": "supra",
+      "lower": "infra",
+      "north": "borea",
+      "south": "austro",
+      "inner": "intro",
+      "outer": "extro",
+      "near": "propo",
+      "far": "longe"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-briga", "-obriga", "-ica", "-castro", "-o"],
+    "toponymic_suffixes": [
+      "-briga",
+      "-obriga",
+      "-ica",
+      "-castro",
+      "-o"
+    ],
     "patronymic_form": "patronymic suffix -iz / -ez (son of); clan name for nobility.",
-    "gendered_endings": { "male": "-o / -us / -iz", "female": "-a / -ica" },
+    "gendered_endings": {
+      "male": "-o / -us / -iz",
+      "female": "-a / -ica"
+    },
     "diminutive_form": "-iello / -ica",
     "compounding_rule": "[adjective|resource](stem) + feature-word, or feature + -briga (hillfort): Atrobriga (black-fort), Ferrobriga (iron-fort)."
   },
   "title_ladder": {
     "government": "clanhold (hillfort chiefs and war-bands; the elder-assembly is narrative flavor)",
     "tiers": {
-      "barony": { "ruler": "Brigant", "domain": "Brigantia" },
-      "march": { "ruler": "Limigant", "domain": "Limigantia" },
-      "county": { "ruler": "Tigern", "domain": "Tigernia" },
-      "duchy": { "ruler": "Brennix", "domain": "Brennia" },
-      "principality": { "ruler": "Vergobret", "domain": "Vergobretia" },
-      "kingdom": { "ruler": "Rix", "domain": "Rigon" },
-      "empire": { "ruler": "Ardrix", "domain": "Ardrigon" }
+      "barony": {
+        "ruler": "Brigant",
+        "domain": "Brigantia"
+      },
+      "march": {
+        "ruler": "Limigant",
+        "domain": "Limigantia"
+      },
+      "county": {
+        "ruler": "Tigern",
+        "domain": "Tigernia"
+      },
+      "duchy": {
+        "ruler": "Brennix",
+        "domain": "Brennia"
+      },
+      "principality": {
+        "ruler": "Vergobret",
+        "domain": "Vergobretia"
+      },
+      "kingdom": {
+        "ruler": "Rix",
+        "domain": "Rigon"
+      },
+      "empire": {
+        "ruler": "Ardrix",
+        "domain": "Ardrigon"
+      }
     },
     "_tiers_note": "Iberian/Celtiberian, ascending. Built on Celtic *rix (chief/king): Brigant (hillfort-lord) up to Rix/Rigon (king/kingdom) and Ardrix/Ardrigon (high king). A clan culture rarely climbs past the lower-middle tiers. March = Limigant (border-warden).",
-    "female_forms": { "Rix": "Rigana", "Ardrix": "Ardrigana", "Brennix": "Brennia", "Tigern": "Tigerna", "Brigant": "Briganta", "Vergobret": "Vergobreta", "Limigant": "Limiganta" },
+    "female_forms": {
+      "Rix": "Rigana",
+      "Ardrix": "Ardrigana",
+      "Brennix": "Brennia",
+      "Tigern": "Tigerna",
+      "Brigant": "Briganta",
+      "Vergobret": "Vergobreta",
+      "Limigant": "Limiganta"
+    },
     "heir": "Tanixt (heir-elect by clan acclamation)",
-    "honorifics": { "lord": "Tigerno", "lady": "Tigerna", "champion": "Caterva (war-champion)", "your_grace": "Magno", "elder": "Senix" },
-    "vassalage": { "liege": "Rix", "vassal": "Cliento", "fealty": "Sacramento (oath)", "tribute": "Tributo" }
+    "honorifics": {
+      "lord": "Tigerno",
+      "lady": "Tigerna",
+      "champion": "Caterva (war-champion)",
+      "your_grace": "Magno",
+      "elder": "Senix"
+    },
+    "vassalage": {
+      "liege": "Rix",
+      "vassal": "Cliento",
+      "fealty": "Sacramento (oath)",
+      "tribute": "Tributo"
+    }
   },
   "people_name_convention": {
     "order": "personal + patronymic (-iz) + clan; warriors often personal + clan only.",
-    "surname_source": ["patronymic (son-of, -iz)", "clan name", "deed/physical agnomen"],
+    "surname_source": [
+      "patronymic (son-of, -iz)",
+      "clan name",
+      "deed/physical agnomen"
+    ],
     "dual_register": "chiefs carry a clan name + war-epithet; commoners a patronymic.",
     "theophoric": "names from the morphed deity-names (devotion to the mountain and war powers: Caiandos-, Orlanno-).",
     "diminutive": "-iello / -ica"
@@ -55,12 +185,26 @@
   "religion": {
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Celtiberian phonology (-os/-anno/-oc/-onos endings, hard c) — recognizably the same powers, never real Iberian gods. Neutral clans are ancestor-venerators (saints primary); Chaotic invoke the chaos-powers.",
     "the_one": "Aiternos (< Aeternus; the high maker; seldom petitioned)",
-    "sample_deity_renames": { "Gaiandus": "Caiandos (mountain-endurance)", "Orlandus": "Orlanno (oath-iron)", "Raptis": "Raptoc (the red hunt)", "Delorum": "Deloron (rest of the dead)" },
+    "sample_deity_renames": {
+      "Gaiandus": "Caiandos (mountain-endurance)",
+      "Orlandus": "Orlanno (oath-iron)",
+      "Raptis": "Raptoc (the red hunt)",
+      "Delorum": "Deloron (rest of the dead)"
+    },
     "demon_epithet_pattern": "each opposing power keeps its morphed name + its own portfolio epithet (distinct per power): Maraxus -> Maraxos the Burning; Metensia -> Metensoc the Wasting; Desoria -> Desoryos the Drowner.",
-    "clergy_ladder": { "1": "Aruspex (diviner-acolyte)", "3": "Sacron (priest)", "5": "Gutuater (high priest)", "7": "Drux (druid-lord)", "9": "Ard-drux (arch-druid)" },
+    "clergy_ladder": {
+      "1": "Aruspex (diviner-acolyte)",
+      "3": "Sacron (priest)",
+      "5": "Gutuater (high priest)",
+      "7": "Drux (druid-lord)",
+      "9": "Ard-drux (arch-druid)"
+    },
     "religious_orders_pattern": "the Nemeton (sacred grove) of [power]: 'the Nemeton of Caiandos'.",
     "saints_pattern": "ancestral hero venerated at his hillfort-tomb (the [name] of [briga]).",
-    "holy_symbol_motifs": { "Caiandos": "grey peak beneath a stag's antlers", "Orlanno": "twin spears over an oath-ring" }
+    "holy_symbol_motifs": {
+      "Caiandos": "grey peak beneath a stag's antlers",
+      "Orlanno": "twin spears over an oath-ring"
+    }
   },
   "banks_patterns": {
     "ships": "raider names (coastal clans): 'Sea-Wolf', 'Stormrider', 'Pride of the Briga'",
@@ -69,10 +213,85 @@
     "dungeons_ruins": "ruined hillforts of fallen clans: 'the [briga]-castro of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Vero", "Boudix", "Corocaud", "Ambato", "Reburro", "Doviro", "Caturo", "Segon", "Talavo", "Andamo", "Turaio", "Cluto", "Virono", "Ategno", "Calaito", "Doidero", "Aravo", "Burralo", "Medugen", "Elaiso"],
-    "personal_f": ["Coria", "Ambata", "Reburra", "Dovira", "Catura", "Segona", "Talava", "Andama", "Turia", "Cluta", "Virona", "Ategna", "Calaita", "Aravica", "Vendana", "Iscalla", "Boudila", "Medugena", "Elaina", "Burrala"],
-    "clan_gens": ["Brigantii", "Coniacii", "Vellicii", "Vadinii", "Tridiavii", "Concanii", "Salaenii", "Vimenii", "Tamaricii", "Coelernii", "Aunigainii", "Blendii", "Selinii", "Orgenii", "Plentii", "Cantabrii"],
-    "epithets_cognomina": ["the Boar", "Ironhand", "the Unbowed", "Stormbrow", "the Red", "Stonehold", "the Swift", "Wolf-friend"],
-    "flagship_settlements": ["Cantabriga (the great hillfort)", "Vellica", "Concana", "Atrobriga", "Ferrobriga", "Castro Vetu"]
+    "personal_m": [
+      "Vero",
+      "Boudix",
+      "Corocaud",
+      "Ambato",
+      "Reburro",
+      "Doviro",
+      "Caturo",
+      "Segon",
+      "Talavo",
+      "Andamo",
+      "Turaio",
+      "Cluto",
+      "Virono",
+      "Ategno",
+      "Calaito",
+      "Doidero",
+      "Aravo",
+      "Burralo",
+      "Medugen",
+      "Elaiso"
+    ],
+    "personal_f": [
+      "Coria",
+      "Ambata",
+      "Reburra",
+      "Dovira",
+      "Catura",
+      "Segona",
+      "Talava",
+      "Andama",
+      "Turia",
+      "Cluta",
+      "Virona",
+      "Ategna",
+      "Calaita",
+      "Aravica",
+      "Vendana",
+      "Iscalla",
+      "Boudila",
+      "Medugena",
+      "Elaina",
+      "Burrala"
+    ],
+    "clan_gens": [
+      "Brigantii",
+      "Coniacii",
+      "Vellicii",
+      "Vadinii",
+      "Tridiavii",
+      "Concanii",
+      "Salaenii",
+      "Vimenii",
+      "Tamaricii",
+      "Coelernii",
+      "Aunigainii",
+      "Blendii",
+      "Selinii",
+      "Orgenii",
+      "Plentii",
+      "Cantabrii"
+    ],
+    "epithets_cognomina": [
+      "the Boar",
+      "Ironhand",
+      "the Unbowed",
+      "Stormbrow",
+      "the Red",
+      "Stonehold",
+      "the Swift",
+      "Wolf-friend"
+    ],
+    "flagship_settlements": [
+      "Cantabriga (the great hillfort)",
+      "Vellica",
+      "Concana",
+      "Atrobriga",
+      "Ferrobriga",
+      "Castro Vetu"
+    ]
   }
 }

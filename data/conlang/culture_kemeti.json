@@ -5,11 +5,20 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 24,
   "sub_palette": "egyptian+geez (intra-family blend)",
-  "synthesis_sources": [5, 14],
+  "synthesis_sources": [
+    5,
+    14
+  ],
   "homeland": "Kemetar",
-  "blend": { "backbone": "egyptian", "overlay": "geez" },
+  "blend": {
+    "backbone": "egyptian",
+    "overlay": "geez"
+  },
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Intra-Near-Eastern blend (Egyptian + Ethiopian): a Nubian/Meroitic-type civ on the desert-savanna frontier. Backbone = Egyptian (phonology, Per-/Niut-/Ta- toponyms, sa-filiation, divine-kingship titles); overlay = Ge'ez (amba and debr features, monastery/saint veneration, Ras/Negus frontier titles, -a endings). civ = feudal. Even split Lawful/Neutral. Common-word lexicon and rank titles use the real Egyptian/Ge'ez registers (allowed, catalog 5.3); DEITY names are SECOND-ORDER phoneme-morphs: the Agrippan canon as morphed into Punic (Barcan) trade-forms, then drifted again through Egyptian phonology — the shared Punic-cognate ancestor of the family.",
   "phonology": {
     "palette": "Egyptian backbone (dj, tj, kh, h, sh, q; l->r; v->w; endings -aa/-et) with Ge'ez overlay touches (-a endings, amba/debr, emphatics); theophoric stems are second-order morphs of the Punic forms (Tjulraa-, Argandja-, Warlandja-, Riarath-).",
@@ -17,40 +26,169 @@
     "transparent_ratio": 0.35
   },
   "lexicon": {
-    "feature_words": { "river": "itru", "stream": "mer", "lake": "she / hayq", "sea": "wadj-wer", "ocean": "wadj-wer-aa", "bay": "khent", "cape": "ta-djeser", "isle": "iu", "mountain": "djew / debr", "hill": "qaa / guba", "ridge": "akhet", "forest": "metjen", "desert": "deshret", "plain": "sekhet / meda", "marsh": "idehu", "ford": "djat", "pass": "ro / gedel", "savanna": "ta-meda", "oasis": "wehat", "coast": "wedjeb" },
-    "settlement_words": { "hamlet": "whyt", "village": "niut-sheri / mender", "town": "niut / ketema", "city": "niut-aat", "fort": "menenu / amba", "port": "mer-yt", "market": "khut / gebeya", "temple_town": "per-netjer", "citadel": "sebakh" },
-    "kinship": { "son": "sa / weld", "daughter": "sat / welatt", "house": "per / bet", "ancestor": "tepi-a" },
-    "adjectives": { "great": "aa / wer", "little": "nedjes", "old": "iaw", "new": "maw", "black": "kem", "white": "hedj", "red": "desher", "golden": "nebu", "iron": "bia", "high": "qa", "far": "wa", "sacred": "djeser / qiddus", "fair": "nefer" },
-    "resources": { "salt": "hemat", "iron": "bia", "bronze": "hemty", "silver": "hedj", "gold": "nebu", "incense": "senetjer", "grain": "it", "lapis": "khesbedj", "fish": "remu", "purple_dye": "insy" },
-    "directional": { "upper": "khent (south/upstream)", "lower": "pehu (north/downstream)", "north": "mehet", "south": "resy", "inner": "imy", "outer": "rwty", "near": "her", "far": "wa" }
+    "feature_words": {
+      "river": "itru",
+      "stream": "mer",
+      "lake": "she / hayq",
+      "sea": "wadj-wer",
+      "ocean": "wadj-wer-aa",
+      "bay": "khent",
+      "cape": "ta-djeser",
+      "isle": "iu",
+      "mountain": "djew / debr",
+      "hill": "qaa / guba",
+      "ridge": "akhet",
+      "forest": "metjen",
+      "desert": "deshret",
+      "plain": "sekhet / meda",
+      "marsh": "idehu",
+      "ford": "djat",
+      "pass": "ro / gedel",
+      "savanna": "ta-meda",
+      "oasis": "wehat",
+      "coast": "wedjeb",
+      "neck": "nehebet",
+      "narrows": "seger",
+      "road": "wat",
+      "way": "menged",
+      "track": "shemet"
+    },
+    "settlement_words": {
+      "hamlet": "whyt",
+      "village": "niut-sheri / mender",
+      "town": "niut / ketema",
+      "city": "niut-aat",
+      "fort": "menenu / amba",
+      "port": "mer-yt",
+      "market": "khut / gebeya",
+      "temple_town": "per-netjer",
+      "citadel": "sebakh"
+    },
+    "kinship": {
+      "son": "sa / weld",
+      "daughter": "sat / welatt",
+      "house": "per / bet",
+      "ancestor": "tepi-a"
+    },
+    "adjectives": {
+      "great": "aa / wer",
+      "little": "nedjes",
+      "old": "iaw",
+      "new": "maw",
+      "black": "kem",
+      "white": "hedj",
+      "red": "desher",
+      "golden": "nebu",
+      "iron": "bia",
+      "high": "qa",
+      "far": "wa",
+      "sacred": "djeser / qiddus",
+      "fair": "nefer"
+    },
+    "resources": {
+      "salt": "hemat",
+      "iron": "bia",
+      "bronze": "hemty",
+      "silver": "hedj",
+      "gold": "nebu",
+      "incense": "senetjer",
+      "grain": "it",
+      "lapis": "khesbedj",
+      "fish": "remu",
+      "purple_dye": "insy"
+    },
+    "directional": {
+      "upper": "khent (south/upstream)",
+      "lower": "pehu (north/downstream)",
+      "north": "mehet",
+      "south": "resy",
+      "inner": "imy",
+      "outer": "rwty",
+      "near": "her",
+      "far": "wa"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["Per- (house of)", "Niut- (city of)", "Ta- (land of)", "Debra- (mount/monastery of, Ge'ez overlay)", "Amba- (fortress, Ge'ez overlay)"],
+    "toponymic_suffixes": [
+      "Per- (house of)",
+      "Niut- (city of)",
+      "Ta- (land of)",
+      "Debra- (mount/monastery of, Ge'ez overlay)",
+      "Amba- (fortress, Ge'ez overlay)"
+    ],
     "patronymic_form": "filiation 'sa' (son of) with Ge'ez 'walda-X' as a secondary form; theophoric given names on morphed god-stems; no inherited surname (filiation + epithet); nobles a per/bet house.",
-    "gendered_endings": { "male": "(consonant) / -mose / -hotep / -a", "female": "-et / -it / -a / -nefru" },
+    "gendered_endings": {
+      "male": "(consonant) / -mose / -hotep / -a",
+      "female": "-et / -it / -a / -nefru"
+    },
     "diminutive_form": "-sheri (little)",
     "compounding_rule": "construct: Per-[god] (house/temple of), Niut-[god] (city of), Debra-[god|feature] (mount of, Ge'ez); quality + feature: Kemu-niut (black-land city)."
   },
   "title_ladder": {
     "government": "feudal (Egyptian backbone; divine-kingship and nomarch bureaucracy, with Ge'ez Ras/Negash titles for the savanna frontier-lords, as narrative flavor)",
     "tiers": {
-      "barony": { "ruler": "Hatia", "domain": "Hatiat" },
-      "march": { "ruler": "Wer-khaset", "domain": "Khaset" },
-      "county": { "ruler": "Sepati", "domain": "Sepat" },
-      "duchy": { "ruler": "Mer-mesha", "domain": "Mesha" },
-      "principality": { "ruler": "Heqa-aa", "domain": "Heqat-aat" },
-      "kingdom": { "ruler": "Nesut", "domain": "Nesutat" },
-      "empire": { "ruler": "Per-aa", "domain": "Per-aat" }
+      "barony": {
+        "ruler": "Hatia",
+        "domain": "Hatiat"
+      },
+      "march": {
+        "ruler": "Wer-khaset",
+        "domain": "Khaset"
+      },
+      "county": {
+        "ruler": "Sepati",
+        "domain": "Sepat"
+      },
+      "duchy": {
+        "ruler": "Mer-mesha",
+        "domain": "Mesha"
+      },
+      "principality": {
+        "ruler": "Heqa-aa",
+        "domain": "Heqat-aat"
+      },
+      "kingdom": {
+        "ruler": "Nesut",
+        "domain": "Nesutat"
+      },
+      "empire": {
+        "ruler": "Per-aa",
+        "domain": "Per-aat"
+      }
     },
     "_tiers_note": "Egyptian backbone, ascending. Hatia (mayor) barony; Wer-khaset (great-one of the frontier-land) march; Sepati/Sepat (nomarch/nome) county; Mer-mesha (army-overseer) duchy; Heqa-aa (great ruler) principality; Nesut (king) kingdom; Per-aa (the Great House) empire. Ge'ez overlay: the southern savanna marches are styled in Ge'ez (a frontier-lord may be hailed Negash or Ras). (Rank titles are the real Egyptian/Ge'ez register, allowed.)",
-    "female_forms": { "Per-aa": "Per-aat (or Nesut-Hemet)", "Nesut": "Nesyt", "Heqa-aa": "Heqat-aat", "Mer-mesha": "Mer-mesha (f)", "Sepati": "Sepatit", "Wer-khaset": "Wert-khaset", "Hatia": "Hatiat" },
+    "female_forms": {
+      "Per-aa": "Per-aat (or Nesut-Hemet)",
+      "Nesut": "Nesyt",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha (f)",
+      "Sepati": "Sepatit",
+      "Wer-khaset": "Wert-khaset",
+      "Hatia": "Hatiat"
+    },
     "heir": "Sa-Nesut (king's son / crown prince); Iry-pat (hereditary heir)",
-    "honorifics": { "lord": "Neb / Geta (Ge'ez)", "lady": "Nebet / Wayzaro (Ge'ez)", "knight": "Aha (warrior)", "your_grace": "Hem-ek (your person)", "your_majesty": "Per-aa ankh-wedja-seneb (life-prosperity-health)" },
-    "vassalage": { "liege": "Neb", "vassal": "Bak (servant)", "fealty": "Ankh (the living-oath)", "tribute": "Inu" }
+    "honorifics": {
+      "lord": "Neb / Geta (Ge'ez)",
+      "lady": "Nebet / Wayzaro (Ge'ez)",
+      "knight": "Aha (warrior)",
+      "your_grace": "Hem-ek (your person)",
+      "your_majesty": "Per-aa ankh-wedja-seneb (life-prosperity-health)"
+    },
+    "vassalage": {
+      "liege": "Neb",
+      "vassal": "Bak (servant)",
+      "fealty": "Ankh (the living-oath)",
+      "tribute": "Inu"
+    }
   },
   "people_name_convention": {
     "order": "given (often theophoric) + filiation (sa-X) and/or earned epithet; the savanna nobility may use the Ge'ez walda-X / a debr-house; no inherited surname.",
-    "surname_source": ["filiation (sa = son-of)", "theophoric given (Tjulraa-hotep = Tjulraa-is-content)", "Ge'ez filiation (walda-X) + house (bet)", "deed/office epithet"],
+    "surname_source": [
+      "filiation (sa = son-of)",
+      "theophoric given (Tjulraa-hotep = Tjulraa-is-content)",
+      "Ge'ez filiation (walda-X) + house (bet)",
+      "deed/office epithet"
+    ],
     "dual_register": "river-valley officials append office-titles; the savanna-frontier nobility use Ge'ez filiation + monastery-house.",
     "theophoric": "given names from the morphed deity-names + an Egyptian element (X-hotep = X-is-content, X-mose = X-is-born, Mery-X = beloved-of-X, Sa-X = son-of-X) or a Ge'ez element (Gabra-X = servant-of-X, overlay). e.g. Tjulraa-hotep, Mery-Argandja, Gabra-Tjulraa.",
     "diminutive": "-sheri"
@@ -58,12 +196,26 @@
   "religion": {
     "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Egyptian phonology (l->r; v->w; -us/-a -> -aa/-et; dj/tj/kh) with a Ge'ez monastic coloring — never real Egyptian, Nubian, or Ethiopian holy names. Lawful/Neutral; a solar divine-kingship cult with a strong funerary and monastery (debr) overlay.",
     "the_one": "Atjaraa (< Punic Atharon < Aeternus; the hidden distant maker)",
-    "sample_deity_renames": { "Tulrius": "Tjulraa (sun and right-order)", "Orlandus": "Warlandja (iron-sworn)", "Argentus": "Argandja (trade and the city)", "Realta": "Riarath (the mother)" },
+    "sample_deity_renames": {
+      "Tulrius": "Tjulraa (sun and right-order)",
+      "Orlandus": "Warlandja (iron-sworn)",
+      "Argentus": "Argandja (trade and the city)",
+      "Realta": "Riarath (the mother)"
+    },
     "demon_epithet_pattern": "each opposing power (the Chaotic 13 for this Lawful-leaning realm) keeps its morphed name + its own portfolio epithet (distinct per power; framed as kin of the great serpent Hefau): Maraxus -> Marakhej the City-Burner; Lusanto -> Lusandja the Coin-Serpent; Vacidus -> Wakedja the Devouring Hefau.",
-    "clergy_ladder": { "1": "Wab (purification-priest/acolyte)", "3": "Hem-netjer (god's-servant/priest)", "5": "Hem-netjer Tepy (high priest)", "7": "Memhir-Debr (monastery-master, Ge'ez overlay)", "9": "Hem-netjer Aa (great prophet)" },
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte)",
+      "3": "Hem-netjer (god's-servant/priest)",
+      "5": "Hem-netjer Tepy (high priest)",
+      "7": "Memhir-Debr (monastery-master, Ge'ez overlay)",
+      "9": "Hem-netjer Aa (great prophet)"
+    },
     "religious_orders_pattern": "the Per-netjer (god's-house/temple) or Debr (monastery, Ge'ez overlay) of [power]: 'the Per-netjer of Tjulraa'.",
     "saints_pattern": "the deified-just dead (akhu) and god-kings, plus Ge'ez-style monastery saints (Qiddus [name]), venerated at tomb-temples and rock-hewn debr.",
-    "holy_symbol_motifs": { "Tjulraa": "sun-disc above the feather of right-order", "Riarath": "a sheltering vulture-mother over the ankh" }
+    "holy_symbol_motifs": {
+      "Tjulraa": "sun-disc above the feather of right-order",
+      "Riarath": "a sheltering vulture-mother over the ankh"
+    }
   },
   "banks_patterns": {
     "ships": "solar-barque and river-trader names: 'Barque of Tjulraa', 'Beloved of the Itru'",
@@ -72,10 +224,73 @@
     "dungeons_ruins": "tomb-pyramids of the god-kings and ruined rock-debr: 'the Tomb of Per-aa [name]', 'the fallen Debr of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Tjulraa-hotep", "Tjulraa-mose", "Warlandja-nakht", "Mery-Tjulraa", "Sa-Riarath", "Argandja-hotep", "Warlandja-mose", "Pa-Tjulraa", "Tjulraa-em-akh", "Sa-Argandja", "Gabra-Tjulraa", "Walda-Riarath", "Tjulraa-ef", "Mery-Argandja", "Sa-Tjulraa", "Argandja-mose"],
-    "personal_f": ["Riarath-nefru", "Mery-Riarath", "Tjulraa-et", "Argandja-et", "Riarath-nefret", "Sat-Tjulraa", "Argandja-nefret", "Tjulraa-nefru", "Riarath-it", "Mery-Tjulraa-f", "Sat-Riarath", "Walatta-Riarath", "Tjulraa-set", "Riarath-em", "Amata-Tjulraa", "Sat-Argandja"],
-    "houses_filiation": ["per-Tjulraa", "per-Argandja", "per-Riarath", "per-Warlandja", "sa-Tjulraa", "sa-Argandja", "mery-Tjulraa", "mery-Riarath", "debra-Tjulraa", "bet-Riarath", "walda-Tjulraa", "sa-Warlandja"],
-    "epithets_cognomina": ["maa-kheru (the justified)", "Strong-of-Arm", "the River-blessed", "Gold-of-Nubia", "the Far-marching", "Sun-faced", "the Enduring", "Debr-warden"],
-    "flagship_settlements": ["Kemetar (the capital)", "Niut-aat (the great city)", "Per-Tjulraa (temple-city of the sun)", "Amba-Resy (the southern fortress)", "Debra-Tjulraa (the sun-monastery)", "Kemu-niut (black-land city)"]
+    "personal_m": [
+      "Tjulraa-hotep",
+      "Tjulraa-mose",
+      "Warlandja-nakht",
+      "Mery-Tjulraa",
+      "Sa-Riarath",
+      "Argandja-hotep",
+      "Warlandja-mose",
+      "Pa-Tjulraa",
+      "Tjulraa-em-akh",
+      "Sa-Argandja",
+      "Gabra-Tjulraa",
+      "Walda-Riarath",
+      "Tjulraa-ef",
+      "Mery-Argandja",
+      "Sa-Tjulraa",
+      "Argandja-mose"
+    ],
+    "personal_f": [
+      "Riarath-nefru",
+      "Mery-Riarath",
+      "Tjulraa-et",
+      "Argandja-et",
+      "Riarath-nefret",
+      "Sat-Tjulraa",
+      "Argandja-nefret",
+      "Tjulraa-nefru",
+      "Riarath-it",
+      "Mery-Tjulraa-f",
+      "Sat-Riarath",
+      "Walatta-Riarath",
+      "Tjulraa-set",
+      "Riarath-em",
+      "Amata-Tjulraa",
+      "Sat-Argandja"
+    ],
+    "houses_filiation": [
+      "per-Tjulraa",
+      "per-Argandja",
+      "per-Riarath",
+      "per-Warlandja",
+      "sa-Tjulraa",
+      "sa-Argandja",
+      "mery-Tjulraa",
+      "mery-Riarath",
+      "debra-Tjulraa",
+      "bet-Riarath",
+      "walda-Tjulraa",
+      "sa-Warlandja"
+    ],
+    "epithets_cognomina": [
+      "maa-kheru (the justified)",
+      "Strong-of-Arm",
+      "the River-blessed",
+      "Gold-of-Nubia",
+      "the Far-marching",
+      "Sun-faced",
+      "the Enduring",
+      "Debr-warden"
+    ],
+    "flagship_settlements": [
+      "Kemetar (the capital)",
+      "Niut-aat (the great city)",
+      "Per-Tjulraa (temple-city of the sun)",
+      "Amba-Resy (the southern fortress)",
+      "Debra-Tjulraa (the sun-monastery)",
+      "Kemu-niut (black-land city)"
+    ]
   }
 }

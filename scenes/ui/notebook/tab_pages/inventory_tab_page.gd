@@ -221,6 +221,16 @@ func _on_active_party_changed(_prev: String, _new: String) -> void:
 	_update_footer()
 
 
+## The notebook reattaches this cached page when its tab is reselected
+## (notebook.gd._swap_page_content). Refreshes that fired while detached skipped
+## the dungeon-adjacency overlay (it needs the live tree), so recompute it on
+## reattach. is_node_ready() skips the first-build enter (before _ready builds
+## the columns); _update_adjacency_view runs then via _build_content.
+func _enter_tree() -> void:
+	if is_node_ready():
+		_update_adjacency_view()
+
+
 # ---------------------------------------------------------------------------
 # Column management
 # ---------------------------------------------------------------------------
@@ -667,8 +677,15 @@ func _ensure_loot_modal() -> void:
 		_update_footer()
 	)
 	# LootDistributionModal already wraps a CanvasLayer at layer 50; parent
-	# to scene root so it does not get torn down with the page.
-	get_tree().root.add_child(_loot_modal)
+	# to scene root so it does not get torn down with the page. combat_ended can
+	# fire while this page is a cached-but-detached notebook tab (get_tree() null),
+	# yet the loot must still appear — reach the tree via the main loop (§26).
+	var main_loop := Engine.get_main_loop()
+	if main_loop == null or not (main_loop is SceneTree):
+		push_error("InventoryTabPage: no SceneTree available to host loot modal")
+		_loot_modal = null
+		return
+	(main_loop as SceneTree).root.add_child(_loot_modal)
 
 
 func _on_combat_ended_loot(_encounter_id: String, outcome: Dictionary) -> void:
@@ -678,6 +695,8 @@ func _on_combat_ended_loot(_encounter_id: String, outcome: Dictionary) -> void:
 	if loot.is_empty():
 		return
 	_ensure_loot_modal()
+	if _loot_modal == null:
+		return
 	_loot_modal.open("Combat Victory", loot)
 
 
@@ -765,6 +784,13 @@ func _resolve_dungeon_controller() -> Node:
 		return _dungeon_controller
 	if GameState.exploration_context != GameState.ExplorationContext.DUNGEON:
 		return null
+	# The notebook caches inactive tab pages and detaches them from the tree
+	# (notebook.gd._swap_page_content), but they stay subscribed to EventBus —
+	# so a refresh can fire while we're out of the tree, where get_tree() is null.
+	# Skip the dungeon-adjacency overlay here; _enter_tree() recomputes it when
+	# the page is reattached.
+	if not is_inside_tree():
+		return null
 	var root := get_tree().get_root()
 	_dungeon_controller = root.find_child("DungeonMapController", true, false)
 	if _dungeon_controller != null:
@@ -833,8 +859,19 @@ func _update_adjacency_view() -> void:
 			col.set_interaction_enabled(true)
 		return
 
+	# Creatures/vehicles share their handler's cell, so they sit at distance 0
+	# from the active character when that character is the handler. Mark them as
+	# co-located-reachable so their columns aren't dimmed (a pack animal you lead
+	# must stay interactive). Characters are never co-located, so this never
+	# un-dims a PC column.
+	var co_located: Array = []
+	for col in _columns:
+		var c_info: Dictionary = col.get_carrier_info()
+		var c_type: String = str(c_info.get("carrier_type", ""))
+		if c_type == "creature" or c_type == "vehicle":
+			co_located.append(str(c_info.get("carrier_id", "")))
 	_adjacent_carrier_ids = ValidatorScript.collect_adjacent_carrier_ids(
-			anchor_id, _carrier_positions)
+			anchor_id, _carrier_positions, co_located)
 
 	for col in _columns:
 		var info: Dictionary = col.get_carrier_info()

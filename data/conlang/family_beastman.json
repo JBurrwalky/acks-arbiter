@@ -24,7 +24,7 @@
   "phonology": {
     "palette": "Kazhur (root, the sorcerers' tongue): harsh Old-Semitic - triliteral consonant roots (D-M blood, Q-T-L kill, B-SH-R flesh); emphatic q/ts and t'; gutturals ' (glottal), kh, gh, h; sibilants sh/s/ts/z/zh; trilled r; three vowels a/i/u (long aa/ii/uu); plurals -im (m) / -uth (f); throaty, ancient, percussive.",
     "phonotactics": "CVC and CVCC around triliteral roots; heavy gutturals and emphatics; initial or root stress.",
-    "transparent_ratio": 0.30,
+    "transparent_ratio": 0.3,
     "regression_note": "Each race REPLACES Kazhur phonemes with bestial sounds (see regression_laws) and keeps only simple concepts; cognates stay faintly recognizable across races but the surface sound is bestial and race-specific."
   },
   "regression_laws": {
@@ -42,8 +42,47 @@
   },
   "lexicon": {
     "_note": "The SIMPLE concept-core of Kazhur (root forms). The made-beasts keep little more than this. Each race regresses these per regression_laws.",
-    "concepts": { "blood": "dam", "flesh_meat": "bashar", "bone": "atsam", "kill": "qatal", "devour": "akhal", "fire": "eshar", "dark": "khashak", "raid_plunder": "shalal", "strong": "gibar", "great": "rab", "small": "qatan", "beast": "behem", "horde_people": "am", "lair_den": "me'ar", "spirit_totem": "ruakh", "fang": "shen", "claw": "tsipar", "horn": "qaran", "hunt": "tsayid", "war": "milkham", "death": "maveth", "night": "laylah", "pain": "ka'ab", "maker_sorcerer": "kashap" },
-    "feature_words": { "mountain": "har", "cave": "me'ar", "pit": "bor", "swamp": "bitsah", "waste": "midbar", "crag": "tsur", "gorge": "gay", "dark_forest": "ya'ar" }
+    "concepts": {
+      "blood": "dam",
+      "flesh_meat": "bashar",
+      "bone": "atsam",
+      "kill": "qatal",
+      "devour": "akhal",
+      "fire": "eshar",
+      "dark": "khashak",
+      "raid_plunder": "shalal",
+      "strong": "gibar",
+      "great": "rab",
+      "small": "qatan",
+      "beast": "behem",
+      "horde_people": "am",
+      "lair_den": "me'ar",
+      "spirit_totem": "ruakh",
+      "fang": "shen",
+      "claw": "tsipar",
+      "horn": "qaran",
+      "hunt": "tsayid",
+      "war": "milkham",
+      "death": "maveth",
+      "night": "laylah",
+      "pain": "ka'ab",
+      "maker_sorcerer": "kashap"
+    },
+    "feature_words": {
+      "mountain": "har",
+      "cave": "me'ar",
+      "pit": "bor",
+      "swamp": "bitsah",
+      "waste": "midbar",
+      "crag": "tsur",
+      "gorge": "gay",
+      "dark_forest": "ya'ar",
+      "neck": "tsawwar",
+      "narrows": "tsarr",
+      "road": "darab",
+      "way": "orakh",
+      "track": "aqab"
+    }
   },
   "morphology": {
     "_note": "Kazhur builds on triliteral roots; the beastmen mostly compound bare roots (blood + fang, great + kill). Plurals -im/-uth in the root tongue; the races often just repeat or grunt the plural.",
@@ -55,13 +94,34 @@
     "_note": "The governing ladder maps to the ACKS 7 tiers the civs use (per Jedidiah: not a perfect fit, but the shared system until revised). Beastmen are clanhold/horde, so the tiers are graded by HOW MANY CLANHOLDS a leader rules: barony = chief of ONE clanhold (the lowest governing leader); empire = the great horde-lord over HUNDREDS of clanholds. Realized in each race's bestial sounds. thrall and warrior are NOT governing roles (see non_governing_ranks).",
     "government": "clanhold / horde (mapped to the civ 7-tier ladder by number of clanholds ruled)",
     "tiers": {
-      "barony": { "ruler": "Rosh", "scope": "chief of a single clanhold (lowest governing leader)" },
-      "march": { "ruler": "Milk-Rosh", "scope": "war-chief of a frontier / raiding clanhold" },
-      "county": { "ruler": "Rab-Rosh", "scope": "great-chief over a few clanholds" },
-      "duchy": { "ruler": "Am-Rosh", "scope": "horde-chief over many clanholds" },
-      "principality": { "ruler": "Malku", "scope": "warlord-king over a great horde" },
-      "kingdom": { "ruler": "Rab-Malku", "scope": "great warlord-king over many hordes" },
-      "empire": { "ruler": "Rab-Am-Malku", "scope": "the great horde-lord over hundreds of clanholds" }
+      "barony": {
+        "ruler": "Rosh",
+        "scope": "chief of a single clanhold (lowest governing leader)"
+      },
+      "march": {
+        "ruler": "Milk-Rosh",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "county": {
+        "ruler": "Rab-Rosh",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Am-Rosh",
+        "scope": "horde-chief over many clanholds"
+      },
+      "principality": {
+        "ruler": "Malku",
+        "scope": "warlord-king over a great horde"
+      },
+      "kingdom": {
+        "ruler": "Rab-Malku",
+        "scope": "great warlord-king over many hordes"
+      },
+      "empire": {
+        "ruler": "Rab-Am-Malku",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      }
     },
     "non_governing_ranks": {
       "thrall_whelp": "shafal (the low; weakling, slave, runt - NOT a governing role)",
@@ -92,14 +152,29 @@
   },
   "totem_system": {
     "_note": "The HEART of beastman faith. Day to day the beastmen serve BEAST-TOTEM-SPIRITS, not the distant Gul-spirits. Each RACE has a great race-totem (its archetypal beast-spirit); each TRIBE/horde also takes a totem. Totem names are DESCRIPTIVE bestial Kazhur (NOT canon-morphs): [great/color/body-part] + [beast]. The kashap communes by blood-offering at the totem-pole, fetish, and skull-heap.",
-    "race_totem_examples": { "orc": "the Iron Tusk / the Red Maw (boar/wolf war-totem)", "goblin": "the Gnawing Dark / the Skulking Rat", "gnoll": "the Laughing Pack / the Carrion-Hyena", "kobold": "the Little Gnasher / the Trap-Lizard", "troll": "the Stone-Belly / the Ever-Mending", "lizardman": "the Old Serpent / the Cold Coil", "troglodyte": "the Reek / the Blind Crawler", "bugbear": "the Hush / the Night-Hand", "hobgoblin": "the Iron Order / the War-Banner Beast", "ogre": "the Great Gut / the Boulder-Fist" },
+    "race_totem_examples": {
+      "orc": "the Iron Tusk / the Red Maw (boar/wolf war-totem)",
+      "goblin": "the Gnawing Dark / the Skulking Rat",
+      "gnoll": "the Laughing Pack / the Carrion-Hyena",
+      "kobold": "the Little Gnasher / the Trap-Lizard",
+      "troll": "the Stone-Belly / the Ever-Mending",
+      "lizardman": "the Old Serpent / the Cold Coil",
+      "troglodyte": "the Reek / the Blind Crawler",
+      "bugbear": "the Hush / the Night-Hand",
+      "hobgoblin": "the Iron Order / the War-Banner Beast",
+      "ogre": "the Great Gut / the Boulder-Fist"
+    },
     "totem_name_pattern": "[Rab-/Dam-/Khashak-/color] + [beast or body-part]: Rab-Shen (the Great Fang), Dam-Tsipar (the Blood-Claw), Khashak-Anaph (the Carrion-Wing).",
     "shaman_rites": "blood-offering, totem-poles and skull-heaps, beast-fetishes, the donning of the totem's hide/skull; the rab-kashap keeps the horde's great-totem.",
     "worship_summary": "CHAOTIC only: the race-totem and tribal totems foremost (daily), the Gul-spirits served dimly through them (Gul-Maraqus the war-spirit above all), the One (Aternu the Sky-Tyrant) and the Lawful (Tarul the Burning-Eye, Orlanu the Chainer) demonized and feared."
   },
   "conventions": {
     "people_name_default": "a beastman is named by the kashap at a blooding: a deed, a trait, or a totem-element in the race's bestial sounds (Orc Khatakh-gur 'kill-growl'; Goblin Snik 'the sneak'). No clan-houses; a beastman belongs to a TRIBE/horde named for its totem ([Totem]-am).",
-    "settlement_named_after": ["the lair-feature (har/me'ar/bor/bitsah) + a totem or a warlord", "the horde's totem", "a battle or a slaughter"],
+    "settlement_named_after": [
+      "the lair-feature (har/me'ar/bor/bitsah) + a totem or a warlord",
+      "the horde's totem",
+      "a battle or a slaughter"
+    ],
     "transparent_vs_opaque": "low surface (bestial sounds) over a faint shared Kazhur skeleton; concepts few and brutal.",
     "no_exonyms": true
   }

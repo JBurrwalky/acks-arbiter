@@ -51,7 +51,9 @@ func _toggle_pause() -> void:
 	]:
 		# Capture the running clock state, then pause the scheduler along
 		# with the game state. The capture feeds the close-time restore.
-		var loop := _scheduler_loop()
+		# (Untyped: _scheduler_loop() returns the loop or null — `:=` cannot
+		# infer a type from an untyped helper and is a parse error.)
+		var loop = _scheduler_loop()
 		_was_running_before_menu = loop != null and not loop.is_paused()
 		_speed_before_menu = loop.get_speed() if _was_running_before_menu \
 			else SchedulerLoop.SPEED_NORMAL

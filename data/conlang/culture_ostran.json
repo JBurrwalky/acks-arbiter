@@ -5,11 +5,20 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 37,
   "sub_palette": "frankish+anglo_saxon (intra-family blend)",
-  "synthesis_sources": [18, 19],
+  "synthesis_sources": [
+    18,
+    19
+  ],
   "homeland": "Ostraclia",
-  "blend": { "backbone": "frankish", "overlay": "anglo_saxon" },
+  "blend": {
+    "backbone": "frankish",
+    "overlay": "anglo_saxon"
+  },
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Intra-Germanic blend (Anglo-Saxon + Frankish): an eastern-Frankish / Austrasian-flavored realm (homeland Ostraclia, 'the east-land') ruling older Anglo-Saxon shires. Backbone = Frankish/OHG (phonology, comites/duces feudal ladder); overlay = Anglo-Saxon (the Aetheling, ealdor-thegn forms and OE place-words in the eastern shires). civ = feudal. Even split Lawful/Neutral. Common-word lexicon and rank titles use the real Frankish/OE register (allowed, catalog 5.3); DEITY names are the Frankish-branch reflexes (with Anglo-Saxon-overlay variants) of the common-Germanic theonym ancestors (family_germanic.json), phoneme-morphs of the Agrippan canon, never real Germanic gods.",
   "phonology": {
     "palette": "Frankish/OHG backbone (High German shift th>d, d>t, k>ch/hh; w>w/wu; -o/-i) with Anglo-Saxon overlay touches (w-, th retained, weak -a; OE place-words); theophoric stems are the Frankish reflexes (Dulro-, Erlant-, Giando-) with AS variants (Thulor-, Eorland-).",
@@ -17,40 +26,171 @@
     "transparent_ratio": 0.45
   },
   "lexicon": {
-    "feature_words": { "river": "aha", "stream": "broc", "lake": "se", "sea": "sae", "bay": "wik", "cape": "naess", "isle": "ouwa", "mountain": "berg", "hill": "dun", "ridge": "rukki", "forest": "wald", "wood": "holt", "plain": "feld", "marsh": "fenn", "ford": "ford", "pass": "klusa", "vale": "tal", "coast": "stade", "heath": "heida" },
-    "settlement_words": { "hamlet": "hofstat", "village": "dorf", "town": "burh", "city": "burgstat", "fort": "burg", "port": "hafa", "market": "ceap", "palace": "phalanza", "temple_town": "munstar", "citadel": "hohburg" },
-    "kinship": { "son": "sunu", "daughter": "tohter", "house": "hus", "kin": "kunni / cynn", "ancestor": "altforderon" },
-    "adjectives": { "great": "mihhil", "little": "luzzil", "old": "alt", "new": "niuwi", "black": "swarz", "white": "wiz", "red": "rot", "golden": "guldin", "iron": "isarn", "high": "hoh", "far": "ferro", "sacred": "heilag", "fair": "skoni" },
-    "resources": { "salt": "salz", "iron": "isarn", "silver": "silabar", "gold": "gold", "grain": "korn", "wine": "win", "wool": "wolla", "horse": "ros", "honey": "honag", "timber": "zimbar" },
-    "directional": { "upper": "obar", "lower": "nidar", "north": "nord", "south": "sund", "inner": "innan", "outer": "uzan", "east": "ost", "west": "west" }
+    "feature_words": {
+      "river": "aha",
+      "stream": "broc",
+      "lake": "se",
+      "sea": "sae",
+      "bay": "wik",
+      "cape": "naess",
+      "isle": "ouwa",
+      "mountain": "berg",
+      "hill": "dun",
+      "ridge": "rukki",
+      "forest": "wald",
+      "wood": "holt",
+      "plain": "feld",
+      "marsh": "fenn",
+      "ford": "ford",
+      "pass": "klusa",
+      "vale": "tal",
+      "coast": "stade",
+      "heath": "heida",
+      "neck": "hals",
+      "narrows": "enge",
+      "waste": "westen",
+      "road": "straza",
+      "way": "weg",
+      "track": "paeth"
+    },
+    "settlement_words": {
+      "hamlet": "hofstat",
+      "village": "dorf",
+      "town": "burh",
+      "city": "burgstat",
+      "fort": "burg",
+      "port": "hafa",
+      "market": "ceap",
+      "palace": "phalanza",
+      "temple_town": "munstar",
+      "citadel": "hohburg"
+    },
+    "kinship": {
+      "son": "sunu",
+      "daughter": "tohter",
+      "house": "hus",
+      "kin": "kunni / cynn",
+      "ancestor": "altforderon"
+    },
+    "adjectives": {
+      "great": "mihhil",
+      "little": "luzzil",
+      "old": "alt",
+      "new": "niuwi",
+      "black": "swarz",
+      "white": "wiz",
+      "red": "rot",
+      "golden": "guldin",
+      "iron": "isarn",
+      "high": "hoh",
+      "far": "ferro",
+      "sacred": "heilag",
+      "fair": "skoni"
+    },
+    "resources": {
+      "salt": "salz",
+      "iron": "isarn",
+      "silver": "silabar",
+      "gold": "gold",
+      "grain": "korn",
+      "wine": "win",
+      "wool": "wolla",
+      "horse": "ros",
+      "honey": "honag",
+      "timber": "zimbar"
+    },
+    "directional": {
+      "upper": "obar",
+      "lower": "nidar",
+      "north": "nord",
+      "south": "sund",
+      "inner": "innan",
+      "outer": "uzan",
+      "east": "ost",
+      "west": "west"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-dorf (village)", "-burg (fort)", "-heim (home)", "-tun (-ton, AS overlay)", "-ingen (people of)", "-munstar (minster)"],
+    "toponymic_suffixes": [
+      "-dorf (village)",
+      "-burg (fort)",
+      "-heim (home)",
+      "-tun (-ton, AS overlay)",
+      "-ingen (people of)",
+      "-munstar (minster)"
+    ],
     "patronymic_form": "patronymic -ing (descendant of); inherited lineage (kunni) for nobility; AS-overlay -ing/-sunu in the eastern shires; clergy a Latinate -us form.",
-    "gendered_endings": { "male": "-o / -i", "female": "-a / -lind" },
+    "gendered_endings": {
+      "male": "-o / -i",
+      "female": "-a / -lind"
+    },
     "diminutive_form": "-ilo / -el",
     "compounding_rule": "[adjective|resource](stem) + feature: Ostwald (east-forest), Isarnburg (iron-fort); lineage + -ingen; AS-overlay -tun/-ham for steads."
   },
   "title_ladder": {
     "government": "feudal (an eastern-Frankish/Austrasian realm; comites and duces under the crown, with Anglo-Saxon ealdor-thegn forms in the older shires)",
     "tiers": {
-      "barony": { "ruler": "Thegn", "domain": "Thegania" },
-      "march": { "ruler": "Markigravo", "domain": "Marka" },
-      "county": { "ruler": "Gravo", "domain": "Gravascaf" },
-      "duchy": { "ruler": "Herizogo", "domain": "Herizoglih" },
-      "principality": { "ruler": "Aetheling", "domain": "Aetheldom" },
-      "kingdom": { "ruler": "Kuning", "domain": "Kuningrihhi" },
-      "empire": { "ruler": "Keisar", "domain": "Keisarrihhi" }
+      "barony": {
+        "ruler": "Thegn",
+        "domain": "Thegania"
+      },
+      "march": {
+        "ruler": "Markigravo",
+        "domain": "Marka"
+      },
+      "county": {
+        "ruler": "Gravo",
+        "domain": "Gravascaf"
+      },
+      "duchy": {
+        "ruler": "Herizogo",
+        "domain": "Herizoglih"
+      },
+      "principality": {
+        "ruler": "Aetheling",
+        "domain": "Aetheldom"
+      },
+      "kingdom": {
+        "ruler": "Kuning",
+        "domain": "Kuningrihhi"
+      },
+      "empire": {
+        "ruler": "Keisar",
+        "domain": "Keisarrihhi"
+      }
     },
     "_tiers_note": "Frankish feudal backbone, ascending, with Anglo-Saxon overlay at the noble tiers. Thegn (retainer-lord, AS) barony; Markigravo (margrave) march; Gravo (count) county; Herizogo (duke) duchy; Aetheling (throne-worthy prince, AS) principality; Kuning (king) kingdom; Keisar (emperor < Caesar) empire. (Rank titles are the real Frankish/OE register, allowed.)",
-    "female_forms": { "Kuning": "Kuningin", "Keisar": "Keisarin", "Aetheling": "Aethelu", "Herizogo": "Herizogin", "Gravo": "Gravin", "Markigravo": "Markigravin", "Thegn": "Thegne" },
+    "female_forms": {
+      "Kuning": "Kuningin",
+      "Keisar": "Keisarin",
+      "Aetheling": "Aethelu",
+      "Herizogo": "Herizogin",
+      "Gravo": "Gravin",
+      "Markigravo": "Markigravin",
+      "Thegn": "Thegne"
+    },
     "heir": "Aetheling (throne-worthy prince)",
-    "honorifics": { "lord": "Herro / Hlaford", "lady": "Frouwa / Hlaefdige", "knight": "Riddari (rider)", "your_grace": "Hohgeboran", "your_majesty": "Kuning" },
-    "vassalage": { "liege": "Herro", "vassal": "Leudo (sworn-man) / Geneat (AS)", "fealty": "Treuwa / Ath (oath)", "tribute": "Zins / Gafol" }
+    "honorifics": {
+      "lord": "Herro / Hlaford",
+      "lady": "Frouwa / Hlaefdige",
+      "knight": "Riddari (rider)",
+      "your_grace": "Hohgeboran",
+      "your_majesty": "Kuning"
+    },
+    "vassalage": {
+      "liege": "Herro",
+      "vassal": "Leudo (sworn-man) / Geneat (AS)",
+      "fealty": "Treuwa / Ath (oath)",
+      "tribute": "Zins / Gafol"
+    }
   },
   "people_name_convention": {
     "order": "personal + lineage (-ing / kunni); nobility use the dynastic -ing name; the eastern shire-folk keep Anglo-Saxon names; clergy a Latinate -us form.",
-    "surname_source": ["lineage (-ing / kunni)", "office/locational (de [place])", "AS patronymic (-ing)"],
+    "surname_source": [
+      "lineage (-ing / kunni)",
+      "office/locational (de [place])",
+      "AS patronymic (-ing)"
+    ],
     "dual_register": "Frankish nobility use dithematic dynastic names; the eastern shires keep Anglo-Saxon names; clergy Latinate.",
     "theophoric": "names from the Frankish deity-reflexes (with AS-overlay variants) + an element: -berht (bright), -ward (guard), -frid (peace): e.g. Dulro-berht, Eorland-ward (AS overlay).",
     "diminutive": "-ilo"
@@ -58,12 +198,26 @@
   "religion": {
     "_note": "Deity-names are the Frankish-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json), with Anglo-Saxon-overlay variants in the eastern shires - phoneme-morphs of the Agrippan canon, never real Germanic gods. Lawful/Neutral henotheist: the One above His ministers; Neutral folk keep the saints and the hallowed dead at the minster.",
     "the_one": "Aiterno (< *Aiternaz < Aeternus; God on high; the AS shires say Aetern)",
-    "sample_deity_renames": { "Tulrius": "Dulro (sun and right-judgment; AS Thulor)", "Orlandus": "Erlant (the iron-oath, war; AS Eorland)", "Gaiandus": "Giando (the enduring earth)", "Realta": "Rialda (the mother, mercy; AS Realda)" },
+    "sample_deity_renames": {
+      "Tulrius": "Dulro (sun and right-judgment; AS Thulor)",
+      "Orlandus": "Erlant (the iron-oath, war; AS Eorland)",
+      "Gaiandus": "Giando (the enduring earth)",
+      "Realta": "Rialda (the mother, mercy; AS Realda)"
+    },
     "demon_epithet_pattern": "the opposing powers keep their reflexes + a portfolio epithet (distinct per power; framed as the hell-host): Maraxus -> Marach the War-Fire (AS Mearox); Vacidus -> Wachid the Unmaker; Lusanto -> Lusando the Hoard-Worm.",
-    "clergy_ladder": { "1": "Klericho (cleric-novice)", "3": "Phaffo (priest)", "5": "Probist (provost)", "7": "Biscof (bishop)", "9": "Erzibiscof (archbishop)" },
+    "clergy_ladder": {
+      "1": "Klericho (cleric-novice)",
+      "3": "Phaffo (priest)",
+      "5": "Probist (provost)",
+      "7": "Biscof (bishop)",
+      "9": "Erzibiscof (archbishop)"
+    },
     "religious_orders_pattern": "the Munstar (minster) of [power]: 'the Munstar of Dulro' (the AS shires keep an older Hearg-turned-minster).",
     "saints_pattern": "Wih/Halig [name] (the holy [name]); the hallowed dead and royal saints venerated at the minster.",
-    "holy_symbol_motifs": { "Dulro": "a sun-cross above the scales of judgment", "Erlant": "an iron spear crossed with an oath-ring" }
+    "holy_symbol_motifs": {
+      "Dulro": "a sun-cross above the scales of judgment",
+      "Erlant": "an iron spear crossed with an oath-ring"
+    }
   },
   "banks_patterns": {
     "ships": "river-trader and saint names: 'the Saint Dulro', 'Swan of the Ost-Aha'",
@@ -72,10 +226,81 @@
     "dungeons_ruins": "ruined phalanza-palaces and old heargs gone to ruin: 'the broken Burg of [name]', 'the Sunken Munstar'"
   },
   "seed_names": {
-    "personal_m": ["Sigiward", "Adalward", "Bernfrid", "Reginhard", "Gerward", "Folkmar", "Meginward", "Hartwin", "Aethelward", "Eadwine", "Beornward", "Osward", "Wulfward", "Aelfward", "Cynewald", "Leofward", "Hrothward", "Gundwin", "Ecgward", "Frithuward"],
-    "personal_f": ["Hildegard", "Bertlind", "Adallinda", "Reginlind", "Gerlind", "Meginburg", "Aethelgifu", "Leofgifu", "Cyneburg", "Aelflind", "Wulfgifu", "Osgifu", "Beornlind", "Hrothlind", "Frithuburg", "Sigilind", "Ecggifu", "Gundlind", "Cynethryth", "Aethellind"],
-    "clan_lineage": ["Ostlingen", "Sigilingen", "Adallingen", "Reginlingen", "Aethelingas", "Cyningas", "Wulfingas", "Bernlingen", "Folkingen", "Hrothingen", "Osingas", "Gerlingen"],
-    "epithets_cognomina": ["der Grosse (the Great)", "the Just", "the Pious", "Iron-arm", "the East-warden", "Golden-helm", "the Lawgiver", "Oath-keeper"],
-    "flagship_settlements": ["Ostraclia (the eastern royal seat)", "Ostwald-Munstar (the east-forest minster)", "Isarnburh (iron-fort)", "Aethelingaham (the princes' home)", "Kuningesdorf (king's-village)", "Markigravenburg (the margrave's fort)"]
+    "personal_m": [
+      "Sigiward",
+      "Adalward",
+      "Bernfrid",
+      "Reginhard",
+      "Gerward",
+      "Folkmar",
+      "Meginward",
+      "Hartwin",
+      "Aethelward",
+      "Eadwine",
+      "Beornward",
+      "Osward",
+      "Wulfward",
+      "Aelfward",
+      "Cynewald",
+      "Leofward",
+      "Hrothward",
+      "Gundwin",
+      "Ecgward",
+      "Frithuward"
+    ],
+    "personal_f": [
+      "Hildegard",
+      "Bertlind",
+      "Adallinda",
+      "Reginlind",
+      "Gerlind",
+      "Meginburg",
+      "Aethelgifu",
+      "Leofgifu",
+      "Cyneburg",
+      "Aelflind",
+      "Wulfgifu",
+      "Osgifu",
+      "Beornlind",
+      "Hrothlind",
+      "Frithuburg",
+      "Sigilind",
+      "Ecggifu",
+      "Gundlind",
+      "Cynethryth",
+      "Aethellind"
+    ],
+    "clan_lineage": [
+      "Ostlingen",
+      "Sigilingen",
+      "Adallingen",
+      "Reginlingen",
+      "Aethelingas",
+      "Cyningas",
+      "Wulfingas",
+      "Bernlingen",
+      "Folkingen",
+      "Hrothingen",
+      "Osingas",
+      "Gerlingen"
+    ],
+    "epithets_cognomina": [
+      "der Grosse (the Great)",
+      "the Just",
+      "the Pious",
+      "Iron-arm",
+      "the East-warden",
+      "Golden-helm",
+      "the Lawgiver",
+      "Oath-keeper"
+    ],
+    "flagship_settlements": [
+      "Ostraclia (the eastern royal seat)",
+      "Ostwald-Munstar (the east-forest minster)",
+      "Isarnburh (iron-fort)",
+      "Aethelingaham (the princes' home)",
+      "Kuningesdorf (king's-village)",
+      "Markigravenburg (the margrave's fort)"
+    ]
   }
 }

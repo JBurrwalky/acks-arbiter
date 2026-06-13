@@ -5,53 +5,194 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 55,
   "sub_palette": "nguni_bantu (Zulu; a distinct register whose DEITY morphs are seeded from the Ge'ez/Axumite set per Jedidiah, then shifted into Nguni phonology)",
-  "synthesis_sources": [22],
+  "synthesis_sources": [
+    22
+  ],
   "homeland": "Shakara",
   "government": "clan_confederation",
-  "alignment_allowed": ["Chaotic"],
-  "alignment_weights": { "Chaotic": 1.0 },
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "alignment_weights": {
+    "Chaotic": 1.0
+  },
   "_note": "Single-source (Southern African Nguni/Bantu, Shakan era; §5.1 #22). Honor-bound CHAOTIC raiders of the savanna and jungle: the amabutho (age-regiment) host under the iNgonyama, disciplined yet Chaotic. Nguni/Zulu phonology (clicks, prenasalized stops, the hl/dl laterals, CV syllables, noun-class prefixes um-/aba-/isi-/ama-/i-) and the real Zulu rulership/kin register (inkosi, induna, iNgonyama, isizwe, umbuso, amabutho - allowed, catalog 5.3). DEITY names are SEEDED from the Ge'ez/Axumite set (the canon morphs of the Agrippan pantheon - Marakos, Warlandos, Wak'idos, Matansa, Numanos, Talros, Riyalta, Atyarna) and SHIFTED into Nguni phonology (per Jedidiah): Marakos -> uMarakela, Warlandos -> uWalandela, Wak'idos -> uVakida, Matansa -> uMatansa. Never real Zulu/African holy names. Faith is ANCESTOR-FIRST and totemic: the amadlozi (ancestral shades) venerated daily through the isangoma; the Chaotic war/death/storm powers prominent; the One (uThangela) remote and unpetitioned; clan/regiment totems (Lion, Buffalo).",
   "phonology": {
     "palette": "Nguni/Zulu (Bantu): click consonants c(dental)/q(palatal)/x(lateral) and their nasal/voiced variants; prenasalized stops mb/nd/ng/nj; lateral fricatives hl/dl; aspirated ph/th/kh; voiced bh/dh; CV(N) syllables, no consonant clusters but the nasal+stop onsets; penultimate vowel-lengthening stress; noun-class prefixes um-/aba- (people), isi-/izi- (manner/thing), ama- (collective), i(li)-/ama- ; theophoric stems are the Nguni-shifted Ge'ez canon morphs (uMarakela-, uWalandela-, uVakida-).",
     "phonotactics": "CV and NCV (prenasalized); clicks as full consonants; no codas except nasals; all words vowel-final; reduplication for intensives.",
-    "transparent_ratio": 0.30
+    "transparent_ratio": 0.3
   },
   "lexicon": {
-    "feature_words": { "river": "umfula", "stream": "umfudlana", "lake": "ichibi", "sea": "ulwandle", "bay": "itheku", "cape": "inhloko-yolwandle", "isle": "isiqhingi", "mountain": "intaba", "hill": "iqele", "ridge": "umhlwenga", "forest": "ihlathi", "jungle": "ihlathi-elimnyama", "savanna": "idlelo", "plain": "ithafa", "marsh": "ixhaphozi", "ford": "izibuko", "pass": "intuba", "veld": "iganga", "coast": "ugu" },
-    "settlement_words": { "homestead": "umuzi (the kraal)", "village": "isigodi", "town": "idolobha", "great_place": "isigodlo (the royal enclosure)", "fort": "isivikelo", "war_kraal": "ikhanda (the military kraal)", "market": "imakethe", "cattle_fold": "isibaya", "capital": "ikhanda-elikhulu" },
-    "kinship": { "son": "indodana", "daughter": "indodakazi", "house": "indlu / umuzi", "father": "ubaba", "ancestor": "idlozi (pl. amadlozi, the ancestral shades) / inyanya (the great forebear)" },
-    "adjectives": { "great": "omkhulu", "little": "omncane", "old": "omdala", "new": "omusha", "black": "omnyama", "white": "omhlophe", "red": "obomvu", "golden": "wegolide", "iron": "lensimbi", "high": "phezulu", "far": "kude", "sacred": "ongcwele", "fair": "omuhle", "brave": "oqhawe (the hero)" },
-    "resources": { "salt": "usawoti", "iron": "insimbi", "copper": "ithusi", "cattle": "izinkomo (the wealth)", "gold": "igolide", "grain": "amabele", "hide": "isikhumba", "spear": "umkhonto / iklwa (the stabbing-spear)", "shield": "isihlangu", "ivory": "uphondo-lwendlovu" },
-    "directional": { "upper": "phezulu", "lower": "phansi", "north": "inyakatho", "south": "iningizimu", "east": "impumalanga", "west": "intshonalanga", "inner": "ngaphakathi", "outer": "ngaphandle", "near": "eduze", "far": "kude" }
+    "feature_words": {
+      "river": "umfula",
+      "stream": "umfudlana",
+      "lake": "ichibi",
+      "sea": "ulwandle",
+      "bay": "itheku",
+      "cape": "inhloko-yolwandle",
+      "isle": "isiqhingi",
+      "mountain": "intaba",
+      "hill": "iqele",
+      "ridge": "umhlwenga",
+      "forest": "ihlathi",
+      "jungle": "ihlathi-elimnyama",
+      "savanna": "idlelo",
+      "plain": "ithafa",
+      "marsh": "ixhaphozi",
+      "ford": "izibuko",
+      "pass": "intuba",
+      "veld": "iganga",
+      "coast": "ugu",
+      "neck": "intamo",
+      "narrows": "umsele",
+      "waste": "ugwadule",
+      "road": "umgwaqo",
+      "way": "indlela",
+      "track": "umkhondo"
+    },
+    "settlement_words": {
+      "homestead": "umuzi (the kraal)",
+      "village": "isigodi",
+      "town": "idolobha",
+      "great_place": "isigodlo (the royal enclosure)",
+      "fort": "isivikelo",
+      "war_kraal": "ikhanda (the military kraal)",
+      "market": "imakethe",
+      "cattle_fold": "isibaya",
+      "capital": "ikhanda-elikhulu"
+    },
+    "kinship": {
+      "son": "indodana",
+      "daughter": "indodakazi",
+      "house": "indlu / umuzi",
+      "father": "ubaba",
+      "ancestor": "idlozi (pl. amadlozi, the ancestral shades) / inyanya (the great forebear)"
+    },
+    "adjectives": {
+      "great": "omkhulu",
+      "little": "omncane",
+      "old": "omdala",
+      "new": "omusha",
+      "black": "omnyama",
+      "white": "omhlophe",
+      "red": "obomvu",
+      "golden": "wegolide",
+      "iron": "lensimbi",
+      "high": "phezulu",
+      "far": "kude",
+      "sacred": "ongcwele",
+      "fair": "omuhle",
+      "brave": "oqhawe (the hero)"
+    },
+    "resources": {
+      "salt": "usawoti",
+      "iron": "insimbi",
+      "copper": "ithusi",
+      "cattle": "izinkomo (the wealth)",
+      "gold": "igolide",
+      "grain": "amabele",
+      "hide": "isikhumba",
+      "spear": "umkhonto / iklwa (the stabbing-spear)",
+      "shield": "isihlangu",
+      "ivory": "uphondo-lwendlovu"
+    },
+    "directional": {
+      "upper": "phezulu",
+      "lower": "phansi",
+      "north": "inyakatho",
+      "south": "iningizimu",
+      "east": "impumalanga",
+      "west": "intshonalanga",
+      "inner": "ngaphakathi",
+      "outer": "ngaphandle",
+      "near": "eduze",
+      "far": "kude"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["kwa- (place of / at the home of)", "e-...-ini (locative)", "isiGodi sa- (ward of)", "kwaNtu- (people of)", "-ndlovu (of the elephant)"],
+    "toponymic_suffixes": [
+      "kwa- (place of / at the home of)",
+      "e-...-ini (locative)",
+      "isiGodi sa- (ward of)",
+      "kwaNtu- (people of)",
+      "-ndlovu (of the elephant)"
+    ],
     "patronymic_form": "filiation 'ka-X' (child of X): Dingane kaSenzangakhona; praise-names (izibongo) earned in war stack onto the given name; the clan name (isibongo) marks lineage; no foreign-style surname.",
-    "gendered_endings": { "male": "given name + ka-(father); warrior praise-names", "female": "often u-/no- prefixed; -kazi (the female/great suffix: indlovukazi = she-elephant, queen-mother)" },
+    "gendered_endings": {
+      "male": "given name + ka-(father); warrior praise-names",
+      "female": "often u-/no- prefixed; -kazi (the female/great suffix: indlovukazi = she-elephant, queen-mother)"
+    },
     "diminutive_form": "-ana (umfana = little-man/boy)",
     "compounding_rule": "verb/quality + class-prefix: Bhekizizwe (watch-the-nations), Nandi (the sweet-one); place via kwa-[name] (at the home of) and e-[feature]-ini (locative); the -kazi augment for the great/female."
   },
   "title_ladder": {
     "government": "clan_confederation - the amabutho host: the iNgonyama (the Lion-king) over the iziNduna and the regiments (amabutho), binding many isizwe (clan-nations) by conquest and the cattle-bond; the isangoma (diviners) counsel but do not rule.",
     "tiers": {
-      "barony": { "ruler": "iNduna", "domain": "Umuzi (the ward-kraal)" },
-      "march": { "ruler": "iNduna yeMpi", "domain": "iKhanda (the war-kraal)" },
-      "county": { "ruler": "iNkosana", "domain": "isiFunda" },
-      "duchy": { "ruler": "iNkosi", "domain": "isiZwe (the clan-nation)" },
-      "principality": { "ruler": "iLembe", "domain": "uMbuso" },
-      "kingdom": { "ruler": "iNgonyama", "domain": "uMbuso omkhulu" },
-      "empire": { "ruler": "iNdlovu (enkulu)", "domain": "Izizwe (the nations)" }
+      "barony": {
+        "ruler": "iNduna",
+        "domain": "Umuzi (the ward-kraal)"
+      },
+      "march": {
+        "ruler": "iNduna yeMpi",
+        "domain": "iKhanda (the war-kraal)"
+      },
+      "county": {
+        "ruler": "iNkosana",
+        "domain": "isiFunda"
+      },
+      "duchy": {
+        "ruler": "iNkosi",
+        "domain": "isiZwe (the clan-nation)"
+      },
+      "principality": {
+        "ruler": "iLembe",
+        "domain": "uMbuso"
+      },
+      "kingdom": {
+        "ruler": "iNgonyama",
+        "domain": "uMbuso omkhulu"
+      },
+      "empire": {
+        "ruler": "iNdlovu (enkulu)",
+        "domain": "Izizwe (the nations)"
+      }
     },
     "_tiers_note": "Nguni/Zulu, ascending. iNduna (headman) barony, over one umuzi-ward; iNduna yeMpi (war-induna) march, holding an iKhanda war-kraal; iNkosana (sub-chief) county; iNkosi (chief of a clan-nation) duchy, over an isiZwe; iLembe (the great blade - the conquering warlord) principality; iNgonyama (the Lion - the king) kingdom; iNdlovu (the Great Elephant) empire, the horde-king over many nations (Izizwe). thrall and common warrior are not governing ranks (see non_governing). (Rank titles are the real Zulu register, allowed.)",
-    "non_governing_ranks": { "warrior": "iButho / iQhawe (regiment-warrior / hero)", "commoner_levy": "umfokazana (the lowborn)", "captive_thrall": "isigqila" },
-    "female_forms": { "iNgonyama": "iNdlovukazi (the she-elephant, the queen-mother/regent)", "iNkosi": "iNkosikazi", "iLembe": "iLembekazi", "iNkosana": "iNkosazana (princess)", "iNduna": "iNdunakazi" },
+    "non_governing_ranks": {
+      "warrior": "iButho / iQhawe (regiment-warrior / hero)",
+      "commoner_levy": "umfokazana (the lowborn)",
+      "captive_thrall": "isigqila"
+    },
+    "female_forms": {
+      "iNgonyama": "iNdlovukazi (the she-elephant, the queen-mother/regent)",
+      "iNkosi": "iNkosikazi",
+      "iLembe": "iLembekazi",
+      "iNkosana": "iNkosazana (princess)",
+      "iNduna": "iNdunakazi"
+    },
     "heir": "iNkosana (the chosen son / heir of the great house)",
-    "honorifics": { "lord": "iNkosi", "lady": "iNkosikazi / iNdlovukazi", "warrior": "iQhawe (hero)", "your_grace": "Nkosi", "your_majesty": "Bayede! (the royal salute, to the iNgonyama alone)" },
-    "vassalage": { "liege": "iNkosi", "vassal": "isiKhonzi (one who pays homage)", "fealty": "ukuKhonza (to submit and serve)", "tribute": "imiThelo / izinkomo (the cattle-tribute)" }
+    "honorifics": {
+      "lord": "iNkosi",
+      "lady": "iNkosikazi / iNdlovukazi",
+      "warrior": "iQhawe (hero)",
+      "your_grace": "Nkosi",
+      "your_majesty": "Bayede! (the royal salute, to the iNgonyama alone)"
+    },
+    "vassalage": {
+      "liege": "iNkosi",
+      "vassal": "isiKhonzi (one who pays homage)",
+      "fealty": "ukuKhonza (to submit and serve)",
+      "tribute": "imiThelo / izinkomo (the cattle-tribute)"
+    }
   },
   "people_name_convention": {
     "order": "given name (a meaningful Nguni phrase, or theophoric on a power) + filiation ka-X (child of X) + clan name (isibongo); the renowned accrue praise-names (izibongo) chanted by the imbongi.",
-    "surname_source": ["clan name / isibongo (lineage)", "filiation (ka-X = child of X)", "praise-name earned in war (izibongo)", "theophoric (uMarakela-element for war-born)"],
+    "surname_source": [
+      "clan name / isibongo (lineage)",
+      "filiation (ka-X = child of X)",
+      "praise-name earned in war (izibongo)",
+      "theophoric (uMarakela-element for war-born)"
+    ],
     "dual_register": "the royal house and iziNduna carry a clan name + war praise-names; commoners use given + ka-father.",
     "theophoric": "war-born and diviner-born names invoke a power or the ancestors: Marakela- (war-born, of the Slaughter-power), Dlozi- / -odlozi (of the ancestors), Nomana- (storm-born). e.g. Marakelendlovu, Sodlozi, Nomanakhulu.",
     "diminutive": "-ana (little)"
@@ -59,12 +200,30 @@
   "religion": {
     "_note": "ANCESTOR-FIRST and totemic, CHAOTIC. Daily faith is the amadlozi (the ancestral shades), reached through the isangoma (diviner) and inyanga (herbalist-shaman) by sacrifice of cattle in the isibaya. Above the ancestors stand the Chaotic powers - foremost the war and death powers - whose names are the Ge'ez/Axumite canon morphs SHIFTED into Nguni: never real Zulu/African gods. The One (uThangela < Atyarna) is the remote First-Out who made the world and withdrew; the Chaotic do not petition Him. Clans and regiments bear beast-totems (the Lion iNgonyama, the Buffalo iNyathi). The warrior swears by the spear (uWalandela) and the ancestors; to break a war-oath is the deepest shame.",
     "the_one": "uThangela (< Atyarna / Axumite; the remote Sky-Father, the First-Out who withdrew; unpetitioned)",
-    "sample_deity_renames": { "Maraxus": "uMarakela (the Slaughter-Bringer, war-fire; foremost of the raiders)", "Orlandus": "uWalandela (the Iron-Spear, the oath of the regiment; Warlandos-shifted)", "Vacidus": "uVakida (the Devouring Dark, death and the grave; Wak'idos-shifted)", "Metensia": "uMatansa (the Wasting - drought and disease, appeased not loved)", "Numeno": "uNomana (the Sky-Winds, the storm and the lightning)", "Tulrius": "uThalosa (the Sun, the sky's eye)", "Realta": "uRiyala (the Earth-Mother, the cattle and the grain)" },
+    "sample_deity_renames": {
+      "Maraxus": "uMarakela (the Slaughter-Bringer, war-fire; foremost of the raiders)",
+      "Orlandus": "uWalandela (the Iron-Spear, the oath of the regiment; Warlandos-shifted)",
+      "Vacidus": "uVakida (the Devouring Dark, death and the grave; Wak'idos-shifted)",
+      "Metensia": "uMatansa (the Wasting - drought and disease, appeased not loved)",
+      "Numeno": "uNomana (the Sky-Winds, the storm and the lightning)",
+      "Tulrius": "uThalosa (the Sun, the sky's eye)",
+      "Realta": "uRiyala (the Earth-Mother, the cattle and the grain)"
+    },
     "demon_epithet_pattern": "for this Chaotic people the WAR and DEATH powers are venerated, not demonized; instead the distant Lawful powers are the cold, meddling sky-strangers - uThalosa-shifted as the Burning-Eye that withers the bold, the Lawful order-powers as the chains the free hosts threw off.",
-    "clergy_ladder": { "1": "umthwasa (the called novice-diviner)", "3": "isangoma (the ancestor-diviner)", "5": "inyanga enkulu (the great herbalist-seer)", "7": "isangoma-sesizwe (the nation's diviner)", "9": "umlozikazi omkhulu (the great voice of the ancestors)" },
+    "clergy_ladder": {
+      "1": "umthwasa (the called novice-diviner)",
+      "3": "isangoma (the ancestor-diviner)",
+      "5": "inyanga enkulu (the great herbalist-seer)",
+      "7": "isangoma-sesizwe (the nation's diviner)",
+      "9": "umlozikazi omkhulu (the great voice of the ancestors)"
+    },
     "religious_orders_pattern": "no temples; the rites are at the isibaya (cattle-fold) and the ancestral graves: 'the diviners of [power/ancestor]', 'the spear-sworn of uWalandela'.",
     "saints_pattern": "the great war-dead and founding forebears become izinyanya (mighty ancestral shades), named in the izibongo and fed at the kraal: 'iNyanya [name]' (the forebear [name]).",
-    "holy_symbol_motifs": { "uMarakela": "a red iklwa (stabbing-spear) crossed over a war-shield", "uWalandela": "an iron spearhead bound with the oath-thong", "amadlozi": "the cattle-horn and the imphepho (the sacred smoke)" }
+    "holy_symbol_motifs": {
+      "uMarakela": "a red iklwa (stabbing-spear) crossed over a war-shield",
+      "uWalandela": "an iron spearhead bound with the oath-thong",
+      "amadlozi": "the cattle-horn and the imphepho (the sacred smoke)"
+    }
   },
   "banks_patterns": {
     "war_regiments": "the amabutho take fierce praise-names: 'the iziCwe (the Slashers)', 'the uFasimba (the Haze)', 'the iziNyosi (the Bees)', 'the iMpi kaMarakela'",
@@ -73,10 +232,77 @@
     "dungeons_ruins": "burnt kraals and ancestral grave-groves: 'the burnt iKhanda of [name]', 'the grave-grove (idlinza) of iNyanya [name]', 'the bone-veld of [battle]'"
   },
   "seed_names": {
-    "personal_m": ["Marakelendlovu", "Sodlozi", "Nomanakhulu", "Bhekizizwe", "Senzomkhonto", "Dingiswayo", "Mgobozi", "Ndlela", "Mzilikazi", "Sothondose", "Walandela-mkhonto", "Mahlebe", "Nqobani", "Sigujana", "Mdlaka", "Zwide", "Matiwane", "Sothobe", "Ngomane", "Vakidankosi"],
-    "personal_f": ["Nandi", "Nomana-kazi", "Mkabayi", "Monase", "Langazana", "Nozinhlanga", "Bhibhi", "Riyala-kazi", "Nomvula (the rain-born)", "Sibongile", "Ntombazi", "Nozincwadi", "Fudukazi", "Nomcoba", "Zinhle", "Dlozikazi"],
-    "clan_houses": ["kwaZulu (the heaven-people)", "kwaNdwandwe", "kwaMthethwa", "kwaQwabe", "kwaButhelezi", "kwaKhumalo", "kwaDlamini", "kwaMarakela (the war-born line)", "kwaNomana", "kwaHlubi", "kwaNgcobo", "kwaSithole"],
-    "epithets_cognomina": ["the Lion (iNgonyama)", "Eater-up-of-cattle", "the Spear-that-rends", "He-who-thunders", "the Buffalo-horn", "Sky-without-cloud", "the Oath-keeper", "Render-of-nations"],
-    "flagship_settlements": ["Shakara (the great isigodlo)", "kwaBulawayo (the place of the killing - the war-capital)", "iKhanda-eliKhulu (the great war-kraal)", "isiBaya-seNgonyama (the king's cattle-fold)", "eGazini (the place of blood)", "kwaNodwengu (the royal kraal)"]
+    "personal_m": [
+      "Marakelendlovu",
+      "Sodlozi",
+      "Nomanakhulu",
+      "Bhekizizwe",
+      "Senzomkhonto",
+      "Dingiswayo",
+      "Mgobozi",
+      "Ndlela",
+      "Mzilikazi",
+      "Sothondose",
+      "Walandela-mkhonto",
+      "Mahlebe",
+      "Nqobani",
+      "Sigujana",
+      "Mdlaka",
+      "Zwide",
+      "Matiwane",
+      "Sothobe",
+      "Ngomane",
+      "Vakidankosi"
+    ],
+    "personal_f": [
+      "Nandi",
+      "Nomana-kazi",
+      "Mkabayi",
+      "Monase",
+      "Langazana",
+      "Nozinhlanga",
+      "Bhibhi",
+      "Riyala-kazi",
+      "Nomvula (the rain-born)",
+      "Sibongile",
+      "Ntombazi",
+      "Nozincwadi",
+      "Fudukazi",
+      "Nomcoba",
+      "Zinhle",
+      "Dlozikazi"
+    ],
+    "clan_houses": [
+      "kwaZulu (the heaven-people)",
+      "kwaNdwandwe",
+      "kwaMthethwa",
+      "kwaQwabe",
+      "kwaButhelezi",
+      "kwaKhumalo",
+      "kwaDlamini",
+      "kwaMarakela (the war-born line)",
+      "kwaNomana",
+      "kwaHlubi",
+      "kwaNgcobo",
+      "kwaSithole"
+    ],
+    "epithets_cognomina": [
+      "the Lion (iNgonyama)",
+      "Eater-up-of-cattle",
+      "the Spear-that-rends",
+      "He-who-thunders",
+      "the Buffalo-horn",
+      "Sky-without-cloud",
+      "the Oath-keeper",
+      "Render-of-nations"
+    ],
+    "flagship_settlements": [
+      "Shakara (the great isigodlo)",
+      "kwaBulawayo (the place of the killing - the war-capital)",
+      "iKhanda-eliKhulu (the great war-kraal)",
+      "isiBaya-seNgonyama (the king's cattle-fold)",
+      "eGazini (the place of blood)",
+      "kwaNodwengu (the royal kraal)"
+    ]
   }
 }

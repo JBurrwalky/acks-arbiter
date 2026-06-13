@@ -1,15 +1,32 @@
 {
   "kit_id": "aethling",
   "tier": "culture",
-  "inherits": ["near_eastern", "germanic"],
+  "inherits": [
+    "near_eastern",
+    "germanic"
+  ],
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 30,
   "sub_palette": "geez-anglosaxon deep fusion (cross-family blend, extreme)",
-  "synthesis_sources": [14, 18],
+  "synthesis_sources": [
+    14,
+    18
+  ],
   "homeland": "Aethal",
-  "blend": { "type": "deep fusion", "parents": ["geez/ethiopian (near_eastern)", "anglo-saxon (germanic)"], "note": "a NEW emergent culture, neither Ethiopian nor Anglo-Saxon - a savanna-highland realm of hill-fastnesses and a literate church-and-court, fusing the Ge'ez highland and the Anglo-Saxon hall; tongue, titles and gods are fused forms between the two parents." },
+  "blend": {
+    "type": "deep fusion",
+    "parents": [
+      "geez/ethiopian (near_eastern)",
+      "anglo-saxon (germanic)"
+    ],
+    "note": "a NEW emergent culture, neither Ethiopian nor Anglo-Saxon - a savanna-highland realm of hill-fastnesses and a literate church-and-court, fusing the Ge'ez highland and the Anglo-Saxon hall; tongue, titles and gods are fused forms between the two parents."
+  },
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral", "Chaotic"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
   "_note": "Cross-family DEEP BLEND (Ethiopian + Anglo-Saxon): a single emergent people of the high savanna - amba-fastnesses and hall-burhs, a literate church-and-court fusing the Ge'ez highland kingdom and the Anglo-Saxon mead-hall. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Ge'ez emphatics/-a + Old English th/ae/-ing). civ = feudal. Seeds/shifts across all three alignments. Common-word lexicon and rank titles fuse the real Ge'ez/Old-English registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods.",
   "phonology": {
     "palette": "Fused Ge'ez-Old-English: emphatics t'/s'/q' meet th/ae; consonants t k s h n r w l m b g, sh, ch; vowels a e i o u + ae; endings fuse Ge'ez -a/-os with OE -en/-ing/-as; root stress.",
@@ -17,40 +34,171 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "felea", "stream": "weyba-broc", "lake": "haymere", "sea": "bahsae", "bay": "merafwic", "cape": "rasnaess", "isle": "desetieg", "mountain": "deborg", "amba": "ambadun", "hill": "dunguba", "ridge": "senselhrycg", "forest": "chakweald", "savanna": "medfeld", "scrub": "barahmor", "marsh": "chaqafenn", "ford": "fordshagar", "pass": "gedelsceard", "vale": "shelladenu", "coast": "sefafwarod" },
-    "settlement_words": { "hamlet": "gotacot", "village": "mendertun", "town": "ketun", "city": "hagarburh", "fort": "ambaweorc", "port": "marsahyth", "market": "gebeyaceap", "temple_town": "betmynster", "citadel": "negestburh" },
-    "kinship": { "son": "weldsunu", "daughter": "welatt-dohtor", "house": "bethus", "kin": "hagcyn", "ancestor": "abew-ieldran" },
-    "adjectives": { "great": "abiymicel", "little": "neuslytel", "old": "biluyeald", "new": "hadisniwe", "black": "tselimsweart", "white": "tsedahwit", "red": "qeyihread", "golden": "werqgylden", "iron": "biretisern", "high": "leulheah", "far": "rehuqfeor", "sacred": "qiddushalig", "fair": "tsegafaeger" },
-    "resources": { "salt": "tsewsealt", "iron": "biretisern", "silver": "birurseolfor", "gold": "werqgold", "incense": "itan", "grain": "ehilcorn", "cattle": "lahm", "fur": "fell", "honey": "mar-hunig", "horse": "fereshors" },
-    "directional": { "upper": "laylay", "lower": "tahtneothera", "north": "semennorth", "south": "debubsuth", "east": "mishraqeast", "west": "merebwest", "inner": "wistinnan", "outer": "wichutan" }
+    "feature_words": {
+      "river": "felea",
+      "stream": "weyba-broc",
+      "lake": "haymere",
+      "sea": "bahsae",
+      "bay": "merafwic",
+      "cape": "rasnaess",
+      "isle": "desetieg",
+      "mountain": "deborg",
+      "amba": "ambadun",
+      "hill": "dunguba",
+      "ridge": "senselhrycg",
+      "forest": "chakweald",
+      "savanna": "medfeld",
+      "scrub": "barahmor",
+      "marsh": "chaqafenn",
+      "ford": "fordshagar",
+      "pass": "gedelsceard",
+      "vale": "shelladenu",
+      "coast": "sefafwarod",
+      "neck": "kisheal",
+      "narrows": "qetsund",
+      "waste": "bedwesten",
+      "road": "mengstraet",
+      "way": "fenoweg",
+      "track": "asarpath"
+    },
+    "settlement_words": {
+      "hamlet": "gotacot",
+      "village": "mendertun",
+      "town": "ketun",
+      "city": "hagarburh",
+      "fort": "ambaweorc",
+      "port": "marsahyth",
+      "market": "gebeyaceap",
+      "temple_town": "betmynster",
+      "citadel": "negestburh"
+    },
+    "kinship": {
+      "son": "weldsunu",
+      "daughter": "welatt-dohtor",
+      "house": "bethus",
+      "kin": "hagcyn",
+      "ancestor": "abew-ieldran"
+    },
+    "adjectives": {
+      "great": "abiymicel",
+      "little": "neuslytel",
+      "old": "biluyeald",
+      "new": "hadisniwe",
+      "black": "tselimsweart",
+      "white": "tsedahwit",
+      "red": "qeyihread",
+      "golden": "werqgylden",
+      "iron": "biretisern",
+      "high": "leulheah",
+      "far": "rehuqfeor",
+      "sacred": "qiddushalig",
+      "fair": "tsegafaeger"
+    },
+    "resources": {
+      "salt": "tsewsealt",
+      "iron": "biretisern",
+      "silver": "birurseolfor",
+      "gold": "werqgold",
+      "incense": "itan",
+      "grain": "ehilcorn",
+      "cattle": "lahm",
+      "fur": "fell",
+      "honey": "mar-hunig",
+      "horse": "fereshors"
+    },
+    "directional": {
+      "upper": "laylay",
+      "lower": "tahtneothera",
+      "north": "semennorth",
+      "south": "debubsuth",
+      "east": "mishraqeast",
+      "west": "merebwest",
+      "inner": "wistinnan",
+      "outer": "wichutan"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-burh (fort-town)", "Amba- / -dun (mountain-fastness)", "Bet- / -mynster (church-town)", "-ing / -ingas (people of)", "Tselim- / Tseda- (black-/white-)", "Hagar- (city of)"],
+    "toponymic_suffixes": [
+      "-burh (fort-town)",
+      "Amba- / -dun (mountain-fastness)",
+      "Bet- / -mynster (church-town)",
+      "-ing / -ingas (people of)",
+      "Tselim- / Tseda- (black-/white-)",
+      "Hagar- (city of)"
+    ],
     "patronymic_form": "filiation Walda- (son of) fused with the OE -ing patronymic; the hagcyn (kindred); a church-name (baptismal) for the literate, an earned hall-name for warriors.",
-    "gendered_endings": { "male": "-a / -en / -ing", "female": "-it / -gifu / -a" },
+    "gendered_endings": {
+      "male": "-a / -en / -ing",
+      "female": "-it / -gifu / -a"
+    },
     "diminutive_form": "-sheri / -incel",
     "compounding_rule": "[quality|feature](stem) + element: Tselim-deborg (black-mountain), Amba-burh (fastness-fort); the church-towns Bet-/-mynster; lineages -ingas."
   },
   "title_ladder": {
     "government": "feudal (a high-savanna kingdom: the Bretnegus over hall-thegns and amba-lords, a literate church-and-court of the Bet-mynster; the witan-council and the church advise)",
     "tiers": {
-      "barony": { "ruler": "Shethen", "domain": "Shethenscipe" },
-      "march": { "ruler": "Marcnegash", "domain": "Mearcland" },
-      "county": { "ruler": "Scirmach", "domain": "Scir" },
-      "duchy": { "ruler": "Heretoras", "domain": "Heretorasdom" },
-      "principality": { "ruler": "Ealdras", "domain": "Ealdrasdom" },
-      "kingdom": { "ruler": "Cynegus", "domain": "Cynegusdom" },
-      "empire": { "ruler": "Bretnegus", "domain": "Bretnegusat" }
+      "barony": {
+        "ruler": "Shethen",
+        "domain": "Shethenscipe"
+      },
+      "march": {
+        "ruler": "Marcnegash",
+        "domain": "Mearcland"
+      },
+      "county": {
+        "ruler": "Scirmach",
+        "domain": "Scir"
+      },
+      "duchy": {
+        "ruler": "Heretoras",
+        "domain": "Heretorasdom"
+      },
+      "principality": {
+        "ruler": "Ealdras",
+        "domain": "Ealdrasdom"
+      },
+      "kingdom": {
+        "ruler": "Cynegus",
+        "domain": "Cynegusdom"
+      },
+      "empire": {
+        "ruler": "Bretnegus",
+        "domain": "Bretnegusat"
+      }
     },
     "_tiers_note": "Fused Ge'ez-Old-English ladder, ascending; the titles blend the two (Ge'ez shum/negash/dejazmach/ras/negus + OE thegn/mearc-weard/scir-gerefa/ealdor/cyning/bretwalda). Shethen (chief-thegn) barony; Marcnegash (march-warden) march; Scirmach (shire-commander) county; Heretoras (war-duke) duchy; Ealdras (high-lord) principality; Cynegus (king) kingdom; Bretnegus (high-king, king of kings) over the Bretnegusat. The church (the Bet-mynster) and the witan-council temper the crown. (Rank titles fuse the real Ge'ez/OE register, allowed.)",
-    "female_forms": { "Bretnegus": "Bretnegist", "Cynegus": "Cynegist", "Ealdras": "Ealdrast", "Heretoras": "Heretorast", "Scirmach": "Scirmachit", "Marcnegash": "Marcnegashit", "Shethen": "Shethenit" },
+    "female_forms": {
+      "Bretnegus": "Bretnegist",
+      "Cynegus": "Cynegist",
+      "Ealdras": "Ealdrast",
+      "Heretoras": "Heretorast",
+      "Scirmach": "Scirmachit",
+      "Marcnegash": "Marcnegashit",
+      "Shethen": "Shethenit"
+    },
     "heir": "Aetheling (the throne-worthy heir; Sa-Cynegus, king's son)",
-    "honorifics": { "lord": "Neb-hlaford", "lady": "Nebet-hlaefdige", "knight": "Faresaha (horseman)", "your_grace": "Janhoy", "elder": "Sruith-ealda" },
-    "vassalage": { "liege": "Neb-hlaford", "vassal": "Gabr-geneat (servant-retainer)", "fealty": "Mehala-ath (the oath)", "tribute": "Gibr-gafol" }
+    "honorifics": {
+      "lord": "Neb-hlaford",
+      "lady": "Nebet-hlaefdige",
+      "knight": "Faresaha (horseman)",
+      "your_grace": "Janhoy",
+      "elder": "Sruith-ealda"
+    },
+    "vassalage": {
+      "liege": "Neb-hlaford",
+      "vassal": "Gabr-geneat (servant-retainer)",
+      "fealty": "Mehala-ath (the oath)",
+      "tribute": "Gibr-gafol"
+    }
   },
   "people_name_convention": {
     "order": "given (theophoric or church-name) + Walda-/-ing filiation; the hagcyn (kindred); warriors an earned hall-name, the literate a church baptismal name.",
-    "surname_source": ["filiation (Walda- / -ing)", "hagcyn (kindred)", "church/baptismal name", "earned hall-name"],
+    "surname_source": [
+      "filiation (Walda- / -ing)",
+      "hagcyn (kindred)",
+      "church/baptismal name",
+      "earned hall-name"
+    ],
     "dual_register": "the church-and-court use Ge'ez-style theophoric and church names; the hall-warriors Old-English dithematic names.",
     "theophoric": "names from the fused deity-names + an element: Walda-X (son-of), Gabra-X (servant-of), or OE -wine/-red: e.g. Gabra-Thalros, Worland-wine.",
     "diminutive": "-sheri / -incel"
@@ -58,13 +206,32 @@
   "religion": {
     "_note": "Deity-names are fused morphs of the Agrippan canon (Ge'ez + Old-English), never real Ethiopian/Germanic gods. Aethling seeds/shifts across all three alignments; its stance follows its CURRENT alignment (see worship_by_alignment). A literate church-and-court (the Bet-mynster) keeps the high cult; the hall and the amba-grove keep the older rites; the honored dead are kept in the church-recital and at the burial-mound.",
     "the_one": "Aethyarn (< Aeternus; fused Ge'ez Atyarna / OE Aetern) - God Most High; revered as the supreme maker when Lawful, set aside when Neutral, reviled as the far tyrant when Chaotic",
-    "sample_deity_renames": { "Tulrius": "Thalros (sun and right-order; Lawful power)", "Orlandus": "Worland (the iron-oath, war; Lawful power)", "Realta": "Riyalda (the mother, mercy; Neutral-honored)", "Maraxus": "Maraxen (the war-fire; Chaotic power)" },
-    "worship_by_alignment": { "Lawful": "revere the One (Aethyarn) and the Lawful powers (Thalros, Worland, Geyandos, Numanos), demonize the Chaotic powers (Maraxen, Waecidos, Lusanden)", "Chaotic": "venerate the Chaotic powers (the war-fire Maraxen and the wild hall-frenzy), demonize the Lawful powers and the One", "Neutral": "all powers ambivalent; foreground the honored dead (the church-recital and the burial-mound) and the amba- and hall-spirits" },
+    "sample_deity_renames": {
+      "Tulrius": "Thalros (sun and right-order; Lawful power)",
+      "Orlandus": "Worland (the iron-oath, war; Lawful power)",
+      "Realta": "Riyalda (the mother, mercy; Neutral-honored)",
+      "Maraxus": "Maraxen (the war-fire; Chaotic power)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aethyarn) and the Lawful powers (Thalros, Worland, Geyandos, Numanos), demonize the Chaotic powers (Maraxen, Waecidos, Lusanden)",
+      "Chaotic": "venerate the Chaotic powers (the war-fire Maraxen and the wild hall-frenzy), demonize the Lawful powers and the One",
+      "Neutral": "all powers ambivalent; foreground the honored dead (the church-recital and the burial-mound) and the amba- and hall-spirits"
+    },
     "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Maraxen the War-Fire; when Chaotic - Tulrius -> Thalros the Cold-Sun, Aeternus -> Aethyarn the Far Tyrant.",
-    "clergy_ladder": { "1": "Diyaqon-cniht (deacon-novice)", "3": "Qesis-preost (priest)", "5": "Qomos-massere (mass-priest)", "7": "Episcop (bishop)", "9": "Abun-aerce (metropolitan)" },
+    "clergy_ladder": {
+      "1": "Diyaqon-cniht (deacon-novice)",
+      "3": "Qesis-preost (priest)",
+      "5": "Qomos-massere (mass-priest)",
+      "7": "Episcop (bishop)",
+      "9": "Abun-aerce (metropolitan)"
+    },
     "religious_orders_pattern": "the Bet-mynster (church-minster) of [power]: 'the Bet-mynster of Thalros'; the amba-grove keeps the older rite.",
     "saints_pattern": "Qiddus/Halig [name] - the deified-just dead, royal saints and church-founders, kept in the recital and at the rock-hewn debr-mynster.",
-    "holy_symbol_motifs": { "Thalros": "a rayed sun above the tablets and the cross-staff", "Worland": "an iron spear crossed with an oath-ring", "Aethyarn": "an all-seeing eye above the amba-fastness" }
+    "holy_symbol_motifs": {
+      "Thalros": "a rayed sun above the tablets and the cross-staff",
+      "Worland": "an iron spear crossed with an oath-ring",
+      "Aethyarn": "an all-seeing eye above the amba-fastness"
+    }
   },
   "banks_patterns": {
     "ships": "highland realm - mule-trains and Red-Sea traders: 'Bringer of Itan', 'the Star of the Bahsae', 'the Oath' (Mehala)",
@@ -73,10 +240,81 @@
     "dungeons_ruins": "ruined amba-fastnesses and rock-hewn mynsters: 'the Amba of [name]', 'the fallen Bet-mynster of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Gabra-Thalros", "Walda-Worland", "Aethel-tasfa", "Ead-mangasha", "Haile-wine", "Walda-red", "Wulf-gabra", "Nagasi-bert", "Aethelnegus", "Tasfa-wine", "Gabra-Geyandos", "Eadweld", "Hailé-stan", "Mangasha-ric", "Worland-wine", "Sayfu-bert", "Aregawi-ing", "Walda-here", "Cyne-tasfa", "Garima-wulf"],
-    "personal_f": ["Amata-Riyalda", "Aethel-gifu", "Walatta-thryth", "Hiruta-gifu", "Sabla-burh", "Aethel-hiruta", "Amata-gifu", "Cyne-sabla", "Walatta-gifu", "Tsega-thryth", "Hiruta-burh", "Aethel-amata", "Sanayit-gifu", "Walatta-hild", "Amata-Thalros", "Ead-sabla", "Mahbuba-gifu", "Cyne-hiruta", "Walda-gifu", "Atsede-thryth"],
-    "clan_houses": ["Bet-Thalros", "Bet-Worland", "Aethelingas", "Bet-Geyandos", "Wulfingas", "Bet-Riyalda", "Eadingas", "Hagcyn Garima", "Bet-Numanos", "Cyningas", "Hagcyn Aregawi", "Walda-ingas"],
-    "epithets_cognomina": ["Anbessa (the Lion)", "the Hall-warden", "the Lawgiver", "Amba-holder", "the Devout (Qiddus)", "Iron-arm", "the Far-marching", "Sword-of-the-Most-High"],
-    "flagship_settlements": ["Aethal (the royal seat)", "Hagarburh (the great church-city)", "Tselim-deborg (the black-mountain fastness)", "Amba-burh (the high fortress)", "Bet-mynster Thalros (the sun-minster)", "Medfeld-tun (the savanna town)"]
+    "personal_m": [
+      "Gabra-Thalros",
+      "Walda-Worland",
+      "Aethel-tasfa",
+      "Ead-mangasha",
+      "Haile-wine",
+      "Walda-red",
+      "Wulf-gabra",
+      "Nagasi-bert",
+      "Aethelnegus",
+      "Tasfa-wine",
+      "Gabra-Geyandos",
+      "Eadweld",
+      "Hailé-stan",
+      "Mangasha-ric",
+      "Worland-wine",
+      "Sayfu-bert",
+      "Aregawi-ing",
+      "Walda-here",
+      "Cyne-tasfa",
+      "Garima-wulf"
+    ],
+    "personal_f": [
+      "Amata-Riyalda",
+      "Aethel-gifu",
+      "Walatta-thryth",
+      "Hiruta-gifu",
+      "Sabla-burh",
+      "Aethel-hiruta",
+      "Amata-gifu",
+      "Cyne-sabla",
+      "Walatta-gifu",
+      "Tsega-thryth",
+      "Hiruta-burh",
+      "Aethel-amata",
+      "Sanayit-gifu",
+      "Walatta-hild",
+      "Amata-Thalros",
+      "Ead-sabla",
+      "Mahbuba-gifu",
+      "Cyne-hiruta",
+      "Walda-gifu",
+      "Atsede-thryth"
+    ],
+    "clan_houses": [
+      "Bet-Thalros",
+      "Bet-Worland",
+      "Aethelingas",
+      "Bet-Geyandos",
+      "Wulfingas",
+      "Bet-Riyalda",
+      "Eadingas",
+      "Hagcyn Garima",
+      "Bet-Numanos",
+      "Cyningas",
+      "Hagcyn Aregawi",
+      "Walda-ingas"
+    ],
+    "epithets_cognomina": [
+      "Anbessa (the Lion)",
+      "the Hall-warden",
+      "the Lawgiver",
+      "Amba-holder",
+      "the Devout (Qiddus)",
+      "Iron-arm",
+      "the Far-marching",
+      "Sword-of-the-Most-High"
+    ],
+    "flagship_settlements": [
+      "Aethal (the royal seat)",
+      "Hagarburh (the great church-city)",
+      "Tselim-deborg (the black-mountain fastness)",
+      "Amba-burh (the high fortress)",
+      "Bet-mynster Thalros (the sun-minster)",
+      "Medfeld-tun (the savanna town)"
+    ]
   }
 }

@@ -10,6 +10,7 @@ extends SessionState
 
 const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const EncounterDecisionScene := preload("res://scenes/ui/dialogs/encounter_decision_prompt.gd")
+const AbandonVehicleScene := preload("res://scenes/ui/dialogs/abandon_vehicle_prompt.gd")
 
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
@@ -17,6 +18,11 @@ var _context_menu = null  # instance of ContextMenuScene (shared with dungeon UI
 var _encounter_prompt: EncounterDecisionPrompt = null
 var _pending_encounter: Dictionary = {}
 var _pending_encounter_party: String = ""
+# Bug 3: when travel is requested with an unhitched (immobile) vehicle, the
+# AbandonVehiclePrompt asks leave-behind vs cancel. The travel params are stashed
+# here until the player decides.
+var _abandon_prompt = null
+var _pending_travel: Dictionary = {}
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -128,6 +134,7 @@ func exit(runner) -> void:
 
 	_close_context_menu()
 	_close_encounter_prompt()
+	_close_abandon_prompt()
 
 	# Handlers stay globally registered (SessionRunner owns the lifetime) —
 	# background parties' travel/activity chains keep resolving after the
@@ -286,6 +293,33 @@ func _on_context_action(action_data: Dictionary) -> void:
 				legs.append(path[i])
 			path = legs
 
+	# Bug 3: a party can't drag an unhitched (immobile) vehicle along. If we're
+	# actually moving (non-empty path) and any vehicle can't move, prompt the
+	# player to leave it behind or cancel — don't silently travel without it.
+	var unhitched: Array = VehicleAbandonmentService.unhitched_vehicles_for_party(party_id)
+	if not path.is_empty() and not unhitched.is_empty():
+		_pending_travel = {
+			"path": path,
+			"scheduler": scheduler,
+			"party_data": party_data,
+			"map_data": map_data,
+			"activity_type": activity_type,
+			"target_hex": target_hex,
+			"party_id": party_id,
+			"current_hex": current_hex,
+			"unhitched": unhitched,
+		}
+		_show_abandon_prompt(unhitched)
+		return
+
+	_proceed_with_travel(path, scheduler, party_data, map_data, activity_type, target_hex, party_id)
+
+
+## Schedules the travel legs + any trailing activity and resumes the clock.
+## Split out of _on_context_action so the unhitched-vehicle prompt can defer it
+## until the player decides (see _on_abandon_decided).
+func _proceed_with_travel(path: Array, scheduler: EventScheduler, party_data: PartyData,
+		map_data: HexMapData, activity_type: String, target_hex: Vector2i, party_id: String) -> void:
 	var travel: Dictionary = _handlers.schedule_travel_path(
 		path, scheduler, party_data, map_data)
 
@@ -314,6 +348,56 @@ func _on_context_action(action_data: Dictionary) -> void:
 	if loop != null and loop.is_paused() \
 			and _runner.get_clock_lock_reason().is_empty():
 		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+# ---------------------------------------------------------------------------
+# Unhitched-vehicle prompt (Bug 3)
+# ---------------------------------------------------------------------------
+
+func _show_abandon_prompt(unhitched: Array) -> void:
+	if _abandon_prompt != null and is_instance_valid(_abandon_prompt):
+		_abandon_prompt.queue_free()
+	_abandon_prompt = AbandonVehicleScene.new()
+	_runner.get_hex_map_renderer().add_child(_abandon_prompt)
+	_abandon_prompt.decided.connect(_on_abandon_decided, CONNECT_ONE_SHOT)
+	var names: Array = []
+	for v in unhitched:
+		names.append(str(v.get("name", "Vehicle")))
+	_abandon_prompt.open(names)
+
+
+func _on_abandon_decided(choice: String) -> void:
+	var pending: Dictionary = _pending_travel
+	_pending_travel = {}
+	if is_instance_valid(_abandon_prompt):
+		_abandon_prompt.queue_free()
+	_abandon_prompt = null
+	if pending.is_empty():
+		return
+	# Cancel: abort the journey; vehicles stay with the party so the player can
+	# hitch a team. The clock is left paused (same as never issuing the command).
+	if choice == AbandonVehiclePrompt.CHOICE_CANCEL:
+		return
+	# Leave behind: park each immobile vehicle at the party's *current* hex
+	# (where it is now, before the party departs), then commit the journey.
+	var current_hex: Vector2i = pending.get("current_hex", Vector2i.ZERO)
+	for v in pending.get("unhitched", []):
+		VehicleAbandonmentService.abandon_to_hex(str(v.get("id", "")), current_hex)
+	_proceed_with_travel(
+		pending.get("path", []),
+		pending.get("scheduler"),
+		pending.get("party_data"),
+		pending.get("map_data"),
+		str(pending.get("activity_type", "")),
+		pending.get("target_hex", Vector2i.ZERO),
+		str(pending.get("party_id", "")))
+
+
+func _close_abandon_prompt() -> void:
+	if _abandon_prompt != null and is_instance_valid(_abandon_prompt):
+		_abandon_prompt.queue_free()
+	_abandon_prompt = null
+	_pending_travel = {}
 
 
 func _close_context_menu() -> void:

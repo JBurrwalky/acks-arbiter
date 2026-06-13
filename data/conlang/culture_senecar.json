@@ -1,15 +1,31 @@
 {
   "kit_id": "senecar",
   "tier": "culture",
-  "inherits": ["celtic", "north_american"],
+  "inherits": [
+    "celtic",
+    "north_american"
+  ],
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 39,
   "sub_palette": "celtic-woodland deep fusion (cross-family blend, extreme)",
-  "synthesis_sources": [7, 16],
+  "synthesis_sources": [
+    7,
+    16
+  ],
   "homeland": "Senecari",
-  "blend": { "type": "deep fusion", "parents": ["celtic (goidelic)", "woodland (north_american, Iroquoian)"], "note": "a NEW emergent culture, neither Celtic nor Woodland - deep-forest clans of grove and longhouse-rath, druid-and-faithkeeper spirit-lore; the tongue, titles and gods are fused forms (Celtic -an/lenition + Iroquoian long -onon, light on labials)." },
+  "blend": {
+    "type": "deep fusion",
+    "parents": [
+      "celtic (goidelic)",
+      "woodland (north_american, Iroquoian)"
+    ],
+    "note": "a NEW emergent culture, neither Celtic nor Woodland - deep-forest clans of grove and longhouse-rath, druid-and-faithkeeper spirit-lore; the tongue, titles and gods are fused forms (Celtic -an/lenition + Iroquoian long -onon, light on labials)."
+  },
   "government": "clanhold",
-  "alignment_allowed": ["Neutral", "Chaotic"],
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
   "_note": "Cross-family DEEP BLEND (Celtic + Woodland): a single emergent people of the deep forest - matrilineal-leaning clans of the grove and the longhouse-rath, their spirit-keepers fusing the druid and the faithkeeper. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic softness + Iroquoian long compounds, sparse in labials). clan = clanhold. Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles fuse the real Gaelic/Iroquois registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods.",
   "phonology": {
     "palette": "Fused Celtic-Iroquoian: soft, vowel-rich, sparse in labials; lenition (c>ch, t>th) meets long polysynthetic compounds; consonants t k s h n r w y, ts, ch, glottal stop; endings fuse Celtic -an/-ach with Iroquoian -onon/-wenne.",
@@ -17,40 +33,171 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "aubyon", "stream": "sruthwisken", "lake": "lochkanota", "sea": "muirhonwaka", "bay": "camaswenta", "cape": "rinonenrak", "isle": "inistehronke", "mountain": "cnononta", "hill": "tolwakenta", "ridge": "drumtehsatha", "forest": "fidkaron", "deep_forest": "karhakonha", "wood": "caillkerhite", "plain": "magkahenta", "marsh": "moinwahyonta", "ford": "athyatak", "pass": "belkanontak", "grove": "nemedonon", "coast": "trachakta" },
-    "settlement_words": { "hamlet": "trebyatenrak", "village": "bailyatenronon", "town": "dunkanata", "city": "cathironon", "fort": "rathwatsenrak", "longhouse": "dunhonsa", "market": "oenwatenhra", "temple_town": "nemedonon", "citadel": "dunkanonhsiyo" },
-    "kinship": { "son": "macronwira", "daughter": "ingenwira", "house": "tekanonhsa", "kin": "finawachira (matrilineal clan)", "ancestor": "senatehronhe" },
-    "adjectives": { "great": "morowanen", "little": "becniwen", "old": "sentehron", "new": "nuase", "black": "dubkahonte", "white": "findyotken", "red": "dergonekwa", "golden": "ordayotsis", "iron": "iarnkariston", "high": "ardyorhen", "far": "cianinon", "sacred": "noibyotenhsen", "fair": "caemwakeron" },
-    "resources": { "salt": "salanntsiken", "iron": "iarnkariston", "bronze": "umaewahsoten", "silver": "argatyotsis", "gold": "ordatsiskowa", "maize": "ithonenra", "bean": "ostenwa", "deer": "echoskenwa", "fur": "kahronwa", "honey": "midohyenta" },
-    "directional": { "upper": "uaseneken", "lower": "isohnaken", "north": "tuaidtowenhton", "south": "tessentiehton", "east": "airtkaras", "west": "iartkaras", "inner": "medakonhsa", "outer": "immeathonha" }
+    "feature_words": {
+      "river": "aubyon",
+      "stream": "sruthwisken",
+      "lake": "lochkanota",
+      "sea": "muirhonwaka",
+      "bay": "camaswenta",
+      "cape": "rinonenrak",
+      "isle": "inistehronke",
+      "mountain": "cnononta",
+      "hill": "tolwakenta",
+      "ridge": "drumtehsatha",
+      "forest": "fidkaron",
+      "deep_forest": "karhakonha",
+      "wood": "caillkerhite",
+      "plain": "magkahenta",
+      "marsh": "moinwahyonta",
+      "ford": "athyatak",
+      "pass": "belkanontak",
+      "grove": "nemedonon",
+      "coast": "trachakta",
+      "neck": "muinyara",
+      "narrows": "caolawa",
+      "waste": "fasawera",
+      "road": "bothaha",
+      "way": "sligente",
+      "track": "lorgenon"
+    },
+    "settlement_words": {
+      "hamlet": "trebyatenrak",
+      "village": "bailyatenronon",
+      "town": "dunkanata",
+      "city": "cathironon",
+      "fort": "rathwatsenrak",
+      "longhouse": "dunhonsa",
+      "market": "oenwatenhra",
+      "temple_town": "nemedonon",
+      "citadel": "dunkanonhsiyo"
+    },
+    "kinship": {
+      "son": "macronwira",
+      "daughter": "ingenwira",
+      "house": "tekanonhsa",
+      "kin": "finawachira (matrilineal clan)",
+      "ancestor": "senatehronhe"
+    },
+    "adjectives": {
+      "great": "morowanen",
+      "little": "becniwen",
+      "old": "sentehron",
+      "new": "nuase",
+      "black": "dubkahonte",
+      "white": "findyotken",
+      "red": "dergonekwa",
+      "golden": "ordayotsis",
+      "iron": "iarnkariston",
+      "high": "ardyorhen",
+      "far": "cianinon",
+      "sacred": "noibyotenhsen",
+      "fair": "caemwakeron"
+    },
+    "resources": {
+      "salt": "salanntsiken",
+      "iron": "iarnkariston",
+      "bronze": "umaewahsoten",
+      "silver": "argatyotsis",
+      "gold": "ordatsiskowa",
+      "maize": "ithonenra",
+      "bean": "ostenwa",
+      "deer": "echoskenwa",
+      "fur": "kahronwa",
+      "honey": "midohyenta"
+    },
+    "directional": {
+      "upper": "uaseneken",
+      "lower": "isohnaken",
+      "north": "tuaidtowenhton",
+      "south": "tessentiehton",
+      "east": "airtkaras",
+      "west": "iartkaras",
+      "inner": "medakonhsa",
+      "outer": "immeathonha"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["Dun- (fort/longhouse)", "Rath- (ringfort)", "-karhakon (deep forest)", "-ononta (hill)", "Nemed- (grove)", "-onon / -an (of)"],
+    "toponymic_suffixes": [
+      "Dun- (fort/longhouse)",
+      "Rath- (ringfort)",
+      "-karhakon (deep forest)",
+      "-ononta (hill)",
+      "Nemed- (grove)",
+      "-onon / -an (of)"
+    ],
     "patronymic_form": "the finawachira (matrilineal clan, by animal-totem) names through the clan-mother (fusing the Celtic fine and the Iroquoian ohwachira); a grove-vision name at the coming-of-age.",
-    "gendered_endings": { "male": "-an / -ronwira", "female": "-wen / -wenne" },
+    "gendered_endings": {
+      "male": "-an / -ronwira",
+      "female": "-wen / -wenne"
+    },
     "diminutive_form": "-an / -sa",
     "compounding_rule": "[quality|totem](stem) + element: Dub-fidkaron (black-deep-forest), Nemed-Toranon (grove of the sun-power); clan-totem + -onon."
   },
   "title_ladder": {
     "government": "clanhold (deep-forest clans bound by a grove-council: the clan-mothers seat the chiefs, the spirit-keepers read the grove; peace-chiefs and war-chiefs distinct)",
     "tiers": {
-      "barony": { "ruler": "Aironer", "domain": "Aironeri" },
-      "march": { "ruler": "Maoresken", "domain": "Crichonon" },
-      "county": { "ruler": "Toisoner", "domain": "Toisecht" },
-      "duchy": { "ruler": "Flaitoken", "domain": "Flaithonon" },
-      "principality": { "ruler": "Rinakenra", "domain": "Tuathonon" },
-      "kingdom": { "ruler": "Ruironon", "domain": "Mortuathonon" },
-      "empire": { "ruler": "Ardonaho", "domain": "Ardonage" }
+      "barony": {
+        "ruler": "Aironer",
+        "domain": "Aironeri"
+      },
+      "march": {
+        "ruler": "Maoresken",
+        "domain": "Crichonon"
+      },
+      "county": {
+        "ruler": "Toisoner",
+        "domain": "Toisecht"
+      },
+      "duchy": {
+        "ruler": "Flaitoken",
+        "domain": "Flaithonon"
+      },
+      "principality": {
+        "ruler": "Rinakenra",
+        "domain": "Tuathonon"
+      },
+      "kingdom": {
+        "ruler": "Ruironon",
+        "domain": "Mortuathonon"
+      },
+      "empire": {
+        "ruler": "Ardonaho",
+        "domain": "Ardonage"
+      }
     },
     "_tiers_note": "Fused Celtic-Iroquoian clanhold, ascending; titles blend the two (Celtic aire/toisech/flaith/ri + Iroquoian royaner/rotiskenrakehte/tadodaho). Aironer (clan-lord) barony; Maoresken (war-warden) march; Toisoner (sept-chief) county; Flaitoken (lord) duchy; Rinakenra (king-sachem) principality; Ruironon (over-chief) kingdom; Ardonaho (high-chief / grand firekeeper) empire. The clan-mothers seat and may depose the chiefs; the grove-council rules by consensus. (Rank titles fuse the real Gaelic/Iroquois register, allowed.)",
-    "female_forms": { "_clan_mother": "Banakenra / Iakoia:ner (clan-mother - seats and deposes the chiefs)", "Ardonaho": "Ban-Ardonaho", "Ruironon": "Ban-Ruironon", "Rinakenra": "Banakenra", "Flaitoken": "Banflaitoken", "Toisoner": "Bantoisoner", "Aironer": "Banaironer" },
+    "female_forms": {
+      "_clan_mother": "Banakenra / Iakoia:ner (clan-mother - seats and deposes the chiefs)",
+      "Ardonaho": "Ban-Ardonaho",
+      "Ruironon": "Ban-Ruironon",
+      "Rinakenra": "Banakenra",
+      "Flaitoken": "Banflaitoken",
+      "Toisoner": "Bantoisoner",
+      "Aironer": "Banaironer"
+    },
     "heir": "Tanaiste-ase (the clan-mother's chosen heir; the title is conferred within the clan)",
-    "honorifics": { "lord": "Tiaroner", "lady": "Banakenra (clan-mother)", "champion": "Caur-skenra (hero-warrior)", "your_grace": "Rinakenra", "elder": "Sruithronhe" },
-    "vassalage": { "liege": "Rinakenra", "vassal": "Ceileskenra (sworn client-warrior)", "fealty": "Gialltewatenra (the binding-belt)", "tribute": "Cisatste (the gift)" }
+    "honorifics": {
+      "lord": "Tiaroner",
+      "lady": "Banakenra (clan-mother)",
+      "champion": "Caur-skenra (hero-warrior)",
+      "your_grace": "Rinakenra",
+      "elder": "Sruithronhe"
+    },
+    "vassalage": {
+      "liege": "Rinakenra",
+      "vassal": "Ceileskenra (sworn client-warrior)",
+      "fealty": "Gialltewatenra (the binding-belt)",
+      "tribute": "Cisatste (the gift)"
+    }
   },
   "people_name_convention": {
     "order": "names belong to the matrilineal finawachira (clan, by totem) and are bestowed by the clan-mother; a grove-vision name at coming-of-age; a deed byname for the renowned.",
-    "surname_source": ["finawachira (matrilineal clan, by totem)", "clan-bestowed name", "grove-vision name", "deed byname"],
+    "surname_source": [
+      "finawachira (matrilineal clan, by totem)",
+      "clan-bestowed name",
+      "grove-vision name",
+      "deed byname"
+    ],
     "dual_register": "the chief-lineages bear council title-names; others a clan-totem name held in trust.",
     "theophoric": "names invoke the grove-and-forest powers + a fused element: Mael-/Gilla- (devotee/servant), -onon, Cu- (hound): e.g. Mael-Toranon, Gilla-Gaianon.",
     "diminutive": "-an / -sa"
@@ -58,13 +205,31 @@
   "religion": {
     "_note": "Deity-names are fused morphs of the Agrippan canon (Celtic + Iroquoian), never real Celtic/Iroquois gods. Senecar seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met in the nemed-grove and the deep forest; the spirit-keepers (fused druid-and-faithkeeper) mediate; the ancestral dead and the Tuath-spirits are honored at the cairn and the burial-grove.",
     "the_one": "Eteronon (< Aeternus; fused Celtic Eternan / Iroquoian Aterhonon) - the Sky-Ancient-Above; acknowledged and set aside (Neutral), reviled as the far tyrant when Chaotic",
-    "sample_deity_renames": { "Tulrius": "Toranon (the sun, the day-keeper; Lawful power)", "Gaiandus": "Gaianon (the enduring earth and forest; Lawful power)", "Realta": "Realwen (the mother, clan-mother of the powers; Neutral-honored)", "Maraxus": "Marakson (the war-fire; Chaotic power)" },
-    "worship_by_alignment": { "Chaotic": "venerate the Chaotic powers (Marakson the war-fire, Wasidonon, Rusanon), demonize the Lawful powers and the One (Eteronon)", "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the Tuath-spirits and the powers of grove and forest" },
+    "sample_deity_renames": {
+      "Tulrius": "Toranon (the sun, the day-keeper; Lawful power)",
+      "Gaiandus": "Gaianon (the enduring earth and forest; Lawful power)",
+      "Realta": "Realwen (the mother, clan-mother of the powers; Neutral-honored)",
+      "Maraxus": "Marakson (the war-fire; Chaotic power)"
+    },
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (Marakson the war-fire, Wasidonon, Rusanon), demonize the Lawful powers and the One (Eteronon)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the Tuath-spirits and the powers of grove and forest"
+    },
     "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Toranon the Cold-Light; Orlandus -> Oranlon the Oath-Chain; Aeternus -> Eteronon the Far Tyrant.",
-    "clergy_ladder": { "1": "Drui-deshi (lore-novice)", "3": "Druiweienon (grove-keeper)", "5": "Faithonon (seer-keeper)", "7": "Ardrui-tha (arch-keeper)", "9": "Ollamonon (supreme sage-keeper)" },
+    "clergy_ladder": {
+      "1": "Drui-deshi (lore-novice)",
+      "3": "Druiweienon (grove-keeper)",
+      "5": "Faithonon (seer-keeper)",
+      "7": "Ardrui-tha (arch-keeper)",
+      "9": "Ollamonon (supreme sage-keeper)"
+    },
     "religious_orders_pattern": "the Nemedonon (grove-shrine) of [power] in the deep forest: 'the Nemedonon of Toranon'; the thanksgiving-circle of the clans.",
     "saints_pattern": "the Tuath-spirits (the god-kin and forest-spirits) and the honored clan-mothers and ancestral heroes, kept in the grove-recital.",
-    "holy_symbol_motifs": { "Toranon": "a sun-wheel over the longhouse and the oak", "Gaianon": "a great forest-tree rooted in the earth", "Realwen": "a sheltering mother over the planted field" }
+    "holy_symbol_motifs": {
+      "Toranon": "a sun-wheel over the longhouse and the oak",
+      "Gaianon": "a great forest-tree rooted in the earth",
+      "Realwen": "a sheltering mother over the planted field"
+    }
   },
   "banks_patterns": {
     "ships": "forest river and lake craft - curach and bark canoe: 'the Grey Heron', 'the River-Otter', 'Forest-Shadow'",
@@ -73,10 +238,81 @@
     "dungeons_ruins": "abandoned raths and burial-groves: 'the Rath of [name]', 'the Ghost-Longhouse of [clan]'"
   },
   "seed_names": {
-    "personal_m": ["Conoren", "Cormakwen", "Diaronon", "Eoganhron", "Ferganon", "Ronwaire", "Tehronan", "Cathalon", "Oskenan", "Lugaronon", "Aedhron", "Ronakwen", "Senoner", "Tehkaras", "Lorconon", "Brendonon", "Roskenan", "Cuhronon", "Tularan", "Onenrak"],
-    "personal_f": ["Aoifenwen", "Realwen", "Ethnonon", "Sadbwenne", "Yonwaire", "Orlawen", "Caoimwen", "Banakenra", "Muirwenne", "Eithwen", "Wakeronwen", "Aoiwenne", "Tuathwen", "Niamwen", "Yenwira", "Deirwen", "Karonwen", "Bebwenne", "Affrawen", "Otenwen"],
-    "clan_finawachira": ["Fine Cu-okwaho (hound-wolf)", "Fine Bran-karas (raven)", "Fine Os-skenon (deer)", "Fine Math-konyar (bear)", "Fine Bradan-onyar (salmon-eel)", "Fine Iolar-akweks (eagle-hawk)", "Fine Torc-anowar (boar-turtle)", "Fine Sionnach (fox)", "Fine Dair-kerhi (oak)", "Fine Corr-tehoska (heron)", "Fine Ceo-onon (mist)", "Fine Gius-onon (pine)"],
-    "epithets_cognomina": ["the Hound (Cu)", "the Forest-walker", "Tall-Oak", "the Grove-warden", "of the Deep Wood", "the Swift", "Keeper-of-the-Fire", "the Red (Ruad)"],
-    "flagship_settlements": ["Senecari (the chief grove-seat)", "Dun-fidkaron (the deep-forest fort)", "Nemedonon-Toranon (the sun-grove)", "Lochkanota (the lakeside town)", "Cnononta (the hill-hold)", "Dunhonsa Mor (the great longhouse-rath)"]
+    "personal_m": [
+      "Conoren",
+      "Cormakwen",
+      "Diaronon",
+      "Eoganhron",
+      "Ferganon",
+      "Ronwaire",
+      "Tehronan",
+      "Cathalon",
+      "Oskenan",
+      "Lugaronon",
+      "Aedhron",
+      "Ronakwen",
+      "Senoner",
+      "Tehkaras",
+      "Lorconon",
+      "Brendonon",
+      "Roskenan",
+      "Cuhronon",
+      "Tularan",
+      "Onenrak"
+    ],
+    "personal_f": [
+      "Aoifenwen",
+      "Realwen",
+      "Ethnonon",
+      "Sadbwenne",
+      "Yonwaire",
+      "Orlawen",
+      "Caoimwen",
+      "Banakenra",
+      "Muirwenne",
+      "Eithwen",
+      "Wakeronwen",
+      "Aoiwenne",
+      "Tuathwen",
+      "Niamwen",
+      "Yenwira",
+      "Deirwen",
+      "Karonwen",
+      "Bebwenne",
+      "Affrawen",
+      "Otenwen"
+    ],
+    "clan_finawachira": [
+      "Fine Cu-okwaho (hound-wolf)",
+      "Fine Bran-karas (raven)",
+      "Fine Os-skenon (deer)",
+      "Fine Math-konyar (bear)",
+      "Fine Bradan-onyar (salmon-eel)",
+      "Fine Iolar-akweks (eagle-hawk)",
+      "Fine Torc-anowar (boar-turtle)",
+      "Fine Sionnach (fox)",
+      "Fine Dair-kerhi (oak)",
+      "Fine Corr-tehoska (heron)",
+      "Fine Ceo-onon (mist)",
+      "Fine Gius-onon (pine)"
+    ],
+    "epithets_cognomina": [
+      "the Hound (Cu)",
+      "the Forest-walker",
+      "Tall-Oak",
+      "the Grove-warden",
+      "of the Deep Wood",
+      "the Swift",
+      "Keeper-of-the-Fire",
+      "the Red (Ruad)"
+    ],
+    "flagship_settlements": [
+      "Senecari (the chief grove-seat)",
+      "Dun-fidkaron (the deep-forest fort)",
+      "Nemedonon-Toranon (the sun-grove)",
+      "Lochkanota (the lakeside town)",
+      "Cnononta (the hill-hold)",
+      "Dunhonsa Mor (the great longhouse-rath)"
+    ]
   }
 }

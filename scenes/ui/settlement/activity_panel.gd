@@ -13,6 +13,11 @@ extends VBoxContainer
 
 signal activity_requested(activity_type: String, poi: Dictionary)
 signal exit_settlement_requested()
+## Emitted when the player clicks "Leave" to back out of the activity panel
+## without committing to an activity. The owning state re-surfaces the PoI
+## selection menu (otherwise the player is stranded with both panels hidden when
+## the panel was opened via travel arrival — the menu was hidden during travel).
+signal leave_requested()
 signal shop_requested(poi: Dictionary)
 signal hiring_requested(poi: Dictionary)
 ## Routes the guild "Hire Specialists" activity to the specialist hire panel
@@ -199,8 +204,9 @@ func _rebuild() -> void:
 		add_child(btn)
 
 	# Always offer a way back out of the activity panel without committing to
-	# an activity. Hides the panel; the settlement menu (with the full PoI
-	# list) remains visible behind so the player can pick a new destination.
+	# an activity. Emits leave_requested so the owning state re-shows the PoI
+	# menu and hides this panel — hide_panel alone would strand the player on a
+	# blank screen when the panel was opened via travel arrival (menu hidden).
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 6)
 	add_child(spacer)
@@ -208,7 +214,7 @@ func _rebuild() -> void:
 	var leave_btn := Button.new()
 	leave_btn.text = "Leave"
 	leave_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	leave_btn.pressed.connect(hide_panel)
+	leave_btn.pressed.connect(func(): leave_requested.emit())
 	add_child(leave_btn)
 
 

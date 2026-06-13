@@ -5,10 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 47,
   "sub_palette": "slavic + hellenic-overlay",
-  "synthesis_sources": [13],
+  "synthesis_sources": [
+    13
+  ],
   "homeland": "Kyivgrad",
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Single-source (Kievan Rus). Slavic sub-palette of the Slavic family with a Byzantine-GREEK (Hellenic) overlay from trade and conversion; a river-trade princedom of golden-domed cities. civ = feudal (the Velikii Knyaz over knyazes and boyars; a Byzantine court and church register). Even split Lawful/Neutral. Distinct from the pagan forest-clan Velesan: Kyivan is settled, princely and Hellenized (the One raised supreme, monastyr and sobor for kapishche, Tsar < Greek Kaisar, Greek -ios/-ia on the holy names and Greek baptismal names). Common-word lexicon and rank titles use the real Slavic/Greek register (allowed, catalog 5.3); DEITY names are the Slavic morphs of the Agrippan canon (family_slavic.json theonym_set) under a Greek overlay, never real Slavic or Greek gods.",
   "phonology": {
     "palette": "Slavic base (palatalization; sibilants sh/zh/ch/shch; -ov/-ich; dithematic glory-names) with a Hellenic overlay from Byzantine contact: Greek loanwords, -ios/-ia endings on the high register, the Church-Slavonic ecclesiastical vocabulary; theophoric stems are the Slavic morphs with a Greek tint (Tulorios-, Numirios-, Relatia-).",
@@ -16,40 +21,170 @@
     "transparent_ratio": 0.45
   },
   "lexicon": {
-    "feature_words": { "river": "reka", "stream": "potok", "lake": "ozero", "sea": "more", "bay": "zaliv", "cape": "mys", "isle": "ostrov", "mountain": "gora", "hill": "holm", "ridge": "hrebet", "forest": "les", "wood": "dubrava", "plain": "pole", "steppe": "step", "marsh": "boloto", "ford": "brod", "pass": "pereval", "vale": "dolina", "coast": "bereg" },
-    "settlement_words": { "hamlet": "ves", "village": "selo", "town": "gorod", "city": "grad", "fort": "ostrog", "port": "pristan", "market": "torg", "temple_town": "monastyr", "citadel": "detinets" },
-    "kinship": { "son": "syn", "daughter": "doch", "house": "dom", "kin": "rod", "ancestor": "predok" },
-    "adjectives": { "great": "velik", "little": "mal", "old": "star", "new": "nov", "black": "chorn", "white": "bel", "red": "krasn", "golden": "zlat", "iron": "zhelezo", "high": "vysok", "far": "dalek", "sacred": "svyat", "fair": "lep" },
-    "resources": { "salt": "sol", "iron": "zhelezo", "silver": "srebro", "gold": "zlato", "amber": "yantar", "fur": "meh", "honey": "med", "wax": "vosk", "grain": "zhito", "silk": "shelk" },
-    "directional": { "upper": "verh", "lower": "niz", "north": "sever", "south": "yug", "east": "vostok", "west": "zapad", "inner": "vnutr", "outer": "vne" }
+    "feature_words": {
+      "river": "reka",
+      "stream": "potok",
+      "lake": "ozero",
+      "sea": "more",
+      "bay": "zaliv",
+      "cape": "mys",
+      "isle": "ostrov",
+      "mountain": "gora",
+      "hill": "holm",
+      "ridge": "hrebet",
+      "forest": "les",
+      "wood": "dubrava",
+      "plain": "pole",
+      "steppe": "step",
+      "marsh": "boloto",
+      "ford": "brod",
+      "pass": "pereval",
+      "vale": "dolina",
+      "coast": "bereg",
+      "neck": "shija",
+      "narrows": "stenon",
+      "waste": "pustosh",
+      "road": "doroga",
+      "way": "put",
+      "track": "stezia"
+    },
+    "settlement_words": {
+      "hamlet": "ves",
+      "village": "selo",
+      "town": "gorod",
+      "city": "grad",
+      "fort": "ostrog",
+      "port": "pristan",
+      "market": "torg",
+      "temple_town": "monastyr",
+      "citadel": "detinets"
+    },
+    "kinship": {
+      "son": "syn",
+      "daughter": "doch",
+      "house": "dom",
+      "kin": "rod",
+      "ancestor": "predok"
+    },
+    "adjectives": {
+      "great": "velik",
+      "little": "mal",
+      "old": "star",
+      "new": "nov",
+      "black": "chorn",
+      "white": "bel",
+      "red": "krasn",
+      "golden": "zlat",
+      "iron": "zhelezo",
+      "high": "vysok",
+      "far": "dalek",
+      "sacred": "svyat",
+      "fair": "lep"
+    },
+    "resources": {
+      "salt": "sol",
+      "iron": "zhelezo",
+      "silver": "srebro",
+      "gold": "zlato",
+      "amber": "yantar",
+      "fur": "meh",
+      "honey": "med",
+      "wax": "vosk",
+      "grain": "zhito",
+      "silk": "shelk"
+    },
+    "directional": {
+      "upper": "verh",
+      "lower": "niz",
+      "north": "sever",
+      "south": "yug",
+      "east": "vostok",
+      "west": "zapad",
+      "inner": "vnutr",
+      "outer": "vne"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-grad / -gorod (town)", "-ov / -ev (of)", "-ichi (people of)", "-sk (place)", "-pol (Greek -polis overlay)", "Zlat- (golden-, the domes)"],
+    "toponymic_suffixes": [
+      "-grad / -gorod (town)",
+      "-ov / -ev (of)",
+      "-ichi (people of)",
+      "-sk (place)",
+      "-pol (Greek -polis overlay)",
+      "Zlat- (golden-, the domes)"
+    ],
     "patronymic_form": "patronymic -ovich / -ich (son of); the rod (boyar house); the clergy and devout take a Greek baptismal name (often -ii / -ios).",
-    "gendered_endings": { "male": "-slav / -mir / -ii", "female": "-a / -slava" },
+    "gendered_endings": {
+      "male": "-slav / -mir / -ii",
+      "female": "-a / -slava"
+    },
     "diminutive_form": "-ko / -ets",
     "compounding_rule": "dithematic glory-names (-slav, -mir, -volod); toponyms quality + feature (Zlat-grad = golden-city, Bel-gorod = white-town); Greek -pol for the great ports (Tsargrad-style)."
   },
   "title_ladder": {
     "government": "feudal (a Kievan-Rus river-princedom: the Velikii Knyaz of Kyivgrad over the knyazes and boyars, the druzhina and the veche, with a Byzantine-Greek court and church overlay)",
     "tiers": {
-      "barony": { "ruler": "Boyarin", "domain": "Boyarstvo" },
-      "march": { "ruler": "Posadnik", "domain": "Posad" },
-      "county": { "ruler": "Namestnik", "domain": "Namestnichestvo" },
-      "duchy": { "ruler": "Voevoda", "domain": "Voevodstvo" },
-      "principality": { "ruler": "Knyaz", "domain": "Knyazhestvo" },
-      "kingdom": { "ruler": "Velikii Knyaz", "domain": "Velikoe Knyazhestvo" },
-      "empire": { "ruler": "Tsar", "domain": "Tsarstvo" }
+      "barony": {
+        "ruler": "Boyarin",
+        "domain": "Boyarstvo"
+      },
+      "march": {
+        "ruler": "Posadnik",
+        "domain": "Posad"
+      },
+      "county": {
+        "ruler": "Namestnik",
+        "domain": "Namestnichestvo"
+      },
+      "duchy": {
+        "ruler": "Voevoda",
+        "domain": "Voevodstvo"
+      },
+      "principality": {
+        "ruler": "Knyaz",
+        "domain": "Knyazhestvo"
+      },
+      "kingdom": {
+        "ruler": "Velikii Knyaz",
+        "domain": "Velikoe Knyazhestvo"
+      },
+      "empire": {
+        "ruler": "Tsar",
+        "domain": "Tsarstvo"
+      }
     },
     "_tiers_note": "Slavic feudal, ascending, with a Byzantine overlay at the top: Tsar (< Greek Kaisar < Caesar) is the Hellenized imperial title over the Tsarstvo, raised above the Velikii Knyaz (grand prince of Kyivgrad) and the knyazes. Boyarin (boyar-lord) barony; Posadnik (appointed town/frontier-governor) march; Namestnik (vicegerent) county; Voevoda (war-leader) duchy. The veche checks the prince. (Rank titles are the real Slavic/Greek register, allowed.)",
-    "female_forms": { "Tsar": "Tsaritsa", "Velikii Knyaz": "Velikaya Knyaginya", "Knyaz": "Knyaginya", "Voevoda": "Voevodina", "Namestnik": "Namestnitsa", "Posadnik": "Posadnitsa", "Boyarin": "Boyarynya" },
+    "female_forms": {
+      "Tsar": "Tsaritsa",
+      "Velikii Knyaz": "Velikaya Knyaginya",
+      "Knyaz": "Knyaginya",
+      "Voevoda": "Voevodina",
+      "Namestnik": "Namestnitsa",
+      "Posadnik": "Posadnitsa",
+      "Boyarin": "Boyarynya"
+    },
     "heir": "Tsarevich / Knyazhich (the prince's son)",
-    "honorifics": { "lord": "Gospodin", "lady": "Gospozha", "knight": "Vityaz (knight-hero)", "your_grace": "Gosudar", "your_majesty": "Tsar" },
-    "vassalage": { "liege": "Gosudar", "vassal": "Druzhinnik (retainer)", "fealty": "Krestotselovanie (the cross-kissing oath)", "tribute": "Dan" }
+    "honorifics": {
+      "lord": "Gospodin",
+      "lady": "Gospozha",
+      "knight": "Vityaz (knight-hero)",
+      "your_grace": "Gosudar",
+      "your_majesty": "Tsar"
+    },
+    "vassalage": {
+      "liege": "Gosudar",
+      "vassal": "Druzhinnik (retainer)",
+      "fealty": "Krestotselovanie (the cross-kissing oath)",
+      "tribute": "Dan"
+    }
   },
   "people_name_convention": {
     "order": "personal (dithematic -slav/-mir, or a Greek baptismal name) + patronymic -ovich; the boyar rod; a Greek saint-name for the devout.",
-    "surname_source": ["patronymic (-ovich / -ich)", "rod (boyar house)", "Greek baptismal name (Hellenization)"],
+    "surname_source": [
+      "patronymic (-ovich / -ich)",
+      "rod (boyar house)",
+      "Greek baptismal name (Hellenization)"
+    ],
     "dual_register": "the knyaz- and boyar-houses use dithematic Slavic glory-names; the clergy and devout take Greek baptismal names (-ii / -ios).",
     "theophoric": "names invoking the morphed powers + a Slavic element (-slav glory, Bog- god), increasingly displaced by Greek saint-names under the Hellenization: e.g. Tuloslav, Bogumir, alongside the Greek-form devotional names.",
     "diminutive": "-ko / -usha"
@@ -57,12 +192,27 @@
   "religion": {
     "_note": "Deity-names are the Slavic morphs of the Agrippan canon (family_slavic.json theonym_set) under a Byzantine-Greek (Hellenized) overlay (-ios/-ia endings) - never real Slavic or Greek gods. Lawful/Neutral henotheist: under the Hellenization the One (Otirios) is raised supreme and worshipped in golden-domed sobors; the old kapishche idols give way to the ikona and the monastyr. Neutral folk still keep the Dedy (ancestral dead) at the grave.",
     "the_one": "Otirios (< Slavic Oterun < Aeternus; God Most High, raised supreme under the Hellenization, worshipped in the domed churches)",
-    "sample_deity_renames": { "Tulrius": "Tulorios (the sun, the just light)", "Numeno": "Numirios (the sky-wisdom, the storm-word)", "Realta": "Relatia (the mother, mercy)", "Orlandus": "Orlonios (the iron-oath, war)" },
+    "sample_deity_renames": {
+      "Tulrius": "Tulorios (the sun, the just light)",
+      "Numeno": "Numirios (the sky-wisdom, the storm-word)",
+      "Realta": "Relatia (the mother, mercy)",
+      "Orlandus": "Orlonios (the iron-oath, war)"
+    },
     "demon_epithet_pattern": "the opposing powers keep their Slavic-Greek morphs + a portfolio epithet (distinct per power): Maraxus -> Marakhios the War-Fire; Vacidus -> Vakidios the Unmaker; Lusanto -> Lusanios the Hoard-Serpent.",
-    "clergy_ladder": { "1": "Chtets (reader/acolyte)", "3": "Ierei (priest; Gk. hiereus)", "5": "Protoierei (archpriest)", "7": "Episkop (bishop; Gk. episkopos)", "9": "Mitropolit (metropolitan; Gk. metropolites)" },
+    "clergy_ladder": {
+      "1": "Chtets (reader/acolyte)",
+      "3": "Ierei (priest; Gk. hiereus)",
+      "5": "Protoierei (archpriest)",
+      "7": "Episkop (bishop; Gk. episkopos)",
+      "9": "Mitropolit (metropolitan; Gk. metropolites)"
+    },
     "religious_orders_pattern": "the Monastyr (monastery) or Sobor (cathedral) of [power]: 'the Sobor of Tulorios', golden-domed, with ikony within.",
     "saints_pattern": "Svyatyi [name] (saint), Greek-form names favored; the Dedy (ancestral dead) still honored at the grave by the Neutral.",
-    "holy_symbol_motifs": { "Otirios": "an all-seeing eye within a golden dome", "Tulorios": "a sun-disc above a domed sanctuary", "Relatia": "the veiled mother above a healing-spring" }
+    "holy_symbol_motifs": {
+      "Otirios": "an all-seeing eye within a golden dome",
+      "Tulorios": "a sun-disc above a domed sanctuary",
+      "Relatia": "the veiled mother above a healing-spring"
+    }
   },
   "banks_patterns": {
     "ships": "river-trade ladya boats and Greek-style galleys: 'the Golden Dome', 'Star of the Sea', 'the River-runner'",
@@ -71,10 +221,81 @@
     "dungeons_ruins": "abandoned monastyri and burned grads: 'the Sobor of [name]', 'the Sunken Grad of [knyaz]'"
   },
   "seed_names": {
-    "personal_m": ["Vseslav", "Izyaslav", "Rostislav", "Vsevolod", "Yaropolk", "Mstislav", "Vyacheslav", "Bryacheslav", "Putyata", "Ratmir", "Tverdislav", "Gleboslav", "Feodor", "Dmitrii", "Vasilii", "Georgii", "Kirill", "Stefan", "Leontii", "Andronik"],
-    "personal_f": ["Predslava", "Rogneda", "Sbyslava", "Verhuslava", "Zvenislava", "Yaroslava", "Gorislava", "Miloslava", "Anastasia", "Evdokia", "Elena", "Sofia", "Irina", "Feodora", "Varvara", "Ksenia", "Marfa", "Agafia", "Vasilisa", "Evpraksia"],
-    "clan_rod": ["Rod Vseslavichi", "Rod Izyaslavichi", "Rod Rostislavichi", "Rod Mstislavichi", "Rod Putyatichi", "Rod Ratmirichi", "Rod Tverdislavichi", "Rod Gleboslavichi", "Rod Yaropolchichi", "Rod Vsevolodichi", "Rod Bryachislavichi", "Rod Zvenislavichi"],
-    "epithets_cognomina": ["the Great (Velikii)", "the Wise (Mudryi)", "the Bold (Hrabryi)", "the Pious (Blagochestivyi)", "Golden-hand", "the Lawgiver", "of Kyivgrad", "the Blessed (Blazhennyi)"],
-    "flagship_settlements": ["Kyivgrad (the mother of cities, the chief seat)", "Belgorod (the white-town)", "Zlatograd (the golden-domed city)", "Novigrad (the new-town)", "Tsargrad-pristan (the Greek-trade port)", "Sobor-Tulorios (the golden cathedral-seat)"]
+    "personal_m": [
+      "Vseslav",
+      "Izyaslav",
+      "Rostislav",
+      "Vsevolod",
+      "Yaropolk",
+      "Mstislav",
+      "Vyacheslav",
+      "Bryacheslav",
+      "Putyata",
+      "Ratmir",
+      "Tverdislav",
+      "Gleboslav",
+      "Feodor",
+      "Dmitrii",
+      "Vasilii",
+      "Georgii",
+      "Kirill",
+      "Stefan",
+      "Leontii",
+      "Andronik"
+    ],
+    "personal_f": [
+      "Predslava",
+      "Rogneda",
+      "Sbyslava",
+      "Verhuslava",
+      "Zvenislava",
+      "Yaroslava",
+      "Gorislava",
+      "Miloslava",
+      "Anastasia",
+      "Evdokia",
+      "Elena",
+      "Sofia",
+      "Irina",
+      "Feodora",
+      "Varvara",
+      "Ksenia",
+      "Marfa",
+      "Agafia",
+      "Vasilisa",
+      "Evpraksia"
+    ],
+    "clan_rod": [
+      "Rod Vseslavichi",
+      "Rod Izyaslavichi",
+      "Rod Rostislavichi",
+      "Rod Mstislavichi",
+      "Rod Putyatichi",
+      "Rod Ratmirichi",
+      "Rod Tverdislavichi",
+      "Rod Gleboslavichi",
+      "Rod Yaropolchichi",
+      "Rod Vsevolodichi",
+      "Rod Bryachislavichi",
+      "Rod Zvenislavichi"
+    ],
+    "epithets_cognomina": [
+      "the Great (Velikii)",
+      "the Wise (Mudryi)",
+      "the Bold (Hrabryi)",
+      "the Pious (Blagochestivyi)",
+      "Golden-hand",
+      "the Lawgiver",
+      "of Kyivgrad",
+      "the Blessed (Blazhennyi)"
+    ],
+    "flagship_settlements": [
+      "Kyivgrad (the mother of cities, the chief seat)",
+      "Belgorod (the white-town)",
+      "Zlatograd (the golden-domed city)",
+      "Novigrad (the new-town)",
+      "Tsargrad-pristan (the Greek-trade port)",
+      "Sobor-Tulorios (the golden cathedral-seat)"
+    ]
   }
 }

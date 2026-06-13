@@ -6,7 +6,11 @@
   "catalog_number": 4,
   "sub_palette": "akkadian",
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral", "Chaotic"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
   "_note": "Single-source (Ancient Mesopotamian: Assyrian/Babylonian/Sumerian). Akkadian sub-palette; river-valley city-states and law-giving empires. civ = feudal. Even split across all three alignments. Common-word lexicon and rank titles use the real Akkadian register (allowed, catalog 5.3); DEITY names are phoneme-morphs of the canonical (Agrippan) pantheon through Akkadian phonology (gdd-naming-conventions 5), never real Mesopotamian gods.",
   "phonology": {
     "palette": "Akkadian: sh, ', kh, ts, q; vowels a i u; endings -u/-tu/-um; theophoric stems are morphed canon-names (Tullaru-, Argantu-, Urlandu-, Numunu-).",
@@ -14,40 +18,166 @@
     "transparent_ratio": 0.35
   },
   "lexicon": {
-    "feature_words": { "river": "naru", "stream": "atappu", "lake": "agammu", "sea": "tamtu", "bay": "kishadu", "cape": "qaqqaru", "isle": "nagu", "mountain": "shadu", "hill": "tillu", "ridge": "bamtu", "forest": "qishtu", "desert": "seru", "plain": "ugaru", "marsh": "apparu", "ford": "nebiru", "pass": "babu", "oasis": "inu", "coast": "ahu" },
-    "settlement_words": { "hamlet": "kapru", "village": "dadmu", "town": "alu", "city": "alu rabu", "fort": "dimtu", "port": "kar", "market": "mahiru", "temple_town": "bit-ili", "citadel": "ekallu" },
-    "kinship": { "son": "mar", "daughter": "marat", "house": "bit", "ancestor": "abu" },
-    "adjectives": { "great": "rabu", "little": "sehru", "old": "labiru", "new": "eshu", "black": "salmu", "white": "pesu", "red": "samu", "golden": "huras", "iron": "parzillu", "high": "shaqu", "far": "ruqu", "sacred": "ellu", "fair": "damqu" },
-    "resources": { "salt": "tabtu", "iron": "parzillu", "bronze": "siparru", "silver": "kaspu", "gold": "hurasu", "incense": "qutrinnu", "grain": "she'u", "lapis": "uqnu", "fish": "nunu", "purple_dye": "argamannu" },
-    "directional": { "upper": "elu", "lower": "shaplu", "north": "iltanu", "south": "shutu", "inner": "qerbu", "outer": "kamu", "near": "qurbu", "far": "ruqu" }
+    "feature_words": {
+      "river": "naru",
+      "stream": "atappu",
+      "lake": "agammu",
+      "sea": "tamtu",
+      "bay": "kishadu",
+      "cape": "qaqqaru",
+      "isle": "nagu",
+      "mountain": "shadu",
+      "hill": "tillu",
+      "ridge": "bamtu",
+      "forest": "qishtu",
+      "desert": "seru",
+      "plain": "ugaru",
+      "marsh": "apparu",
+      "ford": "nebiru",
+      "pass": "babu",
+      "oasis": "inu",
+      "coast": "ahu",
+      "neck": "kishadu",
+      "narrows": "nerebu",
+      "road": "harranu",
+      "way": "urhu",
+      "track": "padanu"
+    },
+    "settlement_words": {
+      "hamlet": "kapru",
+      "village": "dadmu",
+      "town": "alu",
+      "city": "alu rabu",
+      "fort": "dimtu",
+      "port": "kar",
+      "market": "mahiru",
+      "temple_town": "bit-ili",
+      "citadel": "ekallu"
+    },
+    "kinship": {
+      "son": "mar",
+      "daughter": "marat",
+      "house": "bit",
+      "ancestor": "abu"
+    },
+    "adjectives": {
+      "great": "rabu",
+      "little": "sehru",
+      "old": "labiru",
+      "new": "eshu",
+      "black": "salmu",
+      "white": "pesu",
+      "red": "samu",
+      "golden": "huras",
+      "iron": "parzillu",
+      "high": "shaqu",
+      "far": "ruqu",
+      "sacred": "ellu",
+      "fair": "damqu"
+    },
+    "resources": {
+      "salt": "tabtu",
+      "iron": "parzillu",
+      "bronze": "siparru",
+      "silver": "kaspu",
+      "gold": "hurasu",
+      "incense": "qutrinnu",
+      "grain": "she'u",
+      "lapis": "uqnu",
+      "fish": "nunu",
+      "purple_dye": "argamannu"
+    },
+    "directional": {
+      "upper": "elu",
+      "lower": "shaplu",
+      "north": "iltanu",
+      "south": "shutu",
+      "inner": "qerbu",
+      "outer": "kamu",
+      "near": "qurbu",
+      "far": "ruqu"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["Bit-", "Dur- (fort)", "Kar- (port)", "-um", "Til- (mound)"],
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur- (fort)",
+      "Kar- (port)",
+      "-um",
+      "Til- (mound)"
+    ],
     "patronymic_form": "patronymic 'mar' (son of); theophoric given names (on morphed god-stems); family/profession house.",
-    "gendered_endings": { "male": "-u / -um", "female": "-tu / -itu / -at" },
+    "gendered_endings": {
+      "male": "-u / -um",
+      "female": "-tu / -itu / -at"
+    },
     "diminutive_form": "-anu",
     "compounding_rule": "construct chains: Bit-[god/name] (house of), Dur-[ruler] (fort of), Kar-[god] (port of); resource + feature."
   },
   "title_ladder": {
     "government": "feudal (Mesopotamian; the law-code and temple-bureaucracy character is narrative flavor)",
     "tiers": {
-      "barony": { "ruler": "Hazannu", "domain": "Hazannutu" },
-      "march": { "ruler": "Massaru", "domain": "Massarutu" },
-      "county": { "ruler": "Shaknu", "domain": "Shaknutu" },
-      "duchy": { "ruler": "Turtanu", "domain": "Turtanutu" },
-      "principality": { "ruler": "Rubu", "domain": "Rubutu" },
-      "kingdom": { "ruler": "Sharru", "domain": "Sharrutu" },
-      "empire": { "ruler": "Shar-kishshati", "domain": "Kishshatu" }
+      "barony": {
+        "ruler": "Hazannu",
+        "domain": "Hazannutu"
+      },
+      "march": {
+        "ruler": "Massaru",
+        "domain": "Massarutu"
+      },
+      "county": {
+        "ruler": "Shaknu",
+        "domain": "Shaknutu"
+      },
+      "duchy": {
+        "ruler": "Turtanu",
+        "domain": "Turtanutu"
+      },
+      "principality": {
+        "ruler": "Rubu",
+        "domain": "Rubutu"
+      },
+      "kingdom": {
+        "ruler": "Sharru",
+        "domain": "Sharrutu"
+      },
+      "empire": {
+        "ruler": "Shar-kishshati",
+        "domain": "Kishshatu"
+      }
     },
     "_tiers_note": "Akkadian, ascending (barony, march, county, duchy, principality, kingdom, empire). -u/-utu rhyme (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county; Turtanu (commander-in-chief) duchy; Sharru (king) kingdom; Shar-kishshati (king of the totality) emperor over the Kishshatu. (Rank titles are the real Akkadian register, allowed.)",
-    "female_forms": { "Sharru": "Sharratu", "Shar-kishshati": "Sharrat-kishshati", "Rubu": "Rubatu", "Turtanu": "Turtanutu", "Shaknu": "Shaknatu", "Massaru": "Massartu", "Hazannu": "Hazannatu" },
+    "female_forms": {
+      "Sharru": "Sharratu",
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Rubu": "Rubatu",
+      "Turtanu": "Turtanutu",
+      "Shaknu": "Shaknatu",
+      "Massaru": "Massartu",
+      "Hazannu": "Hazannatu"
+    },
     "heir": "Mar-Sharri (son of the king / crown prince)",
-    "honorifics": { "lord": "Belu", "lady": "Beltu", "knight": "Redu (soldier)", "your_grace": "Beli (my lord)", "your_majesty": "Sharri" },
-    "vassalage": { "liege": "Belu", "vassal": "Ardu (servant)", "fealty": "Ade (loyalty-oath)", "tribute": "Biltu / Mandattu" }
+    "honorifics": {
+      "lord": "Belu",
+      "lady": "Beltu",
+      "knight": "Redu (soldier)",
+      "your_grace": "Beli (my lord)",
+      "your_majesty": "Sharri"
+    },
+    "vassalage": {
+      "liege": "Belu",
+      "vassal": "Ardu (servant)",
+      "fealty": "Ade (loyalty-oath)",
+      "tribute": "Biltu / Mandattu"
+    }
   },
   "people_name_convention": {
     "order": "given (often theophoric) + patronymic (mar-X) or profession/house.",
-    "surname_source": ["patronymic (mar)", "theophoric given (Tullaru-iddina = Tullaru-gave-me)", "profession/house"],
+    "surname_source": [
+      "patronymic (mar)",
+      "theophoric given (Tullaru-iddina = Tullaru-gave-me)",
+      "profession/house"
+    ],
     "dual_register": "officials use a profession/house title; commoners a patronymic.",
     "theophoric": "given names built from the morphed deity-names + a common Akkadian verb: X-iddina (X-gave), X-uballit (X-kept-alive), Warad-X (servant-of-X). e.g. Tullaru-iddina, Warad-Urlandu.",
     "diminutive": "-anu"
@@ -55,12 +185,26 @@
   "religion": {
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Akkadian phonology (-us/-ius -> -u/-ishu; o -> u; v -> b; doubling) — recognizably the same powers, never real Mesopotamian gods. All three alignments.",
     "the_one": "Itarnu (< Aeternus; the great distant one, honored not petitioned)",
-    "sample_deity_renames": { "Tulrius": "Tullaru (sun and judgment)", "Numeno": "Numunu (the scribe-wisdom)", "Lieta": "Littu (the grain)", "Argentus": "Argantu (trade and the city)" },
+    "sample_deity_renames": {
+      "Tulrius": "Tullaru (sun and judgment)",
+      "Numeno": "Numunu (the scribe-wisdom)",
+      "Lieta": "Littu (the grain)",
+      "Argentus": "Argantu (trade and the city)"
+    },
     "demon_epithet_pattern": "each opposing power keeps its morphed name + its own portfolio epithet (distinct per power; the suffix '-lemnu' = evil may be appended): Maraxus -> Marakshu the City-Burner; Irantius -> Irantishu the Restless; Vacidus -> Bakidu-lemnu (the Unmaking).",
-    "clergy_ladder": { "1": "Eribbiti (temple-enterer)", "3": "Sangu (priest)", "5": "Shangu Rabu (high priest)", "7": "Urigallu (chief priest)", "9": "Shatammu (temple-primate)" },
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer)",
+      "3": "Sangu (priest)",
+      "5": "Shangu Rabu (high priest)",
+      "7": "Urigallu (chief priest)",
+      "9": "Shatammu (temple-primate)"
+    },
     "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power]: 'the Bit-ili of Tullaru'.",
     "saints_pattern": "deified law-givers and heroes inscribed on the temple-stele; 'the Just [name]'.",
-    "holy_symbol_motifs": { "Tullaru": "winged sun-disc over a law-stele", "Numunu": "stylus on a clay tablet" }
+    "holy_symbol_motifs": {
+      "Tullaru": "winged sun-disc over a law-stele",
+      "Numunu": "stylus on a clay tablet"
+    }
   },
   "banks_patterns": {
     "ships": "river-barge names: 'Pride of the Naru', 'Boat of Tullaru'",
@@ -69,10 +213,72 @@
     "dungeons_ruins": "buried ziggurats and dead cities: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu'"
   },
   "seed_names": {
-    "personal_m": ["Tullaru-iddina", "Argantu-zer", "Urlandu-bani", "Numunu-nasir", "Littu-mukin", "Dilurum-shum", "Bentaliu-rib", "Pullu-shar", "Itarnu-um", "Warad-Tullaru", "Iddin-Argantu", "Numunu-zer", "Urlandu-nasir", "Tullaru-bani", "Naram-Urlandu", "Gayandu-iddina"],
-    "personal_f": ["Tullaru-belit", "Argantu-amat", "Rialtu-rishat", "Numunu-tabni", "Amat-Tullaru", "Belit-Argantu", "Littu-banit", "Rialtu-um", "Numunu-belit", "Tabni-Rialtu", "Urlandu-belit", "Dilurum-at", "Tullaru-rimti", "Argantu-belit", "Rialtu-tabni", "Amat-Numunu"],
-    "clan_houses": ["Bit-Tullaru", "Bit-Argantu", "Bit-Numunu", "Bit-Urlandu", "Bit-Littu", "Bit-Dilurum", "Bit-Rialtu", "Bit-Pullu", "Bit-Bentaliu", "Bit-Gayandu", "Bit-Nuktilunu", "Bit-Numiu"],
-    "epithets_cognomina": ["the Lawful", "Lion-of-the-Gate", "the Stele-writer", "Iron-handed", "the Far-marcher", "Storm-voiced", "the Just", "Wall-builder"],
-    "flagship_settlements": ["Hammur (the capital)", "Dur-Sharrutu (king's-fort)", "Kar-Tullaru (Tullaru's-port)", "Bit-Tullaru", "Til-Labiru (the old mound)"]
+    "personal_m": [
+      "Tullaru-iddina",
+      "Argantu-zer",
+      "Urlandu-bani",
+      "Numunu-nasir",
+      "Littu-mukin",
+      "Dilurum-shum",
+      "Bentaliu-rib",
+      "Pullu-shar",
+      "Itarnu-um",
+      "Warad-Tullaru",
+      "Iddin-Argantu",
+      "Numunu-zer",
+      "Urlandu-nasir",
+      "Tullaru-bani",
+      "Naram-Urlandu",
+      "Gayandu-iddina"
+    ],
+    "personal_f": [
+      "Tullaru-belit",
+      "Argantu-amat",
+      "Rialtu-rishat",
+      "Numunu-tabni",
+      "Amat-Tullaru",
+      "Belit-Argantu",
+      "Littu-banit",
+      "Rialtu-um",
+      "Numunu-belit",
+      "Tabni-Rialtu",
+      "Urlandu-belit",
+      "Dilurum-at",
+      "Tullaru-rimti",
+      "Argantu-belit",
+      "Rialtu-tabni",
+      "Amat-Numunu"
+    ],
+    "clan_houses": [
+      "Bit-Tullaru",
+      "Bit-Argantu",
+      "Bit-Numunu",
+      "Bit-Urlandu",
+      "Bit-Littu",
+      "Bit-Dilurum",
+      "Bit-Rialtu",
+      "Bit-Pullu",
+      "Bit-Bentaliu",
+      "Bit-Gayandu",
+      "Bit-Nuktilunu",
+      "Bit-Numiu"
+    ],
+    "epithets_cognomina": [
+      "the Lawful",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "Iron-handed",
+      "the Far-marcher",
+      "Storm-voiced",
+      "the Just",
+      "Wall-builder"
+    ],
+    "flagship_settlements": [
+      "Hammur (the capital)",
+      "Dur-Sharrutu (king's-fort)",
+      "Kar-Tullaru (Tullaru's-port)",
+      "Bit-Tullaru",
+      "Til-Labiru (the old mound)"
+    ]
   }
 }

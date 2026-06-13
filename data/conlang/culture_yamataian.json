@@ -5,10 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 13,
   "sub_palette": "japonic",
-  "synthesis_sources": [10],
+  "synthesis_sources": [
+    10
+  ],
   "homeland": "Yamatai",
   "government": "clanhold",
-  "alignment_allowed": ["Lawful", "Chaotic"],
+  "alignment_allowed": [
+    "Lawful",
+    "Chaotic"
+  ],
   "_note": "Single-source (Japanese, Sengoku Jidai period). Japonic sub-palette of the East Asian family; warring-states daimyo houses, samurai retainers, castle-towns and kami-shrines. clan = clanhold (the Tenno reigns, the Shogun and daimyo rule). Even split Lawful/Chaotic, no Neutral (the disciplined warrior-way vs the wild war-fury and the untamed kami). Common-word lexicon and rank titles use the real Japanese register (allowed, catalog 5.3); DEITY names are wholly NATIVE kami (family_east_asian.json theonym_sets.japonic) - they do NOT borrow the Chinese forms (the tongues are unrelated) and are never real Shinto kami.",
   "phonology": {
     "palette": "Japonic: open CV moras (only coda -n); five vowels a i u e o; pitch accent; no consonant clusters; rendaku (sequential voicing) in compounds; clan(-shi/uji) + given; kami honorifics -no-kami/-no-mikoto/-hime.",
@@ -16,40 +21,170 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "kawa", "stream": "nagare", "lake": "ko", "sea": "umi", "bay": "ura", "cape": "misaki", "isle": "shima", "mountain": "yama", "hill": "oka", "ridge": "one", "forest": "mori", "wood": "hayashi", "plain": "no", "marsh": "numa", "ford": "watari", "pass": "toge", "vale": "tani", "coast": "hama" },
-    "settlement_words": { "hamlet": "sato", "village": "mura", "town": "machi", "city": "miyako", "fort": "toride", "port": "minato", "market": "ichi", "temple_town": "jinja", "citadel": "shiro" },
-    "kinship": { "son": "musuko", "daughter": "musume", "house": "ie", "kin": "uji", "ancestor": "senzo" },
-    "adjectives": { "great": "oo", "little": "ko", "old": "furu", "new": "ara", "black": "kuro", "white": "shiro", "red": "aka", "golden": "kogane", "iron": "kurogane", "high": "taka", "far": "too", "sacred": "imi", "fair": "kiyo" },
-    "resources": { "salt": "shio", "iron": "tetsu", "bronze": "akagane", "silver": "gin", "gold": "kin", "jade": "hisui", "silk": "kinu", "rice": "kome", "tea": "cha", "horse": "uma" },
-    "directional": { "upper": "ue", "lower": "shita", "north": "kita", "south": "minami", "east": "higashi", "west": "nishi", "inner": "uchi", "outer": "soto" }
+    "feature_words": {
+      "river": "kawa",
+      "stream": "nagare",
+      "lake": "ko",
+      "sea": "umi",
+      "bay": "ura",
+      "cape": "misaki",
+      "isle": "shima",
+      "mountain": "yama",
+      "hill": "oka",
+      "ridge": "one",
+      "forest": "mori",
+      "wood": "hayashi",
+      "plain": "no",
+      "marsh": "numa",
+      "ford": "watari",
+      "pass": "toge",
+      "vale": "tani",
+      "coast": "hama",
+      "neck": "kubi",
+      "narrows": "seto",
+      "waste": "arano",
+      "road": "michi",
+      "way": "do",
+      "track": "komichi"
+    },
+    "settlement_words": {
+      "hamlet": "sato",
+      "village": "mura",
+      "town": "machi",
+      "city": "miyako",
+      "fort": "toride",
+      "port": "minato",
+      "market": "ichi",
+      "temple_town": "jinja",
+      "citadel": "shiro"
+    },
+    "kinship": {
+      "son": "musuko",
+      "daughter": "musume",
+      "house": "ie",
+      "kin": "uji",
+      "ancestor": "senzo"
+    },
+    "adjectives": {
+      "great": "oo",
+      "little": "ko",
+      "old": "furu",
+      "new": "ara",
+      "black": "kuro",
+      "white": "shiro",
+      "red": "aka",
+      "golden": "kogane",
+      "iron": "kurogane",
+      "high": "taka",
+      "far": "too",
+      "sacred": "imi",
+      "fair": "kiyo"
+    },
+    "resources": {
+      "salt": "shio",
+      "iron": "tetsu",
+      "bronze": "akagane",
+      "silver": "gin",
+      "gold": "kin",
+      "jade": "hisui",
+      "silk": "kinu",
+      "rice": "kome",
+      "tea": "cha",
+      "horse": "uma"
+    },
+    "directional": {
+      "upper": "ue",
+      "lower": "shita",
+      "north": "kita",
+      "south": "minami",
+      "east": "higashi",
+      "west": "nishi",
+      "inner": "uchi",
+      "outer": "soto"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-shiro / -jo (castle)", "-machi (town)", "-mura (village)", "-yama (mountain)", "-gawa (river)", "-no (field)"],
+    "toponymic_suffixes": [
+      "-shiro / -jo (castle)",
+      "-machi (town)",
+      "-mura (village)",
+      "-yama (mountain)",
+      "-gawa (river)",
+      "-no (field)"
+    ],
     "patronymic_form": "the clan/house name (uji / -shi) precedes the given name; -no- links clan and name (X no Y); house-suffix -ke for the noble house.",
-    "gendered_endings": { "male": "-ro / -suke / -maru", "female": "-ko / -e / -hime" },
+    "gendered_endings": {
+      "male": "-ro / -suke / -maru",
+      "female": "-ko / -e / -hime"
+    },
     "diminutive_form": "-maru (boys/blades/ships); -chan informal",
     "compounding_rule": "[clan] no [given]; toponyms = feature/quality + type: Kuro-yama (black-mountain), Aka-shiro (red-castle); rendaku voicing (kawa -> -gawa)."
   },
   "title_ladder": {
     "government": "clanhold (the Sengoku warring-states: daimyo houses and their samurai retainers; the Tenno reigns in name, the Shogun and daimyo rule in fact)",
     "tiers": {
-      "barony": { "ruler": "Jito", "domain": "Sho" },
-      "march": { "ruler": "Shugodai", "domain": "Sakai" },
-      "county": { "ruler": "Shugo", "domain": "Kuni" },
-      "duchy": { "ruler": "Daimyo", "domain": "Ryogoku" },
-      "principality": { "ruler": "Kokushu", "domain": "Ryo" },
-      "kingdom": { "ruler": "Shogun", "domain": "Bakufu" },
-      "empire": { "ruler": "Tenno", "domain": "Tenka" }
+      "barony": {
+        "ruler": "Jito",
+        "domain": "Sho"
+      },
+      "march": {
+        "ruler": "Shugodai",
+        "domain": "Sakai"
+      },
+      "county": {
+        "ruler": "Shugo",
+        "domain": "Kuni"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Ryogoku"
+      },
+      "principality": {
+        "ruler": "Kokushu",
+        "domain": "Ryo"
+      },
+      "kingdom": {
+        "ruler": "Shogun",
+        "domain": "Bakufu"
+      },
+      "empire": {
+        "ruler": "Tenno",
+        "domain": "Tenka"
+      }
     },
     "_tiers_note": "Japonic clanhold, ascending. The Tenno (heavenly sovereign) reigns over Tenka (all-under-heaven) but the Shogun (military overlord, the Bakufu) and the Daimyo houses rule in fact; the Sengoku is the war of the daimyo. Kokushu (province-master) principality; Shugo (province-governor) county; Shugodai (border deputy) march; Jito (estate-lord) barony. (Rank titles are the real Japanese register, allowed.)",
-    "female_forms": { "Tenno": "Jotei", "Shogun": "Onna-shogun (rare)", "Kokushu": "Onna-kokushu", "Daimyo": "Onna-daimyo", "Shugo": "Onna-shugo", "Shugodai": "Onna-shugodai", "Jito": "Onna-jito" },
+    "female_forms": {
+      "Tenno": "Jotei",
+      "Shogun": "Onna-shogun (rare)",
+      "Kokushu": "Onna-kokushu",
+      "Daimyo": "Onna-daimyo",
+      "Shugo": "Onna-shugo",
+      "Shugodai": "Onna-shugodai",
+      "Jito": "Onna-jito"
+    },
     "heir": "Yotsugi / Chakushi (the designated heir-son)",
-    "honorifics": { "lord": "Tono", "lady": "Hime", "warrior": "Bushi (samurai)", "your_grace": "Tono", "your_majesty": "Heika" },
-    "vassalage": { "liege": "Shujun", "vassal": "Kerai (retainer)", "fealty": "Chugi (loyal fealty)", "tribute": "Nengu" }
+    "honorifics": {
+      "lord": "Tono",
+      "lady": "Hime",
+      "warrior": "Bushi (samurai)",
+      "your_grace": "Tono",
+      "your_majesty": "Heika"
+    },
+    "vassalage": {
+      "liege": "Shujun",
+      "vassal": "Kerai (retainer)",
+      "fealty": "Chugi (loyal fealty)",
+      "tribute": "Nengu"
+    }
   },
   "people_name_convention": {
     "order": "clan/house name (uji/-shi) first, then given name; samurai add a title or the -no- form (X no Y); a gen-puku adult name for warriors.",
-    "surname_source": ["clan/house (uji, -shi)", "branch-house (-ke)", "fief/locational name", "Buddhist or art-name (-an) for the cultured"],
+    "surname_source": [
+      "clan/house (uji, -shi)",
+      "branch-house (-ke)",
+      "fief/locational name",
+      "Buddhist or art-name (-an) for the cultured"
+    ],
     "dual_register": "the buke (warrior houses) carry a clan name + court/military title; commoners use a single name or trade-name.",
     "theophoric": "names invoke the native kami and warrior-virtues + an element: -maru (child/blade), Take- (valor), Kami- (divine): e.g. Takebimaru, names honoring Terashi-no-kami.",
     "diminutive": "-maru / -chan"
@@ -57,12 +192,26 @@
   "religion": {
     "_note": "Deity-names are NATIVE kami, independently coined (family_east_asian.json theonym_sets.japonic) - they do NOT borrow the Chinese forms (the tongues are unrelated) and are never real Shinto kami. Lawful/Chaotic: the Lawful keep the ordered way of the warrior (the kami of sun, blade and ancestors); the Chaotic the wild kami and the war-fury (the storm, the war-flame, the mountain-oni). The kami pervade all things; the ancestral dead (senzo) are honored at the household shrine.",
     "the_one": "Takami-no-kami (< the One, Aeternus, rendered as native kami; the High-Heaven One, distant above the myriad kami)",
-    "sample_deity_renames": { "Tulrius": "Terashi-no-kami (the Shining One, sun and right-rule)", "Orlandus": "Hagane-no-kami (the Steel One, the blade-oath and war)", "Gaiandus": "Iwane-no-kami (the Rock-Root, the enduring mountain)", "Realta": "Megumi-hime (the Mercy-Maiden, mother and healing)" },
+    "sample_deity_renames": {
+      "Tulrius": "Terashi-no-kami (the Shining One, sun and right-rule)",
+      "Orlandus": "Hagane-no-kami (the Steel One, the blade-oath and war)",
+      "Gaiandus": "Iwane-no-kami (the Rock-Root, the enduring mountain)",
+      "Realta": "Megumi-hime (the Mercy-Maiden, mother and healing)"
+    },
     "demon_epithet_pattern": "the wild and devouring powers are fierce kami or oni, each with an epithet: Maraxus -> Takebi-no-kami the War-Flame; Vacidus -> Utsuro-no-kami the Devouring Void; Lusanto -> Kogane-Orochi the gold hoard-serpent.",
-    "clergy_ladder": { "1": "Miko (shrine-attendant)", "3": "Kannushi (shrine-priest)", "5": "Negi (senior priest)", "7": "Guji (chief priest)", "9": "Saishu (high priest of the realm)" },
+    "clergy_ladder": {
+      "1": "Miko (shrine-attendant)",
+      "3": "Kannushi (shrine-priest)",
+      "5": "Negi (senior priest)",
+      "7": "Guji (chief priest)",
+      "9": "Saishu (high priest of the realm)"
+    },
     "religious_orders_pattern": "the Jinja (shrine) of [kami]: 'the Jinja of Terashi-no-kami', within its torii and sacred grove.",
     "saints_pattern": "great ancestors and fallen heroes enshrined as kami (the eirei, honored dead) at the clan jinja; 'the kami [name]'.",
-    "holy_symbol_motifs": { "Terashi-no-kami": "a rising sun-disc above a mirror and sword", "Hagane-no-kami": "a bare blade crossed before a torii" }
+    "holy_symbol_motifs": {
+      "Terashi-no-kami": "a rising sun-disc above a mirror and sword",
+      "Hagane-no-kami": "a bare blade crossed before a torii"
+    }
   },
   "banks_patterns": {
     "ships": "war-junk and atakebune names: 'the Wave-Cutter', 'the Storm-Crane', 'Hagane-maru'",
@@ -71,10 +220,85 @@
     "dungeons_ruins": "fallen shiro (castles) and abandoned jinja: 'the ruined Shiro of [clan]', 'the haunted Jinja of [name]'"
   },
   "seed_names": {
-    "personal_m": ["Takeshi", "Hideo", "Katsuro", "Yoshihiro", "Kagehisa", "Munenori", "Tadashi", "Nobuhide", "Saburo", "Hayato", "Genki", "Masaru", "Toramaru", "Kenta", "Naoki", "Shintaro", "Raita", "Yukito", "Goro", "Takebimaru"],
-    "personal_f": ["Hanae", "Chiyo", "Sumire", "Aoi", "Kaede", "Yuki", "Sakurako", "Tomoko", "Misaki", "Hinata", "Kiyomi", "Nadeshiko", "Hotaru", "Suzu", "Ayame", "Kohime", "Mitsuko", "Sayuri", "Rei", "Tsukino"],
-    "clan_uji": ["Kurokawa", "Akiyama", "Takemori", "Iwakura", "Yamabe", "Hoshino", "Aragaki", "Mizuhara", "Takayama", "Shirakawa", "Morikawa", "Akabane", "Tsukimori", "Hayashida", "Onodera", "Iwane"],
-    "epithets_cognomina": ["the Tiger (Tora)", "the Dragon (Ryu)", "Iron-arm", "the Loyal (Chugi)", "Blade-saint", "the Storm", "the Demon (Oni)", "the Pine (Matsu)"],
-    "flagship_settlements": ["Yamatai (the clan capital)", "Shiroyama (the castle-mount)", "Kuro-shiro (the black castle)", "Aka-minato (the red port)", "Terashi-jinja (the sun-shrine town)", "Take-no-toride (the bamboo fort)"]
+    "personal_m": [
+      "Takeshi",
+      "Hideo",
+      "Katsuro",
+      "Yoshihiro",
+      "Kagehisa",
+      "Munenori",
+      "Tadashi",
+      "Nobuhide",
+      "Saburo",
+      "Hayato",
+      "Genki",
+      "Masaru",
+      "Toramaru",
+      "Kenta",
+      "Naoki",
+      "Shintaro",
+      "Raita",
+      "Yukito",
+      "Goro",
+      "Takebimaru"
+    ],
+    "personal_f": [
+      "Hanae",
+      "Chiyo",
+      "Sumire",
+      "Aoi",
+      "Kaede",
+      "Yuki",
+      "Sakurako",
+      "Tomoko",
+      "Misaki",
+      "Hinata",
+      "Kiyomi",
+      "Nadeshiko",
+      "Hotaru",
+      "Suzu",
+      "Ayame",
+      "Kohime",
+      "Mitsuko",
+      "Sayuri",
+      "Rei",
+      "Tsukino"
+    ],
+    "clan_uji": [
+      "Kurokawa",
+      "Akiyama",
+      "Takemori",
+      "Iwakura",
+      "Yamabe",
+      "Hoshino",
+      "Aragaki",
+      "Mizuhara",
+      "Takayama",
+      "Shirakawa",
+      "Morikawa",
+      "Akabane",
+      "Tsukimori",
+      "Hayashida",
+      "Onodera",
+      "Iwane"
+    ],
+    "epithets_cognomina": [
+      "the Tiger (Tora)",
+      "the Dragon (Ryu)",
+      "Iron-arm",
+      "the Loyal (Chugi)",
+      "Blade-saint",
+      "the Storm",
+      "the Demon (Oni)",
+      "the Pine (Matsu)"
+    ],
+    "flagship_settlements": [
+      "Yamatai (the clan capital)",
+      "Shiroyama (the castle-mount)",
+      "Kuro-shiro (the black castle)",
+      "Aka-minato (the red port)",
+      "Terashi-jinja (the sun-shrine town)",
+      "Take-no-toride (the bamboo fort)"
+    ]
   }
 }

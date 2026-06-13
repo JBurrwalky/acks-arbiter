@@ -33785,3 +33785,170 @@ on-tick dispatch.
 1. Jedidiah runs the smoke test above; fix anything it surfaces.
 2. Mount PartySelectorTabs in the HUD (chip) — wire `party_selected` → `EventBus.party_focus_requested`, `set_switching_disabled` on combat/camp, group `hud_party_selector_tabs` already honored by HudVisibilityController.
 3. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — PartySelectorTabs mounted in the HUD (Option 1 follow-up)
+
+**Task:** Mount the never-instantiated `scenes/ui/hud/party_selector_tabs.gd` widget in the session HUD and wire it to the Option 1 party-focus system (follow-up chip from the Option 1 session).
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- **Mounted** via the EntityOutliner pattern: SessionRunner creates a `PartySelectorLayer` CanvasLayer (layer 79, just below SessionStatusBar's 80) in `load_session` step 8b and anchors the widget top-left (8,8). The widget hides itself with fewer than 2 parties and already joins the `hud_party_selector_tabs` group (HudVisibilityController hides it while the notebook is open).
+- **Data feed:** `SessionRunner._refresh_party_selector_tabs()` builds `[{id, name, member_count, activity}]` from `list_parties_for_campaign` + `list_party_characters` (SQL-null-guarded per conventions §15.4); activity icon maps from `current_location_type` (settlement → `in_settlement`, else `exploring`). Wired to `party_split` / `party_merged` / `party_member_joined` / `party_member_left` / `active_party_changed` / `session_state_transitioned` (connected AFTER the Option 1 context handler so tabs render post-switch state) and called at session load; `end_session` hides the bar.
+- **Switching:** `party_selected` → `EventBus.party_focus_requested` (one path shared with toast actions; `SessionRunner.go_to_party` does the full context switch). `set_active` keeps the highlight in sync on `active_party_changed`.
+- **Disabled states:** `session_state_transitioned` → `set_switching_disabled("Cannot switch parties during combat."/"…while camping.")` for combat/camp, cleared on wilderness/dungeon/settlement — UI-level mirror of the engine guard in `_apply_party_focus` (which stays authoritative, incl. dungeon in-place combat).
+- **Split button:** routes to a notification pointing at the Notebook's Party tab (the split dialog needs the formation-grid context; not duplicated in the HUD).
+- **Visual verification:** throwaway harness scene rendered the widget windowed and self-captured the viewport to PNG (`get_viewport().get_texture().get_image().save_png` after two `RenderingServer.frame_post_draw` awaits — a useful trick for visual checks from a headless-driven session). Confirmed: enabled row with green active tab + member counts + activity icons + split button; disabled row uniformly dimmed. Harness deleted after verification.
+**Decisions made:**
+- SessionRunner-owned CanvasLayer (EntityOutliner precedent) over editing session_status_bar.tscn — no scene-file surgery, lifecycle managed at load/end session, and the bar visually belongs top-left (Paradox idiom) rather than in the bottom status bar.
+- The widget stays a dumb view (host feeds it) — matching its original design — rather than self-wiring EventBus like clock_speed_controls; SessionRunner already owns every refresh trigger.
+**Interfaces defined or changed:**
+- `SessionRunner._party_selector_tabs` / `_party_selector_layer` + `_refresh_party_selector_tabs()` and the four `_on_*_for_tabs` handlers. No new EventBus signals; no public API changes.
+**Database changes:** None.
+**Tests added/updated:** None (pure UI composition; the engine paths it drives were covered by the Option 1 suite). Verified visually + headless suite green.
+- **Result: 436 passed / 17 failed** (single confirmation run post-cleanup after two clean runs mid-session; zero lock lines) — net-zero vs the 436/17 baseline.
+**Known issues:**
+- The top-left anchor was verified in isolation, not against every in-game HUD overlay (e.g. dungeon minimap is top-right; wilderness HexHUD elements). If something collides in play, nudge `offset_top`/`offset_left` in load_session step 8b.
+- Tab clicks during dungeon in-place combat rely on the engine guard (revert + toast) since no state transition fires to disable the bar — acceptable; noted in the Option 1 entry too.
+**Next session should:**
+1. Jedidiah's Option 1 smoke test (steps in the previous entry) now also covers the tab bar — switch via tabs instead of the Notebook for step (1).
+2. Layer 4 — History Simulation GDD §17 open questions (unchanged queue priority).
+
+## Session 2026-06-12 — Hotfix: pause-menu parse error (`:=` inference from untyped helper)
+
+**Task:** Fix the editor-reported parse error in `scenes/ui/pause/pause_menu_overlay.gd:54` — "Cannot infer the type of 'loop' variable because the value doesn't have a set type" — introduced by the pause-menu auto-restore session.
+**Model used:** Fable 5 (Opus-class).
+**Completed:**
+- `pause_menu_overlay.gd:54`: `var loop := _scheduler_loop()` → `var loop = _scheduler_loop()` with a comment. `_scheduler_loop()` is deliberately untyped (returns the loop or null), and `:=` cannot infer from an untyped return — a hard parse error. The headless suite never caught it because scene/UI scripts are not loaded by the test runner (the documented "suite-green ≠ parse-clean" gotcha; the prior session's "parse-clean" claim was based on `--import` + the suite, neither of which compiles unreferenced scene scripts).
+- **Defensive sweep:** ran `--check-only -s` (filtered for genuine parse errors — "cannot infer"/"unexpected"/"expected", which surface reliably despite the known autoload-reference false positives) over ALL 14 UI/scene scripts touched in the scheduler arc (pause overlay, save/load panel, encounters/threats sub-tab, dungeon renderer, the 10 calendar-dedup UI files). Zero genuine parse errors remain.
+**Decisions made:**
+- None — mechanical fix per GDScript typing rules.
+**Interfaces defined or changed:**
+- None.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None. **Suite run: 436 passed / 17 failed, zero lock lines, failure fingerprint IDENTICAL to the context-refactor baseline.** The +1 passing suite arrived via commit `ae21aaf` ("dungeon time coordination refactor and multi-party time"), which bundled a CONCURRENT session's Option 1 work (go_to_party / party_focus_requested) alongside this arc's checkpoint — net-zero for this fix.
+**Known issues:**
+- A concurrent session is actively building Option 1 (uncommitted `session_runner.gd` diff: PartySelectorTabs wiring) — deliberately untouched by this session.
+**Next session should:**
+1. Continue Option 1 (in flight in the concurrent session).
+2. Verification procedure note: any session touching scene/UI scripts must run the filtered `--check-only` sweep over the touched files — the headless suite does not compile them.
+
+## Session 2026-06-12 — Bug-list pass: inventory crash + Bugs 1/2/4/5 + unhitched-vehicle travel (Bug 3)
+
+**Task:** Diagnose the Avalon test-map dungeons (entrances + generator metadata), then work `docs/Bug List.md`: an inventory-tab detached-node crash plus Bugs 1 (rename propagation), 2 (item transfer to creatures/vehicles), 4 (saddle/tack stack-equip), 5 (settlement gate "Leave" dead-end), and 3 (unhitched-vehicle travel prompt). Bug 6 (dungeon culling) deferred.
+**Model used:** Opus 4.8 (1M context).
+**Completed:**
+- **Avalon dungeon diagnosis (no code change):** `test_content_seeder.gd::_seed_avalon_dungeons` DOES place 3 dungeon_entrances (Forgotten Fane, Sunken Citadel, Temple of Mkia) with complete `spec` metadata (kind/tier/tier_min/tier_max/size/floors/entrance_floor_index) — exactly what `DungeonFixtureService.get_or_generate_voxel` consumes; verified end-to-end (generator produced a 1922-cell voxel dungeon). The live campaign.db was empty (no campaign seeded). Markers are also fog-gated: `hex_map_renderer.gd::_refresh_dungeon_markers` skips HIDDEN hexes, and the 3 dungeons sit 5/11/21 hexes from the party start, so the "D" markers don't render until explored.
+- **Inventory detached-node crash:** `inventory_tab_page.gd::_resolve_dungeon_controller` now guards `is_inside_tree()` (the notebook caches inactive tab pages detached from the tree per `notebook.gd::_swap_page_content`, but they stay EventBus-subscribed — a refresh fired `get_tree()` on a detached node → "Parameter data.tree is null"). Added `_enter_tree()` to recompute the dungeon-adjacency overlay on reattach. Fixed the same latent crash in `_ensure_loot_modal` (combat_ended while detached) via `Engine.get_main_loop()` (conventions §26) + a null-guard in `_on_combat_ended_loot`.
+- **Bug 1 (rename propagation):** `cs_tab_creature_stats.gd::_on_name_submitted` now emits `EventBus.creature_inventory_updated` so the inventory carrier column re-reads the name. Vehicle rename already emitted `vehicle_changed` (worked) — unchanged.
+- **Bug 4 (saddle/tack stack-equip):** `cs_tab_creature_inventory.gd::_on_equip_selected` now `split_stack(item_id, 1)` before `equip_creature_item` when quantity>1 (mirrors the PC equip path in `cs_tab_equipment.gd::_perform_equip`); the remainder stays in the handler's pack.
+- **Bug 5 (settlement gate "Leave" dead-end):** new `SettlementActivityPanel.leave_requested` signal — the Leave button emits it instead of calling `hide_panel`; `SettlementExploreState` connects it to the existing `_restore_navigation_ui()` (re-shows the PoI menu). On travel arrival the menu is hidden, so hide_panel alone stranded the player on a blank screen.
+- **Bug 2 (item transfer to own creature in a dungeon):** `PartyInventoryTransferValidator._check_dungeon_adjacency` and the inventory-tab column-dimming now treat same-cell as reachable WHEN a creature/vehicle is involved. Creatures/vehicles share their handler's cell (`InventoryTabPage._compute_carrier_positions`), so an animal you lead sat at distance 0 — and the strict "Chebyshev exactly 1" rule rejected it. Type-aware so two characters at one cell stay rejected (the documented guard + its tests are preserved).
+- **Bug 3 (unhitched-vehicle travel):** full leave-behind/cancel prompt. New `AbandonVehiclePrompt` modal; new `VehicleAbandonmentService`; `WildernessExploreState._on_context_action` gates travel and prompts when an immobile vehicle would otherwise move silently. "Leave behind" parks cart+cargo as a conspicuous (heavy `raid_monthly_modifier`=40) persistent wilderness cache at the party's current hex — REUSES the location-cache system, no schema change. "Cancel" aborts (clock stays paused, vehicles stay with the party).
+**Decisions made:**
+- Bug 2 fix is type-aware (creature/vehicle same-cell reachable; character↔character same-cell still rejected) so the documented "two entities can't share a cell" guard holds for PCs while the handler-colocated-creature case is fixed. `collect_adjacent_carrier_ids` gained an optional `co_located_reachable_ids := []` param (defaults empty → existing callers + the loot modal unchanged).
+- Bug 3 "leave behind" reuses `location_caches` (per Jedidiah) instead of migrating `draft_vehicles` to carry a hex position: a parked cart becomes a `hidden_wilderness` cache flagged conspicuous via `NOT_HIDDEN_RAID_PENALTY=40`, holding the cargo + the cart-as-item. Cargo round-trips fully; cart re-deployment deferred.
+**Interfaces defined or changed:**
+- `SettlementActivityPanel.leave_requested()` — new signal; `SettlementExploreState` connects it to `_restore_navigation_ui`.
+- `PartyInventoryTransferValidator.collect_adjacent_carrier_ids(anchor_id, carrier_positions, co_located_reachable_ids := [])` — new optional 3rd arg (same-cell reachable for the listed ids).
+- `AbandonVehiclePrompt`: signal `decided(choice)` with `CHOICE_LEAVE="leave_behind"` / `CHOICE_CANCEL="cancel"`; static `body_text(vehicle_names) -> String`.
+- `VehicleAbandonmentService`: `unhitched_vehicles_for_party(party_id) -> Array[{id,name,item_key}]`; `abandon_to_hex(vehicle_id, hex_qr: Vector2i) -> cache_id`; const `NOT_HIDDEN_RAID_PENALTY=40`.
+- (reused) `EventBus.creature_inventory_updated` now also fires on creature rename.
+**Database changes:**
+- None. Bug 3 deliberately reuses `location_caches` rather than adding columns to `draft_vehicles`.
+**Tests added/updated:**
+- New `tests/test_vehicle_abandonment_service.gd` (5 tests: detection both directions, park-as-cache cargo+cart, raid penalty + variant, modal body copy); registered in `test_runner` (ext_resource `441_vehicle_abandonment_tests`). Suite: 437 passed / 17 failed — baseline 436/17 + this passing suite; the 17 are pre-existing carry-forwards. `PartyInventoryTransferValidator` and `InventoryUIAdjacency` stay green (the Bug 2 type-aware change preserved the same-cell guard tests). Other touched files are scene/UI scripts the headless suite does not load — each was `--check-only` parse-swept (no genuine errors).
+**Known issues:**
+- Bug 2 "vehicle" sub-case in wilderness/settlement (no adjacency gate there) was NOT reproduced — needs the exact rejection toast if it recurs; trace `_validate_to_vehicle`.
+- Bug 3: a parked cart is recoverable as an ITEM only; re-deploying it into a working `draft_vehicle` needs a "deploy vehicle from inventory" flow that does not exist (vehicles are created only on purchase). Scoped follow-up.
+- Bug 6 (dungeon wall/ceiling culling/dithering) deferred — visual/shader pass, its own session.
+- A concurrent Claude Code session edited `data/conlang/*.json` + a couple of GDDs throughout — deliberately untouched here.
+**Next session should:**
+1. Bug 6: dungeon wall/ceiling culling/dithering rendering pass.
+2. Add a "deploy vehicle from inventory" flow so parked carts (Bug 3) are fully recoverable as working vehicles.
+3. If the Bug 2 vehicle-in-wilderness case recurs, capture the rejection toast and trace `PartyInventoryTransferValidator._validate_to_vehicle`.
+
+## Session 2026-06-12 — Pre-build design completion: history sim v0.5, Layer-4 wiring, wars, religion simplification, region naming, campaign-creation UI (Cowork advisor session)
+
+**Task:** Resolve every remaining design gap blocking the end-to-end build of the pre-game setting-generation pipeline: the history-sim §17 open questions, the setting-gen Layer 4 rewrite, realm-scale conquest, the religion model, region-painting Phase 2 + naming categories, and the campaign-creation UI.
+**Model used:** Claude Fable 5 (Cowork advisor/design-drafter session — GDDs and data files only; no engine code).
+**Completed:**
+- `generation/gdd-history-simulation.md` v0.1 → **v0.5**: §12.1 cited ruler-level→tier reference (titles_of_nobility lines 276–284; demographics_of_leveled_characters lines 377–399; realms_by_type hex ranges; 4–6 vassal fan-out; tribute `18gp × families^0.6` lines 299–350); concrete functional forms (§7.2 G=4/N0=30/α=1.0 + deterministic budget accumulator; §7.3 power/readiness/home factors); §7.5 tier-multiplier f_size, f_age, ruler quality, BASE=0.01; §7.5.1 economy constants with `min_garrison = Σ families × 2gp` replacing MIN_RATE_FRACTION (RAW floor, line 226); §7.6 severity bands 0.50/0.85 + K distribution; **§7.3.1 realm-scale war resolution** (one-tick wars; border/decisive/crushing ladder; svg-driven vassalize/annex/pillage per DaW lines 762–781) + §7.4 vassal secession + internal-organization rule (CORE_MAX 3, tier-scaled VASSAL_SIZE 3/4/6); §7.7 `fading` end-state wiring (post-peak onset, FADE_RATE 0.985); §10 **religion derived, not simulated**; §6/§8/§9/§13 constants (diffusion, ASSIMILATION_STEP 0.5, logistic demography, migration mechanics, demihuman epoch bias over [0.375, 0.75]×span, slider values, beastman respawn); §7.8 consolidated constants table; §15 `replay_frames` output (REPLAY_CADENCE 4).
+- `generation/gdd-setting-generation.md` rev 2–4: §7.2 is now the **sim output contract** (polities, hex substrate, settlements-by-emergence, event log, ruin seeds with provenance, fallen_polities, replay_frames); Layer 6 reconciled to consume sim outputs (§9.1 reconcile-don't-invent settlements; §9.3 provenance-first dungeons; §9.5 sim-hot-frontier forts; §9.6 promotion-only classification finalization); §10.2 narrate-from-log pinned; §11.1 validation extended (caps, density, tier-vs-families-vs-level, vassal chains, morale seeds, 2gp floor, ruin provenance); §11.2/§12.2/§12.3 modernized (culture_seeder.gd / history_simulator.gd).
+- `generation/gdd-religion-system.md`: §7 propagation model **superseded** (banner; stance taxonomy abandoned).
+- `generation/gdd-region-painting.md` v0.1 → **v0.2**: all §11 items resolved — §3.3 significance formula + thresholds; §4.6 detection-floors table; §4.2 anomaly detector + sub-split rule; §4.1 continent thresholds; §6.1 road tiers with **merged named-route records** (quest-system consumer); §5.1 subtype→naming-recipe table; §5.4/§5.6 historical/hydronym caps; fine regions persist permanently; 1.5-mile painting off v1; LLM polish top-8/min-0.75 with deterministic fallback.
+- `generation/gdd-naming-conventions.md` rev 8: ACKS tier-table item resolved (cites history-sim §12.1; §6.1 ruler levels filled); §2.3 feature-word inventory extended.
+- **NEW** `generation/gdd-campaign-creation-ui.md` v0.1: four-screen flow in CAMPAIGN_SELECT (Quick Start / Advanced tabs per setting-gen §11.2 / generation + watchable epoch replay / §11.3 review & approval with seed sharing, element-regen, lock).
+- **DATA:** `data/conlang/` lexicon gap-fill — **56 files** (55 culture kits + Kazhur base; beastman races inherit): neck, narrows, waste (where no desert word), road, way, track — realized per culture in-register from family roots. (This is the concurrent-session conlang edit noted in the prior entry.)
+- **NEW** `docs/setting-generation-build-handoff.md` — the build kickoff document. **Read it first next session.**
+**Decisions made:**
+- **Tier numbers:** RAW PDFs match `titles_of_nobility` at Prince 7,500 / Duke 1,500 / Count 780 personal-domain families (per Jedidiah); the `revenue_by_realm_type` XML extraction variance is flagged in history-sim §12.1 — **do not consume that table's personal-domain column; never edit rules XML.** Tribute computed precisely via `18gp × realm_families^0.6`.
+- **War system:** hex contests are the skirmish layer; sustained friction escalates to one-tick realm-scale wars (a tick = 25 years). Army size = the gp-value garrison budget (no unit simulation). Crushing victory gated on margin ≥ 0.80 + capital reach; disposition by effective_svg (≤0.35 vassalize / ≥0.65 annex / raider-profile pillage).
+- **Religion simplified (per Jedidiah):** entirely syncretic, one shared pantheon, only axis Law/Neutral/Chaos — matches RAW (axioms lines 466, 518). No religion_weights anywhere; religion derives from alignment×culture at runtime; **nothing religious generated pre-game, not even deity names.** Saints runtime-TBD. Stance taxonomy (syncretist/inclusivist/exclusivist) abandoned.
+- **Demihuman survival: pure emergence** — no exemption mechanism; EPOCH_BIAS_MAX (3.0) is the knob if the balance pass wants survivors possible.
+- **Civ/clan transitions: DEFERRED to v2** — `civ_or_clan_state` holds its authored start value for the whole sim.
+- Fading onset post-peak (age > A_PEAK and tier ≥ Duchy); migrations at proposed rates; vassal domains tier-scaled; fine regions persist permanently; 1.5-mile region painting off v1; LLM polish top-8/min-0.75 **with deterministic fallback when no provider** (engine-first); campaign creation = Quick Start + Advanced + watchable history replay.
+**Interfaces defined or changed:**
+- `sim_output` contract — `gdd-setting-generation.md` §7.2 is authoritative: `polities[]` (with tier_index, ruler {class, level, quality}, garrison_coverage, morale_seed[], vassalized_by_war), `hex_substrate` (culture_weights, alignment_weights, population_band, territory_class, owner_polity_id, land_value — **no religion_weights**), `settlements[]` (urban_families, emergence_tick, is_capital), `event_log[]` (history-sim §11.1 schema; `pillage` added to the type enum), `ruin_seeds[]` (provenance), `fallen_polities[]`, `replay_frames[]` ({tick, owner_by_hex RLE, polity_palette}).
+- Region record (`gdd-region-painting.md` §3.1) incl. road regions as single named routes with ordered hex paths.
+- Proposed EventBus signals (campaign-creation UI §8): `generation_stage_completed(stage)`, `replay_frame_advanced(tick)`, `world_approved(campaign_id)`.
+**Database changes:**
+- None (design session). The build needs schema for canonical setting data (sim output, regions, replay frames) — see the handoff doc Stage 0.
+**Tests added/updated:**
+- None (design session). Determinism hash test, §11.1 validation checks, and a Stage-4 calibration/stats harness are specified in the handoff doc.
+**Known issues:**
+- All numeric constants are [PROVISIONAL] pending one project-wide balance pass (history-sim §7.8 table + region-painting thresholds). The Stage-4 stats harness should produce a calibration report for Jedidiah.
+- Conlang curation flags: extreme-blend coinages (Shidhean, Huitzilan, etc.) and thin Gormdurn/Khraaldurn lexicons (naming-conventions §17).
+- Nemesis-graph sign-off (religion-system §3.2, 11 edges) still open — runtime-religion concern, **not** a pre-game blocker.
+- `data/name_banks/` does not exist — static bank assembly from the conlang kits is a build-phase content task (handoff Stage 5).
+**Next session should:**
+1. Read `docs/setting-generation-build-handoff.md` end to end, then start **Stage 0** (scaffolding: generation subsystem skeleton, seeded RNG streams, setting-data schema, determinism harness).
+2. Then Stage 1 (Layers 1–2: heightmap/hydrology/climate) validated against the setting-gen §15 worked example.
+
+## Session 2026-06-12 — Setting generation pipeline: Stages 0–3 + Stage 4 foundation
+
+**Task:** Begin the end-to-end pre-game setting-generation build per `docs/setting-generation-build-handoff.md`. Deliver Stage 0 (scaffolding + determinism harness), Stage 1 (Layers 1–2 geography/climate), Stage 2 (region painting Phase 1), Stage 3 (Layer 3 culture seeding), and lay the Stage 4 data-driven config foundation.
+**Model used:** Claude Fable 5 for Stages 0–3 implementation; Claude Opus 4.8 for the Stage-3 finish + Stage-4 foundation (RAW tier-table verification, constants resource).
+**Completed:**
+- **Stage 0 — scaffolding + determinism harness.** `db/migrations/156_setting_generation.sql` (11 canonical tables: setting_parameters, setting_hexes, setting_river_edges, setting_polities, setting_fallen_polities, setting_settlements, setting_regions, setting_events, setting_ruin_seeds, setting_poi_seeds, setting_replay_frames, setting_replay_palette). `engine/subsystems/generation/world/`: `world_gen_rng.gd` (FNV-1a 64 seeded-stream derivation, golden-value pinned), `setting_parameters.gd` (full §11.2 slider vector + canonical_json), `setting_repository.gd` (all-static repo over CampaignRepository.db; lock-guarded writers; bulk upsert; deterministic readers), `setting_dataset_hasher.gd` (SHA-256 per-table sub-hashes + world hash; IEEE-754 float bits), `setting_generator.gd` (8-layer orchestrator, EventBus stage signals). EventBus signals `generation_stage_completed` / `replay_frame_advanced` / `world_approved`. Schema classified in `_SCOPE_DIRECT_CAMPAIGN`.
+- **Stage 1 — Layers 1–2.** `heightmap_generator.gd` (FastNoiseLite continental shaping + directional ridge bias, elevation curve, ocean, vertex-walk river tracing → first-class river-edge graph with canonical ownership + width/navigability) and `climate_generator.gd` (latitude/elevation temperature, precipitation with rain shadow + coastal moisture, simplified Köppen cascade → biome + default subtype per terrain-system §7.1, swamp pass, fixed per-terrain land_value table). Large map (1200 hexes) generates in well under 5s incl. DB writes.
+- **Stage 2 — region painting Phase 1.** `region_painter.gd`: continents (≥100/20-99/island), terrain clusters with seam sub-split (>12 hexes → ≥4-hex parts, depth 2) + geological anomalies, coastal/landform (island/archipelago/cape/bay/gulf/strait/peninsula/isthmus), hydronyms (ocean/sea/lake/lakeland/river/river-system via union-find), nesting + significance (§3.3 with context=0) + symmetric overlaps. All §4.6 floors; Sparse doubles + drops anomalies/sub-splits.
+- **Stage 3 — Layer 3 culture seeding.** `culture_catalog_loader.gd` (cached read-only loader for the 65 `data/cultures/*.json`), `culture_seeder.gd` (biome-coverage constraint-satisfaction selection, per-map human cap, ≤3/race demihuman, even-split/weighted alignment draws, §7 jitter on instances, greedy farthest-point homeland placement with phonemic-adjacency avoidance + productivity bias, baseline beastman clanholds from the RAW distribution), `beastman_distribution_loader.gd`. `tools/extract_setting_generation_data.py` extracts `data/setting_generation/beastman_distribution.json` from `ax_domains_of_chaos.xml` with a `--check` freshness gate and a documented RAW patch.
+- **Stage 4 foundation.** `sim_constants.gd` (every history-sim §7.8 constant as one data-driven config; accessors for tier-scaled VASSAL_SIZE, garrison rate, hex caps) and `domain_tier_table.gd` (RAW §12.1A titles_of_nobility, verified against `acore_axioms_strongholds_and_domains.xml:276-284`; `tier_for_families` keys in-sim tier on overall realm families).
+**Decisions made:**
+- **Canonical-vs-play separation:** `setting_*` tables hold the immutable generated world (lock-frozen); the play tables are materialized from them at the party-creation handoff. Generation writers fail loudly after the lock.
+- **Determinism:** FNV-1a 64 over a canonical byte encoding for all stream seeds (NOT GDScript `hash()`); canonical hex order `(r ASC, q ASC)`; floats hashed as raw IEEE-754 bits; deterministic `pol_NNNN`/`reg_NNNN` ids (never `generate_id()`/AUTOINCREMENT).
+- **`setting_polities` is the evolving set** — Layer 3 writes seed polities, Layer 4 will run them forward and re-persist; Stage-3 seed-state assertions move to a seed-only checkpoint when the sim lands.
+- **`setting_hexes` re-saved (upsert) per layer** as substrate evolves; in-memory `ctx["hex_grid"]` is the source of truth within a `generate()` call.
+- **RAW PATCH (§7.4.6):** beastman `river` d100 gap at 13 (bugbear 1-12, gnoll 14-25) corrected to gnoll 13-25 in the extractor with citation; XML untouched.
+- **Seed-biome matcher relaxes glacial/volcanic mountains to any `mountains`** — the climate gen only produces `mountains_glacial`, and the geological-feature pass for volcanic peaks is not in v1 (terrain-system §7.1), so gating dwarves on the exact subtype would lock them out.
+**Interfaces defined or changed:**
+- `SettingGenerator.generate(campaign_id: String, campaign_seed: int, params: SettingParameters) -> bool`; `LAYER_IDS` (geography/climate/culture_seeding/history_sim/naming/infrastructure/narrative/validation).
+- `WorldGenRng.derive_seed(campaign_seed, subsystem, tick, entity_id) -> int` / `.stream(...) -> RandomNumberGenerator`.
+- `SettingRepository` save_*/list_* per the migration-156 column lists (exposed as `HEX_COLUMNS`, `POLITY_COLUMNS`, … so writer/reader/hasher share one source); `save_parameters`/`get_parameters`/`is_locked`/`lock_setting(campaign_id, world_hash)`/`delete_setting`.
+- `SettingDatasetHasher.compute_sub_hashes(campaign_id) -> Dictionary` / `.compute_world_hash(campaign_id) -> String`.
+- Pipeline ctx contract (in-memory): `hex_grid` (Vector2i→hex dict), `river_edges`, `regions`, `culture_instances`, `seed_polities`, `width`/`height`.
+- EventBus: `generation_stage_completed(stage_id)`, `replay_frame_advanced(tick)`, `world_approved(campaign_id)`.
+- `SimConstants` (all §7.8 fields) + `DomainTierTable` (BARONY..EMPIRE, `tier_for_families`/`title_for_tier`/`ruler_level_for_tier`/`stronghold_value_for_tier`).
+**Database changes:**
+- Migration 156 (11 setting-generation tables). `db/schema.sql` updated. Tables added to `CampaignRepository._SCOPE_DIRECT_CAMPAIGN`.
+**Tests added/updated:**
+- `test_setting_stage0.gd` (87 checks: schema, RNG golden values + stream determinism, params round-trip, generate skeleton, determinism hash harness, repo round-trip, lock semantics).
+- `test_setting_stage1.gd` (4324 checks: §15 worked-example characterization, terrain/climate enum + range validity, river-edge canonical ownership, land-value range, Köppen/biome/elevation/land-value unit tests, Large-map perf).
+- `test_setting_stage2.gd` (3169 checks: feature-class presence, region-record invariants, landmass partition, detection floors, sub-split nesting, symmetric/non-nested overlaps, significance bounds, determinism).
+- `test_setting_stage3.gd` (373 checks: homelands satisfy seed biomes, alignments in-set, demihuman/human caps, substrate seeding, beastman chaotic-clanhold invariants, phonemic adjacency, jitter bounds, density-0 → no beastmen, determinism).
+- `test_setting_generation_data_freshness.gd` (§7.4.4 gate: --check shell-out + on-disk sanity + d100 contiguity).
+- `test_setting_stage4_foundation.gd` (SimConstants defaults/accessors; DomainTierTable boundaries/accessors).
+- **Baseline:** 442 suites pass / 17 fail (pre-existing carry-forwards; was 437/17 before this session — net +5 passing suites, zero new failures, measured on the 2nd consecutive run).
+**Known issues:**
+- All numeric constants remain [PROVISIONAL] pending the single balance pass (history-sim §17). `SimConstants` is the one knob-set.
+- Volcanic-mountain cultures (Gormdurn) cannot seed on their exact subtype — climate gen produces no `mountains_volcanic` (no geological pass in v1); they fall back to generic mountains via the relaxed matcher. Acceptable for v1; flag for the geological-feature pass.
+- Beastman river-adjacency nudge (lizardmen near water) is stubbed off — the river-edge set isn't threaded into the per-hex grid dict yet; the biome/elevation mapping still yields a valid column.
+- `[NEEDS-OPUS-REVIEW]` none — Stage-4 tier-table values were RAW-verified this session; the sim core (4a–4g) is the next deep-reasoning task.
+**Next session should:**
+1. **Stage 4 — the history simulation core**, in `history_simulator.gd` consuming `ctx["seed_polities"]` + `ctx["hex_grid"]` + `SimConstants`. Build in §3 phase order, each sub-stage with focused tests (handoff Stage 4 list): 4a substrate diffusion + assimilation + logistic demography + classification advancement + urban emergence (§6); 4b expansion + border contest with the deterministic budget accumulator (§7.2–7.3); 4c the realm economy/garrison ledger as pure functions unit-tested against hand-computed examples (§7.5.1); 4d wars + vassalage/secession + internal vassal organization (§7.3.1, §7.4); 4e stability/collapse/severity/successors + fading + demihuman epoch bias (§7.5–7.7, §9); 4f migration + beastman repopulation (§8, §7.6); 4g event log + replay frames + the §12 present-day handoff (ruler levels/classes, seeded morale) emitting the §7.2 contract.
+2. Wire the sim's present-day output to re-persist `setting_polities` (clearing the seed rows) + `setting_hexes` substrate + `setting_settlements`/`setting_events`/`setting_ruin_seeds`/`setting_fallen_polities`/`setting_replay_frames`/`setting_replay_palette`.
+3. Build the §9.3 calibration harness (≥20 seeds × Large) and write its report with `[NEEDS-REVIEW]` for Jedidiah — do NOT self-tune beyond order-of-magnitude bugs.
+4. Keep the §9.1 determinism hash green and the suite at net-zero new failures.
+
+**Addendum (same session) — [NEEDS-OPUS-REVIEW] rules-XML stronghold-value discrepancy.** A working-tree edit to `rules/acore-setting-construction-rules.xml` `revenue_by_realm_type` (NOT made by this session; present in `git status` before my work) corrected the personal-domain column to match `titles_of_nobility` (Principality/Duchy/County 7,500/1,500/780 — consistent with Jedidiah's §12.1 confirmation) AND changed three stronghold values: Principality 240,000→360,000, Duchy 120,000→115,000, County 60,000→70,000. `domain_tier_table.gd` encodes the GDD §12.1 figures (240K/120K/60K) and now carries an inline `[NEEDS-OPUS-REVIEW]` flag. `stronghold_value_gp` is not consumed until Stage 4g (the §9.5/§12 handoff), so the reconciliation is deferred — rules XML outranks the GDD by source precedence, but the GDD explicitly transcribed the old figures, so confirm with Jedidiah which is canonical when 4g lands. The `families_lower` / `ruler_level` columns derive from `titles_of_nobility` (a different XML file, unchanged) and are unaffected. I did NOT modify the XML (sacred).

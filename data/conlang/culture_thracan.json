@@ -1,15 +1,31 @@
 {
   "kit_id": "thracan",
   "tier": "culture",
-  "inherits": ["classical", "north_american"],
+  "inherits": [
+    "classical",
+    "north_american"
+  ],
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 44,
   "sub_palette": "hellenic-plains deep fusion (cross-family blend, extreme)",
-  "synthesis_sources": [2, 15],
+  "synthesis_sources": [
+    2,
+    15
+  ],
   "homeland": "Thracia",
-  "blend": { "type": "deep fusion", "parents": ["hellenic/greek (classical)", "plains horse-nomads (north_american)"], "note": "a NEW emergent culture, neither Greek nor Plains - Hellenic horse-lords of the open grassland, mystery-cults and vision-quests, the war-band and the polis-of-tents; the tongue, titles and gods are fused forms (Greek -os/-on + Plains -wi/descriptive deed-names)." },
+  "blend": {
+    "type": "deep fusion",
+    "parents": [
+      "hellenic/greek (classical)",
+      "plains horse-nomads (north_american)"
+    ],
+    "note": "a NEW emergent culture, neither Greek nor Plains - Hellenic horse-lords of the open grassland, mystery-cults and vision-quests, the war-band and the polis-of-tents; the tongue, titles and gods are fused forms (Greek -os/-on + Plains -wi/descriptive deed-names)."
+  },
   "government": "clanhold",
-  "alignment_allowed": ["Lawful", "Chaotic"],
+  "alignment_allowed": [
+    "Lawful",
+    "Chaotic"
+  ],
   "_note": "Cross-family DEEP BLEND (Greek + Plains): a single emergent people of the grass-sea - mounted war-clans who wed the Hellenic mystery-cult and bronze-panoply to the Plains vision-quest and horse-raid. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Greek th/ph/kh/-os + Plains open vowels/-wi). clan = clanhold. Seeds/shifts Lawful or Chaotic (the ordered war-host vs the raid-frenzy). Common-word lexicon and rank titles fuse the real Greek/Plains registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods.",
   "phonology": {
     "palette": "Fused Hellenic-Plains: Greek aspirates th/ph/kh and -os/-on/-es meet Plains open vowels and -wi/-ta; consonants p t k s sh h m n w y r l, glottal stop; fused endings -ios/-wios/-os on open Plains roots.",
@@ -17,40 +33,171 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "potahubi", "stream": "rhoska", "lake": "limnemo", "sea": "thalowaka", "bay": "kolsopa", "cape": "akrinato", "isle": "nesispa", "mountain": "orotoya", "hill": "lophotaska", "ridge": "rhachina", "forest": "hyleshowi", "wood": "drymsheka", "plain": "pedsoni", "grass-sea": "talowa-pedion", "marsh": "helwikapo", "ford": "porosawa", "pass": "kleisneto", "vale": "napeholawa", "coast": "aktowaka" },
-    "settlement_words": { "hamlet": "komtisha", "village": "demtishola", "town": "astowleta", "tent-polis": "poltisha", "fort": "phrourpasha", "port": "limhowabena", "market": "agorwacheto", "temple_town": "tem-shinato", "citadel": "akrtisha" },
-    "kinship": { "son": "huiska", "daughter": "thygatna", "house": "oiktisha", "kin": "genolowa (war-band-clan)", "ancestor": "progteheola" },
-    "adjectives": { "great": "megwowi", "little": "mikchiska", "old": "paltehe", "new": "neleshi", "black": "melkumi", "white": "leulena", "red": "erythshiwa", "golden": "chryswisko", "iron": "siderpeshka", "high": "hypskonta", "far": "telewakena", "sacred": "hiertehowa", "fair": "kalwachina" },
-    "resources": { "salt": "halshapa", "iron": "siderpeshka", "silver": "argyrmongo", "gold": "chrysoklawa", "horse": "hippuku", "bison": "taurlomata", "hide": "dermshowa", "wine": "oinos", "grain": "sitwonaska", "feather": "pterwiska" },
-    "directional": { "upper": "anoshowi", "lower": "katoniwi", "north": "borkonalta", "south": "nottalohi", "east": "anatlewaka", "west": "dysshowaka", "inner": "esinita", "outer": "exokata" }
+    "feature_words": {
+      "river": "potahubi",
+      "stream": "rhoska",
+      "lake": "limnemo",
+      "sea": "thalowaka",
+      "bay": "kolsopa",
+      "cape": "akrinato",
+      "isle": "nesispa",
+      "mountain": "orotoya",
+      "hill": "lophotaska",
+      "ridge": "rhachina",
+      "forest": "hyleshowi",
+      "wood": "drymsheka",
+      "plain": "pedsoni",
+      "grass-sea": "talowa-pedion",
+      "marsh": "helwikapo",
+      "ford": "porosawa",
+      "pass": "kleisneto",
+      "vale": "napeholawa",
+      "coast": "aktowaka",
+      "neck": "isthahu",
+      "narrows": "stenkuya",
+      "waste": "eremakosh",
+      "road": "hodanku",
+      "way": "poropoy",
+      "track": "atrotapi"
+    },
+    "settlement_words": {
+      "hamlet": "komtisha",
+      "village": "demtishola",
+      "town": "astowleta",
+      "tent-polis": "poltisha",
+      "fort": "phrourpasha",
+      "port": "limhowabena",
+      "market": "agorwacheto",
+      "temple_town": "tem-shinato",
+      "citadel": "akrtisha"
+    },
+    "kinship": {
+      "son": "huiska",
+      "daughter": "thygatna",
+      "house": "oiktisha",
+      "kin": "genolowa (war-band-clan)",
+      "ancestor": "progteheola"
+    },
+    "adjectives": {
+      "great": "megwowi",
+      "little": "mikchiska",
+      "old": "paltehe",
+      "new": "neleshi",
+      "black": "melkumi",
+      "white": "leulena",
+      "red": "erythshiwa",
+      "golden": "chryswisko",
+      "iron": "siderpeshka",
+      "high": "hypskonta",
+      "far": "telewakena",
+      "sacred": "hiertehowa",
+      "fair": "kalwachina"
+    },
+    "resources": {
+      "salt": "halshapa",
+      "iron": "siderpeshka",
+      "silver": "argyrmongo",
+      "gold": "chrysoklawa",
+      "horse": "hippuku",
+      "bison": "taurlomata",
+      "hide": "dermshowa",
+      "wine": "oinos",
+      "grain": "sitwonaska",
+      "feather": "pterwiska"
+    },
+    "directional": {
+      "upper": "anoshowi",
+      "lower": "katoniwi",
+      "north": "borkonalta",
+      "south": "nottalohi",
+      "east": "anatlewaka",
+      "west": "dysshowaka",
+      "inner": "esinita",
+      "outer": "exokata"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-polis (tent-city)", "-toya (mountain)", "-potahubi (river)", "-pedsoni (plain)", "Mel-/Erysh- (black-/red-)", "-wa / -on (of)"],
+    "toponymic_suffixes": [
+      "-polis (tent-city)",
+      "-toya (mountain)",
+      "-potahubi (river)",
+      "-pedsoni (plain)",
+      "Mel-/Erysh- (black-/red-)",
+      "-wa / -on (of)"
+    ],
     "patronymic_form": "patronymic -ides (Greek) fused with the band-name (genolowa); a deed- or vision-name earned at the first raid; an animal+quality byname.",
-    "gendered_endings": { "male": "-os / -ios / -wi", "female": "-a / -e / -wina" },
+    "gendered_endings": {
+      "male": "-os / -ios / -wi",
+      "female": "-a / -e / -wina"
+    },
     "diminutive_form": "-ion / -tsi",
     "compounding_rule": "[quality|animal](stem) + feature: Mel-orotoya (black-mountain), Hippuku-pedsoni (horse-plain); the band named for its deed or its herd; -polis for the tent-cities."
   },
   "title_ladder": {
     "government": "clanhold (mounted war-clans of the grass-sea: the war-king and his companion-society over the band-chiefs; the assembly of riders and the mystery-cult raise the war-king)",
     "tiers": {
-      "barony": { "ruler": "Toparnan", "domain": "Toparnania" },
-      "march": { "ruler": "Phrourwap", "domain": "Phrourneto" },
-      "county": { "ruler": "Eparaibo", "domain": "Eparowa" },
-      "duchy": { "ruler": "Strategwa", "domain": "Strategia" },
-      "principality": { "ruler": "Dynaraibo", "domain": "Dynarowa" },
-      "kingdom": { "ruler": "Basinaika", "domain": "Basinaikia" },
-      "empire": { "ruler": "Autoknaika", "domain": "Autoknaikia" }
+      "barony": {
+        "ruler": "Toparnan",
+        "domain": "Toparnania"
+      },
+      "march": {
+        "ruler": "Phrourwap",
+        "domain": "Phrourneto"
+      },
+      "county": {
+        "ruler": "Eparaibo",
+        "domain": "Eparowa"
+      },
+      "duchy": {
+        "ruler": "Strategwa",
+        "domain": "Strategia"
+      },
+      "principality": {
+        "ruler": "Dynaraibo",
+        "domain": "Dynarowa"
+      },
+      "kingdom": {
+        "ruler": "Basinaika",
+        "domain": "Basinaikia"
+      },
+      "empire": {
+        "ruler": "Autoknaika",
+        "domain": "Autoknaikia"
+      }
     },
     "_tiers_note": "Fused Hellenic-Plains clanhold, ascending; titles blend the two (Greek toparch/strategos/basileus + Plains nantan/paraibo/naika). Toparnan (lord) barony; Phrourwap (border war-chief) march; Eparaibo (district-chief) county; Strategwa (war-general) duchy; Dynaraibo (great-chief prince) principality; Basinaika (war-king) kingdom; Autoknaika (high war-king) empire. The assembly of riders and the mystery-cult check the war-king. (Rank titles fuse the real Greek/Plains register, allowed.)",
-    "female_forms": { "Autoknaika": "Autoknaikessa", "Basinaika": "Basinaikessa", "Dynaraibo": "Dynaraiba", "Strategwa": "Strategissa", "Eparaibo": "Eparaiba", "Phrourwap": "Phrourwapa", "Toparnan": "Toparnana" },
+    "female_forms": {
+      "Autoknaika": "Autoknaikessa",
+      "Basinaika": "Basinaikessa",
+      "Dynaraibo": "Dynaraiba",
+      "Strategwa": "Strategissa",
+      "Eparaibo": "Eparaiba",
+      "Phrourwap": "Phrourwapa",
+      "Toparnan": "Toparnana"
+    },
     "heir": "Diadnaika (the war-king's successor-designate)",
-    "honorifics": { "lord": "Kyrnan", "lady": "Kyrwina", "champion": "Hipkappi (horse-champion)", "your_grace": "Basinaika", "elder": "Gerteheola" },
-    "vassalage": { "liege": "Hegemnaika", "vassal": "Hetairo-akonta (companion-brave)", "fealty": "Horktoha (the sworn word)", "tribute": "Phorwonha" }
+    "honorifics": {
+      "lord": "Kyrnan",
+      "lady": "Kyrwina",
+      "champion": "Hipkappi (horse-champion)",
+      "your_grace": "Basinaika",
+      "elder": "Gerteheola"
+    },
+    "vassalage": {
+      "liege": "Hegemnaika",
+      "vassal": "Hetairo-akonta (companion-brave)",
+      "fealty": "Horktoha (the sworn word)",
+      "tribute": "Phorwonha"
+    }
   },
   "people_name_convention": {
     "order": "a child-name, replaced at the first raid by a deed- or vision-name; the genolowa (war-band-clan); a Greek -ides patronymic for the high-born; an animal+quality byname.",
-    "surname_source": ["genolowa (war-band-clan)", "deed/vision-name", "-ides patronymic (high-born)", "animal+quality byname"],
+    "surname_source": [
+      "genolowa (war-band-clan)",
+      "deed/vision-name",
+      "-ides patronymic (high-born)",
+      "animal+quality byname"
+    ],
     "dual_register": "the war-king and companion-society bear deed-names and Greek honor-styles; others a band-name + vision-name.",
     "theophoric": "names invoke the sky, sun and war-powers + a fused element: -machos (war), Hipp- (horse), Mel- (black), or a vision-sign: e.g. Maraksios-machos, Hipp-toravios.",
     "diminutive": "-ion / -tsi"
@@ -58,13 +205,31 @@
   "religion": {
     "_note": "Deity-names are fused morphs of the Agrippan canon (Hellenic + Plains), never real Greek/Plains gods. Thracan seeds/shifts Lawful or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met in the mystery-rite and the vision-quest, under the open sky and at the kurgan-tomb; the war-king is initiate and war-leader both.",
     "the_one": "Aiterunos (< Aeternus; fused Hellenic Aiternos / Plains Ateruna) - the Sky-Eternal over the grass-sea; revered when Lawful, reviled as the cold tyrant when Chaotic",
-    "sample_deity_renames": { "Tulrius": "Toravios (the sun, the just light; Lawful power)", "Orlandus": "Orlantos (the iron-oath, war; Lawful power)", "Dementus": "Tamawios (the storm-thunder; Chaotic power)", "Maraxus": "Maraksios (the war-fire, the raid; Chaotic power)" },
-    "worship_by_alignment": { "Lawful": "revere the One (Aiterunos) and the Lawful powers (Toravios, Orlantos, Numawios, Gaiantos), demonize the Chaotic powers (Maraksios, Tamawios, Lusantios)", "Chaotic": "venerate the Chaotic powers (Maraksios the war-fire, Tamawios the storm, the raid-frenzy of the mystery-rite), demonize the Lawful powers and the One" },
+    "sample_deity_renames": {
+      "Tulrius": "Toravios (the sun, the just light; Lawful power)",
+      "Orlandus": "Orlantos (the iron-oath, war; Lawful power)",
+      "Dementus": "Tamawios (the storm-thunder; Chaotic power)",
+      "Maraxus": "Maraksios (the war-fire, the raid; Chaotic power)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aiterunos) and the Lawful powers (Toravios, Orlantos, Numawios, Gaiantos), demonize the Chaotic powers (Maraksios, Tamawios, Lusantios)",
+      "Chaotic": "venerate the Chaotic powers (Maraksios the war-fire, Tamawios the storm, the raid-frenzy of the mystery-rite), demonize the Lawful powers and the One"
+    },
     "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Maraksios the War-Fire, Dementus -> Tamawios the Mad-Storm; when Chaotic - Tulrius -> Toravios the Cold-Sun, Aeternus -> Aiterunos the Sky-Tyrant.",
-    "clergy_ladder": { "1": "Mystos-shi (initiate-novice)", "3": "Hierowika (mystery-priest)", "5": "Hierophwakan (revealer-seer)", "7": "Archmystos (high initiate)", "9": "Megas-Hierophnaika (the war-king's great seer)" },
+    "clergy_ladder": {
+      "1": "Mystos-shi (initiate-novice)",
+      "3": "Hierowika (mystery-priest)",
+      "5": "Hierophwakan (revealer-seer)",
+      "7": "Archmystos (high initiate)",
+      "9": "Megas-Hierophnaika (the war-king's great seer)"
+    },
     "religious_orders_pattern": "the Tem-shinato (mystery-precinct and sacred cairn) of [power] on the high ground: 'the Tem-shinato of Maraksios', and the vision-rite of the riders.",
     "saints_pattern": "the great war-kings and mystery-initiates who became sky-riders; honored at the kurgan-tomb and the mystery-precinct.",
-    "holy_symbol_motifs": { "Toravios": "a radiate sun above a galloping horse", "Maraksios": "a bronze spear and horsetail-standard beneath a thunder-cloud", "Tamawios": "the forked storm over the grass-sea" }
+    "holy_symbol_motifs": {
+      "Toravios": "a radiate sun above a galloping horse",
+      "Maraksios": "a bronze spear and horsetail-standard beneath a thunder-cloud",
+      "Tamawios": "the forked storm over the grass-sea"
+    }
   },
   "banks_patterns": {
     "ships": "(horse-lords of the grass) the war-standards and famed steeds bear names, not ships: 'Storm-Mane', 'the Bronze Lance', 'Wind-Drinker' (a famed horse)",
@@ -73,10 +238,81 @@
     "dungeons_ruins": "kurgan barrow-tombs and abandoned tent-polis grounds: 'the Kurgan of [war-king]', 'the Ghost-Camp of [band]'"
   },
   "seed_names": {
-    "personal_m": ["Therax", "Hippon", "Toryon", "Diokai", "Lysoni", "Sitanos", "Rhesnos", "Charaxwi", "Kotanos", "Spartanos", "Maraxon", "Demoska", "Stratoni", "Phaedwi", "Kallinos", "Eumaska", "Telamwi", "Aristwi", "Nikanos", "Pelska"],
-    "personal_f": ["Bendina", "Kotia", "Therawi", "Daphnoska", "Arewina", "Kalliwi", "Phaidwi", "Stratoska", "Eudoska", "Nikaia", "Melaina", "Thalwi", "Xanthoska", "Hipponoe", "Lysoska", "Demewina", "Aristoska", "Kleiawi", "Charixwi", "Realwina"],
-    "clan_genolowa": ["Genolowa Hippon (horse-clan)", "Genolowa Lykos (wolf-clan)", "Genolowa Taurlomata (bison-clan)", "Genolowa Aetos (eagle-clan)", "Genolowa Maraxon (war-clan)", "Genolowa Therax (beast-clan)", "Genolowa Stratoni (host-clan)", "Genolowa Mel (black-clan)", "Genolowa Charax", "Genolowa Pelska", "Genolowa Kallinos", "Genolowa Demoska"],
-    "epithets_cognomina": ["the Storm-rider", "Bronze-Lance", "the Far-galloped", "Horse-tamer (Hippodamos)", "the Wolf", "the Initiate", "Sun-helm", "the Raid-Storm"],
-    "flagship_settlements": ["Thracia (the great muster-camp)", "Mel-orotoya (the black-mountain rite)", "Hippuku-pedsoni (the horse-plain)", "Maraksios-shinato (the war-cairn)", "Poltisha Megas (the great tent-city)", "Erysh-potahubi (the red-river camp)"]
+    "personal_m": [
+      "Therax",
+      "Hippon",
+      "Toryon",
+      "Diokai",
+      "Lysoni",
+      "Sitanos",
+      "Rhesnos",
+      "Charaxwi",
+      "Kotanos",
+      "Spartanos",
+      "Maraxon",
+      "Demoska",
+      "Stratoni",
+      "Phaedwi",
+      "Kallinos",
+      "Eumaska",
+      "Telamwi",
+      "Aristwi",
+      "Nikanos",
+      "Pelska"
+    ],
+    "personal_f": [
+      "Bendina",
+      "Kotia",
+      "Therawi",
+      "Daphnoska",
+      "Arewina",
+      "Kalliwi",
+      "Phaidwi",
+      "Stratoska",
+      "Eudoska",
+      "Nikaia",
+      "Melaina",
+      "Thalwi",
+      "Xanthoska",
+      "Hipponoe",
+      "Lysoska",
+      "Demewina",
+      "Aristoska",
+      "Kleiawi",
+      "Charixwi",
+      "Realwina"
+    ],
+    "clan_genolowa": [
+      "Genolowa Hippon (horse-clan)",
+      "Genolowa Lykos (wolf-clan)",
+      "Genolowa Taurlomata (bison-clan)",
+      "Genolowa Aetos (eagle-clan)",
+      "Genolowa Maraxon (war-clan)",
+      "Genolowa Therax (beast-clan)",
+      "Genolowa Stratoni (host-clan)",
+      "Genolowa Mel (black-clan)",
+      "Genolowa Charax",
+      "Genolowa Pelska",
+      "Genolowa Kallinos",
+      "Genolowa Demoska"
+    ],
+    "epithets_cognomina": [
+      "the Storm-rider",
+      "Bronze-Lance",
+      "the Far-galloped",
+      "Horse-tamer (Hippodamos)",
+      "the Wolf",
+      "the Initiate",
+      "Sun-helm",
+      "the Raid-Storm"
+    ],
+    "flagship_settlements": [
+      "Thracia (the great muster-camp)",
+      "Mel-orotoya (the black-mountain rite)",
+      "Hippuku-pedsoni (the horse-plain)",
+      "Maraksios-shinato (the war-cairn)",
+      "Poltisha Megas (the great tent-city)",
+      "Erysh-potahubi (the red-river camp)"
+    ]
   }
 }

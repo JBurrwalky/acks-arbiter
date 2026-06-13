@@ -4,9 +4,9 @@
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (realm sizing, population density, territory classification, settlement size/market class tables, domain economics that constrain viable realm configurations), `acore_axioms_strongholds_and_domains.xml` (stronghold and domain rules), `ax_domains_of_chaos.xml` (beastman clanhold demographics, geographic distribution by terrain, chaotic domain rules)
 **Depends on project GDDs:** `gdd-terrain-system.md` (terrain tag definitions, biome mapping, deforestation rules), `gdd-dungeon-layout.md` (dungeon seed requirements), gdd-calendar-seasons.md(season definitions consumed during narrative generation),gdd-weather-generation.md (downstream consumer of Layer 2 output), , gdd-poi-generation.md (wilderness POI placement in Layer 6, rumor seed output), `gdd-quest-rumor-system.md` (quest generation in Layer 6, rumor seed aggregation)
-**Integrates (engine GDDs, 2026-06-03 rework):** `gdd-culture-catalog.md` (Layer 3 culture selection/seeding), `gdd-history-simulation.md` (Layer 4 — replaces the old §6.2 Voronoi borders and §7.1 culture diffusion), `gdd-religion-system.md` (Layer 4 religion overlay), `gdd-region-painting.md` (region pass in Layers 3 & 5). **Supersedes** the LLM-generated-culture model and 1:1 culture-religion seeding of `gdd-cultural-religious-generation.md`.
+**Integrates (engine GDDs, 2026-06-03 rework; Layer 4 fully wired 2026-06-12):** `gdd-culture-catalog.md` (Layer 3 culture selection/seeding), `gdd-history-simulation.md` (Layer 4 — the history simulation; output contract in §7.2 here), `gdd-religion-system.md` (runtime religion flavor — its §7 propagation model is **superseded** by the 2026-06-12 simplification: religion derives from alignment × culture, nothing religious is simulated or generated pre-game; nemesis graph still pending sign-off), `gdd-region-painting.md` (region pass in Layers 3 & 5). **Supersedes** the LLM-generated-culture model and 1:1 culture-religion seeding of `gdd-cultural-religious-generation.md`, and the original static Voronoi-border / one-pass-diffusion political layer.
 **Modifiable by Claude Code:** Yes — all algorithms, parameters, and generation logic are engineering decisions.
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-12
 
 ---
 
@@ -25,7 +25,7 @@ These come from the sourcebooks and MUST be respected. The generation pipeline c
 **Realm sizing (ACore Ch.10):**
 - Realms have population densities driven by families-per-hex by terrain
 - Realm area in hexes corresponds to domain tier (barony → march → county → duchy → principality → kingdom → empire)
-- Each tier has a ruler level range (fighters hold domains, higher-level = larger domain)
+- Each tier has a ruler level range (fighters hold domains, higher-level = larger domain) — exact numbers retrieved and cited in `gdd-history-simulation.md` §12.1 (titles, family ranges, hex ranges, ruler levels, 4–6 vassal fan-out)
 
 **Settlement distribution (ACore Ch.10):**
 - Number and size of settlements is a function of total realm population
@@ -285,18 +285,43 @@ The map now carries: seeded culture-polities in wilderness, unnamed coarse regio
 
 ### 7.1 Run the simulation → `gdd-history-simulation.md`
 
-Run the history simulation forward from the Layer-3 seed state — ~160 generation ticks over ~4,000 years. Each tick, the seeded culture-polities expand (size-exponent growth, biome-weighted), contest borders, migrate, and rise or collapse against a size+age+overextension stability curve. Collapses yield rump states, successor states, alignment drift, and depopulation → wilderness → beastmen + ruins. Demihumans peak early and fall to enclaves. The whole simulation is seed-deterministic.
+Run the history simulation forward from the Layer-3 seed state — ~160 generation ticks over ~4,000 years. Each tick, the seeded culture-polities expand (size-exponent growth, biome-weighted), contest borders, fight realm-scale wars (border friction escalates to one-tick wars whose outcomes range from hex flips through vassal-domain transfer to wholesale vassalization, annexation, or pillage — history-sim §7.3.1), migrate, and rise or collapse against a size+age+overextension stability curve. Collapses yield rump states, successor states, alignment drift, and depopulation → wilderness → beastmen + ruins. Demihumans peak early and fall to enclaves. The whole simulation is seed-deterministic.
 
-### 7.2 Simulation outputs (the permanent present-day data)
+### 7.2 Simulation output contract (the permanent present-day data)
 
-- **Political map** — realms, vassal chains, borders, capitals, rulers (class biased by culture sphere-weights), alignments. *(Replaces the old Layer 3.)*
-- **Substrate weights** — per-hex `culture_weights`, `religion_weights`, `racial_weights`, `alignment_weights`. The former static "weighted demographic distributions" are now the **evolving output** of the sim, with the minimum presence floor retained (default 0.1% — traders, refugees, persecuted minorities appear anywhere).
+This is the **data contract** between the sim and Layers 5–8 (wired 2026-06-12; field semantics defined in `gdd-history-simulation.md` §5, §11.1, §12):
+
+```
+sim_output = {
+  polities: [ {
+    id, culture_id, alignment, tier_index, title,            # tier per history-sim §7.4 / §12.1
+    ruler: { class, level, quality },                        # class via sphere_weights (catalog §4.3); level via §12.1
+    capital_hex, liege_id?, vassal_ids[], hexes[],
+    garrison_coverage, morale_seed[],                        # ACKS morale modifiers at game-start (history-sim §12.2)
+    founded_tick, civ_or_clan_state
+  } ],
+  hex_substrate: per 24-mile hex {
+    culture_weights{}, alignment_weights{},
+    population_band (families), territory_class, owner_polity_id?, land_value
+  },
+  settlements: [ { hex, polity_id, urban_families, emergence_tick, is_capital } ],
+  event_log:  [ per history-sim §11.1 schema, significance-ranked per §11.3 ],
+  ruin_seeds: [ { hex, provenance: { culture_id, polity_toponym, era_tick, event_type }, size_hint } ],
+  fallen_polities: [ { toponym_root, hexes[], era } ],       # for region painting (Layer 5)
+  replay_frames: [ { tick, owner_by_hex (RLE), polity_palette[] } ]   # every 4 ticks — the campaign-creation
+                                                             # history replay (gdd-campaign-creation-ui.md §5/§7)
+}
+```
+
+- **Political map** — realms, vassal chains, borders, capitals, rulers, alignments. *(Replaces the old Layer 3.)*
+- **Substrate weights** — per-hex evolving vectors, with the minimum presence floor retained (default 0.1% — traders, refugees, persecuted minorities appear anywhere). `racial_weights` are **derived**, not stored: `culture_weights` joined through each culture's `race` field (catalog §3.1). **Religion is likewise derived, never stored** (simplified 2026-06-12): practice = `alignment_weights`, tradition flavor = `culture_weights` × the shared pantheon, resolved at runtime (§7.3).
 - **Territory classification** — civilized / borderlands / wilderness emerge from the simulated population bands; Layer 6 only finalizes settlement-local detail (no more preliminary + second pass).
+- **Settlements-by-emergence** — urban settlements arise during the sim as population bands hit the ACKS classification-advancement thresholds (`acore_axioms_strongholds_and_domains.xml`, limits_of_growth, lines 156–176); each carries its `emergence_tick`, so Layer 7 can tell an ancient river capital from a raw frontier town. Layer 6 reconciles and details them (§9.1).
 - **Event log** — founding / expansion / war / conquest / migration / schism / collapse / depopulation events, significance-ranked, feeding region naming (Layer 5), dungeon provenance + quests/rumors (Layer 6), and the timeline (Layer 7).
 
 ### 7.3 Religion overlay → `gdd-religion-system.md`
 
-Religion is the one shared canonical pantheon read through each culture's alignment-family (Lawful henotheist / Chaotic polytheist / Neutral ancestor-way), with per-culture deity names, holy symbols, and saints. The simulation propagates `religion_weights` (syncretic diffusion, conquest conversion at the religion-change morale cost, schism on collapse). This supersedes the old 1:1 culture-religion seeding and `gdd-cultural-religious-generation.md` §3–§4.
+**Simplified 2026-06-12: religion is derived, not simulated.** Religion is entirely syncretic over the one shared canonical pantheon, read through each culture's alignment-family (Lawful henotheist / Chaotic polytheist / Neutral ancestor-way). The only mechanical axis is Law/Neutral/Chaos, which the substrate already carries as `alignment_weights` — RAW-backed: same-alignment worship shifts are not religion changes (`acore_axioms_strongholds_and_domains.xml` line 518). **Nothing religious is generated pre-game, not even deity names.** Per-culture flavor — localized deity names from the phonemic palette, favored powers steering temple dedications (catalog `patron_powers`), culture-specific saints (runtime system, TBD) — resolves at runtime from culture × alignment. Pre-game religious POIs/events carry `(culture_id, alignment, portfolio_concept)` tags; the runtime overlay resolves them to named gods. Layer 7 narration uses the canonical lore names (`gdd-setting-lore.md` §4). This supersedes the propagation model of `gdd-religion-system.md` §7 (stance taxonomy abandoned) and the old 1:1 culture-religion seeding of `gdd-cultural-religious-generation.md` §3–§4. Handoff morale mapping: history-sim §10.
 
 ### 7.4 Present-day handoff
 
@@ -354,23 +379,28 @@ Players can rename any generated name. The original generated name is preserved 
 
 > **Updated for the new model:** three inputs now come from the Layer-4 simulation. **Dungeon/lair seeds** are driven by the sim's collapse/depopulation events — fallen realms emit ruins carrying provenance (culture, era, name) — supplementing the baseline beastman lairs from §6.3. **Territory classification** is a sim *output* (§7.2), so this layer only finalizes settlement-local detail instead of the old preliminary + second pass. **Road naming** of the trunk/highway tier is delegated to `gdd-region-painting.md` §6 (network density set by culture `road_propensity`).
 
-### 9.1 Settlement Placement
+### 9.1 Settlement Placement (rewritten 2026-06-12 — reconcile, don't invent)
 
-Using ACKS settlement distribution tables (from XML rules reference):
+Settlements are now primarily a **sim output** (§7.2 `settlements`), not placed fresh. Layer 6 reconciles them against the ACKS distribution tables and details them:
 
 ```
-1. For each realm, calculate total population from hex count × families-per-hex by terrain
-2. Look up the settlement distribution table: how many Class I, II, III... settlements
-3. Place settlements:
-   - Capital is already placed (Layer 3)
-   - Larger settlements placed first, preferring:
-     a. River hexes (trade)
-     b. Coastal hexes (port)
-     c. Road intersection hexes (after roads are placed)
-     d. Productive terrain (flat clear/woods near water)
-   - Minimum distances between settlements scale with market class
-     (Class I cities are far apart; Class VI hamlets can be close)
-4. Each settlement gets: population, market class, name (from Layer 5)
+1. Realm population comes from the sim's per-hex population bands (NOT recomputed
+   from hex count × terrain — the sim's demography is ground truth).
+2. Consume sim-emergent settlements: capital + urban centers, each with
+   urban_families and emergence_tick. Assign market class from urban population
+   per the ACKS settlement tables.
+3. Reconcile counts against the ACKS distribution for realm population
+   (acore-setting-construction-rules.xml lines 161-169: ~10% of realm population
+   urban; ~20% of urban population in the largest settlement):
+   - DEFICIT: top up with minor settlements (Class V-VI hamlets/villages) — these
+     are below sim resolution and are placed geometrically, preferring:
+     a. River hexes (trade)   b. Coastal hexes (port)
+     c. Road intersections (after roads)   d. Productive terrain near water
+     with minimum distances scaling by market class.
+   - SURPLUS or misfit: never delete a sim settlement; downgrade market class to
+     fit the table. The sim's history outranks the static table's expectation.
+4. Each settlement gets: population, market class, emergence_tick (top-ups get
+   a recent-epoch tick), name (Layer 5).
 ```
 
 ### 9.2 Road Network
@@ -385,24 +415,30 @@ Using ACKS settlement distribution tables (from XML rules reference):
 3. Mark road hexes: road presence reduces movement cost to road rate
 ```
 
-### 9.3 Dungeon and Lair Seeding
+### 9.3 Dungeon and Lair Seeding (rewritten 2026-06-12 — provenance first)
 
-Per ACKS guidance (ACore p.235), a regional map of ~30 dungeon sites per region:
+Per ACKS guidance, ~30 dungeon sites per region with a ~3 large / ~10 medium / ~17 lair split (`acore-setting-construction-rules.xml`, lines 411–420). The placement order is now **inverted: historical seeds first, geometric top-up second.**
 
 ```
-1. Calculate target dungeon count from map size and population:
-   - ~3 large dungeons per ~80 24-mile hexes
-   - ~10 medium dungeons per ~80 hexes
-   - ~17 lair dungeons per ~80 hexes
-   (Scale proportionally for larger/smaller maps)
+0. CONSUME sim ruin_seeds (§7.2): every collapse/depopulation event emitted a
+   ruin seed carrying provenance (culture, fallen-polity toponym, era, event
+   type). These KEEP their historical hexes — they sit where the realm fell,
+   exempt from the spacing rules below. A ruin adjacent to a present-day city
+   is a feature ("the old capital's catacombs"), not an error. size_hint maps
+   to size category (depopulation of a capital → large; marches → medium/lair).
+   Also count baseline beastman lair-strongholds from §6.3.
 
-   NOTE: Beastman lair-strongholds placed in §6.5 count toward these
-   targets. Subtract beastman medium dungeons and lair dungeons from
-   the remaining target before placing additional sites. Large dungeons
-   are always placed independently — beastman lairs do not satisfy
-   the large dungeon requirement.
+1. Calculate REMAINING target from map size:
+   - ~3 large, ~10 medium, ~17 lairs per ~80 24-mile hexes (scale proportionally)
+   - Subtract sim ruins and beastman medium/lair sites from the targets.
+     Large dungeons: sim ruins of large size_hint count; remaining large
+     dungeons are placed independently — beastman lairs never satisfy the
+     large-dungeon requirement.
+   - If sim ruins alone EXCEED a target (turbulent history), keep them all —
+     ruin density is allowed to outrun the static target; it is the
+     collapse_temperament slider working as intended (§7.5).
 
-2. Place large dungeons:
+2. Place remaining large dungeons (geometric top-up, no provenance):
    - Must be in wilderness or deep borderlands hexes
    - Minimum 8 hexes from any Class III+ settlement
    - Minimum 12 hexes from each other
@@ -422,12 +458,16 @@ Per ACKS guidance (ACore p.235), a regional map of ~30 dungeon sites per region:
    (there is published precedent for this)
 
 6. Each dungeon seed gets:
-   - Type (rolled on the d20 dungeon flavor table from gdd-dungeon-layout.md)
+   - Type: sim ruins derive type from provenance (fallen culture + event type —
+     an elven depopulation yields elven ruin types); top-ups roll the d20
+     dungeon flavor table from gdd-dungeon-layout.md
    - Size category (lair/small/medium/large)
    - Level range (based on distance from civilization — farther = higher level)
-   - Theme (from dungeon type)
-   - Name placeholder (from Layer 5)
-   - A one-paragraph hook (generated in Layer 7)
+   - Theme (from dungeon type / provenance)
+   - Name: sim ruins name from the fallen polity's toponym root via Layer 5
+     ("the Drowned Vaults of Sargon"); top-ups draw from local culture banks
+   - A one-paragraph hook (generated in Layer 7; sim ruins hand the LLM their
+     provenance + the linked event-log entries)
 ```
 
 ### 9.4 Deforestation and Forestation Pass
@@ -445,22 +485,31 @@ After settlements are placed, apply the deforestation/forestation rules from `gd
 ### 9.5 Fortification Placement
 
 ```
-1. Place border forts along realm frontiers (every 3-5 hexes along borders)
-2. Place castle/stronghold at each major settlement (Class I-III)
+1. Place border forts along realm frontiers (every 3-5 hexes along borders);
+   PRIORITIZE frontiers the sim marked hot — hexes with recent-epoch war/contest
+   events or borders between opposed-alignment realms get forts first and
+   densest (event_log, §7.2)
+2. Place castle/stronghold at each major settlement (Class I-III); the capital's
+   stronghold value scales with realm tier (gdd-history-simulation.md §12.1
+   variance note: Empire 720K+ ... Barony 22.5K gp)
 3. Place watchtowers along major roads through borderlands (every 4-6 hexes)
 ```
 
-### 9.6 Territory Classification (Second Pass)
+### 9.6 Territory Classification (Finalization) — rewritten 2026-06-12
 
-With settlements and roads placed, recalculate territory classification:
+**Classification is a sim output (§7.2), not recomputed here.** The old second pass — which overwrote a "preliminary classification from Layer 3" that no longer exists — is dead. What remains is settlement-local finalization after Layer 6 placement:
 
 ```
-- Civilized: within 2 hexes of a Class I-IV settlement, OR on a road within a realm
-- Borderlands: within realm borders but not civilized, OR contested territory
-- Wilderness: everything else
+- Hexes near settlements Layer 6 added or upgraded are checked against the ACKS
+  proximity criteria (acore_axioms_strongholds_and_domains.xml lines 26-28:
+  civilized = within 48 miles of a city/large town; borderlands = within 72 miles)
+  and may be PROMOTED one step where the sim's bands also support it.
+- No demotions: the sim's emerged classification is ground truth; Layer 6
+  placement can only locally civilize, never wild a hex the sim settled.
+- Verify per-hex population bands still respect the limits-of-growth caps
+  (wilderness 125 / borderlands 250 / civilized 780 families per 6-mile hex,
+  lines 156-161) after any promotion.
 ```
-
-This overwrites the preliminary classification from Layer 3.
 
 ### 9.7 Wilderness POI Placement
 
@@ -518,13 +567,13 @@ The LLM receives the complete mechanical data for the setting and generates:
 - Political summary (2-3 sentences: who rules, how, what their priorities are)
 - Current situation (is the realm at war? facing a plague? in a golden age?)
 - Relationship descriptions with neighboring realms
-- Recent history (past 300 years): 2-4 paragraphs covering political succession, wars, treaties, religious movements, economic shifts, named rulers and battles. This is what living NPCs remember.
+- Recent history (past 300 years): 2-4 paragraphs covering political succession, wars, treaties, religious movements, economic shifts, named rulers and battles. This is what living NPCs remember. **Drawn from the realm's recent-epoch event-log entries** (§7.2) — the LLM names and dramatizes logged events; it does not invent new ones.
 
 **Per cultural group:**
 - Cultural flavor text (1 paragraph: what makes this culture distinctive)
 - Behavioral tendencies (mercantile, militaristic, scholarly, pastoral, etc.)
 
-**Per religious tradition:**
+**Per religious tradition** *(one tradition per culture × alignment over the shared pantheon — grounded in the culture's alignment lens + `religion_hooks` (catalog §3.4), using canonical lore deity names; per-culture localized names are runtime flavor)*:
 - Description (1 paragraph: what followers believe and practice)
 - Relationship with political power (state religion? persecuted minority? underground cult?)
 
@@ -547,11 +596,11 @@ The LLM receives the complete mechanical data for the setting and generates:
 **Per rumor** (from `gdd-quest-rumor-system.md` §2.2):
 - Narrated text (1-2 sentences in NPC voice, calibrated to the rumor's accuracy level — exaggerated rumors sound breathless, misleading rumors sound confident but wrong, false rumors sound like secondhand gossip)
 
-**Setting-wide historical timeline:**
+**Setting-wide historical timeline** *(narration of the Layer-4 event log, not invention — history-sim §11.3 selects the top-N events per epoch to match these densities)*:
 - Deep history (4,000–1,500 years ago): 8-12 bullet points, one sentence each. Rise and fall of ancient empires, great migrations, cataclysms, founding of religions. These explain why ancient ruins and lost civilizations exist.
 - Middle history (1,500–300 years ago): 15-20 bullet points, 1-2 sentences each. Formation of current realms, major wars, religious schisms, non-human realm interactions.
 - Near history, the last 300 years, 10-15 bullet points, 1-2 sentences each. Focus on development of current conflicts and civilizational threats.
-- All events tagged to specific realms, regions, and cultural groups for LLM context retrieval.
+- All events carry the §11.1 schema tags (polities, cultures, hexes, region hints) for LLM context retrieval.
 
 **Setting overview:**
 - A player-facing setting brief (1-2 pages) that a player would read before starting a campaign
@@ -575,14 +624,26 @@ The LLM receives the complete mechanical data for the setting and generates:
 Automated checks before presenting to the player:
 
 ```
-- Every hex has all required fields (elevation, biome, political entity or wilderness, demographic weights)
-- All demographic weight arrays sum to 100% (within floating-point tolerance)
+- Every hex has all required fields (elevation, biome, owner polity or wilderness, substrate weights)
+- All substrate weight arrays sum to 100% (within floating-point tolerance)
 - Minimum weight floors applied
-- Settlement count matches ACKS tables for realm population
+- Per-hex population bands respect the limits-of-growth caps
+  (wilderness 125 / borderlands 250 / civilized 780 families per 6-mile hex,
+  acore_axioms_strongholds_and_domains.xml lines 156-161)
+- Map-wide density sane: ~5,000 families per 24-mile hex default in settled land;
+  ~50% wilderness overall (acore-setting-construction-rules.xml lines 62-66)
+- Settlement count matches ACKS tables for realm population (after §9.1 reconciliation)
 - Market class assignments are consistent with settlement population
-- Realm sizes are consistent with ruler levels (an empire can't be 3 hexes)
+- Realm tier consistent with realm families, hex count, AND ruler level per the
+  cited tables (gdd-history-simulation.md §12.1) — an empire can't be 3 hexes
+  or ruled by a 7th-level fighter
+- Vassal chains well-formed (every non-personal domain has a vassal; fan-out
+  plausible against the 4-6 rule)
+- Seeded morale fields present and within ACKS modifier ranges (history-sim §12.2)
+- Domain economics are viable (realm income covers garrison costs at the RAW
+  2gp/family floor minimum)
+- Every sim ruin seed has provenance resolving to a logged event
 - All settlements are connected by roads (within their realm)
-- Domain economics are viable (realm income covers garrison costs)
 - No orphaned data (settlement with no road, realm with no capital, etc.)
 ```
 
@@ -593,11 +654,11 @@ Before generation begins, present the full parameter set:
 **Physical (Layer 1-2):**
 - Map size, land mass style, mountain frequency, river density, sea level, latitude range
 
-**Political (Layer 3):**
-- Number of empires/kingdoms, alignment distribution, wilderness ratio
+**Cultures (Layer 3):**
+- Culture seed points (~10 human, ≤3 per demihuman race), demihuman presence, wilderness beastman density (§7.5 table)
 
-**Demographic (Layer 4):**
-- Number of cultures, number of religions, ethnic-political alignment, non-human ratio, religious exclusivism, minority floor
+**History (Layer 4):**
+- Collapse temperament, history length, migration rate, non-human ratio, minority weight floor (§7.5 table). *Realm counts, alignments, and the wilderness fraction are no longer set directly — they emerge from the simulation; the player shapes them through temperament and history length, then reviews the result in §11.3.*
 
 **Content (Layer 6):**
 - Dungeon density multiplier, road density, fortification density, POI density multiplier, POI danger level
@@ -633,7 +694,7 @@ After generation:
 
 - Heightmap generation for a Large map (~1,200 hexes) should complete in under 1 second
 - River tracing is O(n) per river source — fast even for many rivers
-- Voronoi territory expansion: use a priority queue flood-fill, O(n log n)
+- History simulation (Layer 4): every per-tick phase is O(active frontier) or O(hexes + vassal-edges); ~160 ticks on a Large map completes well under a few seconds (`gdd-history-simulation.md` §14). Runs once behind the existing progress bar. *(The old Voronoi flood-fill note is superseded — there are no drawn borders anymore.)*
 - LLM narrative synthesis (Layer 7) is the slowest step — expect 30-60 seconds for a full setting depending on model. Show a progress bar. Generate in parallel where possible (each realm's description is independent).
 
 ### 12.3 File Organization
@@ -643,8 +704,9 @@ engine/subsystems/generation/world/
   setting_generator.gd          # Orchestrates the 8-layer pipeline
   heightmap_generator.gd        # Layer 1: FastNoiseLite heightmap + hydrology
   climate_generator.gd          # Layer 2: temperature, precipitation, Köppen
-  political_generator.gd        # Layer 3: realms, borders, alignment
-  demographic_generator.gd      # Layer 4: cultures, religions, racial weights
+  culture_seeder.gd             # Layer 3: catalog selection, wilderness seeding, baseline beastmen
+  history_simulator.gd          # Layer 4: the gdd-history-simulation.md engine (may decompose into
+                                #   expansion/contest/stability/economy/substrate passes per its §3 loop)
   name_generator.gd             # Layer 5: name bank sampling
   infrastructure_generator.gd   # Layer 6: settlements, roads, dungeons, deforestation
   narrative_generator.gd        # Layer 7: LLM prompt assembly and caching
@@ -737,6 +799,10 @@ Ready for Layer 3 (political placement).
 
 ## 16. Revision History
 
+- **2026-06-12 (rev 4):** Added `replay_frames` to the §7.2 sim output contract (RLE political snapshots every 4 ticks + stable polity palette) for the campaign-creation history replay; the player-facing front door for this whole pipeline is the new `gdd-campaign-creation-ui.md` (Quick Start + Advanced parameters mirroring §11.2; watchable epoch replay; §11.3 review/approval screen).
+- **2026-06-12 (rev 3):** **Religion simplified per Jedidiah** — entirely syncretic, one shared pantheon, only axis Law/Neutral/Chaos. Removed `religion_weights` from the §7.2 contract (religion derives from `alignment_weights` × `culture_weights` at runtime); rewrote §7.3 (nothing religious generated pre-game, not even deity names — POIs/events carry culture/alignment/portfolio tags the runtime overlay resolves); updated the §10.2 religious-tradition prompt and the header note on `gdd-religion-system.md` (its §7 propagation model superseded; stance taxonomy abandoned).
+- **2026-06-12 (rev 2):** §7.1 summary updated for the realm-scale war resolution added in `gdd-history-simulation.md` v0.3 §7.3.1 (wars, vassal transfer, wholesale vassalization, annexation, pillage).
+- **2026-06-12:** **Layer 4 rewrite completed (wiring pass).** Converted the 2026-06-03 summary patch into the full integration: §7.2 is now the concrete **sim output contract** (polities, hex substrate, settlements-by-emergence, event log, ruin seeds with provenance, fallen-polity toponyms; `racial_weights` derived not stored; `religion_weights` opaque pending the religion rework). Reconciled Layer 6 to consume sim outputs: §9.1 settlements reconcile-don't-invent (sim settlements kept, market class fitted, minor settlements topped up per the ~10%-urban rule, lines 161–169); §9.3 dungeon seeding inverted to provenance-first (sim ruins keep historical hexes, exempt from spacing; geometric top-up to the ~3/10/17-per-80-hex targets, lines 411–420; ruin surplus allowed under turbulent temperament); §9.5 forts prioritize sim-hot frontiers and tier-scaled capital strongholds; §9.6 second pass replaced with promotion-only settlement-local finalization against the 48/72-mile criteria (axioms lines 26–28). §10.2 prompts pinned to narrate-from-log; religious-tradition prompt marked a stub pending the religion rework. §11.1 validation extended (limits-of-growth caps, density/wilderness targets, tier-vs-families-vs-level consistency per history-sim §12.1, vassal-chain well-formedness, morale seeds, 2gp-floor viability, ruin-provenance integrity). §11.2 parameter groups aligned to the §7.5 table (realm counts/alignments now emergent). §12.2 Voronoi note superseded by sim cost note; §12.3 renamed Layer 3/4 generators (`culture_seeder.gd`, `history_simulator.gd`). Header cross-references updated; `gdd-religion-system.md` explicitly marked future. No design decisions changed — this was reconciliation; all new design content lives in `gdd-history-simulation.md` v0.2.
 - **2026-06-03:** **Layer 3–4 rework.** Replaced the static political layer and demographic layer with the four-engine model: Layer 3 = culture seeding (`gdd-culture-catalog.md`) + coarse region geometry (`gdd-region-painting.md` Phase 1) + baseline wilderness beastmen; Layer 4 = the history simulation (`gdd-history-simulation.md`) producing the present-day political map, substrate weights, territory classification, and event log, with religion as the shared-pantheon overlay (`gdd-religion-system.md`). Updated the pipeline overview, the timeline principle (now simulated, not LLM-invented), Layer 5 (static canonical banks + region naming), Layer 6 (sim-fed dungeon seeds, territory classification as output, delegated road naming), Layer 8 (ACKS present-day handoff), and superseded the §14 historical-depth decision. Thin-orchestrator style — detail delegated to the engine GDDs.
 - **2026-03-19:** Initial draft. 8-layer pipeline designed. Physical geography uses Godot FastNoiseLite. Climate uses simplified Köppen. Downstream integration documented.
 - **2026-03-19 (rev 2):** All open questions resolved. No tectonic plate simulation (use directional noise bias for mountain chains). Historical depth specified: 4,000-year bullet timeline with double density for recent 1,500 years and generous narrative for past 300. No ocean hex variation for v1.

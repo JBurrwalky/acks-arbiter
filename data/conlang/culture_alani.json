@@ -5,10 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 9,
   "sub_palette": "gothic",
-  "synthesis_sources": [6],
+  "synthesis_sources": [
+    6
+  ],
   "homeland": "Alania",
   "government": "clanhold",
-  "alignment_allowed": ["Lawful", "Chaotic"],
+  "alignment_allowed": [
+    "Lawful",
+    "Chaotic"
+  ],
   "_note": "Single-source (Dark-Ages continental Germanic, Gothic register). Gothic sub-palette of the Germanic family; migrating war-band kindreds of forest and grassland. clan = clanhold (kin-reiks and the thing-assembly). Even split Lawful/Chaotic, no Neutral. Common-word lexicon and rank titles use the real Gothic register (allowed, catalog 5.3); DEITY names are the Gothic-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json), phoneme-morphs of the Agrippan canon, never real Germanic gods.",
   "phonology": {
     "palette": "Gothic/continental Germanic: stops + th/dh, w, h; masc -s/-a, fem -o; ai/au diphthongs; dithematic compounds; theophoric stems are the Gothic reflexes (Thulrs-, Erlanda-, Numins-, Gauanda-).",
@@ -16,40 +21,168 @@
     "transparent_ratio": 0.45
   },
   "lexicon": {
-    "feature_words": { "river": "ahwa", "stream": "rinno", "lake": "saiws", "sea": "marei", "bay": "wiks", "cape": "nasja", "isle": "awja", "mountain": "fairguni", "hill": "hlaiw", "ridge": "hruggs", "forest": "widus", "wood": "triwa", "plain": "haithi", "marsh": "fani", "ford": "furds", "pass": "skards", "vale": "dals", "coast": "staths" },
-    "settlement_words": { "hamlet": "haims", "village": "thaurp", "town": "stads", "city": "baurgs", "fort": "burgs", "port": "hafa", "market": "kaupstads", "temple_town": "alhs", "citadel": "hauhaburgs" },
-    "kinship": { "son": "sunus", "daughter": "dauhtar", "house": "gards", "kin": "kuni", "ancestor": "fadrein" },
-    "adjectives": { "great": "mikils", "little": "leitils", "old": "alths", "new": "niujis", "black": "swarts", "white": "hweits", "red": "rauds", "golden": "gultheins", "iron": "eisarn", "high": "hauhs", "far": "fairra", "sacred": "weihs", "fair": "skauns" },
-    "resources": { "salt": "salt", "iron": "eisarn", "bronze": "aiz", "silver": "silubr", "gold": "gulth", "amber": "glesum", "grain": "kaurn", "fur": "fell", "honey": "milith", "horse": "aihws" },
-    "directional": { "upper": "iup", "lower": "dalath", "north": "naurth", "south": "sauth", "inner": "innana", "outer": "utana", "near": "nehwa", "far": "fairra" }
+    "feature_words": {
+      "river": "ahwa",
+      "stream": "rinno",
+      "lake": "saiws",
+      "sea": "marei",
+      "bay": "wiks",
+      "cape": "nasja",
+      "isle": "awja",
+      "mountain": "fairguni",
+      "hill": "hlaiw",
+      "ridge": "hruggs",
+      "forest": "widus",
+      "wood": "triwa",
+      "plain": "haithi",
+      "marsh": "fani",
+      "ford": "furds",
+      "pass": "skards",
+      "vale": "dals",
+      "coast": "staths",
+      "neck": "hals",
+      "narrows": "aggwus",
+      "waste": "authida",
+      "road": "staiga",
+      "way": "wigs",
+      "track": "laists"
+    },
+    "settlement_words": {
+      "hamlet": "haims",
+      "village": "thaurp",
+      "town": "stads",
+      "city": "baurgs",
+      "fort": "burgs",
+      "port": "hafa",
+      "market": "kaupstads",
+      "temple_town": "alhs",
+      "citadel": "hauhaburgs"
+    },
+    "kinship": {
+      "son": "sunus",
+      "daughter": "dauhtar",
+      "house": "gards",
+      "kin": "kuni",
+      "ancestor": "fadrein"
+    },
+    "adjectives": {
+      "great": "mikils",
+      "little": "leitils",
+      "old": "alths",
+      "new": "niujis",
+      "black": "swarts",
+      "white": "hweits",
+      "red": "rauds",
+      "golden": "gultheins",
+      "iron": "eisarn",
+      "high": "hauhs",
+      "far": "fairra",
+      "sacred": "weihs",
+      "fair": "skauns"
+    },
+    "resources": {
+      "salt": "salt",
+      "iron": "eisarn",
+      "bronze": "aiz",
+      "silver": "silubr",
+      "gold": "gulth",
+      "amber": "glesum",
+      "grain": "kaurn",
+      "fur": "fell",
+      "honey": "milith",
+      "horse": "aihws"
+    },
+    "directional": {
+      "upper": "iup",
+      "lower": "dalath",
+      "north": "naurth",
+      "south": "sauth",
+      "inner": "innana",
+      "outer": "utana",
+      "near": "nehwa",
+      "far": "fairra"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-haims (home)", "-thaurp (steading)", "-burgs (fort)", "-gards (enclosure)", "-stads (place)"],
+    "toponymic_suffixes": [
+      "-haims (home)",
+      "-thaurp (steading)",
+      "-burgs (fort)",
+      "-gards (enclosure)",
+      "-stads (place)"
+    ],
     "patronymic_form": "patronymic -sunus or -ing (descendant of); kin (kuni) name for nobility; deed-bynames common.",
-    "gendered_endings": { "male": "-s / -a", "female": "-o / -a" },
+    "gendered_endings": {
+      "male": "-s / -a",
+      "female": "-o / -a"
+    },
     "diminutive_form": "-ila / -ein",
     "compounding_rule": "[adjective|resource|animal](stem) + feature/settlement: Swarta-widus (black-forest), Eisarna-burgs (iron-fort); kin + -ingos (the people of)."
   },
   "title_ladder": {
     "government": "clanhold (Gothic war-bands and kin-reiks; the gafaurds/thing-assembly is narrative flavor)",
     "tiers": {
-      "barony": { "ruler": "Gardings", "domain": "Gardingi" },
-      "march": { "ruler": "Markareiks", "domain": "Marka" },
-      "county": { "ruler": "Kindins", "domain": "Kindinassus" },
-      "duchy": { "ruler": "Drauhtins", "domain": "Drauhtinassus" },
-      "principality": { "ruler": "Reiks", "domain": "Reiki" },
-      "kingdom": { "ruler": "Thiudans", "domain": "Thiudangardi" },
-      "empire": { "ruler": "Mikilthiudans", "domain": "Miklathiudangardi" }
+      "barony": {
+        "ruler": "Gardings",
+        "domain": "Gardingi"
+      },
+      "march": {
+        "ruler": "Markareiks",
+        "domain": "Marka"
+      },
+      "county": {
+        "ruler": "Kindins",
+        "domain": "Kindinassus"
+      },
+      "duchy": {
+        "ruler": "Drauhtins",
+        "domain": "Drauhtinassus"
+      },
+      "principality": {
+        "ruler": "Reiks",
+        "domain": "Reiki"
+      },
+      "kingdom": {
+        "ruler": "Thiudans",
+        "domain": "Thiudangardi"
+      },
+      "empire": {
+        "ruler": "Mikilthiudans",
+        "domain": "Miklathiudangardi"
+      }
     },
     "_tiers_note": "Gothic clanhold, ascending. Built on thiudans (people-king) and reiks (ruler). Gardings (household-lord) barony; Markareiks (march-ruler) march; Kindins (district-governor) county; Drauhtins (war-band leader) duchy; Reiks (great ruler) principality. A clan culture rarely climbs past the middle tiers. (Rank titles are the real Gothic register, allowed.)",
-    "female_forms": { "Thiudans": "Thiudini", "Mikilthiudans": "Mikilthiudini", "Reiks": "Reikis", "Drauhtins": "Drauhtini", "Kindins": "Kindini", "Markareiks": "Markareikis", "Gardings": "Gardingi" },
+    "female_forms": {
+      "Thiudans": "Thiudini",
+      "Mikilthiudans": "Mikilthiudini",
+      "Reiks": "Reikis",
+      "Drauhtins": "Drauhtini",
+      "Kindins": "Kindini",
+      "Markareiks": "Markareikis",
+      "Gardings": "Gardingi"
+    },
     "heir": "Thiudans-sunus (king's son)",
-    "honorifics": { "lord": "Frauja", "lady": "Fraujo", "champion": "Wigands (warrior)", "your_grace": "Reiks", "elder": "Sineigs" },
-    "vassalage": { "liege": "Frauja", "vassal": "Skalks (servant)", "fealty": "Aiths (oath)", "tribute": "Gild" }
+    "honorifics": {
+      "lord": "Frauja",
+      "lady": "Fraujo",
+      "champion": "Wigands (warrior)",
+      "your_grace": "Reiks",
+      "elder": "Sineigs"
+    },
+    "vassalage": {
+      "liege": "Frauja",
+      "vassal": "Skalks (servant)",
+      "fealty": "Aiths (oath)",
+      "tribute": "Gild"
+    }
   },
   "people_name_convention": {
     "order": "personal + -sunus patronymic or kin (kuni); warriors add a deed/animal byname.",
-    "surname_source": ["patronymic (-sunus / -ing)", "kin/clan (kuni)", "deed/animal byname"],
+    "surname_source": [
+      "patronymic (-sunus / -ing)",
+      "kin/clan (kuni)",
+      "deed/animal byname"
+    ],
     "dual_register": "reiks-kin carry the clan name + war-epithet; commoners a patronymic.",
     "theophoric": "names from the Gothic deity-reflexes + a Germanic element: -mers (famous), -reiks (ruler), -wulf (wolf): e.g. Thulra-mers, Erlanda-reiks.",
     "diminutive": "-ila"
@@ -57,12 +190,26 @@
   "religion": {
     "_note": "Deity-names are the Gothic-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json) - phoneme-morphs of the Agrippan canon, never real Germanic gods. Lawful and Chaotic both present (no Neutral): Lawful kin keep the high oath-and-sun powers, Chaotic kin the wolf-and-fire powers; the One is distant.",
     "the_one": "Aiterns (< *Aiternaz < Aeternus; the distant All-Father, seldom petitioned)",
-    "sample_deity_renames": { "Tulrius": "Thulrs (sun and judgment)", "Orlandus": "Erlands (the iron-oath, war)", "Gaiandus": "Gauands (the enduring earth)", "Numeno": "Numins (the storm-mind, sky-wisdom)" },
+    "sample_deity_renames": {
+      "Tulrius": "Thulrs (sun and judgment)",
+      "Orlandus": "Erlands (the iron-oath, war)",
+      "Gaiandus": "Gauands (the enduring earth)",
+      "Numeno": "Numins (the storm-mind, sky-wisdom)"
+    },
     "demon_epithet_pattern": "the opposing powers keep their Gothic reflexes + a portfolio epithet (distinct per power): Maraxus -> Marahs the War-Fire; Vacidus -> Wakiths the Unmaker; Lusanto -> Lusanths the Hoard-Worm.",
-    "clergy_ladder": { "1": "Gudja-magus (priest-novice)", "3": "Gudja (priest)", "5": "Auhuma-gudja (high priest)", "7": "Weiha (sanctifier)", "9": "Reiks-gudja (priest-lord)" },
+    "clergy_ladder": {
+      "1": "Gudja-magus (priest-novice)",
+      "3": "Gudja (priest)",
+      "5": "Auhuma-gudja (high priest)",
+      "7": "Weiha (sanctifier)",
+      "9": "Reiks-gudja (priest-lord)"
+    },
     "religious_orders_pattern": "the Alhs (temple / sacred grove) of [power]: 'the Alhs of Erlands'.",
     "saints_pattern": "the Anses (deified forebears) honored at the grave-howe; 'the Blessed [name]'.",
-    "holy_symbol_motifs": { "Erlands": "an iron spear crossed with an oath-ring", "Thulrs": "a rayed sun-wheel above the scales" }
+    "holy_symbol_motifs": {
+      "Erlands": "an iron spear crossed with an oath-ring",
+      "Thulrs": "a rayed sun-wheel above the scales"
+    }
   },
   "banks_patterns": {
     "ships": "river-craft and wagon-names (the Alani are inland): 'the Aurochs', 'Wolf of the Ahwa'",
@@ -71,10 +218,81 @@
     "dungeons_ruins": "fallen kin-burgs and grave-howes: 'the Howe of [name]', 'the broken Burgs of [kin]'"
   },
   "seed_names": {
-    "personal_m": ["Gundmers", "Theudmers", "Hrothawulf", "Aliwulf", "Wiljareiks", "Sigismers", "Gaisamund", "Frithareiks", "Hildemers", "Ansila", "Eburwulf", "Gardawulf", "Recamund", "Walamund", "Thiudawulf", "Bandwila", "Athawils", "Wandalmund", "Huniwulf", "Swartila"],
-    "personal_f": ["Gundila", "Hildila", "Frithigo", "Swanahild", "Amala", "Wiljo", "Sunjo", "Theudila", "Hrothila", "Ansigo", "Reikila", "Walagund", "Eburhild", "Sigila", "Hildegund", "Frithila", "Gardila", "Mernigo", "Swarthild", "Bandwa"],
-    "clan_kin": ["Gundingos", "Theudingos", "Hrothingos", "Alingos", "Wiljingos", "Sigisingos", "Frithingos", "Hildingos", "Eburingos", "Wandalingos", "Huningos", "Reikingos"],
-    "epithets_cognomina": ["the Wolf", "Iron-hand", "the Oath-keeper", "Boar-helm", "the Far-wandered", "Storm-voiced", "the Unbowed", "Wagon-lord"],
-    "flagship_settlements": ["Alania (the chief seat)", "Eisarnaburgs (iron-fort)", "Swartawidus (the black-forest hold)", "Thiudangards (the king's-garth)", "Hlaiwastads (the howe-place)", "Markareiki (the march-hold)"]
+    "personal_m": [
+      "Gundmers",
+      "Theudmers",
+      "Hrothawulf",
+      "Aliwulf",
+      "Wiljareiks",
+      "Sigismers",
+      "Gaisamund",
+      "Frithareiks",
+      "Hildemers",
+      "Ansila",
+      "Eburwulf",
+      "Gardawulf",
+      "Recamund",
+      "Walamund",
+      "Thiudawulf",
+      "Bandwila",
+      "Athawils",
+      "Wandalmund",
+      "Huniwulf",
+      "Swartila"
+    ],
+    "personal_f": [
+      "Gundila",
+      "Hildila",
+      "Frithigo",
+      "Swanahild",
+      "Amala",
+      "Wiljo",
+      "Sunjo",
+      "Theudila",
+      "Hrothila",
+      "Ansigo",
+      "Reikila",
+      "Walagund",
+      "Eburhild",
+      "Sigila",
+      "Hildegund",
+      "Frithila",
+      "Gardila",
+      "Mernigo",
+      "Swarthild",
+      "Bandwa"
+    ],
+    "clan_kin": [
+      "Gundingos",
+      "Theudingos",
+      "Hrothingos",
+      "Alingos",
+      "Wiljingos",
+      "Sigisingos",
+      "Frithingos",
+      "Hildingos",
+      "Eburingos",
+      "Wandalingos",
+      "Huningos",
+      "Reikingos"
+    ],
+    "epithets_cognomina": [
+      "the Wolf",
+      "Iron-hand",
+      "the Oath-keeper",
+      "Boar-helm",
+      "the Far-wandered",
+      "Storm-voiced",
+      "the Unbowed",
+      "Wagon-lord"
+    ],
+    "flagship_settlements": [
+      "Alania (the chief seat)",
+      "Eisarnaburgs (iron-fort)",
+      "Swartawidus (the black-forest hold)",
+      "Thiudangards (the king's-garth)",
+      "Hlaiwastads (the howe-place)",
+      "Markareiki (the march-hold)"
+    ]
   }
 }

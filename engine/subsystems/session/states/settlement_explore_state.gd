@@ -201,6 +201,9 @@ func _create_settlement_hud() -> void:
 	_activity_panel.activity_requested.connect(_on_activity_requested)
 	# Phase 10B.2 Wave 2: route mercantile activity launchers to mercantile_panel.
 	_activity_panel.mercantile_requested.connect(_on_mercantile_requested)
+	# "Leave" returns to the PoI menu (the panel can be opened via travel arrival
+	# with the menu hidden, so it must be re-shown — not just the panel hidden).
+	_activity_panel.leave_requested.connect(_restore_navigation_ui)
 
 
 # ---------------------------------------------------------------------------

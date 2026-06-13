@@ -5,11 +5,11 @@
 **Version:** v0.1
 **Authority:** PROJECT-DESIGNED — the kit model, schemas, conventions, and assembly are engineering/design decisions. The phonemic palettes and real-world synthesis anchors come from `gdd-culture-catalog.md` §5.1/§5.2 (ultimately `gdd-setting-lore.md` §5); the canonical deity keys from `gdd-setting-lore.md` §4.1 / `gdd-religion-system.md`.
 **Depends on project GDDs:** `gdd-culture-catalog.md` (cultures, `language_family`, `phonemic_palette`, `toponym`, `sphere_weights`, `social_structure`), `gdd-religion-system.md` (deity renames, saints, clergy ladder, holy days), `gdd-region-painting.md` (feature taxonomy, multilingual major-feature naming, descriptive templates), `gdd-history-simulation.md` (event log → battle/treaty/era names, dynasties, realm names, ruins), `gdd-setting-generation.md` (Layer 5 consumes this), `gdd-calendar-seasons.md` (calendar names), `gdd-heraldry-builder.md` (house/dynasty arms), `gdd-poi-generation.md`, `gdd-settlement-layout.md` (districts), `gdd-npc-personality.md`.
-**Depends on ACKS rules:** `acore_axioms_strongholds_and_domains.xml` (domain tiers underpinning the title ladder — exact tier table is a pending lookup, §17).
+**Depends on ACKS rules:** `acore_axioms_strongholds_and_domains.xml` (domain tiers underpinning the title ladder — **retrieved and cited 2026-06-12 in `gdd-history-simulation.md` §12.1**: titles, family ranges, ruler levels, 4–6 vassal fan-out).
 **Replaces:** `gdd-name-generation.md` — superseded; its 16-category element inventory and JSON bank format are carried forward and expanded here.
 **Blocks:** culture-record authoring; the name-bank build; region/title naming in `gdd-setting-generation.md` Layer 5.
 **Modifiable by Claude Code:** Yes.
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-12
 
 ---
 
@@ -86,7 +86,7 @@ transparent_ratio  : 0–1, how often generated names are descriptive/translatab
 
 The stock from which compound and descriptive names are built. Per family base (overridable per culture):
 
-- **Feature-words** — river, stream, lake, sea, ocean, bay, cape, isle, mountain, hill, ridge, forest, wood, plain, marsh, desert, ford, pass, vale. (Powers region names and the words inside compound settlement names.)
+- **Feature-words** — river, stream, lake, sea, ocean, bay, cape, isle, mountain, hill, ridge, forest, wood, plain, marsh, desert/waste, ford, pass, vale, **neck (isthmus), narrows (strait), road, way, track** (the last six gap-filled across all kits 2026-06-12 for region-painting §5.1; remaining subtypes — ocean, gulf, plateau, basin, peninsula — assemble as compounds/templates per that table). (Powers region names and the words inside compound settlement names.)
 - **Settlement-type words** — hamlet, village, town, city, fort, port, market, holdfast.
 - **Kinship words** — son, daughter, child-of, clan, house. (Powers patronymics and house-names.)
 - **Quality/color adjectives** — great, little, old, new, black, white, red, golden, iron, high, low, far, weeping, broken.
@@ -174,7 +174,7 @@ Generated per culture (most from the kit, per `gdd-religion-system.md` §5.2):
 
 Keyed three ways and **shared by language family** (blended for synthesis cultures):
 
-- **By ACKS domain tier** — barony → march → county → duchy → principality → kingdom → empire (seven tiers, ascending by size — the march is a small frontier holding between barony and county; the exact tier/ruler-level/family-size mapping is the pending `acore_axioms_strongholds_and_domains.xml` lookup, §17).
+- **By ACKS domain tier** — barony → march → county → duchy → principality → kingdom → empire (seven tiers, ascending by size — the march is a small frontier holding between barony and county; the tier/ruler-level/family-size mapping is **retrieved and cited in `gdd-history-simulation.md` §12.1**: Baron L3–4 / Marquis L5–6 / Count L7–8 / Duke L9 / Prince L10–11 / King L12–13 / Emperor L14).
 - **By government** — only **feudal** (civ cultures) and **clanhold** (clan cultures) are mechanically modeled, so a civ culture uses the feudal domain-tier ladder and a clan culture a chieftain ladder. Republics, oligarchies, theocracies, freeholds, etc. are *not* implemented (they live in ACKS supplements we haven't built); such cultural character is narrative flavor laid over a feudal or clanhold realm. Ruler *class* is still biased by `sphere_weights` (§4.3), independent of government.
 - **By culture** — the family's lexical flavor.
 
@@ -321,7 +321,8 @@ assembled examples:
 
 ## 17. Open Questions / Deferred
 
-- **ACKS domain-tier table** — the title ladder's tier→ruler-level mapping needs the pending lookup (`acore_axioms_strongholds_and_domains.xml`), shared with `gdd-history-simulation.md` §17.
+- ~~**ACKS domain-tier table**~~ — ✅ **RESOLVED 2026-06-12**: retrieved and cited in `gdd-history-simulation.md` §12.1 (the `_tier_levels_note` in each kit's title_ladder can now be filled at the next kit-curation pass).
+- **Region feature-word gap-fill** — ✅ **DONE 2026-06-12**: neck/narrows/waste/road/way/track realized per-culture across all 56 kits (beastman races inherit from the Kazhur base); region-painting §5.1 holds the subtype→recipe table. Curation note: the blends' fused coinages and the thin Gormdurn/Khraaldurn inventories should get a look in the kit-curation pass.
 - **Full language-family assignment** — ✅ LOCKED 2026-06-03 (§2.1.1): 9 human families + Elvish/Dwarven, all 47 cultures assigned. The 6 extreme cross-family blends still need careful hand-blending during kit authoring (catalog §4.8).
 - **Per-culture `transparent_ratio` values** — authored per culture during the kit pass.
 - **Seed-stock counts** — confirm minimums per category (carry the old name-gen inventory or trim).
@@ -331,6 +332,7 @@ assembled examples:
 
 ## 18. Revision History
 
+- **2026-06-12 (rev 8):** Region-naming session. **Lexicon gap-fill executed** across all 56 kits in `data/conlang/` (55 culture kits + the Kazhur base; beastman races inherit): six concepts — neck (isthmus), narrows (strait), waste (where no desert word existed), road, way, track — realized per culture in-register from family roots (e.g. fauces/sund/caol/seto/sacbe lineage; blends fused per their house style; elvish as Vanethir cognates vel-/lir-/morn-/lan-/eln-/sylv- under the three branch sound-laws; dwarven with dialect drift gemination/lengthening). §2.3 feature-word inventory updated; remaining region subtypes covered by compounds/templates per `gdd-region-painting.md` §5.1's new recipe table. **ACKS tier-table item resolved** (cited via `gdd-history-simulation.md` §12.1; §6.1 updated with ruler levels). Curation flags: blend coinages + thin dwarven inventories (§17).
 - **2026-06-07 (rev 7):** Beastman tier authored (`data/conlang/family_beastman.json` + 10 race kits: kobold, goblin, orc, hobgoblin, gnoll, troll, bugbear, troglodyte, lizardman, ogre). Root = KAZHUR, the harsh Old-Semitic "maker-tongue" of the Chaotic sorcerers (kashaphim) who bred the beastmen from men and beasts; each race speaks it REGRESSED toward its animal nature (glottal stops, clicks, hisses, growls, barks, yelps) with simplified brutal concepts (kill qatal -> kobold k'atik / orc khatakhgur / troll gadool / lizardman khatazza / ogre gatog). ALWAYS CHAOTIC; totemic shamanism (race-totems + tribal totems, descriptive non-morph; the Chaotic powers served as Gul- prefixed harsh morphs with NO gendered ending - the one degraded tier; the One = Aternu the Sky-Tyrant and the Lawful demonized). Beastmen stay mechanically stripped (catalog §5.3) and are NOT in setting-lore §5.2; the kit is naming/flavor only. Completes the naming-kit corpus.
 - **2026-06-07 (rev 6):** Dwarven demihuman tier authored (`data/conlang/family_dwarven.json` + culture_khordurn/gormdurn/khraaldurn; setting-lore §5.2 #51-53). One people (the Durn) in three DIALECTS (small drift - dwarves are insular and traditional) of a self-contained isolate tongue, DURNKAD; hard consonants, soft vowels, short hammer-rhythm syllables. Unlike the elves the three SHARE the divine ending -drumm (m) / -drumma (f) (the 'anvil-named' suffix), drifting only in the root (Gormdurn geminates, Khraaldurn lengthens). Per-branch weights (Khordurn N0.60/L0.30/C0.10, Gormdurn N0.60/C0.30/L0.10, Khraaldurn N0.80/L0.10/C0.10), biomes (Khordurn any mountain but glacial/volcanic; Gormdurn volcanic only; Khraaldurn glacial mountains or tundra hills). Ancestor-first religion (the gods honored at festivals - forge Orlundrumm, mountain Gundundrumm); the Gormdurn fire-cult casts human sacrifice into the volcanoes. Dwarven is NOT ancestral to any human family.
 - **2026-06-05 (rev 5):** Elvish demihuman tier authored (`data/conlang/family_elvish.json` + culture_aelvaneth/xilvaneth/thalvaneth; setting-lore §5.2 #48-50). One people (the Vaneth) in three branches of a shared Proto-Elvish tongue ("Vanethir") — the human deity-morphs' shared consonant skeletons ARE the root-stock, and each branch applies a sound-law (Aelvaneth smooth high-elf -> Germanic/Celtic/Slavic; Xilvaneth harsh dark-elf stand-in -> Mesoamerican; Thalvaneth smooth Mediterranean sea-elf -> Latinate/Hellenic/Punic), so cognates read across all three. THREE ending-classes keep gods/mortals/places distinct (divine = sacred + gendered: Ael -aron/-arien, Xil -ak'on/-ak'el, Thal -aros/-aressa; gender read off the canon -us/-o vs -a/-ia). Per-branch alignment weights (Ael L0.70/N0.20/C0.10, Xil C0.80/N0.10/L0.10, Thal L0.20/N0.60/C0.20) and the Thalvaneth coastal-forest seeding rule recorded in setting-lore §5.2 and catalog §5.2. This §2.1.1 entry updated from a single "Elvish base kit" to the base + three branches.

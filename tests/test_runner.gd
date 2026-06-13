@@ -190,6 +190,7 @@ extends Node
 @onready var _specialist_integration_tests = $SpecialistIntegrationTests
 @onready var _specialist_dual_path_tests = $SpecialistDualPathTests
 @onready var _party_context_switching_tests = $PartyContextSwitchingTests
+@onready var _vehicle_abandonment_tests = $VehicleAbandonmentTests
 @onready var _casting_geometry_tests = $CastingGeometryTests
 @onready var _casting_resolver_tests = $CastingResolverTests
 @onready var _spell_slot_reset_tests = $SpellSlotResetTests
@@ -531,6 +532,12 @@ extends Node
 @onready var _provisions_service_tests = $ProvisionsServiceTests
 @onready var _grazing_rules_tests = $GrazingRulesTests
 @onready var _animal_sustenance_resolver_tests = $AnimalSustenanceResolverTests
+@onready var _setting_stage0_tests = $SettingStage0Tests
+@onready var _setting_stage1_tests = $SettingStage1Tests
+@onready var _setting_stage2_tests = $SettingStage2Tests
+@onready var _setting_stage3_tests = $SettingStage3Tests
+@onready var _setting_generation_data_freshness_tests = $SettingGenerationDataFreshnessTests
+@onready var _setting_stage4_foundation_tests = $SettingStage4FoundationTests
 
 
 func _ready() -> void:
@@ -708,6 +715,8 @@ func run() -> void:
 			_specialist_dual_path_tests,
 			# 2026-06-12 — Option 1 party-context switching (migration 155)
 			_party_context_switching_tests,
+			# 2026-06-12 — Bug 3: unhitched-vehicle travel (park-as-cache)
+			_vehicle_abandonment_tests,
 			_casting_geometry_tests,
 			_casting_resolver_tests,
 			_spell_slot_reset_tests,
@@ -1058,7 +1067,18 @@ func run() -> void:
 			_provisions_ledger_tests,
 			_provisions_service_tests,
 			_grazing_rules_tests,
-			_animal_sustenance_resolver_tests]:
+			_animal_sustenance_resolver_tests,
+			# 2026-06-12 — Setting generation Stage 0 (scaffolding + determinism harness)
+			_setting_stage0_tests,
+			# 2026-06-12 — Setting generation Stage 1 (Layers 1-2: geography + climate)
+			_setting_stage1_tests,
+			# 2026-06-12 — Setting generation Stage 2 (region painting Phase 1)
+			_setting_stage2_tests,
+			# 2026-06-12 — Setting generation Stage 3 (Layer 3 culture seeding)
+			_setting_stage3_tests,
+			_setting_generation_data_freshness_tests,
+			# 2026-06-12 — Setting generation Stage 4 foundation (SimConstants + tier table)
+			_setting_stage4_foundation_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

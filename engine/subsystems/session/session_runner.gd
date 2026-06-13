@@ -113,6 +113,11 @@ var _follower_arrival_resolver: FollowerArrivalResolver = null
 var _sanctum_apprentice_resolver: SanctumApprenticeResolver = null
 var _entity_outliner: EntityOutliner = null
 var _entity_outliner_layer: CanvasLayer = null
+## Party selector tab bar (Option 1 party-context switching follow-up,
+## 2026-06-12): top-left, one tab per party, visible only with 2+ parties.
+## Clicking a tab focuses that party (full context switch via go_to_party).
+var _party_selector_tabs: PartySelectorTabs = null
+var _party_selector_layer: CanvasLayer = null
 
 ## State keys where the scheduler loop should tick.
 const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "encounter", "downtime"]
@@ -318,6 +323,14 @@ func _ready() -> void:
 	# party_focus_requested.
 	EventBus.active_party_changed.connect(_on_active_party_changed_for_context)
 	EventBus.party_focus_requested.connect(go_to_party)
+	# Party selector tab bar refresh hooks (Option 1 follow-up). Connected
+	# AFTER the context handler so the tabs render the post-switch state.
+	EventBus.party_split.connect(_on_party_lifecycle_for_tabs)
+	EventBus.party_merged.connect(_on_party_lifecycle_for_tabs)
+	EventBus.party_member_joined.connect(_on_party_lifecycle_for_tabs)
+	EventBus.party_member_left.connect(_on_party_lifecycle_for_tabs)
+	EventBus.active_party_changed.connect(_on_active_party_changed_for_tabs)
+	EventBus.session_state_transitioned.connect(_on_state_transition_for_party_tabs)
 	# Ring of Regeneration round-tick consumer (2026-06-03). Per ACKS Core
 	# p.215+ Jedidiah-supplied RAW 2026-06-02: "Regenerates 1 hp per round.
 	# Will not regenerate if reduced to 0 hp or less." The handler scans
@@ -851,6 +864,28 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_entity_outliner.set_scheduler(_scheduler)
 	_entity_outliner.visible = true
 
+	# 8b. Party selector tabs (Option 1 follow-up): top-left tab bar for
+	# focusing parties. Same CanvasLayer pattern as the entity outliner —
+	# Control anchors need a viewport-sized parent rect. The widget hides
+	# itself while fewer than 2 parties exist and joins the
+	# "hud_party_selector_tabs" group (HudVisibilityController hides it while
+	# the notebook is open).
+	if _party_selector_tabs == null:
+		_party_selector_layer = CanvasLayer.new()
+		_party_selector_layer.name = "PartySelectorLayer"
+		_party_selector_layer.layer = 79  # just below SessionStatusBar (layer 80)
+		get_parent().add_child(_party_selector_layer)
+
+		_party_selector_tabs = PartySelectorTabs.new()
+		_party_selector_tabs.name = "PartySelectorTabs"
+		_party_selector_layer.add_child(_party_selector_tabs)
+		_party_selector_tabs.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		_party_selector_tabs.offset_left = 8.0
+		_party_selector_tabs.offset_top = 8.0
+		_party_selector_tabs.party_selected.connect(_on_party_tab_selected)
+		_party_selector_tabs.split_requested.connect(_on_party_tab_split_requested)
+	_refresh_party_selector_tabs()
+
 	# Party-context switching (Option 1): record the watched party for the
 	# loader's next pick, and seed the focus-coupled clock lock (a save with
 	# a suspended dungeon party loaded into wilderness starts locked).
@@ -1168,6 +1203,93 @@ func _build_settlement_focus_context(pd: PartyData) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
+# Party selector tabs (Option 1 follow-up, 2026-06-12)
+# ---------------------------------------------------------------------------
+
+## Rebuilds the tab bar from the campaign's parties. The widget hides itself
+## when fewer than 2 parties exist. Wired to party_split / party_merged /
+## party_member_joined / party_member_left / active_party_changed /
+## session_state_transitioned and called at session load.
+func _refresh_party_selector_tabs() -> void:
+	if _party_selector_tabs == null:
+		return
+	if _campaign_id.is_empty():
+		_party_selector_tabs.update_parties([] as Array[Dictionary], "")
+		return
+	var parties: Array[Dictionary] = []
+	for row: Dictionary in CampaignRepository.list_parties_for_campaign(_campaign_id):
+		var pid: String = str(row.get("id", ""))
+		if pid.is_empty():
+			continue
+		var name_v = row.get("name", "Party")
+		var loc_v = row.get("current_location_type", "wilderness")
+		parties.append({
+			"id": pid,
+			"name": str(name_v) if name_v != null else "Party",
+			"member_count": CampaignRepository.list_party_characters(pid).size(),
+			"activity": _party_tab_activity(str(loc_v) if loc_v != null else "wilderness"),
+		})
+	_party_selector_tabs.update_parties(parties, GameState.active_party_id)
+
+
+## Maps a party's persisted location context to the widget's activity icon key.
+func _party_tab_activity(location_type: String) -> String:
+	match location_type:
+		"settlement":
+			return "in_settlement"
+		_:
+			return "exploring"
+
+
+## Tab click → full focus switch (active = watched = selected). Routed through
+## party_focus_requested so the tab bar shares one path with toast actions.
+func _on_party_tab_selected(party_id: String) -> void:
+	EventBus.party_focus_requested.emit(party_id)
+
+
+## The split button: party splitting lives in the Notebook's Party tab (its
+## dialog needs the formation grid context). Point the player there rather
+## than duplicating the dialog here.
+func _on_party_tab_split_requested() -> void:
+	EventBus.notification_requested.emit({
+		"type": "info",
+		"category": "system",
+		"title": "Split Party",
+		"body": "Open the Notebook's Party tab to split the party.",
+	})
+
+
+## session_state_transitioned handler: disable tab switching in contexts the
+## engine blocks anyway (combat, camp) so the UI tells the player up front,
+## and refresh activity icons on context changes. SessionRunner's
+## _apply_party_focus remains the authoritative guard.
+func _on_state_transition_for_party_tabs(_old_key: String, new_key: String) -> void:
+	if _party_selector_tabs == null:
+		return
+	match new_key:
+		"combat":
+			_party_selector_tabs.set_switching_disabled("Cannot switch parties during combat.")
+		"camp":
+			_party_selector_tabs.set_switching_disabled("Cannot switch parties while camping.")
+		"wilderness", "dungeon", "settlement":
+			_party_selector_tabs.set_switching_disabled("")
+	_refresh_party_selector_tabs()
+
+
+## Lifecycle refresh hooks (split/merge/membership). Distinct narrow handlers
+## so signal arities match.
+func _on_party_lifecycle_for_tabs(_a: String, _b: String) -> void:
+	_refresh_party_selector_tabs()
+
+
+func _on_active_party_changed_for_tabs(_previous_party_id: String, new_party_id: String) -> void:
+	if _party_selector_tabs == null:
+		return
+	_party_selector_tabs.set_active(new_party_id)
+	_refresh_party_selector_tabs()
+
+
+# ---------------------------------------------------------------------------
 # Focus-coupled clock (Option 1 ruling 2026-06-12, Jedidiah's "Option C"):
 # while any party is inside a dungeon, the world clock advances ONLY while the
 # dungeon layer has focus. Other layers may resolve modals and queue orders,
@@ -1269,6 +1391,8 @@ func end_session() -> void:
 	_activity_handler_registry = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
+	if _party_selector_tabs != null:
+		_party_selector_tabs.visible = false
 	# Pause BEFORE clearing the scheduler: pause() triggers the
 	# flush-clock-and-queue choke point, which must see the real queue (or
 	# no-op if already paused) — pausing after clear() would persist an empty

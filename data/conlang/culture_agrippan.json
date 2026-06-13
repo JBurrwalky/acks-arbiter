@@ -6,7 +6,10 @@
   "catalog_number": 1,
   "sub_palette": "latinate",
   "government": "feudal",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Single-source (Roman). Per culture-catalog 5.3, a single-source culture may use real-world forms or a same-palette conlang; Agrippan leans Latinate, mixing genuine Latin-style and coined forms (no specific historical-figure names). Agrippan deity-names ARE the canonical pantheon keys.",
   "phonology": {
     "palette": "Latinate: a e i o u; p t c(=k) b d g f s v l r m n; endings -us/-a/-um/-ius/-or; penultimate stress.",
@@ -14,49 +17,190 @@
     "transparent_ratio": 0.45
   },
   "lexicon": {
-    "feature_words": { "river": "amnis", "stream": "rivus", "lake": "lacus", "sea": "mare", "bay": "sinus", "cape": "prom", "isle": "insa", "mountain": "mons", "hill": "collis", "ridge": "juga", "forest": "silva", "wood": "nemus", "plain": "campus", "marsh": "palus", "ford": "vada", "pass": "clusa", "vale": "vallis", "coast": "ora" },
-    "settlement_words": { "hamlet": "vicellus", "village": "vicus", "town": "oppidum", "city": "urbs", "fort": "castra", "port": "ostia", "market": "forum", "colony": "colonia", "citadel": "arx" },
-    "kinship": { "son": "-ius / filius", "daughter": "-ia / filia", "house": "gens", "ancestor": "avus" },
-    "adjectives": { "great": "magnus", "little": "parvus", "old": "vetus", "new": "novus", "black": "ater", "white": "albus", "red": "rufus", "golden": "aureus", "iron": "ferrus", "high": "altus", "low": "imus", "far": "ultra", "sacred": "sacer", "fair": "pulcher" },
-    "resources": { "salt": "salis", "iron": "ferrum", "silver": "argentum", "gold": "aurum", "wine": "vinum", "oil": "oleum", "grain": "frumen", "marble": "marmor", "fish": "piscis", "purple_dye": "purpura" },
-    "directional": { "upper": "superus", "lower": "inferus", "north": "borus", "south": "auster", "inner": "intra", "outer": "extra", "near": "propus", "far": "longus" }
+    "feature_words": {
+      "river": "amnis",
+      "stream": "rivus",
+      "lake": "lacus",
+      "sea": "mare",
+      "bay": "sinus",
+      "cape": "prom",
+      "isle": "insa",
+      "mountain": "mons",
+      "hill": "collis",
+      "ridge": "juga",
+      "forest": "silva",
+      "wood": "nemus",
+      "plain": "campus",
+      "marsh": "palus",
+      "ford": "vada",
+      "pass": "clusa",
+      "vale": "vallis",
+      "coast": "ora",
+      "neck": "collum",
+      "narrows": "fauces",
+      "waste": "vasta",
+      "road": "via",
+      "way": "iter",
+      "track": "semita"
+    },
+    "settlement_words": {
+      "hamlet": "vicellus",
+      "village": "vicus",
+      "town": "oppidum",
+      "city": "urbs",
+      "fort": "castra",
+      "port": "ostia",
+      "market": "forum",
+      "colony": "colonia",
+      "citadel": "arx"
+    },
+    "kinship": {
+      "son": "-ius / filius",
+      "daughter": "-ia / filia",
+      "house": "gens",
+      "ancestor": "avus"
+    },
+    "adjectives": {
+      "great": "magnus",
+      "little": "parvus",
+      "old": "vetus",
+      "new": "novus",
+      "black": "ater",
+      "white": "albus",
+      "red": "rufus",
+      "golden": "aureus",
+      "iron": "ferrus",
+      "high": "altus",
+      "low": "imus",
+      "far": "ultra",
+      "sacred": "sacer",
+      "fair": "pulcher"
+    },
+    "resources": {
+      "salt": "salis",
+      "iron": "ferrum",
+      "silver": "argentum",
+      "gold": "aurum",
+      "wine": "vinum",
+      "oil": "oleum",
+      "grain": "frumen",
+      "marble": "marmor",
+      "fish": "piscis",
+      "purple_dye": "purpura"
+    },
+    "directional": {
+      "upper": "superus",
+      "lower": "inferus",
+      "north": "borus",
+      "south": "auster",
+      "inner": "intra",
+      "outer": "extra",
+      "near": "propus",
+      "far": "longus"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["-um", "-ia", "-ium", "-pola", "-castra", "-forum"],
+    "toponymic_suffixes": [
+      "-um",
+      "-ia",
+      "-ium",
+      "-pola",
+      "-castra",
+      "-forum"
+    ],
     "patronymic_form": "inherited gens (clan) name as middle element, e.g. Marcus VALERIUS.",
-    "gendered_endings": { "male": "-us / -ius / -or", "female": "-a / -ia" },
+    "gendered_endings": {
+      "male": "-us / -ius / -or",
+      "female": "-a / -ia"
+    },
     "diminutive_form": "-ulus / -illa (Marcus -> Marculus)",
     "compounding_rule": "[adjective|resource](stem) + feature-word, eliding final vowel before a vowel (ater + silva -> Atrasilva); or feature + civic suffix (vada -> Atravada)."
   },
   "title_ladder": {
     "government": "feudal",
     "tiers": {
-      "barony": { "ruler": "Castellanus", "domain": "Castellania" },
-      "march": { "ruler": "Limitanus", "domain": "Limitania" },
-      "county": { "ruler": "Comes", "domain": "Comitatus" },
-      "duchy": { "ruler": "Dux", "domain": "Ducatus" },
-      "principality": { "ruler": "Princeps", "domain": "Principatus" },
-      "kingdom": { "ruler": "Rex", "domain": "Regnum" },
-      "empire": { "ruler": "Imperator", "domain": "Imperium" }
+      "barony": {
+        "ruler": "Castellanus",
+        "domain": "Castellania"
+      },
+      "march": {
+        "ruler": "Limitanus",
+        "domain": "Limitania"
+      },
+      "county": {
+        "ruler": "Comes",
+        "domain": "Comitatus"
+      },
+      "duchy": {
+        "ruler": "Dux",
+        "domain": "Ducatus"
+      },
+      "principality": {
+        "ruler": "Princeps",
+        "domain": "Principatus"
+      },
+      "kingdom": {
+        "ruler": "Rex",
+        "domain": "Regnum"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Imperium"
+      }
     },
     "_tiers_note": "Seven ACKS domain tiers, ascending by size (barony, march, county, duchy, principality, kingdom, empire) per RAW; the march is a small frontier holding between barony and county. All pairs are Latinate and rhyme on a shared stem. The march (frontier) tier is Limitanus/Limitania (from Roman limes/limitanei), leaving Dux/Ducatus for its proper meaning, the duchy. Per-tier family/realm size thresholds come from the ACKS domain rules (acore_axioms_strongholds_and_domains.xml); not reproduced here for IP.",
-    "female_forms": { "Rex": "Regina", "Imperator": "Imperatrix", "Princeps": "Principissa", "Dux": "Ducissa", "Limitanus": "Limitana", "Comes": "Comitissa", "Castellanus": "Castellana" },
+    "female_forms": {
+      "Rex": "Regina",
+      "Imperator": "Imperatrix",
+      "Princeps": "Principissa",
+      "Dux": "Ducissa",
+      "Limitanus": "Limitana",
+      "Comes": "Comitissa",
+      "Castellanus": "Castellana"
+    },
     "heir": "Caesar (heir-designate to the Imperator)",
     "_government_note": "Only feudal and clanhold governments are mechanically modeled; Agrippa's imperial-Roman character is aesthetic flavor over a feudal realm.",
-    "honorifics": { "lord": "Dominus", "lady": "Domina", "knight": "Eques", "your_grace": "Eminentia", "your_majesty": "Maiestas" },
-    "vassalage": { "liege": "Patronus", "vassal": "Cliens", "fealty": "Fides", "tribute": "Tributum" },
+    "honorifics": {
+      "lord": "Dominus",
+      "lady": "Domina",
+      "knight": "Eques",
+      "your_grace": "Eminentia",
+      "your_majesty": "Maiestas"
+    },
+    "vassalage": {
+      "liege": "Patronus",
+      "vassal": "Cliens",
+      "fealty": "Fides",
+      "tribute": "Tributum"
+    },
     "_tier_levels_note": "tier->ruler-level mapping pending the ACKS domain-tier lookup."
   },
   "people_name_convention": {
     "order": "praenomen (personal) + nomen (gens/clan, inherited) + cognomen (earned agnomen, optional)",
-    "surname_source": ["inherited_family_clan (gens)", "deed_or_physical_agnomen (cognomen)"],
+    "surname_source": [
+      "inherited_family_clan (gens)",
+      "deed_or_physical_agnomen (cognomen)"
+    ],
     "dual_register": "patricians use the full tripartite gens; commoners often praenomen + occupational/patronymic byname.",
     "theophoric": "praenomina derived from the canonical Agrippan deities: Tulrian, Orlandus, Argentius, Realtus, Numenius, Delorius, Numian, Noctilus (m); Realta, Lietia, Numia, Noctila (f).",
     "diminutive": "informal -ulus / -illa"
   },
   "religion": {
     "_note": "Agrippan deity-names ARE the canonical pantheon keys; Agrippan is the reference culture other cultures rename FROM (gdd-religion-system 5.2).",
-    "lawful_powers_canonical": ["Tulrius", "Argentus", "Realta", "Numeno", "Lieta", "Ventalius", "Delorum", "Numia", "Fullus", "Gaiandus", "Orlandus", "Noctiluna"],
+    "lawful_powers_canonical": [
+      "Tulrius",
+      "Argentus",
+      "Realta",
+      "Numeno",
+      "Lieta",
+      "Ventalius",
+      "Delorum",
+      "Numia",
+      "Fullus",
+      "Gaiandus",
+      "Orlandus",
+      "Noctiluna"
+    ],
     "the_one": "Aeternus (the One / True God; honored in liturgy, not petitioned)",
     "demon_epithets_for_chaotic": {
       "Maraxus": "the Tyrant-Flame",
@@ -73,10 +217,20 @@
       "Caecida": "the Blinding Slanderer",
       "Vacidus": "the Unmaker"
     },
-    "clergy_ladder": { "1": "Cultor (Acolyte)", "3": "Sacerdos (Priest)", "5": "Flamen", "7": "Pontifex (High Priest)", "9": "Pontifex Maximus" },
+    "clergy_ladder": {
+      "1": "Cultor (Acolyte)",
+      "3": "Sacerdos (Priest)",
+      "5": "Flamen",
+      "7": "Pontifex (High Priest)",
+      "9": "Pontifex Maximus"
+    },
     "religious_orders_pattern": "Collegium of [domain]: Collegium of the Dawn Throne (Tulrius), Order of the Iron Oath (Orlandus).",
     "saints_pattern": "Divus/Diva [name] (deified founders and heroes), e.g. Divus Agrippus the Founder.",
-    "holy_symbol_motifs": { "Tulrius": "rayed sun-disc above a balance", "Orlandus": "iron oath-ring on a tower", "Argentus": "scales over a coin" }
+    "holy_symbol_motifs": {
+      "Tulrius": "rayed sun-disc above a balance",
+      "Orlandus": "iron oath-ring on a tower",
+      "Argentus": "scales over a coin"
+    }
   },
   "banks_patterns": {
     "_note": "Settlement/region names assemble from lexicon+morphology; other categories follow these patterns (full lists assembled by the build step).",
@@ -86,10 +240,101 @@
     "dungeons_ruins": "[Tomb/Vault/Catacomb] of [name]: the Catacombs of Divus Aurelius"
   },
   "seed_names": {
-    "personal_m": ["Marcus", "Lucius", "Gaius", "Titus", "Quintus", "Aulus", "Servius", "Decius", "Valerian", "Cassian", "Aurelian", "Tullius", "Caelius", "Florian", "Vitus", "Severus", "Octavian", "Maxen", "Drusus", "Tiberian", "Albinus", "Cornel", "Fabius", "Rufus"],
-    "personal_f": ["Aurelia", "Valeria", "Cornelia", "Livia", "Octavia", "Drusilla", "Severina", "Tullia", "Caelia", "Marcia", "Fabia", "Antonia", "Pomponia", "Vitia", "Lucilla", "Florentia", "Sabina", "Aemilia", "Junia", "Portia", "Cassia", "Verania", "Albina", "Maxima"],
-    "clan_gens": ["Valerius", "Cornelius", "Fabius", "Aurelius", "Tullius", "Caelius", "Aemilius", "Junius", "Pomponius", "Severus", "Octavius", "Drusus", "Albinus", "Florius", "Vitellius", "Maxentius", "Cassius", "Antonius", "Veranius", "Portius"],
-    "epithets_cognomina": ["Ferrus the Iron", "Magnus the Great", "Pius the Dutiful", "Severus the Stern", "Aquila the Eagle", "Rufus the Red", "Maximus the Greatest", "Vetus the Elder", "Justus the Just", "Audax the Bold", "Sapiens the Wise", "Victor"],
-    "flagship_settlements": ["Agrippola the capital", "Aurelium", "Castra Ferrata", "Portus Magnus", "Marmorea", "Atravada"]
+    "personal_m": [
+      "Marcus",
+      "Lucius",
+      "Gaius",
+      "Titus",
+      "Quintus",
+      "Aulus",
+      "Servius",
+      "Decius",
+      "Valerian",
+      "Cassian",
+      "Aurelian",
+      "Tullius",
+      "Caelius",
+      "Florian",
+      "Vitus",
+      "Severus",
+      "Octavian",
+      "Maxen",
+      "Drusus",
+      "Tiberian",
+      "Albinus",
+      "Cornel",
+      "Fabius",
+      "Rufus"
+    ],
+    "personal_f": [
+      "Aurelia",
+      "Valeria",
+      "Cornelia",
+      "Livia",
+      "Octavia",
+      "Drusilla",
+      "Severina",
+      "Tullia",
+      "Caelia",
+      "Marcia",
+      "Fabia",
+      "Antonia",
+      "Pomponia",
+      "Vitia",
+      "Lucilla",
+      "Florentia",
+      "Sabina",
+      "Aemilia",
+      "Junia",
+      "Portia",
+      "Cassia",
+      "Verania",
+      "Albina",
+      "Maxima"
+    ],
+    "clan_gens": [
+      "Valerius",
+      "Cornelius",
+      "Fabius",
+      "Aurelius",
+      "Tullius",
+      "Caelius",
+      "Aemilius",
+      "Junius",
+      "Pomponius",
+      "Severus",
+      "Octavius",
+      "Drusus",
+      "Albinus",
+      "Florius",
+      "Vitellius",
+      "Maxentius",
+      "Cassius",
+      "Antonius",
+      "Veranius",
+      "Portius"
+    ],
+    "epithets_cognomina": [
+      "Ferrus the Iron",
+      "Magnus the Great",
+      "Pius the Dutiful",
+      "Severus the Stern",
+      "Aquila the Eagle",
+      "Rufus the Red",
+      "Maximus the Greatest",
+      "Vetus the Elder",
+      "Justus the Just",
+      "Audax the Bold",
+      "Sapiens the Wise",
+      "Victor"
+    ],
+    "flagship_settlements": [
+      "Agrippola the capital",
+      "Aurelium",
+      "Castra Ferrata",
+      "Portus Magnus",
+      "Marmorea",
+      "Atravada"
+    ]
   }
 }

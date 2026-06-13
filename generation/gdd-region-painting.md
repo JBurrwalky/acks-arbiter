@@ -2,14 +2,14 @@
 
 **Document type:** Game Design Document (project-designed).
 **Status:** Draft
-**Version:** v0.1
+**Version:** v0.2
 **Authority:** PROJECT-DESIGNED — region detection, the taxonomy, the data model, naming, and all parameters are engineering/design decisions. Region naming is not an ACKS procedure.
-**Depends on project GDDs:** `gdd-setting-generation.md` (Layer 1–2 heightmap / hydrology / biomes are the geometric inputs; this adds a region pass to the pipeline and feeds Layer 5 naming and Layer 7 LLM polish), `gdd-terrain-system.md` (biome / elevation / water tags), `gdd-culture-catalog.md` (cultures, phonemic palettes, `toponym` roots, `road_propensity`), `gdd-name-generation.md` (region/feature name banks + templates — **requires new categories, §11**), `gdd-history-simulation.md` (the event log → historical names and fallen-polity toponyms), `gdd-hex-subdivision.md` (the 24mi→6mi→1.5mi scale hierarchy, deterministic seeded zoom-in §6, and the cross-scale consistency check §7 — fine region painting refines along it, §3.4).
+**Depends on project GDDs:** `gdd-setting-generation.md` (Layer 1–2 heightmap / hydrology / biomes are the geometric inputs; this adds a region pass to the pipeline and feeds Layer 5 naming and Layer 7 LLM polish), `gdd-terrain-system.md` (biome / elevation / water tags), `gdd-culture-catalog.md` (cultures, phonemic palettes, `toponym` roots, `road_propensity`), `gdd-naming-conventions.md` (the generative-kit model — lexicon feature-words + templates; **the required categories are covered by kit recipes + the 2026-06-12 lexicon gap-fill, §5.1**; supersedes `gdd-name-generation.md`), `gdd-history-simulation.md` (the event log → historical names and fallen-polity toponyms), `gdd-hex-subdivision.md` (the 24mi→6mi→1.5mi scale hierarchy, deterministic seeded zoom-in §6, and the cross-scale consistency check §7 — fine region painting refines along it, §3.4).
 **Consumers:** `gdd-quest-rumor-system.md`, `gdd-poi-generation.md`, the LLM narrator (NPC dialogue / location context), and the map UI (`gdd-ui-*`).
 **Depends on ACKS rules:** none directly. Territory classification (ACKS-derived, `gdd-setting-generation.md` §2) informs the road-tier definition (§6) only.
-**Blocks:** `gdd-name-generation.md` (new region/road name categories); the `gdd-setting-generation.md` pipeline wiring (the region pass).
+**Blocks:** the `gdd-setting-generation.md` pipeline wiring (the region pass). *(The name-category dependency is resolved 2026-06-12 — kit recipes + lexicon gap-fill, §5.1.)*
 **Modifiable by Claude Code:** Yes.
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-12
 
 ---
 
@@ -82,12 +82,14 @@ Each 24-mile hex stores a **set** of `region_ids`. Membership is many-to-many (a
 ### 3.3 Significance score
 
 ```
-significance(R) = f( normalized_size, prominence )
-   prominence raises small-but-striking features (an isolated peak, a long thin river,
-   a strait between two peoples) above their raw area.
+significance(R) = clamp01( 0.45 × size + 0.35 × prominence + 0.20 × context )
+   size       = log2(hexes(R)) / log2(hexes of the largest region in R's layer)
+   prominence = anomaly contrast · isolation · aspect ratio (rivers/straits reward length)
+                · peak elevation (ranges) — normalized 0–1 per subtype
+   context    = 0.5 × (≥ 2 cultures adjacent) + 0.5 × (qualifying historical event attached, §5.4)
 ```
 
-Significance drives three things: **LOD map labels** (which names show at which zoom — essential at the dense setting, §8), **LLM-polish eligibility** (only high-significance regions get bespoke Layer-7 names; the rest use deterministic generation, §5.3), and **multilingual eligibility** (only major features get alternate-tongue names, §5.2).
+Concrete thresholds (decided 2026-06-12, [PROVISIONAL] pending the balance pass): **multilingual alternates** require sig ≥ 0.65 *and* ≥ 2 adjacent cultures (§5.2); **LLM-polish eligibility** = top 8 regions by sig with a 0.75 minimum (§5.3); **LOD bands** for map labels: sig ≥ 0.65 at strategic zoom, ≥ 0.35 at mid zoom, all names at close zoom (the UI GDD owns rendering; this GDD owns the score).
 
 ### 3.4 Region scale and lazy cross-scale refinement
 
@@ -111,11 +113,13 @@ Each region record carries a **`scale`** (`campaign_24mi | regional_6mi | local_
    major-features-only (§5.2), so local names are typically single.
 ```
 
-**Determinism & caching.** The fine pass is seeded with the *same* scheme `gdd-hex-subdivision.md` uses for child terrain — `hash(campaign_seed, parent_q, parent_r, child_local_q, child_local_r)` — so a re-zoomed inset yields identical fine regions bit-for-bit. Fine regions are cached/persisted with the inset on first zoom-in and re-derivable on demand (cache policy in §11).
+**Determinism & caching (decided 2026-06-12).** The fine pass is seeded with the *same* scheme `gdd-hex-subdivision.md` uses for child terrain — `hash(campaign_seed, parent_q, parent_r, child_local_q, child_local_r)` — so a re-zoomed inset yields identical fine regions bit-for-bit. Fine regions are **persisted permanently with the inset as campaign data on first zoom-in and never re-derived** — determinism makes persistence cost only savegame bytes, and it guarantees a name the players know can never shift under an engine-version change. (Pre-lock parent-hex edits invalidate and re-derive the inset; post-lock the map is canonical anyway.)
+
+**Fine-pass floors & cap:** at the 6-mile scale every distinct detected feature of ≥ 1 hex is eligible, but each inset names at most its **top ~8 features by significance** — dense enough to dot local play with named copses, brooks, and knolls without drowning it.
 
 **Cross-scale consistency.** Fine regions must nest under coarse ones — a 6-mile hex's inherited coarse memberships always match its parent's. This is precisely the parent/child agreement that `gdd-hex-subdivision.md` §7's consistency check enforces over the regions both scales cover: the painter writes fine regions that satisfy it, and the check surfaces any drift (e.g., after a parent hex is edited and the inset re-derived).
 
-**Local (1.5-mile) scale.** The same lazy, seeded, nested refinement recurses to the 1.5-mile local scale (3-level nesting per `gdd-hex-subdivision.md`) where local play needs it. Whether 1.5-mile region painting is needed at all is deferred (§11).
+**Local (1.5-mile) scale — OFF for v1 (decided 2026-06-12).** The 6-mile fine pass is the finest *named* scale; 1.5-mile play borrows its 6-mile region names ("in the Thornwood"). The lazy/seeded machinery generalizes if local play ever feels name-starved, but no 1.5-mile region pass is built in v1.
 
 ---
 
@@ -124,10 +128,10 @@ Each region record carries a **`scale`** (`campaign_24mi | regional_6mi | local_
 All steps are deterministic flood-fills / scans over the hex grid, O(hexes), run once after Layer 2.
 
 ### 4.1 Continents and landmasses
-Connected-component flood-fill over land hexes. Components above a size threshold are continents; smaller are major isles (the rest become islands/archipelagos in §4.3).
+Connected-component flood-fill over land hexes. **Thresholds (coarse):** continent ≥ 100 land hexes; major isle 20–99; below 20 → islands/archipelagos (§4.3).
 
 ### 4.2 Terrain-cluster and geological regions
-Connected-component clustering over hexes sharing a biome family and elevation band (forests, deserts, plains, swamps, ranges, plateaus, basins). **Dense-naming support:** very large clusters are **sub-split** into named sub-regions along natural seams — a river bisecting a forest, an elevation step in a range, a basin within plains — so a great forest can *contain* several named woods (nesting via `parent_id`). **Geological anomalies** (a *Driftless*-type pocket, a rift, a karst basin) are detected by local contrast: a coherent patch whose terrain/elevation differs sharply from its surroundings. Anomaly detection is lighter and tunable (§11).
+Connected-component clustering over hexes sharing a biome family and elevation band (forests, deserts, plains, swamps, ranges, plateaus, basins). **Sub-split rule (concrete, 2026-06-12):** clusters **> 12 hexes** are sub-split along natural seams — a named river crossing the cluster, an elevation step of ≥ 1 band, a biome-subtype boundary — into parts of **≥ 4 hexes** each, recursing to **max depth 2**; the parent keeps the collective name and parts nest via `parent_id` (a great forest *contains* several named woods). **Geological-anomaly detector (concrete):** a patch of **1–4 contiguous hexes** whose biome family differs from the dominant family of **≥ 5 of its 6-hex surrounding ring**, or whose elevation band differs by **≥ 2 steps from every ring hex**. Score = contrast × rarity; keep the top **`map_hexes / 150`** anomalies (≈ 8 on a Large map).
 
 ### 4.3 Coastal and landform features
 Trace the coastline, then detect:
@@ -143,14 +147,47 @@ From the Layer-1 hydrology: trace the **river graph** (sources → confluences �
 ### 4.5 Cost & determinism
 Every detector is a flood-fill or single scan, O(hexes); the whole phase is a small fraction of a second even on a Huge map and is fully seed-deterministic.
 
+### 4.6 Detection floors (coarse, Dense default — decided 2026-06-12, [PROVISIONAL])
+
+| Subtype | Floor (24-mile hexes) |
+|---|---|
+| terrain clusters (forest/plains/desert/swamp/range/plateau/basin) | ≥ 2 hexes |
+| geological anomaly | 1–4 hexes (by the §4.2 contrast rule) |
+| lake / island | any (≥ 1 hex is notable at this scale) |
+| archipelago | 3+ islands within 2 hexes of each other |
+| bay | water concavity ≥ 2 hexes (gulf ≥ 6) |
+| cape / headland | protrusion ≥ 1 hex beyond the coast line |
+| peninsula | ≥ 4 land hexes behind a neck ≤ 2 hexes wide |
+| isthmus | neck ≤ 2 hexes joining masses ≥ 6 hexes each |
+| strait | water gap ≤ 2 hexes between masses ≥ 6 hexes each |
+| river | named at length ≥ 3 hexes; river-system at ≥ 2 tributaries |
+| sea / ocean | enclosed/marginal water ≥ 8 hexes / open water ≥ 80 hexes |
+
+The **Sparse** slider setting doubles all floors and drops anomalies and sub-splits.
+
 ---
 
 ## 5. Phase 2: Naming
 
 ### 5.1 Name sources
 
-1. **Culture name banks** (`gdd-name-generation.md`) — palette-consistent proper names. The bank needs new feature categories (§11): oceans, seas, lakes, bays, capes, peninsulas, straits, islands, plains, deserts, plateaus, roads, continents (it currently has only rivers, mountains, forests/swamps).
-2. **Descriptive templates** — `The [Adjective] [Feature]` (the Black Forest), `The [Resource] Coast` (the Iron Coast), `[Saint/Hero]'s [Feature]` (drawing on the religion saints / history heroes), `The [Feature] of [Region]`.
+1. **Culture conlang kits** (`gdd-naming-conventions.md` — supersedes the old per-category banks) — names are **assembled** from each kit's lexicon feature-words + morphology, palette-consistent by construction. **Subtype → recipe table (resolved 2026-06-12; lexicon gap-fill applied to all kits in `data/conlang/`):**
+
+   | Subtype | Recipe |
+   |---|---|
+   | ocean | compound `great + sea` (or opaque proper name) |
+   | gulf | compound `great + bay` |
+   | plateau | compound `high + plain` |
+   | basin | compound `low + vale/plain` |
+   | peninsula | `the [Adj] Arm/Horn` template, or cape-word for great capes |
+   | isthmus | lexicon word `neck` |
+   | strait | lexicon word `narrows` |
+   | desert | lexicon word `desert` or `waste` |
+   | roads | lexicon words `road / way / track` + §6.2 templates |
+   | continent | opaque proper name only (always top-significance → LLM polish) |
+   | sea, lake, bay, cape, island, plains, range, forest, etc. | existing lexicon feature-words |
+
+2. **Descriptive templates** — `The [Adjective] [Feature]` (the Black Forest), `The [Resource] Coast` (the Iron Coast), `[Hero]'s [Feature]` (pre-game from history-log figures and seed-stock names; the `[Saint]'s` variant activates at **runtime** once the saints system exists — religion simplification 2026-06-12), `The [Feature] of [Region]`.
 3. **Hydronym-derivation** — a terrain region dominated by a named water feature may borrow it (a jungle named for its great river — *Amazon*).
 4. **History event log** (`gdd-history-simulation.md` §11) — battle-sites, migrations, and fallen realms supply historical names and the fallen-polity toponyms (§5.4).
 
@@ -160,11 +197,11 @@ The **dominant adjacent/owning culture** names each feature (for remote wilderne
 
 ### 5.3 Dense generation, deterministic
 
-Per the locked **dense** setting, nearly every distinguishable feature is named down to a small size floor. This is feasible because naming is **deterministic template + bank lookup**, not a per-feature LLM call — thousands of regions can be named in milliseconds. The Layer-7 **LLM polish is reserved for high-significance regions** (the handful of great features per map), which get bespoke, evocative names and one-line descriptions; everything else uses the generated name as-is. This keeps the LLM cost bounded while the map stays richly labeled.
+Per the locked **dense** setting, nearly every distinguishable feature is named down to the §4.6 floors. This is feasible because naming is **deterministic template + kit assembly**, not a per-feature LLM call — thousands of regions can be named in milliseconds. The Layer-7 **LLM polish is reserved for the top 8 regions by significance (min 0.75)** (decided 2026-06-12), which get bespoke, evocative names and one-line descriptions; everything else uses the generated name as-is. **If no LLM provider is reachable (including the mock provider), the deterministic kit names stand for all regions** — the polish is an upgrade, never a dependency, per the engine-first principle.
 
 ### 5.4 Historical and fallen-polity names
 
-- **Historical override:** if the history log records a significant event at a feature (a great battle in a wood, a cataclysm at a lake), that feature may take a **historical name** that overrides or augments its geographic one (the wood becomes *the Teutoburg* / *the Weeping Wood*), with `name_origin: historical` and a `source_event_id`.
+- **Historical override:** if the history log records a significant event at a feature (a great battle in a wood, a cataclysm at a lake), that feature may take a **historical name** that overrides or augments its geographic one (the wood becomes *the Teutoburg* / *the Weeping Wood*), with `name_origin: historical` and a `source_event_id`. **Caps (2026-06-12):** the event must rank in the top quartile of logged significance (≥ 0.6), one override per region, map-wide cap `hexes / 100` (≈ 12 on Large) — so battles flavor the map without renaming half of it. Fallen-reach regions are their own layer and exempt.
 - **Fallen-polity reaches:** a collapsed/ depopulated realm's former heartland becomes a `historical_cultural` region named from the fallen culture's `toponym` root (the *Old Sargonid Reach*), drawn from the catalog + the collapse event. These are the only cultural toponyms (fallen-only).
 
 ### 5.5 Transparent vs. opaque names
@@ -173,14 +210,20 @@ A mix per culture style: **transparent/translatable** descriptive names (the Bla
 
 ### 5.6 Naming priority & collisions
 
-Name-origin selection priority: **historical** (if a significant logged event) → **hydronym-derived** (if dominated by a named water feature) → **descriptive/cultural template** (default). Track used names per culture to avoid duplicates within a campaign; on collision, re-roll or qualify (Upper/Lower, Great/Little).
+Name-origin selection priority: **historical** (if a significant logged event, capped per §5.4) → **hydronym-derived** (only when the water feature's significance exceeds the cluster's by ≥ 0.1, capped at 25% of named clusters map-wide — not every forest is named for its river) → **descriptive/cultural template** (default). Track used names per culture to avoid duplicates within a campaign; on collision, re-roll or qualify (Upper/Lower, Great/Little).
 
 ---
 
 ## 6. Major Roads
 
 ### 6.1 Road tiers and the definition of "major"
-A small tier enum on each road segment: **highway / road / track.** **Major = highway tier**, defined as a route that connects two Class III+ settlements **or** crosses a realm border as a trade route (territory/market data from the settlement & domain systems; ACKS-derived classification per `gdd-setting-generation.md` §2). Only highways receive proper names. `culture.road_propensity` (`gdd-culture-catalog.md` §4.6) sets how dense the overall network is; this layer only *names* the top tier.
+A small tier enum on each road segment: **highway / road / track** (concrete, 2026-06-12):
+
+- **Highway** — any segment lying on the road-path between two Class III+ markets, between two realm capitals, or crossing a realm border with Class IV+ settlements at both ends (a trade route). Collinear highway segments **merge into one named route record** with an ordered hex path — the whole *King's Road* is a single region the quest/rumor system can reference end to end.
+- **Road** — connects a Class IV–V settlement to the network.
+- **Track** — everything else; density set by `culture.road_propensity` (`gdd-culture-catalog.md` §4.6).
+
+Only highways receive proper names, capped at roughly one named route per ~40 hexes of network so the marquee roads stay marquee. This layer only *names*; the network itself comes from `gdd-setting-generation.md` §9.2.
 
 ### 6.2 Naming roads
 Highway names come from the new road category in the name bank + templates: `The [Toponym] Road/Way` (the road to a city), `The [Resource] Road` (the Salt Way), `The [Ruler/Realm]'s Road` (the King's Road), or a historical name from the event log. A highway crossing a realm border is a **major feature** and gets multilingual alternates (§5.2) — each realm names its end of the road.
@@ -246,19 +289,14 @@ Phase 2 (after cultures + history):
 
 ## 11. Open Questions / Deferred
 
-- **`gdd-name-generation.md` new categories (required).** Add feature categories: oceans, seas, lakes, bays, capes, peninsulas, isthmuses, straits, islands, plains, deserts, plateaus, basins, continents, and **roads**. (This compounds the already-flagged revision making name banks static canonical assets.)
-- **Min-size floors per region type.** The "Dense" floor for each subtype needs tuning — how small a wood/pond/hill-cluster still earns a name.
-- **Geological-anomaly detection.** The local-contrast detector (§4.2) is the least-defined; needs a concrete rule and a sophistication/tuning pass.
-- **Significance thresholds.** The cutoffs for LOD labeling, LLM-polish eligibility, and multilingual eligibility need balance.
-- **Road-tier thresholds.** Exact criteria for highway vs road vs track, in coordination with the settlement/trade and `road_propensity` systems.
-- **Sub-split rules.** How aggressively to sub-split very large clusters into nested named sub-regions.
-- **Map-label rendering / LOD.** The UI-side LOD scheme is described here but specified in the map UI GDD.
-- **Cross-reference cap.** How often hydronym-derivation and historical overrides fire, to avoid every region being named after a river or a battle.
-- **Fine-region cache/persistence policy (§3.4).** Whether lazily-painted 6-mile/1.5-mile regions are stored permanently with the inset or re-derived on demand, and how they are invalidated if a parent hex is edited.
-- **1.5-mile local region painting.** Whether local-scale play needs its own region pass at all, or whether 6-mile fine regions suffice for local reference.
-- **Fine-detection granularity floors.** The Dense size floors at 6-mile scale (how small a copse / brook / knoll still earns a name) — distinct from the coarse floors.
+All 2026-06-03 open items were **resolved 2026-06-12** (name categories → §5.1 recipes + lexicon gap-fill; floors → §4.6; anomaly rule + sub-split → §4.2; significance thresholds → §3.3; road tiers → §6.1; cross-reference caps → §5.4/§5.6; cache → persist permanently, §3.4; 1.5-mile painting → off for v1, §3.4; fine floors/cap → §3.4). Remaining:
+
+- **Map-label rendering / LOD.** The UI-side rendering scheme is specified in the map UI GDD; this GDD owns only the significance bands (§3.3).
+- **Balance pass.** All numeric thresholds above are [PROVISIONAL] and join the project-wide tuning pass once the pipeline runs against real maps (shared with `gdd-history-simulation.md` §17).
+- **Dwarven base-lexicon thinness.** The Gormdurn/Khraaldurn kits carry sparse feature-word inventories beyond the 2026-06-12 gap-fill (no realized river/sea/forest words); acceptable for mountain-dwellers at coarse scale, but the kit-authoring curation pass should fill them.
 
 ## 12. Revision History
 
+- **2026-06-12 (v0.2):** **Phase 2 made implementation-ready** (advisor session with Jedidiah; all §11 items resolved). Concrete: significance formula + thresholds (§3.3: 0.45/0.35/0.20 weights; alternates ≥ 0.65 + 2 cultures; LLM polish top 8 / min 0.75 **with deterministic fallback when no provider is reachable**); detection floors table (§4.6, Dense; Sparse doubles); sub-split rule (> 12 hexes, seams, ≥ 4-hex parts, depth 2) and anomaly detector (1–4 hexes, ≥ 5/6 ring contrast or ≥ 2 elevation steps, top hexes/150) (§4.2); continent thresholds (§4.1: ≥ 100 / 20–99 / < 20); road tiers + merged named-route records + ~1 name per 40 network hexes (§6.1); historical-override caps (event sig ≥ 0.6, 1/region, hexes/100 map-wide) and hydronym-derivation cap (river sig − cluster sig ≥ 0.1, ≤ 25%) (§5.4/§5.6). Decisions: fine regions **persist permanently** with the inset; **1.5-mile painting off for v1** (6-mile names borrowed); fine-pass cap ~8 named features per inset (§3.4). **Name-category dependency resolved**: superseded `gdd-name-generation.md` references re-pointed to `gdd-naming-conventions.md`; §5.1 subtype→recipe table added (compounds for ocean/gulf/plateau/basin; new lexicon words neck/narrows/waste/road/way/track **gap-filled across all 56 kits in `data/conlang/` this session**, per-culture in-register realizations from family roots). Saints template deferred to runtime per the religion simplification; hero/seed-stock names fire pre-game.
 - **2026-06-03 (rev 2):** Added the **cross-scale** model (§1.2, §3.4) per Jedidiah: coarse (24-mile) region painting runs eagerly at campaign creation; **fine (6-mile, recursively 1.5-mile) painting runs lazily at zoom-in**, since most play is at 6-mile. Fine pass inherits coarse region memberships, detects the local features that only resolve at the finer scale, and names them densely — seeded identically to `gdd-hex-subdivision.md` §6's child generation for bit-identical re-derivation, cached per inset, and nesting under coarse regions per the §7 cross-scale consistency check. Added `scale` + `coarse_parent_region_id` to the record; updated dependencies, integration, performance, worked example, and deferred items.
 - **2026-06-03:** Initial draft. Two-phase model (geometric detection after Layer 2 / naming after Layer 4–5 + 7). Six-layer overlapping/nestable taxonomy (continents, coastal-landform, terrain-cluster/geological, hydronyms, roads, historical-cultural fallen-only) covering all brief examples. Region data model with many-to-many hex membership, nesting, overlaps, multilingual names, significance score. Deterministic O(hexes) detection (connected-components, coastline geometry, river graph, anomaly contrast, large-cluster sub-splitting). Naming from banks + templates + hydronym-derivation + history log; **dense** deterministic generation with LLM polish reserved for high-significance features; multilingual alternates for major features only; transparent/opaque mix; historical and fallen-polity names. Road tiers with major = trunk/inter-realm highways. Player density slider; LOD labeling for dense maps; integration with quests/rumors/LLM/POI/UI. Flagged required name-generation categories and tuning items.

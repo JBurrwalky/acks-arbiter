@@ -454,6 +454,13 @@
 [ext_resource type="Script" path="res://tests/test_lair_placement.gd" id="438_lair_placement_tests"]
 [ext_resource type="Script" path="res://tests/test_specialist_dual_path.gd" id="439_specialist_dual_path_tests"]
 [ext_resource type="Script" path="res://tests/test_party_context_switching.gd" id="440_party_context_switching_tests"]
+[ext_resource type="Script" path="res://tests/test_vehicle_abandonment_service.gd" id="441_vehicle_abandonment_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage0.gd" id="442_setting_stage0_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage1.gd" id="443_setting_stage1_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage2.gd" id="444_setting_stage2_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage3.gd" id="445_setting_stage3_tests"]
+[ext_resource type="Script" path="res://tests/data_integrity/test_setting_generation_data_freshness.gd" id="446_setting_generation_data_freshness_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage4_foundation.gd" id="447_setting_stage4_foundation_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1816,3 +1823,24 @@ script = ExtResource("439_specialist_dual_path_tests")
 
 [node name="PartyContextSwitchingTests" type="Node" parent="."]
 script = ExtResource("440_party_context_switching_tests")
+
+[node name="VehicleAbandonmentTests" type="Node" parent="."]
+script = ExtResource("441_vehicle_abandonment_tests")
+
+[node name="SettingStage0Tests" type="Node" parent="."]
+script = ExtResource("442_setting_stage0_tests")
+
+[node name="SettingStage1Tests" type="Node" parent="."]
+script = ExtResource("443_setting_stage1_tests")
+
+[node name="SettingStage2Tests" type="Node" parent="."]
+script = ExtResource("444_setting_stage2_tests")
+
+[node name="SettingStage3Tests" type="Node" parent="."]
+script = ExtResource("445_setting_stage3_tests")
+
+[node name="SettingGenerationDataFreshnessTests" type="Node" parent="."]
+script = ExtResource("446_setting_generation_data_freshness_tests")
+
+[node name="SettingStage4FoundationTests" type="Node" parent="."]
+script = ExtResource("447_setting_stage4_foundation_tests")

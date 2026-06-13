@@ -5,10 +5,15 @@
   "_schema": "gdd-naming-conventions.md 2.6",
   "catalog_number": 22,
   "sub_palette": "woodland (Iroquois/Haudenosaunee)",
-  "synthesis_sources": [16],
+  "synthesis_sources": [
+    16
+  ],
   "homeland": "Oronoka",
   "government": "clanhold",
-  "alignment_allowed": ["Lawful", "Neutral"],
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
   "_note": "Single-source (Eastern Woodland: the Iroquois/Haudenosaunee). Woodland sub-palette of the North American family, Mohawk-Iroquoian register (which genuinely lacks labials). A confederacy of matrilineal longhouse clans bound by a Grand Council of sachems, the clan-mothers choosing and deposing the chiefs. clan = clanhold. Seeds/shifts Lawful or Neutral. Common-word lexicon and rank titles use the real Iroquois register (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon (family_north_american.json theonym_sets.woodland), never real Iroquois gods.",
   "phonology": {
     "palette": "Mohawk-Iroquoian: NO labials (no p/b/m/f); consonants t k s h n r w y, ts, kw, hr, glottal stop '; vowels a e i o u with nasalization (en/on); long polysynthetic compounds; roots kanata (town), kanonhsa (longhouse), ononta (hill), kahyonha (river), ohwachira (clan).",
@@ -16,40 +21,168 @@
     "transparent_ratio": 0.4
   },
   "lexicon": {
-    "feature_words": { "river": "kahyonha", "stream": "kahyonhsa", "lake": "kaniatare", "sea": "kaniatarowanen", "bay": "kaniatarakta", "cape": "onenrakta", "isle": "kawenote", "mountain": "ononta", "hill": "onontasa", "ridge": "onontakeras", "forest": "karhakonha", "wood": "kerhite", "plain": "kahenta", "marsh": "atekwenhta", "ford": "kahyonhakta", "pass": "onontakahere", "vale": "kahyonhakon", "grove": "kerhitekon", "coast": "kaniatarakta-tsi" },
-    "settlement_words": { "hamlet": "kanatasa", "village": "kanata", "town": "kanatakowa", "city": "kanataowanen", "fort": "kanen'to", "port": "kahyonhakta", "market": "atenhninonkwa", "temple_town": "kanonhses", "citadel": "kanonhsiyo" },
-    "kinship": { "son": "ronwaien", "daughter": "yenhaien", "house": "kanonhsa", "kin": "ohwachira (matrilineal clan)", "ancestor": "akhsothenra" },
-    "adjectives": { "great": "kowanen", "little": "niwa'a", "old": "thotiron", "new": "ase", "black": "kahontsi", "white": "karaken", "red": "onekwenhtara", "golden": "otsinekwar", "iron": "kariston", "high": "enekenhtsi", "far": "inon", "sacred": "karihwiyo", "fair": "iohskats" },
-    "resources": { "maize": "onenhste", "bean": "osahe'ta", "squash": "onon'onsera", "tobacco": "oyenkwa", "deer": "oskenonton", "fur": "kahonwa", "shell-bead": "onekorha", "maple": "wahta", "fish": "kentsyon", "flint": "onenhia" },
-    "directional": { "upper": "enekenhtsi", "lower": "ohnaken", "north": "otowenhton", "south": "entiehton", "east": "tkarahkwineken", "west": "tkarahkwakta", "inner": "akonhsa", "outer": "athonha" }
+    "feature_words": {
+      "river": "kahyonha",
+      "stream": "kahyonhsa",
+      "lake": "kaniatare",
+      "sea": "kaniatarowanen",
+      "bay": "kaniatarakta",
+      "cape": "onenrakta",
+      "isle": "kawenote",
+      "mountain": "ononta",
+      "hill": "onontasa",
+      "ridge": "onontakeras",
+      "forest": "karhakonha",
+      "wood": "kerhite",
+      "plain": "kahenta",
+      "marsh": "atekwenhta",
+      "ford": "kahyonhakta",
+      "pass": "onontakahere",
+      "vale": "kahyonhakon",
+      "grove": "kerhitekon",
+      "coast": "kaniatarakta-tsi",
+      "neck": "onyara",
+      "narrows": "kanawa",
+      "waste": "owera",
+      "road": "ohaha",
+      "way": "ohente",
+      "track": "oskenon"
+    },
+    "settlement_words": {
+      "hamlet": "kanatasa",
+      "village": "kanata",
+      "town": "kanatakowa",
+      "city": "kanataowanen",
+      "fort": "kanen'to",
+      "port": "kahyonhakta",
+      "market": "atenhninonkwa",
+      "temple_town": "kanonhses",
+      "citadel": "kanonhsiyo"
+    },
+    "kinship": {
+      "son": "ronwaien",
+      "daughter": "yenhaien",
+      "house": "kanonhsa",
+      "kin": "ohwachira (matrilineal clan)",
+      "ancestor": "akhsothenra"
+    },
+    "adjectives": {
+      "great": "kowanen",
+      "little": "niwa'a",
+      "old": "thotiron",
+      "new": "ase",
+      "black": "kahontsi",
+      "white": "karaken",
+      "red": "onekwenhtara",
+      "golden": "otsinekwar",
+      "iron": "kariston",
+      "high": "enekenhtsi",
+      "far": "inon",
+      "sacred": "karihwiyo",
+      "fair": "iohskats"
+    },
+    "resources": {
+      "maize": "onenhste",
+      "bean": "osahe'ta",
+      "squash": "onon'onsera",
+      "tobacco": "oyenkwa",
+      "deer": "oskenonton",
+      "fur": "kahonwa",
+      "shell-bead": "onekorha",
+      "maple": "wahta",
+      "fish": "kentsyon",
+      "flint": "onenhia"
+    },
+    "directional": {
+      "upper": "enekenhtsi",
+      "lower": "ohnaken",
+      "north": "otowenhton",
+      "south": "entiehton",
+      "east": "tkarahkwineken",
+      "west": "tkarahkwakta",
+      "inner": "akonhsa",
+      "outer": "athonha"
+    }
   },
   "morphology": {
-    "toponymic_suffixes": ["kanata- (town)", "-ononta (hill)", "kahyonha- (river)", "karhakon- (forest)", "kaniatare- (lake)", "Onekwenhtara- / Karaken- (red-/white-)"],
+    "toponymic_suffixes": [
+      "kanata- (town)",
+      "-ononta (hill)",
+      "kahyonha- (river)",
+      "karhakon- (forest)",
+      "kaniatare- (lake)",
+      "Onekwenhtara- / Karaken- (red-/white-)"
+    ],
     "patronymic_form": "the ohwachira (matrilineal clan) is named by an animal-totem; names belong to the clan and are bestowed (and recalled) by the clan-mother (Iakoia:ner); the 50 sachem-titles pass within their clans.",
-    "gendered_endings": { "male": "ra- / ro- / -ronon", "female": "ka- / io- / -wenne" },
+    "gendered_endings": {
+      "male": "ra- / ro- / -ronon",
+      "female": "ka- / io- / -wenne"
+    },
     "diminutive_form": "-sa / -en'a",
     "compounding_rule": "long compounds: [quality|feature] + place: Onekwenhtara-karhakonha (red-forest), Kowanen-kaniatare (great-lake); clan-totem + -ronon."
   },
   "title_ladder": {
     "government": "clanhold (a confederacy of longhouse clans bound by a Grand Council of sachems; the clan-mothers (Iakoia:ner) choose and may depose the chiefs; the Tadodaho presides over the council-fire; rule is by consensus - the Confederacy has no monarch)",
     "tiers": {
-      "barony": { "ruler": "Royaner", "domain": "Ohwachira" },
-      "march": { "ruler": "Rotiskenrakehte", "domain": "Roterihont" },
-      "county": { "ruler": "Hoyaneh", "domain": "Kanata" },
-      "duchy": { "ruler": "Tekarihoken", "domain": "Ratinionkwe" },
-      "principality": { "ruler": "Royaner Kowanen", "domain": "Kanonhsiyo" },
-      "kingdom": { "ruler": "Tadodaho", "domain": "Kanonhsiyonni" },
-      "empire": { "ruler": "Tadodaho Kowanen", "domain": "Haudenosaunee" }
+      "barony": {
+        "ruler": "Royaner",
+        "domain": "Ohwachira"
+      },
+      "march": {
+        "ruler": "Rotiskenrakehte",
+        "domain": "Roterihont"
+      },
+      "county": {
+        "ruler": "Hoyaneh",
+        "domain": "Kanata"
+      },
+      "duchy": {
+        "ruler": "Tekarihoken",
+        "domain": "Ratinionkwe"
+      },
+      "principality": {
+        "ruler": "Royaner Kowanen",
+        "domain": "Kanonhsiyo"
+      },
+      "kingdom": {
+        "ruler": "Tadodaho",
+        "domain": "Kanonhsiyonni"
+      },
+      "empire": {
+        "ruler": "Tadodaho Kowanen",
+        "domain": "Haudenosaunee"
+      }
     },
     "_tiers_note": "Woodland clanhold, ascending; real Iroquois titles. Royaner (clan sachem) barony; Rotiskenrakehte (war chief, 'the carriers of the burden') march; Hoyaneh (village peace-chief) county; Tekarihoken (foremost sachem of a nation) duchy; Royaner Kowanen (great sachem) principality; Tadodaho (presiding firekeeper of the Grand Council) kingdom; Tadodaho Kowanen (presiding over the whole League) empire over the Haudenosaunee (the Confederacy, the great longhouse). The Confederacy has no monarch; the clan-mothers (Iakoia:ner) raise and depose the chiefs, and rule is by council-consensus. (Rank titles are the real Iroquois register, allowed.)",
-    "female_forms": { "_clan_mother": "Iakoia:ner / Otiyaner (clan-mother - holds the sachem titles, chooses and deposes the chiefs)", "Royaner": "Iakoia:ner", "Hoyaneh": "Iakoia:ner", "Tekarihoken": "Iakoia:ner Kowa", "Tadodaho": "(presiding office; the firekeeper is male, seated by the clan-mothers)" },
+    "female_forms": {
+      "_clan_mother": "Iakoia:ner / Otiyaner (clan-mother - holds the sachem titles, chooses and deposes the chiefs)",
+      "Royaner": "Iakoia:ner",
+      "Hoyaneh": "Iakoia:ner",
+      "Tekarihoken": "Iakoia:ner Kowa",
+      "Tadodaho": "(presiding office; the firekeeper is male, seated by the clan-mothers)"
+    },
     "heir": "Royaner-ase (the clan-mother's newly-raised sachem; titles are conferred within the clan, not inherited father-to-son)",
-    "honorifics": { "lord": "Royaner", "lady": "Iakoia:ner (clan-mother)", "warrior": "Rotiskenrakehte", "your_grace": "Royaner", "elder": "Thotiron" },
-    "vassalage": { "liege": "Royaner", "vassal": "Rotiskenrakehte (the warriors)", "fealty": "Kaswentha (the covenant-belt)", "tribute": "Atste (the gift / contribution)" }
+    "honorifics": {
+      "lord": "Royaner",
+      "lady": "Iakoia:ner (clan-mother)",
+      "warrior": "Rotiskenrakehte",
+      "your_grace": "Royaner",
+      "elder": "Thotiron"
+    },
+    "vassalage": {
+      "liege": "Royaner",
+      "vassal": "Rotiskenrakehte (the warriors)",
+      "fealty": "Kaswentha (the covenant-belt)",
+      "tribute": "Atste (the gift / contribution)"
+    }
   },
   "people_name_convention": {
     "order": "names belong to the ohwachira (matrilineal clan) and are held in trust, bestowed and recalled by the clan-mother (Iakoia:ner); the 50 sachem-titles pass within their clans (a new holder takes the title-name).",
-    "surname_source": ["ohwachira (matrilineal clan, by animal-totem)", "clan-held personal name", "sachem title-name (for chiefs)"],
+    "surname_source": [
+      "ohwachira (matrilineal clan, by animal-totem)",
+      "clan-held personal name",
+      "sachem title-name (for chiefs)"
+    ],
     "dual_register": "sachems bear the hereditary title-names of the Great Law; others a clan-held name.",
     "theophoric": "names favor the clan-totem animals and nature; the powers are invoked by domain rather than by name.",
     "diminutive": "-sa / -en'a"
@@ -57,13 +190,31 @@
   "religion": {
     "_note": "Deity-names are morphs of the Agrippan canon in the Woodland register (family_north_american.json theonym_sets.woodland; labial-free, matching real Iroquoian), never real Iroquois gods. Shared pantheon, Woodland names. Oronan seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met at the rite-longhouse and the forest-grove; the council keeps the calendar of thanksgivings.",
     "the_one": "Aterhonon (< Aeternus; the Sky-Holder-Above - revered as the upholder of the council's peace when Lawful, acknowledged but set aside when Neutral)",
-    "sample_deity_renames": { "Tulrius": "Tularonon (the sun, the day-keeper; Lawful power)", "Realta": "Realwenne (the mother, the life-giver, clan-mother of the powers; honored)", "Gaiandus": "Kayanonon (the earth-holder; Lawful power)", "Maraxus": "Waraksonon (the war-fire; Chaotic power, demonized)" },
-    "worship_by_alignment": { "Lawful": "revere the One (Aterhonon) and the Lawful powers (Tularonon, Oranhonon, Kayanonon, Nunaronon), demonize the Chaotic powers (Waraksonon, Wasidonon, Rusanonon)", "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the forest- and clan-spirits, and the thanksgivings to the growing things" },
+    "sample_deity_renames": {
+      "Tulrius": "Tularonon (the sun, the day-keeper; Lawful power)",
+      "Realta": "Realwenne (the mother, the life-giver, clan-mother of the powers; honored)",
+      "Gaiandus": "Kayanonon (the earth-holder; Lawful power)",
+      "Maraxus": "Waraksonon (the war-fire; Chaotic power, demonized)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aterhonon) and the Lawful powers (Tularonon, Oranhonon, Kayanonon, Nunaronon), demonize the Chaotic powers (Waraksonon, Wasidonon, Rusanonon)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the forest- and clan-spirits, and the thanksgivings to the growing things"
+    },
     "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Waraksonon the War-Fire; Vacidus -> Wasidonon the Devourer; Lusanto -> Rusanonon the Greed-Serpent.",
-    "clergy_ladder": { "1": "Rotitsenhaienthon (rite-helper, novice)", "3": "Rotihontsa (faithkeeper)", "5": "Kowa-rotihontsa (head faithkeeper)", "7": "Royaner-tha (council ritual-chief)", "9": "Kanonhsiyonni-tha (the council's high keeper)" },
+    "clergy_ladder": {
+      "1": "Rotitsenhaienthon (rite-helper, novice)",
+      "3": "Rotihontsa (faithkeeper)",
+      "5": "Kowa-rotihontsa (head faithkeeper)",
+      "7": "Royaner-tha (council ritual-chief)",
+      "9": "Kanonhsiyonni-tha (the council's high keeper)"
+    },
     "religious_orders_pattern": "few god-houses - the rite-longhouse (kanonhses) of [power] and the forest-grove: 'the Kanonhses of Tularonon'; the thanksgiving-circle of the clans.",
     "saints_pattern": "the founders of the council's peace and the honored clan-mothers and sachems, kept in the council's recital; honored at the rite-longhouse and the burial-grove.",
-    "holy_symbol_motifs": { "Tularonon": "the day-sun above the longhouse", "Realwenne": "a sheltering mother over the planted field", "Kayanonon": "a great oak rooted deep in the earth" }
+    "holy_symbol_motifs": {
+      "Tularonon": "the day-sun above the longhouse",
+      "Realwenne": "a sheltering mother over the planted field",
+      "Kayanonon": "a great oak rooted deep in the earth"
+    }
   },
   "banks_patterns": {
     "ships": "forest river and lake craft - elm-bark and dugout canoe names: 'the Swift Heron', 'the River-Otter', 'Forest-Shadow'",
@@ -72,10 +223,81 @@
     "dungeons_ruins": "abandoned palisade-castles and burial-groves: 'the empty Kanata of [name]', 'the Ghost-Longhouse of [clan]'"
   },
   "seed_names": {
-    "personal_m": ["Tekarihoken", "Shadekaronyes", "Sharenhowane", "Deyonhehkon", "Kanonkeritawi", "Hahsanowane", "Tehanakarine", "Oren'rehkowa", "Skanawati", "Rastawenserontha", "Onenhsehnhen", "Tehotiren", "Karonhyatekha", "Ronaterihonte", "Tekanonsiote", "Atironta", "Kiotseaeton", "Garakontie", "Saonchiowane", "Tehoragwanegen"],
-    "personal_f": ["Otsitsa", "Karonhiaktatie", "Kahentinetha", "Konwatsi'tsiaienni", "Yegoewaneh", "Watshenni", "Kawisaienta", "Genenrontie", "Awenroharon", "Iotsitsison", "Kanenrhawi", "Konwahonwi", "Tekonwakweni", "Ohtoyo", "Wakerakatste", "Tsienhenron", "Aweion", "Kahyonhes", "Yenenhsenhawi", "Karihwenhawi"],
-    "clan_ohwachira": ["Wolf clan (Okwaho)", "Bear clan (Ohkwari)", "Turtle clan (A'nowara)", "Deer clan (Oskenonton)", "Beaver clan (Tsyonnhwa)", "Hawk clan (Akweks)", "Heron clan", "Snipe clan", "Eel clan (Onyare)", "Ball clan", "Wild-Potato clan", "Bittern clan"],
-    "epithets_cognomina": ["the Sachem", "Keeper-of-the-Fire", "the Peacemaker", "Great-Tree", "the War-Chief", "Two-Row", "Long-House", "the Faithkeeper"],
-    "flagship_settlements": ["Oronoka (the principal castle)", "Kanatakowa (the great town)", "Onontake (on-the-hills, the council-seat)", "Karhakonha (the deep-forest town)", "Kaniatarakta (the lakeside village)", "Kanonhsiyonni (the Grand Council-longhouse)"]
+    "personal_m": [
+      "Tekarihoken",
+      "Shadekaronyes",
+      "Sharenhowane",
+      "Deyonhehkon",
+      "Kanonkeritawi",
+      "Hahsanowane",
+      "Tehanakarine",
+      "Oren'rehkowa",
+      "Skanawati",
+      "Rastawenserontha",
+      "Onenhsehnhen",
+      "Tehotiren",
+      "Karonhyatekha",
+      "Ronaterihonte",
+      "Tekanonsiote",
+      "Atironta",
+      "Kiotseaeton",
+      "Garakontie",
+      "Saonchiowane",
+      "Tehoragwanegen"
+    ],
+    "personal_f": [
+      "Otsitsa",
+      "Karonhiaktatie",
+      "Kahentinetha",
+      "Konwatsi'tsiaienni",
+      "Yegoewaneh",
+      "Watshenni",
+      "Kawisaienta",
+      "Genenrontie",
+      "Awenroharon",
+      "Iotsitsison",
+      "Kanenrhawi",
+      "Konwahonwi",
+      "Tekonwakweni",
+      "Ohtoyo",
+      "Wakerakatste",
+      "Tsienhenron",
+      "Aweion",
+      "Kahyonhes",
+      "Yenenhsenhawi",
+      "Karihwenhawi"
+    ],
+    "clan_ohwachira": [
+      "Wolf clan (Okwaho)",
+      "Bear clan (Ohkwari)",
+      "Turtle clan (A'nowara)",
+      "Deer clan (Oskenonton)",
+      "Beaver clan (Tsyonnhwa)",
+      "Hawk clan (Akweks)",
+      "Heron clan",
+      "Snipe clan",
+      "Eel clan (Onyare)",
+      "Ball clan",
+      "Wild-Potato clan",
+      "Bittern clan"
+    ],
+    "epithets_cognomina": [
+      "the Sachem",
+      "Keeper-of-the-Fire",
+      "the Peacemaker",
+      "Great-Tree",
+      "the War-Chief",
+      "Two-Row",
+      "Long-House",
+      "the Faithkeeper"
+    ],
+    "flagship_settlements": [
+      "Oronoka (the principal castle)",
+      "Kanatakowa (the great town)",
+      "Onontake (on-the-hills, the council-seat)",
+      "Karhakonha (the deep-forest town)",
+      "Kaniatarakta (the lakeside village)",
+      "Kanonhsiyonni (the Grand Council-longhouse)"
+    ]
   }
 }

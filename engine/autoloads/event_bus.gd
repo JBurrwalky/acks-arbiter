@@ -1992,3 +1992,24 @@ signal poi_status_changed(settlement_poi_id: String, old_status: String, new_sta
 ## (Stage G); tradition is 'divine' or 'arcane'; spell_name identifies the
 ## specific spell chosen from the catalog at purchase time.
 signal spellcasting_service_purchased(settlement_poi_id: String, tradition: String, spell_level: int, spell_name: String, payer_character_id: String, unit_cost_gp: int)
+
+
+# ---------------------------------------------------------------------------
+# Setting generation / campaign creation (gdd-campaign-creation-ui.md §8;
+# pipeline per gdd-setting-generation.md §3)
+# ---------------------------------------------------------------------------
+
+## A setting-generation pipeline layer finished. stage_id is one of
+## SettingGenerator.LAYER_IDS ('geography', 'climate', 'culture_seeding',
+## 'history_sim', 'naming', 'infrastructure', 'narrative', 'validation').
+## Consumed by the campaign-creation UI (Screen C staged captions).
+signal generation_stage_completed(stage_id: String)
+
+## The campaign-creation history replay advanced to the frame at [param tick].
+## Emitted by the replay playback controller (UI-side pacing), not by the sim.
+signal replay_frame_advanced(tick: int)
+
+## The player approved the generated world (gdd-setting-generation.md §11.3).
+## Fired AFTER the post-approval lock is written — consumers may treat the
+## setting dataset as canonical and read-only from this moment.
+signal world_approved(campaign_id: String)

@@ -224,7 +224,18 @@ func _on_equip_selected(index: int, items: Array) -> void:
 	if slot.is_empty():
 		return
 
-	CampaignRepository.equip_creature_item(item_id, _creature.id, slot)
+	# Split one unit off a stack before equipping, so a saddle/tack pair held as
+	# (draft) x2 doesn't silently equip the whole stack onto one animal. Mirrors
+	# the PC equip path in cs_tab_equipment.gd._perform_equip. The remaining units
+	# stay in the handler's inventory.
+	var equip_item_id := item_id
+	if _item_int(item, "quantity", 1) > 1:
+		equip_item_id = CampaignRepository.split_stack(item_id, 1)
+		if equip_item_id.is_empty():
+			push_warning("Cannot equip: failed to split stack for %s" % str(item.get("name", item_id)))
+			return
+
+	CampaignRepository.equip_creature_item(equip_item_id, _creature.id, slot)
 	EventBus.creature_inventory_updated.emit(_creature.id)
 
 

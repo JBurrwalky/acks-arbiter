@@ -221,6 +221,8 @@ Temple counts and head-cleric titles come from `gdd-settlement-layout.md` §11.2
 
 ## 7. Propagation Model (fills history-sim §10)
 
+> **SUPERSEDED 2026-06-12 (Jedidiah).** The stance taxonomy (`syncretist/inclusivist/exclusivist`, §5.1) and this propagation model are holdovers from an abandoned, more complex religion sim. Religion is now **entirely syncretic**; the only mechanical axis is **Law/Neutral/Chaos** — which is RAW (`acore_axioms_strongholds_and_domains.xml` lines 466, 518: practice determines apparent alignment; same-alignment worship shifts are not religion changes). The pre-game sim carries **no religion weights**: religion derives from `alignment_weights` × `culture_weights` at runtime (`gdd-history-simulation.md` §10; `gdd-setting-generation.md` §7.3). Everyone shares the same pantheon; only deity names and game-time flavor change per culture, plus culture-specific saints **generated at runtime (system TBD)**. The §5.1 `syncretism` field and the §10 validation line that references it fall with this model. What survives of this GDD as runtime/narrative material: the canonical pantheon data (§3 — nemesis graph still pending sign-off), the alignment-families (§4), the per-culture naming overlay (§5), cleric mechanics (§6), and the departures framework (§8, LLM/Judge-gated). Full v0.2 revision pending.
+
 Religion rides the substrate religion-weights alongside culture (`gdd-history-simulation.md` §6), with its own dynamics:
 
 - **Diffusion by syncretism:** `syncretist` religions bleed into neighboring cultures readily; `inclusivist` moderately; `exclusivist` barely (they stay with their origin culture). Modulates the per-tick weight diffusion.
