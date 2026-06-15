@@ -1,0 +1,420 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Brigantii",
+      "Coniacii",
+      "Vellicii",
+      "Vadinii",
+      "Tridiavii",
+      "Concanii",
+      "Salaenii",
+      "Vimenii",
+      "Tamaricii",
+      "Coelernii",
+      "Aunigainii",
+      "Blendii",
+      "Selinii",
+      "Orgenii",
+      "Plentii",
+      "Cantabrii",
+      "Veroson",
+      "Boudixson",
+      "Corocaudson",
+      "Ambatoson",
+      "Reburroson",
+      "Doviroson",
+      "Caturoson",
+      "Segonson"
+    ],
+    "epithet": [
+      "the Boar",
+      "Ironhand",
+      "the Unbowed",
+      "Stormbrow",
+      "the Red",
+      "Stonehold",
+      "the Swift",
+      "Wolf-friend",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Albabra",
+      "Altobriga",
+      "Argentocalzada",
+      "Atrocamin",
+      "Aureocampa",
+      "Aurocollo",
+      "Austrermo",
+      "Bellofreu",
+      "Boreisla",
+      "Extrolacuna",
+      "Ferromar",
+      "Granomonte",
+      "Infranava",
+      "Introra",
+      "Longeporto",
+      "Longopromo",
+      "Magnoregato",
+      "Marmoresaltu",
+      "Novosenda",
+      "Oleoserra",
+      "Parvosilua",
+      "Pescetremedal",
+      "Propovado",
+      "Purpuravalle",
+      "Rubiabra",
+      "Sacrobriga",
+      "Salecalzada",
+      "Supracamin",
+      "Vetucampa",
+      "Vinocollo"
+    ],
+    "military_unit": [
+      "the Spear-sworn"
+    ],
+    "personal_female": [
+      "Coria",
+      "Ambata",
+      "Reburra",
+      "Dovira",
+      "Catura",
+      "Segona",
+      "Talava",
+      "Andama",
+      "Turia",
+      "Cluta",
+      "Virona",
+      "Ategna",
+      "Calaita",
+      "Aravica",
+      "Vendana",
+      "Iscalla",
+      "Boudila",
+      "Medugena",
+      "Elaina",
+      "Burrala",
+      "Vera",
+      "Turaia",
+      "Doidera",
+      "Arava",
+      "Elaisa",
+      "Caiandos",
+      "Caiandosa",
+      "Deloron",
+      "Delorona",
+      "Orlanno",
+      "Orlannoa",
+      "Raptoc",
+      "Raptoca"
+    ],
+    "personal_male": [
+      "Vero",
+      "Boudix",
+      "Corocaud",
+      "Ambato",
+      "Reburro",
+      "Doviro",
+      "Caturo",
+      "Segon",
+      "Talavo",
+      "Andamo",
+      "Turaio",
+      "Cluto",
+      "Virono",
+      "Ategno",
+      "Calaito",
+      "Doidero",
+      "Aravo",
+      "Burralo",
+      "Medugen",
+      "Elaiso",
+      "Corio",
+      "Segono",
+      "Turio",
+      "Vendano",
+      "Iscallo",
+      "Boudilo",
+      "Medugeno",
+      "Elaino",
+      "Caiandos",
+      "Caiandoso",
+      "Deloron",
+      "Delorono",
+      "Orlanno",
+      "Orlannoo",
+      "Raptoc",
+      "Raptoco"
+    ],
+    "settlement": [
+      "Cantabriga",
+      "Vellica",
+      "Concana",
+      "Atrobriga",
+      "Ferrobriga",
+      "Castro Vetu",
+      "Albarce",
+      "Altobriga",
+      "Argentocasal",
+      "Atrocastro",
+      "Aureocolonia",
+      "Auromercatu",
+      "Austroppido",
+      "Bellora",
+      "Boreaportu",
+      "Extrurbe",
+      "Ferrovado",
+      "Granovicu",
+      "Infrarce",
+      "Introbriga",
+      "Longecasal",
+      "Longocastro",
+      "Magnocolonia",
+      "Marmoremercatu",
+      "Novoppido",
+      "Oleora",
+      "Parvoportu",
+      "Pescurbe",
+      "Propovado",
+      "Purpuravicu",
+      "Rubiarce",
+      "Sacrobriga",
+      "Salecasal",
+      "Supracastro",
+      "Vetucolonia",
+      "Vinomercatu",
+      "Alboppido",
+      "Altora",
+      "Argentoportu",
+      "Atrurbe"
+    ],
+    "ship": [
+      "Sea-Wolf",
+      "Stormrider",
+      "Pride of the Briga"
+    ],
+    "tavern": [
+      "The Boar",
+      ",",
+      "The Albo Argento",
+      "The Alto Auro",
+      "The Atro Ferro",
+      "The Aureo Grano",
+      "The Bello Marmore",
+      "The Ferro Oleo",
+      "The Longo Pesce",
+      "The Magno Purpura",
+      "The Novo Sale",
+      "The Parvo Vino"
+    ]
+  },
+  "culture_id": "cantabran",
+  "family": [
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_cantabran.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "cantabran",
+  "lexicon": {
+    "adjectives": {
+      "black": "atro",
+      "fair": "bello",
+      "far": "longo",
+      "golden": "aureo",
+      "great": "magno",
+      "high": "alto",
+      "iron": "ferro",
+      "little": "parvo",
+      "new": "novo",
+      "old": "vetu",
+      "red": "rubio",
+      "sacred": "sacro",
+      "white": "albo"
+    },
+    "directional": {
+      "far": "longe",
+      "inner": "intro",
+      "lower": "infra",
+      "near": "propo",
+      "north": "borea",
+      "outer": "extro",
+      "south": "austro",
+      "upper": "supra"
+    },
+    "feature_words": {
+      "bay": "abra",
+      "cape": "promo",
+      "coast": "ora",
+      "ford": "vado",
+      "forest": "silua",
+      "hill": "briga",
+      "isle": "isla",
+      "lake": "lacuna",
+      "marsh": "tremedal",
+      "mountain": "monte",
+      "narrows": "freu",
+      "neck": "collo",
+      "pass": "porto",
+      "plain": "campa",
+      "ridge": "serra",
+      "river": "nava",
+      "road": "calzada",
+      "sea": "mar",
+      "stream": "regato",
+      "track": "senda",
+      "vale": "valle",
+      "waste": "ermo",
+      "way": "camin",
+      "wood": "saltu"
+    },
+    "resources": {
+      "fish": "pesce",
+      "gold": "auro",
+      "grain": "grano",
+      "iron": "ferro",
+      "marble": "marmore",
+      "oil": "oleo",
+      "purple_dye": "purpura",
+      "salt": "sale",
+      "silver": "argento",
+      "wine": "vino"
+    },
+    "settlement_words": {
+      "citadel": "arce",
+      "city": "urbe",
+      "colony": "colonia",
+      "fort": "castro",
+      "hamlet": "casal",
+      "market": "mercatu",
+      "port": "portu",
+      "town": "oppido",
+      "village": "vicu"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[adjective|resource](stem) + feature-word, or feature + -briga (hillfort): Atrobriga (black-fort), Ferrobriga (iron-fort).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "ica"
+      ],
+      "male": [
+        "o",
+        "us",
+        "iz"
+      ]
+    },
+    "patronymic_form": "patronymic suffix -iz / -ez (son of); clan name for nobility.",
+    "toponymic_suffixes": [
+      "briga",
+      "obriga",
+      "ica",
+      "castro",
+      "o"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "ruined hillforts of fallen clans: 'the [briga]-castro of [name]'",
+    "military_units": "the [clan] War-band / Caterva: 'the Spear-sworn'",
+    "ships": "raider names (coastal clans): 'Sea-Wolf', 'Stormrider', 'Pride of the Briga'",
+    "taverns": "'The [Adjective] [Noun]': 'The Boar's Head', 'The Iron Horn'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Celtiberian phonology (-os/-anno/-oc/-onos endings, hard c) \u2014 recognizably the same powers, never real Iberian gods. Neutral clans are ancestor-venerators (saints primary); Chaotic invoke the chaos-powers.",
+    "clergy_ladder": {
+      "1": "Aruspex (diviner-acolyte)",
+      "3": "Sacron (priest)",
+      "5": "Gutuater (high priest)",
+      "7": "Drux (druid-lord)",
+      "9": "Ard-drux (arch-druid)"
+    },
+    "demon_epithet_pattern": "each opposing power keeps its morphed name + its own portfolio epithet (distinct per power): Maraxus -> Maraxos the Burning; Metensia -> Metensoc the Wasting; Desoria -> Desoryos the Drowner.",
+    "holy_symbol_motifs": {
+      "Caiandos": "grey peak beneath a stag's antlers",
+      "Orlanno": "twin spears over an oath-ring"
+    },
+    "religious_orders_pattern": "the Nemeton (sacred grove) of [power]: 'the Nemeton of Caiandos'.",
+    "saints_pattern": "ancestral hero venerated at his hillfort-tomb (the [name] of [briga]).",
+    "sample_deity_renames": {
+      "Delorum": "Deloron (rest of the dead)",
+      "Gaiandus": "Caiandos (mountain-endurance)",
+      "Orlandus": "Orlanno (oath-iron)",
+      "Raptis": "Raptoc (the red hunt)"
+    },
+    "the_one": "Aiternos (< Aeternus; the high maker; seldom petitioned)"
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Iberian/Celtiberian, ascending. Built on Celtic *rix (chief/king): Brigant (hillfort-lord) up to Rix/Rigon (king/kingdom) and Ardrix/Ardrigon (high king). A clan culture rarely climbs past the lower-middle tiers. March = Limigant (border-warden).",
+    "female_forms": {
+      "Ardrix": "Ardrigana",
+      "Brennix": "Brennia",
+      "Brigant": "Briganta",
+      "Limigant": "Limiganta",
+      "Rix": "Rigana",
+      "Tigern": "Tigerna",
+      "Vergobret": "Vergobreta"
+    },
+    "government": "clanhold (hillfort chiefs and war-bands; the elder-assembly is narrative flavor)",
+    "heir": "Tanixt (heir-elect by clan acclamation)",
+    "honorifics": {
+      "champion": "Caterva (war-champion)",
+      "elder": "Senix",
+      "lady": "Tigerna",
+      "lord": "Tigerno",
+      "your_grace": "Magno"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Brigantia",
+        "ruler": "Brigant"
+      },
+      "county": {
+        "domain": "Tigernia",
+        "ruler": "Tigern"
+      },
+      "duchy": {
+        "domain": "Brennia",
+        "ruler": "Brennix"
+      },
+      "empire": {
+        "domain": "Ardrigon",
+        "ruler": "Ardrix"
+      },
+      "kingdom": {
+        "domain": "Rigon",
+        "ruler": "Rix"
+      },
+      "march": {
+        "domain": "Limigantia",
+        "ruler": "Limigant"
+      },
+      "principality": {
+        "domain": "Vergobretia",
+        "ruler": "Vergobret"
+      }
+    },
+    "vassalage": {
+      "fealty": "Sacramento (oath)",
+      "liege": "Rix",
+      "tribute": "Tributo",
+      "vassal": "Cliento"
+    }
+  }
+}

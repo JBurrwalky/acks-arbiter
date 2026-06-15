@@ -1,0 +1,419 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Har-ovog",
+      "Tsagaan-ovog",
+      "Chono-ovog",
+      "Burgud-ovog",
+      "Nogai-ovog",
+      "Kypchak-ovog",
+      "Sich-rod",
+      "Don-rod",
+      "Altan-ovog",
+      "Salhi-ovog",
+      "Tomor-ovog",
+      "Kara-rod",
+      "al-Batyr",
+      "al-Toqta",
+      "al-Edige",
+      "al-Kara-Bek",
+      "al-Temir",
+      "al-Aydar",
+      "al-Bulat",
+      "al-Nogai",
+      "al-Munke",
+      "al-Chuluun",
+      "al-Sube",
+      "al-Taras"
+    ],
+    "epithet": [
+      "Baatar",
+      "Kara",
+      "the Wolf",
+      "the Eagle",
+      "Storm-rider",
+      "the Ataman",
+      "Horse-eater",
+      "Sabre-arm",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Airagaral",
+      "Altboghaz",
+      "Altanboloto",
+      "Ariundalai",
+      "Bagadavaa",
+      "Baruunergi",
+      "Davsgatlaga",
+      "Deedgobi",
+      "Doodgol",
+      "Dotorhondii",
+      "Esgiihoshuu",
+      "Gadaadjilga",
+      "Harkheer",
+      "Hoidkhuzu",
+      "Holes",
+      "Huuchinuruu",
+      "Ihnuur",
+      "Malpolyana",
+      "Mehput",
+      "Mongotal",
+      "Moritayga",
+      "Omnotolgoi",
+      "Ondortropa",
+      "Saihanuul",
+      "Shinezam",
+      "Tomoraral",
+      "Tsagaanboghaz",
+      "Ulaanboloto",
+      "Zhitodalai",
+      "Zuundavaa"
+    ],
+    "military_unit": [
+      "the Wolf Tumen",
+      "the Black Sotnia"
+    ],
+    "personal_female": [
+      "Altyn",
+      "Gulnara",
+      "Saran",
+      "Bayan",
+      "Oksana",
+      "Marusya",
+      "Tuya",
+      "Altantsetseg",
+      "Naran",
+      "Sarnai",
+      "Bayarmaa",
+      "Daryna",
+      "Yaryna",
+      "Suvd",
+      "Enkhtuya",
+      "Khanum",
+      "Gulzhan",
+      "Odval",
+      "Solongo",
+      "Halyna",
+      "Kara-jin",
+      "Petro-jin",
+      "Erelta",
+      "Ereltajin",
+      "Gajan",
+      "Gajanjin",
+      "Marakhai",
+      "Marakhaijin",
+      "Tamendei",
+      "Tamendeijin"
+    ],
+    "personal_male": [
+      "Batyr",
+      "Toqta",
+      "Edige",
+      "Kara-Bek",
+      "Temir",
+      "Aydar",
+      "Bulat",
+      "Nogai",
+      "Munke",
+      "Chuluun",
+      "Sube",
+      "Taras",
+      "Bohdan",
+      "Ostap",
+      "Danylo",
+      "Petro-bek",
+      "Altan",
+      "Sukhe",
+      "Baatar",
+      "Mergen",
+      "Erelta",
+      "Ereltatai",
+      "Gajan",
+      "Gajantai",
+      "Marakhai",
+      "Marakhaitai",
+      "Tamendei",
+      "Tamendeitai"
+    ],
+    "settlement": [
+      "Kypcha",
+      "Har-uul",
+      "Altan-gol",
+      "Velikii-Sich",
+      "Tsagaan-stanitsa",
+      "Ih-kheer",
+      "Airagail",
+      "Altbalgas-hot",
+      "Altanergi",
+      "Ariungatlaga",
+      "Bagagorod",
+      "Baruunordu",
+      "Davsostrog",
+      "Deedovoo",
+      "Doodsich",
+      "Dotorstanitsa",
+      "Esgiitolgoi",
+      "Gadaadtorg",
+      "Harail",
+      "Hoidbalgas-hot",
+      "Holergi",
+      "Huuchingatlaga",
+      "Ihgorod",
+      "Malordu",
+      "Mehostrog",
+      "Mongovoo",
+      "Morisich",
+      "Omnostanitsa",
+      "Ondortolgoi",
+      "Saihantorg",
+      "Shinail",
+      "Tomorbalgas-hot",
+      "Tsagaanergi",
+      "Ulaangatlaga",
+      "Zhitogorod",
+      "Zuunordu",
+      "Airagostrog",
+      "Altovoo",
+      "Altansich",
+      "Ariunstanitsa"
+    ],
+    "ship": [
+      "the Black Tug",
+      "Storm of the Gol",
+      "the Wind-Eater"
+    ],
+    "tavern": [
+      "the Khan",
+      ",",
+      "The Altan Airag",
+      "The Ariun Alt",
+      "The Baga Davs",
+      "The Har Esgii",
+      "The Hol Mal",
+      "The Huuchin Meh",
+      "The Ih Mongo",
+      "The Ondor Mori",
+      "The Saihan Tomor",
+      "The Shine Zhito"
+    ]
+  },
+  "culture_id": "kypchan",
+  "family": [
+    "steppe",
+    "slavic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_kypchan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "kypchan",
+  "lexicon": {
+    "adjectives": {
+      "black": "har",
+      "fair": "saihan",
+      "far": "hol",
+      "golden": "altan",
+      "great": "ih",
+      "high": "ondor",
+      "iron": "tomor",
+      "little": "baga",
+      "new": "shine",
+      "old": "huuchin",
+      "red": "ulaan",
+      "sacred": "ariun",
+      "white": "tsagaan"
+    },
+    "directional": {
+      "east": "zuun",
+      "inner": "dotor",
+      "lower": "dood",
+      "north": "hoid",
+      "outer": "gadaad",
+      "south": "omno",
+      "upper": "deed",
+      "west": "baruun"
+    },
+    "feature_words": {
+      "cape": "hoshuu",
+      "coast": "ergi",
+      "ford": "gatlaga",
+      "forest": "les",
+      "grove": "polyana",
+      "hill": "tolgoi",
+      "isle": "aral",
+      "lake": "nuur",
+      "marsh": "boloto",
+      "mountain": "uul",
+      "narrows": "boghaz",
+      "neck": "khuzu",
+      "pass": "davaa",
+      "plain": "tal",
+      "ridge": "nuruu",
+      "river": "gol",
+      "road": "zam",
+      "sea": "dalai",
+      "steppe": "kheer",
+      "stream": "jilga",
+      "taiga": "tayga",
+      "track": "tropa",
+      "vale": "hondii",
+      "waste": "gobi",
+      "way": "put"
+    },
+    "resources": {
+      "airag": "airag",
+      "felt": "esgii",
+      "fur": "meh",
+      "gold": "alt",
+      "grain": "zhito",
+      "herd": "mal",
+      "horse": "mori",
+      "iron": "tomor",
+      "salt": "davs",
+      "silver": "mongo"
+    },
+    "settlement_words": {
+      "camp": "ordu",
+      "citadel": "sich",
+      "city": "balgas-hot",
+      "fort": "ostrog",
+      "hamlet": "ail",
+      "market": "torg",
+      "temple_town": "ovoo",
+      "town": "gorod",
+      "village": "stanitsa"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|animal](stem) + feature: Har-uul (black-mountain), Altan-gol (golden-river); the horde named for its khan; Slavic-overlay -stanitsa/-gorod for the settled holds.",
+    "gendered_endings": {
+      "female": [
+        "jin",
+        "gul",
+        "ovna"
+      ],
+      "male": [
+        "tai",
+        "bek",
+        "ov"
+      ]
+    },
+    "patronymic_form": "patronymic father + -in (steppe) or Slavic -ov/-ich among the settled; the ovog (clan); a deed- or animal-byname.",
+    "toponymic_suffixes": [
+      "uul",
+      "gol",
+      "kheer",
+      "stanitsa",
+      "gorod",
+      "Har-/Tsagaan-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "abandoned ordu-camps, burned stanitsas and kurgan barrow-tombs: 'the Kurgan of [khan]', 'the dead Stanitsa of [name]'",
+    "military_units": "the decimal host and the Cossack bands: the [khan] Tumen (10,000) / the [ataman] Sotnia (hundred): 'the Wolf Tumen', 'the Black Sotnia'",
+    "ships": "river-craft of the great rivers and the horse-standards: 'the Black Tug', 'Storm of the Gol', 'the Wind-Eater' (a famed steed)",
+    "taverns": "the airag-tent and the stanitsa hall: 'the Khan's Airag-tent', 'the Red Stanitsa-Hall'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Steppe primary, from family_steppe theonym_set; Slavic variant, from family_slavic theonym_set), never real steppe/Slavic gods. Kypchan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The ovoo (sacred cairn) and the open sky are the steppe altars; the settled keep the Dedy (ancestral dead) and the kapishche-grove.",
+    "clergy_ladder": {
+      "1": "Bo-shavi (shaman-novice)",
+      "3": "Bo (shaman)",
+      "5": "Idugan (shamaness)",
+      "7": "Volkhv (priest-sorcerer, Slavic overlay)",
+      "9": "Ulu-Boge (high shaman)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Tulai the Soft-Sun; Orlandus -> Orloch the Oath-Chain; Aeternus -> Eterun the Sky-Tyrant.",
+    "holy_symbol_motifs": {
+      "Eterun": "the open blue circle of the bare sky",
+      "Marakhai": "a red horsetail war-standard (tug) beneath a black storm",
+      "Tamendei": "forked lightning over the open steppe"
+    },
+    "religious_orders_pattern": "the Ovoo (sacred cairn) of [power] on a high place, and among the settled the Kapishche (idol-grove): 'the Ovoo of Marakhai', 'the Kapishche of Tamendei'.",
+    "saints_pattern": "the great khans and hero-baatars become sky-riders among the storm; the settled honor the Dedy at the kurgan.",
+    "sample_deity_renames": {
+      "Dementus": "Tamendei - the storm-sky; Chaotic power",
+      "Gaiandus": "Gajan (Slav. Goyan) - the enduring earth; Lawful power",
+      "Maraxus": "Marakhai (Slav. Marakh) - the war-fire, the raider; Chaotic power",
+      "Realta": "Erelta (Slav. Relata) - the mother; Neutral-honored"
+    },
+    "the_one": "Eterun (< Aeternus; Slavic variant Oterun) - the Eternal Sky; reviled as the cold sky-tyrant when Chaotic, acknowledged as the distant Heaven-Father when Neutral",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (Marakhai the war-fire, Tamendei the storm, Lusantai the plunder-serpent), demonize the Lawful powers and the One (Eterun)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the Dedy (ancestral dead), the animal-spirits and the powers of place"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Mongol-Turkic backbone, ascending, with a Slavic overlay at the settled tiers. Noyan (noble) barony; Tarkhan (privileged border-lord) march, over a Slavic Kraina (frontier); Ataman (Cossack host-chief, overlay) county, over a Stanitsa; Voevoda (Slavic war-leader) duchy; Beki (great chief) principality; Khan (king) kingdom; Khagan (khan of khans), also hailed Velikii Khan, over the Yeke Ulus. (Rank titles are the real Mongol-Turkic/Slavic register, allowed.)",
+    "female_forms": {
+      "Ataman": "Atamansha",
+      "Beki": "Bekhi",
+      "Khagan": "Yeke-Khatun",
+      "Khan": "Khatun",
+      "Noyan": "Noyan-Khatun",
+      "Tarkhan": "Tarkhan-Khatun",
+      "Voevoda": "Voevodina"
+    },
+    "government": "clanhold (a horse-nomad horde with a Slavic settled veneer: the Khan and the ovog-clans, the Ataman host-leaders and the stanitsa garrisons; the khural raises the khan)",
+    "heir": "Jinong (the heir-prince)",
+    "honorifics": {
+      "champion": "Baatar (hero)",
+      "elder": "Aksakal",
+      "lady": "Khatun",
+      "lord": "Noyan",
+      "your_grace": "Khan"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Nutag",
+        "ruler": "Noyan"
+      },
+      "county": {
+        "domain": "Stanitsa",
+        "ruler": "Ataman"
+      },
+      "duchy": {
+        "domain": "Voevodstvo",
+        "ruler": "Voevoda"
+      },
+      "empire": {
+        "domain": "Yeke Ulus",
+        "ruler": "Khagan"
+      },
+      "kingdom": {
+        "domain": "Khanlig",
+        "ruler": "Khan"
+      },
+      "march": {
+        "domain": "Kraina",
+        "ruler": "Tarkhan"
+      },
+      "principality": {
+        "domain": "Aimag",
+        "ruler": "Beki"
+      }
+    },
+    "vassalage": {
+      "fealty": "Tangarag (oath)",
+      "liege": "Ezen",
+      "tribute": "Alba / Dan (Slavic)",
+      "vassal": "Nokor (sworn companion)"
+    }
+  }
+}

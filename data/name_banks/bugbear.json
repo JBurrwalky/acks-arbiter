@@ -1,0 +1,298 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Hush band",
+      "the Night-Hand band",
+      "the Ambush band",
+      "the Throat-cutter band",
+      "the Silent-stalk tribe",
+      "the Black-hand band",
+      "the Whisper horde",
+      "the Night-creep tribe",
+      "Atsmbubitsvurr",
+      "Dhamvurrborvurr",
+      "Eshhrrgayvurr",
+      "Gibvurrharvurr",
+      "Khashhrrmembu",
+      "Laylvurrmidbvurr",
+      "Mavurrtsurvurr",
+      "Milkvurrya'vurr",
+      "Qarvurrbitsvurr",
+      "Qatmbuborvurr",
+      "Rabvurrgayvurr",
+      "Shembuharvurr",
+      "Tsipvurrmembu",
+      "Atsmbumidbvurr",
+      "Dhamvurrtsurvurr",
+      "Eshhrrya'vurr"
+    ],
+    "epithet": [
+      "the Silent",
+      "the Throat-cutter",
+      "the Night-hand",
+      "the Stalker",
+      "the Whisper",
+      "the Black-furred",
+      "the Ambusher",
+      "the Unseen",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsmbubitsvurr",
+      "Dhamvurrborvurr",
+      "Eshhrrgayvurr",
+      "Gibvurrharvurr",
+      "Khashhrrmembu",
+      "Laylvurrmidbvurr",
+      "Mavurrtsurvurr",
+      "Milkvurrya'vurr",
+      "Qarvurrbitsvurr",
+      "Qatmbuborvurr",
+      "Rabvurrgayvurr",
+      "Shembuharvurr",
+      "Tsipvurrmembu",
+      "Atsmbumidbvurr",
+      "Dhamvurrtsurvurr",
+      "Eshhrrya'vurr",
+      "Gibvurrbitsvurr",
+      "Khashhrrborvurr",
+      "Laylvurrgayvurr",
+      "Mavurrharvurr",
+      "Milkvurrmembu",
+      "Qarvurrmidbvurr",
+      "Qatmbutsurvurr",
+      "Rabvurrya'vurr",
+      "Shembubitsvurr",
+      "Tsipvurrborvurr",
+      "Atsmbugayvurr",
+      "Dhamvurrharvurr",
+      "Eshhrrmembu",
+      "Gibvurrmidbvurr"
+    ],
+    "military_unit": [
+      "the Hush",
+      "the Throat-cutters"
+    ],
+    "personal_female": [
+      "Dhamvra",
+      "Shembra",
+      "Roshmba",
+      "Eshhra",
+      "Gibvra",
+      "Khashra",
+      "Borvra",
+      "Milkvra",
+      "Ruahvra",
+      "Vragvra",
+      "Nazmba",
+      "Grumvra",
+      "Dragmba",
+      "Skarvra",
+      "Vurmba",
+      "Bhakvra",
+      "Mavra",
+      "Throgvra",
+      "Hushmba",
+      "Lelvra",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Khatabh",
+      "Dhamvurr",
+      "Shembu",
+      "Roshmbu",
+      "Eshhrr",
+      "Gibvurr",
+      "Khashhrr",
+      "Borvurr",
+      "Milkvurr",
+      "Ruahvurr",
+      "Vragvurr",
+      "Nazmbu",
+      "Grumvurr",
+      "Dragmbu",
+      "Skarvurr",
+      "Vurmbu",
+      "Bhakvurr",
+      "Mavurr",
+      "Throgvurr",
+      "Hushmbu",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Ambush-warren",
+      "Borvurr-creep",
+      "Ya'vurr-stalk",
+      "the Throat-cutter den",
+      "Tsurvurr-cave",
+      "Atsmbuborvurr",
+      "Dhamvurrmembu",
+      "Eshhrrborvurr",
+      "Gibvurrmembu",
+      "Khashhrrborvurr",
+      "Laylvurrmembu",
+      "Mavurrborvurr",
+      "Milkvurrmembu",
+      "Qarvurrborvurr",
+      "Qatmbumembu",
+      "Rabvurrborvurr",
+      "Shembumembu",
+      "Tsipvurrborvurr",
+      "Atsmbumembu",
+      "Dhamvurrborvurr",
+      "Eshhrrmembu",
+      "Gibvurrborvurr",
+      "Khashhrrmembu",
+      "Laylvurrborvurr",
+      "Mavurrmembu",
+      "Milkvurrborvurr",
+      "Qarvurrmembu",
+      "Qatmbuborvurr",
+      "Rabvurrmembu",
+      "Shembuborvurr",
+      "Tsipvurrmembu"
+    ]
+  },
+  "culture_id": "bugbear",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_bugbear.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "bugbear",
+  "lexicon": {
+    "concepts": {
+      "beast": "behmbu",
+      "blood": "dhamvurr",
+      "bone": "atsmbu",
+      "claw": "tsipvurr",
+      "dark": "khashhrr",
+      "death": "mavurr",
+      "devour": "akhvurr",
+      "fang": "shembu",
+      "fire": "eshhrr",
+      "flesh_meat": "bashvurr",
+      "great": "rabvurr",
+      "horde": "ammbu",
+      "horn": "qarvurr",
+      "hunt": "tsayvurr",
+      "kill": "khatabh-hrr",
+      "lair": "membu",
+      "night": "laylvurr",
+      "raid_plunder": "shalvurr",
+      "shaman": "kashvurr",
+      "small": "qatmbu",
+      "spirit_totem": "ruahvurr",
+      "strong": "gibvurr",
+      "war": "milkvurr"
+    },
+    "feature_words": {
+      "cave": "membu",
+      "crag": "tsurvurr",
+      "dark_forest": "ya'vurr",
+      "gorge": "gayvurr",
+      "mountain": "harvurr",
+      "pit": "borvurr",
+      "swamp": "bitsvurr",
+      "waste": "midbvurr"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], whispered: Dhamvurr-shembu (blood-fang); band = [Totem]-ammbu.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "ambush-warrens and silent dens: 'the Creep-warren of [band]', 'the Silent hold of [chief]', 'the Throat-cutter den of [name]'",
+    "war_bands": "the whisper-named bands: 'the Hush', 'the Throat-cutters', 'the Night-hands of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Hush / the Night-Hand. The Kashvurr whispers to the totem and the Gul-spirits in the silent dark; foremost Gul-Naktilu the Dark (cover for the kill); the One and the sun demonized (light reveals them).",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun, light)": "Tarul the Burning-Eye (light that reveals the hush)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Naktilu": "a covering shadow",
+      "Night-Hand": "a black hand over a closed eye"
+    },
+    "race_totem": "the Night-Hand (Laylvurr-tsipvurr) / the Hush",
+    "shaman_rites": "whisper-chants in the silent dark; the throat-offering; the donning of the shadow-hide.",
+    "tribal_totem_pattern": "[Laylvurr-/Khashhrr-/Hush-] + [stalking-beast or hand]: Laylvurr-tsipvurr (Night-Claw), Khashhrr-behmbu (Dark-Beast).",
+    "venerated": {
+      "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit)",
+      "Noctiluna (the hush-dark)": "Gul-Naktilu (the Dark that hides the kill; supreme)",
+      "Raptis (the ambush-hunt)": "Gul-Raptu (the Stalk-Hunt)",
+      "Vacidus (the silence)": "Gul-Waqidu (the Devouring-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / ambush-band (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafvurr (the runt/slave)",
+      "warrior": "Gibvurr (the stalker-fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Kashvurr (great-shaman of the band-totem)",
+      "shaman": "Kashvurr (the totem-whisperer)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Roshmbu",
+        "scope": "chief of a single clanhold (ambush-band)"
+      },
+      "county": {
+        "ruler": "Rabvurr-Roshmbu",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Ammbu-Roshmbu",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabvurr-Ammbu-Malmbu",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabvurr-Malmbu",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milkvurr-Roshmbu",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malmbu",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

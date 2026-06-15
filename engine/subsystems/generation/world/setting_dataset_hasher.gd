@@ -61,6 +61,14 @@ static func _table_specs() -> Dictionary:
 			"columns": SettingRepository.POI_SEED_COLUMNS,
 			"order_by": "id ASC",
 		},
+		"setting_roads": {
+			"columns": SettingRepository.ROAD_COLUMNS,
+			"order_by": "id ASC",
+		},
+		"setting_fortifications": {
+			"columns": SettingRepository.FORTIFICATION_COLUMNS,
+			"order_by": "id ASC",
+		},
 		"setting_replay_frames": {
 			"columns": SettingRepository.REPLAY_FRAME_COLUMNS,
 			"order_by": "tick ASC",

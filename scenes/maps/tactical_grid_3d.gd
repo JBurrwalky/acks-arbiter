@@ -524,6 +524,12 @@ static func build_doors_voxel(map: VoxelMapData, level: int) -> Node3D:
 
 
 ## Door orientation for voxel maps. Uses VoxelGrid 2D neighbors.
+## A door spans ACROSS the corridor (perpendicular to the flanking walls), not
+## along it. In the diamond layout the col/row axes are the world 45° diagonals:
+##   - EW corridor (air E & W) -> door lies on the N-S diagonal -> +45°
+##   - NS corridor (air N & S), or ambiguous -> door lies on the E-W diagonal -> -45°
+## (Fixed 2026-06-13: previously returned the wall-edge angle, leaving doors lying
+## along the corridor — 90° off. Mirrors DungeonAssetBuilder._door_rotation.)
 static func _compute_door_orientation_voxel(pos: Vector3i, map: VoxelMapData) -> float:
 	var east := Vector3i(pos.x + 1, pos.y, pos.z)
 	var west := Vector3i(pos.x - 1, pos.y, pos.z)
@@ -534,11 +540,11 @@ static func _compute_door_orientation_voxel(pos: Vector3i, map: VoxelMapData) ->
 	var ns_passage: bool = _is_passage_neighbor_voxel(north, map) and _is_passage_neighbor_voxel(south, map)
 
 	if ew_passage and not ns_passage:
-		return -45.0
+		return 45.0
 	elif ns_passage and not ew_passage:
-		return 45.0
+		return -45.0
 	else:
-		return 45.0
+		return -45.0
 
 
 static func _is_passage_neighbor_voxel(pos: Vector3i, map: VoxelMapData) -> bool:

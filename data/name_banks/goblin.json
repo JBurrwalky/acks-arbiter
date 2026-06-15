@@ -1,0 +1,298 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Gnawing Dark tribe",
+      "the Skulking Rat warren",
+      "the Loot-snatchers",
+      "the Sneak tribe",
+      "the Filth horde",
+      "the Bone-gnawer warren",
+      "the Night-yip tribe",
+      "the Many-snik horde",
+      "Atsnikbitsnik",
+      "Damnikborgik",
+      "Eshnikgaynik",
+      "Gibnikharnik",
+      "Khashnikme'gik",
+      "Laylnikmidbnik",
+      "Mavniktsurgik",
+      "Milknikya'gik",
+      "Qarnikbitsnik",
+      "Qatnikborgik",
+      "Rabnikgaynik",
+      "Shennikharnik",
+      "Tsipnikme'gik",
+      "Atsnikmidbnik",
+      "Damniktsurgik",
+      "Eshnikya'gik"
+    ],
+    "epithet": [
+      "the Sneak",
+      "the Loot-snatcher",
+      "the Backstabber",
+      "the Squealer",
+      "the Filth-eater",
+      "the Skulker",
+      "the Many",
+      "the Quick-knife",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsnikbitsnik",
+      "Damnikborgik",
+      "Eshnikgaynik",
+      "Gibnikharnik",
+      "Khashnikme'gik",
+      "Laylnikmidbnik",
+      "Mavniktsurgik",
+      "Milknikya'gik",
+      "Qarnikbitsnik",
+      "Qatnikborgik",
+      "Rabnikgaynik",
+      "Shennikharnik",
+      "Tsipnikme'gik",
+      "Atsnikmidbnik",
+      "Damniktsurgik",
+      "Eshnikya'gik",
+      "Gibnikbitsnik",
+      "Khashnikborgik",
+      "Laylnikgaynik",
+      "Mavnikharnik",
+      "Milknikme'gik",
+      "Qarnikmidbnik",
+      "Qatniktsurgik",
+      "Rabnikya'gik",
+      "Shennikbitsnik",
+      "Tsipnikborgik",
+      "Atsnikgaynik",
+      "Damnikharnik",
+      "Eshnikme'gik",
+      "Gibnikmidbnik"
+    ],
+    "military_unit": [
+      "the Sneaks",
+      "the Loot-snatchers"
+    ],
+    "personal_female": [
+      "Snikka",
+      "Damnika",
+      "Shennika",
+      "Gnashka",
+      "Eshnika",
+      "Gibnika",
+      "Khashka",
+      "Yibka",
+      "Naznika",
+      "Grubka",
+      "Wikka",
+      "Snigka",
+      "Drennika",
+      "Mogka",
+      "Skritka",
+      "Vargka",
+      "Ruakka",
+      "Borgika",
+      "Lelnika",
+      "Mavnika",
+      "Lusanu",
+      "Maraqus",
+      "Metensu",
+      "Naktilu"
+    ],
+    "personal_male": [
+      "Gatak-snik",
+      "Snikgik",
+      "Damnik",
+      "Shennik",
+      "Gnashek",
+      "Eshnik",
+      "Gibnik",
+      "Khashnik",
+      "Borgik",
+      "Milknik",
+      "Ruaknik",
+      "Yibnik",
+      "Skritnik",
+      "Vargik",
+      "Naznik",
+      "Grubnik",
+      "Wikgik",
+      "Snigak",
+      "Drennik",
+      "Mognik",
+      "Lusanu",
+      "Maraqus",
+      "Metensu",
+      "Naktilu"
+    ],
+    "settlement": [
+      "the Skulk-warren",
+      "Borgik-warren",
+      "Bitsnik-me'gik",
+      "the Loot-pile",
+      "Tsurgik-warren",
+      "Atsnikborgik",
+      "Damnikme'gik",
+      "Eshnikborgik",
+      "Gibnikme'gik",
+      "Khashnikborgik",
+      "Laylnikme'gik",
+      "Mavnikborgik",
+      "Milknikme'gik",
+      "Qarnikborgik",
+      "Qatnikme'gik",
+      "Rabnikborgik",
+      "Shennikme'gik",
+      "Tsipnikborgik",
+      "Atsnikme'gik",
+      "Damnikborgik",
+      "Eshnikme'gik",
+      "Gibnikborgik",
+      "Khashnikme'gik",
+      "Laylnikborgik",
+      "Mavnikme'gik",
+      "Milknikborgik",
+      "Qarnikme'gik",
+      "Qatnikborgik",
+      "Rabnikme'gik",
+      "Shennikborgik",
+      "Tsipnikme'gik"
+    ]
+  },
+  "culture_id": "goblin",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_goblin.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "goblin",
+  "lexicon": {
+    "concepts": {
+      "beast": "behnik",
+      "blood": "damnik",
+      "bone": "atsnik",
+      "claw": "tsipnik",
+      "dark": "khashnik",
+      "death": "mavnik",
+      "devour": "akhnik",
+      "fang": "shennik",
+      "fire": "eshnik",
+      "flesh_meat": "bashnik",
+      "great": "rabnik",
+      "horde": "amnik",
+      "horn": "qarnik",
+      "hunt": "tsaynik",
+      "kill": "gatak-snik",
+      "lair": "me'gik",
+      "night": "laylnik",
+      "raid_plunder": "shalnik",
+      "shaman": "kashnik",
+      "small": "qatnik",
+      "spirit_totem": "ruaknik",
+      "strong": "gibnik",
+      "war": "milknik"
+    },
+    "feature_words": {
+      "cave": "me'gik",
+      "crag": "tsurgik",
+      "dark_forest": "ya'gik",
+      "gorge": "gaynik",
+      "mountain": "harnik",
+      "pit": "borgik",
+      "swamp": "bitsnik",
+      "waste": "midbnik"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], snickered: Damnik-shennik (blood-fang); tribe = [Totem]-amnik.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "warrens, sacked cellars, and loot-piles: 'the Warren of [tribe]', 'the Gnaw-tunnels of [chief]', 'the Loot-pile of [name]'",
+    "war_bands": "the snicker-named mobs: 'the Sneaks', 'the Loot-snatchers', 'the Backstabbers of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Gnawing Dark / the Skulking Rat. The kashnik snickers to the totem and the Gul-spirits over loot-piles in the dark; the One and the sun demonized.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun)": "Tarul the Burning-Eye"
+    },
+    "holy_symbol_motifs": {
+      "Gnawing Dark": "a black hole full of teeth",
+      "Gul-Lusanu": "a snatched and gnawed coin"
+    },
+    "race_totem": "the Gnawing Dark (Akhnik-khashnik) / the Skulking Rat",
+    "shaman_rites": "snicker-chants over loot-piles and the totem's rat-skull; spiteful curses.",
+    "tribal_totem_pattern": "[Khashnik-/Damnik-/Snik-] + [vermin or body-part]: Khashnik-shennik (Dark-Fang), Snik-tsipnik (Sneak-Claw).",
+    "venerated": {
+      "Lusanto (loot-greed)": "Gul-Lusanu (the Loot-Spirit)",
+      "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit, served dimly)",
+      "Metensia (filth, rot)": "Gul-Metensu (the Filth-Spirit)",
+      "Noctiluna (the dark)": "Gul-Naktilu (the dark to skulk in)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / warren (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shaflik (the runt/slave)",
+      "warrior": "Gibnik (the dark-fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-kashnik (great-shaman of the horde-totem)",
+      "shaman": "Kashnik (the totem-snicker)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Gnash",
+        "scope": "chief of a single clanhold (warren)"
+      },
+      "county": {
+        "ruler": "Rabnik-Gnash",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amnik-Gnash",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabnik-Amnik-Malgnik",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabnik-Malgnik",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milknik-Gnash",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malgnik",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

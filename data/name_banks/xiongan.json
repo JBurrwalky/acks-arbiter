@@ -1,0 +1,415 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
+  "categories": {
+    "clan_house": [
+      "Har-ovog",
+      "Tsagaan-ovog",
+      "Chono-ovog",
+      "Burgud-ovog",
+      "Altan-ovog",
+      "Tomor-ovog",
+      "Borjin-ovog",
+      "Naran-ovog",
+      "Zu-Li",
+      "Zu-Wang",
+      "Salhi-ovog",
+      "Mergen-ovog",
+      "Ger Munke",
+      "Ger Temur",
+      "Ger Chuluun",
+      "Ger Naranbaatar",
+      "Ger Ganzorig",
+      "Ger Bayar",
+      "Ger Erdene",
+      "Ger Altan",
+      "Ger Sodnom",
+      "Ger Mergen",
+      "Ger Borte-Chin",
+      "Ger Sube"
+    ],
+    "epithet": [
+      "Baatar",
+      "Mergen",
+      "the Great Khan",
+      "Son-of-Heaven",
+      "Storm-rider",
+      "the Jade-throned",
+      "Horse-lord",
+      "the Sky-favored",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Airagaral",
+      "Altboghaz",
+      "Altandalai",
+      "Ariundavaa",
+      "Bagergi",
+      "Baruungatlaga",
+      "Chagobi",
+      "Davsgol",
+      "Deedhondii",
+      "Doodhoshuu",
+      "Dotorjilga",
+      "Gadaadjim",
+      "Harkheer",
+      "Hoidkhuzu",
+      "Holnamag",
+      "Huuchinuruu",
+      "Ihnuur",
+      "Maloi",
+      "Mongotal",
+      "Moritolgoi",
+      "Omnuul",
+      "Ondorwan",
+      "Saihanyol",
+      "Shinezam",
+      "Saral",
+      "Tomorboghaz",
+      "Tsagaandalai",
+      "Ulaandavaa",
+      "Yergi",
+      "Zuungatlaga"
+    ],
+    "military_unit": [
+      "the Wolf Tumen",
+      "the Azure Banner"
+    ],
+    "personal_female": [
+      "Altantsetseg",
+      "Sarnai",
+      "Naran",
+      "Tuya",
+      "Oyun",
+      "Enkhtuya",
+      "Bayarmaa",
+      "Tsetseg",
+      "Delgermaa",
+      "Suvd",
+      "Lihua Tuya",
+      "Yurong",
+      "Meixiang",
+      "Nomin",
+      "Solongo",
+      "Odval",
+      "Khongor",
+      "Gerelmaa",
+      "Caiyun",
+      "Yuyan",
+      "Marakhai",
+      "Marakhaijin",
+      "Nomon",
+      "Nomonjin",
+      "Orloch",
+      "Orlochjin",
+      "Tulai",
+      "Tulaijin"
+    ],
+    "personal_male": [
+      "Munke",
+      "Temur",
+      "Chuluun",
+      "Naranbaatar",
+      "Ganzorig",
+      "Bayar",
+      "Erdene",
+      "Altan",
+      "Sodnom",
+      "Mergen",
+      "Li Munke",
+      "Zhang Temur",
+      "Chen Bayar",
+      "Wang Altan",
+      "Borte-Chin",
+      "Sube",
+      "Tomur",
+      "Otgon",
+      "Tian-Altan",
+      "Nogai",
+      "Marakhai",
+      "Marakhaitai",
+      "Nomon",
+      "Nomontai",
+      "Orloch",
+      "Orlochtai",
+      "Tulai",
+      "Tulaitai"
+    ],
+    "settlement": [
+      "Xionga",
+      "Yeke-cheng",
+      "Altan-gol",
+      "Har-uul",
+      "Jin-cheng",
+      "Ih-kheer",
+      "Airagail",
+      "Altbalgas",
+      "Altancheng",
+      "Ariunergi",
+      "Bagagatlaga",
+      "Baruunherem",
+      "Chamatou",
+      "Davsmiao",
+      "Deedordu",
+      "Doodtolgoi",
+      "Dotortosgon",
+      "Gadaadzah",
+      "Harail",
+      "Hoidbalgas",
+      "Holcheng",
+      "Huuchinergi",
+      "Ihgatlaga",
+      "Malherem",
+      "Mongomatou",
+      "Morimiao",
+      "Omnordu",
+      "Ondortolgoi",
+      "Saihantosgon",
+      "Shinezah",
+      "Sail",
+      "Tomorbalgas",
+      "Tsagaancheng",
+      "Ulaanergi",
+      "Yugatlaga",
+      "Zuunherem",
+      "Airagmatou",
+      "Altmiao",
+      "Altanordu",
+      "Ariuntolgoi"
+    ],
+    "ship": [
+      "the Sky-Dragon",
+      "Storm of the Gol",
+      "the Jade Banner"
+    ],
+    "tavern": [
+      "The Jade Airag-House",
+      "The Golden Dragon",
+      "The Altan Airag",
+      "The Ariun Alt",
+      "The Baga Cha",
+      "The Har Davs",
+      "The Hol Mal",
+      "The Huuchin Mongo",
+      "The Ih Mori",
+      "The Ondor Si",
+      "The Saihan Tomor",
+      "The Shine Yu"
+    ]
+  },
+  "culture_id": "xiongan",
+  "family": [
+    "steppe",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_xiongan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "xiongan",
+  "lexicon": {
+    "adjectives": {
+      "black": "har",
+      "fair": "saihan",
+      "far": "hol",
+      "golden": "altan",
+      "great": "ih",
+      "high": "ondor",
+      "iron": "tomor",
+      "little": "baga",
+      "new": "shine",
+      "old": "huuchin",
+      "red": "ulaan",
+      "sacred": "ariun",
+      "white": "tsagaan"
+    },
+    "directional": {
+      "east": "zuun",
+      "inner": "dotor",
+      "lower": "dood",
+      "north": "hoid",
+      "outer": "gadaad",
+      "south": "omno",
+      "upper": "deed",
+      "west": "baruun"
+    },
+    "feature_words": {
+      "bay": "wan",
+      "cape": "hoshuu",
+      "coast": "ergi",
+      "ford": "gatlaga",
+      "forest": "oi",
+      "gobi": "gobi",
+      "hill": "tolgoi",
+      "isle": "aral",
+      "lake": "nuur",
+      "marsh": "namag",
+      "mountain": "uul",
+      "narrows": "boghaz",
+      "neck": "khuzu",
+      "pass": "davaa",
+      "plain": "tal",
+      "ridge": "nuruu",
+      "river": "gol",
+      "road": "zam",
+      "sea": "dalai",
+      "steppe": "kheer",
+      "stream": "jilga",
+      "track": "jim",
+      "vale": "hondii",
+      "waste": "gobi",
+      "way": "yol"
+    },
+    "resources": {
+      "airag": "airag",
+      "gold": "alt",
+      "herd": "mal",
+      "horse": "mori",
+      "iron": "tomor",
+      "jade": "yu",
+      "salt": "davs",
+      "silk": "si",
+      "silver": "mongo",
+      "tea": "cha"
+    },
+    "settlement_words": {
+      "citadel": "ordu",
+      "city": "cheng",
+      "fort": "herem",
+      "hamlet": "ail",
+      "market": "zah",
+      "port": "matou",
+      "temple_town": "miao",
+      "town": "balgas",
+      "village": "tosgon"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|animal](stem) + feature: Har-uul (black-mountain); the Sinitic overlay yields [quality]-cheng (Jin-cheng, golden-city) for the great walled cities.",
+    "gendered_endings": {
+      "female": [
+        "jin",
+        "lun"
+      ],
+      "male": [
+        "tai",
+        "dai"
+      ]
+    },
+    "patronymic_form": "patronymic father + -in (steppe); the sinicized court takes a Chinese surname (xing) + given-name; the ovog (clan) for the horde.",
+    "toponymic_suffixes": [
+      "uul",
+      "gol",
+      "cheng",
+      "balgas",
+      "Ih-/Yeke-",
+      "Har-/Tsagaan-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "abandoned ordu-camps and sacked cheng-cities: 'the Kurgan of [khan]', 'the Ruined Cheng of [name]'",
+    "military_units": "the decimal host with Chinese banners: the [khan] Tumen (10,000) / the [color] Banner: 'the Wolf Tumen', 'the Azure Banner'",
+    "ships": "river-junk and steppe horse-standards: 'the Sky-Dragon', 'Storm of the Gol', 'the Jade Banner'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Airag-House', 'The Golden Dragon'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Steppe primary, from family_steppe theonym_set; Sinitic variant, from family_east_asian theonym_sets.sinitic), never real steppe/Chinese gods. Xiongan seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). The Mongol Eternal Sky and the Chinese Mandate of Heaven are fused: when Lawful, the One (Eterun, Sinitic Aiteng) is revered as the ordered Heaven that grants the Mandate; the ovoo-cairn and the imperial miao-temple keep the rites.",
+    "clergy_ladder": {
+      "1": "Bo-shavi (shaman-novice)",
+      "3": "Bo (shaman)",
+      "5": "Daoshi (Daoist priest, Sinitic overlay)",
+      "7": "Ulu-Boge (high shaman)",
+      "9": "Tianshi (celestial master, the court's high priest)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Marakhai the War-Fire (Sin. Maluo the Demon-Marshal); Vacidus -> Bachid the Devourer; Lusanto -> Lusantai the Coin-Serpent.",
+    "holy_symbol_motifs": {
+      "Eterun": "the open sky-disc above the dragon-throne",
+      "Orloch": "an iron oath-ring crossed with the tug-standard",
+      "Tulai": "a winged sun above the law-stele"
+    },
+    "religious_orders_pattern": "the Ovoo (sacred cairn) of [power] on the high places, and the imperial Miao (temple) in the cheng-cities: 'the Ovoo of Eterun', 'the Miao of Tulai'.",
+    "saints_pattern": "the great khans and worthy ministers enrolled in the celestial register and the ancestor-temple; the hero-baatars become sky-riders.",
+    "sample_deity_renames": {
+      "Maraxus": "Marakhai (Sin. Maluo) - the war-fire; Chaotic power, demonized",
+      "Numeno": "Nomon (Sin. Numeng-jun) - sky-wisdom, the scribe; Lawful power",
+      "Orlandus": "Orloch (Sin. Aolan-jun) - iron-oath, war; Lawful power",
+      "Tulrius": "Tulai (Sin. Tuli-di) - sun and judgment; Lawful power"
+    },
+    "the_one": "Eterun (< Aeternus; Sinitic Aiteng) - the Eternal Sky / Highest Heaven; revered as the source of the Mandate when Lawful, acknowledged as the distant Heaven when Neutral",
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Eterun/Aiteng, the Eternal Heaven and Mandate) and the Lawful powers (Tulai, Orloch, Nomon, Gajan), demonize the Chaotic powers (Marakhai, Bachid, Lusantai)",
+      "Neutral": "all powers ambivalent; foreground the ancestral dead (the imperial ancestor-cult) and the powers of place"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Mongol-Turkic backbone, ascending, with a Sinitic administrative overlay. Noyan (noble) barony; Tarkhan (border-lord) march; Darughachi (the Yuan governor-overseer) county, over a Chinese Lu (circuit); Mingghan-Noyan (commander of a thousand) duchy; Beki (great chief) principality; Khan, styled Wang (Chinese prince), kingdom; Khagan, styled Huangdi (the Great Khan as Son of Heaven, holding the Mandate), over the Yeke Ulus. The Confucian bureaucracy serves the horde-aristocracy. (Rank titles are the real Mongol-Turkic/Chinese register, allowed.)",
+    "female_forms": {
+      "Beki": "Bekhi",
+      "Darughachi": "Darughachi (f)",
+      "Khagan Huangdi": "Yeke-Khatun (Huanghou)",
+      "Khan (Wang)": "Khatun",
+      "Mingghan-Noyan": "Mingghan-Khatun",
+      "Noyan": "Noyan-Khatun",
+      "Tarkhan": "Tarkhan-Khatun"
+    },
+    "government": "feudal (a sinicized steppe empire: the Great Khan rules as Son of Heaven over a Chinese-model bureaucracy of darughachi governors; the decimal host and the ovog-clans beneath)",
+    "heir": "Jinong (the heir-prince) / Taizi (crown prince, Sinitic)",
+    "honorifics": {
+      "champion": "Baatar (hero)",
+      "lady": "Khatun",
+      "lord": "Noyan",
+      "your_grace": "Khan / Dianxia",
+      "your_majesty": "Khagan / Bixia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Nutag",
+        "ruler": "Noyan"
+      },
+      "county": {
+        "domain": "Lu",
+        "ruler": "Darughachi"
+      },
+      "duchy": {
+        "domain": "Mingghan",
+        "ruler": "Mingghan-Noyan"
+      },
+      "empire": {
+        "domain": "Yeke Ulus",
+        "ruler": "Khagan Huangdi"
+      },
+      "kingdom": {
+        "domain": "Khanlig",
+        "ruler": "Khan (Wang)"
+      },
+      "march": {
+        "domain": "Hyazgaar",
+        "ruler": "Tarkhan"
+      },
+      "principality": {
+        "domain": "Aimag",
+        "ruler": "Beki"
+      }
+    },
+    "vassalage": {
+      "fealty": "Tangarag (oath)",
+      "liege": "Ezen",
+      "tribute": "Alba / Gongfu (Sinitic)",
+      "vassal": "Nokor (sworn companion)"
+    }
+  }
+}

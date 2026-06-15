@@ -26,6 +26,7 @@ func run_all_tests() -> void:
 	test_subsplit_parts_nest_inside_parent()
 	test_overlaps_are_symmetric_and_not_nested()
 	test_significance_bounds()
+	test_terrain_families_and_basin_detection()
 	test_determinism_same_seed_same_regions()
 	print("SettingStage2Tests: all tests passed (%d checks)" % test_count())
 
@@ -67,7 +68,13 @@ func test_region_record_invariants() -> void:
 		seen_ids[id] = true
 		check(str(region.layer) in VALID_LAYERS, "bad layer '%s'" % region.layer)
 		check(str(region.scale) == "campaign_24mi", "coarse pass must emit campaign_24mi")
-		check(str(region.name_primary) == "", "Phase 1 regions must be unnamed")
+		# Phase 1 emits UNNAMED geometric regions, but this suite reads the full
+		# pipeline output and Layer 5 (Stage 6, region-painting Phase 2) names
+		# every region — so the present-day invariant is that names exist (the
+		# Phase-1-unnamed assertion moved here when naming landed, per the §80
+		# Stage-3-seed-state precedent). Phase-1 geometry is still verified below.
+		check(str(region.name_primary) != "", "Layer 5 names every region (Phase 2)")
+		check(str(region.name_origin) != "", "named region carries a name_origin")
 		var hexes: Array = JSON.parse_string(str(region.hexes))
 		check(hexes is Array and hexes.size() > 0, "region %s has no hexes" % id)
 		var parent := str(region.parent_id)
@@ -170,15 +177,64 @@ func test_overlaps_are_symmetric_and_not_nested() -> void:
 
 
 func test_significance_bounds() -> void:
+	# This suite reads the full pipeline, so significance has been RE-SCORED by
+	# Layer 5 (§3.3 context term, +0.20·context). Phase 1 alone caps at
+	# 0.45+0.35 = 0.80; after Phase 2 it ranges up to 1.0. The valid invariant is
+	# therefore the [0,1] clamp.
 	for region in _regions:
 		var sig := float(region.significance)
 		check(sig >= 0.0 and sig <= 1.0, "significance out of 0-1: %f" % sig)
-	# With the context term 0, the §3.3 weights cap Phase-1 significance at
-	# 0.45 + 0.35 = 0.80.
+
+
+## §4.2 terrain-family classification + basin (enclosed flat+clear) detection.
+## Unit tests on hand-built grids prove the rules seed-independently; the
+## full-map pass checks any basin regions are valid clusters respecting the
+## floor. (Plateau detection is DEFERRED — hills+clear is plains, not plateau —
+## pending a local-flatness pass on elevation_raw; see _cluster_family.)
+func test_terrain_families_and_basin_detection() -> void:
+	const RING := [Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0),
+		Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0)]
+	# Enclosed basin: flat+clear center ringed by hills (high ground).
+	var g := {}
+	g[Vector2i(0, 0)] = _mkhex("flat", "clear")
+	for off in RING:
+		g[Vector2i(0, 0) + off] = _mkhex("hills", "clear")
+	# Plateau deferred: hills+clear is the plains family (a high/rugged "hills"
+	# band is NOT a flat plateau), and mountains+clear is range.
+	check(RegionPainter._cluster_family(g, Vector2i(1, 0)) == "plains",
+		"hills+clear is plains (plateau deferred), not a separate family")
+	check(RegionPainter._cluster_family(g, Vector2i(0, 0)) == "plains",
+		"flat+clear hex is the plains family (basin promotion is component-level)")
+	check(RegionPainter._is_enclosed_basin(g, [Vector2i(0, 0)]),
+		"flat+clear ringed by higher ground is an enclosed basin")
+	g[Vector2i(5, 5)] = _mkhex("mountains", "clear")
+	check(RegionPainter._cluster_family(g, Vector2i(5, 5)) == "range",
+		"mountains+clear is range")
+	# Open lowland: flat+clear ringed by flat -> plains, not a basin.
+	var o := {}
+	o[Vector2i(0, 0)] = _mkhex("flat", "clear")
+	for off in RING:
+		o[Vector2i(0, 0) + off] = _mkhex("flat", "clear")
+	check(not RegionPainter._is_enclosed_basin(o, [Vector2i(0, 0)]),
+		"flat+clear ringed by flat ground is open plains, not a basin")
+	# A component touching only water/edge (empty ring) is never a basin.
+	check(not RegionPainter._is_enclosed_basin({Vector2i(0, 0): _mkhex("flat", "clear")},
+		[Vector2i(0, 0)]), "an unringed flat hex is not a basin")
+	# Plateau is disabled — no region should carry that subtype.
 	for region in _regions:
-		check(float(region.significance) <= 0.801,
-			"Phase-1 significance exceeds 0.45+0.35 cap: %s = %f"
-				% [region.id, float(region.significance)])
+		check(not str(region.subtype).begins_with("plateau"),
+			"plateau detection is deferred; no plateau subtype expected")
+	# Full map: any basin clusters are valid terrain_clusters respecting the floor.
+	for region in _regions:
+		var st := str(region.subtype)
+		if st == "basin" or st == "basin_part":
+			check(str(region.layer) == "terrain_cluster", "%s is a terrain_cluster" % st)
+			var hexes: Array = JSON.parse_string(str(region.hexes))
+			check(hexes.size() >= 2, "%s %s respects the >=2 floor" % [st, region.id])
+
+
+func _mkhex(elevation: String, biome: String) -> Dictionary:
+	return {"water": "", "elevation": elevation, "biome": biome}
 
 
 func test_determinism_same_seed_same_regions() -> void:

@@ -172,15 +172,59 @@ func _run_history_sim(ctx: Dictionary) -> bool:
 	return SettingRepository.save_replay_palette(campaign_id, ctx.get("sim_replay_palette", []))
 
 
-func _run_naming(_ctx: Dictionary) -> bool:
-	# Stage 6: name_generator.gd + region-painting Phase 2 (setting-gen §8).
-	return true
+func _run_naming(ctx: Dictionary) -> bool:
+	# Layer 5 (Stage 6): runtime naming + region-painting Phase 2. Names every
+	# realm/settlement/region (zero LLM, deterministic from the name banks) and
+	# re-scores region significance with the §3.3 context term. Mutates ctx rows
+	# in place, then re-persists the tables it owns. Roads are named later
+	# (Layer 6 builds the network), so no road-layer regions exist here yet.
+	if not NameGenerator.new().run(ctx):
+		return false
+	var campaign_id: String = ctx["campaign_id"]
+	# All these writers are idempotent upserts (coding_conventions §82), so a
+	# re-save over the Stage-4 rows fills the name columns in place. setting_regions
+	# is NOT a sim-output table (never cleared), so this is its only update path.
+	if not SettingRepository.save_settlements(campaign_id, ctx.get("sim_settlements", [])):
+		return false
+	if not SettingRepository.save_polities(campaign_id, ctx.get("sim_polities", [])):
+		return false
+	if not SettingRepository.save_fallen_polities(campaign_id, ctx.get("sim_fallen_polities", [])):
+		return false
+	if not SettingRepository.save_ruin_seeds(campaign_id, ctx.get("sim_ruin_seeds", [])):
+		return false
+	if not SettingRepository.save_events(campaign_id, ctx.get("sim_events", [])):
+		return false
+	return SettingRepository.save_regions(campaign_id, ctx.get("regions", []))
 
 
-func _run_infrastructure(_ctx: Dictionary) -> bool:
-	# Stage 7: infrastructure_generator.gd (settlement reconciliation, roads,
-	# provenance-first dungeons, deforestation, forts, POIs — setting-gen §9).
-	return true
+func _run_infrastructure(ctx: Dictionary) -> bool:
+	# Layer 6 (Stage 7): infrastructure & content seeding (setting-gen §9).
+	# §9.1 REBUILDS the settlement set via the rank-size model (regrounded
+	# 2026-06-14 — only Class III+ cities + the Class IV capital seat survive at
+	# the 24-mile scale), §9.6 finalizes territory classification (promotion-only),
+	# then roads/dungeons/deforestation/forts/POIs. The settlement set changes
+	# SHAPE (not an in-place column fill), so it is REPLACED, not upserted.
+	if not InfrastructureGenerator.new().run(ctx):
+		return false
+	var campaign_id: String = ctx["campaign_id"]
+	if not SettingRepository.replace_settlements(campaign_id, ctx.get("sim_settlements", [])):
+		return false
+	# Roads (§9.2) + the road-layer regions appended to ctx["regions"].
+	if not SettingRepository.save_roads(campaign_id, ctx.get("sim_roads", [])):
+		return false
+	if not SettingRepository.save_regions(campaign_id, ctx.get("regions", [])):
+		return false
+	# Dungeon seeds (§9.3): sim ruins get types; geometric top-ups appended.
+	if not SettingRepository.save_ruin_seeds(campaign_id, ctx.get("sim_ruin_seeds", [])):
+		return false
+	# Fortifications (§9.5).
+	if not SettingRepository.save_fortifications(campaign_id, ctx.get("sim_fortifications", [])):
+		return false
+	# Wilderness POI seeds (§9.7).
+	if not SettingRepository.save_poi_seeds(campaign_id, ctx.get("sim_poi_seeds", [])):
+		return false
+	# Deforestation (§9.4) + territory promotions live on the hex substrate.
+	return _persist_hexes(ctx)
 
 
 func _run_narrative(_ctx: Dictionary) -> bool:

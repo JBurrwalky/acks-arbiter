@@ -1,0 +1,295 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Little Gnasher warren",
+      "the Trap-Lizard tribe",
+      "the Skulk warren",
+      "the Yip-pack",
+      "the Hoard warren",
+      "the Bone-pile tribe",
+      "the Tunnel-rats",
+      "the Sharp-tooth warren",
+      "Dimikbits'ik",
+      "Ets'ikborik",
+      "Gibikgayik",
+      "K'arikharik",
+      "K'ats'ikavik",
+      "K'itikmidbik",
+      "Lelikts'urik",
+      "Mevikya'ik",
+      "Milk'ikbits'ik",
+      "Rebikborik",
+      "Ts'enikgayik",
+      "Ts'imikharik",
+      "Ts'ipikavik",
+      "Dimikmidbik",
+      "Ets'ikts'urik",
+      "Gibikya'ik"
+    ],
+    "epithet": [
+      "the Sharp-tooth",
+      "the Trap-setter",
+      "the Skitterer",
+      "the Tunnel-rat",
+      "the Bone-picker",
+      "the Quick-yip",
+      "the Hidden-claw",
+      "the Many",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Dimikbits'ik",
+      "Ets'ikborik",
+      "Gibikgayik",
+      "K'arikharik",
+      "K'ats'ikavik",
+      "K'itikmidbik",
+      "Lelikts'urik",
+      "Mevikya'ik",
+      "Milk'ikbits'ik",
+      "Rebikborik",
+      "Ts'enikgayik",
+      "Ts'imikharik",
+      "Ts'ipikavik",
+      "Dimikmidbik",
+      "Ets'ikts'urik",
+      "Gibikya'ik",
+      "K'arikbits'ik",
+      "K'ats'ikborik",
+      "K'itikgayik",
+      "Lelikharik",
+      "Mevikavik",
+      "Milk'ikmidbik",
+      "Rebikts'urik",
+      "Ts'enikya'ik",
+      "Ts'imikbits'ik",
+      "Ts'ipikborik",
+      "Dimikgayik",
+      "Ets'ikharik",
+      "Gibikavik",
+      "K'arikmidbik"
+    ],
+    "military_unit": [
+      "the Sharp-teeth",
+      "the Trap-setters"
+    ],
+    "personal_female": [
+      "Dimki",
+      "Ts'enki",
+      "Bitska",
+      "Ru'ki",
+      "Gibki",
+      "K'arki",
+      "Yipka",
+      "Snikka",
+      "Vekki",
+      "Reblik",
+      "Milka",
+      "Ts'idka",
+      "Kavka",
+      "Dremki",
+      "Skritka",
+      "Chika",
+      "Lelka",
+      "Ts'ipka",
+      "Tk'eka",
+      "Mavki",
+      "Lusanu",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "K'atik",
+      "Dimik",
+      "Ts'enik",
+      "Bits'ek",
+      "Ru'ik",
+      "Gibik",
+      "K'arik",
+      "Borik",
+      "Ts'ipik",
+      "Vekik",
+      "Snikik",
+      "Yipik",
+      "Tk'ek",
+      "Rebik",
+      "Milk'ik",
+      "Ts'idik",
+      "Kavik",
+      "Dremik",
+      "Skritik",
+      "Chik'ek",
+      "Lusanu",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Warren",
+      "Borik-kavik",
+      "the Bone-pile",
+      "Midbik-warren",
+      "Ts'urik-kavik",
+      "Dimikborik",
+      "Ets'ikavik",
+      "Gibikborik",
+      "K'arikavik",
+      "K'ats'ikborik",
+      "K'itikavik",
+      "Lelikborik",
+      "Mevikavik",
+      "Milk'ikborik",
+      "Rebikavik",
+      "Ts'enikborik",
+      "Ts'imikavik",
+      "Ts'ipikborik",
+      "Dimikavik",
+      "Ets'ikborik",
+      "Gibikavik",
+      "K'arikborik",
+      "K'ats'ikavik",
+      "K'itikborik",
+      "Lelikavik",
+      "Mevikborik",
+      "Milk'ikavik",
+      "Rebikborik",
+      "Ts'enikavik",
+      "Ts'imikborik",
+      "Ts'ipikavik"
+    ]
+  },
+  "culture_id": "kobold",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_kobold.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "kobold",
+  "lexicon": {
+    "concepts": {
+      "beast": "bekik",
+      "blood": "dimik",
+      "bone": "ts'imik",
+      "claw": "ts'ipik",
+      "dark": "k'ats'ik",
+      "death": "mevik",
+      "devour": "ak'ik",
+      "fang": "ts'enik",
+      "fire": "ets'ik",
+      "flesh_meat": "bits'ek",
+      "great": "rebik",
+      "horde": "emik",
+      "horn": "k'arik",
+      "hunt": "ts'idik",
+      "kill": "k'atik",
+      "lair": "me'ik",
+      "night": "lelik",
+      "raid_plunder": "ts'alik",
+      "shaman": "k'ats'ep",
+      "small": "k'itik",
+      "spirit_totem": "ru'ik",
+      "strong": "gibik",
+      "war": "milk'ik"
+    },
+    "feature_words": {
+      "cave": "kavik",
+      "crag": "ts'urik",
+      "dark_forest": "ya'ik",
+      "gorge": "gayik",
+      "mountain": "harik",
+      "pit": "borik",
+      "swamp": "bits'ik",
+      "waste": "midbik"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], yipped: K'itik-ts'enik (little-fang); warren = [Totem]-emik.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "trap-riddled tunnel-warrens and bone-piles: 'the Warren of [tribe]', 'the Trap-tunnels of [chief]', 'the Bone-pile of [name]'",
+    "war_bands": "the yip-named swarms: 'the Sharp-teeth', 'the Trap-setters', 'the Tunnel-rats of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Little Gnasher / the Trap-Lizard. The k'ats'ep yips to the totem and the Gul-spirits over trap-pits and bone-piles; the One and the sun are demonized (kobolds shun the light).",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun)": "Tarul the Burning-Eye (the light that finds them)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Lusanu": "a heap of stolen teeth and coins",
+      "Little Gnasher": "a tiny gnashing jaw over a snare"
+    },
+    "race_totem": "the Little Gnasher (K'itik-ts'enik) / the Trap-Lizard",
+    "shaman_rites": "yip-chants over trap-pits, bone-piles, and stolen-hoards; the totem's little skull on a stick.",
+    "tribal_totem_pattern": "[K'itik-/Dimik-/k'ats'ik-] + [small-beast or trap]: K'itik-ts'enik (Little Fang), Dimik-ts'ipik (Blood-Claw).",
+    "venerated": {
+      "Lusanto (the hoard/trap-greed)": "Gul-Lusanu (the Hoard-Spirit; trap and steal)",
+      "Noctiluna (the hiding dark)": "Gul-Naktilu (the dark that hides the warren)",
+      "Vacidus (the devouring dark)": "Gul-Waqidu (the Devouring-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / tunnel-warren (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Ts'aflik (the runt/slave)",
+      "warrior": "Gibik (the trap-fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rebik-k'ats'ep (great-shaman of the warren-totem)",
+      "shaman": "K'ats'ep (the totem-yipper)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Rots'",
+        "scope": "chief of a single clanhold (warren)"
+      },
+      "county": {
+        "ruler": "Rebik-Rots'",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Emik-Rots'",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rebik-Emik-Malik",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rebik-Malik",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milk'ik-Rots'",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malik",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

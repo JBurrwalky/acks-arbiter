@@ -379,29 +379,35 @@ Players can rename any generated name. The original generated name is preserved 
 
 > **Updated for the new model:** three inputs now come from the Layer-4 simulation. **Dungeon/lair seeds** are driven by the sim's collapse/depopulation events — fallen realms emit ruins carrying provenance (culture, era, name) — supplementing the baseline beastman lairs from §6.3. **Territory classification** is a sim *output* (§7.2), so this layer only finalizes settlement-local detail instead of the old preliminary + second pass. **Road naming** of the trunk/highway tier is delegated to `gdd-region-painting.md` §6 (network density set by culture `road_propensity`).
 
-### 9.1 Settlement Placement (rewritten 2026-06-12 — reconcile, don't invent)
+### 9.1 Settlement Stocking (rank-size model, regrounded 2026-06-14)
 
-Settlements are now primarily a **sim output** (§7.2 `settlements`), not placed fresh. Layer 6 reconciles them against the ACKS distribution tables and details them:
+Settlements on the 24-mile campaign map are derived from RAW **demographic primitives**, not the quick-stocking tables. Those tables (the villages/towns/cities placement table, the "~15 settlement points per region" budget) are a GM's table-side shortcut and assume a single frontier density; the generator has the compute budget to ground settlement density properly and scale it with each realm's actual population.
 
+**RAW primitives** (`acore_axioms_strongholds_and_domains.xml:106,156-160`; `acore-setting-construction-rules.xml:161-176`):
+- 5 people per family.
+- 24-mile hex peasant caps by territory class — Wilderness **2,000** / Borderlands **4,000** / Civilized **12,480** families (= 16 × the 6-mile caps of 125 / 250 / 780; densities 20 / 40 / 125 people·mi⁻²).
+- ~10% of a realm's population is urban; the largest settlement holds ~20% of that urban population.
+- *"Class IV and smaller settlements can be ignored on the 24-mile campaign map"* (`:174`); *"Class VI ... on the 6-mile regional map"* (`:175`).
+
+**Urban fraction f_u (5–20%, by realm development).** The demographic-adjustment table (`:186-189`) shifts urbanization for agrarian vs. advanced realms. We derive it from each realm's territory-class mix — a development index `dev ∈ [0,1]` (civilized hex = 1.0, borderlands = 0.5, wilderness = 0.0), giving **f_u = 0.05 + 0.15·dev**. Agrarian frontier realms urbanize at 5%; fully-civilized realms at 20%.
+
+**Rank-size (Zipf, exponent 1) settlement system, per realm.** Settlement of rank *r* has `urban_families = A / r`, where **A = 0.20 × (f_u × realm peasant families)** is the largest settlement. The count of settlements at or above a size threshold T is `floor(A / T)`. Market class follows the urban-families table (`acore-campaign-hijinks.xml:632-638`): I ≥ 20,000; II ≥ 5,000; III ≥ 1,750; IV ≥ 600; V ≥ 250; VI < 250.
+
+**What the 24-mile campaign map persists — Class III+ only, plus the Class IV capital-seat exception.** Only Class III+ cities (T = 1,750) are placed, EXCEPT a realm whose largest settlement (= its capital) is Class IV still shows that one seat, so mid-tier realms aren't invisible. No other Class IV — and no Class V–VI — settlement is placed; that urban population folds into the hex's rural aggregate and materializes only on a future **6-mile regional zoom** (T = 250, the same model). Expected yield ≈ 1 Class III+ city per 7 fully-civilized 24-mile hexes for a single realm (fewer as land fragments into smaller realms) — a few to a couple dozen cities on a campaign map. This reconciles with the 6-mile regional budget once the regional map's frontier density is accounted for.
+
+**Algorithm** (per alive, non-beastman polity, in sorted-id order; output in canonical hex order):
 ```
-1. Realm population comes from the sim's per-hex population bands (NOT recomputed
-   from hex count × terrain — the sim's demography is ground truth).
-2. Consume sim-emergent settlements: capital + urban centers, each with
-   urban_families and emergence_tick. Assign market class from urban population
-   per the ACKS settlement tables.
-3. Reconcile counts against the ACKS distribution for realm population
-   (acore-setting-construction-rules.xml lines 161-169: ~10% of realm population
-   urban; ~20% of urban population in the largest settlement):
-   - DEFICIT: top up with minor settlements (Class V-VI hamlets/villages) — these
-     are below sim resolution and are placed geometrically, preferring:
-     a. River hexes (trade)   b. Coastal hexes (port)
-     c. Road intersections (after roads)   d. Productive terrain near water
-     with minimum distances scaling by market class.
-   - SURPLUS or misfit: never delete a sim settlement; downgrade market class to
-     fit the table. The sim's history outranks the static table's expectation.
-4. Each settlement gets: population, market class, emergence_tick (top-ups get
-   a recent-epoch tick), name (Layer 5).
+1. peasant = Σ population_band over the realm's CURRENT hexes;  dev = mean dev-weight.
+2. f_u = 0.05 + 0.15·dev;   urban = f_u·peasant;   A = 0.20·urban.
+3. If A < 600 (Class V–VI capital): no mapped settlement — skip (folds to rural).
+4. count = floor(A / 1750)  (Class III+ ranks);  if count < 1: count = 1  (Class IV seat).
+5. Place rank 1 at the capital; ranks 2..count on the highest urban-signal non-capital
+   hexes, kept ≥ 2 hexes apart. Settlement r gets urban_families = bankers_round(A / r)
+   and market class from the table.
+6. Reuse the sim's per-hex id / name / emergence_tick where one exists at the chosen
+   hex (Layer-5 naming + provenance preserved); else fabricate a fresh seat.
 ```
+The sim's per-hex urban emergence (`gdd-history-simulation.md` §6) is now only a **placement signal** — where urban population concentrated over history — not the settlement set itself. This replaces the prior one-settlement-per-hex scatter (which, compounded by stale records across 160 ticks of ownership change, produced hundreds of phantom hamlets per region) and the "top up with Class V–VI hamlets" rule, both of which conflated the 24-mile and 6-mile scales. Determinism: no new RNG — `f_u` and the hex ranking are sim-derived; names use the existing per-entity streams.
 
 ### 9.2 Road Network
 

@@ -1,0 +1,436 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic",
+    "Lawful"
+  ],
+  "categories": {
+    "clan_house": [
+      "Kron Gormkad",
+      "Kron Askun",
+      "Kron Bralun",
+      "Kron Kaurin",
+      "Kron Marak",
+      "Kron Kronar",
+      "Kron Svarkad",
+      "Kron Gradun",
+      "Kron Drokun",
+      "Kron Galdar",
+      "Kron Durnak",
+      "Kron Kaldun",
+      "Gordakson",
+      "Kaurokson",
+      "Gormvakson",
+      "Askokson",
+      "Drennokson",
+      "Brakkunson",
+      "Vaurokson",
+      "Gorummson",
+      "Kronakson",
+      "Maranokson",
+      "Bralunson",
+      "Khaurokson"
+    ],
+    "epithet": [
+      "the Ash-bearded",
+      "the Fire-handed",
+      "the Caldera-born",
+      "the Cinder-eyed",
+      "the Pyre-keeper",
+      "the Molten-hearted",
+      "the Forge-loud",
+      "the Offering-giver",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the Molten",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Brilkaddaskun",
+      "Drammbrakun",
+      "Durnunnbralgrund",
+      "Galdarrdorun",
+      "Galdunndragun",
+      "Gormkadrangun",
+      "Gormundurnak",
+      "Haldunngattun",
+      "Indrakgormdurnak",
+      "Kadarrgormhol",
+      "Koparrgormkad",
+      "Kordunngormkhorun",
+      "Kronarrgormvar",
+      "Kronunngormvarnkad",
+      "Kruvunngradun",
+      "Nardunngrundar",
+      "Nidrakaldun",
+      "Olunnkavun",
+      "Ordunnkhalld",
+      "Ostunnklundak",
+      "Pikunnkornnak",
+      "Ragdunnkronvar",
+      "Salunnskarnn",
+      "Stronkstikk",
+      "Svarkaddthrangg",
+      "Torunnaskun",
+      "Tringarrbrakun",
+      "Uprakbralgrund",
+      "Utrakdorun",
+      "Vandunndragun"
+    ],
+    "military_unit": [
+      "the Cinder Guard"
+    ],
+    "personal_female": [
+      "Gormla",
+      "Askna",
+      "Kaurna",
+      "Gorra",
+      "Drenna",
+      "Vaurna",
+      "Kronna",
+      "Brakka",
+      "Gormna",
+      "Drokna",
+      "Maranna",
+      "Galda",
+      "Bralna",
+      "Khorra",
+      "Durna",
+      "Gramna",
+      "Tringa",
+      "Varna",
+      "Askra",
+      "Dolna",
+      "Kaura",
+      "Aska",
+      "Vaura",
+      "Marana",
+      "Brala",
+      "Khaura",
+      "Gorma",
+      "Nudra",
+      "Gundunndrumm",
+      "Gundunndrumma",
+      "Marakkadrumm",
+      "Marakkadrumma",
+      "Orlunndrumm",
+      "Orlunndrumma",
+      "Reltaddrumma",
+      "Reltaddrummaa"
+    ],
+    "personal_male": [
+      "Gordak",
+      "Kaurok",
+      "Gormvak",
+      "Askok",
+      "Drennok",
+      "Brakkun",
+      "Vaurok",
+      "Gorumm",
+      "Kronak",
+      "Maranok",
+      "Bralun",
+      "Khaurok",
+      "Durnak",
+      "Gormok",
+      "Torrunn",
+      "Nudrok",
+      "Gradunn",
+      "Karvunn",
+      "Drokunn",
+      "Dolgrunn",
+      "Gormlun",
+      "Askun",
+      "Kaurun",
+      "Gorun",
+      "Drenun",
+      "Vaurun",
+      "Kronun",
+      "Gormun",
+      "Drokun",
+      "Maranun",
+      "Galdun",
+      "Khorun",
+      "Durun",
+      "Gramun",
+      "Tringun",
+      "Varun",
+      "Dolun",
+      "Gundunndrumm",
+      "Gundunndrummun",
+      "Marakkadrumm"
+    ],
+    "settlement": [
+      "Gormgrund",
+      "Bral-gormgrund",
+      "Kaldun-grund",
+      "Askun-kardunn",
+      "Gormkhorun-tarngrund",
+      "Marak-drumgrund",
+      "Brilkaddbaldunn",
+      "Drammbralgrund",
+      "Durnunndrumgrund",
+      "Galdarrdungrund",
+      "Galdunnkardunn",
+      "Gormkadkarngrund",
+      "Gormunkaupunn",
+      "Haldunnkavun",
+      "Indraktarngrund",
+      "Kadarrtrevdunn",
+      "Koparrbaldunn",
+      "Kordunnbralgrund",
+      "Kronarrdrumgrund",
+      "Kronunndungrund",
+      "Kruvunnkardunn",
+      "Nardunnkarngrund",
+      "Nidrakaupunn",
+      "Olunnkavun",
+      "Ordunntarngrund",
+      "Ostunntrevdunn",
+      "Pikunnbaldunn",
+      "Ragdunnbralgrund",
+      "Salunndrumgrund",
+      "Stronkdungrund",
+      "Svarkaddkardunn",
+      "Torunnkarngrund",
+      "Tringarrkaupunn",
+      "Uprakavun",
+      "Utraktarngrund",
+      "Vandunntrevdunn",
+      "Vendunnbaldunn",
+      "Brilkaddbralgrund",
+      "Drammdrumgrund",
+      "Durnunndungrund"
+    ],
+    "ship": [
+      "the Cinder Keel",
+      "Ember-of-the-Deep"
+    ],
+    "tavern": [
+      "the Hall of the Ember Ale",
+      "the Molten Tankard",
+      "The Dramm Brilkadd",
+      "The Durnunn Galdarr",
+      "The Galdunn Gormkad",
+      "The Gormun Kadarr",
+      "The Haldunn Koparr",
+      "The Kronunn Kronarr",
+      "The Kruvunn Olunn",
+      "The Ordunn Salunn",
+      "The Pikunn Svarkadd",
+      "The Ragdunn Tringarr"
+    ]
+  },
+  "culture_id": "gormdurn",
+  "family": [
+    "dwarven"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_gormdurn.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "gormdurn",
+  "lexicon": {
+    "adjectives": {
+      "black": "kruvunn",
+      "deep": "durnunn",
+      "fierce": "stronk",
+      "golden": "galdunn",
+      "great": "dramm",
+      "high": "torunn",
+      "iron": "kronunn",
+      "little": "pikunn",
+      "molten": "gormun",
+      "new": "vandunn",
+      "old": "ordunn",
+      "red": "ragdunn",
+      "sacred": "haldunn"
+    },
+    "directional": {
+      "east": "ostunn",
+      "inner": "indrak",
+      "lower": "nidrak",
+      "north": "kordunn",
+      "outer": "utrak",
+      "south": "nardunn",
+      "upper": "uprak",
+      "west": "vendunn"
+    },
+    "feature_words": {
+      "ash_field": "askun",
+      "bridge": "brakun",
+      "caldera": "kaldun",
+      "cave": "kavun",
+      "chasm": "klundak",
+      "deep": "durnak",
+      "ember_pit": "gormkad",
+      "fire_vent": "gormhol",
+      "forge_hall": "bralgrund",
+      "gate": "dorun",
+      "hall": "grundar",
+      "hot_spring": "gormvarnkad",
+      "lava_flow": "gormvar",
+      "mine": "gradun",
+      "molten_deep": "gormdurnak",
+      "narrows": "thrangg",
+      "neck": "kornnak",
+      "ore_vein": "kronvar",
+      "ridge": "drangun",
+      "road": "khalld",
+      "track": "stikk",
+      "tunnel": "dragun",
+      "volcano": "gormkhorun",
+      "waste": "skarnn",
+      "way": "gattun"
+    },
+    "resources": {
+      "ale": "olunn",
+      "copper": "koparr",
+      "ember": "gormkad",
+      "gem": "brilkadd",
+      "gold": "galdarr",
+      "iron": "kronarr",
+      "obsidian": "svarkadd",
+      "salt": "salunn",
+      "silver": "tringarr",
+      "stone": "kadarr"
+    },
+    "settlement_words": {
+      "citadel": "tarngrund",
+      "city": "karngrund",
+      "festival_hall": "drumgrund",
+      "forge_temple": "bralgrund",
+      "fort": "dungrund",
+      "hamlet": "trevdunn",
+      "market": "kaupunn",
+      "town": "kardunn",
+      "village": "baldunn"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[material|quality](hard root) + feature/hold: Gorm-grund (ember-hold), Bral-gormgrund (the great forge); -grund for the hold, Kron- for the clan.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "na",
+        "ra"
+      ],
+      "male": [
+        "un",
+        "ar",
+        "ok"
+      ]
+    },
+    "patronymic_form": "clan-primary: the clan (Kron [X]) by an ancestral line; an optional patronymic [parent]-kun (son of) / -ketta (daughter of); the forefather is named at every hearth - and, among the fire-cult, every pyre.",
+    "toponymic_suffixes": [
+      "grund",
+      "gormkhorun",
+      "gormdurnak",
+      "gradun",
+      "Gorm- / Bral-",
+      "Kron-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen fire-holds and ash-choked delfs: 'the burned Hold of [clan]', 'the Cinder-Delf of [name]'",
+    "military_units": "the hold-wardens and ash-companies: 'the Cinder Guard', 'the Ash-beards of [clan]'",
+    "ships": "(dwarves are no sailors) magma-barges and ore-rafts on the fire-rivers: 'the Cinder Keel', 'Ember-of-the-Deep'",
+    "taverns": "the ale-hall: 'the Hall of the Ember Ale', 'the Molten Tankard'"
+  },
+  "race": "dwarf",
+  "religion": {
+    "_note": "Deity-names are the Gormdurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real dwarf-gods; sacred ending -drumm (masc) / -drumma (fem). ANCESTOR-CENTRIC like all dwarves (daily prayer to the durnad and fadrun at the tomb-hall), but the Gormdurn lean hardest into FIRE: the forge (Orlunndrumm) and, in the Chaotic fire-cult, the forge-fire/volcano power Marakkadrumm - honored with HUMAN SACRIFICE cast into the volcanoes. The drumgrund and the caldera's edge are both altars.",
+    "clergy_ladder": {
+      "1": "Drok-kun (novice, the hammer-bearer)",
+      "3": "Fadrun-warden (keeper of the ancestor-tombs)",
+      "5": "Gorm-drumm (fire-priest of the caldera)",
+      "7": "Bral-drumm (high forge-priest)",
+      "9": "Dur-Drumm (the realm's high priest)"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment): when Chaotic (the fire-cult) - Aeternus -> Atrunndrumm the Cold-Vault; when Lawful - Maraxus -> Marakkadrumm the Devourer, Lusanto -> Lusunndrumm the Gold-Sickness.",
+    "holy_symbol_motifs": {
+      "Gundunndrumm": "a peak above crossed picks",
+      "Marakkadrumm": "a flame rising from a cleft mountain",
+      "Orlunndrumm": "a hammer crossed over an anvil"
+    },
+    "religious_orders_pattern": "the Drumgrund (festival-hall) or the caldera-rite of [power]: 'the Gorm-Drumgrund of Marakkadrumm', loud with hammers and the offering-fires.",
+    "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), and, in the fire-cult, the great sacrificers, named at hearth, tomb, and pyre.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gundunndrumm (the mountain, the mine, the deep earth; honored, masc.)",
+      "Maraxus": "Marakkadrumm (the forge-fire and the volcano; the fire-cult's power, fed with human sacrifice; Chaotic, masc.)",
+      "Orlandus": "Orlunndrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
+      "Realta": "Reltaddrumma (the hearth-mother, mercy; honored, fem.)"
+    },
+    "the_one": "Atrunndrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at festivals, distant from daily prayer; named the Cold-Vault by the fire-cult)",
+    "worship_by_alignment": {
+      "Chaotic": "the fire-cult (strong here): venerate Marakkadrumm the forge-fire/volcano with HUMAN SACRIFICE in the volcanoes, and Lusunndrumm the gold-sickness; demonize the One (Atrunndrumm the Cold-Vault) and the Lawful powers",
+      "Lawful": "the orderly minority revere the One (Atrunndrumm) and the Lawful powers (Orlunndrumm the smith, Gundunndrumm the mountain), demonize the Chaotic fire-cult",
+      "Neutral": "the dwarven norm: daily prayer to the honored dead (durnad) and clan-fathers (fadrun); the gods at yearly/seasonal festivals, foremost the forge (Orlunndrumm) and the mountain/mine (Gundunndrumm); the volcano-fire (Marakkadrumm) honored AND feared, fed offerings at the caldera"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Gormdurn (fire-dialect) reflexes of the Durnkad title ladder - the same seven ACKS tiers as Khordurn and Khraaldurn, geminated (Korrun -> Korrunn). A golden-age volcanic vault-kingdom, now fastness-holds.",
+    "female_forms": {
+      "Borkunn": "Borka",
+      "Brakkunn": "Brakka",
+      "Dramnarr": "Dramna",
+      "Dur-Korrunn": "Dur-Korra",
+      "Grundarr": "Grunda",
+      "Korrunn": "Korra",
+      "Vardrunn": "Vardra"
+    },
+    "government": "feudal (a volcanic vault-kingdom of forge-clans, now mostly fastness-holds; the Korrunn over the clan-lords, the fire-priests and the ash-companies)",
+    "heir": "Korr-kun (the king's heir, the heir-under-the-fire-mountain)",
+    "honorifics": {
+      "champion": "Drok-thane (hammer-thane)",
+      "elder": "Ordunn-fadrun (the old forefather)",
+      "lady": "Borka",
+      "lord": "Borkunn",
+      "your_grace": "Korrunn"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Borkunngrund",
+        "ruler": "Borkunn"
+      },
+      "county": {
+        "domain": "Grundarrgrund",
+        "ruler": "Grundarr"
+      },
+      "duchy": {
+        "domain": "Dramnarrgrund",
+        "ruler": "Dramnarr"
+      },
+      "empire": {
+        "domain": "Dur-Korrunngrund",
+        "ruler": "Dur-Korrunn"
+      },
+      "kingdom": {
+        "domain": "Korrunngrund",
+        "ruler": "Korrunn"
+      },
+      "march": {
+        "domain": "Vardrunngrund",
+        "ruler": "Vardrunn"
+      },
+      "principality": {
+        "domain": "Brakkunngrund",
+        "ruler": "Brakkunn"
+      }
+    },
+    "vassalage": {
+      "fealty": "Durnoath (the deep-oath, sworn on the ancestors and the fire)",
+      "liege": "Korrunn",
+      "tribute": "Gormgald-due (the fire-and-gold due)",
+      "vassal": "Drok-thane (sworn hammer)"
+    }
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Iron Order legion",
+      "the War-Banner host",
+      "the Red Standard company",
+      "the Skull-helm legion",
+      "the Gul-Maraqus chosen",
+      "the Iron Fist company",
+      "the Black Spear legion",
+      "the Chain-and-Lash host",
+      "Atsmarborrok",
+      "Dammardungtark",
+      "Eshtarkgaytark",
+      "Gibtarkhartark",
+      "Khashtakmekkar",
+      "Layltarmidbtark",
+      "Mavtartsurfort",
+      "Milkkartsurrok",
+      "Qartarya'tark",
+      "Qattanborrok",
+      "Rabtardungtark",
+      "Shentargaytark",
+      "Tsiptarhartark",
+      "Atsmarmekkar",
+      "Dammarmidbtark",
+      "Eshtarktsurfort"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "the Banner-bearer",
+      "the Drillmaster",
+      "the Lash",
+      "the War-captain",
+      "the Helm-splitter",
+      "the Relentless",
+      "the Oath-mocker",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsmarborrok",
+      "Dammardungtark",
+      "Eshtarkgaytark",
+      "Gibtarkhartark",
+      "Khashtakmekkar",
+      "Layltarmidbtark",
+      "Mavtartsurfort",
+      "Milkkartsurrok",
+      "Qartarya'tark",
+      "Qattanborrok",
+      "Rabtardungtark",
+      "Shentargaytark",
+      "Tsiptarhartark",
+      "Atsmarmekkar",
+      "Dammarmidbtark",
+      "Eshtarktsurfort",
+      "Gibtarktsurrok",
+      "Khashtakya'tark",
+      "Layltarborrok",
+      "Mavtardungtark",
+      "Milkkargaytark",
+      "Qartarhartark",
+      "Qattanmekkar",
+      "Rabtarmidbtark",
+      "Shentartsurfort",
+      "Tsiptartsurrok",
+      "Atsmarya'tark",
+      "Dammarborrok",
+      "Eshtarkdungtark",
+      "Gibtarkgaytark"
+    ],
+    "military_unit": [
+      "the Iron Order",
+      "the Red Standard"
+    ],
+    "personal_female": [
+      "Qattra",
+      "Dammra",
+      "Shentra",
+      "Roshtra",
+      "Eshtra",
+      "Gibtra",
+      "Khashtra",
+      "Bortra",
+      "Milkra",
+      "Ruakra",
+      "Vargra",
+      "Nazktra",
+      "Grumtra",
+      "Dragtra",
+      "Skartra",
+      "Vurtra",
+      "Bhaktra",
+      "Maktra",
+      "Throktra",
+      "Braktra",
+      "Maraqus",
+      "Raptu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Qattar",
+      "Dammar",
+      "Shentar",
+      "Roshtar",
+      "Eshtark",
+      "Gibtark",
+      "Khashtak",
+      "Bortok",
+      "Milkkar",
+      "Ruakk",
+      "Vargrok",
+      "Nazktar",
+      "Grumtar",
+      "Dragtok",
+      "Skartar",
+      "Vurtok",
+      "Bhaktar",
+      "Maktok",
+      "Throktar",
+      "Braktok",
+      "Maraqus",
+      "Raptu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the War-camp",
+      "Hartark-fort",
+      "the Iron Barracks",
+      "Tsurrok-fort",
+      "the Black Standard camp",
+      "Atsmarborrok",
+      "Dammarmekkar",
+      "Eshtarkborrok",
+      "Gibtarkmekkar",
+      "Khashtakborrok",
+      "Layltarmekkar",
+      "Mavtarborrok",
+      "Milkkarmekkar",
+      "Qartarborrok",
+      "Qattanmekkar",
+      "Rabtarborrok",
+      "Shentarmekkar",
+      "Tsiptarborrok",
+      "Atsmarmekkar",
+      "Dammarborrok",
+      "Eshtarkmekkar",
+      "Gibtarkborrok",
+      "Khashtakmekkar",
+      "Layltarborrok",
+      "Mavtarmekkar",
+      "Milkkarborrok",
+      "Qartarmekkar",
+      "Qattanborrok",
+      "Rabtarmekkar",
+      "Shentarborrok",
+      "Tsiptarmekkar"
+    ]
+  },
+  "culture_id": "hobgoblin",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_hobgoblin.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "hobgoblin",
+  "lexicon": {
+    "concepts": {
+      "beast": "behtark",
+      "blood": "dammar",
+      "bone": "atsmar",
+      "claw": "tsiptar",
+      "dark": "khashtak",
+      "death": "mavtar",
+      "devour": "akhtar",
+      "fang": "shentar",
+      "fire": "eshtark",
+      "flesh_meat": "bashtar",
+      "great": "rabtar",
+      "horde": "amtark",
+      "horn": "qartar",
+      "hunt": "tsaytar",
+      "kill": "qattar-rok",
+      "lair": "me'tark",
+      "night": "layltar",
+      "raid_plunder": "shaltar",
+      "shaman": "kashtar",
+      "small": "qattan",
+      "spirit_totem": "ruakk",
+      "strong": "gibtark",
+      "war": "milkkar"
+    },
+    "feature_words": {
+      "cave": "mekkar",
+      "crag": "tsurrok",
+      "dark_forest": "ya'tark",
+      "fort": "tsurfort",
+      "gorge": "gaytark",
+      "mountain": "hartark",
+      "pit": "borrok",
+      "war_camp": "dungtark",
+      "waste": "midbtark"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], clipped: Dammar-shentar (blood-fang), Milkkar-behtark (war-beast); legion = [Standard]-amtark.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "war-camps, fortresses, and drill-yards: 'the War-camp of [host]', 'the Fortress of [warlord]', 'the Iron Barracks of [name]'",
+    "war_bands": "named legions and companies: 'the Iron Order', 'the Red Standard', 'the Black Spear legion of [warlord]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic - a chaotic MOCKERY of order. Race-totem the Iron Order / the War-Banner Beast. The Kashtar serves the war-totem and, foremost, Gul-Maraqus the great War-Spirit (hobgoblins are the war-race); the One and - tellingly - Orlanu the Chainer (Lawful order) are demonized: their discipline serves Chaos, not Law.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Orlandus (Lawful order, the oath)": "Orlanu the Chainer (true order, which their tyranny mocks)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Maraqus": "a notched cleaver crossed with a banner-pole",
+      "War-Banner Beast": "a fanged beast on an iron standard"
+    },
+    "race_totem": "the War-Banner Beast (Milkkar-behtark) / the Iron Order",
+    "shaman_rites": "war-rites at the standard and the skull-helm; the drilling of the host before the totem; blood on the banner.",
+    "tribal_totem_pattern": "[Milkkar-/Dammar-/Iron-] + [war-beast or weapon]: Milkkar-behtark (War-Beast), Dammar-shentar (Blood-Fang Standard).",
+    "venerated": {
+      "Maraxus (war, conquest)": "Gul-Maraqus (the great War-Spirit; supreme)",
+      "Raptis (the disciplined hunt)": "Gul-Raptu (the Conquest-Hunt)",
+      "Vacidus (the void)": "Gul-Waqidu (the Devouring-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief (commander) of one clanhold (lowest governing leader), empire = the great horde-lord (Iron Overlord) over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / legion-host - the most ordered of beastmen (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shaftar (the conscript/slave)",
+      "warrior": "Gibtark (the soldier)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Kashtar (high war-shaman of the host-totem)",
+      "shaman": "Kashtar (the war-totem speaker)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Roshtar (commander)",
+        "scope": "chief of a single clanhold-company"
+      },
+      "county": {
+        "ruler": "Rabtar-Roshtar",
+        "scope": "high commander over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amtark-Roshtar",
+        "scope": "host-commander over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabtar-Amtark-Malkkar (the Iron Overlord)",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabtar-Malkkar",
+        "scope": "great warlord-king over many hosts"
+      },
+      "march": {
+        "ruler": "Milkkar-Roshtar",
+        "scope": "war-commander of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malkkar (the Iron King)",
+        "scope": "warlord-king over a great host"
+      }
+    }
+  }
+}

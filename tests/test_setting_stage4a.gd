@@ -67,6 +67,16 @@ func _make_ctx(width: int, capital: Vector2i, pop: int, culture_id: String,
 	}
 
 
+## Unit tests exercise substrate/demography on a single hand-built polity over a
+## long history; §7.6 collapse (4e) would interrupt that growth, so these isolate
+## the mechanic under test by disabling the collapse roll. The integration tests
+## below keep the full sim (collapse + 4f renewal) active.
+func _stable_constants() -> SimConstants:
+	var c := SimConstants.new()
+	c.collapse_base = 0.0
+	return c
+
+
 func _seed_polity(pid: String, culture_id: String, alignment: String, capital: Vector2i) -> Dictionary:
 	return {
 		"id": pid, "culture_id": culture_id, "alignment": alignment,
@@ -98,7 +108,7 @@ func test_logistic_growth_increment() -> void:
 func test_growth_approaches_cap() -> void:
 	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "deep"  # 240 ticks — plenty to fill
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var pop := int(ctx["hex_grid"][Vector2i(1, 0)]["population_band"])
 	# After deep history a held lowland hex should have climbed well past the
 	# wilderness cap (it advances classification) toward the civilized cap.
@@ -109,7 +119,7 @@ func test_growth_approaches_cap() -> void:
 func test_classification_advances_when_full() -> void:
 	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "deep"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var tc := str(ctx["hex_grid"][Vector2i(1, 0)]["territory_class"])
 	check(tc != "wilderness", "a fully-grown homeland should advance past wilderness, got %s" % tc)
 
@@ -117,7 +127,7 @@ func test_classification_advances_when_full() -> void:
 func test_diffusion_spreads_culture_to_neighbors() -> void:
 	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "short"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	# The hexes flanking the homeland should now carry some Agrippan weight.
 	for nq in [1, 3]:
 		var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(nq, 0)]["culture_weights"]))
@@ -129,7 +139,7 @@ func test_diffusion_conserves_then_normalizes() -> void:
 	# After finalize every inhabited hex's culture_weights sum to 1.0.
 	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "short"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(2, 0)]["culture_weights"]))
 	var total := 0.0
 	for k in w:
@@ -140,7 +150,7 @@ func test_diffusion_conserves_then_normalizes() -> void:
 func test_assimilation_is_noop_for_pure_homeland() -> void:
 	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "short"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"]))
 	# Pure homeland stays ~100% its own culture (diffusion bleeds a sliver to
 	# neighbors but assimilation pulls it back; normalization restores 1.0).
@@ -154,7 +164,7 @@ func test_assimilation_converts_foreign_hex() -> void:
 	# Overwrite the homeland's substrate to a foreign culture, owner still pol_0001.
 	ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"] = JSON.stringify({"vargari": 1.0})
 	ctx["params"].history_length = "short"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"]))
 	check(float(w.get("agrippan", 0.0)) > float(w.get("vargari", 0.0)),
 		"owner culture should overtake the foreign culture via assimilation")
@@ -163,7 +173,7 @@ func test_assimilation_converts_foreign_hex() -> void:
 func test_replay_frames_emitted() -> void:
 	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
 	ctx["params"].history_length = "short"  # 80 ticks, cadence 4 → 20 + final
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	HistorySimulator.new().run(ctx, _stable_constants())
 	var frames: Array = ctx["sim_replay_frames"]
 	check(frames.size() >= 20, "expected ~21 replay frames for 80 ticks/cadence 4, got %d" % frames.size())
 	check(int(frames[0]["tick"]) == 0, "first replay frame should be tick 0")
@@ -250,15 +260,24 @@ func test_large_map_sim_performance() -> void:
 	ClimateGenerator.run(ctx)
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
+	var sim := HistorySimulator.new()
+	sim._profile = true
 	var start := Time.get_ticks_msec()
-	HistorySimulator.new().run(ctx)
+	sim.run(ctx)
 	var elapsed := Time.get_ticks_msec() - start
 	print("  [perf] 160-tick sim on Large (with expansion): %d ms" % elapsed)
-	# Soft regression guard, NOT the target. History-sim §14 wants "well under a
-	# few seconds"; the dedicated sim perf pass is scheduled after 4f (per the
-	# build handoff), once all phases exist and can be optimized holistically.
-	# Headroom left for the 4e/4f phases still to land; the perf pass tightens it.
-	check(elapsed < 18000, "160-tick sim on Large took %d ms (soft budget, perf pass after 4f)" % elapsed)
+	var ps := sim.profile_summary()
+	var pkeys := ps.keys()
+	pkeys.sort()
+	for k in pkeys:
+		print("    [phase] %-11s %5d ms" % [k, int(ps[k]) / 1000])
+	# Regression guard. The post-4f perf pass (2026-06-13) brought the full
+	# rise/fall/renewal sim from ~14.7s to ~9s via static-value caching
+	# (terrain_mult, diffusion edge list), hot-loop inlining (diffusion), pruning
+	# sub-minority-floor culture traces, and skipping wilderness in the war scan.
+	# Ceiling is 25s (per Jedidiah); the print above + the per-phase breakdown
+	# (profiling path) surface any regression.
+	check(elapsed < 25000, "160-tick sim on Large took %d ms (regression guard, ceiling 25s)" % elapsed)
 
 
 func test_full_pipeline_determinism() -> void:

@@ -542,6 +542,18 @@ extends Node
 @onready var _setting_stage4b_tests = $SettingStage4bTests
 @onready var _setting_stage4c_tests = $SettingStage4cTests
 @onready var _setting_stage4d_tests = $SettingStage4dTests
+@onready var _setting_stage4e_tests = $SettingStage4eTests
+@onready var _setting_stage4f_tests = $SettingStage4fTests
+@onready var _setting_stage4g_tests = $SettingStage4gTests
+@onready var _setting_calibration_tests = $SettingCalibrationTests
+# 2026-06-13 — Quaternius dungeon asset integration (edge-resolved walls)
+@onready var _wall_edge_resolver_tests = $WallEdgeResolverTests
+# 2026-06-13 — Stage 5 setting-generation name banks
+@onready var _setting_name_banks_tests = $SettingNameBanksTests
+# 2026-06-13 — Stage 6 setting-generation naming (Layer 5 + region painting Phase 2)
+@onready var _setting_stage6_tests = $SettingStage6Tests
+# 2026-06-13 — Stage 7 setting-generation infrastructure (Layer 6)
+@onready var _setting_stage7_tests = $SettingStage7Tests
 
 
 func _ready() -> void:
@@ -1090,7 +1102,23 @@ func run() -> void:
 			# 2026-06-13 — Setting generation Stage 4c (history sim: economy/garrison ledger)
 			_setting_stage4c_tests,
 			# 2026-06-13 — Setting generation Stage 4d (history sim: war + vassalage/secession)
-			_setting_stage4d_tests]:
+			_setting_stage4d_tests,
+			# 2026-06-13 — Setting generation Stage 4e (history sim: stability + collapse)
+			_setting_stage4e_tests,
+			# 2026-06-13 — Setting generation Stage 4f (history sim: migration + beastman repop)
+			_setting_stage4f_tests,
+			# 2026-06-13 — Setting generation Stage 4g (history sim: handoff + significance)
+			_setting_stage4g_tests,
+			# 2026-06-13 — Setting generation §9.3 calibration harness (smoke; env-gated full sweep)
+			_setting_calibration_tests,
+			# 2026-06-13 — Quaternius dungeon asset integration: WallEdgeResolver edge topology
+			_wall_edge_resolver_tests,
+			# 2026-06-13 — Setting generation Stage 5 (name banks)
+			_setting_name_banks_tests,
+			# 2026-06-13 — Setting generation Stage 6 (Layer 5 naming + region Phase 2)
+			_setting_stage6_tests,
+			# 2026-06-13 — Setting generation Stage 7 (Layer 6 infrastructure)
+			_setting_stage7_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

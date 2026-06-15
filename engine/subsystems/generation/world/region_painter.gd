@@ -25,6 +25,10 @@ const MAJOR_ISLE_MIN := 20
 
 # §4.2 terrain clusters.
 const CLUSTER_FLOOR := 2
+# A flat-band clear cluster counts as a basin (low + enclosed) rather than open
+# plains when at least this fraction of its land-ring is higher ground (§4.2 /
+# §5.1 "low + vale/plain").
+const BASIN_ENCLOSURE_FRACTION := 0.6
 const SUB_SPLIT_THRESHOLD := 12
 const SUB_SPLIT_MIN_PART := 4
 const SUB_SPLIT_MAX_DEPTH := 2
@@ -178,7 +182,18 @@ static func _detect_continents(state: Dictionary) -> Array:
 # ---------------------------------------------------------------------------
 
 ## Cluster family of a land hex: ranges trump cover (a mountain forest reads
-## as range at the coarse scale); remaining hexes cluster by ground cover.
+## as range at the coarse scale); remaining hexes cluster by ground cover. A
+## flat-band "plains" COMPONENT enclosed by higher ground is promoted to "basin"
+## in _detect_terrain_clusters.
+##
+## NOTE (2026-06-13): plateau detection is DEFERRED. The elevation tag is a
+## 3-band roughness/height proxy (mountains/hills/flat) derived from
+## elevation_raw magnitude — "hills" means rugged moderate terrain, NOT flat
+## high ground. A real plateau is flat ground at high elevation, which needs a
+## LOCAL-FLATNESS measure (low elevation_raw variance across the ring) gated on
+## high elevation_raw — the raw height is already persisted per hex, so this is
+## a future flatness-pass, not a persistence change. Until then clear ground is
+## just plains/basin (see gdd-region-painting §4.2 deferral note).
 static func _cluster_family(grid: Dictionary, key: Vector2i) -> String:
 	if not _is_land(grid, key):
 		return ""
@@ -200,15 +215,46 @@ static func _cluster_family(grid: Dictionary, key: Vector2i) -> String:
 static func _detect_terrain_clusters(state: Dictionary) -> void:
 	var grid: Dictionary = state["grid"]
 	var floor_mult: int = state["floor_mult"]
+	# §4.2 families: range, forest, desert, plains, swamp; basin = an enclosed
+	# flat+clear "plains" component, promoted below. (plateau deferred — see
+	# _cluster_family.)
 	for family in ["range", "forest", "desert", "plains", "swamp"]:
 		var components := _components(state, func(key: Vector2i) -> bool:
 			return _cluster_family(grid, key) == family)
 		for component in components:
 			if component.size() < CLUSTER_FLOOR * floor_mult:
 				continue
-			var region := _new_region(state, "terrain_cluster", family, component)
+			var subtype: String = family
+			if family == "plains" and _is_enclosed_basin(grid, component):
+				subtype = "basin"
+			var region := _new_region(state, "terrain_cluster", subtype, component)
 			if not state["sparse"]:
 				_sub_split(state, region, component, 1)
+
+
+## §4.2 / §5.1: a flat-band clear cluster ringed predominantly by higher ground
+## (hills/mountains) is a basin (low + enclosed); an open lowland stays plains.
+## Deterministic — the ring is a SET and the fraction is order-independent.
+static func _is_enclosed_basin(grid: Dictionary, component: Array) -> bool:
+	var in_comp := {}
+	for h in component:
+		in_comp[h] = true
+	var ring := {}
+	for h in component:
+		for off in _OFF:
+			var nb: Vector2i = h + off
+			if in_comp.has(nb):
+				continue
+			if _is_land(grid, nb):
+				ring[nb] = true
+	if ring.is_empty():
+		return false  # touches only water/the map edge — a coastal plain
+	var higher := 0
+	for nb in ring:
+		var e: String = grid[nb]["elevation"]
+		if e == "hills" or e == "mountains":
+			higher += 1
+	return float(higher) / float(ring.size()) >= BASIN_ENCLOSURE_FRACTION
 
 
 ## §4.2 sub-split: clusters > 12 hexes split along natural seams — a river

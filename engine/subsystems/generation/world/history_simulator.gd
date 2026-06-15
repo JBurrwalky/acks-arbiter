@@ -27,6 +27,16 @@ const _OFF := [
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
 ]
 
+## §11.3 base significance by event type (the Layer-7 timeline pulls top-N per
+## epoch). A fallen capital/culture outranks a routine border war or succession;
+## the per-event severity adds on top (`_significance_for`).
+const _EVENT_SIGNIFICANCE := {
+	"depopulation": 1.0, "conquest": 0.9, "collapse_shatter": 0.8, "golden_age": 0.6,
+	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "collapse_rump": 0.45,
+	"migration": 0.4, "schism": 0.4, "pillage": 0.35, "war": 0.3,
+	"alignment_drift": 0.3, "expansion": 0.2, "dynasty_change": 0.1,
+}
+
 var _c: SimConstants
 var _campaign_seed: int
 var _n_ticks: int
@@ -38,7 +48,8 @@ var _height: int
 var _ordered_keys: Array         # canonical (r,q) hex order, cached
 var _land_keys: Array            # land hexes only, canonical order (diffusion)
 var _river_barrier: Dictionary   # "q,r,e" -> true for river/major-river crossings
-var _damp_cache: Dictionary      # Vector3i(q,r,e) -> diffusion damping (terrain is static)
+var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
+var _terrain_mult_cache: Dictionary = {}  # culture_id -> {Vector2i -> mult} (terrain is static)
 
 # Substrate parsed into memory for the tick loop (re-serialized at finalize).
 var _culture_w: Dictionary = {}  # Vector2i -> {culture_id: weight}
@@ -57,6 +68,27 @@ var _next_event_seq: int = 1
 # "Q reduced below half its pre-war size" crushing gate.
 var _contest_counts: Dictionary = {}
 var _tick_start_size: Dictionary = {}
+
+# 4e collapse output + successor allocation.
+var _next_polity_seq: int = 1        # next pol_NNNN id for shatter successors / 4f spawns
+var _fallen_polities: Array = []     # §7.6 depopulation heartland records
+var _ruin_seeds: Array = []          # §7.6 ruin/dungeon seeds with provenance
+var _depopulated_at: Dictionary = {} # Vector2i -> tick; 4f beastman repopulation reads it
+var _bands: Array = []               # §8 in-flight migrating bands
+
+# Optional per-phase profiling (set `_profile = true` before run()); off by default.
+var _profile: bool = false
+var _phase_us: Dictionary = {}
+
+
+func _mark(phase: String, t0: int) -> int:
+	var now := Time.get_ticks_usec()
+	_phase_us[phase] = int(_phase_us.get(phase, 0)) + (now - t0)
+	return now
+
+
+func profile_summary() -> Dictionary:
+	return _phase_us
 
 
 func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
@@ -98,15 +130,29 @@ func _tick(tick: int) -> void:
 		pol["pillage_credit_pending"] = 0.0
 		if pol["alive"]:
 			_tick_start_size[pid] = int(pol["hexes"].size())
-	_phase_expansion(tick)    # 4b
-	_phase_war(tick)          # 4d
-	_phase_migration(tick)    # 4f
-	_phase_economy(tick)      # 4c — ledger: garrison_coverage + f_overextension
-	_phase_stability(tick)    # 4e (consumes f_overextension)
-	_phase_collapse(tick)     # 4e
-	_phase_substrate(tick)    # 4a
-	_phase_demography(tick)   # 4a
-	_phase_log(tick)          # 4g
+	if not _profile:
+		_phase_expansion(tick)    # 4b
+		_phase_war(tick)          # 4d
+		_phase_migration(tick)    # 4f
+		_phase_economy(tick)      # 4c — ledger: garrison_coverage + f_overextension
+		_phase_stability(tick)    # 4e (consumes f_overextension)
+		_phase_collapse(tick)     # 4e
+		_phase_substrate(tick)    # 4a
+		_phase_demography(tick)   # 4a
+		_phase_log(tick)          # 4g
+		return
+	# Profiling path (set `_profile = true`) — accumulates per-phase microseconds
+	# into `_phase_us` so the perf pass can see the breakdown. Cheap; off by default.
+	var t := Time.get_ticks_usec()
+	_phase_expansion(tick); t = _mark("expansion", t)
+	_phase_war(tick); t = _mark("war", t)
+	_phase_migration(tick); t = _mark("migration", t)
+	_phase_economy(tick); t = _mark("economy", t)
+	_phase_stability(tick); t = _mark("stability", t)
+	_phase_collapse(tick); t = _mark("collapse", t)
+	_phase_substrate(tick); t = _mark("substrate", t)
+	_phase_demography(tick); t = _mark("demography", t)
+	_phase_log(tick); t = _mark("log", t)
 
 
 # ---------------------------------------------------------------------------
@@ -124,17 +170,19 @@ func _build_ordered_keys() -> void:
 				_land_keys.append(key)
 
 
-## Diffusion edge damping is a function of static terrain (elevation/biome) and
-## the static river graph, so cache it once per directed land-land edge instead
-## of recomputing (string-format + biome checks) every tick.
+## Diffusion runs over a fixed set of undirected land-land edges with static
+## damping (terrain + river graph). Precompute the canonical edge list with its
+## per-edge coefficient ONCE, so the per-tick diffusion is a flat walk with no
+## neighbor math, Vector3i key allocation, or cache lookups (the dominant former
+## substrate cost). Each undirected edge appears once (canonical h < n).
 func _precompute_edge_damp() -> void:
-	_damp_cache = {}
+	_diffusion_edges = []
 	for key in _land_keys:
 		for e in range(6):
 			var n: Vector2i = key + _OFF[e]
-			if not _grid.has(n) or _grid[n]["water"] != "":
+			if not _grid.has(n) or _grid[n]["water"] != "" or not _canonical_less(key, n):
 				continue
-			_damp_cache[Vector3i(key.x, key.y, e)] = _edge_damp(key, n, e)
+			_diffusion_edges.append({"h": key, "n": n, "coef": _c.diffuse_rate * _edge_damp(key, n, e)})
 
 
 ## Edge crossings that damp diffusion to the barrier rate: navigable rivers
@@ -186,6 +234,11 @@ func _init_polities(seed_polities: Array) -> void:
 		var owner := str(_grid[key]["owner_polity_id"])
 		if owner != "" and _polities.has(owner):
 			_polities[owner]["hexes"].append(key)
+	# Shatter successors (4e) get fresh deterministic ids past the seed range.
+	var max_seq := 0
+	for pid in _polities:
+		max_seq = maxi(max_seq, str(pid).trim_prefix("pol_").to_int())
+	_next_polity_seq = max_seq + 1
 
 
 func _sorted_polity_ids() -> Array:
@@ -199,6 +252,11 @@ func _sorted_polity_ids() -> Array:
 # ---------------------------------------------------------------------------
 
 func _phase_substrate(_tick: int) -> void:
+	if _profile:
+		var t := Time.get_ticks_usec()
+		_diffuse_culture(); t = _mark("sub_diffuse", t)
+		_assimilate_held_hexes(); _mark("sub_assim", t)
+		return
 	_diffuse_culture()
 	_assimilate_held_hexes()
 
@@ -210,29 +268,25 @@ func _phase_substrate(_tick: int) -> void:
 ## outflow ≤ 6 × 0.02 < 1). Sea-lane diffusion deferred (v1 land-only).
 func _diffuse_culture() -> void:
 	var deltas := {}
-	# Each undirected edge is processed once (only when the cache holds it for
-	# `key` — i.e. key is the side we precomputed). Both endpoints' deltas are
-	# applied symmetrically: +T to key, −T to the neighbor (T = coef·(W_N−W_H)).
-	for key in _land_keys:
-		var w_h: Dictionary = _culture_w[key]
-		for e in range(6):
-			var cache_key := Vector3i(key.x, key.y, e)
-			if not _damp_cache.has(cache_key):
-				continue
-			var n: Vector2i = key + _OFF[e]
-			# Process the edge once: skip the mirror direction.
-			if not _canonical_less(key, n):
-				continue
-			var w_n: Dictionary = _culture_w[n]
-			if w_h.is_empty() and w_n.is_empty():
-				continue
-			var coef: float = _c.diffuse_rate * float(_damp_cache[cache_key])
-			_apply_pair_diffusion(deltas, key, n, w_h, w_n, coef)
+	# Flat walk over the precomputed canonical edge list. Each edge is applied
+	# symmetrically: +T to h, −T to n (T = coef·(W_N−W_H)). Empty-empty edges skip.
+	for edge in _diffusion_edges:
+		var h: Vector2i = edge["h"]
+		var n: Vector2i = edge["n"]
+		var w_h: Dictionary = _culture_w[h]
+		var w_n: Dictionary = _culture_w[n]
+		if w_h.is_empty() and w_n.is_empty():
+			continue
+		_apply_pair_diffusion(deltas, h, n, w_h, w_n, edge["coef"])
 	for key in deltas:
 		var w: Dictionary = _culture_w[key]
 		for culture in deltas[key]:
 			w[culture] = maxf(float(w.get(culture, 0.0)) + float(deltas[key][culture]), 0.0)
-		_culture_w[key] = _prune_zeros(w)
+		# Prune sub-minority-floor traces so culture_weights stays bounded instead
+		# of accumulating every culture that ever diffused through (the dominant
+		# substrate-phase cost). 10× below the §11.1 minority floor (0.001), which
+		# is re-applied at finalize, so this is quality-neutral.
+		_culture_w[key] = _prune_below(w, _c.diffuse_prune_floor)
 
 
 ## Symmetric per-pair diffusion contribution for one edge: for every culture in
@@ -240,18 +294,28 @@ func _diffuse_culture() -> void:
 ## lands in its own deltas slot, so iteration order within the pair is immaterial.
 func _apply_pair_diffusion(deltas: Dictionary, h: Vector2i, n: Vector2i,
 		w_h: Dictionary, w_n: Dictionary, coef: float) -> void:
+	# Fetch each endpoint's delta dict once per edge (not once per culture via a
+	# function call) and inline the accumulation — this is the hot substrate loop.
+	var dh = deltas.get(h)
+	if dh == null:
+		dh = {}
+		deltas[h] = dh
+	var dn = deltas.get(n)
+	if dn == null:
+		dn = {}
+		deltas[n] = dn
 	for culture in w_h:
 		var t := coef * (float(w_n.get(culture, 0.0)) - float(w_h[culture]))
 		if t != 0.0:
-			_accumulate(deltas, h, culture, t)
-			_accumulate(deltas, n, culture, -t)
+			dh[culture] = float(dh.get(culture, 0.0)) + t
+			dn[culture] = float(dn.get(culture, 0.0)) - t
 	for culture in w_n:
 		if w_h.has(culture):
 			continue
 		var t := coef * float(w_n[culture])   # W_H[culture] = 0
 		if t != 0.0:
-			_accumulate(deltas, h, culture, t)
-			_accumulate(deltas, n, culture, -t)
+			dh[culture] = float(dh.get(culture, 0.0)) + t
+			dn[culture] = float(dn.get(culture, 0.0)) - t
 
 
 static func _canonical_less(a: Vector2i, b: Vector2i) -> bool:
@@ -342,8 +406,11 @@ func _update_tier(pol: Dictionary) -> void:
 
 ## Urban emergence (§6): ~10% of realm pop urban, capital first at 20% of that,
 ## remainder to highest-population hexes. A settlement record emerges when a
-## hex's urban allocation first crosses the smallest settlement class. Market
-## class is assigned at Layer 6 (§9.1).
+## hex's urban allocation first crosses the smallest settlement class.
+## NOTE: these per-hex records are a PLACEMENT SIGNAL only (where urban
+## concentrated over history). Layer 6 §9.1 (regrounded 2026-06-14) derives the
+## actual mapped settlement set via a rank-size model and assigns market class —
+## it does NOT persist one settlement per hex.
 func _emerge_urban(pol: Dictionary, tick: int) -> void:
 	var total := _total_families(pol)
 	if total <= 0:
@@ -410,6 +477,12 @@ func _phase_expansion(tick: int) -> void:
 		if not pol["alive"]:
 			continue
 		pol["last_expansion_budget"] = 0
+		# Beastman clanholds do NOT build realms (the ACKS low-density clanhold
+		# model, ax_domains_of_chaos): they hold their spawn hex, raid/defend, and
+		# are pushed back by civilization (the Lawful/Neutral-destroys war ruling).
+		# They are the scattered chaotic interior, not empire-builders.
+		if pol.get("is_beastman", false):
+			continue
 		pol["expansion_accumulator"] = float(pol["expansion_accumulator"]) \
 				+ _expansion_pressure(pol, tick)
 		var budget := int(floor(float(pol["expansion_accumulator"])))
@@ -586,19 +659,40 @@ func _home_factor(pol: Dictionary, key: Vector2i) -> float:
 
 ## The polity's culture's per-terrain expansion/defense multiplier (catalog
 ## §4.1): 1.5 seed biome / 1.15 affinity / 0.5 avoided / 1.0 neutral.
+## A culture's per-terrain expansion/defense multiplier. Terrain is static (Layer
+## 2) and a culture's biome lists are static, so the value is a pure function of
+## (culture_id, hex) — memoized in `_terrain_mult_cache` (nested cid → key) since
+## this is called per frontier/front/migration-target hex every tick.
 func _terrain_mult(pol: Dictionary, key: Vector2i) -> float:
+	var cid := str(pol["culture_id"])
+	var by_cid: Dictionary = _terrain_mult_cache.get(cid, {})
+	var cached = by_cid.get(key)
+	if cached != null:
+		return cached
 	var inst := _inst(pol)
 	var hex: Dictionary = _grid[key]
+	var result := _c.terrain_mult_neutral
+	var matched := false
 	for term in inst.get("seed_biomes", []):
 		if CultureSeeder._hex_matches_term(hex, str(term)):
-			return _c.terrain_mult_seed
-	for term in inst.get("affinity_secondary", []):
-		if CultureSeeder._hex_matches_term(hex, str(term)):
-			return _c.terrain_mult_secondary
-	for term in inst.get("avoided", []):
-		if CultureSeeder._hex_matches_term(hex, str(term)):
-			return _c.terrain_mult_avoided
-	return _c.terrain_mult_neutral
+			result = _c.terrain_mult_seed
+			matched = true
+			break
+	if not matched:
+		for term in inst.get("affinity_secondary", []):
+			if CultureSeeder._hex_matches_term(hex, str(term)):
+				result = _c.terrain_mult_secondary
+				matched = true
+				break
+	if not matched:
+		for term in inst.get("avoided", []):
+			if CultureSeeder._hex_matches_term(hex, str(term)):
+				result = _c.terrain_mult_avoided
+				break
+	if not _terrain_mult_cache.has(cid):
+		_terrain_mult_cache[cid] = {}
+	_terrain_mult_cache[cid][key] = result
+	return result
 
 
 func _inst(pol: Dictionary) -> Dictionary:
@@ -809,28 +903,39 @@ func _build_war_set(tick: int) -> Array:
 ## defender hex that borders several attacker hexes is recorded once; the
 ## per-front hex sets are returned as canonical-ordered arrays.
 func _compute_fronts() -> Dictionary:
-	var sets := {}   # "A>D" -> {Vector2i: true}
-	for key in _ordered_keys:
-		var a := str(_grid[key]["owner_polity_id"])
-		if a == "" or not _is_alive(a):
+	var sets := {}   # attacker_id -> {defender_id -> {Vector2i: true}}
+	# Iterate owned hexes via the polity hex-lists (skips ~50% wilderness and the
+	# per-hex owner string lookup). Attacker liege + same-realm test hoisted.
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
 			continue
-		for off in _OFF:
-			var n: Vector2i = key + off
-			if not _grid.has(n):
-				continue
-			var d := str(_grid[n]["owner_polity_id"])
-			if d == "" or d == a or not _is_alive(d) or _same_realm(a, d):
-				continue
-			var fkey := "%s>%s" % [a, d]
-			if not sets.has(fkey):
-				sets[fkey] = {}
-			sets[fkey][n] = true
+		var a := str(pid)
+		var a_liege := str(pol.get("liege_id", ""))
+		for key in pol["hexes"]:
+			for off in _OFF:
+				var n: Vector2i = key + off
+				if not _grid.has(n):
+					continue
+				var d := str(_grid[n]["owner_polity_id"])
+				if d == "" or d == a or not _is_alive(d):
+					continue
+				var d_liege := str(_polities[d].get("liege_id", ""))
+				if a_liege == d or d_liege == a or (a_liege != "" and a_liege == d_liege):
+					continue   # same realm — not a war candidate
+				if not sets.has(a):
+					sets[a] = {}
+				var by_def: Dictionary = sets[a]
+				if not by_def.has(d):
+					by_def[d] = {}
+				by_def[d][n] = true
+	# Flatten to "A>D" -> canonical-sweep array (string keys built once per active
+	# pair, not per neighbor). Order is immaterial: consumers average, re-sort, or
+	# canonicalize before persisting.
 	var fronts := {}
-	for fkey in sets:
-		# Deterministic first-encounter order over the canonical attacker sweep.
-		# Consumers either average over the front, re-sort it (deep raid), or
-		# canonicalize before persisting (_emit_event), so the order is immaterial.
-		fronts[fkey] = sets[fkey].keys()
+	for a in sets:
+		for d in sets[a]:
+			fronts["%s>%s" % [a, d]] = sets[a][d].keys()
 	return fronts
 
 
@@ -963,6 +1068,17 @@ func _resolve_crushing(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 		if roll < _c.pillage_chance:
 			_pillage(p, q, front, tick)
 			return
+	# Beastman defenders (Jedidiah's ruling 2026-06-13): a Lawful or Neutral
+	# victor DESTROYS the clanhold (annex → its land becomes civilizable), since
+	# civilizations do not keep chaotic beastman clanholds as vassals; only a
+	# Chaotic conqueror absorbs them as vassals. This overrides the svg bands and
+	# is what clears the beastman interior as civilization advances.
+	if bool(q.get("is_beastman", false)):
+		if str(p["alignment"]) == "chaotic":
+			_vassalize(p, q, tick)
+		else:
+			_annex(p, q, tick)
+		return
 	if svg >= _c.svg_annex_min:
 		_annex(p, q, tick)
 	else:
@@ -1248,33 +1364,33 @@ func _hex_in_seed_biomes(hex: Dictionary, seed_biomes: Array) -> bool:
 
 
 ## The highest-weight culture in [param weights] that is not [param exclude],
-## tie-broken by sorted key for determinism; "" if none.
+## tie-broken by the lexically-smallest key for determinism; "" if none. Single
+## pass (no per-call sort — this runs per held hex per tick during assimilation).
 func _dominant_other_culture(weights: Dictionary, exclude: String) -> String:
 	var best := ""
 	var best_w := 0.0
-	var keys := weights.keys()
-	keys.sort()
-	for k in keys:
-		if str(k) == exclude:
+	for k in weights:
+		var ks := str(k)
+		if ks == exclude:
 			continue
 		var w := float(weights[k])
-		if w > best_w:
+		if w > best_w or (w == best_w and best != "" and ks < best):
 			best_w = w
-			best = str(k)
+			best = ks
 	return best
 
 
-## The highest-weight key in [param weights], tie-broken by sorted key; "" if empty.
+## The highest-weight key in [param weights], tie-broken by the lexically-smallest
+## key; "" if empty. Single pass (no sort).
 func _dominant_key(weights: Dictionary) -> String:
 	var best := ""
 	var best_w := -1.0
-	var keys := weights.keys()
-	keys.sort()
-	for k in keys:
+	for k in weights:
+		var ks := str(k)
 		var w := float(weights[k])
-		if w > best_w:
+		if w > best_w or (w == best_w and best != "" and ks < best):
 			best_w = w
-			best = str(k)
+			best = ks
 	return best
 
 
@@ -1307,21 +1423,763 @@ func _emit_event(tick: int, type: String, polity_ids: Array, culture_ids: Array,
 
 
 # ---------------------------------------------------------------------------
-# Stubbed phases (4e–4f)
+# 4e — Stability + collapse (§7.5 risk curve, §7.6 outcomes, §7.7 fading, §9
+#      demihuman epoch bias). Stability redraws rulers, opens fading, and
+#      computes each realm's per-tick collapse risk; collapse rolls against it
+#      and shatters/rumps/depopulates the losers — restoring wilderness and
+#      seeding ruins/fallen-polity provenance. Runs after the economy ledger
+#      (so this tick's f_overextension feeds the roll) and before substrate, so
+#      a shatter successor's hexes assimilate the same tick.
 # ---------------------------------------------------------------------------
 
-func _phase_migration(_tick: int) -> void:
-	pass
+## §7.5 health pass: redraw ruler quality on the reign cadence (dynasty_change),
+## open fading onset (§7.7), and store the present collapse risk. The stored
+## `collapse_risk` is the value next tick's §7.4 secession reads (prev-tick).
+func _phase_stability(tick: int) -> void:
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		_maybe_redraw_ruler(pol, tick)
+		_maybe_open_fading(pol, tick)
+		pol["collapse_risk"] = _collapse_risk(pol, tick)
 
 
-func _phase_stability(_tick: int) -> void:
-	pass
+## Ruler quality is redrawn every REIGN_TICKS (§7.5): strong/weak/average at
+## 25/25/50%. A genuine transition (not the tick-0 founding draw) emits
+## dynasty_change. Quality feeds the risk roll here, §7.5.1 garrison coverage,
+## and §7.2 expansion (all read `ruler_quality`).
+func _maybe_redraw_ruler(pol: Dictionary, tick: int) -> void:
+	if tick % _c.reign_ticks != 0:
+		return
+	var roll := WorldGenRng.stream(_campaign_seed, "ruler", tick, str(pol["id"])).randf()
+	var q := "average"
+	if roll < _c.ruler_quality_strong_p:
+		q = "strong"
+	elif roll < _c.ruler_quality_strong_p + _c.ruler_quality_weak_p:
+		q = "weak"
+	var old := str(pol.get("ruler_quality", "average"))
+	pol["ruler_quality"] = q
+	if q != old and tick > 0:
+		_emit_event(tick, "dynasty_change", [str(pol["id"])], [str(pol["culture_id"])],
+				[Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))], 0.0, "dynasty_change")
 
 
-func _phase_collapse(_tick: int) -> void:
-	pass
+## §7.7 fading onset: a fading-culture realm that has risen (age > A_PEAK and
+## tier ≥ Duchy) begins its long decline; `fade_onset_tick` then drives
+## `_fade_factor`. Onset is one-way (recorded once).
+func _maybe_open_fading(pol: Dictionary, tick: int) -> void:
+	if pol.get("fade_onset_tick", null) != null:
+		return
+	if str(_inst(pol).get("end_state", "")) != "fading":
+		return
+	var age := tick - int(pol.get("founded_tick", 0))
+	if age > _c.a_peak_ticks and int(pol.get("tier_index", 0)) >= _c.fade_onset_tier:
+		pol["fade_onset_tick"] = tick
 
 
+## §7.5 collapse risk: BASE × temperament × f_size × f_age × f_overextension ×
+## (1+proneness) × ruler_quality, × epoch_bias for demihuman tiers (§9), plus the
+## additive per-tick war/contest weariness (`collapse_risk_tick`), clamped to
+## [0, 0.35]. Fading is deliberately NOT a term here (§7.7).
+func _collapse_risk(pol: Dictionary, tick: int) -> float:
+	var inst := _inst(pol)
+	var tier := int(pol["tier_index"])
+	var age := tick - int(pol.get("founded_tick", 0))
+	var f_size: float = pow(_c.tier_risk_mult, float(maxi(0, tier - _c.tier_risk_cohesion_floor)))
+	var proneness := float(inst.get("collapse_proneness", 0.4))
+	var risk := _c.collapse_base * _params.temperament_multiplier() * f_size * _f_age(age) \
+			* float(pol.get("f_overextension", 1.0)) * (1.0 + proneness) * _ruler_quality_factor(pol)
+	if str(inst.get("tier", "")) == "demihuman":
+		risk *= _epoch_bias(tick)
+	risk += float(pol.get("collapse_risk_tick", 0.0))
+	return clampf(risk, _c.collapse_risk_min, _c.collapse_risk_max)
+
+
+## f_age (§7.5): ramps F_AGE_FLOOR → 1.0 over A_PEAK ticks, then
+## 1 + slope × (age − A_PEAK)/A_PEAK, capped at F_AGE_CAP.
+func _f_age(age: int) -> float:
+	if age <= _c.a_peak_ticks:
+		return lerpf(_c.f_age_floor, 1.0, float(age) / float(_c.a_peak_ticks))
+	return minf(1.0 + _c.f_age_slope * float(age - _c.a_peak_ticks) / float(_c.a_peak_ticks),
+			_c.f_age_cap)
+
+
+func _ruler_quality_factor(pol: Dictionary) -> float:
+	match str(pol.get("ruler_quality", "average")):
+		"strong":
+			return _c.ruler_risk_strong
+		"weak":
+			return _c.ruler_risk_weak
+	return _c.ruler_risk_average
+
+
+## epoch_bias (§9): 1.0 until EPOCH_BIAS_START_FRAC × N_TICKS, ramping linearly to
+## EPOCH_BIAS_MAX at EPOCH_BIAS_FULL_FRAC × N_TICKS, held after — the weighted
+## demihuman decline. Fractions of span, so history length scales it.
+func _epoch_bias(tick: int) -> float:
+	var start := _c.epoch_bias_start_frac * float(_n_ticks)
+	var full := _c.epoch_bias_full_frac * float(_n_ticks)
+	var t := float(tick)
+	if t <= start:
+		return 1.0
+	if t >= full:
+		return _c.epoch_bias_max
+	return lerpf(1.0, _c.epoch_bias_max, (t - start) / (full - start))
+
+
+## §7.6 collapse pass: each realm rolls against its stored risk; a failure rolls
+## severity and rumps/shatters/depopulates. Successors are collected and merged
+## AFTER the loop so the iterated set never grows mid-pass.
+func _phase_collapse(tick: int) -> void:
+	var successors: Array = []
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol["hexes"].is_empty():
+			continue
+		var risk := float(pol.get("collapse_risk", 0.0))
+		if risk <= 0.0:
+			continue
+		if WorldGenRng.stream(_campaign_seed, "collapse", tick, str(pid)).randf() < risk:
+			_collapse_polity(pol, tick, successors)
+	for s in successors:
+		_polities[str(s["id"])] = s
+
+
+## Roll §7.6 severity and dispatch the outcome. Severity bias rewards big,
+## overextended, collapse-prone realms with harder falls; shatter is gated to
+## realms with the vassals (or tier) to fragment, else it degrades to rump.
+func _collapse_polity(pol: Dictionary, tick: int, successors: Array) -> void:
+	var inst := _inst(pol)
+	var tier := int(pol["tier_index"])
+	var bias := _c.severity_tier_weight * float(maxi(0, tier - 2)) / 4.0 \
+			+ _c.severity_overext_weight * (float(pol.get("f_overextension", 1.0)) - 1.0) \
+			+ _c.severity_proneness_weight * float(inst.get("collapse_proneness", 0.4)) \
+			+ _c.severity_temperament_weight * (_params.temperament_multiplier() - 1.0)
+	var s := WorldGenRng.stream(_campaign_seed, "severity", tick, str(pol["id"])).randf() + bias
+	if s < _c.severity_band_rump:
+		_do_rump(pol, tick)
+	elif s < _c.severity_band_shatter:
+		if _vassal_count(pol) >= _c.shatter_vassal_gate or tier >= DomainTierTable.DUCHY:
+			_do_shatter(pol, tick, successors)
+		else:
+			_do_rump(pol, tick)   # degrades to rump (§7.6 gate)
+	else:
+		_do_depopulate(pol, tick)
+
+
+## Rump (§7.6 minor): shed the frontier — the farthest-from-capital, least-
+## assimilated half — back to wilderness; the core + capital survive smaller.
+func _do_rump(pol: Dictionary, tick: int) -> void:
+	if pol["hexes"].size() <= 1:
+		return   # nothing meaningful to shed; the realm weathered the crisis
+	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+	var culture_id := str(pol["culture_id"])
+	var ranked: Array = pol["hexes"].duplicate()
+	ranked.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := _hex_distance(a, cap)
+		var db := _hex_distance(b, cap)
+		if da != db:
+			return da > db   # farthest first
+		var aa := float(_culture_w.get(a, {}).get(culture_id, 0.0))
+		var ab := float(_culture_w.get(b, {}).get(culture_id, 0.0))
+		if not is_equal_approx(aa, ab):
+			return aa < ab   # least-assimilated first
+		return _canonical_less(a, b))
+	var shed_count := mini(int(pol["hexes"].size() / 2), pol["hexes"].size() - 1)
+	var shed: Array = []
+	for i in range(shed_count):
+		shed.append(ranked[i])
+	for h in shed:
+		pol["hexes"].erase(h)
+		_revert_to_wilderness(h, tick, _c.rump_shed_pop_keep, false)
+	_update_tier(pol)
+	_emit_event(tick, "collapse_rump", [str(pol["id"])], [str(pol["culture_id"])],
+			shed, 0.4, "collapse.rump")
+
+
+## Shatter (§7.6 major): fragment P into K successor realms. P keeps the capital
+## region as the rump; the rest splits into K−1 fresh polities (P's culture,
+## founded now so ascendancy resets) plus any freed war-vassals. K = clamp(1d3 +
+## max(0,tier−3), 2, min(6, vassal_count+2)).
+func _do_shatter(pol: Dictionary, tick: int, successors: Array) -> void:
+	var tier := int(pol["tier_index"])
+	var vassals := _vassal_count(pol)
+	var k_roll := WorldGenRng.stream(_campaign_seed, "shatter", tick, str(pol["id"])).randi_range(1, 3)
+	var k := clampi(k_roll + maxi(0, tier - 3), 2, mini(6, vassals + 2))
+	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+	var part := _k_partition(pol["hexes"], cap, k)
+	var groups: Array = part["groups"]
+	var keep_index: int = part["capital_group"]
+	var new_ids: Array = []
+	for i in range(groups.size()):
+		if i == keep_index or groups[i].is_empty():
+			continue
+		var succ := _spawn_successor(pol, groups[i], tick)
+		successors.append(succ)
+		new_ids.append(str(succ["id"]))
+	pol["hexes"] = groups[keep_index]
+	_update_tier(pol)
+	# The empire's shed war-vassals are themselves successor states (§7.4/§7.6).
+	for vid in _vassal_polities_of(str(pol["id"])):
+		_polities[vid]["liege_id"] = ""
+		_polities[vid]["vassalized_by_war"] = 0
+	_emit_event(tick, "collapse_shatter", [str(pol["id"])] + new_ids,
+			[str(pol["culture_id"])], [cap], 0.7, "collapse.shatter")
+
+
+## Depopulate (§7.6 catastrophic): P dies; its whole territory reverts to
+## wilderness (most population lost, hexes marked for §7.6 beastman repopulation
+## in 4f); a ruin seed and a fallen-polity heartland record carry the provenance.
+func _do_depopulate(pol: Dictionary, tick: int) -> void:
+	var former: Array = pol["hexes"].duplicate()
+	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+	# §8 displacement: MIGRANT_FRACTION of the lost population becomes a migrating
+	# band that resettles elsewhere (4f). The rest stays as wilderness remnant
+	# (depopulate_pop_keep) or is lost.
+	var displaced := XPAwardCalculator.bankers_round(_c.migrant_fraction * float(_total_families(pol)))
+	if displaced > 0 and _params.migration_multiplier() > 0.0:
+		_create_band(str(pol["culture_id"]), str(pol["alignment"]), displaced, cap)
+	_emit_ruin(cap, pol, tick, "depopulation")
+	_emit_fallen(pol, former, tick)
+	for h in former:
+		_revert_to_wilderness(h, tick, _c.depopulate_pop_keep, true)
+	pol["hexes"] = []
+	pol["alive"] = false
+	pol["fell_tick"] = tick
+	for vid in _vassal_polities_of(str(pol["id"])):
+		_polities[vid]["liege_id"] = ""
+		_polities[vid]["vassalized_by_war"] = 0
+	_emit_event(tick, "depopulation", [str(pol["id"])], [str(pol["culture_id"])],
+			[cap], 1.0, "collapse.depopulation")
+
+
+## Release a hex to unowned wilderness, retaining [param keep_fraction] of its
+## population (banker's rounded). Substrate weights are left as the diffused
+## trace (provenance). [param mark_depopulated] stamps the tick for 4f beastman
+## repopulation. The caller removes the hex from the polity's holdings.
+func _revert_to_wilderness(h: Vector2i, tick: int, keep_fraction: float,
+		mark_depopulated: bool) -> void:
+	var hex: Dictionary = _grid[h]
+	hex["owner_polity_id"] = ""
+	hex["territory_class"] = "wilderness"
+	hex["population_band"] = maxi(0, XPAwardCalculator.bankers_round(
+			float(int(hex["population_band"])) * keep_fraction))
+	if mark_depopulated:
+		_depopulated_at[h] = tick
+
+
+## A ruin/dungeon seed with the fallen realm's provenance (§7.6 / §7.2). Toponym
+## and dungeon type are filled by Layer 5/6; size scales with the realm's tier.
+func _emit_ruin(h: Vector2i, pol: Dictionary, tick: int, event_type: String) -> void:
+	_ruin_seeds.append({
+		"id": "ruin_%04d" % (_ruin_seeds.size() + 1),
+		"hex_q": h.x, "hex_r": h.y,
+		"provenance_culture_id": str(pol["culture_id"]),
+		"provenance_polity_id": str(pol["id"]),
+		"provenance_toponym": "",
+		"era_tick": tick,
+		"event_type": event_type,
+		"source_event_id": "",
+		"size_hint": _ruin_size_for_tier(int(pol["tier_index"])),
+		"dungeon_type": "",
+		"name": "",
+	})
+
+
+## The fallen polity's heartland (§7.2 fallen_polities[]) — the hexes it held
+## when it fell, for the region painter's historical toponyms (filled at naming).
+func _emit_fallen(pol: Dictionary, former: Array, tick: int) -> void:
+	var sorted_hexes: Array = former.duplicate()
+	sorted_hexes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var pairs: Array = []
+	for h in sorted_hexes:
+		pairs.append([h.x, h.y])
+	_fallen_polities.append({
+		"polity_id": str(pol["id"]),
+		"toponym_root": "",
+		"hexes": JSON.stringify(pairs),
+		"era_tick": tick,
+	})
+
+
+func _ruin_size_for_tier(tier: int) -> String:
+	if tier >= DomainTierTable.KINGDOM:
+		return "large"
+	if tier >= DomainTierTable.PRINCIPALITY:
+		return "medium"
+	if tier >= DomainTierTable.COUNTY:
+		return "small"
+	return "lair"
+
+
+## A fresh successor realm carved from a shattered parent: inherits culture /
+## alignment / class, but founds anew (ascendancy + a clean fade/risk slate) and
+## owns [param hexes]. Capital = the group's lowest-canonical hex.
+func _spawn_successor(parent: Dictionary, hexes: Array, tick: int) -> Dictionary:
+	var succ: Dictionary = parent.duplicate(true)
+	succ["id"] = "pol_%04d" % _next_polity_seq
+	_next_polity_seq += 1
+	var cap := _lowest_canonical(hexes)
+	succ["capital_q"] = cap.x
+	succ["capital_r"] = cap.y
+	succ["hexes"] = hexes.duplicate()
+	succ["founded_tick"] = tick
+	succ["alive"] = true
+	succ["fell_tick"] = null
+	succ["fade_onset_tick"] = null
+	succ["liege_id"] = ""
+	succ["vassalized_by_war"] = 0
+	succ["ruler_quality"] = "average"
+	succ["collapse_risk"] = 0.0
+	succ["collapse_risk_tick"] = 0.0
+	succ["f_overextension"] = 1.0
+	succ["garrison_coverage"] = 0.0
+	succ["garrison_spent"] = 0.0
+	succ["last_income"] = 0.0
+	succ["expansion_accumulator"] = 0.0
+	succ["last_expansion_budget"] = 0
+	succ["pillage_credit_pending"] = 0.0
+	succ["pillage_credit_active"] = 0.0
+	for h in hexes:
+		_grid[h]["owner_polity_id"] = str(succ["id"])
+	_update_tier(succ)
+	return succ
+
+
+## Partition a realm's hexes into K spatially-coherent groups (shatter). Seeds:
+## the capital (group containing it is the rump P keeps), then farthest-point
+## sampling; hexes assign to the nearest seed (Voronoi), ties to the lower seed
+## index. Deterministic. Returns {groups: Array[Array[Vector2i]], capital_group}.
+func _k_partition(hexes: Array, capital: Vector2i, k: int) -> Dictionary:
+	var ordered: Array = hexes.duplicate()
+	ordered.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var seeds: Array = [_nearest_in(ordered, capital)]
+	while seeds.size() < k and seeds.size() < ordered.size():
+		var best: Vector2i = seeds[0]
+		var best_d := -1
+		var found := false
+		for h in ordered:
+			if seeds.has(h):
+				continue
+			var d := _min_distance(h, seeds)
+			if d > best_d:
+				best_d = d
+				best = h
+				found = true
+		if not found:
+			break
+		seeds.append(best)
+	var groups: Array = []
+	for _i in range(seeds.size()):
+		groups.append([])
+	for h in ordered:
+		var best_i := 0
+		var best_d := 1 << 30
+		for i in range(seeds.size()):
+			var d := _hex_distance(h, seeds[i])
+			if d < best_d:
+				best_d = d
+				best_i = i
+		groups[best_i].append(h)
+	# Seed 0 is the capital's nearest hex, so the capital always lands in group 0;
+	# P keeps that group as the rump.
+	return {"groups": groups, "capital_group": 0}
+
+
+## vassal_count for the §7.6 shatter gate / K cap: war-vassal polities plus the
+## realm's internal vassal domains (§7.4 CORE_MAX partition).
+func _vassal_count(pol: Dictionary) -> int:
+	return _vassal_polities_of(str(pol["id"])).size() + _internal_vassal_domains(pol).size()
+
+
+## §7.4 internal vassal domains: the held hexes beyond the directly-managed core
+## (capital + nearest, up to CORE_MAX) grouped into VASSAL_SIZE-contiguous
+## domains (tier-scaled). Computed on demand (collapse + finalize only), not per
+## tick. Returns an Array of hex groups (Array[Vector2i]).
+func _internal_vassal_domains(pol: Dictionary) -> Array:
+	var core := _core_hexes(pol)
+	var remaining: Array = []
+	for h in pol["hexes"]:
+		if not core.has(h):
+			remaining.append(h)
+	if remaining.is_empty():
+		return []
+	return _partition_contiguous(remaining, _c.vassal_size_for_tier(int(pol["tier_index"])))
+
+
+## The directly-held core: the capital plus its nearest held hexes, up to
+## CORE_MAX total (§7.4 "a ruler may directly manage one domain"). Returns a set.
+func _core_hexes(pol: Dictionary) -> Dictionary:
+	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+	var ranked: Array = pol["hexes"].duplicate()
+	ranked.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := _hex_distance(a, cap)
+		var db := _hex_distance(b, cap)
+		if da != db:
+			return da < db
+		return _canonical_less(a, b))
+	var core := {}
+	for i in range(mini(_c.core_max, ranked.size())):
+		core[ranked[i]] = true
+	return core
+
+
+## Group [param hexes] into contiguous chunks of up to [param size] via
+## deterministic BFS from the lowest-canonical unassigned hex (neighbors in
+## _OFF order). Frontier hexes past the size cap return to the pool for the next
+## chunk, so every hex lands in exactly one contiguous group.
+func _partition_contiguous(hexes: Array, size: int) -> Array:
+	var unassigned := {}
+	for h in hexes:
+		unassigned[h] = true
+	var ordered: Array = hexes.duplicate()
+	ordered.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var groups: Array = []
+	while not unassigned.is_empty():
+		var seed := Vector2i()
+		for h in ordered:
+			if unassigned.has(h):
+				seed = h
+				break
+		var group: Array = []
+		var queue: Array = [seed]
+		unassigned.erase(seed)
+		var qi := 0
+		while qi < queue.size() and group.size() < size:
+			var h: Vector2i = queue[qi]
+			qi += 1
+			group.append(h)
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if unassigned.has(n):
+					unassigned.erase(n)
+					queue.append(n)
+		for j in range(qi, queue.size()):
+			unassigned[queue[j]] = true   # frontier past the cap → next chunk
+		groups.append(group)
+	return groups
+
+
+func _nearest_in(hexes: Array, target: Vector2i) -> Vector2i:
+	var best: Vector2i = hexes[0]
+	var best_d := _hex_distance(best, target)
+	for h in hexes:
+		var d := _hex_distance(h, target)
+		if d < best_d:
+			best_d = d
+			best = h
+	return best
+
+
+func _lowest_canonical(hexes: Array) -> Vector2i:
+	var best: Vector2i = hexes[0]
+	for h in hexes:
+		if _canonical_less(h, best):
+			best = h
+	return best
+
+
+func _min_distance(h: Vector2i, seeds: Array) -> int:
+	var best := 1 << 30
+	for s in seeds:
+		best = mini(best, _hex_distance(h, s))
+	return best
+
+
+# ---------------------------------------------------------------------------
+# 4f — Migration + beastman repopulation (§8, §7.6). The renewal half of the
+#      rise/fall loop: depopulated wilderness fills with beastman clanholds, and
+#      fallen/battered peoples send out migrating bands that found fresh realms
+#      far from their origin (ascendancy resets — the Sea-Peoples pattern). Runs
+#      before the economy/stability so a band that lands this tick is a normal
+#      realm immediately. Without this phase the §7.6 collapse drains the map.
+# ---------------------------------------------------------------------------
+
+func _phase_migration(tick: int) -> void:
+	_repopulate_beastmen(tick)
+	_advance_bands(tick)
+	_spawn_pressure_bands(tick)
+
+
+## §7.6 beastman repopulation: a hex empty for ≥ BEASTMAN_DELAY ticks has a
+## (BEASTMAN_FILL × density) chance each tick to spawn a Chaotic clanhold, the
+## race rolled from the terrain's geographic-distribution table (reusing the
+## Layer-3 seeder's terrain/race statics). This is what refills the depopulated
+## interior so the polity population reaches equilibrium rather than draining.
+func _repopulate_beastmen(tick: int) -> void:
+	if _params.wilderness_beastman_density <= 0.0 or _depopulated_at.is_empty():
+		return
+	var keys: Array = _depopulated_at.keys()
+	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var chance := clampf(_c.beastman_fill_per_tick * _params.wilderness_beastman_density, 0.0, 1.0)
+	for h in keys:
+		var hex: Dictionary = _grid[h]
+		if str(hex["owner_polity_id"]) != "" or str(hex["water"]) != "":
+			_depopulated_at.erase(h)   # reclaimed or invalid — no longer a spawn site
+			continue
+		if tick - int(_depopulated_at[h]) < _c.beastman_delay_ticks:
+			continue
+		if WorldGenRng.stream(_campaign_seed, "beastman_repop", tick,
+				"%d,%d" % [h.x, h.y]).randf() < chance:
+			if _spawn_beastman_clanhold(h, tick):
+				_depopulated_at.erase(h)
+
+
+## Spawn one beastman clanhold on an empty hex; returns false if the terrain has
+## no valid clan distribution. The clanhold enters the normal loop (expands,
+## raids, can itself collapse) but stays wilderness and founds no cities (§5.3).
+func _spawn_beastman_clanhold(h: Vector2i, tick: int) -> bool:
+	var dist := BeastmanDistributionLoader.load_data()
+	var terrain_key := CultureSeeder._beastman_terrain_key(_grid[h], _grid)
+	var spec: Dictionary = dist.get("clanholds_by_terrain", {}).get(terrain_key, {})
+	var ranges: Array = spec.get("race_d100", [])
+	if ranges.is_empty():
+		return false
+	var roll := WorldGenRng.stream(_campaign_seed, "beastman_race", tick,
+			"%d,%d" % [h.x, h.y]).randi_range(1, 100)
+	var race := ""
+	for entry in ranges:
+		if roll >= int(entry["lo"]) and roll <= int(entry["hi"]):
+			race = str(entry["race"])
+			break
+	if race.is_empty():
+		return false
+	var cid := CultureCatalogLoader.id_for_beastman_race(race)
+	if cid.is_empty():
+		return false
+	var families: int = mini(int(dist.get("clanhold_demographics", {}).get(race, {})
+			.get("average_families_per_clanhold", 50)), _c.cap_wilderness)
+	var pid := "pol_%04d" % _next_polity_seq
+	_next_polity_seq += 1
+	_grid[h]["owner_polity_id"] = pid
+	_grid[h]["population_band"] = families
+	_grid[h]["territory_class"] = "wilderness"
+	_culture_w[h] = {cid: 1.0}
+	_alignment_w[h] = {"chaotic": 1.0}
+	var pol := CultureSeeder._make_beastman_polity(pid, cid, h)
+	_finalize_new_polity(pol, tick)
+	pol["hexes"] = [h]
+	_update_tier(pol)
+	_polities[pid] = pol
+	return true
+
+
+## §8 displacement/pressure band: a relocating people carrying [param families],
+## not yet routed (retargeted on its first advance tick).
+func _create_band(culture_id: String, alignment: String, families: int, origin: Vector2i) -> void:
+	_bands.append({
+		"culture_id": culture_id, "alignment": alignment, "families": families,
+		"origin_q": origin.x, "origin_r": origin.y,
+		"target_q": -999, "target_r": -999, "ticks_remaining": -1,
+	})
+
+
+## §8 band travel: route un-routed bands to the nearest viable homeland, advance
+## the rest toward their target at MIGRATION_SPEED, and found a fresh realm on
+## arrival. Bands with no reachable destination dissolve.
+func _advance_bands(tick: int) -> void:
+	if _bands.is_empty():
+		return
+	var done: Array = []
+	for band in _bands:
+		if int(band["ticks_remaining"]) < 0:
+			_retarget_band(band)
+		if int(band["target_q"]) == -999:
+			_dissolve_band(band, Vector2i(int(band["origin_q"]), int(band["origin_r"])))
+			done.append(band)   # nowhere to go — dissolves where it started (§8)
+			continue
+		band["ticks_remaining"] = int(band["ticks_remaining"]) - 1
+		if int(band["ticks_remaining"]) <= 0:
+			_found_migrant_polity(band, tick)
+			done.append(band)
+	for b in done:
+		_bands.erase(b)
+
+
+func _retarget_band(band: Dictionary) -> void:
+	var origin := Vector2i(int(band["origin_q"]), int(band["origin_r"]))
+	var target := _find_migration_target(str(band["culture_id"]), origin)
+	if target == Vector2i(-999, -999):
+		band["target_q"] = -999
+		return
+	band["target_q"] = target.x
+	band["target_r"] = target.y
+	var dist := _hex_distance(origin, target)
+	band["ticks_remaining"] = maxi(1, ceili(float(dist) / float(_c.migration_speed)))
+
+
+## Nearest unclaimed land hex whose terrain the culture favors (terrain_mult ≥
+## MIGRATION_DEST_TERRAIN_MULT) and that sits in a ≥ MIGRATION_DEST_MIN_HEXES
+## contiguous-unclaimed cluster. Nearest wins; ties to better terrain then
+## canonical. Returns the NO_TARGET sentinel if nothing qualifies.
+func _find_migration_target(culture_id: String, origin: Vector2i) -> Vector2i:
+	var pseudo := {"culture_id": culture_id}
+	var best := Vector2i(-999, -999)
+	var best_d := 1 << 30
+	var best_mult := 0.0
+	for key in _ordered_keys:
+		var hex: Dictionary = _grid[key]
+		if str(hex["owner_polity_id"]) != "" or str(hex["water"]) != "":
+			continue
+		var mult := _terrain_mult(pseudo, key)
+		if mult < _c.migration_dest_terrain_mult:
+			continue
+		if not _has_unclaimed_cluster(key):
+			continue
+		var d := _hex_distance(origin, key)
+		if d < best_d or (d == best_d and mult > best_mult):
+			best_d = d
+			best_mult = mult
+			best = key
+	return best
+
+
+## True if [param key] is unclaimed land in a cluster of ≥ MIGRATION_DEST_MIN_HEXES
+## contiguous unclaimed land hexes (the hex plus enough unclaimed neighbors).
+func _has_unclaimed_cluster(key: Vector2i) -> bool:
+	var count := 1
+	for off in _OFF:
+		var n: Vector2i = key + off
+		if _grid.has(n) and str(_grid[n]["water"]) == "" \
+				and str(_grid[n]["owner_polity_id"]) == "":
+			count += 1
+			if count >= _c.migration_dest_min_hexes:
+				return true
+	return false
+
+
+## A migrating band reaches its target and founds a fresh realm (§8): founded_tick
+## resets so ascendancy applies anew. If the target was claimed en route, the band
+## dissolves.
+func _found_migrant_polity(band: Dictionary, tick: int) -> void:
+	var target := Vector2i(int(band["target_q"]), int(band["target_r"]))
+	if not _grid.has(target) or str(_grid[target]["owner_polity_id"]) != "":
+		_dissolve_band(band, target)   # land taken en route — the migrants merge in (§8)
+		return
+	var cid := str(band["culture_id"])
+	var alignment := str(band["alignment"])
+	var pid := "pol_%04d" % _next_polity_seq
+	_next_polity_seq += 1
+	var pol := _migrant_seed_shape(pid, cid, alignment, target)
+	_finalize_new_polity(pol, tick)
+	pol["hexes"] = [target]
+	_grid[target]["owner_polity_id"] = pid
+	_grid[target]["population_band"] = mini(int(band["families"]), _c.cap_wilderness)
+	_grid[target]["territory_class"] = "wilderness"
+	_culture_w[target] = {cid: 1.0}
+	_alignment_w[target] = {alignment: 1.0}
+	_update_tier(pol)
+	_polities[pid] = pol
+	_emit_event(tick, "migration", [pid], [cid], [target], 0.0, "migration")
+
+
+## A band that finds no home (no destination, or its target was claimed en route)
+## dissolves into the local substrate where it stops (§8): its families join that
+## hex's population (capped to the class), contributing their culture and
+## alignment by population weight. Conserves the migrating population rather than
+## dropping it.
+func _dissolve_band(band: Dictionary, at: Vector2i) -> void:
+	if not _grid.has(at):
+		return
+	var hex: Dictionary = _grid[at]
+	var prior := int(hex["population_band"])
+	var add := maxi(0, mini(int(band["families"]), _c.cap_for(str(hex["territory_class"])) - prior))
+	if add <= 0:
+		return
+	_alignment_w[at] = _blend_weight(_alignment_w.get(at, {}), str(band["alignment"]), prior, add)
+	_culture_w[at] = _blend_weight(_culture_w.get(at, {}), str(band["culture_id"]), prior, add)
+	hex["population_band"] = prior + add
+
+
+## Population-weighted blend of [param add] newcomers of [param key] into a
+## substrate [param weights] backed by [param prior] residents; normalized.
+func _blend_weight(weights: Dictionary, key: String, prior: int, add: int) -> Dictionary:
+	var scaled := {}
+	for k in weights:
+		scaled[str(k)] = float(weights[k]) * float(prior)
+	scaled[key] = float(scaled.get(key, 0.0)) + float(add)
+	return _normalize(scaled)
+
+
+## §8 pressure migration: a realm that lost its capital or > half its hexes this
+## tick may send out a band carrying MIGRANT_FRACTION of its people (who then
+## leave — the hexes lose that share). Mobile, aggressive cultures relocate;
+## stubborn defensive ones stay. (1-tick loss proxy for the §8 "last 2 ticks".)
+func _spawn_pressure_bands(tick: int) -> void:
+	if _params.migration_multiplier() <= 0.0:
+		return
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol["hexes"].is_empty():
+			continue
+		var start := int(_tick_start_size.get(pid, pol["hexes"].size()))
+		var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+		var lost_capital := str(_grid.get(cap, {}).get("owner_polity_id", "")) != str(pid)
+		var lost_half := float(pol["hexes"].size()) < 0.5 * float(start)
+		if not (lost_capital or lost_half):
+			continue
+		var inst := _inst(pol)
+		var drive := 0.5 + float(inst.get("aggression", 0.5)) - float(inst.get("defense", 0.5))
+		var p_migrate := clampf(_c.migration_pressure_base * _params.migration_multiplier() * drive,
+				_c.migration_pressure_min, _c.migration_pressure_max)
+		if WorldGenRng.stream(_campaign_seed, "migrate", tick, pid).randf() >= p_migrate:
+			continue
+		var fam := XPAwardCalculator.bankers_round(_c.migrant_fraction * float(_total_families(pol)))
+		if fam <= 0:
+			continue
+		_create_band(str(pol["culture_id"]), str(pol["alignment"]), fam, cap)
+		for h in pol["hexes"]:
+			var p := int(_grid[h]["population_band"])
+			_grid[h]["population_band"] = maxi(0, p - XPAwardCalculator.bankers_round(
+					_c.migrant_fraction * float(p)))
+
+
+## Seed-shape polity dict for a migrant-founded realm (runtime fields added by
+## _finalize_new_polity).
+func _migrant_seed_shape(pid: String, cid: String, alignment: String, capital: Vector2i) -> Dictionary:
+	return {
+		"id": pid, "culture_id": cid, "alignment": alignment,
+		"tier_index": 0, "title": "", "ruler_class": "", "ruler_level": 0,
+		"ruler_quality": "average", "capital_q": capital.x, "capital_r": capital.y,
+		"civ_or_clan_state": str(_culture_instances.get(cid, {}).get("civ_or_clan", "civ")),
+		"morale_seed": "[]", "internal_vassals": "[]", "name": "",
+	}
+
+
+## Augment a seed-shape polity dict with the runtime fields the tick loop needs
+## (shared by 4f beastman clanholds and migrant realms). founded_tick = now, so
+## ascendancy (§7.2) applies to the fresh realm. is_beastman follows the §5.3
+## rule (no jittered instance, or an explicit beastman tier).
+func _finalize_new_polity(pol: Dictionary, tick: int) -> void:
+	pol["alive"] = true
+	pol["founded_tick"] = tick
+	pol["fell_tick"] = null
+	pol["fade_onset_tick"] = null
+	pol["liege_id"] = ""
+	pol["vassalized_by_war"] = 0
+	pol["ruler_quality"] = "average"
+	pol["collapse_risk"] = 0.0
+	pol["collapse_risk_tick"] = 0.0
+	pol["f_overextension"] = 1.0
+	pol["garrison_coverage"] = 0.0
+	pol["garrison_spent"] = 0.0
+	pol["last_income"] = 0.0
+	pol["expansion_accumulator"] = 0.0
+	pol["last_expansion_budget"] = 0
+	pol["pillage_credit_pending"] = 0.0
+	pol["pillage_credit_active"] = 0.0
+	var inst: Dictionary = _culture_instances.get(str(pol["culture_id"]), {})
+	pol["is_beastman"] = inst.is_empty() or str(inst.get("tier", "")) == "beastman"
+
+
+# ---------------------------------------------------------------------------
+# Event log (§11)
+# ---------------------------------------------------------------------------
+
+## No per-tick work: events are emitted inline by the phase that causes them
+## (_emit_event), and §11.3 significance is scored once at finalize
+## (_score_event_significance). Kept in the phase order as the §3 log slot.
 func _phase_log(_tick: int) -> void:
 	pass
 
@@ -1364,13 +2222,15 @@ func _rle_owners() -> String:
 
 func _finalize(ctx: Dictionary) -> void:
 	_serialize_substrate()
+	_assign_present_day_handoff()   # 4g §12: ruler level/class + seeded morale
+	_score_event_significance()     # 4g §11.3: per-event significance
 	ctx["sim_polities"] = _polity_rows()
 	ctx["sim_settlements"] = _settlements
 	ctx["sim_events"] = _events
 	ctx["sim_replay_frames"] = _replay_frames
 	ctx["sim_replay_palette"] = _build_palette()
-	ctx["sim_fallen_polities"] = []   # 4e/4f
-	ctx["sim_ruin_seeds"] = []        # 4e/4f
+	ctx["sim_fallen_polities"] = _fallen_polities
+	ctx["sim_ruin_seeds"] = _ruin_seeds
 
 
 ## Write the in-memory substrate back to the grid. Inhabited hexes (pop > 0)
@@ -1418,11 +2278,127 @@ func _polity_rows() -> Array:
 			"fade_onset_tick": pol.get("fade_onset_tick", null),
 			"civ_or_clan_state": str(pol.get("civ_or_clan_state", "civ")),
 			"garrison_coverage": float(pol.get("garrison_coverage", 0.0)),
-			"morale_seed": "[]",
-			"internal_vassals": "[]",
+			"morale_seed": str(pol.get("morale_seed", "[]")),
+			"internal_vassals": _internal_vassals_json(pol),
 			"name": str(pol.get("name", "")),
 		})
 	return rows
+
+
+## The present-day §7.4 internal vassal-domain decomposition (hex groups beyond
+## the core), serialized for the §12 handoff vassal-chain. Hexes canonical so the
+## row hashes stably.
+func _internal_vassals_json(pol: Dictionary) -> String:
+	var out: Array = []
+	for domain in _internal_vassal_domains(pol):
+		var sorted_hexes: Array = domain.duplicate()
+		sorted_hexes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+		var pairs: Array = []
+		for h in sorted_hexes:
+			pairs.append([h.x, h.y])
+		out.append({"hexes": pairs})
+	return JSON.stringify(out)
+
+
+# ---------------------------------------------------------------------------
+# 4g — Present-day handoff (§12) + event significance (§11.3)
+# ---------------------------------------------------------------------------
+
+## §12: give each surviving realm its ACKS ruler level (by tier), ruler class
+## (biased by the culture's sphere_weights over a fighter-leaning baseline,
+## catalog §4.3), and a seeded morale summary — so the world opens with the
+## right tensions. Run at finalize, after the substrate is settled.
+func _assign_present_day_handoff() -> void:
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		pol["ruler_level"] = DomainTierTable.ruler_level_for_tier(int(pol["tier_index"]))
+		pol["ruler_class"] = _ruler_class_for(pol)
+		pol["morale_seed"] = _morale_seed_for(pol)
+
+
+## The culture's ruler-class probability distribution (catalog §4.3): a
+## martial-leaning base lerped with the normalized sphere tilt at RULER_CLASS_BLEND
+## — sphere weights move the odds, they don't set the class (a high-arcane culture
+## rarely has a mage king). Pure/deterministic; the draw is in `_ruler_class_for`.
+func _ruler_class_distribution(pol: Dictionary) -> Dictionary:
+	const BASE := {"fighter": 0.60, "cleric": 0.15, "mage": 0.10, "thief": 0.15}
+	var sw: Dictionary = _inst(pol).get("sphere_weights", {})
+	var tilt := {
+		"fighter": float(sw.get("military", 0.0)),
+		"cleric": float(sw.get("religious", 0.0)),
+		"mage": float(sw.get("arcane", 0.0)),
+		"thief": float(sw.get("mercantile", 0.0)),
+	}
+	var tilt_total := float(tilt["fighter"]) + float(tilt["cleric"]) \
+			+ float(tilt["mage"]) + float(tilt["thief"])
+	var dist := {}
+	for cls in ["fighter", "cleric", "mage", "thief"]:
+		# No spheres → tilt collapses to the base, so dist = base (mostly fighter).
+		var tilt_v: float = float(tilt[cls]) / tilt_total if tilt_total > 0.0 else float(BASE[cls])
+		dist[cls] = lerpf(float(BASE[cls]), tilt_v, _c.ruler_class_blend)
+	return _normalize(dist)
+
+
+## Seeded ruler-class draw from the §4.3 distribution. Maps military→fighter,
+## religious→cleric, arcane→mage, mercantile→thief.
+func _ruler_class_for(pol: Dictionary) -> String:
+	var dist := _ruler_class_distribution(pol)
+	var roll := WorldGenRng.stream(_campaign_seed, "ruler_class", _n_ticks, str(pol["id"])).randf()
+	var acc := 0.0
+	for cls in ["fighter", "cleric", "mage", "thief"]:
+		acc += float(dist[cls])
+		if roll < acc:
+			return cls
+	return "fighter"
+
+
+## Seeded present-day morale inputs (§12): the ruler-vs-population alignment
+## penalty (ACKS −1 / −2), the realm's garrison coverage (the runtime derives
+## borderlands/wilderness under-garrison penalties from it), and whether the
+## realm is still unassimilated (low owner-culture substrate → the
+## conversion-in-progress penalty). Serialized as JSON for the runtime.
+func _morale_seed_for(pol: Dictionary) -> String:
+	var assim := _assimilation_of(pol, str(pol["culture_id"]))
+	var seed := {
+		"alignment_penalty": _alignment_morale_penalty(
+				str(pol["alignment"]), _dominant_population_alignment(pol)),
+		"garrison_coverage": snappedf(float(pol.get("garrison_coverage", 0.0)), 0.001),
+		"low_assimilation": assim < _c.conversion_morale_svg_gate,
+	}
+	return JSON.stringify(seed)
+
+
+## The population's dominant alignment across a realm's hexes (its religious
+## practice, §10), aggregated by weight.
+func _dominant_population_alignment(pol: Dictionary) -> String:
+	var agg := {}
+	for key in pol["hexes"]:
+		for a in _alignment_w.get(key, {}):
+			agg[str(a)] = float(agg.get(str(a), 0.0)) + float(_alignment_w[key][a])
+	return _dominant_key(agg)
+
+
+## ACKS ruler-vs-domain alignment morale penalty: Lawful↔Chaotic −2, Neutral vs
+## L/C −1, matching 0 (acore_axioms_strongholds_and_domains.xml morale modifiers).
+func _alignment_morale_penalty(ruler: String, pop: String) -> int:
+	if pop == "" or ruler == pop:
+		return 0
+	if _alignments_opposed(ruler, pop):
+		return -2
+	return -1
+
+
+## §11.3: score every event's significance for the Layer-7 timeline selection.
+func _score_event_significance() -> void:
+	for e in _events:
+		e["significance"] = _significance_for(str(e["type"]), float(e["severity"]))
+
+
+func _significance_for(type: String, severity: float) -> float:
+	var base: float = _EVENT_SIGNIFICANCE.get(type, 0.2)
+	return snappedf(base + _c.significance_severity_weight * severity, 0.001)
 
 
 ## Stable per-polity replay colors (gdd-campaign-creation-ui §7) — deterministic
@@ -1461,9 +2437,16 @@ func _base_svg(culture_id: String) -> float:
 	return float(_culture_instances.get(culture_id, {}).get("base_subjugation_vs_genocide", 0.5))
 
 
-## fade_factor (§7.7) — 1.0 until a fading culture's polity passes onset (4e).
-func _fade_factor(_pol: Dictionary, _tick: int) -> float:
-	return 1.0
+## fade_factor (§7.7) — 1.0 until a fading culture's polity passes onset, then
+## FADE_RATE ^ (ticks since onset), a compounding ≈ −1.5%/generation. Applies to
+## expansion (`_aggression_eff`), contest defense (`_resolve_contest`), and growth
+## (`_phase_demography`); NOT to the §7.5 collapse roll (a fading realm erodes by
+## border losses, not by its own collapse die). Onset is set in `_phase_stability`.
+func _fade_factor(pol: Dictionary, tick: int) -> float:
+	var onset = pol.get("fade_onset_tick", null)
+	if onset == null:
+		return 1.0
+	return pow(_c.fade_rate, float(tick - int(onset)))
 
 
 func _total_families(pol: Dictionary) -> int:
@@ -1517,7 +2500,13 @@ func _prune_zeros(weights: Dictionary) -> Dictionary:
 	return out
 
 
-func _accumulate(deltas: Dictionary, key: Vector2i, culture: String, amount: float) -> void:
-	if not deltas.has(key):
-		deltas[key] = {}
-	deltas[key][culture] = float(deltas[key].get(culture, 0.0)) + amount
+## Drop entries below [param floor] (diffusion bloat control — see _diffuse_culture).
+func _prune_below(weights: Dictionary, floor: float) -> Dictionary:
+	var out := {}
+	for k in weights:
+		var v := float(weights[k])
+		if v >= floor:
+			out[k] = v
+	return out
+
+

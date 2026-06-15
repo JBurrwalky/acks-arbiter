@@ -1,0 +1,298 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Laughing Pack",
+      "the Carrion-Hyena pack",
+      "the Blood-hunt pack",
+      "the Bone-cracker pack",
+      "the Night-howl pack",
+      "the Flesh-render pack",
+      "the Cackle horde",
+      "the Gnaw-pack",
+      "Atshagbitshag",
+      "Damhyaborhag",
+      "Eshhagayhag",
+      "Gibhagharhag",
+      "Khashhagme'hag",
+      "Laylhagmidbhag",
+      "Mavhagtsurhag",
+      "Milkhagya'hag",
+      "Qarhagbitshag",
+      "Qathagborhag",
+      "Rabhagayhag",
+      "Shenyipharhag",
+      "Tsiphagme'hag",
+      "Atshagmidbhag",
+      "Damhyatsurhag",
+      "Eshhagya'hag"
+    ],
+    "epithet": [
+      "the Cackler",
+      "the Bone-cracker",
+      "the Flesh-render",
+      "the Carrion-eater",
+      "the Pack-leader",
+      "the Mad-laugh",
+      "the Hunter",
+      "the Gnawer",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atshagbitshag",
+      "Damhyaborhag",
+      "Eshhagayhag",
+      "Gibhagharhag",
+      "Khashhagme'hag",
+      "Laylhagmidbhag",
+      "Mavhagtsurhag",
+      "Milkhagya'hag",
+      "Qarhagbitshag",
+      "Qathagborhag",
+      "Rabhagayhag",
+      "Shenyipharhag",
+      "Tsiphagme'hag",
+      "Atshagmidbhag",
+      "Damhyatsurhag",
+      "Eshhagya'hag",
+      "Gibhagbitshag",
+      "Khashhagborhag",
+      "Laylhagayhag",
+      "Mavhagharhag",
+      "Milkhagme'hag",
+      "Qarhagmidbhag",
+      "Qathagtsurhag",
+      "Rabhagya'hag",
+      "Shenyipbitshag",
+      "Tsiphagborhag",
+      "Atshagayhag",
+      "Damhyaharhag",
+      "Eshhagme'hag",
+      "Gibhagmidbhag"
+    ],
+    "military_unit": [
+      "the Laughing Pack",
+      "the Bone-crackers"
+    ],
+    "personal_female": [
+      "Damhyya",
+      "Shenyipa",
+      "Roshhya",
+      "Eshhya",
+      "Gibhya",
+      "Khashya",
+      "Borhya",
+      "Milkhya",
+      "Ruahya",
+      "Vraghya",
+      "Nazhya",
+      "Grumhya",
+      "Skarhya",
+      "Vurhya",
+      "Bhakhya",
+      "Maghya",
+      "Throghya",
+      "Yelphya",
+      "Lelhya",
+      "Snaghya",
+      "Maraqus",
+      "Metensu",
+      "Naktilu",
+      "Raptu"
+    ],
+    "personal_male": [
+      "Qatak-hyag",
+      "Damhya",
+      "Shenyip",
+      "Roshag",
+      "Eshhag",
+      "Gibhag",
+      "Khashhag",
+      "Borhag",
+      "Milkhag",
+      "Ruahag",
+      "Vraghag",
+      "Nazhag",
+      "Grumhyak",
+      "Draghya",
+      "Skarhag",
+      "Vurhag",
+      "Bhakhag",
+      "Maghya",
+      "Throghag",
+      "Yelphag",
+      "Maraqus",
+      "Metensu",
+      "Naktilu",
+      "Raptu"
+    ],
+    "settlement": [
+      "the Hunting-ground",
+      "the Bone-cracker den",
+      "the Carrion-fields",
+      "Borhag-den",
+      "Ya'hag-pack",
+      "Atshagborhag",
+      "Damhyame'hag",
+      "Eshhagborhag",
+      "Gibhagme'hag",
+      "Khashhagborhag",
+      "Laylhagme'hag",
+      "Mavhagborhag",
+      "Milkhagme'hag",
+      "Qarhagborhag",
+      "Qathagme'hag",
+      "Rabhagborhag",
+      "Shenyipme'hag",
+      "Tsiphagborhag",
+      "Atshagme'hag",
+      "Damhyaborhag",
+      "Eshhagme'hag",
+      "Gibhagborhag",
+      "Khashhagme'hag",
+      "Laylhagborhag",
+      "Mavhagme'hag",
+      "Milkhagborhag",
+      "Qarhagme'hag",
+      "Qathagborhag",
+      "Rabhagme'hag",
+      "Shenyipborhag",
+      "Tsiphagme'hag"
+    ]
+  },
+  "culture_id": "gnoll",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_gnoll.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "gnoll",
+  "lexicon": {
+    "concepts": {
+      "beast": "behag",
+      "blood": "damhya",
+      "bone": "atshag",
+      "claw": "tsiphag",
+      "dark": "khashhag",
+      "death": "mavhag",
+      "devour": "akhhag",
+      "fang": "shenyip",
+      "fire": "eshhag",
+      "flesh_meat": "bashag",
+      "great": "rabhag",
+      "horde": "amhag",
+      "horn": "qarhag",
+      "hunt": "tsayhag",
+      "kill": "qatak-hyag",
+      "lair": "me'hag",
+      "night": "laylhag",
+      "raid_plunder": "shalhag",
+      "shaman": "kashhag",
+      "small": "qathag",
+      "spirit_totem": "ruahag",
+      "strong": "gibhag",
+      "war": "milkhag"
+    },
+    "feature_words": {
+      "cave": "me'hag",
+      "crag": "tsurhag",
+      "dark_forest": "ya'hag",
+      "gorge": "gayhag",
+      "mountain": "harhag",
+      "pit": "borhag",
+      "swamp": "bitshag",
+      "waste": "midbhag"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], cackled: Damhya-shenyip (blood-fang); pack = [Totem]-amhag.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "hunting-grounds, bone-cracker dens, carrion-fields: 'the Den of [pack]', 'the Carrion-field of [chief]', 'the Bone-pit of [name]'",
+    "war_bands": "the cackle-named packs: 'the Laughing Pack', 'the Bone-crackers', 'the Flesh-renders of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Laughing Pack / the Carrion-Hyena. The Kashhag cackles to the totem and the Gul-spirits over the carrion-field; foremost Gul-Raptu the Blood-Hunt (gnolls live to hunt and scavenge); the One and the sun demonized.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun)": "Tarul the Burning-Eye"
+    },
+    "holy_symbol_motifs": {
+      "Carrion-Hyena": "a laughing hyena-skull over cracked bones",
+      "Gul-Raptu": "a bloodied paw-print"
+    },
+    "race_totem": "the Carrion-Hyena (Mavhag-behag) / the Laughing Pack",
+    "shaman_rites": "cackle-chants over the carrion-field and bone-cracker pit; the donning of the hyena-hide; laughter at the kill.",
+    "tribal_totem_pattern": "[Mavhag-/Damhya-/Tsay-] + [hyena or carrion]: Mavhag-behag (Carrion-Beast), Damhya-shenyip (Blood-Fang).",
+    "venerated": {
+      "Maraxus (slaughter)": "Gul-Maraqus (the War-Spirit)",
+      "Metensia (carrion, rot)": "Gul-Metensu (the Carrion-Spirit)",
+      "Noctiluna (the night-hunt)": "Gul-Naktilu (the Night-Hunt)",
+      "Raptis (the blood-hunt)": "Gul-Raptu (the Blood-Hunt-Spirit; supreme)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / hunting-pack (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafyip (the runt/slave)",
+      "warrior": "Gibhag (the pack-hunter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Kashhag (great-shaman of the pack-totem)",
+      "shaman": "Kashhag (the totem-cackler)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Roshag",
+        "scope": "chief of a single clanhold (pack)"
+      },
+      "county": {
+        "ruler": "Rabhag-Roshag",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amhag-Roshag",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabhag-Amhag-Malhag",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabhag-Malhag",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milkhag-Roshag",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malhag",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

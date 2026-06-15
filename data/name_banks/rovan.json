@@ -1,0 +1,423 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Hroaldungar",
+      "Ulfungar",
+      "Bjornungar",
+      "Geirungar",
+      "Rod Velislavichi",
+      "Rod Borimirichi",
+      "Rod Ratiborichi",
+      "Stenkilungar",
+      "Rod Putyatichi",
+      "Vargungar",
+      "Rod Dobromirichi",
+      "Rod Volodarichi",
+      "Ulfgrimrvich",
+      "Bjornketillvich",
+      "Geirmundrvich",
+      "Hroaldrvich",
+      "Sveinaldvich",
+      "Hrothgeirvich",
+      "Arnketillvich",
+      "Stenkilvich",
+      "Velislavvich",
+      "Borimirvich",
+      "Bogdanvich",
+      "Dobromirvich"
+    ],
+    "epithet": [
+      "the Konungr",
+      "Ironside",
+      "the Wolf",
+      "the Bold",
+      "the Black",
+      "Oath-sworn",
+      "the Far-sailed",
+      "the Wise",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the White",
+      "the Red",
+      "the Golden",
+      "the Iron"
+    ],
+    "feature": [
+      "Belboloto",
+      "Chervlenbreg",
+      "Chornbrod",
+      "Dalekdoroga",
+      "Lepfjordr",
+      "Malgora",
+      "Medholm",
+      "Mehrebet",
+      "Nizles",
+      "Novmore",
+      "Severmys",
+      "Solostrov",
+      "Srebrozero",
+      "Starpole",
+      "Svyatpotok",
+      "Tonnpustosh",
+      "Velikput",
+      "Verhreka",
+      "Vnesedlo",
+      "Vnutrshija",
+      "Vosksund",
+      "Vostoktayga",
+      "Vysoktropa",
+      "Yantartundra",
+      "Yugzaliv",
+      "Zapadboloto",
+      "Zhelezobreg",
+      "Zhitobrod",
+      "Zlatdoroga",
+      "Zlatofjordr"
+    ],
+    "military_unit": [
+      "s guard) and the Slavic druzhina:",
+      "s Hird",
+      "the Wolf-Druzhina"
+    ],
+    "personal_female": [
+      "Gunnhildr",
+      "Sigrunn",
+      "Svanhildr",
+      "Hrodny",
+      "Steinunn",
+      "Predslava",
+      "Rogneda",
+      "Milena",
+      "Zvenislava",
+      "Dobrava",
+      "Lyudmila",
+      "Bjorghildr",
+      "Gorislava",
+      "Verhuslava",
+      "Ulfrun",
+      "Vesna",
+      "Sbyslava",
+      "Hallveig",
+      "Miloslava",
+      "Gunnvor",
+      "Goyan",
+      "Goyanunn",
+      "Nymir",
+      "Nymirunn",
+      "Orlund",
+      "Orlundunn",
+      "Relata",
+      "Relataunn"
+    ],
+    "personal_male": [
+      "Ulfgrimr",
+      "Bjornketill",
+      "Geirmundr",
+      "Hroaldr",
+      "Sveinald",
+      "Hrothgeir",
+      "Arnketill",
+      "Stenkil",
+      "Velislav",
+      "Borimir",
+      "Bogdan",
+      "Dobromir",
+      "Radomir",
+      "Miroslav",
+      "Vseslav",
+      "Putyata",
+      "Grimulfr",
+      "Vargeir",
+      "Ratibor",
+      "Mstislav",
+      "Sigri",
+      "Steini",
+      "Goyan",
+      "Goyani",
+      "Nymir",
+      "Nymiri",
+      "Orlund",
+      "Orlundi",
+      "Relata",
+      "Relatai"
+    ],
+    "settlement": [
+      "Rovia",
+      "Belgorod",
+      "Novigrad",
+      "Holmgard",
+      "Chorn-reka",
+      "Yantar-pristan",
+      "Belbreg",
+      "Chervlenbrod",
+      "Chorndetinets",
+      "Dalekgard",
+      "Lepgorod",
+      "Malholl",
+      "Medholm",
+      "Mehkapishche",
+      "Nizostrog",
+      "Novselo",
+      "Severstolgrad",
+      "Soltorg",
+      "Srebroves",
+      "Starbreg",
+      "Svyatbrod",
+      "Tonndetinets",
+      "Velikgard",
+      "Verhgorod",
+      "Vneholl",
+      "Vnutrholm",
+      "Voskapishche",
+      "Vostokostrog",
+      "Vysokselo",
+      "Yantarstolgrad",
+      "Yugtorg",
+      "Zapadves",
+      "Zhelezobreg",
+      "Zhitobrod",
+      "Zlatdetinets",
+      "Zlatogard",
+      "Chervlenholl",
+      "Chornholm",
+      "Dalekapishche",
+      "Lepostrog"
+    ],
+    "ship": [
+      "s drakkar) with Slavic river-names:",
+      ","
+    ],
+    "tavern": [
+      "s hall and the village honey-house:",
+      ",",
+      "The Bel Med",
+      "The Chervlen Meh",
+      "The Chorn Sol",
+      "The Dalek Srebro",
+      "The Lep Tonn",
+      "The Mal Vosk",
+      "The Nov Yantar",
+      "The Star Zhelezo",
+      "The Svyat Zhito",
+      "The Velik Zlato"
+    ]
+  },
+  "culture_id": "rovan",
+  "family": [
+    "germanic",
+    "slavic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_rovan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "rovan",
+  "lexicon": {
+    "adjectives": {
+      "black": "chorn",
+      "fair": "lep",
+      "far": "dalek",
+      "golden": "zlat",
+      "great": "velik",
+      "high": "vysok",
+      "iron": "zhelezo",
+      "little": "mal",
+      "new": "nov",
+      "old": "star",
+      "red": "chervlen",
+      "sacred": "svyat",
+      "white": "bel"
+    },
+    "directional": {
+      "east": "vostok",
+      "inner": "vnutr",
+      "lower": "niz",
+      "north": "sever",
+      "outer": "vne",
+      "south": "yug",
+      "upper": "verh",
+      "west": "zapad"
+    },
+    "feature_words": {
+      "bay": "zaliv",
+      "cape": "mys",
+      "coast": "breg",
+      "fjord": "fjordr",
+      "ford": "brod",
+      "forest": "les",
+      "hill": "holm",
+      "isle": "ostrov",
+      "lake": "ozero",
+      "marsh": "boloto",
+      "mountain": "gora",
+      "narrows": "sund",
+      "neck": "shija",
+      "pass": "sedlo",
+      "plain": "pole",
+      "ridge": "hrebet",
+      "river": "reka",
+      "road": "doroga",
+      "sea": "more",
+      "stream": "potok",
+      "taiga": "tayga",
+      "track": "tropa",
+      "tundra": "tundra",
+      "waste": "pustosh",
+      "way": "put"
+    },
+    "resources": {
+      "amber": "yantar",
+      "fur": "meh",
+      "gold": "zlato",
+      "grain": "zhito",
+      "honey": "med",
+      "iron": "zhelezo",
+      "ivory": "tonn",
+      "salt": "sol",
+      "silver": "srebro",
+      "wax": "vosk"
+    },
+    "settlement_words": {
+      "citadel": "detinets",
+      "city": "stolgrad",
+      "fort": "ostrog",
+      "hall": "holl",
+      "hamlet": "ves",
+      "market": "torg",
+      "temple_town": "kapishche",
+      "town": "gorod",
+      "trade_fort": "gard",
+      "village": "selo"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "place-names Slavic (Bel-gorod white-town, Chorn-reka black-river); the Norse elite name halls and trade-forts (Holm-gard, Ulf-by) and ruling lineages (-ungar).",
+    "gendered_endings": {
+      "female": [
+        "unn"
+      ],
+      "male": [
+        "i"
+      ]
+    },
+    "patronymic_form": "the Slavic commons use -ov/-ich; the Norse ruling elite use -son/-dottir and the aett (ruling house); place-names are Slavic, the ruling lineage Norse.",
+    "toponymic_suffixes": [
+      "grad / -gorod",
+      "ov / -ev",
+      "gard",
+      "by",
+      "Bel- / Chorn-",
+      "ichi"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "burned gards, abandoned kapishcha and barrow-kurgans: 'the Howe of [konungr]', 'the dead Gard of [name]'",
+    "military_units": "the Norse hird (the prince's guard) and the Slavic druzhina: 'the Konungr's Hird', 'the Wolf-Druzhina'",
+    "ships": "Norse river-longships (the elite's drakkar) with Slavic river-names: 'the Wave-Wolf', 'Storm-Raven', 'the Reka-Serpent'",
+    "taverns": "the jarl's hall and the village honey-house: 'the Mead-Hall of [jarl]', 'the Honey-Cup'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon, STRATIFIED BY CLASS: the Norse warrior/ruling elite venerate the martial and sovereign powers by their NORSE names (from family_germanic norse reflexes); the Slavic farming/crafting commons venerate the earth, mother, hearth and ancestor powers by their SLAVIC names (from family_slavic theonym_set). Same shared pantheon, two registers. Never real Norse/Slavic gods. Rovan seeds/shifts across all three alignments; the worship/demonize set follows its CURRENT alignment (see worship_by_alignment), within each class's register.",
+    "class_register": {
+      "norse_elite": "the martial and sovereign powers: Eitnir (All-Father), Orlund (the jarls' war-oath), Nymir (the storm-sky wisdom, the ruler's power), Thulr (the king's sun-justice); sworn in the jarl's hall and at the hof",
+      "slavic_commons": "the earth, mother, hearth and ancestor powers: Goyan (the earth/black soil), Relata (the mother and hearth), Tulor (the harvest-sun), and the Dedy (ancestral dead); kept at the kapishche-grove and the hearth"
+    },
+    "clergy_ladder": {
+      "1": "Thul / Vedun (sayer-novice)",
+      "3": "Godi (Norse temple-priest) / Zhrets (Slavic sacrificer)",
+      "5": "Hofgodi (Norse) / Volkhv (Slavic)",
+      "7": "Allsherjargodi (high priest)",
+      "9": "Verhovny Volkhv (the realm's high priest)"
+    },
+    "demon_epithet_pattern": "the demonized set take dread epithets: Maraxus -> Marhr the War-Fire (Slav. Marakh); Vacidus -> Vakr the Unmaker (Slav. Vakid); Lusanto -> Lusandr the Hoard-Worm (Slav. Lusan).",
+    "holy_symbol_motifs": {
+      "Goyan": "the black earth beneath the plough (the commons)",
+      "Nymir": "a storm-eye between two ravens (the rulers)",
+      "Orlund": "crossed spears over an oath-ring (the jarls)",
+      "Relata": "the spinning-distaff over grain (the hearth)"
+    },
+    "religious_orders_pattern": "the Hof (Norse temple, in the jarl-towns) and the Kapishche (Slavic idol-grove, in the villages): 'the Hof of Orlund', 'the Kapishche of Goyan'.",
+    "saints_pattern": "the elite honor the howe-dwelling ancestors of the ruling aett; the commons the Dedy (ancestral dead) at the kurgan; great Konungs become storm-riders.",
+    "sample_deity_renames": {
+      "Gaiandus": "Goyan (Slavic; the black earth, the farmers' power; commons power)",
+      "Numeno": "Nymir (Norse; the storm-sky wisdom, the ruler's power; elite power)",
+      "Orlandus": "Orlund (Norse; the jarls' iron-oath and war; elite power)",
+      "Realta": "Relata (Slavic; the mother and the hearth; commons power)"
+    },
+    "the_one": "Eitnir (Norse, the elite's far All-Father) / Oterun (Slavic, the commons' Heaven-Father) - the One under two registers",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (the elite the war-fire Marhr and the wolf-powers; the commons the wild Vakid), demonize the Lawful powers and the One",
+      "Lawful": "revere the One (Eitnir/Oterun) and the Lawful powers (elite: Thulr, Orlund, Nymir; commons: Goyan, Relata, Tulor), demonize the Chaotic powers",
+      "Neutral": "all powers ambivalent; the commons foreground the Dedy (ancestral dead) and the land-spirits, the elite the hall-ancestors (the aett-dead)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Stratified, ascending: the lower tiers are the SLAVIC native nobility, the upper tiers the NORSE ruling elite. Boyarin (Slavic land-lord) barony; Posadnik (Slavic town-governor) march; Voevoda (Slavic war-governor) county; Jarl (Norse earl) duchy; Konungr (Norse king, styled Knyaz to the commons) principality; Storkonungr (great-king, styled Velikii Knyaz / grand prince) kingdom; Yfirkonungr (over-king, the early Rus style Kagan) over the realm. The Norse elite rule; the Slavic boyars and the veche administer the land. (Rank titles are the real Norse/Slavic register, allowed.)",
+    "female_forms": {
+      "Boyarin": "Boyarynya",
+      "Jarl": "Jarlkona",
+      "Konungr": "Drottning / Knyaginya",
+      "Posadnik": "Posadnitsa",
+      "Storkonungr": "Velikaya Knyaginya",
+      "Voevoda": "Voevodina",
+      "Yfirkonungr": "Yfirdrottning"
+    },
+    "government": "feudal (the Rus: a Norse ruling elite over a Slavic populace - Konungr-princes and their jarls over the native boyars and voevodas; river-trade principalities)",
+    "heir": "Konungs-son / Knyazhich (the prince's son)",
+    "honorifics": {
+      "champion": "Kappi (Norse) / Bogatyr (Slavic)",
+      "elder": "Gamli / Starets",
+      "lady": "Husfru / Gospozha",
+      "lord": "Drottinn (Norse elite) / Gospodin (Slavic)",
+      "your_grace": "Konungr / Knyazhe"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Boyarstvo",
+        "ruler": "Boyarin"
+      },
+      "county": {
+        "domain": "Voevodstvo",
+        "ruler": "Voevoda"
+      },
+      "duchy": {
+        "domain": "Jarldom",
+        "ruler": "Jarl"
+      },
+      "empire": {
+        "domain": "Kaganat",
+        "ruler": "Yfirkonungr"
+      },
+      "kingdom": {
+        "domain": "Velikoe Knyazhestvo",
+        "ruler": "Storkonungr"
+      },
+      "march": {
+        "domain": "Posad",
+        "ruler": "Posadnik"
+      },
+      "principality": {
+        "domain": "Knyazhestvo",
+        "ruler": "Konungr"
+      }
+    },
+    "vassalage": {
+      "fealty": "Eidr (Norse oath) / Rota (Slavic oath)",
+      "liege": "Drottinn",
+      "tribute": "Skattr (Norse) / Dan (Slavic, the polyudye)",
+      "vassal": "Huskarl (Norse retainer) / Druzhinnik (Slavic)"
+    }
+  }
+}

@@ -1,0 +1,430 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
+  "categories": {
+    "clan_house": [
+      "Bet-Talros",
+      "Bet-Numanos",
+      "Bet-Warlandos",
+      "Bet-Gayandos",
+      "Bet-Riyalta",
+      "Bet-Aregawi",
+      "Bet-Mangasha",
+      "Bet-Nagasi",
+      "Bet-Sayfu",
+      "Bet-Garima",
+      "Bet-Kafla",
+      "Bet-Asrata",
+      "Gabra-talrosson",
+      "Walda-numanosson",
+      "Haila-warlandosson",
+      "Gabra-gayandosson",
+      "Mangashason",
+      "Tasfason",
+      "Nagasison",
+      "Sayfuson",
+      "Aregawison",
+      "Yamanason",
+      "Zawaldason",
+      "Tadlason"
+    ],
+    "epithet": [
+      "Anbessa",
+      "Sword-of-the-Most-High",
+      "the Far-trader",
+      "Gold-giver",
+      "the Steadfast",
+      "Amba-holder",
+      "the Devout",
+      "Incense-bearer",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Abiabiy-bahr",
+      "Asasar",
+      "Biluayn",
+      "Biretbahr",
+      "Birurbaraha",
+      "Debubchaka",
+      "Ehilchaqa",
+      "Hadisdebr",
+      "Itandeset",
+      "Layfelag",
+      "Le'ulfenot",
+      "Ne'usgedel",
+      "Nehasguba",
+      "Qeribhayq",
+      "Qeyihkisad",
+      "Qiddusmashagar",
+      "Qirmizmeda",
+      "Rehuqmenged",
+      "Sefirmeraf",
+      "Semenqetin",
+      "Tahtras",
+      "Tse'edasefaf",
+      "Tsegasensel",
+      "Tselimshellaqo",
+      "Tseweyba",
+      "Werqabiy-bahr",
+      "Wichasar",
+      "Wistayn",
+      "Abiybahr",
+      "Asabaraha"
+    ],
+    "military_unit": [
+      "the Sefari of Warlandos"
+    ],
+    "personal_female": [
+      "Amata-Talros",
+      "Amata-Riyalta",
+      "Walatta-Numanos",
+      "Sabla",
+      "Tsega",
+      "Walatta-Talros",
+      "Amata-Warlandos",
+      "Mahbuba",
+      "Hiruta",
+      "Amata-Gayandos",
+      "Walatta-Riyalta",
+      "Tirhas",
+      "Sanayit",
+      "Amata-Numanos",
+      "Walatta-Warlandos",
+      "Atsede",
+      "Itu",
+      "Aregash",
+      "Walatta-Gayandos",
+      "Yamarot",
+      "Gabra-Talrit",
+      "Walda-Numanit",
+      "Haila-Warlandit",
+      "Gabra-Gayandit",
+      "Mangashit",
+      "Tasfit",
+      "Yamanit",
+      "Zawaldit",
+      "Tadlit",
+      "Garimit",
+      "Kafla-Talrit",
+      "Asratit",
+      "Walda-Riyaltit",
+      "Haila-Talrit",
+      "Gabra-Warlandit",
+      "Takla-Numanit",
+      "Walda-Gayandit",
+      "Gayandos",
+      "Gayandosit",
+      "Numanos"
+    ],
+    "personal_male": [
+      "Gabra-Talros",
+      "Walda-Numanos",
+      "Haila-Warlandos",
+      "Gabra-Gayandos",
+      "Mangasha",
+      "Tasfa",
+      "Nagasi",
+      "Sayfu",
+      "Aregawi",
+      "Yamana",
+      "Zawalda",
+      "Tadla",
+      "Garima",
+      "Kafla-Talros",
+      "Asrata",
+      "Walda-Riyalta",
+      "Haila-Talros",
+      "Gabra-Warlandos",
+      "Takla-Numanos",
+      "Walda-Gayandos",
+      "Amata-Riyaltos",
+      "Sablos",
+      "Tsegos",
+      "Mahbubos",
+      "Hirutos",
+      "Walatta-Riyaltos",
+      "Sanayos",
+      "Gayandos",
+      "Gayandosos",
+      "Numanos",
+      "Numanosos",
+      "Riyalta",
+      "Riyaltaos",
+      "Talros",
+      "Talrosos",
+      "Warlandos",
+      "Warlandosos"
+    ],
+    "settlement": [
+      "Axuma",
+      "Marsa-Bahr",
+      "Debra-Talros",
+      "Hagara-Negest",
+      "Tselim-Amba",
+      "Bet-Meqdes",
+      "Abiamba",
+      "Asabet-meqdes",
+      "Biluygebeya",
+      "Biretgota",
+      "Birurguba",
+      "Debubhagar",
+      "Ehilketema",
+      "Hadismarsa",
+      "Itanmashagar",
+      "Laymender",
+      "Le'ulnegest-amba",
+      "Ne'usefaf",
+      "Nehasamba",
+      "Qeribet-meqdes",
+      "Qeyihgebeya",
+      "Qiddusgota",
+      "Qirmizguba",
+      "Rehuqhagar",
+      "Sefirketema",
+      "Semenmarsa",
+      "Tahtmashagar",
+      "Tse'edamender",
+      "Tseganegest-amba",
+      "Tselimsefaf",
+      "Tsewamba",
+      "Werqbet-meqdes",
+      "Wichgebeya",
+      "Wistgota",
+      "Abiyguba",
+      "Asahagar",
+      "Biluyketema",
+      "Biretmarsa",
+      "Birurmashagar",
+      "Debubmender"
+    ],
+    "ship": [
+      "Bringer of Itan",
+      "Star of the Red Bahr",
+      "the Mehala"
+    ],
+    "tavern": [
+      "The Golden Amba",
+      "The Tej Horn",
+      "The Abiy Asa",
+      "The Biluy Biret",
+      "The Biret Birur",
+      "The Hadis Ehil",
+      "The Le'ul Itan",
+      "The Ne'us Nehas",
+      "The Qeyih Qirmiz",
+      "The Qiddus Sefir",
+      "The Rehuq Tsew",
+      "The Tse'eda Werq"
+    ]
+  },
+  "culture_id": "axumite",
+  "family": [
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_axumite.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "axumite",
+  "lexicon": {
+    "adjectives": {
+      "black": "tselim",
+      "fair": "tsega",
+      "far": "rehuq",
+      "golden": "werq",
+      "great": "abiy",
+      "high": "le'ul",
+      "iron": "biret",
+      "little": "ne'us",
+      "new": "hadis",
+      "old": "biluy",
+      "red": "qeyih",
+      "sacred": "qiddus",
+      "white": "tse'eda"
+    },
+    "directional": {
+      "far": "rehuq",
+      "inner": "wist",
+      "lower": "taht",
+      "near": "qerib",
+      "north": "semen",
+      "outer": "wich",
+      "south": "debub",
+      "upper": "lay"
+    },
+    "feature_words": {
+      "bay": "meraf",
+      "cape": "ras",
+      "coast": "sefaf",
+      "desert": "baraha",
+      "ford": "mashagar",
+      "forest": "chaka",
+      "hill": "guba",
+      "isle": "deset",
+      "lake": "hayq",
+      "marsh": "chaqa",
+      "mountain": "debr",
+      "narrows": "qetin",
+      "neck": "kisad",
+      "oasis": "ayn",
+      "ocean": "abiy-bahr",
+      "pass": "gedel",
+      "plain": "meda",
+      "ridge": "sensel",
+      "river": "felag",
+      "road": "menged",
+      "sea": "bahr",
+      "stream": "weyba",
+      "track": "asar",
+      "vale": "shellaqo",
+      "way": "fenot"
+    },
+    "resources": {
+      "bronze": "nehas",
+      "fish": "asa",
+      "gold": "werq",
+      "grain": "ehil",
+      "incense": "itan",
+      "iron": "biret",
+      "lapis": "sefir",
+      "purple_dye": "qirmiz",
+      "salt": "tsew",
+      "silver": "birur"
+    },
+    "settlement_words": {
+      "citadel": "negest-amba",
+      "city": "hagar",
+      "fort": "amba",
+      "hamlet": "gota",
+      "market": "gebeya",
+      "port": "marsa",
+      "temple_town": "bet-meqdes",
+      "town": "ketema",
+      "village": "mender"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "construct: Beta-[deity] (house/temple of), Debra-[deity|feature] (mount of), Hagara-[name] (city of); quality + feature: Tselim-debr (black-mountain).",
+    "gendered_endings": {
+      "female": [
+        "it",
+        "a"
+      ],
+      "male": [
+        "os",
+        "a"
+      ]
+    },
+    "patronymic_form": "filiation 'walda-X' (son of X); theophoric given names on morphed god-stems; nobles a house (beta-X) or clan (zemed); no inherited surname for commoners (filiation + epithet).",
+    "toponymic_suffixes": [
+      "Beta-",
+      "Debra-",
+      "Hagara-",
+      "Amba-",
+      "a"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "ruined amba-fortresses and rock-hewn debr: 'the Debr of [name]', 'the fallen Amba of [name]'",
+    "military_units": "the [god|region] Sefari (host) / the [name] Spears: 'the Sefari of Warlandos'",
+    "ships": "incense-trader and saint/virtue names: 'Bringer of Itan', 'Star of the Red Bahr', 'the Mehala' (the Oath)",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Amba', 'The Tej Horn'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Ge'ez phonology (emphatics; -us/-a -> -a/-os; v -> w/b) \u2014 recognizably the same powers, never real Ethiopian or Christian holy names. Lawful henotheist: the One is prominent and the Lawful powers venerated as His ministers; Neutral kin honor the saints and ancestral dead (akhu equivalents) at monastery-shrines.",
+    "clergy_ladder": {
+      "1": "Diyaqon (deacon-acolyte)",
+      "3": "Qesis (priest)",
+      "5": "Qomos (archpriest/hegumen)",
+      "7": "Episqopos (bishop)",
+      "9": "Abun (metropolitan)"
+    },
+    "demon_epithet_pattern": "each opposing power (the Chaotic 13 for this Lawful-leaning realm) keeps its morphed name + its own hostile portfolio-epithet, distinct per power, framed as the rebel hosts of the serpent-adversary: Maraxus -> Marakos the City-Burner; Vacidus -> Wak'idos the Devouring Void; Metensia -> Matansa the Wasting.",
+    "holy_symbol_motifs": {
+      "Gayandos": "a grey amba (table-mountain) beneath stars",
+      "Talros": "a rayed sun above the tablets of right-order",
+      "Warlandos": "an iron spear crossed with an oath-ring"
+    },
+    "religious_orders_pattern": "the Bet (temple) or Debr (monastery) of [power]: 'the Debr of Numanos'.",
+    "saints_pattern": "Qiddus/Qiddist [name] (the holy [name]); the deified-just dead and god-favored kings, venerated at a debr (monastery-shrine).",
+    "sample_deity_renames": {
+      "Gaiandus": "Gayandos (the enduring mountain)",
+      "Numeno": "Numanos (wisdom and the winds)",
+      "Orlandus": "Warlandos (iron-sworn)",
+      "Realta": "Riyalta (the mother / mercy)",
+      "Tulrius": "Talros (sun and right-order)"
+    },
+    "the_one": "Atyarna (< Aeternus; God Most High, the maker, prominent and petitioned through His ministers)"
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Ge'ez/Ethiopian, ascending (barony..empire). Built on the negus root: Negus/Negusat (king/kingdom), Negusa-Nagast (king of kings, the emperor) over the Mangist (realm). Shum (chief) barony; Bahr-Negash (governor of the sea/frontier) march; Dejazmach (commander of the gate) county; Makwannen (governor) duchy; Ras (head/prince) principality. (Rank titles are the real Ethiopian register, allowed.)",
+    "female_forms": {
+      "Bahr-Negash": "Bahr-Negashit",
+      "Dejazmach": "Dejazmachit",
+      "Makwannen": "Makwannenit",
+      "Negus": "Nigist",
+      "Negusa-Nagast": "Nigista-Nagast (or Itege)",
+      "Ras": "Rasit",
+      "Shum": "Shumit"
+    },
+    "government": "feudal (Ethiopian; the Negus/Negusa-Nagast over a hierarchy of Ras and Dejazmach; the church and the elder-councils are narrative flavor)",
+    "heir": "Le'ul (crown prince) / Walda-Negus (king's son)",
+    "honorifics": {
+      "knight": "Fares (horseman)",
+      "lady": "Wayzaro",
+      "lord": "Geta",
+      "your_grace": "Getoch-hoy",
+      "your_majesty": "Janhoy"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Shumat",
+        "ruler": "Shum"
+      },
+      "county": {
+        "domain": "Dejazmachat",
+        "ruler": "Dejazmach"
+      },
+      "duchy": {
+        "domain": "Makwannenat",
+        "ruler": "Makwannen"
+      },
+      "empire": {
+        "domain": "Mangist",
+        "ruler": "Negusa-Nagast"
+      },
+      "kingdom": {
+        "domain": "Negusat",
+        "ruler": "Negus"
+      },
+      "march": {
+        "domain": "Bahr-Negashat",
+        "ruler": "Bahr-Negash"
+      },
+      "principality": {
+        "domain": "Rasat",
+        "ruler": "Ras"
+      }
+    },
+    "vassalage": {
+      "fealty": "Mehala (oath)",
+      "liege": "Geta",
+      "tribute": "Gibr",
+      "vassal": "Gabr (servant)"
+    }
+  }
+}

@@ -1,0 +1,419 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Cland Conaill",
+      "Cland Cormaic",
+      "Ui Eogain",
+      "Ui Niad",
+      "Cland Fergusa",
+      "Ui Lugdach",
+      "Cland Ronain",
+      "Ui Echach",
+      "Cland Murchada",
+      "Ui Cathail",
+      "Cland Lorcain",
+      "Ui Ruadain",
+      "Macconall",
+      "Maccormac",
+      "Macdiarmait",
+      "Maceogan",
+      "Macfergal",
+      "Maclugaid",
+      "Macniall",
+      "Macronan",
+      "Macaedan",
+      "Macbrendan",
+      "Maccaolan",
+      "Macdonnchad"
+    ],
+    "epithet": [
+      "the Hound",
+      "the Red",
+      "the Fair",
+      "Battle-victor",
+      "of the Glen",
+      "the Swift",
+      "Oath-bound",
+      "the Black",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the White",
+      "the Golden",
+      "the Iron",
+      "the High"
+    ],
+    "feature": [
+      "Airtherabann",
+      "Arbarath",
+      "Ardbealach",
+      "Argatbothar",
+      "Beccamas",
+      "Bocaol",
+      "Caemcladach",
+      "Ciancnoc",
+      "Deiscertcoill",
+      "Dergcurrach",
+      "Dubdoire",
+      "Echdruim",
+      "Findfasach",
+      "Iarnglenn",
+      "Iartharinis",
+      "Immechtrachloch",
+      "Inmedonlorg",
+      "Iochtarmag",
+      "Midmoin",
+      "Mormuin",
+      "Noibmuir",
+      "Nuarinn",
+      "Olannsliabh",
+      "Orslige",
+      "Ordasruth",
+      "Salannabann",
+      "Senath",
+      "Tuaiscertbealach",
+      "Uachtarbothar",
+      "Umacamas"
+    ],
+    "military_unit": [
+      "the Fian of the Red Branch",
+      "the Hound-spears"
+    ],
+    "personal_female": [
+      "Affraic",
+      "Bebinn",
+      "Ciara",
+      "Damhnait",
+      "Eithne",
+      "Fionnuala",
+      "Gormlaith",
+      "Lasair",
+      "Mor",
+      "Nessa",
+      "Orlaith",
+      "Ronnat",
+      "Sadb",
+      "Tuathla",
+      "Aoife",
+      "Blathnat",
+      "Caoimhe",
+      "Deirbhile",
+      "Ailbhe",
+      "Muirenn",
+      "Eogin",
+      "Ronin",
+      "Aedin",
+      "Brendin",
+      "Caolin",
+      "Lorcin",
+      "Ruadin",
+      "Senin",
+      "Gaian",
+      "Gaianin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Conall",
+      "Cormac",
+      "Diarmait",
+      "Eogan",
+      "Fergal",
+      "Lugaid",
+      "Niall",
+      "Ronan",
+      "Aedan",
+      "Brendan",
+      "Caolan",
+      "Donnchad",
+      "Eochaid",
+      "Fiachra",
+      "Lorcan",
+      "Murchad",
+      "Ruadan",
+      "Senan",
+      "Tuathal",
+      "Cathal",
+      "Blathan",
+      "Gaian",
+      "Gaianan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Cuchulei",
+      "Dun Derg",
+      "Rath Mor",
+      "Ard Toran",
+      "Cill Realtan",
+      "Loch Glas",
+      "Airtheraonach",
+      "Arbarath",
+      "Ardbaile",
+      "Argatbaile-mor",
+      "Beccaiseal",
+      "Bocathair",
+      "Caemclachan",
+      "Ciancladach",
+      "Deiscertcnoc",
+      "Dergcuan",
+      "Dubdun",
+      "Echnemed",
+      "Findaonach",
+      "Iarnath",
+      "Iartharbaile",
+      "Immechtrachbaile-mor",
+      "Inmedoncaiseal",
+      "Iochtarcathair",
+      "Midclachan",
+      "Morcladach",
+      "Noibcnoc",
+      "Nuacuan",
+      "Olanndun",
+      "Ornemed",
+      "Ordaonach",
+      "Salannath",
+      "Senbaile",
+      "Tuaiscertbaile-mor",
+      "Uachtarcaiseal",
+      "Umacathair",
+      "Airtherclachan",
+      "Arbarcladach",
+      "Ardcnoc",
+      "Argatcuan"
+    ],
+    "ship": [
+      "the Grey Hound",
+      "Raven of the Glenn"
+    ],
+    "tavern": [
+      "The Salmon of Wisdom",
+      "The Boar and Cauldron",
+      "The Ard Arbar",
+      "The Becc Argat",
+      "The Caem Bo",
+      "The Cian Ech",
+      "The Derg Iarn",
+      "The Dub Mid",
+      "The Find Olann",
+      "The Iarn Or",
+      "The Mor Salann",
+      "The Noib Uma"
+    ]
+  },
+  "culture_id": "cuchulan",
+  "family": [
+    "celtic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_cuchulan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "cuchulan",
+  "lexicon": {
+    "adjectives": {
+      "black": "dub",
+      "fair": "caem",
+      "far": "cian",
+      "golden": "orda",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarn",
+      "little": "becc",
+      "new": "nua",
+      "old": "sen",
+      "red": "derg",
+      "sacred": "noib",
+      "white": "find"
+    },
+    "directional": {
+      "east": "airther",
+      "inner": "inmedon",
+      "lower": "iochtar",
+      "north": "tuaiscert",
+      "outer": "immechtrach",
+      "south": "deiscert",
+      "upper": "uachtar",
+      "west": "iarthar"
+    },
+    "feature_words": {
+      "bay": "camas",
+      "bog": "moin",
+      "cape": "rinn",
+      "coast": "cladach",
+      "ford": "ath",
+      "forest": "coill",
+      "hill": "cnoc",
+      "isle": "inis",
+      "lake": "loch",
+      "marsh": "currach",
+      "mountain": "sliabh",
+      "narrows": "caol",
+      "neck": "muin",
+      "pass": "bealach",
+      "plain": "mag",
+      "ridge": "druim",
+      "river": "abann",
+      "road": "bothar",
+      "sea": "muir",
+      "stream": "sruth",
+      "track": "lorg",
+      "vale": "glenn",
+      "waste": "fasach",
+      "way": "slige",
+      "wood": "doire"
+    },
+    "resources": {
+      "bronze": "uma",
+      "cattle": "bo",
+      "gold": "or",
+      "grain": "arbar",
+      "horse": "ech",
+      "iron": "iarn",
+      "mead": "mid",
+      "salt": "salann",
+      "silver": "argat",
+      "wool": "olann"
+    },
+    "settlement_words": {
+      "citadel": "caiseal",
+      "city": "cathair",
+      "fort": "dun",
+      "hamlet": "clachan",
+      "market": "aonach",
+      "port": "cuan",
+      "temple_town": "nemed",
+      "town": "baile-mor",
+      "village": "baile"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|saint|feature](stem) + element: Dun-derg (red-fort), Ard-mor (great-height), Cill-[name] (church of); patronymic Mac-[father], O-[ancestor].",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "nat"
+      ],
+      "male": [
+        "an",
+        "ach"
+      ]
+    },
+    "patronymic_form": "patronymic Mac- (son of) / O / Ua (grandson/descendant of); the kin-group is the fine, the wider clan the cland; praise- and deed-epithets common.",
+    "toponymic_suffixes": [
+      "Dun-",
+      "Rath-",
+      "Baile-",
+      "Cill-",
+      "Ard-",
+      "Mag-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen raths and sidhe-mounds: 'the Rath of [name]', 'the Sidhe of [hill]'",
+    "military_units": "the [cland] Fian (warrior-band) / the [animal] spears: 'the Fian of the Red Branch', 'the Hound-spears'",
+    "ships": "curach river-boats and chariot-names (the Cuchulan are inland forest-folk): 'the Grey Hound', 'Raven of the Glenn'",
+    "taverns": "'The [Adjective] [Noun]': 'The Salmon of Wisdom', 'The Boar and Cauldron'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the Agrippan canon through Insular-Celtic phonology (family_celtic.json theonym_set) - never real Celtic gods. All three alignments: Lawful kin keep the sun-and-oath powers; Neutral the ancestral dead, the land and the nature-powers; Chaotic the war-fury and raven powers. Druidic: the drui and the fili mediate; the Tuath-de are the god-kin.",
+    "clergy_ladder": {
+      "1": "Drui-dalta (druid-novice)",
+      "3": "Drui (druid)",
+      "5": "Faith (seer-priest)",
+      "7": "Ard-drui (arch-druid)",
+      "9": "Ollam (supreme sage)"
+    },
+    "demon_epithet_pattern": "the opposing powers keep their Celtic morphs + a portfolio epithet (distinct per power): Maraxus -> Maragan the War-Fire; Vacidus -> Faicid the Unmaker; Lusanto -> Losand the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Orlann": "an iron spear crossed with a torc (oath-ring)",
+      "Realtan": "a star above a healing-well",
+      "Toran": "a triskele sun-wheel over crossed oak"
+    },
+    "religious_orders_pattern": "the Nemed (sacred grove) of [power]: 'the Nemed of Toran'.",
+    "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the fine, honored at the cairn and the holy well; the Lawful add 'Naomh [name]' (saint).",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaian (the enduring land)",
+      "Orlandus": "Orlann (the iron-oath, battle)",
+      "Realta": "Realtan (the mother, the mercy-star)",
+      "Tulrius": "Toran (the sun, the just brightness)"
+    },
+    "the_one": "Eternan (< Aeternus; the Ancient One beyond the god-kin, seldom petitioned)"
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Insular Celtic (Gaelic) clanhold, ascending. Built on ri (king) and tuath (petty kingdom): Ri Tuaithe (king of a tuath) principality, Ruiri (over-king) kingdom, Ard-ri (high king) empire over the Ard-rige. Aire (noble) barony; Maor (warden) march; Toisech (sept-chief) county; Flaith (lord) duchy. A clan culture rarely rises past the ri-tuaithe. The brithem (judge) and fili (poet-seer) stand outside the ladder. (Rank titles are the real Gaelic register, allowed.)",
+    "female_forms": {
+      "Aire": "Banaire",
+      "Ard-ri": "Ard-rigan",
+      "Flaith": "Banflaith",
+      "Maor": "Banmaor",
+      "Ri Tuaithe": "Rigan",
+      "Ruiri": "Ruirigan",
+      "Toisech": "Bantoisech"
+    },
+    "government": "clanhold (ri-tuaithe and the oenach assembly; the brithem judges and the fili sings the king's right)",
+    "heir": "Tanaiste (the heir-elect / second)",
+    "honorifics": {
+      "champion": "Caur (hero)",
+      "elder": "Sruith",
+      "lady": "Bantriath",
+      "lord": "Triath",
+      "your_grace": "A Ri"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Airecht",
+        "ruler": "Aire"
+      },
+      "county": {
+        "domain": "Toisecht",
+        "ruler": "Toisech"
+      },
+      "duchy": {
+        "domain": "Flaithes",
+        "ruler": "Flaith"
+      },
+      "empire": {
+        "domain": "Ard-rige",
+        "ruler": "Ard-ri"
+      },
+      "kingdom": {
+        "domain": "Morthuath",
+        "ruler": "Ruiri"
+      },
+      "march": {
+        "domain": "Maoracht",
+        "ruler": "Maor"
+      },
+      "principality": {
+        "domain": "Tuath",
+        "ruler": "Ri Tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Giall (pledge-hostage)",
+      "liege": "Flaith",
+      "tribute": "Cis",
+      "vassal": "Ceile (client)"
+    }
+  }
+}

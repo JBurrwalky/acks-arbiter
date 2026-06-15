@@ -34,7 +34,12 @@ var human_seed_points: int = 10
 ## Whether demihuman (elf/dwarf) seeds are placed at all (§7.5).
 var demihuman_presence: bool = true
 ## Baseline wilderness beastman clanhold scaling, 0.0-2.0 (§6.3).
-var wilderness_beastman_density: float = 1.0
+## [CALIBRATION 2026-06-13] default 1.0→0.5: with the Lawful/Neutral-destroys-
+## beastman war ruling, civilizations now clear beastmen by conquest, so the
+## interior can stay beastman-rich (the chaotic frontier) without pinning the
+## §17 wilderness fraction — 0.5 keeps a plentiful beastman interior that
+## advancing civilizations push back.
+var wilderness_beastman_density: float = 0.5
 
 # --- History (Layer 4) ------------------------------------------------------
 

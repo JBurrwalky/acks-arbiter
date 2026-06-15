@@ -1,0 +1,298 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Great Gut tribe",
+      "the Boulder-Fist clan",
+      "the Skull-smash band",
+      "the Man-eater tribe",
+      "the Club band",
+      "the Big-belly clan",
+      "the Smash horde",
+      "the Bone-club tribe",
+      "Atsogbidog",
+      "Damogborog",
+      "Eshogayog",
+      "Gashogharog",
+      "Gibogmemog",
+      "Laylogmidbog",
+      "Mamogsurog",
+      "Milgogyaog",
+      "Qarogbidog",
+      "Qatogborog",
+      "Rabogayog",
+      "Shenogharog",
+      "Tsipogmemog",
+      "Atsogmidbog",
+      "Damogsurog",
+      "Eshogyaog"
+    ],
+    "dungeon_ruin": [
+      "the Man-eater"
+    ],
+    "epithet": [
+      "the Skull-smasher",
+      "the Man-eater",
+      "the Boulder-fist",
+      "the Big-belly",
+      "the Club",
+      "the Bone-breaker",
+      "the Slow",
+      "the Never-full",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsogbidog",
+      "Damogborog",
+      "Eshogayog",
+      "Gashogharog",
+      "Gibogmemog",
+      "Laylogmidbog",
+      "Mamogsurog",
+      "Milgogyaog",
+      "Qarogbidog",
+      "Qatogborog",
+      "Rabogayog",
+      "Shenogharog",
+      "Tsipogmemog",
+      "Atsogmidbog",
+      "Damogsurog",
+      "Eshogyaog",
+      "Gashogbidog",
+      "Gibogborog",
+      "Laylogayog",
+      "Mamogharog",
+      "Milgogmemog",
+      "Qarogmidbog",
+      "Qatogsurog",
+      "Rabogyaog",
+      "Shenogbidog",
+      "Tsipogborog",
+      "Atsogayog",
+      "Damogharog",
+      "Eshogmemog",
+      "Gashogmidbog"
+    ],
+    "military_unit": [
+      "the Skull-smashers",
+      "the Man-eaters"
+    ],
+    "personal_female": [
+      "Damoga",
+      "Shenoga",
+      "Rogoga",
+      "Eshoga",
+      "Giboga",
+      "Gashoga",
+      "Boroga",
+      "Milgoga",
+      "Rugoga",
+      "Vrogoga",
+      "Nargoga",
+      "Grumoga",
+      "Drogoga",
+      "Skaroga",
+      "Vuroga",
+      "Bhakoga",
+      "Mamoga",
+      "Throgoga",
+      "Gruboga",
+      "Leloga",
+      "Lusanu",
+      "Maraqus",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Gatog",
+      "Damog",
+      "Shenog",
+      "Rogog",
+      "Eshog",
+      "Gibog",
+      "Gashog",
+      "Borog",
+      "Milgog",
+      "Rugog",
+      "Vrogog",
+      "Nargog",
+      "Grumog",
+      "Drogog",
+      "Skarog",
+      "Vurog",
+      "Bhakog",
+      "Mamog",
+      "Throgog",
+      "Grubog",
+      "Lusanu",
+      "Maraqus",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Smash-cave",
+      "Borog-pit",
+      "Bidog-mire",
+      "the Man-eater's cave",
+      "Harog-cave",
+      "Atsogborog",
+      "Damogmemog",
+      "Eshogborog",
+      "Gashogmemog",
+      "Gibogborog",
+      "Laylogmemog",
+      "Mamogborog",
+      "Milgogmemog",
+      "Qarogborog",
+      "Qatogmemog",
+      "Rabogborog",
+      "Shenogmemog",
+      "Tsipogborog",
+      "Atsogmemog",
+      "Damogborog",
+      "Eshogmemog",
+      "Gashogborog",
+      "Gibogmemog",
+      "Laylogborog",
+      "Mamogmemog",
+      "Milgogborog",
+      "Qarogmemog",
+      "Qatogborog",
+      "Rabogmemog",
+      "Shenogborog",
+      "Tsipogmemog"
+    ]
+  },
+  "culture_id": "ogre",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_ogre.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "ogre",
+  "lexicon": {
+    "concepts": {
+      "beast": "bemog",
+      "blood": "damog",
+      "bone": "atsog",
+      "claw": "tsipog",
+      "dark": "gashog",
+      "death": "mamog",
+      "devour": "akhog",
+      "fang": "shenog",
+      "fire": "eshog",
+      "flesh_meat": "bashog",
+      "great": "rabog",
+      "horde": "amog",
+      "horn": "qarog",
+      "hunt": "tsayog",
+      "kill": "gatog",
+      "lair": "memog",
+      "night": "laylog",
+      "raid_plunder": "shalog",
+      "shaman": "gashob",
+      "small": "qatog",
+      "spirit_totem": "rugog",
+      "strong": "gibog",
+      "war": "milgog"
+    },
+    "feature_words": {
+      "cave": "memog",
+      "crag": "surog",
+      "dark_forest": "yaog",
+      "gorge": "gayog",
+      "mountain": "harog",
+      "pit": "borog",
+      "swamp": "bidog",
+      "waste": "midbog"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], boomed: Damog-shenog (blood-fang); band = [Totem]-amog.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "boulder-caves, bone-pits, and mires: 'the Smash-cave of [band]', 'the Bone-pit of [chief]', 'the Man-eater's cave of [name]'",
+    "war_bands": "the boom-named bands: 'the Skull-smashers', 'the Man-eaters', 'the Boulder-fists of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic, and simple. Race-totem the Great Gut / the Boulder-Fist. The Gashob bellows to the totem and the Gul-spirits over the bone-pit; foremost Gul-Maraqus the War-Spirit (the smash) and Gul-Waqidu (the endless gut). The One and the sun demonized. Few gods, few words.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun)": "Tarul the Burning-Eye"
+    },
+    "holy_symbol_motifs": {
+      "Boulder-Fist": "a great fist crushing a skull",
+      "Great Gut": "a vast belly over cracked bones"
+    },
+    "race_totem": "the Great Gut (Rabog-bemog) / the Boulder-Fist (Surog-mog)",
+    "shaman_rites": "bellow-chants over the bone-pit; the cracking of skulls for the totem; the eating-feast.",
+    "tribal_totem_pattern": "[Rabog-/Damog-/Boulder-] + [big-beast or fist]: Rabog-bemog (Great-Beast), Surog-mog (Boulder-Fist).",
+    "venerated": {
+      "Lusanto (eat and take)": "Gul-Lusanu (the Take-Spirit)",
+      "Maraxus (the smash, war)": "Gul-Maraqus (the War-Spirit; the smash)",
+      "Vacidus (the endless gut)": "Gul-Waqidu (the Devouring-Dark; the never-full)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / ogre-band - small, brutal (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafog (the small one/slave)",
+      "warrior": "Gibog (the smasher)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Gashob (great-shaman of the band-totem)",
+      "shaman": "Gashob (the totem-bellower)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Rogog",
+        "scope": "chief of a single clanhold (band)"
+      },
+      "county": {
+        "ruler": "Rabog-Rogog",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amog-Rogog",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabog-Amog-Malog",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabog-Malog",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milgog-Rogog",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malog",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

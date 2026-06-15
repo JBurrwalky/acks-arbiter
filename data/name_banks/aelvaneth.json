@@ -1,0 +1,433 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Chaotic",
+    "Neutral"
+  ],
+  "categories": {
+    "clan_house": [
+      "Noreth Galenath",
+      "Noreth Kelvath",
+      "Noreth Sireth",
+      "Noreth Tularon",
+      "Noreth Oronnath",
+      "Noreth Lasseth",
+      "Noreth Elenath",
+      "Noreth Brennath",
+      "Noreth Araveth",
+      "Noreth Linthath",
+      "Noreth Nelarath",
+      "Noreth Aelarath",
+      "Aelindorson",
+      "Tulorionson",
+      "Orlannionson",
+      "Aerandirson",
+      "Sirethionson",
+      "Faelarson",
+      "Tharionson",
+      "Eredhionson",
+      "Lasselarson",
+      "Gwathionson",
+      "Aranethson",
+      "Brennionson"
+    ],
+    "epithet": [
+      "the Star-eyed",
+      "the Silver-voiced",
+      "the Green-warden",
+      "the Far-seeing",
+      "of the Silver Grove",
+      "the Swift-arrow",
+      "the Song-maker",
+      "the Long-lived",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Airethaelarath",
+      "Amrathathveth",
+      "Angrathbelnath",
+      "Annurethcamath",
+      "Aravethdrumath",
+      "Brennathelneth",
+      "Dulathgalenath",
+      "Erethglenneth",
+      "Fornethinnath",
+      "Gwinethlalaneth",
+      "Haelethlaneth",
+      "Harnethlannath",
+      "Iorathlinnath",
+      "Kelarathlireth",
+      "Kelvathmoineth",
+      "Lassethmornath",
+      "Malathneloreth",
+      "Maldathoronnath",
+      "Medathrinneth",
+      "Minethsireth",
+      "Morethsirneth",
+      "Narothsylvath",
+      "Nuathtawarath",
+      "Ornethtornath",
+      "Pinnethvelath",
+      "Rhunethaelarath",
+      "Salethathveth",
+      "Tarathbelnath",
+      "Vanyathcamath",
+      "Vinnethdrumath"
+    ],
+    "military_unit": [
+      "the Green Wardens"
+    ],
+    "personal_female": [
+      "Aelwen",
+      "Tuloriel",
+      "Sirethiel",
+      "Faelwen",
+      "Elwenneth",
+      "Lasseliel",
+      "Galariel",
+      "Vanyeth",
+      "Naereth",
+      "Kelviel",
+      "Brenneth",
+      "Iorelle",
+      "Maeliel",
+      "Oroniel",
+      "Edhelwen",
+      "Tarniel",
+      "Linthiel",
+      "Aniriel",
+      "Nelariel",
+      "Realtiel",
+      "Orlanniel",
+      "Thariel",
+      "Eredhiel",
+      "Gwathiel",
+      "Brenniel",
+      "Iorliel",
+      "Gaianaron",
+      "Gaianaroniel",
+      "Marakharon",
+      "Marakharoniel",
+      "Realtarien",
+      "Realtarieniel",
+      "Tularon",
+      "Tularoniel"
+    ],
+    "personal_male": [
+      "Aelindor",
+      "Tulorion",
+      "Orlannion",
+      "Aerandir",
+      "Sirethion",
+      "Faelar",
+      "Tharion",
+      "Eredhion",
+      "Lasselar",
+      "Gwathion",
+      "Araneth",
+      "Brennion",
+      "Iorlas",
+      "Vanyaron",
+      "Edhelron",
+      "Malduin",
+      "Kelvron",
+      "Naerdor",
+      "Galarion",
+      "Oronnir",
+      "Elwennion",
+      "Lasselion",
+      "Vanyion",
+      "Naerion",
+      "Kelvion",
+      "Maelion",
+      "Oronion",
+      "Tarnion",
+      "Linthion",
+      "Anirion",
+      "Nelarion",
+      "Realtion",
+      "Gaianaron",
+      "Gaianaronion",
+      "Marakharon",
+      "Marakharonion",
+      "Realtarien",
+      "Realtarienion",
+      "Tularon",
+      "Tularonion"
+    ],
+    "settlement": [
+      "Aelvanar",
+      "Kelar-sireth",
+      "Galar-galenath",
+      "Tularon-neloreth",
+      "Oronnath-tar",
+      "Elenath-anar",
+      "Airethaeneth",
+      "Amrathathveth",
+      "Angrathbaleth",
+      "Annurethcarath",
+      "Aravethcarnath",
+      "Brennathdunath",
+      "Dulathloneth",
+      "Erethneloreth",
+      "Fornethtarnath",
+      "Gwinethtornath",
+      "Haelethtrevath",
+      "Harnethaeneth",
+      "Iorathathveth",
+      "Kelarathbaleth",
+      "Kelvathcarath",
+      "Lassethcarnath",
+      "Malathdunath",
+      "Maldathloneth",
+      "Medathneloreth",
+      "Minethtarnath",
+      "Morethtornath",
+      "Narothtrevath",
+      "Nuathaeneth",
+      "Ornethathveth",
+      "Pinnethbaleth",
+      "Rhunethcarath",
+      "Salethcarnath",
+      "Tarathdunath",
+      "Vanyathloneth",
+      "Vinnethneloreth",
+      "Airethtarnath",
+      "Amrathtornath",
+      "Angrathtrevath",
+      "Annurethaeneth"
+    ],
+    "ship": [
+      "the Silver Leaf",
+      "Star-on-the-Water",
+      "the Swan of Sireth"
+    ],
+    "tavern": [
+      "the Hall of the Silver Harp",
+      "the Mead of Stars",
+      "The Aireth Angrath",
+      "The Angrath Araveth",
+      "The Dulath Brennath",
+      "The Haeleth Gwineth",
+      "The Iorath Kelvath",
+      "The Kelarath Lasseth",
+      "The Malath Maldath",
+      "The Moreth Medath",
+      "The Naroth Orneth",
+      "The Pinneth Saleth"
+    ]
+  },
+  "culture_id": "aelvaneth",
+  "family": [
+    "elvish"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_aelvaneth.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "aelvaneth",
+  "lexicon": {
+    "adjectives": {
+      "black": "dulath",
+      "fair": "vanyath",
+      "far": "haeleth",
+      "golden": "malath",
+      "great": "moreth",
+      "high": "tarath",
+      "iron": "angrath",
+      "little": "pinneth",
+      "new": "vinneth",
+      "old": "iorath",
+      "red": "naroth",
+      "sacred": "aireth",
+      "white": "kelarath"
+    },
+    "directional": {
+      "east": "rhuneth",
+      "inner": "mineth",
+      "lower": "nuath",
+      "north": "forneth",
+      "outer": "ereth",
+      "south": "harneth",
+      "upper": "amrath",
+      "west": "annureth"
+    },
+    "feature_words": {
+      "bay": "camath",
+      "cape": "rinneth",
+      "ford": "athveth",
+      "forest": "galenath",
+      "glade": "lalaneth",
+      "grove": "neloreth",
+      "hill": "tornath",
+      "isle": "innath",
+      "lake": "linnath",
+      "marsh": "moineth",
+      "mountain": "oronnath",
+      "narrows": "lireth",
+      "neck": "velath",
+      "pass": "belnath",
+      "plain": "lannath",
+      "ridge": "drumath",
+      "river": "sireth",
+      "road": "laneth",
+      "sea": "aelarath",
+      "stream": "sirneth",
+      "track": "sylvath",
+      "vale": "glenneth",
+      "waste": "mornath",
+      "way": "elneth",
+      "wood": "tawarath"
+    },
+    "resources": {
+      "amber": "brennath",
+      "gold": "maldath",
+      "hart": "araveth",
+      "honey": "medath",
+      "iron": "angrath",
+      "leaf": "lasseth",
+      "salt": "saleth",
+      "silver": "kelvath",
+      "timber": "orneth",
+      "wine": "gwineth"
+    },
+    "settlement_words": {
+      "citadel": "tarnath",
+      "city": "carnath",
+      "fort": "dunath",
+      "hamlet": "trevath",
+      "market": "aeneth",
+      "port": "loneth",
+      "temple_town": "neloreth",
+      "town": "carath",
+      "village": "baleth"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|root](stem) + feature/realm: Kelar-sireth (silver-river), Galar-galenath (light-forest); -aneth for the realm, -anar for the seat.",
+    "gendered_endings": {
+      "female": [
+        "iel",
+        "eth"
+      ],
+      "male": [
+        "ion",
+        "as"
+      ]
+    },
+    "patronymic_form": "the elven house (noreth) by an elder-line; -ion (son of) / -iel (daughter of); a use-name given freely, a true-name kept private.",
+    "toponymic_suffixes": [
+      "aneth",
+      "sireth",
+      "galenath",
+      "oronnath",
+      "Kelar- / Galar-",
+      "anar"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen elven fastnesses and grown-over groves: 'the lost Fastness of [house]', 'the Drowned Nemreth of [name]'",
+    "military_units": "the warden-archers and house-companies: 'the Green Wardens', 'the Star-Archers of [house]'",
+    "ships": "river and forest-mere craft, swan-prowed: 'the Silver Leaf', 'Star-on-the-Water', 'the Swan of Sireth'",
+    "taverns": "the song-hall (elves keep halls, not taverns): 'the Hall of the Silver Harp', 'the Mead of Stars'"
+  },
+  "race": "elf",
+  "religion": {
+    "_note": "Deity-names are the Aelvaneth (smooth) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real gods; they carry the sacred GENDERED ending -aron (masc) / -arien (fem) - the divine class, distinct from mortal -ion/-iel and common-noun -ath. The Aelvaneth are predominantly Lawful (weights L70/N20/C10), though a realm can seed or drift to Neutral or Chaotic; the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment). The nemreth (star-grove) under the silver trees is the altar; the edhrath (ancestral dead) and the forest-spirits are ever-honored.",
+    "clergy_ladder": {
+      "1": "Edhel-dil (novice-devotee)",
+      "3": "Galadhron (grove-keeper)",
+      "5": "Linthir (song-and-lore keeper)",
+      "7": "Airedhel (high keeper)",
+      "9": "Tar-Linthir (the realm's high song-keeper)"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment) take epithets: when Lawful - Maraxus -> Marakharon the Ruin; when Chaotic - Tulrius -> Tularon the Cold-Star, Aeternus -> Aiternaron the Long-Tyrant.",
+    "holy_symbol_motifs": {
+      "Gaianaron": "a great tree rooted in the green earth",
+      "Realtarien": "a moon-star above the healing-spring",
+      "Tularon": "a rayed star above the silver leaf"
+    },
+    "religious_orders_pattern": "the Nemreth (star-grove) of [power]: 'the Nemreth of Tularon', under the silver trees.",
+    "saints_pattern": "the elder-fathers and song-makers of the houses (the edhrath), honored at the grove and the white-stone.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaianaron (the enduring forest-earth; Lawful power)",
+      "Maraxus": "Marakharon (the war-fire, the ruin; Chaotic power)",
+      "Realta": "Realtarien (the mother, the mercy-star; Neutral-honored)",
+      "Tulrius": "Tularon (the sun and just light; Lawful power)"
+    },
+    "the_one": "Aiternaron (< Proto-Elvish AtyarnA < Aeternus; the Star-Kindler, the Eldest; sacred-masculine ending -aron; revered when Lawful, set aside when Neutral, named the Long-Tyrant when Chaotic)",
+    "worship_by_alignment": {
+      "Chaotic": "the fallen houses venerate the Chaotic powers (Marakharon the war-fire, Wakidaron the void, Lusanaron), demonize the Lawful powers and the One",
+      "Lawful": "the high-elven court reveres the One (Aiternaron) and the Lawful powers (Tularon, Orlandaron, Gaianaron, Numenaron), demonize the Chaotic powers",
+      "Neutral": "both sets ambivalent; foreground the edhrath (ancestral dead), the star-light and the forest-spirits"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Smooth Aelvaneth reflexes of the Proto-Elvish title ladder, ascending. Veluth (lord) barony; Maeron (march-warden) march; Eskel (vale-lord) county; Thalion (great-lord) duchy; Aranel (sovereign-lord) principality; Tharan (king) kingdom; Tar-Tharan (high-king) empire. A golden-age realm, mostly fallen to fastness-enclaves. (These title-roots are the elder ancestors of the human Germanic/Celtic/Slavic lord/king terms.)",
+    "female_forms": {
+      "Aranel": "Araniel",
+      "Eskel": "Eskeliel",
+      "Maeron": "Maeriel",
+      "Tar-Tharan": "Tar-Tharniel",
+      "Thalion": "Thaliel",
+      "Tharan": "Tharniel",
+      "Veluth": "Veluthiel"
+    },
+    "government": "feudal (an ancient woodland realm of elder-houses, now mostly forest-fastnesses; the Tharan over the elven lords, the song-keepers and the warden-archers)",
+    "heir": "Aranion (the sovereign's heir)",
+    "honorifics": {
+      "champion": "Maethor (warrior)",
+      "elder": "Iorath",
+      "lady": "Veluthiel",
+      "lord": "Veluth",
+      "your_grace": "Aranel"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Veluthaneth",
+        "ruler": "Veluth"
+      },
+      "county": {
+        "domain": "Eskelaneth",
+        "ruler": "Eskel"
+      },
+      "duchy": {
+        "domain": "Thalionaneth",
+        "ruler": "Thalion"
+      },
+      "empire": {
+        "domain": "Tar-Tharananeth",
+        "ruler": "Tar-Tharan"
+      },
+      "kingdom": {
+        "domain": "Tharananeth",
+        "ruler": "Tharan"
+      },
+      "march": {
+        "domain": "Maeronaneth",
+        "ruler": "Maeron"
+      },
+      "principality": {
+        "domain": "Aranelaneth",
+        "ruler": "Aranel"
+      }
+    },
+    "vassalage": {
+      "fealty": "Gweth (the oath-bond)",
+      "liege": "Aranel",
+      "tribute": "Anneth (gift-due)",
+      "vassal": "Gwador (sworn companion)"
+    }
+  }
+}

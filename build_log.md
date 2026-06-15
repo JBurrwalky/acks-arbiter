@@ -34082,3 +34082,508 @@ on-tick dispatch.
 1. **Stage 4e** — stability/collapse curve (§7.5), collapse outcomes/severity/K-shatter (§7.6), fading degradation (§7.7), demihuman epoch bias (§9): `_phase_stability`/`_phase_collapse`. Consumes `f_overextension` (4c) + `collapse_risk_tick` (4b/4d war shock); maintains `pol["collapse_risk"]` (read by 4d secession); RESTORES wilderness via depopulation; emits fallen_polities + ruin seeds with provenance. Build the §7.4 internal vassal-domain records here (vassal_count feeds the K cap). Wire `_fade_factor` to real fading (currently returns 1.0).
 2. **Stage 4f** — migration + beastman repopulation (§8, §7.6). Then the §9.3 calibration harness (≥20 seeds × Large) + the deferred sim perf pass.
 3. **Stage 4g** — event-log significance scoring + present-day handoff (§11, §12). **Re-check the stronghold-value discrepancy in `domain_tier_table.gd` with Jedidiah here** (his standing request).
+
+
+## Session 2026-06-13 — Setting generation Stage 4e + 4f (history sim: collapse + renewal — the full rise/fall loop)
+
+**Task:** Implement Stage 4e (§7.5 stability curve, §7.6 collapse outcomes, §7.7 fading, §9 demihuman epoch bias) and — once 4e-alone was found to drain the map — Stage 4f (§8 migration + §7.6 beastman repopulation) in `engine/subsystems/generation/world/history_simulator.gd`, completing the rise→fall→renewal loop so the present-day map reaches the §17 equilibrium (realms + wilderness coexist). Determinism, net-zero new failures, adversarial verification.
+**Model used:** Opus 4.8 (1M) for both sub-stages (spec synthesis, implementation, test authoring, the drain diagnosis, and a 3-agent adversarial verification workflow).
+**Completed:**
+- **4e stability (`_phase_stability`):** per-tick ruler-quality redraw on the REIGN_TICKS cadence (25/25/50% strong/weak/average, `dynasty_change` on a real change), §7.7 fading onset (`_maybe_open_fading` — fading culture, age>A_PEAK, tier≥Duchy → records `fade_onset_tick`; `_fade_factor` now real: `0.985^(tick−onset)`), and `_collapse_risk` = BASE × temperament × f_size(`1.35^max(0,tier−2)`) × f_age(`_f_age`) × f_overextension × (1+proneness) × ruler_quality, × `_epoch_bias` for demihuman tiers (§9), + additive war-weariness, clamped [0,0.35]. Stored `pol["collapse_risk"]` (the value 4d secession reads prev-tick).
+- **4e collapse (`_phase_collapse`/`_collapse_polity`):** seeded roll vs risk → §7.6 severity S = U(0,1)+bias → `_do_rump` (shed farthest/least-assimilated half to wilderness) / `_do_shatter` (K = clamp(1d3+max(0,tier−3), 2, min(6,vassal_count+2)) successor realms via `_k_partition` farthest-point Voronoi; parent keeps the capital group; war-vassals freed) / `_do_depopulate` (realm dies, all hexes → wilderness, ruin seed + fallen-polity record + `_depopulated_at` marks for 4f). Shatter gated (vassal_count≥2 or tier≥Duchy, else degrades to rump). Successors collected and merged AFTER the loop (no mutation of the iterated set).
+- **§7.4 internal vassal domains (`_internal_vassal_domains`/`_core_hexes`/`_partition_contiguous`):** core = capital + nearest up to CORE_MAX; the rest partitioned into VASSAL_SIZE-contiguous BFS chunks. Computed on demand (collapse + finalize only), feeds `_vassal_count` (shatter gate/K cap) and the present-day `internal_vassals` column.
+- **4f beastman repopulation (`_repopulate_beastmen`/`_spawn_beastman_clanhold`):** a hex empty ≥ BEASTMAN_DELAY ticks spawns a Chaotic clanhold at chance `0.25 × wilderness_beastman_density`, race rolled 1d100 from the terrain's distribution (reusing `CultureSeeder._beastman_terrain_key` + the `BeastmanDistributionLoader` data). This is the load-bearing refill that prevents the map draining.
+- **4f migration bands (`_advance_bands`/`_retarget_band`/`_find_migration_target`/`_found_migrant_polity`/`_spawn_pressure_bands`):** displacement bands (30% of a depopulated realm's families, created in `_do_depopulate`) + pressure bands (lost-capital / >50%-hex-loss → `p_migrate` roll) route to the nearest unclaimed ≥3-contiguous cluster at terrain_mult≥1.15, travel at MIGRATION_SPEED, and found a fresh realm (founded_tick=now → ascendancy resets — the Sea-Peoples pattern); `migration` events emitted. A band that finds no home dissolves into the local substrate (`_dissolve_band`/`_blend_weight` — families + culture/alignment merge into the stop hex by population weight, conserving the people). `_finalize_new_polity` shares the runtime-field augmentation for clanholds + migrants (is_beastman per §5.3).
+- **Outputs:** `_finalize` now emits `_fallen_polities` + `_ruin_seeds`; `_polity_rows` populates `internal_vassals` from the on-demand decomposition.
+- New SimConstants: `rump_shed_pop_keep` 0.5, `depopulate_pop_keep` 0.1.
+**Decisions made:**
+- **4e-alone drains the map to ~0 polities** — discovered when 4a–4d integration tests broke (`no present-day polities persisted`, `owns 0`). This is CORRECT per the GDD calibration (§7.5: ~30-tick realm life): over 160 ticks every lineage collapses ~5× and ~39% of low-tier collapses depopulate, and the only polity-creation mechanisms (migration + beastman repop) are §8/§7.6 = 4f. So 4e is the "fall" with no "renewal" until 4f. **Jedidiah chose to build 4f now** (vs. landing a degenerate 4e + relaxed assertions). 4e+4f together reach the intended equilibrium.
+- **The 4a/4b deep/short-history UNIT tests disable collapse** (`SimConstants.collapse_base = 0`) — they isolate substrate/demography/expansion on a single polity, which collapse would interrupt. The INTEGRATION tests keep the full sim (collapse + renewal) active; their populated-world assertions hold again once 4f refills.
+- **Internal vassal-domain records are computed on demand** (collapse + finalize), not maintained per tick — they're only consumed at shatter (vassal_count) and the §12 handoff. Cheap, deterministic, no per-tick cost. (Pulled forward from the 4d deferral.)
+- **Shatter K-partition uses farthest-point seeds + Voronoi** (capital = seed 0 → the rump P keeps); simpler and more spatially-coherent than spinning the internal vassal-domain records into successors, and the GDD only requires "K successor realms inheriting P's culture."
+- **Alignment drift on collapse (§10) deferred** — successors inherit the parent's alignment for now (drift needs the culture's allowed-alignment set plumbed; flavor, emits `schism`).
+**Interfaces defined or changed:**
+- Polity runtime dict gains `fade_onset_tick` semantics (set at fading onset) and is created for successors/clanholds/migrants via `_spawn_successor` / `_finalize_new_polity`. Shatter successors + migrant realms + beastman clanholds get fresh `pol_NNNN` ids from `_next_polity_seq` (initialized past the seed range in `_init_polities`).
+- `_finalize` now emits non-empty `ctx["sim_fallen_polities"]` (FALLEN_POLITY_COLUMNS) and `ctx["sim_ruin_seeds"]` (RUIN_SEED_COLUMNS); `setting_polities.internal_vassals` now carries the real decomposition.
+- New WorldGenRng stream names: `ruler`, `collapse`, `severity`, `shatter` (4e); `beastman_repop`, `beastman_race`, `migrate` (4f).
+- New event types now emitted: `dynasty_change`, `collapse_rump`, `collapse_shatter`, `depopulation`, `migration`.
+**Database changes:** None (migration 156's setting_fallen_polities / setting_ruin_seeds / internal_vassals column already existed).
+**Tests added/updated:**
+- `tests/test_setting_stage4e.gd` (collapse): f_age / ruler-factor / tier-scaled risk / clamp+weariness / epoch-bias / fade-factor / fading-onset gate / severity outcomes (rump/shatter/depopulate) / partitioning / ruin provenance / wilderness-returns / determinism. `tests/test_setting_stage4f.gd` (renewal): band create/route/found/travel, beastman spawn + delay + reclaim-skip, pressure bands, `test_map_reaches_equilibrium` (realms AND wilderness coexist), liege/owner coherence, determinism. Both registered (4 edits each).
+- 4a unit tests (7) + the 4b expansion-over-ticks unit test now pass a no-collapse `SimConstants` to isolate their mechanic.
+- Adversarial verification: a 3-agent Explore workflow re-derived the §7.5/§7.6/§7.7/§9 risk+severity formulas, the collapse outcomes + partitioning, and the §8/§7.6 migration+repop. Verdict: 2/3 "matches"; the migration agent correctly caught that a dissolving band dropped its families (now fixed via `_dissolve_band`, with `test_dissolve_band_conserves_families`) and noted the documented 1-tick pressure-window proxy.
+**Known issues:**
+- **Sim perf: Large 160-tick run is ~14.5s** (was 7.6s mid-4e when the map was draining; 4f refills it → more polities/hexes → more per-tick work + per-band O(hexes) target scans). Under the 18s soft budget but well over §14's "few seconds." **The dedicated sim perf pass (scheduled for after 4f) is now due** — that's the recommended next focus before more features. [NEEDS-OPUS-REVIEW: the perf pass — `_find_migration_target` per-band hex scan, the war-phase front scan, and overall per-polity per-tick cost.]
+- Event log is now very verbose (war + dynasty_change + collapse + migration over 160 ticks → thousands of rows); 4g significance scoring ranks/trims for the timeline. Bounded and deterministic.
+- Alignment drift / `schism` on collapse deferred (see Decisions).
+**Next session should:**
+1. **Sim perf pass** (now due, post-4f) — profile and tighten the Large run back toward §14's target; candidates: cache/skip the war-phase front scan, bound `_find_migration_target`, reduce per-tick per-polity allocations.
+2. **Stage 4g** — event-log significance scoring (§11.3) + present-day handoff (§12: ruler levels/classes from sphere_weights, seeded morale, alignment drift/`schism`). **Re-check the stronghold-value discrepancy in `domain_tier_table.gd` with Jedidiah HERE** (his standing request). Then the §9.3 calibration harness (≥20 seeds × Large; tune the §7.8 [PROVISIONAL] constants toward ~50% wilderness + 5–10 surviving realms).
+
+
+## Session 2026-06-13 — History sim perf pass (post-4f)
+
+**Task:** Optimize the Layer-4 history sim (Large 160-tick run was ~14.7s after 4f refilled the map) toward §14's "few seconds," without changing the simulation's behavior/quality. Ceiling raised to 25s per Jedidiah; optimize as low as practical.
+**Model used:** Opus 4.8 (1M) — profiled per-phase, then targeted the hotspots.
+**Completed:**
+- Added a per-phase profiling path to `HistorySimulator` (`_profile` flag + `_mark` + `_phase_us` / `profile_summary()`; off by default, negligible cost). The 4a perf test runs it and prints a per-phase ms breakdown (regression visibility). Initial breakdown: substrate 5.7s / war 2.8s / expansion 2.7s dominated.
+- **`_terrain_mult` memoized** (`_terrain_mult_cache`, culture_id → {hex → mult}): terrain is static (Layer 2) and a culture's biome lists are static, so the value is a pure function — cached instead of re-running `CultureSeeder._hex_matches_term` string matching per frontier/front/migration-target hex every tick. Biggest single win (expansion/war/migration).
+- **Diffusion precomputed to a flat canonical edge list** (`_diffusion_edges` = {h, n, coef}, built once in `_precompute_edge_damp`; replaced the per-tick `Vector3i` key build + `_damp_cache` lookup + `_canonical_less` + neighbor math). Inlined `_apply_pair_diffusion`'s accumulation (hoisted the per-edge delta dicts; removed the per-culture `_accumulate` call + `has()`; deleted `_accumulate`). Halved `sub_diffuse`.
+- **`culture_weights` bounded by pruning** sub-minority-floor traces during diffusion (`_prune_below`, `SimConstants.diffuse_prune_floor` 0.0001 = 10× below the §11.1 0.001 floor that's re-applied at finalize → quality-neutral). Stops each hex accumulating every culture that ever diffused through.
+- **`_dominant_other_culture`/`_dominant_key` de-sorted** (single-pass max with inline lexical tie-break, no per-call `keys().sort()`), and **`_compute_fronts`** now iterates owned hexes via the polity hex-lists (skips ~50% wilderness + the per-hex owner string lookup) with nested dicts + hoisted attacker-liege (no per-neighbor `"%s>%s"` concat or `_same_realm` call).
+**Decisions made:**
+- All optimizations are behavior-preserving EXCEPT the diffusion trace-pruning, which drops culture weights below 0.0001 — quality-neutral because the §11.1 minority floor (0.001, re-applied at finalize) is 10× larger, and the existing substrate tests (sums-to-one, diffusion-spreads, assimilation) stay green. No cadence or algorithm changes (those were considered and rejected as quality-risky). Determinism preserved (the same-seed hash test stays green).
+- Kept the profiling path in tree (behind `_profile`, default off) — cheap and valuable for catching future perf regressions.
+**Interfaces defined or changed:** `HistorySimulator._profile` / `profile_summary()`; `SimConstants.diffuse_prune_floor`. Internal: `_damp_cache` → `_diffusion_edges`; `_accumulate` removed.
+**Database changes:** None.
+**Tests added/updated:** 4a perf test runs with `_profile = true` and prints the per-phase breakdown; soft budget 18s → **25s** (the regression guard, not the target). Full suite **449/17** (net-zero), determinism green, Large sim **~8.9s** (was 14.7s).
+**Known issues:** Remaining per-phase floors (war ~2.1s, expansion ~1.7s, diffuse ~1.7s) are fundamental frontier/edge scans with diminishing returns; left as-is well under the 25s ceiling.
+**Next session should:** Proceed to **Stage 4g** (event-log significance §11.3 + present-day handoff §12) using the CORRECTED realm income/cost + stronghold-value numbers from the rules XML (the GDD's were transcription errors); rewrite the GDD §12.1 to match. Resolve the `domain_tier_table.gd` `[NEEDS-OPUS-REVIEW — stronghold_value_gp]` flag there.
+
+
+## Session 2026-06-13 — Setting generation Stage 4g (present-day handoff + event significance) + §12.1 income correction
+
+**Task:** Implement Stage 4g — §11.3 event significance scoring + §12 present-day handoff (ruler level/class, seeded morale) — completing the Layer-4 history sim. Per Jedidiah, use the CORRECTED realm income/stronghold numbers (the rules XML transcription errors are now fixed) and rewrite the GDD §12.1 to match; resolve the `domain_tier_table.gd` stronghold-value `[NEEDS-OPUS-REVIEW]` flag.
+**Model used:** Opus 4.8 (1M) — implementation + a focused adversarial verification (Explore agent) that caught a §4.3 ruler-class deviation (fixed).
+**Completed:**
+- **Corrected §12.1 stronghold values** in `domain_tier_table.gd`: County 60K→**70K**, Duchy 120K→**115K**, Principality 240K→**360K** (Empire 720K / Kingdom 480K / March 45K / Barony 22.5K unchanged) — now matching the corrected `revenue_by_realm_type` `rulers_stronghold_value_gp` (acore-setting-construction-rules.xml:122-128). Resolved + removed the `[NEEDS-OPUS-REVIEW — stronghold_value_gp]` flag. The §7.5.1 per-family ledger (Land 3-9 + Services 4 + Taxes 2; overhead 3; garrison 2/3/4) was verified UNCHANGED against `domain_revenue`/`domain_expenses`, so 4c needed no change.
+- **Rewrote GDD `gdd-history-simulation.md` §12.1** — replaced the "extraction variance" caveat with the corrected stronghold/personal-domain table (both tables now agree at 7,500/1,500/780, so the "don't consume the personal-domain column" caveat is retired); the old Principality 240K / Duchy 120K / County 60K values are now explicitly labeled the transcription error.
+- **`_assign_present_day_handoff()`** (runs at `_finalize` over alive polities): `ruler_level` from `DomainTierTable.ruler_level_for_tier(tier)`; `ruler_class` via `_ruler_class_for` / `_ruler_class_distribution` — catalog §4.3 faithful: `dist = lerp(martial-leaning base {fighter .60/cleric .15/mage .10/thief .15}, normalized sphere tilt {military→fighter, religious→cleric, arcane→mage, mercantile→thief}, RULER_CLASS_BLEND 0.5)`, then a seeded draw ("sphere weights move the odds, don't set the class"); `morale_seed` JSON via `_morale_seed_for` (alignment penalty `_alignment_morale_penalty` L↔C −2 / Neutral-vs-LC −1 / same 0 over `_dominant_population_alignment`, garrison_coverage, low_assimilation conversion-in-progress flag).
+- **`_score_event_significance()`** (§11.3, at finalize): every event's `significance` = `_EVENT_SIGNIFICANCE[type]` (depopulation 1.0 / conquest 0.9 / shatter 0.8 … dynasty_change 0.1) + 0.5 × severity — the Layer-7 timeline pulls top-N per epoch. `_phase_log` per-tick stays a no-op (events are emitted inline; significance is a finalize pass).
+- `_polity_rows` now emits the computed `morale_seed` (was hardcoded "[]"); ruler_level/ruler_class already plumbed.
+**Decisions made:**
+- **Use the corrected XML numbers, not the old GDD figures** (Jedidiah, 2026-06-13) — the rules XML is now authoritative and corrected; the GDD was rewritten to follow it.
+- **Ruler class follows catalog §4.3's lerp-of-distributions** (not a cruder fighter-baseline boost) after the verification flagged the divergence — a high-arcane culture rarely has a mage *king*, but reliably leans its court that way (court/mercenary sphere application is full-strength, deferred to runtime).
+- **Alignment drift / `schism` on collapse (§10) remains deferred** — it needs the culture's allowed-alignment set plumbed to the instance; not required for the handoff. Noted for a later pass.
+- Morale seed's `low_assimilation` is a finalize-time proxy for the §10/§12 "conquered ≤2 ticks ago, svg≥0.5" conversion penalty (the substrate-still-distinct signal the runtime can't re-derive).
+**Interfaces defined or changed:**
+- `setting_polities` rows now carry real `ruler_level` (4–14 by tier), `ruler_class` ∈ {fighter,cleric,thief,mage}, and `morale_seed` JSON `{alignment_penalty, garrison_coverage, low_assimilation}`. `setting_events.significance` is now scored (was 0.0).
+- `DomainTierTable.stronghold_value_for_tier()` returns the corrected values. New WorldGenRng stream: `ruler_class` (keyed at `_n_ticks`). SimConstants += `ruler_class_blend` 0.5, `significance_severity_weight` 0.5; `_EVENT_SIGNIFICANCE` const.
+**Database changes:** None (columns existed in migration 156).
+**Tests added/updated:** `tests/test_setting_stage4g.gd` (corrected stronghold/ruler-level numbers, ruler-class distribution, alignment morale penalty, dominant population alignment, morale-seed shape, significance ranking + scoring, plus integration: every present-day polity has ruler level/class + morale, events are scored, determinism). Registered (4 edits). Full suite **450/17** (net-zero new failures); 4g 2873 checks; determinism green.
+**Known issues:** Alignment drift/`schism` deferred (above). Ruler-class court/mercenary full-strength sphere application is a runtime concern (catalog §4.3), not in the sim handoff.
+**Next session should:** Stage 4 (the Layer-4 history sim) is COMPLETE (4a–4g + perf pass). Move to the §9.3 calibration harness (≥20 seeds × Large; tune the §7.8 [PROVISIONAL] constants toward ~50% wilderness + 5–10 surviving realms) OR Stage 5 (name-bank build tool) per the build plan. Optionally wire the deferred §10 alignment drift/`schism`.
+
+
+## Session 2026-06-13 — §9.3 calibration harness + first calibration read-out
+
+**Task:** Build the §9.3 calibration harness (Jedidiah: test-suite report form, report-first/no-tuning) and produce the first end-state metrics read-out vs the §17 targets (~50% wilderness, 5–10 surviving realms on Large, default sliders).
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `tests/test_setting_calibration.gd` — generates N seeds at DEFAULT sliders and reports §17 metrics as mean/min/max. SMOKE by default (medium × 3, stays in the regular suite cheaply); set env `ACKS_CALIBRATION=1` for the FULL Large × 20 sweep the §17 targets use (~3 min). Metrics: wilderness % (territory_class — the ACKS sense, incl. beastman-held interior), unowned %, total/civilized/major-civ/beastman realm counts (civ vs beastman split via `CultureCatalogLoader.ids_by_tier`), demihuman survivors, settlements, ruins, events, depopulations, shatters. §17 targets are REPORTED (MET/MISS), not hard-asserted; only catastrophic-breakage bounds are checked so the suite stays green while tuning is pending. Registered (4 edits).
+**Decisions made:**
+- "Wilderness" measured as `territory_class == "wilderness"` (the ACKS classification, which a beastman clanhold keeps even though it owns the hex), NOT unowned land — the first run mismeasured it as unowned (7.4%) and read "too little wilderness"; the corrected metric (92%) reads "too MUCH."
+- "5–10 realms" measured as CIVILIZED realms (non-beastman, ≥5 hexes), separating the beastman interior fill from the §17 realm count.
+**FIRST READ-OUT (Large × 20, defaults):**
+- **Civilized realms (≥5-hex): mean 8.3 (min 0, max 31) — MET** (target 5–10). The number of surviving civilizations is on target.
+- **Wilderness (class): mean 92.2% (min 68.5, max 100) — MISS** (target ~50%). The civilized realms are too SMALL — only ~8% of the land reaches borderlands/civilized; the rest is wilderness, most of it held by **mean 55.6 beastman clanholds** (the "depopulated interior").
+- Collapse is very aggressive: mean 260 depopulations + 94 shatters per 160-tick run; ~260 ruins/fallen. Demihuman survivors mean 0.3 (§9 "vanishingly rare" met). ~9.5k events/run.
+**Interfaces defined or changed:** None (read-only harness over the §7.2 output).
+**Database changes:** None.
+**Tests added/updated:** `test_setting_calibration.gd` (smoke in-suite; env-gated full sweep). Baseline **451/17** (net-zero new failures).
+**Known issues:** §17 wilderness target missed (92% vs ~50%) — the civilized realms churn too hard (collapse ~3%/tick × 160 ticks → constant shrinkage) to grow large civilized cores, and beastmen fill the freed land. NOT a correctness bug — a §7.8 [PROVISIONAL] balance-tuning matter, deferred to Jedidiah's decision (report-first).
+**Next session should:** Per Jedidiah's tuning decision — likely candidates to raise civilized land toward ~50%: lower collapse aggressiveness (BASE / temperament / severity-to-depopulate) so realms grow larger; reduce `wilderness_beastman_density` / `beastman_fill_per_tick` so civ realms have room to settle+civilize; and/or speed expansion/growth. Re-run `ACKS_CALIBRATION=1` after each constant change. Or accept a frontier-world feel and revise the §17 target.
+
+
+## Session 2026-06-13 — Quaternius dungeon asset integration (Increments 1–3 + cel_environment)
+
+**Task:** Implement `generation/gdd-dungeon-asset-integration-plan.md` — convert the Quaternius dungeon kit to glTF, build an asset-based dungeon renderer path (edge-resolved walls, Strategy A) behind a flag, add camera-occlusion fade for asset walls, and apply the project's environment cel shader. Incremental with in-editor MCP visual checkpoints. Worked in the MAIN checkout (not the auto-created worktree) so the live editor/Godot-AI MCP could verify; a second build agent was concurrently active in main (non-overlapping — not touching the dungeon renderers).
+**Model used:** Opus 4.8 (1M) for the whole session (investigation, conversion, GDScript, MCP-driven visual verification).
+**Completed:**
+- **Conversion (Inc. 1):** `assets/dungeon_kit/_convert.py` (Blender 5.1 headless, reproducible) → 91 `.glb` in 10 category subfolders (floor/wall/door/stair/column/structure/trap/container/prop/overgrowth), 8.9 MB. `assets/dungeon_kit/_SOURCE.md` (CC0 provenance + recipe). Native 2.0-unit scale preserved; rotation+scale baked, location kept (door ±1.0 hinges). 6 tree bark `.jpg` exported as external siblings (overgrowth, deferred).
+- **Registry (Inc. 2):** `engine/shared_types/dungeon_asset_registry.gd` (`DungeonAssetRegistry extends Resource`) — logical-slot → `.glb` maps with code defaults, `kit_scale` (0.5), `use_cel_environment` (true). `floor_scene_for`/`wall_scene_for`/`door_scene_for`/`stair_scene`.
+- **Edge resolver (Inc. 2):** `engine/subsystems/exploration/wall_edge_resolver.gd` (`WallEdgeResolver`, Strategy A) — `resolve_level(map, level)` → `[{air_cell, edge_dir, neighbor_solid}]` for each floored-air-cell edge whose same-level neighbor is solid. `tests/exploration/test_wall_edge_resolver.gd` (8 checks).
+- **Builder (Inc. 2):** `scenes/maps/dungeon_asset_builder.gd` (`DungeonAssetBuilder`) — `build_level_group(map, level, registry)` → "Level_%d" Node3D with FloorSlabs/Walls/Doors/Features (asset glb) + reused code-gen overlays (FeatureLabels/GridLines/FogOverlay/TransitionMarkers). Floors scaled kit_scale/√2 + 45° (diamond tessellation); walls at edge midpoints, ±45°, uniform kit_scale (1.0 length overhangs the 0.707 edge → fills corners). Doors by door_type; secret/portcullis placeholders.
+- **Renderer toggle (Inc. 2):** `scenes/maps/dungeon_map_renderer_3d.gd::_rebuild_grid_voxel` branches on project setting `acks/rendering/dungeon_asset_mode` ("code_generated" default via `ProjectSettings.get_setting`; set to "asset_kit" in project.godot this session). `_is_asset_kit_mode()` + `_get_asset_registry()`.
+- **Asset-wall fade (Inc. 3):** `_update_wall_occlusion` dispatches to `_update_wall_occlusion_assets()` in asset mode — fades occluding focus-level wall MeshInstance3Ds via a shared transparent `material_override` (cleared to restore the glb materials; non-destructive). `_asset_wall_meshes`/`_asset_faded`/`_descendant_mesh_instances`/`_get_asset_fade_material`.
+- **Cel environment (finale):** `DungeonAssetBuilder._apply_environment_materials` converts each kit surface to a shared `cel_environment.gdshader` ShaderMaterial (cached by source albedo color), preserving the flat Quaternius color via `albedo_tint`. Per `gdd-art-direction.md` §7 (flat matte, no bands/outline) — supersedes O-DA-12 "unshaded for v1".
+- **Verified via Godot MCP screenshots** on `data/test_dungeon.json` through a `@tool` preview (`assets/dungeon_kit/_asset_preview.tscn`/`.gd`): full dungeon renders correctly on the diamond grid (walls trace perimeters, corners fill, doors seat, floors tessellate); cel_environment preserves per-surface colors + adds matte form shading and brightened the dark door.
+**Decisions made:**
+- **Worked in MAIN checkout, not the worktree** (Jedidiah) — the live editor/MCP run the main checkout, required for in-editor verification. Held all commits (concurrent agent).
+- **cel_environment (flat matte), NOT cel bands+outline** — Jedidiah first asked for cel bands + dark outline (the cel_figure/character treatment); after flagging that `gdd-art-direction.md` §7 deliberately keeps the environment flat so figures pop, he chose the GDD-aligned flat matte.
+- **Doors mapped by `door_type`, not `door_material`** — VoxelCell carries door_type (arch/unlocked/locked/trapped/secret/portcullis), not the door_material the GDD §5.3 table assumed. Data model is authoritative.
+- **VoxelGrid.cell_to_world Y = level × 1.0** (CELL_SIZE), not the GDD-assumed ELEVATION_SCALE 0.5 (that local TacticalGrid3D const is unused legacy). At 0.5 kit_scale a wall is exactly 1.0 tall = one level — dissolves O-DA-1's squash tension.
+- **Floors scale kit_scale/√2 + 45°; walls uniform kit_scale** — the diamond grid puts cell centers 0.707 apart; floors must tessellate as rotated diamonds while walls fill the 0.707 edge (1.0-length overhang fills corners, GDD §3.1).
+- **Asset overlays reuse code-gen builders** — fog/grid/labels/transition markers are kit-agnostic; the asset path shares `TacticalGrid3D`'s static overlay builders rather than reimplementing.
+**Interfaces defined or changed:**
+- `DungeonAssetRegistry` (Resource): `kit_scale: float`, `use_cel_environment: bool`, slot dicts (floors/walls/doors/stairs/columns/traps/containers/props); `floor_scene_for(floor_type, feature)`, `wall_scene_for(solid_feature)`, `door_scene_for(door_type)`, `stair_scene()`.
+- `WallEdgeResolver.resolve_level(map, level) -> Array` of `{air_cell:Vector3i, edge_dir:int (EdgeDir N/S/E/W), neighbor_solid:Vector3i}`; `WallEdgeResolver.EdgeDir` enum + `OFFSETS`.
+- `DungeonAssetBuilder.build_level_group(map, level, registry) -> Node3D` (+ build_floors/build_walls/build_doors/build_features) — node names parallel `TacticalGrid3D.build_level_group`.
+- Project setting `acks/rendering/dungeon_asset_mode` ("code_generated" | "asset_kit").
+- `dungeon_map_renderer_3d.gd`: `_asset_wall_meshes`/`_asset_faded`/`_asset_fade_material` + `_is_asset_kit_mode`/`_get_asset_registry`/`_update_wall_occlusion_assets`/`_restore_all_faded_asset_walls`/`_descendant_mesh_instances`.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/exploration/test_wall_edge_resolver.gd` (8 checks: empty / single-neighbor dir+neighbor / corridor-count-8 / interior-solid-emits-nothing / floorless-air / absent-neighbor / cross-level-ignored / determinism). Registered as `WallEdgeResolverTests` (ext_resource id 456) in test_runner.tscn/.gd.
+- **[NEEDS-OPUS-REVIEW: suite run deferred]** a second build agent's full headless run (PIDs 11884/11992) was active at wrap; running concurrently would poison both. Run the suite isolated on a quiet machine — expected +1 passing suite, net-zero new failures (changes are additive + compile-clean in the editor; the renderer/builder are scene scripts the headless suite does not load).
+**Known issues:**
+- **Fade + real-lighting cel look not yet verified in-game** — both need the running game (live party tokens / real DirectionalLight @ 0.6 + ambient). Flag is set to "asset_kit" for Jedidiah's verification run. Revert by setting `acks/rendering/dungeon_asset_mode` back to "code_generated" (or deleting the key — in-code default is code_generated).
+- **Stair ▲/▼ direction arrows not emitted in asset mode** (code-gen build_features_voxel adds them; asset build_features adds only the stair mesh). GDD §5.4 wants the arrows kept — deferred polish.
+- **Door bottom gap (~0.1) + dark wood door** — round-arch door mesh starts ~0.11 above the floor; cel_environment wash brightened it but a minor gap remains. Tuning candidates.
+- **Ladder/lever/fountain** keep code-gen geometry (Quaternius ships none — O-DA-3 defer).
+- Uncommitted: all dungeon-asset files staged in the working tree (held per concurrent-agent coordination).
+**Next session should:**
+1. **In-game verify** the asset path (flag is on): wall fade between camera/party, cel_environment under real dungeon lights, fog + transition markers, multi-level dimming. Tune door seating; add stair arrows if wanted.
+2. Run `WallEdgeResolverTests` isolated on a quiet machine; confirm net-zero new failures.
+3. Optionally author `data/dungeon_assets.tres` (designer-editable registry) and register `acks/rendering/dungeon_asset_mode` as a proper enum project setting; wire `cel_environment` `atmospheric_tint` (warm torchlight, gdd-art-direction §7.5).
+4. Commit the dungeon-asset files once coordination with the other agent allows.
+
+
+## Session 2026-06-13 — §9.3 calibration tuning + two beastman mechanic fixes (baseline accepted)
+
+**Task:** Tune the §7.8 [PROVISIONAL] constants toward the §17 end-state targets (~50% wilderness, 5–10 surviving realms on Large) per Jedidiah's "tune toward 50%" decision, iterating against the calibration harness. Jedidiah accepted the resulting world as the calibration baseline.
+**Model used:** Opus 4.8 (1M) — ~12 measured Large×20 sweeps, with Jedidiah supplying two key mechanic rulings mid-loop.
+**Completed:**
+- **Two mechanic fixes (the heavy lifting, both Jedidiah's rulings):**
+  - **Beastman war disposition** (`_resolve_crushing`): a Lawful or Neutral victor DESTROYS a beaten beastman clanhold (annex → land becomes civilizable); only a Chaotic victor vassalizes it. Civilizations no longer harbor chaotic clanholds. Tested in `test_setting_stage4d.gd` (`test_beastman_crushing_by_victor_alignment`).
+  - **Beastmen no longer expand** (`_phase_expansion` skips `is_beastman` polities): clanholds hold their spawn hex (the ACKS low-density model, ax_domains_of_chaos), filling the depopulated interior sparsely instead of building sprawling realms. This was the decisive lever — it took civ-controlled land from ~18% to ~90% and wilderness from ~92% to ~42%.
+- **Tuned §7.8 constants** (all `[CALIBRATION 2026-06-13]`-tagged): `collapse_base` 0.01→0.005; `tier_risk_mult` 1.35→1.15 + `tier_risk_cohesion_floor` 2→3 (empires no longer shatter as fast as they form — the consolidation enabler); `severity_band_rump` 0.50→0.72 (fewer shatter-successors); `base_secede` 0.05→0.02; `war_band_crushing` 0.80→0.70 + `capital_reach` 4→6 + `svg_annex_min` 0.65→0.55 + `war_base` 0.10→0.18 (empires fight and absorb neighbors); `expansion_G` 4→5 + `expansion_N0` 30→50; `classification_advance_fraction` 0.90→0.60 (settled land civilizes sooner); `wilderness_beastman_density` default 1.0→0.5 (`SettingParameters`).
+- **Harness diagnostics** added to `test_setting_calibration.gd`: `civ_owned_land_pct`, `independent_civ_realms` (top-level, vs vassals), `empires_with_vassals`, `multiethnic_empires`, beastman/civ split via `CultureCatalogLoader.ids_by_tier`. Wilderness measured as `territory_class == "wilderness"` (the ACKS sense, incl. beastman-held interior), not unowned land.
+**Decisions made:**
+- **`collapse_base` should NOT go below 0.005** — lowering it (tried 0.0035) raised the realm count, because less collapse lets weak small realms survive instead of being killed/absorbed. Collapse is a consolidation force, not just a wilderness source.
+- **The realm-count target reads best as EMPIRES (top-level realms ruling vassals), which lands at ~6.0 (MET).** The raw "independent" count (~15) also includes ~9 solo mono-culture kingdoms not yet absorbed — consistent with the vision (mono-culture kingdoms, some consolidated under multi-ethnic empires).
+- High seed-to-seed variance is inherent to the chaotic rise/fall sim (empires 0–12, wilderness 40–87%); the calibration aims at the mean.
+- Accepted as the baseline (Jedidiah); fine-tuning of specifics (e.g. pushing solo kingdoms into empires, seed-count experiments for richer multi-ethnic empires) deferred.
+**FINAL READ-OUT (Large × 20, defaults):** wilderness **55%** (✅ ~50%), **6.0 empires** ruling vassals (✅ 5–10 major powers), **2.6 multi-ethnic empires**, ~9 solo kingdoms, ~24 vassal realms, ~52 beastman clanholds, 2.6 demihuman enclaves. Trajectory: wilderness 92→55, independents 42→15, empires emerging.
+**Interfaces defined or changed:** None (constants + read-only harness). The tuned defaults change generated-world character but no contract.
+**Database changes:** None.
+**Tests added/updated:** `test_setting_stage4d.gd` +`test_beastman_crushing_by_victor_alignment`; `test_setting_calibration.gd` empire-structure diagnostics. **Fixed two brittle tests that pinned now-tuned constant VALUES** (the unreliable "all passed" print hid them): `test_setting_stage4_foundation.gd` now checks the §7.5/§7.6 balance knobs as INVARIANTS (tier_risk_mult ≥ 1, severity bands ordered) not pinned values, so calibration no longer trips it; `test_setting_stage4e.gd`'s clamp test forces a high collapse_base locally so it pins the 0.35 ceiling regardless of the tuned default. Full suite net-zero new failures; determinism green.
+**Known issues:** Realm-count variance is high; the raw independent count (~15) sits above 5–10 (the empire count, 6, is in range). Beastman-clanhold count is noisy (2–211). All [PROVISIONAL] — a finer balance pass can revisit once Layers 5–8 give a fuller picture.
+**Next session should:** Stage 4 (Layer-4 history sim) + calibration are COMPLETE. Move to **Stage 5** (name-bank build tool) → Stage 6 (naming) per the build plan, OR the deferred fine-tuning (consolidate solo kingdoms / seed-more for richer empires). The tuned constants are the working baseline.
+
+## Session 2026-06-13 — Setting Generation Stage 5: name-bank build tool
+
+**Task:** Build Stage 5 of the setting-generation pipeline (handoff §6 Stage 5; gdd-naming-conventions.md §13): a dev-time tool that resolves the conlang kits' inheritance and assembles static per-culture name banks into committed `data/name_banks/` assets, with a loader and validation/freshness tests. Engine-first, deterministic, LLM curation deferred.
+
+**Model used:** Opus 4.8 (1M) — schema audit, build-tool design + implementation, loader, tests, docs.
+
+**Completed:**
+- `tools/build_name_banks.py` — resolves kit inheritance (`inherits` string / `[x]` / `[x,y]` blend → normalized list); assembles per-culture banks with NO RNG (sorted + co-prime-diagonal `weave()` enumeration → byte-identical rebuilds); dedups (case-insensitive, order-preserving); validates (naming-conventions §14); writes `data/name_banks/<culture_id>.json` (65) + `_manifest.json`. Modes: default (build all + validate), `--check` (freshness + validation gate, no writes; flags missing/changed/orphaned), `--report` (spot-check markdown). `json.dumps(sort_keys=True)` with `ensure_ascii=True` → pure-ASCII output (escapes the kits' macrons), dodging the cp1252/UTF-8 mojibake gotchas.
+- Category assemblers: `build_personal` (seed stock + re-gendered counterparts via ending-swap + light theophoric from deity stems), `build_clans` (clan/house/tribe seeds via prefix-harvest + kinship-marker patronymics + compound fallback for beastman tribes), `build_epithets` (seed + family shared concepts + `the [Adjective]` top-up), `build_settlements` (flagship seeds + modifier×settlement-word compounds), `build_features` (modifier×feature-word transparent compounds), `build_taverns` + `extract_examples` (harvest the concrete authored examples embedded in `banks_patterns`).
+- `engine/subsystems/generation/world/name_bank_loader.gd` — `NameBankLoader` (RefCounted, static cache, mirrors `CultureCatalogLoader`; skips `_manifest.json`): `load_all()`, `bank_for(cid)`, accessors (`race`/`government`/`family`/`categories`/`names`/`titles`/`ruler_title`/`domain_title`/`religion`/`patterns`/`morphology`), `ids_by_race()`, `clear_cache()`.
+- `tests/test_setting_name_banks.gd` (registered ext_resource/node id 457; 995 checks) — all 65 banks load with core categories ≥10 + dedup invariant; civ + beastman loader accessors; inheritance recorded (agrippan 1 family, sargonid 2); endonym-only (no exonym field); manifest excluded from load; shells out to `--check` as the freshness gate.
+- Output verified in-register across the whole roster (Latin gens, Norse -ungar, Chinese single-syllable surnames, Punic Qart-/Bet-, Goidelic Cland/Ui/Dun, Nahuatl Calpolli/teocalli, Mongolic -ovog, the two elvish sound-law branches, dwarven Kron-, beastman hordes).
+
+**Decisions made:**
+- **Python build tool + committed JSON + GDScript loader + GDScript freshness test**, matching the established §7.4 data-prep pattern (the extractors are Python; GDScript loads/validates). A name bank is a static asset rebuilt offline from kits, never per-campaign — so it needs reproducible (byte-identical) builds, NOT `WorldGenRng`; per-campaign name SELECTION (Stage 6) is where the seeded RNG lives.
+- **Detect schema by shape/prefix, never exact key.** The GDD §2.6 schema is a sketch; the real corpus splits into 55 standard + 10 beastman kits and the clan-seed key alone has ~25 spellings. The builder branches on `race == "beastman"` and harvests clans/flagships by prefix.
+- **Lean on authored content; generate only what kits lack.** Title ladders, deity renames, seed stocks pass through verbatim; the build generates settlement/feature compounds + light top-ups and harvests `banks_patterns` examples for the flavor banks. The generic `compound()` stands in for the per-culture prose `compounding_rule` (not machine-executable); LLM curation is the later content pass.
+- **Gendered SUFFIX endings are not a validation gate** — many cultures gender semantically / by prefix (Aj-/Ix-) / by filiation (ka-); empty parsed arrays are valid.
+
+**Interfaces defined or changed:**
+- `data/name_banks/<culture_id>.json` schema: `{ culture_id, kit_id, tier, race, family[], government, alignment_allowed[], schema_version, generator, categories{ personal_male, personal_female, clan_house, epithet, settlement, feature, [military_unit, dungeon_ruin, ship, tavern] }, titles, religion, patterns, morphology }`. CORE categories guaranteed ≥10. `data/name_banks/_manifest.json` = index {banks: {cid: {race, family, government, counts}}}.
+- `NameBankLoader` static API (above) — the Stage-6 runtime naming entry point.
+- `tools/build_name_banks.py --check` — the freshness/validation CLI gate.
+
+**Database changes:** none (committed file assets only).
+
+**Tests added/updated:** `tests/test_setting_name_banks.gd` (new, 995 checks, suite id 457). Baseline now net-zero new failures (run 2: 40 ASSERTION FAILED lines = the pre-existing 17-failure baseline, measured under isolated APPDATA; my suite GREEN).
+
+**Known issues:**
+- The generic `compound()` and the long agglutinative compounds (Elvish/Nahuatl features run long) are the obvious LLM-curation targets — deterministic baseline stands alone but is not register-perfect (by design; handoff Stage 5 defers curation).
+- Extended flavor categories (military_unit/dungeon_ruin/ship) are short (1-3 authored examples) and absent where the authored pattern was template-only — honest, not a bug; Stage 6 can template-fill from the `patterns` passthrough or a later pooled-generation pass.
+- `tests/test_runner.tscn`/`.gd` are shared with a concurrent dungeon-asset session (its `WallEdgeResolverTests` id 456); name banks added as id 457 without touching it.
+
+**Next session should:**
+- Stage 6 (Layer 5 + region-painting Phase 2): runtime name assignment reading the banks via `NameBankLoader` (mark-used dedup), realm/dynasty naming from clan+title, region naming per region-painting §5, fallen-polity reaches from the event log, settlement naming, re-score region significance. This is where per-campaign `WorldGenRng` name selection lives.
+- Optional content pass: LLM-assisted curation of `data/name_banks/` (trim long compounds, polish register) — the deterministic banks are the floor it improves on.
+
+## Session 2026-06-13 — Setting Generation Stage 6: Layer 5 naming + region-painting Phase 2
+
+**Task:** Build Stage 6 of the setting-generation pipeline (handoff §6; gdd-region-painting.md §3.3/§5/§6; gdd-naming-conventions.md §4/§6.3/§7): runtime naming + region-painting Phase 2 — name every realm/settlement/region/ruin/fallen-reach deterministically from the Stage-5 name banks (zero LLM), re-score region significance with the §3.3 context term, apply the §5 caps. Workflow-orchestrated (ultracode): understand → implement → adversarial review.
+
+**Model used:** Opus 4.8 (1M) — understand workflow (6 readers), implementation, adversarial review workflow (4 dimensions × verify), fixes.
+
+**Completed:**
+- `engine/subsystems/generation/world/name_assembler.gd` (`NameAssembler`, RefCounted, pure/static) — deterministic name composition over a bank + per-entity rng + shared per-culture `used` dedup: `pick_unused` (seeded shuffle + Upper/Lower/Great/Little qualifier, then numbered, on exhaustion), `settlement_name` (flagship-biased for capitals), `feature_name` (subtype→`_SUBTYPE_FEATURE_KEY` recipe: modifier×subtype-feature-word transparent compound, opaque `feature`-pool fallback), `realm_name` (civ: domain title over capital/toponym/`House <dynasty>`; beastman: the horde clan name — no domain title), `dynasty_name`, `ruin_name`, `ruler_styled_title`, `compound()` (mirrors the Stage-5 build tool).
+- `engine/subsystems/generation/world/name_generator.gd` (`NameGenerator`) — Layer-5 orchestration over ctx: indexes polities + recovers fallen-polity cultures from ruin provenance/events; names settlements (capital first) → realms → dynasties; names fallen polities (`toponym_root`) + creates `historical_cultural` "Old <Toponym> Reach" regions (the only live-culture toponyms); names regions (re-score significance per §3.3, attribution = dominant owner/adjacent culture, priority historical→hydronym-derived→descriptive, multilingual alternates for majors); fills `event.region_hint`; names ruins. All draws via WorldGenRng streams `settlement_name`/`polity_name`/`dynasty_name`/`region_name`/`ruin_name`.
+- `setting_generator.gd` `_run_naming` wired: `NameGenerator.new().run(ctx)` + re-persist settlements/polities/fallen/ruins/events/regions.
+- `setting_repository.gd`: `save_polities`/`save_settlements`/`save_events`/`save_ruin_seeds`/`save_fallen_polities`/`save_regions` made idempotent upserts (`replace=true`) so Layer 5 fills name columns in place (REPLACE-into-empty == INSERT, so Layer 4 unaffected). `setting_regions` is NOT a sim-output table — `save_regions` is its only update path.
+- `tools/build_name_banks.py`: bank now carries a `lexicon` passthrough (realized feature/settlement/adjective/resource maps; beastman concepts+feature_words) so Stage-6 region naming is bank-self-contained (subtype recipes, transparent compounds). Regenerated all 65 banks (freshness gate green).
+- Tests: `tests/test_setting_stage6.gd` (NameAssembler unit + full-pipeline integration: everything named, §5 caps, multilingual-majors-only, two-run determinism). Updated `tests/test_setting_stage2.gd` (two stale Phase-1 invariants migrated: regions now named after the full pipeline, significance re-scored to [0,1]).
+
+**Decisions made:**
+- **The history sim does NOT name realms — Layer 5 does.** `sim_polities[].name` is empty after Stage 4; one understand-agent wrongly assumed the sim names them. Realm names are composed here (§6.3).
+- **§3.3 re-score needs no stored prominence:** Phase-1 `significance = 0.45·size + 0.35·prominence` never clamps (≤0.80), so Layer 5 does `clamp(stored + 0.20·context)` exactly. Fallen reaches (no Phase-1 prominence) get `clamp(0.45·size_term + 0.35·prominence_floor + 0.20·context)`.
+- **§5.4 caps key on TOTAL map hexes** (width×height = every cell), NOT a region-size proxy — fixed after adversarial review flagged the proxy as wrong on multi-continent maps.
+- **Idempotent upsert writers** rather than a clear/re-insert dance for the Layer-5 column-fill re-save.
+- **Roads deferred to Stage 7** (the network is built in Layer 6); no road-layer regions exist at Layer 5.
+
+**Interfaces defined or changed:**
+- `NameAssembler` / `NameGenerator` static/instance APIs (above) — the Stage-6 naming entry points; `NameGenerator.new().run(ctx) -> bool`.
+- `save_*` setting writers are now idempotent upserts (behavior-preserving for Layer 4; enables column-fill re-saves). coding_conventions §82.
+- Bank schema gained a `lexicon` block.
+- New WorldGenRng streams: `settlement_name`, `polity_name`, `dynasty_name`, `region_name` (+`"region_id|culture_id"` for alternates), `ruin_name`.
+
+**Database changes:** none (no migration; the columns already existed empty). Writer semantics changed to upsert.
+
+**Tests added/updated:** `test_setting_stage6.gd` (new, 435 checks); `test_setting_stage2.gd` two invariants migrated (now 3535 checks). Baseline **net-zero new failures** (run 2 = 40 ASSERTION FAILED lines = the pre-existing 17-failure set), determinism hash test (Stage0) green.
+
+**Adversarial review (ultracode):** 4 dimensions × find → verify (21 agents). 11 confirmed findings → 6 real fixes landed: caps use true map hexes (was a largest-region proxy); fallen-reach significance follows §3.3 (was a hardcoded 0.65); `_fill_region_hints` determinism (sorted region-id index + id tiebreak on equal significance); dead `realm_name` ternary collapsed; `_SUBTYPE_FEATURE_KEY` += plateau/basin; comment clarifications. False positives (fallback-culture/catalog iteration, hydronym floor, multilingual AND, override decrement) correctly refuted. A real-name spot-check (seed 424242, small) then surfaced one register glitch — the collision qualifier produced "Upper the Man-eater tribe"; fixed `_apply_qualifier` to place the qualifier after a leading article ("the Upper Man-eater tribe"). Sample output: civ realm `Esk'etlanetl of House Wak'tl Sirak'tl` (xilvaneth County); capitals `Xilvanar`/`Aelvanar`/`Gormgrund`; subtype-matched regions `Estlgalen'tl` (forest)/`Milgogyaog` (sea)/`Tsipogmemog` (range); fallen reaches `the Old Gormgrund Reach`/`the Old Xilvanar Reach`.
+
+**Known issues:**
+- **`region_painter.gd` never detects plateau/basin terrain clusters** (GDD §4.2/§4.6 require them) — a pre-existing Stage-2 detection gap, out of Stage-6 scope; Stage-6 naming already maps the subtypes. Flagged as a follow-up task.
+- Per-feature "nearest / most historically-connected" culture attribution (§5.2) for fully-unclaimed regions is deferred — the campaign-wide fallback culture is used (rare; deterministic).
+- Historical-override names are in-palette feature names with a `source_event_id` provenance link, not yet evocative coinages ("the Weeping Wood") — that is the LLM polish at Stage 8.
+- `tests/test_runner.tscn`/`.gd` shared with a concurrent dungeon-asset session (its suite id 456); Stage-5/6 added as 457/458 without touching it.
+
+**Next session should:**
+- Stage 7 (Layer 6): infrastructure & content seeding — settlements reconcile, **roads** (then a road-naming pass reusing `NameAssembler`), provenance-first dungeons, deforestation, forts, POIs, classification finalization. Do the §2 consistency skim of the older POI/dungeon/quest GDDs first.
+- Or pick up the flagged plateau/basin detection follow-up.
+
+## Session 2026-06-13 — Region painting: plateau + basin terrain-cluster detection
+
+**Task:** Close the GDD §4.2/§4.6 gap where `region_painter.gd` never detected plateau or basin terrain-cluster families (it classified all clear-biome land as "plains" regardless of elevation band, and basins not at all). Follow-up to the Stage-6 review, which flagged it (the Stage-6 naming side already maps both subtypes).
+
+**Model used:** Opus 4.8 (1M).
+
+**Completed:**
+- `engine/subsystems/generation/world/region_painter.gd`: `_cluster_family()` now splits clear-biome land by elevation band — `hills`+`clear` → **plateau** (high tableland), `flat`+`clear` → plains. `_detect_terrain_clusters()` added `plateau` to the family loop and promotes a flat-band "plains" COMPONENT to **basin** when `_is_enclosed_basin()` holds. New `_is_enclosed_basin(grid, component)` — true when ≥ `BASIN_ENCLOSURE_FRACTION` (0.6) of the component's deduped land-ring is higher ground (hills/mountains); a component touching only water/edge is never a basin. Mountains still trump clear (a mountain hex is `range`, never plateau).
+- `tests/test_setting_stage2.gd`: `test_plateau_and_basin_detection` — seed-independent unit tests on hand-built grids (hills+clear→plateau; enclosed flat+clear→basin; open flat+clear→plains; mountains+clear→range; unringed→not basin) + a full-map invariant (any plateau/basin cluster is a `terrain_cluster` respecting the §4.6 ≥2 floor). Registered in `run_all_tests`.
+
+**Decisions made:**
+- **plateau = hills+clear; basin = an enclosed flat+clear component** (≥60% of its ring is higher ground). The elevation model is a 3-band tag (mountains/hills/flat), so this is the faithful band×biome reading of §5.1 ("high+plain" / "low+vale"). Component-level enclosure (not per-hex) avoids the depression-interior fragmentation a per-hex test would cause; deterministic (the ring is a set, the fraction is order-independent).
+
+**Interfaces defined or changed:** `RegionPainter._cluster_family` now emits `plateau`; `_detect_terrain_clusters` emits `basin`; new static `_is_enclosed_basin`. No schema/migration change (subtype is an open TEXT field; `name_assembler.gd` `_SUBTYPE_FEATURE_KEY` already maps plateau→plain, basin→vale, so naming was already wired).
+
+**Database changes:** none.
+
+**Tests added/updated:** `test_setting_stage2.gd` +`test_plateau_and_basin_detection` (Stage2 now 3556 checks). Verified end-to-end: seed-42 medium yields `{anomaly:3, basin:1, forest:9, plains:3, plateau:5, range:4}` — both new families appear. Baseline **net-zero new failures** (run 2 = 40 ASSERTION FAILED lines).
+
+**Known issues:** none new. Basin incidence is seed-dependent (an enclosed low clear-cluster); the unit test proves the rule fires regardless.
+
+**Next session should:** Stage 7 (Layer 6 infrastructure + roads), per the build plan.
+
+## Session 2026-06-13 — Plateau detection reverted (kept basin); plateau deferred
+
+**Task:** Correct the plateau definition from the prior entry. Jedidiah flagged that `hills`+clear ≠ plateau: the `hills` elevation band is rugged moderate terrain (valleys/bluffs/coulees/steep inclines — travel-slowing, sub-mountainous), NOT flat high ground. A plateau is *flat* terrain at *high* elevation, which the 3-band elevation tag (mountains/hills/flat, derived from `elevation_raw` magnitude) cannot express. Disable plateau until a proper definition exists; keep basin.
+
+**Model used:** Opus 4.8 (1M).
+
+**Completed:**
+- `region_painter.gd`: reverted the `hills`+clear → plateau split — `_cluster_family` now returns `plains` for all clear ground (the pre-Stage-6 behavior); removed `plateau` from the `_detect_terrain_clusters` family loop. **Basin retained** (the `_is_enclosed_basin` promotion of a flat-band clear component ringed ≥60% by higher ground — a low enclosed depression, which is geologically sound and was not objected to). Added a deferral NOTE on `_cluster_family` explaining the proper plateau definition.
+- `tests/test_setting_stage2.gd`: renamed `test_plateau_and_basin_detection` → `test_terrain_families_and_basin_detection`; now asserts `hills`+clear → `plains` (plateau deferred), basin detection still works, and **no region carries a `plateau` subtype**.
+- Docs: `gdd-region-painting.md` §4.2 gained an implementation-status note (plateau deferred; needs a local-flatness pass on `elevation_raw`; basin detected as low+enclosed). `coding_conventions.md` §82 terrain-families bullet corrected (the wrong hills→plateau rule removed; the deferral + the "elevation_raw is already persisted" fact recorded).
+
+**Decisions made:**
+- **Plateau DEFERRED, not faked.** Rather than ship a second questionable definition, plateau is disabled until a deliberate detection pass exists.
+- **The data is already there.** `elevation_raw` (the 0–1 heightmap float) is persisted per hex (HEX_COLUMNS + the in-memory grid), so the future plateau detector does NOT need a persistence refactor — only a LOCAL-FLATNESS computation: a contiguous clear cluster of high `elevation_raw` whose ring `elevation_raw` variance is low (a flat top), plus a plateau-vs-range resolution in the high band. Thresholds want calibration with Jedidiah's terrain-design input, so it's a future pass, not a one-liner.
+- **Basin kept** — `flat` band = genuinely low+smooth `elevation_raw`; enclosed by higher ground = a real depression. Sound and unobjected.
+
+**Interfaces defined or changed:** `_cluster_family` no longer emits `plateau`; `_detect_terrain_clusters` no longer iterates it. `_is_enclosed_basin` unchanged. `name_assembler.gd` `_SUBTYPE_FEATURE_KEY` still maps plateau→plain (now dormant/reserved) + basin→vale (active) — no change needed.
+
+**Database changes:** none.
+
+**Tests added/updated:** `test_setting_stage2.gd` (renamed test; basin + family + no-plateau assertions). Baseline net-zero new failures.
+
+**Known issues / future:** plateau detection deferred — implement a local-flatness pass on the persisted `elevation_raw` (flat-top + high-elevation gate + plateau/range overlap rule) when prioritized; this is the clean future definition.
+
+**Next session should:** Stage 7 (Layer 6 infrastructure + roads); or take up the plateau flatness-detection pass with Jedidiah's threshold input.
+
+## Session 2026-06-13 — Setting Generation Stage 7a: Layer 6 settlements + classification
+
+**Task:** Begin Stage 7 (Layer 6 infrastructure & content seeding, setting-gen §9). Ran an understand+skim workflow over §9.1–§9.8 + the three older consumer GDDs (dungeon-layout/poi-generation/quest-rumor) against the §7.2 contract, then built sub-stage 7a: §9.1 settlement reconciliation + §9.6 territory-classification finalization (the first 2 of the 4 exit-gated items: settlements/roads/dungeons/classification).
+
+**Model used:** Opus 4.8 (1M) — understand workflow (5 readers), RAW verification, implementation.
+
+**Completed:**
+- `engine/subsystems/generation/world/infrastructure_generator.gd` (`InfrastructureGenerator`, RefCounted) — Layer-6 orchestrator (7a phases so far; 7b-7e stubbed in the header). `run(ctx)`:
+  - **§9.1 settlement reconciliation** — `_market_class(urban_families)` per the RAW table (acore-campaign-hijinks.xml:632-638: Class I ≥20,000 / II ≥5,000 / III ≥1,750 / IV ≥600 / V ≥250 / VI else); every sim settlement's placeholder market_class(6) is replaced. **Bounded capital top-up** (reconcile-don't-invent): a non-beastman realm with a real urban target (10% of its families ≥ the 75-family floor) but NO emerged settlement gets its capital placed (seat sized to ~20% of the urban target), named via `NameAssembler`. Beastman realms are excluded (no urban settlements, §5.3); Class IV-and-smaller hamlet-scatter is NOT done (acore:174 — ignorable on the 24-mile map).
+  - **§9.6 classification finalization** (promotion-only) — hexes near Layer-6 added/upgraded settlements promote one step against the ORIGINAL class: any settlement civilizes wilderness→borderlands within 72 mi (3 hexes); a Class I-II city promotes within 48 mi (2 hexes). Snapshot-based so two drivers can't lift a hex two steps; limits-of-growth guard via `SimConstants.cap_for`; never demotes.
+- `setting_generator.gd` `_run_infrastructure` wired: `InfrastructureGenerator.new().run(ctx)` + idempotent re-save of settlements + `_persist_hexes` (territory promotions). No migration (7a only touches existing settlements/hexes tables).
+- `tests/test_setting_stage7.gd` (suite id 459, 1767 checks) — RAW market-class unit tests + full-pipeline integration: market_class matches the RAW table, no non-beastman realm ≥750 families is settlement-less, settled hexes are never wilderness, all land hexes carry a valid class, two-run determinism.
+
+**Decisions made:**
+- **§9.8 quest/rumor seeding is BLOCKED and deferred** — it requires an NPC personality/motivation system (questgiver authority + domain income) that is NOT YET AUTHORED. Both skim agents confirmed setting-gen doesn't call quest generation today. Stage 7 will generate POI *rumor seeds* (JSON, no NPC needed) but not full quests. Flag for Jedidiah: the quest layer needs the NPC system first.
+- **Dungeons reuse `setting_ruin_seeds`** (no new table) — §9.3 adds geometric top-ups alongside the provenance ruins (the consumer-GDD skim confirmed gdd-dungeon-layout is layout-only and scope-correct; full DG-V1 layout generation stays separate/on-demand).
+- **Roads need migration 157** (`setting_roads` + road-layer regions) for 7b; dungeons/POI/forts reuse existing or one new table (forts).
+- **Verified the RAW** rather than trust the workflow's transcribed numbers — the market-class thresholds, the 48/72-mile rule, and the 125/250/780-per-6-mile caps (×16 = 2000/4000/12480 per 24-mile hex, matching `SimConstants.cap_for`) were read from the XML directly.
+
+**Interfaces defined or changed:** `InfrastructureGenerator.new().run(ctx) -> bool`; `_run_infrastructure` now active. `market_class` is now a real Class I-VI (1-6); top-up settlements get `stl_NNNN` ids past the sim's max; territory promotions write `territory_class` on the hex substrate.
+
+**Database changes:** none (7a). Migration 157 (`setting_roads`) comes with 7b.
+
+**Tests added/updated:** `test_setting_stage7.gd` (new, 1767 checks). Net-zero new failures (run 2 = 40 baseline); determinism hash green.
+
+**Known issues / scope:**
+- Stage 7 remaining sub-stages: **7b** §9.2 roads (migration 157 + AStar network + road-layer regions + road naming pass reusing NameAssembler), **7c** §9.3 dungeon seeding (provenance + geometric top-up into ruin_seeds), **7d** §9.4 deforestation + §9.5 forts (new `setting_fortifications` table), **7e** §9.7 POI seeds. §9.8 quests deferred (NPC blocker).
+- Exit gate (settlements/roads/dungeons/classification) needs 7b + 7c to complete.
+
+**Next session should:** Stage 7b — roads (§9.2): migration 157 `setting_roads`, AStar terrain-cost pathfinding connecting settlements within/between realms, road-layer regions, and a road-naming pass reusing `NameAssembler`/`NameGenerator`.
+
+## Session 2026-06-13 — Setting Generation Stage 7b: Layer 6 road network (§9.2)
+
+**Task:** Continue Stage 7 (Layer 6). Park §9.8 quest gen with clear plug-in breadcrumbs (Jedidiah: the NPC system must exist first), then build 7b: the §9.2 road network + the deferred Stage-6 road naming. Completes 3 of the 4 exit-gated items (settlements/classification/**roads**; dungeons remain).
+
+**Model used:** Opus 4.8 (1M).
+
+**Completed:**
+- **Migration 157** `db/migrations/157_setting_roads.sql` — `setting_roads` (id road_NNNN, campaign_id, hexes JSON-ordered path, from/to_settlement_id, road_class CHECK(highway/road/track), purpose CHECK(domestic/trade), name, region_id; PK (campaign_id, id)). Registered in `CampaignRepository._SCOPE_DIRECT_CAMPAIGN` (the table-scoping gate that asserts every table is scoped/excluded) and `SettingRepository._DATA_TABLES`.
+- `setting_repository.gd`: `ROAD_COLUMNS` + `save_roads` (idempotent upsert) + `list_roads`.
+- `infrastructure_generator.gd` `_build_roads(ctx)` (§9.2): deterministic **A\*** over the hex grid (`_route`/`_pop_lowest_f` single-scan with canonical tiebreak/`_reconstruct`) costed by `_terrain_cost` (per-hex impedance ordered per `HexTerrainData.movement_cost_category`: mountains/swamp 5 > jungle 4 > woods/hills/desert 2 > clear 1; open water impassable; built roads re-used at ×0.35 so paths braid). Within-realm = a star from each capital to its realm's other settlements; inter-realm = each capital to its **nearest ~2 non-opposed** capitals within 10 hexes (sparse "major trade roads", deduped — NOT all-pairs, which webbed the map). A route is a `highway` if inter-realm trade or touching a Class I-III market, else `road`.
+- `name_assembler.gd` `road_name(root, rng, used, cid)` — "the <root> Road/Way/Path" (§7 transparent template; root = the destination settlement's name). Highways are named and get a `road`-layer `setting_regions` row (ordered hex path) cross-linked via region_id.
+- `_run_infrastructure` re-saves roads + regions (road-layer) + settlements + hexes (all idempotent).
+- **§9.8 quest gen PARKED with breadcrumbs** — `infrastructure_generator._seed_quests_DEFERRED()` carries the full plug-in spec (call site after §9.7 POI; inputs already in ctx: ruin hooks, POI rumor seeds, events, market_class notice boards, ruler economics; the missing blocker = per-settlement NPC questgivers w/ motivation + domain income; future migration tables setting_quests/setting_rumors; determinism streams). Cross-referenced from coding_conventions §83 (to write) + project memory.
+
+**Decisions made:**
+- **Sparse trade network (nearest-2), not all-pairs** — the first cut connected every capital pair within range and webbed the small map (16031→10031 test checks after the fix); §9.2 wants "major trade roads," so each capital links to its nearest ~2 non-opposed capitals.
+- **Roads stored as their own table + named highways as road-layer regions** (the schema_ctx skim's recommendation) — `setting_roads` holds the network edge + metadata; the road region holds the ordered hex path for the named highway (region-painting §6.1).
+- **Road naming reuses NameAssembler** (the explicitly-deferred Stage-6 road pass) with an English transparent generic word ("Road"/"Way") + a culture-rooted root, per naming-conventions §7.
+- **Terrain cost aligned to the project's `movement_cost_category` ordering** rather than inventing one.
+
+**Interfaces defined or changed:** `SettingRepository.{ROAD_COLUMNS, save_roads, list_roads}`; `setting_roads` added to `_SCOPE_DIRECT_CAMPAIGN` + `_DATA_TABLES`; `NameAssembler.road_name`; `InfrastructureGenerator._build_roads`; ctx gains `sim_roads`; new road-layer `setting_regions` (layer='road', subtype='highway'). New WorldGenRng stream `road_name`.
+
+**Database changes:** migration 157 `setting_roads`.
+
+**Tests added/updated:** `test_setting_stage7.gd` extended (now 10031 checks): roads connect real settlements with valid class/purpose, road paths are contiguous + never open water, highways are named + link a road-layer region, two-run road-network determinism. Net-zero new failures (run 2 = 40 baseline); determinism hash + scoping gate green.
+
+**Known issues:** A\* node selection is O(n) per pop (fine for the few roads on small/medium; if a large-map perf issue appears, swap in a heap). The §9.1 dataset hash doesn't include setting_roads (road determinism is covered by the 7b two-run test instead).
+
+**Next session should:** Stage 7c — §9.3 dungeon seeding (provenance ruins kept + geometric top-up to ~3 large/10 medium/17 lair per 80 hexes, into `setting_ruin_seeds`; completes the exit gate). Then 7d (deforestation §9.4 + forts §9.5) and 7e (POI seeds §9.7; quests deferred).
+
+## Session 2026-06-13 — Setting Generation Stage 7c: dungeon seeding (§9.3) — EXIT GATE CLOSED
+
+**Task:** Stage 7c — §9.3 provenance-first dungeon & lair seeding. Closes the Stage-7 exit gate (settlements/classification/roads/**dungeons**).
+
+**Model used:** Opus 4.8 (1M). RAW verified directly (acore-setting-construction-rules.xml + gdd-dungeon-layout §3).
+
+**Completed:**
+- `infrastructure_generator.gd` `_seed_dungeons(ctx)` (§9.3, into the existing `setting_ruin_seeds` — no new table): (0) consume sim ruins — assign a flavor `dungeon_type` if empty (`_provenance_type`: beastman→humanoid_warren, else by size large→sunken_city/medium→catacombs/lair→tomb), mark their hexes occupied (kept at historical positions, EXEMPT from spacing — provenance first), count by size bucket (`_size_bucket`: small counts toward medium). (1) targets = `(total_hexes/80) × {3 large, 10 medium, 17 lair}` (RAW acore:414-419, banker's-rounded), minus sim counts, surplus allowed. (2-4) geometric top-ups via `_place_dungeon_topups`: eligible = wilderness/borderlands land, scored by `_drama` (mountains/swamp 3 > jungle 2 > woods 1) so evocative sites fill first; **large** ≥8 from a Class I-III market + ≥12 from other large; **medium** ≥3 from other medium/large; **lair** unconstrained. Each top-up: `ruin_NNNN`, empty provenance, `event_type="geometric"`, size_hint=bucket, `dungeon_type` = seeded d20 roll over the gdd-dungeon-layout §3 table (`_D20_TYPES`), name via `NameAssembler.ruin_name` (nearest non-beastman culture's toponym + size). `level_range` is NOT stored (no column — DG-V1 derives tier from entrance distance at play time). The "undercity beneath a major settlement" exception is deferred (optional "may").
+- `_run_infrastructure` re-saves `setting_ruin_seeds` (idempotent — sim ruins get types, top-ups appended).
+- `test_setting_stage7.gd` (now 10279 checks): dungeons typed + valid size; geometric top-ups carry no provenance, are named, sit in wilderness/borderlands not water; geometric large dungeons ≥12 from other large + ≥8 from Class I-III markets; two-run dungeon-seed determinism.
+
+**Decisions made:**
+- **Geometric top-ups live in `setting_ruin_seeds` with empty provenance + `event_type="geometric"`** — distinguishes them from sim provenance ruins (which this required migrating a stale Stage-4e invariant: `test_fallen_and_ruins_persisted` asserted EVERY ruin carries provenance; now it checks provenance only for non-geometric ruins + that ≥1 provenance ruin exists — the §80 "invariant moves when the next layer lands" pattern).
+- **`dungeon_type` is seed flavor only** — DG-V1 generates every dungeon as wizards_dungeon (other types → fallback), so the d20 flavor is metadata for naming/narration; faithful but cheap.
+- **RAW density scaled per total map hexes** (30 dungeons / ~80 24-mile hexes ≈ one 6-mile regional map per acore:405-419), not land-only — matches the published per-region density.
+
+**Interfaces defined or changed:** `InfrastructureGenerator._seed_dungeons` + helpers; `setting_ruin_seeds` now carries Layer-6 geometric rows (`event_type="geometric"`, empty provenance) alongside sim provenance rows; new WorldGenRng stream `dungeon`. No migration, no schema change.
+
+**Database changes:** none (reuses `setting_ruin_seeds`).
+
+**Tests added/updated:** `test_setting_stage7.gd` (dungeon tests, 10279 checks); `test_setting_stage4e.gd` invariant migrated. Net-zero NEW attributable failures (run 2 = 41 vs 40 baseline; the +1 is the pre-existing FLAKY dice test `is_lingering/percent_in_lair`, a lair-encounter probability test unrelated to setting gen — all setting suites green; determinism + scoping gates green).
+
+**Known issues:** the undercity exception (one large dungeon under a major settlement) deferred. Dungeon placement is O(placed) per candidate for spacing — fine at current scale.
+
+**STAGE 7 EXIT GATE CLOSED:** §11.1 settlements/roads/dungeons/classification all implemented + tested. Remaining (NON-gated): 7d §9.4 deforestation + §9.5 forts; 7e §9.7 POI seeds. §9.8 quests parked (NPC blocker, breadcrumbs in `_seed_quests_DEFERRED`).
+
+**Next session should:** Stage 7d — §9.4 deforestation (VERIFY the radius formula against gdd-terrain-system §6 — the understand agent invented `1+market/2`) + §9.5 fortifications (new `setting_fortifications` table: border forts on event-log hot frontiers, strongholds at Class I-III, watchtowers on trunk roads). Then 7e POI seeds.
+
+## Session 2026-06-13 — Setting Generation Stage 7d: deforestation (§9.4) + forts (§9.5)
+
+**Task:** Stage 7d — §9.4 deforestation/forestation + §9.5 fortification placement (both non-exit-gated; the exit gate closed at 7c). Verified the deforestation formula against the actual GDD rather than the understand-agent's invented one.
+
+**Model used:** Opus 4.8 (1M). RAW/GDD verified directly (gdd-terrain-system §6.1 table; DomainTierTable stronghold values).
+
+**Completed:**
+- **§9.4 deforestation** (`infrastructure_generator._deforest`): per gdd-terrain-system §6.1 — base chance by market class (I 100% / II 80% / III 60% / IV 50% / V 45% / VI 40%) minus 5% per 6-MILE hex; our hexes are 24-mile = 4× 6-mile, so −20% per 24-mile hex (`_DEFOREST_BASE` + `_DEFOREST_PER_HEX`). Each land hex: nearest non-elven settlement (deforest woods/jungle→clear) vs nearest elven settlement (reforest clear→woods, race=="elf" — aelvaneth/xilvaneth/thalvaneth), "closer settlement wins" (tie → lower market-class number), preserve `original_biome`, seeded per-hex via `WorldGenRng.stream(seed,"deforest",0,"q,r")`. Mutated biomes re-persist via `_persist_hexes`.
+- **§9.5 forts** (`_place_forts`): migration **158 `setting_fortifications`** (id fort_NNNN, hex, fort_type CHECK(border_fort/stronghold/watchtower), owner_polity_id, settlement_id, road_id, stronghold_value_gp, is_hot) + `FORTIFICATION_COLUMNS`/`save_fortifications`(upsert)/`list_fortifications`; **registered in `CampaignRepository._SCOPE_DIRECT_CAMPAIGN` + `_DATA_TABLES`**. Three placement types: (1) strongholds — one per Class I-III market, valued by the realm tier of the hex's CURRENT owner via `DomainTierTable.stronghold_value_for_tier` (skipped when the hex has no live owner — handles orphan settlements of fallen realms); (2) border forts — along realm frontiers (`_is_frontier`), spaced 3 hexes on hot frontiers / 6 on cold, where hot = `_hot_border_hexes` (war/conquest/pillage event hexes OR an owned hex bordering an opposed-alignment realm); (3) watchtowers — along highway roads in borderlands, spaced 5. Streams `deforest`; forts deterministic by canonical iteration.
+- `_run_infrastructure` saves fortifications + (deforestation rides the hex re-save).
+- `test_setting_stage7.gd` (now 10330 checks): valid (de)forestation transitions w/ preserved original_biome; forts valid (strongholds at Class I-III with gp value > 0; watchtowers reference a road); two-run determinism for biomes + forts.
+
+**Decisions made:**
+- **VERIFIED the deforestation formula** against gdd-terrain-system §6.1 — the understand agent had invented `radius = 1+market_class/2`; the real rule is a market-class base chance with −5%/6-mile-hex falloff, scaled ×4 for our 24-mile hexes. (Same RAW discipline that caught the plateau + market-class details.)
+- **Strongholds value by the hex's CURRENT owner**, not the settlement's stored polity_id — a Class I-III settlement of a fallen realm references a dead polity (not in the alive sim_polities); using the live hex owner (and skipping if none) avoids a 0-value stronghold (the bug the test caught).
+- **Hot frontiers from the event log + opposed alignment** (§9.5) — recent war/conquest/pillage event hexes and opposed-alignment borders get denser forts.
+
+**Interfaces defined or changed:** migration 158 `setting_fortifications`; `SettingRepository.{FORTIFICATION_COLUMNS, save_fortifications, list_fortifications}`; `setting_fortifications` in the scoping registry + `_DATA_TABLES`; `InfrastructureGenerator._deforest`/`_place_forts`; ctx gains `sim_fortifications`; hex `biome`/`original_biome` mutated by deforestation. New WorldGenRng stream `deforest`.
+
+**Database changes:** migration 158 `setting_fortifications`.
+
+**Tests added/updated:** `test_setting_stage7.gd` (deforestation + fort tests, 10330 checks). Net-zero NEW attributable failures (run 1 = 40 baseline; the recurring run-2 +1 is the pre-existing FLAKY dice test `is_lingering/percent_in_lair`; "wave 2 summary / no stronghold for id" is a pre-existing baseline domain-wave failure — neither is setting-gen). Determinism + scoping gates green.
+
+**Known issues:** deforestation reach on a 24-mile map is coarse (a Class I city can clear forest ~4-5 hexes out); faithful to the scaled RAW but worth an eyeball if it reads too aggressive. Fort spacing iterates placed lists O(n) — fine at scale.
+
+**Next session should:** Stage 7e — §9.7 POI seeds (gdd-poi-generation: 7 archetypes, type-specific skeleton + 1-2 rumor seeds JSON into `setting_poi_seeds`; budget clamp(30−dungeons,5,10); ≥2 from dungeons / ≥3 from POIs; cultural/era context from substrate + events). That finishes Stage 7 (§9.8 quests stay parked — NPC blocker, breadcrumbs in `_seed_quests_DEFERRED`). Then Stage 8 (LLM narrative).
+
+## Session 2026-06-13 — Setting Generation Stage 7e: wilderness POI seeding (§9.7) — STAGE 7 COMPLETE
+
+**Task:** Stage 7e — §9.7 wilderness POI seeding (gdd-poi-generation.md). Finishes Stage 7 (§9.8 quests stay parked — NPC blocker).
+
+**Model used:** Opus 4.8 (1M). GDD-faithful (the POI GDD is self-contained/PROJECT-DESIGNED; transcribed its tables).
+
+**Completed:**
+- `engine/subsystems/generation/world/poi_generator.gd` (`PoiGenerator`, RefCounted) — full §9.7: per-POI d20 type roll (§4.2, with the max-3-of-a-type dedup), terrain-affinity + territory + spacing placement (§2.2/§3/§4.3, scored + weighted-random over the top quartile), the complete per-type **mechanical skeletons** (§4.4, all 7 archetypes transcribed into `_SKELETONS` as roll-indexed outcome tables: sacred_site/ancient_ruin/natural_landmark/burial_site/resource_site/battlefield/creature_habitat), cultural/era/connection context (§4.5: ruling-or-nearest culture, era from the most-significant event touching the hex, near_dungeon/known_locally/culturally_relevant/linked tags), and 1-2 rumor seeds (§4.6: every POI a TRUE rumor + a 2nd less-reliable one when it has treasure/effect) → `setting_poi_seeds` rows (context + rumor_seeds JSON). Deterministic placeholder name (`the <Toponym> <TypeNoun>`); Layer 7 LLM refines.
+- Wired in `infrastructure_generator.run` (after deforestation so POIs read final biomes) + `_run_infrastructure` saves `sim_poi_seeds` (reuses the existing `setting_poi_seeds` table — already scoped, no migration).
+- `test_setting_stage7.gd` (now 10372 checks): POIs typed/named/off-water, civilized POIs only sacred_site/battlefield, skeleton + >=1 TRUE rumor present, >=2 from Class I-III markets, distinct hexes, two-run determinism.
+
+**Decisions made:**
+- **POIs avoid only CITY (Class I-III) hexes + each other, NOT every settlement or dungeon.** A diagnostic showed the sim emits an urban settlement on ~EVERY land hex (~5 rows/hex; `occupied == land`) and §9.3's RAW dungeon density saturates the 24-mile map — so requiring POIs >=3 from every settlement/dungeon left ZERO candidates. Per §3.2.6 ("no city hexes") + §3.2.2 (">=2 from Class I-III") + §3.2.4 (a POI may share a lair's hex), POIs avoid cities + each other and coexist with hamlets/dungeons; fine separation is a 6-mile zoom concern. Spacing relaxes 3->2->1 (distinct hexes guaranteed) if a dense map leaves no room at 3.
+- **The POI GDD is the data** — self-contained PROJECT-DESIGNED tables (no separate extract); transcribed §4.4 skeletons + §4.2 d20 + §2.2 affinity into `PoiGenerator` consts (like the dungeon d20 table).
+- **creature_habitat records a terrain tag** for its creature (`creature_terrain`); the actual creature resolves at play via the existing wilderness-encounter system (encounter_terrain_resolver / acore_adventures_and_encounters.xml), so seeding isn't blocked on it.
+
+**Interfaces defined or changed:** `PoiGenerator.new().run(ctx) -> Array`; ctx gains `sim_poi_seeds`; `setting_poi_seeds` populated (context = {skeleton, cultural_origin, religious_origin, era_tag, connection_tags, linked_poi_ids}; rumor_seeds = [{poi_id, accuracy, knowledge_category, settlement_range, text_hint}]). New WorldGenRng streams `poi_type`/`poi_place`/`poi`.
+
+**Database changes:** none (reuses migration-156 `setting_poi_seeds`).
+
+**Tests added/updated:** `test_setting_stage7.gd` POI tests (10372 checks). Net-zero NEW failures (run 1 = run 2 = 41; the +1 over the 40 baseline is the pre-existing FLAKY dice test `is_lingering/percent_in_lair`). Determinism + scoping gates green.
+
+**Known issues / FLAGGED:** the diagnostic surfaced a real upstream smell — **the history sim emits ~5 settlement rows per hex (hundreds per region)** where ACKS expects ~15 (Class V-VI hamlets are ignorable at the 24-mile scale). Spawned a follow-up task to investigate `HistorySimulator._maybe_emerge_settlement` (re-emergence append vs update) and/or filter Class V-VI at the 24-mile scale. Not a 7e bug; 7e works around it by only avoiding cities.
+
+**STAGE 7 COMPLETE:** §9.1 settlements + §9.6 classification (7a), §9.2 roads (7b), §9.3 dungeons (7c), §9.4 deforestation + §9.5 forts (7d), §9.7 POIs (7e). §9.8 quests DEFERRED (NPC blocker; breadcrumbs in `_seed_quests_DEFERRED`). Exit gate (settlements/roads/dungeons/classification) closed at 7c.
+
+**Next session should:** an **adversarial review of the whole Stage-7 implementation** is warranted (the dungeon/settlement density coexistence assumptions, the cap math, determinism across all 5 sub-phases) — recommended before Stage 8. Then Stage 8 (Layer 7 LLM narrative behind the provider wall — consumes the POI skeletons + rumor seeds + the §11.3 significance-ranked event log). Also pending: the spawned settlement-over-emergence investigation.
+
+
+## Session 2026-06-14 — Settlement density regrounding (rank-size stocking model)
+
+**Task:** Investigate + fix the history sim's settlement over-emergence (the Stage-7e POI build surfaced ~548 settlement rows on a ~108-land-hex region — every land hex a settlement, ~5×/hex). Reground settlement density in RAW demographic primitives per Jedidiah's direction (don't lean on the quick-stocking tables), derive per-hex/per-scale densities + urbanization bounds, and rewrite the §9.1 stocking algorithm + GDD.
+**Model used:** Opus 4.8 (RAW derivation, design, implementation, debugging).
+**Completed:**
+- Diagnosed the over-emergence: `history_simulator._emerge_urban` scatters an urban record onto EVERY qualifying hex (the `others` loop), and those records accumulate stale cross-ownership copies over 160 ticks (a hex contested by N polities keeps N records; dead-polity records never pruned). The per-hex dedup (lines 443-447) IS correct (per hex+polity), so the ~5× multiplier is cross-polity churn, not same-hex append.
+- Derived the RAW density foundation (cited): 5 ppl/family (axioms:106); 24-mi peasant caps 2,000/4,000/12,480 W/B/C (axioms:156-160 = 16× the 6-mi 125/250/780; densities 20/40/125 ppl·mi⁻²); ~10% urban + largest = 20% of urban (acore:161-176); market class by urban families (hijinks:632-638). Established that a single maxed civilized 24-mi hex supports only a Class V village → cities are inherently a multi-hex-realm phenomenon.
+- Built a rank-size (Zipf-1) stocking model in `infrastructure_generator.gd` §9.1, replacing the per-hex scatter + "Class V-VI top-up": per realm, A = 0.20·(f_u·peasant); settlement rank r = A/r; the 24-mi map persists Class III+ (floor(A/1750)) + the Class IV capital-seat exception. f_u varies 5-20% by a realm development index (territory-class mix). The sim's per-hex emergence is now only a placement signal (ranks candidate hexes).
+- Verified on the small test map: 11 settlements (8 Class III + 3 Class II) over 180 hexes — sparse, all genuine cities, matching the predicted ~4-21 range.
+- Fixed two bugs found in testing: (1) `save_settlements` upsert left stale Stage-4 scatter rows in the table (~1,400 spurious failures) → added `SettingRepository.replace_settlements` (DELETE-then-insert) used by `_run_infrastructure`; (2) aggregated realm hexes from the ABSENT `pol["hexes"]`/`pol["alive"]` on exported polity rows → zero settlements → switched to the `hex_grid.owner_polity_id` partition (the canonical Layer-6 source) and dropped the alive filter.
+- Rewrote gdd-setting-generation.md §9.1 (rank-size model, RAW grounding, two-scale materialization), added coding_conventions §83, noted the placement-signal on the sim side (history_simulator `_emerge_urban` comment).
+**Decisions made:**
+- Settlement density is grounded in RAW primitives (density caps + urban ratios), NOT the quick-stocking placement table (which assumes one frontier density and conflates the 6-mi/24-mi scales). The rank-size rule reproduces the quick table's "largest = 20%", reconciles with the 6-mi regional budget at frontier density, and scales correctly into heartlands.
+- 24-mile campaign map = Class III+ only, plus a single Class IV iff it is the realm's largest settlement AND capital (Jedidiah). Class IV-VI urban folds into the hex aggregate for a future 6-mile zoom (T=250, same model).
+- f_u (urban fraction) varies 5-20% by realm development (civ-hex fraction), since the culture catalog has no urbanism axis (Jedidiah: vary 5-20% by advancement).
+**Interfaces defined or changed:**
+- `SettingRepository.replace_settlements(campaign_id, rows) -> bool` (NEW; DELETE-then-insert; Layer 6 uses it instead of `save_settlements` because §9.1 rebuilds the set rather than filling columns in place).
+- `InfrastructureGenerator._reconcile_settlements(settlements, hex_grid, polities) -> Array` (signature changed: takes polities, returns the rebuilt set; `ctx["sim_settlements"]` reassigned). New helpers `_stock_realm`/`_rank_hexes`/`_dev_weight`/`_settlement_row`. Removed `_make_settlement`/`_aggregate_realm_families` + the `_added_settlements`/`_families_by_polity`/`_URBAN_FRACTION` members.
+- Mapped-settlement invariant: every persisted `setting_settlement` is Class III+ (market_class ≤ 3) OR a Class IV (==4) capital seat; no two settlements share a hex; the set is sparse (≤ hexes/5).
+**Database changes:**
+- None (no migration). `setting_settlements` schema unchanged; only the Layer-6 persist semantics changed (replace vs upsert).
+**Tests added/updated:**
+- `tests/test_setting_stage7.gd`: migrated `test_no_civ_realm_settlement_less` → `test_settlement_stocking_invariants` (Class III+/IV-capital + distinct-hex + sparse). Suite header updated. Baseline held at 40 ASSERTION FAILED (net-zero new failures), measured on run 2 under isolated APPDATA.
+**Known issues:**
+- The 6-mile regional zoom (materializing Class IV-VI villages from the per-hex aggregate via the same rank-size model at T=250) is a FUTURE feature — model + thresholds pre-wired, zoom pipeline unbuilt.
+- Stage 6 (NameGenerator) still names the sim's scatter settlements (now discarded at Layer 6); Layer 6 reuses the sim name where a city sits on a sim-emerged hex (common) and fabricates otherwise. Minor wasted naming, not a correctness issue.
+- The sim still over-emerges internally (benign placement signal now); a future cleanup could trim the scatter for memory but it is not required.
+**Next session should:**
+- Stage 7 adversarial review (density/cap math, determinism across 7a-7e), then Stage 8 (Layer 7 LLM narrative, provider-walled). The settlement over-emergence investigation (task_d26641e0) is RESOLVED at the Layer-6 stocking layer.
+
+
+## Session 2026-06-14 (cont.) — Stage 7 adversarial review + fixes
+
+**Task:** Run the /code-review adversarial review (xhigh: 9 finder angles → 1-vote verify → sweep) over the whole Stage-7 (Layer-6 setting infrastructure) implementation, then fix the confirmed defects.
+**Model used:** Opus 4.8 orchestrator; the review ran as a Workflow (58 subagents, ~3.8M tokens): 9 parallel finders (5 correctness + Reuse/Simplification/Efficiency/Altitude) → dedup → per-candidate verifier → sweep → verify-sweep → top-15 synthesis. 53 raw → 42 deduped → 30 verified → +6 sweep → 15 reported.
+**Completed:**
+- **Fixed 8 confirmed findings** (net-zero new test failures, baseline 40 held on run 2):
+  - **Data-loss (mine, this session): `replace_settlements` was non-atomic** — DELETE in autocommit then a separate `_bulk_insert` transaction; an empty rebuild (every realm < Class IV) hit `_bulk_insert`'s empty-rows early-return AFTER the DELETE committed → table permanently wiped (returning true). Fix: added `clear_first` to `_bulk_insert` (DELETE inside the same transaction, before the empty skip); `replace_settlements` now `_bulk_insert(..., replace=true, clear_first=true)`.
+  - **Misplaced capital city (cascade #1/#2/#4/#6): `_rank_hexes` placed rank-1 at `pol.capital_q/r` unconditionally.** A realm that lost its capital hex but stayed alive (sim never relocates capital_q/r) would place its capital city on a hex another realm owns → cross-realm hex collision → `_settlement_row` reused the same `sim_by_hex[hex].id` for both → INSERT OR REPLACE silently dropped one → and `_place_forts` mis-attributed/skipped its stronghold. Fix: `_rank_hexes` ranks only OWNED hexes; seat = capital iff still owned, else the best owned hex.
+  - **Wrong-culture city name (#5): `_settlement_row` reused `sim_by_hex[hex]` id/name for whatever realm now owns the hex** — a hex urbanized by a former owner carries that polity's culture name, so a conquered city wore a mismatched name. Fix: reuse id/name only when `sim.polity_id == pol.id`; emergence_tick reused either way.
+  - **Determinism hash gap (#3): `SettingDatasetHasher._table_specs()` omitted `setting_roads` + `setting_fortifications`** (migrations 157/158) — the Layer-8 world_hash excluded all road/fort output. Fix: added both (order_by id ASC).
+  - **Deforestation tie-break (#8): `_nearest` kept the first settlement at the min distance**, never applying the documented "larger settlement (lower market class) wins" rule → a city's clearing influence was dropped whenever a smaller settlement tied for nearest. Fix: `mini(best_mc, e.mc)` on distance ties.
+  - **Fort stacking (#10): stronghold/border_fort/watchtower spaced only within their own type** → three fort rows could stack on one hex. Fix: shared `fort_at` set, one fortification per hex (priority stronghold > border_fort > watchtower).
+  - **Determinism test blind spot (#15): `_settle_map`/`_road_map` fingerprints excluded hex coords + the road path** → a relocation/reroute that preserved name/class/endpoints would pass `test_determinism` falsely. Fix: added hex_q/hex_r to `_settle_map` and the `hexes` path to `_road_map`.
+**Decisions made:**
+- A realm that lost its capital uses its best OWNED hex as the de-facto seat (rank-1 is still flagged is_capital) — keeps every realm's mapped city on a hex it actually owns.
+- A conquered city gets a fresh current-culture name + id (reuse is gated on same-polity), preserving emergence_tick as real urban-age provenance.
+**Interfaces defined or changed:**
+- `SettingRepository._bulk_insert(campaign_id, table, columns, rows, replace=false, clear_first=false)` — new `clear_first` does an in-transaction campaign-scoped DELETE before inserts (atomic full replace). `replace_settlements` now delegates to it.
+- `SettingDatasetHasher._table_specs()` now includes setting_roads + setting_fortifications (the §80 world_hash covers them).
+- `_rank_hexes` contract: returns hexes ALL owned by the realm (seat = owned capital, else best owned hex).
+**Database changes:**
+- None (no migration). Persist/transaction semantics only.
+**Tests added/updated:**
+- `tests/test_setting_stage7.gd`: determinism fingerprints `_settle_map`/`_road_map` now include geometry. Suite stays green (761 checks); Stage0 +2 checks (89) from the two newly-hashed tables.
+**Known issues — the 4 deferred review findings were ALL CLEARED later this same session (Jedidiah: "clear the 4 deferred items"):**
+- #7 FIXED — `_terrain_cost` now honors `biome_subtype` (forest_dense → jungle-tier 4.0, desert_badlands → hills-tier 2.0), matching HexTerrainData.movement_cost_category, so road A* routes at true in-game impedance.
+- #11 FIXED — `_pop_lowest_f` heuristic scaled by `_ROAD_PREFER` (×0.35 = the minimum per-hex step cost), making it admissible AND consistent → the never-reopened closed set is now correct and routes are minimal / road-reusing.
+- #13 FIXED — `_stock_realm` pre-reserves every reused sim name (same-polity hexes) before building any row, closing the fabricated-vs-reused name-collision window.
+- #14 FIXED — added `test_replace_settlements_empty_safe` (throwaway campaign: seed one row → replace with [] → assert table cleared + returns true), directly covering the atomic empty-replace path.
+- Re-verified: run1 = run2 = 40 (exact baseline, net-zero new failures); Stage7 765 checks, Stage0 89.
+**Next session should:**
+- Stage 8 (Layer 7 LLM narrative, provider-walled): consumes POI skeletons + rumor seeds + the §11.3 significance-ranked event log; mock provider returns deterministic template text; absent provider skips silently. Then Stage 9 (validation/lock) → Stage 10 (campaign-creation UI).

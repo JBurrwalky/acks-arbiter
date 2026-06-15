@@ -1,0 +1,299 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Red Maw horde",
+      "the Great Fang tribe",
+      "the Blood-Claw tribe",
+      "the Dark horde",
+      "the War-Beast horde",
+      "the Skull-heap horde",
+      "the Tusked tribe",
+      "the Carrion horde",
+      "Akhsambitsgar",
+      "Dhamrborgh",
+      "Gibgurgaygor",
+      "Ishakhargur",
+      "Kharganmegargh",
+      "Khashaghmidbargh",
+      "Khataktsurgh",
+      "Laylguryaghar",
+      "Magorbitsgar",
+      "Milkharghborgh",
+      "Rakhgaygor",
+      "Shengurhargur",
+      "Tsibgarmegargh",
+      "Akhsamidbargh",
+      "Dhamrtsurgh",
+      "Gibguryaghar"
+    ],
+    "epithet": [
+      "the Skull-taker",
+      "the Blood-drinker",
+      "the Tusked",
+      "the One-eye",
+      "the Throat-render",
+      "the War-howl",
+      "the Red-handed",
+      "the Gut-eater",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Akhsambitsgar",
+      "Dhamrborgh",
+      "Gibgurgaygor",
+      "Ishakhargur",
+      "Kharganmegargh",
+      "Khashaghmidbargh",
+      "Khataktsurgh",
+      "Laylguryaghar",
+      "Magorbitsgar",
+      "Milkharghborgh",
+      "Rakhgaygor",
+      "Shengurhargur",
+      "Tsibgarmegargh",
+      "Akhsamidbargh",
+      "Dhamrtsurgh",
+      "Gibguryaghar",
+      "Ishakhbitsgar",
+      "Kharganborgh",
+      "Khashaghgaygor",
+      "Khatakhargur",
+      "Laylgurmegargh",
+      "Magormidbargh",
+      "Milkharghtsurgh",
+      "Rakhyaghar",
+      "Shengurbitsgar",
+      "Tsibgarborgh",
+      "Akhsamgaygor",
+      "Dhamrhargur",
+      "Gibgurmegargh",
+      "Ishakhmidbargh"
+    ],
+    "military_unit": [
+      "the Red Maw",
+      "the Skull-takers"
+    ],
+    "personal_female": [
+      "Dhamna",
+      "Ghrazna",
+      "Mokhra",
+      "Brughna",
+      "Khargna",
+      "Ghorna",
+      "Skarna",
+      "Vurgna",
+      "Vughna",
+      "Maghra",
+      "Throgna",
+      "Grukhna",
+      "Bhakna",
+      "Ghazna",
+      "Shengna",
+      "Rakhna",
+      "Murgna",
+      "Vushkna",
+      "Drogna",
+      "Ulghna",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Khatakhgur",
+      "Dhamshen",
+      "Shalrakh",
+      "Milkhargh",
+      "Tsaydgur",
+      "Akhrakh",
+      "Gibgur",
+      "Magor",
+      "Khargan",
+      "Ishakh",
+      "Bhakhar",
+      "Tsibgar",
+      "Drogkhar",
+      "Vurgakh",
+      "Behgur",
+      "Grukhmar",
+      "Vughrakh",
+      "Skarghor",
+      "Throgmar",
+      "Murgakh",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Red Maw",
+      "Hargur-Megargh",
+      "Borgh-Khashagh",
+      "Yaghar-ghamgur",
+      "Bitsgar-megargh",
+      "Akhsamborgh",
+      "Dhamrmegargh",
+      "Gibgurborgh",
+      "Ishakhmegargh",
+      "Kharganborgh",
+      "Khashaghmegargh",
+      "Khatakborgh",
+      "Laylgurmegargh",
+      "Magorborgh",
+      "Milkharghmegargh",
+      "Rakhborgh",
+      "Shengurmegargh",
+      "Tsibgarborgh",
+      "Akhsamegargh",
+      "Dhamrborgh",
+      "Gibgurmegargh",
+      "Ishakhborgh",
+      "Kharganmegargh",
+      "Khashaghborgh",
+      "Khatakmegargh",
+      "Laylgurborgh",
+      "Magormegargh",
+      "Milkharghborgh",
+      "Rakhmegargh",
+      "Shengurborgh",
+      "Tsibgarmegargh"
+    ]
+  },
+  "culture_id": "orc",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_orc.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "orc",
+  "lexicon": {
+    "concepts": {
+      "beast": "behgur",
+      "blood": "dhamr",
+      "bone": "akhsam",
+      "claw": "tsibgar",
+      "dark": "khashagh",
+      "death": "magor",
+      "devour": "akhrakh",
+      "fang": "shengur",
+      "fire": "ishakh",
+      "flesh_meat": "bhakhar",
+      "great": "rakh",
+      "horde": "ghamgur",
+      "horn": "khargan",
+      "hunt": "tsaydgur",
+      "kill": "khatakhgur",
+      "lair": "megargh",
+      "night": "laylgur",
+      "raid_plunder": "shalrakh",
+      "shaman": "khashagh",
+      "small": "khatak",
+      "spirit_totem": "rukhgur",
+      "strong": "gibgur",
+      "war": "milkhargh"
+    },
+    "feature_words": {
+      "cave": "megargh",
+      "crag": "tsurgh",
+      "dark_forest": "yaghar",
+      "gorge": "gaygor",
+      "mountain": "hargur",
+      "pit": "borgh",
+      "swamp": "bitsgar",
+      "waste": "midbargh"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], growled: Dhamr-shengur (blood-fang), Rakh-khatakhgur (great-kill); horde = [Totem]-ghamgur.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "mountain warrens, sacked holds, and skull-heaps: 'the Warren of [horde]', 'the Skull-heap of [warlord]', 'the Sacked Hold of [name]'",
+    "war_bands": "the growl-named warbands and hordes: 'the Red Maw', 'the Skull-takers', 'the Throat-renders of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC only. TOTEMIC shamanism: the orc race-totem is the RED MAW / the Tusked War-Boar; tribes also take totems. The kashap serves the totem and the Chaos-Spirits (the Gul-spirits) by blood-offering on the skull-heap; above all Gul-Maraqus the great War-Spirit (orcs are made for slaughter). The One and the Lawful are demonized and feared. Deity-morphs take the Gul- prefix and no gendered ending (degraded); totems are descriptive bestial Kazhur, not canon-morphs.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Orlandus (iron, law)": "Orlanu the Chainer",
+      "Tulrius (the sun, law)": "Tarul the Burning-Eye"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Maraqus": "a notched cleaver over a skull-heap",
+      "Red Maw": "a red, tusked, gaping jaw"
+    },
+    "race_totem": "the Red Maw (Dhamr-Megargh, the red devouring jaws) / the Tusked War-Boar (Khargan-Behgur)",
+    "shaman_rites": "blood-offering on the skull-heap, the totem-pole and the boar-skull standard, the donning of the totem's hide; the Rakh-Khashagh keeps the horde's great-totem.",
+    "tribal_totem_pattern": "[Rakh-/Dhamr-/Khashak-/color] + [beast or body-part]: Rakh-Shengur (the Great Fang), Dhamr-Tsibgar (the Blood-Claw), Khashak-Behgur (the Dark-Beast).",
+    "venerated": {
+      "Maraxus (war-fire, slaughter)": "Gul-Maraqus (the great War-Spirit; served above all)",
+      "Noctiluna (the night-cover)": "Gul-Naktilu (the Dark that hides the horde)",
+      "Raptis (the blood-hunt)": "Gul-Raptu (the Blood-Hunt-Spirit)",
+      "Vacidus (the devouring void)": "Gul-Waqidu (the Devouring-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / wandering horde (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafgul (the runt/slave)",
+      "warrior": "Gibgur (the blooded fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rakh-Khashagh (great-shaman; keeper of the horde's great-totem)",
+      "shaman": "Khashagh (the totem-speaker)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Ghrosh",
+        "scope": "chief of a single clanhold (tribe)"
+      },
+      "county": {
+        "ruler": "Rakh-Ghrosh",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Ghamgur-Ghrosh",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rakh-Ghamgur-Malghur",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rakh-Malghur",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milkhargh-Ghrosh",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malghur",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

@@ -1,0 +1,429 @@
+{
+  "alignment_allowed": [
+    "Chaotic",
+    "Neutral",
+    "Lawful"
+  ],
+  "categories": {
+    "clan_house": [
+      "Wak'tl Xilwatl",
+      "Wak'tl Itztl",
+      "Wak'tl Balamtl",
+      "Wak'tl Estl",
+      "Wak'tl Sirtl",
+      "Wak'tl Marak'on",
+      "Wak'tl Oront'l",
+      "Wak'tl Nelartl",
+      "Wak'tl Xiwtl",
+      "Wak'tl Rap'ak'el",
+      "Wak'tl Dul'tl",
+      "Wak'tl K'elartl",
+      "Wak'tl Xak'tlan",
+      "Wak'tl Itzaron",
+      "Wak'tl Marak'tzin",
+      "Wak'tl Oront'lak",
+      "Wak'tl Tlak'on",
+      "Wak'tl K'ayan",
+      "Wak'tl Wak'itz",
+      "Wak'tl Esk'el",
+      "Wak'tl Dul'tzin",
+      "Wak'tl Rap'tlan",
+      "Wak'tl Sirak'tl",
+      "Wak'tl Galak'tzin"
+    ],
+    "dungeon_ruin": [
+      "the sunken Nelok",
+      ","
+    ],
+    "epithet": [
+      "the Obsidian-eyed",
+      "the Blood-drinker",
+      "of the Sunless Canopy",
+      "the Flayer",
+      "the Serpent-tongued",
+      "the Jaguar-cloaked",
+      "the Star-hating",
+      "the Long-fanged",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Ait'tlaelartl",
+      "Amtlak'altl",
+      "An'tlatavtl",
+      "Balamtlbeln'tl",
+      "Dul'tldrumtl",
+      "Ertlelntl",
+      "Estlgalen'tl",
+      "Fortlglen'tl",
+      "Hartlin'tl",
+      "Hek'tlk'amatl",
+      "Ihuitlalan'tl",
+      "Iok'tlan'tl",
+      "Itztlantl",
+      "K'elartlirtl",
+      "K'oxtlmoin'tl",
+      "Kakawtlmorn'tl",
+      "Maltlnelok'tl",
+      "Mintloront'l",
+      "Mok'tlrin'tl",
+      "Nak'tlsirin'tl",
+      "Nuk'tlsirtl",
+      "Pik'tlsylvtl",
+      "Rhuntltawak'tl",
+      "Saltltonk'tl",
+      "Sentlvel'tl",
+      "T'artlxilwatl",
+      "Vintlaelartl",
+      "Xak'tlak'altl",
+      "Xiwtlatavtl",
+      "Ait'tlbeln'tl"
+    ],
+    "military_unit": [
+      "the Obsidian Fangs"
+    ],
+    "personal_female": [
+      "Ix-Riyal",
+      "Ix-Nok'la",
+      "Rap'ixel",
+      "Xiwk'el",
+      "Ix-Marak",
+      "Nelak'el",
+      "Ix-Sirtl",
+      "K'elaxel",
+      "Ix-Lan'tl",
+      "Rap'k'el",
+      "Ix-Dul",
+      "Itzixel",
+      "Ix-Oron",
+      "Lin'k'el",
+      "Ix-Galak",
+      "Wak'ixel",
+      "Ix-Tlan",
+      "Estl-ixel",
+      "Ix-Aelar",
+      "Ix-Wakid",
+      "Marak'k'el",
+      "Balamk'el",
+      "Dul'k'el",
+      "Sirak'k'el",
+      "Galak'k'el",
+      "Maek'k'el",
+      "Marak'on",
+      "Marak'onk'el",
+      "Rap'ak'el",
+      "Rap'ak'elk'el",
+      "Tul'ak'on",
+      "Tul'ak'onk'el",
+      "Wakidak'on",
+      "Wakidak'onk'el"
+    ],
+    "personal_male": [
+      "Xak'tlan",
+      "Itzaron",
+      "Marak'tzin",
+      "Balamtl",
+      "Oront'lak",
+      "Tlak'on",
+      "K'ayan",
+      "Wak'itz",
+      "Esk'el",
+      "Dul'tzin",
+      "Rap'tlan",
+      "Sirak'tl",
+      "Galak'tzin",
+      "Nok'tlan",
+      "Aran'etz",
+      "T'arak",
+      "Xiwtzin",
+      "Maek'tl",
+      "Orlan'tz",
+      "Itzak'on",
+      "Xiwtl",
+      "Nelatl",
+      "Rap'tl",
+      "Lin'tl",
+      "Marak'on",
+      "Marak'ontl",
+      "Rap'ak'el",
+      "Rap'ak'eltl",
+      "Tul'ak'on",
+      "Tul'ak'ontl",
+      "Wakidak'on",
+      "Wakidak'ontl"
+    ],
+    "settlement": [
+      "Xilvanar",
+      "Itz-sirtl",
+      "Marak'on-nelok'tl",
+      "Balam-xilwatl",
+      "Oront'l-tark'tl",
+      "Estl-anak",
+      "Ait'tlaentl",
+      "Amtlatavtl",
+      "An'tlbaltl",
+      "Balamtlduntl",
+      "Dul'tlk'aratl",
+      "Ertlk'arnatl",
+      "Estlontl",
+      "Fortlnelok'tl",
+      "Hartltark'tl",
+      "Hek'tltonk'tl",
+      "Ihuitltrevtl",
+      "Iok'tlaentl",
+      "Itztlatavtl",
+      "K'elartlbaltl",
+      "K'oxtlduntl",
+      "Kakawtlk'aratl",
+      "Maltlk'arnatl",
+      "Mintlontl",
+      "Mok'tlnelok'tl",
+      "Nak'tltark'tl",
+      "Nuk'tltonk'tl",
+      "Pik'tltrevtl",
+      "Rhuntlaentl",
+      "Saltlatavtl",
+      "Sentlbaltl",
+      "T'artlduntl",
+      "Vintlk'aratl",
+      "Xak'tlk'arnatl",
+      "Xiwtlontl",
+      "Ait'tlnelok'tl",
+      "Amtltark'tl",
+      "An'tltonk'tl",
+      "Balamtltrevtl",
+      "Dul'tlaentl"
+    ],
+    "ship": [
+      "the Black Sirtl",
+      "Fang-of-the-River",
+      "the Obsidian Serpent"
+    ],
+    "tavern": [
+      "the Hall of the Red Pyramid",
+      "the Cacao of Skulls",
+      "The Ait'tl Balamtl",
+      "The Dul'tl Estl",
+      "The Hek'tl Ihuitl",
+      "The Iok'tl Itztl",
+      "The Itztl K'oxtl",
+      "The K'elartl Kakawtl",
+      "The Maltl Maltl",
+      "The Mok'tl Saltl",
+      "The Nak'tl Sentl",
+      "The Pik'tl Xiwtl"
+    ]
+  },
+  "culture_id": "xilvaneth",
+  "family": [
+    "elvish"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_xilvaneth.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "xilvaneth",
+  "lexicon": {
+    "adjectives": {
+      "black": "dul'tl",
+      "far": "hek'tl",
+      "fierce": "xak'tl",
+      "golden": "maltl",
+      "great": "mok'tl",
+      "high": "t'artl",
+      "little": "pik'tl",
+      "new": "vintl",
+      "obsidian": "itztl",
+      "old": "iok'tl",
+      "red": "nak'tl",
+      "sacred": "ait'tl",
+      "white": "k'elartl"
+    },
+    "directional": {
+      "east": "rhuntl",
+      "inner": "mintl",
+      "lower": "nuk'tl",
+      "north": "fortl",
+      "outer": "ertl",
+      "south": "hartl",
+      "upper": "amtl",
+      "west": "an'tl"
+    },
+    "feature_words": {
+      "bay": "k'amatl",
+      "cape": "rin'tl",
+      "ford": "atavtl",
+      "forest": "galen'tl",
+      "glade": "lalan'tl",
+      "grove": "nelok'tl",
+      "hill": "tonk'tl",
+      "isle": "in'tl",
+      "jungle": "xilwatl",
+      "lake": "ak'altl",
+      "mountain": "oront'l",
+      "narrows": "lirtl",
+      "neck": "vel'tl",
+      "pass": "beln'tl",
+      "ravine": "glen'tl",
+      "ridge": "drumtl",
+      "river": "sirtl",
+      "road": "lantl",
+      "savanna": "lan'tl",
+      "sea": "aelartl",
+      "stream": "sirin'tl",
+      "swamp": "moin'tl",
+      "track": "sylvtl",
+      "waste": "morn'tl",
+      "way": "elntl",
+      "wood": "tawak'tl"
+    },
+    "resources": {
+      "blood": "estl",
+      "cacao": "kakawtl",
+      "feather": "ihuitl",
+      "gold": "maltl",
+      "jade": "xiwtl",
+      "jaguar": "balamtl",
+      "maize": "sentl",
+      "obsidian": "itztl",
+      "salt": "saltl",
+      "venom": "k'oxtl"
+    },
+    "settlement_words": {
+      "citadel": "tark'tl",
+      "city": "k'arnatl",
+      "fort": "duntl",
+      "hamlet": "trevtl",
+      "market": "aentl",
+      "port": "lontl",
+      "temple_town": "nelok'tl",
+      "town": "k'aratl",
+      "village": "baltl"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality](harsh stem) + feature/realm: Itz-sirtl (obsidian-river), Xak-xilwatl (fierce-jungle); -van'tl for the realm, -anak for the seat.",
+    "gendered_endings": {
+      "female": [
+        "k'el"
+      ],
+      "male": [
+        "tl",
+        "tzin"
+      ]
+    },
+    "patronymic_form": "the blood-house (wak'tl) by a blood-line; -tzin/-tl (of the line); ix- marks the feminine; a clipped use-name, a true-name hidden from enemies and demons alike.",
+    "toponymic_suffixes": [
+      "van'tl / -anetl",
+      "sirtl",
+      "xilwatl",
+      "oront'l",
+      "Itz- / Estl-",
+      "anak"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen jungle blood-temples swallowed by the canopy: 'the sunken Nelok'tl of [house]', 'the Drowned Pyramid of [name]'",
+    "military_units": "the jaguar-knights and blood-companies: 'the Obsidian Fangs', 'the Jaguar-cloaks of [house]'",
+    "ships": "jungle river war-canoes, serpent-prowed: 'the Black Sirtl', 'Fang-of-the-River', 'the Obsidian Serpent'",
+    "taverns": "the blood-feast hall (elves keep halls, not taverns): 'the Hall of the Red Pyramid', 'the Cacao of Skulls'"
+  },
+  "race": "elf",
+  "religion": {
+    "_note": "Deity-names are the Xilvaneth (harsh) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real Maya/Nahua gods; they carry the sacred GENDERED ending -ak'on (masc) / -ak'el (fem) - the divine class, distinct from mortal -tl/-tzin/ix- and common-noun -tl. The Xilvaneth are overwhelmingly Chaotic (weights C80/N10/L10); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment), but the cultural default is the Chaotic blood-cult. The nelok'tl (pyramid-grove), its steps dark with offering, is the altar; the ek'tl (devouring ancestors) are fed there.",
+    "clergy_ladder": {
+      "1": "Itz-tlan (novice, the obsidian-bearer)",
+      "3": "K'oxtli (venom-priest)",
+      "5": "Estl-tlan (blood-priest)",
+      "7": "Xak'tli (the high flayer)",
+      "9": "T'ar-Estl (the realm's high blood-priest)"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment): when Chaotic (the norm) - Aeternus -> Atyarnak'on the Sun-Jailer, Tulrius -> Tul'ak'on the Burning-Eye, Orlandus -> Orlanak'on the Iron-Chain; when Lawful - Maraxus -> Marak'on the Ruin.",
+    "holy_symbol_motifs": {
+      "Marak'on": "an obsidian blade over a victory-pyre",
+      "Rap'ak'el": "a jaguar's fang above a blood-drop",
+      "Wakidak'on": "a black void-maw swallowing a star"
+    },
+    "religious_orders_pattern": "the Nelok'tl (pyramid-grove) of [power]: 'the Nelok'tl of Marak'on', its steps dark with offering.",
+    "saints_pattern": "the devouring ancestors and war-captains of the houses (the ek'tl), fed at the pyramid and the obsidian-stone.",
+    "sample_deity_renames": {
+      "Maraxus": "Marak'on (the war-fire and conquest; chief venerated power, masc.)",
+      "Raptis": "Rap'ak'el (the blood-hunt, the Huntress; venerated, fem.)",
+      "Tulrius": "Tul'ak'on (the sun and law; DEMONIZED as the Burning-Eye, masc.)",
+      "Vacidus": "Wakidak'on (the devouring void; venerated, masc.)"
+    },
+    "the_one": "Atyarnak'on (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -ak'on; among the overwhelmingly Chaotic Xilvaneth the One is the DEMONIZED enemy - 'the Sun-Jailer', the cold tyrant of the high sky who would cage the wild; revered only by the rare Lawful minority)",
+    "worship_by_alignment": {
+      "Chaotic": "the overwhelming majority venerate the Chaotic powers (Marak'on the war-fire, Rap'ak'el the blood-hunt, Wakidak'on the void, Lusanak'on the hoard-serpent, Dementak'on the storm-madness), and demonize the One (Atyarnak'on the Sun-Jailer) and the Lawful powers (Tul'ak'on, Orlanak'on)",
+      "Lawful": "a rare fallen-from-grace minority reveres the One and the Lawful powers and demonizes the Chaotic powers - hunted as heretics by the blood-temples",
+      "Neutral": "ambivalent; the ek'tl (ancestral dead), the jungle-spirits, the jaguar and the serpent foremost"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Harsh Xilvaneth reflexes of the Proto-Elvish title ladder, ascending - the same seven ACKS tiers as the smooth branches, glottalized and clipped. A fallen golden-age theocracy, now canopy-fastness enclaves. (These title-roots are ancestral to the human Mesoamerican lordly terms.)",
+    "female_forms": {
+      "Aran'etl": "Ix-Aran'etl",
+      "Esk'etl": "Ix-Esk'etl",
+      "Maek'on": "Ix-Maek'on",
+      "T'ar-T'aran": "Ix-T'ar-T'aran",
+      "T'aran": "Ix-T'aran",
+      "Tal'iotl": "Ix-Tal'iotl",
+      "Wel'utl": "Ix-Wel'utl"
+    },
+    "government": "feudal (a harsh jungle theocracy of blood-temples, now fallen to canopy-fastnesses; the T'aran over the elven blood-lords, the obsidian priesthood and the jaguar war-captains)",
+    "heir": "Aran'etzin (the sovereign's blood-heir)",
+    "honorifics": {
+      "champion": "Xak'tli (flayer-warrior)",
+      "elder": "Iok'tli",
+      "lady": "Ix-Wel'utl",
+      "lord": "Wel'utl",
+      "your_grace": "Aran'etl"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Wel'utlanetl",
+        "ruler": "Wel'utl"
+      },
+      "county": {
+        "domain": "Esk'etlanetl",
+        "ruler": "Esk'etl"
+      },
+      "duchy": {
+        "domain": "Tal'iotlanetl",
+        "ruler": "Tal'iotl"
+      },
+      "empire": {
+        "domain": "T'ar-T'arananetl",
+        "ruler": "T'ar-T'aran"
+      },
+      "kingdom": {
+        "domain": "T'arananetl",
+        "ruler": "T'aran"
+      },
+      "march": {
+        "domain": "Maek'onanetl",
+        "ruler": "Maek'on"
+      },
+      "principality": {
+        "domain": "Aran'etlanetl",
+        "ruler": "Aran'etl"
+      }
+    },
+    "vassalage": {
+      "fealty": "K'oxtl (the blood-oath)",
+      "liege": "Aran'etl",
+      "tribute": "Estl-tl (the blood-due)",
+      "vassal": "Xak'tli (sworn flayer)"
+    }
+  }
+}

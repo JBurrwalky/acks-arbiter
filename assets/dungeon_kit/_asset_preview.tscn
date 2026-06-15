@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b8jtd5o1chjay"]
+
+[ext_resource type="Script" uid="uid://du81h8rong1ph" path="res://assets/dungeon_kit/_asset_preview.gd" id="1"]
+
+[node name="AssetPreview" type="Node3D" unique_id=1301181430]
+script = ExtResource("1")

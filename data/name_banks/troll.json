@@ -1,0 +1,295 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Stone-Belly tribe",
+      "the Ever-Mending tribe",
+      "the Cave-deep band",
+      "the Bone-grind tribe",
+      "the Boulder-throw band",
+      "the Gut tribe",
+      "the Slow-doom band",
+      "the Stone-troll clan",
+      "Atsoombidoom",
+      "Daamogboorug",
+      "Eshoomgaayoom",
+      "Gashuumharrug",
+      "Giboomeeroom",
+      "Layloomidboom",
+      "Maroomsoorug",
+      "Milgoomyaaroom",
+      "Qaroombidoom",
+      "Qatoomboorug",
+      "Raboomgaayoom",
+      "Shoonugharrug",
+      "Tsipoomeeroom",
+      "Atsoomidboom",
+      "Daamogsoorug",
+      "Eshoomyaaroom"
+    ],
+    "epithet": [
+      "the Stone-belly",
+      "the Ever-mending",
+      "the Bone-grinder",
+      "the Boulder-throw",
+      "the Slow-doom",
+      "the Gut",
+      "the Mountain-deep",
+      "the Never-full",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsoombidoom",
+      "Daamogboorug",
+      "Eshoomgaayoom",
+      "Gashuumharrug",
+      "Giboomeeroom",
+      "Layloomidboom",
+      "Maroomsoorug",
+      "Milgoomyaaroom",
+      "Qaroombidoom",
+      "Qatoomboorug",
+      "Raboomgaayoom",
+      "Shoonugharrug",
+      "Tsipoomeeroom",
+      "Atsoomidboom",
+      "Daamogsoorug",
+      "Eshoomyaaroom",
+      "Gashuumbidoom",
+      "Giboomboorug",
+      "Layloomgaayoom",
+      "Maroomharrug",
+      "Milgoomeeroom",
+      "Qaroomidboom",
+      "Qatoomsoorug",
+      "Raboomyaaroom",
+      "Shoonugbidoom",
+      "Tsipoomboorug",
+      "Atsoomgaayoom",
+      "Daamogharrug",
+      "Eshoomeeroom",
+      "Gashuumidboom"
+    ],
+    "military_unit": [
+      "the Stone-Bellies",
+      "the Bone-grinders"
+    ],
+    "personal_female": [
+      "Daamoga",
+      "Shoonuga",
+      "Rooshuma",
+      "Eshooma",
+      "Gibooma",
+      "Gashuuma",
+      "Boruga",
+      "Milgooma",
+      "Rooguma",
+      "Vroomuga",
+      "Naazooma",
+      "Grumooma",
+      "Droomuga",
+      "Skaarooma",
+      "Vurooma",
+      "Bhakooma",
+      "Maarooma",
+      "Throomuga",
+      "Goomruga",
+      "Lelooma",
+      "Maraqus",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Gadool",
+      "Daamog",
+      "Shoonug",
+      "Rooshoom",
+      "Eshoom",
+      "Giboom",
+      "Gashuum",
+      "Boorug",
+      "Milgoom",
+      "Roogug",
+      "Vroomug",
+      "Naazoom",
+      "Grumoom",
+      "Droomug",
+      "Skaaroom",
+      "Vuroom",
+      "Bhakoom",
+      "Maaroom",
+      "Throomug",
+      "Goomrug",
+      "Maraqus",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Deep-cave",
+      "Boorug-deep",
+      "Bidoom-mire",
+      "the Bone-grind cave",
+      "Harrug-cave",
+      "Atsoomboorug",
+      "Daamogmeeroom",
+      "Eshoomboorug",
+      "Gashuumeeroom",
+      "Giboomboorug",
+      "Layloomeeroom",
+      "Maroomboorug",
+      "Milgoomeeroom",
+      "Qaroomboorug",
+      "Qatoomeeroom",
+      "Raboomboorug",
+      "Shoonugmeeroom",
+      "Tsipoomboorug",
+      "Atsoomeeroom",
+      "Daamogboorug",
+      "Eshoomeeroom",
+      "Gashuumboorug",
+      "Giboomeeroom",
+      "Layloomboorug",
+      "Maroomeeroom",
+      "Milgoomboorug",
+      "Qaroomeeroom",
+      "Qatoomboorug",
+      "Raboomeeroom",
+      "Shoonugboorug",
+      "Tsipoomeeroom"
+    ]
+  },
+  "culture_id": "troll",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_troll.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "troll",
+  "lexicon": {
+    "concepts": {
+      "beast": "behoom",
+      "blood": "daamog",
+      "bone": "atsoom",
+      "claw": "tsipoom",
+      "dark": "gashuum",
+      "death": "maroom",
+      "devour": "akhoom",
+      "fang": "shoonug",
+      "fire": "eshoom",
+      "flesh_meat": "boomar",
+      "great": "raboom",
+      "horde": "amoom",
+      "horn": "qaroom",
+      "hunt": "tsayoom",
+      "kill": "gadool",
+      "lair": "meeroom",
+      "night": "layloom",
+      "raid_plunder": "shaloom",
+      "shaman": "gashoob",
+      "small": "qatoom",
+      "spirit_totem": "roogug",
+      "strong": "giboom",
+      "war": "milgoom"
+    },
+    "feature_words": {
+      "cave": "meeroom",
+      "crag": "soorug",
+      "dark_forest": "yaaroom",
+      "gorge": "gaayoom",
+      "mountain": "harrug",
+      "pit": "boorug",
+      "swamp": "bidoom",
+      "waste": "midboom"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], groaned: Daamog-shoonug (blood-fang); band = [Totem]-amoom.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "deep caves, mires, and boulder-fields: 'the Deep-cave of [band]', 'the Bone-grind of [chief]', 'the Boulder-deep of [name]'",
+    "war_bands": "the groan-named bands: 'the Stone-Bellies', 'the Bone-grinders', 'the Boulder-throws of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic, and simple. Race-totem the Stone-Belly / the Ever-Mending (trolls regenerate). The Gashoob groans to the totem and the Gul-spirits in the deep cave; foremost Gul-Waqidu the Devouring-Dark (the endless gut). Trolls demonize Tarul the Burning-Eye above all - FIRE stops their mending, and is their dread.",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun, fire)": "Tarul the Burning-Eye (FIRE, the troll's bane - dreaded above all)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Waqidu": "an open, never-full maw",
+      "Stone-Belly": "a great round gut over a boulder"
+    },
+    "race_totem": "the Stone-Belly (Atsoom-behoom) / the Ever-Mending",
+    "shaman_rites": "slow groan-chants in the deep cave; the gnawing of bones; the dread and shunning of fire.",
+    "tribal_totem_pattern": "[Atsoom-/Daamog-/Stone-] + [deep-beast or stone]: Atsoom-behoom (Stone-Belly), Daamog-shoonug (Blood-Fang).",
+    "venerated": {
+      "Maraxus (the smash)": "Gul-Maraqus (the War-Spirit)",
+      "Noctiluna (the cave-dark)": "Gul-Naktilu (the Deep-Dark)",
+      "Vacidus (the endless devouring)": "Gul-Waqidu (the Devouring-Dark; the never-full gut)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds (rare for trolls, who are few and scattered). thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / troll-band - small, scattered (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafoom (the small one/slave)",
+      "warrior": "Giboom (the smasher)"
+    },
+    "shaman_line": {
+      "high_shaman": "Raab-Gashoob (great-shaman of the band-totem)",
+      "shaman": "Gashoob (the totem-groaner)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Rooshoom",
+        "scope": "chief of a single clanhold (band)"
+      },
+      "county": {
+        "ruler": "Raboom-Rooshoom",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amoom-Rooshoom",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Raboom-Amoom-Maloom",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Raboom-Maloom",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milgoom-Rooshoom",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Maloom",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

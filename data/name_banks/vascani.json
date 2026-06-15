@@ -1,0 +1,430 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral"
+  ],
+  "categories": {
+    "clan_house": [
+      "Etxeberri",
+      "Etxegorri",
+      "Mendizabal",
+      "Otsagabia",
+      "Leinu Eneko",
+      "Leinu Lope",
+      "the Markigravo-ing",
+      "Aroztegi",
+      "Haitzaga",
+      "Leinu Aznar",
+      "the Herizogo-ing",
+      "Garaikoetxe",
+      "Enekoson",
+      "Antsoson",
+      "Gartzeason",
+      "Xemenson",
+      "Lopeson",
+      "Fortunson",
+      "Aznarson",
+      "Belaskoson",
+      "Galindoson",
+      "Otsoason",
+      "Bernhardson",
+      "Sigiwaldson"
+    ],
+    "epithet": [
+      "Otsoa",
+      "Beltza",
+      "Burdin",
+      "of the Pass",
+      "Handi",
+      "the Mountain-warden",
+      "the Cider-lord",
+      "Saindu",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Ardabra",
+      "Arrainaintzira",
+      "Artilebaso",
+      "Barrubide",
+      "Beheremua",
+      "Beltzerreka",
+      "Berrestua",
+      "Burdingain",
+      "Ederhaitz",
+      "Ekialdeharan",
+      "Garibai",
+      "Gatzibi",
+      "Goiduna",
+      "Gorritsaso",
+      "Handilepo",
+      "Haritzmark",
+      "Hegomendi",
+      "Iparmuino",
+      "Kanpomuturra",
+      "Mendebaldoihan",
+      "Sagarordoki",
+      "Saindupadura",
+      "Txikuharte",
+      "Urreweg",
+      "Urrunxendra",
+      "Zaharabra",
+      "Zilaraintzira",
+      "Zuribaso",
+      "Ardibide",
+      "Arraineremua"
+    ],
+    "military_unit": [
+      "the Iron Gudariak",
+      "the Pass-Wardens"
+    ],
+    "personal_female": [
+      "Toda",
+      "Oneka",
+      "Urraka",
+      "Xemena",
+      "Andregoto",
+      "Belasquita",
+      "Hildegard",
+      "Maialen",
+      "Leire",
+      "Edurne",
+      "Amaia",
+      "Bertlind",
+      "Garbine",
+      "Nahia",
+      "Onneca",
+      "Reginlind",
+      "Eider",
+      "Izaro",
+      "Gartzea-Andere",
+      "Lierni",
+      "Enea",
+      "Antsa",
+      "Belasa",
+      "Galinda",
+      "Garinda",
+      "Caiandos",
+      "Caiandosa",
+      "Maraxos",
+      "Maraxosa",
+      "Orlanno",
+      "Orlannoa",
+      "Rialta",
+      "Rialtaa"
+    ],
+    "personal_male": [
+      "Eneko",
+      "Antso",
+      "Gartzea",
+      "Xemen",
+      "Lope",
+      "Fortun",
+      "Aznar",
+      "Belasko",
+      "Galindo",
+      "Otsoa",
+      "Bernhard",
+      "Sigiwald",
+      "Garindo",
+      "Mendoza",
+      "Inaki",
+      "Reginhard",
+      "Beltza",
+      "Sanduru",
+      "Hartmund",
+      "Eneko-Gartzea",
+      "Todo",
+      "Oneko",
+      "Urrako",
+      "Xemeno",
+      "Belasquito",
+      "Eduro",
+      "Amaio",
+      "Garbio",
+      "Nahio",
+      "Onneco",
+      "Caiandos",
+      "Caiandoso",
+      "Maraxos",
+      "Maraxoso",
+      "Orlanno",
+      "Orlannoo",
+      "Rialta",
+      "Rialtao"
+    ],
+    "settlement": [
+      "Vascony",
+      "Hiriburu",
+      "Beltz-mendi",
+      "Haitz-uri",
+      "Iron-burg",
+      "Caiandos-harrespil",
+      "Ardauzo",
+      "Arrainburg",
+      "Artilegaztelu",
+      "Barrugaztelu-nagusi",
+      "Beheharrespil",
+      "Beltzherri",
+      "Berrihiri",
+      "Burdinhiriburu",
+      "Ederibi",
+      "Ekialdemerkatu",
+      "Garimuino",
+      "Gatzauzo",
+      "Goiburg",
+      "Gorrigaztelu",
+      "Handigaztelu-nagusi",
+      "Haritzharrespil",
+      "Hegoherri",
+      "Iparhiri",
+      "Kanpohiriburu",
+      "Mendebaldibi",
+      "Sagarmerkatu",
+      "Saindumuino",
+      "Txikauzo",
+      "Urreburg",
+      "Urrungaztelu",
+      "Zahargaztelu-nagusi",
+      "Zilarharrespil",
+      "Zuriherri",
+      "Ardihiri",
+      "Arrainhiriburu",
+      "Artilibi",
+      "Barrumerkatu",
+      "Behemuino",
+      "Beltzauzo"
+    ],
+    "ship": [
+      "the Iron Mule",
+      "the Grey Peak",
+      "Wave of the Itsaso"
+    ],
+    "tavern": [
+      "The Cider-House",
+      "The Iron Oak",
+      "The Beltz Ardi",
+      "The Berri Arrain",
+      "The Burdin Artile",
+      "The Eder Burdin",
+      "The Goi Gari",
+      "The Gorri Gatz",
+      "The Handi Haritz",
+      "The Saindu Sagar",
+      "The Txiki Urre",
+      "The Urre Zilar"
+    ]
+  },
+  "culture_id": "vascani",
+  "family": [
+    "classical",
+    "germanic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_vascani.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "vascani",
+  "lexicon": {
+    "adjectives": {
+      "black": "beltz",
+      "fair": "eder",
+      "far": "urrun",
+      "golden": "urre",
+      "great": "handi",
+      "high": "goi",
+      "iron": "burdin",
+      "little": "txiki",
+      "new": "berri",
+      "old": "zahar",
+      "red": "gorri",
+      "sacred": "saindu",
+      "white": "zuri"
+    },
+    "directional": {
+      "east": "ekialde",
+      "inner": "barru",
+      "lower": "behe",
+      "north": "ipar",
+      "outer": "kanpo",
+      "south": "hego",
+      "upper": "goi",
+      "west": "mendebalde"
+    },
+    "feature_words": {
+      "bay": "abra",
+      "cape": "muturra",
+      "ford": "ibi",
+      "forest": "oihan",
+      "hill": "muino",
+      "isle": "uharte",
+      "lake": "aintzira",
+      "march": "mark",
+      "marsh": "padura",
+      "mountain": "mendi",
+      "narrows": "estua",
+      "neck": "iduna",
+      "pass": "lepo",
+      "peak": "haitz",
+      "plain": "ordoki",
+      "ridge": "gain",
+      "river": "ibai",
+      "road": "bide",
+      "sea": "itsaso",
+      "stream": "erreka",
+      "track": "xendra",
+      "vale": "haran",
+      "waste": "eremua",
+      "way": "weg",
+      "wood": "baso"
+    },
+    "resources": {
+      "apple": "sagar",
+      "fish": "arrain",
+      "gold": "urre",
+      "iron": "burdin",
+      "oak": "haritz",
+      "salt": "gatz",
+      "sheep": "ardi",
+      "silver": "zilar",
+      "wheat": "gari",
+      "wool": "artile"
+    },
+    "settlement_words": {
+      "burg": "burg",
+      "citadel": "gaztelu-nagusi",
+      "city": "hiriburu",
+      "fort": "gaztelu",
+      "hamlet": "auzo",
+      "market": "merkatu",
+      "temple_town": "harrespil",
+      "town": "hiri",
+      "village": "herri"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|feature](stem) + element: Beltz-mendi (black-mountain), Haitz-uri (crag-town); the Frankish overlay yields -burg forts and -mark marches.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "ne"
+      ],
+      "male": [
+        "o",
+        "ko"
+      ]
+    },
+    "patronymic_form": "Basque patronymic -ez / -enea (son of, of the house of); the etxe (house) names the lineage; the Frankish overlay adds -ing dynastic names for the march-lords.",
+    "toponymic_suffixes": [
+      "iri / -uri",
+      "mendi",
+      "gaztelu",
+      "burg",
+      "mark",
+      "Beltz- / Zuri-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "ruined gazteluak and old harrespil-circles in the high passes: 'the Gaztelu of [name]', 'the Stone-Ring of [mendi]'",
+    "military_units": "the [etxe] gudari-band / the march lances: 'the Iron Gudariak', 'the Pass-Wardens'",
+    "ships": "(a mountain people) river-craft and the iron-laden mule-trains: 'the Iron Mule', 'the Grey Peak', 'Wave of the Itsaso'",
+    "taverns": "'The [Adjective] [Noun]': 'The Cider-House (Sagardotegi)', 'The Iron Oak'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Iberian primary, from the Cantabran register; Frankish variant, from family_germanic reflexes), never real Basque/Frankish gods. Vascani seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). A mountain religion: the harrespil (stone-circle) and the sacred oak (haritz) keep the old rite, the Frankish-overlay munster the new; the enduring mountain (Caiandos) is foremost.",
+    "clergy_ladder": {
+      "1": "Aruspex (diviner-acolyte)",
+      "3": "Sacron (priest)",
+      "5": "Gutuater (high priest)",
+      "7": "Phaffo (Frankish minster-priest, overlay)",
+      "9": "Ard-drux (arch-druid)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Maraxos the Burning; Vacidus -> Bacaid the Unmaker; Lusanto -> Losand the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Caiandos": "a grey peak above crossed oak",
+      "Orlanno": "a Basque iron-cross (lauburu) over an oath-ring",
+      "Rialta": "a hearth-flame beneath the mountain"
+    },
+    "religious_orders_pattern": "the Harrespil (stone-circle) and Nemeton (oak-grove) of [power], and the Frankish Munstar: 'the Harrespil of Caiandos', 'the Munstar of Giando'.",
+    "saints_pattern": "ancestral hillfort-heroes of the etxe and the mountain, plus Frankish-overlay royal saints (Wih [name]), honored at the harrespil and the burial-cairn.",
+    "sample_deity_renames": {
+      "Gaiandus": "Caiandos (Frk. Giando) - the enduring mountain, foremost of the Vascani powers; Lawful",
+      "Maraxus": "Maraxos (Frk. Marach) - the war-fire; Chaotic power, demonized",
+      "Orlandus": "Orlanno (Frk. Erlant) - the iron-oath (and the famed Basque iron); Lawful",
+      "Realta": "Rialta (Frk. Rialda) - the mother, the hearth; Neutral-honored"
+    },
+    "the_one": "Aiternos (< Aeternus; Frankish variant Aiterno) - the high maker, the sky over the peaks; revered when Lawful, set aside when Neutral",
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aiternos) and the Lawful powers (Caiandos the mountain, Orlanno the iron-oath, Numench), demonize the Chaotic powers",
+      "Neutral": "all powers ambivalent; foreground the asaba (ancestral dead), the mountain- and oak-spirits, and the harrespil rites"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Basque-Vasconian ladder, ascending, with a Frankish feudal overlay on the marches. Jauntxo (petty-lord) barony; Markigravo (Frankish margrave) march, over a Marka; Gravo (Frankish count) county, over a Konderri; Herizogo (Frankish duke) duchy; Jaun Nagusi (Basque great-lord) principality; Errege (king) kingdom; Errege Nagusi (high-king) over the realm. The Frankish crown often claims overlordship of the march. (Rank titles are the real Basque/Frankish register, allowed.)",
+    "female_forms": {
+      "Errege": "Erregina",
+      "Errege Nagusi": "Erregina Nagusia",
+      "Gravo": "Gravin",
+      "Herizogo": "Herizogin",
+      "Jaun Nagusi": "Andere Nagusia",
+      "Jauntxo": "Anderetxo",
+      "Markigravo": "Markigravin"
+    },
+    "government": "feudal (a Pyrenean march: Basque jaun lordship under a Frankish feudal overlay - the errege over jaunak, with Frankish margraves and counts on the marches)",
+    "heir": "Oinordeko (the heir)",
+    "honorifics": {
+      "champion": "Gudari (warrior)",
+      "elder": "Aitona (grandfather-elder)",
+      "lady": "Andere",
+      "lord": "Jaun",
+      "your_grace": "Jauna"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Jaurerri",
+        "ruler": "Jauntxo"
+      },
+      "county": {
+        "domain": "Konderri",
+        "ruler": "Gravo"
+      },
+      "duchy": {
+        "domain": "Dukerri",
+        "ruler": "Herizogo"
+      },
+      "empire": {
+        "domain": "Erresuma Nagusia",
+        "ruler": "Errege Nagusi"
+      },
+      "kingdom": {
+        "domain": "Erresuma",
+        "ruler": "Errege"
+      },
+      "march": {
+        "domain": "Marka",
+        "ruler": "Markigravo"
+      },
+      "principality": {
+        "domain": "Jaurerri Nagusia",
+        "ruler": "Jaun Nagusi"
+      }
+    },
+    "vassalage": {
+      "fealty": "Zin (oath)",
+      "liege": "Jaun",
+      "tribute": "Zerga",
+      "vassal": "Morroi (servant) / Leudo (Frankish sworn-man)"
+    }
+  }
+}

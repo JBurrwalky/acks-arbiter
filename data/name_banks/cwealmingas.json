@@ -1,0 +1,408 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Cwealmingas",
+      "Waelingas",
+      "Hildingas",
+      "Garingas",
+      "Beaduingas",
+      "Heoringas",
+      "Wulfingas",
+      "Grimingas",
+      "Sweartingas",
+      "Beorhtingas",
+      "Heorowingas",
+      "Ulfingas",
+      "Cwealmwulfson",
+      "Waelgarson",
+      "Hildebeornson",
+      "Garwulfson",
+      "Beaduheardson",
+      "Heorogarson",
+      "Grimwulfson",
+      "Sweartwulfson",
+      "Wulfstanson",
+      "Hildewulfson",
+      "Beorhtwulfson",
+      "Waelheardson"
+    ],
+    "epithet": [
+      "the Render",
+      "Corpse-maker",
+      "Skull-taker",
+      "the Fenn-Wolf",
+      "Blood-handed",
+      "the Cruel",
+      "Oath-breaker",
+      "the Hanged",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Cornbeorg",
+      "Ealdbroc",
+      "Ealudenu",
+      "Eastdun",
+      "Faegerea",
+      "Fellfeld",
+      "Feorfenn",
+      "Glaerford",
+      "Goldheals",
+      "Gyldenholt",
+      "Halighrycg",
+      "Heahieg",
+      "Horsmere",
+      "Hunigmor",
+      "Hwitnaess",
+      "Innanpaeth",
+      "Isernsae",
+      "Lytelsceard",
+      "Micelstraet",
+      "Neotherasund",
+      "Niwewarod",
+      "Northweald",
+      "Readweg",
+      "Sealtwesten",
+      "Seolforwic",
+      "Suthbeorg",
+      "Sweartbroc",
+      "Uppedenu",
+      "Utandun",
+      "Westea"
+    ],
+    "military_unit": [
+      "the Wolf-Cwealmingas",
+      "the Fenn-Reavers"
+    ],
+    "personal_female": [
+      "Waelburh",
+      "Hildegyth",
+      "Cwealmhild",
+      "Beaduhild",
+      "Garwynn",
+      "Grimhild",
+      "Swearthild",
+      "Heorowynn",
+      "Wulfgyth",
+      "Hildeswith",
+      "Beorhtgyth",
+      "Waelthryth",
+      "Hildethryth",
+      "Garhild",
+      "Cwealmwynn",
+      "Beaduburh",
+      "Grimgyth",
+      "Wulfhild",
+      "Heorohild",
+      "Waelwynn",
+      "Deosor",
+      "Deosoru",
+      "Lusand",
+      "Lusandu",
+      "Mearox",
+      "Mearoxu",
+      "Waecid",
+      "Waecidu"
+    ],
+    "personal_male": [
+      "Cwealmwulf",
+      "Waelgar",
+      "Hildebeorn",
+      "Garwulf",
+      "Beaduheard",
+      "Heorogar",
+      "Grimwulf",
+      "Sweartwulf",
+      "Wulfstan",
+      "Hildewulf",
+      "Beorhtwulf",
+      "Waelheard",
+      "Garmund",
+      "Heorowulf",
+      "Cwealmstan",
+      "Wulfgar",
+      "Hildric",
+      "Beaduwulf",
+      "Ulfkell",
+      "Hroaldr",
+      "Deosor",
+      "Deosora",
+      "Lusand",
+      "Lusanda",
+      "Mearox",
+      "Mearoxa",
+      "Waecid",
+      "Waecida"
+    ],
+    "settlement": [
+      "Cwealmingaham",
+      "Sweartweald",
+      "Fennburh",
+      "Heargdun",
+      "Waelford",
+      "Wulfwic",
+      "Cornburh",
+      "Ealdceap",
+      "Ealuceaster",
+      "Eastcot",
+      "Faegerdun",
+      "Fellford",
+      "Feorgeweorc",
+      "Glaerheahburh",
+      "Goldhearg",
+      "Gyldenhyth",
+      "Haligtun",
+      "Heahwarod",
+      "Horsburh",
+      "Hunigceap",
+      "Hwitceaster",
+      "Innancot",
+      "Iserndun",
+      "Lytelford",
+      "Micelgeweorc",
+      "Neotheraheahburh",
+      "Niwehearg",
+      "Northyth",
+      "Readtun",
+      "Sealtwarod",
+      "Seolforburh",
+      "Suthceap",
+      "Sweartceaster",
+      "Uppecot",
+      "Utandun",
+      "Westford",
+      "Corngeweorc",
+      "Ealdheahburh",
+      "Ealuhearg",
+      "Easthyth"
+    ],
+    "ship": [
+      "Corpse-Maker",
+      "Blood-Wake",
+      "the Fenn-Wolf"
+    ],
+    "tavern": [
+      "The Hanged Man",
+      "The Broken Shield",
+      "The Eald Corn",
+      "The Faeger Ealu",
+      "The Feor Fell",
+      "The Gylden Glaer",
+      "The Halig Gold",
+      "The Heah Hors",
+      "The Hwit Hunig",
+      "The Isern Isern",
+      "The Lytel Sealt",
+      "The Micel Seolfor"
+    ]
+  },
+  "culture_id": "cwealmingas",
+  "family": [
+    "germanic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_cwealmingas.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "cwealmingas",
+  "lexicon": {
+    "adjectives": {
+      "black": "sweart",
+      "fair": "faeger",
+      "far": "feor",
+      "golden": "gylden",
+      "great": "micel",
+      "high": "heah",
+      "iron": "isern",
+      "little": "lytel",
+      "new": "niwe",
+      "old": "eald",
+      "red": "read",
+      "sacred": "halig",
+      "white": "hwit"
+    },
+    "directional": {
+      "east": "east",
+      "inner": "innan",
+      "lower": "neothera",
+      "north": "north",
+      "outer": "utan",
+      "south": "suth",
+      "upper": "uppe",
+      "west": "west"
+    },
+    "feature_words": {
+      "bay": "wic",
+      "cape": "naess",
+      "coast": "warod",
+      "ford": "ford",
+      "forest": "weald",
+      "hill": "dun",
+      "isle": "ieg",
+      "lake": "mere",
+      "marsh": "fenn",
+      "moor": "mor",
+      "mountain": "beorg",
+      "narrows": "sund",
+      "neck": "heals",
+      "pass": "sceard",
+      "plain": "feld",
+      "ridge": "hrycg",
+      "river": "ea",
+      "road": "straet",
+      "sea": "sae",
+      "stream": "broc",
+      "track": "paeth",
+      "vale": "denu",
+      "waste": "westen",
+      "way": "weg",
+      "wood": "holt"
+    },
+    "resources": {
+      "ale": "ealu",
+      "amber": "glaer",
+      "fur": "fell",
+      "gold": "gold",
+      "grain": "corn",
+      "honey": "hunig",
+      "horse": "hors",
+      "iron": "isern",
+      "salt": "sealt",
+      "silver": "seolfor"
+    },
+    "settlement_words": {
+      "citadel": "heahburh",
+      "city": "ceaster",
+      "fort": "geweorc",
+      "hamlet": "cot",
+      "market": "ceap",
+      "port": "hyth",
+      "temple_town": "hearg",
+      "town": "burh",
+      "village": "tun"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|animal](stem) + feature/settlement: Sweart-weald (black-forest), Cwealm-ham (slaughter-home); kin + -ingas; Norse-overlay -by/-thorp for raider-steads.",
+    "gendered_endings": {
+      "female": [
+        "u",
+        "e"
+      ],
+      "male": [
+        "a",
+        "e"
+      ]
+    },
+    "patronymic_form": "patronymic -sunu / -ing (descendant of); kin (cynn) name; Norse-overlay -son among the sea-raiders; cruel deed-bynames common.",
+    "toponymic_suffixes": [
+      "tun",
+      "burh",
+      "ham",
+      "ingas",
+      "ceaster",
+      "by"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "blood-heargs and corpse-fens: 'the Hearg of [name]', 'the Drowned Burh of [kin]'",
+    "military_units": "the [cynn] Slaughter-band / the [animal] reavers: 'the Wolf-Cwealmingas', 'the Fenn-Reavers'",
+    "ships": "reaver-longship names (Norse overlay): 'Corpse-Maker', 'Blood-Wake', 'the Fenn-Wolf'",
+    "taverns": "'The [Adjective] [Noun]': 'The Hanged Man', 'The Broken Shield'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "The Cwealmingas are Chaotic alone: they venerate the CHAOTIC powers directly, by their Anglo-Saxon reflexes (with Norse-overlay variants among the sea-raiders) - phoneme-morphs of the Agrippan canon, never real Germanic/Norse gods. The Lawful powers are the hated 'thrall-gods' of weak folk, named only to curse; the One is reviled as the distant tyrant.",
+    "clergy_ladder": {
+      "1": "Wiglere (sorcerer-novice)",
+      "3": "Heargweard (idol-warden)",
+      "5": "Bloteppa (blood-priest)",
+      "7": "Cwealm-thegn (death-priest)",
+      "9": "Heah-bloter (high sacrificer)"
+    },
+    "demon_epithet_pattern": "the LAWFUL powers are the enemy-gods, named to curse, each with a scornful epithet: Tulrius -> Thulor the Thrall-Light; Orlandus -> Eorland the Oath-Chain; Aeternus -> Aetern the Far Tyrant. (Norse-overlay raiders curse them in the Norse reflexes: Thulr, Orlund.)",
+    "holy_symbol_motifs": {
+      "Mearox": "a burning city under a black wolf's jaws",
+      "Waecid": "an open mouth swallowing a broken sun"
+    },
+    "religious_orders_pattern": "the Hearg (idol-grove) of [power]: 'the Hearg of Mearox', where the blood-offerings hang.",
+    "saints_pattern": "the worst reavers are honored as the Wael-deade (the slaughter-dead), their skulls set in the hearg; 'the dread [name]'.",
+    "sample_deity_renames": {
+      "Desoria": "Deosor (the Fen-Drowner)",
+      "Lusanto": "Lusand (the Hoard-Worm, gold-greed)",
+      "Maraxus": "Mearox (the War-Fire, the city-burner; chief idol)",
+      "Vacidus": "Waecid (the Unmaker, the hungry dark)"
+    },
+    "the_one": "Aetern the Far Tyrant (< *Aiternaz < Aeternus; reviled, never petitioned)"
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Anglo-Saxon clanhold, ascending, with a Norse raiding overlay. Thegn (retainer-lord) barony; Mearc-weard (march-warden) march; Scir-gerefa (shire-reeve) county; Heretoga (war-leader) duchy; Ealdor (chief-lord) principality; Cyning (king) kingdom; Bretwalda (wide-ruler) empire over the Brytenrice. Sea-raider bands answer to Norse-style jarls. (Rank titles are the real OE/Norse register, allowed.)",
+    "female_forms": {
+      "Bretwalda": "Bretwealdcwen",
+      "Cyning": "Cwen",
+      "Ealdor": "Ealdormodor",
+      "Heretoga": "Heretoge",
+      "Mearc-weard": "Mearc-wearde",
+      "Scir-gerefa": "Scir-gerefe",
+      "Thegn": "Thegne"
+    },
+    "government": "clanhold (a cruel war-folk of ealdormen and reaver-jarls; the witan/moot is a thing of threats)",
+    "heir": "Aetheling (throne-worthy prince)",
+    "honorifics": {
+      "champion": "Cempa (warrior)",
+      "elder": "Ealda",
+      "lady": "Hlaefdige",
+      "lord": "Hlaford",
+      "your_grace": "Hlaford"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Thegnscipe",
+        "ruler": "Thegn"
+      },
+      "county": {
+        "domain": "Scir",
+        "ruler": "Scir-gerefa"
+      },
+      "duchy": {
+        "domain": "Heretogdom",
+        "ruler": "Heretoga"
+      },
+      "empire": {
+        "domain": "Brytenrice",
+        "ruler": "Bretwalda"
+      },
+      "kingdom": {
+        "domain": "Cynedom",
+        "ruler": "Cyning"
+      },
+      "march": {
+        "domain": "Mearcland",
+        "ruler": "Mearc-weard"
+      },
+      "principality": {
+        "domain": "Ealdordom",
+        "ruler": "Ealdor"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ath (oath)",
+      "liege": "Hlaford",
+      "tribute": "Gafol",
+      "vassal": "Geneat (retainer)"
+    }
+  }
+}
