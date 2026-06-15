@@ -1,9 +1,13 @@
 # Campaign-Creation UI — Stage 10 scaffold + handoff
 
-**Status (2026-06-15):** the **logic seams are built and headless-tested green**; the
-**scenes are scaffolded** (parse-clean, wired, layout pending your editor pass). The
-headless suite cannot load scene scripts, so the screens' rendering/behaviour can
-only be verified in the Godot editor.
+**Status (2026-06-15):** **logic seams built + headless-tested green; all four
+screens + the political-map renderer BUILT and screenshot-verified end-to-end** via
+the godot-ai MCP — a real small/short world was generated in-editor, the replay
+animated its borders epoch-by-epoch, and the review screen rendered the real brief +
+political map + tier-sorted realms + seed-share token + green validation. The screens
+are code-built (`_build_ui()`), verified by MCP screenshot (the headless suite never
+loads scene scripts); the seams are verified by the suite. **Remaining = polish +
+hookup, not core build** (see the bottom section).
 
 Spec: `generation/gdd-campaign-creation-ui.md` (flow §2, screens §3–6, replay-frame
 data §7, EventBus §8, seed-sharing §9).
@@ -31,14 +35,24 @@ phase machine + the shared `SettingParameters`; on Generate it `create_campaign`
 creation). **EDITOR TODO:** replace `_roll_seed()` with the real new-campaign seed
 source / share-token input (`SeedShareCodec.decode`).
 
-Per-screen contract (signals the flow listens for, seam calls, what's left):
+All screens are code-built Controls + the shared `political_map_view.gd` (a Control
+that draws each hex as a palette-coloured hexagon — used by C animated and D static).
+Per-screen status (BUILT + verified unless noted):
 
-| Screen | Script | Emits → flow | Flow calls | EDITOR TODO (layout/behaviour) |
-|---|---|---|---|---|
-| A Quick Start | `screen_quick_start.gd` | `start_requested`, `customize_requested` | `bind_params(p)` | map-size selector + Generate/Customize buttons |
-| B Advanced | `screen_advanced.gd` | `generate_requested`, `back_requested` | `bind_params(p)` | four parameter tabs of sliders bound to `SettingParameters` fields (tooltips from the owning GDDs); a control writes its field into `_params` on change |
-| C Generate+Replay | `screen_generate_replay.gd` | `review_requested` | `begin_replay(cid)` | the **frame stepping is real** (timer + `ReplayFrameDecoder`, emits `EventBus.replay_frame_advanced`); paint `_render_frame(tick, owners)` (map + caption strip + scrubber + ×1/×2/×4); `finish()` = Skip |
-| D Review | `screen_review.gd` | `approved`, `regenerate_requested` | `populate(payload)` | map renderer + Brief/Realms/Peoples/History tabs bound to the payload; footer with copyable share token + Begin-Campaign confirm modal; `[Regenerate element…]` (§11.3 v1 menu) |
+| Screen | Script | Emits → flow | Flow calls | Built | Remaining polish |
+|---|---|---|---|---|---|
+| A Quick Start | `screen_quick_start.gd` | `start_requested`, `customize_requested` | `bind_params` | map-size toggles + Generate/Customize | tooltips; theme pass |
+| B Advanced | `screen_advanced.gd` | `generate_requested`, `back_requested` | `bind_params` | 4 tabs of sliders/options bound to `SettingParameters` | OptionButton contrast; the rest of the field set; "show values" footer |
+| C Generate+Replay | `screen_generate_replay.gd` | `review_requested` | `begin_replay` | timer + `ReplayFrameDecoder` + `political_map_view` animate the borders; epoch caption; Skip | caption = real event text (not "epoch N/M"); scrubber + ×1/×2/×4 toggle |
+| D Review | `screen_review.gd` | `approved`, `regenerate_requested` | `populate` + `bind_map` | political map + Brief/Realms/Peoples/History tabs + seed-share footer + validation | Begin-Campaign confirm modal; realm-click pan; overlay toggles; `[Regenerate element…]` (§11.3 v1 menu) |
+
+**Flow `_roll_seed()` is a placeholder** — wire the real new-campaign seed source /
+share-token paste (`SeedShareCodec.decode`). And **hook the flow into the main menu /
+campaign-select "New Campaign"** (today it's reached by running its scene directly).
+
+Verified 2026-06-15 via the godot-ai MCP: real small/short generation in-editor →
+replay animated → review rendered (real brief, political map, realms, seed token,
+green validation). No runtime errors in the game log across the full pipeline.
 
 ## Remaining for the playable loop (beyond this UI)
 

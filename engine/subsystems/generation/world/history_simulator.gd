@@ -1663,8 +1663,12 @@ func _revert_to_wilderness(h: Vector2i, tick: int, keep_fraction: float,
 	var hex: Dictionary = _grid[h]
 	hex["owner_polity_id"] = ""
 	hex["territory_class"] = "wilderness"
-	hex["population_band"] = maxi(0, XPAwardCalculator.bankers_round(
-			float(int(hex["population_band"])) * keep_fraction))
+	# Retain a fraction of the population, but a hex now classed wilderness cannot
+	# hold more than the wilderness limit-of-growth cap — a collapsing civilized
+	# hex (up to 12,480) sheds the excess as its lands empty back into wilderness
+	# (otherwise it violates V4: a "wilderness" hex with thousands of families).
+	hex["population_band"] = mini(_c.cap_wilderness, maxi(0, XPAwardCalculator.bankers_round(
+			float(int(hex["population_band"])) * keep_fraction)))
 	if mark_depopulated:
 		_depopulated_at[h] = tick
 
@@ -2313,9 +2317,33 @@ func _assign_present_day_handoff() -> void:
 		var pol: Dictionary = _polities[pid]
 		if not pol["alive"]:
 			continue
-		pol["ruler_level"] = DomainTierTable.ruler_level_for_tier(int(pol["tier_index"]))
-		pol["ruler_class"] = _ruler_class_for(pol)
+		if pol.get("is_beastman", false):
+			_assign_beastman_ruler(pol)
+		else:
+			pol["ruler_level"] = DomainTierTable.ruler_level_for_tier(int(pol["tier_index"]))
+			pol["ruler_class"] = _ruler_class_for(pol)
 		pol["morale_seed"] = _morale_seed_for(pol)
+
+
+## A beastman realm is ruled by the chieftain leader-variant from its race's
+## monster entry — NOT a human adventurer class. The chieftain's Hit Dice is the
+## realm's effective ruler level, and that HD cap (e.g. a goblin chieftain at HD 3)
+## is exactly why beastman realms can't out-level vassals into a stable empire
+## (ax_domains_of_chaos clanhold limits; Jedidiah ruling 2026-06-15). ruler_class
+## carries a snake_case leader id ("goblin_chieftain") so the downstream NPC
+## generator builds a monster ruler, not a classed PC.
+func _assign_beastman_ruler(pol: Dictionary) -> void:
+	var rec: Dictionary = CultureCatalogLoader.load_all().get(str(pol["culture_id"]), {})
+	var race := CultureCatalogLoader.race(rec) if not rec.is_empty() else ""
+	var leader := BeastmanLeaderLoader.leader_for_race(race)
+	if leader.is_empty():
+		# No catalog leader — still NOT a human class: generic chieftain, HD 1.
+		pol["ruler_class"] = ("%s_chieftain" % race) if race != "" else "beastman_chieftain"
+		pol["ruler_level"] = 1
+		return
+	var title := str(leader["title"]).to_lower().replace("-", "_").replace(" ", "_")
+	pol["ruler_class"] = "%s_%s" % [race, title]
+	pol["ruler_level"] = maxi(1, int(leader["hd"]))
 
 
 ## The culture's ruler-class probability distribution (catalog §4.3): a
@@ -2402,14 +2430,14 @@ func _significance_for(type: String, severity: float) -> float:
 
 
 ## Stable per-polity replay colors (gdd-campaign-creation-ui §7) — deterministic
-## golden-angle hue spread by sorted-index so a realm keeps its color.
+## by sorted-index so a realm keeps its color. Colours come from the shared
+## WorldPalette ramp (curated distinct set then a varied golden-angle sweep),
+## also used by the Culture map view so the two can't drift.
 func _build_palette() -> Array:
 	var rows: Array = []
 	var i := 0
 	for pid in _sorted_polity_ids():
-		var hue := fmod(float(i) * 0.6180339887498949, 1.0)
-		var color := Color.from_hsv(hue, 0.55, 0.85)
-		rows.append({"polity_id": str(pid), "color": "#" + color.to_html(false)})
+		rows.append({"polity_id": str(pid), "color": WorldPalette.hex_at(i)})
 		i += 1
 	return rows
 

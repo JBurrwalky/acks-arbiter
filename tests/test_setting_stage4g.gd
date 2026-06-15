@@ -17,6 +17,7 @@ func run_all_tests() -> void:
 	test_ruler_level_by_tier()
 	# Handoff (§12)
 	test_ruler_class_distribution()
+	test_assign_beastman_ruler()
 	test_alignment_morale_penalty()
 	test_dominant_population_alignment()
 	test_morale_seed_shape()
@@ -93,10 +94,26 @@ func test_ruler_class_distribution() -> void:
 	check(float(holy["cleric"]) > float(holy["fighter"]),
 		"a religious culture tilts toward cleric rulers (%f vs %f)" % [holy["cleric"], holy["fighter"]])
 	check(float(holy["fighter"]) > 0.0, "but sphere weights move the odds, they don't zero out fighter")
-	# An instance-less culture (beastman) still draws a valid ACKS progression.
+	# A culture with no instance (no sphere weights) still draws a valid human
+	# progression from the base distribution. (Beastmen take a separate path —
+	# _assign_beastman_ruler — see test_assign_beastman_ruler.)
 	var sim2 := _bare_sim({})
 	check(sim2._ruler_class_for(_polity("p", "none", "chaotic")) in ["fighter", "cleric", "mage", "thief"],
 		"an instance-less culture still draws a valid ruler class")
+
+
+func test_assign_beastman_ruler() -> void:
+	# A beastman realm is ruled by its race's monster leader-variant (a chieftain
+	# from the catalog), capped at the leader's Hit Dice — not a human adventurer
+	# class. Goblins get a goblin chieftain at the catalog's HD 3.
+	var sim := _bare_sim({})
+	var pol := _polity("p", "goblin", "chaotic")
+	pol["is_beastman"] = true
+	sim._assign_beastman_ruler(pol)
+	check(str(pol["ruler_class"]) == "goblin_chieftain",
+		"a goblin realm is ruled by a goblin_chieftain, got '%s'" % pol["ruler_class"])
+	check(int(pol["ruler_level"]) == 3,
+		"the goblin chieftain's HD (3) is the ruler level, got %d" % pol["ruler_level"])
 
 
 func test_alignment_morale_penalty() -> void:
@@ -172,10 +189,21 @@ func _generate_medium(seed_value: int) -> void:
 
 func test_polities_have_ruler_level_and_class() -> void:
 	check(_polities.size() > 0, "no present-day polities")
+	var allc := CultureCatalogLoader.load_all()
 	for p in _polities:
-		check(int(p.ruler_level) >= 4, "polity %s should have a ruler level (≥ Barony's 4), got %d" % [p.id, p.ruler_level])
-		check(str(p.ruler_class) in ["fighter", "cleric", "thief", "mage"],
-			"polity %s ruler_class should be an ACKS progression, got '%s'" % [p.id, p.ruler_class])
+		var rec: Dictionary = allc.get(str(p.culture_id), {})
+		if CultureCatalogLoader.tier(rec) == "beastman":
+			# Beastman realms are ruled by the monster leader-variant (a chieftain
+			# from their race's catalog entry), capped at the race's Hit Dice — that
+			# HD cap is exactly why they never out-level vassals into an empire.
+			check(str(p.ruler_class).ends_with("_chieftain"),
+				"beastman polity %s should be ruled by a <race>_chieftain, got '%s'" % [p.id, p.ruler_class])
+			check(int(p.ruler_level) >= 1,
+				"beastman polity %s should have a ruler level ≥ 1, got %d" % [p.id, p.ruler_level])
+		else:
+			check(int(p.ruler_level) >= 4, "polity %s should have a ruler level (≥ Barony's 4), got %d" % [p.id, p.ruler_level])
+			check(str(p.ruler_class) in ["fighter", "cleric", "thief", "mage"],
+				"polity %s ruler_class should be an ACKS progression, got '%s'" % [p.id, p.ruler_class])
 
 
 func test_morale_seed_persisted() -> void:

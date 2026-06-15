@@ -397,6 +397,7 @@ func _process(delta: float) -> void:
 func _register_states() -> void:
 	_state_registry = {
 		"campaign_select": func() -> SessionState: return CampaignSelectState.new(),
+		"campaign_creation": func() -> SessionState: return CampaignCreationState.new(),
 		"party_creation": func() -> SessionState: return PartyCreationState.new(),
 		"session_load": func() -> SessionState: return SessionLoadState.new(),
 		"wilderness": func() -> SessionState: return WildernessExploreState.new(),
@@ -444,7 +445,7 @@ func transition_to_state(state_key: String, context: Dictionary = {}) -> void:
 	# Update GameState.current_location_key for autoload consumers.
 	# Only exploration states return real keys; overlay states return "unknown"
 	# (preserving the parent exploration state's key); meta states get "none".
-	if state_key in ["campaign_select", "party_creation", "session_load", "session_end"]:
+	if state_key in ["campaign_select", "campaign_creation", "party_creation", "session_load", "session_end"]:
 		GameState.current_location_key = "none"
 	elif state_key in ["wilderness", "dungeon", "settlement"]:
 		GameState.current_location_key = _current_state.get_location_key_for_character("")
@@ -481,6 +482,9 @@ func submit_action(action: String, payload: Dictionary = {}) -> bool:
 func _sync_game_state(state_key: String) -> void:
 	match state_key:
 		"campaign_select":
+			if GameState.current_state != GameState.State.MAIN_MENU:
+				GameState.transition_to(GameState.State.MAIN_MENU)
+		"campaign_creation":
 			if GameState.current_state != GameState.State.MAIN_MENU:
 				GameState.transition_to(GameState.State.MAIN_MENU)
 		"party_creation":

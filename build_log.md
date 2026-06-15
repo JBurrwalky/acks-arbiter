@@ -34752,3 +34752,188 @@ on-tick dispatch.
 - `[Regenerate element…]` (§11.3 constrained menu) not implemented; whole-world regenerate is wired.
 **Next session should:**
 - Jedidiah: open `campaign_creation_flow.tscn` in the editor, flesh out the four screens against the contracts in the scaffold doc + the verified seams. THEN the setting→runtime materialization (connects the generator to play + populates the NPC culture_id columns).
+
+
+## Session 2026-06-15 (cont.) — Stage 10 UI BUILT + screenshot-verified via godot-ai MCP
+
+**Task:** Jedidiah can't build scenes in the editor (the project is vibe-coded) — so use the godot-ai MCP editor integration to actually BUILD the campaign-creation scenes out and verify them with screenshots, not just scaffold them.
+**Model used:** Opus 4.8 driving the godot-ai MCP (editor_state / project_run / editor_manage game_eval / editor_screenshot / logs_read).
+**Completed:**
+- **Built all four screens as code-built Controls** (project idiom: `_build_ui()` constructs nodes; one `.tscn` for the flow, screens are programmatic) and verified each by running the flow scene + screenshotting the game:
+  - **Screen A Quick Start** — title + map-size toggles (Medium preselected) + Generate/Customize. Renders.
+  - **Screen B Advanced** — TabContainer (Physical/Cultures/History/Content); `_enum_row`/`_slider_row`/`_check_row` helpers bind OptionButtons/HSliders/CheckBoxes to `SettingParameters` fields; `_refresh_from_params` populates on bind. Renders (Physical tab verified: map size, land mass, mountains, rivers, latitude, sea-level slider @0.30).
+  - **Screen C Generate+Replay** — "The Ages Turn…", the `political_map_view` animating per-frame via the tested `ReplayFrameDecoder` + a Timer, epoch caption, Skip. Verified mid-replay (epoch 17/21, borders painted).
+  - **Screen D Review** — "Your World Awaits", the `political_map_view` (present-day owners), side TabContainer (Brief/Realms/Peoples/History bound to the assembler payload), footer with the SeedShareCodec token + green ✓-valid. Verified with a REAL generated world.
+- **`political_map_view.gd`** — reusable Control; `bind(ordered_hexes, palette)` + `show_owners(owner_map)`; `_draw()` lays out axial (q,r) → fit-to-rect and draws each hex as a palette-coloured hexagon (`#rrggbb` from `_build_palette`), unowned = slate. Shared by C (animated) + D (static).
+- **END-TO-END verified in-editor:** triggered a real small/short generation through the flow (`_on_start_requested`) — created a campaign, ran the FULL pipeline (geography→history→settlements→narrative→validation) with **no runtime errors in the game log**, produced 21 replay frames, animated the political map, and rendered Review with the real brief ("5 realms… Tuath of Gundar… went to war with the Old Gormgrund"), the real political map, tier-sorted realms, the seed-share token, and green validation.
+- Updated `docs/campaign-creation-ui-scaffold.md` to "BUILT + verified" with the per-screen status + the (smaller) remaining polish list.
+**Decisions made:**
+- Screens are code-built Controls (matches `campaign_select_screen.gd` etc.) — one `.tscn` (the flow) + programmatic children; keeps everything in checkable GDScript and MCP-runnable.
+- The political map is a single shared `political_map_view` (hexagon-per-hex, palette-coloured) for both the replay animation and the static review map.
+- Verification loop = edit .gd → `project_run` custom scene → `game_eval` to navigate/populate → `editor_screenshot source=game`. The real generation runs fine inside the editor's game process.
+**Interfaces defined or changed:**
+- Screen scripts gained real UI + the wiring methods already contracted (`bind_params`, `begin_replay`, `populate`, `bind_map`). `political_map_view.bind/show_owners`. Flow REVIEW phase now also calls `bind_map(list_hexes, list_replay_palette)`.
+**Database changes:** none.
+**Tests added/updated:** none new (the seams remain tested by `test_campaign_creation_seams.gd`, 27 checks; scene scripts are verified by MCP screenshot, not the headless suite). Suite still 40 baseline.
+**Known issues / remaining polish (all minor — core build done):**
+- `_roll_seed()` is a placeholder; wire the real new-campaign seed / share-token paste.
+- Hook the flow into the main menu / campaign-select "New Campaign" (today reached by running its scene directly).
+- Screen C caption = "epoch N/M"; upgrade to real event text + add the scrubber + ×1/×2/×4 toggle. Screen D: Begin-Campaign confirm modal, realm-click map-pan, overlay toggles, the §11.3 `[Regenerate element…]` menu. OptionButton contrast / theme pass.
+**Next session should:**
+- Polish the above UI items + the main-menu hookup, THEN the setting→runtime materialization (the real gap before a generated world is playable; also populates the NPC culture_id columns). See project_setting_runtime_materialization.
+
+
+## Session 2026-06-15 (cont.) — Campaign-creation: main-menu hookup + button-text contrast fix (MCP-verified in the live game)
+
+**Task:** Jedidiah: "put in the main menu hookup so I can play with it, and lighten the button text (too dark for the background)."
+**Model used:** Opus 4.8 + godot-ai MCP (boot Main, click via input_mouse, screenshot).
+**Completed:**
+- **Main-menu hookup (verified end-to-end in the booted game):** the boot screen is the campaign-select screen (`SessionRunner` boots to `"campaign_select"`). Added a **"✦ Generate World" button** to its footer + a `create_world_requested` signal; `CampaignSelectState.enter()` connects it → `submit_action("create_world")`; `handle_action` routes `"create_world"` → `"campaign_creation"`. New **`CampaignCreationState`** (`engine/subsystems/session/states/campaign_creation_state.gd`) hosts the flow and, on `campaign_ready`, routes back to `"campaign_select"`. Registered `"campaign_creation"` in `SessionRunner._register_states` + added it to the meta-state lists in `transition_to_state` (location_key "none") and `_sync_game_state` (→ MAIN_MENU). **Verified:** boot → click Generate World → the flow's Screen A opens, no errors.
+- **GOTCHA fixed (nav-stack transition collision):** first attempt used `nav_stack.push_node(flow)` in the state's enter() — dropped with *"push_node: transition in progress — ignoring"* because `CampaignSelectState.exit()`'s pop starts a SceneTransition and the immediate push is rejected. Fix = add the flow CanvasLayer **directly to Main (`runner.get_parent().add_child`)**, NOT via the NavigationStack, and `queue_free` it in exit() — the exact pattern `PartyCreationState` uses (and documents: "the nav stack may still be mid-transition from the campaign select pop"). States reached from campaign_select must add their screen directly to Main, not push it.
+- **Button-text contrast fix:** my campaign-creation screens set no `font_color`, so buttons/option-buttons used the dark default theme color (unreadable on the dark bg). Fix = `campaign_creation_flow._ui_theme()` builds a `Theme` (light `font_color`/hover/pressed for Button/OptionButton/CheckBox + TabContainer selected/unselected colors) assigned to the holder `Control` — all child screens inherit it. Also lightened the Advanced slider value labels. **Verified by screenshot:** Quick Start + Advanced buttons/options now legible.
+**Decisions made:**
+- The flow is added directly to Main (not the nav stack) — required to dodge the campaign-select pop transition (mirrors PartyCreationState).
+- `world_ready` routes back to campaign_select for now (the eventual party_creation→play route needs the unbuilt setting→runtime materialization).
+**Interfaces defined or changed:**
+- `CampaignSelectScreen` new signal `create_world_requested`; new footer button.
+- `CampaignSelectState` action `"create_world"` → `"campaign_creation"`.
+- New `CampaignCreationState` (action `"world_ready"`/`"cancel_creation"` → `"campaign_select"`). Registered in SessionRunner.
+**Database changes:** none.
+**Tests added/updated:** none (UI + state wiring; MCP-screenshot-verified). Headless suite re-run for net-zero on the session-runner/state edits.
+**Known issues / remaining polish:** the flow's `_roll_seed()` placeholder; Begin-Campaign confirm modal; replay caption=real-event-text + scrubber + speed toggle; §11.3 `[Regenerate element…]` menu. Then the setting→runtime materialization (to actually play).
+**Next session should:**
+- Optional UI polish above, else the setting→runtime materialization (see project_setting_runtime_materialization). UI is now launchable from the menu + verified.
+
+
+## Session 2026-06-15 — Stage 10 post-play UI + correctness fixes (7 issues)
+
+**Task:** Fix the 7 issues Jedidiah found playing the campaign-creation flow: (1) diamond map should be rectangular, (2) beastman clanholds seeded with human-class rulers, (3) no biome/terrain/heightmap view, (4) no color key/labels, (5) realms look non-contiguous, (6a) 11 errors with no inspector + (6b) "conquered a vanished realm" should name the foe, (7) no rewind/watch-again UI. Build AND verify all UI myself via the godot-ai MCP (Jedidiah cannot use the editor).
+**Model used:** Opus 4.8 (1M) for the whole session — RAW interpretation (beastman HD-as-level), sim/narrative edits, UI build, and MCP screenshot/eval verification.
+**Completed:**
+- `scenes/ui/campaign_creation/political_map_view.gd` — REWRITTEN to a flat-top OFFSET hex layout (odd columns stepped down ½ hex) so the map is rectangular, not the axial diamond shear. Added `enum Mode{POLITICAL,BIOME,ELEVATION,TERRITORY}` + `set_mode()` recoloring the same grid, per-hex outline, realm-boundary brighter border (`_neighbors` odd-q), and gold city markers (Class III+ larger). Fixes #1/#3/#5.
+- `scenes/ui/campaign_creation/screen_review.gd` — view-mode toggle row (shared ButtonGroup), legend (swatch+name rows from `_map.legend_entries`), "Issues" tab showing `validation.report`, and a "⟲ Watch the history again" button (`watch_again` signal). Fixes #4/#6a/#7. Realms tab ruler-class humanized (`.replace("_"," ")`).
+- `scenes/ui/campaign_creation/campaign_creation_flow.gd` — `_on_watch_again` re-runs the stored replay; `bind_map` now passes settlements; `_ui_theme()` light font_color so button/tab text is legible on the dark parchment.
+- `engine/subsystems/session/states/campaign_creation_state.gd` (NEW) + `session_runner.gd` + `campaign_select_state.gd` + `campaign_select_screen.gd` — main-menu hookup: campaign-select "✦ Generate World" → `create_world` action → `CampaignCreationState` (flow added DIRECTLY to Main like PartyCreationState, not the nav stack). Playable end-to-end.
+- `engine/subsystems/generation/world/beastman_leader_loader.gd` (NEW) — reads `data/monsters/monster_catalog.json`, indexes each race's `encounter_hierarchy.lair_or_village.leader` by monster id (no monster_types filter), exposes `leader_for_race(race) -> {title, hd}`. HD→level = `floori(base)` (the "+Y" is bonus hp, not levels); falls back to the monster's own base HD when a race has no catalog leader variant.
+- `engine/subsystems/generation/world/history_simulator.gd` — `_assign_present_day_handoff` branches `is_beastman` → new `_assign_beastman_ruler` (ruler_class=`<race>_chieftain`, ruler_level=leader/base HD) instead of a human adventurer class. Fixes #2.
+- `engine/subsystems/generation/world/narrative_generator.gd` — `_name_in(e,idx)` adds a culture fallback ("an Orc realm") for polities with no resolvable name; `_index_polities` no longer hard-codes "a vanished realm" for toponym-less fallen (leave unresolved so the fallback fires); `_event_is_named` counts culture as nameable; `_article()` a/an helper; `_realm_block` humanizes ruler_class. Fixes #6b.
+**Decisions made:**
+- ACKS "X+Y" Hit Dice → ruler level uses `floori(base)` (RAW §3.3 round-down); the +Y modifier is bonus hit points, not levels. A troll chieftain at "10+6 HD" is level 10, not 16. This makes the per-race HD cap (the reason beastmen can't out-level vassals into an empire — Jedidiah) meaningful: troll L10 > ogre/orc L4 > goblin L3 > kobold L2 > gnoll/hobgoblin L1.
+- Beastman-ness is decided by the culture tier upstream, so `BeastmanLeaderLoader` does NOT filter on `monster_types` (troll is tagged `giant_humanoid` yet is a clan race in this setting); index purely by race id.
+- Races with no `lair_or_village.leader` in the catalog (gnoll/hobgoblin/bugbear/ogre) fall back to the monster's base HD, so their chieftains still out-rank a goblin's. `ruler_class` stays a snake_case id ("goblin_chieftain") for the runtime; display humanizes underscores.
+- "a vanished realm" was a hard-coded dead end in `_index_polities` that won because `_name_in` checks `_polity_name` before the culture fallback. Leaving toponym-less fallen unresolved lets the event's culture name them.
+**Interfaces defined or changed:**
+- `BeastmanLeaderLoader.leader_for_race(race: String) -> Dictionary` ({title, hd}) — new static loader, cached per process.
+- Setting `ruler_class` vocabulary widened: human realms keep fighter/cleric/mage/thief; beastman realms carry `<race>_chieftain`. Consumers (campaign_review_assembler, screen_review, narrative_generator) treat it as a display string and humanize underscores.
+- `political_map_view`: `bind(hexes, palette)`, `show_owners(owner_map)`, `set_mode(Mode)`, `set_settlements(s)`, `legend_entries(polity_names) -> Array`.
+- `screen_review`: signals `approved`/`regenerate_requested`/`watch_again`; `bind_map(ordered_hexes, palette, settlements)`.
+- New session action `create_world` (campaign_select → campaign_creation); `world_ready`/`cancel_creation` → campaign_select.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- No new headless suites (all touched runtime code is scene/UI or generation already covered). Verified the sim/narrative fixes by in-editor `game_eval` generations querying `setting_polities`/`setting_events`/the assembled timeline, and the UI by `editor_screenshot` of the live Review screen (rectangular map + all four view modes + legend + city markers + Realms tab beastman chieftains + History tab named foes).
+**Known issues:**
+- Beastman realms rarely appear in the top-of-list realms but DO show when present (Realms tab confirmed orc/kobold/troll/ogre/gnoll/goblin/hobgoblin/troglodyte chieftains). The Realms list is not capped by tier here, so they surface.
+- `political_map_view`/`screen_review`/`campaign_creation_flow` are scene scripts the headless suite never loads — they were parse-checked with `--check-only` and verified live via the MCP, not by the test runner.
+**Next session should:**
+- Tackle the setting→runtime materialization gap ([[project_setting_runtime_materialization]]) so a generated world is playable, including NPC `culture_id` population (the NPC-personality blocker).
+- Optional polish: a/an article + de-underscore could be generalized (other "a %s" prose sites), and a CITY-tier filter on the Realms tab if beastman clanholds should be demoted below human realms.
+
+
+## Session 2026-06-15 — Campaign-creation UI polish: History-tab scroll + parameter tooltips
+
+**Task:** Two follow-ups from playtesting the campaign-creation flow: (1) the Review "History" tab inflated the side panel and had no scrollbar; (2) add hover tooltips / parenthetical notes explaining what each generation size & tuner means (map X,Y dimensions, "turbulent" vs "stable", rough % mountains per setting, what each land-mass type creates, etc.).
+**Model used:** Opus 4.8 (1M) — investigation (traced params→generators, measured terrain empirically), implementation, godot-ai MCP verification.
+**Completed:**
+- `scenes/ui/campaign_creation/screen_review.gd` — `_rich_tab` now sets `fit_content = false` (was true): the History/Brief/Issues RichTextLabels stay the size of the tab area instead of inflating their minimum size to full content height (the "zooms in large"), and `scroll_active` renders a scrollbar on overflow (History content ≈2260px > 741px viewport → scrollbar visible). Also added tooltips to the 4 view-mode buttons (Political/Biome/Elevation/Territory).
+- `scenes/ui/campaign_creation/screen_advanced.gd` — added an optional `tooltip` arg to `_enum_row`/`_slider_row`/`_check_row` (sets `tooltip_text` on the control + appends a "ⓘ" cue to the row label with `mouse_filter = STOP` so hovering the label also works); wired accurate tooltips to all 18 controls across Physical/Cultures/History/Content.
+- `scenes/ui/campaign_creation/screen_quick_start.gd` — per-button dimension tooltips on the 4 map-size buttons (`_SIZE_TOOLTIPS`).
+**Decisions made:**
+- Tooltip numbers are empirically grounded, not guessed. Ran `HeightmapGenerator.run` over 5 seeds × settings (large map) to measure mountains (low ≈ 4%/17%, medium ≈ 5%/20%, high ≈ 8%/31% of land, as mountains/hills) and land fraction by sea level (0.1 = 87% … 0.3 = 51% … 0.6 = 11%), and flood-fill-component-counted the land-mass styles (pangaea concentrates ~92% of land into one mass; archipelago most fragmented at 19 masses; continental ~85%). Map dimensions from `SettingParameters._MAP_DIMENSIONS` × the 24-mile `HeightmapGenerator.HEX_MILES`; history-length years from `SimConstants.tick_years = 25` (short 2,000 / standard 4,000 / deep 6,000 yr); temperament & migration semantics from how `temperament_multiplier`/`migration_multiplier` feed `collapse_base` / migration pressure.
+**Interfaces defined or changed:**
+- `screen_advanced._enum_row` / `_slider_row` / `_check_row` / `_label` each gained a trailing `tooltip: String = ""` parameter (back-compatible; existing callers unaffected).
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None (scene-only changes the headless suite never loads). Verified live via the godot-ai MCP: confirmed 26 tooltip_text values set with correct content across the three screens, ⓘ cues render on every Advanced row (Physical + History tabs screenshotted), and the History scrollbar is visible (`get_v_scroll_bar().visible == true`, max 2260 / page 741).
+**Known issues:**
+- Mountain-frequency couples to the land fraction (the elevation curve shifts the whole distribution against the fixed sea level), so "Low mountains" also yields less land. Documented in the tooltip ("higher settings also push more terrain above sea level") rather than changed.
+**Next session should:**
+- Continue toward setting→runtime materialization (the #1 gap before a generated world is playable).
+
+
+## Session 2026-06-15 — Review-screen bugs (V4 caps, layout blow-off) + map polish (palette, biomes, hex hover tooltip, culture view)
+
+**Task:** From playtesting: fix (A) 51 V4 validation errors "wilderness hex population exceeds cap 2000", (B) the Review right-hand columns blown off-screen; then 5 map enhancements — (1) diversify the too-few/too-similar polity colours, (2) make forest/jungle/dense-forest/swamp biome colours distinct, (3) darken borderlands vs civilized, (4) a per-hex hover tooltip exposing each layer's data, (5) a Culture map view of cultural spread regardless of borders.
+**Model used:** Opus 4.8 (1M) — diagnosis, sim + UI implementation, empirical + live MCP verification.
+**Completed:**
+- **Bug A (V4 caps):** `history_simulator._revert_to_wilderness` retained `pop × keep_fraction` of a collapsing hex's population but never re-capped — a civilized hex (≤12,480) reverting to wilderness kept up to ~6,200, violating the 2,000 wilderness cap. Now `mini(_c.cap_wilderness, …)`. Verified: a turbulent (heavy-collapse) world now validates with **0 V4 / 0 total errors**.
+- **Bug B (layout blow-off):** a custom-parameter world's share token is a long base64 string; `screen_review._refresh` put the whole thing in the seed `Label`, whose ~1,350px width inflated the footer → root container to 1,813px and shoved the right column to x=1,483 (off-screen). Now truncates to 30 chars (full code in the label tooltip) + `clip_text = true`. Verified: right column back at x=778, seed label width clamped.
+- **#1 polity palette:** `history_simulator._build_palette` replaced the fixed-S/V golden-angle sweep with a curated 18-colour maximally-distinct set (after Trubetskoy) + a varied-S/V golden-angle fallback beyond 18. Vividly distinct on the live map.
+- **#2 biome colours** (`political_map_view`): forest = lincoln green, dense forest (woods + `biome_subtype == forest_dense`) = darker, jungle = deep lush green, swamp = muddy blue-green; legend lists all incl. Dense forest.
+- **#3 territory:** borderlands darkened (was `0.62,0.55,0.38` → `0.52,0.42,0.24`) so it reads clearly between civilized & wilderness.
+- **#4 hex hover tooltip:** `political_map_view` now overrides `_get_tooltip(at_position)` → nearest-hex hit-test (`_hex_at` over the cached `_R`/offset layout) → per-mode text: Biome shows the biome; Elevation shows tag + `elevation_raw` (3dp); Territory shows the class; Political & Culture share a rich tooltip — sovereign realm (liege-chain to the top, "held by <vassal>" when applicable), dominant culture, territory, peasant families (+~people), and, if a settlement is on the hex, urban families + "⚑ <name> — Market Class <I-VI>".
+- **#5 Culture map view:** new `Mode.CULTURE`; colours each hex by its dominant culture (parsed from `culture_weights`) using the same distinct palette, deterministic by sorted culture order; "Culture" view-mode button + tooltip added to `screen_review`; culture legend (11 cultures in the test world); shares the political hover tooltip per the ask.
+**Decisions made:**
+- A hex reverting to wilderness sheds population down to the wilderness limit-of-growth cap (the land can't sustain organized civilization once the realm is gone) — matches the "lands emptying back into wilderness" model and keeps V4 invariant.
+- "Highest realm the hex belongs to" = the sovereign at the top of the liege chain (`_sovereign_of`), with the direct owner shown as "held by …" when it differs.
+- Tooltip data needs no new queries: `list_hexes`/`list_settlements` are `SELECT *` so the rows already carry `elevation_raw`, `biome_subtype`, `culture_weights`, `population_band`; `list_polities` supplies the id→name and id→liege_id maps (new `set_polity_meta` on the view, plumbed via `bind_map(..., polities)`).
+**Interfaces defined or changed:**
+- `political_map_view`: new `set_polity_meta(names, lieges)`; `enum Mode` gains `CULTURE`; `_get_tooltip` override. Existing `bind/show_owners/set_mode/set_settlements/legend_entries` unchanged.
+- `screen_review.bind_map(hexes, palette, settlements, polities := [])` — new trailing `polities` arg (back-compatible); `_MODES`/`_MODE_TOOLTIPS` gain Culture (mode 4).
+- `campaign_creation_flow` REVIEW phase now passes `SettingRepository.list_polities(cid)` to `bind_map`.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None new. The sim changes (cap fix + curated palette) are covered by the existing setting suites + validator; ran the full headless suite twice (isolated APPDATA) — **run1 = run2 = 40 ASSERTION FAILED, the documented baseline, net-zero new failures**. Scene-script changes (tooltip, culture view, layout) verified live via the godot-ai MCP: tooltips sampled across all five modes, Culture/Biome/Territory modes screenshotted, Bug A re-validated to 0 errors, Bug B rects re-measured.
+**Known issues:**
+- The truncated seed label hides the full share token (recoverable via its hover tooltip, but not click-to-copy) — a "copy share code" affordance would be a nice follow-up.
+- Couldn't drive the in-game window to the user's 1908px width (it clamps to the 1152 default in-eval), but the Bug B fix is width-independent (the seed label can no longer exceed ~30 chars and clips), so it holds at any window size.
+**Next session should:**
+- Continue toward setting→runtime materialization (the gap before a generated world is playable).
+- Optional: click-to-copy share code; consider exposing the culture palette as a shared constant between the sim (`_build_palette`) and the view (`_DISTINCT`) to avoid the two-file duplication.
+
+
+## Session 2026-06-15 — Follow-ups: shared WorldPalette constant + share-code copy button
+
+**Task:** Two small follow-ups to the map-polish work: (1) a click-to-copy affordance for the now-truncated share code; (2) fold the duplicated distinct-colour palette into one shared constant used by both the sim's polity colours and the Culture map view.
+**Model used:** Opus 4.8 (1M) — implementation + live MCP verification.
+**Completed:**
+- **`engine/shared_types/world_palette.gd` (NEW, `class_name WorldPalette`):** the single source of truth for the maximally-distinct colour ramp (18 curated hues after Trubetskoy, then a varied-S/V golden-angle fallback). `WorldPalette.color_at(i) -> Color` and `WorldPalette.hex_at(i) -> String`.
+- `history_simulator._build_palette` — replaced its local DISTINCT/SAT/VAL + if/else with `WorldPalette.hex_at(i)` (behaviour-identical, so determinism/suite unchanged).
+- `political_map_view` — removed its duplicate `_DISTINCT` + `_distinct_color`; culture colours now come from `WorldPalette.color_at(i)`.
+- `screen_review` — added a "⧉ Copy" footer button next to the (truncated) seed: `DisplayServer.clipboard_set(_share_token)` with brief "✓ Copied" in-button feedback (reverts after 1.2 s). `_share_token` is stored in `_refresh` so the full code is copied even though the label shows a truncation.
+**Decisions made:**
+- A `class_name` static-only RefCounted (not an autoload) is the right home for a shared constant — keeps both layers in sync without proliferating autoloads (CLAUDE.md).
+**Interfaces defined or changed:**
+- `WorldPalette.color_at(i: int) -> Color`, `WorldPalette.hex_at(i: int) -> String` — shared by the sim and the map view.
+- `screen_review`: new "⧉ Copy" button + `_on_copy_seed()` + `_share_token` member.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None. Ran the full headless suite twice (isolated APPDATA): run1 = 40, run2 = 41 — the +1 is the documented pre-existing flaky `is_lingering`/`percent_in_lair` dice test (confirmed by diffing run1↔run2), no palette/WorldPalette/colour failures. The palette refactor is behaviour-identical (same hex values), so no determinism shift. Live MCP verification: copy button set the clipboard to the full 81-char share token + showed "✓ Copied"; the Culture legend's colours resolve through WorldPalette (469990/911eb4/f58231/4363d8 from the distinct set). Confirmed Bug B holds at the user's 1908px window (seed label clamped to width 1, can't inflate the footer).
+**Known issues:**
+- New `class_name` file needs `--headless --import` once (done) before the test runner can preload WorldPalette-dependent scripts.
+**Next session should:**
+- Continue toward setting→runtime materialization.
+
+
+## Session 2026-06-15 — Tooltip text too dark (project-theme fix)
+
+**Task:** The hover tooltips (campaign-creation controls + hex info) had near-black text — unreadable on the dark tooltip panel.
+**Model used:** Opus 4.8 (1M) — diagnosis + theme fix + live MCP verification.
+**Completed:**
+- `assets/ui/theme/acks_arbiter_theme.tres` — added `TooltipLabel/colors/font_color = Color(0.93, 0.88, 0.77)` (light parchment) and a dark `TooltipPanel` stylebox (`SBF_tooltip`: bg `0.14,0.1,0.07,0.97`, parchment border, 5px radius).
+**Decisions made:**
+- Root cause: the project theme (`gui/theme/custom`) defines `Label` font_color = `0.09,0.06,0.03` (dark, for the light parchment panels) but did NOT define `TooltipLabel`. Godot's default tooltip uses theme type `TooltipLabel`, which falls back to `Label` *within the custom theme* before reaching the engine-default light TooltipLabel — so tooltips picked up the dark Label colour. The engine default TooltipLabel is light (0.875); it's the custom theme's Label-fallback that darkened them.
+- Fixed at the project theme (game-wide) rather than per-control: tooltips are popups parented to the viewport, so they resolve `gui/theme/custom`, not the campaign-flow holder theme. This is also correct in scope — every tooltip in the app renders on a dark panel and should be light, so this repairs combat/notebook/etc. tooltips too, not just the new ones.
+**Interfaces defined or changed:**
+- Project theme now styles `TooltipLabel` (light font) + `TooltipPanel` (dark stylebox). Any future dark-on-dark tooltip issues are now centralised here.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None (theme asset only; no code/test impact). Verified live via the godot-ai MCP: the loaded project theme resolves `TooltipLabel` font_color = (0.93,0.88,0.77) + has the TooltipPanel stylebox; rendered a faithful mock using the real `TooltipPanel`/`TooltipLabel` theme types and screenshotted light parchment text on a dark panel.
+**Known issues:**
+- None.
+**Next session should:**
+- Continue toward setting→runtime materialization.

@@ -20,6 +20,10 @@ func enter(runner, context: Dictionary) -> void:
 		func(campaign_id: String):
 			runner.submit_action("campaign_created", {"campaign_id": campaign_id})
 	)
+	_select_node.create_world_requested.connect(
+		func():
+			runner.submit_action("create_world", {})
+	)
 	runner.get_nav_stack().push_node(_select_node, "campaign_select")
 
 
@@ -33,4 +37,6 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 		return "session_load"
 	if action == "campaign_created":
 		return "party_creation"
+	if action == "create_world":
+		return "campaign_creation"
 	return ""

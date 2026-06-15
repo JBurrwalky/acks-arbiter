@@ -51,6 +51,10 @@ func exit() -> void:
 func _build_ui() -> void:
 	_holder = Control.new()
 	_holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Light text on the dark parchment background — a theme on the holder applies to
+	# every Button/OptionButton/CheckBox/Tab in all child screens (they don't
+	# override font_color, so the default dark theme color was unreadable).
+	_holder.theme = _ui_theme()
 	add_child(_holder)
 	# EDITOR: each screen builds its own controls in _build_ui(); see the per-screen
 	# scripts. They are wired to this controller via the signals connected below.
@@ -73,6 +77,25 @@ func _build_ui() -> void:
 	# Screen D: approve → lock + route out; regenerate → new seed back to generate.
 	_review.approved.connect(_on_approved)
 	_review.regenerate_requested.connect(_on_regenerate)
+	_review.watch_again.connect(_on_watch_again)
+
+
+## Light text for the dark background, applied via the holder's theme so every
+## button/option/checkbox/tab in the child screens inherits it.
+func _ui_theme() -> Theme:
+	var t := Theme.new()
+	var light := Color(0.93, 0.88, 0.77)
+	var bright := Color(1.0, 0.96, 0.86)
+	for cls in ["Button", "OptionButton", "CheckBox"]:
+		t.set_color("font_color", cls, light)
+		t.set_color("font_hover_color", cls, bright)
+		t.set_color("font_pressed_color", cls, bright)
+		t.set_color("font_focus_color", cls, bright)
+		t.set_color("font_disabled_color", cls, Color(0.55, 0.51, 0.44))
+	t.set_color("font_selected_color", "TabContainer", bright)
+	t.set_color("font_unselected_color", "TabContainer", Color(0.68, 0.63, 0.54))
+	t.set_color("font_hovered_color", "TabContainer", light)
+	return t
 
 
 # --- flow --------------------------------------------------------------------
@@ -98,6 +121,10 @@ func _show_phase(phase: int) -> void:
 			if _review != null:
 				if _campaign_id != "":
 					_review.populate(CampaignReviewAssembler.assemble(_campaign_id))
+					_review.bind_map(SettingRepository.list_hexes(_campaign_id),
+						SettingRepository.list_replay_palette(_campaign_id),
+						SettingRepository.list_settlements(_campaign_id),
+						SettingRepository.list_polities(_campaign_id))
 				_review.visible = true
 
 
@@ -128,6 +155,14 @@ func _on_approved() -> void:
 ## Screen D "Regenerate world": new seed, same sliders → back through generation.
 func _on_regenerate() -> void:
 	_on_start_requested()
+
+
+## Screen D "Watch the history again": re-run the stored replay (frames persist).
+func _on_watch_again() -> void:
+	if _campaign_id == "":
+		return
+	_show_phase(Phase.GENERATE)
+	_generate.begin_replay(_campaign_id)
 
 
 func _roll_seed() -> int:

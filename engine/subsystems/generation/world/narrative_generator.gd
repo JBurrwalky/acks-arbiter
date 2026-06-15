@@ -93,7 +93,9 @@ func _index_polities(ctx: Dictionary) -> void:
 		if not _polity_name.has(fpid):
 			var root := str(fp.get("toponym_root", "")).strip_edges()
 			if root == "" or root == "<null>" or root == "null":
-				_polity_name[fpid] = "a vanished realm"
+				# No recorded toponym — leave it UNRESOLVED so _name_in falls back to
+				# the event's culture ("a Troll realm") instead of a dead-end label.
+				pass
 			else:
 				_polity_name[fpid] = "the Old %s" % root
 				_named[fpid] = true   # a fallen realm with a real toponym
@@ -185,33 +187,57 @@ func _event_sentence(e: Dictionary) -> String:
 	if type == "migration":
 		var clabel := _culture_label(str(e["cultures"][0]) if e["cultures"].size() > 0 else "")
 		return tmpl % clabel
-	var a := _name_of(e["polities"], 0)
-	if "%s" in tmpl and tmpl.count("%s") >= 2:
-		return tmpl % [a, _name_of(e["polities"], 1)]
+	var a := _name_in(e, 0)
+	if tmpl.count("%s") >= 2:
+		return tmpl % [a, _name_in(e, 1)]
 	return tmpl % a
 
 
-func _name_of(ids: Array, idx: int) -> String:
+## The actor at index `idx` of event `e`, resolved as: its real name (alive realm
+## or fallen "the Old X"); else, when it was annexed without a fallen record, named
+## by its culture so the foe is still identified — "a Nahuatlan realm", not the
+## opaque "a vanished realm".
+func _name_in(e: Dictionary, idx: int) -> String:
+	var ids: Array = e["polities"]
 	if idx >= ids.size():
 		return "a neighbouring realm"
-	return str(_polity_name.get(str(ids[idx]), "a vanished realm"))
+	var pid := str(ids[idx])
+	if _polity_name.has(pid):
+		return str(_polity_name[pid])
+	var cults: Array = e["cultures"]
+	if idx < cults.size() and str(cults[idx]) != "":
+		var label := _culture_label(str(cults[idx]))
+		return "%s %s realm" % [_article(label), label]
+	return "a vanished realm"
 
 
-## An event is "named" (worth surfacing in the global timeline / brief) when its
-## primary actor resolves to a real name. Migration is keyed on culture, which is
-## always labelled, so it always qualifies.
+## "a"/"an" for the following word (vowel-initial → "an").
+func _article(word: String) -> String:
+	return "an" if word.length() > 0 and word.substr(0, 1).to_lower() in ["a", "e", "i", "o", "u"] else "a"
+
+
+## An event is worth surfacing in the global timeline / brief when its primary
+## actor can be identified — by a real name OR (now) by its culture. Migration is
+## culture-keyed, so it always qualifies.
 func _event_is_named(e: Dictionary) -> bool:
 	if str(e["type"]) == "migration":
 		return true
 	var ids: Array = e["polities"]
-	return ids.size() > 0 and _named.has(str(ids[0]))
+	if ids.is_empty():
+		return false
+	if _named.has(str(ids[0])):
+		return true
+	var cults: Array = e["cultures"]
+	return cults.size() > 0 and str(cults[0]) != ""
 
 
 func _realm_block(pol: Dictionary) -> Dictionary:
 	var name := str(_polity_name.get(str(pol.get("id", "")), "this realm"))
 	var title := str(pol.get("title", "realm"))
 	var alignment := str(pol.get("alignment", "Neutral"))
-	var rclass := str(pol.get("ruler_class", "ruler"))
+	# ruler_class is a snake_case id ("fighter", or for beastmen "goblin_chieftain");
+	# humanise underscores for prose so a beastman ruler reads "goblin chieftain".
+	var rclass := str(pol.get("ruler_class", "ruler")).replace("_", " ")
 	var rlevel := int(pol.get("ruler_level", 1))
 	var rquality := str(pol.get("ruler_quality", "average"))
 	var clan := str(pol.get("civ_or_clan_state", "civ"))

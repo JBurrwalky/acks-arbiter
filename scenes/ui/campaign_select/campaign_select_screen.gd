@@ -19,6 +19,10 @@ signal campaign_selected(campaign_id: String)
 ## Routes to party creation flow instead of direct session load.
 signal campaign_created(campaign_id: String)
 
+## Emitted when the player chooses to GENERATE a full simulated world.
+## Routes to the campaign-creation (setting-generation) flow.
+signal create_world_requested
+
 
 const ROW_BG_COLOR := Color(0.94, 0.89, 0.78, 0.42)
 const ROW_BORDER_COLOR := Color(0.44, 0.31, 0.18, 0.88)
@@ -185,6 +189,13 @@ func _build_ui() -> void:
 	new_btn.custom_minimum_size = Vector2(160, 36)
 	new_btn.pressed.connect(_on_new_campaign_pressed)
 	footer.add_child(new_btn)
+
+	# Generate a full simulated world (the setting-generation pipeline).
+	var gen_btn := Button.new()
+	gen_btn.text = "✦ Generate World"
+	gen_btn.custom_minimum_size = Vector2(170, 36)
+	gen_btn.pressed.connect(func(): create_world_requested.emit())
+	footer.add_child(gen_btn)
 
 	_create_dialog_backdrop = ColorRect.new()
 	_create_dialog_backdrop.color = MODAL_BACKDROP_COLOR
