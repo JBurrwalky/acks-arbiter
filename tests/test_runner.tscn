@@ -474,6 +474,7 @@
 [ext_resource type="Script" path="res://tests/test_setting_stage6.gd" id="458_setting_stage6_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage7.gd" id="459_setting_stage7_tests"]
 [ext_resource type="Script" path="res://tests/test_npc_personality.gd" id="460_npc_personality_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage8.gd" id="461_setting_stage8_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1893,6 +1894,9 @@ script = ExtResource("458_setting_stage6_tests")
 
 [node name="SettingStage7Tests" type="Node" parent="."]
 script = ExtResource("459_setting_stage7_tests")
+
+[node name="SettingStage8Tests" type="Node" parent="."]
+script = ExtResource("461_setting_stage8_tests")
 
 [node name="NpcPersonalityTests" type="Node" parent="."]
 script = ExtResource("460_npc_personality_tests")

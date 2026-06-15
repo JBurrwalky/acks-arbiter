@@ -60,13 +60,15 @@ const FORTIFICATION_COLUMNS := ["id", "hex_q", "hex_r", "fort_type",
 	"owner_polity_id", "settlement_id", "road_id", "stronghold_value_gp", "is_hot"]
 const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
 const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
+const NARRATIVE_COLUMNS := ["id", "kind", "subject_id", "body", "is_fallback"]
 
 # Every setting table except setting_parameters, in delete order.
 const _DATA_TABLES := [
 	"setting_hexes", "setting_river_edges", "setting_polities",
 	"setting_fallen_polities", "setting_settlements", "setting_regions",
 	"setting_events", "setting_ruin_seeds", "setting_poi_seeds", "setting_roads",
-	"setting_fortifications", "setting_replay_frames", "setting_replay_palette",
+	"setting_fortifications", "setting_narrative", "setting_replay_frames",
+	"setting_replay_palette",
 ]
 
 
@@ -249,6 +251,12 @@ static func save_replay_palette(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_replay_palette", REPLAY_PALETTE_COLUMNS, rows)
 
 
+## Idempotent upsert: a block can be re-saved in place (e.g. a later LLM pass
+## upgrades a deterministic template). Keyed on (campaign_id, id).
+static func save_narrative(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_narrative", NARRATIVE_COLUMNS, rows, true)
+
+
 # ---------------------------------------------------------------------------
 # Readers (deterministic order; .duplicate()'d so callers own the result)
 # ---------------------------------------------------------------------------
@@ -268,6 +276,10 @@ static func list_polities(campaign_id: String) -> Array:
 
 static func list_fallen_polities(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_fallen_polities", "polity_id ASC")
+
+
+static func list_narrative(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_narrative", "id ASC")
 
 
 static func list_settlements(campaign_id: String) -> Array:

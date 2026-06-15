@@ -554,6 +554,8 @@ extends Node
 @onready var _setting_stage6_tests = $SettingStage6Tests
 # 2026-06-13 — Stage 7 setting-generation infrastructure (Layer 6)
 @onready var _setting_stage7_tests = $SettingStage7Tests
+# 2026-06-14 — Stage 8 setting-generation narrative (Layer 7)
+@onready var _setting_stage8_tests = $SettingStage8Tests
 # 2026-06-14 — NPC personality core layer (twelve-axis sampler + mock + wiring)
 @onready var _npc_personality_tests = $NpcPersonalityTests
 
@@ -1121,6 +1123,8 @@ func run() -> void:
 			_setting_stage6_tests,
 			# 2026-06-13 — Setting generation Stage 7 (Layer 6 infrastructure)
 			_setting_stage7_tests,
+			# 2026-06-14 — Setting generation Stage 8 (Layer 7 narrative)
+			_setting_stage8_tests,
 			# 2026-06-14 — NPC personality core layer
 			_npc_personality_tests]:
 		if suite == null:

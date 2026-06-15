@@ -227,10 +227,14 @@ func _run_infrastructure(ctx: Dictionary) -> bool:
 	return _persist_hexes(ctx)
 
 
-func _run_narrative(_ctx: Dictionary) -> bool:
-	# Stage 8: narrative_generator.gd (prompt assembly behind the provider
-	# wall; deterministic fallback; never blocks — setting-gen §10).
-	return true
+func _run_narrative(ctx: Dictionary) -> bool:
+	# Stage 8: Layer 7 narrative (setting-gen §10). NarrativeGenerator assembles
+	# deterministic template blocks (timeline, brief, per-realm/culture/dungeon/POI)
+	# behind the provider wall — upgraded to LLM prose only if a provider is
+	# configured, never blocking. Persisted as the setting_narrative cache.
+	if not NarrativeGenerator.new().run(ctx):
+		return false
+	return SettingRepository.save_narrative(ctx["campaign_id"], ctx.get("sim_narrative", []))
 
 
 func _run_validation(_ctx: Dictionary) -> bool:

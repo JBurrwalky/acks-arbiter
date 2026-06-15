@@ -34631,3 +34631,35 @@ on-tick dispatch.
 - Decide the culture source for NPC personality once the setting→runtime materialization exists (carry `setting_polities.culture_id` onto runtime `domains`/`settlements`/`realms`), then thread `culture_id` into the generators.
 - Build the deferred personality subsystems: §8 `StrategicDisposition`/`RulerProfile` (ruler-AI handoff), then §5 relationships + §6 knowledge tables at settlement-stocking time.
 - Wire `LLMManager` for the §9.2 cached summary (replace the mock at the `NpcPersonalityGenerator.generate` summary call site).
+
+
+## Session 2026-06-14 (cont.) — Stage 8: Layer 7 LLM narrative (provider wall)
+
+**Task:** Build Stage 8 (setting-gen §10): the narrative layer that EXPLAINS what the generator built, deterministic-template-first behind the LLM provider wall. Report what was missing/half-built in the LLM layer.
+**Model used:** Opus 4.8. Pre-build inventory via an Explore agent (LLM service layer map).
+**Completed:**
+- **Inventory of the LLM layer (the "what's missing" ask):** `LLMManager` autoload is a STUB — `is_configured()` hardcoded false, `request_narration(context) -> ResponseEnvelope` always returns a generic `.fallback()`; no provider abstraction (just an enum), no per-context mock; provider settings wizard explicitly deferred. `ResponseEnvelope` shared type is complete. EventBus `narration_received/failed`/`llm_provider_changed` defined but unemitted. So Stage 8 does NOT depend on LLMManager: NarrativeGenerator assembles deterministic templates itself and calls LLMManager only as an optional upgrade (inert until a provider lands).
+- **migration 159 `setting_narrative`** (id, kind CHECK[timeline/brief/realm/culture/religion/dungeon/poi/quest/rumor/region], subject_id, body, is_fallback CHECK[0,1], PK(campaign_id,id)). Registered in ALL THREE per conventions §83: `SettingRepository._DATA_TABLES`, `CampaignRepository._SCOPE_DIRECT_CAMPAIGN`, `SettingDatasetHasher._table_specs()`.
+- `SettingRepository`: `NARRATIVE_COLUMNS` + `save_narrative` (idempotent upsert) + `list_narrative` (id ASC).
+- **`engine/subsystems/generation/world/narrative_generator.gd`** (`NarrativeGenerator`, RefCounted, NOT autoload): `run(ctx)` builds deterministic blocks — **timeline** (3 epochs by year_before_start: deep≥1500 / middle 300-1500 / near<300; top-N per epoch by significance DESC, year DESC, id ASC; rendered from event `type` + named actors via `_EVENT_TEMPLATES` for the 10 sim event types), **setting brief** (realm/culture counts + foremost realm by tier + current tension), **per-realm** (ruler class/level/quality/alignment/title + the realm's near-epoch event history), **per-culture** (race + dominant sphere → tendency sentence), **per-dungeon** (size + dungeon_type + provenance toponym hook), **per-POI** (poi_type + first rumor seed in NPC voice). Provider wall: `_wrap()` returns the template as `is_fallback=1` unless `LLMManager.is_configured()` returns usable prose. ZERO RNG (pure functions of mechanical data → stable §80 hash).
+- `setting_generator._run_narrative` wired: `NarrativeGenerator.new().run(ctx)` → `SettingRepository.save_narrative`.
+- `tests/test_setting_stage8.gd` (id 461, 4-edit registration): singletons (1 timeline + 1 brief), one block per realm/dungeon/POI + ≥1 culture, all is_fallback=1 + non-empty, timeline has all 3 epoch headers, two-run determinism. 165 checks.
+**Decisions made:**
+- Names in events resolved from BOTH alive realms (Stage-5 name) AND fallen realms ("the Old <Toponym>"); unresolved → generic label so no timeline line is blank.
+- One narrative cache table (kind/subject_id keyed) rather than per-entity description columns — freeform, future-proof, one migration.
+- Provider wall = template-as-default, in-place LLM upgrade. is_fallback marks template (1) vs LLM (0).
+**Interfaces defined or changed:**
+- `SettingRepository.save_narrative(campaign_id, rows) -> bool` / `list_narrative(campaign_id) -> Array`; `NARRATIVE_COLUMNS`.
+- `NarrativeGenerator.run(ctx) -> bool` sets `ctx["sim_narrative"]` = Array of {id, kind, subject_id, body, is_fallback}.
+- Narrative block id scheme: `"<kind>"` (timeline/brief singletons) or `"<kind>:<subject_id>"`.
+**Database changes:**
+- migration 159 `setting_narrative` (auto-applied; migrations are filename-versioned, auto-discovered).
+**Tests added/updated:**
+- `test_setting_stage8.gd` (165 checks). Net-zero new failures (run1=run2=40 baseline). Stage0 90 (+1 from hashing setting_narrative).
+**Known issues (DEFERRED — breadcrumbs in narrative_generator.gd header):**
+- Per-quest + per-rumor narration: blocked on the NPC/quest system (§9.8 deferred) — no quest/rumor rows exist. Add `for q in ctx.get("sim_quests", [])` when seeded.
+- Per-religion tradition: needs culture `religion_hooks` (catalog §3.4), not yet exposed by CultureCatalogLoader.
+- Region-name polish (top-8): LLM-only upgrade of Stage-5 deterministic names; inert without a provider.
+- The real LLM provider (cloud/local) + provider settings wizard + async/progress + EventBus signal emission: a separate design pass (handoff §161). The wall is in place for it to slot into.
+**Next session should:**
+- Stage 9 (Layer 8 validation + lock): the §11.1 mechanical checklist (every hex has required fields, substrate weights sum to 100%, population caps, present-day ACKS-validity handoff) + the post-approval lock. Then Stage 10 (campaign-creation UI).

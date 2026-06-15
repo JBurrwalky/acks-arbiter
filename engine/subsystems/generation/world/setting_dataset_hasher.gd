@@ -69,6 +69,10 @@ static func _table_specs() -> Dictionary:
 			"columns": SettingRepository.FORTIFICATION_COLUMNS,
 			"order_by": "id ASC",
 		},
+		"setting_narrative": {
+			"columns": SettingRepository.NARRATIVE_COLUMNS,
+			"order_by": "id ASC",
+		},
 		"setting_replay_frames": {
 			"columns": SettingRepository.REPLAY_FRAME_COLUMNS,
 			"order_by": "tick ASC",
