@@ -483,7 +483,19 @@ From here the runtime ACKS domain/morale/economic systems take over — includin
 
 **D. Tribute precision** — the family ranges above are quick-construction estimates. The sim always knows actual realm families, so tribute is computed precisely via `tribute_by_realm_families` or the optional formula `18gp × realm_families^0.6` (`acore_axioms_strongholds_and_domains.xml`, lines 299–350) (per Jedidiah, 2026-06-12).
 
-**Extraction variance note (do not edit rules XML):** `revenue_by_realm_type` in `acore-setting-construction-rules.xml` (lines 112–130) shows Principality 6,250 / Duchy 1,250 / County 640 personal-domain families vs. the 7,500 / 1,500 / 780 above. Jedidiah confirmed (2026-06-12) that the RAW PDFs agree with `titles_of_nobility` for both tables; the variance is in that extraction. Use the §12.1A values; do not consume the personal-domain column of `revenue_by_realm_type`. Its **stronghold-value column remains valid and used at handoff**: Empire 720K+ / Kingdom 480K / Principality 240K / Duchy 120K / County 60K / March 45K / Barony 22.5K gp.
+**E. Stronghold value and revenue (corrected 2026-06-13).** `revenue_by_realm_type` (`acore-setting-construction-rules.xml`, lines 112–130) carried a transcription error that has now been corrected in the rules XML. The corrected `rulers_stronghold_value_gp` column is the **stronghold value used at handoff (§12.1)**:
+
+| Title | Stronghold value (gp) | Personal domain (families) |
+|---|---|---|
+| Empire | 720,000+ | 12,500 |
+| Kingdom | 480,000 | 12,500 |
+| Principality | 360,000 | 7,500 |
+| Duchy | 115,000 | 1,500 |
+| County | 70,000 | 780 |
+| March | 45,000 | 320 |
+| Barony | 22,500 | 160 |
+
+The correction also brought the table's personal-domain-families column into agreement with `titles_of_nobility` (§12.1A), so both tables now agree and the earlier "extraction variance / do not consume the personal-domain column" caveat is **retired**. (The previously-transcribed Principality 240K / Duchy 120K / County 60K stronghold values were the error.) The table's monthly-income columns (`domain_income_per_month_gp` / `urban_income_per_month_gp`) are realm-scale aggregates for quick construction; the sim instead computes income **per family** from `domain_revenue` (Land 3–9 + Services 4 + Taxes 2, §7.5.1), which is unchanged. `DomainTierTable.stronghold_value_for_tier()` carries the corrected values.
 
 ---
 

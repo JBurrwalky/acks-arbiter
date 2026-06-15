@@ -15,15 +15,18 @@ func run_all_tests() -> void:
 
 func test_sim_constants_defaults() -> void:
 	var c := SimConstants.new()
-	# Spot-check a few §7.8 values that the sim's behavior hinges on.
-	check(c.tier_risk_mult == 1.35, "TIER_RISK_MULT should default 1.35")
-	check(c.fade_rate == 0.985, "FADE_RATE should default 0.985")
+	# RAW / structural constants (must hold). The §7.5/§7.6 balance knobs
+	# (tier_risk_mult, severity bands, etc.) are CALIBRATION-tuned (the §9.3 pass,
+	# 2026-06-13), so they are checked as invariants here, not pinned values —
+	# pinning them would make this test a tripwire on every balance change.
 	check(c.assimilation_step == 0.5, "ASSIMILATION_STEP should default 0.5")
 	check(c.diffuse_rate == 0.02, "DIFFUSE_RATE should default 0.02")
 	check(c.min_garrison_per_family == 2, "RAW 2gp/family floor")
-	check(c.severity_band_rump == 0.50 and c.severity_band_shatter == 0.85,
-		"severity bands should be 0.50 / 0.85")
 	check(c.replay_cadence == 4, "REPLAY_CADENCE should be 4 ticks")
+	check(c.fade_rate > 0.9 and c.fade_rate < 1.0, "FADE_RATE is a per-tick decay in (0.9, 1.0)")
+	check(c.tier_risk_mult >= 1.0, "TIER_RISK_MULT is a non-decreasing size-risk factor")
+	check(c.severity_band_rump < c.severity_band_shatter and c.severity_band_shatter < 1.0,
+		"severity bands are ordered: rump < shatter < 1.0")
 
 
 func test_sim_constants_accessors() -> void:

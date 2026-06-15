@@ -20,27 +20,24 @@ const KINGDOM := 5
 const EMPIRE := 6
 
 # tier_index → {title, families_lower (overall realm families lower bound),
-# ruler_level (representative), stronghold_value_gp (§12.1 variance note, the
-# valid stronghold-value column)}.
+# ruler_level (representative), stronghold_value_gp}.
 #
-# [NEEDS-OPUS-REVIEW — stronghold_value_gp, flagged 2026-06-12] These values
-# follow gdd-history-simulation.md §12.1 as written (Empire 720K / Kingdom 480K
-# / Principality 240K / Duchy 120K / County 60K / March 45K / Barony 22.5K). A
-# working-tree edit to rules/acore-setting-construction-rules.xml
-# revenue_by_realm_type (NOT made by this session) now shows Principality
-# 360,000 / Duchy 115,000 / County 70,000 instead. Source precedence puts the
-# rules XML above the GDD, but the GDD explicitly transcribed the old figures
-# and called the column "valid and used." stronghold_value_gp is NOT consumed
-# until Stage 4g (the §9.5/§12 handoff), so this is deferred: reconcile against
-# the (possibly newly-canonical) XML column with Jedidiah when 4g lands. The
-# families_lower / ruler_level columns come from titles_of_nobility (a different
-# file) and are unaffected.
+# stronghold_value_gp comes from the CORRECTED `revenue_by_realm_type`
+# (acore-setting-construction-rules.xml:122-128, `rulers_stronghold_value_gp`):
+# Empire 720K / Kingdom 480K / Principality 360K / Duchy 115K / County 70K /
+# March 45K / Barony 22.5K. The earlier GDD figures (Principality 240K / Duchy
+# 120K / County 60K) were a transcription error since corrected in the rules XML
+# (Jedidiah, 2026-06-13); gdd-history-simulation.md §12.1 was rewritten to match.
+# That same correction made `revenue_by_realm_type`'s personal-domain column
+# agree with `titles_of_nobility` (7,500 / 1,500 / 780), so the old "extraction
+# variance" caveat is gone. families_lower / ruler_level come from
+# titles_of_nobility (acore_axioms_strongholds_and_domains.xml:276-284).
 const TIERS := [
 	{"title": "Barony", "families_lower": 160, "ruler_level": 4, "stronghold_value_gp": 22500},
 	{"title": "March", "families_lower": 960, "ruler_level": 6, "stronghold_value_gp": 45000},
-	{"title": "County", "families_lower": 4600, "ruler_level": 8, "stronghold_value_gp": 60000},
-	{"title": "Duchy", "families_lower": 20000, "ruler_level": 9, "stronghold_value_gp": 120000},
-	{"title": "Principality", "families_lower": 87000, "ruler_level": 11, "stronghold_value_gp": 240000},
+	{"title": "County", "families_lower": 4600, "ruler_level": 8, "stronghold_value_gp": 70000},
+	{"title": "Duchy", "families_lower": 20000, "ruler_level": 9, "stronghold_value_gp": 115000},
+	{"title": "Principality", "families_lower": 87000, "ruler_level": 11, "stronghold_value_gp": 360000},
 	{"title": "Kingdom", "families_lower": 364000, "ruler_level": 13, "stronghold_value_gp": 480000},
 	{"title": "Empire", "families_lower": 2000000, "ruler_level": 14, "stronghold_value_gp": 720000},
 ]

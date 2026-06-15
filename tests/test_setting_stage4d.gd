@@ -25,6 +25,7 @@ func run_all_tests() -> void:
 	# Outcome ladder
 	test_crushing_annex_dissolves_defender()
 	test_crushing_vassalize_keeps_defender()
+	test_beastman_crushing_by_victor_alignment()
 	test_pillage_reduces_front_pop_and_books_credit()
 	test_decisive_deep_raid_takes_front_hexes()
 	# Vassalage / secession
@@ -239,6 +240,26 @@ func test_crushing_vassalize_keeps_defender() -> void:
 	check(str(q["liege_id"]) == "p", "vassalized defender's liege should be the attacker")
 	check(int(q["vassalized_by_war"]) == 1, "vassalized_by_war flag should be set")
 	check(q["hexes"].size() == 3, "a vassal keeps its hexes, has %d" % q["hexes"].size())
+
+
+func test_beastman_crushing_by_victor_alignment() -> void:
+	# Jedidiah's ruling: a Lawful/Neutral victor DESTROYS a beaten beastman
+	# clanhold (annex) regardless of svg; only a Chaotic victor vassalizes it.
+	# svg 0.2 would normally vassalize any defender.
+	var sim := _two_realm_sim(0.2)
+	var ql: Dictionary = sim._polities["q"]
+	ql["is_beastman"] = true
+	sim._polities["p"]["alignment"] = "lawful"
+	sim._resolve_crushing(sim._polities["p"], ql, [Vector2i(1, 0)], 5)
+	check(not bool(ql["alive"]), "a lawful victor destroys (annexes) a beastman clanhold despite low svg")
+
+	var sim2 := _two_realm_sim(0.2)
+	var qc: Dictionary = sim2._polities["q"]
+	qc["is_beastman"] = true
+	sim2._polities["p"]["alignment"] = "chaotic"
+	sim2._resolve_crushing(sim2._polities["p"], qc, [Vector2i(1, 0)], 5)
+	check(bool(qc["alive"]) and str(qc["liege_id"]) == "p",
+		"a chaotic victor keeps a beastman clanhold as a vassal")
 
 
 func test_pillage_reduces_front_pop_and_books_credit() -> void:

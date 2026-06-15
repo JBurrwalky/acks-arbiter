@@ -1,0 +1,416 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Calpolli Cuauhtli",
+      "Calpolli Ocelotl",
+      "Ch'ib'al Kan",
+      "Calpolli Coatl",
+      "Calpolli Xochitl",
+      "Ch'ib'al Balam",
+      "Calpolli Itztli",
+      "Calpolli Mazatl",
+      "Calpolli Acatl",
+      "Ch'ib'al K'uk'",
+      "Calpolli Chimalli",
+      "Calpolli Xiuhtli",
+      "Calli Cuauhtli",
+      "Calli Ocelotl",
+      "Calli Itzmin",
+      "Calli Aj-Balam",
+      "Calli Xiuhtli",
+      "Calli Tochtli",
+      "Calli Aj-K'uk'",
+      "Calli Cipactli",
+      "Calli Yaotl",
+      "Calli Coyotl",
+      "Calli Tecolotl",
+      "Calli Citlalpopoca"
+    ],
+    "epithet": [
+      "Cuauhtli",
+      "Balam",
+      "Plumed-Serpent-born",
+      "the Sun-blessed",
+      "Obsidian-heart",
+      "the Toltec",
+      "Jade-handed",
+      "of Tollan",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Acopanahuac",
+      "Cacahuatlanepantla",
+      "Centlapan",
+      "Chalchihuitlapano",
+      "Chichilticatezcatl",
+      "Cihuatlampatlauhco",
+      "Cozticatoyatl",
+      "Cualnezquichakan",
+      "Huecacuahuitl",
+      "Huecapancuauhtla",
+      "Huehuehueyatl",
+      "Hueihueyotli",
+      "Huitztlampicxiotli",
+      "Ihticixtlahuatl",
+      "Itztlohpitzactli",
+      "Iztacohtli",
+      "Iztacteocuitlatlpitzaua",
+      "Iztatlquech",
+      "Mictlampateotlal",
+      "Panitepetl",
+      "Quetzallitepetlatl",
+      "Teocuitlatltepetontli",
+      "Teoyotz'onot",
+      "Tepitonyacatl",
+      "Tepoztlizoquiatl",
+      "Tlananahuac",
+      "Tlauhcopanepantla",
+      "Tlilticapan",
+      "Xihuitlapano",
+      "Yancuicatezcatl"
+    ],
+    "military_unit": [
+      "the Eagle Knights",
+      "the Jaguar Knights",
+      "the Serpent Guard"
+    ],
+    "personal_female": [
+      "Xochitl",
+      "Citlali",
+      "Ix-Chan",
+      "Xiuhtonal",
+      "Malinalli",
+      "Quetzalli",
+      "Ix-K'uk'",
+      "Necahual",
+      "Cozamalotl",
+      "Iztacxochitl",
+      "Tepin",
+      "Papalotl",
+      "Ix-Nik",
+      "Chalchiuh",
+      "Nenetl",
+      "Teyacapan",
+      "Cuicatl",
+      "Xochinic",
+      "Tonalxochitl",
+      "Citlalmina",
+      "Tepiltzin",
+      "Marakatl",
+      "Marakatltzin",
+      "Numenatl",
+      "Numenatltzin",
+      "Rialtzin",
+      "Rialtzintzin",
+      "Tolratl",
+      "Tolratltzin"
+    ],
+    "personal_male": [
+      "Cuauhtli",
+      "Ocelotl",
+      "Itzmin",
+      "Aj-Balam",
+      "Xiuhtli",
+      "Tochtli",
+      "Aj-K'uk'",
+      "Cipactli",
+      "Yaotl",
+      "Coyotl",
+      "Tecolotl",
+      "Citlalpopoca",
+      "Acatl",
+      "Aj-Took'",
+      "Miztli",
+      "Chimalli",
+      "Nahui-Ollin",
+      "Quauhnochtli",
+      "Tepiltzin",
+      "Itztli",
+      "Marakatl",
+      "Marakatltzin",
+      "Numenatl",
+      "Numenatltzin",
+      "Rialtzin",
+      "Rialtzintzin",
+      "Tolratl",
+      "Tolratltzin"
+    ],
+    "settlement": [
+      "Tlan",
+      "Huei-Tepec",
+      "Noh-Witz",
+      "Chichil-apan",
+      "Tolratl-teocalli",
+      "Tz'onot-co",
+      "Acopacalco",
+      "Cacahuatlaltepetl",
+      "Centlanahuac",
+      "Chalchihuitlapano",
+      "Chichilticalpolli",
+      "Cihuatlampahueialtepetl",
+      "Coztictecpancalli",
+      "Cualnezquiteocalli",
+      "Huecatepetontli",
+      "Huecapantianquiztli",
+      "Huehuexacalli",
+      "Hueyaocalli",
+      "Huitztlampacalco",
+      "Ihticaltepetl",
+      "Itztlanahuac",
+      "Iztacapano",
+      "Iztacteocuitlatlcalpolli",
+      "Iztatlhueialtepetl",
+      "Mictlampatecpancalli",
+      "Paniteocalli",
+      "Quetzallitepetontli",
+      "Teocuitlatltianquiztli",
+      "Teoyoxacalli",
+      "Tepitonyaocalli",
+      "Tepoztlacalco",
+      "Tlanaltepetl",
+      "Tlauhcopanahuac",
+      "Tlilticapano",
+      "Xihuitlcalpolli",
+      "Yancuichueialtepetl",
+      "Acopatecpancalli",
+      "Cacahuatlteocalli",
+      "Centlitepetontli",
+      "Chalchihuitltianquiztli"
+    ],
+    "ship": [
+      "the Jade Canoe",
+      "the Plumed Serpent",
+      "the Quetzal of Tollan"
+    ],
+    "tavern": [
+      "the Cacao House",
+      "the Flower-Song Court",
+      "The Chichiltic Cacahuatl",
+      "The Coztic Centli",
+      "The Cualnezqui Chalchihuitl",
+      "The Hueca Itztli",
+      "The Huecapan Iztacteocuitlatl",
+      "The Huehue Iztatl",
+      "The Huei Quetzalli",
+      "The Iztac Teocuitlatl",
+      "The Teoyo Tepoztli",
+      "The Tepiton Xihuitl"
+    ]
+  },
+  "culture_id": "tlanec",
+  "family": [
+    "mesoamerican"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_tlanec.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "tlanec",
+  "lexicon": {
+    "adjectives": {
+      "black": "tliltic",
+      "fair": "cualnezqui",
+      "far": "hueca",
+      "golden": "coztic",
+      "great": "huei",
+      "high": "huecapan",
+      "iron": "tepoztli",
+      "little": "tepiton",
+      "new": "yancuic",
+      "old": "huehue",
+      "red": "chichiltic",
+      "sacred": "teoyo",
+      "white": "iztac"
+    },
+    "directional": {
+      "east": "tlauhcopa",
+      "inner": "ihtic",
+      "lower": "tlani",
+      "north": "mictlampa",
+      "outer": "pani",
+      "south": "huitztlampa",
+      "upper": "acopa",
+      "west": "cihuatlampa"
+    },
+    "feature_words": {
+      "bay": "atlauhco",
+      "cape": "yacatl",
+      "cenote": "tz'onot",
+      "coast": "anahuac",
+      "ford": "apano",
+      "forest": "cuauhtla",
+      "hill": "tepetontli",
+      "isle": "anepantla",
+      "lake": "atezcatl",
+      "marsh": "zoquiatl",
+      "mountain": "tepetl",
+      "narrows": "pitzaua",
+      "neck": "quech",
+      "pass": "ohpitzactli",
+      "plain": "ixtlahuatl",
+      "ridge": "tepetlatl",
+      "river": "atoyatl",
+      "road": "ohtli",
+      "savanna": "chakan",
+      "sea": "hueyatl",
+      "stream": "apan",
+      "track": "icxiotli",
+      "waste": "teotlal",
+      "way": "hueyotli",
+      "wood": "cuahuitl"
+    },
+    "resources": {
+      "cacao": "cacahuatl",
+      "feather": "quetzalli",
+      "gold": "teocuitlatl",
+      "jade": "chalchihuitl",
+      "maize": "centli",
+      "metal": "tepoztli",
+      "obsidian": "itztli",
+      "salt": "iztatl",
+      "silver": "iztacteocuitlatl",
+      "turquoise": "xihuitl"
+    },
+    "settlement_words": {
+      "citadel": "tecpancalli",
+      "city": "hueialtepetl",
+      "fort": "yaocalli",
+      "hamlet": "xacalli",
+      "market": "tianquiztli",
+      "port": "acalco",
+      "temple_town": "teocalli",
+      "town": "altepetl",
+      "village": "calpolli"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|feature](stem) + place-suffix: Huei-tepec (great-mountain), Cuauh-tlan (eagle-place); Maya overlay Chak-witz (red-pyramid).",
+    "gendered_endings": {
+      "female": [
+        "tzin"
+      ],
+      "male": [
+        "tzin"
+      ]
+    },
+    "patronymic_form": "the calpolli (ward) or ch'ib'al (Maya lineage); calendar-day names; a deed/war-name; nobles trace the tecuhtli line or a Maya ajaw dynasty.",
+    "toponymic_suffixes": [
+      "tlan / -titlan",
+      "tepec",
+      "co",
+      "witz",
+      "ha'",
+      "Huei-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "abandoned teocalli, vine-choked pyramids and the ruins of old Tollans: 'the lost Teocalli of [name]', 'the Sunken Tlan of [tlatoani]'",
+    "military_units": "the warrior-societies: the [order] knights: 'the Eagle Knights (Cuauhtli)', 'the Jaguar Knights (Ocelotl)', 'the Serpent Guard'",
+    "ships": "trade-canoes and the great seagoing canoe: 'the Jade Canoe', 'the Plumed Serpent', 'the Quetzal of Tollan'",
+    "taverns": "the octli (pulque) and cacao house: 'the [Adjective] [Noun]': 'the Cacao House', 'the Flower-Song Court'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Tlanec uses the Nahuatl divine-names primarily, with the Maya names as the older substrate register (court-Nahua / folk-Maya) - the same shared pantheon under two name-sets, never real Meso gods. The Plumed-Serpent (the feathered serpent) is the dynastic KINGSHIP-symbol and Toltec legitimacy, NOT a god. Tlanec seeds/shifts Lawful, Neutral, or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment).",
+    "clergy_ladder": {
+      "1": "Tlamacazton (novice)",
+      "3": "Tlamacazqui / Ah-k'in (priest)",
+      "5": "Teopixqui (god-guardian)",
+      "7": "Tlenamacac (fire-offering priest)",
+      "9": "Hueyi Teopixqui (great priest)"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Marakatl the Flayer; when Chaotic - Tulrius -> Tolratl the Cold-Sun, Aeternus -> Aiternatl the Tyrant-Sun.",
+    "holy_symbol_motifs": {
+      "Marakatl": "an obsidian knife over a blood-eagle",
+      "Tolratl": "a sun-disc above the calendar-round",
+      "the Plumed Serpent": "a feathered serpent coiled about the throne (the Toltec kingship-sign, not a god)"
+    },
+    "religious_orders_pattern": "the Teocalli (Nahua) or K'uh-nah (Maya) atop the pyramid of [power]: 'the Teocalli of Tolratl', 'the K'uh-nah of Tulax'.",
+    "saints_pattern": "the Plumed-Serpent dynasts, deified rulers and fallen warriors, honored at the teocalli and the ancestral tomb.",
+    "sample_deity_renames": {
+      "Maraxus": "Marakatl / Maya Marakab (the war-fire; Chaotic power)",
+      "Numeno": "Numenatl / Maya Numench (sky-wisdom; Lawful power)",
+      "Realta": "Rialtzin / Maya Ix Rialtaj (the mother; Neutral-honored)",
+      "Tulrius": "Tolratl / Maya Tulax (sun and law; Lawful power)"
+    },
+    "the_one": "Aiternatl (< Aeternus; Maya substrate: Aj Ternaj) - the One; revered as supreme Giver-of-Life when Lawful, set aside when Neutral, reviled as the tyrant-sun when Chaotic",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (Marakatl, Wakitl, Lusankoatl), demonize the Lawful powers and the One",
+      "Lawful": "revere the One (Aiternatl) and the Lawful powers (Tolratl, Orlantzin, Numenatl, Gaiantli), demonize the Chaotic",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the achtontli (ancestral dead), the day-lords and local spirits"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Toltec-style Maya-Nahua fusion, ascending. The Nahuatl tlatoani ladder over a Maya substrate, so lords bear blended styles: Nakom (Maya war-captain) march, Ajaw (Maya lord) county, and the divine king is the K'uhul Tlatoani (holy-speaker - Maya k'uhul + Nahua tlatoani) at principality. Tlatoani (city-king) duchy; Hueyi Tlatoani (great speaker) kingdom; Cem-Anahuac Tlatoani (ruler of all) empire; Tecuhtli (lord) barony. The Plumed-Serpent throne (the Toltec legacy) legitimizes the line. (Rank titles are the real Nahuatl/Maya register, allowed.)",
+    "female_forms": {
+      "Ajaw": "Ix-Ajaw",
+      "Cem-Anahuac Tlatoani": "Cem-Anahuac Cihuatlatoani",
+      "Hueyi Tlatoani": "Hueyi Cihuatlatoani",
+      "K'uhul Tlatoani": "Ix-K'uhul Cihuatlatoani",
+      "Nakom": "Ix-Nakom",
+      "Tecuhtli": "Cihuatecuhtli",
+      "Tlatoani": "Cihuatlatoani"
+    },
+    "government": "feudal (a Toltec-style fusion: the Nahuatl tlatoani ladder over a Maya substrate; the Plumed-Serpent throne legitimizes the dynasty)",
+    "heir": "Tlatocapilli (the ruling-prince, heir-noble)",
+    "honorifics": {
+      "lady": "Cihuapilli / Ix-Ajaw",
+      "lord": "Tecuhtli / Ajaw",
+      "warrior": "Yaoquizqui / Holkan",
+      "your_grace": "Tlatoani",
+      "your_majesty": "K'uhul Tlatoani"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Tecuhyotl",
+        "ruler": "Tecuhtli"
+      },
+      "county": {
+        "domain": "Tlahtohcayotl",
+        "ruler": "Ajaw"
+      },
+      "duchy": {
+        "domain": "Altepetl",
+        "ruler": "Tlatoani"
+      },
+      "empire": {
+        "domain": "Cem-Anahuac",
+        "ruler": "Cem-Anahuac Tlatoani"
+      },
+      "kingdom": {
+        "domain": "Hueyi Tlahtohcayotl",
+        "ruler": "Hueyi Tlatoani"
+      },
+      "march": {
+        "domain": "Yaotlalli",
+        "ruler": "Nakom"
+      },
+      "principality": {
+        "domain": "Hueyaltepetl",
+        "ruler": "K'uhul Tlatoani"
+      }
+    },
+    "vassalage": {
+      "fealty": "Tenahuatil (oath-bond)",
+      "liege": "Tlatoani",
+      "tribute": "Tlacalaquilli / Patan",
+      "vassal": "Tequitqui / Yajaw (Maya)"
+    }
+  }
+}

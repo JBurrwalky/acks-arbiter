@@ -1,0 +1,409 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Kwahada",
+      "Penateka",
+      "Nokoni",
+      "Yamparika",
+      "Kotsoteka",
+      "Tenawa",
+      "Chiricahua",
+      "Mescalero",
+      "Jicarilla",
+      "Lipan",
+      "Hotametaneo",
+      "Himoweyuhkis",
+      "Kahni Tabananica",
+      "Kahni Mowway",
+      "Kahni Pahayuko",
+      "Kahni Esikwita",
+      "Kahni Delshay",
+      "Kahni Eskiminzin",
+      "Kahni Chacon",
+      "Kahni Santana"
+    ],
+    "epithet": [
+      "the War Chief",
+      "Buffalo-Hump",
+      "Iron-Shirt",
+      "the Far-Rider",
+      "Sound-of-the-Sun",
+      "the Brave",
+      "Eagle-Feather",
+      "Wolf-Heart",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Ekachanku",
+      "Ekapihunubi",
+      "Etuhuupi",
+      "Himihuupibi",
+      "Kuhmakuyapa",
+      "Kuhtsumakosha",
+      "Kutsunaki",
+      "Kwitotapi",
+      "Manakupaa-mia",
+      "Naboopaa-naki",
+      "Ohapupaa-sokobi",
+      "Onabipaahubi",
+      "Pahmupaasokobi",
+      "Piapawi",
+      "Puhapia-paa",
+      "Puhihwipia-paa-naki",
+      "Puukupoyo",
+      "Sariisonipi",
+      "Taabe-miarutahu",
+      "Taabe-yaatoya",
+      "Tosatoyabi",
+      "Tsaatutoyahuvi",
+      "Tubitsitoyanaki",
+      "Tuekatoyatuka",
+      "Tuhutukasoni",
+      "Tukwapuchanku",
+      "Tunapuhunubi",
+      "Waihuupi",
+      "Wuyahuupibi",
+      "Yuaneekuyapa"
+    ],
+    "military_unit": [
+      "the Dog-Soldiers",
+      "the Kit-Fox society",
+      "the Elk-Soldiers"
+    ],
+    "personal_female": [
+      "Morning Star",
+      "Yellow Woman",
+      "Walking Woman",
+      "Sweet Grass",
+      "Owl Woman",
+      "Corn Woman",
+      "Quiet Water",
+      "Singing Bird",
+      "Prairie Flower",
+      "Spotted Fawn",
+      "Rain Cloud",
+      "Red Blanket",
+      "Topay",
+      "Wuni",
+      "Bird Woman",
+      "Willow Woman",
+      "Star Woman",
+      "Pia Mupitsi",
+      "Tabe Pete",
+      "Pekwi",
+      "Kayanta",
+      "Kayantatsi",
+      "Maraksa",
+      "Maraksatsi",
+      "Reawina",
+      "Reawinatsi",
+      "Tamawi",
+      "Tamawitsi"
+    ],
+    "personal_male": [
+      "Ten Bears",
+      "Buffalo Hump",
+      "Iron Shirt",
+      "Lone Wolf",
+      "Standing Elk",
+      "White Horse",
+      "Yellow Wolf",
+      "Big Tree",
+      "Spotted Eagle",
+      "Black Horse",
+      "Wild Horse",
+      "Tabananica",
+      "Mowway",
+      "Pahayuko",
+      "Esikwita",
+      "Nantan Lupan",
+      "Delshay",
+      "Eskiminzin",
+      "Chacon",
+      "Santana",
+      "Kayanta",
+      "Kayantakwa",
+      "Maraksa",
+      "Maraksakwa",
+      "Reawina",
+      "Reawinakwa",
+      "Tamawi",
+      "Tamawikwa"
+    ],
+    "settlement": [
+      "Numina",
+      "Comancheria",
+      "the Llano",
+      "Medicine Bluff",
+      "Antelope Hills",
+      "Big Spring",
+      "Ekakahni-tu",
+      "Ekapinarumu",
+      "Etunuki",
+      "Himipaa-kahni",
+      "Kuhmapaa-mia",
+      "Kuhtsupia-nuki",
+      "Kutsupia-paa-naki",
+      "Kwitatekwuni-kahni",
+      "Manakutoyabi",
+      "Nabootuhuya-kahni",
+      "Ohaputunawa",
+      "Onabiwai-nuki",
+      "Pahmukahni-tu",
+      "Pianarumu",
+      "Puhanuki",
+      "Puhihwipaa-kahni",
+      "Puukupaa-mia",
+      "Sariipia-nuki",
+      "Taabe-miarupia-paa-naki",
+      "Taabe-yaatekwuni-kahni",
+      "Tosatoyabi",
+      "Tsaatutuhuya-kahni",
+      "Tubitsitunawa",
+      "Tuekawai-nuki",
+      "Tuhukahni-tu",
+      "Tukwapunarumu",
+      "Tunapunuki",
+      "Waipaa-kahni",
+      "Wuyapaa-mia",
+      "Yuaneepia-nuki",
+      "Ekapia-paa-naki",
+      "Ekapitekwuni-kahni",
+      "Etutoyabi",
+      "Himituhuya-kahni"
+    ],
+    "ship": [
+      "Storm-Runner",
+      "the Red Lance",
+      "Cloud-Eater"
+    ],
+    "tavern": [
+      "the Great Council-Lodge",
+      "the Red Tipi",
+      "The Eka Ekapi",
+      "The Himi Etu",
+      "The Kuhtsu Kutsu",
+      "The Manaku Onabi",
+      "The Ohapu Pahmu",
+      "The Pia Puhihwi",
+      "The Puha Puuku",
+      "The Puhihwi Sarii",
+      "The Tosa Tunapu",
+      "The Tsaatu Wuya"
+    ]
+  },
+  "culture_id": "numinan",
+  "family": [
+    "north_american"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_numinan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "numinan",
+  "lexicon": {
+    "adjectives": {
+      "black": "tuhu",
+      "fair": "tsaatu",
+      "far": "manaku",
+      "golden": "ohapu",
+      "great": "pia",
+      "high": "wai",
+      "iron": "puhihwi",
+      "little": "tueka",
+      "new": "himi",
+      "old": "kuhtsu",
+      "red": "eka",
+      "sacred": "puha",
+      "white": "tosa"
+    },
+    "directional": {
+      "east": "taabe-miaru (sunrise)",
+      "inner": "naboo",
+      "lower": "tubitsi",
+      "north": "kuhma",
+      "outer": "kwita",
+      "south": "yuanee",
+      "upper": "tukwapu",
+      "west": "taabe-yaa (sunset)"
+    },
+    "feature_words": {
+      "bay": "paa-naki",
+      "cape": "naki",
+      "coast": "pia-paa-naki",
+      "ford": "paa-mia",
+      "forest": "huupibi",
+      "hill": "toyabi",
+      "isle": "paa-sokobi",
+      "lake": "pawi",
+      "marsh": "paasokobi",
+      "mountain": "toya",
+      "narrows": "kuyapa",
+      "neck": "tahu",
+      "pass": "toyahuvi",
+      "plain": "sonipi",
+      "ridge": "toyanaki",
+      "river": "hunubi",
+      "road": "chanku",
+      "scrub": "tukasoni",
+      "sea": "pia-paa",
+      "stream": "paahubi",
+      "track": "otapi",
+      "vale": "toyatuka",
+      "waste": "makosha",
+      "way": "poyo",
+      "wood": "huupi"
+    },
+    "resources": {
+      "bison": "kutsu",
+      "bow": "etu",
+      "drymeat": "tunapu",
+      "feather": "wuya",
+      "hide": "sarii",
+      "horse": "puuku",
+      "metal": "puhihwi",
+      "ochre": "ekapi",
+      "salt": "onabi",
+      "tobacco": "pahmu"
+    },
+    "settlement_words": {
+      "citadel": "tekwuni-kahni",
+      "city": "wai-nuki",
+      "fort": "tuhuya-kahni",
+      "hamlet": "kahni-tu",
+      "market": "narumu",
+      "port": "paa-kahni",
+      "temple_town": "tunawa",
+      "town": "pia-nuki",
+      "village": "nuki"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|animal](stem) + feature: Eka-toya (red-mountain), Kutsu-sonipi (bison-grassland); the band named for its food or range; deed-names rendered descriptively (Ten Bears, Iron Shirt).",
+    "gendered_endings": {
+      "female": [
+        "tsi"
+      ],
+      "male": [
+        "kwa"
+      ]
+    },
+    "patronymic_form": "the band/division name (Comanche, e.g. Kwahada, Penateka); a child-name replaced at coming-of-age by an earned deed- or vision-name; descriptive epithets.",
+    "toponymic_suffixes": [
+      "toya-",
+      "paa-",
+      "soni-",
+      "nuki",
+      "Eka-/Tosa-",
+      "kahni"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "old burial-scaffolds, abandoned war-camps and spirit-haunted buttes: 'the Medicine-Cairn of [chief]', 'the Ghost-Butte of [name]'",
+    "military_units": "the warrior-societies: 'the Dog-Soldiers (Hotametaneo)', 'the Kit-Fox society', 'the Elk-Soldiers'",
+    "ships": "landlocked riders name war-lances and great horses, not ships: 'Storm-Runner', 'the Red Lance', 'Cloud-Eater' (a famed horse)",
+    "taverns": "camps, not taverns: the council-lodge / the [adjective] tipi: 'the Great Council-Lodge', 'the Red Tipi'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon in the Plains register (family_north_american.json theonym_sets.plains), never real Plains gods. Shared pantheon, Plains names. Numinan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met through the vision-quest (puha) and the open sky; the sacred bluff or medicine-cairn is the altar - there are few built temples.",
+    "clergy_ladder": {
+      "1": "Puhakatu-tua (medicine-novice)",
+      "3": "Puhakatu (medicine-man)",
+      "5": "Pia-puhakatu (great medicine-man)",
+      "7": "Numunu-puhakatu (the band's high seer)",
+      "9": "Naika-puhakatu (the council's great seer)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Torawi the Cold-Sun; Orlandus -> Olanta the Chain; Aeternus -> Ateruna the Sky-Tyrant.",
+    "holy_symbol_motifs": {
+      "Maraksa": "a red war-lance beneath a thunder-cloud",
+      "Reawina": "a life-giving rain over the green plain",
+      "Tamawi": "the forked storm over the open grass"
+    },
+    "religious_orders_pattern": "few built temples - the medicine-cairn or vision-bluff of [power] on a high place: 'the Medicine-Bluff of Maraksa'.",
+    "saints_pattern": "the great chiefs and vision-seers who became sky- and animal-spirits; honored at the burial-scaffold and the medicine-cairn.",
+    "sample_deity_renames": {
+      "Dementus": "Tamawi (the storm-thunder; Chaotic power)",
+      "Gaiandus": "Kayanta (the enduring earth; Lawful power)",
+      "Maraxus": "Maraksa (the war-fire, the raider; Chaotic power)",
+      "Realta": "Reawina (the mother, the life-giver; Neutral-honored)"
+    },
+    "the_one": "Ateruna (< Aeternus; the Great-Above - acknowledged as the distant maker when Neutral, reviled as the cold sky-tyrant when Chaotic)",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (Maraksa the war-fire, Tamawi the storm, Lusanta the greed-serpent), demonize the Lawful powers and the One (Ateruna)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the animal-spirits and the medicine (puha) of place"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Plains clanhold, ascending. Nantan (Apache, band headman) barony; Tekwuniwap (Comanche war chief) march; Paraibo (Comanche band peace-chief) county; Akicita-paraibo (warrior-society headman) duchy; Pia-Paraibo (great chief over several bands) principality; Tabe-Naika (head-chief of the confederation's council) kingdom; Pia-Tabe-Naika (grand head-chief) empire. The chiefs' council and the warrior-societies check the chiefs; a nomad confederation rarely holds past the head-chief. (Rank titles draw on the real Plains register, allowed.)",
+    "female_forms": {
+      "Akicita-paraibo": "Wa'ipu-akicita",
+      "Nantan": "Nantan-wa'ipu",
+      "Paraibo": "Wa'ipu-paraibo",
+      "Pia-Paraibo": "Pia-wa'ipu",
+      "Pia-Tabe-Naika": "Pia-wa'ipu-naika",
+      "Tabe-Naika": "Wa'ipu-naika",
+      "Tekwuniwap": "Wa'ipu-tekwuni"
+    },
+    "government": "clanhold (a confederation of bands led by peace-chiefs and war chiefs; the warrior-societies and the chiefs' council raise the head-chief; the camp moves with the herds)",
+    "heir": "Paraibo-tua (the chief's son)",
+    "honorifics": {
+      "champion": "Tuibitsi-puha (honored brave)",
+      "elder": "Kuhtsu-numu (elder)",
+      "lady": "Wa'ipu (lady)",
+      "lord": "Paraibo",
+      "your_grace": "Pia-Paraibo"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Nantan-nuki",
+        "ruler": "Nantan"
+      },
+      "county": {
+        "domain": "Numunu",
+        "ruler": "Paraibo"
+      },
+      "duchy": {
+        "domain": "Akicita-numunu",
+        "ruler": "Akicita-paraibo"
+      },
+      "empire": {
+        "domain": "Numinakwahip",
+        "ruler": "Pia-Tabe-Naika"
+      },
+      "kingdom": {
+        "domain": "Numina-numunu",
+        "ruler": "Tabe-Naika"
+      },
+      "march": {
+        "domain": "Tekwuni-sokobi",
+        "ruler": "Tekwuniwap"
+      },
+      "principality": {
+        "domain": "Pia-numunu",
+        "ruler": "Pia-Paraibo"
+      }
+    },
+    "vassalage": {
+      "fealty": "Puha-tekwa (the sworn word)",
+      "liege": "Pia-Paraibo",
+      "tribute": "Naraboo (the gift-due)",
+      "vassal": "Tuibitsi (sworn brave)"
+    }
+  }
+}

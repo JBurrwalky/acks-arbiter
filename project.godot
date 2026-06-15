@@ -8,6 +8,10 @@
 
 config_version=5
 
+[acks]
+
+rendering/dungeon_asset_mode="asset_kit"
+
 [animation]
 
 compatibility/default_parent_skeleton_in_mesh_instance_3d=true

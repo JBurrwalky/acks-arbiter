@@ -1,0 +1,301 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Old Serpent clan",
+      "the Cold Coil clan",
+      "the Marsh-deep tribe",
+      "the Scale-lord clan",
+      "the Swamp-king tribe",
+      "the Sunken-temple clan",
+      "the Cold-blood horde",
+      "the Many-scale tribe",
+      "Atsazabitsazza",
+      "Dazzaborisk",
+      "Esiskgayssa",
+      "Gibazzaharisk",
+      "Khashazamezza",
+      "Laylazamidbisk",
+      "Mazzatsurisk",
+      "Milkazya'zza",
+      "Qariskbitsazza",
+      "Qatissaborisk",
+      "Rabazagayssa",
+      "Shenssaharisk",
+      "Tsipazamezza",
+      "Atsazamidbisk",
+      "Dazzatsurisk",
+      "Esiskya'zza"
+    ],
+    "epithet": [
+      "the Cold-blooded",
+      "the Scale-lord",
+      "the Marsh-king",
+      "the Old-one",
+      "the Sunken",
+      "the Coil",
+      "the Patient",
+      "the Many-scaled",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsazabitsazza",
+      "Dazzaborisk",
+      "Esiskgayssa",
+      "Gibazzaharisk",
+      "Khashazamezza",
+      "Laylazamidbisk",
+      "Mazzatsurisk",
+      "Milkazya'zza",
+      "Qariskbitsazza",
+      "Qatissaborisk",
+      "Rabazagayssa",
+      "Shenssaharisk",
+      "Tsipazamezza",
+      "Atsazamidbisk",
+      "Dazzatsurisk",
+      "Esiskya'zza",
+      "Gibazzabitsazza",
+      "Khashazaborisk",
+      "Laylazagayssa",
+      "Mazzaharisk",
+      "Milkazamezza",
+      "Qariskmidbisk",
+      "Qatissatsurisk",
+      "Rabazya'zza",
+      "Shenssabitsazza",
+      "Tsipazaborisk",
+      "Atsazagayssa",
+      "Dazzaharisk",
+      "Esiskmezza",
+      "Gibazzamidbisk"
+    ],
+    "military_unit": [
+      "the Old Serpent",
+      "the Cold Coils"
+    ],
+    "personal_female": [
+      "Dazzia",
+      "Shenssia",
+      "Rozzia",
+      "Esiska",
+      "Gibaza",
+      "Khashaza",
+      "Boriska",
+      "Milkaza",
+      "Ruazzia",
+      "Nakhazzia",
+      "Naziska",
+      "Sszakia",
+      "Drazzia",
+      "Skariska",
+      "Vuriska",
+      "Bhakaza",
+      "Mazzia",
+      "Throgaza",
+      "Hissazia",
+      "Lelaza",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Khatazza",
+      "Dazza",
+      "Shenssa",
+      "Rozza",
+      "Esisk",
+      "Gibazza",
+      "Khashaza",
+      "Borisk",
+      "Milkaza",
+      "Ruazza",
+      "Nakhazza",
+      "Nazisk",
+      "Sszaka",
+      "Drazza",
+      "Skarisk",
+      "Vurisk",
+      "Bhakaza",
+      "Mazza",
+      "Throgaza",
+      "Hissaza",
+      "Maraqus",
+      "Naktilu",
+      "Raptu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Marsh-deep",
+      "the Sunken Temple",
+      "Borisk-mire",
+      "the Scale-king's mound",
+      "Mayzza-deep",
+      "Atsazaborisk",
+      "Dazzamezza",
+      "Esiskborisk",
+      "Gibazzamezza",
+      "Khashazaborisk",
+      "Laylazamezza",
+      "Mazzaborisk",
+      "Milkazamezza",
+      "Qariskborisk",
+      "Qatissamezza",
+      "Rabazaborisk",
+      "Shenssamezza",
+      "Tsipazaborisk",
+      "Atsazamezza",
+      "Dazzaborisk",
+      "Esiskmezza",
+      "Gibazzaborisk",
+      "Khashazamezza",
+      "Laylazaborisk",
+      "Mazzamezza",
+      "Milkazaborisk",
+      "Qariskmezza",
+      "Qatissaborisk",
+      "Rabazamezza",
+      "Shenssaborisk",
+      "Tsipazamezza"
+    ]
+  },
+  "culture_id": "lizardman",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_lizardman.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "lizardman",
+  "lexicon": {
+    "concepts": {
+      "beast": "behaza",
+      "blood": "dazza",
+      "bone": "atsaza",
+      "claw": "tsipaza",
+      "dark": "khashaza",
+      "death": "mazza",
+      "devour": "akhaza",
+      "fang": "shenssa",
+      "fire": "esisk",
+      "flesh_meat": "bashaza",
+      "great": "rabaza",
+      "horde": "amazza",
+      "horn": "qarisk",
+      "hunt": "tsayssa",
+      "kill": "khatazza",
+      "lair": "mezza",
+      "night": "laylaza",
+      "raid_plunder": "shalaza",
+      "serpent": "nakhazza",
+      "shaman": "kashazza",
+      "small": "qatissa",
+      "spirit_totem": "ruazza",
+      "strong": "gibazza",
+      "war": "milkaza",
+      "water": "mayzza"
+    },
+    "feature_words": {
+      "cave": "mezza",
+      "crag": "tsurisk",
+      "dark_forest": "ya'zza",
+      "gorge": "gayssa",
+      "marsh": "bitsazza",
+      "mountain": "harisk",
+      "pit": "borisk",
+      "waste": "midbisk"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], hissed smooth: Dazza-shenssa (blood-fang); clan = [Totem]-amazza.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "marsh-deeps, sunken temples, and water-mounds: 'the Sunken Temple of [clan]', 'the Serpent-mound of [chief]', 'the Marsh-deep of [name]'",
+    "war_bands": "the hiss-named clutches: 'the Old Serpent', 'the Cold Coils', 'the Scale-lords of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic, and ancient. Race-totem the OLD SERPENT (Rab-Nakhazza) / the Cold Coil. More totem-bound than the other beastmen - the Old Serpent is venerated above the distant Gul-spirits. The Kashazza hisses to the serpent at the sunken temple; the One and the Lawful sun demonized (though the cold-blood grudgingly basks in the sun's warmth).",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Orlandus (law)": "Orlanu the Chainer",
+      "Tulrius (the Lawful sun)": "Tarul the Burning-Eye (the judge-sun; basked in, never bowed to)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Waqidu": "a cold spiral into the dark",
+      "Old Serpent": "a great coiled serpent swallowing the sun"
+    },
+    "race_totem": "the Old Serpent (Rab-Nakhazza) / the Cold Coil",
+    "shaman_rites": "cold hiss-chants at the sunken temple and the serpent-mound; the egg-clutch blessing; the shedding-rite.",
+    "tribal_totem_pattern": "[Rab-Nakhazza-/Dazza-/Cold-] + [serpent or scale]: Rab-Nakhazza (the Old Serpent), Dazza-tsipaza (Blood-Claw).",
+    "venerated": {
+      "Maraxus (war)": "Gul-Maraqus (the War-Spirit)",
+      "Noctiluna (the marsh-night)": "Gul-Naktilu (the Cold-Night)",
+      "Raptis (the cold hunt)": "Gul-Raptu (the Patient-Hunt)",
+      "Vacidus (the cold ancient void)": "Gul-Waqidu (the Old-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief (clutch-head) of one clanhold (lowest governing leader), empire = the great horde-lord (Scale-Overlord) over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / clutch-clan - the most settled beastmen, marsh-mound holds (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafissa (the hatchling/runt)",
+      "warrior": "Gibazza (the scaled fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Kashazza (great-shaman of the Old Serpent)",
+      "shaman": "Kashazza (the serpent-speaker)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Rozza",
+        "scope": "chief of a single clanhold (clutch)"
+      },
+      "county": {
+        "ruler": "Rabaza-Rozza",
+        "scope": "great scale-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amazza-Rozza",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabaza-Amazza-Malazza",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabaza-Malazza",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milkaza-Rozza",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Malazza (the Scale-King)",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

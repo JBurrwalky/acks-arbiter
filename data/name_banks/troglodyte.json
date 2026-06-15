@@ -1,0 +1,298 @@
+{
+  "alignment_allowed": [
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Reek clan",
+      "the Blind Crawler clan",
+      "the Cave-deep band",
+      "the Stink-pit tribe",
+      "the Foul-water clan",
+      "the Scale-back tribe",
+      "the Dark-crawl band",
+      "the Many-hiss horde",
+      "Atsskbitssk",
+      "Dahssbortk",
+      "Esskgaytk",
+      "Gibtkhartk",
+      "Khasskmetk",
+      "Laylsskmidbtk",
+      "Mavtktsurssk",
+      "Milktkya'ssk",
+      "Qartkbitssk",
+      "Qatkbortk",
+      "Rabsskgaytk",
+      "Ssentkhartk",
+      "Tsiptkmetk",
+      "Atsskmidbtk",
+      "Dahsstsurssk",
+      "Esskya'ssk"
+    ],
+    "epithet": [
+      "the Foul",
+      "the Blind-crawler",
+      "the Stinking",
+      "the Scale-back",
+      "the Wall-clinger",
+      "the Reeker",
+      "the Cave-lurker",
+      "the Cold-blooded",
+      "the Strong",
+      "the Great",
+      "the Dark",
+      "the Blood",
+      "the Fang",
+      "the Claw",
+      "the Night",
+      "the Death"
+    ],
+    "feature": [
+      "Atsskbitssk",
+      "Dahssbortk",
+      "Esskgaytk",
+      "Gibtkhartk",
+      "Khasskmetk",
+      "Laylsskmidbtk",
+      "Mavtktsurssk",
+      "Milktkya'ssk",
+      "Qartkbitssk",
+      "Qatkbortk",
+      "Rabsskgaytk",
+      "Ssentkhartk",
+      "Tsiptkmetk",
+      "Atsskmidbtk",
+      "Dahsstsurssk",
+      "Esskya'ssk",
+      "Gibtkbitssk",
+      "Khasskbortk",
+      "Laylsskgaytk",
+      "Mavtkhartk",
+      "Milktkmetk",
+      "Qartkmidbtk",
+      "Qatktsurssk",
+      "Rabsskya'ssk",
+      "Ssentkbitssk",
+      "Tsiptkbortk",
+      "Atsskgaytk",
+      "Dahsshartk",
+      "Esskmetk",
+      "Gibtkmidbtk"
+    ],
+    "military_unit": [
+      "the Reek",
+      "the Blind-crawlers"
+    ],
+    "personal_female": [
+      "Dahssa",
+      "Sssenta",
+      "Rossska",
+      "Esssa",
+      "Gibta",
+      "Khassska",
+      "Borta",
+      "Milkta",
+      "Ruassa",
+      "Vrassa",
+      "Nazta",
+      "Grumssa",
+      "Drata",
+      "Skarssa",
+      "Vurta",
+      "Bhakta",
+      "Mata",
+      "Throgta",
+      "Hisssa",
+      "Lelssa",
+      "Maraqus",
+      "Metensu",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "personal_male": [
+      "Tch'atassk",
+      "Dahsss",
+      "Sssentk",
+      "Rosssk",
+      "Esssk",
+      "Gibtk",
+      "Khasssk",
+      "Bortk",
+      "Milktk",
+      "Ruasssk",
+      "Vrasssk",
+      "Naztk",
+      "Grumssk",
+      "Dratk",
+      "Skarssk",
+      "Vurtk",
+      "Bhaktk",
+      "Matk",
+      "Throgtk",
+      "Hisssk",
+      "Maraqus",
+      "Metensu",
+      "Naktilu",
+      "Waqidu"
+    ],
+    "settlement": [
+      "the Reek-cave",
+      "Bortk-pit",
+      "Bitsssk-mire",
+      "the Stink-deep",
+      "Ya'ssk-crawl",
+      "Atsskbortk",
+      "Dahssmetk",
+      "Esskbortk",
+      "Gibtkmetk",
+      "Khasskbortk",
+      "Laylsskmetk",
+      "Mavtkbortk",
+      "Milktkmetk",
+      "Qartkbortk",
+      "Qatkmetk",
+      "Rabsskbortk",
+      "Ssentkmetk",
+      "Tsiptkbortk",
+      "Atsskmetk",
+      "Dahssbortk",
+      "Esskmetk",
+      "Gibtkbortk",
+      "Khasskmetk",
+      "Laylsskbortk",
+      "Mavtkmetk",
+      "Milktkbortk",
+      "Qartkmetk",
+      "Qatkbortk",
+      "Rabsskmetk",
+      "Ssentkbortk",
+      "Tsiptkmetk"
+    ]
+  },
+  "culture_id": "troglodyte",
+  "family": [
+    "beastman"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_troglodyte.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "troglodyte",
+  "lexicon": {
+    "concepts": {
+      "beast": "behtk",
+      "blood": "dahsss",
+      "bone": "atsssk",
+      "claw": "tsiptk",
+      "dark": "khasssk",
+      "death": "mavtk",
+      "devour": "akhssk",
+      "fang": "sssentk",
+      "fire": "esssk",
+      "flesh_meat": "bahsssk",
+      "great": "rabssk",
+      "horde": "amssk",
+      "horn": "qartk",
+      "hunt": "tsaytk",
+      "kill": "tch'atassk",
+      "lair": "metk",
+      "night": "laylssk",
+      "raid_plunder": "shalssk",
+      "shaman": "kasssk",
+      "small": "qatk",
+      "spirit_totem": "ruasssk",
+      "strong": "gibtk",
+      "war": "milktk"
+    },
+    "feature_words": {
+      "cave": "metk",
+      "crag": "tsurssk",
+      "dark_forest": "ya'ssk",
+      "gorge": "gaytk",
+      "mountain": "hartk",
+      "pit": "bortk",
+      "swamp": "bitsssk",
+      "waste": "midbtk"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[trait|deed|totem] + [root], hissed: Dahsss-sssentk (blood-fang); clan = [Totem]-amssk.",
+    "gendered_endings": {
+      "female": [],
+      "male": []
+    },
+    "patronymic_form": "",
+    "toponymic_suffixes": []
+  },
+  "patterns": {
+    "lairs_dungeons": "foul caves, stink-pits, and foul-water deeps: 'the Reek-cave of [clan]', 'the Stink-pit of [chief]', 'the Foul-deep of [name]'",
+    "war_bands": "the hiss-named clans: 'the Reek', 'the Blind-crawlers', 'the Scale-backs of [chief]'"
+  },
+  "race": "beastman",
+  "religion": {
+    "_note": "CHAOTIC, totemic. Race-totem the Reek / the Blind Crawler. The Kasssk hisses to the totem and the Gul-spirits in the foul dark; foremost Gul-Metensu the Rot/Reek (the trog's foul stink is sacred); the One and the sun demonized (cave-blind, they hate the light).",
+    "demonized": {
+      "Aeternus (the One)": "Aternu the Sky-Tyrant",
+      "Tulrius (the sun, light)": "Tarul the Burning-Eye (the light that blinds and burns)"
+    },
+    "holy_symbol_motifs": {
+      "Gul-Metensu": "a rotting carcass crawling with vermin",
+      "Reek": "a wavering stink-haze over a coiled crawler"
+    },
+    "race_totem": "the Reek (Khasssk-reek) / the Blind Crawler",
+    "shaman_rites": "hiss-chants in the stink-pit; the marking with foul musk; the blind-crawl rite.",
+    "tribal_totem_pattern": "[Khasssk-/Dahsss-/Reek-] + [reptile or filth]: Khasssk-behtk (Dark-Beast), Dahsss-tsiptk (Blood-Claw).",
+    "venerated": {
+      "Maraxus (the kill)": "Gul-Maraqus (the War-Spirit)",
+      "Metensia (rot, reek, filth)": "Gul-Metensu (the Rot-Spirit; the sacred stink; supreme)",
+      "Noctiluna (the cave-dark)": "Gul-Naktilu (the Blind-Dark)",
+      "Vacidus (the devouring deep)": "Gul-Waqidu (the Devouring-Dark)"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_note": "Mapped to the ACKS 7 civ tiers (the shared system; not a perfect fit) by how many clanholds a leader rules - barony = chief of one clanhold (lowest governing leader), empire = the great horde-lord over hundreds. thrall/warrior are NOT governing roles (see non_governing_ranks).",
+    "government": "clanhold / cave-clan (mapped to the civ 7-tier ladder by clanholds ruled)",
+    "non_governing_ranks": {
+      "thrall_whelp": "Shafssk (the runt/slave)",
+      "warrior": "Gibtk (the cave-fighter)"
+    },
+    "shaman_line": {
+      "high_shaman": "Rab-Kasssk (great-shaman of the clan-totem)",
+      "shaman": "Kasssk (the totem-hisser)"
+    },
+    "tiers": {
+      "barony": {
+        "ruler": "Rosssk",
+        "scope": "chief of a single clanhold (cave-clan)"
+      },
+      "county": {
+        "ruler": "Rabssk-Rosssk",
+        "scope": "great-chief over a few clanholds"
+      },
+      "duchy": {
+        "ruler": "Amssk-Rosssk",
+        "scope": "horde-chief over many clanholds"
+      },
+      "empire": {
+        "ruler": "Rabssk-Amssk-Maltk",
+        "scope": "the great horde-lord over hundreds of clanholds"
+      },
+      "kingdom": {
+        "ruler": "Rabssk-Maltk",
+        "scope": "great warlord-king over many hordes"
+      },
+      "march": {
+        "ruler": "Milktk-Rosssk",
+        "scope": "war-chief of a frontier / raiding clanhold"
+      },
+      "principality": {
+        "ruler": "Maltk",
+        "scope": "warlord-king over a great horde"
+      }
+    }
+  }
+}

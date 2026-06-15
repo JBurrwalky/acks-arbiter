@@ -1,0 +1,435 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Ovonu Kutsa",
+      "Ovonu Morku",
+      "Ovonu Chono",
+      "Ovonu Burgu",
+      "Ovonu Kara",
+      "Ovonu Tsana",
+      "Ovonu Maraksai",
+      "Ovonu Sona",
+      "Ovonu Tamendai",
+      "Ovonu Altu",
+      "Ovonu Naran",
+      "Ovonu Tomwi",
+      "Gerni Kara-baatu",
+      "Gerni Tem-morku",
+      "Gerni Naranoy",
+      "Gerni Bektai",
+      "Gerni Storm-Rider",
+      "Gerni Holaku-tai",
+      "Gerni Sona-bek",
+      "Gerni Maraksai-tu",
+      "Gerni Konawi-khan",
+      "Gerni Wolf-Khan",
+      "Gerni Altu-bek",
+      "Gerni Tsana-noy"
+    ],
+    "epithet": [
+      "Baatu",
+      "Kara",
+      "the Storm-rider",
+      "Bison-heart",
+      "the Far-rider",
+      "Iron-Lance",
+      "Wolf-friend",
+      "the Sky-favored",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Altaralpa",
+      "Bagtuboghapa",
+      "Davsadalpaa",
+      "Deewidavai",
+      "Dootahondu",
+      "Dotwihoshu",
+      "Etkajilpa",
+      "Gadwajimopi",
+      "Holakukhuzova",
+      "Ihmakogobi",
+      "Karanaapu",
+      "Konaltanamapo",
+      "Kuhtunaruka",
+      "Kutsoysa",
+      "Malsupagol",
+      "Mongsapagol-mia",
+      "Morkupagol-naki",
+      "Puharsona",
+      "Saitsutalso",
+      "Sarwitalso-sona",
+      "Shinitolwi",
+      "Talohitoyul",
+      "Tana-miaryolwi",
+      "Tana-yaazamku",
+      "Tomwaralpa",
+      "Tsanaboghapa",
+      "Tunapudalpaa",
+      "Ulesadavai",
+      "Waihondu",
+      "Wuyaihoshu"
+    ],
+    "military_unit": [
+      "the Wolf-society",
+      "the Storm Tumen"
+    ],
+    "personal_female": [
+      "Reelta-na",
+      "Sona-gul",
+      "Altu-na",
+      "Saran-petai",
+      "Morning-Rain",
+      "Tsana-na",
+      "Naran-gul",
+      "Reawina",
+      "Bayan-na",
+      "Holawi-na",
+      "Sweet-Grass",
+      "Ulesa-na",
+      "Konela",
+      "Tuya-na",
+      "Star-Woman",
+      "Suvd-na",
+      "Deeda-na",
+      "Wuyai-na",
+      "Bird-Woman",
+      "Saitsu-na",
+      "Kara-baana",
+      "Bekna",
+      "Holaku-na",
+      "Sona-na",
+      "Maraksai-na",
+      "Bagna",
+      "Munka-baana",
+      "Tarkwan-na",
+      "Gayanta",
+      "Gayantana",
+      "Maraksai",
+      "Maraksaina",
+      "Reelta",
+      "Reeltana",
+      "Tamendai",
+      "Tamendaina"
+    ],
+    "personal_male": [
+      "Kara-baatu",
+      "Tem-morku",
+      "Naranoy",
+      "Bektai",
+      "Storm-Rider",
+      "Holaku-tai",
+      "Sona-bek",
+      "Maraksai-tu",
+      "Konawi-khan",
+      "Wolf-Khan",
+      "Altu-bek",
+      "Tsana-noy",
+      "Iron-Lance",
+      "Bagtu",
+      "Deeda-mori",
+      "Ulesa-tai",
+      "Sky-Runner",
+      "Munka-baatu",
+      "Tarkwan-tu",
+      "Kutsa-noy",
+      "Reelta-tai",
+      "Sona-tai",
+      "Altu-tai",
+      "Tsana-tai",
+      "Naran-tai",
+      "Reawitai",
+      "Bayan-tai",
+      "Holawi-tai",
+      "Tuya-tai",
+      "Suvd-tai",
+      "Deeda-tai",
+      "Wuyai-tai",
+      "Saitsu-tai",
+      "Gayanta",
+      "Gayantatai",
+      "Maraksai",
+      "Maraksaitai",
+      "Reelta",
+      "Reeltatai",
+      "Tamendai"
+    ],
+    "settlement": [
+      "Karak",
+      "Kara-toyul",
+      "Kutsa-talso",
+      "Altan-pagol",
+      "Maraksai-tunawa",
+      "Ih-kheer",
+      "Altubalwi",
+      "Bagtugerni",
+      "Davsagernila",
+      "Deewih-balwi",
+      "Dootakheram",
+      "Dotwinaruma",
+      "Etkordu",
+      "Gadwordu-naika",
+      "Holakupagol-mia",
+      "Ihpagol-naki",
+      "Karatolwi",
+      "Konaltatunawa",
+      "Kuhtubalwi",
+      "Kutsagerni",
+      "Malsugernila",
+      "Mongsih-balwi",
+      "Morkukheram",
+      "Puharnaruma",
+      "Saitsordu",
+      "Sarwordu-naika",
+      "Shinipagol-mia",
+      "Talohipagol-naki",
+      "Tana-miarutolwi",
+      "Tana-yaatunawa",
+      "Tomwibalwi",
+      "Tsanagerni",
+      "Tunapugernila",
+      "Ulesih-balwi",
+      "Waikheram",
+      "Wuyainaruma",
+      "Altordu",
+      "Bagtordu-naika",
+      "Davsapagol-mia",
+      "Deewipagol-naki"
+    ],
+    "ship": [
+      "Storm-Runner",
+      "the Black Lance",
+      "Wind-Eater"
+    ],
+    "tavern": [
+      "the Great Council-Tent",
+      "the Red Gerni",
+      "The Altu Davsa",
+      "The Bagtu Etka",
+      "The Holaku Kutsa",
+      "The Ih Malsu",
+      "The Kara Mongsa",
+      "The Kuhtu Morku",
+      "The Puhar Sarwi",
+      "The Saitsu Tomwi",
+      "The Shini Tunapu",
+      "The Tomwi Wuyai"
+    ]
+  },
+  "culture_id": "karakan",
+  "family": [
+    "north_american",
+    "steppe"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_karakan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "karakan",
+  "lexicon": {
+    "adjectives": {
+      "black": "kara",
+      "fair": "saitsu",
+      "far": "holaku",
+      "golden": "altu",
+      "great": "ih",
+      "high": "wai",
+      "iron": "tomwi",
+      "little": "bagtu",
+      "new": "shini",
+      "old": "kuhtu",
+      "red": "ulesa",
+      "sacred": "puhar",
+      "white": "tsana"
+    },
+    "directional": {
+      "east": "tana-miaru (sunrise)",
+      "inner": "dotwi",
+      "lower": "doota",
+      "north": "konalta",
+      "outer": "gadwa",
+      "south": "talohi",
+      "upper": "deewi",
+      "west": "tana-yaa (sunset)"
+    },
+    "feature_words": {
+      "cape": "hoshu",
+      "coast": "pagol-naki",
+      "ford": "pagol-mia",
+      "forest": "oysa",
+      "grass": "sona",
+      "hill": "tolwi",
+      "isle": "aralpa",
+      "lake": "naapu",
+      "marsh": "namapo",
+      "mountain": "toyul",
+      "narrows": "boghapa",
+      "neck": "khuzova",
+      "pass": "davai",
+      "plain": "talso",
+      "ridge": "naruka",
+      "river": "pagol",
+      "road": "zamku",
+      "savanna": "talso-sona",
+      "sea": "dalpaa",
+      "stream": "jilpa",
+      "track": "jimopi",
+      "vale": "hondu",
+      "waste": "makogobi",
+      "way": "yolwi"
+    },
+    "resources": {
+      "bison": "kutsa",
+      "bow": "etka",
+      "drymeat": "tunapu",
+      "feather": "wuyai",
+      "herd": "malsu",
+      "hide": "sarwi",
+      "horse": "morku",
+      "iron": "tomwi",
+      "salt": "davsa",
+      "silver": "mongsa"
+    },
+    "settlement_words": {
+      "camp": "ordu",
+      "citadel": "ordu-naika",
+      "city": "ih-balwi",
+      "fort": "kheram",
+      "hamlet": "gerni",
+      "market": "naruma",
+      "temple_town": "tunawa",
+      "town": "balwi",
+      "village": "gernila"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[quality|animal](stem) + feature: Kara-toyul (black-mountain), Kutsa-talso (bison-plain); the horde/band named for its khan or its food; -ordu for the moving camp.",
+    "gendered_endings": {
+      "female": [
+        "na",
+        "gul"
+      ],
+      "male": [
+        "tai",
+        "tu",
+        "bek"
+      ]
+    },
+    "patronymic_form": "father's name + -in/-tu; the ovonu (band-clan, named for an animal or food); a deed- or vision-name earned at coming-of-age; the honor Baatu (hero).",
+    "toponymic_suffixes": [
+      "toyul-",
+      "pagol-",
+      "talso-",
+      "ordu",
+      "Kara-/Tsana-",
+      "naika"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "old burial-scaffolds, abandoned ordu-camps and spirit-haunted buttes: 'the Cairn of [khan]', 'the Ghost-Butte of [name]'",
+    "military_units": "the war-societies and the decimal host: the [animal] society / the [khan] Tumen: 'the Wolf-society', 'the Storm Tumen'",
+    "ships": "landlocked riders name war-lances, standards and great horses: 'Storm-Runner', 'the Black Lance', 'Wind-Eater' (a famed steed)",
+    "taverns": "camps, not taverns: the council-tent / the [adjective] gerni: 'the Great Council-Tent', 'the Red Gerni'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are FUSED morphs of the Agrippan canon - single forms sitting between the Plains and Steppe theonym sets (Maraxus: Plains Maraksa / Steppe Marakhai -> fused Maraksai), never real gods. Karakan seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met through the vision-quest and at the sacred cairn on the open horizon; there are no built temples.",
+    "clergy_ladder": {
+      "1": "Bukatu-tuga (vision-novice)",
+      "3": "Bukatu (shaman / medicine-seer)",
+      "5": "Ih-bukatu (great medicine-seer)",
+      "7": "Ovonu-bukatu (the band's high seer)",
+      "9": "Naika-bukatu (the council's great seer)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Toralai the Cold-Sun; Orlandus -> Orlanga the Oath-Chain; Aeternus -> Eteruna the Sky-Tyrant.",
+    "holy_symbol_motifs": {
+      "Maraksai": "a red war-lance and horsetail-standard beneath a black storm",
+      "Reelta": "a life-giving rain over the green plain",
+      "Tamendai": "forked lightning over the open grass"
+    },
+    "religious_orders_pattern": "no built temples - the sacred cairn (tunawa) of [power] on a high horizon: 'the Tunawa of Maraksai', and the vision-hill.",
+    "saints_pattern": "the great khans and vision-seers who became sky- and animal-spirits; honored at the burial-scaffold and the sacred cairn.",
+    "sample_deity_renames": {
+      "Dementus": "Tamendai (fused Tamawi/Tamendei) - the storm-sky; Chaotic power",
+      "Gaiandus": "Gayanta (fused Kayanta/Gajan) - the enduring earth; Lawful power",
+      "Maraxus": "Maraksai (fused Maraksa/Marakhai) - the war-fire, the raider; Chaotic power",
+      "Realta": "Reelta (fused Reawina/Erelta) - the mother, the life-giver; Neutral-honored"
+    },
+    "the_one": "Eteruna (< Aeternus; fused of Plains Ateruna / Steppe Eterun) - the Eternal Sky-Above; reviled as the cold sky-tyrant when Chaotic, acknowledged as the distant maker when Neutral",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers (Maraksai the war-fire, Tamendai the storm, Lusantai the plunder-serpent), demonize the Lawful powers and the One (Eteruna)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the deeda-numu (ancestral dead), the animal-spirits and the powers of place"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Fused Plains-Steppe clanhold, ascending; the titles are blended forms (plains nantan/paraibo/naika + steppe noyan/khan/khagan). Noytan (band-lord) barony; Tarkwan (border war-warden) march; Paranoy (band-chief) county; Mingbo (thousand war-chief) duchy; Bekibo (great chief of several bands) principality; Naikhan (head-khan) kingdom; Khanaika (grand head-khan) empire over the Karak-Ulus (the great-nation). The khural-council and the war-societies check the khans. (Rank titles fuse the real Plains/Mongol registers, allowed.)",
+    "female_forms": {
+      "Bekibo": "Bekhibo",
+      "Khanaika": "Khatun-Naika",
+      "Mingbo": "Mingkhatun",
+      "Naikhan": "Naikhatun",
+      "Noytan": "Noytan-na",
+      "Paranoy": "Paranoy-na",
+      "Tarkwan": "Tarkwan-na"
+    },
+    "government": "clanhold (a fusion of plains bands and steppe hordes: the ovonu-clans and their khans, the war-societies and the vision-chiefs; the khural-council raises the head-khan; the camp moves with the herds)",
+    "heir": "Naikhan-tuga (the head-khan's son)",
+    "honorifics": {
+      "champion": "Baatu (hero-brave)",
+      "elder": "Deeda (elder)",
+      "lady": "Khatun",
+      "lord": "Noytan",
+      "your_grace": "Naikhan"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Noytan-nutag",
+        "ruler": "Noytan"
+      },
+      "county": {
+        "domain": "Ovonu",
+        "ruler": "Paranoy"
+      },
+      "duchy": {
+        "domain": "Mingbo-zuun",
+        "ruler": "Mingbo"
+      },
+      "empire": {
+        "domain": "Karak-Ulus",
+        "ruler": "Khanaika"
+      },
+      "kingdom": {
+        "domain": "Naikhan-ulus",
+        "ruler": "Naikhan"
+      },
+      "march": {
+        "domain": "Saraa",
+        "ruler": "Tarkwan"
+      },
+      "principality": {
+        "domain": "Aimal",
+        "ruler": "Bekibo"
+      }
+    },
+    "vassalage": {
+      "fealty": "Tangra (oath)",
+      "liege": "Ezenoy",
+      "tribute": "Albanu (the gift-due)",
+      "vassal": "Nokwa (sworn companion)"
+    }
+  }
+}

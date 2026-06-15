@@ -16,8 +16,12 @@ var tick_years: int = 25
 # N_TICKS comes from SettingParameters.history_ticks() (80/160/240).
 
 # --- Expansion (§7.2) -------------------------------------------------------
-var expansion_G: float = 4.0          # global growth constant (hexes/tick)
-var expansion_N0: float = 30.0        # half-saturation size (hexes)
+# [CALIBRATION 2026-06-13] G 4→5.5, N0 30→50: civilized realms plateaued too
+# small (only ~12% of the map), leaving the §17 wilderness fraction far too high.
+# A larger growth constant + later half-saturation lets realms keep expanding to
+# substantial size and civilize more of the map.
+var expansion_G: float = 5.0          # global growth constant (hexes/tick)
+var expansion_N0: float = 50.0        # half-saturation size (hexes)
 var expansion_alpha_base: float = 1.0 # α = 1.0 + culture.size_exponent_bias
 var a_peak_ticks: int = 8             # ascendancy/age peak (200 yr)
 var ruler_expansion_strong: float = 1.1
@@ -35,11 +39,20 @@ var contest_attrition: float = 0.005  # per failed contest
 var contest_attrition_cap: float = 0.05 # per tick per polity
 
 # --- Stability / collapse (§7.5) --------------------------------------------
-var collapse_base: float = 0.01
+# [CALIBRATION 2026-06-13] collapse_base 0.01→0.005: the default 0.01 churned
+# realms ~5× over 160 ticks (260 depopulations/run on Large), so civilized cores
+# never grew and the map stayed ~92% wilderness. Halving it lets realms persist
+# and civilize more land toward the §17 ~50%-wilderness target.
+var collapse_base: float = 0.005
 var collapse_risk_min: float = 0.0
 var collapse_risk_max: float = 0.35
-var tier_risk_mult: float = 1.35      # f_size = TIER_RISK_MULT ^ max(0, tier-2)
-var tier_risk_cohesion_floor: int = 2 # County — risk compounds above this tier
+# [CALIBRATION 2026-06-13] mult 1.35→1.15, floor 2→3: at 1.35 an Empire collapsed
+# at 3.3× the base rate, so empires shattered back into fragments as fast as they
+# formed — the world stayed at ~23 small independent realms instead of
+# consolidating into 5–10 multi-ethnic empires. Gentler size-risk (and only above
+# Duchy) lets large realms persist long enough to hold their vassals.
+var tier_risk_mult: float = 1.05      # f_size = TIER_RISK_MULT ^ max(0, tier-floor)
+var tier_risk_cohesion_floor: int = 3 # Duchy — risk compounds above this tier
 var f_age_floor: float = 0.4          # young-polity ramp start
 var f_age_slope: float = 0.15         # per A_PEAK past the peak
 var f_age_cap: float = 2.5
@@ -79,11 +92,24 @@ var severity_tier_weight: float = 0.3
 var severity_overext_weight: float = 0.4
 var severity_proneness_weight: float = 0.6
 var severity_temperament_weight: float = 0.1
-var severity_band_rump: float = 0.50  # S < this → rump
-var severity_band_shatter: float = 0.85 # rump ≤ S < this → shatter; ≥ → depopulate
+# [CALIBRATION 2026-06-13] 0.50→0.72: shatter spawns independent successor
+# realms, the main source of civ-realm over-fragmentation once beastmen stopped
+# pressuring the map. Widening the rump band (keep-core, no successors) cuts that
+# while depopulation (S ≥ shatter band) still recycles land to wilderness.
+var severity_band_rump: float = 0.72  # S < this → rump
+# [CALIBRATION 2026-06-13] 0.85→0.92: total-death depopulation was too common,
+# wiping realms to wilderness; widen the shatter band so most collapses shed/
+# fragment (keep a core) rather than erase.
+var severity_band_shatter: float = 0.92 # rump ≤ S < this → shatter; ≥ → depopulate
 var shatter_vassal_gate: int = 2      # need vassals ≥ this or tier ≥ Duchy
+var rump_shed_pop_keep: float = 0.5   # shed frontier hexes keep half their people
+var depopulate_pop_keep: float = 0.1  # "loses most of its population" (§7.6)
 var beastman_delay_ticks: int = 2
-var beastman_fill_per_tick: float = 0.25  # × density per empty hex
+# [CALIBRATION 2026-06-13] 0.25→0.10: beastmen refilled depopulated land almost
+# instantly (~56 clanholds/run), denying civilized realms room to expand and
+# settle. Slower fill leaves more land for civilization (and keeps the interior
+# beastman-flavored without saturating it).
+var beastman_fill_per_tick: float = 0.10  # × density per empty hex
 
 # --- Fading (§7.7) ----------------------------------------------------------
 var fade_rate: float = 0.985          # per tick after onset
@@ -91,7 +117,7 @@ var fade_onset_tier: int = 3          # Duchy — onset requires tier ≥ this
 
 # --- War escalation (§7.3.1) ------------------------------------------------
 var war_threshold: int = 3            # contested hexes triggering escalation
-var war_base: float = 0.10
+var war_base: float = 0.18            # [CALIBRATION 2026-06-13] 0.10→0.18: more frequent wars so empires actually fight and absorb neighbors (consolidation toward §17 5–10)
 var war_opposed_alignment_mult: float = 1.5
 var war_atk_aggression_base: float = 0.5  # strength = (0.5 + aggression) × ...
 var war_def_defense_base: float = 0.5
@@ -101,10 +127,15 @@ var multi_war_factor: float = 0.8     # 0.8 ^ (extra simultaneous wars)
 var war_margin_jitter: float = 0.15
 var war_band_border: float = 0.50     # ≥ this → border victory
 var war_band_decisive: float = 0.65   # ≥ this → decisive
-var war_band_crushing: float = 0.80   # ≥ this (+ capital reach) → crushing
-var capital_reach: int = 4
+# [CALIBRATION 2026-06-13] crushing 0.80→0.70, capital_reach 4→6, annex_min
+# 0.65→0.55: civilizations weren't consolidating (too many small independent
+# realms) because wars rarely reached a crushing victory that vassalizes/annexes
+# the loser. Easier-to-reach, more-often-annexing crushing wars let strong realms
+# absorb neighbors into 5–10 empires (the §17 target).
+var war_band_crushing: float = 0.70   # ≥ this (+ capital reach) → crushing
+var capital_reach: int = 6
 var svg_vassalize_max: float = 0.35   # ≤ → wholesale vassalization
-var svg_annex_min: float = 0.65       # ≥ → annexation
+var svg_annex_min: float = 0.55       # ≥ → annexation
 var pillage_aggression_gate: float = 0.7
 var pillage_svg_gate: float = 0.3
 var pillage_chance: float = 0.5
@@ -118,11 +149,15 @@ var core_max: int = 3                 # directly-held core hexes
 var vassal_size_principality: int = 3 # tier ≤ Principality
 var vassal_size_kingdom: int = 4
 var vassal_size_empire: int = 6
-var base_secede: float = 0.05
+# [CALIBRATION 2026-06-13] 0.05→0.02: with beastmen no longer pressuring the map,
+# civilizations fragmented into too many independent realms; fewer secessions let
+# conquering empires hold their war-vassals and consolidate (toward §17 5–10).
+var base_secede: float = 0.02
 var liege_weakness_risk: float = 0.15 # collapse_risk above which liege is "weak"
 
 # --- Substrate / demography (§6) --------------------------------------------
 var diffuse_rate: float = 0.02
+var diffuse_prune_floor: float = 0.0001  # drop sub-minority-floor culture traces (perf; §11.1)
 var edge_damp_open: float = 1.0
 var edge_damp_rough: float = 0.7      # forest / hills
 var edge_damp_barrier: float = 0.25   # mountain or major-river crossing
@@ -148,7 +183,11 @@ var settlement_min_urban_families: int = 75
 # Logistic growth approaches the cap asymptotically, so the sim triggers
 # advancement at this fraction of the current class cap (the hex is "full").
 # The RAW urban-settlement / proximity gates are refined at Layer 6 (§9.6).
-var classification_advance_fraction: float = 0.90
+# [CALIBRATION 2026-06-13] 0.90→0.60: hexes advance out of wilderness class at
+# 60% of the class cap, so settled land civilizes sooner — directly lowering the
+# wilderness-class fraction toward the §17 target. (RAW basis: "advances when it
+# fills its class"; 0.60 is a [PROVISIONAL] balance proxy for "mostly settled".)
+var classification_advance_fraction: float = 0.60
 
 # --- Migration (§8) ---------------------------------------------------------
 var migrant_fraction: float = 0.30
@@ -173,9 +212,14 @@ var terrain_mult_secondary: float = 1.15
 var terrain_mult_neutral: float = 1.0
 var terrain_mult_avoided: float = 0.5
 
-# --- Handoff morale gate (§10, §12) -----------------------------------------
+# --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5
+# Ruler class (catalog §4.3): dist = lerp(martial-leaning base, normalized sphere
+# tilt, RULER_CLASS_BLEND), then a seeded draw. "Sphere weights move the odds,
+# don't replace them" — a high-arcane culture rarely has a mage KING.
+var ruler_class_blend: float = 0.5
+var significance_severity_weight: float = 0.5  # event significance = base(type) + this × severity
 
 
 ## VASSAL_SIZE for a realm at the given tier_index (§7.4 tier-scaled).

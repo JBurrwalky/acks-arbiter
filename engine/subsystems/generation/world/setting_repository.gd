@@ -54,6 +54,10 @@ const RUIN_SEED_COLUMNS := [
 	"size_hint", "dungeon_type", "name",
 ]
 const POI_SEED_COLUMNS := ["id", "hex_q", "hex_r", "poi_type", "context", "rumor_seeds", "name"]
+const ROAD_COLUMNS := ["id", "hexes", "from_settlement_id", "to_settlement_id",
+	"road_class", "purpose", "name", "region_id"]
+const FORTIFICATION_COLUMNS := ["id", "hex_q", "hex_r", "fort_type",
+	"owner_polity_id", "settlement_id", "road_id", "stronghold_value_gp", "is_hot"]
 const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
 const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
 
@@ -61,8 +65,8 @@ const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
 const _DATA_TABLES := [
 	"setting_hexes", "setting_river_edges", "setting_polities",
 	"setting_fallen_polities", "setting_settlements", "setting_regions",
-	"setting_events", "setting_ruin_seeds", "setting_poi_seeds",
-	"setting_replay_frames", "setting_replay_palette",
+	"setting_events", "setting_ruin_seeds", "setting_poi_seeds", "setting_roads",
+	"setting_fortifications", "setting_replay_frames", "setting_replay_palette",
 ]
 
 
@@ -184,32 +188,57 @@ static func save_river_edges(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_river_edges", RIVER_EDGE_COLUMNS, rows)
 
 
+# NOTE: the sim-output + region writers are idempotent UPSERTS (replace=true) on
+# their (campaign_id, id) primary keys — so a later layer can re-save a table to
+# fill columns it owns without a clear/duplicate dance. Layer 4 still clears
+# first (clear_sim_output) and INSERT-OR-REPLACE into the empty table behaves as
+# a plain INSERT there; Layer 5 naming re-saves polities/settlements/events/
+# ruins/fallen (mutated in place) AND setting_regions (which is NOT a sim-output
+# table, so it is never cleared — only updated here). See coding_conventions §82.
 static func save_polities(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_polities", POLITY_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_polities", POLITY_COLUMNS, rows, true)
 
 
 static func save_fallen_polities(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_fallen_polities", FALLEN_POLITY_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_fallen_polities", FALLEN_POLITY_COLUMNS, rows, true)
 
 
 static func save_settlements(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_settlements", SETTLEMENT_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_settlements", SETTLEMENT_COLUMNS, rows, true)
+
+
+## Replace the ENTIRE settlement set for a campaign. Layer 6 §9.1 rebuilds the
+## settlement set from scratch via the rank-size model (it is NOT an in-place
+## column fill like the §82 upsert writers), so the stale Stage-4 per-hex rows
+## must be cleared first — an upsert would leave them orphaned. The clear + insert
+## run in ONE transaction (_bulk_insert clear_first), so an empty rebuild or a
+## failed insert can never leave the table wiped.
+static func replace_settlements(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_settlements", SETTLEMENT_COLUMNS, rows, true, true)
 
 
 static func save_regions(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_regions", REGION_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_regions", REGION_COLUMNS, rows, true)
 
 
 static func save_events(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_events", EVENT_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_events", EVENT_COLUMNS, rows, true)
 
 
 static func save_ruin_seeds(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_ruin_seeds", RUIN_SEED_COLUMNS, rows)
+	return _bulk_insert(campaign_id, "setting_ruin_seeds", RUIN_SEED_COLUMNS, rows, true)
 
 
 static func save_poi_seeds(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_poi_seeds", POI_SEED_COLUMNS, rows)
+
+
+static func save_roads(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_roads", ROAD_COLUMNS, rows, true)
+
+
+static func save_fortifications(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_fortifications", FORTIFICATION_COLUMNS, rows, true)
 
 
 static func save_replay_frames(campaign_id: String, rows: Array) -> bool:
@@ -261,6 +290,14 @@ static func list_poi_seeds(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_poi_seeds", "id ASC")
 
 
+static func list_roads(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_roads", "id ASC")
+
+
+static func list_fortifications(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_fortifications", "id ASC")
+
+
 static func list_replay_frames(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_replay_frames", "tick ASC")
 
@@ -282,10 +319,10 @@ static func _reject_if_locked(campaign_id: String, op: String) -> bool:
 
 
 static func _bulk_insert(campaign_id: String, table: String, columns: Array,
-		rows: Array, replace: bool = false) -> bool:
+		rows: Array, replace: bool = false, clear_first: bool = false) -> bool:
 	if _reject_if_locked(campaign_id, "save into %s" % table):
 		return false
-	if rows.is_empty():
+	if rows.is_empty() and not clear_first:
 		return true
 	var db = CampaignRepository.db
 	var col_sql := "campaign_id"
@@ -296,6 +333,16 @@ static func _bulk_insert(campaign_id: String, table: String, columns: Array,
 	var verb := "INSERT OR REPLACE" if replace else "INSERT"
 	var sql := "%s INTO %s (%s) VALUES (%s)" % [verb, table, col_sql, ph]
 	db.query("BEGIN TRANSACTION")
+	# Atomic full replace: clear the campaign's rows in the SAME transaction as the
+	# inserts, so a failed insert — or an empty `rows` set — can never leave the
+	# table wiped (the DELETE rolls back together with the inserts).
+	if clear_first:
+		if not db.query_with_bindings(
+				"DELETE FROM %s WHERE campaign_id = ?" % table, [campaign_id]):
+			push_error("SettingRepository._bulk_insert: clear DELETE failed for %s. campaign=%s"
+					% [table, campaign_id])
+			db.query("ROLLBACK")
+			return false
 	for row in rows:
 		var bindings: Array = [campaign_id]
 		for c in columns:

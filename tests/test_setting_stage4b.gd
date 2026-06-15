@@ -138,7 +138,10 @@ func test_settling_claims_wilderness() -> void:
 func test_polity_expands_into_wilderness_over_ticks() -> void:
 	var ctx := _grid_ctx(9, 9, Vector2i(4, 4), "c", _instance("c", 0.7, 0.5, ["grassland"]))
 	ctx["params"].history_length = "short"
-	HistorySimulator.new().run(ctx, SimConstants.new())
+	# Isolate expansion from §7.6 collapse (4e) so this measures only the 4b spread.
+	var c := SimConstants.new()
+	c.collapse_base = 0.0
+	HistorySimulator.new().run(ctx, c)
 	var owned := 0
 	for key in ctx["hex_grid"]:
 		if str(ctx["hex_grid"][key]["owner_polity_id"]) == "pol_0001":

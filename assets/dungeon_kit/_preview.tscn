@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://hwtndg41df6k"]
+
+[ext_resource type="PackedScene" uid="uid://85naf5d2v1p8" path="res://assets/dungeon_kit/floor/floor_standard.glb" id="1_fhwdq"]
+[ext_resource type="PackedScene" uid="uid://c8unw3tj3om8f" path="res://assets/dungeon_kit/wall/wall.glb" id="2_4s6mi"]
+[ext_resource type="PackedScene" uid="uid://257vwg7773ea" path="res://assets/dungeon_kit/door/doors_round_arch.glb" id="3_non7e"]
+[ext_resource type="PackedScene" uid="uid://b5pykeeqm7lxv" path="res://assets/dungeon_kit/stair/stairs.glb" id="4_27c35"]
+[ext_resource type="PackedScene" uid="uid://d2eg8k404gvhe" path="res://assets/dungeon_kit/column/column_round.glb" id="5_3nhxf"]
+[ext_resource type="PackedScene" uid="uid://b2t2yrtcgthpp" path="res://assets/dungeon_kit/container/chest.glb" id="6_uk6b1"]
+
+[node name="DungeonKitPreview" type="Node3D" unique_id=1883264507]
+
+[node name="Floor0" parent="." unique_id=153796399 instance=ExtResource("1_fhwdq")]
+
+[node name="Floor1" parent="." unique_id=450326819 instance=ExtResource("1_fhwdq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+
+[node name="Floor2" parent="." unique_id=474577945 instance=ExtResource("1_fhwdq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+
+[node name="Wall" parent="." unique_id=1427866357 instance=ExtResource("2_4s6mi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+
+[node name="Door" parent="." unique_id=400885760 instance=ExtResource("3_non7e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -1)
+
+[node name="Stairs" parent="." unique_id=564666715 instance=ExtResource("4_27c35")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+
+[node name="Column" parent="." unique_id=1961338227 instance=ExtResource("5_3nhxf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0, 0.6)
+
+[node name="Chest" parent="." unique_id=180143887 instance=ExtResource("6_uk6b1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0.5)

@@ -1,0 +1,423 @@
+{
+  "alignment_allowed": [
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Ulfungar",
+      "Bjornungar",
+      "Steinungar",
+      "Hrafnungar",
+      "Geirungar",
+      "Hrothungar",
+      "Sigungar",
+      "Gunnungar",
+      "Hallungar",
+      "Ketilungar",
+      "Arnungar",
+      "Vargungar",
+      "Ulfgrimrson",
+      "Bjornketillson",
+      "Steinarrson",
+      "Hrafnkellson",
+      "Geirmundrson",
+      "Hrothgeirson",
+      "Sigvaldrson",
+      "Gunnvaldrson",
+      "Hallsteinnson",
+      "Ketilbjornson",
+      "Eysteinnson",
+      "Sveinaldson"
+    ],
+    "epithet": [
+      "the Wolf",
+      "Ironside",
+      "Oath-breaker",
+      "Storm-rider",
+      "the Red",
+      "Bone-breaker",
+      "the Far-sailed",
+      "Raven-feeder",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Golden",
+      "the Iron"
+    ],
+    "feature": [
+      "Austra",
+      "Fagraudn",
+      "Fjarribekkr",
+      "Gamalldalr",
+      "Gulley",
+      "Gullinnfjall",
+      "Harfjordr",
+      "Heilagrhaf",
+      "Hvalrhals",
+      "Hvitrhaugr",
+      "Innhryggr",
+      "Jarnjokull",
+      "Kornleid",
+      "Litillmyrr",
+      "Mikillnes",
+      "Mjodrskard",
+      "Nidrskogr",
+      "Nordrstigr",
+      "Nyrstrond",
+      "Rafsund",
+      "Raudrvad",
+      "Saltvatn",
+      "Silfrvegr",
+      "Skinnvik",
+      "Sudrvollr",
+      "Svartra",
+      "Tonnaudn",
+      "Uppbekkr",
+      "Utdalr",
+      "Vestrey"
+    ],
+    "military_unit": [
+      "the Wolf-coats",
+      "the Storm-Raven hird"
+    ],
+    "personal_female": [
+      "Gunnhildr",
+      "Hallgerdr",
+      "Steingerdr",
+      "Hrafnlaug",
+      "Vargunn",
+      "Sigrunn",
+      "Bjorghildr",
+      "Geirlaug",
+      "Ketilrid",
+      "Svanhildr",
+      "Arnbjorg",
+      "Hallveig",
+      "Skarphildr",
+      "Ulfrun",
+      "Steinunn",
+      "Hrodny",
+      "Gunnvor",
+      "Eindis",
+      "Valdis",
+      "Grimhildr",
+      "Ulfgrima",
+      "Steinara",
+      "Geirmunda",
+      "Hrothgeia",
+      "Sigvalda",
+      "Gunnvalda",
+      "Eindrida",
+      "Hauknia",
+      "Vargeia",
+      "Ulfara",
+      "Grimulfa",
+      "Nymir",
+      "Nymira",
+      "Orlund",
+      "Orlunda",
+      "Rjalta",
+      "Rjaltaa",
+      "Thulr",
+      "Thulra"
+    ],
+    "personal_male": [
+      "Ulfgrimr",
+      "Bjornketill",
+      "Steinarr",
+      "Hrafnkell",
+      "Geirmundr",
+      "Hrothgeir",
+      "Sigvaldr",
+      "Gunnvaldr",
+      "Hallsteinn",
+      "Ketilbjorn",
+      "Eysteinn",
+      "Sveinald",
+      "Skarphedinn",
+      "Arnketill",
+      "Eindridi",
+      "Hauknir",
+      "Vargeir",
+      "Ulfarr",
+      "Stenkil",
+      "Grimulfr",
+      "Vargr",
+      "Sigrr",
+      "Steinr",
+      "Nymir",
+      "Nymirr",
+      "Orlund",
+      "Orlundr",
+      "Rjalta",
+      "Rjaltar",
+      "Thulr",
+      "Thulrr"
+    ],
+    "settlement": [
+      "Vargarheim",
+      "Ulfvik",
+      "Svartfjall",
+      "Iskaldborg",
+      "Hrafnsey",
+      "Storrdalr",
+      "Austrbol",
+      "Fagrborg",
+      "Fjarrihaborg",
+      "Gamallhaugr",
+      "Gullhof",
+      "Gullinnhofn",
+      "Harkaupang",
+      "Heilagrstrond",
+      "Hvalrthorp",
+      "Hvitrtorg",
+      "Innvad",
+      "Jarnvirki",
+      "Kornbol",
+      "Litillborg",
+      "Mikillhaborg",
+      "Mjodrhaugr",
+      "Nidrhof",
+      "Nordrhofn",
+      "Nyrkaupang",
+      "Rafstrond",
+      "Raudrthorp",
+      "Saltorg",
+      "Silfrvad",
+      "Skinnvirki",
+      "Sudrbol",
+      "Svartrborg",
+      "Tonnhaborg",
+      "Upphaugr",
+      "Uthof",
+      "Vestrhofn",
+      "Austrkaupang",
+      "Fagrstrond",
+      "Fjarrithorp",
+      "Gamalltorg"
+    ],
+    "ship": [
+      "Wave-Wolf",
+      "Storm-Raven",
+      "Sea-Serpent"
+    ],
+    "tavern": [
+      "The Mead-Wolf",
+      "The Frozen Horn",
+      "The Fagr Gull",
+      "The Fjarri Hvalr",
+      "The Gamall Jarn",
+      "The Gullinn Korn",
+      "The Har Mjodr",
+      "The Heilagr Raf",
+      "The Hvitr Salt",
+      "The Jarn Silfr",
+      "The Litill Skinn",
+      "The Mikill Tonn"
+    ]
+  },
+  "culture_id": "vargari",
+  "family": [
+    "germanic"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_vargari.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "vargari",
+  "lexicon": {
+    "adjectives": {
+      "black": "svartr",
+      "fair": "fagr",
+      "far": "fjarri",
+      "golden": "gullinn",
+      "great": "mikill",
+      "high": "har",
+      "iron": "jarn",
+      "little": "litill",
+      "new": "nyr",
+      "old": "gamall",
+      "red": "raudr",
+      "sacred": "heilagr",
+      "white": "hvitr"
+    },
+    "directional": {
+      "east": "austr",
+      "inner": "inn",
+      "lower": "nidr",
+      "north": "nordr",
+      "outer": "ut",
+      "south": "sudr",
+      "upper": "upp",
+      "west": "vestr"
+    },
+    "feature_words": {
+      "bay": "vik",
+      "cape": "nes",
+      "coast": "strond",
+      "fjord": "fjordr",
+      "ford": "vad",
+      "forest": "skogr",
+      "glacier": "jokull",
+      "hill": "haugr",
+      "isle": "ey",
+      "lake": "vatn",
+      "marsh": "myrr",
+      "mountain": "fjall",
+      "narrows": "sund",
+      "neck": "hals",
+      "pass": "skard",
+      "plain": "vollr",
+      "ridge": "hryggr",
+      "river": "a",
+      "road": "vegr",
+      "sea": "haf",
+      "stream": "bekkr",
+      "track": "stigr",
+      "vale": "dalr",
+      "waste": "audn",
+      "way": "leid"
+    },
+    "resources": {
+      "amber": "raf",
+      "fur": "skinn",
+      "gold": "gull",
+      "grain": "korn",
+      "iron": "jarn",
+      "ivory": "tonn",
+      "mead": "mjodr",
+      "salt": "salt",
+      "silver": "silfr",
+      "whale": "hvalr"
+    },
+    "settlement_words": {
+      "citadel": "haborg",
+      "city": "borg",
+      "fort": "virki",
+      "hamlet": "bol",
+      "market": "torg",
+      "port": "hofn",
+      "temple_town": "hof",
+      "town": "kaupang",
+      "village": "thorp"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[adjective|resource|animal](stem) + feature: Svartfjall (black-mountain), Ulf-vik (wolf-bay); -heim/-by for steads.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "unn"
+      ],
+      "male": [
+        "r",
+        "i"
+      ]
+    },
+    "patronymic_form": "patronymic -son / -dottir (X's son/daughter); clan (aett) for the great houses; bynames common.",
+    "toponymic_suffixes": [
+      "heim",
+      "by",
+      "vik",
+      "borg",
+      "dalr",
+      "nes"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "haunted howes and ice-locked halls: 'the Howe of [name]', 'the Draugr-hall of [name]'",
+    "military_units": "the [chief] hird / the [animal] berserkir: 'the Wolf-coats', 'the Storm-Raven hird'",
+    "ships": "beast-prowed longship names: 'Wave-Wolf', 'Storm-Raven', 'Sea-Serpent'",
+    "taverns": "'The [Adjective] [Noun]': 'The Mead-Wolf', 'The Frozen Horn'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are the Norse-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json) - phoneme-morphs of the Agrippan canon, never real Norse gods (no Odin/Thor/Freyja/Loki/Baldr). Neutral and Chaotic: Neutral kin honor the ancestral dead and land-wights; the war-bands swear by the storm and wolf powers.",
+    "clergy_ladder": {
+      "1": "Thul (sayer-novice)",
+      "3": "Godi (chieftain-priest)",
+      "5": "Hofgodi (temple-priest)",
+      "7": "Allsherjargodi (high priest)",
+      "9": "Blotmadr Mikill (great sacrificer)"
+    },
+    "demon_epithet_pattern": "the wild and grasping powers keep their Norse reflexes + a portfolio epithet (distinct per power): Maraxus -> Marhr the War-Fire; Vacidus -> Vakr the Unmaker; Lusanto -> Lusandr the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Nymir": "a storm-eye between two ravens over an ash-tree",
+      "Orlund": "crossed spears over an oath-ring"
+    },
+    "religious_orders_pattern": "the Hof (temple) or Ve (sacred enclosure) of [power]: 'the Hof of Nymir'.",
+    "saints_pattern": "the howe-dwelling ancestors and land-wights honored at the grave-howe and the holy fell.",
+    "sample_deity_renames": {
+      "Numeno": "Nymir (the storm-mind, sky-wisdom)",
+      "Orlandus": "Orlund (the iron-oath, war)",
+      "Realta": "Rjalta (the mother, the hearth-mercy)",
+      "Tulrius": "Thulr (the sun, the just light)"
+    },
+    "the_one": "Eitnir (< *Aiternaz < Aeternus; the far All-Father, beyond the gods' reach)"
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Norse clanhold, ascending. Hauldr (yeoman-lord) barony; Markvordr (march-warden) march; Hersir (district-chief) county; Jarl (earl) duchy; Fylkir (folk-king) principality; Konungr (king) kingdom; Yfirkonungr (over-king) empire over the Storriki. The thing-assembly checks the konungr. (Rank titles are the real Norse register, allowed.)",
+    "female_forms": {
+      "Fylkir": "Fylkja",
+      "Hauldr": "Hauldrkona",
+      "Hersir": "Hersirkona",
+      "Jarl": "Jarlkona",
+      "Konungr": "Drottning",
+      "Markvordr": "Markvordskona",
+      "Yfirkonungr": "Yfirdrottning"
+    },
+    "government": "clanhold (jarls, hersirs and the thing; the konungr is first among chieftains)",
+    "heir": "Konungs-son (king's son)",
+    "honorifics": {
+      "champion": "Kappi",
+      "elder": "Gamli",
+      "lady": "Husfru",
+      "lord": "Drottinn",
+      "your_grace": "Herra"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Hauldrdaemi",
+        "ruler": "Hauldr"
+      },
+      "county": {
+        "domain": "Hersirdaemi",
+        "ruler": "Hersir"
+      },
+      "duchy": {
+        "domain": "Jarldaemi",
+        "ruler": "Jarl"
+      },
+      "empire": {
+        "domain": "Storriki",
+        "ruler": "Yfirkonungr"
+      },
+      "kingdom": {
+        "domain": "Konungdaemi",
+        "ruler": "Konungr"
+      },
+      "march": {
+        "domain": "Markland",
+        "ruler": "Markvordr"
+      },
+      "principality": {
+        "domain": "Fylki",
+        "ruler": "Fylkir"
+      }
+    },
+    "vassalage": {
+      "fealty": "Eidr (oath)",
+      "liege": "Drottinn",
+      "tribute": "Skattr",
+      "vassal": "Huskarl (house-warrior)"
+    }
+  }
+}

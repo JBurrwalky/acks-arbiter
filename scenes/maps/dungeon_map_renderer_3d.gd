@@ -107,6 +107,21 @@ var _wall_meshes: Dictionary = {}
 ## Set of wall cell positions currently faded (to restore on next frame).
 var _faded_walls: Dictionary = {}
 
+## Rendering mode toggle (Quaternius asset kit vs. code-generated geometry).
+## Read from a project setting with a safe default so project.godot need not be
+## edited; surface it in the editor later. See
+## generation/gdd-dungeon-asset-integration-plan.md §7.
+const _ASSET_MODE_SETTING := "acks/rendering/dungeon_asset_mode"
+## Cached DungeonAssetRegistry (asset-kit mode only).
+var _asset_registry_cache: DungeonAssetRegistry = null
+## Focus-level asset-kit wall MeshInstance3Ds, indexed for camera-occlusion fade.
+var _asset_wall_meshes: Array = []
+## Indices into _asset_wall_meshes currently faded (to restore next frame).
+var _asset_faded: Dictionary = {}
+## Shared transparent material applied as material_override to fade asset walls
+## (non-destructive: cleared on restore to reveal the glb's own materials).
+var _asset_fade_material: StandardMaterial3D = null
+
 ## Middle-mouse drag state for camera panning.
 var _middle_dragging: bool = false
 var _middle_drag_start: Vector2 = Vector2.ZERO
@@ -620,23 +635,37 @@ func _rebuild_grid_voxel() -> void:
 
 	_wall_meshes.clear()
 	_faded_walls.clear()
+	_asset_wall_meshes.clear()
+	_asset_faded.clear()
 
 	var focus_level: int = _visibility_manager.focus_level if _visibility_manager != null else 0
 	var color_func := Callable(TacticalGrid3D, "floor_color_for_voxel")
+	var asset_mode: bool = _is_asset_kit_mode()
+	var registry: DungeonAssetRegistry = _get_asset_registry() if asset_mode else null
 
 	for level: int in _voxel_map.get_levels():
 		var use_individual := (level == focus_level)
-		var group := TacticalGrid3D.build_level_group(
-			_voxel_map, level, color_func, use_individual)
+		var group: Node3D
+		if asset_mode:
+			group = DungeonAssetBuilder.build_level_group(_voxel_map, level, registry)
+		else:
+			group = TacticalGrid3D.build_level_group(
+				_voxel_map, level, color_func, use_individual)
 		_grid_meshes.add_child(group)
 
-		# Index focus-level individual walls for occlusion fade
+		# Index focus-level walls for camera-occlusion fade. Code-generated walls
+		# are individual MeshInstance3Ds keyed by solid-cell Vector3i; asset-kit
+		# walls are .glb instances, so collect their descendant MeshInstance3Ds.
 		if use_individual:
 			var walls_node := group.get_node_or_null("Walls")
 			if walls_node != null:
-				for child in walls_node.get_children():
-					if child is MeshInstance3D and child.has_meta("cell_pos"):
-						_wall_meshes[child.get_meta("cell_pos")] = child
+				if asset_mode:
+					for wall_inst in walls_node.get_children():
+						_asset_wall_meshes.append_array(_descendant_mesh_instances(wall_inst))
+				else:
+					for child in walls_node.get_children():
+						if child is MeshInstance3D and child.has_meta("cell_pos"):
+							_wall_meshes[child.get_meta("cell_pos")] = child
 
 	# Apply level visibility (hard-clip)
 	_apply_level_visibility()
@@ -648,6 +677,26 @@ func _rebuild_grid_voxel() -> void:
 	# all wall meshes at full opacity. Without this, walls between camera and
 	# party stop fading after any fog update (the symptom reported in 7b D.1).
 	_update_wall_occlusion()
+
+
+## True when the dungeon should render with the Quaternius asset kit. Reads a
+## project setting (absent -> "code_generated"), so no project.godot edit is
+## required to keep the default; set it to "asset_kit" to enable.
+func _is_asset_kit_mode() -> bool:
+	return str(ProjectSettings.get_setting(_ASSET_MODE_SETTING, "code_generated")) == "asset_kit"
+
+
+## Lazily loads the designer-editable asset registry (data/dungeon_assets.tres),
+## falling back to the code-default registry when the .tres is absent.
+func _get_asset_registry() -> DungeonAssetRegistry:
+	if _asset_registry_cache != null:
+		return _asset_registry_cache
+	var path := "res://data/dungeon_assets.tres"
+	if ResourceLoader.exists(path):
+		_asset_registry_cache = load(path)
+	if _asset_registry_cache == null:
+		_asset_registry_cache = DungeonAssetRegistry.new()
+	return _asset_registry_cache
 
 
 func _rebuild_fog() -> void:
@@ -1423,6 +1472,11 @@ func _set_token_alpha(token: Node3D, alpha: float) -> void:
 ##
 ## The lateral margin grows when zoomed in so nearby walls are caught.
 func _update_wall_occlusion() -> void:
+	# Asset-kit walls are .glb instances (no single tintable material_override),
+	# so they fade via a separate path.
+	if not _asset_wall_meshes.is_empty():
+		_update_wall_occlusion_assets()
+		return
 	if _wall_meshes.is_empty() or _tokens.is_empty():
 		return
 
@@ -1506,6 +1560,96 @@ func _restore_all_faded_walls() -> void:
 				mat.albedo_color = base_color
 				mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	_faded_walls.clear()
+
+
+## Camera-occlusion fade for asset-kit walls. Same party-projection math as
+## _update_wall_occlusion, but each occluding MeshInstance3D fades by swapping in
+## a shared transparent material_override (cleared to restore the glb's material).
+func _update_wall_occlusion_assets() -> void:
+	if _asset_wall_meshes.is_empty() or _tokens.is_empty() or _camera == null:
+		return
+
+	var party_data: Array = []
+	for eid in _tokens.keys():
+		var token: Node3D = _tokens[eid]
+		if token.side == 0:  # PARTY
+			var wpos: Vector3 = token.global_position
+			party_data.append({
+				"depth": wpos.dot(CAM_BACKWARD),
+				"lateral": Vector2(wpos.dot(CAM_RIGHT), wpos.dot(CAM_UP)),
+			})
+
+	if party_data.is_empty():
+		_restore_all_faded_asset_walls()
+		return
+
+	var base_margin := 2.0
+	var zoom_scale := 12.0 / maxf(_camera.size, 1.0)
+	var lateral_margin: float = base_margin * maxf(zoom_scale, 1.0)
+
+	var to_fade: Dictionary = {}
+	for i in range(_asset_wall_meshes.size()):
+		var mesh: MeshInstance3D = _asset_wall_meshes[i]
+		if not is_instance_valid(mesh):
+			continue
+		var wpos: Vector3 = mesh.global_position
+		var wall_depth: float = wpos.dot(CAM_BACKWARD)
+		var wall_lateral := Vector2(wpos.dot(CAM_RIGHT), wpos.dot(CAM_UP))
+		for pd in party_data:
+			if wall_depth <= pd["depth"]:
+				continue
+			var pl: Vector2 = pd["lateral"]
+			if absf(wall_lateral.x - pl.x) <= lateral_margin \
+					and absf(wall_lateral.y - pl.y) <= lateral_margin:
+				to_fade[i] = true
+				break
+
+	# Restore walls that no longer occlude.
+	for i in _asset_faded.keys():
+		if not to_fade.has(i) and i < _asset_wall_meshes.size():
+			var mesh: MeshInstance3D = _asset_wall_meshes[i]
+			if is_instance_valid(mesh):
+				mesh.material_override = null
+
+	# Fade occluding walls.
+	for i in to_fade.keys():
+		var mesh: MeshInstance3D = _asset_wall_meshes[i]
+		if is_instance_valid(mesh):
+			mesh.material_override = _get_asset_fade_material()
+
+	_asset_faded = to_fade.duplicate()
+
+
+func _restore_all_faded_asset_walls() -> void:
+	for i in _asset_faded.keys():
+		if i < _asset_wall_meshes.size():
+			var mesh: MeshInstance3D = _asset_wall_meshes[i]
+			if is_instance_valid(mesh):
+				mesh.material_override = null
+	_asset_faded.clear()
+
+
+## Recursively collects MeshInstance3D descendants of [param node].
+func _descendant_mesh_instances(node: Node) -> Array:
+	var out: Array = []
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			out.append(child)
+		if child.get_child_count() > 0:
+			out.append_array(_descendant_mesh_instances(child))
+	return out
+
+
+## Shared transparent material used to fade occluding asset walls (lazy, cached).
+func _get_asset_fade_material() -> StandardMaterial3D:
+	if _asset_fade_material == null:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.5, 0.5, 0.5, 0.08)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_asset_fade_material = mat
+	return _asset_fade_material
 
 
 # ---------------------------------------------------------------------------

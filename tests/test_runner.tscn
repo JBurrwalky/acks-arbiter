@@ -465,7 +465,15 @@
 [ext_resource type="Script" path="res://tests/test_setting_stage4b.gd" id="449_setting_stage4b_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage4c.gd" id="450_setting_stage4c_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage4d.gd" id="451_setting_stage4d_tests"]
-[ext_resource type="Script" path="res://tests/test_npc_personality.gd" id="452_npc_personality_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage4e.gd" id="452_setting_stage4e_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage4f.gd" id="453_setting_stage4f_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage4g.gd" id="454_setting_stage4g_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_calibration.gd" id="455_setting_calibration_tests"]
+[ext_resource type="Script" path="res://tests/exploration/test_wall_edge_resolver.gd" id="456_wall_edge_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_name_banks.gd" id="457_setting_name_banks_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage6.gd" id="458_setting_stage6_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage7.gd" id="459_setting_stage7_tests"]
+[ext_resource type="Script" path="res://tests/test_npc_personality.gd" id="460_npc_personality_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1862,5 +1870,29 @@ script = ExtResource("450_setting_stage4c_tests")
 [node name="SettingStage4dTests" type="Node" parent="."]
 script = ExtResource("451_setting_stage4d_tests")
 
+[node name="SettingStage4eTests" type="Node" parent="."]
+script = ExtResource("452_setting_stage4e_tests")
+
+[node name="SettingStage4fTests" type="Node" parent="."]
+script = ExtResource("453_setting_stage4f_tests")
+
+[node name="SettingStage4gTests" type="Node" parent="."]
+script = ExtResource("454_setting_stage4g_tests")
+
+[node name="SettingCalibrationTests" type="Node" parent="."]
+script = ExtResource("455_setting_calibration_tests")
+
+[node name="WallEdgeResolverTests" type="Node" parent="."]
+script = ExtResource("456_wall_edge_resolver_tests")
+
+[node name="SettingNameBanksTests" type="Node" parent="."]
+script = ExtResource("457_setting_name_banks_tests")
+
+[node name="SettingStage6Tests" type="Node" parent="."]
+script = ExtResource("458_setting_stage6_tests")
+
+[node name="SettingStage7Tests" type="Node" parent="."]
+script = ExtResource("459_setting_stage7_tests")
+
 [node name="NpcPersonalityTests" type="Node" parent="."]
-script = ExtResource("452_npc_personality_tests")
+script = ExtResource("460_npc_personality_tests")
