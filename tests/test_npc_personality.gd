@@ -30,6 +30,8 @@ func run_all_tests() -> void:
 	test_persistence_round_trip()
 	test_attach_to_character()
 	test_classed_npc_builder_wiring()
+	test_culture_id_threads_through()
+	test_baseline_stocker_threads_culture()
 
 	if not has_failures():
 		print("NpcPersonality: all tests passed.")
@@ -261,6 +263,39 @@ func test_classed_npc_builder_wiring() -> void:
 	var plain_char: CharacterData = plain.get("character")
 	check(plain_char != null and plain_char.personality == "{}",
 		"generate_personality=false should leave personality empty")
+
+
+# ---------------------------------------------------------------------------
+# culture_id threading (migration 160 — domains/settlement_entrances.culture_id)
+# ---------------------------------------------------------------------------
+
+func test_culture_id_threads_through() -> void:
+	# A culture_id string in the public generate() context must reach the sampler's
+	# culture-bias term (the path NpcRulerGenerator / BaselineNpcStocker now use).
+	# abydosian biases five axes, so for a fixed seed the output changes vs no culture.
+	var differed := false
+	for i in range(6):
+		var sk := "culture_thread_%d" % i
+		var with_c := _gen.generate({"tier": "B", "seed_key": sk, "alignment": "neutral", "culture_id": "abydosian"})
+		var without_c := _gen.generate({"tier": "B", "seed_key": sk, "alignment": "neutral", "culture_id": ""})
+		if with_c.all_axis_scores() != without_c.all_axis_scores():
+			differed = true
+			break
+	check(differed, "providing culture_id should change the generated axes (culture bias applied)")
+
+
+func test_baseline_stocker_threads_culture() -> void:
+	# BaselineNpcStocker._make_personality_json must thread its culture_id argument
+	# into the generator — same seed, different culture → different personality JSON.
+	var differed := false
+	for i in range(6):
+		var seed_suffix := "s%d" % i
+		var with_c := BaselineNpcStocker._make_personality_json("cleric", "neutral", "Test", "abydosian", seed_suffix)
+		var without_c := BaselineNpcStocker._make_personality_json("cleric", "neutral", "Test", "", seed_suffix)
+		if with_c != without_c:
+			differed = true
+			break
+	check(differed, "baseline stocker should thread culture_id into the personality JSON")
 
 
 # ---------------------------------------------------------------------------

@@ -129,8 +129,11 @@ func generate_for_domain(domain_id: String, campaign_id: String) -> String:
 	# the row is created so it persists in one shot via to_dict(). Seeded off the
 	# domain id for reproducibility. (The StrategicDisposition ruler-AI handoff in
 	# §8 is a deferred subsystem, not produced here.)
+	# culture_id from the domain row (migration 160; '' until the setting→runtime
+	# handoff populates it, in which case the cultural axis biases activate).
 	NpcPersonalityGenerator.new().attach_to_character(character, {
 		"role": "ruler",
+		"culture_id": String(domain_data.get("culture_id", "")),
 		"seed_key": "ruler:%s" % domain_id,
 	})
 

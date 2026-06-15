@@ -34937,3 +34937,26 @@ on-tick dispatch.
 - None.
 **Next session should:**
 - Continue toward setting→runtime materialization.
+
+
+## Session 2026-06-14 (cont.) — NPC personality culture_id threading (migration 160)
+
+**Task:** Now that the setting-gen agent added migration 160 (`domains.culture_id` + `settlement_entrances.culture_id`), thread those onto the NPC personality generator's `culture_id` context so cultural axis biases apply per-NPC.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `NpcRulerGenerator.generate_for_domain` now passes `culture_id` from the domain row (`domain_data.get("culture_id","")`) into `attach_to_character`.
+- `BaselineNpcStocker.stock_poi` reads `settlement.culture_id` and threads it (new `_make_personality_json` `culture_id` param) into head + adherent personalities.
+- Verified `get_domain` (`SELECT d.*`) and `get_settlement_entrance` (`SELECT *`) flow the new column into their result dicts — no getter change needed.
+**Decisions made:**
+- Threaded now even though POPULATION is not yet built (migration 160 columns are `''` until the setting→runtime handoff fills them). Safe: empty `culture_id` → `CultureCatalogLoader.biases_for_culture("")` → `{}` → zero culture shift (identical to prior behavior). Forward-compatible: cultural biases activate automatically once the handoff populates the columns, with no further NPC-side change.
+**Interfaces defined or changed:**
+- `BaselineNpcStocker._make_personality_json(character_class, alignment, name, culture_id, seed_key)` — added `culture_id` param.
+**Database changes:**
+- None authored here. Consumes migration 160 (`domains.culture_id`, `settlement_entrances.culture_id`, both `TEXT DEFAULT ''`) added by the setting-gen agent.
+**Tests added/updated:**
+- `tests/test_npc_personality.gd` +2: `test_culture_id_threads_through` (culture_id in generate() context changes output) and `test_baseline_stocker_threads_culture` (`_make_personality_json` threads culture_id). Post-merge suite 458/18, net-zero new failures.
+**Known issues:**
+- POPULATION of `domains.culture_id` / `settlement_entrances.culture_id` is still NOT built (the setting→runtime materialization handoff). Columns stay `''` until then, so culture shift is wired-but-inert in practice. The reader side is now complete and waiting.
+**Next session should:**
+- (Setting-gen side) Build the setting→runtime handoff that stamps `setting_settlements.polity_id → setting_polities.culture_id` onto runtime `settlement_entrances.culture_id`, and the controlling polity's culture onto `domains.culture_id`. Once populated, NPC cultural biases go live with zero NPC-side changes.
+- (NPC side) StrategicDisposition (§8), then relationships (§5) + knowledge (§6); wire LLMManager for the cached summary.

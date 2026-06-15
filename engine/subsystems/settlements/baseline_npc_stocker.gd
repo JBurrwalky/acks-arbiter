@@ -139,6 +139,9 @@ static func stock_poi(poi_id: String, rng: RandomNumberGenerator = null) -> Dict
 	var campaign_id: String = String(settlement.get("campaign_id", ""))
 	var urban_families: int = int(settlement.get("urban_families", 0))
 	var market_class: int = int(settlement.get("market_class", 6))
+	# culture_id from the settlement row (migration 160; '' until the setting→runtime
+	# handoff populates it, in which case the cultural axis biases activate).
+	var settlement_culture: String = String(settlement.get("culture_id", ""))
 
 	# Resolve the parent domain's alignment for NPC alignment fallback.
 	var parent_domain_id: String = String(settlement.get("parent_domain_id", ""))
@@ -203,7 +206,7 @@ static func stock_poi(poi_id: String, rng: RandomNumberGenerator = null) -> Dict
 		# sample is driven by the Gaussian draw + alignment soft-shift + role-based
 		# Motivation. Seeded off the POI so a re-stock reproduces it.
 		"personality": _make_personality_json(head_class, stock_alignment, head_name,
-			"head:%s" % poi_id),
+			settlement_culture, "head:%s" % poi_id),
 	})
 	if head_id.is_empty():
 		return _empty_result()
@@ -232,7 +235,7 @@ static func stock_poi(poi_id: String, rng: RandomNumberGenerator = null) -> Dict
 				"home_poi_id": poi_id,
 				"npc_role": "baseline_placeholder",
 				"personality": _make_personality_json(head_class, stock_alignment, adherent_name,
-					"adherent:%s:%d" % [poi_id, i]),
+					settlement_culture, "adherent:%s:%d" % [poi_id, i]),
 			})
 			if not aid.is_empty():
 				adherent_ids.append(aid)
@@ -336,13 +339,16 @@ static func _head_recipe_for(
 
 ## Build the personality JSON for a baseline NPC. Character class maps to a
 ## semantic role (priest/mage/fighter/...) for Motivation biasing; abilities are
-## the v1 default 10s (zero ability shift). Deterministic via [param seed_key].
+## the v1 default 10s (zero ability shift). [param culture_id] is the settlement's
+## culture (CultureCatalogLoader key; '' = unknown → zero culture shift).
+## Deterministic via [param seed_key].
 static func _make_personality_json(character_class: String, alignment: String,
-		name: String, seed_key: String) -> String:
+		name: String, culture_id: String, seed_key: String) -> String:
 	var record := NpcPersonalityGenerator.new().generate({
 		"tier": "B",
 		"character_class": character_class,
 		"alignment": alignment,
+		"culture_id": culture_id,
 		"name": name,
 		"seed_key": "baseline:%s" % seed_key,
 	})
