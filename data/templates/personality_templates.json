@@ -1,0 +1,94 @@
+{
+	"schema_version": 1,
+	"_comment": "gdd-npc-personality.md §9.3 compositional-flavor fragment banks. Keyed by axis name + end (low/high). The mock concatenates fragments for axes that survive the §9.1 deviation filter, plus the motivation phrase, to build a deterministic (no-LLM) personality_summary and speech_notes. Adequate, not creative.",
+	"axis_fragments": {
+		"epistemic_curiosity": {
+			"low": "clings to received wisdom and bristles at unfamiliar ideas",
+			"high": "is hungry to learn and probes at anything new"
+		},
+		"societal_orthodoxy": {
+			"low": "has little patience for rank, custom, or protocol",
+			"high": "venerates precedent, hierarchy, and the proper form of things"
+		},
+		"affective_compassion": {
+			"low": "is unmoved by others' suffering and treats people as means",
+			"high": "feels others' pain keenly and shields the weak"
+		},
+		"stress_reactivity": {
+			"low": "stays calm and deliberate even under direct threat",
+			"high": "flares up sharply and acts on impulse when pressed"
+		},
+		"self_interest": {
+			"low": "weighs every exchange for personal advantage",
+			"high": "keeps their word and cannot be bought"
+		},
+		"in_group_loyalty": {
+			"low": "treats every bond as a transaction and owes no one",
+			"high": "is fiercely devoted to their own and will not betray them"
+		},
+		"mysticism": {
+			"low": "is skeptical of omens and speaks in worldly, concrete terms",
+			"high": "reads divine meaning into events and reveres the sacred"
+		},
+		"expressiveness": {
+			"low": "says little and lets silences stand",
+			"high": "speaks in expansive, performative flourishes"
+		},
+		"civility": {
+			"low": "is coarse and blunt, careless of etiquette",
+			"high": "is unfailingly formal and elaborately courteous"
+		},
+		"jocularity": {
+			"low": "is humorless and severe",
+			"high": "is quick to joke, tease, and deflect with levity"
+		},
+		"amorousness": {
+			"low": "is reserved and modest, uneasy with flirtation",
+			"high": "is forward and shameless, at ease with innuendo"
+		},
+		"epicureanism": {
+			"low": "spurns luxury and keeps to plain tastes",
+			"high": "is devoted to pleasure, fine food, and indulgence"
+		}
+	},
+	"motivation_phrases": {
+		"wealth": "Above all they want to grow richer.",
+		"power": "Above all they want authority and the upper hand.",
+		"knowledge": "Above all they want to learn what others do not know.",
+		"security": "Above all they want to keep themselves and theirs safe.",
+		"revenge": "Above all they want to settle an old score.",
+		"faith": "Above all they want to serve their god.",
+		"legacy": "Above all they want to build something that outlasts them.",
+		"freedom": "Above all they want to be free of obligation.",
+		"pleasure": "Above all they want to enjoy what life offers.",
+		"duty": "Above all they want to fulfill their role.",
+		"survival": "Above all they want to get through the day alive.",
+		"redemption": "Above all they want to atone for an old wrong."
+	},
+	"speech_fragments": {
+		"expressiveness": {
+			"low": "Keep replies to one or two short sentences; let pauses carry weight.",
+			"high": "Speak expansively, with flourish and grand gesture."
+		},
+		"civility": {
+			"low": "Be blunt and coarse; ignore etiquette.",
+			"high": "Use formal address and elaborate courtesy throughout."
+		},
+		"jocularity": {
+			"low": "Stay humorless and grave; no jokes.",
+			"high": "Lace speech with jokes, teasing, and levity."
+		},
+		"amorousness": {
+			"low": "Stay reserved and modest; avoid flirtation.",
+			"high": "Be flirtatious and forward, comfortable with innuendo."
+		},
+		"epicureanism": {
+			"low": "Speak plainly of plain things; disdain excess.",
+			"high": "Dwell on pleasures, luxuries, and fine living."
+		},
+		"mysticism": {
+			"low": "Speak in worldly, concrete terms; wave off the divine.",
+			"high": "Invoke omens and the sacred; read meaning into events."
+		}
+	}
+}

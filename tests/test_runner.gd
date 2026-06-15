@@ -542,6 +542,8 @@ extends Node
 @onready var _setting_stage4b_tests = $SettingStage4bTests
 @onready var _setting_stage4c_tests = $SettingStage4cTests
 @onready var _setting_stage4d_tests = $SettingStage4dTests
+# 2026-06-14 — NPC personality core layer (twelve-axis sampler + mock + wiring)
+@onready var _npc_personality_tests = $NpcPersonalityTests
 
 
 func _ready() -> void:
@@ -1090,7 +1092,9 @@ func run() -> void:
 			# 2026-06-13 — Setting generation Stage 4c (history sim: economy/garrison ledger)
 			_setting_stage4c_tests,
 			# 2026-06-13 — Setting generation Stage 4d (history sim: war + vassalage/secession)
-			_setting_stage4d_tests]:
+			_setting_stage4d_tests,
+			# 2026-06-14 — NPC personality core layer
+			_npc_personality_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

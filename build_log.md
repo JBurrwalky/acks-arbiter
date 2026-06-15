@@ -34082,3 +34082,45 @@ on-tick dispatch.
 1. **Stage 4e** — stability/collapse curve (§7.5), collapse outcomes/severity/K-shatter (§7.6), fading degradation (§7.7), demihuman epoch bias (§9): `_phase_stability`/`_phase_collapse`. Consumes `f_overextension` (4c) + `collapse_risk_tick` (4b/4d war shock); maintains `pol["collapse_risk"]` (read by 4d secession); RESTORES wilderness via depopulation; emits fallen_polities + ruin seeds with provenance. Build the §7.4 internal vassal-domain records here (vassal_count feeds the K cap). Wire `_fade_factor` to real fading (currently returns 1.0).
 2. **Stage 4f** — migration + beastman repopulation (§8, §7.6). Then the §9.3 calibration harness (≥20 seeds × Large) + the deferred sim perf pass.
 3. **Stage 4g** — event-log significance scoring + present-day handoff (§11, §12). **Re-check the stronghold-value discrepancy in `domain_tier_table.gd` with Jedidiah here** (his standing request).
+
+
+## Session 2026-06-14 — NPC Personality core layer (twelve-axis sampler + mock + generator wiring)
+
+**Task:** Build the NPC personality system + personality generator (per `generation/gdd-npc-personality.md`) and plug it into the existing NPC generators. Scope (per Jedidiah): the CORE layer wired end-to-end — twelve axes + Motivation + distinctive feature + seeded sampler + mock-LLM summary + persistence + generator wiring. Relationships (§5), knowledge (§6), and StrategicDisposition (§8) deferred.
+**Model used:** Opus 4.8 (1M) for the full session (design reconciliation + implementation + verification).
+**Completed:**
+- `engine/subsystems/generation/npcs/personality_axes.gd` (new) — static catalog: 12 axis keys (7 strategic / 5 expressive), §9.2 LOW/HIGH directive table (verbatim), §2.5 ability-shift coeffs, §3.4 alignment soft-shifts, §3.3 motivation tags + alignment bias, deviation-filter helpers (`is_deviant`, `directive_for`, `end_of`, `normalize_alignment`).
+- `engine/shared_types/npc_personality.gd` (new) — `NpcPersonality` data shape; `axes` dict + `sampled_axes` (Tier C); `axis()` defaults unsampled to baseline 5; `deviant_axes()`; from_dict/to_dict/from_json/to_json (serialized to `characters.personality`).
+- `engine/subsystems/generation/npcs/axis_sampler.gd` (new) — `PersonalityAxisSampler`: §4.1 step-2 stack sample(`randfn(5,1.8)`) → ability → culture → faction[reserved {}] → alignment → `XPAwardCalculator.bankers_round` → clamp[1,10]. `sample_all` / `sample_subset` / `sample_axis`.
+- `engine/subsystems/generation/npcs/personality_mock.gd` (new) — `PersonalityMock`: diagnostic-echo (verbatim §9.1 directive block) + compositional-flavor (fragment-bank prose); `build_directive_block()` shared with the LLM prompt assembler.
+- `engine/subsystems/generation/npcs/npc_personality_generator.gd` (new) — `NpcPersonalityGenerator`: `generate(context)`, `attach_to_character(character, context)`, `build_dialogue_prompt(record, runtime_ctx)` (§9.1 template), `make_rng(seed_key, campaign_seed=0)` (wraps `WorldGenRng.stream`). Full + Tier C gen, weighted motivation roll with role guarantee, distinctive feature pick, culture-bias fetch.
+- `data/templates/{personality_templates,distinctive_features,role_defaults}.json` (new) — fragment banks (§9.3), §4.3 feature pools, §4.1/§4.2 role→motivation defaults + class→role map.
+- `engine/subsystems/generation/world/culture_catalog_loader.gd` — added `personality_weight_biases(record)` + `biases_for_culture(culture_id)` accessors (data was present at `mechanical.npc.personality_weight_biases` but unconsumed).
+- Wired personality into `ClassedNpcBuilder.build_classed_npc` (lazy `_ensure_personality_generator`; opts `generate_personality` default true, `culture_id`/`culture_name`/`role`/`settlement_name`), `NpcRulerGenerator.generate_for_domain` (role "ruler"), `BaselineNpcStocker` (`_make_personality_json`, head + adherents) + `CampaignRepository.insert_baseline_npc_character` INSERT now writes the `personality` column.
+**Decisions made:**
+- Personality generated PRE-persist and carried on `character.personality` so `create_character`/`insert_baseline_npc_character` persist it in one shot (no extra UPDATE). The GDD's "post-persist" note applies only to relationships/knowledge (which reference other NPC ids); the self-contained axes/motivation/feature need no row id. `npc_id` is NOT duplicated inside the JSON (the row id is the key).
+- Determinism via the project `WorldGenRng` FNV-stream pattern, keyed off a stable `seed_key` (e.g. `classed_npc:<campaign>:<class>:<level>:<roll>`, `ruler:<domain_id>`, `baseline:head:<poi_id>`). Callers may pass their own `rng` instead.
+- Faction + religion biases degrade to zero-shift (FactionData has no `personality_weight_biases`; no runtime religion loader). Cultural biases consumed when `culture_id` supplied; else zero-shift.
+- Mock-first per the core principle: cached `personality_summary`/`speech_notes` produced by `PersonalityMock` at build time; live-LLM summary deferred (swap-in point is `build_dialogue_prompt` + the mock call site).
+- Axis rounding uses `XPAwardCalculator.bankers_round` (project round-half-to-even rule).
+**Interfaces defined or changed:**
+- `NpcPersonalityGenerator.generate(context: Dictionary) -> NpcPersonality`; `.attach_to_character(character: CharacterData, context := {}) -> NpcPersonality`; `.build_dialogue_prompt(record, runtime_context) -> String`; static `.make_rng(seed_key: String, campaign_seed := 0) -> RandomNumberGenerator`; static `.clear_cache()`.
+- `context` keys: `tier`("A"/"B"/"C"), `charisma`/`wisdom`/`intelligence` (or `cha_mod`/`wis_mod`/`int_mod`), `alignment`, `culture_id`/`culture_biases`, `faction_biases`, `role`/`character_class`, `name`/`settlement_name`/`culture_name`/`level`, `rng`/`seed_key`/`campaign_seed`, `mock_mode`.
+- `NpcPersonality.from_json(raw) -> NpcPersonality|null` (null for ""/"{}"/malformed); `.to_json()`; `.axis(key)`; `.all_axis_scores()`; `.deviant_axes()`.
+- `PersonalityAxisSampler.sample_all/sample_subset/sample_axis(...)`. `PersonalityMock.generate_summary(record, context, mode) -> {personality_summary, speech_notes}`; modes `MODE_ECHO`/`MODE_FLAVOR`; `.build_directive_block(record, context)`.
+- `CultureCatalogLoader.personality_weight_biases(record)` + `.biases_for_culture(culture_id)`.
+- `ClassedNpcBuilder.build_classed_npc` opts gained `generate_personality`(default true)/`culture_id`/`culture_name`/`role`/`settlement_name`.
+- `CampaignRepository.insert_baseline_npc_character` now accepts/writes `personality` (default "{}").
+**Database changes:**
+- None (no migration). The `characters.personality TEXT DEFAULT '{}'` column already existed (migration 005). `insert_baseline_npc_character` INSERT extended to write it.
+**Tests added/updated:**
+- `tests/test_npc_personality.gd` (new, 17 tests; registered in `test_runner.tscn`/`.gd` as id `452_npc_personality_tests` / `NpcPersonalityTests`): catalog integrity, 12-axes-in-range, seed determinism, baseline mean ≈5, INT raises curiosity, alignment shifts orthodoxy, culture bias applied, culture-loader accessor, motivation role guarantee, Tier C quick gen, deviation filter, both mock modes, JSON round-trip, attach_to_character, ClassedNpcBuilder wiring (+ opt-out).
+- Stash-and-measure baseline check: WITHOUT changes 446/18; WITH changes 447/18 → +1 passing suite (mine), net-zero new failures. The 18 are pre-existing carry-forwards (movement-3D ZoC/LOS, party split/merge, scheduler transition, domain-style, dungeon encounter, equipment paper-doll, data-freshness .py --check).
+**Known issues:**
+- Baseline NPCs (`BaselineNpcStocker`) generate with default-10 abilities (zero ability shift) and no culture (zero culture shift), so their personalities are alignment+Gaussian-driven only until the stocker threads real abilities/culture. `[NEEDS-OPUS-REVIEW]` not required.
+- Culture bias enrichment is wired but callers don't yet pass `culture_id` (settlements/domains don't carry it directly; needs settlement→domain→polity lookup, deferred). Personalities currently sample without culture shift in practice.
+- Live-LLM summary not wired (mock-only). `personality_summary`/`speech_notes` are deterministic mock output.
+**Next session should:**
+- (Optional follow-on) Thread `culture_id` into the generators (settlement→domain→`SettingRepository` polity lookup) so cultural biases actually apply at stocking time.
+- Build the deferred personality subsystems in priority order: §8 `StrategicDisposition`/`RulerProfile` (ruler-AI handoff; consumed by future `gdd-ruler-ai.md`), then §5 relationships (new table) + §6 knowledge (new table) at settlement-stocking time.
+- Wire `LLMManager` for the §9.2 cached summary (replace the mock at the `NpcPersonalityGenerator.generate` summary call site).

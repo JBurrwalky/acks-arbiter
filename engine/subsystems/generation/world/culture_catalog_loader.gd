@@ -110,6 +110,24 @@ static func sphere_weights(record: Dictionary) -> Dictionary:
 	return mechanical(record).get("rulership", {}).get("sphere_weights", {})
 
 
+## NPC personality mean-shift biases ({ axis: float }, partial; range -2.0..+2.0)
+## per gdd-cultural-religious-generation.md §2.1. Consumed by the NPC personality
+## generator (gdd-npc-personality.md §4.1 step 2c). {} when the record omits them.
+static func personality_weight_biases(record: Dictionary) -> Dictionary:
+	return mechanical(record).get("npc", {}).get("personality_weight_biases", {})
+
+
+## Convenience: personality biases for a culture by id, or {} when the culture is
+## unknown. Loads (and caches) the catalog on first call.
+static func biases_for_culture(culture_id: String) -> Dictionary:
+	if culture_id.is_empty():
+		return {}
+	var rec: Variant = load_all().get(culture_id, null)
+	if rec is Dictionary:
+		return personality_weight_biases(rec)
+	return {}
+
+
 static func ids_by_tier(t: String) -> Array:
 	var out: Array = []
 	var keys := load_all().keys()

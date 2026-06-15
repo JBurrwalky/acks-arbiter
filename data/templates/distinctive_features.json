@@ -1,0 +1,50 @@
+{
+	"schema_version": 1,
+	"_comment": "gdd-npc-personality.md §4.3 distinctive-feature tables. One memorable detail per NPC, drawn from these pools. Physical / behavioral / possessions are pooled equally for v1.",
+	"physical": [
+		"a long scar across one cheek",
+		"a missing finger on the left hand",
+		"a wine-stain birthmark on the throat",
+		"unusually tall and stooped",
+		"short and barrel-chested",
+		"a pronounced limp",
+		"one blue eye and one brown",
+		"an elaborate tattoo coiling up the neck",
+		"always faintly sweating",
+		"a sudden shock of white hair",
+		"several missing teeth",
+		"a brand mark on the forearm",
+		"a crude prosthetic hand of carved wood",
+		"a nose broken and reset crooked",
+		"deeply weathered, sun-leathered skin"
+	],
+	"behavioral": [
+		"hums tunelessly while thinking",
+		"fidgets endlessly with a worn coin",
+		"mutters to an absent companion",
+		"quotes scripture at every turn",
+		"writes everything down in a little book",
+		"never quite makes eye contact",
+		"laughs at the wrong moments",
+		"is always eating something",
+		"compulsively washes their hands",
+		"collects buttons and shows them off",
+		"refers to themselves in the third person",
+		"taps out a rhythm on any nearby surface",
+		"finishes other people's sentences",
+		"counts under their breath",
+		"cracks their knuckles before speaking"
+	],
+	"possessions": [
+		"wears a battered, distinctive wide-brimmed hat",
+		"carries an unusually ornate weapon",
+		"is never without a small, scruffy dog",
+		"wears two boots that do not match",
+		"always has a dog-eared book half-read",
+		"is hung with far too much cheap jewelry",
+		"touches a lucky charm whenever nervous",
+		"keeps a caged songbird close at hand",
+		"wears a faded military medal out of place",
+		"carries a walking stick topped with carved bone"
+	]
+}

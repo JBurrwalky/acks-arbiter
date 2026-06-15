@@ -31,6 +31,8 @@ var _spell_repertoire: TemplateSpellRepertoire = null
 ## Lazily built on the first shaman-totem grant — avoids loading the 225-entry
 ## MonsterRegistry for the common non-totem path. See _ensure_monster_registry().
 var _monster_registry: MonsterRegistry = null
+## Lazily built on the first personality attach (loads small JSON template banks).
+var _personality_generator: NpcPersonalityGenerator = null
 
 
 func _init(p_template_repo: ClassTemplateRepository = null,
@@ -66,6 +68,14 @@ func _ensure_monster_registry() -> MonsterRegistry:
 	if _monster_registry == null:
 		_monster_registry = MonsterRegistry.new()
 	return _monster_registry
+
+
+## Lazily construct the NPC personality generator (loads the small template JSON
+## banks once; cached statically thereafter).
+func _ensure_personality_generator() -> NpcPersonalityGenerator:
+	if _personality_generator == null:
+		_personality_generator = NpcPersonalityGenerator.new()
+	return _personality_generator
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +216,22 @@ func build_classed_npc(class_id: String, opts: Dictionary = {}) -> Dictionary:
 			int(spell_info["extra_spells_to_roll"]), "npc_rep_%s_%d" % [class_id, int(sel["roll"])])
 		result["repertoire_spells"] = rep["spells"]
 		result["repertoire_detail"] = rep
+
+	# NPC personality (gdd-npc-personality.md §4): twelve dispositional axes +
+	# Motivation + a distinctive feature, written onto character.personality so
+	# persist() -> create_character stores it in one shot. The character's rolled
+	# ability scores + alignment always drive the sample; culture_id / role enrich
+	# it when the caller supplies them (else culture is a zero-shift no-op). Seeded
+	# off the same deterministic inputs as the rest of the build (class/level/roll)
+	# so a rebuild reproduces the personality. Opt out with generate_personality=false.
+	if bool(opts.get("generate_personality", true)):
+		_ensure_personality_generator().attach_to_character(character, {
+			"culture_id": String(opts.get("culture_id", "")),
+			"culture_name": String(opts.get("culture_name", "")),
+			"role": String(opts.get("role", "")),
+			"settlement_name": String(opts.get("settlement_name", "")),
+			"seed_key": "classed_npc:%s:%s:%d:%d" % [campaign_id, class_id, level, int(sel["roll"])],
+		})
 
 	result["advancement_pending"] = level > 1  # §7.4 / §10 step 10
 	result["ok"] = true

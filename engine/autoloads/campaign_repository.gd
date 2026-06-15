@@ -4375,8 +4375,8 @@ func insert_baseline_npc_character(data: Dictionary) -> String:
 			id, campaign_id, name, character_type, persistence_tier,
 			race, character_class, level, combat_progression,
 			hp_max, hp_current, alignment,
-			home_poi_id, npc_role
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			home_poi_id, npc_role, personality
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		character_id,
 		campaign_id,
@@ -4392,6 +4392,7 @@ func insert_baseline_npc_character(data: Dictionary) -> String:
 		str(data.get("alignment", "neutral")),
 		home_poi_id_v,
 		str(data.get("npc_role", "baseline_placeholder")),
+		str(data.get("personality", "{}")),
 	]):
 		push_error("CampaignRepository.insert_baseline_npc_character: INSERT failed name=%s"
 			% str(data.get("name", "?")))

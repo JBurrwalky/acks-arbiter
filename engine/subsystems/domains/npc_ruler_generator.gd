@@ -124,6 +124,16 @@ func generate_for_domain(domain_id: String, campaign_id: String) -> String:
 	# Replace the auto-generated placeholder name with a ruler-style name.
 	character.name = roll_ruler_name()
 
+	# NPC personality (gdd-npc-personality.md §4): a full profile for a politically
+	# meaningful ruler. Role "ruler" biases Motivation toward power. Written before
+	# the row is created so it persists in one shot via to_dict(). Seeded off the
+	# domain id for reproducibility. (The StrategicDisposition ruler-AI handoff in
+	# §8 is a deferred subsystem, not produced here.)
+	NpcPersonalityGenerator.new().attach_to_character(character, {
+		"role": "ruler",
+		"seed_key": "ruler:%s" % domain_id,
+	})
+
 	# Persist character row.
 	var new_id: String = CampaignRepository.create_character(character.to_dict())
 	if new_id.is_empty():

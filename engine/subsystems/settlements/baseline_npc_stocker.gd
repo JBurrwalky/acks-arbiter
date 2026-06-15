@@ -198,6 +198,12 @@ static func stock_poi(poi_id: String, rng: RandomNumberGenerator = null) -> Dict
 		"alignment": stock_alignment,
 		"home_poi_id": poi_id,
 		"npc_role": "baseline_placeholder",
+		# gdd-npc-personality.md §4: baseline NPCs get a personality too. Abilities
+		# default to 10 (zero ability shift) and culture is unknown here, so the
+		# sample is driven by the Gaussian draw + alignment soft-shift + role-based
+		# Motivation. Seeded off the POI so a re-stock reproduces it.
+		"personality": _make_personality_json(head_class, stock_alignment, head_name,
+			"head:%s" % poi_id),
 	})
 	if head_id.is_empty():
 		return _empty_result()
@@ -225,6 +231,8 @@ static func stock_poi(poi_id: String, rng: RandomNumberGenerator = null) -> Dict
 				"alignment": stock_alignment,
 				"home_poi_id": poi_id,
 				"npc_role": "baseline_placeholder",
+				"personality": _make_personality_json(head_class, stock_alignment, adherent_name,
+					"adherent:%s:%d" % [poi_id, i]),
 			})
 			if not aid.is_empty():
 				adherent_ids.append(aid)
@@ -320,6 +328,25 @@ static func _head_recipe_for(
 		"combat_progression": "fighter",
 		"level": 1,
 	}
+
+
+# ---------------------------------------------------------------------------
+# Personality — gdd-npc-personality.md §4 (baseline NPCs, Tier B)
+# ---------------------------------------------------------------------------
+
+## Build the personality JSON for a baseline NPC. Character class maps to a
+## semantic role (priest/mage/fighter/...) for Motivation biasing; abilities are
+## the v1 default 10s (zero ability shift). Deterministic via [param seed_key].
+static func _make_personality_json(character_class: String, alignment: String,
+		name: String, seed_key: String) -> String:
+	var record := NpcPersonalityGenerator.new().generate({
+		"tier": "B",
+		"character_class": character_class,
+		"alignment": alignment,
+		"name": name,
+		"seed_key": "baseline:%s" % seed_key,
+	})
+	return record.to_json()
 
 
 # ---------------------------------------------------------------------------
