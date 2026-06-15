@@ -475,6 +475,8 @@
 [ext_resource type="Script" path="res://tests/test_setting_stage7.gd" id="459_setting_stage7_tests"]
 [ext_resource type="Script" path="res://tests/test_npc_personality.gd" id="460_npc_personality_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage8.gd" id="461_setting_stage8_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_stage9.gd" id="462_setting_stage9_tests"]
+[ext_resource type="Script" path="res://tests/test_campaign_creation_seams.gd" id="463_campaign_creation_seams_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1897,6 +1899,12 @@ script = ExtResource("459_setting_stage7_tests")
 
 [node name="SettingStage8Tests" type="Node" parent="."]
 script = ExtResource("461_setting_stage8_tests")
+
+[node name="SettingStage9Tests" type="Node" parent="."]
+script = ExtResource("462_setting_stage9_tests")
+
+[node name="CampaignCreationSeamsTests" type="Node" parent="."]
+script = ExtResource("463_campaign_creation_seams_tests")
 
 [node name="NpcPersonalityTests" type="Node" parent="."]
 script = ExtResource("460_npc_personality_tests")

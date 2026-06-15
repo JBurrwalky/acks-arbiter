@@ -556,6 +556,10 @@ extends Node
 @onready var _setting_stage7_tests = $SettingStage7Tests
 # 2026-06-14 — Stage 8 setting-generation narrative (Layer 7)
 @onready var _setting_stage8_tests = $SettingStage8Tests
+# 2026-06-14 — Stage 9 setting-generation validation + lock (Layer 8)
+@onready var _setting_stage9_tests = $SettingStage9Tests
+# 2026-06-15 — Stage 10 campaign-creation logic seams (codec/review/replay-decode)
+@onready var _campaign_creation_seams_tests = $CampaignCreationSeamsTests
 # 2026-06-14 — NPC personality core layer (twelve-axis sampler + mock + wiring)
 @onready var _npc_personality_tests = $NpcPersonalityTests
 
@@ -1125,6 +1129,10 @@ func run() -> void:
 			_setting_stage7_tests,
 			# 2026-06-14 — Setting generation Stage 8 (Layer 7 narrative)
 			_setting_stage8_tests,
+			# 2026-06-14 — Setting generation Stage 9 (Layer 8 validation + lock)
+			_setting_stage9_tests,
+			# 2026-06-15 — Stage 10 campaign-creation logic seams
+			_campaign_creation_seams_tests,
 			# 2026-06-14 — NPC personality core layer
 			_npc_personality_tests]:
 		if suite == null:

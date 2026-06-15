@@ -47,6 +47,7 @@ const _NEAR_MAX := 14
 const _REALM_HISTORY_MAX := 4    # recent-epoch events narrated per realm
 
 var _polity_name: Dictionary = {}   # pol_id -> display name (alive realm, fallen reach, or generic)
+var _named: Dictionary = {}         # pol_id -> true when it resolved to a REAL name (not the generic)
 var _events: Array = []             # parsed event dicts {y, type, polities, cultures, sig, id}
 
 
@@ -78,16 +79,24 @@ func run(ctx: Dictionary) -> bool:
 ## gets a generic label so a timeline line is never blank.
 func _index_polities(ctx: Dictionary) -> void:
 	_polity_name.clear()
+	_named.clear()
 	for pol in ctx.get("sim_polities", []):
+		var pid := str(pol.get("id", ""))
 		var nm := str(pol.get("name", "")).strip_edges()
 		if nm == "":
-			nm = "the realm of %s" % str(pol.get("id", "?"))
-		_polity_name[str(pol.get("id", ""))] = nm
+			nm = "the realm of %s" % pid
+		else:
+			_named[pid] = true   # an alive realm with a real Stage-5 name
+		_polity_name[pid] = nm
 	for fp in ctx.get("sim_fallen_polities", []):
-		var pid := str(fp.get("polity_id", ""))
-		if not _polity_name.has(pid):
+		var fpid := str(fp.get("polity_id", ""))
+		if not _polity_name.has(fpid):
 			var root := str(fp.get("toponym_root", "")).strip_edges()
-			_polity_name[pid] = ("the Old %s" % root) if root != "" else "a vanished realm"
+			if root == "" or root == "<null>" or root == "null":
+				_polity_name[fpid] = "a vanished realm"
+			else:
+				_polity_name[fpid] = "the Old %s" % root
+				_named[fpid] = true   # a fallen realm with a real toponym
 
 
 func _index_events(ctx: Dictionary) -> void:
@@ -118,6 +127,11 @@ func _timeline_block() -> Dictionary:
 	var middle: Array = []
 	var near: Array = []
 	for e in _events:
+		# Skip "a vanished realm did X to a vanished realm" — the setting-wide
+		# timeline only narrates events whose PRIMARY actor has a real name. (A
+		# realm's own history block still keeps events where it is the OTHER party.)
+		if not _event_is_named(e):
+			continue
 		var y: int = e["y"]
 		if y >= _DEEP_CUTOFF:
 			deep.append(e)
@@ -153,8 +167,13 @@ func _epoch_lines(events: Array, limit: int) -> Array:
 		out.append("  (no recorded events in this age)")
 		return out
 	var n: int = mini(limit, sorted.size())
+	var last := ""
 	for i in n:
-		out.append("  ~%d years ago — %s." % [int(sorted[i]["y"]), _event_sentence(sorted[i])])
+		var line := "  ~%d years ago — %s." % [int(sorted[i]["y"]), _event_sentence(sorted[i])]
+		if line == last:
+			continue   # collapse a true repeat (same year + same actors)
+		out.append(line)
+		last = line
 	return out
 
 
@@ -176,6 +195,16 @@ func _name_of(ids: Array, idx: int) -> String:
 	if idx >= ids.size():
 		return "a neighbouring realm"
 	return str(_polity_name.get(str(ids[idx]), "a vanished realm"))
+
+
+## An event is "named" (worth surfacing in the global timeline / brief) when its
+## primary actor resolves to a real name. Migration is keyed on culture, which is
+## always labelled, so it always qualifies.
+func _event_is_named(e: Dictionary) -> bool:
+	if str(e["type"]) == "migration":
+		return true
+	var ids: Array = e["polities"]
+	return ids.size() > 0 and _named.has(str(ids[0]))
 
 
 func _realm_block(pol: Dictionary) -> Dictionary:
@@ -247,12 +276,15 @@ func _poi_block(p: Dictionary) -> Dictionary:
 	var name := str(p.get("name", "an unmarked place"))
 	var ptype := str(p.get("poi_type", "site")).replace("_", " ")
 	var body := "%s is a %s." % [name, ptype]
-	# First TRUE rumor seed becomes the local lore line (in NPC voice).
+	# First (TRUE) rumor seed becomes the local-lore line. text_hint is structured
+	# "<ptype> at hex <q><r>: <notable fact>" — keep the fact, drop the coordinate.
 	var rumors = JSON.parse_string(str(p.get("rumor_seeds", "[]")))
 	if rumors is Array and rumors.size() > 0:
-		var hint := str(rumors[0].get("content_hint", "")).strip_edges()
-		if hint != "":
-			body += " Travellers whisper that %s" % _lower_first(hint)
+		var hint := str(rumors[0].get("text_hint", "")).strip_edges()
+		var parts := hint.split(": ", false, 1)
+		var fact := str(parts[parts.size() - 1]).strip_edges().replace("_", " ") if parts.size() > 0 else ""
+		if fact != "":
+			body += " Those who pass speak of %s" % _lower_first(fact)
 			if not body.ends_with("."):
 				body += "."
 	return _wrap("poi", str(p.get("id", "")), body, {"poi_type": ptype})
@@ -408,6 +440,8 @@ func _current_tension() -> String:
 		if e["y"] >= _MIDDLE_CUTOFF:
 			continue
 		if e["type"] != "war" and e["type"] != "conquest":
+			continue
+		if not _event_is_named(e):
 			continue
 		if best == null or e["sig"] > best["sig"] \
 				or (e["sig"] == best["sig"] and str(e["id"]) < str(best["id"])):

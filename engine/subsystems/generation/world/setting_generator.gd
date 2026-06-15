@@ -237,7 +237,14 @@ func _run_narrative(ctx: Dictionary) -> bool:
 	return SettingRepository.save_narrative(ctx["campaign_id"], ctx.get("sim_narrative", []))
 
 
-func _run_validation(_ctx: Dictionary) -> bool:
-	# Stage 9: setting_validator.gd (the §11.1 checklist; the post-approval
-	# lock itself is applied by the approval flow, not here).
+func _run_validation(ctx: Dictionary) -> bool:
+	# Stage 9: Layer 8 mechanical validation (§11.1). Runs the validator and stores
+	# the structured result in ctx for player review (§11.3). NON-FATAL to the
+	# pipeline — a finding is surfaced in the report, it does not abort generation;
+	# the post-approval lock is applied by the approval flow, not here.
+	var result := SettingValidator.new().validate(ctx["campaign_id"])
+	ctx["validation"] = result
+	if not bool(result.get("ok", false)):
+		push_warning("SettingValidator found %d error(s):\n%s" % [
+			result.get("errors", []).size(), str(result.get("report", ""))])
 	return true

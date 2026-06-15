@@ -34663,3 +34663,92 @@ on-tick dispatch.
 - The real LLM provider (cloud/local) + provider settings wizard + async/progress + EventBus signal emission: a separate design pass (handoff §161). The wall is in place for it to slot into.
 **Next session should:**
 - Stage 9 (Layer 8 validation + lock): the §11.1 mechanical checklist (every hex has required fields, substrate weights sum to 100%, population caps, present-day ACKS-validity handoff) + the post-approval lock. Then Stage 10 (campaign-creation UI).
+
+
+## Session 2026-06-14 (cont.) — Stage 8 noise-filter polish + Stage 9: Layer 8 validation & lock
+
+**Task:** (1) Clean the Stage-8 timeline "both-unresolved" noise lines per Jedidiah. (2) Build Stage 9 — the §11.1 mechanical validation checklist + verify the post-approval lock.
+**Model used:** Opus 4.8.
+**Completed:**
+- **Stage-8 polish:** added `_named` set (pol_ids resolving to a REAL name) + `_event_is_named()`; the setting-wide timeline + brief's tension line now skip events whose PRIMARY actor is unresolved ("a vanished realm conquered a vanished realm" noise), while realm-history blocks keep them (the realm itself is named there). Also fixed in the same pass: null-toponym leak ("the Old <null>" → "a vanished realm"), POI rumor field (`text_hint` not `content_hint`, prefix stripped, humanized `_`→space), and consecutive-duplicate dedup in epoch lines. New regression assertion: timeline body never contains "— a vanished realm".
+- **Stage 9 validator:** `engine/subsystems/generation/world/setting_validator.gd` (`SettingValidator`, RefCounted, pure reader). `validate(campaign_id) -> {ok, errors, warnings, report}` runs the §11.1 checklist with per-check IDs (handoff §9.2). STRUCTURAL invariants = ERRORS, DISTRIBUTIONS = WARNINGS (so a good world is green):
+  - V1 land-hex completeness (elevation/biome/valid territory_class; water hexes only need a valid water tag — NOT land-biome fields).
+  - V2 owned-hex substrate present + (warn) normalized ~1.0 (unowned land carries an un-normalized trader floor — skipped).
+  - V4 population_band ≤ cap_for(class) (limits-of-growth).
+  - V5 (warn) wilderness fraction in a ~30-75% band.
+  - V6 market_class == table value for urban_families.
+  - V7 (warn) tier ≥ 5 holding < 4 hexes.
+  - V8 vassal chains: self-liege + cycle = ERROR; a fallen (missing) liege = WARNING (tolerable independence).
+  - V9 morale_seed present + parseable (defaults to "[]").
+  - V11 non-geometric ruin has a provenance culture; source_event_id validated ONLY when set (the sim hardcodes it "" — provenance is culture/polity/era, per `_emit_ruin`).
+  - V12 (warn) realm with ≥2 settlements but no connecting road.
+  - V13 settlement/capital sit on real grid hexes.
+- `setting_generator._run_validation` runs the validator, stores `ctx["validation"]`, push_warns on errors, returns true (NON-FATAL — findings surface at player review; the lock is applied by the approval flow).
+- `tests/test_setting_stage9.gd` (id 462, 4-edit registration): validator green (zero errors, report PASS) on a generated world; warnings cite a V-id + severity + message; **lock semantics** — fresh world unlocked → `lock_setting` → `is_locked` true → `save_settlements` refused → settlement set unchanged.
+**Decisions made:**
+- Validation is non-fatal to the pipeline (a report for §11.3 review), not a generation gate — so a future false-positive can't break every generate(). Tests assert `validate().ok` directly.
+- Borderline/uncertain checks (substrate normalization, wilderness fraction, tier plausibility, dangling liege, road coverage) are WARNINGS, not errors, so the validator is green on valid worlds while still surfacing the distribution.
+- The lock already existed (Stage 0: `is_locked`/`lock_setting`/`_reject_if_locked` guarding every writer); Stage 9 added the validator + the lock-semantics regression test.
+**Interfaces defined or changed:**
+- `SettingValidator.validate(campaign_id: String) -> Dictionary` = {ok: bool, errors: Array[{id,severity,message}], warnings: Array, report: String}.
+- `_run_validation` now sets `ctx["validation"]` = that result.
+**Database changes:** None (validator is a pure reader; no new table).
+**Tests added/updated:** `test_setting_stage9.gd` (id 462, 11 checks). Stage 8 suite gained the noise-filter assertion (166 checks). run1=run2=40 baseline, net-zero new failures.
+**Known issues:**
+- V11 found that the sim never wires `source_event_id` on ruins (always ""); provenance is the culture/polity/era fields. Not a bug — but if a hard event-FK is wanted later, populate `_emit_ruin`'s source_event_id from the emitted event id.
+- Economics viability (§11.1 "income ≥ garrison at 2gp/family") not implemented — the ledger isn't persisted per realm. Add when/if domain economics are surfaced.
+- "Validator green on 3 seeds × Medium/Large" exit: tested on 1 seed × small here; a multi-seed/size sweep is a calibration-harness (§9.3) concern.
+**Next session should:**
+- Stage 10 (campaign-creation UI, `gdd-campaign-creation-ui.md`): the four screens, replay playback from stored frames, parameter tabs bound to the config resource, the review screen composing the map renderer + side overlay (consuming the §11.3 validation report + the Layer-7 brief), seed sharing, the §8 EventBus signals. The final pipeline stage.
+
+
+## Session 2026-06-14 (cont.) — Take-stock + NPC crossover: runtime culture_id columns (migration 160); setting→runtime materialization DEFERRED
+
+**Task:** Take stock of the pipeline and address the NPC-generation crossover (NPC personality gen is blocked on a setting→runtime culture handoff and expects this session to act).
+**Model used:** Opus 4.8. Setting→runtime handoff mapped by an Explore agent.
+**Completed:**
+- **CRITICAL FINDING (take-stock):** the **setting→runtime materialization does NOT exist**. The generator writes `setting_*` tables (frozen at lock); the live game reads `domains`/`settlement_entrances`/`realms`. NOTHING converts one into the other — runtime tables are populated by hand-authored TEST fixtures only (`TestContentSeeder` Avalon 376-domain seed / Ashford map). A *generated* campaign has no bridge into play. This gap is bigger than Stage 10's UI; it is the true gap between "generator done" and "playable generated world."
+- **NPC crossover contract mapped:** `realms.culture` already exists (placeholder ''). `domains.culture_id` + `settlement_entrances.culture_id` did NOT exist → **migration 160 adds both** (TEXT NOT NULL DEFAULT ''). They flow through `CampaignRepository.get_domain()` (`SELECT d.*`) and `get_settlement_entrance()` (`SELECT *`) automatically — no getter change. '' = the NPC generator's safe culture zero-shift, so existing campaigns are unaffected. **The NPC agent's READ-side is unblocked now**; it can read `row["culture_id"]` in `NpcRulerGenerator`/`BaselineNpcStocker`.
+- **POPULATION is blocked** on the (unbuilt) materialization — runtime domains/settlements for a generated world don't exist, so there is no `setting_settlements.polity_id → setting_polities.culture_id` chain to walk yet. A "culture-only mini-bridge" is not separable: you can't populate culture_id on rows the materialization hasn't created.
+- **Jedidiah's ruling:** DEFER the materialization; do Stage 10 (campaign-creation UI) next. Columns stay (read-side unblocked); culture stays zero-shifted until the materialization lands.
+**Decisions made:**
+- Added the two culture_id columns now (safe, contract-requested, no-regret) even though population is deferred — it lets the NPC read-side integrate against a stable schema.
+- Materialization (setting_* → realms/domains/settlement_entrances/hex_map + ruler gen + economy seeding + culture threading) is a dedicated future effort, design-heavy; not built this session.
+**Interfaces defined or changed:**
+- `domains.culture_id TEXT NOT NULL DEFAULT ''`, `settlement_entrances.culture_id TEXT NOT NULL DEFAULT ''` (migration 160). Vocabulary = CultureCatalogLoader keys (same as setting_polities.culture_id). '' = unknown.
+- When the materialization is built: a runtime settlement's culture_id = its setting_settlements.polity_id → setting_polities.culture_id; a runtime domain's = its controlling polity's culture_id; and write the real key into realms.culture (replacing the placeholder).
+**Database changes:** migration 160 (two ALTER TABLE ADD COLUMN). Applied cleanly; net-zero new failures (run2 41 = baseline 40 + the pre-existing flaky `is_lingering` dice test, which run1 at 40 did not show). schema.sql NOT updated — it is a stale reference snapshot (already missing migrations 157-159); the DB builds from migrations.
+**Tests added/updated:** none (schema-only migration; columns default ''). Verified migrations apply with no column/ALTER errors.
+**Known issues:**
+- **Setting→runtime materialization unbuilt** — the #1 remaining gap for actually playing a generated world. NPC culture population, ruler generation from generated realms, and economy seeding all hang off it.
+- schema.sql is a stale snapshot (missing 157-160); a future sync pass could regenerate it from migrations.
+**Next session should:**
+- Stage 10 (campaign-creation UI, `gdd-campaign-creation-ui.md`). NOTE: UI/scene scripts are NOT exercised by the headless suite (per project memory) — Stage 10 needs editor verification, not automated tests. After Stage 10, the setting→runtime materialization is the natural follow-on (and the NPC contract's population half).
+
+
+## Session 2026-06-15 — Stage 10: campaign-creation UI (logic seams tested green + scenes scaffolded)
+
+**Task:** Build Stage 10 (the final pipeline stage, `gdd-campaign-creation-ui.md`). Jedidiah's ruling: build + headless-test the logic SEAMS this session, and author the scene SCAFFOLDS for his in-editor verification (the headless suite never loads scene scripts).
+**Model used:** Opus 4.8.
+**Completed:**
+- **Logic seams (`engine/subsystems/campaign_creation/`, all headless-tested green — `test_campaign_creation_seams.gd`, 27 checks):**
+  - `SeedShareCodec` (§9): `encode(seed, params)` / `decode(token)`. Default params → bare seed; modified → `<seed>~<base64(JSON of changed fields)>`. Delta is JSON (types preserved) so it round-trips exactly through `SettingParameters.from_dict`; invalid token → `ok=false` + safe defaults. `is_default(params)`.
+  - `CampaignReviewAssembler` (§6 Screen D): `assemble(campaign_id)` → `{seed, world_hash, share_token, share_is_default, brief, timeline, realms[], peoples[], validation}`. Pure reader over the locked setting_* tables; realms tier-sorted; peoples = distinct cultures + their narrative blurb; validation via `SettingValidator`.
+  - `ReplayFrameDecoder` (§5/§7): `decode_runs(rle)` + `decode_owner_map(rle, ordered_hexes)` → `{Vector2i: polity}`. Matches `history_simulator._rle_owners` exactly (runs "polity:count" joined by ';' over canonical hex order; '' = unowned). Verified against a live present-day frame.
+- **Scenes scaffolded (`scenes/ui/campaign_creation/`, parse-clean via --check-only; rendering/behaviour need Jedidiah's editor pass):** `campaign_creation_flow.gd` + `.tscn` (the spine — A→B→C→D phase machine, shared SettingParameters, create_campaign → SettingGenerator.generate → replay → on-approve compute_world_hash + lock_setting + EventBus.world_approved + emit campaign_ready) and the four code-built screen skeletons `screen_quick_start.gd` / `screen_advanced.gd` / `screen_generate_replay.gd` (the frame STEPPING is real — timer + ReplayFrameDecoder + EventBus.replay_frame_advanced; `_render_frame` is the editor stub) / `screen_review.gd`. Project idiom = code-built UI (`_build_ui`), so one `.tscn` (the flow) + programmatic child screens.
+- **Handoff doc `docs/campaign-creation-ui-scaffold.md`** — the verified-seams table + the per-screen wiring contract (signals/seam-calls/EDITOR-todos) + the entry point + the note that PLAY still needs the setting→runtime materialization.
+**Decisions made:**
+- Screens share one `SettingParameters` (`bind_params` holds the ref; controls mutate in place) rather than collect-on-signal — simpler single source of truth.
+- One entry `.tscn` (the flow); screens are programmatic Controls per the project's code-built-UI idiom — keeps the scaffold parse-checkable and avoids heavy blind `.tscn` authoring.
+- `_roll_seed()` is a placeholder (hash-based, no wall-clock); the real new-campaign seed / share-token input is an editor TODO.
+**Interfaces defined or changed:**
+- `SeedShareCodec.encode/decode/is_default`; `CampaignReviewAssembler.assemble`; `ReplayFrameDecoder.decode_runs/decode_owner_map`.
+- `CampaignCreationFlow` emits `campaign_ready(campaign_id)`; consumes EventBus `world_approved`/`replay_frame_advanced` (already defined Stage 0).
+**Database changes:** none.
+**Tests added/updated:** `test_campaign_creation_seams.gd` (id 463, 27 checks). run1=run2=40 baseline; net-zero new failures.
+**Known issues:**
+- Scene rendering/behaviour UNVERIFIED by the harness — needs Jedidiah's editor pass (the four screens' layout, the map renderer, the replay animation).
+- A generated world is still NOT PLAYABLE until the setting→runtime materialization is built (the bigger gap) — see project_setting_runtime_materialization.
+- `[Regenerate element…]` (§11.3 constrained menu) not implemented; whole-world regenerate is wired.
+**Next session should:**
+- Jedidiah: open `campaign_creation_flow.tscn` in the editor, flesh out the four screens against the contracts in the scaffold doc + the verified seams. THEN the setting→runtime materialization (connects the generator to play + populates the NPC culture_id columns).

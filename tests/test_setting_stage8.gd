@@ -16,22 +16,9 @@ func run_all_tests() -> void:
 		test_per_entity_blocks(cid)
 		test_all_fallback_and_nonempty(cid)
 		test_timeline_structure(cid)
-		_dump_samples(cid)
 		test_determinism(818181, cid)
 	if not has_failures():
 		print("SettingStage8Tests: all tests passed (%d checks)" % test_count())
-
-
-func _dump_samples(cid: String) -> void:
-	var shown := {}
-	print("\nNARRDUMP_START")
-	for n in SettingRepository.list_narrative(cid):
-		var k := str(n.get("kind", ""))
-		if k in ["brief", "timeline"] or not shown.has(k):
-			shown[k] = true
-			print("\n----- [%s] %s -----" % [k, str(n.get("id", ""))])
-			print(str(n.get("body", "")))
-	print("\nNARRDUMP_END")
 
 
 func _generate(seed_value: int) -> String:
@@ -90,6 +77,10 @@ func test_timeline_structure(cid: String) -> void:
 			check(body.contains("Deep history"), "timeline has the deep-history epoch")
 			check(body.contains("Middle history"), "timeline has the middle-history epoch")
 			check(body.contains("Near history"), "timeline has the near-history epoch")
+			# No timeline line may begin with the generic placeholder — events whose
+			# PRIMARY actor is unresolved are filtered (a line reads "— <actor> ...").
+			check(not body.contains("— a vanished realm"),
+				"timeline drops events whose primary actor is unresolved")
 			return
 	check(false, "timeline block not found")
 
