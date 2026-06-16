@@ -23,9 +23,7 @@
     "terrain": {
       "seed_biomes": [
         "dense forest",
-        "forest",
         "swamp",
-        "hills",
         "mountains"
       ],
       "coastal_start": "E"

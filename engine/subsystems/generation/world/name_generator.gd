@@ -105,7 +105,9 @@ func _build_indices(polities: Array, ruins: Array, events: Array,
 	var counts: Dictionary = {}
 	for key in hex_grid:
 		var cid := _owner_culture(hex_grid, key)
-		if not cid.is_empty():
+		# Exclude the bankless generic "beastmen" culture — the fallback must resolve
+		# to a real, banked (settled) culture even on a beastman-heavy map.
+		if not cid.is_empty() and cid != CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID:
 			counts[cid] = int(counts.get(cid, 0)) + 1
 	_fallback_culture = _argmax_str(counts)
 	if _fallback_culture.is_empty():
@@ -138,6 +140,13 @@ func _name_realms(polities: Array) -> void:
 	sorted.sort_custom(func(a, b): return str(a["id"]) < str(b["id"]))
 	for pol in sorted:
 		var cid := str(pol.get("culture_id", ""))
+		# §5.3: a generic "beastmen" realm names from its rolled-race hint, so a horde
+		# reads as an "Orc warren" beside a "Goblin den" (the intermingled frontier)
+		# rather than a single generic beastman label. Reassigning cid routes the bank,
+		# toponym, and dedup through the race exactly as the pre-abstraction realm did.
+		var hint := str(pol.get("beastman_race", ""))
+		if cid == CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID and hint != "":
+			cid = hint
 		var bank := NameBankLoader.bank_for(cid)
 		var pid := str(pol["id"])
 		var tier_name := str(pol.get("title", "")).to_lower()
@@ -446,7 +455,12 @@ func _naming_culture(ad: Dictionary) -> String:
 	# historically-connected" attribution (§5.2) is a deferred refinement; the
 	# campaign fallback is correct and rarely hit (most regions touch an owner).
 	var dom := str(ad.get("dominant", ""))
-	return dom if not dom.is_empty() else _fallback_culture
+	# §5.3: regions are charted and named by SETTLED peoples — the generic "beastmen"
+	# culture has no name bank and never names a region. A beastman-dominated region
+	# takes the campaign-wide settled culture instead (a real, banked fallback).
+	if dom.is_empty() or dom == CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID:
+		return _fallback_culture
+	return dom
 
 
 func _qualifying_events(events: Array) -> Array:

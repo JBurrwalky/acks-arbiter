@@ -1,6 +1,13 @@
 class_name CultureSeeder
 extends RefCounted
 
+## §5.3: at the 24-mile sim scale beastmen are ONE generic chaotic culture (a mixed
+## horde under a fragile war-chief); the specific race is kept only as a per-clanhold
+## hint and the intermingled race mix is materialized per 6-mile sub-hex at the
+## gameplay handoff. data/cultures/beastmen.json backs this id; the 10 per-race files
+## (orc/goblin/…) remain as 6-mile flavor data, never seeded as sim cultures.
+const GENERIC_BEASTMAN_CULTURE_ID := "beastmen"
+
 ## Layer 3 — culture seeding (gdd-setting-generation.md §6; gdd-culture-catalog
 ## .md §6). Selects the campaign's cultures by biome-coverage constraint
 ## satisfaction, draws each homeland's alignment, applies per-campaign jitter,
@@ -87,12 +94,12 @@ static func run(ctx: Dictionary) -> bool:
 	var beastman_polities := _place_beastmen(
 			grid, width, height, params, campaign_seed, occupied, seed_polities.size())
 
-	# Every placed culture needs a sim instance — beastman cultures get a
-	# lightweight one (the history sim reads aggression/terrain/svg from it).
-	for p in beastman_polities:
-		var bcid: String = p["culture_id"]
-		if not instances.has(bcid) and catalog.has(bcid):
-			instances[bcid] = _beastman_instance(catalog[bcid], campaign_seed)
+	# The generic "beastmen" sim culture needs one lightweight instance (the history
+	# sim reads aggression/defense/svg from it). Inject it UNCONDITIONALLY — a sim-time
+	# §7.6 floor-scan clanhold can spawn even when Layer 3 seeded no beastmen.
+	if not instances.has(GENERIC_BEASTMAN_CULTURE_ID) and catalog.has(GENERIC_BEASTMAN_CULTURE_ID):
+		instances[GENERIC_BEASTMAN_CULTURE_ID] = _beastman_instance(
+				catalog[GENERIC_BEASTMAN_CULTURE_ID], campaign_seed)
 
 	ctx["seed_polities"] = seed_polities + beastman_polities
 	return true
@@ -569,9 +576,10 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 			var race := _roll_beastman_race(spec, campaign_seed, q, r)
 			if race.is_empty():
 				continue
-			var cid := CultureCatalogLoader.id_for_beastman_race(race)
-			if cid.is_empty():
-				continue
+			# §5.3: every clanhold is the generic "beastmen" sim culture; the rolled
+			# race is kept only as a hint (chieftain + realm-name flavor + the 6-mile
+			# race-mix handoff), not as the culture identity.
+			var cid := GENERIC_BEASTMAN_CULTURE_ID
 			seq += 1
 			var pid := "pol_%04d" % seq
 			var families := mini(int(demographics.get(race, {})
@@ -580,7 +588,7 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 			hex["alignment_weights"] = JSON.stringify({"chaotic": 1.0})
 			hex["population_band"] = families
 			hex["owner_polity_id"] = pid
-			polities.append(_make_beastman_polity(pid, cid, key))
+			polities.append(_make_beastman_polity(pid, cid, key, race))
 	return polities
 
 
@@ -631,10 +639,12 @@ static func _roll_beastman_race(spec: Dictionary, campaign_seed: int, q: int, r:
 	return ""
 
 
-static func _make_beastman_polity(pid: String, cid: String, capital: Vector2i) -> Dictionary:
+static func _make_beastman_polity(pid: String, cid: String, capital: Vector2i,
+		race: String = "") -> Dictionary:
 	return {
 		"id": pid,
 		"culture_id": cid,
+		"beastman_race": race,   # §5.3 rolled-race hint: chieftain + name flavor + 6-mile mix
 		"alignment": "chaotic",
 		"tier_index": 0,
 		"title": "",

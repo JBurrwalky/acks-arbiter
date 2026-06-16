@@ -58,11 +58,13 @@ static func pick_unused(pool: Array, rng: RandomNumberGenerator,
 		if not seen.has(cand.to_lower()):
 			_mark(used, cid, cand)
 			return cand
-	# Last resort: numbered (deterministic, never collides).
+	# Last resort: a Roman-numeral ordinal (deterministic, never collides), not a
+	# bare base-10 counter.
 	var n := 2
-	while seen.has(("%s %d" % [base, n]).to_lower()):
+	var final := "%s %s" % [base, _roman(n)]
+	while seen.has(final.to_lower()):
 		n += 1
-	var final := "%s %d" % [base, n]
+		final = "%s %s" % [base, _roman(n)]
 	_mark(used, cid, final)
 	return final
 
@@ -137,20 +139,27 @@ static func realm_name(bank: Dictionary, tier_name: String, toponym: String,
 			horde = toponym
 		return _unique_literal(horde if not horde.is_empty()
 			else "the %s Horde" % _safe(toponym, capital_name, "Wild"), used, cid)
-	# Civ: choose a root, preferring capital, then people-toponym, then dynasty.
+	# Civ: build candidate roots most-distinctive first (capital, then dynasty
+	# House, then the shared people-toponym). Return the first "<domain> of <root>"
+	# not yet used — so same-culture realms vary by capital/House instead of piling
+	# up identical "<domain> of <toponym>" that the dedup tail must number.
 	var roots: Array = []
 	if not capital_name.is_empty():
 		roots.append(capital_name)
-	if not toponym.is_empty():
-		roots.append(toponym)
 	if not dynasty.is_empty():
 		roots.append("House %s" % dynasty)
+	if not toponym.is_empty():
+		roots.append(toponym)
 	if roots.is_empty():
 		roots.append(domain)
-	var root := str(roots[rng.randi() % roots.size()])
-	# "Regnum of Agrippola" (capital/people) or "Regnum of House Valerius" (dynasty).
-	var name := "%s of %s" % [domain, root]
-	return _unique_literal(name, used, cid)
+	var seen: Dictionary = used.get(cid, {})
+	for r in roots:
+		var cand := "%s of %s" % [domain, r]
+		if not seen.has(cand.to_lower()):
+			_mark(used, cid, cand)
+			return cand
+	# Every candidate root is taken → qualifier / Roman-numeral fallback.
+	return _unique_literal("%s of %s" % [domain, str(roots[rng.randi() % roots.size()])], used, cid)
 
 
 ## A ruin/dungeon name (§9 adventure sites): "<size-styled site> of <toponym>".
@@ -246,12 +255,28 @@ static func _unique_literal(name: String, used: Dictionary, cid: String) -> Stri
 		if not seen.has(cand.to_lower()):
 			_mark(used, cid, cand)
 			return cand
+	# Last resort: a Roman-numeral ordinal — a second identical title reads as a
+	# legitimate successor realm ("… II"), never a meaningless base-10 counter.
 	var n := 2
-	while seen.has(("%s %d" % [name, n]).to_lower()):
+	var final := "%s %s" % [name, _roman(n)]
+	while seen.has(final.to_lower()):
 		n += 1
-	var final := "%s %d" % [name, n]
+		final = "%s %s" % [name, _roman(n)]
 	_mark(used, cid, final)
 	return final
+
+
+## Roman numeral for a small ordinal (same-name disambiguation suffix).
+static func _roman(n: int) -> String:
+	const VALS := [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+	const SYMS := ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+	var out := ""
+	var x := maxi(n, 1)
+	for i in VALS.size():
+		while x >= VALS[i]:
+			out += SYMS[i]
+			x -= VALS[i]
+	return out
 
 
 static func _lex_word(lex: Dictionary, group: String, key: String) -> String:

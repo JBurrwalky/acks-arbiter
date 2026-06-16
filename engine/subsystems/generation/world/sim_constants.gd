@@ -110,6 +110,23 @@ var beastman_delay_ticks: int = 2
 # settle. Slower fill leaves more land for civilization (and keeps the interior
 # beastman-flavored without saturating it).
 var beastman_fill_per_tick: float = 0.10  # × density per empty hex
+# [2026-06-15] Re-seed broadening: scan ALL empty wilderness (not just collapse
+# craters) on a cadence, with a per-region target so beastmen always persist
+# without overrunning (the §7.4d floor).
+var beastman_scan_period: int = 5         # scan empty wilderness every N ticks
+var beastman_region_radius: int = 3       # hex radius of the "always some beastmen" region
+var beastman_region_target: float = 0.12  # spawn while a region is below this clanhold fraction
+
+# --- Clanhold realm limits (§7.4 — beastmen never form large realms) --------
+# [2026-06-15] Beastman clanholds are always wilderness and small. A hard realm
+# hex cap + wilderness-only acquisition keeps their population (and thus military
+# strength) bounded, and they collapse without shattering into large successors.
+var beastman_realm_max_hexes: int = 3     # a beastman realm may hold at most this many hexes
+# [2026-06-15] Raze-and-retreat (§7.4c): a victor that razes (Lawful/Neutral over
+# a beastman clanhold, or a beastman attacker over anyone) clears the loser's land
+# to wilderness — population destroyed, NOT culture-flipped in place — and takes
+# nothing; the vacated land refills by organic growth / re-seeding.
+var razed_pop_keep: float = 0.0           # fraction of razed population left (0 = wiped)
 
 # --- Fading (§7.7) ----------------------------------------------------------
 var fade_rate: float = 0.985          # per tick after onset
@@ -154,6 +171,37 @@ var vassal_size_empire: int = 6
 # conquering empires hold their war-vassals and consolidate (toward §17 5–10).
 var base_secede: float = 0.02
 var liege_weakness_risk: float = 0.15 # collapse_risk above which liege is "weak"
+
+# --- Genocide rebellion (§7.4b — a subject culture revolts against erasure) ---
+# [CALIBRATION 2026-06-15] A realm actively assimilating away a conquered culture
+# can face a revolt. NOT guaranteed; persists across ticks (each adding to the
+# ruler's war_count, so it fights neighbours weaker via multi_war_factor) and
+# resolves on a margin roll into four bands. Counter-balances the conquest→
+# assimilation snowball that produced near-monoculture large maps (seed 177621).
+var rebellion_base: float = 0.03            # per-(realm,culture) per-tick ignition chance
+var rebellion_min_minority_weight: float = 0.25  # subject culture must still hold ≥ this avg weight to revolt
+var rebellion_mismatch_mult: float = 1.5    # × ignition & rebel strength when alignment opposed
+var rebellion_resolve_chance: float = 0.5   # per-tick chance an active revolt resolves (else persists)
+var rebellion_margin_jitter: float = 0.10
+var rebellion_suppression_base: float = 0.25 # suppression = ruler_war × (this + military_sphere) × multi-front × stability
+# [CALIBRATION 2026-06-15] base 0.5→0.25: at 0.5 suppression swamped rebel strength
+# so revolts ~always failed (0 break-aways, many extinctions across 6 large seeds).
+# 0.25 lets the margin reach the concession/break-away bands — the diversity-
+# preserving outcomes — and pulls outcomes up off the extinction floor. Tune freely.
+var rebel_band_major_success: float = 0.75  # v ≥ → break away (new realm; join same-culture neighbour as vassal if any)
+var rebel_band_mod_success: float = 0.55    # v ≥ → genocide blocked rebellion_block ticks, group stays subject
+var rebel_band_mod_failure: float = 0.30    # v ≥ → revolt ends, assimilation resumes; below this → wiped to floor + diaspora
+var rebellion_block_base_ticks: int = 1     # moderate-success block duration = this + 1d3
+var rebellion_war_fronts: int = 1           # extra war_count added to the ruler while a revolt is active
+var rebellion_wipe_floor: float = 0.001     # major-failure: subject culture crushed to this weight
+
+# --- Contiguity (§7.4d — a realm severed by foreign land sheds the orphan) ---
+# [2026-06-15] A polity's own hexes that are reachable from the capital only
+# THROUGH foreign sovereign territory secede into their own realm. Ocean sea-lanes
+# bridge coastal hexes (real maritime empires), so sea/river separation never
+# splits a realm; only foreign LAND does.
+var sea_lane_range: int = 10              # max ocean gap (24-mi hexes) a sea lane bridges (~240 mi)
+var contiguity_min_secede_hexes: int = 2  # smaller orphans revert to wilderness instead of seceding
 
 # --- Substrate / demography (§6) --------------------------------------------
 var diffuse_rate: float = 0.02

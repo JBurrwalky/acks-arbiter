@@ -229,6 +229,43 @@ p_secede = BASE_SECEDE × (1 + alignment_mismatch) × (1 − assimilation_progre
 
 On success the vassal becomes independent (emits `secession`); renewed war between the two then arises naturally from §7.3.1 escalation. Same-culture, internally-spawned vassals (§7.1) do **not** run this check — they leave only through §7.6 collapse, which keeps healthy realms from fraying randomly. Empires thus erode at their least-assimilated edges first, which is the historically correct failure mode.
 
+### 7.4b Genocide rebellions (added 2026-06-15)
+
+Conquest assimilates conquered hexes toward the conqueror's culture (§6, `effective_svg × ASSIMILATION_STEP`), with no in-place resistance — so a runaway conqueror could erase the cultural map (seed 177621 large → one culture 89.5% of the land). A **genocide rebellion** is the brake: a culture being actively erased can revolt. Runs in a `_phase_rebellion` pass immediately after `_phase_war`, so an active revolt is an **internal front** — it adds `REBELLION_WAR_FRONTS` to the ruler's `war_count`, weakening every external war via the `MULTI_WAR_FACTOR` (an army suppressing a revolt can't fully campaign abroad), for exactly as long as the revolt persists.
+
+**Ignition.** For each realm, group its still-erased subject-culture hexes (a minority culture ≥ `REBELLION_MIN_MINORITY_WEIGHT` whose hex hasn't yet converged to the owner) by culture. For each subject culture with no live revolt, ignite with `p = REBELLION_BASE × (1 + svg) × mismatch` (harder genocide and opposed alignment make revolt likelier). NOT guaranteed.
+
+**Resolution.** A live revolt persists each tick (war penalty applying) until a `REBELLION_RESOLVE_CHANCE` roll fires; then a single margin roll picks one of four bands:
+
+```
+v = rebel_strength / (rebel_strength + suppression) + jitter
+    rebel_strength = avg_minority_weight × mismatch × (1 + svg)        # how much of the people remain, how hard the erasure
+    suppression    = ruler_war × (SUPPRESSION_BASE + military_sphere)
+                     × MULTI_WAR_FACTOR^(other active revolts) × (1 − collapse_risk)   # a busy/weak ruler crushes less well
+```
+- **v ≥ `REBEL_BAND_MAJOR_SUCCESS` (0.75) — break away.** The contiguous subject hexes secede as a fresh realm of their culture (reasserting it on those hexes), joining an adjacent same-culture realm as a vassal if one borders them, else independent. Emits `rebellion_won`.
+- **≥ `REBEL_BAND_MOD_SUCCESS` (0.55) — forced concession.** The sovereign's culture replacement on those hexes is blocked for `REBELLION_BLOCK_BASE + 1d3` ticks; the people stay subjects. Emits `rebellion_concession`.
+- **≥ `REBEL_BAND_MOD_FAILURE` (0.30) — crushed.** The revolt ends; next tick's substrate resumes assimilation. Emits `rebellion_crushed`.
+- **below 0.30 — extinction.** The revolt is put down and the culture is driven to its 0.001 floor on those hexes this tick; the survivors flee as a diaspora band (§8) that may refound the culture elsewhere. Emits `rebellion_extinguished`.
+
+A two-way coupling falls out: a multi-front warlord suppresses revolts worse, and an active revolt makes that warlord worse at war. Knobs (all `[CALIBRATION]` in `SimConstants`) tune ignition rate, the band thresholds, the suppression baseline, and the war-front penalty. The active-revolt set and per-hex genocide blocks are transient sim state; only the emitted events persist (`setting_events`, migration 161 widened its `type` CHECK).
+
+### 7.4c Beastman conquest — raze-and-retreat (added 2026-06-15)
+
+Beastman clanholds (`is_beastman`, the ACKS low-density chaotic interior, `ax_domains_of_chaos`) are **never settled** by the realms that beat them, and **never settle** the realms they beat. Two rulings (Jedidiah, 2026-06-15) replace the generic annex-and-convert outcome:
+
+- **#4 — Lawful/Neutral victors WIPE, don't annex.** When a Lawful or Neutral realm takes a beastman hex, the clanhold population is cleared to wilderness (`razed_pop_keep = 0`) and the victor **takes nothing**; the hex re-civilizes only later, by the victor's own organic expansion into the now-empty wilderness (`_settle_wilderness`) — never by flipping beastman families into the conqueror's culture in place ("beastmen don't become settlers"). RAW *does* let Lawful/Neutral realms retain a beastman population, but that is **slave-taking**, deferred to runtime; the macro-sim does not model slave populations. A **Chaotic** victor still keeps the hex (enslaving its people, RAW) — the raze rule is Lawful/Neutral-only.
+- **Beastman attackers raid and withdraw.** A beastman attacker's decisive/crushing victory razes the front it overran (population destroyed) and retreats to its clanhold — it gains no territory; the vacated land refills by organic growth / re-seeding.
+
+**Single chokepoint.** The raze rule is enforced inside `_flip_hex` — the *one* primitive every conquest hex-transfer routes through (expansion-phase border contest, war border-band, decisive-war deep-raid, crushing-war annex). So `loser.is_beastman ∧ ¬winner.is_beastman ∧ winner.alignment ≠ chaotic ⇒ raze` applies on **every** path, not only the crushing-war branch. (A beastman defender never reaches `_annex`: `_resolve_crushing` routes it to `_raze_realm`/`_vassalize` first.) Razing a clanhold's last hex destroys it (emits `razing`, migration 162); a partial raze just re-tiers the survivor under the clanhold cap.
+
+### 7.4d Contiguity — foreign-land secession (added 2026-06-15)
+
+A realm whose directly-held hexes are split into pieces reachable from the capital only **through foreign sovereign land** sheds the orphan pieces (#5). Each tick, after collapse, `_phase_contiguity` partitions every realm's own hexes into connected components:
+
+- **Connectors:** land adjacency (shared edge); a **sea lane** between two of the realm's own coastal hexes within `sea_lane_range` (= 10 hexes ≈ 240 mi) — ocean/river separation never splits a realm, only foreign land does; and the realm's **own transitive vassal-chain hexes** (same-realm territory is passable, so a liege whose blocks are joined only through its vassal's land is not falsely dismembered — vassal hexes bridge but are never themselves shed).
+- **Keep/shed:** the component holding the capital is kept (else the largest); each orphan ≥ `contiguity_min_secede_hexes` (2) **secedes** as a fresh same-realm-culture realm (joining an adjacent same-culture realm as a vassal if one borders it, emits `secession`), smaller orphans revert to wilderness. If the capital hex itself was already lost, the capital is repointed to the kept block's canonical anchor so home-factor / urban-emergence / core selection stay centered on real territory.
+
 ### 7.5 Stability and collapse curve
 
 Each tick every polity rolls against a collapse risk. This is the heart of the sim and is **project-designed** (the catalog supplies the per-culture knobs):
@@ -340,6 +377,12 @@ Check at defaults: a healthy human duchy mostly rumps; an overextended demihuman
 - **Depopulate (catastrophic):** the region loses most of its population (the ACKS family-loss path), its hexes revert toward **wilderness** classification, **beastmen spawn** per `ax_domains_of_chaos.xml` — after `BEASTMAN_DELAY = 2` ticks of silence, each empty hex has `0.25 × beastman_density` chance per tick to spawn clanholds rolled from the terrain's geographic-distribution table (lines 243–262; races by 1d100, ≤125 families/6-mile hex), becoming Chaotic chieftain polities in the normal loop — and **ruins/dungeon seeds** are emitted carrying the fallen polity's provenance (culture, era, name) for `gdd-dungeon-layout.md` and the Layer-6 dungeon target. Survivors may form a **migrating band** (§8).
 
 Severity is weighted by temperament and `collapse_proneness`: high-proneness cultures (demihumans) shatter and depopulate disproportionately, which is what fills the deep map with elven/dwarven ruins.
+
+**Clanhold cap and re-seed (added 2026-06-15).** Beastman realms are held to the ACKS clanhold scale on every path:
+- **#2 size cap.** A beastman realm holds at most `beastman_realm_max_hexes` (= 3, "small 1–3 hex" per Jedidiah) hexes, stays `wilderness` (never advances classification, founds no settlements — `_demote_to_clanhold` clamps any hex acquired out-of-band, e.g. a rebellion breakaway, to the wilderness cap), and **never shatters** on collapse. They do not run the expansion phase — they hold, raid, defend, and are pushed back by civilization (§7.4c). They are the scattered chaotic interior, not empire-builders.
+- **#3 wilderness re-seed.** Beyond the collapse-crater fast path above, a **regional floor scan** runs every `beastman_scan_period` ticks: it sweeps all empty wilderness and seeds a clanhold where a region (radius `beastman_region_radius`) sits below `beastman_region_target` clanhold density — so there are always beastmen abroad, throttled per-region rather than saturating. The interaction with §7.4c (Lawful/Neutral raze) makes the civilized frontier a live march: razed beastman hexes empty, re-seed regionally over a few ticks, and are razed or settled again — increasing both standing clanholds and wilderness vs. the old annex-and-convert model. [CALIBRATION — `beastman_region_target` (and the generic instance's aggression) governs the equilibrium beastman fraction; tune to taste.]
+
+**Generic "beastmen" sim culture (added 2026-06-15, §5.3).** At the 24-mile sim scale beastmen are ONE generic chaotic culture (`data/cultures/beastmen.json`, `culture_id="beastmen"`), not the ten per-race cultures — a beastman 24-mile hex is a mixed horde under a fragile war-chief, never a swathe of "orc land". The seeders still roll a per-terrain race (`beastman_distribution.json` `race_d100`) but keep it only as a per-clanhold **hint** (`pol["beastman_race"]`, in-memory): it drives the race-specific chieftain (`_assign_beastman_ruler`) and the realm-name flavor (a 1-hex "Orc warren" beside a "Goblin den"), NOT the sim culture identity. The ten race files remain as 6-mile flavor data. The intermingled per-6-mile-sub-hex race mix is materialized at the gameplay handoff (deferred), reusing the same distribution data. Because all beastmen now share one culture, secession/conquest can no longer federate them into chains blindly: beastman secession/breakaway stays independent (clanholds don't swear fealty), and a `_would_create_liege_cycle` guard on `_vassalize`/decisive-transfer prevents a realm from vassalizing its own transitive grand-liege (a latent `_same_realm`-shallowness the abstraction exposed).
 
 ### 7.7 End-state `fading` degradation
 

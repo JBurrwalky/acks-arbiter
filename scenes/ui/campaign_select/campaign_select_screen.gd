@@ -128,7 +128,7 @@ func _build_ui() -> void:
 
 	# --- Title ---
 	var title := Label.new()
-	title.text = "Axiom of Conquest"
+	title.text = "FORGE OF EMPIRE"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	vbox.add_child(title)

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "beastmen",
+      "catalog_number": null,
+      "demonym": "Beastman",
+      "toponym": null,
+      "tier": "beastman",
+      "race": "beastmen",
+      "civ_or_clan": "clan",
+      "synthesis_sources": []
+    },
+    "alignment": {
+      "allowed": [
+        "Chaotic"
+      ],
+      "weights": {
+        "Chaotic": 1
+      },
+      "rigidity": 0.2
+    },
+    "terrain": {
+      "seed_biomes": [
+        "hills",
+        "mountains",
+        "scrubland",
+        "swamp",
+        "jungle",
+        "desert",
+        "woods",
+        "grassland",
+        "barren"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.75,
+      "defense": 0.45,
+      "size_exponent_bias": 0.1
+    },
+    "rulership": {
+      "preferred_troop_types": [
+        "light_infantry",
+        "heavy_infantry",
+        "berserkers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "affective_compassion": -1.5,
+        "stress_reactivity": 1.0,
+        "civility": -1.5,
+        "self_interest": -1.0,
+        "societal_orthodoxy": -0.5
+      }
+    }
+  },
+  "flavor": {
+    "name_bank_key": "beastmen",
+    "phonemic_palette": "Generic beastman horde register; specific race phonology (orc growl, goblin chitter, etc.) is materialized per 6-mile sub-hex at the gameplay handoff.",
+    "phenotype_notes": "A mixed beastman confederation; the constituent races are populated at 6-mile build-out (setting-lore §5.3).",
+    "language": {
+      "language_name": "Beastman pidgin",
+      "language_family": "beastman",
+      "script": "own_script"
+    },
+    "social_structure": "tribal",
+    "values": {
+      "core_values": [],
+      "taboos": [],
+      "attitude_toward_outsiders": "xenophobic"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "tolerated",
+      "notes": "Generic beastman register; per-race name banks resolve at 6-mile handoff."
+    },
+    "architecture_style": {
+      "primary_material": "wood",
+      "aesthetic": "rugged",
+      "signature_feature": "rough clanhold warrens"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Chaotic venerates the 13 and names the 12 as tyrant-gods."
+    },
+    "flavor_text": {
+      "one_line": "Beastmen — the chaotic clanholds of the wild; a confederation of raiding kin.",
+      "one_paragraph": "At the 24-mile sim scale beastmen are ONE generic chaotic type: a fragile horde of mixed kin (orc, goblin, kobold, gnoll, ogre, troll and the rest) under a war-chief. The specific race distribution is intermingled per 6-mile sub-hex at the gameplay handoff (beastman_distribution.json), so chaotic players and NPC lords meet a varied frontier rather than monolithic 'orc land'. Stripped record per gdd-culture-catalog §5.3."
+    }
+  }
+}

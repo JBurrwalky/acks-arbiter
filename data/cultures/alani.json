@@ -24,9 +24,7 @@
       "seed_biomes": [
         "forest",
         "dense forest",
-        "grassland",
-        "hills",
-        "mountains"
+        "hills"
       ],
       "coastal_start": "E"
     },

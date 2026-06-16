@@ -477,6 +477,8 @@
 [ext_resource type="Script" path="res://tests/test_setting_stage8.gd" id="461_setting_stage8_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_stage9.gd" id="462_setting_stage9_tests"]
 [ext_resource type="Script" path="res://tests/test_campaign_creation_seams.gd" id="463_campaign_creation_seams_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_rebellion.gd" id="464_setting_rebellion_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_beastman.gd" id="465_setting_beastman_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1908,3 +1910,9 @@ script = ExtResource("463_campaign_creation_seams_tests")
 
 [node name="NpcPersonalityTests" type="Node" parent="."]
 script = ExtResource("460_npc_personality_tests")
+
+[node name="SettingRebellionTests" type="Node" parent="."]
+script = ExtResource("464_setting_rebellion_tests")
+
+[node name="SettingBeastmanTests" type="Node" parent="."]
+script = ExtResource("465_setting_beastman_tests")

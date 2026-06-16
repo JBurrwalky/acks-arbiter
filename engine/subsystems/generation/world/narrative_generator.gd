@@ -29,6 +29,7 @@ const _EVENT_TEMPLATES := {
 	"war": "%s went to war with %s",
 	"vassalage": "%s submitted to %s as a vassal",   # ids = [liege, vassal]
 	"conquest": "%s conquered %s",
+	"razing": "%s razed the lands of %s and withdrew",
 	"pillage": "%s pillaged the lands of %s",
 	"secession": "%s broke away from %s",            # ids = [seceder, liege]
 	"dynasty_change": "a new dynasty took the throne of %s",
@@ -36,6 +37,13 @@ const _EVENT_TEMPLATES := {
 	"collapse_shatter": "%s shattered into rival successor states",
 	"depopulation": "%s collapsed, its lands emptying back into wilderness",
 	"migration": "the %s folk migrated in search of new lands",  # uses culture, not polity
+	# §7.4b rebellions — rendered as (rebel culture, oppressor realm); cultures =
+	# [oppressor, rebel], polities = [oppressor].
+	"rebellion": "the %s rose in revolt against %s",
+	"rebellion_won": "the %s won their freedom from %s",
+	"rebellion_concession": "the %s wrung concessions from %s, staying its hand",
+	"rebellion_crushed": "the %s revolt against %s was put down",
+	"rebellion_extinguished": "the %s were all but exterminated by %s",
 }
 
 # Narration density per epoch (§10.2 — guidance, not invention).
@@ -187,6 +195,11 @@ func _event_sentence(e: Dictionary) -> String:
 	if type == "migration":
 		var clabel := _culture_label(str(e["cultures"][0]) if e["cultures"].size() > 0 else "")
 		return tmpl % clabel
+	if type.begins_with("rebellion"):
+		# (rebel culture, oppressor realm): cultures = [oppressor, rebel].
+		var cults: Array = e["cultures"]
+		var rebels := _culture_label(str(cults[1])) if cults.size() > 1 else "a subject people"
+		return tmpl % [rebels, _name_in(e, 0)]
 	var a := _name_in(e, 0)
 	if tmpl.count("%s") >= 2:
 		return tmpl % [a, _name_in(e, 1)]

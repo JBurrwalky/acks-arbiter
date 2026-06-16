@@ -562,6 +562,10 @@ extends Node
 @onready var _campaign_creation_seams_tests = $CampaignCreationSeamsTests
 # 2026-06-14 — NPC personality core layer (twelve-axis sampler + mock + wiring)
 @onready var _npc_personality_tests = $NpcPersonalityTests
+# 2026-06-15 — §7.4b genocide rebellions (ignite/block/outcome ladder)
+@onready var _setting_rebellion_tests = $SettingRebellionTests
+# 2026-06-15 — §7.4 beastman clanhold cap / raze / contiguity
+@onready var _setting_beastman_tests = $SettingBeastmanTests
 
 
 func _ready() -> void:
@@ -1134,7 +1138,11 @@ func run() -> void:
 			# 2026-06-15 — Stage 10 campaign-creation logic seams
 			_campaign_creation_seams_tests,
 			# 2026-06-14 — NPC personality core layer
-			_npc_personality_tests]:
+			_npc_personality_tests,
+			# 2026-06-15 — §7.4b genocide rebellions
+			_setting_rebellion_tests,
+			# 2026-06-15 — §7.4 beastman clanhold cap / raze / contiguity
+			_setting_beastman_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

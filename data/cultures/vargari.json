@@ -24,8 +24,6 @@
       "seed_biomes": [
         "tundra",
         "taiga",
-        "grassland",
-        "mountains",
         "glacial mountains"
       ],
       "coastal_start": "Y"

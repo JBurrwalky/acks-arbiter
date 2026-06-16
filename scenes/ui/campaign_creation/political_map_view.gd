@@ -53,6 +53,7 @@ var _polity_names: Dictionary = {}     # polity_id -> realm name (tooltip + lege
 var _polity_lieges: Dictionary = {}    # polity_id -> liege_id (sovereign resolution)
 var _culture_colors: Dictionary = {}   # culture_id -> Color (lazy, deterministic)
 var _mode: int = Mode.POLITICAL
+var _sovereign_view: bool = false      # political mode: colour by top-of-liege-chain
 
 # Layout cached from the last _draw, so the tooltip hit-test maps a pixel→hex.
 var _R := 0.0
@@ -98,6 +99,23 @@ func set_mode(mode: int) -> void:
 	queue_redraw()
 
 
+## Political mode: false = vassal view (every domain its own colour); true =
+## sovereign view (each hex takes the colour of the top of its liege chain, so a
+## realm and all its vassals read as one power).
+func set_sovereign_view(on: bool) -> void:
+	_sovereign_view = on
+	queue_redraw()
+
+
+## The polity whose colour/border a hex shows: its direct owner, or — in sovereign
+## view — the sovereign at the top of that owner's liege chain.
+func _display_owner(h: Dictionary) -> String:
+	var o := _hex_owner(h)
+	if _sovereign_view and o != "":
+		return _sovereign_of(o)
+	return o
+
+
 ## Present-day legend entries [{label, color}] for the current mode.
 func legend_entries(polity_names: Dictionary = {}) -> Array:
 	match _mode:
@@ -136,7 +154,7 @@ func _ranked_owner_legend(polity_names: Dictionary) -> Array:
 	var names: Dictionary = polity_names if not polity_names.is_empty() else _polity_names
 	var count := {}
 	for h in _hexes:
-		var o := str(h.get("owner_polity_id", ""))
+		var o := _display_owner(h)
 		if o != "":
 			count[o] = int(count.get(o, 0)) + 1
 	var ids: Array = count.keys()
@@ -221,7 +239,7 @@ func _draw() -> void:
 	_R = minf(rx, ry)
 	var owner_by := {}
 	for h in _hexes:
-		owner_by[Vector2i(int(h["q"]), int(h["r"]))] = _hex_owner(h)
+		owner_by[Vector2i(int(h["q"]), int(h["r"]))] = _display_owner(h)
 	for h in _hexes:
 		var q := int(h["q"])
 		var r := int(h["r"])
@@ -258,7 +276,7 @@ func _hex_color(h: Dictionary) -> Color:
 		return _WATER
 	match _mode:
 		Mode.POLITICAL:
-			var o := _hex_owner(h)
+			var o := _display_owner(h)
 			return _colors.get(o, _UNOWNED) if o != "" else _UNOWNED
 		Mode.BIOME:
 			if str(h.get("biome_subtype", "")) == "forest_dense":

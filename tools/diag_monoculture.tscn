@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bnkhfn2d3k441"]
+
+[ext_resource type="Script" path="res://tools/diag_monoculture.gd" id="1_diag"]
+
+[node name="DiagMonoculture" type="Node"]
+script = ExtResource("1_diag")

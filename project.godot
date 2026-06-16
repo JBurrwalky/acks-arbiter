@@ -44,6 +44,10 @@ TradeRouteTriggerHandlers="*res://engine/subsystems/commerce/trade_route_trigger
 TestContentSeeder="*res://engine/autoloads/test_content_seeder.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
+[editor]
+
+movie_writer/movie_file="C:/Users/jttau/acks-arbiter/movies/setting_gen_film_1.avi"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg", "res://addons/godot_ai/plugin.cfg")

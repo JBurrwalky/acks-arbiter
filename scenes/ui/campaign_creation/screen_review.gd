@@ -83,6 +83,16 @@ func _build_ui() -> void:
 		b.tooltip_text = str(_MODE_TOOLTIPS.get(int(entry[0]), ""))
 		b.pressed.connect(_on_mode.bind(int(entry[0])))
 		modes.add_child(b)
+	# Vassal ⇄ Sovereign view toggle (affects the Political map: off = every domain
+	# its own colour; on = colour by the top realm of each vassalage chain).
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(14, 0)
+	modes.add_child(spacer)
+	var sov := CheckButton.new()
+	sov.text = "Sovereigns"
+	sov.tooltip_text = "Political map: off shows every domain's own colour & borders (vassal view); on colours each hex by the top realm of its vassalage chain, so a realm and its vassals read as one power."
+	sov.toggled.connect(_on_sovereign_toggled)
+	modes.add_child(sov)
 
 	var map_panel := PanelContainer.new()
 	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -178,6 +188,12 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 func _on_mode(mode: int) -> void:
 	if _map != null:
 		_map.set_mode(mode)
+	_refresh_legend()
+
+
+func _on_sovereign_toggled(on: bool) -> void:
+	if _map != null:
+		_map.set_sovereign_view(on)
 	_refresh_legend()
 
 

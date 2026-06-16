@@ -31,9 +31,11 @@ const _OFF := [
 ## epoch). A fallen capital/culture outranks a routine border war or succession;
 ## the per-event severity adds on top (`_significance_for`).
 const _EVENT_SIGNIFICANCE := {
-	"depopulation": 1.0, "conquest": 0.9, "collapse_shatter": 0.8, "golden_age": 0.6,
+	"depopulation": 1.0, "conquest": 0.9, "rebellion_extinguished": 0.85,
+	"razing": 0.82, "collapse_shatter": 0.8, "rebellion_won": 0.75, "golden_age": 0.6,
 	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "collapse_rump": 0.45,
-	"migration": 0.4, "schism": 0.4, "pillage": 0.35, "war": 0.3,
+	"rebellion_concession": 0.42, "migration": 0.4, "schism": 0.4,
+	"rebellion": 0.4, "rebellion_crushed": 0.38, "pillage": 0.35, "war": 0.3,
 	"alignment_drift": 0.3, "expansion": 0.2, "dynasty_change": 0.1,
 }
 
@@ -57,6 +59,7 @@ var _alignment_w: Dictionary = {} # Vector2i -> {alignment: weight}
 
 var _polities: Dictionary = {}   # id -> mutable polity dict (+ runtime hexes[])
 var _settlements: Array = []     # emerged settlement records
+var _settlement_index: Dictionary = {}  # "q,r,polity_id" -> record ref (O(1) emerge lookup)
 var _events: Array = []          # §11 event log
 var _replay_frames: Array = []   # {tick, owner_by_hex}
 var _next_settlement_seq: int = 1
@@ -75,6 +78,12 @@ var _fallen_polities: Array = []     # §7.6 depopulation heartland records
 var _ruin_seeds: Array = []          # §7.6 ruin/dungeon seeds with provenance
 var _depopulated_at: Dictionary = {} # Vector2i -> tick; 4f beastman repopulation reads it
 var _bands: Array = []               # §8 in-flight migrating bands
+
+# §7.4b genocide rebellions: active revolts {realm_id, culture_id, hexes,
+# started_tick} (transient — only the emitted events persist), and per-hex
+# genocide blocks a moderate-success revolt wins: Vector2i -> {sovereign, until_tick}.
+var _active_rebellions: Array = []
+var _genocide_block: Dictionary = {}
 
 # Optional per-phase profiling (set `_profile = true` before run()); off by default.
 var _profile: bool = false
@@ -111,9 +120,18 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 		if tick % _c.replay_cadence == 0:
 			_capture_replay_frame(tick)
 	_capture_replay_frame(_n_ticks)   # always capture the present-day frame
-
+	if _profile:
+		printerr("HIST PROFILE (ms): ", _phase_us_ms())
 	_finalize(ctx)
 	return true
+
+
+## Per-phase wall-clock (ms) from the profiling path; empty unless `_profile`.
+func _phase_us_ms() -> Dictionary:
+	var out := {}
+	for k in _phase_us:
+		out[k] = int(_phase_us[k]) / 1000
+	return out
 
 
 func _tick(tick: int) -> void:
@@ -133,10 +151,12 @@ func _tick(tick: int) -> void:
 	if not _profile:
 		_phase_expansion(tick)    # 4b
 		_phase_war(tick)          # 4d
+		_phase_rebellion(tick)    # 4d-b (after war: revolts are internal fronts)
 		_phase_migration(tick)    # 4f
 		_phase_economy(tick)      # 4c — ledger: garrison_coverage + f_overextension
 		_phase_stability(tick)    # 4e (consumes f_overextension)
 		_phase_collapse(tick)     # 4e
+		_phase_contiguity(tick)   # 4d-c (shed land severed only by foreign territory)
 		_phase_substrate(tick)    # 4a
 		_phase_demography(tick)   # 4a
 		_phase_log(tick)          # 4g
@@ -146,10 +166,12 @@ func _tick(tick: int) -> void:
 	var t := Time.get_ticks_usec()
 	_phase_expansion(tick); t = _mark("expansion", t)
 	_phase_war(tick); t = _mark("war", t)
+	_phase_rebellion(tick); t = _mark("rebellion", t)
 	_phase_migration(tick); t = _mark("migration", t)
 	_phase_economy(tick); t = _mark("economy", t)
 	_phase_stability(tick); t = _mark("stability", t)
 	_phase_collapse(tick); t = _mark("collapse", t)
+	_phase_contiguity(tick); t = _mark("contiguity", t)
 	_phase_substrate(tick); t = _mark("substrate", t)
 	_phase_demography(tick); t = _mark("demography", t)
 	_phase_log(tick); t = _mark("log", t)
@@ -251,14 +273,14 @@ func _sorted_polity_ids() -> Array:
 # 4a — Substrate (§6): diffusion + assimilation
 # ---------------------------------------------------------------------------
 
-func _phase_substrate(_tick: int) -> void:
+func _phase_substrate(tick: int) -> void:
 	if _profile:
 		var t := Time.get_ticks_usec()
 		_diffuse_culture(); t = _mark("sub_diffuse", t)
-		_assimilate_held_hexes(); _mark("sub_assim", t)
+		_assimilate_held_hexes(tick); _mark("sub_assim", t)
 		return
 	_diffuse_culture()
-	_assimilate_held_hexes()
+	_assimilate_held_hexes(tick)
 
 
 ## Discrete graph-Laplacian diffusion of culture_weights between adjacent LAND
@@ -328,7 +350,8 @@ static func _canonical_less(a: Vector2i, b: Vector2i) -> bool:
 ## of a different culture rewrites at the §4.4 effective_svg for THAT target —
 ## so a demihuman annexing humans in its own seed biome converts fast (genocide,
 ## svg→0.9) while the same people merely vassalize lands outside it (svg low).
-func _assimilate_held_hexes() -> void:
+func _assimilate_held_hexes(tick: int) -> void:
+	var has_blocks := not _genocide_block.is_empty()
 	for pid in _sorted_polity_ids():
 		var pol: Dictionary = _polities[pid]
 		if not pol["alive"]:
@@ -345,6 +368,12 @@ func _assimilate_held_hexes() -> void:
 			# threshold, which re-arms assimilation next tick.
 			if float(_culture_w.get(key, {}).get(culture_id, 0.0)) >= 0.999:
 				continue
+			# §7.4b: a moderate-success revolt halts this sovereign's culture
+			# replacement on its hexes for a few ticks.
+			if has_blocks:
+				var blk = _genocide_block.get(key)
+				if blk != null and str(blk["sovereign"]) == pid and int(blk["until_tick"]) > tick:
+					continue
 			var rate := clampf(_effective_svg_for_hex(pol, key) * _c.assimilation_step, 0.0, 1.0)
 			if rate <= 0.0:
 				continue
@@ -443,13 +472,17 @@ func _maybe_emerge_settlement(pol: Dictionary, key: Vector2i, urban_families: in
 		tick: int) -> void:
 	if urban_families < _c.settlement_min_urban_families:
 		return
-	for s in _settlements:
-		if int(s["hex_q"]) == key.x and int(s["hex_r"]) == key.y \
-				and str(s["polity_id"]) == str(pol["id"]):
-			s["urban_families"] = maxi(int(s["urban_families"]), urban_families)
-			return
+	# O(1) lookup by (hex, polity) — _settlements is append-only and never pruned
+	# (it is a historical placement signal for Layer 6 §9.1), so the index stays
+	# valid for the whole run. The stored value is the live record reference, so a
+	# bump here mutates the same dict that lives in _settlements.
+	var idx_key := "%d,%d,%s" % [key.x, key.y, str(pol["id"])]
+	var existing: Variant = _settlement_index.get(idx_key)
+	if existing != null:
+		existing["urban_families"] = maxi(int(existing["urban_families"]), urban_families)
+		return
 	var is_capital := (key.x == int(pol["capital_q"]) and key.y == int(pol["capital_r"]))
-	_settlements.append({
+	var rec := {
 		"id": "stl_%04d" % _next_settlement_seq,
 		"hex_q": key.x, "hex_r": key.y,
 		"polity_id": str(pol["id"]),
@@ -458,7 +491,9 @@ func _maybe_emerge_settlement(pol: Dictionary, key: Vector2i, urban_families: in
 		"is_capital": 1 if is_capital else 0,
 		"market_class": 6,
 		"name": "",
-	})
+	}
+	_settlements.append(rec)
+	_settlement_index[idx_key] = rec
 	_next_settlement_seq += 1
 
 
@@ -517,7 +552,7 @@ func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
 			var ck := "%s>%s" % [str(pol["id"]), owner]
 			_contest_counts[ck] = int(_contest_counts.get(ck, 0)) + 1
 			if _resolve_contest(pol, _polities[owner], key, tick):
-				_flip_hex(key, _polities[owner], pol)
+				_flip_hex(key, _polities[owner], pol, tick)
 
 
 ## Frontier = land hexes adjacent to the polity's holdings that it does not
@@ -546,7 +581,19 @@ func _settle_wilderness(pol: Dictionary, key: Vector2i) -> void:
 	_alignment_w[key] = {str(pol["alignment"]): 1.0}
 
 
-func _flip_hex(key: Vector2i, loser: Dictionary, winner: Dictionary) -> void:
+func _flip_hex(key: Vector2i, loser: Dictionary, winner: Dictionary, tick: int) -> void:
+	# §7.4c (Jedidiah ruling #4): a Lawful/Neutral conqueror does NOT settle a beastman
+	# hex it overruns — it WIPES the clanhold population to wilderness and takes nothing
+	# ("beastmen don't become settlers"); the cleared land re-civilizes only by the
+	# victor's own organic expansion over later ticks. Only a Chaotic conqueror keeps
+	# the hex (enslaving its people, RAW). This is the single chokepoint for every
+	# conquest flip — expansion contest, war deep-raid, border-band — so the raze rule
+	# applies uniformly, not just in the crushing-war branch. (Annex never reaches here
+	# with a beastman loser: _resolve_crushing routes beastman defenders away first.)
+	if bool(loser.get("is_beastman", false)) and not bool(winner.get("is_beastman", false)) \
+			and str(winner["alignment"]) != "chaotic":
+		_raze_beastman_hex(key, loser, winner, tick)
+		return
 	_grid[key]["owner_polity_id"] = str(winner["id"])
 	loser["hexes"].erase(key)
 	winner["hexes"].append(key)
@@ -554,6 +601,40 @@ func _flip_hex(key: Vector2i, loser: Dictionary, winner: Dictionary) -> void:
 	# phase) begins rewriting it toward the winner per its svg.
 	if loser["hexes"].is_empty():
 		loser["alive"] = false
+		loser["fell_tick"] = tick
+		# A polity whittled to death by a contest / deep-raid must free its
+		# war-vassals (their liege is gone), else a live vassal is left pointing at
+		# a fallen, un-persisted liege — a dangling reference (§7.4 integrity).
+		_free_war_vassals(str(loser["id"]))
+
+
+## Detach every live war-vassal of a polity that just fell, so no surviving polity
+## keeps a liege_id pointing at a dead/un-persisted realm. Shared by every death
+## path (flip-to-death, raze, annex).
+func _free_war_vassals(pid: String) -> void:
+	for vid in _vassal_polities_of(pid):
+		_polities[vid]["liege_id"] = ""
+		_polities[vid]["vassalized_by_war"] = 0
+
+
+## §7.4c per-hex raze: a Lawful/Neutral attacker overruns a single beastman hex (via
+## an expansion contest or a war deep-raid). The clanhold population is cleared to
+## wilderness and the attacker gains NOTHING (no flip, no culture conversion). When the
+## raze empties the clanhold, the realm dies and a razing event records its destruction;
+## a partial raze just re-tiers the survivor (still <= the clanhold cap).
+func _raze_beastman_hex(key: Vector2i, beastman: Dictionary, razer: Dictionary, tick: int) -> void:
+	beastman["hexes"].erase(key)
+	_revert_to_wilderness(key, tick, _c.razed_pop_keep, false)
+	if beastman["hexes"].is_empty():
+		beastman["alive"] = false
+		beastman["fell_tick"] = tick
+		for vid in _vassal_polities_of(str(beastman["id"])):
+			_polities[vid]["liege_id"] = ""
+			_polities[vid]["vassalized_by_war"] = 0
+		_emit_event(tick, "razing", [str(razer["id"]), str(beastman["id"])],
+				[str(razer["culture_id"]), str(beastman["culture_id"])], [key], 0.7, "war.razing_hex")
+	else:
+		_update_tier(beastman)
 
 
 ## Seeded border contest (§7.3). Returns true if P takes the hex from Q.
@@ -860,6 +941,13 @@ func _phase_war(tick: int) -> void:
 	for w in wars:
 		war_count[w["attacker"]] = int(war_count.get(w["attacker"], 0)) + 1
 		war_count[w["defender"]] = int(war_count.get(w["defender"], 0)) + 1
+	# §7.4b: an active revolt is an internal front — it adds to the ruler's war
+	# count, so it fights every external war weaker via the multi_war_factor (an
+	# army busy putting down a rebellion can't fully campaign abroad). Carried from
+	# the previous tick (rebellions resolve after war), the sim's prev-tick coupling.
+	for reb in _active_rebellions:
+		var rid := str(reb["realm_id"])
+		war_count[rid] = int(war_count.get(rid, 0)) + _c.rebellion_war_fronts
 	var lost_war := {}   # liege id -> true; feeds §7.4 secession weakness
 	for w in wars:
 		_resolve_war(w, war_count, tick, lost_war)
@@ -1030,10 +1118,15 @@ func _resolve_war(w: Dictionary, war_count: Dictionary, tick: int, lost_war: Dic
 ## assimilated first). If the defender has no vassal polities, the attacker
 ## instead takes a deep raid of up to double its expansion budget in front hexes.
 func _resolve_decisive(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
+	# §7.4c: a beastman attacker raids and withdraws — no vassal-taking, no deep-raid
+	# settling. It razes the front it overran instead.
+	if bool(p.get("is_beastman", false)):
+		_raze_front_and_retreat(p, q, front, tick)
+		return
 	var vassals := _vassal_polities_of(str(q["id"]))
 	if vassals.is_empty():
 		var raid: int = maxi(2 * int(p.get("last_expansion_budget", 0)), 1)
-		_deep_raid(p, q, front, raid)
+		_deep_raid(p, q, front, raid, tick)
 		return
 	var p_cap := Vector2i(int(p["capital_q"]), int(p["capital_r"]))
 	vassals.sort_custom(func(va: String, vb: String) -> bool:
@@ -1050,6 +1143,8 @@ func _resolve_decisive(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 			"%s>%s" % [str(p["id"]), str(q["id"])]).randi_range(1, 3)
 	for i in range(mini(n, vassals.size())):
 		var v: Dictionary = _polities[vassals[i]]
+		if _would_create_liege_cycle(str(v["id"]), str(p["id"])):
+			continue   # transferring this vassal to p would loop the chain — skip it
 		v["liege_id"] = str(p["id"])
 		v["vassalized_by_war"] = 1
 		_emit_event(tick, "vassalage", [str(p["id"]), str(v["id"])],
@@ -1068,16 +1163,21 @@ func _resolve_crushing(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 		if roll < _c.pillage_chance:
 			_pillage(p, q, front, tick)
 			return
-	# Beastman defenders (Jedidiah's ruling 2026-06-13): a Lawful or Neutral
-	# victor DESTROYS the clanhold (annex → its land becomes civilizable), since
-	# civilizations do not keep chaotic beastman clanholds as vassals; only a
-	# Chaotic conqueror absorbs them as vassals. This overrides the svg bands and
-	# is what clears the beastman interior as civilization advances.
+	# §7.4c: beastmen don't SETTLE conquered land. A beastman attacker razes the
+	# front it overran (population destroyed) and withdraws to its clanhold — it
+	# gains nothing; the vacated land refills by organic growth / re-seeding.
+	if bool(p.get("is_beastman", false)):
+		_raze_front_and_retreat(p, q, front, tick)
+		return
+	# Beastman defenders (Jedidiah's rulings): a Chaotic conqueror absorbs the
+	# clanhold as a vassal (RAW); a Lawful/Neutral victor RAZES it to wilderness —
+	# its population is cleared, NOT culture-flipped in place ("beastmen don't turn
+	# into settlers"). The cleared land refills by the victor's organic expansion.
 	if bool(q.get("is_beastman", false)):
 		if str(p["alignment"]) == "chaotic":
 			_vassalize(p, q, tick)
 		else:
-			_annex(p, q, tick)
+			_raze_realm(p, q, tick)
 		return
 	if svg >= _c.svg_annex_min:
 		_annex(p, q, tick)
@@ -1089,11 +1189,30 @@ func _resolve_crushing(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 ## 0.35–0.65 middle). Q keeps culture, substrate, and any vassals; tribute then
 ## flows through the §7.5.1 ledger. "The conquered remain themselves."
 func _vassalize(p: Dictionary, q: Dictionary, tick: int) -> void:
+	# Guard: vassalizing q under p must not loop the liege chain (p already at/below q).
+	# _same_realm only blocks DIRECT liege / co-vassal wars, so a realm CAN war and beat
+	# its transitive grand-liege; absorbing it back would cycle. Leave q independent in
+	# that case — the war's collapse-risk already applied.
+	if _would_create_liege_cycle(str(q["id"]), str(p["id"])):
+		return
 	q["liege_id"] = str(p["id"])
 	q["vassalized_by_war"] = 1
 	_emit_event(tick, "vassalage", [str(p["id"]), str(q["id"])],
 			[str(p["culture_id"]), str(q["culture_id"])],
 			[Vector2i(int(q["capital_q"]), int(q["capital_r"]))], 0.85, "war.vassalage")
+
+
+## True if making [param vassal_id] a vassal of [param liege_id] would loop the liege
+## chain (liege is already at or below vassal). Walks up from liege; depth-capped.
+func _would_create_liege_cycle(vassal_id: String, liege_id: String) -> bool:
+	var cur := liege_id
+	var guard := 0
+	while cur != "" and guard < 128:
+		if cur == vassal_id:
+			return true
+		cur = str(_polities[cur].get("liege_id", "")) if _polities.has(cur) else ""
+		guard += 1
+	return false
 
 
 ## Annexation (§7.3.1 svg ≥ 0.65): Q dissolves; its hexes join P and rewrite at
@@ -1102,7 +1221,7 @@ func _vassalize(p: Dictionary, q: Dictionary, tick: int) -> void:
 func _annex(p: Dictionary, q: Dictionary, tick: int) -> void:
 	var former: Array = q["hexes"].duplicate()
 	for key in former:
-		_flip_hex(key, q, p)   # sets owner, moves hex lists, kills Q when it empties
+		_flip_hex(key, q, p, tick)   # sets owner, moves hex lists, kills Q when it empties
 	q["alive"] = false
 	q["fell_tick"] = tick
 	for vid in _vassal_polities_of(str(q["id"])):
@@ -1137,7 +1256,7 @@ func _pillage(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
 ## the defender's still-held front hexes to the attacker, best-terrain/nearest
 ## first. The §7.3 contests already grabbed the immediate border; this is the
 ## "never crawl hex-by-hex through a beaten rival" swath.
-func _deep_raid(p: Dictionary, q: Dictionary, front: Array, count: int) -> void:
+func _deep_raid(p: Dictionary, q: Dictionary, front: Array, count: int, tick: int) -> void:
 	var p_cap := Vector2i(int(p["capital_q"]), int(p["capital_r"]))
 	var takeable: Array = front.duplicate()
 	takeable.sort_custom(func(ha: Vector2i, hb: Vector2i) -> bool:
@@ -1156,8 +1275,56 @@ func _deep_raid(p: Dictionary, q: Dictionary, front: Array, count: int) -> void:
 			break
 		if str(_grid[key]["owner_polity_id"]) != str(q["id"]):
 			continue
-		_flip_hex(key, q, p)
+		_flip_hex(key, q, p, tick)
 		taken += 1
+
+
+## §7.4c raze a whole realm: the loser's hexes revert to wilderness (population
+## cleared, NOT culture-flipped to the victor) and are stamped for organic refill;
+## the victor takes nothing. Used when a Lawful/Neutral realm crushes a beastman
+## clanhold — no "beastmen become settlers" flip; the land re-civilizes only by the
+## victor's own expansion (or new clanholds) over later ticks.
+func _raze_realm(p: Dictionary, q: Dictionary, tick: int) -> void:
+	var cap := Vector2i(int(q["capital_q"]), int(q["capital_r"]))
+	for h in q["hexes"].duplicate():
+		_revert_to_wilderness(h, tick, _c.razed_pop_keep, false)
+	q["hexes"] = []
+	q["alive"] = false
+	q["fell_tick"] = tick
+	for vid in _vassal_polities_of(str(q["id"])):
+		_polities[vid]["liege_id"] = ""
+		_polities[vid]["vassalized_by_war"] = 0
+	_emit_event(tick, "razing", [str(p["id"]), str(q["id"])],
+			[str(p["culture_id"]), str(q["culture_id"])], [cap], 0.9, "war.razing")
+
+
+## §7.4c raid-and-retreat: a beastman attacker's decisive+ victory razes the front
+## hexes it overran to wilderness (population destroyed) but TAKES NONE — clanholds
+## wipe and withdraw rather than settle. The realm survives minus the razed front.
+func _raze_front_and_retreat(p: Dictionary, q: Dictionary, front: Array, tick: int) -> void:
+	var razed: Array = []
+	for h in front:
+		if str(_grid.get(h, {}).get("owner_polity_id", "")) == str(q["id"]):
+			q["hexes"].erase(h)
+			_revert_to_wilderness(h, tick, _c.razed_pop_keep, false)
+			razed.append(h)
+	if razed.is_empty():
+		return
+	_update_tier(q)
+	_emit_event(tick, "razing", [str(p["id"]), str(q["id"])],
+			[str(p["culture_id"]), str(q["culture_id"])], razed, 0.7, "war.razing")
+
+
+## Force a hex a beastman realm holds onto clanhold terms: clanholds are always
+## WILDERNESS and never hold civilized-density population, so reclassify the hex to
+## wilderness and clamp its population to the wilderness cap. Called on every hex a
+## beastman polity acquires out-of-band (rebellion breakaway), so beastmen can
+## never inherit a civilized hex (cap 12,480) and field a civ-sized army.
+func _demote_to_clanhold(h: Vector2i) -> void:
+	if not _grid.has(h):
+		return
+	_grid[h]["territory_class"] = "wilderness"
+	_grid[h]["population_band"] = mini(int(_grid[h]["population_band"]), _c.cap_wilderness)
 
 
 # --- War factors / predicates -----------------------------------------------
@@ -1243,6 +1410,421 @@ func _run_secessions(tick: int, lost_war: Dictionary) -> void:
 			_emit_event(tick, "secession", [pid, liege_id],
 					[str(v["culture_id"]), str(l["culture_id"])],
 					[Vector2i(int(v["capital_q"]), int(v["capital_r"]))], 0.0, "secession")
+
+
+# ---------------------------------------------------------------------------
+# 4d-b — Genocide rebellions (§7.4b): a realm actively erasing a conquered
+# culture can face a revolt. Runs right after war so an active revolt counts as
+# an internal front (added to war_count). A revolt persists across ticks and
+# resolves on a margin roll into four bands: break-away (major success), forced
+# concession / genocide halted (moderate success), crushed (moderate failure),
+# or extinction + diaspora (major failure). NOT guaranteed.
+# ---------------------------------------------------------------------------
+func _phase_rebellion(tick: int) -> void:
+	_resolve_rebellions(tick)
+	_ignite_rebellions(tick)
+	_expire_genocide_blocks(tick)
+
+
+## Each active revolt persists until its per-tick resolve roll fires; on firing it
+## applies the §7.4b outcome ladder. Dead/empty revolts are pruned.
+func _resolve_rebellions(tick: int) -> void:
+	var still: Array = []
+	for reb in _active_rebellions:
+		var realm_id := str(reb["realm_id"])
+		var cid := str(reb["culture_id"])
+		if not _is_alive(realm_id):
+			continue
+		var realm: Dictionary = _polities[realm_id]
+		var hexes: Array = []
+		for h in reb["hexes"]:
+			if str(_grid.get(h, {}).get("owner_polity_id", "")) == realm_id \
+					and float(_culture_w.get(h, {}).get(cid, 0.0)) > 0.0:
+				hexes.append(h)
+		if hexes.is_empty():
+			continue   # already assimilated or lost — nothing left to revolt over
+		reb["hexes"] = hexes
+		if WorldGenRng.stream(_campaign_seed, "rebel_resolve", tick, realm_id + "|" + cid).randf() \
+				>= _c.rebellion_resolve_chance:
+			still.append(reb)
+			continue
+		_apply_rebellion_outcome(realm, cid, hexes, tick)
+	_active_rebellions = still
+
+
+## One margin roll → four outcome bands. v = rebel_strength / (rebel + suppression).
+func _apply_rebellion_outcome(realm: Dictionary, cid: String, hexes: Array, tick: int) -> void:
+	var realm_id := str(realm["id"])
+	var align_c := _dominant_alignment_over(hexes)
+	var mismatch := _c.rebellion_mismatch_mult if _alignments_opposed(str(realm["alignment"]), align_c) else 1.0
+	var svg := _avg_svg_over(realm, hexes)
+	var rebel_strength := _avg_minority_weight(hexes, cid) * mismatch * (1.0 + svg)
+	# Suppression weakens with the ruler's other revolts (multi-front) and stress —
+	# a realm busy fighting wars/revolts crushes this one less effectively.
+	var suppression := _ruler_war(realm) \
+			* (_c.rebellion_suppression_base + _military_sphere(realm)) \
+			* pow(_c.multi_war_factor, _other_active_rebellions(realm_id)) \
+			* (1.0 - clampf(float(realm.get("collapse_risk", 0.0)), 0.0, 0.5))
+	var jit := WorldGenRng.stream(_campaign_seed, "rebel_margin", tick, realm_id + "|" + cid) \
+			.randf_range(-_c.rebellion_margin_jitter, _c.rebellion_margin_jitter)
+	var denom := rebel_strength + suppression
+	var v := clampf((rebel_strength / denom if denom > 0.0 else 0.5) + jit, 0.0, 1.0)
+	var cap := _lowest_canonical(hexes)
+	if v >= _c.rebel_band_major_success:
+		_rebellion_breakaway(realm, cid, hexes, align_c, tick)
+	elif v >= _c.rebel_band_mod_success:
+		var dur := _c.rebellion_block_base_ticks + WorldGenRng.stream(
+				_campaign_seed, "rebel_block", tick, realm_id + "|" + cid).randi_range(1, 3)
+		for h in hexes:
+			_genocide_block[h] = {"sovereign": realm_id, "until_tick": tick + dur}
+		_emit_event(tick, "rebellion_concession", [realm_id], [str(realm["culture_id"]), cid],
+				[cap], 0.5, "rebellion.concession")
+	elif v >= _c.rebel_band_mod_failure:
+		# Crushed: the revolt simply ends; next tick's substrate resumes assimilation.
+		_emit_event(tick, "rebellion_crushed", [realm_id], [str(realm["culture_id"]), cid],
+				[cap], 0.4, "rebellion.crushed")
+	else:
+		_rebellion_extinction(realm, cid, hexes, align_c, cap, tick)
+
+
+## Major success: the subject hexes break free as a fresh realm of culture C —
+## joining an adjacent same-culture realm as a vassal if one borders them, else
+## fully independent. The freed hexes reassert their culture.
+func _rebellion_breakaway(realm: Dictionary, cid: String, hexes: Array, align_c: String, tick: int) -> void:
+	var pid := "pol_%04d" % _next_polity_seq
+	_next_polity_seq += 1
+	var cap := _lowest_canonical(hexes)
+	var pol := _migrant_seed_shape(pid, cid, align_c, cap)
+	_finalize_new_polity(pol, tick)
+	var is_beast := bool(pol.get("is_beastman", false))
+	# §7.4: a beastman revolt frees only a clanhold-sized territory; any excess
+	# rebel hexes scatter back to wilderness rather than forming a large realm.
+	var keep: Array = hexes
+	if is_beast and hexes.size() > _c.beastman_realm_max_hexes:
+		var ordered := hexes.duplicate()
+		ordered.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+		keep = ordered.slice(0, _c.beastman_realm_max_hexes)
+		for h in ordered.slice(_c.beastman_realm_max_hexes):
+			realm["hexes"].erase(h)
+			_revert_to_wilderness(h, tick, _c.razed_pop_keep, false)
+	pol["hexes"] = keep.duplicate()
+	var hexset := {}
+	for h in keep:
+		hexset[h] = true
+		_grid[h]["owner_polity_id"] = pid
+		_culture_w[h] = _lerp_toward(_culture_w.get(h, {}), cid, 0.5)
+		_genocide_block.erase(h)
+		if is_beast:
+			_demote_to_clanhold(h)
+	realm["hexes"] = realm["hexes"].filter(func(h): return not hexset.has(h))
+	if realm["hexes"].is_empty():
+		realm["alive"] = false
+		realm["fell_tick"] = tick
+		_free_war_vassals(str(realm["id"]))   # breakaway took its last hex — free its vassals
+	else:
+		_update_tier(realm)
+	_update_tier(pol)
+	_polities[pid] = pol
+	# Beastman breakaway clanholds stay INDEPENDENT (chaotic raiders don't federate;
+	# avoids beastman→beastman vassal cycles); carry the race hint for chieftain flavor.
+	if is_beast:
+		pol["beastman_race"] = str(realm.get("beastman_race", ""))
+	else:
+		var liege := _adjacent_same_culture_realm(keep, cid, pid)
+		if liege != "":
+			pol["liege_id"] = liege
+	_emit_event(tick, "rebellion_won", [str(realm["id"])], [str(realm["culture_id"]), cid],
+			[cap], 0.85, "rebellion.won")
+
+
+## Major failure: the revolt is crushed and culture C is driven to the floor on
+## these hexes this tick; the survivors flee as a diaspora band (if room exists).
+func _rebellion_extinction(realm: Dictionary, cid: String, hexes: Array, align_c: String,
+		cap: Vector2i, tick: int) -> void:
+	var families := 0
+	for h in hexes:
+		var w: Dictionary = _culture_w.get(h, {})
+		families += XPAwardCalculator.bankers_round(
+				float(w.get(cid, 0.0)) * float(_grid.get(h, {}).get("population_band", 0)))
+		w[cid] = _c.rebellion_wipe_floor
+		_culture_w[h] = _normalize(w)
+	if families > 0 and _params.migration_multiplier() > 0.0:
+		_create_band(cid, align_c, families, cap)
+	_emit_event(tick, "rebellion_extinguished", [str(realm["id"])], [str(realm["culture_id"]), cid],
+			[cap], 1.0, "rebellion.extinguished")
+
+
+## Ignite new revolts: per realm, group its actively-erased subject-culture hexes
+## by culture; for each culture with no live revolt, roll a seeded ignition chance.
+func _ignite_rebellions(tick: int) -> void:
+	var existing := {}
+	for reb in _active_rebellions:
+		existing["%s|%s" % [reb["realm_id"], reb["culture_id"]]] = true
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol["hexes"].is_empty():
+			continue
+		var owner_cid := str(pol["culture_id"])
+		var by_culture := {}
+		for h in pol["hexes"]:
+			var w: Dictionary = _culture_w.get(h, {})
+			if float(w.get(owner_cid, 0.0)) >= 0.999:
+				continue
+			var c := _dominant_other_culture(w, owner_cid)
+			if c == "" or float(w.get(c, 0.0)) < _c.rebellion_min_minority_weight:
+				continue
+			if not by_culture.has(c):
+				by_culture[c] = []
+			by_culture[c].append(h)
+		var cultures: Array = by_culture.keys()
+		cultures.sort()   # deterministic ignition order
+		for c in cultures:
+			if existing.has("%s|%s" % [pid, c]):
+				continue
+			var hexes: Array = by_culture[c]
+			var align_c := _dominant_alignment_over(hexes)
+			var mismatch := _c.rebellion_mismatch_mult if _alignments_opposed(str(pol["alignment"]), align_c) else 1.0
+			var p := _c.rebellion_base * (1.0 + _avg_svg_over(pol, hexes)) * mismatch
+			if WorldGenRng.stream(_campaign_seed, "rebel_ignite", tick, "%s|%s" % [pid, c]).randf() < p:
+				_active_rebellions.append({
+					"realm_id": str(pid), "culture_id": str(c),
+					"hexes": hexes.duplicate(), "started_tick": tick,
+				})
+				existing["%s|%s" % [pid, c]] = true
+				_emit_event(tick, "rebellion", [str(pid)], [owner_cid, str(c)],
+						[_lowest_canonical(hexes)], 0.4, "rebellion.ignite")
+
+
+func _expire_genocide_blocks(tick: int) -> void:
+	if _genocide_block.is_empty():
+		return
+	var keep := {}
+	for h in _genocide_block:
+		if int(_genocide_block[h]["until_tick"]) > tick:
+			keep[h] = _genocide_block[h]
+	_genocide_block = keep
+
+
+func _other_active_rebellions(realm_id: String) -> int:
+	var n := 0
+	for reb in _active_rebellions:
+		if str(reb["realm_id"]) == realm_id:
+			n += 1
+	return maxi(0, n - 1)
+
+
+func _military_sphere(pol: Dictionary) -> float:
+	return float(_inst(pol).get("sphere_weights", {}).get("military", 0.0))
+
+
+## Average §4.4 effective_svg (genocide intensity) the realm applies across [hexes].
+func _avg_svg_over(realm: Dictionary, hexes: Array) -> float:
+	if hexes.is_empty():
+		return 0.0
+	var sum := 0.0
+	for h in hexes:
+		sum += _effective_svg_for_hex(realm, h)
+	return sum / float(hexes.size())
+
+
+func _avg_minority_weight(hexes: Array, cid: String) -> float:
+	if hexes.is_empty():
+		return 0.0
+	var sum := 0.0
+	for h in hexes:
+		sum += float(_culture_w.get(h, {}).get(cid, 0.0))
+	return sum / float(hexes.size())
+
+
+## The dominant practised alignment across [hexes] (the rebels' alignment).
+func _dominant_alignment_over(hexes: Array) -> String:
+	var agg := {}
+	for h in hexes:
+		for a in _alignment_w.get(h, {}):
+			agg[str(a)] = float(agg.get(str(a), 0.0)) + float(_alignment_w[h][a])
+	var dk := _dominant_key(agg)
+	return dk if dk != "" else "neutral"
+
+
+## An alive realm of culture [cid] bordering the rebel [hexes] (to host the
+## breakaway as a vassal), or "" if none; lowest-id for determinism.
+func _adjacent_same_culture_realm(hexes: Array, cid: String, exclude_pid: String) -> String:
+	var hexset := {}
+	for h in hexes:
+		hexset[h] = true
+	var best := ""
+	for h in hexes:
+		for off in _OFF:
+			var n: Vector2i = h + off
+			if hexset.has(n) or not _grid.has(n):
+				continue
+			var o := str(_grid[n]["owner_polity_id"])
+			if o == "" or o == exclude_pid or not _is_alive(o):
+				continue
+			if str(_polities[o]["culture_id"]) == cid and (best == "" or o < best):
+				best = o
+	return best
+
+
+# ---------------------------------------------------------------------------
+# 4d-c — Contiguity (§7.4d): a realm whose own territory is split into pieces
+# reachable from the capital only THROUGH foreign sovereign land sheds the orphan
+# pieces as independent realms. Ocean sea-lanes bridge coastal hexes (real
+# maritime empires), so sea/river separation never splits a realm — only foreign
+# LAND does. Runs after collapse so the tick's territorial churn is final.
+# ---------------------------------------------------------------------------
+func _phase_contiguity(tick: int) -> void:
+	var spawned: Array = []
+	# A polity's OWN vassals' territory is same-realm, not foreign: it is a passable
+	# CONNECTOR for the contiguity test, so a liege whose core blocks are joined only
+	# through its vassal's land is NOT falsely dismembered (review finding). Index
+	# liege -> direct vassals once, in sorted-id order so it is deterministic.
+	var vassals_by_liege := {}
+	for vid in _sorted_polity_ids():
+		var vp: Dictionary = _polities[vid]
+		if not vp["alive"]:
+			continue
+		var lg := str(vp.get("liege_id", ""))
+		if lg == "":
+			continue
+		if not vassals_by_liege.has(lg):
+			vassals_by_liege[lg] = []
+		vassals_by_liege[lg].append(vid)
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol["hexes"].size() < 2:
+			continue
+		var comps := _connected_components(pol, vassals_by_liege)
+		if comps.size() <= 1:
+			continue
+		var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
+		var keep_i := -1
+		for i in comps.size():
+			if cap in comps[i]:
+				keep_i = i
+				break
+		if keep_i < 0:
+			keep_i = _largest_component_index(comps)
+		for i in comps.size():
+			if i == keep_i:
+				continue
+			var orphan: Array = comps[i]
+			if orphan.size() < _c.contiguity_min_secede_hexes:
+				for h in orphan:
+					_revert_to_wilderness(h, tick, _c.rump_shed_pop_keep, false)
+			else:
+				_secede_component(pol, orphan, tick, spawned)
+		pol["hexes"] = comps[keep_i]
+		# Capital lost (kept block chosen by largest-component fallback): repoint the
+		# capital to the kept block's canonical anchor so home-factor / urban emergence
+		# / core selection stay centered on real territory, not a now-foreign hex.
+		if not (cap in comps[keep_i]):
+			var anchor: Vector2i = _lowest_canonical(comps[keep_i])
+			pol["capital_q"] = anchor.x
+			pol["capital_r"] = anchor.y
+		_update_tier(pol)
+	for s in spawned:
+		_polities[str(s["id"])] = s
+
+
+## Partition a polity's own hexes into connected components, where two of its
+## hexes connect by LAND adjacency (shared edge) OR a SEA LANE — both coastal and
+## within sea_lane_range (ocean is a neutral connector; foreign land is not). The
+## polity's own transitive vassal-chain hexes (passed via vassals_by_liege) are
+## passable CONNECTORS — traversed to keep same-realm blocks joined, but never
+## collected into a component to shed. Foreign (other-realm) land still severs.
+func _connected_components(pol: Dictionary, vassals_by_liege: Dictionary = {}) -> Array:
+	var own := {}
+	for h in pol["hexes"]:
+		own[h] = true
+	# passable = own hexes + this polity's transitive vassals' hexes.
+	var passable := own.duplicate()
+	if not vassals_by_liege.is_empty():
+		var vstack: Array = [str(pol["id"])]
+		var vseen := {str(pol["id"]): true}
+		while not vstack.is_empty():
+			var lg: String = vstack.pop_back()
+			for vid in vassals_by_liege.get(lg, []):
+				if vseen.has(vid):
+					continue
+				vseen[vid] = true
+				vstack.append(vid)
+				for h in _polities[vid]["hexes"]:
+					passable[h] = true
+	var coastal: Array = []
+	for h in pol["hexes"]:
+		if _is_coastal(h):
+			coastal.append(h)
+	var seen := {}
+	var comps: Array = []
+	for start in pol["hexes"]:
+		if seen.has(start):
+			continue
+		var comp: Array = []
+		var stack: Array = [start]
+		seen[start] = true
+		while not stack.is_empty():
+			var h: Vector2i = stack.pop_back()
+			if own.has(h):           # collect only OWN hexes; vassal hexes just bridge
+				comp.append(h)
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if passable.has(n) and not seen.has(n):
+					seen[n] = true
+					stack.append(n)
+			if _is_coastal(h):
+				for c in coastal:
+					if not seen.has(c) and _hex_distance(h, c) <= _c.sea_lane_range:
+						seen[c] = true
+						stack.append(c)
+		comps.append(comp)
+	return comps
+
+
+## A land hex (this polity's) that borders open ocean — eligible for a sea lane.
+func _is_coastal(h: Vector2i) -> bool:
+	if str(_grid.get(h, {}).get("water", "")) != "":
+		return false
+	for off in _OFF:
+		if str(_grid.get(h + off, {}).get("water", "")) == "ocean":
+			return true
+	return false
+
+
+func _largest_component_index(comps: Array) -> int:
+	var best := 0
+	for i in range(1, comps.size()):
+		if comps[i].size() > comps[best].size():
+			best = i
+	return best
+
+
+## Spin an orphaned (foreign-land-severed) component off as its own realm of the
+## parent's culture — joining an adjacent same-culture realm as a vassal if one
+## borders it, else independent. Emits a secession event.
+func _secede_component(pol: Dictionary, hexes: Array, tick: int, out: Array) -> void:
+	var pid := "pol_%04d" % _next_polity_seq
+	_next_polity_seq += 1
+	var cap := _lowest_canonical(hexes)
+	var npol := _migrant_seed_shape(pid, str(pol["culture_id"]), str(pol["alignment"]), cap)
+	_finalize_new_polity(npol, tick)
+	npol["hexes"] = hexes.duplicate()
+	for h in hexes:
+		_grid[h]["owner_polity_id"] = pid
+	_update_tier(npol)
+	if bool(npol.get("is_beastman", false)):
+		# Chaotic raider clanholds don't swear fealty to one another — a seceded
+		# beastman component stays INDEPENDENT (prevents beastman→beastman vassal
+		# cycles now that all beastmen share one culture). Carry the race hint so the
+		# splinter horde keeps its chieftain/name flavor.
+		npol["beastman_race"] = str(pol.get("beastman_race", ""))
+	else:
+		var liege := _adjacent_same_culture_realm(hexes, str(pol["culture_id"]), pid)
+		if liege != "":
+			npol["liege_id"] = liege
+	out.append(npol)
+	_emit_event(tick, "secession", [pid, str(pol["id"])],
+			[str(pol["culture_id"]), str(pol["culture_id"])], [cap], 0.0, "secession.contiguity")
 
 
 ## Living polities whose liege is [param liege_id] (the war-vassal chain).
@@ -1560,7 +2142,9 @@ func _collapse_polity(pol: Dictionary, tick: int, successors: Array) -> void:
 	if s < _c.severity_band_rump:
 		_do_rump(pol, tick)
 	elif s < _c.severity_band_shatter:
-		if _vassal_count(pol) >= _c.shatter_vassal_gate or tier >= DomainTierTable.DUCHY:
+		# §7.4: beastman clanholds never shatter into large successors — they rump.
+		if not bool(pol.get("is_beastman", false)) \
+				and (_vassal_count(pol) >= _c.shatter_vassal_gate or tier >= DomainTierTable.DUCHY):
 			_do_shatter(pol, tick, successors)
 		else:
 			_do_rump(pol, tick)   # degrades to rump (§7.6 gate)
@@ -1912,22 +2496,57 @@ func _phase_migration(tick: int) -> void:
 ## Layer-3 seeder's terrain/race statics). This is what refills the depopulated
 ## interior so the polity population reaches equilibrium rather than draining.
 func _repopulate_beastmen(tick: int) -> void:
-	if _params.wilderness_beastman_density <= 0.0 or _depopulated_at.is_empty():
+	if _params.wilderness_beastman_density <= 0.0:
 		return
-	var keys: Array = _depopulated_at.keys()
-	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
 	var chance := clampf(_c.beastman_fill_per_tick * _params.wilderness_beastman_density, 0.0, 1.0)
-	for h in keys:
+	# Fast path: refill collapse craters, honoring the "let the ashes cool" delay.
+	if not _depopulated_at.is_empty():
+		var keys: Array = _depopulated_at.keys()
+		keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+		for h in keys:
+			var hex: Dictionary = _grid[h]
+			if str(hex["owner_polity_id"]) != "" or str(hex["water"]) != "":
+				_depopulated_at.erase(h)   # reclaimed or invalid — no longer a spawn site
+				continue
+			if tick - int(_depopulated_at[h]) < _c.beastman_delay_ticks:
+				continue
+			if WorldGenRng.stream(_campaign_seed, "beastman_repop", tick,
+					"%d,%d" % [h.x, h.y]).randf() < chance:
+				if _spawn_beastman_clanhold(h, tick):
+					_depopulated_at.erase(h)
+	# §7.4d floor: every scan_period ticks, sweep ALL empty wilderness and seed
+	# beastmen where a region is below the target clanhold fraction — so there are
+	# always beastmen around, without saturating regions already at target.
+	if _c.beastman_scan_period <= 0 or tick % _c.beastman_scan_period != 0:
+		return
+	for h in _ordered_keys:
 		var hex: Dictionary = _grid[h]
 		if str(hex["owner_polity_id"]) != "" or str(hex["water"]) != "":
-			_depopulated_at.erase(h)   # reclaimed or invalid — no longer a spawn site
 			continue
-		if tick - int(_depopulated_at[h]) < _c.beastman_delay_ticks:
+		if _region_beastman_fraction(h) >= _c.beastman_region_target:
 			continue
-		if WorldGenRng.stream(_campaign_seed, "beastman_repop", tick,
+		if WorldGenRng.stream(_campaign_seed, "beastman_floor", tick,
 				"%d,%d" % [h.x, h.y]).randf() < chance:
 			if _spawn_beastman_clanhold(h, tick):
-				_depopulated_at.erase(h)
+				_depopulated_at.erase(h)   # no-op if h was never a crater; keeps the two branches symmetric
+
+
+## Fraction of land hexes within beastman_region_radius of [center] that a living
+## beastman clanhold holds — the regional governor for the §7.4d re-seed floor.
+func _region_beastman_fraction(center: Vector2i) -> float:
+	var total := 0
+	var beast := 0
+	var r := _c.beastman_region_radius
+	for dq in range(-r, r + 1):
+		for dr in range(-r, r + 1):
+			var h := Vector2i(center.x + dq, center.y + dr)
+			if not _grid.has(h) or str(_grid[h]["water"]) != "" or _hex_distance(center, h) > r:
+				continue
+			total += 1
+			var o := str(_grid[h]["owner_polity_id"])
+			if o != "" and _is_alive(o) and bool(_polities[o].get("is_beastman", false)):
+				beast += 1
+	return float(beast) / float(maxi(total, 1))
 
 
 ## Spawn one beastman clanhold on an empty hex; returns false if the terrain has
@@ -1949,9 +2568,9 @@ func _spawn_beastman_clanhold(h: Vector2i, tick: int) -> bool:
 			break
 	if race.is_empty():
 		return false
-	var cid := CultureCatalogLoader.id_for_beastman_race(race)
-	if cid.is_empty():
-		return false
+	# §5.3: generic "beastmen" sim culture; the rolled race is kept as a per-clanhold
+	# hint (chieftain + realm-name flavor + the 6-mile race-mix handoff).
+	var cid := CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID
 	var families: int = mini(int(dist.get("clanhold_demographics", {}).get(race, {})
 			.get("average_families_per_clanhold", 50)), _c.cap_wilderness)
 	var pid := "pol_%04d" % _next_polity_seq
@@ -1961,7 +2580,7 @@ func _spawn_beastman_clanhold(h: Vector2i, tick: int) -> bool:
 	_grid[h]["territory_class"] = "wilderness"
 	_culture_w[h] = {cid: 1.0}
 	_alignment_w[h] = {"chaotic": 1.0}
-	var pol := CultureSeeder._make_beastman_polity(pid, cid, h)
+	var pol := CultureSeeder._make_beastman_polity(pid, cid, h, race)
 	_finalize_new_polity(pol, tick)
 	pol["hexes"] = [h]
 	_update_tier(pol)
@@ -2285,6 +2904,9 @@ func _polity_rows() -> Array:
 			"morale_seed": str(pol.get("morale_seed", "[]")),
 			"internal_vassals": _internal_vassals_json(pol),
 			"name": str(pol.get("name", "")),
+			# §5.3 rolled-race hint — carried IN-MEMORY to Layer 5 naming (which reads
+			# ctx["sim_polities"]); not a setting_polities column, so save ignores it.
+			"beastman_race": str(pol.get("beastman_race", "")),
 		})
 	return rows
 
@@ -2333,8 +2955,19 @@ func _assign_present_day_handoff() -> void:
 ## carries a snake_case leader id ("goblin_chieftain") so the downstream NPC
 ## generator builds a monster ruler, not a classed PC.
 func _assign_beastman_ruler(pol: Dictionary) -> void:
-	var rec: Dictionary = CultureCatalogLoader.load_all().get(str(pol["culture_id"]), {})
-	var race := CultureCatalogLoader.race(rec) if not rec.is_empty() else ""
+	# §5.3: the realm's culture is the generic "beastmen"; the chieftain's race comes
+	# from the per-clanhold rolled-race hint stashed at spawn (_make_beastman_polity).
+	# Fall back to the culture record's race when the hint is absent — a hand-built
+	# race-culture polity, or a hint-less secession/breakaway horde (→ generic chief).
+	var race := str(pol.get("beastman_race", ""))
+	if race.is_empty():
+		var rec: Dictionary = CultureCatalogLoader.load_all().get(str(pol["culture_id"]), {})
+		var derived := CultureCatalogLoader.race(rec) if not rec.is_empty() else ""
+		# Only adopt a SPECIFIC race (a hand-built race-culture polity); the generic
+		# "beastmen" culture's own race field is not a chieftain race → leave it blank
+		# so a hint-less horde reads as a generic "beastman_chieftain".
+		if derived != CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID:
+			race = derived
 	var leader := BeastmanLeaderLoader.leader_for_race(race)
 	if leader.is_empty():
 		# No catalog leader — still NOT a human class: generic chieftain, HD 1.
