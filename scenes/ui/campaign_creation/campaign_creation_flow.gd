@@ -21,10 +21,17 @@ signal campaign_ready(campaign_id: String)
 
 enum Phase { QUICK_START, ADVANCED, GENERATE, REVIEW }
 
+const _SHARE_SEP := "~"   # SeedShareCodec separator: "<seed>~<base64 params>"
+
 var _params: SettingParameters = SettingParameters.new()
 var _seed: int = 0
 var _campaign_id: String = ""
 var _phase: int = Phase.QUICK_START
+# Player-entered seed or share code (from either customization screen). Empty = roll
+# a fresh random seed. Synced from both screens' seed_input_changed; resolved at
+# generate-time via SeedShareCodec.decode (handles a bare seed OR a full token).
+var _seed_input_text: String = ""
+var _seed_roll_counter: int = 0
 
 # Child screens (instantiated in _build_ui; each is a Control with _build_ui()).
 var _quick_start                # ScreenQuickStart
@@ -69,9 +76,11 @@ func _build_ui() -> void:
 	# Screen A: Quick Start → advance to advanced params or straight to generate.
 	_quick_start.start_requested.connect(_on_start_requested)
 	_quick_start.customize_requested.connect(func(): _show_phase(Phase.ADVANCED))
+	_quick_start.seed_input_changed.connect(_on_seed_input_changed)
 	# Screen B: Advanced → back to generate.
 	_advanced.generate_requested.connect(_on_start_requested)
 	_advanced.back_requested.connect(func(): _show_phase(Phase.QUICK_START))
+	_advanced.seed_input_changed.connect(_on_seed_input_changed)
 	# Screen C: replay finished / skipped → review.
 	_generate.review_requested.connect(func(): _show_phase(Phase.REVIEW))
 	# Screen D: approve → lock + route out; regenerate → new seed back to generate.
@@ -109,10 +118,12 @@ func _show_phase(phase: int) -> void:
 		Phase.QUICK_START:
 			if _quick_start != null:
 				_quick_start.bind_params(_params)
+				_quick_start.set_seed_input(_seed_input_text)
 				_quick_start.visible = true
 		Phase.ADVANCED:
 			if _advanced != null:
 				_advanced.bind_params(_params)
+				_advanced.set_seed_input(_seed_input_text)
 				_advanced.visible = true
 		Phase.GENERATE:
 			if _generate != null:
@@ -132,7 +143,7 @@ func _show_phase(phase: int) -> void:
 ## replay. Generation always runs to completion; only the presentation is paced.
 func _on_start_requested() -> void:
 	# The active screen has mutated the shared _params in place (bind_params).
-	_seed = _roll_seed()
+	_seed = _resolve_seed()
 	_campaign_id = CampaignRepository.create_campaign("Generated World", "w")
 	_show_phase(Phase.GENERATE)
 	var ok: bool = SettingGenerator.new().generate(_campaign_id, _seed, _params)
@@ -152,8 +163,11 @@ func _on_approved() -> void:
 	campaign_ready.emit(_campaign_id)
 
 
-## Screen D "Regenerate world": new seed, same sliders → back through generation.
+## Screen D "Regenerate world": a deliberate re-roll — drop any entered seed/share
+## code so this is a NEW random world, keeping the current sliders, then regenerate.
 func _on_regenerate() -> void:
+	_seed_input_text = ""
+	_sync_seed_fields()
 	_on_start_requested()
 
 
@@ -165,12 +179,52 @@ func _on_watch_again() -> void:
 	_generate.begin_replay(_campaign_id)
 
 
-func _roll_seed() -> int:
-	# EDITOR/SEED: a real seed source (or a player-entered seed / share token via
-	# SeedShareCodec.decode). Placeholder uses a hash of the campaign counter so the
-	# scaffold is deterministic without wall-clock (Date/Time is unavailable in the
-	# generation layer); replace with the actual new-campaign seed input.
-	return abs(hash(_campaign_id + str(_seed))) % 1_000_000_000
+## Resolve the seed to generate with. An empty seed field rolls a fresh random seed.
+## Otherwise SeedShareCodec.decode parses the entry: a bare seed reproduces the world's
+## geography & history but KEEPS the player's current sliders (recreate a known world
+## with different parameters); a full share code ("<seed>~…") also ADOPTS the token's
+## parameters so a shared world is recreated EXACTLY. An unparseable entry falls back
+## to a random seed.
+func _resolve_seed() -> int:
+	var text := _seed_input_text.strip_edges()
+	if text == "":
+		return _random_seed()
+	var decoded := SeedShareCodec.decode(text)
+	if not bool(decoded.get("ok", false)):
+		push_warning("CampaignCreationFlow: unparseable seed/share code '%s' — rolling random." % text)
+		return _random_seed()
+	if text.contains(_SHARE_SEP):
+		# Full share code: adopt its parameters so the world matches exactly, and
+		# re-bind the param screens so they reflect the adopted sliders if revisited.
+		_params = decoded["params"]
+		_rebind_param_screens()
+	return int(decoded.get("seed", 0))
+
+
+## A fresh random seed. The UI layer (unlike the deterministic generation layer) MAY
+## read the wall clock; mixing usec uptime with a per-session counter keeps successive
+## rolls distinct. Bounded so a default-slider share token stays short.
+func _random_seed() -> int:
+	_seed_roll_counter += 1
+	return absi(int(Time.get_ticks_usec()) + _seed_roll_counter * 7919) % 1_000_000_000
+
+
+func _on_seed_input_changed(text: String) -> void:
+	_seed_input_text = text
+
+
+func _sync_seed_fields() -> void:
+	if _quick_start != null:
+		_quick_start.set_seed_input(_seed_input_text)
+	if _advanced != null:
+		_advanced.set_seed_input(_seed_input_text)
+
+
+func _rebind_param_screens() -> void:
+	if _quick_start != null:
+		_quick_start.bind_params(_params)
+	if _advanced != null:
+		_advanced.bind_params(_params)
 
 
 func review_payload() -> Dictionary:

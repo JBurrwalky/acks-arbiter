@@ -113,11 +113,21 @@ func test_settlement_stocking_invariants(cid: String) -> void:
 
 
 func test_settlement_hexes_classified(cid: String) -> void:
-	# A mapped city's hex is never wilderness after §9.6 (it promotes its hex).
+	# A mapped city's hex is never wilderness after §9.6 (it promotes its hex) — EXCEPT
+	# a clanhold's captured-town seat: clanholds (clan cultures) lock their land to
+	# wilderness, and the town is a market-IV remnant of a conquered city on it.
+	var allc := CultureCatalogLoader.load_all()
+	var clan_pol := {}
+	for p in SettingRepository.list_polities(cid):
+		var coc := str(CultureCatalogLoader.identity(
+			allc.get(str(p.get("culture_id", "")), {})).get("civ_or_clan", "civ"))
+		clan_pol[str(p["id"])] = (coc == "clan")
 	var tclass := {}
 	for h in SettingRepository.list_hexes(cid):
 		tclass[Vector2i(int(h["q"]), int(h["r"]))] = str(h.get("territory_class", ""))
 	for s in SettingRepository.list_settlements(cid):
+		if bool(clan_pol.get(str(s.get("polity_id", "")), false)):
+			continue   # clanhold captured-town seat stays wilderness by design
 		var key := Vector2i(int(s["hex_q"]), int(s["hex_r"]))
 		check(tclass.get(key, "wilderness") != "wilderness",
 			"settlement %s hex is borderlands/civilized, not wilderness" % str(s.get("id", "?")))

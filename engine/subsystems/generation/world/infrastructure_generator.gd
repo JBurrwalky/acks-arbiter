@@ -189,6 +189,11 @@ func _reconcile_settlements(settlements: Array, hex_grid: Dictionary, polities: 
 func _stock_realm(pol: Dictionary, owned: Array, hex_grid: Dictionary, sim_by_hex: Dictionary) -> Array:
 	if owned.is_empty():
 		return []
+	# Clanholds (clan cultures: beastmen + nomad/tribe/horde humans) found no cities —
+	# they lack the capacity for urban centres (Jedidiah 2026-06-16). At most they keep
+	# ONE captured former-city hex, reduced to a Class-IV town.
+	if str(pol.get("civ_or_clan_state", "civ")) == "clan":
+		return _stock_clanhold(pol, owned, sim_by_hex)
 	# Peasant families + a development index (0 = wilderness .. 1 = civilized) over
 	# the realm's CURRENT hexes. Development drives the urban fraction f_u: agrarian
 	# frontier realms urbanize at 5%, fully-civilized realms at 20% (acore:186-189).
@@ -237,6 +242,30 @@ func _stock_realm(pol: Dictionary, owned: Array, hex_grid: Dictionary, sim_by_he
 		var fam := XPAwardCalculator.bankers_round(largest / float(i + 1))
 		out.append(_settlement_row(pol, placed[i], fam, i == 0, sim_by_hex))
 	return out
+
+
+## Clanholds lack the capacity for urban centres: the most a clan realm keeps is ONE
+## market-Class-IV town on a hex where a city historically stood (a conquered city
+## reduced to a horde-held market). No Class I–III and no secondaries; everything else
+## is wilderness camps. A clanhold holding no former-city hex maps no settlement.
+func _stock_clanhold(pol: Dictionary, owned: Array, sim_by_hex: Dictionary) -> Array:
+	var best := Vector2i(0, 0)
+	var best_fam := -1
+	for key in owned:
+		if not sim_by_hex.has(key):
+			continue
+		var f := int(sim_by_hex[key].get("urban_families", 0))
+		# Highest historical urban concentration wins; canonical hex order breaks ties.
+		if f > best_fam or (f == best_fam and (key.y < best.y or (key.y == best.y and key.x < best.x))):
+			best_fam = f
+			best = key
+	# Only a former CITY (Class I–III, ≥ 1,750 urban families) leaves a remnant; a
+	# captured town/village simply disperses into the clanhold's wilderness.
+	if best_fam < _MARKET_III:
+		return []
+	# Reduced to a single Class-IV town — the horde's seat — on the clanhold's
+	# wilderness hex. Marked capital so it satisfies the §9.1 "Class IV capital" rule.
+	return [_settlement_row(pol, best, _MARKET_III - 1, true, sim_by_hex)]
 
 
 ## Pick up to `count` hexes for a realm's cities, all drawn from the realm's OWN
@@ -382,6 +411,11 @@ func _finalize_classification(settlements: Array, hex_grid: Dictionary) -> void:
 
 	for key in desired:
 		var hex: Dictionary = hex_grid[key]
+		# Clanhold-held land never civilizes — it stays wilderness regardless of a
+		# neighbouring city's reach (clan cultures lack the capacity for settled life,
+		# so the sim keeps their hexes wilderness and §9.6 must not promote them).
+		if _is_clanhold_hex(hex):
+			continue
 		var orig: int = _CLASS_RANK.get(str(hex.get("territory_class", "wilderness")), 0)
 		var tgt: int = mini(int(desired[key]), orig + 1)  # one step, no demotion
 		if tgt <= orig:
@@ -391,6 +425,16 @@ func _finalize_classification(settlements: Array, hex_grid: Dictionary) -> void:
 		# promoted class's cap (promotion raises the cap, so this rarely blocks).
 		if int(hex.get("population_band", 0)) <= _c.cap_for(to_class):
 			hex["territory_class"] = to_class
+
+
+## True if [param hex] is held by a clan-style realm (beastman or human/demihuman
+## clan culture) — its land is locked to wilderness and never promoted.
+func _is_clanhold_hex(hex: Dictionary) -> bool:
+	var owner := str(hex.get("owner_polity_id", ""))
+	if owner == "":
+		return false
+	var pol = _polity_by_id.get(owner, null)
+	return pol != null and str(pol.get("civ_or_clan_state", "civ")) == "clan"
 
 
 ## Record a desired one-step+ promotion for a hex, evaluated against its ORIGINAL

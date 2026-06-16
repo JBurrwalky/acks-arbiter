@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bytff4lrwjloi"]
+
+[ext_resource type="Script" path="res://tools/check_seeds.gd" id="1_cs"]
+
+[node name="CheckSeeds" type="Node"]
+script = ExtResource("1_cs")

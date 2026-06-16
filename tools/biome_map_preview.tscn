@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://c02y18ut7rab5"]
+
+[ext_resource type="Script" path="res://tools/biome_map_preview.gd" id="1_bmp"]
+
+[node name="BiomeMapPreview" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+script = ExtResource("1_bmp")

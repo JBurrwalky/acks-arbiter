@@ -21,7 +21,8 @@ const _MODE_TOOLTIPS := {
 var _payload: Dictionary = {}
 var _polity_names: Dictionary = {}
 var _map: Control
-var _legend: HBoxContainer
+var _current_mode: int = 0    # mirrors the map view's mode (0 = Political)
+var _legend: VBoxContainer
 var _brief_label: RichTextLabel
 var _realms_box: VBoxContainer
 var _peoples_box: VBoxContainer
@@ -64,10 +65,11 @@ func _build_ui() -> void:
 	body.add_theme_constant_override("separation", 14)
 	root.add_child(body)
 
-	# Left column: view-mode toggle, the map, then the legend.
+	# Left column: view-mode toggle + the map. (The legend moved to its own vertical
+	# column; the data panel now expands into the space the map drawing leaves.)
 	var left := VBoxContainer.new()
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 1.5
+	left.size_flags_stretch_ratio = 1.0
 	left.add_theme_constant_override("separation", 6)
 	body.add_child(left)
 
@@ -102,18 +104,32 @@ func _build_ui() -> void:
 	_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_panel.add_child(_map)
 
+	# Legend column: the map key, VERTICAL alongside the map (was a horizontal strip
+	# under it). Fixed width; scrolls vertically when a world has many realms.
+	var legend_col := VBoxContainer.new()
+	legend_col.custom_minimum_size = Vector2(210, 0)
+	legend_col.add_theme_constant_override("separation", 6)
+	body.add_child(legend_col)
+	var legend_title := Label.new()
+	legend_title.text = "Map Key"
+	legend_title.add_theme_color_override("font_color", Color(0.74, 0.69, 0.6))
+	legend_col.add_child(legend_title)
 	var legend_scroll := ScrollContainer.new()
-	legend_scroll.custom_minimum_size = Vector2(0, 30)
-	legend_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	legend_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(legend_scroll)
-	_legend = HBoxContainer.new()
-	_legend.add_theme_constant_override("separation", 12)
+	legend_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	legend_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	legend_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	legend_col.add_child(legend_scroll)
+	_legend = VBoxContainer.new()
+	_legend.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_legend.add_theme_constant_override("separation", 8)
 	legend_scroll.add_child(_legend)
 
-	# Right column: the data tabs + watch-again.
+	# Right column: the data tabs + watch-again — now EXPANDS to fill the space the
+	# square-ish map drawing leaves, so the brief/realms/peoples text isn't cramped.
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(330, 0)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 1.0
+	right.custom_minimum_size = Vector2(420, 0)
 	right.add_theme_constant_override("separation", 6)
 	body.add_child(right)
 	var side := TabContainer.new()
@@ -186,6 +202,7 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 
 
 func _on_mode(mode: int) -> void:
+	_current_mode = mode
 	if _map != null:
 		_map.set_mode(mode)
 	_refresh_legend()
@@ -203,19 +220,32 @@ func _refresh_legend() -> void:
 	for c in _legend.get_children():
 		c.queue_free()
 	var entries: Array = _map.legend_entries(_polity_names)
-	var shown := 0
-	for e in entries:
-		if shown >= 10:
+	# Political can list hundreds of realms, so cap it (the scroll container handles
+	# the rest) with a "+N more" note. Biome/elevation/territory/culture are short —
+	# show every entry so a low-coverage culture isn't silently dropped from the key.
+	var cap: int = 12 if _current_mode == 0 else entries.size()
+	for i in entries.size():
+		if i >= cap:
+			var more := Label.new()
+			more.text = "+%d more…" % (entries.size() - cap)
+			more.add_theme_color_override("font_color", Color(0.62, 0.58, 0.5))
+			_legend.add_child(more)
 			break
-		shown += 1
+		var e = entries[i]
 		var item := HBoxContainer.new()
-		item.add_theme_constant_override("separation", 4)
+		item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item.add_theme_constant_override("separation", 6)
 		var sw := ColorRect.new()
 		sw.color = e["color"]
 		sw.custom_minimum_size = Vector2(16, 16)
+		sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		item.add_child(sw)
 		var lab := Label.new()
 		lab.text = str(e["label"])
+		# Long realm names clip in the narrow vertical key; full name on hover.
+		lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lab.clip_text = true
+		lab.tooltip_text = str(e["label"])
 		lab.add_theme_color_override("font_color", Color(0.84, 0.79, 0.69))
 		item.add_child(lab)
 		_legend.add_child(item)

@@ -8,9 +8,11 @@ extends Control
 
 signal generate_requested
 signal back_requested
+signal seed_input_changed(text: String)
 
 var _params: SettingParameters
 var _refreshers: Array = []   # Callables that re-read _params into each control
+var _seed_edit: LineEdit
 
 
 func _ready() -> void:
@@ -43,6 +45,8 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color(0.93, 0.86, 0.7))
 	root.add_child(title)
+
+	root.add_child(_build_seed_field())
 
 	var tabs := TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -99,12 +103,12 @@ func _build_physical(p: VBoxContainer) -> void:
 		"High — many more sources, a denser river network")
 	_enum_row(p, "Latitude", [["tropical", "Tropical"], ["subtropical", "Subtropical"], ["temperate", "Temperate"], ["continental", "Continental"], ["polar", "Polar"]],
 		func(): return _params.latitude_range, func(v): _params.latitude_range = v,
-		"Climate band the map sits in.\n" +
-		"Tropical 5–20°N — hot; jungles & deserts\n" +
-		"Subtropical 20–38°N — warm, dry summers\n" +
-		"Temperate 35–55°N — mild; forests & plains (default)\n" +
-		"Continental 45–65°N — cold winters\n" +
-		"Polar 60–75°N — cold; tundra & taiga")
+		"Climate band the map sits in. Rough biome mix (varies by seed; uplands run colder):\n" +
+		"Tropical 5–20°N — hot: ~40% jungle, ~35% savanna, the rest forest & grassland, the odd desert\n" +
+		"Subtropical 20–38°N — warm: mostly forest & grassland, with scrub savanna and dry deserts here & there\n" +
+		"Temperate 35–55°N — mild: ~65% forest, ~25% grassland, a little upland taiga (default)\n" +
+		"Continental 45–65°N — cold winters: mostly forest & taiga, some grassland, patches of tundra\n" +
+		"Polar 60–75°N — frozen: mostly tundra & taiga, little else")
 	_slider_row(p, "Sea level", 0.1, 0.6, 0.05,
 		func(): return _params.sea_level, func(v): _params.sea_level = v,
 		"Ocean coverage — higher means more sea, less land.\n" +
@@ -159,6 +163,37 @@ func _build_content(p: VBoxContainer) -> void:
 		func(): return _params.poi_danger, func(v): _params.poi_danger = v,
 		"How dangerous points of interest skew.\n" +
 		"Low — milder · Medium (default) · High — more lairs, hazards & tougher guardians")
+
+
+# --- seed / share code -------------------------------------------------------
+
+## Optional seed / share-code entry. Empty = a fresh random world. A bare seed
+## reproduces a world's geography & history while keeping these sliders (so you can
+## recreate a known world with DIFFERENT parameters). A full share code (seed~…)
+## reproduces a shared world EXACTLY — seed plus the parameters it was made with.
+func _build_seed_field() -> Control:
+	var tip := "Leave blank for a random world. Enter a seed to reproduce a world while" \
+		+ " keeping your parameters below, or paste a share code to recreate a shared" \
+		+ " world exactly (it also restores that world's parameters)."
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 14)
+	hb.add_child(_label("Seed / share code", tip))
+	_seed_edit = LineEdit.new()
+	_seed_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_seed_edit.placeholder_text = "random — or paste a seed / share code"
+	_seed_edit.tooltip_text = tip
+	_seed_edit.text_changed.connect(func(t): seed_input_changed.emit(t))
+	hb.add_child(_seed_edit)
+	return hb
+
+
+func set_seed_input(text: String) -> void:
+	if _seed_edit != null and _seed_edit.text != text:
+		_seed_edit.text = text
+
+
+func seed_input_text() -> String:
+	return _seed_edit.text if _seed_edit != null else ""
 
 
 # --- control helpers ---------------------------------------------------------

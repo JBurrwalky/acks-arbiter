@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dvk3pxt3v075o"]
+
+[ext_resource type="Script" path="res://tools/check_clanholds.gd" id="1_cl"]
+
+[node name="CheckClan" type="Node"]
+script = ExtResource("1_cl")

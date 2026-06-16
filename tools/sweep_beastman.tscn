@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://tfqtuipq54ho"]
+
+[ext_resource type="Script" path="res://tools/sweep_beastman.gd" id="1_sweep"]
+
+[node name="SweepBeastman" type="Node"]
+script = ExtResource("1_sweep")

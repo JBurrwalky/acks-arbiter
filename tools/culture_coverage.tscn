@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://ilcw8kjggeke"]
+
+[ext_resource type="Script" path="res://tools/culture_coverage.gd" id="1_cc"]
+
+[node name="CultureCoverage" type="Node"]
+script = ExtResource("1_cc")

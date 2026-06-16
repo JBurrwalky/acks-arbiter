@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c02y1vl85rab5"]
+
+[ext_resource type="Script" path="res://tools/biome_dist.gd" id="1_bd"]
+
+[node name="BiomeDist" type="Node"]
+script = ExtResource("1_bd")

@@ -20,6 +20,7 @@ func run_all_tests() -> void:
 	test_capital_repointed_when_lost()
 	test_beastman_generic_culture_and_race_hint()
 	test_vassalize_rejects_liege_cycle()
+	test_human_clanhold_locked_to_wilderness()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -248,6 +249,25 @@ func test_beastman_generic_culture_and_race_hint() -> void:
 	var pol2 := {"culture_id": "beastmen", "ruler_class": "", "ruler_level": 0}
 	sim._assign_beastman_ruler(pol2)
 	check(str(pol2["ruler_class"]) == "beastman_chieftain", "no hint → generic beastman_chieftain")
+
+
+## Clanhold restriction (Jedidiah 2026-06-16): a HUMAN clan-style culture (civ_or_clan
+## "clan", NOT a beastman) is held to clanhold terms too — its hexes revert to
+## WILDERNESS and are capped at the wilderness limit (2,000 families), so it can never
+## hold civilized territory or field a civ-sized population.
+func test_human_clanhold_locked_to_wilderness() -> void:
+	var sim := _sim()
+	sim._culture_instances["nomad"] = {"tier": "human", "civ_or_clan": "clan"}
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "N", "nomad", "neutral", [h], 9000, "civilized")
+	sim._finalize_new_polity(pol, 0)   # sets is_clanhold from civ_or_clan == "clan"
+	check(bool(pol.get("is_clanhold", false)), "a human clan culture is flagged a clanhold")
+	check(not bool(pol.get("is_beastman", false)), "but it is NOT a beastman")
+	sim._phase_demography(1)
+	check(str(sim._grid[h]["territory_class"]) == "wilderness",
+		"the clanhold's civilized hex is demoted to wilderness")
+	check(int(sim._grid[h]["population_band"]) <= sim._c.cap_wilderness,
+		"the clanhold hex is capped at the wilderness limit (2000), got %d" % int(sim._grid[h]["population_band"]))
 
 
 ## §5.3 abstraction guard: now that all beastmen share one culture (and via any

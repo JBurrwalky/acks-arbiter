@@ -32,6 +32,19 @@ const _BIOME := {
 	"desert": Color(0.84, 0.73, 0.46),
 }
 const _BIOME_DENSE_FOREST := Color(0.17, 0.31, 0.11)   # woods + biome_subtype forest_dense
+const _BIOME_TAIGA := Color(0.36, 0.47, 0.42)          # woods + forest_taiga — cold blue-green
+const _BIOME_TUNDRA := Color(0.78, 0.80, 0.82)         # clear + clear_tundra — pale grey-blue
+const _BIOME_SAVANNA := Color(0.80, 0.72, 0.34)        # clear + clear_savanna — dry gold
+const _BIOME_GLACIAL := Color(0.88, 0.92, 0.96)        # desert + mountains_glacial — ice
+
+# Pointillist dapple: a per-forest-type speckle drawn over the base fill so the
+# green family (forest / taiga / jungle / dense forest) reads apart at a glance.
+const _DAPPLE := {
+	"forest": Color(0.47, 0.63, 0.27),   # woods (plain) — lighter leaf-green
+	"taiga": Color(0.66, 0.74, 0.70),    # forest_taiga — frost
+	"jungle": Color(0.18, 0.62, 0.31),   # jungle — bright lime
+	"dense": Color(0.09, 0.19, 0.06),    # forest_dense — deep shadow
+}
 
 const _ELEV := {
 	"flat": Color(0.56, 0.62, 0.40), "hills": Color(0.55, 0.45, 0.30),
@@ -54,6 +67,7 @@ var _polity_lieges: Dictionary = {}    # polity_id -> liege_id (sovereign resolu
 var _culture_colors: Dictionary = {}   # culture_id -> Color (lazy, deterministic)
 var _mode: int = Mode.POLITICAL
 var _sovereign_view: bool = false      # political mode: colour by top-of-liege-chain
+var _replay_mode: bool = false         # replay: per-frame ownership only; no present-day data
 
 # Layout cached from the last _draw, so the tooltip hit-test maps a pixel→hex.
 var _R := 0.0
@@ -77,6 +91,12 @@ func set_settlements(s: Array) -> void:
 func set_polity_meta(names: Dictionary, lieges: Dictionary) -> void:
 	_polity_names = names
 	_polity_lieges = lieges
+
+
+## Replay shows per-frame OWNERSHIP only; the stored culture/territory/peasants are
+## present-day, so the hover suppresses them and reads the frame-aware owner instead.
+func set_replay_mode(on: bool) -> void:
+	_replay_mode = on
 
 
 func bind(hexes: Array, palette: Array) -> void:
@@ -126,11 +146,15 @@ func legend_entries(polity_names: Dictionary = {}) -> Array:
 		Mode.BIOME:
 			return [
 				{"label": "Plains", "color": _BIOME["clear"]},
+				{"label": "Savanna", "color": _BIOME_SAVANNA},
 				{"label": "Forest", "color": _BIOME["woods"]},
 				{"label": "Dense forest", "color": _BIOME_DENSE_FOREST},
+				{"label": "Taiga", "color": _BIOME_TAIGA},
 				{"label": "Jungle", "color": _BIOME["jungle"]},
 				{"label": "Swamp", "color": _BIOME["swamp"]},
 				{"label": "Desert", "color": _BIOME["desert"]},
+				{"label": "Tundra", "color": _BIOME_TUNDRA},
+				{"label": "Glacier", "color": _BIOME_GLACIAL},
 				{"label": "Water", "color": _WATER},
 			]
 		Mode.ELEVATION:
@@ -245,6 +269,8 @@ func _draw() -> void:
 		var r := int(h["r"])
 		var center := _center_of(q, r)
 		_draw_hex(center, _R, _hex_color(h))
+		if _mode == Mode.BIOME and _is_forest_family(h):
+			_draw_dapple(center, _R, _dapple_accent(h), q, r)
 		if _mode == Mode.POLITICAL:
 			var owner := str(owner_by.get(Vector2i(q, r), ""))
 			if owner != "":
@@ -279,9 +305,7 @@ func _hex_color(h: Dictionary) -> Color:
 			var o := _display_owner(h)
 			return _colors.get(o, _UNOWNED) if o != "" else _UNOWNED
 		Mode.BIOME:
-			if str(h.get("biome_subtype", "")) == "forest_dense":
-				return _BIOME_DENSE_FOREST
-			return _BIOME.get(str(h.get("biome", "")), _UNOWNED)
+			return _biome_color(h)
 		Mode.ELEVATION:
 			return _ELEV.get(str(h.get("elevation", "")), _ELEV["flat"])
 		Mode.TERRITORY:
@@ -290,6 +314,47 @@ func _hex_color(h: Dictionary) -> Color:
 			var c := _dominant_culture(h)
 			return _culture_colors.get(c, _UNOWNED) if c != "" else _UNOWNED
 	return _UNOWNED
+
+
+## Biome fill colour, resolving the meaningful subtypes (tundra/taiga/savanna/
+## glacial/dense forest) before falling back to the base biome.
+func _biome_color(h: Dictionary) -> Color:
+	match str(h.get("biome_subtype", "")):
+		"forest_dense": return _BIOME_DENSE_FOREST
+		"forest_taiga": return _BIOME_TAIGA
+		"clear_tundra": return _BIOME_TUNDRA
+		"clear_savanna": return _BIOME_SAVANNA
+		"mountains_glacial": return _BIOME_GLACIAL
+	return _BIOME.get(str(h.get("biome", "")), _UNOWNED)
+
+
+## Forest-family hexes (the greens) get the pointillist dapple.
+func _is_forest_family(h: Dictionary) -> bool:
+	var b := str(h.get("biome", ""))
+	return b == "woods" or b == "jungle"
+
+
+## Speckle accent encoding which green this hex is.
+func _dapple_accent(h: Dictionary) -> Color:
+	if str(h.get("biome", "")) == "jungle":
+		return _DAPPLE["jungle"]
+	match str(h.get("biome_subtype", "")):
+		"forest_taiga": return _DAPPLE["taiga"]
+		"forest_dense": return _DAPPLE["dense"]
+	return _DAPPLE["forest"]
+
+
+## Draw ~6 small accent dots inside a hex at positions derived from (q, r), so the
+## speckle pattern is stable across redraws (no flicker) yet varies hex to hex.
+func _draw_dapple(center: Vector2, radius: float, accent: Color, q: int, r: int) -> void:
+	var dot := maxf(radius * 0.13, 1.0)
+	var hsh := ((q * 374761393) ^ (r * 668265263)) & 0x7fffffff
+	for _i in 6:
+		hsh = (hsh * 1103515245 + 12345) & 0x7fffffff
+		var ang := TAU * float(hsh % 997) / 997.0
+		hsh = (hsh * 1103515245 + 12345) & 0x7fffffff
+		var dist := radius * 0.55 * sqrt(float(hsh % 997) / 997.0)
+		draw_circle(center + Vector2(cos(ang), sin(ang)) * dist, dot, accent)
 
 
 ## A realm-boundary outline is brighter than the per-hex outline so similar
@@ -368,8 +433,13 @@ func _tooltip_for(h: Dictionary) -> String:
 
 
 func _biome_label(h: Dictionary) -> String:
-	if str(h.get("biome_subtype", "")) == "forest_dense":
-		return "Dense forest"
+	match str(h.get("biome_subtype", "")):
+		"forest_dense": return "Dense forest"
+		"forest_taiga": return "Taiga"
+		"clear_tundra": return "Tundra"
+		"clear_savanna": return "Savanna"
+		"clear_grassland": return "Grassland"
+		"mountains_glacial": return "Glacier"
 	match str(h.get("biome", "clear")):
 		"woods": return "Forest"
 		"jungle": return "Jungle"
@@ -380,7 +450,14 @@ func _biome_label(h: Dictionary) -> String:
 
 func _realm_tooltip(h: Dictionary, head: String) -> String:
 	var lines: Array = [head]
-	var owner := str(h.get("owner_polity_id", ""))
+	# Frame-aware owner: in replay this honours the displayed epoch's ownership.
+	var owner := _hex_owner(h)
+	if _replay_mode:
+		# Only per-frame ownership is known for a past epoch; the stored culture,
+		# territory and population are present-day, so don't report them here.
+		lines.append("Realm: %s" % str(_polity_names.get(owner, owner)) if owner != ""
+			else "Unclaimed this epoch")
+		return "\n".join(lines)
 	if owner == "":
 		lines.append("Unclaimed wilderness")
 	else:

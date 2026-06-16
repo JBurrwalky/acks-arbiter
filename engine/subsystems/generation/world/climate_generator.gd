@@ -11,9 +11,23 @@ extends RefCounted
 ## All thresholds are tunable constants (§5.3 "exact thresholds are tunable").
 
 # Temperature model (°C): T = sea-level latitude curve − lapse over elevation.
-const TEMP_AT_EQUATOR := 30.0
-const TEMP_LAPSE_PER_DEGREE_LAT := 0.6
-# Land elevation (sea_level..1) maps to 0..MAX_ELEVATION_METERS.
+# The latitude curve is QUADRATIC, not linear: real annual-mean temperature is
+# nearly flat through the tropics and steepens toward the poles. A linear
+# 0.6 °C/° curve put lat 20 (still tropical) at 18 °C and ran every climate band
+# ~2 zones too cold (a "Tropical" map produced temperate forest, a "Temperate"
+# map produced taiga). T(lat) = TEMP_AT_EQUATOR − TEMP_LAT_QUADRATIC·lat².
+# Calibrated so the latitude presets land on their namesake biomes:
+# lat 20 → ~24 °C (A group), lat 45 → ~13 °C (C group), lat 67 → ~−3 °C (D/E).
+const TEMP_AT_EQUATOR := 27.0
+const TEMP_LAT_QUADRATIC := 0.0068
+# A low-frequency regional temperature anomaly (°C, ±) so the pure-temperature
+# biome boundaries (the A/C/D/E Köppen group splits) don't fall on dead-straight
+# horizontal isotherm lines across large flat lowlands — and so band edges read
+# as natural transition zones rather than a hard latitude cut.
+const TEMP_NOISE_AMPLITUDE_C := 2.0
+# Elevation lapse bites only ABOVE the flat ceiling: flat land is lowland and
+# follows the latitude curve directly; hills/mountains get progressively colder.
+# (Mapping the whole sea-level..1 band to 0..3500 m over-cooled flat lowlands.)
 const MAX_ELEVATION_METERS := 3500.0
 const LAPSE_C_PER_1000M := 6.5
 
@@ -77,6 +91,15 @@ static func run(ctx: Dictionary) -> bool:
 	season_noise.fractal_octaves = 2
 	season_noise.frequency = 0.0012
 
+	# Temperature anomaly channel (see TEMP_NOISE_AMPLITUDE_C): breaks isotherm
+	# stripes on flat lowlands and softens the climate-band edges.
+	var temp_noise := FastNoiseLite.new()
+	temp_noise.seed = WorldGenRng.derive_seed(campaign_seed, "temperature")
+	temp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	temp_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	temp_noise.fractal_octaves = 3
+	temp_noise.frequency = 0.006
+
 	var ocean_distance := _ocean_distance_field(grid, width, height)
 	var river_hexes := _river_adjacent_set(river_edges)
 	var lat_south := params.latitude_south()
@@ -90,14 +113,18 @@ static func run(ctx: Dictionary) -> bool:
 			# latitude DEcreases as r grows.
 			var lat: float = lat_south + lat_span * (float(height - 1 - r) / maxf(height - 1, 1))
 			hex["effective_latitude"] = lat
-			var temp := TEMP_AT_EQUATOR - TEMP_LAPSE_PER_DEGREE_LAT * lat
+			var pos := HeightmapGenerator._hex_center(q, r)
+			var temp := TEMP_AT_EQUATOR - TEMP_LAT_QUADRATIC * lat * lat \
+					+ temp_noise.get_noise_2d(pos.x, pos.y) * TEMP_NOISE_AMPLITUDE_C
 			if hex["water"] == "":
-				var meters: float = (float(hex["elevation_raw"]) - params.sea_level) \
-						/ maxf(1.0 - params.sea_level, 0.000001) * MAX_ELEVATION_METERS
-				temp -= LAPSE_C_PER_1000M * maxf(meters, 0.0) / 1000.0
+				var land_above: float = maxf(float(hex["elevation_raw"]) \
+						- HeightmapGenerator.HILLS_THRESHOLD, 0.0)
+				var meters: float = land_above \
+						/ maxf(1.0 - HeightmapGenerator.HILLS_THRESHOLD, 0.000001) \
+						* MAX_ELEVATION_METERS
+				temp -= LAPSE_C_PER_1000M * meters / 1000.0
 			hex["temperature"] = temp
 
-			var pos := HeightmapGenerator._hex_center(q, r)
 			var precip := (precip_noise.get_noise_2d(pos.x, pos.y) + 1.0) * 0.5
 			precip *= 1.0 - _rain_shadow(key, grid)
 			if int(ocean_distance.get(key, 9999)) <= COASTAL_MOISTURE_RANGE:
@@ -239,7 +266,10 @@ static func _assign_biome(hex: Dictionary, koppen: String, ocean_dist: int) -> v
 			biome = "desert"
 			if hex["elevation"] == "mountains":
 				subtype = "mountains_glacial"
-	# §7.2 montane forest: jungle at mountain elevation becomes woods.
+	# §7.2 montane forest: jungle at mountain elevation becomes woods. Defensive:
+	# with the current elevation lapse a mountain hex is always cooled below the
+	# 24 °C tropical threshold, so the Köppen cascade already classifies tropical
+	# peaks as montane woods directly and this guard normally does not fire.
 	if biome == "jungle" and hex["elevation"] == "mountains":
 		biome = "woods"
 		subtype = ""

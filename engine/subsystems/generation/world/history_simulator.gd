@@ -251,6 +251,12 @@ func _init_polities(seed_polities: Array) -> void:
 		# hex (ax_domains_of_chaos), so they never advance classification.
 		var inst: Dictionary = _culture_instances.get(str(pol["culture_id"]), {})
 		pol["is_beastman"] = inst.is_empty() or str(inst.get("tier", "")) == "beastman"
+		# CLANHOLD style (civ_or_clan = "clan"): beastmen AND human/demihuman clan
+		# cultures (nomads, tribes, hordes) lack the capacity for dense settlement —
+		# their land stays wilderness (≤2,000 families/24-mi hex) and founds no cities.
+		# Orthogonal to alignment and to the beastman tier (which adds the scattered
+		# ≤3-hex / raze behaviour on top).
+		pol["is_clanhold"] = pol["is_beastman"] or str(inst.get("civ_or_clan", "civ")) == "clan"
 		_polities[str(pol["id"])] = pol
 	for key in _ordered_keys:
 		var owner := str(_grid[key]["owner_polity_id"])
@@ -391,13 +397,20 @@ func _phase_demography(tick: int) -> void:
 		if not pol["alive"]:
 			continue
 		var fade := _fade_factor(pol, tick)
-		var is_beastman: bool = pol.get("is_beastman", false)
+		var is_clanhold: bool = pol.get("is_clanhold", false)
 		for key in pol["hexes"]:
+			if is_clanhold:
+				# Clanholds (beastmen + human/demihuman clan cultures) lack the capacity
+				# for dense settlement: every held hex stays WILDERNESS — captured
+				# civilized/borderlands land reverts and is clamped to the wilderness
+				# limit-of-growth (2,000 families/24-mi hex). Done before growth so a
+				# just-captured city's population is reduced this same tick.
+				_demote_to_clanhold(key)
 			_grow_hex(key, fade)
-			if not is_beastman:   # clanholds stay wilderness (ax_domains_of_chaos)
+			if not is_clanhold:   # clanholds never civilize their land
 				_advance_classification(key)
 		_update_tier(pol)
-		if not is_beastman:       # beastmen found no urban settlements (§5.3)
+		if not is_clanhold:       # clanholds found no urban centres (§5.3)
 			_emerge_urban(pol, tick)
 
 
@@ -1315,11 +1328,12 @@ func _raze_front_and_retreat(p: Dictionary, q: Dictionary, front: Array, tick: i
 			[str(p["culture_id"]), str(q["culture_id"])], razed, 0.7, "war.razing")
 
 
-## Force a hex a beastman realm holds onto clanhold terms: clanholds are always
-## WILDERNESS and never hold civilized-density population, so reclassify the hex to
-## wilderness and clamp its population to the wilderness cap. Called on every hex a
-## beastman polity acquires out-of-band (rebellion breakaway), so beastmen can
-## never inherit a civilized hex (cap 12,480) and field a civ-sized army.
+## Force a hex a clanhold realm holds onto clanhold terms: clanholds (beastmen AND
+## human/demihuman clan cultures) are always WILDERNESS and never hold civilized-
+## density population, so reclassify the hex to wilderness and clamp its population to
+## the wilderness cap (2,000 families). Run every tick on a clanhold's hexes (§4a
+## demography) and on out-of-band acquisitions (rebellion breakaway), so a clanhold
+## can never inherit a civilized hex (cap 12,480) and field a civ-sized army.
 func _demote_to_clanhold(h: Vector2i) -> void:
 	if not _grid.has(h):
 		return
@@ -2794,6 +2808,7 @@ func _finalize_new_polity(pol: Dictionary, tick: int) -> void:
 	pol["pillage_credit_active"] = 0.0
 	var inst: Dictionary = _culture_instances.get(str(pol["culture_id"]), {})
 	pol["is_beastman"] = inst.is_empty() or str(inst.get("tier", "")) == "beastman"
+	pol["is_clanhold"] = pol["is_beastman"] or str(inst.get("civ_or_clan", "civ")) == "clan"
 
 
 # ---------------------------------------------------------------------------

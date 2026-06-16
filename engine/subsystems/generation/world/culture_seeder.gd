@@ -36,6 +36,11 @@ const _HUMAN_SEED_CAP := {"small": 4, "medium": 7, "large": 10, "huge": 12}
 # Per-race demihuman seed-point cap (§6.1: ≤3 elf + ≤3 dwarf).
 const DEMIHUMAN_SEEDS_PER_RACE := 3
 
+# Per-CULTURE demihuman seed-point cap (Jedidiah 2026-06-16): a single demihuman
+# culture (e.g. an elf people) may seed at most this many homelands, so one
+# high-coverage culture can't claim every demihuman seed and proliferate.
+const DEMIHUMAN_SEEDS_PER_CULTURE := 2
+
 # Tick-0 homeland population (history-sim §6: new 24-mile hex starts ~500).
 const HOMELAND_FAMILIES := 500
 
@@ -203,24 +208,29 @@ static func _count_matches(catalog: Dictionary, grid: Dictionary, width: int,
 # ---------------------------------------------------------------------------
 
 ## Returns an ordered Array of seed dicts {culture_id, race} — humans first
-## (biome-coverage greedy), then demihuman seeds per race.
+## Seeding PRIORITY (Jedidiah 2026-06-16): demihumans seed FIRST so dwarves/elves
+## claim their acceptable biomes before humans, THEN humans fill the remaining land,
+## THEN beastmen take the leftover wilderness (_place_beastmen, after homelands). The
+## returned order is also the PLACEMENT order in _place_homelands, so earlier seeds get
+## first pick of matching hexes. Each demihuman culture is capped at
+## DEMIHUMAN_SEEDS_PER_CULTURE homelands (biome-coverage greedy, per race).
 static func _select_cultures(catalog: Dictionary, match_counts: Dictionary,
 		params: SettingParameters, campaign_seed: int) -> Array:
 	var rng := WorldGenRng.stream(campaign_seed, "culture_selection")
 	var seeds: Array = []
+
+	if params.demihuman_presence:
+		for race in ["elf", "dwarf"]:
+			var pool := _candidate_pool_by_race(catalog, match_counts, "demihuman", race)
+			seeds.append_array(_greedy_coverage_select(
+					catalog, pool, match_counts, DEMIHUMAN_SEEDS_PER_RACE, rng, true,
+					DEMIHUMAN_SEEDS_PER_CULTURE))
 
 	var human_target: int = mini(params.human_seed_points,
 			int(_HUMAN_SEED_CAP.get(params.map_size, 7)))
 	var human_pool := _candidate_pool(catalog, match_counts, "human")
 	seeds.append_array(_greedy_coverage_select(
 			catalog, human_pool, match_counts, human_target, rng))
-
-	if params.demihuman_presence:
-		for race in ["elf", "dwarf"]:
-			var pool := _candidate_pool_by_race(catalog, match_counts, "demihuman", race)
-			var picked := _greedy_coverage_select(
-					catalog, pool, match_counts, DEMIHUMAN_SEEDS_PER_RACE, rng, true)
-			seeds.append_array(picked)
 	return seeds
 
 
@@ -247,14 +257,17 @@ static func _candidate_pool_by_race(catalog: Dictionary, match_counts: Dictionar
 
 ## Greedy biome-coverage selection: repeatedly pick the pool culture that adds
 ## the most not-yet-covered seed biomes (tie-break by match count, then a
-## seeded jitter). When [param allow_repeats] (demihumans, §6.1), a culture may
-## be picked more than once at different homelands.
+## seeded jitter). When [param allow_repeats] (demihumans, §6.1), a culture may be
+## picked more than once at different homelands — but at most [param max_per_culture]
+## times (0 = unlimited), after which it is dropped so no single people monopolizes
+## the race's seeds.
 static func _greedy_coverage_select(catalog: Dictionary, pool: Array,
 		match_counts: Dictionary, target: int, rng: RandomNumberGenerator,
-		allow_repeats: bool = false) -> Array:
+		allow_repeats: bool = false, max_per_culture: int = 0) -> Array:
 	var picked: Array = []
 	var covered := {}
 	var available := pool.duplicate()
+	var pick_count := {}   # cid -> times picked (repeats mode)
 	while picked.size() < target and not available.is_empty():
 		var best := ""
 		var best_score := -1.0
@@ -276,8 +289,10 @@ static func _greedy_coverage_select(catalog: Dictionary, pool: Array,
 			covered[str(term)] = true
 		if not allow_repeats:
 			available.erase(best)
-		elif picked.size() >= pool.size() * DEMIHUMAN_SEEDS_PER_RACE:
-			break  # safety bound when repeats are allowed
+		else:
+			pick_count[best] = int(pick_count.get(best, 0)) + 1
+			if max_per_culture > 0 and pick_count[best] >= max_per_culture:
+				available.erase(best)   # this people has hit its per-culture cap
 	return picked
 
 

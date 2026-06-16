@@ -35051,3 +35051,178 @@ on-tick dispatch.
 **Next session should:**
 - Tune beastman aggression / re-seed to restore the desired wilderness fraction once Jedidiah picks a target; consider the re-seed-rate UI slider.
 - Part B (deferred): 6-mile per-race materialization — when the setting→runtime materialization is built, subdivide each beastman 24-mile hex into 6-mile sub-hexes and populate the intermingled race mix from `beastman_distribution.json` (clanhold_chance_per_6_mile_hex + race_d100 + clanhold_demographics + BeastmanLeaderLoader). The data already exists; the call site is new.
+
+
+## Session 2026-06-16 — Replay per-epoch rewind/scrubber (Screen C transport controls)
+
+**Task:** Jedidiah wants to examine the generated history step by step — a per-epoch rewind option in the campaign-creation replay (Screen C), which previously only auto-played the frames to review.
+**Model used:** Opus 4.8 (1M) — build + MCP verification.
+**Completed:**
+- Rebuilt `scenes/ui/campaign_creation/screen_generate_replay.gd` with full transport controls over the stored replay frames (the map repaint via `political_map_view.show_owners` is stateless, so reverse stepping is free):
+  - **Scrubber** (HSlider 0..N-1, draggable) + a "N / total" position label; programmatic playhead updates use `set_value_no_signal` so auto-play tracks the slider without triggering a pause, and only a real drag fires `_on_scrub` → jump+pause.
+  - **Transport bar:** `◀◀ Start` (rewind), `◀ Back` (step −1), `▶ Play`/`❚❚ Pause` toggle, `Next ▶` (step +1), `End ▶▶` (jump to present day). Manual transport pauses; the timer's auto-advance keeps playing.
+  - **Auto-play now STOPS at the present day** instead of auto-advancing to review, so the timeline can be rewound/inspected; an explicit `Continue to Review ▸` commits (calls `finish()`).
+  - **Per-epoch caption:** `Epoch i of N · <years> years ago · R realms` (present day at the last frame). Years-ago = `(last_tick − tick) × 25` (4,000 yr ÷ 160 standard ticks); realm count = distinct non-empty owners in the decoded frame.
+- Glyphs: `⏮/⏭/⏸` render as boxes in the theme font → switched to geometric-shapes `◀ ▶ ❚❚` (verified rendering via screenshot).
+**Decisions made:**
+- "Epoch" = each stored replay frame (captured every `replay_cadence`=4 ticks + the present-day frame), which is the granularity the player steps through.
+- Reaching the end pauses-in-place rather than finishing, because the feature is for *examination*; the player explicitly continues.
+**Interfaces defined or changed:** none cross-system. `screen_generate_replay` keeps its `review_requested` signal + `begin_replay(cid)` / `set_speed()` API; new internal `_goto`, `_set_playing`, `_on_scrub`, `_epoch_caption`.
+**Database changes:** none.
+**Tests added/updated:** none automated (scene script — headless suite never loads it). **Verified live via godot-ai MCP:** ran `campaign_creation_flow.tscn`, generated a small/short world (21 frames), drove the controls by eval — pause, jump to epoch 13 (800 yr ago, 14 realms), step **back** to epoch 12 (900 yr, 6 realms), scrub to epoch 5 (1,600 yr, 5 realms) — each repainted the map + caption; screenshotted the present-day frame (21/21) confirming the transport bar, scrubber handle, and clean glyphs. Parse-checked `--check-only`.
+**Known issues:**
+- One-tick cosmetic: when auto-play reaches the last frame, the Pause label shows for the single 0.6 s tick before the stop fires and flips it to Play. Negligible.
+**Next session should:**
+- Optional polish: a speed control (the `set_speed` API exists but isn't surfaced) and keyboard left/right-arrow stepping.
+- Resume the beastman wilderness-lever decision (terrain-habitability floor vs accept + runtime backfill) when Jedidiah returns to it.
+
+
+## Session 2026-06-16 — Replay speed control + keyboard transport (follow-up)
+
+**Task:** Add the two replay polish items flagged in the scrubber entry: a playback-speed control and arrow-key stepping.
+**Model used:** Opus 4.8 (1M) — build + MCP verification.
+**Completed (`scenes/ui/campaign_creation/screen_generate_replay.gd`):**
+- **Speed control:** a `Speed` OptionButton (0.5× / 1× / 2× / 4×, default 1×) in the transport bar → `set_speed(_SPEEDS[idx])`. `set_speed` now sets `_timer.wait_time` even while stopped, so a speed change made during a pause applies on resume (a running timer picks it up next cycle).
+- **Keyboard transport** (`_unhandled_key_input`, guarded on `visible` so it only acts on Screen C): **←/→ step** an epoch (key-repeat allowed → hold to scrub), **Space** play/pause, **Home/End** jump to first / present-day. Consumes the event via `get_viewport().set_input_as_handled()`.
+**Database changes:** none.
+**Tests added/updated:** none automated (scene script). **Verified live via godot-ai MCP:** speed → `_timer.wait_time` tracks 1×=0.6s / 2×=0.3s / 0.5×=1.2s; `game_manage.input_key` Right stepped 3→4, Left stepped 10→9, Space toggled play; screenshot confirms the "Speed 1.0×" dropdown renders in the bar. Parse-checked.
+**Next session should:** resume the beastman wilderness-lever decision when Jedidiah returns to it.
+
+
+## Session 2026-06-16 — Demihuman seed cap + seeding priority + −25% base expansion
+
+**Task:** Jedidiah: elf (Aelvaneth) homelands proliferate and end with vast holdings while dwarves barely appear. Cap demihuman seeds per culture, seed demihumans before humans, and slow base expansion ~25%.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- **Per-CULTURE demihuman seed cap = 2** (`culture_seeder.gd`): new `const DEMIHUMAN_SEEDS_PER_CULTURE := 2`; `_greedy_coverage_select` gained a `max_per_culture` param — in repeats mode it tallies picks per culture and drops a culture from the pool once it hits the cap (replaces the old `pool.size() × PER_RACE` safety bound). Per-race cap stays 3, so e.g. one elf people ≤2 seeds, the race ≤3 across its peoples.
+- **Seeding PRIORITY reordered** (`_select_cultures`): demihumans seed FIRST (elf then dwarf), THEN humans, THEN beastmen (`_place_beastmen`, after homelands). The returned seed order is also the PLACEMENT order in `_place_homelands`, so demihumans get first pick of matching wilderness hexes — dwarves now actually claim their mountain/hill biomes before humans spread over them.
+- **−25% base expansion** (`sim_constants.gd`): `expansion_G 5.0 → 3.75`. Scales every realm's `_expansion_pressure` size-term, so all cultures spread slower.
+**Decisions made:**
+- Cap is per *culture* (not per race) — the proliferation was a single high-coverage elf people taking all the race's seeds.
+- Reorder changes the `culture_selection` RNG draw order, so worlds for a given seed differ from before (intended; determinism within a seed preserved).
+**Interfaces defined or changed:**
+- `CultureSeeder.DEMIHUMAN_SEEDS_PER_CULTURE := 2`; `_greedy_coverage_select(..., max_per_culture := 0)` (0 = unlimited).
+- `SimConstants.expansion_G` 5.0 → 3.75 [CALIBRATION].
+**Database changes:** none.
+**Tests added/updated:** none automated (tuning change; no test pins these). Suite **461/17, net-zero new failures** (Stage3 300, Stage4d/f, Calibration 6, Beastman 47 all green). Empirically verified via new `tools/check_seeds.gd` (medium ×3 seeds): dwarves now hold territory (gormdurn 26 hexes / khraaldurn 9), Aelvaneth no longer monopolizes (balanced with dwarves on seed 1).
+**Known issues:**
+- **−25% expansion strongly raises wilderness, but it's a TIPPING-POINT lever with high seed variance.** Present-day territory-class wilderness now ranges ~11% → ~54% across seeds (calibration smoke 3-seed mean 18.8%; my check_seeds 3-seed ~50%). The mean moved up toward the §9.3 ~50% target, but no single value is reliable — the civ-fills-or-doesn't bistability persists. If Jedidiah wants a specific wilderness fraction (~1/3), sweeping `expansion_G` (e.g. 4.0–4.5 for less, 3.5 for more) is the dial; reliability would need a civ-coverage/habitability floor (still parked). This is the same lever that the beastman knobs couldn't move.
+**Next session should:**
+- If Jedidiah wants to pin a wilderness target, sweep `expansion_G` with `tools/sweep_beastman.gd`/`check_seeds.gd`; otherwise accept the wilder, more-variable frontier.
+- Resume the parked beastman wilderness-lever decision (terrain-habitability floor) if reliable wilderness becomes a hard requirement.
+
+
+## Session 2026-06-16 — Seed / share-code input in campaign creation
+
+**Task:** Jedidiah wants a field to input a specific seed (recreate known worlds with different params) and paste a share code (recreate a shared world exactly), in the customization screens.
+**Model used:** Opus 4.8 (1M) — build + MCP verification.
+**Completed:**
+- **Seed / share-code field on BOTH customization screens** (`screen_quick_start.gd`, `screen_advanced.gd`): a LineEdit (placeholder "random — or paste a seed / share code") with `set_seed_input`/`seed_input_text` + a `seed_input_changed(text)` signal. Quick-start: between map-size and the actions; Advanced: a full-width row at the top, above the tabs.
+- **Flow wiring** (`campaign_creation_flow.gd`): `_seed_input_text` synced from both screens' `seed_input_changed`; `_show_phase` calls `set_seed_input` on entry so the value persists across screens. Replaced the placeholder `_roll_seed` (campaign-hash stub) with **`_resolve_seed()`**: empty → `_random_seed()` (usec-uptime + per-session counter, bounded 1e9 — the UI layer may read the clock); a **bare seed** → `SeedShareCodec.decode` sets the seed but KEEPS current sliders (recreate a known world with different params); a **full share code** ("<seed>~…", detected by the `~` separator) → also ADOPTS the token's parameters (`_params = decoded.params` + `_rebind_param_screens`) so a shared world is recreated EXACTLY; unparseable → `push_warning` + random.
+- **`_on_regenerate`** (Screen D "Regenerate world") now clears `_seed_input_text` + the fields first, so it's always a NEW random world (keeping sliders) rather than re-using the entered seed.
+- Leans entirely on the existing tested `SeedShareCodec.decode` ({ok, seed, params}) — no codec change; the review screen already DISPLAYS the share token (encode), this adds the INPUT side (decode).
+**Decisions made:**
+- Field on both screens (quick-start = paste-and-go; advanced = the customization menu Jedidiah referenced), synced via the flow so one value shows on both.
+- Bare seed vs full token distinguished by the `~` separator → bare seed keeps sliders (tweak a known world), token adopts params (exact share). Regenerate always re-rolls.
+**Interfaces defined or changed:** screens gained `seed_input_changed(text)` signal + `set_seed_input`/`seed_input_text`; flow `_resolve_seed`/`_random_seed`/`_on_seed_input_changed`/`_sync_seed_fields`/`_rebind_param_screens`. No DB/save change (the seed already persists as `campaign_seed`).
+**Database changes:** none.
+**Tests added/updated:** none automated (scene scripts). **Verified live via godot-ai MCP:** field renders on quick-start + advanced (screenshots); bare seed 777333 → reaches generation, keeps map_size "small"; share token `555111~…` → seed 555111 + mountains adopted "high", map_size replaced; empty → distinct random seeds; invalid → random fallback; **same seed 777333 twice → identical world_hash 045aa137…** (recreate-known-worlds requirement); value synced quick-start↔advanced. Parse-checked all three. SeedShareCodec seam tests untouched (suite 461/17 unaffected — scene scripts aren't loaded by it).
+**Next session should:** optional — surface "invalid code" inline on the field (currently a console push_warning); a "paste from clipboard" button next to the field.
+
+
+## Session 2026-06-16 — Front-end background music (placeholder, looping with seam fades)
+
+**Task:** Wire "Accept The Challenge" (MaxKoMusic) as placeholder background music for the front-end screens — main menu, setting generation, campaign select, pre-made party select, and the player-character-creation workflow — looping with a 3-second fade-in at the start and fade-out at the end to smooth the loop seam.
+**Model used:** Opus 4.8 (1M) — build + MCP verification.
+**Completed:**
+- **`engine/autoloads/audio_router.gd`** (was a stub) now plays the front-end music, driven entirely by **`GameState.state_changed`** — no per-screen wiring. Music is ON while `GameState.current_state ∈ {MAIN_MENU, CHARACTER_CREATION, LOADING}` (MAIN_MENU = title/campaign-select/setting-gen/party-select; CHARACTER_CREATION = the char-creation screen, set at `character_creation_screen.gd:147`), and fades OUT when actual play (EXPLORATION/COMBAT/…) begins. `_ready` connects the signal + applies the current state (the app boots into MAIN_MENU). Transitions BETWEEN front-end states are idempotent (no restart).
+- **Loop with seam fades:** the imported `AudioStreamMP3` has `loop=false` (set at runtime) so we control the loop. `_start_menu_music` plays at silence and fades in over `_FADE_SECONDS` (3s) to `_MUSIC_DB` (−6 dB). `_process` watches the playback position and, within 3s of the end, fades out to silence; on `finished` it restarts from the top and fades back in. `_stop_menu_music` fades out then stops via a tween callback. All fades are a single `_fade_to(db, on_done)` tween (kills any prior tween).
+- Audio bus: routes to a "Music" bus if one exists, else Master (the project currently has only Master).
+- Imported the MP3 (`--import` generated the `.import`); kept the credit txt alongside.
+**Decisions made:**
+- One signal-driven hook in AudioRouter rather than play/stop calls scattered across every screen/state — covers all listed screens automatically and survives new front-end screens.
+- Included LOADING in the front-end set so a load transition between front-end screens doesn't dip the music; it still fades out at EXPLORATION.
+- `_MUSIC_DB = −6` and `_FADE_SECONDS = 3` are easy-to-tune consts at the top (placeholder levels).
+**Interfaces defined or changed:** AudioRouter `play_music("menu")` / `stop_music()` now route to the front-end music; new internal `_start_menu_music`/`_stop_menu_music`/`_apply_state`/`_fade_to`.
+**Database changes:** none.
+**Tests added/updated:** none automated (audio playback). **Verified live via godot-ai MCP** (ran Main.tscn): music loads (159s track), fades in −40→−6 over 3s; `GameState.state_changed` connected; entering EXPLORATION fades out + stops (`_menu_music_on=false`); returning to MAIN_MENU restarts; **loop seam confirmed** by seeking near the end — fade-out triggers (−6→−9.3→…), then restart at pos≈0 with fade-in (−40→−31→…). Suite still green (AudioRouter autoload loads + plays harmlessly under the headless dummy audio driver).
+**Known issues:**
+- Placeholder track + level; real SFX and a multi-track music registry remain the later Tier-1 AudioRouter item.
+**Next session should:** if desired, add a Music audio bus + a volume slider in settings; swap/curate the track when final music is chosen.
+
+
+## Session 2026-06-16 — Review screen layout polish (wide data panel + vertical legend)
+
+**Task:** Jedidiah, on the Review screen (Screen D "Your World Awaits"): widen the side data panel (it was cramped at 330px with a big empty gap between it and the map), and move the map key/legend from a horizontal strip across the bottom to a vertical column alongside the map. "Nothing new, just moving the pieces."
+**Model used:** Opus 4.8 (1M) — layout edit + MCP verification.
+**Completed (`scenes/ui/campaign_creation/screen_review.gd`):**
+- **Root cause of the empty gap:** the `body` HBox gave the map's `left` column `stretch_ratio 1.5` while the `right` panel was a fixed 330px. The political map drawing fits to HEIGHT (~810px wide for these aspect ratios), so the over-wide left column left a large unused band to the right of the map.
+- **Vertical legend:** `_legend` changed from an `HBoxContainer` (in a horizontal scroll under the map) to a `VBoxContainer` in its own fixed-width (210px) "Map Key" column placed between the map and the data panel. Items now `EXPAND_FILL` the column width with `clip_text` + a full-name hover tooltip (long realm names don't overflow the narrow key). Scrolls vertically.
+- **Wide data panel:** `left` stretch_ratio 1.5 → 1.0; `right` gained `SIZE_EXPAND_FILL` + stretch_ratio 1.0 (min 420px). With the legend's fixed 210px removed from the split, left and right share the remaining width ~50/50 — the left column shrinks to ~match the map drawing (no gap) and the Brief/Realms/Peoples/History panel widens from ~330 to ~800px, so the text isn't cramped.
+**Decisions made:**
+- Let the panel fill the freed space (~800px) rather than cap it at the literal "red box" (~605px): the map is height-limited at ~810px wide, so capping the panel narrower would just reintroduce a gap. No-gap + wide panel is the cleaner outcome of the same intent.
+**Interfaces defined or changed:** none (`_legend` member type HBox→VBox is internal).
+**Database changes:** none.
+**Tests added/updated:** none automated (scene script). **Verified live via godot-ai MCP** at BOTH small and large map sizes: vertical "Map Key" column beside the map (10 entries, long names clipping with tooltips), wide Brief panel spanning the full width, map fills its column with no purple gap. Parse-checked. Suite unaffected (scene script not loaded by the headless runner; tested seams untouched) — 461/17.
+**Next session should:** optional — the Brief tab has empty space below its short text; nothing to fix (Realms/History fill it). Continue toward setting→runtime materialization.
+
+
+## Session 2026-06-16 — Clanhold restrictions apply to HUMAN clan cultures (not just beastmen)
+
+**Task:** Jedidiah: human clan-style "civilizations" (nomad/tribe/horde cultures) were holding civilized territory. Clanholds — beastmen AND human/demihuman clan cultures — lack the capacity for dense settlement, so they must suffer the 2,000-families/24-mi-hex cap, be locked to WILDERNESS territory class (civilized/borderlands they hold reverts), and any captured cities drop to market Class IV.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- **New `is_clanhold` flag** (`history_simulator.gd`, `_init_polities` + `_finalize_new_polity`): `is_beastman or instance.civ_or_clan == "clan"`. Orthogonal to alignment and to the beastman tier. Affects 17 human clan cultures (alaman/alani/kypchan/orkhan/the steppe & tribal peoples) plus all beastmen.
+- **Demography (§4a) now gates on `is_clanhold`** (was `is_beastman`): a clanhold's hexes skip `_advance_classification` (never civilize) and `_emerge_urban` (found no cities), AND each tick run `_demote_to_clanhold` — territory_class → wilderness, population clamped to `cap_wilderness` (2,000). So captured civilized/borderlands land reverts to wilderness and its population is reduced the same tick. The beastman-SPECIFIC behaviour (scatter / no-expansion, raze, never-shatter, ≤3-hex) stays on `is_beastman`.
+- **Layer 6 §9.6 classification fix** (`infrastructure_generator._finalize_classification`): a settlement's reach no longer promotes CLANHOLD-held hexes — new `_is_clanhold_hex` (owner's `civ_or_clan_state == "clan"`) skips them, so a civ city next door can't civilize a clanhold's wilderness. (This was the real cause of clan hexes still reading civilized: the sim kept them wilderness but §9.6 was re-promoting them.)
+- **Captured cities → Class IV** (`infrastructure_generator._stock_realm` → new `_stock_clanhold`): a clan realm founds no cities; the most it keeps is ONE Class-IV town on a hex where a CITY historically stood (≥ Class III urban signal), reduced to `_MARKET_III − 1` families (high Class IV), marked the seat. Former towns/villages disperse; a clanhold with no captured city maps no settlement.
+**Decisions made:**
+- A clanhold's captured-town seat is a market-IV settlement on a WILDERNESS hex (territory stays wilderness per the ruling; the town is the remnant). This is a new, valid shape, so two §9.6 settlement invariants moved (one relaxed in the test, one satisfied by making the remnant an exact Class-IV capital).
+- Only former CITIES (Class I–III) leave a remnant — a captured village just disperses into wilderness.
+**Interfaces defined or changed:** polity field `is_clanhold` (in-memory); `InfrastructureGenerator._is_clanhold_hex`, `_stock_clanhold`.
+**Database changes:** none.
+**Tests added/updated:** `test_setting_beastman.gd` + `test_human_clanhold_locked_to_wilderness` (a human clan polity's civilized hex is demoted to wilderness + capped via `_phase_demography`). `test_setting_stage7.test_settlement_hexes_classified` relaxed to exempt clanhold settlements (their seat hex stays wilderness by design — the §80 invariant-moves pattern). Empirically verified via new `tools/check_clanholds.gd` (3 seeds): every clan hex wilderness, pop ≤ 2,000, zero Class I–III cities; clan settlements are Class-IV captured-city remnants only.
+**Known issues:** none.
+**Next session should:** continue toward setting→runtime materialization.
+
+
+## Session 2026-06-16 — Climate recalibration so latitude bands match their biomes + latitude tooltips
+
+**Task:** Jedidiah asked for tooltips on the latitude dropdown (advanced campaign-creation screen) giving the rough biome % per band. Measuring the actual output revealed the biomes ran ~2 climate zones COLDER than the band labels (a "Tropical" map produced temperate forest with almost no jungle; a "Temperate" map produced subarctic taiga/tundra). Per his decision, fixed the climate first, then wrote tooltips matching the corrected output.
+**Model used:** Opus 4.8 (1M); 4-lens adversarial workflow review of the climate change.
+**Completed:**
+- **Root cause** (`climate_generator.gd`): (1) the latitude→temperature curve was LINEAR `T = 30 − 0.6·lat`, too steep through the mid-latitudes — lat 20 (still tropical) landed at 18 °C, below the 24 °C A-group threshold, so jungle/savanna almost never appeared; (2) the elevation lapse mapped the WHOLE land band (sea_level..1) to 0–3500 m, so even "flat" land got up to ~6.5 °C of cooling, compounding the cold-shift.
+- **Fix 1 — quadratic latitude curve:** `T = TEMP_AT_EQUATOR(27.0) − TEMP_LAT_QUADRATIC(0.0068)·lat²`. Real annual-mean temperature is flat through the tropics and steepens toward the poles; the quadratic matches that. Calibrated so lat 20 → ~24 °C (A group), lat 45 → ~13 °C (C group), lat 67 → ~−3 °C (D/E). Köppen thresholds and `_classify_koppen()` UNCHANGED.
+- **Fix 2 — lapse only above the flat ceiling:** `meters = max(0, elevation_raw − HeightmapGenerator.HILLS_THRESHOLD(0.55)) / (1 − 0.55) · 3500`. Flat land (elev_raw < 0.55) is now lowland and follows the latitude curve directly; only hills/mountains get progressively colder (alpine taiga/tundra/glacial at altitude — realistic).
+- **Fix 3 — temperature anomaly channel** (`TEMP_NOISE_AMPLITUDE_C = 2.0`, seeded "temperature" FastNoiseLite, freq 0.006): added because zeroing the flat-land lapse made every flat hex in a map row temperature-identical, so the pure-temperature Köppen boundaries (A/C/D/E group splits) could fall on dead-straight horizontal isotherm lines on large flat lowlands. A small ±~1.5 °C regional anomaly breaks the isotherms and gives natural fuzzy band edges. (Surfaced by the adversarial review; confirmed it preserves every band's identity on re-measure.)
+- **Tooltips** (`screen_advanced.gd` latitude row): rewrote the prose with the measured biome mix per band (ballpark % where one biome dominates, prose otherwise).
+**Decisions made:**
+- Two-lever fix (curve + lapse) rather than one: the curve alone left the lapse pushing tropical flat land back below the A-group threshold (no jungle). Both were needed.
+- Flat land now has a single temperature per latitude row (no elevation term); precipitation + seasonality noise still give within-band variation (desert vs grassland vs forest), so no unnatural stripes. Verified by screenshot.
+**Interfaces defined or changed:** `ClimateGenerator` constants `TEMP_AT_EQUATOR`, `TEMP_LAT_QUADRATIC` (replaced `TEMP_LAPSE_PER_DEGREE_LAT`); lapse now keyed off `HeightmapGenerator.HILLS_THRESHOLD`.
+**Database changes:** none.
+**Tests added/updated:** none changed; full suite 461/17 net-zero (Stage1 4323 checks, Stage2 3790, Stage3 culture-seeding 279, Stage4a 630, Stage7 630 all green — no test pinned a determinism hash, so the changed worlds didn't break determinism tests). Verified empirically with new diagnostics `tools/biome_dist.gd/.tscn` (biome % per latitude × 5 bands × 3 seeds) and `tools/biome_map_preview.gd/.tscn` (renders the BIOME map of a generated world for MCP screenshot). Post-fix means: Tropical jungle ~41% + savanna ~33%; Subtropical forest ~56% + grassland ~33%; Temperate forest ~66% + grassland ~25%; Continental forest ~55% + taiga ~27%; Polar tundra ~57% + taiga ~36%. MCP screenshots (same seed) confirm tropical shows deep-green jungle, temperate shows uniform forest + a grassland patch and zero jungle.
+**Adversarial review (4-lens workflow):** zero confirmed bugs; 6 low-notes, all pre-existing/cosmetic/informational. Acted on two: the isotherm-stripe artifact (Fix 3 above) and a comment noting the §7.2 jungle-at-mountains guard is now defensive (the lapse always cools a mountain below the 24 °C jungle threshold, so the Köppen cascade classifies tropical peaks as montane woods directly). The rest confirmed out-of-scope or harmless: desert rarity is a precipitation-noise problem (P(precip<0.18)≈0.19%), not temperature — the fix correctly made HOT deserts reachable (temp>22 °C below lat 27); Dfb/Dfd and desert_badlands are pre-existing dead Köppen branches; flat clear_tundra now needs lat≥~70 but no culture is locked out (all tundra-seeded cultures fall back to taiga/mountain terms).
+**Known issues:**
+- The biome MAP view (`political_map_view.gd` Mode.BIOME) colours tundra as "clear" (tan) and taiga as "woods" (green), so a POLAR map reads visually like a TEMPERATE one. Distinct tundra/taiga/savanna colours would make the climate band legible to players — flagged as an optional follow-up, not done (out of scope for the tooltip ask).
+- Hot deserts (BWh) remain rare (~2–5%) even in subtropical because they need precip < ARID_THRESHOLD; that's a precipitation-model dial, not a temperature one. Noted, not changed.
+**Next session should:** continue toward setting→runtime materialization; optionally add tundra/taiga/savanna colours to the biome map legend.
+
+
+## Session 2026-06-16 — Map-view fixes: biome subtype colors + dapple, frame-aware replay hover, uncapped culture legend
+
+**Task:** Three campaign-creation map-view issues Jedidiah raised after the climate rework: (1) the biome map coloured tundra as tan and taiga as green so polar maps looked temperate, and the green family (forest/taiga/jungle/dense) was hard to tell apart; (2) the replay's first-epoch hover appeared to show a culture spanning half the map; (3) a hex hovered as "Aelvaneth" wasn't in the Culture map key. Advised first (with a measured reproduction of his huge continental seed), then built the three he greenlit. Large-map cultural-diversity tuning deferred to a design discussion.
+**Model used:** Opus 4.8 (1M); 3-lens investigation workflow + per-seed coverage measurement.
+**Completed:**
+- **Biome subtype colours + pointillist dapple** (`political_map_view.gd`): new consts `_BIOME_TAIGA` (cold blue-green), `_BIOME_TUNDRA` (pale grey-blue), `_BIOME_SAVANNA` (gold), `_BIOME_GLACIAL` (near-white); new `_biome_color(h)` resolves biome_subtype (forest_dense/forest_taiga/clear_tundra/clear_savanna/mountains_glacial) before the base biome. `legend_entries` (BIOME) and `_biome_label` (hover) gained the new rows/labels. Added `_DAPPLE` palette + `_draw_dapple()` — ~6 accent dots per forest-family hex, positions hashed from (q,r) so they're stable across redraws, a distinct accent per forest type (leaf/frost/lime/shadow). Drawn only in BIOME mode in the `_draw` loop; redraws happen on bind/mode-switch only (never on hover), so cost is negligible (~7,200 dots worst case on a huge map).
+- **Frame-aware replay hover** (`political_map_view.gd` + `screen_generate_replay.gd`): the replay tooltip was reading present-day `owner_polity_id` + `culture_weights` regardless of the displayed epoch (the substrate is written present-day to every hex), so hovering epoch 1 showed present-day culture/ownership. New `_replay_mode` flag + `set_replay_mode()`; `_realm_tooltip` now reads the frame-aware `_hex_owner(h)` and, in replay mode, prints only the per-epoch owner ("Realm: X" / "Unclaimed this epoch") — present-day culture/territory/peasants are suppressed. `begin_replay` sets replay mode and feeds polity names/lieges (from `list_polities`) so the owner line is named. The review screen keeps the full present-day tooltip (replay_mode stays false).
+- **Uncapped Culture legend** (`screen_review.gd`): `_refresh_legend` hard-broke at 10 rows, dropping low-coverage cultures (e.g. Aelvaneth) from the Map Key even though hover showed them (both read the same `_dominant_culture` substrate — it was purely a render cap). Now caps only POLITICAL (12 + a "+N more…" row, since it can list hundreds of realms) and shows ALL entries for biome/elevation/territory/culture. Added `_current_mode` mirror.
+**Decisions made:**
+- Cap policy is per-mode: only Political can run to hundreds of entries, so only it is capped (with an explicit "+N more"); the short enumerations show everything.
+- Replay tooltip shows only per-frame ownership rather than reconstructing per-epoch culture — epoch-accurate culture would need per-frame culture snapshots (a bigger replay table), deferred.
+**Interfaces defined or changed:** `political_map_view.set_replay_mode(on: bool)`; `_biome_color`, `_is_forest_family`, `_dapple_accent`, `_draw_dapple` helpers; new biome legend labels Savanna/Taiga/Tundra/Glacier.
+**Database changes:** none.
+**Tests added/updated:** none (scene/UI scripts — not loaded by the headless suite). Verified end-to-end via the godot-ai MCP in the live campaign-creation flow: biome map shows forest/taiga/tundra/glacier distinct + dapple (continental + the in-flow review screen); replay hover returns "Realm: Hersirdaemi of House Arnungar" / "Unclaimed this epoch" with no present-day culture line (replay_mode=true confirmed; review map replay_mode=false keeps the full tooltip); Culture legend lists all 4 cultures incl. Aelvaneth, Political legend shows 12 + "+3 more…". Diagnostic `tools/culture_coverage.gd/.tscn` added (reproduces a seed, reports hexes + polities per dominant culture).
+**Known issues:**
+- Large-map cultural monoculture (the parked "large-map monoculture variance"): on the measured huge continental seed, 3 cultures cover 96% (jinxian 51%) because realm expansion paints its culture onto every settled wilderness hex (`history_simulator._settle_wilderness`) over deep history. This is expansion-driven, not a seeding bug (humans seed 1 homeland per culture); deferred to a design discussion (history length / expansion rate / realm-size cap).
+**Next session should:** optionally take up the large-map diversity discussion; otherwise continue toward setting→runtime materialization.

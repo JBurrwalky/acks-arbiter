@@ -6,6 +6,7 @@ extends Control
 
 signal start_requested
 signal customize_requested
+signal seed_input_changed(text: String)
 
 const _SIZES := [["small", "Small"], ["medium", "Medium"], ["large", "Large"], ["huge", "Huge"]]
 
@@ -19,6 +20,7 @@ const _SIZE_TOOLTIPS := {
 
 var _params: SettingParameters
 var _size_buttons: Dictionary = {}
+var _seed_edit: LineEdit
 
 
 func _ready() -> void:
@@ -75,6 +77,9 @@ func _build_ui() -> void:
 		_size_buttons[entry[0]] = b
 	_highlight_size()
 
+	vb.add_child(_spacer(8))
+	vb.add_child(_build_seed_field())
+
 	vb.add_child(_spacer(16))
 
 	var actions := HBoxContainer.new()
@@ -100,6 +105,37 @@ func _spacer(h: int) -> Control:
 	var s := Control.new()
 	s.custom_minimum_size = Vector2(0, h)
 	return s
+
+
+## Optional seed / share-code entry. Empty = a fresh random world. A bare seed
+## reproduces the same world (keeping the current sliders so you can tweak). A full
+## share code (seed~…) reproduces a shared world EXACTLY (seed + its parameters).
+func _build_seed_field() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	var lbl := Label.new()
+	lbl.text = "Seed / share code"
+	lbl.add_theme_color_override("font_color", Color(0.74, 0.69, 0.6))
+	lbl.tooltip_text = "Leave blank for a random world. Enter a seed to reproduce a world" \
+		+ " (keeping your sliders), or paste a share code to recreate a shared world exactly."
+	row.add_child(lbl)
+	_seed_edit = LineEdit.new()
+	_seed_edit.custom_minimum_size = Vector2(280, 0)
+	_seed_edit.placeholder_text = "random — or paste a seed / share code"
+	_seed_edit.tooltip_text = lbl.tooltip_text
+	_seed_edit.text_changed.connect(func(t): seed_input_changed.emit(t))
+	row.add_child(_seed_edit)
+	return row
+
+
+func set_seed_input(text: String) -> void:
+	if _seed_edit != null and _seed_edit.text != text:
+		_seed_edit.text = text
+
+
+func seed_input_text() -> String:
+	return _seed_edit.text if _seed_edit != null else ""
 
 
 func _on_size_pressed(size: String) -> void:

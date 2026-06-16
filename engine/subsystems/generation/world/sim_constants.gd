@@ -20,7 +20,10 @@ var tick_years: int = 25
 # small (only ~12% of the map), leaving the §17 wilderness fraction far too high.
 # A larger growth constant + later half-saturation lets realms keep expanding to
 # substantial size and civilize more of the map.
-var expansion_G: float = 5.0          # global growth constant (hexes/tick)
+# [CALIBRATION 2026-06-16] G 5.0→3.75 (−25%): Jedidiah — slow everyone's base
+# expansion so the frontier stays wilder for longer and demihuman/late seeds aren't
+# steamrolled by fast human spread.
+var expansion_G: float = 3.75         # global growth constant (hexes/tick)
 var expansion_N0: float = 50.0        # half-saturation size (hexes)
 var expansion_alpha_base: float = 1.0 # α = 1.0 + culture.size_exponent_bias
 var a_peak_ticks: int = 8             # ascendancy/age peak (200 yr)
