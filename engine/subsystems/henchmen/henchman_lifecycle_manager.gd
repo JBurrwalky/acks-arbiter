@@ -342,8 +342,17 @@ func trigger_loyalty_check(character_id: String, trigger: String,
 	var grudging: bool = int(state.get("is_grudging", 0)) == 1
 	var fanatic: bool = int(state.get("is_fanatic", 0)) == 1
 
+	# In-Group Loyalty personality axis (gdd-npc-personality.md §3.2): a zealous
+	# henchman (high) is steadier, a mercenary one (low) wavers — a situational
+	# modifier layered on the RAW CHA/treatment morale, never a replacement. Only
+	# a deviant axis (1-3 / 8-10) contributes (±1/±2); mid-range adds nothing.
+	var extra_modifiers: Dictionary = {}
+	var loyalty_mod: int = _personality_loyalty_modifier(character_id)
+	if loyalty_mod != 0:
+		extra_modifiers["in_group_loyalty"] = loyalty_mod
+
 	var result := HenchmanLoyaltyResolver.resolve_loyalty_check(
-		morale, grudging, fanatic, dice)
+		morale, grudging, fanatic, dice, extra_modifiers)
 
 	# Apply outcome to henchman_state.
 	var new_grudging := grudging
@@ -370,6 +379,22 @@ func trigger_loyalty_check(character_id: String, trigger: String,
 		bus.emit_signal("henchman_loyalty_checked", character_id, trigger, result)
 
 	return result
+
+
+## In-Group Loyalty axis → henchman loyalty-check situational modifier
+## (gdd-npc-personality.md §3.2). Loads the henchman's personality; a deviant axis
+## maps to ±1/±2 (zealot steadier, mercenary wavers). Returns 0 when the repo
+## can't load the character, the NPC has no personality, or the axis is mid-range.
+func _personality_loyalty_modifier(character_id: String) -> int:
+	if not _repo.has_method("get_character"):
+		return 0
+	var row: Dictionary = _repo.get_character(character_id)
+	if row.is_empty():
+		return 0
+	var personality := NpcPersonality.from_json(String(row.get("personality", "{}")))
+	if personality == null:
+		return 0
+	return PersonalityAxes.deviant_magnitude(personality.axis("in_group_loyalty"))
 
 
 # ---------------------------------------------------------------------------

@@ -562,6 +562,8 @@ extends Node
 @onready var _campaign_creation_seams_tests = $CampaignCreationSeamsTests
 # 2026-06-14 — NPC personality core layer (twelve-axis sampler + mock + wiring)
 @onready var _npc_personality_tests = $NpcPersonalityTests
+# 2026-06-14 — Personality consumers (reaction modifiers + disposition + loyalty)
+@onready var _personality_consumers_tests = $PersonalityConsumersTests
 
 
 func _ready() -> void:
@@ -1134,7 +1136,9 @@ func run() -> void:
 			# 2026-06-15 — Stage 10 campaign-creation logic seams
 			_campaign_creation_seams_tests,
 			# 2026-06-14 — NPC personality core layer
-			_npc_personality_tests]:
+			_npc_personality_tests,
+			# 2026-06-14 — Personality consumers (reaction / disposition / loyalty)
+			_personality_consumers_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

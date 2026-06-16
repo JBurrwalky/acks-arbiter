@@ -188,6 +188,23 @@ static func is_deviant(score: int) -> bool:
 	return score <= DEVIATION_LOW_MAX or score >= DEVIATION_HIGH_MIN
 
 
+## Magnitude of a deviant axis as a proportionate ±1/±2 mechanical modifier
+## (PROJECT CALL): ±2 at the absolute extreme (1/10), ±1 across the rest of the
+## deviant band (2-3 / 8-9), 0 for mid-range (4-7). High score → positive. Single
+## source for the personality situational modifiers fed to reaction rolls and
+## henchman loyalty checks, keeping both in the RAW ±1/±2 band.
+static func deviant_magnitude(score: int) -> int:
+	if score >= 10:
+		return 2
+	if score >= DEVIATION_HIGH_MIN:
+		return 1
+	if score <= 1:
+		return -2
+	if score <= DEVIATION_LOW_MAX:
+		return -1
+	return 0
+
+
 ## Returns the §9.2 directive string for an axis at the given score, or "" if
 ## the score is mid-range (does not survive the deviation filter).
 static func directive_for(axis: String, score: int) -> String:

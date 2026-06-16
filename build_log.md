@@ -34960,3 +34960,39 @@ on-tick dispatch.
 **Next session should:**
 - (Setting-gen side) Build the setting→runtime handoff that stamps `setting_settlements.polity_id → setting_polities.culture_id` onto runtime `settlement_entrances.culture_id`, and the controlling polity's culture onto `domains.culture_id`. Once populated, NPC cultural biases go live with zero NPC-side changes.
 - (NPC side) StrategicDisposition (§8), then relationships (§5) + knowledge (§6); wire LLMManager for the cached summary.
+
+
+## Session 2026-06-14 (cont.) — Personality consumers: reaction modifiers (#5), disposition tracking (#7), henchman loyalty (#6)
+
+**Task:** Make the generated personality axes mechanically matter. Wire the strategically-active axes + runtime disposition into the reaction/influencing roll (#5), track per-NPC disposition across interactions (#7), and feed In-Group Loyalty into henchman loyalty checks (#6). RAW-grounded (`ax_reactions_and_influencing.xml`, `acore_equipment.xml`); personality INFORMS modifiers, never replaces the 2d6 roll.
+**Model used:** Opus 4.8 (1M) — investigation (3 parallel explores + RAW lookup) + design + implementation + verification.
+**Completed:**
+- **#5** `engine/subsystems/reputation/personality_reaction_modifiers.gd` (new) — `PersonalityReactionModifiers.modifiers_for(personality, tone)` maps deviant strategic axes → per-tone ±1/±2 situational modifiers. Mapping (PROJECT CALL): diplomatic ← affective_compassion(+), epistemic_curiosity(+); intimidation ← stress_reactivity(+), self_interest(−), in_group_loyalty(−); seduction ← self_interest(−). societal_orthodoxy/mysticism intentionally unmapped (context-specific). `disposition_modifier()` projects disposition(−5..+5) → capped ±2.
+- **#5** `InteractionResolver._apply_personality_modifiers` — applied AFTER the RAW tone block (so it can't shift the seduction "+1 threshold" check); reads `context["target_personality"]` (NpcPersonality or JSON); adds entries under category "personality". The 2d6 roll is never replaced.
+- **#7** `engine/subsystems/reputation/disposition_tracker.gd` (new) — `DispositionTracker.apply_interaction(personality, result)` moves disposition from an InteractionResult (diplomatic/seduction warm/cool by attitude/shift; intimidation only holds-or-resents), clamps −5..+5, sets warming/cooling/stable trend, appends a capped (8) history; `apply_delta()` for non-interaction events; `persist(npc_id, personality, repo)` writes back.
+- **#7** `NpcPersonality` gained `disposition_trend` + `disposition_history` (from_dict/to_dict). `CampaignRepository.update_character_personality(id, json)` (targeted personality-column UPDATE).
+- **#6** `HenchmanLifecycleManager.trigger_loyalty_check` now loads the henchman's personality and passes In-Group Loyalty (deviant → ±1/±2) as an `extra_modifiers["in_group_loyalty"]` to `HenchmanLoyaltyResolver.resolve_loyalty_check` (the resolver already accepted extra_modifiers). New `_personality_loyalty_modifier(character_id)`.
+- Shared `PersonalityAxes.deviant_magnitude(score)` (±2 at 1/10, ±1 across the deviant band, 0 mid) — single source for reaction + loyalty magnitudes.
+**Decisions made:**
+- Personality modifiers stay in the RAW ±1/±2 band (RAW reaction terms are mostly ±1/±2; CHA/WIS ±3; only harm/3:1-outnumber reach ±5) and only deviant axes (1-3/8-10) contribute — mid-range NPCs add nothing, matching the §9.1 deviation filter.
+- Disposition (per-NPC, direct-interaction feeling) is kept DISTINCT from the ReputationSystem (broad/cascading faction/settlement/domain standing) to avoid a reaction double-count: disposition feeds a capped ±2; the reputation tier modifier is layered separately. Documented as a PROJECT CALL.
+- Intimidation never raises genuine disposition (coerced compliance breeds resentment).
+**Interfaces defined or changed:**
+- `PersonalityReactionModifiers.modifiers_for(personality, tone) -> Array[{source_id,value}]`; `.disposition_modifier(personality) -> int`.
+- `InteractionResolver` context key `target_personality` (NpcPersonality | JSON string).
+- `DispositionTracker.apply_interaction(personality, result) -> {delta,disposition,trend}`; `.apply_delta(personality, delta, reason)`; `.persist(npc_id, personality, repo)`; consts `DISP_MIN/MAX`, `HISTORY_CAP=8`.
+- `NpcPersonality.disposition_trend: String`, `.disposition_history: Array`.
+- `CampaignRepository.update_character_personality(id, personality_json) -> bool`.
+- `PersonalityAxes.deviant_magnitude(score) -> int`.
+- `HenchmanLifecycleManager.trigger_loyalty_check` now passes `extra_modifiers`.
+**Database changes:**
+- None (no migration). `update_character_personality` UPDATEs the existing `characters.personality` column.
+**Tests added/updated:**
+- `tests/test_personality_consumers.gd` (new, 17 tests; id `461_personality_consumers_tests`): axis→tone mapping per tone, mid-range/unmapped silence, magnitude, InteractionResolver integration (+ no-personality unchanged), disposition initial/influence/intimidation-resentment/clamp/trend/history-cap/projection/round-trip/persist, loyalty magnitude + lifecycle integration.
+- Run 1 (quiet): 459/18 — net-zero new failures (+1 passing suite = mine). Run 2: 458/19 — the +1 is the setting-gen 160-tick sim PERF guard (30175ms > 25s ceiling) flaking under concurrent CPU load from the active setting-gen session; unrelated. All touched suites pass both runs (InteractionResolver, HenchmanLoyaltyResolver, HenchmanLifecycle, ReputationSystem).
+**Known issues:**
+- The live encounter UI (`scenes/ui/encounter/encounter_screen.gd`) still rolls reactions directly and does not yet call `InteractionResolver`; the personality + disposition hooks activate once it (or another caller) routes through the resolver and calls `DispositionTracker` on the outcome. The plumbing is complete and tested; the live wiring is a separate UI task.
+- Setting-gen 160-tick sim perf guard is timing-flaky under concurrent CPU (setting agent's domain; build-log NEEDS-OPUS-REVIEW carry-forward).
+**Next session should:**
+- Wire the live encounter/dialogue flow to call `InteractionResolver` (passing `context["target_personality"]`) and `DispositionTracker.apply_interaction` + `.persist` on the outcome, so reactions/disposition go live in play.
+- Remaining personality GDD pieces: §5 relationships + §6 knowledge (new tables); §8 StrategicDisposition/RulerProfile; live-LLM dialogue.

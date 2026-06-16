@@ -193,6 +193,14 @@ static func _apply_sacred_modifiers(stack: ModifierStack, tone: String, ctx: Dic
 		InteractionResult.TONE_SEDUCTION:
 			_apply_seduction(stack, ctx)
 
+	# Personality-derived situational modifiers (gdd-npc-personality.md §2/§3.2):
+	# the target NPC's strategically-active axes + runtime disposition, capped at
+	# the RAW ±1/±2 band. Applied AFTER the RAW tone block so it never affects the
+	# seduction "+1 in modifiers" proficiency threshold (which must see RAW only),
+	# and never replaces the 2d6 roll. Pass ctx["target_personality"] as an
+	# NpcPersonality or its JSON string; absent → no personality modifiers.
+	_apply_personality_modifiers(stack, tone, ctx)
+
 
 static func _apply_diplomatic(stack: ModifierStack, ctx: Dictionary) -> void:
 	# Alignment.
@@ -314,6 +322,28 @@ static func _apply_seduction(stack: ModifierStack, ctx: Dictionary) -> void:
 		stack.add_modifier(_mk("advantage_target", "history", -2, "history_target"))
 	if ctx.get("liaison_personal_risk", false):
 		stack.add_modifier(_mk("liaison_risk", "history", -2, "liaison_risk"))
+
+
+## Layer the target NPC's personality modifiers onto the stack (category
+## "personality"). Reads ctx["target_personality"] as an NpcPersonality or JSON.
+static func _apply_personality_modifiers(stack: ModifierStack, tone: String, ctx: Dictionary) -> void:
+	var personality := _personality_from_ctx(ctx)
+	if personality == null:
+		return
+	for entry in PersonalityReactionModifiers.modifiers_for(personality, tone):
+		var value: int = int(entry.get("value", 0))
+		if value != 0:
+			stack.add_modifier(_mk(String(entry.get("source_id", "personality")),
+				"personality", value, "personality"))
+
+
+static func _personality_from_ctx(ctx: Dictionary) -> NpcPersonality:
+	var p: Variant = ctx.get("target_personality", null)
+	if p is NpcPersonality:
+		return p
+	if p is String and not (p as String).is_empty():
+		return NpcPersonality.from_json(p)
+	return null
 
 
 static func _already_attitude_modifier(tone: String, already: String) -> int:
