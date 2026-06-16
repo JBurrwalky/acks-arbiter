@@ -1,0 +1,195 @@
+# GDD: Region Zoom-In (24-mile → 6-mile content materialization)
+
+**Document type:** Game Design Document (project-designed, generation/procedural)
+**Authority:** PROJECT-DESIGNED — the 6-mile content-placement and natural-variation algorithms are engineering decisions. The scale hierarchy (24mi→6mi, 16:1) and the ACKS density/settlement/beastman tables are RAW and may NOT be changed. Subordinate to `acks_arbiter_design_brief_v11.md` (the §5.1 map-scale model) and to `gdd-setting-runtime-materialization.md` (which invokes this as its critical-path content pass).
+**Status:** Draft v0.1 — specifies the lazy/eager 6-mile zoom-in that `gdd-setting-runtime-materialization.md` Phase M2 consumes. Terrain-tag *inheritance* (the per-child base) is already specified in `gdd-hex-subdivision.md §6`; this GDD owns the **content placement, the richer natural-variation passes, road/river generation, beastman intermingling, the rolling/persisted frontier, and the performance/optimization model.** No code written.
+**Depends on ACKS rules:** `rules/acore_axioms_strongholds_and_domains.xml:14-21` (16:1 sub-hex ratio); `rules/ax_domains_of_chaos.xml:10-11,79` (125 fam/6-mile SOFT limit — half land revenue beyond, not a hard cap); `rules/ax_domains_of_chaos.xml:15-19,106-233,248-324` (beastman family composition, ogre/troll ×4, per-terrain clanhold density + race d100); `rules/acore-setting-construction-rules.xml:412` (~15 settlement points on a 6-mile *regional* map — **RE-VERIFY at build**, sourced from the setting-gen build notes); `rules/acore-campaign-hijinks.xml:632-638` (market class by urban families).
+**Depends on project GDDs:** [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) (§5 aggregation, §6 the terrain-tag inheritance base this GDD enriches, §6.2 child indexing + seeding); [`gdd-setting-runtime-materialization.md`](gdd-setting-runtime-materialization.md) (the caller; source-of-truth rule; rolling-map model; migrations); [`gdd-terrain-system.md`](gdd-terrain-system.md) (the tag layers + movement/encounter derivation); [`gdd-settlement-stocking.md`](gdd-settlement-stocking.md) (interiors on entry — NOT here); [`gdd-lair-discovery.md`](gdd-lair-discovery.md) (emergent lairs — coexist, NOT here); [`gdd-realtime-scheduler.md`](gdd-realtime-scheduler.md) (zoom-in + frontier growth run as scheduled events); [`gdd-wilderness-hex-3d.md`](gdd-wilderness-hex-3d.md) (heightmap-era variation hooks).
+**Modifiable by Claude Code:** Yes — all variation strengths, placement densities, chunk sizes, and growth thresholds are engineering/tuning decisions. The scale ratio and the RAW tables are not.
+**Last updated:** 2026-06-16
+
+---
+
+## 1. Purpose and Scope
+
+When the player's party plays at 6-mile scale (per `gdd-setting-runtime-materialization.md`), the world must exist at 6-mile resolution where they are. This GDD specifies the **zoom-in pass** that turns a 24-mile parent hex into its sixteen 6-mile children — terrain, content, roads/rivers, ownership, culture — in a way that **feels natural** (not 16 identical tiles), **performs** at the scale a real campaign explores, and is **deterministic and persisted** (computed once, never regenerated).
+
+It runs in two modes, identical algorithm:
+- **Eager** — at the handoff, for the ~30×40 starting extent (~80 parents) around the player's chosen city.
+- **Rolling** — as the party approaches the generated frontier, one parent at a time, appended to the same growing 6-mile map.
+
+What this GDD does **not** own: terrain-tag *inheritance* defaults (`gdd-hex-subdivision.md §6` — this GDD enriches them); settlement *interiors*/POI stocking (`gdd-settlement-stocking.md`, on entry); dungeon *layouts* (DG-V1, on entry); *emergent* wilderness lairs (`gdd-lair-discovery.md`, which coexists). It produces the **map and the placed-content stubs**; downstream systems flesh them out on contact.
+
+---
+
+## 2. ACKS Constraints
+
+- **16:1 sub-hex ratio** (`rules/acore_axioms_strongholds_and_domains.xml:14-21`): each 24-mile parent → sixteen 6-mile children, indexed `child.q = parent_q*4 + cqi`, `child.r = parent_r*4 + cri`, `cqi,cri ∈ {0..3}` (`gdd-hex-subdivision.md §6.2`).
+- **125 families/6-mile hex is a SOFT clanhold limit** (`rules/ax_domains_of_chaos.xml:10-11,79`): population distribution across children may exceed it; excess simply yields half land revenue at runtime (a domain-economy concern, NOT a placement clamp). **Never hard-cap here.**
+- **Beastman intermingling tables** (`rules/ax_domains_of_chaos.xml:248-324`): per-terrain clanhold density (`clanhold_chance_per_6_mile_hex`, `clanholds_per_24_mile_hex`) and per-terrain race d100 — already extracted to `data/setting_generation/beastman_distribution.json`. Family composition (1 warrior + N race noncombatants; ogre/troll ×4) per `:15-19,160-233`.
+- **~15 settlement points on a 6-mile regional map** (`rules/acore-setting-construction-rules.xml:412` — RE-VERIFY): the budget for *minor* 6-mile settlement scatter is a regional-map quantity, distinct from the 24-mile settlement density. Hamlets/villages below the 24-mile settlement threshold legitimately appear here.
+- **Market class by urban families** (`rules/acore-campaign-hijinks.xml:632-638`): any minor settlement generated at 6-mile gets its market class from its own urban families.
+
+---
+
+## 3. Performance & Optimization Model
+
+The two questions: *how much 6-mile can we create/persist before breakdown,* and *how do we optimize.*
+
+### 3.1 The numbers (grounded in real map sizes)
+24-mile map presets (`setting_parameters.gd`): small 15×12 = **180**, medium 25×20 = **500**, large 40×30 = **1,200**, huge 60×45 = **2,700** parent hexes. Each parent → 16 children, so a *fully-explored* continent at 6-mile is **2,880 / 8,000 / 19,200 / 43,200** hexes.
+
+| Quantity | Count | Cost |
+|---|---|---|
+| **Eager starting extent** (~80 parents) | **~1,280** 6-mile hex_cells + a few hundred content rows | ~2× the Avalon fixture (600 hexes) which already runs; one-time write behind the loading screen; ~100 KB on disk |
+| **Rolling growth** (per frontier parent) | **16** hex_cells + a few content rows | milliseconds; scheduled event; imperceptible |
+| **Fully-explored continent** (worst case, huge) | up to **43,200** hex_cells | ~4 MB on disk (SQLite is fine); the pressure is RENDER, not storage |
+
+**Bottleneck is render texture memory + image-build time, not storage or generation.** `hex_map_renderer` rasterizes hexes to an image (cheap per-frame to blit; build-time + texture scale with hex count). Comfortable to several thousand active hexes; beyond ~10k a single image is wasteful.
+
+### 3.2 Optimization levers (the answer to "can we optimize")
+1. **Persist all, render near (chunked rendering) — the key lever.** Every explored 6-mile hex is persisted (cheap), but the renderer builds/keeps image chunks only within a radius of the party; distant chunks' *images* unload (data stays in the DB, rebuilt on approach). Caps render memory regardless of explored extent → the system is scale-free. Chunk size is a tuning parameter (e.g. one chunk = one 24-mile parent's 4×4 children, or a fixed N×N).
+2. **24-mile world map from `setting_hexes`.** The world-map screen can render from the source-of-truth `setting_hexes` rather than a full `hex_cells` duplicate (≤2,700 rows; copying is also acceptable). Avoids a redundant continent-sized copy.
+3. **Off-camera sovereigns as `named`-tier stubs.** Eager-create every sovereign (per the handoff ruling) as lightweight name+class+level+culture+alignment+morale; promote to `full` on contact. Hundreds = KB-scale.
+4. **Abstract off-camera simulation.** The off-camera "political goings-on" run on *abstracted* domains (gp-value ledger, no per-hex) — the same abstraction the history sim used (cheap, hundreds of realms). (Phase M5.)
+5. **Lazy fine content.** Settlement interiors, dungeon layouts, `settlement_pois`, encounter NPCs — all on contact. The zoom-in writes only stubs.
+6. **Compute-once.** Deterministic + persisted → no recompute on revisit. The only ongoing cost is rendering the chunks near the party.
+
+### 3.3 Budget recommendation
+Eager window **~1,280** (safe, proven-scale). Keep the **actively rendered** region in the low thousands via chunking; persist without limit. Revisit chunk size only if profiling shows image-build hitches at the frontier.
+
+---
+
+## 4. Natural-Variation Algorithm
+
+**Goal (Jedidiah):** do not plop 16 identical tiles because the parent is one type; mingle/dither/vary *smartly* and *naturally* — foothills, dense/light forest patches, grass/jungle oases in desert (especially near rivers) — while avoiding **both** too much uniformity **and** too much randomized noise. Dither polity boundaries and culture %s across the children too.
+
+The algorithm composes **three structured passes** over the `gdd-hex-subdivision.md §6` base, each physically motivated, **budget-bounded** (so it reads as variation, not noise) and **coherence-clustered** (so it clusters, not salt-and-pepper). All are deterministic, seeded per `gdd-hex-subdivision.md §6.2`.
+
+```
+zoom_parent(P, neighbors[6]):
+  1. BASE      → 16 children inherit P's tags (gdd-hex-subdivision §6.3 step 2)
+  2. NOISE     → per-child smoothed_noise (gdd-hex-subdivision §6.3 step 3 + §6.5 smoothing)
+  3. PASS A    → neighbor-gradient ecotones        (§4.1)   [boundary-directed]
+  4. PASS B    → feature-driven local variation    (§4.2)   [river/elevation/coast-directed]
+  5. PASS C    → coherent stochastic texture        (§4.3)   [remaining budget; patches]
+  6. DITHER    → polity-boundary feathering + culture-% interpolation (§4.4)
+  7. WATER/CITY→ gdd-hex-subdivision §6.6 / §6.3 step 6 (carrier child)
+```
+
+Each pass writes within a **per-layer deviation budget** (elevation ≤10%, biome ≤25%, civilization ≤5% of the 16 children — `gdd-hex-subdivision.md §6.4`). The passes are **ordered by priority**: gradients and features claim the budget first (structured deviation), and the stochastic pass fills only what remains (texture). A **strength dial** per pass (`grad_strength`, `feature_strength`, `texture_strength`) tunes the uniformity↔noise balance globally.
+
+### 4.1 Pass A — Neighbor-gradient (ecotones)
+A child near a parent edge is biased toward the **adjacent parent's** biome/elevation, producing a feathered transition rather than a hard 24-mile step.
+
+- For each child, compute its **edge proximity** to each of the 6 parent neighbors (children in the outer ring of the 4×4 are near one or two neighbors; interior children near none).
+- For a neighbor `N` whose biome is one impedance step from `P`'s, the bordering children gain a deviation bias toward `N`'s biome, **strongest in the corner/edge children, fading inward over 2–3 children**. Example: a `woods` parent bordering a `clear` parent → the clear-facing edge children lean `woods → (scrub subtype) → clear`, interior stays `woods`.
+- Elevation gradients the same way (a `mountains` parent bordering `flat` → the flat-facing children step `mountains → hills → flat` — see also §4.2 foothills).
+- Interior children (near no qualifying neighbor) receive **no** Pass-A deviation → uniform-region cores stay uniform (anti-over-variation).
+
+This makes boundaries **directional and natural**, and it is the primary anti-uniformity mechanism without being random — the variation *points* at the neighbor.
+
+### 4.2 Pass B — Feature-driven local variation
+Within-parent features override/augment the base. These are the cases Jedidiah named:
+
+- **Riparian corridors (the oasis case).** Children a river edge passes through or adjacent to get a **+1 wetness step**:
+  - desert parent → riverside children become `clear` (grassland subtype) or, if latitude/precip permits, `jungle` (an oasis);
+  - clear parent → riverside → `woods` (gallery forest);
+  - the corridor follows the river's child path (from the inherited boundary constraints, `gdd-hex-subdivision.md §6.3` step 7), so it's a coherent ribbon, not scattered.
+- **Orographic foothills.** Around any `mountains` child (or toward a `mountains` neighbor), adjacent children step **mountains → hills → flat** in a ring, instead of a cliff edge. Same for `hills → flat` skirts. Deterministic ring, bounded by the elevation budget.
+- **Coastal fringe.** `ocean`/`lake`-adjacent land children get a beach/marsh/`clear` deviation (coast is rarely the parent's interior biome).
+- **Rain-shadow (heightmap-era hook).** When continuous 6-mile height exists (`gdd-wilderness-hex-3d.md`), the lee side of a ridge gets a drier biome deviation. Hook only; off for MVP.
+
+Pass B claims budget after Pass A (features beat generic gradients where they conflict — a river oasis overrides a faint ecotone bias).
+
+### 4.3 Pass C — Coherent stochastic texture (patches)
+Whatever deviation budget remains after A and B is spent on **coherence-smoothed noise** (`gdd-hex-subdivision.md §6.5`) to create natural, feature-independent **patches**:
+
+- **Dense vs light forest** via `biome_subtype` (`forest_dense` vs the base `woods`) — the cheapest, highest-value texture, and exactly Jedidiah's "patches of dense and light forest."
+- Copses in grassland (`woods` specks in `clear`), rocky scrub in desert (`desert_badlands` subtype), tundra/taiga mottling.
+- Clustered (smoothed noise) so patches are 2–3 contiguous children, never single-cell speckle.
+
+Because A and B usually consume most of the budget near boundaries/features, Pass C dominates only in **uniform interiors**, adding gentle texture where there's nothing else going on — which is precisely where "16 identical tiles" would otherwise occur.
+
+### 4.4 Polity-boundary feathering + culture-% interpolation
+Political and cultural geography dither across the children too (Jedidiah's explicit ask).
+
+- **Polity-boundary feathering.** A child near a parent boundary with a **different owning polity** may flip ownership to that neighbor with probability scaled by:
+  - **contested-ness** — how much war/conquest/pillage history that border carried (from the event log / `setting_polities` provenance): hotly-contested borders feather more (raids blur the line); quiet borders stay crisp;
+  - **terrain hardness** — rivers/mountains/coast **dampen** feathering (natural defensible borders hold); open plains feather freely.
+  Bounded so a polity never loses its **core** children (only outer-ring boundary children flip). Result: jagged, terrain-respecting borders at 6-mile instead of 24-mile-hex steps.
+- **Culture-% interpolation.** Each child's `culture_weights` = `P`'s weights **blended toward adjacent parents' weights** by edge proximity (the Pass-A gradient), renormalized, with the **minimum-presence floor** (default 0.1%) retained. A border child genuinely has mixed population — consistent with the substrate philosophy (traders, refugees, persecuted minorities appear anywhere). `alignment_weights` interpolate the same way. (These feed runtime NPC culture + derived religion; persisted on the 6-mile hex per the source-of-truth rule, or read-back from the parent for MVP per `gdd-setting-runtime-materialization.md §5.10`.)
+
+### 4.5 The uniformity ↔ noise dial
+The three strength parameters give a single tunable axis:
+- **Low strengths** → near-uniform children (the §6 base alone).
+- **High strengths** → strong ecotones/features/patches.
+- The **priority ordering** (A → B → C within a fixed budget) guarantees the character: structured deviation at boundaries/features, gentle texture in interiors, never random chaos (budget cap) and never flat (texture floor).
+These are **eyeball-tunable** once a real region renders (godot-ai MCP) — expect a calibration pass, like the history-sim knobs.
+
+---
+
+## 5. Content Placement
+
+After terrain (§4), place content onto the resolved children. Tagged 24-mile content projects down; new minor 6-mile content scatters; roads/rivers generate.
+
+### 5.1 Carrier-child projection (24-mile tags → 6-mile)
+Each 24-mile-tagged settlement (`setting_settlements`), dungeon (`setting_ruin_seeds`), POI (`setting_poi_seeds`), and fortification (`setting_fortifications`) is placed on **exactly one** of the 16 children — the **carrier child** (`gdd-hex-subdivision.md §6.3` step 6: highest-noise child, biased toward roads/rivers/lower-impedance terrain for settlements; toward dramatic/remote terrain for dungeons). Writes the runtime stub row (`settlement_entrances`, `dungeon_entrances`, `pois` with own context, `strongholds`).
+
+### 5.2 Minor 6-mile content scatter
+The 24-mile scale intentionally omits sub-threshold content; the 6-mile scale adds it, **budgeted** (not noise):
+- **Minor settlements** (hamlets/villages below the 24-mile cut): up to ~the regional ~15-settlement-points budget (`acore:412`, re-verify), placed on civilized/borderlands children near roads/water, market class from their own families. Full `settlement_entrances` stubs.
+- **Lesser ruins / wilderness POIs:** a small budget of geometric dungeons + natural-feature POIs on dramatic children, reusing the setting-gen scoring heuristics at 6-mile.
+- **Emergent lairs are NOT placed here** — `gdd-lair-discovery.md`'s lazy per-hex lair system continues to own them and coexists (authored landmarks vs emergent lairs).
+
+### 5.3 Beastman per-race intermingling (the deferred "Part B")
+A 24-mile beastman/clanhold area carries one generic culture + a race hint. At zoom-in, materialize the **per-race mix** from `data/setting_generation/beastman_distribution.json`:
+- per child, roll `clanhold_chance_per_6_mile_hex` for the child's terrain; on a hit, roll the per-terrain **race d100**;
+- create a clanhold (a clanhold-style domain + `strongholds.archetype='clanhold'` + a `BeastmanRulerMaterializer` chieftain), with **family composition** per race (1 warrior + N noncombatants; ogre/troll ×4 families + 4× land); set `available_tribal_warriors` = families.
+- Eager within the generated area; lazy at the frontier. Deterministic per child seed.
+
+### 5.4 Road & river generation (Decision 7h)
+- **Project** the 24-mile roads/rivers down to their child boundary constraints (`gdd-hex-subdivision.md §6.3` step 7; §5.2 road/river aggregation in reverse), detailing the interior path biased by terrain (roads prefer cleared/civilized + low impedance; rivers follow the wetness/elevation gradient).
+- **Generate new** 6-mile roads/rivers to connect the **newly-placed minor settlements** (§5.2) that did not exist at 24-mile — short local roads to the nearest existing road/settlement; minor streams along low-elevation child chains feeding the main rivers. Persist road metadata in the runtime `roads` entity (class/name/purpose) + `hex_overlays` geometry; rivers in `hex_river_edges` (+ width).
+
+### 5.5 Population distribution
+Distribute each parent's `population_band` across its civilized/borderlands children weighted by land value / settlement presence, **with no hard cap** (the clanhold 125 soft limit is a runtime economy penalty, §2). Write per-child `domain_hexes` land values; aggregate to the domain's `peasant_families`.
+
+---
+
+## 6. The Rolling, Persisted Frontier
+
+One growing `regional_6mi` `hex_maps` row (per `gdd-setting-runtime-materialization.md §4.3`), not discrete windows.
+
+- **Initial extent:** the eager ~30×40 around the start city, snapped to whole 24-mile parents (footprint = those parents).
+- **Growth trigger:** when the party comes within a threshold distance of the generated frontier (a tunable ring, e.g. 3–4 six-mile hexes from the edge), schedule a `zoom_in_requested` event (`gdd-realtime-scheduler.md`) for the next parent(s) just beyond the edge; it completes before movement resumes.
+- **Append + persist:** the new parent's 16 children + content are written to the **same** map and footprint, permanently. Never regenerated, never discarded → no seam (the false "cross-window" concern is moot).
+- **Newly-located domains:** an off-camera abstracted domain whose hexes the frontier reaches becomes **located** (gains `location_map_id` + `domain_hexes`) append-only; the migration-119 `compute_consistent_domain_hex_set` reconciles its cross-scale hex set.
+- **Determinism:** growth order doesn't matter — each parent's children are a pure function of its seed, so the same hexes always resolve identically regardless of when the player reaches them.
+
+---
+
+## 7. Determinism & Data Model
+
+- **Seeding:** every roll keys on `(campaign_seed, parent_q, parent_r, child_local_q, child_local_r [, salt])` via `WorldGenRng` (`gdd-hex-subdivision.md §6.2`); per-pass salts keep A/B/C/dither independent. No `Date.now()`/global RNG.
+- **Writes:** `hex_cells` (16/parent, + `elevation_raw`), `hex_river_edges`, `hex_overlays` + `roads` entity, `settlement_entrances`, `dungeon_entrances`, `pois` (+context), `strongholds`, `domain_hexes`, clanhold `domains`/`characters` — all on the `regional_6mi` play map, campaign-scoped.
+- **Source of truth:** once a parent is zoomed, its 6-mile rows are authoritative; pre-zoom reads fall back to `setting_hexes` (`gdd-setting-runtime-materialization.md §4.2`).
+- **Idempotence:** a parent is zoomed at most once (guard on footprint membership); re-entry is a no-op.
+
+---
+
+## 8. Open Questions / Architectural Concerns
+
+- **Chunk size + unload policy.** §3.2 lever 1 needs a concrete chunk granularity and an LRU/radius unload rule; pick after profiling the image-build at the frontier. Persisted data is never unloaded — only render images.
+- **Strength-dial calibration (§4.5).** `grad_strength`/`feature_strength`/`texture_strength` + the feathering probability need an eyeball pass on a rendered region (godot-ai MCP), like the history-sim knobs. Start conservative.
+- **6-mile `elevation_raw` synthesis.** Children currently inherit the parent's raw height flat; true continuous 6-mile height (for foothill heightmaps + rain-shadow §4.2) is a joint concern with `gdd-wilderness-hex-3d.md`. The variation passes are written to consume it when it exists.
+- **`acore:412` settlement-point budget — RE-VERIFY** the citation + number at build (sourced from setting-gen notes, not re-read here).
+- **Ecotone direction at corners.** A corner child borders two neighbors; resolve the gradient by the stronger (nearer/larger-impedance-gap) neighbor, or blend — decide at implementation, low stakes.
+- **Polity feathering vs. domain-hex consistency.** Feathered ownership at 6-mile must still satisfy the migration-119 cross-scale consistency check (a child flipping owner means the parent's aggregated ownership must still hold). Confirm the feathering stays within the "parent owner = plurality of children" tolerance.
+- **Frontier prefetch.** Optionally pre-zoom one parent-ring ahead of the trigger during idle, to hide even the 16-hex hitch. Defer unless profiling demands it.
+
+---
+
+## 9. Revision History
+
+- **2026-06-16 (v0.1):** Initial draft, authored as the critical-path content pass for `gdd-setting-runtime-materialization.md` Phase M2, in response to Jedidiah's three build-time concerns: §3 performance/optimization model (grounded in real map sizes + the chunked-render lever + off-camera compression); §4 the natural-variation algorithm (neighbor-gradient ecotones + feature-driven local variation incl. river oases & foothills + coherent stochastic patches + polity/culture dithering, with a uniformity↔noise dial); §5 content placement (carrier-child projection, minor scatter, beastman intermingling, road/river generation); §6 the rolling/persisted frontier. Enriches `gdd-hex-subdivision.md §6` (the terrain base) rather than restating it.
