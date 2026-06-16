@@ -202,8 +202,15 @@ func test_polities_have_ruler_level_and_class() -> void:
 				"beastman polity %s should have a ruler level ≥ 1, got %d" % [p.id, p.ruler_level])
 		else:
 			check(int(p.ruler_level) >= 4, "polity %s should have a ruler level (≥ Barony's 4), got %d" % [p.id, p.ruler_level])
-			check(str(p.ruler_class) in ["fighter", "cleric", "thief", "mage"],
-				"polity %s ruler_class should be an ACKS progression, got '%s'" % [p.id, p.ruler_class])
+			# Demihuman realms are ruled by the race's class equivalent (no cleric for
+			# elves, no mage for dwarves; Jedidiah 2026-06-16); humans keep the bare
+			# progression id.
+			var valid: Array = ["fighter", "cleric", "thief", "mage"]
+			match CultureCatalogLoader.race(rec):
+				"elf": valid = ["elven_spellsword", "elven_courtier", "elven_enchanter"]
+				"dwarf": valid = ["dwarven_vaultguard", "dwarven_delver", "dwarven_craftpriest"]
+			check(str(p.ruler_class) in valid,
+				"polity %s ruler_class should be valid for its race, got '%s'" % [p.id, p.ruler_class])
 
 
 func test_morale_seed_persisted() -> void:

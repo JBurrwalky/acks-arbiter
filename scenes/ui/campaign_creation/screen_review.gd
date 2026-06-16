@@ -107,7 +107,7 @@ func _build_ui() -> void:
 	# Legend column: the map key, VERTICAL alongside the map (was a horizontal strip
 	# under it). Fixed width; scrolls vertically when a world has many realms.
 	var legend_col := VBoxContainer.new()
-	legend_col.custom_minimum_size = Vector2(210, 0)
+	legend_col.custom_minimum_size = Vector2(330, 0)
 	legend_col.add_theme_constant_override("separation", 6)
 	body.add_child(legend_col)
 	var legend_title := Label.new()
@@ -128,8 +128,8 @@ func _build_ui() -> void:
 	# square-ish map drawing leaves, so the brief/realms/peoples text isn't cramped.
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.size_flags_stretch_ratio = 1.0
-	right.custom_minimum_size = Vector2(420, 0)
+	right.size_flags_stretch_ratio = 0.6
+	right.custom_minimum_size = Vector2(360, 0)
 	right.add_theme_constant_override("separation", 6)
 	body.add_child(right)
 	var side := TabContainer.new()

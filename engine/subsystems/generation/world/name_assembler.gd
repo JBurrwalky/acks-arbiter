@@ -53,7 +53,8 @@ static func pick_unused(pool: Array, rng: RandomNumberGenerator,
 			break
 	if base.is_empty():
 		return ""
-	for q in _QUALIFIERS:
+	# Shuffled qualifier order (not always "Upper" first) — see _unique_literal.
+	for q in _shuffled(_QUALIFIERS, rng):
 		var cand := _apply_qualifier(q, base)
 		if not seen.has(cand.to_lower()):
 			_mark(used, cid, cand)
@@ -134,11 +135,18 @@ static func realm_name(bank: Dictionary, tier_name: String, toponym: String,
 	var domain := NameBankLoader.domain_title(bank, tier_name)
 	# Beastman / scope-only ladders have no domain title — the horde IS the realm.
 	if domain.is_empty():
-		var horde := dynasty if not dynasty.is_empty() else capital_name
-		if horde.is_empty():
-			horde = toponym
-		return _unique_literal(horde if not horde.is_empty()
-			else "the %s Horde" % _safe(toponym, capital_name, "Wild"), used, cid)
+		# The dynasty (and any named capital) were ALREADY deduped + marked by their
+		# own naming passes, so a horde takes that root DIRECTLY. Re-running
+		# _unique_literal on an already-marked name always self-collides and stacks
+		# a qualifier on it — the cause of near-universal "Upper" and "Upper Lower
+		# Gnashrakk". Only the un-deduped toponym/horde fallback needs uniquifying.
+		if not dynasty.is_empty():
+			return dynasty
+		if not capital_name.is_empty():
+			return capital_name
+		var horde := toponym if not toponym.is_empty() \
+			else "the %s Horde" % _safe(toponym, capital_name, "Wild")
+		return _unique_literal(horde, used, cid, rng)
 	# Civ: build candidate roots most-distinctive first (capital, then dynasty
 	# House, then the shared people-toponym). Return the first "<domain> of <root>"
 	# not yet used — so same-culture realms vary by capital/House instead of piling
@@ -159,7 +167,7 @@ static func realm_name(bank: Dictionary, tier_name: String, toponym: String,
 			_mark(used, cid, cand)
 			return cand
 	# Every candidate root is taken → qualifier / Roman-numeral fallback.
-	return _unique_literal("%s of %s" % [domain, str(roots[rng.randi() % roots.size()])], used, cid)
+	return _unique_literal("%s of %s" % [domain, str(roots[rng.randi() % roots.size()])], used, cid, rng)
 
 
 ## A ruin/dungeon name (§9 adventure sites): "<size-styled site> of <toponym>".
@@ -243,14 +251,18 @@ static func _mark(used: Dictionary, cid: String, name: String) -> void:
 	used[cid][name.to_lower()] = true
 
 
-static func _unique_literal(name: String, used: Dictionary, cid: String) -> String:
+static func _unique_literal(name: String, used: Dictionary, cid: String,
+		rng: RandomNumberGenerator = null) -> String:
 	var seen: Dictionary = used.get(cid, {})
 	if name.is_empty():
 		return ""
 	if not seen.has(name.to_lower()):
 		_mark(used, cid, name)
 		return name
-	for q in _QUALIFIERS:
+	# Shuffle the qualifier order when an rng is supplied, so collisions don't all
+	# pile on "Upper" (the fixed index-0 qualifier).
+	var quals: Array = _shuffled(_QUALIFIERS, rng) if rng != null else _QUALIFIERS
+	for q in quals:
 		var cand := _apply_qualifier(q, name)
 		if not seen.has(cand.to_lower()):
 			_mark(used, cid, cand)

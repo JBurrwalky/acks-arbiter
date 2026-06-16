@@ -3014,6 +3014,11 @@ func _ruler_class_distribution(pol: Dictionary) -> Dictionary:
 		# No spheres → tilt collapses to the base, so dist = base (mostly fighter).
 		var tilt_v: float = float(tilt[cls]) / tilt_total if tilt_total > 0.0 else float(BASE[cls])
 		dist[cls] = lerpf(float(BASE[cls]), tilt_v, _c.ruler_class_blend)
+	# Demihuman class availability (Jedidiah 2026-06-16): elves field no cleric and
+	# dwarves no mage — zero the unavailable progression so it is never drawn.
+	match str(_inst(pol).get("race", "human")):
+		"elf": dist["cleric"] = 0.0
+		"dwarf": dist["mage"] = 0.0
 	return _normalize(dist)
 
 
@@ -3023,11 +3028,32 @@ func _ruler_class_for(pol: Dictionary) -> String:
 	var dist := _ruler_class_distribution(pol)
 	var roll := WorldGenRng.stream(_campaign_seed, "ruler_class", _n_ticks, str(pol["id"])).randf()
 	var acc := 0.0
+	var base := "fighter"
 	for cls in ["fighter", "cleric", "mage", "thief"]:
 		acc += float(dist[cls])
 		if roll < acc:
-			return cls
-	return "fighter"
+			base = cls
+			break
+	return _racialize_ruler_class(str(_inst(pol).get("race", "human")), base)
+
+
+## Map the drawn base progression to the race's class id (Jedidiah 2026-06-16):
+## elf fighter→Spellsword, thief→Courtier, mage→Enchanter (no cleric); dwarf
+## fighter→Vaultguard, thief→Delver, cleric→Craftpriest (no mage). Humans keep the
+## bare progression id. The `.get` fallback defends against an excluded class
+## slipping through (the distribution already zeroes it).
+const _ELF_RULER_CLASS := {
+	"fighter": "elven_spellsword", "thief": "elven_courtier", "mage": "elven_enchanter",
+}
+const _DWARF_RULER_CLASS := {
+	"fighter": "dwarven_vaultguard", "thief": "dwarven_delver", "cleric": "dwarven_craftpriest",
+}
+func _racialize_ruler_class(race: String, base: String) -> String:
+	if race == "elf":
+		return str(_ELF_RULER_CLASS.get(base, "elven_spellsword"))
+	if race == "dwarf":
+		return str(_DWARF_RULER_CLASS.get(base, "dwarven_vaultguard"))
+	return base
 
 
 ## Seeded present-day morale inputs (§12): the ruler-vs-population alignment

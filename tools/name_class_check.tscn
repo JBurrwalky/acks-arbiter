@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c6r47xmifg3lu"]
+
+[ext_resource type="Script" path="res://tools/name_class_check.gd" id="1_nc"]
+
+[node name="NameClassCheck" type="Node"]
+script = ExtResource("1_nc")
