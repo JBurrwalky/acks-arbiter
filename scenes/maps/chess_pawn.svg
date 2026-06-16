@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- White chess-pawn silhouette. Drawn in pure white so the renderer can
+       tint it per-party via Sprite2D.self_modulate. -->
+  <g fill="#ffffff">
+    <circle cx="32" cy="13" r="8.5"/>
+    <ellipse cx="32" cy="24" rx="11" ry="4.5"/>
+    <path d="M27 24 L37 24 L42 46 L22 46 Z"/>
+    <rect x="12" y="44" width="40" height="11" rx="4"/>
+  </g>
+</svg>

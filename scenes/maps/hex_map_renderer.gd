@@ -7,8 +7,7 @@ extends Node2D
 ##   ├── TerrainLayer (TileMapLayer)
 ##   ├── FogLayer (TileMapLayer)
 ##   ├── EntityLayer (Node2D)
-##   │   └── PartyToken (Sprite2D — texture bound by HeraldryRenderer)
-##   ├── HeraldryHolder (Node2D, invisible — hosts SubViewports for heraldry rendering)
+##   │   └── PartyToken (Sprite2D — chess-pawn art, tinted per party)
 ##   ├── Camera2D
 ##   └── HexHUD (CanvasLayer, layer=10)
 ##       └── TooltipPanel (PanelContainer)
@@ -80,7 +79,6 @@ const ZOOM_STEP := 0.1     # 10% additive per tick
 @onready var _fog_layer: TileMapLayer = $FogLayer
 @onready var _entity_layer: Node2D = $EntityLayer
 @onready var _party_token: Sprite2D = $EntityLayer/PartyToken
-@onready var _heraldry_holder: Node2D = $HeraldryHolder
 @onready var _camera: Camera2D = $Camera2D
 @onready var _tooltip_panel: PanelContainer = $HexHUD/TooltipPanel
 @onready var _tooltip_label: Label = $HexHUD/TooltipPanel/TooltipLabel
@@ -119,12 +117,10 @@ var _settlement_entrance_cache: Dictionary = {}
 ## Multi-party token management: party_id → Sprite2D
 var _party_tokens: Dictionary = {}
 
-## party_id → HeraldryRenderer that drives the token's texture.
-## Includes the primary party as well as split parties; one renderer per token.
-var _heraldry_renderers: Dictionary = {}
-
-## Token dimensions in pixels (applied as Sprite2D texture render target size).
-const HERALDRY_TOKEN_PX := 64
+## Chess-pawn token art, loaded lazily and shared across all party tokens.
+## Each party's token is the same pawn texture, tinted via self_modulate.
+const PAWN_TEXTURE_PATH := "res://scenes/maps/chess_pawn.svg"
+var _pawn_texture: Texture2D = null
 
 ## Axial coord → party_id. Rebuilt alongside tokens; consulted on left-click to
 ## decide whether the click lands on a party token (active-party selection) or
@@ -162,8 +158,8 @@ func _ready() -> void:
 	add_child(_overlay_layer)
 	move_child(_overlay_layer, _fog_layer.get_index())
 
-	# The primary party token is a Sprite2D in the scene; its texture is bound
-	# on first _rebuild_party_tokens() from the party's heraldry descriptor.
+	# The primary party token is a Sprite2D in the scene; its pawn texture and
+	# tint are bound on first _rebuild_party_tokens().
 
 	# Connect party lifecycle signals for multi-party token management
 	EventBus.party_split.connect(_on_party_split)
@@ -173,7 +169,6 @@ func _ready() -> void:
 	# tokens. The controller's `party_moved` signal only fires for the
 	# primary party, so this catches the rest.
 	EventBus.party_hex_changed.connect(_on_party_hex_changed)
-	EventBus.heraldry_changed.connect(_on_heraldry_changed)
 
 	# Phase 9C polish: live-refresh landmark icons when a stronghold is
 	# completed (status flips to 'completed') or destroyed (status flips to
@@ -695,8 +690,8 @@ func _update_party_token_position() -> void:
 
 
 ## Rebuilds all party tokens from the database. Creates/removes Sprite2D nodes
-## and their paired HeraldryRenderer instances as needed. Active party token is
-## full-bright at 1.15×; inactive tokens are slightly desaturated at 0.9×.
+## as needed. Active party token is full-bright at 1.15×; inactive tokens are
+## slightly desaturated at 0.9×.
 ## Migration 119 — decide where a party should render on the currently-
 ## loaded map. Returns a dict with keys:
 ##   "hex": Vector2i — the coordinate to place the token at on this map
@@ -785,13 +780,12 @@ func _rebuild_party_tokens() -> void:
 		var token := _get_or_create_token_for_party(pid)
 		var godot_coord := HexMapController.axial_to_godot_map(coord)
 		token.position = _terrain_layer.map_to_local(godot_coord)
-		_ensure_heraldry_for_party(pid, token)
+		_ensure_token_art_for_party(pid, token)
 		_style_token(token, pid == active_id)
 		_index_party_hex(coord, pid, active_id)
 
 	# Remove split-party tokens whose parties no longer exist.
-	# The scene-defined primary token is never removed; its heraldry renderer
-	# is left in place even if the party transiently disappears from DB.
+	# The scene-defined primary token is never removed.
 	var stale_ids: Array = []
 	for pid in _party_tokens:
 		if not valid_ids.has(pid):
@@ -801,7 +795,6 @@ func _rebuild_party_tokens() -> void:
 		if is_instance_valid(token):
 			token.queue_free()
 		_party_tokens.erase(pid)
-		_free_heraldry_renderer(pid)
 
 
 ## Returns the Sprite2D token for [param party_id], creating one if missing.
@@ -818,30 +811,29 @@ func _get_or_create_token_for_party(party_id: String) -> Sprite2D:
 	return token
 
 
-## Ensures the party has a HeraldryRenderer in _heraldry_renderers and its
-## texture is bound to [param token]. Fetches the descriptor from the DB on
-## first call; subsequent calls are cheap no-ops unless the descriptor changed.
-func _ensure_heraldry_for_party(party_id: String, token: Sprite2D) -> void:
-	var renderer: HeraldryRenderer = _heraldry_renderers.get(party_id, null)
-	if renderer == null or not is_instance_valid(renderer):
-		renderer = HeraldryRenderer.new()
-		_heraldry_holder.add_child(renderer)
-		_heraldry_renderers[party_id] = renderer
-		var descriptor := CampaignRepository.get_heraldry_for_party(party_id)
-		if descriptor == null:
-			# Shouldn't happen post-backfill, but stay defensive — use an
-			# empty descriptor with defaults so the token still renders.
-			descriptor = HeraldryDescriptor.new()
-		renderer.update_descriptor(descriptor, HERALDRY_TOKEN_PX)
-	if token.texture != renderer.get_texture():
-		token.texture = renderer.get_texture()
+## Binds the chess-pawn art to [param token] and tints it with the party's
+## color. Replaces the old heraldry-shield rendering — the pawn texture is
+## shared, so only the per-token self_modulate distinguishes parties.
+func _ensure_token_art_for_party(party_id: String, token: Sprite2D) -> void:
+	var tex := _get_pawn_texture()
+	if tex != null and token.texture != tex:
+		token.texture = tex
+	token.self_modulate = _pawn_color_for_party(party_id)
 
 
-func _free_heraldry_renderer(party_id: String) -> void:
-	var renderer: HeraldryRenderer = _heraldry_renderers.get(party_id, null)
-	if renderer != null and is_instance_valid(renderer):
-		renderer.queue_free()
-	_heraldry_renderers.erase(party_id)
+## Loads (and caches) the shared chess-pawn texture.
+func _get_pawn_texture() -> Texture2D:
+	if _pawn_texture == null or not is_instance_valid(_pawn_texture):
+		_pawn_texture = load(PAWN_TEXTURE_PATH)
+	return _pawn_texture
+
+
+## Deterministic vivid color for a party. Derived from a stable hash of the
+## party id so a token keeps the same "random" color across rebuilds, while
+## different parties get visually distinct hues.
+func _pawn_color_for_party(party_id: String) -> Color:
+	var hue := float(posmod(hash(party_id), 360)) / 360.0
+	return Color.from_hsv(hue, 0.65, 0.95)
 
 
 ## Records a party's hex for left-click lookup. When multiple parties share a
@@ -854,8 +846,8 @@ func _index_party_hex(coord: Vector2i, party_id: String, active_id: String) -> v
 		_party_hex_index[coord] = party_id
 
 
-## Creates a new Sprite2D party token node. The texture is bound later by
-## _ensure_heraldry_for_party once the paired HeraldryRenderer has rendered.
+## Creates a new Sprite2D party token node. The pawn texture and tint are
+## bound later by _ensure_token_art_for_party.
 func _create_party_token_node() -> Sprite2D:
 	var token := Sprite2D.new()
 	token.centered = true
@@ -937,26 +929,6 @@ func _on_party_hex_changed(_party_id: String, _hex: Vector2i) -> void:
 	_update_enter_settlement_button()
 
 
-## Looks up which party owns the changed heraldry and re-renders just that
-## token's shield in place. Skips rebuilding all tokens — the change doesn't
-## affect other parties, and the Sprite2D.texture reference remains stable.
-func _on_heraldry_changed(heraldry_id: String) -> void:
-	if GameState.campaign_id.is_empty():
-		return
-	var all_parties: Array = CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
-	for p in all_parties:
-		if str(p.get("heraldry_id", "")) != heraldry_id:
-			continue
-		var pid: String = p.id
-		var renderer: HeraldryRenderer = _heraldry_renderers.get(pid, null)
-		if renderer == null or not is_instance_valid(renderer):
-			# No renderer yet for this party; rebuild will create one on next pass.
-			_rebuild_party_tokens()
-			return
-		var descriptor := CampaignRepository.get_heraldry_for_party(pid)
-		if descriptor != null:
-			renderer.update_descriptor(descriptor, HERALDRY_TOKEN_PX)
-		return
 
 
 ## Places a "D" label marker on each revealed hex that has a dungeon entrance.
