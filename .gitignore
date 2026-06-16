@@ -32,3 +32,9 @@ Thumbs.db
 
 # Agent worktrees (claude-code parallel runs)
 .claude/worktrees/
+
+# Large generated/media video files — exceed GitHub's 100MB push limit; keep out of git.
+*.avi
+*.mp4
+*.mov
+*.mkv
