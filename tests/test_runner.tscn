@@ -479,6 +479,7 @@
 [ext_resource type="Script" path="res://tests/test_campaign_creation_seams.gd" id="463_campaign_creation_seams_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_rebellion.gd" id="464_setting_rebellion_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_beastman.gd" id="465_setting_beastman_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_materialization.gd" id="466_setting_materialization_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1916,3 +1917,6 @@ script = ExtResource("464_setting_rebellion_tests")
 
 [node name="SettingBeastmanTests" type="Node" parent="."]
 script = ExtResource("465_setting_beastman_tests")
+
+[node name="SettingMaterializationTests" type="Node" parent="."]
+script = ExtResource("466_setting_materialization_tests")

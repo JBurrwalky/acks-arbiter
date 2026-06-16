@@ -32,7 +32,12 @@ CREATE TABLE IF NOT EXISTS campaigns (
     last_customs_roll_year INTEGER NOT NULL DEFAULT 0,
     -- Migration 155: the party the player was watching at last save; the
     -- session loader prefers it over the unordered LIMIT-1 pick. '' = none.
-    last_active_party_id TEXT NOT NULL DEFAULT ''
+    last_active_party_id TEXT NOT NULL DEFAULT '',
+    -- Migration 163: 'generated' (materialized from setting_* by SettingMaterializer)
+    -- vs 'fixture' (TestContentSeeder). The two paths must never both run for one
+    -- campaign. See gdd-setting-runtime-materialization.md §11.
+    campaign_origin TEXT NOT NULL DEFAULT 'fixture'
+        CHECK(campaign_origin IN ('fixture', 'generated'))
 );
 
 CREATE TABLE IF NOT EXISTS characters (
@@ -315,7 +320,11 @@ CREATE TABLE IF NOT EXISTS pois (
     discovered           INTEGER NOT NULL DEFAULT 0 CHECK(discovered IN (0, 1)),
     discovered_at_round  INTEGER NOT NULL DEFAULT 0,
     faction_id           TEXT    NOT NULL DEFAULT '',
-    seed                 INTEGER NOT NULL DEFAULT 0
+    seed                 INTEGER NOT NULL DEFAULT 0,
+    -- Migration 167: self-contained context + rumor seeds (6-mile-generated POIs
+    -- have no setting_poi_seeds row to read back from). JSON.
+    context              TEXT    NOT NULL DEFAULT '{}',
+    rumor_seeds          TEXT    NOT NULL DEFAULT '[]'
 );
 
 CREATE INDEX IF NOT EXISTS idx_pois_hex
@@ -679,6 +688,10 @@ CREATE TABLE IF NOT EXISTS hex_cells (
     original_biome TEXT NOT NULL DEFAULT '',
     fog_state TEXT NOT NULL DEFAULT 'hidden'
         CHECK(fog_state IN ('hidden', 'explored', 'visible')),
+    -- Migration 164: raw continuous elevation (≈0..1) from setting gen, persisted
+    -- for the future 2D→3D wilderness renderer (gdd-wilderness-hex-3d.md). 0.0 =
+    -- legacy / unknown (fixture maps).
+    elevation_raw REAL NOT NULL DEFAULT 0.0,
     PRIMARY KEY (map_id, q, r)
 );
 
@@ -711,11 +724,30 @@ CREATE TABLE IF NOT EXISTS hex_river_edges (
         CHECK(navigability IN ('none', 'small_craft', 'river_craft', 'large_craft')),
     crossing        TEXT    NOT NULL DEFAULT 'none'
         CHECK(crossing IN ('none', 'bridge', 'ford', 'ferry')),
+    -- Migration 166: river width class from setting gen (free text; '' = unknown).
+    width_category  TEXT    NOT NULL DEFAULT '',
     PRIMARY KEY (map_id, hex_q, hex_r, edge)
 );
 
 CREATE INDEX IF NOT EXISTS idx_hex_river_edges_owner
     ON hex_river_edges(map_id, hex_q, hex_r);
+
+-- Migration 165: runtime `roads` as first-class entities (ordered hex path + class
+-- + purpose + name). hex_overlays carries per-cell render geometry; this carries
+-- the road entity so the game knows WHERE roads are and WHAT they are, and 6-mile
+-- zoom-in can add new roads. Mirrors generator-side setting_roads.
+CREATE TABLE IF NOT EXISTS roads (
+    id            TEXT    PRIMARY KEY,
+    campaign_id   TEXT    NOT NULL REFERENCES campaigns(id),
+    map_id        TEXT    NOT NULL REFERENCES hex_maps(id),
+    hexes         TEXT    NOT NULL DEFAULT '[]',
+    road_class    TEXT    NOT NULL DEFAULT 'road'
+        CHECK(road_class IN ('highway', 'road', 'track')),
+    purpose       TEXT    NOT NULL DEFAULT '',
+    name          TEXT    NOT NULL DEFAULT '',
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_roads_map ON roads(map_id);
 
 CREATE TABLE IF NOT EXISTS domains (
     id TEXT PRIMARY KEY,

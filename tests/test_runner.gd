@@ -566,6 +566,8 @@ extends Node
 @onready var _setting_rebellion_tests = $SettingRebellionTests
 # 2026-06-15 — §7.4 beastman clanhold cap / raze / contiguity
 @onready var _setting_beastman_tests = $SettingBeastmanTests
+# 2026-06-16 — Setting→runtime materialization M0 (24-mile world map)
+@onready var _setting_materialization_tests = $SettingMaterializationTests
 
 
 func _ready() -> void:
@@ -1142,7 +1144,9 @@ func run() -> void:
 			# 2026-06-15 — §7.4b genocide rebellions
 			_setting_rebellion_tests,
 			# 2026-06-15 — §7.4 beastman clanhold cap / raze / contiguity
-			_setting_beastman_tests]:
+			_setting_beastman_tests,
+			# 2026-06-16 — Setting→runtime materialization M0 (24-mile world map)
+			_setting_materialization_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
