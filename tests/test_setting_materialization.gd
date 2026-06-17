@@ -1,22 +1,28 @@
 extends "res://tests/test_suite_base.gd"
 
-## Phase M0 acceptance: SettingMaterializer turns a generated + LOCKED setting into
-## a runtime 24-mile world map (hex_maps + hex_cells [+elevation_raw] + river edges
-## [+width] + the roads entity). Proves the bridge from setting_* → runtime tables.
-## Later phases (polities/rulers/6-mile play map/party) are not exercised here.
+## SettingMaterializer acceptance — M0 (24-mile world map) + M1 (political layer:
+## realms + abstracted domains + sovereign rulers, incl. the monster-statblock
+## beastman-ruler path and the tribute-title translation). Generates a small/short
+## world, locks it, materializes, and verifies the runtime tables. M2 (6-mile play
+## map + located domains + party) is not exercised here.
 
 const MAP := "small"
 const SHORT := "short"
 
+var _mat_result: Dictionary = {}
+
 
 func run_all_tests() -> void:
 	NameBankLoader.clear_cache()
+	test_ruler_title_translation()  # pure unit test of the tribute-title mapping (Q1)
 	var cid := _generate(424242)  # generated, NOT yet locked
 	if not cid.is_empty():
 		# Order matters: guard runs while unlocked; then we lock and materialize.
 		test_guard_refuses_unlocked(cid)
 		SettingRepository.lock_setting(cid, "deadbeefcafe")
-		test_world_map_materialized(cid)
+		test_world_map_materialized(cid)        # runs materialize() (M0 + M1)
+		test_political_layer_materialized(cid)  # asserts the M1 output
+		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
 	if not has_failures():
@@ -45,6 +51,7 @@ func test_guard_refuses_unlocked(cid: String) -> void:
 
 func test_world_map_materialized(cid: String) -> void:
 	var res: Dictionary = SettingMaterializer.new().materialize(cid)
+	_mat_result = res
 	check(bool(res.get("ok", false)), "materialize ok (errors: %s)" % str(res.get("errors", [])))
 	var wid := String(res.get("world_map_id", ""))
 	check(wid != "", "world_map_id returned")
@@ -107,6 +114,127 @@ func test_campaign_origin_generated(cid: String) -> void:
 	if not CampaignRepository.db.query_result.is_empty():
 		check(String(CampaignRepository.db.query_result[0].get("o", "")) == "generated",
 			"campaign_origin marked 'generated'")
+
+
+func test_political_layer_materialized(cid: String) -> void:
+	var db = CampaignRepository.db
+	var polities: Array = SettingRepository.list_polities(cid)
+	var sovereigns: Array = []
+	var vassals: Array = []
+	for p in polities:
+		var liege := str(p.get("liege_id", ""))
+		if liege == "0":
+			liege = ""
+		if liege.is_empty():
+			sovereigns.append(p)
+		else:
+			vassals.append(p)
+
+	# Result counts.
+	check(int(_mat_result.get("realm_count", -1)) == sovereigns.size(),
+		"realm_count == sovereigns (%d)" % sovereigns.size())
+	check(int(_mat_result.get("domain_count", -1)) == polities.size(),
+		"domain_count == polities (%d)" % polities.size())
+	check(int(_mat_result.get("ruler_count", -1)) == sovereigns.size(), "ruler_count == sovereigns")
+
+	# DB row counts.
+	check(_count("realms", "campaign_id", cid) == sovereigns.size(), "realms rows == sovereigns")
+	check(_count("domains", "campaign_id", cid) == polities.size(), "domains rows == polities")
+
+	# Realms: all 'foreign' at M1; head FK-resolves.
+	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind != 'foreign'", [cid]) == 0,
+		"all realms are 'foreign' at M1 (promotion deferred to M2)")
+	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND (head_character_id IS NULL OR head_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?))", [cid, cid]) == 0,
+		"every realm head resolves to a character")
+
+	# Domains: abstracted (no location), culture threaded, FK integrity.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id IS NOT NULL", [cid]) == 0,
+		"all M1 domains are abstracted (no location)")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND (realm_id IS NULL OR realm_id NOT IN (SELECT id FROM realms WHERE campaign_id = ?))", [cid, cid]) == 0,
+		"every domain.realm_id resolves to a realm")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [cid, cid]) == 0,
+		"every liege_domain_id resolves (no dangling)")
+	# domain_style matches civ_or_clan_state.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND domain_style NOT IN ('civilized','clanhold')", [cid]) == 0,
+		"all domain_style values valid")
+
+	# No re-roll: for every distinct GENERATED sovereign ruler_class, a matching ruler
+	# character exists (covers human bare / elven_*/dwarven_* / *_chieftain).
+	var seen := {}
+	for p in sovereigns:
+		var rc := str(p.get("ruler_class", ""))
+		if seen.has(rc):
+			continue
+		seen[rc] = true
+		check(_scalar("SELECT COUNT(*) AS n FROM characters WHERE campaign_id = ? AND character_type = 'npc' AND character_class = ?", [cid, rc]) >= 1,
+			"a ruler exists for generated class '%s' (no re-roll)" % rc)
+
+	# Ruler levels honored (not all stubbed at level 1).
+	var max_gen_level := 0
+	for lp in sovereigns:
+		max_gen_level = maxi(max_gen_level, int(lp.get("ruler_level", 1)))
+	if max_gen_level > 1:
+		check(_scalar("SELECT COUNT(*) AS n FROM characters WHERE campaign_id = ? AND character_type = 'npc' AND level > 1", [cid]) >= 1,
+			"ruler levels honored (a level > 1 ruler exists; generated max %d)" % max_gen_level)
+
+	# Vassal tribute > 0 proves the Barony→Baron title translation fired.
+	if vassals.size() > 0:
+		check(_scalar("SELECT COALESCE(SUM(tribute_out_owed),0) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL", [cid]) > 0,
+			"at least one vassal owes tribute (title translation works)")
+	# Sovereign domains owe nothing.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NULL AND tribute_out_owed != 0", [cid]) == 0,
+		"sovereign domains owe no tribute")
+
+	# Culture threaded onto a sampled domain.
+	if sovereigns.size() > 0:
+		var sc := str(sovereigns[0].get("culture_id", ""))
+		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND culture_id = ?", [cid, sc]) >= 1,
+			"culture_id threaded onto domains")
+
+
+func test_beastman_ruler_direct(cid: String) -> void:
+	# Exercise the monster-ruler path directly (independent of whether the generated
+	# world happened to include a beastman sovereign).
+	var char_id := BeastmanRulerMaterializer.build_and_persist("goblin_chieftain", 3, cid, {
+		"name": "Test Warlord", "alignment": "chaotic", "culture_id": "beastmen",
+	})
+	check(char_id != "", "beastman ruler persisted")
+	if char_id == "":
+		return
+	CampaignRepository.db.query_with_bindings("SELECT * FROM characters WHERE id = ?", [char_id])
+	check(not CampaignRepository.db.query_result.is_empty(), "beastman character row exists")
+	if CampaignRepository.db.query_result.is_empty():
+		return
+	var c: Dictionary = CampaignRepository.db.query_result[0]
+	check(String(c.get("character_class", "")) == "goblin_chieftain", "character_class verbatim (goblin_chieftain)")
+	check(String(c.get("race", "")) == "goblin", "race recovered (goblin)")
+	check(int(c.get("level", 0)) == 3, "level honored (3)")
+	check(String(c.get("combat_progression", "")) in ["fighter", "cleric", "thief", "mage"],
+		"combat_progression satisfies the CHECK domain")
+	check(int(c.get("armor_class", 0)) != 0, "armor_class derived from catalog (not default 0)")
+	check(int(c.get("hp_max", 0)) > 0, "hp_max derived from catalog")
+	check(int(c.get("base_movement", 0)) > 0, "base_movement derived")
+	check(String(c.get("character_type", "")) == "npc", "character_type npc")
+	check(String(c.get("npc_role", "")) == "named_npc", "npc_role named_npc")
+
+
+func test_ruler_title_translation() -> void:
+	# Q1: DomainTierTable domain titles -> the ruler-title keys AbstractTributeResolver
+	# uses. Without this, vassal tribute silently zeroes.
+	check(SettingMaterializer.ruler_title_for("Barony") == "Baron", "Barony→Baron")
+	check(SettingMaterializer.ruler_title_for("March") == "Marquis", "March→Marquis")
+	check(SettingMaterializer.ruler_title_for("County") == "Count", "County→Count")
+	check(SettingMaterializer.ruler_title_for("Duchy") == "Duke", "Duchy→Duke")
+	check(SettingMaterializer.ruler_title_for("Principality") == "Prince", "Principality→Prince")
+	check(SettingMaterializer.ruler_title_for("Kingdom") == "King", "Kingdom→King")
+	check(SettingMaterializer.ruler_title_for("Empire") == "Emperor", "Empire→Emperor")
+
+
+func _scalar(sql: String, binds: Array) -> int:
+	CampaignRepository.db.query_with_bindings(sql, binds)
+	if CampaignRepository.db.query_result.is_empty():
+		return -1
+	return int(CampaignRepository.db.query_result[0].get("n", -1))
 
 
 func _has_error(res: Dictionary, fragment: String) -> bool:
