@@ -35346,3 +35346,29 @@ on-tick dispatch.
 **Next session should:**
 1. **Phase M2** — the 6-mile regional play map via the region zoom-in (`gdd-region-zoom-in.md`): located domains + `domain_hexes` + settlements + `hex_overlays` road geometry + in-region vassal-chain rulers + realm_kind promotion + party placement (M3). This is the big one (the natural-variation algorithm + content placement).
 2. Confirm with Jedidiah the `realm_kind` default + whether human-ruler `npc_role` needs an override.
+
+
+## Session 2026-06-16 — Setting→runtime materialization M2a (6-mile regional play map terrain)
+
+**Task:** Phase M2a of the setting→runtime handoff: build the `regional_6mi` play map (the surface play actually happens on) from the 24-mile world map — the child map + per-child TERRAIN with natural variation, per `generation/gdd-region-zoom-in.md` §4/§6. (Content placement, located domains, roads, dithering, party = later M2/M3 increments.)
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- **NEW `engine/subsystems/generation/materialization/region_zoom_in.gd`** (`class_name RegionZoomIn`, RefCounted). `build_start_region(campaign_id, world_map_id, start_settlement_id := "") -> {ok, errors, region_map_id, parent_count, child_count, center}`: picks the window center (the chosen start settlement's 24-mile hex, else the largest civilized settlement by market_class, else extent midpoint) → computes a `WINDOW_W_PARENTS`(8)×`WINDOW_H_PARENTS`(10) window snapped to whole 24-mile parents that exist on the world map → creates the `regional_6mi` `hex_maps` child (parent_map_id=world map, anchor (0,0), footprint=covered parents) → per parent, generates 16 children (global 6-mile coords `parent*4+local`) and writes `hex_cells`.
+- **Per-child terrain (gdd-region-zoom-in §4 / gdd-hex-subdivision §6):** base inheritance from the parent (elevation/biome/biome_subtype/water/civilization/original_biome/elevation_raw) + (a) coherent-noise patches — top-quartile by smoothed per-child noise deviate biome one impedance step (copses/clearings), dense/light forest via `biome_subtype` (`forest_dense`/`""`); (b) intra-parent orographic FOOTHILLS (mountains→hills→flat skirt by smoothed noise threshold; hills→flat valleys; occasional knolls on flats); (c) rare civilization one-step deviation. Water parents inherit wholesale (§6.6, coastline deferred). All deterministic via `WorldGenRng.stream(seed, stream, 0, "pq,pr,cqi,cri")` + a one-round §6.5 neighbor-smoothing of the 4×4 noise.
+- **Hooked into `SettingMaterializer.materialize()` step 3** (after the political layer, before the clock); result now also returns `region_map_id`/`region_parent_count`/`region_child_count`.
+- **Test extended to 80 checks:** region map is `regional_6mi` + child of the world map + non-empty footprint; child_count == parents×16 + rows written; all region terrain satisfies the CHECK domains; **natural variation proven** — children differ from their parent (variation ran) AND inheritance dominates (`same > differ`).
+**Decisions made:**
+- M2a is terrain-only and self-contained; the child coords are GLOBAL 6-mile (`parent_q*4+cqi`), so `parent_anchor=(0,0)` and the footprint lists the covered parents (matches gdd-hex-subdivision §6.2).
+- Window auto-centers on the largest settlement when no start city is chosen (the UI picker is later); ~30×40 snapped to 8×10 = up to 80 parents (≈1,280 hexes, the GDD's eager extent).
+- Deferred within M2 (so the increment stays verifiable): cross-parent ecotone gradients (Pass A — needs per-edge child→neighbor geometry), river oases (need 6-mile rivers), rain-shadow (need heightmap), polity/culture dithering (need substrate storage + located domains), and ALL content placement.
+**Interfaces defined or changed:**
+- `RegionZoomIn.build_start_region(campaign_id: String, world_map_id: String, start_settlement_id := "") -> Dictionary`.
+- Runtime: a `regional_6mi` `hex_maps` row `"<cid>_region6mi"`, child of `"<cid>_world24mi"`; its `hex_cells` are the 6-mile play terrain (fog_state='hidden', elevation_raw inherited).
+**Database changes:** none (uses existing hex_maps/hex_cells + the M0 columns). No migration.
+**Tests added/updated:** `test_setting_materialization.gd` 69 → 80 checks (M2a region-map + variation). VERIFIED net-zero: branch baseline 460/18 → 461/18, stable across two runs (41 assertion failures = baseline exactly; 0 DB locks). My suite green (80 checks).
+**Known issues:**
+- M2a terrain only — no settlements/dungeons/POIs/forts/roads/rivers/located-domains on the 6-mile map yet (M2b+). The 6-mile map isn't yet the party's `current_map_id` (no party placed — M3).
+- Cross-parent ecotones, river oases, and polity/culture dithering deferred (the richer §4 passes); current variation is coherent patches + foothills (already避 "16 identical tiles", but boundaries aren't feathered yet).
+**Next session should:**
+1. **Phase M2b** — content placement onto the 6-mile carrier children: project `setting_settlements`→`settlement_entrances`, `setting_ruin_seeds`→`dungeon_entrances`, `setting_poi_seeds`→`pois`, `setting_fortifications`→`strongholds`; located domains + `domain_hexes` for the in-window realms; `realm_kind`→'tracked' for the start-region realm.
+2. Then M2c (roads/rivers + `hex_overlays` geometry), the richer variation passes (ecotones/oases/dithering), and M3 (party placement + the Strategic⇄Regional toggle wired to world-map/play-map).

@@ -22,6 +22,7 @@ func run_all_tests() -> void:
 		SettingRepository.lock_setting(cid, "deadbeefcafe")
 		test_world_map_materialized(cid)        # runs materialize() (M0 + M1)
 		test_political_layer_materialized(cid)  # asserts the M1 output
+		test_region_map_materialized(cid)       # asserts the M2a 6-mile play map
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -228,6 +229,63 @@ func test_ruler_title_translation() -> void:
 	check(SettingMaterializer.ruler_title_for("Principality") == "Prince", "Principality→Prince")
 	check(SettingMaterializer.ruler_title_for("Kingdom") == "King", "Kingdom→King")
 	check(SettingMaterializer.ruler_title_for("Empire") == "Emperor", "Empire→Emperor")
+
+
+func test_region_map_materialized(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	check(rid != "", "region_map_id returned")
+	if rid == "":
+		return
+	var wid := str(_mat_result.get("world_map_id", ""))
+
+	# region map: regional_6mi child of the world map, with a footprint.
+	CampaignRepository.db.query_with_bindings(
+		"SELECT scale, parent_map_id, parent_hex_footprint FROM hex_maps WHERE id = ?", [rid])
+	check(not CampaignRepository.db.query_result.is_empty(), "region hex_maps row exists")
+	if not CampaignRepository.db.query_result.is_empty():
+		var row: Dictionary = CampaignRepository.db.query_result[0]
+		check(str(row.get("scale", "")) == "regional_6mi", "region map is regional_6mi")
+		check(str(row.get("parent_map_id", "")) == wid, "region map's parent is the world map")
+		check(str(row.get("parent_hex_footprint", "[]")).length() > 2, "footprint is non-empty")
+
+	# child count == parents × 16, and the rows are actually written.
+	var pcount := int(_mat_result.get("region_parent_count", 0))
+	var ccount := int(_mat_result.get("region_child_count", 0))
+	check(pcount > 0, "region covers ≥1 parent (%d)" % pcount)
+	check(ccount == pcount * 16, "child count == parents × 16 (%d)" % ccount)
+	check(_count("hex_cells", "map_id", rid) == ccount, "region hex_cells rows written")
+
+	# all region terrain satisfies the CHECK domains.
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND (elevation NOT IN ('flat','hills','mountains') OR biome NOT IN ('clear','woods','jungle','swamp','desert') OR civilization NOT IN ('civilized','borderlands','wilderness'))", [rid]) == 0,
+		"all region terrain values valid")
+
+	# Natural variation: children inherit (inheritance dominates) but are NOT all
+	# identical to their parent (the variation passes ran).
+	var v := _region_variation(rid, wid)
+	check(int(v["differ"]) > 0, "some children vary from their parent (%d differ)" % int(v["differ"]))
+	check(int(v["same"]) > int(v["differ"]), "inheritance dominates (same %d > differ %d)" % [int(v["same"]), int(v["differ"])])
+
+
+func _region_variation(rid: String, wid: String) -> Dictionary:
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT q, r, elevation, biome, biome_subtype FROM hex_cells WHERE map_id = ?", [rid])
+	var region_rows: Array = db.query_result.duplicate(true)
+	db.query_with_bindings("SELECT q, r, elevation, biome, biome_subtype FROM hex_cells WHERE map_id = ?", [wid])
+	var world := {}
+	for row in db.query_result:
+		world["%d,%d" % [int(row["q"]), int(row["r"])]] = row
+	var same := 0
+	var differ := 0
+	for ch in region_rows:
+		var pkey := "%d,%d" % [int(ch["q"]) / 4, int(ch["r"]) / 4]
+		if not world.has(pkey):
+			continue
+		var p: Dictionary = world[pkey]
+		if str(ch["elevation"]) == str(p["elevation"]) and str(ch["biome"]) == str(p["biome"]) and str(ch["biome_subtype"]) == str(p["biome_subtype"]):
+			same += 1
+		else:
+			differ += 1
+	return {"same": same, "differ": differ}
 
 
 func _scalar(sql: String, binds: Array) -> int:

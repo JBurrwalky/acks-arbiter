@@ -33,6 +33,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"ok": false, "errors": [], "world_map_id": "",
 		"hex_count": 0, "river_count": 0, "road_count": 0,
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
+		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 	}
 	var errors: Array = result["errors"]
 
@@ -65,14 +66,26 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		errors.append("political-layer materialization failed")
 		return result
 
+	# 3. REGIONAL PLAY MAP (M2a) — the 6-mile terrain the party plays on, zoomed
+	# from the start region of the 24-mile world map.
+	var region := RegionZoomIn.new().build_start_region(campaign_id, world_map_id, _start_settlement_id)
+	if not bool(region.get("ok", false)):
+		for e in region.get("errors", []):
+			errors.append("region zoom-in: %s" % str(e))
+		return result
+	result["region_map_id"] = str(region.get("region_map_id", ""))
+	result["region_parent_count"] = int(region.get("parent_count", 0))
+	result["region_child_count"] = int(region.get("child_count", 0))
+
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
 	CampaignRepository.update_campaign_calendar(campaign_id, 1)
 
 	# --- LATER PHASES (stubs) -------------------------------------------------
-	# M2: the 6-mile regional play map via the region zoom-in (gdd-region-zoom-in) —
-	#     located domains + domain_hexes + settlements + in-region vassal-chain rulers
-	#     + realm_kind promotion to 'tracked' for the start region.
+	# M2 (cont.): content placement onto the 6-mile carrier children (settlements,
+	#     dungeons, POIs, forts), located domains + domain_hexes, roads/rivers,
+	#     cross-parent ecotones + river oases + polity/culture dithering,
+	#     realm_kind promotion to 'tracked' for the start region, rolling frontier.
 	# M3: party placement at the chosen start city.
 
 	result["ok"] = errors.is_empty()
