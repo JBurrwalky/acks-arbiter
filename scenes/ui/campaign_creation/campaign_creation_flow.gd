@@ -135,7 +135,8 @@ func _show_phase(phase: int) -> void:
 					_review.bind_map(SettingRepository.list_hexes(_campaign_id),
 						SettingRepository.list_replay_palette(_campaign_id),
 						SettingRepository.list_settlements(_campaign_id),
-						SettingRepository.list_polities(_campaign_id))
+						SettingRepository.list_polities(_campaign_id),
+						SettingRepository.list_river_edges(_campaign_id))
 				_review.visible = true
 
 

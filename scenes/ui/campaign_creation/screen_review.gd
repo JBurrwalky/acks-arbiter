@@ -184,7 +184,7 @@ func populate(payload: Dictionary) -> void:
 
 ## hexes + replay palette + city markers + the full realm name/liege maps (from
 ## list_polities) for the hover tooltip's sovereign resolution and the legend.
-func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities: Array = []) -> void:
+func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities: Array = [], rivers: Array = []) -> void:
 	if _map == null:
 		return
 	var names := {}
@@ -198,6 +198,7 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 		_map.set_polity_meta(names, lieges)
 	_map.bind(ordered_hexes, palette)
 	_map.set_settlements(settlements)
+	_map.set_rivers(rivers)
 	_refresh_legend()
 
 

@@ -35483,3 +35483,27 @@ on-tick dispatch.
 - Generation changed (phantom realms absorbed + expansion jitter), so a seed regenerates a slightly different world than older screencaps (expected; no determinism hash is pinned).
 **Next session should:**
 - Build the UI debug features Jedidiah requested: a RIVER overlay on the map (river_edges already generated) + a VASSALAGE TREE view in the review screen. Bundle with the deferred #6 replay items (dead-realm names via setting_fallen_polities.toponym_root + the existing layer toggles) as one godot-ai MCP-verified review-UI session.
+
+## Session 2026-06-17 — Review map matches gametime coords (orphan-render fix) + river overlay
+
+**Task:** Jedidiah's "orphans" persisted in the review map even after the sim-side phantom-sea-lane fix, and he asked for a river overlay + to "make [the review map] match the gametime map — same coordinate system or the world garbles on handoff." Investigate against the gametime map and fix.
+**Model used:** Opus 4.8 (investigation via reproduction diagnostics + the live gametime map over the godot-ai MCP; implementation + MCP visual verification).
+**Completed:**
+- **Root cause of the remaining "orphans" (VIEW-side, ~40% of realms):** `political_map_view._center_of` laid axial `(q,r)` out as an odd-q OFFSET grid, skipping the axial→offset conversion the gametime map uses (`HexMapController.axial_to_godot_map`: col=q, row=r+(q-(q&1))/2). The whole data pipeline (rivers/climate/culture/history sim) is axial; the view treated `(q,r)` as offset, so axial-adjacent hexes (a realm's own land) landed non-adjacent on screen and contiguous realms rendered with phantom gaps. Diagnostic: 7/19 and 12/30 realms render split under offset vs axial.
+- **FIX:** `_center_of` now applies the gametime axial→even-q-offset transform; `_neighbors` returns AXIAL neighbours (matches the sim `_OFF` / `HexMapController.get_neighbors`), so realm-boundary outlines align with the fills. The map is now the faithful flat-top parallelogram — the same coordinate system the gametime map renders for axial-rectangular world data.
+- **River overlay (Jedidiah request):** `_draw_rivers` draws each `setting_river_edges` row as a segment along the owning hex's edge (edge e spans vertices (e+4)%6 / (e+5)%6, flat-top), ported from `HexMapRenderer._draw_river_edge`; width by `width_category`. Wired via `bind_map` (review) + `begin_replay` (replay) → `SettingRepository.list_river_edges`. `campaign_creation_flow` passes the river rows to `bind_map`.
+**Decisions made:**
+- Match the gametime map's coordinate system (axial + `axial_to_godot_map`), per Jedidiah — fixes the orphans AND lets rivers draw on correct edges. Resulting shape is a parallelogram (the honest axial layout); Jedidiah pre-accepted "if it's a parallelogram, do that."
+- The earlier rectangle look of both the gametime screenshot and the old review map were respectively a zoomed window and the buggy odd-q misrendering.
+**Interfaces defined or changed:**
+- `political_map_view`: `_center_of` (axial→even-q offset), `_neighbors` (axial), new `set_rivers(edges)` + `_draw_rivers` + `_edge_vertex_offsets`; `_draw` extent computed in offset space.
+- `screen_review.bind_map` gains a `rivers` param; `screen_generate_replay.begin_replay` loads rivers; `campaign_creation_flow` passes `list_river_edges`.
+**Database changes:** None.
+**Tests added/updated:**
+- None automated — these are scene scripts (NOT loaded by the headless suite). Verified via the godot-ai MCP in the live campaign-creation flow: generated a Small world, confirmed contiguous realms (no phantom gaps) in both replay + review, rivers drawn on hex edges (Biome mode, full-res), no runtime errors.
+**Known issues:**
+- The map renders as a parallelogram (faithful axial). If a true rectangle is wanted, the WORLD GENERATION would need offset-rectangular coords (history_simulator builds an axial-rectangle q∈[0,W],r∈[0,H]); deferred unless Jedidiah prefers it.
+- Still TODO from the requested batch: VASSALAGE TREE view (review screen) + #6 replay (dead-realm names via `setting_fallen_polities.toponym_root`, + wire the existing layer-mode toggles into the replay screen). Next focused MCP-verified session.
+**Next session should:**
+- Build the vassalage-tree review tab + the #6 replay names/toggles, MCP-verified.
+- Consider whether to confirm the setting↔gametime coordinate handoff is 1:1 (both axial) so materialization doesn't garble.
