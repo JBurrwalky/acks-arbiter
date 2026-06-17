@@ -25,6 +25,8 @@ export/
 Thumbs.db
 *.tmp
 *~
+# LibreOffice/Office open-document lock files
+.~lock.*#
 
 # SQLite runtime databases (generated at runtime in user://)
 # These live outside the project folder in the OS user data dir,
