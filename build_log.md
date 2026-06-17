@@ -35399,3 +35399,35 @@ on-tick dispatch.
 - Build **Phase 2 (go-native)**: periodically flip a dominant realm's own culture_id when it has absorbed a large, higher-prestige subject population (tied to both subject size AND prestige per Jedidiah) — the targeted reset for snowball seeds.
 - Then the **expansion-settling cultural reach** (RAW `range_of_trade` falloff: full ×1 / half ×2 / quarter ×4, summed over same-culture cities, water ≈ 2× road) — hits the actual monoculture driver.
 - P1.2 devastate when convenient (RAW pillage/salt depopulation).
+
+## Session 2026-06-17 — Go-native (§7.4f): conqueror adopts a developed subject
+
+**Task:** Build the Phase 2 "go-native" mechanism on the setting-gen history sim — a sovereign realm ruling a large, more-developed foreign subject adopts that subject's culture (the conqueror "goes native": Yuan→Chinese, Norman→English). Mathed out first as a design turn, then implemented + verified. Follows the §7.4e significance floor + Phase 1.1 resisted-assimilation work.
+**Model used:** Opus 4.8 (design math, implementation, verification).
+**Completed:**
+- `CultureSeeder._developed_for(record, mech)` (new static) + threaded `"developed"` onto both culture instances (`_jitter_instance` reads `mechanical.class_kit_weights.developed`; `_beastman_instance` = 0.0). Prestige proxy = 0 primitive / 0.7 developing / 0.9 advanced; demihuman files omit it → default 0.9; beastman 0.0.
+- `HistorySimulator._phase_go_native(tick)` (new; wired 4e-c into `_tick` after consolidation / before substrate, both normal + profile paths) + helpers `_subject_culture_share(pol)`, `_developed(cid)`, `_apply_go_native(pol, from, to, tick)`.
+- Mechanism: eligible = alive, mature (`go_native_min_age`), non-beastman SOVEREIGN; `p = go_native_base_rate(0.05) × subject_share × (developed(S) − developed(O))`, adopt-up only (gradient > 0, no floor), gated on `subject_share ≥ go_native_min_share(0.4)`. subject_share = mass(S)/Σmass over OWN hexes, mass(c)=Σ culture_w[c]×population_band (populous foreign core > empty marches). Per-(tick,polity) WorldGenRng stream; collect-then-apply (order-independent).
+- On flip: culture_id=S; recompute is_beastman/is_clanhold (clan→civ sheds clanhold, realm civilizes); emits `cultural_shift` event (cultures=[from,to], polities=[realm], sig 0.5). `_EVENT_SIGNIFICANCE["cultural_shift"]=0.5`.
+- `narrative_generator.gd`: `_EVENT_TEMPLATES["cultural_shift"]` + a render branch (realm name + adopted-culture label).
+- SimConstants: `go_native_base_rate`(0.05), `go_native_min_share`(0.4), `go_native_min_age`(2).
+- GDD `generation/gdd-history-simulation.md` §7.4f added (mechanism, prestige proxy, formula, gates, flip behaviour, event, determinism, honest scope caveat).
+**Decisions made:**
+- Prestige proxy = `class_kit_weights.developed` (Jedidiah confirmed) — the civilization-level scalar, gives the right steppe(0)→urban-civ(0.9) gradients.
+- Adopt-UP only, NO floor (Jedidiah) — a conqueror adopts a more-developed subject, never sideways/down; a great civ ruling a primitive subject imposes its own culture (the subject assimilates normally).
+- Emit a `cultural_shift` event (Jedidiah wants the shift visible in the rewind/replay review, which currently only labels end-frame realms).
+- Numbers built from first principles (0.05 / 0.4 / 2), tune later per the "current numbers first" directive.
+**Interfaces defined or changed:**
+- Culture instance dict gains `"developed": float` (set by CultureSeeder for every instance).
+- New event type `cultural_shift` (cultures=[from_cid, to_cid], polities=[realm_id], severity 0.5, summary_key "go_native").
+- `HistorySimulator._phase_go_native/_subject_culture_share/_developed/_apply_go_native`; SimConstants `go_native_*`.
+**Database changes:**
+- Migration 163 (`163_setting_events_cultural_shift.sql`): widens `setting_events.type` CHECK with `cultural_shift` (table rebuild — SQLite can't ALTER a CHECK). `db/schema.sql` canonical CHECK synced.
+**Tests added/updated:**
+- `tests/test_setting_beastman.gd` +7 go-native tests (helper `_go_native_sim` forces base_rate high for deterministic mechanism tests): happy-path flip + de-clanholding, beastman-skip, adopt-up-only gate, min_share gate, vassal-skip, mass-weighted subject_share, cultural_shift event emission. SettingBeastmanTests now 101 checks.
+- Suite 461/17 net-zero (run 2, isolated APPDATA via tools/run_tests.ps1).
+**Known issues:**
+- Go-native fires 0 times at default base_rate 0.05 across 8 medium seeds (verified by a DB probe over the assim_sweep generations): the triggering configuration (a less-developed sovereign ruling a ≥40% more-developed subject) is rare on these maps — dominance is high-dev expansion, which go-native correctly ignores by design. Mechanism is proven-correct + armed (unit tests); whether to loosen the gates/rate is a deferred tuning call. Monoculture sweep unchanged at 48% avg top-culture / 12 polities (no regression; go-native is NOT the monoculture lever for high-dev-expansion seeds).
+**Next session should:**
+- Address the batch of bugs Jedidiah flagged ("I have a number of other bugs... once we are at a good break point") — go-native is that break point.
+- The real monoculture fix remains EXPANSION-SETTLING cultural REACH (Phase 5): `_settle_wilderness` should not paint the expander's culture at full strength everywhere; use the RAW `range_of_trade` falloff (acore-setting-construction-rules.xml:264). Optionally revisit go-native gate/rate tuning if natural firings are desired.

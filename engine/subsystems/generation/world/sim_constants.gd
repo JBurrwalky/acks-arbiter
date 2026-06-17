@@ -271,6 +271,18 @@ var assimilation_step: float = 0.5
 var assim_resist_entrench: float = 0.6     # weight on the subject culture's local share
 var assim_resist_rigidity: float = 0.3     # weight on the subject culture's rigidity scalar
 var assim_resist_max: float = 0.85         # ceiling so the rate never reaches 0 (always some erosion)
+
+# --- §7.4f Go-native (the conqueror adopts a large, more-developed subject) --
+# A sovereign realm ruling a foreign subject that is BOTH large (≥min_share of the
+# realm's populated mass) AND more developed than the ruling culture has a per-tick
+# chance to adopt that subject's culture (Yuan→Chinese, Norman→English). Adopt-up
+# only — you take on prestige, never sideways/down (Jedidiah 2026-06-17, no floor).
+#   p = base_rate × subject_share × (developed(subject) − developed(owner))
+# At base 0.05 a steppe (dev 0) realm 70%-held by an urban civ (dev 0.9) flips with
+# ~3% per tick (~47% over 20 ticks). Beastmen never go native (they raze).
+var go_native_base_rate: float = 0.05    # per-tick probability coefficient
+var go_native_min_share: float = 0.4     # subject must be ≥40% of the realm's populated mass
+var go_native_min_age: int = 2           # realm age (ticks) before it can go native (no flash-conquest flips)
 var pop_growth: float = 0.10          # logistic rate/tick
 var settle_start_families: int = 500
 var cap_wilderness: int = 2000        # 24-mile hex caps (16× 6-mile limits)

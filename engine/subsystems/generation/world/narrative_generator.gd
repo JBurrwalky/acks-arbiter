@@ -37,6 +37,8 @@ const _EVENT_TEMPLATES := {
 	"collapse_shatter": "%s shattered into rival successor states",
 	"depopulation": "%s collapsed, its lands emptying back into wilderness",
 	"migration": "the %s folk migrated in search of new lands",  # uses culture, not polity
+	# §7.4f go-native — (realm, adopted culture): cultures = [from, to], polities = [realm].
+	"cultural_shift": "%s took on the ways and customs of the %s",
 	# §7.4b rebellions — rendered as (rebel culture, oppressor realm); cultures =
 	# [oppressor, rebel], polities = [oppressor].
 	"rebellion": "the %s rose in revolt against %s",
@@ -200,6 +202,11 @@ func _event_sentence(e: Dictionary) -> String:
 		var cults: Array = e["cultures"]
 		var rebels := _culture_label(str(cults[1])) if cults.size() > 1 else "a subject people"
 		return tmpl % [rebels, _name_in(e, 0)]
+	if type == "cultural_shift":
+		# (realm, adopted culture): cultures = [from, to]; the realm took on `to`.
+		var adopted: Array = e["cultures"]
+		var to_label := _culture_label(str(adopted[1])) if adopted.size() > 1 else "a foreign people"
+		return tmpl % [_name_in(e, 0), to_label]
 	var a := _name_in(e, 0)
 	if tmpl.count("%s") >= 2:
 		return tmpl % [a, _name_in(e, 1)]

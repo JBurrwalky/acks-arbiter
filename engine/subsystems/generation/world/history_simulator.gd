@@ -33,7 +33,7 @@ const _OFF := [
 const _EVENT_SIGNIFICANCE := {
 	"depopulation": 1.0, "conquest": 0.9, "rebellion_extinguished": 0.85,
 	"razing": 0.82, "collapse_shatter": 0.8, "rebellion_won": 0.75, "golden_age": 0.6,
-	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "collapse_rump": 0.45,
+	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "cultural_shift": 0.5, "collapse_rump": 0.45,
 	"rebellion_concession": 0.42, "migration": 0.4, "schism": 0.4,
 	"rebellion": 0.4, "rebellion_crushed": 0.38, "pillage": 0.35, "war": 0.3,
 	"alignment_drift": 0.3, "expansion": 0.2, "dynasty_change": 0.1,
@@ -172,6 +172,7 @@ func _tick(tick: int) -> void:
 		_phase_collapse(tick)     # 4e
 		_phase_contiguity(tick)   # 4d-c (shed land severed only by foreign territory)
 		_phase_consolidation(tick) # 4e-b (significance floor: merge sub-floor fragments)
+		_phase_go_native(tick)    # 4e-c (conqueror adopts a large, more-developed subject)
 		_phase_substrate(tick)    # 4a
 		_phase_demography(tick)   # 4a
 		_phase_log(tick)          # 4g
@@ -188,6 +189,7 @@ func _tick(tick: int) -> void:
 	_phase_collapse(tick); t = _mark("collapse", t)
 	_phase_contiguity(tick); t = _mark("contiguity", t)
 	_phase_consolidation(tick); t = _mark("consolidation", t)
+	_phase_go_native(tick); t = _mark("go_native", t)
 	_phase_substrate(tick); t = _mark("substrate", t)
 	_phase_demography(tick); t = _mark("demography", t)
 	_phase_log(tick); t = _mark("log", t)
@@ -2421,6 +2423,110 @@ func _dominant_key(weights: Dictionary) -> String:
 			best_w = w
 			best = ks
 	return best
+
+
+# ---------------------------------------------------------------------------
+# 4e-c — Go-native (§7.4f): a sovereign realm that has come to rule a large,
+#        more-developed foreign subject adopts that subject's culture — the
+#        conqueror "goes native" (Yuan→Chinese, Norman→English, the steppe
+#        khan who becomes a bureaucrat to govern the empire he won). Runs after
+#        consolidation (own-hex set settled) and before substrate, so the SAME
+#        tick the realm begins assimilating its former homeland toward the newly
+#        adopted high culture. Adopt-UP only: the subject must be more developed
+#        than the owner (you take on prestige, never sideways/down). Beastmen
+#        never go native — they raze rather than assimilate. See
+#        gdd-history-simulation.md §7.4f.
+# ---------------------------------------------------------------------------
+
+## Per-tick go-native check. Eligible: an alive, mature SOVEREIGN (no liege),
+## non-beastman, ruling a subject culture that is both large (≥ go_native_min_share
+## of the realm's populated mass) and more developed than its own. Rolls per
+## (tick, polity) on an independent stream and COLLECTS flips, applying them after
+## the scan so no realm's subject_share is perturbed mid-iteration (determinism:
+## order-independent; substrate/demography this tick then act on the new culture).
+func _phase_go_native(tick: int) -> void:
+	var flips: Array = []
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		if str(pol.get("liege_id", "")) != "":
+			continue                                   # vassals follow their liege; they don't self-convert
+		if pol.get("is_beastman", false):
+			continue                                   # chaotic raiders raze, never assimilate up
+		if tick - int(pol.get("founded_tick", 0)) < _c.go_native_min_age:
+			continue
+		var owner_cid := str(pol["culture_id"])
+		var subject := _subject_culture_share(pol)
+		var s_cid := str(subject["cid"])
+		var share := float(subject["share"])
+		if s_cid == "" or share < _c.go_native_min_share:
+			continue
+		var gradient := _developed(s_cid) - _developed(owner_cid)
+		if gradient <= 0.0:
+			continue                                   # adopt UP only — no floor (Jedidiah 2026-06-17)
+		var p := _c.go_native_base_rate * share * gradient
+		var rng := WorldGenRng.stream(_campaign_seed, "go_native", tick, pid)
+		if rng.randf() < p:
+			flips.append([pid, owner_cid, s_cid])
+	for f in flips:
+		_apply_go_native(_polities[str(f[0])], str(f[1]), str(f[2]), tick)
+
+
+## The realm's single dominant non-owner ("subject") culture and its mass-weighted
+## share of the realm's OWN hexes. mass(c) = Σ_hex culture_w[hex][c] × population_band
+## — a populous foreign core counts for more than empty foreign marches. Returns
+## {"cid": String, "share": float}; {"", 0.0} if the realm has no populated foreign
+## substrate. Single pass, deterministic tie-break (lexically-smallest culture id).
+func _subject_culture_share(pol: Dictionary) -> Dictionary:
+	var owner_cid := str(pol["culture_id"])
+	var mass := {}
+	var total := 0.0
+	for key in pol["hexes"]:
+		var pop := float(_grid[key]["population_band"])
+		if pop <= 0.0:
+			continue
+		for c in _culture_w.get(key, {}):
+			var m := float(_culture_w[key][c]) * pop
+			mass[c] = float(mass.get(c, 0.0)) + m
+			total += m
+	if total <= 0.0:
+		return {"cid": "", "share": 0.0}
+	var best := ""
+	var best_m := 0.0
+	for c in mass:
+		var cs := str(c)
+		if cs == owner_cid:
+			continue
+		var m := float(mass[c])
+		if m > best_m or (m == best_m and best != "" and cs < best):
+			best_m = m
+			best = cs
+	if best == "":
+		return {"cid": "", "share": 0.0}
+	return {"cid": best, "share": best_m / total}
+
+
+## §7.4f prestige: a culture's civilization level, threaded onto its instance by
+## CultureSeeder._developed_for (0 primitive / 0.7 developing / 0.9 advanced).
+func _developed(cid: String) -> float:
+	return float(_culture_instances.get(cid, {}).get("developed", 0.5))
+
+
+## Flip a realm to its adopted subject culture (§7.4f). The ruling dynasty goes
+## native: culture_id becomes the subject's, and is_beastman/is_clanhold recompute
+## from the new culture — a steppe/clan conqueror adopting a civilized subject sheds
+## clanhold status and may now civilize its land and found cities (the "horde lord
+## becomes a bureaucrat" path). From this tick assimilation pulls the realm's former
+## homeland toward the adopted culture, and at handoff its rulers and realm name come
+## from the new culture's kit. Emits a cultural_shift event (visible in the replay).
+func _apply_go_native(pol: Dictionary, from_cid: String, to_cid: String, tick: int) -> void:
+	pol["culture_id"] = to_cid
+	var inst: Dictionary = _culture_instances.get(to_cid, {})
+	pol["is_beastman"] = inst.is_empty() or str(inst.get("tier", "")) == "beastman"
+	pol["is_clanhold"] = pol["is_beastman"] or str(inst.get("civ_or_clan", "civ")) == "clan"
+	_emit_event(tick, "cultural_shift", [str(pol["id"])], [from_cid, to_cid],
+			pol["hexes"], 0.5, "go_native")
 
 
 # --- Event emission (§11) ---------------------------------------------------

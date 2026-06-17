@@ -360,6 +360,9 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": str(CultureCatalogLoader.identity(record).get("civ_or_clan", "civ")),
 		"toponym": CultureCatalogLoader.toponym(record),
+		# §7.4f "prestige": civilization level (class_kit_weights.developed) that
+		# drives go-native — a conqueror adopts a large, more-developed subject.
+		"developed": _developed_for(record, mech),
 		"aggression": _jitter_scalar(float(expansion.get("aggression", 0.5)), rng),
 		"defense": _jitter_scalar(float(expansion.get("defense", 0.5)), rng),
 		"size_exponent_bias": float(expansion.get("size_exponent_bias", 0.0)),
@@ -380,6 +383,19 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 	return inst
 
 
+## §7.4f "prestige" proxy: a culture's civilization level, read from
+## class_kit_weights.developed (0 primitive / 0.7 developing / 0.9 advanced). The
+## scalar lives under `mechanical` for civilized cultures; demihuman culture files
+## omit it but are advanced civilizations (default 0.9); any other gap → 0.5.
+static func _developed_for(record: Dictionary, mech: Dictionary) -> float:
+	var ckw: Dictionary = mech.get("class_kit_weights", record.get("class_kit_weights", {}))
+	if ckw.has("developed"):
+		return float(ckw["developed"])
+	if CultureCatalogLoader.tier(record) == "demihuman":
+		return 0.9
+	return 0.5
+
+
 ## A lightweight per-campaign instance for a beastman culture (stripped schema,
 ## §5.3 — no conquest/lifecycle/rulership blocks). Beastmen expand and raid; the
 ## history sim reads these fields the same way it reads human/demihuman ones.
@@ -393,6 +409,7 @@ static func _beastman_instance(record: Dictionary, campaign_seed: int) -> Dictio
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": "clan",
 		"toponym": CultureCatalogLoader.toponym(record),
+		"developed": 0.0,   # §7.4f beastmen are primitive — never a go-native target
 		"aggression": _jitter_scalar(float(expansion.get("aggression", 0.7)), rng),
 		"defense": _jitter_scalar(float(expansion.get("defense", 0.45)), rng),
 		"size_exponent_bias": float(expansion.get("size_exponent_bias", 0.0)),

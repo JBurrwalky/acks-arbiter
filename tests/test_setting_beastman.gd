@@ -38,6 +38,14 @@ func run_all_tests() -> void:
 	test_assimilation_resists_entrenched_culture()
 	test_cultural_assimilation_slider_scales_rate()
 	test_rigid_culture_resists_more()
+	# Phase 2 — go-native (§7.4f; Jedidiah 2026-06-17)
+	test_go_native_flips_to_developed_subject()
+	test_go_native_skips_beastman()
+	test_go_native_requires_more_developed_subject()
+	test_go_native_requires_large_subject()
+	test_go_native_skips_vassal()
+	test_subject_culture_share_is_mass_weighted()
+	test_go_native_emits_cultural_shift_event()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -536,3 +544,112 @@ func test_rigid_culture_resists_more() -> void:
 	var rigid := _subject_weight_after(0.9, 1.0, 3)
 	check(rigid > flexible,
 		"a rigid subject resists more than a flexible one: %f (rho=0.9) > %f (rho=0.0)" % [rigid, flexible])
+
+
+# --- §7.4f go-native (conqueror adopts a large, more-developed subject) ------
+
+## A sim whose culture instances carry §7.4f "developed" (prestige) scalars:
+## steppe = low-dev clan culture (0.0), high = advanced civ (0.9), orc = beastman.
+## go_native_base_rate is forced high so the per-(tick, polity) roll fires
+## deterministically — these tests verify the GATES and the flip, not the dice.
+func _go_native_sim() -> HistorySimulator:
+	var sim := _sim()
+	sim._culture_instances["steppe"] = {"tier": "human", "civ_or_clan": "clan", "developed": 0.0}
+	sim._culture_instances["high"] = {"tier": "human", "civ_or_clan": "civ", "developed": 0.9}
+	sim._culture_instances["civ"]["developed"] = 0.9
+	sim._culture_instances["orc"]["developed"] = 0.0
+	sim._c.go_native_base_rate = 100.0   # p ≥ 1 → the roll always fires when the gates pass
+	return sim
+
+
+## Happy path: a low-dev clan conqueror ruling a large, more-developed subject
+## adopts that culture AND sheds clanhold status (the horde lord becomes a bureaucrat).
+func test_go_native_flips_to_developed_subject() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "P", "steppe", "neutral", [h], 3000, "civilized")
+	sim._finalize_new_polity(pol, 0)   # is_clanhold = true (steppe is a clan culture)
+	sim._culture_w[h] = {"high": 0.8, "steppe": 0.2}   # large, more-developed subject
+	check(bool(pol.get("is_clanhold", false)), "the steppe conqueror starts as a clanhold")
+	sim._phase_go_native(5)
+	check(str(pol["culture_id"]) == "high", "the realm adopts the developed subject culture")
+	check(not bool(pol.get("is_clanhold", false)),
+		"going native to a civ culture sheds clanhold status (the realm can now civilize)")
+	check(not bool(pol.get("is_beastman", false)), "and is not a beastman")
+
+
+## A beastman horde never goes native — it razes rather than assimilates up.
+func test_go_native_skips_beastman() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "B", "orc", "chaotic", [h], 1800, "wilderness")
+	sim._culture_w[h] = {"high": 0.9, "orc": 0.1}
+	sim._phase_go_native(5)
+	check(str(pol["culture_id"]) == "orc", "a beastman horde never adopts a subject culture")
+
+
+## Adopt-UP only: an advanced realm does NOT adopt a less-developed subject.
+func test_go_native_requires_more_developed_subject() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "P", "high", "lawful", [h], 5000, "civilized")
+	sim._culture_w[h] = {"steppe": 0.8, "high": 0.2}   # large but LESS-developed subject
+	sim._phase_go_native(5)
+	check(str(pol["culture_id"]) == "high",
+		"a more-developed realm does not adopt a less-developed subject (no floor, adopt-up only)")
+
+
+## The subject must be large (≥ min_share); a small foreign minority is imposed on instead.
+func test_go_native_requires_large_subject() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "P", "steppe", "neutral", [h], 3000, "civilized")
+	sim._culture_w[h] = {"high": 0.3, "steppe": 0.7}   # more-developed but < min_share (0.4)
+	sim._phase_go_native(5)
+	check(str(pol["culture_id"]) == "steppe",
+		"a subject below min_share does not trigger go-native (the conqueror imposes its own culture)")
+
+
+## A vassal follows its liege; it does not self-convert.
+func test_go_native_skips_vassal() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "V", "steppe", "neutral", [h], 3000, "civilized")
+	pol["liege_id"] = "L"
+	sim._culture_w[h] = {"high": 0.8, "steppe": 0.2}
+	sim._phase_go_native(5)
+	check(str(pol["culture_id"]) == "steppe", "a vassal does not go native independently of its liege")
+
+
+## Subject share is mass-weighted: an empty owner hex contributes no mass, so it does
+## not dilute a populous foreign core's share.
+func test_subject_culture_share_is_mass_weighted() -> void:
+	var sim := _go_native_sim()
+	var h0 := Vector2i(0, 0)   # populous, fully the subject culture
+	var h1 := Vector2i(1, 0)   # empty (pop 0), owner culture
+	var pol := _realm(sim, "P", "steppe", "neutral", [h0, h1], 1000, "civilized")
+	sim._grid[h1]["population_band"] = 0
+	sim._culture_w[h0] = {"high": 1.0}
+	sim._culture_w[h1] = {"steppe": 1.0}
+	var s := sim._subject_culture_share(pol)
+	check(str(s["cid"]) == "high", "the dominant non-owner culture is identified, got %s" % str(s["cid"]))
+	check(abs(float(s["share"]) - 1.0) < 0.001,
+		"an empty owner hex adds no mass — subject share is ~1.0, got %f" % float(s["share"]))
+
+
+## A flip emits a cultural_shift event carrying [from, to] cultures for the replay timeline.
+func test_go_native_emits_cultural_shift_event() -> void:
+	var sim := _go_native_sim()
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "P", "steppe", "neutral", [h], 3000, "civilized")
+	sim._culture_w[h] = {"high": 0.8, "steppe": 0.2}
+	sim._phase_go_native(5)
+	var found := false
+	for e in sim._events:
+		if str(e["type"]) != "cultural_shift":
+			continue
+		found = true
+		var cults: Array = JSON.parse_string(str(e["culture_ids"]))
+		check(cults.size() == 2 and str(cults[0]) == "steppe" and str(cults[1]) == "high",
+			"the event records [from, to] cultures, got %s" % str(cults))
+	check(found, "a cultural_shift event is emitted (visible in the replay review)")

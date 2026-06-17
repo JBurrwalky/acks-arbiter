@@ -287,6 +287,29 @@ Consolidation is **silent** (no event — a soft administrative merge; the repla
 
 **Determinism:** sorted-id candidates, canonical neighbour/hex iteration, the strict `_outranks` order, no RNG. The handoff dependency (sub-floor holdings → 6-mile vassals/clanholds) belongs to the separate setting→runtime materialization; this change only ensures the 24-mile output cleanly omits them.
 
+### 7.4f Go-native — conqueror adopts a developed subject (added 2026-06-17)
+
+A sovereign realm that has come to **rule a large, more-developed foreign subject** has a per-tick chance to adopt that subject's culture — the conqueror "goes native" (Yuan→Chinese, Norman→English, the steppe khan who must become a bureaucrat to govern the empire he won). This is the counterpart to assimilation (§6): assimilation rewrites the *land's* substrate toward the ruling culture; go-native flips the *ruling* culture toward the land. Together with the §6/§7.4e resistance damping and the §7.4-clanhold rules they give the full set of post-conquest outcomes RAW allows (`daw_campaigning_armies.xml`: assimilate / vassalize / pillage): a horde that rules a civilization either **adopts** it (go-native fires — the civilization survives under a new dynasty) or, failing that, slowly **degrades** it (clan assimilation + the §7.4 clan-density collapse — "barbarians ruin the cities"). Both are historical; the dice choose.
+
+**Prestige proxy = `developed`.** Each culture instance carries a civilization-level scalar `developed` (CultureSeeder threads `mechanical.class_kit_weights.developed`: 0 primitive / 0.7 developing / 0.9 advanced — the same scalar that picks developed-vs-primitive NPC gear). Demihuman culture files omit it but are advanced civilizations (default 0.9); beastmen are 0.0. "Adopt-up" uses this gradient directly.
+
+**The check (`_phase_go_native`, runs after consolidation, before substrate).** For every alive, mature (`go_native_min_age`) **sovereign** (no liege — vassals follow their liege, they don't self-convert) that is **not a beastman** (chaotic raiders raze, they never assimilate up):
+
+```
+subject_share = mass(S) / Σ_c mass(c)   over the realm's OWN hexes,
+                where mass(c) = Σ_hex culture_w[hex][c] × population_band[hex],
+                and S = the dominant non-owner culture (mass-weighted, lexical tie-break)
+
+eligible iff  subject_share ≥ go_native_min_share (0.4)  AND  developed(S) > developed(owner)
+p_go_native   = go_native_base_rate (0.05) × subject_share × (developed(S) − developed(owner))
+```
+
+Mass-weighting (not hex count) means a populous foreign *core* counts for more than empty foreign marches — a realm whose heartland is the subject goes native, one whose distant frontier happens to be foreign does not. **Adopt-up only** (`gradient > 0`, no floor — Jedidiah 2026-06-17): you take on prestige, never sideways or down; a great civilization ruling a primitive subject imposes its own culture (the subject assimilates normally) rather than going native. At base 0.05 a steppe realm (dev 0) 70%-held by an urban civ (dev 0.9) flips with ≈3.2%/tick (~47% over 20 ticks ≈ 500 yr); an intra-civ developing→advanced adoption at 60% share is ≈0.6%/tick (~11%). Rolled per `(tick, polity)` on an independent `WorldGenRng` stream; flips are **collected then applied** so no realm's `subject_share` is perturbed mid-scan (order-independent, deterministic).
+
+**On flip (`_apply_go_native`).** `culture_id` becomes the subject's; `is_beastman`/`is_clanhold` recompute from the new culture — a steppe/clan conqueror adopting a civilized subject **sheds clanhold status** and may now civilize its land and found cities (the "horde lord becomes a bureaucrat" path; if go-native never fires, the §7.4 clan rules instead collapse the conquered cities to clanhold density). From that tick assimilation pulls the realm's former homeland toward the adopted culture, and at handoff its rulers and realm name come from the new culture's kit. A **`cultural_shift`** event is emitted (`cultures = [from, to]`, `polities = [realm]`; significance 0.5), so the shift is visible in the replay timeline and narrated ("the Vargari Khanate took on the ways and customs of the Jinxian"). Migration 163 widens the `setting_events.type` CHECK; the narrative timeline renders it via `_EVENT_TEMPLATES["cultural_shift"]`.
+
+**Scope (honest).** Go-native targets **low-development-conqueror** dominance — it converts a primitive culture that has conquered a civilization *into* that civilization, which is the least-plausible monoculture (a steppe culture painting a continent) and the richest flavor. It does **not** break a **high-development expansion** monoculture: a most-developed culture (e.g. jinxian, dev 0.9) never finds a more-developed subject to adopt, and expansion-driven dominance carries low `subject_share` (settled land, not ruled subjects). The direct fix for that case is the expansion-settling cultural reach (RAW `range_of_trade` falloff — Phase 5, future work), not go-native.
+
 ### 7.5 Stability and collapse curve
 
 Each tick every polity rolls against a collapse risk. This is the heart of the sim and is **project-designed** (the catalog supplies the per-culture knobs):
