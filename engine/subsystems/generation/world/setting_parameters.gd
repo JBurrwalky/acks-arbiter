@@ -49,6 +49,11 @@ var collapse_temperament: String = "moderate"
 var history_length: String = "standard"
 ## "off" 0.0 | "low" 0.5 | "moderate" 1.0 | "high" 2.0 (history-sim §13).
 var migration_rate: String = "moderate"
+## Cultural assimilation speed — multiplier on the conquest culture-flip rate
+## (history-sim §6 / §7.4e). 1.0 = default; lower = tenacious cultures and a lasting
+## mosaic of peoples; higher = a fast melting-pot where dominant cultures homogenize
+## the map. Scales the (entrenchment+rigidity-resisted) assimilation rate per tick.
+var cultural_assimilation: float = 1.0
 ## Overall non-human demographic share target (~1:5 — setting-gen §7.5).
 var non_human_ratio: float = 0.2
 ## Minimum demographic presence anywhere (setting-gen §7.3/§7.5).
@@ -138,6 +143,7 @@ func to_dict() -> Dictionary:
 		"collapse_temperament": collapse_temperament,
 		"history_length": history_length,
 		"migration_rate": migration_rate,
+		"cultural_assimilation": cultural_assimilation,
 		"non_human_ratio": non_human_ratio,
 		"minority_weight_floor": minority_weight_floor,
 		"dungeon_density": dungeon_density,
@@ -165,6 +171,7 @@ static func from_dict(data: Dictionary) -> SettingParameters:
 	p.collapse_temperament = str(data.get("collapse_temperament", p.collapse_temperament))
 	p.history_length = str(data.get("history_length", p.history_length))
 	p.migration_rate = str(data.get("migration_rate", p.migration_rate))
+	p.cultural_assimilation = float(data.get("cultural_assimilation", p.cultural_assimilation))
 	p.non_human_ratio = float(data.get("non_human_ratio", p.non_human_ratio))
 	p.minority_weight_floor = float(data.get("minority_weight_floor", p.minority_weight_floor))
 	p.dungeon_density = float(data.get("dungeon_density", p.dungeon_density))

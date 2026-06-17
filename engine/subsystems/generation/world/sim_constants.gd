@@ -118,18 +118,62 @@ var beastman_fill_per_tick: float = 0.10  # × density per empty hex
 # without overrunning (the §7.4d floor).
 var beastman_scan_period: int = 5         # scan empty wilderness every N ticks
 var beastman_region_radius: int = 3       # hex radius of the "always some beastmen" region
-var beastman_region_target: float = 0.12  # spawn while a region is below this clanhold fraction
+# [CALIBRATION 2026-06-17] 0.12 → 0.06: under the §7.4e war-horde model each re-seed
+# plants a ≥3-hex horde (not a 1-hex clanhold), so a coarser/lower regional target
+# keeps hordes spaced out rather than carpeting the interior.
+var beastman_region_target: float = 0.06  # spawn while a region is below this horde fraction
+# [CALIBRATION 2026-06-17] §7.4e global ceiling on modeled beastman territory. War-
+# hordes are durable (multi-hex, only front-razed), so on large/deep maps unbounded
+# re-seeding let beastmen fill collapse craters faster than civilization could reclaim
+# them (measured ~60% of a large map). Beastmen are meant to be a frontier MINORITY at
+# 24 miles — significant hordes plus mostly-empty wilderness the 6-mile runtime fills —
+# so re-seeding stops once modeled beastmen hold this fraction of the land. (Seed-time
+# and collapse-fill hordes can still exist; only NEW re-seeds are gated.)
+var beastman_global_land_cap: float = 0.15
 
 # --- Clanhold realm limits (§7.4 — beastmen never form large realms) --------
 # [2026-06-15] Beastman clanholds are always wilderness and small. A hard realm
 # hex cap + wilderness-only acquisition keeps their population (and thus military
 # strength) bounded, and they collapse without shattering into large successors.
-var beastman_realm_max_hexes: int = 3     # a beastman realm may hold at most this many hexes
+# [2026-06-17] Raised 3 → 8 for the §7.4e war-horde model: a horde is one realm
+# spanning the cohering cluster of clanholds it was aggregated from (each hex still
+# wilderness, ≤ cap_wilderness families — RAW ax_domains_of_chaos), so the cap must
+# admit a multi-hex horde. Still well below a civilized realm's reach.
+var beastman_realm_max_hexes: int = 8     # a beastman realm may hold at most this many hexes
 # [2026-06-15] Raze-and-retreat (§7.4c): a victor that razes (Lawful/Neutral over
 # a beastman clanhold, or a beastman attacker over anyone) clears the loser's land
 # to wilderness — population destroyed, NOT culture-flipped in place — and takes
 # nothing; the vacated land refills by organic growth / re-seeding.
 var razed_pop_keep: float = 0.0           # fraction of razed population left (0 = wiped)
+
+# --- Significance floor (§7.4e — only model historically-significant realms) -
+# [2026-06-17, Jedidiah ruling] At the 24-mile setting scale, model civilized/
+# demihuman realms only down to DUCHY and beastmen only as cohering war-hordes.
+# Sub-floor holdings are inferred as the absorbing realm's internal vassal
+# decomposition (§7.4) and materialized at the 6-mile handoff, not recorded as
+# separate 24-mile polities. A consolidation phase runs on this cadence during the
+# sim (merge/coalesce/migrate sub-floor sovereigns; merge/dissolve sub-threshold
+# hordes), and a final unconditional sweep guarantees a clean present-day floor.
+var consolidation_period: int = 4         # run the consolidation phase every N ticks (0 = sim-time off; final sweep still runs)
+# A sub-floor sovereign younger than this is left alone during the sim so a fresh
+# realm has time (~min_age × 25 yr) to grow to Duchy organically before it is
+# considered a stuck fragment. The finalization sweep ignores this gate.
+var consolidation_min_age: int = 8        # ticks (200 yr) before a sub-floor sovereign is a sim-time consolidation candidate
+# Population lost when an ORPHANED sub-floor realm (no adjacent merge-valid realm)
+# relocates its people to the nearest valid realm (Jedidiah: "migrate with some
+# population loss"). The survivors join the destination's hexes / expand its border.
+var consolidation_migrate_loss: float = 0.25
+# The DUCHY floor for civilized/demihuman realms keys on DomainTierTable.DUCHY
+# (tier 3, ≥20,000 families) — referenced directly, not duplicated here.
+
+# --- Beastman war-horde threshold (§7.4e) -----------------------------------
+# A beastman cluster must cohere into at least this many contiguous 24-mile
+# clanhold hexes (each hex = many 6-mile clanholds) under a dominant war-chief to
+# be a historically-significant horde worth modeling at 24 miles. Smaller/isolated
+# clanholds are NOT recorded here — the runtime procedural generator fills empty
+# wilderness with them at the 6-mile scale (mirrors duchy → implied baronies). Must
+# match CultureSeeder.BEASTMAN_HORDE_MIN_HEXES (the seed-time threshold).
+var beastman_horde_min_hexes: int = 3
 
 # --- Fading (§7.7) ----------------------------------------------------------
 var fade_rate: float = 0.985          # per tick after onset
@@ -214,6 +258,19 @@ var edge_damp_rough: float = 0.7      # forest / hills
 var edge_damp_barrier: float = 0.25   # mountain or major-river crossing
 var edge_damp_sea: float = 0.1
 var assimilation_step: float = 0.5
+# §6/§7.4e conquest-assimilation RESISTANCE (Jedidiah 2026-06-17). The held-hex
+# culture-flip rate is damped by how entrenched the subject culture still is (its
+# weight in the hex) plus the subject's rigidity, so a strong/rigid conquered people
+# resists replacement and erodes quickly only once it is already a minority — a
+# tipping-point curve, not the old instant geometric wipe. Applied as:
+#   rate = effective_svg × assimilation_step × (1 − resist) × params.cultural_assimilation
+#   resist = clamp(entrench·subject_weight + rigidity·subject_rigidity, 0, max)
+# [CALIBRATION] starting numbers from the worked-example math (svg-0.5 dominant flip
+# ~3 → ~8 ticks); tune via the culture-share sweep and the in-game Cultural
+# Assimilation slider (SettingParameters.cultural_assimilation).
+var assim_resist_entrench: float = 0.6     # weight on the subject culture's local share
+var assim_resist_rigidity: float = 0.3     # weight on the subject culture's rigidity scalar
+var assim_resist_max: float = 0.85         # ceiling so the rate never reaches 0 (always some erosion)
 var pop_growth: float = 0.10          # logistic rate/tick
 var settle_start_families: int = 500
 var cap_wilderness: int = 2000        # 24-mile hex caps (16× 6-mile limits)

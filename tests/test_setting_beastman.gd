@@ -21,6 +21,23 @@ func run_all_tests() -> void:
 	test_beastman_generic_culture_and_race_hint()
 	test_vassalize_rejects_liege_cycle()
 	test_human_clanhold_locked_to_wilderness()
+	# §7.4e significance floor (Jedidiah 2026-06-17)
+	test_connected_present_components_groups_contiguous()
+	test_consolidate_civ_merges_adjacent_subfloor()
+	test_consolidate_civ_migrates_orphan()
+	test_consolidation_skips_young_sovereign_until_final()
+	test_consolidate_beastman_dissolves_isolated_subthreshold()
+	test_consolidate_beastman_merges_into_neighbor()
+	test_spawn_beastman_horde_requires_cluster()
+	test_fold_subfloor_vassal_into_liege()
+	# Phase 0 — realm-tier (Option C) + clan-demote-on-replacement (Jedidiah 2026-06-17)
+	test_realm_tier_counts_vassals()
+	test_consolidation_keeps_vassal_ruling_sovereign()
+	test_clan_keeps_civ_hex_until_replaced()
+	# Phase 1.1 — resisted assimilation + Cultural Assimilation slider (Jedidiah 2026-06-17)
+	test_assimilation_resists_entrenched_culture()
+	test_cultural_assimilation_slider_scales_rate()
+	test_rigid_culture_resists_more()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -288,3 +305,234 @@ func test_vassalize_rejects_liege_cycle() -> void:
 	var d := _realm(sim, "D", "civ", "lawful", [Vector2i(3, 0)])
 	sim._vassalize(a, d, 1)
 	check(str(d["liege_id"]) == "A", "a non-cyclic vassalage is applied normally")
+
+
+# --- §7.4e significance floor (Jedidiah 2026-06-17) ------------------------
+
+## Seed-time aggregation primitive: contiguous present-hexes group into one
+## component (the war-horde candidate); the ≥3 threshold is applied by the caller.
+func test_connected_present_components_groups_contiguous() -> void:
+	var present := {
+		Vector2i(0, 0): {"race": "orc", "families": 100},
+		Vector2i(1, 0): {"race": "orc", "families": 100},
+		Vector2i(2, 0): {"race": "orc", "families": 100},   # cluster A (3 contiguous)
+		Vector2i(5, 5): {"race": "goblin", "families": 50},
+		Vector2i(5, 6): {"race": "goblin", "families": 50}, # cluster B (2 contiguous)
+		Vector2i(9, 9): {"race": "troll", "families": 25},  # lone (1)
+	}
+	var comps := CultureSeeder._connected_present_components(present)
+	check(comps.size() == 3, "three connected components, got %d" % comps.size())
+	var sizes: Array = []
+	for c in comps:
+		sizes.append(c.size())
+	sizes.sort()
+	check(sizes == [1, 2, 3], "component sizes 1/2/3, got %s" % str(sizes))
+
+
+## A sub-Duchy civilized sovereign adjacent to a Duchy is annexed (no separate realm).
+func test_consolidate_civ_merges_adjacent_subfloor() -> void:
+	var sim := _sim()
+	var d := _realm(sim, "D", "civ", "lawful",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
+	c["tier_index"] = DomainTierTable.COUNTY
+	sim._consolidate(160, true)
+	check(not bool(c["alive"]), "the sub-duchy county is annexed, not kept as a 24-mile realm")
+	check(d["hexes"].size() == 4, "the duchy absorbed the county's hex")
+	check(str(sim._grid[Vector2i(3, 0)]["owner_polity_id"]) == "D", "the county hex now belongs to the duchy")
+
+
+## An orphaned sub-floor sovereign (no adjacent merge target) migrates its people to
+## the nearest valid realm with population loss; its land empties to wilderness.
+func test_consolidate_civ_migrates_orphan() -> void:
+	var sim := _sim()
+	var d := _realm(sim, "D", "civ", "lawful",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	var o := _realm(sim, "O", "civ", "neutral", [Vector2i(10, 0)], 1000, "civilized")
+	o["tier_index"] = DomainTierTable.COUNTY
+	var before := sim._total_families(d)
+	sim._consolidate(160, true)
+	check(not bool(o["alive"]), "the orphaned county is removed")
+	check(str(sim._grid[Vector2i(10, 0)]["owner_polity_id"]) == "", "its land reverts to wilderness for the 6-mile fill")
+	check(int(sim._grid[Vector2i(10, 0)]["population_band"]) == 0, "its hex emptied (the people migrated)")
+	check(sim._total_families(d) > before, "the duchy gained the migrating population (minus loss)")
+
+
+## During the sim a YOUNG sub-floor sovereign is spared (room to grow); the
+## finalization sweep consolidates it regardless of age.
+func test_consolidation_skips_young_sovereign_until_final() -> void:
+	var sim := _sim()
+	var d := _realm(sim, "D", "civ", "lawful",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	d["founded_tick"] = 0
+	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
+	c["tier_index"] = DomainTierTable.COUNTY
+	c["founded_tick"] = 158   # age 2 at tick 160 < consolidation_min_age (8)
+	sim._consolidate(160, false)
+	check(bool(c["alive"]), "a young sub-floor sovereign is NOT consolidated during the sim")
+	sim._consolidate(160, true)
+	check(not bool(c["alive"]), "the finalization sweep consolidates it regardless of age")
+
+
+## A sub-threshold beastman horde with no neighbours dissolves to wilderness.
+func test_consolidate_beastman_dissolves_isolated_subthreshold() -> void:
+	var sim := _sim()
+	var b := _realm(sim, "B", "orc", "chaotic", [Vector2i(0, 0), Vector2i(1, 0)], 1500, "wilderness")
+	sim._consolidate(160, true)
+	check(not bool(b["alive"]), "an isolated 2-hex horde (< 3) dissolves — left for the 6-mile fill")
+	check(str(sim._grid[Vector2i(0, 0)]["owner_polity_id"]) == "", "its hexes revert to wilderness")
+
+
+## Two adjacent sub-threshold hordes coalesce into one cohering war-horde.
+func test_consolidate_beastman_merges_into_neighbor() -> void:
+	var sim := _sim()
+	var big := _realm(sim, "B1", "orc", "chaotic", [Vector2i(0, 0), Vector2i(1, 0)], 1500, "wilderness")
+	var small := _realm(sim, "B2", "orc", "chaotic", [Vector2i(2, 0)], 800, "wilderness")
+	sim._consolidate(160, true)
+	check(not bool(small["alive"]), "the smaller adjacent horde merges away")
+	check(bool(big["alive"]) and big["hexes"].size() == 3,
+		"the dominant horde absorbs it into a 3-hex war-horde, got %d hexes" % int(big["hexes"].size()))
+
+
+## In-sim re-seed: a war-horde forms only from a contiguous cluster of ≥3 empty
+## wilderness hexes; a too-small region is left empty (the 6-mile runtime fills it).
+func test_spawn_beastman_horde_requires_cluster() -> void:
+	var sim := _sim()
+	for h in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]:
+		sim._grid[h] = {"owner_polity_id": "", "population_band": 0, "water": "",
+			"elevation": "flat", "biome": "clear", "biome_subtype": "", "territory_class": "wilderness"}
+	var ok := sim._spawn_beastman_horde(Vector2i(0, 0), 5)
+	check(ok, "a ≥3-hex empty cluster spawns a war-horde")
+	var owner := str(sim._grid[Vector2i(0, 0)]["owner_polity_id"])
+	check(owner != "" and sim._polities.has(owner), "the cluster is owned by the new horde")
+	check(int(sim._polities[owner]["hexes"].size()) == 3, "the horde holds the whole 3-hex cluster")
+	check(bool(sim._polities[owner].get("is_beastman", false)), "the new realm is a beastman horde")
+	sim._grid[Vector2i(20, 20)] = {"owner_polity_id": "", "population_band": 0, "water": "",
+		"elevation": "flat", "biome": "clear", "biome_subtype": "", "territory_class": "wilderness"}
+	var ok2 := sim._spawn_beastman_horde(Vector2i(20, 20), 5)
+	check(not ok2, "a lone hex too small to cohere does NOT spawn a 24-mile horde")
+
+
+## Finalization: a sub-Duchy VASSAL row folds into its liege; a Duchy+ vassal stays.
+func test_fold_subfloor_vassal_into_liege() -> void:
+	var sim := _sim()
+	var l := _realm(sim, "L", "civ", "lawful",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	l["tier_index"] = DomainTierTable.DUCHY
+	var v := _realm(sim, "V", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
+	v["tier_index"] = DomainTierTable.COUNTY
+	v["liege_id"] = "L"
+	var v2 := _realm(sim, "V2", "civ", "lawful",
+		[Vector2i(4, 0), Vector2i(5, 0), Vector2i(6, 0)], 8000, "civilized")
+	v2["tier_index"] = DomainTierTable.DUCHY
+	v2["liege_id"] = "L"
+	sim._fold_subfloor_vassals(160)
+	check(not bool(v["alive"]), "a sub-duchy vassal folds into its liege (becomes internal decomposition)")
+	check(bool(v2["alive"]), "a Duchy+ vassal stays a modeled realm")
+	check(str(sim._grid[Vector2i(3, 0)]["owner_polity_id"]) == "L", "the folded vassal's hex now belongs to the liege")
+
+
+## §12 realm-tier (Option C): tier/title key on the OVERALL realm (own + transitive
+## war-vassals), not own territory alone.
+func test_realm_tier_counts_vassals() -> void:
+	var sim := _sim()
+	var king := _realm(sim, "K", "civ", "lawful", [Vector2i(0, 0)], 4000, "civilized")
+	var v1 := _realm(sim, "V1", "civ", "lawful",
+		[Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0)], 8000, "civilized")
+	var _v2 := _realm(sim, "V2", "civ", "lawful",
+		[Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2)], 8000, "civilized")
+	sim._polities["V1"]["liege_id"] = "K"
+	sim._polities["V2"]["liege_id"] = "K"
+	check(sim._realm_families(king) == 4000 + 24000 + 24000,
+		"realm families = own + transitive war-vassals, got %d" % sim._realm_families(king))
+	check(sim._realm_tier(king) > DomainTierTable.tier_for_families(sim._total_families(king)),
+		"ruling vassals raises the realm tier above the own-territory tier")
+	check(sim._realm_tier(v1) == DomainTierTable.tier_for_families(24000),
+		"a vassal is tiered by its own realm (rank aggregates up the tree without double-counting territory)")
+
+
+## A sovereign whose OWN core is sub-Duchy but whose OVERALL realm (via vassals) is
+## Duchy+ is NOT a consolidation fragment — the §7.4e floor reads realm-tier.
+func test_consolidation_keeps_vassal_ruling_sovereign() -> void:
+	var sim := _sim()
+	var o := _realm(sim, "O", "civ", "lawful", [Vector2i(0, 0)], 5000, "civilized")
+	o["tier_index"] = DomainTierTable.COUNTY
+	var _vs := _realm(sim, "VS", "civ", "lawful",
+		[Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2)], 8000, "civilized")
+	sim._polities["VS"]["liege_id"] = "O"
+	var d := _realm(sim, "D", "civ", "lawful",
+		[Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0)], 9000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	sim._consolidate(160, true)
+	check(bool(o["alive"]),
+		"an overlord whose OVERALL realm is Duchy+ survives the floor despite a sub-Duchy core")
+
+
+## A clan realm's conquered CIVILIZED hex keeps its density/class until the clan culture
+## actually replaces the civ one — the demographic collapse follows replacement, not annexation.
+func test_clan_keeps_civ_hex_until_replaced() -> void:
+	var sim := _sim()
+	sim._culture_instances["nomad"] = {"tier": "human", "civ_or_clan": "clan"}
+	sim._culture_instances["civ"] = {"tier": "human", "civ_or_clan": "civ"}
+	var h := Vector2i(0, 0)
+	var pol := _realm(sim, "N", "nomad", "neutral", [h], 9000, "civilized")
+	sim._finalize_new_polity(pol, 0)   # sets is_clanhold from civ_or_clan == "clan"
+	sim._culture_w[h] = {"civ": 0.8, "nomad": 0.2}   # conquered, civ culture still dominant
+	check(bool(pol.get("is_clanhold", false)), "the nomad culture is a clanhold")
+	sim._phase_demography(1)
+	check(str(sim._grid[h]["territory_class"]) == "civilized",
+		"a clan-held hex keeps its civ class while a CIV culture is still dominant")
+	check(int(sim._grid[h]["population_band"]) > sim._c.cap_wilderness,
+		"and keeps civ density (> wilderness cap) until replacement")
+	sim._culture_w[h] = {"civ": 0.2, "nomad": 0.8}   # now the clan culture has replaced it
+	sim._phase_demography(2)
+	check(str(sim._grid[h]["territory_class"]) == "wilderness",
+		"once the clan culture is dominant the hex collapses to clanhold terms")
+	check(int(sim._grid[h]["population_band"]) <= sim._c.cap_wilderness,
+		"and is clamped to the wilderness cap (2000)")
+
+
+# --- §6/§7.4e resisted assimilation -----------------------------------------
+
+## Run [ticks] of assimilation on a hex fully held by a "sub" culture under a "civ"
+## owner (base svg 0.5), at the given subject rigidity + Cultural Assimilation
+## multiplier; return how much of the subject culture remains.
+func _subject_weight_after(rigidity: float, mult: float, ticks: int) -> float:
+	var sim := _sim()
+	sim._culture_instances["civ"] = {"base_subjugation_vs_genocide": 0.5, "tier": "human",
+		"conquest_modifiers": []}
+	sim._culture_instances["sub"] = {"tier": "human", "rigidity": rigidity}
+	sim._params.cultural_assimilation = mult
+	var h := Vector2i(0, 0)
+	_realm(sim, "P", "civ", "lawful", [h], 3000, "civilized")
+	sim._culture_w[h] = {"civ": 0.0, "sub": 1.0}
+	for t in range(ticks):
+		sim._assimilate_held_hexes(t)
+	return float(sim._culture_w[h].get("sub", 0.0))
+
+
+## Resistance leaves an entrenched subject far stronger than the old unresisted wipe
+## (svg 0.5 × step 0.5 = 0.25/tick → 0.75^3 ≈ 0.42 after 3 ticks).
+func test_assimilation_resists_entrenched_culture() -> void:
+	var resisted := _subject_weight_after(0.5, 1.0, 3)
+	check(resisted > 0.7,
+		"resistance keeps a conquered culture dominant far longer than the unresisted 0.42, got %f" % resisted)
+
+
+## The Cultural Assimilation slider scales the rate: a higher multiplier converts faster.
+func test_cultural_assimilation_slider_scales_rate() -> void:
+	var slow := _subject_weight_after(0.5, 0.5, 3)
+	var fast := _subject_weight_after(0.5, 2.0, 3)
+	check(fast < slow,
+		"a higher Cultural Assimilation multiplier converts faster: %f (×2.0) < %f (×0.5)" % [fast, slow])
+
+
+## A more rigid subject culture resists assimilation more.
+func test_rigid_culture_resists_more() -> void:
+	var flexible := _subject_weight_after(0.0, 1.0, 3)
+	var rigid := _subject_weight_after(0.9, 1.0, 3)
+	check(rigid > flexible,
+		"a rigid subject resists more than a flexible one: %f (rho=0.9) > %f (rho=0.0)" % [rigid, flexible])

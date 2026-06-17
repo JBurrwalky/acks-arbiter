@@ -26,6 +26,7 @@ func run_all_tests() -> void:
 	test_demihuman_caps()
 	test_human_seed_cap_respected()
 	test_homeland_substrate_seeded()
+	test_homelands_seed_two_hexes()
 	test_beastmen_are_chaotic_clanholds()
 	test_phonemic_adjacency_best_effort()
 	test_culture_instances_jittered_within_bounds()
@@ -160,17 +161,57 @@ func test_homeland_substrate_seeded() -> void:
 			"homeland alignment_weights missing '%s' for %s" % [p.alignment, p.id])
 
 
+## §7.4e: homelands seed TWO contiguous hexes where terrain allows (Barony-scale start,
+## less likely to be culled by the significance floor before reaching Duchy). At least
+## one civ/demihuman homeland should own ≥2 hexes on a medium map.
+func test_homelands_seed_two_hexes() -> void:
+	var owned := {}
+	for key in _hexes_by_qr:
+		var o := str(_hexes_by_qr[key].get("owner_polity_id", ""))
+		if o != "":
+			owned[o] = int(owned.get(o, 0)) + 1
+	var two_plus := 0
+	for p in _non_beastman_polities():
+		if int(owned.get(str(p.id), 0)) >= 2:
+			two_plus += 1
+	check(two_plus > 0, "at least one civ/demihuman homeland seeded a 2-hex realm, got %d" % two_plus)
+
+
 func test_beastmen_are_chaotic_clanholds() -> void:
-	var beastmen := _beastman_polities()
+	# §7.4e: beastmen seed as cohering WAR-HORDES (a contiguous cluster of
+	# ≥ BEASTMAN_HORDE_MIN_HEXES wilderness hexes under one chief), not lone clanholds.
+	# At DEFAULT density a given map/seed may legitimately form zero hordes — the
+	# scattered clanholds are then deferred to the 6-mile runtime fill — so use a high
+	# density here so a horde reliably forms and the seeding mechanism is exercised.
+	var params := SettingParameters.new()
+	params.map_size = "medium"
+	params.wilderness_beastman_density = 4.0
+	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 42, "params": params}
+	HeightmapGenerator.run(ctx)
+	ClimateGenerator.run(ctx)
+	RegionPainter.run_phase1(ctx)
+	CultureSeeder.run(ctx)
+	var grid: Dictionary = ctx["hex_grid"]
+	var hexes_by_pid := {}
+	for key in grid:
+		var o := str(grid[key]["owner_polity_id"])
+		if o != "":
+			hexes_by_pid[o] = int(hexes_by_pid.get(o, 0)) + 1
+	var beastmen: Array = []
+	for p in ctx["seed_polities"]:
+		if _tier_of(str(p.culture_id)) == "beastman":
+			beastmen.append(p)
 	for p in beastmen:
 		check(str(p.alignment) == "chaotic", "beastman polity %s not chaotic" % p.id)
 		check(str(p.civ_or_clan_state) == "clan", "beastman polity %s not clan" % p.id)
 		var key := Vector2i(int(p.capital_q), int(p.capital_r))
-		var hex: Dictionary = _hexes_by_qr.get(key, {})
+		var hex: Dictionary = grid.get(key, {})
 		check(not hex.is_empty() and str(hex.water) == "",
 			"beastman polity %s not on a wilderness land hex" % p.id)
-	# A default-density medium map should produce at least some beastmen.
-	check(beastmen.size() > 0, "no baseline beastman clanholds placed at default density")
+		check(int(hexes_by_pid.get(str(p.id), 0)) >= CultureSeeder.BEASTMAN_HORDE_MIN_HEXES,
+			"beastman horde %s holds fewer than %d hexes (not a cohering war-horde)"
+				% [p.id, CultureSeeder.BEASTMAN_HORDE_MIN_HEXES])
+	check(beastmen.size() > 0, "a cohering beastman war-horde forms at high density")
 
 
 func test_phonemic_adjacency_best_effort() -> void:
