@@ -632,7 +632,7 @@ PowerRegistry: Loaded 56 power definitions
   transient_pool_get: OK
 ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
-ERROR: CampaignRepository.get_character: not found. id=0f8c596bb82656ebed20eabf5b3c4db5
+ERROR: CampaignRepository.get_character: not found. id=2e5003441ac4a184c703f3f384d6e7ed
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] get_character (res://engine/autoloads/campaign_repository.gd:616)
@@ -674,7 +674,7 @@ ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
 ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
-ERROR: CampaignRepository.get_character: not found. id=a38a123b69e639d5cb1e02dbf4dc7e9c
+ERROR: CampaignRepository.get_character: not found. id=00e6cef72da05f6a8d7e16ad6b9522bc
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] get_character (res://engine/autoloads/campaign_repository.gd:616)
@@ -690,7 +690,7 @@ ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
 ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
-ERROR: PromotionEngine.promote_c_to_b: character '52ac018a173b4047cf8919f311773302' is not transient (tier='named')
+ERROR: PromotionEngine.promote_c_to_b: character 'a12d807b4b46f16a4062bfbdc8b0ddd2' is not transient (tier='named')
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] promote_c_to_b (res://engine/subsystems/characters/promotion_engine.gd:40)
@@ -701,7 +701,7 @@ ERROR: PromotionEngine.promote_c_to_b: character '52ac018a173b4047cf8919f3117733
        [5] _ready (res://tests/test_runner.gd:577)
 ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
-ERROR: PromotionEngine.promote_b_to_a: character '9d6aac2bcc935377cd052f4f08b26831' is not named (tier='full')
+ERROR: PromotionEngine.promote_b_to_a: character 'de79e658725152548f7ae6246c6f8011' is not named (tier='full')
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] promote_b_to_a (res://engine/subsystems/characters/promotion_engine.gd:70)
@@ -2462,7 +2462,7 @@ ERROR: ASSERTION FAILED: split_signal: new id should match
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
   split_emits_signal: OK
-ERROR: CampaignRepository.get_party: not found. id=22b5e6e90a3d6879c331896926e9ef1c
+ERROR: CampaignRepository.get_party: not found. id=f3d9722d00493b0cea3041f6a7be781d
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] get_party (res://engine/autoloads/campaign_repository.gd:790)
@@ -2725,37 +2725,37 @@ CharacterTab: all tests passed.
 MonsterRegistry: Loaded 225 monster definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  page_builds_modal_layer: OK (party_id=8efe42420d902109dff54b4288647839)
+  page_builds_modal_layer: OK (party_id=3aae5b40cbd59bb207677259956235af)
 MonsterRegistry: Loaded 225 monster definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  load_columns_for_party_with_pc_and_henchman: OK (party_id=040250c5020bcc848ffe4194fd5bc7ee)
+  load_columns_for_party_with_pc_and_henchman: OK (party_id=94815dee43d5a61a6795d655123f053d)
 MonsterRegistry: Loaded 225 monster definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  prefs_modal_parents_under_modal_layer: OK (party_id=a4a766164e86adf6dda2b42f1a8b5109)
+  prefs_modal_parents_under_modal_layer: OK (party_id=d30281419f2e313a5afae33e80b4c227)
 MonsterRegistry: Loaded 225 monster definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  filter_dropdown_propagates_to_columns: OK (party_id=9acf05e1490e4391f3f2861005e3bd05)
+  filter_dropdown_propagates_to_columns: OK (party_id=72947a294f5eef376a200a56482e5d1e)
 InventoryTab: all tests passed.
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  page_builds_with_modal_layer_and_sub_tabs: OK (party_id=6ca19339ce09ce562070f3632c9355b8)
+  page_builds_with_modal_layer_and_sub_tabs: OK (party_id=13684b2a1ef81c3296f49fcb8b3061c9)
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
   content_root_is_stretched_full_rect: OK
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  composition_loads_party_members: OK (party_id=86aa9d8eda3ee5f4b8027720896d0626)
+  composition_loads_party_members: OK (party_id=2e17699673d6fbc270a3def4cf76544d)
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  wilderness_and_dungeon_grids_are_independent: OK (party_id=14c6755a7157d93fac8c130d6e658e39)
+  wilderness_and_dungeon_grids_are_independent: OK (party_id=2e4fecd62623e823bc07fb2c756b939e)
 ClassRegistry: Loaded 29 class definitions
 ClassRegistry: Loaded 29 class definitions
-  travel_consumption_humanoid_food_and_water: OK (party_id=87e8b46c793390597a598e9161ee19b6)
+  travel_consumption_humanoid_food_and_water: OK (party_id=a0fbd6f18e1516c46d518caa052890f6)
   substate_round_trip_active_subtab_and_grid: OK
 PartyTab: all tests passed.
 ERROR: ASSERTION FAILED: widget zone has 9 cells (3×3); got 11
@@ -3206,7 +3206,7 @@ ERROR:  --> SQL error: CHECK constraint failed: kind IN ('pathfinder', 'land_sur
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.open_specialist: insert failed for a0e34dcb2d2fe4d6d83441205ca3acb2
+ERROR: CampaignRepository.open_specialist: insert failed for c24c3e0b0e38bafe7bb603fb86a8125d
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] open_specialist (res://engine/autoloads/campaign_repository.gd:7422)
@@ -3828,7 +3828,7 @@ ERROR:  --> SQL error: UNIQUE constraint failed: army_unit_assignments.troop_uni
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-ERROR: ArmyRepository.create_assignment failed: army=4a65e81ac85b74e04995180bc744bffe unit=4fb6745feaff048bde63c04f2f3e0f81
+ERROR: ArmyRepository.create_assignment failed: army=07ac3ddc8a1e1c1e9b9355d65ee24e40 unit=832f90470c44d678358aca02a298f40b
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_assignment (res://engine/subsystems/armies/army_repository.gd:291)
@@ -3909,7 +3909,7 @@ ERROR:  --> SQL error: UNIQUE constraint failed: vassal_assignments.liege_charac
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-ERROR: VassalRepository.create_assignment failed: liege=8e9c9f15fdb440f440ea1bd9f0fbd6f5 vassal=9541a74b9d5e50c26fc3043914e7117d
+ERROR: VassalRepository.create_assignment failed: liege=710016b98b59f43b6090c5be9bad8eda vassal=bb161d0b517ad75008a6a0eb9d7d6c6b
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_assignment (res://engine/subsystems/realm_ai/vassal_repository.gd:66)
@@ -3955,7 +3955,7 @@ ERROR:  --> SQL error: table hex_maps has no column named hex_size_miles
 MonsterRegistry: Loaded 225 monster definitions
 Phase9A: all tests passed.
 Phase9B: all 88 tests passed.
-WARNING: CallToArmsHandler.resolve_revocation: vassal cb831c960f2e801312d883c8ed4173b4 has no garrison army to receive returned troops
+WARNING: CallToArmsHandler.resolve_revocation: vassal e60491d596ff4ab720ac8c9d42f140a9 has no garrison army to receive returned troops
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] resolve_revocation (res://engine/subsystems/realm_ai/call_to_arms_handler.gd:229)
@@ -3964,21 +3964,12 @@ WARNING: CallToArmsHandler.resolve_revocation: vassal cb831c960f2e801312d883c8ed
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-WARNING: DomainEncounterResolver: no creatures in category 'men' match terrain 'underground' (domain 'fallback_test_dom_44224'); using unfiltered pool
+WARNING: DomainEncounterResolver: no creatures in category 'men' match terrain 'underground' (domain 'fallback_test_dom_43837'); using unfiltered pool
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] _generate_encounter (res://engine/subsystems/domains/domain_encounter_resolver.gd:592)
        [1] test_terrain_aware_selection_falls_back_when_no_matches (res://tests/test_phase_9c.gd:1111)
        [2] run_all_tests (res://tests/test_phase_9c.gd:89)
-       [3] _run_suite (res://tests/test_runner.gd:1170)
-       [4] run (res://tests/test_runner.gd:1150)
-       [5] _ready (res://tests/test_runner.gd:577)
-ERROR: ASSERTION FAILED: d100=1 should produce is_lingering=true for any creature with percent_in_lair ≥ 1
-   at: push_error (core/variant/variant_utility.cpp:1024)
-   GDScript backtrace (most recent call first):
-       [0] check (res://tests/test_suite_base.gd:24)
-       [1] test_settled_lair_lingering_creates_settled_lair_kind (res://tests/test_phase_9c.gd:1207)
-       [2] run_all_tests (res://tests/test_phase_9c.gd:93)
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
@@ -3994,7 +3985,17 @@ ERROR: ASSERTION FAILED: _bankers_round should be callable
 MonsterRegistry: Loaded 225 monster definitions
 SpellRegistry: Loaded 282 spell definitions (28 reversed forms)
 SpellRegistry: Loaded spell list indices
-  FAILED (2 assertion(s))
+  FAILED (1 assertion(s))
+WARNING: DomainEncounterResolver: no creatures in category 'giants' match terrain 'inhabited' (domain ''); using unfiltered pool
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _generate_encounter (res://engine/subsystems/domains/domain_encounter_resolver.gd:592)
+       [1] _invoke_generate_encounter (res://tests/test_monster_catalog_consistency.gd:223)
+       [2] test_resolver_generates_encounter_against_unified_catalog (res://tests/test_monster_catalog_consistency.gd:202)
+       [3] run_all_tests (res://tests/test_monster_catalog_consistency.gd:40)
+       [4] _run_suite (res://tests/test_runner.gd:1170)
+       [5] run (res://tests/test_runner.gd:1150)
+       [6] _ready (res://tests/test_runner.gd:577)
 MonsterCatalogConsistency: all tests passed.
 HexTerrainQuery: all 36 tests passed.
 DragonDataConsistency: all 453 tests passed.
@@ -4015,7 +4016,7 @@ ERROR:  --> SQL error: CHECK constraint failed: status IN ('in_progress', 'compl
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_magic_research_project: failed. id=162d7c4a54fb61cd0d9f3fea58a8f472
+ERROR: CampaignRepository.create_magic_research_project: failed. id=5c1735280f94f5b8aae1be0a80951765
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_magic_research_project (res://engine/autoloads/campaign_repository.gd:8402)
@@ -4040,7 +4041,7 @@ ERROR:  --> SQL error: CHECK constraint failed: status IN (
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_follower: failed. id=497d10ad0a195e751e85b4df6d173381
+ERROR: CampaignRepository.create_follower: failed. id=4ea78173c307114579bdd5bd18b2e69b
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_follower (res://engine/autoloads/campaign_repository.gd:8693)
@@ -4063,7 +4064,7 @@ ERROR:  --> SQL error: CHECK constraint failed: target_value BETWEEN 3 AND 30
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_magic_research_project: failed. id=4ae530a525e43023620ca06f700629c3
+ERROR: CampaignRepository.create_magic_research_project: failed. id=9bf036077af995405317a4a6ff5fd7ac
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_magic_research_project (res://engine/autoloads/campaign_repository.gd:8402)
@@ -4083,7 +4084,7 @@ ERROR:  --> SQL error: CHECK constraint failed: target_value BETWEEN 3 AND 30
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_magic_research_project: failed. id=21af14a7ab43ce3d6ad14477a5ace2ce
+ERROR: CampaignRepository.create_magic_research_project: failed. id=665974ceb5dded886665e5b84cce365d
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_magic_research_project (res://engine/autoloads/campaign_repository.gd:8402)
@@ -4103,7 +4104,7 @@ ERROR:  --> SQL error: CHECK constraint failed: target_value BETWEEN 3 AND 30
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_magic_research_project: failed. id=e90ab4f1dcfefbc683c015d66845af64
+ERROR: CampaignRepository.create_magic_research_project: failed. id=e6724d4c4eb21675ed2d414c850e78a9
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_magic_research_project (res://engine/autoloads/campaign_repository.gd:8402)
@@ -4123,7 +4124,7 @@ ERROR:  --> SQL error: CHECK constraint failed: target_value BETWEEN 3 AND 30
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: CampaignRepository.create_magic_research_project: failed. id=73f6685e0370d22aeb07988b4d4dab2b
+ERROR: CampaignRepository.create_magic_research_project: failed. id=5320e5e5e49a2accfedee427ec06d898
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] create_magic_research_project (res://engine/autoloads/campaign_repository.gd:8402)
@@ -4362,7 +4363,7 @@ SellMerchandiseHandler: all 15 tests passed.
 PersuadeMerchantsHandler: all 20 tests passed.
 SolicitMerchantsHandler: all 20 tests passed.
 LocateMerchandiseHandler: all 16 tests passed.
-ShippingContractOfferRoller: all 40 tests passed.
+ShippingContractOfferRoller: all 46 tests passed.
 AcceptShippingContractHandler: all 19 tests passed.
 ShippingContractWorkflow: all 11 tests passed.
 CommerceMonthlyResolver: all 25 tests passed.
@@ -5400,7 +5401,7 @@ ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
 ProficiencyRegistry: Loaded 107 proficiency definitions
 ProficiencyRegistry: Loaded 38 general proficiency keys
-  class_distribution: OK (fighter=721, cleric=172, mage=62, thief=45)
+  class_distribution: OK (fighter=695, cleric=196, mage=48, thief=61)
   level_by_title: OK
 ClassRegistry: Loaded 29 class definitions
 PowerRegistry: Loaded 56 power definitions
@@ -5897,7 +5898,7 @@ MonsterRegistry: Loaded 225 monster definitions
   materialize_marks_hoard_looted: OK
   materialize_is_idempotent: OK
   materialize_trap_fallback_locked_chest: OK
-WARNING: CampaignRepository.update_inventory_item_equip_state: cursed item refuses to be unequipped. id=d2ee252e013a9464a6ecd801b871eded
+WARNING: CampaignRepository.update_inventory_item_equip_state: cursed item refuses to be unequipped. id=f56c09258074ad6110a01560e0672285
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] update_inventory_item_equip_state (res://engine/autoloads/campaign_repository.gd:2995)
@@ -6039,7 +6040,7 @@ SpellRegistry: Loaded 282 spell definitions (28 reversed forms)
 SpellRegistry: Loaded spell list indices
   control_effect_unwind_clears_flag: OK
 MagicItemActivator: all tests passed.
-WARNING: CampaignRepository.update_inventory_item_equip_state: container '2e868c10932de78db784def9669cd38a' has insufficient capacity for item 'd4200021aeb53fcdaac51cdc001f72c6'.
+WARNING: CampaignRepository.update_inventory_item_equip_state: container '26731f188595dc662fa41e5f3c455a10' has insufficient capacity for item '86606fdeb0b0aa3b6f5071d431057b29'.
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] update_inventory_item_equip_state (res://engine/autoloads/campaign_repository.gd:3018)
@@ -6048,7 +6049,7 @@ WARNING: CampaignRepository.update_inventory_item_equip_state: container '2e868c
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-WARNING: CampaignRepository.update_inventory_item_equip_state: container 'd769b33c88527d39e66bd6fb50da8fd0' has insufficient capacity for item '7f96576ddf9049b65135fe802bf2f3d1'.
+WARNING: CampaignRepository.update_inventory_item_equip_state: container '0cc1b6d708595b8aebdb5a161a92d31b' has insufficient capacity for item '6feec8646d22c5c8ca2558f6b8e62262'.
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] update_inventory_item_equip_state (res://engine/autoloads/campaign_repository.gd:3018)
@@ -6057,7 +6058,7 @@ WARNING: CampaignRepository.update_inventory_item_equip_state: container 'd769b3
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-WARNING: CampaignRepository.update_inventory_item_equip_state: container '833b403126d25e0b97bbc939e2bb4da0' has insufficient capacity for item '95bf4f91d6c3f181f98656afe7858f02'.
+WARNING: CampaignRepository.update_inventory_item_equip_state: container '82c89a3ed599afc3f5bc68517938f014' has insufficient capacity for item '80aeaa4fe41ae783c8979419cc4c9418'.
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] update_inventory_item_equip_state (res://engine/autoloads/campaign_repository.gd:3018)
@@ -6066,7 +6067,7 @@ WARNING: CampaignRepository.update_inventory_item_equip_state: container '833b40
        [3] _run_suite (res://tests/test_runner.gd:1170)
        [4] run (res://tests/test_runner.gd:1150)
        [5] _ready (res://tests/test_runner.gd:577)
-WARNING: CampaignRepository.update_inventory_item_equip_state: container 'df24470886e3221573034aa8862be767' has insufficient capacity for item 'cc63e8c369005c0121899b75a13d905d'.
+WARNING: CampaignRepository.update_inventory_item_equip_state: container '8733aad930f7ea4535cea5e80312bcb7' has insufficient capacity for item '80d29b1cabf14b65d61bd8757c16bd9b'.
    at: push_warning (core/variant/variant_utility.cpp:1034)
    GDScript backtrace (most recent call first):
        [0] update_inventory_item_equip_state (res://engine/autoloads/campaign_repository.gd:3018)
@@ -6502,7 +6503,7 @@ ERROR: SettingRepository._bulk_insert: row missing column 'koppen' for setting_h
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: SettingRepository.save_parameters: setting is locked (post-approval). campaign=797a5c2bc443d8bd7c5abe020989a5d7
+ERROR: SettingRepository.save_parameters: setting is locked (post-approval). campaign=a6de7a7a4a498e5f575f797de7eea3d5
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] _reject_if_locked (res://engine/subsystems/generation/world/setting_repository.gd:327)
@@ -6512,7 +6513,7 @@ ERROR: SettingRepository.save_parameters: setting is locked (post-approval). cam
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: SettingRepository.save into setting_hexes: setting is locked (post-approval). campaign=797a5c2bc443d8bd7c5abe020989a5d7
+ERROR: SettingRepository.save into setting_hexes: setting is locked (post-approval). campaign=a6de7a7a4a498e5f575f797de7eea3d5
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] _reject_if_locked (res://engine/subsystems/generation/world/setting_repository.gd:327)
@@ -6523,7 +6524,7 @@ ERROR: SettingRepository.save into setting_hexes: setting is locked (post-approv
        [5] _run_suite (res://tests/test_runner.gd:1170)
        [6] run (res://tests/test_runner.gd:1150)
        [7] _ready (res://tests/test_runner.gd:577)
-ERROR: SettingRepository.delete_setting: setting is locked (post-approval). campaign=797a5c2bc443d8bd7c5abe020989a5d7
+ERROR: SettingRepository.delete_setting: setting is locked (post-approval). campaign=a6de7a7a4a498e5f575f797de7eea3d5
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] _reject_if_locked (res://engine/subsystems/generation/world/setting_repository.gd:327)
@@ -6533,7 +6534,7 @@ ERROR: SettingRepository.delete_setting: setting is locked (post-approval). camp
        [4] _run_suite (res://tests/test_runner.gd:1170)
        [5] run (res://tests/test_runner.gd:1150)
        [6] _ready (res://tests/test_runner.gd:577)
-ERROR: SettingGenerator.generate: setting already locked. campaign=797a5c2bc443d8bd7c5abe020989a5d7
+ERROR: SettingGenerator.generate: setting already locked. campaign=a6de7a7a4a498e5f575f797de7eea3d5
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] generate (res://engine/subsystems/generation/world/setting_generator.gd:46)
@@ -6544,51 +6545,53 @@ ERROR: SettingGenerator.generate: setting already locked. campaign=797a5c2bc443d
        [5] _ready (res://tests/test_runner.gd:577)
 SettingStage0Tests: all tests passed (90 checks)
 SettingStage1Tests: all tests passed (4323 checks)
-SettingStage2Tests: all tests passed (3581 checks)
-SettingStage3Tests: all tests passed (273 checks)
+SettingStage2Tests: all tests passed (3704 checks)
+SettingStage3Tests: all tests passed (200 checks)
 SettingGenerationDataFreshness: all tests passed.
 SettingStage4FoundationTests: all tests passed (31 checks)
-HIST PROFILE (ms): { "expansion": 975, "war": 1089, "rebellion": 274, "migration": 772, "economy": 434, "stability": 301, "collapse": 251, "contiguity": 532, "sub_diffuse": 1298, "sub_assim": 808, "substrate": 2108, "demography": 434, "log": 0 }
-  [perf] 160-tick sim on Large (with expansion): 7305 ms
-    [phase] collapse      251 ms
-    [phase] contiguity    532 ms
-    [phase] demography    434 ms
-    [phase] economy       434 ms
-    [phase] expansion     975 ms
+HIST PROFILE (ms): { "expansion": 1164, "war": 1102, "rebellion": 413, "migration": 669, "economy": 396, "stability": 142, "collapse": 175, "contiguity": 680, "consolidation": 1263, "go_native": 142, "sub_diffuse": 1352, "sub_assim": 1123, "substrate": 2476, "demography": 572, "log": 0 }
+  [perf] 160-tick sim on Large (with expansion): 9687 ms
+    [phase] collapse      175 ms
+    [phase] consolidation  1263 ms
+    [phase] contiguity    680 ms
+    [phase] demography    572 ms
+    [phase] economy       396 ms
+    [phase] expansion    1164 ms
+    [phase] go_native     142 ms
     [phase] log             0 ms
-    [phase] migration     772 ms
-    [phase] rebellion     274 ms
-    [phase] stability     301 ms
-    [phase] sub_assim     808 ms
-    [phase] sub_diffuse  1298 ms
-    [phase] substrate    2108 ms
-    [phase] war          1089 ms
-SettingStage4aTests: all tests passed (504 checks)
+    [phase] migration     669 ms
+    [phase] rebellion     413 ms
+    [phase] stability     142 ms
+    [phase] sub_assim    1123 ms
+    [phase] sub_diffuse  1352 ms
+    [phase] substrate    2476 ms
+    [phase] war          1102 ms
+SettingStage4aTests: all tests passed (366 checks)
 SCRIPT ERROR: Invalid access to property or key 'collapse_risk_tick' on a base object of type 'Dictionary'.
-   at: HistorySimulator._add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:678)
+   at: HistorySimulator._add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:705)
    GDScript backtrace (most recent call first):
-       [0] _add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:678)
-       [1] _add_attrition (res://engine/subsystems/generation/world/history_simulator.gd:672)
-       [2] _resolve_contest (res://engine/subsystems/generation/world/history_simulator.gd:666)
+       [0] _add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:705)
+       [1] _add_attrition (res://engine/subsystems/generation/world/history_simulator.gd:699)
+       [2] _resolve_contest (res://engine/subsystems/generation/world/history_simulator.gd:693)
        [3] test_contest_certain_win_and_loss (res://tests/test_setting_stage4b.gd:167)
        [4] run_all_tests (res://tests/test_setting_stage4b.gd:20)
        [5] _run_suite (res://tests/test_runner.gd:1170)
        [6] run (res://tests/test_runner.gd:1150)
        [7] _ready (res://tests/test_runner.gd:577)
 SCRIPT ERROR: Invalid access to property or key 'collapse_risk_tick' on a base object of type 'Dictionary'.
-   at: HistorySimulator._add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:678)
+   at: HistorySimulator._add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:705)
    GDScript backtrace (most recent call first):
-       [0] _add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:678)
-       [1] _add_attrition (res://engine/subsystems/generation/world/history_simulator.gd:672)
-       [2] _resolve_contest (res://engine/subsystems/generation/world/history_simulator.gd:667)
+       [0] _add_collapse_risk (res://engine/subsystems/generation/world/history_simulator.gd:705)
+       [1] _add_attrition (res://engine/subsystems/generation/world/history_simulator.gd:699)
+       [2] _resolve_contest (res://engine/subsystems/generation/world/history_simulator.gd:694)
        [3] test_contest_certain_win_and_loss (res://tests/test_setting_stage4b.gd:167)
        [4] run_all_tests (res://tests/test_setting_stage4b.gd:20)
        [5] _run_suite (res://tests/test_runner.gd:1170)
        [6] run (res://tests/test_runner.gd:1150)
        [7] _ready (res://tests/test_runner.gd:577)
-SettingStage4bTests: all tests passed (168 checks)
-SettingStage4cTests: all tests passed (59 checks)
-SettingStage4dTests: all tests passed (1141 checks)
+SettingStage4bTests: all tests passed (173 checks)
+SettingStage4cTests: all tests passed (30 checks)
+SettingStage4dTests: all tests passed (661 checks)
 SCRIPT ERROR: unsupported format character in operator '%'.
    at: test_revert_to_wilderness (res://tests/test_setting_stage4e.gd:239)
    GDScript backtrace (most recent call first):
@@ -6597,44 +6600,44 @@ SCRIPT ERROR: unsupported format character in operator '%'.
        [2] _run_suite (res://tests/test_runner.gd:1170)
        [3] run (res://tests/test_runner.gd:1150)
        [4] _ready (res://tests/test_runner.gd:577)
-SettingStage4eTests: all tests passed (304 checks)
-SettingStage4fTests: all tests passed (580 checks)
-SettingStage4gTests: all tests passed (2501 checks)
+SettingStage4eTests: all tests passed (271 checks)
+SettingStage4fTests: all tests passed (553 checks)
+SettingStage4gTests: all tests passed (1284 checks)
 
 [calibration] ============================================================
 [calibration]  mode: smoke — medium map × 3 seeds, DEFAULT sliders
 [calibration]  (set ACKS_CALIBRATION=1 for the full Large×20 sweep the §17 targets use)
 [calibration] ------------------------------------------------------------
-[calibration]  wilderness_class_pct    mean     64.9   min   45.8   max   77.2
-[calibration]  civ_owned_land_pct      mean     70.7   min   34.0   max   90.5
-[calibration]  unowned_pct             mean     23.8   min    8.3   max   52.4
-[calibration]  realms_total            mean    100.3   min   44.0   max  146.0
-[calibration]  civ_realms              mean     28.7   min   14.0   max   37.0
-[calibration]  major_civ_realms        mean     17.3   min    9.0   max   23.0
-[calibration]  independent_civ_realms  mean     10.0   min    9.0   max   12.0
-[calibration]  empires_with_vassals    mean      4.0   min    1.0   max    6.0
-[calibration]  multiethnic_empires     mean      1.3   min    1.0   max    2.0
-[calibration]  beastman_realms         mean     71.7   min    9.0   max  132.0
-[calibration]  demi_survivors          mean      1.7   min    0.0   max    3.0
-[calibration]  settlements             mean      8.3   min    3.0   max   11.0
-[calibration]  ruins                   mean    168.3   min  159.0   max  173.0
-[calibration]  events                  mean   6044.3   min 5222.0   max 6670.0
-[calibration]  depopulations           mean     79.7   min   73.0   max   85.0
-[calibration]  shatters                mean     10.7   min    6.0   max   18.0
+[calibration]  wilderness_class_pct    mean     77.5   min   56.3   max   93.2
+[calibration]  civ_owned_land_pct      mean     90.4   min   90.2   max   90.5
+[calibration]  unowned_pct             mean      9.3   min    8.4   max    9.8
+[calibration]  realms_total            mean     44.0   min   34.0   max   61.0
+[calibration]  civ_realms              mean     43.7   min   34.0   max   60.0
+[calibration]  major_civ_realms        mean     23.3   min   21.0   max   27.0
+[calibration]  independent_civ_realms  mean      9.3   min    7.0   max   12.0
+[calibration]  empires_with_vassals    mean      5.7   min    3.0   max    7.0
+[calibration]  multiethnic_empires     mean      0.7   min    0.0   max    2.0
+[calibration]  beastman_realms         mean      0.3   min    0.0   max    1.0
+[calibration]  demi_survivors          mean      0.3   min    0.0   max    1.0
+[calibration]  settlements             mean     10.0   min    4.0   max   17.0
+[calibration]  ruins                   mean    168.0   min  164.0   max  171.0
+[calibration]  events                  mean   4626.7   min 3538.0   max 6215.0
+[calibration]  depopulations           mean     76.0   min   51.0   max  107.0
+[calibration]  shatters                mean     16.7   min   13.0   max   23.0
 [calibration] ------------------------------------------------------------
 [calibration]  §17 targets (Large, defaults):
-[calibration]    ~50% wilderness (class)        actual 64.9%       → MISS
-[calibration]    5–10 independent civ realms    actual 10.0          → MET
+[calibration]    ~50% wilderness (class)        actual 77.5%       → MISS
+[calibration]    5–10 independent civ realms    actual 9.3          → MET
 [calibration]  NOTE: smoke ran on medium; the §17 targets are pegged to Large.
 [calibration] ============================================================
 
 SettingCalibrationTests: all tests passed (6 checks)
 WallEdgeResolver: all tests passed.
 SettingNameBanksTests: all tests passed (995 checks)
-SettingStage6Tests: all tests passed (130 checks)
-SettingStage7Tests: all tests passed (630 checks)
-SettingStage8Tests: all tests passed (166 checks)
-ERROR: SettingRepository.save into setting_settlements: setting is locked (post-approval). campaign=19c62b9d78c2f67494972a1dade9a39e
+SettingStage6Tests: all tests passed (89 checks)
+SettingStage7Tests: all tests passed (501 checks)
+SettingStage8Tests: all tests passed (150 checks)
+ERROR: SettingRepository.save into setting_settlements: setting is locked (post-approval). campaign=eeabc0c4e8f6272b49a80c2fc86a929c
    at: push_error (core/variant/variant_utility.cpp:1024)
    GDScript backtrace (most recent call first):
        [0] _reject_if_locked (res://engine/subsystems/generation/world/setting_repository.gd:327)
@@ -6645,7 +6648,7 @@ ERROR: SettingRepository.save into setting_settlements: setting is locked (post-
        [5] _run_suite (res://tests/test_runner.gd:1170)
        [6] run (res://tests/test_runner.gd:1150)
        [7] _ready (res://tests/test_runner.gd:577)
-SettingStage9Tests: all tests passed (8 checks)
+SettingStage9Tests: all tests passed (11 checks)
 CampaignCreationSeamsTests: all tests passed (27 checks)
 ClassRegistry: Loaded 29 class definitions
 ProficiencyRegistry: Loaded 107 proficiency definitions
@@ -6654,14 +6657,14 @@ PowerRegistry: Loaded 56 power definitions
 NpcPersonality: all tests passed.
 SettingRebellionTests: all tests passed (20 checks)
 SCRIPT ERROR: Invalid access to property or key 'liege_id' on a base object of type 'Dictionary'.
-   at: test_vassalize_rejects_liege_cycle (res://tests/test_setting_beastman.gd:286)
+   at: test_vassalize_rejects_liege_cycle (res://tests/test_setting_beastman.gd:314)
    GDScript backtrace (most recent call first):
-       [0] test_vassalize_rejects_liege_cycle (res://tests/test_setting_beastman.gd:286)
+       [0] test_vassalize_rejects_liege_cycle (res://tests/test_setting_beastman.gd:314)
        [1] run_all_tests (res://tests/test_setting_beastman.gd:22)
        [2] _run_suite (res://tests/test_runner.gd:1170)
        [3] run (res://tests/test_runner.gd:1150)
        [4] _ready (res://tests/test_runner.gd:577)
-SettingBeastmanTests: all tests passed (51 checks)
+SettingBeastmanTests: all tests passed (107 checks)
 === TEST RESULTS: 461 suites passed, 17 failed ===
 CampaignRepository: wiped 150 tables for test run
 Closed database (C:/Users/jttau/AppData/Local/Temp/acks_test_appdata_babb79ef/Godot/app_userdata/ACKS Arbiter/campaign_test.db)

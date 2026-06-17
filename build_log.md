@@ -35431,3 +35431,31 @@ on-tick dispatch.
 **Next session should:**
 - Address the batch of bugs Jedidiah flagged ("I have a number of other bugs... once we are at a good break point") — go-native is that break point.
 - The real monoculture fix remains EXPANSION-SETTLING cultural REACH (Phase 5): `_settle_wilderness` should not paint the expander's culture at full strength everywhere; use the RAW `range_of_trade` falloff (acore-setting-construction-rules.xml:264). Optionally revisit go-native gate/rate tuning if natural firings are desired.
+
+## Session 2026-06-17 — Setting-gen + inventory bug batch (Jedidiah's 6-bug list)
+
+**Task:** Work a 6-bug list: (1) items can't transfer to animals/vehicles; (2) unclaimed hexes marked borderlands with a culture label + no pop; (3) Duchies reaching 12+ hexes (RAW 4–11); (4) a Principality vassalized by a Principality should promote the liege to King; (5) noncontiguous realms under one lord + princes-vassals-of-princes; (6) replay shows only pol_id/hex# (dead realms unnamed) + a nice-to-have for layer toggles in replay.
+**Model used:** Opus 4.8 (investigation via two parallel general-purpose agents for #1 + #6; RAW grounding; a structural diagnostic over the three seeds; fixes + verification).
+**Completed:**
+- **#4/#5 prince-under-prince (FIXED, 564acc4):** `HistorySimulator._realm_tier` was family-count-only; now `mini(_realm_tier_rec(pol,{}), EMPIRE)` where `_realm_tier_rec` = max(`tier_for_families(_realm_families)`, max over direct vassals of `_realm_tier_rec(v)+1`). RAW `political_divisions_of_realms` (acore-setting-construction-rules.xml:102): ruling a tier-N realm makes you tier N+1. Prince-ruling-prince → King; promotes recursively up the chain. Diagnostic: same/higher-tier vassalage 3/1/0 → 0 (seeds 345235582/38045604/40847028).
+- **#2 unclaimed-borderlands (FIXED, 564acc4):** root was `infrastructure_generator._classify_territory` (§9.6) promoting ANY wilderness hex within a settlement's reach, including UNOWNED land → "unclaimed borderlands". Now it skips `owner_polity_id == ""` hexes (classify only a realm's held hinterland). Diagnostic: unowned-not-wilderness 24/50/38 → 0. (A speculative history-sim `_normalize_unclaimed_wilderness` was added then reverted — it was a no-op: heightmap inits all-wilderness, the sim only promotes owned hexes, and `_revert_to_wilderness` is the sole owner-clearing path and already sets wilderness.)
+- **#1 inventory transfer (FIXED, bc8c7a2):** `PartyInventoryTransferValidator._validate_to_creature` routed a default-slot drag to the cargo branch (needs draft/pack saddle or rope), never trying an equipped saddlebag/pannier — so a riding mount with saddlebags, or a draft animal, was rejected even with free capacity. Now a loose drag onto a pack-container-equipped mount routes to the saddlebag branch first, and the contradictory `saddle_type=="draft"` reject (which disagreed with `TrainedCreatureData.can_carry_loose_cargo`) is removed. Vehicles were already fine for a properly-hitched team.
+**Decisions made:**
+- **#3 over-area duchies = NOT A BUG (Jedidiah confirmed from ACKS FAQ/discussions):** realm tier is FAMILY-COUNT-driven; the realms_by_type hex-count columns are guidelines assuming ~125–185 families per 6-mile hex. With dynamic per-hex density a low-density duchy CAN be geographically huge (12–25 hexes) and stay RAW-valid. No split/cap mechanism. The structural-tier fix is consistent (families + the ruling-tier floor).
+- **#5 contiguity = leave the bridging rules as-is (Jedidiah):** sea-lane range 10 (~240 mi) is historically defensible (Athens/Ionia, Rome/Carthage, the Danelaw); vassal-separation carries RAW penalties. Confirmed NOT a shearing bug — `_connected_components` bridges via sea-lanes + transitive vassal land and `_phase_contiguity` shears the rest. The case Jedidiah actually wants (holdings cut off by ENEMY land with no bridge) should already be sheared; he will try to reproduce + screencap.
+**Interfaces defined or changed:**
+- `HistorySimulator._realm_tier(pol)` semantics: now the structural RAW tier (max of family-tier and 1 + highest-direct-vassal-tier), clamped to EMPIRE; new `_realm_tier_rec(pol, seen)`. The output `setting_polities.tier_index`/title/ruler_level reflect it (already the Option-C contract).
+- `infrastructure_generator._classify_territory`: unowned hexes are no longer promoted.
+- `PartyInventoryTransferValidator._validate_to_creature`: default-slot drag prefers an equipped pack container (saddlebags/panniers) over loose cargo; no draft-saddle reject.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_beastman`: +2 structural-tier (`test_realm_tier_structural_promotion`, `test_realm_tier_promotes_chain`).
+- `test_setting_stage7`: +1 end-to-end (`test_unclaimed_hexes_are_wilderness`).
+- `test_party_inventory_transfer_validator`: +2 (`test_default_drag_onto_saddlebag_mount_accepted`, `test_default_drag_onto_draft_animal_accepted`).
+- Suite 461/17 net-zero throughout (three measured runs).
+**Known issues:**
+- **#6 replay (DEFERRED to a focused MCP-verified UI session):** root cause confirmed — replay frames store only ownership ids; dead-before-present realms are never named (only `setting_polities` survivors get Layer-5 names; dead realms keep a `toponym_root` in `setting_fallen_polities` the replay never loads). FIX READY: in `screen_generate_replay.begin_replay`, also load `SettingRepository.list_fallen_polities` → `names[fid] = "the Old <toponym_root>"` (fallback "a fallen realm"). NICE-TO-HAVE (Part B): wire the existing `political_map_view` mode toggles (POLITICAL/BIOME/ELEVATION/TERRITORY/CULTURE + Sovereign — already built, used by `screen_review`) into the replay screen's `_build_ui` (copy `_MODES`/`_on_mode`/`_on_sovereign_toggled` from `screen_review`). Per-epoch CULTURE in replay needs an approximate owner-culture lookup or a new per-frame snapshot (deferred). Scene scripts are not suite-loaded → verify via godot-ai MCP in the live flow.
+- #5: awaiting Jedidiah's repro/screencaps of the no-bridge enemy-cutoff case.
+**Next session should:**
+- Implement #6 (replay names via fallen toponyms + the Part B layer toggles) and MCP-verify in the live campaign-creation flow.
+- If #5 screencaps show a genuine no-bridge cutoff, investigate `_phase_contiguity` finalization coverage.
