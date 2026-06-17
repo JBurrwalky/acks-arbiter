@@ -1519,6 +1519,16 @@ func test_npc_dialogue_falls_back_to_template() -> void:
 - **Assert ACKS rule compliance.** If a function implements an ACKS rule, the test should verify the rule is followed.
 - **Assert boundary values.** Especially for banker's rounding, level thresholds, and domain population breakpoints.
 
+### 9.6 Test database isolation (2026-06-16)
+
+The "test database" in the §9.3 table is a **separate file**, not the player's live DB. Test runs must never open, wipe, or lock the playtest data. Two layers enforce this:
+
+- **In-code redirect (`CampaignRepository`).** `_ready()` calls `_is_test_run()` and, when true, points `db.path` at `TEST_DB_PATH` (`user://campaign_test.db`) and `_active_saves_dir` at `TEST_SAVES_DIR` (`user://saves_test`) **before `open_db()`**. The path must be chosen pre-open — a post-open close/reopen swap triggers godot-sqlite FK-check breakage (the original reason the suite wiped the live file in place). `_is_test_run()` returns true if the command line contains `test_runner.tscn` **or** an explicit `--test` flag. `wipe_for_tests()` is guarded: it refuses to run unless `is_test_run` is set, so a stray call can never nuke live data. Any new save-file path **must** route through `_active_saves_dir`, never the `SAVES_DIR` constant directly, or it will escape the redirect.
+
+- **APPDATA isolation (`tools/run_tests.ps1` / `.sh`).** Godot derives `user://` from `%APPDATA%` + the project name, which is **identical across every git worktree** — so by default concurrent worktrees share one `campaign.db` (lost playtest data, `database is locked` spam). The wrappers point `%APPDATA%` at a stable per-worktree temp dir before launching, giving each worktree a fully private `user://`. This is the **required** way to run the suite when another worktree is active. The dir is stable per worktree, so re-runs reuse the same isolated test DB (no fresh-DB FK-noise every run; measure pass/fail on run 2 of a freshly-created dir — run 1 applies all migrations with `foreign_keys` ON).
+
+Net effect: the suite's `wipe_for_tests()` (called at both the start and end of `test_runner.gd.run()`) only ever clears the isolated test DB + `saves_test/`. The player can keep a long-running playtest campaign across any number of test runs.
+
 ---
 
 ## 10. Action Vocabulary and Roll Types

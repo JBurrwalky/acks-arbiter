@@ -35245,3 +35245,86 @@ on-tick dispatch.
 **Known issues:**
 - A demihuman ruler_class now carries the `elven_*`/`dwarven_*` id; confirm the downstream NPC builder / narrative display handle the prefixed id (the class files exist; narrative just `.replace("_", " ")`).
 **Next session should:** continue toward setting→runtime materialization; the large-map cultural-monoculture discussion is still open.
+
+
+## Session 2026-06-16 — 3D Wilderness Hex Renderer GDD (exploratory → draft + adversarial review)
+
+**Task:** Assess converting the 2D wilderness hex map to a 3D heightmap with the hex grid overlaid, then author the GDD. Exploratory, no code changes. Driven by Jedidiah's design: elevation_raw → smooth heightmap → biome programmatic distortion (gentle on hills, sharp on mountains) → textured hexes with edge dithering → lava patches on volcanic / snow on glacial → river depressions; isometric default camera (not necessarily locked); fix the zoom-out limitation.
+
+**Model used:** Opus 4.8 (1M context) for all phases (codebase exploration; two multi-agent Workflows — a 5-agent gather and a 3-agent adversarial review; GDD authoring).
+
+**Completed:**
+- Deep review of the 2D hexmap layer + consumers (scenes/maps/hex_map_renderer.gd [Node2D, TileMapLayer], engine/subsystems/exploration/hex_map_controller.gd, shared_types hex_map_data/hex_terrain_data/hex_river_edge_data/hex_overlay_data) and the existing 3D dungeon renderer as the reuse base.
+- Authored generation/gdd-wilderness-hex-3d.md (v0.2, full first draft) — the "wilderness/hex visual-pass GDD" that gdd-dungeon-asset-integration-plan.md (:36, :526-531) explicitly deferred.
+- Catalogued the Terrain asset library at C:\Users\jttau\OneDrive\Pictures\Terrain: 12 AmbientCG 1K PBR ground sets under "hexmap textures\" (clear/grassland/savanna/tundra/forest_floor/jungle_floor/desert/badlands/mountain/mountain_volcanic/lava[+Emission]/snow), ~150 Quaternius Wilderness scatter .blend (birch/common/pine/palm/willow + autumn/dead/snow, bushes/cactus/rocks/groundcover/stumps/logs), shared Bark/Leaf textures. Mapped biome→texture and biome→scatter; surfaced gaps.
+- Ran adversarial verification: repo-fidelity 46/47 citations CONFIRMED (0 wrong; lone "unverifiable" was actually correct); Godot 4.6 techniques stress-tested (no WRONG items; several RISKY) and corrections applied to the GDD §3/§5/§6/§7/§8/§9/§10/§11/§12.
+
+**Decisions made:**
+- SCALE STRATEGY (recommended, pending Jedidiah): keep the 24-mile map 2D (strategic abstraction) and make 3D the 6-mile scale; this dissolves cross-scale texture continuity. Rationale: NO 6-mile continuous height exists — heightmap_generator.gd:17 HEX_MILES=24 (24-mile only); elevation_raw lives in setting_hexes only, not hex_cells; gdd-hex-subdivision.md §6 (6-mile derivation) and setting→runtime materialization are both UNBUILT.
+- RENDERER-OWNED HEIGHT SYNTHESIS: the 3D renderer is a pure view that synthesizes deterministic height from the categorical tag (TAG_ONLY fallback) or the interpolated 24-mile parent via migration-119 linkage (PARENT_GUIDE default), with a RAW_FIELD hook for when subdivision lands. No schema change for V1.
+- PICKING raycasts the chunk collision mesh (NOT flat-plane — parallax shifts a displaced peak ~1.43*H in XZ under the -35deg ortho camera). HEX GRID is single-pass (folded into the splat fragment with a uniform toggle, NOT next_pass — avoids Godot #95419 + the can't-read-prior-pass limit). Both corrected during review.
+
+**Interfaces defined or changed:**
+- Proposed (NOT built): scenes/maps/hex_map_renderer_3d.gd + scenes/maps/hex_map_3d.tscn; WildernessAssetRegistry + res://data/wilderness_assets.tres; ProjectSettings flag "acks/rendering/wilderness_hex_mode" ("flat_2d" default | "heightmap_3d"); assets/wilderness_kit/<subcat>/<name>.glb; assets/wilderness_textures/<biome>/.
+- CONTRACT TO PRESERVE (the 2D→3D swap depends on it): the 3D renderer must re-emit verbatim — party_token_clicked(party_id:String, coord:Vector2i), hex_context_menu_requested(coord:Vector2i, screen_pos:Vector2), dungeon_entry_requested(entrance:Dictionary, spawn_cell:Vector2i), settlement_entry_requested(entrance:Dictionary, entry_poi_id:String) — and honor setup(controller), center_on_hex(coord), visible, process_mode. Wilderness gameplay seam stays Vector2i(q,r), NOT Vector3i like the dungeon.
+- Coordinate anchor: 1 world unit = 1 hex footprint (keeps a 60x45 map's camera size under the 16384 ortho clamp; clean float precision; the kit_scale fit target).
+
+**Database changes:**
+- None. Optional migration 163 (add elevation_raw REAL to hex_cells + carry through campaign_repository.gd:1347 save_hex_map, which currently drops it) is documented in GDD §14 but DEFERRED. Latest migration is 162_setting_events_razing.sql.
+
+**Tests added/updated:**
+- None (design-only session).
+
+**Known issues:**
+- [APPROVAL GATE] Design brief §5.1 (:143-156) / §6.1 (:181-183) lock the hex map as "2D presentation layer"; shipping the 3D renderer needs Jedidiah's amendment. GDD proposes a flag-gated PARALLEL renderer (2D stays default) as the least-invasive form.
+- ASSET GAPS: no swamp ground texture; no water surface asset (needs a shader); no reeds/jungle-canopy/savanna-acacia trees; no settlement/road 3D meshes (V1: billboard landmark icons + draped road decals). Substitutes noted in GDD §12.4.
+- 2D RENDERER BUG (independent of 3D): scenes/maps/hex_map_renderer.gd:70 ZOOM_MIN := 1.0 forbids zooming out below default → large generated maps can't be viewed whole. Jedidiah approved fixing; NOT yet done (GDD phase W-0).
+- Godot 4.6 watch-items captured in GDD: ortho Camera3D size silently clamped to <=16384 (proposal #5736 — the real "can't zoom out" cause if the map is modeled in feet); MultiMesh has no per-instance cull (#10669 — chunking + custom_aabb mandatory) and casts shadows as one unit; next_pass depth bug #95419 (avoided via single-pass grid); cross-chunk normal seams need analytic/apron normals; ViewportTexture heraldry needs the SubViewport in-tree + rendered once before assignment.
+
+**Next session should:**
+- Get Jedidiah's rulings on the GDD §15 gates: (1) design-brief amendment for 2D→3D, (2) scale strategy (24mi 2D / 3D=6mi), (3) asset-gap handling + settlement representation.
+- Optionally land the standalone 2D ZOOM_MIN / zoom-to-fit fix (GDD phase W-0) — valuable regardless of the 3D decision.
+- On approval, begin W-1 (asset import: textures→materials, trees→glTF via the assets/dungeon_kit/_convert.py headless pattern + acks-blender-pipeline skill) then W-2 (flag + 3D scene scaffold with full signal/interaction parity, verified via godot-ai MCP).
+
+
+## Session 2026-06-16 — Test-DB isolation (stop the suite obliterating playtest saves)
+
+**Task:** The test runner's `wipe_for_tests()` deleted ALL campaign rows and ALL `user://saves/*.db` files on every run — including the player's long-running playtest. Isolate test data from playtest data so a campaign survives repeated suite runs, and avoid `campaign.db` conflicts/locks with a concurrent git worktree.
+
+**Model used:** Opus 4.8 (investigation, design, implementation, verification).
+
+**Completed:**
+- Root cause: one shared `user://campaign.db` + `user://saves/` for everything; `user://` derives from `%APPDATA%` + project name `"ACKS Arbiter"` (no custom user dir in `project.godot`), so EVERY worktree shares the same files. `tests/test_runner.gd._ready()` (and again at end of `run()`, line ~1162) calls `CampaignRepository.wipe_for_tests()`, which `DELETE`s every table and calls `_wipe_save_slot_files()` (deletes every `*.db` under the saves dir).
+- Option 1 (in-code redirect) — `engine/autoloads/campaign_repository.gd`:
+  - Added `TEST_DB_PATH = "user://campaign_test.db"`, `TEST_SAVES_DIR = "user://saves_test"`, `var is_test_run`, `var _active_saves_dir`.
+  - Added `_is_test_run()` — true if cmdline (engine args or user args after `--`) contains `test_runner.tscn` or `--test`.
+  - `_ready()` now picks `db.path` and `_active_saves_dir` from `is_test_run` BEFORE `open_db()` (pre-open choice avoids the godot-sqlite FK-check breakage a post-open swap causes — the original reason the suite wiped in place).
+  - `wipe_for_tests()` guarded: refuses to run unless `is_test_run` (fail-safe, can never nuke live data).
+  - Routed `_wipe_save_slot_files()`, `_ensure_saves_dir()`, `_slot_file_path()` through `_active_saves_dir` instead of the `SAVES_DIR` constant.
+- Option 2 (APPDATA isolation) — added `tools/run_tests.ps1` (canonical, Windows) and `tools/run_tests.sh` (git-bash mirror). They point `%APPDATA%` at a STABLE per-worktree temp dir (`%TEMP%\acks_test_appdata_<sha1[0:8]>`) so each worktree gets a private `user://` (no cross-worktree DB lock), and pass `-- --test`. Stable dir => re-runs reuse the same isolated DB (no fresh-DB FK noise every run).
+- Verified: a 2-run suite under isolation opened `.../campaign_test.db` (logged `TEST MODE`), produced **461/17** on run 2 (17 = pre-existing carry-forward, net-zero new failures), and the live `campaign.db` stayed byte-identical (169443328 bytes, mtime unchanged) across both runs despite 4 total `wipe_for_tests` calls.
+
+**Decisions made:**
+- Separate persistent test DB (not a fresh temp DB each run, not a scoped/guarded wipe). Keeps current test ergonomics (schema already migrated, no per-run fresh-DB FK noise) while fully protecting playtest data. The raw documented headless command (`res://tests/test_runner.tscn`) now ALSO self-isolates via scene-path detection — playtest is safe even without the wrapper; the wrapper only adds cross-worktree APPDATA isolation.
+- Detection = scene path OR `--test` (belt-and-suspenders across headless CLI, editor play-scene, godot-ai MCP).
+
+**Interfaces defined or changed:**
+- `CampaignRepository.is_test_run: bool` (new public-ish flag), `CampaignRepository.TEST_DB_PATH`, `CampaignRepository.TEST_SAVES_DIR`, `CampaignRepository._active_saves_dir`, `CampaignRepository._is_test_run() -> bool`.
+- `wipe_for_tests()` now no-ops (with push_error) outside test mode.
+- New convention: any new save-file path MUST route through `_active_saves_dir`, never `SAVES_DIR` directly.
+
+**Database changes:**
+- None (no migration). New runtime file `user://campaign_test.db` + `user://saves_test/` created only during test runs.
+
+**Tests added/updated:**
+- No new suites. Full suite re-run under isolation: 461/17 (net-zero new failures vs carry-forward 17).
+
+**Known issues:**
+- Two CONCURRENT playtests in different worktrees still share the live `campaign.db` (Option 1 only separates test-vs-playtest; the APPDATA wrapper separates test runs). Rare in practice.
+- `tools/run_tests.sh` (git-bash path/cygpath handling) is provided as a mirror but was not executed this session; `run_tests.ps1` is the verified canonical wrapper.
+- CLAUDE.md still documents the raw headless command; consider pointing it at the wrapper (left to Jedidiah — the raw command is now non-destructive anyway).
+
+**Next session should:**
+- Optionally update CLAUDE.md's headless test command to recommend `tools/run_tests.ps1`.
+- Optionally smoke-test `tools/run_tests.sh` under git-bash.
+- coding_conventions.md §9.6 documents this; no further doc work required.

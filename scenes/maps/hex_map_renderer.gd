@@ -66,7 +66,11 @@ const CROSSING_FERRY_COLOR := Color(0.95, 0.95, 0.95)
 # Camera panning
 const PAN_SPEED := 200.0
 const EDGE_MARGIN := 40.0
-const ZOOM_MIN := 1.0      # 100% — no zoom out beyond default
+## Absolute floor on zoom-out so an enormous map can't shrink to nothing.
+const ZOOM_MIN_FLOOR := 0.15
+## Zoom on load / Home (100%). Players zoom out to the per-map fit-to-screen
+## zoom (`_zoom_min`, computed in `_compute_camera_limits`) or in to ZOOM_MAX.
+const ZOOM_DEFAULT := 1.0
 const ZOOM_MAX := 2.5      # 250%
 const ZOOM_STEP := 0.1     # 10% additive per tick
 
@@ -91,6 +95,14 @@ const ZOOM_STEP := 0.1     # 10% additive per tick
 var _controller: HexMapController
 var _map_data: HexMapData
 var _zoom_level: float = 1.0
+
+## Per-map minimum zoom (most zoomed-out). Recomputed as the fit-to-screen zoom
+## so the whole map is always reachable; never above ZOOM_DEFAULT (small maps keep
+## a 100% floor), never below ZOOM_MIN_FLOOR.
+var _zoom_min: float = ZOOM_DEFAULT
+## Padded pixel extent of the loaded map (bbox + tile overhang + margin), cached
+## so the fit-zoom can be recomputed against the live viewport without re-walking hexes.
+var _content_size: Vector2 = Vector2.ZERO
 
 ## Node2D child that draws river/road overlay lines via _draw().
 var _overlay_layer: Node2D
@@ -1233,7 +1245,8 @@ func _on_overlay_updated(_coord: Vector2i) -> void:
 	_refresh_overlay_layer()
 
 
-## Computes Camera2D limits from the map's pixel bounding box plus 1-tile padding.
+## Computes Camera2D limits from the map's pixel bounding box plus 1-tile
+## padding, and caches the padded extent used for the fit-to-screen minimum zoom.
 func _compute_camera_limits() -> void:
 	if _camera == null or _map_data == null:
 		return
@@ -1252,6 +1265,35 @@ func _compute_camera_limits() -> void:
 	_camera.limit_right  = int(max_pos.x + pad_x)
 	_camera.limit_top    = int(min_pos.y - pad_y)
 	_camera.limit_bottom = int(max_pos.y + pad_y)
+	# Cache the padded pixel extent: bbox (hex centers) + one tile of overhang
+	# (half a tile beyond the edge centers on each side) + one tile of margin
+	# on each side. Used by _recompute_zoom_min() for the fit-to-screen floor.
+	if not _map_data.hexes.is_empty():
+		_content_size = Vector2(
+			(max_pos.x - min_pos.x) + float(TERRAIN_TILE_SIZE.x) + 2.0 * pad_x,
+			(max_pos.y - min_pos.y) + float(TERRAIN_TILE_SIZE.y) + 2.0 * pad_y
+		)
+	else:
+		_content_size = Vector2.ZERO
+	_recompute_zoom_min()
+
+
+## Recomputes the per-map minimum zoom (most zoomed-out) as the fit-to-screen
+## zoom for the cached map extent against the current viewport: at this zoom the
+## whole map (with a tile of margin) is visible. Clamped to (ZOOM_MIN_FLOOR,
+## ZOOM_DEFAULT] so small maps keep a 100% floor and huge maps can't shrink to
+## nothing. Cheap (no hex walk) so it runs on every zoom tick, staying correct
+## across window resizes.
+func _recompute_zoom_min() -> void:
+	if _content_size.x <= 0.0 or _content_size.y <= 0.0:
+		_zoom_min = ZOOM_DEFAULT
+		return
+	var vp := get_viewport().get_visible_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		_zoom_min = ZOOM_DEFAULT
+		return
+	var fit := minf(vp.x / _content_size.x, vp.y / _content_size.y)
+	_zoom_min = clampf(fit, ZOOM_MIN_FLOOR, ZOOM_DEFAULT)
 
 
 ## Zoom in/out. If [param center_on_screen] is provided (mouse wheel), the
@@ -1261,7 +1303,9 @@ func _apply_zoom(new_zoom: float, center_on_screen: Vector2 = Vector2(-1, -1)) -
 	if _camera == null:
 		return
 	var old_zoom := _zoom_level
-	_zoom_level = clampf(new_zoom, ZOOM_MIN, ZOOM_MAX)
+	# Refresh the fit-to-screen floor (handles window resizes since map load).
+	_recompute_zoom_min()
+	_zoom_level = clampf(new_zoom, _zoom_min, ZOOM_MAX)
 	if _zoom_level == old_zoom:
 		return
 
