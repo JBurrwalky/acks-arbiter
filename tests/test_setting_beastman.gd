@@ -46,6 +46,9 @@ func run_all_tests() -> void:
 	test_go_native_skips_vassal()
 	test_subject_culture_share_is_mass_weighted()
 	test_go_native_emits_cultural_shift_event()
+	# Bug batch 2026-06-17 — structural realm-tier (#4/#5) + unclaimed→wilderness (#2)
+	test_realm_tier_structural_promotion()
+	test_realm_tier_promotes_chain()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -653,3 +656,38 @@ func test_go_native_emits_cultural_shift_event() -> void:
 		check(cults.size() == 2 and str(cults[0]) == "steppe" and str(cults[1]) == "high",
 			"the event records [from, to] cultures, got %s" % str(cults))
 	check(found, "a cultural_shift event is emitted (visible in the replay review)")
+
+
+# --- bug batch 2026-06-17 -----------------------------------------------------
+
+## #4/#5: structural realm-tier (RAW political_divisions) — a realm ranks at least one
+## tier above the realms it DIRECTLY rules, even when combined families fall short of
+## that tier's population floor. A Duchy ruling a Duchy is a Principality.
+func test_realm_tier_structural_promotion() -> void:
+	var sim := _sim()
+	var liege := _realm(sim, "L", "civ", "lawful", [Vector2i(0, 0)], 22000, "civilized")
+	liege["tier_index"] = DomainTierTable.DUCHY
+	var vassal := _realm(sim, "V", "civ", "lawful", [Vector2i(2, 0)], 22000, "civilized")
+	vassal["tier_index"] = DomainTierTable.DUCHY
+	vassal["liege_id"] = "L"
+	check(DomainTierTable.tier_for_families(sim._realm_families(liege)) == DomainTierTable.DUCHY,
+		"by families alone the liege (44k) is still a Duchy")
+	check(sim._realm_tier(liege) == DomainTierTable.PRINCIPALITY,
+		"a Duchy ruling a Duchy is structurally a Principality, got %d" % sim._realm_tier(liege))
+	check(sim._realm_tier(vassal) == DomainTierTable.DUCHY, "the vassal stays a Duchy")
+
+
+## A same-tier vassalage CHAIN promotes recursively: prince→prince→prince resolves to
+## emperor→king→prince (no "prince the vassal of a prince" at the top).
+func test_realm_tier_promotes_chain() -> void:
+	var sim := _sim()
+	var a := _realm(sim, "A", "civ", "lawful", [Vector2i(0, 0)], 90000, "civilized")
+	var _b := _realm(sim, "B", "civ", "lawful", [Vector2i(2, 0)], 90000, "civilized")
+	var _c := _realm(sim, "C", "civ", "lawful", [Vector2i(4, 0)], 90000, "civilized")
+	sim._polities["B"]["liege_id"] = "A"   # chain A → B → C
+	sim._polities["C"]["liege_id"] = "B"
+	check(sim._realm_tier(_c) == DomainTierTable.PRINCIPALITY, "leaf C is a Principality (90k families)")
+	check(sim._realm_tier(_b) == DomainTierTable.KINGDOM,
+		"B (ruling a Principality) is a Kingdom, got %d" % sim._realm_tier(_b))
+	check(sim._realm_tier(a) == DomainTierTable.EMPIRE,
+		"A (ruling a Kingdom) is an Empire, got %d" % sim._realm_tier(a))

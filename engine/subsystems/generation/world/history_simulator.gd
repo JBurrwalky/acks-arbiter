@@ -3785,11 +3785,29 @@ func _realm_families_rec(pol: Dictionary, seen: Dictionary) -> int:
 	return total
 
 
-## The realm-tier (RAW overall-realm rank), keyed on _realm_families — the polity's
-## present-day TITLE / ruler-level / significance tier. Distinct from `tier_index`
-## (own territory, drives dynamics). §7.4e / §12.
+## The realm-tier (RAW overall-realm rank): the HIGHER of (a) the family tier of the
+## whole realm (own + transitive war-vassals) and (b) the STRUCTURAL floor — a realm
+## that directly rules a tier-N realm ranks at least tier N+1 (RAW
+## political_divisions_of_realms, acore-setting-construction-rules.xml:102: a Kingdom
+## contains Principalities, a Principality contains Duchies, a Duchy contains Counties…).
+## So a Prince who war-vassalizes a Prince becomes a King even when their combined
+## families fall short of the Kingdom population floor — and the chain promotes
+## recursively (a King who takes a King is an Emperor). The polity's present-day TITLE /
+## ruler-level / significance tier; distinct from `tier_index` (own territory, drives
+## dynamics). §7.4e / §12.
 func _realm_tier(pol: Dictionary) -> int:
-	return DomainTierTable.tier_for_families(_realm_families(pol))
+	return mini(_realm_tier_rec(pol, {}), DomainTierTable.EMPIRE)
+
+
+func _realm_tier_rec(pol: Dictionary, seen: Dictionary) -> int:
+	var pid := str(pol["id"])
+	if seen.has(pid):
+		return DomainTierTable.BARONY
+	seen[pid] = true
+	var t := DomainTierTable.tier_for_families(_realm_families(pol))
+	for vid in _vassal_polities_of(pid):
+		t = maxi(t, _realm_tier_rec(_polities[vid], seen) + 1)   # rank above each realm it directly rules
+	return t
 
 
 func _parse_weights(json_str: String) -> Dictionary:

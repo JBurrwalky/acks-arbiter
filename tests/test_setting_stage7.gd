@@ -21,6 +21,7 @@ func run_all_tests() -> void:
 		test_settlement_stocking_invariants(cid)
 		test_settlement_hexes_classified(cid)
 		test_territory_classes_valid(cid)
+		test_unclaimed_hexes_are_wilderness(cid)
 		test_roads_valid(cid)
 		test_road_paths_contiguous_and_dry(cid)
 		test_highways_named(cid)
@@ -141,6 +142,20 @@ func test_territory_classes_valid(cid: String) -> void:
 			check(t in ["wilderness", "borderlands", "civilized"],
 				"land hex (%d,%d) has a valid territory_class (got '%s')"
 				% [int(h["q"]), int(h["r"]), t])
+
+
+## #2 (2026-06-17): an UNCLAIMED land hex must be wilderness. §9.6 classification
+## promotes only a realm's HELD hinterland, never ownerless no-man's-land — the 24-mile
+## review surfaced "unclaimed borderlands" hexes a neighbouring city had promoted.
+func test_unclaimed_hexes_are_wilderness(cid: String) -> void:
+	for h in SettingRepository.list_hexes(cid):
+		if str(h.get("water", "")) != "":
+			continue
+		if str(h.get("owner_polity_id", "")) != "":
+			continue
+		check(str(h.get("territory_class", "")) == "wilderness",
+			"unclaimed hex (%d,%d) is wilderness, got '%s'" % [
+				int(h["q"]), int(h["r"]), str(h.get("territory_class", ""))])
 
 
 func test_roads_valid(cid: String) -> void:
