@@ -35459,3 +35459,27 @@ on-tick dispatch.
 **Next session should:**
 - Implement #6 (replay names via fallen toponyms + the Part B layer toggles) and MCP-verify in the live campaign-creation flow.
 - If #5 screencaps show a genuine no-bridge cutoff, investigate `_phase_contiguity` finalization coverage.
+
+## Session 2026-06-17 — Phantom sea-lanes + orphan absorption + expansion strips (#5 follow-up)
+
+**Task:** Jedidiah supplied repro seeds + screencaps refuting the earlier "#5 = no bug" call (orphan hexes inside enemy realms, no sea access, not vassals). Re-investigate; he ruled a severed orphan should be ABSORBED by the realm that surrounds it. Also: civs settle in long vertical strips ("walk straight north").
+**Model used:** Opus 4.8 (re-investigation via reproduction diagnostics + a subagent for the expansion-direction analysis; implementation + verification).
+**Completed:**
+- **Phantom sea-lane bug (CONFIRMED + FIXED):** `_connected_components` bridged any two coastal hexes within `sea_lane_range` by STRAIGHT-LINE distance, never checking a shared body of water — so blocks separated by enemy LAND got a phantom "sea lane" and were never sheared (the orphans Jedidiah saw). Diagnostic confirmed 3 phantom-bridged realms in seed 777207224, 1 in 360202439. FIX: `_precompute_ocean_components()` flood-fills the (static) ocean into connected components once and records each coastal land hex's bordering ocean(s) (`_coastal_oceans`); the sea-lane jump in `_connected_components` now also requires `_shared_ocean(h, c)`. Post-fix verification: 0 phantom-split realms across all 3 seeds.
+- **Orphan absorption (Jedidiah ruling):** `_phase_contiguity` now annexes a severed orphan component into the realm that SURROUNDS it — `_dominant_surrounding_realm` (most-adjacent live foreign realm) + `_absorb_orphan` (routes through `_flip_hex`, so substrate assimilation + the §7.4c beastman-raze rule apply). Falls back to the old secede(≥ floor)/revert-to-wilderness(lone hex) only when nothing but wilderness/ocean borders the orphan (keeps `test_contiguity_secedes_orphan` valid).
+- **Vertical-strip expansion bias (CONFIRMED + FIXED):** root cause (subagent-confirmed) = the expansion frontier is sorted by terrain score (only 4 discrete values → many ties), tie-broken by `_canonical_less` = northmost-first, so realms march straight north. FIX: `_precompute_expand_jitter()` gives each land hex a deterministic ±5% factor (well under the 0.15 gap between terrain-affinity buckets, so it never overrides real terrain preference); `_compute_frontier` multiplies `_terrain_mult` by it → equal-terrain ties scatter → organic growth.
+**Decisions made:**
+- A severed orphan is ABSORBED by the surrounding realm (Jedidiah), not seceded, whenever a foreign realm borders it.
+- A sea lane requires a shared flood-filled ocean body, not just straight-line distance. (Water-PATH distance ≤ range is a possible future refinement; shared-ocean fixes the confirmed across-land phantom cases.)
+- The earlier "#5 = no bug" conclusion was WRONG — it trusted the sim's own (flawed) connectivity definition instead of questioning it. Jedidiah's direct observation was correct.
+**Interfaces defined or changed:**
+- `HistorySimulator`: new members `_ocean_id` / `_coastal_oceans` / `_expand_jitter_by_hex`; new `_precompute_ocean_components` / `_shared_ocean` / `_precompute_expand_jitter` / `_dominant_surrounding_realm` / `_absorb_orphan`; `_connected_components` sea-lane now requires `_shared_ocean`; `_compute_frontier` applies the jitter; `_phase_contiguity` absorbs orphans. Both precomputes run in `run()` right after `_build_ordered_keys`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_beastman`: rewrote `test_sea_lane_bridges_coastal` (a real CONNECTED ocean strip + `_precompute_ocean_components`); added `test_phantom_sea_lane_not_bridged` (different ocean bodies are NOT bridged), `test_orphan_absorbed_by_surrounder`, `test_expand_jitter_breaks_ties`. SettingBeastmanTests now 113 checks.
+- Suite 461/17 net-zero. Post-fix seed verification: 0 phantom-split realms (was 3 / 1 / 0).
+**Known issues:**
+- Sea-lane validity uses shared-ocean + straight-line distance, not water-PATH distance — two blocks on the same ocean but a long way around by water (> range) could still bridge. Minor; refine only if it surfaces.
+- Generation changed (phantom realms absorbed + expansion jitter), so a seed regenerates a slightly different world than older screencaps (expected; no determinism hash is pinned).
+**Next session should:**
+- Build the UI debug features Jedidiah requested: a RIVER overlay on the map (river_edges already generated) + a VASSALAGE TREE view in the review screen. Bundle with the deferred #6 replay items (dead-realm names via setting_fallen_polities.toponym_root + the existing layer toggles) as one godot-ai MCP-verified review-UI session.

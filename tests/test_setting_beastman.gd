@@ -15,6 +15,9 @@ func run_all_tests() -> void:
 	test_flip_hex_chaotic_keeps_beastman()
 	test_components_split_by_foreign_land()
 	test_sea_lane_bridges_coastal()
+	test_phantom_sea_lane_not_bridged()
+	test_orphan_absorbed_by_surrounder()
+	test_expand_jitter_breaks_ties()
 	test_contiguity_secedes_orphan()
 	test_vassal_bridge_keeps_realm_whole()
 	test_capital_repointed_when_lost()
@@ -210,10 +213,57 @@ func test_components_split_by_foreign_land() -> void:
 func test_sea_lane_bridges_coastal() -> void:
 	var sim := _sim()
 	var r := _realm(sim, "R", "civ", "lawful", [Vector2i(0, 0), Vector2i(1, 0), Vector2i(8, 0), Vector2i(9, 0)])
-	# make (0,0) and (8,0) coastal (ocean neighbor) — distance 8 ≤ sea_lane_range 10
+	# A CONNECTED ocean strip so (0,0) and (8,0) border the SAME water body — distance 8
+	# ≤ sea_lane_range 10, so a real sea lane joins them into one realm.
+	for q in range(0, 9):
+		_ocean(sim, Vector2i(q, -1))
+	sim._precompute_ocean_components()
+	check(sim._connected_components(r).size() == 1, "a sea lane over shared ocean (≤ range) keeps the realm one piece")
+
+
+## §7.4d: two coastal blocks within sea-lane range but on DIFFERENT ocean bodies are NOT
+## bridged — the old straight-line check phantom-joined them across land, leaving realms
+## that looked orphaned yet were never sheared.
+func test_phantom_sea_lane_not_bridged() -> void:
+	var sim := _sim()
+	var r := _realm(sim, "R", "civ", "lawful", [Vector2i(0, 0), Vector2i(1, 0), Vector2i(8, 0), Vector2i(9, 0)])
+	# Two SEPARATE one-hex ponds: (0,0) borders one, (8,0) the other — no shared water.
 	_ocean(sim, Vector2i(0, -1))
 	_ocean(sim, Vector2i(8, -1))
-	check(sim._connected_components(r).size() == 1, "a sea lane between coastal hexes (≤ range) keeps the realm one piece")
+	sim._precompute_ocean_components()
+	check(sim._connected_components(r).size() == 2,
+		"coastal blocks on different ocean bodies are NOT sea-lane bridged (no phantom)")
+
+
+## §7.4d: a severed enclave surrounded by another realm is ABSORBED by it (Jedidiah),
+## not seceded; the former owner keeps its capital block.
+func test_orphan_absorbed_by_surrounder() -> void:
+	var sim := _sim()
+	# R holds a capital block (0,0),(1,0) plus a lone enclave (5,0). B rings the enclave,
+	# so (5,0) is severed from R and surrounded by B (no ocean → no sea lane to rescue it).
+	var r := _realm(sim, "R", "civ", "lawful", [Vector2i(0, 0), Vector2i(1, 0), Vector2i(5, 0)])
+	var b := _realm(sim, "B", "civ", "neutral", [
+		Vector2i(5, -1), Vector2i(6, -1), Vector2i(6, 0),
+		Vector2i(5, 1), Vector2i(4, 1), Vector2i(4, 0)])
+	sim._precompute_ocean_components()
+	sim._phase_contiguity(1)
+	check(str(sim._grid[Vector2i(5, 0)]["owner_polity_id"]) == "B",
+		"the severed enclave is absorbed by the surrounding realm")
+	check(Vector2i(5, 0) in b["hexes"], "B gained the enclave")
+	check(not (Vector2i(5, 0) in r["hexes"]) and r["hexes"].size() == 2,
+		"R lost the enclave but kept its capital block")
+
+
+## §7.2: per-hex expansion jitter is deterministic, within ±5%, and distinct per hex, so
+## equal-terrain frontier hexes no longer tie and fall to the canonical (northward) sort.
+func test_expand_jitter_breaks_ties() -> void:
+	var sim := _sim()
+	sim._land_keys = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(2, 3)]
+	sim._precompute_expand_jitter()
+	var a := float(sim._expand_jitter_by_hex[Vector2i(0, 0)])
+	var b := float(sim._expand_jitter_by_hex[Vector2i(1, 0)])
+	check(a >= 0.95 and a <= 1.05, "jitter stays within ±5%, got %f" % a)
+	check(a != b, "distinct hexes get distinct jitter (ties broken, not all northmost)")
 
 
 func test_contiguity_secedes_orphan() -> void:

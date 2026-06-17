@@ -51,6 +51,9 @@ var _ordered_keys: Array         # canonical (r,q) hex order, cached
 var _land_keys: Array            # land hexes only, canonical order (diffusion)
 var _river_barrier: Dictionary   # "q,r,e" -> true for river/major-river crossings
 var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
+var _ocean_id: Dictionary = {}        # ocean Vector2i -> connected-ocean id (sea-lane validity)
+var _coastal_oceans: Dictionary = {}  # coastal land Vector2i -> {ocean id: true} it borders
+var _expand_jitter_by_hex: Dictionary = {}  # land Vector2i -> §7.2 expansion tie-break factor
 var _terrain_mult_cache: Dictionary = {}  # culture_id -> {Vector2i -> mult} (terrain is static)
 
 # Substrate parsed into memory for the tick loop (re-serialized at finalize).
@@ -110,6 +113,8 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 	_height = ctx["height"]
 	_n_ticks = _params.history_ticks()
 	_build_ordered_keys()
+	_precompute_ocean_components()   # §7.4d: sea lanes require a shared ocean body
+	_precompute_expand_jitter()      # §7.2: break the canonical-tie expansion strip bias
 	_build_river_barriers(ctx.get("river_edges", []))
 	_precompute_edge_damp()
 	_parse_substrate()
@@ -609,7 +614,7 @@ func _compute_frontier(pol: Dictionary) -> Array:
 			if str(_grid[n]["owner_polity_id"]) == pid:
 				continue
 			seen[n] = true
-			out.append({"hex": n, "mult": _terrain_mult(pol, n)})
+			out.append({"hex": n, "mult": _terrain_mult(pol, n) * _expand_jitter_by_hex.get(n, 1.0)})
 	return out
 
 
@@ -1765,7 +1770,14 @@ func _phase_contiguity(tick: int) -> void:
 			if i == keep_i:
 				continue
 			var orphan: Array = comps[i]
-			if orphan.size() < _c.contiguity_min_secede_hexes:
+			# A severed piece is ANNEXED by the realm that surrounds it (Jedidiah, 2026-06-17):
+			# a stranded enclave inside another realm joins that realm rather than spinning off a
+			# doomed micro-state. Only when nothing but wilderness/ocean borders it does it fall
+			# back to seceding (>= the secede floor) or reverting to wilderness (a lone hex).
+			var surrounder := _dominant_surrounding_realm(pol, orphan)
+			if surrounder != "":
+				_absorb_orphan(orphan, pol, _polities[surrounder], tick)
+			elif orphan.size() < _c.contiguity_min_secede_hexes:
 				for h in orphan:
 					_revert_to_wilderness(h, tick, _c.rump_shed_pop_keep, false)
 			else:
@@ -1830,7 +1842,8 @@ func _connected_components(pol: Dictionary, vassals_by_liege: Dictionary = {}) -
 					stack.append(n)
 			if _is_coastal(h):
 				for c in coastal:
-					if not seen.has(c) and _hex_distance(h, c) <= _c.sea_lane_range:
+					if not seen.has(c) and _hex_distance(h, c) <= _c.sea_lane_range \
+							and _shared_ocean(h, c):
 						seen[c] = true
 						stack.append(c)
 		comps.append(comp)
@@ -1847,12 +1860,113 @@ func _is_coastal(h: Vector2i) -> bool:
 	return false
 
 
+## §7.4d sea-lane validity. Flood-fill the (static) ocean into connected components once,
+## and record for each coastal LAND hex which ocean body(ies) it borders. A sea lane is
+## valid only between coastal hexes that share an ocean — straight-line distance alone
+## wrongly bridged blocks separated by enemy LAND ("phantom" sea lanes that left realms
+## looking orphaned but never sheared). One pass over the grid; ocean never changes.
+func _precompute_ocean_components() -> void:
+	_ocean_id = {}
+	_coastal_oceans = {}
+	var next_id := 0
+	for key in _grid:
+		if str(_grid[key].get("water", "")) != "ocean" or _ocean_id.has(key):
+			continue
+		var stack: Array = [key]
+		_ocean_id[key] = next_id
+		while not stack.is_empty():
+			var h: Vector2i = stack.pop_back()
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if str(_grid.get(n, {}).get("water", "")) == "ocean" and not _ocean_id.has(n):
+					_ocean_id[n] = next_id
+					stack.append(n)
+		next_id += 1
+	for key in _grid:
+		if str(_grid[key].get("water", "")) != "":
+			continue
+		var ids := {}
+		for off in _OFF:
+			var n: Vector2i = key + off
+			if _ocean_id.has(n):
+				ids[_ocean_id[n]] = true
+		if not ids.is_empty():
+			_coastal_oceans[key] = ids
+
+
+## True if coastal land hexes [a] and [b] border a common ocean body (a ship can sail
+## between them) — the precondition for a valid sea lane.
+func _shared_ocean(a: Vector2i, b: Vector2i) -> bool:
+	var ia: Dictionary = _coastal_oceans.get(a, {})
+	if ia.is_empty():
+		return false
+	for id in _coastal_oceans.get(b, {}):
+		if ia.has(id):
+			return true
+	return false
+
+
+## §7.2 expansion tie-break jitter. A small, deterministic, per-hex factor so equal-
+## terrain frontier hexes don't all tie and fall to the canonical (northmost) sort —
+## which made realms expand in straight vertical strips. ±5%, well under the 0.15 gap
+## between terrain-affinity buckets (0.5/1.0/1.15/1.5), so it never overrides real
+## terrain preference; per-hex and stable across ticks. Precomputed once.
+func _precompute_expand_jitter() -> void:
+	_expand_jitter_by_hex = {}
+	for key in _land_keys:
+		var rng := WorldGenRng.stream(_campaign_seed, "expand_jitter", 0, "%d,%d" % [key.x, key.y])
+		_expand_jitter_by_hex[key] = 1.0 + (rng.randf() - 0.5) * 0.1
+
+
 func _largest_component_index(comps: Array) -> int:
 	var best := 0
 	for i in range(1, comps.size()):
 		if comps[i].size() > comps[best].size():
 			best = i
 	return best
+
+
+## §7.4d: the live FOREIGN realm holding the most hexes adjacent to [orphan], or "" if
+## the orphan borders only wilderness/ocean (nothing to absorb it). Deterministic — a
+## sorted-id scan, highest adjacency count wins, lexically-smallest id breaks ties. (A
+## piece bordering the realm's OWN vassal can't reach here: vassal land bridges it, so it
+## would not be a separate component.)
+func _dominant_surrounding_realm(pol: Dictionary, orphan: Array) -> String:
+	var orphan_set := {}
+	for h in orphan:
+		orphan_set[h] = true
+	var counts := {}
+	for h in orphan:
+		for off in _OFF:
+			var n: Vector2i = h + off
+			if orphan_set.has(n) or not _grid.has(n):
+				continue
+			var owner := str(_grid[n]["owner_polity_id"])
+			if owner == "" or owner == str(pol["id"]):
+				continue
+			if not _polities.has(owner) or not _polities[owner]["alive"]:
+				continue
+			counts[owner] = int(counts.get(owner, 0)) + 1
+	var owners: Array = counts.keys()
+	owners.sort()
+	var best := ""
+	var best_n := 0
+	for owner in owners:
+		if int(counts[owner]) > best_n:
+			best_n = int(counts[owner])
+			best = str(owner)
+	return best
+
+
+## §7.4d: annex a severed orphan component into the realm that surrounds it. Routes
+## through the _flip_hex chokepoint, so substrate assimilation and the §7.4c beastman-
+## raze rule apply uniformly (a beastman enclave overrun by a Lawful/Neutral surrounder
+## is razed, not settled). The orphan's former owner keeps its retained capital block.
+func _absorb_orphan(orphan: Array, from_pol: Dictionary, to_pol: Dictionary, tick: int) -> void:
+	for h in orphan:
+		_flip_hex(h, from_pol, to_pol, tick)
+	if to_pol.get("alive", false):
+		_update_tier(to_pol)
 
 
 ## Spin an orphaned (foreign-land-severed) component off as its own realm of the
