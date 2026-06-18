@@ -411,6 +411,12 @@ func _finalize_classification(settlements: Array, hex_grid: Dictionary) -> void:
 
 	for key in desired:
 		var hex: Dictionary = hex_grid[key]
+		# Only a realm's HELD land is promoted: a settlement civilizes the hinterland its
+		# realm controls, not unclaimed no-man's-land between realms. An ownerless hex
+		# stays wilderness, so the review never shows "unclaimed borderlands". (#2 fix —
+		# the 24-mile review surfaced unowned hexes promoted by a neighbouring city.)
+		if str(hex.get("owner_polity_id", "")) == "":
+			continue
 		# Clanhold-held land never civilizes — it stays wilderness regardless of a
 		# neighbouring city's reach (clan cultures lack the capacity for settled life,
 		# so the sim keeps their hexes wilderness and §9.6 must not promote them).

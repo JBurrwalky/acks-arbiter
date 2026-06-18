@@ -15,9 +15,25 @@ extends Node
 ##   db.path uses "user://" not "res://"
 
 const DB_PATH := "user://campaign.db"
+## Isolated database used ONLY during automated test runs, so the suite's
+## `wipe_for_tests()` can never touch the player's live `campaign.db`. The path
+## is selected in `_ready()` BEFORE `open_db()` — choosing it pre-open avoids the
+## godot-sqlite FK-check misbehavior that a post-open close/reopen swap triggers
+## (the reason the original design stayed on one shared file; see `wipe_for_tests`).
+const TEST_DB_PATH := "user://campaign_test.db"
 const MIGRATIONS_RES_PATH := "res://db/migrations/"
 
 var db: SQLite
+
+## True when this process is an automated test run (see `_is_test_run`). Drives
+## the test-DB + test-saves redirect so the player's live save data is never
+## opened, let alone wiped, by the test suite. Set once in `_ready()`.
+var is_test_run := false
+
+## Directory actually used for whole-DB save-slot files this session — the live
+## `SAVES_DIR` in normal play, or `TEST_SAVES_DIR` during a test run. Set in
+## `_ready()` alongside the DB-path choice so save/load/prune/wipe all agree.
+var _active_saves_dir := ""
 
 # Lazily-cached EquipmentCatalog for capacity fallback. Populated on first
 # call to `_get_equipment_catalog` (used by `_check_container_capacity` when
@@ -27,10 +43,33 @@ var db: SQLite
 var _equipment_catalog_cache: EquipmentCatalog = null
 
 
+## True when launched as an automated test run, so the DB + saves redirect to
+## isolated test paths and the player's live save data is never wiped. Detected
+## two ways (belt-and-suspenders across launch methods — headless CLI, editor
+## play-scene, godot-ai MCP test_run):
+##   1. the test-runner scene path appears anywhere in the command line, or
+##   2. an explicit `--test` flag is passed (as an engine arg or a user arg
+##      after `--`; the `tools/run_tests.*` wrappers always pass it).
+func _is_test_run() -> bool:
+	for arg in OS.get_cmdline_args():
+		if arg == "--test" or arg.ends_with("test_runner.tscn"):
+			return true
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--test":
+			return true
+	return false
+
+
 func _ready() -> void:
 	db = SQLite.new()
-	db.path = DB_PATH
+	# Decide test-vs-live BEFORE opening: the path must be chosen pre-open to
+	# avoid the godot-sqlite FK-check breakage a post-open swap causes.
+	is_test_run = _is_test_run()
+	db.path = TEST_DB_PATH if is_test_run else DB_PATH
+	_active_saves_dir = TEST_SAVES_DIR if is_test_run else SAVES_DIR
 	db.open_db()
+	if is_test_run:
+		print("CampaignRepository: TEST MODE — isolated DB '%s' + saves '%s'; live save data is untouched." % [db.path, _active_saves_dir])
 	# Persistence policy (2026-06-12): WAL journal + synchronous NORMAL.
 	# SQLite's defaults (DELETE journal, synchronous FULL) fsync roughly twice
 	# per statement-level implicit transaction, which made the per-frame write
@@ -51,15 +90,20 @@ func _ready() -> void:
 ## runs don't accumulate orphan campaigns (101 test files call
 ## `create_campaign`; zero call `delete_campaign`).
 ##
-## Stays on the same DB file rather than swapping to a separate test DB —
-## attempting to swap+re-open via close_db / open_db surfaces FK-check
-## behavior in godot-sqlite that breaks otherwise-correct test inserts.
-## The downside is the user's persistent game data is wiped on every test
-## run; the trade-off is acceptable because tests were already polluting
-## that data before this fix landed.
+## SAFE BY CONSTRUCTION: this only ever runs against the isolated test DB +
+## test saves dir. `_ready()` redirects `db.path` to `TEST_DB_PATH` and
+## `_active_saves_dir` to `TEST_SAVES_DIR` whenever `_is_test_run()` is true,
+## BEFORE the DB is opened (pre-open path choice sidesteps the godot-sqlite
+## FK-check breakage that a post-open close/reopen swap caused — the reason
+## the original design wiped the live file in place). The guard below is a
+## fail-safe: if test mode was somehow NOT detected, refuse rather than wipe
+## the player's live `campaign.db` / `saves/`.
 func wipe_for_tests() -> void:
 	if db == null:
 		push_error("CampaignRepository.wipe_for_tests: db not open")
+		return
+	if not is_test_run:
+		push_error("CampaignRepository.wipe_for_tests: refusing to wipe — not a detected test run (db=%s). Live save data preserved. Launch via tools/run_tests.* or pass --test." % db.path)
 		return
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
 	var tables: Array = db.query_result.duplicate()
@@ -77,9 +121,10 @@ func wipe_for_tests() -> void:
 	print("CampaignRepository: wiped %d tables for test run" % (tables.size() - PRESERVE.size()))
 
 
-## Removes every *.db file under SAVES_DIR. Test-hygiene helper for wipe_for_tests.
+## Removes every *.db file under the ACTIVE saves dir (the isolated test saves
+## dir during a test run — never the live `SAVES_DIR`). Helper for wipe_for_tests.
 func _wipe_save_slot_files() -> void:
-	var saves_abs := ProjectSettings.globalize_path(SAVES_DIR)
+	var saves_abs := ProjectSettings.globalize_path(_active_saves_dir)
 	if not DirAccess.dir_exists_absolute(saves_abs):
 		return
 	var d := DirAccess.open(saves_abs)
@@ -5064,16 +5109,19 @@ func transfer_item_to_character(item_id: String, character_id: String) -> bool:
 # Snapshot management (used by OverrideManager)
 # ---------------------------------------------------------------------------
 
-## Directory holding whole-DB save-slot files.
+## Directory holding whole-DB save-slot files in normal play.
 const SAVES_DIR := "user://saves"
+## Isolated save-slot dir used during test runs (see `_active_saves_dir`), so the
+## suite's `_wipe_save_slot_files()` never deletes the player's real save slots.
+const TEST_SAVES_DIR := "user://saves_test"
 ## Default cap on retained slots per campaign (oldest auto-pruned).
 const MAX_SLOTS_PER_CAMPAIGN := 20
 
 func _ensure_saves_dir() -> void:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVES_DIR))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_active_saves_dir))
 
 func _slot_file_path(snapshot_id: String) -> String:
-	return "%s/%s.db" % [SAVES_DIR, snapshot_id]
+	return "%s/%s.db" % [_active_saves_dir, snapshot_id]
 
 func _slot_abs_path(snapshot_id: String) -> String:
 	return ProjectSettings.globalize_path(_slot_file_path(snapshot_id))

@@ -172,6 +172,16 @@ func _check_rulers(polities: Array, grid: Dictionary, errors: Array, warnings: A
 		var owner := str(grid[key].get("owner_polity_id", ""))
 		if owner != "":
 			hex_count[owner] = int(hex_count.get(owner, 0)) + 1
+	# V7 judges tier against the WHOLE realm (own + transitive war-vassals), matching the
+	# realm-tier that now sets the title (§7.4e / §12) — a king ruling vassal-duchies has
+	# few own hexes but a large realm, which is plausible, not a warning.
+	var vassals_of := {}
+	for p in polities:
+		var lg := str(p.get("liege_id", ""))
+		if lg != "":
+			if not vassals_of.has(lg):
+				vassals_of[lg] = []
+			vassals_of[lg].append(str(p["id"]))
 	for p in polities:
 		var pid := str(p["id"])
 		# V9: seeded morale present (Stage 4g §12.2) and valid JSON.
@@ -185,9 +195,21 @@ func _check_rulers(polities: Array, grid: Dictionary, errors: Array, warnings: A
 		# V7: a high tier on a one-hex holding is implausible (an empire can't be 3
 		# hexes — §12.1). A warning: the present-day handoff is the authority.
 		var tier := int(p.get("tier_index", 0))
-		var held := int(hex_count.get(pid, 0))
+		var held := _realm_hex_count(pid, vassals_of, hex_count, {})
 		if tier >= 5 and held < 4:
-			_warn(warnings, "V7", "polity %s is tier %d but holds only %d hexes" % [pid, tier, held])
+			_warn(warnings, "V7", "polity %s is tier %d but its whole realm holds only %d hexes" % [pid, tier, held])
+
+
+## Own hexes plus every transitive war-vassal's hexes (visited-set guarded against any
+## stray liege cycle, which V8 reports separately).
+func _realm_hex_count(pid: String, vassals_of: Dictionary, hex_count: Dictionary, seen: Dictionary) -> int:
+	if seen.has(pid):
+		return 0
+	seen[pid] = true
+	var total := int(hex_count.get(pid, 0))
+	for vid in vassals_of.get(pid, []):
+		total += _realm_hex_count(str(vid), vassals_of, hex_count, seen)
+	return total
 
 
 ## V11 every NON-geometric ruin seed carries real provenance. A sim ruin's

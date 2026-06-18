@@ -251,14 +251,12 @@ func _validate_to_creature(_source: Dictionary, target: Dictionary,
 	if creature_data == null:
 		return _reject("Creature data not available")
 
-	# Check rigging state via saddle type
+	# Rigging check: the creature needs a saddle of any kind, or a rope, to carry
+	# anything at all. (A DRAFT saddle is a valid loose-cargo carrier too — see
+	# TrainedCreatureData.can_carry_loose_cargo — so there is NO special draft reject
+	# here; that reject was the bug that blocked hitch-capable animals from receiving
+	# any item even with free capacity.)
 	var saddle_type: String = creature_data.get_equipped_saddle_type()
-
-	# Draft saddle is for vehicle hitching only, not cargo
-	if saddle_type == "draft":
-		return _reject("Draft saddle is for vehicle hitching; use a pack saddle for cargo")
-
-	# Check if creature has any rigging at all
 	var load_mult: float = creature_data.get_load_multiplier()
 	if load_mult <= 0.0 and saddle_type.is_empty():
 		return _reject("Creature needs a saddle or rope to carry cargo")
@@ -267,8 +265,21 @@ func _validate_to_creature(_source: Dictionary, target: Dictionary,
 	var slot_hint: String = str(target.get("slot", ""))
 	var resolved_slot := slot_hint
 
-	if slot_hint.is_empty() or slot_hint == "cargo":
-		# Default: validate as cargo
+	if slot_hint.is_empty() and CreatureEquipmentService.has_pack_container_equipped(creature_data):
+		# A loose drag (no explicit slot) onto a mount carrying saddlebags/panniers
+		# goes INTO the pack container — tried BEFORE loose cargo, so a riding/war
+		# mount with saddlebags accepts the item even though its saddle can't lash
+		# loose cargo. (#1 fix: the default-slot drag previously always routed to the
+		# cargo branch and never tried an equipped pack container.)
+		var pc_id: String = CreatureEquipmentService.get_pack_container_item_id(creature_data)
+		var pc_err: String = CreatureEquipmentService.validate_into_saddlebags(
+				creature_data, _item_to_dict(item), pc_id, _catalog)
+		if not pc_err.is_empty():
+			return _reject(pc_err)
+		resolved_slot = "saddlebag"
+
+	elif slot_hint.is_empty() or slot_hint == "cargo":
+		# Loose cargo on the mount's back — needs a draft/pack saddle or rope.
 		var err: String = CreatureEquipmentService.validate_cargo_on_creature(
 				creature_data, _item_to_dict(item))
 		if not err.is_empty():
@@ -276,19 +287,19 @@ func _validate_to_creature(_source: Dictionary, target: Dictionary,
 		resolved_slot = "cargo"
 
 	elif slot_hint == "saddlebag":
-		if not CreatureEquipmentService.has_saddlebags_equipped(creature_data):
+		if not CreatureEquipmentService.has_pack_container_equipped(creature_data):
 			return _reject("Creature has no saddlebags equipped")
-		var sb_id: String = CreatureEquipmentService.get_saddlebag_item_id(creature_data)
-		var err: String = CreatureEquipmentService.validate_into_saddlebags(
+		var sb_id: String = CreatureEquipmentService.get_pack_container_item_id(creature_data)
+		var sb_err: String = CreatureEquipmentService.validate_into_saddlebags(
 				creature_data, _item_to_dict(item), sb_id, _catalog)
-		if not err.is_empty():
-			return _reject(err)
+		if not sb_err.is_empty():
+			return _reject(sb_err)
 
 	elif slot_hint == "equipped" or slot_hint == "tack":
-		var err: String = CreatureEquipmentService.validate_equip_on_creature(
+		var eq_err: String = CreatureEquipmentService.validate_equip_on_creature(
 				creature_data, _item_to_dict(item), _catalog)
-		if not err.is_empty():
-			return _reject(err)
+		if not eq_err.is_empty():
+			return _reject(eq_err)
 		resolved_slot = "equipped"
 
 	# Capacity warning

@@ -19,3 +19,14 @@ Status key: [FIXED 2026-06-12] / [DEFERRED]
 
 6: [DEFERRED] The dungeon wall/ceiling culling/dithering is not good. See attached screencap.
    → Visual/shader rendering pass; warrants its own focused session.
+
+7: Items still cannot be transferred to an animal or vehicle, even if capacity is available or a team is properly hitched.
+
+8: Setting Generator: some hexes are marked "unclaimed wilderness" with territory type "borderlands" and a culture label still applied, but there are no population counts present in the hex. May be a bug from the 0.1 culture floor preventing full regression to true wilderness and culture-wipe? seed: 40847028
+
+9: Setting gen Duchy realms are reaching scales of 12+ hexes, when the RAW limit is 4 to 11. May need some Duchy splitting mechanism to split duchies that reach 12 into two duchies of ~6 each, unless intentional to promote overreach and collapse/shatter? seed: 40847028
+
+10: Principalities are being vassalized by principalities, but that should promote the liege to King/kingdom. Seed: 38045604
+
+11: noncontiguous realms under the same direct lord, princes vassals of princes, seed 345235582
+

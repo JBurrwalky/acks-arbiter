@@ -8,6 +8,26 @@ extends RefCounted
 ## (orc/goblin/…) remain as 6-mile flavor data, never seeded as sim cultures.
 const GENERIC_BEASTMAN_CULTURE_ID := "beastmen"
 
+## §7.4e war-horde threshold (Jedidiah 2026-06-17): a beastman cluster must hold at
+## least this many CONTIGUOUS 24-mile clanhold hexes to be modeled as a significant
+## war-horde at seed time. Smaller scatter is dropped — left as empty wilderness for
+## the 6-mile runtime fill (mirrors the civilized duchy floor). Must match
+## SimConstants.beastman_horde_min_hexes (the in-sim threshold).
+const BEASTMAN_HORDE_MIN_HEXES := 3
+
+## A seeded war-horde holds at most this many hexes (the densest cluster around the
+## dominant clanhold); a larger contiguous beastman region is capped to one horde and
+## the surplus left as empty wilderness for the 6-mile fill. Beastman hordes are
+## durable (multi-hex, only front-razed), so an uncapped giant region would seed a
+## horde nothing can erode. Must match SimConstants.beastman_realm_max_hexes.
+const BEASTMAN_HORDE_MAX_HEXES := 8
+
+## Global ceiling on seeded beastman territory (fraction of land hexes). Hordes are
+## created largest-first until this budget is spent; the rest of the rolled clanhold
+## presence is left as empty wilderness (the 6-mile runtime fills it). Keeps beastmen
+## a frontier minority at 24 miles. Mirrors SimConstants.beastman_global_land_cap.
+const BEASTMAN_SEED_LAND_CAP := 0.15
+
 ## Layer 3 — culture seeding (gdd-setting-generation.md §6; gdd-culture-catalog
 ## .md §6). Selects the campaign's cultures by biome-coverage constraint
 ## satisfaction, draws each homeland's alignment, applies per-campaign jitter,
@@ -340,6 +360,9 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": str(CultureCatalogLoader.identity(record).get("civ_or_clan", "civ")),
 		"toponym": CultureCatalogLoader.toponym(record),
+		# §7.4f "prestige": civilization level (class_kit_weights.developed) that
+		# drives go-native — a conqueror adopts a large, more-developed subject.
+		"developed": _developed_for(record, mech),
 		"aggression": _jitter_scalar(float(expansion.get("aggression", 0.5)), rng),
 		"defense": _jitter_scalar(float(expansion.get("defense", 0.5)), rng),
 		"size_exponent_bias": float(expansion.get("size_exponent_bias", 0.0)),
@@ -360,6 +383,19 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 	return inst
 
 
+## §7.4f "prestige" proxy: a culture's civilization level, read from
+## class_kit_weights.developed (0 primitive / 0.7 developing / 0.9 advanced). The
+## scalar lives under `mechanical` for civilized cultures; demihuman culture files
+## omit it but are advanced civilizations (default 0.9); any other gap → 0.5.
+static func _developed_for(record: Dictionary, mech: Dictionary) -> float:
+	var ckw: Dictionary = mech.get("class_kit_weights", record.get("class_kit_weights", {}))
+	if ckw.has("developed"):
+		return float(ckw["developed"])
+	if CultureCatalogLoader.tier(record) == "demihuman":
+		return 0.9
+	return 0.5
+
+
 ## A lightweight per-campaign instance for a beastman culture (stripped schema,
 ## §5.3 — no conquest/lifecycle/rulership blocks). Beastmen expand and raid; the
 ## history sim reads these fields the same way it reads human/demihuman ones.
@@ -373,6 +409,7 @@ static func _beastman_instance(record: Dictionary, campaign_seed: int) -> Dictio
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": "clan",
 		"toponym": CultureCatalogLoader.toponym(record),
+		"developed": 0.0,   # §7.4f beastmen are primitive — never a go-native target
 		"aggression": _jitter_scalar(float(expansion.get("aggression", 0.7)), rng),
 		"defense": _jitter_scalar(float(expansion.get("defense", 0.45)), rng),
 		"size_exponent_bias": float(expansion.get("size_exponent_bias", 0.0)),
@@ -437,8 +474,44 @@ static func _place_homelands(selected: Array, catalog: Dictionary, grid: Diction
 		var pid := "pol_%04d" % (polities.size() + 1)
 		var alignment: String = selected[i]["alignment"]
 		_seed_homeland_hex(grid[capital], cid, alignment, pid)
+		# §7.4e (Jedidiah 2026-06-17): seed a TWO-hex homeland — the capital plus the best
+		# adjacent matching wilderness hex — so a fresh realm starts at Barony scale and is
+		# less likely to be culled by the significance floor before it can grow toward Duchy.
+		# Deterministic (no RNG); the 2nd hex stays this polity's territory (collected in
+		# _init_polities) but is not the capital.
+		var second := _pick_second_homeland_hex(capital, record, grid, coastal, placed)
+		if second != Vector2i(-9999, -9999):
+			placed.append(second)
+			_seed_homeland_hex(grid[second], cid, alignment, pid)
 		polities.append(_make_polity(pid, cid, alignment, capital, record, campaign_seed, i))
 	return polities
+
+
+## The best adjacent matching wilderness hex for a 2-hex homeland (highest land_value,
+## +coastal bonus, canonical tiebreak; no RNG). Skips water, non-wilderness, already-
+## populated, already-placed, and non-matching hexes. Returns the sentinel if none.
+static func _pick_second_homeland_hex(capital: Vector2i, record: Dictionary,
+		grid: Dictionary, coastal: Dictionary, placed: Array) -> Vector2i:
+	var best := Vector2i(-9999, -9999)
+	var best_score := -INF
+	for off in _OFF:
+		var n: Vector2i = capital + off
+		if not grid.has(n):
+			continue
+		var hex: Dictionary = grid[n]
+		if hex["water"] != "" or hex["territory_class"] != "wilderness":
+			continue
+		if int(hex["population_band"]) > 0 or n in placed:
+			continue
+		if not _hex_matches_culture(hex, record, coastal.has(n)):
+			continue
+		var score := float(hex["land_value"])
+		if coastal.has(n):
+			score += 2.0
+		if score > best_score or (score == best_score and _canonical_less(n, best)):
+			best_score = score
+			best = n
+	return best
 
 
 ## Greedy farthest-point placement biased to productive terrain near water,
@@ -555,6 +628,14 @@ static func _draw_ruler_quality(rng: RandomNumberGenerator) -> String:
 # Baseline beastman clanholds (§6.3; ax_domains_of_chaos distribution)
 # ---------------------------------------------------------------------------
 
+## §6.3 + §7.4e: roll clanhold PRESENCE per eligible wilderness hex (RAW
+## ax_domains_of_chaos geographic distribution × density), then AGGREGATE the
+## contiguous present-hexes into war-hordes. Each connected component of
+## ≥ BEASTMAN_HORDE_MIN_HEXES becomes ONE horde polity under the dominant clanhold's
+## war-chief (race = dominant hex's rolled race). Components below the threshold are
+## DROPPED — those hexes stay empty wilderness for the 6-mile runtime fill (only
+## historically-significant hordes are modeled at the 24-mile scale). The per-hex
+## presence/race rolls are unchanged, so determinism holds — only the grouping is new.
 static func _place_beastmen(grid: Dictionary, width: int, height: int,
 		params: SettingParameters, campaign_seed: int, occupied: Dictionary,
 		first_polity_index: int) -> Array:
@@ -567,8 +648,8 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 	if density <= 0.0:
 		return []
 
-	var polities: Array = []
-	var seq := first_polity_index
+	# Pass 1: per-hex presence + race + families (canonical order).
+	var present := {}   # Vector2i -> {race, families}
 	for r in range(height):
 		for q in range(width):
 			var key := Vector2i(q, r)
@@ -591,20 +672,123 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 			var race := _roll_beastman_race(spec, campaign_seed, q, r)
 			if race.is_empty():
 				continue
-			# §5.3: every clanhold is the generic "beastmen" sim culture; the rolled
-			# race is kept only as a hint (chieftain + realm-name flavor + the 6-mile
-			# race-mix handoff), not as the culture identity.
-			var cid := GENERIC_BEASTMAN_CULTURE_ID
-			seq += 1
-			var pid := "pol_%04d" % seq
 			var families := mini(int(demographics.get(race, {})
 					.get("average_families_per_clanhold", 50)), 2000)
+			present[key] = {"race": race, "families": families}
+
+	# Pass 2: aggregate contiguous present-hexes into war-hordes — largest-first under a
+	# global land budget, each capped to BEASTMAN_HORDE_MAX_HEXES; drop the rest to empty
+	# wilderness (the 6-mile runtime fills it). Bounds beastmen to a frontier minority.
+	var entries: Array = []
+	for comp in _connected_present_components(present):
+		if comp.size() < BEASTMAN_HORDE_MIN_HEXES:
+			continue   # sub-threshold scatter — left as empty wilderness (6-mile fill)
+		# Dominant clanhold: most families, ties to the lowest-canonical hex.
+		var dom: Vector2i = comp[0]
+		for h in comp:
+			var df := int(present[dom]["families"])
+			var hf := int(present[h]["families"])
+			if hf > df or (hf == df and _canonical_less(h, dom)):
+				dom = h
+		entries.append({"comp": comp, "dom": dom, "dom_fam": int(present[dom]["families"])})
+	# Most significant hordes first (dominant families desc, canonical tiebreak) so the
+	# land budget keeps the biggest war-hordes and drops the marginal ones.
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a["dom_fam"]) != int(b["dom_fam"]):
+			return int(a["dom_fam"]) > int(b["dom_fam"])
+		return _canonical_less(a["dom"], b["dom"]))
+	var land_total := 0
+	for r in range(height):
+		for q in range(width):
+			if str(grid[Vector2i(q, r)]["water"]) == "":
+				land_total += 1
+	var budget := int(BEASTMAN_SEED_LAND_CAP * float(land_total))
+	var polities: Array = []
+	var seq := first_polity_index
+	var used := 0
+	for e in entries:
+		if used >= budget:
+			break   # global beastman-land budget spent — the rest stays empty (6-mile fill)
+		var comp: Array = e["comp"]
+		var dom: Vector2i = e["dom"]
+		var kept: Array = comp if comp.size() <= BEASTMAN_HORDE_MAX_HEXES \
+				else _cap_cluster(comp, dom, BEASTMAN_HORDE_MAX_HEXES)
+		if kept.size() < BEASTMAN_HORDE_MIN_HEXES:
+			continue
+		var cid := GENERIC_BEASTMAN_CULTURE_ID
+		seq += 1
+		var pid := "pol_%04d" % seq
+		for h in kept:
+			var hex: Dictionary = grid[h]
 			hex["culture_weights"] = JSON.stringify({cid: 1.0})
 			hex["alignment_weights"] = JSON.stringify({"chaotic": 1.0})
-			hex["population_band"] = families
+			hex["population_band"] = int(present[h]["families"])
 			hex["owner_polity_id"] = pid
-			polities.append(_make_beastman_polity(pid, cid, key, race))
+		used += kept.size()
+		# §5.3: generic "beastmen" culture; the dominant clanhold's race is the
+		# horde's chieftain/name-flavor hint (the 6-mile mix is materialized later).
+		polities.append(_make_beastman_polity(pid, cid, dom, str(present[dom]["race"])))
 	return polities
+
+
+## The [max_hexes] hexes of [comp] nearest the dominant clanhold [dom] — a canonical
+## BFS from [dom] over component members (deterministic; the cohering core of an
+## over-large beastman region, surplus dropped to empty wilderness).
+static func _cap_cluster(comp: Array, dom: Vector2i, max_hexes: int) -> Array:
+	var inset := {}
+	for h in comp:
+		inset[h] = true
+	var out: Array = []
+	var seen := {dom: true}
+	var queue: Array = [dom]
+	var qi := 0
+	while qi < queue.size() and out.size() < max_hexes:
+		var h: Vector2i = queue[qi]
+		qi += 1
+		out.append(h)
+		for off in _OFF:
+			var n: Vector2i = h + off
+			if inset.has(n) and not seen.has(n):
+				seen[n] = true
+				queue.append(n)
+	return out
+
+
+## Connected components (6-neighbour adjacency) over the present-hex set, returned
+## in canonical (r,q) seed order with each component's hexes in canonical order —
+## deterministic regardless of Dictionary iteration order.
+static func _connected_present_components(present: Dictionary) -> Array:
+	var ordered: Array = present.keys()
+	ordered.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	var seen := {}
+	var comps: Array = []
+	for start in ordered:
+		if seen.has(start):
+			continue
+		var comp: Array = []
+		var queue: Array = [start]
+		seen[start] = true
+		var qi := 0
+		while qi < queue.size():
+			var h: Vector2i = queue[qi]
+			qi += 1
+			comp.append(h)
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if present.has(n) and not seen.has(n):
+					seen[n] = true
+					queue.append(n)
+		comp.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+		comps.append(comp)
+	return comps
+
+
+## Canonical hex order (r ASC, then q ASC) — mirrors HistorySimulator._canonical_less
+## so seed-time and sim-time aggregation iterate identically.
+static func _canonical_less(a: Vector2i, b: Vector2i) -> bool:
+	if a.y != b.y:
+		return a.y < b.y
+	return a.x < b.x
 
 
 ## Map a wilderness land hex to a beastman-distribution terrain column.

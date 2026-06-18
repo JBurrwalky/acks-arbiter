@@ -144,6 +144,13 @@ func _build_history(p: VBoxContainer) -> void:
 		func(): return _params.migration_rate, func(v): _params.migration_rate = v,
 		"How readily whole peoples uproot and resettle under pressure.\n" +
 		"Off — none · Low · Moderate (default) · High — frequent folk-migrations reshuffle the map")
+	_slider_row(p, "Cultural assimilation", 0.25, 2.5, 0.05,
+		func(): return _params.cultural_assimilation, func(v): _params.cultural_assimilation = v,
+		"How fast conquerors absorb the cultures of the peoples they rule.\n" +
+		"Low (0.25–0.75) — tenacious cultures; a lasting mosaic of distinct peoples and minorities\n" +
+		"1.0 — default\n" +
+		"High (1.5–2.5) — a fast melting-pot; dominant cultures spread and homogenize the map\n" +
+		"(A conquered people resists hardest while it is still the local majority.)")
 	_slider_row(p, "Non-human ratio", 0.0, 0.5, 0.05,
 		func(): return _params.non_human_ratio, func(v): _params.non_human_ratio = v,
 		"Target share of the population that is non-human (demihuman + beastman).\n" +

@@ -35247,6 +35247,296 @@ on-tick dispatch.
 **Next session should:** continue toward setting→runtime materialization; the large-map cultural-monoculture discussion is still open.
 
 
+## Session 2026-06-16 — 3D Wilderness Hex Renderer GDD (exploratory → draft + adversarial review)
+
+**Task:** Assess converting the 2D wilderness hex map to a 3D heightmap with the hex grid overlaid, then author the GDD. Exploratory, no code changes. Driven by Jedidiah's design: elevation_raw → smooth heightmap → biome programmatic distortion (gentle on hills, sharp on mountains) → textured hexes with edge dithering → lava patches on volcanic / snow on glacial → river depressions; isometric default camera (not necessarily locked); fix the zoom-out limitation.
+
+**Model used:** Opus 4.8 (1M context) for all phases (codebase exploration; two multi-agent Workflows — a 5-agent gather and a 3-agent adversarial review; GDD authoring).
+
+**Completed:**
+- Deep review of the 2D hexmap layer + consumers (scenes/maps/hex_map_renderer.gd [Node2D, TileMapLayer], engine/subsystems/exploration/hex_map_controller.gd, shared_types hex_map_data/hex_terrain_data/hex_river_edge_data/hex_overlay_data) and the existing 3D dungeon renderer as the reuse base.
+- Authored generation/gdd-wilderness-hex-3d.md (v0.2, full first draft) — the "wilderness/hex visual-pass GDD" that gdd-dungeon-asset-integration-plan.md (:36, :526-531) explicitly deferred.
+- Catalogued the Terrain asset library at C:\Users\jttau\OneDrive\Pictures\Terrain: 12 AmbientCG 1K PBR ground sets under "hexmap textures\" (clear/grassland/savanna/tundra/forest_floor/jungle_floor/desert/badlands/mountain/mountain_volcanic/lava[+Emission]/snow), ~150 Quaternius Wilderness scatter .blend (birch/common/pine/palm/willow + autumn/dead/snow, bushes/cactus/rocks/groundcover/stumps/logs), shared Bark/Leaf textures. Mapped biome→texture and biome→scatter; surfaced gaps.
+- Ran adversarial verification: repo-fidelity 46/47 citations CONFIRMED (0 wrong; lone "unverifiable" was actually correct); Godot 4.6 techniques stress-tested (no WRONG items; several RISKY) and corrections applied to the GDD §3/§5/§6/§7/§8/§9/§10/§11/§12.
+
+**Decisions made:**
+- SCALE STRATEGY (recommended, pending Jedidiah): keep the 24-mile map 2D (strategic abstraction) and make 3D the 6-mile scale; this dissolves cross-scale texture continuity. Rationale: NO 6-mile continuous height exists — heightmap_generator.gd:17 HEX_MILES=24 (24-mile only); elevation_raw lives in setting_hexes only, not hex_cells; gdd-hex-subdivision.md §6 (6-mile derivation) and setting→runtime materialization are both UNBUILT.
+- RENDERER-OWNED HEIGHT SYNTHESIS: the 3D renderer is a pure view that synthesizes deterministic height from the categorical tag (TAG_ONLY fallback) or the interpolated 24-mile parent via migration-119 linkage (PARENT_GUIDE default), with a RAW_FIELD hook for when subdivision lands. No schema change for V1.
+- PICKING raycasts the chunk collision mesh (NOT flat-plane — parallax shifts a displaced peak ~1.43*H in XZ under the -35deg ortho camera). HEX GRID is single-pass (folded into the splat fragment with a uniform toggle, NOT next_pass — avoids Godot #95419 + the can't-read-prior-pass limit). Both corrected during review.
+
+**Interfaces defined or changed:**
+- Proposed (NOT built): scenes/maps/hex_map_renderer_3d.gd + scenes/maps/hex_map_3d.tscn; WildernessAssetRegistry + res://data/wilderness_assets.tres; ProjectSettings flag "acks/rendering/wilderness_hex_mode" ("flat_2d" default | "heightmap_3d"); assets/wilderness_kit/<subcat>/<name>.glb; assets/wilderness_textures/<biome>/.
+- CONTRACT TO PRESERVE (the 2D→3D swap depends on it): the 3D renderer must re-emit verbatim — party_token_clicked(party_id:String, coord:Vector2i), hex_context_menu_requested(coord:Vector2i, screen_pos:Vector2), dungeon_entry_requested(entrance:Dictionary, spawn_cell:Vector2i), settlement_entry_requested(entrance:Dictionary, entry_poi_id:String) — and honor setup(controller), center_on_hex(coord), visible, process_mode. Wilderness gameplay seam stays Vector2i(q,r), NOT Vector3i like the dungeon.
+- Coordinate anchor: 1 world unit = 1 hex footprint (keeps a 60x45 map's camera size under the 16384 ortho clamp; clean float precision; the kit_scale fit target).
+
+**Database changes:**
+- None. Optional migration 163 (add elevation_raw REAL to hex_cells + carry through campaign_repository.gd:1347 save_hex_map, which currently drops it) is documented in GDD §14 but DEFERRED. Latest migration is 162_setting_events_razing.sql.
+
+**Tests added/updated:**
+- None (design-only session).
+
+**Known issues:**
+- [APPROVAL GATE] Design brief §5.1 (:143-156) / §6.1 (:181-183) lock the hex map as "2D presentation layer"; shipping the 3D renderer needs Jedidiah's amendment. GDD proposes a flag-gated PARALLEL renderer (2D stays default) as the least-invasive form.
+- ASSET GAPS: no swamp ground texture; no water surface asset (needs a shader); no reeds/jungle-canopy/savanna-acacia trees; no settlement/road 3D meshes (V1: billboard landmark icons + draped road decals). Substitutes noted in GDD §12.4.
+- 2D RENDERER BUG (independent of 3D): scenes/maps/hex_map_renderer.gd:70 ZOOM_MIN := 1.0 forbids zooming out below default → large generated maps can't be viewed whole. Jedidiah approved fixing; NOT yet done (GDD phase W-0).
+- Godot 4.6 watch-items captured in GDD: ortho Camera3D size silently clamped to <=16384 (proposal #5736 — the real "can't zoom out" cause if the map is modeled in feet); MultiMesh has no per-instance cull (#10669 — chunking + custom_aabb mandatory) and casts shadows as one unit; next_pass depth bug #95419 (avoided via single-pass grid); cross-chunk normal seams need analytic/apron normals; ViewportTexture heraldry needs the SubViewport in-tree + rendered once before assignment.
+
+**Next session should:**
+- Get Jedidiah's rulings on the GDD §15 gates: (1) design-brief amendment for 2D→3D, (2) scale strategy (24mi 2D / 3D=6mi), (3) asset-gap handling + settlement representation.
+- Optionally land the standalone 2D ZOOM_MIN / zoom-to-fit fix (GDD phase W-0) — valuable regardless of the 3D decision.
+- On approval, begin W-1 (asset import: textures→materials, trees→glTF via the assets/dungeon_kit/_convert.py headless pattern + acks-blender-pipeline skill) then W-2 (flag + 3D scene scaffold with full signal/interaction parity, verified via godot-ai MCP).
+
+
+## Session 2026-06-16 — Test-DB isolation (stop the suite obliterating playtest saves)
+
+**Task:** The test runner's `wipe_for_tests()` deleted ALL campaign rows and ALL `user://saves/*.db` files on every run — including the player's long-running playtest. Isolate test data from playtest data so a campaign survives repeated suite runs, and avoid `campaign.db` conflicts/locks with a concurrent git worktree.
+
+**Model used:** Opus 4.8 (investigation, design, implementation, verification).
+
+**Completed:**
+- Root cause: one shared `user://campaign.db` + `user://saves/` for everything; `user://` derives from `%APPDATA%` + project name `"ACKS Arbiter"` (no custom user dir in `project.godot`), so EVERY worktree shares the same files. `tests/test_runner.gd._ready()` (and again at end of `run()`, line ~1162) calls `CampaignRepository.wipe_for_tests()`, which `DELETE`s every table and calls `_wipe_save_slot_files()` (deletes every `*.db` under the saves dir).
+- Option 1 (in-code redirect) — `engine/autoloads/campaign_repository.gd`:
+  - Added `TEST_DB_PATH = "user://campaign_test.db"`, `TEST_SAVES_DIR = "user://saves_test"`, `var is_test_run`, `var _active_saves_dir`.
+  - Added `_is_test_run()` — true if cmdline (engine args or user args after `--`) contains `test_runner.tscn` or `--test`.
+  - `_ready()` now picks `db.path` and `_active_saves_dir` from `is_test_run` BEFORE `open_db()` (pre-open choice avoids the godot-sqlite FK-check breakage a post-open swap causes — the original reason the suite wiped in place).
+  - `wipe_for_tests()` guarded: refuses to run unless `is_test_run` (fail-safe, can never nuke live data).
+  - Routed `_wipe_save_slot_files()`, `_ensure_saves_dir()`, `_slot_file_path()` through `_active_saves_dir` instead of the `SAVES_DIR` constant.
+- Option 2 (APPDATA isolation) — added `tools/run_tests.ps1` (canonical, Windows) and `tools/run_tests.sh` (git-bash mirror). They point `%APPDATA%` at a STABLE per-worktree temp dir (`%TEMP%\acks_test_appdata_<sha1[0:8]>`) so each worktree gets a private `user://` (no cross-worktree DB lock), and pass `-- --test`. Stable dir => re-runs reuse the same isolated DB (no fresh-DB FK noise every run).
+- Verified: a 2-run suite under isolation opened `.../campaign_test.db` (logged `TEST MODE`), produced **461/17** on run 2 (17 = pre-existing carry-forward, net-zero new failures), and the live `campaign.db` stayed byte-identical (169443328 bytes, mtime unchanged) across both runs despite 4 total `wipe_for_tests` calls.
+
+**Decisions made:**
+- Separate persistent test DB (not a fresh temp DB each run, not a scoped/guarded wipe). Keeps current test ergonomics (schema already migrated, no per-run fresh-DB FK noise) while fully protecting playtest data. The raw documented headless command (`res://tests/test_runner.tscn`) now ALSO self-isolates via scene-path detection — playtest is safe even without the wrapper; the wrapper only adds cross-worktree APPDATA isolation.
+- Detection = scene path OR `--test` (belt-and-suspenders across headless CLI, editor play-scene, godot-ai MCP).
+
+**Interfaces defined or changed:**
+- `CampaignRepository.is_test_run: bool` (new public-ish flag), `CampaignRepository.TEST_DB_PATH`, `CampaignRepository.TEST_SAVES_DIR`, `CampaignRepository._active_saves_dir`, `CampaignRepository._is_test_run() -> bool`.
+- `wipe_for_tests()` now no-ops (with push_error) outside test mode.
+- New convention: any new save-file path MUST route through `_active_saves_dir`, never `SAVES_DIR` directly.
+
+**Database changes:**
+- None (no migration). New runtime file `user://campaign_test.db` + `user://saves_test/` created only during test runs.
+
+**Tests added/updated:**
+- No new suites. Full suite re-run under isolation: 461/17 (net-zero new failures vs carry-forward 17).
+
+**Known issues:**
+- Two CONCURRENT playtests in different worktrees still share the live `campaign.db` (Option 1 only separates test-vs-playtest; the APPDATA wrapper separates test runs). Rare in practice.
+- `tools/run_tests.sh` (git-bash path/cygpath handling) is provided as a mirror but was not executed this session; `run_tests.ps1` is the verified canonical wrapper.
+- CLAUDE.md still documents the raw headless command; consider pointing it at the wrapper (left to Jedidiah — the raw command is now non-destructive anyway).
+
+**Next session should:**
+- Optionally update CLAUDE.md's headless test command to recommend `tools/run_tests.ps1`.
+- Optionally smoke-test `tools/run_tests.sh` under git-bash.
+- coding_conventions.md §9.6 documents this; no further doc work required.
+
+
+## Session 2026-06-17 — Setting-gen §7.4e significance floor: Duchy realms + beastman war-hordes
+
+**Task:** At the 24-mile setting scale, model only historically-significant realms (Jedidiah ruling): civilized/demihuman floor = Duchy; beastmen aggregated into cohering war-hordes; sub-floor holdings inferred as the absorbing realm's internal decomposition (materialized at the 6-mile handoff), not separate 24-mile polities. Goal: fix hyper-fragmentation (~575 polities on a huge map), free name pools, speed downstream layers.
+**Model used:** Opus 4.8 (1M) for design, RAW lookup, implementation, calibration, verification.
+**Completed:**
+- **RAW grounding:** `ax_domains_of_chaos.xml` — beastman realms ARE RAW ("a chieftain may establish a realm by founding additional clanholds…"; distribution procedure step 6 "organize the clanholds into one or more realms at the Judge's discretion"). The sim is the Judge. Clanholds always wilderness, ≤2,000 fam/24-mi hex (already enforced).
+- **`history_simulator.gd` — new `_phase_consolidation(tick)`** (in `_tick` after `_phase_contiguity`, before `_phase_substrate`; gated `tick % consolidation_period`). `_consolidate(tick, final)` is a monotonic fixpoint (each merge removes one realm; strict `_outranks` order = families→hexes→id so no two realms absorb each other). Civ sub-floor sovereigns: `_consolidate_civ` → `_best_adjacent_merge_target(pol, same_only)` → `_annex_realm` (hexes flip via `_flip_hex`, realm dies, war-vassals freed); orphans (no adjacent target, final sweep only) → `_migrate_realm_into` → `_deposit_migrants` (fill dest hexes to cap, then `_dest_border_wilderness` expansion) with `consolidation_migrate_loss`. Beastman sub-threshold hordes: `_consolidate_beastman_horde` (merge into adjacent outranking horde + `_clamp_beastman_hexes`, else dissolve if truly isolated, else wait — `_has_adjacent_beastman_horde`). Helpers: `_realm_neighbors`, `_outranks`, `_nearest_merge_target`, `_beastman_owned_count`.
+- **Finalization sweep** in `run()` BEFORE the present-day replay frame (so the last frame + output rows agree): `_consolidate(_n_ticks, true)` → `_fold_subfloor_vassals` (folds sub-Duchy vassal rows into their liege) → `_consolidate(_n_ticks, true)`.
+- **Beastman re-seed reworked** (`_repopulate_beastmen` + `_spawn_beastman_horde` replacing `_spawn_beastman_clanhold`): re-seed now grows WAR-HORDES (≥3 contiguous empty-wilderness hexes via `_gather_empty_wilderness`, up to the cap), scan-cadence only (crater fast-path folded in, BEASTMAN_DELAY still gates crater anchors), bounded by a global land budget tracked within the scan. `_spawn_beastman_horde` returns the hex count (0 = no spawn).
+- **`culture_seeder.gd` — beastman seed aggregation** (`_place_beastmen` rewritten): roll per-hex presence as before, aggregate contiguous present-hexes into hordes (`_connected_present_components`), keep components ≥`BEASTMAN_HORDE_MIN_HEXES` largest-first under `BEASTMAN_SEED_LAND_CAP`, each capped to `BEASTMAN_HORDE_MAX_HEXES` (`_cap_cluster` BFS around the dominant clanhold), drop the rest to empty wilderness. Same per-hex RNG → determinism preserved (only grouping is new).
+- **`sim_constants.gd`:** `beastman_realm_max_hexes` 3→8; new `consolidation_period`(4), `consolidation_min_age`(8), `consolidation_migrate_loss`(0.25), `beastman_horde_min_hexes`(3), `beastman_global_land_cap`(0.15); `beastman_region_target` 0.12→0.06.
+**Decisions made:**
+- **In-sim consolidation phase + finalization sweep** (Jedidiah's choice), not finalization-only — fewer entities tracked through the sim's back half and all of Layers 5/6/handoff.
+- **Annex (absorb hexes), not vassalize** — sub-floor holdings become the absorbing realm's internal decomposition (no separate row/name); materialized at 6-mile. Frees names.
+- **Cross-culture merging allowed (Jedidiah) but deferred to the finalization sweep**; the mid-sim periodic phase merges SAME-CULTURE only. Rationale: a cross-culture annex assimilates the absorbed hexes toward the absorber over the remaining ticks → mid-sim cross-culture merging homogenizes the substrate (a monoculture amplifier). At the last tick there are no remaining ticks to assimilate, so finalization cross-culture merges keep the absorbed culture. Same-culture preferred even at finalization.
+- **Beastman war-horde threshold = ≥3 contiguous hexes** (parallels the Duchy needing ~2-3 civ hexes). Sub-threshold → not modeled (6-mile runtime fill).
+- **Consolidation is SILENT** (no event) — a soft administrative merge; replay frames still show borders change. Avoids a new event type / migration.
+- **Orphan rule** (sub-floor fragment surviving a higher realm's fall) falls out of the recurring consolidation + finalization sweep.
+**Interfaces defined or changed:**
+- `HistorySimulator`: `_phase_consolidation(tick)`, `_consolidate(tick, final)`, `_consolidate_civ(pol, tick, final)->bool`, `_best_adjacent_merge_target(pol, same_only)->String`, `_nearest_merge_target(pol)->String`, `_outranks(a,b)->bool`, `_realm_neighbors(pol)->Array`, `_annex_realm(absorber, victim, tick)`, `_migrate_realm_into(orphan, dest, tick)`, `_deposit_migrants(...)`, `_dest_border_wilderness(dest, from_cap)->Vector2i`, `_consolidate_beastman_horde(pol, tick)->bool`, `_best_adjacent_beastman_horde(pol)->String`, `_has_adjacent_beastman_horde(pol)->bool`, `_clamp_beastman_hexes(pol, tick)`, `_fold_subfloor_vassals(tick)`, `_beastman_owned_count()->int`, `_spawn_beastman_horde(center, tick)->int` (was `_spawn_beastman_clanhold`->bool), `_gather_empty_wilderness(center, n)->Array`.
+- `CultureSeeder`: consts `BEASTMAN_HORDE_MIN_HEXES`(3), `BEASTMAN_HORDE_MAX_HEXES`(8), `BEASTMAN_SEED_LAND_CAP`(0.15); statics `_connected_present_components(present)`, `_cap_cluster(comp, dom, max)`, `_canonical_less(a,b)`.
+- No signal changes. `_polity_rows()`/`save_polities` unchanged (just fewer rows).
+**Database changes:** NONE. Consolidation is silent (no new event type), so no migration. Latest migration remains 162.
+**Tests added/updated:** `test_setting_beastman.gd` +8 (`test_connected_present_components_groups_contiguous`, `_consolidate_civ_merges_adjacent_subfloor`, `_consolidate_civ_migrates_orphan`, `_consolidation_skips_young_sovereign_until_final`, `_consolidate_beastman_dissolves_isolated_subthreshold`, `_consolidate_beastman_merges_into_neighbor`, `_spawn_beastman_horde_requires_cluster`, `_fold_subfloor_vassal_into_liege`) → 77 checks. `test_setting_stage4f.gd`: renamed `test_spawn_beastman_clanhold`→`test_spawn_beastman_horde`, rewrote the two `_repopulate_*` tests for horde re-seed (set `beastman_global_land_cap=1.0` to isolate delay/skip from the land budget on tiny grids). `test_setting_stage3.test_beastmen_are_chaotic_clanholds` rewritten: the old `beastmen.size() > 0` encoded the lone-clanhold model and broke under war-hordes (medium/seed42 at default density legitimately seeds ZERO cohering hordes — deferred to the runtime; the sim re-seeds them later, which is why full-generate worlds still show beastmen). It now builds a high-density seed ctx so a horde reliably forms and asserts the new property (each seeded horde is chaotic + clan + on wilderness + holds ≥ BEASTMAN_HORDE_MIN_HEXES hexes). The stage4f integration tests (determinism, liege/owner coherence, equilibrium) pass with the new consolidation + re-seed.
+**Test baseline: 461/17 (run 2), net-zero NEW failures** — confirmed by stash-and-measure (git stash → baseline run2 = 461/17; my code run2 = 461/17). The 17 failures are the pre-existing carry-forward set (all non-setting; I touched only setting-gen). All 21 setting suites green. Measure run 2 (warm test DB); the headless command self-isolates to `campaign_test.db`.
+**Fragmentation measured (`tools/culture_coverage.gd`, deep history, present-day polity count):** medium/seed42 **92→11**; large/seed42 **401→24**; large/seed177621 **351→33**. Beastman OWNED land bounded to ~15% (culture_coverage's substrate-dominant count over-reports beastmen because vacated/razed beastman land keeps its `{beastmen:1.0}` trace though unowned — use `_beastman_owned_count`, not the substrate count).
+**Known issues:**
+- **Large-map monoculture amplification (PARKED issue, see project_pioneering_weight_deferred).** Aggregating beastmen into fewer hordes removes the widespread scattered-clanhold pressure that used to check civ expansion, so on snowball-prone seeds one culture can dominate (seed177621 large: was vargari 45%-max → now jinxian 93%). This is the pre-existing expansion-driven monoculture variance, not the consolidation (the same-culture-only mid-sim rule confirms consolidation no longer amplifies it via assimilation). Levers: rebellion suppression, `expansion_G`, beastman density/cap. Two of three measured seeds stay healthily multi-cultural.
+- `consolidation_min_age`/`consolidation_period`/`beastman_global_land_cap` are [CALIBRATION] — Jedidiah may dial.
+**Next session should:**
+- **Setting→runtime materialization (the real next gap)** must consume the new 24-mile output shape: Duchy+ realms with their internal vassal decomposition → 6-mile baronies; war-hordes → 6-mile per-race clanhold mixes; and EMPTY wilderness (sub-threshold beastmen + sub-duchy holdings the floor omitted) → 6-mile procedural fill (see project_setting_runtime_materialization + the beastman_distribution.json runtime data).
+- Optionally revisit large-map monoculture (parked) now that beastman pressure changed.
+
+
+## Session 2026-06-17 (cont.) — Significance-floor review fixes + realm-tier + clan-gate + resisted assimilation
+
+**Task:** Adversarial review of the §7.4e significance-floor diff (with a RAW domain/realm-tier audit), then build the agreed follow-ups: the contiguity fix (#1), the realm-tier/domain model (#2, Option C), and Phase 1.1 of the monoculture work (resisted culture assimilation + a player-facing slider). Continues the earlier same-day §7.4e floor entry.
+**Model used:** Opus 4.8 (1M) — review (multi-agent: 6 finder angles + RAW-grounding agent), design discussion, implementation, multi-seed measurement, MCP UI verification.
+**Completed:**
+- **Code review (max-effort, 6 angles + a dedicated ACKS-RAW tier-grounding agent).** RAW verdict: the domain/realm tier model is faithful — every `DomainTierTable` number matches `titles_of_nobility` / `revenue_by_realm_type` / `demographics_of_leveled_characters`; cutting the model at DUCHY is arithmetically exact (a civ 24-mi hex caps at 12,480 = County; a Duchy = 20,000 needs 2-3 hexes; `political_divisions_of_realms` = 4-6 of the next tier down) and tier is keyed on families not hex count. The one real divergence → fixed by #2.
+- **#1 — contiguity after consolidation** (`history_simulator.gd`): the finalization sweep now runs `_consolidate → _fold_subfloor_vassals → _consolidate → _phase_contiguity → _consolidate` (run() ~127), so a folded non-adjacent vassal / beastman-merge can't leave a spatially split realm in the present-day output. `_clamp_beastman_hexes` rewritten to keep a BFS-CONNECTED core (new `_connected_core`) instead of distance-ranked hexes.
+- **#2 / Phase 0.1 — realm-tier (Option C) + carry the vassal tree.** New `_realm_families(pol)` = own + transitive war-vassals (`_realm_families_rec`, cycle-guarded) and `_realm_tier(pol)`. RAW "title = overall realm size, vassals included." Routed realm-tier into the present-day **ruler_level / title / output tier_index** (`_assign_present_day_handoff`, `_polity_rows`) and the **§7.4e floor candidacy** (`_consolidate`, `_fold_subfloor_vassals`) so a vassal-ruling sovereign with a small core isn't culled as a fragment. The own-territory `tier_index` is UNCHANGED and still drives the dynamics (f_size/fade/shatter) — deliberate decouple. `setting_validator` V7 made realm-aware (`_realm_hex_count` sums own + transitive vassal hexes).
+- **Phase 0.2 — clan-demote-on-replacement** (`history_simulator.gd`): `_demote_to_clanhold` (per-tick, §4a) now gated on `_clanhold_culture_dominant(key)` — a clan realm's freshly-conquered civilized hex keeps civ density/class until the clan culture actually becomes dominant (the demographic collapse follows the infrastructure failure, per RAW chaotic-domain rules, not the annexation).
+- **Phase 0.3 — 2-hex homeland seeds** (`culture_seeder.gd`): `_place_homelands` seeds the capital PLUS the best adjacent matching wilderness hex (`_pick_second_homeland_hex`, deterministic), so a fresh realm starts at Barony scale and is less likely to be culled before reaching Duchy.
+- **Phase 1.1 — resisted assimilation + Cultural Assimilation slider.** `_assimilate_held_hexes` rate is now `effective_svg × assimilation_step × (1 − resist) × params.cultural_assimilation`, `resist = clamp(0.6·subject_weight + 0.3·subject_rigidity, 0, 0.85)` (`_assimilation_resistance`). A strong/rigid conquered culture resists replacement (tipping-point curve) instead of the old ~3-tick geometric wipe (svg-0.5 dominant-flip ~3 → ~8 ticks). New `SettingParameters.cultural_assimilation` (1.0) + a slider in screen_advanced → History (range 0.25-2.5); the share-codec auto-captures it.
+- **`tools/assim_sweep.gd/.tscn`** — multi-seed monoculture diagnostic (ASSIM/SIZE env → per-seed top-culture share + polity count + averages).
+**Decisions made:**
+- **#2 = Option C** (Jedidiah): realm-tier (own + transitive vassals) drives TITLE/significance/handoff; own-hexes `tier_index` keeps driving the per-tick dynamics (preserves the calibration, matches RAW's personal-domain-vs-overall-realm split). **Carry the vassal tree** at handoff ("conqueror" is half the game's name).
+- **Annex vs vassalize semantics confirmed (no surgery needed):** vassalize keeps the realm's culture/rulers/name (a distinct vassal subtree); annex converts the territory's culture at svg rate + gives it the conqueror's culture/rulers/name. Personal-domain validity is a 6-mile materializer concern (the 24-mi sim never builds personal domains) — recorded as a materialization contract (recursive next-tier-down decomposition + personal-domain caps + annex/vassalize identity).
+- **Resistance numbers** `0.6/0.3/0.85` from the worked-example math; build-from-baseline-then-tune. Cultural Assimilation exposed as a float slider (melting-pot ↔ mosaic) — a customizability selling point.
+- **MEASURED LEARNING (the important one):** the multi-seed sweep (8 seeds, medium, default params) shows resistance at default (assim 1.0 → **48% avg top-culture**, 12 polities) is more diverse than weak resistance (2.0 → 63%), so it reduces typical-case monoculture; but it is NON-MONOTONIC (0.5 → 60% + 16 polities — very slow assimilation makes subjects REVOLT, fragmenting the map while the dominant culture still expands). So the slider is a world-CHARACTER dial (melting-pot empire ↔ balanced ↔ rebellious mosaic), the default is the diversity sweet-spot, and **resistance is a PARTIAL monoculture lever**: per-seed bistability dominates (19%-94% at the same setting) and monoculture is substantially EXPANSION-driven (`_settle_wilderness` paints the expander's culture), which resistance doesn't touch. The targeted fix for snowball seeds is Phase 2 (go-native).
+**Interfaces defined or changed:**
+- `HistorySimulator`: `_realm_families(pol)->int`, `_realm_tier(pol)->int`, `_connected_core(hexes, seed, max_n)->Array`, `_clanhold_culture_dominant(key)->bool`, `_assimilation_resistance(key, owner_cid)->float`. `_clamp_beastman_hexes` now contiguity-preserving. run() finalization sweep extended with a contiguity pass + 3rd consolidate.
+- `SettingParameters`: new `cultural_assimilation: float = 1.0` (in to_dict/from_dict → share-codec + determinism hash).
+- `SimConstants`: `assim_resist_entrench`(0.6), `assim_resist_rigidity`(0.3), `assim_resist_max`(0.85) [CALIBRATION].
+- `SettingValidator`: `_realm_hex_count(...)`; V7 now judges tier against the whole realm.
+- `CultureSeeder`: `_pick_second_homeland_hex(...)`.
+- **Output contract change:** `setting_polities.tier_index`/`title`/`ruler_level` now carry the OVERALL-REALM rank (own + war-vassals), not own-territory. Downstream (materializer/narrative/review) reads the realm rank.
+**Database changes:** NONE. No migration (consolidation/contiguity are silent; the new param is a float in the existing params vector). Latest migration remains 162.
+**Tests added/updated:** `test_setting_beastman.gd` +6 this arc (realm-tier aggregates vassals; floor keeps a vassal-ruling overlord; clan keeps civ density until replaced; resistance slows the flip; slider scales the rate; rigid culture resists more). `test_setting_stage3.gd` +1 (homelands seed 2 hexes). `test_setting_stage4f.gd` fold-vassal test still holds under realm-tier. **Suite 461/17 (run 2), net-zero new failures**, all 21 setting suites green; slider MCP-verified in-editor (renders in History tab, binds 1.0→2.0).
+**Known issues:**
+- **Monoculture not solved** — resistance is partial (see the measured learning). Snowball seeds (e.g. medium/99001 → 94%) and large maps still homogenize via expansion. Phase 2 (go-native) is the targeted lever; a cultural-reach limit on expansion-settling (using RAW `range_of_trade`, `acore-setting-construction-rules.xml:264`) is the deeper fix. The parked [[project_pioneering_weight_deferred]] variance still dominates.
+- Cultural Assimilation slider is non-monotonic for diversity (low end backfires via rebellions) — documented as a world-character dial, not a clean diversity knob.
+- P1.2 (devastate/depopulation, the genocide RAW-fidelity path) NOT built — deprioritized (orthogonal to monoculture).
+- `project.godot` has an unrelated editor movie-writer path change (not committed).
+**Next session should:**
+- Build **Phase 2 (go-native)**: periodically flip a dominant realm's own culture_id when it has absorbed a large, higher-prestige subject population (tied to both subject size AND prestige per Jedidiah) — the targeted reset for snowball seeds.
+- Then the **expansion-settling cultural reach** (RAW `range_of_trade` falloff: full ×1 / half ×2 / quarter ×4, summed over same-culture cities, water ≈ 2× road) — hits the actual monoculture driver.
+- P1.2 devastate when convenient (RAW pillage/salt depopulation).
+
+## Session 2026-06-17 — Go-native (§7.4f): conqueror adopts a developed subject
+
+**Task:** Build the Phase 2 "go-native" mechanism on the setting-gen history sim — a sovereign realm ruling a large, more-developed foreign subject adopts that subject's culture (the conqueror "goes native": Yuan→Chinese, Norman→English). Mathed out first as a design turn, then implemented + verified. Follows the §7.4e significance floor + Phase 1.1 resisted-assimilation work.
+**Model used:** Opus 4.8 (design math, implementation, verification).
+**Completed:**
+- `CultureSeeder._developed_for(record, mech)` (new static) + threaded `"developed"` onto both culture instances (`_jitter_instance` reads `mechanical.class_kit_weights.developed`; `_beastman_instance` = 0.0). Prestige proxy = 0 primitive / 0.7 developing / 0.9 advanced; demihuman files omit it → default 0.9; beastman 0.0.
+- `HistorySimulator._phase_go_native(tick)` (new; wired 4e-c into `_tick` after consolidation / before substrate, both normal + profile paths) + helpers `_subject_culture_share(pol)`, `_developed(cid)`, `_apply_go_native(pol, from, to, tick)`.
+- Mechanism: eligible = alive, mature (`go_native_min_age`), non-beastman SOVEREIGN; `p = go_native_base_rate(0.05) × subject_share × (developed(S) − developed(O))`, adopt-up only (gradient > 0, no floor), gated on `subject_share ≥ go_native_min_share(0.4)`. subject_share = mass(S)/Σmass over OWN hexes, mass(c)=Σ culture_w[c]×population_band (populous foreign core > empty marches). Per-(tick,polity) WorldGenRng stream; collect-then-apply (order-independent).
+- On flip: culture_id=S; recompute is_beastman/is_clanhold (clan→civ sheds clanhold, realm civilizes); emits `cultural_shift` event (cultures=[from,to], polities=[realm], sig 0.5). `_EVENT_SIGNIFICANCE["cultural_shift"]=0.5`.
+- `narrative_generator.gd`: `_EVENT_TEMPLATES["cultural_shift"]` + a render branch (realm name + adopted-culture label).
+- SimConstants: `go_native_base_rate`(0.05), `go_native_min_share`(0.4), `go_native_min_age`(2).
+- GDD `generation/gdd-history-simulation.md` §7.4f added (mechanism, prestige proxy, formula, gates, flip behaviour, event, determinism, honest scope caveat).
+**Decisions made:**
+- Prestige proxy = `class_kit_weights.developed` (Jedidiah confirmed) — the civilization-level scalar, gives the right steppe(0)→urban-civ(0.9) gradients.
+- Adopt-UP only, NO floor (Jedidiah) — a conqueror adopts a more-developed subject, never sideways/down; a great civ ruling a primitive subject imposes its own culture (the subject assimilates normally).
+- Emit a `cultural_shift` event (Jedidiah wants the shift visible in the rewind/replay review, which currently only labels end-frame realms).
+- Numbers built from first principles (0.05 / 0.4 / 2), tune later per the "current numbers first" directive.
+**Interfaces defined or changed:**
+- Culture instance dict gains `"developed": float` (set by CultureSeeder for every instance).
+- New event type `cultural_shift` (cultures=[from_cid, to_cid], polities=[realm_id], severity 0.5, summary_key "go_native").
+- `HistorySimulator._phase_go_native/_subject_culture_share/_developed/_apply_go_native`; SimConstants `go_native_*`.
+**Database changes:**
+- Migration 163 (`163_setting_events_cultural_shift.sql`): widens `setting_events.type` CHECK with `cultural_shift` (table rebuild — SQLite can't ALTER a CHECK). `db/schema.sql` canonical CHECK synced.
+**Tests added/updated:**
+- `tests/test_setting_beastman.gd` +7 go-native tests (helper `_go_native_sim` forces base_rate high for deterministic mechanism tests): happy-path flip + de-clanholding, beastman-skip, adopt-up-only gate, min_share gate, vassal-skip, mass-weighted subject_share, cultural_shift event emission. SettingBeastmanTests now 101 checks.
+- Suite 461/17 net-zero (run 2, isolated APPDATA via tools/run_tests.ps1).
+**Known issues:**
+- Go-native fires 0 times at default base_rate 0.05 across 8 medium seeds (verified by a DB probe over the assim_sweep generations): the triggering configuration (a less-developed sovereign ruling a ≥40% more-developed subject) is rare on these maps — dominance is high-dev expansion, which go-native correctly ignores by design. Mechanism is proven-correct + armed (unit tests); whether to loosen the gates/rate is a deferred tuning call. Monoculture sweep unchanged at 48% avg top-culture / 12 polities (no regression; go-native is NOT the monoculture lever for high-dev-expansion seeds).
+**Next session should:**
+- Address the batch of bugs Jedidiah flagged ("I have a number of other bugs... once we are at a good break point") — go-native is that break point.
+- The real monoculture fix remains EXPANSION-SETTLING cultural REACH (Phase 5): `_settle_wilderness` should not paint the expander's culture at full strength everywhere; use the RAW `range_of_trade` falloff (acore-setting-construction-rules.xml:264). Optionally revisit go-native gate/rate tuning if natural firings are desired.
+
+## Session 2026-06-17 — Setting-gen + inventory bug batch (Jedidiah's 6-bug list)
+
+**Task:** Work a 6-bug list: (1) items can't transfer to animals/vehicles; (2) unclaimed hexes marked borderlands with a culture label + no pop; (3) Duchies reaching 12+ hexes (RAW 4–11); (4) a Principality vassalized by a Principality should promote the liege to King; (5) noncontiguous realms under one lord + princes-vassals-of-princes; (6) replay shows only pol_id/hex# (dead realms unnamed) + a nice-to-have for layer toggles in replay.
+**Model used:** Opus 4.8 (investigation via two parallel general-purpose agents for #1 + #6; RAW grounding; a structural diagnostic over the three seeds; fixes + verification).
+**Completed:**
+- **#4/#5 prince-under-prince (FIXED, 564acc4):** `HistorySimulator._realm_tier` was family-count-only; now `mini(_realm_tier_rec(pol,{}), EMPIRE)` where `_realm_tier_rec` = max(`tier_for_families(_realm_families)`, max over direct vassals of `_realm_tier_rec(v)+1`). RAW `political_divisions_of_realms` (acore-setting-construction-rules.xml:102): ruling a tier-N realm makes you tier N+1. Prince-ruling-prince → King; promotes recursively up the chain. Diagnostic: same/higher-tier vassalage 3/1/0 → 0 (seeds 345235582/38045604/40847028).
+- **#2 unclaimed-borderlands (FIXED, 564acc4):** root was `infrastructure_generator._classify_territory` (§9.6) promoting ANY wilderness hex within a settlement's reach, including UNOWNED land → "unclaimed borderlands". Now it skips `owner_polity_id == ""` hexes (classify only a realm's held hinterland). Diagnostic: unowned-not-wilderness 24/50/38 → 0. (A speculative history-sim `_normalize_unclaimed_wilderness` was added then reverted — it was a no-op: heightmap inits all-wilderness, the sim only promotes owned hexes, and `_revert_to_wilderness` is the sole owner-clearing path and already sets wilderness.)
+- **#1 inventory transfer (FIXED, bc8c7a2):** `PartyInventoryTransferValidator._validate_to_creature` routed a default-slot drag to the cargo branch (needs draft/pack saddle or rope), never trying an equipped saddlebag/pannier — so a riding mount with saddlebags, or a draft animal, was rejected even with free capacity. Now a loose drag onto a pack-container-equipped mount routes to the saddlebag branch first, and the contradictory `saddle_type=="draft"` reject (which disagreed with `TrainedCreatureData.can_carry_loose_cargo`) is removed. Vehicles were already fine for a properly-hitched team.
+**Decisions made:**
+- **#3 over-area duchies = NOT A BUG (Jedidiah confirmed from ACKS FAQ/discussions):** realm tier is FAMILY-COUNT-driven; the realms_by_type hex-count columns are guidelines assuming ~125–185 families per 6-mile hex. With dynamic per-hex density a low-density duchy CAN be geographically huge (12–25 hexes) and stay RAW-valid. No split/cap mechanism. The structural-tier fix is consistent (families + the ruling-tier floor).
+- **#5 contiguity = leave the bridging rules as-is (Jedidiah):** sea-lane range 10 (~240 mi) is historically defensible (Athens/Ionia, Rome/Carthage, the Danelaw); vassal-separation carries RAW penalties. Confirmed NOT a shearing bug — `_connected_components` bridges via sea-lanes + transitive vassal land and `_phase_contiguity` shears the rest. The case Jedidiah actually wants (holdings cut off by ENEMY land with no bridge) should already be sheared; he will try to reproduce + screencap.
+**Interfaces defined or changed:**
+- `HistorySimulator._realm_tier(pol)` semantics: now the structural RAW tier (max of family-tier and 1 + highest-direct-vassal-tier), clamped to EMPIRE; new `_realm_tier_rec(pol, seen)`. The output `setting_polities.tier_index`/title/ruler_level reflect it (already the Option-C contract).
+- `infrastructure_generator._classify_territory`: unowned hexes are no longer promoted.
+- `PartyInventoryTransferValidator._validate_to_creature`: default-slot drag prefers an equipped pack container (saddlebags/panniers) over loose cargo; no draft-saddle reject.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_beastman`: +2 structural-tier (`test_realm_tier_structural_promotion`, `test_realm_tier_promotes_chain`).
+- `test_setting_stage7`: +1 end-to-end (`test_unclaimed_hexes_are_wilderness`).
+- `test_party_inventory_transfer_validator`: +2 (`test_default_drag_onto_saddlebag_mount_accepted`, `test_default_drag_onto_draft_animal_accepted`).
+- Suite 461/17 net-zero throughout (three measured runs).
+**Known issues:**
+- **#6 replay (DEFERRED to a focused MCP-verified UI session):** root cause confirmed — replay frames store only ownership ids; dead-before-present realms are never named (only `setting_polities` survivors get Layer-5 names; dead realms keep a `toponym_root` in `setting_fallen_polities` the replay never loads). FIX READY: in `screen_generate_replay.begin_replay`, also load `SettingRepository.list_fallen_polities` → `names[fid] = "the Old <toponym_root>"` (fallback "a fallen realm"). NICE-TO-HAVE (Part B): wire the existing `political_map_view` mode toggles (POLITICAL/BIOME/ELEVATION/TERRITORY/CULTURE + Sovereign — already built, used by `screen_review`) into the replay screen's `_build_ui` (copy `_MODES`/`_on_mode`/`_on_sovereign_toggled` from `screen_review`). Per-epoch CULTURE in replay needs an approximate owner-culture lookup or a new per-frame snapshot (deferred). Scene scripts are not suite-loaded → verify via godot-ai MCP in the live flow.
+- #5: awaiting Jedidiah's repro/screencaps of the no-bridge enemy-cutoff case.
+**Next session should:**
+- Implement #6 (replay names via fallen toponyms + the Part B layer toggles) and MCP-verify in the live campaign-creation flow.
+- If #5 screencaps show a genuine no-bridge cutoff, investigate `_phase_contiguity` finalization coverage.
+
+## Session 2026-06-17 — Phantom sea-lanes + orphan absorption + expansion strips (#5 follow-up)
+
+**Task:** Jedidiah supplied repro seeds + screencaps refuting the earlier "#5 = no bug" call (orphan hexes inside enemy realms, no sea access, not vassals). Re-investigate; he ruled a severed orphan should be ABSORBED by the realm that surrounds it. Also: civs settle in long vertical strips ("walk straight north").
+**Model used:** Opus 4.8 (re-investigation via reproduction diagnostics + a subagent for the expansion-direction analysis; implementation + verification).
+**Completed:**
+- **Phantom sea-lane bug (CONFIRMED + FIXED):** `_connected_components` bridged any two coastal hexes within `sea_lane_range` by STRAIGHT-LINE distance, never checking a shared body of water — so blocks separated by enemy LAND got a phantom "sea lane" and were never sheared (the orphans Jedidiah saw). Diagnostic confirmed 3 phantom-bridged realms in seed 777207224, 1 in 360202439. FIX: `_precompute_ocean_components()` flood-fills the (static) ocean into connected components once and records each coastal land hex's bordering ocean(s) (`_coastal_oceans`); the sea-lane jump in `_connected_components` now also requires `_shared_ocean(h, c)`. Post-fix verification: 0 phantom-split realms across all 3 seeds.
+- **Orphan absorption (Jedidiah ruling):** `_phase_contiguity` now annexes a severed orphan component into the realm that SURROUNDS it — `_dominant_surrounding_realm` (most-adjacent live foreign realm) + `_absorb_orphan` (routes through `_flip_hex`, so substrate assimilation + the §7.4c beastman-raze rule apply). Falls back to the old secede(≥ floor)/revert-to-wilderness(lone hex) only when nothing but wilderness/ocean borders the orphan (keeps `test_contiguity_secedes_orphan` valid).
+- **Vertical-strip expansion bias (CONFIRMED + FIXED):** root cause (subagent-confirmed) = the expansion frontier is sorted by terrain score (only 4 discrete values → many ties), tie-broken by `_canonical_less` = northmost-first, so realms march straight north. FIX: `_precompute_expand_jitter()` gives each land hex a deterministic ±5% factor (well under the 0.15 gap between terrain-affinity buckets, so it never overrides real terrain preference); `_compute_frontier` multiplies `_terrain_mult` by it → equal-terrain ties scatter → organic growth.
+**Decisions made:**
+- A severed orphan is ABSORBED by the surrounding realm (Jedidiah), not seceded, whenever a foreign realm borders it.
+- A sea lane requires a shared flood-filled ocean body, not just straight-line distance. (Water-PATH distance ≤ range is a possible future refinement; shared-ocean fixes the confirmed across-land phantom cases.)
+- The earlier "#5 = no bug" conclusion was WRONG — it trusted the sim's own (flawed) connectivity definition instead of questioning it. Jedidiah's direct observation was correct.
+**Interfaces defined or changed:**
+- `HistorySimulator`: new members `_ocean_id` / `_coastal_oceans` / `_expand_jitter_by_hex`; new `_precompute_ocean_components` / `_shared_ocean` / `_precompute_expand_jitter` / `_dominant_surrounding_realm` / `_absorb_orphan`; `_connected_components` sea-lane now requires `_shared_ocean`; `_compute_frontier` applies the jitter; `_phase_contiguity` absorbs orphans. Both precomputes run in `run()` right after `_build_ordered_keys`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_setting_beastman`: rewrote `test_sea_lane_bridges_coastal` (a real CONNECTED ocean strip + `_precompute_ocean_components`); added `test_phantom_sea_lane_not_bridged` (different ocean bodies are NOT bridged), `test_orphan_absorbed_by_surrounder`, `test_expand_jitter_breaks_ties`. SettingBeastmanTests now 113 checks.
+- Suite 461/17 net-zero. Post-fix seed verification: 0 phantom-split realms (was 3 / 1 / 0).
+**Known issues:**
+- Sea-lane validity uses shared-ocean + straight-line distance, not water-PATH distance — two blocks on the same ocean but a long way around by water (> range) could still bridge. Minor; refine only if it surfaces.
+- Generation changed (phantom realms absorbed + expansion jitter), so a seed regenerates a slightly different world than older screencaps (expected; no determinism hash is pinned).
+**Next session should:**
+- Build the UI debug features Jedidiah requested: a RIVER overlay on the map (river_edges already generated) + a VASSALAGE TREE view in the review screen. Bundle with the deferred #6 replay items (dead-realm names via setting_fallen_polities.toponym_root + the existing layer toggles) as one godot-ai MCP-verified review-UI session.
+
+## Session 2026-06-17 — Review map matches gametime coords (orphan-render fix) + river overlay
+
+**Task:** Jedidiah's "orphans" persisted in the review map even after the sim-side phantom-sea-lane fix, and he asked for a river overlay + to "make [the review map] match the gametime map — same coordinate system or the world garbles on handoff." Investigate against the gametime map and fix.
+**Model used:** Opus 4.8 (investigation via reproduction diagnostics + the live gametime map over the godot-ai MCP; implementation + MCP visual verification).
+**Completed:**
+- **Root cause of the remaining "orphans" (VIEW-side, ~40% of realms):** `political_map_view._center_of` laid axial `(q,r)` out as an odd-q OFFSET grid, skipping the axial→offset conversion the gametime map uses (`HexMapController.axial_to_godot_map`: col=q, row=r+(q-(q&1))/2). The whole data pipeline (rivers/climate/culture/history sim) is axial; the view treated `(q,r)` as offset, so axial-adjacent hexes (a realm's own land) landed non-adjacent on screen and contiguous realms rendered with phantom gaps. Diagnostic: 7/19 and 12/30 realms render split under offset vs axial.
+- **FIX:** `_center_of` now applies the gametime axial→even-q-offset transform; `_neighbors` returns AXIAL neighbours (matches the sim `_OFF` / `HexMapController.get_neighbors`), so realm-boundary outlines align with the fills. The map is now the faithful flat-top parallelogram — the same coordinate system the gametime map renders for axial-rectangular world data.
+- **River overlay (Jedidiah request):** `_draw_rivers` draws each `setting_river_edges` row as a segment along the owning hex's edge (edge e spans vertices (e+4)%6 / (e+5)%6, flat-top), ported from `HexMapRenderer._draw_river_edge`; width by `width_category`. Wired via `bind_map` (review) + `begin_replay` (replay) → `SettingRepository.list_river_edges`. `campaign_creation_flow` passes the river rows to `bind_map`.
+**Decisions made:**
+- Match the gametime map's coordinate system (axial + `axial_to_godot_map`), per Jedidiah — fixes the orphans AND lets rivers draw on correct edges. Resulting shape is a parallelogram (the honest axial layout); Jedidiah pre-accepted "if it's a parallelogram, do that."
+- The earlier rectangle look of both the gametime screenshot and the old review map were respectively a zoomed window and the buggy odd-q misrendering.
+**Interfaces defined or changed:**
+- `political_map_view`: `_center_of` (axial→even-q offset), `_neighbors` (axial), new `set_rivers(edges)` + `_draw_rivers` + `_edge_vertex_offsets`; `_draw` extent computed in offset space.
+- `screen_review.bind_map` gains a `rivers` param; `screen_generate_replay.begin_replay` loads rivers; `campaign_creation_flow` passes `list_river_edges`.
+**Database changes:** None.
+**Tests added/updated:**
+- None automated — these are scene scripts (NOT loaded by the headless suite). Verified via the godot-ai MCP in the live campaign-creation flow: generated a Small world, confirmed contiguous realms (no phantom gaps) in both replay + review, rivers drawn on hex edges (Biome mode, full-res), no runtime errors.
+**Known issues:**
+- The map renders as a parallelogram (faithful axial). If a true rectangle is wanted, the WORLD GENERATION would need offset-rectangular coords (history_simulator builds an axial-rectangle q∈[0,W],r∈[0,H]); deferred unless Jedidiah prefers it.
+- Still TODO from the requested batch: VASSALAGE TREE view (review screen) + #6 replay (dead-realm names via `setting_fallen_polities.toponym_root`, + wire the existing layer-mode toggles into the replay screen). Next focused MCP-verified session.
+**Next session should:**
+- Build the vassalage-tree review tab + the #6 replay names/toggles, MCP-verified.
+- Consider whether to confirm the setting↔gametime coordinate handoff is 1:1 (both axial) so materialization doesn't garble.
+
+
+## Session 2026-06-17 — Rectangle refactor PRE-IMPLEMENTATION impact analysis (axial-rectangle → offset-rectangle setting grid)
+
+**Task:** Code-review-grade, analysis-only deep dive (NO code/migration/generator touched) to plan how to make generated worlds render as a RECTANGLE (offset-rectangle grid) instead of a PARALLELOGRAM (current axial-rectangle), keeping faithful axial adjacency and decoupling latitude from axial r. Deliverable = `docs/rectangle-refactor-plan.md` (impact map + sequenced plan + risk + verification + open questions).
+**Model used:** Opus 4.8 throughout. Method: an 8-angle multi-agent code-trace workflow (16 agents: one tracer + one adversarial verifier per angle) + manual cross-check of the load-bearing files + synthesis.
+**Completed:**
+- Wrote `docs/rectangle-refactor-plan.md` (sections A–E) — the green-light package for Jedidiah.
+- Confirmed H1: `HexMapController.axial_to_godot_map(q,r) = (q, r+(q-(q&1))/2)` even-q (`hex_map_controller.gd:126`); `godot_map_to_axial` is its exact inverse (`:134`), roundtrip-tested. The offset→axial derivation the refactor needs IS `godot_map_to_axial`; the render transform is its inverse, so they compose back to a clean (col,row) rectangle → NO renderer change.
+- Confirmed H2 with a correction: `const _OFF = [(0,-1),(1,-1),(1,0),(0,1),(-1,1),(-1,0)]` is byte-identical across 8 generator files (region_painter/history_simulator/heightmap/climate/culture_seeder/infrastructure/name_generator/poi_generator) + the canonical `HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS`. It is NOT in `hex_map_controller.gd` (which inlines `get_neighbors` in a DIFFERENT order); the build-log "AND in hex_map_controller.gd" claim was FALSE. `_OFF` order is edge-index-contractual (river/road/vertex encoding) — must NOT be reordered.
+- Confirmed H4: the grid is enumerated as an AXIAL-rectangle at EXACTLY ONE key-creation site — `heightmap_generator.gd:59-63` (`grid[key] = {…}`; grep proved one creation site in world/). Every other `for r in range(height): for q in range(width): Vector2i(q,r)` loop RE-INDEXES existing keys (climate ×2, region_painter, culture_seeder, `history_simulator._build_ordered_keys`, `setting_generator._persist_hexes`).
+- Confirmed H5 (the load-bearing risk): `climate_generator.gd:114` derives `effective_latitude` directly from axial r; the WHOLE climate cascade (temp→Köppen→biome→swamp→land_value) hangs off it. Exhaustive grep → this is the SOLE r→fraction→semantics site. `effective_latitude` is persisted but read back ONLY by tests (no runtime/generator consumer); the materializer drops it. So the decouple is fully contained to the climate writer + `test_setting_stage1.gd:93-102`.
+- Confirmed H6: materialization (unmerged worktree `claude/kind-blackburn-c7a1b9`) is a 1:1 axial `setting_hexes→hex_cells` copy (`setting_materializer.gd:128-157`) that drops latitude; the 6-mile child subdivision is `(pq*SUB+i, pr*SUB+j)`, SUB=4 (`region_zoom_in.gd:170-220`). NEW FINDING: the 6-mile WINDOW selection (`region_zoom_in.gd:63-71`) is a FIXED AXIAL BOX → re-shears to a parallelogram at the regional/play scale; fixing only world-gen leaves the actual play map a parallelogram (Step 7).
+- Confirmed H7: combat/dungeon/exploration runtime are shape-agnostic (dict-membership bounds via `hex_map_data.gd:75`; combat/dungeon run on a separate square/voxel grid). NO 2D-array-by-(col,row) store anywhere → negative axial r is safe at runtime. Untouched by the refactor.
+- Surfaced THREE additional outline-coupled sites beyond `climate:114` that the refactor MUST also fix: `region_painter.gd:687` (ocean/sea axial-bbox edge test — the only min/max-bounds test in the generators; fix via the off-grid-neighbor pattern already at `region_painter.gd:248-251`); `heightmap_generator.gd:130-136` (continental falloff centered on assumed axial-rectangle corners; recompute from actual enumerated extremes); `climate_generator.gd:156-165` `_rain_shadow` (uses axial `-q` as "west" — decide axial vs visual-west).
+**Decisions made (RECOMMENDATIONS pending Jedidiah; captured as open questions E-1..E-6):**
+- Reject the "switch the whole game off axial coords" alternative — axial adjacency is shared/correct; only the generator's grid SHAPE + the r-as-latitude coupling are the problem.
+- Recommend: rectangle applies to NEWLY generated worlds only (locked worlds are frozen behind `_reject_if_locked`; a fixed seed now yields a different world); stay even-q; allow negative axial r; standardize even-q parity across review + gametime maps; land the world-gen fix + the `region_zoom_in` window fix together (they are one logical change across two scales).
+- Implementation spine: a single shared `enumerate_offset_rect(W,H)` helper that yields `{key(axial), col, row}` sorted canonically `(r ASC, q ASC)`; route the one creation site + all full-grid re-walks through it; decouple latitude to use `row`. CRITICAL: `_build_ordered_keys` must emit `(r ASC, q ASC)` over the new key set (explicit sort) so the replay RLE encoder stays aligned with the `list_hexes` decoder.
+**Interfaces defined or changed:** NONE this session (analysis only). PROPOSED for implementation: a static `enumerate_offset_rect(width:int, height:int) -> Array` (entries `{key: Vector2i, col: int, row: int}`, canonical `(r ASC, q ASC)` sort) on a small `WorldGrid` util (NOT an autoload); `climate_generator` latitude to read the offset `row`. No signatures changed yet.
+**Database changes:** None (analysis only). The refactor itself needs NO schema change — `setting_hexes`/`hex_cells` PKs are `(…,q,r)` INTEGER and tolerate negative r; only stored q/r VALUES + `effective_latitude` change for a given seed.
+**Tests added/updated:** None this session. Planned (in the doc): enumerator round-trip/sort test; "is it a rectangle?" assertion (`axial_to_godot_map` covers col×row); rewrite `test_setting_stage1.gd:93-102` latitude assertion to the offset row; ocean/sea + falloff tests; `_build_ordered_keys == list_hexes` order assertion. NOTE: scene scripts are NOT suite-loaded — visual correctness MUST be godot-ai MCP verified (review map + gametime 6-mile map).
+**Known issues:**
+- Determinism blast radius (intended, must be owned): RNG is per-key-seeded (not a global stream), so NOT a full reshuffle — BUT positional noise (`_hex_center(q,r)`), coord-keyed per-hex draws (swamp/expand_jitter/beastman), AND shared-stream culture-homeland seeding (`culture_seeder.gd:459/541`, biome-derived input) all shift → a fixed seed regenerates a MATERIALLY DIFFERENT world (terrain + seed-capital positions + downstream history). No pinned golden world hash exists, so the suite won't catch it; old screencaps/seeds won't reproduce.
+- `region_zoom_in.gd:63-71` 6-mile window re-shear: the world-gen fix is INCOMPLETE without mirroring the shape fix here (lives on the unmerged branch).
+- Cosmetic: `political_map_view` (hand-rolled, staggers EVEN col) vs gametime `TileMapLayer` (`TILE_OFFSET_AXIS_VERTICAL`) share the even-q FORMULA but not pixel-identical parity — eyeball that the two outlines truly match (open question E-3).
+**Next session should:**
+1. Get Jedidiah's answers to open questions E-1..E-6 (esp. new-worlds-only migration policy and whether to land on `claude/kind-blackburn-c7a1b9` so both scales move together).
+2. Implement Steps 1–3 (shared enumerator + switch the single creation site + route all re-walks; keep determinism suite green and `_build_ordered_keys == list_hexes`).
+3. Then Steps 4–6 (latitude→offset-row + rewrite the stage1 latitude test; `region_painter:687` ocean/sea fix; `heightmap:130-136` falloff fix), and godot-ai MCP visual verification on seeds 345235582 / 38045604 / 40847028 + 777207224 / 360202439, Small (15×12) and Large (40×30).
 ## Session 2026-06-16 — Setting→runtime materialization PLANNING (GDD + decision register)
 
 **Task:** Design the setting→runtime materialization (the handoff converting the locked generated `setting_*` world into the runtime tables the live game reads), surface every open decision for Jedidiah to rule, and produce a draft GDD. Planning only — no implementation.

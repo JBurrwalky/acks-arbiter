@@ -20,6 +20,7 @@ enum Mode { POLITICAL, BIOME, ELEVATION, TERRITORY, CULTURE }
 
 const _UNOWNED := Color(0.17, 0.16, 0.15)
 const _WATER := Color(0.20, 0.34, 0.52)
+const _RIVER := Color(0.40, 0.66, 0.95)
 const _OUTLINE := Color(0.0, 0.0, 0.0, 0.28)
 
 # Biome palette — distinct hues per Jedidiah's brief: a lincoln-green forest, a
@@ -58,6 +59,7 @@ const _TERR := {
 }
 
 var _hexes: Array = []          # full setting_hexes rows (SELECT *)
+var _rivers: Array = []         # setting_river_edges rows (drawn as edge segments)
 var _colors: Dictionary = {}    # polity_id -> Color (replay palette)
 var _owner_override: Dictionary = {}   # Vector2i -> polity_id (replay frame); empty = use hex.owner
 var _settlements: Array = []
@@ -83,6 +85,13 @@ func set_settlements(s: Array) -> void:
 	_settle_by_hex = {}
 	for row in s:
 		_settle_by_hex[Vector2i(int(row.get("hex_q", 0)), int(row.get("hex_r", 0)))] = row
+	queue_redraw()
+
+
+## River edges (SettingRepository.list_river_edges) — drawn as line segments along the
+## owning hex's edge, matching the gametime map (HexMapRenderer._draw_river_edge).
+func set_rivers(edges: Array) -> void:
+	_rivers = edges
 	queue_redraw()
 
 
@@ -250,16 +259,17 @@ func _draw() -> void:
 		return
 	if _mode == Mode.CULTURE:
 		_ensure_culture_colors()
-	var maxq := 0
-	var maxr := 0
+	# Extent in EVEN-Q OFFSET space (axial row r maps to row + (q-(q&1))/2), so the
+	# parallelogram of axial hexes fits the rect without clipping.
+	var max_col := 0
+	var max_row := 0
 	for h in _hexes:
-		maxq = maxi(maxq, int(h["q"]))
-		maxr = maxi(maxr, int(h["r"]))
-	var cols := maxq + 1
-	var rows := maxr + 1
+		var hq := int(h["q"])
+		max_col = maxi(max_col, hq)
+		max_row = maxi(max_row, int(h["r"]) + (hq - (hq & 1)) / 2)
 	_margin = 8.0
-	var rx := (size.x - 2.0 * _margin) / (1.5 * float(cols) + 0.5)
-	var ry := (size.y - 2.0 * _margin) / ((float(rows) + 0.5) * sqrt(3.0))
+	var rx := (size.x - 2.0 * _margin) / (1.5 * float(max_col + 1) + 0.5)
+	var ry := (size.y - 2.0 * _margin) / ((float(max_row) + 2.0) * sqrt(3.0))
 	_R = minf(rx, ry)
 	var owner_by := {}
 	for h in _hexes:
@@ -275,6 +285,7 @@ func _draw() -> void:
 			var owner := str(owner_by.get(Vector2i(q, r), ""))
 			if owner != "":
 				_draw_hex_outline(center, _R, _border_for(owner_by, q, r, owner))
+	_draw_rivers()
 	# City markers (Class I-III larger). Drawn on top of the hexes.
 	for s in _settlements:
 		var sc := _center_of(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
@@ -283,11 +294,42 @@ func _draw() -> void:
 		draw_circle(sc, mrad, Color(0.18, 0.10, 0.04), false, 1.0)
 
 
-## Pixel centre of hex (q, r) in the rectangular offset layout (odd-q stepped).
+## Draw river edges as line segments along the owning hex's edge, matching the gametime
+## map (HexMapRenderer._draw_river_edge): edge e spans hex vertices (e+4)%6 and (e+5)%6
+## (flat-top, vertex n at 60°·n). Width encodes the river class. Drawn over the fills.
+func _draw_rivers() -> void:
+	if _rivers.is_empty() or _R <= 0.0:
+		return
+	for row in _rivers:
+		var center := _center_of(int(row.get("hex_q", 0)), int(row.get("hex_r", 0)))
+		var verts := _edge_vertex_offsets(int(row.get("edge", 0)))
+		var wcat := str(row.get("width_category", "stream"))
+		var w := 3.0 if wcat == "major_river" else (2.2 if wcat == "river" else 1.4)
+		draw_line(center + verts[0], center + verts[1], _RIVER, w)
+
+
+## Pixel offsets of edge e's two endpoints from the hex centre (flat-top circumradius _R).
+## Edge e spans vertices (e+4)%6 and (e+5)%6 — ported from HexMapRenderer so the segment
+## lies on the same edge the gametime map draws. Edge numbering 0=N, 1=NE … 5=NW.
+func _edge_vertex_offsets(e: int) -> Array:
+	var a := deg_to_rad(60.0 * float((e + 4) % 6))
+	var b := deg_to_rad(60.0 * float((e + 5) % 6))
+	return [Vector2(cos(a), sin(a)) * _R, Vector2(cos(b), sin(b)) * _R]
+
+
+## Pixel centre of AXIAL hex (q, r), matching the gametime map: axial → even-q offset
+## (HexMapController.axial_to_godot_map) then a flat-top hex layout. The axial→offset
+## conversion is exactly what the review view was missing — without it, axial-adjacent
+## hexes (a realm's own land) landed non-adjacent on screen, so contiguous realms rendered
+## with phantom gaps ("orphans"). Columns are spaced 1.5R; rows √3·R; even columns drop a
+## half-row (even-q). Uses the cached `_max_row` extent so the layout fills the rect.
 func _center_of(q: int, r: int) -> Vector2:
+	var col := q
+	var row := r + (q - (q & 1)) / 2     # axial → even-q offset (matches gametime)
+	var col_shift := 0.5 if (col & 1) == 0 else 0.0
 	return Vector2(
-		_margin + _R + 1.5 * _R * float(q),
-		_margin + sqrt(3.0) * _R * (float(r) + 0.5 * float(q & 1)) + sqrt(3.0) * _R * 0.5)
+		_margin + _R + 1.5 * _R * float(col),
+		_margin + sqrt(3.0) * _R * (float(row) + col_shift + 0.5))
 
 
 func _hex_owner(h: Dictionary) -> String:
@@ -367,12 +409,10 @@ func _border_for(owner_by: Dictionary, q: int, r: int, owner: String) -> Color:
 
 
 func _neighbors(q: int, r: int) -> Array:
-	# Flat-top offset neighbours (odd-q vertical layout).
-	if q & 1:
-		return [Vector2i(q + 1, r), Vector2i(q + 1, r + 1), Vector2i(q, r + 1),
-			Vector2i(q - 1, r + 1), Vector2i(q - 1, r), Vector2i(q, r - 1)]
-	return [Vector2i(q + 1, r - 1), Vector2i(q + 1, r), Vector2i(q, r + 1),
-		Vector2i(q - 1, r), Vector2i(q - 1, r - 1), Vector2i(q, r - 1)]
+	# AXIAL neighbours — the data's true adjacency (matches the sim's _OFF and
+	# HexMapController.get_neighbors), so realm-boundary outlines align with the fills.
+	return [Vector2i(q + 1, r), Vector2i(q - 1, r), Vector2i(q + 1, r - 1),
+		Vector2i(q - 1, r + 1), Vector2i(q, r - 1), Vector2i(q, r + 1)]
 
 
 func _draw_hex(center: Vector2, radius: float, col: Color) -> void:

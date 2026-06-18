@@ -36,6 +36,8 @@ func run_all_tests() -> void:
 	# Carrier-type: creature targets
 	test_pc_to_creature_with_rope_accepted()
 	test_pc_to_untacked_creature_rejected()
+	test_default_drag_onto_saddlebag_mount_accepted()
+	test_default_drag_onto_draft_animal_accepted()
 
 	# Carrier-type: vehicle targets
 	test_pc_to_vehicle_within_capacity_accepted()
@@ -370,6 +372,43 @@ func test_pc_to_untacked_creature_rejected() -> void:
 
 	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
 	check(not result.ok, "untacked creature should reject cargo")
+	_cleanup()
+
+
+## #1 (2026-06-17): a loose drag (no slot hint) onto a riding mount with equipped
+## saddlebags must go INTO the saddlebags. Previously the default slot always routed
+## to the loose-cargo branch, which a riding saddle can't satisfy, so the item was
+## wrongly rejected even with free capacity.
+func test_default_drag_onto_saddlebag_mount_accepted() -> void:
+	_setup()
+	_create_creature_item(CREATURE_A, "saddle_riding", "Riding Saddle", 1, 500, "gear", true, "mount")
+	_create_creature_item(CREATURE_A, "saddlebags", "Saddlebags", 1, 200, "gear", true, "pack")
+	var creature := _load_creature_data(CREATURE_A)
+	var item := _make_item("sack_large", "Large Sack", 1, 100)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("creature", CREATURE_A, "", creature)   # default slot = a loose drag
+	var ctx := _make_context()
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(result.ok, "loose drag onto a saddlebag-equipped riding mount should be accepted: reason='%s'" % result.get("reason", ""))
+	check(result.resolved_slot == "saddlebag", "should resolve into the saddlebags: got '%s'" % result.resolved_slot)
+	_cleanup()
+
+
+## #1: a DRAFT-saddled animal accepts loose cargo (can_carry_loose_cargo). The old
+## "draft saddle is hitch-only" reject blocked it even with free capacity.
+func test_default_drag_onto_draft_animal_accepted() -> void:
+	_setup()
+	_create_creature_item(CREATURE_A, "saddle_draft", "Draft Saddle", 1, 500, "gear", true, "mount")
+	var creature := _load_creature_data(CREATURE_A)
+	var item := _make_item("sack_large", "Large Sack", 1, 100)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("creature", CREATURE_A, "", creature)
+	var ctx := _make_context()
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(result.ok, "a draft-saddled animal should accept loose cargo: reason='%s'" % result.get("reason", ""))
+	check(result.resolved_slot == "cargo", "draft cargo resolves to 'cargo': got '%s'" % result.resolved_slot)
 	_cleanup()
 
 

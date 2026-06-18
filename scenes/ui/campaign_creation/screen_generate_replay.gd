@@ -170,6 +170,7 @@ func begin_replay(campaign_id: String) -> void:
 	_index = 0
 	if _map != null:
 		_map.bind(_ordered_hexes, SettingRepository.list_replay_palette(campaign_id))
+		_map.set_rivers(SettingRepository.list_river_edges(campaign_id))
 		# Replay tooltips report per-frame ownership only (the stored culture/
 		# territory/peasants are present-day), and need realm names for the owner line.
 		_map.set_replay_mode(true)

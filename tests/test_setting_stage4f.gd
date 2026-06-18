@@ -20,8 +20,8 @@ func run_all_tests() -> void:
 	test_found_migrant_polity()
 	test_advance_band_travels_then_lands()
 	test_dissolve_band_conserves_families()
-	# Beastman repopulation (§7.6)
-	test_spawn_beastman_clanhold()
+	# Beastman repopulation (§7.6 / §7.4e war-hordes)
+	test_spawn_beastman_horde()
 	test_repopulate_respects_delay()
 	test_repopulate_skips_reclaimed_hex()
 	test_finalize_new_polity_flags_beastman()
@@ -185,41 +185,51 @@ func test_dissolve_band_conserves_families() -> void:
 
 # --- Beastman repopulation ---------------------------------------------------
 
-func test_spawn_beastman_clanhold() -> void:
+## §7.4e: re-seeding spawns a WAR-HORDE from a contiguous ≥3-hex empty cluster, not a
+## lone clanhold. A region too small to cohere yields nothing (left for the 6-mile fill).
+func test_spawn_beastman_horde() -> void:
 	var sim := _bare_sim({})
-	_build_grid(sim, 1, 1)   # one empty clear/flat hex → 'clear_grass' distribution column
-	var ok := sim._spawn_beastman_clanhold(Vector2i(0, 0), 12)
-	check(ok, "a clanhold spawns on valid wilderness terrain")
+	_build_grid(sim, 3, 1)   # three contiguous empty clear/flat hexes → a cohering cluster
+	var ok := sim._spawn_beastman_horde(Vector2i(0, 0), 12)
+	check(ok, "a ≥3-hex empty cluster spawns a war-horde")
 	var pid := str(sim._grid[Vector2i(0, 0)]["owner_polity_id"])
-	check(pid != "", "the spawned clanhold owns its hex")
+	check(pid != "", "the spawned horde owns its anchor hex")
 	var pol: Dictionary = sim._polities[pid]
-	check(str(pol["alignment"]) == "chaotic", "beastman clanholds are Chaotic")
-	check(bool(pol["is_beastman"]), "the clanhold is flagged beastman")
-	check(int(pol["founded_tick"]) == 12, "the clanhold founds at the spawn tick")
+	check(int(pol["hexes"].size()) == 3, "the horde holds the whole 3-hex cluster")
+	check(str(pol["alignment"]) == "chaotic", "beastman hordes are Chaotic")
+	check(bool(pol["is_beastman"]), "the horde is flagged beastman")
+	check(int(pol["founded_tick"]) == 12, "the horde founds at the spawn tick")
+	var sim2 := _bare_sim({})
+	_build_grid(sim2, 2, 1)   # only two contiguous hexes (< threshold 3)
+	check(not sim2._spawn_beastman_horde(Vector2i(0, 0), 12),
+		"a 2-hex region is too small to cohere — no 24-mile horde")
 
 
 func test_repopulate_respects_delay() -> void:
 	var sim := _bare_sim({})
-	_build_grid(sim, 1, 1)
+	_build_grid(sim, 3, 1)   # a 3-hex region that CAN cohere into a horde
+	sim._c.beastman_global_land_cap = 1.0   # isolate the delay logic from the land budget
 	sim._params.wilderness_beastman_density = 100.0   # force the spawn roll to pass
-	sim._depopulated_at = {Vector2i(0, 0): 10}
-	sim._repopulate_beastmen(11)   # only 1 tick since depopulation (< BEASTMAN_DELAY 2)
+	sim._depopulated_at = {Vector2i(0, 0): 10, Vector2i(1, 0): 10, Vector2i(2, 0): 10}
+	sim._repopulate_beastmen(10)   # scan tick (10 % 5 == 0), but 0 ticks since the crater (< delay 2)
 	check(str(sim._grid[Vector2i(0, 0)]["owner_polity_id"]) == "",
-		"no beastman spawns before BEASTMAN_DELAY elapses")
-	sim._repopulate_beastmen(12)   # 2 ticks elapsed → eligible
+		"no horde re-seeds before BEASTMAN_DELAY elapses")
+	sim._repopulate_beastmen(15)   # scan tick; 5 ticks elapsed → eligible
 	check(str(sim._grid[Vector2i(0, 0)]["owner_polity_id"]) != "",
-		"a beastman clanhold spawns once the delay has passed")
+		"a war-horde re-seeds once the delay has passed")
 
 
 func test_repopulate_skips_reclaimed_hex() -> void:
 	var sim := _bare_sim({})
-	_build_grid(sim, 1, 1, {Vector2i(0, 0): "human"})   # hex already reclaimed
+	_build_grid(sim, 4, 1, {Vector2i(0, 0): "human"})   # (0,0) reclaimed; (1,0)-(3,0) empty
+	sim._c.beastman_global_land_cap = 1.0   # isolate the skip logic from the land budget
 	sim._params.wilderness_beastman_density = 100.0
-	sim._depopulated_at = {Vector2i(0, 0): 0}
-	sim._repopulate_beastmen(20)
+	sim._repopulate_beastmen(20)   # scan tick (20 % 5 == 0)
 	check(str(sim._grid[Vector2i(0, 0)]["owner_polity_id"]) == "human",
-		"a reclaimed hex is not overwritten by beastman repopulation")
-	check(not sim._depopulated_at.has(Vector2i(0, 0)), "the reclaimed hex is dropped from the spawn set")
+		"a reclaimed (owned) hex is never overwritten by beastman re-seeding")
+	var pid := str(sim._grid[Vector2i(1, 0)]["owner_polity_id"])
+	check(pid != "" and bool(sim._polities[pid]["is_beastman"]),
+		"a war-horde forms on the contiguous EMPTY cluster beside it")
 
 
 func test_finalize_new_polity_flags_beastman() -> void:

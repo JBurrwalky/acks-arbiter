@@ -46,7 +46,7 @@ _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [editor]
 
-movie_writer/movie_file="C:/Users/jttau/movies/setting_gen_film_1.avi"
+movie_writer/movie_file="C:/Users/jttau/movies/Character_Creation_1.ogv"
 
 [editor_plugins]
 
