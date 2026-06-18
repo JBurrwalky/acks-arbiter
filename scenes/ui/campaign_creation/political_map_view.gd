@@ -321,12 +321,15 @@ func _edge_vertex_offsets(e: int) -> Array:
 ## (HexMapController.axial_to_godot_map) then a flat-top hex layout. The axial→offset
 ## conversion is exactly what the review view was missing — without it, axial-adjacent
 ## hexes (a realm's own land) landed non-adjacent on screen, so contiguous realms rendered
-## with phantom gaps ("orphans"). Columns are spaced 1.5R; rows √3·R; even columns drop a
-## half-row (even-q). Uses the cached `_max_row` extent so the layout fills the rect.
+## with phantom gaps ("orphans"). Columns are spaced 1.5R; rows √3·R; ODD columns drop a
+## half-row — matching Godot's TileMapLayer (TILE_OFFSET_AXIS_VERTICAL), which staggers
+## odd columns down, so the review map is PIXEL-IDENTICAL to the gametime map (the old
+## even-column shift drew even columns a full row low vs gametime). Uses the cached
+## `_max_row` extent so the layout fills the rect.
 func _center_of(q: int, r: int) -> Vector2:
 	var col := q
 	var row := r + (q - (q & 1)) / 2     # axial → even-q offset (matches gametime)
-	var col_shift := 0.5 if (col & 1) == 0 else 0.0
+	var col_shift := 0.5 if (col & 1) == 1 else 0.0
 	return Vector2(
 		_margin + _R + 1.5 * _R * float(col),
 		_margin + sqrt(3.0) * _R * (float(row) + col_shift + 0.5))

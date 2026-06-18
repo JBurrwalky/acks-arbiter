@@ -54,8 +54,40 @@ func run_all_tests() -> void:
 	test_compute_party_visibility_bonus_single_eagle_returns_one()
 	test_compute_party_visibility_bonus_multi_wearer_maxes_not_sums()
 	test_compute_party_visibility_bonus_skips_null_members()
+	test_review_map_matches_gametime_stagger_parity()
 	if not has_failures():
 		print("HexMapController: all tests passed.")
+
+
+## Pixel-parity guard (Jedidiah 2026-06-17): the campaign-review map
+## (political_map_view._center_of) must stagger the SAME column parity DOWN as the
+## gametime map (Godot's TileMapLayer with TILE_OFFSET_AXIS_VERTICAL), or the two maps
+## render mirror-staggered. Ground truth = a real TileMapLayer with the gametime hex
+## config; axial (1,0) is the SE neighbour of (0,0), so BOTH renderers must draw it lower.
+func test_review_map_matches_gametime_stagger_parity() -> void:
+	var layer := TileMapLayer.new()
+	var ts := TileSet.new()
+	ts.tile_shape = TileSet.TILE_SHAPE_HEXAGON
+	ts.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_VERTICAL
+	ts.tile_size = Vector2i(83, 72)   # TERRAIN_TILE_SIZE (hex_map_renderer)
+	layer.tile_set = ts
+	var g0 := layer.map_to_local(HexMapController.axial_to_godot_map(Vector2i(0, 0)))
+	var g1 := layer.map_to_local(HexMapController.axial_to_godot_map(Vector2i(1, 0)))
+	layer.free()
+	check(g1.y > g0.y,
+		"gametime: axial (1,0) [SE of (0,0)] renders lower — Godot staggers odd columns down")
+
+	var view = load("res://scenes/ui/campaign_creation/political_map_view.gd").new()
+	view._R = 40.0
+	view._margin = 8.0
+	var p0: Vector2 = view._center_of(0, 0)
+	var p1: Vector2 = view._center_of(1, 0)
+	view.free()
+	check(p1.y > p0.y,
+		"review map: axial (1,0) must render lower than (0,0), matching the gametime stagger")
+	# And the parity matches the gametime layer's direction (both true).
+	check((g1.y > g0.y) == (p1.y > p0.y),
+		"review-map and gametime column-stagger parity must agree (pixel parity)")
 
 
 func test_get_neighbors_returns_six() -> void:
