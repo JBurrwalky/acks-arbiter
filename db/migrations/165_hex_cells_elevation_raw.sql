@@ -1,4 +1,4 @@
--- Migration 164: persist raw continuous elevation (≈0..1) on runtime hex cells.
+-- Migration 165: persist raw continuous elevation (≈0..1) on runtime hex cells.
 -- The categorical `elevation` (flat/hills/mountains) suffices for 2D play, but the
 -- future 2D→3D wilderness renderer (gdd-wilderness-hex-3d.md) needs the raw
 -- heightmap value. SettingMaterializer copies it from setting_hexes.elevation_raw

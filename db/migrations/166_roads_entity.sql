@@ -1,4 +1,4 @@
--- Migration 165: runtime `roads` entity — the materialized + 6-mile-generated road
+-- Migration 166: runtime `roads` entity — the materialized + 6-mile-generated road
 -- network as first-class entities. `hex_overlays` carries per-cell render geometry
 -- (edges); THIS table carries each road as an entity (ordered hex path + class +
 -- purpose + name) so the game knows WHERE roads are and WHAT they are, and so

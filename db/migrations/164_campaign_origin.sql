@@ -1,4 +1,4 @@
--- Migration 163: campaign_origin marker — distinguishes a GENERATED campaign
+-- Migration 164: campaign_origin marker — distinguishes a GENERATED campaign
 -- (materialized from the locked setting_* tables by SettingMaterializer) from a
 -- FIXTURE campaign (hand-authored test content via TestContentSeeder). Both paths
 -- write the same runtime tables and must NEVER both run for one campaign; this
