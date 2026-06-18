@@ -86,13 +86,13 @@ Rewrite the war-resolution effects (`_annex` / `_resolve_crushing` / `_resolve_d
 - A realm may claim contiguous **empty wilderness enclosed within / adjacent to its bounded territory** (no tax revenue — purely titular reach, like Imperial Siberia). Gated so not every wilderness hex flips to its biggest neighbor: claim only wilderness that is enclosed or anchored by a **stranded same-culture population**.
 - Stranded same-culture pockets become **anchor points** that soften (slow / reduce) the forced migration of non-contiguous same-culture populations.
 
-### Q3 mechanic — Peaceful auto-coagulation (replaces silent consolidation)
-New `_phase_coagulation` (or fold into consolidation), **culture-gated, distance-gated, event-emitting**:
-- A **sub-Duchy sovereign** S looks within `coagulation_reach(S.tier)` hexes for the strongest **same-majority-culture** realm T (any tier).
-- Reach scales with tier: base 1–2 hexes, e.g. **a March reaches 1–3 hexes**; higher tiers reach farther.
-- If found, S **peacefully joins T** (S → vassal of T; two peers merge). Two sovereign Baronies auto-join each other; a sovereign March auto-joins a nearby same-culture Empire; etc.
-- Emits a **new event type** (e.g. `protectorate` / `union`): *"X signed a treaty of protection with Y, joining their two realms."*
-- Keeps the **Duchy-level seed points** (seeding unchanged); allows **viable low-tier sovereigns** to persist (bringing the low titles back to the map) while preventing fragmentation by coagulating coherent same-culture neighbors — a narratively-legible alternative to today's silent merge.
+### Q3 mechanic — Peaceful auto-coagulation (replaces silent consolidation) — IMPLEMENTED (Phase 3a)
+Folded into `_consolidate_civ`, **distance-gated, event-emitting**:
+- A **sub-Duchy sovereign** S looks within `coagulation_reach_base(2) + S.realm_tier` hexes (Barony 2 / March 3 / County 4) for the best acceptable realm T.
+- **Validity** for T: within reach, OUTRANKS S, not beastman, **same civ-type** (civilized↔civilized / clanhold↔clanhold), and **not opposed alignment** (law & chaos refuse protection from each other; neutral seeks/accepts both), no liege cycle.
+- **Preference (lexicographic, fragmentation-limiting fallback):** same-culture > same-alignment > same-civ-type > closest > largest realm > lowest id. So same-culture kin win, but if none is in reach S falls back to any same-civ-type non-opposed neighbour (limits fragmentation) rather than staying a lone fragment.
+- If found, S **peacefully joins T as a vassal** (`liege_id = T`, `vassalized_by_war = 0`); raises T's realm tier. Emits **`protectorate`** (significance 0.45, migration 169): *"X signed a treaty of protection with Y, joining their realms."*
+- With **no acceptable target in reach** S SURVIVES as a viable low-tier sovereign (an enclave). Keeps the Duchy-level seed points; brings the low titles back to the map without the 575-polity explosion (calibration smoke: ~15 realms, ~6.7 independent, ~2.3 empires-with-vassals).
 
 ### #1a — Every-tick replay
 `replay_cadence: 4 → 1` (`sim_constants.gd:327`). ~4× frames (standard 41 → 161; <1 MB even on huge/deep). The 100-yr jump disappears automatically (each frame = 25 yr). Link `screen_generate_replay._YEARS_PER_TICK` to `SimConstants.tick_years` (kill the unlinked duplicate).

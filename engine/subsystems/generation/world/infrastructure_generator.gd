@@ -417,6 +417,11 @@ func _finalize_classification(settlements: Array, hex_grid: Dictionary) -> void:
 		# the 24-mile review surfaced unowned hexes promoted by a neighbouring city.)
 		if str(hex.get("owner_polity_id", "")) == "":
 			continue
+		# Empty (pop-0) owned land never civilizes — civilization needs people. Keeps
+		# req-H titular wilderness claims (owned but unpopulated "Siberia") as wilderness;
+		# the 6-mile handoff fills them with beastmen.
+		if int(hex.get("population_band", 0)) <= 0:
+			continue
 		# Clanhold-held land never civilizes — it stays wilderness regardless of a
 		# neighbouring city's reach (clan cultures lack the capacity for settled life,
 		# so the sim keeps their hexes wilderness and §9.6 must not promote them).

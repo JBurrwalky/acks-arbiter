@@ -223,11 +223,17 @@ func test_multiple_owners_coexist() -> void:
 		"expansion should leave several coexisting realms, got %d" % owners.size())
 
 
+## Owned SETTLED land carries population. req-H titular wilderness claims (owned but
+## unpopulated "Siberia" — pop 0, wilderness-class) are the deliberate exception.
 func test_owned_hexes_are_populated() -> void:
 	for key in _hexes_by_qr:
-		if str(_hexes_by_qr[key].owner_polity_id) != "":
-			check(int(_hexes_by_qr[key].population_band) > 0,
-				"owned hex %s should have population" % key)
+		var hex = _hexes_by_qr[key]
+		if str(hex.owner_polity_id) == "":
+			continue
+		if str(hex.territory_class) == "wilderness" and int(hex.population_band) == 0:
+			continue   # titular wilderness claim — owned empty land, allowed
+		check(int(hex.population_band) > 0,
+			"owned settled hex %s should have population" % key)
 
 
 func test_determinism() -> void:

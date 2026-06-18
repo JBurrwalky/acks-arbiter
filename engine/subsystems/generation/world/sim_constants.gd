@@ -163,6 +163,20 @@ var consolidation_min_age: int = 8        # ticks (200 yr) before a sub-floor so
 # relocates its people to the nearest valid realm (Jedidiah: "migrate with some
 # population loss"). The survivors join the destination's hexes / expand its border.
 var consolidation_migrate_loss: float = 0.25
+# §7.4f auto-coagulation reach: a sub-Duchy sovereign peacefully joins (as a vassal —
+# a "treaty of protection") the best acceptable realm within `coagulation_reach_base +
+# its realm tier` hexes. So a Barony reaches 2, a March 3, a County 4 (Jedidiah: "1-2 hex
+# distance + tier; a march will have a 1-3 hex reach"). Preference: same-culture, then any
+# same-civ-type non-opposed-alignment realm (limits fragmentation). With no acceptable
+# target in reach the sovereign SURVIVES as a viable low-tier sovereign (an enclave).
+var coagulation_reach_base: int = 2
+# req-H titular wilderness claiming (finalization): a realm claims an EMPTY (pop-0)
+# wilderness pocket enclosed within its borders iff the pocket is ≤ this many hexes AND a
+# single realm borders ≥ titular_claim_dominance of its land border. Small enclosed holes /
+# Siberia-style gaps get a titular owner (no population/tax, stays wilderness); large open
+# frontiers stay unclaimed ("not just every wilderness hex"). [CALIBRATION]
+var titular_claim_max_pocket: int = 12
+var titular_claim_dominance: float = 0.65
 # The DUCHY floor for civilized/demihuman realms keys on DomainTierTable.DUCHY
 # (tier 3, ≥20,000 families) — referenced directly, not duplicated here.
 

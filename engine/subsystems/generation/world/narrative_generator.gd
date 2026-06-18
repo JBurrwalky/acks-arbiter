@@ -39,6 +39,8 @@ const _EVENT_TEMPLATES := {
 	"migration": "the %s folk migrated in search of new lands",  # uses culture, not polity
 	# §7.4f go-native — (realm, adopted culture): cultures = [from, to], polities = [realm].
 	"cultural_shift": "%s took on the ways and customs of the %s",
+	# §7.4f coagulation — (joiner, protector): both same culture; polities = [joiner, protector].
+	"protectorate": "%s signed a treaty of protection with %s, joining their realms",
 	# §7.4b rebellions — rendered as (rebel culture, oppressor realm); cultures =
 	# [oppressor, rebel], polities = [oppressor].
 	"rebellion": "the %s rose in revolt against %s",

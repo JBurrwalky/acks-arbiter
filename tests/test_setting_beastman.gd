@@ -27,8 +27,13 @@ func run_all_tests() -> void:
 	# §7.4e significance floor (Jedidiah 2026-06-17)
 	test_connected_present_components_groups_contiguous()
 	test_consolidate_civ_merges_adjacent_subfloor()
-	test_consolidate_civ_migrates_orphan()
+	test_consolidate_civ_isolated_sovereign_survives()
 	test_consolidation_skips_young_sovereign_until_final()
+	test_coagulate_cross_culture_same_type_fallback()
+	test_coagulate_refuses_opposed_alignment()
+	test_coagulate_prefers_same_culture()
+	test_titular_claim_encloses_interior_pocket()
+	test_titular_claim_skips_open_frontier()
 	test_consolidate_beastman_dissolves_isolated_subthreshold()
 	test_consolidate_beastman_merges_into_neighbor()
 	test_spawn_beastman_horde_requires_cluster()
@@ -76,6 +81,12 @@ func _sim() -> HistorySimulator:
 
 func _ocean(sim: HistorySimulator, h: Vector2i) -> void:
 	sim._grid[h] = {"owner_polity_id": "", "population_band": 0, "water": "ocean",
+		"elevation": "flat", "biome": "clear", "biome_subtype": "", "territory_class": "wilderness"}
+
+
+## An empty (unowned, pop-0) wilderness land hex — the only thing titular claiming touches.
+func _empty_hex(sim: HistorySimulator, h: Vector2i) -> void:
+	sim._grid[h] = {"owner_polity_id": "", "population_band": 0, "water": "",
 		"elevation": "flat", "biome": "clear", "biome_subtype": "", "territory_class": "wilderness"}
 
 
@@ -390,7 +401,9 @@ func test_connected_present_components_groups_contiguous() -> void:
 	check(sizes == [1, 2, 3], "component sizes 1/2/3, got %s" % str(sizes))
 
 
-## A sub-Duchy civilized sovereign adjacent to a Duchy is annexed (no separate realm).
+## §7.4f: a sub-Duchy civilized sovereign adjacent to a stronger SAME-CULTURE realm
+## peacefully coagulates — it joins as a vassal (treaty of protection), keeping its own
+## hex; it is NOT annexed/dissolved.
 func test_consolidate_civ_merges_adjacent_subfloor() -> void:
 	var sim := _sim()
 	var d := _realm(sim, "D", "civ", "lawful",
@@ -399,30 +412,30 @@ func test_consolidate_civ_merges_adjacent_subfloor() -> void:
 	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
 	c["tier_index"] = DomainTierTable.COUNTY
 	sim._consolidate(160, true)
-	check(not bool(c["alive"]), "the sub-duchy county is annexed, not kept as a 24-mile realm")
-	check(d["hexes"].size() == 4, "the duchy absorbed the county's hex")
-	check(str(sim._grid[Vector2i(3, 0)]["owner_polity_id"]) == "D", "the county hex now belongs to the duchy")
+	check(bool(c["alive"]), "the sub-duchy county survives as a vassal (coagulation, not annex)")
+	check(str(c.get("liege_id", "")) == "D", "the county signed a treaty of protection — now D's vassal")
+	check(str(sim._grid[Vector2i(3, 0)]["owner_polity_id"]) == "C", "the county keeps its own hex")
+	check(d["hexes"].size() == 3, "the duchy does NOT absorb the county's hex")
 
 
-## An orphaned sub-floor sovereign (no adjacent merge target) migrates its people to
-## the nearest valid realm with population loss; its land empties to wilderness.
-func test_consolidate_civ_migrates_orphan() -> void:
+## §7.4f: an isolated sub-Duchy sovereign with NO same-culture realm within reach SURVIVES
+## as a viable low-tier sovereign — coagulation clusters reachable kin, it does not migrate
+## or dissolve lone realms away.
+func test_consolidate_civ_isolated_sovereign_survives() -> void:
 	var sim := _sim()
 	var d := _realm(sim, "D", "civ", "lawful",
 		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
 	d["tier_index"] = DomainTierTable.DUCHY
 	var o := _realm(sim, "O", "civ", "neutral", [Vector2i(10, 0)], 1000, "civilized")
 	o["tier_index"] = DomainTierTable.COUNTY
-	var before := sim._total_families(d)
 	sim._consolidate(160, true)
-	check(not bool(o["alive"]), "the orphaned county is removed")
-	check(str(sim._grid[Vector2i(10, 0)]["owner_polity_id"]) == "", "its land reverts to wilderness for the 6-mile fill")
-	check(int(sim._grid[Vector2i(10, 0)]["population_band"]) == 0, "its hex emptied (the people migrated)")
-	check(sim._total_families(d) > before, "the duchy gained the migrating population (minus loss)")
+	check(bool(o["alive"]), "an isolated sub-Duchy sovereign survives (not migrated away)")
+	check(str(o.get("liege_id", "")) == "", "it stays sovereign — no same-culture realm in reach")
+	check(str(sim._grid[Vector2i(10, 0)]["owner_polity_id"]) == "O", "it keeps its land")
 
 
-## During the sim a YOUNG sub-floor sovereign is spared (room to grow); the
-## finalization sweep consolidates it regardless of age.
+## During the sim a YOUNG sub-Duchy sovereign is spared (room to grow); the finalization
+## sweep coagulates it regardless of age (joins the adjacent same-culture Duchy).
 func test_consolidation_skips_young_sovereign_until_final() -> void:
 	var sim := _sim()
 	var d := _realm(sim, "D", "civ", "lawful",
@@ -433,9 +446,87 @@ func test_consolidation_skips_young_sovereign_until_final() -> void:
 	c["tier_index"] = DomainTierTable.COUNTY
 	c["founded_tick"] = 158   # age 2 at tick 160 < consolidation_min_age (8)
 	sim._consolidate(160, false)
-	check(bool(c["alive"]), "a young sub-floor sovereign is NOT consolidated during the sim")
+	check(bool(c["alive"]) and str(c.get("liege_id", "")) == "", "a young sub-floor sovereign is spared during the sim")
 	sim._consolidate(160, true)
-	check(not bool(c["alive"]), "the finalization sweep consolidates it regardless of age")
+	check(str(c.get("liege_id", "")) == "D", "the finalization sweep coagulates it (joins D) regardless of age")
+	check(bool(c["alive"]), "coagulation keeps it alive as a vassal")
+
+
+## §7.4f fallback: with NO same-culture realm in reach, a sub-Duchy sovereign coagulates
+## into a different-culture but SAME-civ-type, non-opposed-alignment neighbour (limits
+## fragmentation) rather than staying a lone fragment.
+func test_coagulate_cross_culture_same_type_fallback() -> void:
+	var sim := _sim()
+	var d := _realm(sim, "D2", "civ2", "lawful",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
+	c["tier_index"] = DomainTierTable.COUNTY
+	sim._consolidate(160, true)
+	check(bool(c["alive"]), "the county survives as a vassal of the cross-culture protector")
+	check(str(c.get("liege_id", "")) == "D2", "it falls back to the same-civ-type, non-opposed neighbour")
+
+
+## §7.4f: law and chaos refuse protection from each other — a lawful county next to ONLY a
+## chaotic realm finds no acceptable target and survives as an independent sovereign.
+func test_coagulate_refuses_opposed_alignment() -> void:
+	var sim := _sim()
+	var x := _realm(sim, "X", "civ2", "chaotic",
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)], 8000, "civilized")
+	x["tier_index"] = DomainTierTable.DUCHY
+	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(3, 0)], 1000, "civilized")
+	c["tier_index"] = DomainTierTable.COUNTY
+	sim._consolidate(160, true)
+	check(bool(c["alive"]), "the lawful county survives (no acceptable protector)")
+	check(str(c.get("liege_id", "")) == "", "it refuses protection from the opposed-alignment realm")
+
+
+## §7.4f tie-break: same-culture outranks a cross-culture peer even when both are valid and
+## equally close — a county between a same-culture duchy and a foreign duchy joins its kin.
+func test_coagulate_prefers_same_culture() -> void:
+	var sim := _sim()
+	var sc := _realm(sim, "SC", "civ", "lawful", [Vector2i(0, 0)], 24000, "civilized")
+	sc["tier_index"] = DomainTierTable.DUCHY
+	var xc := _realm(sim, "XC", "civ2", "lawful", [Vector2i(2, 0)], 24000, "civilized")
+	xc["tier_index"] = DomainTierTable.DUCHY
+	var c := _realm(sim, "C", "civ", "lawful", [Vector2i(1, 0)], 1000, "civilized")
+	c["tier_index"] = DomainTierTable.COUNTY
+	sim._consolidate(160, true)
+	check(str(c.get("liege_id", "")) == "SC", "the county joins its same-culture kin over the equally-close foreign duchy")
+
+
+## req-H: a realm fully enclosing an empty wilderness hex claims it TITULARLY — owner set,
+## but population stays 0, class stays wilderness, and the realm gains NO families (no tax).
+func test_titular_claim_encloses_interior_pocket() -> void:
+	var sim := _sim()
+	# D owns the six axial neighbours of (1,1); (1,1) itself is empty.
+	var ring := [Vector2i(1, 0), Vector2i(2, 0), Vector2i(2, 1),
+		Vector2i(1, 2), Vector2i(0, 2), Vector2i(0, 1)]
+	var d := _realm(sim, "D", "civ", "lawful", ring, 4000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	_empty_hex(sim, Vector2i(1, 1))
+	sim._ordered_keys = sim._grid.keys()
+	var before := sim._total_families(d)
+	sim._claim_titular_wilderness()
+	check(str(sim._grid[Vector2i(1, 1)]["owner_polity_id"]) == "D", "the enclosed empty hex is titularly claimed by D")
+	check(int(sim._grid[Vector2i(1, 1)]["population_band"]) == 0, "the titular claim adds no population")
+	check(str(sim._grid[Vector2i(1, 1)]["territory_class"]) == "wilderness", "the claimed hex stays wilderness-class")
+	check(sim._total_families(d) == before, "titular land yields no families (no tax/tier change)")
+	check(Vector2i(1, 1) in d["hexes"], "the claimed hex joins the realm's footprint")
+
+
+## req-H: an empty hex contested ~50/50 between two realms is NOT enclosed by either, so it
+## stays unclaimed wilderness ("not just every wilderness hex is claimed by its biggest neighbour").
+func test_titular_claim_skips_open_frontier() -> void:
+	var sim := _sim()
+	var d := _realm(sim, "D", "civ", "lawful", [Vector2i(0, 0)], 8000, "civilized")
+	d["tier_index"] = DomainTierTable.DUCHY
+	var e := _realm(sim, "E", "civ2", "lawful", [Vector2i(2, 0)], 8000, "civilized")
+	e["tier_index"] = DomainTierTable.DUCHY
+	_empty_hex(sim, Vector2i(1, 0))   # bordered 1:1 by D and E → dominance 0.5 < 0.65
+	sim._ordered_keys = sim._grid.keys()
+	sim._claim_titular_wilderness()
+	check(str(sim._grid[Vector2i(1, 0)]["owner_polity_id"]) == "", "a contested frontier hex stays unclaimed wilderness")
 
 
 ## A sub-threshold beastman horde with no neighbours dissolves to wilderness.

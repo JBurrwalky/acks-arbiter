@@ -33,7 +33,8 @@ const _OFF := [
 const _EVENT_SIGNIFICANCE := {
 	"depopulation": 1.0, "conquest": 0.9, "rebellion_extinguished": 0.85,
 	"razing": 0.82, "collapse_shatter": 0.8, "rebellion_won": 0.75, "golden_age": 0.6,
-	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "cultural_shift": 0.5, "collapse_rump": 0.45,
+	"vassalage": 0.6, "secession": 0.55, "founding": 0.5, "cultural_shift": 0.5,
+	"collapse_rump": 0.45, "protectorate": 0.45,
 	"rebellion_concession": 0.42, "migration": 0.4, "schism": 0.4,
 	"rebellion": 0.4, "rebellion_crushed": 0.38, "pillage": 0.35, "war": 0.3,
 	"alignment_drift": 0.3, "expansion": 0.2, "dynasty_change": 0.1,
@@ -138,6 +139,7 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 	_consolidate(_n_ticks, true)
 	_phase_contiguity(_n_ticks)
 	_consolidate(_n_ticks, true)
+	_claim_titular_wilderness()        # req-H: realms claim enclosed empty wilderness (titular)
 	_capture_replay_frame(_n_ticks)   # always capture the present-day frame
 	if _profile:
 		printerr("HIST PROFILE (ms): ", _phase_us_ms())
@@ -2065,14 +2067,15 @@ func _alignments_opposed(a: String, b: String) -> bool:
 # absorbing realm's internal vassal decomposition (§7.4), materialized at the
 # 6-mile handoff — never separate 24-mile polities. (Jedidiah ruling 2026-06-17.)
 #
-# Mechanism: a sub-floor civilized SOVEREIGN merges into the strongest acceptable
-# adjacent realm (annex hexes, cultural variance allowed); a sub-floor sovereign
-# with NO adjacent merge target (an orphan) migrates its people to the nearest
-# valid realm with population loss, vacating its land to wilderness. A sub-threshold
-# beastman horde merges into an adjacent horde or dissolves to wilderness (chaotic
-# raiders don't federate). Consolidation is SILENT (no event — it is a soft
-# administrative merge; the replay frames still show the borders change), so it adds
-# no records and needs no event-type migration. Runs on a cadence during the sim
+# Mechanism (§7.4f coagulation): a sub-Duchy civilized SOVEREIGN peacefully JOINS the best
+# acceptable realm within a tier-scaled reach as a vassal (a "treaty of protection") — it
+# keeps its identity/hexes/rulers, only its liege changes. Preference is same-culture, then
+# any same-civ-type non-opposed-alignment realm (law & chaos refuse; neutral accepts both),
+# to limit fragmentation. A sub-Duchy sovereign with NO acceptable target in reach SURVIVES
+# as a viable low-tier sovereign (an enclave). A sub-threshold beastman horde merges into an
+# adjacent horde or dissolves to wilderness (chaotic raiders don't federate). Civ
+# coagulation EMITS a "protectorate" event (a peaceful union worth recording); the
+# beastman-horde merge and the vassal-fold stay silent. Runs on a cadence during the sim
 # (mature fragments only — young realms keep room to grow) and unconditionally in a
 # finalization sweep that guarantees a clean present-day floor.
 #
@@ -2121,29 +2124,197 @@ func _consolidate(tick: int, final: bool) -> void:
 				changed = true
 
 
-## A sub-floor civilized sovereign: merge into the strongest acceptable adjacent
-## realm that outranks it; else (orphan, final sweep only) migrate to the nearest
-## valid realm. Returns true if the realm was removed.
-func _consolidate_civ(pol: Dictionary, tick: int, final: bool) -> bool:
-	# During the sim, merge only into a SAME-culture neighbour (build same-culture
-	# duchies — a "larger confederation"). Cross-culture merging is deferred to the
-	# finalization sweep, where it happens at the last tick so the absorbed hexes keep
-	# their own culture (no remaining ticks to assimilate) — this is what preserves
-	# cultural diversity. Merging cross-culture every tick would let the substrate
-	# homogenize toward whichever realm is winning (a monoculture amplifier).
-	var target := _best_adjacent_merge_target(pol, not final)
+## §7.4f auto-coagulation: a sub-Duchy civilized SOVEREIGN peacefully joins the best
+## acceptable realm within a tier-scaled reach as a vassal (a "treaty of protection") —
+## keeping its identity/hexes/rulers, only its liege changes. Prefers same-culture kin,
+## then falls back to any same-civ-type, non-opposed-alignment realm to limit fragmentation
+## (see _best_coagulation_target). It does NOT dissolve, and a sovereign with no acceptable
+## target in reach SURVIVES as a viable low-tier sovereign. Returns true if [pol] coagulated
+## — it is now a vassal, so the consolidation loop skips it thereafter and the fixpoint
+## still terminates monotonically. (Replaces the older silent cross-culture annex +
+## orphan-migration: the map keeps its low titles via peaceful, preference-ordered union.)
+func _consolidate_civ(pol: Dictionary, tick: int, _final: bool) -> bool:
+	var reach := _c.coagulation_reach_base + _realm_tier(pol)
+	var target := _best_coagulation_target(pol, reach)
 	if target != "":
-		_annex_realm(_polities[target], pol, tick)
+		_coagulate(pol, _polities[target], tick)
 		return true
-	# Local maximum with no adjacent merge target: during the sim, wait (smaller
-	# neighbours merge INTO it; it may yet grow to Duchy). At finalization, relocate
-	# its people to the nearest valid realm (Jedidiah's orphan rule).
-	if final:
-		var dest := _nearest_merge_target(pol)
-		if dest != "":
-			_migrate_realm_into(pol, _polities[dest], tick)
-			return true
 	return false
+
+
+## [pol]'s peaceful-union target: the best realm within [reach] hexes that OUTRANKS it,
+## is the SAME civ-type (civilized↔civilized / clanhold↔clanhold — beastmen never
+## federate), is NOT opposed in alignment (law & chaos refuse protection from each other;
+## neutral accepts both), and would not form a liege cycle. Among valid candidates the
+## preference is lexicographic (§7.4f fragmentation-limiting fallback): same-culture >
+## same-alignment > same-civ-type > closest > largest realm > lowest id. "" if none —
+## then [pol] survives as a sovereign enclave (no acceptable kin/peer in reach).
+func _best_coagulation_target(pol: Dictionary, reach: int) -> String:
+	var cid := str(pol["culture_id"])
+	var pal := str(pol["alignment"])
+	var ctype := _coag_civ_type(pol)
+	var pid := str(pol["id"])
+	var within: Dictionary = _realms_within_reach(pol, reach)   # oid -> nearest ring distance
+	var cands: Array = within.keys()
+	cands.sort()   # deterministic candidate order before the preference scan
+	var best := ""
+	for oid in cands:
+		var o: Dictionary = _polities[oid]
+		if not o["alive"] or o["hexes"].is_empty():
+			continue
+		if bool(o.get("is_beastman", false)):
+			continue   # chaotic raiders neither grant nor seek protection
+		if _coag_civ_type(o) != ctype:
+			continue   # matching civ-type only (civilized↔civilized / clanhold↔clanhold)
+		if _alignments_opposed(pal, str(o["alignment"])):
+			continue   # law & chaos refuse; neutral accepts both
+		if not _outranks(o, pol):
+			continue
+		if _would_create_liege_cycle(pid, oid):
+			continue
+		if best == "" or _coag_preferred(o, _polities[best], cid, pal, int(within[oid]), int(within[best])):
+			best = oid
+	return best
+
+
+## True if candidate [o] is a better coagulation target than [b] for a realm of culture
+## [cid] / alignment [pal], with [o]/[b] at ring distances [do]/[db]. Lexicographic:
+## same-culture > same-alignment > closest > largest realm > lowest id (civ-type is a
+## validity gate, so it never differs between two valid candidates).
+func _coag_preferred(o: Dictionary, b: Dictionary, cid: String, pal: String, do: int, db: int) -> bool:
+	var oc := 1 if str(o["culture_id"]) == cid else 0
+	var bc := 1 if str(b["culture_id"]) == cid else 0
+	if oc != bc:
+		return oc > bc
+	var oa := 1 if str(o["alignment"]) == pal else 0
+	var ba := 1 if str(b["alignment"]) == pal else 0
+	if oa != ba:
+		return oa > ba
+	if do != db:
+		return do < db          # closest
+	return _outranks(o, b)      # largest realm, then lowest id
+
+
+## A realm's coagulation civ-type: beastman (never federates), clanhold (human/demihuman
+## clan culture), or civilized. Two realms coagulate only within the same civ-type.
+func _coag_civ_type(pol: Dictionary) -> String:
+	if bool(pol.get("is_beastman", false)):
+		return "beastman"
+	if bool(pol.get("is_clanhold", false)):
+		return "clanhold"
+	return "civilized"
+
+
+## OTHER realms within [reach] hexes of [pol]'s territory → {realm_id: nearest ring
+## distance}. BFS outward through any hexes (proximity, not contiguity); first sighting of
+## a realm records its nearest distance. The caller sorts ids, so this is deterministic.
+func _realms_within_reach(pol: Dictionary, reach: int) -> Dictionary:
+	var pid := str(pol["id"])
+	var seen := {}
+	var frontier: Array = pol["hexes"].duplicate()
+	for h in frontier:
+		seen[h] = true
+	var found := {}   # oid -> nearest ring distance
+	var dist := 0
+	while dist < maxi(reach, 0):
+		dist += 1
+		var nxt: Array = []
+		for h in frontier:
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if not _grid.has(n) or seen.has(n):
+					continue
+				seen[n] = true
+				nxt.append(n)
+				var o := str(_grid[n]["owner_polity_id"])
+				if o != "" and o != pid and _polities.has(o) and not found.has(o):
+					found[o] = dist
+		frontier = nxt
+	return found
+
+
+## req-H titular wilderness claiming (finalization): a realm claims the EMPTY (pop-0)
+## wilderness pockets ENCLOSED within its borders — interior holes and gaps dominated by
+## one realm (Imperial Siberia "ruling" empty land). The claim is TITULAR: the hex gets the
+## realm's owner + culture substrate (V2) but keeps population 0 and stays wilderness-class
+## (no revenue/tier/tax change; the 6-mile handoff fills it with beastmen). Sensible-gated:
+## only pockets ≤ titular_claim_max_pocket hexes whose LAND border is ≥ titular_claim_dominance
+## one realm — large open frontiers stay unclaimed. The dominant border can be a stranded
+## same-culture enclave, so a realm's outliers connect titularly through claimed land.
+## Deterministic: canonical seed order, set-flood, sorted-id dominance tie-break, no RNG.
+func _claim_titular_wilderness() -> void:
+	var visited := {}
+	for seed in _ordered_keys:
+		if visited.has(seed) or not _is_empty_land(seed):
+			continue
+		var pocket: Array = []
+		var border := {}        # realm_id -> bordering-hex count
+		var land_border := 0
+		var stack: Array = [seed]
+		visited[seed] = true
+		while not stack.is_empty():
+			var h: Vector2i = stack.pop_back()
+			pocket.append(h)
+			for off in _OFF:
+				var n: Vector2i = h + off
+				if not _grid.has(n) or str(_grid[n].get("water", "")) != "":
+					continue
+				if _is_empty_land(n):
+					if not visited.has(n):
+						visited[n] = true
+						stack.append(n)
+				else:
+					var no := str(_grid[n]["owner_polity_id"])
+					if no != "" and _polities.has(no):
+						land_border += 1
+						border[no] = int(border.get(no, 0)) + 1
+		if land_border == 0 or pocket.size() > _c.titular_claim_max_pocket:
+			continue   # open frontier (no realm border) or too large to be an interior hole
+		var rids: Array = border.keys()
+		rids.sort()
+		var dom := ""
+		var dom_n := 0
+		for rid in rids:
+			if int(border[rid]) > dom_n:
+				dom_n = int(border[rid])
+				dom = rid
+		if dom == "" or not _polities[dom]["alive"]:
+			continue
+		if float(dom_n) / float(land_border) < _c.titular_claim_dominance:
+			continue   # contested / open — not enclosed by a single realm; leave it wild
+		var pol: Dictionary = _polities[dom]
+		for h in pocket:
+			_claim_titular_hex(pol, h)
+
+
+## A hex that is unowned LAND with no population — the only thing titular claiming touches.
+func _is_empty_land(key: Vector2i) -> bool:
+	var h: Dictionary = _grid[key]
+	return str(h.get("water", "")) == "" and str(h["owner_polity_id"]) == "" \
+			and int(h.get("population_band", 0)) <= 0
+
+
+## Titular claim of one empty hex: owner + culture substrate (V2 needs an owned hex to
+## carry one) only. Population stays 0 (no revenue/tier), territory_class stays wilderness
+## (the §9.6 classifier skips pop-0 hexes), so the claim is purely a border/title extent.
+func _claim_titular_hex(pol: Dictionary, key: Vector2i) -> void:
+	_grid[key]["owner_polity_id"] = str(pol["id"])
+	pol["hexes"].append(key)
+	_culture_w[key] = {str(pol["culture_id"]): 1.0}
+	_alignment_w[key] = {str(pol["alignment"]): 1.0}
+
+
+## §7.4f: [weaker] joins [stronger] (same culture, within reach) as a peaceful vassal —
+## a "treaty of protection". It keeps its hexes/culture/rulers; only its liege changes,
+## which raises [stronger]'s realm tier. Cycle-checked by the caller. Emits the lone
+## non-silent consolidation event (polities = [joiner, protector]).
+func _coagulate(weaker: Dictionary, stronger: Dictionary, tick: int) -> void:
+	weaker["liege_id"] = str(stronger["id"])
+	weaker["vassalized_by_war"] = 0   # peaceful union, not a war vassal
+	_emit_event(tick, "protectorate",
+			[str(weaker["id"]), str(stronger["id"])],
+			[str(weaker["culture_id"]), str(stronger["culture_id"])],
+			[], 0.0, "protectorate.treaty")
 
 
 ## The strongest acceptable civilized realm adjacent to [pol] that OUTRANKS it,

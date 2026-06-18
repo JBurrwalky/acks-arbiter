@@ -3772,7 +3772,7 @@ CREATE TABLE IF NOT EXISTS setting_events (
                        'golden_age', 'dynasty_change', 'alignment_drift',
                        'rebellion', 'rebellion_won', 'rebellion_concession',
                        'rebellion_crushed', 'rebellion_extinguished', 'razing',
-                       'cultural_shift')),
+                       'cultural_shift', 'protectorate')),
     polity_ids TEXT NOT NULL DEFAULT '[]',
     culture_ids TEXT NOT NULL DEFAULT '[]',
     hexes TEXT NOT NULL DEFAULT '[]',

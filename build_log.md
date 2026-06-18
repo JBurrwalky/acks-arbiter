@@ -35807,3 +35807,89 @@ on-tick dispatch.
 - Phase 2 did NOT touch the consolidation/significance-floor gate (still raw `_realm_tier ≥ DUCHY`), so a once-great realm that shrinks below Duchy can still be consolidated away before its floored title is exported. The "viable low-tier sovereigns survive" behavior is Phase 3 (the floor relaxation + auto-coagulation land together).
 
 **Next session should:** Phase 3 — requirement H (realms claim enclosed/anchored wilderness within borders, no tax; stranded same-culture pops anchor claims + soften non-contiguous same-culture migration) + the auto-coagulation "treaty of protection" mechanic (sub-Duchy same-majority-culture sovereigns within a tier-scaled reach merge peacefully; new `protectorate` event type → migration 169 rebuilding the `setting_events.type` CHECK, following the 161/162/163 pattern). Then Phase 4 (war re-parenting) and Phase 5 (finalization decomposition + UI).
+
+
+## Session 2026-06-18 (cont.) — Realms/Titles refactor Phase 3a: peaceful auto-coagulation (treaty of protection)
+
+**Task:** Phase 3a of `gdd-realms-titles-refactor.md` — the Q3 auto-coagulation mechanic. Replace the §7.4e silent civ-consolidation (annex sub-Duchy sovereigns away) with culture-gated, reach-based, event-emitting peaceful VASSALIZATION; let isolated/cross-culture sub-Duchy realms survive as viable low-tier sovereigns.
+**Model used:** Opus 4.8 (1M), implementation + suite/calibration verification.
+
+**Completed:**
+- **Migration 169** (`db/migrations/169_setting_events_protectorate.sql` + schema.sql): new `protectorate` event type in the `setting_events.type` CHECK (table rebuild, mirroring 161/162/163; `setting_events` already in `_SCOPE_DIRECT_CAMPAIGN`/`_DATA_TABLES`).
+- **`history_simulator.gd` — coagulation:** `_consolidate_civ` rewritten — a sub-Duchy civ SOVEREIGN finds the strongest SAME-majority-culture realm within `coagulation_reach_base(2) + _realm_tier(pol)` hexes (Barony 2 / March 3 / County 4) that outranks it (cycle-guarded via the existing `_would_create_liege_cycle`), and joins it as a peaceful vassal via new `_coagulate` (sets `liege_id`, `vassalized_by_war=0`, emits `protectorate`). New helpers `_realms_within_reach(pol, reach)` (deterministic BFS — set sorted by id) + `_best_coagulation_target`. The old cross-culture annex + orphan-migration paths are gone: an isolated/cross-culture sub-Duchy sovereign now SURVIVES. Fixpoint still terminates monotonically (a coagulated realm gets a liege → the loop's `liege_id != ""` check skips it thereafter). Added `protectorate` to `_EVENT_SIGNIFICANCE` (0.45).
+- **`sim_constants.gd`:** new `coagulation_reach_base: int = 2`.
+- **Formatters:** `narrative_generator._EVENT_TEMPLATES["protectorate"]` + `screen_review._event_sentence` protectorate case ("X signed a treaty of protection with Y, joining their realms").
+- **Tests:** rewrote the 3 `test_setting_beastman.gd` consolidation tests to the new contract — `test_consolidate_civ_merges_adjacent_subfloor` (now asserts vassalize-not-annex: county survives, `liege_id=="D"`, keeps its hex, duchy unchanged), `test_consolidate_civ_isolated_sovereign_survives` (renamed from `_migrates_orphan`; isolated sovereign survives, stays sovereign, keeps land), `test_consolidation_skips_young_sovereign_until_final` (young spared mid-sim, then coagulates at finalization). Updated the run-list call.
+
+**Decisions made:**
+- Coagulation VASSALIZES (peaceful union, keeps the joiner's identity/hexes/rulers in the tree) rather than annexing/dissolving — matches Jedidiah's "treaty of protection … joining their two realms".
+- SAME-majority-culture only (compares realm `culture_id`); isolated or cross-culture sub-Duchy sovereigns SURVIVE (the viable low-tier sovereigns / cultural enclaves Jedidiah wanted).
+- Reach scales with realm tier (`base 2 + tier`): Barony 2, March 3, County 4 — per "1-2 hex distance + tier; a march will have a 1-3 hex reach".
+- BFS proximity (through any hexes), not contiguity — a March near an empire across a little wilderness can still join it.
+
+**Interfaces defined or changed:**
+- New `protectorate` setting_events type: `polities=[joiner, protector]`, `cultures=[joiner, protector]`, `summary_key="protectorate.treaty"`, significance 0.45.
+- New `HistorySimulator._coagulate(weaker, stronger, tick)`, `_best_coagulation_target(pol, reach)`, `_realms_within_reach(pol, reach)`.
+- `SimConstants.coagulation_reach_base: int = 2`.
+- `_consolidate_civ` signature unchanged (`(pol, tick, _final)`) but its contract changed from annex/migrate to coagulate/survive.
+
+**Database changes:** Migration 169 — `setting_events.type` CHECK rebuilt to add `protectorate`. Next migration: 170.
+
+**Tests added/updated:** 3 consolidation unit tests rewritten (above). Suite **463/17 on run 2 — net-zero new failures** (zero assertion failures touching coagulation/protectorate/consolidate/county/duchy/liege). Migration 169 applies cleanly across all setting suites; `protectorate` emits through the full pipeline (stage7/calibration green). **Calibration smoke (medium×3): realms_total 15, independent_civ_realms 6.7 (MET the 5–10 §17 target), empires_with_vassals 2.3** — coagulation builds vassal trees WITHOUT over-fragmenting (the fragmentation concern is unfounded).
+
+**Known issues:**
+- Three now-dead helpers (`_best_adjacent_merge_target`, `_nearest_merge_target`, `_migrate_realm_into`) left in place — removing them risks orphaning `_deposit_migrants`; flagged for a cleanup pass (verify `_deposit_migrants`'s other callers first).
+- `coagulation_reach_base` is [CALIBRATION].
+- MCP visual of a "treaty of protection" row in the History tab not captured this session (suite + calibration verified the data path; the History formatter is identical to the MCP-verified war/rebellion lines). The game-window relaunches at a smaller resolution intermittently, which clips the Review tab panel (pre-existing layout issue).
+
+**Next session should:** Phase 3b — requirement H: realms claim enclosed/anchored wilderness within their borders (titular, no tax), stranded same-culture populations as anchor points, and soften the forced migration of non-contiguous same-culture populations. Then Phase 4 (war re-parenting: annex re-parents the loser's vassals + tier-disparity-weighted vassalization + orphan re-homing) and Phase 5 (finalization decomposition + Vassalage collapsible tree + Realms=sovereigns-only).
+
+
+## Session 2026-06-18 (cont.) — Phase 3a addendum: coagulation fallback ladder (limit fragmentation)
+
+**Task:** Jedidiah refinement to the auto-coagulation target search — add a fragmentation-limiting fallback below same-culture.
+
+**Completed (`history_simulator.gd`):** `_best_coagulation_target` rewritten from "same-majority-culture only" to a validity gate + lexicographic preference. **Validity:** within reach, OUTRANKS pol, NOT beastman, **same civ-type** (civilized↔civilized / clanhold↔clanhold via new `_coag_civ_type`), **not opposed alignment** (law & chaos refuse protection from each other; neutral seeks/accepts both — the existing `_alignments_opposed`), no liege cycle. **Preference (new `_coag_preferred`, lexicographic):** same-culture > same-alignment > same-civ-type > closest > largest realm > lowest id. `_realms_within_reach` now returns `{realm_id: nearest_ring_distance}` (was a sorted id list) to drive the "closest" tie-break; caller sorts ids for determinism. So a sub-Duchy sovereign with no same-culture kin in reach now falls back to any same-civ-type, non-opposed neighbour (limiting fragmentation) instead of always staying a lone fragment; with NO acceptable target it still survives as an enclave.
+
+**Decisions made:** Per Jedidiah — "prefer same-culture; if none, seek matching civ-type UNLESS opposite alignment; if no matching type in range remain independent; tie-breaks same-culture > same-alignment > same-civ-type, closest > largest sovereign." Beastmen are excluded entirely (chaotic raiders neither grant nor seek protection). Since `_consolidate_civ` only runs for civilized sovereigns today, the civ-type gate currently resolves to "civilized targets"; the `_coag_civ_type` helper makes it correct if clanhold coagulation is ever enabled.
+
+**Interfaces defined or changed:** `_best_coagulation_target` signature unchanged; `_realms_within_reach(pol, reach)` now returns `Dictionary` (id→distance) not `Array`; new `_coag_preferred(o, b, cid, pal, do, db) -> bool` and `_coag_civ_type(pol) -> String`. No DB/event change (still the `protectorate` event from migration 169; joiner/protector may now be different cultures).
+
+**Database changes:** None (still migration 169).
+
+**Tests added/updated:** 3 new `test_setting_beastman.gd` tests — `test_coagulate_cross_culture_same_type_fallback` (no kin → joins same-civ-type non-opposed neighbour), `test_coagulate_refuses_opposed_alignment` (lawful county beside only a chaotic realm survives independent), `test_coagulate_prefers_same_culture` (same-culture wins the tie-break over an equally-close foreign duchy). Suite **463/17 net-zero**; SettingBeastman 119 checks; zero coagulation assertion failures.
+
+**Calibration impact (smoke, medium×3):** realms_total 16.0, independent_civ_realms 6.3, empires_with_vassals 2.7 — and **both §17 targets now MET**: wilderness 58.2% (was 73.4% same-culture-only; the cross-culture fallback builds slightly larger realms that hold more land), independent civ realms 6.3 (in the 5–10 band). The fallback limits fragmentation AND nudges wilderness toward target — net win.
+
+**Known issues:** per-seed variance is high on the 3-seed smoke (realms_total 5–27) — the known per-seed bistability; the §17 sweep is Large×20. `coagulation_reach_base` + the preference order remain [CALIBRATION].
+
+**Next session should:** Phase 3b — requirement H (claim enclosed/anchored wilderness in borders; stranded same-culture anchors; soften non-contiguous same-culture migration), then Phase 4 (war re-parenting) and Phase 5 (finalization decomposition + UI).
+
+
+## Session 2026-06-18 (cont.) — Realms/Titles refactor Phase 3b: titular wilderness claiming (req H)
+
+**Task:** Phase 3b of `gdd-realms-titles-refactor.md` — requirement H: realms claim empty/wilderness territory enclosed within their borders (titular, no tax; the handoff fills it with beastmen), anchored sensibly (not every wilderness hex); soften the migration of non-contiguous same-culture populations.
+**Model used:** Opus 4.8 (1M), implementation + suite/calibration verification.
+
+**Completed (`history_simulator.gd`):** new finalization step `_claim_titular_wilderness()` (called in `run()` after the last consolidation sweep, before the present-day frame). It floods each contiguous EMPTY (unowned, pop-0) wilderness land pocket, tallies the bordering realms, and — if the pocket is ≤ `titular_claim_max_pocket(12)` hexes AND a single realm borders ≥ `titular_claim_dominance(0.65)` of its LAND border — that realm claims the whole pocket via `_claim_titular_hex`: sets `owner_polity_id` + the realm's culture substrate (V2 requires an owned hex to carry one) but keeps `population_band = 0` and `territory_class = "wilderness"`. So the claim is purely a border/title extent — NO revenue/tier/tax change (pop 0), and it stays wilderness-class. New helper `_is_empty_land`. Deterministic (canonical seed order, set-flood, sorted-id dominance tie-break, no RNG).
+**Completed (`infrastructure_generator.gd`):** `_classify_territory` now skips pop-0 owned hexes ("civilization needs people") — keeps titular claims (and any empty owned land) as wilderness so the §9.6 classifier never civilizes them.
+**Completed (`sim_constants.gd`):** `titular_claim_max_pocket = 12`, `titular_claim_dominance = 0.65` [CALIBRATION].
+
+**Decisions made:**
+- Titular claim = owned + culture substrate (V2) + pop 0 + wilderness-class. Only EMPTY (pop-0) wilderness is claimed (reverted-wilderness-with-residual-pop is left alone — that's a populated remnant, not "empty Siberia").
+- Enclosure gate (dominance ≥ 0.65 of land border + pocket ≤ 12) keeps it "sensible" — interior holes / small enclosed gaps get a titular owner; large open frontiers and contested ~50/50 gaps stay unclaimed.
+- **Requirement H part 2 (soften non-contiguous same-culture migration) needs NO separate change** — it emerges from the finalization order `coagulate → contiguity → coagulate → claim-titular`: a stranded same-culture pocket peeled off by contiguity is re-joined by coagulation (same-culture, within reach → vassalized back, not migrated), and titular claiming fills the empty land between them. A pocket beyond coagulation reach stays a distant enclave (a viable low-tier sovereign), which is the desired outcome.
+
+**Interfaces defined or changed:** new `HistorySimulator._claim_titular_wilderness()`, `_claim_titular_hex(pol, key)`, `_is_empty_land(key) -> bool`. `SimConstants.titular_claim_max_pocket: int`, `titular_claim_dominance: float`. `infrastructure_generator._classify_territory` now skips pop-0 owned hexes. No DB/event change.
+
+**Database changes:** None (titular claims reuse `setting_hexes.owner_polity_id` + pop 0 + wilderness territory_class).
+
+**Tests added/updated:** 2 new `test_setting_beastman.gd` tests — `test_titular_claim_encloses_interior_pocket` (a realm enclosing an empty hex claims it; pop stays 0, class wilderness, NO families gained — no tax) and `test_titular_claim_skips_open_frontier` (a hex contested ~50/50 between two realms stays unclaimed). Updated `test_setting_stage4b.test_owned_hexes_are_populated` — its "every owned hex is populated" invariant now exempts titular claims (owned, pop-0, wilderness-class); owned SETTLED (non-wilderness) hexes still must be populated. Suite **463/17 on run 2 — net-zero**; zero titular/population/substrate assertion failures; determinism + V2 + Stage7 settlement stocking green.
+
+**Calibration impact (smoke, medium×3):** wilderness_class_pct **58.2% (MET, unchanged)** — titular claims stay wilderness-class, so the §17 wilderness target is untouched; `unowned_pct` **28.5%** (down — realms now titularly claim ~30% of interior wilderness, the Imperial-Siberia effect); realms_total 16.0, independent_civ_realms 6.3 (MET).
+
+**Known issues:**
+- `titular_claim_*` constants are [CALIBRATION].
+- The 1:1 `setting_hexes → hex_cells` handoff drops `owner_polity_id` (per the materialization map), so titular borders render on the 24-mile world map but per-hex ownership on the play surface is reconstructed via `domain_hexes` at M2b (deferred) — titular claims reach the play map only once M2b lands.
+
+**Next session should:** Phase 4 — war re-parenting (annex keeps the loser's vassal sub-trees instead of freeing them; tier-disparity-weighted vassalize-vs-annex odds; orphaned non-contiguous vassals re-home to a new liege within the victor's realm). Then Phase 5 (finalization decomposition + collapsible Vassalage tree + Realms=sovereigns-only).

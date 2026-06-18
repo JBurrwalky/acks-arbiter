@@ -532,6 +532,7 @@ func _event_sentence(e: Dictionary) -> String:
 		"pillage": return "%s pillaged %s" % [a, b]
 		"razing": return "%s put %s to the torch" % [a, b]
 		"secession": return "%s broke away from %s" % [a, b]
+		"protectorate": return "%s signed a treaty of protection with %s, joining their realms" % [a, b]
 		"rebellion": return "%s rose in revolt within %s" % [subject, a]
 		"rebellion_won": return "%s won their freedom from %s" % [subject, a]
 		"rebellion_concession": return "%s won concessions from %s" % [subject, a]
