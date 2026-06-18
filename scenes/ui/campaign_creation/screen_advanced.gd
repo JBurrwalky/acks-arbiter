@@ -155,6 +155,12 @@ func _build_history(p: VBoxContainer) -> void:
 		func(): return _params.non_human_ratio, func(v): _params.non_human_ratio = v,
 		"Target share of the population that is non-human (demihuman + beastman).\n" +
 		"0.2 ≈ one in five (default).")
+	_slider_row(p, "Vassal consolidation", 1.0, 3.0, 0.25,
+		func(): return _params.vassal_consolidation, func(v): _params.vassal_consolidation = v,
+		"How the finished realm hierarchy packs its mid-tier vassals (Dukes, Counts, Marquis).\n" +
+		"1.0 — granular default: more, thinner vassals (a Duke with many small Counties)\n" +
+		"Higher (up to 3.0) — fewer, fuller mid-tier realms, leaving more vacant seats for you to claim\n" +
+		"(Only changes how the simulated world is carved into fiefs for play — not the history itself.)")
 
 
 func _build_content(p: VBoxContainer) -> void:

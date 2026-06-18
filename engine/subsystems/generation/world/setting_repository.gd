@@ -61,10 +61,13 @@ const FORTIFICATION_COLUMNS := ["id", "hex_q", "hex_r", "fort_type",
 const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
 const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
 const NARRATIVE_COLUMNS := ["id", "kind", "subject_id", "body", "is_fallback"]
+const DOMAIN_COLUMNS := ["id", "polity_id", "liege_domain_id", "tier_index", "title",
+	"ruler_class", "ruler_level", "ruler_name", "realm_name", "seat_q", "seat_r",
+	"families", "hex_count", "depth", "is_personal_domain"]
 
 # Every setting table except setting_parameters, in delete order.
 const _DATA_TABLES := [
-	"setting_hexes", "setting_river_edges", "setting_polities",
+	"setting_hexes", "setting_river_edges", "setting_polities", "setting_domains",
 	"setting_fallen_polities", "setting_settlements", "setting_regions",
 	"setting_events", "setting_ruin_seeds", "setting_poi_seeds", "setting_roads",
 	"setting_fortifications", "setting_narrative", "setting_replay_frames",
@@ -126,7 +129,7 @@ static func lock_setting(campaign_id: String, world_hash: String) -> bool:
 # present-day result over the Layer-3 seed polities (setting_hexes is NOT here:
 # the sim mutates substrate in place and re-saves it via the hex upsert).
 const _SIM_OUTPUT_TABLES := [
-	"setting_polities", "setting_settlements", "setting_events",
+	"setting_polities", "setting_domains", "setting_settlements", "setting_events",
 	"setting_ruin_seeds", "setting_fallen_polities",
 	"setting_replay_frames", "setting_replay_palette",
 ]
@@ -243,6 +246,10 @@ static func save_fortifications(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_fortifications", FORTIFICATION_COLUMNS, rows, true)
 
 
+static func save_domains(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_domains", DOMAIN_COLUMNS, rows, true)
+
+
 static func save_replay_frames(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_replay_frames", REPLAY_FRAME_COLUMNS, rows)
 
@@ -308,6 +315,10 @@ static func list_roads(campaign_id: String) -> Array:
 
 static func list_fortifications(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_fortifications", "id ASC")
+
+
+static func list_domains(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_domains", "id ASC")
 
 
 static func list_replay_frames(campaign_id: String) -> Array:

@@ -35924,3 +35924,109 @@ on-tick dispatch.
 - Intermediate-duke re-homing of non-contiguous vassals is deferred to Phase 5 (the sim re-parents to the sovereign; the decomposition assigns the duke).
 
 **Next session should:** Phase 5 (the last phase) — the finalization decomposition: recursively partition each surviving sovereign's territory into the RAW 4–6 vassal hierarchy down to per-hex County/March/Barony, each with a seat hex + ruler + title, persisted to a new `setting_domains` table (+ repo + `_SCOPE_DIRECT_CAMPAIGN`/`_DATA_TABLES` registration); the Review Vassalage tab becomes a collapsible per-liege tree (default all collapsed) reading it; Realms tab filters to sovereigns only. Runtime seat materialization stays deferred to M2b (per the Q2 decision).
+
+## Session 2026-06-18 — Realms/Titles Refactor Phase 5: finalization decomposition + Vassalage tree UI
+
+**Task:** Phase 5 (final phase) of the realms/titles/vassalage refactor — the deterministic finalization decomposition: partition each surviving civ sovereign's territory into the RAW 4-6 vassal hierarchy down to per-hex County leaves, persist to a new `setting_domains` table, and rework the Review screen (Realms tab = sovereigns only; Vassalage tab = collapsible per-liege tree). Runtime seat materialization stays deferred to M2b (Jedidiah's Q2 ruling). Controlling doc: `generation/gdd-realms-titles-refactor.md` (§7 has the as-built record).
+**Model used:** Opus 4.8 (1M) — planning, RAW verification, decomposition algorithm, implementation, in-engine verification.
+**Completed:**
+- **Migration 170** (`db/migrations/170_setting_domains.sql`) + `db/schema.sql`: new `setting_domains` table (id, campaign_id FK, polity_id, liege_domain_id, tier_index, title, ruler_class, ruler_level, ruler_name, realm_name, seat_q, seat_r, families, hex_count, depth, is_personal_domain; PK (campaign_id, id) + idx on (campaign_id, polity_id)). Plain CREATE-TABLE migration (no CHECK-rebuild).
+- **`SettingRepository`** (`engine/subsystems/generation/world/setting_repository.gd`): `DOMAIN_COLUMNS` const; `setting_domains` added to `_DATA_TABLES` (after setting_polities) and `_SIM_OUTPUT_TABLES`; `save_domains` (INSERT OR REPLACE) + `list_domains` (id ASC).
+- **`CampaignRepository._SCOPE_DIRECT_CAMPAIGN`**: added `setting_domains`.
+- **`setting_generator.gd`**: `save_domains(ctx["sim_domains"])` in BOTH `_run_history_sim` (sim pass) and `_run_naming` (after Layer-5 names fill in).
+- **`history_simulator.gd`**: `_decompose_all` (called from `_finalize`, sets `ctx["sim_domains"]`) → per-alive-civ-polity `_decompose_polity` → `_split_realm` (County floor tiles per-hex leaves via `_emit_leaves`; Duchy+ splits into RAW 4-6 contiguous next-tier-down groups via `_split_into_groups` reusing `_partition_contiguous`, each an interior node + recursion). Helpers `_families_of_hexes`, `_seat_of` (highest-pop hex, canonical tiebreak), `_domain_row`, `_domain_ruler_class` (decompose_class RNG stream). Beastman/clan polities skipped. Deterministic.
+- **`name_generator.gd`**: `_name_domains` (Layer 5) fills each domain's ruler_name (dynasty) + realm_name, after `_name_realms` so the per-culture dedup set carries over.
+- **`screen_review.gd`**: Realms tab → sovereigns only (`_refresh_realms`, filters `liege_id != ''`, re-run by `bind_map`); Vassalage tab → native collapsible `Tree` (`_tree_tab`, hide_root, all items collapsed) fusing war-vassal polity nesting with each polity's setting_domains decomposition (`_refresh_vassalage`/`_add_polity_item`/`_add_domain_item`/`_sorted_domains`/`_domain_label`); `set_domains` setter; old `_vassalage_box`/`_add_vassal_rows` retired.
+- **`campaign_creation_flow.gd`**: REVIEW phase calls `_review.set_domains(SettingRepository.list_domains(_campaign_id))`.
+**Decisions made:**
+- **Decompose each alive CIV polity's OWN hexes** (sovereign AND war-vassal), not the whole realm — war-vassalage stays in setting_polities (liege_id); setting_domains is the intra-polity tree. Union over polities accounts for all families. Beastman/clanholds have no feudal title ladder → never decomposed (req H).
+- **Reconciled req C (each settled hex its own ruler) vs RAW 4-6 branching:** the 4-6 governs interior (Duchy-and-up) nesting; the County floor tiles per-hex, so a duchy may directly hold >6 county-hexes. Sub-County splitting deferred to 6-mile M2b (GDD §A.3). Honors the user's explicit req C.
+- **Seats = highest-pop hex** of each node (req B). Interior `families`/`hex_count` are subtree aggregates (display); leaves tile the actual hexes (accounting).
+- Domain ids: `dom_<q>_<r>` (leaf, globally unique per hex) / `idom_<q>_<r>_<depth>` (interior; depth disambiguates a parent/child sharing a seat).
+- Vassalage tab switched from VBox-of-Labels to a native Godot `Tree` for real collapse/expand at scale (hundreds of domains).
+**Interfaces defined or changed:**
+- New table `setting_domains` (see columns above). `SettingRepository.save_domains(campaign_id, rows)` / `list_domains(campaign_id) -> Array`.
+- `ctx["sim_domains"]: Array[Dictionary]` — sim → orchestrator → repo contract (DOMAIN_COLUMNS shape; ruler_name/realm_name empty until Layer 5).
+- `HistorySimulator._decompose_all() -> Array`; `NameGenerator._name_domains(domains: Array)`.
+- `ScreenReview.set_domains(domains: Array)`; `_vassalage_tree: Tree` (was `_vassalage_box: VBoxContainer`).
+- New WorldGenRng stream name: `decompose_class`.
+**Database changes:** Migration 170 (setting_domains). No CHECK-rebuild. Auto-applied by the migration runner on fresh/test DBs.
+**Tests added/updated:**
+- `tests/test_setting_beastman.gd`: +6 pure decomposition tests (`test_decompose_accounts_for_all_hexes`, `_is_deterministic`, `_interior_branching_and_leaf_floor`, `_seats_within_realm`, `_skips_beastman_and_clan`, `_skips_county_polity`) + `_block` helper. 125 -> 280 checks.
+- `tests/test_setting_stage7.gd`: `test_setting_domains_round_trip` (save/list + idempotent re-save) + `test_domains_valid(cid)` (end-to-end referential integrity + per-polity leaf-tiling accounting on a generated world). 652 -> 1650 checks.
+- Suite: **463 passed / 17 failed (net-zero, run 2, isolated APPDATA)** — exactly baseline.
+**Known issues:**
+- The dead `internal_vassals` JSON blob is still written to setting_polities by `_internal_vassals_json` — superseded by setting_domains; safe to retire once the materializer no longer reads it (deferred cleanup).
+- MCP pixel screenshot of the Review screen was blocked by an unfocused-window capture-staleness quirk (the same root cause that stalls `await`/`queue_free` in game_eval). Logic was verified instead by instantiating the real ScreenReview in the running engine via game_eval (Realms = 1 sovereign row; unified collapsible tree with correct nesting + labels). No code defect.
+**Next session should:**
+- Phase 5 completes the realms/titles refactor. Next: M2b runtime seat materialization (per-hex 6-mile child seats from `setting_domains` seat_q/r; `domains.location_*`), sub-County (March/Barony) splitting at 6-mile, and retiring the dead `internal_vassals` blob. Then return to the monoculture work (expansion-settling cultural REACH — the direct fix) per the setting-generation memory.
+
+## Session 2026-06-18 — Phase 5 follow-ups: drop empty baronies + sovereign-boundary map borders
+
+**Task:** Two fixes from Jedidiah's review of a generated world (share code `30641663~...` = seed 30641663, large map): (1) titular-claimed wilderness (pop-0 hexes) was being decomposed into rulerless empty Baronies — drop them; (2) the political map gives every polity (sovereign + war-vassal) its own colour but offers no way to see SOVEREIGN realms as units in vassal view — add sovereign-boundary borders. The decomposition NESTING oddities he asked about (a flat low-density Duchy with many direct counties; a Principality with 2 direct counties beside near-maxed Dukes) were diagnosed as RAW-faithful and KEPT as-is per his decision.
+**Model used:** Opus 4.8 (1M) — diagnosis (regenerated the seed via a throwaway `tools/diag_seed.tscn`), implementation, in-engine verification.
+**Completed:**
+- **Empty-barony drop** (`history_simulator._decompose_polity`): partitions only POPULATED hexes (`population_band > 0`) — titular wilderness now stays polity-owned but domain-less (the M2b materializer will attach it to the nearest populated domain) instead of spawning 0-family Baronies. Export tier (the title) still counts the whole realm. Empirically on seed 30641663: map-wide empty baronies 41→0, leaves 226→185; "Dramnaargrund of New Isk-grundaar" 31→20 vassals, "Dramnarrgrund of Old Vendunnbaldunn" 23→21, "Mortuath of Ardnemed" unchanged.
+- **Sovereign-boundary borders** (`political_map_view.gd`): new `_political_border(owner_by, sov_by, q, r, owner)` returns [colour, width] — a SOVEREIGN boundary (neighbour's top-of-liege-chain differs, or unclaimed land) gets a thick bright border (2.5px), an internal VASSAL boundary the thin bright border (1.0px), interior the faint default. `_draw` builds a `sov_by` map (`_sovereign_of` per hex) alongside `owner_by`; `_draw_hex_outline` gained a `width` param. In sovereign view every owner already IS its sovereign, so only realm outlines draw (thicker). Verified in-engine via game_eval: sovereign=2.5/bright, vassal=1.0/bright, interior=1.0/faint.
+**Decisions made:**
+- Empty (pop-0) titular hexes are LAND, not fiefs — no ruler/domain. Keeps the County floor's "each settled hex its own ruler" honest (settled = populated). Sub-county hex assignment of titular land is an M2b concern.
+- Nesting kept as-is: a Duchy holds counties directly (no tier between Duchy and County), and the contiguous-BFS partition leaves geographically-isolated single hexes as direct counties when the would-be Dukes are near their family cap — both RAW-legal, good gameplay hooks.
+**Interfaces defined or changed:**
+- `political_map_view._political_border(owner_by, sov_by, q, r, owner) -> Array` (replaces `_border_for`); `_draw_hex_outline(center, radius, col, width := 1.0)`.
+- No data-model/schema change; `setting_domains` rows now exclude pop-0 hexes (fewer leaf rows; no 0-family rows).
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_setting_beastman.gd`: `test_decompose_skips_empty_hexes` (pop-0 hexes get no domain; leaves tile only populated hexes). 280→305 checks.
+- `tests/test_setting_stage7.gd`: `test_domains_valid` now tiles POPULATED owned hexes + asserts every domain has families > 0. 1650→1706 checks.
+- Suite **463/17 net-zero** (run 2, isolated APPDATA).
+**Known issues:**
+- Map sovereign-borders verified by logic (game_eval), not pixel screenshot — the MCP game capture returns stale frames when the game window is unfocused (documented; not a code defect).
+- `tools/diag_seed.gd/.tscn` was a throwaway investigation harness (removed at session end).
+- A large multi-hex County or a big clanhold (e.g. a 47-hex clanhold Duchy) still shows no internal domains — County-or-lower realms are held directly, and clans are skipped (no feudal ladder). Flagged to Jedidiah; left as-is.
+**Next session should:**
+- M2b runtime seat materialization (attach titular wilderness to nearest populated domain; per-hex 6-mile child seats) + sub-County (March/Barony) split. Then back to monoculture (expansion-settling cultural REACH).
+
+## Session 2026-06-18 — Map borders regraded by realm tier (supersedes the sovereign-border pass)
+
+**Task:** Jedidiah's follow-up after seeing the first border pass: the binary sovereign/vassal borders made the many small low-tier realms' frontiers overrun the map. Regrade borders by realm RANK and dot the low tiers.
+**Model used:** Opus 4.8 (1M) — implementation + in-engine verification.
+**Completed:**
+- `political_map_view.gd`: replaced `_political_border` (binary sovereign/vassal) with `_realm_border` + `_border_style(tier)` — outline weight by the owner's tier: Empire 3.0px / Kingdom 2.6 / Principality 2.1 / Duchy 1.6 (solid), County 1.2 / March / Barony 1.0 (DOTTED). Interior hexes keep the faint per-hex grid. `_draw_hex_outline` gained a `dashed` param (per-edge `draw_dashed_line`, dash ≈ 0.45·R). `_draw` no longer builds the `sov_by` map.
+- `set_polity_meta(names, lieges, tiers := {})` — new optional `tiers` map (back-compat). Threaded from `screen_review.bind_map` and `screen_generate_replay` (both build it from `list_polities`' `tier_index`).
+**Decisions made:**
+- Weight by the OWNER polity's own tier (not the sovereign's), so County-tier realms — sovereign or vassal — read as dotted subordinate divisions while Kingdoms/Empires read as bold frontiers. In sovereign view the owner already IS its sovereign, so the weight tracks the whole realm's rank.
+**Interfaces defined or changed:**
+- `political_map_view.set_polity_meta(names, lieges, tiers := {})`; `_realm_border(owner_by, q, r, owner) -> [Color, width, dashed]`; `_border_style(tier) -> [Color, width, dashed]`; `_draw_hex_outline(center, radius, col, width := 1.0, dashed := false)`.
+**Database changes:** None.
+**Tests added/updated:** None (scene scripts are not headless-loadable). Verified in-engine via game_eval: Empire 3.0 / Kingdom 2.6 / Duchy 1.6 widths, County+March dotted, Kingdom solid, interior faint solid. All three scripts `--check-only` clean (autoload false-positives aside).
+**Known issues:**
+- Verified by logic (game_eval), not pixel screenshot (MCP game capture is stale while the window is unfocused).
+**Next session should:**
+- Unchanged from the prior entry: M2b runtime seat materialization + sub-County split, then monoculture (expansion-settling cultural reach).
+
+## Session 2026-06-18 — Decomposition reworked into a complete feudal ladder + vassal_consolidation slider
+
+**Task:** Jedidiah's review of the Phase-5 decomposition (with the game-creator's Borderlands Principality spreadsheet as reference): the sub-duchy tiers were emitted as flat SIBLINGS (Marches/Baronies all hanging directly off the Duke), which would force the runtime handoff to invent the missing Counts/Marquis. Rework so the hierarchy is COMPLETE — Baronies under Marquis under Counts, for the most part — and expose the granularity as a user slider.
+**Model used:** Opus 4.8 (1M) — read the .xlsx reference (openpyxl), algorithm rework, in-engine verification on seed 30641663.
+**Completed:**
+- **Complete-ladder decomposition** (`history_simulator._split_realm` + new `_emit_leaf` + `_cluster_for_tier`; removed `_emit_leaves`/`_split_into_groups`/`_DECOMPOSE_BRANCH_*`): each realm's children are built one rank down — hexes already big enough to stand as a (node_tier-1) realm by their own families become LEAVES at that rank (a real County-hex stays a County); the smaller remainder is CLUSTERED into synthesized (node_tier-1) NODES that recurse, down to Baronies. So a Marquis sits under a Count, a Baron under a Marquis (single-hex clusters skip a level — acceptable). `_emit_leaf` clamps a leaf's title ≤ its slot (a vassal never out-ranks its lord). `_decompose_polity` now decomposes any realm > Barony with >1 populated hex (County-tier realms now nest their Marches/Baronies too).
+- **`vassal_consolidation`** (`SettingParameters`, float default 1.0; to_dict/from_dict): `_cluster_for_tier` targets `tier_floor × vassal_consolidation` families per synthesized vassal. 1.0 = granular (more, thinner); higher = fewer, fuller mid-tiers. Exposed as a 1.0–3.0 slider in `screen_advanced._build_history` ("Vassal consolidation"). Finalization-only; rides the share code (default omitted from the token, so old codes reproduce).
+**Decisions made:**
+- Branching is NOT hard-capped at 4-6 — geography + family floors drive child counts; over-sizing / under-fill / occasional skip-level is expected and RAW-legal (room for a player to become the missing Count), per Jedidiah.
+- Synthesized intermediate nodes (Counts/Marquis) are titled at their STRUCTURAL slot (so they EXIST for the handoff), even if their population under-fills the band — the handoff fills sub-hex detail, never reorganises or invents the middle tiers.
+- Leaves are per-populated-hex at their family rank; `vassal_consolidation` only changes the intermediate NODE count, never the leaf set.
+**Interfaces defined or changed:**
+- `SettingParameters.vassal_consolidation: float = 1.0` (+ to_dict/from_dict + canonical_json/share-token participation).
+- `HistorySimulator._split_realm(hexes, node_tier, liege, depth, rows)` (rewritten contract); `_emit_leaf(h, liege, slot_tier, depth, rows)`; `_cluster_for_tier(hexes, child_tier)` reads `_params.vassal_consolidation`.
+- Handoff contract (unchanged shape, now complete): every `setting_domains` row carries `seat_q/seat_r` (its 24-mile hex) + `liege_domain_id` (direct tribute lord; "" = the polity ruler). Leaf seats tile every populated hex; the handoff maps 24-mi hex → leaf → liege chain → polity → sovereign and derives sub-hex (6-mile) realm counts from each leaf's tier.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_setting_beastman.gd`: `test_decompose_interior_branching_and_leaf_floor` → `test_decompose_builds_complete_ladder` (ladder spans ≥3 tiers + every domain ranks strictly below its lord); `test_decompose_skips_county_polity` → `test_decompose_single_hex_held_directly` + `test_decompose_county_realm_nests_marches`; added `test_vassal_consolidation_reduces_nodes`. 305→416 checks.
+- `tests/test_setting_stage7.gd` `test_domains_valid`: added the ladder invariant (a vassal ranks strictly below its lord). 1706→2091 checks.
+- `tests/test_campaign_creation_seams.gd`: modified-params round-trip now sets `vassal_consolidation = 2.5`.
+- Suite **463/17 net-zero** (run 2, isolated APPDATA).
+**Known issues:**
+- Slider verified by logic (game_eval: advanced screen builds 10 sliders, the new one wired to the param) — not pixel screenshot (MCP game capture stale while unfocused).
+- A multi-hex County-tier or large clanhold realm: County-tier now nests its Marches/Baronies; clanholds still skipped (no feudal ladder). Beastman/clan unchanged.
+**Next session should:**
+- M2b runtime seat materialization: walk `setting_domains` (seat hex + liege chain), attach titular wilderness to the nearest populated domain, and invent the sub-hex (6-mile) Barony/March fan-out per leaf tier within the start-region zoom window. Then back to monoculture (expansion-settling cultural reach).

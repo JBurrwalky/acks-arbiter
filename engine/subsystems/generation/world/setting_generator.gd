@@ -160,6 +160,8 @@ func _run_history_sim(ctx: Dictionary) -> bool:
 		return false
 	if not SettingRepository.save_polities(campaign_id, ctx.get("sim_polities", [])):
 		return false
+	if not SettingRepository.save_domains(campaign_id, ctx.get("sim_domains", [])):
+		return false
 	if not SettingRepository.save_settlements(campaign_id, ctx.get("sim_settlements", [])):
 		return false
 	if not SettingRepository.save_events(campaign_id, ctx.get("sim_events", [])):
@@ -188,6 +190,8 @@ func _run_naming(ctx: Dictionary) -> bool:
 	if not SettingRepository.save_settlements(campaign_id, ctx.get("sim_settlements", [])):
 		return false
 	if not SettingRepository.save_polities(campaign_id, ctx.get("sim_polities", [])):
+		return false
+	if not SettingRepository.save_domains(campaign_id, ctx.get("sim_domains", [])):
 		return false
 	if not SettingRepository.save_fallen_polities(campaign_id, ctx.get("sim_fallen_polities", [])):
 		return false

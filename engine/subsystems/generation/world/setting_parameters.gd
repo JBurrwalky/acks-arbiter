@@ -54,6 +54,14 @@ var migration_rate: String = "moderate"
 ## mosaic of peoples; higher = a fast melting-pot where dominant cultures homogenize
 ## the map. Scales the (entrenchment+rigidity-resisted) assimilation rate per tick.
 var cultural_assimilation: float = 1.0
+## Vassal-realm consolidation — multiplier on the target families per synthesized
+## vassal in the Phase-5 finalization decomposition (gdd-realms-titles-refactor.md §7).
+## 1.0 = the granular default (each Count/Marquis ≈ its tier's family floor → more,
+## thinner vassals). Higher = fewer, fuller mid-tier realms (a Duke with 3-4 big
+## Counties, not 6 thin ones), leaving more vacant seats for a player to claim. A
+## finalization-only knob: it changes how the history-sim result is PARTITIONED for
+## the handoff, never the simulated history itself.
+var vassal_consolidation: float = 1.0
 ## Overall non-human demographic share target (~1:5 — setting-gen §7.5).
 var non_human_ratio: float = 0.2
 ## Minimum demographic presence anywhere (setting-gen §7.3/§7.5).
@@ -144,6 +152,7 @@ func to_dict() -> Dictionary:
 		"history_length": history_length,
 		"migration_rate": migration_rate,
 		"cultural_assimilation": cultural_assimilation,
+		"vassal_consolidation": vassal_consolidation,
 		"non_human_ratio": non_human_ratio,
 		"minority_weight_floor": minority_weight_floor,
 		"dungeon_density": dungeon_density,
@@ -172,6 +181,7 @@ static func from_dict(data: Dictionary) -> SettingParameters:
 	p.history_length = str(data.get("history_length", p.history_length))
 	p.migration_rate = str(data.get("migration_rate", p.migration_rate))
 	p.cultural_assimilation = float(data.get("cultural_assimilation", p.cultural_assimilation))
+	p.vassal_consolidation = float(data.get("vassal_consolidation", p.vassal_consolidation))
 	p.non_human_ratio = float(data.get("non_human_ratio", p.non_human_ratio))
 	p.minority_weight_floor = float(data.get("minority_weight_floor", p.minority_weight_floor))
 	p.dungeon_density = float(data.get("dungeon_density", p.dungeon_density))

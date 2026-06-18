@@ -57,6 +57,16 @@ func run_all_tests() -> void:
 	# Bug batch 2026-06-17 — structural realm-tier (#4/#5) + unclaimed→wilderness (#2)
 	test_realm_tier_structural_promotion()
 	test_realm_tier_promotes_chain()
+	# Phase 5 — finalization decomposition (gdd-realms-titles-refactor.md §3 A/B/C)
+	test_decompose_accounts_for_all_hexes()
+	test_decompose_is_deterministic()
+	test_decompose_builds_complete_ladder()
+	test_decompose_seats_within_realm()
+	test_decompose_skips_beastman_and_clan()
+	test_decompose_single_hex_held_directly()
+	test_decompose_county_realm_nests_marches()
+	test_decompose_skips_empty_hexes()
+	test_vassal_consolidation_reduces_nodes()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -107,6 +117,164 @@ func _realm(sim: HistorySimulator, pid: String, culture: String, alignment: Stri
 		sim._alignment_w[h] = {alignment: 1.0}
 	sim._polities[pid] = pol
 	return pol
+
+
+## A contiguous w×h block of axial hexes (q in [q0,q0+w), r in [r0,r0+h)), row-major.
+func _block(w: int, h: int, q0 := 0, r0 := 0) -> Array:
+	var out: Array = []
+	for r in range(h):
+		for q in range(w):
+			out.append(Vector2i(q0 + q, r0 + r))
+	return out
+
+
+# --- Phase 5 finalization decomposition ------------------------------------
+
+## A Duchy (24 hexes × 1000 fam = 24,000 ⇒ Duchy floor) decomposes to per-hex
+## county leaves (req C). Every hex is the seat of exactly one leaf — accounting
+## is exhaustive and disjoint.
+func test_decompose_accounts_for_all_hexes() -> void:
+	var sim := _sim()
+	var hexes := _block(6, 4)
+	_realm(sim, "D", "civ", "lawful", hexes, 1000)
+	var rows := sim._decompose_all()
+	check(rows.size() > 0, "a Duchy decomposes into vassal domains")
+	var leaf_seats := {}
+	for row in rows:
+		if int(row["is_personal_domain"]) == 1:
+			var key := Vector2i(int(row["seat_q"]), int(row["seat_r"]))
+			check(not leaf_seats.has(key), "no hex is the seat of two leaf domains")
+			leaf_seats[key] = true
+			check(int(row["tier_index"]) <= DomainTierTable.COUNTY, "a leaf never exceeds County")
+	check(leaf_seats.size() == hexes.size(), "every settled hex is exactly one leaf domain")
+	for h in hexes:
+		check(leaf_seats.has(h), "hex %s has its own ruler" % h)
+
+
+## Same seed ⇒ byte-identical decomposition (the determinism spine).
+func test_decompose_is_deterministic() -> void:
+	var a := _sim()
+	_realm(a, "P", "civ", "lawful", _block(8, 6), 2000)
+	var b := _sim()
+	_realm(b, "P", "civ", "lawful", _block(8, 6), 2000)
+	check(JSON.stringify(a._decompose_all()) == JSON.stringify(b._decompose_all()),
+		"decomposition is deterministic for a fixed seed")
+
+
+## A Principality of low-density hexes (60 × 1,500 = 90,000) must synthesize the
+## middle tiers: Principality → Duchies → Counties → March leaves. Asserts the ladder
+## is complete (interior nodes exist, multiple tiers span) and PROPERLY NESTED — every
+## domain ranks strictly below its lord, no flat siblings of mixed rank (Jedidiah
+## 2026-06-18).
+func test_decompose_builds_complete_ladder() -> void:
+	var sim := _sim()
+	_realm(sim, "P", "civ", "lawful", _block(10, 6), 1500)
+	var rows := sim._decompose_all()
+	var by_id := {}
+	for row in rows:
+		by_id[str(row["id"])] = row
+	var interior := 0
+	var tiers_seen := {}
+	for row in rows:
+		var t := int(row["tier_index"])
+		tiers_seen[t] = true
+		if int(row["is_personal_domain"]) == 1:
+			check(t <= DomainTierTable.COUNTY, "a leaf never exceeds County")
+		else:
+			interior += 1
+		var liege := str(row["liege_domain_id"])
+		if liege != "" and by_id.has(liege):
+			check(t < int(by_id[liege]["tier_index"]),
+				"%s (tier %d) ranks below its lord (tier %d)" % [str(row["id"]), t, int(by_id[liege]["tier_index"])])
+	check(interior > 0, "the ladder synthesizes intermediate County/Duchy nodes")
+	check(tiers_seen.size() >= 3, "the decomposition spans >=3 distinct tiers, not a flat sheet")
+
+
+## Every domain's seat hex belongs to its polity (leaves and interior nodes alike).
+func test_decompose_seats_within_realm() -> void:
+	var sim := _sim()
+	var hexes := _block(6, 4)
+	_realm(sim, "D", "civ", "lawful", hexes, 1500)
+	var owned := {}
+	for h in hexes:
+		owned[h] = true
+	for row in sim._decompose_all():
+		check(owned.has(Vector2i(int(row["seat_q"]), int(row["seat_r"]))),
+			"domain %s seat is inside its realm" % str(row["id"]))
+
+
+## Beastman hordes and clanholds have no feudal title ladder — never decomposed.
+## Both realms are Duchy-sized (would decompose if civ), so an empty result is real.
+func test_decompose_skips_beastman_and_clan() -> void:
+	var sim := _sim()
+	_realm(sim, "B", "orc", "chaotic", _block(6, 4), 1000)            # beastman horde
+	var clan := _realm(sim, "C", "civ", "neutral", _block(6, 4, 20, 0), 1000)
+	clan["civ_or_clan_state"] = "clan"                               # human clanhold
+	check(sim._decompose_all().is_empty(),
+		"neither a beastman horde nor a clanhold is decomposed")
+
+
+## A one-hex realm is held directly by its ruler (the polity row IS it) — no sub-domains.
+func test_decompose_single_hex_held_directly() -> void:
+	var sim := _sim()
+	_realm(sim, "S", "civ", "lawful", _block(1, 1), 6000)   # 1 hex
+	check(sim._decompose_all().is_empty(), "a one-hex realm emits no sub-domains")
+
+
+## A multi-hex County realm IS decomposed — its March vassals nest under the Count,
+## so the handoff never has to invent them (Jedidiah 2026-06-18).
+func test_decompose_county_realm_nests_marches() -> void:
+	var sim := _sim()
+	_realm(sim, "K", "civ", "lawful", _block(3, 1), 2000)   # 3 hexes × 2000 ⇒ County, each March-pop
+	var rows := sim._decompose_all()
+	check(rows.size() == 3, "a 3-hex County realm yields its 3 March vassals (got %d)" % rows.size())
+	for row in rows:
+		check(int(row["tier_index"]) == DomainTierTable.MARCH, "each vassal is a March under the Count")
+		check(str(row["liege_domain_id"]) == "", "each reports directly to the polity ruler (the Count)")
+
+
+## Titular-claimed wilderness (pop-0 hexes) gets NO domain — no rulerless empty
+## baronies (Jedidiah 2026-06-18). Leaves tile only the populated hexes.
+func test_decompose_skips_empty_hexes() -> void:
+	var sim := _sim()
+	var hexes := _block(6, 4)   # 24 hexes
+	_realm(sim, "D", "civ", "lawful", hexes, 2000)   # 48,000 fam ⇒ Duchy
+	var empties := [Vector2i(5, 3), Vector2i(4, 3), Vector2i(5, 2),
+		Vector2i(3, 3), Vector2i(5, 1), Vector2i(5, 0)]
+	for h in empties:
+		sim._grid[h]["population_band"] = 0   # 36,000 left ⇒ still Duchy
+	var rows := sim._decompose_all()
+	var leaf_seats := {}
+	for row in rows:
+		check(int(row["families"]) > 0, "no domain has zero families (titular land excluded)")
+		if int(row["is_personal_domain"]) == 1:
+			leaf_seats[Vector2i(int(row["seat_q"]), int(row["seat_r"]))] = true
+	check(leaf_seats.size() == hexes.size() - empties.size(),
+		"leaves tile only populated hexes (%d of %d)" % [leaf_seats.size(), hexes.size()])
+	for h in empties:
+		check(not leaf_seats.has(h), "empty hex %s gets no domain" % h)
+
+
+## The user-facing `vassal_consolidation` knob: a higher value packs the mid-tiers
+## into FEWER, fuller vassal nodes (Jedidiah 2026-06-18), while the per-hex leaf
+## realms are unchanged.
+func test_vassal_consolidation_reduces_nodes() -> void:
+	var lo := _sim()
+	_realm(lo, "P", "civ", "lawful", _block(10, 6), 1500)
+	lo._params.vassal_consolidation = 1.0
+	var rows_lo := lo._decompose_all()
+	var hi := _sim()
+	_realm(hi, "P", "civ", "lawful", _block(10, 6), 1500)
+	hi._params.vassal_consolidation = 3.0
+	var rows_hi := hi._decompose_all()
+	var nodes_lo := rows_lo.filter(func(r): return int(r["is_personal_domain"]) == 0).size()
+	var nodes_hi := rows_hi.filter(func(r): return int(r["is_personal_domain"]) == 0).size()
+	var leaves_lo := rows_lo.filter(func(r): return int(r["is_personal_domain"]) == 1).size()
+	var leaves_hi := rows_hi.filter(func(r): return int(r["is_personal_domain"]) == 1).size()
+	check(nodes_hi < nodes_lo,
+		"higher consolidation = fewer intermediate vassal nodes (%d < %d)" % [nodes_hi, nodes_lo])
+	check(leaves_lo == leaves_hi,
+		"the per-hex leaf realms are unchanged by consolidation (%d == %d)" % [leaves_lo, leaves_hi])
 
 
 # --- #2 clanhold cap -------------------------------------------------------

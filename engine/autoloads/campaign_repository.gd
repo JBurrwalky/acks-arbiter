@@ -5287,7 +5287,7 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
 	"override_log", "parties", "pois", "pursuit_states", "realm_relations",
 	"realms", "reputation_entries", "restricted_cooldowns", "roads", "scheduled_events", "settlement_entrances",
-	"setting_events", "setting_fallen_polities", "setting_hexes", "setting_parameters",
+	"setting_domains", "setting_events", "setting_fallen_polities", "setting_hexes", "setting_parameters",
 	"setting_fortifications", "setting_narrative", "setting_poi_seeds", "setting_polities",
 	"setting_regions", "setting_replay_frames", "setting_replay_palette", "setting_river_edges",
 	"setting_roads", "setting_ruin_seeds", "setting_settlements",

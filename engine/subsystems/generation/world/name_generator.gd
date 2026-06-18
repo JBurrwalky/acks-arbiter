@@ -70,6 +70,7 @@ func run(ctx: Dictionary) -> bool:
 	_build_indices(polities, ruins, events, hex_grid)
 	_name_settlements(settlements)
 	_name_realms(polities)
+	_name_domains(ctx.get("sim_domains", []))   # Phase 5 vassal tree (after realms: reuses _used)
 	_name_fallen(fallen, regions)            # appends historical_cultural regions
 	_name_regions(regions, events, hex_grid)
 	_fill_region_hints(events)
@@ -156,6 +157,29 @@ func _name_realms(polities: Array) -> void:
 		var capital := str(_capital_name_by_polity.get(pid, ""))
 		pol["name"] = NameAssembler.realm_name(bank, tier_name, toponym, capital,
 			dynasty, WorldGenRng.stream(_seed, "polity_name", 0, pid), _used, cid)
+
+
+## §6.3 applied to the Phase-5 vassal tree: every domain (Duchy/County/…) gets a
+## noble house (ruler_name = a dynasty surname) and a realm_name. Named in id order
+## after the sovereign realms so the same per-culture dedup set (_used) carries over.
+## Domains are civ-only (the sim never decomposes beastman/clan polities), so no
+## generic-beastman race remap is needed. capital is left empty so realm_name draws
+## the dynasty/toponym forms rather than re-using the polity capital for every sub-domain.
+func _name_domains(domains: Array) -> void:
+	var sorted := domains.duplicate()
+	sorted.sort_custom(func(a, b): return str(a["id"]) < str(b["id"]))
+	for dom in sorted:
+		var pid := str(dom.get("polity_id", ""))
+		var cid := str(_culture_by_polity.get(pid, _fallback_culture))
+		var bank := NameBankLoader.bank_for(cid)
+		var dom_id := str(dom["id"])
+		var tier_name := str(dom.get("title", "")).to_lower()
+		var dynasty := NameAssembler.dynasty_name(
+			bank, WorldGenRng.stream(_seed, "domain_dynasty", 0, dom_id), _used, cid)
+		dom["ruler_name"] = dynasty
+		var toponym := str(_toponym_by_culture.get(cid, ""))
+		dom["realm_name"] = NameAssembler.realm_name(bank, tier_name, toponym, "",
+			dynasty, WorldGenRng.stream(_seed, "domain_name", 0, dom_id), _used, cid)
 
 
 # --- fallen polities + their reaches (§5.4) ---------------------------------

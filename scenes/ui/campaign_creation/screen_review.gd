@@ -21,13 +21,14 @@ const _MODE_TOOLTIPS := {
 var _payload: Dictionary = {}
 var _polity_names: Dictionary = {}
 var _polities: Array = []           # full setting_polities rows (for the Vassalage tab)
+var _domains: Array = []            # setting_domains rows — the Phase 5 intra-realm vassal tree
 var _present_ids: Dictionary = {}   # polity_id -> true for realms still holding territory
 var _map: Control
 var _current_mode: int = 0    # mirrors the map view's mode (0 = Political)
 var _legend: VBoxContainer
 var _brief_label: RichTextLabel
 var _realms_box: VBoxContainer
-var _vassalage_box: VBoxContainer
+var _vassalage_tree: Tree          # collapsible per-liege tree (war-vassals + domain decomposition)
 var _peoples_box: VBoxContainer
 var _history_log: RichTextLabel       # the structured event-log body (History tab)
 var _history_filter: OptionButton     # "All realms" + one entry per present-day sovereign
@@ -149,7 +150,7 @@ func _build_ui() -> void:
 	right.add_child(side)
 	_brief_label = _rich_tab(side, "Brief")
 	_realms_box = _list_tab(side, "Realms")
-	_vassalage_box = _list_tab(side, "Vassalage")
+	_vassalage_tree = _tree_tab(side, "Vassalage")
 	_peoples_box = _list_tab(side, "Peoples")
 	_build_history_tab(side)
 	_issues_label = _rich_tab(side, "Issues")
@@ -210,21 +211,31 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 			_present_ids[o] = true
 	var names := {}
 	var lieges := {}
+	var tiers := {}
 	_liege_by_id = {}
 	for p in polities:
 		var pid := str(p.get("id", ""))
 		names[pid] = str(p.get("name", pid)) if str(p.get("name", "")) != "" else pid
 		lieges[pid] = str(p.get("liege_id", ""))
+		tiers[pid] = int(p.get("tier_index", 0))
 		_liege_by_id[pid] = str(p.get("liege_id", ""))
 	if not names.is_empty():
 		_polity_names = names   # fuller than the top-realms map from populate()
-		_map.set_polity_meta(names, lieges)
+		_map.set_polity_meta(names, lieges, tiers)
 	_map.bind(ordered_hexes, palette)
 	_map.set_settlements(settlements)
 	_map.set_rivers(rivers)
 	_refresh_legend()
+	_refresh_realms()    # liege map now known → drop vassals from the Realms tab
 	_refresh_vassalage()
 	_refresh_history()   # sovereigns now known → rebuild the History filter + log
+
+
+## The Phase 5 vassal tree (setting_domains). Call after bind_map so _present_ids
+## and _polities are populated; rebuilds the Vassalage tab with the domain layer.
+func set_domains(domains: Array) -> void:
+	_domains = domains
+	_refresh_vassalage()
 
 
 func _on_mode(mode: int) -> void:
@@ -280,15 +291,21 @@ func _refresh_legend() -> void:
 ## Vassalage tab: an indented liege→vassal forest of the present-day realms. Roots are
 ## sovereigns (no present liege); each realm's vassals nest beneath it, deepest tier
 ## first. Built from list_polities' liege_id, scoped to realms that still hold territory.
+## A unified collapsible feudal tree (req D), default ALL collapsed: roots are
+## sovereigns, each expanding to its war-vassal/protectorate polities AND its own
+## crownland's domain decomposition (setting_domains, Phase 5). Domain nodes expand
+## to their sub-domains. War-vassalage lives in setting_polities (liege_id); the
+## intra-realm Duchy→County tree lives in setting_domains — this view fuses both.
 func _refresh_vassalage() -> void:
-	if _vassalage_box == null:
+	if _vassalage_tree == null:
 		return
-	for c in _vassalage_box.get_children():
-		c.queue_free()
+	_vassalage_tree.clear()
+	var root := _vassalage_tree.create_item()   # hidden root (hide_root)
+	# --- polity (war-vassalage) maps ---
 	var by_id := {}
 	for p in _polities:
 		by_id[str(p.get("id", ""))] = p
-	var kids := {}        # liege_id -> [polity_id, …]
+	var pol_kids := {}    # liege polity_id -> [vassal polity_id, …]
 	var roots: Array = []
 	for p in _polities:
 		var pid := str(p.get("id", ""))
@@ -296,37 +313,96 @@ func _refresh_vassalage() -> void:
 			continue
 		var liege := str(p.get("liege_id", ""))
 		if liege != "" and bool(_present_ids.get(liege, false)) and by_id.has(liege):
-			if not kids.has(liege):
-				kids[liege] = []
-			kids[liege].append(pid)
+			if not pol_kids.has(liege):
+				pol_kids[liege] = []
+			pol_kids[liege].append(pid)
 		else:
 			roots.append(pid)   # sovereign, or liege fell / isn't a present realm
+	# --- domain (intra-realm decomposition) maps ---
+	var dom_top := {}        # polity_id -> [domain rows with no liege domain]
+	var dom_kids := {}       # liege_domain_id -> [domain rows]
+	for d in _domains:
+		var dp := str(d.get("polity_id", ""))
+		if not bool(_present_ids.get(dp, false)):
+			continue
+		var dl := str(d.get("liege_domain_id", ""))
+		if dl == "":
+			if not dom_top.has(dp):
+				dom_top[dp] = []
+			dom_top[dp].append(d)
+		else:
+			if not dom_kids.has(dl):
+				dom_kids[dl] = []
+			dom_kids[dl].append(d)
 	if roots.is_empty():
-		var none := Label.new()
-		none.text = "No present-day realms."
-		none.add_theme_color_override("font_color", Color(0.7, 0.66, 0.58))
-		_vassalage_box.add_child(none)
+		var none := _vassalage_tree.create_item(root)
+		none.set_text(0, "No present-day realms.")
+		none.set_custom_color(0, Color(0.7, 0.66, 0.58))
 		return
 	roots.sort_custom(func(a, b): return int(by_id.get(a, {}).get("tier_index", 0)) > int(by_id.get(b, {}).get("tier_index", 0)))
 	var seen := {}
 	for rid in roots:
-		_add_vassal_rows(rid, 0, by_id, kids, seen)
+		_add_polity_item(root, rid, by_id, pol_kids, seen, dom_top, dom_kids)
 
 
-func _add_vassal_rows(pid: String, depth: int, by_id: Dictionary, kids: Dictionary, seen: Dictionary) -> void:
+func _add_polity_item(parent: TreeItem, pid: String, by_id: Dictionary,
+		pol_kids: Dictionary, seen: Dictionary, dom_top: Dictionary, dom_kids: Dictionary) -> void:
 	if seen.has(pid):     # cycle guard — a liege loop would otherwise recurse forever
 		return
 	seen[pid] = true
-	var line := Label.new()
-	var prefix := ("    ".repeat(depth - 1) + "└ ") if depth > 0 else ""
-	line.text = prefix + _vassal_label(by_id.get(pid, {}), pid)
-	line.add_theme_color_override("font_color",
-		Color(0.86, 0.81, 0.71) if depth == 0 else Color(0.78, 0.74, 0.66))
-	_vassalage_box.add_child(line)
-	var ck: Array = kids.get(pid, [])
+	var item := _vassalage_tree.create_item(parent)
+	item.set_text(0, _vassal_label(by_id.get(pid, {}), pid))
+	item.set_custom_color(0, Color(0.90, 0.85, 0.74))
+	item.collapsed = true
+	# This polity's own crownland, decomposed into its vassal domains (Phase 5).
+	for d in _sorted_domains(dom_top.get(pid, [])):
+		_add_domain_item(item, d, dom_kids)
+	# Its war-vassal / protectorate polities (each its own realm).
+	var ck: Array = pol_kids.get(pid, [])
 	ck.sort_custom(func(a, b): return int(by_id.get(a, {}).get("tier_index", 0)) > int(by_id.get(b, {}).get("tier_index", 0)))
 	for cid in ck:
-		_add_vassal_rows(cid, depth + 1, by_id, kids, seen)
+		_add_polity_item(item, cid, by_id, pol_kids, seen, dom_top, dom_kids)
+
+
+func _add_domain_item(parent: TreeItem, dom: Dictionary, dom_kids: Dictionary) -> void:
+	var item := _vassalage_tree.create_item(parent)
+	item.set_text(0, _domain_label(dom))
+	item.set_custom_color(0, Color(0.78, 0.74, 0.66))
+	item.collapsed = true
+	for c in _sorted_domains(dom_kids.get(str(dom.get("id", "")), [])):
+		_add_domain_item(item, c, dom_kids)
+
+
+## Highest tier first, then id — a stable, readable order within a liege.
+func _sorted_domains(rows: Array) -> Array:
+	var out: Array = rows.duplicate()
+	out.sort_custom(func(a, b):
+		var ta := int(a.get("tier_index", 0))
+		var tb := int(b.get("tier_index", 0))
+		if ta != tb:
+			return ta > tb
+		return str(a.get("id", "")) < str(b.get("id", "")))
+	return out
+
+
+func _domain_label(d: Dictionary) -> String:
+	var nm := str(d.get("realm_name", ""))
+	if nm == "":
+		nm = str(d.get("title", "Domain"))
+	var meta: Array = []
+	var title := str(d.get("title", ""))
+	if title != "":
+		meta.append(title)
+	var rc := str(d.get("ruler_class", "")).replace("_", " ")
+	if rc != "":
+		var lvl := int(d.get("ruler_level", 0))
+		meta.append("%s L%d" % [rc, lvl] if lvl > 0 else rc)
+	var fam := int(d.get("families", 0))
+	if fam > 0:
+		meta.append("%s families" % _commafy(fam))
+	if meta.is_empty():
+		return nm
+	return "%s — %s" % [nm, ", ".join(meta)]
 
 
 func _vassal_label(p: Dictionary, pid: String) -> String:
@@ -370,15 +446,7 @@ func _refresh() -> void:
 	_issues_label.text = str(v.get("report", "No validation report.")) if verr > 0 \
 		else "✓ No mechanical issues — the world is internally consistent."
 
-	for c in _realms_box.get_children():
-		c.queue_free()
-	for r in _payload.get("realms", []):
-		var line := Label.new()
-		line.text = "%s — %s, %s (%s L%d)" % [str(r.get("name", "?")), str(r.get("title", "")),
-			str(r.get("alignment", "")), str(r.get("ruler_class", "")).replace("_", " "),
-			int(r.get("ruler_level", 0))]
-		line.add_theme_color_override("font_color", Color(0.86, 0.81, 0.71))
-		_realms_box.add_child(line)
+	_refresh_realms()
 
 	for c in _peoples_box.get_children():
 		c.queue_free()
@@ -389,6 +457,27 @@ func _refresh() -> void:
 		_peoples_box.add_child(line)
 
 	_refresh_legend()
+
+
+## Realms tab = SOVEREIGNS ONLY (req D): a realm with a present-day liege is a
+## vassal and shows in the Vassalage tree, not here. _liege_by_id is populated by
+## bind_map (from list_polities); before that (the populate() pass) it is empty and
+## every realm shows, so bind_map re-runs this once the liege map is known.
+func _refresh_realms() -> void:
+	if _realms_box == null:
+		return
+	for c in _realms_box.get_children():
+		c.queue_free()
+	for r in _payload.get("realms", []):
+		var rid := str(r.get("id", ""))
+		if str(_liege_by_id.get(rid, "")) != "":
+			continue   # a vassal — lives in the Vassalage tree
+		var line := Label.new()
+		line.text = "%s — %s, %s (%s L%d)" % [str(r.get("name", "?")), str(r.get("title", "")),
+			str(r.get("alignment", "")), str(r.get("ruler_class", "")).replace("_", " "),
+			int(r.get("ruler_level", 0))]
+		line.add_theme_color_override("font_color", Color(0.86, 0.81, 0.71))
+		_realms_box.add_child(line)
 
 
 # --- History tab: structured, per-sovereign, exportable event log --------------
@@ -628,6 +717,23 @@ func _list_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	vb.offset_top = 8
 	scroll.add_child(vb)
 	return vb
+
+
+## A collapsible Tree tab (the Vassalage forest). hide_root makes the sovereigns the
+## visible top level; every item is created collapsed, so the tab opens as a tidy
+## sovereign list the player drills into. A dark panel keeps it on-theme.
+func _tree_tab(tabs: TabContainer, title: String) -> Tree:
+	var tree := Tree.new()
+	tree.name = title
+	tree.hide_root = true
+	tree.columns = 1
+	tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tree.add_theme_color_override("font_color", Color(0.86, 0.81, 0.71))
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0.14, 0.13, 0.10)
+	tree.add_theme_stylebox_override("panel", panel)
+	tabs.add_child(tree)
+	return tree
 
 
 func _h_expand() -> Control:

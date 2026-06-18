@@ -211,6 +211,7 @@ func begin_replay(campaign_id: String) -> void:
 		_map.set_replay_mode(true)
 		var names := {}
 		var lieges := {}
+		var tiers := {}
 		var has_name := {}
 		for p in SettingRepository.list_polities(campaign_id):
 			var pid := str(p.get("id", ""))
@@ -218,6 +219,7 @@ func begin_replay(campaign_id: String) -> void:
 			names[pid] = nm if nm != "" else pid
 			has_name[pid] = nm != ""
 			lieges[pid] = str(p.get("liege_id", ""))
+			tiers[pid] = int(p.get("tier_index", 0))
 		# Realms that fell during the history never received a present-day name (the
 		# naming layer only names survivors), so they would tooltip as a bare pol_id.
 		# Name them by their toponym root: "the Old Vthûn" instead of "47".
@@ -228,7 +230,7 @@ func begin_replay(campaign_id: String) -> void:
 			var root := str(f.get("toponym_root", ""))
 			if root != "":
 				names[pid] = "the Old %s" % root
-		_map.set_polity_meta(names, lieges)
+		_map.set_polity_meta(names, lieges, tiers)
 	if _frames.is_empty():
 		finish()
 		return

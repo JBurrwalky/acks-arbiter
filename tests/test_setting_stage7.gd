@@ -15,6 +15,7 @@ func run_all_tests() -> void:
 	NameBankLoader.clear_cache()
 	test_market_class_thresholds()
 	test_replace_settlements_empty_safe()
+	test_setting_domains_round_trip()
 	var cid := _generate(717171)
 	if not cid.is_empty():
 		test_market_class_assigned(cid)
@@ -30,6 +31,7 @@ func run_all_tests() -> void:
 		test_deforestation_transitions(cid)
 		test_forts_valid(cid)
 		test_pois_valid(cid)
+		test_domains_valid(cid)
 		test_determinism(717171, cid)
 	if not has_failures():
 		print("SettingStage7Tests: all tests passed (%d checks)" % test_count())
@@ -63,6 +65,26 @@ func test_replace_settlements_empty_safe() -> void:
 	check(SettingRepository.replace_settlements(c, []), "replace_settlements([]) returns true")
 	check(SettingRepository.list_settlements(c).size() == 0,
 		"replace_settlements([]) atomically clears the table")
+
+
+## Phase 5: setting_domains save/list round-trip (migration 170 columns) +
+## idempotent re-save on the same PK. A throwaway campaign.
+func test_setting_domains_round_trip() -> void:
+	var c := CampaignRepository.create_campaign("Stage7 domains", "w")
+	var row := {"id": "dom_1_2", "polity_id": "pol_0001", "liege_domain_id": "",
+		"tier_index": 2, "title": "County", "ruler_class": "fighter", "ruler_level": 8,
+		"ruler_name": "House Vane", "realm_name": "Vanecounty", "seat_q": 1, "seat_r": 2,
+		"families": 6000, "hex_count": 1, "depth": 0, "is_personal_domain": 1}
+	check(SettingRepository.save_domains(c, [row]), "save one domain row")
+	var got := SettingRepository.list_domains(c)
+	check(got.size() == 1, "one domain round-trips")
+	if got.size() == 1:
+		var r: Dictionary = got[0]
+		check(str(r["id"]) == "dom_1_2", "id round-trips")
+		check(int(r["tier_index"]) == 2 and int(r["families"]) == 6000, "ints round-trip")
+		check(str(r["realm_name"]) == "Vanecounty", "name round-trips")
+	check(SettingRepository.save_domains(c, [row]), "re-save same id is idempotent")
+	check(SettingRepository.list_domains(c).size() == 1, "re-save keeps one row (INSERT OR REPLACE)")
 
 
 # --- integration ------------------------------------------------------------
@@ -336,6 +358,65 @@ func test_pois_valid(cid: String) -> void:
 	for k in poi_keys:
 		check(not seen.has(k), "POI hex (%d,%d) is not shared with another POI" % [k.x, k.y])
 		seen[k] = true
+
+
+## Phase 5: the finalization vassal tree on a real generated world. Validates
+## referential integrity (polity_id + liege_domain_id resolve), the tier domain
+## (0-6, leaves <= County), per-hex leaf accounting against each polity's hexes, and
+## that Layer 5 named every domain. Beastman/clan polities are never decomposed.
+func test_domains_valid(cid: String) -> void:
+	var polities := SettingRepository.list_polities(cid)
+	var pol_by_id := {}
+	for p in polities:
+		pol_by_id[str(p["id"])] = p
+	var owned := {}   # polity_id -> {Vector2i: true} of its POPULATED present-day hexes
+	for h in SettingRepository.list_hexes(cid):
+		var o := str(h.get("owner_polity_id", ""))
+		# Titular wilderness (pop 0) is excluded — it gets no domain by design.
+		if o != "" and int(h.get("population_band", 0)) > 0:
+			if not owned.has(o):
+				owned[o] = {}
+			owned[o][Vector2i(int(h["q"]), int(h["r"]))] = true
+	var domains := SettingRepository.list_domains(cid)
+	var dom_by_id := {}
+	for d in domains:
+		dom_by_id[str(d["id"])] = d
+	var leaf_seats_by_polity := {}
+	for d in domains:
+		var did := str(d["id"])
+		var pid := str(d["polity_id"])
+		check(pol_by_id.has(pid), "domain %s belongs to a real polity" % did)
+		var liege := str(d.get("liege_domain_id", ""))
+		check(liege == "" or dom_by_id.has(liege), "domain %s liege resolves" % did)
+		# Ladder invariant: a vassal ranks strictly below its lord (no flat siblings of
+		# mixed rank; Marquis under Counts, Barons under Marquis — Jedidiah 2026-06-18).
+		if liege != "" and dom_by_id.has(liege):
+			check(int(d["tier_index"]) < int(dom_by_id[liege]["tier_index"]),
+				"domain %s ranks below its lord %s" % [did, liege])
+		var tier := int(d["tier_index"])
+		check(tier >= 0 and tier <= 6, "domain %s tier in range" % did)
+		check(int(d["is_personal_domain"]) in [0, 1], "domain %s personal flag boolean" % did)
+		check(str(d.get("realm_name", "")).strip_edges() != "", "domain %s is named (Layer 5)" % did)
+		check(str(d.get("ruler_name", "")).strip_edges() != "", "domain %s ruler is named" % did)
+		# Its polity must be a decomposable civ realm.
+		var pol: Dictionary = pol_by_id.get(pid, {})
+		check(str(pol.get("civ_or_clan_state", "civ")) == "civ",
+			"domain %s polity is civ (not clan/beastman)" % did)
+		check(int(d["families"]) > 0, "domain %s governs a populated seat (no empty fiefs)" % did)
+		var seat := Vector2i(int(d["seat_q"]), int(d["seat_r"]))
+		check(owned.get(pid, {}).has(seat), "domain %s seat is a populated hex of its polity" % did)
+		if int(d["is_personal_domain"]) == 1:
+			check(tier <= 2, "leaf domain %s never exceeds County" % did)
+			if not leaf_seats_by_polity.has(pid):
+				leaf_seats_by_polity[pid] = {}
+			check(not leaf_seats_by_polity[pid].has(seat),
+				"domain %s leaf seat is unique within its polity" % did)
+			leaf_seats_by_polity[pid][seat] = true
+	# Per-polity accounting: a decomposed polity's leaves tile exactly its hexes.
+	for pid in leaf_seats_by_polity:
+		check(int(leaf_seats_by_polity[pid].size()) == int(owned.get(pid, {}).size()),
+			"polity %s leaves tile all its hexes (%d leaves vs %d hexes)"
+				% [pid, int(leaf_seats_by_polity[pid].size()), int(owned.get(pid, {}).size())])
 
 
 func _min_d(key: Vector2i, hexes: Array) -> int:

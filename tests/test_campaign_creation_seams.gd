@@ -53,6 +53,7 @@ func test_seed_share_modified_roundtrip() -> void:
 	p.collapse_temperament = "turbulent"
 	p.dungeon_density = 1.5
 	p.demihuman_presence = false
+	p.vassal_consolidation = 2.5
 	check(not SeedShareCodec.is_default(p), "modified params not default")
 	var token: String = SeedShareCodec.encode(42, p)
 	check(token.contains("~"), "modified token carries a delta block")

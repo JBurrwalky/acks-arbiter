@@ -3804,6 +3804,7 @@ func _finalize(ctx: Dictionary) -> void:
 	_assign_present_day_handoff()   # 4g §12: ruler level/class + seeded morale
 	_score_event_significance()     # 4g §11.3: per-event significance
 	ctx["sim_polities"] = _polity_rows()
+	ctx["sim_domains"] = _decompose_all()   # Phase 5: finalization vassal-tree decomposition
 	ctx["sim_settlements"] = _settlements
 	ctx["sim_events"] = _events
 	ctx["sim_replay_frames"] = _replay_frames
@@ -4003,6 +4004,179 @@ func _racialize_ruler_class(race: String, base: String) -> String:
 	if race == "dwarf":
 		return str(_DWARF_RULER_CLASS.get(base, "dwarven_vaultguard"))
 	return base
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: finalization decomposition (gdd-realms-titles-refactor.md §3 A/B/C, §7).
+# Each surviving CIV polity's OWN territory is partitioned into a COMPLETE feudal
+# ladder (acore-setting-construction-rules.xml:90-110 political_divisions_of_realms):
+# Baronies under Marquis under Counts under Dukes … down from the polity ruler. Each
+# settled hex is a leaf realm at its own family rank (req C); the smaller hexes that
+# can't stand as a full sub-realm are CLUSTERED into synthesized intermediate nodes
+# (a Count grouping several Marches, a Marquis grouping several Baronies) so the tree
+# is complete and the runtime handoff fills sub-hex detail, never reorganises or
+# invents the middle tiers. Some over-sizing / skip-level is expected and RAW-legal
+# (room for a player to become the missing Count). Every node carries a seat 24-mile
+# hex (req B) + its direct liege (req: tribute chain); the union of leaf seats tiles
+# every populated hex. Structure + ruler class/level only — names are Layer 5. War-
+# vassalage between polities stays in setting_polities (liege_id); this is the INTRA-
+# polity tree. Beastman hordes / clanholds have no feudal ladder (req H) and are left
+# undecomposed. Deterministic: contiguous BFS + integer family math; only RNG is the
+# per-domain ruler class.
+
+
+func _decompose_all() -> Array:
+	var rows: Array = []
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not bool(pol.get("alive", false)):
+			continue
+		if bool(pol.get("is_beastman", false)) or bool(pol.get("is_clanhold", false)):
+			continue
+		if str(pol.get("civ_or_clan_state", "civ")) != "civ":
+			continue
+		_decompose_polity(pol, rows)
+	return rows
+
+
+## Decompose one civ polity's own POPULATED hexes into its vassal ladder. A one-hex
+## (or Barony-tier) realm is held directly by its ruler — no sub-domains. Titular
+## wilderness (pop 0, §H Phase 3b) gets no domain (no families to govern); it stays
+## polity-titular land that the M2b materializer attaches to the nearest populated
+## domain. The export tier (which sets the polity's title) still counts the whole
+## realm; only the partition runs over populated land.
+func _decompose_polity(pol: Dictionary, rows: Array) -> void:
+	var hexes: Array = pol["hexes"].filter(
+		func(h: Vector2i) -> bool: return int(_grid[h]["population_band"]) > 0)
+	if hexes.size() <= 1:
+		return
+	var tier := _export_tier(pol)
+	if tier <= DomainTierTable.BARONY:
+		return
+	_split_realm(hexes, tier, "", pol, 0, rows)
+
+
+## Build the vassal sub-realms (one rank down) of a realm of [param node_tier] over
+## [param hexes], whose lord is the domain [param liege_domain_id] ("" = the polity
+## ruler). A hex already big enough to stand as a (node_tier-1) realm on its own
+## becomes a LEAF at its family rank; the smaller remainder is CLUSTERED into
+## (node_tier-1) grouping NODES that recurse — so a Marquis always sits under a Count,
+## a Baron under a Marquis, for the most part (single-hex clusters skip a level, which
+## is acceptable). Children never out-rank their lord.
+func _split_realm(hexes: Array, node_tier: int, liege_domain_id: String,
+		pol: Dictionary, depth: int, rows: Array) -> void:
+	if hexes.is_empty():
+		return
+	var child_tier := node_tier - 1
+	# Peel hexes that are a child_tier (or larger) realm by their own families — each
+	# is its own leaf at that rank, directly under the lord (a real County-hex stays a
+	# County, not pushed down). The rest are "small" and must be grouped.
+	var big: Array = []
+	var small: Array = []
+	for h in hexes:
+		if DomainTierTable.tier_for_families(int(_grid[h]["population_band"])) >= child_tier:
+			big.append(h)
+		else:
+			small.append(h)
+	big.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+	for h in big:
+		_emit_leaf(h, liege_domain_id, pol, child_tier, depth, rows)
+	if small.is_empty():
+		return
+	if child_tier <= DomainTierTable.BARONY:
+		small.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _canonical_less(a, b))
+		for h in small:
+			_emit_leaf(h, liege_domain_id, pol, child_tier, depth, rows)
+		return
+	for group in _cluster_for_tier(small, child_tier):
+		if group.size() == 1:
+			_emit_leaf(group[0], liege_domain_id, pol, child_tier, depth, rows)
+		else:
+			var seat: Vector2i = _seat_of(group)
+			var node_id := "idom_%d_%d_%d" % [seat.x, seat.y, depth]
+			rows.append(_domain_row(node_id, pol, liege_domain_id, child_tier, seat,
+					_families_of_hexes(group), group.size(), depth, false))
+			_split_realm(group, child_tier, node_id, pol, depth + 1, rows)
+
+
+## A single hex as a leaf realm under [param liege_domain_id], titled at its own
+## family rank but never above [param slot_tier] (a vassal can't out-rank its lord).
+func _emit_leaf(h: Vector2i, liege_domain_id: String, pol: Dictionary,
+		slot_tier: int, depth: int, rows: Array) -> void:
+	var hfam := int(_grid[h]["population_band"])
+	var ltier := clampi(DomainTierTable.tier_for_families(hfam), DomainTierTable.BARONY, slot_tier)
+	rows.append(_domain_row("dom_%d_%d" % [h.x, h.y], pol, liege_domain_id,
+			ltier, h, hfam, 1, depth, true))
+
+
+## Cluster [param hexes] into contiguous groups, each ≈ one [param child_tier] realm,
+## so a sparse region yields a few full sub-realms rather than a swarm of singletons.
+## Target families/group = the tier floor × the user's `vassal_consolidation` knob
+## (1.0 = granular floor → more, thinner vassals; higher → fewer, fuller mid-tiers).
+## Count = round(total_families / target), at least 1.
+func _cluster_for_tier(hexes: Array, child_tier: int) -> Array:
+	var floor_fam := maxi(int(DomainTierTable.TIERS[child_tier]["families_lower"]), 1)
+	var target := maxf(float(floor_fam) * _params.vassal_consolidation, 1.0)
+	var n := clampi(roundi(float(_families_of_hexes(hexes)) / target), 1, hexes.size())
+	var group_size := ceili(float(hexes.size()) / float(n))
+	return _partition_contiguous(hexes, group_size)
+
+
+func _families_of_hexes(hexes: Array) -> int:
+	var total := 0
+	for h in hexes:
+		total += int(_grid[h]["population_band"])
+	return total
+
+
+## The personal-domain anchor hex of a domain: its highest-population hex, ties
+## broken by canonical order (deterministic).
+func _seat_of(hexes: Array) -> Vector2i:
+	var best: Vector2i = hexes[0]
+	var best_pop := int(_grid[best]["population_band"])
+	for h in hexes:
+		var pop := int(_grid[h]["population_band"])
+		if pop > best_pop or (pop == best_pop and _canonical_less(h, best)):
+			best = h
+			best_pop = pop
+	return best
+
+
+func _domain_row(id: String, pol: Dictionary, liege_domain_id: String, tier: int,
+		seat: Vector2i, families: int, hex_count: int, depth: int,
+		is_personal: bool) -> Dictionary:
+	return {
+		"id": id,
+		"polity_id": str(pol["id"]),
+		"liege_domain_id": liege_domain_id,
+		"tier_index": tier,
+		"title": DomainTierTable.title_for_tier(tier),
+		"ruler_class": _domain_ruler_class(pol, id),
+		"ruler_level": DomainTierTable.ruler_level_for_tier(tier),
+		"ruler_name": "",   # filled by Layer 5 (NameGenerator)
+		"realm_name": "",   # filled by Layer 5 (NameGenerator)
+		"seat_q": seat.x,
+		"seat_r": seat.y,
+		"families": families,
+		"hex_count": hex_count,
+		"depth": depth,
+		"is_personal_domain": 1 if is_personal else 0,
+	}
+
+
+## Seeded ruler-class for a domain, from its polity's §4.3 sphere distribution,
+## keyed by the domain id so siblings vary. Mirrors _ruler_class_for (per polity).
+func _domain_ruler_class(pol: Dictionary, dom_id: String) -> String:
+	var dist := _ruler_class_distribution(pol)
+	var roll := WorldGenRng.stream(_campaign_seed, "decompose_class", _n_ticks, dom_id).randf()
+	var acc := 0.0
+	var base := "fighter"
+	for cls in ["fighter", "cleric", "mage", "thief"]:
+		acc += float(dist[cls])
+		if roll < acc:
+			base = cls
+			break
+	return _racialize_ruler_class(str(_inst(pol).get("race", "human")), base)
 
 
 ## Seeded present-day morale inputs (§12): the ruler-vs-population alignment

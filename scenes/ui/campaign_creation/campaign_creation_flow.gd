@@ -139,6 +139,7 @@ func _show_phase(phase: int) -> void:
 						SettingRepository.list_river_edges(_campaign_id))
 					_review.set_event_log(SettingRepository.list_events(_campaign_id),
 						SettingRepository.list_fallen_polities(_campaign_id))
+					_review.set_domains(SettingRepository.list_domains(_campaign_id))
 				_review.visible = true
 
 

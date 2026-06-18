@@ -66,6 +66,7 @@ var _settlements: Array = []
 var _settle_by_hex: Dictionary = {}    # Vector2i -> settlement row (tooltip)
 var _polity_names: Dictionary = {}     # polity_id -> realm name (tooltip + legend)
 var _polity_lieges: Dictionary = {}    # polity_id -> liege_id (sovereign resolution)
+var _polity_tiers: Dictionary = {}     # polity_id -> tier_index (border weight by rank)
 var _culture_colors: Dictionary = {}   # culture_id -> Color (lazy, deterministic)
 var _mode: int = Mode.POLITICAL
 var _sovereign_view: bool = false      # political mode: colour by top-of-liege-chain
@@ -95,11 +96,14 @@ func set_rivers(edges: Array) -> void:
 	queue_redraw()
 
 
-## Full realm name + liege maps (from SettingRepository.list_polities) for the
-## hover tooltip's "highest realm" (sovereign) resolution and the legend.
-func set_polity_meta(names: Dictionary, lieges: Dictionary) -> void:
+## Full realm name + liege + tier maps (from SettingRepository.list_polities) for
+## the hover tooltip's "highest realm" (sovereign) resolution, the legend, and the
+## tier-graded political borders (higher-rank realms outlined thicker; County and
+## below dotted). [param tiers] is optional for back-compat (empty ⇒ all dotted).
+func set_polity_meta(names: Dictionary, lieges: Dictionary, tiers: Dictionary = {}) -> void:
 	_polity_names = names
 	_polity_lieges = lieges
+	_polity_tiers = tiers
 
 
 ## Replay shows per-frame OWNERSHIP only; the stored culture/territory/peasants are
@@ -284,7 +288,8 @@ func _draw() -> void:
 		if _mode == Mode.POLITICAL:
 			var owner := str(owner_by.get(Vector2i(q, r), ""))
 			if owner != "":
-				_draw_hex_outline(center, _R, _border_for(owner_by, q, r, owner))
+				var b := _realm_border(owner_by, q, r, owner)
+				_draw_hex_outline(center, _R, b[0], b[1], b[2])
 	_draw_rivers()
 	# City markers (Class I-III larger). Drawn on top of the hexes.
 	for s in _settlements:
@@ -402,13 +407,31 @@ func _draw_dapple(center: Vector2, radius: float, accent: Color, q: int, r: int)
 		draw_circle(center + Vector2(cos(ang), sin(ang)) * dist, dot, accent)
 
 
-## A realm-boundary outline is brighter than the per-hex outline so similar
-## adjacent realm colours separate; interior hexes get the faint default.
-func _border_for(owner_by: Dictionary, q: int, r: int, owner: String) -> Color:
+## Political-mode hex outline as [colour, width, dashed]. A realm boundary (the hex
+## has a neighbour of a different owner, or borders unclaimed land) is drawn at a
+## weight set by the owner's RANK: Empire/Kingdom thickest, Duchy/Principality medium,
+## County-and-below a thin DOTTED line — so the many small low-tier realms stop
+## drowning out the big ones. Interior hexes (all neighbours same owner) keep the
+## faint per-hex grid. In sovereign view the owner already IS its sovereign, so the
+## weight tracks the whole realm's rank.
+func _realm_border(owner_by: Dictionary, q: int, r: int, owner: String) -> Array:
 	for n in _neighbors(q, r):
-		if str(owner_by.get(n, owner)) != owner:
-			return Color(0.95, 0.92, 0.8, 0.5)
-	return _OUTLINE
+		if owner_by.has(n) and str(owner_by[n]) != owner:
+			return _border_style(int(_polity_tiers.get(owner, 0)))
+	return [_OUTLINE, 1.0, false]
+
+
+## Border [colour, width, dashed] for a realm of [param tier] (DomainTierTable index
+## 0=Barony … 6=Empire). Higher rank → thicker & more opaque; County (2) and below
+## switch to a dotted line so they read as subordinate divisions, not hard frontiers.
+func _border_style(tier: int) -> Array:
+	match tier:
+		6: return [Color(1.00, 0.97, 0.86, 0.98), 3.0, false]   # Empire
+		5: return [Color(0.99, 0.95, 0.83, 0.95), 2.6, false]   # Kingdom
+		4: return [Color(0.97, 0.93, 0.80, 0.90), 2.1, false]   # Principality
+		3: return [Color(0.95, 0.91, 0.78, 0.85), 1.6, false]   # Duchy
+		2: return [Color(0.93, 0.89, 0.76, 0.80), 1.2, true]    # County (dotted)
+	return [Color(0.90, 0.86, 0.73, 0.65), 1.0, true]           # March / Barony (dotted)
 
 
 func _neighbors(q: int, r: int) -> Array:
@@ -422,10 +445,16 @@ func _draw_hex(center: Vector2, radius: float, col: Color) -> void:
 	draw_colored_polygon(_hex_poly(center, radius), col)
 
 
-func _draw_hex_outline(center: Vector2, radius: float, col: Color) -> void:
+func _draw_hex_outline(center: Vector2, radius: float, col: Color, width: float = 1.0,
+		dashed: bool = false) -> void:
 	var poly := _hex_poly(center, radius)
+	if dashed:
+		var dash := maxf(radius * 0.45, 3.0)
+		for i in 6:
+			draw_dashed_line(poly[i], poly[(i + 1) % 6], col, width, dash)
+		return
 	poly.append(poly[0])
-	draw_polyline(poly, col, 1.0)
+	draw_polyline(poly, col, width)
 
 
 func _hex_poly(center: Vector2, radius: float) -> PackedVector2Array:
