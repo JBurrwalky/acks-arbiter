@@ -221,6 +221,17 @@ var pillage_pop_loss: float = 0.20    # −20% front-region pop
 var pillage_income_credit: float = 0.5
 var war_shock_loser: float = 0.02
 var war_shock_winner: float = 0.005
+# §F tier-disparity gradient on whole-sovereign absorption. A crushing victory takes a
+# realm of tier ≤ absorb_full_max_tier (County) WHOLE; a larger sovereign is fully absorbed
+# in one war only on a roll vs _full_absorb_chance = clamp(absorb_base + absorb_gap_weight ×
+# (tier_attacker − tier_target) − absorb_size_weight × tier_target, 0, 1), else the victor
+# takes a swathe (vassal transfer + border) and the realm survives. Tuned: Duchy-vs-Duchy
+# ~0.14, Kingdom-vs-Duchy ~0.5, Empire-vs-Duchy ~0.68, Empire-vs-Empire 0 (whittle, don't
+# swallow). So borders shove back and forth with rare Alexandrian sweeps. [CALIBRATION]
+var absorb_full_max_tier: int = 2     # ≤ County → taken whole; Duchy+ gated by the chance
+var absorb_base: float = 0.5
+var absorb_gap_weight: float = 0.18
+var absorb_size_weight: float = 0.12
 
 # --- Vassalage / secession (§7.4) -------------------------------------------
 var core_max: int = 3                 # directly-held core hexes

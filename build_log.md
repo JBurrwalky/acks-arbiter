@@ -35893,3 +35893,34 @@ on-tick dispatch.
 - The 1:1 `setting_hexes → hex_cells` handoff drops `owner_polity_id` (per the materialization map), so titular borders render on the 24-mile world map but per-hex ownership on the play surface is reconstructed via `domain_hexes` at M2b (deferred) — titular claims reach the play map only once M2b lands.
 
 **Next session should:** Phase 4 — war re-parenting (annex keeps the loser's vassal sub-trees instead of freeing them; tier-disparity-weighted vassalize-vs-annex odds; orphaned non-contiguous vassals re-home to a new liege within the victor's realm). Then Phase 5 (finalization decomposition + collapsible Vassalage tree + Realms=sovereigns-only).
+
+
+## Session 2026-06-18 (cont.) — Realms/Titles refactor Phase 4: war re-parenting + tier-disparity gradient (req F)
+
+**Task:** Phase 4 of `gdd-realms-titles-refactor.md` — requirement F: keep vassal sub-trees intact through conquest; make whole-sovereign absorption a tier-disparity-weighted gradient (transfer swathes / annex border rather than swallow whole sovereigns; Empire-grabs-Barony easy, Barony-grabs-Empire near-impossible; Alexandrian sweeps possible but not automatic).
+**Model used:** Opus 4.8 (1M), implementation + suite/calibration verification.
+
+**Completed (`history_simulator.gd`):**
+- **`_annex` re-parents the loser's war-vassals to the victor** (cycle-guarded) instead of freeing them — "Duke John's Counts come with him." CRITICAL ordering fix: `_flip_hex` calls `_free_war_vassals` when the loser empties, so the vassal list is captured (`var subs := _vassal_polities_of(q)`) BEFORE the flip loop, then re-parented after (caught by the new test).
+- **`_resolve_crushing` tier-disparity gate:** a realm of tier ≤ `absorb_full_max_tier`(County) is taken whole as before; a Duchy+ sovereign is fully absorbed in one war only if `_full_absorb_roll` passes — else it degrades to `_resolve_decisive` (swathe transfer + border) and the realm SURVIVES. New `_full_absorb_chance(p,q) = clamp(absorb_base + absorb_gap_weight·(tier_p − tier_q) − absorb_size_weight·tier_q, 0, 1)` + `_full_absorb_roll` (new `war_absorb` RNG stream).
+- **Decisive swathe scales with the tier gap:** `_resolve_decisive` transfers `1d3 + max(0, tier_p − tier_q − 1)` of the defender's vassal realms.
+
+**Completed (`sim_constants.gd`):** `absorb_full_max_tier = 2` (County), `absorb_base = 0.5`, `absorb_gap_weight = 0.18`, `absorb_size_weight = 0.12` [CALIBRATION]. Tuned so Duchy-vs-Duchy ≈ 0.14, Kingdom-vs-Duchy ≈ 0.5, Empire-vs-Duchy ≈ 0.68, Empire-vs-Empire = 0.
+
+**Decisions made:**
+- Whole-sovereign absorption gated at County: small realms swallowed whole, large ones whittled over many wars (borders shove back and forth). Matches "easier for a Kingdom to claim a duchy than a Duchy to claim another Duchy; hardest for a sovereign Barony to claim an Empire."
+- The "non-contiguous vassal finds a new liege DUKE within the realm" edge case is handled at the SIM level by re-parenting the sub-tree to the victor SOVEREIGN; the intermediate-duke nesting is Phase 5's finalization decomposition. Truly spatially-orphaned pieces still fall to the existing contiguity shearer + coagulation re-join.
+
+**Interfaces defined or changed:** new `HistorySimulator._full_absorb_chance(p, q) -> float`, `_full_absorb_roll(p, q, tick) -> bool`; new RNG stream `war_absorb`. `SimConstants.absorb_full_max_tier:int`, `absorb_base/absorb_gap_weight/absorb_size_weight:float`. `_annex` now re-parents (not frees) the loser's vassals; `_resolve_decisive` swathe count is tier-gap-scaled. No DB/event change.
+
+**Database changes:** None.
+
+**Tests added/updated:** 3 new `test_setting_stage4d.gd` tests — `test_annex_reparents_vassals` (annex re-parents Q's vassal to the victor, not freed — caught the flip/free ordering bug), `test_full_absorb_chance_tier_disparity` (Empire-vs-Duchy > Duchy-vs-Duchy; Duchy-vs-Duchy < 0.5), `test_crushing_large_target_degrades_to_swathe` (forces chance 0 → a Duchy target survives a crushing and a vassal transfers). The existing crushing unit tests are unaffected (their `_two_realm_sim` defender is a 1500-family March, below the County gate). Suite **463/17 on run 2 — net-zero**; SettingStage4d 1097 checks; zero war/absorb/re-parent assertion failures.
+
+**Calibration impact (smoke, medium×3):** realms_total 14.3, independent_civ_realms 6.7 (MET the 5–10 target), empires_with_vassals 2.0 — vassal trees still forming, no over-fragmentation despite rarer whole-sovereign absorption. (Wilderness 66% MISS this seed-set is medium-smoke variance — prior runs 58%; §17 targets are Large×20; the hard <99.5% bound passes.)
+
+**Known issues:**
+- `absorb_*` constants are [CALIBRATION] — the §17 Large×20 balance pass will retune.
+- Intermediate-duke re-homing of non-contiguous vassals is deferred to Phase 5 (the sim re-parents to the sovereign; the decomposition assigns the duke).
+
+**Next session should:** Phase 5 (the last phase) — the finalization decomposition: recursively partition each surviving sovereign's territory into the RAW 4–6 vassal hierarchy down to per-hex County/March/Barony, each with a seat hex + ruler + title, persisted to a new `setting_domains` table (+ repo + `_SCOPE_DIRECT_CAMPAIGN`/`_DATA_TABLES` registration); the Review Vassalage tab becomes a collapsible per-liege tree (default all collapsed) reading it; Realms tab filters to sovereigns only. Runtime seat materialization stays deferred to M2b (per the Q2 decision).

@@ -1204,8 +1204,11 @@ func _resolve_decisive(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 		if not is_equal_approx(aa, ab):
 			return aa < ab
 		return va < vb)
+	# §F: the swathe scales with the tier gap — a much greater power peels off more of the
+	# defender's vassal realms in one decisive war (Empire vs Duchy takes more than Duke vs Duke).
 	var n: int = WorldGenRng.stream(_campaign_seed, "war_transfer", tick,
-			"%s>%s" % [str(p["id"]), str(q["id"])]).randi_range(1, 3)
+			"%s>%s" % [str(p["id"]), str(q["id"])]).randi_range(1, 3) \
+			+ maxi(0, _realm_tier(p) - _realm_tier(q) - 1)
 	for i in range(mini(n, vassals.size())):
 		var v: Dictionary = _polities[vassals[i]]
 		if _would_create_liege_cycle(str(v["id"]), str(p["id"])):
@@ -1244,10 +1247,33 @@ func _resolve_crushing(p: Dictionary, q: Dictionary, front: Array, tick: int) ->
 		else:
 			_raze_realm(p, q, tick)
 		return
+	# §F: fully absorbing a WHOLE sovereign is gated by tier disparity. A small realm
+	# (≤ County) is taken whole; a large one (Duchy+) usually only yields a SWATHE — the
+	# victor peels off some of its vassals + annexes the front (via _resolve_decisive) and
+	# the realm survives, so big powers are whittled down over many wars (borders shove back
+	# and forth) with only rare Alexandrian full conquests. The chance rises with the gap.
+	if _realm_tier(q) > _c.absorb_full_max_tier and not _full_absorb_roll(p, q, tick):
+		_resolve_decisive(p, q, front, tick)
+		return
 	if svg >= _c.svg_annex_min:
 		_annex(p, q, tick)
 	else:
 		_vassalize(p, q, tick)
+
+
+## §F: the chance a crushing victory fully absorbs a LARGE sovereign in ONE war (vs only
+## taking a swathe). Rises with the tier gap (a greater power swallows more readily), falls
+## with the target's tier (a bigger realm is harder to take whole). Clamped [0,1] — tuned so
+## a Duchy rarely takes another Duchy whole while an Empire readily takes a Duchy.
+func _full_absorb_chance(p: Dictionary, q: Dictionary) -> float:
+	var gap := _realm_tier(p) - _realm_tier(q)
+	return clampf(_c.absorb_base + _c.absorb_gap_weight * float(gap)
+			- _c.absorb_size_weight * float(_realm_tier(q)), 0.0, 1.0)
+
+
+func _full_absorb_roll(p: Dictionary, q: Dictionary, tick: int) -> bool:
+	return WorldGenRng.stream(_campaign_seed, "war_absorb", tick,
+			"%s>%s" % [str(p["id"]), str(q["id"])]).randf() < _full_absorb_chance(p, q)
 
 
 ## Wholesale vassalization: Q becomes P's vassal intact (§7.3.1 svg ≤ 0.35 / the
@@ -1281,17 +1307,28 @@ func _would_create_liege_cycle(vassal_id: String, liege_id: String) -> bool:
 
 
 ## Annexation (§7.3.1 svg ≥ 0.65): Q dissolves; its hexes join P and rewrite at
-## effective_svg via this tick's substrate phase. Q's own war-vassals are freed
-## (their liege is gone). The demihuman extinction-war case.
+## effective_svg via this tick's substrate phase. §F: Q's own war-vassals come WITH the
+## realm — they re-parent to the victor (intact sub-tree, "Duke John's Counts come with
+## him") rather than being freed. The demihuman extinction-war case.
 func _annex(p: Dictionary, q: Dictionary, tick: int) -> void:
 	var former: Array = q["hexes"].duplicate()
+	# §F: capture Q's war-vassals BEFORE the flip loop — _flip_hex calls _free_war_vassals
+	# when Q empties (clearing their liege), so we must grab them first to re-parent them.
+	var subs: Array = _vassal_polities_of(str(q["id"]))
 	for key in former:
 		_flip_hex(key, q, p, tick)   # sets owner, moves hex lists, kills Q when it empties
 	q["alive"] = false
 	q["fell_tick"] = tick
-	for vid in _vassal_polities_of(str(q["id"])):
-		_polities[vid]["liege_id"] = ""
-		_polities[vid]["vassalized_by_war"] = 0
+	# §F: re-parent the loser's war-vassals to the victor (the sub-tree survives intact); a
+	# re-parenting that would loop the liege chain falls back to independence (rare safety).
+	for vid in subs:
+		var sub: Dictionary = _polities[vid]
+		if _would_create_liege_cycle(vid, str(p["id"])):
+			sub["liege_id"] = ""
+			sub["vassalized_by_war"] = 0
+		else:
+			sub["liege_id"] = str(p["id"])
+			sub["vassalized_by_war"] = 1
 	_emit_event(tick, "conquest", [str(p["id"]), str(q["id"])],
 			[str(p["culture_id"]), str(q["culture_id"])],
 			[Vector2i(int(q["capital_q"]), int(q["capital_r"]))], 1.0, "war.conquest")

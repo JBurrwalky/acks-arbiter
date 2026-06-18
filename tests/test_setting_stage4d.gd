@@ -28,6 +28,10 @@ func run_all_tests() -> void:
 	test_beastman_crushing_by_victor_alignment()
 	test_pillage_reduces_front_pop_and_books_credit()
 	test_decisive_deep_raid_takes_front_hexes()
+	# §F war re-parenting + tier-disparity gradient
+	test_annex_reparents_vassals()
+	test_full_absorb_chance_tier_disparity()
+	test_crushing_large_target_degrades_to_swathe()
 	# Vassalage / secession
 	test_assimilation_of()
 	test_secession_frees_war_vassal_of_weak_liege()
@@ -240,6 +244,62 @@ func test_crushing_vassalize_keeps_defender() -> void:
 	check(str(q["liege_id"]) == "p", "vassalized defender's liege should be the attacker")
 	check(int(q["vassalized_by_war"]) == 1, "vassalized_by_war flag should be set")
 	check(q["hexes"].size() == 3, "a vassal keeps its hexes, has %d" % q["hexes"].size())
+
+
+## §F: annexing a realm RE-PARENTS its war-vassals to the victor (intact sub-tree —
+## "Duke John's Counts come with him"), instead of freeing them to independence.
+func test_annex_reparents_vassals() -> void:
+	var sim := _two_realm_sim(0.8)
+	sim._grid[Vector2i(5, 0)] = _hex("v")
+	sim._culture_w[Vector2i(5, 0)] = {"cq": 1.0}
+	sim._alignment_w[Vector2i(5, 0)] = {"lawful": 1.0}
+	var v := _polity("v", "cq", "lawful", Vector2i(5, 0))
+	v["hexes"] = [Vector2i(5, 0)]
+	v["liege_id"] = "q"
+	v["vassalized_by_war"] = 1
+	sim._polities["v"] = v
+	sim._annex(sim._polities["p"], sim._polities["q"], 5)
+	check(not bool(sim._polities["q"]["alive"]), "the annexed realm dies")
+	check(bool(v["alive"]) and str(v["liege_id"]) == "p",
+		"the loser's vassal re-parents to the victor (sub-tree intact), not freed")
+
+
+## §F: _full_absorb_chance rises with the attacker's tier advantage and falls with the
+## target's tier — an Empire takes a Duchy whole far more readily than another Duchy can.
+func test_full_absorb_chance_tier_disparity() -> void:
+	var sim := _bare_sim({"ca": _instance("ca", 0.5, 0.5), "cq": _instance("cq", 0.5, 0.5)})
+	sim._grid[Vector2i(0, 0)] = _hex("EMP", 2_500_000)
+	sim._grid[Vector2i(1, 0)] = _hex("D1", 30_000)
+	sim._grid[Vector2i(2, 0)] = _hex("D2", 30_000)
+	var emp := _polity("EMP", "ca", "lawful", Vector2i(0, 0)); emp["hexes"] = [Vector2i(0, 0)]
+	var d1 := _polity("D1", "ca", "lawful", Vector2i(1, 0)); d1["hexes"] = [Vector2i(1, 0)]
+	var d2 := _polity("D2", "ca", "lawful", Vector2i(2, 0)); d2["hexes"] = [Vector2i(2, 0)]
+	sim._polities = {"EMP": emp, "D1": d1, "D2": d2}
+	check(sim._full_absorb_chance(emp, d1) > sim._full_absorb_chance(d2, d1),
+		"an Empire absorbs a Duchy more readily than another Duchy does")
+	check(sim._full_absorb_chance(d2, d1) < 0.5, "a Duchy rarely absorbs another Duchy whole")
+
+
+## §F: a crushing victory over a LARGE sovereign it cannot fully absorb degrades to a
+## swathe transfer — the realm survives and a vassal changes hands.
+func test_crushing_large_target_degrades_to_swathe() -> void:
+	var sim := _two_realm_sim(0.8)   # svg 0.8 would annex a SMALL Q
+	var q: Dictionary = sim._polities["q"]
+	for key in q["hexes"]:
+		sim._grid[key]["population_band"] = 8000   # 3 × 8000 = 24,000 → Duchy (above the gate)
+	sim._grid[Vector2i(5, 0)] = _hex("v")
+	sim._culture_w[Vector2i(5, 0)] = {"cq": 1.0}
+	sim._alignment_w[Vector2i(5, 0)] = {"lawful": 1.0}
+	var v := _polity("v", "cq", "lawful", Vector2i(5, 0))
+	v["hexes"] = [Vector2i(5, 0)]
+	v["liege_id"] = "q"
+	sim._polities["v"] = v
+	sim._c.absorb_base = 0.0   # force the full-absorb chance to 0 → always degrade
+	sim._c.absorb_gap_weight = 0.0
+	sim._c.absorb_size_weight = 0.0
+	sim._resolve_crushing(sim._polities["p"], q, [Vector2i(1, 0)], 5)
+	check(bool(q["alive"]), "a large sovereign survives a crushing it can't be fully absorbed by")
+	check(str(v["liege_id"]) == "p", "the victor takes a swathe — the defender's vassal transfers")
 
 
 func test_beastman_crushing_by_victor_alignment() -> void:
