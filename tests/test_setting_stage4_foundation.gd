@@ -22,7 +22,7 @@ func test_sim_constants_defaults() -> void:
 	check(c.assimilation_step == 0.5, "ASSIMILATION_STEP should default 0.5")
 	check(c.diffuse_rate == 0.02, "DIFFUSE_RATE should default 0.02")
 	check(c.min_garrison_per_family == 2, "RAW 2gp/family floor")
-	check(c.replay_cadence == 4, "REPLAY_CADENCE should be 4 ticks")
+	check(c.replay_cadence == 1, "replay_cadence should be 1 (a frame every tick)")
 	check(c.fade_rate > 0.9 and c.fade_rate < 1.0, "FADE_RATE is a per-tick decay in (0.9, 1.0)")
 	check(c.tier_risk_mult >= 1.0, "TIER_RISK_MULT is a non-decreasing size-risk factor")
 	check(c.severity_band_rump < c.severity_band_shatter and c.severity_band_shatter < 1.0,

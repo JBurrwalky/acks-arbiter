@@ -30,3 +30,4 @@ Status key: [FIXED 2026-06-12] / [DEFERRED]
 
 11: noncontiguous realms under the same direct lord, princes vassals of princes, seed 345235582
 
+12: setting gen review; replay does not surface a polity name or culture, just a hex number and pol_id number. Only realms that survive to the final epoch are named in the review/rewind. Related non-bug: would be nice ot be able to view the other map layers in review mode too (culture, sovereign toggle, territory, biome, elevation).

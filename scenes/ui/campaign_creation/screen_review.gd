@@ -20,18 +20,30 @@ const _MODE_TOOLTIPS := {
 
 var _payload: Dictionary = {}
 var _polity_names: Dictionary = {}
+var _polities: Array = []           # full setting_polities rows (for the Vassalage tab)
+var _present_ids: Dictionary = {}   # polity_id -> true for realms still holding territory
 var _map: Control
 var _current_mode: int = 0    # mirrors the map view's mode (0 = Political)
 var _legend: VBoxContainer
 var _brief_label: RichTextLabel
 var _realms_box: VBoxContainer
+var _vassalage_box: VBoxContainer
 var _peoples_box: VBoxContainer
-var _history_label: RichTextLabel
+var _history_log: RichTextLabel       # the structured event-log body (History tab)
+var _history_filter: OptionButton     # "All realms" + one entry per present-day sovereign
+var _history_filter_ids: Array = []   # parallel to the filter items; "" = master log
+var _history_export_btn: Button
+var _liege_by_id: Dictionary = {}     # polity_id -> liege_id (present-day, for sovereign-of)
 var _issues_label: RichTextLabel
 var _seed_label: Label
 var _validation_label: Label
 var _copy_btn: Button
 var _share_token: String = ""
+
+# Event log (History tab). Loaded via set_event_log(); rendered per-sovereign or as a
+# master log. Dead-realm names come from setting_fallen_polities (toponym roots).
+var _events: Array = []
+var _fallen_names: Dictionary = {}    # polity_id -> "the Old <root>"
 
 
 func _ready() -> void:
@@ -137,8 +149,9 @@ func _build_ui() -> void:
 	right.add_child(side)
 	_brief_label = _rich_tab(side, "Brief")
 	_realms_box = _list_tab(side, "Realms")
+	_vassalage_box = _list_tab(side, "Vassalage")
 	_peoples_box = _list_tab(side, "Peoples")
-	_history_label = _rich_tab(side, "History")
+	_build_history_tab(side)
 	_issues_label = _rich_tab(side, "Issues")
 	var watch := Button.new()
 	watch.text = "⟲ Watch the history again"
@@ -187,12 +200,22 @@ func populate(payload: Dictionary) -> void:
 func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities: Array = [], rivers: Array = []) -> void:
 	if _map == null:
 		return
+	_polities = polities
+	# Present-day realms = those still holding at least one hex at game-start (fallen
+	# realms own none). Scopes the Vassalage tab to the living political map.
+	_present_ids = {}
+	for h in ordered_hexes:
+		var o := str(h.get("owner_polity_id", ""))
+		if o != "":
+			_present_ids[o] = true
 	var names := {}
 	var lieges := {}
+	_liege_by_id = {}
 	for p in polities:
 		var pid := str(p.get("id", ""))
 		names[pid] = str(p.get("name", pid)) if str(p.get("name", "")) != "" else pid
 		lieges[pid] = str(p.get("liege_id", ""))
+		_liege_by_id[pid] = str(p.get("liege_id", ""))
 	if not names.is_empty():
 		_polity_names = names   # fuller than the top-realms map from populate()
 		_map.set_polity_meta(names, lieges)
@@ -200,6 +223,8 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 	_map.set_settlements(settlements)
 	_map.set_rivers(rivers)
 	_refresh_legend()
+	_refresh_vassalage()
+	_refresh_history()   # sovereigns now known → rebuild the History filter + log
 
 
 func _on_mode(mode: int) -> void:
@@ -252,11 +277,82 @@ func _refresh_legend() -> void:
 		_legend.add_child(item)
 
 
+## Vassalage tab: an indented liege→vassal forest of the present-day realms. Roots are
+## sovereigns (no present liege); each realm's vassals nest beneath it, deepest tier
+## first. Built from list_polities' liege_id, scoped to realms that still hold territory.
+func _refresh_vassalage() -> void:
+	if _vassalage_box == null:
+		return
+	for c in _vassalage_box.get_children():
+		c.queue_free()
+	var by_id := {}
+	for p in _polities:
+		by_id[str(p.get("id", ""))] = p
+	var kids := {}        # liege_id -> [polity_id, …]
+	var roots: Array = []
+	for p in _polities:
+		var pid := str(p.get("id", ""))
+		if pid == "" or not bool(_present_ids.get(pid, false)):
+			continue
+		var liege := str(p.get("liege_id", ""))
+		if liege != "" and bool(_present_ids.get(liege, false)) and by_id.has(liege):
+			if not kids.has(liege):
+				kids[liege] = []
+			kids[liege].append(pid)
+		else:
+			roots.append(pid)   # sovereign, or liege fell / isn't a present realm
+	if roots.is_empty():
+		var none := Label.new()
+		none.text = "No present-day realms."
+		none.add_theme_color_override("font_color", Color(0.7, 0.66, 0.58))
+		_vassalage_box.add_child(none)
+		return
+	roots.sort_custom(func(a, b): return int(by_id.get(a, {}).get("tier_index", 0)) > int(by_id.get(b, {}).get("tier_index", 0)))
+	var seen := {}
+	for rid in roots:
+		_add_vassal_rows(rid, 0, by_id, kids, seen)
+
+
+func _add_vassal_rows(pid: String, depth: int, by_id: Dictionary, kids: Dictionary, seen: Dictionary) -> void:
+	if seen.has(pid):     # cycle guard — a liege loop would otherwise recurse forever
+		return
+	seen[pid] = true
+	var line := Label.new()
+	var prefix := ("    ".repeat(depth - 1) + "└ ") if depth > 0 else ""
+	line.text = prefix + _vassal_label(by_id.get(pid, {}), pid)
+	line.add_theme_color_override("font_color",
+		Color(0.86, 0.81, 0.71) if depth == 0 else Color(0.78, 0.74, 0.66))
+	_vassalage_box.add_child(line)
+	var ck: Array = kids.get(pid, [])
+	ck.sort_custom(func(a, b): return int(by_id.get(a, {}).get("tier_index", 0)) > int(by_id.get(b, {}).get("tier_index", 0)))
+	for cid in ck:
+		_add_vassal_rows(cid, depth + 1, by_id, kids, seen)
+
+
+func _vassal_label(p: Dictionary, pid: String) -> String:
+	var nm := str(p.get("name", ""))
+	if nm == "":
+		nm = str(_polity_names.get(pid, pid))
+	var title := str(p.get("title", ""))
+	var rc := str(p.get("ruler_class", "")).replace("_", " ")
+	var lvl := int(p.get("ruler_level", 0))
+	var meta: Array = []
+	if title != "":
+		meta.append(title)
+	if rc != "":
+		meta.append("%s L%d" % [rc, lvl] if lvl > 0 else rc)
+	if meta.is_empty():
+		return nm
+	return "%s — %s" % [nm, ", ".join(meta)]
+
+
 func _refresh() -> void:
 	if _brief_label == null:
 		return
 	_brief_label.text = str(_payload.get("brief", "—"))
-	_history_label.text = str(_payload.get("timeline", "—"))
+	# History tab is the structured event log, populated via set_event_log() (not the
+	# pre-baked prose timeline). _refresh_history() re-renders it.
+	_refresh_history()
 	# A custom-parameter world's share token is a long base64 string; show a
 	# truncated form (full code in the tooltip) and clip it, so it can't inflate
 	# the footer and shove the whole right column off-screen.
@@ -293,6 +389,208 @@ func _refresh() -> void:
 		_peoples_box.add_child(line)
 
 	_refresh_legend()
+
+
+# --- History tab: structured, per-sovereign, exportable event log --------------
+
+## The History tab is a custom page (filter row + scrolling log) rather than a plain
+## _rich_tab, so it can filter the chronicle by sovereign and export it to Markdown.
+func _build_history_tab(tabs: TabContainer) -> void:
+	var page := VBoxContainer.new()
+	page.name = "History"
+	page.add_theme_constant_override("separation", 6)
+	tabs.add_child(page)
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 8)
+	page.add_child(bar)
+	var flbl := Label.new()
+	flbl.text = "Realm"
+	flbl.add_theme_color_override("font_color", Color(0.74, 0.69, 0.6))
+	bar.add_child(flbl)
+	_history_filter = OptionButton.new()
+	_history_filter.tooltip_text = "Filter the chronicle to one sovereign realm (its own + its vassals' events), or show every realm."
+	_history_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_history_filter.item_selected.connect(_on_history_filter)
+	bar.add_child(_history_filter)
+	_history_export_btn = Button.new()
+	_history_export_btn.text = "⧉ Export"
+	_history_export_btn.tooltip_text = "Copy the currently-shown chronicle to the clipboard as Markdown."
+	_history_export_btn.pressed.connect(_on_export_history)
+	bar.add_child(_history_export_btn)
+	_history_log = RichTextLabel.new()
+	_history_log.fit_content = false
+	_history_log.scroll_active = true
+	_history_log.bbcode_enabled = false
+	_history_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_history_log.add_theme_color_override("default_color", Color(0.84, 0.79, 0.69))
+	page.add_child(_history_log)
+
+
+## Feed the History tab the raw chronicle (setting_events) + fallen-realm names so dead
+## realms read as "the Old X" instead of a bare pol_id. Called by the flow on review entry.
+func set_event_log(events: Array, fallen: Array = []) -> void:
+	_events = events
+	_fallen_names = {}
+	for f in fallen:
+		var pid := str(f.get("polity_id", ""))
+		var root := str(f.get("toponym_root", ""))
+		if pid != "" and root != "" and root != "<null>":
+			_fallen_names[pid] = "the Old %s" % root
+	_refresh_history()
+
+
+## Rebuild the filter dropdown from present-day sovereigns (highest tier first), then
+## render. Master log is index 0; each sovereign filters to its own + its vassals' events.
+func _refresh_history() -> void:
+	if _history_filter == null:
+		return
+	_history_filter.clear()
+	_history_filter_ids = []
+	_history_filter.add_item("All realms (master)")
+	_history_filter_ids.append("")
+	var sovs: Array = []
+	for p in _polities:
+		if str(p.get("liege_id", "")) == "" and bool(_present_ids.get(str(p.get("id", "")), false)):
+			sovs.append(p)
+	sovs.sort_custom(func(a, b): return int(a.get("tier_index", 0)) > int(b.get("tier_index", 0)))
+	for p in sovs:
+		var pid := str(p.get("id", ""))
+		_history_filter.add_item(str(_polity_names.get(pid, pid)))
+		_history_filter_ids.append(pid)
+	_history_filter.select(0)
+	_render_history_log()
+
+
+func _on_history_filter(_idx: int) -> void:
+	_render_history_log()
+
+
+func _render_history_log() -> void:
+	if _history_log == null:
+		return
+	var sov := _current_history_filter()
+	var lines: Array = []
+	for e in _events:
+		if sov != "" and not _event_touches_sovereign(e, sov):
+			continue
+		var sentence := _event_sentence(e)
+		if sentence == "":
+			continue
+		lines.append("~%s yr ago — %s" % [_commafy(int(e.get("year_before_start", 0))), sentence])
+	if lines.is_empty():
+		_history_log.text = "No recorded events yet." if sov == "" else "No recorded events for this realm."
+	else:
+		_history_log.text = "\n".join(lines)
+
+
+func _current_history_filter() -> String:
+	if _history_filter == null:
+		return ""
+	var idx := _history_filter.selected
+	return str(_history_filter_ids[idx]) if idx >= 0 and idx < _history_filter_ids.size() else ""
+
+
+## True if any polity named in the event resolves (up its present-day liege chain) to
+## the given sovereign — so a war involving a vassal shows under that vassal's sovereign.
+func _event_touches_sovereign(e: Dictionary, sov: String) -> bool:
+	for pid in _parse_ids(e.get("polity_ids", "[]")):
+		if _sovereign_of(str(pid)) == sov:
+			return true
+	return false
+
+
+func _sovereign_of(pid: String) -> String:
+	var cur := pid
+	var guard := 0
+	while str(_liege_by_id.get(cur, "")) != "" and guard < 32:
+		cur = str(_liege_by_id[cur])
+		guard += 1
+	return cur
+
+
+func _parse_ids(raw) -> Array:
+	var parsed = JSON.parse_string(str(raw))
+	return parsed if parsed is Array else []
+
+
+## One human-readable chronicle line per event. Unknown types return "" (skipped).
+func _event_sentence(e: Dictionary) -> String:
+	var ids := _parse_ids(e.get("polity_ids", "[]"))
+	var cults := _parse_ids(e.get("culture_ids", "[]"))
+	var a := _name_for(str(ids[0])) if ids.size() > 0 else "a realm"
+	var b := _name_for(str(ids[1])) if ids.size() > 1 else "a neighbour"
+	var subject := str(cults[1]).capitalize() if cults.size() > 1 else "a subject people"
+	match str(e.get("type", "")):
+		"war":
+			match str(e.get("summary_key", "")):
+				"war.defender_held": return "%s repelled %s's invasion" % [b, a]
+				"war.border": return "%s won border clashes with %s" % [a, b]
+				"war.crushing": return "%s crushed %s in war" % [a, b]
+				_: return "%s won a war against %s" % [a, b]
+		"conquest": return "%s annexed %s" % [a, b]
+		"vassalage": return "%s vassalized %s" % [a, b]
+		"pillage": return "%s pillaged %s" % [a, b]
+		"razing": return "%s put %s to the torch" % [a, b]
+		"secession": return "%s broke away from %s" % [a, b]
+		"rebellion": return "%s rose in revolt within %s" % [subject, a]
+		"rebellion_won": return "%s won their freedom from %s" % [subject, a]
+		"rebellion_concession": return "%s won concessions from %s" % [subject, a]
+		"rebellion_crushed": return "%s crushed a %s revolt" % [a, subject]
+		"rebellion_extinguished": return "%s annihilated the %s" % [a, subject]
+		"collapse_rump": return "%s fragmented, shedding its frontier" % a
+		"collapse_shatter": return "%s shattered into successor states" % a
+		"depopulation": return "%s collapsed into ruin" % a
+		"dynasty_change": return "A new dynasty took the throne of %s" % a
+		"cultural_shift": return "%s adopted %s ways" % [a, subject]
+		"migration": return "A wandering people resettled the frontier"
+		"founding": return "%s was founded" % a
+		_: return ""
+
+
+func _name_for(pid: String) -> String:
+	# _polity_names stores the pid itself as a fallback for unnamed realms, so a value
+	# equal to the id means "no real name" — fall through to the fallen toponym, then a
+	# generic descriptor (the history sim only names survivors + fallen-with-heartland).
+	var nm := str(_polity_names.get(pid, ""))
+	if nm != "" and nm != pid:
+		return nm
+	if _fallen_names.has(pid):
+		return str(_fallen_names[pid])
+	return "an unnamed realm"
+
+
+## Copy the currently-shown (filtered) chronicle to the clipboard as Markdown.
+func _on_export_history() -> void:
+	var sov := _current_history_filter()
+	var title := "All realms"
+	if _history_filter != null and _history_filter.selected >= 0:
+		title = _history_filter.get_item_text(_history_filter.selected)
+	var md: Array = ["# Chronicle — %s" % title, ""]
+	for e in _events:
+		if sov != "" and not _event_touches_sovereign(e, sov):
+			continue
+		var sentence := _event_sentence(e)
+		if sentence == "":
+			continue
+		md.append("- **~%s yr ago** — %s" % [_commafy(int(e.get("year_before_start", 0))), sentence])
+	DisplayServer.clipboard_set("\n".join(md))
+	if _history_export_btn != null:
+		_history_export_btn.text = "✓ Copied"
+		await get_tree().create_timer(1.2).timeout
+		if is_instance_valid(_history_export_btn):
+			_history_export_btn.text = "⧉ Export"
+
+
+func _commafy(n: int) -> String:
+	var s := str(absi(n))
+	var out := ""
+	var c := 0
+	for i in range(s.length() - 1, -1, -1):
+		out = s[i] + out
+		c += 1
+		if c % 3 == 0 and i > 0:
+			out = "," + out
+	return ("-" + out) if n < 0 else out
 
 
 # --- helpers -----------------------------------------------------------------

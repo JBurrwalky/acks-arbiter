@@ -16,6 +16,8 @@ const _FRAME_SECONDS := 0.6   # §5 pacing ≈ 1 frame / 0.5–0.75 s
 const _YEARS_PER_TICK := 25   # 4,000 yr of deep history ÷ 160 standard ticks (UI §4)
 const _SPEEDS := [0.5, 1.0, 2.0, 4.0]
 const _SPEED_DEFAULT_IDX := 1   # 1×
+const _PMV := preload("res://scenes/ui/campaign_creation/political_map_view.gd")
+const _MODE_LABELS := ["Political", "Biome", "Elevation", "Territory", "Culture"]
 
 var _frames: Array = []
 var _ordered_hexes: Array = []
@@ -29,6 +31,8 @@ var _caption: Label
 var _scrub: HSlider
 var _play_btn: Button
 var _pos_label: Label
+var _mode_btn: OptionButton
+var _sovereign_chk: CheckButton
 
 
 func _ready() -> void:
@@ -57,7 +61,31 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", Color(0.93, 0.86, 0.7))
 	root.add_child(title)
 
-	_map = preload("res://scenes/ui/campaign_creation/political_map_view.gd").new()
+	# Layer toggles (mirror Screen D's left column). Political animates the per-epoch
+	# ownership; Biome/Elevation/Territory/Culture render the PRESENT-DAY world (replay
+	# frames store ownership only), so flipping to them shows the end-state map — handy
+	# for reading what culture/terrain a hex ends up as while scrubbing the history.
+	var layers_row := HBoxContainer.new()
+	layers_row.add_theme_constant_override("separation", 10)
+	root.add_child(layers_row)
+	var layer_lbl := Label.new()
+	layer_lbl.text = "Layer"
+	layer_lbl.add_theme_color_override("font_color", Color(0.72, 0.68, 0.6))
+	layers_row.add_child(layer_lbl)
+	_mode_btn = OptionButton.new()
+	_mode_btn.tooltip_text = "Switch map layer. Political animates the history; Biome/Elevation/Territory/Culture show the present-day world."
+	for m in _MODE_LABELS:
+		_mode_btn.add_item(m)
+	_mode_btn.select(_PMV.Mode.POLITICAL)
+	_mode_btn.item_selected.connect(_on_mode_selected)
+	layers_row.add_child(_mode_btn)
+	_sovereign_chk = CheckButton.new()
+	_sovereign_chk.text = "Sovereigns"
+	_sovereign_chk.tooltip_text = "Political map: colour each hex by the top realm of its vassalage chain, so a realm and its vassals read as one power."
+	_sovereign_chk.toggled.connect(_on_sovereign_toggled)
+	layers_row.add_child(_sovereign_chk)
+
+	_map = _PMV.new()
 	_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(_map)
@@ -171,16 +199,35 @@ func begin_replay(campaign_id: String) -> void:
 	if _map != null:
 		_map.bind(_ordered_hexes, SettingRepository.list_replay_palette(campaign_id))
 		_map.set_rivers(SettingRepository.list_river_edges(campaign_id))
+		# Re-entry (Watch again) rehydration: always start on the animated Political layer.
+		if _mode_btn != null:
+			_mode_btn.select(_PMV.Mode.POLITICAL)
+		if _sovereign_chk != null:
+			_sovereign_chk.set_pressed_no_signal(false)
+		_map.set_mode(_PMV.Mode.POLITICAL)
+		_map.set_sovereign_view(false)
 		# Replay tooltips report per-frame ownership only (the stored culture/
 		# territory/peasants are present-day), and need realm names for the owner line.
 		_map.set_replay_mode(true)
 		var names := {}
 		var lieges := {}
+		var has_name := {}
 		for p in SettingRepository.list_polities(campaign_id):
 			var pid := str(p.get("id", ""))
 			var nm := str(p.get("name", ""))
 			names[pid] = nm if nm != "" else pid
+			has_name[pid] = nm != ""
 			lieges[pid] = str(p.get("liege_id", ""))
+		# Realms that fell during the history never received a present-day name (the
+		# naming layer only names survivors), so they would tooltip as a bare pol_id.
+		# Name them by their toponym root: "the Old Vthûn" instead of "47".
+		for f in SettingRepository.list_fallen_polities(campaign_id):
+			var pid := str(f.get("polity_id", ""))
+			if pid == "" or bool(has_name.get(pid, false)):
+				continue
+			var root := str(f.get("toponym_root", ""))
+			if root != "":
+				names[pid] = "the Old %s" % root
 		_map.set_polity_meta(names, lieges)
 	if _frames.is_empty():
 		finish()
@@ -190,6 +237,23 @@ func begin_replay(campaign_id: String) -> void:
 	_timer.wait_time = _FRAME_SECONDS / maxf(_speed, 0.25)
 	_show_frame(0)
 	_set_playing(true)
+
+
+# --- layer toggles -----------------------------------------------------------
+
+func _on_mode_selected(idx: int) -> void:
+	if _map == null:
+		return
+	_map.set_mode(idx)
+	# POLITICAL is the only layer that honours the per-frame ownership override, so its
+	# tooltip stays frame-aware ("Realm: X this epoch"). The static layers show the full
+	# present-day tooltip (culture / territory / populations) for the hovered hex.
+	_map.set_replay_mode(idx == _PMV.Mode.POLITICAL)
+
+
+func _on_sovereign_toggled(on: bool) -> void:
+	if _map != null:
+		_map.set_sovereign_view(on)
 
 
 # --- transport ---------------------------------------------------------------

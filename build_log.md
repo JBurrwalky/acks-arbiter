@@ -35698,3 +35698,112 @@ on-tick dispatch.
 **Next session should:**
 - (Optional) Live godot-ai MCP screenshot pass: generate a Small world, screenshot the campaign-review map + the materialized 6-mile play map, confirm both render as clean rectangles with identical stagger (seeds 345235582 / 38045604 / 40847028 suggested).
 - Resume the deferred review-UI batch (vassalage-tree tab + #6 replay dead-realm names via setting_fallen_polities.toponym_root + layer toggles).
+
+
+## Session 2026-06-18 — Campaign-creation review UI: Vassalage tab + replay dead-realm names + replay layer toggles
+
+**Task:** Resume the deferred campaign-creation review-UI batch: (1) a Vassalage tree tab on the Review screen, (2) dead-realm names in the History replay (so a fallen realm tooltips as a name, not a bare pol_id), (3) wire the existing political_map_view layer-mode toggles into the Replay screen. MCP-verified per the project UI mandate (headless suite cannot load scene scripts).
+
+**Model used:** Opus 4.8 (1M) — understand-phase Workflow fan-out (6 readers over the screens/repo/schema/GDD/conventions/build-log), then inline implementation + godot-ai MCP visual verification.
+
+**Completed:**
+- `scenes/ui/campaign_creation/screen_generate_replay.gd` (Replay / Screen C):
+  - Added a "Layer" row above the map: an OptionButton (Political/Biome/Elevation/Territory/Culture) + a "Sovereigns" CheckButton, mirroring Screen D's left column. New `const _PMV := preload(political_map_view.gd)` + `const _MODE_LABELS`; new members `_mode_btn`, `_sovereign_chk`.
+  - `_on_mode_selected(idx)` → `_map.set_mode(idx)` and couples the tooltip mode: `_map.set_replay_mode(idx == _PMV.Mode.POLITICAL)` — POLITICAL keeps the frame-aware owner tooltip; the static terrain/culture layers show the full present-day hover tooltip. `_on_sovereign_toggled(on)` → `_map.set_sovereign_view(on)`.
+  - `begin_replay()` now rehydrates the toggle UI on every (re)entry (select POLITICAL, clear Sovereigns) and DEAD-REALM NAMES: after building names from `list_polities`, it loads `SettingRepository.list_fallen_polities` and sets `names[pid] = "the Old %s" % toponym_root` for any fallen realm with no present-day name (the naming layer only names survivors). Preserves the prior pid fallback for living-but-unnamed realms via a `has_name` set.
+- `scenes/ui/campaign_creation/screen_review.gd` (Review / Screen D):
+  - New "Vassalage" `_list_tab` inserted between Realms and Peoples. New members `_vassalage_box`, `_polities`, `_present_ids`.
+  - `bind_map` now stores the full polity rows (`_polities = polities`) and computes `_present_ids` = the set of `owner_polity_id` over the present-day hexes (a realm is "present" iff it still holds >=1 hex; fallen realms own none). Calls `_refresh_vassalage()`.
+  - `_refresh_vassalage()` builds an indented liege->vassal forest of the present-day realms: roots = sovereigns (no present liege) or realms whose liege isn't present; children grouped by `liege_id`; sorted by `tier_index` desc; `seen` cycle guard. `_add_vassal_rows()` indents with `"    ".repeat(depth-1) + "└ "`. `_vassal_label()` renders `name — title, ruler_class L#`.
+
+**Decisions made:**
+- Replay layer toggles are an intentional extension beyond gdd-campaign-creation-ui.md §5 (which specified only the speed toggle on Screen C). Driven by Jedidiah's debug need: the freeze-frame review couldn't tell what culture/polity a hex held. Honest behavior documented in-code: only POLITICAL honours per-frame ownership; Biome/Elevation/Territory/Culture render the PRESENT-DAY world (replay frames store ownership only), shown statically while scrubbing.
+- Vassalage tab is scoped to PRESENT-DAY realms (those still holding territory), determined from `hex.owner_polity_id` rather than `fell_tick` (avoids godot-sqlite NULL-Variant ambiguity). Rendered as indented Labels (project idiom; no Tree node), matching the Realms/Peoples flat-list style.
+- Dead-realm names use `setting_fallen_polities.toponym_root` (the only name source for fallen realms — `setting_polities.name` is populated only for survivors).
+
+**Interfaces defined or changed:**
+- No signal/contract changes. `screen_review.bind_map(ordered_hexes, palette, settlements, polities=[], rivers=[])` unchanged in signature; it now additionally retains `polities` + derives a present-owner set for the Vassalage tab.
+- `political_map_view.gd` public API UNCHANGED — both new features reuse existing methods (`set_mode`, `set_sovereign_view`, `set_replay_mode`, `set_polity_meta`). Its `Mode` enum (POLITICAL=0..CULTURE=4) is now referenced by the replay screen via `preload`.
+
+**Database changes:**
+- None. Reads `setting_fallen_polities` (polity_id, toponym_root) and `setting_polities` (liege_id, tier_index, title, ruler_class, ruler_level, name) via existing `SettingRepository.list_fallen_polities` / `list_polities`.
+
+**Tests added/updated:**
+- None automated: both files are scene scripts the headless `test_runner.tscn` never loads. Verified per the project UI mandate via godot-ai MCP: `--check-only -s` on both files parse-clean (only the known EventBus autoload false-positive); then project_run + a full flow drive (Generate World -> Medium seed -> replay -> review).
+  - Layer toggle: Political <-> Culture recolors the map correctly.
+  - Dead-realm names: epoch-11 tooltip read "Realm: the Old Jinxia" (a realm fallen by present day), not a bare pol_id.
+  - Vassalage tab: rendered 6 sovereigns + "└ Kraina of House Tihomirson — March, cleric L6" nested under "Mesha of Upper Rwtydjat — Duchy, fighter L9".
+  - Zero push_error/warning in the game log across the whole flow.
+
+**Known issues:**
+- The Sovereigns toggle on the Replay screen was wired (one-liner identical to Screen D's working toggle) and renders, but the sovereign-recolor itself was not separately screenshotted on Screen C (this seed had only one vassal relationship); low risk.
+- The rectangle-refactor planning chip resurfaced earlier this session is STALE — the refactor already landed on main (commits "Rectangle refactor 1/5..5/5" + "marked IMPLEMENTED"). Pending Jedidiah's call to dismiss or repurpose it as a retrospective review.
+
+**Next session should:**
+- Get Jedidiah's decision on the stale rectangle-refactor chip (dismiss vs. retrospective code-review of the landed refactor — the one real open risk there is no pinned golden world-hash, so a seed now regenerates a materially different world).
+- Optionally: confirm the Replay Sovereigns toggle recolor on a seed with deeper vassal chains; consider a compact legend on the Replay screen (Review has one; Replay relies on hover tooltips).
+
+
+## Session 2026-06-18 (cont.) — Realms/Titles refactor: PLAN doc + Phase 1 (every-tick replay + per-sovereign event log)
+
+**Task:** Plan the large realms/titles/vassalage/wars rebase + replay/event-log enrichment (Jedidiah: "plan carefully before executing"), then execute Phase 1 (replay/log, chosen first).
+**Model used:** Opus 4.8 (1M). 12-agent understand-workflow (system map + ACKS RAW grounding) → controlling plan doc → Phase 1 implementation + godot-ai MCP verification.
+
+**Completed:**
+- `generation/gdd-realms-titles-refactor.md` — NEW controlling plan doc for the whole refactor (A–H requirements + the two #1 asks), with the SACRED ACKS Constraints (RAW tier/family/tribute/levy/political-division/demesne numbers, cited), the core architecture (sim stays at sovereign+war-vassal scale; full per-hex vassal tree built as a FINALIZATION decomposition), per-requirement design, the peaceful auto-coagulation mechanic, a 5-phase plan, risks, and open tuning items.
+- Phase 1 sim-side (suite-covered): `SimConstants.replay_cadence 4 → 1` (every-tick replay; standard 41→161 frames, kills the 100-yr jump). `HistorySimulator._resolve_war` now stamps the `war` event `summary_key` with the resolved outcome band (`war.defender_held`/`war.border`/`war.decisive`/`war.crushing`) — winner/loser legible (winner=attacker unless defender_held); the existing conquest/vassalage/pillage/razing events still carry the territorial result. No migration (rebellions were already outcome-typed).
+- Phase 1c UI (`scenes/ui/campaign_creation/screen_review.gd`): History tab rebuilt from a plain RichTextLabel into a custom page — a sovereign **filter** OptionButton ("All realms (master)" + present-day sovereigns, tier-sorted), a scrolling structured **event log** (one chronicle line per event via `_event_sentence`), and a **⧉ Export** button that copies the currently-shown log to the clipboard as Markdown. Per-sovereign filtering resolves each event's polity_ids up the present-day liege chain (`_sovereign_of` via `_liege_by_id` built in `bind_map`). Dead-realm names from `setting_fallen_polities` toponym roots ("the Old X"); unnamed historical realms render as "an unnamed realm" (not a bare pol_id); `<null>` toponym guarded.
+- `campaign_creation_flow.gd`: REVIEW phase now calls `_review.set_event_log(list_events, list_fallen_polities)`.
+
+**Decisions made (Jedidiah, via AskUserQuestion):**
+- Sequencing: **replay/log first**, then the sim rebase in phases.
+- Decomposition: **County floor, Review-display-only for now** (runtime seat materialization deferred to M2b). A single 24-mi civ hex maxes at County (12,480 fam < Duchy 20,000) per RAW, so County ≈ per-hex.
+- Low-tier realms: **allow viable low-tier sovereigns** but keep Duchy-level seeds + add a NEW peaceful **auto-coagulation** phase — sub-Duchy same-majority-culture sovereigns within a tier-scaled reach (a March reaches ~1–3 hexes) merge without war, emitting a "treaty of protection" (`protectorate`) event. Two baronies auto-join; a March joins a nearby same-culture empire; etc.
+- War model: **sovereign-scale sim + re-parent** (annex re-parents the loser's vassals instead of freeing them; tier-disparity-weighted vassalize-vs-annex; orphaned non-contiguous vassals re-home within the victor's realm). Counties stay a finalization detail.
+
+**Interfaces defined or changed:**
+- `ScreenReview.set_event_log(events: Array, fallen: Array = [])` — NEW (flow→review event-log handoff).
+- `SimConstants.replay_cadence` default is now **1** (was 4).
+- `war` event `summary_key` vocabulary: `war.defender_held` | `war.border` | `war.decisive` | `war.crushing` (was always `war.declared`).
+
+**Database changes:** None.
+
+**Tests added/updated:** `test_setting_stage4_foundation.gd` cadence pin `==4 → ==1`; `test_setting_stage4a.gd` frame-count comment/message updated for cadence 1 (assertion `>=20` still holds at 81 frames). Suite **463/17 on run 2 — net-zero new failures** (the 17 are baseline carry-forward; all Stage4 suites green incl. 4d war resolution 839 checks). Phase-1c scene scripts are NOT suite-loaded; verified `--check-only` clean + godot-ai MCP.
+
+**Known issues:**
+- Unnamed historical realms (annexed/consolidated, never "fell") render as "an unnamed realm"; full historical naming is deferred to Phase 5 (the decomposition/naming pass will name the whole vassal tree).
+- The Review screen's 3-column body **overflows at narrow window widths (<~1400px)** — the right-hand tab panel clips and History/Issues become unreachable. Pre-existing (whole-screen layout, not the History tab); verified fine at 1908×942. Worth a responsive-layout follow-up.
+- OptionButton filter popup + Export "✓ Copied" feedback not MCP-confirmed (synthetic-input/OptionButton-popup flakiness + the smaller window); both are wired + parse-clean.
+
+**Next session should:** Phase 2 — sim tuning (E + G): `tier_floor` ratchet on `setting_polities` (no demote on pop-loss alone until total depopulation); soften depopulation −20% (`depopulate_pop_keep 0.10 → 0.28`, confirm interpretation); restrict shatter to sovereign tier-1 (Empire→Kingdoms, Kingdom→Principalities), successors at exactly tier−1. Then Phase 3 (wilderness claiming + auto-coagulation `protectorate` event → migration 169), Phase 4 (war re-parenting), Phase 5 (finalization decomposition + Vassalage collapsible tree + Realms=sovereigns-only).
+
+
+## Session 2026-06-18 (cont.) — Realms/Titles refactor Phase 2: tier-floor (E) + softer collapse/shatter (G)
+
+**Task:** Phase 2 of `gdd-realms-titles-refactor.md` — sim tuning. Requirement E (tier is a floor, no demotion from population loss) + G (soften collapses −20%, restrict shatter to sovereign tier-1).
+**Model used:** Opus 4.8 (1M), implementation + suite verification.
+
+**Completed:**
+- **E — tier-floor ratchet** (`history_simulator.gd`): `_update_tier` now ratchets a per-realm in-memory `tier_floor` = high-water of the OWN-territory `tier_index` (no schema column — it's a sim quantity like `tier_index`). New `_export_tier(pol)` = `maxi(_realm_tier(pol), tier_floor)`, used for the exported `tier_index`/`title` in `_polity_rows` and the `ruler_level` in `_assign_present_day_handoff`. So a realm that loses population keeps its rank (a "fallen Duchy/Kingdom" — narrative/quest hooks), while losing VASSALS still demotes (political change, not population loss — the floor tracks own-territory peak only). Cleared only by total depopulation (realm death exports nothing).
+- **G — softer collapse** (`sim_constants.gd` + `history_simulator.gd`): `depopulate_pop_keep 0.10 → 0.28` (keep 28% → 20% less population destroyed). Shatter gate in `_collapse_polity` changed from `(_vassal_count ≥ 2 OR own-tier ≥ Duchy)` to **`sovereign (liege_id=="") AND _realm_tier ≥ Principality`** — Empire→Kingdoms, Kingdom→Principalities, Principality→Duchies; everything smaller / all vassals / beastman clanholds degrade to a rump (a much softer, more common collapse). `_do_shatter` now produces **K = randi_range(4,6)** successors (RAW political_divisions_of_realms) clamped to available hexes, replacing the old `clamp(1d3+max(0,tier−3), 2, min(6,vassals+2))`.
+
+**Decisions made:**
+- tier_floor tracks the OWN-territory tier high-water (not the overall realm tier), so it preserves title against population loss but NOT against vassal loss (the latter is a legitimate political demotion). This is the precise reading of "do not demote it from population loss alone."
+- Shatter floor set at Principality (tier 4); below that → rump. Matches the user's "empire→kingdoms, kingdom→principalities" examples and softens shatter frequency.
+- `depopulate_pop_keep = 0.28` interpretation: 20% less population *destroyed* (loss 0.90 → 0.72).
+
+**Interfaces defined or changed:**
+- New `HistorySimulator._export_tier(pol: Dictionary) -> int` (overall realm tier floored at the high-water `tier_floor`).
+- `pol["tier_floor"]` — new in-memory polity field (ratcheted in `_update_tier`; not persisted).
+- `SimConstants.shatter_vassal_gate` is now UNUSED (superseded by the §G sovereign+Principality gate); left defined for the §17 balance pass.
+- Shatter RNG stream "shatter" range changed 1–3 → 4–6 (regenerates a different world for a given seed; determinism test still matches same-seed runs — no golden hash pinned).
+
+**Database changes:** None.
+
+**Tests added/updated:** None needed. Suite **463/17 on run 2 — net-zero new failures**. All Stage4 suites green (4e collapse/shatter 259 checks; 4g 1123; SettingCalibration 6 checks — its loose assertions hold since softer collapse only increases survival). `test_do_shatter_fragments` bypasses the gate (calls `_do_shatter` directly) and still yields ≥1 successor under K=4–6. Zero assertion failures in collapse/shatter/tier/depopulate code.
+
+**Known issues:**
+- `depopulate_pop_keep = 0.28` and the Principality shatter-floor are [CALIBRATION] — confirm with Jedidiah / the §17 balance pass.
+- Phase 2 did NOT touch the consolidation/significance-floor gate (still raw `_realm_tier ≥ DUCHY`), so a once-great realm that shrinks below Duchy can still be consolidated away before its floored title is exported. The "viable low-tier sovereigns survive" behavior is Phase 3 (the floor relaxation + auto-coagulation land together).
+
+**Next session should:** Phase 3 — requirement H (realms claim enclosed/anchored wilderness within borders, no tax; stranded same-culture pops anchor claims + soften non-contiguous same-culture migration) + the auto-coagulation "treaty of protection" mechanic (sub-Duchy same-majority-culture sovereigns within a tier-scaled reach merge peacefully; new `protectorate` event type → migration 169 rebuilding the `setting_events.type` CHECK, following the 161/162/163 pattern). Then Phase 4 (war re-parenting) and Phase 5 (finalization decomposition + UI).

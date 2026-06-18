@@ -172,10 +172,10 @@ func test_assimilation_converts_foreign_hex() -> void:
 
 func test_replay_frames_emitted() -> void:
 	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
-	ctx["params"].history_length = "short"  # 80 ticks, cadence 4 → 20 + final
+	ctx["params"].history_length = "short"  # 80 ticks, cadence 1 → 80 + final = 81
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var frames: Array = ctx["sim_replay_frames"]
-	check(frames.size() >= 20, "expected ~21 replay frames for 80 ticks/cadence 4, got %d" % frames.size())
+	check(frames.size() >= 20, "expected ~81 replay frames for 80 ticks/cadence 1, got %d" % frames.size())
 	check(int(frames[0]["tick"]) == 0, "first replay frame should be tick 0")
 	check(int(frames[frames.size() - 1]["tick"]) == 80, "last frame should be the present day (tick 80)")
 	check(str(frames[0]["owner_by_hex"]).contains("pol_0001"),

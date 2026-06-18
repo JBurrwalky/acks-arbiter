@@ -104,9 +104,9 @@ var severity_band_rump: float = 0.72  # S < this → rump
 # wiping realms to wilderness; widen the shatter band so most collapses shed/
 # fragment (keep a core) rather than erase.
 var severity_band_shatter: float = 0.92 # rump ≤ S < this → shatter; ≥ → depopulate
-var shatter_vassal_gate: int = 2      # need vassals ≥ this or tier ≥ Duchy
+var shatter_vassal_gate: int = 2      # UNUSED since §G (shatter now gated to sovereign + realm-tier ≥ Principality); kept for the §17 balance pass
 var rump_shed_pop_keep: float = 0.5   # shed frontier hexes keep half their people
-var depopulate_pop_keep: float = 0.1  # "loses most of its population" (§7.6)
+var depopulate_pop_keep: float = 0.28 # §G softened: keep 28% (was 0.10) → 20% less population loss
 var beastman_delay_ticks: int = 2
 # [CALIBRATION 2026-06-13] 0.25→0.10: beastmen refilled depopulated land almost
 # instantly (~56 clanholds/run), denying civilized realms room to expand and
@@ -324,7 +324,9 @@ var epoch_bias_start_frac: float = 0.375 # × N_TICKS
 var epoch_bias_full_frac: float = 0.75   # × N_TICKS
 
 # --- Replay (§15) -----------------------------------------------------------
-var replay_cadence: int = 4           # ticks between frames
+# 1 = capture a frame EVERY tick (25 yr/frame) so the history watch advances one
+# generation at a time. Raise to coarsen (4 = 100-yr steps, the old default).
+var replay_cadence: int = 1           # ticks between frames
 
 # --- Conquest substrate (§4.1 catalog) --------------------------------------
 var terrain_mult_seed: float = 1.5    # seed_biomes

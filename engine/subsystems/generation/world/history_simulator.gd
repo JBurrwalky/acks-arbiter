@@ -479,6 +479,12 @@ func _advance_classification(key: Vector2i) -> void:
 
 func _update_tier(pol: Dictionary) -> void:
 	pol["tier_index"] = DomainTierTable.tier_for_families(_total_families(pol))
+	# §E tier-floor: a realm's RANK is a high-water mark. The live own-territory
+	# tier_index shrinks with population (driving dynamics), but the EXPORTED title /
+	# ruler level never falls below this floor — so a shrunken realm reads as a "fallen
+	# Duchy/Kingdom" (narrative & quest hooks) rather than silently demoting. Only total
+	# depopulation (realm death) clears it, and a dead realm exports nothing.
+	pol["tier_floor"] = maxi(int(pol.get("tier_floor", 0)), int(pol["tier_index"]))
 
 
 ## Urban emergence (§6): ~10% of realm pop urban, capital first at 20% of that,
@@ -1140,21 +1146,30 @@ func _resolve_war(w: Dictionary, war_count: Dictionary, tick: int, lost_war: Dic
 			"%s>%s" % [p_id, q_id]).randf_range(-_c.war_margin_jitter, _c.war_margin_jitter)
 	var v := clampf(str_p / (str_p + str_q) + jitter, 0.0, 1.0)
 
-	_emit_event(tick, "war", [p_id, q_id], [str(p["culture_id"]), str(q["culture_id"])],
-			front, v, "war.declared")
-
+	# Resolve the outcome band FIRST so the `war` event carries it. The event log reads
+	# winner/loser from summary_key: the winner is the attacker (polity_ids[0]) unless
+	# the band is "war.defender_held". The territorial-effect events the resolvers emit
+	# (conquest / vassalage / pillage / razing) follow this `war` row in the same tick.
 	var loser := q_id
 	var winner := p_id
+	var outcome := "war.decisive"
 	if v < _c.war_band_border:
 		# Defender holds: the attacker's campaign fails. The tick's skirmishes
 		# (§7.3 expansion contests) stand as border friction; no escalation.
 		loser = p_id
 		winner = q_id
+		outcome = "war.defender_held"
 	elif v < _c.war_band_decisive:
-		pass   # Border victory: the expansion-phase flips stand; nothing extra.
+		outcome = "war.border"   # border victory: the expansion-phase flips stand.
 	elif v >= _c.war_band_crushing and _capital_reach(q, front):
+		outcome = "war.crushing"
+
+	_emit_event(tick, "war", [p_id, q_id], [str(p["culture_id"]), str(q["culture_id"])],
+			front, v, outcome)
+
+	if outcome == "war.crushing":
 		_resolve_crushing(p, q, front, tick)
-	else:
+	elif outcome == "war.decisive":
 		_resolve_decisive(p, q, front, tick)
 	lost_war[loser] = true
 	_add_collapse_risk(_polities[loser], _c.war_shock_loser)
@@ -2812,9 +2827,13 @@ func _collapse_polity(pol: Dictionary, tick: int, successors: Array) -> void:
 	if s < _c.severity_band_rump:
 		_do_rump(pol, tick)
 	elif s < _c.severity_band_shatter:
-		# §7.4: beastman clanholds never shatter into large successors — they rump.
+		# §G: shattering is reserved for SOVEREIGN realms of Principality+ rank — an
+		# Empire breaks into Kingdoms, a Kingdom into Principalities, a Principality into
+		# Duchies. Vassals, sub-Principality sovereigns, and beastman clanholds degrade to
+		# a rump instead (a much softer, more common collapse than a full fragmentation).
 		if not bool(pol.get("is_beastman", false)) \
-				and (_vassal_count(pol) >= _c.shatter_vassal_gate or tier >= DomainTierTable.DUCHY):
+				and str(pol.get("liege_id", "")) == "" \
+				and _realm_tier(pol) >= DomainTierTable.PRINCIPALITY:
 			_do_shatter(pol, tick, successors)
 		else:
 			_do_rump(pol, tick)   # degrades to rump (§7.6 gate)
@@ -2852,15 +2871,13 @@ func _do_rump(pol: Dictionary, tick: int) -> void:
 			shed, 0.4, "collapse.rump")
 
 
-## Shatter (§7.6 major): fragment P into K successor realms. P keeps the capital
-## region as the rump; the rest splits into K−1 fresh polities (P's culture,
-## founded now so ascendancy resets) plus any freed war-vassals. K = clamp(1d3 +
-## max(0,tier−3), 2, min(6, vassal_count+2)).
+## Shatter (§7.6 major / §G): fragment a Principality+ sovereign into K = 4–6 successor
+## realms of the next tier down (RAW political_divisions_of_realms). P keeps the capital
+## region as the rump; the rest splits into fresh polities (P's culture, founded now so
+## ascendancy resets) plus any freed war-vassals.
 func _do_shatter(pol: Dictionary, tick: int, successors: Array) -> void:
-	var tier := int(pol["tier_index"])
-	var vassals := _vassal_count(pol)
-	var k_roll := WorldGenRng.stream(_campaign_seed, "shatter", tick, str(pol["id"])).randi_range(1, 3)
-	var k := clampi(k_roll + maxi(0, tier - 3), 2, mini(6, vassals + 2))
+	var k_roll := WorldGenRng.stream(_campaign_seed, "shatter", tick, str(pol["id"])).randi_range(4, 6)
+	var k := clampi(k_roll, 2, maxi(2, pol["hexes"].size()))
 	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
 	var part := _k_partition(pol["hexes"], cap, k)
 	var groups: Array = part["groups"]
@@ -3614,10 +3631,11 @@ func _polity_rows() -> Array:
 		var pol: Dictionary = _polities[pid]
 		if not pol["alive"]:
 			continue
-		# Present-day output tier = the OVERALL-realm rank (own + war-vassals), the polity's
-		# title for the handoff/display; the in-memory own-territory `tier_index` is a sim-
-		# dynamics quantity and is not exported (§7.4e / §12, Option C).
-		var rtier := _realm_tier(pol)
+		# Present-day output tier = the OVERALL-realm rank (own + war-vassals), floored at
+		# the realm's high-water tier (§E), as the polity's title for the handoff/display;
+		# the in-memory own-territory `tier_index` is a sim-dynamics quantity and is not
+		# exported (§7.4e / §12, Option C).
+		var rtier := _export_tier(pol)
 		rows.append({
 			"id": str(pol["id"]),
 			"culture_id": str(pol["culture_id"]),
@@ -3678,8 +3696,9 @@ func _assign_present_day_handoff() -> void:
 			_assign_beastman_ruler(pol)
 		else:
 			# Ruler level/title follow the OVERALL-realm tier (RAW: title by overall realm,
-			# vassals included) — a conqueror ruling vassal-duchies ranks King/Emperor, not Duke.
-			pol["ruler_level"] = DomainTierTable.ruler_level_for_tier(_realm_tier(pol))
+			# vassals included) — a conqueror ruling vassal-duchies ranks King/Emperor, not Duke —
+			# floored at the realm's high-water rank (§E) so pop loss alone can't demote it.
+			pol["ruler_level"] = DomainTierTable.ruler_level_for_tier(_export_tier(pol))
 			pol["ruler_class"] = _ruler_class_for(pol)
 		pol["morale_seed"] = _morale_seed_for(pol)
 
@@ -3914,6 +3933,14 @@ func _realm_families_rec(pol: Dictionary, seen: Dictionary) -> int:
 ## dynamics). §7.4e / §12.
 func _realm_tier(pol: Dictionary) -> int:
 	return mini(_realm_tier_rec(pol, {}), DomainTierTable.EMPIRE)
+
+
+## §E: the exported rank = the overall-realm tier, never below the realm's high-water
+## tier-floor — so population loss alone can't demote a realm's title / ruler level.
+## (Losing vassals still demotes: that's a political change, not population loss, and
+## the floor tracks own-territory peak only.) Used by the present-day handoff + rows.
+func _export_tier(pol: Dictionary) -> int:
+	return maxi(_realm_tier(pol), int(pol.get("tier_floor", 0)))
 
 
 func _realm_tier_rec(pol: Dictionary, seen: Dictionary) -> int:
