@@ -1,7 +1,10 @@
 # Rectangle Refactor Plan — axial-rectangle → offset-rectangle setting grid
 
-**Status:** PRE-IMPLEMENTATION ANALYSIS — no code has been changed. This document is a green-light
-package for Jedidiah. Nothing in `engine/`, no migration, and no generator run was touched producing it.
+**Status:** ✅ IMPLEMENTED 2026-06-17 (commits `39794c3` → `0a18fee`, "Rectangle refactor 1/5"…"5/5" on
+`main`). Suite 463/17, net-zero new failing suites. The text below is the original pre-implementation
+green-light analysis, preserved as the design record; the build-log entry for 2026-06-17 records the
+as-built result (including the one deviation: `HistorySimulator._build_ordered_keys` iterates the grid's
+own keys rather than `enumerate(w,h)`, to stay robust to hand-built unit-test grids).
 
 **Author:** Build agent (Opus 4.8), 2026-06-17. Method: 8-angle multi-agent code trace, each hypothesis
 adversarially verified against source (16 agents). Every claim below carries a `file:line`.
