@@ -673,8 +673,6 @@ static func _split_by_cut(hexes: Array, hex_set: Dictionary, cut: Array) -> Arra
 
 static func _detect_hydronyms(state: Dictionary, river_edges: Array) -> void:
 	var grid: Dictionary = state["grid"]
-	var width: int = state["width"]
-	var height: int = state["height"]
 	var floor_mult: int = state["floor_mult"]
 
 	# Open-water bodies: oceans (≥ 80, touching the map edge) vs seas
@@ -684,8 +682,16 @@ static func _detect_hydronyms(state: Dictionary, river_edges: Array) -> void:
 	for component in ocean_components:
 		var touches_edge := false
 		for h in component:
-			if h.x == 0 or h.y == 0 or h.x == width - 1 or h.y == height - 1:
-				touches_edge = true
+			# "Touches the map edge" = the open-water body reaches the map boundary,
+			# i.e. some hex of it has an off-grid neighbour. The old axial-bounding-box
+			# test (q/r == 0 or width-1/height-1) is wrong under the offset-rectangle
+			# layout (axial r is sheared / negative), so use the grid-presence test —
+			# the same outline-agnostic pattern as _is_land / culture_seeder._coastal_set.
+			for off in _OFF:
+				if not grid.has(h + off):
+					touches_edge = true
+					break
+			if touches_edge:
 				break
 		if component.size() >= OCEAN_MIN * floor_mult and touches_edge:
 			_new_region(state, "hydronym", "ocean", component)
