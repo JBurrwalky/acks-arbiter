@@ -20,6 +20,7 @@ var _cid: String = ""
 
 func run_all_tests() -> void:
 	test_worked_example_seed42_medium()
+	test_generated_grid_is_rectangle()
 	test_terrain_enums_valid()
 	test_climate_fields_sane()
 	test_river_edges_valid()
@@ -66,6 +67,21 @@ func test_worked_example_seed42_medium() -> void:
 	check(rivers.size() > 0, "no river edges generated (worked example has a major river)")
 
 
+func test_generated_grid_is_rectangle() -> void:
+	# The generator lays hexes on an OFFSET-rectangle so they render as a clean
+	# rectangle (not the old axial parallelogram): every stored axial key must map
+	# through the even-q transform onto a unique (col,row) tiling 25x20.
+	var hexes := _generated_hexes()
+	var offsets := {}
+	for hex in hexes:
+		var off := WorldGrid.axial_to_offset(Vector2i(int(hex.q), int(hex.r)))
+		check(off.x >= 0 and off.x < 25 and off.y >= 0 and off.y < 20,
+			"hex (%s,%s) renders outside the 25x20 rectangle at %s" % [hex.q, hex.r, str(off)])
+		offsets[off] = true
+	check(offsets.size() == 25 * 20,
+		"the 500 hexes should tile the 25x20 rectangle exactly, got %d distinct offsets" % offsets.size())
+
+
 func test_terrain_enums_valid() -> void:
 	for hex in _generated_hexes():
 		check(str(hex.elevation) in VALID_ELEVATIONS, "bad elevation '%s'" % hex.elevation)
@@ -90,11 +106,14 @@ func test_climate_fields_sane() -> void:
 			"effective latitude outside temperate preset: %f" % lat)
 		var precip := float(hex.precipitation)
 		check(precip >= 0.0 and precip <= 1.0, "precipitation out of 0-1: %f" % precip)
-		# r = 0 is the map's north edge (higher latitude → colder).
-		if int(hex.r) == 0:
+		# Sample by VISUAL row (offset-rectangle): row 0 is the map's north edge
+		# (higher latitude → colder), row H-1 the south. Axial r is sheared and is
+		# no longer the visual row, so derive the row via the even-q transform.
+		var vrow := WorldGrid.axial_to_offset(Vector2i(int(hex.q), int(hex.r))).y
+		if vrow == 0:
 			north_temp += float(hex.temperature)
 			north_n += 1
-		elif int(hex.r) == 19:
+		elif vrow == 19:
 			south_temp += float(hex.temperature)
 			south_n += 1
 	check(north_n > 0 and south_n > 0, "row sampling failed")
@@ -121,8 +140,11 @@ func test_river_edges_valid() -> void:
 		# Canonical ownership (terrain-system §3.6.2): owner is lex-lower (q, r).
 		check(owner.x < neighbor.x or (owner.x == neighbor.x and owner.y < neighbor.y),
 			"river edge owner not canonical: %s edge %d" % [owner, e])
-		check(owner.x >= 0 and owner.x < 25 and owner.y >= 0 and owner.y < 20,
-			"river edge owner off-map: %s" % owner)
+		# Owner is a valid on-map hex: its OFFSET (col,row) is in [0,25)x[0,20).
+		# (Axial r is sheared under the offset-rectangle layout, so check the offset.)
+		var owner_off := WorldGrid.axial_to_offset(owner)
+		check(owner_off.x >= 0 and owner_off.x < 25 and owner_off.y >= 0 and owner_off.y < 20,
+			"river edge owner off-map: %s (offset %s)" % [owner, owner_off])
 		check(str(row.navigability) == nav_by_width.get(str(row.width_category), "?"),
 			"navigability '%s' inconsistent with width '%s'"
 				% [row.navigability, row.width_category])
@@ -196,23 +218,31 @@ func test_elevation_tag_bands() -> void:
 
 
 func test_land_value_table_unit() -> void:
-	# 1x6 fake grid covering each table row (history-sim §7.5.1).
+	# 1-row fake grid covering each table row (history-sim §7.5.1). Keys are the
+	# offset-rectangle axial coords _assign_land_values now enumerates (col 0..5,
+	# row 0) — NOT a bare axial-rectangle, which the new layout no longer produces.
+	var k0 := WorldGrid.offset_to_axial(0, 0)
+	var k1 := WorldGrid.offset_to_axial(1, 0)
+	var k2 := WorldGrid.offset_to_axial(2, 0)
+	var k3 := WorldGrid.offset_to_axial(3, 0)
+	var k4 := WorldGrid.offset_to_axial(4, 0)
+	var k5 := WorldGrid.offset_to_axial(5, 0)
 	var grid := {
-		Vector2i(0, 0): _land_hex("flat", "desert", ""),
-		Vector2i(1, 0): _land_hex("mountains", "clear", ""),
-		Vector2i(2, 0): _land_hex("flat", "woods", ""),
-		Vector2i(3, 0): _land_hex("hills", "clear", ""),
-		Vector2i(4, 0): _land_hex("flat", "clear", ""),
-		Vector2i(5, 0): _land_hex("flat", "swamp", ""),
+		k0: _land_hex("flat", "desert", ""),
+		k1: _land_hex("mountains", "clear", ""),
+		k2: _land_hex("flat", "woods", ""),
+		k3: _land_hex("hills", "clear", ""),
+		k4: _land_hex("flat", "clear", ""),
+		k5: _land_hex("flat", "swamp", ""),
 	}
-	# Hex (4,0) is river-adjacent: plains 6 + 1 = 7.
-	ClimateGenerator._assign_land_values(grid, 6, 1, {Vector2i(4, 0): true})
-	check(int(grid[Vector2i(0, 0)]["land_value"]) == 3, "desert should be 3")
-	check(int(grid[Vector2i(1, 0)]["land_value"]) == 3, "mountains should be 3")
-	check(int(grid[Vector2i(2, 0)]["land_value"]) == 4, "forest should be 4")
-	check(int(grid[Vector2i(3, 0)]["land_value"]) == 5, "hills should be 5")
-	check(int(grid[Vector2i(4, 0)]["land_value"]) == 7, "river-adjacent plains should be 6+1")
-	check(int(grid[Vector2i(5, 0)]["land_value"]) == 3, "swamp should be 3")
+	# Col 4 is river-adjacent: plains 6 + 1 = 7.
+	ClimateGenerator._assign_land_values(grid, 6, 1, {k4: true})
+	check(int(grid[k0]["land_value"]) == 3, "desert should be 3")
+	check(int(grid[k1]["land_value"]) == 3, "mountains should be 3")
+	check(int(grid[k2]["land_value"]) == 4, "forest should be 4")
+	check(int(grid[k3]["land_value"]) == 5, "hills should be 5")
+	check(int(grid[k4]["land_value"]) == 7, "river-adjacent plains should be 6+1")
+	check(int(grid[k5]["land_value"]) == 3, "swamp should be 3")
 
 
 func test_large_map_performance() -> void:

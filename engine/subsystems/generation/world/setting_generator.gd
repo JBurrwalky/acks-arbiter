@@ -117,11 +117,12 @@ func _persist_terrain(ctx: Dictionary) -> bool:
 func _persist_hexes(ctx: Dictionary) -> bool:
 	var grid: Dictionary = ctx["hex_grid"]
 	var rows: Array = []
-	for r in range(int(ctx["height"])):
-		for q in range(int(ctx["width"])):
-			var hex: Dictionary = grid[Vector2i(q, r)].duplicate()
-			hex["q"] = q
-			hex["r"] = r
+	for row in range(int(ctx["height"])):
+		for col in range(int(ctx["width"])):
+			var key := WorldGrid.offset_to_axial(col, row)
+			var hex: Dictionary = grid[key].duplicate()
+			hex["q"] = key.x
+			hex["r"] = key.y
 			rows.append(hex)
 	return SettingRepository.save_hexes(ctx["campaign_id"], rows)
 

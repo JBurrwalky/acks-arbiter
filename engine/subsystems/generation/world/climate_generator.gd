@@ -105,15 +105,17 @@ static func run(ctx: Dictionary) -> bool:
 	var lat_south := params.latitude_south()
 	var lat_span := params.latitude_north() - lat_south
 
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var hex: Dictionary = grid[key]
-			# North edge of the map is r = 0 (edge 0 = N points to r-1), so
-			# latitude DEcreases as r grows.
-			var lat: float = lat_south + lat_span * (float(height - 1 - r) / maxf(height - 1, 1))
+			# Latitude is derived from the OFFSET row (visual north-south), NOT
+			# axial r: under the offset-rectangle layout a constant axial r is no
+			# longer a constant visual row. row = 0 is the map's north edge (highest
+			# latitude); latitude DEcreases as the row grows southward.
+			var lat: float = lat_south + lat_span * (float(height - 1 - row) / maxf(height - 1, 1))
 			hex["effective_latitude"] = lat
-			var pos := HeightmapGenerator._hex_center(q, r)
+			var pos := HeightmapGenerator._hex_center(key.x, key.y)
 			var temp := TEMP_AT_EQUATOR - TEMP_LAT_QUADRATIC * lat * lat \
 					+ temp_noise.get_noise_2d(pos.x, pos.y) * TEMP_NOISE_AMPLITUDE_C
 			if hex["water"] == "":
@@ -152,7 +154,9 @@ static func run(ctx: Dictionary) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Fraction of precipitation removed by upwind mountains. Prevailing wind is
-## west→east (§5.2 default): upwind = the -q axial direction.
+## west→east (§5.2 default): upwind = the -q axial direction. (Kept as axial -q
+## under the offset-rectangle layout per Jedidiah 2026-06-17 — q stays the column,
+## so -q remains an approximate visual-west; revisit only if the skew shows.)
 static func _rain_shadow(key: Vector2i, grid: Dictionary) -> float:
 	for k in range(1, RAIN_SHADOW_RANGE + 1):
 		var upwind := Vector2i(key.x - k, key.y)
@@ -170,9 +174,9 @@ static func _rain_shadow(key: Vector2i, grid: Dictionary) -> float:
 static func _ocean_distance_field(grid: Dictionary, width: int, height: int) -> Dictionary:
 	var dist := {}
 	var frontier: Array[Vector2i] = []
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if grid[key]["water"] == "ocean":
 				dist[key] = 0
 				frontier.append(key)
@@ -283,9 +287,9 @@ static func _assign_biome(hex: Dictionary, koppen: String, ocean_dist: int) -> v
 
 static func _apply_swamp_pass(campaign_seed: int, grid: Dictionary, width: int,
 		height: int, river_hexes: Dictionary) -> void:
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var hex: Dictionary = grid[key]
 			if hex["water"] != "" or hex["elevation"] != "flat":
 				continue
@@ -300,7 +304,7 @@ static func _apply_swamp_pass(campaign_seed: int, grid: Dictionary, width: int,
 			if chance <= 0.0:
 				continue
 			# Per-hex stream: deterministic regardless of iteration order.
-			var rng := WorldGenRng.stream(campaign_seed, "swamp", 0, "%d,%d" % [q, r])
+			var rng := WorldGenRng.stream(campaign_seed, "swamp", 0, "%d,%d" % [key.x, key.y])
 			if rng.randf() < chance:
 				hex["biome"] = "swamp"
 				hex["biome_subtype"] = ""
@@ -314,9 +318,9 @@ static func _apply_swamp_pass(campaign_seed: int, grid: Dictionary, width: int,
 
 static func _assign_land_values(grid: Dictionary, width: int, height: int,
 		river_hexes: Dictionary) -> void:
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var hex: Dictionary = grid[key]
 			if hex["water"] != "":
 				hex["land_value"] = 0

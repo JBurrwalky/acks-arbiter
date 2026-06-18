@@ -88,8 +88,11 @@ func test_membership_hexes_on_map() -> void:
 		for pair in hexes:
 			var q := int(pair[0])
 			var r := int(pair[1])
-			check(q >= 0 and q < 25 and r >= 0 and r < 20,
-				"region %s hex (%d,%d) off-map" % [region.id, q, r])
+			# Region hexes are axial; under the offset-rectangle layout r is sheared
+			# (possibly negative), so validate the OFFSET (col,row) is in bounds.
+			var off := WorldGrid.axial_to_offset(Vector2i(q, r))
+			check(off.x >= 0 and off.x < 25 and off.y >= 0 and off.y < 20,
+				"region %s hex (%d,%d) renders off-map at %s" % [region.id, q, r, str(off)])
 
 
 func test_continents_cover_land() -> void:

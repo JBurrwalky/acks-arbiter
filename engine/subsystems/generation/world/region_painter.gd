@@ -132,9 +132,9 @@ static func _components(state: Dictionary, predicate: Callable) -> Array:
 	var grid: Dictionary = state["grid"]
 	var visited := {}
 	var result: Array = []
-	for r in range(int(state["height"])):
-		for q in range(int(state["width"])):
-			var key := Vector2i(q, r)
+	for row in range(int(state["height"])):
+		for col in range(int(state["width"])):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if visited.has(key) or not predicate.call(key):
 				continue
 			var component: Array = []
@@ -352,9 +352,9 @@ static func _detect_anomalies(state: Dictionary) -> void:
 	# Family frequency over land (for the rarity term).
 	var family_counts := {}
 	var land_total := 0
-	for r in range(height):
-		for q in range(width):
-			var f := _cluster_family(grid, Vector2i(q, r))
+	for row in range(height):
+		for col in range(width):
+			var f := _cluster_family(grid, WorldGrid.offset_to_axial(col, row))
 			if f != "":
 				family_counts[f] = int(family_counts.get(f, 0)) + 1
 				land_total += 1
@@ -363,9 +363,9 @@ static func _detect_anomalies(state: Dictionary) -> void:
 
 	var elevation_band := {"flat": 0, "hills": 1, "mountains": 2}
 	var seeds: Array = []  # {hex, score}
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var family := _cluster_family(grid, key)
 			if family == "":
 				continue
@@ -499,9 +499,9 @@ static func _detect_capes(state: Dictionary) -> void:
 	var grid: Dictionary = state["grid"]
 	var width: int = state["width"]
 	var height: int = state["height"]
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if not _is_land(grid, key):
 				continue
 			var water_neighbors := 0
@@ -556,9 +556,9 @@ static func _detect_straits(state: Dictionary, land_components: Array) -> void:
 	# A strait hex: ocean hex adjacent (within the gap width) to two distinct
 	# large masses. Gap ≤ 2: direct adjacency or via one more ocean hex.
 	var strait_hexes := {}
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if not grid.has(key) or grid[key]["water"] != "ocean":
 				continue
 			var masses := {}

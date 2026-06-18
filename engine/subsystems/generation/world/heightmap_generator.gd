@@ -56,9 +56,9 @@ static func run(ctx: Dictionary) -> bool:
 
 	var shaped := _build_heightmap(campaign_seed, params, dims)
 	var grid := {}
-	for r in range(dims.y):
-		for q in range(dims.x):
-			var key := Vector2i(q, r)
+	for row in range(dims.y):
+		for col in range(dims.x):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var elev: float = shaped[key]
 			grid[key] = {
 				"elevation_raw": elev,
@@ -126,21 +126,28 @@ static func _build_heightmap(campaign_seed: int, params: SettingParameters,
 
 	var influence: float = _CONTINENT_INFLUENCE.get(params.land_mass_style, 0.5)
 
-	# Map extent in cartesian space for falloff normalization.
-	var center := (_hex_center(0, 0) + _hex_center(dims.x - 1, dims.y - 1)) * 0.5
-	var max_dist := 0.0
-	for corner in [
-		_hex_center(0, 0), _hex_center(dims.x - 1, 0),
-		_hex_center(0, dims.y - 1), _hex_center(dims.x - 1, dims.y - 1),
-	]:
-		max_dist = maxf(max_dist, center.distance_to(corner))
+	# Map extent in cartesian space for falloff normalization. Computed from the
+	# ACTUAL enumerated hex centres (not the axial-rectangle corners) so the
+	# continental falloff stays centred under the offset-rectangle layout. The
+	# bbox-corner distance is an upper bound on any hex-centre distance, so
+	# falloff stays in [0, 1] (no edge hex over-suppressed into spurious ocean).
+	var bb_min := Vector2(INF, INF)
+	var bb_max := Vector2(-INF, -INF)
+	for cell in WorldGrid.enumerate(dims.x, dims.y):
+		var ck: Vector2i = cell["key"]
+		var cc := _hex_center(ck.x, ck.y)
+		bb_min = bb_min.min(cc)
+		bb_max = bb_max.max(cc)
+	var center := (bb_min + bb_max) * 0.5
+	var max_dist := maxf(center.distance_to(bb_min), 0.000001)
 
 	var raw := {}
 	var raw_min := INF
 	var raw_max := -INF
-	for r in range(dims.y):
-		for q in range(dims.x):
-			var pos := _hex_center(q, r)
+	for row in range(dims.y):
+		for col in range(dims.x):
+			var key := WorldGrid.offset_to_axial(col, row)
+			var pos := _hex_center(key.x, key.y)
 			var terrain := (terrain_noise.get_noise_2d(pos.x, pos.y) + 1.0) * 0.5
 			var shape := (shape_noise.get_noise_2d(pos.x, pos.y) + 1.0) * 0.5
 			var falloff := center.distance_to(pos) / max_dist
@@ -153,7 +160,7 @@ static func _build_heightmap(campaign_seed: int, params: SettingParameters,
 			var ry := (-pos.x * sin_t + pos.y * cos_t) * RIDGE_ANISOTROPY
 			var ridged := 1.0 - absf(ridge_noise.get_noise_2d(rx, ry))
 			elev += RIDGE_WEIGHT * pow(ridged, 3.0)
-			raw[Vector2i(q, r)] = elev
+			raw[key] = elev
 			raw_min = minf(raw_min, elev)
 			raw_max = maxf(raw_max, elev)
 
@@ -161,9 +168,9 @@ static func _build_heightmap(campaign_seed: int, params: SettingParameters,
 	var span := maxf(raw_max - raw_min, 0.000001)
 	var exponent := params.elevation_exponent()
 	var shaped := {}
-	for r in range(dims.y):
-		for q in range(dims.x):
-			var key := Vector2i(q, r)
+	for row in range(dims.y):
+		for col in range(dims.x):
+			var key := WorldGrid.offset_to_axial(col, row)
 			shaped[key] = pow((raw[key] - raw_min) / span, exponent)
 	return shaped
 
@@ -186,9 +193,9 @@ static func _trace_rivers(campaign_seed: int, params: SettingParameters,
 		dims: Vector2i, grid: Dictionary) -> Array:
 	var threshold: float = _SOURCE_THRESHOLD.get(params.river_density, 0.75)
 	var sources: Array[Vector2i] = []
-	for r in range(dims.y):
-		for q in range(dims.x):
-			var key := Vector2i(q, r)
+	for row in range(dims.y):
+		for col in range(dims.x):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var hex: Dictionary = grid[key]
 			if hex["water"] == "ocean" or float(hex["elevation_raw"]) < threshold:
 				continue

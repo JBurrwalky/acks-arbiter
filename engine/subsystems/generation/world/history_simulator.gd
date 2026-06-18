@@ -207,12 +207,15 @@ func _tick(tick: int) -> void:
 func _build_ordered_keys() -> void:
 	_ordered_keys = []
 	_land_keys = []
-	for r in range(_height):
-		for q in range(_width):
-			var key := Vector2i(q, r)
-			_ordered_keys.append(key)
-			if _grid[key]["water"] == "":
-				_land_keys.append(key)
+	# Iterate the grid's OWN keys in canonical (r ASC, q ASC) order — robust to any
+	# grid the sim is handed (the real offset-rectangle, or a hand-built unit-test
+	# grid) and identical to list_hexes / replay-RLE order for the real world.
+	var keys: Array = _grid.keys()
+	keys.sort_custom(WorldGrid.canonical_less)
+	for key in keys:
+		_ordered_keys.append(key)
+		if _grid[key]["water"] == "":
+			_land_keys.append(key)
 
 
 ## Diffusion runs over a fixed set of undirected land-land edges with static

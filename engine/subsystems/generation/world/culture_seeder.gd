@@ -186,9 +186,9 @@ static func _hex_matches_culture(hex: Dictionary, record: Dictionary,
 
 static func _coastal_set(grid: Dictionary, width: int, height: int) -> Dictionary:
 	var coastal := {}
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if grid[key]["water"] != "":
 				continue
 			for off in _OFF:
@@ -211,9 +211,9 @@ static func _count_matches(catalog: Dictionary, grid: Dictionary, width: int,
 		if CultureCatalogLoader.tier(record) == "beastman":
 			continue
 		var count := 0
-		for r in range(height):
-			for q in range(width):
-				var key := Vector2i(q, r)
+		for row in range(height):
+			for col in range(width):
+				var key := WorldGrid.offset_to_axial(col, row)
 				var hex: Dictionary = grid[key]
 				if hex["water"] != "" or hex["territory_class"] != "wilderness":
 					continue
@@ -523,9 +523,9 @@ static func _pick_homeland(record: Dictionary, palette: String, grid: Dictionary
 	var best_score := -INF
 	var fallback := Vector2i(-9999, -9999)
 	var fallback_score := -INF
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			var hex: Dictionary = grid[key]
 			if hex["water"] != "" or hex["territory_class"] != "wilderness":
 				continue
@@ -650,9 +650,9 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 
 	# Pass 1: per-hex presence + race + families (canonical order).
 	var present := {}   # Vector2i -> {race, families}
-	for r in range(height):
-		for q in range(width):
-			var key := Vector2i(q, r)
+	for row in range(height):
+		for col in range(width):
+			var key := WorldGrid.offset_to_axial(col, row)
 			if occupied.has(key):
 				continue
 			var hex: Dictionary = grid[key]
@@ -666,10 +666,10 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 				continue
 			var presence := clampf(
 					float(spec.get("clanhold_chance_per_6_mile_hex", 0.0)) * density, 0.0, 0.95)
-			var p_rng := WorldGenRng.stream(campaign_seed, "beastman_presence", 0, "%d,%d" % [q, r])
+			var p_rng := WorldGenRng.stream(campaign_seed, "beastman_presence", 0, "%d,%d" % [key.x, key.y])
 			if p_rng.randf() >= presence:
 				continue
-			var race := _roll_beastman_race(spec, campaign_seed, q, r)
+			var race := _roll_beastman_race(spec, campaign_seed, key.x, key.y)
 			if race.is_empty():
 				continue
 			var families := mini(int(demographics.get(race, {})
@@ -698,9 +698,9 @@ static func _place_beastmen(grid: Dictionary, width: int, height: int,
 			return int(a["dom_fam"]) > int(b["dom_fam"])
 		return _canonical_less(a["dom"], b["dom"]))
 	var land_total := 0
-	for r in range(height):
-		for q in range(width):
-			if str(grid[Vector2i(q, r)]["water"]) == "":
+	for row in range(height):
+		for col in range(width):
+			if str(grid[WorldGrid.offset_to_axial(col, row)]["water"]) == "":
 				land_total += 1
 	var budget := int(BEASTMAN_SEED_LAND_CAP * float(land_total))
 	var polities: Array = []
