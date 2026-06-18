@@ -255,6 +255,24 @@ func test_region_map_materialized(cid: String) -> void:
 	check(ccount == pcount * 16, "child count == parents × 16 (%d)" % ccount)
 	check(_count("hex_cells", "map_id", rid) == ccount, "region hex_cells rows written")
 
+	# The 6-mile child map tiles a clean OFFSET-rectangle: every child offset is
+	# parent_offset*4 + local (local in [0,4)x[0,4)) and each (parent,local) is unique
+	# — i.e. NO parent-column-parity stagger (the old linear axial scheme produced one).
+	CampaignRepository.db.query_with_bindings("SELECT q, r FROM hex_cells WHERE map_id = ?", [rid])
+	var seen_local := {}
+	var clean := true
+	for crow in CampaignRepository.db.query_result:
+		var coff := WorldGrid.axial_to_offset(Vector2i(int(crow["q"]), int(crow["r"])))
+		var lx := coff.x % 4
+		var ly := coff.y % 4
+		if lx < 0 or lx >= 4 or ly < 0 or ly >= 4:
+			clean = false
+		var lk := "%d,%d,%d,%d" % [coff.x / 4, coff.y / 4, lx, ly]
+		if seen_local.has(lk):
+			clean = false
+		seen_local[lk] = true
+	check(clean, "6-mile children tile a clean offset-rectangle (parent*4 + local, no stagger)")
+
 	# all region terrain satisfies the CHECK domains.
 	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND (elevation NOT IN ('flat','hills','mountains') OR biome NOT IN ('clear','woods','jungle','swamp','desert') OR civilization NOT IN ('civilized','borderlands','wilderness'))", [rid]) == 0,
 		"all region terrain values valid")
@@ -277,7 +295,11 @@ func _region_variation(rid: String, wid: String) -> Dictionary:
 	var same := 0
 	var differ := 0
 	for ch in region_rows:
-		var pkey := "%d,%d" % [int(ch["q"]) / 4, int(ch["r"]) / 4]
+		# Child -> parent in OFFSET space: parent_offset = child_offset / 4, then
+		# back to axial (children are laid as parent_offset*4 + local).
+		var c_off := WorldGrid.axial_to_offset(Vector2i(int(ch["q"]), int(ch["r"])))
+		var p_axial := WorldGrid.offset_to_axial(c_off.x / 4, c_off.y / 4)
+		var pkey := "%d,%d" % [p_axial.x, p_axial.y]
 		if not world.has(pkey):
 			continue
 		var p: Dictionary = world[pkey]

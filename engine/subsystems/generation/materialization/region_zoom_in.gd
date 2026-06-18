@@ -60,15 +60,18 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	# actually exist on the world map.
 	var window: Array = []          # Array[Vector2i] of parent coords
 	var footprint: Array = []       # same, for the hex_maps footprint
-	var min_q := center.x - WINDOW_W_PARENTS / 2
-	var min_r := center.y - WINDOW_H_PARENTS / 2
-	for dq in WINDOW_W_PARENTS:
-		for dr in WINDOW_H_PARENTS:
-			var pq := min_q + dq
-			var pr := min_r + dr
-			if parents.has("%d,%d" % [pq, pr]):
-				window.append(Vector2i(pq, pr))
-				footprint.append(Vector2i(pq, pr))
+	# The window is an OFFSET-rectangle box (so the 6-mile play map renders as a clean
+	# rectangle, matching the world map). center is axial; box it in offset space and
+	# convert each cell back to axial. A fixed axial box would render a parallelogram.
+	var center_off := WorldGrid.axial_to_offset(center)
+	var min_col := center_off.x - WINDOW_W_PARENTS / 2
+	var min_row := center_off.y - WINDOW_H_PARENTS / 2
+	for dcol in WINDOW_W_PARENTS:
+		for drow in WINDOW_H_PARENTS:
+			var pkey := WorldGrid.offset_to_axial(min_col + dcol, min_row + drow)
+			if parents.has("%d,%d" % [pkey.x, pkey.y]):
+				window.append(pkey)
+				footprint.append(pkey)
 	if window.is_empty():
 		result["errors"].append("starting window covers no real parents")
 		return result
@@ -161,6 +164,11 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 	var p_civ := str(parent.get("civilization", "wilderness"))
 	var p_orig := str(parent.get("original_biome", ""))
 	var p_eraw := float(parent.get("elevation_raw", 0.0))
+	# Parent offset row — children are laid in OFFSET space (parent_col*SUB+local,
+	# parent_row*SUB+local) so the 4x4 child block tiles a clean rectangle. The old
+	# linear axial scheme (pr*SUB) staggered child rows by parent-column parity.
+	# (parent_col == pq because q == col under even-q.)
+	var prow := WorldGrid.axial_to_offset(Vector2i(pq, pr)).y
 
 	var out: Array = []
 
@@ -168,8 +176,9 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 	if p_water != "":
 		for cqi in SUB:
 			for cri in SUB:
+				var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
 				out.append({
-					"q": pq * SUB + cqi, "r": pr * SUB + cri,
+					"q": ck.x, "r": ck.y,
 					"elevation": p_elev, "biome": p_biome, "biome_subtype": _clamp_sub(p_sub),
 					"water": p_water, "civilization": p_civ, "original_biome": p_orig,
 					"elevation_raw": p_eraw,
@@ -211,8 +220,9 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 			if _roll(seed, "zoom_civ", pq, pr, cqi, cri) >= 0.95:
 				civ = _deviate_civ(p_civ)
 
+			var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
 			out.append({
-				"q": pq * SUB + cqi, "r": pr * SUB + cri,
+				"q": ck.x, "r": ck.y,
 				"elevation": elev, "biome": biome,
 				"biome_subtype": _clamp_sub(sub if biome == p_biome else ""),
 				"water": "", "civilization": civ, "original_biome": p_orig,
