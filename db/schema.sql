@@ -839,6 +839,10 @@ CREATE TABLE IF NOT EXISTS domains (
     -- the realms row this domain belongs to. NULL means "compute via apex
     -- walk" (RealmGraph.apex_for_domain) as a fallback.
     realm_id TEXT REFERENCES realms(id),
+    -- Migration 172: tick of the latest vassalage/conquest/protectorate event that
+    -- subjugated this domain's polity (set by the setting→runtime materializer on
+    -- war-vassal crowns). -1 = never subjugated. NPC/narrator history hook.
+    subjugated_since_tick INTEGER NOT NULL DEFAULT -1,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

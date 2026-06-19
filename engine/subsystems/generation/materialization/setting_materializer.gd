@@ -416,10 +416,11 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary, ctx: 
 	return true
 
 
-## Set each war-vassal crown's tribute_out_owed from its realm family total
-## (own + transitive war-vassals), per RAW 18×realm_families^0.6. Sovereigns and
-## dangling-root polities have no overlord → skipped. Deterministic (pure family
-## arithmetic over the frozen liege graph).
+## For each war-vassal crown: set its subjugated_since_tick (the latest event that
+## subjugated its polity — M2b-5 / principle 3) and its tribute_out_owed from the realm
+## family total (own + transitive war-vassals), per RAW 18×realm_families^0.6.
+## Sovereigns and dangling-root polities have no overlord → skipped. Deterministic
+## (pure family arithmetic + a frozen-event read over the liege graph).
 func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Dictionary, crown_by_pid: Dictionary) -> void:
 	var db = CampaignRepository.db
 	# Direct war-vassals per overlord (setting_polities.liege_id).
@@ -443,7 +444,18 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 		var pid := str(p["id"])
 		var lg := _norm_liege(p)
 		if lg.is_empty() or not by_id.has(lg) or not crown_by_pid.has(pid):
-			continue  # sovereign / dangling-root: no overlord to pay
+			continue  # sovereign / dangling-root: no overlord
+		# Subjugation tick (how long under the overlord) — the latest event that
+		# subjugated this polity. Set regardless of families (a depopulated conquered
+		# realm is still subjugated). M2b-5 / principle 3.
+		db.query_with_bindings(
+			"SELECT COALESCE(MAX(tick), -1) AS t FROM setting_events WHERE campaign_id = ? AND type IN ('vassalage','conquest','protectorate') AND polity_ids LIKE ?",
+			[campaign_id, "%\"" + pid + "\"%"])
+		var since := -1
+		if not db.query_result.is_empty():
+			since = int(db.query_result[0].get("t", -1))
+		db.query_with_bindings("UPDATE domains SET subjugated_since_tick = ? WHERE id = ?", [since, crown_by_pid[pid]])
+		# War-vassal up-tribute from the realm family total.
 		var rf := int(realm_fam.get(pid, 0))
 		if rf <= 0:
 			continue

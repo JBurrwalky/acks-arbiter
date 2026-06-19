@@ -29,6 +29,7 @@ func run_all_tests() -> void:
 		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
+		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -449,6 +450,51 @@ func test_pocket_realms(cid: String) -> void:
 
 ## In-window orphan (unowned, populated) families — the population M2b-4 turns into
 ## pocket realms. Reads the region footprint and sums matching setting_hexes.
+func test_subjugation_and_history(cid: String) -> void:
+	# subjugated_since_tick (migration 172): sovereign/independent crowns = -1; never < -1.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NULL AND subjugated_since_tick != -1", [cid]) == 0,
+		"sovereign/independent domains have subjugated_since_tick = -1")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND subjugated_since_tick < -1", [cid]) == 0,
+		"subjugated_since_tick is never below -1")
+	var subj_events := _scalar("SELECT COUNT(*) AS n FROM setting_events WHERE campaign_id = ? AND type IN ('vassalage','conquest','protectorate')", [cid])
+	var warvassals := _scalar("SELECT COUNT(*) AS n FROM setting_polities WHERE campaign_id = ? AND liege_id != '' AND liege_id != '0'", [cid])
+	if subj_events > 0 and warvassals > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND subjugated_since_tick >= 0", [cid]) > 0,
+			"≥1 war-vassal crown records a subjugation tick")
+
+	# SettingHistoryReader round-trips the frozen chronicle (zero-copy access).
+	var n_events := _scalar("SELECT COUNT(*) AS n FROM setting_events WHERE campaign_id = ?", [cid])
+	var chron := SettingHistoryReader.chronicle(cid)
+	check(chron.size() == n_events, "SettingHistoryReader.chronicle returns all %d events" % n_events)
+	var sorted := true
+	var last := -2147483648
+	for e in chron:
+		var t := int(e.get("tick", 0))
+		if t < last:
+			sorted = false
+		last = t
+	check(sorted, "chronicle ordered oldest-first")
+	var pid := _scalar_str("SELECT id AS v FROM setting_polities WHERE campaign_id = ? ORDER BY id LIMIT 1", [cid])
+	if pid != "":
+		var pe := SettingHistoryReader.events_for_polity(cid, pid)
+		check(pe.size() <= chron.size(), "events_for_polity ⊆ chronicle")
+		var all_ref := true
+		for e in pe:
+			if not str(e.get("polity_ids", "")).contains(pid):
+				all_ref = false
+		check(all_ref, "events_for_polity events all reference the polity")
+
+
+func _scalar_str(sql: String, binds: Array) -> String:
+	CampaignRepository.db.query_with_bindings(sql, binds)
+	if CampaignRepository.db.query_result.is_empty():
+		return ""
+	var row: Dictionary = CampaignRepository.db.query_result[0]
+	for k in row:
+		return str(row[k])
+	return ""
+
+
 func _in_window_orphan_fam(cid: String, rid: String) -> int:
 	if rid == "":
 		return 0
