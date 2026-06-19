@@ -30,6 +30,7 @@ func run_all_tests() -> void:
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
+		test_roads_rivers_materialized(cid)     # asserts the M2c 6-mile roads + rivers
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -488,6 +489,32 @@ func test_subjugation_and_history(cid: String) -> void:
 			if not str(e.get("polity_ids", "")).contains(pid):
 				all_ref = false
 		check(all_ref, "events_for_polity events all reference the polity")
+
+
+func test_roads_rivers_materialized(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+
+	# Rivers (M2c-a): 24-mile setting_river_edges projected to 6-mile boundary edges.
+	var nr := int(_mat_result.get("river_edge_count", -1))
+	check(nr == _scalar("SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [rid]),
+		"river_edge_count matches hex_river_edges on the region map")
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ? AND (edge < 0 OR edge > 5)", [rid]) == 0,
+		"all 6-mile river edges valid (0-5)")
+	if nr > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM hex_river_edges hre WHERE hre.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = hre.map_id AND h.q = hre.hex_q AND h.r = hre.hex_r)", [rid]) == 0,
+			"river-edge owners sit on real region hex_cells")
+
+	# Roads (M2c-c): 24-mile setting_roads projected to 6-mile roads entity + overlays.
+	var nrd := int(_mat_result.get("road_count_6mi", -1))
+	check(nrd == _scalar("SELECT COUNT(*) AS n FROM roads WHERE map_id = ?", [rid]),
+		"road_count_6mi matches roads entity rows on the region map")
+	if nrd > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays WHERE map_id = ? AND overlay_type = 'road'", [rid]) > 0,
+			"road overlays written for the region map")
+		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r)", [rid]) == 0,
+			"road overlays sit on real region hex_cells")
 
 
 func _scalar_str(sql: String, binds: Array) -> String:

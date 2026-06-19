@@ -36,7 +36,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
 		"dungeon_count": 0, "poi_count": 0, "fort_count": 0, "domain_hex_count": 0,
-		"pocket_realm_count": 0,
+		"pocket_realm_count": 0, "river_edge_count": 0, "road_count_6mi": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -105,6 +105,9 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _materialize_forts(campaign_id, region_map_id, ctx, result)
 		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
+		# M2c: roads/rivers projected onto the 6-mile play map.
+		and _materialize_rivers(campaign_id, region_map_id, result)
+		and _materialize_roads(campaign_id, region_map_id, result)
 	)
 	if not content_ok:
 		errors.append("content placement failed")
@@ -152,6 +155,7 @@ func _cleanup_partial(campaign_id: String) -> void:
 		"DELETE FROM realms WHERE campaign_id = ?",
 		"DELETE FROM characters WHERE campaign_id = ?",
 		"DELETE FROM roads WHERE campaign_id = ?",
+		"DELETE FROM hex_overlays WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
 		"DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
 		"DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
 		"DELETE FROM hex_maps WHERE campaign_id = ?",
@@ -1050,6 +1054,204 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 					[CampaignRepository.generate_id(), domain_id, region_map_id, ch.x, ch.y, int(o["lv"])]):
 					return false
 	return true
+
+
+# ── M2c: ROADS + RIVERS ON THE 6-MILE PLAY MAP ───────────────────────────────
+
+## M2c-a: project the 24-mile setting_river_edges onto the 6-mile play map. A 24-mile
+## river edge between H and its neighbour Hn (both in-window) runs along the boundary
+## between their 4×4 child blocks; emit a hex_river_edge for each adjacent child pair
+## across that boundary (computed from REAL adjacency via HexRiverEdgeData, not a
+## hardcoded offset table). One crossing per 24-mile edge (placed on the first child
+## edge in deterministic order); flow/navigability/width carried from the source.
+func _materialize_rivers(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return true
+	var db = CampaignRepository.db
+	var placed := 0
+	for re in SettingRepository.list_river_edges(campaign_id):
+		var hq := int(re["hex_q"])
+		var hr := int(re["hex_r"])
+		var e := int(re["edge"])
+		if e < 0 or e >= 6:
+			continue
+		var hn: Vector2i = Vector2i(hq, hr) + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[e]
+		# Both parents must be in-window so both child blocks exist on the play map.
+		if not in_window.has("%d,%d" % [hq, hr]) or not in_window.has("%d,%d" % [hn.x, hn.y]):
+			continue
+		var hn_children := _child_set(hn.x, hn.y)
+		var crossing := str(re.get("crossing", "none"))
+		var flow := int(re.get("flow_clockwise", 1))
+		var nav := str(re.get("navigability", "river_craft"))
+		var width := str(re.get("width_category", ""))
+		var crossing_used := false
+		for cqi in 4:
+			for cri in 4:
+				var c := _carrier_child(hq, hr, cqi, cri)
+				for ce in 6:
+					var nb: Vector2i = c + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[ce]
+					if not hn_children.has("%d,%d" % [nb.x, nb.y]):
+						continue
+					var canon := HexRiverEdgeData.canonicalize_edge(c.x, c.y, nb.x, nb.y)
+					if not bool(canon.get("adjacent", false)):
+						continue
+					var this_crossing := "none"
+					if crossing != "none" and not crossing_used:
+						this_crossing = crossing
+						crossing_used = true
+					if not db.query_with_bindings("""
+						INSERT OR IGNORE INTO hex_river_edges
+							(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing, width_category)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+					""", [region_map_id, int(canon["hex_q"]), int(canon["hex_r"]), int(canon["edge"]), flow, nav, this_crossing, width]):
+						result["errors"].append("river edge insert failed")
+						return false
+					placed += 1
+	result["river_edge_count"] = placed
+	return true
+
+
+## M2c-c: project the 24-mile setting_roads onto the 6-mile play map. Each road's
+## in-window 24-mile hex run is mapped to its carrier children and joined by a hex
+## line (so the 6-mile road is continuous), then written as a runtime `roads` entity
+## (the 6-mile path) + `hex_overlays(road)` per-cell edge geometry. Edges accumulate
+## across roads so intersections keep all directions.
+func _materialize_roads(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return true
+	var db = CampaignRepository.db
+	var road_edges := {}   # "q,r" → {edge:true} accumulated across all roads
+	var roads_made := 0
+	for road in SettingRepository.list_roads(campaign_id):
+		var raw = JSON.parse_string(str(road.get("hexes", "[]")))
+		if not (raw is Array):
+			continue
+		# In-window 24-mile hexes of this road, in path order.
+		var path24: Array = []
+		for h in raw:
+			if h is Array and (h as Array).size() == 2 and in_window.has("%d,%d" % [int(h[0]), int(h[1])]):
+				path24.append(Vector2i(int(h[0]), int(h[1])))
+		if path24.size() < 2:
+			continue
+		# Build the continuous 6-mile path: carrier children joined by hex lines.
+		var path6: Array = []
+		for i in range(path24.size()):
+			var carrier := _carrier_child(path24[i].x, path24[i].y, 1, 1)
+			if i == 0:
+				path6.append(carrier)
+			else:
+				var seg := _hex_line(path6[path6.size() - 1], carrier)
+				for j in range(1, seg.size()):  # skip the duplicate first hex
+					path6.append(seg[j])
+		# Accumulate per-cell road edges along the 6-mile path. Skip any cell whose
+		# parent fell outside the window (a hex line can clip a corner) so overlays only
+		# land on real region hex_cells.
+		for i in range(path6.size()):
+			if not _hex_in_window(in_window, path6[i]):
+				continue
+			var key := "%d,%d" % [path6[i].x, path6[i].y]
+			if not road_edges.has(key):
+				road_edges[key] = {}
+			if i > 0:
+				var eb := _edge_toward(path6[i], path6[i - 1])
+				if eb >= 0:
+					(road_edges[key] as Dictionary)[eb] = true
+			if i < path6.size() - 1:
+				var ef := _edge_toward(path6[i], path6[i + 1])
+				if ef >= 0:
+					(road_edges[key] as Dictionary)[ef] = true
+		# Runtime roads entity (the 6-mile path).
+		var hexes_json := JSON.stringify(path6.map(func(v: Vector2i) -> Array: return [v.x, v.y]))
+		if not db.query_with_bindings("""
+			INSERT INTO roads (id, campaign_id, map_id, hexes, road_class, purpose, name)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, hexes_json,
+			str(road.get("road_class", "road")), str(road.get("purpose", "")), str(road.get("name", ""))]):
+			result["errors"].append("6-mile road insert failed")
+			return false
+		roads_made += 1
+	# Write the accumulated road overlays (one per cell; intersections keep all edges).
+	for key in road_edges:
+		var parts := str(key).split(",")
+		var edges: Array = (road_edges[key] as Dictionary).keys()
+		edges.sort()
+		if not db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges, flow_exit)
+			VALUES (?, ?, ?, 'road', ?, -1)
+		""", [region_map_id, int(parts[0]), int(parts[1]), JSON.stringify(edges)]):
+			result["errors"].append("road overlay insert failed")
+			return false
+	result["road_count_6mi"] = roads_made
+	return true
+
+
+## The 16 child "q,r" keys of a 24-mile parent (the same layout RegionZoomIn writes).
+func _child_set(pq: int, pr: int) -> Dictionary:
+	var out := {}
+	for cqi in 4:
+		for cri in 4:
+			var ch := _carrier_child(pq, pr, cqi, cri)
+			out["%d,%d" % [ch.x, ch.y]] = true
+	return out
+
+
+## True if a 6-mile child hex's 24-mile parent is in the window (so it exists on the
+## play map). Floor-divides the offset coords by 4 (correct for negative parents).
+func _hex_in_window(in_window: Dictionary, hex: Vector2i) -> bool:
+	var coff := WorldGrid.axial_to_offset(hex)
+	var p := WorldGrid.offset_to_axial(floori(coff.x / 4.0), floori(coff.y / 4.0))
+	return in_window.has("%d,%d" % [p.x, p.y])
+
+
+## The edge index (0–5) on `from` that points at the adjacent hex `to`, or -1.
+func _edge_toward(from: Vector2i, to: Vector2i) -> int:
+	for e in 6:
+		if from + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[e] == to:
+			return e
+	return -1
+
+
+## A contiguous axial hex line from a to b (inclusive), via cube-coord lerp + round.
+func _hex_line(a: Vector2i, b: Vector2i) -> Array:
+	var n := _hex_distance(a, b)
+	if n == 0:
+		return [a]
+	var ax := float(a.x)
+	var az := float(a.y)
+	var ay := -ax - az
+	var bx := float(b.x)
+	var bz := float(b.y)
+	var by := -bx - bz
+	var out: Array = []
+	for i in range(n + 1):
+		var t := float(i) / float(n)
+		out.append(_cube_round(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t))
+	return out
+
+
+func _hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var dq := a.x - b.x
+	var dr := a.y - b.y
+	return (absi(dq) + absi(dq + dr) + absi(dr)) / 2
+
+
+## Round fractional cube coords to the nearest hex; return axial (q,r).
+func _cube_round(x: float, y: float, z: float) -> Vector2i:
+	var rx := roundf(x)
+	var ry := roundf(y)
+	var rz := roundf(z)
+	var dx := absf(rx - x)
+	var dy := absf(ry - y)
+	var dz := absf(rz - z)
+	if dx > dy and dx > dz:
+		rx = -ry - rz
+	elif dy > dz:
+		ry = -rx - rz
+	else:
+		rz = -rx - ry
+	return Vector2i(int(rx), int(rz))
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder
