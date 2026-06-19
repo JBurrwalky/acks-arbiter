@@ -27,6 +27,7 @@ func run_all_tests() -> void:
 		test_region_map_materialized(cid)       # asserts the M2a 6-mile play map
 		test_settlements_materialized(cid)      # asserts the M2b-3a settlement placement
 		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
+		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -396,6 +397,28 @@ func test_content_placed(cid: String) -> void:
 			"fort archetypes satisfy the CHECK domain")
 		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf,
 			"all forts are completed")
+
+
+func test_domain_hexes_materialized(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var ndh := int(_mat_result.get("domain_hex_count", -1))
+	check(ndh == _count("domain_hexes", "map_id", rid), "domain_hex_count matches domain_hexes on the region map")
+	check(ndh > 0, "≥1 domain_hex created (%d)" % ndh)
+	check(ndh % 16 == 0, "domain_hexes come in full 24-mile blocks of 16 (%d)" % ndh)
+	# domain_id resolves to a campaign domain.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes dh WHERE dh.map_id = ? AND dh.domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [rid, cid]) == 0,
+		"every domain_hex.domain_id resolves to a domain")
+	# land_value within the runtime CHECK range.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes WHERE map_id = ? AND (land_value < 3 OR land_value > 9)", [rid]) == 0,
+		"domain_hex land_value within 3–9")
+	# Each hex sits on a real region hex_cell.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes dh WHERE dh.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = dh.map_id AND h.q = dh.hex_q AND h.r = dh.hex_r)", [rid]) == 0,
+		"domain_hexes sit on real region hex_cells")
+	# Each 6-mile child belongs to exactly one domain (no overlap / double-claim).
+	check(_scalar("SELECT COUNT(*) AS n FROM (SELECT hex_q, hex_r FROM domain_hexes WHERE map_id = ? GROUP BY hex_q, hex_r HAVING COUNT(DISTINCT domain_id) > 1) t", [rid]) == 0,
+		"each 6-mile child belongs to exactly one domain")
 
 
 func _region_variation(rid: String, wid: String) -> Dictionary:

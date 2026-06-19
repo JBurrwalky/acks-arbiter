@@ -35,7 +35,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
-		"dungeon_count": 0, "poi_count": 0, "fort_count": 0,
+		"dungeon_count": 0, "poi_count": 0, "fort_count": 0, "domain_hex_count": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -99,6 +99,8 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	_materialize_dungeons(campaign_id, region_map_id, result)
 	_materialize_pois(campaign_id, region_map_id, result)
 	_materialize_forts(campaign_id, region_map_id, result)
+	# M2b-3c: give in-window located domains their 6-mile territory (domain_hexes).
+	_materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
 
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
@@ -400,6 +402,10 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary, ctx: 
 	# war-vassal family total, leaving crown families=0 (conservation intact). Internal-
 	# ladder apexes (no liege) legitimately owe 0 — their leaves pay piecemeal.
 	_set_war_vassal_tribute(campaign_id, ordered, by_id, crown_by_pid)
+
+	# Hand the polity→crown map to M2b-3c (domain_hexes) for non-laddered polities'
+	# non-capital hexes, which have no leaf seated on them.
+	ctx["crown_by_pid"] = crown_by_pid
 
 	result["realm_count"] = realm_count
 	result["domain_count"] = domain_pid.size()
@@ -731,6 +737,61 @@ func _materialize_forts(campaign_id: String, region_map_id: String, result: Dict
 		""", [CampaignRepository.generate_id(), domain_id, archetype, cp, region_map_id, child.x, child.y])
 		placed += 1
 	result["fort_count"] = placed
+
+
+## M2b-3c: give each in-window LOCATED domain its 6-mile territory. For every owned
+## in-window 24-mile hex, all 16 of its children become domain_hexes of the domain
+## governing that hex — the leaf located on it (families>0) if the polity is laddered,
+## else the polity's crown (for a clanhold/Barony crown's non-capital hexes). land_value
+## inherits the 24-mile hex's (clamped to the runtime 3–9 CHECK). Population stays
+## conserved at the DOMAIN level (M2b-1: peasant_families == the 24-mile hex pop); no
+## per-6-mile-hex population is stored (no consumer / field yet — deferred). Unowned
+## hexes (titular / orphan) are M2b-4.
+func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
+	var placed := 0
+	for key in in_window:
+		var parts := str(key).split(",")
+		if parts.size() != 2:
+			continue
+		var hq := int(parts[0])
+		var hr := int(parts[1])
+		db.query_with_bindings(
+			"SELECT owner_polity_id, land_value FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+			[campaign_id, hq, hr])
+		if db.query_result.is_empty():
+			continue
+		var owner := str(db.query_result[0].get("owner_polity_id", ""))
+		if owner.is_empty() or owner == "0":
+			continue  # unowned (titular wilderness / orphan — handled in M2b-4)
+		var lv := clampi(int(db.query_result[0].get("land_value", 5)), 3, 9)
+
+		# Governing domain: the leaf located on this hex (families>0), else the crown.
+		var seat_child := _carrier_child(hq, hr, 1, 1)
+		var gov = null
+		db.query_with_bindings(
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			[campaign_id, region_map_id, seat_child.x, seat_child.y])
+		if not db.query_result.is_empty():
+			gov = str(db.query_result[0]["id"])
+		elif crown_by_pid.has(owner):
+			gov = str(crown_by_pid[owner])
+		if gov == null:
+			continue
+
+		var poff := WorldGrid.axial_to_offset(Vector2i(hq, hr))
+		for cx in 4:
+			for cy in 4:
+				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
+				db.query_with_bindings(
+					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
+					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv])
+				placed += 1
+	result["domain_hex_count"] = placed
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder
