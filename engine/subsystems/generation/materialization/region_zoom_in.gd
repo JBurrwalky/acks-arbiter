@@ -29,6 +29,20 @@ const _VALID_SUBTYPES := [
 	"clear_scrub", "desert_badlands",
 ]
 
+# Cross-parent ecotone (Pass A, gdd-region-zoom-in §4.1) feathering strength: an edge
+# child bordering ONE different-biome neighbour parent feathers toward it with this
+# probability; a corner child (two such neighbours) feathers at 2×. The primary
+# anti-uniformity mechanism — softens the 24-mile biome step into a natural transition.
+# Tunable uniformity↔noise dial.
+const ECOTONE_STRENGTH := 0.25
+
+# The 6 axial hex-neighbour deltas (matches HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS /
+# HexMapController), for locating which neighbour PARENT an edge child borders.
+const _AXIAL_NEIGHBORS := [
+	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0),
+	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
+]
+
 
 ## Build the starting region's 6-mile play map. Returns
 ## {ok, errors[], region_map_id, parent_count, child_count, center}.
@@ -83,7 +97,7 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var child_count := 0
 	for pv in window:
 		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
-		for ch in _children_for_parent(campaign_seed, pv.x, pv.y, parent):
+		for ch in _children_for_parent(campaign_seed, pv.x, pv.y, parent, parents):
 			if not db.query_with_bindings("""
 				INSERT OR REPLACE INTO hex_cells
 					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
@@ -155,8 +169,9 @@ func _create_region_map(campaign_id: String, world_map_id: String, footprint: Ar
 
 
 ## 16 children for one parent: inherit + vary (patches, dense/light forest,
-## intra-parent foothills). Water parents inherit wholesale (§6.6).
-func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Array:
+## intra-parent foothills, cross-parent ecotones). Water parents inherit wholesale
+## (§6.6). `parents` is the full covered-parent map, for the ecotone neighbour lookup.
+func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, parents: Dictionary) -> Array:
 	var p_elev := str(parent.get("elevation", "flat"))
 	var p_biome := str(parent.get("biome", "clear"))
 	var p_sub := str(parent.get("biome_subtype", ""))
@@ -192,6 +207,7 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 	for cqi in SUB:
 		for cri in SUB:
 			var s: float = sm[cqi][cri]
+			var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
 
 			# Elevation: intra-parent orographic foothills (coherent → contiguous).
 			var elev := p_elev
@@ -215,12 +231,19 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 				elif s <= 0.20:
 					sub = ""  # a light/thinned patch
 
+			# Cross-parent ecotone (Pass A): an edge child bordering a different-biome
+			# neighbour PARENT feathers toward it — the boundary becomes a natural
+			# transition instead of a hard 24-mile step. Interior children are untouched.
+			var eco := _ecotone_biome(ck, pq, pr, p_biome, parents, seed, cqi, cri)
+			if not eco.is_empty():
+				biome = eco
+				sub = ""
+
 			# Civilization: rare one-step deviation at the margins.
 			var civ := p_civ
 			if _roll(seed, "zoom_civ", pq, pr, cqi, cri) >= 0.95:
 				civ = _deviate_civ(p_civ)
 
-			var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
 			out.append({
 				"q": ck.x, "r": ck.y,
 				"elevation": elev, "biome": biome,
@@ -229,6 +252,36 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary) -> Ar
 				"elevation_raw": p_eraw,
 			})
 	return out
+
+
+## Cross-parent ecotone (§4.1): if child `ck` borders a neighbour PARENT (not the
+## current one) whose biome differs and isn't water, feather toward it with
+## probability ECOTONE_STRENGTH × (number of such neighbours) — so corner children
+## feather more. Returns the chosen neighbour biome, or "" for no deviation (always
+## "" for interior children, which border no neighbour parent). Deterministic.
+func _ecotone_biome(ck: Vector2i, pq: int, pr: int, p_biome: String, parents: Dictionary, seed: int, cqi: int, cri: int) -> String:
+	var cands: Array = []
+	for d in _AXIAL_NEIGHBORS:
+		var nb: Vector2i = ck + d
+		var nboff := WorldGrid.axial_to_offset(nb)
+		var np := WorldGrid.offset_to_axial(floori(nboff.x / 4.0), floori(nboff.y / 4.0))
+		if np.x == pq and np.y == pr:
+			continue  # neighbour child is in the same parent (interior edge)
+		var npar = parents.get("%d,%d" % [np.x, np.y], null)
+		if npar == null:
+			continue
+		if str((npar as Dictionary).get("water", "")) != "":
+			continue  # never feather toward water
+		var nbiome := str((npar as Dictionary).get("biome", "clear"))
+		if nbiome != p_biome and not cands.has(nbiome):
+			cands.append(nbiome)
+	if cands.is_empty():
+		return ""
+	if _roll(seed, "zoom_ecotone", pq, pr, cqi, cri) >= ECOTONE_STRENGTH * float(cands.size()):
+		return ""
+	cands.sort()
+	var idx := clampi(int(_roll(seed, "zoom_ecotone_pick", pq, pr, cqi, cri) * float(cands.size())), 0, cands.size() - 1)
+	return str(cands[idx])
 
 
 func _noise_grid(seed: int, pq: int, pr: int) -> Array:
