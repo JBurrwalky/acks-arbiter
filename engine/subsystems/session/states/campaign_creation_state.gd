@@ -10,11 +10,11 @@ extends SessionState
 ## NavigationStack) — same as PartyCreationState — because the nav stack is still
 ## mid-transition from the campaign-select pop, so a push_node would be dropped.
 ##
-## NOTE: the eventual route on `world_ready` is "party_creation" → play, but that
-## needs the setting→runtime materialization (setting_* → runtime
-## domains/settlements/realms), which is NOT built yet (see the
-## project_setting_runtime_materialization memory). Until then a generated world
-## is locked + browsable but not playable, so we land back on the menu.
+## On approval the flow has locked the world; M3 then MATERIALIZES it (setting_* →
+## runtime domains/settlements/realms/play-map) so the generated campaign is
+## playable, and returns to campaign select where the player picks it → party
+## creation → SessionLoadState (which lands the party on the 6-mile play map). The
+## start city is auto-picked for now (the Decision-K picker is a follow-up).
 
 var _flow: Node = null
 
@@ -25,6 +25,10 @@ func enter(runner, _context: Dictionary) -> void:
 	_flow = scene.instantiate()
 	_flow.campaign_ready.connect(
 		func(campaign_id: String):
+			# M3: materialize the locked generated world into the runtime tables.
+			var res: Dictionary = SettingMaterializer.new().materialize(campaign_id, "")
+			if not bool(res.get("ok", false)):
+				push_error("CampaignCreationState: materialization failed: %s" % str(res.get("errors", [])))
 			runner.submit_action("world_ready", {"campaign_id": campaign_id})
 	)
 	runner.get_parent().add_child(_flow)

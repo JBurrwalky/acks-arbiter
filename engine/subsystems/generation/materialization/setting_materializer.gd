@@ -128,6 +128,32 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	return result
 
 
+## Where a new party in a GENERATED campaign starts play (M3): the 6-mile regional
+## play map + the start city's hex (the largest-market settlement, which the zoom-in
+## centred the window on). Returns {map_id, hex_q, hex_r}, or {} if the campaign has
+## no regional play map (not generated / not materialized). Static + read-only so
+## SessionLoadState and the test both use it.
+static func start_position(campaign_id: String) -> Dictionary:
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"SELECT id FROM hex_maps WHERE campaign_id = ? AND scale = 'regional_6mi' ORDER BY id LIMIT 1",
+		[campaign_id])
+	if db.query_result.is_empty():
+		return {}
+	var rid := str(db.query_result[0]["id"])
+	# The start city: the largest-market settlement on the play map (lowest market_class).
+	db.query_with_bindings(
+		"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? ORDER BY market_class ASC, hex_q ASC, hex_r ASC LIMIT 1",
+		[campaign_id, rid])
+	if not db.query_result.is_empty():
+		return {"map_id": rid, "hex_q": int(db.query_result[0]["hex_q"]), "hex_r": int(db.query_result[0]["hex_r"])}
+	# Fallback: a deterministic region hex (no settlement materialized in-window).
+	db.query_with_bindings("SELECT q, r FROM hex_cells WHERE map_id = ? ORDER BY q ASC, r ASC LIMIT 1", [rid])
+	if not db.query_result.is_empty():
+		return {"map_id": rid, "hex_q": int(db.query_result[0]["q"]), "hex_r": int(db.query_result[0]["r"])}
+	return {}
+
+
 ## True if any runtime hex_map already exists for the campaign (the "runtime tables
 ## empty" half of the guard). A freshly-generated campaign has none.
 func _runtime_already_materialized(campaign_id: String) -> bool:

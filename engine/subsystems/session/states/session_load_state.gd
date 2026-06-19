@@ -34,34 +34,41 @@ func enter(runner, context: Dictionary) -> void:
 			runner.transition_to_state("campaign_select")
 			return
 
-	# Pick the top-level map for this campaign (parent_map_id IS NULL first,
-	# then by created_at). Procgen / multi-region campaigns will eventually
-	# want richer selection here, but for now any campaign has exactly one
-	# top-level region.
+	# Pick the map to load. Default = the top-level map (parent_map_id IS NULL first).
+	# M3: a NEW party in a GENERATED campaign instead starts on the 6-mile regional
+	# PLAY map at its start city — hex_maps[0] for a generated campaign is the 24-mile
+	# WORLD map, which is view-only (the play surface is the regional_6mi child).
 	var hex_maps: Array = CampaignRepository.list_hex_maps_for_campaign(campaign_id)
 	if hex_maps.is_empty():
 		push_error("SessionLoadState: campaign has no hex_maps after seeding (campaign=%s)" % campaign_id)
 		runner.transition_to_state("campaign_select")
 		return
+	var pd_init: PartyData = runner.get_party_data()
 	var primary_map_id: String = String(hex_maps[0].get("id", ""))
+	var gen_start := Vector2i.ZERO
+	var is_gen_new := false
+	if pd_init != null and pd_init.current_map_id.is_empty():
+		var sp: Dictionary = SettingMaterializer.start_position(campaign_id)
+		if not sp.is_empty():
+			primary_map_id = String(sp["map_id"])
+			gen_start = Vector2i(int(sp["hex_q"]), int(sp["hex_r"]))
+			is_gen_new = true
+
 	var map_data: HexMapData = CampaignRepository.load_hex_map(primary_map_id)
 	if map_data == null:
 		push_error("SessionLoadState: load_hex_map failed for id=%s" % primary_map_id)
 		runner.transition_to_state("campaign_select")
 		return
 
-	# Seed party_hex on map_data before the first map_loaded signal fires.
-	# Without this, two bugs appear:
-	#   1. Fresh party (NULL current_map_id): _resolve_party_render_position()
-	#      returns {} (map id mismatch) and the token is never rendered until
-	#      the first scheduler event writes a DB position.
-	#   2. Existing party on the primary map: _rebuild_party_tokens() overrides
-	#      coord with _map_data.party_hex (Vector2i.ZERO default), placing the
-	#      token at (0,0) instead of the saved hex.
-	var pd_init: PartyData = runner.get_party_data()
+	# Seed party_hex on map_data before the first map_loaded signal fires (else the
+	# token renders at (0,0) or not at all until the first scheduler event).
 	if pd_init != null:
-		if pd_init.current_map_id.is_empty():
-			# New party: write a default position so the renderer can match map ids.
+		if is_gen_new:
+			# Generated new party: land at the start city on the regional play map.
+			CampaignRepository.update_party_position(party_id, primary_map_id, gen_start.x, gen_start.y)
+			map_data.party_hex = gen_start
+		elif pd_init.current_map_id.is_empty():
+			# New party (fixture): default position so the renderer can match map ids.
 			CampaignRepository.update_party_position(party_id, primary_map_id, 0, 0)
 			map_data.party_hex = Vector2i.ZERO
 		elif pd_init.current_map_id == primary_map_id:

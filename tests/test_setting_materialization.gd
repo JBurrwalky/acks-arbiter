@@ -31,6 +31,7 @@ func run_all_tests() -> void:
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
 		test_roads_rivers_materialized(cid)     # asserts the M2c 6-mile roads + rivers
+		test_start_position(cid)                # asserts the M3 party start placement
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -515,6 +516,21 @@ func test_roads_rivers_materialized(cid: String) -> void:
 			"road overlays written for the region map")
 		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r)", [rid]) == 0,
 			"road overlays sit on real region hex_cells")
+
+
+func test_start_position(cid: String) -> void:
+	# M3: where a new party in this generated campaign starts play.
+	var sp := SettingMaterializer.start_position(cid)
+	check(not sp.is_empty(), "start_position returns a placement for a materialized campaign")
+	if sp.is_empty():
+		return
+	var rid := str(_mat_result.get("region_map_id", ""))
+	check(str(sp.get("map_id", "")) == rid, "start_position is on the 6-mile regional play map")
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND q = ? AND r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) == 1,
+		"start hex is a real region hex_cell")
+	if _count("settlement_entrances", "map_id", rid) > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) >= 1,
+			"start hex hosts a settlement (the start city)")
 
 
 func _scalar_str(sql: String, binds: Array) -> String:
