@@ -34,7 +34,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"hex_count": 0, "river_count": 0, "road_count": 0,
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
-		"located_domain_count": 0, "tracked_realm_count": 0,
+		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -92,6 +92,10 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	# their realm is promoted to 'tracked'; out-of-window domains stay abstracted.
 	_locate_in_window_domains(campaign_id, region_map_id, ctx, result)
 
+	# 5. CONTENT PLACEMENT (M2b-3) — project in-window 24-mile-tagged content onto the
+	# 6-mile carrier children: settlements (M2b-3a, + derived history_context).
+	_materialize_settlements(campaign_id, region_map_id, result)
+
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
 	CampaignRepository.update_campaign_calendar(campaign_id, 1)
@@ -125,6 +129,7 @@ func _cleanup_partial(campaign_id: String) -> void:
 	var db = CampaignRepository.db
 	for sql in [
 		"DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)",
+		"DELETE FROM settlement_entrances WHERE campaign_id = ?",
 		"DELETE FROM domains WHERE campaign_id = ?",
 		"DELETE FROM realms WHERE campaign_id = ?",
 		"DELETE FROM characters WHERE campaign_id = ?",
@@ -440,22 +445,10 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 ## settlement-carrier child are M2b-3. Reads the covered parents from the region map's
 ## persisted footprint, and each domain's seat from ctx (no re-correlation needed).
 func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> void:
-	if region_map_id.is_empty():
-		return
-	var db = CampaignRepository.db
-	db.query_with_bindings("SELECT parent_hex_footprint FROM hex_maps WHERE id = ?", [region_map_id])
-	if db.query_result.is_empty():
-		return
-	var fp_parsed = JSON.parse_string(str(db.query_result[0].get("parent_hex_footprint", "[]")))
-	if not (fp_parsed is Array):
-		return
-	var in_window := {}   # "q,r" → true (24-mile parents the play map covers)
-	for pair in fp_parsed:
-		if pair is Array and (pair as Array).size() == 2:
-			in_window["%d,%d" % [int(pair[0]), int(pair[1])]] = true
+	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
 		return
-
+	var db = CampaignRepository.db
 	var seats: Dictionary = ctx.get("domain_seats", {})
 	var tracked_realms := {}
 	var located := 0
@@ -463,8 +456,7 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 		var seat: Vector2i = seats[did]
 		if not in_window.has("%d,%d" % [seat.x, seat.y]):
 			continue
-		var poff := WorldGrid.axial_to_offset(seat)
-		var child := WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
+		var child := _carrier_child(seat.x, seat.y, 1, 1)
 		db.query_with_bindings(
 			"UPDATE domains SET location_map_id = ?, location_hex_q = ?, location_hex_r = ?, updated_at = datetime('now') WHERE id = ?",
 			[region_map_id, child.x, child.y, str(did)])
@@ -479,6 +471,157 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 
 	result["located_domain_count"] = located
 	result["tracked_realm_count"] = tracked_realms.size()
+
+
+## The set of 24-mile parent hexes the region play map covers ("q,r" → true), from
+## the region map's persisted footprint. Shared by the locate + content-placement steps.
+func _in_window_parents(region_map_id: String) -> Dictionary:
+	var out := {}
+	if region_map_id.is_empty():
+		return out
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT parent_hex_footprint FROM hex_maps WHERE id = ?", [region_map_id])
+	if db.query_result.is_empty():
+		return out
+	var fp = JSON.parse_string(str(db.query_result[0].get("parent_hex_footprint", "[]")))
+	if not (fp is Array):
+		return out
+	for pair in fp:
+		if pair is Array and (pair as Array).size() == 2:
+			out["%d,%d" % [int(pair[0]), int(pair[1])]] = true
+	return out
+
+
+## The 6-mile carrier child (lx,ly in [0,4)) of a 24-mile seat hex, in RegionZoomIn's
+## parent_col*4+local / parent_row*4+local offset layout (so the child hex_cell exists).
+## Different content types use different local offsets to avoid colliding on one hex.
+func _carrier_child(seat_q: int, seat_r: int, lx: int, ly: int) -> Vector2i:
+	var poff := WorldGrid.axial_to_offset(Vector2i(seat_q, seat_r))
+	return WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
+
+
+## M2b-3a: place each in-window setting_settlement onto its carrier child as a
+## settlement_entrances row (interior `settlement_data` stays lazy/empty), wired to
+## the runtime domain governing its hex, and carrying a derived `history_context`
+## (past ruling cultures + founding) for the narrator (principle 3). Out-of-window
+## settlements stay in setting_settlements until their region rolls in.
+func _materialize_settlements(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+
+	var culture_by_pid := {}
+	var rclass_by_pid := {}
+	for p in SettingRepository.list_polities(campaign_id):
+		culture_by_pid[str(p["id"])] = str(p.get("culture_id", ""))
+		rclass_by_pid[str(p["id"])] = str(p.get("ruler_class", ""))
+
+	# History index: 24-mile hex "q,r" → the events that touched it (built once).
+	db.query_with_bindings(
+		"SELECT tick, type, polity_ids, culture_ids, hexes FROM setting_events WHERE campaign_id = ? ORDER BY tick ASC",
+		[campaign_id])
+	var hex_events := _build_hex_event_index(db.query_result.duplicate(true))
+
+	var placed := 0
+	for s in SettingRepository.list_settlements(campaign_id):
+		var sq := int(s["hex_q"])
+		var sr := int(s["hex_r"])
+		if not in_window.has("%d,%d" % [sq, sr]):
+			continue
+		var child := _carrier_child(sq, sr, 1, 1)
+		var pid := str(s.get("polity_id", ""))
+		var current_culture := str(culture_by_pid.get(pid, ""))
+
+		# Parent domain = the located domain governing this hex (the most-populated
+		# one at the carrier child — a leaf over a 0-family crown).
+		var parent_domain = null
+		db.query_with_bindings(
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			[campaign_id, region_map_id, child.x, child.y])
+		if not db.query_result.is_empty():
+			parent_domain = str(db.query_result[0]["id"])
+
+		var hist := _settlement_history_json(
+			hex_events.get("%d,%d" % [sq, sr], []), current_culture, int(s.get("emergence_tick", 0)))
+
+		var sid := CampaignRepository.generate_id()
+		db.query_with_bindings("""
+			INSERT INTO settlement_entrances
+				(id, campaign_id, map_id, hex_q, hex_r, name, market_class,
+				 settlement_data, parent_domain_id, urban_families, dominant_race,
+				 culture_id, history_context)
+			VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
+		""", [
+			sid, campaign_id, region_map_id, child.x, child.y,
+			str(s.get("name", "")), int(s.get("market_class", 6)),
+			parent_domain, int(s.get("urban_families", 0)),
+			_race_for_ruler_class(str(rclass_by_pid.get(pid, ""))),
+			current_culture, hist,
+		])
+		placed += 1
+	result["settlement_count"] = placed
+
+
+## Build "q,r" → [event digest] for setting_events that bear on a hex's history
+## (ownership/culture changes + founding). Each digest is shared across the event's
+## hexes. Parsed once; consumed per settlement.
+func _build_hex_event_index(events: Array) -> Dictionary:
+	const _HISTORICAL := ["founding", "conquest", "vassalage", "secession",
+		"cultural_shift", "protectorate", "razing", "rebellion_won"]
+	var idx := {}
+	for e in events:
+		var etype := str(e.get("type", ""))
+		if not _HISTORICAL.has(etype):
+			continue
+		var hexes = JSON.parse_string(str(e.get("hexes", "[]")))
+		if not (hexes is Array):
+			continue
+		var cultures = JSON.parse_string(str(e.get("culture_ids", "[]")))
+		var polities = JSON.parse_string(str(e.get("polity_ids", "[]")))
+		var digest := {
+			"tick": int(e.get("tick", 0)),
+			"type": etype,
+			"cultures": cultures if cultures is Array else [],
+			"polities": polities if polities is Array else [],
+		}
+		for h in hexes:
+			if h is Array and (h as Array).size() == 2:
+				var k := "%d,%d" % [int(h[0]), int(h[1])]
+				if not idx.has(k):
+					idx[k] = []
+				(idx[k] as Array).append(digest)
+	return idx
+
+
+## A settlement's history_context JSON: founding tick, current culture, the distinct
+## PAST ruling cultures (oldest-first, excluding the current one), and the touching
+## events (tick/type/cultures/polities). Consumed by the LLM narrator / NPC layer.
+func _settlement_history_json(touching: Array, current_culture: String, founding_tick: int) -> String:
+	var past_cultures := []
+	var seen := {}
+	for d in touching:
+		for c in d.get("cultures", []):
+			var cs := str(c)
+			if cs != "" and cs != current_culture and not seen.has(cs):
+				seen[cs] = true
+				past_cultures.append(cs)
+	return JSON.stringify({
+		"founding_tick": founding_tick,
+		"current_culture": current_culture,
+		"past_cultures": past_cultures,
+		"events": touching,
+	})
+
+
+## elven_* → elf, dwarven_* → dwarf, else human (settlement dominant race heuristic
+## from the owning polity's ruler class).
+func _race_for_ruler_class(ruler_class: String) -> String:
+	if ruler_class.begins_with("elven_"):
+		return "elf"
+	if ruler_class.begins_with("dwarven_"):
+		return "dwarf"
+	return "human"
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder

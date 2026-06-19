@@ -1199,7 +1199,11 @@ CREATE TABLE IF NOT EXISTS settlement_entrances (
     -- domains.xml:641-648`. SettlementGrowthResolver increments this each
     -- month by the consumed investment_cp. Seeded to 10000gp (Class VI
     -- founding floor) so pre-existing settlements stay above the cap.
-    cumulative_investment_gp INTEGER NOT NULL DEFAULT 10000
+    cumulative_investment_gp INTEGER NOT NULL DEFAULT 10000,
+    -- Migration 171: per-settlement world-history provenance (past ruling
+    -- cultures/polities + founding), derived from setting_events by the
+    -- setting→runtime materializer for the LLM narrator/NPC layer. JSON; '{}' = none.
+    history_context TEXT NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_settlement_entrances_parent_domain
     ON settlement_entrances(parent_domain_id);

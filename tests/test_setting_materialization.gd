@@ -25,6 +25,7 @@ func run_all_tests() -> void:
 		test_world_map_materialized(cid)        # runs materialize() (M0 + M1)
 		test_political_layer_materialized(cid)  # asserts the M1 output
 		test_region_map_materialized(cid)       # asserts the M2a 6-mile play map
+		test_settlements_materialized(cid)      # asserts the M2b-3a settlement placement
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -323,6 +324,41 @@ func test_region_map_materialized(cid: String) -> void:
 	# math matches RegionZoomIn's child layout).
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND d.location_map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = d.location_map_id AND h.q = d.location_hex_q AND h.r = d.location_hex_r)", [cid, rid]) == 0,
 		"located domains sit on a real region hex_cell")
+
+
+func test_settlements_materialized(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var placed := int(_mat_result.get("settlement_count", -1))
+	check(placed == _count("settlement_entrances", "map_id", rid),
+		"settlement_count matches settlement_entrances on the region map")
+	check(placed > 0, "≥1 settlement placed in the start region (%d)" % placed)
+	# All materialized settlements sit on the 6-mile region map (never elsewhere).
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
+		"all materialized settlements sit on the 6-mile region map")
+	# Each settlement sits on a REAL region hex_cell (carrier-child math is consistent).
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND se.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = se.map_id AND h.q = se.hex_q AND h.r = se.hex_r)", [cid, rid]) == 0,
+		"settlements sit on real region hex_cells")
+	# parent_domain_id resolves (FK) and at least one is wired.
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND parent_domain_id IS NOT NULL AND parent_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [cid, cid]) == 0,
+		"settlement parent_domain_id resolves to a domain")
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND parent_domain_id IS NOT NULL", [cid]) > 0,
+		"≥1 settlement wired to its parent domain")
+	# Name + market_class faithfully copied from setting_settlements.
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND EXISTS (SELECT 1 FROM setting_settlements ss WHERE ss.campaign_id = se.campaign_id AND ss.name = se.name AND ss.market_class = se.market_class)", [cid]) > 0,
+		"settlement name + market_class copied from setting_settlements")
+	# history_context present + well-formed (principle 3 provenance).
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND (history_context = '' OR history_context IS NULL)", [cid]) == 0,
+		"every settlement has a history_context")
+	CampaignRepository.db.query_with_bindings(
+		"SELECT history_context FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? LIMIT 1", [cid, rid])
+	if not CampaignRepository.db.query_result.is_empty():
+		var hc = JSON.parse_string(str(CampaignRepository.db.query_result[0].get("history_context", "{}")))
+		check(hc is Dictionary, "history_context parses as a JSON object")
+		if hc is Dictionary:
+			check(hc.has("founding_tick") and hc.has("current_culture") and hc.has("past_cultures") and hc.has("events"),
+				"history_context carries founding_tick/current_culture/past_cultures/events")
 
 
 func _region_variation(rid: String, wid: String) -> Dictionary:
