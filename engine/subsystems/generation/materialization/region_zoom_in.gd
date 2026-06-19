@@ -83,9 +83,34 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	# The window is an OFFSET-rectangle box (so the 6-mile play map renders as a clean
 	# rectangle, matching the world map). center is axial; box it in offset space and
 	# convert each cell back to axial. A fixed axial box would render a parallelogram.
+	# World offset-bounds, so the window SHIFTS to stay inside the world near an edge
+	# instead of TRUNCATING — that keeps the play map a full landscape rectangle (the
+	# 10×8 request) even when the start city sits near a world border (otherwise a
+	# near-edge city yields a clipped, portrait-ish window). Only clamps when the world
+	# is larger than the window in that axis; else the window spans the whole dimension.
+	var w_min_col := 1 << 30
+	var w_max_col := -(1 << 30)
+	var w_min_row := 1 << 30
+	var w_max_row := -(1 << 30)
+	for key in parents:
+		var pp: Dictionary = parents[key]
+		var po := WorldGrid.axial_to_offset(Vector2i(int(pp["q"]), int(pp["r"])))
+		w_min_col = mini(w_min_col, po.x)
+		w_max_col = maxi(w_max_col, po.x)
+		w_min_row = mini(w_min_row, po.y)
+		w_max_row = maxi(w_max_row, po.y)
+
 	var center_off := WorldGrid.axial_to_offset(center)
 	var min_col := center_off.x - WINDOW_W_PARENTS / 2
 	var min_row := center_off.y - WINDOW_H_PARENTS / 2
+	if w_max_col - w_min_col + 1 >= WINDOW_W_PARENTS:
+		min_col = clampi(min_col, w_min_col, w_max_col - WINDOW_W_PARENTS + 1)
+	else:
+		min_col = w_min_col
+	if w_max_row - w_min_row + 1 >= WINDOW_H_PARENTS:
+		min_row = clampi(min_row, w_min_row, w_max_row - WINDOW_H_PARENTS + 1)
+	else:
+		min_row = w_min_row
 	for dcol in WINDOW_W_PARENTS:
 		for drow in WINDOW_H_PARENTS:
 			var pkey := WorldGrid.offset_to_axial(min_col + dcol, min_row + drow)
