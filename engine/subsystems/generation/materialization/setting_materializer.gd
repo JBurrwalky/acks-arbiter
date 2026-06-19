@@ -34,8 +34,13 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"hex_count": 0, "river_count": 0, "road_count": 0,
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
+		"located_domain_count": 0, "tracked_realm_count": 0,
 	}
 	var errors: Array = result["errors"]
+	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
+	# seat hex, so the post-zoom-in locate step (M2b-2) can place in-window domains on
+	# the 6-mile play map without re-correlating runtime rows back to setting_domains.
+	var ctx := {"domain_seats": {}}
 
 	# 0. GUARD ----------------------------------------------------------------
 	if campaign_id.is_empty():
@@ -62,8 +67,9 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		_cleanup_partial(campaign_id)
 		return result
 
-	# 2. POLITICAL LAYER (M1) — realms + abstracted domains + sovereign rulers.
-	if not _materialize_political_layer(campaign_id, result):
+	# 2. POLITICAL LAYER (M1/M2b-1) — realms + the crown+ladder domain hierarchy +
+	# sovereign rulers. Records each domain's 24-mile seat into ctx for M2b-2.
+	if not _materialize_political_layer(campaign_id, result, ctx):
 		errors.append("political-layer materialization failed")
 		_cleanup_partial(campaign_id)
 		return result
@@ -76,20 +82,25 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 			errors.append("region zoom-in: %s" % str(e))
 		_cleanup_partial(campaign_id)
 		return result
-	result["region_map_id"] = str(region.get("region_map_id", ""))
+	var region_map_id := str(region.get("region_map_id", ""))
+	result["region_map_id"] = region_map_id
 	result["region_parent_count"] = int(region.get("parent_count", 0))
 	result["region_child_count"] = int(region.get("child_count", 0))
+
+	# 4. LOCATE IN-WINDOW DOMAINS (M2b-2) — domains whose 24-mile seat falls inside
+	# the zoomed start region get a 6-mile location (their seat's carrier child) and
+	# their realm is promoted to 'tracked'; out-of-window domains stay abstracted.
+	_locate_in_window_domains(campaign_id, region_map_id, ctx, result)
 
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
 	CampaignRepository.update_campaign_calendar(campaign_id, 1)
 
 	# --- LATER PHASES (stubs) -------------------------------------------------
-	# M2 (cont.): content placement onto the 6-mile carrier children (settlements,
-	#     dungeons, POIs, forts), located domains + domain_hexes, roads/rivers,
-	#     cross-parent ecotones + river oases + polity/culture dithering,
-	#     realm_kind promotion to 'tracked' for the start region, rolling frontier.
-	# M3: party placement at the chosen start city.
+	# M2b-3: content placement onto the 6-mile carrier children (settlements,
+	#     dungeons, POIs, forts) + domain_hexes + population distribution (§6b).
+	# M2b-4: titular-wilderness attach + orphaned-pop pocket realms.
+	# M2b-5: runtime history accessor + domain subjugation. M3: party placement.
 
 	result["ok"] = errors.is_empty()
 	return result
@@ -265,8 +276,10 @@ static func ruler_title_for(domain_title: String) -> String:
 ## abstract (owner NULL) until M2b-2 locates the start window. Domains are still
 ## ABSTRACTED here (no location_map_id); M2b-2 locates the in-window ones.
 ## Not wrapped in one transaction because ClassedNpcBuilder.persist may manage its
-## own; the materialize() guard prevents a partial re-run.
-func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bool:
+## own; the materialize() guard prevents a partial re-run. Records each runtime
+## domain's 24-mile seat into ctx["domain_seats"] for the M2b-2 locate step.
+func _materialize_political_layer(campaign_id: String, result: Dictionary, ctx: Dictionary) -> bool:
+	var domain_seats: Dictionary = ctx["domain_seats"]
 	var db = CampaignRepository.db
 	var polities := SettingRepository.list_polities(campaign_id)
 	if polities.is_empty():
@@ -336,13 +349,15 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 			return false
 		crown_by_pid[pid] = crown_id
 		domain_pid[crown_id] = pid
+		# The crown's seat is the polity capital (its ruler's 24-mile seat hex).
+		domain_seats[crown_id] = Vector2i(int(p.get("capital_q", 0)), int(p.get("capital_r", 0)))
 
 	# Pass 2 — the civ vassal ladder beneath each crown.
 	for p in ordered:
 		var pid := str(p["id"])
 		if not sdoms_by_pid.has(pid):
 			continue
-		if not _create_ladder_for_polity(campaign_id, p, sdoms_by_pid[pid], crown_by_pid[pid], domain_pid, result):
+		if not _create_ladder_for_polity(campaign_id, p, sdoms_by_pid[pid], crown_by_pid[pid], domain_pid, domain_seats, result):
 			return false
 
 	# Pass 3 — realm_id (walk liege chain to the sovereign root) + crown owner wiring.
@@ -415,6 +430,55 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 		db.query_with_bindings(
 			"UPDATE domains SET tribute_out_owed = ?, updated_at = datetime('now') WHERE id = ?",
 			[owed, crown_by_pid[pid]])
+
+
+## M2b-2: locate domains whose 24-mile seat falls inside the zoomed start region.
+## Each in-window domain gets a 6-mile location — the (1,1) carrier child of its seat
+## parent, matching RegionZoomIn's parent_col*4+local / parent_row*4+local layout so
+## the child hex exists on the play map — and its realm is promoted to 'tracked'.
+## Out-of-window domains stay abstracted (NULL location). domain_hexes + the precise
+## settlement-carrier child are M2b-3. Reads the covered parents from the region map's
+## persisted footprint, and each domain's seat from ctx (no re-correlation needed).
+func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> void:
+	if region_map_id.is_empty():
+		return
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT parent_hex_footprint FROM hex_maps WHERE id = ?", [region_map_id])
+	if db.query_result.is_empty():
+		return
+	var fp_parsed = JSON.parse_string(str(db.query_result[0].get("parent_hex_footprint", "[]")))
+	if not (fp_parsed is Array):
+		return
+	var in_window := {}   # "q,r" → true (24-mile parents the play map covers)
+	for pair in fp_parsed:
+		if pair is Array and (pair as Array).size() == 2:
+			in_window["%d,%d" % [int(pair[0]), int(pair[1])]] = true
+	if in_window.is_empty():
+		return
+
+	var seats: Dictionary = ctx.get("domain_seats", {})
+	var tracked_realms := {}
+	var located := 0
+	for did in seats:
+		var seat: Vector2i = seats[did]
+		if not in_window.has("%d,%d" % [seat.x, seat.y]):
+			continue
+		var poff := WorldGrid.axial_to_offset(seat)
+		var child := WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
+		db.query_with_bindings(
+			"UPDATE domains SET location_map_id = ?, location_hex_q = ?, location_hex_r = ?, updated_at = datetime('now') WHERE id = ?",
+			[region_map_id, child.x, child.y, str(did)])
+		located += 1
+		db.query_with_bindings("SELECT realm_id FROM domains WHERE id = ?", [str(did)])
+		if not db.query_result.is_empty():
+			var rid := str(db.query_result[0].get("realm_id", ""))
+			if not rid.is_empty():
+				tracked_realms[rid] = true
+	for rid in tracked_realms:
+		db.query_with_bindings("UPDATE realms SET realm_kind = 'tracked' WHERE id = ?", [rid])
+
+	result["located_domain_count"] = located
+	result["tracked_realm_count"] = tracked_realms.size()
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder
@@ -494,7 +558,7 @@ func _create_crown_domain(campaign_id: String, p: Dictionary, crown_by_pid: Dict
 ## stay abstract (owner NULL) until M2b-2. Records every runtime domain in
 ## [param domain_pid] for the realm backfill.
 func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
-		crown_id: String, domain_pid: Dictionary, result: Dictionary) -> bool:
+		crown_id: String, domain_pid: Dictionary, domain_seats: Dictionary, result: Dictionary) -> bool:
 	var pid := str(p["id"])
 	var culture := str(p.get("culture_id", ""))
 	var alignment := _alignment_or_neutral(str(p.get("alignment", "")))
@@ -505,7 +569,9 @@ func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
 		var liege_runtime = local.get(liege_sd, null) if not liege_sd.is_empty() else crown_id
 		var is_leaf := int(sd.get("is_personal_domain", 0)) == 1
 		var node_families: int = int(sd.get("families", 0)) if is_leaf else 0
-		var territory := _territory_for_hex(campaign_id, int(sd.get("seat_q", 0)), int(sd.get("seat_r", 0)))
+		var seat_q := int(sd.get("seat_q", 0))
+		var seat_r := int(sd.get("seat_r", 0))
+		var territory := _territory_for_hex(campaign_id, seat_q, seat_r)
 		var realm_title := ruler_title_for(str(sd.get("title", "")))
 		var dname := str(sd.get("realm_name", ""))
 		if dname.is_empty():
@@ -533,6 +599,7 @@ func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
 		""", [node_families, realm_title, culture, liege_runtime, domain_id])
 		local[sd_id] = domain_id
 		domain_pid[domain_id] = pid
+		domain_seats[domain_id] = Vector2i(seat_q, seat_r)
 	return true
 
 

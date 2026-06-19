@@ -147,15 +147,18 @@ func test_political_layer_materialized(cid: String) -> void:
 	check(_count("realms", "campaign_id", cid) == sovereigns.size(), "realms rows == sovereigns")
 	check(_count("domains", "campaign_id", cid) == expected_domains, "domains rows == crowns + ladder")
 
-	# Realms: all 'foreign' at M1; head FK-resolves.
-	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind != 'foreign'", [cid]) == 0,
-		"all realms are 'foreign' at M1 (promotion deferred to M2)")
+	# Realms: 'foreign' by default, 'tracked' once promoted for the in-window start
+	# region (M2b-2); head FK-resolves.
+	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind NOT IN ('foreign','tracked')", [cid]) == 0,
+		"all realms are 'foreign' or 'tracked'")
 	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND (head_character_id IS NULL OR head_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?))", [cid, cid]) == 0,
 		"every realm head resolves to a character")
 
-	# Domains: abstracted (no location), culture threaded, FK integrity.
-	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id IS NOT NULL", [cid]) == 0,
-		"all M1 domains are abstracted (no location)")
+	# Domains: out-of-window abstracted; any LOCATED domain sits on the 6-mile region
+	# map (M2b-2). FK integrity below.
+	var rmid := str(_mat_result.get("region_map_id", ""))
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id IS NOT NULL AND location_map_id != ?", [cid, rmid]) == 0,
+		"located domains all sit on the 6-mile region map")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND (realm_id IS NULL OR realm_id NOT IN (SELECT id FROM realms WHERE campaign_id = ?))", [cid, cid]) == 0,
 		"every domain.realm_id resolves to a realm")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [cid, cid]) == 0,
@@ -304,6 +307,22 @@ func test_region_map_materialized(cid: String) -> void:
 	var v := _region_variation(rid, wid)
 	check(int(v["differ"]) > 0, "some children vary from their parent (%d differ)" % int(v["differ"]))
 	check(int(v["same"]) > int(v["differ"]), "inheritance dominates (same %d > differ %d)" % [int(v["same"]), int(v["differ"])])
+
+	# M2b-2: domains whose 24-mile seat is in the window are located on the play map,
+	# and their realms are promoted to 'tracked'.
+	var located := int(_mat_result.get("located_domain_count", -1))
+	var tracked := int(_mat_result.get("tracked_realm_count", -1))
+	check(located == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
+		"located_domain_count matches domains located on the region map")
+	check(located > 0, "≥1 domain located in the start region (%d)" % located)
+	check(tracked == _scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked'", [cid]),
+		"tracked_realm_count matches promoted realms (%d)" % tracked)
+	if located > 0:
+		check(tracked > 0, "≥1 realm promoted to 'tracked' for the start region")
+	# Each located domain points at a REAL region hex_cell (proves the carrier-child
+	# math matches RegionZoomIn's child layout).
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND d.location_map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = d.location_map_id AND h.q = d.location_hex_q AND h.r = d.location_hex_r)", [cid, rid]) == 0,
+		"located domains sit on a real region hex_cell")
 
 
 func _region_variation(rid: String, wid: String) -> Dictionary:
