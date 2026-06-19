@@ -26,6 +26,7 @@ func run_all_tests() -> void:
 		test_political_layer_materialized(cid)  # asserts the M1 output
 		test_region_map_materialized(cid)       # asserts the M2a 6-mile play map
 		test_settlements_materialized(cid)      # asserts the M2b-3a settlement placement
+		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -359,6 +360,42 @@ func test_settlements_materialized(cid: String) -> void:
 		if hc is Dictionary:
 			check(hc.has("founding_tick") and hc.has("current_culture") and hc.has("past_cultures") and hc.has("events"),
 				"history_context carries founding_tick/current_culture/past_cultures/events")
+
+
+func test_content_placed(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+
+	# Dungeons (setting_ruin_seeds → dungeon_entrances, provenance in dungeon_data).
+	var nd := int(_mat_result.get("dungeon_count", -1))
+	check(nd == _count("dungeon_entrances", "map_id", rid), "dungeon_count matches dungeon_entrances on the region map")
+	check(_scalar("SELECT COUNT(*) AS n FROM dungeon_entrances WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
+		"dungeons all sit on the 6-mile region map")
+	check(_scalar("SELECT COUNT(*) AS n FROM dungeon_entrances de WHERE de.campaign_id = ? AND de.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = de.map_id AND h.q = de.hex_q AND h.r = de.hex_r)", [cid, rid]) == 0,
+		"dungeons sit on real region hex_cells")
+	if nd > 0:
+		CampaignRepository.db.query_with_bindings(
+			"SELECT dungeon_data FROM dungeon_entrances WHERE campaign_id = ? AND map_id = ? LIMIT 1", [cid, rid])
+		var dd = JSON.parse_string(str(CampaignRepository.db.query_result[0].get("dungeon_data", "{}")))
+		check(dd is Dictionary and dd.has("provenance") and dd.has("size_hint"),
+			"dungeon_data carries provenance + size_hint (principle 3)")
+
+	# POIs (setting_poi_seeds → pois, context/rumor_seeds verbatim).
+	var npoi := int(_mat_result.get("poi_count", -1))
+	check(npoi == _count("pois", "map_id", rid), "poi_count matches pois on the region map")
+	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
+		"POIs all sit on the 6-mile region map")
+
+	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed).
+	var nf := int(_mat_result.get("fort_count", -1))
+	check(nf == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
+		"fort_count matches strongholds on the region map")
+	if nf > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND archetype NOT IN ('fortress','fastness','sanctum','hideout','vault','clanhold')", [rid]) == 0,
+			"fort archetypes satisfy the CHECK domain")
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf,
+			"all forts are completed")
 
 
 func _region_variation(rid: String, wid: String) -> Dictionary:

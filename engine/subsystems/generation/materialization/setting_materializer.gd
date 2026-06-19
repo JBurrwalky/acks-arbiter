@@ -35,6 +35,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
+		"dungeon_count": 0, "poi_count": 0, "fort_count": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -93,8 +94,11 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	_locate_in_window_domains(campaign_id, region_map_id, ctx, result)
 
 	# 5. CONTENT PLACEMENT (M2b-3) — project in-window 24-mile-tagged content onto the
-	# 6-mile carrier children: settlements (M2b-3a, + derived history_context).
+	# 6-mile carrier children: settlements (3a, +history), then dungeons/POIs/forts (3b).
 	_materialize_settlements(campaign_id, region_map_id, result)
+	_materialize_dungeons(campaign_id, region_map_id, result)
+	_materialize_pois(campaign_id, region_map_id, result)
+	_materialize_forts(campaign_id, region_map_id, result)
 
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
@@ -130,6 +134,9 @@ func _cleanup_partial(campaign_id: String) -> void:
 	for sql in [
 		"DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)",
 		"DELETE FROM settlement_entrances WHERE campaign_id = ?",
+		"DELETE FROM dungeon_entrances WHERE campaign_id = ?",
+		"DELETE FROM pois WHERE campaign_id = ?",
+		"DELETE FROM strongholds WHERE location_map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
 		"DELETE FROM domains WHERE campaign_id = ?",
 		"DELETE FROM realms WHERE campaign_id = ?",
 		"DELETE FROM characters WHERE campaign_id = ?",
@@ -622,6 +629,108 @@ func _race_for_ruler_class(ruler_class: String) -> String:
 	if ruler_class.begins_with("dwarven_"):
 		return "dwarf"
 	return "human"
+
+
+## M2b-3b: project in-window setting_ruin_seeds onto carrier children (2,2) as
+## dungeon_entrances stubs. dungeon_data carries size hint + flavor + PROVENANCE
+## (culture/polity/toponym/era/event — principle 3) for the narrator + DG-V1
+## layout-on-first-entry. Coexists with the emergent lazy-lair system.
+func _materialize_dungeons(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+	var placed := 0
+	for s in SettingRepository.list_ruin_seeds(campaign_id):
+		var sq := int(s["hex_q"])
+		var sr := int(s["hex_r"])
+		if not in_window.has("%d,%d" % [sq, sr]):
+			continue
+		var child := _carrier_child(sq, sr, 2, 2)
+		var dd := JSON.stringify({
+			"size_hint": str(s.get("size_hint", "lair")),
+			"dungeon_type": str(s.get("dungeon_type", "")),
+			"provenance": {
+				"culture_id": str(s.get("provenance_culture_id", "")),
+				"polity_id": str(s.get("provenance_polity_id", "")),
+				"toponym": str(s.get("provenance_toponym", "")),
+				"era_tick": int(s.get("era_tick", 0)),
+				"event_type": str(s.get("event_type", "")),
+				"source_event_id": str(s.get("source_event_id", "")),
+			},
+		})
+		var dname := str(s.get("name", ""))
+		if dname.is_empty():
+			dname = "Unknown Dungeon"
+		db.query_with_bindings("""
+			INSERT INTO dungeon_entrances (id, campaign_id, map_id, hex_q, hex_r, name, dungeon_data)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y, dname, dd])
+		placed += 1
+	result["dungeon_count"] = placed
+
+
+## M2b-3b: project in-window setting_poi_seeds onto carrier children (3,3) as pois,
+## carrying the seed's context + rumor_seeds verbatim (resolved at discovery).
+func _materialize_pois(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+	var placed := 0
+	for s in SettingRepository.list_poi_seeds(campaign_id):
+		var sq := int(s["hex_q"])
+		var sr := int(s["hex_r"])
+		if not in_window.has("%d,%d" % [sq, sr]):
+			continue
+		var child := _carrier_child(sq, sr, 3, 3)
+		var ptype := str(s.get("poi_type", ""))
+		if ptype.is_empty():
+			ptype = "unknown"
+		db.query_with_bindings("""
+			INSERT INTO pois (poi_id, campaign_id, map_id, hex_q, hex_r, poi_type, name, discovered, context, rumor_seeds)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+		""", [
+			CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y,
+			ptype, str(s.get("name", "")),
+			str(s.get("context", "{}")), str(s.get("rumor_seeds", "[]")),
+		])
+		placed += 1
+	result["poi_count"] = placed
+
+
+## M2b-3b: project in-window setting_fortifications onto carrier children (2,1) as
+## strongholds, tied to the runtime domain governing the hex (NULL if none — an
+## unowned border fort). cp_value = stronghold_value_gp×100; completed. watchtower →
+## fastness, else fortress.
+func _materialize_forts(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+	var placed := 0
+	for s in SettingRepository.list_fortifications(campaign_id):
+		var sq := int(s["hex_q"])
+		var sr := int(s["hex_r"])
+		if not in_window.has("%d,%d" % [sq, sr]):
+			continue
+		var child := _carrier_child(sq, sr, 2, 1)
+		var seat_child := _carrier_child(sq, sr, 1, 1)
+		var domain_id = null
+		db.query_with_bindings(
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			[campaign_id, region_map_id, seat_child.x, seat_child.y])
+		if not db.query_result.is_empty():
+			domain_id = str(db.query_result[0]["id"])
+		var archetype := "fastness" if str(s.get("fort_type", "")) == "watchtower" else "fortress"
+		var cp := int(s.get("stronghold_value_gp", 0)) * 100
+		db.query_with_bindings("""
+			INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
+				completion_pct, status, location_map_id, location_hex_q, location_hex_r)
+			VALUES (?, ?, ?, 'keep', ?, 100, 'completed', ?, ?, ?)
+		""", [CampaignRepository.generate_id(), domain_id, archetype, cp, region_map_id, child.x, child.y])
+		placed += 1
+	result["fort_count"] = placed
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder
