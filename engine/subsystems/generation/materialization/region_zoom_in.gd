@@ -20,8 +20,8 @@ extends RefCounted
 ## (campaign_seed, parent_q, parent_r, child_local) via WorldGenRng.
 
 const SUB := 4                  # 16:1 sub-hex ratio → a 4×4 child block per parent
-const WINDOW_W_PARENTS := 8     # ≈32 six-mile hexes wide  (the ~30×40 GDD window,
-const WINDOW_H_PARENTS := 10    # ≈40 six-mile hexes tall   snapped to whole parents)
+const WINDOW_W_PARENTS := 10    # ≈40 six-mile hexes wide  (wider-than-tall play window,
+const WINDOW_H_PARENTS := 8     # ≈32 six-mile hexes tall   ~5:4, snapped to whole parents)
 
 const _VALID_SUBTYPES := [
 	"", "forest_dense", "forest_taiga", "mountains_volcanic", "mountains_glacial",
@@ -35,6 +35,12 @@ const _VALID_SUBTYPES := [
 # anti-uniformity mechanism — softens the 24-mile biome step into a natural transition.
 # Tunable uniformity↔noise dial.
 const ECOTONE_STRENGTH := 0.25
+
+# Coastal jitter (gdd-region-zoom-in §4.2 "coastal fringe"): a boundary child between a
+# land and a water parent can flip — a water child near land juts out as a peninsula,
+# a land child near water floods to a cove. Coherent (driven by the smoothed noise, so
+# it clusters into capes/inlets, not speckle). Higher = more ragged coast.
+const COAST_STRENGTH := 0.30
 
 # The 6 axial hex-neighbour deltas (matches HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS /
 # HexMapController), for locating which neighbour PARENT an edge child borders.
@@ -168,9 +174,9 @@ func _create_region_map(campaign_id: String, world_map_id: String, footprint: Ar
 	return region_id
 
 
-## 16 children for one parent: inherit + vary (patches, dense/light forest,
-## intra-parent foothills, cross-parent ecotones). Water parents inherit wholesale
-## (§6.6). `parents` is the full covered-parent map, for the ecotone neighbour lookup.
+## 16 children for one parent: inherit + vary (patches, dense/light forest, intra-parent
+## foothills, cross-parent ecotones, coastal jitter). `parents` is the full covered-parent
+## map, for the neighbour-parent (ecotone + coast) lookup.
 func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, parents: Dictionary) -> Array:
 	var p_elev := str(parent.get("elevation", "flat"))
 	var p_biome := str(parent.get("biome", "clear"))
@@ -179,35 +185,60 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, paren
 	var p_civ := str(parent.get("civilization", "wilderness"))
 	var p_orig := str(parent.get("original_biome", ""))
 	var p_eraw := float(parent.get("elevation_raw", 0.0))
-	# Parent offset row — children are laid in OFFSET space (parent_col*SUB+local,
-	# parent_row*SUB+local) so the 4x4 child block tiles a clean rectangle. The old
-	# linear axial scheme (pr*SUB) staggered child rows by parent-column parity.
-	# (parent_col == pq because q == col under even-q.)
+	# Children laid in OFFSET space (parent_col*SUB+local) so the 4x4 block tiles a clean
+	# rectangle (parent_col == pq under even-q).
 	var prow := WorldGrid.axial_to_offset(Vector2i(pq, pr)).y
+
+	# Coherent smoothed noise (§6.5) — drives foothills, forest patches, AND the coastal
+	# jitter (so capes/inlets cluster into shapes instead of speckling).
+	var sm := _smooth(_noise_grid(seed, pq, pr))
 
 	var out: Array = []
 
-	# Water parent → 16 water children, no variation (coastline geometry deferred).
+	# Water parent → water children, EXCEPT a child bordering a LAND neighbour parent can
+	# jut out as a coherent peninsula/spit (coastal jitter — softens the square coast).
 	if p_water != "":
 		for cqi in SUB:
 			for cri in SUB:
-				var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
-				out.append({
-					"q": ck.x, "r": ck.y,
-					"elevation": p_elev, "biome": p_biome, "biome_subtype": _clamp_sub(p_sub),
-					"water": p_water, "civilization": p_civ, "original_biome": p_orig,
-					"elevation_raw": p_eraw,
-				})
+				var ckw := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
+				var land_nb := _coastal_neighbor(ckw, pq, pr, parents, false)
+				if not land_nb.is_empty() and sm[cqi][cri] >= 1.0 - COAST_STRENGTH:
+					out.append({
+						"q": ckw.x, "r": ckw.y,
+						"elevation": str(land_nb.get("elevation", "flat")),
+						"biome": str(land_nb.get("biome", "clear")), "biome_subtype": "",
+						"water": "", "civilization": str(land_nb.get("civilization", "wilderness")),
+						"original_biome": str(land_nb.get("original_biome", "")),
+						"elevation_raw": float(land_nb.get("elevation_raw", 0.0)),
+					})
+				else:
+					out.append({
+						"q": ckw.x, "r": ckw.y,
+						"elevation": p_elev, "biome": p_biome, "biome_subtype": _clamp_sub(p_sub),
+						"water": p_water, "civilization": p_civ, "original_biome": p_orig,
+						"elevation_raw": p_eraw,
+					})
 		return out
-
-	# Per-child coherent noise (one smoothing round, §6.5).
-	var noise := _noise_grid(seed, pq, pr)
-	var sm := _smooth(noise)
 
 	for cqi in SUB:
 		for cri in SUB:
 			var s: float = sm[cqi][cri]
 			var ck := WorldGrid.offset_to_axial(pq * SUB + cqi, prow * SUB + cri)
+
+			# A land child bordering a WATER neighbour parent can flood to a coherent cove
+			# (coastal jitter) — overrides the land variation below.
+			var water_nb := _coastal_neighbor(ck, pq, pr, parents, true)
+			if not water_nb.is_empty() and s <= COAST_STRENGTH:
+				out.append({
+					"q": ck.x, "r": ck.y,
+					"elevation": str(water_nb.get("elevation", "flat")),
+					"biome": str(water_nb.get("biome", "clear")), "biome_subtype": "",
+					"water": str(water_nb.get("water", "ocean")),
+					"civilization": str(water_nb.get("civilization", "wilderness")),
+					"original_biome": str(water_nb.get("original_biome", "")),
+					"elevation_raw": float(water_nb.get("elevation_raw", 0.0)),
+				})
+				continue
 
 			# Elevation: intra-parent orographic foothills (coherent → contiguous).
 			var elev := p_elev
@@ -232,8 +263,7 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, paren
 					sub = ""  # a light/thinned patch
 
 			# Cross-parent ecotone (Pass A): an edge child bordering a different-biome
-			# neighbour PARENT feathers toward it — the boundary becomes a natural
-			# transition instead of a hard 24-mile step. Interior children are untouched.
+			# neighbour PARENT feathers toward it — a natural transition, not a hard step.
 			var eco := _ecotone_biome(ck, pq, pr, p_biome, parents, seed, cqi, cri)
 			if not eco.is_empty():
 				biome = eco
@@ -252,6 +282,24 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, paren
 				"elevation_raw": p_eraw,
 			})
 	return out
+
+
+## A bordering neighbour PARENT (not the current one) that is water (want_water=true) or
+## land (false). Returns the parent dict, or {} if `ck` borders no such neighbour — for
+## the coastal jitter (land child near water → cove; water child near land → peninsula).
+func _coastal_neighbor(ck: Vector2i, pq: int, pr: int, parents: Dictionary, want_water: bool) -> Dictionary:
+	for d in _AXIAL_NEIGHBORS:
+		var nb: Vector2i = ck + d
+		var nboff := WorldGrid.axial_to_offset(nb)
+		var np := WorldGrid.offset_to_axial(floori(nboff.x / 4.0), floori(nboff.y / 4.0))
+		if np.x == pq and np.y == pr:
+			continue
+		var npar = parents.get("%d,%d" % [np.x, np.y], null)
+		if npar == null:
+			continue
+		if (str((npar as Dictionary).get("water", "")) != "") == want_water:
+			return npar as Dictionary
+	return {}
 
 
 ## Cross-parent ecotone (§4.1): if child `ck` borders a neighbour PARENT (not the
