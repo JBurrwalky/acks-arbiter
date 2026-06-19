@@ -28,6 +28,7 @@ func run_all_tests() -> void:
 		test_settlements_materialized(cid)      # asserts the M2b-3a settlement placement
 		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
+		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
@@ -146,9 +147,10 @@ func test_political_layer_materialized(cid: String) -> void:
 		"domain_count == crowns + ladder (%d + %d)" % [polities.size(), ladder_expected])
 	check(int(_mat_result.get("ruler_count", -1)) == sovereigns.size(), "ruler_count == sovereigns")
 
-	# DB row counts.
-	check(_count("realms", "campaign_id", cid) == sovereigns.size(), "realms rows == sovereigns")
-	check(_count("domains", "campaign_id", cid) == expected_domains, "domains rows == crowns + ladder")
+	# DB row counts. M2b-4 adds one realm + one crown domain per in-window pocket realm.
+	var np := int(_mat_result.get("pocket_realm_count", 0))
+	check(_count("realms", "campaign_id", cid) == sovereigns.size() + np, "realms rows == sovereigns + pockets")
+	check(_count("domains", "campaign_id", cid) == expected_domains + np, "domains rows == crowns + ladder + pockets")
 
 	# Realms: 'foreign' by default, 'tracked' once promoted for the in-window start
 	# region (M2b-2); head FK-resolves.
@@ -205,14 +207,16 @@ func test_political_layer_materialized(cid: String) -> void:
 		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND peasant_families = 0 AND tribute_out_owed > 0", [cid]) > 0,
 			"war-vassal crowns owe realm-scaled up-tribute (families=0, tribute>0)")
 
-	# Population CONSERVED through decomposition (gdd §15.3 / contract §6b): the leaf
-	# domains tile every populated owned hex; interior nodes + crowns of laddered civ
-	# polities hold 0 personal families. So Σ runtime domain families == Σ owned-hex
-	# families, with no double-count. (Orphaned/unowned populated land becomes pocket
-	# realms in M2b-4 and is excluded from both sides here.)
+	# Population CONSERVED (gdd §15.3 / contract §6b): leaf domains tile every populated
+	# owned hex; interior nodes + laddered crowns hold 0 personal families; in-window
+	# orphaned (unowned, populated) hexes become pocket realms (M2b-4) carrying their
+	# families. So Σ runtime domain families == Σ owned-hex families + Σ in-window orphan
+	# families, with no double-count. (Out-of-window orphans stay lazy, excluded.)
 	var owned_fam := _scalar("SELECT COALESCE(SUM(population_band),0) AS n FROM setting_hexes WHERE campaign_id = ? AND owner_polity_id IN (SELECT id FROM setting_polities WHERE campaign_id = ?)", [cid, cid])
+	var orphan_fam := _in_window_orphan_fam(cid, rmid)
 	var dom_fam := _scalar("SELECT COALESCE(SUM(peasant_families),0) AS n FROM domains WHERE campaign_id = ?", [cid])
-	check(dom_fam == owned_fam, "population conserved: Σ domain families (%d) == Σ owned-hex families (%d)" % [dom_fam, owned_fam])
+	check(dom_fam == owned_fam + orphan_fam,
+		"population conserved: Σ domain families (%d) == owned (%d) + in-window orphan pockets (%d)" % [dom_fam, owned_fam, orphan_fam])
 
 	# Culture threaded onto a sampled domain.
 	if sovereigns.size() > 0:
@@ -315,11 +319,12 @@ func test_region_map_materialized(cid: String) -> void:
 	# and their realms are promoted to 'tracked'.
 	var located := int(_mat_result.get("located_domain_count", -1))
 	var tracked := int(_mat_result.get("tracked_realm_count", -1))
-	check(located == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
-		"located_domain_count matches domains located on the region map")
+	check(located + int(_mat_result.get("pocket_realm_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
+		"located domains == M2b-2 in-window domains + M2b-4 pocket crowns")
 	check(located > 0, "≥1 domain located in the start region (%d)" % located)
-	check(tracked == _scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked'", [cid]),
-		"tracked_realm_count matches promoted realms (%d)" % tracked)
+	# DB 'tracked' realms = M2b-2 promoted in-window realms + M2b-4 pocket realms.
+	check(tracked + int(_mat_result.get("pocket_realm_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked'", [cid]),
+		"tracked realms == M2b-2 promoted (%d) + pockets" % tracked)
 	if located > 0:
 		check(tracked > 0, "≥1 realm promoted to 'tracked' for the start region")
 	# Each located domain points at a REAL region hex_cell (proves the carrier-child
@@ -419,6 +424,51 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	# Each 6-mile child belongs to exactly one domain (no overlap / double-claim).
 	check(_scalar("SELECT COUNT(*) AS n FROM (SELECT hex_q, hex_r FROM domain_hexes WHERE map_id = ? GROUP BY hex_q, hex_r HAVING COUNT(DISTINCT domain_id) > 1) t", [rid]) == 0,
 		"each 6-mile child belongs to exactly one domain")
+
+
+func test_pocket_realms(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var np := int(_mat_result.get("pocket_realm_count", -1))
+	var orphan_fam := _in_window_orphan_fam(cid, rid)
+	if orphan_fam > 0:
+		check(np > 0, "in-window orphan population (%d fam) → ≥1 pocket realm" % orphan_fam)
+	else:
+		check(np == 0, "no in-window orphans → no pocket realms")
+	if np > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked' AND name LIKE 'Free Holding%'", [cid]) == np,
+			"pocket realms are tracked 'Free Holding' realms (%d)" % np)
+		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND name LIKE 'Free Holding%' AND location_map_id = ? AND liege_domain_id IS NULL AND peasant_families > 0", [cid, rid]) == np,
+			"pocket crowns are located, sovereign, and populated")
+		check(_scalar("SELECT COALESCE(SUM(peasant_families),0) AS n FROM domains WHERE campaign_id = ? AND name LIKE 'Free Holding%'", [cid]) == orphan_fam,
+			"Σ pocket families == in-window orphan families (%d)" % orphan_fam)
+		check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND d.name LIKE 'Free Holding%' AND (d.owner_character_id IS NULL OR d.owner_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?))", [cid, cid]) == 0,
+			"every pocket crown has a resolvable ruler")
+
+
+## In-window orphan (unowned, populated) families — the population M2b-4 turns into
+## pocket realms. Reads the region footprint and sums matching setting_hexes.
+func _in_window_orphan_fam(cid: String, rid: String) -> int:
+	if rid == "":
+		return 0
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT parent_hex_footprint FROM hex_maps WHERE id = ?", [rid])
+	if db.query_result.is_empty():
+		return 0
+	var fp = JSON.parse_string(str(db.query_result[0].get("parent_hex_footprint", "[]")))
+	if not (fp is Array):
+		return 0
+	var inw := {}
+	for pair in fp:
+		if pair is Array and (pair as Array).size() == 2:
+			inw["%d,%d" % [int(pair[0]), int(pair[1])]] = true
+	db.query_with_bindings("SELECT q, r, population_band FROM setting_hexes WHERE campaign_id = ? AND population_band > 0 AND (owner_polity_id = '' OR owner_polity_id = '0')", [cid])
+	var total := 0
+	for row in db.query_result:
+		if inw.has("%d,%d" % [int(row["q"]), int(row["r"])]):
+			total += int(row["population_band"])
+	return total
 
 
 func _region_variation(rid: String, wid: String) -> Dictionary:

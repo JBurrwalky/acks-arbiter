@@ -36,6 +36,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
 		"dungeon_count": 0, "poi_count": 0, "fort_count": 0, "domain_hex_count": 0,
+		"pocket_realm_count": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -101,6 +102,8 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	_materialize_forts(campaign_id, region_map_id, result)
 	# M2b-3c: give in-window located domains their 6-mile territory (domain_hexes).
 	_materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
+	# M2b-4: orphaned populated land → persisted independent pocket realms.
+	_materialize_pocket_realms(campaign_id, region_map_id, result)
 
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
@@ -792,6 +795,190 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv])
 				placed += 1
 	result["domain_hex_count"] = placed
+
+
+## M2b-4: orphaned populated land (in-window hexes that are UNOWNED but population>0
+## — collapse remnants the sim left polity-less) becomes persisted independent POCKET
+## realms ("points of light", contract §6c / principle 2). Cluster contiguous
+## same-dominant-culture orphan hexes (axial 6-neighbours — setting_hexes q,r are
+## axial), size each cluster's tier by its families (Barony…County floor), give it a
+## rolled ruler + a located crown + domain_hexes. setting_* stays frozen; this is a
+## pure runtime construct. Out-of-window orphans stay lazy (on-encounter, later).
+func _materialize_pocket_realms(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return
+	var db = CampaignRepository.db
+	var campaign_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
+
+	# In-window orphan hexes (unowned, populated).
+	var orphans := {}
+	for key in in_window:
+		var parts := str(key).split(",")
+		if parts.size() != 2:
+			continue
+		db.query_with_bindings(
+			"SELECT owner_polity_id, population_band, culture_weights, alignment_weights, land_value FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+			[campaign_id, int(parts[0]), int(parts[1])])
+		if db.query_result.is_empty():
+			continue
+		var row: Dictionary = db.query_result[0]
+		var owner := str(row.get("owner_polity_id", ""))
+		var pop := int(row.get("population_band", 0))
+		if (owner.is_empty() or owner == "0") and pop > 0:
+			orphans[key] = {
+				"q": int(parts[0]), "r": int(parts[1]), "pop": pop,
+				"cw": str(row.get("culture_weights", "{}")),
+				"aw": str(row.get("alignment_weights", "{}")),
+				"lv": clampi(int(row.get("land_value", 5)), 3, 9),
+			}
+	if orphans.is_empty():
+		return
+
+	# Fallen-realm toponyms by hex (names a pocket after the realm whose collapse left
+	# it — principle 3 history).
+	var fallen_by_hex := {}
+	for fp in SettingRepository.list_fallen_polities(campaign_id):
+		var hx = JSON.parse_string(str(fp.get("hexes", "[]")))
+		if hx is Array:
+			for h in hx:
+				if h is Array and (h as Array).size() == 2:
+					fallen_by_hex["%d,%d" % [int(h[0]), int(h[1])]] = str(fp.get("toponym_root", ""))
+
+	var pockets := 0
+	for cluster in _cluster_orphans(orphans):
+		if _create_pocket_realm(campaign_id, region_map_id, campaign_seed, cluster, orphans, fallen_by_hex):
+			pockets += 1
+	result["pocket_realm_count"] = pockets
+	# Re-sync the domain_hex tally: M2b-3c counted only owned hexes; pockets added more.
+	db.query_with_bindings("SELECT COUNT(*) AS n FROM domain_hexes WHERE map_id = ?", [region_map_id])
+	if not db.query_result.is_empty():
+		result["domain_hex_count"] = int(db.query_result[0].get("n", 0))
+
+
+## Flood-fill orphan hexes into contiguous SAME-dominant-culture clusters (axial
+## 6-neighbours). Deterministic: keys sorted; cluster membership is set-based.
+func _cluster_orphans(orphans: Dictionary) -> Array:
+	var dom_culture := {}
+	for k in orphans:
+		dom_culture[k] = _dominant_key(str(orphans[k]["cw"]))
+	var keys := orphans.keys()
+	keys.sort()
+	var visited := {}
+	var clusters: Array = []
+	const _AXIAL_NEIGHBORS := [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]]
+	for start in keys:
+		if visited.has(start):
+			continue
+		var cluster: Array = []
+		var stack: Array = [start]
+		visited[start] = true
+		while not stack.is_empty():
+			var cur = stack.pop_back()
+			cluster.append(cur)
+			var cq := int(orphans[cur]["q"])
+			var cr := int(orphans[cur]["r"])
+			for d in _AXIAL_NEIGHBORS:
+				var nk := "%d,%d" % [cq + d[0], cr + d[1]]
+				if orphans.has(nk) and not visited.has(nk) and dom_culture[nk] == dom_culture[start]:
+					visited[nk] = true
+					stack.append(nk)
+		clusters.append(cluster)
+	return clusters
+
+
+## The highest-weight key of a JSON weights dict (culture_weights / alignment_weights),
+## canonical (sorted) tiebreak; "" if empty/malformed.
+func _dominant_key(json_str: String) -> String:
+	var d = JSON.parse_string(json_str)
+	if not (d is Dictionary):
+		return ""
+	var ks = d.keys()
+	ks.sort()
+	var best := ""
+	var best_v := -1.0
+	for k in ks:
+		var v := float(d[k])
+		if v > best_v:
+			best_v = v
+			best = str(k)
+	return best
+
+
+## Instantiate one pocket realm from a cluster of orphan hex keys: realm (tracked) +
+## a located crown domain + a rolled ruler + the cluster's domain_hexes. Returns false
+## on a hard create failure.
+func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_seed: int,
+		cluster: Array, orphans: Dictionary, fallen_by_hex: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	var total_fam := 0
+	var seat_key = cluster[0]
+	var seat_pop := -1
+	for k in cluster:
+		var o: Dictionary = orphans[k]
+		total_fam += int(o["pop"])
+		if int(o["pop"]) > seat_pop:
+			seat_pop = int(o["pop"])
+			seat_key = k
+	var seat: Dictionary = orphans[seat_key]
+	var sq := int(seat["q"])
+	var sr := int(seat["r"])
+	var culture := _dominant_key(str(seat["cw"]))
+	var alignment := _alignment_or_neutral(_dominant_key(str(seat["aw"])))
+	var tier := clampi(DomainTierTable.tier_for_families(total_fam), DomainTierTable.BARONY, DomainTierTable.COUNTY)
+	var level := DomainTierTable.ruler_level_for_tier(tier)
+
+	var toponym := ""
+	for k in cluster:
+		if fallen_by_hex.has(k) and not str(fallen_by_hex[k]).is_empty():
+			toponym = str(fallen_by_hex[k])
+			break
+	var realm_name := ("Free Holding of %s" % toponym) if not toponym.is_empty() else "Free Holding"
+
+	# A rolled frontier lord (a fighter — the classic ACKS domain-holder).
+	var roll := WorldGenRng.stream(campaign_seed, "pocket_ruler", 0, seat_key).randi_range(3, 18)
+	var builder := ClassedNpcBuilder.new()
+	var rres: Dictionary = builder.build_and_persist("fighter", campaign_id, {
+		"level": level, "character_type": "npc", "tier": "named", "role": "ruler",
+		"culture_id": culture, "generate_personality": true, "forced_roll": roll,
+	})
+	var ruler_id := ""
+	if rres is Dictionary and bool(rres.get("ok", false)):
+		ruler_id = str(rres.get("character_id", ""))
+
+	var realm_id := RealmRepository.create_realm({
+		"campaign_id": campaign_id, "name": realm_name, "head_character_id": ruler_id,
+		"alignment": _alignment_or_empty(alignment), "dominant_religion": "",
+		"culture": culture, "realm_kind": "tracked",
+	})
+	if realm_id.is_empty():
+		return false
+
+	var seat_child := _carrier_child(sq, sr, 1, 1)
+	var domain_id := CampaignRepository.create_domain({
+		"campaign_id": campaign_id, "name": realm_name,
+		"owner_character_id": (ruler_id if not ruler_id.is_empty() else null),
+		"location_map_id": region_map_id, "location_hex_q": seat_child.x, "location_hex_r": seat_child.y,
+		"territory_type": _territory_for_hex(campaign_id, sq, sr),
+		"alignment": alignment, "religion": "", "domain_style": "civilized",
+		"establishment_method": "generated", "established_calendar_day": 0,
+	})
+	if domain_id.is_empty():
+		return false
+	db.query_with_bindings(
+		"UPDATE domains SET peasant_families = ?, morale = 0, realm_title = ?, culture_id = ?, realm_id = ? WHERE id = ?",
+		[total_fam, ruler_title_for(DomainTierTable.title_for_tier(tier)), culture, realm_id, domain_id])
+
+	for k in cluster:
+		var o: Dictionary = orphans[k]
+		var poff := WorldGrid.axial_to_offset(Vector2i(int(o["q"]), int(o["r"])))
+		for cx in 4:
+			for cy in 4:
+				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
+				db.query_with_bindings(
+					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
+					[CampaignRepository.generate_id(), domain_id, region_map_id, ch.x, ch.y, int(o["lv"])])
+	return true
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder
