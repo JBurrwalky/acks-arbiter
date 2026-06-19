@@ -425,6 +425,11 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	# Each 6-mile child belongs to exactly one domain (no overlap / double-claim).
 	check(_scalar("SELECT COUNT(*) AS n FROM (SELECT hex_q, hex_r FROM domain_hexes WHERE map_id = ? GROUP BY hex_q, hex_r HAVING COUNT(DISTINCT domain_id) > 1) t", [rid]) == 0,
 		"each 6-mile child belongs to exactly one domain")
+	# A LOCATED domain_hex must never point at an abstract (unlocated) domain (M2b-3c
+	# located-crown-only fix): titular wilderness whose crown is out-of-window is left
+	# unclaimed rather than bound to a domain the stocker would skip.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes dh JOIN domains d ON dh.domain_id = d.id WHERE dh.map_id = ? AND d.location_map_id IS NULL", [rid]) == 0,
+		"no domain_hex belongs to an unlocated (abstract) domain")
 
 
 func test_pocket_realms(cid: String) -> void:

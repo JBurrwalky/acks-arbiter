@@ -94,16 +94,22 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	# their realm is promoted to 'tracked'; out-of-window domains stay abstracted.
 	_locate_in_window_domains(campaign_id, region_map_id, ctx, result)
 
-	# 5. CONTENT PLACEMENT (M2b-3) — project in-window 24-mile-tagged content onto the
-	# 6-mile carrier children: settlements (3a, +history), then dungeons/POIs/forts (3b).
-	_materialize_settlements(campaign_id, region_map_id, result)
-	_materialize_dungeons(campaign_id, region_map_id, result)
-	_materialize_pois(campaign_id, region_map_id, result)
-	_materialize_forts(campaign_id, region_map_id, result)
-	# M2b-3c: give in-window located domains their 6-mile territory (domain_hexes).
-	_materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
-	# M2b-4: orphaned populated land → persisted independent pocket realms.
-	_materialize_pocket_realms(campaign_id, region_map_id, result)
+	# 5. CONTENT PLACEMENT (M2b-3/4) — project in-window 24-mile-tagged content onto the
+	# 6-mile carrier children. Each pass is fail-aware: a DB insert/create failure
+	# returns false so we roll back the partial materialization and stay retryable
+	# (rather than silently under-populating a campaign the idempotence guard then locks).
+	var content_ok := (
+		_materialize_settlements(campaign_id, region_map_id, ctx, result)
+		and _materialize_dungeons(campaign_id, region_map_id, result)
+		and _materialize_pois(campaign_id, region_map_id, result)
+		and _materialize_forts(campaign_id, region_map_id, ctx, result)
+		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
+		and _materialize_pocket_realms(campaign_id, region_map_id, result)
+	)
+	if not content_ok:
+		errors.append("content placement failed")
+		_cleanup_partial(campaign_id)
+		return result
 
 	# 7. CLOCK (Decision J) — day 1, spring. calendar_day defaults to 1; set it
 	# explicitly so a re-materialize is unambiguous.
@@ -446,14 +452,22 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 		if lg.is_empty() or not by_id.has(lg) or not crown_by_pid.has(pid):
 			continue  # sovereign / dangling-root: no overlord
 		# Subjugation tick (how long under the overlord) — the latest event that
-		# subjugated this polity. Set regardless of families (a depopulated conquered
-		# realm is still subjugated). M2b-5 / principle 3.
+		# subjugated THIS polity, where it is the SUBJUGATED party (not the subjugator:
+		# a war-vassal can itself later conquer/vassalize others). vassalage/conquest
+		# store polity_ids = [subjugator, subjugated]; protectorate = [joiner(subjugated),
+		# protector]. The loose LIKE only prefilters; the position check is authoritative.
+		# Set regardless of families (a depopulated conquered realm is still subjugated).
 		db.query_with_bindings(
-			"SELECT COALESCE(MAX(tick), -1) AS t FROM setting_events WHERE campaign_id = ? AND type IN ('vassalage','conquest','protectorate') AND polity_ids LIKE ?",
+			"SELECT tick, type, polity_ids FROM setting_events WHERE campaign_id = ? AND type IN ('vassalage','conquest','protectorate') AND polity_ids LIKE ?",
 			[campaign_id, "%\"" + pid + "\"%"])
 		var since := -1
-		if not db.query_result.is_empty():
-			since = int(db.query_result[0].get("t", -1))
+		for ev in db.query_result:
+			var pids = JSON.parse_string(str(ev.get("polity_ids", "[]")))
+			if not (pids is Array):
+				continue
+			var subjugated_idx := 0 if str(ev.get("type", "")) == "protectorate" else 1
+			if (pids as Array).size() > subjugated_idx and str(pids[subjugated_idx]) == pid:
+				since = maxi(since, int(ev.get("tick", -1)))
 		db.query_with_bindings("UPDATE domains SET subjugated_since_tick = ? WHERE id = ?", [since, crown_by_pid[pid]])
 		# War-vassal up-tribute from the realm family total.
 		var rf := int(realm_fam.get(pid, 0))
@@ -533,11 +547,12 @@ func _carrier_child(seat_q: int, seat_r: int, lx: int, ly: int) -> Vector2i:
 ## the runtime domain governing its hex, and carrying a derived `history_context`
 ## (past ruling cultures + founding) for the narrator (principle 3). Out-of-window
 ## settlements stay in setting_settlements until their region rolls in.
-func _materialize_settlements(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+func _materialize_settlements(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
+	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
 
 	var culture_by_pid := {}
 	var rclass_by_pid := {}
@@ -546,8 +561,9 @@ func _materialize_settlements(campaign_id: String, region_map_id: String, result
 		rclass_by_pid[str(p["id"])] = str(p.get("ruler_class", ""))
 
 	# History index: 24-mile hex "q,r" → the events that touched it (built once).
+	# id-tiebroken so same-tick events order reproducibly (matches SettingHistoryReader).
 	db.query_with_bindings(
-		"SELECT tick, type, polity_ids, culture_ids, hexes FROM setting_events WHERE campaign_id = ? ORDER BY tick ASC",
+		"SELECT id, tick, type, polity_ids, culture_ids, hexes FROM setting_events WHERE campaign_id = ? ORDER BY tick ASC, id ASC",
 		[campaign_id])
 	var hex_events := _build_hex_event_index(db.query_result.duplicate(true))
 
@@ -561,42 +577,52 @@ func _materialize_settlements(campaign_id: String, region_map_id: String, result
 		var pid := str(s.get("polity_id", ""))
 		var current_culture := str(culture_by_pid.get(pid, ""))
 
-		# Parent domain = the located domain governing this hex (the most-populated
-		# one at the carrier child — a leaf over a 0-family crown).
+		# Parent domain = the located leaf governing this hex (most-populated at the
+		# carrier child); else the polity's crown — a valid FK even when the crown is
+		# abstract, so a settlement on a Barony-tier / non-capital / urban-only hex (no
+		# leaf is seated there) still links to its realm for the reputation cascade.
 		var parent_domain = null
 		db.query_with_bindings(
-			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id LIMIT 1",
 			[campaign_id, region_map_id, child.x, child.y])
 		if not db.query_result.is_empty():
 			parent_domain = str(db.query_result[0]["id"])
+		elif crown_by_pid.has(pid):
+			parent_domain = str(crown_by_pid[pid])
 
 		var hist := _settlement_history_json(
 			hex_events.get("%d,%d" % [sq, sr], []), current_culture, int(s.get("emergence_tick", 0)))
 
-		var sid := CampaignRepository.generate_id()
-		db.query_with_bindings("""
+		if not db.query_with_bindings("""
 			INSERT INTO settlement_entrances
 				(id, campaign_id, map_id, hex_q, hex_r, name, market_class,
 				 settlement_data, parent_domain_id, urban_families, dominant_race,
 				 culture_id, history_context)
 			VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
 		""", [
-			sid, campaign_id, region_map_id, child.x, child.y,
+			CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y,
 			str(s.get("name", "")), int(s.get("market_class", 6)),
 			parent_domain, int(s.get("urban_families", 0)),
 			_race_for_ruler_class(str(rclass_by_pid.get(pid, ""))),
 			current_culture, hist,
-		])
+		]):
+			result["errors"].append("settlement insert failed at (%d,%d)" % [sq, sr])
+			return false
 		placed += 1
 	result["settlement_count"] = placed
+	return true
 
 
 ## Build "q,r" → [event digest] for setting_events that bear on a hex's history
 ## (ownership/culture changes + founding). Each digest is shared across the event's
 ## hexes. Parsed once; consumed per settlement.
 func _build_hex_event_index(events: Array) -> Dictionary:
-	const _HISTORICAL := ["founding", "conquest", "vassalage", "secession",
-		"cultural_shift", "protectorate", "razing", "rebellion_won"]
+	# Culture-/ownership-bearing event types a settlement's narrator wants. Includes
+	# depopulation + migration ("this town was wiped when realm X fell" / "settled by
+	# Y's refugees") per principle 3. ('founding' is never emitted by the sim — founding
+	# comes from setting_settlements.emergence_tick — so it is intentionally omitted.)
+	const _HISTORICAL := ["conquest", "vassalage", "secession", "cultural_shift",
+		"protectorate", "razing", "rebellion_won", "depopulation", "migration"]
 	var idx := {}
 	for e in events:
 		var etype := str(e.get("type", ""))
@@ -656,10 +682,10 @@ func _race_for_ruler_class(ruler_class: String) -> String:
 ## dungeon_entrances stubs. dungeon_data carries size hint + flavor + PROVENANCE
 ## (culture/polity/toponym/era/event — principle 3) for the narrator + DG-V1
 ## layout-on-first-entry. Coexists with the emergent lazy-lair system.
-func _materialize_dungeons(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+func _materialize_dungeons(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
 	var placed := 0
 	for s in SettingRepository.list_ruin_seeds(campaign_id):
@@ -683,20 +709,23 @@ func _materialize_dungeons(campaign_id: String, region_map_id: String, result: D
 		var dname := str(s.get("name", ""))
 		if dname.is_empty():
 			dname = "Unknown Dungeon"
-		db.query_with_bindings("""
+		if not db.query_with_bindings("""
 			INSERT INTO dungeon_entrances (id, campaign_id, map_id, hex_q, hex_r, name, dungeon_data)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y, dname, dd])
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y, dname, dd]):
+			result["errors"].append("dungeon insert failed at (%d,%d)" % [sq, sr])
+			return false
 		placed += 1
 	result["dungeon_count"] = placed
+	return true
 
 
 ## M2b-3b: project in-window setting_poi_seeds onto carrier children (3,3) as pois,
 ## carrying the seed's context + rumor_seeds verbatim (resolved at discovery).
-func _materialize_pois(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+func _materialize_pois(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
 	var placed := 0
 	for s in SettingRepository.list_poi_seeds(campaign_id):
@@ -708,27 +737,31 @@ func _materialize_pois(campaign_id: String, region_map_id: String, result: Dicti
 		var ptype := str(s.get("poi_type", ""))
 		if ptype.is_empty():
 			ptype = "unknown"
-		db.query_with_bindings("""
+		if not db.query_with_bindings("""
 			INSERT INTO pois (poi_id, campaign_id, map_id, hex_q, hex_r, poi_type, name, discovered, context, rumor_seeds)
 			VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 		""", [
 			CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y,
 			ptype, str(s.get("name", "")),
 			str(s.get("context", "{}")), str(s.get("rumor_seeds", "[]")),
-		])
+		]):
+			result["errors"].append("poi insert failed at (%d,%d)" % [sq, sr])
+			return false
 		placed += 1
 	result["poi_count"] = placed
+	return true
 
 
 ## M2b-3b: project in-window setting_fortifications onto carrier children (2,1) as
 ## strongholds, tied to the runtime domain governing the hex (NULL if none — an
 ## unowned border fort). cp_value = stronghold_value_gp×100; completed. watchtower →
 ## fastness, else fortress.
-func _materialize_forts(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+func _materialize_forts(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
+	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
 	var placed := 0
 	for s in SettingRepository.list_fortifications(campaign_id):
 		var sq := int(s["hex_q"])
@@ -737,35 +770,48 @@ func _materialize_forts(campaign_id: String, region_map_id: String, result: Dict
 			continue
 		var child := _carrier_child(sq, sr, 2, 1)
 		var seat_child := _carrier_child(sq, sr, 1, 1)
+		# Owning domain = the located leaf on this hex; else the owner polity's crown
+		# (valid FK even when abstract); else NULL (an unowned border fort).
 		var domain_id = null
 		db.query_with_bindings(
-			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id LIMIT 1",
 			[campaign_id, region_map_id, seat_child.x, seat_child.y])
 		if not db.query_result.is_empty():
 			domain_id = str(db.query_result[0]["id"])
+		else:
+			var owner := str(s.get("owner_polity_id", ""))
+			if crown_by_pid.has(owner):
+				domain_id = str(crown_by_pid[owner])
 		var archetype := "fastness" if str(s.get("fort_type", "")) == "watchtower" else "fortress"
 		var cp := int(s.get("stronghold_value_gp", 0)) * 100
-		db.query_with_bindings("""
+		if not db.query_with_bindings("""
 			INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
 				completion_pct, status, location_map_id, location_hex_q, location_hex_r)
 			VALUES (?, ?, ?, 'keep', ?, 100, 'completed', ?, ?, ?)
-		""", [CampaignRepository.generate_id(), domain_id, archetype, cp, region_map_id, child.x, child.y])
+		""", [CampaignRepository.generate_id(), domain_id, archetype, cp, region_map_id, child.x, child.y]):
+			result["errors"].append("stronghold insert failed at (%d,%d)" % [sq, sr])
+			return false
 		placed += 1
 	result["fort_count"] = placed
+	return true
 
 
 ## M2b-3c: give each in-window LOCATED domain its 6-mile territory. For every owned
 ## in-window 24-mile hex, all 16 of its children become domain_hexes of the domain
 ## governing that hex — the leaf located on it (families>0) if the polity is laddered,
-## else the polity's crown (for a clanhold/Barony crown's non-capital hexes). land_value
+## else the polity's crown IF the crown is itself located (a clanhold/Barony crown
+## whose capital is in-window, or titular pop-0 wilderness of such a polity). A
+## located domain_hex must NEVER point at an abstract (unlocated) domain, so when the
+## only candidate is an out-of-window crown the hex is left UNCLAIMED (it stays empty
+## on the play map rather than binding to a domain the stocker would skip). land_value
 ## inherits the 24-mile hex's (clamped to the runtime 3–9 CHECK). Population stays
 ## conserved at the DOMAIN level (M2b-1: peasant_families == the 24-mile hex pop); no
-## per-6-mile-hex population is stored (no consumer / field yet — deferred). Unowned
-## hexes (titular / orphan) are M2b-4.
-func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> void:
+## per-6-mile-hex population is stored (no consumer / field yet — deferred). UNOWNED
+## populated land (orphans) is M2b-4 pocket realms.
+func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
 	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
 	var placed := 0
@@ -782,19 +828,24 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 			continue
 		var owner := str(db.query_result[0].get("owner_polity_id", ""))
 		if owner.is_empty() or owner == "0":
-			continue  # unowned (titular wilderness / orphan — handled in M2b-4)
+			continue  # unowned populated land → M2b-4 pocket realms
 		var lv := clampi(int(db.query_result[0].get("land_value", 5)), 3, 9)
 
-		# Governing domain: the leaf located on this hex (families>0), else the crown.
+		# Governing domain: the located leaf on this hex; else the owner's crown ONLY if
+		# the crown is itself located (else leave the hex unclaimed — never bind a located
+		# domain_hex to an abstract domain).
 		var seat_child := _carrier_child(hq, hr, 1, 1)
 		var gov = null
 		db.query_with_bindings(
-			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, id ASC LIMIT 1",
+			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id LIMIT 1",
 			[campaign_id, region_map_id, seat_child.x, seat_child.y])
 		if not db.query_result.is_empty():
 			gov = str(db.query_result[0]["id"])
 		elif crown_by_pid.has(owner):
-			gov = str(crown_by_pid[owner])
+			var crown_id := str(crown_by_pid[owner])
+			db.query_with_bindings("SELECT location_map_id FROM domains WHERE id = ?", [crown_id])
+			if not db.query_result.is_empty() and str(db.query_result[0].get("location_map_id", "")) == region_map_id:
+				gov = crown_id
 		if gov == null:
 			continue
 
@@ -802,11 +853,14 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		for cx in 4:
 			for cy in 4:
 				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
-				db.query_with_bindings(
+				if not db.query_with_bindings(
 					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
-					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv])
+					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv]):
+					result["errors"].append("domain_hex insert failed at (%d,%d)" % [ch.x, ch.y])
+					return false
 				placed += 1
 	result["domain_hex_count"] = placed
+	return true
 
 
 ## M2b-4: orphaned populated land (in-window hexes that are UNOWNED but population>0
@@ -816,10 +870,10 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 ## axial), size each cluster's tier by its families (Barony…County floor), give it a
 ## rolled ruler + a located crown + domain_hexes. setting_* stays frozen; this is a
 ## pure runtime construct. Out-of-window orphans stay lazy (on-encounter, later).
-func _materialize_pocket_realms(campaign_id: String, region_map_id: String, result: Dictionary) -> void:
+func _materialize_pocket_realms(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
-		return
+		return true
 	var db = CampaignRepository.db
 	var campaign_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
 
@@ -845,7 +899,7 @@ func _materialize_pocket_realms(campaign_id: String, region_map_id: String, resu
 				"lv": clampi(int(row.get("land_value", 5)), 3, 9),
 			}
 	if orphans.is_empty():
-		return
+		return true
 
 	# Fallen-realm toponyms by hex (names a pocket after the realm whose collapse left
 	# it — principle 3 history).
@@ -859,13 +913,17 @@ func _materialize_pocket_realms(campaign_id: String, region_map_id: String, resu
 
 	var pockets := 0
 	for cluster in _cluster_orphans(orphans):
-		if _create_pocket_realm(campaign_id, region_map_id, campaign_seed, cluster, orphans, fallen_by_hex):
-			pockets += 1
+		if not _create_pocket_realm(campaign_id, region_map_id, campaign_seed, cluster, orphans, fallen_by_hex):
+			result["errors"].append("pocket realm create failed")
+			return false
+		pockets += 1
 	result["pocket_realm_count"] = pockets
-	# Re-sync the domain_hex tally: M2b-3c counted only owned hexes; pockets added more.
+	# Re-sync the domain_hex tally to the true total: M2b-3c counted only owned hexes;
+	# pockets added more (owned + pocket hex sets are disjoint, so no double-count).
 	db.query_with_bindings("SELECT COUNT(*) AS n FROM domain_hexes WHERE map_id = ?", [region_map_id])
 	if not db.query_result.is_empty():
 		result["domain_hex_count"] = int(db.query_result[0].get("n", 0))
+	return true
 
 
 ## Flood-fill orphan hexes into contiguous SAME-dominant-culture clusters (axial
@@ -987,9 +1045,10 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 		for cx in 4:
 			for cy in 4:
 				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
-				db.query_with_bindings(
+				if not db.query_with_bindings(
 					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
-					[CampaignRepository.generate_id(), domain_id, region_map_id, ch.x, ch.y, int(o["lv"])])
+					[CampaignRepository.generate_id(), domain_id, region_map_id, ch.x, ch.y, int(o["lv"])]):
+					return false
 	return true
 
 
