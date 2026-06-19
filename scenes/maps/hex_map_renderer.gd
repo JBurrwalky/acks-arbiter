@@ -512,6 +512,18 @@ func _on_enter_settlement_pressed() -> void:
 	# SettlementExploreState performs the same gate, so the entry_pois set
 	# the player picks from here matches the one the state will load.
 	var entrance_id: String = String(entrance.get("id", ""))
+
+	# Lazy interior stocking (Decision H): a materialized/generated settlement is
+	# created with empty settlement_data and NO settlement_pois rows. Stock a baseline
+	# interior on first entry so the town is enterable. This is the FIRST gate (the
+	# enter-button picker); SettlementExploreState.enter performs the same guard, but
+	# by then the rows already exist, so it runs exactly once. Fixtures (Avalon) ship
+	# settlement_data and skip this.
+	if not SettlementDictBuilder.has_relational_pois(entrance_id) \
+			and String(entrance.get("settlement_data", "")).is_empty():
+		SettlementLayoutGenerator.new().seed_pois(
+			entrance_id, int(entrance.get("market_class", 6)), String(entrance.get("name", "Settlement")))
+
 	var settlement_dict: Variant = null
 	if SettlementDictBuilder.has_relational_pois(entrance_id):
 		settlement_dict = SettlementDictBuilder.build_from_pois(entrance_id, entrance)
