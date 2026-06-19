@@ -206,7 +206,7 @@ func _materialize_world_map(campaign_id: String, world_map_id: String, result: D
 	return true
 
 
-# ── M1: POLITICAL LAYER ──────────────────────────────────────────────────────
+# ── M1 + M2b-1: POLITICAL LAYER ──────────────────────────────────────────────
 
 const _DOMAIN_TITLE_TO_RULER := {
 	"Barony": "Baron", "March": "Marquis", "County": "Count",
@@ -223,8 +223,15 @@ static func ruler_title_for(domain_title: String) -> String:
 	return str(_DOMAIN_TITLE_TO_RULER.get(domain_title, "Baron"))
 
 
-## setting_polities → realms + abstracted domains + sovereign rulers. Domains are
-## ABSTRACTED at M1 (no location_map_id / domain_hexes); M2 locates the start region.
+## setting_polities + setting_domains → realms + the full domain hierarchy + rulers
+## (M2b-1 regrounding, gdd §15.2). Each polity gets a CROWN domain (its ruler's
+## apex); each civ polity's `setting_domains` vassal ladder is materialized beneath
+## that crown. Leaves (is_personal_domain=1) carry the population (conserved — no
+## double-count); interior grouping nodes + the crown hold 0 personal families.
+## Beastman/clan polities have no `setting_domains` rows and keep the flat crown-only
+## path. Sovereign rulers are eager (the M1 set); ladder/vassal-chain rulers stay
+## abstract (owner NULL) until M2b-2 locates the start window. Domains are still
+## ABSTRACTED here (no location_map_id); M2b-2 locates the in-window ones.
 ## Not wrapped in one transaction because ClassedNpcBuilder.persist may manage its
 ## own; the materialize() guard prevents a partial re-run.
 func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bool:
@@ -241,15 +248,26 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 		by_id[str(p["id"])] = p
 	var ordered := _topo_order_polities(polities, by_id, result)
 
-	var ruler_by_pid := {}    # pid → character_id (sovereigns in M1)
-	var realm_by_pid := {}    # sovereign pid → realm_id
-	var domain_by_pid := {}   # pid → domain_id
+	# setting_domains grouped by owning polity (only civ polities have rows).
+	var sdoms_by_pid := {}
+	for sd in SettingRepository.list_domains(campaign_id):
+		var spid := str(sd["polity_id"])
+		if not sdoms_by_pid.has(spid):
+			sdoms_by_pid[spid] = []
+		(sdoms_by_pid[spid] as Array).append(sd)
+
+	var ruler_by_pid := {}     # pid → ruler character_id (sovereigns, eager)
+	var realm_by_pid := {}     # sovereign pid → realm_id
+	var crown_by_pid := {}     # pid → runtime crown-domain id
+	var domain_pid := {}       # runtime domain id → owning polity id (realm backfill)
 	var realm_count := 0
 	var ruler_count := 0
 
+	# Pass 1 — sovereign rulers + realms + a crown domain for every polity.
 	for p in ordered:
 		var pid := str(p["id"])
 		var is_sovereign := _norm_liege(p).is_empty()
+		var has_ladder: bool = sdoms_by_pid.has(pid) and not (sdoms_by_pid[pid] as Array).is_empty()
 		if is_sovereign:
 			var ruler_id := _build_ruler(campaign_id, campaign_seed, p)
 			if not ruler_id.is_empty():
@@ -271,29 +289,35 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 				return false
 			realm_by_pid[pid] = realm_id
 			realm_count += 1
-		var domain_id := _create_domain_for_polity(campaign_id, p, domain_by_pid)
-		if domain_id.is_empty():
-			result["errors"].append("domain create failed for %s" % pid)
+		var crown_id := _create_crown_domain(campaign_id, p, crown_by_pid, has_ladder)
+		if crown_id.is_empty():
+			result["errors"].append("crown domain create failed for %s" % pid)
 			return false
-		domain_by_pid[pid] = domain_id
+		crown_by_pid[pid] = crown_id
+		domain_pid[crown_id] = pid
 
-	# Backfill realm_id (walk liege chain to sovereign root) + wire sovereign owners.
-	for bp in ordered:
-		var bpid := str(bp["id"])
-		if not domain_by_pid.has(bpid):
+	# Pass 2 — the civ vassal ladder beneath each crown.
+	for p in ordered:
+		var pid := str(p["id"])
+		if not sdoms_by_pid.has(pid):
 			continue
-		var broot := _root_sovereign_pid(bpid, by_id)
-		var brealm := str(realm_by_pid.get(broot, ""))
-		if not brealm.is_empty():
-			db.query_with_bindings("UPDATE domains SET realm_id = ? WHERE id = ?",
-				[brealm, domain_by_pid[bpid]])
-		if ruler_by_pid.has(bpid):
+		if not _create_ladder_for_polity(campaign_id, p, sdoms_by_pid[pid], crown_by_pid[pid], domain_pid, result):
+			return false
+
+	# Pass 3 — realm_id (walk liege chain to the sovereign root) + crown owner wiring.
+	for did in domain_pid:
+		var opid := str(domain_pid[did])
+		var realm := str(realm_by_pid.get(_root_sovereign_pid(opid, by_id), ""))
+		if not realm.is_empty():
+			db.query_with_bindings("UPDATE domains SET realm_id = ? WHERE id = ?", [realm, did])
+	for cpid in crown_by_pid:
+		if ruler_by_pid.has(cpid):
 			db.query_with_bindings(
 				"UPDATE domains SET owner_character_id = ?, updated_at = datetime('now') WHERE id = ?",
-				[ruler_by_pid[bpid], domain_by_pid[bpid]])
+				[ruler_by_pid[cpid], crown_by_pid[cpid]])
 
-	# Tribute: vassals owe up-chain, sovereigns owe 0 (compute_tribute_owed handles
-	# a still-NULL vassal owner via the flat-rate branch).
+	# Pass 4 — tribute. Vassals owe up-chain (abstract per-title rate while owner is
+	# NULL); sovereign + zero-family apexes owe 0 (compute_tribute_owed handles both).
 	for d in CampaignRepository.list_campaign_domains(campaign_id):
 		var owed := int(AbstractTributeResolver.compute_tribute_owed(d))
 		if owed > 0:
@@ -302,7 +326,7 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 				[owed, str(d["id"])])
 
 	result["realm_count"] = realm_count
-	result["domain_count"] = domain_by_pid.size()
+	result["domain_count"] = domain_pid.size()
 	result["ruler_count"] = ruler_count
 	return true
 
@@ -331,13 +355,17 @@ func _build_ruler(campaign_id: String, campaign_seed: int, p: Dictionary) -> Str
 	return ""
 
 
-## Create an ABSTRACTED domain (no location/hexes) for a polity + fill the columns
-## create_domain doesn't cover. liege_domain_id resolves because callers pass topo
-## order (the liege's domain already exists in domain_by_pid).
-func _create_domain_for_polity(campaign_id: String, p: Dictionary, domain_by_pid: Dictionary) -> String:
+## A polity's CROWN domain — its ruler's apex / personal seat. ABSTRACTED (no
+## location). When the civ polity has a `setting_domains` ladder the crown holds 0
+## personal families (the leaves carry the population — strictly conserved); a polity
+## with no ladder (beastman/clan, or a single-hex / Barony-tier civ) holds its whole
+## family count directly, as in M1. liege_domain_id chains to the overlord polity's
+## crown (war-vassalage; callers pass topo order so it already exists); '' for
+## sovereigns.
+func _create_crown_domain(campaign_id: String, p: Dictionary, crown_by_pid: Dictionary, has_ladder: bool) -> String:
 	var pid := str(p["id"])
 	var domain_style := "clanhold" if str(p.get("civ_or_clan_state", "civ")) == "clan" else "civilized"
-	var families := _polity_peasant_families(campaign_id, pid)
+	var families: int = 0 if has_ladder else _polity_peasant_families(campaign_id, pid)
 	var territory := _territory_type_for_polity(campaign_id, p)
 
 	var domain_id := CampaignRepository.create_domain({
@@ -356,7 +384,7 @@ func _create_domain_for_polity(campaign_id: String, p: Dictionary, domain_by_pid
 		return ""
 
 	var liege := _norm_liege(p)
-	var liege_domain = domain_by_pid.get(liege, null) if not liege.is_empty() else null
+	var liege_domain = crown_by_pid.get(liege, null) if not liege.is_empty() else null
 	var realm_title := ruler_title_for(str(p.get("title", "")))
 	var tribal := 0
 	if domain_style == "clanhold":
@@ -370,6 +398,101 @@ func _create_domain_for_polity(campaign_id: String, p: Dictionary, domain_by_pid
 		WHERE id = ?
 	""", [families, realm_title, str(p.get("culture_id", "")), tribal, liege_domain, domain_id])
 	return domain_id
+
+
+## Materialize one civ polity's `setting_domains` vassal ladder as runtime domains
+## beneath its crown (M2b-1). Leaves (is_personal_domain=1) carry their own hex
+## families; interior grouping nodes carry 0 (their families/hex_count are subtree
+## aggregates, display-only — summing leaves is the accounting truth). Each domain's
+## liege resolves within the polity, or the crown for a top-level ('') liege. Rulers
+## stay abstract (owner NULL) until M2b-2. Records every runtime domain in
+## [param domain_pid] for the realm backfill.
+func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
+		crown_id: String, domain_pid: Dictionary, result: Dictionary) -> bool:
+	var pid := str(p["id"])
+	var culture := str(p.get("culture_id", ""))
+	var alignment := _alignment_or_neutral(str(p.get("alignment", "")))
+	var local := {}   # setting_domain id → runtime domain id
+	for sd in _topo_order_domains(sdoms, result):
+		var sd_id := str(sd["id"])
+		var liege_sd := str(sd.get("liege_domain_id", ""))
+		var liege_runtime = local.get(liege_sd, null) if not liege_sd.is_empty() else crown_id
+		var is_leaf := int(sd.get("is_personal_domain", 0)) == 1
+		var node_families: int = int(sd.get("families", 0)) if is_leaf else 0
+		var territory := _territory_for_hex(campaign_id, int(sd.get("seat_q", 0)), int(sd.get("seat_r", 0)))
+		var realm_title := ruler_title_for(str(sd.get("title", "")))
+		var dname := str(sd.get("realm_name", ""))
+		if dname.is_empty():
+			dname = "%s of %s" % [str(sd.get("title", "Domain")), str(p.get("name", ""))]
+
+		var domain_id := CampaignRepository.create_domain({
+			"campaign_id": campaign_id,
+			"name": dname,
+			"owner_character_id": null,
+			"location_map_id": null,
+			"territory_type": territory,
+			"alignment": alignment,
+			"religion": "",
+			"domain_style": "civilized",
+			"establishment_method": "generated",
+			"established_calendar_day": 0,
+		})
+		if domain_id.is_empty():
+			result["errors"].append("ladder domain create failed (polity %s, sdom %s)" % [pid, sd_id])
+			return false
+		CampaignRepository.db.query_with_bindings("""
+			UPDATE domains SET peasant_families = ?, morale = 0, realm_title = ?,
+				culture_id = ?, liege_domain_id = ?
+			WHERE id = ?
+		""", [node_families, realm_title, culture, liege_runtime, domain_id])
+		local[sd_id] = domain_id
+		domain_pid[domain_id] = pid
+	return true
+
+
+## Order a polity's `setting_domains` so each domain follows its liege (a '' liege =
+## the crown, always available). `setting_domains` is read id-ASC, which does NOT
+## preserve parent-before-child, so the runtime FK (liege_domain_id → domains.id)
+## needs this. Mirrors _topo_order_polities; a dangling/cyclic liege falls back to
+## the crown.
+func _topo_order_domains(sdoms: Array, result: Dictionary) -> Array:
+	var ordered: Array = []
+	var placed := {}
+	var remaining: Array = sdoms.duplicate()
+	var passes := 0
+	while not remaining.is_empty() and passes < 256:
+		passes += 1
+		var next_remaining: Array = []
+		for sd in remaining:
+			var liege := str(sd.get("liege_domain_id", ""))
+			if liege.is_empty() or placed.has(liege):
+				ordered.append(sd)
+				placed[str(sd["id"])] = true
+			else:
+				next_remaining.append(sd)
+		if next_remaining.size() == remaining.size():
+			for sd in next_remaining:
+				result["errors"].append("setting_domain %s has unresolved liege %s; attached to crown" % [str(sd["id"]), str(sd.get("liege_domain_id", ""))])
+				sd["liege_domain_id"] = ""   # fall back to the crown
+				ordered.append(sd)
+				placed[str(sd["id"])] = true
+			next_remaining = []
+		remaining = next_remaining
+	return ordered
+
+
+## territory_class of a single 24-mile setting hex (for a ladder domain's seat),
+## clamped to the runtime CHECK domain.
+func _territory_for_hex(campaign_id: String, q: int, r: int) -> String:
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"SELECT territory_class FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+		[campaign_id, q, r])
+	if not db.query_result.is_empty():
+		var tc := str(db.query_result[0].get("territory_class", ""))
+		if _VALID_CIVILIZATION.has(tc):
+			return tc
+	return "civilized"
 
 
 ## Layered topological sort: sovereigns first, each vassal after its liege.

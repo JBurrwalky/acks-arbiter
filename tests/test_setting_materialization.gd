@@ -1,10 +1,12 @@
 extends "res://tests/test_suite_base.gd"
 
-## SettingMaterializer acceptance — M0 (24-mile world map) + M1 (political layer:
-## realms + abstracted domains + sovereign rulers, incl. the monster-statblock
-## beastman-ruler path and the tribute-title translation). Generates a small/short
-## world, locks it, materializes, and verifies the runtime tables. M2 (6-mile play
-## map + located domains + party) is not exercised here.
+## SettingMaterializer acceptance — M0 (24-mile world map) + M1/M2b-1 (political
+## layer: realms + the full domain hierarchy — a crown domain per polity plus each
+## civ polity's setting_domains vassal ladder beneath it — + sovereign rulers, incl.
+## the monster-statblock beastman-ruler path and the tribute-title translation).
+## Generates a small/short world, locks it, materializes, and verifies the runtime
+## tables, including population conservation through decomposition. M2b-2+ (located
+## domains + content + party) is not exercised here.
 
 const MAP := "small"
 const SHORT := "short"
@@ -131,16 +133,19 @@ func test_political_layer_materialized(cid: String) -> void:
 		else:
 			vassals.append(p)
 
-	# Result counts.
+	# Result counts. Each polity gets a CROWN domain; each civ polity's setting_domains
+	# ladder is materialized beneath it (M2b-1).
+	var ladder_expected := _scalar("SELECT COUNT(*) AS n FROM setting_domains WHERE campaign_id = ? AND polity_id IN (SELECT id FROM setting_polities WHERE campaign_id = ?)", [cid, cid])
+	var expected_domains := polities.size() + ladder_expected
 	check(int(_mat_result.get("realm_count", -1)) == sovereigns.size(),
 		"realm_count == sovereigns (%d)" % sovereigns.size())
-	check(int(_mat_result.get("domain_count", -1)) == polities.size(),
-		"domain_count == polities (%d)" % polities.size())
+	check(int(_mat_result.get("domain_count", -1)) == expected_domains,
+		"domain_count == crowns + ladder (%d + %d)" % [polities.size(), ladder_expected])
 	check(int(_mat_result.get("ruler_count", -1)) == sovereigns.size(), "ruler_count == sovereigns")
 
 	# DB row counts.
 	check(_count("realms", "campaign_id", cid) == sovereigns.size(), "realms rows == sovereigns")
-	check(_count("domains", "campaign_id", cid) == polities.size(), "domains rows == polities")
+	check(_count("domains", "campaign_id", cid) == expected_domains, "domains rows == crowns + ladder")
 
 	# Realms: all 'foreign' at M1; head FK-resolves.
 	check(_scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind != 'foreign'", [cid]) == 0,
@@ -185,6 +190,15 @@ func test_political_layer_materialized(cid: String) -> void:
 	# Sovereign domains owe nothing.
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NULL AND tribute_out_owed != 0", [cid]) == 0,
 		"sovereign domains owe no tribute")
+
+	# Population CONSERVED through decomposition (gdd §15.3 / contract §6b): the leaf
+	# domains tile every populated owned hex; interior nodes + crowns of laddered civ
+	# polities hold 0 personal families. So Σ runtime domain families == Σ owned-hex
+	# families, with no double-count. (Orphaned/unowned populated land becomes pocket
+	# realms in M2b-4 and is excluded from both sides here.)
+	var owned_fam := _scalar("SELECT COALESCE(SUM(population_band),0) AS n FROM setting_hexes WHERE campaign_id = ? AND owner_polity_id IN (SELECT id FROM setting_polities WHERE campaign_id = ?)", [cid, cid])
+	var dom_fam := _scalar("SELECT COALESCE(SUM(peasant_families),0) AS n FROM domains WHERE campaign_id = ?", [cid])
+	check(dom_fam == owned_fam, "population conserved: Σ domain families (%d) == Σ owned-hex families (%d)" % [dom_fam, owned_fam])
 
 	# Culture threaded onto a sampled domain.
 	if sovereigns.size() > 0:
