@@ -59,11 +59,13 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	result["world_map_id"] = world_map_id
 	if not _materialize_world_map(campaign_id, world_map_id, result):
 		errors.append("world-map materialization failed")
+		_cleanup_partial(campaign_id)
 		return result
 
 	# 2. POLITICAL LAYER (M1) — realms + abstracted domains + sovereign rulers.
 	if not _materialize_political_layer(campaign_id, result):
 		errors.append("political-layer materialization failed")
+		_cleanup_partial(campaign_id)
 		return result
 
 	# 3. REGIONAL PLAY MAP (M2a) — the 6-mile terrain the party plays on, zoomed
@@ -72,6 +74,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 	if not bool(region.get("ok", false)):
 		for e in region.get("errors", []):
 			errors.append("region zoom-in: %s" % str(e))
+		_cleanup_partial(campaign_id)
 		return result
 	result["region_map_id"] = str(region.get("region_map_id", ""))
 	result["region_parent_count"] = int(region.get("parent_count", 0))
@@ -98,6 +101,29 @@ func _runtime_already_materialized(campaign_id: String) -> bool:
 	CampaignRepository.db.query_with_bindings(
 		"SELECT 1 FROM hex_maps WHERE campaign_id = ? LIMIT 1", [campaign_id])
 	return not CampaignRepository.db.query_result.is_empty()
+
+
+## Roll back a FAILED materialization so the campaign can be retried. The political
+## layer + region zoom-in are NOT one transaction (ClassedNpcBuilder manages its own),
+## so a mid-pipeline DB failure can leave partial runtime rows that
+## _runtime_already_materialized would then permanently block (a bricked campaign).
+## Deletes every runtime table the materializer writes (FK-safe child→parent order)
+## and resets the origin marker so a clean re-run is possible. Best-effort: runs on
+## the failure path only, before any play exists for the campaign.
+func _cleanup_partial(campaign_id: String) -> void:
+	var db = CampaignRepository.db
+	for sql in [
+		"DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)",
+		"DELETE FROM domains WHERE campaign_id = ?",
+		"DELETE FROM realms WHERE campaign_id = ?",
+		"DELETE FROM characters WHERE campaign_id = ?",
+		"DELETE FROM roads WHERE campaign_id = ?",
+		"DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
+		"DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
+		"DELETE FROM hex_maps WHERE campaign_id = ?",
+	]:
+		db.query_with_bindings(sql, [campaign_id])
+	db.query_with_bindings("UPDATE campaigns SET campaign_origin = 'fixture' WHERE id = ?", [campaign_id])
 
 
 ## Create the campaign_24mi world map and copy setting_hexes → hex_cells (1:1),
@@ -220,7 +246,13 @@ const _DOMAIN_TITLE_TO_RULER := {
 ## tribute silently returns 0 (the title key won't match). Public + static so the
 ## test can prove the mapping directly.
 static func ruler_title_for(domain_title: String) -> String:
-	return str(_DOMAIN_TITLE_TO_RULER.get(domain_title, "Baron"))
+	if not _DOMAIN_TITLE_TO_RULER.has(domain_title):
+		# Unreachable on valid producer data (the sim writes DomainTierTable titles).
+		# Warn loudly rather than silently taxing at the Baron rate if the upstream
+		# title schema ever drifts.
+		push_warning("SettingMaterializer.ruler_title_for: unknown domain title '%s'; defaulting to Baron" % domain_title)
+		return "Baron"
+	return str(_DOMAIN_TITLE_TO_RULER[domain_title])
 
 
 ## setting_polities + setting_domains → realms + the full domain hierarchy + rulers
@@ -264,9 +296,18 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 	var ruler_count := 0
 
 	# Pass 1 — sovereign rulers + realms + a crown domain for every polity.
+	# "Sovereign" for materialization = no liege OR a liege that fell out of the set
+	# (a war-vassal of a since-removed realm). Aligning this with _topo_order_polities /
+	# _root_sovereign_pid (which both treat a dangling liege as a root) guarantees every
+	# topo-root polity gets a realm + ruler — otherwise its crown lands with realm_id
+	# NULL and no ruler (the Layer-8 validator only WARNs on a fallen liege, so it can
+	# reach the lock).
 	for p in ordered:
 		var pid := str(p["id"])
-		var is_sovereign := _norm_liege(p).is_empty()
+		var liege_pid := _norm_liege(p)
+		var is_sovereign := liege_pid.is_empty() or not by_id.has(liege_pid)
+		if not liege_pid.is_empty() and not by_id.has(liege_pid):
+			push_warning("SettingMaterializer: polity %s liege '%s' is absent from the set; materializing it as independent" % [pid, liege_pid])
 		var has_ladder: bool = sdoms_by_pid.has(pid) and not (sdoms_by_pid[pid] as Array).is_empty()
 		if is_sovereign:
 			var ruler_id := _build_ruler(campaign_id, campaign_seed, p)
@@ -325,10 +366,55 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary) -> bo
 				"UPDATE domains SET tribute_out_owed = ?, updated_at = datetime('now') WHERE id = ?",
 				[owed, str(d["id"])])
 
+	# Pass 5 — war-vassal up-tribute (the inter-polity edge). A war-vassalized crown
+	# has families=0 (Model E: its leaves carry the conserved population), so Pass 4
+	# gave it 0 — but RAW (acore_axioms…:299) makes the REALM pay its overlord
+	# 18×realm_families^0.6. Set it explicitly from the vassal realm's own+transitive-
+	# war-vassal family total, leaving crown families=0 (conservation intact). Internal-
+	# ladder apexes (no liege) legitimately owe 0 — their leaves pay piecemeal.
+	_set_war_vassal_tribute(campaign_id, ordered, by_id, crown_by_pid)
+
 	result["realm_count"] = realm_count
 	result["domain_count"] = domain_pid.size()
 	result["ruler_count"] = ruler_count
 	return true
+
+
+## Set each war-vassal crown's tribute_out_owed from its realm family total
+## (own + transitive war-vassals), per RAW 18×realm_families^0.6. Sovereigns and
+## dangling-root polities have no overlord → skipped. Deterministic (pure family
+## arithmetic over the frozen liege graph).
+func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Dictionary, crown_by_pid: Dictionary) -> void:
+	var db = CampaignRepository.db
+	# Direct war-vassals per overlord (setting_polities.liege_id).
+	var war_children := {}
+	for p in ordered:
+		var lg := _norm_liege(p)
+		if not lg.is_empty() and by_id.has(lg):
+			if not war_children.has(lg):
+				war_children[lg] = []
+			(war_children[lg] as Array).append(str(p["id"]))
+	# Realm family total = own families + Σ war-vassal realm totals (children-first;
+	# `ordered` is sovereign-first, so iterate it in reverse).
+	var realm_fam := {}
+	for i in range(ordered.size() - 1, -1, -1):
+		var pid := str(ordered[i]["id"])
+		var total := _polity_peasant_families(campaign_id, pid)
+		for cpid in war_children.get(pid, []):
+			total += int(realm_fam.get(cpid, 0))
+		realm_fam[pid] = total
+	for p in ordered:
+		var pid := str(p["id"])
+		var lg := _norm_liege(p)
+		if lg.is_empty() or not by_id.has(lg) or not crown_by_pid.has(pid):
+			continue  # sovereign / dangling-root: no overlord to pay
+		var rf := int(realm_fam.get(pid, 0))
+		if rf <= 0:
+			continue
+		var owed := int(XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(rf)) * 100.0))
+		db.query_with_bindings(
+			"UPDATE domains SET tribute_out_owed = ?, updated_at = datetime('now') WHERE id = ?",
+			[owed, crown_by_pid[pid]])
 
 
 ## Build a sovereign's ruler character. Human/demihuman via ClassedNpcBuilder

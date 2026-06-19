@@ -191,6 +191,14 @@ func test_political_layer_materialized(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NULL AND tribute_out_owed != 0", [cid]) == 0,
 		"sovereign domains owe no tribute")
 
+	# War-vassal crowns owe realm-scaled up-tribute to their overlord even though their
+	# personal families are 0 (Model E: leaves carry the population). They are the only
+	# families=0 domains with a liege AND tribute>0 — interior ladder nodes owe 0.
+	var warvassals_with_pop := _scalar("SELECT COUNT(*) AS n FROM setting_polities sp WHERE sp.campaign_id = ? AND sp.liege_id != '' AND sp.liege_id != '0' AND (SELECT COALESCE(SUM(population_band),0) FROM setting_hexes WHERE campaign_id = sp.campaign_id AND owner_polity_id = sp.id) > 0", [cid])
+	if warvassals_with_pop > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND peasant_families = 0 AND tribute_out_owed > 0", [cid]) > 0,
+			"war-vassal crowns owe realm-scaled up-tribute (families=0, tribute>0)")
+
 	# Population CONSERVED through decomposition (gdd §15.3 / contract §6b): the leaf
 	# domains tile every populated owned hex; interior nodes + crowns of laddered civ
 	# polities hold 0 personal families. So Σ runtime domain families == Σ owned-hex
