@@ -53,6 +53,19 @@ func enter(runner, context: Dictionary) -> void:
 			primary_map_id = String(sp["map_id"])
 			gen_start = Vector2i(int(sp["hex_q"]), int(sp["hex_r"]))
 			is_gen_new = true
+	elif pd_init != null and not pd_init.current_map_id.is_empty() \
+			and String(CampaignRepository.get_campaign(campaign_id).get("campaign_origin", "")) == "generated":
+		# LOADED save in a GENERATED campaign: restore the map the party was actually on
+		# — its regional_6mi PLAY map. hex_maps[0] is the 24-mile view-only WORLD map
+		# (parent_map_id IS NULL sorts first); it has no settlement entrances and is the
+		# wrong play surface, so loading it stranded the party off-map with no enterable
+		# towns after a save/load. (Fixtures keep the legacy hex_maps[0] behavior — their
+		# party's current_map_id IS hex_maps[0].) Validate against this campaign's maps;
+		# fall back to hex_maps[0] if the saved id is somehow stale.
+		for hm in hex_maps:
+			if String(hm.get("id", "")) == pd_init.current_map_id:
+				primary_map_id = pd_init.current_map_id
+				break
 
 	var map_data: HexMapData = CampaignRepository.load_hex_map(primary_map_id)
 	if map_data == null:
