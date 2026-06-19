@@ -10,11 +10,12 @@ extends SessionState
 ## NavigationStack) — same as PartyCreationState — because the nav stack is still
 ## mid-transition from the campaign-select pop, so a push_node would be dropped.
 ##
-## On approval the flow has locked the world; M3 then MATERIALIZES it (setting_* →
-## runtime domains/settlements/realms/play-map) so the generated campaign is
-## playable, and returns to campaign select where the player picks it → party
-## creation → SessionLoadState (which lands the party on the 6-mile play map). The
-## start city is auto-picked for now (the Decision-K picker is a follow-up).
+## On approval ("Begin Campaign") the flow has locked the world; M3 then MATERIALIZES
+## it (setting_* → runtime domains/settlements/realms/play-map) and routes straight to
+## PARTY CREATION for this campaign (same generic PartyCreationState the fixture "New
+## Campaign" path uses) → the player rolls their PCs → "Begin Adventure" →
+## SessionLoadState lands the party on the 6-mile play map at the start city. The start
+## city is auto-picked for now (the Decision-K picker is a follow-up).
 
 var _flow: Node = null
 
@@ -41,6 +42,11 @@ func exit(_runner) -> void:
 
 
 func handle_action(_runner, action: String, _payload: Dictionary) -> String:
-	if action == "world_ready" or action == "cancel_creation":
+	# After materialization, hand off to party creation for this generated campaign
+	# (the action payload carries {campaign_id}, which PartyCreationState.enter reads —
+	# the same handoff the fixture "New Campaign" path uses via campaign_created).
+	if action == "world_ready":
+		return "party_creation"
+	if action == "cancel_creation":
 		return "campaign_select"
 	return ""
