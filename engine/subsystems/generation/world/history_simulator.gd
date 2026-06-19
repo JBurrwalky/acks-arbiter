@@ -3046,12 +3046,24 @@ func _collapse_polity(pol: Dictionary, tick: int, successors: Array) -> void:
 		else:
 			_do_rump(pol, tick)   # degrades to rump (§7.6 gate)
 	else:
-		_do_depopulate(pol, tick)
+		# §catastrophic (top band): a large SOVEREIGN (Principality+) COLLAPSES TO ITS
+		# HEARTLAND — a deep rump (sheds most of its territory) so the realm survives much
+		# smaller instead of evaporating into a populated wilderness void. Polity-neutral
+		# (no successor multiplication), so it doesn't disturb the realm-count / perf model;
+		# the shed provinces revert to wilderness and re-aggregate through expansion and war.
+		# Full depopulation stays for smaller realms (vassals, sub-Principality sovereigns,
+		# beastman clanholds), whose few orphaned hexes ordinary expansion mops up.
+		if not bool(pol.get("is_beastman", false)) \
+				and str(pol.get("liege_id", "")) == "" \
+				and _realm_tier(pol) >= DomainTierTable.PRINCIPALITY:
+			_do_rump(pol, tick, _c.collapse_catastrophic_shed)
+		else:
+			_do_depopulate(pol, tick)
 
 
 ## Rump (§7.6 minor): shed the frontier — the farthest-from-capital, least-
 ## assimilated half — back to wilderness; the core + capital survive smaller.
-func _do_rump(pol: Dictionary, tick: int) -> void:
+func _do_rump(pol: Dictionary, tick: int, shed_fraction: float = 0.5) -> void:
 	if pol["hexes"].size() <= 1:
 		return   # nothing meaningful to shed; the realm weathered the crisis
 	var cap := Vector2i(int(pol["capital_q"]), int(pol["capital_r"]))
@@ -3067,7 +3079,7 @@ func _do_rump(pol: Dictionary, tick: int) -> void:
 		if not is_equal_approx(aa, ab):
 			return aa < ab   # least-assimilated first
 		return _canonical_less(a, b))
-	var shed_count := mini(int(pol["hexes"].size() / 2), pol["hexes"].size() - 1)
+	var shed_count := mini(int(pol["hexes"].size() * shed_fraction), pol["hexes"].size() - 1)
 	var shed: Array = []
 	for i in range(shed_count):
 		shed.append(ranked[i])

@@ -6,7 +6,7 @@
 
 ---
 
-**TL;DR:** M2a was built against the pre-refactor world. Since then the generator gained a **new `setting_domains` table** (a complete, per-hex feudal vassal ladder), changed what `setting_polities.tier_index` *means*, and now produces **far fewer, larger realms**. The headline for M2b: **consume `setting_domains` instead of inventing the sub-realm hierarchy.**
+**TL;DR:** M2a was built against the pre-refactor world. Since then the generator gained a **new `setting_domains` table** (a complete, per-hex feudal vassal ladder), changed what `setting_polities.tier_index` *means*, and now produces **far fewer, larger realms**. The headline for M2b: **consume `setting_domains` instead of inventing the sub-realm hierarchy.** Plus three firm Jedidiah rulings in **§6**: take realm size/tier/title from the sim verbatim; conserve population through the 24→6-mile zoom (children sum to the parent hex); and instantiate orphaned populated land as persistent independent **pocket realms** at the handoff.
 
 ## What the materializer reads today (M0/M1/M2a)
 `setting_materializer.gd` reads `list_settlements` / `list_hexes` / `list_river_edges` / `list_roads` / `list_polities`. M1 makes **one abstracted domain per polity** (no location), realms = sovereigns (`realm_kind='foreign'`), and `ruler_title_for(p.title)` translates the domain title → ruler title. It does **not** read `setting_domains` (it didn't exist). M2b was planned to "invent located domains + domain_hexes."
@@ -29,9 +29,12 @@ Contract for the handoff:
 - `tier_index` is now the **overall-realm / export tier** = max(own + transitive war-vassal family tier, structural +1-per-ruled-realm, high-water floor) — **not** own-territory tier. A Prince ruling vassal princes reads as King/Emperor even with small own families. `title` derives from it. (`ruler_title_for` translation still works; the values are just Option-C-correct now.)
 - **Tier is a floor** — never demoted by population loss alone.
 - `liege_id` now also covers **peaceful protectorates** (not just war conquest); `vassalized_by_war` (0/1) distinguishes them.
+- **Rumped fallen realms** (2026-06-18 collapse softening): a large sovereign that catastrophically collapses now contracts to its heartland (a "deep rump") and **survives** rather than vanishing. So expect **Principality+/high-tier realms sitting on a tiny territory** with a correspondingly small `setting_domains` tree — title/tier is decoupled from territory size. Size the runtime realm from the actual hexes/domains, not from the title.
 
-## 3. `setting_hexes` — titular wilderness
-A hex can be **owned (`owner_polity_id` set) but pop-0 and wilderness-class**, with **no `setting_domains` row**. Treat as titular reach (no ruler, no tax) — **attach to the nearest populated domain** at materialization (the M2b "fill the blanks" step). Don't expect a domain for every owned hex.
+## 3. `setting_hexes` — two "no-domain" hex categories
+The handoff must NOT assume *populated ⇒ owned ⇒ has-a-domain*. Two kinds of hex carry no `setting_domains` row:
+- **Titular wilderness** — `owner_polity_id` set, **pop-0**, wilderness-class. Owned reach, no ruler/tax. Attach to the nearest populated domain at materialization (the "fill the blanks" step). Don't expect a domain for every *owned* hex.
+- **Orphaned populated land** — `owner_polity_id == ''` but **`population_band > 0`** (collapse/depopulation remnants: a fallen realm's hexes keep up to the wilderness cap of population). These belong to **no polity and no domain** in the sim output. **Do NOT wipe or silently absorb them** — per the 2026-06-18 ruling (§6c) the handoff instantiates each as an **independent sovereign "pocket polity / point of light"** (sized by its family count, given a ruler) and persists it. Don't expect every *populated* hex to already map to a ruler in the sim output; the handoff is the backstop that supplies one. (On the large review seed: ~52, small/scattered — the rump-only collapse change stopped large realms vanishing into big voids, so these are minor remnants of *smaller* realms' depopulations, not continent-sized holes.)
 
 ## 4. Fewer, larger realms (§7.4e consolidation, 2026-06-17)
 Polity counts dropped dramatically (e.g. large map ~401 → ~24). M2a's "materialize as many sovereigns as perf tolerates / fall back to a consolidation pass" worry is largely moot — the world is already consolidated.
@@ -41,9 +44,18 @@ Polity counts dropped dramatically (e.g. large map ~401 → ~24). M2a's "materia
 - New `setting_events` types `protectorate` (mig 169) + `cultural_shift` (mig 163) — these feed the **Review replay only**; not part of the runtime materialization contract.
 - Review-screen + political-map-border changes (this session) are **gen-side display only** — no handoff impact.
 
+## 6. Sizing & population transfer + pocket realms (Jedidiah rulings, 2026-06-18)
+Three firm requirements for M2b:
+
+**6a — Size, tier, and title come from the SIM, not re-derivation.** A runtime realm's/domain's tier, ruler title, and size are whatever the sim wrote (`setting_polities` + `setting_domains`: `tier_index` / `title` / `families` / `hex_count`, plus the pre-rolled `ruler_class` / `ruler_level`). Do **not** re-tier from runtime population, re-roll titles, or resize realms — transfer the sim's numbers verbatim. (A rumped fallen Principality on a tiny heartland keeps its Principality title — §2.)
+
+**6b — Population transfers and is CONSERVED through the 24→6-mile zoom.** Each 24-mile parent hex's `population_band` (the sim-end family count) is distributed across its 16 six-mile children when the parent is zoomed in. The per-child split MAY be randomized (deterministically, via the zoom-in's `WorldGenRng` stream), but the 16 children's populations **MUST SUM to the parent hex's total** — no population is created or lost in subdivision. (The 24-mile family caps are exactly 16× the 6-mile caps — civ 12,480 = 16×780 — so a full parent distributes to ≈cap-per-child; partial parents distribute proportionally, under cap.) This is a `gdd-region-zoom-in.md` / `RegionZoomIn` requirement.
+
+**6c — Orphaned populated land → independent POCKET realms (persist them).** The unowned-but-populated remnants (§3) become **appropriately-sized independent sovereign realms** in the runtime — "pocket polities / points of light," desirable play encounters. Cluster adjacent same-culture orphan hexes into one pocket; size its tier by the cluster's total families (Barony…County, the per-hex floor); assign a culture-appropriate ruler; **persist it**. The handoff is the backstop: if the sim's consolidation/cleanup left them orphaned, the handoff gives them a ruler — never leave them rulerless and never delete them. (Eager for the start region; lazy/on-encounter beyond, per the M2a eager-coarse/lazy-fine decision. This lives at the **handoff, not the sim**, on purpose: instantiating a pocket at runtime is cheap — a realm + domain + a ruler character — whereas doing it in the sim blew up Layer-6 settlement/road generation. See `gdd-realms-titles-refactor.md` §7 / build_log 2026-06-18.)
+
 ## Changed / new files (producer side)
 - **New:** `db/migrations/170_setting_domains.sql`; `db/schema.sql` (+`setting_domains`).
-- **`engine/subsystems/generation/world/history_simulator.gd`** — Phases 1–5: tier-floor ratchet, war re-parenting, coagulation/protectorate, titular-wilderness claim, and `_decompose_all` / `_split_realm` / `_emit_leaf` / `_cluster_for_tier` (the ladder → `ctx["sim_domains"]`).
+- **`engine/subsystems/generation/world/history_simulator.gd`** — Phases 1–5: tier-floor ratchet, war re-parenting, coagulation/protectorate, titular-wilderness claim, and `_decompose_all` / `_split_realm` / `_emit_leaf` / `_cluster_for_tier` (the ladder → `ctx["sim_domains"]`). Plus the 2026-06-18 collapse softening (`_do_rump` deep-rump for large sovereigns; `SimConstants.collapse_catastrophic_shed`) — affects which realms survive/shrink, not the output schema.
 - **`engine/subsystems/generation/world/setting_repository.gd`** — `DOMAIN_COLUMNS`, `save_domains` / `list_domains`, `_DATA_TABLES` / `_SIM_OUTPUT_TABLES`.
 - **`engine/subsystems/generation/world/setting_generator.gd`** — saves domains in both orchestrator passes.
 - **`engine/subsystems/generation/world/name_generator.gd`** — names domains (Layer 5: `ruler_name` + `realm_name`).
@@ -54,6 +66,6 @@ Polity counts dropped dramatically (e.g. large map ~401 → ~24). M2a's "materia
 1. Read `setting_domains` (+ keep reading `setting_polities` for the realm/war-vassalage layer + `setting_hexes` for terrain/ownership/population).
 2. Replace M1's one-abstracted-domain-per-polity with the **per-polity domain tree** from `setting_domains` (leaves + interior nodes), wiring `liege_domain_id` (and `''`→polity ruler) into the runtime domain hierarchy; backfill `realm_id` via the polity's liege chain to the sovereign (as M1 already does at the polity level).
 3. For domains whose `seat_q/seat_r` falls in the 6-mile start window: located domains + `domain_hexes`; promote `realm_kind`→`tracked`. Out of window: abstracted (append-located on frontier growth).
-4. Per leaf domain in-window: invent the 6-mile Barony/March sub-fiefs from its tier (per `gdd-region-zoom-in.md`).
-5. Titular wilderness (owned, pop-0, no domain): attach to the nearest populated domain.
+4. Per leaf domain in-window: invent the 6-mile Barony/March sub-fiefs from its tier (per `gdd-region-zoom-in.md`). **Transfer the sim's tier/title/size verbatim (§6a), and distribute each parent hex's `population_band` across its 16 children so they sum to the parent total (§6b).**
+5. No-domain hexes (§3): **titular wilderness** (owned, pop-0) → attach to the nearest populated domain; **orphaned populated land** (unowned, pop>0 — collapse remnants) → **instantiate as an independent pocket realm (§6c), sized by family count + given a ruler, and persist it** (do not wipe or absorb).
 6. Beastman/clan polities have no `setting_domains` rows — keep the M1 flat-clanhold + `BeastmanRulerMaterializer` + `available_tribal_warriors` path unchanged.

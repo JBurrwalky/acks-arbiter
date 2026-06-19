@@ -107,6 +107,12 @@ var severity_band_shatter: float = 0.92 # rump ≤ S < this → shatter; ≥ →
 var shatter_vassal_gate: int = 2      # UNUSED since §G (shatter now gated to sovereign + realm-tier ≥ Principality); kept for the §17 balance pass
 var rump_shed_pop_keep: float = 0.5   # shed frontier hexes keep half their people
 var depopulate_pop_keep: float = 0.28 # §G softened: keep 28% (was 0.10) → 20% less population loss
+# [CALIBRATION 2026-06-18] catastrophic collapse of a large (Principality+) SOVEREIGN:
+# shed this fraction of its hexes to wilderness (deep rump → collapses to its heartland,
+# survives smaller) instead of full depopulation, so big realms don't vanish into a
+# populated void. Polity-neutral; the shed provinces revert to wilderness and re-aggregate
+# through expansion / war over time. Smaller realms still depopulate fully.
+var collapse_catastrophic_shed: float = 0.8
 var beastman_delay_ticks: int = 2
 # [CALIBRATION 2026-06-13] 0.25→0.10: beastmen refilled depopulated land almost
 # instantly (~56 clanholds/run), denying civilized realms room to expand and

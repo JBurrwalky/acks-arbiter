@@ -67,6 +67,7 @@ func run_all_tests() -> void:
 	test_decompose_county_realm_nests_marches()
 	test_decompose_skips_empty_hexes()
 	test_vassal_consolidation_reduces_nodes()
+	test_catastrophic_rump_keeps_heartland()
 	print("SettingBeastmanTests: all tests passed (%d checks)" % test_count())
 
 
@@ -275,6 +276,31 @@ func test_vassal_consolidation_reduces_nodes() -> void:
 		"higher consolidation = fewer intermediate vassal nodes (%d < %d)" % [nodes_hi, nodes_lo])
 	check(leaves_lo == leaves_hi,
 		"the per-hex leaf realms are unchanged by consolidation (%d == %d)" % [leaves_lo, leaves_hi])
+
+
+## A catastrophic collapse of a large sovereign does a DEEP rump (shed_fraction 0.8):
+## the realm survives at its heartland instead of vanishing; the shed provinces revert
+## to unowned wilderness (to re-aggregate later). Polity-neutral — the realm count is
+## unchanged. (Jedidiah 2026-06-18.)
+func test_catastrophic_rump_keeps_heartland() -> void:
+	var sim := _sim()
+	var hexes := _block(5, 2)   # 10 hexes
+	_realm(sim, "K", "civ", "lawful", hexes, 3000)
+	sim._do_rump(sim._polities["K"], 100, 0.8)
+	var pol: Dictionary = sim._polities["K"]
+	var kept := int(pol["hexes"].size())
+	check(kept >= 1 and kept <= 3, "deep rump (0.8) keeps a small heartland (kept %d of 10)" % kept)
+	check(bool(pol["alive"]), "the realm SURVIVES the catastrophic collapse — it does not vanish")
+	var unowned := 0
+	for h in hexes:
+		if str(sim._grid[h]["owner_polity_id"]) == "":
+			unowned += 1
+	check(unowned == 10 - kept, "the shed provinces revert to unowned wilderness (%d shed)" % unowned)
+	# The default shed (0.5, the existing rump band) still keeps ~half.
+	var sim2 := _sim()
+	_realm(sim2, "K", "civ", "lawful", _block(5, 2), 3000)
+	sim2._do_rump(sim2._polities["K"], 100)
+	check(int(sim2._polities["K"]["hexes"].size()) == 5, "the default rump (0.5) sheds half, keeps 5")
 
 
 # --- #2 clanhold cap -------------------------------------------------------

@@ -36030,3 +36030,25 @@ on-tick dispatch.
 - A multi-hex County-tier or large clanhold realm: County-tier now nests its Marches/Baronies; clanholds still skipped (no feudal ladder). Beastman/clan unchanged.
 **Next session should:**
 - M2b runtime seat materialization: walk `setting_domains` (seat hex + liege chain), attach titular wilderness to the nearest populated domain, and invent the sub-hex (6-mile) Barony/March fan-out per leaf tier within the start-region zoom window. Then back to monoculture (expansion-settling cultural reach).
+
+## Session 2026-06-18 — Collapse softening: large sovereigns rump-to-heartland instead of vanishing
+
+**Task:** Jedidiah's replay observation — large realms sometimes "suddenly vanish," leaving populated hexes with no polity owner. Diagnosed as the depopulation band of `_collapse_polity` (top severity band → `_do_depopulate`: realm dies, every hex reverts to wilderness keeping up to the wilderness cap of population). Smooth it so big realms don't evaporate into a populated void.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- **Deep-rump on catastrophic collapse of a large sovereign** (`_collapse_polity` top band): a non-beastman SOVEREIGN of `_realm_tier >= Principality` does `_do_rump(pol, tick, _c.collapse_catastrophic_shed)` (sheds 0.8 of its hexes → collapses to its heartland, SURVIVES smaller) instead of `_do_depopulate`. Smaller realms (vassals, sub-Principality sovereigns, beastman clanholds) still fully depopulate.
+- `_do_rump` gained a `shed_fraction := 0.5` param (default unchanged → existing rump band + shatter-degrade keep shedding half). `SimConstants.collapse_catastrophic_shed = 0.8`.
+**Decisions made:**
+- **Rump-only — NO pocket realms, NO shatter.** Two earlier approaches were tried and ABANDONED for perf:
+  - **Multi-successor shatter** (fragment into 4-9 successors): removes the sim's only polity-death SINK → realms multiply instead of dying → polity count climbs toward the hex count → per-tick O(polities²) explodes ~300× (this was a 35-CPU-minute runaway gen). Do NOT route depopulation→shatter.
+  - **Pocket-realm finalization pass** (orphaned populated wilderness → new sovereign mini-realms): multiplies the sovereign count → Layer-6 settlement-stocking + road A* balloons on LARGE maps. Abandoned (would need Layer-6 to skip pockets).
+  - **Deep rump is POLITY-NEUTRAL** (one realm shrinks, no successors), so it doesn't perturb the realm-count/perf model. Shed provinces revert to wilderness and re-aggregate via expansion/war (and `_absorb_orphan` for contiguity orphans).
+- **GOTCHA (cost me hours): `--headless --import` before a headless gen run serves a STALE compiled GDScript blob** — my collapse/pocket bisects gave false hangs because `--import` reran the prior (shatter/pocket-active) blob. A FRESH `--headless <scene>.tscn` process (NO `--import`) compiles current source correctly. Verify gen-path changes with a fresh process or the test runner, never `--import`-then-run.
+**Interfaces defined or changed:** `_do_rump(pol, tick, shed_fraction := 0.5)`; `SimConstants.collapse_catastrophic_shed`.
+**Database changes:** None.
+**Tests added/updated:** `tests/test_setting_beastman.gd` `test_catastrophic_rump_keeps_heartland` (deep rump keeps a 1-3 hex heartland, realm stays alive, shed → unowned wilderness; default 0.5 still sheds half). SettingBeastmanTests 416→420. Suite **463/17 net-zero**.
+**Known issues:**
+- Smaller realms still fully depopulate → ~52 orphan populated hexes on the large review seed (down from the big voids; no large realm vanishes now). They re-aggregate through expansion/war over ticks; late-game ones persist to handoff and are handled at runtime.
+- Per-seed reproduction changed (the collapse outcome differs); Stage6/8/9 check counts shifted (world differs), all invariants pass.
+**Verification:** Large-map gen (seed 30641663, the review world) = 6,182 ms — NO regression vs the ~7s baseline. 23 sovereigns, 52 orphan hexes.
+**Next session should:** Optional future polish — let expansion/`_absorb_orphan` preferentially re-claim depopulation-remnant populated hexes to shrink the ~52 further; or revisit independent pocket-cultures only if Layer-6 is taught to skip settlement/road gen for them. Otherwise back to the M2b setting→runtime handoff (see docs/handoff_setting_domains_contract.md).
