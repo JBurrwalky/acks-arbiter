@@ -107,6 +107,8 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _decompose_in_window_domains(campaign_id, region_map_id, ctx, result)
 		and _materialize_county_settlements(campaign_id, region_map_id, ctx, result)
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
+		# M4-3 garrisons run AFTER pocket realms so pocket-realm domains get one too.
+		and _materialize_garrisons(campaign_id, region_map_id, result)
 		# M2c: roads/rivers projected onto the 6-mile play map.
 		and _materialize_rivers(campaign_id, region_map_id, result)
 		and _materialize_roads(campaign_id, region_map_id, result)
@@ -1163,6 +1165,60 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 		placed += 1
 	result["county_settlement_count"] = placed
 	return true
+
+
+## M4-3 (gdd-region-zoom-in §5.6d): denormalized display-ready garrison per located CIV
+## domain, from the JJ Step-10 model — minimum garrison gp = own peasant_families ×
+## {2 civ / 3 BL / 4 wilderness} gp, converted to troops by unit cost (~25% veterans).
+## Leaves (Baronies/govs) carry families → real garrisons; interior Marches (0 personal
+## families, Model E) keep '{}' (their troops live in their Baron vassals — the chain).
+## Also sets the legacy garrison_troops aggregate. Clanholds keep their tribal warriors.
+func _materialize_garrisons(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"SELECT id, peasant_families, territory_type FROM domains WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized' AND peasant_families > 0",
+		[campaign_id, region_map_id])
+	var doms: Array = db.query_result.duplicate(true)
+	var n := 0
+	for d in doms:
+		var comp := _garrison_composition(int(d["peasant_families"]), str(d.get("territory_type", "wilderness")))
+		db.query_with_bindings(
+			"UPDATE domains SET garrison_composition = ?, garrison_troops = ? WHERE id = ?",
+			[JSON.stringify(comp), int(comp.get("troops", 0)), str(d["id"])])
+		n += 1
+	result["garrison_count"] = n
+	return true
+
+
+## JJ Step-10 garrison: gp = families × territory rate (2 civ / 3 BL / 4 wilderness),
+## split across unit types by a fixed gp-budget ratio (veterans = elite cataphract +
+## veteran heavy ≈ 23%), counts = floor(budget_share / unit_cost). Deterministic.
+func _garrison_composition(families: int, territory: String) -> Dictionary:
+	var rate := 4  # wilderness (the higher frontier rate)
+	if territory == "civilized":
+		rate = 2
+	elif territory == "borderlands":
+		rate = 3
+	var gp := families * rate
+	var heavy_inf := floori(float(gp) * 0.30 / 12.0)
+	var vet_heavy := floori(float(gp) * 0.15 / 24.0)
+	var composite := floori(float(gp) * 0.20 / 18.0)
+	var horse_archer := floori(float(gp) * 0.15 / 45.0)
+	var cataphract := floori(float(gp) * 0.12 / 75.0)
+	var elite_cat := floori(float(gp) * 0.08 / 87.0)
+	var total := heavy_inf + vet_heavy + composite + horse_archer + cataphract + elite_cat
+	return {
+		"garrison_gp": gp,
+		"troops": total,
+		"units": {
+			"heavy_infantry": heavy_inf,
+			"veteran_heavy_infantry": vet_heavy,
+			"composite_bowmen": composite,
+			"horse_archers": horse_archer,
+			"cataphract_cavalry": cataphract,
+			"elite_cataphract_cavalry": elite_cat,
+		},
+	}
 
 
 ## §2 Villages/Towns/Cities table: a realm's peasant families → its largest settlement's

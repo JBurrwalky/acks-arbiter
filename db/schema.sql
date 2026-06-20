@@ -765,6 +765,10 @@ CREATE TABLE IF NOT EXISTS domains (
     peasant_families INTEGER NOT NULL DEFAULT 0,
     morale INTEGER NOT NULL DEFAULT 0,
     garrison_troops INTEGER NOT NULL DEFAULT 0,
+    -- Migration 174: denormalized display-ready garrison (JSON: gp + per-unit-type
+    -- counts) from the JJ Step-10 model (families × {2/3/4 gp by territory} → troops,
+    -- ~25% vet). See gdd-region-zoom-in §5.6d. '{}' = no garrison.
+    garrison_composition TEXT NOT NULL DEFAULT '{}',
     revenue_cp INTEGER NOT NULL DEFAULT 0,
     expenses_cp INTEGER NOT NULL DEFAULT 0,
     net_income_cp INTEGER NOT NULL DEFAULT 0,

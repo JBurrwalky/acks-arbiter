@@ -29,6 +29,7 @@ func run_all_tests() -> void:
 		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
 		test_subfief_decomposition(cid)         # asserts the M4-1b 6-mile vassal-tree fill
+		test_garrisons(cid)                     # asserts the M4-3 denormalized garrisons
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
 		test_roads_rivers_materialized(cid)     # asserts the M2c 6-mile roads + rivers
@@ -457,6 +458,49 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	check(_scalar("SELECT COALESCE(SUM(families),0) AS n FROM domain_hexes WHERE map_id = ?", [rid]) > 0,
 		"per-hex families distributed (Σ > 0)")
 	check(_domain_hex_blocks_conserve(cid, rid), "per-hex families conserve per 24-mile block (16 children sum to population_band)")
+
+
+## M4-3: denormalized garrisons (the JJ Step-10 model; gdd-region-zoom-in §5.6d).
+func test_garrisons(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var ng := int(_mat_result.get("garrison_count", 0))
+	check(ng > 0, "M4-3 garrisons materialized (%d)" % ng)
+	if ng == 0:
+		return
+	# Every populated CIV located domain has a non-empty garrison; 0-family interiors don't.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized' AND peasant_families > 0 AND (garrison_composition = '{}' OR garrison_composition = '' OR garrison_composition IS NULL)", [cid, rid]) == 0,
+		"every populated CIV domain has a garrison")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ? AND peasant_families = 0 AND garrison_composition != '{}'", [cid, rid]) == 0,
+		"0-family interior domains carry no garrison")
+	# Spot-check the JJ gp model (gp == families × {2/3/4}) + troop-sum integrity.
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT peasant_families, territory_type, garrison_composition, garrison_troops FROM domains WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized' AND peasant_families > 0", [cid, rid])
+	var ok_gp := true
+	var ok_sum := true
+	for d in db.query_result:
+		var fam := int(d["peasant_families"])
+		var rate := 4
+		if str(d["territory_type"]) == "civilized":
+			rate = 2
+		elif str(d["territory_type"]) == "borderlands":
+			rate = 3
+		var comp = JSON.parse_string(str(d["garrison_composition"]))
+		if not (comp is Dictionary):
+			ok_gp = false
+			continue
+		if int(comp.get("garrison_gp", -1)) != fam * rate:
+			ok_gp = false
+		var units = comp.get("units", {})
+		var s := 0
+		if units is Dictionary:
+			for k in units:
+				s += int(units[k])
+		if s != int(comp.get("troops", -1)) or s != int(d["garrison_troops"]):
+			ok_sum = false
+	check(ok_gp, "garrison gp == families × {2/3/4 by territory} (JJ Step 10)")
+	check(ok_sum, "garrison troop count == Σ units == garrison_troops")
 
 
 ## M4-1b: the 6-mile vassal-tree fill — each in-window located leaf decomposed into a
