@@ -599,8 +599,11 @@ func test_subfief_decomposition(cid: String) -> void:
 	var nbaron := _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND realm_title = 'Baron'" % SF, [cid])
 	var nmarq := _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND realm_title = 'Marquis'" % SF, [cid])
 	check(nbaron > 0, "the tree reaches Baron (≥1 sub-fief Barony, %d)" % nbaron)
-	# Pyramid: more Barons than Marquis (fan-out — a County has ~16-24 Barons, ~4-6 Marquis).
-	check(nbaron >= nmarq, "Barons (%d) ≥ Marquis (%d) — correct fan-out" % [nbaron, nmarq])
+	# Fan-out target (Jedidiah 2026-06-20): the Barony:March ratio is at least 2:1 — the
+	# clustering targets ~_FANOUT (3) Barons per March, replacing the family-target's degenerate
+	# ~1:1 in the dense core. Asserted overall (the dominant in-window Counties run ~2.7-3.0).
+	if nmarq > 0:
+		check(nbaron >= nmarq * 2, "Barony:March ratio ≥ 2:1 (Barons %d ≥ 2 × Marquis %d) — fan-out" % [nbaron, nmarq])
 	# Every sub-fief is located, has a resolving liege, sits in a resolving realm.
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND (location_map_id != ? OR liege_domain_id IS NULL)" % SF, [cid, rid]) == 0,
 		"every sub-fief is located on the region map with a liege")

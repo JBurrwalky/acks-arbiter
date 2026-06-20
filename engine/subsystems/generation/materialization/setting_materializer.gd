@@ -908,10 +908,16 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 	return true
 
 
-## M4-1b density dial: target families per sub-fief = the tier floor × this knob
-## (1.0 = granular floor → more, thinner vassals; higher → fewer, fuller mid-tiers).
-## Mirrors HistorySimulator's vassal_consolidation at 6-mile. Tunable in the M4 dials.
-const _SUBFIEF_CONSOLIDATION := 1.0
+## M4-1b fan-out dial (Jedidiah 2026-06-20): target vassal nodes per interior node — i.e.
+## ~Baronies per March, ~Marches per County. Drives the clustering: a child_tier interior
+## node's realm targets (its demesne hexes + _FANOUT × the next tier down's realm hexes), so
+## the Barony:March ratio lands at ~_FANOUT:1 instead of the family-target's ~1:1 in the
+## dense core (where a March-realm 960 families = ~2 hexes = 1 demesne + 1 Baron). Replaces
+## the old family-target `_SUBFIEF_CONSOLIDATION` knob (see gdd-region-zoom-in §5.6a).
+const _FANOUT := 3
+## Floor on interior vassal nodes per parent (≥ this many Marches per County where the realm
+## has the hexes for it) so consolidation never collapses a realm to a single sub-fief.
+const _MIN_INTERIOR_VASSALS := 2
 
 ## RAW ruler's-personal-domain families per tier (Barony…Empire), from
 ## acore-setting-construction-rules.xml:112-130 `revenue_by_realm_type`. These are the
@@ -927,9 +933,12 @@ const _DEMESNE_JITTER := 0.15
 ## per-tier hex FLOOR are met (whichever yields more hexes). The floor guarantees higher
 ## tiers are VISIBLY larger in the dense civilized core (where the small family budgets
 ## would otherwise collapse every tier to ~1 hex); the family budget still makes a sparse
-## frontier demesne sprawl across many hexes. Barony 1 is moot (leaves never peel). Indexed
-## Barony…Empire; jittered ±_DEMESNE_JITTER for variety (no effect below ~4, by design).
-const DEMESNE_HEX_FLOOR := [1, 2, 4, 8, 16, 24, 32]
+## frontier demesne sprawl across many hexes. Barony 1 is moot (leaves never peel); March is
+## also 1 — a March's personal demesne is normally a single hex (Jedidiah 2026-06-20), and a
+## 1-hex March demesne frees a hex per March for a Baron vassal, which is what makes the
+## ~_FANOUT:1 Barony:March ratio land. County+ keep multi-hex floors for visible realm-head
+## demesnes. Indexed Barony…Empire; jittered ±_DEMESNE_JITTER for variety (no effect below ~4).
+const DEMESNE_HEX_FLOOR := [1, 1, 4, 8, 16, 24, 32]
 
 
 ## M4-1b (gdd-region-zoom-in §5.6a): decompose each in-window located CIV domain one
@@ -1107,12 +1116,25 @@ func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: i
 	return dom_id
 
 
-## Cluster small children into ≈one-child_tier-realm contiguous-ish groups (canonical
-## order chunked into n groups, n = round(total_fam / (floor × consolidation))).
+## The target hex count of one [param tier] realm under the ~_FANOUT:1 fan-out: the tier's
+## demesne hexes plus _FANOUT realms of the tier below (recursive; a Barony is one hex). For
+## _FANOUT = 3 this is March 4 / County 16 / Duchy 56 — the divisor that sets how many
+## interior nodes the clustering makes, so the Barony:March ratio lands near _FANOUT:1.
+func _ratio_group_hexes(tier: int) -> int:
+	if tier <= DomainTierTable.BARONY:
+		return 1
+	var demesne: int = DEMESNE_HEX_FLOOR[clampi(tier, 0, DEMESNE_HEX_FLOOR.size() - 1)]
+	return demesne + _FANOUT * _ratio_group_hexes(tier - 1)
+
+
+## Cluster small children into ≈one-child_tier-realm groups, sized for the ~_FANOUT:1 fan-out
+## (canonical order chunked into n groups, n = round(hexes / one-realm-hexes), ≥ the interior
+## vassal floor where the realm has the hexes for it). Replaces the old family-target divisor,
+## which produced ~1 Baron per March in the dense core (gdd-region-zoom-in §5.6a).
 func _cluster_6mi(children: Array, child_tier: int) -> Array:
-	var floor_fam := maxi(int(DomainTierTable.TIERS[child_tier]["families_lower"]), 1)
-	var target := maxf(float(floor_fam) * _SUBFIEF_CONSOLIDATION, 1.0)
-	var n := clampi(roundi(float(_fam_of(children)) / target), 1, children.size())
+	var group_hexes := maxi(1, _ratio_group_hexes(child_tier))
+	var lo := mini(_MIN_INTERIOR_VASSALS, children.size())
+	var n := clampi(roundi(float(children.size()) / float(group_hexes)), lo, children.size())
 	var sorted_children := children.duplicate()
 	sorted_children.sort_custom(_child_canonical_less)
 	var group_size := ceili(float(sorted_children.size()) / float(n))
