@@ -632,6 +632,14 @@ func test_subfief_decomposition(cid: String) -> void:
 	# falls out of local density per the families-budget rule — it is not monotonic in tier.
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.peasant_families <= 0 OR NOT EXISTS (SELECT 1 FROM domain_hexes h WHERE h.domain_id = d.id AND h.map_id = ?))" % SF, [cid, rid]) == 0,
 		"every sub-fief carries a demesne (families > 0 and ≥ 1 owned hex)")
+	# The hybrid hex floor makes realm heads visibly larger: at least one decomposed gov
+	# (County+) holds a multi-hex personal demesne, while the half-cap keeps the vassal tree
+	# intact (a demesne never exceeds half its realm). Guarded so it only asserts when the
+	# fixture actually contains a decomposed County+ realm head.
+	var gov_multi := _scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND d.location_map_id = ? AND d.domain_style = 'civilized' AND d.establishment_method != 'materialized_subfief' AND (SELECT COUNT(*) FROM domain_hexes h WHERE h.domain_id = d.id AND h.map_id = ? AND h.families > 0) > 1", [cid, rid, rid])
+	var gov_county := _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized' AND establishment_method != 'materialized_subfief' AND realm_title IN ('Count','Duke','Prince','King','Emperor')", [cid, rid])
+	if gov_county > 0:
+		check(gov_multi > 0, "≥1 County+ realm head holds a multi-hex personal demesne (the hybrid floor)")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups

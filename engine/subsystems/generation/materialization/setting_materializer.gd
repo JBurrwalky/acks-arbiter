@@ -923,6 +923,14 @@ const _SUBFIEF_CONSOLIDATION := 1.0
 const PERSONAL_DOMAIN_FAMILIES := [160, 320, 780, 1500, 7500, 12500, 12500]
 const _DEMESNE_JITTER := 0.15
 
+## HYBRID demesne sizing (Jedidiah 2026-06-20): peel until BOTH the family budget AND a
+## per-tier hex FLOOR are met (whichever yields more hexes). The floor guarantees higher
+## tiers are VISIBLY larger in the dense civilized core (where the small family budgets
+## would otherwise collapse every tier to ~1 hex); the family budget still makes a sparse
+## frontier demesne sprawl across many hexes. Barony 1 is moot (leaves never peel). Indexed
+## Barony…Empire; jittered ±_DEMESNE_JITTER for variety (no effect below ~4, by design).
+const DEMESNE_HEX_FLOOR := [1, 2, 4, 8, 16, 24, 32]
+
 
 ## M4-1b (gdd-region-zoom-in §5.6a): decompose each in-window located CIV domain one
 ## scale-step deeper — into a 6-mile County→March→Barony ladder so every populated
@@ -1147,6 +1155,16 @@ func _demesne_budget(tier: int, seat: Vector2i) -> int:
 	return maxi(1, XPAwardCalculator.bankers_round(float(base) * (1.0 + jitter)))
 
 
+## The per-tier hex FLOOR for a demesne (the visible-size guarantee), jittered ±15% from a
+## seat+tier hash (different salt order than _demesne_budget, so the two jitters are
+## independent). Deterministic / replay-stable; min 1.
+func _demesne_hex_floor(tier: int, seat: Vector2i) -> int:
+	var base: int = DEMESNE_HEX_FLOOR[clampi(tier, 0, DEMESNE_HEX_FLOOR.size() - 1)]
+	var mix := absi((seat.x * 19349663) ^ (seat.y * 83492791) ^ ((tier + 1) * 73856093))
+	var jitter := (float(mix % 1000) / 1000.0 * 2.0 - 1.0) * _DEMESNE_JITTER  # [-0.15, +0.15)
+	return maxi(1, XPAwardCalculator.bankers_round(float(base) * (1.0 + jitter)))
+
+
 ## Demesne hex ordering: the seat first (the ruler's stronghold sits there), then densest,
 ## then canonical — a strict total order so peeling is deterministic.
 func _demesne_less(a: Dictionary, b: Dictionary, seat: Vector2i) -> bool:
@@ -1159,19 +1177,24 @@ func _demesne_less(a: Dictionary, b: Dictionary, seat: Vector2i) -> bool:
 	return _child_canonical_less(a, b)
 
 
-## Peel a ruler's personal demesne off [param children]: the seat + densest hexes whose
-## families reach the [param tier] budget (the last hex may overshoot — it is the "filled
-## out" boundary), always ≥ 1 hex. Returns {demesne, remainder, fam}; the remainder becomes
-## the ruler's vassals.
+## Peel a ruler's personal demesne off [param children]: the seat + densest hexes, taken
+## until BOTH the family budget AND the per-tier hex floor are satisfied (the hybrid rule —
+## whichever demands more hexes wins; the last hex may overshoot the family budget). HARD
+## CAP: a demesne never exceeds HALF its realm's hexes, so the vassal tree always gets the
+## rest (a ruler's personal domain is a minority of his realm — RAW County 780 / realm
+## 4,600+ ≈ 17%; the half-cap only binds in tiny dense realms where the hex floor would
+## otherwise swallow every Barony). Always ≥ 1 hex. Returns {demesne, remainder, fam}.
 func _peel_demesne(children: Array, tier: int, seat: Vector2i, _sub_ctx: Dictionary) -> Dictionary:
 	var budget := _demesne_budget(tier, seat)
+	var hex_cap := maxi(1, children.size() / 2)
+	var hex_floor := mini(_demesne_hex_floor(tier, seat), hex_cap)
 	var ordered := children.duplicate()
 	ordered.sort_custom(func(a, b): return _demesne_less(a, b, seat))
 	var demesne: Array = []
 	var remainder: Array = []
 	var acc := 0
 	for c in ordered:
-		if demesne.is_empty() or acc < budget:
+		if demesne.size() < hex_cap and (demesne.is_empty() or acc < budget or demesne.size() < hex_floor):
 			demesne.append(c)
 			acc += int(c["fam"])
 		else:
