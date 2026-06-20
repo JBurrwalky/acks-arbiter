@@ -36158,3 +36158,20 @@ on-tick dispatch.
 - Hand off to Jedidiah's playtest of the AX3-density world (visual density + interaction).
 - If he wants tiered castles, give higher tiers a multi-hex personal demesne in `_decompose_in_window_domains` (gov keeps ~tier-families/density hexes instead of 1 seat) — the formula then auto-scales their strongholds.
 - Resume the deferred playtest-calibration dials (6-mile dungeon/POI density re-budget, `faction_stronghold` archetype, landmark↔POI icon dedup, clanhold per-race intermingling) and the tribute decision when he is ready.
+
+
+## Session 2026-06-20 — M4 stronghold formula base correction (15,000 → 16,000)
+
+**Task:** Jedidiah caught that the prior entry's per-hex base of 15,000 is wrong: "The math should perfectly scale from 1.5 to 6 mile hex by multiplying by 16. So the base 6-mile civ hex stronghold value should be 16,000 because the base 1.5 mile civ value in RAW is 1,000… adjust the base from 15000 to 16000 and the math works out." This reveals a typographical error in the RAW (the flat per-tier Barony figure of 22,500 implies a 15,000 base).
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `engine/subsystems/generation/world/domain_tier_table.gd`: `STRONGHOLD_GP_PER_HEX_CIVILIZED` 15,000 → **16,000** (= RAW civ manor 1,000 × 16; a 6-mile hex is 16 of the RAW 1.5-mile hexes). Single const change propagates through `min_stronghold_gp` / `stronghold_gp_for_hexes` / `max_hexes_for_stronghold`. Per-hex securing cost is now **civ 16,000 / BL 24,000 / wild 32,000** (modifiers 1.0/1.5/2.0 unchanged; wilderness back to the original 32,000, now internally consistent rather than ad-hoc). Comment documents the ×16 scaling + flags the RAW 22,500 Barony figure as a 15,000-base typo (per CLAUDE.md: flag, don't edit the rules XML).
+- Updated `tests/test_setting_materialization.gd test_stronghold_formula` expectations (16k/24k/32k, 64k for 4 civ hexes, 80k = 5th civ hex boundary, etc.) + the sub-fief assertion comment/message. The sub-fief/sub-clanhold cp assertions read the helper directly, so they auto-tracked.
+- Updated `generation/gdd-region-zoom-in.md §5.6` (a) + the REVISED-2026-06-20 callout to 16,000/24,000/32,000 with the ×16 / typo explanation.
+**Decisions made:**
+- The securing FORMULA uses the corrected 16,000 base; the `DomainTierTable.TIERS` per-tier `stronghold_value_gp` (Barony 22,500, etc.) is left untouched as the abstract 24-mile revenue/tribute reference — the two are now legitimately different numbers (formula = exact ×16 securing cost; TIERS = the RAW abstract figure with its typo).
+**Interfaces defined or changed:** None (value-only change; same API as the prior entry).
+**Database changes:** None.
+**Tests added/updated:** `test_stronghold_formula` expected values updated for base 16,000. Full suite **462/18** on run 2; materialization 170 checks; net-zero new failures.
+**Known issues:** Unchanged from the prior entry — the tiered-stronghold question (uniform 1-hex strongholds under Model E) and tribute chains remain open for Jedidiah.
+**Next session should:** Same as the prior entry — hand off to Jedidiah's AX3-density playtest; on his word, add multi-hex personal demesnes for higher tiers (tiered castles) and/or resume the deferred density/icon/tribute items.
