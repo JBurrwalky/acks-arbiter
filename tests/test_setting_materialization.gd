@@ -276,23 +276,24 @@ func test_ruler_title_translation() -> void:
 
 func test_stronghold_formula() -> void:
 	# Jedidiah 2026-06-20: stronghold value is a formula, not a per-tier figure. Per-hex
-	# securing cost = 15,000 × {civ 1.0 / BL 1.5 / wild 2.0}; max territory = floor(gp / cost),
-	# remainders down; the 1-hex cost is also the hard floor.
-	check(DomainTierTable.min_stronghold_gp("civilized") == 15000, "civ 1-hex floor = 15,000")
-	check(DomainTierTable.min_stronghold_gp("borderlands") == 22500, "BL 1-hex floor = 22,500")
-	check(DomainTierTable.min_stronghold_gp("wilderness") == 30000, "wild 1-hex floor = 30,000")
-	check(DomainTierTable.min_stronghold_gp("") == 30000, "unknown territory defaults to wilderness rate")
+	# securing cost = 16,000 × {civ 1.0 / BL 1.5 / wild 2.0} (exactly 16× the RAW 1.5-mile
+	# manor price 1,000/1,500/2,000); max territory = floor(gp / cost), remainders down;
+	# the 1-hex cost is also the hard floor.
+	check(DomainTierTable.min_stronghold_gp("civilized") == 16000, "civ 1-hex floor = 16,000")
+	check(DomainTierTable.min_stronghold_gp("borderlands") == 24000, "BL 1-hex floor = 24,000")
+	check(DomainTierTable.min_stronghold_gp("wilderness") == 32000, "wild 1-hex floor = 32,000")
+	check(DomainTierTable.min_stronghold_gp("") == 32000, "unknown territory defaults to wilderness rate")
 	# stronghold_gp_for_hexes scales linearly and floors at one hex.
-	check(DomainTierTable.stronghold_gp_for_hexes(0, "civilized") == 15000, "0 hexes floors to 1-hex cost")
-	check(DomainTierTable.stronghold_gp_for_hexes(1, "civilized") == 15000, "1 civ hex = 15,000")
-	check(DomainTierTable.stronghold_gp_for_hexes(4, "civilized") == 60000, "4 civ hexes = 60,000")
-	check(DomainTierTable.stronghold_gp_for_hexes(3, "wilderness") == 90000, "3 wild hexes = 90,000")
+	check(DomainTierTable.stronghold_gp_for_hexes(0, "civilized") == 16000, "0 hexes floors to 1-hex cost")
+	check(DomainTierTable.stronghold_gp_for_hexes(1, "civilized") == 16000, "1 civ hex = 16,000")
+	check(DomainTierTable.stronghold_gp_for_hexes(4, "civilized") == 64000, "4 civ hexes = 64,000")
+	check(DomainTierTable.stronghold_gp_for_hexes(3, "wilderness") == 96000, "3 wild hexes = 96,000")
 	# max_hexes_for_stronghold is the inverse, remainders down.
-	check(DomainTierTable.max_hexes_for_stronghold(60000, "civilized") == 4, "60,000 secures 4 civ hexes")
-	check(DomainTierTable.max_hexes_for_stronghold(74999, "civilized") == 4, "partial value claims no extra hex")
-	check(DomainTierTable.max_hexes_for_stronghold(75000, "civilized") == 5, "exact value claims the 5th hex")
-	check(DomainTierTable.max_hexes_for_stronghold(14999, "civilized") == 0, "below the floor secures nothing")
-	check(DomainTierTable.max_hexes_for_stronghold(60000, "wilderness") == 2, "same gp secures fewer wilderness hexes")
+	check(DomainTierTable.max_hexes_for_stronghold(64000, "civilized") == 4, "64,000 secures 4 civ hexes")
+	check(DomainTierTable.max_hexes_for_stronghold(79999, "civilized") == 4, "partial value claims no extra hex")
+	check(DomainTierTable.max_hexes_for_stronghold(80000, "civilized") == 5, "exact value claims the 5th hex")
+	check(DomainTierTable.max_hexes_for_stronghold(15999, "civilized") == 0, "below the floor secures nothing")
+	check(DomainTierTable.max_hexes_for_stronghold(64000, "wilderness") == 2, "same gp secures fewer wilderness hexes")
 
 
 func test_region_map_materialized(cid: String) -> void:
@@ -614,7 +615,7 @@ func test_subfief_decomposition(cid: String) -> void:
 	# Stronghold value is a FORMULA, not a per-tier figure (Jedidiah 2026-06-20): a
 	# sub-fief secures ≤1 personal hex (a leaf its own hex; an interior 0, floored to 1),
 	# so EVERY sub-fief's stronghold = the 1-hex securing cost by territory
-	# (civ 15k / BL 22.5k / wild 30k × 100 cp) — Marquis interiors no longer carry the
+	# (civ 16k / BL 24k / wild 32k × 100 cp) — Marquis interiors no longer carry the
 	# old per-tier table value. Expected is read straight from the shared formula so the
 	# test tracks the rule rather than restating constants.
 	var db_sv = CampaignRepository.db
@@ -624,7 +625,7 @@ func test_subfief_decomposition(cid: String) -> void:
 		var exp_cp := DomainTierTable.stronghold_gp_for_hexes(1, str(rr["territory_type"])) * 100
 		if int(rr["cp_value"]) != exp_cp:
 			ok_sv = false
-	check(ok_sv, "every sub-fief stronghold cp = 1-hex securing formula (civ 15k / BL 22.5k / wild 30k × 100)")
+	check(ok_sv, "every sub-fief stronghold cp = 1-hex securing formula (civ 16k / BL 24k / wild 32k × 100)")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups

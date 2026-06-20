@@ -73,13 +73,18 @@ static func stronghold_value_for_tier(tier_index: int) -> int:
 ## many 6-mile hexes the domain can secure. RAW secures a single 1.5-mile hex for
 ## 1,000 gp civilized / 1,500 borderlands / 2,000 wilderness; a 6-mile hex is 16
 ## of those, and the project's MINIMUM DOMAIN SIZE is one 6-mile hex, so the
-## per-6-mile-hex securing cost is 16× the RAW manor price:
-##   civilized 15,000 / borderlands 22,500 / wilderness 30,000 gp.
+## per-6-mile-hex securing cost is EXACTLY 16× the RAW 1.5-mile manor price:
+##   civilized 16,000 / borderlands 24,000 / wilderness 32,000 gp.
+## (Base 16,000 = 1,000 × 16; the modifiers 1.0/1.5/2.0 are the RAW 1,000/1,500/
+## 2,000 ratios, so all three scale cleanly. NOTE — Jedidiah 2026-06-20: the
+## RAW flat per-tier Barony figure of 22,500 reflects a 15,000-base typo; the
+## ×16 scaling from the manor prices is the correct intent, so the securing
+## FORMULA uses 16,000, not the 22,500 table value.)
 ## This REPLACES the per-tier stronghold_value_gp for sizing actual domain
 ## strongholds — the value is now a FORMULA of (hexes secured × territory rate),
 ## not a flat tier figure. stronghold_value_for_tier() is retained only as the
 ## abstract 24-mile revenue/tribute reference (revenue_by_realm_type).
-const STRONGHOLD_GP_PER_HEX_CIVILIZED := 15000
+const STRONGHOLD_GP_PER_HEX_CIVILIZED := 16000
 
 
 ## civ 1.0 / borderlands 1.5 / wilderness 2.0. Unknown defaults to the highest
