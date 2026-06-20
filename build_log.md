@@ -36201,3 +36201,22 @@ on-tick dispatch.
 - **OPEN (raised to Jedidiah) — demesne hex count is density-driven, not tier-driven.** Diagnostic on the test fixture: Marquis demesne = 1 hex (the March budget 320 is < a dense hex's pop, so the seat alone fills it); dense-core County/March/Baron demesnes all ~1-2 hexes; sparse demesnes span many hexes. So a sparse Baron can occupy more *hexes* than a dense Count. RAW-faithful (families, not hexes) but not a visible per-tier hex progression. Fork offered: keep the family budget (A, built) vs switch to a per-tier HEX band (B; scaffolding unchanged, only `_demesne_budget`/`_peel_demesne` swap units).
 - Tribute chains still DEFERRED.
 **Next session should:** Resolve the A-vs-B demesne-basis fork with Jedidiah; if B, swap `_demesne_budget` to a per-tier hex band + adjust `_peel_demesne` to count hexes. Then hand off to the AX3-density playtest. Deferred dials (dungeon/POI density, faction archetype, icon dedup, clanhold intermingling) + tribute remain.
+
+
+## Session 2026-06-20 — M4 demesne sizing: hybrid hex floor + half-cap
+
+**Task:** Resolve the demesne-basis fork raised in the prior entry. Jedidiah chose the HYBRID (per-tier hex floor + family budget), so higher tiers are visibly larger even in the dense core where the small RAW family budgets alone collapse every tier to ~1 hex.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `engine/subsystems/generation/materialization/setting_materializer.gd`: `DEMESNE_HEX_FLOOR := [1, 2, 4, 8, 16, 24, 32]` (Barony…Empire) + `_demesne_hex_floor(tier, seat)` (jittered ±15% from an independent seat+tier salt). `_peel_demesne` now peels until BOTH the family budget AND the hex floor are met. **Critical guard: the demesne is hard-capped at half the realm's hexes** (`children.size() / 2`).
+- Stronghold value still back-derived from the (now larger) demesne hex count, so a County keep is naturally bigger than a Baron's.
+**Decisions made:**
+- The half-cap is essential, not cosmetic: applying the floor to interior nodes naively ate the entire Barony layer. With fat Baronies (project min-domain = 1 hex), a dense March realm is only ~2 hexes, so a 2-hex March floor consumed both and left no Baron vassals — measured Barons crashed 37→1. The half-cap lets the floor bind where there's room (County gov demesne went 1.3→3.5 hexes, the main win) but yields in tight quarters so the tree survives (Barons restored to ~30, ≈ Marquis 29). Grounded: a ruler's personal domain is a minority of his realm (RAW County 780 / realm 4,600+ ≈ 17%).
+- Net behaviour: realm heads (County+) get visibly larger demesnes; dense-core interior Marches stay ~1 hex (capped to protect the tree); sparse-frontier demesnes still sprawl by the family budget. The fat-Barony rule fundamentally limits how much both demesne and tree can expand in the concentrated dense core.
+**Interfaces defined or changed:** None beyond the prior entry (internal helpers only).
+**Database changes:** None.
+**Tests added/updated:** `tests/test_setting_materialization.gd` — "≥1 County+ realm head holds a multi-hex personal demesne" (guarded on the fixture containing a decomposed County+). Suite **462/18**, mat suite **172 checks**, net-zero new failures (run 2). Verified via temporary diagnostics (since removed): gov County demesne avg 3.50 hexes (max 5), Barons 30 ≈ Marquis 29.
+**Known issues:**
+- In the dense civilized core, interior Marquis demesnes stay ~1 hex (the half-cap yields to keep the Barony layer) — so March is not visibly larger than Barony *there*; the visible tiering shows at the realm head (County+) and in sparser terrain. This is the accepted trade-off (tree-fill > interior demesne size), inherent to the fat-Barony concentration of dense land.
+- Tribute chains still DEFERRED.
+**Next session should:** Hand off to Jedidiah's AX3-density playtest (visual demesne/stronghold sizes + interaction). Deferred dials (6-mile dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + the tribute decision remain when he's ready.
