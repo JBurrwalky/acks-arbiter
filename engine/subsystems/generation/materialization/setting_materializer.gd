@@ -1060,7 +1060,11 @@ func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: i
 		[families, ruler_title_for(title), str(sub_ctx.get("culture", "")),
 		str(sub_ctx.get("realm_id", "")), liege_id, dom_id])
 	var arch := "fastness" if tier <= DomainTierTable.BARONY else "fortress"
-	var cp := int(DomainTierTable.TIERS[tier]["stronghold_value_gp"]) * 100
+	# A Barony is a full 6-mile hex (project rule: minimum domain = 1 hex), so its minimum
+	# stronghold is the 6-mile-hex cost by territory (NOT the 1.5-mile RAW minimum). Higher
+	# tiers (March+) keep the per-tier table value (they aggregate many hexes).
+	var cp := (_min_stronghold_gp(str(sub_ctx.get("territory", "wilderness"))) if tier <= DomainTierTable.BARONY \
+		else int(DomainTierTable.TIERS[tier]["stronghold_value_gp"])) * 100
 	if not db.query_with_bindings("""
 		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
 			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
@@ -1209,7 +1213,7 @@ func _create_sub_clanhold(seat: Vector2i, warriors: int, liege_id: String, sub_c
 	db.query_with_bindings(
 		"UPDATE domains SET available_tribal_warriors = ?, morale = 0, realm_title = 'Chieftain', culture_id = ?, realm_id = ?, liege_domain_id = ? WHERE id = ?",
 		[warriors, str(sub_ctx.get("culture", "")), str(sub_ctx.get("realm_id", "")), liege_id, dom_id])
-	var cp := int(DomainTierTable.TIERS[DomainTierTable.BARONY]["stronghold_value_gp"]) * 100
+	var cp := _min_stronghold_gp(str(sub_ctx.get("territory", "wilderness"))) * 100  # 1-hex min
 	if not db.query_with_bindings("""
 		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
 			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
@@ -1408,6 +1412,20 @@ func _market_class_for_families(fam: int) -> int:
 	if fam >= 5000:
 		return 5
 	return 6
+
+
+## Minimum stronghold (gp) to secure a 1-hex domain, by territory. PROJECT RULE
+## (Jedidiah 2026-06-20): minimum domain size = one 6-mile hex, so the minimum stronghold
+## is the 6-mile-hex cost, NOT RAW's 1.5-mile minimum (1,000 / 1,500 / 2,000 civ/BL/wild).
+## Scaled to the 6-mile hex: civilized 15,000 / borderlands 22,500 / wilderness 32,000 —
+## safer land is cheaper to hold, wild land needs a real fortress. (Borderlands 22,500
+## matches the DomainTierTable Barony value, which was implicitly the borderlands figure.)
+func _min_stronghold_gp(territory: String) -> int:
+	if territory == "civilized":
+		return 15000
+	if territory == "borderlands":
+		return 22500
+	return 32000  # wilderness
 
 
 ## M2b-4: orphaned populated land (in-window hexes that are UNOWNED but population>0

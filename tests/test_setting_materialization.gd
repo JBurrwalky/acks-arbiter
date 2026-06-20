@@ -579,6 +579,20 @@ func test_subfief_decomposition(cid: String) -> void:
 	# Every sub-fief has a watchtower stronghold (the UI hook).
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id)" % SF, [cid]) == 0,
 		"every sub-fief has a stronghold")
+	# Project rule: a Barony = 1 hex, so its stronghold is the 6-mile-hex minimum by
+	# territory (civ 15k / BL 22.5k / wild 32k × 100 cp). Higher tiers keep the table value.
+	var db_sv = CampaignRepository.db
+	db_sv.query_with_bindings("SELECT d.territory_type, s.cp_value FROM domains d JOIN strongholds s ON s.domain_id = d.id WHERE d.campaign_id = ? AND %s AND d.realm_title = 'Baron'" % SF, [cid])
+	var ok_sv := true
+	for rr in db_sv.query_result:
+		var exp := 32000
+		if str(rr["territory_type"]) == "civilized":
+			exp = 15000
+		elif str(rr["territory_type"]) == "borderlands":
+			exp = 22500
+		if int(rr["cp_value"]) != exp * 100:
+			ok_sv = false
+	check(ok_sv, "Barony stronghold cp = territory min (civ 15k / BL 22.5k / wild 32k × 100)")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups
