@@ -36130,3 +36130,31 @@ on-tick dispatch.
 - The fixture campaign is cleaned up after the test, so the absolute sub-fief MAGNITUDE wasn't queried — but the structural tests prove correctness + non-zero + the pyramid, and the per-window magnitude is bounded by the fixed window size (~1,280 hexes), so no large-world perf risk. Visual density is the next playtest.
 - M4-5 fixture coverage is conditional (the fixture window may contain no in-window clanholds → the clanhold structure asserts only fire when sub-clanholds exist). A beastman-heavy world will exercise it at playtest.
 **Next session should:** Await Jedidiah's playtest of the AX3-density world (visual density + interaction). Then the playtest-calibration pass (dungeon/POI density dials, faction archetype, icon dedup, clanhold intermingling), plus the previously-parked M3-c Notebook World Map tab and M3-b world-name fix.
+
+
+## Session 2026-06-20 — M4 stronghold value → securing formula (not per-tier)
+
+**Task:** Replace the per-tier stronghold values used for sizing materialized domain strongholds with a single securing formula, per Jedidiah's ruling: "We actually don't need a per-tier stronghold value, we need a formula… max 6-mile-hex territory of a domain = floor(stronghold gp / (15000 × territory modifier)), modifier civ 1.0 / border 1.5 / wilderness 2.0, remainders down, keep the floor hard-coded."
+**Model used:** Opus 4.8 (1M) for the lot.
+**Completed:**
+- `engine/subsystems/generation/world/domain_tier_table.gd`: added the shared securing formula — `const STRONGHOLD_GP_PER_HEX_CIVILIZED := 15000`, `territory_securing_modifier(territory)` (civ 1.0 / borderlands 1.5 / wilderness 2.0, unknown → 2.0 so a missing classification never under-charges), `min_stronghold_gp(territory)` (= the per-6-mile-hex cost AND the hard floor: 15,000 / 22,500 / 30,000), `stronghold_gp_for_hexes(hexes, territory)` (= `maxi(1, hexes) × min`, floors at one hex), `max_hexes_for_stronghold(stronghold_gp, territory)` (= `floori(gp / min)`, remainders down). `stronghold_value_for_tier` retained, now documented as the abstract 24-mile revenue/tribute reference only.
+- `engine/subsystems/generation/materialization/setting_materializer.gd`: `_create_sub_domain` now sets stronghold cp from `DomainTierTable.stronghold_gp_for_hexes(personal_hexes, territory) × 100` where `personal_hexes = 1 if families > 0 else 0` (a leaf holds its single hex; a Model-E interior holds 0 → floors to the 1-hex cost). This drops the old per-tier branch (Marquis interiors were taking the 45k table value). `_create_sub_clanhold` gained a `hexes` param and scales its clanhold stronghold by the whole hex group it secures (`g.size()`). Deleted the local `_min_stronghold_gp` helper (the previous flat 15k/22.5k/**32k** values; wilderness now correctly 30k via the formula).
+- Wilderness per-hex cost corrected 32,000 → **30,000** (the formula 15,000 × 2.0; the earlier 32,000 was an ad-hoc figure).
+**Decisions made:**
+- Formula lives on `DomainTierTable`, not the materializer, because it is a domain game-rule the future player securing/conquest system needs too — one source of truth for "what does a stronghold of value G secure."
+- Crown/fort strongholds (line ~822, from `setting_fortifications`) are left alone — those values come from the sim's own Step-10-ish fort sizing, not a per-tier lookup, so they are already formula-derived in spirit.
+- Surfaced (not as a blocker) the Model-E consequence: govs/interiors personally hold ≤1 hex, so the formula gives County/March/Barony the same 1-hex stronghold. Tiered "bigger castle per tier" would require higher tiers to keep a multi-hex personal demesne (ripples into garrison + families). Flagged for Jedidiah; the uniform result is consistent with the explicit "no per-tier value" instruction.
+**Interfaces defined or changed:**
+- New static API on `DomainTierTable`: `territory_securing_modifier(String) -> float`, `min_stronghold_gp(String) -> int`, `stronghold_gp_for_hexes(int, String) -> int`, `max_hexes_for_stronghold(int, String) -> int`. Const `STRONGHOLD_GP_PER_HEX_CIVILIZED := 15000`.
+- `SettingMaterializer._create_sub_clanhold` signature changed: `(seat, warriors, liege_id, sub_ctx)` → `(seat, hexes, warriors, liege_id, sub_ctx)`.
+**Database changes:** None (no schema change — formula derives cp_value at materialization time).
+**Tests added/updated:**
+- `tests/test_setting_materialization.gd`: new pure unit test `test_stronghold_formula` (floor values, 0-hex floor, linear scaling, the `max_hexes_for_stronghold` inverse incl. round-down + below-floor=0). Broadened the sub-fief assertion to check EVERY sub-fief stronghold cp == the 1-hex securing formula by territory (reads the helper, so it tracks the rule). Added a sub-clanhold assertion: cp == `hexes_owned × territory rate × 100`. SettingMaterializationTests 156 → 170 checks.
+- Full suite **462/18** on run 2 (isolated APPDATA, fresh DB) — exactly the trusted baseline; net-zero new failures (all 18 are the known carry-forwards: hex_map_controller adjacency, proficiency popup, scheduler transition signals, combat LOS/ZoC, encumbrance assignment, dungeon Vector3i).
+**Known issues:**
+- Tiered-stronghold question above (uniform 1-hex strongholds under Model E) — awaiting Jedidiah if he expected County seats to be larger than Baron seats.
+- Tribute chains still DEFERRED (Jedidiah: "revisit this later") — explicit NPC tribute flows vs the abstract `realm families × 18^0.6 gp` model.
+**Next session should:**
+- Hand off to Jedidiah's playtest of the AX3-density world (visual density + interaction).
+- If he wants tiered castles, give higher tiers a multi-hex personal demesne in `_decompose_in_window_domains` (gov keeps ~tier-families/density hexes instead of 1 seat) — the formula then auto-scales their strongholds.
+- Resume the deferred playtest-calibration dials (6-mile dungeon/POI density re-budget, `faction_stronghold` archetype, landmark↔POI icon dedup, clanhold per-race intermingling) and the tribute decision when he is ready.
