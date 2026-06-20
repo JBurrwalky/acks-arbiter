@@ -432,6 +432,43 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	# unclaimed rather than bound to a domain the stocker would skip.
 	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes dh JOIN domains d ON dh.domain_id = d.id WHERE dh.map_id = ? AND d.location_map_id IS NULL", [rid]) == 0,
 		"no domain_hex belongs to an unlocated (abstract) domain")
+	# M4-1: per-6-mile-hex families distributed + CONSERVED (mig 173). No negatives;
+	# and the distribution conserves PER 24-mile block — the 16 children of each placed
+	# owned hex sum to that hex's population_band (banker-clean integer split). Blocks
+	# with Σ families = 0 (titular wilderness / pocket-realm land) are skipped.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes WHERE map_id = ? AND families < 0", [rid]) == 0,
+		"no negative per-hex families")
+	check(_scalar("SELECT COALESCE(SUM(families),0) AS n FROM domain_hexes WHERE map_id = ?", [rid]) > 0,
+		"per-hex families distributed (Σ > 0)")
+	check(_domain_hex_blocks_conserve(cid, rid), "per-hex families conserve per 24-mile block (16 children sum to population_band)")
+
+
+## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups
+## region-map domain_hexes by their parent 24-mile hex (child offset floor-div 4); for
+## each block carrying any families, the children must sum to the parent setting_hex's
+## population_band. Blocks summing to 0 (titular wilderness / pocket-realm land) skipped.
+func _domain_hex_blocks_conserve(cid: String, rid: String) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT hex_q, hex_r, families FROM domain_hexes WHERE map_id = ?", [rid])
+	var block_fam := {}
+	for row in db.query_result:
+		var coff := WorldGrid.axial_to_offset(Vector2i(int(row["hex_q"]), int(row["hex_r"])))
+		var pax := WorldGrid.offset_to_axial(floori(coff.x / 4.0), floori(coff.y / 4.0))
+		var k := "%d,%d" % [pax.x, pax.y]
+		block_fam[k] = int(block_fam.get(k, 0)) + int(row["families"])
+	for k in block_fam:
+		var sum_fam := int(block_fam[k])
+		if sum_fam == 0:
+			continue
+		var pp := str(k).split(",")
+		db.query_with_bindings(
+			"SELECT population_band FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+			[cid, int(pp[0]), int(pp[1])])
+		if db.query_result.is_empty():
+			continue
+		if sum_fam != int(db.query_result[0].get("population_band", 0)):
+			return false
+	return true
 
 
 func test_pocket_realms(cid: String) -> void:

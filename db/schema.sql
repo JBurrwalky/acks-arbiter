@@ -870,6 +870,10 @@ CREATE TABLE IF NOT EXISTS domain_hexes (
     hex_r                  INTEGER NOT NULL,
     land_value             INTEGER NOT NULL DEFAULT 5
         CHECK(land_value BETWEEN 3 AND 9),
+    -- Migration 173: per-6-mile-hex peasant families (the input to the M4-1
+    -- 6-mile vassal decomposition; conserved — a 24-mile hex's 16 children sum
+    -- to its population_band). See gdd-region-zoom-in §5.5/§5.6a.
+    families               INTEGER NOT NULL DEFAULT 0,
     surveyed_by            TEXT REFERENCES characters(id),
     is_littoral            INTEGER NOT NULL DEFAULT 0
         CHECK(is_littoral IN (0, 1)),

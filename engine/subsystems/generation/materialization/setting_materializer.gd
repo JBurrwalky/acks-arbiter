@@ -852,7 +852,7 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		var hq := int(parts[0])
 		var hr := int(parts[1])
 		db.query_with_bindings(
-			"SELECT owner_polity_id, land_value FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+			"SELECT owner_polity_id, land_value, population_band FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
 			[campaign_id, hq, hr])
 		if db.query_result.is_empty():
 			continue
@@ -860,6 +860,12 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		if owner.is_empty() or owner == "0":
 			continue  # unowned populated land → M2b-4 pocket realms
 		var lv := clampi(int(db.query_result[0].get("land_value", 5)), 3, 9)
+		# M4-1: distribute the 24-mile hex's population across its 16 children, CONSERVED
+		# (the 16 children sum to population_band). Uniform for now (weighting by
+		# land_value / settlement presence is an M4-2 refinement); deterministic order.
+		var hex_pop := maxi(0, int(db.query_result[0].get("population_band", 0)))
+		var fam_base := hex_pop / 16
+		var fam_rem := hex_pop % 16
 
 		# Governing domain: the located leaf on this hex; else the owner's crown ONLY if
 		# the crown is itself located (else leave the hex unclaimed — never bind a located
@@ -880,12 +886,15 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 			continue
 
 		var poff := WorldGrid.axial_to_offset(Vector2i(hq, hr))
+		var child_idx := 0
 		for cx in 4:
 			for cy in 4:
 				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
+				var fam := fam_base + (1 if child_idx < fam_rem else 0)
+				child_idx += 1
 				if not db.query_with_bindings(
-					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
-					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv]):
+					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value, families) VALUES (?, ?, ?, ?, ?, ?, ?)",
+					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv, fam]):
 					result["errors"].append("domain_hex insert failed at (%d,%d)" % [ch.x, ch.y])
 					return false
 				placed += 1
