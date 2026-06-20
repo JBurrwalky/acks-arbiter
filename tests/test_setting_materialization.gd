@@ -30,6 +30,7 @@ func run_all_tests() -> void:
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
 		test_subfief_decomposition(cid)         # asserts the M4-1b 6-mile vassal-tree fill
 		test_garrisons(cid)                     # asserts the M4-3 denormalized garrisons
+		test_clanhold_decomposition(cid)        # asserts the M4-5 shallow clanhold tree
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
 		test_roads_rivers_materialized(cid)     # asserts the M2c 6-mile roads + rivers
@@ -158,7 +159,8 @@ func test_political_layer_materialized(cid: String) -> void:
 	# M4-1b adds the 6-mile sub-fief ladder (Marquis/Baron domains) beneath the in-window
 	# located leaves — one extra domain row per sub-fief.
 	var nsf := int(_mat_result.get("subfief_count", 0))
-	check(_count("domains", "campaign_id", cid) == expected_domains + np + nsf, "domains rows == crowns + ladder + pockets + sub-fiefs")
+	var nsc := int(_mat_result.get("subclanhold_count", 0))  # M4-5 sub-clanholds
+	check(_count("domains", "campaign_id", cid) == expected_domains + np + nsf + nsc, "domains rows == crowns + ladder + pockets + sub-fiefs + sub-clanholds")
 
 	# Realms: 'foreign' by default, 'tracked' once promoted for the in-window start
 	# region (M2b-2); head FK-resolves.
@@ -328,8 +330,8 @@ func test_region_map_materialized(cid: String) -> void:
 	var located := int(_mat_result.get("located_domain_count", -1))
 	var tracked := int(_mat_result.get("tracked_realm_count", -1))
 	# M4-1b sub-fiefs are all located on the play map (one per created Marquis/Baron domain).
-	check(located + int(_mat_result.get("pocket_realm_count", 0)) + int(_mat_result.get("subfief_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
-		"located domains == M2b-2 in-window + M2b-4 pocket crowns + M4-1b sub-fiefs")
+	check(located + int(_mat_result.get("pocket_realm_count", 0)) + int(_mat_result.get("subfief_count", 0)) + int(_mat_result.get("subclanhold_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
+		"located domains == M2b-2 in-window + pocket crowns + M4-1b sub-fiefs + M4-5 sub-clanholds")
 	check(located > 0, "≥1 domain located in the start region (%d)" % located)
 	# DB 'tracked' realms = M2b-2 promoted in-window realms + M2b-4 pocket realms.
 	check(tracked + int(_mat_result.get("pocket_realm_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked'", [cid]),
@@ -407,9 +409,11 @@ func test_content_placed(cid: String) -> void:
 
 	# POIs (setting_poi_seeds → pois, context/rumor_seeds verbatim).
 	var npoi := int(_mat_result.get("poi_count", -1))
-	# M4-4 adds one 'stronghold' POI per distinct sub-fief watchtower hex (the UI hooks).
+	# M4-4 adds one 'stronghold' POI per sub-fief watchtower hex; M4-5 adds one 'clanhold'
+	# POI per sub-clanhold (the UI hooks).
 	var nspoi := int(_mat_result.get("stronghold_poi_count", 0))
-	check(npoi + nspoi == _count("pois", "map_id", rid), "poi_count + stronghold POIs match pois on the region map")
+	var nclan := int(_mat_result.get("subclanhold_count", 0))
+	check(npoi + nspoi + nclan == _count("pois", "map_id", rid), "poi_count + stronghold + clanhold POIs match pois on the region map")
 	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
 		"POIs all sit on the 6-mile region map")
 	# M4-4: stronghold POIs are typed 'stronghold', one per hex, each on a real sub-fief
@@ -426,13 +430,14 @@ func test_content_placed(cid: String) -> void:
 	# adds one watchtower stronghold per sub-fief (Marquis/Baron), also completed.
 	var nf := int(_mat_result.get("fort_count", -1))
 	var nsf2 := int(_mat_result.get("subfief_count", 0))
-	check(nf + nsf2 == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
-		"fort_count + sub-fief watchtowers match strongholds on the region map")
+	var nsc2 := int(_mat_result.get("subclanhold_count", 0))  # M4-5 clanhold strongholds
+	check(nf + nsf2 + nsc2 == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
+		"fort_count + sub-fief watchtowers + sub-clanhold strongholds match strongholds on the region map")
 	if nf > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND archetype NOT IN ('fortress','fastness','sanctum','hideout','vault','clanhold')", [rid]) == 0,
 			"fort archetypes satisfy the CHECK domain")
-		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2,
-			"all forts (+ sub-fief watchtowers) are completed")
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2 + nsc2,
+			"all forts (+ sub-fief + sub-clanhold strongholds) are completed")
 
 
 func test_domain_hexes_materialized(cid: String) -> void:
@@ -469,6 +474,31 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	check(_scalar("SELECT COALESCE(SUM(families),0) AS n FROM domain_hexes WHERE map_id = ?", [rid]) > 0,
 		"per-hex families distributed (Σ > 0)")
 	check(_domain_hex_blocks_conserve(cid, rid), "per-hex families conserve per 24-mile block (16 children sum to population_band)")
+
+
+## M4-5: shallow clanhold decomposition (chieftain→sub-clanholds; gdd-region-zoom-in §5.6a/§5.3).
+## Conditional: the fixture window may contain no in-window clanholds (nothing to assert then).
+func test_clanhold_decomposition(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var nsc := int(_mat_result.get("subclanhold_count", 0))
+	check(nsc >= 0, "M4-5 clanhold decomposition ran (%d sub-clanholds)" % nsc)
+	if nsc == 0:
+		return  # no in-window clanholds in this fixture window — nothing more to assert
+	const SC := "establishment_method = 'materialized_subclanhold'"
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s" % SC, [cid]) == nsc,
+		"subclanhold_count matches tagged sub-clanhold rows (%d)" % nsc)
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND (domain_style != 'clanhold' OR location_map_id != ? OR liege_domain_id IS NULL OR owner_character_id IS NOT NULL)" % SC, [cid, rid]) == 0,
+		"sub-clanholds are clanhold-style, located, lieged, lazy-ruled")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND d.liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)" % SC, [cid, cid]) == 0,
+		"every sub-clanhold liege resolves")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id AND s.archetype = 'clanhold')" % SC, [cid]) == 0,
+		"every sub-clanhold has a clanhold stronghold")
+	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE map_id = ? AND poi_type = 'clanhold'", [rid]) == nsc,
+		"one 'clanhold' POI per sub-clanhold")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND available_tribal_warriors <= 0" % SC, [cid]) == 0,
+		"sub-clanholds carry tribal warriors")
 
 
 ## M4-3: denormalized garrisons (the JJ Step-10 model; gdd-region-zoom-in §5.6d).

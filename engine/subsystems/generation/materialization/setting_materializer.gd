@@ -105,6 +105,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _materialize_forts(campaign_id, region_map_id, ctx, result)
 		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
 		and _decompose_in_window_domains(campaign_id, region_map_id, ctx, result)
+		and _decompose_clanholds(campaign_id, region_map_id, ctx, result)
 		and _materialize_county_settlements(campaign_id, region_map_id, ctx, result)
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
 		# M4-3 garrisons run AFTER pocket realms so pocket-realm domains get one too.
@@ -1107,6 +1108,132 @@ func _child_canonical_less(a: Dictionary, b: Dictionary) -> bool:
 	var ha: Vector2i = a["hex"]
 	var hb: Vector2i = b["hex"]
 	return ha.x < hb.x or (ha.x == hb.x and ha.y < hb.y)
+
+
+## M4-5 (gdd-region-zoom-in §5.6a / §5.3; user ruling 2026-06-19): give each in-window
+## clanhold realm a SHALLOW chieftain→sub-clanhold tree so the chaotic frontier reaches
+## interactivity parity with the civilized interior. Per ax_domains_of_chaos.xml:43 a
+## chieftain founds additional clanholds assigned to sub-chieftains; clanholds average
+## ~68–192 families (:167-195) with ~1 tribal warrior/family (:37). The crown keeps its
+## seat; the rest of its territory splits into ~_CLANHOLD_FAMILIES-sized sub-clanholds,
+## each a 'clanhold' domain (liege = the chieftain crown) with a clanhold stronghold, a
+## clanhold POI (the UI hook), and a LAZY sub-chieftain (owner NULL, promoted on visit).
+## Tribal warriors split with the territory (conserved). The full per-race INTERMINGLING
+## scatter — placing NEW clanholds across empty wilderness (§5.3 "Part B") — stays a
+## deferred follow-on. NOT the feudal ladder (clanholds have no County/March/Barony tiers).
+func _decompose_clanholds(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("""
+		SELECT id, available_tribal_warriors, realm_id, culture_id, territory_type,
+		       alignment, location_hex_q, location_hex_r, name
+		FROM domains
+		WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'clanhold'
+		  AND available_tribal_warriors > 0
+		ORDER BY available_tribal_warriors DESC, location_hex_q, location_hex_r, id
+	""", [campaign_id, region_map_id])
+	var crowns: Array = db.query_result.duplicate(true)
+	db.query("BEGIN TRANSACTION")
+	var made := 0
+	for c in crowns:
+		var crown_id := str(c["id"])
+		var warriors := int(c["available_tribal_warriors"])
+		db.query_with_bindings(
+			"SELECT hex_q, hex_r, families FROM domain_hexes WHERE domain_id = ? AND map_id = ?",
+			[crown_id, region_map_id])
+		var seat := Vector2i(int(c["location_hex_q"]), int(c["location_hex_r"]))
+		var others: Array = []
+		var total_fam := 0
+		for ch in db.query_result:
+			var h := Vector2i(int(ch["hex_q"]), int(ch["hex_r"]))
+			var f := int(ch["families"])
+			total_fam += f
+			if h != seat and f > 0:
+				others.append({"hex": h, "fam": f})
+		if others.is_empty() or total_fam <= 0:
+			continue
+		var ratio := float(warriors) / float(total_fam)  # warriors per family (≈1, ×4 ogre/troll)
+		var sub_ctx := {
+			"campaign_id": campaign_id, "region_map_id": region_map_id,
+			"realm_id": str(c.get("realm_id", "")), "culture": str(c.get("culture_id", "")),
+			"territory": str(c.get("territory_type", "wilderness")),
+			"alignment": str(c.get("alignment", "chaotic")),
+			"crown_name": str(c.get("name", "Clanhold")), "result": result, "n": 0,
+		}
+		var n_groups := clampi(roundi(float(_fam_of(others)) / float(_CLANHOLD_FAMILIES)), 1, others.size())
+		others.sort_custom(_child_canonical_less)
+		var gsize := ceili(float(others.size()) / float(n_groups))
+		var assigned := 0
+		var i := 0
+		while i < others.size():
+			var g: Array = others.slice(i, mini(i + gsize, others.size()))
+			i += gsize
+			var g_war := maxi(1, roundi(float(_fam_of(g)) * ratio))
+			assigned += g_war
+			var sub_id := _create_sub_clanhold(_seat_6mi(g), g_war, crown_id, sub_ctx)
+			if sub_id.is_empty():
+				db.query("ROLLBACK")
+				return false
+			for ch2 in g:
+				var hh: Vector2i = ch2["hex"]
+				db.query_with_bindings(
+					"UPDATE domain_hexes SET domain_id = ? WHERE map_id = ? AND hex_q = ? AND hex_r = ?",
+					[sub_id, region_map_id, hh.x, hh.y])
+			made += 1
+		# Chieftain keeps the remaining warriors (his own clanhold + rounding remainder).
+		db.query_with_bindings("UPDATE domains SET available_tribal_warriors = ? WHERE id = ?",
+			[maxi(0, warriors - assigned), crown_id])
+	db.query("COMMIT")
+	result["subclanhold_count"] = made
+	return true
+
+
+## One sub-clanhold under [param liege_id] at [param seat] with [param warriors], + a
+## clanhold stronghold + a clanhold POI (UI hook) + a LAZY sub-chieftain (owner NULL).
+func _create_sub_clanhold(seat: Vector2i, warriors: int, liege_id: String, sub_ctx: Dictionary) -> String:
+	var db = CampaignRepository.db
+	var n := int(sub_ctx.get("n", 0)) + 1
+	sub_ctx["n"] = n
+	var dname := "%s, Clanhold %d" % [str(sub_ctx.get("crown_name", "Clan")), n]
+	var dom_id := CampaignRepository.create_domain({
+		"campaign_id": str(sub_ctx["campaign_id"]), "name": dname,
+		"owner_character_id": null,
+		"location_map_id": str(sub_ctx["region_map_id"]),
+		"location_hex_q": seat.x, "location_hex_r": seat.y,
+		"territory_type": str(sub_ctx.get("territory", "wilderness")),
+		"alignment": str(sub_ctx.get("alignment", "chaotic")),
+		"religion": "", "domain_style": "clanhold",
+		"establishment_method": "materialized_subclanhold", "established_calendar_day": 0,
+	})
+	if dom_id.is_empty():
+		return ""
+	db.query_with_bindings(
+		"UPDATE domains SET available_tribal_warriors = ?, morale = 0, realm_title = 'Chieftain', culture_id = ?, realm_id = ?, liege_domain_id = ? WHERE id = ?",
+		[warriors, str(sub_ctx.get("culture", "")), str(sub_ctx.get("realm_id", "")), liege_id, dom_id])
+	var cp := int(DomainTierTable.TIERS[DomainTierTable.BARONY]["stronghold_value_gp"]) * 100
+	if not db.query_with_bindings("""
+		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
+			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
+		VALUES (?, ?, 'clanhold', 'keep', ?, 100, 'completed', ?, ?, ?)
+	""", [CampaignRepository.generate_id(), dom_id, cp, str(sub_ctx["region_map_id"]), seat.x, seat.y]):
+		var r: Dictionary = sub_ctx["result"]
+		r["errors"].append("sub-clanhold stronghold insert failed at (%d,%d)" % [seat.x, seat.y])
+		return ""
+	var ctx_json := JSON.stringify({"clanhold": true, "domain_id": dom_id})
+	if not db.query_with_bindings("""
+		INSERT INTO pois (poi_id, campaign_id, map_id, hex_q, hex_r, poi_type, name,
+			discovered, context, rumor_seeds)
+		VALUES (?, ?, ?, ?, ?, 'clanhold', ?, 0, ?, '[]')
+	""", [CampaignRepository.generate_id(), str(sub_ctx["campaign_id"]), str(sub_ctx["region_map_id"]),
+		seat.x, seat.y, "%s (clanhold)" % dname, ctx_json]):
+		var r2: Dictionary = sub_ctx["result"]
+		r2["errors"].append("clanhold POI insert failed at (%d,%d)" % [seat.x, seat.y])
+		return ""
+	return dom_id
+
+
+## M4-5 density: representative average families per clanhold (ax_domains_of_chaos.xml
+## :167-195 ranges 68–192 by race; per-race refinement rides the deferred §5.3 scatter).
+const _CLANHOLD_FAMILIES := 100
 
 
 ## M4-2 (gdd-region-zoom-in §5.6b): recover the County-tier urban settlements the 24-mile
