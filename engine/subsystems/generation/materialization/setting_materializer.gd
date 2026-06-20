@@ -109,6 +109,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
 		# M4-3 garrisons run AFTER pocket realms so pocket-realm domains get one too.
 		and _materialize_garrisons(campaign_id, region_map_id, result)
+		and _materialize_stronghold_pois(campaign_id, region_map_id, result)
 		# M2c: roads/rivers projected onto the 6-mile play map.
 		and _materialize_rivers(campaign_id, region_map_id, result)
 		and _materialize_roads(campaign_id, region_map_id, result)
@@ -1219,6 +1220,50 @@ func _garrison_composition(families: int, territory: String) -> Dictionary:
 			"elite_cataphract_cavalry": elite_cat,
 		},
 	}
+
+
+## M4-4 (gdd-region-zoom-in §5.6c/e): surface the M4-1b Marquis/Baron watchtower
+## strongholds (no settlement) as 'stronghold' POIs so the party can interact with them
+## ("stop at the watchtower") — the UI hooks a tabletop map omits but the game needs. One
+## POI per distinct sub-fief stronghold hex (a March seat co-located with its seat Barony
+## yields a single POI, the higher tier winning), carrying tier + domain for the narrator.
+## The broader 6-mile dungeon/POI DENSITY re-budget, the faction_stronghold archetype, and
+## the landmark-vs-POI icon dedup are density-dial / visual-calibration work deferred to the
+## playtest correction pass (the densities are MCP-eyeballed dials, §4.5).
+func _materialize_stronghold_pois(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("""
+		SELECT d.id, d.name, d.realm_title, s.location_hex_q AS sq, s.location_hex_r AS sr
+		FROM domains d JOIN strongholds s ON s.domain_id = d.id
+		WHERE d.campaign_id = ? AND d.location_map_id = ?
+		  AND d.establishment_method = 'materialized_subfief' AND s.location_map_id = ?
+		ORDER BY s.location_hex_q, s.location_hex_r,
+			CASE d.realm_title WHEN 'Marquis' THEN 0 ELSE 1 END, d.id
+	""", [campaign_id, region_map_id, region_map_id])
+	var rows: Array = db.query_result.duplicate(true)
+	var seen := {}
+	var n := 0
+	for r in rows:
+		var hk := "%d,%d" % [int(r["sq"]), int(r["sr"])]
+		if seen.has(hk):
+			continue
+		seen[hk] = true
+		var ctx_json := JSON.stringify({
+			"stronghold": true, "tier": str(r.get("realm_title", "Baron")),
+			"domain_id": str(r["id"]),
+		})
+		var pname := "%s (stronghold)" % str(r.get("name", "Watchtower"))
+		if not db.query_with_bindings("""
+			INSERT INTO pois (poi_id, campaign_id, map_id, hex_q, hex_r, poi_type, name,
+				discovered, context, rumor_seeds)
+			VALUES (?, ?, ?, ?, ?, 'stronghold', ?, 0, ?, '[]')
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id,
+			int(r["sq"]), int(r["sr"]), pname, ctx_json]):
+			result["errors"].append("stronghold POI insert failed at (%d,%d)" % [int(r["sq"]), int(r["sr"])])
+			return false
+		n += 1
+	result["stronghold_poi_count"] = n
+	return true
 
 
 ## §2 Villages/Towns/Cities table: a realm's peasant families → its largest settlement's

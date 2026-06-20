@@ -407,9 +407,20 @@ func test_content_placed(cid: String) -> void:
 
 	# POIs (setting_poi_seeds → pois, context/rumor_seeds verbatim).
 	var npoi := int(_mat_result.get("poi_count", -1))
-	check(npoi == _count("pois", "map_id", rid), "poi_count matches pois on the region map")
+	# M4-4 adds one 'stronghold' POI per distinct sub-fief watchtower hex (the UI hooks).
+	var nspoi := int(_mat_result.get("stronghold_poi_count", 0))
+	check(npoi + nspoi == _count("pois", "map_id", rid), "poi_count + stronghold POIs match pois on the region map")
 	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
 		"POIs all sit on the 6-mile region map")
+	# M4-4: stronghold POIs are typed 'stronghold', one per hex, each on a real sub-fief
+	# stronghold, and reference their domain.
+	check(nspoi == _scalar("SELECT COUNT(*) AS n FROM pois WHERE map_id = ? AND poi_type = 'stronghold'", [rid]),
+		"stronghold_poi_count matches 'stronghold' POIs (%d)" % nspoi)
+	check(_scalar("SELECT COUNT(*) AS n FROM (SELECT hex_q, hex_r FROM pois WHERE map_id = ? AND poi_type = 'stronghold' GROUP BY hex_q, hex_r HAVING COUNT(*) > 1) t", [rid]) == 0,
+		"at most one stronghold POI per hex")
+	if nspoi > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM pois p WHERE p.map_id = ? AND p.poi_type = 'stronghold' AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.location_map_id = p.map_id AND s.location_hex_q = p.hex_q AND s.location_hex_r = p.hex_r)", [rid]) == 0,
+			"every stronghold POI sits on a real stronghold hex")
 
 	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed). M4-1b
 	# adds one watchtower stronghold per sub-fief (Marquis/Baron), also completed.
