@@ -36175,3 +36175,29 @@ on-tick dispatch.
 **Tests added/updated:** `test_stronghold_formula` expected values updated for base 16,000. Full suite **462/18** on run 2; materialization 170 checks; net-zero new failures.
 **Known issues:** Unchanged from the prior entry — the tiered-stronghold question (uniform 1-hex strongholds under Model E) and tribute chains remain open for Jedidiah.
 **Next session should:** Same as the prior entry — hand off to Jedidiah's AX3-density playtest; on his word, add multi-hex personal demesnes for higher tiers (tiered castles) and/or resume the deferred density/icon/tribute items.
+
+
+## Session 2026-06-20 — M4 personal demesnes (RAW per-tier family budget)
+
+**Task:** Per Jedidiah, "higher tiers should get larger personal domains/demesnes when built by the materializer." After an acks-raw-lookup of the domain density/revenue tables, give each ruler (gov + interior March) a multi-hex personal demesne, and back-derive the stronghold value from the filled demesne (the knock-on Jedidiah called out). Jedidiah's clarification: use the RAW per-tier personal-domain families as the UPPER-BOUND peel-stop ("filled out") ± 15% jitter, not a hard cap.
+**Model used:** Opus 4.8 (1M).
+**RAW grounding (acks-raw-lookup):**
+- `acore-setting-construction-rules.xml:112-130` `revenue_by_realm_type` — ruler's personal-domain families per tier: Barony 160 / March 320 / County 780 / Duchy 1,500 / Principality 7,500 / Kingdom 12,500 / Empire 12,500 (fixed per-tier, independent of overall realm size).
+- `acore-setting-construction-rules.xml:62, 132-146` — density: default 300 families / 6-mile hex (range 250-650). No RAW table maps Civ/BL/Wild → families-per-hex (only the clanhold 125/6-mi cap, `ax_domains_of_chaos.xml:7-15`), so deriving demesne hexes from a territory→density constant would hit a RAW gap — avoided by peeling against the ACTUAL per-hex families (M4-1a).
+- `acore_aging_poisons_high-level-start_optional_rules.xml:862-873` — "the personal domain begins with the maximum number of families allowed by the stronghold's size" → the stronghold↔demesne link (and its reverse) is RAW-canonical.
+**Completed:**
+- `engine/subsystems/generation/materialization/setting_materializer.gd`: new `PERSONAL_DOMAIN_FAMILIES` const (RAW per-tier) + `_DEMESNE_JITTER = 0.15`. `_demesne_budget(tier, seat)` = RAW budget × (1 ± 15% deterministic jitter from a seat+tier hash, no RNG state, banker's rounded). `_demesne_less` (seat-first, then densest, then canonical — strict total order) + `_peel_demesne` (peel seat + densest hexes until the budget is met, ≥1 hex, last hex may overshoot → {demesne, remainder, fam}). `_assign_hexes` reassigns interior demesne hexes. `_decompose_in_window_domains` rewritten: gov keeps its peeled demesne (already-owned hexes), splits the remainder. `_split_6mi` interior branch: peel the node's demesne, assign it, recurse on the remainder. `_create_sub_domain` gained a `hexes` arg; stronghold cp is now the reverse formula `stronghold_gp_for_hexes(hexes, territory) × 100`. `_ensure_gov_stronghold` gives any gov lacking a stronghold one at its demesne securing minimum (`result.gov_stronghold_count`).
+- Conservation preserved (decomposition only moves `domain_id` pointers; the `families` column is untouched; each hex counted once by its holder). Garrisons (M4-3) now cover interiors (they carry real demesne families).
+**Decisions made:**
+- Demesne sized by FAMILIES (RAW budget), not hexes, per the standing "domains sized by families, hexes are estimation" rule + Jedidiah's upper-bound clarification.
+- Stronghold value back-derived from the demesne (reverse of the securing formula) — the knock-on Jedidiah requested.
+- Gov keeps unpopulated (0-fam) wilderness hexes as before (pre-existing); they don't affect the demesne-sized stronghold/garrison (those use the populated demesne count).
+**Interfaces defined or changed:**
+- `SettingMaterializer._create_sub_domain` signature: added `hexes` arg → `(tier, liege_id, seat, families, hexes, sub_ctx)`.
+- New `_mat_result` key `gov_stronghold_count`.
+**Database changes:** None.
+**Tests added/updated:** `tests/test_setting_materialization.gd` — sub-fief stronghold cp asserted against the actual demesne hex count (reverse formula); "every sub-fief carries a demesne (families > 0, ≥ 1 owned hex)"; gov strongholds folded into the stronghold reconciliation. Suite **462/18**, mat suite **171 checks**, net-zero new failures (run 2, isolated APPDATA).
+**Known issues:**
+- **OPEN (raised to Jedidiah) — demesne hex count is density-driven, not tier-driven.** Diagnostic on the test fixture: Marquis demesne = 1 hex (the March budget 320 is < a dense hex's pop, so the seat alone fills it); dense-core County/March/Baron demesnes all ~1-2 hexes; sparse demesnes span many hexes. So a sparse Baron can occupy more *hexes* than a dense Count. RAW-faithful (families, not hexes) but not a visible per-tier hex progression. Fork offered: keep the family budget (A, built) vs switch to a per-tier HEX band (B; scaffolding unchanged, only `_demesne_budget`/`_peel_demesne` swap units).
+- Tribute chains still DEFERRED.
+**Next session should:** Resolve the A-vs-B demesne-basis fork with Jedidiah; if B, swap `_demesne_budget` to a per-tier hex band + adjust `_peel_demesne` to count hexes. Then hand off to the AX3-density playtest. Deferred dials (dungeon/POI density, faction archetype, icon dedup, clanhold intermingling) + tribute remain.
