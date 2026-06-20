@@ -36220,3 +36220,23 @@ on-tick dispatch.
 - In the dense civilized core, interior Marquis demesnes stay ~1 hex (the half-cap yields to keep the Barony layer) — so March is not visibly larger than Barony *there*; the visible tiering shows at the realm head (County+) and in sparser terrain. This is the accepted trade-off (tree-fill > interior demesne size), inherent to the fat-Barony concentration of dense land.
 - Tribute chains still DEFERRED.
 **Next session should:** Hand off to Jedidiah's AX3-density playtest (visual demesne/stronghold sizes + interaction). Deferred dials (6-mile dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + the tribute decision remain when he's ready.
+
+
+## Session 2026-06-20 — M4 fan-out fix: ~3 Barons per March
+
+**Task:** Investigate + fix the Marquis:Baron ratio collapsing to ~1:1 (every Marquis had ~1 Baron vassal). Jedidiah approved Option A (ratio-driven clustering) + dropping the March hex floor to 1, targeting ~3 Barons per March without too few Marches per County.
+**Model used:** Opus 4.8 (1M). Exploration reported + signed off before building.
+**Root cause (confirmed via read-only diagnostics):** `_cluster_6mi` sized March groups by a FAMILY target (one March realm ≈ 960 families). At the dense core's ~480 families/hex, that's only ~2 hexes per March → 1 demesne + 1 Baron. Measured: each in-window County = 4 demesne + 6 Marches × (1 demesne + 1 Baron) = 16 hexes, ratio 1.0. The Baron hexes per County are fixed; it's purely a partition choice (`M = H_avail / (ratio + 1)`), so hitting ratio 3 means halving the Marches.
+**Completed:**
+- `engine/subsystems/generation/materialization/setting_materializer.gd`: `_FANOUT := 3` (target vassal nodes per parent) + `_MIN_INTERIOR_VASSALS := 2` (Marches-per-County floor), replacing the `_SUBFIEF_CONSOLIDATION` family-target knob. `_ratio_group_hexes(tier)` = demesne floor + `_FANOUT` × the tier below (recursive; Barony 1 / March 4 / County 16). `_cluster_6mi` now sets `n = clamp(round(children.size() / _ratio_group_hexes(child_tier)), min(_MIN_INTERIOR_VASSALS, size), size)`. Dropped `DEMESNE_HEX_FLOOR` March 2→1 (`[1, 1, 4, 8, 16, 24, 32]`) so a March's 1-hex demesne frees a hex per March for a Baron vassal.
+**Decisions made:**
+- Option A (preventive, ratio-driven clustering) over Option B (post-hoc detect-and-merge) — same end state, ~2 lines vs tree surgery. The fan-out divisor is the tier's full realm hexes, so the ratio lands at ~_FANOUT:1 at every interior tier (also ~3 Marches/County, ~3 Counties/Duchy).
+- March demesne is normally 1 hex (Jedidiah: "a March should be 1 hex normally"); it only looked odd because Baronies are floored to 1 too. County+ keep multi-hex demesne floors for visible realm-head sizing.
+- Hard constraint surfaced + accepted: at dense fat-domain 6-mile scale you cannot have both RAW Marches-per-County (4–6) AND RAW Barons-per-March (3–4); not enough hexes. Favour ~3 Marches × ~3 Barons over the degenerate 6×1.
+**Interfaces defined or changed:** Internal only (`_FANOUT`, `_MIN_INTERIOR_VASSALS`, `_ratio_group_hexes`; removed `_SUBFIEF_CONSOLIDATION`). `_cluster_6mi` has one caller (the civ ladder); clanholds use a separate path, unaffected.
+**Database changes:** None.
+**Tests added/updated:** `tests/test_setting_materialization.gd` — "Barony:March ratio ≥ 2:1 (Barons ≥ 2 × Marquis)" replaces the weak "Barons ≥ Marquis". Suite **462/18**, mat suite **172 checks**, net-zero new failures. Verified via temporary diagnostics (removed): overall ratio 1.0 → **2.93** (Barons 30→44, Marquis 29→15); per-County **3 Marches × 8–9 Barons (ratio 2.67–3.00)**.
+**Known issues:**
+- Tiny Counties (< ~8 hexes) still run tighter than 3:1 (the `_MIN_INTERIOR_VASSALS` floor forces ≥2 Marches even when the realm can't fill them) — inherent to small realms; rare in-window.
+- Tribute chains still DEFERRED.
+**Next session should:** Jedidiah playtests the AX3-density world (demesnes, strongholds, Barony:March fan-out, interaction). Deferred dials (6-mile dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + the tribute decision remain when he's ready.
