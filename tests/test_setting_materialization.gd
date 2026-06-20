@@ -346,9 +346,18 @@ func test_settlements_materialized(cid: String) -> void:
 	if rid == "":
 		return
 	var placed := int(_mat_result.get("settlement_count", -1))
-	check(placed == _count("settlement_entrances", "map_id", rid),
-		"settlement_count matches settlement_entrances on the region map")
+	# M4-2 adds Class V+ County-seat settlements (county_settlement_count) on top of the
+	# M2b §9.1 Class III+ cities.
+	var nc := int(_mat_result.get("county_settlement_count", 0))
+	check(placed + nc == _count("settlement_entrances", "map_id", rid),
+		"settlement_count + M4-2 County settlements match settlement_entrances on the region map")
 	check(placed > 0, "≥1 settlement placed in the start region (%d)" % placed)
+	# M4-2 settlements attach to County+ realm-head seats, NEVER to Marquis/Baron sub-fiefs
+	# (those are hamlets/watchtowers — no market). And no settlement is below Class VI.
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se JOIN domains d ON se.parent_domain_id = d.id WHERE se.map_id = ? AND d.establishment_method = 'materialized_subfief'", [rid]) == 0,
+		"no settlement attached to a Marquis/Baron sub-fief")
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND (market_class < 1 OR market_class > 6)", [rid]) == 0,
+		"all settlement market classes valid (1–6)")
 	# All materialized settlements sit on the 6-mile region map (never elsewhere).
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
 		"all materialized settlements sit on the 6-mile region map")

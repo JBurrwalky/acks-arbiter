@@ -105,6 +105,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _materialize_forts(campaign_id, region_map_id, ctx, result)
 		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
 		and _decompose_in_window_domains(campaign_id, region_map_id, ctx, result)
+		and _materialize_county_settlements(campaign_id, region_map_id, ctx, result)
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
 		# M2c: roads/rivers projected onto the 6-mile play map.
 		and _materialize_rivers(campaign_id, region_map_id, result)
@@ -1103,6 +1104,82 @@ func _child_canonical_less(a: Dictionary, b: Dictionary) -> bool:
 	var ha: Vector2i = a["hex"]
 	var hb: Vector2i = b["hex"]
 	return ha.x < hb.x or (ha.x == hb.x and ha.y < hb.y)
+
+
+## M4-2 (gdd-region-zoom-in §5.6b): recover the County-tier urban settlements the 24-mile
+## rank-size model folds away. Each in-window CIV realm-head (a located domain that is NOT
+## an M4-1b sub-fief — i.e. a 24-mile-hex leaf/County) gets its largest settlement, sized
+## by its REALM families (the 24-mile hex population at its seat) via the RAW Villages/
+## Towns/Cities table (§2), placed at its seat/stronghold IF Class V or better and the seat
+## lacks a settlement. Class VI realms (borderlands/wilderness County seats — the Túros Tem
+## case) get NO settlement row: their stronghold is the market (a Stronghold POI in M4-4).
+## Marquis/Baron sub-fiefs get nothing — hamlets/watchtowers only. Urban families (~2% of
+## realm = the largest settlement, RAW) live on the settlement, separate from the domain's
+## peasant_families (Q-MERC-15), so this recovers folded urban pop without double-count.
+func _materialize_county_settlements(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("""
+		SELECT id, location_hex_q, location_hex_r, culture_id, name
+		FROM domains
+		WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized'
+		  AND establishment_method != 'materialized_subfief'
+		ORDER BY location_hex_q, location_hex_r, id
+	""", [campaign_id, region_map_id])
+	var heads: Array = db.query_result.duplicate(true)
+	var placed := 0
+	for d in heads:
+		var seat := Vector2i(int(d["location_hex_q"]), int(d["location_hex_r"]))
+		var soff := WorldGrid.axial_to_offset(seat)
+		var pax := WorldGrid.offset_to_axial(floori(soff.x / 4.0), floori(soff.y / 4.0))
+		db.query_with_bindings(
+			"SELECT population_band FROM setting_hexes WHERE campaign_id = ? AND q = ? AND r = ?",
+			[campaign_id, pax.x, pax.y])
+		if db.query_result.is_empty():
+			continue
+		var realm_fam := int(db.query_result[0].get("population_band", 0))
+		var mc := _market_class_for_families(realm_fam)
+		if mc >= 6:
+			continue  # Class VI realm → stronghold-market, no settlement row
+		var culture := str(d.get("culture_id", ""))
+		var dname := str(d.get("name", "Settlement"))
+		var dom_id := str(d["id"])
+		# Seat already has a settlement (an M2b Class III+ city)? Don't double-place.
+		db.query_with_bindings(
+			"SELECT 1 AS x FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ? LIMIT 1",
+			[region_map_id, seat.x, seat.y])
+		if not db.query_result.is_empty():
+			continue
+		var urban_fam := floori(float(realm_fam) / 50.0)  # ~2% of realm = largest settlement (§2)
+		if not db.query_with_bindings("""
+			INSERT INTO settlement_entrances
+				(id, campaign_id, map_id, hex_q, hex_r, name, market_class,
+				 settlement_data, parent_domain_id, urban_families, dominant_race, culture_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'human', ?)
+		""", [
+			CampaignRepository.generate_id(), campaign_id, region_map_id, seat.x, seat.y,
+			dname, mc, dom_id, urban_fam, culture]):
+			result["errors"].append("county settlement insert failed at (%d,%d)" % [seat.x, seat.y])
+			return false
+		placed += 1
+	result["county_settlement_count"] = placed
+	return true
+
+
+## §2 Villages/Towns/Cities table: a realm's peasant families → its largest settlement's
+## market class (1 = metropolis … 6 = stronghold-market hamlet). < 5,000 families = Class
+## VI (the stronghold-only market). Boundaries are the RAW table's class breaks.
+func _market_class_for_families(fam: int) -> int:
+	if fam >= 500000:
+		return 1
+	if fam >= 62500:
+		return 2
+	if fam >= 31250:
+		return 3
+	if fam >= 12500:
+		return 4
+	if fam >= 5000:
+		return 5
+	return 6
 
 
 ## M2b-4: orphaned populated land (in-window hexes that are UNOWNED but population>0
