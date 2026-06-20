@@ -65,3 +65,48 @@ static func ruler_level_for_tier(tier_index: int) -> int:
 
 static func stronghold_value_for_tier(tier_index: int) -> int:
 	return int(TIERS[clampi(tier_index, 0, TIERS.size() - 1)]["stronghold_value_gp"])
+
+
+## --- Stronghold ↔ territory formula (Jedidiah ruling 2026-06-20) ---
+##
+## A domain owner must hold a stronghold, and the stronghold's gp value caps how
+## many 6-mile hexes the domain can secure. RAW secures a single 1.5-mile hex for
+## 1,000 gp civilized / 1,500 borderlands / 2,000 wilderness; a 6-mile hex is 16
+## of those, and the project's MINIMUM DOMAIN SIZE is one 6-mile hex, so the
+## per-6-mile-hex securing cost is 16× the RAW manor price:
+##   civilized 15,000 / borderlands 22,500 / wilderness 30,000 gp.
+## This REPLACES the per-tier stronghold_value_gp for sizing actual domain
+## strongholds — the value is now a FORMULA of (hexes secured × territory rate),
+## not a flat tier figure. stronghold_value_for_tier() is retained only as the
+## abstract 24-mile revenue/tribute reference (revenue_by_realm_type).
+const STRONGHOLD_GP_PER_HEX_CIVILIZED := 15000
+
+
+## civ 1.0 / borderlands 1.5 / wilderness 2.0. Unknown defaults to the highest
+## (wilderness) so a missing classification never UNDER-charges securing.
+static func territory_securing_modifier(territory: String) -> float:
+	match territory:
+		"civilized":
+			return 1.0
+		"borderlands":
+			return 1.5
+		_:
+			return 2.0
+
+
+## gp to secure ONE 6-mile hex in [param territory] — also the hard floor: spend
+## less than this and you secure nothing (no toe-holds, no orphaned strongholds).
+static func min_stronghold_gp(territory: String) -> int:
+	return int(STRONGHOLD_GP_PER_HEX_CIVILIZED * territory_securing_modifier(territory))
+
+
+## Stronghold gp needed to secure [param hexes] 6-mile hexes (floored at one hex).
+static func stronghold_gp_for_hexes(hexes: int, territory: String) -> int:
+	return maxi(1, hexes) * min_stronghold_gp(territory)
+
+
+## Max 6-mile hexes a [param stronghold_gp] stronghold can secure in
+## [param territory] — floor(gp / per-hex), remainders down (RAW: a partial
+## securing value claims no hex).
+static func max_hexes_for_stronghold(stronghold_gp: int, territory: String) -> int:
+	return floori(float(stronghold_gp) / float(min_stronghold_gp(territory)))

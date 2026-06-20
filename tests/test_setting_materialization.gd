@@ -17,6 +17,7 @@ var _mat_result: Dictionary = {}
 func run_all_tests() -> void:
 	NameBankLoader.clear_cache()
 	test_ruler_title_translation()  # pure unit test of the tribute-title mapping (Q1)
+	test_stronghold_formula()       # pure unit test of the stronghold↔territory formula
 	var cid := _generate(424242)  # generated, NOT yet locked
 	if not cid.is_empty():
 		# Order matters: guard runs while unlocked; then we lock and materialize.
@@ -273,6 +274,27 @@ func test_ruler_title_translation() -> void:
 	check(SettingMaterializer.ruler_title_for("Empire") == "Emperor", "Empire→Emperor")
 
 
+func test_stronghold_formula() -> void:
+	# Jedidiah 2026-06-20: stronghold value is a formula, not a per-tier figure. Per-hex
+	# securing cost = 15,000 × {civ 1.0 / BL 1.5 / wild 2.0}; max territory = floor(gp / cost),
+	# remainders down; the 1-hex cost is also the hard floor.
+	check(DomainTierTable.min_stronghold_gp("civilized") == 15000, "civ 1-hex floor = 15,000")
+	check(DomainTierTable.min_stronghold_gp("borderlands") == 22500, "BL 1-hex floor = 22,500")
+	check(DomainTierTable.min_stronghold_gp("wilderness") == 30000, "wild 1-hex floor = 30,000")
+	check(DomainTierTable.min_stronghold_gp("") == 30000, "unknown territory defaults to wilderness rate")
+	# stronghold_gp_for_hexes scales linearly and floors at one hex.
+	check(DomainTierTable.stronghold_gp_for_hexes(0, "civilized") == 15000, "0 hexes floors to 1-hex cost")
+	check(DomainTierTable.stronghold_gp_for_hexes(1, "civilized") == 15000, "1 civ hex = 15,000")
+	check(DomainTierTable.stronghold_gp_for_hexes(4, "civilized") == 60000, "4 civ hexes = 60,000")
+	check(DomainTierTable.stronghold_gp_for_hexes(3, "wilderness") == 90000, "3 wild hexes = 90,000")
+	# max_hexes_for_stronghold is the inverse, remainders down.
+	check(DomainTierTable.max_hexes_for_stronghold(60000, "civilized") == 4, "60,000 secures 4 civ hexes")
+	check(DomainTierTable.max_hexes_for_stronghold(74999, "civilized") == 4, "partial value claims no extra hex")
+	check(DomainTierTable.max_hexes_for_stronghold(75000, "civilized") == 5, "exact value claims the 5th hex")
+	check(DomainTierTable.max_hexes_for_stronghold(14999, "civilized") == 0, "below the floor secures nothing")
+	check(DomainTierTable.max_hexes_for_stronghold(60000, "wilderness") == 2, "same gp secures fewer wilderness hexes")
+
+
 func test_region_map_materialized(cid: String) -> void:
 	var rid := str(_mat_result.get("region_map_id", ""))
 	check(rid != "", "region_map_id returned")
@@ -495,6 +517,16 @@ func test_clanhold_decomposition(cid: String) -> void:
 		"every sub-clanhold liege resolves")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id AND s.archetype = 'clanhold')" % SC, [cid]) == 0,
 		"every sub-clanhold has a clanhold stronghold")
+	# A clanhold secures its whole group of hexes (flat), so its stronghold cp scales with
+	# the formula: hexes_owned × territory rate × 100 cp (Jedidiah 2026-06-20).
+	var db_cl = CampaignRepository.db
+	db_cl.query_with_bindings("SELECT d.id, d.territory_type, s.cp_value, (SELECT COUNT(*) FROM domain_hexes h WHERE h.domain_id = d.id AND h.map_id = ?) AS hexes FROM domains d JOIN strongholds s ON s.domain_id = d.id AND s.archetype = 'clanhold' WHERE d.campaign_id = ? AND %s" % SC, [rid, cid])
+	var ok_cl := true
+	for rr in db_cl.query_result:
+		var exp_cp := DomainTierTable.stronghold_gp_for_hexes(int(rr["hexes"]), str(rr["territory_type"])) * 100
+		if int(rr["cp_value"]) != exp_cp:
+			ok_cl = false
+	check(ok_cl, "sub-clanhold stronghold cp = hexes × territory securing rate (formula)")
 	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE map_id = ? AND poi_type = 'clanhold'", [rid]) == nsc,
 		"one 'clanhold' POI per sub-clanhold")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND available_tribal_warriors <= 0" % SC, [cid]) == 0,
@@ -579,20 +611,20 @@ func test_subfief_decomposition(cid: String) -> void:
 	# Every sub-fief has a watchtower stronghold (the UI hook).
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id)" % SF, [cid]) == 0,
 		"every sub-fief has a stronghold")
-	# Project rule: a Barony = 1 hex, so its stronghold is the 6-mile-hex minimum by
-	# territory (civ 15k / BL 22.5k / wild 32k × 100 cp). Higher tiers keep the table value.
+	# Stronghold value is a FORMULA, not a per-tier figure (Jedidiah 2026-06-20): a
+	# sub-fief secures ≤1 personal hex (a leaf its own hex; an interior 0, floored to 1),
+	# so EVERY sub-fief's stronghold = the 1-hex securing cost by territory
+	# (civ 15k / BL 22.5k / wild 30k × 100 cp) — Marquis interiors no longer carry the
+	# old per-tier table value. Expected is read straight from the shared formula so the
+	# test tracks the rule rather than restating constants.
 	var db_sv = CampaignRepository.db
-	db_sv.query_with_bindings("SELECT d.territory_type, s.cp_value FROM domains d JOIN strongholds s ON s.domain_id = d.id WHERE d.campaign_id = ? AND %s AND d.realm_title = 'Baron'" % SF, [cid])
+	db_sv.query_with_bindings("SELECT d.territory_type, s.cp_value FROM domains d JOIN strongholds s ON s.domain_id = d.id WHERE d.campaign_id = ? AND %s" % SF, [cid])
 	var ok_sv := true
 	for rr in db_sv.query_result:
-		var exp := 32000
-		if str(rr["territory_type"]) == "civilized":
-			exp = 15000
-		elif str(rr["territory_type"]) == "borderlands":
-			exp = 22500
-		if int(rr["cp_value"]) != exp * 100:
+		var exp_cp := DomainTierTable.stronghold_gp_for_hexes(1, str(rr["territory_type"])) * 100
+		if int(rr["cp_value"]) != exp_cp:
 			ok_sv = false
-	check(ok_sv, "Barony stronghold cp = territory min (civ 15k / BL 22.5k / wild 32k × 100)")
+	check(ok_sv, "every sub-fief stronghold cp = 1-hex securing formula (civ 15k / BL 22.5k / wild 30k × 100)")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups
