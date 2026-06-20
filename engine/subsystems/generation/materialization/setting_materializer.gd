@@ -913,16 +913,27 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 ## Mirrors HistorySimulator's vassal_consolidation at 6-mile. Tunable in the M4 dials.
 const _SUBFIEF_CONSOLIDATION := 1.0
 
+## RAW ruler's-personal-domain families per tier (Barony…Empire), from
+## acore-setting-construction-rules.xml:112-130 `revenue_by_realm_type`. These are the
+## hand-buildout figures the rulebook gives for a ruler's PERSONAL demesne (distinct from
+## the overall-realm families that set the title/tier). The materializer uses them as the
+## UPPER-BOUND family budget that stops demesne peeling — "filled out" when the seat +
+## densest neighbour hexes reach this (± _DEMESNE_JITTER); the remainder becomes vassals.
+## (Jedidiah 2026-06-20: not a hard realm cap, just the peel-stop threshold.)
+const PERSONAL_DOMAIN_FAMILIES := [160, 320, 780, 1500, 7500, 12500, 12500]
+const _DEMESNE_JITTER := 0.15
+
 
 ## M4-1b (gdd-region-zoom-in §5.6a): decompose each in-window located CIV domain one
 ## scale-step deeper — into a 6-mile County→March→Barony ladder so every populated
-## 6-mile hex sits in its own Barony (the AX3 watchtower density). The governing leaf
-## KEEPS its seat child as its personal domain; the rest of its territory becomes
-## Marquis/Baron sub-domains (Model E: leaf Baronies carry families, interior Marches
-## carry 0 — conserved). Each sub-domain gets a watchtower stronghold at its seat + a
-## LAZY/names-only ruler (owner NULL, promoted on visit — the §5.6a perf split, since a
-## full window is ~750–1,100 domains). Clanholds (domain_style='clanhold') and pockets
-## are skipped — they stay flat (M4-5 handles clanholds). Wrapped in one transaction.
+## 6-mile hex sits in exactly one domain (a leaf Barony, or a higher ruler's demesne).
+## Each ruler (the gov and every interior node) KEEPS a personal demesne — the seat +
+## densest hexes up to its tier's RAW family budget (± jitter) — and the remainder splits
+## into vassals; families are conserved (each hex counted once, by whoever holds it). Each
+## sub-domain gets a stronghold at its seat sized by the securing formula (demesne hexes ×
+## territory rate) + a LAZY/names-only ruler (owner NULL, promoted on visit — the §5.6a
+## perf split). Clanholds (domain_style='clanhold') and pockets are skipped — they stay
+## flat (M4-5 handles clanholds). Wrapped in one transaction.
 func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
 	var db = CampaignRepository.db
 	db.query_with_bindings("""
@@ -945,17 +956,12 @@ func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ct
 			"SELECT hex_q, hex_r, families FROM domain_hexes WHERE domain_id = ? AND map_id = ?",
 			[gov_id, region_map_id])
 		var seat := Vector2i(int(g["location_hex_q"]), int(g["location_hex_r"]))
-		var seat_fam := 0
-		var others: Array = []
+		var children: Array = []
 		for ch in db.query_result:
-			var h := Vector2i(int(ch["hex_q"]), int(ch["hex_r"]))
-			var f := int(ch["families"])
-			if h == seat:
-				seat_fam = f
-			elif f > 0:
-				others.append({"hex": h, "fam": f})
-		if others.is_empty():
-			continue  # only the seat is populated → gov stays the single leaf
+			if int(ch["families"]) > 0:
+				children.append({"hex": Vector2i(int(ch["hex_q"]), int(ch["hex_r"])), "fam": int(ch["families"])})
+		if children.size() <= 1:
+			continue  # only one hex is populated → gov stays the single leaf
 		var sub_ctx := {
 			"campaign_id": campaign_id, "region_map_id": region_map_id,
 			"realm_id": str(g.get("realm_id", "")), "culture": str(g.get("culture_id", "")),
@@ -963,14 +969,22 @@ func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ct
 			"alignment": str(g.get("alignment", "neutral")),
 			"gov_name": str(g.get("name", "")), "result": result, "n": 0,
 		}
-		if not _split_6mi(others, gtier, gov_id, sub_ctx):
+		# The gov KEEPS a personal demesne — the seat + its densest neighbour hexes up to its
+		# tier's RAW family budget (± jitter, §5.6a). Those hexes' domain_hexes already point
+		# to gov, so no reassign; the REMAINDER splits into Marquis/Baron vassals. Its
+		# title/tier is UNCHANGED — a ruler's tier is set by his whole realm, not his demesne
+		# size (JJ Step 8).
+		var peeled := _peel_demesne(children, gtier, seat, sub_ctx)
+		var demesne: Array = peeled["demesne"]
+		if not _split_6mi(peeled["remainder"], gtier, gov_id, sub_ctx):
 			db.query("ROLLBACK")
 			result["errors"].append("6-mile decomposition failed for domain %s" % gov_id)
 			return false
-		# gov keeps only its SEAT child's families as its personal domain (the rest is now
-		# its vassals'). Its realm_title/tier is UNCHANGED — a ruler's tier is set by his
-		# whole realm, not his personal-domain size (JJ Step 8).
-		db.query_with_bindings("UPDATE domains SET peasant_families = ? WHERE id = ?", [seat_fam, gov_id])
+		db.query_with_bindings("UPDATE domains SET peasant_families = ? WHERE id = ?", [int(peeled["fam"]), gov_id])
+		if not _ensure_gov_stronghold(gov_id, seat, str(g.get("territory_type", "wilderness")), demesne.size(), sub_ctx):
+			db.query("ROLLBACK")
+			result["errors"].append("gov stronghold ensure failed for domain %s" % gov_id)
+			return false
 		made += int(sub_ctx.get("n", 0))
 	db.query("COMMIT")
 	result["subfief_count"] = made
@@ -979,8 +993,9 @@ func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ct
 
 ## Mirror of HistorySimulator._split_realm at 6-mile over (hex, fam) children: peel
 ## children big enough to stand as a child_tier realm into leaves directly under the
-## lord; cluster the small remainder into child_tier interior nodes and recurse. Barony
-## is the floor (every leftover child becomes its own Barony — the per-hex watchtower).
+## lord; cluster the small remainder into child_tier interior nodes — each of which peels
+## its OWN demesne before recursing — and recurse. Barony is the floor (every leftover
+## child becomes its own 1-hex Barony — the per-hex watchtower).
 func _split_6mi(children: Array, node_tier: int, liege_id: String, sub_ctx: Dictionary) -> bool:
 	if children.is_empty():
 		return true
@@ -1009,12 +1024,18 @@ func _split_6mi(children: Array, node_tier: int, liege_id: String, sub_ctx: Dict
 			if not _emit_leaf_6mi(group[0], child_tier, liege_id, sub_ctx):
 				return false
 		else:
-			# interior node (e.g. a Marquis grouping Baronies): 0 personal families
-			# (Model E) but a real seat + stronghold; recurse to fill its leaves.
-			var node_id := _create_sub_domain(child_tier, liege_id, _seat_6mi(group), 0, sub_ctx)
+			# interior node (e.g. a Marquis grouping Baronies): keep a PERSONAL DEMESNE
+			# (RAW per-tier families ± jitter, §5.6a) — the seat + densest hexes — and split
+			# the REMAINDER into its vassals. Reassign the demesne hexes to the node.
+			var seat := _seat_6mi(group)
+			var node_peeled := _peel_demesne(group, child_tier, seat, sub_ctx)
+			var node_demesne: Array = node_peeled["demesne"]
+			var node_id := _create_sub_domain(child_tier, liege_id, seat, int(node_peeled["fam"]), node_demesne.size(), sub_ctx)
 			if node_id.is_empty():
 				return false
-			if not _split_6mi(group, child_tier, node_id, sub_ctx):
+			if not _assign_hexes(node_demesne, node_id, sub_ctx):
+				return false
+			if not _split_6mi(node_peeled["remainder"], child_tier, node_id, sub_ctx):
 				return false
 	return true
 
@@ -1023,7 +1044,7 @@ func _split_6mi(children: Array, node_tier: int, liege_id: String, sub_ctx: Dict
 ## slot_tier), under [param liege_id]; reassigns its domain_hex from the gov to the leaf.
 func _emit_leaf_6mi(c: Dictionary, slot_tier: int, liege_id: String, sub_ctx: Dictionary) -> bool:
 	var ltier := clampi(DomainTierTable.tier_for_families(int(c["fam"])), DomainTierTable.BARONY, slot_tier)
-	var dom_id := _create_sub_domain(ltier, liege_id, c["hex"], int(c["fam"]), sub_ctx)
+	var dom_id := _create_sub_domain(ltier, liege_id, c["hex"], int(c["fam"]), 1, sub_ctx)
 	if dom_id.is_empty():
 		return false
 	var h: Vector2i = c["hex"]
@@ -1033,9 +1054,10 @@ func _emit_leaf_6mi(c: Dictionary, slot_tier: int, liege_id: String, sub_ctx: Di
 
 
 ## Create one runtime sub-domain (March or Barony) under [param liege_id] at [param seat]
-## with [param families] (0 for an interior node), + a watchtower stronghold at the seat,
-## + a LAZY ruler (owner NULL). Returns the new domain id, or "" on failure.
-func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: int, sub_ctx: Dictionary) -> String:
+## with [param families] across [param hexes] demesne hexes, + a stronghold at the seat
+## sized by the securing formula (hexes × territory rate), + a LAZY ruler (owner NULL).
+## Returns the new domain id, or "" on failure.
+func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: int, hexes: int, sub_ctx: Dictionary) -> String:
 	var db = CampaignRepository.db
 	var n := int(sub_ctx.get("n", 0)) + 1
 	sub_ctx["n"] = n
@@ -1062,11 +1084,10 @@ func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: i
 	var arch := "fastness" if tier <= DomainTierTable.BARONY else "fortress"
 	# Stronghold value is a FORMULA of the hexes the domain personally secures, not a
 	# per-tier figure (Jedidiah 2026-06-20): hexes × territory rate, floored at one 6-mile
-	# hex. A leaf holds its single hex; an interior node (Model E) holds 0 personal hexes
-	# and so falls to the 1-hex floor — its power is the vassal tree below it, not demesne.
-	var personal_hexes := 1 if families > 0 else 0
+	# hex. A leaf holds its single hex; an interior node holds its peeled demesne (the
+	# reverse of the securing formula — fill the demesne, then derive the stronghold value).
 	var cp := DomainTierTable.stronghold_gp_for_hexes(
-		personal_hexes, str(sub_ctx.get("territory", "wilderness"))) * 100
+		maxi(1, hexes), str(sub_ctx.get("territory", "wilderness"))) * 100
 	if not db.query_with_bindings("""
 		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
 			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
@@ -1114,6 +1135,82 @@ func _child_canonical_less(a: Dictionary, b: Dictionary) -> bool:
 	var ha: Vector2i = a["hex"]
 	var hb: Vector2i = b["hex"]
 	return ha.x < hb.x or (ha.x == hb.x and ha.y < hb.y)
+
+
+## The peel-stop family budget for a [param tier] demesne: the RAW per-tier personal-domain
+## families with a deterministic ±15% jitter derived from the seat hex + tier (no RNG state,
+## so it is replay-stable; banker's rounded per project convention).
+func _demesne_budget(tier: int, seat: Vector2i) -> int:
+	var base: int = PERSONAL_DOMAIN_FAMILIES[clampi(tier, 0, PERSONAL_DOMAIN_FAMILIES.size() - 1)]
+	var mix := absi((seat.x * 73856093) ^ (seat.y * 19349663) ^ ((tier + 1) * 83492791))
+	var jitter := (float(mix % 1000) / 1000.0 * 2.0 - 1.0) * _DEMESNE_JITTER  # [-0.15, +0.15)
+	return maxi(1, XPAwardCalculator.bankers_round(float(base) * (1.0 + jitter)))
+
+
+## Demesne hex ordering: the seat first (the ruler's stronghold sits there), then densest,
+## then canonical — a strict total order so peeling is deterministic.
+func _demesne_less(a: Dictionary, b: Dictionary, seat: Vector2i) -> bool:
+	var a_seat := (Vector2i(a["hex"]) == seat)
+	var b_seat := (Vector2i(b["hex"]) == seat)
+	if a_seat != b_seat:
+		return a_seat
+	if int(a["fam"]) != int(b["fam"]):
+		return int(a["fam"]) > int(b["fam"])
+	return _child_canonical_less(a, b)
+
+
+## Peel a ruler's personal demesne off [param children]: the seat + densest hexes whose
+## families reach the [param tier] budget (the last hex may overshoot — it is the "filled
+## out" boundary), always ≥ 1 hex. Returns {demesne, remainder, fam}; the remainder becomes
+## the ruler's vassals.
+func _peel_demesne(children: Array, tier: int, seat: Vector2i, _sub_ctx: Dictionary) -> Dictionary:
+	var budget := _demesne_budget(tier, seat)
+	var ordered := children.duplicate()
+	ordered.sort_custom(func(a, b): return _demesne_less(a, b, seat))
+	var demesne: Array = []
+	var remainder: Array = []
+	var acc := 0
+	for c in ordered:
+		if demesne.is_empty() or acc < budget:
+			demesne.append(c)
+			acc += int(c["fam"])
+		else:
+			remainder.append(c)
+	return {"demesne": demesne, "remainder": remainder, "fam": acc}
+
+
+## Reassign every hex in [param children] to [param dom_id] (its new owning domain).
+func _assign_hexes(children: Array, dom_id: String, sub_ctx: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	for c in children:
+		var h: Vector2i = c["hex"]
+		if not db.query_with_bindings(
+			"UPDATE domain_hexes SET domain_id = ? WHERE map_id = ? AND hex_q = ? AND hex_r = ?",
+			[dom_id, str(sub_ctx["region_map_id"]), h.x, h.y]):
+			return false
+	return true
+
+
+## Guarantee the gov (a domain owner) has a stronghold. If it already has one (e.g. a sim
+## fort — possibly a grander castle ≥ the securing minimum) leave it; otherwise create one
+## at the demesne's securing minimum (the reverse of the formula: hexes × territory rate),
+## so every realm head is a clickable, RAW-consistent UI hook. Counts creations into
+## result["gov_stronghold_count"]. Returns false only on insert failure.
+func _ensure_gov_stronghold(gov_id: String, seat: Vector2i, territory: String, demesne_hexes: int, sub_ctx: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT COUNT(*) AS n FROM strongholds WHERE domain_id = ?", [gov_id])
+	if not db.query_result.is_empty() and int(db.query_result[0]["n"]) > 0:
+		return true
+	var cp := DomainTierTable.stronghold_gp_for_hexes(maxi(1, demesne_hexes), territory) * 100
+	if not db.query_with_bindings("""
+		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
+			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
+		VALUES (?, ?, 'fortress', 'keep', ?, 100, 'completed', ?, ?, ?)
+	""", [CampaignRepository.generate_id(), gov_id, cp, str(sub_ctx["region_map_id"]), seat.x, seat.y]):
+		return false
+	var r: Dictionary = sub_ctx["result"]
+	r["gov_stronghold_count"] = int(r.get("gov_stronghold_count", 0)) + 1
+	return true
 
 
 ## M4-5 (gdd-region-zoom-in §5.6a / §5.3; user ruling 2026-06-19): give each in-window

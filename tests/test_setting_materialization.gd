@@ -450,17 +450,19 @@ func test_content_placed(cid: String) -> void:
 			"every stronghold POI sits on a real stronghold hex")
 
 	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed). M4-1b
-	# adds one watchtower stronghold per sub-fief (Marquis/Baron), also completed.
+	# adds one stronghold per sub-fief (Marquis/Baron) + one per gov that lacked one, also
+	# completed; M4-5 adds one per sub-clanhold.
 	var nf := int(_mat_result.get("fort_count", -1))
 	var nsf2 := int(_mat_result.get("subfief_count", 0))
 	var nsc2 := int(_mat_result.get("subclanhold_count", 0))  # M4-5 clanhold strongholds
-	check(nf + nsf2 + nsc2 == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
-		"fort_count + sub-fief watchtowers + sub-clanhold strongholds match strongholds on the region map")
+	var ngs := int(_mat_result.get("gov_stronghold_count", 0))  # M4-1b gov strongholds created
+	check(nf + nsf2 + nsc2 + ngs == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
+		"fort + sub-fief + sub-clanhold + gov strongholds match strongholds on the region map")
 	if nf > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND archetype NOT IN ('fortress','fastness','sanctum','hideout','vault','clanhold')", [rid]) == 0,
 			"fort archetypes satisfy the CHECK domain")
-		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2 + nsc2,
-			"all forts (+ sub-fief + sub-clanhold strongholds) are completed")
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2 + nsc2 + ngs,
+			"all forts (+ sub-fief + sub-clanhold + gov strongholds) are completed")
 
 
 func test_domain_hexes_materialized(cid: String) -> void:
@@ -612,20 +614,24 @@ func test_subfief_decomposition(cid: String) -> void:
 	# Every sub-fief has a watchtower stronghold (the UI hook).
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id)" % SF, [cid]) == 0,
 		"every sub-fief has a stronghold")
-	# Stronghold value is a FORMULA, not a per-tier figure (Jedidiah 2026-06-20): a
-	# sub-fief secures ≤1 personal hex (a leaf its own hex; an interior 0, floored to 1),
-	# so EVERY sub-fief's stronghold = the 1-hex securing cost by territory
-	# (civ 16k / BL 24k / wild 32k × 100 cp) — Marquis interiors no longer carry the
-	# old per-tier table value. Expected is read straight from the shared formula so the
-	# test tracks the rule rather than restating constants.
+	# Stronghold value is the reverse of the securing FORMULA (Jedidiah 2026-06-20): every
+	# sub-fief's stronghold cp = (the demesne hexes it owns) × territory rate × 100. A leaf
+	# owns its 1 hex; an interior owns its peeled demesne (≥1 hex). Expected is read from the
+	# shared formula on the domain's actual hex count, so the test tracks the rule.
 	var db_sv = CampaignRepository.db
-	db_sv.query_with_bindings("SELECT d.territory_type, s.cp_value FROM domains d JOIN strongholds s ON s.domain_id = d.id WHERE d.campaign_id = ? AND %s" % SF, [cid])
+	db_sv.query_with_bindings("SELECT d.territory_type, s.cp_value, (SELECT COUNT(*) FROM domain_hexes h WHERE h.domain_id = d.id AND h.map_id = ?) AS hexes FROM domains d JOIN strongholds s ON s.domain_id = d.id WHERE d.campaign_id = ? AND %s" % SF, [rid, cid])
 	var ok_sv := true
 	for rr in db_sv.query_result:
-		var exp_cp := DomainTierTable.stronghold_gp_for_hexes(1, str(rr["territory_type"])) * 100
+		var exp_cp := DomainTierTable.stronghold_gp_for_hexes(int(rr["hexes"]), str(rr["territory_type"])) * 100
 		if int(rr["cp_value"]) != exp_cp:
 			ok_sv = false
-	check(ok_sv, "every sub-fief stronghold cp = 1-hex securing formula (civ 16k / BL 24k / wild 32k × 100)")
+	check(ok_sv, "every sub-fief stronghold cp = (demesne hexes × territory rate) × 100 (reverse formula)")
+	# Every sub-fief (leaf OR interior March) now carries a real personal demesne — families
+	# > 0 and ≥ 1 owned hex. (Pre-demesne, interior nodes carried 0 families / 0 hexes; this
+	# is the Model-E → demesne change.) The demesne's HEX count, and so its stronghold value,
+	# falls out of local density per the families-budget rule — it is not monotonic in tier.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.peasant_families <= 0 OR NOT EXISTS (SELECT 1 FROM domain_hexes h WHERE h.domain_id = d.id AND h.map_id = ?))" % SF, [cid, rid]) == 0,
+		"every sub-fief carries a demesne (families > 0 and ≥ 1 owned hex)")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups
