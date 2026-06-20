@@ -28,6 +28,7 @@ func run_all_tests() -> void:
 		test_settlements_materialized(cid)      # asserts the M2b-3a settlement placement
 		test_content_placed(cid)                # asserts the M2b-3b dungeon/POI/fort placement
 		test_domain_hexes_materialized(cid)     # asserts the M2b-3c domain territory
+		test_subfief_decomposition(cid)         # asserts the M4-1b 6-mile vassal-tree fill
 		test_pocket_realms(cid)                 # asserts the M2b-4 orphan→pocket realms
 		test_subjugation_and_history(cid)       # asserts M2b-5 subjugation + history reader
 		test_roads_rivers_materialized(cid)     # asserts the M2c 6-mile roads + rivers
@@ -153,7 +154,10 @@ func test_political_layer_materialized(cid: String) -> void:
 	# DB row counts. M2b-4 adds one realm + one crown domain per in-window pocket realm.
 	var np := int(_mat_result.get("pocket_realm_count", 0))
 	check(_count("realms", "campaign_id", cid) == sovereigns.size() + np, "realms rows == sovereigns + pockets")
-	check(_count("domains", "campaign_id", cid) == expected_domains + np, "domains rows == crowns + ladder + pockets")
+	# M4-1b adds the 6-mile sub-fief ladder (Marquis/Baron domains) beneath the in-window
+	# located leaves — one extra domain row per sub-fief.
+	var nsf := int(_mat_result.get("subfief_count", 0))
+	check(_count("domains", "campaign_id", cid) == expected_domains + np + nsf, "domains rows == crowns + ladder + pockets + sub-fiefs")
 
 	# Realms: 'foreign' by default, 'tracked' once promoted for the in-window start
 	# region (M2b-2); head FK-resolves.
@@ -322,8 +326,9 @@ func test_region_map_materialized(cid: String) -> void:
 	# and their realms are promoted to 'tracked'.
 	var located := int(_mat_result.get("located_domain_count", -1))
 	var tracked := int(_mat_result.get("tracked_realm_count", -1))
-	check(located + int(_mat_result.get("pocket_realm_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
-		"located domains == M2b-2 in-window domains + M2b-4 pocket crowns")
+	# M4-1b sub-fiefs are all located on the play map (one per created Marquis/Baron domain).
+	check(located + int(_mat_result.get("pocket_realm_count", 0)) + int(_mat_result.get("subfief_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND location_map_id = ?", [cid, rid]),
+		"located domains == M2b-2 in-window + M2b-4 pocket crowns + M4-1b sub-fiefs")
 	check(located > 0, "≥1 domain located in the start region (%d)" % located)
 	# DB 'tracked' realms = M2b-2 promoted in-window realms + M2b-4 pocket realms.
 	check(tracked + int(_mat_result.get("pocket_realm_count", 0)) == _scalar("SELECT COUNT(*) AS n FROM realms WHERE campaign_id = ? AND realm_kind = 'tracked'", [cid]),
@@ -396,15 +401,17 @@ func test_content_placed(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM pois WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
 		"POIs all sit on the 6-mile region map")
 
-	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed).
+	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed). M4-1b
+	# adds one watchtower stronghold per sub-fief (Marquis/Baron), also completed.
 	var nf := int(_mat_result.get("fort_count", -1))
-	check(nf == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
-		"fort_count matches strongholds on the region map")
+	var nsf2 := int(_mat_result.get("subfief_count", 0))
+	check(nf + nsf2 == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
+		"fort_count + sub-fief watchtowers match strongholds on the region map")
 	if nf > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND archetype NOT IN ('fortress','fastness','sanctum','hideout','vault','clanhold')", [rid]) == 0,
 			"fort archetypes satisfy the CHECK domain")
-		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf,
-			"all forts are completed")
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2,
+			"all forts (+ sub-fief watchtowers) are completed")
 
 
 func test_domain_hexes_materialized(cid: String) -> void:
@@ -441,6 +448,43 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	check(_scalar("SELECT COALESCE(SUM(families),0) AS n FROM domain_hexes WHERE map_id = ?", [rid]) > 0,
 		"per-hex families distributed (Σ > 0)")
 	check(_domain_hex_blocks_conserve(cid, rid), "per-hex families conserve per 24-mile block (16 children sum to population_band)")
+
+
+## M4-1b: the 6-mile vassal-tree fill — each in-window located leaf decomposed into a
+## County→March→Barony ladder (the AX3-density spine; gdd-region-zoom-in §5.6a).
+func test_subfief_decomposition(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		return
+	var nsf := int(_mat_result.get("subfief_count", 0))
+	check(nsf > 0, "M4-1b created 6-mile sub-fiefs (%d)" % nsf)
+	if nsf == 0:
+		return
+	# Scope ALL checks to the M4-1b-tagged sub-fiefs (establishment_method) so M2b's own
+	# 24-mile Baron/Marquis leaves — which legitimately have rulers / are sovereign /
+	# may lack a stronghold — don't confound the assertions.
+	const SF := "establishment_method = 'materialized_subfief'"
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s" % SF, [cid]) == nsf,
+		"subfief_count matches tagged sub-fief rows (%d)" % nsf)
+	# The ladder reaches Baron (the floor — the per-hex watchtower fief).
+	var nbaron := _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND realm_title = 'Baron'" % SF, [cid])
+	var nmarq := _scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND realm_title = 'Marquis'" % SF, [cid])
+	check(nbaron > 0, "the tree reaches Baron (≥1 sub-fief Barony, %d)" % nbaron)
+	# Pyramid: more Barons than Marquis (fan-out — a County has ~16-24 Barons, ~4-6 Marquis).
+	check(nbaron >= nmarq, "Barons (%d) ≥ Marquis (%d) — correct fan-out" % [nbaron, nmarq])
+	# Every sub-fief is located, has a resolving liege, sits in a resolving realm.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND (location_map_id != ? OR liege_domain_id IS NULL)" % SF, [cid, rid]) == 0,
+		"every sub-fief is located on the region map with a liege")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND d.liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)" % SF, [cid, cid]) == 0,
+		"every sub-fief liege resolves to a domain")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.realm_id IS NULL OR d.realm_id NOT IN (SELECT id FROM realms WHERE campaign_id = ?))" % SF, [cid, cid]) == 0,
+		"every sub-fief is in a resolving realm")
+	# Lazy rulers (region-zoom-in §5.6a perf split): sub-fiefs carry NO eager ruler.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND owner_character_id IS NOT NULL" % SF, [cid]) == 0,
+		"sub-fiefs have lazy (NULL) rulers")
+	# Every sub-fief has a watchtower stronghold (the UI hook).
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id)" % SF, [cid]) == 0,
+		"every sub-fief has a stronghold")
 
 
 ## M4-1: per-24-mile-block conservation of the per-hex families distribution. Groups

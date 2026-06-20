@@ -104,6 +104,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		and _materialize_pois(campaign_id, region_map_id, result)
 		and _materialize_forts(campaign_id, region_map_id, ctx, result)
 		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
+		and _decompose_in_window_domains(campaign_id, region_map_id, ctx, result)
 		and _materialize_pocket_realms(campaign_id, region_map_id, result)
 		# M2c: roads/rivers projected onto the 6-mile play map.
 		and _materialize_rivers(campaign_id, region_map_id, result)
@@ -900,6 +901,208 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 				placed += 1
 	result["domain_hex_count"] = placed
 	return true
+
+
+## M4-1b density dial: target families per sub-fief = the tier floor × this knob
+## (1.0 = granular floor → more, thinner vassals; higher → fewer, fuller mid-tiers).
+## Mirrors HistorySimulator's vassal_consolidation at 6-mile. Tunable in the M4 dials.
+const _SUBFIEF_CONSOLIDATION := 1.0
+
+
+## M4-1b (gdd-region-zoom-in §5.6a): decompose each in-window located CIV domain one
+## scale-step deeper — into a 6-mile County→March→Barony ladder so every populated
+## 6-mile hex sits in its own Barony (the AX3 watchtower density). The governing leaf
+## KEEPS its seat child as its personal domain; the rest of its territory becomes
+## Marquis/Baron sub-domains (Model E: leaf Baronies carry families, interior Marches
+## carry 0 — conserved). Each sub-domain gets a watchtower stronghold at its seat + a
+## LAZY/names-only ruler (owner NULL, promoted on visit — the §5.6a perf split, since a
+## full window is ~750–1,100 domains). Clanholds (domain_style='clanhold') and pockets
+## are skipped — they stay flat (M4-5 handles clanholds). Wrapped in one transaction.
+func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	db.query_with_bindings("""
+		SELECT id, peasant_families, realm_id, culture_id, territory_type, alignment,
+		       location_hex_q, location_hex_r, name
+		FROM domains
+		WHERE campaign_id = ? AND location_map_id = ? AND domain_style = 'civilized'
+		  AND peasant_families > 0
+		ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id
+	""", [campaign_id, region_map_id])
+	var govs: Array = db.query_result.duplicate(true)
+	db.query("BEGIN TRANSACTION")
+	var made := 0
+	for g in govs:
+		var gov_id := str(g["id"])
+		var gtier := DomainTierTable.tier_for_families(int(g["peasant_families"]))
+		if gtier <= DomainTierTable.BARONY:
+			continue  # already a Barony — its hexes stay its own domain_hexes
+		db.query_with_bindings(
+			"SELECT hex_q, hex_r, families FROM domain_hexes WHERE domain_id = ? AND map_id = ?",
+			[gov_id, region_map_id])
+		var seat := Vector2i(int(g["location_hex_q"]), int(g["location_hex_r"]))
+		var seat_fam := 0
+		var others: Array = []
+		for ch in db.query_result:
+			var h := Vector2i(int(ch["hex_q"]), int(ch["hex_r"]))
+			var f := int(ch["families"])
+			if h == seat:
+				seat_fam = f
+			elif f > 0:
+				others.append({"hex": h, "fam": f})
+		if others.is_empty():
+			continue  # only the seat is populated → gov stays the single leaf
+		var sub_ctx := {
+			"campaign_id": campaign_id, "region_map_id": region_map_id,
+			"realm_id": str(g.get("realm_id", "")), "culture": str(g.get("culture_id", "")),
+			"territory": str(g.get("territory_type", "wilderness")),
+			"alignment": str(g.get("alignment", "neutral")),
+			"gov_name": str(g.get("name", "")), "result": result, "n": 0,
+		}
+		if not _split_6mi(others, gtier, gov_id, sub_ctx):
+			db.query("ROLLBACK")
+			result["errors"].append("6-mile decomposition failed for domain %s" % gov_id)
+			return false
+		# gov keeps only its SEAT child's families as its personal domain (the rest is now
+		# its vassals'). Its realm_title/tier is UNCHANGED — a ruler's tier is set by his
+		# whole realm, not his personal-domain size (JJ Step 8).
+		db.query_with_bindings("UPDATE domains SET peasant_families = ? WHERE id = ?", [seat_fam, gov_id])
+		made += int(sub_ctx.get("n", 0))
+	db.query("COMMIT")
+	result["subfief_count"] = made
+	return true
+
+
+## Mirror of HistorySimulator._split_realm at 6-mile over (hex, fam) children: peel
+## children big enough to stand as a child_tier realm into leaves directly under the
+## lord; cluster the small remainder into child_tier interior nodes and recurse. Barony
+## is the floor (every leftover child becomes its own Barony — the per-hex watchtower).
+func _split_6mi(children: Array, node_tier: int, liege_id: String, sub_ctx: Dictionary) -> bool:
+	if children.is_empty():
+		return true
+	var child_tier := node_tier - 1
+	var big: Array = []
+	var small: Array = []
+	for c in children:
+		if DomainTierTable.tier_for_families(int(c["fam"])) >= child_tier:
+			big.append(c)
+		else:
+			small.append(c)
+	big.sort_custom(_child_canonical_less)
+	for c in big:
+		if not _emit_leaf_6mi(c, child_tier, liege_id, sub_ctx):
+			return false
+	if small.is_empty():
+		return true
+	if child_tier <= DomainTierTable.BARONY:
+		small.sort_custom(_child_canonical_less)
+		for c in small:
+			if not _emit_leaf_6mi(c, child_tier, liege_id, sub_ctx):
+				return false
+		return true
+	for group in _cluster_6mi(small, child_tier):
+		if group.size() == 1:
+			if not _emit_leaf_6mi(group[0], child_tier, liege_id, sub_ctx):
+				return false
+		else:
+			# interior node (e.g. a Marquis grouping Baronies): 0 personal families
+			# (Model E) but a real seat + stronghold; recurse to fill its leaves.
+			var node_id := _create_sub_domain(child_tier, liege_id, _seat_6mi(group), 0, sub_ctx)
+			if node_id.is_empty():
+				return false
+			if not _split_6mi(group, child_tier, node_id, sub_ctx):
+				return false
+	return true
+
+
+## One child as a leaf domain titled at its own family rank (clamped Barony ≤ ltier ≤
+## slot_tier), under [param liege_id]; reassigns its domain_hex from the gov to the leaf.
+func _emit_leaf_6mi(c: Dictionary, slot_tier: int, liege_id: String, sub_ctx: Dictionary) -> bool:
+	var ltier := clampi(DomainTierTable.tier_for_families(int(c["fam"])), DomainTierTable.BARONY, slot_tier)
+	var dom_id := _create_sub_domain(ltier, liege_id, c["hex"], int(c["fam"]), sub_ctx)
+	if dom_id.is_empty():
+		return false
+	var h: Vector2i = c["hex"]
+	return CampaignRepository.db.query_with_bindings(
+		"UPDATE domain_hexes SET domain_id = ? WHERE map_id = ? AND hex_q = ? AND hex_r = ?",
+		[dom_id, str(sub_ctx["region_map_id"]), h.x, h.y])
+
+
+## Create one runtime sub-domain (March or Barony) under [param liege_id] at [param seat]
+## with [param families] (0 for an interior node), + a watchtower stronghold at the seat,
+## + a LAZY ruler (owner NULL). Returns the new domain id, or "" on failure.
+func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: int, sub_ctx: Dictionary) -> String:
+	var db = CampaignRepository.db
+	var n := int(sub_ctx.get("n", 0)) + 1
+	sub_ctx["n"] = n
+	var title := DomainTierTable.title_for_tier(tier)
+	var dname := "%s, %s %d" % [str(sub_ctx.get("gov_name", "Domain")), ruler_title_for(title), n]
+	var dom_id := CampaignRepository.create_domain({
+		"campaign_id": str(sub_ctx["campaign_id"]), "name": dname,
+		"owner_character_id": null,
+		"location_map_id": str(sub_ctx["region_map_id"]),
+		"location_hex_q": seat.x, "location_hex_r": seat.y,
+		"territory_type": str(sub_ctx.get("territory", "wilderness")),
+		"alignment": str(sub_ctx.get("alignment", "neutral")),
+		"religion": "", "domain_style": "civilized",
+		# Marks a handoff-invented 6-mile sub-fief (vs a sim-pre-rolled setting_domains
+		# leaf) — distinguishes M4-1b output for lazy-ruler promotion + replay provenance.
+		"establishment_method": "materialized_subfief", "established_calendar_day": 0,
+	})
+	if dom_id.is_empty():
+		return ""
+	db.query_with_bindings(
+		"UPDATE domains SET peasant_families = ?, morale = 0, realm_title = ?, culture_id = ?, realm_id = ?, liege_domain_id = ? WHERE id = ?",
+		[families, ruler_title_for(title), str(sub_ctx.get("culture", "")),
+		str(sub_ctx.get("realm_id", "")), liege_id, dom_id])
+	var arch := "fastness" if tier <= DomainTierTable.BARONY else "fortress"
+	var cp := int(DomainTierTable.TIERS[tier]["stronghold_value_gp"]) * 100
+	if not db.query_with_bindings("""
+		INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
+			completion_pct, status, location_map_id, location_hex_q, location_hex_r)
+		VALUES (?, ?, ?, 'keep', ?, 100, 'completed', ?, ?, ?)
+	""", [CampaignRepository.generate_id(), dom_id, arch, cp, str(sub_ctx["region_map_id"]), seat.x, seat.y]):
+		var r: Dictionary = sub_ctx["result"]
+		r["errors"].append("sub-domain stronghold insert failed at (%d,%d)" % [seat.x, seat.y])
+		return ""
+	return dom_id
+
+
+## Cluster small children into ≈one-child_tier-realm contiguous-ish groups (canonical
+## order chunked into n groups, n = round(total_fam / (floor × consolidation))).
+func _cluster_6mi(children: Array, child_tier: int) -> Array:
+	var floor_fam := maxi(int(DomainTierTable.TIERS[child_tier]["families_lower"]), 1)
+	var target := maxf(float(floor_fam) * _SUBFIEF_CONSOLIDATION, 1.0)
+	var n := clampi(roundi(float(_fam_of(children)) / target), 1, children.size())
+	var sorted_children := children.duplicate()
+	sorted_children.sort_custom(_child_canonical_less)
+	var group_size := ceili(float(sorted_children.size()) / float(n))
+	var groups: Array = []
+	var i := 0
+	while i < sorted_children.size():
+		groups.append(sorted_children.slice(i, mini(i + group_size, sorted_children.size())))
+		i += group_size
+	return groups
+
+
+func _seat_6mi(group: Array) -> Vector2i:
+	var best: Dictionary = group[0]
+	for c in group:
+		if int(c["fam"]) > int(best["fam"]) or (int(c["fam"]) == int(best["fam"]) and _child_canonical_less(c, best)):
+			best = c
+	return best["hex"]
+
+
+func _fam_of(group: Array) -> int:
+	var t := 0
+	for c in group:
+		t += int(c["fam"])
+	return t
+
+
+func _child_canonical_less(a: Dictionary, b: Dictionary) -> bool:
+	var ha: Vector2i = a["hex"]
+	var hb: Vector2i = b["hex"]
+	return ha.x < hb.x or (ha.x == hb.x and ha.y < hb.y)
 
 
 ## M2b-4: orphaned populated land (in-window hexes that are UNOWNED but population>0
