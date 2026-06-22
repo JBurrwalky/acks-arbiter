@@ -113,6 +113,17 @@ func test_world_map_materialized(cid: String) -> void:
 	check(_count("roads", "map_id", wid) == int(res.get("road_count", -2)),
 		"roads rows written")
 
+	# World name = the continent region's proper noun (drives "Welcome to <world>" + the
+	# campaign label, replacing the "w" stub). Returns "" when a small world has no continent
+	# region (≥100 land hexes) — the flow then supplies its own fallback. set_world_name
+	# round-trips onto the campaign.
+	var wn := SettingRepository.world_name(cid)
+	check(wn == _scalar_str("SELECT name_primary AS n FROM setting_regions WHERE campaign_id = ? AND subtype = 'continent' ORDER BY significance DESC, id ASC LIMIT 1", [cid]),
+		"world_name returns the continent region name ('%s'; '' if no continent)" % wn)
+	CampaignRepository.set_world_name(cid, "Neosrhoos")
+	check(String(CampaignRepository.get_campaign(cid).get("world_name", "")) == "Neosrhoos",
+		"set_world_name persists onto the campaign")
+
 
 func test_idempotent_guard(cid: String) -> void:
 	# Second materialize is refused (runtime already populated) — never double-write.

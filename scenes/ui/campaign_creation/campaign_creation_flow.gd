@@ -148,12 +148,17 @@ func _show_phase(phase: int) -> void:
 func _on_start_requested() -> void:
 	# The active screen has mutated the shared _params in place (bind_params).
 	_seed = _resolve_seed()
-	_campaign_id = CampaignRepository.create_campaign("Generated World", "w")
+	# world_name is set after generation, once the world has named its continent (below).
+	_campaign_id = CampaignRepository.create_campaign("Generated World", "")
 	_show_phase(Phase.GENERATE)
 	var ok: bool = SettingGenerator.new().generate(_campaign_id, _seed, _params)
 	if not ok:
 		push_error("CampaignCreationFlow: generation failed (seed %d)" % _seed)
 		return
+	# Name the world after its continent (a top-significance proper noun), so "Welcome to
+	# <world>" and the campaign label read as the real generated land, not the "w" stub.
+	var world := SettingRepository.world_name(_campaign_id)
+	CampaignRepository.set_world_name(_campaign_id, world if not world.is_empty() else "the Uncharted Lands")
 	# Hand the replay its frames + the present-day review payload to pre-warm.
 	_generate.begin_replay(_campaign_id)
 

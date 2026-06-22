@@ -548,6 +548,14 @@ func update_campaign_calendar(id: String, day: int) -> void:
 		push_error("CampaignRepository.update_campaign_calendar: failed. id=%s" % id)
 
 
+func set_world_name(id: String, world_name: String) -> void:
+	if not db.query_with_bindings(
+		"UPDATE campaigns SET world_name = ? WHERE id = ?",
+		[world_name, id]
+	):
+		push_error("CampaignRepository.set_world_name: failed. id=%s" % id)
+
+
 # ---------------------------------------------------------------------------
 # Character CRUD
 # ---------------------------------------------------------------------------

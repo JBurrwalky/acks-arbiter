@@ -294,6 +294,21 @@ static func list_regions(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_regions", "id ASC")
 
 
+## The generated world's proper name = its continent region's name (one per world,
+## a top-significance opaque proper noun). Empty if no continent was named (degenerate
+## all-water world); the caller supplies its own fallback.
+static func world_name(campaign_id: String) -> String:
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT name_primary FROM setting_regions
+		WHERE campaign_id = ? AND subtype = 'continent'
+		ORDER BY significance DESC, id ASC LIMIT 1
+	""", [campaign_id]):
+		return ""
+	if CampaignRepository.db.query_result.is_empty():
+		return ""
+	return String(CampaignRepository.db.query_result[0].get("name_primary", ""))
+
+
 static func list_events(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_events", "tick ASC, id ASC")
 
