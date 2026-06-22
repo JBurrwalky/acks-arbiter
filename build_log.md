@@ -36262,3 +36262,25 @@ on-tick dispatch.
 - Tribute chains still DEFERRED.
 - Process note: the first pass fixed only M4-1a and missed `_create_pocket_realm`; the "no domain_hex on water" regression test caught it immediately (a `water_by_hex` scope error also surfaced because the cluster loop is in a different function than the parent). Worth keeping the regression guard.
 **Next session should:** Jedidiah re-playtests (the throwaway save still has the old ocean watchtowers; a fresh generation will be clean). Deferred dials (dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + tribute remain.
+
+
+## Session 2026-06-21 — Strip the sim fortification layer (roads-only infrastructure)
+
+**Task:** Jedidiah: the setting-gen fortification placement is redundant now that the runtime materializer populates the full feudal stronghold tree — strip it, leave infrastructure as roads-only.
+**Model used:** Opus 4.8 (1M).
+**Investigation (confirmed the redundancy before stripping):** `setting_fortifications` has exactly one consumer (`_materialize_forts` / M2b-3b) — it does NOT feed the 24-mile world map, any off-camera/military sim, narrative, or anything else (the only other references were the table-scope list and the determinism hasher). Live-save evidence: 273 region strongholds, 249 on M4 sub-fief/clanhold domains; **0 unowned border forts** (the one thing forts could uniquely add); **10 hexes carried a fort stacked on a sub-fief stronghold** (the duplicate + the deferred landmark↔POI icon-dup). The sim's three fort types — road watchtowers (every ~5 hexes), border forts, seat strongholds — are all covered by the M4 tree (every Barony hex already has a watchtower; every ruler seat a stronghold). `cp_value` has no gameplay consumer yet, so the layer produced nothing in use.
+**Completed:**
+- `infrastructure_generator.gd`: removed `_place_forts` + the fort-only helpers (`_make_fort`, `_is_frontier`, `_hot_border_hexes`, `_opposed`, `_too_close_list`, `_parse_pairs`, `_seed_fort_sequence`), the fort consts (`_BORDER_FORT_HOT/COLD`, `_WATCHTOWER_SPACING`), and `_next_fort_seq`. Road generation and the shared helpers (`_hex_dist`, `_OFF`, `_alignment_opposed`) are untouched; forts were downstream of roads, so road output is unchanged.
+- `setting_generator.gd`: removed the `save_fortifications` persist call.
+- `setting_repository.gd`: removed `save_fortifications` / `list_fortifications` / `FORTIFICATION_COLUMNS`. The (now-unwritten) `setting_fortifications` table is left in place — no destructive migration — and stays in the table-scope lists.
+- `setting_dataset_hasher.gd`: removed the `setting_fortifications` hash entry.
+- `setting_materializer.gd`: removed `_materialize_forts` + its pipeline call + the `fort_count` result key.
+**Decisions made:**
+- Strip over the "snap fort → +50% cp" alternative: the strength-variation texture has no consumer yet (no siege/military sim), so baking a latent number into a parallel table we'd otherwise delete isn't worth it. When the military sim lands, add a "fortified positions" pass INSIDE the materializer instead.
+- Keep the empty `setting_fortifications` table (conventions forbid destructive migrations); it's vestigial but harmless.
+- This also closes the deferred landmark↔POI icon-dedup (the dup-icon came from fort+sub-fief double strongholds).
+**Interfaces defined or changed:** Removed `SettingRepository.save_fortifications` / `list_fortifications` / `FORTIFICATION_COLUMNS`; removed `_mat_result.fort_count`.
+**Database changes:** None (table left empty in place).
+**Tests added/updated:** Removed `test_forts_valid` + the fortification determinism check/`_fort_map` helper from stage7; the materialization stronghold reconciliation now counts only the M4 tree (sub-fief + sub-clanhold + gov, no forts). Suite **462/18**, stage7 2091→**2058 checks**, mat suite 173, freshness/determinism suites green, net-zero new failures.
+**Known issues:** Tribute chains still DEFERRED. (The fort-on-water risk is now moot — the path is gone.)
+**Next session should:** Jedidiah playtests a freshly generated world (roads-only infrastructure, M4 stronghold tree as the sole stronghold source, no ocean watchtowers). Deferred dials (6-mile dungeon/POI density, faction archetype, clanhold intermingling) + the tribute decision + the eventual "fortified positions" materializer pass remain.
