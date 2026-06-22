@@ -110,6 +110,21 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 			% entrance_id)
 		return ""
 
+	# Preserve the narrator metadata the stub carried (provenance / context / dungeon_level /
+	# size_hint / dungeon_type — written by SettingMaterializer._materialize_dungeons) across
+	# the voxel overwrite, so an ENTERED dungeon keeps its origin for the M5 narrator. The
+	# voxel dict still has "cells", so the cache-hit short-circuit on re-entry is unaffected.
+	if existing is Dictionary:
+		var voxel_dict: Variant = JSON.parse_string(voxel_json)
+		if voxel_dict is Dictionary:
+			var merged := false
+			for key in ["provenance", "context", "dungeon_level", "size_hint", "dungeon_type"]:
+				if (existing as Dictionary).has(key) and not (voxel_dict as Dictionary).has(key):
+					(voxel_dict as Dictionary)[key] = (existing as Dictionary)[key]
+					merged = true
+			if merged:
+				voxel_json = JSON.stringify(voxel_dict)
+
 	# -------------------------------------------------------------------------
 	# 6. Persist back to dungeon_entrances and update the in-memory dict so the
 	#    caller sees the populated dungeon_data immediately.

@@ -25,6 +25,7 @@ func run_all_tests() -> void:
 	test_spec_stub_generates_voxel()
 	test_cache_hit_idempotency()
 	test_single_floor_spec()
+	test_metadata_preserved_across_generation()
 	_teardown_db()
 	if not has_failures():
 		print("DungeonFixtureService: all tests passed.")
@@ -121,6 +122,43 @@ func test_single_floor_spec() -> void:
 		"single-floor voxel dict should have 'cells' key")
 
 	print("  test_single_floor_spec: OK")
+
+
+func test_metadata_preserved_across_generation() -> void:
+	# The narrator metadata the materializer writes (provenance / context / dungeon_level /
+	# size_hint / dungeon_type) must SURVIVE the voxel overwrite on first entry, so an entered
+	# dungeon keeps its origin for the M5 narrator (review finding 2026-06-22).
+	var entrance := _make_entrance("dfs_test_meta", {
+		"spec": {"kind": "tomb", "tier": 4, "size": "medium", "floors": 3, "entrance_floor_index": 1},
+		"size_hint": "medium",
+		"dungeon_type": "tomb",
+		"dungeon_level": 4,
+		"context": "scattered",
+		"provenance": {"culture_id": "khemt", "toponym": "Khraal", "event_type": "ruin"},
+	})
+	var result_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	var parsed: Variant = JSON.parse_string(result_json)
+	check(parsed is Dictionary and (parsed as Dictionary).has("cells"),
+		"metadata test: voxel generated (has 'cells')")
+	if not (parsed is Dictionary):
+		return
+	check(str((parsed as Dictionary).get("context", "")) == "scattered",
+		"context survives the voxel overwrite")
+	check(int((parsed as Dictionary).get("dungeon_level", -1)) == 4,
+		"dungeon_level survives the voxel overwrite")
+	check(str((parsed as Dictionary).get("size_hint", "")) == "medium",
+		"size_hint survives the voxel overwrite")
+	check(str((parsed as Dictionary).get("dungeon_type", "")) == "tomb",
+		"dungeon_type survives the voxel overwrite")
+	var prov: Variant = (parsed as Dictionary).get("provenance", null)
+	check(prov is Dictionary and str((prov as Dictionary).get("culture_id", "")) == "khemt",
+		"provenance survives the voxel overwrite")
+	# Cache hit on re-entry still returns the persisted (metadata-merged) blob unchanged.
+	var db_entrance := CampaignRepository.get_dungeon_entrance("dfs_test_meta")
+	var second: String = DungeonFixtureService.get_or_generate_voxel(db_entrance)
+	check(second == str(db_entrance.get("dungeon_data", "")),
+		"cache hit returns the persisted (metadata-merged) JSON unchanged")
+	print("  test_metadata_preserved_across_generation: OK")
 
 
 # ---------------------------------------------------------------------------
