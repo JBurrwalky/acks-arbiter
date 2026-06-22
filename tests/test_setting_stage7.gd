@@ -29,7 +29,6 @@ func run_all_tests() -> void:
 		test_dungeons_valid(cid)
 		test_dungeon_large_spacing(cid)
 		test_deforestation_transitions(cid)
-		test_forts_valid(cid)
 		test_pois_valid(cid)
 		test_domains_valid(cid)
 		test_determinism(717171, cid)
@@ -294,24 +293,6 @@ func test_deforestation_transitions(cid: String) -> void:
 				% [int(h["q"]), int(h["r"]), orig, biome])
 
 
-func test_forts_valid(cid: String) -> void:
-	# §9.5: strongholds at Class I-III markets with a gp value; watchtowers on roads.
-	var settle_class := {}
-	for s in SettingRepository.list_settlements(cid):
-		settle_class[str(s["id"])] = int(s.get("market_class", 6))
-	for f in SettingRepository.list_fortifications(cid):
-		check(str(f.get("fort_type", "")) in ["border_fort", "stronghold", "watchtower"],
-			"fort %s type valid" % str(f.get("id", "?")))
-		if str(f.get("fort_type", "")) == "stronghold":
-			check(int(f.get("stronghold_value_gp", 0)) > 0,
-				"stronghold %s has a gp value" % str(f.get("id", "?")))
-			check(int(settle_class.get(str(f.get("settlement_id", "")), 6)) <= 3,
-				"stronghold %s sits at a Class I-III market" % str(f.get("id", "?")))
-		if str(f.get("fort_type", "")) == "watchtower":
-			check(str(f.get("road_id", "")) != "",
-				"watchtower %s references a road" % str(f.get("id", "?")))
-
-
 func test_pois_valid(cid: String) -> void:
 	# §9.7: POIs typed, placed off water/cities and spaced, with a skeleton +
 	# >=1 true rumor seed + a name; civilized POIs are only sacred/battlefield.
@@ -442,8 +423,6 @@ func test_determinism(seed_value: int, first_cid: String) -> void:
 		"same seed -> identical dungeon seeds")
 	check(_biome_map(first_cid) == _biome_map(second),
 		"same seed -> identical deforestation")
-	check(_fort_map(first_cid) == _fort_map(second),
-		"same seed -> identical fortifications")
 	check(_poi_map(first_cid) == _poi_map(second),
 		"same seed -> identical POI seeds")
 
@@ -466,14 +445,6 @@ func _biome_map(cid: String) -> Dictionary:
 	var out := {}
 	for h in SettingRepository.list_hexes(cid):
 		out["%d,%d" % [int(h["q"]), int(h["r"])]] = "%s|%s" % [str(h.get("biome", "")), str(h.get("original_biome", ""))]
-	return out
-
-
-func _fort_map(cid: String) -> Dictionary:
-	var out := {}
-	for f in SettingRepository.list_fortifications(cid):
-		out[str(f["id"])] = "%d,%d|%s|%d" % [int(f["hex_q"]), int(f["hex_r"]),
-			str(f.get("fort_type", "")), int(f.get("stronghold_value_gp", 0))]
 	return out
 
 

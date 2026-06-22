@@ -65,10 +65,6 @@ static func _table_specs() -> Dictionary:
 			"columns": SettingRepository.ROAD_COLUMNS,
 			"order_by": "id ASC",
 		},
-		"setting_fortifications": {
-			"columns": SettingRepository.FORTIFICATION_COLUMNS,
-			"order_by": "id ASC",
-		},
 		"setting_narrative": {
 			"columns": SettingRepository.NARRATIVE_COLUMNS,
 			"order_by": "id ASC",

@@ -56,8 +56,9 @@ const RUIN_SEED_COLUMNS := [
 const POI_SEED_COLUMNS := ["id", "hex_q", "hex_r", "poi_type", "context", "rumor_seeds", "name"]
 const ROAD_COLUMNS := ["id", "hexes", "from_settlement_id", "to_settlement_id",
 	"road_class", "purpose", "name", "region_id"]
-const FORTIFICATION_COLUMNS := ["id", "hex_q", "hex_r", "fort_type",
-	"owner_polity_id", "settlement_id", "road_id", "stronghold_value_gp", "is_hot"]
+# setting_fortifications removed (Jedidiah 2026-06-21): the runtime materializer's feudal
+# stronghold tree replaces the sim's redundant fort layer. The (now-unwritten) table is
+# left in place to avoid a destructive migration; its save/list helpers were removed.
 const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
 const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
 const NARRATIVE_COLUMNS := ["id", "kind", "subject_id", "body", "is_fallback"]
@@ -242,10 +243,6 @@ static func save_roads(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_roads", ROAD_COLUMNS, rows, true)
 
 
-static func save_fortifications(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_fortifications", FORTIFICATION_COLUMNS, rows, true)
-
-
 static func save_domains(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_domains", DOMAIN_COLUMNS, rows, true)
 
@@ -311,10 +308,6 @@ static func list_poi_seeds(campaign_id: String) -> Array:
 
 static func list_roads(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_roads", "id ASC")
-
-
-static func list_fortifications(campaign_id: String) -> Array:
-	return _list(campaign_id, "setting_fortifications", "id ASC")
 
 
 static func list_domains(campaign_id: String) -> Array:

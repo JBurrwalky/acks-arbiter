@@ -222,9 +222,8 @@ func _run_infrastructure(ctx: Dictionary) -> bool:
 	# Dungeon seeds (§9.3): sim ruins get types; geometric top-ups appended.
 	if not SettingRepository.save_ruin_seeds(campaign_id, ctx.get("sim_ruin_seeds", [])):
 		return false
-	# Fortifications (§9.5).
-	if not SettingRepository.save_fortifications(campaign_id, ctx.get("sim_fortifications", [])):
-		return false
+	# §9.5 fortifications removed (Jedidiah 2026-06-21) — the runtime materializer's feudal
+	# stronghold tree covers strongholds; the sim's parallel fort layer was redundant.
 	# Wilderness POI seeds (§9.7).
 	if not SettingRepository.save_poi_seeds(campaign_id, ctx.get("sim_poi_seeds", [])):
 		return false

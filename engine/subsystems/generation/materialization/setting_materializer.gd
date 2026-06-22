@@ -35,7 +35,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"realm_count": 0, "domain_count": 0, "ruler_count": 0,
 		"region_map_id": "", "region_parent_count": 0, "region_child_count": 0,
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
-		"dungeon_count": 0, "poi_count": 0, "fort_count": 0, "domain_hex_count": 0,
+		"dungeon_count": 0, "poi_count": 0, "domain_hex_count": 0,
 		"pocket_realm_count": 0, "river_edge_count": 0, "road_count_6mi": 0,
 	}
 	var errors: Array = result["errors"]
@@ -102,7 +102,6 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		_materialize_settlements(campaign_id, region_map_id, ctx, result)
 		and _materialize_dungeons(campaign_id, region_map_id, result)
 		and _materialize_pois(campaign_id, region_map_id, result)
-		and _materialize_forts(campaign_id, region_map_id, ctx, result)
 		and _materialize_domain_hexes(campaign_id, region_map_id, ctx, result)
 		and _decompose_in_window_domains(campaign_id, region_map_id, ctx, result)
 		and _decompose_clanholds(campaign_id, region_map_id, ctx, result)
@@ -785,50 +784,6 @@ func _materialize_pois(campaign_id: String, region_map_id: String, result: Dicti
 			return false
 		placed += 1
 	result["poi_count"] = placed
-	return true
-
-
-## M2b-3b: project in-window setting_fortifications onto carrier children (2,1) as
-## strongholds, tied to the runtime domain governing the hex (NULL if none — an
-## unowned border fort). cp_value = stronghold_value_gp×100; completed. watchtower →
-## fastness, else fortress.
-func _materialize_forts(campaign_id: String, region_map_id: String, ctx: Dictionary, result: Dictionary) -> bool:
-	var in_window := _in_window_parents(region_map_id)
-	if in_window.is_empty():
-		return true
-	var db = CampaignRepository.db
-	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
-	var placed := 0
-	for s in SettingRepository.list_fortifications(campaign_id):
-		var sq := int(s["hex_q"])
-		var sr := int(s["hex_r"])
-		if not in_window.has("%d,%d" % [sq, sr]):
-			continue
-		var child := _carrier_child(sq, sr, 2, 1)
-		var seat_child := _carrier_child(sq, sr, 1, 1)
-		# Owning domain = the located leaf on this hex; else the owner polity's crown
-		# (valid FK even when abstract); else NULL (an unowned border fort).
-		var domain_id = null
-		db.query_with_bindings(
-			"SELECT id FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q = ? AND location_hex_r = ? ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id LIMIT 1",
-			[campaign_id, region_map_id, seat_child.x, seat_child.y])
-		if not db.query_result.is_empty():
-			domain_id = str(db.query_result[0]["id"])
-		else:
-			var owner := str(s.get("owner_polity_id", ""))
-			if crown_by_pid.has(owner):
-				domain_id = str(crown_by_pid[owner])
-		var archetype := "fastness" if str(s.get("fort_type", "")) == "watchtower" else "fortress"
-		var cp := int(s.get("stronghold_value_gp", 0)) * 100
-		if not db.query_with_bindings("""
-			INSERT INTO strongholds (id, domain_id, archetype, structure_type, cp_value,
-				completion_pct, status, location_map_id, location_hex_q, location_hex_r)
-			VALUES (?, ?, ?, 'keep', ?, 100, 'completed', ?, ?, ?)
-		""", [CampaignRepository.generate_id(), domain_id, archetype, cp, region_map_id, child.x, child.y]):
-			result["errors"].append("stronghold insert failed at (%d,%d)" % [sq, sr])
-			return false
-		placed += 1
-	result["fort_count"] = placed
 	return true
 
 

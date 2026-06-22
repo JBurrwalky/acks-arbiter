@@ -7,7 +7,7 @@ extends RefCounted
 ##   7a §9.1 settlement reconciliation + §9.6 territory-classification finalize  ← THIS FILE (so far)
 ##   7b §9.2 roads (+ road naming)        — pending
 ##   7c §9.3 dungeon seeding (ruin_seeds) — pending
-##   7d §9.4 deforestation + §9.5 forts   — pending
+##   7d §9.4 deforestation                — pending (§9.5 forts removed 2026-06-21, redundant)
 ##   7e §9.7 POI seeds (§9.8 quests are BLOCKED on the unbuilt NPC system) — pending
 ##
 ## Mutates ctx rows in place; the orchestrator re-persists via idempotent upserts
@@ -45,7 +45,6 @@ var _beastman_cultures: Dictionary = {}     # culture_id -> true (no urban settl
 var _toponym_by_culture: Dictionary = {}    # culture_id -> toponym root (for ruin names)
 var _elf_cultures: Dictionary = {}          # culture_id -> true (elven settlements reforest, §6.2)
 var _next_road_seq: int = 1
-var _next_fort_seq: int = 1
 var _next_region_seq: int = 1
 var _road_hexes: Dictionary = {}            # Vector2i -> true (built roads prefer existing)
 
@@ -78,7 +77,9 @@ func run(ctx: Dictionary) -> bool:
 	_build_roads(ctx)                               # §9.2
 	_seed_dungeons(ctx)                             # §9.3
 	_deforest(ctx)                                  # §9.4
-	_place_forts(ctx)                               # §9.5
+	# §9.5 fortification placement removed (Jedidiah 2026-06-21): the runtime materializer's
+	# feudal stronghold tree (a watchtower per Barony hex + a stronghold per ruler's seat)
+	# already covers strongholds; the sim's parallel fort layer was redundant. Roads-only.
 	# §9.7 runs AFTER deforestation so POI placement reads the final biomes.
 	ctx["sim_poi_seeds"] = PoiGenerator.new().run(ctx)
 	_seed_quests_DEFERRED(ctx)
@@ -732,161 +733,6 @@ func _nearest(key: Vector2i, entries: Array) -> Dictionary:
 	if best == 999999:
 		return {}
 	return {"d": best, "mc": best_mc}
-
-
-# --- §9.5 fortification placement --------------------------------------------
-
-const _BORDER_FORT_HOT := 3          # fort spacing on a hot frontier
-const _BORDER_FORT_COLD := 6         # fort spacing on a cold frontier
-const _WATCHTOWER_SPACING := 5       # watchtower spacing along a trunk road
-
-func _place_forts(ctx: Dictionary) -> void:
-	var hex_grid: Dictionary = ctx.get("hex_grid", {})
-	var settlements: Array = ctx.get("sim_settlements", [])
-	var roads: Array = ctx.get("sim_roads", [])
-	var forts: Array = []
-	var fort_at: Dictionary = {}    # Vector2i -> true: at most one fortification per
-	                                # hex (priority stronghold > border_fort > watchtower)
-	_seed_fort_sequence(ctx)
-
-	# 1) Strongholds: one at each Class I-III market, valued by the realm tier of
-	#    the hex's CURRENT owner (a settlement of a fallen realm whose hex is now
-	#    unclaimed or held by no live polity gets no stronghold).
-	for s in settlements:
-		if int(s.get("market_class", 6)) > 3:
-			continue
-		var key := Vector2i(int(s["hex_q"]), int(s["hex_r"]))
-		var hex = hex_grid.get(key, null)
-		var owner := str(hex.get("owner_polity_id", "")) if hex != null else str(s.get("polity_id", ""))
-		var pol = _polity_by_id.get(owner, null)
-		if pol == null:
-			continue
-		var value := DomainTierTable.stronghold_value_for_tier(int(pol.get("tier_index", 0)))
-		forts.append(_make_fort(key, "stronghold", owner, str(s["id"]), "", value, false))
-		fort_at[key] = true
-
-	# 2) Border forts along realm frontiers, denser on sim-hot frontiers.
-	var hot := _hot_border_hexes(ctx)
-	var keys: Array = hex_grid.keys()
-	keys.sort_custom(func(a, b): return a.y < b.y or (a.y == b.y and a.x < b.x))
-	var placed_border: Array = []
-	for key in keys:
-		var hex: Dictionary = hex_grid[key]
-		var owner := str(hex.get("owner_polity_id", ""))
-		if owner.is_empty() or str(hex.get("water", "")) != "":
-			continue
-		if not _is_frontier(hex_grid, key, owner):
-			continue
-		if fort_at.has(key):
-			continue   # a stronghold already fortifies this hex
-		var is_hot: bool = hot.has(key)
-		var spacing: int = _BORDER_FORT_HOT if is_hot else _BORDER_FORT_COLD
-		if _too_close_list(key, placed_border, spacing):
-			continue
-		placed_border.append(key)
-		forts.append(_make_fort(key, "border_fort", owner, "", "", 0, is_hot))
-		fort_at[key] = true
-
-	# 3) Watchtowers along highway roads passing through borderlands.
-	var placed_tower: Array = []
-	for r in roads:
-		if str(r.get("road_class", "")) != "highway":
-			continue
-		for pair in _parse_pairs(str(r.get("hexes", "[]"))):
-			var key := Vector2i(int(pair[0]), int(pair[1]))
-			var hex = hex_grid.get(key, null)
-			if hex == null or str(hex.get("territory_class", "")) != "borderlands":
-				continue
-			if fort_at.has(key):
-				continue   # a stronghold or border fort already holds this hex
-			if _too_close_list(key, placed_tower, _WATCHTOWER_SPACING):
-				continue
-			placed_tower.append(key)
-			forts.append(_make_fort(key, "watchtower", str(hex.get("owner_polity_id", "")),
-				"", str(r.get("id", "")), 0, false))
-			fort_at[key] = true
-
-	ctx["sim_fortifications"] = forts
-
-
-func _make_fort(key: Vector2i, fort_type: String, owner: String, settlement_id: String,
-		road_id: String, value: int, is_hot: bool) -> Dictionary:
-	var fid := "fort_%04d" % _next_fort_seq
-	_next_fort_seq += 1
-	return {
-		"id": fid, "hex_q": key.x, "hex_r": key.y, "fort_type": fort_type,
-		"owner_polity_id": owner, "settlement_id": settlement_id, "road_id": road_id,
-		"stronghold_value_gp": value, "is_hot": 1 if is_hot else 0,
-	}
-
-
-## A frontier hex: owned land with >=1 neighbour owned by a DIFFERENT polity
-## (or unowned wilderness).
-func _is_frontier(hex_grid: Dictionary, key: Vector2i, owner: String) -> bool:
-	for off in _OFF:
-		var nb: Vector2i = key + off
-		var nh = hex_grid.get(nb, null)
-		if nh == null:
-			continue
-		var no := str(nh.get("owner_polity_id", ""))
-		if no != owner:
-			return true
-	return false
-
-
-## Hexes on a hot frontier: near a recent war/conquest/pillage event, OR an
-## owned hex bordering an OPPOSED-alignment realm.
-func _hot_border_hexes(ctx: Dictionary) -> Dictionary:
-	var hot: Dictionary = {}
-	var hex_grid: Dictionary = ctx.get("hex_grid", {})
-	# Event-driven: recent conflict events stamp their hexes hot.
-	for ev in ctx.get("sim_events", []):
-		if str(ev.get("type", "")) in ["war", "conquest", "pillage"]:
-			for pair in _parse_pairs(str(ev.get("hexes", "[]"))):
-				hot[Vector2i(int(pair[0]), int(pair[1]))] = true
-	# Alignment-driven: an owned hex bordering an opposed-alignment realm.
-	for key in hex_grid:
-		var hex: Dictionary = hex_grid[key]
-		var owner := str(hex.get("owner_polity_id", ""))
-		if owner.is_empty():
-			continue
-		var pa = _polity_by_id.get(owner, null)
-		if pa == null:
-			continue
-		for off in _OFF:
-			var nh = hex_grid.get(Vector2i(key.x + off.x, key.y + off.y), null)
-			if nh == null:
-				continue
-			var no := str(nh.get("owner_polity_id", ""))
-			if no.is_empty() or no == owner:
-				continue
-			var pb = _polity_by_id.get(no, null)
-			if pb != null and _opposed(str(pa.get("alignment", "")), str(pb.get("alignment", ""))):
-				hot[key] = true
-				break
-	return hot
-
-
-func _opposed(a: String, b: String) -> bool:
-	var la := a.to_lower()
-	var lb := b.to_lower()
-	return (la == "lawful" and lb == "chaotic") or (la == "chaotic" and lb == "lawful")
-
-
-func _too_close_list(key: Vector2i, placed: Array, min_dist: int) -> bool:
-	for p in placed:
-		if _hex_dist(key, p) < min_dist:
-			return true
-	return false
-
-
-func _parse_pairs(s: String) -> Array:
-	var arr = JSON.parse_string(s)
-	return arr if typeof(arr) == TYPE_ARRAY else []
-
-
-func _seed_fort_sequence(_ctx: Dictionary) -> void:
-	_next_fort_seq = 1   # forts are generated fresh each run (no sim forts to continue)
 
 
 # --- §9.2 road network ------------------------------------------------------

@@ -453,20 +453,19 @@ func test_content_placed(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM pois p JOIN hex_cells h ON h.map_id = p.map_id AND h.q = p.hex_q AND h.r = p.hex_r WHERE p.map_id = ? AND p.poi_type = 'stronghold' AND h.water != ''", [rid]) == 0,
 		"no stronghold POI (watchtower) sits on a water hex")
 
-	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed). M4-1b
-	# adds one stronghold per sub-fief (Marquis/Baron) + one per gov that lacked one, also
-	# completed; M4-5 adds one per sub-clanhold.
-	var nf := int(_mat_result.get("fort_count", -1))
+	# Strongholds: the M4 feudal tree is the sole source now (sim forts removed 2026-06-21).
+	# One per sub-fief (Marquis/Baron) + one per gov that lacked one + one per sub-clanhold.
 	var nsf2 := int(_mat_result.get("subfief_count", 0))
 	var nsc2 := int(_mat_result.get("subclanhold_count", 0))  # M4-5 clanhold strongholds
 	var ngs := int(_mat_result.get("gov_stronghold_count", 0))  # M4-1b gov strongholds created
-	check(nf + nsf2 + nsc2 + ngs == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
-		"fort + sub-fief + sub-clanhold + gov strongholds match strongholds on the region map")
-	if nf > 0:
+	var n_strong := nsf2 + nsc2 + ngs
+	check(n_strong == _scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ?", [rid]),
+		"sub-fief + sub-clanhold + gov strongholds match strongholds on the region map (no sim forts)")
+	if n_strong > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND archetype NOT IN ('fortress','fastness','sanctum','hideout','vault','clanhold')", [rid]) == 0,
-			"fort archetypes satisfy the CHECK domain")
-		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == nf + nsf2 + nsc2 + ngs,
-			"all forts (+ sub-fief + sub-clanhold + gov strongholds) are completed")
+			"stronghold archetypes satisfy the CHECK domain")
+		check(_scalar("SELECT COUNT(*) AS n FROM strongholds WHERE location_map_id = ? AND completion_pct = 100 AND status = 'completed'", [rid]) == n_strong,
+			"all strongholds are completed")
 
 
 func test_domain_hexes_materialized(cid: String) -> void:
