@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	NameBankLoader.clear_cache()
 	test_ruler_title_translation()  # pure unit test of the tribute-title mapping (Q1)
 	test_stronghold_formula()       # pure unit test of the stronghold↔territory formula
+	test_coastal_seat_placement()   # pure unit test of coast-aware town placement
 	var cid := _generate(424242)  # generated, NOT yet locked
 	if not cid.is_empty():
 		# Order matters: guard runs while unlocked; then we lock and materialize.
@@ -307,6 +308,31 @@ func test_stronghold_formula() -> void:
 	check(DomainTierTable.max_hexes_for_stronghold(64000, "wilderness") == 2, "same gp secures fewer wilderness hexes")
 
 
+func test_coastal_seat_placement() -> void:
+	# Jedidiah 2026-06-22: at 6-mile a town seats ON the coast when its 24-mile parent
+	# borders water, else falls back to the (1,1) carrier child. Pure test of the helper.
+	var m := SettingMaterializer.new()
+	var poff := WorldGrid.axial_to_offset(Vector2i(0, 0))
+	# Inland parent (no water anywhere) → default (1,1) carrier child.
+	var inland: Vector2i = m._coastal_seat_child(0, 0, {})
+	check(inland == WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1),
+		"inland parent falls back to the 1,1 carrier child")
+	# Coastal parent: mark one child-cell as water. The seat must be a LAND child of the
+	# parent, adjacent to that water (a coastline hex), never the water cell itself.
+	var watery: Vector2i = WorldGrid.offset_to_axial(poff.x * 4 + 0, poff.y * 4 + 0)
+	var water := {"%d,%d" % [watery.x, watery.y]: true}
+	var seat: Vector2i = m._coastal_seat_child(0, 0, water)
+	check(not water.has("%d,%d" % [seat.x, seat.y]), "coastal seat is on land, not the water cell")
+	var soff := WorldGrid.axial_to_offset(seat)
+	check(floori(soff.x / 4.0) == poff.x and floori(soff.y / 4.0) == poff.y,
+		"coastal seat is a child of the same parent")
+	var adj := false
+	for d in [Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0)]:
+		if water.has("%d,%d" % [seat.x + d.x, seat.y + d.y]):
+			adj = true
+	check(adj, "coastal seat sits next to water (on the coastline)")
+
+
 func test_region_map_materialized(cid: String) -> void:
 	var rid := str(_mat_result.get("region_map_id", ""))
 	check(rid != "", "region_map_id returned")
@@ -401,6 +427,10 @@ func test_settlements_materialized(cid: String) -> void:
 	# Each settlement sits on a REAL region hex_cell (carrier-child math is consistent).
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND se.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = se.map_id AND h.q = se.hex_q AND h.r = se.hex_r)", [cid, rid]) == 0,
 		"settlements sit on real region hex_cells")
+	# Coast-aware placement (Jedidiah 2026-06-22): a town is always on LAND (never the sea —
+	# coastal placement seats it ON the shore, adjacent to water, not in it).
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se JOIN hex_cells h ON h.map_id = se.map_id AND h.q = se.hex_q AND h.r = se.hex_r WHERE se.map_id = ? AND h.water != ''", [rid]) == 0,
+		"no settlement on a water hex")
 	# parent_domain_id resolves (FK) and at least one is wired.
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND parent_domain_id IS NOT NULL AND parent_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [cid, cid]) == 0,
 		"settlement parent_domain_id resolves to a domain")
@@ -766,13 +796,22 @@ func test_roads_rivers_materialized(cid: String) -> void:
 
 	# Roads (M2c-c): 24-mile setting_roads projected to 6-mile roads entity + overlays.
 	var nrd := int(_mat_result.get("road_count_6mi", -1))
-	check(nrd == _scalar("SELECT COUNT(*) AS n FROM roads WHERE map_id = ?", [rid]),
-		"road_count_6mi matches roads entity rows on the region map")
-	if nrd > 0:
+	var nfd := int(_mat_result.get("feeder_road_count", -1))
+	check(nrd + nfd == _scalar("SELECT COUNT(*) AS n FROM roads WHERE map_id = ?", [rid]),
+		"trunk + feeder road counts match roads entity rows on the region map")
+	if nrd + nfd > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays WHERE map_id = ? AND overlay_type = 'road'", [rid]) > 0,
 			"road overlays written for the region map")
 		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r)", [rid]) == 0,
 			"road overlays sit on real region hex_cells")
+	# Feeder network (Jedidiah 2026-06-22 — develop the underdeveloped 6-mile roads).
+	# The dense feudal fill seats many settlements + sub-fief seats off the sparse trunk,
+	# so feeder roads must be produced, must stay on land, and must reach the towns.
+	check(nfd >= 1, "feeder roads were generated (the 6-mile local network)")
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r AND h.water != '')", [rid]) == 0,
+		"no road overlay on a water hex (feeders route over land)")
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_overlays ho WHERE ho.map_id = se.map_id AND ho.q = se.hex_q AND ho.r = se.hex_r AND ho.overlay_type = 'road')", [rid]) == 0,
+		"every settlement sits on the road network (feeders connect the towns)")
 
 
 func test_start_position(cid: String) -> void:

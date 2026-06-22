@@ -149,8 +149,10 @@ static func start_position(campaign_id: String) -> Dictionary:
 		return {}
 	var rid := str(db.query_result[0]["id"])
 	# The player's chosen start city (M3-b picker), if any: spawn at its in-window
-	# settlement_entrance (the setting_settlement's 1,1 carrier child — where M2b-3a placed
-	# it). Falls through to the largest-market auto-pick when '' or unresolvable.
+	# settlement_entrance. Coast-aware placement may have seated the city on any of its
+	# parent's 16 children (not just 1,1), and a parent hosts exactly one capital, so scan
+	# the children and take the entrance found. Falls through to the largest-market
+	# auto-pick when '' or unresolvable.
 	db.query_with_bindings("SELECT start_settlement_id FROM campaigns WHERE id = ?", [campaign_id])
 	var chosen := str(db.query_result[0].get("start_settlement_id", "")) if not db.query_result.is_empty() else ""
 	if not chosen.is_empty():
@@ -160,12 +162,14 @@ static func start_position(campaign_id: String) -> Dictionary:
 			var sq := int(db.query_result[0]["hex_q"])
 			var sr := int(db.query_result[0]["hex_r"])
 			var poff := WorldGrid.axial_to_offset(Vector2i(sq, sr))
-			var child := WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
-			db.query_with_bindings(
-				"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ? LIMIT 1",
-				[campaign_id, rid, child.x, child.y])
-			if not db.query_result.is_empty():
-				return {"map_id": rid, "hex_q": int(db.query_result[0]["hex_q"]), "hex_r": int(db.query_result[0]["hex_r"])}
+			for ly in range(4):
+				for lx in range(4):
+					var ch := WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
+					db.query_with_bindings(
+						"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ? LIMIT 1",
+						[campaign_id, rid, ch.x, ch.y])
+					if not db.query_result.is_empty():
+						return {"map_id": rid, "hex_q": int(db.query_result[0]["hex_q"]), "hex_r": int(db.query_result[0]["hex_r"])}
 	# The start city: the largest-market settlement on the play map (lowest market_class).
 	db.query_with_bindings(
 		"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? ORDER BY market_class ASC, hex_q ASC, hex_r ASC LIMIT 1",
@@ -553,6 +557,7 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 	if in_window.is_empty():
 		return
 	var db = CampaignRepository.db
+	var water := _region_water_set(region_map_id)
 	var seats: Dictionary = ctx.get("domain_seats", {})
 	var tracked_realms := {}
 	var located := 0
@@ -560,7 +565,9 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 		var seat: Vector2i = seats[did]
 		if not in_window.has("%d,%d" % [seat.x, seat.y]):
 			continue
-		var child := _carrier_child(seat.x, seat.y, 1, 1)
+		# Coast-aware seat: a coastal-parent ruler seats on the shore (so M4-2's
+		# capital lands there too); inland parents fall back to the (1,1) carrier child.
+		var child := _coastal_seat_child(seat.x, seat.y, water)
 		db.query_with_bindings(
 			"UPDATE domains SET location_map_id = ?, location_hex_q = ?, location_hex_r = ?, updated_at = datetime('now') WHERE id = ?",
 			[region_map_id, child.x, child.y, str(did)])
@@ -604,6 +611,46 @@ func _carrier_child(seat_q: int, seat_r: int, lx: int, ly: int) -> Vector2i:
 	return WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
 
 
+## Axial 6-neighbour deltas (the generator's _OFF convention).
+const _AX_NB: Array[Vector2i] = [
+	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0),
+	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
+]
+
+## The 6-mile SEAT/TOWN child of a 24-mile parent, COAST-AWARE (Jedidiah 2026-06-22).
+## A town whose parent borders the sea belongs ON the coast: if any LAND child of the
+## parent sits next to a WATER cell (a coastline child — water may be a cove inside the
+## parent or the edge of a neighbouring water parent), seat the town there, preferring
+## the most-waterfront child (a real port hugs the shore), with a deterministic (ly,lx)
+## tie-break. A fully-inland parent has no coastal child → fall back to the default
+## (1,1) carrier child. Shared by domain-seat location (M2b-2) and settlement placement
+## (M2b-3a) so a capital and its seat stay on the SAME hex (the helper is pure per parent).
+func _coastal_seat_child(seat_q: int, seat_r: int, water: Dictionary) -> Vector2i:
+	var poff := WorldGrid.axial_to_offset(Vector2i(seat_q, seat_r))
+	var best := Vector2i.ZERO
+	var best_score := 0
+	var best_local := Vector2i(99, 99)   # (ly, lx) — lower wins on a tie
+	for ly in range(4):
+		for lx in range(4):
+			var child := WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
+			if water.has("%d,%d" % [child.x, child.y]):
+				continue   # the town hex itself must be land
+			var wn := 0
+			for d in _AX_NB:
+				if water.has("%d,%d" % [child.x + d.x, child.y + d.y]):
+					wn += 1
+			if wn == 0:
+				continue   # not on the coastline
+			var local := Vector2i(lx, ly)
+			if wn > best_score or (wn == best_score and (ly < best_local.y or (ly == best_local.y and lx < best_local.x))):
+				best_score = wn
+				best = child
+				best_local = Vector2i(lx, ly)
+	if best_score > 0:
+		return best
+	return WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
+
+
 ## M2b-3a: place each in-window setting_settlement onto its carrier child as a
 ## settlement_entrances row (interior `settlement_data` stays lazy/empty), wired to
 ## the runtime domain governing its hex, and carrying a derived `history_context`
@@ -628,6 +675,7 @@ func _materialize_settlements(campaign_id: String, region_map_id: String, ctx: D
 		"SELECT id, tick, type, polity_ids, culture_ids, hexes FROM setting_events WHERE campaign_id = ? ORDER BY tick ASC, id ASC",
 		[campaign_id])
 	var hex_events := _build_hex_event_index(db.query_result.duplicate(true))
+	var water := _region_water_set(region_map_id)   # coast-aware town placement
 
 	var placed := 0
 	for s in SettingRepository.list_settlements(campaign_id):
@@ -635,7 +683,10 @@ func _materialize_settlements(campaign_id: String, region_map_id: String, ctx: D
 		var sr := int(s["hex_r"])
 		if not in_window.has("%d,%d" % [sq, sr]):
 			continue
-		var child := _carrier_child(sq, sr, 1, 1)
+		# Class III+ towns hug the coast when their parent borders water (Jedidiah
+		# 2026-06-22). A capital co-located with its domain seat resolves to the SAME
+		# coastal child (the helper is pure per parent) so the FK lookup below still binds.
+		var child := _coastal_seat_child(sq, sr, water)
 		var pid := str(s.get("polity_id", ""))
 		var current_culture := str(culture_by_pid.get(pid, ""))
 
@@ -825,6 +876,36 @@ func _region_water_set(region_map_id: String) -> Dictionary:
 	for wr in CampaignRepository.db.query_result:
 		water["%d,%d" % [int(wr["q"]), int(wr["r"])]] = true
 	return water
+
+
+## Set of LAND (non-water) 6-mile hexes on [param region_map_id], keyed "q,r" — the
+## walkable graph for road routing (water is impassable; `water` is a TEXT column, '' = land).
+func _region_land_set(region_map_id: String) -> Dictionary:
+	var land := {}
+	CampaignRepository.db.query_with_bindings(
+		"SELECT q, r FROM hex_cells WHERE map_id = ? AND water = ''", [region_map_id])
+	for lr in CampaignRepository.db.query_result:
+		land["%d,%d" % [int(lr["q"]), int(lr["r"])]] = true
+	return land
+
+
+## A sentinel "no hex" used where a carrier child can't be resolved on land.
+const _INVALID_HEX := Vector2i(-2147483647, -2147483647)
+
+## The LAND carrier child of a 24-mile parent for road anchoring: the (1,1) child if it's
+## land, else the first land child found (a road hex's parent is land, but its 1,1 child may
+## be a cove). _INVALID_HEX only if the whole parent is water (no road there).
+func _land_carrier(parent: Vector2i, land: Dictionary) -> Vector2i:
+	var c := _carrier_child(parent.x, parent.y, 1, 1)
+	if land.has("%d,%d" % [c.x, c.y]):
+		return c
+	var poff := WorldGrid.axial_to_offset(parent)
+	for ly in range(4):
+		for lx in range(4):
+			var ch := WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
+			if land.has("%d,%d" % [ch.x, ch.y]):
+				return ch
+	return _INVALID_HEX
 
 
 ## M2b-3c: give each in-window LOCATED domain its 6-mile territory. For every owned
@@ -1829,6 +1910,8 @@ func _materialize_roads(campaign_id: String, region_map_id: String, result: Dict
 		return true
 	var db = CampaignRepository.db
 	var road_edges := {}   # "q,r" → {edge:true} accumulated across all roads
+	var network := {}      # "q,r" → true: every hex carrying road (trunk + feeders)
+	var land := _region_land_set(region_map_id)
 	var roads_made := 0
 	for road in SettingRepository.list_roads(campaign_id):
 		var raw = JSON.parse_string(str(road.get("hexes", "[]")))
@@ -1841,16 +1924,25 @@ func _materialize_roads(campaign_id: String, region_map_id: String, result: Dict
 				path24.append(Vector2i(int(h[0]), int(h[1])))
 		if path24.size() < 2:
 			continue
-		# Build the continuous 6-mile path: carrier children joined by hex lines.
+		# Each in-window 24-mile road hex → a LAND carrier child; join consecutive carriers
+		# with a LAND-routed path (Dijkstra) so the 6-mile road winds around water rather
+		# than the old cube-lerp cutting straight across a cove (which laid road on the sea).
 		var path6: Array = []
 		for i in range(path24.size()):
-			var carrier := _carrier_child(path24[i].x, path24[i].y, 1, 1)
-			if i == 0:
+			var carrier := _land_carrier(path24[i], land)
+			if carrier == _INVALID_HEX:
+				continue   # an all-water parent (no land child) — nothing to road here
+			if path6.is_empty():
 				path6.append(carrier)
-			else:
-				var seg := _hex_line(path6[path6.size() - 1], carrier)
-				for j in range(1, seg.size()):  # skip the duplicate first hex
-					path6.append(seg[j])
+			elif carrier != path6[path6.size() - 1]:
+				var seg := _route_to_network(path6[path6.size() - 1], {"%d,%d" % [carrier.x, carrier.y]: true}, land)
+				if seg.size() >= 2:
+					for j in range(1, seg.size()):  # skip the duplicate first hex
+						path6.append(seg[j])
+				else:
+					path6.append(carrier)   # no land bridge across water — accept a gap
+		if path6.size() < 2:
+			continue
 		# Accumulate per-cell road edges along the 6-mile path. Skip any cell whose
 		# parent fell outside the window (a hex line can clip a corner) so overlays only
 		# land on real region hex_cells.
@@ -1858,6 +1950,7 @@ func _materialize_roads(campaign_id: String, region_map_id: String, result: Dict
 			if not _hex_in_window(in_window, path6[i]):
 				continue
 			var key := "%d,%d" % [path6[i].x, path6[i].y]
+			network[key] = true
 			if not road_edges.has(key):
 				road_edges[key] = {}
 			if i > 0:
@@ -1878,6 +1971,11 @@ func _materialize_roads(campaign_id: String, region_map_id: String, result: Dict
 			result["errors"].append("6-mile road insert failed")
 			return false
 		roads_made += 1
+	# Local feeder network: connect every in-window settlement + ruler seat to the trunk
+	# (or to each other) with land-routed roads. The trunk projection alone is the coarse
+	# 24-mile inter-realm web — far too sparse for the dense 6-mile feudal fill (M4). Adds
+	# to road_edges + network before the single overlay write below.
+	var feeders := _feeder_roads(campaign_id, region_map_id, road_edges, network, land, result)
 	# Write the accumulated road overlays (one per cell; intersections keep all edges).
 	for key in road_edges:
 		var parts := str(key).split(",")
@@ -1890,7 +1988,149 @@ func _materialize_roads(campaign_id: String, region_map_id: String, result: Dict
 			result["errors"].append("road overlay insert failed")
 			return false
 	result["road_count_6mi"] = roads_made
+	result["feeder_road_count"] = feeders
 	return true
+
+
+## Max land-hexes a single feeder spur may run before giving up (an unreachable anchor —
+## an island, or one cut off by water — simply gets no road, which is correct).
+const _MAX_FEEDER := 40
+## Hard cap on Dijkstra pops per spur, so a pathological search can't stall materialization.
+const _FEEDER_POP_CAP := 4000
+
+## Local feeder roads (Jedidiah 2026-06-22 — "the road networks are underdeveloped").
+## Anchors = every in-window settlement_entrance + every located ruler seat. Each anchor
+## not already on the network is joined to it by the cheapest LAND path (water is
+## impassable, existing road hexes are near-free so spurs merge into trunks rather than
+## run parallel), processed in a deterministic order so the tree reproduces. Paths are
+## hex-adjacency walks (they follow the terrain, unlike the trunk's cube-lerp), written as
+## `roads` entities (purpose 'local') with their edges folded into the shared overlay map.
+func _feeder_roads(campaign_id: String, region_map_id: String, road_edges: Dictionary, network: Dictionary, land: Dictionary, result: Dictionary) -> int:
+	var db = CampaignRepository.db
+	# Anchors: settlements first (largest market = lowest class first), then ruler seats.
+	# Deterministic order → reproducible tree. Dedup by hex; keep only land hexes.
+	var anchors: Array = []
+	var seen := {}
+	db.query_with_bindings(
+		"SELECT hex_q AS q, hex_r AS r FROM settlement_entrances WHERE map_id = ? ORDER BY market_class ASC, hex_r ASC, hex_q ASC",
+		[region_map_id])
+	for s in db.query_result.duplicate(true):
+		_add_anchor(anchors, seen, int(s["q"]), int(s["r"]), land)
+	db.query_with_bindings(
+		"SELECT location_hex_q AS q, location_hex_r AS r FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q IS NOT NULL ORDER BY location_hex_r ASC, location_hex_q ASC, id ASC",
+		[campaign_id, region_map_id])
+	for d in db.query_result.duplicate(true):
+		_add_anchor(anchors, seen, int(d["q"]), int(d["r"]), land)
+	if anchors.is_empty():
+		return 0
+	# No trunk roads in-window → seed the network with the first (largest) anchor.
+	if network.is_empty():
+		var a0: Vector2i = anchors[0]
+		network["%d,%d" % [a0.x, a0.y]] = true
+	var made := 0
+	for a in anchors:
+		if network.has("%d,%d" % [a.x, a.y]):
+			continue
+		var path := _route_to_network(a, network, land)
+		if path.size() < 2:
+			continue   # already on the network, or unreachable (island)
+		for i in range(path.size()):
+			var key := "%d,%d" % [path[i].x, path[i].y]
+			network[key] = true
+			if not road_edges.has(key):
+				road_edges[key] = {}
+			if i > 0:
+				var eb := _edge_toward(path[i], path[i - 1])
+				if eb >= 0:
+					(road_edges[key] as Dictionary)[eb] = true
+			if i < path.size() - 1:
+				var ef := _edge_toward(path[i], path[i + 1])
+				if ef >= 0:
+					(road_edges[key] as Dictionary)[ef] = true
+		var hexes_json := JSON.stringify(path.map(func(v: Vector2i) -> Array: return [v.x, v.y]))
+		if not db.query_with_bindings("""
+			INSERT INTO roads (id, campaign_id, map_id, hexes, road_class, purpose, name)
+			VALUES (?, ?, ?, ?, 'road', 'local', '')
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, hexes_json]):
+			result["errors"].append("feeder road insert failed")
+		else:
+			made += 1
+	return made
+
+
+## Append (q,r) as an anchor if it's a land hex not already taken.
+func _add_anchor(anchors: Array, seen: Dictionary, q: int, r: int, land: Dictionary) -> void:
+	var k := "%d,%d" % [q, r]
+	if seen.has(k) or not land.has(k):
+		return
+	seen[k] = true
+	anchors.append(Vector2i(q, r))
+
+
+## Dijkstra over LAND from `start` to the nearest hex already in `network`. Existing road
+## hexes cost ~¼ a plain hex so spurs merge into the trunk. Returns the path (start..network
+## hex inclusive), or [] if `start` is already on the network or no land path within budget.
+func _route_to_network(start: Vector2i, network: Dictionary, land: Dictionary) -> Array:
+	var skey := "%d,%d" % [start.x, start.y]
+	if network.has(skey):
+		return []
+	var dist := {skey: 0.0}
+	var prev := {}
+	var frontier := {skey: 0.0}
+	var visited := {}
+	var pops := 0
+	while not frontier.is_empty() and pops < _FEEDER_POP_CAP:
+		var ck := _pop_min_key(frontier)
+		pops += 1
+		visited[ck] = true
+		if ck != skey and network.has(ck):
+			return _reconstruct_path(prev, skey, ck)
+		var cd: float = dist[ck]
+		if cd >= float(_MAX_FEEDER):
+			continue
+		var parts := ck.split(",")
+		var cur := Vector2i(int(parts[0]), int(parts[1]))
+		for d in _AX_NB:
+			var nb := cur + d
+			var nk := "%d,%d" % [nb.x, nb.y]
+			if visited.has(nk) or not land.has(nk):
+				continue
+			var step := 0.25 if network.has(nk) else 1.0
+			var nd := cd + step
+			if not dist.has(nk) or nd < float(dist[nk]):
+				dist[nk] = nd
+				prev[nk] = ck
+				frontier[nk] = nd
+	return []
+
+
+## Pop (and remove) the lowest-distance key from a frontier dict; ties break on the
+## string key so the search is deterministic. Linear scan — fine for the bounded land set.
+func _pop_min_key(frontier: Dictionary) -> String:
+	var best := ""
+	var bestd := INF
+	for k in frontier:
+		var dv: float = frontier[k]
+		if dv < bestd or (dv == bestd and (best == "" or k < best)):
+			bestd = dv
+			best = k
+	frontier.erase(best)
+	return best
+
+
+## Walk `prev` from `end` back to `start` and return the hex path in forward order.
+func _reconstruct_path(prev: Dictionary, start: String, end: String) -> Array:
+	var keys: Array = [end]
+	var cur := end
+	while cur != start and prev.has(cur):
+		cur = str(prev[cur])
+		keys.append(cur)
+	keys.reverse()
+	var out: Array = []
+	for k in keys:
+		var p := str(k).split(",")
+		out.append(Vector2i(int(p[0]), int(p[1])))
+	return out
 
 
 ## The 16 child "q,r" keys of a 24-mile parent (the same layout RegionZoomIn writes).
