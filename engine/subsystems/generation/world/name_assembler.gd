@@ -177,6 +177,10 @@ static func ruin_name(bank: Dictionary, size_hint: String, toponym: String,
 	var root := toponym
 	if root.is_empty():
 		root = pick_unused(NameBankLoader.names(bank, "feature"), rng, used, cid)
+	# A culture-less / feature-less bank yields no toponym — drop the dangling " of "
+	# rather than render "the Sunken Halls of " (synthesized materializer dungeons).
+	if root.strip_edges().is_empty():
+		return _unique_literal("the %s" % site, used, cid)
 	return _unique_literal("the %s of %s" % [site, root], used, cid)
 
 const _RUIN_SITE := {

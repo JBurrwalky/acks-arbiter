@@ -890,6 +890,7 @@ func _materialize_dungeons(campaign_id: String, region_map_id: String, result: D
 		_take_from_pool(leftover, used, n, "scattered", picks, n)
 
 	# Write each placement with the fixture-readable spec stub + a sampled level.
+	var home_cid := str(by_id.get(home_sov, {}).get("culture_id", "")) if by_id.has(home_sov) else ""
 	var used_names := {}
 	var placed := 0
 	for pick in picks:
@@ -903,7 +904,14 @@ func _materialize_dungeons(campaign_id: String, region_map_id: String, result: D
 			owner_pid = str(hex_ctx.get("%d,%d" % [parent.x, parent.y], {}).get("owner", ""))
 		else:
 			hex = pick["hex"]   # undercity: the sewer entrance is the city hex itself
+			var coff2 := WorldGrid.axial_to_offset(hex)   # its parent owns the city's culture
+			var up2 := WorldGrid.offset_to_axial(floori(coff2.x / 4.0), floori(coff2.y / 4.0))
+			owner_pid = str(hex_ctx.get("%d,%d" % [up2.x, up2.y], {}).get("owner", ""))
+		# Naming culture: the holding polity's, else the home realm's (so synthesized
+		# dungeons get real toponyms instead of a culture-less generic site).
 		var owner_cid := str(by_id.get(owner_pid, {}).get("culture_id", "")) if by_id.has(owner_pid) else ""
+		if owner_cid.is_empty():
+			owner_cid = home_cid
 		var prng := WorldGenRng.stream(seed, "dungeon_budget", 0, "%d,%d" % [hex.x, hex.y])
 		var context := str(pick["context"])
 
