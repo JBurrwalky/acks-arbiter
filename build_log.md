@@ -36345,3 +36345,21 @@ on-tick dispatch.
 - Mode toggle (Biome/Elevation/Territory/Culture views) not included — political-only for now; easy follow-up if wanted.
 - Tribute chains still DEFERRED.
 **Next session should:** M3-b/c is now COMPLETE (world name, start-city picker, world-map tab). Remaining materialization work: the M4 calibration dials (6-mile dungeon/POI density re-budget, `faction_stronghold` archetype, clanhold per-race intermingling) and/or M5 (live off-camera realm sim). Tribute decision still parked.
+
+## Session 2026-06-22 — M3-c follow-up: world-map tab layer toggle + panel-grey fix
+
+**Task:** Jedidiah: "I will need world map tab UI to have the same layer options as the review screen, biome, elevation, territory classification." Add the layer toggle to the Notebook World-Map tab (the prior M3-c entry shipped it political-only) and clean up a grey band beside the map.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `scenes/ui/notebook/tab_pages/world_map_tab_page.gd` — added a mutually-exclusive mode toggle matching ScreenReview: five toggle `Button`s in a shared `ButtonGroup` (`_MODES = Political / Biome / Elevation / Territory / Culture`, ints map to `PoliticalMapView.Mode`) plus a `Sovereigns` `CheckButton`. `_on_mode(mode)` calls `_map.set_mode(mode)` + `_refresh_legend()`; `_on_sovereign_toggled(on)` calls `_map.set_sovereign_view(on)` + refresh. `_refresh_legend()` rebuilds the swatch+label list from `_map.legend_entries(_polity_names)` per layer — Political capped at 14 (`+N more…`), the short layers (biome/elevation/territory/culture) show every entry so a low-coverage key isn't silently dropped. Per-mode tooltips on each toggle.
+- Removed the `PanelContainer` that wrapped the map. The widget draws a height-fit square and paints no background of its own (verified: `_draw` only emits hex polys / rivers / dapples / city circles / outlines), so in a wide page the panel's default grey stylebox showed as a dark band to the right of the map. Bare, the spare area shows the notebook page background.
+**Decisions made:**
+- The gap beside the square map is structural (square map drawn left-anchored in a wide row) and is benign now that it reads as page background, not a grey panel — left as-is rather than adding AspectRatioContainer/centering gymnastics. It is narrower in the real notebook page than in a full-screen test, and matches how ScreenReview looks (there the data column fills the space).
+**Interfaces defined or changed:** None (tab id `world_map` unchanged; reuses the existing `PoliticalMapView` API `set_mode`/`set_sovereign_view`/`legend_entries`).
+**Database changes:** None.
+**Tests added/updated:** None new (scene-script UI; the headless suite doesn't load tab pages). `--check-only` clean on the tab script. Suite **463/17** (run 2, isolated APPDATA), `SettingMaterializationTests` green (70 checks); all 17 failures are known pre-existing carry-forwards (hex_map_controller non-adjacent, language-proficiency rows, proficiency popup, transition/signal emits, LOS/ZoC/charge combat-grid, combat trickery, 30ft/5ft cells). Net-zero new failures.
+**MCP verification:** ran the game, bound `GameState.campaign_id` to the 47-realm generated world "Chigang", instantiated the tab, screenshotted — the five mode buttons + Sovereigns render in the toolbar, switching to Territory recolored the map to Civilized/Borderlands/Wilderness/Water with the legend updating to match. Authoritative `get_viewport().get_texture().get_image().get_pixel` sample confirmed the area beside the map reads parchment (~0.94,0.81,0.64), i.e. page background, not panel grey.
+**Known issues:**
+- The map does not fill the full page width at very wide layouts (parchment margin between the square map and the legend); benign, smaller in the real notebook.
+- Tribute chains still DEFERRED.
+**Next session should:** M3 (world map, name, start-city picker, layer toggle) is COMPLETE. Remaining materialization work: M4 calibration dials (6-mile dungeon/POI density re-budget, `faction_stronghold` archetype, clanhold per-race intermingling) and/or M5 (live off-camera realm sim + domains-provenance migration). Tribute decision still parked.
