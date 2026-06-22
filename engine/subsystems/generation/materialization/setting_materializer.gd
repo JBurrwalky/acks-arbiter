@@ -172,8 +172,15 @@ static func start_position(campaign_id: String) -> Dictionary:
 		[campaign_id, rid])
 	if not db.query_result.is_empty():
 		return {"map_id": rid, "hex_q": int(db.query_result[0]["hex_q"]), "hex_r": int(db.query_result[0]["hex_r"])}
-	# Fallback: a deterministic region hex (no settlement materialized in-window).
-	db.query_with_bindings("SELECT q, r FROM hex_cells WHERE map_id = ? ORDER BY q ASC, r ASC LIMIT 1", [rid])
+	# Fallback (no settlement in-window): the biggest stronghold's hex — a domain seat, always
+	# on LAND. Never spawn on water (bug 2026-06-22: the old "first hex_cell" fallback picked
+	# the top-left hex, which is ocean).
+	db.query_with_bindings(
+		"SELECT location_hex_q AS q, location_hex_r AS r FROM strongholds WHERE location_map_id = ? ORDER BY cp_value DESC, location_hex_q ASC, location_hex_r ASC LIMIT 1", [rid])
+	if not db.query_result.is_empty():
+		return {"map_id": rid, "hex_q": int(db.query_result[0]["q"]), "hex_r": int(db.query_result[0]["r"])}
+	# Last resort: a deterministic LAND hex_cell (water excluded).
+	db.query_with_bindings("SELECT q, r FROM hex_cells WHERE map_id = ? AND water = '' ORDER BY q ASC, r ASC LIMIT 1", [rid])
 	if not db.query_result.is_empty():
 		return {"map_id": rid, "hex_q": int(db.query_result[0]["q"]), "hex_r": int(db.query_result[0]["r"])}
 	return {}
@@ -1418,8 +1425,11 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 			continue
 		var realm_fam := int(db.query_result[0].get("population_band", 0))
 		var mc := _market_class_for_families(realm_fam)
-		if mc >= 6:
-			continue  # Class VI realm → stronghold-market, no settlement row
+		# A realm CAPITAL (realm-head seat) ALWAYS gets a settlement_entrance — even a Class VI
+		# village — so the player always has a city to start in / enter. (Bug 2026-06-22: a
+		# small all-Class-VI world materialized ZERO settlements, so the start dropped the
+		# party into the top-left ocean.) The §2 "ignore Class VI" rule still applies to
+		# NON-capital hamlets, which M4-2 never places — it only seats realm-heads.
 		var culture := str(d.get("culture_id", ""))
 		var dname := str(d.get("name", "Settlement"))
 		var dom_id := str(d["id"])
@@ -1429,7 +1439,7 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 			[region_map_id, seat.x, seat.y])
 		if not db.query_result.is_empty():
 			continue
-		var urban_fam := floori(float(realm_fam) / 50.0)  # ~2% of realm = largest settlement (§2)
+		var urban_fam := maxi(1, floori(float(realm_fam) / 50.0))  # ~2% of realm; ≥1 for a Class VI village
 		if not db.query_with_bindings("""
 			INSERT INTO settlement_entrances
 				(id, campaign_id, map_id, hex_q, hex_r, name, market_class,

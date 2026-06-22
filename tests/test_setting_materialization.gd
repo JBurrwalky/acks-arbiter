@@ -785,9 +785,16 @@ func test_start_position(cid: String) -> void:
 	check(str(sp.get("map_id", "")) == rid, "start_position is on the 6-mile regional play map")
 	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND q = ? AND r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) == 1,
 		"start hex is a real region hex_cell")
-	if _count("settlement_entrances", "map_id", rid) > 0:
-		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) >= 1,
-			"start hex hosts a settlement (the start city)")
+	# Bug 2026-06-22: the party must NEVER start on water (the old fallback picked the
+	# top-left hex = ocean). The start hex is always land.
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND q = ? AND r = ? AND water != ''", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) == 0,
+		"start hex is on land, never water")
+	# Bug 2026-06-22: a materialized world ALWAYS has ≥1 settlement (the start capital), even
+	# a small all-Class-VI world (realm-head seats are always seated as settlements).
+	check(_count("settlement_entrances", "map_id", rid) >= 1,
+		"the materialized world has at least one settlement (the start city)")
+	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) >= 1,
+		"start hex hosts a settlement (the start city)")
 
 	# M3-b picker: this run materialized with start_settlement_id = '' (auto), and
 	# start_position must HONOR a chosen city (its in-window settlement_entrance) over the
