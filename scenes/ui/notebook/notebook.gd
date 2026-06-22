@@ -35,6 +35,7 @@ const TAB_PAGE_SCRIPTS := {
 	"domain":    preload("res://scenes/ui/notebook/tab_pages/domain_tab_page.gd"),
 	"journal":   preload("res://scenes/ui/notebook/tab_pages/journal_tab_page.gd"),
 	"quests":    preload("res://scenes/ui/notebook/tab_pages/quests_tab_page.gd"),
+	"world_map": preload("res://scenes/ui/notebook/tab_pages/world_map_tab_page.gd"),
 }
 
 

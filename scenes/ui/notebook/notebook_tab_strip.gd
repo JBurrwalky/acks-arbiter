@@ -37,6 +37,7 @@ const TAB_ORDER := [
 	["domain", "Domain"],
 	["journal", "Journal"],
 	["quests", "Quests"],
+	["world_map", "World Map"],
 ]
 
 ## Number of tabs that go in the primary (innermost) column.
