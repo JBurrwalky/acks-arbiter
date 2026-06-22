@@ -36240,3 +36240,25 @@ on-tick dispatch.
 - Tiny Counties (< ~8 hexes) still run tighter than 3:1 (the `_MIN_INTERIOR_VASSALS` floor forces ≥2 Marches even when the realm can't fill them) — inherent to small realms; rare in-window.
 - Tribute chains still DEFERRED.
 **Next session should:** Jedidiah playtests the AX3-density world (demesnes, strongholds, Barony:March fan-out, interaction). Deferred dials (6-mile dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + the tribute decision remain when he's ready.
+
+
+## Session 2026-06-21 — M4 fix: domains/watchtowers never on water hexes
+
+**Task:** Playtest showed watchtowers (sub-fief Stronghold POIs) in ocean hexes. Investigate + fix, including a cleanliness follow-on so future systems don't repeat it.
+**Model used:** Opus 4.8 (1M).
+**Root cause (confirmed via read-only query of the live save):** both 6-mile population-distribution paths spread a 24-mile parent's `population_band` uniformly across all 16 children with no land/water check, so ocean children of a coastal owned hex (and orphan→pocket hex) received families → decomposed into Baronies → got watchtower strongholds + Stronghold POIs on the sea. Live save: 8 of 273 strongholds + 8 of 249 stronghold POIs on `hex_cells.water='ocean'`, all `materialized_subfief` on civilized-parent ocean children; 12 populated water `domain_hexes`.
+**Completed:**
+- `engine/subsystems/generation/materialization/setting_materializer.gd`: new `_region_water_set(region_map_id)` — a shared `{"q,r": true}` set of the region's water hexes from `hex_cells.water`. `_materialize_domain_hexes` (M4-1a) now distributes population across **land children only**; ocean/lake children get **no `domain_hexes` row at all** (cleanliness — you don't own open sea), with an all-water-owned-hex guard. `_create_pocket_realm` (M2b-4) skips water children the same way (the second source — its cluster loop lives in `_create_pocket_realm`, not `_materialize_pocket_realms`, so the water lookup is built there).
+**Decisions made:**
+- Skip the `domain_hexes` row entirely for water (not just families=0), per the cleanliness follow-on, so downstream systems iterating `domain_hexes` never see open sea.
+- Shared `_region_water_set` helper rather than inline duplication, so future passes that distribute population / claim land across a parent's children consult one source.
+- Conservation preserved (land children sum to `population_band`); the clanhold path reads the now-land-only `domain_hexes`, so sub-clanholds are land-only too.
+- Forts (`_materialize_forts`) are a separate path (project `setting_fortifications` onto a carrier child) NOT covered here — but the live save showed 0 forts on water, so it isn't manifesting; flagged for if it ever does.
+**Interfaces defined or changed:** New helper `_region_water_set(region_map_id) -> Dictionary`. No signature changes.
+**Database changes:** None.
+**Tests added/updated:** `tests/test_setting_materialization.gd` — replaced the now-invalid "domain_hexes come in full 24-mile blocks of 16" assertion (coastal blocks are land-only now) with "no domain_hex sits on a water hex"; added "no stronghold POI (watchtower) sits on a water hex". Fix is exercised in the fixture (29 coastal blocks trimmed; region has 437 water cells). Suite **462/18**, mat suite **173 checks**, net-zero new failures.
+**Known issues:**
+- Forts on water not guarded (separate path; not currently manifesting).
+- Tribute chains still DEFERRED.
+- Process note: the first pass fixed only M4-1a and missed `_create_pocket_realm`; the "no domain_hex on water" regression test caught it immediately (a `water_by_hex` scope error also surfaced because the cluster loop is in a different function than the parent). Worth keeping the regression guard.
+**Next session should:** Jedidiah re-playtests (the throwaway save still has the old ocean watchtowers; a fresh generation will be clean). Deferred dials (dungeon/POI density, faction archetype, landmark↔POI icon dedup, clanhold intermingling) + tribute remain.
