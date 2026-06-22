@@ -99,14 +99,12 @@ func _build_content() -> void:
 	sov.toggled.connect(_on_sovereign_toggled)
 	modes.add_child(sov)
 
-	# Map (expands).
-	var map_panel := PanelContainer.new()
-	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left.add_child(map_panel)
+	# Map (expands). No PanelContainer wrapper — the map draws a square, so in a wide page a
+	# panel bg would show grey to its right; bare, the spare area shows the notebook page bg.
 	_map = PoliticalMapViewScript.new()
 	_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_panel.add_child(_map)
+	left.add_child(_map)
 	# Same bind order as ScreenReview.bind_map (set_polity_meta before bind).
 	_map.set_polity_meta(_polity_names, lieges, tiers)
 	_map.bind(SettingRepository.list_hexes(cid), SettingRepository.list_replay_palette(cid))
