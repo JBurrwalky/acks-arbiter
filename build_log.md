@@ -36305,3 +36305,23 @@ on-tick dispatch.
 - A clean pixel screenshot of the picker in the live review screen wasn't captured (harness friction); functionally verified via game_eval. Re-confirm visually on the next world generation.
 - Tribute chains still DEFERRED.
 **Next session should:** M3-c — the Notebook "World Map" tab (24-mile strategic view, adapting `political_map_view`) is the remaining M3-b/c item. Then the M4 calibration dials (dungeon/POI density, faction_stronghold archetype, clanhold intermingling) and/or M5 (live off-camera realm sim).
+
+
+## Session 2026-06-22 — Fix: settlement-less small worlds + ocean party spawn
+
+**Task:** Jedidiah's "The Uncharted Lands" generated save had ZERO settlements but many mid-level strongholds, and the party spawned in the top-left ocean hex. Two high-visibility bugs, small-map-specific.
+**Model used:** Opus 4.8 (1M).
+**Root cause (confirmed from the save):** the world is tiny — 180 hexes, 51 land/populated, 4 realms maxing at County (1 County + 3 Marches), and `setting_settlements = 0` (no realm reaches Class III, so the §9.1 rank-size pass generates no cities). The M4 decomposition still made 66 Barony strongholds, but M4-2 (`_materialize_county_settlements`) skipped every realm-head seat at Class VI (`if mc >= 6: continue`), so the in-window map had 0 `settlement_entrances`. `start_position` then hit its final fallback — `SELECT q,r FROM hex_cells ORDER BY q,r LIMIT 1` — the lowest-coord (top-left) hex, which is ocean.
+**Completed:**
+- `_materialize_county_settlements` (M4-2): a realm CAPITAL (realm-head seat) now ALWAYS gets a `settlement_entrance`, even a Class VI village — removed the `mc >= 6` skip; `urban_families` clamped to `maxi(1, …)`. The §2 "ignore Class VI" rule still applies to non-capital hamlets (M4-2 only seats realm-heads). Guarantees ≥1 start city in any world.
+- `start_position` fallback (no in-window settlement): spawn at the biggest stronghold's hex (a domain seat — always LAND, since domain_hexes are land-only), then a non-water `hex_cell`, never the top-left ocean.
+**Decisions made:**
+- Capital-always-seated over a "force one only if zero" post-check: every realm deserves a visible, enterable capital, it fixes the bug generally, and the realm-heads are few (no clutter). Non-capital Class VI scatter stays unplaced per §2.
+**Interfaces defined or changed:** None (internal logic only).
+**Database changes:** None.
+**Tests added/updated:** `test_start_position` now asserts the start hex is on land (never water) and the world has ≥1 settlement. Suite **462/18**, mat suite 177→**179 checks**, net-zero new failures. Diagnostic on the small/short fixture: 2 generated cities + 9 realm-head capitals (incl. previously-skipped Class VI) = 10 settlements; start hex water = '' (land).
+**Known issues:**
+- Forward-only: the existing "Uncharted Lands" save keeps its 0-settlement / ocean-spawn state (throwaway). A fresh small-world generation is now correct.
+- Minor (not a bug): a continent-less small world still gets the generic "the Uncharted Lands" name (the world-name fallback). Could later fall back to the largest land-region name instead; left as-is since not flagged.
+- Tribute chains still DEFERRED.
+**Next session should:** M3-c (the Notebook World-Map tab) is the remaining M3-b/c item; then M4 calibration dials / M5. Re-confirm the small-world fix visually on a fresh generation if convenient.
