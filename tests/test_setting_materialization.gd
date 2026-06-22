@@ -789,6 +789,30 @@ func test_start_position(cid: String) -> void:
 		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ?", [rid, int(sp["hex_q"]), int(sp["hex_r"])]) >= 1,
 			"start hex hosts a settlement (the start city)")
 
+	# M3-b picker: this run materialized with start_settlement_id = '' (auto), and
+	# start_position must HONOR a chosen city (its in-window settlement_entrance) over the
+	# largest-market auto-pick. Pick an in-window setting_settlement (its 1,1 carrier child
+	# hosts an entrance), set the choice, and confirm start_position lands there.
+	check(_scalar_str("SELECT start_settlement_id AS n FROM campaigns WHERE id = ?", [cid]) == "",
+		"materialize persisted start_settlement_id = '' (auto-pick) this run")
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT id, hex_q, hex_r FROM setting_settlements WHERE campaign_id = ?", [cid])
+	var chosen_id := ""
+	var chosen_hex := Vector2i.ZERO
+	for s in db.query_result.duplicate():
+		var poff := WorldGrid.axial_to_offset(Vector2i(int(s["hex_q"]), int(s["hex_r"])))
+		var child := WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
+		if _scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE map_id = ? AND hex_q = ? AND hex_r = ?", [rid, child.x, child.y]) >= 1:
+			chosen_id = str(s["id"])
+			chosen_hex = child
+			break
+	if not chosen_id.is_empty():
+		db.query_with_bindings("UPDATE campaigns SET start_settlement_id = ? WHERE id = ?", [chosen_id, cid])
+		var sp2 := SettingMaterializer.start_position(cid)
+		check(int(sp2.get("hex_q", -999)) == chosen_hex.x and int(sp2.get("hex_r", -999)) == chosen_hex.y,
+			"start_position honors the chosen start city's entrance (%d,%d)" % [chosen_hex.x, chosen_hex.y])
+		db.query_with_bindings("UPDATE campaigns SET start_settlement_id = '' WHERE id = ?", [cid])
+
 
 func _scalar_str(sql: String, binds: Array) -> String:
 	CampaignRepository.db.query_with_bindings(sql, binds)

@@ -5,7 +5,7 @@ extends Control
 ## the side tabs (Brief / Realms / Peoples / History / Issues), the seed footer, and
 ## Accept / Regenerate / Watch-again. Binds CampaignReviewAssembler's payload.
 
-signal approved
+signal approved(start_settlement_id: String)
 signal regenerate_requested
 signal watch_again
 
@@ -40,6 +40,13 @@ var _seed_label: Label
 var _validation_label: Label
 var _copy_btn: Button
 var _share_token: String = ""
+
+# Decision-K start-city picker (footer): the player chooses which generated city the
+# 6-mile play window opens on. Defaults to the auto-pick (largest market). _start_ids is
+# parallel to the OptionButton items; _start_settlement_id is the current choice ("" = auto).
+var _start_picker: OptionButton
+var _start_ids: Array = []
+var _start_settlement_id: String = ""
 
 # Event log (History tab). Loaded via set_event_log(); rendered per-sovereign or as a
 # master log. Dead-realm names come from setting_fallen_polities (toponym roots).
@@ -180,11 +187,20 @@ func _build_ui() -> void:
 	regen.custom_minimum_size = Vector2(170, 44)
 	regen.pressed.connect(func(): regenerate_requested.emit())
 	footer.add_child(regen)
+	var start_lbl := Label.new()
+	start_lbl.text = "Start in:"
+	start_lbl.add_theme_color_override("font_color", Color(0.82, 0.78, 0.66))
+	footer.add_child(start_lbl)
+	_start_picker = OptionButton.new()
+	_start_picker.custom_minimum_size = Vector2(210, 44)
+	_start_picker.tooltip_text = "Which generated city your party starts in (the 6-mile play map opens here)."
+	_start_picker.item_selected.connect(_on_start_picked)
+	footer.add_child(_start_picker)
 	var begin := Button.new()
 	begin.text = "Begin Campaign  ▸"
 	begin.custom_minimum_size = Vector2(180, 44)
 	begin.add_theme_font_size_override("font_size", 18)
-	begin.pressed.connect(func(): approved.emit())
+	begin.pressed.connect(func(): approved.emit(_start_settlement_id))
 	footer.add_child(begin)
 
 
@@ -225,10 +241,57 @@ func bind_map(ordered_hexes: Array, palette: Array, settlements: Array, polities
 	_map.bind(ordered_hexes, palette)
 	_map.set_settlements(settlements)
 	_map.set_rivers(rivers)
+	_populate_start_picker(settlements)
 	_refresh_legend()
 	_refresh_realms()    # liege map now known → drop vassals from the Realms tab
 	_refresh_vassalage()
 	_refresh_history()   # sovereigns now known → rebuild the History filter + log
+
+
+## Fill the start-city picker from the generated settlements. Order matches the
+## materializer's auto-pick (RegionZoomIn._pick_center: lowest market_class first, then
+## hex_r, hex_q), so item 0 == the default start and "no change" reproduces today's
+## behaviour. _start_settlement_id holds the chosen setting_settlements id.
+func _populate_start_picker(settlements: Array) -> void:
+	if _start_picker == null:
+		return
+	_start_picker.clear()
+	_start_ids.clear()
+	_start_settlement_id = ""
+	var sorted := settlements.duplicate()
+	sorted.sort_custom(func(a, b):
+		var ma := int(a.get("market_class", 6))
+		var mb := int(b.get("market_class", 6))
+		if ma != mb:
+			return ma < mb
+		var ra := int(a.get("hex_r", 0))
+		var rb := int(b.get("hex_r", 0))
+		if ra != rb:
+			return ra < rb
+		return int(a.get("hex_q", 0)) < int(b.get("hex_q", 0)))
+	for s in sorted:
+		var nm := str(s.get("name", "")) if str(s.get("name", "")) != "" else "Unnamed"
+		var mc := int(s.get("market_class", 6))
+		_start_picker.add_item("%s  (Class %s)" % [nm, _roman(mc)])
+		_start_ids.append(str(s.get("id", "")))
+	if not _start_ids.is_empty():
+		_start_picker.select(0)
+		_start_settlement_id = str(_start_ids[0])
+	_start_picker.disabled = _start_ids.size() <= 1
+
+
+func _on_start_picked(idx: int) -> void:
+	_start_settlement_id = str(_start_ids[idx]) if idx >= 0 and idx < _start_ids.size() else ""
+
+
+func _roman(mc: int) -> String:
+	match clampi(mc, 1, 6):
+		1: return "I"
+		2: return "II"
+		3: return "III"
+		4: return "IV"
+		5: return "V"
+		_: return "VI"
 
 
 ## The Phase 5 vassal tree (setting_domains). Call after bind_map so _present_ids

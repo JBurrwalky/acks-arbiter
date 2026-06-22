@@ -57,9 +57,11 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 
 	# Mark origin = generated. This is the fixture/materializer mutual-exclusion
 	# guard (gdd §11 / Decision M): TestContentSeeder must never seed a 'generated'
-	# campaign and vice versa.
+	# campaign and vice versa. Also persist the player's chosen start city (M3-b picker;
+	# '' = auto) so start_position() spawns the party there, not at the largest in-window.
 	CampaignRepository.db.query_with_bindings(
-		"UPDATE campaigns SET campaign_origin = 'generated' WHERE id = ?", [campaign_id])
+		"UPDATE campaigns SET campaign_origin = 'generated', start_settlement_id = ? WHERE id = ?",
+		[_start_settlement_id, campaign_id])
 
 	# 1. WORLD MAP ------------------------------------------------------------
 	var world_map_id := "%s_world24mi" % campaign_id
@@ -146,6 +148,24 @@ static func start_position(campaign_id: String) -> Dictionary:
 	if db.query_result.is_empty():
 		return {}
 	var rid := str(db.query_result[0]["id"])
+	# The player's chosen start city (M3-b picker), if any: spawn at its in-window
+	# settlement_entrance (the setting_settlement's 1,1 carrier child — where M2b-3a placed
+	# it). Falls through to the largest-market auto-pick when '' or unresolvable.
+	db.query_with_bindings("SELECT start_settlement_id FROM campaigns WHERE id = ?", [campaign_id])
+	var chosen := str(db.query_result[0].get("start_settlement_id", "")) if not db.query_result.is_empty() else ""
+	if not chosen.is_empty():
+		db.query_with_bindings(
+			"SELECT hex_q, hex_r FROM setting_settlements WHERE campaign_id = ? AND id = ?", [campaign_id, chosen])
+		if not db.query_result.is_empty():
+			var sq := int(db.query_result[0]["hex_q"])
+			var sr := int(db.query_result[0]["hex_r"])
+			var poff := WorldGrid.axial_to_offset(Vector2i(sq, sr))
+			var child := WorldGrid.offset_to_axial(poff.x * 4 + 1, poff.y * 4 + 1)
+			db.query_with_bindings(
+				"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ? LIMIT 1",
+				[campaign_id, rid, child.x, child.y])
+			if not db.query_result.is_empty():
+				return {"map_id": rid, "hex_q": int(db.query_result[0]["hex_q"]), "hex_r": int(db.query_result[0]["hex_r"])}
 	# The start city: the largest-market settlement on the play map (lowest market_class).
 	db.query_with_bindings(
 		"SELECT hex_q, hex_r FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? ORDER BY market_class ASC, hex_q ASC, hex_r ASC LIMIT 1",

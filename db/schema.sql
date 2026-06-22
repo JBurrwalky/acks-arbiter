@@ -37,7 +37,11 @@ CREATE TABLE IF NOT EXISTS campaigns (
     -- vs 'fixture' (TestContentSeeder). The two paths must never both run for one
     -- campaign. See gdd-setting-runtime-materialization.md §11.
     campaign_origin TEXT NOT NULL DEFAULT 'fixture'
-        CHECK(campaign_origin IN ('fixture', 'generated'))
+        CHECK(campaign_origin IN ('fixture', 'generated')),
+    -- Migration 175: the setting_settlements id the player chose as the start city on the
+    -- review screen (Decision-K picker, M3-b). Centers the play window + spawns the party
+    -- there. '' = auto-pick the largest market.
+    start_settlement_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS characters (

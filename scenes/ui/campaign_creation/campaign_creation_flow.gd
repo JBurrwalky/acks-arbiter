@@ -17,7 +17,7 @@ extends CanvasLayer
 ## ManagedScene (duck-typed): enter()/exit(). Emits campaign_ready(campaign_id)
 ## once the player approves and the world locks → routes to party creation.
 
-signal campaign_ready(campaign_id: String)
+signal campaign_ready(campaign_id: String, start_settlement_id: String)
 
 enum Phase { QUICK_START, ADVANCED, GENERATE, REVIEW }
 
@@ -164,12 +164,13 @@ func _on_start_requested() -> void:
 
 
 ## Screen D "Begin Campaign": apply the §11.3 post-approval lock, announce the
-## world as canonical, and route to party creation.
-func _on_approved() -> void:
+## world as canonical, and route to party creation. [param start_settlement_id] is the
+## player's chosen start city ("" = the materializer auto-picks the largest market).
+func _on_approved(start_settlement_id: String = "") -> void:
 	var world_hash := SettingDatasetHasher.compute_world_hash(_campaign_id)
 	SettingRepository.lock_setting(_campaign_id, world_hash)
 	EventBus.world_approved.emit(_campaign_id)
-	campaign_ready.emit(_campaign_id)
+	campaign_ready.emit(_campaign_id, start_settlement_id)
 
 
 ## Screen D "Regenerate world": a deliberate re-roll — drop any entered seed/share

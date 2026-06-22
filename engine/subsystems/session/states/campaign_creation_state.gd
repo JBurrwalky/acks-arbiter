@@ -25,9 +25,10 @@ func enter(runner, _context: Dictionary) -> void:
 		"res://scenes/ui/campaign_creation/campaign_creation_flow.tscn")
 	_flow = scene.instantiate()
 	_flow.campaign_ready.connect(
-		func(campaign_id: String):
-			# M3: materialize the locked generated world into the runtime tables.
-			var res: Dictionary = SettingMaterializer.new().materialize(campaign_id, "")
+		func(campaign_id: String, start_settlement_id: String):
+			# M3: materialize the locked generated world into the runtime tables, centered on
+			# the player's chosen start city ("" → auto-pick the largest market, M3-b picker).
+			var res: Dictionary = SettingMaterializer.new().materialize(campaign_id, start_settlement_id)
 			if not bool(res.get("ok", false)):
 				push_error("CampaignCreationState: materialization failed: %s" % str(res.get("errors", [])))
 			runner.submit_action("world_ready", {"campaign_id": campaign_id})
