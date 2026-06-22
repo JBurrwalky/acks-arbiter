@@ -19,6 +19,7 @@ func run_all_tests() -> void:
 	test_ruler_title_translation()  # pure unit test of the tribute-title mapping (Q1)
 	test_stronghold_formula()       # pure unit test of the stronghold↔territory formula
 	test_coastal_seat_placement()   # pure unit test of coast-aware town placement
+	test_dungeon_level_bell()       # pure statistical test of the dungeon-level bell sampler
 	var cid := _generate(424242)  # generated, NOT yet locked
 	if not cid.is_empty():
 		# Order matters: guard runs while unlocked; then we lock and materialize.
@@ -333,6 +334,30 @@ func test_coastal_seat_placement() -> void:
 	check(adj, "coastal seat sits next to water (on the coastline)")
 
 
+func test_dungeon_level_bell() -> void:
+	# Jedidiah 2026-06-22: dungeon level is its OWN axis, sampled from a bell — few at L1-2,
+	# MOST at L3-5, few at L6. Pure statistical test of the weighted sampler + the bell weights.
+	var m := SettingMaterializer.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 0x5EED
+	var counts := [0, 0, 0, 0, 0, 0, 0]   # index 1..6
+	var weights := [1.0, 2.0, 4.0, 5.0, 4.0, 1.5]
+	for i in range(12000):
+		counts[m._weighted_pick(weights, rng) + 1] += 1
+	var low: int = counts[1] + counts[2]
+	var mid: int = counts[3] + counts[4] + counts[5]
+	var high: int = counts[6]
+	check(mid > low and mid > high, "level bell: L3-5 is the bulk (mid %d > low %d, high %d)" % [mid, low, high])
+	check(mid > (low + high), "level bell: the L3-5 middle outweighs both tails combined")
+	check(counts[1] >= 1 and counts[6] >= 1, "level bell: both tails (L1 and L6) occur")
+	# _weighted_pick is total-proportional: a flat weight set is ~uniform.
+	var flat := [1.0, 1.0, 1.0]
+	var fc := [0, 0, 0]
+	for i in range(9000):
+		fc[m._weighted_pick(flat, rng)] += 1
+	check(fc[0] > 2400 and fc[1] > 2400 and fc[2] > 2400, "weighted pick is proportional (flat ≈ uniform)")
+
+
 func test_region_map_materialized(cid: String) -> void:
 	var rid := str(_mat_result.get("region_map_id", ""))
 	check(rid != "", "region_map_id returned")
@@ -457,19 +482,47 @@ func test_content_placed(cid: String) -> void:
 	if rid == "":
 		return
 
-	# Dungeons (setting_ruin_seeds → dungeon_entrances, provenance in dungeon_data).
+	# Dungeons — M4 true-dungeon budget (Jedidiah 2026-06-22; AX3 calibration): a curated
+	# 6-12 per window, level sampled from a bell as its own axis, written in the spec shape
+	# the DungeonFixtureService reads (kind/tier/size/floors) so level + size take effect.
 	var nd := int(_mat_result.get("dungeon_count", -1))
 	check(nd == _count("dungeon_entrances", "map_id", rid), "dungeon_count matches dungeon_entrances on the region map")
 	check(_scalar("SELECT COUNT(*) AS n FROM dungeon_entrances WHERE campaign_id = ? AND map_id != ?", [cid, rid]) == 0,
 		"dungeons all sit on the 6-mile region map")
 	check(_scalar("SELECT COUNT(*) AS n FROM dungeon_entrances de WHERE de.campaign_id = ? AND de.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = de.map_id AND h.q = de.hex_q AND h.r = de.hex_r)", [cid, rid]) == 0,
 		"dungeons sit on real region hex_cells")
+	# Window budget N in the AX3 band, and the placed count never exceeds it / the hard cap.
+	var bn := int(_mat_result.get("dungeon_budget_n", -1))
+	check(bn >= 6 and bn <= 12, "dungeon budget N is in the AX3 band 6-12 (%d)" % bn)
+	check(nd <= 12 and nd <= bn, "placed dungeon count respects the budget (%d <= %d)" % [nd, bn])
+	# No true dungeon on a water hex (placed on land children only).
+	check(_scalar("SELECT COUNT(*) AS n FROM dungeon_entrances de JOIN hex_cells h ON h.map_id = de.map_id AND h.q = de.hex_q AND h.r = de.hex_r WHERE de.map_id = ? AND h.water != ''", [rid]) == 0,
+		"no true dungeon on a water hex")
 	if nd > 0:
 		CampaignRepository.db.query_with_bindings(
-			"SELECT dungeon_data FROM dungeon_entrances WHERE campaign_id = ? AND map_id = ? LIMIT 1", [cid, rid])
-		var dd = JSON.parse_string(str(CampaignRepository.db.query_result[0].get("dungeon_data", "{}")))
-		check(dd is Dictionary and dd.has("provenance") and dd.has("size_hint"),
-			"dungeon_data carries provenance + size_hint (principle 3)")
+			"SELECT dungeon_data FROM dungeon_entrances WHERE campaign_id = ? AND map_id = ?", [cid, rid])
+		var rows := CampaignRepository.db.query_result.duplicate(true)
+		var bad_meta := 0
+		var bad_spec := 0
+		var bad_level := 0
+		for dr in rows:
+			var dd = JSON.parse_string(str(dr.get("dungeon_data", "{}")))
+			if not (dd is Dictionary and dd.has("provenance") and dd.has("size_hint")):
+				bad_meta += 1
+				continue
+			# The spec stub is the fix for the pre-existing shape mismatch (materializer wrote
+			# {size_hint,...} but the fixture reads {spec:{kind,tier,size,floors}} → tier-1 fallback).
+			if not (dd.has("spec") and dd["spec"] is Dictionary
+					and (dd["spec"] as Dictionary).has("kind") and (dd["spec"] as Dictionary).has("tier")
+					and (dd["spec"] as Dictionary).has("size") and (dd["spec"] as Dictionary).has("floors")):
+				bad_spec += 1
+				continue
+			var t := int((dd["spec"] as Dictionary)["tier"])
+			if t < 1 or t > 6:
+				bad_level += 1
+		check(bad_meta == 0, "every dungeon_data carries provenance + size_hint (principle 3)")
+		check(bad_spec == 0, "every dungeon has a fixture-readable spec{kind,tier,size,floors}")
+		check(bad_level == 0, "every dungeon level (spec.tier) is sampled in 1..6")
 
 	# POIs (setting_poi_seeds → pois, context/rumor_seeds verbatim).
 	var npoi := int(_mat_result.get("poi_count", -1))

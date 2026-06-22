@@ -791,46 +791,326 @@ func _race_for_ruler_class(ruler_class: String) -> String:
 	return "human"
 
 
-## M2b-3b: project in-window setting_ruin_seeds onto carrier children (2,2) as
-## dungeon_entrances stubs. dungeon_data carries size hint + flavor + PROVENANCE
-## (culture/polity/toponym/era/event — principle 3) for the narrator + DG-V1
-## layout-on-first-entry. Coexists with the emergent lazy-lair system.
+# --- True-dungeon 6-mile budget (Jedidiah 2026-06-22; AX3 calibration) -----------
+# A CURATED 6-12 TRUE dungeons per play window — the AX3 'Capital of the Borderlands'
+# detail bar. RAW's per-hex density beyond this is carried by the EMERGENT lazy-lair
+# system (lairs/hex_lair_state — UNTOUCHED here). Count scales with the window's LAND.
+const _DUNGEON_HEXES_PER := 110.0    # ~one true dungeon per this many in-window land hexes
+const _DUNGEON_MIN := 6
+const _DUNGEON_MAX := 12
+const _UNDERCITY_MARKET_CLASS := 3   # a Class III+ (market_class <= 3) start city gets the sewer anchor
+# Dungeon LEVEL bell (entrance_tier / nominal dungeon level), index 0..5 = L1..L6: few low,
+# most mid, few high. Jedidiah's ruling: level is its OWN axis — sampled directly, NOT set
+# by size or provenance (provenance skew may come later if monster-stocking forces it).
+const _DUNGEON_LEVEL_WEIGHTS := [1.0, 2.0, 4.0, 5.0, 4.0, 1.5]
+# Size weights for a SYNTHESIZED dungeon (a context anchor with no ruin seed under it).
+# Orthogonal to level — a small dungeon may be deadly. lair/small/medium/large.
+const _DUNGEON_SIZE_KEYS := ["lair", "small", "medium", "large"]
+const _DUNGEON_SIZE_WEIGHTS := [2.0, 3.0, 4.0, 2.0]
+# Size -> floor count (deeper floors get harder via DungeonTierDerivation's V-shape).
+const _DUNGEON_FLOORS := {"lair": 1, "small": 2, "medium": 3, "large": 4}
+# Flavor types for a synthesized dungeon with no specific cultural provenance (AX3
+# taxonomy; narrator metadata — every type still lays out as wizards_dungeon in DG-V1).
+const _DUNGEON_FLAVOR := ["tomb", "catacombs", "barrow_mound", "temple", "crumbling_castle", "natural_caverns", "humanoid_warren"]
+
+
+## M2b-3b + M4 dungeon budget (gdd-region-zoom-in §9.3; AX3 calibration 2026-06-22).
+## Place a CURATED 6-12 TRUE dungeons on the 6-mile play window: four context anchors —
+## 2 in the home realm's civilized/borderlands land, 1 sewer beneath the Class-III+ start
+## city, 1 in titular-claim home wilderness — plus the rest scattered through wilderness &
+## borderlands NOT held by the home realm (beastman clanhold territory included). Each
+## dungeon's nominal LEVEL is sampled from a bell (few L1-2, most L3-5, few L6) as its own
+## axis; size is orthogonal. Reuses an in-window setting_ruin_seed under a chosen parent
+## (its provenance/name) when one exists, else synthesizes. Writes the spec stub the
+## DungeonFixtureService reads (kind/tier/size/floors) so level + size take effect at play.
+## The EMERGENT lazy-lair system (lairs/hex_lair_state) is NOT touched.
 func _materialize_dungeons(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
+		result["dungeon_count"] = 0
 		return true
 	var db = CampaignRepository.db
+	var seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
+	var land := _region_land_set(region_map_id)
+
+	# Window budget: a hand-quality 6-12, scaled by how much land the window holds.
+	var n := clampi(int(round(float(land.size()) / _DUNGEON_HEXES_PER)), _DUNGEON_MIN, _DUNGEON_MAX)
+	result["dungeon_budget_n"] = n
+
+	# Per-parent context from the frozen 24-mile setting_hexes (owner / territory / terrain).
+	var by_id := {}
+	for p in SettingRepository.list_polities(campaign_id):
+		by_id[str(p["id"])] = p
+	var hex_ctx := _window_hex_context(campaign_id, in_window)
+	var home_sov := _home_sovereign_pid(campaign_id, hex_ctx, by_id)
+	var seed_by_parent := _ruin_seeds_by_parent(campaign_id, in_window)
+
+	# Classify in-window parents into placement pools (drama-sorted).
+	var pool_inrealm: Array = []
+	var pool_titular: Array = []
+	var pool_scattered: Array = []
+	for k in hex_ctx:
+		var c: Dictionary = hex_ctx[k]
+		var parts := str(k).split(",")
+		var key := Vector2i(int(parts[0]), int(parts[1]))
+		var owner := str(c["owner"])
+		var terr := str(c["territory"])
+		var sov := _root_sovereign_pid(owner, by_id) if not owner.is_empty() else ""
+		var is_home := (not sov.is_empty() and sov == home_sov)
+		var entry := {"key": key, "drama": _dungeon_drama(str(c["biome"]), str(c["elevation"])), "k": str(k)}
+		if is_home and (terr == "civilized" or terr == "borderlands"):
+			pool_inrealm.append(entry)
+		elif is_home and terr == "wilderness":
+			pool_titular.append(entry)
+		elif terr == "wilderness" or terr == "borderlands":
+			pool_scattered.append(entry)
+		# Civilized parents of OTHER realms are skipped (no dungeons under foreign cities).
+	_sort_drama(pool_inrealm)
+	_sort_drama(pool_titular)
+	_sort_drama(pool_scattered)
+
+	# Pick the placements: undercity + 2 in-realm + 1 titular + scattered fill to N.
+	var picks: Array = []   # each {parent:Vector2i|null, hex:Vector2i|null, context:String}
+	var used := {}          # parent "k" already taken
+	# Undercity (sewer) anchor: beneath the biggest in-window city, if Class III+.
+	db.query_with_bindings(
+		"SELECT hex_q, hex_r, market_class FROM settlement_entrances WHERE map_id = ? ORDER BY market_class ASC, hex_r ASC, hex_q ASC LIMIT 1",
+		[region_map_id])
+	if not db.query_result.is_empty() and int(db.query_result[0]["market_class"]) <= _UNDERCITY_MARKET_CLASS:
+		var city_hex := Vector2i(int(db.query_result[0]["hex_q"]), int(db.query_result[0]["hex_r"]))
+		picks.append({"hex": city_hex, "parent": null, "context": "undercity"})
+		var coff := WorldGrid.axial_to_offset(city_hex)
+		var up := WorldGrid.offset_to_axial(floori(coff.x / 4.0), floori(coff.y / 4.0))
+		used["%d,%d" % [up.x, up.y]] = true   # don't double-place in the city's parent
+	_take_from_pool(pool_inrealm, used, 2, "in_realm", picks, n)
+	_take_from_pool(pool_titular, used, 1, "titular", picks, n)
+	_take_from_pool(pool_scattered, used, n, "scattered", picks, n)
+	# If scattered is thin, top up from the leftover home pools so we still reach N.
+	for leftover in [pool_inrealm, pool_titular, pool_scattered]:
+		_take_from_pool(leftover, used, n, "scattered", picks, n)
+
+	# Write each placement with the fixture-readable spec stub + a sampled level.
+	var used_names := {}
 	var placed := 0
-	for s in SettingRepository.list_ruin_seeds(campaign_id):
-		var sq := int(s["hex_q"])
-		var sr := int(s["hex_r"])
-		if not in_window.has("%d,%d" % [sq, sr]):
-			continue
-		var child := _carrier_child(sq, sr, 2, 2)
-		var dd := JSON.stringify({
-			"size_hint": str(s.get("size_hint", "lair")),
-			"dungeon_type": str(s.get("dungeon_type", "")),
-			"provenance": {
-				"culture_id": str(s.get("provenance_culture_id", "")),
-				"polity_id": str(s.get("provenance_polity_id", "")),
-				"toponym": str(s.get("provenance_toponym", "")),
-				"era_tick": int(s.get("era_tick", 0)),
-				"event_type": str(s.get("event_type", "")),
-				"source_event_id": str(s.get("source_event_id", "")),
-			},
-		})
-		var dname := str(s.get("name", ""))
+	for pick in picks:
+		var hex: Vector2i
+		var owner_pid := ""
+		if pick.get("parent", null) != null:
+			var parent: Vector2i = pick["parent"]
+			hex = _land_child_pref(parent, 2, 2, land)
+			if hex == _INVALID_HEX:
+				continue   # an all-water parent (shouldn't happen for a land pool)
+			owner_pid = str(hex_ctx.get("%d,%d" % [parent.x, parent.y], {}).get("owner", ""))
+		else:
+			hex = pick["hex"]   # undercity: the sewer entrance is the city hex itself
+		var owner_cid := str(by_id.get(owner_pid, {}).get("culture_id", "")) if by_id.has(owner_pid) else ""
+		var prng := WorldGenRng.stream(seed, "dungeon_budget", 0, "%d,%d" % [hex.x, hex.y])
+		var context := str(pick["context"])
+
+		# Reuse a setting_ruin_seed under this parent (its provenance/name/size/type) when
+		# one exists; else synthesize. Undercity is always synthesized (sewers, large).
+		var size_hint := ""
+		var dtype := ""
+		var dname := ""
+		var prov := {}
+		var seed_row = null
+		if pick.get("parent", null) != null:
+			var pk := "%d,%d" % [(pick["parent"] as Vector2i).x, (pick["parent"] as Vector2i).y]
+			if seed_by_parent.has(pk) and not (seed_by_parent[pk] as Array).is_empty():
+				seed_row = (seed_by_parent[pk] as Array)[0]
+		if context == "undercity":
+			size_hint = "large"
+			dtype = "sewers"
+			dname = NameAssembler.ruin_name(NameBankLoader.bank_for(owner_cid), "large", "", prng, used_names, owner_cid)
+		elif seed_row != null:
+			size_hint = str(seed_row.get("size_hint", "medium"))
+			dtype = str(seed_row.get("dungeon_type", ""))
+			dname = str(seed_row.get("name", ""))
+			prov = {
+				"culture_id": str(seed_row.get("provenance_culture_id", "")),
+				"polity_id": str(seed_row.get("provenance_polity_id", "")),
+				"toponym": str(seed_row.get("provenance_toponym", "")),
+				"era_tick": int(seed_row.get("era_tick", 0)),
+				"event_type": str(seed_row.get("event_type", "")),
+				"source_event_id": str(seed_row.get("source_event_id", "")),
+			}
+		else:
+			size_hint = _DUNGEON_SIZE_KEYS[_weighted_pick(_DUNGEON_SIZE_WEIGHTS, prng)]
+			dtype = _synth_dungeon_type(owner_pid, by_id, prng)
+			dname = NameAssembler.ruin_name(NameBankLoader.bank_for(owner_cid), size_hint, "", prng, used_names, owner_cid)
+		if dtype.is_empty():
+			dtype = "tomb"
 		if dname.is_empty():
 			dname = "Unknown Dungeon"
+		if prov.is_empty():
+			prov = {"culture_id": owner_cid, "polity_id": "", "toponym": "", "era_tick": 0, "event_type": context, "source_event_id": ""}
+
+		# Nominal dungeon LEVEL (own axis) + size→floors. entrance_floor_index=1 (top entry:
+		# entrance_tier is the entry level; deeper floors harden via the V-shape, clamp 6).
+		var level := _weighted_pick(_DUNGEON_LEVEL_WEIGHTS, prng) + 1
+		var floors := int(_DUNGEON_FLOORS.get(size_hint, 2))
+		var dd := JSON.stringify({
+			"spec": {
+				"kind": dtype, "tier": level, "size": size_hint,
+				"floors": floors, "entrance_floor_index": 1,
+			},
+			"size_hint": size_hint,
+			"dungeon_type": dtype,
+			"dungeon_level": level,
+			"context": context,
+			"provenance": prov,
+		})
 		if not db.query_with_bindings("""
 			INSERT INTO dungeon_entrances (id, campaign_id, map_id, hex_q, hex_r, name, dungeon_data)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, child.x, child.y, dname, dd]):
-			result["errors"].append("dungeon insert failed at (%d,%d)" % [sq, sr])
+		""", [CampaignRepository.generate_id(), campaign_id, region_map_id, hex.x, hex.y, dname, dd]):
+			result["errors"].append("dungeon insert failed at (%d,%d)" % [hex.x, hex.y])
 			return false
 		placed += 1
 	result["dungeon_count"] = placed
 	return true
+
+
+## In-window 24-mile setting_hexes context: "sq,sr" → {owner, territory, biome, elevation}.
+func _window_hex_context(campaign_id: String, in_window: Dictionary) -> Dictionary:
+	var out := {}
+	CampaignRepository.db.query_with_bindings(
+		"SELECT q, r, owner_polity_id, territory_class, biome, elevation FROM setting_hexes WHERE campaign_id = ?",
+		[campaign_id])
+	for h in CampaignRepository.db.query_result:
+		var k := "%d,%d" % [int(h["q"]), int(h["r"])]
+		if in_window.has(k):
+			out[k] = {
+				"owner": str(h.get("owner_polity_id", "")),
+				"territory": str(h.get("territory_class", "wilderness")),
+				"biome": str(h.get("biome", "")),
+				"elevation": str(h.get("elevation", "")),
+			}
+	return out
+
+
+## The HOME sovereign (the realm that owns the player's start region): the start city's
+## parent owner walked to its sovereign root, else the most-common owner among in-window
+## parents (the realm dominating the window). "" if the window is ownerless wilderness.
+func _home_sovereign_pid(campaign_id: String, hex_ctx: Dictionary, by_id: Dictionary) -> String:
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT start_settlement_id FROM campaigns WHERE id = ?", [campaign_id])
+	var chosen := str(db.query_result[0].get("start_settlement_id", "")) if not db.query_result.is_empty() else ""
+	var owner := ""
+	if not chosen.is_empty():
+		db.query_with_bindings("SELECT hex_q, hex_r FROM setting_settlements WHERE campaign_id = ? AND id = ?", [campaign_id, chosen])
+		if not db.query_result.is_empty():
+			var c = hex_ctx.get("%d,%d" % [int(db.query_result[0]["hex_q"]), int(db.query_result[0]["hex_r"])], null)
+			if c != null:
+				owner = str(c["owner"])
+	if owner.is_empty():
+		var counts := {}
+		for k in hex_ctx:
+			var o := str(hex_ctx[k]["owner"])
+			if not o.is_empty():
+				counts[o] = int(counts.get(o, 0)) + 1
+		var bn := 0
+		for o in counts:
+			if int(counts[o]) > bn:
+				bn = int(counts[o])
+				owner = o
+	return _root_sovereign_pid(owner, by_id) if not owner.is_empty() else ""
+
+
+## In-window setting_ruin_seeds grouped by their 24-mile parent "sq,sr" → [rows].
+func _ruin_seeds_by_parent(campaign_id: String, in_window: Dictionary) -> Dictionary:
+	var out := {}
+	for s in SettingRepository.list_ruin_seeds(campaign_id):
+		var k := "%d,%d" % [int(s["hex_q"]), int(s["hex_r"])]
+		if in_window.has(k):
+			if not out.has(k):
+				out[k] = []
+			(out[k] as Array).append(s)
+	return out
+
+
+## "Dramatic terrain" score for dungeon siting (§9.3): mountains/swamp 3 > jungle 2 >
+## woods/hills 1 > else 0. Mirrors InfrastructureGenerator._drama at 6-mile.
+func _dungeon_drama(biome: String, elevation: String) -> int:
+	if elevation == "mountains":
+		return 3
+	if biome == "swamp":
+		return 3
+	if biome == "jungle":
+		return 2
+	if biome == "woods":
+		return 1
+	if elevation == "hills":
+		return 1
+	return 0
+
+
+## Sort a placement pool by drama DESC, then canonical (r,q) — deterministic.
+func _sort_drama(pool: Array) -> void:
+	pool.sort_custom(func(a, b):
+		if int(a["drama"]) != int(b["drama"]):
+			return int(a["drama"]) > int(b["drama"])
+		var ka: Vector2i = a["key"]
+		var kb: Vector2i = b["key"]
+		return ka.y < kb.y or (ka.y == kb.y and ka.x < kb.x))
+
+
+## Take up to `limit` unused entries from `pool` into `picks` (capped at the budget `n`).
+func _take_from_pool(pool: Array, used: Dictionary, limit: int, context: String, picks: Array, n: int) -> void:
+	var taken := 0
+	for e in pool:
+		if picks.size() >= n or taken >= limit:
+			break
+		var k := str(e["k"])
+		if used.has(k):
+			continue
+		used[k] = true
+		picks.append({"parent": e["key"], "hex": null, "context": context})
+		taken += 1
+
+
+## Weighted index pick over `weights` using a seeded RNG (deterministic).
+func _weighted_pick(weights: Array, rng: RandomNumberGenerator) -> int:
+	var total := 0.0
+	for w in weights:
+		total += float(w)
+	if total <= 0.0:
+		return 0
+	var roll := rng.randf() * total
+	var acc := 0.0
+	for i in weights.size():
+		acc += float(weights[i])
+		if roll < acc:
+			return i
+	return weights.size() - 1
+
+
+## The (plx,ply)-preferred LAND carrier child of a parent (the dungeon convention is 2,2);
+## falls back to the first land child, or _INVALID_HEX if the whole parent is water.
+func _land_child_pref(parent: Vector2i, plx: int, ply: int, land: Dictionary) -> Vector2i:
+	var c := _carrier_child(parent.x, parent.y, plx, ply)
+	if land.has("%d,%d" % [c.x, c.y]):
+		return c
+	var poff := WorldGrid.axial_to_offset(parent)
+	for ly in range(4):
+		for lx in range(4):
+			var ch := WorldGrid.offset_to_axial(poff.x * 4 + lx, poff.y * 4 + ly)
+			if land.has("%d,%d" % [ch.x, ch.y]):
+				return ch
+	return _INVALID_HEX
+
+
+## Provenance flavor for a synthesized dungeon, from the holding polity's race (AX3
+## taxonomy): elf → abandoned elf city, dwarf → dragon-captured vault, else a flavor roll
+## (tombs / catacombs / chaos temples / warrens). Beastman-specific skew is a later pass.
+func _synth_dungeon_type(owner_pid: String, by_id: Dictionary, rng: RandomNumberGenerator) -> String:
+	var rc := str(by_id.get(owner_pid, {}).get("ruler_class", "")) if by_id.has(owner_pid) else ""
+	var race := _race_for_ruler_class(rc)
+	if race == "elf":
+		return "sunken_city"
+	if race == "dwarf":
+		return "dwarven_vault"
+	return _DUNGEON_FLAVOR[rng.randi() % _DUNGEON_FLAVOR.size()]
 
 
 ## M2b-3b: project in-window setting_poi_seeds onto carrier children (3,3) as pois,
