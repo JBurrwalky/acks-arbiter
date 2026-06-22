@@ -37,6 +37,7 @@ func run_all_tests() -> void:
 	# Group 1: Hex landmark icon mapping
 	test_settlement_class_band_mapping()
 	test_stronghold_shp_band_mapping()
+	test_stronghold_value_band_mapping()
 	test_landmark_icon_paths_resolve()
 	test_landmark_icons_query_skips_destroyed_strongholds()
 	# Group 2: Disease loop
@@ -200,7 +201,7 @@ func test_settlement_class_band_mapping() -> void:
 
 
 func test_stronghold_shp_band_mapping() -> void:
-	# Cutoffs at 20,000 and 100,000 SHP per O-9C-10.
+	# Cutoffs at 20,000 and 100,000 SHP per O-9C-10 (retained for SHP-based callers).
 	check(HexMapLandmarkIcons.stronghold_shp_band(100) == "tower", "100 shp → tower")
 	check(HexMapLandmarkIcons.stronghold_shp_band(20000) == "tower", "20000 shp → tower (boundary)")
 	check(HexMapLandmarkIcons.stronghold_shp_band(20001) == "keep", "20001 shp → keep")
@@ -208,14 +209,26 @@ func test_stronghold_shp_band_mapping() -> void:
 	check(HexMapLandmarkIcons.stronghold_shp_band(100001) == "fortress", "100001 shp → fortress")
 
 
+func test_stronghold_value_band_mapping() -> void:
+	# Map icons band by gp VALUE (cp_value ÷ 100), since materialized strongholds have shp=0
+	# but a real cp_value. Same 20k/100k cutoffs, in gp. (Barony ~16k tower / County ~64-80k
+	# keep / Duke+ >100k fortress.)
+	check(HexMapLandmarkIcons.stronghold_value_band(16000) == "tower", "16,000gp (Barony) → tower")
+	check(HexMapLandmarkIcons.stronghold_value_band(20000) == "tower", "20,000gp → tower (boundary)")
+	check(HexMapLandmarkIcons.stronghold_value_band(20001) == "keep", "20,001gp → keep")
+	check(HexMapLandmarkIcons.stronghold_value_band(72000) == "keep", "72,000gp (County) → keep")
+	check(HexMapLandmarkIcons.stronghold_value_band(100000) == "keep", "100,000gp → keep (boundary)")
+	check(HexMapLandmarkIcons.stronghold_value_band(120000) == "fortress", "120,000gp (Duke) → fortress")
+
+
 func test_landmark_icon_paths_resolve() -> void:
 	# Verify all six SVG asset paths exist on disk.
 	for class_idx in [1, 3, 5]:
 		var path: String = HexMapLandmarkIcons.icon_path_for_settlement(class_idx)
 		check(ResourceLoader.exists(path), "settlement icon %s exists for class %d" % [path, class_idx])
-	for shp in [10000, 50000, 200000]:
-		var path: String = HexMapLandmarkIcons.icon_path_for_stronghold(shp)
-		check(ResourceLoader.exists(path), "stronghold icon %s exists for shp %d" % [path, shp])
+	for value_gp in [10000, 50000, 200000]:  # tower / keep / fortress bands
+		var path: String = HexMapLandmarkIcons.icon_path_for_stronghold_by_value(value_gp)
+		check(ResourceLoader.exists(path), "stronghold icon %s exists for value %dgp" % [path, value_gp])
 
 
 func test_landmark_icons_query_skips_destroyed_strongholds() -> void:

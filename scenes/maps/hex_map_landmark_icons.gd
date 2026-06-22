@@ -12,10 +12,13 @@ extends Node2D
 ##     1-2 (city)   → settlement_mc_ii_i.svg
 ##     3-4 (town)   → settlement_mc_iv_iii.svg
 ##     5-6 (hamlet) → settlement_mc_vi_v.svg
-##   Stronghold shp band → asset (per O-9C-10 2026-05-09):
-##     ≤ 20,000          → stronghold_1k_20k_shp.svg (tower)
-##     20,001 – 100,000  → stronghold_21k_100k_shp.svg (keep)
-##     > 100,000         → stronghold_100k_plus_shp.svg (fortress)
+##   Stronghold VALUE band → asset (gp = cp_value ÷ 100; bands the original
+##   O-9C-10 thresholds in gp). Banding by value, not shp, because materialized
+##   NPC strongholds carry shp = 0 — so shp put every keep/fortress in the tower
+##   band; cp_value tiers correctly (Barony ~16k / County ~64-80k / Duke+ >100k):
+##     ≤ 20,000 gp        → stronghold_1k_20k_shp.svg (tower)
+##     20,001 – 100,000   → stronghold_21k_100k_shp.svg (keep)
+##     > 100,000          → stronghold_100k_plus_shp.svg (fortress)
 ##
 ## Placement: centered on hex when one is present; side-by-side with ~5px gap
 ## (settlement on left, stronghold on right) when both are present.
@@ -25,9 +28,10 @@ extends Node2D
 ##     Clears existing icons and rebuilds from the DB.
 ##
 ##   settlement_class_band(market_class) -> String
-##   stronghold_shp_band(shp) -> String
+##   stronghold_value_band(value_gp) -> String     (icon banding)
+##   stronghold_shp_band(shp) -> String            (retained for SHP-based callers)
 ##   icon_path_for_settlement(market_class) -> String
-##   icon_path_for_stronghold(shp) -> String
+##   icon_path_for_stronghold_by_value(value_gp) -> String
 
 const ICON_SIZE_PX := 24
 const SIDE_BY_SIDE_GAP_PX := 5
@@ -44,8 +48,14 @@ const STRONGHOLD_ICON_BY_BAND := {
 	"fortress": "res://assets/icons/hexmap_icons/stronghold_100k_plus_shp.svg",
 }
 
+# SHP bands — retained for SHP-based callers (e.g. DomainStocker.structure_type_for_shp,
+# which sizes player/NPC-built strongholds by their real structural HP).
 const STRONGHOLD_SHP_TOWER_MAX := 20_000
 const STRONGHOLD_SHP_KEEP_MAX := 100_000
+# VALUE (gp) bands — what the map icons use, since materialized strongholds carry shp = 0
+# but a populated cp_value. Same thresholds, in gp.
+const STRONGHOLD_GP_TOWER_MAX := 20_000
+const STRONGHOLD_GP_KEEP_MAX := 100_000
 
 const ICON_TINT := Color(0.15, 0.10, 0.08, 1.0)  # dark sepia, readable on terrain colors
 
@@ -66,8 +76,18 @@ static func settlement_class_band(market_class: int) -> String:
 	return "vi_v"       # hamlet (Class V-VI)
 
 
-## Static helper: stronghold shp → band key.
-## Cutoffs at 20,000 and 100,000 SHP per O-9C-10 confirmation.
+## Static helper: stronghold VALUE (gp) → band key. The map-icon banding (cp_value ÷ 100),
+## since materialized strongholds have shp = 0 but a real cp_value.
+static func stronghold_value_band(value_gp: int) -> String:
+	if value_gp > STRONGHOLD_GP_KEEP_MAX:
+		return "fortress"
+	if value_gp > STRONGHOLD_GP_TOWER_MAX:
+		return "keep"
+	return "tower"
+
+
+## Static helper: stronghold shp → band key. Retained for SHP-based callers (DomainStocker);
+## NOT used for map icons (see stronghold_value_band). Cutoffs per O-9C-10.
 static func stronghold_shp_band(shp: int) -> String:
 	if shp > STRONGHOLD_SHP_KEEP_MAX:
 		return "fortress"
@@ -80,8 +100,8 @@ static func icon_path_for_settlement(market_class: int) -> String:
 	return String(SETTLEMENT_ICON_BY_BAND.get(settlement_class_band(market_class), ""))
 
 
-static func icon_path_for_stronghold(shp: int) -> String:
-	return String(STRONGHOLD_ICON_BY_BAND.get(stronghold_shp_band(shp), ""))
+static func icon_path_for_stronghold_by_value(value_gp: int) -> String:
+	return String(STRONGHOLD_ICON_BY_BAND.get(stronghold_value_band(value_gp), ""))
 
 
 ## Clear and rebuild all landmark icons for the given map.
@@ -107,10 +127,9 @@ func refresh(map_id: String, hex_to_pixel: Callable, fog_check: Callable = Calla
 	for st in strongholds:
 		var coord := Vector2i(int(st.get("location_hex_q", 0)), int(st.get("location_hex_r", 0)))
 		var entry: Dictionary = by_hex.get(coord, {})
-		# If multiple strongholds on one hex, prefer the largest (highest shp).
+		# If multiple strongholds on one hex, prefer the largest (highest cp_value).
 		if entry.has("stronghold"):
-			var existing_shp: int = int(entry["stronghold"].get("shp", 0))
-			if int(st.get("shp", 0)) <= existing_shp:
+			if int(st.get("cp_value", 0)) <= int(entry["stronghold"].get("cp_value", 0)):
 				continue
 		entry["stronghold"] = st
 		by_hex[coord] = entry
@@ -125,12 +144,12 @@ func refresh(map_id: String, hex_to_pixel: Callable, fog_check: Callable = Calla
 			# Side-by-side: settlement on left, stronghold on right.
 			_place_settlement(int(entry["settlement"].get("market_class", 6)),
 				center + Vector2(-SIDE_BY_SIDE_HALF_OFFSET_PX, 0.0))
-			_place_stronghold(int(entry["stronghold"].get("shp", 0)),
+			_place_stronghold(_stronghold_value_gp(entry["stronghold"]),
 				center + Vector2(SIDE_BY_SIDE_HALF_OFFSET_PX, 0.0))
 		elif has_s:
 			_place_settlement(int(entry["settlement"].get("market_class", 6)), center)
 		elif has_h:
-			_place_stronghold(int(entry["stronghold"].get("shp", 0)), center)
+			_place_stronghold(_stronghold_value_gp(entry["stronghold"]), center)
 
 
 # ---------------------------------------------------------------------------
@@ -151,8 +170,13 @@ func _place_settlement(market_class: int, pos: Vector2) -> void:
 	_place_icon(path, pos)
 
 
-func _place_stronghold(shp: int, pos: Vector2) -> void:
-	var path: String = icon_path_for_stronghold(shp)
+## Stronghold gp value for icon banding = cp_value (copper) ÷ 100.
+func _stronghold_value_gp(stronghold: Dictionary) -> int:
+	return int(stronghold.get("cp_value", 0)) / 100
+
+
+func _place_stronghold(value_gp: int, pos: Vector2) -> void:
+	var path: String = icon_path_for_stronghold_by_value(value_gp)
 	if path.is_empty():
 		return
 	_place_icon(path, pos)
