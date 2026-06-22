@@ -448,6 +448,10 @@ func test_content_placed(cid: String) -> void:
 	if nspoi > 0:
 		check(_scalar("SELECT COUNT(*) AS n FROM pois p WHERE p.map_id = ? AND p.poi_type = 'stronghold' AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.location_map_id = p.map_id AND s.location_hex_q = p.hex_q AND s.location_hex_r = p.hex_r)", [rid]) == 0,
 			"every stronghold POI sits on a real stronghold hex")
+	# Regression (Jedidiah 2026-06-21): no watchtower (Stronghold POI) ever sits on a water
+	# hex — the land-only domain_hex distribution stops sub-fiefs materializing on the sea.
+	check(_scalar("SELECT COUNT(*) AS n FROM pois p JOIN hex_cells h ON h.map_id = p.map_id AND h.q = p.hex_q AND h.r = p.hex_r WHERE p.map_id = ? AND p.poi_type = 'stronghold' AND h.water != ''", [rid]) == 0,
+		"no stronghold POI (watchtower) sits on a water hex")
 
 	# Forts (setting_fortifications → strongholds; cp_value = value×100; completed). M4-1b
 	# adds one stronghold per sub-fief (Marquis/Baron) + one per gov that lacked one, also
@@ -472,7 +476,11 @@ func test_domain_hexes_materialized(cid: String) -> void:
 	var ndh := int(_mat_result.get("domain_hex_count", -1))
 	check(ndh == _count("domain_hexes", "map_id", rid), "domain_hex_count matches domain_hexes on the region map")
 	check(ndh > 0, "≥1 domain_hex created (%d)" % ndh)
-	check(ndh % 16 == 0, "domain_hexes come in full 24-mile blocks of 16 (%d)" % ndh)
+	# Land-only (Jedidiah 2026-06-21): a 24-mile block contributes its LAND children only —
+	# ocean/lake children get no domain_hex row (no population, no sea Baronies/watchtowers).
+	# So domain_hexes per block is ≤ 16, and NO domain_hex ever sits on a water hex.
+	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes d JOIN hex_cells h ON h.map_id = d.map_id AND h.q = d.hex_q AND h.r = d.hex_r WHERE d.map_id = ? AND h.water != ''", [rid]) == 0,
+		"no domain_hex sits on a water hex (land-only distribution)")
 	# domain_id resolves to a campaign domain.
 	check(_scalar("SELECT COUNT(*) AS n FROM domain_hexes dh WHERE dh.map_id = ? AND dh.domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)", [rid, cid]) == 0,
 		"every domain_hex.domain_id resolves to a domain")

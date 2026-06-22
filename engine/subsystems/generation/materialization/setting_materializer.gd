@@ -832,6 +832,19 @@ func _materialize_forts(campaign_id: String, region_map_id: String, ctx: Diction
 	return true
 
 
+## Set of water (ocean/lake) 6-mile hexes on [param region_map_id], keyed "q,r". Any
+## materialization that distributes population or claims land across a parent's children
+## must consult this so domains/strongholds never land on open water (you don't own the
+## sea). hex_cells terrain is materialized by M2a before any M2b/M4 pass runs.
+func _region_water_set(region_map_id: String) -> Dictionary:
+	var water := {}
+	CampaignRepository.db.query_with_bindings(
+		"SELECT q, r FROM hex_cells WHERE map_id = ? AND water != ''", [region_map_id])
+	for wr in CampaignRepository.db.query_result:
+		water["%d,%d" % [int(wr["q"]), int(wr["r"])]] = true
+	return water
+
+
 ## M2b-3c: give each in-window LOCATED domain its 6-mile territory. For every owned
 ## in-window 24-mile hex, all 16 of its children become domain_hexes of the domain
 ## governing that hex — the leaf located on it (families>0) if the polity is laddered,
@@ -850,6 +863,8 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		return true
 	var db = CampaignRepository.db
 	var crown_by_pid: Dictionary = ctx.get("crown_by_pid", {})
+	# Region-map water set, so population/domains never land on open water (no sea Baronies).
+	var water_by_hex := _region_water_set(region_map_id)
 	var placed := 0
 	for key in in_window:
 		var parts := str(key).split(",")
@@ -866,12 +881,7 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		if owner.is_empty() or owner == "0":
 			continue  # unowned populated land → M2b-4 pocket realms
 		var lv := clampi(int(db.query_result[0].get("land_value", 5)), 3, 9)
-		# M4-1: distribute the 24-mile hex's population across its 16 children, CONSERVED
-		# (the 16 children sum to population_band). Uniform for now (weighting by
-		# land_value / settlement presence is an M4-2 refinement); deterministic order.
 		var hex_pop := maxi(0, int(db.query_result[0].get("population_band", 0)))
-		var fam_base := hex_pop / 16
-		var fam_rem := hex_pop % 16
 
 		# Governing domain: the located leaf on this hex; else the owner's crown ONLY if
 		# the crown is itself located (else leave the hex unclaimed — never bind a located
@@ -891,19 +901,32 @@ func _materialize_domain_hexes(campaign_id: String, region_map_id: String, ctx: 
 		if gov == null:
 			continue
 
+		# M4-1: distribute the 24-mile hex's population across its LAND 6-mile children only —
+		# ocean/lake children are open water, so they get NO domain_hex row at all (you don't
+		# own the open sea; this stops sub-fiefs/watchtowers from materializing on water and
+		# keeps domain_hexes a clean land-only set for downstream systems). CONSERVED: the land
+		# children sum to population_band. Uniform for now (land_value/settlement weighting is
+		# an M4-2 refinement); deterministic offset order.
 		var poff := WorldGrid.axial_to_offset(Vector2i(hq, hr))
-		var child_idx := 0
+		var land_children: Array = []
 		for cx in 4:
 			for cy in 4:
 				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
-				var fam := fam_base + (1 if child_idx < fam_rem else 0)
-				child_idx += 1
-				if not db.query_with_bindings(
-					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value, families) VALUES (?, ?, ?, ?, ?, ?, ?)",
-					[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv, fam]):
-					result["errors"].append("domain_hex insert failed at (%d,%d)" % [ch.x, ch.y])
-					return false
-				placed += 1
+				if not water_by_hex.has("%d,%d" % [ch.x, ch.y]):
+					land_children.append(ch)
+		if land_children.is_empty():
+			continue  # an all-water owned hex (open sea) carries no population or domains
+		var fam_base := hex_pop / land_children.size()
+		var fam_rem := hex_pop % land_children.size()
+		for li in land_children.size():
+			var ch: Vector2i = land_children[li]
+			var fam := fam_base + (1 if li < fam_rem else 0)
+			if not db.query_with_bindings(
+				"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value, families) VALUES (?, ?, ?, ?, ?, ?, ?)",
+				[CampaignRepository.generate_id(), gov, region_map_id, ch.x, ch.y, lv, fam]):
+				result["errors"].append("domain_hex insert failed at (%d,%d)" % [ch.x, ch.y])
+				return false
+			placed += 1
 	result["domain_hex_count"] = placed
 	return true
 
@@ -1680,6 +1703,7 @@ func _dominant_key(json_str: String) -> String:
 func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_seed: int,
 		cluster: Array, orphans: Dictionary, fallen_by_hex: Dictionary) -> bool:
 	var db = CampaignRepository.db
+	var water_by_hex := _region_water_set(region_map_id)  # never claim open water
 	var total_fam := 0
 	var seat_key = cluster[0]
 	var seat_pop := -1
@@ -1744,6 +1768,8 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 		for cx in 4:
 			for cy in 4:
 				var ch := WorldGrid.offset_to_axial(poff.x * 4 + cx, poff.y * 4 + cy)
+				if water_by_hex.has("%d,%d" % [ch.x, ch.y]):
+					continue  # open water — not part of the pocket realm's land
 				if not db.query_with_bindings(
 					"INSERT OR IGNORE INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value) VALUES (?, ?, ?, ?, ?, ?)",
 					[CampaignRepository.generate_id(), domain_id, region_map_id, ch.x, ch.y, int(o["lv"])]):
