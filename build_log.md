@@ -36325,3 +36325,23 @@ on-tick dispatch.
 - Minor (not a bug): a continent-less small world still gets the generic "the Uncharted Lands" name (the world-name fallback). Could later fall back to the largest land-region name instead; left as-is since not flagged.
 - Tribute chains still DEFERRED.
 **Next session should:** M3-c (the Notebook World-Map tab) is the remaining M3-b/c item; then M4 calibration dials / M5. Re-confirm the small-world fix visually on a fresh generation if convenient.
+
+
+## Session 2026-06-22 — M3-c: Notebook World Map tab
+
+**Task:** Build the last M3-b/c item — a Notebook tab showing the 24-mile strategic political map of the generated world.
+**Model used:** Opus 4.8 (1M).
+**Completed:**
+- `scenes/ui/notebook/tab_pages/world_map_tab_page.gd` (new) — extends `notebook_tab_page`; reuses the campaign-creation review's `PoliticalMapView` widget with the same bind sequence (`set_polity_meta` → `bind` → `set_settlements` → `set_rivers`), reading the frozen `setting_*` tables (`list_polities`/`list_hexes`/`list_replay_palette`/`list_settlements`/`list_river_edges`) via `GameState.campaign_id`. Adds a header (world name · realm count) + a ranked-realm legend (color swatch + name, capped at 14 with a "+N more" line). Built-in hover tooltips carry realm/culture/population. Only for `campaign_origin='generated'`; a fixture campaign (no `setting_*`) gets an empty state.
+- Registered in `notebook.gd` `TAB_PAGE_SCRIPTS["world_map"]` + `notebook_tab_strip.gd` `TAB_ORDER` (secondary/outermost column, after Quests).
+**Decisions made:**
+- Reuse `PoliticalMapView` verbatim rather than fork it — the review screen already binds the same `setting_*` data; the tab is the same widget in a different host. Political mode (the widget default); a mode toggle (Biome/Elevation/Territory/Culture) is a possible follow-up but not needed for the strategic view.
+- `TAB_ID` const is NOT redeclared in the subclass (it's a parent const; GDScript forbids re-declaring it — the base's "subclasses must override" comment is stale; tab_id comes from the registration dict, not the page).
+**Interfaces defined or changed:** New notebook tab id `world_map`. No engine/data changes.
+**Database changes:** None.
+**Tests added/updated:** None new (pure scene-script UI; the suite doesn't load tab pages). `Notebook` / `CharacterTab` / `JournalTab` suites pass (the registration didn't break notebook instantiation). Suite **462/18**, net-zero.
+**MCP verification:** ran the game, set `GameState.campaign_id` to the 9-realm generated campaign, instantiated the tab on a top CanvasLayer, screenshotted — the political map renders correctly: 9 color-coded realms, ocean, unclaimed land, gold city markers, rivers, the header, and the full ranked legend. (The header showed "w" only because that campaign predates the world-name fix; a fresh world shows its continent name.)
+**Known issues:**
+- Mode toggle (Biome/Elevation/Territory/Culture views) not included — political-only for now; easy follow-up if wanted.
+- Tribute chains still DEFERRED.
+**Next session should:** M3-b/c is now COMPLETE (world name, start-city picker, world-map tab). Remaining materialization work: the M4 calibration dials (6-mile dungeon/POI density re-budget, `faction_stronghold` archetype, clanhold per-race intermingling) and/or M5 (live off-camera realm sim). Tribute decision still parked.
