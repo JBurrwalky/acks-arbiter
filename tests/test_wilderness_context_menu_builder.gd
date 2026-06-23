@@ -56,16 +56,16 @@ func _make_map_with_terrain(coord: Vector2i, terrain: HexTerrainData) -> HexMapD
 
 func test_returns_expected_options_including_cancel() -> void:
 	# 8 actions (move_here, explore, build_stronghold, place_loot_cache,
-	# visit_loot_cache, survey, search_lair, hunt) + cancel = 9 entries.
+	# visit_loot_cache, survey, search_lair, hunt) + get_hex_info (dev) + cancel = 10.
 	var options := _build()
-	check(options.size() == 9, "expected 9 options (8 actions + cancel), got %d" % options.size())
+	check(options.size() == 10, "expected 10 options (8 actions + dev info + cancel), got %d" % options.size())
 
 
 func test_all_expected_ids_present() -> void:
 	var options := _build()
 	var expected := ["move_here", "explore", "build_stronghold",
 		"place_loot_cache", "visit_loot_cache", "survey", "search_lair",
-		"hunt", "cancel"]
+		"hunt", "get_hex_info", "cancel"]
 	var ids: Array = []
 	for opt in options:
 		ids.append(opt.get("id", ""))
@@ -97,10 +97,12 @@ func test_empty_active_party_disables_action_options() -> void:
 	var options: Array[Dictionary] = WildernessContextMenuBuilder.build_menu(
 		TARGET_HEX, "", null, null)
 	for opt in options:
-		if opt.get("id", "") == "cancel":
+		var oid := str(opt.get("id", ""))
+		# cancel + get_hex_info (a pure-read dev tool) are always enabled, party or not.
+		if oid == "cancel" or oid == "get_hex_info":
 			continue
 		check(not opt.get("enabled", true),
-			"option %s should be disabled without active party" % opt.get("id", ""))
+			"option %s should be disabled without active party" % oid)
 
 
 func test_cancel_remains_enabled_when_no_party() -> void:
@@ -151,9 +153,9 @@ func test_current_hex_menu_omits_move_here() -> void:
 		ids.append(opt.get("id", ""))
 	check(not ("move_here" in ids),
 		"move_here should be omitted on the party's current hex; got %s" % str(ids))
-	# Current-hex menu omits move_here, leaves 7 activities + cancel = 8.
-	check(options.size() == 8,
-		"current-hex menu should have 8 options (7 activities + cancel), got %d" % options.size())
+	# Current-hex menu omits move_here: 7 activities + get_hex_info (dev) + cancel = 9.
+	check(options.size() == 9,
+		"current-hex menu should have 9 options (7 activities + dev info + cancel), got %d" % options.size())
 
 
 func test_current_hex_menu_includes_place_loot_cache() -> void:

@@ -11,6 +11,7 @@ extends SessionState
 const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const EncounterDecisionScene := preload("res://scenes/ui/dialogs/encounter_decision_prompt.gd")
 const AbandonVehicleScene := preload("res://scenes/ui/dialogs/abandon_vehicle_prompt.gd")
+const HexInfoModalScene := preload("res://scenes/ui/dev/hex_info_modal.gd")
 
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
@@ -232,6 +233,13 @@ func _on_context_action(action_data: Dictionary) -> void:
 	if action_type == "" or action_type == "cancel":
 		return
 
+	# Get Hex Info (dev tool, Jedidiah 2026-06-23): a self-contained UI action — open a modal
+	# dump of all stored data for the hex. No travel, works on any hex (impassable included),
+	# so it returns BEFORE the passable-target / active-party resolution below.
+	if action_type == "wilderness_get_hex_info":
+		_show_hex_info(Vector2i(int(action_data.get("hex_q", 0)), int(action_data.get("hex_r", 0))))
+		return
+
 	# Enter Lair (gdd-lair-discovery.md §6.2). The dungeon-entry flow needs
 	# the Lair Generator's tactical layout, which is a stubbed future
 	# subsystem — surface the placeholder rather than a broken transition.
@@ -407,6 +415,25 @@ func _close_context_menu() -> void:
 	if is_instance_valid(parent):
 		parent.queue_free()
 	_context_menu = null
+
+
+## Dev tool (Jedidiah 2026-06-23): open the Get Hex Info modal for [param hex] — a scrollable
+## dump of every stored datum (terrain/ownership/realm/population/culture/settlement/dungeon/
+## POI/stronghold/lairs/setting/history/occupants). News up a fresh modal parented to the
+## viewport root (above the play map, survives state/HUD teardown); it queue_free()s on close.
+func _show_hex_info(hex: Vector2i) -> void:
+	if _runner == null:
+		return
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	var map_data: HexMapData = controller.get_map() if controller != null else null
+	var map_id: String = map_data.id if map_data != null else ""
+	var campaign_id: String = GameState.campaign_id if typeof(GameState) != TYPE_NIL else ""
+	if map_id.is_empty() or campaign_id.is_empty():
+		return
+	var sections: Array = HexInfoAssembler.assemble(campaign_id, map_id, hex.x, hex.y)
+	var modal := HexInfoModalScene.new()
+	modal.setup("Hex Info — (%d, %d)" % [hex.x, hex.y], sections)
+	(Engine.get_main_loop() as SceneTree).root.add_child(modal)
 
 
 func _activity_type_for_action(action_type: String) -> String:

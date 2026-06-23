@@ -169,6 +169,18 @@ static func build_menu(
 			lair_campaign_id, lair_map_id, target_hex, activity_enabled):
 		options.append(lair_option)
 
+	# Dev tooling (Jedidiah 2026-06-23): dump every stored datum for this hex. A pure read,
+	# always enabled (works on impassable/water/unowned hexes too). Sits at the very bottom,
+	# just above Cancel.
+	options.append({
+		"id": "get_hex_info",
+		"label": "Get Hex Info (dev)",
+		"enabled": true,
+		"tooltip": "Show every stored datum for this hex (developer tool).",
+		"category": "universal",
+		"action_data": _action(base_data, "wilderness_get_hex_info"),
+	})
+
 	options.append({
 		"id": "cancel",
 		"label": "Cancel",

@@ -570,6 +570,8 @@ extends Node
 @onready var _setting_materialization_tests = $SettingMaterializationTests
 # 2026-06-17 — WorldGrid offset-rectangle geometry (rectangle refactor)
 @onready var _world_grid_tests = $WorldGridTests
+# 2026-06-23 — Get Hex Info dev tool (HexInfoAssembler data layer)
+@onready var _hex_info_assembler_tests = $HexInfoAssemblerTests
 
 
 func _ready() -> void:
@@ -1150,7 +1152,9 @@ func run() -> void:
 			# 2026-06-16 — Setting→runtime materialization M0 (24-mile world map)
 			_setting_materialization_tests,
 			# 2026-06-17 — WorldGrid offset-rectangle geometry (rectangle refactor)
-			_world_grid_tests]:
+			_world_grid_tests,
+			# 2026-06-23 — Get Hex Info dev tool (HexInfoAssembler data layer)
+			_hex_info_assembler_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
