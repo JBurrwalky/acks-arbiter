@@ -310,11 +310,12 @@ func _on_map_loaded(_map_id: String) -> void:
 func _on_visibility_updated() -> void:
 	_map_data = _controller.get_map()
 	_refresh_fog_layer()
-	# Landmark icons are gated by fog (HIDDEN hexes skip their icons), so any
-	# fog change can expose previously-invisible settlements/strongholds.
-	# Without this refresh, a settlement on a hex revealed mid-session never
-	# gets its icon until the next map_loaded.
+	# Landmark icons + dungeon markers are gated by fog (HIDDEN hexes skip them), so any
+	# fog change can expose previously-invisible settlements/strongholds/DUNGEONS. Without
+	# these refreshes, a landmark on a hex revealed mid-session (or via the Override
+	# "Reveal All") never gets its icon until the next map_loaded.
 	_refresh_landmark_icons()
+	_refresh_dungeon_markers()
 
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
@@ -955,8 +956,13 @@ func _on_party_hex_changed(_party_id: String, _hex: Vector2i) -> void:
 
 
 
-## Places a "D" label marker on each revealed hex that has a dungeon entrance.
-## Clears old markers first. Called after map load and fog update.
+## Black skull-and-crossbones icon (Jedidiah 2026-06-23 — one marker for ALL dungeon kinds).
+const _DUNGEON_SKULL_ICON := "res://assets/icons/hexmap_icons/dungeon_skull.svg"
+
+## Places a black skull-and-crossbones on each REVEALED hex that has a dungeon entrance
+## (all kinds share the one marker). Mirrors the landmark-icon fog gate (skip HIDDEN), and
+## is refreshed on visibility updates (_on_visibility_updated), so the Override "Reveal All"
+## surfaces every dungeon's location. Clears old markers first.
 func _refresh_dungeon_markers() -> void:
 	for m in _dungeon_markers:
 		if is_instance_valid(m):
@@ -965,6 +971,7 @@ func _refresh_dungeon_markers() -> void:
 
 	if _map_data == null or _terrain_layer == null:
 		return
+	var tex: Texture2D = load(_DUNGEON_SKULL_ICON) if ResourceLoader.exists(_DUNGEON_SKULL_ICON) else null
 
 	var entrances := CampaignRepository.get_dungeon_entrances_for_map(_map_data.id)
 	for entrance in entrances:
@@ -979,12 +986,22 @@ func _refresh_dungeon_markers() -> void:
 		var godot_coord := HexMapController.axial_to_godot_map(coord)
 		var screen_pos := _terrain_layer.map_to_local(godot_coord)
 
-		var lbl := Label.new()
-		lbl.text = "D"
-		lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
-		lbl.position = screen_pos - Vector2(8.0, 12.0)
-		add_child(lbl)
-		_dungeon_markers.append(lbl)
+		var marker: CanvasItem
+		if tex != null:
+			var sprite := Sprite2D.new()
+			sprite.texture = tex
+			sprite.modulate = Color(0.0, 0.0, 0.0, 1.0)   # force pure black regardless of SVG import
+			sprite.position = screen_pos                  # Sprite2D centres on the hex
+			marker = sprite
+		else:
+			# Fallback to the legacy "D" label only if the icon asset is missing.
+			var lbl := Label.new()
+			lbl.text = "D"
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+			lbl.position = screen_pos - Vector2(8.0, 12.0)
+			marker = lbl
+		add_child(marker)
+		_dungeon_markers.append(marker)
 
 
 ## Phase 9C polish — refresh landmarks when a stronghold's status changes.
