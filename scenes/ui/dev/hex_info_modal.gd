@@ -25,10 +25,15 @@ func _ready() -> void:
 	_build()
 
 
+const _LABEL_COLOR := Color(0.30, 0.22, 0.12, 1.0)   # dark enough to read on the panel bg
+const _VALUE_COLOR := Color(0.08, 0.05, 0.02, 1.0)   # near-black for headers + values
+
+
 func _build() -> void:
-	# Dimming backdrop — clicking off the panel closes the modal.
+	# Light dimming backdrop — clicking off the panel closes the modal. Kept subtle (a dev
+	# panel, not a blocking dialog) so the map stays legible behind it.
 	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.0, 0.0, 0.0, 0.55)
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.25)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	backdrop.gui_input.connect(_on_backdrop_input)
@@ -45,7 +50,18 @@ func _build() -> void:
 	panel.offset_bottom = 0.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(panel)
-	UiSurfaceStyles.apply_framed_window_chrome(panel)
+	# OPAQUE, bright, flat vellum bg (the framed-window chrome uses an aged-parchment texture
+	# with draw_center=false — too dark/busy for a dense data dump). High text contrast wins.
+	var pstyle := StyleBoxFlat.new()
+	pstyle.bg_color = Color(0.93, 0.88, 0.78, 1.0)
+	pstyle.set_border_width_all(2)
+	pstyle.border_color = Color(0.36, 0.26, 0.15, 1.0)
+	pstyle.set_corner_radius_all(8)
+	pstyle.content_margin_left = 18.0
+	pstyle.content_margin_right = 18.0
+	pstyle.content_margin_top = 12.0
+	pstyle.content_margin_bottom = 12.0
+	panel.add_theme_stylebox_override("panel", pstyle)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 6)
@@ -57,7 +73,7 @@ func _build() -> void:
 	var title := Label.new()
 	title.text = _header
 	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+	title.add_theme_color_override("font_color", _VALUE_COLOR)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_bar.add_child(title)
 	var x_btn := Button.new()
@@ -82,7 +98,7 @@ func _build() -> void:
 		var sec_label := Label.new()
 		sec_label.text = "▸ " + str((sec as Dictionary).get("title", "?"))
 		sec_label.add_theme_font_size_override("font_size", 15)
-		sec_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+		sec_label.add_theme_color_override("font_color", _VALUE_COLOR)
 		body.add_child(_spacer(7))
 		body.add_child(sec_label)
 		for row in (sec as Dictionary).get("rows", []):
@@ -93,13 +109,13 @@ func _build() -> void:
 			lbl.text = str((row as Dictionary).get("label", ""))
 			lbl.custom_minimum_size = Vector2(210, 0)
 			lbl.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-			lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_SECONDARY_TEXT_COLOR)
+			lbl.add_theme_color_override("font_color", _LABEL_COLOR)
 			rh.add_child(lbl)
 			var val := Label.new()
 			val.text = str((row as Dictionary).get("value", ""))
 			val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			val.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+			val.add_theme_color_override("font_color", _VALUE_COLOR)
 			rh.add_child(val)
 			body.add_child(rh)
 
