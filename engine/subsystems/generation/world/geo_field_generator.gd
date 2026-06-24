@@ -125,7 +125,11 @@ static func _build_height(field: GeoField, campaign_seed: int, params) -> void:
 	var span := maxf(raw_max - raw_min, 0.000001)
 	var exponent: float = params.elevation_exponent()
 	for i in range(n):
-		field.surface[i] = pow((raw[i] - raw_min) / span, exponent)
+		# Clamp the normalized base to [0,1] before the curve. raw is float32 but
+		# raw_min/raw_max are the float64 extrema, so the minimum cell can round
+		# just below raw_min → a tiny-negative base → pow(neg, 1.5) = NaN. The
+		# clamp also absorbs any FBM excursion past the noise's nominal range.
+		field.surface[i] = pow(clampf((raw[i] - raw_min) / span, 0.0, 1.0), exponent)
 
 
 # ---------------------------------------------------------------------------
