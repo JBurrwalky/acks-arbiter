@@ -63,6 +63,8 @@ Layer 8: Validation & Review ──── mechanical checks, player parameter ad
 
 ## 4. Layer 1: Physical Geography
 
+> **⚠ REFACTOR APPROVED 2026-06-24 (Jedidiah) — pending implementation.** Layers 1 (geography) and 2 (climate) are being refactored from **hex-native** generation (one noise sample per 24-mile hex center; greedy vertex-walk rivers with no flow accumulation; per-hex climate) to a **continuous, non-hexagonal field** per [`gdd-continuous-geography.md`](gdd-continuous-geography.md): a coarse base raster (4×4 samples / 24-mile hex) bearing real hydrology (Priority-Flood + D8 + flow-accumulation + Strahler river order) and an orographic precipitation sweep, then normalized into per-hex tags by `tag_for_footprint` at any scale. The §4/§5 algorithms below remain the as-built record until that refactor lands. The output taxonomy and all Layer-3+ consumers are unchanged.
+
 ### 4.1 Heightmap Generation
 
 **Tool:** Godot's built-in `FastNoiseLite` class provides Simplex/Perlin noise with fractal octaves (fBm), cellular noise, and value noise. No external libraries needed.

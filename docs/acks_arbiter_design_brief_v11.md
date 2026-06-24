@@ -146,13 +146,15 @@ The game world is a nested spatial hierarchy. The party exists at one level at a
 
 | Level | Map Type | Grid Unit | Movement Model | Presentation Layer | Rules Context |
 |---|---|---|---|---|---|
-| Campaign | Hex grid (flat-top) | 24-mile hex | Cell-to-cell | 2D | Wilderness (strategic) |
-| Regional | Hex grid (flat-top) | 6-mile hex | Cell-to-cell | 2D | Wilderness (tactical) |
-| Local | Hex grid (flat-top) | 1.5-mile hex | Cell-to-cell | 2D | Wilderness / Domain |
+| Campaign | Hex grid (flat-top) | 24-mile hex | Cell-to-cell | 2D (strategic world map) | Wilderness (strategic) |
+| Regional | Hex grid (flat-top) | 6-mile hex | Cell-to-cell | 2D, or 3D heightmap (flag-gated) † | Wilderness (tactical) |
+| Local | Hex grid (flat-top) | 1.5-mile hex | Cell-to-cell | 2D, or 3D heightmap (flag-gated) † | Wilderness / Domain |
 | Sea Voyage | Hex grid (flat-top) | 24-mile or 6-mile hex | Cell-to-cell | 2D | Sea voyage |
 | Settlement (any layer) | Node graph (PoIs as nodes, edges weighted by block distance) | PoI node | Edge traversal | 2D panel + overview | Urban |
 | Dungeon / Interior | 3D voxel grid (diamond horizontal, integer level vertical) | 5' cube cell | Real-time tick simulator on voxel grid | 3D | Dungeon exploration |
 | Battle (temporary) | 3D voxel grid (diamond horizontal, integer level vertical) | 5' cube cell | Turn-based on voxel grid | 3D | Combat |
+
+† **Hex presentation (amended 2026-06-24, approved by Jedidiah):** the wilderness hex map renders 2D by default and as a true **3D heightmap** behind the `acks/rendering/wilderness_hex_mode` flag — the 24-mile map stays a 2D strategic overview; the 6-mile play surface (and finer) gets the 3D heightmap with the hex grid draped on top. See [`gdd-wilderness-hex-3d.md`](../generation/gdd-wilderness-hex-3d.md) (renderer) and [`gdd-continuous-geography.md`](../generation/gdd-continuous-geography.md) (the continuous field it renders). This amends the prior "2D-only" hex presentation.
 
 Hex scales are nested: a 24-mile hex contains 6-mile hexes, which contain 1.5-mile hexes. Settlements have arbitrary vertical layers (surface, upper levels, undercity levels) sharing the same coordinate system. Transition points link all layers.
 
@@ -180,7 +182,7 @@ All map types share a common abstract structure: id, name, type, grid config, re
 
 ### 6.1 Hex Maps
 
-Flat-top hexagonal grid presented as a 2D map layer. Terrain taxonomy from ACKS encounter tables, represented as layered tags per `gdd-terrain-system.md` (elevation + biome + water + civilization). Party token occupies a hex cell; movement crosses boundaries with terrain-based cost. Fog of war per-hex. Nested zoom supported across scales.
+Flat-top hexagonal grid. **Presentation (amended 2026-06-24):** 2D by default with a flag-gated true-3D heightmap path — the 24-mile map is a 2D strategic overview; the 6-mile play surface (and finer) renders as a 3D heightmap with the hex grid draped on top (`acks/rendering/wilderness_hex_mode`; [`gdd-wilderness-hex-3d.md`](../generation/gdd-wilderness-hex-3d.md)). Geography is generated as a continuous, non-hexagonal field (elevation + hydrology + climate) and normalized into the per-hex tags ([`gdd-continuous-geography.md`](../generation/gdd-continuous-geography.md)). Terrain taxonomy from ACKS encounter tables, represented as layered tags per `gdd-terrain-system.md` (elevation + biome + water + civilization). Party token occupies a hex cell; movement crosses boundaries with terrain-based cost. Fog of war per-hex. Nested zoom supported across scales.
 
 ### 6.2 Settlement Maps
 

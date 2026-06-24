@@ -70,6 +70,8 @@ Eager window **~1,280** (safe, proven-scale). Keep the **actively rendered** reg
 
 ## 4. Natural-Variation Algorithm
 
+> **⚠ SUPERSEDED 2026-06-24 (approved by Jedidiah) — pending implementation.** The three-pass, budget-bounded variation algorithm below is **replaced by field-sampling** per [`gdd-continuous-geography.md`](gdd-continuous-geography.md): rather than fabricating budgeted deviation over a flat-copied parent value, each 6-mile child samples the continuous geography field at its own location (`tag_for_footprint`), so foothills / forest patches / desert oases near rivers *emerge from the real field*. The "uniformity ↔ noise dial" (§4.5) becomes the field's detail-octave amplitude (one physically-meaningful parameter). The text below remains the as-built record until the refactor lands. Content placement (§5) and the rolling persisted frontier (§6) are unaffected.
+
 **Goal (Jedidiah):** do not plop 16 identical tiles because the parent is one type; mingle/dither/vary *smartly* and *naturally* — foothills, dense/light forest patches, grass/jungle oases in desert (especially near rivers) — while avoiding **both** too much uniformity **and** too much randomized noise. Dither polity boundaries and culture %s across the children too.
 
 The algorithm composes **three structured passes** over the `gdd-hex-subdivision.md §6` base, each physically motivated, **budget-bounded** (so it reads as variation, not noise) and **coherence-clustered** (so it clusters, not salt-and-pepper). All are deterministic, seeded per `gdd-hex-subdivision.md §6.2`.
