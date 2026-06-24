@@ -12,6 +12,7 @@ func run_all_tests() -> void:
 	test_hex_spacing()
 	test_convex_blob_is_straight_and_sized()
 	test_bent_arc_is_curved()
+	test_obb_overlap_sat()
 	test_empty_window_skips()
 	if not has_failures():
 		print("RegionLabelRenderer: all tests passed.")
@@ -60,10 +61,15 @@ func test_convex_blob_is_straight_and_sized() -> void:
 	for col in range(17):
 		for row in range(5):
 			pts.append(Vector2(col * 100.0, row * 150.0 - 300.0))
-	var pl: Dictionary = rl._layout("Gloomwood", pts)   # 9 chars
-	check(str(pl.get("mode", "")) == "straight", "a convex blob labels STRAIGHT (mode=%s)" % str(pl.get("mode", "")))
+	var cand: Dictionary = rl._build_candidate("Gloomwood", "(forest)", pts)   # 9 chars
+	check(str(cand.get("mode", "")) == "straight", "a convex blob labels STRAIGHT (mode=%s)" % str(cand.get("mode", "")))
 	# size_from_length = 1600/(0.62*9) ≈ 287, size_from_width = 600 → clamp to MAX_FONT 64.
-	check(int(pl.get("fs", 0)) == 64, "font size clamps to MAX_FONT for a big region + short name (%d)" % int(pl.get("fs", 0)))
+	check(int(cand.get("base_fs", 0)) == 64, "font size clamps to MAX_FONT for a big region + short name (%d)" % int(cand.get("base_fs", 0)))
+	# Finalize at base size → straight title + a subtitle line.
+	cand["fs"] = cand["base_fs"]
+	var pl: Dictionary = rl._finalize(cand)
+	check(str(pl.get("sub_text", "")) == "(forest)", "the type subtitle is carried through (%s)" % str(pl.get("sub_text", "")))
+	check(int(pl.get("sub_fs", 0)) < int(pl.get("fs", 0)), "the subtitle font is smaller than the title")
 
 
 func test_bent_arc_is_curved() -> void:
@@ -75,14 +81,30 @@ func test_bent_arc_is_curved() -> void:
 	for i in range(13):
 		var ang := deg_to_rad(float(i) * 12.0)
 		pts.append(Vector2(cos(ang), sin(ang)) * 400.0)
-	var pl: Dictionary = rl._layout("Aelvanar River", pts)   # 14 chars
-	check(str(pl.get("mode", "")) == "curved", "a bent arc labels CURVED (mode=%s)" % str(pl.get("mode", "")))
+	var cand: Dictionary = rl._build_candidate("Aelvanar River", "(river)", pts)   # 14 chars
+	check(str(cand.get("mode", "")) == "curved", "a bent arc labels CURVED (mode=%s)" % str(cand.get("mode", "")))
+	cand["fs"] = cand["base_fs"]
+	var pl: Dictionary = rl._finalize(cand)
 	var glyphs: Array = pl.get("glyphs", [])
 	check(glyphs.size() == "Aelvanar River".length(), "curved layout places one glyph per character (%d)" % glyphs.size())
-	# Each glyph carries a world origin + a tangent angle.
 	if glyphs.size() > 0:
 		check((glyphs[0] as Dictionary).has("origin") and (glyphs[0] as Dictionary).has("angle"),
 			"each curved glyph carries an origin + angle")
+	check(str(pl.get("sub_text", "")) == "(river)", "curved label also carries its type subtitle")
+
+
+func test_obb_overlap_sat() -> void:
+	# Oriented-bounding-box collision (the overlap declutter): two boxes sharing space overlap;
+	# two far apart don't; a rotation that separates them is detected.
+	var rl := RegionLabelRenderer.new()
+	var a := {"c": Vector2(0, 0), "half": Vector2(100, 20), "angle": 0.0}
+	var b_over := {"c": Vector2(40, 0), "half": Vector2(100, 20), "angle": 0.0}
+	var b_far := {"c": Vector2(500, 500), "half": Vector2(100, 20), "angle": 0.0}
+	check(rl._obb_overlap(a, b_over), "overlapping boxes are detected")
+	check(not rl._obb_overlap(a, b_far), "well-separated boxes do not collide")
+	# Same centres but one rotated 90° and both thin → still overlap (cross shape).
+	var b_rot := {"c": Vector2(0, 0), "half": Vector2(100, 20), "angle": PI / 2.0}
+	check(rl._obb_overlap(a, b_rot), "crossed thin boxes overlap at the centre")
 
 
 func test_empty_window_skips() -> void:
