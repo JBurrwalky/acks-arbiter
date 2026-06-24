@@ -2286,29 +2286,26 @@ const _MAX_FEEDER := 40
 ## Hard cap on Dijkstra pops per spur, so a pathological search can't stall materialization.
 const _FEEDER_POP_CAP := 4000
 
-## Local feeder roads (Jedidiah 2026-06-22 — "the road networks are underdeveloped").
-## Anchors = every in-window settlement_entrance + every located ruler seat. Each anchor
-## not already on the network is joined to it by the cheapest LAND path (water is
-## impassable, existing road hexes are near-free so spurs merge into trunks rather than
-## run parallel), processed in a deterministic order so the tree reproduces. Paths are
+## Local feeder roads (Jedidiah 2026-06-22; refined 2026-06-24). These are PAVED / hardened
+## roads, NOT every dirt trail or wagon track — so anchors = only Market Class V and HIGHER
+## settlements (market_class <= 5). Class VI hamlets and ruler-seat watchtower strongholds
+## are NOT roaded. Each anchor not already on the network is joined to it by the cheapest
+## LAND path (water is impassable, existing road hexes are near-free so spurs merge into
+## trunks rather than run parallel), deterministic order so the tree reproduces. Paths are
 ## hex-adjacency walks (they follow the terrain, unlike the trunk's cube-lerp), written as
 ## `roads` entities (purpose 'local') with their edges folded into the shared overlay map.
 func _feeder_roads(campaign_id: String, region_map_id: String, road_edges: Dictionary, network: Dictionary, land: Dictionary, result: Dictionary) -> int:
 	var db = CampaignRepository.db
-	# Anchors: settlements first (largest market = lowest class first), then ruler seats.
-	# Deterministic order → reproducible tree. Dedup by hex; keep only land hexes.
+	# Anchors: Class V+ settlements only (market_class <= 5), largest-market first for a
+	# deterministic, reproducible tree. Class VI hamlets + ruler-seat watchtowers are
+	# excluded — paved roads connect real towns, not every track. Dedup by hex; land only.
 	var anchors: Array = []
 	var seen := {}
 	db.query_with_bindings(
-		"SELECT hex_q AS q, hex_r AS r FROM settlement_entrances WHERE map_id = ? ORDER BY market_class ASC, hex_r ASC, hex_q ASC",
+		"SELECT hex_q AS q, hex_r AS r FROM settlement_entrances WHERE map_id = ? AND market_class <= 5 ORDER BY market_class ASC, hex_r ASC, hex_q ASC",
 		[region_map_id])
 	for s in db.query_result.duplicate(true):
 		_add_anchor(anchors, seen, int(s["q"]), int(s["r"]), land)
-	db.query_with_bindings(
-		"SELECT location_hex_q AS q, location_hex_r AS r FROM domains WHERE campaign_id = ? AND location_map_id = ? AND location_hex_q IS NOT NULL ORDER BY location_hex_r ASC, location_hex_q ASC, id ASC",
-		[campaign_id, region_map_id])
-	for d in db.query_result.duplicate(true):
-		_add_anchor(anchors, seen, int(d["q"]), int(d["r"]), land)
 	if anchors.is_empty():
 		return 0
 	# No trunk roads in-window → seed the network with the first (largest) anchor.

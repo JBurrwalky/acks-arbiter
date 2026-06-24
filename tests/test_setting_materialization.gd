@@ -857,14 +857,16 @@ func test_roads_rivers_materialized(cid: String) -> void:
 			"road overlays written for the region map")
 		check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND NOT EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r)", [rid]) == 0,
 			"road overlays sit on real region hex_cells")
-	# Feeder network (Jedidiah 2026-06-22 — develop the underdeveloped 6-mile roads).
-	# The dense feudal fill seats many settlements + sub-fief seats off the sparse trunk,
-	# so feeder roads must be produced, must stay on land, and must reach the towns.
-	check(nfd >= 1, "feeder roads were generated (the 6-mile local network)")
+	# Feeder network (Jedidiah 2026-06-24 — PAVED roads only): anchors are Class V+
+	# settlements (market_class <= 5). Class VI hamlets + ruler-seat watchtowers are NOT
+	# roaded — paved roads connect real towns, not every track.
 	check(_scalar("SELECT COUNT(*) AS n FROM hex_overlays ho WHERE ho.map_id = ? AND ho.overlay_type = 'road' AND EXISTS (SELECT 1 FROM hex_cells h WHERE h.map_id = ho.map_id AND h.q = ho.q AND h.r = ho.r AND h.water != '')", [rid]) == 0,
 		"no road overlay on a water hex (feeders route over land)")
-	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.map_id = ? AND NOT EXISTS (SELECT 1 FROM hex_overlays ho WHERE ho.map_id = se.map_id AND ho.q = se.hex_q AND ho.r = se.hex_r AND ho.overlay_type = 'road')", [rid]) == 0,
-		"every settlement sits on the road network (feeders connect the towns)")
+	# When a road network exists, every Class V+ town is on it (anchors are connected: the
+	# seed is fed by another town's spur). Class VI / watchtower hexes need NOT be on a road.
+	if nrd + nfd > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.map_id = ? AND se.market_class <= 5 AND NOT EXISTS (SELECT 1 FROM hex_overlays ho WHERE ho.map_id = se.map_id AND ho.q = se.hex_q AND ho.r = se.hex_r AND ho.overlay_type = 'road')", [rid]) == 0,
+			"every Class V+ settlement sits on the road network (paved roads connect the towns)")
 
 
 func test_start_position(cid: String) -> void:
