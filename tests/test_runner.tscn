@@ -482,6 +482,7 @@
 [ext_resource type="Script" path="res://tests/test_setting_materialization.gd" id="466_setting_materialization_tests"]
 [ext_resource type="Script" path="res://tests/test_world_grid.gd" id="467_world_grid_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_info_assembler.gd" id="468_hex_info_assembler_tests"]
+[ext_resource type="Script" path="res://tests/test_region_label_renderer.gd" id="469_region_label_renderer_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1928,3 +1929,6 @@ script = ExtResource("467_world_grid_tests")
 
 [node name="HexInfoAssemblerTests" type="Node" parent="."]
 script = ExtResource("468_hex_info_assembler_tests")
+
+[node name="RegionLabelRendererTests" type="Node" parent="."]
+script = ExtResource("469_region_label_renderer_tests")

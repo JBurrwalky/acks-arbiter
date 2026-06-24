@@ -572,6 +572,8 @@ extends Node
 @onready var _world_grid_tests = $WorldGridTests
 # 2026-06-23 — Get Hex Info dev tool (HexInfoAssembler data layer)
 @onready var _hex_info_assembler_tests = $HexInfoAssemblerTests
+# 2026-06-24 — Region labels on the 6-mile play map (RegionLabelRenderer math)
+@onready var _region_label_renderer_tests = $RegionLabelRendererTests
 
 
 func _ready() -> void:
@@ -1154,7 +1156,9 @@ func run() -> void:
 			# 2026-06-17 — WorldGrid offset-rectangle geometry (rectangle refactor)
 			_world_grid_tests,
 			# 2026-06-23 — Get Hex Info dev tool (HexInfoAssembler data layer)
-			_hex_info_assembler_tests]:
+			_hex_info_assembler_tests,
+			# 2026-06-24 — Region labels on the 6-mile play map (RegionLabelRenderer math)
+			_region_label_renderer_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

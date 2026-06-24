@@ -112,6 +112,7 @@ var _dungeon_markers: Array = []
 
 ## Phase 9C — settlement + stronghold landmark icons overlay.
 var _landmark_icons: HexMapLandmarkIcons = null
+var _region_labels: RegionLabelRenderer = null
 
 ## "Enter Dungeon" button shown when party is on a dungeon entrance hex.
 var _enter_dungeon_btn: Button
@@ -297,6 +298,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_refresh_terrain_layer()
 	_refresh_overlay_layer()
 	_refresh_fog_layer()
+	_refresh_region_labels()
 	_rebuild_party_tokens()
 	_compute_camera_limits()
 	center_on_hex(_map_data.party_hex)
@@ -1035,6 +1037,25 @@ func _refresh_landmark_icons() -> void:
 			return false
 		return _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN
 	_landmark_icons.refresh(_map_data.id, hex_to_pixel, fog_check)
+
+
+## Region name labels (Jedidiah 2026-06-24): bold black auto-sized labels for the named
+## setting_regions overlapping the play window — straight where they fit, curved where they
+## must bend. World-space child (pans/zooms with the map); recomputed on map load only
+## (regions are static). Always visible (cartographic), so it ignores fog updates.
+func _refresh_region_labels() -> void:
+	if _map_data == null or _terrain_layer == null:
+		return
+	if _region_labels == null:
+		_region_labels = RegionLabelRenderer.new()
+		# Add above the fog layer but below party tokens / landmark icons — labels are
+		# background cartography. (Inserted before tokens/icons in the map-load path.)
+		add_child(_region_labels)
+	var terrain_layer := _terrain_layer
+	var hex_to_pixel := func(coord: Vector2i) -> Vector2:
+		return terrain_layer.map_to_local(HexMapController.axial_to_godot_map(coord))
+	var campaign_id: String = GameState.campaign_id if typeof(GameState) != TYPE_NIL else ""
+	_region_labels.refresh(campaign_id, _map_data.id, hex_to_pixel)
 
 
 ## Repaints a single terrain tile after an in-memory terrain update.
