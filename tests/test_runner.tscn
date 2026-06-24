@@ -485,6 +485,7 @@
 [ext_resource type="Script" path="res://tests/test_region_label_renderer.gd" id="469_region_label_renderer_tests"]
 [ext_resource type="Script" path="res://tests/test_political_map_view_labels.gd" id="470_political_map_view_labels_tests"]
 [ext_resource type="Script" path="res://tests/test_geo_field_layer1.gd" id="471_geo_field_layer1_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_field_layer2.gd" id="472_geo_field_layer2_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1940,3 +1941,6 @@ script = ExtResource("470_political_map_view_labels_tests")
 
 [node name="GeoFieldLayer1Tests" type="Node" parent="."]
 script = ExtResource("471_geo_field_layer1_tests")
+
+[node name="GeoFieldLayer2Tests" type="Node" parent="."]
+script = ExtResource("472_geo_field_layer2_tests")

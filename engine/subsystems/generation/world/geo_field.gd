@@ -20,6 +20,22 @@ const WATER_NONE := 0
 const WATER_OCEAN := 1
 const WATER_LAKE := 2
 
+## Per-cell biome enum (Layer-2 classifies each base cell; tag_for_footprint
+## aggregates). Index → HexTerrainData biome string via BIOME_NAMES.
+const BIOME_CLEAR := 0
+const BIOME_WOODS := 1
+const BIOME_JUNGLE := 2
+const BIOME_SWAMP := 3
+const BIOME_DESERT := 4
+const BIOME_NAMES := ["clear", "woods", "jungle", "swamp", "desert"]
+
+## Per-cell biome subtype enum. Index → HexTerrainData subtype string.
+const SUB_NONE := 0
+const SUBTYPE_NAMES := [
+	"", "forest_dense", "forest_taiga", "mountains_volcanic", "mountains_glacial",
+	"clear_tundra", "clear_savanna", "clear_grassland", "desert_badlands",
+]
+
 ## D8 neighbor offsets (dcol, drow), clockwise from East. Array index = the value
 ## stored in `flow_dir`.
 const D8 := [
@@ -44,9 +60,13 @@ var flow_accum: PackedFloat32Array = PackedFloat32Array()
 var strahler: PackedInt32Array = PackedInt32Array()
 ## WATER_NONE / WATER_OCEAN / WATER_LAKE.
 var water: PackedInt32Array = PackedInt32Array()
-## Layer-2 climate (filled by the climate port; 0.0 until then).
+## Layer-2 climate (filled by GeoClimateGenerator; 0.0 until then).
 var temperature: PackedFloat32Array = PackedFloat32Array()
 var precipitation: PackedFloat32Array = PackedFloat32Array()
+## Per-cell biome / subtype enum indices (filled by GeoClimateGenerator on land
+## cells; BIOME_CLEAR / SUB_NONE elsewhere). tag_for_footprint maps back to strings.
+var biome: PackedInt32Array = PackedInt32Array()
+var biome_subtype: PackedInt32Array = PackedInt32Array()
 
 
 func size_cells() -> int:
@@ -86,6 +106,8 @@ func allocate(w: int, h: int) -> void:
 	water.resize(n)
 	temperature.resize(n)
 	precipitation.resize(n)
+	biome.resize(n)
+	biome_subtype.resize(n)
 
 
 ## Bilinear sample of the surface at fractional cell coords, clamped to the
