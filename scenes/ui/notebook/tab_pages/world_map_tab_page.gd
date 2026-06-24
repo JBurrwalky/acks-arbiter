@@ -110,6 +110,7 @@ func _build_content() -> void:
 	_map.bind(SettingRepository.list_hexes(cid), SettingRepository.list_replay_palette(cid))
 	_map.set_settlements(SettingRepository.list_settlements(cid))
 	_map.set_rivers(SettingRepository.list_river_edges(cid))
+	_map.set_regions(SettingRepository.list_regions(cid))   # continent / sea / ocean names
 
 	# Legend column (refreshes per layer; scrolls when a layer has many entries).
 	var legend_col := VBoxContainer.new()

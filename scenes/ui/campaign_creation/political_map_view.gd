@@ -58,6 +58,20 @@ const _TERR := {
 	"wilderness": Color(0.34, 0.40, 0.30),
 }
 
+# Region labels (Jedidiah 2026-06-24) — bold names for the big strategic features:
+# continents over land, oceans & seas over water. Straight, centred on the region,
+# sized to its extent; placed biggest-first and shrunk/skipped on overlap (OBB-SAT).
+# Only these three subtypes from setting_regions are labelled here.
+const _LABEL_SUBTYPES := {"continent": true, "ocean": true, "sea": true}
+const _LABEL_FILL := Color(0.0, 0.0, 0.0, 1.0)
+const _LABEL_OUTLINE := Color(0.97, 0.96, 0.90, 0.85)
+const _LABEL_MIN_FONT := 10
+const _LABEL_MAX_FONT := 40
+const _LABEL_ADVANCE_RATIO := 0.62
+const _LABEL_EMBOLDEN := 0.55
+const _LABEL_TILT_ASPECT := 1.5    # only tilt regions longer than this; blobs stay horizontal
+const _LABEL_SHRINK_STEP := 0.82
+
 var _hexes: Array = []          # full setting_hexes rows (SELECT *)
 var _rivers: Array = []         # setting_river_edges rows (drawn as edge segments)
 var _colors: Dictionary = {}    # polity_id -> Color (replay palette)
@@ -71,6 +85,8 @@ var _culture_colors: Dictionary = {}   # culture_id -> Color (lazy, deterministi
 var _mode: int = Mode.POLITICAL
 var _sovereign_view: bool = false      # political mode: colour by top-of-liege-chain
 var _replay_mode: bool = false         # replay: per-frame ownership only; no present-day data
+var _regions: Array = []               # named continent/ocean/sea regions (24-mi hexes JSON)
+var _label_font: FontVariation = null  # lazy bold font for the region labels
 
 # Layout cached from the last _draw, so the tooltip hit-test maps a pixel→hex.
 var _R := 0.0
@@ -93,6 +109,21 @@ func set_settlements(s: Array) -> void:
 ## owning hex's edge, matching the gametime map (HexMapRenderer._draw_river_edge).
 func set_rivers(edges: Array) -> void:
 	_rivers = edges
+	queue_redraw()
+
+
+## Continent / sea / ocean regions (SettingRepository.list_regions) → bold names on the
+## strategic map. Only the three big-feature subtypes, and only if named, are kept; the
+## rest of the region corpus (terrain clusters, hydronyms, coastal landforms) is ignored
+## here — those clutter a strategic overview.
+func set_regions(regions: Array) -> void:
+	_regions = []
+	for reg in regions:
+		if not _LABEL_SUBTYPES.has(str(reg.get("subtype", ""))):
+			continue
+		if str(reg.get("name_primary", "")).strip_edges().is_empty():
+			continue
+		_regions.append(reg)
 	queue_redraw()
 
 
@@ -297,6 +328,8 @@ func _draw() -> void:
 		var mrad: float = _R * (0.5 if int(s.get("market_class", 6)) <= 3 else 0.32)
 		draw_circle(sc, mrad, Color(0.99, 0.96, 0.84))
 		draw_circle(sc, mrad, Color(0.18, 0.10, 0.04), false, 1.0)
+	# Continent / sea / ocean names, on top of everything else.
+	_draw_region_labels()
 
 
 ## Draw river edges as line segments along the owning hex's edge, matching the gametime
@@ -463,6 +496,172 @@ func _hex_poly(center: Vector2, radius: float) -> PackedVector2Array:
 		var a := deg_to_rad(60.0 * float(k))
 		poly.append(center + Vector2(cos(a), sin(a)) * radius)
 	return poly
+
+
+# --- region labels (continent / sea / ocean) --------------------------------
+
+func _ensure_label_font() -> void:
+	if _label_font == null:
+		_label_font = FontVariation.new()
+		_label_font.base_font = ThemeDB.fallback_font
+		_label_font.variation_embolden = _LABEL_EMBOLDEN
+
+
+## Bold continent / sea / ocean names. Biggest regions first (so continents & oceans keep
+## their size); each is sized to its own extent, then shrunk to dodge an already-placed
+## label, and skipped only if it can't fit above the minimum size. OBB-SAT collision.
+func _draw_region_labels() -> void:
+	if _regions.is_empty() or _R <= 0.0:
+		return
+	_ensure_label_font()
+	var ordered := _regions.duplicate()
+	ordered.sort_custom(func(a, b): return _region_hex_count(a) > _region_hex_count(b))
+	var placed: Array = []
+	for reg in ordered:
+		var lay := _region_layout(reg)
+		if lay.is_empty():
+			continue
+		var fs := int(lay["max_fs"])
+		while fs >= _LABEL_MIN_FONT:
+			var box := _label_box(lay, fs)
+			var hit := false
+			for po in placed:
+				if _box_overlap(box, po):
+					hit = true
+					break
+			if not hit:
+				placed.append(box)
+				_draw_region_label(str(lay["text"]), lay["c"], float(lay["angle"]), fs)
+				break
+			fs = int(float(fs) * _LABEL_SHRINK_STEP)
+
+
+func _region_hex_count(reg: Dictionary) -> int:
+	var parsed = JSON.parse_string(str(reg.get("hexes", "[]")))
+	return (parsed as Array).size() if parsed is Array else 0
+
+
+## Pixel centres of a region's member hexes (24-mile axial → map pixel, via _center_of).
+func _region_member_px(reg: Dictionary) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var parsed = JSON.parse_string(str(reg.get("hexes", "[]")))
+	if not (parsed is Array):
+		return out
+	for pair in parsed:
+		if pair is Array and (pair as Array).size() == 2:
+			out.append(_center_of(int(pair[0]), int(pair[1])))
+	return out
+
+
+## Straight-label layout for a region: centroid, axis (the long axis for an elongated
+## region, horizontal for a blob), and a font size sized to the region's extent & name
+## length. Returns {} for an empty region.
+func _region_layout(reg: Dictionary) -> Dictionary:
+	var pts := _region_member_px(reg)
+	if pts.is_empty():
+		return {}
+	var text := str(reg.get("name_primary", "")).strip_edges()
+	var c := Vector2.ZERO
+	for p in pts:
+		c += p
+	c /= float(pts.size())
+	# PCA principal axis of the member cloud.
+	var sxx := 0.0
+	var syy := 0.0
+	var sxy := 0.0
+	for p in pts:
+		var d := p - c
+		sxx += d.x * d.x
+		syy += d.y * d.y
+		sxy += d.x * d.y
+	var theta := 0.5 * atan2(2.0 * sxy, sxx - syy)
+	var axis := Vector2(cos(theta), sin(theta))
+	var ln_pca := _extent_along(pts, c, axis)
+	var w_pca := _extent_along(pts, c, Vector2(-axis.y, axis.x))
+	# Tilt only elongated regions; a round ocean/sea reads better horizontal.
+	if ln_pca < _LABEL_TILT_ASPECT * maxf(1.0, w_pca):
+		axis = Vector2.RIGHT
+	# Orient the baseline conventionally: left-to-right, and bottom-to-top for a
+	# near-vertical label (so a tall sea/ocean name reads upward, not head-down).
+	if absf(axis.x) < 0.2:
+		if axis.y > 0.0:
+			axis = -axis
+	elif axis.x < 0.0:
+		axis = -axis
+	var ln := _extent_along(pts, c, axis)
+	var half_w := _extent_along(pts, c, Vector2(-axis.y, axis.x)) * 0.5 + _R
+	var fs := clampi(
+		int(min(ln / (_LABEL_ADVANCE_RATIO * maxf(1.0, float(text.length()))), 2.0 * half_w)),
+		_LABEL_MIN_FONT, _LABEL_MAX_FONT)
+	return {"text": text, "c": c, "axis": axis, "angle": atan2(axis.y, axis.x), "max_fs": fs}
+
+
+## Peak-to-peak span of the points projected onto `dir`.
+func _extent_along(pts: PackedVector2Array, c: Vector2, dir: Vector2) -> float:
+	var lo := INF
+	var hi := -INF
+	for p in pts:
+		var a := (p - c).dot(dir)
+		lo = minf(lo, a)
+		hi = maxf(hi, a)
+	return maxf(0.0, hi - lo)
+
+
+## The label's oriented bounding box at size `fs`: {c, half, angle}.
+func _label_box(lay: Dictionary, fs: int) -> Dictionary:
+	var w := _label_font.get_string_size(str(lay["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	return {"c": lay["c"], "half": Vector2(w * 0.5, float(fs) * 0.6), "angle": float(lay["angle"])}
+
+
+func _box_corners(o: Dictionary) -> PackedVector2Array:
+	var a := float(o["angle"])
+	var half: Vector2 = o["half"]
+	var c: Vector2 = o["c"]
+	var ux := Vector2(cos(a), sin(a)) * half.x
+	var uy := Vector2(-sin(a), cos(a)) * half.y
+	return PackedVector2Array([c - ux - uy, c + ux - uy, c + ux + uy, c - ux + uy])
+
+
+## Separating-axis test on two oriented boxes (each {c, half, angle}).
+func _box_overlap(a: Dictionary, b: Dictionary) -> bool:
+	var ca := _box_corners(a)
+	var cb := _box_corners(b)
+	var aa := float(a["angle"])
+	var ab := float(b["angle"])
+	var axes := [
+		Vector2(cos(aa), sin(aa)), Vector2(-sin(aa), cos(aa)),
+		Vector2(cos(ab), sin(ab)), Vector2(-sin(ab), cos(ab)),
+	]
+	for ax in axes:
+		var amin := INF
+		var amax := -INF
+		var bmin := INF
+		var bmax := -INF
+		for p in ca:
+			var d: float = p.dot(ax)
+			amin = minf(amin, d)
+			amax = maxf(amax, d)
+		for p in cb:
+			var d: float = p.dot(ax)
+			bmin = minf(bmin, d)
+			bmax = maxf(bmax, d)
+		if amax < bmin or bmax < amin:
+			return false   # separating axis → no overlap
+	return true
+
+
+## One straight, centred, bold-black region name with a light outline (legible over both
+## land and water). `c` is the region centroid; the text is centred on it.
+func _draw_region_label(text: String, c: Vector2, angle: float, fs: int) -> void:
+	var w := _label_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var axis := Vector2(cos(angle), sin(angle))
+	var perp := Vector2(-axis.y, axis.x)
+	var origin := c - axis * (w * 0.5) + perp * (float(fs) * 0.32)
+	draw_set_transform(origin, angle, Vector2.ONE)
+	draw_string_outline(_label_font, Vector2.ZERO, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+		maxi(2, int(float(fs) * 0.12)), _LABEL_OUTLINE)
+	draw_string(_label_font, Vector2.ZERO, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, _LABEL_FILL)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
 # --- hover tooltip -----------------------------------------------------------

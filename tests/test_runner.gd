@@ -574,6 +574,8 @@ extends Node
 @onready var _hex_info_assembler_tests = $HexInfoAssemblerTests
 # 2026-06-24 — Region labels on the 6-mile play map (RegionLabelRenderer math)
 @onready var _region_label_renderer_tests = $RegionLabelRendererTests
+# 2026-06-24 — Continent/sea/ocean labels on the 24-mile World Map tab (PoliticalMapView)
+@onready var _political_map_view_labels_tests = $PoliticalMapViewLabelsTests
 
 
 func _ready() -> void:
@@ -1158,7 +1160,9 @@ func run() -> void:
 			# 2026-06-23 — Get Hex Info dev tool (HexInfoAssembler data layer)
 			_hex_info_assembler_tests,
 			# 2026-06-24 — Region labels on the 6-mile play map (RegionLabelRenderer math)
-			_region_label_renderer_tests]:
+			_region_label_renderer_tests,
+			# 2026-06-24 — Continent/sea/ocean labels on the 24-mile World Map tab
+			_political_map_view_labels_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
