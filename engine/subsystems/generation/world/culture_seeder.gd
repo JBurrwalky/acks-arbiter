@@ -135,10 +135,10 @@ static func run(ctx: Dictionary) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Does [param hex] satisfy [param term] from a culture's seed_biomes?
-## Glacial/volcanic mountain subtypes relax to any mountains — the climate
-## generator only produces mountains_glacial, and the geological-feature pass
-## that would place volcanic peaks is not in v1 (terrain-system §7.1), so
-## gating dwarves on the exact subtype would lock them out of the map.
+## Glacial/volcanic mountain subtypes relax to any mountains: the volcanic stamp
+## (VolcanismPainter, the geological-feature pass) marks only ~20% of ranges, so
+## gating dwarves on the exact subtype would lock them out of most of the map —
+## the relaxation keeps "volcanic mountains" cultures placeable on any peak.
 static func _hex_matches_term(hex: Dictionary, term: String) -> bool:
 	if hex["water"] != "":
 		return false

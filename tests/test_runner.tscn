@@ -490,6 +490,7 @@
 [ext_resource type="Script" path="res://tests/test_geo_field_integration.gd" id="474_geo_field_integration_tests"]
 [ext_resource type="Script" path="res://tests/test_geo_river_mapper.gd" id="475_geo_river_mapper_tests"]
 [ext_resource type="Script" path="res://tests/test_region_field_materialization.gd" id="476_region_field_mat_tests"]
+[ext_resource type="Script" path="res://tests/test_volcanism.gd" id="477_volcanism_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1960,3 +1961,6 @@ script = ExtResource("475_geo_river_mapper_tests")
 
 [node name="RegionFieldMaterializationTests" type="Node" parent="."]
 script = ExtResource("476_region_field_mat_tests")
+
+[node name="VolcanismTests" type="Node" parent="."]
+script = ExtResource("477_volcanism_tests")

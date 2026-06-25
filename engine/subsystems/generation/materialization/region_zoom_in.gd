@@ -29,6 +29,19 @@ const _VALID_SUBTYPES := [
 	"clear_scrub", "desert_badlands",
 ]
 
+const SUBTYPE_VOLCANIC := "mountains_volcanic"
+# When the 24-mile parent is a volcanic range/peak (VolcanismPainter stamp), this
+# fraction of its mountain CHILDREN become active vents (also mountains_volcanic);
+# the rest read as ordinary mountains. A lone volcanic peak (no volcanic neighbor on
+# the world map) vents far more freely so the solitary cone actually shows up.
+const VENT_RATE_RANGE := 0.25
+const VENT_RATE_LONE := 0.70
+# Pointy-top hex neighbor offsets (axial) — for the lone-vs-range neighbor test.
+const _OFF := [
+	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0),
+	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
+]
+
 
 ## Build the starting region's 6-mile play map. Returns
 ## {ok, errors[], region_map_id, parent_count, child_count, center}.
@@ -49,6 +62,14 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	if parents.is_empty():
 		result["errors"].append("no world-map hexes to subdivide")
 		return result
+
+	# Volcanic parents (VolcanismPainter stamp) — the lone-vs-range vent rate is
+	# derived from the FULL world map here, not just the play window, so a volcano
+	# at the window edge still vents at the right rate.
+	var volcanic_parents := {}
+	for pkey in parents:
+		if str(parents[pkey].get("biome_subtype", "")) == SUBTYPE_VOLCANIC:
+			volcanic_parents[pkey] = true
 
 	var center := _pick_center(campaign_id, parents, start_settlement_id)
 	result["center"] = center
@@ -121,7 +142,7 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var region_grid := {}   # child axial → child dict, for the 6-mile river pass
 	for pv in window:
 		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
-		for ch in _children_from_field(field, pv.x, pv.y, parent):
+		for ch in _children_from_field(field, pv.x, pv.y, parent, campaign_seed, volcanic_parents):
 			if not db.query_with_bindings("""
 				INSERT OR REPLACE INTO hex_cells
 					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
@@ -212,10 +233,17 @@ func _create_region_map(campaign_id: String, world_map_id: String, footprint: Ar
 ## machinery of the legacy path is unnecessary here (the field already has it).
 ## Politics (civilization / original_biome) have no field representation, so they're
 ## inherited from the 24-mile parent.
-func _children_from_field(field: GeoField, pq: int, pr: int, parent: Dictionary) -> Array:
+func _children_from_field(field: GeoField, pq: int, pr: int, parent: Dictionary,
+		campaign_seed: int = 0, volcanic_parents: Dictionary = {}) -> Array:
 	var prow := WorldGrid.axial_to_offset(Vector2i(pq, pr)).y
 	var p_civ := str(parent.get("civilization", "wilderness"))
 	var p_orig := str(parent.get("original_biome", ""))
+	# Volcanic parent → its mountain children may erupt into active vents. A lone
+	# volcano (no volcanic neighbor on the world map) vents at the higher rate.
+	var p_volcanic := str(parent.get("biome_subtype", "")) == SUBTYPE_VOLCANIC
+	var vent_rate := 0.0
+	if p_volcanic:
+		vent_rate = VENT_RATE_LONE if _is_lone_volcano(pq, pr, volcanic_parents) else VENT_RATE_RANGE
 	var out: Array = []
 	for cqi in SUB:
 		for cri in SUB:
@@ -223,17 +251,43 @@ func _children_from_field(field: GeoField, pq: int, pr: int, parent: Dictionary)
 			var fr := prow * SUB + cri
 			var ck := WorldGrid.offset_to_axial(fc, fr)
 			var tag := GeoFieldSampler.tag_6mile(field, fc, fr)
+			var sub := _clamp_sub(str(tag["biome_subtype"]))
+			if p_volcanic and str(tag["elevation"]) == "mountains":
+				sub = _volcanic_vent_subtype(sub, vent_rate, campaign_seed, ck)
 			out.append({
 				"q": ck.x, "r": ck.y,
 				"elevation": str(tag["elevation"]),
 				"biome": str(tag["biome"]),
-				"biome_subtype": _clamp_sub(str(tag["biome_subtype"])),
+				"biome_subtype": sub,
 				"water": str(tag["water"]),
 				"civilization": p_civ,
 				"original_biome": p_orig,
 				"elevation_raw": float(tag["elevation_raw"]),
 			})
 	return out
+
+
+## A volcanic-range parent is part of a connected volcanic mass, so it has at least
+## one volcanic neighbor; a lone volcanic peak has none. (A size-1 mountain component
+## can have no adjacent mountain — hence no adjacent volcanic — by construction.)
+static func _is_lone_volcano(pq: int, pr: int, volcanic_parents: Dictionary) -> bool:
+	for off in _OFF:
+		var n: Vector2i = Vector2i(pq, pr) + off
+		if volcanic_parents.has("%d,%d" % [n.x, n.y]):
+			return false
+	return true
+
+
+## Decide whether a mountain child of a volcanic parent is an active vent. A vent
+## reads as mountains_volcanic (winning over glacial); otherwise the child keeps its
+## field-sampled subtype. Deterministic per child axial (coding_conventions §80).
+static func _volcanic_vent_subtype(base_sub: String, vent_rate: float,
+		campaign_seed: int, child: Vector2i) -> String:
+	var rng := WorldGenRng.stream(campaign_seed, "volcano_vent", 0,
+			"%d,%d" % [child.x, child.y])
+	if rng.randf() < vent_rate:
+		return SUBTYPE_VOLCANIC
+	return base_sub
 
 
 func _clamp_sub(sub: String) -> String:

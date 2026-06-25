@@ -136,6 +136,10 @@ func _run_culture_seeding(ctx: Dictionary) -> bool:
 	# alignment, jitter, wilderness homeland seeding, baseline beastmen.
 	var campaign_id: String = ctx["campaign_id"]
 	var region_rows := RegionPainter.run_phase1(ctx)
+	# Geological-feature pass (follow-on to region painting): mark whole mountain
+	# ranges / lone peaks volcanic on the 24-mile substrate. The 6-mile zoom reads
+	# the stamp and randomizes which children are active vents.
+	VolcanismPainter.paint(ctx)
 	if not SettingRepository.save_regions(campaign_id, region_rows):
 		return false
 	if not CultureSeeder.run(ctx):

@@ -37,6 +37,7 @@ const _BIOME_TAIGA := Color(0.36, 0.47, 0.42)          # woods + forest_taiga �
 const _BIOME_TUNDRA := Color(0.78, 0.80, 0.82)         # clear + clear_tundra — pale grey-blue
 const _BIOME_SAVANNA := Color(0.80, 0.72, 0.34)        # clear + clear_savanna — dry gold
 const _BIOME_GLACIAL := Color(0.88, 0.92, 0.96)        # desert + mountains_glacial — ice
+const _BIOME_VOLCANIC := Color(0.34, 0.16, 0.15)       # mountains_volcanic — dark basalt/ember
 
 # Pointillist dapple: a per-forest-type speckle drawn over the base fill so the
 # green family (forest / taiga / jungle / dense forest) reads apart at a glance.
@@ -199,6 +200,7 @@ func legend_entries(polity_names: Dictionary = {}) -> Array:
 				{"label": "Desert", "color": _BIOME["desert"]},
 				{"label": "Tundra", "color": _BIOME_TUNDRA},
 				{"label": "Glacier", "color": _BIOME_GLACIAL},
+				{"label": "Volcanic", "color": _BIOME_VOLCANIC},
 				{"label": "Water", "color": _WATER},
 			]
 		Mode.ELEVATION:
@@ -408,6 +410,7 @@ func _biome_color(h: Dictionary) -> Color:
 		"clear_tundra": return _BIOME_TUNDRA
 		"clear_savanna": return _BIOME_SAVANNA
 		"mountains_glacial": return _BIOME_GLACIAL
+		"mountains_volcanic": return _BIOME_VOLCANIC
 	return _BIOME.get(str(h.get("biome", "")), _UNOWNED)
 
 
@@ -711,6 +714,7 @@ func _biome_label(h: Dictionary) -> String:
 		"clear_savanna": return "Savanna"
 		"clear_grassland": return "Grassland"
 		"mountains_glacial": return "Glacier"
+		"mountains_volcanic": return "Volcanic mountains"
 	match str(h.get("biome", "clear")):
 		"woods": return "Forest"
 		"jungle": return "Jungle"
