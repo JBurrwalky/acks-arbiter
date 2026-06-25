@@ -158,6 +158,7 @@ var _spell_slot_reset_handler: SpellSlotResetHandler = null
 
 var _hex_controller: HexMapController
 var _hex_renderer: Node
+var _world_viewport: Node
 var _nav_stack: NavigationStack
 var _scene_container: Node
 var _scene_transition: Node
@@ -170,7 +171,18 @@ var _scene_transition: Node
 func _ready() -> void:
 	# Resolve sibling references
 	_hex_controller = get_parent().get_node("HexMapController")
-	_hex_renderer = get_parent().get_node("HexMap")
+	# HexMap lives inside the WorldViewport SubViewport (so the map renders only
+	# in the area above the session status bar). Resolve it recursively so the
+	# lookup survives that reparenting and any future scene-graph moves.
+	# Flag-gated 3D swap (gdd-wilderness-hex-3d.md §13): when wilderness_hex_mode is
+	# "heightmap_3d", replace the 2D HexMap with the 3D heightmap renderer under the
+	# same SubViewport (own_world_3d so its Camera3D renders). Default flat_2d is a no-op.
+	_maybe_swap_wilderness_3d()
+	_hex_renderer = get_parent().find_child("HexMap", true, false)
+	# The SubViewportContainer frame wrapping the wilderness map. States hide the
+	# whole frame when leaving the wilderness so it doesn't draw a cleared
+	# rectangle over 3D world content (e.g. the dungeon map).
+	_world_viewport = get_parent().find_child("WorldViewport", true, false)
 	_nav_stack = get_parent().get_node("NavigationStack")
 	_scene_container = get_parent().get_node("SceneContainer")
 	_scene_transition = get_parent().get_node("SceneTransition")
@@ -526,6 +538,35 @@ func get_hex_map_controller() -> HexMapController:
 
 func get_hex_map_renderer() -> Node:
 	return _hex_renderer
+
+
+## Flag-gated wilderness 3D renderer swap (gdd-wilderness-hex-3d.md §13.2). When
+## acks/rendering/wilderness_hex_mode == "heightmap_3d", replace the 2D HexMap
+## under the WorldSubViewport with the 3D heightmap scene (root renamed "HexMap"
+## so find_child resolves it) and enable own_world_3d so its Camera3D renders.
+## Default "flat_2d" leaves the shipped 2D path untouched.
+func _maybe_swap_wilderness_3d() -> void:
+	if str(ProjectSettings.get_setting("acks/rendering/wilderness_hex_mode", "flat_2d")) != "heightmap_3d":
+		return
+	var sub: Node = get_parent().find_child("WorldSubViewport", true, false)
+	if sub == null or not (sub is SubViewport):
+		push_warning("wilderness 3D: WorldSubViewport not found; staying 2D.")
+		return
+	var old: Node = sub.find_child("HexMap", false, false)
+	if old != null:
+		old.name = "HexMap2D_disabled"
+		old.queue_free()
+	(sub as SubViewport).own_world_3d = true
+	var scene_3d: Node = load("res://scenes/maps/hex_map_3d.tscn").instantiate()
+	scene_3d.name = "HexMap"
+	sub.add_child(scene_3d)
+
+
+## The SubViewportContainer frame that wraps the wilderness map (anchored above
+## the status bar). Hide it when leaving the wilderness so it doesn't draw over
+## 3D world content. May be null in tests / scenes without the frame.
+func get_world_viewport() -> Node:
+	return _world_viewport
 
 func get_campaign_id() -> String:
 	return _campaign_id
