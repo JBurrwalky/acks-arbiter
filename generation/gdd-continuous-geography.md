@@ -142,7 +142,17 @@ The first build's height recipe (smooth FBM + radial falloff + a weak ridge term
 
 **Calibration outcomes (verified).** Land split lands at **59.8% / 27.8% / 12.4%** (target 60/28/12); ranges read as connected cordillera with foothills; lake speckle controlled via `LAKE_FILL_THRESHOLD 0.008` + the low-octave-dominant ridge (`RIDGE_HFALL 0.52`, 4 octaves) that stopped the shattered-crest tarns; the three styles are visibly distinct at large scale. Determinism, large-map performance (<8000 ms), and channel formation all green; full suite 471/16 = branch baseline, net-zero new failures. The visual calibration rig is `tools/render_geo_field.gd` (latitude / seed / style contact sheets + grayscale / band / hillshade diagnostics) and `tools/geo_climate_stats.gd`.
 
-**Open follow-ups:** rivers are still not prominent at map scale — that's downstream FAT/hydrology tuning + the field-channel→`HexRiverEdgeData` hex-edge mapping (interim tracer still in place), separate from the height method. Belt placement constants (`BELT_INNER_MI`/`BELT_PEAK_MI`/`BELT_GRAD`) remain the most visual-iteration-sensitive knobs.
+**Open follow-ups:** belt placement constants (`BELT_INNER_MI`/`BELT_PEAK_MI`/`BELT_GRAD`) remain the most visual-iteration-sensitive knobs.
+
+---
+
+## 5.6 Rivers → hex edges — corner-graph drainage (`GeoRiverMapper`, 2026-06-24)
+
+The renderer draws rivers as **along-edge** segments (corner→corner on the hex boundary; `hex_map_renderer._draw_river_edge`) — the ACKS river-as-edge convention with bridge/ford/ferry crossings. The field's hydrology, by contrast, is **cell-center D8 flow**, and measured shallow: max Strahler ≈ 2, no large trunks (the continent drains through many medium basins). So mapping the 6-mile cell network straight onto hex edges is both a lossy center→edge conversion *and* trunk-poor.
+
+**Solution: rerun drainage on the hex-CORNER graph** (the dual honeycomb), corner elevations being the mean of the 3 touching hexes' `elevation_raw`. `GeoRiverMapper.map_rivers(params, dims, grid)`: enumerate corners → corner Priority-Flood(+ε) from ocean/edge outlets → steepest-descent flow → flow accumulation → channel extraction (`FAT` per `river_density`) → emit canonical `HexRiverEdgeData`. Two payoffs: (a) the corner graph **is** the along-edge representation, so no lossy conversion; (b) aggregating onto the coarser graph **merges sub-basins into trunks** — creeks and rivers emerge that the 6-mile network never had.
+
+**Width from discharge, not Strahler.** Even on the corner graph Strahler caps at ~3, so the GDD's Strahler→width table never reaches `river`. Width is instead bucketed from **corner flow-accumulation** as multiples of `FAT` (`creek ≥2.5×`, `river ≥5×`, `major_river ≥12×`) — discharge has real dynamic range up the trunk, so the biggest drainage reads as a major river even at Strahler 3, and river size scales with drainage area (a large continent gets a major trunk; a small one tops out at `river`). **Scale-agnostic:** the same function serves the 24-mile world map and a future materialized 6-mile region (both grids sampled from the one field → cross-scale-consistent rivers). Verified (large, 3 seeds): ~140–170 edges/map, full stream→creek→river→(major) hierarchy, rivers reach outlets, deterministic; replaces the interim `HeightmapGenerator._trace_rivers` greedy vertex-walk in `geo_field_to_grid.gd`. Calibration rig: `tools/river_probe.tscn`.
 
 ---
 

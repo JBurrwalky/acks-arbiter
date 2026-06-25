@@ -49,8 +49,10 @@ static func run(ctx: Dictionary) -> bool:
 			grid[key] = _hex_from_field(field, col, row, lat)
 	ctx["hex_grid"] = grid
 
-	# INTERIM rivers: the proven hex tracer on the field-derived per-hex elevation.
-	ctx["river_edges"] = HeightmapGenerator._trace_rivers(seed, params, dims, grid)
+	# Rivers: drainage on the hex-corner graph (GeoRiverMapper), aggregating the
+	# field's terrain into along-edge trunk rivers with Strahler-ranked width.
+	# Replaces the interim greedy vertex-walk (HeightmapGenerator._trace_rivers).
+	ctx["river_edges"] = GeoRiverMapper.map_rivers(params, dims, grid)
 	var river_hexes := ClimateGenerator._river_adjacent_set(ctx["river_edges"])
 	ClimateGenerator._apply_swamp_pass(seed, grid, dims.x, dims.y, river_hexes)
 	ClimateGenerator._assign_land_values(grid, dims.x, dims.y, river_hexes)

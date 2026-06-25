@@ -538,6 +538,7 @@ extends Node
 @onready var _geo_field_layer2_tests = $GeoFieldLayer2Tests
 @onready var _geo_field_layer3_tests = $GeoFieldLayer3Tests
 @onready var _geo_field_integration_tests = $GeoFieldIntegrationTests
+@onready var _geo_river_mapper_tests = $GeoRiverMapperTests
 @onready var _setting_stage2_tests = $SettingStage2Tests
 @onready var _setting_stage3_tests = $SettingStage3Tests
 @onready var _setting_generation_data_freshness_tests = $SettingGenerationDataFreshnessTests
@@ -1122,6 +1123,8 @@ func run() -> void:
 			_geo_field_layer3_tests,
 			# 2026-06-24 — Continuous-geography flag-gated pipeline integration
 			_geo_field_integration_tests,
+			# 2026-06-24 — Continuous-geography rivers (corner-graph drainage → hex edges)
+			_geo_river_mapper_tests,
 			# 2026-06-12 — Setting generation Stage 2 (region painting Phase 1)
 			_setting_stage2_tests,
 			# 2026-06-12 — Setting generation Stage 3 (Layer 3 culture seeding)
