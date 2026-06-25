@@ -2382,16 +2382,6 @@ func _reconstruct_path(prev: Dictionary, start: String, end: String) -> Array:
 	return out
 
 
-## The 16 child "q,r" keys of a 24-mile parent (the same layout RegionZoomIn writes).
-func _child_set(pq: int, pr: int) -> Dictionary:
-	var out := {}
-	for cqi in 4:
-		for cri in 4:
-			var ch := _carrier_child(pq, pr, cqi, cri)
-			out["%d,%d" % [ch.x, ch.y]] = true
-	return out
-
-
 ## True if a 6-mile child hex's 24-mile parent is in the window (so it exists on the
 ## play map). Floor-divides the offset coords by 4 (correct for negative parents).
 func _hex_in_window(in_window: Dictionary, hex: Vector2i) -> bool:

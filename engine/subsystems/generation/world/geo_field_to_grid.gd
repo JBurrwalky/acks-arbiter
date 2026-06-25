@@ -33,8 +33,7 @@ static func run(ctx: Dictionary) -> bool:
 	ctx["hex_grid"] = grid
 
 	# Rivers: drainage on the hex-corner graph (GeoRiverMapper), aggregating the
-	# field's terrain into along-edge trunk rivers with Strahler-ranked width.
-	# Replaces the interim greedy vertex-walk (HeightmapGenerator._trace_rivers).
+	# field's terrain into along-edge trunk rivers with discharge-ranked width.
 	ctx["river_edges"] = GeoRiverMapper.map_rivers(params, dims, grid)
 	var river_hexes := ClimateGenerator._river_adjacent_set(ctx["river_edges"])
 	ClimateGenerator._apply_swamp_pass(seed, grid, dims.x, dims.y, river_hexes)

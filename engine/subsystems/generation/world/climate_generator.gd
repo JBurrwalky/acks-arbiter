@@ -1,13 +1,17 @@
 class_name ClimateGenerator
 extends RefCounted
 
-## Layer 2 — climate (gdd-setting-generation.md §5): latitude/elevation
-## temperature, precipitation noise with rain shadow + coastal moisture,
-## simplified Köppen classification, biome + default-subtype assignment per
-## gdd-terrain-system.md §7.1, swamp placement, and the fixed per-terrain
-## land_value table (history-sim §7.5.1 — set at map-gen).
+## Shared Layer-2 climate CLASSIFICATION (gdd-setting-generation.md §5). The
+## hex-native climate generation (the latitude/lapse temperature + noise-precip
+## + rain-shadow + coastal-moisture run() pass) was RETIRED 2026-06-25 —
+## continuous-geography (GeoClimateGenerator) is the only climate producer. What
+## survives are the pure classifiers the field-first engine + materializer reuse:
+## the simplified Köppen cascade, biome + default-subtype assignment
+## (gdd-terrain-system.md §7.1), swamp placement, the fixed per-terrain land_value
+## table (history-sim §7.5.1), and the river-adjacency set — plus the temperature
+## + Köppen-threshold constants GeoClimateGenerator samples. (Class name kept to
+## avoid churn; it is now a classifier util, not a generator.)
 ##
-## Reads/writes the orchestrator ctx.hex_grid built by HeightmapGenerator.
 ## All thresholds are tunable constants (§5.3 "exact thresholds are tunable").
 
 # Temperature model (°C): T = sea-level latitude curve − lapse over elevation.
@@ -44,15 +48,6 @@ const MONSOON_SEASONALITY := 0.6   # A group: seasonal regime → Am
 const SUMMER_DRY_SEASONALITY := 0.55  # C group: summer-dry → Csa/Csb
 const CONTINENTAL_MILD_C := 2.0    # D group: above → Dfa/Dfb, else Dfc
 
-# Rain shadow (§5.2): prevailing wind west→east; mountains shade up to
-# RAIN_SHADOW_RANGE hexes downwind, strongest adjacent.
-const RAIN_SHADOW_RANGE := 4
-const RAIN_SHADOW_MAX_REDUCTION := 0.45
-
-# Coastal moisture (§5.2): hexes within 3 of ocean get +20%.
-const COASTAL_MOISTURE_RANGE := 3
-const COASTAL_MOISTURE_BONUS := 1.2
-
 # Deep interior (terrain-system §7.1: forest_dense "in deep interior").
 const DEEP_INTERIOR_OCEAN_DISTANCE := 7
 
@@ -64,135 +59,6 @@ const _OFF := [
 	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0),
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0),
 ]
-
-
-static func run(ctx: Dictionary) -> bool:
-	var params: SettingParameters = ctx["params"]
-	var campaign_seed: int = ctx["campaign_seed"]
-	var grid: Dictionary = ctx["hex_grid"]
-	var width: int = ctx["width"]
-	var height: int = ctx["height"]
-	var river_edges: Array = ctx["river_edges"]
-
-	var precip_noise := FastNoiseLite.new()
-	precip_noise.seed = WorldGenRng.derive_seed(campaign_seed, "precipitation")
-	precip_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	precip_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	precip_noise.fractal_octaves = 4
-	precip_noise.frequency = 0.004
-
-	# Seasonality channel: broad regional belts deciding monsoon (Am) and
-	# Mediterranean summer-dry (Csa/Csb) regimes — a deterministic stand-in
-	# for the seasonal simulation Layer 2 doesn't run.
-	var season_noise := FastNoiseLite.new()
-	season_noise.seed = WorldGenRng.derive_seed(campaign_seed, "seasonality")
-	season_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	season_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	season_noise.fractal_octaves = 2
-	season_noise.frequency = 0.0012
-
-	# Temperature anomaly channel (see TEMP_NOISE_AMPLITUDE_C): breaks isotherm
-	# stripes on flat lowlands and softens the climate-band edges.
-	var temp_noise := FastNoiseLite.new()
-	temp_noise.seed = WorldGenRng.derive_seed(campaign_seed, "temperature")
-	temp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	temp_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	temp_noise.fractal_octaves = 3
-	temp_noise.frequency = 0.006
-
-	var ocean_distance := _ocean_distance_field(grid, width, height)
-	var river_hexes := _river_adjacent_set(river_edges)
-	var lat_south := params.latitude_south()
-	var lat_span := params.latitude_north() - lat_south
-
-	for row in range(height):
-		for col in range(width):
-			var key := WorldGrid.offset_to_axial(col, row)
-			var hex: Dictionary = grid[key]
-			# Latitude is derived from the OFFSET row (visual north-south), NOT
-			# axial r: under the offset-rectangle layout a constant axial r is no
-			# longer a constant visual row. row = 0 is the map's north edge (highest
-			# latitude); latitude DEcreases as the row grows southward.
-			var lat: float = lat_south + lat_span * (float(height - 1 - row) / maxf(height - 1, 1))
-			hex["effective_latitude"] = lat
-			var pos := HeightmapGenerator._hex_center(key.x, key.y)
-			var temp := TEMP_AT_EQUATOR - TEMP_LAT_QUADRATIC * lat * lat \
-					+ temp_noise.get_noise_2d(pos.x, pos.y) * TEMP_NOISE_AMPLITUDE_C
-			if hex["water"] == "":
-				var land_above: float = maxf(float(hex["elevation_raw"]) \
-						- HeightmapGenerator.HILLS_THRESHOLD, 0.0)
-				var meters: float = land_above \
-						/ maxf(1.0 - HeightmapGenerator.HILLS_THRESHOLD, 0.000001) \
-						* MAX_ELEVATION_METERS
-				temp -= LAPSE_C_PER_1000M * meters / 1000.0
-			hex["temperature"] = temp
-
-			var precip := (precip_noise.get_noise_2d(pos.x, pos.y) + 1.0) * 0.5
-			precip *= 1.0 - _rain_shadow(key, grid)
-			if int(ocean_distance.get(key, 9999)) <= COASTAL_MOISTURE_RANGE:
-				precip *= COASTAL_MOISTURE_BONUS
-			precip = clampf(precip, 0.0, 1.0)
-			hex["precipitation"] = precip
-
-			if hex["water"] != "":
-				hex["koppen"] = ""
-				hex["land_value"] = 0
-				continue
-
-			var seasonality := (season_noise.get_noise_2d(pos.x, pos.y) + 1.0) * 0.5
-			var koppen := _classify_koppen(temp, precip, seasonality)
-			hex["koppen"] = koppen
-			_assign_biome(hex, koppen, int(ocean_distance.get(key, 9999)))
-
-	_apply_swamp_pass(campaign_seed, grid, width, height, river_hexes)
-	_assign_land_values(grid, width, height, river_hexes)
-	return true
-
-
-# ---------------------------------------------------------------------------
-# Precipitation modifiers
-# ---------------------------------------------------------------------------
-
-## Fraction of precipitation removed by upwind mountains. Prevailing wind is
-## west→east (§5.2 default): upwind = the -q axial direction. (Kept as axial -q
-## under the offset-rectangle layout per Jedidiah 2026-06-17 — q stays the column,
-## so -q remains an approximate visual-west; revisit only if the skew shows.)
-static func _rain_shadow(key: Vector2i, grid: Dictionary) -> float:
-	for k in range(1, RAIN_SHADOW_RANGE + 1):
-		var upwind := Vector2i(key.x - k, key.y)
-		if not grid.has(upwind):
-			break
-		var hex: Dictionary = grid[upwind]
-		if hex["water"] == "" and hex["elevation"] == "mountains":
-			# Decays with distance: full reduction adjacent, fading outward.
-			return RAIN_SHADOW_MAX_REDUCTION * (1.0 - float(k - 1) / float(RAIN_SHADOW_RANGE))
-	return 0.0
-
-
-## BFS distance (in hexes) to the nearest ocean hex, capped where it stops
-## mattering (deep-interior threshold + 1).
-static func _ocean_distance_field(grid: Dictionary, width: int, height: int) -> Dictionary:
-	var dist := {}
-	var frontier: Array[Vector2i] = []
-	for row in range(height):
-		for col in range(width):
-			var key := WorldGrid.offset_to_axial(col, row)
-			if grid[key]["water"] == "ocean":
-				dist[key] = 0
-				frontier.append(key)
-	var d := 0
-	var cap := DEEP_INTERIOR_OCEAN_DISTANCE + 1
-	while not frontier.is_empty() and d < cap:
-		d += 1
-		var next: Array[Vector2i] = []
-		for cell in frontier:
-			for off in _OFF:
-				var n: Vector2i = cell + off
-				if grid.has(n) and not dist.has(n):
-					dist[n] = d
-					next.append(n)
-		frontier = next
-	return dist
 
 
 ## Hexes touched by any river edge (owner side + the neighbor across it).
