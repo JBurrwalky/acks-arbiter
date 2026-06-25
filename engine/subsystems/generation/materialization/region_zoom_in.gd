@@ -55,7 +55,7 @@ const _AXIAL_NEIGHBORS := [
 func build_start_region(campaign_id: String, world_map_id: String, start_settlement_id: String = "") -> Dictionary:
 	var result := {
 		"ok": false, "errors": [], "region_map_id": "",
-		"parent_count": 0, "child_count": 0, "center": Vector2i.ZERO,
+		"parent_count": 0, "child_count": 0, "river_count": 0, "center": Vector2i.ZERO,
 	}
 	var db = CampaignRepository.db
 
@@ -82,8 +82,9 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	# same flag as world generation — only consistent when the world was generated
 	# field-first (gdd-continuous-geography.md §5.6 / hex-normalization §8).
 	var field: GeoField = null
+	var sp: SettingParameters = null
 	if GeoFieldToGrid.is_enabled() and not params.is_empty():
-		var sp := SettingParameters.from_dict(params)
+		sp = SettingParameters.from_dict(params)
 		field = GeoFieldGenerator.generate(campaign_seed, sp)
 		GeoClimateGenerator.apply(field, campaign_seed, sp)
 
@@ -137,6 +138,7 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 
 	db.query("BEGIN TRANSACTION")
 	var child_count := 0
+	var region_grid := {}   # child axial → child dict, for the 6-mile river pass
 	for pv in window:
 		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
 		var kids: Array = _children_from_field(field, pv.x, pv.y, parent) if field != null \
@@ -155,11 +157,26 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 				db.query("ROLLBACK")
 				result["errors"].append("child hex insert failed at parent (%d,%d)" % [pv.x, pv.y])
 				return result
+			if field != null:
+				region_grid[Vector2i(int(ch["q"]), int(ch["r"]))] = ch
 			child_count += 1
+
+	# 6-mile rivers (continuous-geography): corner-graph drainage on the window
+	# grid, keyed by child axial → so the play surface carries real rivers in the
+	# field's fine valleys. Window-edge corners drain off as outlets (the river
+	# continues into the rest of the world off-screen).
+	var river_count := 0
+	if field != null and sp != null and not region_grid.is_empty():
+		var r_origin := Vector2i(min_col * SUB, min_row * SUB)
+		var r_dims := Vector2i(WINDOW_W_PARENTS * SUB, WINDOW_H_PARENTS * SUB)
+		for edge_row in GeoRiverMapper.map_rivers(sp, r_dims, region_grid, r_origin):
+			if CampaignRepository.save_hex_river_edge(region_id, HexRiverEdgeData.from_dict(edge_row)):
+				river_count += 1
 	db.query("COMMIT")
 
 	result["parent_count"] = window.size()
 	result["child_count"] = child_count
+	result["river_count"] = river_count
 	result["ok"] = true
 	return result
 

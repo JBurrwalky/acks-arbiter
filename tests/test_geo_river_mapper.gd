@@ -22,7 +22,39 @@ func run_all_tests() -> void:
 	test_determinism()
 	test_richness_and_trunks()
 	test_rivers_reach_outlets()
+	test_windowed_origin()
 	print("GeoRiverMapperTests: all tests passed (%d checks)" % test_count())
+
+
+func test_windowed_origin() -> void:
+	# map_rivers on a SUB-WINDOW (non-zero offset origin, grid keyed by WORLD axial)
+	# — the 6-mile region pass. Every emitted edge owner must lie inside the window
+	# and carry a valid edge index.
+	var p := SettingParameters.new()
+	p.map_size = "medium"
+	var ctx := {"params": p, "campaign_seed": 101}
+	GeoFieldToGrid.run(ctx)
+	var grid: Dictionary = ctx["hex_grid"]
+	var origin := Vector2i(5, 4)
+	var wdims := Vector2i(14, 10)
+	# A WINDOW-ONLY sub-grid (mirrors how build_start_region passes region_grid):
+	# out-of-window neighbours are absent → window-edge corners are outlets, so no
+	# owner spills outside. Passing the full grid would let boundary owners leak.
+	var inwin := {}
+	var win_grid := {}
+	for row in range(wdims.y):
+		for col in range(wdims.x):
+			var k := WorldGrid.offset_to_axial(origin.x + col, origin.y + row)
+			inwin[k] = true
+			if grid.has(k):
+				win_grid[k] = grid[k]
+	var edges: Array = GeoRiverMapper.map_rivers(p, wdims, win_grid, origin)
+	var bad := 0
+	for e in edges:
+		if not inwin.has(Vector2i(int(e["hex_q"]), int(e["hex_r"]))) \
+				or int(e["edge"]) < 0 or int(e["edge"]) > 5:
+			bad += 1
+	check(bad == 0, "%d windowed river edges fall outside the window / bad edge idx" % bad)
 
 
 func _ctx(size: String, seed_val: int) -> Dictionary:

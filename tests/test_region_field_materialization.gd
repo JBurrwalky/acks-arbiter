@@ -14,7 +14,39 @@ func run_all_tests() -> void:
 	test_children_count_and_validity()
 	test_intra_parent_variation()
 	test_determinism()
+	test_full_materialize_with_field()
+	# Belt-and-braces: the flag must be OFF when this suite exits.
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
 	print("RegionFieldMaterializationTests: all tests passed (%d checks)" % test_count())
+
+
+# End-to-end: with the flag ON, generate → lock → materialize, and confirm
+# build_start_region's field-mode path runs and persists 6-mile rivers + varied
+# terrain to the region map (the wiring the unit tests above don't exercise).
+func test_full_materialize_with_field() -> void:
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
+	var cid := CampaignRepository.create_campaign("FieldMat", "Testaria")
+	var p := SettingParameters.new()
+	p.map_size = "medium"
+	p.history_length = "short"
+	var ok := SettingGenerator.new().generate(cid, 2024, p)
+	if not ok:
+		ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
+		check(false, "field-mode generate() failed")
+		return
+	SettingRepository.lock_setting(cid, "deadbeefcafe")
+	var res: Dictionary = SettingMaterializer.new().materialize(cid)
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
+	check(bool(res.get("ok", false)), "field-mode materialize ok (errors: %s)" % str(res.get("errors", [])))
+	var rid := str(res.get("region_map_id", ""))
+	check(rid != "", "region map produced")
+	if rid == "":
+		return
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [rid])
+	var n_rivers := int(db.query_result[0].get("n", 0))
+	print("  field-mode region: %d six-mile river edges" % n_rivers)
+	check(n_rivers > 0, "field-mode materialization persisted no 6-mile river edges")
 
 
 func _field(seed_val: int) -> GeoField:

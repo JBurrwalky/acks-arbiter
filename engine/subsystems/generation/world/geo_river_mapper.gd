@@ -49,13 +49,16 @@ static var debug_max_accum := 0.0
 
 ## Build the river-edge rows (same dict shape as HeightmapGenerator._trace_rivers /
 ## SettingRepository.RIVER_EDGE_COLUMNS) for a hex grid. dims = hex (cols, rows).
-static func map_rivers(params, dims: Vector2i, grid: Dictionary) -> Array:
+## `origin` is the grid's offset (col,row) origin — pass it (with grid keyed by
+## WORLD axial) to run on a sub-window (e.g. a 6-mile region inside the world);
+## defaults to (0,0) for a full map. Window-edge corners drain off as outlets.
+static func map_rivers(params, dims: Vector2i, grid: Dictionary, origin: Vector2i = Vector2i.ZERO) -> Array:
 	# --- 1. enumerate corners (hex offset order; dedup by canonical key) ---
 	var corner_index := {}   # vertex_key → int
 	var corners: Array = []   # Array of vertex (Array[Vector2i], the 3 touching hexes)
 	for row in range(dims.y):
 		for col in range(dims.x):
-			var hex := WorldGrid.offset_to_axial(col, row)
+			var hex := WorldGrid.offset_to_axial(origin.x + col, origin.y + row)
 			if not grid.has(hex):
 				continue
 			for c in range(6):
