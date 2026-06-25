@@ -57,8 +57,13 @@ const _MIN_LAND_CELLS := {"continental": 64, "archipelago": 3, "pangaea": 120}
 const _MIN_OCEAN_CELLS := {"continental": 40, "archipelago": 4, "pangaea": 64}
 
 # --- Orogenic belt locator (where ranges run) ---
-const BELT_INNER_MI := 30.0   # ranges start this far inland off the beach
-const BELT_PEAK_MI := 120.0   # full belt weight by this inland distance
+# The belt engages near the coast and saturates across most of the interior, so the
+# RIDGE field's linear crests define DISTINCT cordillera spread across the continent
+# rather than pooling into one central highland province (a low PEAK_MI was what made
+# mountains cluster deep-interior). The quantile remap fixes the 12% mountain fraction;
+# this only redistributes WHERE they sit.
+const BELT_INNER_MI := 18.0   # ranges start this far inland off the beach
+const BELT_PEAK_MI := 50.0    # full belt weight by this inland distance (interior-wide)
 const BELT_CORE := 0.6
 const BELT_GRAD := 6.0         # continental-margin (mask-gradient) contribution
 const BELT_LO := 0.35
@@ -68,12 +73,20 @@ const BELT_HI := 0.85
 ## Energy is concentrated in the low octaves (RIDGE_HFALL ≈ 0.5, Musgrave) so
 ## ridgelines are broad + coherent; a few high octaves add flank texture without
 ## shattering the crest into gravel (which also spawned excessive tarns).
-const RIDGE_FREQ_BASE := 0.0018
-const RIDGE_OCTAVES := 4
+##
+## RANGE STYLE (params.mountain_range_style, a player customization dial): the base
+## frequency + octave count are what separate "many distinct linear spines" from
+## "few bold ranges". Higher freq + more octaves ⇒ a denser ridge-and-valley field
+## (cordillera); lower freq + fewer octaves ⇒ fewer, broader, bolder ranges with
+## wide lowlands between (alpine). All other ridge/belt knobs are shared.
+const _RANGE_STYLE := {
+	"cordillera": {"ridge_freq": 0.0018, "ridge_octaves": 4},
+	"alpine": {"ridge_freq": 0.0011, "ridge_octaves": 3},
+}
 const RIDGE_LACUNARITY := 2.0
 const RIDGE_HFALL := 0.52      # per-octave amplitude falloff (low-octave dominant)
 const RIDGE_GATE := 0.8        # running-signal gate → ridges connect into spines
-const RIDGE_ANISO := 3.2       # across-strike compression → linear cordillera
+const RIDGE_ANISO := 4.5       # across-strike compression → linear cordillera
 
 # --- Base composition gains ---
 const LAND_GAIN := 0.55        # broad coast→interior rise from the mask
@@ -101,9 +114,10 @@ const LAND_PAD := 0.03
 ## ties on a flat filled basin (Priority-Flood +ε variant, Barnes 2014).
 const FILL_EPSILON := 0.00001
 ## A non-ocean cell whose fill raised it at least this far is flagged a lake.
-## Raised from 0.003 so only substantial basins become lakes — the sharper ridged
-## relief otherwise flagged every shallow inter-ridge pit as a tarn (lake speckle).
-const LAKE_FILL_THRESHOLD := 0.008
+## Raised to 0.015 so only substantial basins become lakes — the sharper ridged
+## relief otherwise flagged every shallow inter-ridge pit as a tarn (lake speckle),
+## especially up in the high terrain between the spines.
+const LAKE_FILL_THRESHOLD := 0.015
 ## Crest-preserving thermal erosion: one gentle talus-relaxation pass that skips
 ## mountain crests (≥ MOUNTAIN_PRESERVE) so cordillera don't round back into domes.
 const TALUS := 0.07
@@ -226,6 +240,9 @@ static func _build_height(field: GeoField, campaign_seed: int, params) -> void:
 			belt[i] = smoothstep(BELT_LO, BELT_HI, clampf(BELT_CORE * core + 0.5 * grad, 0.0, 1.0))
 
 	# --- STEP 4: amplitude-gated ridged-multifractal → ridge_raw (+ max) ---
+	var rstyle: Dictionary = _RANGE_STYLE.get(params.mountain_range_style, _RANGE_STYLE["cordillera"])
+	var ridge_freq_base: float = rstyle["ridge_freq"]
+	var ridge_octaves: int = rstyle["ridge_octaves"]
 	var ridge_raw := PackedFloat32Array()
 	ridge_raw.resize(n)
 	var ridge_max := 0.0
@@ -236,10 +253,10 @@ static func _build_height(field: GeoField, campaign_seed: int, params) -> void:
 			var rx := px * cos_t + py * sin_t
 			var ry := (-px * sin_t + py * cos_t) * RIDGE_ANISO
 			var amp := 1.0
-			var freq := RIDGE_FREQ_BASE
+			var freq := ridge_freq_base
 			var prev := 1.0
 			var acc := 0.0
-			for _o in range(RIDGE_OCTAVES):
+			for _o in range(ridge_octaves):
 				var nv := ridge.get_noise_2d(rx * freq, ry * freq)
 				var sig := 1.0 - absf(nv)
 				sig = sig * sig  # sharpen the crest

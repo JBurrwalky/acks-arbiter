@@ -26,8 +26,38 @@ func run_all_tests() -> void:
 	test_strahler_confluence_unit()
 	test_channel_incision()
 	test_sample_surface_bilinear()
+	test_range_style_switches()
 	test_large_map_performance()
 	print("GeoFieldLayer1Tests: all tests passed (%d checks)" % test_count())
+
+
+func test_range_style_switches() -> void:
+	# mountain_range_style is a real dial: cordillera (many linear spines) vs alpine
+	# (fewer bold ranges) must produce a DIFFERENT surface for the same seed, while
+	# both stay valid (land + ocean + mountains present, deterministic per style).
+	var pc := _params("medium")
+	pc.mountain_range_style = "cordillera"
+	var pa := _params("medium")
+	pa.mountain_range_style = "alpine"
+	var fc := GeoFieldGenerator.generate(42, pc)
+	var fa := GeoFieldGenerator.generate(42, pa)
+	check(fc.surface_hash() != fa.surface_hash(), "range style must change the surface")
+	check(fc.surface_hash() == GeoFieldGenerator.generate(42, _style_params("cordillera")).surface_hash(),
+		"cordillera must be deterministic")
+	var mtn_c := 0
+	var mtn_a := 0
+	for i in range(fc.size_cells()):
+		if fc.water[i] == GeoField.WATER_NONE and fc.surface[i] >= HeightmapGenerator.MOUNTAINS_THRESHOLD:
+			mtn_c += 1
+		if fa.water[i] == GeoField.WATER_NONE and fa.surface[i] >= HeightmapGenerator.MOUNTAINS_THRESHOLD:
+			mtn_a += 1
+	check(mtn_c > 0 and mtn_a > 0, "both styles must still produce mountains (c=%d a=%d)" % [mtn_c, mtn_a])
+
+
+func _style_params(style: String) -> SettingParameters:
+	var p := _params("medium")
+	p.mountain_range_style = style
+	return p
 
 
 func _params(size: String) -> SettingParameters:

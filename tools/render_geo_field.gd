@@ -21,12 +21,99 @@ const BG := Color(0.06, 0.06, 0.09)
 
 
 func _initialize() -> void:
+	_build_range_style_compare()
+	_build_range_sheet()
 	_build_latitude_sheet()
 	_build_terrain_sheet()
 	_build_single_large()
 	_build_terrain_diagnostics()
 	_build_style_sheet()
 	quit()
+
+
+# --- mountain_range_style comparison: the SAME seed in cordillera vs alpine, to
+#     confirm the parameter switches the range character. ---
+func _build_range_style_compare() -> void:
+	var styles := ["cordillera", "alpine"]
+	var fields: Array = []
+	var fw := 0
+	var fh := 0
+	for st in styles:
+		var p := SettingParameters.new()
+		p.map_size = "large"
+		p.mountain_range_style = st
+		var f := GeoFieldGenerator.generate(101, p)
+		fw = f.width
+		fh = f.height
+		fields.append(f)
+	var pw := fw * 2
+	var ph := fh * 2
+	var sheet := Image.create(2 * pw + 3 * GAP, ph + 2 * GAP, false, Image.FORMAT_RGB8)
+	sheet.fill(BG)
+	for i in range(2):
+		var ox := GAP + i * (pw + GAP)
+		var f: GeoField = fields[i]
+		for row in range(f.height):
+			for col in range(f.width):
+				var idx := f.idx(col, row)
+				var is_water := f.water[idx] != GeoField.WATER_NONE
+				var base := _band_color(f, idx, is_water)
+				if not is_water:
+					var sh := _hillshade(f, col, row)
+					base = Color(clampf(base.r * sh, 0, 1), clampf(base.g * sh, 0, 1), clampf(base.b * sh, 0, 1))
+				for dy in range(2):
+					for dx in range(2):
+						sheet.set_pixel(ox + col * 2 + dx, oy_zero() + row * 2 + dy, base)
+	sheet.save_png("user://geo_range_style.png")
+	print("GEO_RANGE_STYLE=", ProjectSettings.globalize_path("user://geo_range_style.png"),
+			" (left=cordillera, right=alpine; seed 101 large)")
+
+
+func oy_zero() -> int:
+	return GAP
+
+
+# --- Range-tuning sheet: elevation bands + hillshade for several large seeds, so
+#     the orogenic belt placement / range length / clustering can be eyeballed. ---
+func _build_range_sheet() -> void:
+	var seeds := [101, 202, 303, 404, 505, 606]
+	var ncol := 3
+	var nrow := 2
+	var fields: Array = []
+	var fw := 0
+	var fh := 0
+	for sv in seeds:
+		var p := SettingParameters.new()
+		p.map_size = "large"
+		var f := GeoFieldGenerator.generate(sv, p)
+		fw = f.width
+		fh = f.height
+		fields.append(f)
+	var pw := fw * 2  # 2 px/cell
+	var ph := fh * 2
+	var sheet := Image.create(ncol * pw + (ncol + 1) * GAP, nrow * ph + (nrow + 1) * GAP,
+			false, Image.FORMAT_RGB8)
+	sheet.fill(BG)
+	for i in range(seeds.size()):
+		var r := i / ncol
+		var c := i % ncol
+		var ox := GAP + c * (pw + GAP)
+		var oy := GAP + r * (ph + GAP)
+		var f: GeoField = fields[i]
+		for row in range(f.height):
+			for col in range(f.width):
+				var idx := f.idx(col, row)
+				var is_water := f.water[idx] != GeoField.WATER_NONE
+				var base := _band_color(f, idx, is_water)
+				if not is_water:
+					var sh := _hillshade(f, col, row)
+					base = Color(clampf(base.r * sh, 0, 1), clampf(base.g * sh, 0, 1), clampf(base.b * sh, 0, 1))
+				for dy in range(2):
+					for dx in range(2):
+						sheet.set_pixel(ox + col * 2 + dx, oy + row * 2 + dy, base)
+	sheet.save_png("user://geo_range_sheet.png")
+	print("GEO_RANGE_SHEET=", ProjectSettings.globalize_path("user://geo_range_sheet.png"))
+	print("GEO_RANGE_SEEDS=", seeds, " (large, ", fw, "x", fh, " cells)")
 
 
 # --- Landmass-style comparison (continental / archipelago / pangaea) ---
