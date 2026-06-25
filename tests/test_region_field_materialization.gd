@@ -15,8 +15,8 @@ func run_all_tests() -> void:
 	test_intra_parent_variation()
 	test_determinism()
 	test_full_materialize_with_field()
-	# Belt-and-braces: the flag must be OFF when this suite exits.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
+	# Cutover (2026-06-25): continuous-geography is the default — restore it ON.
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
 	print("RegionFieldMaterializationTests: all tests passed (%d checks)" % test_count())
 
 

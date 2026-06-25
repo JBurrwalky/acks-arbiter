@@ -16,15 +16,15 @@ const VALID_WATER := ["", "ocean", "lake"]
 
 
 func run_all_tests() -> void:
-	test_flag_default_off()
+	test_flag_default_on()
 	test_grid_valid_and_complete()
 	test_rivers_traced()
 	test_determinism()
 	test_flag_toggle()
 	test_full_pipeline_smoke()
-	# Belt-and-braces: the flag must be OFF when this suite exits so later suites
-	# (which run the real pipeline) are unaffected.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
+	# Cutover (2026-06-25): continuous-geography is the default, so restore it ON
+	# when this suite exits — later suites validate the LIVE (continuous) path.
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
 	print("GeoFieldIntegrationTests: all tests passed (%d checks)" % test_count())
 
 
@@ -36,11 +36,11 @@ func _run(seed_val: int) -> Dictionary:
 	return ctx
 
 
-func test_flag_default_off() -> void:
-	# A fresh project has the flag unset → continuous geography is OFF, so the
-	# shipped HeightmapGenerator/ClimateGenerator path runs by default.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
-	check(not GeoFieldToGrid.is_enabled(), "continuous-geography flag must default OFF")
+func test_flag_default_on() -> void:
+	# Cutover (2026-06-25): continuous-geography is the shipped DEFAULT world-gen.
+	# is_enabled() returns true unless explicitly cleared (the legacy escape hatch).
+	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
+	check(GeoFieldToGrid.is_enabled(), "continuous-geography is the default world-gen")
 
 
 func test_grid_valid_and_complete() -> void:

@@ -404,11 +404,14 @@ func test_region_map_materialized(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND (elevation NOT IN ('flat','hills','mountains') OR biome NOT IN ('clear','woods','jungle','swamp','desert') OR civilization NOT IN ('civilized','borderlands','wilderness'))", [rid]) == 0,
 		"all region terrain values valid")
 
-	# Natural variation: children inherit (inheritance dominates) but are NOT all
-	# identical to their parent (the variation passes ran).
+	# Natural variation: 6-mile children carry the continuous field's REAL sub-hex
+	# terrain — neither all identical to the 24-mile parent (the field varies) nor
+	# all different (a parent's character still broadly carries). The legacy
+	# "inheritance dominates" deviation-budget is retired by continuous-geography
+	# (gdd-continuous-geography.md §5.6 / hex-subdivision §6).
 	var v := _region_variation(rid, wid)
 	check(int(v["differ"]) > 0, "some children vary from their parent (%d differ)" % int(v["differ"]))
-	check(int(v["same"]) > int(v["differ"]), "inheritance dominates (same %d > differ %d)" % [int(v["same"]), int(v["differ"])])
+	check(int(v["same"]) > 0, "children still partly match the parent character (%d same)" % int(v["same"]))
 
 	# M2b-2: domains whose 24-mile seat is in the window are located on the play map,
 	# and their realms are promoted to 'tracked'.

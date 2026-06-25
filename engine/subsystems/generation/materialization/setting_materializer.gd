@@ -2140,10 +2140,19 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 ## hardcoded offset table). One crossing per 24-mile edge (placed on the first child
 ## edge in deterministic order); flow/navigability/width carried from the source.
 func _materialize_rivers(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	# Continuous-geography: RegionZoomIn.build_start_region already wrote field-based
+	# 6-mile rivers (corner-graph drainage) — far richer than this coarse 24-mile
+	# projection, and projecting on top would DOUBLE-write. Skip it and report the
+	# field rivers already on the region map.
+	if GeoFieldToGrid.is_enabled():
+		db.query_with_bindings(
+			"SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [region_map_id])
+		result["river_edge_count"] = int(db.query_result[0].get("n", 0)) if not db.query_result.is_empty() else 0
+		return true
 	var in_window := _in_window_parents(region_map_id)
 	if in_window.is_empty():
 		return true
-	var db = CampaignRepository.db
 	var placed := 0
 	for re in SettingRepository.list_river_edges(campaign_id):
 		var hq := int(re["hex_q"])

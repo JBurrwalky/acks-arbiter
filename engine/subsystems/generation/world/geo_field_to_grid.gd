@@ -23,8 +23,11 @@ extends RefCounted
 const SETTING := "acks/worldgen/continuous_geography"
 
 
+## Continuous-geography is the DEFAULT world-gen as of the 2026-06-25 cutover.
+## The flag remains as a legacy escape hatch: set it false to fall back to the
+## hex-native HeightmapGenerator/ClimateGenerator path (retiring, untested).
 static func is_enabled() -> bool:
-	return bool(ProjectSettings.get_setting(SETTING, false))
+	return bool(ProjectSettings.get_setting(SETTING, true))
 
 
 ## Fill ctx.hex_grid / river_edges / width / height with the field-first Layers
