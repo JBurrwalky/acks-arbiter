@@ -76,17 +76,17 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var params := SettingRepository.get_parameters(campaign_id)
 	var campaign_seed := int(params.get("campaign_seed", 0))
 
-	# Continuous-geography: regenerate the deterministic field and SAMPLE it per
-	# 6-mile child cell (each child = one base cell → real sub-hex terrain), instead
-	# of flat-copying the 24-mile parent into 16 near-identical tiles. Gated on the
-	# same flag as world generation — only consistent when the world was generated
-	# field-first (gdd-continuous-geography.md §5.6 / hex-normalization §8).
-	var field: GeoField = null
-	var sp: SettingParameters = null
-	if GeoFieldToGrid.is_enabled() and not params.is_empty():
-		sp = SettingParameters.from_dict(params)
-		field = GeoFieldGenerator.generate(campaign_seed, sp)
-		GeoClimateGenerator.apply(field, campaign_seed, sp)
+	# Continuous-geography (the only world-gen path since the 2026-06-25 cutover):
+	# regenerate the deterministic field and SAMPLE it per 6-mile child cell (each
+	# child = one base cell → real sub-hex terrain), instead of flat-copying the
+	# 24-mile parent into 16 near-identical tiles (gdd-continuous-geography.md §5.6 /
+	# hex-normalization §8). Field-mode requires the campaign's setting parameters.
+	if params.is_empty():
+		result["errors"].append("no setting parameters for campaign %s" % campaign_id)
+		return result
+	var sp := SettingParameters.from_dict(params)
+	var field := GeoFieldGenerator.generate(campaign_seed, sp)
+	GeoClimateGenerator.apply(field, campaign_seed, sp)
 
 	# Window: WINDOW_W×H parents centered on `center`, keeping only parents that
 	# actually exist on the world map.
@@ -141,9 +141,7 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var region_grid := {}   # child axial → child dict, for the 6-mile river pass
 	for pv in window:
 		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
-		var kids: Array = _children_from_field(field, pv.x, pv.y, parent) if field != null \
-				else _children_for_parent(campaign_seed, pv.x, pv.y, parent, parents)
-		for ch in kids:
+		for ch in _children_from_field(field, pv.x, pv.y, parent):
 			if not db.query_with_bindings("""
 				INSERT OR REPLACE INTO hex_cells
 					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
@@ -157,16 +155,14 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 				db.query("ROLLBACK")
 				result["errors"].append("child hex insert failed at parent (%d,%d)" % [pv.x, pv.y])
 				return result
-			if field != null:
-				region_grid[Vector2i(int(ch["q"]), int(ch["r"]))] = ch
+			region_grid[Vector2i(int(ch["q"]), int(ch["r"]))] = ch
 			child_count += 1
 
-	# 6-mile rivers (continuous-geography): corner-graph drainage on the window
-	# grid, keyed by child axial → so the play surface carries real rivers in the
-	# field's fine valleys. Window-edge corners drain off as outlets (the river
-	# continues into the rest of the world off-screen).
+	# 6-mile rivers: corner-graph drainage on the window grid, keyed by child axial
+	# → the play surface carries real rivers in the field's fine valleys. Window-edge
+	# corners drain off as outlets (the river continues into the rest of the world).
 	var river_count := 0
-	if field != null and sp != null and not region_grid.is_empty():
+	if not region_grid.is_empty():
 		var r_origin := Vector2i(min_col * SUB, min_row * SUB)
 		var r_dims := Vector2i(WINDOW_W_PARENTS * SUB, WINDOW_H_PARENTS * SUB)
 		for edge_row in GeoRiverMapper.map_rivers(sp, r_dims, region_grid, r_origin):

@@ -11,7 +11,6 @@ config_version=5
 [acks]
 
 rendering/dungeon_asset_mode="asset_kit"
-worldgen/continuous_geography=true
 
 [animation]
 

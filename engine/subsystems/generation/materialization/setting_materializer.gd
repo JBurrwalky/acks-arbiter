@@ -2139,60 +2139,15 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 ## across that boundary (computed from REAL adjacency via HexRiverEdgeData, not a
 ## hardcoded offset table). One crossing per 24-mile edge (placed on the first child
 ## edge in deterministic order); flow/navigability/width carried from the source.
-func _materialize_rivers(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+func _materialize_rivers(_campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	# Continuous-geography (the only world-gen since the 2026-06-25 cutover):
+	# RegionZoomIn.build_start_region already wrote field-based 6-mile rivers
+	# (corner-graph drainage) straight onto the region map. Just report their count —
+	# the legacy 24-mile→6-mile projection is retired (it would double-write).
 	var db = CampaignRepository.db
-	# Continuous-geography: RegionZoomIn.build_start_region already wrote field-based
-	# 6-mile rivers (corner-graph drainage) — far richer than this coarse 24-mile
-	# projection, and projecting on top would DOUBLE-write. Skip it and report the
-	# field rivers already on the region map.
-	if GeoFieldToGrid.is_enabled():
-		db.query_with_bindings(
-			"SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [region_map_id])
-		result["river_edge_count"] = int(db.query_result[0].get("n", 0)) if not db.query_result.is_empty() else 0
-		return true
-	var in_window := _in_window_parents(region_map_id)
-	if in_window.is_empty():
-		return true
-	var placed := 0
-	for re in SettingRepository.list_river_edges(campaign_id):
-		var hq := int(re["hex_q"])
-		var hr := int(re["hex_r"])
-		var e := int(re["edge"])
-		if e < 0 or e >= 6:
-			continue
-		var hn: Vector2i = Vector2i(hq, hr) + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[e]
-		# Both parents must be in-window so both child blocks exist on the play map.
-		if not in_window.has("%d,%d" % [hq, hr]) or not in_window.has("%d,%d" % [hn.x, hn.y]):
-			continue
-		var hn_children := _child_set(hn.x, hn.y)
-		var crossing := str(re.get("crossing", "none"))
-		var flow := int(re.get("flow_clockwise", 1))
-		var nav := str(re.get("navigability", "river_craft"))
-		var width := str(re.get("width_category", ""))
-		var crossing_used := false
-		for cqi in 4:
-			for cri in 4:
-				var c := _carrier_child(hq, hr, cqi, cri)
-				for ce in 6:
-					var nb: Vector2i = c + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[ce]
-					if not hn_children.has("%d,%d" % [nb.x, nb.y]):
-						continue
-					var canon := HexRiverEdgeData.canonicalize_edge(c.x, c.y, nb.x, nb.y)
-					if not bool(canon.get("adjacent", false)):
-						continue
-					var this_crossing := "none"
-					if crossing != "none" and not crossing_used:
-						this_crossing = crossing
-						crossing_used = true
-					if not db.query_with_bindings("""
-						INSERT OR IGNORE INTO hex_river_edges
-							(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing, width_category)
-						VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-					""", [region_map_id, int(canon["hex_q"]), int(canon["hex_r"]), int(canon["edge"]), flow, nav, this_crossing, width]):
-						result["errors"].append("river edge insert failed")
-						return false
-					placed += 1
-	result["river_edge_count"] = placed
+	db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [region_map_id])
+	result["river_edge_count"] = int(db.query_result[0].get("n", 0)) if not db.query_result.is_empty() else 0
 	return true
 
 

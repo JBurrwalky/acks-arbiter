@@ -1,33 +1,13 @@
 class_name GeoFieldToGrid
 extends RefCounted
 
-## Flag-gated INTEGRATION of the field-first engine (gdd-continuous-geography.md
-## §13 build order — the playtest-gated cutover). When enabled it REPLACES the
-## hex-native Layers 1-2 (HeightmapGenerator + ClimateGenerator): generate the
-## continuous GeoField, then normalize it into the per-24-mile-hex grid via
-## GeoFieldSampler.tag_24mile + block-mean climate. Produces ctx.hex_grid /
-## river_edges / width / height in the SAME shape the existing pipeline does, so
-## every downstream layer (region painting, history sim, …) runs unchanged.
-##
-## INTERIM rivers: the proven hex tracer (HeightmapGenerator._trace_rivers) runs
-## on the field-derived elevation. Mapping the field's Strahler channel network
-## to HexRiverEdgeData hex-edge rivers is a calibration follow-up (build_log).
-##
-## Gated on the ProjectSettings flag below (default OFF), NOT a seed/params field
-## — so the shipped default path + its determinism hash stay untouched while the
-## refactor is visually calibrated. When it becomes the default the flag retires.
-## NOTE: because the flag is outside the seed+params determinism contract, a
-## world generated with it on is NOT reproducible from seed+params alone until
-## the cutover lands; this is intentional for the experimental phase.
-
-const SETTING := "acks/worldgen/continuous_geography"
-
-
-## Continuous-geography is the DEFAULT world-gen as of the 2026-06-25 cutover.
-## The flag remains as a legacy escape hatch: set it false to fall back to the
-## hex-native HeightmapGenerator/ClimateGenerator path (retiring, untested).
-static func is_enabled() -> bool:
-	return bool(ProjectSettings.get_setting(SETTING, true))
+## INTEGRATION of the field-first engine (gdd-continuous-geography.md §13). The
+## SOLE Layers-1-2 world-gen path since the 2026-06-25 cutover (the legacy
+## hex-native HeightmapGenerator/ClimateGenerator generation was retired): generate
+## the continuous GeoField, then normalize it into the per-24-mile-hex grid via
+## GeoFieldSampler.tag_24mile + block-mean climate, and map corner-graph rivers
+## (GeoRiverMapper). Produces ctx.hex_grid / river_edges / width / height in the
+## shape every downstream layer (region painting, history sim, …) consumes.
 
 
 ## Fill ctx.hex_grid / river_edges / width / height with the field-first Layers

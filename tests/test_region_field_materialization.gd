@@ -15,28 +15,24 @@ func run_all_tests() -> void:
 	test_intra_parent_variation()
 	test_determinism()
 	test_full_materialize_with_field()
-	# Cutover (2026-06-25): continuous-geography is the default — restore it ON.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
 	print("RegionFieldMaterializationTests: all tests passed (%d checks)" % test_count())
 
 
-# End-to-end: with the flag ON, generate → lock → materialize, and confirm
-# build_start_region's field-mode path runs and persists 6-mile rivers + varied
-# terrain to the region map (the wiring the unit tests above don't exercise).
+# End-to-end: generate → lock → materialize, and confirm build_start_region's
+# field-mode path runs and persists 6-mile rivers + varied terrain to the region
+# map (the wiring the unit tests above don't exercise). Continuous-geography is the
+# only world-gen path, so no flag plumbing.
 func test_full_materialize_with_field() -> void:
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
 	var cid := CampaignRepository.create_campaign("FieldMat", "Testaria")
 	var p := SettingParameters.new()
 	p.map_size = "medium"
 	p.history_length = "short"
 	var ok := SettingGenerator.new().generate(cid, 2024, p)
 	if not ok:
-		ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
 		check(false, "field-mode generate() failed")
 		return
 	SettingRepository.lock_setting(cid, "deadbeefcafe")
 	var res: Dictionary = SettingMaterializer.new().materialize(cid)
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
 	check(bool(res.get("ok", false)), "field-mode materialize ok (errors: %s)" % str(res.get("errors", [])))
 	var rid := str(res.get("region_map_id", ""))
 	check(rid != "", "region map produced")

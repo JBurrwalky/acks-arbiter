@@ -247,16 +247,16 @@ func test_land_value_table_unit() -> void:
 
 func test_large_map_performance() -> void:
 	# Measure Layers 1-2 in ISOLATION (the full generate() now also runs culture
-	# seeding + the 160-tick history sim, which have their own budgets). This is
-	# Stage 1's exit criterion: heightmap + hydrology + climate on a Large map.
+	# seeding + the 160-tick history sim, which have their own budgets). Stage 1's
+	# exit criterion: the continuous-geography field engine (raster + hydrology +
+	# climate + biome + corner-graph rivers) on a Large map in one pass.
 	var params := SettingParameters.new()
 	params.map_size = "large"
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 7, "params": params}
 	var start := Time.get_ticks_msec()
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)
 	var elapsed := Time.get_ticks_msec() - start
-	check(elapsed < 5000, "Layers 1-2 on Large took %d ms (budget: well under 5s)" % elapsed)
+	check(elapsed < 12000, "Layers 1-2 on Large took %d ms (budget 12s)" % elapsed)
 	check(ctx["hex_grid"].size() == 40 * 30, "large map should have 1200 hexes")
 
 

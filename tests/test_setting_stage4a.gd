@@ -256,8 +256,7 @@ func test_large_map_sim_performance() -> void:
 	var params := SettingParameters.new()
 	params.map_size = "large"
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 7, "params": params}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)  # continuous-geography: complete Layers 1-2 in one pass
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
 	var sim := HistorySimulator.new()

@@ -16,15 +16,10 @@ const VALID_WATER := ["", "ocean", "lake"]
 
 
 func run_all_tests() -> void:
-	test_flag_default_on()
 	test_grid_valid_and_complete()
 	test_rivers_traced()
 	test_determinism()
-	test_flag_toggle()
 	test_full_pipeline_smoke()
-	# Cutover (2026-06-25): continuous-geography is the default, so restore it ON
-	# when this suite exits — later suites validate the LIVE (continuous) path.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
 	print("GeoFieldIntegrationTests: all tests passed (%d checks)" % test_count())
 
 
@@ -34,13 +29,6 @@ func _run(seed_val: int) -> Dictionary:
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": seed_val, "params": p}
 	GeoFieldToGrid.run(ctx)
 	return ctx
-
-
-func test_flag_default_on() -> void:
-	# Cutover (2026-06-25): continuous-geography is the shipped DEFAULT world-gen.
-	# is_enabled() returns true unless explicitly cleared (the legacy escape hatch).
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
-	check(GeoFieldToGrid.is_enabled(), "continuous-geography is the default world-gen")
 
 
 func test_grid_valid_and_complete() -> void:
@@ -126,24 +114,14 @@ func test_determinism() -> void:
 	check(mism == 0, "%d hexes differ between same-seed continuous-geography runs:%s" % [mism, diffs])
 
 
-func test_flag_toggle() -> void:
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
-	check(GeoFieldToGrid.is_enabled(), "is_enabled() should be true when the flag is set")
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
-	check(not GeoFieldToGrid.is_enabled(), "is_enabled() should be false when the flag is cleared")
-
-
 func test_full_pipeline_smoke() -> void:
-	# The whole 8-layer pipeline must run on field-derived terrain (region
-	# painting, history sim, etc. consume the same ctx shape). Flag set IN-MEMORY
-	# only and reset immediately — never persisted, so project.godot + other
-	# suites are untouched.
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, true)
+	# The whole 8-layer pipeline runs on the field-derived terrain (region painting,
+	# history sim, etc. consume the same ctx shape). Continuous-geography is the only
+	# world-gen path, so no flag plumbing.
 	var cid := CampaignRepository.create_campaign("ContGeo Smoke", "w")
 	var p := SettingParameters.new()
 	p.map_size = "small"
 	var ok := SettingGenerator.new().generate(cid, 123, p)
-	ProjectSettings.set_setting(GeoFieldToGrid.SETTING, false)
 	check(ok, "full generate() with continuous geography failed")
 	if ok:
 		var hexes := SettingRepository.list_hexes(cid)

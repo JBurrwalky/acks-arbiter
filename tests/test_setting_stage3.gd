@@ -49,8 +49,7 @@ func _build_seed_ctx(map_size: String, seed_value: int) -> Dictionary:
 	var params := SettingParameters.new()
 	params.map_size = map_size
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": seed_value, "params": params}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)  # continuous-geography: complete Layers 1-2 in one pass
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
 	return ctx
@@ -187,8 +186,7 @@ func test_beastmen_are_chaotic_clanholds() -> void:
 	params.map_size = "medium"
 	params.wilderness_beastman_density = 4.0
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 42, "params": params}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)  # continuous-geography: complete Layers 1-2 in one pass
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
 	var grid: Dictionary = ctx["hex_grid"]
