@@ -24,7 +24,110 @@ func _initialize() -> void:
 	_build_latitude_sheet()
 	_build_terrain_sheet()
 	_build_single_large()
+	_build_terrain_diagnostics()
+	_build_style_sheet()
 	quit()
+
+
+# --- Landmass-style comparison (continental / archipelago / pangaea) ---
+
+func _build_style_sheet() -> void:
+	var styles := ["continental", "archipelago", "pangaea"]
+	var style_size := "large"  # bigger map so fragmentation differences are legible
+	var fields: Array = []
+	var fw := 0
+	var fh := 0
+	for style in styles:
+		var p := SettingParameters.new()
+		p.map_size = style_size
+		p.land_mass_style = style
+		var f := GeoFieldGenerator.generate(SEEDS[0], p)
+		GeoClimateGenerator.apply(f, SEEDS[0], p)
+		fw = f.width
+		fh = f.height
+		fields.append(f)
+	var pw := fw * PANEL_SCALE
+	var ph := fh * PANEL_SCALE
+	var ncol := styles.size()
+	var sheet := Image.create(ncol * pw + (ncol + 1) * GAP, ph + 2 * GAP, false, Image.FORMAT_RGB8)
+	sheet.fill(BG)
+	for c in range(ncol):
+		var ox := GAP + c * (pw + GAP)
+		var f: GeoField = fields[c]
+		for row in range(f.height):
+			for col in range(f.width):
+				var i := f.idx(col, row)
+				_fill_block(sheet, col, row, PANEL_SCALE, ox, GAP, _band_color(f, i,
+						f.water[i] != GeoField.WATER_NONE))
+	sheet.save_png("user://geo_style_sheet.png")
+	print("GEO_STYLE_SHEET=", ProjectSettings.globalize_path("user://geo_style_sheet.png"))
+	print("GEO_STYLE_COLS(left->right)=", styles)
+	print("GEO_STYLE_SCALE: each panel = %dx%d cells = %d x %d miles (%s map)" % [
+			fw, fh, int(fw * GeoField.CELL_MILES), int(fh * GeoField.CELL_MILES), style_size])
+
+
+# --- Terrain diagnostics (honest, non-interpretive views of the raw field) ---
+
+func _build_terrain_diagnostics() -> void:
+	var p := SettingParameters.new()
+	p.map_size = "large"
+	var f := GeoFieldGenerator.generate(SEEDS[0], p)
+	var sea: float = p.sea_level
+
+	# 1. Pure grayscale heightmap: surface 0..1 → black..white; ocean faint blue.
+	var gray := Image.create(f.width * SCALE, f.height * SCALE, false, Image.FORMAT_RGB8)
+	# 2. Elevation-band quantization: ocean / flat / hills / mountains as flat colors.
+	var bands := Image.create(f.width * SCALE, f.height * SCALE, false, Image.FORMAT_RGB8)
+	# 3. Hillshade-only relief (no hypsometric tint): pure shape.
+	var relief := Image.create(f.width * SCALE, f.height * SCALE, false, Image.FORMAT_RGB8)
+	for row in range(f.height):
+		for col in range(f.width):
+			var i := f.idx(col, row)
+			var s := f.surface[i]
+			var is_water := f.water[i] != GeoField.WATER_NONE
+			_fill_block(gray, col, row, SCALE, 0, 0,
+					Color(0.06, 0.10, 0.22) if is_water else Color(s, s, s))
+			_fill_block(bands, col, row, SCALE, 0, 0, _band_color(f, i, is_water))
+			var sh := _hillshade(f, col, row)
+			var rc := Color(0.10, 0.16, 0.30) if is_water else Color(sh * 0.7, sh * 0.7, sh * 0.72)
+			_fill_block(relief, col, row, SCALE, 0, 0, rc)
+	gray.save_png("user://geo_height_gray.png")
+	bands.save_png("user://geo_elev_bands.png")
+	relief.save_png("user://geo_relief.png")
+	print("GEO_HEIGHT_GRAY=", ProjectSettings.globalize_path("user://geo_height_gray.png"))
+	print("GEO_ELEV_BANDS=", ProjectSettings.globalize_path("user://geo_elev_bands.png"))
+	print("GEO_RELIEF=", ProjectSettings.globalize_path("user://geo_relief.png"))
+	# Surface histogram so the band split is legible as numbers, not just pixels.
+	var below := 0
+	var flat := 0
+	var hills := 0
+	var mtn := 0
+	for i in range(f.size_cells()):
+		if f.water[i] != GeoField.WATER_NONE:
+			below += 1
+			continue
+		var tag := str(HeightmapGenerator._elevation_tag(f.surface[i]))
+		if tag == "mountains":
+			mtn += 1
+		elif tag == "hills":
+			hills += 1
+		else:
+			flat += 1
+	var landn: int = maxi(flat + hills + mtn, 1)
+	print("GEO_BANDS ocean=%d  land: flat=%.1f%% hills=%.1f%% mountains=%.1f%%" % [
+			below, 100.0 * flat / landn, 100.0 * hills / landn, 100.0 * mtn / landn])
+
+
+func _band_color(f: GeoField, i: int, is_water: bool) -> Color:
+	if is_water:
+		return Color(0.10, 0.20, 0.46)
+	match str(HeightmapGenerator._elevation_tag(f.surface[i])):
+		"mountains":
+			return Color(0.55, 0.40, 0.34)
+		"hills":
+			return Color(0.62, 0.58, 0.38)
+		_:
+			return Color(0.50, 0.62, 0.40)  # flat
 
 
 # --- Contact sheets ---------------------------------------------------------

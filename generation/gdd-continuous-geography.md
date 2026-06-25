@@ -112,6 +112,40 @@ Run the full chain **on the base raster only** (≤43k cells), in this exact DEM
 
 ---
 
+## 5.5 Height-field construction — implemented method (rework 2026-06-24)
+
+The first build's height recipe (smooth FBM + radial falloff + a weak ridge term + `pow(norm, exponent)`) produced a flat-dominated blob: measured **85.3% flat / 13.5% hills / 1.3% mountains**, no connected ranges (highs were rounded domes), and fragmented coasts. The rework (judge-panel synthesis of three independent designs) replaces `_build_height` with this pipeline, all on the square base raster, all deterministic (§80):
+
+```
+1. Continental mask     — domain-warped FBM (cmask01), the SOLE land/ocean decider;
+                          frequency scaled per land_mass_style; edge-bias toward ocean
+2. Rank land threshold  — sort cmask, cut at TARGET_LAND_FRAC[style] rank → EXACT ocean
+                          fraction (sea_level nudges the target so the param stays live)
+3. Orogenic belt locator— 8-conn coast-distance BFS + mask-gradient → belt[i], HIGH inland
+                          where ranges belong (ranges run inland, not on sea-cliffs)
+4. Gated ridged-multifractal — manual octave loop; weight = running_signal·RIDGE_GATE.
+                          The gate makes ridgelines CONNECT into spines; anisotropic
+                          rotated frame → linear cordillera. Normalized by field max.
+5. Compose base         — LAND_GAIN·cmask + RIDGE_GAIN·belt·ridge + FOOTHILL·belt·… + DETAIL
+                          (ranges confined to belts; foothills ring crests; signed detail)
+6. Morphological cleanup— connected-component pass: sink land comps < MIN_LAND[style],
+                          fill enclosed ocean pockets < MIN_OCEAN[style]  (the look dial)
+7. Quantile hypsometry  — monotone piecewise-linear transfer pinning the land
+                          distribution's OWN percentiles to the fixed 0.55 / 0.75 tags
+                          → exactly ~60/28/12 of land for every seed/size, D8-safe
+8. Crest-preserving thermal erosion — one gentle talus pass that SKIPS crests (≥0.74)
+```
+
+**Why these mechanisms.** (4) The amplitude **gate** is the one thing that makes ridges connect into ranges instead of fracturing into domes/gravel. (7) The quantile remap is the proven precip trick applied to height: pinning the land percentiles to the tag thresholds **guarantees** the split and is monotone, so D8 flow ordering survives — and it doubles as a safety net (12% of land is always mountains, so ranges exist even on small maps where belts are narrow). (6) Morphological cleanup is the explicit, controllable fragmentation dial.
+
+**Parameter wiring.** `mountain_frequency` now routes through the hypsometry anchors (`low {0.66,0.92}` / `medium {0.60,0.88}` / `high {0.52,0.82}`) — `elevation_exponent()` is no longer consumed. `sea_level` nudges the land target (keeps it live). `land_mass_style` drives **three knobs together** — mask frequency `_CONT_FREQ_MULT` (continental 1.0 / archipelago 3.0 / pangaea 0.6), `_TARGET_LAND_FRAC` (0.60 / 0.40 / 0.80), and cleanup sizes — so continental = one cohesive continent, archipelago = scattered islands, pangaea = supercontinent. The frequency (not just the land fraction) is what fragments vs. consolidates the landform; lowering land fraction alone only shrinks one continent.
+
+**Calibration outcomes (verified).** Land split lands at **59.8% / 27.8% / 12.4%** (target 60/28/12); ranges read as connected cordillera with foothills; lake speckle controlled via `LAKE_FILL_THRESHOLD 0.008` + the low-octave-dominant ridge (`RIDGE_HFALL 0.52`, 4 octaves) that stopped the shattered-crest tarns; the three styles are visibly distinct at large scale. Determinism, large-map performance (<8000 ms), and channel formation all green; full suite 471/16 = branch baseline, net-zero new failures. The visual calibration rig is `tools/render_geo_field.gd` (latitude / seed / style contact sheets + grayscale / band / hillshade diagnostics) and `tools/geo_climate_stats.gd`.
+
+**Open follow-ups:** rivers are still not prominent at map scale — that's downstream FAT/hydrology tuning + the field-channel→`HexRiverEdgeData` hex-edge mapping (interim tracer still in place), separate from the height method. Belt placement constants (`BELT_INNER_MI`/`BELT_PEAK_MI`/`BELT_GRAD`) remain the most visual-iteration-sensitive knobs.
+
+---
+
 ## 6. Climate — upgrade precipitation to an orographic sweep
 
 The current `ClimateGenerator` is already above-average (quadratic latitude curve with calibration, elevation lapse above a ceiling, a BFS rain-shadow, coastal-moisture BFS). The wins: run it **per base cell** (climate varies *within* a 24-mile hex), add **continentality**, and replace the noise-multiplier precipitation with a **swept moisture-transport** pass that makes rain shadow *emerge* instead of being a separate heuristic.
