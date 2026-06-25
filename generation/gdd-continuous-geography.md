@@ -131,8 +131,11 @@ T = T_equator − k_lat·lat²            # keep existing quadratic curve
    - over **land**: `uplift = positive elevation gradient along wind`; `rain = moisture·(base + orographic_coef·max(uplift,0))`; deposit as this cell's precip; `moisture −= rain`.
    Windward slopes drain the parcel → leeward cells get a depleted parcel → **rain shadow emerges** from the same pass. The separate `_rain_shadow` heuristic is no longer needed.
 3. 2–3 box/Gaussian blur passes to kill 1-D streaking; keep a low-amplitude noise overlay so iso-precip lines aren't unnaturally smooth.
+4. **Rank-normalize the swept rain to a uniform [0,1] over land, then reshape with `ARIDITY_GAMMA`** (calibration 2026-06-24). The raw sweep is pathologically right-skewed — a mass of low flat-land rain plus rare high windward-mountain spikes — so a plain min-max normalize crushes nearly all land below the arid Köppen threshold and the whole continent classifies as desert. Ranking preserves the sweep's wet→dry *ordering* (windward wet, leeward / deep-interior dry, rain shadow intact) while guaranteeing a balanced, latitude-independent wet/dry split that's self-calibrating across seeds and map sizes. `ARIDITY_GAMMA` (default `0.82`, `<1` wetter / `>1` drier) is the single world-character dial and never touches the Köppen thresholds. Verified per-band land-biome split (3-seed mean): jungle peaks in the tropics, woods dominate the temperate belt, taiga+tundra ≈ 83 % of polar land, desert a steady ~13–15 % minority wherever the sweep leaves land dry.
 
-All O(n). Moisture/humidity is just the carried parcel state — store final precip; no separate channel unless biome rules want it.
+All O(n) (the rank sort is O(n log n)). Moisture/humidity is just the carried parcel state — store final precip; no separate channel unless biome rules want it.
+
+**Deferred climate-sophistication item:** the aridity cutoff is currently a *fixed* normalized precip (`ARID_THRESHOLD 0.18`), so desert holds the same ~15 % at every latitude. A more faithful model makes the Köppen `B` threshold rise with temperature (hot subtropics need more rain to escape aridity → more desert there, less at the poles). That edits the **shared** `_classify_koppen` (the live hex pipeline consumes it too), so it's bundled into the climate/terrain sophistication pass, not the precip calibration.
 
 ---
 

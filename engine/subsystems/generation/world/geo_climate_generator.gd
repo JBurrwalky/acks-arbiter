@@ -30,6 +30,11 @@ const BASE_RAIN := 0.06          # fraction of the parcel that rains on flat lan
 const OROGRAPHIC_COEF := 6.0     # extra rain fraction per unit of windward uplift
 const BLUR_PASSES := 2
 const PRECIP_NOISE_AMP := 0.08   # low-amplitude texture so iso-precip lines aren't smooth
+## Dials the whole world wetter (<1) or drier (>1) by reshaping the rank-normalized
+## precip. 1.0 = uniform [0,1] (~18% of land below the arid threshold). Lower values
+## push the median wetter (less desert); higher values aridify. A global character
+## knob that never touches the Köppen thresholds themselves.
+const ARIDITY_GAMMA := 0.82
 
 
 ## Fill field.temperature / precipitation / biome / biome_subtype. Call after
@@ -167,15 +172,28 @@ static func _precipitation(field: GeoField, campaign_seed: int) -> void:
 				blurred[i] = sum / cnt
 		raw = blurred
 
-	# Min-max normalize over LAND so the result spans [0,1] (keeps the Köppen
-	# thresholds meaningful regardless of the sweep's absolute magnitudes).
-	var lo := INF
-	var hi := -INF
+	# Rank-normalize the land precip to a uniform [0,1]. The orographic sweep is
+	# pathologically right-skewed — a mass of low flat-land values plus rare high
+	# windward-mountain spikes — so a plain min-max normalize crushes almost all
+	# land below the arid Köppen threshold (the whole continent becomes desert).
+	# Ranking preserves the sweep's wet→dry ORDERING (windward wet, leeward and
+	# deep-interior dry, rain shadow intact) while guaranteeing a balanced split,
+	# self-calibrating across seeds and latitudes. ARIDITY_GAMMA then dials the
+	# world wetter/drier without disturbing the thresholds.
+	var land_idx: Array[int] = []
 	for i in range(n):
 		if field.water[i] == GeoField.WATER_NONE:
-			lo = minf(lo, raw[i])
-			hi = maxf(hi, raw[i])
-	var span := maxf(hi - lo, 0.000001)
+			land_idx.append(i)
+	# Ascending by rain; index tie-break keeps the order deterministic.
+	land_idx.sort_custom(func(a: int, b: int) -> bool:
+		if raw[a] == raw[b]:
+			return a < b
+		return raw[a] < raw[b])
+	var denom := maxf(float(land_idx.size() - 1), 1.0)
+	var rank_frac := PackedFloat32Array()
+	rank_frac.resize(n)
+	for r in range(land_idx.size()):
+		rank_frac[land_idx[r]] = float(r) / denom
 
 	var precip_noise := FastNoiseLite.new()
 	precip_noise.seed = WorldGenRng.derive_seed(campaign_seed, "geo_precip_texture")
@@ -190,7 +208,7 @@ static func _precipitation(field: GeoField, campaign_seed: int) -> void:
 			if field.water[i] != GeoField.WATER_NONE:
 				field.precipitation[i] = 0.0
 				continue
-			var norm := (raw[i] - lo) / span
+			var norm := pow(rank_frac[i], ARIDITY_GAMMA)
 			var px := (float(col) + 0.5) * GeoField.CELL_MILES
 			var py := (float(row) + 0.5) * GeoField.CELL_MILES
 			var jitter := precip_noise.get_noise_2d(px, py) * PRECIP_NOISE_AMP
