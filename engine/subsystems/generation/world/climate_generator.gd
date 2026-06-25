@@ -38,9 +38,20 @@ const LAPSE_C_PER_1000M := 6.5
 # Köppen thresholds (°C / normalized precipitation 0-1 / seasonality 0-1).
 const COLD_THRESHOLD_C := -5.0     # below → E group (ET/EF)
 const POLAR_DRY_THRESHOLD := 0.2   # E group: below → EF, else ET
-const ARID_THRESHOLD := 0.18       # below → BW desert
-const SEMIARID_THRESHOLD := 0.33   # below → BS steppe
 const HOT_THRESHOLD_C := 22.0      # BWh/BSh vs BWk/BSk
+
+# Temperature-dependent aridity (real Köppen B: the dry threshold rises with mean
+# temperature — hot regions need far more rain to escape desert, so the great deserts
+# sit in the hot subtropics/tropics and cold zones stay non-arid). Replaces the flat
+# ARID/SEMIARID cutoffs (2026-06-25). `precip` is the normalized [0,1] field value;
+# arid_t = clamp(ARID_BASE + ARID_PER_DEG·(temp − ARID_REF_TEMP_C), ARID_MIN, ARID_MAX),
+# steppe band = [arid_t, arid_t + STEPPE_BAND).
+const ARID_REF_TEMP_C := 10.0
+const ARID_BASE := 0.15
+const ARID_PER_DEG := 0.011
+const ARID_MIN := 0.03
+const ARID_MAX := 0.40
+const STEPPE_BAND := 0.15
 const TROPICAL_THRESHOLD_C := 24.0 # above → A group
 const TEMPERATE_THRESHOLD_C := 8.0 # above → C group, else D group
 const WET_THRESHOLD := 0.65        # A group: above → Af rainforest
@@ -75,12 +86,18 @@ static func _river_adjacent_set(river_edges: Array) -> Dictionary:
 # Köppen classification (§5.3 cascade, simplified major groups)
 # ---------------------------------------------------------------------------
 
+## Temperature-dependent Köppen B cutoff: warmer → higher dry threshold → arid.
+static func _arid_threshold(temp: float) -> float:
+	return clampf(ARID_BASE + ARID_PER_DEG * (temp - ARID_REF_TEMP_C), ARID_MIN, ARID_MAX)
+
+
 static func _classify_koppen(temp: float, precip: float, seasonality: float) -> String:
 	if temp < COLD_THRESHOLD_C:
 		return "EF" if precip < POLAR_DRY_THRESHOLD else "ET"
-	if precip < ARID_THRESHOLD:
+	var arid_t := _arid_threshold(temp)
+	if precip < arid_t:
 		return "BWh" if temp > HOT_THRESHOLD_C else "BWk"
-	if precip < SEMIARID_THRESHOLD:
+	if precip < arid_t + STEPPE_BAND:
 		return "BSh" if temp > HOT_THRESHOLD_C else "BSk"
 	if temp > TROPICAL_THRESHOLD_C:
 		if precip > WET_THRESHOLD:
@@ -111,10 +128,8 @@ static func _assign_biome(hex: Dictionary, koppen: String, ocean_dist: int) -> v
 		"BSh", "BSk":
 			biome = "clear"
 			subtype = "clear_grassland"
-			# §7.2: the driest steppe fringes shade into desert.
-			if float(hex["precipitation"]) < ARID_THRESHOLD + 0.03:
-				biome = "desert"
-				subtype = ""
+			# (The temperature-dependent BW cutoff in _classify_koppen now draws the
+			# desert/steppe line; the old flat-threshold fringe rule is retired.)
 		"Csa", "Csb":
 			biome = "clear"
 			subtype = "clear_grassland"
