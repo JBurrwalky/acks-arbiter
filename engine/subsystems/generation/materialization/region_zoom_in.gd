@@ -76,6 +76,17 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var params := SettingRepository.get_parameters(campaign_id)
 	var campaign_seed := int(params.get("campaign_seed", 0))
 
+	# Continuous-geography: regenerate the deterministic field and SAMPLE it per
+	# 6-mile child cell (each child = one base cell → real sub-hex terrain), instead
+	# of flat-copying the 24-mile parent into 16 near-identical tiles. Gated on the
+	# same flag as world generation — only consistent when the world was generated
+	# field-first (gdd-continuous-geography.md §5.6 / hex-normalization §8).
+	var field: GeoField = null
+	if GeoFieldToGrid.is_enabled() and not params.is_empty():
+		var sp := SettingParameters.from_dict(params)
+		field = GeoFieldGenerator.generate(campaign_seed, sp)
+		GeoClimateGenerator.apply(field, campaign_seed, sp)
+
 	# Window: WINDOW_W×H parents centered on `center`, keeping only parents that
 	# actually exist on the world map.
 	var window: Array = []          # Array[Vector2i] of parent coords
@@ -128,7 +139,9 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	var child_count := 0
 	for pv in window:
 		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
-		for ch in _children_for_parent(campaign_seed, pv.x, pv.y, parent, parents):
+		var kids: Array = _children_from_field(field, pv.x, pv.y, parent) if field != null \
+				else _children_for_parent(campaign_seed, pv.x, pv.y, parent, parents)
+		for ch in kids:
 			if not db.query_with_bindings("""
 				INSERT OR REPLACE INTO hex_cells
 					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
@@ -305,6 +318,37 @@ func _children_for_parent(seed: int, pq: int, pr: int, parent: Dictionary, paren
 				"biome_subtype": _clamp_sub(sub if biome == p_biome else ""),
 				"water": "", "civilization": civ, "original_biome": p_orig,
 				"elevation_raw": p_eraw,
+			})
+	return out
+
+
+## Continuous-geography child generation: each 6-mile child reads ONE base cell of
+## the field (child offset (pq·SUB+cqi, prow·SUB+cri) == that field cell, 1:1), so
+## terrain is the field's real sub-hex variation — coastline, ridge/valley, biome
+## transitions are READ, not invented. The heuristic deviation/ecotone/coastal-jitter
+## machinery of the legacy path is unnecessary here (the field already has it).
+## Politics (civilization / original_biome) have no field representation, so they're
+## inherited from the 24-mile parent.
+func _children_from_field(field: GeoField, pq: int, pr: int, parent: Dictionary) -> Array:
+	var prow := WorldGrid.axial_to_offset(Vector2i(pq, pr)).y
+	var p_civ := str(parent.get("civilization", "wilderness"))
+	var p_orig := str(parent.get("original_biome", ""))
+	var out: Array = []
+	for cqi in SUB:
+		for cri in SUB:
+			var fc := pq * SUB + cqi    # parent_col == pq under even-q (see legacy note)
+			var fr := prow * SUB + cri
+			var ck := WorldGrid.offset_to_axial(fc, fr)
+			var tag := GeoFieldSampler.tag_6mile(field, fc, fr)
+			out.append({
+				"q": ck.x, "r": ck.y,
+				"elevation": str(tag["elevation"]),
+				"biome": str(tag["biome"]),
+				"biome_subtype": _clamp_sub(str(tag["biome_subtype"])),
+				"water": str(tag["water"]),
+				"civilization": p_civ,
+				"original_biome": p_orig,
+				"elevation_raw": float(tag["elevation_raw"]),
 			})
 	return out
 
