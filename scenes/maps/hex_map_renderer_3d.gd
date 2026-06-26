@@ -90,6 +90,14 @@ var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
+## Cliff/canyon walls (gdd-cliffs-canyons.md §7). _cliff_by_pair maps an unordered
+## hex-pair key -> HexCliffEdgeData so the terrain mesh can keep cliff edges as a
+## height DISCONTINUITY (stop averaging corners across them) and a vertical wall
+## fills the gap. Empty when the map has no cliffs -> the terrain is unchanged.
+var _cliff_root: Node3D = null
+var _cliff_mat: StandardMaterial3D = null
+var _mountain_tex: Texture2D = null
+var _cliff_by_pair := {}
 var _landmark_root: Node3D = null
 var _landmark_mat: StandardMaterial3D = null
 var _dungeon_mat: StandardMaterial3D = null
@@ -123,6 +131,9 @@ func _ready() -> void:
 	_river_root = Node3D.new()
 	_river_root.name = "Rivers"
 	add_child(_river_root)
+	_cliff_root = Node3D.new()
+	_cliff_root.name = "Cliffs"
+	add_child(_cliff_root)
 	_landmark_root = Node3D.new()
 	_landmark_root.name = "Landmarks"
 	add_child(_landmark_root)
@@ -169,8 +180,10 @@ func _on_map_loaded(_map_id: String) -> void:
 		return
 	_reveal_all_fog = bool(ProjectSettings.get_setting("acks/rendering/reveal_all_fog", false))
 	_ensure_field()
+	_rebuild_cliff_lookup()   # before terrain: corners become cliff-aware
 	_build_terrain()
 	_build_rivers()
+	_build_cliffs()           # vertical walls filling the cliff-edge discontinuities
 	_build_landmarks()
 	_rebuild_tokens()
 	_fit_camera()
@@ -318,10 +331,13 @@ func _build_chunk(coords: Array) -> void:
 		var corner_pos := []
 		var corner_uv2 := []
 		for i in range(6):
-			var sharing := _corner_sharing(coord, i)
-			corner_pos.append(Vector3(center_xz.x + corner_off[i].x, _avg_height(sharing),
+			# Height = the cliff-aware component average (keeps a vertical discontinuity at
+			# cliff edges that the wall fills); the biome texture blend keeps the full
+			# sharing set for smooth coloring across the corner.
+			corner_pos.append(Vector3(center_xz.x + corner_off[i].x,
+					_corner_component_avg(coord, i),
 					center_xz.y + corner_off[i].y))
-			corner_uv2.append(_vertex_uv2(sharing))
+			corner_uv2.append(_vertex_uv2(_corner_sharing(coord, i)))
 
 		# Fan: 6 triangles. Each covers the wedge near ONE hex edge, so it blends just
 		# TWO layers — this hex (slot 0) and the neighbour across that edge (slot 1) —
@@ -424,6 +440,77 @@ const _CORNER_NEIGHBORS := [
 	[Vector2i(-1, 0), Vector2i(0, -1)],
 	[Vector2i(0, -1), Vector2i(1, -1)],
 ]
+
+
+# ---------------------------------------------------------------------------
+# Cliff/canyon edges (gdd-cliffs-canyons.md §7)
+# ---------------------------------------------------------------------------
+
+## Rebuild the unordered-pair -> cliff lookup from _map_data.cliff_edges. Call before
+## _build_terrain so the corner heights are cliff-aware. No cliffs -> empty -> no-op.
+func _rebuild_cliff_lookup() -> void:
+	_cliff_by_pair = {}
+	if _map_data == null:
+		return
+	for c in _map_data.cliff_edges:
+		if not (c is HexCliffEdgeData):
+			continue
+		var owner := Vector2i(c.hex_q, c.hex_r)
+		var nb: Vector2i = owner + HexCliffEdgeData.neighbor_offset(c.edge)
+		_cliff_by_pair[_cliff_pair_key(owner, nb)] = c
+
+
+func _cliff_pair_key(a: Vector2i, b: Vector2i) -> String:
+	if a.x < b.x or (a.x == b.x and a.y <= b.y):
+		return "%d,%d|%d,%d" % [a.x, a.y, b.x, b.y]
+	return "%d,%d|%d,%d" % [b.x, b.y, a.x, a.y]
+
+
+## The cliff edge between adjacent hexes a,b, or null if none.
+func _cliff_between(a: Vector2i, b: Vector2i):
+	return _cliff_by_pair.get(_cliff_pair_key(a, b))
+
+
+## CANONICAL per-corner height (gdd-cliffs-canyons.md §7): the mean _hex_height over the
+## connected COMPONENT of [param coord] among the three hexes meeting at corner [param i],
+## using only NON-cliff edges as connections. Cliffs separate height groups, so adjacent
+## hexes agree across non-cliff edges (no crack) but step across cliffs (gap → wall), and a
+## cliff that ends is "shorted out" through the bridging hex → the gap tapers to zero. The
+## TERRAIN mesh AND the cliff walls both call THIS (bit-identical heights, no FP seams — F3).
+## No cliffs → the whole trio connects → identical to _avg_height(_corner_sharing).
+func _corner_component_avg(coord: Vector2i, i: int) -> float:
+	var offs: Array = _CORNER_NEIGHBORS[i]
+	var trio := [coord, coord + offs[0], coord + offs[1]]   # coord is index 0
+	# BFS coord's component over non-cliff edges (the trio is pairwise adjacent).
+	var comp := [0]
+	var added := {0: true}
+	var head := 0
+	while head < comp.size():
+		var a: int = comp[head]
+		head += 1
+		for b in range(3):
+			if added.has(b) or not _map_data.is_valid_coord(trio[b]):
+				continue
+			if _cliff_between(trio[a], trio[b]) == null:
+				added[b] = true
+				comp.append(b)
+	var sum := 0.0
+	for k in comp:
+		sum += _hex_height(trio[k])
+	return sum / float(comp.size())
+
+
+## The corner index (0..5) of the hex centred at [param center] nearest world-XZ
+## [param p] — matches a shared corner across two hexes by position, no index arithmetic.
+func _corner_index_at(center: Vector2, p: Vector2, corner_off: Array) -> int:
+	var best := 0
+	var best_d := INF
+	for j in range(6):
+		var d: float = (center + corner_off[j]).distance_squared_to(p)
+		if d < best_d:
+			best_d = d
+			best = j
+	return best
 
 
 ## UV2 = (water_flag, fog_value), averaged over the sharing hexes.
@@ -721,6 +808,97 @@ func _river_material() -> StandardMaterial3D:
 	m.emission_energy_multiplier = 0.5
 	_river_material_cache = m
 	return m
+
+
+# ---------------------------------------------------------------------------
+# Cliff/canyon walls — a vertical quad along each cliff edge filling the corner
+# discontinuity the cliff-aware terrain leaves (gdd-cliffs-canyons.md §7). Mountain
+# texture for now; double-sided so it reads from inside a canyon.
+# ---------------------------------------------------------------------------
+
+func _build_cliffs() -> void:
+	for ch in _cliff_root.get_children():
+		ch.queue_free()
+	if _map_data == null or _map_data.cliff_edges.is_empty():
+		return
+	var corner_off := WildernessHexMath.corner_offsets()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var emitted := 0
+	for c in _map_data.cliff_edges:
+		if not (c is HexCliffEdgeData):
+			continue
+		var owner := Vector2i(c.hex_q, c.hex_r)
+		var nb: Vector2i = owner + HexCliffEdgeData.neighbor_offset(c.edge)
+		if not (_map_data.is_valid_coord(owner) and _map_data.is_valid_coord(nb)):
+			continue
+		# Edge e is bounded by owner corners (e+4)%6 and (e+5)%6 (matches _build_chunk).
+		var k1: int = (c.edge + 4) % 6
+		var k2: int = (c.edge + 5) % 6
+		var oc := WildernessHexMath.axial_to_world(owner)
+		var p1: Vector2 = oc + corner_off[k1]
+		var p2: Vector2 = oc + corner_off[k2]
+		# Owner + neighbour heights at the two shared corners — the SAME canonical
+		# component average the terrain fan uses (F3: bit-identical, no seams). The
+		# neighbour's corner indices are matched by world position.
+		var oh1 := _corner_component_avg(owner, k1)
+		var oh2 := _corner_component_avg(owner, k2)
+		var nc := WildernessHexMath.axial_to_world(nb)
+		var nh1 := _corner_component_avg(nb, _corner_index_at(nc, p1, corner_off))
+		var nh2 := _corner_component_avg(nb, _corner_index_at(nc, p2, corner_off))
+		# Wall span = [min, max] of the two component averages (F1: never an inverted,
+		# backfacing quad — independent of which raw hex is "higher").
+		var top1: float = maxf(oh1, nh1)
+		var top2: float = maxf(oh2, nh2)
+		var bot1: float = minf(oh1, nh1)
+		var bot2: float = minf(oh2, nh2)
+		if absf(top1 - bot1) < 1.0e-4 and absf(top2 - bot2) < 1.0e-4:
+			continue   # degenerate at BOTH corners (cliff tapered to zero here) — F2
+		var vb1 := Vector3(p1.x, bot1, p1.y)
+		var vt1 := Vector3(p1.x, top1, p1.y)
+		var vt2 := Vector3(p2.x, top2, p2.y)
+		var vb2 := Vector3(p2.x, bot2, p2.y)
+		st.add_vertex(vb1); st.add_vertex(vt1); st.add_vertex(vt2)
+		st.add_vertex(vb1); st.add_vertex(vt2); st.add_vertex(vb2)
+		emitted += 1
+	if emitted == 0:
+		return
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = _cliff_wall_material()
+	_cliff_root.add_child(mi)
+
+
+func _cliff_wall_material() -> StandardMaterial3D:
+	if _cliff_mat != null:
+		return _cliff_mat
+	var m := StandardMaterial3D.new()
+	var tex := _mountain_texture()
+	if tex != null:
+		m.albedo_texture = tex
+		m.uv1_triplanar = true
+		m.uv1_world_triplanar = true
+		m.uv1_scale = Vector3.ONE / 6.0   # ~match terrain tile density; tune
+	else:
+		m.albedo_color = Color(0.42, 0.36, 0.30)   # rock fallback
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.95
+	m.metallic = 0.0
+	_cliff_mat = m
+	return m
+
+
+## The mountain biome layer pulled out of the splat Texture2DArray as a standalone
+## Texture2D for the wall material (cached). Null if the array isn't ready.
+func _mountain_texture() -> Texture2D:
+	if _mountain_tex != null:
+		return _mountain_tex
+	if _albedo_array != null and _albedo_array.get_layers() > LAYER_MOUNTAIN:
+		var img := _albedo_array.get_layer_data(LAYER_MOUNTAIN)
+		if img != null:
+			_mountain_tex = ImageTexture.create_from_image(img)
+	return _mountain_tex
 
 
 # ---------------------------------------------------------------------------
