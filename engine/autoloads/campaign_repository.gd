@@ -1399,12 +1399,13 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			_: fog_str = "hidden"
 		if not db.query_with_bindings("""
 			INSERT OR REPLACE INTO hex_cells
-				(map_id, q, r, elevation, biome, water, civilization,
-				 has_city, original_biome, fog_state)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				(map_id, q, r, elevation, elevation_raw, biome, biome_subtype,
+				 water, civilization, has_city, original_biome, fog_state)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			map_data.id, coord.x, coord.y,
-			terrain.elevation, terrain.biome, terrain.water, terrain.civilization,
+			terrain.elevation, terrain.elevation_raw, terrain.biome, terrain.biome_subtype,
+			terrain.water, terrain.civilization,
 			1 if terrain.has_city else 0, terrain.original_biome, fog_str
 		]):
 			push_error("CampaignRepository.save_hex_map: cell insert failed at q=%d r=%d" % [coord.x, coord.y])
@@ -1489,7 +1490,9 @@ func load_hex_map(map_id: String) -> HexMapData:
 		var coord := Vector2i(row["q"], row["r"])
 		map_data.hexes[coord] = HexTerrainData.from_dict({
 			"elevation":      row["elevation"],
+			"elevation_raw":  row.get("elevation_raw", 0.0),
 			"biome":          row["biome"],
+			"biome_subtype":  row.get("biome_subtype", ""),
 			"water":          row["water"],
 			"civilization":   row["civilization"],
 			"has_city":       row["has_city"] == 1,

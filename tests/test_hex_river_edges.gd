@@ -32,6 +32,7 @@ func run_all_tests() -> void:
 	test_get_river_edges_for_map_bulk()
 	test_cross_map_isolation()
 	test_round_trip_through_hex_map_data()
+	test_elevation_raw_and_subtype_round_trip()
 	test_loader_auto_flips_non_canonical_json()
 	test_loader_drops_non_adjacent_warning_ok()
 	test_terrain_has_river_cached_on_load()
@@ -291,6 +292,30 @@ func test_round_trip_through_hex_map_data() -> void:
 	check(got.crossing == HexRiverEdgeData.CROSSING_BRIDGE, "crossing round-trip")
 	_cleanup()
 	print("  round_trip_through_hex_map_data: OK")
+
+
+func test_elevation_raw_and_subtype_round_trip() -> void:
+	# Regression (2026-06-26): save_hex_map's INSERT omitted elevation_raw +
+	# biome_subtype, so INSERT OR REPLACE reset both to the column default on every
+	# save — the in-game Get Hex Info panel then read 0.0 raw elevation even on
+	# mountains. Both must survive a full save_hex_map -> load_hex_map round-trip.
+	_setup_campaign()
+	var m := _make_minimal_map(MAP_A)
+	var peak: HexTerrainData = m.hexes[Vector2i(0, 0)]
+	peak.elevation = "mountains"
+	peak.elevation_raw = 0.873
+	peak.biome_subtype = "mountains_volcanic"
+	check(CampaignRepository.save_hex_map(m, TEST_CAMPAIGN), "map should save")
+	var loaded := CampaignRepository.load_hex_map(MAP_A)
+	check(loaded != null, "map should load")
+	var rt: HexTerrainData = loaded.get_hex(Vector2i(0, 0))
+	check(rt != null, "peak hex should load")
+	check(absf(rt.elevation_raw - 0.873) < 1.0e-4,
+		"elevation_raw must round-trip; got %f" % rt.elevation_raw)
+	check(rt.biome_subtype == "mountains_volcanic",
+		"biome_subtype must round-trip; got '%s'" % rt.biome_subtype)
+	_cleanup()
+	print("  elevation_raw_and_subtype_round_trip: OK")
 
 
 func test_terrain_has_river_cached_on_load() -> void:
