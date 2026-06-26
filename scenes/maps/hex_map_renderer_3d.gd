@@ -88,6 +88,8 @@ var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
+var _landmark_root: Node3D = null
+var _landmark_mat: StandardMaterial3D = null
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
@@ -110,6 +112,9 @@ func _ready() -> void:
 	_river_root = Node3D.new()
 	_river_root.name = "Rivers"
 	add_child(_river_root)
+	_landmark_root = Node3D.new()
+	_landmark_root.name = "Landmarks"
+	add_child(_landmark_root)
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
@@ -151,6 +156,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_ensure_field()
 	_build_terrain()
 	_build_rivers()
+	_build_landmarks()
 	_rebuild_tokens()
 	_fit_camera()
 	# Scatter is deferred so it never blocks the session-load flow (this runs inside
@@ -164,6 +170,7 @@ func _on_visibility_updated() -> void:
 	if _map_data != null:
 		_build_terrain()
 		_build_rivers()
+		_build_landmarks()
 		call_deferred("_build_scatter")
 
 
@@ -649,6 +656,100 @@ func _river_material() -> StandardMaterial3D:
 	m.emission_energy_multiplier = 0.5
 	_river_material_cache = m
 	return m
+
+
+# ---------------------------------------------------------------------------
+# Settlement / stronghold landmarks — PLACEHOLDER red cube + market-class label
+# (I-VI for settlements by market_class, O for sub-market strongholds = Outpost).
+# Quaternius glTF replacements come later; this just makes them visible/locatable.
+# ---------------------------------------------------------------------------
+
+const _ROMAN := ["", "I", "II", "III", "IV", "V", "VI"]
+
+
+func _build_landmarks() -> void:
+	for c in _landmark_root.get_children():
+		c.queue_free()
+	if _map_data == null:
+		return
+	for s in _query_settlement_entrances():
+		var coord := Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
+		if _fog_value(coord) < 0.25:
+			continue
+		_place_landmark(coord, _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)])
+	for h in _query_strongholds():
+		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
+		if _fog_value(coord) < 0.25:
+			continue
+		_place_landmark(coord, "O")
+
+
+const LANDMARK_SIZE := 0.36
+
+
+func _place_landmark(coord: Vector2i, text: String) -> void:
+	var xz := WildernessHexMath.axial_to_world(coord)
+	var base_y := _hex_height(coord)
+	var holder := Node3D.new()
+	# Holder at the cube centre; the cube sits ON the terrain (bottom at base_y).
+	holder.position = Vector3(xz.x, base_y + LANDMARK_SIZE * 0.5, xz.y)
+
+	var cube := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(LANDMARK_SIZE, LANDMARK_SIZE, LANDMARK_SIZE)
+	cube.mesh = box
+	cube.material_override = _landmark_cube_material()
+	holder.add_child(cube)
+
+	# Letter on the +Z face (which faces the yaw-0 iso camera) — part of the cube,
+	# world-scaled (no billboard, no fixed_size) so it zooms with everything else.
+	var label := Label3D.new()
+	label.text = text
+	label.font_size = 96
+	label.pixel_size = LANDMARK_SIZE / 150.0
+	label.modulate = Color(1, 1, 1)
+	label.outline_size = 16
+	label.outline_modulate = Color(0, 0, 0)
+	label.double_sided = true
+	label.rotation_degrees = Vector3(0.0, 180.0, 0.0)   # face +Z toward the camera
+	label.position = Vector3(0.0, 0.0, LANDMARK_SIZE * 0.5 + 0.006)
+	holder.add_child(label)
+
+	_landmark_root.add_child(holder)
+
+
+func _landmark_cube_material() -> StandardMaterial3D:
+	if _landmark_mat != null:
+		return _landmark_mat
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.85, 0.12, 0.12)
+	m.emission_enabled = true
+	m.emission = Color(0.55, 0.06, 0.06)
+	m.emission_energy_multiplier = 0.6
+	_landmark_mat = m
+	return m
+
+
+func _query_settlement_entrances() -> Array:
+	if _map_data == null:
+		return []
+	if not CampaignRepository.db.query_with_bindings(
+			"SELECT hex_q, hex_r, market_class, name FROM settlement_entrances WHERE map_id = ?",
+			[_map_data.id]):
+		return []
+	return CampaignRepository.db.query_result.duplicate()
+
+
+func _query_strongholds() -> Array:
+	if _map_data == null:
+		return []
+	if not CampaignRepository.db.query_with_bindings("""
+			SELECT location_hex_q, location_hex_r FROM strongholds
+			WHERE location_map_id = ? AND status IN ('completed', 'claimed')
+			      AND location_hex_q IS NOT NULL AND location_hex_r IS NOT NULL
+		""", [_map_data.id]):
+		return []
+	return CampaignRepository.db.query_result.duplicate()
 
 
 # ---------------------------------------------------------------------------
