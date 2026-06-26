@@ -537,7 +537,8 @@ func _build_scatter() -> void:
 		for ci in range(6):
 			corner_y.append(_avg_height(_corner_sharing(coord, ci)))
 		var rng := WorldGenRng.stream(_campaign_seed, "tree_scatter", 0, "%d,%d" % [coord.x, coord.y])
-		for _i in range(int(pool["density"])):
+		var density := rng.randi_range(int(pool["density_min"]), int(pool["density_max"]))
+		for _i in range(density):
 			var variant_name: String = variants[rng.randi() % variants.size()]
 			var ang := rng.randf() * TAU
 			var rad := sqrt(rng.randf()) * SCATTER_JITTER * WildernessHexMath.HEX_RADIUS
@@ -577,21 +578,26 @@ func _build_scatter() -> void:
 		_scatter_root.add_child(mmi)
 
 
-## Scatter pool for a hex: {variants: Array, density: int}. Empty = no scatter.
+## Scatter pool for a hex: {variants: Array, density_min: int, density_max: int}.
+## Per-hex tree count is randi_range(min, max). Sparse on purpose — a hex is a 6-mile
+## SYMBOL, not a literal forest: regular woods 1-2 trees, dense woods/jungle 3-4.
+## Empty = no scatter.
 func _scatter_pool(t: HexTerrainData) -> Dictionary:
 	if t.water != "" or t.elevation == "mountains":
 		return {}
 	match t.biome:
 		"woods":
+			if t.biome_subtype == "forest_dense":
+				return {"variants": _BROADLEAF, "density_min": 3, "density_max": 4}
 			if t.biome_subtype == "forest_taiga":
-				return {"variants": _PINE, "density": 5}
-			return {"variants": _BROADLEAF, "density": 6}
+				return {"variants": _PINE, "density_min": 1, "density_max": 2}
+			return {"variants": _BROADLEAF, "density_min": 1, "density_max": 2}
 		"jungle":
-			return {"variants": _PALM, "density": 6}
+			return {"variants": _PALM, "density_min": 3, "density_max": 4}
 		"swamp":
-			return {"variants": _WILLOW, "density": 3}
+			return {"variants": _WILLOW, "density_min": 1, "density_max": 2}
 		"desert":
-			return {"variants": _CACTUS, "density": 1}
+			return {"variants": _CACTUS, "density_min": 1, "density_max": 1}
 	return {}
 
 
