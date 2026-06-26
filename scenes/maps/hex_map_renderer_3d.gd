@@ -22,7 +22,9 @@ signal settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)
 # WildernessHexMath is a global class_name (axial<->world helpers).
 
 # --- Tunables ---
-const HEIGHT_GAIN := 3.0          # field surface [0,1] -> world Y (vertical exaggeration)
+const HEIGHT_GAIN := 2.0          # field surface [0,1] -> world Y. ~2.5x vertical
+                                  # exaggeration vs real (1 hex=6mi=1 unit; 0.45 surface
+                                  # span=3500m=0.9 units). Was 3.0 (~3.7x, read as cliffs).
 const WATER_LEVEL_RAW := 0.30     # below this the field is ocean; water mesh Y
 const CHUNK_HEXES := 8            # ~8x8 hexes per mesh chunk (offset-space)
 const TEX_SIZE := 512            # common albedo size for the Texture2DArray

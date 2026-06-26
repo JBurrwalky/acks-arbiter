@@ -20,6 +20,12 @@ uniform vec3 fog_hidden_color : source_color = vec3(0.015, 0.015, 0.02);
 uniform vec3 fog_explored_color : source_color = vec3(0.34, 0.34, 0.38);
 uniform float blend_jitter = 0.4;         // edge-dither strength (feathered transition)
 uniform float dither_freq = 2.6;          // dither feature frequency (per world unit)
+// Relief readability: the geometry is kept gently exaggerated (HEIGHT_GAIN ~2x) so
+// slopes don't read as cliffs, but that leaves gentle HILLS hard to see. Instead of
+// adding height back, exaggerate the slope of the NORMAL the engine LIGHTS with, so a
+// gentle hill shades as if steeper. Purely a lighting effect — geometry is untouched.
+uniform float relief_gain = 4.0;          // 1 = real normals; higher = hills read more
+uniform float relief_cavity = 0.18;       // extra ambient darkening on any slope (AO feel)
 
 varying vec3 v_world;
 varying vec4 v_weights;
@@ -111,6 +117,17 @@ void fragment() {
 	vec3 terrain = sample_terrain(uv, v_world.xz);
 	vec3 albedo = mix(terrain, water_color, clamp(v_water, 0.0, 1.0));
 
+	// Relief readability (land only): tilt the lit NORMAL toward its slope so the
+	// directional light shades gentle hills as if they were steeper. NORMAL is
+	// view-space, so go to world, exaggerate the horizontal components, come back.
+	float relief_slope = 0.0;
+	if (v_water < 0.5) {
+		vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec3 wn_ex = normalize(vec3(wn.x * relief_gain, wn.y, wn.z * relief_gain));
+		relief_slope = clamp(1.0 - wn_ex.y, 0.0, 1.0);
+		NORMAL = normalize((VIEW_MATRIX * vec4(wn_ex, 0.0)).xyz);
+	}
+
 	if (show_grid) {
 		// Distance to the boundary of the flat-top hex this fragment falls in. The
 		// nearest hex centre's edge IS the shared edge, so the line is continuous
@@ -121,6 +138,10 @@ void fragment() {
 		float line = 1.0 - smoothstep(grid_line, grid_line + aa, d);
 		albedo = mix(albedo, grid_color, line * grid_strength);
 	}
+
+	// Slope cavity: a touch of slope-proportional ambient darkening so ridges/valleys
+	// read even where they face away from the sun.
+	albedo *= 1.0 - relief_slope * relief_cavity;
 
 	// fog of war (HIDDEN darkens, EXPLORED desaturates toward grey)
 	if (v_fog < 0.25) {
