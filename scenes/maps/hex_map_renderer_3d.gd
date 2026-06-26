@@ -22,7 +22,7 @@ signal settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)
 # WildernessHexMath is a global class_name (axial<->world helpers).
 
 # --- Tunables ---
-const HEIGHT_GAIN := 8.0          # field surface [0,1] -> world Y
+const HEIGHT_GAIN := 3.0          # field surface [0,1] -> world Y (vertical exaggeration)
 const WATER_LEVEL_RAW := 0.30     # below this the field is ocean; water mesh Y
 const CHUNK_HEXES := 8            # ~8x8 hexes per mesh chunk (offset-space)
 const TEX_SIZE := 512            # common albedo size for the Texture2DArray
@@ -278,29 +278,37 @@ func _build_chunk(coords: Array) -> void:
 		var center_xz := WildernessHexMath.axial_to_world(coord)
 		var ch := _hex_height(coord)
 		var center := Vector3(center_xz.x, ch, center_xz.y)
-		var center_blend := _vertex_blend([coord])
+		var own_layer := float(_biome_layer(t))
 		var center_uv2 := _vertex_uv2([coord])
 
-		# Precompute the 6 corners (height + biome blend from sharing hexes).
-		var corners := []
+		# Precompute the 6 corner positions + fog/water (height = mean of sharing hexes).
+		var corner_pos := []
+		var corner_uv2 := []
 		for i in range(6):
 			var sharing := _corner_sharing(coord, i)
-			var cpos := Vector3(center_xz.x + corner_off[i].x, _avg_height(sharing),
-					center_xz.y + corner_off[i].y)
-			corners.append({
-				"pos": cpos,
-				"blend": _vertex_blend(sharing),
-				"uv2": _vertex_uv2(sharing),
-			})
+			corner_pos.append(Vector3(center_xz.x + corner_off[i].x, _avg_height(sharing),
+					center_xz.y + corner_off[i].y))
+			corner_uv2.append(_vertex_uv2(sharing))
 
-		# Fan: 6 triangles (center, corner i, corner i+1), wound so the top face
-		# is front-facing (CCW) under cull_back viewed from +Y.
+		# Fan: 6 triangles. Each covers the wedge near ONE hex edge, so it blends just
+		# TWO layers — this hex (slot 0) and the neighbour across that edge (slot 1) —
+		# with the SAME layer pair on all 3 of its vertices. (Interpolating per-vertex
+		# layer INDICES through the Texture2DArray is what drew the concentric biome
+		# rings; constant-per-triangle layers + only the WEIGHTS interpolating fixes it.)
 		for i in range(6):
-			var c0: Dictionary = corners[i]
-			var c1: Dictionary = corners[(i + 1) % 6]
-			_emit_vertex(st, center, center_blend, center_uv2)
-			_emit_vertex(st, c0["pos"], c0["blend"], c0["uv2"])
-			_emit_vertex(st, c1["pos"], c1["blend"], c1["uv2"])
+			var e := (i + 2) % 6   # hex edge between corners i and i+1 (HexRiverEdgeData order)
+			var nb_layer := own_layer
+			var nb: Vector2i = coord + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[e]
+			if _map_data.is_valid_coord(nb):
+				var nt := _terrain(nb)
+				if nt != null:
+					nb_layer = float(_biome_layer(nt))
+			var layers := Color(own_layer, nb_layer, 0.0, 0.0)
+			var i1 := (i + 1) % 6
+			# Centre is pure own; both edge corners blend own<->neighbour 50/50.
+			_emit_vertex(st, center, Color(1.0, 0.0, 0.0, 0.0), layers, center_uv2)
+			_emit_vertex(st, corner_pos[i], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i])
+			_emit_vertex(st, corner_pos[i1], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i1])
 
 	st.generate_normals()
 	st.generate_tangents()
@@ -322,9 +330,9 @@ func _build_chunk(coords: Array) -> void:
 	mi.add_child(body)
 
 
-func _emit_vertex(st: SurfaceTool, pos: Vector3, blend: Dictionary, uv2: Vector2) -> void:
-	st.set_color(blend["weights"])
-	st.set_custom(0, blend["layers"])
+func _emit_vertex(st: SurfaceTool, pos: Vector3, weights: Color, layers: Color, uv2: Vector2) -> void:
+	st.set_color(weights)        # per-vertex blend weights (slot0=own, slot1=neighbour)
+	st.set_custom(0, layers)     # constant per triangle -> never interpolates an index
 	st.set_uv(Vector2(pos.x, pos.z))   # world XZ; shader rescales by tex_scale
 	st.set_uv2(uv2)
 	st.add_vertex(pos)
@@ -361,38 +369,6 @@ const _CORNER_NEIGHBORS := [
 	[Vector2i(-1, 0), Vector2i(0, -1)],
 	[Vector2i(0, -1), Vector2i(1, -1)],
 ]
-
-
-## Combine the biome layers of the sharing hexes into <=4 (layer, weight) pairs.
-## Returns {weights: Color, layers: Color}.
-func _vertex_blend(coords: Array) -> Dictionary:
-	var acc := {}   # layer -> weight
-	for c in coords:
-		var t := _terrain(c)
-		if t == null:
-			continue
-		var lyr := _biome_layer(t)
-		acc[lyr] = float(acc.get(lyr, 0.0)) + 1.0
-	if acc.is_empty():
-		return {"weights": Color(1, 0, 0, 0), "layers": Color(0, 0, 0, 0)}
-	var layers := [0, 0, 0, 0]
-	var weights := [0.0, 0.0, 0.0, 0.0]
-	var keys: Array = acc.keys()
-	keys.sort()
-	var total := 0.0
-	for w in acc.values():
-		total += w
-	var slot := 0
-	for k in keys:
-		if slot >= 4:
-			break
-		layers[slot] = k
-		weights[slot] = float(acc[k]) / total
-		slot += 1
-	return {
-		"weights": Color(weights[0], weights[1], weights[2], weights[3]),
-		"layers": Color(float(layers[0]), float(layers[1]), float(layers[2]), float(layers[3])),
-	}
 
 
 ## UV2 = (water_flag, fog_value), averaged over the sharing hexes.

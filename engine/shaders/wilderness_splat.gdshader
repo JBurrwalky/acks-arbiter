@@ -18,6 +18,8 @@ uniform float grid_strength = 0.55;
 uniform float hex_radius = 0.5773503;
 uniform vec3 fog_hidden_color : source_color = vec3(0.015, 0.015, 0.02);
 uniform vec3 fog_explored_color : source_color = vec3(0.34, 0.34, 0.38);
+uniform float blend_jitter = 0.4;         // edge-dither strength (feathered transition)
+uniform float dither_freq = 2.6;          // dither feature frequency (per world unit)
 
 varying vec3 v_world;
 varying vec4 v_weights;
@@ -33,17 +35,35 @@ void vertex() {
 	v_fog = UV2.y;
 }
 
-vec3 sample_terrain(vec2 uv) {
-	float wsum = v_weights.x + v_weights.y + v_weights.z + v_weights.w;
-	if (wsum < 0.0001) {
-		return texture(biome_albedo, vec3(uv, v_layers.x)).rgb;
-	}
-	vec3 c = vec3(0.0);
-	c += texture(biome_albedo, vec3(uv, v_layers.x)).rgb * v_weights.x;
-	c += texture(biome_albedo, vec3(uv, v_layers.y)).rgb * v_weights.y;
-	c += texture(biome_albedo, vec3(uv, v_layers.z)).rgb * v_weights.z;
-	c += texture(biome_albedo, vec3(uv, v_layers.w)).rgb * v_weights.w;
-	return c / wsum;
+// Cheap hash value-noise for organic edge dithering.
+float hash12(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash12(i);
+	float b = hash12(i + vec2(1.0, 0.0));
+	float c = hash12(i + vec2(0.0, 1.0));
+	float d = hash12(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// Two-layer biome blend: slot0 = own hex, slot1 = the edge neighbour. The layer pair
+// is CONSTANT per triangle (no layer-index interpolation -> no concentric rings).
+// v_weights.y runs 0 at the hex centre -> 0.5 at the shared edge; noise jitters the
+// transition (ramped up away from the centre) so the boundary feathers, not bands.
+vec3 sample_terrain(vec2 uv, vec2 world_xz) {
+	float blend = v_weights.y;
+	float dw = smoothstep(0.04, 0.25, blend);
+	float n = vnoise(world_xz * dither_freq) - 0.5;
+	blend = clamp(blend + n * blend_jitter * dw, 0.0, 0.5);
+	vec3 a = texture(biome_albedo, vec3(uv, v_layers.x)).rgb;
+	vec3 b = texture(biome_albedo, vec3(uv, v_layers.y)).rgb;
+	return mix(a, b, blend);
 }
 
 // world XZ -> nearest axial hex (q,r). FLAT-TOP, cube-rounded — the exact inverse
@@ -88,7 +108,7 @@ float sd_hex_flat(vec2 p, float r) {
 
 void fragment() {
 	vec2 uv = v_world.xz / tex_scale;
-	vec3 terrain = sample_terrain(uv);
+	vec3 terrain = sample_terrain(uv, v_world.xz);
 	vec3 albedo = mix(terrain, water_color, clamp(v_water, 0.0, 1.0));
 
 	if (show_grid) {
