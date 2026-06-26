@@ -67,6 +67,15 @@ const _PALM := ["palm_tree_1", "palm_tree_2", "palm_tree_3", "palm_tree_4"]
 const _WILLOW := ["willow_1", "willow_2", "willow_3", "willow_4", "willow_5"]
 const _CACTUS := ["cactus_1", "cactus_2", "cactus_3", "cactus_4", "cactus_5"]
 
+# --- Edge rivers (GDD §8.3/§8.4) — water ribbons along the HexRiverEdgeData edges ---
+## Ribbon width (world units) by navigability. Rivers run ALONG hex edges
+## (corner->corner); width scales with navigable craft size.
+const _RIVER_WIDTH := {
+	"none": 0.09, "small_craft": 0.12, "river_craft": 0.17, "large_craft": 0.26,
+}
+## Raise the water just above the terrain so it doesn't z-fight the surface.
+const RIVER_LIFT := 0.035
+
 var _controller: HexMapController = null
 var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
@@ -77,6 +86,8 @@ var _camera: Camera3D = null
 var _terrain_root: Node3D = null
 var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
+var _river_root: Node3D = null
+var _river_material_cache: StandardMaterial3D = null
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
@@ -96,6 +107,9 @@ func _ready() -> void:
 	_scatter_root = Node3D.new()
 	_scatter_root.name = "Scatter"
 	add_child(_scatter_root)
+	_river_root = Node3D.new()
+	_river_root.name = "Rivers"
+	add_child(_river_root)
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
@@ -136,6 +150,7 @@ func _on_map_loaded(_map_id: String) -> void:
 		return
 	_ensure_field()
 	_build_terrain()
+	_build_rivers()
 	_rebuild_tokens()
 	_fit_camera()
 	# Scatter is deferred so it never blocks the session-load flow (this runs inside
@@ -145,9 +160,10 @@ func _on_map_loaded(_map_id: String) -> void:
 
 func _on_visibility_updated() -> void:
 	# Fog rides in per-vertex UV2; cheapest correct path is a terrain rebuild.
-	# Scatter is gated on non-hidden hexes, so it refreshes with the fog too.
+	# Scatter + rivers are gated on non-hidden hexes, so they refresh with the fog.
 	if _map_data != null:
 		_build_terrain()
+		_build_rivers()
 		call_deferred("_build_scatter")
 
 
@@ -577,6 +593,86 @@ func _first_mesh_instance(node: Node) -> MeshInstance3D:
 		if found != null:
 			return found
 	return null
+
+
+# ---------------------------------------------------------------------------
+# Edge rivers (GDD §8.3/§8.4) — water ribbons ALONG hex edges (corner->corner)
+# ---------------------------------------------------------------------------
+
+func _build_rivers() -> void:
+	for c in _river_root.get_children():
+		c.queue_free()
+	if _map_data == null or _map_data.river_edges.is_empty():
+		return
+	var corner_off := WildernessHexMath.corner_offsets()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var emitted := 0
+	for edge_data in _map_data.river_edges:
+		if not (edge_data is HexRiverEdgeData):
+			continue
+		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		# Fog: skip if BOTH endpoint hexes are still hidden (don't reveal unseen rivers).
+		var nb: Vector2i = owner + HexRiverEdgeData.neighbor_offset(edge_data.edge)
+		if _fog_value(owner) < 0.25 and _fog_value(nb) < 0.25:
+			continue
+		# Edge e (0=N..5=NW) is bounded by mesh corners (e+4)%6 and (e+5)%6.
+		var e: int = edge_data.edge
+		var i1 := (e + 4) % 6
+		var i2 := (e + 5) % 6
+		var center := WildernessHexMath.axial_to_world(owner)
+		var p1 := Vector3(center.x + corner_off[i1].x,
+				_avg_height(_corner_sharing(owner, i1)) + RIVER_LIFT, center.y + corner_off[i1].y)
+		var p2 := Vector3(center.x + corner_off[i2].x,
+				_avg_height(_corner_sharing(owner, i2)) + RIVER_LIFT, center.y + corner_off[i2].y)
+		var w: float = _RIVER_WIDTH.get(edge_data.navigability, 0.075)
+		_emit_river_quad(st, p1, p2, w)
+		emitted += 1
+	if emitted == 0:
+		return
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = _river_material()
+	_river_root.add_child(mi)
+
+
+## A flat water quad of width [param w] from p1 to p2, perpendicular in XZ.
+func _emit_river_quad(st: SurfaceTool, p1: Vector3, p2: Vector3, w: float) -> void:
+	var dir := p2 - p1
+	dir.y = 0.0
+	if dir.length() < 1.0e-5:
+		return
+	dir = dir.normalized()
+	var perp := Vector3(-dir.z, 0.0, dir.x) * (w * 0.5)
+	var a := p1 - perp
+	var b := p1 + perp
+	var c := p2 + perp
+	var d := p2 - perp
+	st.set_uv(Vector2(0, 0)); st.add_vertex(a)
+	st.set_uv(Vector2(1, 0)); st.add_vertex(b)
+	st.set_uv(Vector2(1, 1)); st.add_vertex(c)
+	st.set_uv(Vector2(0, 0)); st.add_vertex(a)
+	st.set_uv(Vector2(1, 1)); st.add_vertex(c)
+	st.set_uv(Vector2(0, 1)); st.add_vertex(d)
+
+
+func _river_material() -> StandardMaterial3D:
+	if _river_material_cache != null:
+		return _river_material_cache
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.20, 0.48, 0.74, 0.95)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED   # thin ribbon, view from above only
+	m.roughness = 0.1
+	m.metallic = 0.0
+	m.metallic_specular = 0.8
+	# A touch of emission so rivers stay readable against shadowed terrain.
+	m.emission_enabled = true
+	m.emission = Color(0.05, 0.16, 0.26)
+	m.emission_energy_multiplier = 0.5
+	_river_material_cache = m
+	return m
 
 
 # ---------------------------------------------------------------------------
