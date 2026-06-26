@@ -19,6 +19,7 @@ func run_all_tests() -> void:
 	test_rng_same_key_same_sequence()
 	test_rng_key_components_diverge()
 	test_parameters_round_trip()
+	test_parameters_from_db_row()
 	test_parameters_derived_accessors()
 	test_generate_persists_parameters()
 	test_generate_emits_stage_signals()
@@ -97,6 +98,30 @@ func test_parameters_round_trip() -> void:
 		"default canonical_json not stable across instances")
 	check(SettingParameters.new().canonical_json() != p.canonical_json(),
 		"modified params canonical_json equals defaults")
+
+
+func test_parameters_from_db_row() -> void:
+	# REGRESSION (2026-06-26): SettingRepository.get_parameters() returns the raw
+	# setting_parameters DB ROW, whose real parameter vector lives in the params_json
+	# STRING column. from_dict must parse that; otherwise it silently DEFAULTED every
+	# field — most damagingly map_size -> "medium", so a huge/large/small world
+	# regenerated its field at the wrong size and the 6-mile materialization window
+	# clamped off the field edge into open ocean (party spawned mid-sea, no land).
+	var p := SettingParameters.new()
+	p.map_size = "huge"
+	p.sea_level = 0.42
+	p.land_mass_style = "archipelago"
+	# Exactly the shape get_parameters() hands back (canonical_json IS params_json).
+	var db_row := {
+		"campaign_id": "x", "campaign_seed": 99,
+		"params_json": p.canonical_json(), "is_locked": 0,
+	}
+	var restored := SettingParameters.from_dict(db_row)
+	check(restored.map_size == "huge", "from_dict(DB row) lost map_size (got %s)" % restored.map_size)
+	check(restored.map_dimensions() == Vector2i(60, 45),
+		"huge map_dimensions wrong after DB-row from_dict (got %s)" % str(restored.map_dimensions()))
+	check(absf(restored.sea_level - 0.42) < 1.0e-6, "from_dict(DB row) lost sea_level")
+	check(restored.land_mass_style == "archipelago", "from_dict(DB row) lost land_mass_style")
 
 
 func test_parameters_derived_accessors() -> void:

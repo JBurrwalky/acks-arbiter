@@ -170,6 +170,16 @@ func to_dict() -> Dictionary:
 
 
 static func from_dict(data: Dictionary) -> SettingParameters:
+	# Accept a raw `setting_parameters` DB row directly: its real parameter vector
+	# lives in the `params_json` string column (campaign_seed is a separate column
+	# the callers read on their own). Without this, from_dict(get_parameters(...))
+	# silently DEFAULTED every field — most damagingly map_size -> "medium", so a
+	# huge/large/small world regenerated its field at the wrong size and the 6-mile
+	# materialization window clamped off the field edge into open ocean.
+	if data.has("params_json"):
+		var parsed: Variant = JSON.parse_string(str(data["params_json"]))
+		if parsed is Dictionary:
+			data = parsed
 	var p := SettingParameters.new()
 	p.map_size = str(data.get("map_size", p.map_size))
 	p.land_mass_style = str(data.get("land_mass_style", p.land_mass_style))
