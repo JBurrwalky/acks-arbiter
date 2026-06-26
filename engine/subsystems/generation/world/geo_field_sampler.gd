@@ -62,7 +62,7 @@ static func tag_for_footprint(field: GeoField, ox: float, oy: float, size: float
 					land += 1
 					# Gradient-aware per-cell tag (relief + height), then the footprint
 					# aggregates these counts via the mountain-override / hills-frac rules.
-					match HeightmapGenerator.elevation_tag_for(field.surface[ci], field.slope[ci]):
+					match HeightmapGenerator.elevation_tag_for(field.surface[ci], field.slope[ci], field.prominence[ci]):
 						"mountains":
 							mtn += 1
 						"hills":

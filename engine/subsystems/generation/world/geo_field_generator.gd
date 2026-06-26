@@ -145,7 +145,8 @@ static func generate(campaign_seed: int, params) -> GeoField:
 	_flow_accumulation(field)
 	var fat := _fat(params)
 	_strahler_order(field, fat)
-	_compute_slope(field)      # geomorphic relief (pre-incision) for elevation tagging
+	_compute_slope(field)      # immediate relief (pre-incision) for elevation tagging
+	_compute_prominence(field) # medium-scale relief (rise above the local valley floor)
 	_incise_channels(field, fat)
 	return field
 
@@ -168,6 +169,39 @@ static func _compute_slope(field: GeoField) -> void:
 					continue
 				mx = maxf(mx, absf(here - field.surface[nr * w + nc]))
 			field.slope[i] = mx
+
+
+## Prominence = surface − min(surface within PROMINENCE_RADIUS cells), a separable
+## square min-filter (horizontal min, then vertical min of that). Computed on the
+## geomorphic surface (pre-incision), so river valleys don't deepen the floor.
+## Window radius ~3 cells (≈18 mi): broad enough to reach a range's flanking
+## valleys, narrow enough that a bump on a wide plateau still floors on the plateau.
+const PROMINENCE_RADIUS := 3
+
+static func _compute_prominence(field: GeoField) -> void:
+	var w := field.width
+	var h := field.height
+	var n := w * h
+	var r := PROMINENCE_RADIUS
+	var rowmin := PackedFloat32Array()
+	rowmin.resize(n)
+	for row in range(h):
+		for col in range(w):
+			var c0 := maxi(col - r, 0)
+			var c1 := mini(col + r, w - 1)
+			var lo := field.surface[row * w + c0]
+			for cc in range(c0 + 1, c1 + 1):
+				lo = minf(lo, field.surface[row * w + cc])
+			rowmin[row * w + col] = lo
+	for row in range(h):
+		var r0 := maxi(row - r, 0)
+		var r1 := mini(row + r, h - 1)
+		for col in range(w):
+			var i := row * w + col
+			var lo := rowmin[r0 * w + col]
+			for rr in range(r0 + 1, r1 + 1):
+				lo = minf(lo, rowmin[rr * w + col])
+			field.prominence[i] = maxf(field.surface[i] - lo, 0.0)
 
 
 static func _fat(params) -> float:

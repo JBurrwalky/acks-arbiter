@@ -27,33 +27,51 @@ func run_all_tests() -> void:
 	test_channel_incision()
 	test_sample_surface_bilinear()
 	test_range_style_switches()
-	test_elevation_tag_gradient()
-	test_slope_channel_populated()
+	test_elevation_tag_combined()
+	test_slope_and_prominence_channels_populated()
 	test_large_map_performance()
 	print("GeoFieldLayer1Tests: all tests passed (%d checks)" % test_count())
 
 
-func test_elevation_tag_gradient() -> void:
-	# The gradient classifier tags on local RELIEF, not absolute height, so a steep
-	# crest reads as mountains and a flat-topped high plateau reads as flat.
-	check(HeightmapGenerator.elevation_tag_for(0.50, 0.20) == "mountains",
-		"a steep crest at modest height should be mountains")
-	check(HeightmapGenerator.elevation_tag_for(0.95, 0.004) == "flat",
+func test_elevation_tag_combined() -> void:
+	# The tag combines height-gate + slope + prominence (2026-06-26 ruling).
+	var H := HeightmapGenerator
+	# High AND steep -> mountains.
+	check(H.elevation_tag_for(0.80, 0.20, 0.0) == "mountains",
+		"high steep crest should be mountains")
+	# Steep but BELOW the height gate -> hills, not mountains (the option-2 fix).
+	check(H.elevation_tag_for(0.50, 0.20, 0.0) == "hills",
+		"a steep but low ridge should be hills, not mountains (height gate)")
+	# High AND smooth but very prominent massif -> mountains (prominence catches it).
+	check(H.elevation_tag_for(0.80, 0.02, 0.20) == "mountains",
+		"a high, smooth, prominent massif should be mountains via prominence")
+	# Flat-topped high plateau (low slope + low prominence) -> flat.
+	check(H.elevation_tag_for(0.95, 0.004, 0.01) == "flat",
 		"a flat-topped high plateau should be flat, not mountains")
-	check(HeightmapGenerator.elevation_tag_for(0.40, HeightmapGenerator.HILL_SLOPE + 0.01) == "hills",
+	# Rolling ground -> hills.
+	check(H.elevation_tag_for(0.40, H.HILL_SLOPE + 0.01, 0.0) == "hills",
 		"rolling ground should be hills")
-	check(HeightmapGenerator.elevation_tag_for(0.80, HeightmapGenerator.HILL_SLOPE - 0.01) == "flat",
-		"high but gentle ground should be flat (height does not force a band)")
+	# Gentle low ground -> flat.
+	check(H.elevation_tag_for(0.60, H.HILL_SLOPE - 0.01, 0.05) == "flat",
+		"gentle low ground should be flat")
+	# Prominence alone (below the height gate) does NOT make hills — it is a
+	# mountains-only signal, so a smooth raised lowland stays flat.
+	check(H.elevation_tag_for(0.50, H.HILL_SLOPE - 0.01, 0.30) == "flat",
+		"prominence below the height gate must not promote to hills")
 
 
-func test_slope_channel_populated() -> void:
-	# GeoField.slope must be allocated and carry real relief on land (it drives tags).
+func test_slope_and_prominence_channels_populated() -> void:
+	# Both relief channels must be allocated and carry real signal on land.
 	var f := _shared()
 	check(f.slope.size() == f.size_cells(), "slope channel not allocated")
+	check(f.prominence.size() == f.size_cells(), "prominence channel not allocated")
 	var max_slope := 0.0
+	var max_prom := 0.0
 	for i in range(f.size_cells()):
 		max_slope = maxf(max_slope, f.slope[i])
+		max_prom = maxf(max_prom, f.prominence[i])
 	check(max_slope > 0.02, "slope channel looks empty (max %f)" % max_slope)
+	check(max_prom > 0.05, "prominence channel looks empty (max %f)" % max_prom)
 
 
 func test_range_style_switches() -> void:

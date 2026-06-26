@@ -240,7 +240,7 @@ static func _classify(field: GeoField, campaign_seed: int, ocean_dist: PackedInt
 			var py := (float(row) + 0.5) * GeoField.CELL_MILES
 			var seasonality := (season_noise.get_noise_2d(px, py) + 1.0) * 0.5
 			var koppen := ClimateGenerator._classify_koppen(field.temperature[i], field.precipitation[i], seasonality)
-			var elev_tag := HeightmapGenerator.elevation_tag_for(field.surface[i], field.slope[i])
+			var elev_tag := HeightmapGenerator.elevation_tag_for(field.surface[i], field.slope[i], field.prominence[i])
 			var d := {"elevation": elev_tag, "precipitation": field.precipitation[i], "water": ""}
 			ClimateGenerator._assign_biome(d, koppen, ocean_dist[i])
 			field.biome[i] = maxi(0, GeoField.BIOME_NAMES.find(str(d["biome"])))

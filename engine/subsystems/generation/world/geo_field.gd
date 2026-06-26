@@ -53,6 +53,11 @@ var surface: PackedFloat32Array = PackedFloat32Array()
 ## surface (pre channel-incision). The gradient signal for elevation tagging —
 ## lets a flat-topped plateau read as flat and a prominent peak read as mountains.
 var slope: PackedFloat32Array = PackedFloat32Array()
+## Per-cell prominence: rise above the local valley floor (surface − min surface
+## within PROMINENCE_RADIUS cells), on the GEOMORPHIC surface (pre-incision). The
+## medium-scale relief signal — catches a smooth massif that slope misses and
+## vetoes a small bump sitting on an already-high plateau. 0 on flat/lowland.
+var prominence: PackedFloat32Array = PackedFloat32Array()
 ## Depression-filled hydrology DEM (surface + Priority-Flood fill + ε). Used only
 ## for flow routing — never rendered.
 var filled: PackedFloat32Array = PackedFloat32Array()
@@ -102,6 +107,7 @@ func allocate(w: int, h: int) -> void:
 	var n := w * h
 	surface.resize(n)
 	slope.resize(n)
+	prominence.resize(n)
 	filled.resize(n)
 	flow_accum.resize(n)
 	flow_accum.fill(1.0)
