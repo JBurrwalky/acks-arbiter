@@ -27,8 +27,33 @@ func run_all_tests() -> void:
 	test_channel_incision()
 	test_sample_surface_bilinear()
 	test_range_style_switches()
+	test_elevation_tag_gradient()
+	test_slope_channel_populated()
 	test_large_map_performance()
 	print("GeoFieldLayer1Tests: all tests passed (%d checks)" % test_count())
+
+
+func test_elevation_tag_gradient() -> void:
+	# The gradient classifier tags on local RELIEF, not absolute height, so a steep
+	# crest reads as mountains and a flat-topped high plateau reads as flat.
+	check(HeightmapGenerator.elevation_tag_for(0.50, 0.20) == "mountains",
+		"a steep crest at modest height should be mountains")
+	check(HeightmapGenerator.elevation_tag_for(0.95, 0.004) == "flat",
+		"a flat-topped high plateau should be flat, not mountains")
+	check(HeightmapGenerator.elevation_tag_for(0.40, HeightmapGenerator.HILL_SLOPE + 0.01) == "hills",
+		"rolling ground should be hills")
+	check(HeightmapGenerator.elevation_tag_for(0.80, HeightmapGenerator.HILL_SLOPE - 0.01) == "flat",
+		"high but gentle ground should be flat (height does not force a band)")
+
+
+func test_slope_channel_populated() -> void:
+	# GeoField.slope must be allocated and carry real relief on land (it drives tags).
+	var f := _shared()
+	check(f.slope.size() == f.size_cells(), "slope channel not allocated")
+	var max_slope := 0.0
+	for i in range(f.size_cells()):
+		max_slope = maxf(max_slope, f.slope[i])
+	check(max_slope > 0.02, "slope channel looks empty (max %f)" % max_slope)
 
 
 func test_range_style_switches() -> void:

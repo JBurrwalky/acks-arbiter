@@ -60,13 +60,15 @@ static func tag_for_footprint(field: GeoField, ox: float, oy: float, size: float
 					lake += 1
 				_:
 					land += 1
-					var hgt := field.surface[ci]
-					if hgt >= HeightmapGenerator.MOUNTAINS_THRESHOLD:
-						mtn += 1
-					elif hgt >= HeightmapGenerator.HILLS_THRESHOLD:
-						hills += 1
-					else:
-						flat += 1
+					# Gradient-aware per-cell tag (relief + height), then the footprint
+					# aggregates these counts via the mountain-override / hills-frac rules.
+					match HeightmapGenerator.elevation_tag_for(field.surface[ci], field.slope[ci]):
+						"mountains":
+							mtn += 1
+						"hills":
+							hills += 1
+						_:
+							flat += 1
 					var b := field.biome[ci]
 					biome_votes[b] = int(biome_votes.get(b, 0)) + 1
 					if not subtype_by_biome.has(b):

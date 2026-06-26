@@ -49,6 +49,10 @@ var height: int = 0
 ## Final visible surface, 0-1 (post-curve, post-channel-incision). The terrain
 ## renderer / hex normalizer samples THIS.
 var surface: PackedFloat32Array = PackedFloat32Array()
+## Per-cell local relief (max |Δsurface| to a D8 neighbour) on the GEOMORPHIC
+## surface (pre channel-incision). The gradient signal for elevation tagging —
+## lets a flat-topped plateau read as flat and a prominent peak read as mountains.
+var slope: PackedFloat32Array = PackedFloat32Array()
 ## Depression-filled hydrology DEM (surface + Priority-Flood fill + ε). Used only
 ## for flow routing — never rendered.
 var filled: PackedFloat32Array = PackedFloat32Array()
@@ -97,6 +101,7 @@ func allocate(w: int, h: int) -> void:
 	height = h
 	var n := w * h
 	surface.resize(n)
+	slope.resize(n)
 	filled.resize(n)
 	flow_accum.resize(n)
 	flow_accum.fill(1.0)

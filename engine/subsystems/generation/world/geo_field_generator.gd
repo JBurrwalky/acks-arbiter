@@ -145,8 +145,29 @@ static func generate(campaign_seed: int, params) -> GeoField:
 	_flow_accumulation(field)
 	var fat := _fat(params)
 	_strahler_order(field, fat)
+	_compute_slope(field)      # geomorphic relief (pre-incision) for elevation tagging
 	_incise_channels(field, fat)
 	return field
+
+
+## Per-cell local relief = max |Δsurface| to a D8 neighbour, on the GEOMORPHIC
+## surface (called before channel incision so river valleys don't read as steep
+## mountains). Feeds the gradient-aware elevation classifier.
+static func _compute_slope(field: GeoField) -> void:
+	var w := field.width
+	var h := field.height
+	for row in range(h):
+		for col in range(w):
+			var i := row * w + col
+			var here := field.surface[i]
+			var mx := 0.0
+			for off: Vector2i in GeoField.D8:
+				var nc := col + off.x
+				var nr := row + off.y
+				if nc < 0 or nc >= w or nr < 0 or nr >= h:
+					continue
+				mx = maxf(mx, absf(here - field.surface[nr * w + nc]))
+			field.slope[i] = mx
 
 
 static func _fat(params) -> float:
