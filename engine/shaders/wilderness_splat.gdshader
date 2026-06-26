@@ -13,7 +13,7 @@ uniform float tex_scale = 6.0;            // world units per albedo tile
 uniform vec3 water_color : source_color = vec3(0.16, 0.34, 0.52);
 uniform bool show_grid = true;
 uniform vec3 grid_color : source_color = vec3(0.04, 0.04, 0.05);
-uniform float grid_line = 0.05;           // line half-width (axial-cube units, 0..0.5)
+uniform float grid_line = 0.022;          // line half-width in WORLD units
 uniform float grid_strength = 0.55;
 uniform float hex_radius = 0.5773503;
 uniform vec3 fog_hidden_color : source_color = vec3(0.015, 0.015, 0.02);
@@ -46,11 +46,44 @@ vec3 sample_terrain(vec2 uv) {
 	return c / wsum;
 }
 
-// world XZ -> fractional cube coords (matches WildernessHexMath.world_to_axial)
-vec3 world_to_cube(vec2 xz) {
+// world XZ -> nearest axial hex (q,r). FLAT-TOP, cube-rounded — the exact inverse
+// of axial_to_world below and of WildernessHexMath / HexMapController.axial_to_godot_map
+// (the shared even-q transform the 2D renderer + every data model are built on).
+vec2 world_to_axial(vec2 xz) {
 	float q = (2.0 / 3.0 * xz.x) / hex_radius;
 	float r = (-1.0 / 3.0 * xz.x + (1.7320508 / 3.0) * xz.y) / hex_radius;
-	return vec3(q, -q - r, r);
+	float x = q;
+	float z = r;
+	float y = -x - z;
+	float rx = floor(x + 0.5);
+	float ry = floor(y + 0.5);
+	float rz = floor(z + 0.5);
+	float dx = abs(rx - x);
+	float dy = abs(ry - y);
+	float dz = abs(rz - z);
+	if (dx > dy && dx > dz) {
+		rx = -ry - rz;
+	} else if (dy > dz) {
+		ry = -rx - rz;
+	} else {
+		rz = -rx - ry;
+	}
+	return vec2(rx, rz);
+}
+
+vec2 axial_to_world(vec2 qr) {
+	return vec2(hex_radius * 1.5 * qr.x, hex_radius * 1.7320508 * (qr.y + qr.x * 0.5));
+}
+
+// Signed distance to a FLAT-TOP hexagon (flat N/S edges, E/W vertices — the
+// orientation the mesh corners + the 2D renderer use), apothem r = centre->edge.
+// True Euclidean SDF, so the grid line is a uniform width all the way round.
+float sd_hex_flat(vec2 p, float r) {
+	const vec3 k = vec3(-0.8660254, 0.5, 0.5773503);
+	p = abs(p);
+	p -= 2.0 * min(dot(k.xy, p), 0.0) * k.xy;
+	p -= vec2(clamp(p.x, -k.z * r, k.z * r), r);
+	return length(p) * sign(p.y);
 }
 
 void fragment() {
@@ -59,23 +92,13 @@ void fragment() {
 	vec3 albedo = mix(terrain, water_color, clamp(v_water, 0.0, 1.0));
 
 	if (show_grid) {
-		vec3 cube = world_to_cube(v_world.xz);
-		// Constraint-preserving cube rounding: rounding each axis independently
-		// breaks q+r+s=0, which mis-locates the nearest hex centre near vertices and
-		// blobs the grid lines at every corner. Reset the worst-rounded axis instead.
-		vec3 rc = round(cube);
-		vec3 dc = abs(cube - rc);
-		if (dc.x > dc.y && dc.x > dc.z) {
-			rc.x = -rc.y - rc.z;
-		} else if (dc.y > dc.z) {
-			rc.y = -rc.x - rc.z;
-		} else {
-			rc.z = -rc.x - rc.y;
-		}
-		vec3 diff = abs(cube - rc);                  // 0 at hex centre .. 0.5 at edge
-		float border = max(diff.x, max(diff.y, diff.z));
-		float aa = fwidth(border) * 1.5 + 0.0015;
-		float line = smoothstep(0.5 - grid_line - aa, 0.5 - grid_line + aa, border);
+		// Distance to the boundary of the flat-top hex this fragment falls in. The
+		// nearest hex centre's edge IS the shared edge, so the line is continuous
+		// across boundaries and uniform-width (a true SDF, not the rotated cube metric).
+		vec2 center = axial_to_world(world_to_axial(v_world.xz));
+		float d = abs(sd_hex_flat(v_world.xz - center, hex_radius * 0.8660254));
+		float aa = fwidth(d) + 0.0015;
+		float line = 1.0 - smoothstep(grid_line, grid_line + aa, d);
 		albedo = mix(albedo, grid_color, line * grid_strength);
 	}
 
