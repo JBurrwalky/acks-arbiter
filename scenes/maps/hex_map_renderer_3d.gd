@@ -93,12 +93,20 @@ var _river_material_cache: StandardMaterial3D = null
 var _landmark_root: Node3D = null
 var _landmark_mat: StandardMaterial3D = null
 var _dungeon_mat: StandardMaterial3D = null
+## Strongholds live in their own root so they can be hidden as a group when zoomed
+## out (there can be hundreds from the feudal fill — they bury the map otherwise).
+var _stronghold_root: Node3D = null
+var _stronghold_mat: StandardMaterial3D = null
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
 var _chunks: Array = []           # MeshInstance3D list (for rebuild)
 var _hex_height_cache := {}       # Vector2i -> float (world Y at hex center)
 var _party_tokens := {}           # party_id -> Node3D
+## Dev: reveal the whole map (no fog) for renderer work — project setting
+## acks/rendering/reveal_all_fog (default false). Refreshed on every map load, so
+## flipping the setting + reloading the campaign reveals everything. OFF in normal play.
+var _reveal_all_fog := false
 
 var _zoom := 24.0
 var _zoom_min := 8.0
@@ -118,6 +126,9 @@ func _ready() -> void:
 	_landmark_root = Node3D.new()
 	_landmark_root.name = "Landmarks"
 	add_child(_landmark_root)
+	_stronghold_root = Node3D.new()
+	_stronghold_root.name = "Strongholds"
+	add_child(_stronghold_root)
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
@@ -156,6 +167,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_map_data = _controller.get_map()
 	if _map_data == null:
 		return
+	_reveal_all_fog = bool(ProjectSettings.get_setting("acks/rendering/reveal_all_fog", false))
 	_ensure_field()
 	_build_terrain()
 	_build_rivers()
@@ -420,6 +432,8 @@ func _vertex_uv2(coords: Array) -> Vector2:
 
 
 func _fog_value(coord: Vector2i) -> float:
+	if _reveal_all_fog:
+		return 1.0
 	if _map_data == null:
 		return 1.0
 	match _map_data.get_fog_state(coord):
@@ -504,7 +518,7 @@ func _build_scatter() -> void:
 	var max_z := -INF
 	for coord in _map_data.hexes.keys():
 		# Don't reveal unexplored ground (fog leak): scatter only non-hidden hexes.
-		if _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN:
+		if not _reveal_all_fog and _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN:
 			continue
 		var t := _terrain(coord)
 		if t == null:
@@ -704,23 +718,34 @@ const _ROMAN := ["", "I", "II", "III", "IV", "V", "VI"]
 func _build_landmarks() -> void:
 	for c in _landmark_root.get_children():
 		c.queue_free()
+	for c in _stronghold_root.get_children():
+		c.queue_free()
 	if _map_data == null:
 		return
-	# One marker per hex. A settlement and a stronghold on the same hex are generally
-	# the same place (the stronghold became a settlement POI), so the settlement wins —
-	# show its market class, not the stronghold's "O".
-	var by_hex := {}   # Vector2i -> label String
+	# Settlements: a full red cube + market-class letter, always visible (a settlement
+	# and a stronghold on the same hex are the same place — the settlement wins).
+	var settlement_hexes := {}   # Vector2i -> label String
 	for s in _query_settlement_entrances():
 		var coord := Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
-		by_hex[coord] = _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)]
-	for h in _query_strongholds():
-		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
-		if not by_hex.has(coord):
-			by_hex[coord] = "O"
-	for coord in by_hex:
+		settlement_hexes[coord] = _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)]
+	for coord in settlement_hexes:
 		if _fog_value(coord) < 0.25:
 			continue
-		_place_landmark(coord, by_hex[coord])
+		_place_landmark(coord, settlement_hexes[coord])
+
+	# Strongholds (where no settlement sits): a small DIM cube in the dedicated
+	# stronghold root, so the group can be hidden when zoomed out (the feudal fill
+	# can place hundreds). Deduped against settlements; no letter (keeps them quiet).
+	var stronghold_hexes := {}
+	for h in _query_strongholds():
+		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
+		if not settlement_hexes.has(coord):
+			stronghold_hexes[coord] = true
+	for coord in stronghold_hexes:
+		if _fog_value(coord) < 0.25:
+			continue
+		_place_stronghold_marker(coord)
+	_update_stronghold_lod()
 
 	# Dungeons: a purple pyramid at each entrance. Shown regardless of fog for now —
 	# placeholder location markers so dungeons are visible before entry/discovery is
@@ -731,6 +756,10 @@ func _build_landmarks() -> void:
 
 
 const LANDMARK_SIZE := 0.36
+## Stronghold cubes are smaller + dimmer than settlements, and the whole group hides
+## when the camera's ortho size exceeds this (zoomed out) — see _update_stronghold_lod.
+const STRONGHOLD_SIZE := 0.18
+const STRONGHOLD_LOD_ZOOM := 18.0
 
 
 func _place_landmark(coord: Vector2i, text: String) -> void:
@@ -773,6 +802,32 @@ func _landmark_cube_material() -> StandardMaterial3D:
 	m.emission = Color(0.55, 0.06, 0.06)
 	m.emission_energy_multiplier = 0.6
 	_landmark_mat = m
+	return m
+
+
+## A small, dim red cube for a stronghold (no letter). Sits in _stronghold_root so the
+## whole layer can be hidden when zoomed out; recessive vs the brighter settlement cube.
+func _place_stronghold_marker(coord: Vector2i) -> void:
+	var xz := WildernessHexMath.axial_to_world(coord)
+	var base_y := _hex_height(coord)
+	var cube := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(STRONGHOLD_SIZE, STRONGHOLD_SIZE, STRONGHOLD_SIZE)
+	cube.mesh = box
+	cube.material_override = _stronghold_marker_material()
+	cube.position = Vector3(xz.x, base_y + STRONGHOLD_SIZE * 0.5, xz.y)
+	_stronghold_root.add_child(cube)
+
+
+func _stronghold_marker_material() -> StandardMaterial3D:
+	if _stronghold_mat != null:
+		return _stronghold_mat
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.45, 0.16, 0.16)   # muted brick — quieter than settlements
+	m.emission_enabled = true
+	m.emission = Color(0.22, 0.05, 0.05)
+	m.emission_energy_multiplier = 0.4
+	_stronghold_mat = m
 	return m
 
 
@@ -865,6 +920,15 @@ func _apply_camera() -> void:
 	var dir := Vector3(0, sin(-pitch), cos(-pitch)).rotated(Vector3.UP, yaw)
 	_camera.position = _cam_target + dir * dist
 	_camera.rotation = Vector3(pitch, yaw, 0)
+	_update_stronghold_lod()
+
+
+## Strongholds are a strategic-clutter layer: hide the whole group when zoomed out
+## (ortho size large), reveal it only when zoomed in past STRONGHOLD_LOD_ZOOM, where
+## the smaller dim cubes recede behind the terrain. Settlements + dungeons ignore this.
+func _update_stronghold_lod() -> void:
+	if _stronghold_root != null:
+		_stronghold_root.visible = _zoom <= STRONGHOLD_LOD_ZOOM
 
 
 func _build_environment() -> void:
