@@ -672,16 +672,21 @@ func _build_landmarks() -> void:
 		c.queue_free()
 	if _map_data == null:
 		return
+	# One marker per hex. A settlement and a stronghold on the same hex are generally
+	# the same place (the stronghold became a settlement POI), so the settlement wins —
+	# show its market class, not the stronghold's "O".
+	var by_hex := {}   # Vector2i -> label String
 	for s in _query_settlement_entrances():
 		var coord := Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
-		if _fog_value(coord) < 0.25:
-			continue
-		_place_landmark(coord, _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)])
+		by_hex[coord] = _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)]
 	for h in _query_strongholds():
 		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
+		if not by_hex.has(coord):
+			by_hex[coord] = "O"
+	for coord in by_hex:
 		if _fog_value(coord) < 0.25:
 			continue
-		_place_landmark(coord, "O")
+		_place_landmark(coord, by_hex[coord])
 
 
 const LANDMARK_SIZE := 0.36
