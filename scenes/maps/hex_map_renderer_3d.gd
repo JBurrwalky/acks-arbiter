@@ -230,16 +230,27 @@ func _hex_height(coord: Vector2i) -> float:
 	if _hex_height_cache.has(coord):
 		return _hex_height_cache[coord]
 	var raw := 0.0
+	var t := _terrain(coord)
 	if _field != null:
 		var cell := HexMapController.axial_to_godot_map(coord)
 		var fx: int = clampi(cell.x, 0, _field.width - 1)
 		var fy: int = clampi(cell.y, 0, _field.height - 1)
-		raw = _field.surface[_field.idx(fx, fy)]
+		var fi: int = _field.idx(fx, fy)
+		raw = _field.surface[fi]
+		if t != null and t.water == "lake":
+			# A lake sits at its basin POUR level — the Priority-Flood "filled" DEM is
+			# exactly the brim it fills to before spilling into its outlet river. Render
+			# the surface there, not at the global sea plane, or a high-altitude lake
+			# carves down to sea level and reads as a deep pit. (Clamp >= sea level so a
+			# near-coast lake never dips below the ocean.) Truly steep rims become a real
+			# shore now and a cliff face once that feature exists.
+			raw = maxf(_field.filled[fi], WATER_LEVEL_RAW)
+		elif t != null and t.water != "":
+			raw = WATER_LEVEL_RAW  # ocean sits at the global sea plane
 	else:
 		raw = _tag_height(coord)
-	var t := _terrain(coord)
-	if t != null and t.water != "":
-		raw = WATER_LEVEL_RAW  # water hexes sit at the water plane
+		if t != null and t.water != "":
+			raw = WATER_LEVEL_RAW
 	var y := raw * HEIGHT_GAIN
 	_hex_height_cache[coord] = y
 	return y
