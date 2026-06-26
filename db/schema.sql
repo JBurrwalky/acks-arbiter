@@ -736,6 +736,23 @@ CREATE TABLE IF NOT EXISTS hex_river_edges (
 CREATE INDEX IF NOT EXISTS idx_hex_river_edges_owner
     ON hex_river_edges(map_id, hex_q, hex_r);
 
+-- Migration 176: cliff / canyon edges — impassable elevation gradients
+-- (gdd-cliffs-canyons.md §3). Per-edge feature mirroring hex_river_edges.
+CREATE TABLE IF NOT EXISTS hex_cliff_edges (
+    map_id       TEXT    NOT NULL REFERENCES hex_maps(id),
+    hex_q        INTEGER NOT NULL,
+    hex_r        INTEGER NOT NULL,
+    edge         INTEGER NOT NULL CHECK(edge BETWEEN 0 AND 5),
+    cliff_type   TEXT    NOT NULL DEFAULT 'cliff'
+        CHECK(cliff_type IN ('cliff', 'canyon')),
+    height_ft    INTEGER NOT NULL DEFAULT 0,
+    high_side    INTEGER NOT NULL DEFAULT 0 CHECK(high_side IN (0, 1)),
+    PRIMARY KEY (map_id, hex_q, hex_r, edge)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hex_cliff_edges_owner
+    ON hex_cliff_edges(map_id, hex_q, hex_r);
+
 -- Migration 166: runtime `roads` as first-class entities (ordered hex path + class
 -- + purpose + name). hex_overlays carries per-cell render geometry; this carries
 -- the road entity so the game knows WHERE roads are and WHAT they are, and 6-mile

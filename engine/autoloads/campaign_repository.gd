@@ -436,6 +436,7 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_overlays WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_cliff_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM voxel_map_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	# Domain sub-tables
 	db.query_with_bindings("DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
@@ -1451,6 +1452,31 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			db.query("ROLLBACK")
 			return false
 
+	# Replace cliff/canyon edges for this map (migration 176). Re-canonicalize
+	# defensively, mirroring the river-edge handling above.
+	db.query_with_bindings(
+		"DELETE FROM hex_cliff_edges WHERE map_id = ?", [map_data.id])
+	for cliff_data in map_data.cliff_edges:
+		if not (cliff_data is HexCliffEdgeData):
+			continue
+		var cc: HexCliffEdgeData = cliff_data
+		if not cc.is_canonical():
+			cc = HexCliffEdgeData.from_dict(cliff_data.to_dict())
+			cc.flip_to_canonical()
+		if not db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_cliff_edges
+				(map_id, hex_q, hex_r, edge, cliff_type, height_ft, high_side)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [
+			map_data.id,
+			cc.hex_q, cc.hex_r, cc.edge,
+			cc.cliff_type, cc.height_ft, cc.high_side,
+		]):
+			push_error("CampaignRepository.save_hex_map: cliff edge insert failed at q=%d r=%d edge=%d"
+				% [cc.hex_q, cc.hex_r, cc.edge])
+			db.query("ROLLBACK")
+			return false
+
 	db.query("COMMIT")
 	return true
 
@@ -1544,6 +1570,19 @@ func load_hex_map(map_id: String) -> HexMapData:
 		var neighbor_terrain: HexTerrainData = map_data.hexes.get(neighbor_coord)
 		if neighbor_terrain != null:
 			neighbor_terrain.has_river_cached = true
+	# Load cliff/canyon edges (migration 176 / gdd-cliffs-canyons.md §3).
+	db.query_with_bindings(
+		"SELECT * FROM hex_cliff_edges WHERE map_id = ?", [map_id])
+	for row in db.query_result:
+		var cliff_data := HexCliffEdgeData.new()
+		cliff_data.hex_q = int(row["hex_q"])
+		cliff_data.hex_r = int(row["hex_r"])
+		cliff_data.edge = int(row["edge"])
+		cliff_data.cliff_type = String(row["cliff_type"])
+		cliff_data.height_ft = int(row["height_ft"])
+		cliff_data.high_side = int(row["high_side"])
+		map_data.cliff_edges.append(cliff_data)
+
 	return map_data
 
 
@@ -5323,7 +5362,7 @@ const _SCOPE_VIA_PARTY := [
 const _SCOPE_VIA_DOMAIN := [
 	"active_adventuring_log", "domain_followers", "follower_arrivals", "ledger_entries", "domain_hexes",
 ]
-const _SCOPE_VIA_HEXMAP := ["hex_cells", "hex_overlays", "hex_river_edges"]
+const _SCOPE_VIA_HEXMAP := ["hex_cells", "hex_overlays", "hex_river_edges", "hex_cliff_edges"]
 const _SCOPE_VIA_ARMY := ["army_officers", "army_supply_state", "army_unit_assignments"]
 const _SCOPE_VIA_BATTLE := ["battle_log", "battle_unit_states"]
 const _SCOPE_VIA_SIEGE := ["siege_actions", "siege_artillery", "siege_mines"]
