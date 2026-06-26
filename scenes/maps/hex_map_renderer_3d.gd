@@ -90,6 +90,7 @@ var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
 var _landmark_root: Node3D = null
 var _landmark_mat: StandardMaterial3D = null
+var _dungeon_mat: StandardMaterial3D = null
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
@@ -356,6 +357,28 @@ func _avg_height(coords: Array) -> float:
 	return sum / float(maxi(n, 1))
 
 
+## World Y on the RENDERED surface at a point [param local] (XZ offset from the hex
+## centre), interpolated over the same 6-triangle fan the terrain mesh draws:
+## center at [param center_y], corner i at [param corner_y][i] (positions in
+## [param corner_off]). Barycentric over whichever wedge (centre, corner i, corner
+## i+1) contains the point; falls back to centre height if none (point at/near
+## centre or just outside). Keeps scattered trees ON the tilted surface.
+func _fan_y(local: Vector2, center_y: float, corner_off: Array, corner_y: Array) -> float:
+	for i in range(6):
+		var i1 := (i + 1) % 6
+		var b: Vector2 = corner_off[i]
+		var c: Vector2 = corner_off[i1]
+		var det := b.x * c.y - c.x * b.y
+		if absf(det) < 1.0e-9:
+			continue
+		var wb := (local.x * c.y - c.x * local.y) / det
+		var wc := (b.x * local.y - local.x * b.y) / det
+		var wa := 1.0 - wb - wc
+		if wa >= -0.01 and wb >= -0.01 and wc >= -0.01:
+			return wa * center_y + wb * float(corner_y[i]) + wc * float(corner_y[i1])
+	return center_y
+
+
 ## The hexes sharing corner [param i] of [param coord] (self + up to 2 neighbours).
 func _corner_sharing(coord: Vector2i, i: int) -> Array:
 	var pairs: Array = _CORNER_NEIGHBORS[i]
@@ -489,18 +512,27 @@ func _build_scatter() -> void:
 			continue
 		var variants: Array = pool["variants"]
 		var center := WildernessHexMath.axial_to_world(coord)
-		var base_y := _hex_height(coord)
+		# Precompute the same fan the terrain mesh draws (center height + 6 corner
+		# heights), so a scattered tree follows the tilted surface instead of the flat
+		# hex-centre height — which is what sank/floated them off-centre.
+		var center_y := _hex_height(coord)
+		var corner_off := WildernessHexMath.corner_offsets()
+		var corner_y := []
+		for ci in range(6):
+			corner_y.append(_avg_height(_corner_sharing(coord, ci)))
 		var rng := WorldGenRng.stream(_campaign_seed, "tree_scatter", 0, "%d,%d" % [coord.x, coord.y])
 		for _i in range(int(pool["density"])):
 			var variant_name: String = variants[rng.randi() % variants.size()]
 			var ang := rng.randf() * TAU
 			var rad := sqrt(rng.randf()) * SCATTER_JITTER * WildernessHexMath.HEX_RADIUS
-			var px := center.x + cos(ang) * rad
-			var pz := center.y + sin(ang) * rad
+			var local := Vector2(cos(ang) * rad, sin(ang) * rad)
+			var px := center.x + local.x
+			var pz := center.y + local.y
+			var py := _fan_y(local, center_y, corner_off, corner_y)
 			var yaw := rng.randf() * TAU
 			var s := TREE_SCALE * (0.8 + rng.randf() * 0.5)
 			var xform := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s, s)),
-					Vector3(px, base_y, pz))
+					Vector3(px, py, pz))
 			if not per_variant.has(variant_name):
 				per_variant[variant_name] = []
 			per_variant[variant_name].append(xform)
@@ -688,6 +720,13 @@ func _build_landmarks() -> void:
 			continue
 		_place_landmark(coord, by_hex[coord])
 
+	# Dungeons: a purple pyramid at each entrance. Shown regardless of fog for now —
+	# placeholder location markers so dungeons are visible before entry/discovery is
+	# wired. A dungeon can share a hex with a settlement (undercity), so this pass is
+	# independent of the settlement/stronghold markers above.
+	for d in _query_dungeon_entrances():
+		_place_dungeon_marker(Vector2i(int(d.get("hex_q", 0)), int(d.get("hex_r", 0))))
+
 
 const LANDMARK_SIZE := 0.36
 
@@ -733,6 +772,48 @@ func _landmark_cube_material() -> StandardMaterial3D:
 	m.emission_energy_multiplier = 0.6
 	_landmark_mat = m
 	return m
+
+
+## Purple pyramid marking a dungeon entrance (placeholder until proper art / entry).
+## A square-based pyramid = CylinderMesh with top_radius 0 and 4 radial segments.
+func _place_dungeon_marker(coord: Vector2i) -> void:
+	var xz := WildernessHexMath.axial_to_world(coord)
+	var base_y := _hex_height(coord)
+	var pyramid := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.0
+	cyl.bottom_radius = LANDMARK_SIZE * 0.62
+	cyl.height = LANDMARK_SIZE * 1.35
+	cyl.radial_segments = 4   # square base -> a 4-sided pyramid
+	cyl.rings = 1
+	pyramid.mesh = cyl
+	pyramid.material_override = _dungeon_marker_material()
+	# Origin is the cylinder centre, so lift by half its height to sit on the terrain.
+	pyramid.position = Vector3(xz.x, base_y + cyl.height * 0.5, xz.y)
+	pyramid.rotation_degrees = Vector3(0.0, 45.0, 0.0)   # a flat face toward the iso camera
+	_landmark_root.add_child(pyramid)
+
+
+func _dungeon_marker_material() -> StandardMaterial3D:
+	if _dungeon_mat != null:
+		return _dungeon_mat
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.62, 0.20, 0.85)   # purple
+	m.emission_enabled = true
+	m.emission = Color(0.40, 0.08, 0.55)
+	m.emission_energy_multiplier = 0.7
+	_dungeon_mat = m
+	return m
+
+
+func _query_dungeon_entrances() -> Array:
+	if _map_data == null:
+		return []
+	if not CampaignRepository.db.query_with_bindings(
+			"SELECT hex_q, hex_r, name FROM dungeon_entrances WHERE map_id = ?",
+			[_map_data.id]):
+		return []
+	return CampaignRepository.db.query_result.duplicate()
 
 
 func _query_settlement_entrances() -> Array:
