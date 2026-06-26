@@ -163,17 +163,36 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	# → the play surface carries real rivers in the field's fine valleys. Window-edge
 	# corners drain off as outlets (the river continues into the rest of the world).
 	var river_count := 0
+	var river_hexes := {}   # Vector2i set: hexes a river touches (for canyon classification)
 	if not region_grid.is_empty():
 		var r_origin := Vector2i(min_col * SUB, min_row * SUB)
 		var r_dims := Vector2i(WINDOW_W_PARENTS * SUB, WINDOW_H_PARENTS * SUB)
 		for edge_row in GeoRiverMapper.map_rivers(sp, r_dims, region_grid, r_origin):
-			if CampaignRepository.save_hex_river_edge(region_id, HexRiverEdgeData.from_dict(edge_row)):
+			var redge := HexRiverEdgeData.from_dict(edge_row)
+			if CampaignRepository.save_hex_river_edge(region_id, redge):
 				river_count += 1
+				var ow := Vector2i(redge.hex_q, redge.hex_r)
+				river_hexes[ow] = true
+				river_hexes[ow + HexRiverEdgeData.neighbor_offset(redge.edge)] = true
+
+	# Cliff / canyon edges (gdd-cliffs-canyons.md §4): steep cross-edge deltas on the play
+	# grid. A cliff whose LOW side carries a river is a canyon (river-incised gorge).
+	var cliff_count := 0
+	for cliff in CliffDetector.detect(region_grid, river_hexes):
+		var cd: HexCliffEdgeData = cliff
+		if db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_cliff_edges
+				(map_id, hex_q, hex_r, edge, cliff_type, height_ft, high_side)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [region_id, cd.hex_q, cd.hex_r, cd.edge, cd.cliff_type, cd.height_ft, cd.high_side]):
+			cliff_count += 1
+
 	db.query("COMMIT")
 
 	result["parent_count"] = window.size()
 	result["child_count"] = child_count
 	result["river_count"] = river_count
+	result["cliff_count"] = cliff_count
 	result["ok"] = true
 	return result
 

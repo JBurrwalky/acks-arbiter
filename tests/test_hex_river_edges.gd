@@ -35,6 +35,7 @@ func run_all_tests() -> void:
 	test_elevation_raw_and_subtype_round_trip()
 	test_cliff_edge_round_trip()
 	test_cliff_edge_high_side_canonicalizes()
+	test_cliff_detector_basic()
 	test_loader_auto_flips_non_canonical_json()
 	test_loader_drops_non_adjacent_warning_ok()
 	test_terrain_has_river_cached_on_load()
@@ -361,6 +362,35 @@ func test_cliff_edge_high_side_canonicalizes() -> void:
 		"owner + high_side survive the round-trip")
 	_cleanup()
 	print("  cliff_edge_high_side_canonicalizes: OK")
+
+
+func test_cliff_detector_basic() -> void:
+	# CliffDetector flags only steep cross-edge deltas; a river on the LOW side makes a
+	# canyon; ocean coasts are skipped; high_side + height_ft are set (gdd §4).
+	var grid := {
+		Vector2i(0, 0): {"elevation_raw": 0.80, "water": ""},        # high
+		Vector2i(0, 1): {"elevation_raw": 0.30, "water": ""},        # low + river -> canyon
+		Vector2i(0, 2): {"elevation_raw": 0.32, "water": ""},        # gentle vs (0,1) -> no
+		Vector2i(-1, 0): {"elevation_raw": 0.20, "water": "ocean"},  # ocean coast -> skip
+		Vector2i(2, 0): {"elevation_raw": 0.85, "water": ""},        # high
+		Vector2i(2, 1): {"elevation_raw": 0.40, "water": ""},        # low, no river -> cliff
+	}
+	var rivers := {Vector2i(0, 1): true}
+	var edges := CliffDetector.detect(grid, rivers)
+	check(edges.size() == 2, "two steep edges (ocean coast + gentle excluded); got %d" % edges.size())
+	var by_owner := {}
+	for ed in edges:
+		by_owner[Vector2i(ed.hex_q, ed.hex_r)] = ed
+	var canyon: HexCliffEdgeData = by_owner.get(Vector2i(0, 0))
+	check(canyon != null and canyon.cliff_type == HexCliffEdgeData.CANYON,
+		"river-floor edge classified as canyon")
+	check(canyon != null and canyon.high_side == 0, "(0,0) is the high hex (owner)")
+	check(canyon != null and canyon.height_ft > 12000 and canyon.height_ft < 13000,
+		"0.50 delta ~= 12762 ft; got %d" % (canyon.height_ft if canyon != null else -1))
+	var cliff: HexCliffEdgeData = by_owner.get(Vector2i(2, 0))
+	check(cliff != null and cliff.cliff_type == HexCliffEdgeData.CLIFF,
+		"no-river edge classified as cliff")
+	print("  cliff_detector_basic: OK")
 
 
 func test_terrain_has_river_cached_on_load() -> void:
