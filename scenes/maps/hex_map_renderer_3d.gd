@@ -55,13 +55,28 @@ const LAYER_VOLCANIC := 9
 const LAYER_SNOW := 10
 const LAYER_SWAMP := 11
 
+# --- Vegetation scatter (GDD §9) — small-but-visible trees on forest/jungle ---
+## Native Quaternius trees are ~2-4 units; in a 1-unit-hex world scale them down
+## hard so they read as small trees dotting a hex, not towers.
+const TREE_SCALE := 0.12
+const SCATTER_JITTER := 0.62        # fraction of HEX_RADIUS trees scatter within
+const _BROADLEAF := ["common_tree_1", "common_tree_2", "common_tree_3", "common_tree_4",
+	"common_tree_5", "birch_tree_1", "birch_tree_2", "birch_tree_3", "birch_tree_4", "birch_tree_5"]
+const _PINE := ["pine_tree_1", "pine_tree_2", "pine_tree_3", "pine_tree_4", "pine_tree_5"]
+const _PALM := ["palm_tree_1", "palm_tree_2", "palm_tree_3", "palm_tree_4"]
+const _WILLOW := ["willow_1", "willow_2", "willow_3", "willow_4", "willow_5"]
+const _CACTUS := ["cactus_1", "cactus_2", "cactus_3", "cactus_4", "cactus_5"]
+
 var _controller: HexMapController = null
 var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
 var _field_ready := false
+var _campaign_seed := 0
 
 var _camera: Camera3D = null
 var _terrain_root: Node3D = null
+var _scatter_root: Node3D = null
+var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
@@ -78,6 +93,9 @@ func _ready() -> void:
 	_terrain_root = Node3D.new()
 	_terrain_root.name = "TerrainChunks"
 	add_child(_terrain_root)
+	_scatter_root = Node3D.new()
+	_scatter_root.name = "Scatter"
+	add_child(_scatter_root)
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
@@ -120,12 +138,17 @@ func _on_map_loaded(_map_id: String) -> void:
 	_build_terrain()
 	_rebuild_tokens()
 	_fit_camera()
+	# Scatter is deferred so it never blocks the session-load flow (this runs inside
+	# controller.load_map()); it also refreshes with fog via _on_visibility_updated.
+	call_deferred("_build_scatter")
 
 
 func _on_visibility_updated() -> void:
 	# Fog rides in per-vertex UV2; cheapest correct path is a terrain rebuild.
+	# Scatter is gated on non-hidden hexes, so it refreshes with the fog too.
 	if _map_data != null:
 		_build_terrain()
+		call_deferred("_build_scatter")
 
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
@@ -156,10 +179,10 @@ func _ensure_field() -> void:
 		_field = null
 		_field_ready = true
 		return
-	var campaign_seed := int(params.get("campaign_seed", 0))
+	_campaign_seed = int(params.get("campaign_seed", 0))
 	var sp := SettingParameters.from_dict(params)
-	_field = GeoFieldGenerator.generate(campaign_seed, sp)
-	GeoClimateGenerator.apply(_field, campaign_seed, sp)
+	_field = GeoFieldGenerator.generate(_campaign_seed, sp)
+	GeoClimateGenerator.apply(_field, _campaign_seed, sp)
 	_field_ready = true
 
 
@@ -439,6 +462,121 @@ func _build_albedo_array() -> Texture2DArray:
 	var arr := Texture2DArray.new()
 	arr.create_from_images(images)
 	return arr
+
+
+# ---------------------------------------------------------------------------
+# Vegetation scatter (GDD §9) — seeded MultiMesh trees on forest/jungle hexes
+# ---------------------------------------------------------------------------
+
+func _build_scatter() -> void:
+	for child in _scatter_root.get_children():
+		child.queue_free()
+	if _map_data == null:
+		return
+	var per_variant := {}   # variant name -> Array[Transform3D]
+	var min_x := INF
+	var max_x := -INF
+	var min_z := INF
+	var max_z := -INF
+	for coord in _map_data.hexes.keys():
+		# Don't reveal unexplored ground (fog leak): scatter only non-hidden hexes.
+		if _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN:
+			continue
+		var t := _terrain(coord)
+		if t == null:
+			continue
+		var pool := _scatter_pool(t)
+		if pool.is_empty():
+			continue
+		var variants: Array = pool["variants"]
+		var center := WildernessHexMath.axial_to_world(coord)
+		var base_y := _hex_height(coord)
+		var rng := WorldGenRng.stream(_campaign_seed, "tree_scatter", 0, "%d,%d" % [coord.x, coord.y])
+		for _i in range(int(pool["density"])):
+			var variant_name: String = variants[rng.randi() % variants.size()]
+			var ang := rng.randf() * TAU
+			var rad := sqrt(rng.randf()) * SCATTER_JITTER * WildernessHexMath.HEX_RADIUS
+			var px := center.x + cos(ang) * rad
+			var pz := center.y + sin(ang) * rad
+			var yaw := rng.randf() * TAU
+			var s := TREE_SCALE * (0.8 + rng.randf() * 0.5)
+			var xform := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s, s)),
+					Vector3(px, base_y, pz))
+			if not per_variant.has(variant_name):
+				per_variant[variant_name] = []
+			per_variant[variant_name].append(xform)
+			min_x = minf(min_x, px)
+			max_x = maxf(max_x, px)
+			min_z = minf(min_z, pz)
+			max_z = maxf(max_z, pz)
+	if per_variant.is_empty():
+		return
+	var aabb := AABB(Vector3(min_x, -2.0, min_z),
+			Vector3(max_x - min_x + 1.0, HEIGHT_GAIN + 6.0, max_z - min_z + 1.0))
+	for variant_name in per_variant:
+		var mesh := _load_scatter_mesh(variant_name)
+		if mesh == null:
+			continue
+		var xforms: Array = per_variant[variant_name]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = xforms.size()
+		for i in range(xforms.size()):
+			mm.set_instance_transform(i, xforms[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.custom_aabb = aabb   # GDD §9.1: auto-AABB only covers origin -> wrong culling
+		_scatter_root.add_child(mmi)
+
+
+## Scatter pool for a hex: {variants: Array, density: int}. Empty = no scatter.
+func _scatter_pool(t: HexTerrainData) -> Dictionary:
+	if t.water != "" or t.elevation == "mountains":
+		return {}
+	match t.biome:
+		"woods":
+			if t.biome_subtype == "forest_taiga":
+				return {"variants": _PINE, "density": 5}
+			return {"variants": _BROADLEAF, "density": 6}
+		"jungle":
+			return {"variants": _PALM, "density": 6}
+		"swamp":
+			return {"variants": _WILLOW, "density": 3}
+		"desert":
+			return {"variants": _CACTUS, "density": 1}
+	return {}
+
+
+## Load a scatter variant's mesh from its single-mesh .glb (cached). The Mesh
+## resource is ref-counted, so it survives freeing the throwaway instance.
+func _load_scatter_mesh(variant_name: String) -> Mesh:
+	if _scatter_mesh_cache.has(variant_name):
+		return _scatter_mesh_cache[variant_name]
+	var cat := "cactus" if variant_name.begins_with("cactus") else "tree"
+	var path := "res://assets/wilderness_kit/%s/%s.glb" % [cat, variant_name]
+	var mesh: Mesh = null
+	var packed := load(path) as PackedScene
+	if packed != null:
+		var inst := packed.instantiate()
+		var mi := _first_mesh_instance(inst)
+		if mi != null:
+			mesh = mi.mesh
+		inst.free()
+	if mesh == null:
+		push_warning("wilderness scatter: no mesh in %s" % path)
+	_scatter_mesh_cache[variant_name] = mesh
+	return mesh
+
+
+func _first_mesh_instance(node: Node) -> MeshInstance3D:
+	if node is MeshInstance3D:
+		return node
+	for child in node.get_children():
+		var found := _first_mesh_instance(child)
+		if found != null:
+			return found
+	return null
 
 
 # ---------------------------------------------------------------------------

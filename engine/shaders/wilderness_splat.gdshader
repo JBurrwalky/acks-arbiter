@@ -60,7 +60,19 @@ void fragment() {
 
 	if (show_grid) {
 		vec3 cube = world_to_cube(v_world.xz);
-		vec3 diff = abs(cube - round(cube));         // 0 at hex center .. ~0.5 at edge
+		// Constraint-preserving cube rounding: rounding each axis independently
+		// breaks q+r+s=0, which mis-locates the nearest hex centre near vertices and
+		// blobs the grid lines at every corner. Reset the worst-rounded axis instead.
+		vec3 rc = round(cube);
+		vec3 dc = abs(cube - rc);
+		if (dc.x > dc.y && dc.x > dc.z) {
+			rc.x = -rc.y - rc.z;
+		} else if (dc.y > dc.z) {
+			rc.y = -rc.x - rc.z;
+		} else {
+			rc.z = -rc.x - rc.y;
+		}
+		vec3 diff = abs(cube - rc);                  // 0 at hex centre .. 0.5 at edge
 		float border = max(diff.x, max(diff.y, diff.z));
 		float aa = fwidth(border) * 1.5 + 0.0015;
 		float line = smoothstep(0.5 - grid_line - aa, 0.5 - grid_line + aa, border);
