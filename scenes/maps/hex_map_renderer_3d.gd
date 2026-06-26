@@ -30,10 +30,11 @@ const TEX_SIZE := 512            # common albedo size for the Texture2DArray
 # Camera (lifted from the dungeon iso camera, tactical_grid_3d).
 const CAM_PITCH_DEG := -35.264
 const CAM_YAW_DEG := 0.0
-const ZOOM_MIN_FLOOR := 4.0
-const ZOOM_MAX := 80.0
-const ZOOM_STEP := 2.0
-const PAN_SPEED := 1.0
+const ZOOM_MIN_FLOOR := 3.0      # most zoomed-IN ortho size (smaller = closer)
+const ZOOM_MAX := 120.0          # most zoomed-OUT ortho size
+const ZOOM_FACTOR := 1.12        # multiplicative size change per wheel tick
+const EDGE_MARGIN := 24.0        # px from a viewport edge that triggers edge-pan
+const EDGE_PAN_RATE := 0.85      # fraction of the view height panned per second
 
 # Terrain-class -> Texture2DArray layer index. Order fixed; the array is built
 # from res://assets/wilderness_textures/<name>.jpg in this order.
@@ -71,7 +72,6 @@ var _party_tokens := {}           # party_id -> Node3D
 var _zoom := 24.0
 var _zoom_min := 8.0
 var _cam_target := Vector3.ZERO
-var _dragging := false
 
 
 func _ready() -> void:
@@ -545,56 +545,88 @@ func _make_party_marker() -> Node3D:
 # Input: pan / zoom / pick
 # ---------------------------------------------------------------------------
 
+## Continuous pan: WASD / arrows, plus mouse-to-edge panning (mirrors the 2D
+## renderer's _process). Pans the camera TARGET in world XZ; speed scales with the
+## ortho size so it feels consistent at any zoom.
+func _process(delta: float) -> void:
+	if not visible or _camera == null or _map_data == null:
+		return
+	var vp_size := get_viewport().get_visible_rect().size
+	var mouse_pos := get_viewport().get_mouse_position()
+	var pan := Vector2.ZERO
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+		pan.x -= 1.0
+	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+		pan.x += 1.0
+	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+		pan.y -= 1.0
+	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+		pan.y += 1.0
+	if pan == Vector2.ZERO and mouse_pos.x >= 0.0 and mouse_pos.x <= vp_size.x \
+			and mouse_pos.y >= 0.0 and mouse_pos.y <= vp_size.y:
+		if mouse_pos.x < EDGE_MARGIN:
+			pan.x -= 1.0
+		elif mouse_pos.x > vp_size.x - EDGE_MARGIN:
+			pan.x += 1.0
+		if mouse_pos.y < EDGE_MARGIN:
+			pan.y -= 1.0
+		elif mouse_pos.y > vp_size.y - EDGE_MARGIN:
+			pan.y += 1.0
+	if pan != Vector2.ZERO:
+		var step := _zoom * EDGE_PAN_RATE * delta
+		_cam_target += Vector3(pan.x, 0.0, pan.y).normalized() * step
+		_apply_camera()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or _camera == null:
 		return
-	if event is InputEventMouseButton:
-		_handle_mouse_button(event)
-	elif event is InputEventMouseMotion and _dragging:
-		_pan(event.relative)
-
-
-func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	match event.button_index:
-		MOUSE_BUTTON_WHEEL_UP:
-			if event.pressed:
-				_zoom = clampf(_zoom - ZOOM_STEP, _zoom_min, ZOOM_MAX)
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				_pick(false)
+				get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_RIGHT:
+				_pick(true)
+				get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_UP:
+				_zoom = clampf(_zoom / ZOOM_FACTOR, _zoom_min, ZOOM_MAX)
 				_apply_camera()
-		MOUSE_BUTTON_WHEEL_DOWN:
-			if event.pressed:
-				_zoom = clampf(_zoom + ZOOM_STEP, _zoom_min, ZOOM_MAX)
+				get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_zoom = clampf(_zoom * ZOOM_FACTOR, _zoom_min, ZOOM_MAX)
 				_apply_camera()
-		MOUSE_BUTTON_MIDDLE:
-			_dragging = event.pressed
-		MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				_pick(event.position, false)
-		MOUSE_BUTTON_RIGHT:
-			if event.pressed:
-				_pick(event.position, true)
-
-
-func _pan(rel: Vector2) -> void:
-	var k := _zoom * 0.002 * PAN_SPEED
-	_cam_target += Vector3(-rel.x * k, 0, -rel.y * k)
-	_apply_camera()
+				get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_MIDDLE) != 0:
+		# Middle-drag pan: 1:1 with the world (world-units-per-pixel = size / vp height).
+		var vp_h := maxf(get_viewport().get_visible_rect().size.y, 1.0)
+		var k := _zoom / vp_h
+		_cam_target += Vector3(-event.relative.x * k, 0.0, -event.relative.y * k)
+		_apply_camera()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_HOME:
+		_fit_camera()
+		get_viewport().set_input_as_handled()
 
 
 ## Surface-raycast pick: ray -> chunk collision -> world XZ -> axial (GDD §11.2).
-func _pick(screen_pos: Vector2, is_context: bool) -> void:
+## Uses the SubViewport-local mouse position (event.position is unreliable inside
+## a SubViewport — the 2D renderer reads get_local_mouse_position for the same reason).
+func _pick(is_context: bool) -> void:
 	if _camera == null or _map_data == null:
 		return
+	var screen_pos := get_viewport().get_mouse_position()
 	var from := _camera.project_ray_origin(screen_pos)
 	var dir := _camera.project_ray_normal(screen_pos)
 	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 2000.0)
+	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 4000.0)
 	var hit := space.intersect_ray(query)
 	var coord: Vector2i
 	if hit.is_empty():
-		# Off-map fallback: intersect the Y=0 plane.
+		# Off-map fallback: intersect the water-level plane.
+		var plane_y := WATER_LEVEL_RAW * HEIGHT_GAIN
 		if absf(dir.y) < 1e-5:
 			return
-		var ti := -from.y / dir.y
+		var ti := (plane_y - from.y) / dir.y
 		var p := from + dir * ti
 		coord = WildernessHexMath.world_to_axial(Vector2(p.x, p.z))
 	else:
