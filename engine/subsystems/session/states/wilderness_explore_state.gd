@@ -30,9 +30,14 @@ func enter(runner, context: Dictionary) -> void:
 	_runner = runner
 	var renderer: Node = runner.get_hex_map_renderer()
 
-	# Show hex map
+	# Show hex map. The map lives inside the WorldViewport SubViewport frame —
+	# show the whole frame, not just the renderer, so the wilderness surface is
+	# visible above the status bar.
 	renderer.visible = true
 	renderer.process_mode = Node.PROCESS_MODE_INHERIT
+	var world_viewport: Node = runner.get_world_viewport()
+	if world_viewport != null:
+		world_viewport.visible = true
 	_show_hex_hud(renderer, true)
 
 	# Connect renderer signals (safe: _connect checks for existing connections).
@@ -143,9 +148,15 @@ func exit(runner) -> void:
 	_handlers = null
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
-	# but safe to always do — re-shown on enter)
+	# but safe to always do — re-shown on enter). Hide the WorldViewport frame
+	# too: hiding only the renderer leaves the SubViewportContainer drawing an
+	# opaque (cleared) rectangle that would cover 3D world content rendered
+	# behind it — e.g. the dungeon map in SceneContainer.
 	renderer.visible = false
 	renderer.process_mode = Node.PROCESS_MODE_DISABLED
+	var world_viewport: Node = runner.get_world_viewport()
+	if world_viewport != null:
+		world_viewport.visible = false
 	_show_hex_hud(renderer, false)
 
 	_runner = null
@@ -245,6 +256,15 @@ func _on_context_action(action_data: Dictionary) -> void:
 	# subsystem — surface the placeholder rather than a broken transition.
 	if action_type == "wilderness_enter_lair":
 		_on_enter_lair_requested(str(action_data.get("lair_id", "")))
+		return
+
+	# Climb Here (gdd-cliffs-canyons.md §5/§6). A deliberate cliff crossing — runs the
+	# SHEER_SURFACE_CLIMB gate + per-climber throws and schedules the gate-bypassing
+	# arrival itself, so it returns BEFORE the normal passable-target / pathfind flow
+	# (find_path can't route across a cliff and would just report "No Route").
+	if action_type == "wilderness_climb_cliff":
+		_on_climb_cliff_requested(Vector2i(
+			int(action_data.get("hex_q", 0)), int(action_data.get("hex_r", 0))))
 		return
 
 	var target_hex := Vector2i(
@@ -465,6 +485,179 @@ func _on_enter_lair_requested(lair_id: String) -> void:
 		"title": "%s Lair" % type_label,
 		"body": "Lair interiors arrive with the Lair Generator — entering is not yet implemented.",
 		"duration": 4.0,
+	})
+
+
+# ---------------------------------------------------------------------------
+# Cliff climbing (SHEER_SURFACE_CLIMB — gdd-cliffs-canyons.md §5/§6)
+# ---------------------------------------------------------------------------
+
+## Handle a deliberate "Climb Here" order onto an across-a-cliff neighbour. Runs the
+## ClimbResolver gate (Mountaineering + per-climber gear; refuse if mercenaries present),
+## blocks with a shortfall toast when short, otherwise resolves each climber's throws,
+## applies + persists any fall damage, and schedules the gate-bypassing crossing at ¼
+## movement speed. The climb math/gate is the pure ClimbResolver; this is the wiring.
+func _on_climb_cliff_requested(target_hex: Vector2i) -> void:
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null:
+		return
+	var map_data: HexMapData = controller.get_map()
+	if map_data == null:
+		return
+	var party_id: String = _resolve_active_party_id()
+	if party_id.is_empty():
+		return
+	var party_data: PartyData = _resolve_party_data(party_id)
+	if party_data == null:
+		return
+	var current_hex: Vector2i = _resolve_party_hex(party_id, map_data)
+	var cliff: HexCliffEdgeData = controller.cliff_edge_between(current_hex, target_hex)
+	if cliff == null or not controller.is_hex_passable(target_hex):
+		return
+
+	var climbers: Array = _load_climbers(party_id)
+	var pooled_gear: Dictionary = _pooled_climb_gear(party_id, climbers)
+	var gate: Dictionary = ClimbResolver.evaluate_gate(
+		climbers, pooled_gear, cliff.height_ft, _party_has_mercenaries(party_id))
+	if not bool(gate.get("allowed", false)):
+		_notify_climb_blocked(gate)
+		return
+
+	# Gate satisfied → resolve each climber's ascent and apply + persist any falls.
+	var falls: Array = _resolve_and_apply_falls(climbers, cliff.height_ft)
+
+	# The climb supersedes any in-flight travel/activity (mirrors Move Here).
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_EVENT)
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_COMPLETE_EVENT)
+	if cancelled > 0:
+		EventBus.order_cancelled.emit(party_id, "travel_leg")
+
+	# Climb time = ¼ normal movement (acore_core_classes.xml:1450) → 4× a normal hex
+	# crossing. Schedule a single is_climb travel_leg; _handle_travel_leg crosses it with
+	# the gate-bypassing climb_party_across, and path_index 0 of 1 auto-pauses on arrival.
+	var terrain: HexTerrainData = map_data.get_hex(target_hex)
+	var terrain_cat: String = terrain.movement_cost_category() if terrain != null else "clear"
+	var base_rounds: int = TravelSpeedCalculator.hex_crossing_rounds(party_data, terrain_cat, false, null)
+	var arrival_time: int = Timekeeping.get_total_rounds() + maxi(1, base_rounds * 4)
+	scheduler.schedule_at(
+		arrival_time, "travel_leg", party_id,
+		{
+			"hex_q": target_hex.x, "hex_r": target_hex.y, "is_climb": true,
+			"path_index": 0, "path_total": 1, "terrain_category": terrain_cat,
+		},
+		ScheduledEvent.PRIORITY_ARRIVAL)
+	EventBus.order_queued.emit(party_id, "travel_leg", arrival_time)
+	_notify_climb_started(cliff, falls)
+
+	# Resume the clock so the climb leg fires (mirrors _proceed_with_travel).
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused() and _runner.get_clock_lock_reason().is_empty():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+## Every climber = each PC + henchman in the travelling party (list_party_characters spans
+## both), loaded as a damageable CharacterData with proficiencies hydrated — has_proficiency
+## reads c.proficiencies, which the bare character-row load does NOT populate.
+func _load_climbers(party_id: String) -> Array:
+	var out: Array = []
+	for row in CampaignRepository.list_party_characters(party_id):
+		var c := CharacterData.from_dict(row)
+		c.proficiencies = CampaignRepository.get_character_proficiencies(c.id)
+		out.append(c)
+	return out
+
+
+## Pooled climbing gear (individual units) across every climber's inventory + the shared
+## party pool, bucketed to ClimbResolver's GEAR_* keys. iron_spikes_12 is a bundle of 12, so
+## its quantity is multiplied; a mallet drives wooden stakes only and does NOT count as a
+## spike-driving hammer (base_equipment.json:100).
+func _pooled_climb_gear(party_id: String, climbers: Array) -> Dictionary:
+	var rope := 0
+	var spikes := 0
+	var hammer := 0
+	var grapple := 0
+	var rows: Array = []
+	for c in climbers:
+		rows.append_array(CampaignRepository.get_inventory_items(c.id))
+	rows.append_array(CampaignRepository.get_party_inventory(party_id))
+	for it in rows:
+		var key := str(it.get("item_key", ""))
+		var qty := int(it.get("quantity", 1))
+		match key:
+			"rope_50ft": rope += qty
+			"iron_spikes_12": spikes += qty * 12
+			"hammer_small", "warhammer": hammer += qty
+			"grappling_hook": grapple += qty
+	return {
+		ClimbResolver.GEAR_ROPE: rope,
+		ClimbResolver.GEAR_SPIKES: spikes,
+		ClimbResolver.GEAR_HAMMER: hammer,
+		ClimbResolver.GEAR_GRAPPLE: grapple,
+	}
+
+
+## Mercenaries are troop units with no party-travel association yet (gdd-cliffs-canyons.md
+## §2a; recon 2026-06-26), so they can't travel as individual climbers — always false for
+## now. When war-band travel lands, detect mercenary troop units on the party here.
+func _party_has_mercenaries(_party_id: String) -> bool:
+	return false
+
+
+## Resolve each climber's ascent; for any who fall, apply + persist the fall damage and emit
+## the same damage/hp signals the sustenance system uses. Returns per-faller summaries.
+func _resolve_and_apply_falls(climbers: Array, height_ft: int) -> Array:
+	var summaries: Array = []
+	for c in climbers:
+		var res: Dictionary = ClimbResolver.resolve_climb(c, height_ft)
+		if not bool(res.get("fell", false)):
+			continue
+		var dmg: int = int(res.get("damage", 0))
+		var before: int = c.hp_current
+		var outcome: Dictionary = c.apply_damage(dmg, "physical")
+		CampaignRepository.update_character_hp(c.id, c.hp_current)
+		EventBus.damage_dealt.emit(c.id, dmg, "fall", "")
+		EventBus.hp_changed.emit(c.id, before, c.hp_current)
+		summaries.append({
+			"name": c.name, "damage": dmg, "fall_ft": int(res.get("fall_ft", 0)),
+			"downed": bool(outcome.get("is_downed", c.hp_current <= 0)),
+		})
+	return summaries
+
+
+func _notify_climb_blocked(gate: Dictionary) -> void:
+	var body := ""
+	match str(gate.get("reason", "")):
+		ClimbResolver.REASON_MERCENARIES:
+			body = "The party's mercenaries can't make this climb. Send them around, or travel without them."
+		ClimbResolver.REASON_NO_MOUNTAINEERING:
+			body = "No one has the Mountaineering proficiency — this cliff can't be climbed. Route around it."
+		ClimbResolver.REASON_INSUFFICIENT_GEAR:
+			body = ClimbResolver.shortfall_message(gate.get("shortfall", {}))
+		_:
+			body = "The cliff can't be climbed right now."
+	EventBus.notification_requested.emit({
+		"type": "warning", "category": "exploration",
+		"title": "Cannot Climb", "body": body, "duration": 5.0,
+	})
+
+
+func _notify_climb_started(cliff: HexCliffEdgeData, falls: Array) -> void:
+	var kind := "canyon wall" if cliff.cliff_type == HexCliffEdgeData.CANYON else "cliff"
+	var body := "The party scales the %d-ft %s." % [cliff.height_ft, kind]
+	if not falls.is_empty():
+		var parts: Array[String] = []
+		for f in falls:
+			var tag := " (down!)" if bool(f.get("downed", false)) else ""
+			parts.append("%s fell %d ft for %d damage%s" % [
+				str(f.get("name", "A climber")), int(f.get("fall_ft", 0)),
+				int(f.get("damage", 0)), tag])
+		body += " " + "; ".join(parts) + "."
+	EventBus.notification_requested.emit({
+		"type": "warning" if not falls.is_empty() else "info",
+		"category": "exploration", "title": "Climbing",
+		"body": body, "duration": 6.0,
 	})
 
 

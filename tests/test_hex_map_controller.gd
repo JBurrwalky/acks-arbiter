@@ -44,6 +44,9 @@ func run_all_tests() -> void:
 	test_can_cross_river_edge_ignores_cliff()
 	test_find_path_routes_around_cliff()
 	test_find_path_cliff_encircled_hex_unreachable()
+	test_climb_party_across_moves_over_cliff()
+	test_climb_party_across_rejects_non_cliff_edge()
+	test_climb_party_across_rejects_non_adjacent()
 	# Roads imply crossings (2026-06-08 Jedidiah ruling)
 	test_road_on_owner_side_implies_crossing()
 	test_road_on_neighbor_side_implies_crossing()
@@ -572,6 +575,44 @@ func test_find_path_cliff_encircled_hex_unreachable() -> void:
 	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
 	check(path.is_empty(),
 		"a hex ringed by cliffs is unreachable by normal travel; got %s" % str(path))
+	controller.free()
+
+
+func test_climb_party_across_moves_over_cliff() -> void:
+	# After the climb gate is cleared upstream, climb_party_across moves the party over
+	# a cliff edge that normal move_party would refuse.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(not controller.move_party(Vector2i(1, 0)),
+		"sanity: normal move_party refuses the cliff crossing")
+	check(map.party_hex == Vector2i(0, 0), "...party stayed put")
+	check(controller.climb_party_across(Vector2i(1, 0)),
+		"climb_party_across crosses the cliff edge")
+	check(map.party_hex == Vector2i(1, 0), "party is now across the cliff")
+	controller.free()
+
+
+func test_climb_party_across_rejects_non_cliff_edge() -> void:
+	# Guard: the bypass only works where a real cliff edge exists, so it can't be used
+	# to skip the crossing gate on an ordinary edge.
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())  # no cliffs
+	check(not controller.climb_party_across(Vector2i(1, 0)),
+		"climb_party_across refuses a non-cliff neighbour")
+	check(controller.get_map().party_hex == Vector2i(0, 0), "party stayed put")
+	controller.free()
+
+
+func test_climb_party_across_rejects_non_adjacent() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)
+	controller.load_map(map)
+	check(not controller.climb_party_across(Vector2i(2, 0)),
+		"climb_party_across refuses a non-adjacent target")
+	check(map.party_hex == Vector2i(0, 0), "party stayed put")
 	controller.free()
 
 

@@ -380,8 +380,14 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	# directly and reveals fog non-destructively so the active party's
 	# vicinity isn't accidentally demoted to EXPLORED.
 	if is_primary:
-		# move_party also calls _update_visibility(coord) and emits party_moved.
-		controller.move_party(coord)
+		# A cliff-climb leg (is_climb) crosses a wall the normal gate forbids — the
+		# SHEER_SURFACE_CLIMB gate was already cleared when the order was issued, so
+		# move it across with the gate-bypassing climb helper. Both paths update fog
+		# via _update_visibility and emit party_moved.
+		if bool(event.data.get("is_climb", false)):
+			controller.climb_party_across(coord)
+		else:
+			controller.move_party(coord)
 	else:
 		controller.reveal_around(coord)
 	if party_data != null:

@@ -369,6 +369,28 @@ func move_party(target: Vector2i) -> bool:
 	return true
 
 
+## Moves the party ACROSS a cliff edge after a successful climb (SHEER_SURFACE_CLIMB,
+## gdd-cliffs-canyons.md §5/§6). Deliberately bypasses the `can_cross_edge` gate that
+## [method move_party] enforces — the climb gate (Mountaineering + gear) has already been
+## satisfied upstream — but still requires the two hexes to be adjacent, the target
+## passable, and a real cliff edge to exist between them, so this can't be used to skip the
+## crossing gate anywhere else. Emits the same movement signals as [method move_party].
+func climb_party_across(target: Vector2i) -> bool:
+	if _map_data == null:
+		return false
+	var from := _map_data.party_hex
+	if not (is_adjacent(from, target) and is_hex_passable(target) \
+			and cliff_edge_between(from, target) != null):
+		push_error("HexMapController.climb_party_across: %s is not a climbable cliff neighbour of %s"
+			% [str(target), str(from)])
+		return false
+	_map_data.party_hex = target
+	_update_visibility(target)
+	party_moved.emit(from, target)
+	EventBus.hex_entered.emit("%d,%d" % [target.x, target.y])
+	return true
+
+
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------

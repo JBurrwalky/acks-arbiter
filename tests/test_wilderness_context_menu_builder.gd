@@ -30,6 +30,8 @@ func run_all_tests() -> void:
 	test_impassable_hex_move_here_disabled()
 	test_enter_lair_buttons_with_stable_ordinals()
 	test_build_stronghold_gated_by_survey_and_clearance()
+	test_climb_here_appears_across_cliff_edge()
+	test_climb_here_absent_without_cliff_edge()
 	if not has_failures():
 		print("WildernessContextMenuBuilder: all tests passed.")
 
@@ -218,6 +220,67 @@ func test_impassable_hex_move_here_disabled() -> void:
 				"move_here should be disabled on impassable (ocean) terrain")
 			return
 	check(false, "move_here option not found")
+
+
+# ---------------------------------------------------------------------------
+# Climb Here (cliff crossing — gdd-cliffs-canyons.md §6); needs a real controller
+# ---------------------------------------------------------------------------
+
+func _controller_with_terrain(with_cliff: bool) -> HexMapController:
+	var m := HexMapData.new()
+	m.id = "test_climb_menu"
+	m.party_hex = CURRENT_HEX
+	for q in range(-1, 2):
+		for r in range(-1, 2):
+			m.hexes[Vector2i(q, r)] = HexTerrainData.new()
+	if with_cliff:
+		# Cliff edge (0,0)-(1,0): owner (0,0), edge 2 (SE) → neighbour (1,0).
+		var e := HexCliffEdgeData.new()
+		e.hex_q = 0
+		e.hex_r = 0
+		e.edge = 2
+		e.height_ft = 900
+		m.cliff_edges.append(e)
+	var ctrl := HexMapController.new()
+	ctrl.load_map(m)
+	return ctrl
+
+
+func test_climb_here_appears_across_cliff_edge() -> void:
+	var ctrl := _controller_with_terrain(true)
+	var options := WildernessContextMenuBuilder.build_menu(
+		Vector2i(1, 0), ACTIVE_PARTY_ID, ctrl.get_map(), ctrl, CURRENT_HEX)
+	var climb: Dictionary = {}
+	for opt in options:
+		if opt.get("id", "") == "climb_cliff":
+			climb = opt
+			break
+	check(not climb.is_empty(), "Climb Here appears across a cliff edge")
+	var ad: Dictionary = climb.get("action_data", {})
+	check(str(ad.get("action_type", "")) == "wilderness_climb_cliff",
+		"climb option dispatches wilderness_climb_cliff")
+	check(int(ad.get("hex_q", 999)) == 1 and int(ad.get("hex_r", 999)) == 0,
+		"climb option carries the target hex coords")
+	check(opt_enabled(options, "climb_cliff"), "climb option enabled for a passable cliff top")
+	ctrl.free()
+
+
+func test_climb_here_absent_without_cliff_edge() -> void:
+	var ctrl := _controller_with_terrain(false)
+	var ids: Array = []
+	for opt in WildernessContextMenuBuilder.build_menu(
+			Vector2i(1, 0), ACTIVE_PARTY_ID, ctrl.get_map(), ctrl, CURRENT_HEX):
+		ids.append(opt.get("id", ""))
+	check(not ("climb_cliff" in ids),
+		"no Climb Here option without a cliff edge; got %s" % str(ids))
+	ctrl.free()
+
+
+func opt_enabled(options: Array, id: String) -> bool:
+	for opt in options:
+		if opt.get("id", "") == id:
+			return bool(opt.get("enabled", false))
+	return false
 
 
 # ---------------------------------------------------------------------------
