@@ -93,6 +93,11 @@ const RIVER_BOW := 0.07             # per-edge mid bow cap (frac of edge length)
                                     # while the channel hugs the carved trough near the edge line.
 const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
 
+## #3 Water shader: a seamless water PNG dropped here turns the flat-blue ribbon into an
+## animated flowing channel (river_water.gdshader). Missing → graceful flat-blue fallback.
+const WATER_TEX_PATH := "res://assets/wilderness_textures/water.png"
+const RIVER_WATER_SHADER := "res://engine/shaders/river_water.gdshader"
+
 var _controller: HexMapController = null
 var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
@@ -105,6 +110,7 @@ var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
+var _river_water_cache: ShaderMaterial = null   # #3 animated water (when the PNG is present)
 ## Vector2i hex -> 6-bit mask of which of its corners a river runs through (carved into a
 ## riverbed by _corner_component_avg, #1). The bit is set on ALL hexes sharing each river
 ## corner so the carve is identical across the trio (watertight). A cheap dict+bit test keeps
@@ -874,7 +880,7 @@ func _build_rivers() -> void:
 	st.generate_normals()
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
-	mi.material_override = _river_material()
+	mi.material_override = _river_water_material()
 	_river_root.add_child(mi)
 
 
@@ -905,12 +911,14 @@ func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float) -> void:
 		var r0: Vector3 = right[s - 1]
 		var l1: Vector3 = left[s]
 		var r1: Vector3 = right[s]
-		st.set_uv(Vector2(0, 0)); st.add_vertex(l0)
-		st.set_uv(Vector2(1, 0)); st.add_vertex(r0)
-		st.set_uv(Vector2(1, 1)); st.add_vertex(r1)
-		st.set_uv(Vector2(0, 0)); st.add_vertex(l0)
-		st.set_uv(Vector2(1, 1)); st.add_vertex(r1)
-		st.set_uv(Vector2(0, 1)); st.add_vertex(l1)
+		# World-XZ UVs: the water shader tiles + scrolls the texture consistently across the
+		# winding channel (the flat-blue fallback ignores UVs).
+		st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
+		st.set_uv(Vector2(r0.x, r0.z)); st.add_vertex(r0)
+		st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
+		st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
+		st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
+		st.set_uv(Vector2(l1.x, l1.z)); st.add_vertex(l1)
 
 
 ## Quadratic Bezier point a→ctrl→b at [param t] — the meander centreline (#2).
@@ -959,6 +967,26 @@ func _river_material() -> StandardMaterial3D:
 	m.emission_energy_multiplier = 0.5
 	_river_material_cache = m
 	return m
+
+
+## The river surface material: an ANIMATED water shader when the seamless water PNG is present
+## (#3), else the flat-blue StandardMaterial fallback — so rivers render either way and "just
+## work" the moment the texture is dropped at WATER_TEX_PATH and reimported. The ribbon's UVs
+## are world XZ, so the shader tiles + scrolls the texture consistently across the channel.
+func _river_water_material() -> Material:
+	if _river_water_cache != null:
+		return _river_water_cache
+	if not ResourceLoader.exists(WATER_TEX_PATH) or not ResourceLoader.exists(RIVER_WATER_SHADER):
+		return _river_material()
+	var tex := load(WATER_TEX_PATH) as Texture2D
+	var shader := load(RIVER_WATER_SHADER) as Shader
+	if tex == null or shader == null:
+		return _river_material()
+	var sm := ShaderMaterial.new()
+	sm.shader = shader
+	sm.set_shader_parameter("water_tex", tex)
+	_river_water_cache = sm
+	return sm
 
 
 # ---------------------------------------------------------------------------
