@@ -78,6 +78,19 @@ const _RIVER_WIDTH := {
 ## Raise the water just above the terrain so it doesn't z-fight the surface.
 const RIVER_LIFT := 0.035
 
+## #1 Riverbed: lower the SHARED corner height for any corner a river touches, so the channel
+## recesses between banks. Applied in the one corner-height function the terrain + cliff walls
+## share (_corner_component_avg) → watertight, and canyons (river+cliff corners) stay seam-free.
+const RIVER_CARVE := 0.10
+
+## #2 Meander: the rendered centreline weaves across the hex EDGE within a bounded envelope —
+## the DATA stays edge-canonical (movement still answers "on the edge"). Deviations are
+## fractions of the hex edge length. A SHARED per-corner jitter keeps adjacent river edges
+## continuous; a per-edge bow gives character (most gentle/straight, a few wigglier).
+const RIVER_CORNER_JITTER := 0.08   # shared per-corner XZ wobble (frac of edge length)
+const RIVER_BOW := 0.16             # per-edge mid bow cap (frac of edge length); squared → mostly small
+const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
+
 var _controller: HexMapController = null
 var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
@@ -90,6 +103,11 @@ var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
+## Vector2i hex -> 6-bit mask of which of its corners a river runs through (carved into a
+## riverbed by _corner_component_avg, #1). The bit is set on ALL hexes sharing each river
+## corner so the carve is identical across the trio (watertight). A cheap dict+bit test keeps
+## the terrain hot path fast; rebuilt only on map/edge change (rivers are fog-independent).
+var _river_corner_mask := {}
 ## Cliff/canyon walls (gdd-cliffs-canyons.md §7). _cliff_by_pair maps an unordered
 ## hex-pair key -> HexCliffEdgeData so the terrain mesh can keep cliff edges as a
 ## height DISCONTINUITY (stop averaging corners across them) and a vertical wall
@@ -181,6 +199,7 @@ func _on_map_loaded(_map_id: String) -> void:
 		return
 	_reveal_all_fog = bool(ProjectSettings.get_setting("acks/rendering/reveal_all_fog", false))
 	_ensure_field()
+	_rebuild_river_lookup()   # before terrain: corners a river runs through carve a riverbed
 	_rebuild_cliff_lookup()   # before terrain: corners become cliff-aware
 	_build_terrain()
 	_build_rivers()
@@ -215,6 +234,7 @@ func _on_frontier_grown(_map_id: String) -> void:
 	if _map_data == null:
 		return
 	_ensure_field()
+	_rebuild_river_lookup()   # new hexes may add river corners to carve
 	_rebuild_cliff_lookup()   # new hexes may add cliff edges; refresh corner-awareness first
 	_build_terrain()
 	_build_rivers()
@@ -464,6 +484,47 @@ const _CORNER_NEIGHBORS := [
 # Cliff/canyon edges (gdd-cliffs-canyons.md §7)
 # ---------------------------------------------------------------------------
 
+## Build the set of SHARED corner-keys any river edge touches, so _corner_component_avg can
+## carve a riverbed there (#1). Call before _build_terrain. Rivers are fog-independent, so
+## this is rebuilt only when the map/edges change (like the cliff lookup), not per fog update.
+func _rebuild_river_lookup() -> void:
+	_river_corner_mask = {}
+	if _map_data == null:
+		return
+	var corner_off := WildernessHexMath.corner_offsets()
+	for edge_data in _map_data.river_edges:
+		if not (edge_data is HexRiverEdgeData):
+			continue
+		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var e: int = edge_data.edge
+		_mark_river_corner(owner, (e + 4) % 6, corner_off)
+		_mark_river_corner(owner, (e + 5) % 6, corner_off)
+
+
+## Set the river-corner bit on EVERY hex sharing the physical corner (owner, i) — each at its
+## OWN local corner index (matched by world position) — so the carve in _corner_component_avg
+## is bit-identical across the trio and the mesh stays watertight. Cold path (lookup build).
+func _mark_river_corner(owner: Vector2i, i: int, corner_off: Array) -> void:
+	var world_p: Vector2 = WildernessHexMath.axial_to_world(owner) + corner_off[i]
+	var trio: Array[Vector2i] = [owner, owner + _CORNER_NEIGHBORS[i][0], owner + _CORNER_NEIGHBORS[i][1]]
+	for h in trio:
+		if not _map_data.is_valid_coord(h):
+			continue
+		var li := _corner_index_at(WildernessHexMath.axial_to_world(h), world_p, corner_off)
+		_river_corner_mask[h] = int(_river_corner_mask.get(h, 0)) | (1 << li)
+
+
+## Canonical key for the PHYSICAL corner at index [param i] of [param coord] — the sorted trio
+## of hexes meeting there — so every hex referencing the same corner yields one key. Used (off
+## the hot path) to seed the SHARED meander corner jitter, keeping adjacent river edges joined.
+func _corner_key(coord: Vector2i, i: int) -> String:
+	var offs: Array = _CORNER_NEIGHBORS[i]
+	var trio: Array[Vector2i] = [coord, coord + offs[0], coord + offs[1]]
+	trio.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.x < b.x or (a.x == b.x and a.y < b.y))
+	return "%d,%d|%d,%d|%d,%d" % [trio[0].x, trio[0].y, trio[1].x, trio[1].y, trio[2].x, trio[2].y]
+
+
 ## Rebuild the unordered-pair -> cliff lookup from _map_data.cliff_edges. Call before
 ## _build_terrain so the corner heights are cliff-aware. No cliffs -> empty -> no-op.
 func _rebuild_cliff_lookup() -> void:
@@ -515,7 +576,13 @@ func _corner_component_avg(coord: Vector2i, i: int) -> float:
 	var sum := 0.0
 	for k in comp:
 		sum += _hex_height(trio[k])
-	return sum / float(comp.size())
+	var h := sum / float(comp.size())
+	# #1 Riverbed carve: a corner a river runs through drops by RIVER_CARVE. Applied HERE so
+	# the terrain mesh AND the cliff walls (both call this) carve identically — no crack, and
+	# a canyon (river on a cliff's low side) just deepens. Cheap dict+bit test; no-op w/o rivers.
+	if not _river_corner_mask.is_empty() and ((int(_river_corner_mask.get(coord, 0)) >> i) & 1) != 0:
+		h -= RIVER_CARVE
+	return h
 
 
 ## The corner index (0..5) of the hex centred at [param center] nearest world-XZ
@@ -758,6 +825,7 @@ func _build_rivers() -> void:
 	if _map_data == null or _map_data.river_edges.is_empty():
 		return
 	var corner_off := WildernessHexMath.corner_offsets()
+	var edge_len: float = (corner_off[0] - corner_off[1]).length()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var emitted := 0
@@ -769,17 +837,34 @@ func _build_rivers() -> void:
 		var nb: Vector2i = owner + HexRiverEdgeData.neighbor_offset(edge_data.edge)
 		if _fog_value(owner) < 0.25 and _fog_value(nb) < 0.25:
 			continue
-		# Edge e (0=N..5=NW) is bounded by mesh corners (e+4)%6 and (e+5)%6.
+		# Edge e (0=N..5=NW) is bounded by mesh corners (e+4)%6 and (e+5)%6. The DATA is that
+		# straight edge; the RENDER meanders across it within a bounded envelope (#2). Endpoints
+		# are the two carved corners, each nudged by a SHARED per-corner jitter so adjacent river
+		# edges meet at the same point → one continuous channel.
 		var e: int = edge_data.edge
 		var i1 := (e + 4) % 6
 		var i2 := (e + 5) % 6
 		var center := WildernessHexMath.axial_to_world(owner)
-		var p1 := Vector3(center.x + corner_off[i1].x,
-				_avg_height(_corner_sharing(owner, i1)) + RIVER_LIFT, center.y + corner_off[i1].y)
-		var p2 := Vector3(center.x + corner_off[i2].x,
-				_avg_height(_corner_sharing(owner, i2)) + RIVER_LIFT, center.y + corner_off[i2].y)
+		var a_xz := Vector2(center.x + corner_off[i1].x, center.y + corner_off[i1].y) \
+				+ _corner_jitter(_corner_key(owner, i1), edge_len)
+		var b_xz := Vector2(center.x + corner_off[i2].x, center.y + corner_off[i2].y) \
+				+ _corner_jitter(_corner_key(owner, i2), edge_len)
+		# Per-edge bow → a quadratic control point pulled perpendicular to the edge (character).
+		var dir := b_xz - a_xz
+		var perp := Vector2(-dir.y, dir.x).normalized()
+		var ctrl := (a_xz + b_xz) * 0.5 + perp * _edge_bow(owner, e, edge_len)
+		# Both host hexes' carved corner heights, precomputed once (water follows the bed).
+		var oc := _hex_corners_y(owner)
+		var nc := _hex_corners_y(nb)
 		var w: float = _RIVER_WIDTH.get(edge_data.navigability, 0.075)
-		_emit_river_quad(st, p1, p2, w)
+		var prev := Vector3.ZERO
+		for s in range(RIVER_SAMPLES + 1):
+			var t := float(s) / float(RIVER_SAMPLES)
+			var p := _qbez(a_xz, ctrl, b_xz, t)
+			var cur := Vector3(p.x, _river_surface_y(owner, nb, oc, nc, p, corner_off), p.y)
+			if s > 0:
+				_emit_river_quad(st, prev, cur, w)
+			prev = cur
 		emitted += 1
 	if emitted == 0:
 		return
@@ -808,6 +893,65 @@ func _emit_river_quad(st: SurfaceTool, p1: Vector3, p2: Vector3, w: float) -> vo
 	st.set_uv(Vector2(0, 0)); st.add_vertex(a)
 	st.set_uv(Vector2(1, 1)); st.add_vertex(c)
 	st.set_uv(Vector2(0, 1)); st.add_vertex(d)
+
+
+## Quadratic Bezier point a→ctrl→b at [param t] — the meander centreline (#2).
+static func _qbez(a: Vector2, ctrl: Vector2, b: Vector2, t: float) -> Vector2:
+	var u := 1.0 - t
+	return a * (u * u) + ctrl * (2.0 * u * t) + b * (t * t)
+
+
+## Stable 0..1 hash of a string — cosmetic determinism, no global RNG. The meander is render-
+## only (never feeds game logic), but must look identical on every rebuild.
+static func _hash01(s: String) -> float:
+	return float(hash(s) & 0xFFFFFF) / float(0x1000000)
+
+
+## SHARED XZ jitter for a physical corner (keyed on its canonical corner key) so adjacent
+## river edges meet at the same nudged point → a continuous channel. Bounded to a fraction of
+## the hex edge length.
+func _corner_jitter(key: String, edge_len: float) -> Vector2:
+	var ang := _hash01(key + "#a") * TAU
+	var mag := _hash01(key + "#m") * RIVER_CORNER_JITTER * edge_len
+	return Vector2(cos(ang), sin(ang)) * mag
+
+
+## Signed per-edge mid bow, SQUARED so most edges stay gentle/near-straight and only a few are
+## wigglier (character, not noise). Deterministic per canonical edge.
+func _edge_bow(owner: Vector2i, e: int, edge_len: float) -> float:
+	var key := "%d,%d,%d" % [owner.x, owner.y, e]
+	var u := _hash01(key + "#b")
+	var sgn := 1.0 if _hash01(key + "#s") < 0.5 else -1.0
+	return sgn * u * u * RIVER_BOW * edge_len
+
+
+## The 6 carved corner heights of [param coord], or [] if off-map (for surface sampling).
+func _hex_corners_y(coord: Vector2i) -> Array:
+	if not _map_data.is_valid_coord(coord):
+		return []
+	var out: Array = []
+	for i in range(6):
+		out.append(_corner_component_avg(coord, i))
+	return out
+
+
+## Water Y at world-XZ [param p]: the CARVED terrain surface of whichever host hex (owner or
+## neighbour) contains p, plus a small lift so the water reads just above the bed floor. The
+## recessed look comes from the CARVE — the river corners are low while the banks (centre +
+## non-river corners) stay high, so the carved fan returns a low surface ALONG the channel and
+## water + lift sits in the trough between banks. Host carved corner heights are passed in
+## ([param oc]/[param nc]); falls back to the owner when the neighbour is off-map.
+func _river_surface_y(owner: Vector2i, nb: Vector2i, oc: Array, nc: Array, p: Vector2,
+		corner_off: Array) -> float:
+	var co := WildernessHexMath.axial_to_world(owner)
+	var use_nb := not nc.is_empty() \
+			and p.distance_squared_to(WildernessHexMath.axial_to_world(nb)) < p.distance_squared_to(co)
+	var host := nb if use_nb else owner
+	var cy: Array = nc if use_nb else oc
+	if cy.is_empty():
+		return _hex_height(host) - RIVER_CARVE + RIVER_LIFT
+	var center := WildernessHexMath.axial_to_world(host)
+	return _fan_y(p - center, _hex_height(host), corner_off, cy) + RIVER_LIFT
 
 
 func _river_material() -> StandardMaterial3D:
