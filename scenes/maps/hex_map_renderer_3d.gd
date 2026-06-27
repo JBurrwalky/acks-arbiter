@@ -879,11 +879,12 @@ func _cliff_wall_material() -> StandardMaterial3D:
 		m.albedo_texture = tex
 		m.uv1_triplanar = true
 		m.uv1_world_triplanar = true
-		m.uv1_scale = Vector3.ONE / 6.0   # ~match terrain tile density; tune
-	else:
-		m.albedo_color = Color(0.42, 0.36, 0.30)   # rock fallback
+		m.uv1_scale = Vector3.ONE / 6.0
+	# Darken the rock to a shadowed exposed-cliff face so it READS against the lighter
+	# mountain terrain it sits in (the un-modulated mountain texture blends in).
+	m.albedo_color = Color(0.52, 0.47, 0.42) if tex != null else Color(0.30, 0.26, 0.22)
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.roughness = 0.95
+	m.roughness = 0.96
 	m.metallic = 0.0
 	_cliff_mat = m
 	return m
