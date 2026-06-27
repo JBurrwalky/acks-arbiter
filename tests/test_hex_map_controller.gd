@@ -38,6 +38,12 @@ func run_all_tests() -> void:
 	test_find_path_routes_around_river()
 	test_find_path_river_encircled_hex_unreachable()
 	test_find_path_reaches_hex_through_bridge_in_river_ring()
+	# Cliff-edge crossing gate (2026-06-26 — cliffs block normal routing; Phase 4a)
+	test_cliff_edge_between_finds_cliff()
+	test_can_cross_edge_blocked_by_cliff()
+	test_can_cross_river_edge_ignores_cliff()
+	test_find_path_routes_around_cliff()
+	test_find_path_cliff_encircled_hex_unreachable()
 	# Roads imply crossings (2026-06-08 Jedidiah ruling)
 	test_road_on_owner_side_implies_crossing()
 	test_road_on_neighbor_side_implies_crossing()
@@ -473,6 +479,99 @@ func test_find_path_reaches_hex_through_bridge_in_river_ring() -> void:
 	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
 	check(not path.is_empty(), "the bridge in the river ring makes (2,0) reachable")
 	check(path[path.size() - 1] == Vector2i(2, 0), "path ends at the bridged hex")
+	controller.free()
+
+
+# ---------------------------------------------------------------------------
+# Cliff-edge crossing gate (added 2026-06-26 — gdd-cliffs-canyons.md §6)
+# ---------------------------------------------------------------------------
+#
+# Cliffs/canyons run along hex EDGES, same per-edge model as rivers. A cliff edge
+# is impassable to NORMAL routing in every case — the party routes around it, and
+# crossing one is only ever a deliberate climb action (Phase 4b). So unlike a
+# river, a cliff has no "crossing" that opens it for pathfinding. Edge index 2
+# (SE) from (0,0) is the neighbour (1,0).
+
+func _add_cliff_edge(map: HexMapData, q: int, r: int, edge: int,
+		height_ft: int = 800, cliff_type: String = HexCliffEdgeData.CLIFF) -> void:
+	var e := HexCliffEdgeData.new()
+	e.hex_q = q
+	e.hex_r = r
+	e.edge = edge
+	e.height_ft = height_ft
+	e.cliff_type = cliff_type
+	map.cliff_edges.append(e)
+
+
+func test_cliff_edge_between_finds_cliff() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2, 1200)  # (0,0)-(1,0)
+	controller.load_map(map)
+	var here := controller.cliff_edge_between(Vector2i(0, 0), Vector2i(1, 0))
+	check(here != null, "a cliff on the shared edge is found")
+	check(here != null and here.height_ft == 1200, "the returned cliff carries its height_ft")
+	check(controller.cliff_edge_between(Vector2i(1, 0), Vector2i(0, 0)) != null,
+		"...found in the reverse orientation too (canonical lookup)")
+	check(controller.cliff_edge_between(Vector2i(0, 0), Vector2i(0, 1)) == null,
+		"no cliff on a different edge → null")
+	controller.free()
+
+
+func test_can_cross_edge_blocked_by_cliff() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(not controller.can_cross_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a cliff edge blocks normal crossing")
+	check(not controller.can_cross_edge(Vector2i(1, 0), Vector2i(0, 0)),
+		"...in both orientations")
+	check(not controller.can_move_to(Vector2i(1, 0)),
+		"can_move_to rejects a step across a cliff")
+	controller.free()
+
+
+func test_can_cross_river_edge_ignores_cliff() -> void:
+	# Separation of concerns: a cliff with no river must NOT register as a river
+	# block — can_cross_river_edge stays river-only; the cliff block lives in
+	# can_cross_edge / cliff_edge_between.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)
+	controller.load_map(map)
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a cliff-only edge does not block the river gate")
+	controller.free()
+
+
+func test_find_path_routes_around_cliff() -> void:
+	# A single cliff edge between (0,0) and (1,0) must not strand the party — the
+	# pathfinder reaches (1,0) by a non-cliff edge and never takes the blocked step.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # height irrelevant to routing; default applies
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(not path.is_empty(), "a detour around one cliff edge should exist")
+	for i in range(path.size() - 1):
+		var blocked := path[i] == Vector2i(0, 0) and path[i + 1] == Vector2i(1, 0)
+		check(not blocked, "path must not cross the (0,0)-(1,0) cliff edge directly: %s" % str(path))
+	controller.free()
+
+
+func test_find_path_cliff_encircled_hex_unreachable() -> void:
+	# Surround (2,0) with cliff edges on all six sides → no land path in (cliffs
+	# never auto-open, so there is no climb-free route — Phase 4b adds deliberate
+	# climbing, which is not pathfinding).
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	for edge in range(6):
+		_add_cliff_edge(map, 2, 0, edge)
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(path.is_empty(),
+		"a hex ringed by cliffs is unreachable by normal travel; got %s" % str(path))
 	controller.free()
 
 

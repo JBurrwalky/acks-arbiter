@@ -188,7 +188,7 @@ func can_move_to(target: Vector2i) -> bool:
 		_map_data != null
 		and _map_data.is_valid_coord(target)
 		and is_adjacent(_map_data.party_hex, target)
-		and can_cross_river_edge(_map_data.party_hex, target)
+		and can_cross_edge(_map_data.party_hex, target)
 	)
 
 
@@ -215,6 +215,33 @@ func can_cross_river_edge(from_hex: Vector2i, to_hex: Vector2i) -> bool:
 			# passable even without an authored crossing.
 			return _edge_has_road(owner, edge_data.edge)
 	return true
+
+
+## Returns the cliff/canyon edge running along the shared boundary between two
+## adjacent hexes, or null if there is none (gdd-cliffs-canyons.md §4/§6). Cliff
+## edges are stored canonically (lex-lower hex owns the entry; no mirror entry),
+## so this checks the edge in both orientations — same scan as rivers. The
+## returned [HexCliffEdgeData] carries `height_ft` / `high_side`, which the climb
+## resolver (SHEER_SURFACE_CLIMB, §5) reads when a deliberate crossing is ordered.
+func cliff_edge_between(from_hex: Vector2i, to_hex: Vector2i) -> HexCliffEdgeData:
+	if _map_data == null:
+		return null
+	for edge_data in _map_data.cliff_edges:
+		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var neighbor: Vector2i = owner + HexCliffEdgeData.neighbor_offset(edge_data.edge)
+		if (owner == from_hex and neighbor == to_hex) \
+				or (owner == to_hex and neighbor == from_hex):
+			return edge_data
+	return null
+
+
+## Returns true if the party may cross the edge between two adjacent hexes by
+## NORMAL travel — i.e. the river gate allows it AND no cliff/canyon walls it off.
+## A cliff edge is impassable to routing in every case: the party routes around
+## it, and crossing one is only ever a deliberate climb action (§5/§6), never an
+## auto-pathed step. Pathfinding and single-step moves both gate on this.
+func can_cross_edge(from_hex: Vector2i, to_hex: Vector2i) -> bool:
+	return can_cross_river_edge(from_hex, to_hex) and cliff_edge_between(from_hex, to_hex) == null
 
 
 ## Returns true if a road runs across the edge `edge` of `owner_coord` — i.e.
@@ -287,10 +314,11 @@ func find_path(from_hex: Vector2i, to_hex: Vector2i) -> Array[Vector2i]:
 			# walk into — but is_hex_passable already approved the goal above.
 			if not is_hex_passable(n):
 				continue
-			# Rivers without a bridge/ford/ferry block the step between two
-			# adjacent hexes (no boats yet — GDD §3.6.5). Pathfinding routes
-			# around them, threading through declared crossings.
-			if not can_cross_river_edge(current, n):
+			# Rivers without a bridge/ford/ferry, and cliff/canyon edges, block
+			# the step between two adjacent hexes (no boats yet — GDD §3.6.5;
+			# cliffs are impassable to routing — gdd-cliffs-canyons.md §6).
+			# Pathfinding routes around them, threading through declared crossings.
+			if not can_cross_edge(current, n):
 				continue
 			var tentative: int = current_g + 1
 			if not g_score.has(n) or tentative < int(g_score[n]):
