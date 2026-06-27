@@ -15,18 +15,23 @@ extends RefCounted
 # Raw elevation (0-1) → feet: ~7,778 m per raw unit (climate lapse) × 3.281 ft/m.
 const RAW_TO_FEET := 25524.0
 
-# Cross-edge raw delta at/above which a boundary is a cliff. Calibrated against the play
-# grid's land-edge delta distribution (gdd §4): 0.12 ≈ 3,000 ft ≈ the top ~1.7% of land
-# edges — dramatic escarpments + canyon walls, not every steep slope. Tunable.
-const CLIFF_DELTA := 0.12
+# ADAPTIVE cliff threshold (gdd §4). A fixed absolute cutoff is map-size dependent — larger
+# maps build steeper relief, so 0.12 gave a Large map ~51 cliffs while a Medium map's STEEPEST
+# edge was only 0.11 (=> zero cliffs). Instead take the steepest CLIFF_PERCENTILE of a map's
+# own land edges, so cliff DENSITY is consistent at any size — but never below CLIFF_DELTA_FLOOR
+# so a genuinely flat map stays cliff-free.
+const CLIFF_PERCENTILE := 0.97    # top ~3% of land edges by cross-edge delta
+const CLIFF_DELTA_FLOOR := 0.07   # ~1,800 ft; no edge below this is ever a cliff
 
 
 ## Detect cliff/canyon edges. [param grid]: Vector2i → {elevation_raw: float, water: String}
 ## (extra keys ignored, so child dicts pass straight through). [param river_hexes]: a set
-## (Vector2i → true) of hexes a river touches. Returns Array[HexCliffEdgeData], canonical,
-## one per steep boundary.
-static func detect(grid: Dictionary, river_hexes: Dictionary) -> Array:
-	var out: Array = []
+## (Vector2i → true) of hexes a river touches. [param threshold_override]: pin the cutoff for
+## tests (< 0 = use the adaptive threshold). Returns Array[HexCliffEdgeData], canonical.
+static func detect(grid: Dictionary, river_hexes: Dictionary, threshold_override: float = -1.0) -> Array:
+	# Pass 1: every land-land boundary (once, from the lex-lower hex) + its delta.
+	var edges: Array = []
+	var deltas: Array = []
 	for a: Vector2i in grid.keys():
 		var ha: Dictionary = grid[a]
 		if str(ha.get("water", "")) == "ocean":
@@ -36,21 +41,39 @@ static func detect(grid: Dictionary, river_hexes: Dictionary) -> Array:
 			var b: Vector2i = a + HexCliffEdgeData.neighbor_offset(e)
 			if not grid.has(b):
 				continue
-			# Process each boundary once, from its lex-lower hex.
 			if not (a.x < b.x or (a.x == b.x and a.y < b.y)):
 				continue
 			var hb: Dictionary = grid[b]
 			if str(hb.get("water", "")) == "ocean":
 				continue
 			var eb := float(hb.get("elevation_raw", 0.0))
-			var delta := absf(ea - eb)
-			if delta < CLIFF_DELTA:
-				continue
-			var high: Vector2i = a if ea > eb else b
-			var low: Vector2i = b if ea > eb else a
-			var height_ft: int = roundi(delta * RAW_TO_FEET)
-			var ctype: String = HexCliffEdgeData.CANYON if river_hexes.has(low) else HexCliffEdgeData.CLIFF
-			var cliff := HexCliffEdgeData.make(high, low, height_ft, ctype)
-			if cliff != null:
-				out.append(cliff)
+			var d := absf(ea - eb)
+			edges.append({"a": a, "b": b, "ea": ea, "eb": eb, "delta": d})
+			deltas.append(d)
+	if edges.is_empty():
+		return []
+	# Adaptive cutoff (or the test override).
+	var threshold: float
+	if threshold_override >= 0.0:
+		threshold = threshold_override
+	else:
+		deltas.sort()
+		var idx: int = clampi(int(CLIFF_PERCENTILE * float(deltas.size())), 0, deltas.size() - 1)
+		threshold = maxf(CLIFF_DELTA_FLOOR, float(deltas[idx]))
+	# Pass 2: build cliff edges at/above the cutoff.
+	var out: Array = []
+	for rec: Dictionary in edges:
+		if float(rec["delta"]) < threshold:
+			continue
+		var a: Vector2i = rec["a"]
+		var b: Vector2i = rec["b"]
+		var ea2 := float(rec["ea"])
+		var eb2 := float(rec["eb"])
+		var high: Vector2i = a if ea2 > eb2 else b
+		var low: Vector2i = b if ea2 > eb2 else a
+		var height_ft: int = roundi(float(rec["delta"]) * RAW_TO_FEET)
+		var ctype: String = HexCliffEdgeData.CANYON if river_hexes.has(low) else HexCliffEdgeData.CLIFF
+		var cliff := HexCliffEdgeData.make(high, low, height_ft, ctype)
+		if cliff != null:
+			out.append(cliff)
 	return out

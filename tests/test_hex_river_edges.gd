@@ -376,7 +376,7 @@ func test_cliff_detector_basic() -> void:
 		Vector2i(2, 1): {"elevation_raw": 0.40, "water": ""},        # low, no river -> cliff
 	}
 	var rivers := {Vector2i(0, 1): true}
-	var edges := CliffDetector.detect(grid, rivers)
+	var edges := CliffDetector.detect(grid, rivers, 0.12)   # pinned threshold for determinism
 	check(edges.size() == 2, "two steep edges (ocean coast + gentle excluded); got %d" % edges.size())
 	var by_owner := {}
 	for ed in edges:
