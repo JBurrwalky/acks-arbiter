@@ -1,6 +1,7 @@
 # GDD — Cliffs & Canyons (impassable elevation gradient)
 
-**Status:** DESIGN (rulings captured 2026-06-26; V1 = detect + store + render + block).
+**Status:** IN PROGRESS (2026-06-26). Data + Detect + Render + Block-4a LANDED; Block-4b
+(the `SHEER_SURFACE_CLIMB` climb service) is the remaining V1 work — see §9.
 **Controlling renderer:** `scenes/maps/hex_map_renderer_3d.gd`. **Field:** `engine/subsystems/generation/world/geo_field*.gd`.
 
 ## 1. Overview & definitions
@@ -23,20 +24,43 @@ become cliffs naturally via the same detector; most mountain edges stay passable
 
 ## 2. ACKS Constraints (SACRED — from the books; implement faithfully)
 
+Verified against the rule files 2026-06-26 (recon workflow). Lines cited are exact.
+
 - **No unaided crossing of sheer terrain.** Without a relevant proficiency/gear/magic a
-  party simply cannot cross a cliff (`acore_proficiencies_rules_and_catalog.xml:590`;
-  vehicles need roads through mountains `daw_equipment_and_construction.xml:87`).
-- **Climbing proficiency / Thief — Climb Walls** (`acore_core_classes.xml:1447`): scale
-  sheer surfaces with a **proficiency throw per 100' climbed**; on a failed throw, **fall a
-  distance = half the attempted segment + the distance already climbed**, taking **1d6 per
-  10'**; climb at **¼ combat movement**. Throw target = thief-of-level table
-  (`acore_core_classes.xml:1475`; L1 6+, L3 5+, L4 4+ …). Climbing proficiency lets only
-  the **individual** climb.
-- **Mountaineering + gear** (`acore_proficiencies:855`): lets the **whole party** climb as
-  thieves of their level (falling still a risk). **Required gear:** ≥ 50' rope, **1 iron
-  stake per 50' of cliff height**, and a warhammer/small hammer/mallet. **Plus a grappling
-  hook** if *no* party member has Climbing or is a Thief alongside the Mountaineer.
+  party simply cannot scale a sheer surface (`acore_proficiencies_rules_and_catalog.xml:590-592`
+  Climbing; `:855-858` Mountaineering — both grant climbing only *as a thief of class level*).
+- **Climb Walls** (`acore_core_classes.xml:1447-1450`): scale sheer surfaces with **one
+  proficiency throw per 100' climbed** (1d20 roll-high vs target; nat 20 always succeeds,
+  nat 1 always fails); on a failed throw **fall a distance = half the attempted segment +
+  the distance already climbed**, taking **1d6 per 10'**; climb at **¼ combat movement**.
+  Throw target = thief-of-level table (`acore_core_classes.xml:1475+`): L1 6+, L2 5+, L3 5+,
+  L4 4+, L5 4+, L6 4+, L7 3+, L8 3+, L9 3+, L10 3+, L11 2+, L12 2+, L13 1+, L14 1+. This
+  table already lives in `data/classes/thief.json` (`climb_walls` progression).
+- **Climbing proficiency** (`:590-592`): lets the **individual** climb sheer surfaces *as a
+  thief of class level*, without aids.
+- **Mountaineering proficiency** (`:855-858`): lets the character **use gear to climb
+  difficult mountains and cliff faces, and rig lines for others, as a thief of class level**
+  — i.e. enables the **whole party** to climb (falling still a risk). Does NOT allow climbing
+  sheer surfaces in combat or "without extensive gear." Enabler action key is
+  `mountaineering_climb`, NOT `climb_walls` — but the mechanic is the same climb-walls throw.
 - Magic alternatives (out of scope V1): Spider Climb, Fly, climbing potion.
+
+### 2a. House rules (PROJECT DESIGN — NOT from the books; modify freely)
+
+The books say Mountaineering needs "extensive gear" but **enumerate no specific items or
+quantities**. The concrete gear list below is **Jedidiah's house rule** (rulings 2026-06-25/26),
+not RAW — do not attribute it to `acore_proficiencies:855`.
+
+- **Per-climber gear gate** (every climber = each PC + henchman making the climb): **50' rope
+  ×1**, **iron spikes × ceil(height_ft / 50)**, a **hammer/mallet ×1**, **plus a grappling
+  hook ×1 unless** some party member has the Climbing proficiency or is a Thief.
+- Gear may sit in any party inventory; what matters is the **pooled** total ≥ N_climbers ×
+  per-climber. Item keys: `rope_50ft`, `iron_spikes_12` (**bundle of 12 — count quantity×12
+  spikes**), `hammer_small` / `warhammer` / `mallet`, `grappling_hook`.
+- **Insufficient gear → block the attempt** with a shortfall message listing the missing
+  counts. Missing **Mountaineering** entirely → impassable, route around (no list).
+- **Mercenaries:** if any mercenary is travelling with the party, **refuse the climb** for
+  now (mercenaries aren't modeled as individual climbers yet) — Jedidiah ruling 2026-06-26.
 
 ## 3. Data model
 
@@ -127,13 +151,25 @@ distinct texture/strata; V1 uses the mountain layer for both.
 
 ## 9. V1 build phases
 
-1. **Data** — migration `hex_cliff_edges`; `HexCliffEdgeData`; `HexMapData.cliff_edges`
+1. **Data** ✅ DONE — migration `hex_cliff_edges`; `HexCliffEdgeData`; `HexMapData.cliff_edges`
    load/save; repo round-trip + test.
-2. **Detect** — materialization derives cliff/canyon edges from the field; calibrate
-   thresholds; store on the play map.
-3. **Render** — cliff-aware corners + wall quads (mountain texture); in-engine verify.
-4. **Block** — generalize the edge chokepoint; `SHEER_SURFACE_CLIMB` service (gate + throws
-   + fall); pathfinding routes around; crossing pays time + resolves falls.
+2. **Detect** ✅ DONE — materialization derives cliff/canyon edges from the field (adaptive
+   percentile threshold, `CliffDetector`); stored on the play map.
+3. **Render** ✅ DONE — watertight component-average corners + wall quads (darkened mountain
+   texture so the face reads); in-engine verified on a fresh world.
+4. **Block** — split into two shippable slices (Jedidiah 2026-06-26):
+   - **4a** ✅ DONE — generalize the edge chokepoint (`HexMapController.cliff_edge_between` +
+     `can_cross_edge`); cliffs are impassable to routing, the party routes around, walled-in
+     targets report "No Route". Pathfinding + single-step moves inherit it. Unit-tested.
+   - **4b** ⬜ NEXT — the reusable `SHEER_SURFACE_CLIMB` service (grep tag), wired to an
+     **explicit "Climb here" context action** on an across-a-cliff hex (cliffs never auto-path,
+     so crossing is always deliberate): gate (Mountaineering + per-climber gear §2a; **refuse
+     if mercenaries present**) → per-climber climb-walls throws (target from the thief table by
+     level — uniform for thieves and proficiency-climbers, since Mountaineering's `mountaineering_climb`
+     enabler has no thief progression of its own) → on a fail apply `1d6/10'` fall damage via
+     `CharacterData.apply_damage`; the leg pays ¼-movement climb time, then the party crosses.
+     **Climber roster = PCs + henchmen** (`list_party_characters` / `list_party_henchmen`);
+     mercenaries deferred until war-band travel is modeled.
 
 ## 10. RESOLVED — cliff CLIMB HEIGHT = full delta (2026-06-26)
 
