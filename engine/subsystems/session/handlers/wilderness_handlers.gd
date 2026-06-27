@@ -31,6 +31,13 @@ const PURSUIT_CATCHUP_EVENT := "pursuit_catchup_check"
 ## first).
 const WILDERNESS_ENCOUNTER_EVENT := "wilderness_encounter"
 
+## Rolling-frontier growth (gdd-region-zoom-in.md §6 / gdd-setting-runtime-materialization
+## §4.3). When the primary party travels within FRONTIER_TRIGGER_HEXES six-mile hexes of the
+## play map's frontier, this event materializes the next parent strip into the SAME map so
+## the play surface extends out of sight ahead of the party.
+const FRONTIER_EVENT := "frontier_zoom_in"
+const FRONTIER_TRIGGER_HEXES := 6
+
 ## In-memory buffer keyed by party_id → most-recent foraging summary. Filled
 ## by the noon-tick handler and consumed by the midnight day-tick when
 ## writing the sustenance log row. Not persisted; on session reload the
@@ -121,6 +128,7 @@ func register_global(registry: EventHandlerRegistry) -> void:
 	registry.register(TRACKING_CHECK_EVENT, _handle_tracking_check)
 	registry.register(PURSUIT_CATCHUP_EVENT, _handle_pursuit_catchup_check)
 	registry.register(WILDERNESS_ENCOUNTER_EVENT, _handle_wilderness_encounter)
+	registry.register(FRONTIER_EVENT, _handle_frontier_zoom_in)
 
 
 func unregister_global(registry: EventHandlerRegistry) -> void:
@@ -135,6 +143,7 @@ func unregister_global(registry: EventHandlerRegistry) -> void:
 	registry.unregister(TRACKING_CHECK_EVENT)
 	registry.unregister(PURSUIT_CATCHUP_EVENT)
 	registry.unregister(WILDERNESS_ENCOUNTER_EVENT)
+	registry.unregister(FRONTIER_EVENT)
 
 
 ## True while the wilderness UI state is the active session context — the
@@ -409,6 +418,12 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if map_data != null:
 		CampaignRepository.save_hex_map(map_data, _runner.get_campaign_id())
 
+	# Rolling frontier (gdd-region-zoom-in.md §6): if the PRIMARY party (whose play map is
+	# the loaded one) is nearing the materialized edge, schedule the next strip's growth so
+	# the map extends ahead of it. Background parties don't grow the loaded map.
+	if is_primary and map_data != null:
+		_maybe_schedule_frontier_growth(coord, map_data, moving_pid)
+
 	# (The v1 per-leg passive lair-spot that fired here was removed 2026-06-10
 	# per gdd-lair-discovery.md §10 — lairs are placed lazily by wandering
 	# substitution / search only; there is nothing pre-placed to spot.)
@@ -497,6 +512,89 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 		}
 
 	return {}
+
+
+# ---------------------------------------------------------------------------
+# Rolling-frontier growth (gdd-region-zoom-in.md §6)
+# ---------------------------------------------------------------------------
+
+## Materialize the next parent strip into the loaded play map, then adopt the enlarged map
+## (fog-preserving) so the renderer extends out of sight ahead of the party. A no-op at the
+## world edge. Scheduled by [method _maybe_schedule_frontier_growth] off a travel leg.
+func _handle_frontier_zoom_in(event: ScheduledEvent) -> Dictionary:
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null:
+		return {}
+	var map_data: HexMapData = controller.get_map()
+	if map_data == null:
+		return {}
+	var dir := Vector2i(int(event.data.get("dir_x", 0)), int(event.data.get("dir_y", 0)))
+	if dir == Vector2i.ZERO:
+		return {}
+	var res: Dictionary = RegionZoomIn.new().grow_frontier(
+		_runner.get_campaign_id(), map_data.id, dir)
+	if not bool(res.get("grew", false)):
+		return {}   # at the world edge (or no real parents that way) — nothing to refresh
+	# Re-read the enlarged map from the DB and adopt it without re-hiding fog → renderer
+	# rebuilds the surface + reseamed river/cliff geometry in place.
+	var grown: HexMapData = CampaignRepository.load_hex_map(map_data.id)
+	if grown != null:
+		controller.adopt_grown_map(grown)
+	return {}
+
+
+## If [param coord] (the party's new hex) is within FRONTIER_TRIGGER_HEXES of the play map's
+## frontier on some side, (re)schedule one near-immediate growth event toward that side.
+func _maybe_schedule_frontier_growth(coord: Vector2i, map_data: HexMapData, pid: String) -> void:
+	if map_data.parent_hex_footprint.is_empty():
+		return
+	var dir := _frontier_growth_direction(coord, map_data)
+	if dir == Vector2i.ZERO:
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	if scheduler == null:
+		return
+	# One pending growth per party: drop any stale request, then schedule this one for the
+	# next tick so it fires before the next travel leg resolves (legs are tens of rounds apart).
+	scheduler.cancel_all_for_owner(pid, FRONTIER_EVENT)
+	scheduler.schedule_at(
+		Timekeeping.get_total_rounds() + 1, FRONTIER_EVENT, pid,
+		{"dir_x": dir.x, "dir_y": dir.y}, ScheduledEvent.PRIORITY_ENVIRONMENTAL)
+
+
+## The offset-space side (E/W/S/N unit, or ZERO) the party is nearest within the trigger
+## band. The play map's child extent is the footprint's parent offset box × 4 (16:1 ratio).
+func _frontier_growth_direction(coord: Vector2i, map_data: HexMapData) -> Vector2i:
+	var min_col := 1 << 30
+	var max_col := -(1 << 30)
+	var min_row := 1 << 30
+	var max_row := -(1 << 30)
+	for p: Vector2i in map_data.parent_hex_footprint:
+		var o := WorldGrid.axial_to_offset(p)
+		min_col = mini(min_col, o.x)
+		max_col = maxi(max_col, o.x)
+		min_row = mini(min_row, o.y)
+		max_row = maxi(max_row, o.y)
+	var c_min := min_col * 4
+	var c_max := (max_col + 1) * 4 - 1
+	var r_min := min_row * 4
+	var r_max := (max_row + 1) * 4 - 1
+	var po := WorldGrid.axial_to_offset(coord)
+	var best := FRONTIER_TRIGGER_HEXES + 1
+	var dir := Vector2i.ZERO
+	if c_max - po.x < best:
+		best = c_max - po.x
+		dir = Vector2i(1, 0)
+	if po.x - c_min < best:
+		best = po.x - c_min
+		dir = Vector2i(-1, 0)
+	if r_max - po.y < best:
+		best = r_max - po.y
+		dir = Vector2i(0, 1)
+	if po.y - r_min < best:
+		best = po.y - r_min
+		dir = Vector2i(0, -1)
+	return dir
 
 
 ## Random encounter check (can be scheduled independently from travel).

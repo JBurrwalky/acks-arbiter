@@ -159,6 +159,7 @@ func setup(controller: HexMapController) -> void:
 	controller.party_moved.connect(_on_party_moved)
 	controller.hex_terrain_updated.connect(_on_hex_terrain_updated)
 	controller.hex_overlay_updated.connect(_on_overlay_updated)
+	controller.frontier_grown.connect(_on_frontier_grown)
 	var existing := controller.get_map()
 	if existing != null:
 		_on_map_loaded(existing.id)
@@ -204,6 +205,23 @@ func _on_visibility_updated() -> void:
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
 	_rebuild_tokens()
+
+
+func _on_frontier_grown(_map_id: String) -> void:
+	# Rolling frontier (gdd-region-zoom-in.md §6): hexes + reseamed river/cliff edges were
+	# appended to the live map. Rebuild the surface + edge geometry, but DO NOT _fit_camera —
+	# the player keeps their current view (the growth is meant to be out of sight at the edge).
+	_map_data = _controller.get_map()
+	if _map_data == null:
+		return
+	_ensure_field()
+	_rebuild_cliff_lookup()   # new hexes may add cliff edges; refresh corner-awareness first
+	_build_terrain()
+	_build_rivers()
+	_build_cliffs()
+	_build_landmarks()
+	_rebuild_tokens()
+	call_deferred("_build_scatter")
 
 
 func _on_hex_terrain_updated(_coord: Vector2i) -> void:

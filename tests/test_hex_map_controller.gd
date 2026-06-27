@@ -47,6 +47,8 @@ func run_all_tests() -> void:
 	test_climb_party_across_moves_over_cliff()
 	test_climb_party_across_rejects_non_cliff_edge()
 	test_climb_party_across_rejects_non_adjacent()
+	# Rolling frontier (2026-06-26): adopting a grown map preserves fog + party position
+	test_adopt_grown_map_preserves_fog_and_party()
 	# Roads imply crossings (2026-06-08 Jedidiah ruling)
 	test_road_on_owner_side_implies_crossing()
 	test_road_on_neighbor_side_implies_crossing()
@@ -613,6 +615,35 @@ func test_climb_party_across_rejects_non_adjacent() -> void:
 	check(not controller.climb_party_across(Vector2i(2, 0)),
 		"climb_party_across refuses a non-adjacent target")
 	check(map.party_hex == Vector2i(0, 0), "party stayed put")
+	controller.free()
+
+
+func test_adopt_grown_map_preserves_fog_and_party() -> void:
+	# Frontier growth swaps in an enlarged map; explored fog must NOT be re-hidden, the party
+	# position is carried forward, and the new frontier hexes stay hidden/unexplored.
+	var controller := HexMapController.new()
+	var orig := _make_test_map()
+	controller.load_map(orig)
+	orig.fog[Vector2i(1, 0)] = HexMapData.FogState.EXPLORED   # already explored
+	orig.fog[Vector2i(0, 0)] = HexMapData.FogState.VISIBLE    # current vicinity
+
+	var grown := _make_test_map()
+	grown.hexes[Vector2i(9, 0)] = HexTerrainData.new()        # a newly materialized frontier hex
+	grown.fog[Vector2i(9, 0)] = HexMapData.FogState.HIDDEN
+
+	var fired := [false]
+	controller.frontier_grown.connect(func(_id): fired[0] = true)
+	controller.adopt_grown_map(grown)
+
+	check(fired[0], "adopt_grown_map emits frontier_grown")
+	check(controller.get_map() == grown, "controller adopted the grown map")
+	check(grown.fog.get(Vector2i(1, 0)) == HexMapData.FogState.EXPLORED,
+		"explored fog carried forward (not re-hidden)")
+	check(grown.fog.get(Vector2i(0, 0)) == HexMapData.FogState.VISIBLE,
+		"visible vicinity carried forward")
+	check(grown.fog.get(Vector2i(9, 0)) == HexMapData.FogState.HIDDEN,
+		"the new frontier hex stays hidden/unexplored")
+	check(grown.party_hex == Vector2i(0, 0), "party position carried forward")
 	controller.free()
 
 

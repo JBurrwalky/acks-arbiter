@@ -27,6 +27,10 @@ signal visibility_updated()
 signal party_moved(from_hex: Vector2i, to_hex: Vector2i)
 signal hex_terrain_updated(coord: Vector2i)
 signal hex_overlay_updated(coord: Vector2i)
+## The play map grew at its frontier — hexes (and reseamed river/cliff edges) were appended
+## to the SAME map mid-session (gdd-region-zoom-in.md §6). Renderer rebuilds without
+## re-centering or re-hiding fog.
+signal frontier_grown(map_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +157,21 @@ func load_map(map_data: HexMapData) -> void:
 
 func get_map() -> HexMapData:
 	return _map_data
+
+
+## Replace the live map with a GROWN copy (more hexes + reseamed edges) after frontier
+## growth, WITHOUT re-hiding fog or re-centering (gdd-region-zoom-in.md §6). The current
+## fog + party position are carried forward, so explored land stays explored and the newly
+## appended hexes default to HIDDEN. Emits [signal frontier_grown] for the renderer.
+func adopt_grown_map(new_map_data: HexMapData) -> void:
+	if new_map_data == null:
+		return
+	if _map_data != null:
+		for coord in _map_data.fog.keys():
+			new_map_data.fog[coord] = _map_data.fog[coord]
+		new_map_data.party_hex = _map_data.party_hex
+	_map_data = new_map_data
+	frontier_grown.emit(_map_data.id)
 
 
 ## Updates a single terrain field on a hex in-memory and emits hex_terrain_updated.
