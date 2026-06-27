@@ -49,6 +49,7 @@ func run_all_tests() -> void:
 	test_climb_party_across_rejects_non_adjacent()
 	# Rolling frontier (2026-06-26): adopting a grown map preserves fog + party position
 	test_adopt_grown_map_preserves_fog_and_party()
+	test_frontier_growth_direction_geometry()
 	# Roads imply crossings (2026-06-08 Jedidiah ruling)
 	test_road_on_owner_side_implies_crossing()
 	test_road_on_neighbor_side_implies_crossing()
@@ -645,6 +646,32 @@ func test_adopt_grown_map_preserves_fog_and_party() -> void:
 		"the new frontier hex stays hidden/unexplored")
 	check(grown.party_hex == Vector2i(0, 0), "party position carried forward")
 	controller.free()
+
+
+func test_frontier_growth_direction_geometry() -> void:
+	# WildernessHandlers._frontier_growth_direction: which side of the play-map frontier the
+	# party is nearest within the trigger band (FRONTIER_TRIGGER_HEXES = 6). The play map's
+	# child extent is the footprint parent box (offset [0..9]x[0..7] here) x 4 = child offset
+	# [0..39]x[0..31]. Pure offset geometry — no runner needed.
+	var handlers := WildernessHandlers.new(null)
+	var m := HexMapData.new()
+	m.id = "fg_geom"
+	var fp: Array = []
+	for col in range(0, 10):
+		for row in range(0, 8):
+			fp.append(WorldGrid.offset_to_axial(col, row))
+	m.parent_hex_footprint = fp
+	# Near each edge (1 hex in) → grow that way; dead center → no growth.
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(38, 15), m) == Vector2i(1, 0),
+		"near the east frontier → grow east")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(1, 15), m) == Vector2i(-1, 0),
+		"near the west frontier → grow west")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 1), m) == Vector2i(0, -1),
+		"near the north frontier → grow north")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 30), m) == Vector2i(0, 1),
+		"near the south frontier → grow south")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 15), m) == Vector2i.ZERO,
+		"dead center (far from every edge) → no growth")
 
 
 # ---------------------------------------------------------------------------
