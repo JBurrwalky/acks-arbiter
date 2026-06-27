@@ -31,7 +31,6 @@ const CLIFF_DELTA_FLOOR := 0.07   # ~1,800 ft; no edge below this is ever a clif
 static func detect(grid: Dictionary, river_hexes: Dictionary, threshold_override: float = -1.0) -> Array:
 	# Pass 1: every land-land boundary (once, from the lex-lower hex) + its delta.
 	var edges: Array = []
-	var deltas: Array = []
 	for a: Vector2i in grid.keys():
 		var ha: Dictionary = grid[a]
 		if str(ha.get("water", "")) == "ocean":
@@ -47,19 +46,12 @@ static func detect(grid: Dictionary, river_hexes: Dictionary, threshold_override
 			if str(hb.get("water", "")) == "ocean":
 				continue
 			var eb := float(hb.get("elevation_raw", 0.0))
-			var d := absf(ea - eb)
-			edges.append({"a": a, "b": b, "ea": ea, "eb": eb, "delta": d})
-			deltas.append(d)
+			edges.append({"a": a, "b": b, "ea": ea, "eb": eb, "delta": absf(ea - eb)})
 	if edges.is_empty():
 		return []
-	# Adaptive cutoff (or the test override).
-	var threshold: float
-	if threshold_override >= 0.0:
-		threshold = threshold_override
-	else:
-		deltas.sort()
-		var idx: int = clampi(int(CLIFF_PERCENTILE * float(deltas.size())), 0, deltas.size() - 1)
-		threshold = maxf(CLIFF_DELTA_FLOOR, float(deltas[idx]))
+	# A PINNED override (frontier growth — gdd-region-zoom-in.md §6) keeps cliffs stable as
+	# the map grows; otherwise the adaptive cutoff for this grid.
+	var threshold: float = threshold_override if threshold_override >= 0.0 else compute_threshold(grid)
 	# Pass 2: build cliff edges at/above the cutoff.
 	var out: Array = []
 	for rec: Dictionary in edges:
@@ -77,3 +69,32 @@ static func detect(grid: Dictionary, river_hexes: Dictionary, threshold_override
 		if cliff != null:
 			out.append(cliff)
 	return out
+
+
+## The adaptive cliff cutoff for a grid: the steepest CLIFF_PERCENTILE of its land-land
+## cross-edge deltas, floored at CLIFF_DELTA_FLOOR. The single source of truth for the
+## threshold formula — [method detect] calls this for its adaptive branch, and the
+## materializer calls it once at the first build to PIN the value (then reuses the pinned
+## value for every frontier growth so cliffs don't drift as the map grows; §6).
+static func compute_threshold(grid: Dictionary) -> float:
+	var deltas: Array = []
+	for a: Vector2i in grid.keys():
+		var ha: Dictionary = grid[a]
+		if str(ha.get("water", "")) == "ocean":
+			continue
+		var ea := float(ha.get("elevation_raw", 0.0))
+		for e in range(6):
+			var b: Vector2i = a + HexCliffEdgeData.neighbor_offset(e)
+			if not grid.has(b):
+				continue
+			if not (a.x < b.x or (a.x == b.x and a.y < b.y)):
+				continue
+			var hb: Dictionary = grid[b]
+			if str(hb.get("water", "")) == "ocean":
+				continue
+			deltas.append(absf(ea - float(hb.get("elevation_raw", 0.0))))
+	if deltas.is_empty():
+		return CLIFF_DELTA_FLOOR
+	deltas.sort()
+	var idx: int = clampi(int(CLIFF_PERCENTILE * float(deltas.size())), 0, deltas.size() - 1)
+	return maxf(CLIFF_DELTA_FLOOR, float(deltas[idx]))

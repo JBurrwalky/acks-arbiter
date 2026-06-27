@@ -663,7 +663,11 @@ CREATE TABLE IF NOT EXISTS hex_maps (
     parent_map_id TEXT REFERENCES hex_maps(id),
     parent_anchor_q INTEGER,
     parent_anchor_r INTEGER,
-    parent_hex_footprint TEXT NOT NULL DEFAULT '[]'
+    parent_hex_footprint TEXT NOT NULL DEFAULT '[]',
+    -- Migration 177: the cliff-detection threshold (adaptive percentile) pinned at the
+    -- FIRST build of a regional_6mi map, reused on frontier growth so cliffs stay stable
+    -- as the map grows (gdd-region-zoom-in.md §6). NULL → fall back to adaptive.
+    cliff_threshold REAL
 );
 
 -- fog_state is per-campaign (scoped through hex_maps.campaign_id)

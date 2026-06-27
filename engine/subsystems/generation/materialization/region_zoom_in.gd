@@ -138,61 +138,29 @@ func build_start_region(campaign_id: String, world_map_id: String, start_settlem
 	result["region_map_id"] = region_id
 
 	db.query("BEGIN TRANSACTION")
-	var child_count := 0
-	var region_grid := {}   # child axial → child dict, for the 6-mile river pass
-	for pv in window:
-		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
-		for ch in _children_from_field(field, pv.x, pv.y, parent, campaign_seed, volcanic_parents):
-			if not db.query_with_bindings("""
-				INSERT OR REPLACE INTO hex_cells
-					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
-					 has_city, original_biome, fog_state, elevation_raw)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'hidden', ?)
-			""", [
-				region_id, ch["q"], ch["r"], ch["elevation"], ch["biome"],
-				ch["biome_subtype"], ch["water"], ch["civilization"],
-				ch["original_biome"], ch["elevation_raw"],
-			]):
-				db.query("ROLLBACK")
-				result["errors"].append("child hex insert failed at parent (%d,%d)" % [pv.x, pv.y])
-				return result
-			region_grid[Vector2i(int(ch["q"]), int(ch["r"]))] = ch
-			child_count += 1
+	var region_grid := {}   # child axial → child dict, for the 6-mile edge passes
+	var child_count := _materialize_children(
+		region_id, field, window, parents, campaign_seed, volcanic_parents, region_grid)
+	if child_count < 0:
+		db.query("ROLLBACK")
+		result["errors"].append("child hex insert failed")
+		return result
 
-	# 6-mile rivers: corner-graph drainage on the window grid, keyed by child axial
-	# → the play surface carries real rivers in the field's fine valleys. Window-edge
-	# corners drain off as outlets (the river continues into the rest of the world).
-	var river_count := 0
-	var river_hexes := {}   # Vector2i set: hexes a river touches (for canyon classification)
-	if not region_grid.is_empty():
-		var r_origin := Vector2i(min_col * SUB, min_row * SUB)
-		var r_dims := Vector2i(WINDOW_W_PARENTS * SUB, WINDOW_H_PARENTS * SUB)
-		for edge_row in GeoRiverMapper.map_rivers(sp, r_dims, region_grid, r_origin):
-			var redge := HexRiverEdgeData.from_dict(edge_row)
-			if CampaignRepository.save_hex_river_edge(region_id, redge):
-				river_count += 1
-				var ow := Vector2i(redge.hex_q, redge.hex_r)
-				river_hexes[ow] = true
-				river_hexes[ow + HexRiverEdgeData.neighbor_offset(redge.edge)] = true
-
-	# Cliff / canyon edges (gdd-cliffs-canyons.md §4): steep cross-edge deltas on the play
-	# grid. A cliff whose LOW side carries a river is a canyon (river-incised gorge).
-	var cliff_count := 0
-	for cliff in CliffDetector.detect(region_grid, river_hexes):
-		var cd: HexCliffEdgeData = cliff
-		if db.query_with_bindings("""
-			INSERT OR REPLACE INTO hex_cliff_edges
-				(map_id, hex_q, hex_r, edge, cliff_type, height_ft, high_side)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-		""", [region_id, cd.hex_q, cd.hex_r, cd.edge, cd.cliff_type, cd.height_ft, cd.high_side]):
-			cliff_count += 1
+	# 6-mile rivers + cliffs over the window grid (window-edge corners drain off as
+	# outlets). The adaptive cliff threshold is PINNED on the map row here so frontier
+	# growth reuses it and cliffs stay stable as the map grows (gdd-region-zoom-in.md §6).
+	var r_origin := Vector2i(min_col * SUB, min_row * SUB)
+	var r_dims := Vector2i(WINDOW_W_PARENTS * SUB, WINDOW_H_PARENTS * SUB)
+	var edges := _rebuild_edges(region_id, sp, region_grid, r_origin, r_dims, -1.0)
+	db.query_with_bindings(
+		"UPDATE hex_maps SET cliff_threshold = ? WHERE id = ?", [edges["threshold"], region_id])
 
 	db.query("COMMIT")
 
 	result["parent_count"] = window.size()
 	result["child_count"] = child_count
-	result["river_count"] = river_count
-	result["cliff_count"] = cliff_count
+	result["river_count"] = edges["river_count"]
+	result["cliff_count"] = edges["cliff_count"]
 	result["ok"] = true
 	return result
 
@@ -311,3 +279,243 @@ static func _volcanic_vent_subtype(base_sub: String, vent_rate: float,
 
 func _clamp_sub(sub: String) -> String:
 	return sub if _VALID_SUBTYPES.has(sub) else ""
+
+
+# ---------------------------------------------------------------------------
+# Shared materialization core (build_start_region + grow_frontier)
+# ---------------------------------------------------------------------------
+
+## Write the 16 field-sampled children of each parent in [param parents_to_write] into the
+## region map's hex_cells, accumulating them into [param region_grid] (child axial → dict).
+## Returns the number of children written, or -1 on a DB insert failure (caller ROLLBACKs).
+## Caller is responsible for the surrounding transaction.
+func _materialize_children(region_id: String, field: GeoField, parents_to_write: Array,
+		parents: Dictionary, campaign_seed: int, volcanic_parents: Dictionary,
+		region_grid: Dictionary) -> int:
+	var db = CampaignRepository.db
+	var n := 0
+	for pv: Vector2i in parents_to_write:
+		var parent: Dictionary = parents["%d,%d" % [pv.x, pv.y]]
+		for ch in _children_from_field(field, pv.x, pv.y, parent, campaign_seed, volcanic_parents):
+			if not db.query_with_bindings("""
+				INSERT OR REPLACE INTO hex_cells
+					(map_id, q, r, elevation, biome, biome_subtype, water, civilization,
+					 has_city, original_biome, fog_state, elevation_raw)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'hidden', ?)
+			""", [
+				region_id, ch["q"], ch["r"], ch["elevation"], ch["biome"],
+				ch["biome_subtype"], ch["water"], ch["civilization"],
+				ch["original_biome"], ch["elevation_raw"],
+			]):
+				return -1
+			region_grid[Vector2i(int(ch["q"]), int(ch["r"]))] = ch
+			n += 1
+	return n
+
+
+## Recompute the whole river + cliff EDGE layer over [param region_grid] (the FULL current
+## play grid) and write it. Terrain hexes are never regenerated; only the edge layer is
+## rebuilt so the frontier rivers extend naturally and cliffs stay consistent
+## (gdd-region-zoom-in.md §6, Jedidiah ruling 2026-06-26). [param threshold] < 0 → compute
+## the adaptive cliff cutoff (first build); ≥ 0 → reuse the pinned value (growth). DELETE +
+## reinsert makes it idempotent. Returns {river_count, cliff_count, threshold}. Caller owns
+## the transaction.
+func _rebuild_edges(region_id: String, sp: SettingParameters, region_grid: Dictionary,
+		origin: Vector2i, dims: Vector2i, threshold: float) -> Dictionary:
+	var db = CampaignRepository.db
+	db.query_with_bindings("DELETE FROM hex_river_edges WHERE map_id = ?", [region_id])
+	db.query_with_bindings("DELETE FROM hex_cliff_edges WHERE map_id = ?", [region_id])
+	var river_count := 0
+	var river_hexes := {}   # Vector2i set: hexes a river touches (for canyon classification)
+	for edge_row in GeoRiverMapper.map_rivers(sp, dims, region_grid, origin):
+		var redge := HexRiverEdgeData.from_dict(edge_row)
+		if CampaignRepository.save_hex_river_edge(region_id, redge):
+			river_count += 1
+			var ow := Vector2i(redge.hex_q, redge.hex_r)
+			river_hexes[ow] = true
+			river_hexes[ow + HexRiverEdgeData.neighbor_offset(redge.edge)] = true
+	var thr: float = threshold if threshold >= 0.0 else CliffDetector.compute_threshold(region_grid)
+	var cliff_count := 0
+	for cliff in CliffDetector.detect(region_grid, river_hexes, thr):
+		var cd: HexCliffEdgeData = cliff
+		if db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_cliff_edges
+				(map_id, hex_q, hex_r, edge, cliff_type, height_ft, high_side)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [region_id, cd.hex_q, cd.hex_r, cd.edge, cd.cliff_type, cd.height_ft, cd.high_side]):
+			cliff_count += 1
+	return {"river_count": river_count, "cliff_count": cliff_count, "threshold": thr}
+
+
+# ---------------------------------------------------------------------------
+# Frontier growth (gdd-region-zoom-in.md §6 / gdd-setting-runtime-materialization §4.3)
+# ---------------------------------------------------------------------------
+
+## Append the next ROW or COLUMN of 24-mile parents' 16 children to the SAME regional_6mi
+## map, on [param dir] (offset-space unit: (1,0)=E, (-1,0)=W, (0,1)=S, (0,-1)=N), keeping
+## the play map a clean growing rectangle. Terrain hexes are pure field samples (generated
+## once, never changed); the river/cliff edge layer is recomputed over the enlarged grid
+## with the PINNED cliff threshold so it stays seamless + stable. Stops at the world edge.
+## Returns {ok, grew, new_parents, new_children, river_count, cliff_count, errors, footprint}.
+func grow_frontier(campaign_id: String, region_map_id: String, dir: Vector2i) -> Dictionary:
+	var result := {
+		"ok": false, "grew": false, "errors": [], "new_parents": 0, "new_children": 0,
+		"river_count": 0, "cliff_count": 0, "footprint": [],
+	}
+	var db = CampaignRepository.db
+	db.query_with_bindings(
+		"SELECT parent_map_id, parent_hex_footprint, cliff_threshold FROM hex_maps WHERE id = ?",
+		[region_map_id])
+	if db.query_result.is_empty():
+		result["errors"].append("region map %s not found" % region_map_id)
+		return result
+	var mrow: Dictionary = db.query_result[0]
+	var world_map_id := str(mrow.get("parent_map_id", ""))
+	var footprint := HexMapData.footprint_from_json_string(str(mrow.get("parent_hex_footprint", "[]")))
+	var stored_threshold: float = float(mrow["cliff_threshold"]) if mrow.get("cliff_threshold") != null else -1.0
+	if footprint.is_empty():
+		result["errors"].append("region map has an empty footprint")
+		return result
+
+	# World parents (the set we may subdivide) + volcanic stamps.
+	var parents := {}
+	db.query_with_bindings(
+		"SELECT q, r, elevation, biome, biome_subtype, water, civilization, original_biome, elevation_raw FROM hex_cells WHERE map_id = ?",
+		[world_map_id])
+	for row in db.query_result:
+		parents["%d,%d" % [int(row["q"]), int(row["r"])]] = row
+	if parents.is_empty():
+		result["errors"].append("world map %s has no hexes" % world_map_id)
+		return result
+	var volcanic_parents := {}
+	for pkey in parents:
+		if str(parents[pkey].get("biome_subtype", "")) == SUBTYPE_VOLCANIC:
+			volcanic_parents[pkey] = true
+
+	# The next parent strip just beyond the footprint on `dir`, clamped to the world.
+	var strip := _frontier_strip(_offset_bounds(footprint), _world_offset_bounds(parents), dir, parents)
+	if strip.is_empty():
+		result["ok"] = true   # at the world edge (or no real parents that way) — a no-op, not an error
+		return result
+
+	var params := SettingRepository.get_parameters(campaign_id)
+	if params.is_empty():
+		result["errors"].append("no setting parameters for campaign %s" % campaign_id)
+		return result
+	var sp := SettingParameters.from_dict(params)
+	var campaign_seed := int(params.get("campaign_seed", 0))
+	var field := GeoFieldGenerator.generate(campaign_seed, sp)
+	GeoClimateGenerator.apply(field, campaign_seed, sp)
+
+	# Load the existing region grid (needed for the seamless full-grid edge re-run).
+	var region_grid := {}
+	db.query_with_bindings(
+		"SELECT q, r, elevation, biome, biome_subtype, water, civilization, original_biome, elevation_raw FROM hex_cells WHERE map_id = ?",
+		[region_map_id])
+	for row in db.query_result:
+		region_grid[Vector2i(int(row["q"]), int(row["r"]))] = row
+
+	db.query("BEGIN TRANSACTION")
+	var new_children := _materialize_children(
+		region_map_id, field, strip, parents, campaign_seed, volcanic_parents, region_grid)
+	if new_children < 0:
+		db.query("ROLLBACK")
+		result["errors"].append("frontier child insert failed")
+		return result
+
+	var new_footprint := footprint.duplicate()
+	new_footprint.append_array(strip)
+	var box := _grid_box(new_footprint)
+	var edges := _rebuild_edges(region_map_id, sp, region_grid, box["origin"], box["dims"], stored_threshold)
+
+	var fp_json: Array = []
+	for pv: Vector2i in new_footprint:
+		fp_json.append([pv.x, pv.y])
+	db.query_with_bindings(
+		"UPDATE hex_maps SET parent_hex_footprint = ?, cliff_threshold = ? WHERE id = ?",
+		[JSON.stringify(fp_json), edges["threshold"], region_map_id])
+	db.query("COMMIT")
+
+	result["ok"] = true
+	result["grew"] = true
+	result["new_parents"] = strip.size()
+	result["new_children"] = new_children
+	result["river_count"] = edges["river_count"]
+	result["cliff_count"] = edges["cliff_count"]
+	result["footprint"] = new_footprint
+	return result
+
+
+## Offset-space bounding box {min_col, max_col, min_row, max_row} of a set of axial parent
+## coords (Array[Vector2i]).
+func _offset_bounds(coords: Array) -> Dictionary:
+	var min_col := 1 << 30
+	var max_col := -(1 << 30)
+	var min_row := 1 << 30
+	var max_row := -(1 << 30)
+	for c: Vector2i in coords:
+		var o := WorldGrid.axial_to_offset(c)
+		min_col = mini(min_col, o.x)
+		max_col = maxi(max_col, o.x)
+		min_row = mini(min_row, o.y)
+		max_row = maxi(max_row, o.y)
+	return {"min_col": min_col, "max_col": max_col, "min_row": min_row, "max_row": max_row}
+
+
+## Offset-space bounding box of the world map's parents ("q,r"-keyed dict).
+func _world_offset_bounds(parents: Dictionary) -> Dictionary:
+	var coords: Array = []
+	for row in parents.values():
+		coords.append(Vector2i(int(row["q"]), int(row["r"])))
+	return _offset_bounds(coords)
+
+
+## The child-coordinate origin + dims for the river/cliff grid box covering a footprint:
+## origin = (min_col·SUB, min_row·SUB); dims = (cols·SUB, rows·SUB).
+func _grid_box(footprint: Array) -> Dictionary:
+	var b := _offset_bounds(footprint)
+	return {
+		"origin": Vector2i(b["min_col"] * SUB, b["min_row"] * SUB),
+		"dims": Vector2i((b["max_col"] - b["min_col"] + 1) * SUB, (b["max_row"] - b["min_row"] + 1) * SUB),
+	}
+
+
+## The next parent strip (a row or column) just beyond the footprint on [param dir], in
+## offset space, keeping only parents that exist on the world map. Empty at the world edge.
+func _frontier_strip(fb: Dictionary, wb: Dictionary, dir: Vector2i, parents: Dictionary) -> Array:
+	var strip: Array = []
+	if dir == Vector2i(1, 0):          # east — new column to the right
+		var col: int = int(fb["max_col"]) + 1
+		if col > int(wb["max_col"]):
+			return strip
+		_append_col_parents(strip, col, int(fb["min_row"]), int(fb["max_row"]), parents)
+	elif dir == Vector2i(-1, 0):       # west — new column to the left
+		var col2: int = int(fb["min_col"]) - 1
+		if col2 < int(wb["min_col"]):
+			return strip
+		_append_col_parents(strip, col2, int(fb["min_row"]), int(fb["max_row"]), parents)
+	elif dir == Vector2i(0, 1):        # south — new row below
+		var row: int = int(fb["max_row"]) + 1
+		if row > int(wb["max_row"]):
+			return strip
+		_append_row_parents(strip, row, int(fb["min_col"]), int(fb["max_col"]), parents)
+	elif dir == Vector2i(0, -1):       # north — new row above
+		var row2: int = int(fb["min_row"]) - 1
+		if row2 < int(wb["min_row"]):
+			return strip
+		_append_row_parents(strip, row2, int(fb["min_col"]), int(fb["max_col"]), parents)
+	return strip
+
+
+func _append_col_parents(strip: Array, col: int, min_row: int, max_row: int, parents: Dictionary) -> void:
+	for row in range(min_row, max_row + 1):
+		var p := WorldGrid.offset_to_axial(col, row)
+		if parents.has("%d,%d" % [p.x, p.y]):
+			strip.append(p)
+
+
+func _append_row_parents(strip: Array, row: int, min_col: int, max_col: int, parents: Dictionary) -> void:
+	for col in range(min_col, max_col + 1):
+		var p := WorldGrid.offset_to_axial(col, row)
+		if parents.has("%d,%d" % [p.x, p.y]):
+			strip.append(p)

@@ -42,6 +42,7 @@ func run_all_tests() -> void:
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
+		test_frontier_growth(cid)               # asserts the rolling-frontier growth (M2 rolling)
 	if not has_failures():
 		print("SettingMaterializationTests: all tests passed (%d checks)" % test_count())
 
@@ -1029,6 +1030,66 @@ func test_start_position(cid: String) -> void:
 		check(int(sp2.get("hex_q", -999)) == chosen_hex.x and int(sp2.get("hex_r", -999)) == chosen_hex.y,
 			"start_position honors the chosen start city's entrance (%d,%d)" % [chosen_hex.x, chosen_hex.y])
 		db.query_with_bindings("UPDATE campaigns SET start_settlement_id = '' WHERE id = ?", [cid])
+
+
+## M2 rolling frontier (gdd-region-zoom-in.md §6): the play map grows by appending the next
+## parent strip's children, recomputing the river/cliff EDGE layer with the PINNED cliff
+## threshold, and stops at the world edge. Runs LAST (it mutates the region map).
+func test_frontier_growth(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		check(false, "no region map for the frontier-growth test")
+		return
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT cliff_threshold, parent_hex_footprint FROM hex_maps WHERE id = ?", [rid])
+	var mrow: Dictionary = db.query_result[0]
+	# The adaptive cliff threshold is PINNED at first build so growth can reuse it.
+	check(mrow.get("cliff_threshold") != null, "cliff threshold pinned on the region map at first build")
+	var pinned: float = float(mrow["cliff_threshold"]) if mrow.get("cliff_threshold") != null else -1.0
+	var footprint0 := HexMapData.footprint_from_json_string(str(mrow.get("parent_hex_footprint", "[]")))
+	var cells_before := _count("hex_cells", "map_id", rid)
+
+	# Find a growable direction. The 'small' world is 15x12 parents vs the 10x8 window, so the
+	# play map does NOT cover the whole world — at least one side has room to grow.
+	var zoom := RegionZoomIn.new()
+	var grew_dir := Vector2i.ZERO
+	var grew_res: Dictionary = {}
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var res: Dictionary = zoom.grow_frontier(cid, rid, d)
+		check(bool(res.get("ok", false)), "grow_frontier ok for dir %s (errors: %s)" % [str(d), str(res.get("errors", []))])
+		if bool(res.get("grew", false)):
+			grew_dir = d
+			grew_res = res
+			break
+	check(grew_dir != Vector2i.ZERO, "at least one direction grew (small world is larger than the window)")
+	if grew_dir == Vector2i.ZERO:
+		return
+
+	var np := int(grew_res.get("new_parents", 0))
+	var nc := int(grew_res.get("new_children", 0))
+	check(np > 0, "growth added >=1 parent (%d)" % np)
+	check(nc == np * 16, "new children == new parents x 16 (%d vs %d)" % [nc, np])
+	check(_count("hex_cells", "map_id", rid) == cells_before + nc, "region hex_cells grew by the new children")
+	var footprint1: Array = grew_res.get("footprint", [])
+	check(footprint1.size() == footprint0.size() + np, "footprint gained exactly the new parents")
+	# The new strip's children are real, appended rows (a coord beyond the old footprint bound).
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ?", [rid]) == cells_before + nc,
+		"appended hexes are persisted on the same region map")
+
+	# Growth reused the PINNED threshold (no adaptive drift as the map enlarged).
+	db.query_with_bindings("SELECT cliff_threshold FROM hex_maps WHERE id = ?", [rid])
+	check(absf(float(db.query_result[0]["cliff_threshold"]) - pinned) < 0.0000001,
+		"growth reused the pinned cliff threshold (no drift)")
+
+	# Marching the same direction eventually hits the world edge and stops (grew=false, ok=true).
+	var last: Dictionary = grew_res
+	var guard := 0
+	while bool(last.get("grew", false)) and guard < 40:
+		last = zoom.grow_frontier(cid, rid, grew_dir)
+		check(bool(last.get("ok", false)), "grow ok while marching to the world edge")
+		guard += 1
+	check(not bool(last.get("grew", false)), "growth stops cleanly at the world edge (grew=false)")
+	check(guard < 40, "world-edge stop reached within the guard (no runaway growth)")
 
 
 func _scalar_str(sql: String, binds: Array) -> String:
