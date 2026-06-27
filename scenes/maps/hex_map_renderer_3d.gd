@@ -81,14 +81,16 @@ const RIVER_LIFT := 0.035
 ## #1 Riverbed: lower the SHARED corner height for any corner a river touches, so the channel
 ## recesses between banks. Applied in the one corner-height function the terrain + cliff walls
 ## share (_corner_component_avg) → watertight, and canyons (river+cliff corners) stay seam-free.
-const RIVER_CARVE := 0.10
+const RIVER_CARVE := 0.24
 
 ## #2 Meander: the rendered centreline weaves across the hex EDGE within a bounded envelope —
 ## the DATA stays edge-canonical (movement still answers "on the edge"). Deviations are
 ## fractions of the hex edge length. A SHARED per-corner jitter keeps adjacent river edges
 ## continuous; a per-edge bow gives character (most gentle/straight, a few wigglier).
 const RIVER_CORNER_JITTER := 0.08   # shared per-corner XZ wobble (frac of edge length)
-const RIVER_BOW := 0.16             # per-edge mid bow cap (frac of edge length); squared → mostly small
+const RIVER_BOW := 0.07             # per-edge mid bow cap (frac of edge length); squared → mostly small.
+                                    # Kept modest: the smooth-ramp water height only stays visible
+                                    # while the channel hugs the carved trough near the edge line.
 const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
 
 var _controller: HexMapController = null
@@ -853,18 +855,19 @@ func _build_rivers() -> void:
 		var dir := b_xz - a_xz
 		var perp := Vector2(-dir.y, dir.x).normalized()
 		var ctrl := (a_xz + b_xz) * 0.5 + perp * _edge_bow(owner, e, edge_len)
-		# Both host hexes' carved corner heights, precomputed once (water follows the bed).
-		var oc := _hex_corners_y(owner)
-		var nc := _hex_corners_y(nb)
+		# Smooth water height: a flat ramp between the two CARVED corner heights. (Per-sample
+		# terrain sampling jumped around as the centreline crossed hexes → tilted/flipped quads.)
+		# The carve makes both corners low, so the channel sits in the trough; small bows keep it
+		# visible there. Collect the centreline, then weld ONE ribbon through it (no per-seg tears).
+		var ya := _corner_component_avg(owner, i1) + RIVER_LIFT
+		var yb := _corner_component_avg(owner, i2) + RIVER_LIFT
 		var w: float = _RIVER_WIDTH.get(edge_data.navigability, 0.075)
-		var prev := Vector3.ZERO
+		var pts: Array[Vector3] = []
 		for s in range(RIVER_SAMPLES + 1):
 			var t := float(s) / float(RIVER_SAMPLES)
 			var p := _qbez(a_xz, ctrl, b_xz, t)
-			var cur := Vector3(p.x, _river_surface_y(owner, nb, oc, nc, p, corner_off), p.y)
-			if s > 0:
-				_emit_river_quad(st, prev, cur, w)
-			prev = cur
+			pts.append(Vector3(p.x, lerpf(ya, yb, t), p.y))
+		_emit_river_ribbon(st, pts, w)
 		emitted += 1
 	if emitted == 0:
 		return
@@ -875,24 +878,39 @@ func _build_rivers() -> void:
 	_river_root.add_child(mi)
 
 
-## A flat water quad of width [param w] from p1 to p2, perpendicular in XZ.
-func _emit_river_quad(st: SurfaceTool, p1: Vector3, p2: Vector3, w: float) -> void:
-	var dir := p2 - p1
-	dir.y = 0.0
-	if dir.length() < 1.0e-5:
+## A CONTINUOUS welded water ribbon of width [param w] through centreline points [param pts].
+## Each sample gets ONE consistent perpendicular (from its averaged tangent), so consecutive
+## quads SHARE their seam vertices — fixes the per-segment perp mismatch (tearing) and the
+## independent-quad tilt (flipping). XZ-perp only; the strip keeps each sample's own height.
+func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float) -> void:
+	var n := pts.size()
+	if n < 2:
 		return
-	dir = dir.normalized()
-	var perp := Vector3(-dir.z, 0.0, dir.x) * (w * 0.5)
-	var a := p1 - perp
-	var b := p1 + perp
-	var c := p2 + perp
-	var d := p2 - perp
-	st.set_uv(Vector2(0, 0)); st.add_vertex(a)
-	st.set_uv(Vector2(1, 0)); st.add_vertex(b)
-	st.set_uv(Vector2(1, 1)); st.add_vertex(c)
-	st.set_uv(Vector2(0, 0)); st.add_vertex(a)
-	st.set_uv(Vector2(1, 1)); st.add_vertex(c)
-	st.set_uv(Vector2(0, 1)); st.add_vertex(d)
+	var hw := w * 0.5
+	var left: Array[Vector3] = []
+	var right: Array[Vector3] = []
+	for s in range(n):
+		var pc: Vector3 = pts[s]
+		var pa: Vector3 = pts[maxi(s - 1, 0)]
+		var pb: Vector3 = pts[mini(s + 1, n - 1)]
+		var tang := Vector2(pb.x - pa.x, pb.z - pa.z)
+		if tang.length() < 1.0e-5:
+			tang = Vector2(1.0, 0.0)
+		tang = tang.normalized()
+		var perp := Vector2(-tang.y, tang.x) * hw
+		left.append(Vector3(pc.x - perp.x, pc.y, pc.z - perp.y))
+		right.append(Vector3(pc.x + perp.x, pc.y, pc.z + perp.y))
+	for s in range(1, n):
+		var l0: Vector3 = left[s - 1]
+		var r0: Vector3 = right[s - 1]
+		var l1: Vector3 = left[s]
+		var r1: Vector3 = right[s]
+		st.set_uv(Vector2(0, 0)); st.add_vertex(l0)
+		st.set_uv(Vector2(1, 0)); st.add_vertex(r0)
+		st.set_uv(Vector2(1, 1)); st.add_vertex(r1)
+		st.set_uv(Vector2(0, 0)); st.add_vertex(l0)
+		st.set_uv(Vector2(1, 1)); st.add_vertex(r1)
+		st.set_uv(Vector2(0, 1)); st.add_vertex(l1)
 
 
 ## Quadratic Bezier point a→ctrl→b at [param t] — the meander centreline (#2).
@@ -923,35 +941,6 @@ func _edge_bow(owner: Vector2i, e: int, edge_len: float) -> float:
 	var u := _hash01(key + "#b")
 	var sgn := 1.0 if _hash01(key + "#s") < 0.5 else -1.0
 	return sgn * u * u * RIVER_BOW * edge_len
-
-
-## The 6 carved corner heights of [param coord], or [] if off-map (for surface sampling).
-func _hex_corners_y(coord: Vector2i) -> Array:
-	if not _map_data.is_valid_coord(coord):
-		return []
-	var out: Array = []
-	for i in range(6):
-		out.append(_corner_component_avg(coord, i))
-	return out
-
-
-## Water Y at world-XZ [param p]: the CARVED terrain surface of whichever host hex (owner or
-## neighbour) contains p, plus a small lift so the water reads just above the bed floor. The
-## recessed look comes from the CARVE — the river corners are low while the banks (centre +
-## non-river corners) stay high, so the carved fan returns a low surface ALONG the channel and
-## water + lift sits in the trough between banks. Host carved corner heights are passed in
-## ([param oc]/[param nc]); falls back to the owner when the neighbour is off-map.
-func _river_surface_y(owner: Vector2i, nb: Vector2i, oc: Array, nc: Array, p: Vector2,
-		corner_off: Array) -> float:
-	var co := WildernessHexMath.axial_to_world(owner)
-	var use_nb := not nc.is_empty() \
-			and p.distance_squared_to(WildernessHexMath.axial_to_world(nb)) < p.distance_squared_to(co)
-	var host := nb if use_nb else owner
-	var cy: Array = nc if use_nb else oc
-	if cy.is_empty():
-		return _hex_height(host) - RIVER_CARVE + RIVER_LIFT
-	var center := WildernessHexMath.axial_to_world(host)
-	return _fan_y(p - center, _hex_height(host), corner_off, cy) + RIVER_LIFT
 
 
 func _river_material() -> StandardMaterial3D:
