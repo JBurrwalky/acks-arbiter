@@ -93,9 +93,10 @@ const RIVER_BOW := 0.07             # per-edge mid bow cap (frac of edge length)
                                     # while the channel hugs the carved trough near the edge line.
 const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
 
-## #3 Water shader: a seamless water PNG dropped here turns the flat-blue ribbon into an
+## #3 Water shader: a seamless river-water PNG dropped here turns the flat-blue ribbon into an
 ## animated flowing channel (river_water.gdshader). Missing → graceful flat-blue fallback.
-const WATER_TEX_PATH := "res://assets/wilderness_textures/water.png"
+## (Ocean gets its own texture later — hence river-specific, not a generic "water".)
+const RIVER_TEX_PATH := "res://assets/wilderness_textures/river.png"
 const RIVER_WATER_SHADER := "res://engine/shaders/river_water.gdshader"
 
 var _controller: HexMapController = null
@@ -976,9 +977,9 @@ func _river_material() -> StandardMaterial3D:
 func _river_water_material() -> Material:
 	if _river_water_cache != null:
 		return _river_water_cache
-	if not ResourceLoader.exists(WATER_TEX_PATH) or not ResourceLoader.exists(RIVER_WATER_SHADER):
+	if not ResourceLoader.exists(RIVER_TEX_PATH) or not ResourceLoader.exists(RIVER_WATER_SHADER):
 		return _river_material()
-	var tex := load(WATER_TEX_PATH) as Texture2D
+	var tex := load(RIVER_TEX_PATH) as Texture2D
 	var shader := load(RIVER_WATER_SHADER) as Shader
 	if tex == null or shader == null:
 		return _river_material()
