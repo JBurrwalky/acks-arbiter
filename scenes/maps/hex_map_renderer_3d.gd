@@ -23,8 +23,8 @@ signal settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)
 
 # --- Tunables ---
 const HEIGHT_GAIN := 2.0          # field surface [0,1] -> world Y. ~2.5x vertical
-                                  # exaggeration vs real (1 hex=6mi=1 unit; 0.45 surface
-                                  # span=3500m=0.9 units). Was 3.0 (~3.7x, read as cliffs).
+								  # exaggeration vs real (1 hex=6mi=1 unit; 0.45 surface
+								  # span=3500m=0.9 units). Was 3.0 (~3.7x, read as cliffs).
 const WATER_LEVEL_RAW := 0.30     # below this the field is ocean; water mesh Y
 const CHUNK_HEXES := 8            # ~8x8 hexes per mesh chunk (offset-space)
 const TEX_SIZE := 512            # common albedo size for the Texture2DArray
@@ -97,8 +97,8 @@ const RIVER_CARVE_DEFAULT := 0.045
 ## continuous; a per-edge bow gives character (most gentle/straight, a few wigglier).
 const RIVER_CORNER_JITTER := 0.08   # shared per-corner XZ wobble (frac of edge length)
 const RIVER_BOW := 0.07             # per-edge mid bow cap (frac of edge length); squared → mostly small.
-                                    # Kept modest: the smooth-ramp water height only stays visible
-                                    # while the channel hugs the carved trough near the edge line.
+									# Kept modest: the smooth-ramp water height only stays visible
+									# while the channel hugs the carved trough near the edge line.
 const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
 
 ## #3 Water shader: a seamless river-water PNG dropped here turns the flat-blue ribbon into an
@@ -530,7 +530,7 @@ func _mark_river_corner(owner: Vector2i, i: int, depth: float, corner_off: Array
 		if not _map_data.is_valid_coord(h):
 			continue
 		var li := _corner_index_at(WildernessHexMath.axial_to_world(h), world_p, corner_off)
-		var arr: Array = _river_corner_carve.get(h, null)
+		var arr = _river_corner_carve.get(h, null)   # untyped: get() returns null when absent
 		if arr == null:
 			arr = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			_river_corner_carve[h] = arr
@@ -604,7 +604,7 @@ func _corner_component_avg(coord: Vector2i, i: int) -> float:
 	# HERE so the terrain mesh AND the cliff walls (both call this) carve identically — no crack,
 	# and a canyon (river on a cliff's low side) just deepens. Cheap dict lookup; no-op w/o rivers.
 	if not _river_corner_carve.is_empty():
-		var arr: Array = _river_corner_carve.get(coord, null)
+		var arr = _river_corner_carve.get(coord, null)   # untyped: get() returns null when absent
 		if arr != null:
 			h -= float(arr[i])
 	return h
@@ -1002,6 +1002,9 @@ func _river_water_material() -> Material:
 	var sm := ShaderMaterial.new()
 	sm.shader = shader
 	sm.set_shader_parameter("water_tex", tex)
+	# Align the water's hex-grid overlay with the terrain's (same hex_radius) so the grid lines
+	# read continuous across land and river → the river looks set INTO the ground.
+	sm.set_shader_parameter("hex_radius", WildernessHexMath.HEX_RADIUS)
 	_river_water_cache = sm
 	return sm
 
