@@ -13,10 +13,9 @@ render_mode cull_disabled, diffuse_lambert, specular_disabled;
 
 uniform sampler2D water_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform float tex_scale = 0.65;            // world-XZ units -> UV tiling (lower = bigger waves)
-uniform vec2 flow_dir = vec2(1.0, 0.2);    // global flow direction in world XZ
-uniform float flow_speed = 0.025;          // downstream scroll speed
+uniform float flow_speed = 0.03;           // downstream scroll speed (direction is per-vertex)
 uniform float layer2_scale = 1.43;         // second layer tiling (break the repeat)
-uniform float layer2_speed = 0.6;          // second layer relative speed (opposing)
+uniform float layer2_speed = 0.55;         // second layer relative speed (same dir, layered detail)
 uniform float water_alpha = 0.86;          // translucency (bed shows through)
 uniform float emission_boost = 0.04;       // small lift for readability (was glowing too cyan)
 uniform float tint = 0.88;                 // darken toward the texture's deeper blue
@@ -63,9 +62,12 @@ float sd_hex_flat(vec2 p, float r) {
 }
 
 void fragment() {
+	// Per-vertex DOWNHILL flow direction (XZ), encoded in vertex COLOR.rg by the ribbon builder.
+	// Each channel scrolls along its OWN course instead of one universal direction.
+	vec2 fdir = COLOR.rg * 2.0 - 1.0;
 	vec2 base = UV * tex_scale;
-	vec2 f = normalize(flow_dir) * (TIME * flow_speed);
-	vec3 a = texture(water_tex, base + f).rgb;
+	vec2 f = fdir * (TIME * flow_speed);
+	vec3 a = texture(water_tex, base - f).rgb;
 	vec3 b = texture(water_tex, base * layer2_scale - f * layer2_speed).rgb;
 	vec3 col = mix(a, b, 0.5) * tint;
 	if (show_grid) {

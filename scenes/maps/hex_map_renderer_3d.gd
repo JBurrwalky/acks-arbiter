@@ -91,15 +91,12 @@ const RIVER_CARVE_BY_NAV := {
 }
 const RIVER_CARVE_DEFAULT := 0.045
 
-## #2 Meander: the rendered centreline weaves across the hex EDGE within a bounded envelope —
-## the DATA stays edge-canonical (movement still answers "on the edge"). Deviations are
-## fractions of the hex edge length. A SHARED per-corner jitter keeps adjacent river edges
-## continuous; a per-edge bow gives character (most gentle/straight, a few wigglier).
+## #2 Smooth meander: the channel is one Catmull-Rom curve through the river's (jittered) corner
+## nodes, so bends ROUND across hex corners instead of kinking into rectangles. The DATA stays
+## edge-canonical (movement still answers "on the edge"). A SHARED per-corner jitter keeps
+## adjacent edges joined; the spline does the rest.
 const RIVER_CORNER_JITTER := 0.08   # shared per-corner XZ wobble (frac of edge length)
-const RIVER_BOW := 0.07             # per-edge mid bow cap (frac of edge length); squared → mostly small.
-									# Kept modest: the smooth-ramp water height only stays visible
-									# while the channel hugs the carved trough near the edge line.
-const RIVER_SAMPLES := 7            # centreline samples per edge (ribbon smoothness)
+const RIVER_SAMPLES := 9            # centreline samples per edge (curve smoothness)
 
 ## #3 Water shader: a seamless river-water PNG dropped here turns the flat-blue ribbon into an
 ## animated flowing channel (river_water.gdshader). Missing → graceful flat-blue fallback.
@@ -851,46 +848,73 @@ func _build_rivers() -> void:
 		return
 	var corner_off := WildernessHexMath.corner_offsets()
 	var edge_len: float = (corner_off[0] - corner_off[1]).length()
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var emitted := 0
+
+	# Pass 1: build the river-corner GRAPH — each visible river edge contributes its two carved,
+	# jittered corner nodes and links them as neighbours. The graph lets the render smooth ACROSS
+	# corners (Catmull-Rom → one flowing curve, not per-edge rectangles) and pick a per-channel
+	# DOWNHILL flow direction (instead of one universal scroll). DATA stays edge-canonical.
+	var nodes := {}             # corner_key -> {pos: Vector2 (jittered XZ), y: float, nbrs: Array}
+	var edge_list: Array = []   # [{ak, bk, navig}] for the visible edges
 	for edge_data in _map_data.river_edges:
 		if not (edge_data is HexRiverEdgeData):
 			continue
 		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var e: int = edge_data.edge
+		var nb: Vector2i = owner + HexRiverEdgeData.neighbor_offset(e)
 		# Fog: skip if BOTH endpoint hexes are still hidden (don't reveal unseen rivers).
-		var nb: Vector2i = owner + HexRiverEdgeData.neighbor_offset(edge_data.edge)
 		if _fog_value(owner) < 0.25 and _fog_value(nb) < 0.25:
 			continue
-		# Edge e (0=N..5=NW) is bounded by mesh corners (e+4)%6 and (e+5)%6. The DATA is that
-		# straight edge; the RENDER meanders across it within a bounded envelope (#2). Endpoints
-		# are the two carved corners, each nudged by a SHARED per-corner jitter so adjacent river
-		# edges meet at the same point → one continuous channel.
-		var e: int = edge_data.edge
+		# Edge e (0=N..5=NW) is bounded by mesh corners (e+4)%6 and (e+5)%6.
 		var i1 := (e + 4) % 6
 		var i2 := (e + 5) % 6
+		var ka := _corner_key(owner, i1)
+		var kb := _corner_key(owner, i2)
 		var center := WildernessHexMath.axial_to_world(owner)
-		var a_xz := Vector2(center.x + corner_off[i1].x, center.y + corner_off[i1].y) \
-				+ _corner_jitter(_corner_key(owner, i1), edge_len)
-		var b_xz := Vector2(center.x + corner_off[i2].x, center.y + corner_off[i2].y) \
-				+ _corner_jitter(_corner_key(owner, i2), edge_len)
-		# Per-edge bow → a quadratic control point pulled perpendicular to the edge (character).
-		var dir := b_xz - a_xz
-		var perp := Vector2(-dir.y, dir.x).normalized()
-		var ctrl := (a_xz + b_xz) * 0.5 + perp * _edge_bow(owner, e, edge_len)
-		# Smooth water height: a flat ramp between the two CARVED corner heights. (Per-sample
-		# terrain sampling jumped around as the centreline crossed hexes → tilted/flipped quads.)
-		# The carve makes both corners low, so the channel sits in the trough; small bows keep it
-		# visible there. Collect the centreline, then weld ONE ribbon through it (no per-seg tears).
-		var ya := _corner_component_avg(owner, i1) + RIVER_LIFT
-		var yb := _corner_component_avg(owner, i2) + RIVER_LIFT
-		var w: float = _RIVER_WIDTH.get(edge_data.navigability, 0.075)
+		if not nodes.has(ka):
+			nodes[ka] = {
+				"pos": Vector2(center.x + corner_off[i1].x, center.y + corner_off[i1].y) + _corner_jitter(ka, edge_len),
+				"y": _corner_component_avg(owner, i1) + RIVER_LIFT,
+				"nbrs": [],
+			}
+		if not nodes.has(kb):
+			nodes[kb] = {
+				"pos": Vector2(center.x + corner_off[i2].x, center.y + corner_off[i2].y) + _corner_jitter(kb, edge_len),
+				"y": _corner_component_avg(owner, i2) + RIVER_LIFT,
+				"nbrs": [],
+			}
+		(nodes[ka]["nbrs"] as Array).append(kb)
+		(nodes[kb]["nbrs"] as Array).append(ka)
+		edge_list.append({"ak": ka, "bk": kb, "navig": edge_data.navigability})
+
+	# Pass 2: render each edge as a Catmull-Rom segment through (A's other nbr, A, B, B's other
+	# nbr) so bends round smoothly; carry a per-vertex DOWNHILL flow direction for the shader. The
+	# water height is a flat ramp between the two carved corners (it sits in the carved trough).
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var emitted := 0
+	for ed in edge_list:
+		var a: Dictionary = nodes[ed["ak"]]
+		var b: Dictionary = nodes[ed["bk"]]
+		var p1: Vector2 = a["pos"]
+		var p2: Vector2 = b["pos"]
+		var p0: Vector2 = _other_nbr_pos(nodes, ed["ak"], ed["bk"], p1, p2)
+		var p3: Vector2 = _other_nbr_pos(nodes, ed["bk"], ed["ak"], p2, p1)
+		var ya: float = a["y"]
+		var yb: float = b["y"]
+		var downhill := yb <= ya   # flow toward the LOWER corner (consistent across corners)
+		var w: float = _RIVER_WIDTH.get(ed["navig"], 0.075)
 		var pts: Array[Vector3] = []
+		var flows: Array = []
 		for s in range(RIVER_SAMPLES + 1):
 			var t := float(s) / float(RIVER_SAMPLES)
-			var p := _qbez(a_xz, ctrl, b_xz, t)
+			var p := _catmull(p0, p1, p2, p3, t)
 			pts.append(Vector3(p.x, lerpf(ya, yb, t), p.y))
-		_emit_river_ribbon(st, pts, w)
+			var tang := _catmull_tangent(p0, p1, p2, p3, t)
+			if tang.length() < 1.0e-5:
+				tang = p2 - p1
+			tang = tang.normalized()
+			flows.append(tang if downhill else -tang)
+		_emit_river_ribbon(st, pts, w, flows)
 		emitted += 1
 	if emitted == 0:
 		return
@@ -905,7 +929,7 @@ func _build_rivers() -> void:
 ## Each sample gets ONE consistent perpendicular (from its averaged tangent), so consecutive
 ## quads SHARE their seam vertices — fixes the per-segment perp mismatch (tearing) and the
 ## independent-quad tilt (flipping). XZ-perp only; the strip keeps each sample's own height.
-func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float) -> void:
+func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float, flows: Array) -> void:
 	var n := pts.size()
 	if n < 2:
 		return
@@ -924,24 +948,53 @@ func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float) -> void:
 		left.append(Vector3(pc.x - perp.x, pc.y, pc.z - perp.y))
 		right.append(Vector3(pc.x + perp.x, pc.y, pc.z + perp.y))
 	for s in range(1, n):
+		var c0 := _flow_color(flows[s - 1])
+		var c1 := _flow_color(flows[s])
 		var l0: Vector3 = left[s - 1]
 		var r0: Vector3 = right[s - 1]
 		var l1: Vector3 = left[s]
 		var r1: Vector3 = right[s]
-		# World-XZ UVs: the water shader tiles + scrolls the texture consistently across the
-		# winding channel (the flat-blue fallback ignores UVs).
-		st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
-		st.set_uv(Vector2(r0.x, r0.z)); st.add_vertex(r0)
-		st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
-		st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
-		st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
-		st.set_uv(Vector2(l1.x, l1.z)); st.add_vertex(l1)
+		# World-XZ UVs (tile/scroll the texture); per-vertex COLOR.rg carries the local DOWNHILL
+		# flow direction so the shader scrolls each channel along its OWN course (not universal).
+		st.set_color(c0); st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
+		st.set_color(c0); st.set_uv(Vector2(r0.x, r0.z)); st.add_vertex(r0)
+		st.set_color(c1); st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
+		st.set_color(c0); st.set_uv(Vector2(l0.x, l0.z)); st.add_vertex(l0)
+		st.set_color(c1); st.set_uv(Vector2(r1.x, r1.z)); st.add_vertex(r1)
+		st.set_color(c1); st.set_uv(Vector2(l1.x, l1.z)); st.add_vertex(l1)
 
 
-## Quadratic Bezier point a→ctrl→b at [param t] — the meander centreline (#2).
-static func _qbez(a: Vector2, ctrl: Vector2, b: Vector2, t: float) -> Vector2:
-	var u := 1.0 - t
-	return a * (u * u) + ctrl * (2.0 * u * t) + b * (t * t)
+## Encode a flow direction (unit XZ) into vertex COLOR.rg (0..1); the shader unmaps it.
+func _flow_color(flow: Vector2) -> Color:
+	return Color(flow.x * 0.5 + 0.5, flow.y * 0.5 + 0.5, 0.0, 1.0)
+
+
+## Catmull-Rom point at [param t] on the segment p1->p2 (p0,p3 are the neighbouring control
+## points) — smooths the channel ACROSS hex corners so it reads as a flowing curve, not rectangles.
+static func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var t2 := t * t
+	var t3 := t2 * t
+	return 0.5 * ((2.0 * p1) + (-p0 + p2) * t \
+		+ (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 \
+		+ (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3)
+
+
+## Catmull-Rom tangent (unnormalised) at [param t] — the local downstream axis for the flow.
+static func _catmull_tangent(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var t2 := t * t
+	return 0.5 * ((-p0 + p2) \
+		+ 2.0 * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t \
+		+ 3.0 * (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t2)
+
+
+## The XZ of a river neighbour of [param key] other than [param exclude_key] (the Catmull-Rom
+## control point). Degree-1 (a channel endpoint) → reflect so the spline runs straight out.
+func _other_nbr_pos(nodes: Dictionary, key: String, exclude_key: String,
+		self_pos: Vector2, exclude_pos: Vector2) -> Vector2:
+	for nk in (nodes[key]["nbrs"] as Array):
+		if nk != exclude_key and nodes.has(nk):
+			return nodes[nk]["pos"]
+	return self_pos * 2.0 - exclude_pos
 
 
 ## Stable 0..1 hash of a string — cosmetic determinism, no global RNG. The meander is render-
@@ -957,15 +1010,6 @@ func _corner_jitter(key: String, edge_len: float) -> Vector2:
 	var ang := _hash01(key + "#a") * TAU
 	var mag := _hash01(key + "#m") * RIVER_CORNER_JITTER * edge_len
 	return Vector2(cos(ang), sin(ang)) * mag
-
-
-## Signed per-edge mid bow, SQUARED so most edges stay gentle/near-straight and only a few are
-## wigglier (character, not noise). Deterministic per canonical edge.
-func _edge_bow(owner: Vector2i, e: int, edge_len: float) -> float:
-	var key := "%d,%d,%d" % [owner.x, owner.y, e]
-	var u := _hash01(key + "#b")
-	var sgn := 1.0 if _hash01(key + "#s") < 0.5 else -1.0
-	return sgn * u * u * RIVER_BOW * edge_len
 
 
 func _river_material() -> StandardMaterial3D:
