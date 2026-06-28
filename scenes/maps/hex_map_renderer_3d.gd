@@ -81,7 +81,15 @@ const RIVER_LIFT := 0.035
 ## #1 Riverbed: lower the SHARED corner height for any corner a river touches, so the channel
 ## recesses between banks. Applied in the one corner-height function the terrain + cliff walls
 ## share (_corner_component_avg) → watertight, and canyons (river+cliff corners) stay seam-free.
-const RIVER_CARVE := 0.24
+## #1 Riverbed depth, SCALED BY RIVER SIZE (navigability). A fixed deep carve made every river
+## a steep valley — too extreme for the many small streams. Now a small stream barely sinks
+## (just enough that the water isn't floating) and only a big river cuts a real valley. The
+## depth lowers the SHARED river corners in _corner_component_avg (watertight). Keep modest so
+## the hex tilts gently.
+const RIVER_CARVE_BY_NAV := {
+	"none": 0.045, "small_craft": 0.07, "river_craft": 0.11, "large_craft": 0.16,
+}
+const RIVER_CARVE_DEFAULT := 0.045
 
 ## #2 Meander: the rendered centreline weaves across the hex EDGE within a bounded envelope —
 ## the DATA stays edge-canonical (movement still answers "on the edge"). Deviations are
@@ -112,11 +120,11 @@ var _scatter_mesh_cache := {}     # variant name -> Mesh
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
 var _river_water_cache: ShaderMaterial = null   # #3 animated water (when the PNG is present)
-## Vector2i hex -> 6-bit mask of which of its corners a river runs through (carved into a
-## riverbed by _corner_component_avg, #1). The bit is set on ALL hexes sharing each river
-## corner so the carve is identical across the trio (watertight). A cheap dict+bit test keeps
-## the terrain hot path fast; rebuilt only on map/edge change (rivers are fog-independent).
-var _river_corner_mask := {}
+## Vector2i hex -> Array[6] of per-corner carve DEPTHS (0 = no river there), scaled by river
+## size. Set on ALL hexes sharing each river corner (max if several rivers meet) so the carve
+## in _corner_component_avg is identical across the trio (watertight). A cheap dict lookup +
+## index keeps the terrain hot path fast; rebuilt only on map/edge change (fog-independent).
+var _river_corner_carve := {}
 ## Cliff/canyon walls (gdd-cliffs-canyons.md §7). _cliff_by_pair maps an unordered
 ## hex-pair key -> HexCliffEdgeData so the terrain mesh can keep cliff edges as a
 ## height DISCONTINUITY (stop averaging corners across them) and a vertical wall
@@ -497,7 +505,7 @@ const _CORNER_NEIGHBORS := [
 ## carve a riverbed there (#1). Call before _build_terrain. Rivers are fog-independent, so
 ## this is rebuilt only when the map/edges change (like the cliff lookup), not per fog update.
 func _rebuild_river_lookup() -> void:
-	_river_corner_mask = {}
+	_river_corner_carve = {}
 	if _map_data == null:
 		return
 	var corner_off := WildernessHexMath.corner_offsets()
@@ -506,21 +514,27 @@ func _rebuild_river_lookup() -> void:
 			continue
 		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
 		var e: int = edge_data.edge
-		_mark_river_corner(owner, (e + 4) % 6, corner_off)
-		_mark_river_corner(owner, (e + 5) % 6, corner_off)
+		var depth: float = float(RIVER_CARVE_BY_NAV.get(edge_data.navigability, RIVER_CARVE_DEFAULT))
+		_mark_river_corner(owner, (e + 4) % 6, depth, corner_off)
+		_mark_river_corner(owner, (e + 5) % 6, depth, corner_off)
 
 
-## Set the river-corner bit on EVERY hex sharing the physical corner (owner, i) — each at its
-## OWN local corner index (matched by world position) — so the carve in _corner_component_avg
-## is bit-identical across the trio and the mesh stays watertight. Cold path (lookup build).
-func _mark_river_corner(owner: Vector2i, i: int, corner_off: Array) -> void:
+## Record the carve [param depth] on EVERY hex sharing the physical corner (owner, i) — each at
+## its OWN local corner index (matched by world position), taking the MAX where rivers meet —
+## so the carve in _corner_component_avg is identical across the trio and the mesh stays
+## watertight. Cold path (lookup build).
+func _mark_river_corner(owner: Vector2i, i: int, depth: float, corner_off: Array) -> void:
 	var world_p: Vector2 = WildernessHexMath.axial_to_world(owner) + corner_off[i]
 	var trio: Array[Vector2i] = [owner, owner + _CORNER_NEIGHBORS[i][0], owner + _CORNER_NEIGHBORS[i][1]]
 	for h in trio:
 		if not _map_data.is_valid_coord(h):
 			continue
 		var li := _corner_index_at(WildernessHexMath.axial_to_world(h), world_p, corner_off)
-		_river_corner_mask[h] = int(_river_corner_mask.get(h, 0)) | (1 << li)
+		var arr: Array = _river_corner_carve.get(h, null)
+		if arr == null:
+			arr = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			_river_corner_carve[h] = arr
+		arr[li] = maxf(float(arr[li]), depth)
 
 
 ## Canonical key for the PHYSICAL corner at index [param i] of [param coord] — the sorted trio
@@ -586,11 +600,13 @@ func _corner_component_avg(coord: Vector2i, i: int) -> float:
 	for k in comp:
 		sum += _hex_height(trio[k])
 	var h := sum / float(comp.size())
-	# #1 Riverbed carve: a corner a river runs through drops by RIVER_CARVE. Applied HERE so
-	# the terrain mesh AND the cliff walls (both call this) carve identically — no crack, and
-	# a canyon (river on a cliff's low side) just deepens. Cheap dict+bit test; no-op w/o rivers.
-	if not _river_corner_mask.is_empty() and ((int(_river_corner_mask.get(coord, 0)) >> i) & 1) != 0:
-		h -= RIVER_CARVE
+	# #1 Riverbed carve: a corner a river runs through drops by its size-scaled depth. Applied
+	# HERE so the terrain mesh AND the cliff walls (both call this) carve identically — no crack,
+	# and a canyon (river on a cliff's low side) just deepens. Cheap dict lookup; no-op w/o rivers.
+	if not _river_corner_carve.is_empty():
+		var arr: Array = _river_corner_carve.get(coord, null)
+		if arr != null:
+			h -= float(arr[i])
 	return h
 
 
