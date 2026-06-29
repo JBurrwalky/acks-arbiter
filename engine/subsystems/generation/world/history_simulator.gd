@@ -745,9 +745,20 @@ func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
 		if a["mult"] != b["mult"]:
 			return float(a["mult"]) > float(b["mult"])
 		return _canonical_less(a["hex"], b["hex"]))
+	# §5.1 boxed-in escape valve: if even the best frontier hex is unfavorable
+	# (the realm is hemmed by terrain its race can't develop), it expands at a
+	# reduced rate rather than pouring its whole budget into bad land — but never
+	# zero, so it is never hard-stuck.
+	var best_pref := 0.0
+	for entry in frontier:
+		best_pref = maxf(best_pref, float(entry["pref"]))
+	var budget_eff := budget
+	if best_pref < _c.expansion_boxed_in_threshold:
+		budget_eff = maxi(1, XPAwardCalculator.bankers_round(
+				float(budget) * _c.expansion_boxed_in_rate))
 	var spent := 0
 	for entry in frontier:
-		if spent >= budget:
+		if spent >= budget_eff:
 			break
 		var key: Vector2i = entry["hex"]
 		var owner := str(_grid[key]["owner_polity_id"])
@@ -778,8 +789,40 @@ func _compute_frontier(pol: Dictionary) -> Array:
 			if str(_grid[n]["owner_polity_id"]) == pid:
 				continue
 			seen[n] = true
-			out.append({"hex": n, "mult": _terrain_mult(pol, n) * _expand_jitter_by_hex.get(n, 1.0)})
+			# §5.1 cap-aware preference biases PEACEFUL expansion toward terrain the
+			# culture's race can develop (TerritoryCap), in the §4.6 order. `pref` is
+			# kept separately so _expand_polity can detect a boxed-in polity.
+			var pref := _expansion_preference(pol, n)
+			var mult: float = _terrain_mult(pol, n) * float(_expand_jitter_by_hex.get(n, 1.0)) * pref
+			out.append({"hex": n, "mult": mult, "pref": pref})
 	return out
+
+
+## §5.1 / §4.6: the expanding culture's preference for settling [param key], in
+## (0, 1]. Combines the §4 territory cap its race could reach there (civilized >
+## borderlands > wilderness — a strong penalty on wilderness-capped land) with the
+## §4.6 biome→elevation rank; a §4.6 hard exclusion returns a tiny weight (nonzero,
+## so a boxed-in polity is never hard-stuck). PEACEFUL expansion only.
+func _expansion_preference(pol: Dictionary, key: Vector2i) -> float:
+	var race := str(_inst(pol).get("race", "human"))
+	var hex: Dictionary = _grid[key]
+	var biome := str(hex["biome"])
+	var subtype := str(hex["biome_subtype"])
+	var elevation := str(hex["elevation"])
+	if TerritoryCap.is_hard_excluded(race, biome, subtype, elevation):
+		return _c.expansion_pref_excluded
+	var roc: bool = _river_incident.has(key) or _coastal_oceans.has(key)
+	var cap := TerritoryCap.effective_cap(biome, subtype, elevation, race, roc)
+	return _cap_pref_weight(cap) * TerritoryCap.terrain_rank(race, biome, subtype, elevation)
+
+
+func _cap_pref_weight(cap: String) -> float:
+	match cap:
+		"civilized":
+			return _c.expansion_pref_civilized
+		"borderlands":
+			return _c.expansion_pref_borderlands
+	return _c.expansion_pref_wilderness
 
 
 func _settle_wilderness(pol: Dictionary, key: Vector2i) -> void:

@@ -94,6 +94,69 @@ static func _dwarf_cap(elevation: String) -> String:
 	return WILDERNESS           # flat
 
 
+# --- Expansion preference & hard exclusions (§4.6, PEACEFUL expansion only) --
+
+## §4.6 hard exclusions — terrain a race will NEVER take by peaceful expansion
+## (war ignores this). Humans never settle glacial mountains; elves never swamp,
+## desert, or glacial mountains (cannot be forested); dwarves + beastmen have none.
+static func is_hard_excluded(race: String, biome: String, subtype: String,
+		elevation: String) -> bool:
+	var glacial := elevation == "mountains" and subtype == "mountains_glacial"
+	match race:
+		"elf":
+			return biome == "swamp" or biome == "desert" or glacial
+		"dwarf":
+			return false
+		"human":
+			return glacial
+	return false   # beastmen / unknown — settle anywhere
+
+
+## §4.6 expansion preference rank in (0, 1] — biome dominates, elevation is a
+## secondary modulation (a mountain-forest beats a flat-desert). Used to ORDER a
+## culture's peaceful expansion; combined with the cap weight by the caller. Hard
+## exclusions are handled separately (is_hard_excluded); this is the soft ordering.
+static func terrain_rank(race: String, biome: String, subtype: String,
+		elevation: String) -> float:
+	match race:
+		"dwarf":
+			# elevation only: mountains > volcanic > glacial > hills > flat.
+			if elevation == "mountains":
+				if subtype == "mountains_volcanic":
+					return 0.9
+				if subtype == "mountains_glacial":
+					return 0.8
+				return 1.0
+			if elevation == "hills":
+				return 0.5
+			return 0.3
+		"elf":
+			# forest/jungle best; clear next; elevation irrelevant.
+			if biome == "woods" or biome == "jungle":
+				return 1.0
+			if biome == "clear":
+				return 0.6
+			return 0.4   # swamp/desert (excluded anyway)
+		_:
+			# human: biome rank, lightly modulated by elevation (flat>hills>mtn).
+			var biome_score := 0.3
+			match biome:
+				"clear":
+					biome_score = 0.3 if subtype == "clear_tundra" else 1.0
+				"woods":
+					biome_score = 0.75
+				"jungle", "swamp":
+					biome_score = 0.5
+				"desert":
+					biome_score = 0.3
+			var elev_mod := 1.0
+			if elevation == "hills":
+				elev_mod = 0.93
+			elif elevation == "mountains":
+				elev_mod = 0.85
+			return biome_score * elev_mod
+
+
 # --- Elf (§4.4) -------------------------------------------------------------
 
 static func _elf_cap(biome: String, elevation: String) -> String:

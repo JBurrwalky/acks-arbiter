@@ -36922,3 +36922,32 @@ on-tick dispatch.
 - Then Phase 4 (hybrid emergence — highest arch risk, Opus review). Phase 5 (clanhold migration) DEFERRED.
 - Backlog: runtime EventScheduler deforestation/reforestation phases + market/settlement accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
 **Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), + this (P2c). Phase 2 COMPLETE.
+
+## Session 2026-06-29 — Culture emergence Phase 3a: cap-aware terrain avoidance (§5.1/§4.6)
+
+**Task:** Begin Phase 3 (handoff §5). Implement the cap-aware unfavorable-terrain avoidance: peaceful expansion prefers terrain the culture's RACE can develop, in the §4.6 biome→elevation order, avoiding hard exclusions.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **`TerritoryCap.is_hard_excluded(race, biome, subtype, elevation)`** (§4.6 hard exclusions: human glacial mountains; elf swamp/desert/glacial; dwarf/beastman none) + **`TerritoryCap.terrain_rank(...)`** (§4.6 soft order in (0,1], biome dominates elevation: human clear>forest>jungle/swamp>desert with flat>hills>mtn modulation; elf forest/jungle>clear, elevation irrelevant; dwarf mountains>volcanic>glacial>hills>flat, biome irrelevant). Pure.
+- **`HistorySimulator._expansion_preference(pol, key)`** = cap weight (civ/borderlands/wilderness from `_c`) × `terrain_rank`, or `expansion_pref_excluded` for a §4.6 exclusion (nonzero → never hard-stuck). `_compute_frontier` multiplies each frontier hex's `mult` by this preference and stores `pref` per entry. So PEACEFUL expansion expands toward developable land first. `_resolve_contest` strength + `_phase_war` are UNTOUCHED (war ignores the preference).
+- **Boxed-in escape valve** in `_expand_polity`: only when the best frontier hex is a §4.6 hard exclusion (best `pref` < `expansion_boxed_in_threshold` = 0.11, just above the excluded weight) does the polity expand at a reduced rate (`expansion_boxed_in_rate`); ordinary wilderness-capped frontier (forest/mountain — the deforestation path to civ) still expands at full rate.
+**Decisions made:**
+- **Gentle gradient (wilderness 0.55, not a harsh 0.2)** — PROVISIONAL, tuned for sim health. A harsh wilderness penalty makes realms refuse forest/mountain (which civilize via deforestation), crowding onto scarce clear and leaving the map mostly unowned. The §4.6 `terrain_rank` carries the finer order; the cap weights just tilt toward higher-cap land.
+- **The preference biases ORDER, not amount** (the budget loop spends a fixed hex-count); only the boxed-in valve (rare, exclusion-only) reduces amount. An earlier over-broad valve threshold death-spiraled (throttled realms → less size-scaled budget → smaller) — fixed to fire only for genuinely excluded-bound polities.
+**Interfaces defined or changed:**
+- `TerritoryCap.is_hard_excluded(...)` / `TerritoryCap.terrain_rank(...)` (pure).
+- `HistorySimulator._expansion_preference(pol, key)` / `_cap_pref_weight(cap)`; `_compute_frontier` entries now carry `pref`.
+- `SimConstants.expansion_pref_civilized/borderlands/wilderness/excluded`, `expansion_boxed_in_threshold/rate`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_expansion_exclusions_and_rank` (TerritoryCapTests now 68 checks): §4.6 exclusions per race + the biome-dominates-elevation ordering.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged; zero new failures). Determinism green. Calibration smoke IMPROVED: wilderness **72.9% → 57.6%** (closer to the §17 ~50% target), civ_owned 65% → 79%, unowned 30% → 19% — the preference directs expansion onto land that civilizes.
+**Known issues:**
+- **DEBUGGING LESSON:** a `var mult := <expr with Dictionary.get()>` introduced a Variant-inference PARSE ERROR that silently broke the ENTIRE history_simulator compile → the sim never ran → 100% wilderness + 37 failures, and identical numbers across constant changes (the tell). Fixed with `var mult: float =`. When a constant change has ZERO effect, suspect a compile break, not balance.
+- Phase 3b (natural borders + saturation) and 3c (overseas — Opus review) not built.
+- Parallel editor work (`hex_map_renderer_3d.gd`, `assets/wilderness_kit/`) still uncommitted — not mine; left untouched.
+**Next session should:**
+- **Phase 3b** (handoff §5.2): `natural_border_resistance` per frontier edge (rivers/coast/mountain-spine damp peaceful expansion) + consolidate-before-expand saturation gate (≥75% hexes at ≥50% current-biome pop cap → redirect budget to internal growth). War exempt.
+- **Phase 3c** (handoff §5.3): overseas expansion across short sea gaps (coastal-settlement requirement) → non-contiguous sea-linked colonies; coordinate with §7.4d contiguity. OPUS REVIEW before building.
+- Then Phase 4 (hybrid emergence — Opus review).
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), + this (P3a).

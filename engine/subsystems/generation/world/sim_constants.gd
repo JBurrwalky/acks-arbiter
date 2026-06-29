@@ -384,6 +384,29 @@ var terrain_mult_secondary: float = 1.15
 var terrain_mult_neutral: float = 1.0
 var terrain_mult_avoided: float = 0.5
 
+# --- Expansion terrain preference (§5.1 / §4.6 — PEACEFUL expansion only) ----
+# A cap-aware frontier-scoring bias: a polity expands toward terrain its RACE can
+# develop (TerritoryCap) first, in the §4.6 biome→elevation order, avoiding its hard
+# exclusions. War (_phase_war) ignores all of this. Multiplies the §4.1 terrain mult
+# in _compute_frontier. [PROVISIONAL]
+# A GENTLE ordering nudge, not a near-prohibition: most terrain is wilderness-capped
+# for humans, and forest/mountain IS the path to civilization (deforestation), so a
+# harsh wilderness penalty makes realms refuse developable-via-clearing land and the
+# map collapses to mostly-unowned. The §4.6 terrain_rank carries the finer biome
+# order; these weights just tilt toward higher-cap land. [PROVISIONAL — tuned for sim health]
+var expansion_pref_civilized: float = 1.0
+var expansion_pref_borderlands: float = 0.8
+var expansion_pref_wilderness: float = 0.55    # penalized but still freely expanded into
+var expansion_pref_excluded: float = 0.1       # §4.6 hard exclusion; nonzero = boxed-in escape valve
+# Boxed-in escape valve: ONLY when the best frontier hex is a §4.6 HARD EXCLUSION
+# (pref ≈ expansion_pref_excluded) does a polity throttle — it is truly hemmed by
+# terrain its race cannot take. Set just above the excluded weight so ordinary
+# wilderness-capped frontier (forest/jungle/mountain) still expands at full rate
+# (it civilizes via deforestation). A higher threshold death-spirals: throttled
+# realms stay small, and expansion budget scales with size.
+var expansion_boxed_in_threshold: float = 0.11
+var expansion_boxed_in_rate: float = 0.5       # fraction of budget a boxed-in polity spends
+
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5

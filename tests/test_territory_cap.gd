@@ -14,6 +14,7 @@ func run_all_tests() -> void:
 	test_deforestation_steps()
 	test_cleared_subtype_mapping()
 	test_reforestation_targets()
+	test_expansion_exclusions_and_rank()
 	if not has_failures():
 		print("TerritoryCapTests: all tests passed (%d checks)" % test_count())
 
@@ -164,6 +165,41 @@ func test_reforestation_targets() -> void:
 		"dense forest is at climax")
 	check(Deforestation.reforest_target("jungle", "", "jungle", "Af", true).is_empty(),
 		"jungle is at climax")
+
+
+func test_expansion_exclusions_and_rank() -> void:
+	# §4.6 hard exclusions.
+	check(TerritoryCap.is_hard_excluded("human", "clear", "mountains_glacial", "mountains"),
+		"humans never settle glacial mountains")
+	check(not TerritoryCap.is_hard_excluded("human", "desert", "", "flat"),
+		"humans are NOT excluded from desert (just penalized)")
+	check(TerritoryCap.is_hard_excluded("elf", "swamp", "", "flat")
+			and TerritoryCap.is_hard_excluded("elf", "desert", "", "flat"),
+		"elves never swamp/desert")
+	check(not TerritoryCap.is_hard_excluded("dwarf", "swamp", "", "flat"),
+		"dwarves have no hard exclusion")
+	# §4.6 rank: biome dominates elevation (a mountain-forest beats a flat-desert).
+	check(TerritoryCap.terrain_rank("human", "woods", "", "mountains")
+			> TerritoryCap.terrain_rank("human", "desert", "", "flat"),
+		"human mountain-forest ranks above flat-desert (biome dominates)")
+	# Human: clear > forest > jungle/swamp > desert.
+	check(TerritoryCap.terrain_rank("human", "clear", "clear_grassland", "flat")
+			> TerritoryCap.terrain_rank("human", "woods", "", "flat"),
+		"human clear > forest")
+	check(TerritoryCap.terrain_rank("human", "woods", "", "flat")
+			> TerritoryCap.terrain_rank("human", "desert", "", "flat"),
+		"human forest > desert")
+	# Elf: forest/jungle > clear; elevation irrelevant.
+	check(TerritoryCap.terrain_rank("elf", "woods", "forest_dense", "mountains")
+			== TerritoryCap.terrain_rank("elf", "woods", "", "flat"),
+		"elf rank ignores elevation")
+	check(TerritoryCap.terrain_rank("elf", "jungle", "", "flat")
+			> TerritoryCap.terrain_rank("elf", "clear", "clear_grassland", "flat"),
+		"elf jungle > clear")
+	# Dwarf: mountains > hills > flat; biome irrelevant.
+	check(TerritoryCap.terrain_rank("dwarf", "desert", "", "mountains")
+			> TerritoryCap.terrain_rank("dwarf", "clear", "clear_grassland", "hills"),
+		"dwarf mountain > hills regardless of biome")
 
 
 func test_helpers() -> void:
