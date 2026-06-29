@@ -1,0 +1,451 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Tulrides",
+      "the Orlandrides",
+      "the Numenides",
+      "the Gaiandrides",
+      "the Telamonides",
+      "the Lysandrides",
+      "Ch'ib'al Balam",
+      "Ch'ib'al K'uk'",
+      "Ch'ib'al Kan",
+      "Ch'ib'al Took'",
+      "Ch'ib'al Muwan",
+      "Ch'ib'al Yax",
+      "Aj-balamson",
+      "Aj-sak-mo'son",
+      "Aj-tulaxson",
+      "Aj-took'son",
+      "Aj-chak-ek'son",
+      "Aj-kanson",
+      "Aj-muwanson",
+      "Aj-yaxson",
+      "Aj-tz'ikinson",
+      "Aj-imixson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Manteion"
+    ],
+    "epithet": [
+      "ho Megas",
+      "the Oracle-blessed",
+      "ho Dikaios",
+      "Balam",
+      "the Star-born",
+      "Quetzal-plumed",
+      "the Stela-writer",
+      "of the Two Rites",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Anakra",
+      "Argyrosakte",
+      "Boreasatrapos",
+      "Chakosbejos",
+      "Chikinoscheos",
+      "Chrysoseremos",
+      "Ekoshaos",
+      "Esohelos",
+      "Exohodos",
+      "Halasisthmos",
+      "Hierokuhkaaxon",
+      "Hypseloskolpos",
+      "Iximosmulos",
+      "Kabosnahbos",
+      "Kakaosnape",
+      "Kalosoros",
+      "Kanospedion",
+      "Katopetenos",
+      "Kukosporos",
+      "Lakinospuukon",
+      "Leukosakbeos",
+      "Maskabostenon",
+      "Megosthalassa",
+      "Mikrostzonotos",
+      "Naachosyokhaos",
+      "Neosakra",
+      "Notosakte",
+      "Palaiosatrapos",
+      "Tajosbejos",
+      "Tookoscheos"
+    ],
+    "military_unit": [
+      "the Bronze Phalanx",
+      "the Jaguar Holkan",
+      "the Feather-helms"
+    ],
+    "personal_female": [
+      "Theodora Tulrides",
+      "Daphne Orlandrides",
+      "Arete Numenides",
+      "Thalia Gaiandros",
+      "Phaidra Tulrides",
+      "Kallisto Eudora",
+      "Stratonike Pelagia",
+      "Demetria Leontia",
+      "Lysandra Eirene",
+      "Xanthe Kleia",
+      "Ix-Sak-Nik",
+      "Ix-Rialtaj",
+      "Ix-Chan",
+      "Ix-K'uk'",
+      "Ix-Bolon",
+      "Ix-Chak",
+      "Ix-Muwan",
+      "Ix-Yax",
+      "Ix-Imix",
+      "Ix-Kab'",
+      "Gaiandros",
+      "Gaiandrose",
+      "Numenos",
+      "Numenose",
+      "Orlandros",
+      "Orlandrose",
+      "Rialta",
+      "Rialtae",
+      "Tulrios",
+      "Tulriose"
+    ],
+    "personal_male": [
+      "Theron Tulrides",
+      "Damon Orlandrides",
+      "Stratos Numenides",
+      "Hieron Gaiandros",
+      "Phaedros Tulrides",
+      "Kallias Menelos",
+      "Ariston Telamon",
+      "Lysandros Diokles",
+      "Nikandros Eumenes",
+      "Leontos Pelias",
+      "Aj-Balam",
+      "Aj-Sak-Mo'",
+      "Aj-Tulax",
+      "Aj-Took'",
+      "Aj-Chak-Ek'",
+      "Aj-Kan",
+      "Aj-Muwan",
+      "Aj-Yax",
+      "Aj-Tz'ikin",
+      "Aj-Imix",
+      "Gaiandros",
+      "Gaiandrosos",
+      "Numenos",
+      "Numenosos",
+      "Orlandros",
+      "Orlandrosos",
+      "Rialta",
+      "Rialtaos",
+      "Tulrios",
+      "Tulriosos"
+    ],
+    "settlement": [
+      "Oracmaya",
+      "Mantekuh-Witz",
+      "Neapolis-Kah",
+      "Chak-Haos",
+      "Akropaa-Tulrios",
+      "Yaaxtun-Peten",
+      "Anagora",
+      "Argyrosakropaa",
+      "Boreasakte",
+      "Chakosasty",
+      "Chikinoskahos",
+      "Chrysoskome",
+      "Ekoslimen",
+      "Esomantekuh",
+      "Exomulos",
+      "Halaspaaon",
+      "Hierokuhpoliskah",
+      "Hypselosporos",
+      "Iximosagora",
+      "Kabosakropaa",
+      "Kakaosakte",
+      "Kalosasty",
+      "Kanoskahos",
+      "Katokome",
+      "Kukoslimen",
+      "Lakinosmantekuh",
+      "Leukosmulos",
+      "Maskabospaaon",
+      "Megospoliskah",
+      "Mikrosporos",
+      "Naachosagora",
+      "Neosakropaa",
+      "Notosakte",
+      "Palaiosasty",
+      "Tajoskahos",
+      "Tookoskome",
+      "Yaaxtunlimen",
+      "Anomantekuh",
+      "Argyrosmulos",
+      "Boreaspaaon"
+    ],
+    "ship": [
+      "Pride of Oracmaya",
+      "the Jade Galley",
+      "the Quetzal of the Haos"
+    ],
+    "tavern": [
+      "-house:",
+      ",",
+      "The Chakos Argyros",
+      "The Ekos Chrysos",
+      "The Hierokuh Halas",
+      "The Hypselos Iximos",
+      "The Kalos Kabos",
+      "The Kanos Kakaos",
+      "The Leukos Kukos",
+      "The Megos Maskabos",
+      "The Mikros Tajos",
+      "The Naachos Yaaxtun"
+    ]
+  },
+  "culture_id": "oracmaya",
+  "family": [
+    "classical",
+    "mesoamerican"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_oracmaya.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "oracmaya",
+  "lexicon": {
+    "adjectives": {
+      "black": "ekos",
+      "fair": "kalos",
+      "far": "naachos",
+      "golden": "kanos",
+      "great": "megos",
+      "high": "hypselos",
+      "iron": "tookos",
+      "little": "mikros",
+      "new": "neos",
+      "old": "palaios",
+      "red": "chakos",
+      "sacred": "hierokuh",
+      "white": "leukos"
+    },
+    "directional": {
+      "east": "lakinos",
+      "inner": "eso",
+      "lower": "kato",
+      "north": "boreas",
+      "outer": "exo",
+      "south": "notos",
+      "upper": "ano",
+      "west": "chikinos"
+    },
+    "feature_words": {
+      "bay": "kolpos",
+      "cape": "akra",
+      "cenote": "tzonotos",
+      "coast": "akte",
+      "ford": "poros",
+      "forest": "kaaxon",
+      "hill": "mulos",
+      "isle": "petenos",
+      "lake": "nahbos",
+      "marsh": "helos",
+      "mountain": "oros",
+      "narrows": "stenon",
+      "neck": "isthmos",
+      "pass": "bejos",
+      "plain": "pedion",
+      "ridge": "puukon",
+      "river": "haos",
+      "road": "sakbeos",
+      "sea": "thalassa",
+      "stream": "yokhaos",
+      "track": "atrapos",
+      "vale": "nape",
+      "waste": "eremos",
+      "way": "hodos",
+      "wood": "cheos"
+    },
+    "resources": {
+      "cacao": "kakaos",
+      "feather": "kukos",
+      "gold": "chrysos",
+      "honey": "kabos",
+      "jade": "yaaxtun",
+      "maize": "iximos",
+      "metal": "maskabos",
+      "obsidian": "tajos",
+      "salt": "halas",
+      "silver": "argyros"
+    },
+    "settlement_words": {
+      "citadel": "akropaa",
+      "city": "poliskah",
+      "fort": "paaon",
+      "hamlet": "kome",
+      "market": "agora",
+      "port": "limen",
+      "temple_town": "mantekuh",
+      "town": "asty",
+      "village": "kahos"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Hellenic [adjective|resource](stem) + feature-word with linking -o- (Megos-oros, the great mountain) layered over Maya [quality|color] + feature prefixes (Chak-witz, red-pyramid; Noh-kah, great-town): the capital Oracmaya (the oracle of the maya), Mantekuh-Witz (the oracle-temple pyramid).",
+    "gendered_endings": {
+      "female": [
+        "e",
+        "a"
+      ],
+      "male": [
+        "os",
+        "es"
+      ]
+    },
+    "patronymic_form": "the Hellenic oracle-aristocracy keep a patronymic -ides/-ades (son of) plus the polis demonym; the Maya populace keep the ch'ib'al (lineage) name with the aj- (he of) / ix- (she of) prefix and calendar-day birth-names; the throne fuses both - an archon who carries an -ides line and a witz-seat dynasty.",
+    "toponymic_suffixes": [
+      "polis",
+      "on / -os",
+      "eia / -ia",
+      "witz",
+      "kah",
+      "Noh- / Chak-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "vine-choked pyramids and fallen porticoes: 'the lost Witz of [name]', 'the Sunken Manteion', 'the Stela-court of [ajaw]'",
+    "military_units": "the [Adjective] Phalanx and the Maya Holkan: 'the Bronze Phalanx', 'the Jaguar Holkan', 'the Feather-helms'",
+    "ships": "coastal galleys and the great seagoing trade-canoes: 'Pride of Oracmaya', 'the Jade Galley', 'the Quetzal of the Haos'",
+    "taverns": "'The [Adjective] [Noun]' and the balche'-house: 'The Jade Kylix', 'The Cacao Court'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Hellenic reflexes PRIMARY (family_classical / achillean: Tulrios/Orlandros/Numenos, the -os/-on/-es Hellenic column), Mayan morphs SECONDARY (family_mesoamerican theonym_sets.mayan: Tulax/Orlanab/Numench), never real Greek/Maya gods (no Apollo, no Kukulkan). Shared pantheon; the oracle speaks in Hellenic names, the day-keeper in Maya names. Oracmaya allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Delphic oracle-rite and the Maya bloodletting-and-day-count both bind the basileus to the powers; the manteion-portico and the witz-pyramid are twin altars.",
+    "clergy_ladder": {
+      "1": "Neokoros (temple-keeper) / Ah-miatz (novice-scribe)",
+      "3": "Hiereus (priest) / Ah-k'in (sun-priest, day-keeper)",
+      "5": "Archiereus (high priest) / Ah-k'uhun (god-keeper)",
+      "7": "Hierophant / Nakom-k'in (sacrificer-priest)",
+      "9": "Megas Hierophant / Ah-k'in Mai (high day-priest)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as daimones (Hellenic demons) or k'ak'as (Maya evil), keep their morphs + an epithet: Maraxus -> Maraxos the Tyrant-Flame (Maya Marakab the War-Fire); Vacidus -> Wakix the Devourer (Hellenic Wakidaimon the Void); Lusanto -> Lusankaan the Hoard-Serpent.",
+    "holy_symbol_motifs": {
+      "Orlandros": "an iron spear crossed with the oath-ring and the war-standard",
+      "Rialta": "the moon-rabbit cradling maize above the olive-branch",
+      "Tulrios": "a radiate sun-disc above the oracle-tripod and the bloodletting-stela"
+    },
+    "religious_orders_pattern": "the Manteion (Hellenic oracle-temple) or K'uh-nah (Maya god-house) atop the witz (pyramid) of [power]: 'the Manteion of Tulrios', 'the K'uh-nah of Tulax'.",
+    "saints_pattern": "the Heroes (deified founder-heroes, venerated at a heroon) and the deified k'uhul ajaw ancestors (the uchben), honored at the heroon-tomb, the carved stela, and the pyramid-acropolis.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaiandros (Maya Kayanab) - the enduring earth, the maize-ground",
+      "Numeno": "Numenos (Maya Numench) - air, sky-wisdom, the seer's breath",
+      "Orlandus": "Orlandros (Maya Orlanab) - iron, oath, war",
+      "Realta": "Rialta (Maya Ix Rialtaj) - the mother, mercy, the moon-and-maize",
+      "Tulrius": "Tulrios (Maya Tulax) - the sun, the oracle, and right-order; Lawful power"
+    },
+    "the_one": "Aiternos (Hellenic; Maya Aj Ternaj) - the distant One, the unknowable source, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiternos - as the tyrant-gods to be defied; the bloodletting-rite turned to dread ends.",
+      "Lawful": "venerates the Lawful powers - Aiternos, Tulrios the just oracle, Orlandros of the sworn war, Rialta the merciful - and names the Chaotic powers as daimones (Hellenic) / k'ak'as (Maya evil), warded; the oracle-rite and the day-count bind alike",
+      "Neutral": "all powers ambivalent - honored and feared by turns; foregrounds the deified founder-heroes (the Heroes) and the uchben (Maya ancestral dead), the day-lords and the local k'uh (spirits) invoked at the manteion-grove and the witz situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Hellenic ladder, ascending, with the Maya substrate co-titles fused beneath. Toparch (district-lord) barony; Nakomarch (the Maya nakom war-captain fused to the Hellenic march) march; Eparch-Sajal (the provincial eparch over the Maya sajal governor) county - shown in DISPLAY as the approved foreign term 'Archon'; Strategos (general) duchy; Dynastes (prince-ruler) principality; Basileus (king) kingdom over a Basileia; Autokrator-Kalomte (the Hellenic autocrat fused to the Maya kalomte' high-king) empire over the Autokratoria. The conquered cities keep their Maya batab' (local chief) and ah-k'in (day-priest) beneath the Hellenic crown. Rank titles fuse the real Hellenic and Maya registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Archon' for the county). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Autokrator-Kalomte": "Autokrateira-Ix-Kalomte",
+      "Basileus": "Basilissa",
+      "Dynastes": "Dynastissa",
+      "Eparch-Sajal": "Eparchissa-Ix-Sajal",
+      "Nakomarch": "Nakomarchissa",
+      "Strategos": "Strategissa",
+      "Toparch": "Toparchissa"
+    },
+    "government": "feudal (a Hellenic oracle-aristocracy over the Maya jungle-cities: the basileus and his dynastes-kin at the crown, the archon-governors over the poliskah-cities, the toparch-holders of the lesser seats; the ah-k'in day-keepers and the k'uh-nah priesthood serve beneath)",
+    "heir": "Diadochos (the successor-designate; the Maya call him the Baah-ch'ok, head-youth)",
+    "honorifics": {
+      "champion": "Hippeus (Hellenic knight) / Holkan (Maya warrior)",
+      "elder": "Presbys (the elder) / Chilam (the seer-elder)",
+      "lady": "Kyria / Ix-Ajaw",
+      "lord": "Kyrios / Ajaw",
+      "your_grace": "Megistos / K'uhul"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Toparchia",
+        "ruler": "Baron",
+        "ruler_native": "Toparch"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Eparchia",
+        "ruler": "Archon",
+        "ruler_native": "Eparch-Sajal"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Strategia",
+        "ruler": "Duke",
+        "ruler_native": "Strategos"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Autokratoria",
+        "ruler": "Emperor",
+        "ruler_native": "Autokrator-Kalomte"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Basileia",
+        "ruler": "King",
+        "ruler_native": "Basileus"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Nakomarchia",
+        "ruler": "Marquis",
+        "ruler_native": "Nakomarch"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Dynasteia",
+        "ruler": "Prince",
+        "ruler_native": "Dynastes"
+      }
+    },
+    "vassalage": {
+      "fealty": "Horkos (oath) / Patan-t'an (oath of service)",
+      "liege": "Hegemon / Kalomte",
+      "tribute": "Phoros / Patan",
+      "vassal": "Symmachos (ally) / Yajaw (under-lord)"
+    }
+  }
+}

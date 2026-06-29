@@ -1,7 +1,8 @@
 {
   "alignment_allowed": [
     "Lawful",
-    "Neutral"
+    "Neutral",
+    "Chaotic"
   ],
   "categories": {
     "clan_house": [
@@ -328,7 +329,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Deity-names are fused morphs of the Agrippan canon (Latin + Sinitic), never real Roman/Chinese gods. Serican seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). A Celestial Bureaucracy under the Mandate of Heaven, fused with the Roman law-cult: the One (Aiterneng) is Highest Heaven and source of the Mandate; the Lawful powers the celestial magistracy that gave the law; the templ-miao temple and the law-curia keep the rite.",
+    "_note": "Deity-names are fused morphs of the Agrippan canon (Latin reflexes primary, Sinitic variants secondary), never real Roman/Chinese gods. All-three alignment: Serica's stance follows its CURRENT alignment (see worship_by_alignment). A Celestial Bureaucracy under the Mandate of Heaven, fused with the Roman law-cult: the One (Aiterneng) is Highest Heaven and source of the Mandate; the Lawful powers the celestial magistracy that gave the law; the templ-miao temple and the law-curia keep the rite.",
     "clergy_ladder": {
       "1": "Cultor-tu (acolyte)",
       "3": "Sacerdshi (priest)",
@@ -345,13 +346,14 @@
     "religious_orders_pattern": "the Templ-miao (temple) of [power]: 'the Templ-miao of Tulin'; the law-curia keeps its codex-stele.",
     "saints_pattern": "deified law-givers and worthy officials enrolled in the celestial register; 'Divus [name]' / 'the Lord [name]', honored at the ancestral hall and the miao.",
     "sample_deity_renames": {
-      "Numeno": "Numengus (the scribe-wisdom, keeper of the codex; Lawful power)",
-      "Orlandus": "Orlanus (the iron-oath, war; Lawful power)",
-      "Realta": "Relianta (the mother of mercy; Neutral-honored)",
-      "Tulrius": "Tulin (sun and judgment, lord of the law-stele; Lawful power)"
+      "Numeno": "Numengus (Sinitic Numeng-jun) - the scribe-wisdom, keeper of the codex; Lawful power",
+      "Orlandus": "Orlanus (Sinitic Orla-jun) - the iron-oath, war; Lawful power",
+      "Realta": "Relianta (Sinitic Lianta-mu) - the mother of mercy; Neutral-honored",
+      "Tulrius": "Tulin (Sinitic Tuli-di) - sun and judgment, lord of the law-stele; Lawful power"
     },
     "the_one": "Aiterneng (< Aeternus; fused Latin Aeternus / Sinitic Aiteng) - Highest Heaven, the source of the Mandate and the law; revered above all when Lawful, served-not-petitioned when Neutral",
     "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic demon-marshals of the canon (Maraluo, Wucidus, Lusanus) and name the Lawful powers - and Aiterneng, the One - as the tyrant-throne of Heaven to be defied",
       "Lawful": "revere the One (Aiterneng) and the Lawful powers (Tulin, Orlanus, Numengus, Gaidunus), demonize the Chaotic demon-marshals (Maraluo, Wucidus, Lusanus)",
       "Neutral": "all powers ambivalent; foreground the deified ancestors (the ancestral hall and the Divi) and the local earth-and-grain powers"
     }
@@ -359,8 +361,21 @@
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Fused Latin-Sinitic, ascending; titles blend the two (Latin castellanus/comes/dux/princeps/rex/imperator + Chinese nan/dudu/bo/hou/gong/wang/huangdi). Castelnan (castellan-baron) barony; Limitudu (march-commander) march; Combo (count) county; Duxou (duke-marquis) duchy; Princong (prince-duke) principality; Rexwang (king) kingdom; Imperdi (emperor, holding the Mandate) over the Imperdium. The legions (legio) and the celestial magistracy serve the throne. (Rank titles fuse the real Latin/Chinese register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "DISPLAY ruler/domain titles are English, except the empire tier which shows the approved foreign term 'Imperator' (the commonly-known Roman imperial title). The *_native forms are the fused Latin-Sinitic conlang titles for NPC dialogue: Castelnan (castellan-baron, castellanus+nan); Limitudu (march-commander, limitanus+dudu); Combo (count, comes+bo); Duxou (duke-marquis, dux+hou); Princong (prince-duke, princeps+gong); Rexwang (king, rex+wang); Imperdi (emperor holding the Mandate, imperator+huangdi) over the Imperdium. The legions (legio) and the celestial magistracy serve the throne. (Rank titles fuse the real Latin/Chinese register, allowed.)",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here the empire tier shows 'Imperator'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Castelnan": "Castelnana",
       "Combo": "Comba",
       "Duxou": "Duxoua",
@@ -369,7 +384,7 @@
       "Princong": "Princonga",
       "Rexwang": "Reginwang"
     },
-    "government": "feudal (a law-and-Mandate empire: the Imperdi holds the Mandate over the peerage and a vast literate magistracy; the legions and the codex sustain the order)",
+    "government": "feudal (a law-and-Mandate empire: the Imperator (native Imperdi) holds the Mandate over the peerage and a vast literate magistracy; the legions and the codex sustain the order)",
     "heir": "Taizi-Princeps (the crown prince / heir)",
     "honorifics": {
       "knight": "Equeswushi (cavalier)",
@@ -380,32 +395,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Castelnanum",
-        "ruler": "Castelnan"
+        "domain": "Barony",
+        "domain_native": "Castelnanum",
+        "ruler": "Baron",
+        "ruler_native": "Castelnan"
       },
       "county": {
-        "domain": "Comboguo",
-        "ruler": "Combo"
+        "domain": "County",
+        "domain_native": "Comboguo",
+        "ruler": "Count",
+        "ruler_native": "Combo"
       },
       "duchy": {
-        "domain": "Duxouum",
-        "ruler": "Duxou"
+        "domain": "Duchy",
+        "domain_native": "Duxouum",
+        "ruler": "Duke",
+        "ruler_native": "Duxou"
       },
       "empire": {
-        "domain": "Imperdium",
-        "ruler": "Imperdi"
+        "domain": "Empire",
+        "domain_native": "Imperdium",
+        "ruler": "Imperator",
+        "ruler_native": "Imperdi"
       },
       "kingdom": {
-        "domain": "Rexwangguo",
-        "ruler": "Rexwang"
+        "domain": "Kingdom",
+        "domain_native": "Rexwangguo",
+        "ruler": "King",
+        "ruler_native": "Rexwang"
       },
       "march": {
-        "domain": "Limitduqu",
-        "ruler": "Limitudu"
+        "domain": "March",
+        "domain_native": "Limitduqu",
+        "ruler": "Marquis",
+        "ruler_native": "Limitudu"
       },
       "principality": {
-        "domain": "Princongguo",
-        "ruler": "Princong"
+        "domain": "Principality",
+        "domain_native": "Princongguo",
+        "ruler": "Prince",
+        "ruler_native": "Princong"
       }
     },
     "vassalage": {

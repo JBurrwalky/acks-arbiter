@@ -1,0 +1,456 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Thorulfssaett",
+      "the Steinarssaett",
+      "the Hrafnkelssaett",
+      "the Eyvindssaett",
+      "the Ketilssaett",
+      "Wolf clan",
+      "Bear clan",
+      "Turtle clan",
+      "Deer clan",
+      "Hawk clan",
+      "the Sigurdssaett",
+      "Heron clan",
+      "al-Thorulfr",
+      "al-Steinarr",
+      "al-Gunnarr",
+      "al-Hrafnkell",
+      "al-Eyvindr",
+      "al-Olafr",
+      "al-Ketill",
+      "al-Sigurdr",
+      "al-Bjarnharr",
+      "al-Halldorr",
+      "al-Tehanakarine",
+      "al-Karonhyateha"
+    ],
+    "dungeon_ruin": [
+      "the Ghost-Longhouse"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Wave-rider",
+      "of Vinheim",
+      "the Oath-keeper",
+      "Forest-walker",
+      "the Sachem",
+      "Antler-crowned",
+      "Keeper-of-the-Fire",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Austrhentr",
+      "Fagrhjonakt",
+      "Fjarrhjonkonr",
+      "Gamalrhjonr",
+      "Gullinrhjonsa",
+      "Harrkanawr",
+      "Honwrkarhakr",
+      "Hrosskerhitkonr",
+      "Hvitrkerhitr",
+      "Innrnenrakt",
+      "Jarnjarr",
+      "Karheilagnjatr",
+      "Litilrnjatrakt",
+      "Mikilrnjatrtsi",
+      "Nenhstrnjatrvan",
+      "Nidrohar",
+      "Nonsrohentr",
+      "Nordronontas",
+      "Nyronontkar",
+      "Raudronontker",
+      "Sahetronontr",
+      "Silfrskenr",
+      "Skenontrtekwentr",
+      "Sudrvenotr",
+      "Svartrwerr",
+      "Upprhentr",
+      "Utrhjonakt",
+      "Vestrhjonkonr",
+      "Wahtrhjonr",
+      "Wisrhjonsa"
+    ],
+    "military_unit": [
+      ","
+    ],
+    "personal_female": [
+      "Gunnhildr",
+      "Thorgerdr",
+      "Steinunn",
+      "Sigridr",
+      "Astridr",
+      "Hallgerdr",
+      "Yngvildr",
+      "Aslaug",
+      "Otsitsa",
+      "Kahentinetha",
+      "Watshenni",
+      "Kawisaienta",
+      "Yegoewaneh",
+      "Karihwenhawi",
+      "Tekonwakweni",
+      "Aweion",
+      "Thora",
+      "Steina",
+      "Gunna",
+      "Eyvinda",
+      "Olafa",
+      "Sigurda",
+      "Bjarnha",
+      "Halldora",
+      "Geyandr",
+      "Geyandra",
+      "Nymir",
+      "Nymira",
+      "Orlund",
+      "Orlunda",
+      "Rjalta",
+      "Rjaltaa",
+      "Thulr",
+      "Thulra"
+    ],
+    "personal_male": [
+      "Thorulfr",
+      "Steinarr",
+      "Gunnarr",
+      "Hrafnkell",
+      "Eyvindr",
+      "Olafr",
+      "Ketill",
+      "Sigurdr",
+      "Bjarnharr",
+      "Halldorr",
+      "Tehanakarine",
+      "Karonhyateha",
+      "Skanawati",
+      "Tekanonsiote",
+      "Hahsanowane",
+      "Atironta",
+      "Otsitsr",
+      "Kahentinethr",
+      "Kawisaientr",
+      "Geyandr",
+      "Geyandrr",
+      "Nymir",
+      "Nymirr",
+      "Orlund",
+      "Orlundr",
+      "Rjalta",
+      "Rjaltar",
+      "Thulr",
+      "Thulrr"
+    ],
+    "settlement": [
+      "Vinheim",
+      "Jarn-haugr",
+      "Kanata-by",
+      "Onontake",
+      "Svart-skogr",
+      "Kaniatarakta",
+      "Austrhjonakt",
+      "Fagrhjonhofn",
+      "Fjarrkanatas",
+      "Gamalrkanatborg",
+      "Gullinrkanatkr",
+      "Harrkanatr",
+      "Honwrkanonhof",
+      "Hrosskanonsetr",
+      "Hvitrkanvirki",
+      "Innrnjatrtsi",
+      "Jarnonontas",
+      "Karheilagtenhinr",
+      "Litilrhjonakt",
+      "Mikilrhjonhofn",
+      "Nenhstrkanatas",
+      "Nidrkanatborg",
+      "Nonsrakanatkr",
+      "Nordrkanatr",
+      "Nyrkanonhof",
+      "Raudrkanonsetr",
+      "Sahetrkanvirki",
+      "Silfrnjatrtsi",
+      "Skenontronontas",
+      "Sudrtenhinr",
+      "Svartrhjonakt",
+      "Upprhjonhofn",
+      "Utrkanatas",
+      "Vestrkanatborg",
+      "Wahtrkanatkr",
+      "Wisrkanatr",
+      "Austrkanonhof",
+      "Fagrkanonsetr",
+      "Fjarrkanvirki",
+      "Gamalrnjatrtsi"
+    ],
+    "ship": [
+      "the Wave-Stallion",
+      "Raven of the Skogr",
+      "the Swift Heron",
+      "Forest-Shadow"
+    ],
+    "tavern": [
+      "The Red Antler",
+      "The Boar and Oar",
+      "the Turtle Longhouse",
+      "The Fagr Honwr",
+      "The Fjarr Hross",
+      "The Gamalr Jarn",
+      "The Gullinr Nenhstr",
+      "The Harr Nonsra",
+      "The Hvitr Sahetr",
+      "The Jarn Silfr",
+      "The Karheilag Skenontr",
+      "The Litilr Wahtr"
+    ]
+  },
+  "culture_id": "maniheim",
+  "family": [
+    "germanic",
+    "north_american"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_maniheim.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "clanhold",
+  "kit_id": "maniheim",
+  "lexicon": {
+    "adjectives": {
+      "black": "svartr",
+      "fair": "fagr",
+      "far": "fjarr",
+      "golden": "gullinr",
+      "great": "mikilr",
+      "high": "harr",
+      "iron": "jarn",
+      "little": "litilr",
+      "new": "nyr",
+      "old": "gamalr",
+      "red": "raudr",
+      "sacred": "karheilag",
+      "white": "hvitr"
+    },
+    "directional": {
+      "east": "austr",
+      "inner": "innr",
+      "lower": "nidr",
+      "north": "nordr",
+      "outer": "utr",
+      "south": "sudr",
+      "upper": "uppr",
+      "west": "vestr"
+    },
+    "feature_words": {
+      "bay": "njatrakt",
+      "cape": "nenrakt",
+      "coast": "njatrtsi",
+      "ford": "hjonakt",
+      "forest": "karhakr",
+      "grove": "kerhitkonr",
+      "hill": "onontas",
+      "isle": "venotr",
+      "lake": "njatr",
+      "marsh": "tekwentr",
+      "mountain": "onontr",
+      "narrows": "kanawr",
+      "neck": "njarr",
+      "pass": "onontker",
+      "plain": "hentr",
+      "ridge": "onontkar",
+      "river": "hjonr",
+      "road": "ohar",
+      "sea": "njatrvan",
+      "stream": "hjonsa",
+      "track": "skenr",
+      "vale": "hjonkonr",
+      "waste": "werr",
+      "way": "ohentr",
+      "wood": "kerhitr"
+    },
+    "resources": {
+      "bean": "sahetr",
+      "deer": "skenontr",
+      "fur": "honwr",
+      "horse": "hross",
+      "iron": "jarn",
+      "maize": "nenhstr",
+      "maple": "wahtr",
+      "salt": "wisr",
+      "silver": "silfr",
+      "squash": "nonsra"
+    },
+    "settlement_words": {
+      "citadel": "kanonsetr",
+      "city": "kanatborg",
+      "fort": "kanvirki",
+      "hamlet": "kanatas",
+      "market": "tenhinr",
+      "port": "hjonhofn",
+      "temple_town": "kanonhof",
+      "town": "kanatkr",
+      "village": "kanatr"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Norse dithematic ([quality|animal](stem) + element: Jarn-haugr, iron-hill; Svart-skogr, black-forest) layered over Woodland long compounds ([quality|feature] + place: Onekwenhtara-karhakonha, red-forest): the chief seat Vinheim (the vine-home), Kanata-by (the longhouse-town beside the Norse steading).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "hild"
+      ],
+      "male": [
+        "r",
+        "ulfr",
+        "arr"
+      ]
+    },
+    "patronymic_form": "the Norse settler-stock keep the dithematic name + -son / -dottir patronymic (and an aett lineage-name for the chief houses); the Woodland People keep the ohwachira (matrilineal clan, by animal-totem) and the clan-held name bestowed by the clan-mother (Iakoia:ner); the kinhold fuses both - a konungr who is also seated by the clan-mothers of the longhouse he was wedded into.",
+    "toponymic_suffixes": [
+      "heim",
+      "by",
+      "staedr / -stad",
+      "kanata-",
+      "karhakon-",
+      "kahyonha- / -ononta"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen Norse virki and howes and abandoned palisade-kanata: 'the Howe of the [aett]', 'the broken Virki of [name]', 'the empty Kanata of [clan]', 'the Ghost-Longhouse'",
+    "military_units": "the konungr's hird (sworn war-troop / comitatus) and the [clan-totem] war-parties: 'the Hird of Vinheim', 'the Wolf-clan warriors', 'the Iron-helms', 'the Hawk war-party'",
+    "ships": "the longship and the forest river-craft, named in Norse kennings and Woodland totems: 'the Wave-Stallion', 'Raven of the Skogr', 'the Swift Heron', 'Forest-Shadow'",
+    "taverns": "'The [Adjective] [Noun]' and the longhouse: 'The Red Antler', 'The Boar and Oar', 'the Turtle Longhouse'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Norse reflexes PRIMARY (from family_germanic.json theonym_ancestors, the norse column), Woodland variants SECONDARY (from family_north_american.json theonym_sets.woodland; labial-free, matching real Iroquoian), never real Norse gods or real Indigenous powers. Shared pantheon, two registers. Alignment PROVISIONAL ([Neutral]): a settled frontier kindred - the Norse ancestor-cult (the deified aett-dead) and the Woodland clan-and-forest spirits both read Neutral; the great powers are invoked situationally at the hof-grove and the rite-longhouse rather than worshipped wholesale.",
+    "clergy_ladder": {
+      "1": "Hof-thraell (temple-servant, novice) / Rotitsenhaienthon (Woodland rite-helper)",
+      "3": "Godi (priest-chief) / Rotihontsa (faithkeeper)",
+      "5": "Hof-godi (temple-priest) / Kowa-rotihontsa (head faithkeeper)",
+      "7": "Yfir-godi (high priest) / Royaner-tha (council ritual-chief)",
+      "9": "Allsherjar-godi (the supreme priest of the realm) / Kanonhsiyonni-tha (the council's high keeper)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, when warded, keep their morphs + a dread epithet: Maraxus -> Marhr the War-Brand (Woodland Waraksonon the War-Fire); Vacidus -> Vakr the Unmaker (Woodland Wasidonon the Devourer); Lusanto -> Lusandr the Hoard-Worm (Woodland Rusanonon the Greed-Serpent).",
+    "holy_symbol_motifs": {
+      "Geyandr": "a great oak rooted deep in the earth above the longhouse",
+      "Orlund": "an iron sword crossed with a war-club",
+      "Thulr": "a sun-wheel over the longship's prow"
+    },
+    "religious_orders_pattern": "the Hof (Norse temple) or Lundr (sacred grove) of [power] beside the Woodland Kanonhses (rite-longhouse) and the forest-grove: 'the Hof of Thulr', 'the Kanonhses of Tularonon', 'the Lundr of Geyandr'.",
+    "saints_pattern": "the deified aett-dead (the war-honored ancestors of the settler-houses, kept at the howe) and the founders of the kindred-peace and the honored clan-mothers and sachems, kept in the thing's recital and the council's recital; honored at the howe, the hof-grove and the burial-grove.",
+    "sample_deity_renames": {
+      "Gaiandus": "Geyandr (Woodland Kayanonon) - the enduring earth, the earth-holder",
+      "Numeno": "Nymir (Woodland Nunaronon) - air, sky-wisdom, lightning",
+      "Orlandus": "Orlund (Woodland Oranhonon) - iron, oath, war",
+      "Realta": "Rjalta (Woodland Realwenne) - the mother, mercy, the clan-mother of the powers",
+      "Tulrius": "Thulr (Woodland Tularonon) - the sun, the day-keeper, justice"
+    },
+    "the_one": "Eitnir (Norse; Woodland Aterhonon) - the distant Ancient One, the Sky-Holder-Above, acknowledged but set aside, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eitnir - as the tyrant-gods to be defied.",
+      "Lawful": "Venerates the Lawful powers of the canon - Eitnir foremost - and names the Chaotic powers as demons to be warded.",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead (the deified aett-dead of the settler-houses, kept at the howe) and the Woodland clan- and forest-spirits (the karhakonha-powers and the clan-totems), with the thanksgivings to the growing things; the great powers invoked situationally at the hof-grove and the rite-longhouse rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Norse clanhold ladder, ascending, with the Woodland sachem co-titles beneath. Hersir (local kindred-chieftain, war-leader of a district) barony over a Hersirdaemi; Mark-vordr (march-warden) march over a Mork; Jarl (earl, the great kindred-lord) county over a Jarldom; Stor-jarl (great earl, over-jarl) duchy; Fylkir (leader of a folk-host, a confederation of kindreds) principality over a Fylki; Konungr (king, raised by the thing and the kindreds) kingdom over a Konungriki; Yfir-konungr (over-king, high-king of all the kindreds) empire over the Stor-riki (the great realm). This is a kindred-king (raised and judged by the thing, not an absolute feudal monarch), NOT a feudal lord. The Woodland substrate keeps its own council beneath: the royaner / hoyaneh (sachems), the rotiskenrakehte (war-leaders), seated and deposed by the clan-mothers (Iakoia:ner). The godi (Norse priest-chief) and the rotihontsa (Woodland faithkeeper) stand outside the ladder. Rank titles fuse the real Old Norse and Woodland registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Jarl (duchy)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Emperor": "Empress",
+      "Jarl": "Duchess",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Fylkir": "Fylkis-kona",
+      "Hersir": "Hersis-kona",
+      "Jarl": "Jarlinna",
+      "Konungr": "Drottning",
+      "Mark-vordr": "Mark-kona",
+      "Stor-jarl": "Stor-jarlinna",
+      "Yfir-konungr": "Yfir-drottning"
+    },
+    "government": "clanhold (a Norse kindred-kingship entwined with the Woodland longhouse-clans: the konungr and his jarls at the crown, the hersar over the kindreds, the karls sworn to the hird; the thing counsels and the clan-mothers (Iakoia:ner) seat and unseat the chiefs, the Woodland sachem-council (royaner) endures beneath - kindred-and-comitatus bound, NOT a centralized feudal state)",
+    "heir": "Konungs-barn (the king's child, the throne-worthy heir; among the Woodland kindred a chief's seat is conferred within the clan by the Iakoia:ner, not inherited father-to-son)",
+    "honorifics": {
+      "champion": "Kappi (Norse champion) / Rotiskenrakehte (Woodland war-leader)",
+      "elder": "Gamall / Thotiron (the eldest)",
+      "lady": "Frua / Iakoia:ner (clan-mother)",
+      "lord": "Drottinn / Royaner (Woodland sachem)",
+      "your_grace": "Drottinn minn"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hersirdaemi",
+        "ruler": "Baron",
+        "ruler_native": "Hersir"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Jarldom",
+        "ruler": "Count",
+        "ruler_native": "Jarl"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Stor-jarldom",
+        "ruler": "Jarl",
+        "ruler_native": "Stor-jarl"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Stor-riki",
+        "ruler": "Emperor",
+        "ruler_native": "Yfir-konungr"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Konungriki",
+        "ruler": "King",
+        "ruler_native": "Konungr"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Mork",
+        "ruler": "Marquis",
+        "ruler_native": "Mark-vordr"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Fylki",
+        "ruler": "Prince",
+        "ruler_native": "Fylkir"
+      }
+    },
+    "vassalage": {
+      "fealty": "Eidr (the sworn oath) / Kaswentha (the covenant-belt)",
+      "liege": "Drottinn",
+      "tribute": "Skattr (Norse tribute) / Atste (the Woodland gift)",
+      "vassal": "Karl (sworn free-man) / Rotiskenrakehte (Woodland warrior)"
+    }
+  }
+}

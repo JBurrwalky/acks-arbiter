@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "aryastan",
+      "csv_id": "BASE_04",
+      "culture_class": "base",
+      "catalog_number": null,
+      "demonym": "Aryastani",
+      "toponym": "Aryastan",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ"
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "weights": {
+        "Lawful": 0.55,
+        "Neutral": 0.45
+      },
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.7,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.2,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.3,
+      "end_state": "fading"
+    },
+    "infrastructure": {
+      "road_propensity": 0.85
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.3,
+        "mercantile": 0.3,
+        "religious": 0.2,
+        "arcane": 0.2
+      },
+      "preferred_troop_types": [
+        "archers",
+        "heavy_cavalry",
+        "heavy_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0,
+        "civility": 1.0,
+        "epistemic_curiosity": 0.5,
+        "affective_compassion": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "aryastan",
+    "phonemic_palette": "Old Persian (Indo-Iranian): vowels a i u with long a/i/u; spirants th(0)/x(kh)/f; sibilants s/sh/z/zh and c(ts); r l; nasals m n; semivowels y v/w; aspirate h; characteristic endings -a, -ah, -ish, -iya, -ana, -aspa(horse), -arta(truth), -data(law-given), -farnah(glory); theophoric stems are the Old-Persian-shifted canon morphs (Turvasa-, Urlaspa-, Arta-, Baga-).",
+    "phenotype_notes": "Features of the Human analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Old Persian",
+      "language_family": "near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "imperial_bureaucracy",
+    "values": {
+      "core_values": [
+        "honor",
+        "law",
+        "duty"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "breaking the law-code"
+      ],
+      "attitude_toward_outsiders": "tolerant"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Human register; deity-morphs in name_bank 'axsatran'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "stone halls of the Axsatran"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 5,
+      "patron_powers": [
+        "light",
+        "law",
+        "wisdom"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Aryastani (Persian) — the generic Persian base culture (BASE_04); civilized.",
+      "one_paragraph": "The Aryastani are the generic Persian base culture (BASE_04) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest, taiga. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Persian register (lexicon, titles, religion, and names) of its source member culture."
+    }
+  }
+}

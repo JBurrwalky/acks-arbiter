@@ -1,0 +1,452 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Gens Valeria",
+      "the Gens Aurelia",
+      "the Gens Tullia",
+      "the Gens Caelia",
+      "the Gens Cassia",
+      "the Gens Fabia",
+      "the Teraso-i house",
+      "the Hagano-i house",
+      "the Iwano-i house",
+      "the Atriamus house",
+      "the Acasima house",
+      "the Megumarus-i house",
+      "Teraso-marusvich",
+      "Hagano-secusvich",
+      "Iwano-rusvich",
+      "Hagano-em-bushusvich",
+      "Teraso-tulliusvich"
+    ],
+    "dungeon_ruin": [
+      "the ruined Sirarx"
+    ],
+    "epithet": [
+      "Ferrus the Iron",
+      "Magnus the Great",
+      "Aquila the Eagle",
+      "the Sun-blessed",
+      "of the Sun-Isles",
+      "the Far-marching",
+      "the Wave-rider",
+      "Justus the Just",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Acagnusaiastum",
+      "Acarufusamus",
+      "Albusaranum",
+      "Altuscampus",
+      "Aranovuscavus",
+      "Argentumcollis",
+      "Atrocruscomitum",
+      "Aureuscubus",
+      "Aurumfauces",
+      "Austeriamus",
+      "Borusinsima",
+      "Chaiter",
+      "Comeumlacus",
+      "Extramisacum",
+      "Ferrumorum",
+      "Ferrusnagarus",
+      "Higastusnumus",
+      "Hisuumonus",
+      "Intratogus",
+      "Kinumumus",
+      "Magnusurus",
+      "Nisterusvallis",
+      "Parvusvatarum",
+      "Pulchrusvia",
+      "Sacrimusaiastum",
+      "Salisamus",
+      "Sitanusaranum",
+      "Superuscampus",
+      "Ultuscavus",
+      "Umaruscollis"
+    ],
+    "military_unit": [
+      "Legio Prima Ferrata",
+      "the Crimson Sonus",
+      "the Eagle-Standard"
+    ],
+    "personal_female": [
+      "Aurelia Valeria",
+      "Cornelia Tullia",
+      "Realta Caelia",
+      "Numia Fabia",
+      "Livia Octavia",
+      "Severina Cassia",
+      "Megumarus-imia",
+      "Hanaca",
+      "Chiyoca",
+      "Sumireca Valeria",
+      "Meguma-Tullia",
+      "Teraso-imia",
+      "Kiyomica",
+      "Sayurica Aurelia",
+      "Realta-imia",
+      "Aoica Caelia",
+      "Teraso-mara",
+      "Hagano-seca",
+      "Iwano-ra",
+      "Hagano-em-busha",
+      "Teraso-Tulla",
+      "Gaiandus",
+      "Gaiandusa",
+      "Numeno",
+      "Numenoa",
+      "Orlandus",
+      "Orlandusa",
+      "Realta",
+      "Realtaa",
+      "Tulrius",
+      "Tulriusa"
+    ],
+    "personal_male": [
+      "Marcus Valerius",
+      "Lucius Aurelius",
+      "Gaius Tullius",
+      "Titus Caelius",
+      "Tulrian Cassian",
+      "Orlandus Severus",
+      "Gaiandus Fabius",
+      "Numenius Octavian",
+      "Teraso-marus",
+      "Hagano-secus",
+      "Iwano-rus",
+      "Terasomarus Valerius",
+      "Hagano-em-bushus",
+      "Takeshus Caelius",
+      "Katsurus Aurelius",
+      "Teraso-Tullius",
+      "Megumarus-us",
+      "Hanacus",
+      "Chiyocus",
+      "Meguma-Tullius",
+      "Teraso-us",
+      "Kiyomicus",
+      "Realta-us",
+      "Gaiandus",
+      "Gaiandusus",
+      "Numeno",
+      "Numenous",
+      "Orlandus",
+      "Orlandusus",
+      "Realta",
+      "Realtaus",
+      "Tulrius",
+      "Tulriusus"
+    ],
+    "settlement": [
+      "Waitalia",
+      "Castra-Aquila",
+      "Urbs Magna",
+      "Portus Teraso",
+      "Acasirarx",
+      "Insima-Sacra",
+      "Acagnusamus",
+      "Acarufuscollis",
+      "Albusforum",
+      "Altusiantemplum",
+      "Aranovusmacium",
+      "Argentuminatus",
+      "Atrocrusmurum",
+      "Aureusirarx",
+      "Aurumtoricastra",
+      "Austerurbs",
+      "Borusvatarum",
+      "Chaiavicellus",
+      "Comeumamus",
+      "Extracollis",
+      "Ferrumforum",
+      "Ferrusiantemplum",
+      "Higastusmacium",
+      "Hisuuminatus",
+      "Intramurum",
+      "Kinumsirarx",
+      "Magnustoricastra",
+      "Nisterusurbs",
+      "Parvusvatarum",
+      "Pulchrusvicellus",
+      "Sacrimusamus",
+      "Saliscollis",
+      "Sitanusforum",
+      "Superusiantemplum",
+      "Ultusmacium",
+      "Umarusminatus",
+      "Vetusmurum",
+      "Acagnusirarx",
+      "Acarufustoricastra",
+      "Albusurbs"
+    ],
+    "ship": [
+      "Aquila of Waitalia",
+      "the Wave-Cutter",
+      "Dawn of the Eagle",
+      "Teraso-marus"
+    ],
+    "tavern": [
+      "The Gilded Amphora",
+      "The Floating Eagle",
+      "The Eagle and Torii",
+      "The Acarufus Acagnus",
+      "The Albus Argentum",
+      "The Altus Aurum",
+      "The Aranovus Chaia",
+      "The Atrocrus Comeum",
+      "The Aureus Ferrum",
+      "The Ferrus Hisuum",
+      "The Magnus Kinum",
+      "The Parvus Salis"
+    ]
+  },
+  "culture_id": "waitalia",
+  "family": [
+    "classical",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_waitalia.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "waitalia",
+  "lexicon": {
+    "adjectives": {
+      "black": "atrocrus",
+      "fair": "pulchrus",
+      "far": "ultus",
+      "golden": "aureus",
+      "great": "magnus",
+      "high": "altus",
+      "iron": "ferrus",
+      "little": "parvus",
+      "new": "aranovus",
+      "old": "vetus",
+      "red": "acarufus",
+      "sacred": "sacrimus",
+      "white": "albus"
+    },
+    "directional": {
+      "east": "higastus",
+      "inner": "intra",
+      "lower": "sitanus",
+      "north": "borus",
+      "outer": "extra",
+      "south": "auster",
+      "upper": "superus",
+      "west": "nisterus"
+    },
+    "feature_words": {
+      "bay": "urus",
+      "cape": "misacum",
+      "coast": "amus",
+      "ford": "vatarum",
+      "forest": "morum",
+      "hill": "collis",
+      "isle": "insima",
+      "lake": "lacus",
+      "marsh": "numus",
+      "mountain": "iamus",
+      "narrows": "fauces",
+      "neck": "cubus",
+      "pass": "togus",
+      "plain": "campus",
+      "ridge": "onus",
+      "river": "cavus",
+      "road": "via",
+      "sea": "umus",
+      "stream": "nagarus",
+      "track": "comitum",
+      "vale": "vallis",
+      "waste": "aranum",
+      "way": "iter",
+      "wood": "aiastum"
+    },
+    "resources": {
+      "bronze": "acagnus",
+      "gold": "aurum",
+      "horse": "umarus",
+      "iron": "ferrum",
+      "jade": "hisuum",
+      "rice": "comeum",
+      "salt": "salis",
+      "silk": "kinum",
+      "silver": "argentum",
+      "tea": "chaia"
+    },
+    "settlement_words": {
+      "citadel": "sirarx",
+      "city": "urbs",
+      "fort": "toricastra",
+      "hamlet": "vicellus",
+      "market": "forum",
+      "port": "minatus",
+      "temple_town": "iantemplum",
+      "town": "macium",
+      "village": "murum"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Latin construct-chains (Castra-[name], Via-[name], [adjective|resource](stem) + feature-word eliding before a vowel) layered over fused feature-compounds (quality + island/shrine element): the capital Waitalia (the eagle-realm, aquila + wa + -ia), Castra-Ferra (the iron-fort), Atriamus (black-mountain isle, ater + iamus), Insima-Magna (the great isle). Quality + feature in the Latin manner: magnus (great), ater (black), sacer (sacred) lead the compound; rendaku voicing simplifies to the Latin stop.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "imia"
+      ],
+      "male": [
+        "us",
+        "ius"
+      ]
+    },
+    "patronymic_form": "the Roman-descended civic stock keep an inherited gens (clan) name as a binomial/trinomial element (X VALERIUS) woven onto the fused frame; the Japonic-substrate folk keep a reduced -i- house-link (latinized from -no-) before the given name; nobility carry the gens and an earned cognomen. The throne fuses both - an Imperator who heads a gens and also an island gens-i- house with a -i- shrine-lineage. Order given-first.",
+    "toponymic_suffixes": [
+      "um",
+      "ia",
+      "Castra-",
+      "Via-",
+      "sima",
+      "iamus"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen castra and isle-shiro, buried civic temples and abandoned iantemplum: 'the Catacombs of Divus [name]', 'the Sunken Castra of [name]', 'the ruined Sirarx', 'the haunted Iantemplum of [name]'",
+    "military_units": "the Legio [ordinal] [cognomen] and the isle-house sonus (battle-formations): 'Legio Prima Ferrata (the Iron Legion)', 'the Crimson Sonus', 'the Eagle-Standard'",
+    "ships": "eagle-galleys and isle war-keels: 'Aquila of Waitalia', 'the Wave-Cutter', 'Dawn of the Eagle', 'Teraso-marus'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Floating Eagle', 'The Eagle and Torii'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (the agrippan column, the canonical pantheon keys: Tulrius, Orlandus, Gaiandus, Numeno, Realta, Aeternus), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, recut to Latin shape: Teraso, Hagano, Iwano, Numeno-no-kami, Megumarus, Aeternus-no-kami), never real Roman gods or Shinto kami. The fused rite identifies the temple-power and the shrine-kami as one face - the eagle and the rising sun as one: the pontifex of the forum-temple and the kannushi of the torii keep the same powers. All three alignments; the law-stele and the civic cult fused with the household shrine and the ancestral kami, the legion's oath and the samurai's way under one heaven.",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Micus (shrine-attendant, from Japonic miko)",
+      "3": "Sacerdos (priest) / Kannusus (shrine-priest, from Japonic kannushi)",
+      "5": "Flamen (senior priest) / Negus (from Japonic negi)",
+      "7": "Pontifex (high priest) / Gujus (chief priest, from Japonic guji)",
+      "9": "Pontifex Maximus / Saisus (high priest of the realm, from Japonic saishu)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the brood of the great serpent Lusanto (Latin) or the aramus (Japonic wild spirits), keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Jp Takebus the War-Flame); Vacidus -> Vacidus the Unmaker (Jp Utsurus the Devouring Void); Lusanto -> Lusanto the Coin-Serpent (Jp Koganus-Orochus the gold serpent).",
+    "holy_symbol_motifs": {
+      "Gaiandus": "the tilled field and the island-mountain beneath the law-stele",
+      "Orlandus": "an iron oath-ring and a bare blade crossed before a torii and the eagle-standard",
+      "Tulrius": "a rayed sun-disc above a balance, mirrored in a rising-sun mirror"
+    },
+    "religious_orders_pattern": "the Collegium (college/order) of the forum-temple or the Iantemplum (shrine-isle temple) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Iantemplum of Teraso', within its sacred court and torii-grove.",
+    "saints_pattern": "the deified founders and heroes (Divus/Diva [name], the justified dead) venerated at the civic temples, and the great ancestors enshrined as kami at the isle-iantemplum (the honored dead); 'Divus [name]' and 'the kami [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaiandus (Jp Iwano-no-kami) - the enduring earth and mountain",
+      "Numeno": "Numeno (Jp Amatkazus-no-kami) - air, sky and scribe-wisdom",
+      "Orlandus": "Orlandus (Jp Hagano-no-kami) - iron, oath, war, the blade and the eagle",
+      "Realta": "Realta (Jp Megumarus-hime) - the mother, mercy and healing",
+      "Tulrius": "Tulrius (Jp Teraso-no-kami) - the sun and right-rule, the rayed sun-disc and the rising sun"
+    },
+    "the_one": "Aeternus (the One / True God; Jp shrine-name Takamus-no-kami) - the distant Ancient One, the High-Heaven One above the myriad powers, honored in liturgy not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-flame and the devouring serpent, the storm-kami and the mountain-oni - and names the Lawful powers, and Aeternus, as the tyrant-powers to be defied.",
+      "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just sun, Orlandus of the sworn oath, Realta the merciful, Numeno of the law - at the forum-temple and the torii-grove alike, and names the Chaotic powers the brood of the great serpent Lusanto or the aramus (the wild spirits), warded; the law-stele and the civic rite, the legion's oath and the samurai's way, bind together",
+      "Neutral": "the deified dead (the divi of the gens inscribed on the law-stele and the senzavi enshrined at the household iantemplum) and the civic-and-isle spirits of the forum and the shrine-isles; the great powers invoked at temple and torii situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Latin native ladder, ascending, beneath an English display ladder (Baron/Marquis/Count/[Daimyo]/Prince/King/[Imperator]). The empire-tier DISPLAY ruler is the approved commonly-known foreign term 'Imperator' (the Roman imperial style, its native form remaining Imperator) and the duchy-tier DISPLAY ruler is 'Daimyo' (the great island-house lord, the Japonic-substrate co-rank, its native Latin form remaining Dux); all other display tiers are English. Native: Castellanus (castle-lord) barony; Limitanus (frontier-warden, from the Roman limes/limitanei) march; Comes (companion-count) county; Dux (war-leader, the duke - styled the Daimyo) duchy over a Ducatus; Princeps (first-citizen prince) principality; Rex (king) kingdom over a Regnum; Imperator (commander, the imperial style) empire over the Imperium. The Japonic substrate keeps its shugo-governor and kannushi-priest beneath the Roman crown; the pontifex of the forum and the kannushi of the torii stand together. Rank native-forms use the real Latin register (allowed); 'Imperator' and 'Daimyo' are the approved foreign display terms.",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the empire which uses the approved commonly-known term 'Imperator' (the Roman imperial style) and the duchy which uses 'Daimyo' (the great island-house lord). The *_native conlang (Latin) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Castellanus": "Castellana",
+      "Comes": "Comitissa",
+      "Dux": "Ducissa",
+      "Imperator": "Imperatrix",
+      "Limitanus": "Limitana",
+      "Princeps": "Principissa",
+      "Rex": "Regina"
+    },
+    "government": "feudal (a fused eagle-and-shrine realm: the Imperator and his patrician kin at the crown over the island-provinces, the Comes-counts over the urbs civic-provinces, the great island-houses - the daimyo of the shrine-isles - sworn beneath; the pontifex-priesthood of the forum and the kannushi-shrine-keepers serve the one rite together, the legion and the samurai under one eagle)",
+    "heir": "Caesar (heir-designate to the Imperator; the crown prince)",
+    "honorifics": {
+      "champion": "Eques (Roman knight) / Bushus (the warrior, from Japonic bushi, latinized)",
+      "elder": "Senior (the elder)",
+      "lady": "Domina",
+      "lord": "Dominus",
+      "your_grace": "Eminentia",
+      "your_majesty": "Maiestas"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Castellania",
+        "ruler": "Baron",
+        "ruler_native": "Castellanus"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Comitatus",
+        "ruler": "Count",
+        "ruler_native": "Comes"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Ducatus",
+        "ruler": "Daimyo",
+        "ruler_native": "Dux"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Imperium",
+        "ruler": "Imperator",
+        "ruler_native": "Imperator"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Regnum",
+        "ruler": "King",
+        "ruler_native": "Rex"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Limitania",
+        "ruler": "Marquis",
+        "ruler_native": "Limitanus"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Principatus",
+        "ruler": "Prince",
+        "ruler_native": "Princeps"
+      }
+    },
+    "vassalage": {
+      "fealty": "Fides (faith) / Chugus (loyal fealty, from Japonic chugi, latinized)",
+      "liege": "Patronus",
+      "tribute": "Tributum / Nengus (the isle-render, from Japonic nengu, latinized)",
+      "vassal": "Cliens (client) / Keraius (the retainer, from Japonic kerai, latinized)"
+    }
+  }
+}

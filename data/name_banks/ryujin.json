@@ -1,7 +1,8 @@
 {
   "alignment_allowed": [
     "Lawful",
-    "Neutral"
+    "Neutral",
+    "Chaotic"
   ],
   "categories": {
     "clan_house": [
@@ -17,18 +18,18 @@
       "Shinkai",
       "Ryusei",
       "Wadatsu",
-      "Ie Ryutaro",
-      "Ie Tenma",
-      "Ie Kaito",
-      "Ie Seiji",
-      "Ie Ryunosuke",
-      "Ie Takumi",
-      "Ie Kanemori",
-      "Ie Shinji",
-      "Ie Tatsuya",
-      "Ie Umito",
-      "Ie Reizan",
-      "Ie Koryu"
+      "Iega Ryutaro",
+      "Iega Tenma",
+      "Iega Kaito",
+      "Iega Seiji",
+      "Iega Ryunosuke",
+      "Iega Takumi",
+      "Iega Kanemori",
+      "Iega Shinji",
+      "Iega Tatsuya",
+      "Iega Umito",
+      "Iega Reizan",
+      "Iega Koryu"
     ],
     "epithet": [
       "the Dragon",
@@ -58,15 +59,15 @@
       "Gyokukoya",
       "Hakukubi",
       "Higashimichi",
-      "Kinmisaki",
-      "Kinumori",
-      "Kitanagare",
-      "Kokuno",
-      "Komenuma",
-      "Minamoka",
-      "Nishone",
-      "Reiseto",
-      "Seishima",
+      "Imiseimisaki",
+      "Kinmori",
+      "Kinushinagare",
+      "Kitano",
+      "Kokunuma",
+      "Komoka",
+      "Minamone",
+      "Nishiseto",
+      "Reishima",
       "Seidotani",
       "Shintoge",
       "Shinjumi",
@@ -141,37 +142,37 @@
       "Ryu-miya",
       "Shinju-to",
       "Akahama",
-      "Chahonjo",
+      "Chahonbo",
       "Daichi",
-      "Enjiin",
-      "Furujo",
-      "Ginmachi",
-      "Gyokuminato",
-      "Hakumiyako",
+      "Enjo",
+      "Furumachi",
+      "Ginminato",
+      "Gyokumiyabyo",
+      "Hakumiyajo",
       "Higashimura",
-      "Kinoka",
-      "Kinusato",
-      "Kitawatari",
-      "Kokuhama",
-      "Komehonjo",
-      "Minamichi",
-      "Nishijiin",
-      "Reijo",
-      "Seimachi",
-      "Seidominato",
-      "Shinmiyako",
+      "Imiseoka",
+      "Kinsato",
+      "Kinushiwatari",
+      "Kitahama",
+      "Kokuhonbo",
+      "Komichi",
+      "Minamijo",
+      "Nishimachi",
+      "Reiminato",
+      "Seidomiyabyo",
+      "Shinmiyajo",
       "Shinjumura",
       "Shioka",
       "Shitasato",
       "Showatari",
       "Sotohama",
-      "Takahonjo",
+      "Takahonbo",
       "Tetsichi",
-      "Uchijiin",
-      "Uejo",
-      "Akamachi",
-      "Chaminato",
-      "Daimiyako",
+      "Uchijo",
+      "Uemachi",
+      "Akaminato",
+      "Chamiyabyo",
+      "Daimiyajo",
       "Enmura",
       "Furoka"
     ],
@@ -187,11 +188,11 @@
       "The Dai Gin",
       "The En Gyoku",
       "The Furu Kin",
-      "The Haku Kinu",
-      "The Kin Kome",
-      "The Koku Seido",
-      "The Rei Shinju",
-      "The Sei Shio",
+      "The Haku Kinushi",
+      "The Imisei Kome",
+      "The Kin Seido",
+      "The Koku Shinju",
+      "The Rei Shio",
       "The Shin Tetsu"
     ]
   },
@@ -219,7 +220,7 @@
       "new": "shin",
       "old": "furu",
       "red": "aka",
-      "sacred": "sei",
+      "sacred": "imisei",
       "white": "haku"
     },
     "directional": {
@@ -266,24 +267,24 @@
       "pearl": "shinju",
       "rice": "kome",
       "salt": "shio",
-      "silk": "kinu",
+      "silk": "kinushi",
       "silver": "gin",
       "tea": "cha"
     },
     "settlement_words": {
-      "citadel": "honjo",
-      "city": "miyako",
+      "citadel": "honbo",
+      "city": "miyajo",
       "fort": "jo",
       "hamlet": "sato",
       "market": "ichi",
       "port": "minato",
-      "temple_town": "jiin",
+      "temple_town": "miyabyo",
       "town": "machi",
       "village": "mura"
     }
   },
   "morphology": {
-    "compounding_rule": "[clan] no [given]; toponyms feature/quality + type, often on'yomi: Dai-jo (great-castle), Ryu-to (dragon-capital), Kin-zan (gold-mountain).",
+    "compounding_rule": "[clan] no [given]; toponyms feature/quality + type, often on'yomi: Dai-jo (great-castle), Ryu-to (dragon-capital), Kin-zan (gold-mountain); rendaku voicing in compounds (kawa -> -gawa).",
     "gendered_endings": {
       "female": [
         "ko"
@@ -294,7 +295,7 @@
         "maru"
       ]
     },
-    "patronymic_form": "clan/house name (-shi / ichizoku) first, then given; Sino-Japanese court titles; -no- linking; on'yomi style-names for officials and clergy.",
+    "patronymic_form": "clan/house name (-shi / ujizo) first, then given; Sino-Japanese court titles; -no- linking; on'yomi style-names for officials and clergy.",
     "toponymic_suffixes": [
       "jo",
       "to",
@@ -312,7 +313,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Ryujin is SYNCRETIC (the Sino-Japanese honji-suijaku BELIEF): the world HOLDS each power to be one being under two faces - a Chinese celestial official (Sinitic name) and a native kami (Japonic name). This is a belief, NOT a naming operation: the temple-namer never concatenates the two faces. Each holy site takes ONE name, chosen by its building type (see naming_rule), so naming costs exactly what a single-pantheon culture costs. Across a province the player sees the celestial face on Miao/Jiin halls and the kami face on Miya/Jinja shrines, and infers they are the same power - the syncretism surfaces through the spread of names, not within any one name. Faces draw on BOTH family_east_asian.json theonym sets; never real gods. Lawful/Neutral; the dragon-powers of sea and storm are especially honored (Ryujo, the dragon-realm).",
+    "_note": "Ryujin is SYNCRETIC (the Sino-Japanese honji-suijaku BELIEF): the world HOLDS each power to be one being under two faces - a Chinese celestial official (Sinitic name) and a native kami (Japonic name). This is a belief, NOT a naming operation: the temple-namer never concatenates the two faces. Each holy site takes ONE name, chosen by its building type (see naming_rule), so naming costs exactly what a single-pantheon culture costs. Across a province the player sees the celestial face on Miao/Jiin halls and the kami face on Miya/Jinja shrines, and infers they are the same power - the syncretism surfaces through the spread of names, not within any one name. Faces draw on BOTH family_east_asian.json theonym sets; never real gods. Lawful/Neutral/Chaotic (all human cultures, per the alignment pass); the dragon-powers of sea and storm are especially honored (Ryujo, the dragon-realm).",
     "clergy_ladder": {
       "1": "Doji (acolyte-child)",
       "3": "Shinkan / Daoshi (priest)",
@@ -376,13 +377,32 @@
       "_belief": "one power, two faces",
       "celestial": "Tentei (Aiteng, Highest Heaven)",
       "kami": "Takami-no-kami (the High-Heaven kami)"
+    },
+    "worship_by_alignment": {
+      "Chaotic": "venerates the Chaotic powers of the canon under both faces (Maluo/Takebi-no-kami, Wuci/Utsuro-no-kami, Lusan/Kogane-Orochi), and names the Lawful celestial order - and Tentei - as the tyrant-heaven to be defied.",
+      "Lawful": "venerates the Lawful powers under both faces - Tentei/Takami-no-kami on high, Tuli-di/Terashi-no-kami the just, Aolan-jun/Hagane-no-kami of the sworn war, Lianta-mu/Megumi-hime the merciful - and wards the Chaotic powers as ma / oni; the celestial rite and the kami-shrine bind alike.",
+      "Neutral": "the ancestral dead (senzo) of the dragon-houses and the local earth-and-grain and sea powers; the great celestial officials and the kami invoked situationally at the Miao-hall and the Jinja-shrine; the dragon-kings of the sea especially honored."
     }
   },
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Sino-Japanese sinicized monarchy, ascending. The Tei (emperor; on'yomi of Chinese 'di') over the O (kings) and Shinno (royal princes); the bureaucracy of Bugyo (commissioner) and Kokushi (province-governor) on the Chinese/Ritsuryo model; the Aji are the local lords (Ryukyuan register); Sakimori guard the frontier. (Rank titles are the real Sino-Japanese/Ryukyuan register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "Sino-Japanese sinicized monarchy, ascending. The Tei (emperor; on'yomi of Chinese 'di') over the O (kings) and Shinno (royal princes); the bureaucracy of Bugyo (commissioner) and Kokushi (province-governor) on the Chinese/Ritsuryo model; the Aji are the local lords (Ryukyuan register); Sakimori guard the frontier. DISPLAY titles are English, save the approved foreign terms Daimyo (duchy) and Shogun (kingdom). The *_native forms are the real Sino-Japanese/Ryukyuan register, for NPC dialogue.",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, save the approved foreign terms set in 'ruler' (Daimyo for the duchy, Shogun for the kingdom). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Prince": "Princess",
+      "Shogun": "Queen"
+    },
+    "female_forms_native": {
       "Aji": "Anji",
       "Bugyo": "Onna-bugyo",
       "Kokushi": "Onna-kokushi",
@@ -402,32 +422,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Aji-ryo",
-        "ruler": "Aji"
+        "domain": "Barony",
+        "domain_native": "Aji-ryo",
+        "ruler": "Baron",
+        "ruler_native": "Aji"
       },
       "county": {
-        "domain": "Gun",
-        "ruler": "Bugyo"
+        "domain": "County",
+        "domain_native": "Gun",
+        "ruler": "Count",
+        "ruler_native": "Bugyo"
       },
       "duchy": {
-        "domain": "Kuni",
-        "ruler": "Kokushi"
+        "domain": "Duchy",
+        "domain_native": "Kuni",
+        "ruler": "Daimyo",
+        "ruler_native": "Kokushi"
       },
       "empire": {
-        "domain": "Teikoku",
-        "ruler": "Tei"
+        "domain": "Empire",
+        "domain_native": "Teikoku",
+        "ruler": "Emperor",
+        "ruler_native": "Tei"
       },
       "kingdom": {
-        "domain": "Okoku",
-        "ruler": "O"
+        "domain": "Kingdom",
+        "domain_native": "Okoku",
+        "ruler": "Shogun",
+        "ruler_native": "O"
       },
       "march": {
-        "domain": "Sakai",
-        "ruler": "Sakimori"
+        "domain": "March",
+        "domain_native": "Sakai",
+        "ruler": "Marquis",
+        "ruler_native": "Sakimori"
       },
       "principality": {
-        "domain": "Shinno-ryo",
-        "ruler": "Shinno"
+        "domain": "Principality",
+        "domain_native": "Shinno-ryo",
+        "ruler": "Prince",
+        "ruler_native": "Shinno"
       }
     },
     "vassalage": {

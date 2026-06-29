@@ -1,0 +1,456 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Cland Conaill",
+      "the Ua Neill",
+      "the Cland Cormaic",
+      "the Ua Brennain",
+      "the Cland Lugaid",
+      "the Theronides",
+      "the Kalliades",
+      "the Lysandrides",
+      "the Aristides",
+      "the Eumenides",
+      "the Ua Diarmata",
+      "the Demetriades",
+      "Macconall",
+      "Macniall",
+      "Macdiarmaid",
+      "Maccormac",
+      "Macbrennos",
+      "Macaodhan",
+      "Macruadhan",
+      "Macfergal",
+      "Macdonncha",
+      "Maclugaid",
+      "Mactheron",
+      "Mackallias"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Nemed",
+      "the Cairn of the Ri",
+      "the broken Dun-rath"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Hound-of-Galanpolis",
+      "the Spear-king",
+      "ho Megas",
+      "the Oath-keeper",
+      "City-warden",
+      "the Far-marcher",
+      "Storm-voiced",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Airgiracra",
+      "Amachacta",
+      "Ardatrap",
+      "Banbearna",
+      "Beagbothar",
+      "Bocaol",
+      "Creumhacnoc",
+      "Deargcoill",
+      "Deisceartcolpa",
+      "Dubhcorrach",
+      "Eachdrima",
+      "Fadadruim",
+      "Fionnearam",
+      "Iaranngleann",
+      "Iartharinis",
+      "Inistma",
+      "Iochtarloch",
+      "Isteachmag",
+      "Morporas",
+      "Naviarpotam",
+      "Nuasli",
+      "Oirthearsliabh",
+      "Olannsruth",
+      "Ortalas",
+      "Orgacra",
+      "Salannacta",
+      "Seanatrap",
+      "Siotbearna",
+      "Tuaisceartbothar",
+      "Uachtarcaol"
+    ],
+    "military_unit": [
+      "s sluagh and the polis levies:",
+      ","
+    ],
+    "personal_female": [
+      "Niamh",
+      "Aoife",
+      "Deirdre",
+      "Sadhbh",
+      "Etain",
+      "Mor",
+      "Findabair",
+      "Theodora",
+      "Kallisto",
+      "Stratonike",
+      "Eirene",
+      "Lysandra",
+      "Daphne",
+      "Arete",
+      "Aodhin",
+      "Ruadhin",
+      "Eumenin",
+      "Gaian",
+      "Gaianin",
+      "Numan",
+      "Numanin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Conall",
+      "Niall",
+      "Diarmaid",
+      "Cormac",
+      "Brennos",
+      "Aodhan",
+      "Ruadhan",
+      "Fergal",
+      "Donncha",
+      "Lugaid",
+      "Theron",
+      "Kallias",
+      "Lysandros",
+      "Ariston",
+      "Demetrios",
+      "Nikandros",
+      "Eumenes",
+      "Stratos",
+      "Etaan",
+      "Theodoran",
+      "Lysandran",
+      "Gaian",
+      "Gaianan",
+      "Numan",
+      "Numanan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Galanpolis",
+      "Dun-Conaill",
+      "Toran-polis",
+      "Neapolis",
+      "Rath-Cormaic",
+      "Akropolis-cairn",
+      "Airgiracta",
+      "Amachagra",
+      "Ardasta",
+      "Banbaile",
+      "Beagcathbal",
+      "Boclachan",
+      "Creumhacnoc",
+      "Deargdunfror",
+      "Deisceartliman",
+      "Dubhnemiar",
+      "Eachporas",
+      "Fadarathacar",
+      "Fionnacta",
+      "Iarannagra",
+      "Iartharasta",
+      "Inabaile",
+      "Iochtarcathbal",
+      "Isteachclachan",
+      "Morcnoc",
+      "Naviardunfror",
+      "Nualiman",
+      "Oirthearnemiar",
+      "Olannporas",
+      "Orathacar",
+      "Orgacta",
+      "Salannagra",
+      "Seanasta",
+      "Siotbaile",
+      "Tuaisceartcathbal",
+      "Uachtarclachan",
+      "Airgircnoc",
+      "Amachdunfror",
+      "Ardliman",
+      "Banemiar"
+    ],
+    "ship": [
+      "the Wave-Hound",
+      "Raven of Galanpolis",
+      "the Nike",
+      "Pride of the Muir"
+    ],
+    "tavern": [
+      "The Amber Kylix",
+      "The Spear and Olive",
+      "The Golden Curach",
+      "The Ard Airgir",
+      "The Ban Bo",
+      "The Beag Creumha",
+      "The Dearg Each",
+      "The Dubh Iarann",
+      "The Fada Ina",
+      "The Fionn Olann",
+      "The Iarann Or",
+      "The Mor Salann"
+    ]
+  },
+  "culture_id": "ionbria",
+  "family": [
+    "celtic",
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_ionbria.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "ionbria",
+  "lexicon": {
+    "adjectives": {
+      "black": "dubh",
+      "fair": "fionn",
+      "far": "fada",
+      "golden": "orga",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarann",
+      "little": "beag",
+      "new": "nua",
+      "old": "sean",
+      "red": "dearg",
+      "sacred": "naviar",
+      "white": "ban"
+    },
+    "directional": {
+      "east": "oirthear",
+      "inner": "isteach",
+      "lower": "iochtar",
+      "north": "tuaisceart",
+      "outer": "amach",
+      "south": "deisceart",
+      "upper": "uachtar",
+      "west": "iarthar"
+    },
+    "feature_words": {
+      "bay": "colpa",
+      "cape": "acra",
+      "coast": "acta",
+      "ford": "poras",
+      "forest": "coill",
+      "hill": "cnoc",
+      "isle": "inis",
+      "lake": "loch",
+      "marsh": "corrach",
+      "mountain": "sliabh",
+      "narrows": "caol",
+      "neck": "istma",
+      "pass": "bearna",
+      "plain": "mag",
+      "ridge": "druim",
+      "river": "potam",
+      "road": "bothar",
+      "sea": "talas",
+      "stream": "sruth",
+      "track": "atrap",
+      "vale": "gleann",
+      "waste": "earam",
+      "way": "sli",
+      "wood": "drima"
+    },
+    "resources": {
+      "bronze": "creumha",
+      "cattle": "bo",
+      "gold": "or",
+      "grain": "siot",
+      "horse": "each",
+      "iron": "iarann",
+      "salt": "salann",
+      "silver": "airgir",
+      "wine": "ina",
+      "wool": "olann"
+    },
+    "settlement_words": {
+      "citadel": "rathacar",
+      "city": "cathbal",
+      "fort": "dunfror",
+      "hamlet": "clachan",
+      "market": "agra",
+      "port": "liman",
+      "temple_town": "nemiar",
+      "town": "asta",
+      "village": "baile"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Goidelic compounds ([fort-type|quality|saint](stem) + element: Dun-derg, red-fort; Ard-mor, great-height) layered over Hellenic civic compounds (feature/quality + -polis / linking -o-: Neapolis, Melanoros): the capital Galanpolis (the Gauls' city), Dun-Toran (Toran's-fort), Toran-polis (Toran's-city).",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "a",
+        "is"
+      ],
+      "male": [
+        "an",
+        "es",
+        "eus"
+      ]
+    },
+    "patronymic_form": "the Goidelic ruling stock carry the Mac- (son of) / Ua- (descendant of) patronymic and the fine/cland lineage-name (the war-cland of the ri); the Hellenic populace keep the -ides / -ades patronymic and the polis/deme demonym of origin; the throne fuses both - a ri who also bears an archon-seat and a polis-title.",
+    "toponymic_suffixes": [
+      "Dun-",
+      "Rath-",
+      "Cill-",
+      "Ard-",
+      "Mag-",
+      "polis",
+      "os / -on",
+      "eia / -ia"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "sunken poleis and fallen Celtic duns: 'the Akropolis of [name]', 'the Sunken Nemed', 'the Cairn of the Ri', 'the broken Dun-rath'",
+    "military_units": "the ri's sluagh (the sworn hosting / war-band) and the polis levies: 'the Sluagh of Galanpolis', 'the Spear-cland', 'the Bronze Phalanx of the poleis'",
+    "ships": "the war-curach and the long-keel, named in Celtic kennings and Hellenic virtue-names: 'the Wave-Hound', 'Raven of Galanpolis', 'the Nike', 'Pride of the Muir'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Spear and Olive', 'The Golden Curach'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Celtic GOIDELIC reflexes PRIMARY (family_celtic theonym_set), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Celtic/Greek gods. Alignment PROVISIONAL: the Celtic war-oath and the cland's hosting meet the Hellenic civic law and the polis' settled order.",
+    "clergy_ladder": {
+      "1": "Cele-nemid (temple-servant) / Neokoros",
+      "3": "Drui (priest)",
+      "5": "Ard-drui (high priest) / Hiereus",
+      "7": "Primh-drui (chief priest) / Archiereus",
+      "9": "Sinser-drui (eldest priest) / Megas Hierophant"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fuath (Celtic spectres) or -daimon (Hellenic demon), keep their morphs + an epithet: Maraxus -> Maragan the War-Brand (Hell. Maraxos the Tyrant-Flame); Vacidus -> Faicid the Unmaker (Hell. Vakidos-daimon); Lusanto -> Losand the Hoard-Worm (Hell. Lusandos the Drowner-of-Gold).",
+    "holy_symbol_motifs": {
+      "Gaian": "the standing stones above the olive-terrace",
+      "Orlann": "an iron spear crossed with an oath-ring",
+      "Toran": "a sun-wheel over a crossed spear and scales"
+    },
+    "religious_orders_pattern": "the Nemed (Celtic sacred grove) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Nemed of Toran', 'the Temenos of Tulrios'.",
+    "saints_pattern": "the deified ri and the heroes of the ruling cland (the war-dead honored at the cairn / the dun), and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaian (Hell. Gaiandros) - the enduring earth, cold, endurance",
+      "Numeno": "Numan (Hell. Numenos) - air, lightning, sky-wisdom",
+      "Orlandus": "Orlann (Hell. Orlandros) - iron, oath, war",
+      "Realta": "Realtan (Hell. Realtia) - the mother, mercy, healing",
+      "Tulrius": "Toran (Hell. Tulrios) - the sun, fire, and justice"
+    },
+    "the_one": "Eternan (Celtic; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eternan - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers fuath (spectres) / daimones, warded and unworshipped; the cland-oath and the polis' civic law bind alike, the sworn hosting and the ordered polis the social ideal",
+      "Neutral": "the ancestral war-dead (the deified ri and the heroes of the ruling cland) and the city-heroes of the poleis (the heroon-dead); the great powers invoked at the nemed-grove and the polis-temple situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Goidelic ladder, ascending, with the Hellenic substrate co-titles beneath. Tigerna (lord) barony over a Tigernas; Flaith-criche (lord of the border) march over a Crich (the border-land); Flaith (noble lord) county over a Flaithes; Toisech (chief / war-leader) duchy over a Toiseces; Ri-tuaithe (king of a tuath) principality over a Tuath (the petty kingdom); Ruiri (over-king) kingdom over a Ruirecht; Ard-ri (high king) empire over an Ard-rige (the high-kingship). The conquered poleis keep their Hellenic archon (city-magistrate) and strategos (general / fleet-commander) beneath the Celtic crown - the county ruler is displayed by the archon's title. The brithem (judge) and the fili/ollam (poet-sage), and the Hellenic hierophant, stand outside the ladder. Rank titles fuse the real Gaelic and Greek registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Ard-ri": "Ard-rigan",
+      "Flaith": "Banflaith",
+      "Flaith-criche": "Banflaith-criche",
+      "Ri-tuaithe": "Rigan-tuaithe",
+      "Ruiri": "Ruirigan",
+      "Tigerna": "Tigernain",
+      "Toisech": "Bantoisech"
+    },
+    "government": "feudal (a Goidelic war-aristocracy over the Hellenic poleis: the ri and his flaith-kin at the crown, the tigerna-lords and the archon-governors over the city-provinces, the sworn hosting of the cland bound to the throne; the archons and the strategoi of the fleets, the agora and the philosophers' schools serve beneath)",
+    "heir": "Tanaiste (the designated heir; the Hellenic Diadochos for the polis-line)",
+    "honorifics": {
+      "champion": "Caur (Goidelic champion) / Hippeus (Hellenic knight)",
+      "elder": "Sinser (the eldest) / Geron",
+      "lady": "Banflaith / Kyria",
+      "lord": "Flaith / Kyrios",
+      "your_grace": "A flaith / Megistos"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Tigernas",
+        "ruler": "Baron",
+        "ruler_native": "Tigerna"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Flaithes",
+        "ruler": "Archon",
+        "ruler_native": "Flaith"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Toiseces",
+        "ruler": "Duke",
+        "ruler_native": "Toisech"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Ard-rige",
+        "ruler": "Emperor",
+        "ruler_native": "Ard-ri"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Ruirecht",
+        "ruler": "King",
+        "ruler_native": "Ruiri"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Crich",
+        "ruler": "Marquis",
+        "ruler_native": "Flaith-criche"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Tuath",
+        "ruler": "Prince",
+        "ruler_native": "Ri-tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Luige (oath) / Horkos (Hellenic oath)",
+      "liege": "Flaith / Hegemon",
+      "tribute": "Cain (Goidelic tribute) / Phoros (Hellenic tribute)",
+      "vassal": "Cel-sine (sworn client) / Symmachos (Hellenic ally)"
+    }
+  }
+}

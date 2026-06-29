@@ -1,0 +1,450 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Theudingos",
+      "the Ermaningos",
+      "the Hrothingos",
+      "the Wiljingos",
+      "Bit-Tullaru",
+      "Bit-Erlands",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "the Hildingos",
+      "Bit-Riala",
+      "the Athalingos",
+      "Theudereiksson",
+      "Ermanareiksson",
+      "Gundomersson",
+      "Hrothareiksson",
+      "Wiljareiksson",
+      "Athalmersson",
+      "Theudemersson",
+      "Hildereiksson",
+      "Tullaru-iddinason",
+      "Warad-erlandsson",
+      "Numunu-nasirson",
+      "Iddin-tullaruson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Ekallu",
+      "the Howe of the Theudings"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "of the Two Rivers",
+      "the Oath-keeper",
+      "City-breaker",
+      "the Far-marcher",
+      "Storm-voiced",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Aldsagam",
+      "Austahus",
+      "Eisarnappar",
+      "Fagrbab",
+      "Fairrbamt",
+      "Glesdal",
+      "Gulthals",
+      "Hauharran",
+      "Hweitkakkar",
+      "Innkishad",
+      "Leitilkisht",
+      "Marhmark",
+      "Midnag",
+      "Mikilnar",
+      "Nithrnebir",
+      "Niwinereb",
+      "Nurthpadan",
+      "Raudser",
+      "Shewshadberg",
+      "Silbrtamth",
+      "Sipartapps",
+      "Suthtill",
+      "Swartugar",
+      "Tabtweg",
+      "Ufwids",
+      "Uknagam",
+      "Utahus",
+      "Weihelappar",
+      "Westbab",
+      "Aldsbamt"
+    ],
+    "military_unit": [
+      "hari and the city-standards:",
+      ","
+    ],
+    "personal_female": [
+      "Gunthild",
+      "Ermangund",
+      "Swanahild",
+      "Theudelinda",
+      "Hrothahild",
+      "Wiljagund",
+      "Tullaru-belit",
+      "Amat-Erlands",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Theudereika",
+      "Ermanareika",
+      "Gundomera",
+      "Hrothareika",
+      "Wiljareika",
+      "Athalmera",
+      "Theudemera",
+      "Hildereika",
+      "Warad-Erlanda",
+      "Naram-Erlanda",
+      "Erlands",
+      "Erlandsa",
+      "Gauands",
+      "Gauandsa",
+      "Numins",
+      "Numinsa",
+      "Riala",
+      "Rialaa",
+      "Thulrs",
+      "Thulrsa"
+    ],
+    "personal_male": [
+      "Theudereiks",
+      "Ermanareiks",
+      "Gundomers",
+      "Hrothareiks",
+      "Wiljareiks",
+      "Athalmers",
+      "Theudemers",
+      "Hildereiks",
+      "Tullaru-iddina",
+      "Warad-Erlands",
+      "Numunu-nasir",
+      "Iddin-Tullaru",
+      "Urlandu-bani",
+      "Argantu-zer",
+      "Gayandu-iddina",
+      "Naram-Erlands",
+      "Theudelinds",
+      "Argantu-ams",
+      "Erlands",
+      "Erlandss",
+      "Gauands",
+      "Gauandss",
+      "Numins",
+      "Numinss",
+      "Riala",
+      "Rialas",
+      "Thulrs",
+      "Thulrss"
+    ],
+    "settlement": [
+      "Ashurheim",
+      "Dur-Theuda",
+      "Kar-Thulrs",
+      "Bit-Tullaru",
+      "Eisarna-burgs",
+      "Til-Labiru",
+      "Aldsahus",
+      "Austalrab",
+      "Eisarnals",
+      "Fagrbitalh",
+      "Fairrdadm",
+      "Glesdimburg",
+      "Gulthekalburg",
+      "Hauhkapr",
+      "Hweitkar",
+      "Innmahir",
+      "Leitilnebir",
+      "Marhtill",
+      "Midahus",
+      "Mikilalrab",
+      "Nithrals",
+      "Niwibitalh",
+      "Nurthdadm",
+      "Raudimburg",
+      "Shewekalburg",
+      "Silbrkapr",
+      "Siparkar",
+      "Suthmahir",
+      "Swartnebir",
+      "Tabtill",
+      "Ufahus",
+      "Uknalrab",
+      "Utals",
+      "Weihelbitalh",
+      "Westdadm",
+      "Aldsdimburg",
+      "Austekalburg",
+      "Eisarnkapr",
+      "Fagrkar",
+      "Fairrmahir"
+    ],
+    "ship": [
+      "Pride of the Naru",
+      "the Iron Boar",
+      "Boat of Thulrs"
+    ],
+    "tavern": [
+      "The Lapis Cup",
+      "The Boar and Stele",
+      "The Alds Eisarn",
+      "The Eisarn Gles",
+      "The Fagr Gulth",
+      "The Fairr Marh",
+      "The Gulth Mid",
+      "The Hauh Shew",
+      "The Hweit Silbr",
+      "The Leitil Sipar",
+      "The Mikil Tabt",
+      "The Niwi Ukn"
+    ]
+  },
+  "culture_id": "ashurheim",
+  "family": [
+    "germanic",
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_ashurheim.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "ashurheim",
+  "lexicon": {
+    "adjectives": {
+      "black": "swart",
+      "fair": "fagr",
+      "far": "fairr",
+      "golden": "gulth",
+      "great": "mikil",
+      "high": "hauh",
+      "iron": "eisarn",
+      "little": "leitil",
+      "new": "niwi",
+      "old": "alds",
+      "red": "raud",
+      "sacred": "weihel",
+      "white": "hweit"
+    },
+    "directional": {
+      "east": "aust",
+      "inner": "inn",
+      "lower": "nithr",
+      "north": "nurth",
+      "outer": "ut",
+      "south": "suth",
+      "upper": "uf",
+      "west": "west"
+    },
+    "feature_words": {
+      "bay": "kishad",
+      "cape": "kakkar",
+      "coast": "ahus",
+      "ford": "nebir",
+      "forest": "kisht",
+      "hill": "till",
+      "isle": "nag",
+      "lake": "agam",
+      "march": "mark",
+      "marsh": "appar",
+      "mountain": "shadberg",
+      "narrows": "nereb",
+      "neck": "hals",
+      "pass": "bab",
+      "plain": "ugar",
+      "ridge": "bamt",
+      "river": "nar",
+      "road": "harran",
+      "sea": "tamth",
+      "stream": "tapps",
+      "track": "padan",
+      "vale": "dal",
+      "waste": "ser",
+      "way": "weg",
+      "wood": "wids"
+    },
+    "resources": {
+      "amber": "gles",
+      "bronze": "sipar",
+      "gold": "gulth",
+      "grain": "shew",
+      "horse": "marh",
+      "iron": "eisarn",
+      "lapis": "ukn",
+      "mead": "mid",
+      "salt": "tabt",
+      "silver": "silbr"
+    },
+    "settlement_words": {
+      "citadel": "ekalburg",
+      "city": "alrab",
+      "fort": "dimburg",
+      "hamlet": "kapr",
+      "market": "mahir",
+      "port": "kar",
+      "temple_town": "bitalh",
+      "town": "als",
+      "village": "dadm"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Germanic dithematic ([quality](stem) + element: Eisarna-burgs, iron-fort) layered over Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]): the capital Ashur-heim (Ashur's-home), Dur-Theuda (fort of the Theuda-house).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "at"
+      ],
+      "male": [
+        "s",
+        "um"
+      ]
+    },
+    "patronymic_form": "the Germanic ruling house keeps a dithematic lineage-name and -ingos; the Akkadian populace keep the 'mar-' (son of) patronymic and theophoric constructs; the throne fuses both - a thiudans who also carries a Bit- house-name.",
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur-",
+      "Kar-",
+      "Til-",
+      "heim",
+      "burg"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried ziggurats and fallen Germanic burgs: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu', 'the Howe of the Theudings'",
+    "military_units": "the Thiudans' hari (war-host) and the city-standards: 'the Hari of Ashurheim', 'the Standard of Erlands', 'the Iron-helms'",
+    "ships": "river-barges and war-keels: 'Pride of the Naru', 'the Iron Boar', 'Boat of Thulrs'",
+    "taverns": "'The [Adjective] [Noun]': 'The Lapis Cup', 'The Boar and Stele'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column), Akkadian variants SECONDARY (the family_near_eastern / hammuran morphs), never real Germanic/Mesopotamian gods. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Akkadian law-stele tradition.",
+    "clergy_ladder": {
+      "1": "Alhs-skalks (temple-servant) / Eribbiti",
+      "3": "Gudja (priest)",
+      "5": "Sangu (city-priest) / Weiha-gudja",
+      "7": "Ufar-gudja (high priest) / Urigallu",
+      "9": "Sinista-gudja (eldest priest) / Shatammu (temple-primate)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as skohsla (Gothic demons) or -lemnu (Akkadian evil), keep their morphs + an epithet: Maraxus -> Marahs the War-Brand (Akk Marakshu the City-Burner); Vacidus -> Wakiths the Unmaker (Akk Bakidu-lemnu); Lusanto -> Lusanths the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Erlands": "an iron sword crossed with the city-standard",
+      "Gauands": "the alluvial field beneath the ziggurat",
+      "Thulrs": "a sun-disc over a crossed sword and law-stele"
+    },
+    "religious_orders_pattern": "the Alhs (Germanic grove-temple) or Bit-ili (Akkadian god-house) of [power]: 'the Alhs of Thulrs', 'the Bit-ili of Tullaru'.",
+    "saints_pattern": "the Anses (the deified war-dead of the ruling house) and the deified law-givers of the cities, inscribed on the stele and honored at the howe and the ziggurat.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gauands (Akk Gayandu) - the enduring earth",
+      "Numeno": "Numins (Akk Numunu) - sky and scribe-wisdom",
+      "Orlandus": "Erlands (Akk Urlandu) - iron, oath, war",
+      "Realta": "Riala (Akk Rialtu) - the mother, mercy",
+      "Tulrius": "Thulrs (Akk Tullaru) - the sun and judgment"
+    },
+    "the_one": "Aiterns (Gothic; Akk Itarnu) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterns - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded; the war-oath and the law-stele bind alike",
+      "Neutral": "the ancestral war-dead (the Anses of the ruling house) and the city-spirits of the bit-ili; the great powers invoked at the alhs-grove and the temple situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Gothic ladder, ascending, with the Akkadian substrate co-titles beneath. Gardingus (king's-man) barony; Marka-frauja (march-lord) march; Kindins (provincial governor) county; Drauhtins (war-lord; *druhtinaz) duchy; Reiks (prince-ruler) principality; Thiudans (king) kingdom over a Thiudangardi (Gothic 'kingdom'); Sharr-Thiudans (the king-of-kings; Akk sharru + Gmc thiudans) empire over the Kishsha-Thiudi (the 'totality of the people'). The conquered cities keep their Akkadian shaknu (governor) and sangu (priest) beneath the Germanic crown. The gudja (priest) and the scribal shatammu stand outside the ladder. Rank titles fuse the real Gothic and Akkadian registers (allowed).",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Drauhtins": "Drauhtini",
+      "Gardingus": "Gardingjo",
+      "Kindins": "Kindini",
+      "Marka-frauja": "Marka-fraujo",
+      "Reiks": "Reikja",
+      "Sharr-Thiudans": "Sharrat-Thiudana",
+      "Thiudans": "Thiudana"
+    },
+    "government": "feudal (a Germanic war-aristocracy over the Akkadian temple-cities: the thiudans and his reiks-kin at the crown, the kindins-governors over the alu-cities, the gardingus-retainers sworn to the war-host; the sangu-priesthood and the scribal ekallu serve beneath)",
+    "heir": "Thiudans-barn (the king's child; the heir)",
+    "honorifics": {
+      "champion": "Wigands (Germanic warrior) / Redu (Akkadian soldier)",
+      "elder": "Sinista (the eldest)",
+      "lady": "Fraujo / Beltu",
+      "lord": "Frauja / Belu",
+      "your_grace": "Frauja meins"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Gardas",
+        "ruler": "Baron",
+        "ruler_native": "Gardingus"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Kindinassus",
+        "ruler": "Count",
+        "ruler_native": "Kindins"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Drauhti",
+        "ruler": "Duke",
+        "ruler_native": "Drauhtins"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Kishsha-Thiudi",
+        "ruler": "Emperor",
+        "ruler_native": "Sharr-Thiudans"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Thiudangardi",
+        "ruler": "King",
+        "ruler_native": "Thiudans"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Marka",
+        "ruler": "Marquis",
+        "ruler_native": "Marka-frauja"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Reiki",
+        "ruler": "Prince",
+        "ruler_native": "Reiks"
+      }
+    },
+    "vassalage": {
+      "fealty": "Treuwa (troth) / Ade (Akkadian oath)",
+      "liege": "Frauja",
+      "tribute": "Gild (Germanic) / Biltu (Akkadian)",
+      "vassal": "Skalks (servant) / Ardu (Akkadian)"
+    }
+  }
+}

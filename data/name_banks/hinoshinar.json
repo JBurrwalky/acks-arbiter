@@ -1,0 +1,445 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Bit-Tullaru",
+      "Bit-Urlandu",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "Bit-Terashu",
+      "Bit-Haganu",
+      "Bit-Iwanu",
+      "Bit-Rialtu",
+      "Bit-Megumu",
+      "the Kuru-yamu house",
+      "the Aka-shimnagu house",
+      "Tullaru-iddinason",
+      "Warad-urlanduson",
+      "Numunu-nasirson",
+      "Iddin-tullaruson",
+      "Urlandu-banison",
+      "Argantu-zerson",
+      "Gayandu-iddinason",
+      "Naram-urlanduson",
+      "Terashu-banison",
+      "Haganu-musmaruson",
+      "Warad-terashuson",
+      "Iwanu-nasirson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Ekallu",
+      "the ruined Shirkallu"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "of the Temple-Isles",
+      "the Oath-keeper",
+      "City-breaker",
+      "the Wave-rider",
+      "the Tiger",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Akaganaranu",
+      "Akkatappu",
+      "Chakuduru",
+      "Eluhamu",
+      "Eshuharranu",
+      "Furruhayshu",
+      "Higashukishadu",
+      "Hisuyukomichu",
+      "Huraskoru",
+      "Imellumisaku",
+      "Kamumuru",
+      "Kaspunaru",
+      "Kinnunumaru",
+      "Kinnu-mokku",
+      "Kitanonnu",
+      "Kiyusetu",
+      "Komushimnagu",
+      "Kurutannu",
+      "Kuruganutogu",
+      "Minamugaru",
+      "Nishumu",
+      "Qerburanu",
+      "Rabuwatru",
+      "Ruqyamu",
+      "Sehraranu",
+      "Shaplatappu",
+      "Shiruduru",
+      "Shiuhamu",
+      "Takkuharranu",
+      "Umaruhayshu"
+    ],
+    "military_unit": [
+      "s hari and the isle-house sonae :",
+      ","
+    ],
+    "personal_female": [
+      "Tullaru-belit",
+      "Amat-Urlandu",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Terashu-belit",
+      "Amat-Terashu",
+      "Megumu-himu",
+      "Rialtu-tabni",
+      "Terashu-rimti",
+      "Megumu-belit",
+      "Warad-Urlandtu",
+      "Iddin-Tullartu",
+      "Naram-Urlandtu",
+      "Haganu-musmartu",
+      "Warad-Terashtu",
+      "Takebu-martu",
+      "Gayandu",
+      "Gayandutu",
+      "Numunu",
+      "Numunutu",
+      "Rialtu",
+      "Rialtutu",
+      "Tullaru",
+      "Tullarutu",
+      "Urlandu",
+      "Urlandutu"
+    ],
+    "personal_male": [
+      "Tullaru-iddina",
+      "Warad-Urlandu",
+      "Numunu-nasir",
+      "Iddin-Tullaru",
+      "Urlandu-bani",
+      "Argantu-zer",
+      "Gayandu-iddina",
+      "Naram-Urlandu",
+      "Terashu-bani",
+      "Haganu-musmaru",
+      "Warad-Terashu",
+      "Iwanu-nasir",
+      "Terashu-iddina",
+      "Haganu-zer",
+      "Amatsukazu-bani",
+      "Takebu-maru",
+      "Gayandu",
+      "Gayanduu",
+      "Numunu",
+      "Numunuu",
+      "Rialtu",
+      "Rialtuu",
+      "Tullaru",
+      "Tullaruu",
+      "Urlandu",
+      "Urlanduu"
+    ],
+    "settlement": [
+      "Hinoshinar",
+      "Dur-Tullaru",
+      "Kar-Terashu",
+      "Bit-Tullaru",
+      "Aka-shirkallu",
+      "Til-Labiru",
+      "Akaganuhamu",
+      "Akkujinbitu",
+      "Chakumachu",
+      "Elumahiru",
+      "Eshuminatu",
+      "Furrumiyaku",
+      "Higashumuraru",
+      "Hisuyokku",
+      "Hurasatu",
+      "Imellushirkallu",
+      "Kamutoridimu",
+      "Kaspuwatru",
+      "Kinnuhamu",
+      "Kinnu-mujinbitu",
+      "Kitanumachu",
+      "Kiyumahiru",
+      "Komuminatu",
+      "Kurumiyaku",
+      "Kuruganumuraru",
+      "Minamokku",
+      "Nishusatu",
+      "Qerbushirkallu",
+      "Rabutoridimu",
+      "Ruquwatru",
+      "Sehruhamu",
+      "Shaplujinbitu",
+      "Shirumachu",
+      "Shiumahiru",
+      "Takkuminatu",
+      "Umarumiyaku",
+      "Akaganumuraru",
+      "Akkokku",
+      "Chakusatu",
+      "Elushirkallu"
+    ],
+    "ship": [
+      "Pride of the Naru",
+      "the Wave-Cutter",
+      "Boat of Tullaru",
+      "Terashu-maru"
+    ],
+    "tavern": [
+      "The Lapis Teahouse",
+      "The Floating Stele",
+      "The Lion and Torii",
+      "The Akku Akaganu",
+      "The Eshu Chaku",
+      "The Furru Hisuyu",
+      "The Huras Kaspu",
+      "The Imellu Kinnu",
+      "The Kiyu Kinnu-mu",
+      "The Kuru Komu",
+      "The Kuruganu Kuruganu",
+      "The Rabu Shiu"
+    ]
+  },
+  "culture_id": "hinoshinar",
+  "family": [
+    "near_eastern",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_hinoshinar.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "hinoshinar",
+  "lexicon": {
+    "adjectives": {
+      "black": "kuru",
+      "fair": "kiyu",
+      "far": "ruqu",
+      "golden": "huras",
+      "great": "rabu",
+      "high": "takku",
+      "iron": "kuruganu",
+      "little": "sehru",
+      "new": "eshu",
+      "old": "furru",
+      "red": "akku",
+      "sacred": "imellu",
+      "white": "shiru"
+    },
+    "directional": {
+      "east": "higashu",
+      "inner": "qerbu",
+      "lower": "shaplu",
+      "north": "kitanu",
+      "outer": "kamu",
+      "south": "minamu",
+      "upper": "elu",
+      "west": "nishu"
+    },
+    "feature_words": {
+      "bay": "uranu",
+      "cape": "misaku",
+      "coast": "hamu",
+      "ford": "watru",
+      "forest": "muru",
+      "hill": "okku",
+      "isle": "shimnagu",
+      "lake": "koru",
+      "marsh": "numaru",
+      "mountain": "yamu",
+      "narrows": "setu",
+      "neck": "kishadu",
+      "pass": "togu",
+      "plain": "ugaru",
+      "ridge": "onnu",
+      "river": "naru",
+      "road": "harranu",
+      "sea": "umu",
+      "stream": "atappu",
+      "track": "komichu",
+      "vale": "tannu",
+      "waste": "aranu",
+      "way": "duru",
+      "wood": "hayshu"
+    },
+    "resources": {
+      "bronze": "akaganu",
+      "gold": "kinnu",
+      "horse": "umaru",
+      "iron": "kuruganu",
+      "jade": "hisuyu",
+      "rice": "komu",
+      "salt": "shiu",
+      "silk": "kinnu-mu",
+      "silver": "kaspu",
+      "tea": "chaku"
+    },
+    "settlement_words": {
+      "citadel": "shirkallu",
+      "city": "miyaku",
+      "fort": "toridimu",
+      "hamlet": "satu",
+      "market": "mahiru",
+      "port": "minatu",
+      "temple_town": "jinbitu",
+      "town": "machu",
+      "village": "muraru"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]) layered over fused feature-compounds (quality + island/shrine element): the capital Hinoshinar (the temple-isle, hino + shinar), Dur-Tullaru (fort of Tullaru), Kuru-yamu (black-mountain), Aka-shirkallu (the red citadel).",
+    "gendered_endings": {
+      "female": [
+        "tu"
+      ],
+      "male": [
+        "u"
+      ]
+    },
+    "patronymic_form": "the Akkadian 'mar-' (son of) patronymic and theophoric constructs are the lead form; the Japonic substrate keeps a reduced clan-linking -nu- (from -no-) before the given name; nobility carry a Bit- house-name. The throne fuses both - a sharru who also heads an island Bit- house with a -nu- shrine-lineage.",
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur-",
+      "Kar-",
+      "Til-",
+      "shu",
+      "yamu"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried ziggurats and fallen isle-shiro: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu', 'the haunted Jinbitu of [name]', 'the ruined Shirkallu'",
+    "military_units": "the Sharru's hari (war-host) and the isle-house sonae (battle-formations): 'the Hari of Hinoshinar', 'the Standard of Urlandu', 'the Crimson Sonae'",
+    "ships": "river-barges and isle war-keels: 'Pride of the Naru', 'the Wave-Cutter', 'Boat of Tullaru', 'Terashu-maru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Lapis Teahouse', 'The Floating Stele', 'The Lion and Torii'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Akkadian canon-morphs PRIMARY (family_near_eastern / hammuran, the akkadian column), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column), never real Mesopotamian gods or Shinto kami. The fused rite identifies the temple-power and the shrine-kami as one face: the sangu of the ziggurat and the kannushi of the torii keep the same powers. All three alignments.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer) / Miku (shrine-attendant)",
+      "3": "Sangu (priest) / Kannushu",
+      "5": "Shangu Rabu (high priest) / Negu",
+      "7": "Urigallu (chief priest) / Guju",
+      "9": "Shatammu (temple-primate) / Saishu (high priest of the realm)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as -lemnu (Akkadian evil) or aramitama (Japonic wild spirits), keep their morphs + an epithet: Maraxus -> Marakshu the City-Burner (Jp Takebu the War-Flame); Vacidus -> Bakidu-lemnu the Unmaking (Jp Utsuru the Devouring Void); Lusanto -> Lusantu the Hoard-Worm (Jp Koganu-Orochu the gold serpent).",
+    "holy_symbol_motifs": {
+      "Gayandu": "the alluvial field and the island-mountain beneath the ziggurat",
+      "Tullaru": "a winged sun-disc above a mirror and law-stele",
+      "Urlandu": "an iron blade crossed before a torii and the city-standard"
+    },
+    "religious_orders_pattern": "the Bit-ili (god-house/temple) or the Jinbitu (shrine-isle temple) of [power]: 'the Bit-ili of Tullaru', 'the Jinbitu of Terashu', within its ziggurat-court and torii-grove.",
+    "saints_pattern": "the deified law-givers and heroes inscribed on the temple-stele, and the great ancestors enshrined as kami at the isle-jinbitu (the honored dead); 'the Just [name]', 'the kami [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gayandu (Jp Iwanu) - the enduring earth and mountain",
+      "Numeno": "Numunu (Jp Amatsukazu) - sky and scribe-wisdom",
+      "Orlandus": "Urlandu (Jp Haganu) - iron, oath, war",
+      "Realta": "Rialtu (Jp Megumu) - the mother, mercy",
+      "Tulrius": "Tullaru (Jp Terashu) - the sun and judgment"
+    },
+    "the_one": "Itarnu (Akkadian; Jp shrine-name Takamu-no-kami) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-flame and the devouring void, the storm-kami and the mountain-oni - and names the Lawful powers, and Itarnu, as the tyrant-powers to be defied.",
+      "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn oath, Rialtu the merciful - at the ziggurat and the torii-grove alike, and names the Chaotic powers lemnu (evil) or aramitama (the wild spirits), warded; the law-stele and the kami-rite bind together",
+      "Neutral": "the ancestral dead (the senzabu inscribed on the temple-stele and enshrined at the household jinbitu) and the city-and-isle spirits of the bit-ili and the shrine-isles; the great powers invoked at temple and torii situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Akkadian ladder, ascending, -u/-utu rhyme (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom over a Sharrutu; Shar-kishshati (king of the totality) empire over the Kishshatu. DISPLAY titles are English; the duchy display is set to 'Daimyo' as the apt, commonly-known term for the great island-house lord (the Japonic-substrate co-rank), its native Akkadian form remaining Turtanu. The Japonic substrate keeps its shugo-governor and kannushi-priest beneath the Akkadian crown; the gudja-equivalent sangu and the scribal shatammu stand outside the ladder. Rank native-forms use the real Akkadian register (allowed).",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the duchy which uses the approved commonly-known term 'Daimyo' (the great island-house lord). The *_native conlang (Akkadian) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Hazannu": "Hazannatu",
+      "Massaru": "Massartu",
+      "Rubu": "Rubatu",
+      "Shaknu": "Shaknatu",
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Turtanu": "Turtanutu"
+    },
+    "government": "feudal (a fused temple-and-isle realm: the sharru and his rubu-kin at the crown over the Tenka-isles, the shaknu-governors over the alu river-cities, the great island-houses - the daimyo of the shrine-isles - sworn beneath; the sangu-priesthood and the kannushi-shrine-keepers serve the rite together)",
+    "heir": "Mar-Sharri (son of the king; the crown heir)",
+    "honorifics": {
+      "champion": "Redu (Akkadian soldier) / Bushu (the warrior, from Japonic bushi)",
+      "elder": "Shibu (the eldest / elder)",
+      "lady": "Beltu",
+      "lord": "Belu",
+      "your_grace": "Beli (my lord)"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Shaknutu",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Daimyo",
+        "ruler_native": "Turtanu"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Kishshatu",
+        "ruler": "Emperor",
+        "ruler_native": "Shar-kishshati"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "King",
+        "ruler_native": "Sharru"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Massarutu",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ade (loyalty-oath)",
+      "liege": "Belu",
+      "tribute": "Biltu / Nengu (the isle-render, from Japonic nengu)",
+      "vassal": "Ardu (servant)"
+    }
+  }
+}

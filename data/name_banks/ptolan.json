@@ -1,7 +1,8 @@
 {
   "alignment_allowed": [
     "Lawful",
-    "Neutral"
+    "Neutral",
+    "Chaotic"
   ],
   "categories": {
     "clan_house": [
@@ -52,36 +53,36 @@
       "the Stern"
     ],
     "feature": [
-      "Anatolakra",
-      "Anakte",
-      "Argyrosatrapos",
-      "Boreaseremos",
-      "Chryseoshelos",
-      "Chrysoshodos",
-      "Dysishyle",
-      "Erythrosisthmos",
-      "Esokleisoura",
-      "Exokolpos",
-      "Halaslimne",
-      "Hieroslophos",
-      "Hypselosnape",
-      "Kalosnesos",
-      "Katoros",
-      "Leukospedion",
-      "Megasporos",
-      "Melaspotamos",
-      "Mikrosrhachis",
-      "Neosrhoos",
-      "Notostenon",
-      "Oinosthalassa",
-      "Othonewehat",
-      "Palaiosakra",
-      "Papyrosakte",
-      "Porphyratrapos",
-      "Senetjereremos",
-      "Sidereoshelos",
-      "Sideroshodos",
-      "Sitoshyle"
+      "Anatolakhetis",
+      "Anakra",
+      "Argyrosakte",
+      "Boreasatrapos",
+      "Dysisdeshretos",
+      "Erythroshelos",
+      "Esohodos",
+      "Exohyle",
+      "Halasisthmos",
+      "Hypselositropotamos",
+      "Kaloskleisoura",
+      "Katokolpos",
+      "Kemoslimne",
+      "Leukoslophos",
+      "Megasmeros",
+      "Mikrosmitos",
+      "Nebiosnape",
+      "Neosnesos",
+      "Notosoros",
+      "Oinosporos",
+      "Othonesekhetos",
+      "Palaiostenon",
+      "Papyrosthalassa",
+      "Porphyrawehatos",
+      "Senethymosakhetis",
+      "Sidereosakra",
+      "Siderosakte",
+      "Sitosatrapos",
+      "Teledeshretos",
+      "Zeshieroshelos"
     ],
     "military_unit": [
       "the Bronze Phalanx",
@@ -179,39 +180,39 @@
       "Niut-aat",
       "Limen Megas",
       "Anatolagora",
-      "Anakropolis",
-      "Argyrosakte",
-      "Boreasasty",
-      "Chryseosdemos",
-      "Chrysoskome",
-      "Dysislimen",
-      "Erythroslophos",
-      "Esoper-netjer",
-      "Exophrourion",
-      "Halaspolis",
-      "Hierosporos",
-      "Hypselosagora",
-      "Kalosakropolis",
-      "Katakte",
-      "Leukosasty",
-      "Megasdemos",
-      "Melaskome",
-      "Mikroslimen",
-      "Neoslophos",
-      "Notosper-netjer",
-      "Oinosphrourion",
-      "Othonepolis",
-      "Palaiosporos",
-      "Papyrosagora",
-      "Porphyrakropolis",
-      "Senetjerakte",
-      "Sidereosasty",
-      "Siderosdemos",
-      "Sitoskome",
-      "Telelimen",
+      "Anakte",
+      "Argyrosasty",
+      "Boreasdemos",
+      "Dysiskome",
+      "Erythroslimen",
+      "Esolophos",
+      "Exoniautopolis",
+      "Halaspernetpolis",
+      "Hypselosphrourion",
+      "Kalosporos",
+      "Katosebakropolis",
+      "Kemosagora",
+      "Leukosakte",
+      "Megasasty",
+      "Mikrosdemos",
+      "Nebioskome",
+      "Neoslimen",
+      "Notoslophos",
+      "Oinosniautopolis",
+      "Othonepernetpolis",
+      "Palaiosphrourion",
+      "Papyrosporos",
+      "Porphyrasebakropolis",
+      "Senethymosagora",
+      "Sidereosakte",
+      "Siderosasty",
+      "Sitosdemos",
+      "Telekome",
+      "Zeshieroslimen",
       "Anatolelophos",
-      "Anoper-netjer",
-      "Argyrosphrourion"
+      "Anoniautopolis",
+      "Argyrospernetpolis",
+      "Boreasphrourion"
     ],
     "ship": [
       "Nike",
@@ -221,22 +222,22 @@
     "tavern": [
       "The Amber Kylix",
       "The Golden Lotus",
-      "The Chryseos Argyros",
-      "The Erythros Chrysos",
-      "The Hieros Halas",
-      "The Hypselos Oinos",
-      "The Kalos Othone",
-      "The Leukos Papyros",
-      "The Megas Porphyra",
-      "The Melas Senetjer",
-      "The Mikros Sideros",
-      "The Neos Sitos"
+      "The Erythros Argyros",
+      "The Hypselos Halas",
+      "The Kalos Nebios",
+      "The Kemos Oinos",
+      "The Leukos Othone",
+      "The Megas Papyros",
+      "The Mikros Porphyra",
+      "The Nebios Senethymos",
+      "The Neos Sideros",
+      "The Palaios Sitos"
     ]
   },
   "culture_id": "ptolan",
   "family": [
-    "classical",
-    "near_eastern"
+    "near_eastern",
+    "classical"
   ],
   "generator": {
     "deterministic": true,
@@ -247,10 +248,10 @@
   "kit_id": "ptolan",
   "lexicon": {
     "adjectives": {
-      "black": "melas",
+      "black": "kemos",
       "fair": "kalos",
       "far": "tele",
-      "golden": "chryseos",
+      "golden": "nebios",
       "great": "megas",
       "high": "hypselos",
       "iron": "sidereos",
@@ -258,24 +259,24 @@
       "new": "neos",
       "old": "palaios",
       "red": "erythros",
-      "sacred": "hieros",
+      "sacred": "zeshieros",
       "white": "leukos"
     },
     "directional": {
       "east": "anatole",
       "inner": "eso",
-      "lower": "kato (Delta/north)",
+      "lower": "kato",
       "north": "boreas",
       "outer": "exo",
       "south": "notos",
-      "upper": "ano (Thebaid/south)",
+      "upper": "ano",
       "west": "dysis"
     },
     "feature_words": {
       "bay": "kolpos",
       "cape": "akra",
       "coast": "akte",
-      "desert": "eremos",
+      "desert": "deshretos",
       "ford": "poros",
       "forest": "hyle",
       "hill": "lophos",
@@ -285,22 +286,22 @@
       "mountain": "oros",
       "narrows": "stenon",
       "neck": "isthmos",
-      "oasis": "wehat",
+      "oasis": "wehatos",
       "pass": "kleisoura",
-      "plain": "pedion",
-      "ridge": "rhachis",
-      "river": "potamos",
+      "plain": "sekhetos",
+      "ridge": "akhetis",
+      "river": "itropotamos",
       "road": "hodos",
       "sea": "thalassa",
-      "stream": "rhoos",
+      "stream": "meros",
       "track": "atrapos",
       "vale": "nape",
-      "way": "poros"
+      "way": "mitos"
     },
     "resources": {
-      "gold": "chrysos",
+      "gold": "nebios",
       "grain": "sitos",
-      "incense": "senetjer",
+      "incense": "senethymos",
       "iron": "sideros",
       "linen": "othone",
       "papyrus": "papyros",
@@ -310,13 +311,13 @@
       "wine": "oinos"
     },
     "settlement_words": {
-      "citadel": "akropolis",
-      "city": "polis",
+      "citadel": "sebakropolis",
+      "city": "niautopolis",
       "fort": "phrourion",
       "hamlet": "kome",
       "market": "agora",
       "port": "limen",
-      "temple_town": "per-netjer",
+      "temple_town": "pernetpolis",
       "town": "asty",
       "village": "demos"
     }
@@ -353,7 +354,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Deity-names are morphs of the Agrippan canon (Hellenic primary, from classical theonym treatment; Egyptian variant from near_eastern theonym_sets), never real Greek/Egyptian gods. The Ptolan fuse the two cults (a Serapis-style syncretism): each power has a Hellenic court-name and an Egyptian temple-name, held to be one. Ptolan seeds/shifts Lawful or Neutral; its stance follows its CURRENT alignment (see worship_by_alignment). The polis-temple and the Egyptian Per-netjer keep the rites together.",
+    "_note": "Deity-names are morphs of the Agrippan canon (Hellenic reflexes primary, from classical theonym treatment; Egyptian variants secondary, from near_eastern theonym_sets), never real Greek/Egyptian gods. The Ptolan fuse the two cults (a Serapis-style syncretism): each power has a Hellenic court-name and an Egyptian temple-name, held to be one. Ptolan stance follows its CURRENT alignment (see worship_by_alignment). The polis-temple and the Egyptian Per-netjer keep the rites together.",
     "clergy_ladder": {
       "1": "Neokoros (temple-keeper)",
       "3": "Hiereus (priest)",
@@ -375,8 +376,9 @@
       "Realta": "Realta (Egy. Riaret) - the mother; Neutral-honored",
       "Tulrius": "Tulrios (Egy. Tjuraa) - sun and right-order; Lawful"
     },
-    "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral",
+    "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral, defied as the tyrant-god when Chaotic",
     "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers of the canon (Maraxos/Marakhu and their kin), and name the Lawful powers - and the One - as the tyrant-gods to be defied",
       "Lawful": "revere the One (Aiternos/Atjernaa) and the Lawful powers (Tulrios, Orlandros, Numenos, Gauandos), demonize the Chaotic powers",
       "Neutral": "all powers ambivalent; foreground the deified ancestors (the justified dead) and the local temple-cults of place"
     }
@@ -384,8 +386,22 @@
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Hellenic backbone, ascending, with an Egyptian overlay at the nome and the crown. Toparch barony; Phrourarch (garrison-commander) march; Nomarch (governor of an Egyptian nome) county; Strategos (general-governor) duchy; Dynastes (prince) principality; Basileus (king) kingdom; Basileus Megas, styled Per-aa (Pharaoh) to the native temples, over the realm. The Greek court and the Egyptian priesthood share the rule. (Rank titles are the real Greek/Egyptian register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "Hellenic backbone, ascending, with an Egyptian overlay at the nome and the crown. DISPLAY titles are English except two approved foreign terms: Archon (the Greek polis-magistrate) at county, and Pharaoh at kingdom (the Ptolemies styled themselves Pharaoh - the realm's iconic throne). ruler_native carries the full Greek register: Toparch barony; Phrourarch (garrison-commander) march; Nomarch (governor of an Egyptian nome) county; Strategos (general-governor) duchy; Dynastes (prince) principality; Basileus (king) kingdom; Basileus Megas, styled Per-aa (Pharaoh) to the native temples, empire. The Greek court and the Egyptian priesthood share the rule. (Rank titles are the real Greek/Egyptian register, allowed.)",
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Basileus": "Basilissa",
       "Basileus Megas (Per-aa)": "Basilissa Megale (Per-aat)",
       "Dynastes": "Dynastissa",
@@ -394,7 +410,7 @@
       "Strategos": "Strategissa",
       "Toparch": "Toparchissa"
     },
-    "government": "feudal (a Hellenistic kingdom over an Egyptian land: the Basileus wears the double crown, styled Per-aa to the native temples; the Greek polis-magistracy over the Egyptian nome-substrate)",
+    "government": "feudal (a Hellenistic kingdom over an Egyptian land: the Greek court styled Pharaoh to the native temples, wearing the double crown; the Greek polis-magistracy - the Archon - over the Egyptian nome-substrate)",
     "heir": "Diadochos (successor-designate)",
     "honorifics": {
       "knight": "Hippeus",
@@ -405,32 +421,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Toparchy",
-        "ruler": "Toparch"
+        "domain": "Barony",
+        "domain_native": "Toparchy",
+        "ruler": "Baron",
+        "ruler_native": "Toparch"
       },
       "county": {
-        "domain": "Nomos",
-        "ruler": "Nomarch"
+        "domain": "County",
+        "domain_native": "Nomos",
+        "ruler": "Archon",
+        "ruler_native": "Nomarch"
       },
       "duchy": {
-        "domain": "Strategia",
-        "ruler": "Strategos"
+        "domain": "Duchy",
+        "domain_native": "Strategia",
+        "ruler": "Duke",
+        "ruler_native": "Strategos"
       },
       "empire": {
-        "domain": "Autokratoria",
-        "ruler": "Basileus Megas (Per-aa)"
+        "domain": "Empire",
+        "domain_native": "Autokratoria",
+        "ruler": "Emperor",
+        "ruler_native": "Basileus Megas (Per-aa)"
       },
       "kingdom": {
-        "domain": "Basileia",
-        "ruler": "Basileus"
+        "domain": "Kingdom",
+        "domain_native": "Basileia",
+        "ruler": "Pharaoh",
+        "ruler_native": "Basileus"
       },
       "march": {
-        "domain": "Phrourarchia",
-        "ruler": "Phrourarch"
+        "domain": "March",
+        "domain_native": "Phrourarchia",
+        "ruler": "Marquis",
+        "ruler_native": "Phrourarch"
       },
       "principality": {
-        "domain": "Dynasteia",
-        "ruler": "Dynastes"
+        "domain": "Principality",
+        "domain_native": "Dynasteia",
+        "ruler": "Prince",
+        "ruler_native": "Dynastes"
       }
     },
     "vassalage": {

@@ -1,0 +1,458 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Rurikssons",
+      "the Sigurdssons",
+      "the Ingvarssons",
+      "the Haraldssons",
+      "the Bjornssons",
+      "the Hrolfssons",
+      "the xing Li",
+      "the xing Wang",
+      "the xing Zhao",
+      "the xing Chen",
+      "the xing Sun",
+      "the Eysteinssons",
+      "Sigurdrson",
+      "Thorsteinnson",
+      "Haraldrson",
+      "Ingvarrson",
+      "Olafrson",
+      "Rurikrson",
+      "Bjornson",
+      "Hrolfrson",
+      "Eysteinnson",
+      "Gunnarrson"
+    ],
+    "dungeon_ruin": [
+      "the Howe of the Jarls",
+      "the Drowned Kaupang"
+    ],
+    "epithet": [
+      "the Far-Sailed",
+      "Silk-getter",
+      "the Iron-handed",
+      "of the Great River",
+      "the Oath-keeper",
+      "Cheng-breaker",
+      "the Mandate-holder",
+      "Gold-tongue",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Austrannr",
+      "Efridaubr",
+      "Fagrdaur",
+      "Fjarridur",
+      "Gamallgangr",
+      "Gullinngjangr",
+      "Gullrgur",
+      "Hargvannr",
+      "Hvitrheir",
+      "Innrihur",
+      "Jannrhvangr",
+      "Jarnjaunr",
+      "Jurjingr",
+      "Litillkjaur",
+      "Marrlingr",
+      "Mikillinr",
+      "Mirlur",
+      "Nedrimur",
+      "Nordrskir",
+      "Nyrskjar",
+      "Rafskjarn",
+      "Raudrtser",
+      "Shenheiltur",
+      "Silfrvannr",
+      "Sirannr",
+      "Sudrdaubr",
+      "Svartrdaur",
+      "Tungrdur",
+      "Vestrgangr",
+      "Ytrigjangr"
+    ],
+    "military_unit": [
+      "s hird and the felag , plus the Sinitic Ying and the colored Banner:",
+      ","
+    ],
+    "personal_female": [
+      "Sigrun",
+      "Thordis",
+      "Gudrun",
+      "Ingunn",
+      "Ragnhild",
+      "Astrid",
+      "Yngvild",
+      "Halldis",
+      "Wang Yurong",
+      "Li Meixiang",
+      "Zhao Zhilan",
+      "Chen Wanqing",
+      "Sun Caiyun",
+      "Huang Yuyan",
+      "Sigurda",
+      "Haralda",
+      "Ingvara",
+      "Olafa",
+      "Rurika",
+      "Hrolfa",
+      "Gunnara",
+      "Geyandr",
+      "Geyandra",
+      "Nymir",
+      "Nymira",
+      "Orlund",
+      "Orlunda",
+      "Rjalta",
+      "Rjaltaa",
+      "Thulr",
+      "Thulra"
+    ],
+    "personal_male": [
+      "Sigurdr",
+      "Thorsteinn",
+      "Haraldr",
+      "Ingvarr",
+      "Olafr",
+      "Rurikr",
+      "Bjorn",
+      "Hrolfr",
+      "Eysteinn",
+      "Gunnarr",
+      "Li Zhongyan",
+      "Wang Mingyuan",
+      "Zhao Dewei",
+      "Chen Anguo",
+      "Sun Jingyao",
+      "Huang Baoshan",
+      "Zhou Wenbo",
+      "Xu Shenglong",
+      "Thorr",
+      "Ingr",
+      "Hallr",
+      "Geyandr",
+      "Geyandrr",
+      "Nymir",
+      "Nymirr",
+      "Orlund",
+      "Orlundr",
+      "Rjalta",
+      "Rjaltar",
+      "Thulr",
+      "Thulrr"
+    ],
+    "settlement": [
+      "Seres-vik",
+      "Jarn-cheng",
+      "Silki-jiang",
+      "Rurik-borg",
+      "Da-jiang-kaupang",
+      "Tuli-miao",
+      "Austrannr",
+      "Efrichenborg",
+      "Fagrchenkastr",
+      "Fjarridur",
+      "Gamallkunr",
+      "Gullinnlingr",
+      "Gullrmatvik",
+      "Harmjohof",
+      "Hvitrsjir",
+      "Innriskjvirki",
+      "Jannrtjenr",
+      "Jarntvangr",
+      "Jurannr",
+      "Litillchenborg",
+      "Marrchenkastr",
+      "Mikilldur",
+      "Mirkunr",
+      "Nedrilingr",
+      "Nordrmatvik",
+      "Nyrmjohof",
+      "Rafsjir",
+      "Raudrskjvirki",
+      "Shenheiltjenr",
+      "Silfrtvangr",
+      "Sirannr",
+      "Sudrchenborg",
+      "Svartrchenkastr",
+      "Tungrdur",
+      "Vestrkunr",
+      "Ytrilingr",
+      "Austrmatvik",
+      "Efrimjohof",
+      "Fagrsjir",
+      "Fjarriskjvirki"
+    ],
+    "ship": [
+      "the Silk-Serpent",
+      "the Wave-Stallion",
+      "Raven of the Jiang",
+      "Pride of the Vik"
+    ],
+    "tavern": [
+      "The Jade Cup",
+      "The Silk and Salt",
+      "The Far-Sailed Raven",
+      "The Fagr Gullr",
+      "The Fjarri Jannr",
+      "The Gamall Jarn",
+      "The Gullinn Jur",
+      "The Har Marr",
+      "The Hvitr Mir",
+      "The Jarn Raf",
+      "The Litill Silfr",
+      "The Mikill Sir"
+    ]
+  },
+  "culture_id": "seresmark",
+  "family": [
+    "germanic",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_seresmark.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "seresmark",
+  "lexicon": {
+    "adjectives": {
+      "black": "svartr",
+      "fair": "fagr",
+      "far": "fjarri",
+      "golden": "gullinn",
+      "great": "mikill",
+      "high": "har",
+      "iron": "jarn",
+      "little": "litill",
+      "new": "nyr",
+      "old": "gamall",
+      "red": "raudr",
+      "sacred": "shenheil",
+      "white": "hvitr"
+    },
+    "directional": {
+      "east": "austr",
+      "inner": "innri",
+      "lower": "nedri",
+      "north": "nordr",
+      "outer": "ytri",
+      "south": "sudr",
+      "upper": "efri",
+      "west": "vestr"
+    },
+    "feature_words": {
+      "bay": "vannr",
+      "cape": "kjaur",
+      "coast": "annr",
+      "ford": "dur",
+      "forest": "linr",
+      "hill": "lingr",
+      "isle": "daur",
+      "lake": "hur",
+      "marsh": "tser",
+      "mountain": "skjarn",
+      "narrows": "skjar",
+      "neck": "jingr",
+      "pass": "gvannr",
+      "plain": "jaunr",
+      "ridge": "gangr",
+      "river": "gjangr",
+      "road": "daubr",
+      "sea": "heir",
+      "stream": "skir",
+      "track": "tur",
+      "vale": "gur",
+      "waste": "hvangr",
+      "way": "lur",
+      "wood": "mur"
+    },
+    "resources": {
+      "amber": "raf",
+      "bronze": "tungr",
+      "gold": "gullr",
+      "grain": "mir",
+      "horse": "marr",
+      "iron": "jarn",
+      "jade": "jur",
+      "salt": "jannr",
+      "silk": "sir",
+      "silver": "silfr"
+    },
+    "settlement_words": {
+      "citadel": "chenkastr",
+      "city": "chenborg",
+      "fort": "skjvirki",
+      "hamlet": "kunr",
+      "market": "sjir",
+      "port": "matvik",
+      "temple_town": "mjohof",
+      "town": "tjenr",
+      "village": "tvangr"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Norse dithematic ([quality|animal|resource](stem) + element: Jarn-borg, iron-fort; Silki-vik, silk-bay) fused to Sinitic quality+type heads (Jin-cheng, golden-city; Da-jiang, great-river): the capital Seres-vik (the silk-trade bay), Jarn-cheng (the iron-walled city), Silki-jiang (the silk-river).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "dis",
+        "unn",
+        "jade"
+      ],
+      "male": [
+        "r",
+        "ulf",
+        "orm"
+      ]
+    },
+    "patronymic_form": "the Norse ruling stock keep the -son / -dottir patronymic and an aett (lineage) name; the Sinitic populace keep the clan-surname (xing) first, then the given name (ming), with generation-names within a zu; the throne fuses both - a konungr who carries both a -son patronymic and a granted xing of the Mandate-court.",
+    "toponymic_suffixes": [
+      "cheng",
+      "jiang",
+      "shan",
+      "guan",
+      "vik",
+      "borg",
+      "by",
+      "kaupang"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "sunken river-borgs and fallen warlord cheng: 'the Borg of [name]', 'the Howe of the Jarls', 'the Ruined Cheng of [warlord]', 'the Drowned Kaupang'",
+    "military_units": "the konungr's hird (war-band) and the felag (the sworn trade-and-war company), plus the Sinitic Ying (camp/army) and the colored Banner: 'the Hird of Seresmark', 'the Silk-felag', 'the Azure Banner of the cheng'",
+    "ships": "river-keels and silk-traders, named in Norse kennings: 'the Silk-Serpent', 'the Wave-Stallion', 'Raven of the Jiang', 'Pride of the Vik'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Cup', 'The Silk and Salt', 'The Far-Sailed Raven'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Norse reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Sinitic variants SECONDARY (family_east_asian theonym_sets.sinitic, rendered in the jinxian -di/-jun celestial register), never real Norse/Chinese gods. The Norse far-traders keep their oath-and-war powers; the conquered silk-empire keeps its Celestial Bureaucracy under the Mandate of Heaven, and the two are quietly identified (one power, two faces). Alignment PROVISIONAL (Lawful/Neutral): the Norse oath-and-trade felag meets the Sinitic Mandate-of-Heaven law-court.",
+    "clergy_ladder": {
+      "1": "Hof-thraell (temple-servant, novice) / Daoshi-tu",
+      "3": "Gothi (priest) / Daoshi",
+      "5": "Blot-gothi (sacrifice-priest) / Fashi (ritual-master)",
+      "7": "Hof-godi (high priest) / Gaogong",
+      "9": "Allsherjar-gothi (the supreme priest) / Tianshi (celestial master)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fjandr (Norse foes) or mo (Sinitic demon-marshals), keep their morphs + an epithet: Maraxus -> Marhr the War-Brand (Sinitic Maluo the War-Fire Marshal); Vacidus -> Vakr the Unmaker (Sinitic Wuci the Devourer); Lusanto -> Lusandr the Hoard-Worm (Sinitic Lusan the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Geyandr": "the green mountain over the grain-altar",
+      "Orlund": "an iron sword crossed with a war-keel's prow",
+      "Thulr": "a sun-disc over a crossed sword and the seal of office"
+    },
+    "religious_orders_pattern": "the Hof (Norse temple) or Miao (Sinitic temple) of [power]: 'the Hof of Thulr', 'the Miao of Tuli-di'; the ancestral Ci (Sinitic clan-shrine) for the zu.",
+    "saints_pattern": "the deified war-dead and konungar of the Norse aett, honored at the haugr (howe) and the hof; and the worthy officials and heroes of the silk-empire enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
+    "sample_deity_renames": {
+      "Gaiandus": "Geyandr (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
+      "Numeno": "Nymir (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
+      "Orlandus": "Orlund (Sinitic Aolan-jun) - iron, oath, war",
+      "Realta": "Rjalta (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy",
+      "Tulrius": "Thulr (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+    },
+    "the_one": "Eitnir (Norse; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eitnir - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eitnir foremost, Thulr the just, Orlund of the sworn war, Rjalta the merciful - and names the Chaotic powers fjandr (foes/devils) or the Sinitic mo (demon-marshals), warded and unworshipped; the felag-oath, the just konungr and the Mandate-throne are the social ideal",
+      "Neutral": "the ancestral war-dead (the Norse aett-forebears and the deified konungar) and the Sinitic ancestors (the zu) and local earth-and-grain powers; the great powers invoked at the hof and the miao situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Norse ladder, ascending, with the Sinitic mandarin co-titles beneath. Hersir (war-chieftain, local lord) barony over a Herad (district); Mark-jarl (march-jarl) march over the Mork (border-march); Lendr-madr (the landed king's-man) county over a Len (granted fief); Jarl (earl/great-lord) duchy over a Jarldom; Fylkir (folk-king, host-leader) principality over a Fylki; Konungr (king) kingdom over a Konungriki; Allra-Konungr (the king-of-all, the high-konungr who holds the Mandate-throne) empire over the Stor-riki (the 'great realm'). The conquered silk-empire keeps its Sinitic Wang (king-of-the-old-line, now a vassal-prince) and the five peerages Gong > Hou > Bo > Nan beneath the Norse crown, plus the Dudu frontier-commanders and the Confucian officials who run the cheng-cities. The gothi (Norse priest) and the Sinitic Daoshi stand outside the ladder. Rank titles fuse the real Old Norse and Chinese registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Jarl (duchy)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Emperor": "Empress",
+      "Jarl": "Duchess",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Allra-Konungr": "Allra-Drottning",
+      "Fylkir": "Fylkju",
+      "Hersir": "Hersis-kona",
+      "Jarl": "Jarlkona",
+      "Konungr": "Drottning",
+      "Lendr-madr": "Lend-kona",
+      "Mark-jarl": "Mark-jarlkona"
+    },
+    "government": "feudal (a Norse far-trader aristocracy over the Sinitic silk-empire: the konungr and his jarl-kin at the Mandate-throne, the jarls and hersar over the river-cheng, the felag-sworn huskarlar of the war-band; the Sinitic mandarinate - the wang, the five peerages and the Confucian officials - serve beneath and run the cheng-cities and the silk-revenues)",
+    "heir": "Konungs-son (the king's son; the heir; the Sinitic court calls him Taizi, the crown-prince)",
+    "honorifics": {
+      "champion": "Kappi (Norse champion) / Wushi (Sinitic warrior)",
+      "elder": "Eldri (the elder) / the Bixia at the Mandate-throne",
+      "lady": "Frua / Furen",
+      "lord": "Drottinn / Daren",
+      "your_grace": "Herra minn / Dianxia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Herad",
+        "ruler": "Baron",
+        "ruler_native": "Hersir"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Len",
+        "ruler": "Count",
+        "ruler_native": "Lendr-madr"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Jarldom",
+        "ruler": "Jarl",
+        "ruler_native": "Jarl"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Stor-riki",
+        "ruler": "Emperor",
+        "ruler_native": "Allra-Konungr"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Konungriki",
+        "ruler": "King",
+        "ruler_native": "Konungr"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Mork",
+        "ruler": "Marquis",
+        "ruler_native": "Mark-jarl"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Fylki",
+        "ruler": "Prince",
+        "ruler_native": "Fylkir"
+      }
+    },
+    "vassalage": {
+      "fealty": "Eidr (the sworn oath) / Mengyue (Sinitic sworn covenant)",
+      "liege": "Drottinn",
+      "tribute": "Skattr (Norse tribute) / Gongfu (Sinitic tribute)",
+      "vassal": "Thegn (sworn man) / Chen (Sinitic subject)"
+    }
+  }
+}

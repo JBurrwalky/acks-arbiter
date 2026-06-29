@@ -36789,3 +36789,39 @@ on-tick dispatch.
 - If desired, give Dfb/Dfd distinct biomes/subtypes (currently grouped with Dfa/Dfc).
 - Verify dungeon mouse-picking in-engine after the SubViewport wrap.
 - Consider a corner-connected test river for welded-chain regression coverage.
+
+## Session 2026-06-29 — Culture emergence Phase 1: base-only seeding + civ/clan + stricter seed biomes
+
+**Task:** Begin the culture-emergence build (docs/handoff_culture_emergence_build.md). Implement Phase 1 — restrict the human seed pool to the 11 BASE cultures, assign civ/clan per GDD §3.2, tighten seed biomes to developable-only terrain, and reconcile the kit/name-bank data.
+**Model used:** Opus 4.8 (exploration, data authoring, implementation, headless verification).
+**Completed:**
+- **Authored the 11 base mechanical kits** (`data/cultures/{thiodmark,albawyn,shinarur,aryastan,kemetra,quirium,hellaspol,hinowa,huaxia,tollanaz,manitland}.json`). The mechanical kits the seeder loads were still the OLD member roster — no base records existed. Each base derives its mechanical scalars from the member it "reuses" (per its conlang concept note: thiodmark←alani, albawyn←cuchulan, shinarur←hammuran, aryastan←axsatran, kemetra←abydosian, quirium←agrippan, hellaspol←achillean, hinowa←yamataian, huaxia←jinxian, tollanaz←tlanec, manitland←numinan), with overrides: `identity.culture_id/demonym/toponym/csv_id`, `culture_class="base"`, dropped `synthesis_sources`, `civ_or_clan` per §3.2 (thiodmark/albawyn/manitland = clan; other 8 = civ — note this OVERRIDES yamataian's clan member value for hinowa→civ), `alignment.allowed` = all three (§3.7), rewritten `terrain.seed_biomes`, `flavor.name_bank_key=<base>`, regenerated `flavor.flavor_text`. Generated via a scratchpad transform script + validated programmatically (all 11 OK).
+- **Restricted the human seed pool to bases.** `CultureSeeder._select_cultures` now builds the human pool via `_candidate_pool(..., bases_only=true)`, which filters `culture_class=="base"`. Added `CultureCatalogLoader.culture_class(record)` (default `"member"`). Demihuman/beastman selection unchanged. Old member kits stay on disk but are dormant (excluded by the marker) — physical retirement deferred to a controlled cleanup (no behavior change, since the marker already gates them; GDD Q11 Gundic retirement folds into that pass).
+- **Subtype-resolved seed-biome matching.** `CultureSeeder._hex_matches_term` no longer collapses `woods`→{forest,dense,taiga} / `clear`→any. Now: `forest`→woods+subtype `""`, `taiga`→`forest_taiga`, `dense forest`→`forest_dense`, `grassland`→clear+(`""`|`clear_grassland`), `savanna`→`clear_savanna`; kept tundra/hills/mountains arms (incl. the glacial/volcanic→any-mountains dwarf relaxation). Verified against the actual climate_generator subtype vocabulary; `clear_steppe`/`clear_scrub` are Phase-2 deforestation products (not painted at seed). Base seed_biomes drawn only from {grassland, savanna, forest, taiga} so humans never seed dense-forest/jungle/desert/tundra/swamp/glacial-or-volcanic mountains.
+- **Rebuilt the name banks.** `tools/build_name_banks.py` now emits 122 banks (was 65): 11 bases + 54 hybrids added, 10 old-member banks refreshed for the new title/alignment conventions. Freshness `--check` GREEN. This FIXED a pre-existing failing state (banks were missing for every new conlang kit at HEAD).
+**Decisions made:**
+- **Data-driven seeding gate** (`culture_class="base"` marker + accessor) rather than a hardcoded base-id list, so eventual deletion of old member kits is a pure cleanup with no behavior change. Don't reintroduce member-id allowlists.
+- **Base scalars copied from the representative member** (PROVISIONAL, engineering authority) — the conlang kits explicitly state each base reuses its member's register; mechanical tuning can follow later.
+- **Deferred physical retirement** of the ~54 old human member kits + Gundic to a dedicated pass (lower risk than deleting now; the marker dormant-izes them for seeding).
+- A few deep cosmetic flavor strings in the base kits still name the source member (e.g. "name_bank 'alani'", "stone halls of the Alani"); not load-bearing (the load-bearing name_bank_key/language/palette are correct). Left for a flavor-polish pass.
+**Interfaces defined or changed:**
+- `CultureCatalogLoader.culture_class(record: Dictionary) -> String` — "base" | "member" (default "member").
+- `CultureSeeder._candidate_pool(catalog, match_counts, t, bases_only := false)` — new 4th param; human call passes `true`.
+- `CultureSeeder._hex_matches_term` — now subtype-resolved (see above); seed-biome term vocabulary tightened.
+- Base mechanical kit shape: `mechanical.identity` carries `culture_class="base"` + `csv_id="BASE_0N"`, no `synthesis_sources`.
+- Every new `setting_*`-consuming system that filters human cultures should gate on `culture_class=="base"`, not tier alone.
+**Database changes:**
+- None. (Pure data-file + code change; `setting_polities` already carries `culture_id`/`civ_or_clan_state`.)
+**Tests added/updated:**
+- `test_setting_stage3.gd`: added `test_only_bases_seed_for_humans` (every seeded human culture has `culture_class=="base"`) and `test_humans_avoid_undevelopable_homelands` (no human homeland on jungle/desert/swamp/forest_dense/clear_tundra/mountains_glacial/mountains_volcanic). Suite 195→217 checks, GREEN.
+- `test_setting_name_banks.gd`: `EXPECTED_BANK_COUNT` 65→122 with a note that `--check` is the real authority. Suite GREEN (1850 checks).
+- Full isolated headless suite: **475 passed / 16 failed** on two consecutive runs (was 474/17 — net +1: name-banks freshness fixed, zero new failures). The 16 are the known pre-existing failures (combat ZoC/LOS/charge, proficiency popups, familiar/follower/magic-research/vassal UNIQUE, clanhold ledger, mass-combat, item cascade) — none touched by this work.
+**Known issues:**
+- Old human member kits (alani, cuchulan, hammuran, …) + Gundic still on disk (dormant). Their banks still build (part of the 122). Physical retirement is a deferred cleanup pass.
+- Cosmetic member-name residue in base kit flavor strings (see Decisions).
+- In-engine map-legend visual (base names in the culture legend) NOT spot-checked — a headless multi-generate roster dump was too slow (continuous-geography geo-gen); the deterministic Stage3 assertions cover the exit criteria. Recommend an editor spot-check when the map view is next opened.
+- Seeding homogeneity (GDD Q12): 11 bases is a much smaller pool than 65; whether early maps feel too homogeneous is an OPEN design question for Jedidiah, not a Phase-1 blocker (humans still seed ≥1 on a medium map).
+**Next session should:**
+- Phase 2 — territory gating: `effective_territory_cap(hex, dominant_race, civ_or_clan)` per GDD §4.2–4.4, gating `_advance_classification` (sim) + `classification_advancement.gd` (runtime); graduated deforestation (§5.2–5.4) as a timed cost via a runtime `_phase_deforestation`; reforestation. Add `clearing_progress` persistence (column or side table) + `sim_constants` (CLEAR_TICKS_STEP=20, CLEAR_TICKS_JUNGLE=30, REFOREST_*).
+- Controlled retirement pass for the old member kits + Gundic (delete `data/cultures/`, `data/conlang/`, `data/name_banks/` for the retired ids; re-run `build_name_banks.py --check`; update EXPECTED_BANK_COUNT).
+- (Optional) base-kit flavor-string polish + an in-engine seeding spot-check.

@@ -1,0 +1,455 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "per-Tjuraa",
+      "per-Oranetj",
+      "per-Geandaa",
+      "per-Numenaa",
+      "per-Riaret",
+      "sa-Tjuraa",
+      "per-Terashaa",
+      "per-Haganetj",
+      "per-Iwanaa",
+      "per-Megumaa",
+      "the Kem-djamaa house",
+      "the Aka-iushimaa house",
+      "Tjuraa-hotepson",
+      "Tjuraa-moseson",
+      "Oranetj-moseson",
+      "Mery-tjuraason",
+      "Sa-riaretson",
+      "Numenaa-hotepson",
+      "Geandaa-nakhtson",
+      "Sa-tjuraason",
+      "Terashaa-moseson",
+      "Haganetj-hotepson",
+      "Mery-terashaason",
+      "Iwanaa-nakhtson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Per-netjer",
+      "the ruined Shirbakh"
+    ],
+    "epithet": [
+      "maa-kheru",
+      "Sun-faced",
+      "the River-blessed",
+      "of the Sun-Isles",
+      "Gold-of-Honor",
+      "the Far-marching",
+      "the Wave-rider",
+      "the Enduring",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Akhone",
+      "Biaganaraanu",
+      "Biaumadjamaa",
+      "Deshakidehu",
+      "Djesimitru",
+      "Hedjginiushimaa",
+      "Hedjshiromeraa",
+      "Hemshiomeraat",
+      "Hemtakamisaket",
+      "Hisaamitdo",
+      "Iabhigashinehkubi",
+      "Iafuruqaaka",
+      "Imnnishirotoge",
+      "Imyuchisegeret",
+      "Itkomesekhno",
+      "Kemkurosheko",
+      "Khentueshemiket",
+      "Kinuaatjanu",
+      "Maarauraa",
+      "Mehetwatjaa",
+      "Nebkinwatmichi",
+      "Nebkoganewedjeb",
+      "Nedjkowedjumi",
+      "Neferyakhone",
+      "Pehushitaraanu",
+      "Qatakadjamaa",
+      "Residehu",
+      "Rwtysotitru",
+      "Tjaiushimaa",
+      "Watoomeraa"
+    ],
+    "military_unit": [
+      "the Division of Oranetj",
+      "the Sun-Standard",
+      "the Crimson Sonae"
+    ],
+    "personal_female": [
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Geandaa-et",
+      "Riaret-nefret",
+      "Sat-Tjuraa",
+      "Numenaa-et",
+      "Tjuraa-nefru",
+      "Terashaa-nefru",
+      "Megumaa-himet",
+      "Mery-Megumaa",
+      "Terashaa-et",
+      "Megumaa-nefret",
+      "Sat-Terashaa",
+      "Riaret-himet",
+      "Sat-Riaret",
+      "Oranetj-et",
+      "Haganetj-et",
+      "Geandaa",
+      "Geandaaet",
+      "Numenaa",
+      "Numenaaet",
+      "Oranetj",
+      "Oranetjet",
+      "Riaret",
+      "Riaretet",
+      "Tjuraa",
+      "Tjuraaet"
+    ],
+    "personal_male": [
+      "Tjuraa-hotep",
+      "Tjuraa-mose",
+      "Oranetj-mose",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Geandaa-nakht",
+      "Sa-Tjuraa",
+      "Terashaa-mose",
+      "Haganetj-hotep",
+      "Mery-Terashaa",
+      "Iwanaa-nakht",
+      "Terashaa-em-akh",
+      "Haganetj-mose",
+      "Amatkazaa-hotep",
+      "Takebaa-maru",
+      "Mery-Riarmose",
+      "Geandaa-mose",
+      "Riaret-nefrmose",
+      "Numenaa-mose",
+      "Megumaa-himmose",
+      "Megumaa-nefrmose",
+      "Riaret-himmose",
+      "Sat-Riarmose",
+      "Geandaa",
+      "Geandaamose",
+      "Numenaa",
+      "Numenaamose",
+      "Oranetj",
+      "Oranetjmose",
+      "Riaret",
+      "Riaretmose",
+      "Tjuraa",
+      "Tjuraamose"
+    ],
+    "settlement": [
+      "Raiko",
+      "Per-Tjuraa",
+      "Niut-aa",
+      "Kar-Terashaa",
+      "Aka-shirbakh",
+      "Pa-iushimaa",
+      "Aajinper",
+      "Biaganukhuichi",
+      "Biaumaminet",
+      "Deshakaniumachi",
+      "Djesiminiuraa",
+      "Hedjginiut-aa",
+      "Hedjshiroqaaka",
+      "Hemshioshirbakh",
+      "Hemtakatoremenu",
+      "Hisaawatjaa",
+      "Iabhigashiwedjeb",
+      "Iafuruwhysaa",
+      "Imnnishijinper",
+      "Imyuchikhuichi",
+      "Itkomeminet",
+      "Kemkuroniumachi",
+      "Khentueniuraa",
+      "Kinuaaniut-aa",
+      "Maaraaqaaka",
+      "Mehetshirbakh",
+      "Nebkintoremenu",
+      "Nebkoganewatjaa",
+      "Nedjkowedjeb",
+      "Neferyowhysaa",
+      "Pehushitajinper",
+      "Qatakakhuichi",
+      "Resyminet",
+      "Rwtysotoniumachi",
+      "Tjaaniuraa",
+      "Watooniut-aa",
+      "Aaqaaka",
+      "Biaganushirbakh",
+      "Biaumatoremenu",
+      "Deshakawatjaa"
+    ],
+    "ship": [
+      "Barque of Tjuraa",
+      "the Wave-Cutter",
+      "Beloved of the River",
+      "Terashaa-maru"
+    ],
+    "tavern": [
+      "The Golden Lotus",
+      "The Floating Pylon",
+      "The Sun and Torii",
+      "The Aa Biaganu",
+      "The Biaganu Biauma",
+      "The Deshaka Hedjgin",
+      "The Djesimi Hemshio",
+      "The Hedjshiro Hemtaka",
+      "The Iafuru Hisaa",
+      "The Kemkuro Itkome",
+      "The Maaraa Kinuaa",
+      "The Nebkogane Nebkin"
+    ]
+  },
+  "culture_id": "raiko",
+  "family": [
+    "near_eastern",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_raiko.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "raiko",
+  "lexicon": {
+    "adjectives": {
+      "black": "kemkuro",
+      "fair": "neferyo",
+      "far": "watoo",
+      "golden": "nebkogane",
+      "great": "aa",
+      "high": "qataka",
+      "iron": "biaganu",
+      "little": "nedjko",
+      "new": "maaraa",
+      "old": "iafuru",
+      "red": "deshaka",
+      "sacred": "djesimi",
+      "white": "hedjshiro"
+    },
+    "directional": {
+      "east": "iabhigashi",
+      "inner": "imyuchi",
+      "lower": "pehushita",
+      "north": "mehet",
+      "outer": "rwtysoto",
+      "south": "resy",
+      "upper": "khentue",
+      "west": "imnnishi"
+    },
+    "feature_words": {
+      "bay": "uraa",
+      "cape": "misaket",
+      "coast": "wedjeb",
+      "ford": "watjaa",
+      "forest": "meraat",
+      "hill": "qaaka",
+      "isle": "iushimaa",
+      "lake": "sheko",
+      "marsh": "idehu",
+      "mountain": "djamaa",
+      "narrows": "segeret",
+      "neck": "nehkubi",
+      "pass": "rotoge",
+      "plain": "sekhno",
+      "ridge": "akhone",
+      "river": "itru",
+      "road": "watmichi",
+      "sea": "wedjumi",
+      "stream": "meraa",
+      "track": "shemiket",
+      "vale": "tjanu",
+      "waste": "araanu",
+      "way": "mitdo"
+    },
+    "resources": {
+      "bronze": "hemtaka",
+      "gold": "nebkin",
+      "horse": "biauma",
+      "iron": "biaganu",
+      "jade": "hisaa",
+      "rice": "itkome",
+      "salt": "hemshio",
+      "silk": "kinuaa",
+      "silver": "hedjgin",
+      "tea": "tjaa"
+    },
+    "settlement_words": {
+      "citadel": "shirbakh",
+      "city": "niut-aa",
+      "fort": "toremenu",
+      "hamlet": "whysaa",
+      "market": "khuichi",
+      "port": "minet",
+      "temple_town": "jinper",
+      "town": "niumachi",
+      "village": "niuraa"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Egyptian construct-chains (Per-[god], Niut-[god], Pa-[noun], Ta-[land]) layered over fused feature-compounds (quality + island/shrine element): the capital Raiko (the sun-realm, rai + ko), Per-Tjuraa (temple of Tjuraa), Niut-aa (the great city), Kem-djamaa (black-mountain isle), Pa-iushimaa (the isle). Quality + feature in the Egyptian manner: aa (great), kem (black), djeser (sacred) lead the compound.",
+    "gendered_endings": {
+      "female": [
+        "et",
+        "it"
+      ],
+      "male": [
+        "mose"
+      ]
+    },
+    "patronymic_form": "the Egyptian filiation 'sa-' (son of) and theophoric given names are the lead form; the Japonic substrate keeps a reduced honorific -na- / -en- (from -no-) before the given name; nobility carry no inherited surname (filiation + epithet, or a Per- house-name) in the Egyptian manner. The throne fuses both - a Nesut who also heads an island Per- house with a -na- shrine-lineage.",
+    "toponymic_suffixes": [
+      "Per-",
+      "Niut-",
+      "Pa-",
+      "Ta-",
+      "shimaa",
+      "djamaa"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "tombs and pyramids of the sun-god-kings and fallen isle-shiro: 'the Tomb of Per-aa [name]', 'the Sunken Per-netjer', 'the haunted Jinper of [name]', 'the ruined Shirbakh'",
+    "military_units": "the [god] Division and the isle-house sonae (battle-formations): 'the Division of Oranetj', 'the Sun-Standard', 'the Crimson Sonae'",
+    "ships": "solar-barques and isle war-keels: 'Barque of Tjuraa', 'the Wave-Cutter', 'Beloved of the River', 'Terashaa-maru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Floating Pylon', 'The Sun and Torii'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (family_near_eastern / abydosian, the egyptian column: Tjuraa, Oranetj, Geandaa, Numenaa, Riaret, Atjernaa), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, hardened/breathed to Egyptian shape), never real Egyptian gods or Shinto kami. The fused rite identifies the sun-temple-power and the shrine-kami as one face - the sun-disc and the rising sun as one: the hem-netjer of the per-netjer and the kannushi of the torii keep the same powers. All three alignments; strong solar god-king and funerary cult fused with the household shrine and ancestral kami.",
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte) / Mikaa (shrine-attendant)",
+      "3": "Hem-netjer (god's-servant/priest) / Kannushaa",
+      "5": "Hem-netjer Sen-nu (second prophet) / Negaa",
+      "7": "Hem-netjer Tepy (first prophet/high priest) / Gujaa",
+      "9": "Hem-netjer Aa (great prophet) / Saishaa (high priest of the realm)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the -kin of the great serpent Hefau (Egyptian) or the aramitama (Japonic wild spirits), keep their morphs + an epithet: Maraxus -> Marakhu the City-Burner (Jp Takebaa the War-Flame); Vacidus -> Wakedjet the Devouring Hefau (Jp Utsuraa the Devouring Void); Lusanto -> Lusantj the Hoard-Worm (Jp Koganaa-Orochaa the gold serpent).",
+    "holy_symbol_motifs": {
+      "Geandaa": "the alluvial field and the island-mountain beneath the pylon",
+      "Oranetj": "an iron blade crossed before a torii and the temple-standard",
+      "Tjuraa": "a sun-disc above the feather of right-order, mirrored in a rising-sun mirror"
+    },
+    "religious_orders_pattern": "the Per-netjer (god's-house/temple) or the Jinper (shrine-isle temple) of [power]: 'the Per-netjer of Tjuraa', 'the Jinper of Terashaa', within its pylon-court and torii-grove.",
+    "saints_pattern": "the deified dead (akhu) and sun-god-kings venerated at tomb-temples ('the justified [name]', maa-kheru), and the great ancestors enshrined as kami at the isle-jinper (the honored dead); 'the kami [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Geandaa (Jp Iwanaa) - the enduring earth and mountain",
+      "Numeno": "Numenaa (Jp Amatkazaa) - air, sky and scribe-wisdom",
+      "Orlandus": "Oranetj (Jp Haganetj) - iron, oath, war",
+      "Realta": "Riaret (Jp Megumaa) - the mother, mercy",
+      "Tulrius": "Tjuraa (Jp Terashaa) - the sun and right-order, the solar disc and the rising sun"
+    },
+    "the_one": "Atjernaa (Egyptian; Jp shrine-name Takamaa-no-kami) - the hidden distant maker, the High-Heaven One above the myriad powers, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-flame and the devouring serpent, the storm-kami and the mountain-oni - and names the Lawful powers, and Atjernaa, as the tyrant-powers to be defied.",
+      "Lawful": "venerates the Lawful powers - Atjernaa, Tjuraa the just sun, Oranetj of the sworn oath, Riaret the merciful - at the per-netjer and the torii-grove alike, and names the Chaotic powers as the -kin of the great serpent Hefau or the aramitama (the wild spirits), warded; the right-order of the sun-temple and the kami-rite bind together",
+      "Neutral": "the deified dead (the akhu inscribed on the tomb-stele and the senzaa enshrined at the household jinper) and the river-and-isle spirits of the per-netjer and the shrine-isles; the great powers invoked at temple and torii situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Egyptian ladder, ascending. Hatia (mayor) barony; Wer-khaset (great-one of the frontier-land) march; Sepati/Sepat (nomarch/nome) county; Mer-mesha (army-overseer/general) duchy; Heqa-aa (great ruler) principality; Nesut (king) kingdom; Per-aa (Pharaoh, lit. the Great House) empire over the Per-aat. DISPLAY titles are English except the kingdom which uses the approved commonly-known term 'Pharaoh' (set in 'ruler', its native Egyptian form remaining Nesut) and the duchy which uses 'Daimyo' (the great island-house lord, the Japonic-substrate co-rank, its native Egyptian form remaining Mer-mesha). NOTE the foreign term 'Pharaoh' sits at the kingdom tier here (the solar god-king of the realm) while the native Per-aa caps the empire; the English 'Emperor' is shown at the empire tier. The Japonic substrate keeps its shugo-governor and kannushi-priest beneath the Egyptian crown; the hem-netjer (god's-servant) and the scribal sesh stand outside the ladder. Rank native-forms use the real Egyptian register (allowed).",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the kingdom which uses the approved commonly-known term 'Pharaoh' (the solar god-king) and the duchy which uses 'Daimyo' (the great island-house lord). The *_native conlang (Egyptian) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Hatia": "Hatiat",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha-et",
+      "Nesut": "Nesyt",
+      "Per-aa": "Per-aat",
+      "Sepati": "Sepatit",
+      "Wer-khaset": "Wert-khaset"
+    },
+    "government": "feudal (a fused sun-temple-and-isle realm: the Nesut and his iry-pat kin at the crown over the Tenka-isles, the Sepati-nomarchs over the niut river-cities, the great island-houses - the daimyo of the shrine-isles - sworn beneath; the hem-netjer priesthood and the kannushi-shrine-keepers serve the one sun-rite together)",
+    "heir": "Sa-Nesut (king's son / crown prince); Iry-pat (hereditary heir)",
+    "honorifics": {
+      "champion": "Aha (Egyptian warrior) / Bushaa (the warrior, from Japonic bushi, breathed)",
+      "elder": "Semsu (the eldest / elder)",
+      "lady": "Nebet",
+      "lord": "Neb",
+      "your_grace": "Hem-ek (your person/majesty)"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hatiat",
+        "ruler": "Baron",
+        "ruler_native": "Hatia"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Sepat",
+        "ruler": "Count",
+        "ruler_native": "Sepati"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Mesha",
+        "ruler": "Daimyo",
+        "ruler_native": "Mer-mesha"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Per-aat",
+        "ruler": "Emperor",
+        "ruler_native": "Per-aa"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Nesutat",
+        "ruler": "Pharaoh",
+        "ruler_native": "Nesut"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Khaset",
+        "ruler": "Marquis",
+        "ruler_native": "Wer-khaset"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Heqat-aat",
+        "ruler": "Prince",
+        "ruler_native": "Heqa-aa"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ankh (the living-oath)",
+      "liege": "Neb",
+      "tribute": "Inu / Nengaa (the isle-render, from Japonic nengu)",
+      "vassal": "Bak (servant)"
+    }
+  }
+}

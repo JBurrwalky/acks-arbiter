@@ -1,7 +1,8 @@
 {
   "alignment_allowed": [
     "Lawful",
-    "Neutral"
+    "Neutral",
+    "Chaotic"
   ],
   "categories": {
     "clan_house": [
@@ -54,31 +55,31 @@
       "Ellapparu",
       "Elatappu",
       "Eshubabu",
-      "Hurasbamtu",
-      "Hurasudeshret",
-      "Iltanuharranu",
-      "Kamukishadu",
-      "Kaspunagu",
-      "Labirunaru",
-      "Nununebiru",
-      "Parzillunerebu",
-      "Pesupadanu",
-      "Qerbuqaqqaru",
-      "Qurbuqishtu",
-      "Qutrinnushadu",
-      "Rabutamtu",
-      "Ruqutamtu-rabitu",
-      "Salmutillu",
-      "Samugaru",
-      "Sehrurhu",
-      "Shapluwehat",
-      "Shaqagammu",
-      "She'ahu",
-      "Shutapparu",
-      "Siparratappu",
-      "Tabtubabu",
-      "Uqnubamtu",
-      "Argamannudeshret"
+      "Hurasubamtu",
+      "Iltanudeshru",
+      "Kamuharranu",
+      "Kaspitnaru",
+      "Labirukishadu",
+      "Nununagu",
+      "Parzillunebiru",
+      "Pesunehebtu",
+      "Qerbunerebu",
+      "Qurbupadanu",
+      "Rabuqaqqaru",
+      "Ruquqishtu",
+      "Salmushadu",
+      "Samutamtu",
+      "Sehrutamtu-rabitu",
+      "Senetrinnutillu",
+      "Shaplugaru",
+      "Shaqurhu",
+      "She'uwehatu",
+      "Shutagammu",
+      "Siparrahu",
+      "Tabtapparu",
+      "Uqnatappu",
+      "Argamannubabu",
+      "Damqubamtu"
     ],
     "military_unit": [
       "the Standard of Urlanzu"
@@ -161,34 +162,34 @@
       "Eludadmu",
       "Eshudimtu",
       "Hurasekallu",
-      "Hurasukapru",
-      "Iltanukar",
-      "Kamumahiru",
-      "Kaspunebiru",
-      "Labiruper-ili",
-      "Nunutillu",
-      "Parzillahu",
-      "Pesalu",
-      "Qerbalu-rabu",
-      "Qurbudadmu",
-      "Qutrinnudimtu",
-      "Rabekallu",
-      "Ruqukapru",
-      "Salmukar",
-      "Samumahiru",
-      "Sehrunebiru",
-      "Shapluper-ili",
-      "Shaqutillu",
-      "She'ahu",
-      "Shutalu",
-      "Siparralu-rabu",
-      "Tabtudadmu",
-      "Uqnudimtu",
-      "Argamannekallu",
-      "Damqukapru",
-      "Ellukar",
-      "Elumahiru",
-      "Eshunebiru"
+      "Iltanukapru",
+      "Kamukar",
+      "Kaspumahiru",
+      "Labirunebiru",
+      "Nunuper-netjeru",
+      "Parzillutillu",
+      "Pesahu",
+      "Qerbalu",
+      "Qurbalu-rabu",
+      "Rabudadmu",
+      "Ruqudimtu",
+      "Salmekallu",
+      "Samukapru",
+      "Sehrukar",
+      "Senetrinnumahiru",
+      "Shaplunebiru",
+      "Shaquper-netjeru",
+      "She'utillu",
+      "Shutahu",
+      "Siparralu",
+      "Tabtalu-rabu",
+      "Uqnudadmu",
+      "Argamannudimtu",
+      "Damqekallu",
+      "Ellukapru",
+      "Elukar",
+      "Eshumahiru",
+      "Hurasunebiru"
     ],
     "ship": [
       "Pride of the Naru",
@@ -201,9 +202,9 @@
       "The Damqu Argamannu",
       "The Ellu Hurasu",
       "The Eshu Kaspu",
-      "The Huras Nunu",
+      "The Hurasu Nunu",
       "The Labiru Parzillu",
-      "The Parzillu Qutrinnu",
+      "The Parzillu Senetrinnu",
       "The Pesu She'u",
       "The Rabu Siparru",
       "The Ruqu Tabtu",
@@ -226,7 +227,7 @@
       "black": "salmu",
       "fair": "damqu",
       "far": "ruqu",
-      "golden": "huras",
+      "golden": "hurasu",
       "great": "rabu",
       "high": "shaqu",
       "iron": "parzillu",
@@ -251,7 +252,7 @@
       "bay": "kishadu",
       "cape": "qaqqaru",
       "coast": "ahu",
-      "desert": "deshret",
+      "desert": "deshru",
       "ford": "nebiru",
       "forest": "qishtu",
       "hill": "tillu",
@@ -260,13 +261,13 @@
       "marsh": "apparu",
       "mountain": "shadu",
       "narrows": "nerebu",
-      "neck": "kishadu",
-      "oasis": "wehat",
+      "neck": "nehebtu",
+      "oasis": "wehatu",
       "ocean": "tamtu-rabitu",
       "pass": "babu",
       "plain": "ugaru",
       "ridge": "bamtu",
-      "river": "naru",
+      "river": "itnaru",
       "road": "harranu",
       "sea": "tamtu",
       "stream": "atappu",
@@ -278,7 +279,7 @@
       "fish": "nunu",
       "gold": "hurasu",
       "grain": "she'u",
-      "incense": "qutrinnu",
+      "incense": "senetrinnu",
       "iron": "parzillu",
       "lapis": "uqnu",
       "purple_dye": "argamannu",
@@ -292,7 +293,7 @@
       "hamlet": "kapru",
       "market": "mahiru",
       "port": "kar",
-      "temple_town": "per-ili",
+      "temple_town": "per-netjeru",
       "town": "alu",
       "village": "dadmu"
     }
@@ -328,7 +329,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology with an Egyptian solar-funerary coloring \u2014 never real Mesopotamian or Egyptian gods. Lawful/Neutral; a law-stele cult over a solar and tomb-cult overlay.",
+    "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology with an Egyptian solar-funerary coloring - never real Mesopotamian or Egyptian gods. Lawful/Neutral/Chaotic; a law-stele cult over a solar and tomb-cult overlay.",
     "clergy_ladder": {
       "1": "Eribbiti (temple-enterer)",
       "3": "Sangu (priest)",
@@ -349,13 +350,31 @@
       "Realta": "Rialtu (the mother)",
       "Tulrius": "Tulrishu (sun and judgment)"
     },
-    "the_one": "Atharnu (< Punic Atharon < Aeternus; the great distant maker, honored through His ministers)"
+    "the_one": "Atharnu (< Punic Atharon < Aeternus; the great distant maker, honored through His ministers)",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon (the Coin-Serpent, the City-Burner, the Devourer), and names the Lawful powers - and Atharnu - as the distant tyrant-makers to be defied; the law-stele is a thing to be broken.",
+      "Lawful": "venerates the Lawful powers - Atharnu the distant maker, Tulrishu the just-judge of the law-stele, Urlanzu of the sworn iron, Rialtu the merciful mother - inscribed on the stele and honored in the sun-temple; the Chaotic powers are named -lemnu (evil) and warded.",
+      "Neutral": "the justified dead and the ancestral law-givers (the deified Just) and the city-spirits of the Bit-ili / Per-netjer; the great powers invoked at temple and tomb-chapel situationally."
+    }
   },
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Akkadian backbone, ascending; the imperial tier blends in the Egyptian overlay: Shar-Per (king of the Great House) over the Per-Sharrutu. -u/-utu rhyme the lower tiers (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (governor) county; Turtanu (commander) duchy; Rubu (prince) principality. (Rank titles are the real Akkadian/Egyptian register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "Akkadian backbone, ascending; the imperial tier blends in the Egyptian overlay: Shar-Per (king of the Great House) over the Per-Sharrutu. -u/-utu rhyme the lower native tiers (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (governor) county; Turtanu (commander) duchy; Rubu (prince) principality. DISPLAY titles are English, except the kingdom tier shows the approved foreign throne-term Pharaoh (the Egyptian-overlay kingship; the native form remains Sharru, the v1 empire tier was Shar-Per). (Rank titles are the real Akkadian/Egyptian register, allowed.)",
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Hazannu": "Hazannatu",
       "Massaru": "Massartu",
       "Rubu": "Rubatu",
@@ -375,32 +394,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Hazannutu",
-        "ruler": "Hazannu"
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
       },
       "county": {
-        "domain": "Shaknutu",
-        "ruler": "Shaknu"
+        "domain": "County",
+        "domain_native": "Shaknutu",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
       },
       "duchy": {
-        "domain": "Turtanutu",
-        "ruler": "Turtanu"
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Duke",
+        "ruler_native": "Turtanu"
       },
       "empire": {
-        "domain": "Per-Sharrutu",
-        "ruler": "Shar-Per"
+        "domain": "Empire",
+        "domain_native": "Per-Sharrutu",
+        "ruler": "Emperor",
+        "ruler_native": "Shar-Per"
       },
       "kingdom": {
-        "domain": "Sharrutu",
-        "ruler": "Sharru"
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "Pharaoh",
+        "ruler_native": "Sharru"
       },
       "march": {
-        "domain": "Massarutu",
-        "ruler": "Massaru"
+        "domain": "March",
+        "domain_native": "Massarutu",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
       },
       "principality": {
-        "domain": "Rubutu",
-        "ruler": "Rubu"
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
       }
     },
     "vassalage": {

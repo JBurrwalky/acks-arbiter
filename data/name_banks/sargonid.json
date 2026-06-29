@@ -1,6 +1,8 @@
 {
   "alignment_allowed": [
-    "Lawful"
+    "Lawful",
+    "Neutral",
+    "Chaotic"
   ],
   "categories": {
     "clan_house": [
@@ -52,16 +54,16 @@
     ],
     "feature": [
       "Argamannagammu",
-      "Damqahu",
-      "Ellapparu",
-      "Elatappu",
-      "Ereb-shamshibabu",
-      "Eshubamtu",
-      "Hurasinu",
-      "Hurasiter",
-      "Iltanukishadu",
-      "Kamunagu",
-      "Kaspunaru",
+      "Argentahu",
+      "Damqapparu",
+      "Ellatappu",
+      "Elubabu",
+      "Ereb-shamshibamtu",
+      "Eshinu",
+      "Hurasitru",
+      "Hurasukishadu",
+      "Iltanunagu",
+      "Kamunaru",
       "Labirunebiru",
       "Nununerebia",
       "Parzillupadanu",
@@ -72,7 +74,7 @@
       "Ruqutamtu",
       "Salmutillu",
       "Samugaru",
-      "Sehruvia",
+      "Sehruwiateru",
       "Shaplagammu",
       "Shaqahu",
       "She'apparu",
@@ -80,7 +82,7 @@
       "Siparrubabu",
       "Sit-shamshibamtu",
       "Tabtinu",
-      "Uqniter"
+      "Uqnitru"
     ],
     "military_unit": [
       "the Legio of Urlandu",
@@ -156,39 +158,39 @@
       "Bit-Tullaru",
       "Til-Labiru",
       "Argamannahu",
-      "Damqalu",
-      "Ellalu-rabu",
-      "Elubit-ili",
-      "Ereb-shamshicolonia",
-      "Eshudadmu",
-      "Hurasdimtu",
-      "Hurasekallu",
-      "Iltanukapru",
-      "Kamukar",
-      "Kaspumahiru",
+      "Argentalu",
+      "Damqalu-rabu",
+      "Ellubittemplu",
+      "Eludadmu",
+      "Ereb-shamshidimkastu",
+      "Eshekalarsu",
+      "Huraskapru",
+      "Hurasukar",
+      "Iltanukolalu",
+      "Kamumahirum",
       "Labirunebiru",
       "Nunutillu",
       "Parzillahu",
       "Pesalu",
       "Qerbalu-rabu",
-      "Qutrinnubit-ili",
-      "Rabucolonia",
-      "Ruqudadmu",
-      "Salmudimtu",
-      "Samekallu",
-      "Sehrukapru",
-      "Shaplukar",
-      "Shaqumahiru",
+      "Qutrinnubittemplu",
+      "Rabudadmu",
+      "Ruqudimkastu",
+      "Salmekalarsu",
+      "Samukapru",
+      "Sehrukar",
+      "Shaplukolalu",
+      "Shaqumahirum",
       "She'unebiru",
       "Shututillu",
       "Siparrahu",
       "Sit-shamshalu",
       "Tabtalu-rabu",
-      "Uqnubit-ili",
-      "Argamannucolonia",
-      "Damqudadmu",
-      "Elludimtu",
-      "Elekallu"
+      "Uqnubittemplu",
+      "Argamannudadmu",
+      "Argentudimkastu",
+      "Damqekalarsu",
+      "Ellukapru"
     ],
     "ship": [
       "Pride of the Naru",
@@ -199,8 +201,8 @@
       "The Lapis Cup",
       "The Lion-Gate Tavern",
       "The Damqu Argamannu",
-      "The Ellu Hurasu",
-      "The Eshu Kaspu",
+      "The Ellu Argentu",
+      "The Eshu Hurasu",
       "The Huras Nunu",
       "The Labiru Parzillu",
       "The Parzillu Qutrinnu",
@@ -267,11 +269,11 @@
       "plain": "ugaru",
       "ridge": "bamtu",
       "river": "naru",
-      "road": "via",
+      "road": "wiateru",
       "sea": "tamtu",
       "stream": "atappu",
       "track": "padanu",
-      "way": "iter"
+      "way": "itru"
     },
     "resources": {
       "bronze": "siparru",
@@ -283,17 +285,17 @@
       "lapis": "uqnu",
       "purple_dye": "argamannu",
       "salt": "tabtu",
-      "silver": "kaspu"
+      "silver": "argentu"
     },
     "settlement_words": {
-      "citadel": "ekallu",
+      "citadel": "ekalarsu",
       "city": "alu-rabu",
-      "colony": "colonia",
-      "fort": "dimtu",
+      "colony": "kolalu",
+      "fort": "dimkastu",
       "hamlet": "kapru",
-      "market": "mahiru",
+      "market": "mahirum",
       "port": "kar",
-      "temple_town": "bit-ili",
+      "temple_town": "bittemplu",
       "town": "alu",
       "village": "dadmu"
     }
@@ -330,7 +332,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Deity-names are morphs of the Agrippan canon (Akkadian primary, from near_eastern theonym_sets; Latinate canon-form as the learned variant), never real Mesopotamian/Roman gods. Sargonid is Lawful alone: the apex law-empire reveres the One (Itarnu) above His ministers and the Lawful powers as the celestial magistracy that gave the law; the Chaotic powers are the demon-marshals it exists to suppress. The law-stele and the temple-tower (ziggurat) are the altars.",
+    "_note": "Deity-names are morphs of the Agrippan canon (Akkadian primary, from near_eastern theonym_sets; Latinate canon-form as the learned variant), never real Mesopotamian/Roman gods. Sargonid is the apex law-empire: it reveres the One (Itarnu) above His ministers and the Lawful powers as the celestial magistracy that gave the law; the Chaotic powers are the demon-marshals it exists to suppress. The law-stele and the temple-tower (ziggurat) are the altars. (Though all three alignments are now permitted in play, the culture's character remains strongly Lawful.)",
     "clergy_ladder": {
       "1": "Eribbiti (temple-enterer)",
       "3": "Sangu (priest)",
@@ -352,18 +354,36 @@
       "Orlandus": "Urlandu (the iron-oath, war; Lawful)",
       "Tulrius": "Tullaru (sun and judgment, lord of the law-stele; Lawful)"
     },
-    "the_one": "Itarnu (< Aeternus; Latinate variant Aeternus - the supreme Lawgiver of Heaven, source of the Mandate of order, revered above all)"
+    "the_one": "Itarnu (< Aeternus; Latinate variant Aeternus - the supreme Lawgiver of Heaven, source of the Mandate of order, revered above all)",
+    "worship_by_alignment": {
+      "Chaotic": "venerates the Chaotic powers of the canon - the demon-marshals reframed as liberators against the law-stele - and names the Lawful powers, and Itarnu, as the tyrant-magistracy of Heaven to be defied; the heresy the empire exists to suppress.",
+      "Lawful": "venerates the Lawful powers - Itarnu above all, Tullaru the just lord of the law-stele, Urlandu of the sworn iron-oath, Numunu keeper of the code, Argantu of the lawful city - and names the Chaotic powers the demon-marshals (-lemnu), warded and suppressed; the law-code and the temple-tower bind the order. This is the empire's apex creed.",
+      "Neutral": "the deified law-givers and just magistrates of the stele, and the city-spirits of the bit-ili and the alu; the great powers invoked at the ziggurat and the Curia situationally, for the order of the city rather than the war of Heaven."
+    }
   },
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Akkadian backbone, ascending, with a Latinate administrative overlay. Hazannu (mayor) barony; Massaru (warden) march, over a Latin-styled Limis (frontier); Shaknu (appointed governor) county, ruling a Praefectura; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom; Shar-kishshati (king of the totality), styled in the Latin overlay Imperator, over the Kishshatu. The legions (Legio) and the law-code (the dinu) are the empire's spine. (Rank titles are the real Akkadian/Latin register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "Akkadian backbone, ascending, with a Latinate administrative substrate beneath. Hazannu (mayor) barony; Massaru (warden) march, over a Latin-styled Limis (frontier); Shaknu (appointed governor) county, ruling a Praefectura; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom; Shar-kishshati (king of the totality), whose APPROVED display style is the Latin-substrate Imperator, over the Kishshatu. The legions (Legio) and the law-code (the dinu) are the empire's spine. Rank ruler_native titles are the real Akkadian register; the empire display 'Imperator' is an approved commonly-known foreign term (see approved_foreign_terms_used).",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here the empire ruler is 'Imperator'). The *_native conlang forms (Hazannu, Sharru, Shar-kishshati, etc.) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Hazannu": "Hazannatu",
       "Massaru": "Massartu",
       "Rubu": "Rubatu",
       "Shaknu": "Shaknatu",
-      "Shar-kishshati Imperator": "Sharrat-kishshati Imperatrix",
+      "Shar-kishshati": "Sharrat-kishshati",
       "Sharru": "Sharratu",
       "Turtanu": "Turtanutu"
     },
@@ -378,32 +398,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Hazannutu",
-        "ruler": "Hazannu"
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
       },
       "county": {
-        "domain": "Praefectura",
-        "ruler": "Shaknu"
+        "domain": "County",
+        "domain_native": "Praefectura",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
       },
       "duchy": {
-        "domain": "Turtanutu",
-        "ruler": "Turtanu"
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Duke",
+        "ruler_native": "Turtanu"
       },
       "empire": {
-        "domain": "Kishshatu",
-        "ruler": "Shar-kishshati Imperator"
+        "domain": "Empire",
+        "domain_native": "Kishshatu",
+        "ruler": "Imperator",
+        "ruler_native": "Shar-kishshati"
       },
       "kingdom": {
-        "domain": "Sharrutu",
-        "ruler": "Sharru"
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "King",
+        "ruler_native": "Sharru"
       },
       "march": {
-        "domain": "Limitis",
-        "ruler": "Massaru"
+        "domain": "March",
+        "domain_native": "Limitis",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
       },
       "principality": {
-        "domain": "Rubutu",
-        "ruler": "Rubu"
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
       }
     },
     "vassalage": {

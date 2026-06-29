@@ -1,0 +1,440 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Bit-Tullaru",
+      "Bit-Argantu",
+      "Bit-Numunu",
+      "Bit-Urlandu",
+      "Bit-Littu",
+      "Bit-Dilurum",
+      "Bit-Rialtu",
+      "Bit-Pullu",
+      "Bit-Bentaliu",
+      "Bit-Gayandu",
+      "Bit-Nuktilunu",
+      "Bit-Numiu",
+      "Tullaru-iddinason",
+      "Argantu-zerson",
+      "Urlandu-banison",
+      "Numunu-nasirson",
+      "Littu-mukinson",
+      "Dilurum-shumson",
+      "Bentaliu-ribson",
+      "Pullu-sharson",
+      "Itarnu-umson",
+      "Warad-tullaruson",
+      "Iddin-argantuson",
+      "Numunu-zerson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Ekallu"
+    ],
+    "epithet": [
+      "the Lawful",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "Iron-handed",
+      "the Far-marcher",
+      "Storm-voiced",
+      "the Just",
+      "Wall-builder",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Argamannagammu",
+      "Damqahu",
+      "Ellapparu",
+      "Elatappu",
+      "Eshubabu",
+      "Hurasbamtu",
+      "Hurasuharranu",
+      "Iltaninu",
+      "Kamukishadu",
+      "Kaspunagu",
+      "Labirunaru",
+      "Nununebiru",
+      "Parzillunerebu",
+      "Pesupadanu",
+      "Qerbuqaqqaru",
+      "Qurbuqishtu",
+      "Qutrinnuseru",
+      "Rabushadu",
+      "Ruqutamtu",
+      "Salmutillu",
+      "Samugaru",
+      "Sehrurhu",
+      "Shaplagammu",
+      "Shaqahu",
+      "She'apparu",
+      "Shutatappu",
+      "Siparrubabu",
+      "Tabtubamtu",
+      "Uqnuharranu",
+      "Argamanninu"
+    ],
+    "military_unit": [
+      "the Standard of Urlandu"
+    ],
+    "personal_female": [
+      "Tullaru-belit",
+      "Argantu-amat",
+      "Rialtu-rishat",
+      "Numunu-tabni",
+      "Amat-Tullaru",
+      "Belit-Argantu",
+      "Littu-banit",
+      "Rialtu-um",
+      "Numunu-belit",
+      "Tabni-Rialtu",
+      "Urlandu-belit",
+      "Dilurum-at",
+      "Tullaru-rimti",
+      "Argantu-belit",
+      "Rialtu-tabni",
+      "Amat-Numunu",
+      "Dilurum-shtu",
+      "Itarnu-tu",
+      "Warad-Tullartu",
+      "Iddin-Arganttu",
+      "Naram-Urlandtu",
+      "Argantu",
+      "Argantutu",
+      "Littu",
+      "Littutu",
+      "Numunu",
+      "Numunutu",
+      "Tullaru",
+      "Tullarutu"
+    ],
+    "personal_male": [
+      "Tullaru-iddina",
+      "Argantu-zer",
+      "Urlandu-bani",
+      "Numunu-nasir",
+      "Littu-mukin",
+      "Dilurum-shum",
+      "Bentaliu-rib",
+      "Pullu-shar",
+      "Itarnu-um",
+      "Warad-Tullaru",
+      "Iddin-Argantu",
+      "Numunu-zer",
+      "Urlandu-nasir",
+      "Tullaru-bani",
+      "Naram-Urlandu",
+      "Gayandu-iddina",
+      "Argantu-amu",
+      "Rialtu-rishu",
+      "Belit-Arganu",
+      "Tabni-Rialu",
+      "Dilurum-u",
+      "Argantu",
+      "Argantuu",
+      "Littu",
+      "Littuu",
+      "Numunu",
+      "Numunuu",
+      "Tullaru",
+      "Tullaruu"
+    ],
+    "settlement": [
+      "Shinarur",
+      "Dur-Sharrutu",
+      "Kar-Tullaru",
+      "Bit-Tullaru",
+      "Til-Labiru",
+      "Argamannahu",
+      "Damqalu",
+      "Ellubit-ili",
+      "Eludadmu",
+      "Eshudimtu",
+      "Hurasekallu",
+      "Hurasukapru",
+      "Iltanukar",
+      "Kamumahiru",
+      "Kaspunebiru",
+      "Labirutillu",
+      "Nunahu",
+      "Parzillalu",
+      "Pesubit-ili",
+      "Qerbudadmu",
+      "Qurbudimtu",
+      "Qutrinnekallu",
+      "Rabukapru",
+      "Ruqukar",
+      "Salmumahiru",
+      "Samunebiru",
+      "Sehrutillu",
+      "Shaplahu",
+      "Shaqalu",
+      "She'ubit-ili",
+      "Shutudadmu",
+      "Siparrudimtu",
+      "Tabtekallu",
+      "Uqnukapru",
+      "Argamannukar",
+      "Damqumahiru",
+      "Ellunebiru",
+      "Elutillu",
+      "Eshahu",
+      "Hurasalu"
+    ],
+    "ship": [
+      "Pride of the Naru",
+      "Boat of Tullaru"
+    ],
+    "tavern": [
+      "The Lapis Cup",
+      "The Lion-Gate Tavern",
+      "The Damqu Argamannu",
+      "The Ellu Hurasu",
+      "The Eshu Kaspu",
+      "The Huras Nunu",
+      "The Labiru Parzillu",
+      "The Parzillu Qutrinnu",
+      "The Pesu She'u",
+      "The Rabu Siparru",
+      "The Ruqu Tabtu",
+      "The Salmu Uqnu"
+    ]
+  },
+  "culture_id": "shinarur",
+  "family": [
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_shinarur.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "shinarur",
+  "lexicon": {
+    "adjectives": {
+      "black": "salmu",
+      "fair": "damqu",
+      "far": "ruqu",
+      "golden": "huras",
+      "great": "rabu",
+      "high": "shaqu",
+      "iron": "parzillu",
+      "little": "sehru",
+      "new": "eshu",
+      "old": "labiru",
+      "red": "samu",
+      "sacred": "ellu",
+      "white": "pesu"
+    },
+    "directional": {
+      "far": "ruqu",
+      "inner": "qerbu",
+      "lower": "shaplu",
+      "near": "qurbu",
+      "north": "iltanu",
+      "outer": "kamu",
+      "south": "shutu",
+      "upper": "elu"
+    },
+    "feature_words": {
+      "bay": "kishadu",
+      "cape": "qaqqaru",
+      "coast": "ahu",
+      "desert": "seru",
+      "ford": "nebiru",
+      "forest": "qishtu",
+      "hill": "tillu",
+      "isle": "nagu",
+      "lake": "agammu",
+      "marsh": "apparu",
+      "mountain": "shadu",
+      "narrows": "nerebu",
+      "neck": "kishadu",
+      "oasis": "inu",
+      "pass": "babu",
+      "plain": "ugaru",
+      "ridge": "bamtu",
+      "river": "naru",
+      "road": "harranu",
+      "sea": "tamtu",
+      "stream": "atappu",
+      "track": "padanu",
+      "way": "urhu"
+    },
+    "resources": {
+      "bronze": "siparru",
+      "fish": "nunu",
+      "gold": "hurasu",
+      "grain": "she'u",
+      "incense": "qutrinnu",
+      "iron": "parzillu",
+      "lapis": "uqnu",
+      "purple_dye": "argamannu",
+      "salt": "tabtu",
+      "silver": "kaspu"
+    },
+    "settlement_words": {
+      "citadel": "ekallu",
+      "city": "alu rabu",
+      "fort": "dimtu",
+      "hamlet": "kapru",
+      "market": "mahiru",
+      "port": "kar",
+      "temple_town": "bit-ili",
+      "town": "alu",
+      "village": "dadmu"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "construct chains: Bit-[god/name] (house of), Dur-[ruler] (fort of), Kar-[god] (port of); resource + feature.",
+    "gendered_endings": {
+      "female": [
+        "tu",
+        "itu",
+        "at"
+      ],
+      "male": [
+        "u",
+        "um"
+      ]
+    },
+    "patronymic_form": "patronymic 'mar' (son of); theophoric given names (on morphed god-stems); family/profession house.",
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur-",
+      "Kar-",
+      "um",
+      "Til-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried ziggurats and dead cities: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu'",
+    "military_units": "the [god] Standard / the [number] Companies: 'the Standard of Urlandu'",
+    "ships": "river-barge names: 'Pride of the Naru', 'Boat of Tullaru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Lapis Cup', 'The Lion-Gate Tavern'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Akkadian phonology (-us/-ius -> -u/-ishu; o -> u; v -> b; doubling) - recognizably the same powers, never real Mesopotamian gods. All three alignments.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer)",
+      "3": "Sangu (priest)",
+      "5": "Shangu Rabu (high priest)",
+      "7": "Urigallu (chief priest)",
+      "9": "Shatammu (temple-primate)"
+    },
+    "demon_epithet_pattern": "each opposing power keeps its morphed name + its own portfolio epithet (distinct per power; the suffix '-lemnu' = evil may be appended): Maraxus -> Marakshu the City-Burner; Irantius -> Irantishu the Restless; Vacidus -> Bakidu-lemnu (the Unmaking).",
+    "holy_symbol_motifs": {
+      "Numunu": "stylus on a clay tablet",
+      "Tullaru": "winged sun-disc over a law-stele"
+    },
+    "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power]: 'the Bit-ili of Tullaru'.",
+    "saints_pattern": "deified law-givers and heroes inscribed on the temple-stele; 'the Just [name]'.",
+    "sample_deity_renames": {
+      "Argentus": "Argantu (trade and the city)",
+      "Lieta": "Littu (the grain)",
+      "Numeno": "Numunu (the scribe-wisdom)",
+      "Tulrius": "Tullaru (sun and judgment)"
+    },
+    "the_one": "Itarnu (< Aeternus; the great distant one, honored not petitioned)",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Itarnu - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers of the canon - Itarnu the distant, Tullaru the just sun-judge, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers -lemnu (evil), warded by the law-stele and the temple rite",
+      "Neutral": "the city-spirits and ancestral dead of the bit-ili and the family stele; the great powers invoked at the temple situationally, as the season and the need require"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Akkadian native ladder, ascending (barony, march, county, duchy, principality, kingdom, empire). -u/-utu rhyme (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom; Shar-kishshati (king of the totality) emperor over the Kishshatu. (Rank titles are the real Akkadian register, allowed.) DISPLAY titles are English per display_policy; the Akkadian forms above are for NPC dialogue only.",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH. The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Hazannu": "Hazannatu",
+      "Massaru": "Massartu",
+      "Rubu": "Rubatu",
+      "Shaknu": "Shaknatu",
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Turtanu": "Turtanutu"
+    },
+    "government": "feudal (Mesopotamian; the law-code and temple-bureaucracy character is narrative flavor - the sharru at the crown, the hazannu over the alu-town, the sangu-priesthood serving in the bit-ili)",
+    "heir": "Mar-Sharri (son of the king / crown prince)",
+    "honorifics": {
+      "knight": "Redu (soldier)",
+      "lady": "Beltu",
+      "lord": "Belu",
+      "your_grace": "Beli (my lord)",
+      "your_majesty": "Sharri"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Shaknutu",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Duke",
+        "ruler_native": "Turtanu"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Kishshatu",
+        "ruler": "Emperor",
+        "ruler_native": "Shar-kishshati"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "King",
+        "ruler_native": "Sharru"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Massarutu",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ade (loyalty-oath)",
+      "liege": "Belu",
+      "tribute": "Biltu / Mandattu",
+      "vassal": "Ardu (servant)"
+    }
+  }
+}

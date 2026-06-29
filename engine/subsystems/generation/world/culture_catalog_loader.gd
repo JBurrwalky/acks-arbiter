@@ -76,6 +76,15 @@ static func tier(record: Dictionary) -> String:
 	return str(identity(record).get("tier", "human"))
 
 
+## "base" | "member" — the base/hybrid culture-emergence model
+## (gdd-culture-emergence-and-territory.md §3.1). Only the 11 human BASE cultures
+## carry culture_class="base"; the seeder restricts the human seed pool to bases
+## (hybrids emerge at runtime; old member kits are never seeded). Records that
+## omit the field default to "member".
+static func culture_class(record: Dictionary) -> String:
+	return str(identity(record).get("culture_class", "member"))
+
+
 static func race(record: Dictionary) -> String:
 	return str(identity(record).get("race", "human"))
 

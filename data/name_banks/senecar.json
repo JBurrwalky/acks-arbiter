@@ -1,5 +1,6 @@
 {
   "alignment_allowed": [
+    "Lawful",
     "Neutral",
     "Chaotic"
   ],
@@ -363,6 +364,7 @@
     "the_one": "Eteronon (< Aeternus; fused Celtic Eternan / Iroquoian Aterhonon) - the Sky-Ancient-Above; acknowledged and set aside (Neutral), reviled as the far tyrant when Chaotic",
     "worship_by_alignment": {
       "Chaotic": "venerate the Chaotic powers (Marakson the war-fire, Wasidonon, Rusanon), demonize the Lawful powers and the One (Eteronon)",
+      "Lawful": "Venerates the Lawful powers of the canon - Eteronon foremost - and names the Chaotic powers as demons to be warded.",
       "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the Tuath-spirits and the powers of grove and forest"
     }
   },
@@ -370,7 +372,17 @@
   "tier": "culture",
   "titles": {
     "_tiers_note": "Fused Celtic-Iroquoian clanhold, ascending; titles blend the two (Celtic aire/toisech/flaith/ri + Iroquoian royaner/rotiskenrakehte/tadodaho). Aironer (clan-lord) barony; Maoresken (war-warden) march; Toisoner (sept-chief) county; Flaitoken (lord) duchy; Rinakenra (king-sachem) principality; Ruironon (over-chief) kingdom; Ardonaho (high-chief / grand firekeeper) empire. The clan-mothers seat and may depose the chiefs; the grove-council rules by consensus. (Rank titles fuse the real Gaelic/Iroquois register, allowed.)",
-    "female_forms": {
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Aironer": "Banaironer",
       "Ardonaho": "Ban-Ardonaho",
       "Flaitoken": "Banflaitoken",
@@ -390,32 +402,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Aironeri",
-        "ruler": "Aironer"
+        "domain": "Barony",
+        "domain_native": "Aironeri",
+        "ruler": "Baron",
+        "ruler_native": "Aironer"
       },
       "county": {
-        "domain": "Toisecht",
-        "ruler": "Toisoner"
+        "domain": "County",
+        "domain_native": "Toisecht",
+        "ruler": "Count",
+        "ruler_native": "Toisoner"
       },
       "duchy": {
-        "domain": "Flaithonon",
-        "ruler": "Flaitoken"
+        "domain": "Duchy",
+        "domain_native": "Flaithonon",
+        "ruler": "Duke",
+        "ruler_native": "Flaitoken"
       },
       "empire": {
-        "domain": "Ardonage",
-        "ruler": "Ardonaho"
+        "domain": "Empire",
+        "domain_native": "Ardonage",
+        "ruler": "Emperor",
+        "ruler_native": "Ardonaho"
       },
       "kingdom": {
-        "domain": "Mortuathonon",
-        "ruler": "Ruironon"
+        "domain": "Kingdom",
+        "domain_native": "Mortuathonon",
+        "ruler": "King",
+        "ruler_native": "Ruironon"
       },
       "march": {
-        "domain": "Crichonon",
-        "ruler": "Maoresken"
+        "domain": "March",
+        "domain_native": "Crichonon",
+        "ruler": "Marquis",
+        "ruler_native": "Maoresken"
       },
       "principality": {
-        "domain": "Tuathonon",
-        "ruler": "Rinakenra"
+        "domain": "Principality",
+        "domain_native": "Tuathonon",
+        "ruler": "Prince",
+        "ruler_native": "Rinakenra"
       }
     },
     "vassalage": {

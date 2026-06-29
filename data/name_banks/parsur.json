@@ -1,0 +1,467 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Bit-Tullaru",
+      "Bit-Urlandu",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "Vit-Turvasa",
+      "Vit-Urlaspa",
+      "Vit-Vishtaspa",
+      "Vit-Arzanta",
+      "Bit-Rialtu",
+      "Vit-Aryabarza",
+      "Bit-Itarnu",
+      "al-Tullaru-iddina",
+      "al-Warad-Urlandu",
+      "al-Turvasa-data",
+      "al-Baga-Tullaru",
+      "al-Numunu-nasir",
+      "al-Artafarnu",
+      "al-Urlandu-bani",
+      "al-Iddin-Argantu",
+      "al-Naram-Urlandu",
+      "al-Aspaturvasu",
+      "al-Tullaru-bani",
+      "al-Vishtaspu-shum"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Ekallu"
+    ],
+    "epithet": [
+      "the Two-Rivers' Crown",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "the Arta-true",
+      "Gold-giver",
+      "City-builder",
+      "the Far-rider",
+      "Spear-of-Urlandu",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Apaxtaragru",
+      "Ardatahu",
+      "Argamannanupu",
+      "Artatappu",
+      "Aspubanu",
+      "Barzanuchatu",
+      "Bauidudrayaketu",
+      "Eluduvaru",
+      "Elyaztugardanu",
+      "Kasakugardu",
+      "Labiruharranu",
+      "Naibukaufu",
+      "Navukishadu",
+      "Nununagu",
+      "Parunaru",
+      "Parzillunebiru",
+      "Pisaitunerebu",
+      "Qerbupadanu",
+      "Qurbuparshvu",
+      "Ruqupathu",
+      "Ruxshuseru",
+      "Salmutamtu",
+      "Sehrutangu",
+      "Shamtarugaru",
+      "Shapluvazrakatamtu",
+      "Shutagru",
+      "Siparrahu",
+      "Tabtanupu",
+      "Ushastaratappu",
+      "Vazrakubanu"
+    ],
+    "military_unit": [
+      "the Standard of Urlandu",
+      "the Spada of the Shah",
+      "the Ten-Thousand"
+    ],
+    "personal_female": [
+      "Tullaru-belit",
+      "Amat-Urlandu",
+      "Riyata-banu",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Artaduxtu",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Riyata-farnu",
+      "Gayanta-duxtu",
+      "Naumana-banu",
+      "Rialtu-tabni",
+      "Amat-Numunu",
+      "Artazatu",
+      "Warad-Urlandtu",
+      "Baga-Tullartu",
+      "Artafarntu",
+      "Iddin-Arganttu",
+      "Naram-Urlandtu",
+      "Aspaturvastu",
+      "Urlaspa-farntu",
+      "Bagadattu",
+      "Argantu",
+      "Argantutu",
+      "Gayandu",
+      "Gayandutu",
+      "Numunu",
+      "Numunutu",
+      "Rialtu",
+      "Rialtutu",
+      "Tullaru",
+      "Tullarutu",
+      "Urlandu",
+      "Urlandutu"
+    ],
+    "personal_male": [
+      "Tullaru-iddina",
+      "Warad-Urlandu",
+      "Turvasa-data",
+      "Baga-Tullaru",
+      "Numunu-nasir",
+      "Artafarnu",
+      "Urlandu-bani",
+      "Iddin-Argantu",
+      "Naram-Urlandu",
+      "Aspaturvasu",
+      "Tullaru-bani",
+      "Vishtaspu-shum",
+      "Gayandu-iddina",
+      "Urlaspa-farnu",
+      "Argantu-zer",
+      "Arta-shum",
+      "Numunu-zer",
+      "Bagadatu",
+      "Artaduxu",
+      "Gayanta-duxu",
+      "Artazau",
+      "Argantu",
+      "Argantuu",
+      "Gayandu",
+      "Gayanduu",
+      "Numunu",
+      "Numunuu",
+      "Rialtu",
+      "Rialtuu",
+      "Tullaru",
+      "Tullaruu",
+      "Urlandu",
+      "Urlanduu"
+    ],
+    "settlement": [
+      "Parsur",
+      "Dur-Sharru",
+      "Kar-Tullaru",
+      "Bit-Tullaru",
+      "Atash-Turvasa",
+      "Til-Labiru",
+      "Apaxtarahu",
+      "Ardatalpuru",
+      "Argamannalu",
+      "Artubitashanu",
+      "Aspudimdidu",
+      "Barzanekaldidu",
+      "Bauidugardu",
+      "Elukapru",
+      "Elyaztukar",
+      "Kasakukirdaidu",
+      "Labirunebiru",
+      "Naibuvahanu",
+      "Navuvishu",
+      "Nunahu",
+      "Paralpuru",
+      "Parzillalu",
+      "Pisaitubitashanu",
+      "Qerbudimdidu",
+      "Qurbekaldidu",
+      "Ruqugardu",
+      "Ruxshukapru",
+      "Salmukar",
+      "Sehrukirdaidu",
+      "Shamtarunebiru",
+      "Shapluvahanu",
+      "Shutuvishu",
+      "Siparrahu",
+      "Tabtalpuru",
+      "Ushastaralu",
+      "Vazrakubitashanu",
+      "Yavudimdidu",
+      "Zaranekaldidu",
+      "Apaxtarugardu",
+      "Ardatukapru"
+    ],
+    "ship": [
+      "Pride of the Naru",
+      "Bearer of the Baji",
+      "Boat of Tullaru"
+    ],
+    "tavern": [
+      "The Lapis Cup",
+      "The Golden Farnah",
+      "The Lion-Gate Tavern",
+      "The Artu Ardatu",
+      "The Barzanu Argamannu",
+      "The Elyaztu Aspu",
+      "The Labiru Bauidu",
+      "The Naibu Kasaku",
+      "The Navu Nunu",
+      "The Parzillu Parzillu",
+      "The Pisaitu Siparru",
+      "The Ruqu Tabtu"
+    ]
+  },
+  "culture_id": "parsur",
+  "family": [
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_parsur.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "parsur",
+  "lexicon": {
+    "adjectives": {
+      "black": "salmu",
+      "fair": "naibu",
+      "far": "ruqu",
+      "golden": "zaranu",
+      "great": "vazraku",
+      "high": "barzanu",
+      "iron": "parzillu",
+      "little": "sehru",
+      "new": "navu",
+      "old": "labiru",
+      "red": "ruxshu",
+      "sacred": "elyaztu",
+      "true": "artu",
+      "white": "pisaitu"
+    },
+    "directional": {
+      "east": "ushastaru",
+      "far": "ruqu",
+      "inner": "qerbu",
+      "lower": "shaplu",
+      "near": "qurbu",
+      "north": "apaxtaru",
+      "outer": "paru",
+      "south": "shutu",
+      "upper": "elu",
+      "west": "shamtaru"
+    },
+    "feature_words": {
+      "bay": "kishadu",
+      "cape": "agru",
+      "coast": "ahu",
+      "desert": "seru",
+      "ford": "nebiru",
+      "forest": "banu",
+      "hill": "gardu",
+      "isle": "nagu",
+      "lake": "drayaketu",
+      "marsh": "anupu",
+      "mountain": "kaufu",
+      "narrows": "nerebu",
+      "neck": "gardanu",
+      "oasis": "chatu",
+      "ocean": "vazrakatamtu",
+      "pass": "duvaru",
+      "plain": "ugaru",
+      "ridge": "parshvu",
+      "river": "naru",
+      "road": "harranu",
+      "sea": "tamtu",
+      "stream": "atappu",
+      "track": "padanu",
+      "vale": "tangu",
+      "waste": "seru",
+      "way": "pathu"
+    },
+    "resources": {
+      "bronze": "siparru",
+      "fish": "nunu",
+      "gold": "zaranu",
+      "grain": "yavu",
+      "horse": "aspu",
+      "incense": "bauidu",
+      "iron": "parzillu",
+      "lapis": "kasaku",
+      "purple_dye": "argamannu",
+      "salt": "tabtu",
+      "silver": "ardatu"
+    },
+    "settlement_words": {
+      "citadel": "ekaldidu",
+      "city": "alpuru",
+      "fort": "dimdidu",
+      "garden": "kirdaidu",
+      "hamlet": "kapru",
+      "market": "vahanu",
+      "port": "kar",
+      "temple_town": "bitashanu",
+      "town": "alu",
+      "village": "vishu"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]) absorbing the Persian ezafe genitive-of-relation: the capital Parsur (Parsa + the Two Rivers' -ur), Dur-Sharru (king's-fort), Atash-Tullaru (fire of Tullaru) on the Akkadian construct frame; resource + feature (Zaranu-kaufu, the gold-mountain).",
+    "gendered_endings": {
+      "female": [
+        "tu",
+        "itu"
+      ],
+      "male": [
+        "u"
+      ]
+    },
+    "patronymic_form": "the Akkadian scribal-priestly populace keep the 'mar-' (son of) patronymic and theophoric constructs; the Persian-descended upland court keep a house (vith-, Akkadianized to vit-) and a satrapal/court office; the throne fuses both - a Sharru who also carries a Bit- house-name and the Persian farnah-glory. Order given-first.",
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur-",
+      "Kar-",
+      "Til-",
+      "pura",
+      "Atash-",
+      "marz"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried ziggurats and fallen apadana-halls: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu', 'the dead Atashana of [name]'",
+    "military_units": "the [god] Standard and the Spada-host: 'the Standard of Urlandu', 'the Spada of the Shah', 'the Ten-Thousand'",
+    "ships": "river-barges and royal-road craft: 'Pride of the Naru', 'Bearer of the Baji', 'Boat of Tullaru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Lapis Cup', 'The Golden Farnah', 'The Lion-Gate Tavern'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Akkadian Sargonid reflexes PRIMARY (the family_near_eastern / hammuran morphs), Old-Persian variants SECONDARY (the axsatran shifted stems), never real Mesopotamian/Iranian gods. All three alignments (standard lens). The Akkadian temple-cult is the spine; the Persian fire-and-Arta register is the courtly overlay - the crown keeps both the bit-ili god-house and the atash fire-altar.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer) / Athravu (fire-tender)",
+      "3": "Sangu (priest) / Magu (magus)",
+      "5": "Shangu Rabu (high priest) / Magupatu",
+      "7": "Urigallu (chief priest)",
+      "9": "Shatammu (temple-primate)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as -lemnu (Akkadian evil) or the hosts of Drauga (the Persian Lie), keep their morphs + an epithet: Maraxus -> Marakshu the City-Burner (Persian Marakhsha the Burner-of-Cities); Vacidus -> Bakidu-lemnu the Unmaking (Persian Vakida the Devouring-Void); Lusanto -> Lusanu the Hoard-Worm (Persian Lusanta the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Gayandu": "the alluvial field beneath the ziggurat and the mountain",
+      "Tullaru": "a winged sun-disc over a law-stele and a fire-altar",
+      "Urlandu": "an iron spear crossed with an oath-ring"
+    },
+    "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power] and its Atash (fire of [power]): 'the Bit-ili of Tullaru', 'the Atash of Tullaru'.",
+    "saints_pattern": "the deified law-givers and just kings of the cities, kept as fravartu (fore-spirits) and inscribed on the temple-stele; honored at the ziggurat and the fire-altar; 'the Just [name]', 'the Arta-true [name]'.",
+    "sample_deity_renames": {
+      "Argentus": "Argantu (Persian Arzanta) - trade, the road and increase",
+      "Gaiandus": "Gayandu (Persian Gayanta) - the enduring earth and mountain",
+      "Numeno": "Numunu (Persian Naumana) - sky, the good mind and scribe-wisdom",
+      "Orlandus": "Urlandu (Persian Urlaspa) - iron, oath, war and the cavalier",
+      "Realta": "Rialtu (Persian Riyata) - the mother, the Lady of Waters, mercy",
+      "Tulrius": "Tullaru (Persian Turvasa) - the sun and judgment, lamp of right-order"
+    },
+    "the_one": "Itarnu (Akkadian; Persian Asturna) - the great distant one, honored not petitioned, source of the Shah's farnah-glory",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, the hosts of the Lie, and names the Lawful powers - and Itarnu - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Itarnu the distant, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful, Numunu of the law-stele - upholding the right-order (the Persian Arta) and naming the Chaotic powers -lemnu (evil) or the hosts of the Lie, warded; the law-stele and the fire-altar bind alike",
+      "Neutral": "the ancestral dead (kept as fravartu, the honored fore-spirits, after the Persian fravashi) and the city-spirits of the bit-ili; the great powers invoked at the temple and the atash fire-altar situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Akkadian native ladder, ascending, beneath an English display ladder (Baron/Marquis/Count/Duke/Prince/[Shah]/Emperor). The kingdom-tier DISPLAY ruler is the approved foreign term 'Shah' (the Persian throne-word, the one Persian title the realm wears openly); all other display tiers are English. Native: Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king; styled the Shah) kingdom over a Sharrutu; Shar-kishshati (king of the totality) empire over the Kishshatu. The highland Persian-descended marz-wardens and the satrapal usage survive in regional flavor beneath the Akkadian frame. The sangu (priest) and the scribal shatammu stand outside the ladder. Rank titles are the real Akkadian register (allowed); 'Shah' is the approved foreign display term.",
+    "approved_foreign_terms_used": [
+      "Shah (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Shah' at the kingdom tier). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Prince": "Princess",
+      "Shah": "Shahbanu"
+    },
+    "female_forms_native": {
+      "Hazannu": "Hazannatu",
+      "Massaru": "Massartu",
+      "Rubu": "Rubatu",
+      "Shaknu": "Shaknatu",
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Turtanu": "Turtanutu"
+    },
+    "government": "feudal (a Perso-Akkadian crown over the Two Rivers' temple-cities: the Shah and his rubu-kin at the throne, the shaknu-governors over the alu-cities, the hazannu-mayors and the turtanu-commanders beneath; the Persian-descended marz-wardens hold the highland marches; the sangu-priesthood and the scribal ekallu serve the crown as they have served every crown)",
+    "heir": "Mar-Sharri (son of the king / crown prince; the Shah's heir)",
+    "honorifics": {
+      "champion": "Redasparu (the horse-lord; Akkadian redu + Persian asabara)",
+      "elder": "Shibu (the elder)",
+      "lady": "Beltu",
+      "lord": "Belu",
+      "your_grace": "Beli (my lord)",
+      "your_majesty": "Sharri (the Shah)"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Shaknutu",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Duke",
+        "ruler_native": "Turtanu"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Kishshatu",
+        "ruler": "Emperor",
+        "ruler_native": "Shar-kishshati"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "Shah",
+        "ruler_native": "Sharru"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Massarutu",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ade (loyalty-oath)",
+      "liege": "Belu",
+      "tribute": "Biltu / Baji (Persian tribute, Akkadianized)",
+      "vassal": "Ardu (servant) / Bandaku (the king's bondsman; Persian bandaka, Akkadianized)"
+    }
+  }
+}

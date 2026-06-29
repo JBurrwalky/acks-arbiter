@@ -1,0 +1,467 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Theronides",
+      "the Damonides",
+      "the Stratides",
+      "the Lysandrides",
+      "the Aristides",
+      "House Li-keng",
+      "House Wang-keng",
+      "House Zhao-keng",
+      "House Sun-keng",
+      "the Hieronides",
+      "House Ma-keng",
+      "the Eumenides",
+      "Theronson",
+      "Damonson",
+      "Stratosson",
+      "Hieronson",
+      "Phaedrosson",
+      "Kalliasson",
+      "Aristonson",
+      "Eumenesson",
+      "Lysandrosson",
+      "Nikandrosson",
+      "Zhongyan-idesson",
+      "Yunlong-osson"
+    ],
+    "dungeon_ruin": [
+      "the Labyrinth of Heros Theron"
+    ],
+    "epithet": [
+      "ho Sophos",
+      "ho Megas",
+      "the Silk-marcher",
+      "ho Dikaios",
+      "Jade-blade",
+      "the Loyal",
+      "Cloud-rider",
+      "Nikephoros",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Anakra",
+      "Argyrosakte",
+      "Boreasatrapos",
+      "Chaosdouros",
+      "Chryseosdrymos",
+      "Chrysosgangos",
+      "Dongosguanon",
+      "Erythroshelos",
+      "Esohodos",
+      "Exohuangos",
+      "Halashyle",
+      "Hiersengisthmos",
+      "Hipposkhios",
+      "Hypseloskolpos",
+      "Kaloslimne",
+      "Katolophos",
+      "Leukosnape",
+      "Megasnesos",
+      "Melaspotagian",
+      "Mikroserdaos",
+      "Neoshanos",
+      "Notostenon",
+      "Palaiosthalassa",
+      "Sidereosyuanos",
+      "Siderosakra",
+      "Siosakte",
+      "Sitosatrapos",
+      "Teledouros",
+      "Tongosdrymos",
+      "Waigangos"
+    ],
+    "military_unit": [
+      "the Bronze Phalanx",
+      "the Azure Banner",
+      "the Strategos"
+    ],
+    "personal_female": [
+      "Theodora",
+      "Daphne",
+      "Arete",
+      "Thalia",
+      "Kallisto",
+      "Stratonike",
+      "Eudora",
+      "Demetria",
+      "Lihua-is",
+      "Yurong-e",
+      "Meixia",
+      "Zhilane",
+      "Caiyune",
+      "Suyin-e",
+      "Strate",
+      "Phaedre",
+      "Eumene",
+      "Lysandre",
+      "Nikandre",
+      "Zhongyan-ide",
+      "Yunlong-e",
+      "Bowen-ide",
+      "Dewei-e",
+      "Anguo-e",
+      "Gaiandros",
+      "Gaiandrose",
+      "Numenos",
+      "Numenose",
+      "Orlandros",
+      "Orlandrose",
+      "Realtia",
+      "Realtiae",
+      "Tulrios",
+      "Tulriose"
+    ],
+    "personal_male": [
+      "Theron",
+      "Damon",
+      "Stratos",
+      "Hieron",
+      "Phaedros",
+      "Kallias",
+      "Ariston",
+      "Eumenes",
+      "Lysandros",
+      "Nikandros",
+      "Zhongyan-ides",
+      "Yunlong-os",
+      "Bowen-ides",
+      "Dewei-os",
+      "Mingyan",
+      "Anguo-os",
+      "Theodoros",
+      "Daphnos",
+      "Aretos",
+      "Thalios",
+      "Stratonikos",
+      "Eudoros",
+      "Demetrios",
+      "Yurong-os",
+      "Meixios",
+      "Zhilanos",
+      "Caiyunos",
+      "Suyin-os",
+      "Gaiandros",
+      "Gaiandrosos",
+      "Numenos",
+      "Numenosos",
+      "Orlandros",
+      "Orlandrosos",
+      "Realtia",
+      "Realtiaos",
+      "Tulrios",
+      "Tulriosos"
+    ],
+    "settlement": [
+      "Serellis",
+      "Chryskeng",
+      "Potagian-polis",
+      "Akra Leuke",
+      "Serdaos-guan",
+      "Yulos-miao",
+      "Anagora",
+      "Argyrosakropolis",
+      "Boreasakte",
+      "Chaosasty",
+      "Chryseosdemos",
+      "Chrysosdouros",
+      "Dongoshieromiao",
+      "Erythroskome",
+      "Esolimen",
+      "Exolophos",
+      "Halasphrourion",
+      "Hiersengpoliskeng",
+      "Hipposagora",
+      "Hypselosakropolis",
+      "Kalosakte",
+      "Katasty",
+      "Leukosdemos",
+      "Megasdouros",
+      "Melashieromiao",
+      "Mikroskome",
+      "Neoslimen",
+      "Notoslophos",
+      "Palaiosphrourion",
+      "Sidereospoliskeng",
+      "Siderosagora",
+      "Siosakropolis",
+      "Sitosakte",
+      "Telasty",
+      "Tongosdemos",
+      "Waidouros",
+      "Yuloshieromiao",
+      "Anokome",
+      "Argyroslimen",
+      "Boreaslophos"
+    ],
+    "ship": [
+      "Pride of Serellis",
+      "the Jade Trireme",
+      "Boat of Tulrios",
+      "the Silk-Wind"
+    ],
+    "tavern": [
+      "The Jade Kylix",
+      "The Silk and Scroll",
+      "The Bronze Helm",
+      "The Chryseos Argyros",
+      "The Erythros Chaos",
+      "The Hierseng Chrysos",
+      "The Hypselos Halas",
+      "The Kalos Hippos",
+      "The Leukos Sideros",
+      "The Megas Sios",
+      "The Melas Sitos",
+      "The Mikros Tongos"
+    ]
+  },
+  "culture_id": "serellis",
+  "family": [
+    "classical",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_serellis.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "serellis",
+  "lexicon": {
+    "adjectives": {
+      "black": "melas",
+      "fair": "kalos",
+      "far": "tele",
+      "golden": "chryseos",
+      "great": "megas",
+      "high": "hypselos",
+      "iron": "sidereos",
+      "little": "mikros",
+      "new": "neos",
+      "old": "palaios",
+      "red": "erythros",
+      "sacred": "hierseng",
+      "white": "leukos"
+    },
+    "directional": {
+      "east": "dongos",
+      "inner": "eso",
+      "lower": "kato",
+      "north": "boreas",
+      "outer": "wai",
+      "south": "notos",
+      "upper": "ano",
+      "west": "exo"
+    },
+    "feature_words": {
+      "bay": "kolpos",
+      "cape": "akra",
+      "coast": "akte",
+      "ford": "douros",
+      "forest": "hyle",
+      "hill": "lophos",
+      "isle": "nesos",
+      "lake": "limne",
+      "marsh": "helos",
+      "mountain": "shanos",
+      "narrows": "stenon",
+      "neck": "isthmos",
+      "pass": "guanon",
+      "plain": "yuanos",
+      "ridge": "gangos",
+      "river": "potagian",
+      "road": "serdaos",
+      "sea": "thalassa",
+      "stream": "khios",
+      "track": "atrapos",
+      "vale": "nape",
+      "waste": "huangos",
+      "way": "hodos",
+      "wood": "drymos"
+    },
+    "resources": {
+      "bronze": "tongos",
+      "gold": "chrysos",
+      "grain": "sitos",
+      "horse": "hippos",
+      "iron": "sideros",
+      "jade": "yulos",
+      "salt": "halas",
+      "silk": "sios",
+      "silver": "argyros",
+      "tea": "chaos"
+    },
+    "settlement_words": {
+      "citadel": "akropolis",
+      "city": "poliskeng",
+      "fort": "phrourion",
+      "hamlet": "kome",
+      "market": "agora",
+      "port": "limen",
+      "temple_town": "hieromiao",
+      "town": "asty",
+      "village": "demos"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Hellenic [adjective|resource](stem) + feature-word with linking -o- (Melas + oros -> Melanoros) layered over Sinitic quality/feature + type compounds run through the Greek filter (Jin + cheng -> Chryskeng, golden-city; Da + jiang -> Megagian, great-river): the capital Serellis, Chryskeng (the golden walled-city), Potagian-polis (the river-city).",
+    "gendered_endings": {
+      "female": [
+        "e",
+        "a",
+        "jade"
+      ],
+      "male": [
+        "os",
+        "es"
+      ]
+    },
+    "patronymic_form": "the Hellenic ruling stock keep a patronymic -ides/-ades (son of) plus an academy/polis demonym; the Sinitic populace keep the clan-surname (xing) first plus a generation-name within a zu-lineage; the throne fuses both - a strategos who also carries a Sinitic xing-house name. Order given-first for the Greek register, surname-first for the Sinitic.",
+    "toponymic_suffixes": [
+      "os",
+      "on",
+      "polis",
+      "eia",
+      "keng",
+      "gian",
+      "guan"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen Hellenic sanctums and ruined warlord cheng along the silk-road: 'the Labyrinth of Heros Theron', 'the Ruined Keng of [warlord]', 'the Tomb of [name]'",
+    "military_units": "the [Adjective] Phalanx / Lochos and the Sinitic Ying-camps and Banners: 'the Bronze Phalanx', 'the Azure Banner', 'the Strategos' Lochos'",
+    "ships": "silk-road river-barges and Hellenic war-keels: 'Pride of Serellis', 'the Jade Trireme', 'Boat of Tulrios', 'the Silk-Wind'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Kylix', 'The Silk and Scroll', 'The Bronze Helm'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Hellenic Greek reflexes PRIMARY (family_classical/achillean, the -os/-on/-es Hellenic forms), Sinitic celestial morphs SECONDARY (family_east_asian.json theonym_sets.sinitic), never real Greek/Chinese gods. The academy's philosophy of the One meets the celestial bureaucracy of the Mandate: the philosophers contemplate Aiternos/Aiteng the unknowable source, the mandarins serve the celestial powers as officials of Highest Heaven.",
+    "clergy_ladder": {
+      "1": "Neokoros (temple-keeper) / Daoshi-tu (acolyte)",
+      "3": "Hiereus (priest) / Daoshi",
+      "5": "Archiereus (high priest) / Fashi (ritual-master)",
+      "7": "Hierophant / Gaogong (high priest)",
+      "9": "Megas Hierophant / Tianshi (celestial master)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as daimones (Hellenic demons) or the mo demon-marshals (Sinitic) outside the celestial order, keep their morphs + an epithet: Maraxus -> Maraxos the Tyrant-Flame (Sinitic Maluo the War-Fire Marshal); Vacidus -> Vakidos the Void (Sinitic Wuci the Devourer); Lusanto -> Lusanthos the Hoard-Worm (Sinitic Lusan the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Gaiandros": "a green mountain above the olive-branch and the grain-altar",
+      "Orlandros": "an iron spear crossed with an oath-ring and the city-standard",
+      "Tulrios": "a radiate sun-disc above the scales of justice and the seal of office"
+    },
+    "religious_orders_pattern": "the Temenos/Mysteria (Hellenic precinct) or the Miao (Sinitic temple) of [power]: 'the Mysteries of Numenos', 'the Miao of Tuli-di'; the ancestral Ci (clan-shrine) for the zu.",
+    "saints_pattern": "the Heroes (deified founders and sages, venerated at a heroon tomb-shrine) and the worthy officials enrolled in the celestial register, honored at the Ci (ancestral shrine) and the miao-temple; 'Heros [name]', 'the Lord [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaiandros (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
+      "Numeno": "Numenos (Sinitic Numeng-jun) - air and sage-wisdom of the winds",
+      "Orlandus": "Orlandros (Sinitic Aolan-jun) - iron, oath, war",
+      "Realta": "Realtia (Sinitic Lianta-mu) - the mother, mercy",
+      "Tulrius": "Tulrios (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+    },
+    "the_one": "Aiternos (Hellenic, < Aeternus; Sinitic Aiteng, the Highest Heaven and source of the Mandate) - the One, unknowable source, honored and contemplated, not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiternos/Aiteng - as the tyrant-gods of a corrupt court to be defied and overthrown.",
+      "Lawful": "venerates the Lawful powers - Aiternos contemplated, Tulrios the just, Orlandros of the sworn oath, Realtia the merciful - as the celestial officials of Highest Heaven and the patrons of the academy; the philosopher's reason and the mandarin's rite bind alike, and the Chaotic powers are named daimones (Hellenic) or the mo demon-marshals (Sinitic), warded outside the celestial order.",
+      "Neutral": "honors the deified ancestors (the Heroes of the founding houses and the zu of the lineage) and the local earth-and-grain powers and city-spirits, with the great powers invoked at the temenos-grove and the miao-temple situationally; the Confucian ancestral rite orders all."
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Hellenic ladder, ascending, with the Sinitic celestial-bureaucratic substrate co-titles fused beneath. Toparch (estate-lord) barony; Phrourarch-dudu (garrison-march-commander; Gk phrourarch + Ch dudu frontier-command) march; ARCHON (the approved foreign term, the provincial governor) county over an Archontia; Strategos (general-governor) duchy; Dynastes (prince-ruler) principality; Basileus-wang (king; Gk basileus + Ch wang) kingdom over a Basileia; Autokrator-di (emperor; Gk autokrator + Ch -di celestial-emperor) empire over the Autokratoria, holding the Mandate (Tianming) and the academy's blessing alike. The conquered cheng-cities keep their Sinitic shidafu (scholar-official) and the Confucian magistrate beneath the Hellenic crown. The hierophant-priest and the Sinitic daoshi stand outside the ladder. Rank titles fuse the real Greek and Chinese registers (allowed); only the county ruler surfaces as an approved foreign DISPLAY term (Archon).",
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here Archon for the county). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Archon": "Archontissa",
+      "Autokrator-di": "Autokrateira-di",
+      "Basileus-wang": "Basilissa-wang",
+      "Dynastes": "Dynastissa",
+      "Phrourarch-dudu": "Phrourarchissa-dudu",
+      "Strategos": "Strategissa",
+      "Toparch": "Toparchissa"
+    },
+    "government": "feudal (a Hellenic philosopher-aristocracy over the Sinitic river-cities and their mandarin bureaucracy: the Basileus and his strategoi at the crown, the Archon-governors over the cheng-cities, the toparch-lords on their estates; the Sinitic scholar-officials of the celestial court - the shidafu and the dudu frontier-commands - serve and administer beneath)",
+    "heir": "Diadochos (successor-designate; Sinitic Taizi/Shizi for a wang-heir)",
+    "honorifics": {
+      "champion": "Hippeus (Hellenic knight) / Wushi (Sinitic warrior)",
+      "elder": "Presbys (the eldest) / Zhanglao",
+      "lady": "Kyria / Furen",
+      "lord": "Kyrios / Daren",
+      "your_grace": "Megistos / Dianxia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Toparchia",
+        "ruler": "Baron",
+        "ruler_native": "Toparch"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Archontia",
+        "ruler": "Archon",
+        "ruler_native": "Archon"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Strategia",
+        "ruler": "Duke",
+        "ruler_native": "Strategos"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Autokratoria",
+        "ruler": "Emperor",
+        "ruler_native": "Autokrator-di"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Basileia",
+        "ruler": "King",
+        "ruler_native": "Basileus-wang"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Phrourarchia",
+        "ruler": "Marquis",
+        "ruler_native": "Phrourarch-dudu"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Dynasteia",
+        "ruler": "Prince",
+        "ruler_native": "Dynastes"
+      }
+    },
+    "vassalage": {
+      "fealty": "Horkos (oath) / Mengyue (sworn covenant)",
+      "liege": "Hegemon / Jun (sovereign)",
+      "tribute": "Phoros / Gongfu",
+      "vassal": "Symmachos (ally) / Chen (subject)"
+    }
+  }
+}

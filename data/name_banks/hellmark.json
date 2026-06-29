@@ -1,0 +1,465 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Sigurdungar",
+      "the Haraldungar",
+      "the Bjornungar",
+      "the Ragnarungar",
+      "the Steinarungar",
+      "the Theronides",
+      "the Kalliades",
+      "the Lysandrides",
+      "the Aristides",
+      "the Eumenides",
+      "the Hroarungar",
+      "the Demetriades",
+      "Sigurdrson",
+      "Haraldrson",
+      "Thorsteinnson",
+      "Bjornulfrson",
+      "Ragnarrson",
+      "Eysteinnson",
+      "Gunnarrson",
+      "Hroarrson",
+      "Olafrson",
+      "Steinarrson",
+      "Theronson",
+      "Kalliasson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Hof",
+      "the Haugr of the Jarls",
+      "the broken Jarlsborg"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Axe-of-Miklagardr",
+      "the Sea-king",
+      "ho Megas",
+      "the Oath-keeper",
+      "City-warden",
+      "the Far-sailed",
+      "Storm-voiced",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Argyrakr",
+      "Austraktr",
+      "Efratrapr",
+      "Elainndrymr",
+      "Fagreremr",
+      "Fjarrhelr",
+      "Gamallhodr",
+      "Gullinnhylr",
+      "Halristhmr",
+      "Harkleysr",
+      "Heilroskolpr",
+      "Hrosslimnr",
+      "Hvitrlofr",
+      "Innrinapr",
+      "Jarnesr",
+      "Krysrorr",
+      "Litillpedinn",
+      "Marmrporr",
+      "Mikillpotamr",
+      "Nedrirakr",
+      "Nordroyr",
+      "Nyrstenr",
+      "Oinrthalassr",
+      "Rafrvegr",
+      "Raudrakr",
+      "Sitraktr",
+      "Sudratrapr",
+      "Svartrdrymr",
+      "Vestreremr",
+      "Ytrihelr"
+    ],
+    "military_unit": [
+      "s hird and the polis levies:",
+      ","
+    ],
+    "personal_female": [
+      "Gudrun",
+      "Ragnhildr",
+      "Sigrunn",
+      "Thorunn",
+      "Astrid",
+      "Ingunn",
+      "Hervor",
+      "Theodora",
+      "Kallisto",
+      "Stratonike",
+      "Eirene",
+      "Lysandra",
+      "Daphne",
+      "Arete",
+      "Sigurda",
+      "Haralda",
+      "Bjornulfa",
+      "Ragnara",
+      "Gunnara",
+      "Hroara",
+      "Olafa",
+      "Steinara",
+      "Eumena",
+      "Geyandr",
+      "Geyandra",
+      "Nymir",
+      "Nymira",
+      "Orlund",
+      "Orlunda",
+      "Rjalta",
+      "Rjaltaa",
+      "Thulr",
+      "Thulra"
+    ],
+    "personal_male": [
+      "Sigurdr",
+      "Haraldr",
+      "Thorsteinn",
+      "Bjornulfr",
+      "Ragnarr",
+      "Eysteinn",
+      "Gunnarr",
+      "Hroarr",
+      "Olafr",
+      "Steinarr",
+      "Theron",
+      "Kallias",
+      "Lysandros",
+      "Ariston",
+      "Demetrios",
+      "Nikandros",
+      "Eumenes",
+      "Stratos",
+      "Sigrr",
+      "Thorr",
+      "Ingr",
+      "Theodorr",
+      "Lysandrr",
+      "Geyandr",
+      "Geyandrr",
+      "Nymir",
+      "Nymirr",
+      "Orlund",
+      "Orlundr",
+      "Rjalta",
+      "Rjaltar",
+      "Thulr",
+      "Thulrr"
+    ],
+    "settlement": [
+      "Miklagardr",
+      "Jarnborg",
+      "Thulrs-polis",
+      "Neapolis",
+      "Sigurdsvik",
+      "Akropolis-haugr",
+      "Argyragorr",
+      "Austrakrokast",
+      "Efraktr",
+      "Elainnastr",
+      "Fagrdemr",
+      "Fjarrfrurki",
+      "Gamallhierof",
+      "Gullinnkomr",
+      "Halrlimr",
+      "Harlofr",
+      "Heilrosmiklipol",
+      "Hrossporr",
+      "Hvitragorr",
+      "Innrakrokast",
+      "Jarnaktr",
+      "Krysrastr",
+      "Litilldemr",
+      "Marmrfrurki",
+      "Mikillhierof",
+      "Nedrikomr",
+      "Nordrlimr",
+      "Nyrlofr",
+      "Oinrmiklipol",
+      "Rafrporr",
+      "Raudragorr",
+      "Sitrakrokast",
+      "Sudraktr",
+      "Svartrastr",
+      "Vestrdemr",
+      "Ytrifrurki",
+      "Argyrhierof",
+      "Austrkomr",
+      "Efrilimr",
+      "Elainnlofr"
+    ],
+    "ship": [
+      "the Wave-Stallion",
+      "Raven of Miklagardr",
+      "the Nike",
+      "Pride of the Thalassa"
+    ],
+    "tavern": [
+      "The Amber Kylix",
+      "The Axe and Olive",
+      "The Golden Drekar",
+      "The Fagr Argyr",
+      "The Fjarr Elainn",
+      "The Gamall Halr",
+      "The Gullinn Hross",
+      "The Har Jarn",
+      "The Heilros Krysr",
+      "The Hvitr Marmr",
+      "The Jarn Oinr",
+      "The Litill Rafr"
+    ]
+  },
+  "culture_id": "hellmark",
+  "family": [
+    "germanic",
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_hellmark.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "hellmark",
+  "lexicon": {
+    "adjectives": {
+      "black": "svartr",
+      "fair": "fagr",
+      "far": "fjarr",
+      "golden": "gullinn",
+      "great": "mikill",
+      "high": "har",
+      "iron": "jarn",
+      "little": "litill",
+      "new": "nyr",
+      "old": "gamall",
+      "red": "raudr",
+      "sacred": "heilros",
+      "white": "hvitr"
+    },
+    "directional": {
+      "east": "austr",
+      "inner": "innri",
+      "lower": "nedri",
+      "north": "nordr",
+      "outer": "ytri",
+      "south": "sudr",
+      "upper": "efri",
+      "west": "vestr"
+    },
+    "feature_words": {
+      "bay": "kolpr",
+      "cape": "akr",
+      "coast": "aktr",
+      "ford": "porr",
+      "forest": "hylr",
+      "hill": "lofr",
+      "isle": "nesr",
+      "lake": "limnr",
+      "marsh": "helr",
+      "mountain": "orr",
+      "narrows": "stenr",
+      "neck": "isthmr",
+      "pass": "kleysr",
+      "plain": "pedinn",
+      "ridge": "rakr",
+      "river": "potamr",
+      "road": "hodr",
+      "sea": "thalassr",
+      "stream": "royr",
+      "track": "atrapr",
+      "vale": "napr",
+      "waste": "eremr",
+      "way": "vegr",
+      "wood": "drymr"
+    },
+    "resources": {
+      "amber": "rafr",
+      "gold": "krysr",
+      "grain": "sitr",
+      "horse": "hross",
+      "iron": "jarn",
+      "marble": "marmr",
+      "oil": "elainn",
+      "salt": "halr",
+      "silver": "argyr",
+      "wine": "oinr"
+    },
+    "settlement_words": {
+      "citadel": "akrokast",
+      "city": "miklipol",
+      "fort": "frurki",
+      "hamlet": "komr",
+      "market": "agorr",
+      "port": "limr",
+      "temple_town": "hierof",
+      "town": "astr",
+      "village": "demr"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Norse dithematic ([quality|animal|resource](stem) + element: Jarn-borg, iron-fort; Svart-vidr, black-wood) layered over Hellenic civic compounds (feature/quality + -polis / linking -o-: Neapolis, Melanoros): the capital Miklagardr (the Great City), Jarnborg (the iron-fort), Thulrs-polis (Thulr's-city).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "unn",
+        "is"
+      ],
+      "male": [
+        "r",
+        "son",
+        "es",
+        "eus"
+      ]
+    },
+    "patronymic_form": "the Norse ruling stock carry the -son / -dottir patronymic and a dithematic lineage-name (the -ungr / -ingar line of the jarl-house); the Hellenic populace keep the -ides / -ades patronymic and the polis/deme demonym of origin; the throne fuses both - a konungr who also bears a basileus-title and a polis-seat.",
+    "toponymic_suffixes": [
+      "polis",
+      "os / -on",
+      "eia / -ia",
+      "borg",
+      "stadr",
+      "vik",
+      "ey"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "sunken poleis and fallen Norse borgs: 'the Akropolis of [name]', 'the Sunken Hof', 'the Haugr of the Jarls', 'the broken Jarlsborg'",
+    "military_units": "the Konungr's hird (the axe-bearing guard / Varangian-band) and the polis levies: 'the Hird of Miklagardr', 'the Axe-bearers', 'the Bronze Phalanx of the poleis'",
+    "ships": "the war-keel and the long-ship, named in Norse kennings and Hellenic virtue-names: 'the Wave-Stallion', 'Raven of Miklagardr', 'the Nike', 'Pride of the Thalassa'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Axe and Olive', 'The Golden Drekar'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - NORSE Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Norse/Greek gods. Alignment PROVISIONAL (Neutral/Lawful): the Norse war-oath and hird-loyalty meet the Hellenic civic law and the basileus' settled order.",
+    "clergy_ladder": {
+      "1": "Hof-thegn (temple-servant) / Neokoros",
+      "3": "Godi (priest)",
+      "5": "Hof-godi (temple-priest) / Hiereus",
+      "7": "Allsherjar-godi (high priest) / Archiereus",
+      "9": "Ellri-godi (eldest priest) / Megas Hierophant"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fjandr (Norse fiends) or -daimon (Hellenic demon), keep their morphs + an epithet: Maraxus -> Marhr the War-Brand (Hell. Maraxos the Tyrant-Flame); Vacidus -> Vakr the Unmaker (Hell. Vakidos-daimon); Lusanto -> Lusandr the Hoard-Worm (Hell. Lusandos the Drowner-of-Gold).",
+    "holy_symbol_motifs": {
+      "Geyandr": "the standing stones above the olive-terrace",
+      "Orlund": "an iron axe crossed with an oath-ring",
+      "Thulr": "a sun-wheel over a crossed axe and scales"
+    },
+    "religious_orders_pattern": "the Hof (Norse grove-temple) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Hof of Thulr', 'the Temenos of Tulrios'.",
+    "saints_pattern": "the disir and the deified jarls (the war-dead of the ruling house, honored at the haugr / barrow) and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
+    "sample_deity_renames": {
+      "Gaiandus": "Geyandr (Hell. Gaiandros) - the enduring earth, cold, endurance",
+      "Numeno": "Nymir (Hell. Numenos) - air, lightning, sky-wisdom",
+      "Orlandus": "Orlund (Hell. Orlandros) - iron, oath, war",
+      "Realta": "Rjalta (Hell. Realtia) - the mother, mercy, healing",
+      "Tulrius": "Thulr (Hell. Tulrios) - the sun, fire, and justice"
+    },
+    "the_one": "Eitnir (Norse; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eitnir - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eitnir, Thulr the just, Orlund of the sworn war, Rjalta the merciful - and names the Chaotic powers fjandr (fiends) / daimones, warded and unworshipped; the hird-oath and the basileus' civic law bind alike, the enthroned guard and the ordered polis the social ideal",
+      "Neutral": "the ancestral war-dead (the disir and the deified jarls of the ruling house) and the city-heroes of the poleis (the heroon-dead); the great powers invoked at the hof-grove and the polis-temple situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Norse ladder, ascending, with the Hellenic substrate co-titles beneath. Hersir (war-chief / sworn lord) barony over a Hersa-rad; Markgreifi (march-count) march over a Mork; Eparkr (Norse-borne form of the Greek eparch / provincial governor) county over an Eparkia; Hertogi (war-leader; *harja-tugon) duchy over a Hertogadaemi; Jarl (the great earl-prince) principality over a Jarlsriki; Konungr-Basileus (the king, fusing the Norse konungr and the Greek basileus) kingdom over a Konungsriki; Stori Basileus (the Great Basileus, king-of-kings; ON storr + Gk basileus) empire over the Megalriki (the 'great realm'). The conquered poleis keep their Hellenic archon (city-magistrate) and strategos (general / fleet-commander) beneath the Norse crown. The godi (priest) and the Hellenic hierophant stand outside the ladder. Rank titles fuse the real Old Norse and Greek registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Jarl (duchy)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Emperor": "Empress",
+      "Jarl": "Duchess",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Eparkr": "Eparkissa",
+      "Hersir": "Hersa",
+      "Hertogi": "Hertogynja",
+      "Jarl": "Jarla",
+      "Konungr-Basileus": "Drottning-Basilissa",
+      "Markgreifi": "Markgreifynja",
+      "Stori Basileus": "Stora Basilissa"
+    },
+    "government": "feudal (a Norse war-elite over the Hellenic poleis: the konungr-basileus and his jarl-kin at the crown, the hersar and eparchs over the city-provinces, the axe-bearing hird sworn to the throne; the archons and the strategoi of the fleets, the agora and the philosophers' schools serve beneath)",
+    "heir": "Konungs-barn (the king's child; the heir; the Hellenic Diadochos for the polis-line)",
+    "honorifics": {
+      "champion": "Kappi (Norse champion) / Hippeus (Hellenic knight)",
+      "elder": "Ellri (the eldest) / Geron",
+      "lady": "Frua / Kyria",
+      "lord": "Drottinn / Kyrios",
+      "your_grace": "Drottinn minn / Megistos"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hersa-rad",
+        "ruler": "Baron",
+        "ruler_native": "Hersir"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Eparkia",
+        "ruler": "Archon",
+        "ruler_native": "Eparkr"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Hertogadaemi",
+        "ruler": "Jarl",
+        "ruler_native": "Hertogi"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Megalriki",
+        "ruler": "Emperor",
+        "ruler_native": "Stori Basileus"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Konungsriki",
+        "ruler": "King",
+        "ruler_native": "Konungr-Basileus"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Mork",
+        "ruler": "Marquis",
+        "ruler_native": "Markgreifi"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Jarlsriki",
+        "ruler": "Prince",
+        "ruler_native": "Jarl"
+      }
+    },
+    "vassalage": {
+      "fealty": "Eidr (oath) / Horkos (Hellenic oath)",
+      "liege": "Drottinn / Hegemon",
+      "tribute": "Skattr (Norse tribute) / Phoros (Hellenic tribute)",
+      "vassal": "Thegn (sworn man) / Symmachos (Hellenic ally)"
+    }
+  }
+}

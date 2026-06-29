@@ -1,0 +1,473 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "per-Tjuraa",
+      "per-Oranetj",
+      "per-Riaret",
+      "per-Numenaa",
+      "per-Geandaa",
+      "per-Djeroraa",
+      "the Wareria",
+      "the Tulriana",
+      "sa-Tjuraa",
+      "sa-Oranetj",
+      "the Korneliaa",
+      "mery-Riaret",
+      "Tjuraa-hotepson",
+      "Oranetj-moseson",
+      "Mery-tjuraason",
+      "Sa-riaretson",
+      "Numenaa-hotepson",
+      "Geandaa-nakhtson",
+      "Djeroraa-moseson",
+      "Pa-tjuraason",
+      "Numenaa-efson",
+      "Mery-oranetjson",
+      "Tjuraa-em-akhson",
+      "Oranetj-hotepson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Per-netjer",
+      "the Buried Menkastjer",
+      "the Drowned Koraa"
+    ],
+    "epithet": [
+      "maa-kheru",
+      "Sun-faced",
+      "the River-blessed",
+      "Eagle-of-the-Nile",
+      "the Far-marching",
+      "Standard-bearer",
+      "Gold-of-Honor",
+      "the Enduring",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Akhet",
+      "Argjetdeshret",
+      "Desherdjew",
+      "Djeseridehu",
+      "Feretiter",
+      "Hedjitru",
+      "Hematiu",
+      "Hemtykampet",
+      "Iabtkhent",
+      "Iawmer",
+      "Imentmetjen",
+      "Imetnehebet",
+      "Imynemaa",
+      "Insypromet",
+      "Itqaa",
+      "Kemro",
+      "Khentseger",
+      "Marmershe",
+      "Mawshemet",
+      "Mehetwadet",
+      "Merhetwadjmer",
+      "Nebuwaret",
+      "Nedjeswastet",
+      "Neferwatwia",
+      "Pehuwedjeb",
+      "Qakhet",
+      "Remudeshret",
+      "Resydjew",
+      "Rwtidehu",
+      "Witer"
+    ],
+    "military_unit": [
+      "the Division of Oranetj",
+      "the Regaa of Romkemet",
+      "the River-Eagles",
+      "the Standard of the Sun"
+    ],
+    "personal_female": [
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Oranetj-et",
+      "Riaret-nefret",
+      "Sat-Tjuraa",
+      "Numenaa-et",
+      "Riaret-it Realtiet",
+      "Geandaa-et",
+      "Djeroraa-nefret",
+      "Sat-Riaret Realtiet",
+      "Tjuraa-nefru",
+      "Riaret-em",
+      "Numenaa-nefret",
+      "Sat-Oranetj",
+      "Riaret-set Aurelet",
+      "Mery-Tjuret",
+      "Djeroraa-et",
+      "Pa-Tjuret",
+      "Marcaa-Tjuret",
+      "Djeroraa",
+      "Djeroraaet",
+      "Geandaa",
+      "Geandaaet",
+      "Numenaa",
+      "Numenaaet",
+      "Oranetj",
+      "Oranetjet",
+      "Riaret",
+      "Riaretet",
+      "Tjuraa",
+      "Tjuraaet"
+    ],
+    "personal_male": [
+      "Tjuraa-hotep",
+      "Oranetj-mose",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Tjuraa-mose Tulrianaa",
+      "Geandaa-nakht",
+      "Djeroraa-mose",
+      "Sa-Oranetj Orlandiaa",
+      "Pa-Tjuraa",
+      "Numenaa-ef",
+      "Mery-Oranetj",
+      "Tjuraa-em-akh",
+      "Sa-Tjuraa Wareriaa",
+      "Oranetj-hotep",
+      "Geandaa-mose Gaiandiaa",
+      "Marcaa-Tjuraa",
+      "Lukaa-Oranetj",
+      "Mery-Riaraa",
+      "Tjuraa-aa",
+      "Oranetj-aa",
+      "Riaret-nefraa",
+      "Numenaa-aa",
+      "Geandaa-aa",
+      "Djeroraa-nefraa",
+      "Numenaa-nefraa",
+      "Djeroraa",
+      "Djeroraaaa",
+      "Geandaa",
+      "Geandaaaa",
+      "Numenaa",
+      "Numenaaaa",
+      "Oranetj",
+      "Oranetjaa",
+      "Riaret",
+      "Riaretaa",
+      "Tjuraa",
+      "Tjuraaaa"
+    ],
+    "settlement": [
+      "Romkemet",
+      "Per-Tjuraa-Wia",
+      "Niutweret",
+      "Menkastjer-Resy",
+      "Niutkoraa",
+      "Kemu-niut",
+      "Aamahir",
+      "Argjetmenkastjer",
+      "Deshermer-yt",
+      "Djeserniut",
+      "Feretniut-sheri",
+      "Hedjniutkoraa",
+      "Hematniutweret",
+      "Hemtypernetjmahir",
+      "Iabtqaa",
+      "Iawsebakhar",
+      "Imentwadet",
+      "Imetwedjeb",
+      "Imywiket",
+      "Insymahir",
+      "Itmenkastjer",
+      "Kemer-yt",
+      "Khentniut",
+      "Marmerniut-sheri",
+      "Mawniutkoraa",
+      "Mehetniutweret",
+      "Merhetpernetjmahir",
+      "Nebuqaa",
+      "Nedjesebakhar",
+      "Neferwadet",
+      "Pehuwedjeb",
+      "Qawiket",
+      "Remumahir",
+      "Resymenkastjer",
+      "Rwtymer-yt",
+      "Waniut",
+      "Winetniut-sheri",
+      "Aaniutkoraa",
+      "Argjetniutweret",
+      "Desherpernetjmahir"
+    ],
+    "ship": [
+      "Barque of Tjuraa",
+      "Pride of the Itru",
+      "the Eagle of the River",
+      "Grain of the Black Land"
+    ],
+    "tavern": [
+      "The Golden Lotus",
+      "The Eagle and Lotus",
+      "The Iron Standard",
+      "The Aa Argjet",
+      "The Desher Feret",
+      "The Djeser Hemat",
+      "The Feret Hemty",
+      "The Hedj Insy",
+      "The Iaw It",
+      "The Imet Marmer",
+      "The Kem Merhet",
+      "The Maw Nebu"
+    ]
+  },
+  "culture_id": "romkem",
+  "family": [
+    "near_eastern",
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_romkem.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "romkem",
+  "lexicon": {
+    "adjectives": {
+      "black": "kem",
+      "fair": "nefer",
+      "far": "wa",
+      "golden": "nebu",
+      "great": "aa",
+      "high": "qa",
+      "iron": "feret",
+      "little": "nedjes",
+      "low": "imet",
+      "new": "maw",
+      "old": "iaw",
+      "red": "desher",
+      "sacred": "djeser",
+      "white": "hedj"
+    },
+    "directional": {
+      "east": "iabt",
+      "inner": "imy",
+      "lower": "pehu",
+      "north": "mehet",
+      "outer": "rwty",
+      "south": "resy",
+      "upper": "khent",
+      "west": "iment"
+    },
+    "feature_words": {
+      "bay": "khent",
+      "cape": "promet",
+      "coast": "wedjeb",
+      "desert": "deshret",
+      "ford": "wadet",
+      "forest": "metjen",
+      "hill": "qaa",
+      "isle": "iu",
+      "lake": "she",
+      "marsh": "idehu",
+      "mountain": "djew",
+      "narrows": "seger",
+      "neck": "nehebet",
+      "pass": "ro",
+      "plain": "kampet",
+      "ridge": "akhet",
+      "river": "itru",
+      "road": "watwia",
+      "sea": "wadjmer",
+      "stream": "mer",
+      "track": "shemet",
+      "vale": "waret",
+      "waste": "wastet",
+      "way": "iter",
+      "wood": "nemaa"
+    },
+    "resources": {
+      "bronze": "hemty",
+      "fish": "remu",
+      "gold": "nebu",
+      "grain": "it",
+      "iron": "feret",
+      "marble": "marmer",
+      "oil": "merhet",
+      "purple_dye": "insy",
+      "salt": "hemat",
+      "silver": "argjet",
+      "wine": "winet"
+    },
+    "settlement_words": {
+      "citadel": "sebakhar",
+      "city": "niutweret",
+      "colony": "niutkoraa",
+      "fort": "menkastjer",
+      "hamlet": "wiket",
+      "market": "mahir",
+      "port": "mer-yt",
+      "temple_town": "pernetjmahir",
+      "town": "niut",
+      "village": "niut-sheri"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Egyptian construct-chains (Per-[god], Niut-[god], Ta-[land], Pa-[noun]) layered over adapted Latin civic compounds (Kastjer-[name] = castra-of, Wia-[name] = via-of, Koraa-[name] = colony-of): the capital Per-Tjuraa-Wia (temple-of-the-sun on the road), Menkastjer-Resy (the southern legion-fort).",
+    "gendered_endings": {
+      "female": [
+        "et",
+        "it"
+      ],
+      "male": [
+        "aa",
+        "mose"
+      ]
+    },
+    "patronymic_form": "the Egyptian register keeps the 'sa' (son of) filiation and theophoric given names; the imperial administrative class adopt a Latinate gens-style cognomen (an adapted nomen carried as an office-name); the throne fuses both - a Nesut who carries a Per- temple-house and a Latinate imperial cognomen.",
+    "toponymic_suffixes": [
+      "Per-",
+      "Niut-",
+      "Ta-",
+      "Pa-",
+      "aa",
+      "Kastjer-",
+      "Koraa-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "tombs of the god-kings and ruined legion-forts: 'the Tomb of Pharaoh [name]', 'the Sunken Per-netjer', 'the Buried Menkastjer', 'the Drowned Koraa'",
+    "military_units": "the [god] Division and the imperial legions of the Nile: 'the Division of Oranetj', 'the Regaa of Romkemet' (legion), 'the River-Eagles', 'the Standard of the Sun'",
+    "ships": "solar-barques and grain-fleet galleys: 'Barque of Tjuraa', 'Pride of the Itru', 'the Eagle of the River', 'Grain of the Black Land'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Eagle and Lotus', 'The Iron Standard'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (the abydosian column, Tjuraa<Tulrius etc.), Latinate morphs SECONDARY (the agrippan column), never real Egyptian/Roman gods. Standard lens (Lawful/Neutral/Chaotic). Concept: the sun-disc temple-cult of the Black Land endures beneath the imperial eagle; strong funerary cult (akhu) under a Latin civic-religious overlay.",
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte) / Kurtaa (adapted Cultor)",
+      "3": "Hem-netjer (god's-servant/priest) / Sakerdaa (adapted Sacerdos)",
+      "5": "Hem-netjer Sen-nu (second prophet) / Framaa (adapted Flamen)",
+      "7": "Hem-netjer Tepy (first prophet/high priest) / Pontifaa (adapted Pontifex)",
+      "9": "Hem-netjer Aa (great prophet) / Pontifaa Weret (adapted Pontifex Maximus)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as Hefau-kin (the serpent-brood) or -lemnaa (adapted Latin evil), keep their morphs + a portfolio epithet: Maraxus -> Marakhaa the City-Burner (Lat. Maraxaa the Tyrant-Flame); Raptis -> Rapetj the Red Hunter; Vacidus -> Wakedjaa the Devouring Hefau (Lat. Wakidaa the Unmaker).",
+    "holy_symbol_motifs": {
+      "Geandaa": "the alluvial flood-field beneath the temple-pylon",
+      "Oranetj": "an iron sword crossed with the eagle-standard",
+      "Tjuraa": "the rayed sun-disc above the feather of right-order, set on a legion-standard"
+    },
+    "religious_orders_pattern": "the Per-netjer (god's-house/temple) of [power]: 'the Per-netjer of Tjuraa'; the imperial collegia recast as the Kolegaa of [power]: 'the Kolegaa of Oranetj' (the legion-cult).",
+    "saints_pattern": "the deified dead (akhu) and god-kings, venerated at tomb-temples as 'the justified [name]' (maa-kheru); the deified imperial founders styled Diwaa [name] (adapted Divus).",
+    "sample_deity_renames": {
+      "Delorum": "Djeroraa (Lat. Delori) - lord of the peaceful dead",
+      "Gaiandus": "Geandaa (Lat. Gaiandi) - the enduring earth and the flood-field",
+      "Numeno": "Numenaa (Lat. Numeni) - sky and scribe-wisdom",
+      "Orlandus": "Oranetj (Lat. Orlandi) - iron, oath, war",
+      "Realta": "Riaret (Lat. Realti) - the mother, mercy",
+      "Tulrius": "Tjuraa (Lat. Tulri) - the sun-disc and right-order"
+    },
+    "the_one": "Atjernaa (< Aeternus; Lat. Aeternaa) - the hidden distant maker, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Atjernaa - as the tyrant-gods to be defied; the serpent Hefau exalted over the sun-disc.",
+      "Lawful": "venerates the Lawful powers - Atjernaa the hidden, Tjuraa the just sun, Oranetj of the sworn legion-oath, Riaret the merciful - upholding right-order (maat) and the imperial law alike; names the Chaotic powers as Hefau-kin (serpent-brood) and warded -lemnaa (adapted Latin), set against both the temple and the eagle.",
+      "Neutral": "the deified dead (akhu) of the god-kings and the genius of the legion-standards and the city-spirits of the per; the great powers invoked at the per-netjer and the forum-shrine situationally."
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Egyptian native ladder, ascending, under the imperial Latin overlay. Hatia (mayor) barony; Wer-khaset (great-one of the frontier-land) march; Sepati/Sepat (nomarch/nome) county; Mer-mesha (army-overseer/general) duchy; Heqa-aa (great ruler) principality; Nesut (king) kingdom, shown as Pharaoh in display (the Great-House sovereign of the Black Land); Per-aa (lit. the Great House) empire, shown as Imperator in display (the Eagle-sovereign over the province). The Latin legate (Legatus) and legion-prefect (Praefectus) garrison the grain-province beneath the crown; the per-netjer hem-netjer (sun-priest) and the scribal sesh stand outside the ladder. DISPLAY uses English tiers with two approved foreign sovereign-terms (Pharaoh at the kingdom tier, Imperator at the empire tier); the *_native Egyptian forms are NPC-dialogue only.",
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)",
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here Pharaoh at the kingdom tier and Imperator at the empire tier). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Hatia": "Hatiat",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha (f)",
+      "Nesut": "Nesyt",
+      "Per-aa": "Per-aat (or Nesut-Hemet)",
+      "Sepati": "Sepatit",
+      "Wer-khaset": "Wert-khaset"
+    },
+    "government": "feudal (Egyptian temple-and-Nile rule under an imperial Latin apparatus: the Nesut and his heqa-kin at the crown, the sepati-nomarchs over the nomes, the hatia-mayors over the niut-cities; the Latin legate and the legion-prefect garrison the grain-province, the per-netjer sun-priesthood and the scribal house serve beneath)",
+    "heir": "Sa-Nesut (king's son / crown prince); Iry-pat (hereditary heir); the imperial heir-designate styled Kaisaraa (adapted Caesar)",
+    "honorifics": {
+      "champion": "Aha (warrior) / Ekwaa (adapted Eques)",
+      "elder": "Tepi-a (the eldest/forebear)",
+      "lady": "Nebet (lady) / Domnet (adapted Domina)",
+      "lord": "Neb (lord) / Domnaa (adapted Dominus)",
+      "your_grace": "Hem-ek (your person/majesty)"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hatiat",
+        "ruler": "Baron",
+        "ruler_native": "Hatia"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Sepat",
+        "ruler": "Count",
+        "ruler_native": "Sepati"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Mesha",
+        "ruler": "Duke",
+        "ruler_native": "Mer-mesha"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Per-aat",
+        "ruler": "Imperator",
+        "ruler_native": "Per-aa"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Nesutat",
+        "ruler": "Pharaoh",
+        "ruler_native": "Nesut"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Khaset",
+        "ruler": "Marquis",
+        "ruler_native": "Wer-khaset"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Heqat-aat",
+        "ruler": "Prince",
+        "ruler_native": "Heqa-aa"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ankh (the living-oath) / Fidet (adapted Fides)",
+      "liege": "Neb / Patrunaa (adapted Patronus)",
+      "tribute": "Inu (Egyptian) / Tribet (adapted Tributum)",
+      "vassal": "Bak (servant) / Krienet (adapted Cliens)"
+    }
+  }
+}

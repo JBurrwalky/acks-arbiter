@@ -1,0 +1,442 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Bit-Tullaru",
+      "Bit-Urlandu",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "Bit-Rialtu",
+      "Shibal Balam",
+      "Shibal K'uk'",
+      "Shibal Kan",
+      "Shibal Tulax",
+      "Shibal Took'",
+      "Shibal Yax",
+      "al-Tullaru-iddina",
+      "al-Warad-Urlandu",
+      "al-Numunu-nasir",
+      "al-Iddin-Tullaru",
+      "al-Urlandu-bani",
+      "al-Naram-Tullaru",
+      "al-Gayandu-iddina",
+      "al-Argantu-zer",
+      "al-Aj-Tulax",
+      "al-Aj-Orlanab",
+      "al-Aj-Balam-Numunu",
+      "al-Aj-Took'-Urlandu"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Witzbitu"
+    ],
+    "epithet": [
+      "the Stele-writer",
+      "Lion-of-the-Gate",
+      "of the Two Rivers and the Jungle",
+      "the Oath-keeper",
+      "City-breaker",
+      "Balam",
+      "Quetzal-plumed",
+      "the Blood-giver",
+      "the Just",
+      "Obsidian-handed",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White"
+    ],
+    "feature": [
+      "Elahu",
+      "Iltanapparu",
+      "Iximubabu",
+      "Kakawubelu",
+      "Kanaluhalbu",
+      "Kishpanuharranu",
+      "Kukujomu",
+      "Labirukapu",
+      "Laqinukishadu",
+      "Nakumulu",
+      "Pachunahbu",
+      "Parzillunaru",
+      "Qanunebiru",
+      "Qerbuniu",
+      "Quhullupetenu",
+      "Rabupuqu",
+      "Sakuqaxu",
+      "Salmuseru",
+      "Saqmaskushadu",
+      "Sehrushewu",
+      "Shakutamtu",
+      "Shaplutsonotu",
+      "Shiqinugaru",
+      "Shutuxokbu",
+      "Siparryoqu",
+      "Tabtahu",
+      "Tajapparu",
+      "Takinubabu",
+      "Tumbubelu",
+      "Yaxuqnuhalbu"
+    ],
+    "military_unit": [
+      "s redu and the jungle Holkan companies:",
+      ","
+    ],
+    "personal_female": [
+      "Tullaru-belit",
+      "Amat-Urlandu",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Ix-Rialtaj",
+      "Ix-Tulax",
+      "Ix-Kayanab",
+      "Ix-Sak-Nik",
+      "Ix-Chan-Rialtu",
+      "Amat-Numench",
+      "Warad-Urlandtu",
+      "Iddin-Tullartu",
+      "Naram-Tullartu",
+      "Aj-Balam-Numuntu",
+      "Aj-Took'-Urlandtu",
+      "Aj-Bolon-Tullartu",
+      "Gayandu",
+      "Gayandutu",
+      "Numunu",
+      "Numunutu",
+      "Rialtu",
+      "Rialtutu",
+      "Tullaru",
+      "Tullarutu",
+      "Urlandu",
+      "Urlandutu"
+    ],
+    "personal_male": [
+      "Tullaru-iddina",
+      "Warad-Urlandu",
+      "Numunu-nasir",
+      "Iddin-Tullaru",
+      "Urlandu-bani",
+      "Naram-Tullaru",
+      "Gayandu-iddina",
+      "Argantu-zer",
+      "Aj-Tulax",
+      "Aj-Orlanab",
+      "Aj-Balam-Numunu",
+      "Aj-Took'-Urlandu",
+      "Aj-Kayanab",
+      "Aj-Chak-Ek'",
+      "Iddin-Tulax",
+      "Aj-Bolon-Tullaru",
+      "Ix-Chan-Rialu",
+      "Gayandu",
+      "Gayanduu",
+      "Numunu",
+      "Numunuu",
+      "Rialtu",
+      "Rialtuu",
+      "Tullaru",
+      "Tullaruu",
+      "Urlandu",
+      "Urlanduu"
+    ],
+    "settlement": [
+      "Tollanur",
+      "Dur-Sharru",
+      "Kar-Tullaru",
+      "Noh-Witzbitu",
+      "Bit-Tullaru",
+      "Yaxuqnu-Petenu",
+      "Til-Labiru",
+      "Elahu",
+      "Iltanudadmu",
+      "Iximudimtu",
+      "Kakawukahalu",
+      "Kanalukaru",
+      "Kishpanumahiru",
+      "Kukumulu",
+      "Labirunebiru",
+      "Laqinunohkahu",
+      "Nakotshu",
+      "Pachupakallu",
+      "Parzilluwitzbitu",
+      "Qanahu",
+      "Qerbudadmu",
+      "Quhulludimtu",
+      "Rabukahalu",
+      "Sakukaru",
+      "Salmumahiru",
+      "Saqmaskumulu",
+      "Sehrunebiru",
+      "Shakunohkahu",
+      "Shaplotshu",
+      "Shiqinupakallu",
+      "Shutuwitzbitu",
+      "Siparrahu",
+      "Tabtudadmu",
+      "Tajudimtu",
+      "Takinukahalu",
+      "Tumbukaru",
+      "Yaxuqnumahiru",
+      "Elumulu",
+      "Iltanunebiru",
+      "Iximunohkahu"
+    ],
+    "ship": [
+      "Pride of the Naru",
+      "the Jade Canoe",
+      "Boat of Tullaru"
+    ],
+    "tavern": [
+      "-house:",
+      ",",
+      "The Kanalu Iximu",
+      "The Kishpanu Kakawu",
+      "The Labiru Kuku",
+      "The Naku Parzillu",
+      "The Parzillu Saqmasku",
+      "The Qanu Siparru",
+      "The Quhullu Tabtu",
+      "The Rabu Taju",
+      "The Saku Takinu",
+      "The Salmu Yaxuqnu"
+    ]
+  },
+  "culture_id": "tollanur",
+  "family": [
+    "near_eastern",
+    "mesoamerican"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_tollanur.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "tollanur",
+  "lexicon": {
+    "adjectives": {
+      "black": "salmu",
+      "fair": "kishpanu",
+      "far": "naku",
+      "golden": "qanu",
+      "great": "rabu",
+      "high": "kanalu",
+      "iron": "parzillu",
+      "little": "sehru",
+      "new": "tumbu",
+      "old": "labiru",
+      "red": "shaku",
+      "sacred": "quhullu",
+      "white": "saku"
+    },
+    "directional": {
+      "east": "laqinu",
+      "inner": "qerbu",
+      "lower": "shaplu",
+      "north": "iltanu",
+      "outer": "pachu",
+      "south": "shutu",
+      "upper": "elu",
+      "west": "shiqinu"
+    },
+    "feature_words": {
+      "bay": "kapu",
+      "cape": "niu",
+      "cenote": "tsonotu",
+      "coast": "ahu",
+      "ford": "nebiru",
+      "forest": "qaxu",
+      "hill": "mulu",
+      "isle": "petenu",
+      "lake": "nahbu",
+      "marsh": "apparu",
+      "mountain": "shadu",
+      "narrows": "halbu",
+      "neck": "kishadu",
+      "pass": "babu",
+      "plain": "ugaru",
+      "ridge": "puqu",
+      "river": "naru",
+      "road": "harranu",
+      "sea": "tamtu",
+      "stream": "yoqu",
+      "track": "xokbu",
+      "vale": "jomu",
+      "waste": "seru",
+      "way": "belu",
+      "wood": "shewu"
+    },
+    "resources": {
+      "bronze": "siparru",
+      "cacao": "kakawu",
+      "feather": "kuku",
+      "gold": "takinu",
+      "iron": "parzillu",
+      "jade": "yaxuqnu",
+      "maize": "iximu",
+      "obsidian": "taju",
+      "salt": "tabtu",
+      "silver": "saqmasku"
+    },
+    "settlement_words": {
+      "citadel": "pakallu",
+      "city": "kahalu",
+      "fort": "dimtu",
+      "hamlet": "otshu",
+      "market": "mahiru",
+      "port": "karu",
+      "temple_town": "witzbitu",
+      "town": "nohkahu",
+      "village": "dadmu"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]) layered over Mayan quality+feature compounds (Noh-[feature], Chak-[feature], [color]-witz): the capital Tollanur (the reed-place of stepped towers), Dur-Sharru (king's-fort), Noh-Witzbitu (the great pyramid-temple-city).",
+    "gendered_endings": {
+      "female": [
+        "tu"
+      ],
+      "male": [
+        "u"
+      ]
+    },
+    "patronymic_form": "the Akkadian populace keep the 'mar-' (son of) patronymic and theophoric constructs; the Mayan substrate keeps the shibal- (lineage, < ch'ib'al) house and the aj-/ix- (he-of/she-of) prefixes on day-and-power names; the throne fuses both - a sharru who also carries a Bit- house-name and a witz-dynastic count.",
+    "toponymic_suffixes": [
+      "Bit-",
+      "Dur-",
+      "Kar-",
+      "Noh-",
+      "witz",
+      "kah"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried ziggurats and vine-choked witz: 'the Ziggurat of Dur-[name]', 'the Sunken Witzbitu', 'the lost Pyramid of [ajaw]'",
+    "military_units": "the Sharru's redu (war-host) and the jungle Holkan companies: 'the Standard of Urlandu', 'the Jaguar Holkan', 'the Obsidian-helms'",
+    "ships": "river-barges and seagoing trade-canoes: 'Pride of the Naru', 'the Jade Canoe', 'Boat of Tullaru'",
+    "taverns": "'The [Adjective] [Noun]' and the cacao/balche'-house: 'The Lapis Cup', 'The Cacao Court', 'The Jade and Stele'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru-, Urlandu-, Numunu-), Mayan morphs SECONDARY (family_mesoamerican.json theonym_sets.mayan: Tulax, Orlanab, Numench, aj-/ix- prefixed), never real Mesopotamian or Maya gods. Same shared pantheon, two registers. All three alignments. The witz (pyramid) and the ziggurat are one altar; the Long-Count calendar and the law-stele bind the sharru and the ajaw alike to the powers.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer) / Ah-miatz (novice-scribe)",
+      "3": "Sangu (priest) / Ah-k'in (sun-priest, day-keeper)",
+      "5": "Shangu Rabu (high priest) / Ah-k'uhun (god-keeper)",
+      "7": "Urigallu (chief priest) / Nakom-k'in (sacrificer-priest)",
+      "9": "Shatammu (temple-primate) / Ah-k'in Mai (high priest)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as -lemnu (Akkadian evil) or demonized in the Mayan register, keep their morphs + an epithet: Maraxus -> Marakshu the City-Burner (Maya Marakab the War-Fire); Vacidus -> Bakidu-lemnu the Unmaking (Maya Wakix the Devourer); Lusanto -> Lusankaan the Hoard-Serpent.",
+    "holy_symbol_motifs": {
+      "Gayandu": "the alluvial maize-field beneath the stepped witz",
+      "Tullaru": "a winged sun-disc above the law-stele and the bloodletting-glyph",
+      "Urlandu": "an iron blade crossed with the obsidian war-club"
+    },
+    "religious_orders_pattern": "the Bit-ili (Akkadian god-house) or the Quhnellu (the Mayan k'uh-nah god-house) atop the witz of [power]: 'the Bit-ili of Tullaru', 'the Witz of Tulax'.",
+    "saints_pattern": "the deified law-givers and sharru-kin inscribed on the stele, and the deified k'uhul ajaw ancestors (the uchben), honored at the ziggurat and the carved stela atop the witz.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gayandu (Maya Kayanab) - the enduring earth",
+      "Numeno": "Numunu (Maya Numench) - sky and scribe-wisdom",
+      "Orlandus": "Urlandu (Maya Orlanab) - iron, oath, war",
+      "Realta": "Rialtu (Maya Ix Rialtaj) - the mother, mercy",
+      "Tulrius": "Tullaru (Maya Tulax) - the sun and judgment"
+    },
+    "the_one": "Itarnu (Akk; Maya Aj Ternaj) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon (Marakshu, Bakidu-lemnu, the war-fire), and names the Lawful powers - and Itarnu - as the tyrant-gods to be defied; the bloodletting-rite turned to dread ends.",
+      "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers lemnu (evil) or demonizes the Mayan Marakab/Wakix/Lusankaan, warded; the law-stele and the Long-Count calendar bind alike",
+      "Neutral": "the ancestral dead (the deified sharru-kin and the uchben, the Mayan forebears) and the city-spirits of the bit-ili and the day-lords; the great powers invoked at the witz-pyramid and the temple situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Akkadian ladder, ascending, with the Mayan substrate co-titles folded beneath. Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county over the Mayan sajal; Turtanu (commander-in-chief) duchy over the ajaw-nobility; Rubu (prince) principality echoing the k'uhul ajaw (holy lord); Sharru (king) kingdom over a Sharrutu, the Mayan kalomte' (overlord) folded under the crown; Shar-kishshati (king-of-the-totality) empire over the Kishshatu. The jungle cities keep their ajaw and sajal and their ah-k'in (sun-priest) beneath the Akkadian crown; the sangu (city-priest) and scribal shatammu stand outside the ladder. Rank titles fuse the real Akkadian and Maya registers (allowed); DISPLAY titles are English.",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH. No approved commonly-known foreign term applies to this fused Akkadian-Maya register, so English display titles are used throughout. The *_native conlang forms (Akkadian, with Mayan co-titles) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Hazannu": "Hazannatu",
+      "Massaru": "Massartu",
+      "Rubu": "Rubatu",
+      "Shaknu": "Shaknatu",
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Turtanu": "Turtanutu"
+    },
+    "government": "feudal (an Akkadian temple-and-stele aristocracy grown together with the Mayan jungle city-states: the sharru and his rubu-kin at the crown, the shaknu-governors over the kahalu-cities, the witz-priesthood and the scribal ekallu beneath; the Mayan ajaw-nobility and sajal-governors fold into the same ladder)",
+    "heir": "Mar-Sharri (son of the king; the crown prince; the baah-ch'ok, head-youth, of the witz-dynasty)",
+    "honorifics": {
+      "champion": "Redu (Akkadian soldier) / Holkan (Mayan warrior)",
+      "elder": "Chilam (the elder-speaker) / Shibu (the eldest)",
+      "lady": "Beltu / Ix-Ajaw",
+      "lord": "Belu / Ajaw",
+      "your_grace": "Beli (my lord)"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Hazannutu",
+        "ruler": "Baron",
+        "ruler_native": "Hazannu"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Shaknutu",
+        "ruler": "Count",
+        "ruler_native": "Shaknu"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Turtanutu",
+        "ruler": "Duke",
+        "ruler_native": "Turtanu"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Kishshatu",
+        "ruler": "Emperor",
+        "ruler_native": "Shar-kishshati"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Sharrutu",
+        "ruler": "King",
+        "ruler_native": "Sharru"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Massarutu",
+        "ruler": "Marquis",
+        "ruler_native": "Massaru"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Rubutu",
+        "ruler": "Prince",
+        "ruler_native": "Rubu"
+      }
+    },
+    "vassalage": {
+      "fealty": "Ade (Akkadian loyalty-oath) / Patan-t'an (Mayan oath of service)",
+      "liege": "Belu / Kalomte'",
+      "tribute": "Biltu (Akkadian) / Patan (Mayan)",
+      "vassal": "Ardu (servant) / Yajaw (Mayan under-lord)"
+    }
+  }
+}

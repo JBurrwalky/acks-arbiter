@@ -1,6 +1,7 @@
 {
   "alignment_allowed": [
     "Lawful",
+    "Neutral",
     "Chaotic"
   ],
   "categories": {
@@ -17,18 +18,18 @@
       "Ch'ib'al Yax",
       "Otenra Akweks",
       "Ch'ib'al Chak-Ek'",
-      "Nah Aj-Balam",
-      "Nah Aj-K'uk'",
-      "Nah Aj-Chan",
-      "Nah Aj-Kan",
-      "Nah Aj-Took'",
-      "Nah Aj-Bolon",
-      "Nah Aj-Chak-Ek'",
-      "Nah Aj-Tz'ikin",
-      "Nah Tehronwa",
-      "Nah Roskenra",
-      "Nah Oskenwa",
-      "Nah Aj-Muwan"
+      "Kanonah Aj-Balam",
+      "Kanonah Aj-K'uk'",
+      "Kanonah Aj-Chan",
+      "Kanonah Aj-Kan",
+      "Kanonah Aj-Took'",
+      "Kanonah Aj-Bolon",
+      "Kanonah Aj-Chak-Ek'",
+      "Kanonah Aj-Tz'ikin",
+      "Kanonah Tehronwa",
+      "Kanonah Roskenra",
+      "Kanonah Oskenwa",
+      "Kanonah Aj-Muwan"
     ],
     "epithet": [
       "Balam",
@@ -53,32 +54,32 @@
       "Chanbeel",
       "Chik'inbej",
       "Ek'bejha'",
-      "Ichchakan",
-      "Iximchaltun",
-      "K'anha'",
-      "K'uhulhalab",
-      "K'uk'jom",
-      "K'uutzk'aax",
-      "Ka'analk'ak'nab",
-      "Kab'alkaap",
+      "Ichchaltun",
+      "Iximha'",
+      "K'anhalab",
+      "K'uhwiyojom",
+      "K'uk'k'ak'nab",
+      "Ka'analkaap",
+      "Kab'alkahent",
       "Kakawkal",
-      "Kiichpankarhakonha",
-      "Labajmul",
-      "Lak'inahb",
-      "Maaskabni'",
-      "Naachpachk'ak'nab",
-      "Nohpeten",
-      "Noholpuuk",
-      "Pachsacbe",
-      "Saktz'onot",
-      "Taabwitz",
-      "Tajxokbil",
-      "Takinyok'ha'",
-      "Tookak'alche'",
-      "Tuumbenbeel",
-      "Xamanbej",
-      "Yaaxtunbejha'",
-      "Yok'olchakan"
+      "Kiichpankarhak'",
+      "Labajkarhak'aax",
+      "Lak'inkerhitkon",
+      "Maaskabnahb",
+      "Naachni'",
+      "Nohonon",
+      "Noholoskon",
+      "Oyenk'pachk'ak'nab",
+      "Pachpeten",
+      "Sakpuuk",
+      "Taabsacbe",
+      "Tajtz'onot",
+      "Takinwitz",
+      "Tookyok'ha'",
+      "Tuumbenak'alche'",
+      "Xamanbeel",
+      "Yaaxtunbej",
+      "Yok'olbejha'"
     ],
     "military_unit": [
       ","
@@ -139,43 +140,43 @@
       "Tikala",
       "Noh-Witz",
       "Chak-Ha'",
-      "Ek-Karhakon",
+      "Ek-Karhak'",
       "Tulax-K'uhnah",
       "Yaaxtun-Peten",
       "Chakbejha'",
       "Chank'iwik",
       "Chik'ink'uh-nah",
-      "Ek'k'uhul-kah",
-      "Ichkah",
-      "Iximkanonhsa",
-      "K'anmul",
-      "K'uhulnoh-kah",
+      "Ek'kah",
+      "Ichkanahkah",
+      "Iximkanonah",
+      "K'ankanpaa'",
+      "K'uhwiyonoh-kah",
       "K'uk'nohol-paa'",
-      "K'uutzotoch",
-      "Ka'analpaa'",
-      "Kab'alpachk'ak'nab",
-      "Kakawbejha'",
-      "Kiichpank'iwik",
-      "Labajk'uh-nah",
-      "Lak'ink'uhul-kah",
+      "Ka'analonon",
+      "Kab'alotoch",
+      "Kakawpachk'ak'nab",
+      "Kiichpanbejha'",
+      "Labajk'iwik",
+      "Lak'ink'uh-nah",
       "Maaskabkah",
-      "Naachkanonhsa",
-      "Nohmul",
-      "Noholnoh-kah",
+      "Naachkanahkah",
+      "Nohkanonah",
+      "Noholkanpaa'",
+      "Oyenk'noh-kah",
       "Pachnohol-paa'",
-      "Sakotoch",
-      "Taabpaa'",
+      "Sakonon",
+      "Taabotoch",
       "Tajpachk'ak'nab",
       "Takinbejha'",
       "Took'k'iwik",
       "Tuumbenk'uh-nah",
-      "Xamank'uhul-kah",
-      "Yaaxtunkah",
-      "Yok'olkanonhsa",
-      "Chakmul",
+      "Xamankah",
+      "Yaaxtunkanahkah",
+      "Yok'olkanonah",
+      "Chakanpaa'",
       "Chanoh-kah",
       "Chik'inohol-paa'",
-      "Ekotoch"
+      "Ekonon"
     ],
     "ship": [
       "the Jade Canoe",
@@ -186,9 +187,9 @@
       ",",
       "The Chak Ixim",
       "The Chan K'uk'",
-      "The Ek' K'uutz",
-      "The K'an Kakaw",
-      "The K'uhul Maaskab",
+      "The Ek' Kakaw",
+      "The K'an Maaskab",
+      "The K'uhwiyo Oyenk'",
       "The Ka'anal Taab",
       "The Kiichpan Taj",
       "The Labaj Takin",
@@ -221,7 +222,7 @@
       "new": "tuumben",
       "old": "labaj",
       "red": "chak",
-      "sacred": "k'uhul",
+      "sacred": "k'uhwiyo",
       "white": "sak"
     },
     "directional": {
@@ -239,10 +240,11 @@
       "cape": "ni'",
       "cenote": "tz'onot",
       "coast": "pachk'ak'nab",
-      "deep_forest": "karhakonha",
+      "deep_forest": "karhak'aax",
       "ford": "bejha'",
-      "forest": "k'aax",
-      "hill": "mul",
+      "forest": "karhak'",
+      "grove": "kerhitkon",
+      "hill": "onon",
       "isle": "peten",
       "lake": "nahb",
       "marsh": "ak'alche'",
@@ -250,13 +252,13 @@
       "narrows": "halab",
       "neck": "kal",
       "pass": "bej",
-      "plain": "chakan",
+      "plain": "kahent",
       "ridge": "puuk",
       "river": "ha'",
       "road": "sacbe",
       "sea": "k'ak'nab",
       "stream": "yok'ha'",
-      "track": "xokbil",
+      "track": "oskon",
       "vale": "jom",
       "waste": "chaltun",
       "way": "beel"
@@ -271,14 +273,14 @@
       "metal": "maaskab",
       "obsidian": "taj",
       "salt": "taab",
-      "tobacco": "k'uutz"
+      "tobacco": "oyenk'"
     },
     "settlement_words": {
       "citadel": "nohol-paa'",
-      "city": "k'uhul-kah",
-      "fort": "paa'",
+      "city": "kanahkah",
+      "fort": "kanpaa'",
       "hamlet": "otoch",
-      "longhouse": "kanonhsa",
+      "longhouse": "kanonah",
       "market": "k'iwik",
       "temple_town": "k'uh-nah",
       "town": "noh-kah",
@@ -286,7 +288,7 @@
     }
   },
   "morphology": {
-    "compounding_rule": "[quality|color](stem) + feature: Chak-witz (red-pyramid), Ek-nahb (black-lake); the Woodland overlay yields -karhakon (deep-forest) compounds and the clan-totem houses.",
+    "compounding_rule": "[quality|color](stem) + feature: Chak-witz (red-pyramid), Ek-nahb (black-lake); the Woodland overlay yields -karhak' (deep-forest) compounds and the clan-totem houses.",
     "gendered_endings": {
       "female": [],
       "male": []
@@ -297,7 +299,7 @@
       "witz",
       "ha'",
       "peten",
-      "karhakon",
+      "karhak'",
       "Noh-/Chak-/Ek-"
     ]
   },
@@ -309,7 +311,7 @@
   },
   "race": "human",
   "religion": {
-    "_note": "Deity-names are morphs of the Agrippan canon (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. Tikan seeds/shifts Lawful or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The witz-pyramid and the forest-grove keep the rites; the Long Count and the clan-mothers' thanksgivings bind the year.",
+    "_note": "Deity-names are morphs of the Agrippan canon (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. Tikan seeds/shifts Lawful, Neutral, or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The witz-pyramid and the forest-grove keep the rites; the Long Count and the clan-mothers' thanksgivings bind the year.",
     "clergy_ladder": {
       "1": "Ah-miatz (novice-scribe)",
       "3": "Ah-k'in (sun-priest, day-keeper)",
@@ -331,17 +333,28 @@
       "Realta": "Ix Rialtaj (Wd. Realwenne) - the mother, the clan-mother of the powers; Neutral-honored",
       "Tulrius": "Tulax (Wd. Tularonon) - sun and right-order; Lawful power"
     },
-    "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, reviled as the far tyrant when Chaotic",
+    "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, acknowledged but set aside when Neutral, reviled as the far tyrant when Chaotic",
     "worship_by_alignment": {
       "Chaotic": "venerate the Chaotic powers (the war-fire Marakab, the blood-cult, the raid), demonize the Lawful powers and the One",
-      "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench, Kayanab), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)"
+      "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench, Kayanab), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the uchben (ancestral dead), the day-lords, the clan-mothers' thanksgivings, and the local k'uh and forest-spirits"
     }
   },
   "schema_version": 1,
   "tier": "culture",
   "titles": {
-    "_tiers_note": "Mayan backbone, ascending, on a Woodland clan-base. Batab' (local chief, seated by the clan-mother) barony; Nakom (war-captain) march; Sajal (subordinate governor) county; Ajaw (town-king) duchy; K'uhul Ajaw (holy lord) principality; Kalomte' (overlord) kingdom; Noh-Kalomte' (great overlord) empire. The matrilineal ohwachira-clans and their clan-mothers (the Woodland overlay) choose and may depose the batabs; the ah-k'in priests and the Long Count order the realm. (Rank titles are the real Maya/Iroquois register, allowed.)",
-    "female_forms": {
+    "_tiers_note": "Mayan backbone, ascending, on a Woodland clan-base. Batab' (local chief, seated by the clan-mother) barony; Nakom (war-captain) march; Sajal (subordinate governor) county; Ajaw (town-king) duchy; K'uhul Ajaw (holy lord) principality; Kalomte' (overlord) kingdom; Noh-Kalomte' (great overlord) empire. The matrilineal ohwachira-clans and their clan-mothers (the Woodland overlay) choose and may depose the batabs; the ah-k'in priests and the Long Count order the realm. (Native rank titles are the real Maya/Iroquois register, allowed; DISPLAY titles are English.)",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are plain ENGLISH - NO approved foreign term applies here (neither the Maya nor the Woodland ranks are on the approved commonly-known list), so there is no foreign display term and approved_foreign_terms_used is omitted. The *_native conlang forms (Mayan, with the Woodland clan-mother overlay) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
       "Ajaw": "Ix-Ajaw",
       "Batab'": "Ix-Batab'",
       "K'uhul Ajaw": "Ix-K'uhul-Ajaw",
@@ -362,32 +375,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Batab'il",
-        "ruler": "Batab'"
+        "domain": "Barony",
+        "domain_native": "Batab'il",
+        "ruler": "Baron",
+        "ruler_native": "Batab'"
       },
       "county": {
-        "domain": "Sajalil",
-        "ruler": "Sajal"
+        "domain": "County",
+        "domain_native": "Sajalil",
+        "ruler": "Count",
+        "ruler_native": "Sajal"
       },
       "duchy": {
-        "domain": "Ajawil",
-        "ruler": "Ajaw"
+        "domain": "Duchy",
+        "domain_native": "Ajawil",
+        "ruler": "Duke",
+        "ruler_native": "Ajaw"
       },
       "empire": {
-        "domain": "Noh-Kalomte'il",
-        "ruler": "Noh-Kalomte'"
+        "domain": "Empire",
+        "domain_native": "Noh-Kalomte'il",
+        "ruler": "Emperor",
+        "ruler_native": "Noh-Kalomte'"
       },
       "kingdom": {
-        "domain": "Kalomte'il",
-        "ruler": "Kalomte'"
+        "domain": "Kingdom",
+        "domain_native": "Kalomte'il",
+        "ruler": "King",
+        "ruler_native": "Kalomte'"
       },
       "march": {
-        "domain": "Nakomil",
-        "ruler": "Nakom"
+        "domain": "March",
+        "domain_native": "Nakomil",
+        "ruler": "Marquis",
+        "ruler_native": "Nakom"
       },
       "principality": {
-        "domain": "K'uhul-Ajawil",
-        "ruler": "K'uhul Ajaw"
+        "domain": "Principality",
+        "domain_native": "K'uhul-Ajawil",
+        "ruler": "Prince",
+        "ruler_native": "K'uhul Ajaw"
       }
     },
     "vassalage": {

@@ -1,0 +1,466 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Hrodingo",
+      "the Adalingo",
+      "the Theodingo",
+      "the Reginingo",
+      "Per-Tjuraa",
+      "Per-Djeroraa",
+      "Per-Riaret",
+      "Per-Numenaa",
+      "Per-Oranetj",
+      "the Baldingo",
+      "Per-Geandaa",
+      "the Wilingo",
+      "Hrodrichson",
+      "Adaloson",
+      "Theodrichson",
+      "Wilhelmoson",
+      "Gundomarson",
+      "Reginhartson",
+      "Dulro-mundson",
+      "Erlant-richson",
+      "Hartmannson",
+      "Baldrichson",
+      "Tjuraa-hotepson",
+      "Mery-djeroraason"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Per-netjer",
+      "the Howe of the Hrodings"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Lion-of-the-River",
+      "the Justified",
+      "of the Itru",
+      "the Oath-keeper",
+      "City-breaker",
+      "the Far-marcher",
+      "Sun-faced",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Altachet",
+      "Chentufirchent",
+      "Chesbedatfurt",
+      "Desilagdeschret",
+      "Fagardeschrot",
+      "Ferrodewberg",
+      "Guldinidhu",
+      "Hedsilabaridru",
+      "Hematiuwerd",
+      "Hemtimarcha",
+      "Hohmer",
+      "Imnarmezenwald",
+      "Isarnmitwec",
+      "Itchornehbhals",
+      "Luzzilqabuhil",
+      "Meduro",
+      "Mehnordschemet",
+      "Michilsechfeld",
+      "Nebuseger",
+      "Niuwishe",
+      "Ostartadeser",
+      "Pehnidarital",
+      "Remuhroswadwer",
+      "Resundwatwech",
+      "Rotwedeb",
+      "Ruzarachet",
+      "Senezerchent",
+      "Swarzdatfurt",
+      "Westardeschret",
+      "Wizdeschrot"
+    ],
+    "military_unit": [
+      "s heri and the temple divisions:",
+      ","
+    ],
+    "personal_female": [
+      "Hrodgund",
+      "Adalinda",
+      "Brunichild",
+      "Theodelind",
+      "Reginlind",
+      "Gisalo",
+      "Wilgund",
+      "Rialda-gund",
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Sat-Djeroraa",
+      "Numenaa-et",
+      "Sat-Tjuraa",
+      "Hroda",
+      "Adala",
+      "Theoda",
+      "Wilhelma",
+      "Erlant-a",
+      "Balda",
+      "Oranetj-a",
+      "Tjuraa-a",
+      "Djeroraa",
+      "Djeroraaa",
+      "Dulro",
+      "Dulroa",
+      "Erlant",
+      "Erlanta",
+      "Giando",
+      "Giandoa",
+      "Numino",
+      "Numinoa",
+      "Rialda",
+      "Rialdaa"
+    ],
+    "personal_male": [
+      "Hrodrich",
+      "Adalo",
+      "Theodrich",
+      "Wilhelmo",
+      "Gundomar",
+      "Reginhart",
+      "Dulro-mund",
+      "Erlant-rich",
+      "Hartmann",
+      "Baldrich",
+      "Tjuraa-hotep",
+      "Mery-Djeroraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Oranetj-mose",
+      "Tjuraa-mose",
+      "Sa-Tjuraa",
+      "Djeroraa-nakht",
+      "Adalindo",
+      "Theodeo",
+      "Regino",
+      "Sat-Djerorao",
+      "Sat-Tjurao",
+      "Djeroraa",
+      "Djeroraao",
+      "Dulro",
+      "Dulroo",
+      "Erlant",
+      "Erlanto",
+      "Giando",
+      "Giandoo",
+      "Numino",
+      "Numinoo",
+      "Rialda",
+      "Rialdao"
+    ],
+    "settlement": [
+      "Niltreich",
+      "Hrodes-burg",
+      "Per-Dulro",
+      "Niut-aat",
+      "Isarn-burg",
+      "Ta-Erlant",
+      "Altchutmerchat",
+      "Chentufirdatfurt",
+      "Chesbedmenburg",
+      "Desilagmeryt",
+      "Fagarniudat",
+      "Ferroniudburg",
+      "Guldiniutdorf",
+      "Hedsilabarpernalah",
+      "Hematqabuhil",
+      "Hemtisebachburg",
+      "Hohwedeb",
+      "Imnarwhido",
+      "Isarnchutmerchat",
+      "Itchorndatfurt",
+      "Luzzilmenburg",
+      "Medumeryt",
+      "Mehnordniudat",
+      "Michilniudburg",
+      "Nebuniutdorf",
+      "Niuwipernalah",
+      "Ostarqabuhil",
+      "Pehnidarisebachburg",
+      "Remuhroswedeb",
+      "Resundwhido",
+      "Rotchutmerchat",
+      "Ruzardatfurt",
+      "Senezermenburg",
+      "Swarzmeryt",
+      "Westarniudat",
+      "Wizniudburg",
+      "Altniutdorf",
+      "Chentufirpernalah",
+      "Chesbedqabuhil",
+      "Desilagsebachburg"
+    ],
+    "ship": [
+      "Barque of Dulro",
+      "the Iron Lion",
+      "Pride of the Itru"
+    ],
+    "tavern": [
+      "The Golden Lotus",
+      "The Lion and Stele",
+      "The Alt Chesbed",
+      "The Desilag Hedsilabar",
+      "The Fagar Hemat",
+      "The Ferro Hemti",
+      "The Guldin Isarn",
+      "The Hoh Itchorn",
+      "The Isarn Medu",
+      "The Luzzil Nebu",
+      "The Michil Remuhros",
+      "The Niuwi Senezer"
+    ]
+  },
+  "culture_id": "kemetric",
+  "family": [
+    "germanic",
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_kemetric.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "kemetric",
+  "lexicon": {
+    "adjectives": {
+      "black": "swarz",
+      "fair": "fagar",
+      "far": "ferro",
+      "golden": "guldin",
+      "great": "michil",
+      "high": "hoh",
+      "iron": "isarn",
+      "little": "luzzil",
+      "new": "niuwi",
+      "old": "alt",
+      "red": "rot",
+      "sacred": "desilag",
+      "white": "wiz"
+    },
+    "directional": {
+      "east": "ostar",
+      "inner": "imnar",
+      "lower": "pehnidari",
+      "north": "mehnord",
+      "outer": "ruzar",
+      "south": "resund",
+      "upper": "chentufir",
+      "west": "westar"
+    },
+    "feature_words": {
+      "bay": "chent",
+      "cape": "tadeser",
+      "coast": "wedeb",
+      "desert": "deschret",
+      "ford": "datfurt",
+      "forest": "mezenwald",
+      "hill": "qabuhil",
+      "isle": "iuwerd",
+      "lake": "she",
+      "march": "marcha",
+      "marsh": "idhu",
+      "mountain": "dewberg",
+      "narrows": "seger",
+      "neck": "nehbhals",
+      "pass": "ro",
+      "plain": "sechfeld",
+      "ridge": "achet",
+      "river": "idru",
+      "road": "watwech",
+      "sea": "wadwer",
+      "stream": "mer",
+      "track": "schemet",
+      "vale": "tal",
+      "waste": "deschrot",
+      "way": "mitwec"
+    },
+    "resources": {
+      "bronze": "hemti",
+      "gold": "nebu",
+      "grain": "itchorn",
+      "horse": "remuhros",
+      "incense": "senezer",
+      "iron": "isarn",
+      "lapis": "chesbed",
+      "mead": "medu",
+      "salt": "hemat",
+      "silver": "hedsilabar"
+    },
+    "settlement_words": {
+      "citadel": "sebachburg",
+      "city": "niudat",
+      "fort": "menburg",
+      "hamlet": "whido",
+      "market": "chutmerchat",
+      "port": "meryt",
+      "temple_town": "pernalah",
+      "town": "niudburg",
+      "village": "niutdorf"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Frankish dithematic ([quality](stem) + element: Isarn-burg, iron-fort) layered over Egyptian construct-chains (Per-[god], Niut-[god], Ta-[noun]): the capital Niltreich (the Nile-realm), Per-Dulro (temple-city of Dulro), Ta-Erlant (the iron-land).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "lind",
+        "it"
+      ],
+      "male": [
+        "o",
+        "i",
+        "rich",
+        "mose"
+      ]
+    },
+    "patronymic_form": "the Frankish ruling house keeps a dithematic lineage-name and -ingo/-ingun; the Egyptian populace keep the 'sa-' (son of) filiation and theophoric constructs; the throne fuses both - a kuning who also carries a Per- house-name.",
+    "toponymic_suffixes": [
+      "Per-",
+      "Niut-",
+      "Ta-",
+      "Pa-",
+      "heim",
+      "burg"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried per-temples and fallen Frankish burgs: 'the Tomb of Nesut [name]', 'the Sunken Per-netjer', 'the Howe of the Hrodings'",
+    "military_units": "the Kuning's heri (war-host) and the temple divisions: 'the Heri of Niltreich', 'the Standard of Erlant', 'the Division of Tjuraa', 'the Iron-helms'",
+    "ships": "river-barges and crusader war-keels: 'Barque of Dulro', 'the Iron Lion', 'Pride of the Itru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Lion and Stele'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - FRANKISH (Old High German) reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Germanic/Egyptian gods. Alignment PROVISIONAL (Lawful/Neutral): the Frankish crusader-oath order (the sworn knighthood of a Lawful high-king) meets the Egyptian right-order / maa-kheru funerary tradition; the older heathen-and-funerary layer reads Neutral.",
+    "clergy_ladder": {
+      "1": "Per-scalc (temple-servant, novice) / Wab",
+      "3": "Priast (priest) / Hem-netjer",
+      "5": "Per-priast (temple-priest) / Hem-netjer Sen-nu (second prophet)",
+      "7": "Ufar-priast (high priest) / Hem-netjer Tepy (first prophet)",
+      "9": "Altiro-priast (eldest priest) / Hem-netjer Aa (great prophet)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as tiufala (Frankish devils) or framed as -kin of the great serpent Hefau (Egyptian), keep their morphs + an epithet: Maraxus -> Marach the War-Brand (Eg. Marakhu the City-Burner); Vacidus -> Wachid the Unmaker (Eg. Wakedjet, the Devouring Hefau); Lusanto -> Lusando the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Dulro": "a sun-disc over a crossed sword and the feather of right-order",
+      "Erlant": "an iron crusader-sword crossed with the river-standard",
+      "Giando": "the black alluvial field beneath the temple-pylon"
+    },
+    "religious_orders_pattern": "the Alah (Frankish grove-temple) or Per-netjer (Egyptian god's-house) of [power]: 'the Alah of Dulro', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "the deified war-dead of the crusader-house (honored at the howe and on the tomb-stele) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
+    "sample_deity_renames": {
+      "Delorum / death-lord": "Djeroraa (Frk. Deloro) - lord of the peaceful dead",
+      "Gaiandus": "Giando (Eg. Geandaa) - the enduring earth, the black alluvial land",
+      "Numeno": "Numino (Eg. Numenaa) - sky, lightning and scribe-wisdom",
+      "Orlandus": "Erlant (Eg. Oranetj) - iron, oath, war",
+      "Realta": "Rialda (Eg. Riaret) - the mother, mercy",
+      "Tulrius": "Dulro (Eg. Tjuraa) - the sun, right-order and judgment"
+    },
+    "the_one": "Aiterno (Frankish; Eg. Atjernaa) - the distant Ancient One, the hidden maker, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterno - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Aiterno, Dulro the just (the sun above the feather of right-order), Erlant of the sworn crusade, Rialda the merciful - and names the Chaotic powers tiufala (devils) / Hefau-kin, warded and unworshipped; the sworn knighthood and the just high-king are the social ideal",
+      "Neutral": "the ancestral war-dead (the deified knights of the ruling house) and the akhu / justified dead of the per-temples; the great powers invoked at the alah-grove and the per-netjer situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Frankish (Old High German) ladder, ascending, with the Egyptian substrate co-titles beneath. Comes (the king's-companion count) barony; Marcho-graf (march-count) march; Graf (count) county over a Grafscaf; Herizogo (war-leader / duke; *harja-tugon) duchy; Furisto (the foremost / prince) principality; Kuning (king) kingdom over a Kuningrichi; Keisar-Nesut (the emperor-king; Frk. keisar < Caesar + Eg. nesut) empire over the Keisartuom. The conquered river-cities keep their Egyptian sepati (nomarch) and hem-netjer (priest) beneath the Frankish crown; the per-aa style survives as the highest sacral honorific of the enthroned kuning. The Egyptian wab and hem-netjer stand outside the ladder. Rank titles fuse the real Frankish and Egyptian registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Comes": "Comitissa",
+      "Furisto": "Furistin",
+      "Graf": "Grafin",
+      "Herizogo": "Herizogin",
+      "Keisar-Nesut": "Keisarin-Nesyt",
+      "Kuning": "Kuningin",
+      "Marcho-graf": "Marcho-grafin"
+    },
+    "government": "feudal (a Frankish crusader-aristocracy over the Egyptian river-kingdom: the kuning and his herizogen at the crown, the comites and grafen over the niut-cities, the dganman-knights sworn to the war-host; the hem-netjer priesthood and the scribal per-aat serve beneath)",
+    "heir": "Kuning-barn (the king's child; the heir); Sa-Nesut (king's son, Egyptian style)",
+    "honorifics": {
+      "champion": "Degan (Frankish warrior) / Aha (Egyptian warrior)",
+      "elder": "Altiro (the elder) / Tepi-a",
+      "lady": "Frowa / Nebet",
+      "lord": "Truhtin / Neb",
+      "your_grace": "Truhtin min"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Comitat",
+        "ruler": "Baron",
+        "ruler_native": "Comes"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Grafscaf",
+        "ruler": "Count",
+        "ruler_native": "Graf"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Herizogtuom",
+        "ruler": "Duke",
+        "ruler_native": "Herizogo"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Keisartuom",
+        "ruler": "Emperor",
+        "ruler_native": "Keisar-Nesut"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Kuningrichi",
+        "ruler": "Pharaoh",
+        "ruler_native": "Kuning"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Marcha",
+        "ruler": "Marquis",
+        "ruler_native": "Marcho-graf"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Furisttuom",
+        "ruler": "Prince",
+        "ruler_native": "Furisto"
+      }
+    },
+    "vassalage": {
+      "fealty": "Triuwa (troth) / Ankh (the living-oath, Egyptian)",
+      "liege": "Truhtin",
+      "tribute": "Gelt (Frankish) / Inu (Egyptian)",
+      "vassal": "Scalc (servant) / Bak (Egyptian)"
+    }
+  }
+}

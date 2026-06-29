@@ -12,7 +12,11 @@ extends "res://tests/test_suite_base.gd"
 const SCRIPT_REL_PATH := "res://tools/build_name_banks.py"
 const BANKS_DIR := "res://data/name_banks/"
 const MIN_CORE := 10
-const EXPECTED_BANK_COUNT := 65
+# 11 human BASE kits + 54 first-order HYBRID kits + the demihuman/beastman/legacy
+# member kits assembled by build_name_banks.py (gdd-culture-emergence-and-territory
+# .md §3.5). The freshness gate (test_build_tool_check_mode_passes) is the real
+# authority on the set; this count is a coarse tripwire for accidental add/drop.
+const EXPECTED_BANK_COUNT := 122
 
 
 func run_all_tests() -> void:

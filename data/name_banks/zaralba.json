@@ -1,0 +1,453 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Ui Chuinn",
+      "the Ui Neill",
+      "the Cland Brain",
+      "the Ui Chonaill",
+      "Vith-Turvasa",
+      "Vith-Urlaspa",
+      "Vith-Naumana",
+      "Vith-Arzanta",
+      "Vith-Aryabarza",
+      "the Cland Fergail",
+      "Vith-Vishtaspa",
+      "the Ui Aenguis",
+      "Macconn",
+      "Macniall",
+      "Macbran",
+      "Macconall",
+      "Macfergal",
+      "Macaengus",
+      "Macdomnall",
+      "Macmael-toran",
+      "Macgilla-orlann",
+      "Macturvasa-data",
+      "Macbaga-urlaspa",
+      "Macartafarnah"
+    ],
+    "dungeon_ruin": [
+      "the Cairn of the Conn-clan"
+    ],
+    "epithet": [
+      "the Hound",
+      "the Far-rider",
+      "the Fior-true",
+      "Spear-of-Urlaspa",
+      "the Geis-keeper",
+      "Gold-giver",
+      "the Plateau-lord",
+      "the Red",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Golden",
+      "the Iron"
+    ],
+    "feature": [
+      "Alainnagar",
+      "Antaranubh",
+      "Ardanubhach",
+      "Ardadbhanach",
+      "Asabhbhiotar",
+      "Beagbhish",
+      "Bobhistach",
+      "Breugcaudh",
+      "Deascaudhbh",
+      "Dergdalann",
+      "Fadadibhe",
+      "Fiartadrachad",
+      "Fionndrachladh",
+      "Iabhadraigh",
+      "Iaranndubhar",
+      "Iocharfionnbh",
+      "Miodhgarrad",
+      "Morpannad",
+      "Namhacparsabh",
+      "Naomhadpathad",
+      "Nuarabha",
+      "Olannrachadh",
+      "Pararath",
+      "Raudhatangadh",
+      "Sarannagar",
+      "Seananubh",
+      "Shamaranubhach",
+      "Siabhbhanach",
+      "Tuathbhiotar",
+      "Uacharbhish"
+    ],
+    "military_unit": [
+      "s sluag and the Persian-style cavalry guard:",
+      ","
+    ],
+    "personal_female": [
+      "Eithne",
+      "Mor",
+      "Deirdre",
+      "Aoife",
+      "Fionnuala",
+      "Sadb",
+      "Riyata-banu",
+      "Artaduxta",
+      "Naumana-banu",
+      "Vahudata",
+      "Farnah-banu",
+      "Gayanta-duxta",
+      "Brin",
+      "Mael-Torin",
+      "Baga-Urlin",
+      "Artafarnin",
+      "Urlaspa-farnin",
+      "Gaian",
+      "Gaianin",
+      "Numan",
+      "Numanin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Conn",
+      "Niall",
+      "Bran",
+      "Conall",
+      "Fergal",
+      "Aengus",
+      "Domnall",
+      "Mael-Toran",
+      "Gilla-Orlann",
+      "Turvasa-data",
+      "Baga-Urlaspa",
+      "Artafarnah",
+      "Vahu-Arzanta",
+      "Aryabarza",
+      "Urlaspa-farnah",
+      "Asturna-data",
+      "Arta-puthra",
+      "Naumana-data",
+      "Riyata-an",
+      "Naumana-an",
+      "Farnah-an",
+      "Gaian",
+      "Gaianan",
+      "Numan",
+      "Numanan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Dunfarnah",
+      "Dida-Conn",
+      "Atashana-Turvasa",
+      "Rath-Derg",
+      "Aspa-pura",
+      "Marz-Apaxtara",
+      "Alainnbhanam",
+      "Antarbhiotar",
+      "Ardbhioth",
+      "Ardadbhisean",
+      "Asabhcathra",
+      "Beagdachra",
+      "Bodrachcuan",
+      "Breugdrachladh",
+      "Deasdunad",
+      "Dergarrad",
+      "Fadaneimheas",
+      "Fiartarathad",
+      "Fionnbhanam",
+      "Iabhabhiotar",
+      "Iarannbhioth",
+      "Iocharbhisean",
+      "Miodhcathra",
+      "Mordachra",
+      "Namhacdrachcuan",
+      "Naomhadrachladh",
+      "Nuadunad",
+      "Olanngarrad",
+      "Paraneimheas",
+      "Raudharathad",
+      "Sarannabhanam",
+      "Seanbhiotar",
+      "Shamarbhioth",
+      "Siabhbhisean",
+      "Tuathcathra",
+      "Uachardachra",
+      "Ushardrachcuan",
+      "Alainndrachladh",
+      "Antardunad",
+      "Ardgarrad"
+    ],
+    "ship": [
+      "Pride of the Abann",
+      "Bearer of the Baji",
+      "Boat of Turvasa"
+    ],
+    "tavern": [
+      "The Golden Farnah",
+      "The Hound and Cup",
+      "The Cup of Truth",
+      "The Alainn Ardad",
+      "The Ard Asabh",
+      "The Beag Bo",
+      "The Breug Iabha",
+      "The Derg Iarann",
+      "The Fada Miodh",
+      "The Fiarta Namhac",
+      "The Fionn Olann",
+      "The Iarann Raudha"
+    ]
+  },
+  "culture_id": "zaralba",
+  "family": [
+    "celtic",
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_zaralba.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "zaralba",
+  "lexicon": {
+    "adjectives": {
+      "black": "siabh",
+      "fair": "alainn",
+      "false": "breug",
+      "far": "fada",
+      "golden": "saranna",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarann",
+      "little": "beag",
+      "new": "nua",
+      "old": "sean",
+      "red": "derg",
+      "sacred": "naomhad",
+      "true": "fiarta",
+      "white": "fionn"
+    },
+    "directional": {
+      "east": "ushar",
+      "inner": "antar",
+      "lower": "iochar",
+      "north": "tuath",
+      "outer": "para",
+      "south": "deas",
+      "upper": "uachar",
+      "west": "shamar"
+    },
+    "feature_words": {
+      "bay": "caudh",
+      "bog": "anubhach",
+      "cape": "agar",
+      "coast": "drachladh",
+      "ford": "bhiotar",
+      "forest": "bhanach",
+      "hill": "garrad",
+      "isle": "dibhe",
+      "lake": "drachad",
+      "marsh": "anubh",
+      "mountain": "caudhbh",
+      "narrows": "tangadh",
+      "pass": "dubhar",
+      "plain": "rabha",
+      "ridge": "parsabh",
+      "river": "rath",
+      "road": "pathad",
+      "sea": "draigh",
+      "stream": "bhish",
+      "track": "pannad",
+      "vale": "dalann",
+      "waste": "bhistach",
+      "way": "rachadh",
+      "wood": "fionnbh"
+    },
+    "resources": {
+      "bronze": "raudha",
+      "cattle": "bo",
+      "gold": "saranna",
+      "grain": "iabha",
+      "horse": "asabh",
+      "iron": "iarann",
+      "mead": "miodh",
+      "salt": "namhac",
+      "silver": "ardad",
+      "wool": "olann"
+    },
+    "settlement_words": {
+      "citadel": "rathad",
+      "city": "cathra",
+      "fort": "dunad",
+      "hamlet": "bhioth",
+      "market": "bhanam",
+      "port": "drachcuan",
+      "temple_town": "neimheas",
+      "town": "dachra",
+      "village": "bhisean"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Goidelic compound ([quality|feature|saint](stem) + element: Dun-derg, red-fort; Ard-mor, great-height) layered over Old Persian relation-compounds and construct via '-ahya' and the Ezafe (Arta-xshaca, truth-realm; Dida-[name], fort of; [name]-pura, city of): the capital Dunfarnah (the glory-fort), Dida-Conn (citadel of the Conn-house).",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "banu"
+      ],
+      "male": [
+        "an",
+        "ah",
+        "aspa"
+      ]
+    },
+    "patronymic_form": "the Goidelic ruling clan keeps the Mac- (son of) and O-/Ua- (descendant of) patronymic and the fine/cland kin-group; the Persian populace keep the filiation 'X-ahya puthra' (son of X) or compact 'X-puthra' and a house (vith-X) or office; the throne fuses both - a ri who also bears a vith- house-name and a satrapal seat.",
+    "toponymic_suffixes": [
+      "Dun-",
+      "Rath-",
+      "Baile-",
+      "pura",
+      "Dida-",
+      "stana",
+      "marz"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen apadana-halls, dead fire-temples, and sunken Celtic raths: 'the buried Apadana of Dida-[name]', 'the dead Atashana of [name]', 'the Cairn of the Conn-clan'",
+    "military_units": "the ruiri's sluag (war-host) and the Persian-style cavalry guard: 'the Sluag of Zaralba', 'the Spada of Urlaspa', 'the Iron Marcaigh (the riders of the plateau)'",
+    "ships": "the few river-barges and royal-road craft of a horse-and-cattle power: 'Pride of the Abann', 'Bearer of the Baji', 'Boat of Turvasa'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Farnah', 'The Hound and Cup', 'The Cup of Truth (Arta-jam)'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic theonym_set: Toran, Orlann, Gaian, Numan, Realtan, Eternan, Dolar, Nochtluan, Raithan), Old-Persian/axsatran variants SECONDARY (the axsatran shifted morphs: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna), never real Celtic/Iranian/Zoroastrian gods. The cardinal Persian virtue ARTA (Truth/Right-order) and its opposite DRAUGA (the Lie) carry over as the court's moral vocabulary, fused with the Celtic warrior-oath and the geis (the binding vow); the breaking of a geis is the Celtic face of the Lie. Alignment per the standard lens (Lawful/Neutral/Chaotic): the Celtic warrior-oath and the Persian Arta tradition read Lawful-friendly, the horse-clans' ancestor-cult and the cattle-raid reads Neutral, the wild Chaotic powers of the hunt and the war-fire keep their cults. The realm is broadly TOLERANT in the Persian manner - the ruiri shelters the subject cults beneath the crown.",
+    "clergy_ladder": {
+      "1": "Gilla-nemed (grove-servant) / Athravan (fire-tender acolyte)",
+      "3": "Drui (druid-priest) / Magu (magus)",
+      "5": "Sacart-mor (consecrated priest) / Magupati (chief magus of a fire-temple)",
+      "7": "Ard-drui (high druid) / Dahyu-Magupati (provincial chief magus)",
+      "9": "Sinnsear-drui (eldest druid) / Magupatan Magupat (chief of chief magi)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the fomoraig (Celtic demon-brood) or the hosts of Drauga (the Persian Lie), keep their morphs + an epithet: Maraxus -> Maragan the War-Brand (Pers. Marakhsha the Burner-of-Cities); Vacidus -> Faicid the Unmaker (Pers. Vakida the Devouring-Void); Lusanto -> Losand the Hoard-Worm (Pers. Lusanta the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Gaian": "the enduring mountain beneath the winged ring-disc (the farnah-glory)",
+      "Orlann": "an iron spear crossed with an oath-ring (the geis-ring)",
+      "Toran": "a rayed sun-wheel over a crossed sword and the upright Arta-measure"
+    },
+    "religious_orders_pattern": "the Nemed (Celtic sacred grove) or the Atashana (Persian fire-temple) of [power]: 'the Nemed of Toran', 'the Atashana of Turvasa'; the druids keep the grove and the magi keep the ever-burning fire (Atar) on the altar.",
+    "saints_pattern": "the sinnsir (the deified champions and forefathers of the ruling clan) and the honest dead and just kings of the Persian cities, kept as fravashi (fore-spirits) and honored at the cairn, the standing stone, and the fire-altar; 'the Fior-true [name]' (the righteous [name]).",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaian (Pers. Gayanta) - the enduring earth, cold, and mountain",
+      "Numeno": "Numan (Pers. Naumana) - air, lightning, sky-wisdom, and the good-mind",
+      "Orlandus": "Orlann (Pers. Urlaspa) - iron, oath, war, and the cavalier",
+      "Realta": "Realtan (Pers. Riyata) - the mother, mercy, healing, the Lady of Waters",
+      "Tulrius": "Toran (Pers. Turvasa) - the sun, fire, light, and justice; the lamp of right-order"
+    },
+    "the_one": "Eternan (Celtic; Persian Asturna) - the distant Ancient One and Wise Lord Most High, upholder of Arta, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - Raithan of the red hunt, Maragan the war-brand - and names the Lawful powers, and Eternan, as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - upholding Arta (right-order) and naming the Chaotic powers the hosts of Drauga the Lie, warded as the fomoraig (the demon-brood); the warrior-oath, the geis, and the king's-word-as-bond bind alike",
+      "Neutral": "the ancestral war-dead (the deified champions of the ruling clan) honored as the sinnsir (the forefathers) and as fravashi (fore-spirits), and the land-spirits of the nemed-grove and the -pura; the great powers and Nochtluan of the moon invoked at the nemed and the fire-altar situationally; the cattle-raid and the saddle stand under no single power"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Goidelic clanhold ladder, ascending, with the Old-Persian satrapal substrate co-titles beneath. Toisech (clan-chief / leader) barony over a Toisecheacht; Flaith-criche (border-lord) march over a Crich (the border-march); Tigerna (lord) county; Flaith (noble-lord) duchy ruling over a Xshacapavanam (the Persian SATRAPY he holds as a war-fief); Ri-tuaithe (king of a tuath) principality over a Tuath (petty kingdom); Ruiri (over-king) kingdom over a Mor-tuath (great tuath) - the kingdom DISPLAY title is the approved foreign 'Shah' from the Persian substrate; Ard-ri (high king) empire over the Vispa-tuath (the 'all-the-tuatha', Gmc Persian Vispa- + Goid. tuath). The subject cities keep their Persian Xshacapavan (satrap) and Framatar (appointed governor) and Marzapana (march-warden) beneath the Goidelic crown. The brithem (judge), the fili/ollam (poet-sage), the gudja-druid and the Persian magu stand outside the ladder. Rank titles fuse the real Gaelic and Old-Persian registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Shah (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Prince": "Princess",
+      "Shah": "Shahbanu"
+    },
+    "female_forms_native": {
+      "Ard-ri": "Ard-rigan",
+      "Flaith": "Banflaith",
+      "Flaith-criche": "Banflaith-criche",
+      "Ri-tuaithe": "Rigan-tuaithe",
+      "Ruiri": "Ruirigan",
+      "Tigerna": "Banntigerna",
+      "Toisech": "Bantoisech"
+    },
+    "government": "feudal (a Goidelic horse-clan aristocracy over the Persian satrapal heartland: the ruiri (over-king) and his flaith-kin in the saddle at the crown, the tigerna-lords and the Persian Xshacapavan-satraps over the -pura cities, the marcaigh-riders and the king's-warriors sworn to the war-host; the magi tend the fire and the scribal court endures beneath; the brithem-judge and the fili-poet stand outside the ladder)",
+    "heir": "Tanaiste (the second; the designated heir) / Mathishta (the greatest; crown prince)",
+    "honorifics": {
+      "champion": "Caur (Celtic champion-hound) / Asabara (Persian horseman-cavalier)",
+      "elder": "Sinnsear (the eldest)",
+      "lady": "Banntigerna / Banuka",
+      "lord": "Tigerna / Khvatava",
+      "your_grace": "A Thigerna / Khvatava"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Toisecheacht",
+        "ruler": "Baron",
+        "ruler_native": "Toisech"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Tigernas",
+        "ruler": "Count",
+        "ruler_native": "Tigerna"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Xshacapavanam (satrapy)",
+        "ruler": "Duke",
+        "ruler_native": "Flaith"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Vispa-tuath",
+        "ruler": "Emperor",
+        "ruler_native": "Ard-ri"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Mor-tuath",
+        "ruler": "Shah",
+        "ruler_native": "Ruiri"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Crich",
+        "ruler": "Marquis",
+        "ruler_native": "Flaith-criche"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Tuath",
+        "ruler": "Prince",
+        "ruler_native": "Ri-tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Geis (the binding oath) / Bandaka (the bond)",
+      "liege": "Flaith / Khvatava",
+      "tribute": "Cain (Celtic tribute-due) / Baji (Persian tribute)",
+      "vassal": "Ceile (the client) / Bandaka (the king's bondsman)"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 {
   "alignment_allowed": [
     "Lawful",
+    "Neutral",
     "Chaotic"
   ],
   "categories": {
@@ -374,14 +375,29 @@
     "the_one": "Eterami (< Aeternus; fused Celtic Eternan / Japonic Takami) - the Ancient-Above, the sky over the misted peaks; revered when Lawful, set aside when Chaotic",
     "worship_by_alignment": {
       "Chaotic": "venerate the Chaotic powers (Maratake the war-flame, the wild grove-frenzy), demonize the Lawful powers and the One",
-      "Lawful": "revere the One (Eterami) and the Lawful powers (Toranshi, Orhagane, Gaiwane, Num-ami), demonize the Chaotic powers (Maratake, Faikido, Losankr)"
+      "Lawful": "revere the One (Eterami) and the Lawful powers (Toranshi, Orhagane, Gaiwane, Num-ami), demonize the Chaotic powers (Maratake, Faikido, Losankr)",
+      "Neutral": "Honors the ancestral dead and the local powers of hearth, grove and land; the great powers of the canon are invoked situationally rather than worshipped whole."
     }
   },
   "schema_version": 1,
   "tier": "culture",
   "titles": {
     "_tiers_note": "Fused Celtic-Japonic ladder, ascending; the titles blend the two (Celtic aire/tigern/flaith/ri + Japonic jito/shugo/daimyo/o/tenno). Aijito (land-lord) barony; Maorsaki (border-warden) march; Tigosho (province-lord) county; Flaimyo (great-lord) duchy; Rikoshu (prince) principality; Ruirio (king) kingdom; Ardtenno (high-sovereign) empire over Ardtenka. The brithem-code and the honor-bound clans order the realm. (Rank titles fuse the real Gaelic/Japanese register, allowed.)",
-    "female_forms": {
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Prince": "Princess",
+      "Shogun": "Queen"
+    },
+    "female_forms_native": {
       "Aijito": "Aijitohime",
       "Ardtenno": "Ardtennohime",
       "Flaimyo": "Flaimyohime",
@@ -401,32 +417,46 @@
     },
     "tiers": {
       "barony": {
-        "domain": "Aijitoryo",
-        "ruler": "Aijito"
+        "domain": "Barony",
+        "domain_native": "Aijitoryo",
+        "ruler": "Baron",
+        "ruler_native": "Aijito"
       },
       "county": {
-        "domain": "Tigoshoryo",
-        "ruler": "Tigosho"
+        "domain": "County",
+        "domain_native": "Tigoshoryo",
+        "ruler": "Count",
+        "ruler_native": "Tigosho"
       },
       "duchy": {
-        "domain": "Flaimyoryo",
-        "ruler": "Flaimyo"
+        "domain": "Duchy",
+        "domain_native": "Flaimyoryo",
+        "ruler": "Daimyo",
+        "ruler_native": "Flaimyo"
       },
       "empire": {
-        "domain": "Ardtenka",
-        "ruler": "Ardtenno"
+        "domain": "Empire",
+        "domain_native": "Ardtenka",
+        "ruler": "Emperor",
+        "ruler_native": "Ardtenno"
       },
       "kingdom": {
-        "domain": "Ruirioku",
-        "ruler": "Ruirio"
+        "domain": "Kingdom",
+        "domain_native": "Ruirioku",
+        "ruler": "Shogun",
+        "ruler_native": "Ruirio"
       },
       "march": {
-        "domain": "Crichsakai",
-        "ruler": "Maorsaki"
+        "domain": "March",
+        "domain_native": "Crichsakai",
+        "ruler": "Marquis",
+        "ruler_native": "Maorsaki"
       },
       "principality": {
-        "domain": "Rikoshuryo",
-        "ruler": "Rikoshu"
+        "domain": "Principality",
+        "domain_native": "Rikoshuryo",
+        "ruler": "Prince",
+        "ruler_native": "Rikoshu"
       }
     },
     "vassalage": {
