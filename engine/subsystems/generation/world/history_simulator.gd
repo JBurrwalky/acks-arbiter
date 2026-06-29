@@ -51,6 +51,7 @@ var _height: int
 var _ordered_keys: Array         # canonical (r,q) hex order, cached
 var _land_keys: Array            # land hexes only, canonical order (diffusion)
 var _river_barrier: Dictionary   # "q,r,e" -> true for river/major-river crossings
+var _river_incident: Dictionary  # Vector2i -> true for a hex incident to ANY river edge (§4.2 cradle)
 var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
 var _ocean_id: Dictionary = {}        # ocean Vector2i -> connected-ocean id (sea-lane validity)
 var _coastal_oceans: Dictionary = {}  # coastal land Vector2i -> {ocean id: true} it borders
@@ -239,14 +240,20 @@ func _precompute_edge_damp() -> void:
 ## (width river / major_river). Keyed both owner-side and neighbor-side.
 func _build_river_barriers(river_edges: Array) -> void:
 	_river_barrier = {}
+	_river_incident = {}
 	for row in river_edges:
+		var owner := Vector2i(int(row["hex_q"]), int(row["hex_r"]))
+		var e := int(row["edge"])
+		var neighbor: Vector2i = owner + _OFF[e]
+		# §4.2 cradle exception keys on incidence to ANY river edge (all widths are
+		# "major" enough at the 24-mile scale — handoff §5.2); only navigable rivers
+		# (river / major_river) act as diffusion barriers.
+		_river_incident[owner] = true
+		_river_incident[neighbor] = true
 		var width_cat := str(row.get("width_category", ""))
 		if width_cat != "river" and width_cat != "major_river":
 			continue
-		var owner := Vector2i(int(row["hex_q"]), int(row["hex_r"]))
-		var e := int(row["edge"])
 		_river_barrier["%d,%d,%d" % [owner.x, owner.y, e]] = true
-		var neighbor: Vector2i = owner + _OFF[e]
 		_river_barrier["%d,%d,%d" % [neighbor.x, neighbor.y, (e + 3) % 6]] = true
 
 
@@ -466,17 +473,38 @@ func _grow_hex(key: Vector2i, fade: float) -> void:
 
 
 ## A held hex advances classification when it fills its current class
-## (RAW axioms:165-176; triggered at classification_advance_fraction of the cap).
+## (RAW axioms:165-176; triggered at classification_advance_fraction of the cap),
+## UNLESS the §4 biome/race territory cap forbids the target class (TerritoryCap).
+## The cap is read through the hex's dominant race; deforestation (§5.2, Phase 2b)
+## raises a forest hex's cap by transforming the biome.
 func _advance_classification(key: Vector2i) -> void:
 	var hex: Dictionary = _grid[key]
 	var pop := int(hex["population_band"])
 	var tc := str(hex["territory_class"])
-	if tc == "wilderness" \
+	var cap := _hex_territory_cap(key)
+	if tc == "wilderness" and TerritoryCap.allows(cap, "borderlands") \
 			and pop >= int(_c.classification_advance_fraction * _c.cap_wilderness):
 		hex["territory_class"] = "borderlands"
-	elif tc == "borderlands" \
+	elif tc == "borderlands" and TerritoryCap.allows(cap, "civilized") \
 			and pop >= int(_c.classification_advance_fraction * _c.cap_borderlands):
 		hex["territory_class"] = "civilized"
+
+
+## §4: the territory-class ceiling for a hex, read through its dominant culture's
+## race + biome/elevation, with the §4.2 desert cradle exception (river/coastal).
+func _hex_territory_cap(key: Vector2i) -> String:
+	var hex: Dictionary = _grid[key]
+	var roc: bool = _river_incident.has(key) or _coastal_oceans.has(key)
+	return TerritoryCap.effective_cap(str(hex["biome"]), str(hex["biome_subtype"]),
+			str(hex["elevation"]), _dominant_race(key), roc)
+
+
+## Race of a hex's dominant culture (default "human" when no instance / no weight).
+func _dominant_race(key: Vector2i) -> String:
+	var cid := _dominant_key(_culture_w.get(key, {}))
+	if cid == "":
+		return "human"
+	return str(_culture_instances.get(cid, {}).get("race", "human"))
 
 
 func _update_tier(pol: Dictionary) -> void:

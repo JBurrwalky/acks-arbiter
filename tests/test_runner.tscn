@@ -492,6 +492,7 @@
 [ext_resource type="Script" path="res://tests/test_region_field_materialization.gd" id="476_region_field_mat_tests"]
 [ext_resource type="Script" path="res://tests/test_volcanism.gd" id="477_volcanism_tests"]
 [ext_resource type="Script" path="res://tests/test_climb_resolver.gd" id="478_climb_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_territory_cap.gd" id="479_territory_cap_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1968,3 +1969,6 @@ script = ExtResource("477_volcanism_tests")
 
 [node name="ClimbResolverTests" type="Node" parent="."]
 script = ExtResource("478_climb_resolver_tests")
+
+[node name="TerritoryCapTests" type="Node" parent="."]
+script = ExtResource("479_territory_cap_tests")
