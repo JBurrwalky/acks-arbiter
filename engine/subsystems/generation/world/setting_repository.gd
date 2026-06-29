@@ -21,7 +21,7 @@ const HEX_COLUMNS := [
 	"q", "r", "elevation_raw", "elevation", "water", "temperature",
 	"precipitation", "effective_latitude", "koppen", "biome", "biome_subtype",
 	"original_biome", "culture_weights", "alignment_weights", "population_band",
-	"territory_class", "owner_polity_id", "land_value",
+	"territory_class", "owner_polity_id", "land_value", "clearing_progress",
 ]
 const RIVER_EDGE_COLUMNS := [
 	"hex_q", "hex_r", "edge", "flow_clockwise", "width_category",

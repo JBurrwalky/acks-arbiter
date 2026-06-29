@@ -276,5 +276,5 @@ func _hex_row(q: int, r: int) -> Dictionary:
 		"original_biome": "",
 		"culture_weights": "{}", "alignment_weights": "{}",
 		"population_band": 0, "territory_class": "wilderness",
-		"owner_polity_id": "", "land_value": 4,
+		"owner_polity_id": "", "land_value": 4, "clearing_progress": 0,
 	}

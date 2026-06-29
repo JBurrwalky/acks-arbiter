@@ -183,6 +183,7 @@ func _tick(tick: int) -> void:
 		_phase_go_native(tick)    # 4e-c (conqueror adopts a large, more-developed subject)
 		_phase_substrate(tick)    # 4a
 		_phase_demography(tick)   # 4a
+		_phase_deforestation(tick) # 4a — graduated clearing past the §4 biome cap
 		_phase_log(tick)          # 4g
 		return
 	# Profiling path (set `_profile = true`) — accumulates per-phase microseconds
@@ -200,6 +201,7 @@ func _tick(tick: int) -> void:
 	_phase_go_native(tick); t = _mark("go_native", t)
 	_phase_substrate(tick); t = _mark("substrate", t)
 	_phase_demography(tick); t = _mark("demography", t)
+	_phase_deforestation(tick); t = _mark("deforestation", t)
 	_phase_log(tick); t = _mark("log", t)
 
 
@@ -505,6 +507,66 @@ func _dominant_race(key: Vector2i) -> String:
 	if cid == "":
 		return "human"
 	return str(_culture_instances.get(cid, {}).get("race", "human"))
+
+
+## The next classification up, or "" when already civilized.
+func _next_class(tc: String) -> String:
+	if tc == "wilderness":
+		return "borderlands"
+	if tc == "borderlands":
+		return "civilized"
+	return ""
+
+
+# ---------------------------------------------------------------------------
+# 4a — Graduated deforestation (§5.4): a forest/jungle hex being developed past
+# its §4 biome cap clears over time, stepping the biome down (dense forest →
+# forest → clear; jungle → clear) so it can eventually civilize. Human-driven
+# only (elves reforest — Phase 2c); clanholds/beastmen never clear. Deterministic
+# (no RNG): a per-tick counter against a fixed threshold. Runs AFTER demography so
+# this tick's growth is reflected, and a completed step raises the cap for next
+# tick's _advance_classification.
+# ---------------------------------------------------------------------------
+
+func _phase_deforestation(_tick: int) -> void:
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol.get("is_clanhold", false):
+			continue
+		for key in pol["hexes"]:
+			_accrue_clearing(key)
+
+
+## Accrue (or complete) one tick of clearing on a held forest/jungle hex that is
+## "full" for its current class but biome-capped below the next class.
+func _accrue_clearing(key: Vector2i) -> void:
+	var hex: Dictionary = _grid[key]
+	var biome := str(hex["biome"])
+	if not Deforestation.is_clearable(biome):
+		return
+	if _dominant_race(key) != "human":
+		return   # human-driven clearing only (§5.4); elves reforest (Phase 2c)
+	var tc := str(hex["territory_class"])
+	var next := _next_class(tc)
+	if next == "":
+		return   # already civilized — no clearing pressure
+	if int(hex["population_band"]) < int(_c.classification_advance_fraction * _c.cap_for(tc)):
+		return   # not yet full — no development pressure on the cap
+	if TerritoryCap.allows(_hex_territory_cap(key), next):
+		return   # biome already permits advancing; _advance_classification handles it
+	# Biome-blocked + full → develop the land: accrue clearing.
+	var threshold: int = _c.clear_ticks_jungle if biome == "jungle" else _c.clear_ticks_step
+	var prog := int(hex.get("clearing_progress", 0)) + _c.clear_rate_base
+	if prog < threshold:
+		hex["clearing_progress"] = prog
+		return
+	# Step complete: transform the biome (preserve original_biome) and reset.
+	var step := Deforestation.next_step(biome, str(hex["biome_subtype"]), str(hex["koppen"]))
+	if str(hex.get("original_biome", "")) == "":
+		hex["original_biome"] = biome
+	hex["biome"] = str(step["biome"])
+	hex["biome_subtype"] = str(step["subtype"])
+	hex["clearing_progress"] = 0
 
 
 func _update_tier(pol: Dictionary) -> void:

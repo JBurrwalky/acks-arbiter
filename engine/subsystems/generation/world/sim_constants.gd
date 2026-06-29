@@ -340,6 +340,18 @@ var settlement_min_urban_families: int = 75
 # fills its class"; 0.60 is a [PROVISIONAL] balance proxy for "mostly settled".)
 var classification_advance_fraction: float = 0.60
 
+# --- Graduated deforestation (§5.4 — timed cost) ----------------------------
+# A forest/jungle hex being developed past its §4 biome cap accrues
+# clearing_progress per tick; on reaching the step threshold the biome steps down
+# (dense forest → forest → clear; jungle → clear) and the counter resets, raising
+# the hex's TerritoryCap so it can civilize. [PROVISIONAL]
+# SIM-TIME NOTE: the §5.4 "+2/tick adjacent to a market class III+ settlement"
+# accelerator is a RUNTIME-phase feature (market class is assigned at Layer 6,
+# after the history sim) — the sim uses the uniform base rate.
+var clear_ticks_step: int = 20        # Dense Forest → Forest, and Forest → Clear
+var clear_ticks_jungle: int = 30      # Jungle → Clear (slower)
+var clear_rate_base: int = 1          # clearing_progress accrued per tick (sim-time, uniform)
+
 # --- Migration (§8) ---------------------------------------------------------
 var migrant_fraction: float = 0.30
 var migration_pressure_base: float = 0.3

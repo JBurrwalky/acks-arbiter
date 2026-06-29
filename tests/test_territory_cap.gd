@@ -11,6 +11,8 @@ func run_all_tests() -> void:
 	test_dwarf_caps()
 	test_elf_caps()
 	test_helpers()
+	test_deforestation_steps()
+	test_cleared_subtype_mapping()
 	if not has_failures():
 		print("TerritoryCapTests: all tests passed (%d checks)" % test_count())
 
@@ -92,6 +94,45 @@ func test_elf_caps() -> void:
 		"elf grassland -> borderlands")
 	check(_cap("desert", "", "flat", "elf") == "borderlands", "elf desert -> borderlands")
 	check(_cap("swamp", "", "flat", "elf") == "borderlands", "elf swamp -> borderlands")
+
+
+func test_deforestation_steps() -> void:
+	# §5.2 graduated steps. Dense forest steps to plain forest first (not straight to clear).
+	var dense := Deforestation.next_step("woods", "forest_dense", "Cfb")
+	check(dense["biome"] == "woods" and dense["subtype"] == "", "dense forest -> plain forest")
+	# Plain forest clears to the climate subtype.
+	var plain := Deforestation.next_step("woods", "", "Cfb")
+	check(plain["biome"] == "clear" and plain["subtype"] == "clear_grassland",
+		"temperate plain forest -> clear_grassland")
+	# Taiga clears straight to steppe.
+	var taiga := Deforestation.next_step("woods", "forest_taiga", "Dfc")
+	check(taiga["biome"] == "clear" and taiga["subtype"] == "clear_steppe",
+		"taiga -> clear_steppe")
+	# Jungle clears to the warm-band subtype.
+	var jungle := Deforestation.next_step("jungle", "", "Af")
+	check(jungle["biome"] == "clear" and jungle["subtype"] == "clear_savanna",
+		"jungle -> clear_savanna")
+	# Non-clearable input is returned unchanged.
+	check(not Deforestation.is_clearable("clear"), "clear is not clearable")
+	check(not Deforestation.is_clearable("desert"), "desert is not clearable")
+	check(Deforestation.is_clearable("woods") and Deforestation.is_clearable("jungle"),
+		"woods + jungle are clearable")
+
+
+func test_cleared_subtype_mapping() -> void:
+	# §5.3 climate-band -> cleared subtype, and the resulting TerritoryCap follows.
+	check(Deforestation.cleared_subtype("Aw", "") == "clear_savanna", "tropical -> savanna")
+	check(Deforestation.cleared_subtype("Csa", "") == "clear_scrub", "summer-dry -> scrub")
+	check(Deforestation.cleared_subtype("Dfc", "") == "clear_steppe", "cold -> steppe")
+	check(Deforestation.cleared_subtype("Cfb", "") == "clear_grassland", "temperate -> grassland")
+	# Source taiga always wins (steppe) regardless of koppen.
+	check(Deforestation.cleared_subtype("Cfb", "forest_taiga") == "clear_steppe",
+		"taiga source -> steppe")
+	# The §5.2 terminal-at-Borderlands case: arid forest clears to scrub, which caps at Borderlands.
+	check(TerritoryCap._human_biome_cap("clear", "clear_scrub", false) == "borderlands",
+		"clear_scrub caps at Borderlands (terminal)")
+	check(TerritoryCap._human_biome_cap("clear", "clear_grassland", false) == "civilized",
+		"clear_grassland unlocks Civilized")
 
 
 func test_helpers() -> void:

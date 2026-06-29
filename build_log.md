@@ -36825,3 +36825,67 @@ on-tick dispatch.
 - Phase 2 — territory gating: `effective_territory_cap(hex, dominant_race, civ_or_clan)` per GDD §4.2–4.4, gating `_advance_classification` (sim) + `classification_advancement.gd` (runtime); graduated deforestation (§5.2–5.4) as a timed cost via a runtime `_phase_deforestation`; reforestation. Add `clearing_progress` persistence (column or side table) + `sim_constants` (CLEAR_TICKS_STEP=20, CLEAR_TICKS_JUNGLE=30, REFOREST_*).
 - Controlled retirement pass for the old member kits + Gundic (delete `data/cultures/`, `data/conlang/`, `data/name_banks/` for the retired ids; re-run `build_name_banks.py --check`; update EXPECTED_BANK_COUNT).
 - (Optional) base-kit flavor-string polish + an in-engine seeding spot-check.
+
+## Session 2026-06-29 — Culture emergence Phase 2a: biome/race territory gating
+
+**Task:** Continue the culture-emergence build (handoff §4). Implement Phase 2a — the §4 territory-cap that gates how far a hex can develop, read through the dominant culture's race.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **New `TerritoryCap` helper** (`engine/subsystems/generation/world/territory_cap.gd`, class_name): `effective_cap(biome, subtype, elevation, race, river_or_coastal) -> "wilderness"|"borderlands"|"civilized"`. Encodes §4.2 human (elevation ceiling: mountains→Borderlands, volcanic/glacial→Wilderness; biome cap: grassland/savanna→Civ, plain-forest/taiga→Borderlands, dense-forest/jungle/swamp/dry-desert→Wilderness; desert cradle exception: river/coastal desert→Civ), §4.3 dwarf (any mountain→Civ, hills→Borderlands, flat→Wilderness), §4.4 elf (forest/jungle incl. forested mountains→Civ, bare mountains→Wilderness, else Borderlands). Pure; `rank`/`min_class`/`allows` helpers.
+- **Gated `HistorySimulator._advance_classification`** on `TerritoryCap.allows(cap, target)` — a held hex only advances to a class its §4 cap permits. Cap read via new `_hex_territory_cap(key)` → `_dominant_race(key)` (dominant culture instance's race, default human) + river/coastal incidence. Clanhold cultures unaffected (they never reach the advancement path; their existing wilderness clamp stands).
+- **Per-hex river incidence:** `_build_river_barriers` now also fills `_river_incident` (Vector2i→true for a hex incident to ANY river edge, all widths) for the §4.2 cradle exception; the navigable-only barrier set is unchanged.
+**Decisions made:**
+- Cap is read through the hex's CURRENT biome; the §5.2 "on exceeding the cap → deforest" transition (Phase 2b) raises a forest hex's cap by changing the biome, so 2a's cap and 2b's deforestation are two halves of one mechanic.
+- River incidence uses ALL widths (handoff §5.2: every sim-scale river is "major" enough); only navigable rivers remain diffusion barriers.
+**Interfaces defined or changed:**
+- `TerritoryCap.effective_cap(biome, subtype, elevation, race, river_or_coastal) -> String`; `.rank/.min_class/.allows`. Shared by sim + (pending) runtime classification.
+- `HistorySimulator`: new `_river_incident` member; new `_hex_territory_cap(key)` + `_dominant_race(key)`.
+**Database changes:**
+- None yet. (Phase 2b will need per-hex `clearing_progress` persistence — a setting_hexes schema change — pending Jedidiah's approval per CLAUDE.md data-model rule.)
+**Tests added/updated:**
+- New `tests/test_territory_cap.gd` (registered as TerritoryCapTests; 35 checks) covering the §4.2/4.3/4.4 tables + desert cradle + helpers.
+- Full suite **476 passed / 16 failed** (net +1 vs Phase-1's 475/16; the new TerritoryCapTests is the +1). Determinism (Stage3/4) + calibration smoke (6 checks) green on two consecutive runs. Zero new failures.
+**Known issues:**
+- The cap raises the wilderness-class fraction (calibration smoke wilderness ~74.5%, realms 16.7) because forests/mountains/jungle now cap below Civilized. This is the designed effect; §5.2 graduated deforestation (Phase 2b) is the escape valve that lets civilization clear forest to reach Civilized. The §17 Large×20 balance target may want 2b before a full re-tune.
+- Runtime `classification_advancement.gd` (6-mile play-time) NOT yet gated — only the 24-mile sim is. The runtime resolver is a pure checker; gating it cleanly means threading a precomputed `max_classification` from the domain's hex biome/race (follow-on, lower-traffic path).
+- **Parallel work observed:** `scenes/maps/hex_map_renderer_3d.gd` (+138) and new `assets/wilderness_kit/{building,mountain}/` appeared in the working tree mid-session (not mine — likely the live Godot editor session, PID 11032). Phase 2a was committed (31d1cfb) with ONLY my 5 files; the renderer/asset work was left untouched/uncommitted.
+**Next session should:**
+- Phase 2b — graduated deforestation as a timed cost: per-hex `clearing_progress` (setting_hexes column — NEEDS Jedidiah's data-model approval), graduated transitions dense→forest→clear (climate subtype §5.3) + jungle→clear (30t), a `_phase_deforestation` sim/runtime event (+1/tick, +2 near a market class I–III settlement), constants `CLEAR_TICKS_STEP=20`/`CLEAR_TICKS_JUNGLE=30`/`CLEAR_RATE_NEAR_MARKET3=2`. Generalize `infrastructure_generator._deforest`'s biome-flip + `original_biome`.
+- Phase 2c — reforestation (natural +1/tick ceiling Forest; elven +2/+3 to original incl. Dense/Jungle).
+- Wire the runtime classification resolver to the cap.
+**Commits:** 62ca2e9 (Phase 1), 31d1cfb (Phase 2a).
+
+## Session 2026-06-29 — Culture emergence Phase 2b: graduated deforestation (timed cost)
+
+**Task:** Continue Phase 2 (handoff §4). Implement graduated deforestation as a timed cost so forest/jungle hexes being developed past their §4 biome cap clear over time and can civilize.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **Migration 178** (`178_setting_hexes_clearing_progress.sql`): non-destructive `ALTER TABLE setting_hexes ADD COLUMN clearing_progress INTEGER NOT NULL DEFAULT 0`. Chosen as a column (vs side table) — 1:1 per hex, read/written in the same row access as biome/territory_class, mirrors the existing `original_biome` per-hex deforestation column, auto-covered by the determinism hash (which keys on `SettingRepository.HEX_COLUMNS`). Confirmed by Jedidiah (efficiency + stability).
+- **Persistence wiring:** `clearing_progress` added to `SettingRepository.HEX_COLUMNS`; `geo_field_to_grid.gd` hex builder initializes it to 0 (so every in-memory grid hex carries it for the Layer-2/3/4 `save_hexes` calls — `_bulk_insert` fails loudly on missing keys). Fixed the lone hand-built fixture (`test_setting_stage0._hex_row`).
+- **New `Deforestation` helper** (`deforestation.gd`, class_name; pure): `is_clearable(biome)`, `next_step(biome, subtype, koppen)` (§5.2 graduated steps: dense forest→plain forest→clear; taiga→clear; jungle→clear), `cleared_subtype(koppen, from_subtype)` (§5.3 climate-band→subtype: tropical→savanna, cold/taiga→steppe, arid/summer-dry→scrub [Borderlands-terminal], temperate→grassland). Keyed on the persisted `setting_hexes.koppen`.
+- **`HistorySimulator._phase_deforestation`** (new 4a phase, runs after `_phase_demography` in both the fast + profiled tick paths): for each non-clanhold polity's held forest/jungle hex with a human dominant culture, that is FULL for its class (pop ≥ advance_fraction × class cap) but biome-capped below the next class (`not TerritoryCap.allows(cap, next)`), accrue `clearing_progress += clear_rate_base`; on reaching the step threshold, apply `Deforestation.next_step`, preserve `original_biome`, reset the counter. The biome flip raises the §4 cap so next tick's `_advance_classification` can advance. Deterministic (no RNG).
+- **Constants** (`sim_constants.gd`, PROVISIONAL): `clear_ticks_step=20`, `clear_ticks_jungle=30`, `clear_rate_base=1`.
+**Decisions made:**
+- **Sim-time integration on setting_hexes** (pairs with 2a, addresses 2a's elevated wilderness fraction). The handoff also calls for a RUNTIME EventScheduler `_phase_deforestation` (6-mile gameplay) — deferred as a follow-on; the pure `Deforestation` helper + clearing_progress concept are reusable there.
+- **Sim-time uses a UNIFORM +1/tick** (no `+2`-near-market-III accelerator): market class is assigned at Layer 6, AFTER the history sim, so the §5.4 market accelerator is a runtime-phase feature. Documented in `sim_constants`.
+- Clearing is human-driven only (`_dominant_race == "human"`); clanholds/beastmen skipped (no dense settlement); elves reforest (Phase 2c).
+**Interfaces defined or changed:**
+- `Deforestation.is_clearable/next_step/cleared_subtype` (pure; shared by sim + future runtime phase).
+- `setting_hexes.clearing_progress` (INTEGER, default 0); `SettingRepository.HEX_COLUMNS` extended; every in-memory grid hex carries `clearing_progress`.
+- `HistorySimulator._phase_deforestation`/`_accrue_clearing`/`_next_class` (new); `_phase_deforestation` is the 12th tick phase (after demography).
+- `SimConstants.clear_ticks_step/clear_ticks_jungle/clear_rate_base`.
+**Database changes:**
+- Migration 178 — `setting_hexes.clearing_progress`. Sequential, non-destructive.
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_deforestation_steps` + `test_cleared_subtype_mapping` (TerritoryCapTests now 49 checks).
+- `test_setting_stage0._hex_row` fixture carries `clearing_progress`.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged vs Phase 2a; zero new failures). Determinism (Stage3 + hash) green; calibration smoke green with **wilderness 74.5% → 69.3%** (deforestation reclaiming forest, as designed). Migration 178 applied cleanly; clearing_progress round-trips.
+**Known issues:**
+- Runtime EventScheduler `_phase_deforestation` (6-mile) + the §5.4 `+2`-near-market-III accelerator NOT built — sim-time only for now.
+- Reforestation (Phase 2c) not built — `Deforestation` currently only steps DOWN.
+- Parallel work still uncommitted in the tree (`scenes/maps/hex_map_renderer_3d.gd`, `assets/wilderness_kit/{building,mountain}/`) — not mine; left untouched. Phase 2b committed with ONLY my files.
+**Next session should:**
+- Phase 2c — reforestation: natural (+1/tick on depopulation, ceiling Forest, cleared needs a Forest neighbor, jungle Clear→Jungle 15t with a Jungle neighbor) + elven (+2/+3, any settled hex, restore to `original_biome` incl. Dense/Jungle). Reverse via `Deforestation` (add `reforest_step`). Constants `REFOREST_*`.
+- Wire the runtime classification resolver (`classification_advancement.gd`) + a runtime EventScheduler deforestation phase with the market-class accelerator.
+- Phase 3 (expansion constraints), then Phase 4 (hybrid emergence — Opus review).
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), + this (P2b).

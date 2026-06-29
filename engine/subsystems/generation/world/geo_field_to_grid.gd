@@ -76,4 +76,5 @@ static func _hex_from_field(field: GeoField, col: int, row: int, lat: float) -> 
 		"territory_class": "wilderness",
 		"owner_polity_id": "",
 		"land_value": 0,
+		"clearing_progress": 0,   # §5.4 deforestation timed-cost counter (Phase 2b)
 	}
