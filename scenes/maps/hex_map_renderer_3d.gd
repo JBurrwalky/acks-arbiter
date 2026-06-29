@@ -116,14 +116,13 @@ const REGION_BIG_SUBTYPES := {"ocean": true, "sea": true}   # too large for the 
 const REGION_SIG_MIN := 0.30
 const REGION_SUB := 4                       # 24-mile parent -> 6-mile children (offset *4)
 const REGION_LABEL_FONT_SIZE := 64          # texture resolution; world size is via pixel_size
-const REGION_LABEL_MIN_WORLD := 0.7         # cull floor for the title's world-height
-const REGION_LABEL_MAX_WORLD := 2.0         # hard cap so a big region can't splash a giant name
+const REGION_LABEL_MIN_WORLD := 0.5         # cull floor for the title's world-height
+const REGION_LABEL_MAX_WORLD := 1.1         # hard cap so a big region can't splash a giant name
 const REGION_LABEL_SHRINK := 0.82           # per-step shrink while dodging an overlap
 const REGION_LABEL_ADVANCE := 0.55          # glyph advance as a fraction of text height
-const REGION_LABEL_LIFT := 0.7              # world units the title floats above terrain
+const REGION_LABEL_LIFT := 0.15            # sits just above the terrain it's painted onto
 const REGION_LABEL_FILL := Color(0.0, 0.0, 0.0, 1.0)
 const REGION_LABEL_OUTLINE := Color(0.97, 0.96, 0.90, 0.9)   # cream halo, legible over any biome
-const REGION_SUBTITLE_RATIO := 0.58
 ## Translucent per-region colour wash (the status-bar "Regions" toggle). Hugs the terrain
 ## just above the surface; floats UNDER labels + the party token.
 const REGION_OVERLAY_LIFT := 0.04
@@ -133,7 +132,7 @@ const REGION_OVERLAY_ALPHA := 0.34
 ## strongholds (STRONGHOLD_LOD_ZOOM) — they appear only when zoomed in. Black fill,
 ## white halo, hovering right over the settlement cube.
 const CITY_LABEL_FONT_SIZE := 64
-const CITY_LABEL_WORLD := 0.55              # world-height of the city name text
+const CITY_LABEL_WORLD := 0.28              # world-height of the city name text (small; zoom-gated)
 const CITY_LABEL_LIFT := 0.28              # above the settlement cube top
 const CITY_LABEL_FILL := Color(0.0, 0.0, 0.0, 1.0)
 const CITY_LABEL_OUTLINE := Color(1.0, 1.0, 1.0, 1.0)
@@ -148,6 +147,15 @@ var _camera: Camera3D = null
 var _terrain_root: Node3D = null
 var _scatter_root: Node3D = null
 var _scatter_mesh_cache := {}     # variant name -> Mesh
+## Farmland tiles on cultivated (clear/grassland, in-domain, settlement-free) hexes.
+var _farmland_root: Node3D = null
+## path -> PackedScene cache for the full-scene models (settlement buildings + farmland);
+## kept so repeated placements don't reload the glTF.
+var _model_scene_cache := {}
+## culture_id set whose culture is civ_or_clan == "clan" (beastmen + nomad/tribe humans) —
+## their settlements get the clanhold building (Jedidiah: clanhold realms only). Built once.
+var _clan_cultures := {}
+var _clan_cultures_ready := false
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
 var _river_water_cache: ShaderMaterial = null   # #3 animated water (when the PNG is present)
@@ -202,6 +210,9 @@ func _ready() -> void:
 	_scatter_root = Node3D.new()
 	_scatter_root.name = "Scatter"
 	add_child(_scatter_root)
+	_farmland_root = Node3D.new()
+	_farmland_root.name = "Farmland"
+	add_child(_farmland_root)
 	_river_root = Node3D.new()
 	_river_root.name = "Rivers"
 	add_child(_river_root)
@@ -281,6 +292,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	# Scatter is deferred so it never blocks the session-load flow (this runs inside
 	# controller.load_map()); it also refreshes with fog via _on_visibility_updated.
 	call_deferred("_build_scatter")
+	call_deferred("_build_farmland")
 
 
 func _on_visibility_updated() -> void:
@@ -291,6 +303,7 @@ func _on_visibility_updated() -> void:
 		_build_rivers()
 		_build_landmarks()
 		call_deferred("_build_scatter")
+	call_deferred("_build_farmland")
 
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
@@ -314,6 +327,7 @@ func _on_frontier_grown(_map_id: String) -> void:
 	_build_regions()          # reproject region overlay/labels over the enlarged window
 	_rebuild_tokens()
 	call_deferred("_build_scatter")
+	call_deferred("_build_farmland")
 
 
 func _on_hex_terrain_updated(_coord: Vector2i) -> void:
@@ -895,6 +909,40 @@ func _first_mesh_instance(node: Node) -> MeshInstance3D:
 	return null
 
 
+## Place farmland tiles on cultivated hexes: clear/grassland biome, civilized or borderlands
+## territory (= inside a domain), and no settlement on the hex. Tile style follows the hex's
+## territory; two variants seeded per hex. Fog-gated + rebuilt with the scatter.
+func _build_farmland() -> void:
+	for child in _farmland_root.get_children():
+		child.queue_free()
+	if _map_data == null:
+		return
+	var settlement_hexes := {}
+	for s in _query_settlement_entrances():
+		settlement_hexes[Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))] = true
+	for coord in _map_data.hexes.keys():
+		if not _reveal_all_fog and _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN:
+			continue
+		if settlement_hexes.has(coord):
+			continue
+		var t := _terrain(coord)
+		if t == null or t.water != "" or t.biome != "clear":
+			continue
+		if t.biome_subtype != HexTerrainData.SUBTYPE_NONE and t.biome_subtype != HexTerrainData.SUBTYPE_CLEAR_GRASSLAND:
+			continue
+		var style := ""
+		if t.civilization == HexTerrainData.TERRITORY_CIVILIZED:
+			style = "civilized"
+		elif t.civilization == HexTerrainData.TERRITORY_BORDERLANDS:
+			style = "borderlands"
+		else:
+			continue
+		var rng := WorldGenRng.stream(_campaign_seed, "farmland", 0, "%d,%d" % [coord.x, coord.y])
+		var n := 1 + (rng.randi() % 2)
+		var path := "%s/%s-farmland-%d.gltf" % [BUILDING_DIR, style, n]
+		_place_fitted_scene(_farmland_root, coord, path, FARMLAND_FOOTPRINT, float(rng.randi() % 4) * (PI * 0.5))
+
+
 # ---------------------------------------------------------------------------
 # Edge rivers (GDD §8.3/§8.4) — water ribbons ALONG hex edges (corner->corner)
 # ---------------------------------------------------------------------------
@@ -1278,19 +1326,22 @@ func _build_landmarks() -> void:
 		c.queue_free()
 	if _map_data == null:
 		return
-	# Settlements: a full red cube + market-class letter, always visible (a settlement
-	# and a stronghold on the same hex are the same place — the settlement wins). Each
-	# discovered settlement also gets a zoom-gated name label (see _place_city_label).
-	var settlement_hexes := {}   # Vector2i -> market-class roman String
-	var settlement_names := {}   # Vector2i -> settlement name String
+	# Settlements: a Quaternius building model sized by market class (a settlement and a
+	# stronghold on the same hex are the same place — the settlement wins). Each discovered
+	# settlement also gets a zoom-gated name label (see _place_city_label).
+	_ensure_clan_cultures()
+	var settlement_classes := {}   # Vector2i -> int market_class (1..6)
+	var settlement_names := {}     # Vector2i -> settlement name String
+	var settlement_clan := {}      # Vector2i -> bool (owning culture is a clan culture)
 	for s in _query_settlement_entrances():
 		var coord := Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
-		settlement_hexes[coord] = _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)]
+		settlement_classes[coord] = clampi(int(s.get("market_class", 6)), 1, 6)
 		settlement_names[coord] = str(s.get("name", ""))
-	for coord in settlement_hexes:
+		settlement_clan[coord] = _clan_cultures.has(str(s.get("culture_id", "")))
+	for coord in settlement_classes:
 		if _fog_value(coord) < 0.25:
 			continue
-		_place_landmark(coord, settlement_hexes[coord])
+		_place_settlement_building(coord, int(settlement_classes[coord]), bool(settlement_clan.get(coord, false)))
 		_place_city_label(coord, str(settlement_names.get(coord, "")))
 
 	# Strongholds (where no settlement sits): a small DIM cube in the dedicated
@@ -1299,7 +1350,7 @@ func _build_landmarks() -> void:
 	var stronghold_hexes := {}
 	for h in _query_strongholds():
 		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
-		if not settlement_hexes.has(coord):
+		if not settlement_classes.has(coord):
 			stronghold_hexes[coord] = true
 	for coord in stronghold_hexes:
 		if _fog_value(coord) < 0.25:
@@ -1320,6 +1371,20 @@ const LANDMARK_SIZE := 0.36
 ## when the camera's ortho size exceeds this (zoomed out) — see _update_stronghold_lod.
 const STRONGHOLD_SIZE := 0.18
 const STRONGHOLD_LOD_ZOOM := 18.0
+
+# --- Settlement building + farmland models (Jedidiah 2026-06-29) ------------------
+## Settlement buildings by market class: civ-MC-I … civ-MC-VI for civilized realms,
+## clanhold-MC-III … VI for clan-culture realms (see _place_settlement_building). The model
+## is auto-fitted by its AABB to a per-class footprint so a Class-I metropolis reads bigger
+## than a Class-VI hamlet regardless of the source model's native scale. (Mountains were
+## tried + cut — too exaggerated; their assets were removed.)
+const BUILDING_DIR := "res://assets/wilderness_kit/building"
+const SETTLEMENT_FOOTPRINT_MIN := 0.5     # MC VI (hamlet) footprint, world units
+const SETTLEMENT_FOOTPRINT_STEP := 0.12   # added per class below VI (MC I = +5 steps)
+## Farmland tiles fill cultivated hexes: clear/grassland, inside a domain (civilized or
+## borderlands territory), with no settlement. civilized-farmland-* vs borderlands-farmland-*
+## by the hex's territory class; two variants each, seeded per hex.
+const FARMLAND_FOOTPRINT := 0.4     # a small cultivated patch, not a hex-filling field
 
 
 func _place_landmark(coord: Vector2i, text: String) -> void:
@@ -1351,6 +1416,98 @@ func _place_landmark(coord: Vector2i, text: String) -> void:
 	holder.add_child(label)
 
 	_landmark_root.add_child(holder)
+
+
+## Place a settlement building sized to its market class. Clan-culture settlements get the
+## clanhold model (which only spans Class III-VI — clamped — since clanholds never reach a
+## metropolis); everyone else gets the civilized building. Falls back to the old red cube +
+## roman letter if the model can't be loaded (so a settlement is never invisible).
+func _place_settlement_building(coord: Vector2i, market_class: int, is_clan: bool) -> void:
+	var mc := clampi(market_class, 1, 6)
+	var path: String
+	if is_clan:
+		path = "%s/clanhold-MC-%s.glb" % [BUILDING_DIR, _ROMAN[clampi(mc, 3, 6)]]
+	else:
+		path = "%s/civ-MC-%s.glb" % [BUILDING_DIR, _ROMAN[mc]]
+	var footprint := SETTLEMENT_FOOTPRINT_MIN + float(6 - mc) * SETTLEMENT_FOOTPRINT_STEP
+	if not _place_fitted_scene(_landmark_root, coord, path, footprint, 0.0):
+		_place_landmark(coord, _ROMAN[mc])
+
+
+## Build the clan-culture set once: a culture is "clan" (clanhold-style) when its catalog
+## identity has civ_or_clan == "clan" (beastmen + nomad/tribe humans) — same signal as
+## tools/check_clanholds.gd. Static catalog, so campaign-independent + cached.
+func _ensure_clan_cultures() -> void:
+	if _clan_cultures_ready:
+		return
+	_clan_cultures_ready = true
+	var all_cultures: Dictionary = CultureCatalogLoader.load_all()
+	for cid in all_cultures:
+		var coc := str(CultureCatalogLoader.identity(all_cultures[cid]).get("civ_or_clan", "civ"))
+		if coc == "clan":
+			_clan_cultures[str(cid)] = true
+
+
+## Instance a full glTF/glb scene at [param coord], auto-fitted: uniformly scaled so its
+## widest XZ extent == [param footprint], centred on the hex, and seated so its base rests
+## on the terrain. [param yaw] spins it about its centre. Returns false if the model is
+## missing/empty (caller can fall back). Scale-agnostic — works whatever the source units.
+func _place_fitted_scene(parent: Node3D, coord: Vector2i, path: String, footprint: float, yaw: float) -> bool:
+	var packed := _load_packed(path)
+	if packed == null:
+		return false
+	var inst := packed.instantiate()
+	var aabb := _combined_aabb(inst)
+	var fp := maxf(aabb.size.x, aabb.size.z)
+	if fp < 0.0001:
+		inst.free()
+		return false
+	var s := footprint / fp
+	var xz := WildernessHexMath.axial_to_world(coord)
+	var holder := Node3D.new()
+	holder.position = Vector3(xz.x, _hex_height(coord), xz.y)
+	holder.rotation = Vector3(0.0, yaw, 0.0)
+	var center := aabb.position + aabb.size * 0.5
+	inst.scale = Vector3(s, s, s)
+	# Centre the model's XZ on the hex and seat its base (min-Y) at the holder origin.
+	inst.position = Vector3(-center.x * s, -aabb.position.y * s, -center.z * s)
+	holder.add_child(inst)
+	parent.add_child(holder)
+	return true
+
+
+## Cached PackedScene load for the model kits (settlements + mountains).
+func _load_packed(path: String) -> PackedScene:
+	if _model_scene_cache.has(path):
+		return _model_scene_cache[path]
+	var p := load(path) as PackedScene
+	if p == null:
+		push_warning("wilderness model: cannot load %s" % path)
+	_model_scene_cache[path] = p
+	return p
+
+
+## The combined local-space AABB of every MeshInstance3D under [param root] (transforms
+## accumulated down the tree), so a multi-part model fits as a whole.
+func _combined_aabb(root: Node) -> AABB:
+	var boxes: Array = []
+	_collect_mesh_aabbs(root, Transform3D.IDENTITY, boxes)
+	if boxes.is_empty():
+		return AABB()
+	var acc: AABB = boxes[0]
+	for i in range(1, boxes.size()):
+		acc = acc.merge(boxes[i])
+	return acc
+
+
+func _collect_mesh_aabbs(node: Node, xform: Transform3D, out: Array) -> void:
+	var t := xform
+	if node is Node3D:
+		t = xform * (node as Node3D).transform
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
+		out.append(t * (node as MeshInstance3D).mesh.get_aabb())
+	for c in node.get_children():
+		_collect_mesh_aabbs(c, t, out)
 
 
 func _landmark_cube_material() -> StandardMaterial3D:
@@ -1437,7 +1594,7 @@ func _query_settlement_entrances() -> Array:
 	if _map_data == null:
 		return []
 	if not CampaignRepository.db.query_with_bindings(
-			"SELECT hex_q, hex_r, market_class, name FROM settlement_entrances WHERE map_id = ?",
+			"SELECT hex_q, hex_r, market_class, name, culture_id FROM settlement_entrances WHERE map_id = ?",
 			[_map_data.id]):
 		return []
 	return CampaignRepository.db.query_result.duplicate()
@@ -1621,7 +1778,7 @@ func _build_region_labels(regions: Array) -> void:
 		cz /= n
 		var name := str(reg["name"])
 		cands.append({
-			"name": name, "sub": _region_subtitle(str(reg["subtype"]), str(reg["layer"])),
+			"name": name,
 			"cx": cx, "cy": cy, "cz": cz, "len": maxi(name.length(), 1),
 			"count": members.size(),
 			"base_h": _region_label_world_h(_members_extent(members, Vector2(cx, cz)), name.length()),
@@ -1644,14 +1801,12 @@ func _build_region_labels(regions: Array) -> void:
 		var px := world_h / float(REGION_LABEL_FONT_SIZE)
 		var title := _make_map_label(str(cd["name"]), REGION_LABEL_FILL, REGION_LABEL_OUTLINE,
 				REGION_LABEL_FONT_SIZE, px)
+		# Lie FLAT on the ground (parallel to the geography, like a name printed on a map)
+		# rather than standing up as a billboard — and draw on top so terrain never clips it.
+		title.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+		title.no_depth_test = true
 		title.position = Vector3(cd["cx"], float(cd["cy"]) + REGION_LABEL_LIFT, cd["cz"])
 		_region_label_root.add_child(title)
-		var sub := str(cd["sub"])
-		if not sub.is_empty():
-			var subl := _make_map_label(sub, REGION_LABEL_FILL, REGION_LABEL_OUTLINE,
-					REGION_LABEL_FONT_SIZE, px * REGION_SUBTITLE_RATIO)
-			subl.position = Vector3(cd["cx"], float(cd["cy"]) + REGION_LABEL_LIFT - world_h * 0.78, cd["cz"])
-			_region_label_root.add_child(subl)
 	_region_label_root.visible = _zoom > STRONGHOLD_LOD_ZOOM
 
 
@@ -1672,12 +1827,12 @@ func _region_label_world_h(extent: float, name_len: int) -> float:
 	return clampf(world_h, REGION_LABEL_MIN_WORLD, REGION_LABEL_MAX_WORLD)
 
 
-## The label's world-XZ collision box (centred at the centroid). Width = the title's text
-## width; the height covers the title+subtitle stack, widened for the iso tilt's Z squash
-## so on-screen vertical overlaps are caught. {x, z, hw, hh}.
+## The label's world-XZ footprint box (centred at the centroid). The title lies flat on the
+## ground, so its text width is the X extent and its single-line height the Z extent — a
+## faithful ground footprint for de-cluttering. {x, z, hw, hh}.
 func _region_label_box(cd: Dictionary, world_h: float) -> Dictionary:
 	var w := REGION_LABEL_ADVANCE * float(int(cd["len"])) * world_h
-	return {"x": float(cd["cx"]), "z": float(cd["cz"]), "hw": w * 0.5, "hh": world_h * 1.2}
+	return {"x": float(cd["cx"]), "z": float(cd["cz"]), "hw": w * 0.5, "hh": world_h * 0.6}
 
 
 func _xz_box_hits(box: Dictionary, placed: Array) -> bool:
@@ -1688,15 +1843,7 @@ func _xz_box_hits(box: Dictionary, placed: Array) -> bool:
 	return false
 
 
-## "(forest)" / "(river)" subtitle from the region's subtype (else its layer): a leaf
-## sub-split "basin_part" reads "basin", "river_system" reads "river system".
-func _region_subtitle(subtype: String, layer: String) -> String:
-	var s := subtype if not subtype.is_empty() else layer
-	s = s.trim_suffix("_part").replace("_", " ").strip_edges()
-	return "" if s.is_empty() else "(%s)" % s
-
-
-## A billboarded, world-sized map label (black fill + halo outline), faces the camera and
+## A world-sized map label (black fill + halo outline), faces the camera and
 ## zooms with the map. Shared by region names and city names.
 func _make_map_label(text: String, fill: Color, outline: Color, font_size: int,
 		pixel_size: float) -> Label3D:
@@ -1707,11 +1854,12 @@ func _make_map_label(text: String, fill: Color, outline: Color, font_size: int,
 	l.modulate = fill
 	l.outline_modulate = outline
 	l.outline_size = maxi(2, int(float(font_size) * 0.12))
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.double_sided = true
 	l.fixed_size = false
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Orientation is the caller's call: city names billboard (face camera); region names
+	# lie flat on the ground (see _build_region_labels / _place_city_label).
 	return l
 
 
@@ -1724,6 +1872,7 @@ func _place_city_label(coord: Vector2i, name: String) -> void:
 	var base_y := _hex_height(coord)
 	var px := CITY_LABEL_WORLD / float(CITY_LABEL_FONT_SIZE)
 	var l := _make_map_label(name, CITY_LABEL_FILL, CITY_LABEL_OUTLINE, CITY_LABEL_FONT_SIZE, px)
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED   # face the camera, hovering over the town
 	l.position = Vector3(xz.x, base_y + LANDMARK_SIZE + CITY_LABEL_LIFT, xz.y)
 	_city_label_root.add_child(l)
 

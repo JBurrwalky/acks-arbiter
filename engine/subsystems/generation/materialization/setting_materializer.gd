@@ -1783,6 +1783,11 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 	""", [campaign_id, region_map_id])
 	var heads: Array = db.query_result.duplicate(true)
 	var placed := 0
+	# A seat settlement gets its OWN toponym, NOT the domain's realm/ruler name (which read
+	# as long ruler-named towns — Jedidiah 2026-06-29). Deterministic per seat hex; deduped
+	# across the seats placed in this pass.
+	var seat_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
+	var seat_used := {}
 	for d in heads:
 		var seat := Vector2i(int(d["location_hex_q"]), int(d["location_hex_r"]))
 		var soff := WorldGrid.axial_to_offset(seat)
@@ -1800,7 +1805,12 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 		# party into the top-left ocean.) The §2 "ignore Class VI" rule still applies to
 		# NON-capital hamlets, which M4-2 never places — it only seats realm-heads.
 		var culture := str(d.get("culture_id", ""))
-		var dname := str(d.get("name", "Settlement"))
+		# Own settlement toponym (the bug was using d["name"] = the domain's realm name).
+		var name_bank := NameBankLoader.bank_for(culture)
+		var name_rng := WorldGenRng.stream(seat_seed, "seat_settlement_name", 0, "%d,%d" % [seat.x, seat.y])
+		var dname := NameAssembler.settlement_name(name_bank, name_rng, seat_used, culture, mc <= 2)
+		if dname.strip_edges().is_empty():
+			dname = str(d.get("name", "Settlement"))   # safety net for a culture with no name bank
 		var dom_id := str(d["id"])
 		# Seat already has a settlement (an M2b Class III+ city)? Don't double-place.
 		db.query_with_bindings(
