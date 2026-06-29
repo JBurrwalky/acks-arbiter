@@ -407,6 +407,34 @@ var expansion_pref_excluded: float = 0.1       # §4.6 hard exclusion; nonzero =
 var expansion_boxed_in_threshold: float = 0.11
 var expansion_boxed_in_rate: float = 0.5       # fraction of budget a boxed-in polity spends
 
+# --- §5.2 Natural borders + consolidate-before-expand (PEACEFUL expansion only) ---
+# Rivers (ANY width at the 24-mi scale — all are "major" enough there) are natural borders
+# realm boundaries prefer to settle onto. A frontier hex reachable only by CROSSING a river
+# edge has its expansion score damped by natural_border_resistance_river — but ONLY when
+# CONTESTING an enemy-owned hex, NOT when claiming EMPTY land. (Damping empty-land
+# settlement across rivers strands trans-river wilderness unclaimed on the finite-tick sim
+# and regressed the §17 coverage target ~4pts; the contest-only scope keeps coverage at the
+# 3a baseline while mature realm borders still settle onto rivers via stabilization —
+# Jedidiah 2026-06-29.) Coast needs no multiplier (land can't cross ocean — automatic);
+# mountain spines are left to the §4.6 elevation preferencing (handoff §5.2 OMITs explicit
+# mountain gating). War (_phase_war) ignores all of this. [PROVISIONAL]
+var natural_border_resistance_river: float = 0.5
+# Consolidate-before-expand: a realm whose only open frontier is across a natural border
+# (every river-free, developable settle target is taken) and that has NOT yet filled its
+# interior redirects expansion into internal growth — it spends only consolidate_rate of
+# its budget until saturated, then spills across. Kept > 0 (a SOFTENING of the spec's
+# "redirect all budget") so a river is never a HARD border and the map still fills across
+# it slowly. COVERAGE NOTE (Jedidiah 2026-06-29): this throttle lowers civilization
+# coverage on the fixed-tick history sim; that is accepted — if maps come out too wild we
+# raise ascendant-polity pop growth to compensate, NOT weaken this gate. [PROVISIONAL]
+var consolidate_rate: float = 0.5
+# Saturation = ≥ saturation_hex_fraction of a polity's POPULATED land hexes at
+# ≥ saturation_pop_fraction of their CURRENT-biome cap (cap_for(effective_cap) — the
+# present biome's ceiling, NOT the post-deforestation one: a realm does not wait to clear
+# forest before seeking new space). [PROVISIONAL]
+var saturation_hex_fraction: float = 0.75
+var saturation_pop_fraction: float = 0.50
+
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5

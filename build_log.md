@@ -36951,3 +36951,34 @@ on-tick dispatch.
 - **Phase 3c** (handoff §5.3): overseas expansion across short sea gaps (coastal-settlement requirement) → non-contiguous sea-linked colonies; coordinate with §7.4d contiguity. OPUS REVIEW before building.
 - Then Phase 4 (hybrid emergence — Opus review).
 **Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), + this (P3a).
+
+## Session 2026-06-29 — Culture emergence Phase 3b: natural-border resistance + consolidate-before-expand (§5.2)
+
+**Task:** Phase 3b (handoff §5.2). Make peaceful expansion respect rivers as natural borders, and add a consolidate-before-expand saturation gate so realms fill their interior before spilling across a border. War-making exempt throughout.
+**Model used:** Opus 4.8 (implementation, calibration tuning, headless verification).
+**Completed:**
+- **`HistorySimulator._build_river_barriers`** now also builds `_river_edge_any` ("q,r,e" → true for EVERY river edge, both widths, both directions) — distinct from the navigable-only `_river_barrier` diffusion set. `_river_free_approach(pid, n)` reports whether a frontier hex has a river-free owned-neighbour approach.
+- **`HistorySimulator._compute_frontier`** damps a frontier hex's `mult` by `SimConstants.natural_border_resistance_river` (0.5) **only when the hex is enemy-owned AND reached only across a river** (CONTEST-only — NOT empty-land settlement). Each entry now also carries `river_crossed` + `settle` for the gate.
+- **Consolidate-before-expand gate** in `_expand_polity`: `_is_border_bounded(pol, frontier)` (no river-free developable open SETTLE target left, and the realm abuts a river-crossed frontier or a coastline) + `_is_saturated(pol)` (≥0.75 of POPULATED hexes at ≥0.50 of their CURRENT-biome cap, `cap_for(_hex_territory_cap)`) reduce the expansion budget by `consolidate_rate` (0.5, never 0). War (`_phase_war`) untouched.
+- **`SimConstants`**: `natural_border_resistance_river=0.5`, `consolidate_rate=0.5`, `saturation_hex_fraction=0.75`, `saturation_pop_fraction=0.50` (all PROVISIONAL, documented).
+- **`tools/calib_sweep.gd` + `.tscn`** — new standalone calibration harness (Large×N in ~2.5 min, skips the 492-suite runner which is too slow/DB-contended to tune against). Kept as the standing tuning tool for the planned ascendant-pop-growth compensation pass.
+**Decisions made:**
+- **River resistance is CONTEST-ONLY** (Jedidiah ruling 2026-06-29). Reliable Large×12 sweeps showed that damping empty-land settlement across rivers strands trans-river wilderness unclaimed on the finite-tick sim and regresses the §17 coverage target ~4pts (wilderness 58.6→62.4, unowned 24.4→27.3, even at a gentle 0.7; the cost comes from the frontier REORDERING, not the magnitude — 0.9 ≈ 0.7 ≈ same hit). Restricting the damp to inter-realm border contests keeps coverage at the 3a baseline while mature borders still settle onto rivers via stabilization.
+- **The saturation gate is INCLUDED** (Jedidiah: include it, do NOT tune it against the wilderness target — if maps come out too wild, raise ascendant-polity pop growth to compensate instead). In practice the gate is coverage-neutral *because* the resistance is contest-only: empty land stays freely claimable, so realms are rarely border-bounded and the gate seldom fires.
+- **Saturation is measured against the CURRENT-biome ceiling** (`cap_for(_hex_territory_cap)`), not the post-deforestation cap — a realm does not wait to clear forest before seeking new space (handoff §5.2). Populated hexes only (razed pop-0 land can't grow, so it doesn't count toward fill).
+**Interfaces defined or changed:**
+- `HistorySimulator`: new members `_river_edge_any`; new methods `_river_free_approach(pid, n)`, `_is_border_bounded(pol, frontier)`, `_is_saturated(pol)`. `_compute_frontier` entries gain `river_crossed`/`settle` keys (only caller is `_expand_polity`).
+- `SimConstants`: `natural_border_resistance_river`, `consolidate_rate`, `saturation_hex_fraction`, `saturation_pop_fraction`.
+**Database changes:** None.
+**Tests added/updated:**
+- Full suite **476 passed / 16 failed** (warm-DB measured run) — exactly the pre-3b baseline; the 16 are the known pre-existing combat/proficiency/ZoC/LOS/encounter/item-cascade failures, none in world-gen/history-sim/calibration/determinism. Determinism + all setting-stage + calibration suites green. Phase 3b's new logic is stateful sim-internal (no new pure functions like 3a's TerritoryCap helpers); it is covered by the determinism + calibration integration suites rather than new unit tests.
+- **Calibration (final config, Large×12, contest-only 0.5 + gate 0.5):** wilderness 59.2 / civ_owned 69.8 / unowned 24.8 / realms 31.1 / indep_civ 13.6 — vs pure-3a baseline 58.6 / 70.0 / 24.4 / 35.0 / 15.7. Headline metrics NEUTRAL (within noise); realms consolidate 35→31 with unowned flat (consolidation toward the §17 "5–10 independent realms" band, not collapse).
+**Known issues:**
+- River-border AESTHETIC not yet visually verified in-engine (the renderer is up in the parallel editor session — eyeball the political map: borders should preferentially align to rivers where two realms meet across one). The stabilization effect is by-construction but subtle.
+- The realms 35→31 drop appears across ALL frontier-reordering variants (any resistance < 1.0), so it is a determinism-shift artifact of reordering, not specific to the contest scope. Benign (unowned flat).
+- `tools/calib_sweep.*` writes test campaigns into `campaign_test.db`; clear it (`find <iso-appdata> -iname campaign_test.db* -delete`) before a full-suite run or the bloat slows the suite past the 10-min headless timeout.
+**Next session should:**
+- **Phase 3c** (handoff §5.3 — OPUS REVIEW gate): overseas expansion across short sea gaps (coastal-settlement requirement) → non-contiguous sea-linked colonies; must coordinate with §7.4d contiguity (`_phase_contiguity`) so sea-linked colonies are NOT auto-severed (mark them sea-linked). Soft `SEA_CROSS_COST` distance curve. Present the design before/while building (it touches the contiguity contract).
+- Then Phase 4 (hybrid emergence — highest arch risk, Opus review).
+- Backlog: ascendant-polity pop-growth boost (the agreed compensation lever if coverage dips); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), + this (P3b).

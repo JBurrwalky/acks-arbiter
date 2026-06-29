@@ -52,6 +52,7 @@ var _ordered_keys: Array         # canonical (r,q) hex order, cached
 var _land_keys: Array            # land hexes only, canonical order (diffusion)
 var _river_barrier: Dictionary   # "q,r,e" -> true for river/major-river crossings
 var _river_incident: Dictionary  # Vector2i -> true for a hex incident to ANY river edge (§4.2 cradle)
+var _river_edge_any: Dictionary  # "q,r,e" -> true for ANY river edge, both widths (§5.2 natural border)
 var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
 var _ocean_id: Dictionary = {}        # ocean Vector2i -> connected-ocean id (sea-lane validity)
 var _coastal_oceans: Dictionary = {}  # coastal land Vector2i -> {ocean id: true} it borders
@@ -245,6 +246,7 @@ func _precompute_edge_damp() -> void:
 func _build_river_barriers(river_edges: Array) -> void:
 	_river_barrier = {}
 	_river_incident = {}
+	_river_edge_any = {}
 	for row in river_edges:
 		var owner := Vector2i(int(row["hex_q"]), int(row["hex_r"]))
 		var e := int(row["edge"])
@@ -254,6 +256,10 @@ func _build_river_barriers(river_edges: Array) -> void:
 		# (river / major_river) act as diffusion barriers.
 		_river_incident[owner] = true
 		_river_incident[neighbor] = true
+		# §5.2 natural-border resistance damps PEACEFUL expansion across ANY river edge
+		# (both widths), keyed per directed edge so either bank sees the crossing.
+		_river_edge_any["%d,%d,%d" % [owner.x, owner.y, e]] = true
+		_river_edge_any["%d,%d,%d" % [neighbor.x, neighbor.y, (e + 3) % 6]] = true
 		var width_cat := str(row.get("width_category", ""))
 		if width_cat != "river" and width_cat != "major_river":
 			continue
@@ -756,6 +762,13 @@ func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
 	if best_pref < _c.expansion_boxed_in_threshold:
 		budget_eff = maxi(1, XPAwardCalculator.bankers_round(
 				float(budget) * _c.expansion_boxed_in_rate))
+	# §5.2 consolidate-before-expand: a realm hemmed by a natural border (no river-free,
+	# developable open frontier left) that has not yet filled its interior spends only a
+	# fraction of its budget — population grows internally (demography) and the realm spills
+	# across the river once saturated. PEACEFUL only; _phase_war is unaffected.
+	if _is_border_bounded(pol, frontier) and not _is_saturated(pol):
+		budget_eff = mini(budget_eff, maxi(1, XPAwardCalculator.bankers_round(
+				float(budget) * _c.consolidate_rate)))
 	var spent := 0
 	for entry in frontier:
 		if spent >= budget_eff:
@@ -793,9 +806,81 @@ func _compute_frontier(pol: Dictionary) -> Array:
 			# culture's race can develop (TerritoryCap), in the §4.6 order. `pref` is
 			# kept separately so _expand_polity can detect a boxed-in polity.
 			var pref := _expansion_preference(pol, n)
-			var mult: float = _terrain_mult(pol, n) * float(_expand_jitter_by_hex.get(n, 1.0)) * pref
-			out.append({"hex": n, "mult": mult, "pref": pref})
+			# §5.2 natural-border resistance: peaceful border pressure across a river is
+			# damped — a realm reaching a river prefers to push elsewhere rather than shove a
+			# neighbour across it, so mature borders settle onto rivers. Applied to CONTEST
+			# (enemy-owned) frontier only, NOT to claiming EMPTY land: on a finite-tick sim,
+			# damping empty-land settlement across rivers strands trans-river wilderness
+			# unclaimed and regresses the §17 coverage target. War (_phase_war) is exempt.
+			var is_settle := str(_grid[n]["owner_polity_id"]) == ""
+			var river_crossed := not _river_free_approach(pid, n)
+			var resist: float = 1.0
+			if river_crossed and not is_settle:
+				resist = _c.natural_border_resistance_river
+			var mult: float = _terrain_mult(pol, n) * float(_expand_jitter_by_hex.get(n, 1.0)) \
+					* pref * resist
+			out.append({
+				"hex": n, "mult": mult, "pref": pref,
+				"river_crossed": river_crossed,
+				"settle": is_settle,
+			})
 	return out
+
+
+## §5.2: true when [param n] has at least one owned neighbour (of polity [param pid])
+## reachable WITHOUT crossing a river edge — the realm can settle it from its own bank.
+## False when every owned approach crosses a river (the hex is across a natural border).
+## Edge indices match _build_river_barriers (_river_edge_any keyed "q,r,e").
+func _river_free_approach(pid: String, n: Vector2i) -> bool:
+	for e in range(6):
+		var m: Vector2i = n + _OFF[e]
+		if not _grid.has(m) or str(_grid[m]["owner_polity_id"]) != pid:
+			continue
+		if not _river_edge_any.has("%d,%d,%d" % [n.x, n.y, e]):
+			return true
+	return false
+
+
+## §5.2 consolidate-before-expand trigger: the realm is bounded by a natural border with
+## no easy room left — it has NO river-free, developable open settle target, and it either
+## abuts a river-crossed frontier or sits on a coastline. (A realm merely enclosed by enemy
+## land is NOT "border-bounded" — that is a war situation, left to _phase_war.) PEACEFUL
+## settlement only.
+func _is_border_bounded(pol: Dictionary, frontier: Array) -> bool:
+	var touches_river_frontier := false
+	for entry in frontier:
+		if not entry["settle"]:
+			continue
+		if not entry["river_crossed"] and float(entry["pref"]) >= _c.expansion_boxed_in_threshold:
+			return false   # a river-free developable open hex remains: not yet bounded
+		if entry["river_crossed"]:
+			touches_river_frontier = true
+	if touches_river_frontier:
+		return true
+	for key in pol["hexes"]:
+		if _coastal_oceans.has(key):
+			return true
+	return false
+
+
+## §5.2 saturation: ≥ saturation_hex_fraction of the polity's POPULATED land hexes have
+## reached ≥ saturation_pop_fraction of their CURRENT-biome cap (cap_for(effective_cap) —
+## the present biome's ceiling, NOT the post-deforestation one). An unsaturated,
+## border-bounded realm consolidates instead of spilling across the border.
+func _is_saturated(pol: Dictionary) -> bool:
+	var total := 0
+	var filled := 0
+	for key in pol["hexes"]:
+		var pop := int(_grid[key]["population_band"])
+		if pop <= 0:
+			continue   # razed / unpopulated land can't grow; it doesn't count toward fill
+		total += 1
+		var cap := _c.cap_for(_hex_territory_cap(key))
+		if float(pop) >= _c.saturation_pop_fraction * float(cap):
+			filled += 1
+	if total == 0:
+		return true   # nothing populated to consolidate
+	return float(filled) >= _c.saturation_hex_fraction * float(total)
 
 
 ## §5.1 / §4.6: the expanding culture's preference for settling [param key], in
