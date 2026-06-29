@@ -6,11 +6,11 @@
     "east_asian"
   ],
   "_schema": "gdd-naming-conventions.md 2.6",
-  "catalog_number": 29,
+  "catalog_number": null,
   "sub_palette": "celtic-japonic deep fusion (cross-family blend, extreme)",
   "synthesis_sources": [
-    7,
-    10
+    "BASE_02",
+    "BASE_08"
   ],
   "homeland": "Shidara",
   "blend": {
@@ -22,15 +22,32 @@
     "note": "a NEW emergent culture, neither Celtic nor Japanese - a mist-shrouded mountain-forest realm of honor-clans and grove-spirits; the soft, vowel-rich tongue, titles and gods are fused forms between the two parents."
   },
   "government": "feudal",
+  "civ_or_clan": "civ",
   "alignment_allowed": [
     "Lawful",
+    "Neutral",
     "Chaotic"
   ],
-  "_note": "Cross-family DEEP BLEND (Celtic + Japanese): a single emergent people of misted peaks and deep forests - honor-bound clans served by grove-and-mountain spirit-keepers, drawing on the druid's lore and the warrior's code without being either. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic lenition/-an + Japonic CV moras/-no). civ = feudal. Seeds/shifts Lawful or Chaotic (the ordered honor-clans vs the wild spirit-frenzy). Common-word lexicon and rank titles fuse the real Gaelic/Japanese registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods.",
+  "_note": "Cross-family DEEP BLEND (Celtic + Japanese): a single emergent people of misted peaks and deep forests - honor-bound clans served by grove-and-mountain spirit-keepers, drawing on the druid's lore and the warrior's code without being either. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic lenition/-an + Japonic CV moras/-no). civ = feudal. Seeds/shifts Lawful or Chaotic (the ordered honor-clans vs the wild spirit-frenzy). Common-word lexicon and rank titles fuse the real Gaelic/Japanese registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods. [REWORKED 2026-06-27 to the base/hybrid model: csv_id HYB_16; all human cultures allow Lawful/Neutral/Chaotic; ruler/domain DISPLAY titles now English (or an approved foreign term), the fused conlang titles moved to ruler_native/domain_native for NPC dialogue; worship_by_alignment completed to all three. Deep-fusion blend, lexicon, deities (canonical Agrippan morphs) and name stock retained from the v1 kit.]",
   "phonology": {
     "palette": "Fused Celtic-Japonic: soft, vowel-rich; lenition (c>ch, t>th) meets the open CV mora; consonants k g t d s sh ch ts n m r w y, glottal stop; endings fuse Celtic -an/-ach with Japonic -no/-ama/-shi; pitch-and-stress mixed.",
     "phonotactics": "CV/CVC; mutation-clusters soften into open syllables; vowel-final frequent.",
-    "transparent_ratio": 0.4
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "deep fusion (Celtic-Japonic), balanced; soft vowel-rich phonology",
+      "sound_changes": [
+        "Celtic root + Japonic root weld into one stem; neither parent dominates - the join is mid-word (loch+ko>lokko, sruth+no>sruthno, magh+no>magno)",
+        "Japonic open CV-mora shape governs the tail: a fused word tends to end vowel-final on a Japonic element (-no, -ko, -ma/-yama, -shi, -michi, -minato)",
+        "Celtic lenition softens the clusters at the seam (c>ch, t>th, bd>open): cathair>cathiro, rath+jo>rathjo, dun+machi>dunmachi",
+        "geminate the consonant at a short Celtic+Japonic join rather than break the syllable: loch+ko>lokko, cnoc+ka>cnokka, becc+chi>becchi",
+        "Japonic moraic vowel-stacking absorbs Celtic vowels (long/doubled vowels kept): cian+too>ciantoo, sean+furu>senfuru, find+shiro>findshiro",
+        "signature phonemes from both stay audible - Celtic sruth-/loch-/dun-/cath- onsets and Japonic -yama/-mori/-shio/-tetsu finals"
+      ],
+      "source_tilt": "land/terrain/water/staple roots split evenly and fuse (Celtic loch/sruth/magh/cnoc + Japonic -ko/-no/-yama/-mori); the join is welded so the two ancestries are inseparable rather than one-sourced - a balanced deep fusion, not a substrate under a prestige register",
+      "portmanteaus": [
+        "lake loch+-ko>lokko", "stream sruth+-no>sruthno", "hill cnoc+-ka>cnokka", "plain magh+-no>magno", "mountain shian/sliabh+yama>shiyama", "forest fiodh+mori>fimori", "old sean+furu>senfuru", "town dun+machi>dunmachi"
+      ]
+    }
   },
   "lexicon": {
     "feature_words": {
@@ -137,44 +154,49 @@
     "government": "feudal (mist-realm honor-clans: the high-sovereign at Shidara over clan-lords and grove-keepers; the brithem-code and the warrior's honor bind, the council of elders advises)",
     "tiers": {
       "barony": {
-        "ruler": "Aijito",
-        "domain": "Aijitoryo"
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Aijito",
+        "domain_native": "Aijitoryo"
       },
       "march": {
-        "ruler": "Maorsaki",
-        "domain": "Crichsakai"
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Maorsaki",
+        "domain_native": "Crichsakai"
       },
       "county": {
-        "ruler": "Tigosho",
-        "domain": "Tigoshoryo"
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Tigosho",
+        "domain_native": "Tigoshoryo"
       },
       "duchy": {
-        "ruler": "Flaimyo",
-        "domain": "Flaimyoryo"
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Flaimyo",
+        "domain_native": "Flaimyoryo"
       },
       "principality": {
-        "ruler": "Rikoshu",
-        "domain": "Rikoshuryo"
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rikoshu",
+        "domain_native": "Rikoshuryo"
       },
       "kingdom": {
-        "ruler": "Ruirio",
-        "domain": "Ruirioku"
+        "ruler": "Shogun",
+        "domain": "Kingdom",
+        "ruler_native": "Ruirio",
+        "domain_native": "Ruirioku"
       },
       "empire": {
-        "ruler": "Ardtenno",
-        "domain": "Ardtenka"
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Ardtenno",
+        "domain_native": "Ardtenka"
       }
     },
     "_tiers_note": "Fused Celtic-Japonic ladder, ascending; the titles blend the two (Celtic aire/tigern/flaith/ri + Japonic jito/shugo/daimyo/o/tenno). Aijito (land-lord) barony; Maorsaki (border-warden) march; Tigosho (province-lord) county; Flaimyo (great-lord) duchy; Rikoshu (prince) principality; Ruirio (king) kingdom; Ardtenno (high-sovereign) empire over Ardtenka. The brithem-code and the honor-bound clans order the realm. (Rank titles fuse the real Gaelic/Japanese register, allowed.)",
-    "female_forms": {
-      "Ardtenno": "Ardtennohime",
-      "Ruirio": "Ruiriohime",
-      "Rikoshu": "Rikoshuhime",
-      "Flaimyo": "Flaimyohime",
-      "Tigosho": "Tigoshohime",
-      "Maorsaki": "Maorsakihime",
-      "Aijito": "Aijitohime"
-    },
     "heir": "Tanaiste-yotsugi (the designated heir)",
     "honorifics": {
       "lord": "Tiarno",
@@ -188,7 +210,30 @@
       "vassal": "Ceilekerai (sworn client-retainer)",
       "fealty": "Giallchugi (the binding-loyalty)",
       "tribute": "Cisnengu"
-    }
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Ardtenno": "Ardtennohime",
+      "Ruirio": "Ruiriohime",
+      "Rikoshu": "Rikoshuhime",
+      "Flaimyo": "Flaimyohime",
+      "Tigosho": "Tigoshohime",
+      "Maorsaki": "Maorsakihime",
+      "Aijito": "Aijitohime"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Shogun": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ]
   },
   "people_name_convention": {
     "order": "the finuji (clan) name first, then a personal name bestowed at the coming-of-age; a deed or grove-vision byname; the high-born take an honor-name.",
@@ -212,6 +257,7 @@
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Eterami) and the Lawful powers (Toranshi, Orhagane, Gaiwane, Num-ami), demonize the Chaotic powers (Maratake, Faikido, Losankr)",
+      "Neutral": "Honors the ancestral dead and the local powers of hearth, grove and land; the great powers of the canon are invoked situationally rather than worshipped whole.",
       "Chaotic": "venerate the Chaotic powers (Maratake the war-flame, the wild grove-frenzy), demonize the Lawful powers and the One"
     },
     "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Maratake the War-Flame, Vacidus -> Faikido the Unmaker; when Chaotic - Tulrius -> Toranshi the Cold-Light, Aeternus -> Eterami the Far Tyrant.",
@@ -313,5 +359,7 @@
       "Nemiya-no-Toranshi (the sun-grove shrine)",
       "Lokko-glentan (the lake-vale)"
     ]
-  }
+  },
+  "csv_id": "HYB_16",
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (was #29 in the v1 culture system); csv_id is authoritative."
 }

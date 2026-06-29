@@ -6,11 +6,11 @@
     "north_american"
   ],
   "_schema": "gdd-naming-conventions.md 2.6",
-  "catalog_number": 39,
+  "catalog_number": null,
   "sub_palette": "celtic-woodland deep fusion (cross-family blend, extreme)",
   "synthesis_sources": [
-    7,
-    16
+    "BASE_02",
+    "BASE_11"
   ],
   "homeland": "Senecari",
   "blend": {
@@ -22,15 +22,32 @@
     "note": "a NEW emergent culture, neither Celtic nor Woodland - deep-forest clans of grove and longhouse-rath, druid-and-faithkeeper spirit-lore; the tongue, titles and gods are fused forms (Celtic -an/lenition + Iroquoian long -onon, light on labials)."
   },
   "government": "clanhold",
+  "civ_or_clan": "clan",
   "alignment_allowed": [
+    "Lawful",
     "Neutral",
     "Chaotic"
   ],
-  "_note": "Cross-family DEEP BLEND (Celtic + Woodland): a single emergent people of the deep forest - matrilineal-leaning clans of the grove and the longhouse-rath, their spirit-keepers fusing the druid and the faithkeeper. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic softness + Iroquoian long compounds, sparse in labials). clan = clanhold. Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles fuse the real Gaelic/Iroquois registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods.",
+  "_note": "Cross-family DEEP BLEND (Celtic + Woodland): a single emergent people of the deep forest - matrilineal-leaning clans of the grove and the longhouse-rath, their spirit-keepers fusing the druid and the faithkeeper. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic softness + Iroquoian long compounds, sparse in labials). clan = clanhold. Seeds/shifts Neutral or Chaotic. Common-word lexicon and rank titles fuse the real Gaelic/Iroquois registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods. [REWORKED 2026-06-27 to the base/hybrid model: csv_id HYB_19; all human cultures allow Lawful/Neutral/Chaotic; ruler/domain DISPLAY titles now English (or an approved foreign term), the fused conlang titles moved to ruler_native/domain_native for NPC dialogue; worship_by_alignment completed to all three. Deep-fusion blend, lexicon, deities (canonical Agrippan morphs) and name stock retained from the v1 kit.]",
   "phonology": {
     "palette": "Fused Celtic-Iroquoian: soft, vowel-rich, sparse in labials; lenition (c>ch, t>th) meets long polysynthetic compounds; consonants t k s h n r w y, ts, ch, glottal stop; endings fuse Celtic -an/-ach with Iroquoian -onon/-wenne.",
     "phonotactics": "CV/CVC; few labials; glottal stops; long compounds.",
-    "transparent_ratio": 0.4
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "deep fusion (Celtic-Iroquoian), balanced; soft, labial-sparse, long compounds",
+      "sound_changes": [
+        "Celtic root + Iroquoian root weld into one long stem; neither parent dominates - the Celtic onset carries an Iroquoian polysynthetic tail (aub+yon>aubyon, loch+kanota>lochkanota, sruth+wisken>sruthwisken)",
+        "Iroquoian long compounding governs word length: fused stems run long and agglutinative, stacking -onon/-onta/-enrak/-wira/-wenne/-anota onto the Celtic head",
+        "Celtic lenition softens the seam (c>ch, t>th): cathair>cathironon, cnoc>cnononta, both/bothar>bothaha",
+        "labial-sparse - p/b/m thinned at the join; Celtic labials drop or open into the vowel-rich Iroquoian body (dubh>dub- kept but rare, marsh moin- light)",
+        "glottal stops and vowel hiatus tolerated inside the long compound rather than collapsed (bothaha, caolawa, muinyara)",
+        "signature phonemes from both stay audible - Celtic loch-/sruth-/dun-/rath-/cath- onsets and Iroquoian -onon/-onta/-wira/-kanota/-tehron finals"
+      ],
+      "source_tilt": "land/terrain/water/staple roots take a Celtic head and an Iroquoian compounding tail, welded inseparably (Celtic loch/sruth/cnoc/dun + Iroquoian -kanota/-wisken/-ononta/-onon); a balanced deep fusion, not a substrate under a prestige register, with the Iroquoian side driving length and the labial-sparse shape",
+      "portmanteaus": [
+        "river aub+-yon>aubyon", "lake loch+-kanota>lochkanota", "stream sruth+-wisken>sruthwisken", "hill cnoc+-ononta>cnononta", "city cathair+-onon>cathironon", "son mac+-ronwira>macronwira", "kin fine+ohwachira>finawachira", "grove nemed+-onon>nemedonon"
+      ]
+    }
   },
   "lexicon": {
     "feature_words": {
@@ -137,44 +154,49 @@
     "government": "clanhold (deep-forest clans bound by a grove-council: the clan-mothers seat the chiefs, the spirit-keepers read the grove; peace-chiefs and war-chiefs distinct)",
     "tiers": {
       "barony": {
-        "ruler": "Aironer",
-        "domain": "Aironeri"
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Aironer",
+        "domain_native": "Aironeri"
       },
       "march": {
-        "ruler": "Maoresken",
-        "domain": "Crichonon"
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Maoresken",
+        "domain_native": "Crichonon"
       },
       "county": {
-        "ruler": "Toisoner",
-        "domain": "Toisecht"
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Toisoner",
+        "domain_native": "Toisecht"
       },
       "duchy": {
-        "ruler": "Flaitoken",
-        "domain": "Flaithonon"
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Flaitoken",
+        "domain_native": "Flaithonon"
       },
       "principality": {
-        "ruler": "Rinakenra",
-        "domain": "Tuathonon"
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rinakenra",
+        "domain_native": "Tuathonon"
       },
       "kingdom": {
-        "ruler": "Ruironon",
-        "domain": "Mortuathonon"
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Ruironon",
+        "domain_native": "Mortuathonon"
       },
       "empire": {
-        "ruler": "Ardonaho",
-        "domain": "Ardonage"
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Ardonaho",
+        "domain_native": "Ardonage"
       }
     },
     "_tiers_note": "Fused Celtic-Iroquoian clanhold, ascending; titles blend the two (Celtic aire/toisech/flaith/ri + Iroquoian royaner/rotiskenrakehte/tadodaho). Aironer (clan-lord) barony; Maoresken (war-warden) march; Toisoner (sept-chief) county; Flaitoken (lord) duchy; Rinakenra (king-sachem) principality; Ruironon (over-chief) kingdom; Ardonaho (high-chief / grand firekeeper) empire. The clan-mothers seat and may depose the chiefs; the grove-council rules by consensus. (Rank titles fuse the real Gaelic/Iroquois register, allowed.)",
-    "female_forms": {
-      "_clan_mother": "Banakenra / Iakoia:ner (clan-mother - seats and deposes the chiefs)",
-      "Ardonaho": "Ban-Ardonaho",
-      "Ruironon": "Ban-Ruironon",
-      "Rinakenra": "Banakenra",
-      "Flaitoken": "Banflaitoken",
-      "Toisoner": "Bantoisoner",
-      "Aironer": "Banaironer"
-    },
     "heir": "Tanaiste-ase (the clan-mother's chosen heir; the title is conferred within the clan)",
     "honorifics": {
       "lord": "Tiaroner",
@@ -188,6 +210,25 @@
       "vassal": "Ceileskenra (sworn client-warrior)",
       "fealty": "Gialltewatenra (the binding-belt)",
       "tribute": "Cisatste (the gift)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "_clan_mother": "Banakenra / Iakoia:ner (clan-mother - seats and deposes the chiefs)",
+      "Ardonaho": "Ban-Ardonaho",
+      "Ruironon": "Ban-Ruironon",
+      "Rinakenra": "Banakenra",
+      "Flaitoken": "Banflaitoken",
+      "Toisoner": "Bantoisoner",
+      "Aironer": "Banaironer"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
     }
   },
   "people_name_convention": {
@@ -212,8 +253,9 @@
       "Maraxus": "Marakson (the war-fire; Chaotic power)"
     },
     "worship_by_alignment": {
-      "Chaotic": "venerate the Chaotic powers (Marakson the war-fire, Wasidonon, Rusanon), demonize the Lawful powers and the One (Eteronon)",
-      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the Tuath-spirits and the powers of grove and forest"
+      "Lawful": "Venerates the Lawful powers of the canon - Eteronon foremost - and names the Chaotic powers as demons to be warded.",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the Tuath-spirits and the powers of grove and forest",
+      "Chaotic": "venerate the Chaotic powers (Marakson the war-fire, Wasidonon, Rusanon), demonize the Lawful powers and the One (Eteronon)"
     },
     "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Toranon the Cold-Light; Orlandus -> Oranlon the Oath-Chain; Aeternus -> Eteronon the Far Tyrant.",
     "clergy_ladder": {
@@ -314,5 +356,7 @@
       "Cnononta (the hill-hold)",
       "Dunhonsa Mor (the great longhouse-rath)"
     ]
-  }
+  },
+  "csv_id": "HYB_19",
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (was #39 in the v1 culture system); csv_id is authoritative."
 }

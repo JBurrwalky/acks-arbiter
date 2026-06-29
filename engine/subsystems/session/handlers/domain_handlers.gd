@@ -951,7 +951,7 @@ func _compute_tribute_out_for_vassal_domain(domain_data: Dictionary) -> int:
 	var liege_v: Variant = domain_data.get("liege_domain_id")
 	if liege_v == null or String(liege_v).is_empty():
 		return 0
-	var owner_id: String = String(domain_data.get("owner_character_id", ""))
+	var owner_id: String = _str_field(domain_data, "owner_character_id")
 	if owner_id.is_empty():
 		return 0
 	var aggregate: Dictionary = RealmAggregator.aggregate(owner_id)
@@ -963,7 +963,7 @@ func _compute_tribute_out_for_vassal_domain(domain_data: Dictionary) -> int:
 ## {old_title, new_title, muster_period, changed}.
 func _resolve_realm_title(domain_data: Dictionary) -> Dictionary:
 	var old_title: String = String(domain_data.get("realm_title", "Baron"))
-	var owner_id: String = String(domain_data.get("owner_character_id", ""))
+	var owner_id: String = _str_field(domain_data, "owner_character_id")
 	if owner_id.is_empty():
 		return {"old_title": old_title, "new_title": old_title,
 				"muster_period": "Week", "changed": false}
@@ -1004,7 +1004,7 @@ func _resolve_vassal_tribute_payment(
 		return summary
 	var treasury: int = int(domain_data.get("treasury_cp", 0))
 	# Find the vassal_assignment row for the domain's owner.
-	var owner_id: String = String(domain_data.get("owner_character_id", ""))
+	var owner_id: String = _str_field(domain_data, "owner_character_id")
 	if owner_id.is_empty():
 		return summary
 	var assn: Dictionary = VassalRepository.get_active_assignment_for_vassal(owner_id)
@@ -1054,7 +1054,7 @@ func _compute_active_scutage_cp_for_domain(domain_data: Dictionary) -> int:
 	var liege_v: Variant = domain_data.get("liege_domain_id")
 	if liege_v == null or String(liege_v).is_empty():
 		return 0
-	var owner_id: String = String(domain_data.get("owner_character_id", ""))
+	var owner_id: String = _str_field(domain_data, "owner_character_id")
 	if owner_id.is_empty():
 		return 0
 	var assn: Dictionary = VassalRepository.get_active_assignment_for_vassal(owner_id)
@@ -1076,7 +1076,7 @@ func _compute_active_scutage_cp_for_domain(domain_data: Dictionary) -> int:
 ## Phase 8 polish: also runs the loan-repayment monthly chance (RAW L365)
 ## and the construction auto-expenditure (RAW L361) for each active vassal.
 func _resolve_favors_and_duties(domain_data: Dictionary, calendar_day: int) -> Array:
-	var ruler_id: String = String(domain_data.get("owner_character_id", ""))
+	var ruler_id: String = _str_field(domain_data, "owner_character_id")
 	if ruler_id.is_empty():
 		return []
 	var assignments: Array = VassalRepository.list_active_for_liege(ruler_id)

@@ -1,0 +1,363 @@
+{
+  "kit_id": "tollangard",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "mesoamerican"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_09",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (norse) backbone + mesoamerican (nahuatl) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_10"
+  ],
+  "homeland": "Tollangard",
+  "blend": {
+    "backbone": "germanic (norse register: konungr/jarl, nominative -r, -son/-dottir, retained th/dh, ei/ey diphthongs, root-initial stress, dithematic names)",
+    "overlay": "mesoamerican (nahuatl: the altepetl pyramid-cities, the teocalli temple-priesthood, the calpolli wards, the -tl/-tli absolutive and -tzin reverential, -tlan/-tepec/-co place-suffixes, the feathered-serpent kingship)",
+    "lean": "Germanic-heavy - a Norse sky-warrior aristocracy enthroned over a Nahua temple-civilization: the longship-warriors rule from the sun-pyramids, the feathered-serpent cities and their priesthood and populace endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_10 (Mesoamerican/Nahua). REPURPOSES and supersedes the old culture_huitzilan kit (catalog 28), which was authored as a narrow Chaotic-only blood-cult clanhold; Tollangard reuses huitzilan's Norse+Nahuatl linguistic material - the fused lexicon, the fused titles, the Agrippan deity-morphs and the name-stock - but BROADENS it into the general Germanic-leaning Mesoamerican hybrid for the new model. The huitzilan file is LEFT INTACT pending a Claude Code retirement pass. CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Mesoamerican base = Civilized, and any Civ parent -> Civ, so Tollangard is Civilized (feudal). Concept: northern sky-warriors who conquered the pyramid-cities of the southern highlands and set up as kings over the temple-civilization - the Norse war-host rules, the Nahua altepetl endures (a Norse-Aztec fusion; 'Tollan's-enclosure'). Backbone = Germanic (norse: the ruling war-aristocracy, the konungr/jarl register, dithematic and -son names); overlay/substrate = Nahuatl (the altepetl-cities, the teocalli temples, the calpolli wards, the populace and the priesthood). Common-word lexicon and rank titles use the real Old Norse and Nahuatl registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Norse reflexes primary, Nahuatl variants secondary), never real Norse/Aztec gods. PROVISIONAL: alignment broadened from huitzilan's Chaotic-ONLY to Chaotic/Neutral - the blood-cult heritage (the offered heart, the berserker's frenzy) remains AVAILABLE as the Chaotic streak, but is no longer the only stance; pending the alignment pass. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Norse) backbone - root-initial stress, sharp stops p/t/k b/d/g, the dental fricatives th/dh, the nominative -r, ei/ey diphthongs, dithematic compounding - meeting a Nahuatl overlay: the absolutive -tl/-tli and reverential -tzin, the affricate tz, x (sh), hu/w, ku, and a penultimate-pull stress. Per the CSV: glottal stops mixed with sharp stops; grammar is SVO with possessive-case inflections carried on Norse strong stems and Nahuatl absolutives. The Norse nominative -r and the Nahuatl absolutive -tl collide into fused endings -atl/-tr/-r. Theophoric on the Norse reflexes (Thulr-, Orlund-) with Nahuatl variants (Tolratl-, Orlantzin-).",
+    "phonotactics": "CVC and the clusters tl/tz/kn/fj/ku meeting Norse st/sk/br; fused -atl/-tr/-r endings; glottal stops; root-initial Norse stress with a Nahuatl penultimate pull; dithematic Norse names over -tlan/-tepec/-gard toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (norse) phonology dominant",
+      "sound_changes": [
+        "Nahuatl absolutive -tl/-tli and the glottal stop adapt to Norse endings: -tl/-tli>-r/-tr/-l, glottal-stop>0; saltillo never closes a syllable",
+        "Norse nominative -r and root-initial stress imposed on every word; Norse clusters (st, sk, br, kn, fj) permitted; the Nahuatl penultimate pull survives only as secondary stress",
+        "Nahuatl long and reduplicated 'vibrant' vowels clipped to a single Norse vowel; hu-/w- > Norse v-/w-, ku- kept",
+        "retain Norse th/dh, ei/ey and the Nahuatl signatures tz, x (sh) and the -tl onset; very short roots take a Norse -r ending"
+      ],
+      "source_tilt": "land/terrain/pyramid/material/staple words from Nahuatl roots (the substrate works the land and raises the teocalli: atl>at-, tepetl>tep-, teotl>teo-, centli>cen-); kin-line/quality/abstract/rule/war words from Norse roots (the ruling war-register: huey-/konr/jarl/yao-); every root then filtered to the one Norse-shaped phonology",
+      "portmanteaus": [
+        "son pilli+sonr>pilson", "daughter ichpochtli+dottir>ichdottr", "kin calpolli+kyn>calpkyn", "city altepetl+borg>alteborg", "fort yaotl+borg>yaoborg", "temple teocalli+horgr>teoharg", "citadel tecpan+borg>tekborg", "sacred teotl+vigja>teovih"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Nahuatl land/pyramid/material/staple roots + Norse rule/kin/quality/war roots, all run through one Norse-shaped sound-law (the -tl/glottal adapted to Norse -r/clusters, vibrant vowels clipped); portmanteaus mark the blended institutions and bloodline. One word per concept, no slashes.",
+    "feature_words": {
+      "river": "atoyr",
+      "stream": "apr",
+      "lake": "atvatr",
+      "sea": "hueyr",
+      "bay": "vikatr",
+      "cape": "yacatr",
+      "isle": "eyatr",
+      "mountain": "tepfjall",
+      "hill": "tepetr",
+      "ridge": "rukketr",
+      "jungle": "skuauhtr",
+      "forest": "cuaskr",
+      "plain": "ixtr",
+      "glacier": "jokketr",
+      "marsh": "zoquir",
+      "ford": "apatr",
+      "pass": "skardatr",
+      "vale": "atlauhr",
+      "coast": "anahr",
+      "neck": "quechals",
+      "narrows": "pitzsund",
+      "waste": "teotlaud",
+      "road": "ohtvegr",
+      "way": "hueyleid",
+      "track": "icxistig"
+    },
+    "settlement_words": {
+      "hamlet": "xakr",
+      "village": "kalbol",
+      "town": "altepr",
+      "city": "alteborg",
+      "fort": "yaoborg",
+      "camp": "ordatr",
+      "market": "tianr",
+      "temple_town": "teoharg",
+      "citadel": "tekborg"
+    },
+    "kinship": {
+      "son": "pilson",
+      "daughter": "ichdottr",
+      "house": "holkal",
+      "kin": "calpkyn",
+      "ancestor": "achtodeydr"
+    },
+    "adjectives": {
+      "great": "huey",
+      "little": "tepitr",
+      "old": "gamtl",
+      "new": "yankr",
+      "black": "tlilsvart",
+      "white": "izthvit",
+      "red": "chichraud",
+      "golden": "coztgull",
+      "iron": "tepjarn",
+      "high": "huekr",
+      "far": "hekr",
+      "sacred": "teovih",
+      "fair": "cualfagr"
+    },
+    "resources": {
+      "salt": "iztr",
+      "iron": "tepjarn",
+      "blood": "blestli",
+      "obsidian": "itztr",
+      "fire": "tledr",
+      "jade": "chalchr",
+      "gold": "coztgull",
+      "feather": "quetzr",
+      "hide": "sarr",
+      "maize": "centli"
+    },
+    "directional": {
+      "upper": "akopr",
+      "lower": "tlanidr",
+      "north": "mictnordr",
+      "south": "huitzudr",
+      "east": "tlauhaustr",
+      "west": "cihuavestr",
+      "inner": "ihtinn",
+      "outer": "panut"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-gard (Norse enclosure)",
+      "-borg (Norse fort)",
+      "-tepr / -tepec (mountain)",
+      "-atoyr (river)",
+      "-tlan (Nahuatl place-of)",
+      "Tlil-/Chich- (black-/red-)",
+      "Huey- (great-)"
+    ],
+    "patronymic_form": "the Norse ruling house keeps a dithematic lineage-name and the -son/-dottir patronymic; the Nahua populace keep the calpolli (ward) and the calendar-day name; the throne fuses both - a konungr who also carries a calpolli-house style. Renowned warriors take an earned deed-name.",
+    "gendered_endings": {
+      "male": "-r / -son / -tl (Norse ruling; Nahua absolutive)",
+      "female": "-a / -dottir (Norse); -tzin / Cihua- (Nahua)"
+    },
+    "diminutive_form": "-i (Norse) / -tzin / -ton (Nahua)",
+    "compounding_rule": "Norse dithematic ([quality|animal](stem) + element: Tlil-tepfjall black-mountain, Chich-atoyr red-river) layered over Nahuatl place-compounds (-tlan/-tepec/-co): the capital Tollangard (Tollan's-enclosure), Quetz-altepr (the feathered city), the calpolli-wards named for their power or peak; -gard/-borg for the steadings."
+  },
+  "title_ladder": {
+    "government": "feudal (a Norse war-aristocracy over the Nahua temple-cities: the konungr and his jarl-kin at the crown, the tecuhtli-governors over the altepetl-cities, the karl-retainers sworn to the war-host; the teopixqui-priesthood and the calpolli wards serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hertekw",
+        "domain_native": "Hertekwgard"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Yaomark",
+        "domain_native": "Yaolan"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Tecujarl",
+        "domain_native": "Jarlatl"
+      },
+      "duchy": {
+        "ruler": "Jarl",
+        "domain": "Duchy",
+        "ruler_native": "Tlacafylk",
+        "domain_native": "Fylkatl"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Kontlatl",
+        "domain_native": "Kontlan"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Hueykonr",
+        "domain_native": "Hueykonatl"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Cemkonr",
+        "domain_native": "Cem-Tollangard"
+      }
+    },
+    "_tiers_note": "Fused Norse-Nahuatl ladder, ascending; the titles blend the two (Norse jarl/konungr + Nahua tecuhtli/tlatoani). Hertekw (war-lord; *harja-tugon) barony; Yaomark (border war-chief) march; Tecujarl (lord; tecuhtli + jarl) county over a Jarlatl; Tlacafylk (war-leader; tlaca- + fylki) duchy; Kontlatl (city-king; konungr + tlatoani) principality; Hueykonr (great king; huey- + konungr) kingdom over a Hueykonatl; Cemkonr (the all-king; cem-anahuac + konungr) empire over Cem-Tollangard. The conquered cities keep their Nahua tecuhtli (city-lord) and teopixqui (priest) beneath the Norse crown. (Rank titles fuse the real Norse/Nahuatl register, allowed.)",
+    "heir": "Kontlatl-pilr (the king's son; the heir)",
+    "honorifics": {
+      "lord": "Tecujarl",
+      "lady": "Cihuajarl",
+      "champion": "Yaokappi (war-champion)",
+      "your_grace": "Kontlatl",
+      "elder": "Achto-deydr (elder)"
+    },
+    "vassalage": {
+      "liege": "Hueykonr",
+      "vassal": "Yaokarl (war-retainer)",
+      "fealty": "Eztli-eidr (the blood-oath)",
+      "tribute": "Tlacalskattr"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Cemkonr": "Cemkona",
+      "Hueykonr": "Hueykona",
+      "Kontlatl": "Kontlatzin",
+      "Tlacafylk": "Tlacafylkja",
+      "Tecujarl": "Tecujarlkona",
+      "Yaomark": "Yaomarka",
+      "Hertekw": "Hertekwa"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Jarl": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Jarl (duchy)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Norse ruling stock carry a dithematic name + -son/-dottir patronymic and a lineage; the Nahua populace carry a calendar-day name + calpolli (ward); renowned warriors take an earned deed-name; order given-first.",
+    "surname_source": [
+      "Norse dithematic lineage",
+      "-son / -dottir patronymic",
+      "calpolli (Nahua ward) + calendar-day name",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Norse war-aristocracy keep dithematic and -son names (Itz-, Yao-, -ketill, -grimr, -bjorn); the Nahua city-folk keep day-names and theophoric constructs (X-coatl, Quetz-, Xochi-) on the morphed canon-stems.",
+    "theophoric": "Norse devotional on the Norse god-reflexes (Thulr-, Orlund-); Nahua devotional constructs on the Nahua variants: Tolratl-coatl (of Tolratl), Marakatl- (of the war-fire). Older Chaotic-streak names invoke the blood powers: Eztli- (blood), Yao- (war), -tletl (fire).",
+    "diminutive": "-i (Norse) / -tzin / -ton (Nahua)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Norse Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Nahuatl variants SECONDARY (family_mesoamerican theonym_sets, the nahuatl column), never real Norse/Aztec gods. ALIGNMENT IS PROVISIONAL (Chaotic/Neutral), broadened from huitzilan's Chaotic-only: the blood-cult heritage survives as the Chaotic streak (the offered heart atop the teocalli, the berserker's frenzy of the war-host), but Neutral worship - the ancestral war-dead and the city-powers invoked situationally - is now also available. Pending the alignment pass.",
+    "the_one": "Eitnir (Norse; Nahua Aiternatl) - the distant Ancient One, the cold sky above the lesser powers; honored or reviled by alignment",
+    "sample_deity_renames": {
+      "Tulrius": "Thulr (Nahua Tolratl) - the sun and justice, the sky-fire of the conquerors",
+      "Orlandus": "Orlund (Nahua Orlantzin) - iron, oath, war",
+      "Gaiandus": "Geyandr (Nahua Gaiantli) - the enduring earth, the maize-ground",
+      "Numeno": "Nymir (Nahua Numenatl) - sky, lightning, sky-wisdom",
+      "Realta": "Rjalta (Nahua Rialtzin) - the mother, mercy",
+      "Maraxus": "Marhr (Nahua Marakatl) - the War-Fire, the Blood-Sun of the cult",
+      "Lusanto": "Lusandr (Nahua Lusankoatl) - the hoard-serpent, the feathered worm"
+    },
+    "worship_by_alignment": {
+      "Lawful": "Venerates the Lawful powers of the canon - Eitnir foremost - and names the Chaotic powers as demons to be warded.",
+      "Neutral": "the ancestral war-dead of the ruling house (the deydr) and the city-powers of the altepetl and the calpolli-ward, the powers of peak, hearth and pyramid invoked situationally rather than worshipped wholesale; the great gods petitioned at the teoharg and the burial-howe as need demands",
+      "Chaotic": "the blood-cult heritage - venerates the Chaotic powers, chief among them Marhr the War-Fire and Blood-Sun that must be fed, and the feathered hoard-serpent Lusankoatl; the One (Eitnir) and the Lawful powers are reviled as the cold sky-tyrants; the berserker's frenzy and the offered heart are one rite, the teoharg (blood-temple) atop the tepfjall and the skull-rack the altars"
+    },
+    "demon_epithet_pattern": "under Neutral or against the Chaotic streak, the warded powers keep their morphs + an epithet: under Chaotic worship the One and the Lawful powers are the enemy-gods (Eitnir the Tyrant-Sun, Thulr the Cold-Sun, Orlund the Soft-Oath); under Neutral the Chaotic powers are warded - Maraxus -> Marhr the War-Brand (Nahua Marakatl the City-Burner); Vacidus -> Vakr the Unmaker (Nahua Wakitl); Lusanto -> Lusandr the Hoard-Worm.",
+    "clergy_ladder": {
+      "1": "Bloteppa-tzin (temple-novice)",
+      "3": "Godtlama (priest)",
+      "5": "Tledr-godi (fire-priest) / Teopixqui",
+      "7": "Valnamac (high offerer)",
+      "9": "Hueyblotmadr (great sacrificer; supreme priest)"
+    },
+    "religious_orders_pattern": "the Teoharg (temple) atop the tepfjall (peak) of [power], the Nahua substrate keeping the teocalli (pyramid-temple): 'the Teoharg of Marhr', 'the Teocalli of Tolratl'.",
+    "saints_pattern": "fallen kings and the greatest reavers become sun-feeding storm-riders; the deydr (ancestral war-dead) honored at the skull-rack, the burial-howe and the pyramid-tomb.",
+    "holy_symbol_motifs": {
+      "Marhr": "an obsidian-edged sword over a blood-fed sun",
+      "Thulr": "a sun-disc over a crossed sword",
+      "Lusandr": "a feathered serpent coiled over a hoard"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-longships that raid the southern coasts: 'Blood-Wake', 'the Obsidian Prow', 'the Feathered Serpent'",
+    "military_units": "the warrior-societies and the king's hird: 'the Jaguar-coats', 'the Eagle-hird', 'the Obsidian-spears'",
+    "taverns": "the war-hall and the octli-pit: 'the Skull-Hall', 'the Blood-Mead Pit', 'the Feathered Cup'",
+    "dungeons_ruins": "abandoned pyramid-temples and fallen Norse gards: 'the Teoharg of [name]', 'the Sunken Teocalli', 'the Frozen Gard of [konungr]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Itzgeirr",
+      "Yaogrimr",
+      "Tlilketill",
+      "Cuauhulfr",
+      "Tledr-mund",
+      "Ocelketill",
+      "Huitzbjorn",
+      "Maratake",
+      "Sveinatl",
+      "Chichmund",
+      "Tepilketill",
+      "Yaoketill",
+      "Grimcoatl",
+      "Tlacasteinn",
+      "Mictlgrimr",
+      "Itztli-arr",
+      "Ravncoatl",
+      "Huey-grimr",
+      "Quetzgeirr",
+      "Tolra-mund"
+    ],
+    "personal_f": [
+      "Tlilgerdr",
+      "Xochsteinunn",
+      "Cihuahildr",
+      "Yaorun",
+      "Itzhildr",
+      "Quetzgunn",
+      "Malingerdr",
+      "Cozahildr",
+      "Tepin-run",
+      "Ocelhild",
+      "Necarunn",
+      "Tlilxochi",
+      "Sigxochi",
+      "Huithildr",
+      "Papalrun",
+      "Citlalhildr",
+      "Yolosvana",
+      "Rjaltgerdr"
+    ],
+    "clan_houses": [
+      "the Itzketlingar (ruling house)",
+      "the Yaogrimlingar",
+      "Calpolli Ocelotl (jaguar ward)",
+      "Calpolli Cuauhtli (eagle ward)",
+      "Calpolli Coatl (serpent ward)",
+      "Calpolli Itztli (obsidian ward)",
+      "the Bjornlingar",
+      "Calpolli Quetzal (feather ward)",
+      "Calpolli Mictl (death ward)",
+      "the Tledrlingar",
+      "Calpolli Tlil (black ward)",
+      "the Ravnlingar"
+    ],
+    "epithets_cognomina": [
+      "the Sky-Warrior",
+      "Obsidian-heart",
+      "the Serpent-crowned",
+      "Skull-taker",
+      "the Ice-Wolf",
+      "Jaguar-coat",
+      "Sun-feeder",
+      "the Pyramid-king"
+    ],
+    "flagship_settlements": [
+      "Tollangard (the chief seat - Tollan's-enclosure)",
+      "Quetz-altepr (the feathered city)",
+      "Tlil-tepfjall (the black-peak hold)",
+      "Chich-atoyr (the blood-river town)",
+      "Thulr-teoharg (the sun-temple seat)",
+      "Huey-altepr (the great city)"
+    ]
+  }
+}

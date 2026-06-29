@@ -104,6 +104,40 @@ const RIVER_SAMPLES := 9            # centreline samples per edge (curve smoothn
 const RIVER_TEX_PATH := "res://assets/wilderness_textures/river.png"
 const RIVER_WATER_SHADER := "res://engine/shaders/river_water.gdshader"
 
+# --- Region labels + colour overlay (Jedidiah 2026-06-28) ------------------------
+## Named-region labels on the 6-mile play map, ported from the 2D region_label_renderer
+## (which the 3D renderer replaced). CONTINENTS are intentionally omitted here — they
+## span far beyond the window so their label read as a tiny sliver; they're shown only
+## on the 24-mile notebook map (political_map_view._draw_region_labels). Oceans/seas are
+## dropped for the same reason. Regions are static geography, so labels+overlay are
+## rebuilt only on map load / frontier growth, NOT on every fog tick.
+const REGION_LABEL_LAYERS := {"coastal_landform": true, "terrain_cluster": true, "hydronym": true}
+const REGION_BIG_SUBTYPES := {"ocean": true, "sea": true}   # too large for the 6-mile window
+const REGION_SIG_MIN := 0.30
+const REGION_SUB := 4                       # 24-mile parent -> 6-mile children (offset *4)
+const REGION_LABEL_FONT_SIZE := 64          # texture resolution; world size is via pixel_size
+const REGION_LABEL_MIN_WORLD := 0.7         # cull floor for the title's world-height
+const REGION_LABEL_MAX_WORLD := 2.0         # hard cap so a big region can't splash a giant name
+const REGION_LABEL_SHRINK := 0.82           # per-step shrink while dodging an overlap
+const REGION_LABEL_ADVANCE := 0.55          # glyph advance as a fraction of text height
+const REGION_LABEL_LIFT := 0.7              # world units the title floats above terrain
+const REGION_LABEL_FILL := Color(0.0, 0.0, 0.0, 1.0)
+const REGION_LABEL_OUTLINE := Color(0.97, 0.96, 0.90, 0.9)   # cream halo, legible over any biome
+const REGION_SUBTITLE_RATIO := 0.58
+## Translucent per-region colour wash (the status-bar "Regions" toggle). Hugs the terrain
+## just above the surface; floats UNDER labels + the party token.
+const REGION_OVERLAY_LIFT := 0.04
+const REGION_OVERLAY_ALPHA := 0.34
+
+## City name labels over each settlement, gated by the SAME zoom LOD as the baron
+## strongholds (STRONGHOLD_LOD_ZOOM) — they appear only when zoomed in. Black fill,
+## white halo, hovering right over the settlement cube.
+const CITY_LABEL_FONT_SIZE := 64
+const CITY_LABEL_WORLD := 0.55              # world-height of the city name text
+const CITY_LABEL_LIFT := 0.28              # above the settlement cube top
+const CITY_LABEL_FILL := Color(0.0, 0.0, 0.0, 1.0)
+const CITY_LABEL_OUTLINE := Color(1.0, 1.0, 1.0, 1.0)
+
 var _controller: HexMapController = null
 var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
@@ -137,6 +171,14 @@ var _dungeon_mat: StandardMaterial3D = null
 ## out (there can be hundreds from the feudal fill — they bury the map otherwise).
 var _stronghold_root: Node3D = null
 var _stronghold_mat: StandardMaterial3D = null
+## Region overlay (translucent colour wash), region name labels, and city name labels —
+## each in its own root so it can be layered + toggled independently. The overlay floats
+## just over the terrain; the label roots float above the markers, under the party token.
+var _region_overlay_root: Node3D = null
+var _region_overlay_mat: StandardMaterial3D = null
+var _region_overlay_enabled := false   # driven by EventBus.region_overlay_toggled
+var _region_label_root: Node3D = null
+var _city_label_root: Node3D = null
 var _token_root: Node3D = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
@@ -166,18 +208,32 @@ func _ready() -> void:
 	_cliff_root = Node3D.new()
 	_cliff_root.name = "Cliffs"
 	add_child(_cliff_root)
+	# Region colour wash sits OVER the terrain layers (terrain/scatter/rivers/cliffs)
+	# but UNDER the markers, labels, and party token.
+	_region_overlay_root = Node3D.new()
+	_region_overlay_root.name = "RegionOverlay"
+	_region_overlay_root.visible = false
+	add_child(_region_overlay_root)
 	_landmark_root = Node3D.new()
 	_landmark_root.name = "Landmarks"
 	add_child(_landmark_root)
 	_stronghold_root = Node3D.new()
 	_stronghold_root.name = "Strongholds"
 	add_child(_stronghold_root)
+	# Labels float above the markers (region names + zoom-gated city names), under the token.
+	_region_label_root = Node3D.new()
+	_region_label_root.name = "RegionLabels"
+	add_child(_region_label_root)
+	_city_label_root = Node3D.new()
+	_city_label_root.name = "CityLabels"
+	add_child(_city_label_root)
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
 	_build_environment()
 	_build_camera()
 	_build_splat_material()
+	EventBus.region_overlay_toggled.connect(_on_region_overlay_toggled)
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +275,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_build_rivers()
 	_build_cliffs()           # vertical walls filling the cliff-edge discontinuities
 	_build_landmarks()
+	_build_regions()          # named-region colour overlay + region name labels (static geography)
 	_rebuild_tokens()
 	_fit_camera()
 	# Scatter is deferred so it never blocks the session-load flow (this runs inside
@@ -254,6 +311,7 @@ func _on_frontier_grown(_map_id: String) -> void:
 	_build_rivers()
 	_build_cliffs()
 	_build_landmarks()
+	_build_regions()          # reproject region overlay/labels over the enlarged window
 	_rebuild_tokens()
 	call_deferred("_build_scatter")
 
@@ -849,12 +907,18 @@ func _build_rivers() -> void:
 	var corner_off := WildernessHexMath.corner_offsets()
 	var edge_len: float = (corner_off[0] - corner_off[1]).length()
 
-	# Pass 1: build the river-corner GRAPH — each visible river edge contributes its two carved,
-	# jittered corner nodes and links them as neighbours. The graph lets the render smooth ACROSS
-	# corners (Catmull-Rom → one flowing curve, not per-edge rectangles) and pick a per-channel
-	# DOWNHILL flow direction (instead of one universal scroll). DATA stays edge-canonical.
-	var nodes := {}             # corner_key -> {pos: Vector2 (jittered XZ), y: float, nbrs: Array}
-	var edge_list: Array = []   # [{ak, bk, navig}] for the visible edges
+	# Pass 1: build the DIRECTED river graph from the edge-canonical data. Each visible river
+	# edge contributes its two carved, jittered corner nodes; the flow direction comes from the
+	# stored flow_clockwise (the downstream "clockwise" vertex of edge e is the corner shared
+	# with edge (e+1)%6 — mesh corner (e+5)%6 here), NOT from re-reading terrain heights.
+	# Edges are a flat list; out_edges holds the indices leaving each corner, so a corner with
+	# several out-edges (a hand-authored distributary; steepest-descent drainage never makes
+	# one) branches into separate chains instead of silently dropping all but one.
+	var nodes := {}            # corner_key -> {pos: Vector2 (jittered XZ), y: float}
+	var edges: Array = []      # {up: String, to: String, navig: String}, data order
+	var out_edges := {}        # up_key -> Array[int] (indices into `edges`)
+	var in_deg := {}           # corner_key -> int (upstream edge count)
+	var out_deg := {}          # corner_key -> int (downstream edge count)
 	for edge_data in _map_data.river_edges:
 		if not (edge_data is HexRiverEdgeData):
 			continue
@@ -874,48 +938,51 @@ func _build_rivers() -> void:
 			nodes[ka] = {
 				"pos": Vector2(center.x + corner_off[i1].x, center.y + corner_off[i1].y) + _corner_jitter(ka, edge_len),
 				"y": _corner_component_avg(owner, i1) + RIVER_LIFT,
-				"nbrs": [],
 			}
 		if not nodes.has(kb):
 			nodes[kb] = {
 				"pos": Vector2(center.x + corner_off[i2].x, center.y + corner_off[i2].y) + _corner_jitter(kb, edge_len),
 				"y": _corner_component_avg(owner, i2) + RIVER_LIFT,
-				"nbrs": [],
 			}
-		(nodes[ka]["nbrs"] as Array).append(kb)
-		(nodes[kb]["nbrs"] as Array).append(ka)
-		edge_list.append({"ak": ka, "bk": kb, "navig": edge_data.navigability})
+		# flow_clockwise → downstream is the clockwise vertex (mesh corner i2 = kb).
+		var up_key: String = ka if edge_data.flow_clockwise else kb
+		var down_key: String = kb if edge_data.flow_clockwise else ka
+		var ei := edges.size()
+		edges.append({"up": up_key, "to": down_key, "navig": edge_data.navigability})
+		if not out_edges.has(up_key):
+			out_edges[up_key] = []
+		(out_edges[up_key] as Array).append(ei)
+		out_deg[up_key] = int(out_deg.get(up_key, 0)) + 1
+		in_deg[down_key] = int(in_deg.get(down_key, 0)) + 1
+		if not in_deg.has(up_key):
+			in_deg[up_key] = 0      # ensure a source reads as in-degree 0
+		if not out_deg.has(down_key):
+			out_deg[down_key] = 0   # ensure a sink reads as out-degree 0
 
-	# Pass 2: render each edge as a Catmull-Rom segment through (A's other nbr, A, B, B's other
-	# nbr) so bends round smoothly; carry a per-vertex DOWNHILL flow direction for the shader. The
-	# water height is a flat ramp between the two carved corners (it sits in the carved trough).
+	# Pass 2: decompose the directed graph into maximal CHAINS. A chain breaks at any node
+	# that is NOT a simple pass-through (in-degree 1 AND out-degree 1) — i.e. at sources,
+	# sinks, confluences (in-degree > 1), and distributaries (out-degree > 1). Each chain
+	# renders as ONE continuous Catmull-Rom ribbon welded across its corners, flowing
+	# downstream. Every edge is consumed exactly once (the fallback catches any cycle).
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var visited := {}          # edge index -> true once consumed
 	var emitted := 0
-	for ed in edge_list:
-		var a: Dictionary = nodes[ed["ak"]]
-		var b: Dictionary = nodes[ed["bk"]]
-		var p1: Vector2 = a["pos"]
-		var p2: Vector2 = b["pos"]
-		var p0: Vector2 = _other_nbr_pos(nodes, ed["ak"], ed["bk"], p1, p2)
-		var p3: Vector2 = _other_nbr_pos(nodes, ed["bk"], ed["ak"], p2, p1)
-		var ya: float = a["y"]
-		var yb: float = b["y"]
-		var downhill := yb <= ya   # flow toward the LOWER corner (consistent across corners)
-		var w: float = _RIVER_WIDTH.get(ed["navig"], 0.075)
-		var pts: Array[Vector3] = []
-		var flows: Array = []
-		for s in range(RIVER_SAMPLES + 1):
-			var t := float(s) / float(RIVER_SAMPLES)
-			var p := _catmull(p0, p1, p2, p3, t)
-			pts.append(Vector3(p.x, lerpf(ya, yb, t), p.y))
-			var tang := _catmull_tangent(p0, p1, p2, p3, t)
-			if tang.length() < 1.0e-5:
-				tang = p2 - p1
-			tang = tang.normalized()
-			flows.append(tang if downhill else -tang)
-		_emit_river_ribbon(st, pts, w, flows)
-		emitted += 1
+	for ei2 in range(edges.size()):
+		var up: String = edges[ei2]["up"]
+		if int(in_deg.get(up, 0)) == 1 and int(out_deg.get(up, 0)) == 1:
+			continue           # interior node — reached by an upstream chain
+		if visited.has(ei2):
+			continue
+		if _emit_river_chain(st, nodes, edges, out_edges, in_deg, out_deg, visited, ei2):
+			emitted += 1
+	# Fallback: any edge not consumed (a pure cycle — impossible in a drainage DAG) becomes
+	# its own ribbon, so no river is ever silently dropped.
+	for ei3 in range(edges.size()):
+		if visited.has(ei3):
+			continue
+		if _emit_river_chain(st, nodes, edges, out_edges, in_deg, out_deg, visited, ei3):
+			emitted += 1
 	if emitted == 0:
 		return
 	st.generate_normals()
@@ -925,15 +992,72 @@ func _build_rivers() -> void:
 	_river_root.add_child(mi)
 
 
-## A CONTINUOUS welded water ribbon of width [param w] through centreline points [param pts].
-## Each sample gets ONE consistent perpendicular (from its averaged tangent), so consecutive
-## quads SHARE their seam vertices — fixes the per-segment perp mismatch (tearing) and the
-## independent-quad tilt (flipping). XZ-perp only; the strip keeps each sample's own height.
-func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float, flows: Array) -> void:
+## Walk the directed river graph downstream from edge [param start_ei] (which leaves a source /
+## confluence / distributary), following the single out-edge while interior nodes stay
+## degree-(1 in, 1 out), collecting corner positions/heights + per-segment width, then emit ONE
+## continuous welded ribbon for the chain. Stops at any non-pass-through node so junctions stay
+## crisp. Marks each consumed edge visited. Returns true if a ribbon was emitted.
+func _emit_river_chain(st: SurfaceTool, nodes: Dictionary, edges: Array, out_edges: Dictionary,
+		in_deg: Dictionary, out_deg: Dictionary, visited: Dictionary, start_ei: int) -> bool:
+	var keys: Array[String] = [str(edges[start_ei]["up"])]
+	var navigs: Array = []     # navigability of the edge keys[i] -> keys[i+1]
+	var ei := start_ei
+	while ei >= 0 and not visited.has(ei):
+		visited[ei] = true
+		var ed: Dictionary = edges[ei]
+		var nxt: String = ed["to"]
+		keys.append(nxt)
+		navigs.append(ed["navig"])
+		# Continue only through a pass-through node (1 in, 1 out); stop at a confluence
+		# (in-degree > 1), distributary (out-degree > 1), or sink (no out-edge).
+		ei = -1
+		if int(in_deg.get(nxt, 0)) == 1 and int(out_deg.get(nxt, 0)) == 1:
+			var outs: Array = out_edges.get(nxt, [])
+			if not outs.is_empty() and not visited.has(int(outs[0])):
+				ei = int(outs[0])
+	var m := keys.size()
+	if m < 2:
+		return false
+	var cpos: Array[Vector2] = []
+	var cy: Array[float] = []
+	for k in keys:
+		cpos.append(nodes[k]["pos"] as Vector2)
+		cy.append(float(nodes[k]["y"]))
+	# Sample each segment with Catmull-Rom through the chain's OWN corners (continuous across
+	# corners → welded). Phantom endpoints reflect so the spline runs straight out of the
+	# source / mouth. Non-final segments stop one sample short to avoid duplicating the shared
+	# corner; the final segment includes its endpoint.
+	var pts: Array[Vector3] = []
+	var flows: Array = []
+	var widths: Array = []
+	for seg in range(m - 1):
+		var p0: Vector2 = cpos[seg - 1] if seg > 0 else (cpos[0] * 2.0 - cpos[1])
+		var p1: Vector2 = cpos[seg]
+		var p2: Vector2 = cpos[seg + 1]
+		var p3: Vector2 = cpos[seg + 2] if seg + 2 < m else (cpos[m - 1] * 2.0 - cpos[m - 2])
+		var w: float = _RIVER_WIDTH.get(navigs[seg], 0.075)
+		var n_samp: int = RIVER_SAMPLES + 1 if seg == m - 2 else RIVER_SAMPLES
+		for s in range(n_samp):
+			var t := float(s) / float(RIVER_SAMPLES)
+			var p := _catmull(p0, p1, p2, p3, t)
+			pts.append(Vector3(p.x, lerpf(cy[seg], cy[seg + 1], t), p.y))
+			var tang := _catmull_tangent(p0, p1, p2, p3, t)
+			if tang.length() < 1.0e-5:
+				tang = p2 - p1
+			flows.append(tang.normalized())   # chain is ordered upstream→downstream
+			widths.append(w)
+	_emit_river_ribbon(st, pts, widths, flows)
+	return true
+
+
+## A CONTINUOUS welded water ribbon through centreline points [param pts], with a per-sample
+## width [param widths] and per-sample downstream flow [param flows]. Each sample's
+## perpendicular comes from its own averaged tangent, so consecutive quads SHARE their seam
+## vertices — no tearing, no per-quad tilt. XZ-perp only; each sample keeps its own height.
+func _emit_river_ribbon(st: SurfaceTool, pts: Array, widths: Array, flows: Array) -> void:
 	var n := pts.size()
 	if n < 2:
 		return
-	var hw := w * 0.5
 	var left: Array[Vector3] = []
 	var right: Array[Vector3] = []
 	for s in range(n):
@@ -944,6 +1068,7 @@ func _emit_river_ribbon(st: SurfaceTool, pts: Array, w: float, flows: Array) -> 
 		if tang.length() < 1.0e-5:
 			tang = Vector2(1.0, 0.0)
 		tang = tang.normalized()
+		var hw: float = float(widths[s]) * 0.5
 		var perp := Vector2(-tang.y, tang.x) * hw
 		left.append(Vector3(pc.x - perp.x, pc.y, pc.z - perp.y))
 		right.append(Vector3(pc.x + perp.x, pc.y, pc.z + perp.y))
@@ -985,16 +1110,6 @@ static func _catmull_tangent(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2,
 	return 0.5 * ((-p0 + p2) \
 		+ 2.0 * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t \
 		+ 3.0 * (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t2)
-
-
-## The XZ of a river neighbour of [param key] other than [param exclude_key] (the Catmull-Rom
-## control point). Degree-1 (a channel endpoint) → reflect so the spline runs straight out.
-func _other_nbr_pos(nodes: Dictionary, key: String, exclude_key: String,
-		self_pos: Vector2, exclude_pos: Vector2) -> Vector2:
-	for nk in (nodes[key]["nbrs"] as Array):
-		if nk != exclude_key and nodes.has(nk):
-			return nodes[nk]["pos"]
-	return self_pos * 2.0 - exclude_pos
 
 
 ## Stable 0..1 hash of a string — cosmetic determinism, no global RNG. The meander is render-
@@ -1159,18 +1274,24 @@ func _build_landmarks() -> void:
 		c.queue_free()
 	for c in _stronghold_root.get_children():
 		c.queue_free()
+	for c in _city_label_root.get_children():
+		c.queue_free()
 	if _map_data == null:
 		return
 	# Settlements: a full red cube + market-class letter, always visible (a settlement
-	# and a stronghold on the same hex are the same place — the settlement wins).
-	var settlement_hexes := {}   # Vector2i -> label String
+	# and a stronghold on the same hex are the same place — the settlement wins). Each
+	# discovered settlement also gets a zoom-gated name label (see _place_city_label).
+	var settlement_hexes := {}   # Vector2i -> market-class roman String
+	var settlement_names := {}   # Vector2i -> settlement name String
 	for s in _query_settlement_entrances():
 		var coord := Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))
 		settlement_hexes[coord] = _ROMAN[clampi(int(s.get("market_class", 6)), 1, 6)]
+		settlement_names[coord] = str(s.get("name", ""))
 	for coord in settlement_hexes:
 		if _fog_value(coord) < 0.25:
 			continue
 		_place_landmark(coord, settlement_hexes[coord])
+		_place_city_label(coord, str(settlement_names.get(coord, "")))
 
 	# Strongholds (where no settlement sits): a small DIM cube in the dedicated
 	# stronghold root, so the group can be hidden when zoomed out (the feudal fill
@@ -1335,6 +1456,285 @@ func _query_strongholds() -> Array:
 
 
 # ---------------------------------------------------------------------------
+# Named regions — translucent colour overlay + region name labels
+# (Jedidiah 2026-06-28; ports the 2D region_label_renderer onto the 3D surface).
+# Static geography → built on map load / frontier growth, fog-independent.
+# ---------------------------------------------------------------------------
+
+func _build_regions() -> void:
+	var regions := _collect_label_regions()
+	_build_region_overlay(regions)
+	_build_region_labels(regions)
+
+
+## The labelable regions overlapping the play window, as
+##   {id, name, subtype, layer, members: Array[Vector2i]} — members are the in-window
+## 6-mile child hexes. Continents + oceans/seas are excluded (too big for this scale);
+## the notebook 24-mile map carries those. Empty for a non-generated campaign.
+func _collect_label_regions() -> Array:
+	var out: Array = []
+	if _map_data == null:
+		return out
+	var cid := GameState.campaign_id
+	if cid.is_empty():
+		return out
+	for reg in SettingRepository.list_regions(cid):
+		if not REGION_LABEL_LAYERS.has(str(reg.get("layer", ""))):
+			continue
+		if REGION_BIG_SUBTYPES.has(str(reg.get("subtype", ""))):
+			continue
+		if float(reg.get("significance", 0.0)) < REGION_SIG_MIN:
+			continue
+		var name := str(reg.get("name_primary", "")).strip_edges()
+		if name.is_empty():
+			continue
+		var members := _project_region_members(str(reg.get("hexes", "[]")))
+		if members.is_empty():
+			continue
+		out.append({
+			"id": str(reg.get("id", "")), "name": name,
+			"subtype": str(reg.get("subtype", "")), "layer": str(reg.get("layer", "")),
+			"members": members,
+		})
+	return out
+
+
+## A region's 24-mile parent hexes (JSON [[q,r],…]) → the in-window 6-mile child hexes it
+## covers (offset space, SUB=4 — mirrors the 2D region_label_renderer._project_members).
+func _project_region_members(hexes_json: String) -> Array:
+	var out: Array = []
+	var parsed = JSON.parse_string(hexes_json)
+	if not (parsed is Array):
+		return out
+	for pair in parsed:
+		if not (pair is Array and (pair as Array).size() == 2):
+			continue
+		var poff := WorldGrid.axial_to_offset(Vector2i(int(pair[0]), int(pair[1])))
+		for lx in range(REGION_SUB):
+			for ly in range(REGION_SUB):
+				var child := WorldGrid.offset_to_axial(poff.x * REGION_SUB + lx, poff.y * REGION_SUB + ly)
+				if _map_data.hexes.has(child):
+					out.append(child)
+	return out
+
+
+## One translucent mesh washing each named region's hexes with a stable per-region colour.
+## A hex in several regions takes the SMALLEST region's colour (paint biggest-first; the
+## later, smaller region overwrites), so local features (a forest, a range) read distinctly
+## rather than drowning under a broad parent. Hugs the terrain a hair above the surface.
+func _build_region_overlay(regions: Array) -> void:
+	for c in _region_overlay_root.get_children():
+		c.queue_free()
+	if _map_data == null or regions.is_empty():
+		return
+	var ordered := regions.duplicate()
+	ordered.sort_custom(func(a, b): return (a["members"] as Array).size() > (b["members"] as Array).size())
+	var hex_color := {}   # Vector2i -> Color
+	for reg in ordered:
+		var col := _region_color(str(reg["id"]))
+		for h in reg["members"]:
+			hex_color[h] = col
+	if hex_color.is_empty():
+		return
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var corner_off := WildernessHexMath.corner_offsets()
+	for coord in hex_color:
+		_emit_overlay_hex(st, coord, corner_off, hex_color[coord])
+	var mesh := st.commit()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = _region_overlay_material()
+	_region_overlay_root.add_child(mi)
+	_region_overlay_root.visible = _region_overlay_enabled
+
+
+## A single hex's flat fan (centre + 6 corners), lifted just above the terrain it hugs,
+## every vertex tinted [param col]. Winding is irrelevant (unshaded, cull-disabled).
+func _emit_overlay_hex(st: SurfaceTool, coord: Vector2i, corner_off: Array, col: Color) -> void:
+	var center_xz := WildernessHexMath.axial_to_world(coord)
+	var center := Vector3(center_xz.x, _hex_height(coord) + REGION_OVERLAY_LIFT, center_xz.y)
+	var cpos: Array = []
+	for i in range(6):
+		cpos.append(Vector3(center_xz.x + corner_off[i].x,
+				_corner_component_avg(coord, i) + REGION_OVERLAY_LIFT,
+				center_xz.y + corner_off[i].y))
+	for i in range(6):
+		var i1 := (i + 1) % 6
+		st.set_color(col)
+		st.add_vertex(center)
+		st.set_color(col)
+		st.add_vertex(cpos[i])
+		st.set_color(col)
+		st.add_vertex(cpos[i1])
+
+
+func _region_overlay_material() -> StandardMaterial3D:
+	if _region_overlay_mat != null:
+		return _region_overlay_mat
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED   # don't occlude markers/labels
+	_region_overlay_mat = m
+	return m
+
+
+## Stable, deterministic colour for a region id (hash → hue), with the overlay alpha baked
+## in (the material reads vertex-colour alpha). Adjacent regions have unrelated ids, so
+## their hues land far apart — distinct patches without storing a palette.
+func _region_color(region_id: String) -> Color:
+	var h := 0
+	for i in range(region_id.length()):
+		h = (h * 31 + region_id.unicode_at(i)) & 0x7fffffff
+	var hue := float(h % 360) / 360.0
+	return Color.from_hsv(hue, 0.55, 0.95, REGION_OVERLAY_ALPHA)
+
+
+## Billboarded region name labels (+ a small subtype subtitle) at each region's in-window
+## centroid. Placed BIGGEST-REGION-FIRST with greedy overlap resolution in world-XZ
+## (zoom-invariant, like the 2D region_label_renderer): a label that would collide is
+## shrunk to dodge, and culled if it can't stay above the minimum — so the major features
+## keep their names and minor ones yield instead of piling into an illegible jumble.
+## The whole layer is gated to the ZOOMED-OUT view (see _update_stronghold_lod) so it
+## reads as a map overview and never fights the zoomed-in city labels.
+func _build_region_labels(regions: Array) -> void:
+	for c in _region_label_root.get_children():
+		c.queue_free()
+	# Candidate per region: centroid + base world-height, ordered biggest-region-first.
+	var cands: Array = []
+	for reg in regions:
+		var members: Array = reg["members"]
+		var n := float(members.size())
+		var cx := 0.0
+		var cy := 0.0
+		var cz := 0.0
+		for h in members:
+			var xz := WildernessHexMath.axial_to_world(h)
+			cx += xz.x
+			cz += xz.y
+			cy += _hex_height(h)
+		cx /= n
+		cy /= n
+		cz /= n
+		var name := str(reg["name"])
+		cands.append({
+			"name": name, "sub": _region_subtitle(str(reg["subtype"]), str(reg["layer"])),
+			"cx": cx, "cy": cy, "cz": cz, "len": maxi(name.length(), 1),
+			"count": members.size(),
+			"base_h": _region_label_world_h(_members_extent(members, Vector2(cx, cz)), name.length()),
+		})
+	cands.sort_custom(func(a, b): return int(a["count"]) > int(b["count"]))
+	# Greedy de-clutter: shrink-to-fit, cull below the floor. Boxes are world-XZ AABBs.
+	var placed: Array = []
+	for cd in cands:
+		var world_h := float(cd["base_h"])
+		var fitted := false
+		while world_h >= REGION_LABEL_MIN_WORLD:
+			var box := _region_label_box(cd, world_h)
+			if not _xz_box_hits(box, placed):
+				placed.append(box)
+				fitted = true
+				break
+			world_h *= REGION_LABEL_SHRINK
+		if not fitted:
+			continue
+		var px := world_h / float(REGION_LABEL_FONT_SIZE)
+		var title := _make_map_label(str(cd["name"]), REGION_LABEL_FILL, REGION_LABEL_OUTLINE,
+				REGION_LABEL_FONT_SIZE, px)
+		title.position = Vector3(cd["cx"], float(cd["cy"]) + REGION_LABEL_LIFT, cd["cz"])
+		_region_label_root.add_child(title)
+		var sub := str(cd["sub"])
+		if not sub.is_empty():
+			var subl := _make_map_label(sub, REGION_LABEL_FILL, REGION_LABEL_OUTLINE,
+					REGION_LABEL_FONT_SIZE, px * REGION_SUBTITLE_RATIO)
+			subl.position = Vector3(cd["cx"], float(cd["cy"]) + REGION_LABEL_LIFT - world_h * 0.78, cd["cz"])
+			_region_label_root.add_child(subl)
+	_region_label_root.visible = _zoom > STRONGHOLD_LOD_ZOOM
+
+
+## Diameter (≈) of the member cloud about its centroid, in world units.
+func _members_extent(members: Array, c: Vector2) -> float:
+	var maxd := 0.0
+	for h in members:
+		var xz := WildernessHexMath.axial_to_world(h)
+		maxd = maxf(maxd, Vector2(xz.x, xz.y).distance_to(c))
+	return maxd * 2.0
+
+
+## World text-height that makes the title span ~70% of the region, clamped so neither a
+## sprawling region splashes a giant name nor a sliver shrinks below the floor.
+func _region_label_world_h(extent: float, name_len: int) -> float:
+	var target_w := extent * 0.7
+	var world_h := target_w / (REGION_LABEL_ADVANCE * float(maxi(name_len, 1)))
+	return clampf(world_h, REGION_LABEL_MIN_WORLD, REGION_LABEL_MAX_WORLD)
+
+
+## The label's world-XZ collision box (centred at the centroid). Width = the title's text
+## width; the height covers the title+subtitle stack, widened for the iso tilt's Z squash
+## so on-screen vertical overlaps are caught. {x, z, hw, hh}.
+func _region_label_box(cd: Dictionary, world_h: float) -> Dictionary:
+	var w := REGION_LABEL_ADVANCE * float(int(cd["len"])) * world_h
+	return {"x": float(cd["cx"]), "z": float(cd["cz"]), "hw": w * 0.5, "hh": world_h * 1.2}
+
+
+func _xz_box_hits(box: Dictionary, placed: Array) -> bool:
+	for p in placed:
+		if absf(float(box["x"]) - float(p["x"])) < float(box["hw"]) + float(p["hw"]) \
+				and absf(float(box["z"]) - float(p["z"])) < float(box["hh"]) + float(p["hh"]):
+			return true
+	return false
+
+
+## "(forest)" / "(river)" subtitle from the region's subtype (else its layer): a leaf
+## sub-split "basin_part" reads "basin", "river_system" reads "river system".
+func _region_subtitle(subtype: String, layer: String) -> String:
+	var s := subtype if not subtype.is_empty() else layer
+	s = s.trim_suffix("_part").replace("_", " ").strip_edges()
+	return "" if s.is_empty() else "(%s)" % s
+
+
+## A billboarded, world-sized map label (black fill + halo outline), faces the camera and
+## zooms with the map. Shared by region names and city names.
+func _make_map_label(text: String, fill: Color, outline: Color, font_size: int,
+		pixel_size: float) -> Label3D:
+	var l := Label3D.new()
+	l.text = text
+	l.font_size = font_size
+	l.pixel_size = pixel_size
+	l.modulate = fill
+	l.outline_modulate = outline
+	l.outline_size = maxi(2, int(float(font_size) * 0.12))
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.double_sided = true
+	l.fixed_size = false
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return l
+
+
+## A settlement's name label, hovering over its cube. Added to _city_label_root, whose
+## visibility is gated by the stronghold zoom LOD (_update_stronghold_lod).
+func _place_city_label(coord: Vector2i, name: String) -> void:
+	if name.strip_edges().is_empty():
+		return
+	var xz := WildernessHexMath.axial_to_world(coord)
+	var base_y := _hex_height(coord)
+	var px := CITY_LABEL_WORLD / float(CITY_LABEL_FONT_SIZE)
+	var l := _make_map_label(name, CITY_LABEL_FILL, CITY_LABEL_OUTLINE, CITY_LABEL_FONT_SIZE, px)
+	l.position = Vector3(xz.x, base_y + LANDMARK_SIZE + CITY_LABEL_LIFT, xz.y)
+	_city_label_root.add_child(l)
+
+
+func _on_region_overlay_toggled(enabled: bool) -> void:
+	_region_overlay_enabled = enabled
+	if _region_overlay_root != null:
+		_region_overlay_root.visible = enabled
+
+
+# ---------------------------------------------------------------------------
 # Camera, lighting, environment
 # ---------------------------------------------------------------------------
 
@@ -1365,9 +1765,18 @@ func _apply_camera() -> void:
 ## Strongholds are a strategic-clutter layer: hide the whole group when zoomed out
 ## (ortho size large), reveal it only when zoomed in past STRONGHOLD_LOD_ZOOM, where
 ## the smaller dim cubes recede behind the terrain. Settlements + dungeons ignore this.
+## City NAME labels share the same gate (Jedidiah: appear "on zoom in") — quiet when
+## zoomed out, legible once the player zooms into a locale. REGION names are the inverse:
+## an overview layer that shows when zoomed OUT and yields to the city names up close, so
+## the two label tiers never fight for the same screen space.
 func _update_stronghold_lod() -> void:
+	var zoomed_in := _zoom <= STRONGHOLD_LOD_ZOOM
 	if _stronghold_root != null:
-		_stronghold_root.visible = _zoom <= STRONGHOLD_LOD_ZOOM
+		_stronghold_root.visible = zoomed_in
+	if _city_label_root != null:
+		_city_label_root.visible = zoomed_in
+	if _region_label_root != null:
+		_region_label_root.visible = not zoomed_in
 
 
 func _build_environment() -> void:

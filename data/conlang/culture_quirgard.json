@@ -1,0 +1,358 @@
+{
+  "kit_id": "quirgard",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_05",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (gothic) backbone + classical (latinate) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_06"
+  ],
+  "homeland": "Quirgard",
+  "blend": {
+    "backbone": "germanic (gothic register: thiudans/reiks, dithematic -s/-az names, retained th/w, ai/au diphthongs, heavy root-initial stress)",
+    "overlay": "classical (latinate: the urbs/oppidum cities, the via road-net, the rex/consul/comes civic register, the senate and the law, -us/-a/-um endings, penultimate stress, the togate populace)",
+    "lean": "Germanic-heavy - a Gothic war-kingship (a thiudans-house) enthroned over the Latinate heartland of fallen Agrippa: the Gothic crown and its reiks-kin rule, while the city, the road, the senate, the law and the legion are preserved and serve beneath. Theodoric's Italy."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_06 the Agrippan/Latinate base (Classical). CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Classical/Latinate base = Civilized, and any Civ parent -> Civ, so Quirgard is Civilized (feudal). Concept: an Ostrogothic kingship over Rome's heartland - the Germanic war-king seated where the Caesars sat, with the senate, the law, the roads and the legions preserved and serving beneath a Gothic crown (Theodoric's Italy). Backbone = Germanic (GOTHIC: the ruling war-aristocracy, the thiudans/reiks register, dithematic names; the Ostrogothic Kingdom of Italy is the rationale for the Gothic reflex choice); overlay/substrate = Latinate (the urbs-cities, the via road-net, the senate and the law, the Latin-named populace, the rex/consul/comes civic register). Common-word lexicon and rank titles use the real Gothic and Latin registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Gothic reflexes PRIMARY from family_germanic theonym_ancestors, Latinate variants SECONDARY morphed via agrippan - and because agrippan IS the canon's home register, its forms are near-canonical), never real Roman/Germanic gods. PROVISIONAL: alignment (Lawful/Neutral) is a per-hybrid design choice pending the alignment pass - the Germanic war-oath order meets the Roman law-and-senate tradition; both read Lawful comfortably, an older heathen war-band layer reads Neutral. Register choice: Germanic-base hybrids default to the GOTHIC reflexes (Thiodmark = *theudo-mark, 'people-march'); here the Ostrogothic concept makes Gothic the obvious branch. Dual register: Gothic dithematic rulers (Theud-, Erman-, -reiks, -mers); Latin names for the populace (the -us/-a/-ius gens stock). [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Gothic) backbone - heavy root-initial stress, sharp stops p/t/k b/d/g, retained th/w, ai/au diphthongs, dithematic compounding - meeting a Latinate overlay: vowel-rich a/e/i/o/u, liquids l/r, sibilant s, f/v, the -us/-a/-um/-ius endings, penultimate stress, c=k, geminates ll/ss/tt. Per the CSV linguistic profile: precise articulation but heavy consonant endings (the Gothic -s/-ths/-reiks closes over the Latin open syllables); grammar is SVO with simplified case-inflections (the Gothic strong/weak stems lightened against the Latin gens-and-cognomen frame). Theophoric on the Gothic reflexes (Thulrs-, Erlands-) with Latinate variants (Tulrian-, Orland-).",
+    "phonotactics": "CVC; Germanic clusters (st, sk, br, kn, hl, hr, hw) meeting Latinate onset clusters (st, tr, pr, cl, sp) and geminates ll/ss/tt; heavy initial stress with a Latinate penultimate pull; dithematic Gothic names over -um/-ia civic toponyms and Castra-/Forum- compounds.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (gothic) phonology dominant",
+      "sound_changes": [
+        "Latin inflectional endings drop: final -us/-um/-ius/-a/-is>0 (or -a>-a where Gothic-weak); roots become consonant-final to match the Gothic -s/-ths close",
+        "Latin c=k always; Latin v>w (vinum>win, via>weg); the open Latin syllable is closed under Gothic stress",
+        "Gothic root-initial stress on all words, overriding the Latin penultimate pull; Gothic clusters (st, sk, br, kn, hl, hr, hw) permitted",
+        "retain Gothic th, w, ai, au; Latin geminates (ll, ss, tt) simplify or hold under stress; very short roots take a Gothic -s/-a ending"
+      ],
+      "source_tilt": "land/terrain/civic/material/staple words from Latin roots (the togate substrate works the land, builds the road and the city); kin-line/quality/abstract/rule/war words from Gothic roots (the ruling war-register); every root then filtered to one Germanic-shaped phonology",
+      "portmanteaus": [
+        "city urbs+baurgs>urbaurg",
+        "fort castra+burg>kastburg",
+        "temple templum+alhs>templalh",
+        "citadel arx+burg>arkburg",
+        "house gens+haus>genshaus",
+        "clan gens+kuni>genskun",
+        "son filius+sunus>sunfil",
+        "daughter filia+dauhtar>dauhtfil",
+        "sacred sacer+weihs>sakweih"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Latin land/civic/material roots + Gothic rule/kin/war-roots, all run through one Germanic-shaped sound-law (Latin -us/-um endings dropped, Gothic stress and clusters imposed); portmanteaus mark the blended institutions and bloodline (Ostrogothic Rome).",
+    "feature_words": {
+      "river": "amn",
+      "stream": "riv",
+      "lake": "lak",
+      "sea": "mar",
+      "bay": "sin",
+      "cape": "prom",
+      "isle": "ins",
+      "mountain": "berg",
+      "hill": "koll",
+      "ridge": "jug",
+      "forest": "silw",
+      "wood": "nem",
+      "plain": "kamp",
+      "marsh": "pals",
+      "ford": "wad",
+      "pass": "klus",
+      "vale": "wall",
+      "march": "mark",
+      "coast": "ors",
+      "neck": "hals",
+      "narrows": "fauk",
+      "waste": "wast",
+      "road": "weg",
+      "way": "iter",
+      "track": "semt"
+    },
+    "settlement_words": {
+      "hamlet": "wikell",
+      "village": "wik",
+      "town": "oppid",
+      "city": "urbaurg",
+      "fort": "kastburg",
+      "port": "ost",
+      "market": "forn",
+      "colony": "koln",
+      "citadel": "arkburg"
+    },
+    "kinship": {
+      "son": "sunfil",
+      "daughter": "dauhtfil",
+      "house": "genshaus",
+      "kin": "genskun",
+      "ancestor": "auld"
+    },
+    "adjectives": {
+      "great": "mikil",
+      "little": "leitil",
+      "old": "alds",
+      "new": "niwi",
+      "black": "swart",
+      "white": "hweit",
+      "red": "raud",
+      "golden": "gulth",
+      "iron": "eisarn",
+      "high": "hauh",
+      "far": "fairr",
+      "sacred": "sakweih",
+      "fair": "fagr"
+    },
+    "resources": {
+      "salt": "sal",
+      "iron": "ferr",
+      "silver": "argent",
+      "gold": "aur",
+      "wine": "win",
+      "oil": "ole",
+      "grain": "frumn",
+      "marble": "marmr",
+      "horse": "marh",
+      "amber": "gles"
+    },
+    "directional": {
+      "upper": "uf",
+      "lower": "nithr",
+      "north": "nurth",
+      "south": "suth",
+      "east": "aust",
+      "west": "west",
+      "inner": "inn",
+      "outer": "ut"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-um (Latinate civic neuter)",
+      "-ia (Latinate civic feminine)",
+      "Castra- (Latinate fort)",
+      "Forum- (Latinate market)",
+      "-heim (Germanic home)",
+      "-burg (Germanic fort)"
+    ],
+    "patronymic_form": "the Gothic ruling house keeps a dithematic lineage-name and -ingos; the Latinate populace keep the inherited gens (clan) name as a middle element (Marcus VALERIUS) and the filius- son-of frame; the throne fuses both - a thiudans who also carries a borrowed gens or a senatorial cognomen.",
+    "gendered_endings": {
+      "male": "-s / -reiks / -mers (Gothic ruling); -us / -ius / -or (Latinate)",
+      "female": "-a / -hild (Gothic); -a / -ia (Latinate)"
+    },
+    "diminutive_form": "-ila (Gothic) / -ulus / -illa (Latinate)",
+    "compounding_rule": "Germanic dithematic ([quality](stem) + element: Eisarna-burgs, iron-fort) layered over Latinate civic compounding (feature/adjective + civic suffix, eliding before a vowel: Castra-Theuda, the Theuda-house fort; Forum-Erlands): the capital Quirgard (the Gothic war-seat), the old urbs kept under its Latin name."
+  },
+  "title_ladder": {
+    "government": "feudal (a Gothic war-aristocracy over the Latinate cities and senate: the thiudans and his reiks-kin at the crown, the kindins-governors set over the provinces, the gardingus-retainers sworn to the war-host; the Latin senatus, the comites and the consular law-courts preserved and serving beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Gardingus",
+        "domain_native": "Gardas"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marka-frauja",
+        "domain_native": "Marka"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Kindins",
+        "domain_native": "Kindinassus"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Drauhtins",
+        "domain_native": "Drauhti"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Reiks",
+        "domain_native": "Reiki"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Thiudans",
+        "domain_native": "Thiudangardi"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Thiudans-Imperator",
+        "domain_native": "Imperium-Thiudi"
+      }
+    },
+    "_tiers_note": "Gothic ladder, ascending, with the Latinate civic substrate co-titles beneath. Gardingus (king's-man) barony; Marka-frauja (march-lord) march; Kindins (provincial governor) county over a Kindinassus, with the Latin Comes co-title for the conquered comitatus; Drauhtins (war-lord; *druhtinaz) duchy, beside the Latin Dux; Reiks (prince-ruler) principality, beside the Latin Princeps; Thiudans (king) kingdom over a Thiudangardi (Gothic 'kingdom'), styled Rex by the senate and the Latin chancery; Thiudans-Imperator (the king who wears the imperial purple of fallen Agrippa; Gmc thiudans + Lat imperator) empire over the Imperium-Thiudi. The preserved cities keep their Latin Consul, Senatus and Comes beneath the Gothic crown. The gudja (priest) and the Latin Pontifex stand outside the ladder. Rank titles fuse the real Gothic and Latin registers (allowed).",
+    "heir": "Thiudans-barn (the king's child; the heir), styled Caesar in the Latin chancery",
+    "honorifics": {
+      "lord": "Frauja / Dominus",
+      "lady": "Fraujo / Domina",
+      "champion": "Wigands (Gothic warrior) / Eques (Latin knight)",
+      "your_grace": "Frauja meins / Eminentia",
+      "elder": "Sinista (the eldest) / Senator"
+    },
+    "vassalage": {
+      "liege": "Frauja / Patronus",
+      "vassal": "Skalks (servant) / Cliens (Latin client)",
+      "fealty": "Treuwa (troth) / Fides (Latin faith)",
+      "tribute": "Gild (Germanic) / Tributum (Latin)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Thiudans-Imperator": "Thiudana-Imperatrix",
+      "Thiudans": "Thiudana",
+      "Reiks": "Reikja",
+      "Drauhtins": "Drauhtini",
+      "Kindins": "Kindini",
+      "Marka-frauja": "Marka-fraujo",
+      "Gardingus": "Gardingjo"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Imperator": "Imperatrix"
+    },
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Gothic ruling stock carry a dithematic name + -ingos lineage; the Latinate populace carry the tripartite praenomen + gens + cognomen (or, for commoners, praenomen + occupational byname); order given-first.",
+    "surname_source": [
+      "Germanic -ingos lineage",
+      "inherited gens (Latinate)",
+      "earned cognomen (Latinate)",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Gothic war-aristocracy keep dithematic names (Theud-, Erman-, -reiks, -mers); the Latinate city-folk keep the gens-and-cognomen names (Marcus Valerius, Aurelia Cornelia) on the morphed canon-stems; the throne often carries both - a Gothic thiudans who also bears a senatorial gens.",
+    "theophoric": "Germanic devotional on the Gothic god-reflexes (Thulrs-mers, Erlands-); Latinate theophoric praenomina on the morphed canon: Tulrian (of Thulrs), Orlandus, Realtus, Numenius.",
+    "diminutive": "-ila (Gothic) / -ulus / -illa (Latinate)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column), Latinate variants SECONDARY (the agrippan/Latinate canon forms, which are near-canonical because agrippan is the canon's home register), never real Germanic/Roman gods. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Roman law-and-senate tradition.",
+    "the_one": "Aiterns (Gothic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Thulrs (Lat Tulrius) - the sun and justice",
+      "Orlandus": "Erlands (Lat Orlandus) - iron, oath, war",
+      "Gaiandus": "Gauands (Lat Gaiandus) - the enduring earth",
+      "Numeno": "Numins (Lat Numeno / Numenius) - sky and law-wisdom",
+      "Realta": "Riala (Lat Realta) - the mother, mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded and unworshipped; the war-oath of the war-band and the law-stele of the senate bind alike, and the just thiudans rules by both",
+      "Neutral": "the ancestral war-dead (the Anses of the ruling house) and the city-genii (the Latin genius loci of the urbs); the great powers invoked at the alhs-grove and the templum situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterns - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as skohsla (Gothic demons) rather than worshipped, keep their morphs + an epithet: Maraxus -> Marahs the War-Brand (Lat Maraxus the Tyrant-Flame); Vacidus -> Wakiths the Unmaker (Lat Vacidus the Unmaker); Lusanto -> Lusanths the Hoard-Worm (Lat Lusento the Coin-Serpent).",
+    "clergy_ladder": {
+      "1": "Alhs-skalks (temple-servant) / Cultor",
+      "3": "Gudja (priest) / Sacerdos",
+      "5": "Weiha-gudja (hallow-priest) / Flamen",
+      "7": "Ufar-gudja (high priest) / Pontifex",
+      "9": "Sinista-gudja (eldest priest) / Pontifex Maximus"
+    },
+    "religious_orders_pattern": "the Alhs (Germanic grove-temple) or Templum / Collegium (Latinate) of [power]: 'the Alhs of Thulrs', 'the Collegium of Tulrius'.",
+    "saints_pattern": "the Anses (the deified war-dead of the ruling house) and the Latin Divus/Diva (deified founders and law-givers of the cities), honored at the howe and inscribed on the senate-stele.",
+    "holy_symbol_motifs": {
+      "Thulrs": "a sun-disc over a crossed sword and law-stele",
+      "Erlands": "an iron sword crossed with the legion-eagle",
+      "Gauands": "the ploughed campus beneath the city-wall"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-keels and the old galleys of the coast: 'Pride of the Marei', 'the Iron Boar', 'Aquila of Quirgard'",
+    "military_units": "the Thiudans' hari (war-host) and the preserved Latin legions: 'the Hari of Quirgard', 'the Legio Ferrata (the Iron Legion)', 'the Iron-helms'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Boar and Eagle'",
+    "dungeons_ruins": "fallen Gothic burgs and the old Agrippan ruins: 'the Castra of Dur-[name]', 'the Sunken Forum', 'the Howe of the Theudings', 'the broken Arx'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Theudereiks",
+      "Ermanareiks",
+      "Gundomers",
+      "Hrothareiks",
+      "Wiljareiks",
+      "Athalmers",
+      "Theudemers",
+      "Hildereiks",
+      "Witigeis",
+      "Marcus Valerius",
+      "Lucius Aurelius",
+      "Gaius Cornelius",
+      "Tullius Severus",
+      "Aurelian Fabius",
+      "Cassian Tullius",
+      "Valerian Caelius"
+    ],
+    "personal_f": [
+      "Gunthild",
+      "Ermangund",
+      "Swanahild",
+      "Theudelinda",
+      "Hrothahild",
+      "Wiljagund",
+      "Amalaswintha",
+      "Aurelia Valeria",
+      "Cornelia Livia",
+      "Tullia Marcia",
+      "Severina Fabia",
+      "Octavia Caelia"
+    ],
+    "clan_houses": [
+      "the Theudingos (ruling house)",
+      "the Ermaningos",
+      "the Hrothingos",
+      "the Wiljingos",
+      "the Amalingos (the Gothic royal line)",
+      "the gens Valeria",
+      "the gens Cornelia",
+      "the gens Aurelia",
+      "the gens Tullia",
+      "the Hildingos",
+      "the gens Caelia",
+      "the Athalingos"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "Lion-of-the-Forum",
+      "the Law-keeper",
+      "of the Eternal City",
+      "the Oath-keeper (the Treuwa-frauja)",
+      "City-warden",
+      "the Far-marcher",
+      "Purple-clad"
+    ],
+    "flagship_settlements": [
+      "Quirgard (the chief seat - the Gothic war-seat)",
+      "Castra-Theuda (the ruling-house fort)",
+      "Aurelium (the preserved Latin city)",
+      "Forum-Erlands (the great market under the iron-god's name)",
+      "Eisarna-burgs (the iron-fort)",
+      "Atravada (the old Agrippan ford-town)"
+    ]
+  }
+}

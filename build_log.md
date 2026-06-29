@@ -36425,3 +36425,367 @@ on-tick dispatch.
 - Scene scripts (the modal) aren't loaded by the headless suite — verified via `--check-only` + MCP.
 - Latent gaps surfaced by the enumeration (not fixed — pre-existing): `hex_river_edges.width_category` and `roads` have no struct/repo accessor (assembler raw-SELECTs them); `weather_states` has no map_id in its key; `db/schema.sql` is stale (missing migrations 157-159). The assembler reads defensively around all of these.
 **Next session should:** N/A for this dev tool. Back to the materialization M4 dials / M5 when Jedidiah directs.
+
+
+## Session 2026-06-23 — Dungeon/combat floor "dithering" fix (texture mipmaps)
+
+**Task:** Jedidiah reported the dungeon map floor looked like a "dithering mess" — a chaotic light/dark speckle (screen-door static) over the floor tiles at the zoomed-out isometric view, bad enough to obscure layout.
+**Model used:** Opus 4.8 for diagnosis, fix, and GPU-render verification.
+**Completed:**
+- Diagnosed root cause: the floor/wall textures (`assets/floors/slate_tile_light.png`, the two grass variants, `assets/walls/stone_brick_dark_01.png`, `wood_oak_weathered.png`) were imported with `mipmaps/generate=false`. `TacticalGrid3D` tiles the detailed slate texture (UV scale 2.0/cell) and the camera minifies it heavily when zoomed out, so without a mip chain the GPU undersamples the texels into aliasing speckle. They lacked mipmaps because Godot's detect-3d auto-mipmap pass only fires for textures referenced by *saved* material resources, but `TacticalGrid3D` builds its `StandardMaterial3D`s in code at runtime — so the hook never fired.
+- Enabled `mipmaps/generate=true` in all five texture `.import` files (local only — `*.import` is gitignored in this project per `.gitignore`).
+- Added `TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC` to the floor material (`build_floor_multimesh_voxel`) and the shared `_make_textured_material` (walls), since floors are viewed at a grazing isometric angle.
+- Durable, version-controlled guarantee: added `TacticalGrid3D._ensure_mipmaps(tex)` called from `_load_texture()`. It rebuilds any texture lacking a mip chain as an `ImageTexture` with `generate_mipmaps()` (decompressing first if needed). This survives a fresh clone / `.godot` wipe, where `.import` regenerates with default (no-mipmap) settings and detect-3d still wouldn't fire. No-op when the import already supplies mipmaps.
+- Fix covers both dungeon and combat maps (both render via `TacticalGrid3D`) and the wilderness grass textures.
+**Decisions made:**
+- Belt-and-suspenders: keep the `.import` mipmap edits (correct editor preview, immediate effect) AND the runtime `_ensure_mipmaps` guarantee (durable + tracked in git). The runtime path is the authoritative fix since `.import` is not version-controlled.
+**Interfaces defined or changed:**
+- New static `TacticalGrid3D._ensure_mipmaps(tex: Texture2D) -> Texture2D` (internal; called by `_load_texture`). No public API change.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None automated (texture mipmaps are not meaningfully testable under the headless dummy renderer — `get_image()` returns null there, which `_ensure_mipmaps` guards). Verified instead by GPU render via the godot-ai MCP: built a throwaway 26×26 stone-floor scene under the real isometric rig at zoomed-out `size=22`, captured `source="game"`. Floor rendered clean/even (no speckle). Also simulated a fresh clone by reimporting slate with `mipmaps=false` and re-rendering — still clean, proving the runtime path generates the mips. Temp dev scene + `main_scene` swap reverted; parse-checked `tactical_grid_3d.gd` clean.
+**Known issues:**
+- None. The faint regular tile pattern remaining on the floor is the intended slate texture (UV scale 2.0), now correctly filtered rather than aliasing.
+**Next session should:**
+- Optional polish only: if the slate tile pattern still reads as too busy at full zoom-out, consider lowering `FLOOR_UV_SCALE` (2.0 → ~1.0) so each cell shows the texture once. Not required for the reported bug.
+
+
+## Session 2026-06-24 — World map renders in a SubViewport anchored above the resizable status bar
+
+**Task:** Jedidiah reported the session status bar (a CanvasLayer, layer 80) occluded the bottom of the wilderness map. The map rendered full-screen into the root window viewport, so right-click context menus opened near the bottom got buried under the bar, and "center on party" focused on a point partly hidden behind the bar. Goal: anchor the map's viewport to the top of the status bar and resize the viewport WINDOW (not stretch the image) as the bar is dragged taller/shorter.
+**Model used:** Opus 4.8 for diagnosis, implementation, and in-game (godot-ai MCP) verification.
+**Completed:**
+- Wrapped the wilderness hex map in a SubViewport so it renders only in the area above the bar. `scenes/Main.tscn`: new `WorldViewport` (SubViewportContainer, full-rect anchors, `stretch = true`) → `WorldSubViewport` (SubViewport) → existing `HexMap` (scenes/maps/hex_map.tscn) reparented under it. Edited via the godot-ai MCP (Main.tscn is MCP-authored, carries `unique_id` attrs).
+- New `scenes/maps/world_viewport_frame.gd` (extends SubViewportContainer): on `EventBus.bar_height_changed(px)` sets `offset_bottom = -px`; on `_ready` forces `stretch=true` + full-rect anchors and pulls the bar's current height as a fallback.
+- `EventBus`: new signal `bar_height_changed(height_px: float)` (engine/autoloads/event_bus.gd) — the code already anticipated it (a comment in session_status_bar.gd referenced it "when that signal lands").
+- `SessionStatusBar` (scenes/ui/hud/session_status_bar.gd): new `get_effective_bar_height() -> int` (applied height when visible, 0 when hidden) + `_emit_bar_height()`; emits from `_apply_height_pixels` (covers drag + every state change), `_update_visibility`, `_on_notebook_open_state_changed`, and a new `_on_viewport_size_changed` wired to `get_viewport().size_changed` (EXPANDED height is viewport-relative, so it re-applies on window resize).
+- `engine/subsystems/session/session_runner.gd:173`: changed `get_parent().get_node("HexMap")` → `get_parent().find_child("HexMap", true, false)` so the renderer lookup survives the reparent.
+- Coding conventions: added §84 documenting the world-viewport-frame pattern.
+**Decisions made:**
+- Used the `SubViewportContainer(stretch=true) + SubViewport` pattern — the same one combat already uses (`scenes/ui/combat/combat_screen.gd:93`) — rather than a camera-offset hack. With `stretch=true` the SubViewport tracks the container size, so the Camera2D shows `window − bar` of world at unchanged zoom: the viewport WINDOW resizes and the image is rendered 1:1 (never scaled), exactly as requested.
+- Frame tracks the bar via a broadcast signal, not a hard reference — keeps SessionStatusBar and the map decoupled.
+- Scoped to the wilderness map this pass (Jedidiah's choice: "wilderness now, dungeon next"). The 3D dungeon map has the same root-viewport occlusion and is the designed next step.
+**Interfaces defined or changed:**
+- New signal `EventBus.bar_height_changed(height_px: float)` — emitted by SessionStatusBar, consumed by world_viewport_frame.gd. `height_px` = the bar's occluding height in px, 0 when hidden.
+- New `SessionStatusBar.get_effective_bar_height() -> int`.
+- Scene contract: the wilderness HexMap now lives at `Main/WorldViewport/WorldSubViewport/HexMap`. Resolve it via `find_child("HexMap", true, false)`, not a fixed node path.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- No new automated tests (pure scene/rendering-layout change; verified in-engine). Full suite re-run under APPDATA isolation (tools/run_tests.ps1, run 2): 465 suites passed / 17 failed — net-zero NEW failures vs the ~461–463/17 baseline. The one red check in `tests/test_session_status_bar.gd:70` (`widget zone has 9 cells; got 11`) is a PRE-EXISTING stale assertion: row 3 grew to 5 widgets when `_view_mode_btn` + `_enter_region_btn` were added (migration 119), unrelated to this change (I never touched `_build_widget_zone`). My status-bar edits add methods + signal emits only and are tree-safe in the harness (`_make_bar()` adds the bar to the tree before `_ready`).
+- In-game verification via godot-ai MCP (loaded "Iltaninu" campaign → wilderness): at the default 200px bar (window 1908×942) `WorldViewport.offset_bottom = -200` and `WorldSubViewport.size = 1908×742`; dragging the bar to minimal grew the SubViewport to 1908×892 live; hex art stayed the same size (no stretch); the party cluster re-centered in the visible (above-bar) area; clicking the in-SubViewport "Enter Settlement" button opened its dialog centered above the bar (proves GUI input forwards into the SubViewport).
+**Known issues:**
+- The 3D dungeon map (`dungeon_explore_state` `_scene`, dungeon_map_3d.tscn) still renders full-screen to the root viewport — same occlusion, not yet fixed (deferred by scope).
+- Synthetic right-click via the MCP debugger doesn't drive the renderer's `get_local_mouse_position()`-based hit test, so the wilderness right-click context menu couldn't be exercised through injected input; real mouse input is unaffected (GUI forwarding proven via the button-dialog test, and the menu's on-screen clamp reads the SubViewport rect so it clips above the bar).
+- The drag test left the persisted bar height at "minimal" (`user://session_status_bar_height.txt`) — cosmetic; the player adjusts it freely.
+**Next session should:**
+- Apply the same WorldViewport/SubViewport framing to the 3D dungeon map (mount `dungeon_map_3d` under `WorldSubViewport`, or give it its own bar-tracking frame) so dungeon context menus / camera focus also respect the bar.
+
+
+## Session 2026-06-24 — 3D dungeon map: bar-tracking SubViewport frame + wilderness-overlay fix
+
+**Task:** Apply the wilderness map's above-the-status-bar SubViewport framing to the 3D dungeon map (follow-up to the same-day wilderness change). The dungeon should render only in the area above the resizable status bar, resize with it (no image stretch), and keep its context menus / camera focus within the visible area.
+**Model used:** Opus 4.8 for implementation and in-game (godot-ai MCP + game_eval) verification.
+**Completed:**
+- Found + fixed a LATENT REGRESSION from the same-day wilderness change: `wilderness_explore_state.exit()` hid only the inner `HexMap` (`renderer.visible=false`), but the `WorldViewport` SubViewportContainer stayed visible and drew an opaque (cleared) rectangle that covers 3D world content rendered behind it — i.e. the dungeon (mounted in `SceneContainer`, which is earlier in the tree → drawn under `WorldViewport`). Now the whole frame hides/shows with the wilderness context.
+  - `engine/subsystems/session/session_runner.gd`: resolve `_world_viewport = get_parent().find_child("WorldViewport", true, false)` in `_ready`; new `get_world_viewport()`.
+  - `engine/subsystems/session/states/wilderness_explore_state.gd` enter/exit: toggle `runner.get_world_viewport().visible` alongside the existing renderer toggles.
+- Wrapped the dungeon scene in a bar-tracking SubViewport frame. `engine/subsystems/session/states/dungeon_explore_state.gd` `enter()`: instead of `push_node(_scene, ...)`, build `DungeonViewportFrame` (`SubViewportContainer` + `world_viewport_frame.gd`, `stretch=true`) → `DungeonSubViewport` (`own_world_3d=true`, `handle_input_locally=true`) → `_scene` (the dungeon `Node3D`), and push the FRAME via the nav stack. Added `const WorldViewportFrame := preload("res://scenes/maps/world_viewport_frame.gd")`.
+- Reused the existing generic `world_viewport_frame.gd` (tracks `EventBus.bar_height_changed`, anchors full-rect, `stretch=true`) for the dungeon frame — no new script.
+- Conventions §84 updated to document the two frames + the hide-when-inactive rule.
+- Cleared a spawned cleanup task: fixed the stale `tests/test_session_status_bar.gd:70` assertion (a long-standing baseline red). The widget zone has 11 children, not 9, since migration 119 added the two context-gated cross-scale buttons (`_view_mode_btn` / `_enter_region_btn`); updated the assertion to `== 11` + the comment (the *rendered* layout stays ~3×3 because the buttons are mutually exclusive). gdd-ui-architecture.md §3.8 keeps the 3×3 design language; not a UI redesign.
+**Decisions made:**
+- The dungeon uses its OWN frame (pushed via the nav stack, freed on pop), NOT the shared wilderness `WorldSubViewport`. Rationale: the dungeon mounts through `NavigationStack.push_node` into `SceneContainer` with push/pop lifecycle + fade transitions — wrapping `_scene` keeps that intact — and `own_world_3d` isolates the dungeon's self-contained 3D world (Camera3D + DirectionalLight3D + WorldEnvironment, built by `TacticalGrid3D.create_environment()`), exactly like the combat map.
+- Fixed the wilderness-overlay regression here rather than only adding the dungeon frame: it's the same root cause (a wilderness SubViewport frame left visible over a non-wilderness context). `transparent_bg` is not a fix — the container still intercepts input even when transparent; hiding the frame is the correct fix.
+**Interfaces defined or changed:**
+- New `SessionRunner.get_world_viewport() -> Node` — the wilderness map's SubViewportContainer; may be null in tests / frame-less scenes.
+- Dungeon scene-graph contract: `DungeonMap3D` now lives at `SceneContainer/DungeonViewportFrame/DungeonSubViewport/DungeonMap3D` (was `SceneContainer/DungeonMap3D`). All dungeon code addresses it via the `_scene` reference + relative `DungeonHUD/...` paths, which are unaffected.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- No new automated tests (scene/rendering-layout change). Full suite under APPDATA isolation (tools/run_tests.ps1, run 2): **466 passed / 17 failed**. Net-zero NEW failures verified by NAME (not count — the headless baseline count is flaky/order-dependent per build-workflow notes): every one of the 17 failures lives in a file this session did NOT touch (combat geometry `test_movement_resolver_3d`/LOS/ZoC, `test_dungeon_map_controller_voxel` Vector3i signals — the CONTROLLER, not the state I changed — clanhold domain_style, region-label angles, garrison, `_bankers_round`, inventory cascade), and the suites adjacent to the change PASS (`VoxelDungeonIntegration`, `WildernessContextMenuBuilder`, and `SessionRunner`'s own non-harness tests). `SessionStatusBar: all tests passed` now (was the stale red, fixed this session). `test_session_runner`'s signal failures are a pre-existing harness limitation (the suite instantiates SessionRunner without its Main.tscn siblings, so `_ready` aborts at `_nav_stack.setup()` — unchanged by me; my added `find_child("WorldViewport")` returns null harmlessly).
+  - First-run crash gotcha (resolved): the initial suite run crashed at the Godot banner (exit 255, empty log) because a zombie headless Godot pair from a prior run held the isolated test DB while the editor was mid-reimport of the edited scripts. Killed the orphaned `Godot_*` PIDs (kept the editor + godot-ai MCP) and re-ran clean. Symptom per build-workflow notes: `Get-Process *odot*` showing a console+main pair with a stale StartTime.
+- In-game verification via godot-ai MCP + `game_eval`: force-entered a stored dungeon ("the Sunken Halls of Nedjesta-djeser") by driving `runner.transition_to_state("dungeon", {entrance, spawn_cell})`. Confirmed at runtime: tree = `DungeonViewportFrame(SubViewportContainer, world_viewport_frame.gd) → DungeonSubViewport(own_world_3d=true) → DungeonMap3D` (camera + light + WorldEnvironment + 6 entity tokens inside); `offset_bottom=-200`, SubViewport `1908×742` (window 942 − bar 200); Camera3D `current=true`, party tokens rendering; **`WorldViewport.visible=false`** (overlay fix holds in the dungeon); emitting `bar_height_changed(400)` resized the dungeon SubViewport to `1908×542` live and restored to 742 at the real height (no image stretch). Cleaned up the forced entry via `clear_party_dungeon_position`.
+**Known issues:**
+- The forced-entry test dungeon built no `GridMeshes` floor geometry (a tiny 297-byte generated dungeon); unrelated to framing (tokens + camera render fine) and not touched by this work. A richly-stocked dungeon should be re-checked when DG-V1 per-type themes land.
+- Settlement exploration is menu-driven (CanvasLayer UI), already covered by the wilderness-overlay fix (WorldViewport hidden on wilderness exit). Combat self-frames (its own SubViewport), unaffected.
+**Next session should:**
+- Optional: re-verify a fully-stocked dungeon (rooms/walls/doors) renders correctly in the frame once richer dungeon content is available; this pass verified the framing + bar tracking with a minimal dungeon.
+
+
+## Session 2026-06-24 — Continuous-geography world-gen refactor GDD + wilderness-3d reassessment
+
+**Task:** Assess work landed since the 2026-06-16 3D-hex GDD; update gdd-wilderness-hex-3d.md to match current state; draft directives for refactoring world/setting generation into a continuous (non-hex) 3D heightmap with better climate/biome/watershed sim, normalized into hexes. Jedidiah's direction: "generate geography non-hexagonally, layer the hexmap on top, normalize terrain/elevation types."
+
+**Model used:** Opus 4.8 (1M context); a 4-agent assessment Workflow (gen-sophistication, materialization/region-scale state, GDD staleness, continuous-geography design research) + GDD authoring.
+
+**Completed:**
+- Assessed landed work (git + build_log + workflow): materialization M0-M4 LANDED (`region_zoom_in.gd` produces a playable 6-mile map; MCP-verified), region-scale system LANDED (24-mile view-only World Map Notebook tab + layer toggles `world_map_tab_page.gd`; "Enter Region" + Strategic/Regional toggle in `session_status_bar.gd`; migration-119 cross-scale), HexMap reparented under `Main/WorldViewport/WorldSubViewport/HexMap` (conventions §84), migration counter now 175.
+- KEY FINDING: 6-mile children DO carry `elevation_raw` (`region_zoom_in.gd:135`) but `_children_for_parent` FLAT-COPIES the parent's 24-mile value (`:212, :307`; edge children borrow a neighbor) -> 16-hex plateaus, no true sub-24-mile height. Geography is still ONE noise sample per 24-mile hex center (`heightmap_generator.gd:92-95,147-165`); rivers are a greedy vertex-walk with NO flow accumulation (`:186-269`), width by `log2(source_count)` (`:32-41`); lakes by a depression heuristic. Climate is already decent (quadratic latitude + above-ceiling lapse + rain-shadow BFS + coastal-moisture BFS) but precipitation is noise x multiplier, computed per-24-mile.
+- Authored NEW `generation/gdd-continuous-geography.md` (v0.1): field-first world gen. Coarse base raster (4x4 per 24-mi hex = 6-mile cell; <=43,200 cells at `huge`) + on-demand detail noise modulated by the coarse field. Hydrology: thermal erosion x3-5 + Priority-Flood (fill+watershed, O(n log n)) + D8 + flow accumulation + channel extraction (FAT) + Strahler order -> width/navigability + channel-incision carve; SKIP global hydraulic droplet erosion. Climate: orographic wind sweep (rain shadow EMERGES) + continentality + per-cell Köppen. `tag_for_footprint(field, footprint, scale) -> HexTags` is the load-bearing hex-normalization contract (area-weighted dominance, "mountains if >25%", stored runner-up biome; idempotent => cross-scale consistency is structural). Replaces the stochastic deviation-budget inheritance with field-sampling.
+- Updated `gdd-wilderness-hex-3d.md` -> v0.3: scale strategy now RESOLVED (the 24mi-2D / 3D-6mi split is the shipped architecture); `RAW_FIELD` (read `field_sampler.sample(x,y)`) is now the target default height source; SubViewport hosting fix (§13.2 + §3.1); migration 163 -> 175; added `hex_clicked` to the 5-signal contract; dependency is now the continuous-geography refactor + `gdd-setting-runtime-materialization.md`.
+
+**Decisions made:**
+- Continuous-geography refactor is the recommended NEXT world-gen build (pays off for the 2D maps + sim regardless of the 3D renderer); the 3D renderer then builds straight onto `RAW_FIELD` (no `PARENT_GUIDE` interim needed).
+- Base raster 4x4 per 24-mi hex; STORE (~6 MB BLOB) not regenerate; thermal + channel-incision erosion only (no global droplet erosion).
+- Keep Köppen classifier (seasonality regimes + already calibrated) over raw Whittaker.
+
+**Interfaces defined or changed:**
+- Proposed (NOT built): `field_sampler.gd` with `sample(x,y)` + `tag_for_footprint(field, footprint, scale) -> HexTags`; `setting_field_raster` table OR channel-keyed `PackedFloat32Array` BLOB; `region_zoom_in._children_for_parent` -> field-sample (stops flat-copying `elevation_raw`); `heightmap_generator._trace_rivers` -> D8/accumulation/Strahler.
+- `elevation_raw` SEMANTICS CHANGE: "24-mile center point-sample" -> "area-mean of the footprint over the continuous field" (consumers unaffected; values more faithful).
+- Renderer GDD contract: the 3D renderer must emit FIVE signals (`hex_clicked` added since v0.2) and mounts under `WorldSubViewport` (`own_world_3d=true`).
+
+**Database changes:**
+- None this session. Proposed (deferred, needs sign-off): `setting_field_raster` BLOB (or channel-keyed column).
+
+**Tests added/updated:**
+- None (design-only). Flagged for the build: re-baseline setting-gen suites + `SettingDatasetHasher`; add a cross-scale idempotence test (aggregating 6-mile tags reproduces the 24-mile tag) + a determinism test (same seed -> identical raster hash).
+
+**Known issues:**
+- [APPROVAL] The continuous-geography refactor amends `gdd-setting-generation.md` §4-5, `gdd-hex-subdivision.md` §6, `gdd-region-zoom-in.md` §4 (retires the deviation-budget inheritance model) — needs Jedidiah's sign-off BEFORE editing those GDDs.
+- [APPROVAL] The 2D->3D design-brief amendment is still pending (renderer GDD §15).
+- Decisions to confirm: base resolution 4x4, store-vs-regenerate, erosion scope (all recommended in `gdd-continuous-geography.md` §13).
+
+**Next session should:**
+- Get Jedidiah's rulings on the `gdd-continuous-geography.md` §13 gates (amend the 3 GDDs; base resolution; storage; erosion scope; build order).
+- On approval: begin Layer-1 raster + hydrology (Priority-Flood / D8 / flow-accumulation / Strahler) in a refactored `heightmap_generator.gd` + new `field_sampler.gd`; then the climate orographic sweep in `climate_generator.gd`; then `tag_for_footprint` + rewire `region_zoom_in.gd` to field-sample.
+
+
+## Session 2026-06-24 — Continuous-geography Layer-1 (base raster + hydrology) LANDED
+
+**Task:** Begin implementing the approved continuous-geography world-gen refactor (`gdd-continuous-geography.md`). Step 1 of the build order: Layer-1 = the continuous base raster + full hydrology chain, built ADDITIVELY (not yet wired into the live pipeline) on branch `feature/continuous-geography`.
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- New `engine/subsystems/generation/world/geo_field.gd` (class GeoField, RefCounted) — the continuous square base raster: 4 cells / 24-mile hex = 6-mile cells (`CELL_MILES=6.0`, `SUBDIV_PER_24MI=4`). Flat `PackedFloat32Array`/`PackedInt32Array` channels (surface, filled, flow_dir, flow_accum, strahler, water, temperature, precipitation) indexed row-major (coding_conventions §80 — no `Dictionary[Vector2i]`). Accessors `idx`/`col_of`/`row_of`/`in_bounds`/`size_cells`/`allocate(w,h)`; bilinear `sample_surface(cx,cy)`; `surface_hash()` (SHA-256 of raw IEEE-754 bytes) for determinism tests. `D8` neighbour table.
+- New `engine/subsystems/generation/world/geo_field_generator.gd` (class GeoFieldGenerator, static) — Layer-1 pipeline `generate(campaign_seed, params) -> GeoField`: noise stack (ported from heightmap_generator, sampled in mile-space) -> thermal erosion (delta-accumulated, 4 passes) -> sea-level ocean mask -> Priority-Flood depression fill (+epsilon, binary min-heap, Barnes 2014; interior filled depressions flagged lakes) -> D8 steepest-descent flow direction -> flow accumulation (descending-height push) -> channel extraction (FAT threshold by river_density) + Strahler stream order -> channel incision (lower by `INCISION_SCALE * ln(accum)`). All randomness via `WorldGenRng`; explicit total-order tie-breaks (cell index) on the heap + both sorts -> deterministic.
+- New test suite `tests/test_geo_field_layer1.gd` (27 checks): dimensions; surface in [0,1] + finite; land+ocean present; DETERMINISM (same seed -> identical `surface_hash` + flow/strahler/flow_dir); seed variation; Priority-Flood drainage invariant (every interior land cell has `flow_dir >= 0`); flow-accumulation monotonicity (downstream >= upstream) + a trunk forms; Strahler validity on a medium map + a hand-built Y-confluence UNIT test (junction -> order 2, stays 2 downstream); channel incision (`surface <= filled`); bilinear sampling; large-map perf (<8s). Registered in the runner (4 edits, ext id 471).
+
+**Decisions made:**
+- ADDITIVE landing: NOT wired into `setting_generator`/`heightmap_generator` yet (GDD §13 build order — build+test the field producer first; rewire `region_zoom_in` + swap the pipeline in later steps). Keeps the setting-gen determinism hash green — confirmed `SettingStage0Tests` passes 89 checks.
+- D8 on the square base raster for hydrology (GDD §5), NOT hex adjacency; hexagonalize only at the later `tag_for_footprint` step.
+- Strahler verified via a deterministic synthetic Y-confluence unit test, NOT a noise-map max-order assertion (an unbranched >=FAT stem is legitimately all order 1; max order on a noise map is FAT/size-dependent — the assertion was relaxed after it false-failed on medium/seed-42).
+
+**Interfaces defined or changed:**
+- `GeoField`: channels above + `allocate(w,h)` / `sample_surface(cx,cy)` / `surface_hash()`; consts `CELL_MILES=6.0`, `SUBDIV_PER_24MI=4`, `WATER_NONE/OCEAN/LAKE`, `D8`.
+- `GeoFieldGenerator.generate(campaign_seed:int, params) -> GeoField` (static); `_fat(params)->float` and `_strahler_order(field, fat)` are test-callable.
+- No change to existing pipeline interfaces.
+
+**Database changes:** None (additive in-memory module; persisting the raster as a BLOB is a later step per GDD §10).
+
+**Tests added/updated:** `test_geo_field_layer1.gd` (new, 27 checks, GREEN). Full suite (isolated %APPDATA%, run 2 / warm DB): **468 passed / 16 failed**. Net-zero NEW failures — the 16 are pre-existing carry-forwards (ranged/attack/maneuver combat resolvers, session_runner harness, dungeon_generator_v1, monopoly_registry, familiar_level_up, religion_conversion, clanhold, settlement_pois_schema, character persistence/aging/language) and none touch world-gen. Fresh-DB run-1 showed the usual ~52 FK-noise failures; run-2 warm dropped to baseline (per the build-workflow gotcha).
+
+**Known issues:**
+- FAT thresholds (low 600 / med 300 / high 150) yield mostly unbranched >=FAT stems on small/medium maps (max Strahler 1) — tributary branching needs lower FAT or larger maps. A TUNING decision deferred to the renderer-feedback pass; the algorithm is correct (synthetic confluence test proves the +1 rule).
+- Lake detection (`filled - surface > LAKE_FILL_THRESHOLD`) is a coarse Layer-1 approximation; refine with proper watershed labels later.
+- `flow_accumulation` sorts all cells via a GDScript lambda (O(n log n)); fine for one-time gen at world scale (large map well under the 8s budget).
+
+**Next session should:**
+- Layer-2: port `ClimateGenerator` onto the field (orographic precipitation sweep + continentality + per-cell Köppen) -> fills `GeoField.temperature`/`precipitation`.
+- Then `field_sampler.gd`: detail-octave `sample()` + `tag_for_footprint(field, footprint, scale) -> HexTags` (the hex-normalization contract, GDD §8).
+- Then rewire `region_zoom_in.gd` to field-sample (stop flat-copying `elevation_raw`) + persist the raster BLOB (GDD §10), then swap the pipeline over and re-baseline the determinism hash.
+
+
+## Session 2026-06-24 (cont.) — Continuous-geography Layers 2-3 LANDED; paused at the playtest-gated integration
+
+**Task:** Continue the continuous-geography world-gen build (Jedidiah: "continue through all layers until finished unless playtesting required; commit after each layer's tests pass"). Layers 2-3 of the field-first engine on branch `feature/continuous-geography`.
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- LAYER-2 (commit 1e62a7c) — `geo_climate_generator.gd` (`GeoClimateGenerator.apply`): temperature (lat^2 curve + above-ceiling lapse + continentality + anomaly noise), orographic west->east precipitation sweep (rain shadow EMERGES from windward moisture depletion) + box-blur + min-max normalize + texture noise, then per-cell Köppen classification REUSING `ClimateGenerator._classify_koppen` + `_assign_biome` verbatim (biome logic matches the live pipeline). `GeoField` gained `biome`/`biome_subtype` int channels + `BIOME_NAMES`/`SUBTYPE_NAMES`. Suite `test_geo_field_layer2` (10 checks): temp range, north<south, lapse, precip in [0,1], rain-shadow aggregate, >=3 land biomes, determinism.
+- LAYER-3 (commit ea082cb) — `geo_field_sampler.gd` (`GeoFieldSampler`): `tag_for_footprint(field, ox, oy, size, subsamples) -> Dictionary` the hex-normalization contract — samples a square field footprint, reduces to one hex's tags (elevation band + >25% mountain override; biome plurality + runner-up; coastal-biased water >=35%; area-mean elevation_raw); idempotent across scales. + `tag_24mile`/`tag_6mile` convenience + `make_detail_noise`/`sample_height_detailed` (detail-octave for the 3D renderer / sub-hex). Suite `test_geo_field_layer3` (15 checks): water coverage, mountain override + plurality + runner-up, uniform mean, CROSS-SCALE consistency (a 24-mile tag reproduces the plurality of its sixteen 6-mile tags), determinism, detail bounded.
+- Suite after each layer: Layer-2 469/16, Layer-3 470/16. Geo suites green (27/10/15 checks). `setting_stage0` determinism hash intact (89 checks). Net-zero new failures throughout — the field engine is ADDITIVE (not wired into the live pipeline); the 16 failures are pre-existing carry-forwards.
+
+**Decisions made:**
+- PAUSED at the live-pipeline integration (the next phase) per the "playtesting required" gate. The field ENGINE (Layers 1-3) is complete + tested; the integration changes generated worlds and needs visual calibration:
+  - precipitation / FAT / climate constants are tuned blind (no map view yet); the new biome/river distribution must be eyeballed on the 2D World Map tab.
+  - the field's Strahler channel network (cell-to-cell flow on the square raster) -> `HexRiverEdgeData` hex-edge rows is an UNSPECIFIED, non-trivial mapping that wants visual verification.
+- Integration should be FLAG-GATED (`SettingParameters.use_continuous_geography`, default off) so flipping it is the playtest action and the default pipeline + determinism hash stay green until calibrated.
+
+**Interfaces defined or changed:**
+- `GeoClimateGenerator.apply(field, campaign_seed, params)` (static).
+- `GeoFieldSampler.tag_for_footprint(field, ox:float, oy:float, size:float, subsamples:int) -> Dictionary` (keys: elevation, biome, biome_subtype, water, elevation_raw, biome_runner_up, runner_up_fraction); `tag_24mile`/`tag_6mile`; `make_detail_noise`/`sample_height_detailed`.
+- `GeoField` + `biome`/`biome_subtype` PackedInt32Array channels + BIOME_*/SUB_* enums + `BIOME_NAMES`/`SUBTYPE_NAMES`.
+- No live-pipeline interface changed (additive).
+
+**Database changes:** None yet (raster BLOB persistence is part of the integration phase, GDD §10).
+
+**Tests added/updated:** `test_geo_field_layer2.gd` (10), `test_geo_field_layer3.gd` (15). Both green. Total 470/16.
+
+**Known issues:**
+- FAT (channel threshold) + orographic precip constants are uncalibrated (no visual feedback yet) — expect tuning during the playtest pass.
+- Field-channel -> hex-edge-river mapping is unbuilt (integration phase).
+- The orographic sweep resets the moisture parcel per row at the west map edge (a simplification).
+
+**Next session should (INTEGRATION — needs Jedidiah's playtest):**
+- Add `SettingParameters.use_continuous_geography` flag (default off).
+- Flag-on path in `setting_generator`: run `GeoFieldGenerator` + `GeoClimateGenerator`; write 24-mile `setting_hexes` tags via `GeoFieldSampler.tag_24mile`; derive river edges from the Strahler channel network; (optional) persist the raster BLOB. Rewire `region_zoom_in._children_for_parent` to field-sample (stop flat-copying `elevation_raw`) when the field is present.
+- Then Jedidiah playtests the generated 2D World Map (biome/terrain/river distribution), calibrates FAT/climate, and on approval the flag flips to default + the determinism hash re-baselines.
+
+
+## Session 2026-06-24 (cont.) — Continuous-geography flag-gated pipeline integration LANDED (generate-and-inspect ready)
+
+**Task:** Wire the field-first engine into the live setting_generator behind a flag so Jedidiah can generate + inspect a continuous-geography world (commit a223144 on branch `feature/continuous-geography`).
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- New `geo_field_to_grid.gd` (`GeoFieldToGrid`): when enabled, REPLACES the hex-native Layers 1-2 — runs `GeoFieldGenerator` + `GeoClimateGenerator`, then writes the per-24-mile-hex grid via `GeoFieldSampler.tag_24mile` + block-mean temperature/precipitation, producing ctx.hex_grid / river_edges / width / height in the SAME shape so all downstream layers run unchanged. INTERIM rivers: reuses `HeightmapGenerator._trace_rivers` on the field-derived elevation (the field Strahler-channel -> hex-edge mapping is the next calibration item).
+- Gated on ProjectSettings `acks/worldgen/continuous_geography` (default OFF) — NOT a seed/params field, so the shipped default path + its determinism hash are untouched. `setting_generator._run_geography`/`_run_climate` branch on `GeoFieldToGrid.is_enabled()` (cached in `ctx["_continuous_geo"]`).
+- BUG FIX in `geo_field_generator._build_height`: `raw` is a PackedFloat32Array but raw_min/raw_max were the float64 extrema, so the minimum (ocean) cell rounded just below raw_min -> `(raw - raw_min)` tiny-negative -> `pow(neg, 1.5) = NaN`. Fixed by clamping the normalized base to [0,1] before the curve. (The existing HeightmapGenerator uses a float64 Dictionary so never hit it.)
+- New suite `test_geo_field_integration` (18 checks): flag default-off; grid valid/complete (500 hexes, valid enums, land+ocean, >=3 biomes, land_value 3-9); rivers traced; determinism + medium-map finiteness (the NaN hunt that found the bug); flag toggle; and a FULL 8-LAYER PIPELINE SMOKE (set flag in-memory -> generate a small world -> 180 hexes + >=2 biomes + rivers -> reset flag). Confirms region painting / history sim / naming / infrastructure all run on field-derived terrain.
+
+**Decisions made:**
+- Flag is a ProjectSettings runtime toggle (not a SettingParameters field) to avoid touching the params determinism/share-token contract + the determinism hash while the path is experimental. CAVEAT: a world generated with it on is not reproducible from seed+params alone until the cutover lands (intentional for the experimental phase).
+- Interim rivers via the proven hex tracer; field-channel -> hex-edge rivers deferred (needs visual calibration).
+
+**Interfaces defined or changed:**
+- `GeoFieldToGrid.run(ctx) -> bool`, `GeoFieldToGrid.is_enabled() -> bool`, `GeoFieldToGrid.SETTING = "acks/worldgen/continuous_geography"`.
+- `setting_generator`: `ctx["_continuous_geo"]` set in `_run_geography`, read in `_run_climate`.
+- No persisted-interface change; the ProjectSettings key defaults OFF and is NOT registered in project.godot (tests stay on the default path).
+
+**Database changes:** None.
+
+**Tests added/updated:** `test_geo_field_integration.gd` (18 checks, green; incl. the full-pipeline smoke). Suite 471/16, net-zero new failures; SettingStage0/1 green; default path unchanged.
+
+**Known issues:**
+- Rivers are the old hex tracer on the new elevation (interim) — the field Strahler hydrology -> hex-edge river mapping is the next item.
+- FAT / orographic-precip / biome thresholds are uncalibrated (the point of the inspect pass).
+- The flag is GLOBAL ProjectSettings: enabling it persistently in project.godot would make the test suite run continuous geography (and fail `test_flag_default_off`). Inspect by setting it ON temporarily and OFF before running tests; do NOT commit project.godot with it on.
+
+**Next session should (after Jedidiah's inspect):**
+- Calibrate FAT (river density) + orographic precipitation + biome thresholds from the World Map.
+- Build the field Strahler-channel -> HexRiverEdgeData hex-edge river mapping (replace the interim tracer).
+- Then flip the default + re-baseline the determinism hash (the cutover).
+
+
+## Session 2026-06-25 — Fix flaky settled-lair lingering assertion (test_phase_9c.gd)
+
+**Task:** Eliminate the intermittent failure (~1 in 4 full-suite runs) of the `test_settled_lair_lingering_creates_settled_lair_kind` assertion in `tests/test_phase_9c.gd`: "d100=1 should produce is_lingering=true for any creature with percent_in_lair >= 1". Pre-existing flakiness, unrelated to world-gen.
+**Model used:** Opus 4.8 (1M) for diagnosis, fix, and verification.
+**Completed:**
+- Root-caused the flakiness to an unpinned-RNG leak. `DomainEncounterResolver._generate_encounter()` picks its creature with raw `randi() % filtered.size()` at `engine/subsystems/domains/domain_encounter_resolver.gd:598`, NOT the mocked `dice`. Every other roll in that function routes through `_roll_die(sides, dice)`. For the test's "woods" + animals (d8=4) pool of 13 creatures, 2 (`boar`, `boar_giant`) have `percent_in_lair = null` -> `in_lair_pct = 0` -> `1 <= 0` is false -> `is_lingering = false`. ~15% per-call failure, matching the observed ~1-in-4.
+- Rewrote the flaky single-call assertion (in `test_settled_lair_lingering_creates_settled_lair_kind`) into a robust, outcome-deterministic check that does NOT touch production: loop 50 draws with d100=1, read each drawn creature's `percent_in_lair` via `MonsterRegistry`, and assert the EXACT contract `is_lingering == (1 <= percent_in_lair)` for whatever creature is drawn, plus require >=1 lairing creature to actually exercise the lingering branch. The per-draw invariant is the literal code contract (cannot fail); the woods animal pool is 11/13 lairing, so the saw_lingering guard misses with probability ~(2/13)^50 (~1e-41).
+- Verified: ran the full suite 5x under APPDATA isolation. Stable runs (1,2,3,5) = 473 suites / 16 failed / 39 baseline assertion-failures, with 0 lingering-related failures in ALL 5 runs. Run 4 wobbled to 471/18, but the 17 extra failures were ALL continuous-geography/setting-materialization suites (hex_cells/materialize/region map/realm_count/world_map_id) -- pre-existing world-gen DB/FK flakiness, not this fix.
+**Decisions made:**
+- Fixed the TEST, not production, to keep the change scoped and avoid regressing the sibling test `test_terrain_aware_selection_filters_to_matching_creatures` (~line 1066), which deliberately relies on the random creature pick to sample the full filtered pool over 30 iterations. Routing line 598 through `dice` would collapse that test's sampling coverage.
+**Interfaces defined or changed:**
+- None.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_phase_9c.gd::test_settled_lair_lingering_creates_settled_lair_kind` -- lingering precondition check rewritten to be deterministic-in-outcome (loop + exact-invariant + at-least-one-lingering).
+**Known issues:**
+- [NEEDS-OPUS-REVIEW] Production abstraction hole: `DomainEncounterResolver._generate_encounter` takes a `dice` for deterministic/mockable rolls but the creature pick at line 598 uses raw `randi()`, escaping the abstraction (so a mocked/seeded dice cannot fully determine the encounter). Sibling `DragonVariantResolver` already uses the correct pattern `_roll_die(pool.size(), dice) - 1` (lines 154/200/295). Closing the hole is a one-line, distribution-identical change for null dice, but requires updating `test_terrain_aware_selection_filters_to_matching_creatures` (which depends on randomized sampling). Spawned a background task chip (task_00ec41f7) for this follow-up.
+**Next session should:**
+- (Optional) Close the `randi()` abstraction hole in `_generate_encounter` per the flagged follow-up, updating the terrain-selection sampling test accordingly.
+
+
+## Session 2026-06-25 — Dedicated Model-E up-tribute regression test (test_setting_materialization.gd)
+
+**Task:** Restore STRONG coverage of the Model-E war-vassal up-tribute mechanism after the 2026-06-25 climate change (temperature-dependent Köppen aridity) shifted seed 424242 so it no longer produces a families=0 laddered war-vassal crown. The integration assertion had been weakened from an EXISTENCE check (families=0 crown owes tribute>0) to a non-negative INVARIANT because it was coupled to that specific generated world. Replace the lost coverage with a deterministic unit test that builds the structure by hand.
+**Model used:** Opus 4.8 (1M) for analysis, test design, and verification.
+**Completed:**
+- Added `test_model_e_up_tribute()` to `tests/test_setting_materialization.gd` (registered in `run_all_tests` alongside the other pure unit tests, before the seed-coupled `_generate(424242)` block).
+- The test hand-builds a two-level war-vassal ladder with NO RNG/seed: overlord realm (sovereign) ← conquered realm (war-vassal, crown families=0, population in setting_hexes) ← sub-vassal realm. It drives the materializer's own code: `SettingMaterializer._create_crown_domain` (Pass 1, threading `crown_by_pid` so each war-vassal crown lieges to its overlord crown) then `_set_war_vassal_tribute` (Pass 5).
+- Asserts: the conquered crown (families=0, lieged) owes a positive `tribute_out_owed` == `bankers_round(compute_tribute_base_gp(own+transitive)*100)`; that value is strictly GREATER than the own-families-only value (proves REALM-scaling via transitive aggregation, not own-only/per-title); the sub-vassal crown owes its own realm-scaled tribute; the sovereign overlord owes 0; interior ladder nodes (families=0, same realm) owe 0 (Pass 5 is crown-only). Cross-checks `AbstractTributeResolver.compute_tribute_owed` (Pass 4): families=0 interior → 0, population-bearing leaf → >0.
+**Decisions made:**
+- Drove the actual private materializer methods (`_create_crown_domain`, `_set_war_vassal_tribute`) on a hand-built DB fixture rather than re-running full generation — consistent with the file's existing private-method unit tests (`_coastal_seat_child`, `_weighted_pick`) and faithful to the production tribute path. Expected values are computed via the same `TributeCalculator`/`XPAwardCalculator` functions (the file's established convention, cf. `test_stronghold_formula`); the non-circular regression force comes from the structural assertions (realm-vs-own scaling, sovereign-skip, crown-only, interior-zero).
+- Left the weakened integration invariant in place (it still guards "no families=0 laddered crown owes negative tribute" across whatever structure the seed yields); the new unit test is the crown-specific guard.
+**Interfaces defined or changed:**
+- None. (Test-only; reads `SettingMaterializer._create_crown_domain` / `_set_war_vassal_tribute`, `AbstractTributeResolver.compute_tribute_owed`, `TributeCalculator.compute_tribute_base_gp`, `XPAwardCalculator.bankers_round`.)
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_setting_materialization.gd::test_model_e_up_tribute` — new deterministic regression guard for war-vassal crown up-tribute (Model E). Suite now 188 checks (was ~176), "all tests passed".
+**Known issues:**
+- None new. The 16 pre-existing failing suites (familiars/army/vassal/magic-research UNIQUE+CHECK carry-forwards) are unchanged; SettingMaterializationTests is green.
+**Next session should:**
+- Continue M4 calibration / M5 per the setting→runtime materialization roadmap.
+
+
+## Session 2026-06-25 — Close the encounter-resolver randi() abstraction hole (follow-up)
+
+**Task:** Close the abstraction hole flagged earlier the same day: route `DomainEncounterResolver._generate_encounter`'s creature pick through the `dice` abstraction instead of raw `randi()`, so a mocked/seeded dice fully determines the encounter. Then repair every test that relied on the old randomized sampling.
+**Model used:** Opus 4.8 (1M) throughout.
+**Completed:**
+- `engine/subsystems/domains/domain_encounter_resolver.gd:598` — replaced `String(filtered[randi() % filtered.size()])` with `var pick_idx := _roll_die(filtered.size(), dice) - 1` + `String(filtered[pick_idx])`, matching the sibling `DragonVariantResolver`'s `_roll_die(pool.size(), dice) - 1` idiom. Distribution-identical in production (dice is null there -> `_roll_die` falls back to `randi_range(1, size)`; `- 1` -> uniform 0..size-1, same as `randi() % size`).
+- `tests/test_phase_9c.gd` — added an `IndexWalkDice` inner class (returns fixed d8/d100 but a settable, clamped creature-INDEX roll for any other 1dN) so tests can deterministically pick a specific creature or enumerate the whole filtered pool.
+- Rewrote `test_terrain_aware_selection_filters_to_matching_creatures` (the test the follow-up explicitly flagged): walks the index roll to enumerate the ENTIRE desert+men reachable pool and asserts no disallowed creature is ever reachable + the full eligible pool IS reachable. Preserves the original full-pool coverage without randi() sampling.
+- Repaired two MORE tests broken by the change (NOT flagged by the follow-up but caught by the run-2 diff): `test_hydra_in_ocean_terrain_marks_aquatic_true` and `test_hydra_in_swamp_terrain_marks_aquatic_false`. Both looped 40x hoping randi would land on a hydra; deterministic picking parked them on `dragon_adult`/`cockatrice` (pool index 0) forever. Now they WALK the index (IndexWalkDice) to the first hydra (hydras sit at pool indices 11-18 behind the dragon entries) and assert is_aquatic. Verified the dragon resolver fired on the dragon indices during the walk is hang-safe (`_pick_uniform_without_replacement` shrinks a remaining[] list, `_weighted_pick` is a single bounded scan — no reroll-until-distinct loop).
+- Hardened `test_settled_lair_dungeon_doubles_linger_chance` (was passing only by luck that swamp-animals filtered[0]=bat_giant has pct=35): now walks to a swamp animal with percent_in_lair in [25,50) and asserts the with-dungeon 2x linger flip on that one deterministic creature.
+**Decisions made:**
+- Fixed ALL tests affected by the production change, not just the one the follow-up named. The run-2 baseline diff is the safety net that surfaced the two unflagged hydra breakages.
+**Interfaces defined or changed:**
+- None (internal pick mechanism only; signatures unchanged).
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_phase_9c.gd`: new `IndexWalkDice` helper; rewrote `test_terrain_aware_selection_filters_to_matching_creatures`, `test_hydra_in_ocean_terrain_marks_aquatic_true`, `test_hydra_in_swamp_terrain_marks_aquatic_false`, `test_settled_lair_dungeon_doubles_linger_chance` to be deterministic under the dice abstraction.
+**Tests run:**
+- Canonical `tools/run_tests.ps1 -Runs 2`. Run 2 = 473 suites / 16 failed / 39 total assertion failures = EXACT pre-change baseline. Baseline-diff confirmed ZERO novel failures (the only delta vs the broken intermediate state was the two hydra messages disappearing: 41 -> 39 assertion failures, 40 -> 38 unique messages). All four edited tests pass.
+**Known issues:**
+- None new. (The [NEEDS-OPUS-REVIEW] abstraction hole from the earlier 2026-06-25 entry is now CLOSED.)
+- Convention recorded: docs/coding_conventions.md §38 now states all encounter-resolver randomness (incl. uniform creature selection) routes through the dice abstraction; tests drive the pick deterministically rather than loop-and-hope.
+**Next session should:**
+- Nothing required for this thread; encounter generation is now fully reproducible from a seeded/mocked dice.
+
+
+## Session 2026-06-25 — Volcanic mountains (24-mile range stamp + 6-mile vents)
+
+**Task:** Add volcanic mountains to continuous-geography world-gen. Mark whole mountain RANGES volcanic (not random individual peaks), randomize active vents primarily at the 6-mile level, lone peaks at a higher rate. Volcanic wins over glacial.
+**Model used:** Opus 4.8 (1M) — design + implementation + tests + UI.
+**Completed:**
+- New `engine/subsystems/generation/world/volcanism_painter.gd` (`VolcanismPainter`): the "geological-feature pass" deferred from continuous-geography v1 (the deferral was recorded in `culture_seeder._hex_matches_term`). `paint(ctx)` flood-fills mountain hexes into connected components (= ranges, the same unit RegionPainter clusters); a seeded per-component roll (anchor-hex stream key, `WorldGenRng`) stamps the WHOLE range `biome_subtype = "mountains_volcanic"` at ~20%, lone peaks (size-1 components) at ~50%. Volcanic overrides a prior `mountains_glacial`.
+- Wired into `setting_generator._run_culture_seeding` right after `RegionPainter.run_phase1`, before `_persist_hexes` — so the stamp lands in `hex_cells` for the 6-mile zoom to read.
+- `region_zoom_in.gd` (6-mile materialization): precomputes the volcanic-parent set from the full world map; `_children_from_field` now places ACTIVE VENTS — for a volcanic parent, each mountain child rolls (seeded per child axial) into `mountains_volcanic` at VENT_RATE_RANGE 0.25 / VENT_RATE_LONE 0.70. Lone-vs-range is derived from neighbors (a size-1 mountain component has no adjacent mountain → no volcanic neighbor → lone; a range hex always has ≥1 volcanic neighbor) via static `_is_lone_volcano`; vent decision is static `_volcanic_vent_subtype` (vent wins over glacial). The two new `_children_from_field` params are optional (default no-volcanism) so the existing materialization tests are unaffected.
+- `political_map_view.gd` (world/biome map): added `_BIOME_VOLCANIC` (dark basalt/ember), the `mountains_volcanic` cases in `_biome_color` + `_biome_label` ("Volcanic mountains"), and a "Volcanic" BIOME-mode legend entry. (Brings volcanic to parity with how glacial is surfaced; the in-play 3D renderer differentiates neither subtype.)
+- Updated the now-stale `culture_seeder._hex_matches_term` comment (the volcanic-peak pass exists; the relax-to-any-mountains rule stays because only ~20% of ranges are volcanic).
+**Decisions made:**
+- A "volcanic range" = a connected mountain component (geological unit), computed in VolcanismPainter itself rather than read from RegionPainter's region rows — avoids JSON round-trips + the sub-split "range_part" complication and is geologically correct (region sub-splits are a naming-granularity concern, not geology).
+- No migration: `mountains_volcanic` was already a valid `SUBTYPE_NAMES` entry (just never produced) and is already wired into SettlementEconomyInputs; range-vs-lone is derivable at zoom time, so nothing extra is persisted.
+- 24-mile = "this is a volcanic range" (whole range stamped); 6-mile = the actual scattered active vents. The volcanism overlay is intentionally NOT a field-aggregation (it comes from the hex-level range clustering), so it has its own logic at each scale — consistent with the user's contract.
+**Interfaces defined or changed:**
+- `VolcanismPainter.paint(ctx)` (mutates ctx.hex_grid, sets ctx["volcanic_hex_count"]); constants VOLCANIC_RANGE_CHANCE 0.20, VOLCANIC_LONE_CHANCE 0.50, RANGE_MIN 2.
+- `RegionZoomIn._children_from_field(field, pq, pr, parent, campaign_seed=0, volcanic_parents={})`; static `_is_lone_volcano(pq, pr, volcanic_parents)`, `_volcanic_vent_subtype(base_sub, vent_rate, campaign_seed, child)`; constants SUBTYPE_VOLCANIC, VENT_RATE_RANGE 0.25, VENT_RATE_LONE 0.70.
+**Database changes:** None.
+**Tests added/updated:**
+- New `tests/test_volcanism.gd` (registered as suite, ext_resource 477): component split (range vs lone peak), stamp determinism, stamp-only-on-mountains, whole-range-homogeneity, some-volcanic-across-6-seeds, glacial-override at 24mi; 6-mile `_is_lone_volcano` neighbor test, vent-rate bounds (1.0 always / 0.0 never), vent determinism + glacial override.
+**Known issues:**
+- Volcanic ranges are not yet NAMED distinctly (no "Mount X" fire-naming) — region naming treats them as ordinary ranges. Follow-on.
+- In-play 3D renderer doesn't differentiate volcanic (nor glacial) mountains — only the world/biome map does. Follow-on if play-surface differentiation is wanted.
+**Next session should:**
+- (Optional) volcanic-range naming hook in Stage 6; (optional) play-surface volcanic material; consider a GVP-catalog arc-realism pass if real volcano data tooling lands.
+
+
+## Session 2026-06-29 — Code-review fixes: river-render refactor + climate fidelity + test corrections
+
+**Task:** Run `/code-review ultra` on the `feature/continuous-geography` branch, then fix every finding with a clear solution and confirm the design calls with Jedidiah.
+**Model used:** Opus 4.8 (review, planning, implementation, in-engine verification via godot-ai MCP, adversarial-verification workflow).
+**Completed:**
+- Test corrections (3): `test_session_status_bar.gd` widget-zone assertion 11 -> 12 (it omitted the new `_region_overlay_btn`; `_build_widget_zone` adds exactly 12 children); `test_phase_9c.gd` `test_settled_lair_lingering_creates_settled_lair_kind` rewritten from `FakeDice` + 50-iteration "variety" loop (invalidated now that `_generate_encounter` routes the creature pick through `_roll_die(filtered.size(), dice)`, pinning the draw) to `IndexWalkDice` deterministic pool enumeration; `cliff_detector.gd` cliff `height_ft` now uses `XPAwardCalculator.bankers_round` not `roundi` (CLAUDE.md banker's rule; the height feeds ClimbResolver mechanics).
+- #10 Koppen Dfb/Dfd (Jedidiah: emit all four): `ClimateGenerator._classify_koppen` D-group now emits Dfa/Dfb/Dfc/Dfd via new consts `CONTINENTAL_WARM_C=4.0` / `CONTINENTAL_COLD_C=-2.0` (`CONTINENTAL_MILD_C=2.0` unchanged = woods/taiga edge). The previously-dead Dfb/Dfd biome arms are now live; biome output is provably unchanged (Dfa,Dfb -> woods; Dfc,Dfd -> taiga; split still at 2.0).
+- #8 Orographic rain-shadow (Jedidiah: fix it): `GeoField` gained `pre_incision_surface`; `GeoFieldGenerator.generate` snapshots `surface.duplicate()` after slope/prominence and before `_incise_channels`; `GeoClimateGenerator._precipitation` reads the geomorphic (pre-incision) surface for windward uplift (size-guarded fallback to `surface`). River-carved windward cells no longer read as dry leeward dips. surface_hash (surface+water only) is unaffected, so layer-1 determinism is preserved.
+- #5/#6/#7 River render (Jedidiah: all three): `hex_map_renderer_3d.gd` `_build_rivers` rewritten -- directed graph from `HexRiverEdgeData.flow_clockwise` (downstream = mesh corner (e+5)%6 = kb when clockwise) -> maximal-chain decomposition (breaks at sources/sinks/confluences/distributaries) -> one continuous welded Catmull-Rom ribbon per chain, per-sample width, data-driven downstream flow. Replaces per-edge ribbons, the corner-height flow heuristic, and `_other_nbr_pos`. Edge-indexed graph (out_edges as Array of indices) so out-degree>1 branches into separate chains instead of silently dropping all-but-one (adversarial-review hardening).
+**Decisions made:**
+- Koppen: split WITHOUT moving the woods/taiga boundary, so biomes and test baselines don't churn (none did). Dfb currently shares Dfa's biome and Dfd shares Dfc's -- flagged for Jedidiah if distinct biomes per sub-code are wanted later.
+- River flow direction taken from authoritative `flow_clockwise` data, not rendered corner heights (#7). Mapping independently confirmed via corner-index algebra (workflow reviewer, all 6 edges) and matches `geo_river_mapper._emit_edge`; NOT inverted.
+- Left the active river-tuning aesthetics alone beyond the three approved items.
+**Interfaces defined or changed:**
+- `GeoField.pre_incision_surface: PackedFloat32Array` (new; populated by `GeoFieldGenerator.generate`, read by `GeoClimateGenerator._precipitation`; empty -> fallback to `surface`).
+- `ClimateGenerator._classify_koppen` now emits Dfb/Dfd; new consts `CONTINENTAL_WARM_C`, `CONTINENTAL_COLD_C`.
+- `hex_map_renderer_3d.gd`: `_emit_river_chain(st, nodes, edges, out_edges, in_deg, out_deg, visited, start_ei)` and `_emit_river_ribbon(st, pts, widths, flows)` new signatures; `_other_nbr_pos` removed.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `test_session_status_bar.gd` (widget count 12), `test_phase_9c.gd` (IndexWalkDice lingering rewrite). Full headless suite: 474 passed / 17 failed = unchanged baseline (the 17 are pre-existing failures in unrelated subsystems: combat ZoC/LOS/charge, proficiency popups, party/familiar/vassal UNIQUE, clanhold style, mass-combat waves, magic research, item cascade). No new failures.
+**Known issues:**
+- River out-degree>1 (distributary) now branches correctly, but no procedural data produces it (steepest-descent -> single downstream) and the hand-authored `data/test_hex_map.json` Ashford River is not corner-connected, so the welded-chain path is exercised only by `geo_river_mapper` output (verified in-engine on campaign "Chadu"), not by a headless test. A corner-connected regression river would close that gap.
+- Dungeon SubViewport wrap (`dungeon_explore_state.gd`, in the worktree, not mine): `handle_input_locally=true` vs the wilderness frame's `false` -- needs an in-engine dungeon mouse-picking check; not part of the approved fix set, so flagged not fixed.
+**Next session should:**
+- If desired, give Dfb/Dfd distinct biomes/subtypes (currently grouped with Dfa/Dfc).
+- Verify dungeon mouse-picking in-engine after the SubViewport wrap.
+- Consider a corner-connected test river for welded-chain regression coverage.

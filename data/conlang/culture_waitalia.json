@@ -1,0 +1,363 @@
+{
+  "kit_id": "waitalia",
+  "tier": "culture",
+  "inherits": [
+    "classical",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_42",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "classical (latinate) lean + east_asian (japonic) substrate (cross-family fusion, Latinate-leaning)",
+  "synthesis_sources": [
+    "BASE_06",
+    "BASE_08"
+  ],
+  "homeland": "Waitalia (the Eagle-Realm of the Rising Sun; Wa- the island-realm + Italia)",
+  "blend": {
+    "lean_parent": "classical (latinate: the Roman civic-and-legal spine - the via and iter roads, the castra forts and the urbs cities, the legio and the forum, the gens-line and the lex law-stele, the -us/-um/-a endings and penultimate stress, the imperator-style imperial title, the engineering and law register of a road-and-eagle state)",
+    "substrate_parent": "east_asian (japonic: the open CV-mora island and shrine words - the shima-isles and the jinja-shrines, the kami of mountain and sea, the rice-and-silk-and-jade staple words, the torii-grove and the castle-town, the daimyo island-house lord)",
+    "lean": "Latinate-heavy - the legion and the samurai, the forum and the shrine, the eagle over the rising sun: a Roman-Japonic realm grown into one tongue and one rite, where the Roman civic-legal-rule register is the backbone and the Japonic island/shrine/material/staple words are the substrate. Not a ruling elite over a populace - one merged people, one fused language (per gdd-hybrid-conlang-fusion.md): the forum keeps the law and the shrine keeps the land."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_06 (Roman/Agrippan, Latinate) x BASE_08 (Japonic/Yamataian). FUSION-FIRST (gdd-hybrid-conlang-fusion.md): a SINGLE fused tongue, one word per concept, derived by principled sound-change from both parents - NOT a slash-pair dual-register gloss. CIV/CLAN DECIDED by inheritance: Roman (Classical) base = Civilized, Japonic base = Clanhold, and any Civ parent -> Civ, so Waitalia is Civilized (feudal). Concept: a Roman-Japonic realm - the legion and the samurai, the forum and the shrine, the eagle over the rising sun (a Roman west wedded to an island-arc of daimyo houses and kami-shrines). Lean = Latinate (the rule/kin/law/land/civic register, the via/castra/urbs/forum civic spine, the -us/-um/-a endings, penultimate stress, the imperial Imperator title, SOV recut from the substrate); substrate = Japonic (island, shrine, mountain, sea, rice, silk, jade - the land, material and staple words). Common-word lexicon and rank titles use the real Latin register (allowed, catalog 5.3), with the Japonic substrate words fused into Latin phonology; DEITY names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (the agrippan column: Tulrius, Orlandus, Gaiandus, Numeno, Realta, Aeternus), Japonic kami-morphs SECONDARY (the yamataian / family_east_asian.json japonic column: Terashi-no-kami, Hagane-no-kami, Iwane-no-kami, recut to Latin shape), never real Roman gods or Shinto kami. All three alignments (per 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic). Ruler/domain DISPLAY titles are ENGLISH except the empire which uses the approved commonly-known term 'Imperator' (the Roman imperial style) and the duchy which uses 'Daimyo' (the great island-house lord, the apt Japonic-substrate co-rank); conlang titles in ruler_native/domain_native (Latin) for NPC dialogue. CSV phonetic profile 'Mora-timed rhythm with balanced rhythm'; grammar 'SOV, Case-inflected agglutinative particles'.",
+  "phonology": {
+    "palette": "Classical (Latinate) lean - a e i o u; p t c(=k) b d g f s v l r m n; the endings -us/-a/-um/-ius/-or; penultimate stress; the moderate onset clusters st-/tr-/pr-/cl-/sp- and the geminates ll/ss/tt - taking up an East-Asian (Japonic) substrate: open CV moras, the five vowels a i u e o, the island/shrine/mountain/sea/rice/silk/jade word-stock, rendaku voicing, the -no linking particle. Per the CSV: a mora-timed rhythm carried under a balanced Latin rhythm (the Japonic CV evenness audible beneath the Latin penultimate stress and the -us/-um closes); grammar is SOV, case-inflected with agglutinative particles (the Japonic agglutinative SOV substrate recut onto the Latin case-endings, the -no relational particle latinized to a linking -i-/-o-). Theophoric on the Latinate canon-morphs (Tulrius-, Orlandus-) with the Japonic kami-morphs as the shrine register (Teraso-, Hagano-).",
+    "phonotactics": "CV / CVC (Latin) over the Japonic CV moras; Japonic CV-mora roots shed their final open vowel into a Latin -us/-um/-a close or take a Latin nominal ending; clusters st-/tr-/pr-/cl-/sp- (Latin) admitted, geminates ll/ss/tt allowed; penultimate stress (the Latin pattern overrides Japonic pitch-accent); Castra-/Via-/-um construct toponyms over -sima/-yama island-and-mountain elements; the -no particle latinized to a linking vowel.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "classical (latinate) phonology dominant",
+      "sound_changes": [
+        "Japonic open CV-moras adapt to Latin shape: the final open vowel sheds or recuts into a Latin -us/-um/-a/-or close, or the stem hardens consonant-final before taking a Latin nominal ending (yama>iamus, shima>sima, mori>morum, umi>umus, kawa>cavus, jinja>iancia)",
+        "Japonic plain consonants map onto the Latin inventory: k>c(=k), s retained, t retained, voiced g/b/d retained, ch>c, sh>s before the Latin vowels; rendaku voicing simplifies to the Latin stop (-gawa root surfaces as -cavus)",
+        "Japonic pitch-accent is overridden by Latin penultimate stress; word order is SOV recut with case-inflected agglutinative particles; the Japonic -no linking particle is latinized to a linking -i-/-o- (X-no-Y > X-i-Y)",
+        "the Latin a/e/i/o/u with penultimate stress dominate; Japonic e/o admitted in stressed substrate roots; retain the Latin -us/-um/-ius/-or endings and the st-/tr-/pr- clusters, and retain the Japonic open-vowel color of substrate stems; Latin geminates ll/ss/tt permitted",
+        "very short Japonic roots take a Latin -us/-um/-a ending to reach a CV(C)-us shape (ko>colus, no>novum/campus-substrate, do>dorum, cha>chaia)"
+      ],
+      "source_tilt": "island/shrine/mountain/sea/coast/material/staple words from Japonic roots (the substrate land and its making - shima, yama, umi, jinja, kome, kinu, hisui, uma, cha), then filtered to Latin phonology; rule/kin-line/law/land/civic/quality/abstract/war words from Latin roots (the lean register - via, castra, urbs, forum, lex, gens, magnus, ferrum, legio); every chosen root then run through the one Latin-shaped sound-law (penultimate stress, -us/-um/-a closes) so the split is invisible at the surface - it all sounds like one Latin-shaped tongue",
+      "portmanteaus": [
+        "isle insula+shima>insima",
+        "shrine-town jinja+templum>iantemplum",
+        "citadel shiro+arx>sirarx",
+        "castle-fort toride+castra>toricastra",
+        "son filius+musuko>filimuscus",
+        "daughter filia+musume>filimusa",
+        "sacred sacer+imi>sacrimus",
+        "eagle-realm (capital element) aquila+wa>aquilwa"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Japonic island/shrine/material/staple roots + Latin rule/kin/law/land/civic roots, all run through one Latin-shaped sound-law (CV-moras recut into -us/-um/-a closes, penultimate stress, st-/tr-/pr- clusters, latinized -no linking vowel); portmanteaus mark the blended institutions and bloodline. One word per concept, NO slashes.",
+    "feature_words": {
+      "river": "cavus",
+      "stream": "nagarus",
+      "lake": "lacus",
+      "sea": "umus",
+      "bay": "urus",
+      "cape": "misacum",
+      "isle": "insima",
+      "mountain": "iamus",
+      "hill": "collis",
+      "ridge": "onus",
+      "forest": "morum",
+      "wood": "aiastum",
+      "plain": "campus",
+      "marsh": "numus",
+      "ford": "vatarum",
+      "pass": "togus",
+      "vale": "vallis",
+      "coast": "amus",
+      "neck": "cubus",
+      "narrows": "fauces",
+      "waste": "aranum",
+      "road": "via",
+      "way": "iter",
+      "track": "comitum"
+    },
+    "settlement_words": {
+      "hamlet": "vicellus",
+      "village": "murum",
+      "town": "macium",
+      "city": "urbs",
+      "fort": "toricastra",
+      "port": "minatus",
+      "market": "forum",
+      "temple_town": "iantemplum",
+      "citadel": "sirarx"
+    },
+    "kinship": {
+      "son": "filimuscus",
+      "daughter": "filimusa",
+      "house": "gens",
+      "kin": "ujus",
+      "ancestor": "senzavus"
+    },
+    "adjectives": {
+      "great": "magnus",
+      "little": "parvus",
+      "old": "vetus",
+      "new": "aranovus",
+      "black": "atrocrus",
+      "white": "albus",
+      "red": "acarufus",
+      "golden": "aureus",
+      "iron": "ferrus",
+      "high": "altus",
+      "far": "ultus",
+      "sacred": "sacrimus",
+      "fair": "pulchrus"
+    },
+    "resources": {
+      "salt": "salis",
+      "iron": "ferrum",
+      "bronze": "acagnus",
+      "silver": "argentum",
+      "gold": "aurum",
+      "jade": "hisuum",
+      "silk": "kinum",
+      "rice": "comeum",
+      "tea": "chaia",
+      "horse": "umarus"
+    },
+    "directional": {
+      "upper": "superus",
+      "lower": "sitanus",
+      "north": "borus",
+      "south": "auster",
+      "east": "higastus",
+      "west": "nisterus",
+      "inner": "intra",
+      "outer": "extra"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-um (place/neuter; Latin)",
+      "-ia (land-of; Latin)",
+      "Castra- (fort; Latin construct)",
+      "Via- (road-of; Latin construct)",
+      "-sima (isle; from Japonic -shima, recut to Latin -sima)",
+      "-iamus (mountain; from Japonic -yama, latinized)"
+    ],
+    "patronymic_form": "the Roman-descended civic stock keep an inherited gens (clan) name as a binomial/trinomial element (X VALERIUS) woven onto the fused frame; the Japonic-substrate folk keep a reduced -i- house-link (latinized from -no-) before the given name; nobility carry the gens and an earned cognomen. The throne fuses both - an Imperator who heads a gens and also an island gens-i- house with a -i- shrine-lineage. Order given-first.",
+    "gendered_endings": {
+      "male": "-us / -ius / -or (Latin); -ro / -suke latinized to -rus / -secus (Japonic-substrate)",
+      "female": "-a / -ia (Latin); -ko / -hime recut to -ca / -imia (Japonic-substrate)"
+    },
+    "diminutive_form": "-ulus / -illa (Latin) / -marus (Japonic-substrate -maru, child/blade/ship, latinized)",
+    "compounding_rule": "Latin construct-chains (Castra-[name], Via-[name], [adjective|resource](stem) + feature-word eliding before a vowel) layered over fused feature-compounds (quality + island/shrine element): the capital Waitalia (the eagle-realm, aquila + wa + -ia), Castra-Ferra (the iron-fort), Atriamus (black-mountain isle, ater + iamus), Insima-Magna (the great isle). Quality + feature in the Latin manner: magnus (great), ater (black), sacer (sacred) lead the compound; rendaku voicing simplifies to the Latin stop."
+  },
+  "title_ladder": {
+    "government": "feudal (a fused eagle-and-shrine realm: the Imperator and his patrician kin at the crown over the island-provinces, the Comes-counts over the urbs civic-provinces, the great island-houses - the daimyo of the shrine-isles - sworn beneath; the pontifex-priesthood of the forum and the kannushi-shrine-keepers serve the one rite together, the legion and the samurai under one eagle)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Castellanus",
+        "domain_native": "Castellania"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Limitanus",
+        "domain_native": "Limitania"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Comes",
+        "domain_native": "Comitatus"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Dux",
+        "domain_native": "Ducatus"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Princeps",
+        "domain_native": "Principatus"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Rex",
+        "domain_native": "Regnum"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Imperator",
+        "domain_native": "Imperium"
+      }
+    },
+    "_tiers_note": "Latin native ladder, ascending, beneath an English display ladder (Baron/Marquis/Count/[Daimyo]/Prince/King/[Imperator]). The empire-tier DISPLAY ruler is the approved commonly-known foreign term 'Imperator' (the Roman imperial style, its native form remaining Imperator) and the duchy-tier DISPLAY ruler is 'Daimyo' (the great island-house lord, the Japonic-substrate co-rank, its native Latin form remaining Dux); all other display tiers are English. Native: Castellanus (castle-lord) barony; Limitanus (frontier-warden, from the Roman limes/limitanei) march; Comes (companion-count) county; Dux (war-leader, the duke - styled the Daimyo) duchy over a Ducatus; Princeps (first-citizen prince) principality; Rex (king) kingdom over a Regnum; Imperator (commander, the imperial style) empire over the Imperium. The Japonic substrate keeps its shugo-governor and kannushi-priest beneath the Roman crown; the pontifex of the forum and the kannushi of the torii stand together. Rank native-forms use the real Latin register (allowed); 'Imperator' and 'Daimyo' are the approved foreign display terms.",
+    "heir": "Caesar (heir-designate to the Imperator; the crown prince)",
+    "honorifics": {
+      "lord": "Dominus",
+      "lady": "Domina",
+      "champion": "Eques (Roman knight) / Bushus (the warrior, from Japonic bushi, latinized)",
+      "your_grace": "Eminentia",
+      "your_majesty": "Maiestas",
+      "elder": "Senior (the elder)"
+    },
+    "vassalage": {
+      "liege": "Patronus",
+      "vassal": "Cliens (client) / Keraius (the retainer, from Japonic kerai, latinized)",
+      "fealty": "Fides (faith) / Chugus (loyal fealty, from Japonic chugi, latinized)",
+      "tribute": "Tributum / Nengus (the isle-render, from Japonic nengu, latinized)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the empire which uses the approved commonly-known term 'Imperator' (the Roman imperial style) and the duchy which uses 'Daimyo' (the great island-house lord). The *_native conlang (Latin) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Imperator": "Imperatrix",
+      "Rex": "Regina",
+      "Princeps": "Principissa",
+      "Dux": "Ducissa",
+      "Comes": "Comitissa",
+      "Limitanus": "Limitana",
+      "Castellanus": "Castellana"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Imperator": "Imperatrix"
+    },
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Imperator (empire)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Roman-descended civic stock carry a praenomen (personal) + nomen (gens/clan, inherited) + cognomen (earned, optional); the Japonic-substrate folk add a reduced -i- shrine-lineage (latinized from -no-) before the given name; order given-first (both parents agree - the Roman praenomen-first and the reshaped Japonic clan-link resolve to given-first on the fused frame).",
+    "surname_source": [
+      "inherited gens (nomen, Roman clan)",
+      "deed/office cognomen",
+      "Japonic-substrate shrine-lineage (-i-, from -no-)",
+      "fief/locational byname"
+    ],
+    "dual_register": "the patrician civic register carries the full tripartite gens (praenomen + nomen + cognomen) on the morphed canon-stems; the island-shrine substrate carries fused given names on the kami-morphs (Teraso-, Hagano-) with -rus/-ca/-marus endings recut to the lean Latin phonology; the throne fuses both - a gens-bearing Imperator who also heads an island house.",
+    "theophoric": "Roman devotional praenomina lead, derived from the Latinate canon-morphs: Tulrian, Orlandus, Gaiandus, Numenius, Realtus (m), Realta, Numia (f); the shrine register builds on the Japonic kami-morphs: Teraso- (from Terashi), Hagano- (from Hagane), Iwano- (from Iwane), e.g. Terasomarus, Mery-Meguma latinized to Megumarus; names honoring Teraso-the-Shining.",
+    "diminutive": "-ulus / -illa (Latin) / -marus (Japonic-substrate)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (the agrippan column, the canonical pantheon keys: Tulrius, Orlandus, Gaiandus, Numeno, Realta, Aeternus), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, recut to Latin shape: Teraso, Hagano, Iwano, Numeno-no-kami, Megumarus, Aeternus-no-kami), never real Roman gods or Shinto kami. The fused rite identifies the temple-power and the shrine-kami as one face - the eagle and the rising sun as one: the pontifex of the forum-temple and the kannushi of the torii keep the same powers. All three alignments; the law-stele and the civic cult fused with the household shrine and the ancestral kami, the legion's oath and the samurai's way under one heaven.",
+    "the_one": "Aeternus (the One / True God; Jp shrine-name Takamus-no-kami) - the distant Ancient One, the High-Heaven One above the myriad powers, honored in liturgy not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tulrius (Jp Teraso-no-kami) - the sun and right-rule, the rayed sun-disc and the rising sun",
+      "Orlandus": "Orlandus (Jp Hagano-no-kami) - iron, oath, war, the blade and the eagle",
+      "Gaiandus": "Gaiandus (Jp Iwano-no-kami) - the enduring earth and mountain",
+      "Numeno": "Numeno (Jp Amatkazus-no-kami) - air, sky and scribe-wisdom",
+      "Realta": "Realta (Jp Megumarus-hime) - the mother, mercy and healing"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just sun, Orlandus of the sworn oath, Realta the merciful, Numeno of the law - at the forum-temple and the torii-grove alike, and names the Chaotic powers the brood of the great serpent Lusanto or the aramus (the wild spirits), warded; the law-stele and the civic rite, the legion's oath and the samurai's way, bind together",
+      "Neutral": "the deified dead (the divi of the gens inscribed on the law-stele and the senzavi enshrined at the household iantemplum) and the civic-and-isle spirits of the forum and the shrine-isles; the great powers invoked at temple and torii situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-flame and the devouring serpent, the storm-kami and the mountain-oni - and names the Lawful powers, and Aeternus, as the tyrant-powers to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the brood of the great serpent Lusanto (Latin) or the aramus (Japonic wild spirits), keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Jp Takebus the War-Flame); Vacidus -> Vacidus the Unmaker (Jp Utsurus the Devouring Void); Lusanto -> Lusanto the Coin-Serpent (Jp Koganus-Orochus the gold serpent).",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Micus (shrine-attendant, from Japonic miko)",
+      "3": "Sacerdos (priest) / Kannusus (shrine-priest, from Japonic kannushi)",
+      "5": "Flamen (senior priest) / Negus (from Japonic negi)",
+      "7": "Pontifex (high priest) / Gujus (chief priest, from Japonic guji)",
+      "9": "Pontifex Maximus / Saisus (high priest of the realm, from Japonic saishu)"
+    },
+    "religious_orders_pattern": "the Collegium (college/order) of the forum-temple or the Iantemplum (shrine-isle temple) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Iantemplum of Teraso', within its sacred court and torii-grove.",
+    "saints_pattern": "the deified founders and heroes (Divus/Diva [name], the justified dead) venerated at the civic temples, and the great ancestors enshrined as kami at the isle-iantemplum (the honored dead); 'Divus [name]' and 'the kami [name]'.",
+    "holy_symbol_motifs": {
+      "Tulrius": "a rayed sun-disc above a balance, mirrored in a rising-sun mirror",
+      "Orlandus": "an iron oath-ring and a bare blade crossed before a torii and the eagle-standard",
+      "Gaiandus": "the tilled field and the island-mountain beneath the law-stele"
+    }
+  },
+  "banks_patterns": {
+    "ships": "eagle-galleys and isle war-keels: 'Aquila of Waitalia', 'the Wave-Cutter', 'Dawn of the Eagle', 'Teraso-marus'",
+    "military_units": "the Legio [ordinal] [cognomen] and the isle-house sonus (battle-formations): 'Legio Prima Ferrata (the Iron Legion)', 'the Crimson Sonus', 'the Eagle-Standard'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Floating Eagle', 'The Eagle and Torii'",
+    "dungeons_ruins": "fallen castra and isle-shiro, buried civic temples and abandoned iantemplum: 'the Catacombs of Divus [name]', 'the Sunken Castra of [name]', 'the ruined Sirarx', 'the haunted Iantemplum of [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Marcus Valerius",
+      "Lucius Aurelius",
+      "Gaius Tullius",
+      "Titus Caelius",
+      "Tulrian Cassian",
+      "Orlandus Severus",
+      "Gaiandus Fabius",
+      "Numenius Octavian",
+      "Teraso-marus",
+      "Hagano-secus",
+      "Iwano-rus",
+      "Terasomarus Valerius",
+      "Hagano-em-bushus",
+      "Takeshus Caelius",
+      "Katsurus Aurelius",
+      "Teraso-Tullius"
+    ],
+    "personal_f": [
+      "Aurelia Valeria",
+      "Cornelia Tullia",
+      "Realta Caelia",
+      "Numia Fabia",
+      "Livia Octavia",
+      "Severina Cassia",
+      "Megumarus-imia",
+      "Hanaca",
+      "Chiyoca",
+      "Sumireca Valeria",
+      "Meguma-Tullia",
+      "Teraso-imia",
+      "Kiyomica",
+      "Sayurica Aurelia",
+      "Realta-imia",
+      "Aoica Caelia"
+    ],
+    "clan_houses": [
+      "the Gens Valeria (the chief civic house)",
+      "the Gens Aurelia",
+      "the Gens Tullia",
+      "the Gens Caelia",
+      "the Gens Cassia",
+      "the Gens Fabia",
+      "the Teraso-i house (the chief shrine-isle house)",
+      "the Hagano-i house",
+      "the Iwano-i house",
+      "the Atriamus house (of the black-mountain isle)",
+      "the Acasima house (of the red isle)",
+      "the Megumarus-i house"
+    ],
+    "epithets_cognomina": [
+      "Ferrus the Iron",
+      "Magnus the Great",
+      "Aquila the Eagle",
+      "the Sun-blessed",
+      "of the Sun-Isles",
+      "the Far-marching",
+      "the Wave-rider",
+      "Justus the Just"
+    ],
+    "flagship_settlements": [
+      "Waitalia (the chief seat - the eagle-realm of the rising sun)",
+      "Castra-Aquila (the great eagle-fort)",
+      "Urbs Magna (the great city)",
+      "Portus Teraso (Teraso's-port)",
+      "Acasirarx (the red citadel)",
+      "Insima-Sacra (the holy isle)"
+    ]
+  }
+}

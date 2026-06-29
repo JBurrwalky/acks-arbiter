@@ -1,0 +1,356 @@
+{
+  "kit_id": "kemetric",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "near_eastern"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_04",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (frankish) backbone + near_eastern (egyptian) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_05"
+  ],
+  "homeland": "Niltreich",
+  "blend": {
+    "backbone": "germanic (frankish / Old High German register: kuning/herizogo, dithematic -o/-i names, High German shift th>d / d>t / k>ch-hh, retained w, comes-and-herizogo crusader register)",
+    "overlay": "near_eastern (egyptian: the itru river-land, the per-netjer temple-houses, the niut river-cities, construct toponyms Per-/Niut-/Ta-, breathy vowels and dj/tj/kh, aspect-based strong verbs over the substrate)",
+    "lean": "Germanic-heavy - a Frankish crusader-dynasty enthroned on the Nile: a war-host of comites and herizogen seized the river-cities and set themselves up as feudal kings over the temple-priesthood and the scribal populace; the knights rule, the per-temples and the river-kingdom endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_05 (Egyptian / abydosian river-kingdom). CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Egyptian base = Civilized, and any Civ parent -> Civ, so Kemetric is Civilized (feudal). Concept: a Frankish crusader-dynasty enthroned on the Nile - Germanic knights and a feudal court (the comites and herizogen of a Damietta-on-the-river crusader state) ruling over the existing temple-priesthood, scribes, and river-cities of the Egyptian kingdom. Backbone = Germanic (FRANKISH/Old High German: the ruling war-aristocracy, the kuning/herizogo/comes register, dithematic -o/-i names, the High German consonant shift th>d / d>t / k>ch-hh); overlay/substrate = Egyptian (the itru river, the per-netjer temples, the niut river-cities, the scribal and priestly populace, the Per-/Niut-/Ta- construct toponyms). Common-word lexicon and rank titles use the real Frankish (Old High German) and Egyptian registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (FRANKISH reflexes primary - the family_germanic theonym_ancestors frankish column; Egyptian morphs secondary - the abydosian deity-morphs), never real Germanic/Egyptian gods. PROVISIONAL: alignment (Lawful/Neutral) is a per-hybrid design choice pending the alignment pass - the Frankish crusader-oath order (the sworn knighthood of a Lawful high-king) meets the Egyptian right-order / maa-kheru funerary tradition; the older heathen and funerary layer reads Neutral. Register choice: the Germanic ruling layer is the FRANKISH special case (not the default Gothic), rationale = the Frankish/Latin crusader states on the Nile (Damietta); flag for Jedidiah if a uniform Germanic register is wanted instead. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Frankish / Old High German) backbone - heavy root-initial stress, sharp stops, the High German consonant shift (th>d, d>t, k>ch/hh; e.g. *Thulraz > Dulro), retained w, dithematic compounding, -o/-i endings - meeting an Egyptian overlay: dj/tj/kh, l tends to r, v tends to w, the long -aa and feminine -et endings, breathy reconstructed vowels (a e i o u). Per the CSV: breathy vowels cutting through consonant clusters; grammar is SVO with aspect-based strong verbs (the Egyptian substrate aspect-marking carried on Frankish strong/weak stems). Theophoric on the Frankish reflexes (Dulro-, Erlant-) with Egyptian construct variants (Tjuraa-, Djeroraa-).",
+    "phonotactics": "CVC; Frankish clusters (st, hh, br, chn) shifted by the High German pattern, meeting Egyptian dj/tj/kh onsets and long -aa codas; heavy initial stress with a breathy Egyptian vowel-quality cutting the clusters; dithematic Frankish names over Per-/Niut-/Ta- construct toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (frankish / Old High German) phonology dominant",
+      "sound_changes": [
+        "Egyptian dj/tj/kh and breathy onsets -> Frankish inventory: dj>d, tj>z/t, kh>ch-hh, glottal/aleph>0; Egyptian l already tends to r",
+        "the High German consonant shift applied to every root from either parent: th>d, d>t, k>ch/hh (e.g. itru>idru, khent>chent, djew>dew)",
+        "Egyptian -aa/-et endings adapted or dropped: long -aa>-o/-a or 0, feminine -et>-et/0; roots take a Frankish -o/-i where too short",
+        "Frankish root-initial stress on all words; Frankish clusters (st, br, chn, hh) permitted; breathy Egyptian vowel-quality retained between clusters",
+        "retain Frankish w, hh and the -o/-i endings, and an audible Egyptian per-/niut- and the breathy a-e-o vowels; v>w throughout"
+      ],
+      "source_tilt": "land/river/desert/material/staple words from Egyptian roots (the river-folk and scribes work the black land - itru, deshret, nebu, it); kin-line/quality/abstract/rule/war words from Frankish (Old High German) roots (the crusader ruling register - michil, swarz, isarn, heri); every root then filtered to one Frankish-shaped phonology",
+      "portmanteaus": [
+        "son sa+sunu>sasun", "daughter sat+tohti>satoht", "house per+hus>perhus", "kin chunni+abet>chunabt", "city niut+burg>niudburg", "fort menenu+burg>menburg", "temple per-netjer+alah>pernalah", "citadel sebakh+hochburg>sebachburg", "sacred djeser+heilag>desilag"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Egyptian land/river/material roots + Frankish (Old High German) rule/kin/war-roots, all run through one Frankish-shaped sound-law with the High German consonant shift; portmanteaus mark the blended institutions and bloodline. One word per concept, no slashes.",
+    "feature_words": {
+      "river": "idru",
+      "stream": "mer",
+      "lake": "she",
+      "sea": "wadwer",
+      "bay": "chent",
+      "cape": "tadeser",
+      "isle": "iuwerd",
+      "mountain": "dewberg",
+      "hill": "qabuhil",
+      "ridge": "achet",
+      "forest": "mezenwald",
+      "desert": "deschret",
+      "plain": "sechfeld",
+      "marsh": "idhu",
+      "ford": "datfurt",
+      "pass": "ro",
+      "vale": "tal",
+      "march": "marcha",
+      "coast": "wedeb",
+      "neck": "nehbhals",
+      "narrows": "seger",
+      "waste": "deschrot",
+      "road": "watwech",
+      "way": "mitwec",
+      "track": "schemet"
+    },
+    "settlement_words": {
+      "hamlet": "whido",
+      "village": "niutdorf",
+      "town": "niudburg",
+      "city": "niudat",
+      "fort": "menburg",
+      "port": "meryt",
+      "market": "chutmerchat",
+      "temple_town": "pernalah",
+      "citadel": "sebachburg"
+    },
+    "kinship": {
+      "son": "sasun",
+      "daughter": "satoht",
+      "house": "perhus",
+      "kin": "chunabt",
+      "ancestor": "tepialtfater"
+    },
+    "adjectives": {
+      "great": "michil",
+      "little": "luzzil",
+      "old": "alt",
+      "new": "niuwi",
+      "black": "swarz",
+      "white": "wiz",
+      "red": "rot",
+      "golden": "guldin",
+      "iron": "isarn",
+      "high": "hoh",
+      "far": "ferro",
+      "sacred": "desilag",
+      "fair": "fagar"
+    },
+    "resources": {
+      "salt": "hemat",
+      "iron": "isarn",
+      "bronze": "hemti",
+      "silver": "hedsilabar",
+      "gold": "nebu",
+      "incense": "senezer",
+      "grain": "itchorn",
+      "lapis": "chesbed",
+      "horse": "remuhros",
+      "mead": "medu"
+    },
+    "directional": {
+      "upper": "chentufir",
+      "lower": "pehnidari",
+      "north": "mehnord",
+      "south": "resund",
+      "east": "ostar",
+      "west": "westar",
+      "inner": "imnar",
+      "outer": "ruzar"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Per- (house/temple of; Egyptian construct)",
+      "Niut- (city of; Egyptian)",
+      "Ta- (land of; Egyptian)",
+      "Pa- (the; Egyptian)",
+      "-heim (Frankish home)",
+      "-burg (Frankish fort)"
+    ],
+    "patronymic_form": "the Frankish ruling house keeps a dithematic lineage-name and -ingo/-ingun; the Egyptian populace keep the 'sa-' (son of) filiation and theophoric constructs; the throne fuses both - a kuning who also carries a Per- house-name.",
+    "gendered_endings": {
+      "male": "-o / -i / -rich / -mund (Frankish ruling); (consonant) / -mose / -hotep (Egyptian)",
+      "female": "-a / -lind / -gund (Frankish); -et / -it / -nefru (Egyptian)"
+    },
+    "diminutive_form": "-ilo (Frankish) / -sheri (Egyptian)",
+    "compounding_rule": "Frankish dithematic ([quality](stem) + element: Isarn-burg, iron-fort) layered over Egyptian construct-chains (Per-[god], Niut-[god], Ta-[noun]): the capital Niltreich (the Nile-realm), Per-Dulro (temple-city of Dulro), Ta-Erlant (the iron-land)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Frankish crusader-aristocracy over the Egyptian river-kingdom: the kuning and his herizogen at the crown, the comites and grafen over the niut-cities, the dganman-knights sworn to the war-host; the hem-netjer priesthood and the scribal per-aat serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Comes",
+        "domain_native": "Comitat"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marcho-graf",
+        "domain_native": "Marcha"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Graf",
+        "domain_native": "Grafscaf"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Herizogo",
+        "domain_native": "Herizogtuom"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Furisto",
+        "domain_native": "Furisttuom"
+      },
+      "kingdom": {
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Kuning",
+        "domain_native": "Kuningrichi"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Keisar-Nesut",
+        "domain_native": "Keisartuom"
+      }
+    },
+    "_tiers_note": "Frankish (Old High German) ladder, ascending, with the Egyptian substrate co-titles beneath. Comes (the king's-companion count) barony; Marcho-graf (march-count) march; Graf (count) county over a Grafscaf; Herizogo (war-leader / duke; *harja-tugon) duchy; Furisto (the foremost / prince) principality; Kuning (king) kingdom over a Kuningrichi; Keisar-Nesut (the emperor-king; Frk. keisar < Caesar + Eg. nesut) empire over the Keisartuom. The conquered river-cities keep their Egyptian sepati (nomarch) and hem-netjer (priest) beneath the Frankish crown; the per-aa style survives as the highest sacral honorific of the enthroned kuning. The Egyptian wab and hem-netjer stand outside the ladder. Rank titles fuse the real Frankish and Egyptian registers (allowed).",
+    "heir": "Kuning-barn (the king's child; the heir); Sa-Nesut (king's son, Egyptian style)",
+    "honorifics": {
+      "lord": "Truhtin / Neb",
+      "lady": "Frowa / Nebet",
+      "champion": "Degan (Frankish warrior) / Aha (Egyptian warrior)",
+      "your_grace": "Truhtin min",
+      "elder": "Altiro (the elder) / Tepi-a"
+    },
+    "vassalage": {
+      "liege": "Truhtin",
+      "vassal": "Scalc (servant) / Bak (Egyptian)",
+      "fealty": "Triuwa (troth) / Ankh (the living-oath, Egyptian)",
+      "tribute": "Gelt (Frankish) / Inu (Egyptian)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Keisar-Nesut": "Keisarin-Nesyt",
+      "Kuning": "Kuningin",
+      "Furisto": "Furistin",
+      "Herizogo": "Herizogin",
+      "Graf": "Grafin",
+      "Marcho-graf": "Marcho-grafin",
+      "Comes": "Comitissa"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Pharaoh": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Frankish ruling stock carry a dithematic name + -ingo lineage; the Egyptian populace carry a theophoric given name + sa- filiation; order given-first.",
+    "surname_source": [
+      "Frankish -ingo lineage",
+      "Per- house (Egyptian)",
+      "sa- filiation",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Frankish war-aristocracy keep Old High German dithematic names (Hrod-, Adal-, -rich, -mund, -o); the Egyptian river-folk keep theophoric names (X-hotep, Mery-X, Sa-X) on the morphed canon-stems.",
+    "theophoric": "Frankish devotional on the morphed Frankish reflexes (Dulro-mund, Erlant-rich); Egyptian devotional constructs: Tjuraa-hotep (Tjuraa-is-content), Mery-Djeroraa (beloved-of-Djeroraa), Sa-Riaret (son-of-Riaret).",
+    "diminutive": "-ilo (Frankish) / -sheri (Egyptian)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - FRANKISH (Old High German) reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Germanic/Egyptian gods. Alignment PROVISIONAL (Lawful/Neutral): the Frankish crusader-oath order (the sworn knighthood of a Lawful high-king) meets the Egyptian right-order / maa-kheru funerary tradition; the older heathen-and-funerary layer reads Neutral.",
+    "the_one": "Aiterno (Frankish; Eg. Atjernaa) - the distant Ancient One, the hidden maker, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Dulro (Eg. Tjuraa) - the sun, right-order and judgment",
+      "Orlandus": "Erlant (Eg. Oranetj) - iron, oath, war",
+      "Gaiandus": "Giando (Eg. Geandaa) - the enduring earth, the black alluvial land",
+      "Numeno": "Numino (Eg. Numenaa) - sky, lightning and scribe-wisdom",
+      "Realta": "Rialda (Eg. Riaret) - the mother, mercy",
+      "Delorum / death-lord": "Djeroraa (Frk. Deloro) - lord of the peaceful dead"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aiterno, Dulro the just (the sun above the feather of right-order), Erlant of the sworn crusade, Rialda the merciful - and names the Chaotic powers tiufala (devils) / Hefau-kin, warded and unworshipped; the sworn knighthood and the just high-king are the social ideal",
+      "Neutral": "the ancestral war-dead (the deified knights of the ruling house) and the akhu / justified dead of the per-temples; the great powers invoked at the alah-grove and the per-netjer situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterno - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as tiufala (Frankish devils) or framed as -kin of the great serpent Hefau (Egyptian), keep their morphs + an epithet: Maraxus -> Marach the War-Brand (Eg. Marakhu the City-Burner); Vacidus -> Wachid the Unmaker (Eg. Wakedjet, the Devouring Hefau); Lusanto -> Lusando the Hoard-Worm.",
+    "clergy_ladder": {
+      "1": "Per-scalc (temple-servant, novice) / Wab",
+      "3": "Priast (priest) / Hem-netjer",
+      "5": "Per-priast (temple-priest) / Hem-netjer Sen-nu (second prophet)",
+      "7": "Ufar-priast (high priest) / Hem-netjer Tepy (first prophet)",
+      "9": "Altiro-priast (eldest priest) / Hem-netjer Aa (great prophet)"
+    },
+    "religious_orders_pattern": "the Alah (Frankish grove-temple) or Per-netjer (Egyptian god's-house) of [power]: 'the Alah of Dulro', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "the deified war-dead of the crusader-house (honored at the howe and on the tomb-stele) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
+    "holy_symbol_motifs": {
+      "Dulro": "a sun-disc over a crossed sword and the feather of right-order",
+      "Erlant": "an iron crusader-sword crossed with the river-standard",
+      "Giando": "the black alluvial field beneath the temple-pylon"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-barges and crusader war-keels: 'Barque of Dulro', 'the Iron Lion', 'Pride of the Itru'",
+    "military_units": "the Kuning's heri (war-host) and the temple divisions: 'the Heri of Niltreich', 'the Standard of Erlant', 'the Division of Tjuraa', 'the Iron-helms'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Lion and Stele'",
+    "dungeons_ruins": "buried per-temples and fallen Frankish burgs: 'the Tomb of Nesut [name]', 'the Sunken Per-netjer', 'the Howe of the Hrodings'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Hrodrich",
+      "Adalo",
+      "Theodrich",
+      "Wilhelmo",
+      "Gundomar",
+      "Reginhart",
+      "Dulro-mund",
+      "Erlant-rich",
+      "Hartmann",
+      "Baldrich",
+      "Tjuraa-hotep",
+      "Mery-Djeroraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Oranetj-mose",
+      "Tjuraa-mose",
+      "Sa-Tjuraa",
+      "Djeroraa-nakht"
+    ],
+    "personal_f": [
+      "Hrodgund",
+      "Adalinda",
+      "Brunichild",
+      "Theodelind",
+      "Reginlind",
+      "Gisalo",
+      "Wilgund",
+      "Rialda-gund",
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Sat-Djeroraa",
+      "Numenaa-et",
+      "Sat-Tjuraa"
+    ],
+    "clan_houses": [
+      "the Hrodingo (ruling house)",
+      "the Adalingo",
+      "the Theodingo",
+      "the Reginingo",
+      "Per-Tjuraa",
+      "Per-Djeroraa",
+      "Per-Riaret",
+      "Per-Numenaa",
+      "Per-Oranetj",
+      "the Baldingo",
+      "Per-Geandaa",
+      "the Wilingo"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "Lion-of-the-River",
+      "the Justified (maa-kheru)",
+      "of the Itru",
+      "the Oath-keeper (the holt-degan)",
+      "City-breaker",
+      "the Far-marcher",
+      "Sun-faced"
+    ],
+    "flagship_settlements": [
+      "Niltreich (the chief seat - the Nile-realm)",
+      "Hrodes-burg (the ruling-house fort)",
+      "Per-Dulro (temple-city of the sun)",
+      "Niut-aat (the great river-city)",
+      "Isarn-burg (the iron-fort)",
+      "Ta-Erlant (the iron-land march)"
+    ]
+  }
+}

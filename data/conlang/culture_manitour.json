@@ -1,0 +1,360 @@
+{
+  "kit_id": "manitour",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "north_american"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_27",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (akkadian) lean + north_american (plains) substrate (cross-family fusion, Mesopotamian-leaning)",
+  "synthesis_sources": [
+    "BASE_03",
+    "BASE_11"
+  ],
+  "homeland": "Mantua-Sonipi (the Manitou-grassland; the river-temple over the open plain)",
+  "blend": {
+    "lean": "near_eastern (akkadian: the alu/bit river-cities, the sangu temple-priesthood, construct-chain toponyms, emphatic gutturals q/kh/sh, triconsonantal roots, -u/-um endings, penultimate stress, SOV agglutinative grammar - the rule/temple/kin register dominant)",
+    "substrate": "north_american (plains: the horse-nomad bands, the warrior-societies, the medicine-cairn of the open sky, glottalized/ejective consonants, descriptive compounds - the plain/beast/material/staple register beneath)",
+    "fusion": "Mesopotamian-leaning - a river-city temple-empire of the Two Rivers married to the great-plains horse-nomads who ride its grasslands: the alu-city and the ziggurat enthroned over the buffalo-range, the sangu-scribe and the puhakatu-seer one people. The Akkadian backbone supplies rule, kin, and temple; the Plains substrate supplies the plain, the beast, and the worked material - all run through one Akkadian-shaped sound-law."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_03 (Mesopotamian/Akkadian, civ) x BASE_11 (Plains horse-nomad/Amerindian, clan). CIV/CLAN DECIDED by inheritance: Mesopotamian base = Civilized, Plains base = Clanhold, and any Civ parent -> Civ, so Manitour is Civilized (feudal). Concept: 'Manitou' (the great-spirit power) meeting the river-empire - the temple-cities of the Two Rivers fused with the buffalo-hunting horse-nomads of the open plain (an Akkadian-Plains fusion). LEAN = near_eastern (akkadian: the ruling/scribal/temple register, the alu-cities, the bit-ili temples, the construct-chain toponyms, the Akkadian phonology that all words obey); SUBSTRATE = Plains (the grassland, the herds, the worked hide and bone, the horse, the warrior-societies). Common-word lexicon and rank titles use the real Akkadian and Plains registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Akkadian reflexes PRIMARY via hammuran, Plains morphs SECONDARY via family_north_american theonym_sets.plains / numinan), never real gods. Ruler/domain DISPLAY titles are ENGLISH (no approved foreign term applies for this pairing); conlang forms live in ruler_native/domain_native (Akkadian) for NPC dialogue. All human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Deities via the per-family morph method.",
+  "phonology": {
+    "palette": "Akkadian lean - emphatic and guttural consonants (q, kh, h, ', sh, ts), triconsonantal roots, a/i/u vowels, -u/-um/-tu endings, penultimate stress, SOV agglutinative grammar - over a Plains substrate: the Plains ejectives and the barred-u and the long descriptive compounds, all bent to the Akkadian inventory. Per the CSV: ejective consonants with deep vowels; grammar is SOV and polysynthetic-agglutinative (the Plains compounding habit carried on Akkadian construct-chains and case-inflection). Theophoric on the Akkadian canon-morphs (Tullaru-, Urlandu-, Numunu-) with Plains medicine-name variants (Torawi-, Kayanta-) as a vision-sign.",
+    "phonotactics": "CVC; mimation -um and the Akkadian -u/-tu endings; Plains glottal-stops collapsed to Akkadian ' or dropped; Plains ejectives (p'/t'/k') resolved to the Akkadian emphatics (q, ts) or plain stops; long Plains compounds reshaped as construct-chains; penultimate stress; Bit-/Dur-/Kar- construct toponyms over Plains feature-roots.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "near-eastern (akkadian) phonology dominant",
+      "sound_changes": [
+        "Plains ejectives/glottalized stops -> Akkadian inventory: p'>q or p, t'>ts or t, k'>q, glottal-stop ' kept or dropped word-finally",
+        "Plains barred-u and free vowels -> Akkadian a/i/u; long descriptive compounds compressed to two-root construct-chains",
+        "Akkadian word-shape imposed on every root: penultimate stress, CVC syllables, a final Akkadian -u/-um/-tu on bare roots (puuku>pukku, soni>sunu, toya>tuya)",
+        "retain the Akkadian sh/q/kh/emphatics and one audible Plains signature (the -tu/-pu echo, the doubled stop) so both ancestries stay heard; SOV agglutinative grammar throughout"
+      ],
+      "source_tilt": "plain/beast/material/staple words from Plains roots (the substrate works the grass and the herds: soni>sunu grass-plain, puuku>pukku horse, kutsu>kutsu bison, sarii>sarru hide, tunapu>tunappu drymeat); rule/kin/temple/land-tenure/abstract words from Akkadian roots (the ruling register: rabu, mar, ellu, bit, sharru); every chosen root then filtered to one Akkadian-shaped sound-law",
+      "portmanteaus": [
+        "city alu+nuki>alunki",
+        "fort dimtu+kahni>dimkanni",
+        "temple_town bit-ili+tunawa>bitunawa",
+        "citadel ekallu+tekwuni>ekaltekwu",
+        "son mar+tua>martua",
+        "daughter marat+petu>marpetu",
+        "sacred ellu+puha>ellupuha",
+        "horse-host puuku+kishru>pukkishru"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Plains plain/beast/material/staple-roots + Akkadian rule/kin/temple/land-roots, all run through one Akkadian-shaped sound-law (penultimate stress, CVC, -u/-um/-tu, Plains ejectives collapsed to emphatics); portmanteaus mark the blended institutions, bloodline, and the horse-host where the river-temple and the open plain visibly married.",
+    "feature_words": {
+      "river": "naru",
+      "stream": "atappu",
+      "lake": "pawu",
+      "sea": "tamtu",
+      "bay": "kishadu",
+      "cape": "nakku",
+      "isle": "nagu",
+      "mountain": "tuya",
+      "hill": "tuyabu",
+      "ridge": "bamtu",
+      "forest": "huppu",
+      "wood": "huppi",
+      "plain": "sunu",
+      "scrub": "tukasunu",
+      "marsh": "apparu",
+      "ford": "nebiru",
+      "pass": "babu",
+      "vale": "tuyatuku",
+      "coast": "ahu",
+      "neck": "tahu",
+      "narrows": "nerebu",
+      "waste": "makshu",
+      "road": "harranu",
+      "way": "puyu",
+      "track": "padanu"
+    },
+    "settlement_words": {
+      "hamlet": "kapru",
+      "village": "nukku",
+      "town": "alu",
+      "city": "alunki",
+      "fort": "dimkanni",
+      "port": "kar",
+      "market": "mahiru",
+      "temple_town": "bitunawa",
+      "citadel": "ekaltekwu"
+    },
+    "kinship": {
+      "son": "martua",
+      "daughter": "marpetu",
+      "house": "bit",
+      "kin": "kimtu",
+      "ancestor": "abu"
+    },
+    "adjectives": {
+      "great": "rabu",
+      "little": "sehru",
+      "old": "labiru",
+      "new": "eshu",
+      "black": "salmu",
+      "white": "pesu",
+      "red": "samu",
+      "golden": "hurasu",
+      "iron": "puhihu",
+      "high": "shaqu",
+      "far": "ruqu",
+      "sacred": "ellupuha",
+      "fair": "damqu"
+    },
+    "resources": {
+      "salt": "tabtu",
+      "metal": "puhihu",
+      "bronze": "siparru",
+      "silver": "kaspu",
+      "gold": "hurasu",
+      "hide": "sarru",
+      "grain": "she'u",
+      "lapis": "uqnu",
+      "horse": "pukku",
+      "bison": "kutsu",
+      "feather": "wuyu",
+      "drymeat": "tunappu",
+      "tobacco": "pahmu"
+    },
+    "directional": {
+      "upper": "elu",
+      "lower": "shaplu",
+      "north": "iltanu",
+      "south": "shutu",
+      "east": "tabu-miaru",
+      "west": "tabu-yau",
+      "inner": "qerbu",
+      "outer": "kamu"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Bit- (house-of; Akkadian construct)",
+      "Dur- (fort; Akkadian)",
+      "Kar- (port; Akkadian)",
+      "Til- (mound; Akkadian)",
+      "-sunu (grass-plain; Plains substrate)",
+      "Tuya- (mountain; Plains substrate)"
+    ],
+    "patronymic_form": "the Akkadian ruling/scribal stock keep the 'mar-' (son of) patronymic and theophoric constructs; the Plains horse-stock keep the band/division name and an earned deed/vision-name; the throne fuses both - a sharru who also rode with a band and carries a Bit- house-name over a deed-byname.",
+    "gendered_endings": {
+      "male": "-u / -um (Akkadian ruling); -tu / -kwa (Plains deed-names)",
+      "female": "-tu / -itu / -at (Akkadian); -pi / -tsi (Plains deed-names)"
+    },
+    "diminutive_form": "-anu (Akkadian) / -tsi (Plains)",
+    "compounding_rule": "Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]) layered over Plains descriptive compounds bent to the Akkadian shape ([quality|animal] + feature: Eka-tuya 'red-mountain', Kutsu-sunu 'bison-plain'): the capital Mantua-Sonipi (Manitou-grassland), Dur-Sharrutu (king's-fort) over the Kutsu-sunu range."
+  },
+  "title_ladder": {
+    "government": "feudal (an Akkadian river-temple monarchy whose lords ride with the Plains bands: the sharru and his rubu-kin at the crown, the shaknu-governors over the alu-cities, the akicita warrior-societies and the band-chiefs sworn to the war-host; the sangu-priesthood and the scribal shatammu serve beneath, beside the puhakatu medicine-seers)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hazannu",
+        "domain_native": "Hazannutu"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Massaru",
+        "domain_native": "Massarutu"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Shaknu",
+        "domain_native": "Shaknutu"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Turtanu",
+        "domain_native": "Turtanutu"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rubu",
+        "domain_native": "Rubutu"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Sharru",
+        "domain_native": "Sharrutu"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Shar-kishshati",
+        "domain_native": "Kishshatu"
+      }
+    },
+    "_tiers_note": "Akkadian ladder, ascending, with the Plains substrate co-titles beneath. Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom over a Sharrutu; Shar-kishshati (king of the totality) empire over the Kishshatu. The Plains substrate keeps its band-chiefs and warrior-societies beneath the Akkadian crown: the paraibo (band peace-chief) and tekwuniwap (war chief) serve as the shaknu's and turtanu's field-captains, the akicita-society raised as the war-host. The sangu (city-priest) and the puhakatu (medicine-seer) stand outside the ladder. Rank titles fuse the real Akkadian and Plains registers (allowed); display titles are English.",
+    "heir": "Mar-Sharri (the king's son / crown prince; the heir)",
+    "honorifics": {
+      "lord": "Belu / Paraibo",
+      "lady": "Beltu / Wa'ipu",
+      "champion": "Redu (Akkadian soldier) / Tuibitsi-puha (Plains honored brave)",
+      "your_grace": "Beli (my lord)",
+      "elder": "Abu-labiru (the eldest) / Kuhtsu-numu (the old ones)"
+    },
+    "vassalage": {
+      "liege": "Belu",
+      "vassal": "Ardu (Akkadian servant) / Tuibitsi (Plains sworn brave)",
+      "fealty": "Ade (Akkadian loyalty-oath) / Puha-tekwa (the Plains sworn word)",
+      "tribute": "Biltu (Akkadian) / Naraboo (the Plains gift-due)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (no commonly-known foreign term applies for this Akkadian-Plains pairing). The *_native conlang forms (Akkadian) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "female_forms_native": {
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Rubu": "Rubatu",
+      "Turtanu": "Turtanutu",
+      "Shaknu": "Shaknatu",
+      "Massaru": "Massartu",
+      "Hazannu": "Hazannatu"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Akkadian ruling/scribal stock carry a theophoric given name + mar- patronymic; the Plains horse-stock carry an earned deed/vision-name + band/division; order given-first.",
+    "surname_source": [
+      "mar- patronymic (Akkadian)",
+      "Bit- house (Akkadian)",
+      "band/division (Plains, e.g. Kwahada)",
+      "earned deed/vision-name (Plains)"
+    ],
+    "dual_register": "the Akkadian city-and-temple folk keep theophoric names (X-iddina, Warad-X) on the morphed canon-stems; the Plains riders keep deed-names (Iron Shirt, Spotted Eagle) and society-honors; the throne fuses both - a theophoric sharru who also rode under a war-vision.",
+    "theophoric": "Akkadian devotional constructs on the morphed canon-stems: Warad-Tullaru (servant of Tullaru), Tullaru-iddina (Tullaru-gave-me), Numunu-nasir; the Plains side rarely names the powers directly, taking a vision-sign instead (animal, sky, weather - a war-vision under Maraksa).",
+    "diminutive": "-anu (Akkadian) / -tsi (Plains)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru-, Urlandu-, Numunu-), Plains morphs SECONDARY (family_north_american.json theonym_sets.plains, also used by numinan: Torawi, Olanta, Kayanta), never real Mesopotamian/Plains gods. Same shared pantheon, two name-registers for one people. All three alignments; stance follows current alignment (worship_by_alignment). The powers are met both at the built bit-ili/ziggurat of the river-cities AND through the vision-quest (puha) and the medicine-cairn of the open plain.",
+    "the_one": "Itarnu (< Aeternus; Plains echo Ateruna) - the distant Great-Above, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tullaru (Plains Torawi) - the sun and judgment",
+      "Orlandus": "Urlandu (Plains Olanta) - iron, oath, war",
+      "Gaiandus": "Gayandu (Plains Kayanta) - the enduring earth and plain",
+      "Numeno": "Numunu (Plains Nimawi) - sky and scribe-wisdom",
+      "Realta": "Rialtu (Plains Reawina) - the mother, mercy and rain"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - at the law-stele of the bit-ili and the medicine-cairn alike; names the Chaotic powers -lemnu (Akkadian evil) or the dread sky-set, warded; the temple-oath and the vision-word bind together",
+      "Neutral": "the ancestral war-dead and the city-spirits of the bit-ili beside the animal-spirits and the medicine (puha) of place and herd; the great powers invoked at the ziggurat and the vision-bluff situationally",
+      "Chaotic": "venerates the Chaotic powers of the canon (Marakshu the city-burner / war-fire, Tamawi the storm, Lusanta the greed-serpent), and names the Lawful powers - and Itarnu - as the tyrant-gods (Itarnu the Sky-Tyrant) to be defied"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as -lemnu (Akkadian evil) or the dread sky-set, keep their morphs + an epithet: Maraxus -> Marakshu the City-Burner (Plains Maraksa the war-fire); Vacidus -> Bakidu-lemnu the Unmaking (Plains Vachita the void); Lusanto -> Lusanta the Hoard-Serpent.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer) / Puhakatu-tua (medicine-novice)",
+      "3": "Sangu (priest) / Puhakatu (medicine-man)",
+      "5": "Shangu Rabu (high priest) / Pia-puhakatu (great medicine-man)",
+      "7": "Urigallu (chief priest) / Numunu-puhakatu (the band's high seer)",
+      "9": "Shatammu (temple-primate) / Naika-puhakatu (the council's great seer)"
+    },
+    "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power] in the river-cities, and the medicine-cairn or vision-bluff of [power] on the open plain: 'the Bit-ili of Tullaru', 'the Medicine-Bluff of Maraksa'.",
+    "saints_pattern": "the deified law-givers and heroes inscribed on the temple-stele of the cities, and the great chiefs and vision-seers who became sky- and animal-spirits; honored at the ziggurat, the burial-scaffold and the medicine-cairn.",
+    "holy_symbol_motifs": {
+      "Tullaru": "a winged sun-disc over a law-stele and a buffalo-skull",
+      "Urlandu": "an iron sword crossed with a war-lance",
+      "Gayandu": "the alluvial field beneath the ziggurat, ringed by open grass"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-barges of the Two Rivers and named war-horses of the plain: 'Pride of the Naru', 'Boat of Tullaru', 'Storm-Runner' (a famed pukku)",
+    "military_units": "the sharru's kishru (war-host) and the Plains warrior-societies raised beneath it: 'the Kishru of Mantua', 'the Standard of Urlandu', 'the Dog-Soldier Akicita', 'the Iron-Lance riders'",
+    "taverns": "'The [Adjective] [Noun]' in the cities, the council-lodge or [adjective] tipi on the range: 'The Lapis Cup', 'The Bison and Stele', 'the Red Tipi'",
+    "dungeons_ruins": "buried ziggurats and abandoned war-camps: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu', 'the Ghost-Butte of [chief]', 'the Medicine-Cairn of [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tullaru-iddina",
+      "Warad-Urlandu",
+      "Numunu-nasir",
+      "Iddin-Argantu",
+      "Urlandu-bani",
+      "Naram-Tullaru",
+      "Gayandu-iddina",
+      "Pullu-shar",
+      "Kutsu-mar (Bison-son)",
+      "Pukku-redu (Horse-soldier)",
+      "Eka-tua (Red-son)",
+      "Tuya-nasir (Mountain-keeper)",
+      "Sunu-bani (Plain-builder)",
+      "Iron-Lance",
+      "Spotted Eagle",
+      "Standing Bison"
+    ],
+    "personal_f": [
+      "Tullaru-belit",
+      "Amat-Urlandu",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Sunu-banit (Plain-born)",
+      "Petu-Rialtu (Daughter-of-Rialtu)",
+      "Morning Star",
+      "Rain Cloud",
+      "Sweet-Grass",
+      "Eka-petu (Red-daughter)"
+    ],
+    "clan_houses": [
+      "Bit-Tullaru (the great temple-city house)",
+      "Bit-Urlandu",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "Bit-Rialtu",
+      "the Kutsuteka (the Bison-Eaters band)",
+      "the Pukkuna (the Horse-People band)",
+      "the Sunuteka (the Plain-Dwellers band)",
+      "the Kwahada (the Antelope band)",
+      "Bit-Pullu",
+      "the Akicita-Pukku (the Horse-Soldier society)"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "of the Two Rivers",
+      "the Oath-keeper",
+      "Bison-Hump",
+      "the Far-Rider",
+      "City-breaker",
+      "Storm-voiced",
+      "Sound-of-the-Sun"
+    ],
+    "flagship_settlements": [
+      "Mantua-Sonipi (the chief seat - the Manitou-grassland)",
+      "Dur-Sharrutu (the king's-fort)",
+      "Kar-Tullaru (Tullaru's-port)",
+      "Bit-Tullaru (the great temple-city)",
+      "Alunki-Kutsu (the bison-city)",
+      "Til-Labiru (the old mound)",
+      "Tuya-Sunu (the mountain over the plain)"
+    ]
+  }
+}

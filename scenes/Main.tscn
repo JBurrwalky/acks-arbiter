@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://bpjfnpumvibw" path="res://engine/subsystems/exploration/hex_map_controller.gd" id="2_controller"]
 [ext_resource type="PackedScene" path="res://scenes/maps/hex_map.tscn" id="3_hex_map"]
 [ext_resource type="Script" uid="uid://bc6yky0lp40jl" path="res://engine/subsystems/override/override_manager.gd" id="4_override_mgr"]
+[ext_resource type="Script" uid="uid://bvlug7knkpi6y" path="res://scenes/maps/world_viewport_frame.gd" id="5_1nqs0"]
 [ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
@@ -33,7 +34,33 @@ script = ExtResource("9_nav_stack")
 [node name="HexMapController" type="Node" parent="." unique_id=1744656386]
 script = ExtResource("2_controller")
 
-[node name="HexMap" parent="." unique_id=189064747 instance=ExtResource("3_hex_map")]
+[node name="WorldViewport" type="SubViewportContainer" parent="." unique_id=1673845841]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch = true
+script = ExtResource("5_1nqs0")
+
+[node name="WorldSubViewport" type="SubViewport" parent="WorldViewport" unique_id=923281546]
+handle_input_locally = false
+size = Vector2i(1152, 648)
+render_target_update_mode = 4
+
+[node name="HexMap" parent="WorldViewport/WorldSubViewport" unique_id=189064747 instance=ExtResource("3_hex_map")]
+
+[node name="TerrainLayer2" type="TileMapLayer" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=508808217]
+
+[node name="FogLayer2" type="TileMapLayer" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=1356273726]
+
+[node name="EntityLayer2" type="Node2D" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=922449867]
+
+[node name="HeraldryHolder2" type="Node2D" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=830097322]
+visible = false
+
+[node name="Camera2D2" type="Camera2D" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=560417024]
+
+[node name="HexHUD2" type="CanvasLayer" parent="WorldViewport/WorldSubViewport/HexMap" unique_id=1649335436]
+layer = 10
 
 [node name="OverrideManager" type="Node" parent="." unique_id=132181756]
 script = ExtResource("4_override_mgr")

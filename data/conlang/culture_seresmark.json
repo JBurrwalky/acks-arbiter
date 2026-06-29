@@ -1,0 +1,356 @@
+{
+  "kit_id": "seresmark",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_08",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (norse) backbone + east_asian (sinitic) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_09"
+  ],
+  "homeland": "Seresmark",
+  "blend": {
+    "backbone": "germanic (norse / Old Norse register: konungr/jarl, the -son/-dottir patronymics, nominative -r, ai>ei, initial w- lost before round vowels, dithematic -ar/-orm/-ulf names, the river-and-sea far-trader vik-stock)",
+    "overlay": "east_asian (sinitic: the -cheng silk-cities, the -jiang rivers and -shan mountains, the Confucian -di/-wang/-jun mandarin bureaucracy, monosyllabic surname-first names, the contour-toned isolating substrate)",
+    "lean": "Germanic-heavy - a Norse far-trading aristocracy (a vik-borne Rus war-merchant house) rowed up the great rivers to Cathay and enthroned itself over the Sinitic silk-empire: the Norse konungr and his jarls hold the Mandate-court at the river-mouth, the Chinese mandarins, the cheng-cities and the silk-and-river populace endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_09 Jinxia (Sinitic/Chinese). CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Sinitic (Jinxian/Chinese) base = Civilized, and any Civ parent -> Civ, so Seresmark is Civilized (feudal). Concept: a Norse far-trader aristocracy - the Rus reaching Cathay along the great rivers - that rowed its war-keels up the silk-rivers and set itself up as konungr-kings over the Sinitic silk-empire and its Mandate court. Backbone = Germanic (NORSE: the far-trading sea-and-river war-merchant ruling layer, the konungr/jarl register, -son/-dottir patronymics, dithematic name-stock); overlay/substrate = Sinitic (the -cheng silk-cities, the -jiang/-shan land, the Confucian mandarin bureaucracy, the silk-and-river populace, the monosyllabic surname-first names). Common-word lexicon and rank titles use the real Old Norse and Chinese registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Norse reflexes PRIMARY from family_germanic theonym_ancestors norse column; Sinitic variants SECONDARY from family_east_asian theonym_sets.sinitic, in the jinxian -di/-jun register), never real Norse/Chinese gods. PROVISIONAL: alignment (Lawful/Neutral) is a per-hybrid design choice pending the alignment pass - the Norse oath-and-trade war-band meets the Sinitic Mandate-of-Heaven law-court; Lawful reads the just Mandate-throne and the sworn felag, Neutral reads the older Norse ancestral war-dead and the local earth-and-grain powers. Register choice: Germanic-base hybrids default to the GOTHIC/continental reflexes, but Seresmark is the NORSE special case (the Rus/Norse far-traders reaching Cathay) - flag for Jedidiah if a uniform Germanic register is wanted instead. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Norse) backbone - heavy root-initial stress, sharp stops p/t/k b/d/g, retained th/dh, nominative -r, initial w- lost before round vowels (Wod- > Od-), ei/au and ey diphthongs, i- and u-umlaut, dithematic compounding, -son/-dottir patronymics - meeting a Sinitic overlay: monosyllabic morphemes, syllable (C)(G)V(C) with only -n/-ng codas, contour tones (unmarked in data), NO native consonant clusters, surname(1)+given(1-2), the celestial -di/-jun/-wang titles. Per the CSV: tonal contours laid over the Germanic consonant clusters, the Norse stress meeting the Sinitic tone-and-syllable; grammar shifts toward SVO and isolating (the Sinitic substrate) carried on Norse strong-verb stems - 'SVO, isolating strong verbs'. Theophoric on the Norse reflexes (Thulrs-, Orlund-) with Sinitic -di/-jun variants (Tuli-di, Aolan-jun).",
+    "phonotactics": "CVC; Norse clusters (st, sk, br, kn, hr, fl) meeting the tight Sinitic monosyllable (no clusters, only -n/-ng codas) - the river-port names fuse a Norse element with a -cheng/-jiang Sinitic head; heavy Norse initial stress laid under the Sinitic tonal contour; dithematic Norse names over surname-first Sinitic mandarin names.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (norse) phonology dominant",
+      "sound_changes": [
+        "Sinitic tones drop entirely; the bare contour-toned monosyllable is reset to Norse root-initial stress (no tonal contour survives)",
+        "Sinitic isolating roots take the Norse nominative/agentive -r and may close on Norse codas (-r, -nr, -ngr), losing the Sinitic only-vowel/-n/-ng restriction: jiang>gjangr, shan>skjarn, cheng>chen-",
+        "Sinitic initials with no Norse equal collapse into the Norse inventory and pick up Norse onset-clusters: zh/x/q/j>sk-/sj-/j-, c/z>ts-/s-, h before back vowels>hv- (xi>skir, ze>tser, huang>hvangr)",
+        "Sinitic mono-syllables compound to fill Norse dithematic slots, a Sinitic land/material head fused to a Norse element (matou>matou-vik, cheng>chen-borg)",
+        "Norse signatures kept throughout: nominative -r, the dh/th dentals, ei/au/ey diphthongs, the st/sk/br/kn/hr clusters; Sinitic leaves its mono-root shapes and its civic/silk vocabulary audible beneath"
+      ],
+      "source_tilt": "river/land/silk/material/civic words from Sinitic roots (the silk-and-river populace works the cheng-cities: jiang, shan, si, yu, tong, cheng); kin-line/quality/abstract/rule/war words from Norse roots (the konungr-aristocracy's register: mikill, svartr, jarn, aett); every root then filtered to one Norse-shaped phonology",
+      "portmanteaus": [
+        "son zi+son>sjonr", "daughter nu+dottir>nudottr", "kin zu+fraendi>sufraendr", "city cheng+borg>chenborg", "fort zhai+virki>skjvirki", "temple_town miao+hof>mjohof", "citadel chengbao+kastali>chenkastr", "sacred sheng+heilagr>shenheil"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Sinitic river/silk/material/civic roots + Norse kin/quality/rule/war roots, all run through one Norse-shaped sound-law (tones dropped, nominative -r, Norse clusters); portmanteaus mark the blended institutions and bloodline. Norse traders fused to the silk-empire, not a slash-list.",
+    "feature_words": {
+      "river": "gjangr",
+      "stream": "skir",
+      "lake": "hur",
+      "sea": "heir",
+      "bay": "vannr",
+      "cape": "kjaur",
+      "isle": "daur",
+      "mountain": "skjarn",
+      "hill": "lingr",
+      "ridge": "gangr",
+      "forest": "linr",
+      "wood": "mur",
+      "plain": "jaunr",
+      "marsh": "tser",
+      "ford": "dur",
+      "pass": "gvannr",
+      "vale": "gur",
+      "coast": "annr",
+      "neck": "jingr",
+      "narrows": "skjar",
+      "waste": "hvangr",
+      "road": "daubr",
+      "way": "lur",
+      "track": "tur"
+    },
+    "settlement_words": {
+      "hamlet": "kunr",
+      "village": "tvangr",
+      "town": "tjenr",
+      "city": "chenborg",
+      "fort": "skjvirki",
+      "port": "matvik",
+      "market": "sjir",
+      "temple_town": "mjohof",
+      "citadel": "chenkastr"
+    },
+    "kinship": {
+      "son": "sjonr",
+      "daughter": "nudottr",
+      "house": "aett",
+      "kin": "sufraendr",
+      "ancestor": "forfadir"
+    },
+    "adjectives": {
+      "great": "mikill",
+      "little": "litill",
+      "old": "gamall",
+      "new": "nyr",
+      "black": "svartr",
+      "white": "hvitr",
+      "red": "raudr",
+      "golden": "gullinn",
+      "iron": "jarn",
+      "high": "har",
+      "far": "fjarri",
+      "sacred": "shenheil",
+      "fair": "fagr"
+    },
+    "resources": {
+      "salt": "jannr",
+      "iron": "jarn",
+      "bronze": "tungr",
+      "silver": "silfr",
+      "gold": "gullr",
+      "silk": "sir",
+      "jade": "jur",
+      "amber": "raf",
+      "grain": "mir",
+      "horse": "marr"
+    },
+    "directional": {
+      "upper": "efri",
+      "lower": "nedri",
+      "north": "nordr",
+      "south": "sudr",
+      "east": "austr",
+      "west": "vestr",
+      "inner": "innri",
+      "outer": "ytri"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-cheng (walled silk-city; Sinitic)",
+      "-jiang (river; Sinitic)",
+      "-shan (mountain; Sinitic)",
+      "-guan (pass; Sinitic)",
+      "-vik (Norse trading-bay/inlet)",
+      "-borg (Norse fort)",
+      "-by (Norse steading)",
+      "-kaupang (Norse market-port)"
+    ],
+    "patronymic_form": "the Norse ruling stock keep the -son / -dottir patronymic and an aett (lineage) name; the Sinitic populace keep the clan-surname (xing) first, then the given name (ming), with generation-names within a zu; the throne fuses both - a konungr who carries both a -son patronymic and a granted xing of the Mandate-court.",
+    "gendered_endings": {
+      "male": "-r / -ulf / -orm / -arr (Norse ruling); auspicious martial/virtue meanings (Sinitic)",
+      "female": "-a / -dis / -unn / -hild (Norse); flower/jade/virtue meanings (Sinitic)"
+    },
+    "diminutive_form": "-i / -lingr (Norse) / Xiao- (little) prefix (Sinitic)",
+    "compounding_rule": "Norse dithematic ([quality|animal|resource](stem) + element: Jarn-borg, iron-fort; Silki-vik, silk-bay) fused to Sinitic quality+type heads (Jin-cheng, golden-city; Da-jiang, great-river): the capital Seres-vik (the silk-trade bay), Jarn-cheng (the iron-walled city), Silki-jiang (the silk-river)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Norse far-trader aristocracy over the Sinitic silk-empire: the konungr and his jarl-kin at the Mandate-throne, the jarls and hersar over the river-cheng, the felag-sworn huskarlar of the war-band; the Sinitic mandarinate - the wang, the five peerages and the Confucian officials - serve beneath and run the cheng-cities and the silk-revenues)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hersir",
+        "domain_native": "Herad"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Mark-jarl",
+        "domain_native": "Mork"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Lendr-madr",
+        "domain_native": "Len"
+      },
+      "duchy": {
+        "ruler": "Jarl",
+        "domain": "Duchy",
+        "ruler_native": "Jarl",
+        "domain_native": "Jarldom"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Fylkir",
+        "domain_native": "Fylki"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Konungr",
+        "domain_native": "Konungriki"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Allra-Konungr",
+        "domain_native": "Stor-riki"
+      }
+    },
+    "_tiers_note": "Norse ladder, ascending, with the Sinitic mandarin co-titles beneath. Hersir (war-chieftain, local lord) barony over a Herad (district); Mark-jarl (march-jarl) march over the Mork (border-march); Lendr-madr (the landed king's-man) county over a Len (granted fief); Jarl (earl/great-lord) duchy over a Jarldom; Fylkir (folk-king, host-leader) principality over a Fylki; Konungr (king) kingdom over a Konungriki; Allra-Konungr (the king-of-all, the high-konungr who holds the Mandate-throne) empire over the Stor-riki (the 'great realm'). The conquered silk-empire keeps its Sinitic Wang (king-of-the-old-line, now a vassal-prince) and the five peerages Gong > Hou > Bo > Nan beneath the Norse crown, plus the Dudu frontier-commanders and the Confucian officials who run the cheng-cities. The gothi (Norse priest) and the Sinitic Daoshi stand outside the ladder. Rank titles fuse the real Old Norse and Chinese registers (allowed).",
+    "heir": "Konungs-son (the king's son; the heir; the Sinitic court calls him Taizi, the crown-prince)",
+    "honorifics": {
+      "lord": "Drottinn / Daren",
+      "lady": "Frua / Furen",
+      "champion": "Kappi (Norse champion) / Wushi (Sinitic warrior)",
+      "your_grace": "Herra minn / Dianxia",
+      "elder": "Eldri (the elder) / the Bixia at the Mandate-throne"
+    },
+    "vassalage": {
+      "liege": "Drottinn",
+      "vassal": "Thegn (sworn man) / Chen (Sinitic subject)",
+      "fealty": "Eidr (the sworn oath) / Mengyue (Sinitic sworn covenant)",
+      "tribute": "Skattr (Norse tribute) / Gongfu (Sinitic tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Allra-Konungr": "Allra-Drottning",
+      "Konungr": "Drottning",
+      "Fylkir": "Fylkju",
+      "Jarl": "Jarlkona",
+      "Lendr-madr": "Lend-kona",
+      "Mark-jarl": "Mark-jarlkona",
+      "Hersir": "Hersis-kona"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Jarl": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Jarl (duchy)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Norse ruling stock carry a dithematic given name + -son / -dottir patronymic and an aett lineage; the Sinitic populace carry a monosyllabic surname (xing) first, then the given name (ming); order given-first for the Norse, surname-first for the Sinitic.",
+    "surname_source": [
+      "Norse -son / -dottir patronymic",
+      "Norse aett (lineage) name",
+      "Sinitic clan-surname (xing)",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Norse war-trader aristocracy keep Old Norse dithematic names (Sig-, Thor-/Thur-, Har-, -ulf, -orm, -arr, -steinn) with -son/-dottir; the Sinitic city-folk and mandarins keep the xing + ming names (Li Zhongyan, Wang Yurong) and the official courtesy-name (zi).",
+    "theophoric": "Norse devotional on the morphed canon-reflexes (the Thur-/Thulrs- and Orlund- elements): Thurstein (Thulrs-stone), Orlund-ulf (wolf of Orlund); the Sinitic substrate invokes the celestial powers' epithets rather than the god-name directly - Tian-en (heaven's grace), or a temple-name honoring Tuli-di.",
+    "diminutive": "-i / -lingr (Norse) / Xiao- (little) prefix (Sinitic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Norse reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Sinitic variants SECONDARY (family_east_asian theonym_sets.sinitic, rendered in the jinxian -di/-jun celestial register), never real Norse/Chinese gods. The Norse far-traders keep their oath-and-war powers; the conquered silk-empire keeps its Celestial Bureaucracy under the Mandate of Heaven, and the two are quietly identified (one power, two faces). Alignment PROVISIONAL (Lawful/Neutral): the Norse oath-and-trade felag meets the Sinitic Mandate-of-Heaven law-court.",
+    "the_one": "Eitnir (Norse; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Thulr (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor",
+      "Orlandus": "Orlund (Sinitic Aolan-jun) - iron, oath, war",
+      "Gaiandus": "Geyandr (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
+      "Numeno": "Nymir (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
+      "Realta": "Rjalta (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Eitnir foremost, Thulr the just, Orlund of the sworn war, Rjalta the merciful - and names the Chaotic powers fjandr (foes/devils) or the Sinitic mo (demon-marshals), warded and unworshipped; the felag-oath, the just konungr and the Mandate-throne are the social ideal",
+      "Neutral": "the ancestral war-dead (the Norse aett-forebears and the deified konungar) and the Sinitic ancestors (the zu) and local earth-and-grain powers; the great powers invoked at the hof and the miao situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eitnir - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fjandr (Norse foes) or mo (Sinitic demon-marshals), keep their morphs + an epithet: Maraxus -> Marhr the War-Brand (Sinitic Maluo the War-Fire Marshal); Vacidus -> Vakr the Unmaker (Sinitic Wuci the Devourer); Lusanto -> Lusandr the Hoard-Worm (Sinitic Lusan the Coin-Serpent).",
+    "clergy_ladder": {
+      "1": "Hof-thraell (temple-servant, novice) / Daoshi-tu",
+      "3": "Gothi (priest) / Daoshi",
+      "5": "Blot-gothi (sacrifice-priest) / Fashi (ritual-master)",
+      "7": "Hof-godi (high priest) / Gaogong",
+      "9": "Allsherjar-gothi (the supreme priest) / Tianshi (celestial master)"
+    },
+    "religious_orders_pattern": "the Hof (Norse temple) or Miao (Sinitic temple) of [power]: 'the Hof of Thulr', 'the Miao of Tuli-di'; the ancestral Ci (Sinitic clan-shrine) for the zu.",
+    "saints_pattern": "the deified war-dead and konungar of the Norse aett, honored at the haugr (howe) and the hof; and the worthy officials and heroes of the silk-empire enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
+    "holy_symbol_motifs": {
+      "Thulr": "a sun-disc over a crossed sword and the seal of office",
+      "Orlund": "an iron sword crossed with a war-keel's prow",
+      "Geyandr": "the green mountain over the grain-altar"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-keels and silk-traders, named in Norse kennings: 'the Silk-Serpent', 'the Wave-Stallion', 'Raven of the Jiang', 'Pride of the Vik'",
+    "military_units": "the konungr's hird (war-band) and the felag (the sworn trade-and-war company), plus the Sinitic Ying (camp/army) and the colored Banner: 'the Hird of Seresmark', 'the Silk-felag', 'the Azure Banner of the cheng'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Cup', 'The Silk and Salt', 'The Far-Sailed Raven'",
+    "dungeons_ruins": "sunken river-borgs and fallen warlord cheng: 'the Borg of [name]', 'the Howe of the Jarls', 'the Ruined Cheng of [warlord]', 'the Drowned Kaupang'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Sigurdr",
+      "Thorsteinn",
+      "Haraldr",
+      "Ingvarr",
+      "Olafr",
+      "Rurikr",
+      "Bjorn",
+      "Hrolfr",
+      "Eysteinn",
+      "Gunnarr",
+      "Li Zhongyan",
+      "Wang Mingyuan",
+      "Zhao Dewei",
+      "Chen Anguo",
+      "Sun Jingyao",
+      "Huang Baoshan",
+      "Zhou Wenbo",
+      "Xu Shenglong"
+    ],
+    "personal_f": [
+      "Sigrun",
+      "Thordis",
+      "Gudrun",
+      "Ingunn",
+      "Ragnhild",
+      "Astrid",
+      "Yngvild",
+      "Halldis",
+      "Wang Yurong",
+      "Li Meixiang",
+      "Zhao Zhilan",
+      "Chen Wanqing",
+      "Sun Caiyun",
+      "Huang Yuyan"
+    ],
+    "clan_houses": [
+      "the Rurikssons (ruling aett, the river-konungar)",
+      "the Sigurdssons",
+      "the Ingvarssons",
+      "the Haraldssons",
+      "the Bjornssons",
+      "the Hrolfssons",
+      "the xing Li (the great mandarin house)",
+      "the xing Wang (the old royal line, now vassal-princes)",
+      "the xing Zhao",
+      "the xing Chen",
+      "the xing Sun",
+      "the Eysteinssons"
+    ],
+    "epithets_cognomina": [
+      "the Far-Sailed",
+      "Silk-getter",
+      "the Iron-handed",
+      "of the Great River",
+      "the Oath-keeper",
+      "Cheng-breaker",
+      "the Mandate-holder",
+      "Gold-tongue"
+    ],
+    "flagship_settlements": [
+      "Seres-vik (the chief seat - the silk-trade bay, the Mandate-throne)",
+      "Jarn-cheng (the iron-walled silk-city)",
+      "Silki-jiang (the silk-river port)",
+      "Rurik-borg (the ruling-house river-fort)",
+      "Da-jiang-kaupang (the great-river market)",
+      "Tuli-miao (the sun-temple town)"
+    ]
+  }
+}

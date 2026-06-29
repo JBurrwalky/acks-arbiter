@@ -6,28 +6,48 @@
     "classical"
   ],
   "_schema": "gdd-naming-conventions.md 2.6",
-  "catalog_number": 31,
-  "sub_palette": "akkadian + latinate-overlay (cross-family blend)",
+  "csv_id": "HYB_22",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (was #31 in the v1 system); csv_id is authoritative.",
+  "sub_palette": "akkadian backbone + latinate (classical) substrate (cross-family blend, Akkadian-leaning)",
   "synthesis_sources": [
-    1,
-    4
+    "BASE_03",
+    "BASE_06"
   ],
   "homeland": "Sargonia",
   "blend": {
-    "backbone": "akkadian (near_eastern)",
-    "overlay": "latinate (classical)"
+    "backbone": "akkadian (near_eastern): the alu river-cities, the sharru/shar-kishshati ladder, the bit-ili temple-towers, construct-chain toponyms, emphatic gutturals (q, kh, ', sh, ts), mimation -u/-um, theophoric god-king names",
+    "overlay": "latinate (classical): a Romanizing legal and administrative substrate - the dinu law-code, the via/iter roads, the colonia, the -us magistracies and the Legio, supplying the civic/legal/material register beneath the Akkadian crown",
+    "lean": "Akkadian-heavy - a Mesopotamian god-king order (the sharru over the alu-cities and the bit-ili) that absorbed a Romanizing legal and administrative apparatus: the throne and the temple are Akkadian, the law-court, the roads and the magistracy are the Latin substrate that runs the empire's machinery."
   },
   "government": "feudal",
+  "civ_or_clan": "civ",
   "alignment_allowed": [
-    "Lawful"
+    "Lawful",
+    "Neutral",
+    "Chaotic"
   ],
-  "_note": "Cross-family blend (Roman + Mesopotamian): a supreme law-giving empire - the Mesopotamian law-code and god-king tradition under a Romanizing legal and administrative order. Backbone = Akkadian (near_eastern: phonology, the alu cities, the sharru ladder); overlay = Latinate (classical: Roman legal/administrative register, Imperator/Praefectus/Legio, -us offices). civ = feudal. LAWFUL ALONE (the apex order-empire). Common-word lexicon and rank titles use the real Akkadian/Latin registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon drawn from both parents' sets (Akkadian primary, Latinate variant), never real gods.",
+  "_note": "Cross-family hybrid under the base/hybrid model. BASE_03 Shinarur (Mesopotamian) x BASE_06 Agrippan/Latin (classical). CIV/CLAN DECIDED by inheritance: Mesopotamian base = Civilized, classical base = Civilized, so Sargonid is Civilized (feudal). Concept: a supreme law-giving empire - the Mesopotamian law-code and god-king tradition fused with a Romanizing legal and administrative order. Backbone = Akkadian (near_eastern: phonology, the alu cities, the sharru ladder, the bit-ili temples); substrate = Latinate (classical: the Roman legal/administrative register, Imperator/Praefectus/Legio, the dinu law-code, the via roads, the -us offices). civ = feudal. Common-word lexicon is now a SINGLE fused tongue (Akkadian-shaped, Latin-substrated); rank titles use ENGLISH display with the real Akkadian ruler_native (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon drawn from both parents' sets (Akkadian primary, Latinate variant), never real Mesopotamian/Roman gods. CHARACTER NOTE: though all three alignments are now permitted, Sargonid remains the apex law-empire and leans strongly Lawful in flavor - the law-stele and the temple-tower are its altars, the celestial magistracy gave the law, and the Chaotic powers are the demon-marshals it exists to suppress. [REWORKED 2026-06-27 to base/hybrid model: csv_id HYB_22; all-three alignment (character still the apex law-empire); English display titles + Akkadian ruler_native; deep-fusion lexicon + fusion_rules.]",
   "phonology": {
-    "palette": "Akkadian backbone (sh, ', kh, ts, q; vowels a i u; endings -u/-tu/-um; mimation) with a Latinate overlay (a Romanizing legal/administrative register; -us/-or office-endings); theophoric on the Akkadian morphs (Tullaru-, Argantu-, Urlandu-).",
-    "phonotactics": "CVC; mimation -um; construct chains; the Latin overlay adds -us/-or in offices and names.",
-    "transparent_ratio": 0.35
+    "palette": "Akkadian backbone (sh, ', kh, ts, q; vowels a i u; endings -u/-tu/-um; mimation; triconsonantal roots; construct chains) meeting a Latinate substrate (a Romanizing legal/administrative register; -us/-um/-or office-endings adapted onto the Akkadian frame). Theophoric on the Akkadian morphs (Tullaru-, Argantu-, Urlandu-) with Latinate canon variants.",
+    "phonotactics": "CVC; mimation -um; construct chains; the Latin substrate is adapted to the Akkadian inventory - -us/-um/-or endings re-cut to -u/-um, penultimate stress, emphatics preserved.",
+    "transparent_ratio": 0.35,
+    "fusion_rules": {
+      "lean": "near-eastern (akkadian) phonology dominant",
+      "sound_changes": [
+        "Latin -us/-um/-or office/noun endings re-cut to the Akkadian frame: -us>-u, -um>-um (already legal), -or>-uru; nominative -s dropped",
+        "Latin clusters and exotic shapes flatten into the Akkadian inventory; v>w/b, hard-c/q>q (emphatic), x>ks, intervocalic doubling allowed; the glottal-stop and sh are added where the Akkadian root supplies them",
+        "Akkadian penultimate stress and CVC syllable shape imposed on every root; construct-chain compounding (X-Y = Y-of-X) governs derived terms",
+        "retain Akkadian sh, q, ', kh and mimation -u/-um; a Latin root keeps an audible -u/-um tail and one signature consonant (the v>w, the -t-, the -r-) so the substrate stays heard"
+      ],
+      "source_tilt": "civic/legal/road/material/staple words from Latin roots (the administrative substrate built the law-court, the roads and the works: via>*wiu*, iter>*itru*, colonia>*kolunu*, argentum>*argentu*); rule/kin/temple/land words from Akkadian roots (the god-king crown and the temple-cities: sharru, bit, alu, naru, shadu); every root then filtered to one Akkadian-shaped phonology",
+      "portmanteaus": [
+        "road via+iter>wiateru", "colony colonia+alu>kolalu", "citadel ekallu+arx>ekalarsu", "fort dimtu+castru>dimkastu", "temple_town bit-ili+templu>bittemplu", "market mahiru+forum>mahirum", "son mar+filu>marfilu", "kin kimtu+gentu>kimgentu"
+      ]
+    }
   },
   "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Akkadian rule/kin/temple/land-roots + Latin civic/legal/road/material-roots, all run through one Akkadian-shaped sound-law (penultimate stress, mimation, construct chains, emphatics retained); portmanteaus mark the blended institutions and bloodline - the empire's law-court, roads and works carry the Latin substrate adapted to the Akkadian frame.",
     "feature_words": {
       "river": "naru",
       "stream": "atappu",
@@ -45,12 +65,12 @@
       "marsh": "apparu",
       "ford": "nebiru",
       "pass": "babu",
-      "road": "via",
+      "road": "wiateru",
       "oasis": "inu",
       "coast": "ahu",
       "neck": "kishadu",
       "narrows": "nerebia",
-      "way": "iter",
+      "way": "itru",
       "track": "padanu"
     },
     "settlement_words": {
@@ -58,18 +78,18 @@
       "village": "dadmu",
       "town": "alu",
       "city": "alu-rabu",
-      "fort": "dimtu",
+      "fort": "dimkastu",
       "port": "kar",
-      "market": "mahiru",
-      "colony": "colonia",
-      "temple_town": "bit-ili",
-      "citadel": "ekallu"
+      "market": "mahirum",
+      "colony": "kolalu",
+      "temple_town": "bittemplu",
+      "citadel": "ekalarsu"
     },
     "kinship": {
-      "son": "mar",
+      "son": "marfilu",
       "daughter": "marat",
       "house": "bit",
-      "kin": "kimtu",
+      "kin": "kimgentu",
       "ancestor": "abu"
     },
     "adjectives": {
@@ -91,7 +111,7 @@
       "salt": "tabtu",
       "iron": "parzillu",
       "bronze": "siparru",
-      "silver": "kaspu",
+      "silver": "argentu",
       "gold": "hurasu",
       "incense": "qutrinnu",
       "grain": "she'u",
@@ -131,43 +151,70 @@
     "government": "feudal (a law-empire: the Sharru-Imperator over the peerage and the Confucian-strict magistracy; the law-code and the legions sustain the order)",
     "tiers": {
       "barony": {
-        "ruler": "Hazannu",
-        "domain": "Hazannutu"
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hazannu",
+        "domain_native": "Hazannutu"
       },
       "march": {
-        "ruler": "Massaru",
-        "domain": "Limitis"
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Massaru",
+        "domain_native": "Limitis"
       },
       "county": {
-        "ruler": "Shaknu",
-        "domain": "Praefectura"
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Shaknu",
+        "domain_native": "Praefectura"
       },
       "duchy": {
-        "ruler": "Turtanu",
-        "domain": "Turtanutu"
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Turtanu",
+        "domain_native": "Turtanutu"
       },
       "principality": {
-        "ruler": "Rubu",
-        "domain": "Rubutu"
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rubu",
+        "domain_native": "Rubutu"
       },
       "kingdom": {
-        "ruler": "Sharru",
-        "domain": "Sharrutu"
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Sharru",
+        "domain_native": "Sharrutu"
       },
       "empire": {
-        "ruler": "Shar-kishshati Imperator",
-        "domain": "Kishshatu"
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Shar-kishshati",
+        "domain_native": "Kishshatu"
       }
     },
-    "_tiers_note": "Akkadian backbone, ascending, with a Latinate administrative overlay. Hazannu (mayor) barony; Massaru (warden) march, over a Latin-styled Limis (frontier); Shaknu (appointed governor) county, ruling a Praefectura; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom; Shar-kishshati (king of the totality), styled in the Latin overlay Imperator, over the Kishshatu. The legions (Legio) and the law-code (the dinu) are the empire's spine. (Rank titles are the real Akkadian/Latin register, allowed.)",
-    "female_forms": {
-      "Shar-kishshati Imperator": "Sharrat-kishshati Imperatrix",
+    "_tiers_note": "Akkadian backbone, ascending, with a Latinate administrative substrate beneath. Hazannu (mayor) barony; Massaru (warden) march, over a Latin-styled Limis (frontier); Shaknu (appointed governor) county, ruling a Praefectura; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom; Shar-kishshati (king of the totality), whose APPROVED display style is the Latin-substrate Imperator, over the Kishshatu. The legions (Legio) and the law-code (the dinu) are the empire's spine. Rank ruler_native titles are the real Akkadian register; the empire display 'Imperator' is an approved commonly-known foreign term (see approved_foreign_terms_used).",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here the empire ruler is 'Imperator'). The *_native conlang forms (Hazannu, Sharru, Shar-kishshati, etc.) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "female_forms_native": {
+      "Shar-kishshati": "Sharrat-kishshati",
       "Sharru": "Sharratu",
       "Rubu": "Rubatu",
       "Turtanu": "Turtanutu",
       "Shaknu": "Shaknatu",
       "Massaru": "Massartu",
       "Hazannu": "Hazannatu"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Imperator": "Imperatrix"
     },
     "heir": "Mar-Sharri (son of the king / crown prince)",
     "honorifics": {
@@ -196,13 +243,18 @@
     "diminutive": "-anu"
   },
   "religion": {
-    "_note": "Deity-names are morphs of the Agrippan canon (Akkadian primary, from near_eastern theonym_sets; Latinate canon-form as the learned variant), never real Mesopotamian/Roman gods. Sargonid is Lawful alone: the apex law-empire reveres the One (Itarnu) above His ministers and the Lawful powers as the celestial magistracy that gave the law; the Chaotic powers are the demon-marshals it exists to suppress. The law-stele and the temple-tower (ziggurat) are the altars.",
+    "_note": "Deity-names are morphs of the Agrippan canon (Akkadian primary, from near_eastern theonym_sets; Latinate canon-form as the learned variant), never real Mesopotamian/Roman gods. Sargonid is the apex law-empire: it reveres the One (Itarnu) above His ministers and the Lawful powers as the celestial magistracy that gave the law; the Chaotic powers are the demon-marshals it exists to suppress. The law-stele and the temple-tower (ziggurat) are the altars. (Though all three alignments are now permitted in play, the culture's character remains strongly Lawful.)",
     "the_one": "Itarnu (< Aeternus; Latinate variant Aeternus - the supreme Lawgiver of Heaven, source of the Mandate of order, revered above all)",
     "sample_deity_renames": {
       "Tulrius": "Tullaru (sun and judgment, lord of the law-stele; Lawful)",
       "Orlandus": "Urlandu (the iron-oath, war; Lawful)",
       "Numeno": "Numunu (the scribe-wisdom, keeper of the code; Lawful)",
       "Argentus": "Argantu (trade and the city; Lawful)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Itarnu above all, Tullaru the just lord of the law-stele, Urlandu of the sworn iron-oath, Numunu keeper of the code, Argantu of the lawful city - and names the Chaotic powers the demon-marshals (-lemnu), warded and suppressed; the law-code and the temple-tower bind the order. This is the empire's apex creed.",
+      "Neutral": "the deified law-givers and just magistrates of the stele, and the city-spirits of the bit-ili and the alu; the great powers invoked at the ziggurat and the Curia situationally, for the order of the city rather than the war of Heaven.",
+      "Chaotic": "venerates the Chaotic powers of the canon - the demon-marshals reframed as liberators against the law-stele - and names the Lawful powers, and Itarnu, as the tyrant-magistracy of Heaven to be defied; the heresy the empire exists to suppress."
     },
     "demon_epithet_pattern": "the Chaotic powers are the demon-marshals the empire suppresses, each with a portfolio epithet ('-lemnu' = evil): Maraxus -> Marakshu the City-Burner; Vacidus -> Bakidu-lemnu the Unmaking; Lusanto -> Lusantu the Coin-Serpent.",
     "clergy_ladder": {

@@ -1,0 +1,335 @@
+{
+  "kit_id": "manitland",
+  "tier": "culture",
+  "inherits": [
+    "north_american"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "BASE_11",
+  "catalog_number": null,
+  "_numbering_note": "(BASE culture; csv_id authoritative)",
+  "sub_palette": "north_american (plains)",
+  "homeland": "Manitland",
+  "government": "clanhold",
+  "civ_or_clan": "clan",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "Generic Amerindian base (BASE_11), the single-language Plains register adapted from culture_numinan.json (kept separately as the named member culture). The horse-nomads of the great plains: the open sky, the buffalo-herds, polysynthetic word-building, warrior-societies of grass and scrub moving with the herds. Single language, seeded directly - a BASE has no blend and no fusion_rules. clan = clanhold. Seeds/shifts across all three alignments. Common-word lexicon and rank titles use the real Plains register (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon (family_north_american.json theonym_sets.plains), never real Plains gods. Ruler/domain DISPLAY titles are English; the Plains conlang titles live in ruler_native/domain_native for NPC dialogue. No approved foreign term applies - all rulers English.",
+  "phonology": {
+    "palette": "Plains, Comanche-leaning: roots paa (water), toya (mountain), huupi (tree), soni (grass), taabe (sun), mua (moon), puuku (horse), numu (people); the barred-u vowel (written u); endings -pu/-bo/-tu; Apache nantan; pan-Plains akicita. Descriptive deed-names in the usual rendering.",
+    "phonotactics": "CV(C); glottal stops; u (barred-u); vowel-flowing.",
+    "transparent_ratio": 0.4
+  },
+  "lexicon": {
+    "feature_words": {
+      "river": "hunubi",
+      "stream": "paahubi",
+      "lake": "pawi",
+      "sea": "pia-paa",
+      "bay": "paa-naki",
+      "cape": "naki",
+      "isle": "paa-sokobi",
+      "mountain": "toya",
+      "hill": "toyabi",
+      "ridge": "toyanaki",
+      "forest": "huupibi",
+      "wood": "huupi",
+      "plain": "sonipi",
+      "scrub": "tukasoni",
+      "marsh": "paasokobi",
+      "ford": "paa-mia",
+      "pass": "toyahuvi",
+      "vale": "toyatuka",
+      "coast": "pia-paa-naki",
+      "neck": "tahu",
+      "narrows": "kuyapa",
+      "waste": "makosha",
+      "road": "chanku",
+      "way": "poyo",
+      "track": "otapi"
+    },
+    "settlement_words": {
+      "hamlet": "kahni-tu",
+      "village": "nuki",
+      "town": "pia-nuki",
+      "city": "wai-nuki",
+      "fort": "tuhuya-kahni",
+      "port": "paa-kahni",
+      "market": "narumu",
+      "temple_town": "tunawa",
+      "citadel": "tekwuni-kahni"
+    },
+    "kinship": {
+      "son": "tua",
+      "daughter": "petu",
+      "house": "kahni",
+      "kin": "numunu",
+      "ancestor": "kuhtsu-numu"
+    },
+    "adjectives": {
+      "great": "pia",
+      "little": "tueka",
+      "old": "kuhtsu",
+      "new": "himi",
+      "black": "tuhu",
+      "white": "tosa",
+      "red": "eka",
+      "golden": "ohapu",
+      "iron": "puhihwi",
+      "high": "wai",
+      "far": "manaku",
+      "sacred": "puha",
+      "fair": "tsaatu"
+    },
+    "resources": {
+      "salt": "onabi",
+      "metal": "puhihwi",
+      "horse": "puuku",
+      "bison": "kutsu",
+      "hide": "sarii",
+      "feather": "wuya",
+      "bow": "etu",
+      "drymeat": "tunapu",
+      "ochre": "ekapi",
+      "tobacco": "pahmu"
+    },
+    "directional": {
+      "upper": "tukwapu",
+      "lower": "tubitsi",
+      "north": "kuhma",
+      "south": "yuanee",
+      "east": "taabe-miaru",
+      "west": "taabe-yaa",
+      "inner": "naboo",
+      "outer": "kwita"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "toya- (mountain)",
+      "paa- (water)",
+      "soni- (grass)",
+      "-nuki (camp/place)",
+      "Eka-/Tosa- (red-/white-)",
+      "-kahni (lodge)"
+    ],
+    "patronymic_form": "the band/division name (Comanche, e.g. Kwahada, Penateka); a child-name replaced at coming-of-age by an earned deed- or vision-name; descriptive epithets.",
+    "gendered_endings": {
+      "male": "deed-names; -tu / -kwa",
+      "female": "deed-names; -pi / -tsi"
+    },
+    "diminutive_form": "-tsi / -sa",
+    "compounding_rule": "[quality|animal](stem) + feature: Eka-toya (red-mountain), Kutsu-sonipi (bison-grassland); the band named for its food or range; deed-names rendered descriptively (Ten Bears, Iron Shirt)."
+  },
+  "title_ladder": {
+    "government": "clanhold (a confederation of bands led by peace-chiefs and war chiefs; the warrior-societies and the chiefs' council raise the head-chief; the camp moves with the herds)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Nantan",
+        "domain_native": "Nantan-nuki"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Tekwuniwap",
+        "domain_native": "Tekwuni-sokobi"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Paraibo",
+        "domain_native": "Numunu"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Akicita-paraibo",
+        "domain_native": "Akicita-numunu"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Pia-Paraibo",
+        "domain_native": "Pia-numunu"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Tabe-Naika",
+        "domain_native": "Numina-numunu"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Pia-Tabe-Naika",
+        "domain_native": "Numinakwahip"
+      }
+    },
+    "_tiers_note": "Plains clanhold, ascending, with the native Plains co-titles beneath the English display. Nantan (Apache, band headman) barony; Tekwuniwap (Comanche war chief) march; Paraibo (Comanche band peace-chief) county; Akicita-paraibo (warrior-society headman) duchy; Pia-Paraibo (great chief over several bands) principality; Tabe-Naika (head-chief of the confederation's council) kingdom; Pia-Tabe-Naika (grand head-chief) empire. The chiefs' council and the warrior-societies check the chiefs; a nomad confederation rarely holds past the head-chief. (Rank titles draw on the real Plains register, allowed.)",
+    "heir": "Paraibo-tua (the chief's son)",
+    "honorifics": {
+      "lord": "Paraibo",
+      "lady": "Wa'ipu (lady)",
+      "champion": "Tuibitsi-puha (honored brave)",
+      "your_grace": "Pia-Paraibo",
+      "elder": "Kuhtsu-numu (elder)"
+    },
+    "vassalage": {
+      "liege": "Pia-Paraibo",
+      "vassal": "Tuibitsi (sworn brave)",
+      "fealty": "Puha-tekwa (the sworn word)",
+      "tribute": "Naraboo (the gift-due)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH. The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays. No approved foreign term applies to this base - all rulers display English.",
+    "female_forms_native": {
+      "Nantan": "Nantan-wa'ipu",
+      "Tekwuniwap": "Wa'ipu-tekwuni",
+      "Paraibo": "Wa'ipu-paraibo",
+      "Akicita-paraibo": "Wa'ipu-akicita",
+      "Pia-Paraibo": "Pia-wa'ipu",
+      "Tabe-Naika": "Wa'ipu-naika",
+      "Pia-Tabe-Naika": "Pia-wa'ipu-naika"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "a child-name, replaced at coming-of-age by an earned deed- or vision-name; the band/division; descriptive epithets (animal + quality), rendered in the usual way.",
+    "surname_source": [
+      "band/division (Comanche, e.g. Kwahada)",
+      "earned deed/vision-name",
+      "animal+quality epithet"
+    ],
+    "dual_register": "chiefs and braves bear deed-names and society-honors; others a band-name + given name.",
+    "theophoric": "names rarely name the powers directly; more often a vision-sign (animal, sky, weather): e.g. a war-vision under Maraksa.",
+    "diminutive": "-tsi / -sa"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon in the Plains register (family_north_american.json theonym_sets.plains), never real Plains gods. Shared pantheon, Plains names. Manitland seeds/shifts across all three alignments; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met through the vision-quest (puha) and the open sky; the sacred bluff or medicine-cairn is the altar - there are few built temples.",
+    "the_one": "Ateruna (< Aeternus; the Great-Above - acknowledged as the distant maker when Lawful or Neutral, reviled as the cold sky-tyrant when Chaotic)",
+    "sample_deity_renames": {
+      "Maraxus": "Maraksa (the war-fire, the raider; Chaotic power)",
+      "Dementus": "Tamawi (the storm-thunder; Chaotic power)",
+      "Realta": "Reawina (the mother, the life-giver; Neutral-honored)",
+      "Gaiandus": "Kayanta (the enduring earth; Lawful power)",
+      "Tulrius": "Torawi (the sun, justice; Lawful power)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerate the Lawful powers (Torawi the just sun, Kayanta the enduring earth, the One Ateruna the Great-Above) and the medicine (puha) of the sworn vision; name the Chaotic powers (Maraksa, Tamawi, Lusanta) dread-spirits to be warded on the high bluff",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral dead, the animal-spirits and the medicine (puha) of place",
+      "Chaotic": "venerate the Chaotic powers (Maraksa the war-fire, Tamawi the storm, Lusanta the greed-serpent), demonize the Lawful powers and the One (Ateruna)"
+    },
+    "demon_epithet_pattern": "the demonized set (the Lawful powers + the One, when Chaotic) take dread epithets: Tulrius -> Torawi the Cold-Sun; Orlandus -> Olanta the Chain; Aeternus -> Ateruna the Sky-Tyrant.",
+    "clergy_ladder": {
+      "1": "Puhakatu-tua (medicine-novice)",
+      "3": "Puhakatu (medicine-man)",
+      "5": "Pia-puhakatu (great medicine-man)",
+      "7": "Numunu-puhakatu (the band's high seer)",
+      "9": "Naika-puhakatu (the council's great seer)"
+    },
+    "religious_orders_pattern": "few built temples - the medicine-cairn or vision-bluff of [power] on a high place: 'the Medicine-Bluff of Maraksa'.",
+    "saints_pattern": "the great chiefs and vision-seers who became sky- and animal-spirits; honored at the burial-scaffold and the medicine-cairn.",
+    "holy_symbol_motifs": {
+      "Maraksa": "a red war-lance beneath a thunder-cloud",
+      "Tamawi": "the forked storm over the open grass",
+      "Reawina": "a life-giving rain over the green plain",
+      "Torawi": "a white sun-disc over the open plain"
+    }
+  },
+  "banks_patterns": {
+    "ships": "landlocked riders name war-lances and great horses, not ships: 'Storm-Runner', 'the Red Lance', 'Cloud-Eater' (a famed horse)",
+    "military_units": "the warrior-societies: 'the Dog-Soldiers (Hotametaneo)', 'the Kit-Fox society', 'the Elk-Soldiers'",
+    "taverns": "camps, not taverns: the council-lodge / the [adjective] tipi: 'the Great Council-Lodge', 'the Red Tipi'",
+    "dungeons_ruins": "old burial-scaffolds, abandoned war-camps and spirit-haunted buttes: 'the Medicine-Cairn of [chief]', 'the Ghost-Butte of [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Ten Bears",
+      "Buffalo Hump",
+      "Iron Shirt",
+      "Lone Wolf",
+      "Standing Elk",
+      "White Horse",
+      "Yellow Wolf",
+      "Big Tree",
+      "Spotted Eagle",
+      "Black Horse",
+      "Wild Horse",
+      "Tabananica",
+      "Mowway",
+      "Pahayuko",
+      "Esikwita",
+      "Nantan Lupan",
+      "Delshay",
+      "Eskiminzin",
+      "Chacon",
+      "Santana"
+    ],
+    "personal_f": [
+      "Morning Star",
+      "Yellow Woman",
+      "Walking Woman",
+      "Sweet Grass",
+      "Owl Woman",
+      "Corn Woman",
+      "Quiet Water",
+      "Singing Bird",
+      "Prairie Flower",
+      "Spotted Fawn",
+      "Rain Cloud",
+      "Red Blanket",
+      "Topay",
+      "Wuni",
+      "Bird Woman",
+      "Willow Woman",
+      "Star Woman",
+      "Pia Mupitsi",
+      "Tabe Pete",
+      "Pekwi"
+    ],
+    "clan_band": [
+      "Kwahada (Antelopes)",
+      "Penateka (Honey-Eaters)",
+      "Nokoni (Wanderers)",
+      "Yamparika (Yap-Eaters)",
+      "Kotsoteka (Buffalo-Eaters)",
+      "Tenawa",
+      "Chiricahua",
+      "Mescalero",
+      "Jicarilla",
+      "Lipan",
+      "Hotametaneo (Dog-Soldiers)",
+      "Himoweyuhkis (Elk-Soldiers)"
+    ],
+    "epithets_cognomina": [
+      "the War Chief",
+      "Buffalo-Hump",
+      "Iron-Shirt",
+      "the Far-Rider",
+      "Sound-of-the-Sun",
+      "the Brave",
+      "Eagle-Feather",
+      "Wolf-Heart"
+    ],
+    "flagship_settlements": [
+      "Manitland (the chief encampment)",
+      "the Great Range (the home range)",
+      "the Llano (the high plain)",
+      "Medicine Bluff",
+      "Antelope Hills",
+      "Big Spring"
+    ]
+  }
+}

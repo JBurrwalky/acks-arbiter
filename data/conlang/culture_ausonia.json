@@ -1,0 +1,360 @@
+{
+  "kit_id": "ausonia",
+  "tier": "culture",
+  "inherits": [
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_41",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "classical (latinate) backbone + classical (hellenic) substrate (intra-family blend, Latinate-leaning)",
+  "synthesis_sources": [
+    "BASE_06",
+    "BASE_07"
+  ],
+  "homeland": "Ausonia (Latium Hesperion - 'the Western Land of Latium', the twin shore where the eagle and the olive meet)",
+  "blend": {
+    "backbone": "classical (latinate register: the canon's home tongue - Rex/Imperator, penultimate stress, -us/-a/-um/-ius endings, c=k, the gens-trinomial name, the forum and the legion)",
+    "overlay": "classical (hellenic register: the polis and the agora, the aspirates th/ph/kh, the -os/-on/-eus endings, the patronymic -ides, the philosopher and the phalanx, the thalassic sea-tongue)",
+    "lean": "Latinate-heavy - one classical realm where the Latin eagle rules and the Greek mind teaches: the imperium and the legion are Latin, but the agora, the academy, the harbor, and the learned arts speak Greek beneath. Forum and agora fused; the magistrate is a Comes, the scholar a philosophos."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW intra-family hybrid under the base/hybrid model. BASE_06 (Latinate/Roman) x BASE_07 (Hellenic/Greek) - the Greco-Roman classical world as ONE realm, 'Ausonia' (the old poetic name for Italy/the classical south). Both parents are sub-palettes of the SAME Classical family, so inherits is ['classical'] listed ONCE (intra-family blend; no cross-family stacking). CIV/CLAN: both parents Civilized -> Civ (feudal). Concept: the Latin imperium enthroned over a shared Greco-Latin civilization - the eagle and the philosopher, forum and agora, legion and phalanx, fused into a single people and tongue. Backbone = Latinate (agrippan IS the canon's home register, near-canonical deity keys, the rule/law/kin/land vocabulary); substrate = Hellenic (achillean, the learned/civic/sea/material vocabulary - the Greek words a Roman would borrow for philosophy, the harbor, the market, and the crafts). Common-word lexicon and rank titles use the real Latin and Greek registers (allowed, catalog 5.3); DEITY names are MORPHS of the Agrippan canon (Latinate near-canonical PRIMARY per agrippan, Hellenic SECONDARY per achillean), never real Greco-Roman gods. FOREIGN TERMS: the empire-tier ruler displays as 'Imperator' and the county-tier ruler as 'Archon' (both approved commonly-known foreign terms). All human cultures allow Lawful/Neutral/Chaotic. Ruler/domain DISPLAY titles are English (or an approved foreign term); conlang titles in ruler_native/domain_native for NPC dialogue.",
+  "phonology": {
+    "palette": "Classical Latinate backbone - vowel-rich (a e i o u), penultimate stress, sharp stops p/t/c(=k)/b/d/g, f/v/s, liquids l/r, -us/-a/-um/-ius/-or endings, open syllables, the gens-trinomial - meeting a Hellenic overlay: the aspirates th/ph/kh, the -os/-on/-eus endings, the patronymic -ides, clusters kt/pt/ps, long e/o. Per the CSV: a clear five-vowel system carried on a pitch accent (the Hellenic prosody pulling against the Latin penultimate stress); grammar stays SVO and case-inflected, the Latin cases enriched by the fuller Greek aspect-system. Theophoric on the Latinate canon-keys (Tulrian-, Orlandus-) with Hellenic learned-variants (Tulrios-, Orlandros-).",
+    "phonotactics": "CV / CVC; Latinate open syllables and clusters (st, tr, pr, cl, sp) meeting Hellenic aspirate-clusters (th, ph, kh, kt, pt, ps); penultimate stress with a Hellenic pitch-accent overlay; gens-trinomial Latin names over -polis / -ion civic toponyms.",
+    "transparent_ratio": 0.45,
+    "fusion_rules": {
+      "lean": "classical (latinate) phonology dominant",
+      "sound_changes": [
+        "Hellenic -os/-on endings Latinize: -os>-us, -on>-um, -e>-a; Greek roots take Latin case-vowels (potamos>potam-, thalassa>thalass-)",
+        "Hellenic patronymic/abstract endings simplify into the Latin frame; Greek -eus>-eus retained as a signature high-register marker",
+        "Latin penultimate stress on all words; Latin open-syllable shape and clusters (st, tr, pr, cl, sp) preferred",
+        "retain Hellenic aspirates th/ph/kh and Latin c(=k)/v/-us as the two audible ancestries; very short roots take a Latin -us/-a/-um ending"
+      ],
+      "source_tilt": "learned/civic/sea/material/craft words from Hellenic roots (the Greek mind supplies philosophy, the harbor, the agora, the marble, the wine); rule/kin/law/land/terrain words from Latinate roots (the Latin register supplies the imperium, the gens, the field, the river); every root then filtered to one Latinate phonology",
+      "portmanteaus": [
+        "city urbs+polis>urbopolis", "fort castra+phrourion>castrurion", "temple templum+naos>templanos", "sea mare+thalassa>marthalia", "harbor portus+limen>portilimen", "son filius+huios>filhuus", "sacred sacer+hieros>sacrieron", "academy schola+akademia>scholakadem"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Hellenic learned/civic/sea/material-roots + Latinate rule/kin/law/land-roots, all run through one Latinate-shaped sound-law (Greek -os>-us, aspirates kept, Latin stress and open syllables); portmanteaus mark the shared classical institutions and the blended bloodline. Forum and agora are one tongue here, not a slash-list.",
+    "feature_words": {
+      "river": "amnis",
+      "stream": "rivus",
+      "lake": "lacus",
+      "sea": "marthalia",
+      "ocean": "okeanus",
+      "bay": "kolpus",
+      "cape": "akra",
+      "isle": "nesus",
+      "mountain": "mons",
+      "hill": "collis",
+      "ridge": "rhakis",
+      "forest": "silva",
+      "wood": "drymus",
+      "plain": "campus",
+      "marsh": "palus",
+      "ford": "vada",
+      "pass": "kleisura",
+      "vale": "vallis",
+      "coast": "akta",
+      "neck": "isthmus",
+      "narrows": "stenum",
+      "waste": "eremus",
+      "road": "via",
+      "way": "hodus",
+      "track": "semita"
+    },
+    "settlement_words": {
+      "hamlet": "vicellus",
+      "village": "vicus",
+      "town": "asty",
+      "city": "urbopolis",
+      "fort": "castrurion",
+      "port": "portilimen",
+      "market": "agora",
+      "colony": "apoikia",
+      "citadel": "akropolis"
+    },
+    "kinship": {
+      "son": "filhuus",
+      "daughter": "filthya",
+      "house": "gens",
+      "ancestor": "avus"
+    },
+    "adjectives": {
+      "great": "magnus",
+      "little": "parvus",
+      "old": "vetus",
+      "new": "novus",
+      "black": "ater",
+      "white": "leukus",
+      "red": "rufus",
+      "golden": "khryseus",
+      "iron": "ferrus",
+      "high": "altus",
+      "low": "imus",
+      "far": "ultra",
+      "sacred": "sacrieron",
+      "fair": "pulkher"
+    },
+    "resources": {
+      "salt": "salis",
+      "iron": "ferrum",
+      "silver": "argyrus",
+      "gold": "khrysus",
+      "wine": "oinus",
+      "oil": "elaium",
+      "grain": "frumen",
+      "marble": "marmarus",
+      "fish": "ikhthys",
+      "purple_dye": "porphyra"
+    },
+    "directional": {
+      "upper": "superus",
+      "lower": "inferus",
+      "north": "boreas",
+      "south": "auster",
+      "inner": "intra",
+      "outer": "extra",
+      "near": "propus",
+      "far": "longus"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-um (Latinate civic)",
+      "-ia (Latinate)",
+      "-ium (Latinate)",
+      "-polis (Hellenic city)",
+      "-ion (Hellenic)",
+      "-castra (Latinate fort)"
+    ],
+    "patronymic_form": "the Latinate ruling stock keep the gens-trinomial lineage-name (praenomen + nomen + cognomen); the Hellenic learned and civic register keep the patronymic -ides (son-of) and the polis demonym; the throne fuses both - an Imperator who carries a Latin gens and a Greek academy-style honorific.",
+    "gendered_endings": {
+      "male": "-us / -ius / -or (Latinate); -os / -eus (Hellenic)",
+      "female": "-a / -ia (Latinate); -e / -is (Hellenic)"
+    },
+    "diminutive_form": "-ulus / -illa (Latinate) / -ion / -iskos (Hellenic)",
+    "compounding_rule": "Latinate [adjective|resource](stem) + feature-word, eliding before a vowel (ater + silva -> Atrasilva), layered over Hellenic [adjective|resource]-o-[feature] linking compounds (leukus + akra -> Leukakra; Nea + polis -> Neapolis): the capital Urbopolis Magna, the harbor-city Portilimen, the academy-town Scholakadem."
+  },
+  "title_ladder": {
+    "government": "feudal (a Latinate imperium over a shared Greco-Latin civilization: the Imperator and his Princeps-kin at the crown, the Comites/Archontes over the provinces and poleis, the Castellani sworn to the legion; the Greek learned orders - the philosophoi, the strategoi-admirals, the agora-magistrates - serve and counsel beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Castellanus",
+        "domain_native": "Castellania"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Limitarkhus",
+        "domain_native": "Limitarkhia"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Komarkhus",
+        "domain_native": "Komarkhia"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Strategus",
+        "domain_native": "Strategia"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Princeps",
+        "domain_native": "Principatus"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Basileus",
+        "domain_native": "Basileia"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Imperator-Autokrator",
+        "domain_native": "Imperium"
+      }
+    },
+    "_tiers_note": "Latinate ladder, ascending, with the Hellenic substrate co-titles fused beneath. Castellanus (castle-holder) barony; Limitarkhus (march-commander; Lat limes + Gk -arkhos) march; Komarkhus (district-archon; the county ruler displays as the approved foreign term 'Archon') county over a Komarkhia; Strategus (the general; the Greek war-command taken as the duke) duchy; Princeps (the first-man) principality; Basileus (king) kingdom over a Basileia; Imperator-Autokrator (the Latin imperator fused with the Greek autokrator) empire over the Imperium (the empire ruler displays as the approved foreign term 'Imperator'). The poleis keep their Greek Eparch (governor) and the legion its Latin Legatus beneath the imperial crown. The philosophos (scholar) and the Pontifex (priest) stand outside the ladder. Rank titles fuse the real Latin and Greek registers (allowed, catalog 5.3).",
+    "heir": "Caesar-Diadokhus (the heir-designate; the Latin Caesar fused with the Greek diadochos, 'the successor')",
+    "honorifics": {
+      "lord": "Dominus / Kyrios",
+      "lady": "Domina / Kyria",
+      "champion": "Eques (Latin knight) / Hippeus (Hellenic knight)",
+      "your_grace": "Eminentia",
+      "elder": "Presbys (the elder)"
+    },
+    "vassalage": {
+      "liege": "Patronus / Hegemon",
+      "vassal": "Cliens / Symmakhus (Hellenic ally)",
+      "fealty": "Fides (troth) / Horkus (Hellenic oath)",
+      "tribute": "Tributum / Phorus"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Archon' at county and 'Imperator' at empire). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Imperator-Autokrator": "Imperatrix-Autokrateira",
+      "Basileus": "Basilissa",
+      "Princeps": "Principissa",
+      "Strategus": "Strategissa",
+      "Komarkhus": "Komarkhissa",
+      "Limitarkhus": "Limitarkhissa",
+      "Castellanus": "Castellana"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Imperator": "Imperatrix"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Imperator (empire)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Latinate ruling stock carry the gens-trinomial (praenomen + nomen + cognomen); the Hellenic learned and civic register carry a personal name + patronymic -ides + polis demonym; order given-first.",
+    "surname_source": [
+      "Latinate gens (nomen)",
+      "Hellenic patronymic (-ides)",
+      "polis/deme of origin (locational)",
+      "deed/physical cognomen"
+    ],
+    "dual_register": "the Latinate aristocracy keep the full gens-trinomial (Marcus Valerius Ferratus); the Hellenic citizen and scholar keep personal + patronymic + deme (Theron Charaxides Akademeus) on the morphed canon-stems.",
+    "theophoric": "Latinate devotional on the canon-keys (Tulrian-, Orlandus-, Numenius-); Hellenic learned devotional on the morphed variants: Tulrios-genes (born-of-Tulrios), Orlandro-dotos (Orlandros-given).",
+    "diminutive": "-ulus / -illa (Latinate) / -ion / -iskos (Hellenic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate near-canonical keys PRIMARY (agrippan IS the canon's home register; Tulrius/Orlandus/Gaiandus/Numeno/Realta and Aeternus the One stand near-unchanged), Hellenic learned variants SECONDARY (the achillean -os/-os morphs, recognizably the same powers), never real Greco-Roman gods. All three alignments worshipped (standard lens).",
+    "the_one": "Aeternus (the One / True God, near-canonical; Hellenic learned variant Aiternos) - honored in liturgy, not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tulrius (Hellenic Tulrios) - the sun and judgment, the canon-key near-unchanged",
+      "Orlandus": "Orlandus (Hellenic Orlandros) - iron, oath, war",
+      "Gaiandus": "Gaiandus (Hellenic Gaiandros) - the enduring earth",
+      "Numeno": "Numeno (Hellenic Numenos) - sky, wisdom, the scholar's lord",
+      "Realta": "Realta (Hellenic Realte) - the mother, mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers of the canon - Aeternus, Tulrius the just, Orlandus of the sworn legion, Realta the merciful, Numeno of the academy - at the templum and the temenos alike; the imperial law and the philosopher's reason are held to bind as one, and the Chaotic powers are named daimones, warded.",
+      "Neutral": "the deified ancestors (the Divi of the gens and the Heroes of the polis) and the city-spirits of the forum and the agora; the great powers invoked at the templum-grove and the temenos situationally.",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aeternus - as the tyrant-gods to be defied; the cult of Maraxos the Tyrant-Flame burns the eagle and the olive alike."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as daimones (Hellenic demons) or named with a Latin malum-epithet, keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Hellenic Maraxos the City-Burner); Vacidus -> Vacidus the Unmaker (Hellenic Vakidos-daimon); Lusento -> Lusentus the Coin-Serpent (Hellenic Lysentos the Hoard-Worm).",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Neokorus",
+      "3": "Sacerdos (priest) / Hiereus",
+      "5": "Flamen / Arkhiereus",
+      "7": "Pontifex (high priest) / Hierophant",
+      "9": "Pontifex Maximus / Megas Hierophant"
+    },
+    "religious_orders_pattern": "the Collegium (Latin) or Temenos (Greek) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Temenos of Numenos'.",
+    "saints_pattern": "the Divi (the deified founders and law-givers of the gens, Divus [name]) and the Heroes (the deified founders of the polis, Heros [name]), honored at the templum and the heroon.",
+    "holy_symbol_motifs": {
+      "Tulrius": "a rayed sun-disc above a balance and an olive-branch",
+      "Orlandus": "an iron oath-ring on a tower crossed with the legion-eagle",
+      "Numeno": "the open scroll beneath the night-sky and the academy-lamp"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-galleys and merchant triremes: 'Aquila' (the eagle), 'Nike' (victory), 'Pride of Ausonia', 'Boat of Tulrius'",
+    "military_units": "the Imperator's legions and the city-phalanxes: 'Legio Prima Ferrata (the Iron Legion)', 'the Bronze Phalanx', 'the Eagle-and-Olive'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Bronze Helm and Eagle'",
+    "dungeons_ruins": "fallen forums and buried temene: 'the Catacombs of Divus Aurelius', 'the Labyrinth of Heros Theron', 'the Sunken Akropolis'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Marcus Valerius",
+      "Lucius Caelius",
+      "Theron Charaxides",
+      "Aurelian Fabius",
+      "Damon Aristides",
+      "Cassian Severus",
+      "Stratos Lysandrides",
+      "Tullius Octavian",
+      "Hieron Nikandrides",
+      "Florian Cornel",
+      "Phaedros Dioklides",
+      "Vitus Drusus",
+      "Menelos Telamonides",
+      "Severus Albinus",
+      "Ariston Eumenides",
+      "Maxen Tiberian",
+      "Diokles Peliades",
+      "Octavian Fabius",
+      "Eurymachos Leontides",
+      "Cornel Vitellius"
+    ],
+    "personal_f": [
+      "Aurelia Valeria",
+      "Theodora Charixene",
+      "Livia Cornelia",
+      "Daphne Aristea",
+      "Octavia Drusilla",
+      "Arete Lysandra",
+      "Tullia Caelia",
+      "Phaidra Nikaia",
+      "Marcia Fabia",
+      "Kallisto Leontia",
+      "Antonia Severina",
+      "Pelagia Demetria",
+      "Florentia Sabina",
+      "Eudora Hiera",
+      "Junia Portia",
+      "Stratonike Melaina",
+      "Aemilia Lucilla",
+      "Eirene Xanthe"
+    ],
+    "clan_houses": [
+      "the Valerii (ruling gens)",
+      "the Cornelii",
+      "the Aurelii",
+      "the Fabii",
+      "the Theronides",
+      "the Aristides",
+      "the Lysandrides",
+      "the Tullii",
+      "the Charaxides",
+      "the Octavii",
+      "the Telamonides",
+      "the Severi"
+    ],
+    "epithets_cognomina": [
+      "Ferrus the Iron",
+      "ho Megas (the Great)",
+      "Sapiens the Wise",
+      "ho Dikaios (the Just)",
+      "Aquila the Eagle",
+      "Nikephoros (Victory-bearer)",
+      "Magnus the Great",
+      "ho Sophos (the Learned)"
+    ],
+    "flagship_settlements": [
+      "Urbopolis Magna (the chief seat - 'the Great City')",
+      "Portilimen (the great harbor-city)",
+      "Neapolis (the new polis)",
+      "Castra Ferrata (the iron-fort)",
+      "Scholakadem (the academy-town)",
+      "Akra Leuke (the white cape)"
+    ]
+  }
+}

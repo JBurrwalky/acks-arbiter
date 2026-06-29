@@ -28,6 +28,23 @@ class FakeDice:
 		if count == 1 and sides == 4: return fixed_d4
 		return 1
 
+## Fake dice for the terrain-filter enumeration test. Returns fixed category
+## (d8) and in-lair (d100) rolls, but lets the test drive the creature-INDEX
+## roll — any other 1dN, which _generate_encounter now issues via
+## `_roll_die(filtered.size(), dice)` — to a chosen value. The value is clamped
+## to the pool size so walking past the end safely re-picks the last creature,
+## letting the test enumerate the entire filtered pool deterministically.
+class IndexWalkDice:
+	extends RefCounted
+	var fixed_d8: int = 3      # → 'men' category
+	var fixed_d100: int = 90   # high → not in lair
+	var index_roll: int = 1    # 1-based creature index over the filtered pool
+	func roll(count: int, sides: int) -> int:
+		if count == 1 and sides == 8: return fixed_d8
+		if count == 1 and sides == 100: return fixed_d100
+		# Any other 1dN is the uniform creature-index roll over the filtered pool.
+		return mini(index_roll, sides)
+
 var _campaign_id: String = ""
 var _suffix: int = 0
 
@@ -1069,42 +1086,53 @@ func test_terrain_aware_selection_filters_to_matching_creatures() -> void:
 	## 'barren_desert' in terrain_affinity should be eligible: brigand_cavalry,
 	## merchants, nomad_cavalry, nomad_archers. Pirates and berserkers/brigand_bowmen
 	## should be excluded.
-	var dice := FakeDice.new()
-	dice.fixed_d8 = 3       # → 'men' category
-	dice.fixed_d100 = 90    # high → not in lair (in_lair_pct typically 50ish)
-	# Run 30 selections; collect picked ids.
-	var picks: Dictionary = {}
-	for i in range(30):
-		var enc: Dictionary = DomainEncounterResolver._generate_encounter(
-			dice, "desert", "tafd_domain")
-		if enc.is_empty():
-			continue
-		var key: String = String(enc.get("key", ""))
-		picks[key] = int(picks.get(key, 0)) + 1
-	# Allowed ids per the catalog's terrain_affinity (this session's catalog).
+	##
+	## The creature pick now routes through the dice abstraction
+	## (_generate_encounter uses `_roll_die(filtered.size(), dice) - 1`), so the
+	## pick is deterministic under a mocked dice — the prior randi()-driven
+	## 30-iteration histogram would collapse to a single creature. Instead we
+	## WALK the creature-index roll (IndexWalkDice) to deterministically
+	## enumerate the entire reachable pool, preserving the original test's
+	## full-pool coverage: disallowed creatures must be unreachable, and the
+	## complete eligible pool must be reachable.
 	var allowed: Array = [
 		"brigand_cavalry", "merchants", "nomad_cavalry", "nomad_archers",
 	]
-	# Disallowed ids (should never appear).
+	# Disallowed ids (should never be reachable on desert terrain).
 	var disallowed: Array = [
 		"berserkers",        # ["clear_grass_scrub", "woods", "mountains_hills"]
 		"brigand_bowmen",    # ["woods", "mountains_hills", "swamp"]
 		"pirate_swordsmen",  # ["ocean", "river"]
 		"pirate_bowmen",     # ["ocean", "river"]
 	]
+	var dice := IndexWalkDice.new()
+	dice.fixed_d8 = 3       # → 'men' category
+	dice.fixed_d100 = 90    # high → not in lair
+	# Walk the index roll past the pool size (the 'men' category has 8 members,
+	# so the desert-filtered pool is at most 8; the dice clamps to the actual
+	# pool, so distinct picks cover every reachable creature).
+	var reachable: Dictionary = {}
+	for idx in range(1, 13):
+		dice.index_roll = idx
+		var enc: Dictionary = DomainEncounterResolver._generate_encounter(
+			dice, "desert", "tafd_domain")
+		if enc.is_empty():
+			continue
+		var key: String = String(enc.get("key", ""))
+		reachable[key] = int(reachable.get(key, 0)) + 1
+	# No disallowed (non-desert) creature may ever be reachable.
 	for d in disallowed:
-		check(not picks.has(d),
-			"terrain-aware selection should NOT pick '%s' for desert+men, but did (%d times)" %
-			[d, int(picks.get(d, 0))])
-	# At least one allowed pick should occur in 30 attempts (very high probability).
-	var any_allowed := false
+		check(not reachable.has(d),
+			"terrain-aware selection should NEVER reach '%s' for desert+men, but did" % d)
+	# Every reachable creature must be one of the desert-eligible men.
+	for k in reachable.keys():
+		check(allowed.has(String(k)),
+			"reachable creature '%s' for desert+men should be desert-eligible" % str(k))
+	# And the full eligible pool should be reachable (filter didn't over-prune).
 	for a in allowed:
-		if picks.has(a):
-			any_allowed = true
-			break
-	check(any_allowed,
-		"terrain-aware selection should pick at least one of %s for desert+men over 30 attempts; picks=%s" %
-		[str(allowed), str(picks)])
+		check(reachable.has(a),
+			"desert-eligible creature '%s' should be reachable for desert+men; reachable=%s" %
+			[a, str(reachable.keys())])
 
 
 func test_terrain_aware_selection_falls_back_when_no_matches() -> void:
@@ -1141,34 +1169,42 @@ func test_terrain_aware_selection_falls_back_when_no_matches() -> void:
 
 func test_settled_lair_dungeon_doubles_linger_chance() -> void:
 	## Per RAW L349 ("Monsters are twice as likely to linger if treasure is
-	## available in an unoccupied or partly occupied dungeon"). Pick a
-	## creature with percent_in_lair=35 (e.g. wolf). Without dungeon: linger
-	## requires d100 ≤ 35. With dungeon: linger requires d100 ≤ 70.
-	## Set d100=50: without dungeon → migrating (50 > 35); with dungeon →
-	## lingering (50 ≤ 70).
-	var dice := FakeDice.new()
-	dice.fixed_d8 = 4   # animals
+	## available in an unoccupied or partly occupied dungeon"). A creature
+	## whose percent_in_lair is in the [25, 50) band MIGRATES at d100=50
+	## without a dungeon (50 > pct) but LINGERS with one (50 <= min(pct*2, 100)).
+	##
+	## The creature pick is dice-deterministic now (resolver uses
+	## `_roll_die(filtered.size(), dice) - 1`), so we WALK the index roll
+	## (IndexWalkDice) to a swamp animal in that band — same dice/index for
+	## both calls picks the SAME creature — and assert the with-dungeon flip,
+	## rather than relying on randi() to land different creatures across calls.
+	var dice := IndexWalkDice.new()
+	dice.fixed_d8 = 4      # animals
 	dice.fixed_d100 = 50
-	# Without dungeon (has_dungeon=false): expect is_lingering=false for any
-	# creature whose percent_in_lair < 50. Run several picks and check at
-	# least one is migrating.
-	var got_migrating: bool = false
-	var got_lingering_with_dungeon: bool = false
-	for i in range(20):
+	var reg := MonsterRegistry.new()
+	var tested := false
+	for idx in range(1, 13):
+		dice.index_roll = idx
 		var enc_no: Dictionary = DomainEncounterResolver._generate_encounter(
 			dice, "swamp", "lair_test_dom_no", false)
-		if not enc_no.is_empty() and not bool(enc_no.get("is_lingering", false)):
-			got_migrating = true
+		if enc_no.is_empty():
+			continue
+		var key: String = String(enc_no.get("key", ""))
+		var pct_raw: Variant = reg.get_monster(key).get("percent_in_lair", 0)
+		var pct: int = int(pct_raw) if pct_raw != null else 0
+		if pct < 25 or pct >= 50:
+			continue  # only borderline creatures exercise the 2x flip
+		# Same dice + same index_roll → with-dungeon call picks the SAME creature.
 		var enc_yes: Dictionary = DomainEncounterResolver._generate_encounter(
 			dice, "swamp", "lair_test_dom_yes", true)
-		if not enc_yes.is_empty() and bool(enc_yes.get("is_lingering", false)):
-			got_lingering_with_dungeon = true
-		if got_migrating and got_lingering_with_dungeon:
-			break
-	check(got_migrating,
-		"without dungeon, d100=50 should produce at least one migrating encounter (%creatures pct < 50)")
-	check(got_lingering_with_dungeon,
-		"with dungeon, d100=50 should produce at least one lingering encounter (2x boost takes pct ≥ 25 to lingering)")
+		check(not bool(enc_no.get("is_lingering", false)),
+			"%s (pct=%d): without dungeon, d100=50 should MIGRATE (50 > %d)" % [key, pct, pct])
+		check(bool(enc_yes.get("is_lingering", false)),
+			"%s (pct=%d): with dungeon, d100=50 should LINGER (50 <= min(%d*2, 100))" % [key, pct, pct])
+		tested = true
+		break
+	check(tested,
+		"expected a swamp animal with percent_in_lair in [25,50) to exercise the 2x dungeon boost")
 
 
 func test_settled_lair_lingering_creates_settled_lair_kind() -> void:
@@ -1206,19 +1242,50 @@ func test_settled_lair_lingering_creates_settled_lair_kind() -> void:
 	if lairs.size() >= 1:
 		check(String((lairs[0] as Dictionary).get("creature_key", "")) == "wolf",
 			"listed lair has creature_key=wolf, got '%s'" % str((lairs[0] as Dictionary).get("creature_key", "")))
-	# Verify _generate_encounter produces is_lingering=true with very low
-	# d100 (the precondition that triggers the kind='settled_lair' branch
-	# in roll_monthly_encounters_for_domain).
-	var dice := FakeDice.new()
-	dice.fixed_d8 = 4    # animals
-	dice.fixed_d100 = 1  # very low → lingering=true for any creature with percent_in_lair ≥ 1
-	var enc: Dictionary = DomainEncounterResolver._generate_encounter(
-		dice, "woods", domain_id, false)
-	check(not enc.is_empty(),
-		"expected non-empty encounter for d100=1 (lingering should fire)")
-	if not enc.is_empty():
-		check(bool(enc.get("is_lingering", false)),
-			"d100=1 should produce is_lingering=true for any creature with percent_in_lair ≥ 1")
+	# Verify _generate_encounter produces is_lingering=true with very low d100
+	# (the precondition that triggers the kind='settled_lair' branch in
+	# roll_monthly_encounters_for_domain). The creature pick is now dice-
+	# DETERMINISTIC (resolver uses `_roll_die(filtered.size(), dice) - 1`), so a
+	# mocked dice fully pins the draw — the prior FakeDice + 50-iteration "variety"
+	# loop would have drawn the SAME creature every time (FakeDice returns 1 for
+	# the unmatched index roll), making the (2/13)^50 argument invalid. Instead we
+	# WALK the creature-index roll (IndexWalkDice) over the woods-animals pool and
+	# assert the EXACT contract for every reachable creature — with d100=1,
+	# is_lingering must equal (percent_in_lair >= 1) — and require at least one
+	# lairing creature to be reachable so the lingering branch is truly exercised
+	# (the woods animal pool is overwhelmingly lairing, 11 of 13).
+	var dice := IndexWalkDice.new()
+	dice.fixed_d8 = 4      # animals
+	dice.fixed_d100 = 1    # minimum roll → any creature that lairs at all lingers
+	var reg := MonsterRegistry.new()
+	var saw_non_empty := false
+	var saw_lingering := false
+	var invariant_violation := ""
+	# Walk past the pool size; the dice clamps to the actual pool, so distinct
+	# indices cover every reachable creature (pool ≤ 13 → 1..15 enumerates it).
+	for idx in range(1, 16):
+		dice.index_roll = idx
+		var enc: Dictionary = DomainEncounterResolver._generate_encounter(
+			dice, "woods", domain_id, false)
+		if enc.is_empty():
+			continue
+		saw_non_empty = true
+		var picked_key: String = String(enc.get("key", ""))
+		var pct_raw: Variant = reg.get_monster(picked_key).get("percent_in_lair", 0)
+		var in_lair_pct: int = int(pct_raw) if pct_raw != null else 0
+		var lingering: bool = bool(enc.get("is_lingering", false))
+		# Exact contract: with d100=1, lingering iff the creature lairs at all.
+		if lingering != (1 <= in_lair_pct) and invariant_violation.is_empty():
+			invariant_violation = "creature '%s' pct=%d but is_lingering=%s" % [
+				picked_key, in_lair_pct, str(lingering)]
+		if lingering:
+			saw_lingering = true
+	check(saw_non_empty,
+		"expected at least one non-empty encounter for d100=1 while walking the woods pool")
+	check(invariant_violation.is_empty(),
+		"d100=1: is_lingering must equal (percent_in_lair >= 1) for every reachable creature; first violation: %s" % invariant_violation)
+	check(saw_lingering,
+		"d100=1 should produce at least one lingering encounter (a lairing woods animal reachable in the pool)")
 
 
 func test_settled_lair_morale_penalty_xp_per_family() -> void:
@@ -1299,21 +1366,20 @@ func test_settled_lair_morale_penalty_subtracts_from_event_modifiers() -> void:
 
 
 func test_bankers_round_half_to_even() -> void:
-	## Direct test of DomainEncounterResolver._bankers_round per CLAUDE.md
-	## convention (round half to even, NOT half away from zero like roundi()).
-	var script := load("res://engine/subsystems/domains/domain_encounter_resolver.gd")
-	var fn := Callable(script, "_bankers_round")
-	check(fn.is_valid(), "_bankers_round should be callable")
-	if not fn.is_valid():
-		return
-	check(int(fn.call(0.5)) == 0, "0.5 → 0 (round to even)")
-	check(int(fn.call(1.5)) == 2, "1.5 → 2 (round to even)")
-	check(int(fn.call(2.5)) == 2, "2.5 → 2 (round to even)")
-	check(int(fn.call(3.5)) == 4, "3.5 → 4 (round to even)")
-	check(int(fn.call(0.4)) == 0, "0.4 → 0 (round down)")
-	check(int(fn.call(0.6)) == 1, "0.6 → 1 (round up)")
-	check(int(fn.call(1.0)) == 1, "1.0 → 1 (exact)")
-	check(int(fn.call(18.0)) == 18, "18.0 → 18 (exact)")
+	## Banker's rounding per CLAUDE.md convention (round half to even, NOT half
+	## away from zero like roundi()). The domain settled-lair morale penalty
+	## (compute_settled_lair_morale_penalty) routes through this. Banker's
+	## rounding was consolidated 2026-05-19 from DomainEncounterResolver
+	## ._bankers_round into XPAwardCalculator.bankers_round — test the canonical
+	## home directly rather than a since-removed private helper.
+	check(XPAwardCalculator.bankers_round(0.5) == 0, "0.5 → 0 (round to even)")
+	check(XPAwardCalculator.bankers_round(1.5) == 2, "1.5 → 2 (round to even)")
+	check(XPAwardCalculator.bankers_round(2.5) == 2, "2.5 → 2 (round to even)")
+	check(XPAwardCalculator.bankers_round(3.5) == 4, "3.5 → 4 (round to even)")
+	check(XPAwardCalculator.bankers_round(0.4) == 0, "0.4 → 0 (round down)")
+	check(XPAwardCalculator.bankers_round(0.6) == 1, "0.6 → 1 (round up)")
+	check(XPAwardCalculator.bankers_round(1.0) == 1, "1.0 → 1 (exact)")
+	check(XPAwardCalculator.bankers_round(18.0) == 18, "18.0 → 18 (exact)")
 
 
 # ---------------------------------------------------------------------------
@@ -1324,15 +1390,20 @@ func test_hydra_in_ocean_terrain_marks_aquatic_true() -> void:
 	## When a hydra is picked on ocean terrain, the encounter dict should
 	## carry is_aquatic=true (catalog flag presence + water terrain check).
 	## Force d8=7 → 'fantastic_creatures' category. Hydras' terrain_affinity
-	## now includes 'ocean' so they're eligible to pick.
-	var dice := FakeDice.new()
-	dice.fixed_d8 = 7   # → fantastic_creatures category
-	dice.fixed_d100 = 90  # not in lair
-	# Run multiple selections to land on a hydra (uniform pick from filtered
-	# fantastic_creatures with terrain_affinity containing 'ocean'). Hydras
-	# are the primary catalog entries with ocean affinity in fantastic_creatures.
+	## includes 'ocean' so they're eligible to pick.
+	##
+	## The creature pick is dice-deterministic now (resolver uses
+	## `_roll_die(filtered.size(), dice) - 1`), so we WALK the index roll
+	## (IndexWalkDice) to deterministically reach a hydra rather than relying
+	## on randi() sampling. The fantastic_creatures pool leads with dragon
+	## entries (the dragon resolver fires harmlessly on those indices; we skip
+	## non-hydras), then hydras.
+	var dice := IndexWalkDice.new()
+	dice.fixed_d8 = 7      # → fantastic_creatures category
+	dice.fixed_d100 = 90   # not in lair
 	var got_hydra_aquatic: bool = false
-	for i in range(40):
+	for idx in range(1, 30):
+		dice.index_roll = idx
 		var enc: Dictionary = DomainEncounterResolver._generate_encounter(
 			dice, "ocean", "aquatic_test_dom", false)
 		if enc.is_empty():
@@ -1347,17 +1418,18 @@ func test_hydra_in_ocean_terrain_marks_aquatic_true() -> void:
 		got_hydra_aquatic = true
 		break
 	check(got_hydra_aquatic,
-		"expected at least one hydra pick across 40 attempts on ocean terrain")
+		"expected to reach a hydra by walking the fantastic_creatures pool on ocean")
 
 
 func test_hydra_in_swamp_terrain_marks_aquatic_false() -> void:
 	## Swamp is a hydra terrain (terrain_affinity includes 'swamp') but it's
 	## not aquatic. Hydras picked on swamp should have is_aquatic=false.
-	var dice := FakeDice.new()
+	var dice := IndexWalkDice.new()
 	dice.fixed_d8 = 7
 	dice.fixed_d100 = 90
 	var got_hydra_non_aquatic: bool = false
-	for i in range(40):
+	for idx in range(1, 30):
+		dice.index_roll = idx
 		var enc: Dictionary = DomainEncounterResolver._generate_encounter(
 			dice, "swamp", "swamp_test_dom", false)
 		if enc.is_empty():
@@ -1372,7 +1444,7 @@ func test_hydra_in_swamp_terrain_marks_aquatic_false() -> void:
 		got_hydra_non_aquatic = true
 		break
 	check(got_hydra_non_aquatic,
-		"expected at least one hydra pick across 40 attempts on swamp terrain")
+		"expected to reach a hydra by walking the fantastic_creatures pool on swamp")
 
 
 func test_non_hydra_creature_omits_is_aquatic_field() -> void:

@@ -142,6 +142,7 @@ var _camp_btn: Button = null
 var _notebook_btn: Button = null
 var _view_mode_btn: Button = null
 var _enter_region_btn: Button = null
+var _region_overlay_btn: CheckButton = null
 var _notification_label: Label = null
 
 # Travel speeds zone (right of widget zone, left of log zone).
@@ -359,6 +360,17 @@ func _build_widget_zone() -> GridContainer:
 	_enter_region_btn.visible = false
 	grid.add_child(_enter_region_btn)
 
+	# "Regions" toggle — turns the 3D play map's translucent named-region colour
+	# overlay on/off (forests, ranges, rivers, …). Wilderness-only, like Camp.
+	_region_overlay_btn = CheckButton.new()
+	_region_overlay_btn.text = "Regions"
+	_region_overlay_btn.tooltip_text = "Show translucent colour overlays for the named regions on the play map."
+	_region_overlay_btn.add_theme_font_size_override("font_size", FONT_SIZE)
+	_region_overlay_btn.add_theme_color_override("font_color", LABEL_COLOR)
+	_region_overlay_btn.visible = false
+	_region_overlay_btn.toggled.connect(_on_region_overlay_btn_toggled)
+	grid.add_child(_region_overlay_btn)
+
 	# Notification surface holds the latest non-modal notification.
 	# Pause-reason text reuses this slot when scheduler pauses.
 	var notif_box := HBoxContainer.new()
@@ -511,6 +523,22 @@ func _apply_height_pixels(pixels: int) -> void:
 	var clamped: int = clampi(pixels, HEIGHT_HIDDEN, _expanded_height_pixels())
 	_bar.offset_top = -float(clamped)
 	_bar.offset_bottom = 0
+	_emit_bar_height()
+
+
+## The number of screen pixels the bar currently occludes at the bottom of the
+## viewport — its applied height when visible, 0 when hidden. The world viewport
+## frame reads this to size the map render area so nothing draws behind the bar.
+func get_effective_bar_height() -> int:
+	if _bar == null or not _bar.visible:
+		return 0
+	return -int(_bar.offset_top)
+
+
+## Broadcast the current effective bar height so the world viewport frame can
+## keep its bottom edge pinned to the bar's top edge.
+func _emit_bar_height() -> void:
+	EventBus.bar_height_changed.emit(float(get_effective_bar_height()))
 
 
 ## Snaps the current pixel height to the nearest discrete height state and
@@ -602,6 +630,9 @@ func _make_label(text: String, color: Color, size: int) -> Label:
 # ---------------------------------------------------------------------------
 
 func _connect_signals() -> void:
+	# EXPANDED height is a fraction of the viewport height; re-apply on resize
+	# so the bar — and the world frame that tracks it — stay correct.
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	GameState.state_changed.connect(_on_state_changed)
 	GameState.exploration_context_changed.connect(_on_exploration_context_changed)
 	EventBus.hex_entered.connect(_on_hex_entered)
@@ -653,6 +684,7 @@ func _on_notebook_open_state_changed(is_open: bool) -> void:
 	# Hide the bar while the notebook is open. The drag-handle and height
 	# state are preserved; the bar reappears at its prior height on close.
 	_bar.visible = (not is_open) and _state_allows_visibility()
+	_emit_bar_height()
 
 
 func _refresh_notebook_btn_state() -> void:
@@ -664,6 +696,12 @@ func _refresh_notebook_btn_state() -> void:
 		_refresh_notebook_btn_tooltip()
 	else:
 		_notebook_btn.tooltip_text = "Notebook unavailable during enemy resolution."
+
+
+func _on_viewport_size_changed() -> void:
+	# Recompute the applied height (EXPANDED tracks viewport height) and re-emit
+	# bar_height_changed so the world viewport frame resizes with the window.
+	_apply_height_state()
 
 
 func _on_notification_requested(payload: Dictionary) -> void:
@@ -842,6 +880,7 @@ func _update_visibility() -> void:
 	if _bar == null:
 		return
 	_bar.visible = _state_allows_visibility()
+	_emit_bar_height()
 
 
 func _update_wilderness_buttons() -> void:
@@ -851,6 +890,8 @@ func _update_wilderness_buttons() -> void:
 	)
 	if _camp_btn != null:
 		_camp_btn.visible = show_buttons
+	if _region_overlay_btn != null:
+		_region_overlay_btn.visible = show_buttons
 
 
 func _on_hex_entered(hex_id: String) -> void:
@@ -1139,6 +1180,12 @@ func _on_enter_region_btn_pressed() -> void:
 		return
 	# Switch the camera to Regional view so the player sees the new map.
 	GameState.set_map_view_mode(GameState.MapViewMode.REGIONAL)
+
+
+## "Regions" toggle → broadcast to the 3D wilderness renderer, which shows/hides its
+## translucent named-region colour overlay.
+func _on_region_overlay_btn_toggled(pressed: bool) -> void:
+	EventBus.region_overlay_toggled.emit(pressed)
 
 
 func _on_map_view_mode_changed(_from_mode: int, _to_mode: int) -> void:

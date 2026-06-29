@@ -49,6 +49,12 @@ var height: int = 0
 ## Final visible surface, 0-1 (post-curve, post-channel-incision). The terrain
 ## renderer / hex normalizer samples THIS.
 var surface: PackedFloat32Array = PackedFloat32Array()
+## Snapshot of the surface BEFORE channel incision (the geomorphic surface).
+## GeoFieldGenerator fills it just before _incise_channels; GeoClimateGenerator
+## reads it for orographic uplift so a river-carved windward cell still registers
+## its true windward rise instead of the dry dip its incised channel would imply.
+## Empty until populated by generate(); climate falls back to `surface` if absent.
+var pre_incision_surface: PackedFloat32Array = PackedFloat32Array()
 ## Per-cell local relief (max |Δsurface| to a D8 neighbour) on the GEOMORPHIC
 ## surface (pre channel-incision). The gradient signal for elevation tagging —
 ## lets a flat-topped plateau read as flat and a prominent peak read as mountains.

@@ -1,0 +1,367 @@
+{
+  "kit_id": "wabanstan",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "north_american"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_34",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "old_persian (Achaemenid / court register) backbone + woodland (Iroquois/Haudenosaunee) overlay (cross-family blend, Persian-leaning)",
+  "synthesis_sources": [
+    "BASE_04",
+    "BASE_11"
+  ],
+  "homeland": "Wabanstan",
+  "blend": {
+    "backbone": "old_persian (Achaemenid court register: the Xshayathiya/satrapal ladder, the paradise-garden and the royal road, theophorics on Arta- and the shifted canon-stems, flowing a/i/u vowels with long counterparts, ezafe genitive-of-relation '-ahya', spirants th/x/f and sibilants s/sh/z/c, the -aspa/-arta/-farnah/-data endings)",
+    "overlay": "woodland (Iroquois/Haudenosaunee: the matrilineal longhouse-clans (ohwachira) and the Grand Council of sachems, the forest-and-lake material world, labial-sparse polysynthetic compounds, glottal stops and nasal vowels, the clan-mothers who raise and depose the chiefs)",
+    "lean": "Persian-heavy - a Persian-style court and satrapal order (a Xshayathiya-house and its paridaida-gardens) grown together with the eastern-forest longhouse-people: the rose-court and the dawn-confederacy made one people. The flowing court tongue dominates; the woodland substrate keeps the forest, the longhouse, and the worked things of the land."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_04 Axsatra (Achaemenid Persian) x BASE_11 Oronan (Eastern Woodland / Haudenosaunee). CIV/CLAN DECIDED by inheritance: Persian base = Civilized, Woodland base = Clanhold, and any Civ parent -> Civ, so Wabanstan is Civilized (feudal). Concept: a Perso-Woodland realm - the dawn-people of the eastern forests and the rose-court grown into one people; the longhouse and the paradise-garden, the council-fire and the satrapal road. Backbone = Old Persian (the court register, the Xshayathiya ladder, the paridaida-garden, the Arta-theophorics); overlay/substrate = Woodland (the longhouse-clans, the forest material world, the labial-sparse polysynthetic compounds). Common-word lexicon and rank titles use the real Old-Persian register, with woodland substrate roots filtered into Persian phonology (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Persian-shifted reflexes primary, Woodland morphs secondary), never real gods. Homeland Wabanstan = Waban- (dawn / the east) + -stan (place-of): the land of the dawn-people. APPROVED FOREIGN TERM: the kingdom display title is 'Shah' (the commonly-known Persian word for king), recorded in approved_foreign_terms_used; all other ruler/domain DISPLAY titles are English, with Persian conlang forms in ruler_native/domain_native for NPC dialogue. All human cultures allow Lawful/Neutral/Chaotic. The cardinal Persian virtue ARTA (Truth/Right-order, opposed to DRAUGA the Lie) carries through the court register; the woodland council-peace and the clan-mothers' raising of chiefs survive within the feudal frame.",
+  "phonology": {
+    "palette": "Old Persian (Indo-Iranian) backbone - flowing vowels a i u with long a/i/u, spirants th(0)/x(kh)/f, sibilants s/sh/z/zh and c(ts), r l, nasals m n, semivowels y v/w, aspirate h, the signature endings -a/-ah/-ish/-iya/-ana/-aspa/-arta/-data/-farnah, ezafe genitive-of-relation '-ahya', stress on heavy syllables - meeting a Woodland overlay: labial-sparse roots (the Iroquoian source lacks p/b/m/f), glottal stops, nasal vowels (en/on), long polysynthetic compounds (kanonhsa longhouse, karhakon forest, kahyonha river, ohwachira clan). Per the CSV: a harsh consonantal texture (glottal stops, sibilants, the woodland clusters ts/kw/hr) carried on flowing Persian vowels and ezafe; grammar SOV and polysynthetic, the long woodland compounds re-shaped into Persian construct-chains and softened with linking vowels. Theophoric on the Persian-shifted reflexes (Turvasa-, Urlaspa-, Arta-) with Woodland morph variants (Tularsa-, Oransa-).",
+    "phonotactics": "CV(C); permitted Persian clusters xsh-, sp-, st-, fr-, vr-, thr- meeting Woodland ts, kw, hr and glottal stops; vowel length distinctive; long woodland compounds broken with Persian linking vowels and the ezafe '-ahya'; heavy-syllable stress with a Persian penultimate pull over the woodland compound stems; satrapal/garden toponyms (-pura, Dida-, Paridaida-) over woodland feature-stems (kanata-, karhakon-, kahyonha-).",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "iranian (old persian) phonology dominant",
+      "sound_changes": [
+        "Woodland labial-sparse roots keep their labial-free texture but are RE-VOWELED to the Persian flowing system (a i u + long counterparts) and given Persian linking vowels where the woodland cluster is heavy",
+        "Woodland polysynthetic over-long compounds are CLIPPED to a Persian root + a Persian suffix or ezafe construct (kanonhsa -> *kanusa, karhakonha -> *karhana), losing the trailing -ha/-onha and the nasal-vowel tail",
+        "Old Persian heavy-syllable stress and the ezafe genitive '-ahya' imposed on all words; Persian spirants th/x/f preferred where a woodland stop would otherwise stand",
+        "retain Old Persian endings (-a, -ah, -iya, -ana, -aspa, -arta) and a few signature Woodland phonemes (the glottal-stop ', the ts/kw clusters, the nasal -on) so both ancestries stay audible; very short woodland roots take a Persian -a / -ah"
+      ],
+      "source_tilt": "forest/longhouse/material/staple words from Woodland roots (the substrate works the forest and the field - kahyonha river, karhakon forest, kanonhsa longhouse, onenhste maize, oskenonton deer, wahta maple); rule/kin/court/land words from Old Persian roots (the ruling register - the Xshayathiya ladder, the paridaida-garden, puthra/duxta kinship, pura/dahyu land); every chosen root then filtered to the one Persian-shaped phonology",
+      "portmanteaus": [
+        "longhouse kanonhsa+vith>kanavitha (the clan-longhouse as the house-of-the-line)",
+        "forest karhakon+vana>karhavana (the deep-forest)",
+        "river kahyonha+rautah>kahrautah (the forest-river)",
+        "clan ohwachira+vith>ohvitha (the matrilineal house-line)",
+        "council kanonhsiyo+xshaca>kansaxsa (the council-realm, the great longhouse-rule)",
+        "garden paridaida+kahenta>paridahenta (the paradise-meadow, the walled garden of the plain)",
+        "sachem royaner+xshathra>royaxsa (the sachem-ruler, the council-lord raised to the crown)"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Woodland forest/longhouse/material roots + Old Persian rule/kin/court/land roots, all run through one Old-Persian-shaped sound-law (flowing vowels, ezafe, heavy-syllable stress; woodland over-long compounds clipped and re-voweled); portmanteaus mark the blended institutions - the longhouse-line, the council-realm, the paradise-meadow. One word per concept, no slashes.",
+    "feature_words": {
+      "river": "kahrautah",
+      "stream": "kahyusa",
+      "lake": "kaniatar",
+      "sea": "draya",
+      "bay": "kaniatakta",
+      "cape": "onenrakta",
+      "isle": "kawenata",
+      "mountain": "kaufa",
+      "hill": "ononta",
+      "ridge": "parshva",
+      "forest": "karhavana",
+      "wood": "kerhita",
+      "plain": "kahenta",
+      "marsh": "anupa",
+      "ford": "kahyakta",
+      "pass": "duvara",
+      "vale": "kahyakana",
+      "grove": "kerhitana",
+      "coast": "kaniatakta-pada",
+      "neck": "onyara",
+      "narrows": "tanga",
+      "waste": "owerah",
+      "road": "patha",
+      "way": "raha",
+      "track": "oskena"
+    },
+    "settlement_words": {
+      "hamlet": "kanatasa",
+      "village": "kanata",
+      "town": "kanatapura",
+      "city": "pura",
+      "fort": "dida",
+      "port": "kahyaktapura",
+      "market": "vahanam",
+      "garden": "paridahenta",
+      "temple_town": "atashkanusa",
+      "citadel": "vazraka-dida"
+    },
+    "kinship": {
+      "son": "ronputhra",
+      "daughter": "yenduxta",
+      "house": "kanavitha",
+      "kin": "ohvitha",
+      "ancestor": "fravashi"
+    },
+    "adjectives": {
+      "great": "kowana",
+      "little": "kasu",
+      "old": "thotira",
+      "new": "ase",
+      "black": "kahontsa",
+      "white": "spaita",
+      "red": "ruxsha",
+      "golden": "zaranya",
+      "iron": "ayah",
+      "high": "barzan",
+      "far": "inan",
+      "sacred": "yazata",
+      "fair": "naiba",
+      "true": "arta",
+      "false": "drauga"
+    },
+    "resources": {
+      "salt": "namaka",
+      "iron": "ayah",
+      "bronze": "raudha",
+      "silver": "ardata",
+      "gold": "zaranya",
+      "maize": "onenhsta",
+      "grain": "yava",
+      "deer": "oskenana",
+      "fur": "kahonwa",
+      "maple": "wahta",
+      "tobacco": "oyenkwa",
+      "horse": "aspa"
+    },
+    "directional": {
+      "upper": "upari",
+      "lower": "athah",
+      "north": "otowena",
+      "south": "nimroz",
+      "east": "waban (sunrise, the dawn)",
+      "west": "shamtara (sunset)",
+      "inner": "antar",
+      "outer": "para"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-pura (city of; Persian)",
+      "Dida- (fort of; Persian)",
+      "Paridaida- (paradise-garden of; Persian)",
+      "-stan / -stana (place of; Persian)",
+      "kanata- (town; Woodland)",
+      "karhakon- / karhavana- (forest; Woodland)",
+      "kahyonha- / kahrautah- (river; Woodland)"
+    ],
+    "patronymic_form": "the Persian court-and-feudal nobility carry a house (vith-X / ohvitha) and filiation 'X-ahya puthra' (son of X) or compact 'X-puthra'; the woodland substrate keeps the matrilineal clan-name (ohwachira, by animal-totem) held and bestowed by the clan-mother; the throne fuses both - a Xshayathiya who also belongs to a totem-clan-line through the clan-mothers.",
+    "gendered_endings": {
+      "male": "-a / -ah / -aspa / -puthra (Persian); ron- / -na (Woodland)",
+      "female": "-a / -i / -duxta / -banu (Persian); yen- / io- / -wenne (Woodland)"
+    },
+    "diminutive_form": "-aka / -ka (Persian) / -sa / -en'a (Woodland)",
+    "compounding_rule": "Persian quality/relation + element via ezafe '-ahya' (Arta-xshaca truth-realm, Baga-data god-given) layered over clipped Woodland compounds (karhavana deep-forest, kanavitha clan-longhouse): the capital Wabanstan (dawn-land), Paridahenta-Riyata (the watered paradise-meadow), Karhavana-pura (the deep-forest city)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Persian-style court and feudal order over the woodland longhouse-confederacy: the Xshayathiya/Shah and the Vispuhra-princes of the blood at the crown, the Xshacapavan-satraps and Marzapana-wardens over the provinces, the royaner-sachems and clan-mothers (Iakoia:ner) of the longhouse-clans serving and seated beneath; the magi tend the fire and the faithkeepers tend the council-rite)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Vispati",
+        "domain_native": "Vis"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marzapana",
+        "domain_native": "Marz"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Framatar",
+        "domain_native": "Parada"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Xshacapavan",
+        "domain_native": "Xshacapavanam"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Vispuhra",
+        "domain_native": "Dahyu"
+      },
+      "kingdom": {
+        "ruler": "Shah",
+        "domain": "Kingdom",
+        "ruler_native": "Xsayasa",
+        "domain_native": "Xshacam"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Xsayasa Xsayasanam",
+        "domain_native": "Vispa-Dahyu"
+      }
+    },
+    "_tiers_note": "Old Persian ladder, ascending, with the Woodland council-substrate seated beneath. Vispati (clan-lord of a vis) barony; Marzapana (march-warden, the marzban) march; Framatar (appointed governor) county over a Parada (governed district); Xshacapavan (SATRAP, protector of the realm) duchy over a satrapy; Vispuhra (prince of the blood) principality over a great province (Dahyu); Xsayasa (king; the shifted Xshayathiya) kingdom over a Xshacam, shown in English as the approved foreign term SHAH; Xsayasa Xsayasanam (King of Kings) empire over the Vispa-Dahyu, all the lands. The woodland longhouse-clans keep their royaner (sachem) and the clan-mothers (Iakoia:ner) who raise and depose the local chiefs beneath the Persian crown; the magi (magu) and the council-faithkeepers (rotihontsa) stand outside the ladder. Rank titles fuse the real Old-Persian and Iroquois registers (allowed); the kingdom DISPLAY uses the approved foreign term 'Shah'.",
+    "heir": "Mathishta (the greatest; crown prince / the heir) / Visa-puthra (the king's son)",
+    "honorifics": {
+      "lord": "Khvatava / Royaner",
+      "lady": "Banuka / Iakoia:ner (clan-mother)",
+      "champion": "Asabara (horseman/cavalier) / Rotiskenrakehte (the woodland war-chief)",
+      "your_grace": "Khvatava",
+      "elder": "Thotira (the eldest)"
+    },
+    "vassalage": {
+      "liege": "Khvatava",
+      "vassal": "Bandaka (the king's loyal bondsman) / Rotiskenrakehte (the warriors)",
+      "fealty": "Bandaka (the bond) / Kaswentha (the covenant-belt)",
+      "tribute": "Baji (tribute) / Atste (the gift borne to the council)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the kingdom tier which uses the approved foreign term 'Shah' (a commonly-known Persian word, recorded in approved_foreign_terms_used). The *_native conlang forms (Vispati, Xshacapavan, Xsayasa, Royaner, etc.) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Shah": "Shahbanu",
+      "Emperor": "Empress"
+    },
+    "female_forms_native": {
+      "Xsayasa Xsayasanam": "Xsayarsa-banu",
+      "Xsayasa": "Xsayasa-banu",
+      "Vispuhra": "Vispuhri",
+      "Xshacapavan": "Xshacapavi",
+      "Framatar": "Framatri",
+      "Marzapana": "Marzapani",
+      "Vispati": "Vispatni"
+    },
+    "approved_foreign_terms_used": [
+      "Shah (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Persian court-stock carry a given (often theophoric or Arta-/Vahu- virtue-name) + filiation (X-puthra) + a house (vith-X) and court/satrapal office; the woodland substrate carry a clan-held name bestowed by the clan-mother + ohwachira (matrilineal totem-clan); the throne fuses both - given-first.",
+    "surname_source": [
+      "filiation (X-puthra = son-of-X; Persian)",
+      "house (vith-X) / matrilineal clan (ohwachira, by totem; Woodland)",
+      "theophoric / virtue-name (Baga-data, Arta-xshathra; Persian)",
+      "clan-held name or sachem title-name (Woodland)"
+    ],
+    "dual_register": "the Persian court-and-satrapal nobility carry a house (vith), office, and filiation; the woodland longhouse-folk carry a clan-held name and a matrilineal totem-clan; the renowned earn an honest-deed epithet on the Arta-true pattern.",
+    "theophoric": "Persian devotional on the shifted canon-stems + an Old Persian element: Baga-X (god-X), X-data (X-given), X-farnah (glory-of-X), Vahu-X (good-X) - Turvasa-data, Baga-Urlaspa, Artafarnah; Woodland devotional favors the clan-totem animals and the powers by domain, on the woodland morphs (Tularsa-, Oransa-).",
+    "diminutive": "-aka / -ka (Persian) / -sa / -en'a (Woodland)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Persian-shifted reflexes PRIMARY (axsatran's Old-Persian-shifted set: Turvasa, Urlaspa, Naumana, Arzanta, Asturna), Woodland morphs SECONDARY (family_north_american.json theonym_sets.woodland: Tularonon, Oranhonon, Kayanonon, here softened toward the Persian register as Tularsa, Oransa, Kayansa), never real Iranian/Zoroastrian or Iroquois gods. Lawful henotheist but TOLERANT (the Persian lean): Asturna the Wise Lord most high upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie; the king's word is bond. The empire shelters the subject cults under Asturna's peace - the woodland council keeps its calendar of thanksgivings at the rite-longhouse beneath the fire-temple's tolerance. Worship vs demonization follows the culture's CURRENT alignment (worship_by_alignment).",
+    "the_one": "Asturna (< Aeternus / Itarnu / woodland Aterhonon; the Wise Lord Most High, the Sky-Holder-Above, upholder of Arta and source of the king's farnah-glory, revered above His ministers and acknowledged at the council-fire)",
+    "sample_deity_renames": {
+      "Tulrius": "Turvasa (the sun and Arta, the day-keeper; woodland Tularsa; Lawful)",
+      "Numeno": "Naumana (the good mind, wisdom and the law; woodland Nunarsa; Lawful)",
+      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; woodland Oransa; Lawful)",
+      "Argentus": "Arzanta (trade, the road and increase; woodland Arensa; Lawful)",
+      "Gaiandus": "Gayanta (the enduring earth and the rooted oak; woodland Kayansa)",
+      "Realta": "Riyata (the Lady of Waters, the mother and life-giver, clan-mother of the powers; woodland Riyawenne)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates Asturna the Wise Lord and the Lawful powers (Turvasa the just, Urlaspa of the sworn war, Naumana of the law, Arzanta of the road, Riyata the merciful), upholds ARTA and names the Chaotic powers the hosts of DRAUGA the Lie, warded; the fire-altar and the council-rite bind alike, and the king's word is bond",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the honest ancestral dead (the fravashi), the forest- and clan-spirits of the longhouse, and the thanksgivings to the growing things; the fire is tended and the council keeps its calendar, the great powers invoked situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon (the hosts once named Drauga), and names the Lawful powers - and Asturna - as the tyrant-gods of a false order, to be defied; the council-peace is broken for the strong"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the hosts of Drauga the Lie (Persian) or demonized at the council (Woodland), keep their morphs + a hostile portfolio-epithet: Maraxus -> Marakhsha the Burner-of-Cities (woodland Waraksa the War-Fire); Vacidus -> Vakida the Devouring-Void (woodland Wasida the Devourer); Lusanto -> Lusanta the Coin-Serpent (the Lie made gold; woodland Rusana the Greed-Serpent).",
+    "clergy_ladder": {
+      "1": "Athravan (fire-tender acolyte) / Rotitsenhaienthon (rite-helper)",
+      "3": "Magu (magus / priest) / Rotihontsa (faithkeeper)",
+      "5": "Magupati (chief magus of a fire-temple) / Kowa-rotihontsa (head faithkeeper)",
+      "7": "Dahyu-Magupati (provincial chief magus) / Royaner-tha (council ritual-chief)",
+      "9": "Magupatan Magupat (the chief of chief magi) / Kansaxsa-tha (the council's high keeper)"
+    },
+    "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashkanusa) over the rite-longhouse (kanusa) of [power] and the forest-grove: 'the Atashkanusa of Turvasa', 'the Kanusa of Tularsa'; the magi keep the ever-burning fire (Atar) on the altar and the faithkeepers keep the council's thanksgivings.",
+    "saints_pattern": "the honest dead and the just kings (kept as fravashi and petitioned at the fire-altar; 'the Arta-true [name]') together with the founders of the council's peace and the honored clan-mothers and sachems, kept in the council's recital and at the burial-grove.",
+    "holy_symbol_motifs": {
+      "Asturna": "a winged ring-disc (the farnah-glory) above a fire-altar set before the longhouse",
+      "Turvasa": "a rayed sun above the upright Arta-measure and the longhouse",
+      "Urlaspa": "an iron spear crossed with an oath-ring"
+    }
+  },
+  "banks_patterns": {
+    "ships": "forest river-and-lake craft and the few royal barges (a land-and-forest realm): 'Bearer of the Baji', 'the Swift Heron', 'Boat of Arzanta', 'the Dawn-Canoe'",
+    "military_units": "the [number/power] Spada (host) and the longhouse war-bands: 'the Spada of Urlaspa', 'the Wolf-clan warriors', 'the Ten-Thousand (Anushiya)'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Farnah', 'The Cup of Truth (Arta-jam)', 'The Maple and Rose'",
+    "dungeons_ruins": "fallen apadana-halls, dead fire-temples and abandoned palisade-castles: 'the dead Atashkanusa of [name]', 'the empty Kanata of [name]', 'the Ghost-Longhouse of [clan]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Turvasa-data",
+      "Baga-Urlaspa",
+      "Artafarnah",
+      "Vahu-Arzanta",
+      "Asturna-data",
+      "Artaxshathra",
+      "Bagadata",
+      "Vishtaspa",
+      "Ron-Turvasa",
+      "Tehana-puthra",
+      "Karonhya-farnah",
+      "Skana-data",
+      "Oren'aspa",
+      "Aryabarza",
+      "Tularsa-data",
+      "Wabana-puthra"
+    ],
+    "personal_f": [
+      "Riyata-banu",
+      "Artaduxta",
+      "Vahudata",
+      "Atusa",
+      "Parisata",
+      "Yegoa-banu",
+      "Banuka-Arta",
+      "Otsitsa-duxta",
+      "Naumana-banu",
+      "Kahenta-banu",
+      "Artazata",
+      "Riyawenne-banu",
+      "Roshanak",
+      "Konwa-duxta",
+      "Farnah-banu",
+      "Gayanta-duxta"
+    ],
+    "clan_houses": [
+      "Vith-Turvasa (ruling house)",
+      "Vith-Urlaspa",
+      "Vith-Naumana",
+      "Vith-Arzanta",
+      "Vith-Asturna",
+      "Wolf clan (Okwaho-ohvitha)",
+      "Bear clan (Ohkwari-ohvitha)",
+      "Turtle clan (A'nowara-ohvitha)",
+      "Heron clan (ohvitha)",
+      "Hawk clan (Akweks-ohvitha)",
+      "Vith-Vishtaspa",
+      "Vith-Aryabarza"
+    ],
+    "epithets_cognomina": [
+      "the Arta-true (the Honest)",
+      "Keeper-of-the-Fire",
+      "the Dawn-rider",
+      "Gold-giver",
+      "the King's Bandaka",
+      "the Peacemaker",
+      "the Tolerant",
+      "Spear-of-Urlaspa"
+    ],
+    "flagship_settlements": [
+      "Wabanstan (the throne-city; the dawn-land seat)",
+      "Atashkanusa-Turvasa (the great fire-temple longhouse-town)",
+      "Dida-Vazraka (the great citadel)",
+      "Karhavana-pura (the deep-forest city)",
+      "Paridahenta-Riyata (the watered paradise-meadow)",
+      "Kahrautah-kanata (the forest-river town)"
+    ]
+  }
+}

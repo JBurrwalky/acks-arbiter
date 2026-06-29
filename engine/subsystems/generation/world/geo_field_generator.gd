@@ -147,6 +147,9 @@ static func generate(campaign_seed: int, params) -> GeoField:
 	_strahler_order(field, fat)
 	_compute_slope(field)      # immediate relief (pre-incision) for elevation tagging
 	_compute_prominence(field) # medium-scale relief (rise above the local valley floor)
+	# Snapshot the geomorphic surface before incision so the climate layer's
+	# orographic uplift reads true relief, not the river-carved channel floor.
+	field.pre_incision_surface = field.surface.duplicate()
 	_incise_channels(field, fat)
 	return field
 

@@ -1,0 +1,363 @@
+{
+  "kit_id": "romkem",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_36",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (egyptian) backbone + classical (latinate) substrate (cross-family fusion, Egyptian-leaning)",
+  "synthesis_sources": [
+    "BASE_05",
+    "BASE_06"
+  ],
+  "homeland": "Romkemet (the Nile-province of the Eagle; lit. 'Rome of the Black Land')",
+  "blend": {
+    "backbone": "near_eastern (egyptian: the per/nesut/heqa register, the itru/Nile temple-cities, -aa/-et theophoric stems, dj/tj/kh phonology, VSO; the sun-disc cult and the funerary akhu)",
+    "overlay": "classical (latinate: the civic/legal/military/road register - via, legio, castra, forum, colonia, the imperial eagle and the standing legions over the grain-province)",
+    "lean": "Egyptian-heavy - the temple of the sun-disc and the Nile register dominate the tongue and the rites; the Latin overlay supplies the apparatus of empire (the legion, the law-court, the paved road, the milestone, the grain-fleet) that governs the Black Land as a province."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_05 (Egyptian, near_eastern) x BASE_06 (Roman, classical). CIV/CLAN DECIDED by inheritance: both parents are Civilized (feudal), so Romkem is Civilized (feudal). Concept: 'Roman Egypt' - the Nile as the grain-province of an empire, the temple of the sun-disc standing under the eagle and the legions. EGYPTIAN-LEAN: Egyptian phonology and the temple/Nile register are dominant; the Latin substrate supplies the civic, legal, military and road vocabulary of the conquering empire (the contact-linguistics pattern: the substrate keeps land/rule/kin/temple/Nile words, the dominant administrative overlay supplies law/road/legion/material words). Common-word lexicon is a SINGLE FUSED TONGUE per gdd-hybrid-conlang-fusion.md - Latin roots adapted to Egyptian triconsonantal shape, -aa/-et endings, dj/tj/kh, VSO. Rank titles: ENGLISH display ladder + Egyptian ruler_native/domain_native (the nesut/heqa register); approved foreign display terms Pharaoh (kingdom) and Imperator (empire). DEITY names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (the abydosian column: Tjuraa<Tulrius etc.), Latinate morphs SECONDARY (the agrippan column), never real gods. All human cultures allow Lawful/Neutral/Chaotic (standard lens).",
+  "phonology": {
+    "palette": "Egyptian backbone - dj, tj, kh, h, sh, q; l tends to r; v tends to w; endings -aa/-et; vowels a e i o u (reconstructed); heavy temple/Nile register, VSO clause order - meeting a Latinate overlay: the civic/legal/military stops p t c(=k) b d g, f/s/v, liquids l/r, the -us/-um/-a endings of the conquering register (legio, via, castra, forum). Per the CSV: a balanced rhythm with gutturals (the Egyptian dj/tj/kh over the open Latin syllables); grammar is VSO with case-inflected triconsonantal root-patterns (the Egyptian substrate) carrying adapted Latin civic stems. Theophoric on the Egyptian canon-morphs (Tjuraa-, Oranetj-, Riaret-) with Latinate construct variants (Tulri-, Orlandi-).",
+    "phonotactics": "CVC; Egyptian clusters dj/tj/kh and long -aa meeting Latin onset clusters (st, tr, pr, cl) recast to Egyptian shape; stress varies with an Egyptian pull; Per-/Niut-/Ta- construct toponyms over adapted Castr-/Wia- (via) civic elements.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "near-eastern (egyptian) phonology dominant",
+      "sound_changes": [
+        "Latin civic-endings drop or recast to Egyptian: final -us>0/-aa, -um>0/-et, -a>-et; nominative -is>0 (legio>regaa, castra>kastjer, forum>peret-mahir core)",
+        "Latin liquids and fricatives shift Egyptian: l>r, v>w (via>wat-core/wia, vallum>warem); c=k always",
+        "Latin roots recast to Egyptian triconsonantal shape with dj/tj/kh flavor and the long -aa; Egyptian roots kept as-is",
+        "Egyptian clause order VSO imposed on all phrasing; Egyptian -aa/-et gender-endings applied to fused roots",
+        "retain Egyptian dj/tj/kh and the construct Per-/Niut-/Ta-; retain a Latin signature in the civic/road/legion words so the empire stays audible (the -er/-aa adapted stems)"
+      ],
+      "source_tilt": "rule/kin-line/temple/Nile/land/staple words from Egyptian roots (the Black Land and its sun-cult endure - itru, niut, per, nesut, it); civic/legal/military/road/material words from Latin roots (the empire's apparatus governs - via, legio, castra, forum, colonia, ferrum), every root then run through one Egyptian-shaped sound-law so the split is invisible at the surface",
+      "portmanteaus": [
+        "fort menenu+castra>menkastjer", "road wat+via>watwia", "city niut-aat+urbs>niutweret", "colony niut+colonia>niutkoraa", "legion-camp menenu+legio>menregaa", "temple-town per-netjer+forum>pernetjmahir", "son sa+filius>safiraa", "milestone iner+miliarium>inermiraa"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Egyptian rule/temple/Nile/land roots + Latin civic/legal/military/road/material roots, all run through one Egyptian-shaped sound-law (l>r, v>w, -aa/-et, dj/tj/kh, VSO); portmanteaus mark the blended institutions of the grain-province and the bloodline. No slashes - one word per concept.",
+    "feature_words": {
+      "river": "itru",
+      "stream": "mer",
+      "lake": "she",
+      "sea": "wadjmer",
+      "bay": "khent",
+      "cape": "promet",
+      "isle": "iu",
+      "mountain": "djew",
+      "hill": "qaa",
+      "ridge": "akhet",
+      "forest": "metjen",
+      "wood": "nemaa",
+      "plain": "kampet",
+      "marsh": "idehu",
+      "ford": "wadet",
+      "pass": "ro",
+      "vale": "waret",
+      "desert": "deshret",
+      "coast": "wedjeb",
+      "neck": "nehebet",
+      "narrows": "seger",
+      "waste": "wastet",
+      "road": "watwia",
+      "way": "iter",
+      "track": "shemet"
+    },
+    "settlement_words": {
+      "hamlet": "wiket",
+      "village": "niut-sheri",
+      "town": "niut",
+      "city": "niutweret",
+      "fort": "menkastjer",
+      "port": "mer-yt",
+      "market": "mahir",
+      "colony": "niutkoraa",
+      "temple_town": "pernetjmahir",
+      "citadel": "sebakhar"
+    },
+    "kinship": {
+      "son": "safiraa",
+      "daughter": "satfiret",
+      "house": "per",
+      "kin": "abet",
+      "ancestor": "tepi-a"
+    },
+    "adjectives": {
+      "great": "aa",
+      "little": "nedjes",
+      "old": "iaw",
+      "new": "maw",
+      "black": "kem",
+      "white": "hedj",
+      "red": "desher",
+      "golden": "nebu",
+      "iron": "feret",
+      "high": "qa",
+      "low": "imet",
+      "far": "wa",
+      "sacred": "djeser",
+      "fair": "nefer"
+    },
+    "resources": {
+      "salt": "hemat",
+      "iron": "feret",
+      "bronze": "hemty",
+      "silver": "argjet",
+      "gold": "nebu",
+      "wine": "winet",
+      "oil": "merhet",
+      "grain": "it",
+      "marble": "marmer",
+      "fish": "remu",
+      "purple_dye": "insy"
+    },
+    "directional": {
+      "upper": "khent",
+      "lower": "pehu",
+      "north": "mehet",
+      "south": "resy",
+      "east": "iabt",
+      "west": "iment",
+      "inner": "imy",
+      "outer": "rwty"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Per- (house/temple of; Egyptian construct)",
+      "Niut- (city of; Egyptian)",
+      "Ta- (land of; Egyptian)",
+      "Pa- (the; Egyptian)",
+      "-aa (Egyptian augmentative)",
+      "Kastjer- (fort; adapted Latin castra)",
+      "Koraa- (colony; adapted Latin colonia)"
+    ],
+    "patronymic_form": "the Egyptian register keeps the 'sa' (son of) filiation and theophoric given names; the imperial administrative class adopt a Latinate gens-style cognomen (an adapted nomen carried as an office-name); the throne fuses both - a Nesut who carries a Per- temple-house and a Latinate imperial cognomen.",
+    "gendered_endings": {
+      "male": "(consonant) / -aa / -mose / -hotep (Egyptian); adapted Latin -aa from -us",
+      "female": "-et / -it / -nefru (Egyptian); adapted Latin -et from -a"
+    },
+    "diminutive_form": "-sheri (Egyptian) / -uret (adapted Latin -ulus)",
+    "compounding_rule": "Egyptian construct-chains (Per-[god], Niut-[god], Ta-[land], Pa-[noun]) layered over adapted Latin civic compounds (Kastjer-[name] = castra-of, Wia-[name] = via-of, Koraa-[name] = colony-of): the capital Per-Tjuraa-Wia (temple-of-the-sun on the road), Menkastjer-Resy (the southern legion-fort)."
+  },
+  "title_ladder": {
+    "government": "feudal (Egyptian temple-and-Nile rule under an imperial Latin apparatus: the Nesut and his heqa-kin at the crown, the sepati-nomarchs over the nomes, the hatia-mayors over the niut-cities; the Latin legate and the legion-prefect garrison the grain-province, the per-netjer sun-priesthood and the scribal house serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hatia",
+        "domain_native": "Hatiat"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Wer-khaset",
+        "domain_native": "Khaset"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Sepati",
+        "domain_native": "Sepat"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Mer-mesha",
+        "domain_native": "Mesha"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Heqa-aa",
+        "domain_native": "Heqat-aat"
+      },
+      "kingdom": {
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Nesut",
+        "domain_native": "Nesutat"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Per-aa",
+        "domain_native": "Per-aat"
+      }
+    },
+    "_tiers_note": "Egyptian native ladder, ascending, under the imperial Latin overlay. Hatia (mayor) barony; Wer-khaset (great-one of the frontier-land) march; Sepati/Sepat (nomarch/nome) county; Mer-mesha (army-overseer/general) duchy; Heqa-aa (great ruler) principality; Nesut (king) kingdom, shown as Pharaoh in display (the Great-House sovereign of the Black Land); Per-aa (lit. the Great House) empire, shown as Imperator in display (the Eagle-sovereign over the province). The Latin legate (Legatus) and legion-prefect (Praefectus) garrison the grain-province beneath the crown; the per-netjer hem-netjer (sun-priest) and the scribal sesh stand outside the ladder. DISPLAY uses English tiers with two approved foreign sovereign-terms (Pharaoh at the kingdom tier, Imperator at the empire tier); the *_native Egyptian forms are NPC-dialogue only.",
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)",
+      "Imperator (empire)"
+    ],
+    "heir": "Sa-Nesut (king's son / crown prince); Iry-pat (hereditary heir); the imperial heir-designate styled Kaisaraa (adapted Caesar)",
+    "honorifics": {
+      "lord": "Neb (lord) / Domnaa (adapted Dominus)",
+      "lady": "Nebet (lady) / Domnet (adapted Domina)",
+      "champion": "Aha (warrior) / Ekwaa (adapted Eques)",
+      "your_grace": "Hem-ek (your person/majesty)",
+      "elder": "Tepi-a (the eldest/forebear)"
+    },
+    "vassalage": {
+      "liege": "Neb / Patrunaa (adapted Patronus)",
+      "vassal": "Bak (servant) / Krienet (adapted Cliens)",
+      "fealty": "Ankh (the living-oath) / Fidet (adapted Fides)",
+      "tribute": "Inu (Egyptian) / Tribet (adapted Tributum)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here Pharaoh at the kingdom tier and Imperator at the empire tier). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Per-aa": "Per-aat (or Nesut-Hemet)",
+      "Nesut": "Nesyt",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha (f)",
+      "Sepati": "Sepatit",
+      "Wer-khaset": "Wert-khaset",
+      "Hatia": "Hatiat"
+    },
+    "female_forms_display": {
+      "Imperator": "Imperatrix",
+      "Pharaoh": "Queen",
+      "Prince": "Princess",
+      "Duke": "Duchess",
+      "Count": "Countess",
+      "Marquis": "Marquise",
+      "Baron": "Baroness"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Egyptian register carries a theophoric given name + sa- filiation; the imperial administrative class carries a given name + an adopted Latinate cognomen (office/gens); order given-first.",
+    "surname_source": [
+      "filiation (sa = son-of; Egyptian)",
+      "theophoric given (Tjuraa-hotep = Tjuraa-is-content)",
+      "adopted Latinate cognomen (imperial office/gens)",
+      "deed/office epithet"
+    ],
+    "dual_register": "the temple and Nile-folk keep Egyptian theophoric names (X-hotep, X-mose, Mery-X, Sa-X) on the morphed canon-stems; the imperial officials append an adopted Latinate cognomen (Tjuraa-hotep Wareriaa, sun-priest of the Wareria office) over the same morphed stems.",
+    "theophoric": "given names built from the morphed deity-names + a common element: Egyptian X-hotep (X-is-content), X-mose (X-is-born), Mery-X (beloved-of-X), Sa-X (son-of-X); Latinate devotional cognomina on the secondary morphs (Tulri-anaa = of-Tulri/Tjuraa). e.g. Tjuraa-hotep, Mery-Oranetj, Sa-Riaret Tulrianaa.",
+    "diminutive": "-sheri (Egyptian) / -uret (adapted Latin)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (the abydosian column, Tjuraa<Tulrius etc.), Latinate morphs SECONDARY (the agrippan column), never real Egyptian/Roman gods. Standard lens (Lawful/Neutral/Chaotic). Concept: the sun-disc temple-cult of the Black Land endures beneath the imperial eagle; strong funerary cult (akhu) under a Latin civic-religious overlay.",
+    "the_one": "Atjernaa (< Aeternus; Lat. Aeternaa) - the hidden distant maker, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tjuraa (Lat. Tulri) - the sun-disc and right-order",
+      "Orlandus": "Oranetj (Lat. Orlandi) - iron, oath, war",
+      "Gaiandus": "Geandaa (Lat. Gaiandi) - the enduring earth and the flood-field",
+      "Numeno": "Numenaa (Lat. Numeni) - sky and scribe-wisdom",
+      "Realta": "Riaret (Lat. Realti) - the mother, mercy",
+      "Delorum": "Djeroraa (Lat. Delori) - lord of the peaceful dead"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Atjernaa the hidden, Tjuraa the just sun, Oranetj of the sworn legion-oath, Riaret the merciful - upholding right-order (maat) and the imperial law alike; names the Chaotic powers as Hefau-kin (serpent-brood) and warded -lemnaa (adapted Latin), set against both the temple and the eagle.",
+      "Neutral": "the deified dead (akhu) of the god-kings and the genius of the legion-standards and the city-spirits of the per; the great powers invoked at the per-netjer and the forum-shrine situationally.",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Atjernaa - as the tyrant-gods to be defied; the serpent Hefau exalted over the sun-disc."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as Hefau-kin (the serpent-brood) or -lemnaa (adapted Latin evil), keep their morphs + a portfolio epithet: Maraxus -> Marakhaa the City-Burner (Lat. Maraxaa the Tyrant-Flame); Raptis -> Rapetj the Red Hunter; Vacidus -> Wakedjaa the Devouring Hefau (Lat. Wakidaa the Unmaker).",
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte) / Kurtaa (adapted Cultor)",
+      "3": "Hem-netjer (god's-servant/priest) / Sakerdaa (adapted Sacerdos)",
+      "5": "Hem-netjer Sen-nu (second prophet) / Framaa (adapted Flamen)",
+      "7": "Hem-netjer Tepy (first prophet/high priest) / Pontifaa (adapted Pontifex)",
+      "9": "Hem-netjer Aa (great prophet) / Pontifaa Weret (adapted Pontifex Maximus)"
+    },
+    "religious_orders_pattern": "the Per-netjer (god's-house/temple) of [power]: 'the Per-netjer of Tjuraa'; the imperial collegia recast as the Kolegaa of [power]: 'the Kolegaa of Oranetj' (the legion-cult).",
+    "saints_pattern": "the deified dead (akhu) and god-kings, venerated at tomb-temples as 'the justified [name]' (maa-kheru); the deified imperial founders styled Diwaa [name] (adapted Divus).",
+    "holy_symbol_motifs": {
+      "Tjuraa": "the rayed sun-disc above the feather of right-order, set on a legion-standard",
+      "Oranetj": "an iron sword crossed with the eagle-standard",
+      "Geandaa": "the alluvial flood-field beneath the temple-pylon"
+    }
+  },
+  "banks_patterns": {
+    "ships": "solar-barques and grain-fleet galleys: 'Barque of Tjuraa', 'Pride of the Itru', 'the Eagle of the River', 'Grain of the Black Land'",
+    "military_units": "the [god] Division and the imperial legions of the Nile: 'the Division of Oranetj', 'the Regaa of Romkemet' (legion), 'the River-Eagles', 'the Standard of the Sun'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Eagle and Lotus', 'The Iron Standard'",
+    "dungeons_ruins": "tombs of the god-kings and ruined legion-forts: 'the Tomb of Pharaoh [name]', 'the Sunken Per-netjer', 'the Buried Menkastjer', 'the Drowned Koraa'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tjuraa-hotep",
+      "Oranetj-mose",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Tjuraa-mose Tulrianaa",
+      "Geandaa-nakht",
+      "Djeroraa-mose",
+      "Sa-Oranetj Orlandiaa",
+      "Pa-Tjuraa",
+      "Numenaa-ef",
+      "Mery-Oranetj",
+      "Tjuraa-em-akh",
+      "Sa-Tjuraa Wareriaa",
+      "Oranetj-hotep",
+      "Geandaa-mose Gaiandiaa",
+      "Marcaa-Tjuraa",
+      "Lukaa-Oranetj"
+    ],
+    "personal_f": [
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Oranetj-et",
+      "Riaret-nefret",
+      "Sat-Tjuraa",
+      "Numenaa-et",
+      "Riaret-it Realtiet",
+      "Geandaa-et",
+      "Djeroraa-nefret",
+      "Sat-Riaret Realtiet",
+      "Tjuraa-nefru",
+      "Riaret-em",
+      "Numenaa-nefret",
+      "Sat-Oranetj",
+      "Riaret-set Aurelet"
+    ],
+    "clan_houses": [
+      "per-Tjuraa (the great sun-temple house)",
+      "per-Oranetj",
+      "per-Riaret",
+      "per-Numenaa",
+      "per-Geandaa",
+      "per-Djeroraa",
+      "the Wareria (an imperial office-gens)",
+      "the Tulriana (the sun-cult office-line)",
+      "sa-Tjuraa",
+      "sa-Oranetj",
+      "the Korneliaa (an adopted Latinate gens)",
+      "mery-Riaret"
+    ],
+    "epithets_cognomina": [
+      "maa-kheru (the justified)",
+      "Sun-faced",
+      "the River-blessed",
+      "Eagle-of-the-Nile",
+      "the Far-marching",
+      "Standard-bearer",
+      "Gold-of-Honor",
+      "the Enduring"
+    ],
+    "flagship_settlements": [
+      "Romkemet (the chief seat - the Nile-province capital, 'Rome of the Black Land')",
+      "Per-Tjuraa-Wia (the sun-temple city on the imperial road)",
+      "Niutweret (the great river-city)",
+      "Menkastjer-Resy (the southern legion-fort)",
+      "Niutkoraa (the veterans' colony)",
+      "Kemu-niut (the black-land city)"
+    ]
+  }
+}

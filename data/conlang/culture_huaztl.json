@@ -1,0 +1,362 @@
+{
+  "kit_id": "huaztl",
+  "tier": "culture",
+  "inherits": [
+    "east_asian",
+    "mesoamerican"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_53",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "east_asian (sinitic / Chinese register) backbone + mesoamerican (nahuatl / Aztec) substrate (cross-family blend, Sinitic-leaning)",
+  "synthesis_sources": [
+    "BASE_09",
+    "BASE_10"
+  ],
+  "homeland": "Huaztlan",
+  "blend": {
+    "backbone": "east_asian (sinitic / Chinese register: the Huangdi over wang and the five peerages, the Mandate of Heaven and the Confucian mandarin bureaucracy, the walled cheng river-cities, monosyllabic (C)(G)V(C) roots with -n/-ng codas and tonal contours, the celestial -di/-jun/-wang titles, the dragon and the celestial court)",
+    "overlay": "mesoamerican (nahuatl / Aztec: the teocalli sun-pyramid and the calendar-round, the calpolli wards and the chinampa, the jaguar-and-eagle war-cult, the feathered serpent, the jungle wealth of jade, obsidian, cacao, maize and quetzal-feather, the -tl/-tli absolutive and -tzin reverential, vigesimal counting)",
+    "lean": "Sinitic-heavy - a Celestial-Mandate dragon-court enthroned over the jungle pyramid-cities of the feathered serpent: the Huangdi and his mandarin order rule from the walled cheng, the Nahua jaguar-priesthood and the calpolli wards endure and serve beneath. The dragon and the feathered serpent, the celestial court and the sun-pyramid, the mandarin and the jaguar-priest - the Mandate of Heaven laid over the calendar-round."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_09 (Sinitic / Chinese, the Jinxian backbone) x BASE_10 (Nahuatl / Aztec, the Nahuan substrate). CIV/CLAN DECIDED by inheritance: both parents are Civilized (the Sinitic Mandate realm + the Nahua Triple-Alliance theocracy), and any Civ parent -> Civ, so Huaztl is Civilized (feudal). Concept: a Sinitic-Mesoamerican realm - the dragon and the feathered serpent, the celestial court and the sun-pyramid, the mandarin and the jaguar-priest. A Celestial-Mandate dragon-court that reached into the jungle, married the pyramid-cities of the feathered serpent, and set up the Huangdi and his mandarin bureaucracy over a Nahua war-cult: the Mandate of Heaven laid over the calendar-round. Backbone = Sinitic (the ruling celestial court, the Huangdi/wang/peerage register, the Mandate, the walled cheng, the Confucian mandarins); overlay/substrate = Nahuatl (the teocalli pyramid-temple, the calpolli wards, the jaguar-and-eagle war-cult, the jungle material wealth - jade, obsidian, cacao, maize, quetzal). Common-word lexicon is a SINGLE FUSED tongue (Nahuatl jungle/pyramid/material/staple roots + Sinitic rule/kin/court/land roots, all run through one Sinitic-shaped sound-law: tones and monosyllables dominant, the -tl/-tli absolutives clipped, clusters resolved); rank titles are English DISPLAY with Sinitic *_native forms beneath. NO approved foreign term applies (neither a Chinese nor a Mesoamerican rank is on the approved commonly-known list), so ALL display rulers are plain English and approved_foreign_terms_used is OMITTED. DEITY names are morphs of the Agrippan canon from both parents (Sinitic canon-morphs PRIMARY, the Jinxian / family_east_asian sinitic set - Tuli-di, Aolan-jun; Nahuatl morphs SECONDARY, the Nahuan / family_mesoamerican nahuatl set - Tolratl, Marakatl), recognizably the same powers under two faces, never real Chinese/Aztec gods. The Mandate of Heaven (Tianming) legitimizes the throne; the calendar-round and the offered heart bind the jungle wards beneath. All human cultures allow Lawful/Neutral/Chaotic (the dragon-court mandarins keep the Lawful celestial order; the jaguar war-cult of the substrate leans to the Chaotic blood-sun; worship assigned by current alignment).",
+  "phonology": {
+    "palette": "Sinitic (Chinese) backbone - monosyllabic morphemes; syllable (C)(G)V(C) with only -n/-ng codas; tonal contours (unmarked in data); NO consonant clusters; the retroflex/palatal initials zh/ch/sh/x/q/j; surname(1) + given(1-2); celestial titles -di (emperor), -jun (lord), -wang (king) - meeting a Nahuatl substrate: the absolutive -tl/-tli and reverential -tzin, the consonants tl, tz, ch, x (sh), hu/uh (w), the place-suffixes -tlan/-tepec/-co, the jungle and pyramid vocabulary, vigesimal counting. Per the CSV: vibrant vowels with tonal contours, the Nahua material-roots clipped to fit the tight Sinitic monosyllable and the celestial tone-court; grammar is SVO with isolating vigesimal counting (the Sinitic word-order and the Nahua base-20 number-system married, no case-stacking). Theophoric on the Sinitic morph-stems (Tuli-, Aolan-, Gaidun-) with Nahua deity-variants beneath (Tolra-, Maraka-).",
+    "phonotactics": "tight Sinitic monosyllables (C)(G)V(C), finals -n/-ng only, NO clusters; the Nahua -tl/-tli/-tzin endings clipped away and the -tl/-tz clusters resolved to a bare initial (tl > t or l, tz > z/c) to fit the Sinitic syllable; initials incl. zh/ch/sh/x/q/j; tonal contours distinctive; surname(1) + given(1-2) over -tepec/-tlan substrate toponyms re-cut to Sinitic shape.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "east-asian (sinitic) phonology dominant",
+      "sound_changes": [
+        "Nahuatl absolutive -tl/-tli and reverential -tzin dropped: the root is clipped to a bare Sinitic monosyllable (tepetl>tepe>te, cuahuitl>cua, itztli>itz>i)",
+        "Nahuatl -tl/-tz clusters resolved to fit the no-cluster Sinitic syllable: tl- > t or l, tz- > z or c, the -uh/hu glide > -u/w; only -n/-ng survive as codas",
+        "Nahua polysyllables compressed to one or two Sinitic syllables under tonal stress; the long Nahuatl place-words re-cut (atoyatl>ya river-root, teocalli>teo-cheng pyramid-city)",
+        "Sinitic tones and monosyllabic shape imposed on every root from either parent; surname(1)+given(1-2) order kept; vigesimal counting (the Nahua base-20) carried on Sinitic number-words",
+        "retain the Sinitic finals -n/-ng, the zh/ch/sh/x/q/j initials and the celestial -di/-jun/-wang, plus a few audible Nahua signatures (teo- divine, -tepe mountain, quetz- feather); very short Nahua roots take a Sinitic vowel to scan"
+      ],
+      "source_tilt": "jungle/pyramid/material/staple words from Nahuatl roots (the substrate works the jungle and the chinampa - the teocalli pyramid, jade, obsidian, cacao, maize, quetzal-feather); rule/kin/court/land/quality/war words from Sinitic roots (the ruling celestial-court register); every root then filtered to one Sinitic-shaped phonology (tones, monosyllables, no clusters) so the split is invisible at the surface - it all sounds like one tongue",
+      "portmanteaus": [
+        "city cheng+altepetl>chengtepe (the walled water-mountain city)",
+        "pyramid-temple miao+teocalli>teomiao (the sun-pyramid temple-house)",
+        "fort zhai+yaocalli>zhaiyao (the war-fort)",
+        "citadel chengbao+tecpancalli>chengtec (the palace-citadel)",
+        "son zi+pilli>zipil",
+        "daughter nu+ichpochtli>nuich",
+        "sacred sheng+teoyo>shengteo",
+        "jade yu+chalchihuitl>yuchal (the dragon-jade)"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Nahuatl jungle/pyramid/material/staple roots + Sinitic rule/kin/court/land roots, all run through one Sinitic-shaped sound-law (the -tl/-tli/-tzin absolutives clipped, clusters resolved to the no-cluster Sinitic syllable, tones and monosyllabic shape imposed); portmanteaus mark the married institutions where the dragon-court and the feathered-serpent pyramid wedded. One language - Sinitic-shaped, Nahuatl-substrated - not a slash list.",
+    "feature_words": {
+      "river": "jiang",
+      "stream": "xi",
+      "lake": "atez",
+      "sea": "hai",
+      "bay": "wan",
+      "cape": "ya",
+      "isle": "dao",
+      "mountain": "tepe",
+      "hill": "ling",
+      "ridge": "gang",
+      "forest": "cuauh",
+      "wood": "cua",
+      "plain": "ixta",
+      "marsh": "zoki",
+      "ford": "du",
+      "pass": "guan",
+      "vale": "atlauh",
+      "coast": "anua",
+      "neck": "jing",
+      "narrows": "xia",
+      "waste": "teotlan",
+      "road": "oh",
+      "way": "lu",
+      "track": "icxi"
+    },
+    "settlement_words": {
+      "hamlet": "cun",
+      "village": "calpo",
+      "town": "zhen",
+      "city": "chengtepe",
+      "fort": "zhaiyao",
+      "port": "acal",
+      "market": "tianki",
+      "temple_town": "teomiao",
+      "citadel": "chengtec"
+    },
+    "kinship": {
+      "son": "zipil",
+      "daughter": "nuich",
+      "house": "jia",
+      "kin": "zu",
+      "ancestor": "achzu"
+    },
+    "adjectives": {
+      "great": "da",
+      "little": "xiao",
+      "old": "gu",
+      "new": "xin",
+      "black": "hei",
+      "white": "bai",
+      "red": "chi",
+      "golden": "jin",
+      "iron": "tepoz",
+      "high": "gao",
+      "far": "yao",
+      "sacred": "shengteo",
+      "fair": "mei"
+    },
+    "resources": {
+      "salt": "izta",
+      "iron": "tepoz",
+      "bronze": "tong",
+      "silver": "yin",
+      "gold": "jin",
+      "jade": "yuchal",
+      "cacao": "caca",
+      "maize": "cen",
+      "obsidian": "itz",
+      "feather": "quetz"
+    },
+    "directional": {
+      "upper": "shang",
+      "lower": "xia",
+      "north": "bei",
+      "south": "nan",
+      "east": "dong",
+      "west": "xi",
+      "inner": "nei",
+      "outer": "wai"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-cheng (walled city; Sinitic)",
+      "-zhou (province; Sinitic)",
+      "-guan (pass / frontier-gate; Sinitic)",
+      "-tepe (mountain-of; Nahua substrate, clipped from -tepec)",
+      "-tlan (place-of; Nahua substrate)",
+      "Huei-/Da- (great-; Nahua / Sinitic)"
+    ],
+    "patronymic_form": "the Sinitic mandarin nobility carry the clan-surname (xing) first then a given name, with generation-names within a zu (lineage) and an examination-rank; the Nahua substrate keep the calpolli (ward) name and a calendar-day name with -tzin reverential for the honored; the throne fuses both - a Huangdi who carries a Sinitic xing and holds the Mandate over the teocalli-cities and the calpolli wards.",
+    "gendered_endings": {
+      "male": "auspicious martial/virtue meanings (Sinitic court); a calendar-day or deed name + -tzin reverential (Nahua substrate)",
+      "female": "flower/jade/virtue meanings (Sinitic court); Cihua- (woman) or flower-day name + -tzin (Nahua substrate)"
+    },
+    "diminutive_form": "Xiao- prefix / -er suffix (Sinitic) / -ton / -tzin (Nahua)",
+    "compounding_rule": "Sinitic feature/quality + type juxtaposition ([surname]+[given]; Jin-cheng golden-city, Bei-guan north-pass) layered over Nahua place-compounds re-cut to Sinitic shape (Huei-tepe great-mountain, Quetz-tlan feather-place): the capital Huaztlan (Hua-ztlan, the cathay-of-the-jungle, the dragon-serpent river-land), Da-teomiao (the great sun-pyramid temple), Jin-cheng (the golden city)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Sinitic celestial-court over the Nahua pyramid-cities: the Huangdi and his wang-kin at the crown holding the Mandate, the peerage-governors over the cheng-provinces, the Confucian mandarin order of officials; the Nahua tlatoque city-kings, the pipiltin nobility, the calpolli wards and the jaguar war-cult serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Nan",
+        "domain_native": "Nanguo"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Dudu",
+        "domain_native": "Duduqu"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Bo",
+        "domain_native": "Boguo"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Hou",
+        "domain_native": "Houguo"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Gong",
+        "domain_native": "Gongguo"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Wang",
+        "domain_native": "Wangguo"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Huangdi",
+        "domain_native": "Diguo"
+      }
+    },
+    "_tiers_note": "Sinitic ladder, ascending, with the Nahua pyramid-city substrate co-titles beneath. Nan (baron) barony; Dudu (frontier military command) march; Bo (count) county; Hou (marquis) duchy; Gong (duke / prince of the blood) principality; Wang (king) kingdom over a Wangguo; Huangdi (emperor) empire over the Diguo, holding the Mandate of Heaven (Tianming). The conquered jungle-cities keep their Nahua tlatoani (city-king of an altepetl), tecuhtli (lord) and the calpolli ward-heads beneath the Sinitic crown; the Confucian mandarin shi-officials govern, the Nahua tlamacazqui jaguar-priests tend the teocalli, both standing in and beside the ladder. NO approved foreign term applies (neither the Sinitic nor the Nahua ranks are on the approved commonly-known list), so ALL display rulers are plain English; the Sinitic *_native forms are for NPC DIALOGUE ONLY.",
+    "heir": "Taizi (the crown prince; the heir) / Shizi (heir of a wang or peer)",
+    "honorifics": {
+      "lord": "Daren / Tecuh (Nahua lord, clipped from Tecuhtli)",
+      "lady": "Furen / Cihuapil (Nahua lady)",
+      "champion": "Wushi (Sinitic warrior) / Yaoki (Nahua warrior, clipped from Yaoquizqui)",
+      "your_grace": "Dianxia",
+      "your_majesty": "Bixia (the Huangdi)",
+      "elder": "Zhang (the eldest) / Huehue (the Nahua elder)"
+    },
+    "vassalage": {
+      "liege": "Jun (sovereign)",
+      "vassal": "Chen (Sinitic subject) / Teki (Nahua service-bound, clipped from Tequitqui)",
+      "fealty": "Mengyue (sworn covenant) / Tenahua (Nahua oath-bond)",
+      "tribute": "Gongfu (Sinitic) / Tlacala (Nahua tribute, clipped from Tlacalaquilli)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are plain ENGLISH - NO approved foreign term applies here (neither the Sinitic nor the Nahua ranks are on the approved commonly-known list), so there is no foreign display term and approved_foreign_terms_used is omitted. The *_native conlang forms (Sinitic, with Nahua co-titles) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Huangdi": "Nuhuang",
+      "Wang": "Nuwang",
+      "Gong": "Nugong",
+      "Hou": "Nuhou",
+      "Bo": "Nubo",
+      "Dudu": "Nudu",
+      "Nan": "Nunan"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Sinitic mandarin ruling stock carry the clan-surname (xing) first then a given name (ming), with a courtesy-name (zi) for adults and an examination-rank; the Nahua substrate carry a calendar-day name + an earned deed/war-name and a calpolli (ward), with -tzin reverential for the honored; order surname-first for the Sinitic court, day-name-first for the Nahua substrate, the court register prevailing at the throne.",
+    "surname_source": [
+      "Sinitic clan surname (xing, monosyllabic)",
+      "courtesy-name (zi) / studio-sobriquet (hao) for the learned",
+      "Nahua calpolli (ward)",
+      "Nahua calendar-day name or earned deed/war-name"
+    ],
+    "dual_register": "the Sinitic mandarin nobility carry xing + ming, a courtesy-name (zi) and an examination-rank; the Nahua city-folk carry a calendar-day name + ward (calpolli) and lordly -tzin titles for the pipiltin.",
+    "theophoric": "Sinitic names invoke the celestial powers' epithets and the Mandate rather than the god-name directly (Tian-en, heaven's grace; a temple-name honoring Tuli-di) on the Sinitic morph-stems; the Nahua substrate invokes the powers + an element - Teo- (divine), -tzin (revered): Tolra-tzin, Teo-Maraka, calendar-and-power day-names on the Nahua morph-stems (Tolratl, Marakatl).",
+    "diminutive": "Xiao- prefix (Sinitic) / -ton / -tzin (Nahua)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Sinitic canon-morphs PRIMARY (the Jinxian / family_east_asian theonym_sets.sinitic: Tuli-di, Aolan-jun, Gaidun-di, Numeng-jun, Lianta-mu), Nahuatl morphs SECONDARY (the Nahuan / family_mesoamerican theonym_sets.nahuatl: Tolratl, Marakatl, Gaiantli, Numenatl, Rialtzin), recognizably the same powers under two faces, never real Chinese/Aztec gods (no Tian-shang-di, Guan-yu, Quetzalcoatl, Tezcatlipoca, Huitzilopochtli). Shared pantheon, two registers married. A Celestial Bureaucracy under the Mandate of Heaven laid over the calendar-round: the One (Aiteng, the Nahua face Aiternatl) presides as Highest Heaven; the Lawful powers are the celestial officials (the -di emperors and -jun lords of the dragon-court); the jungle war-cult of the substrate leans to the Chaotic blood-sun (Marakatl). The Mandate (Tianming) legitimizes the throne, the calendar-round and the offered heart bind the calpolli wards. Worship vs demonization follows the culture's CURRENT alignment (see worship_by_alignment).",
+    "the_one": "Aiteng (< Aeternus; the Nahua face Aiternatl) - the Highest Heaven, the source of the Mandate, served not petitioned by the dragon-court; named the Tyrant-Sun by the Chaotic jaguar-cult of the substrate",
+    "sample_deity_renames": {
+      "Tulrius": "Tuli-di (Nahua Tolratl) - the Sun-Justice Emperor, lord of the celestial register; Lawful",
+      "Orlandus": "Aolan-jun (Nahua Orlantzin) - the iron Lord of oath and war",
+      "Gaiandus": "Gaidun-di (Nahua Gaiantli) - the Earth Emperor, lord of mountains and the chinampa",
+      "Numeno": "Numeng-jun (Nahua Numenatl) - the Sage Lord of the winds, the feathered-serpent wind",
+      "Realta": "Lianta-mu (Nahua Rialtzin) - the Mother of Mercy, the Lady of Waters",
+      "Maraxus": "Maluo (Nahua Marakatl) - the War-Fire Marshal, the Blood-Sun of the jaguar-cult; chief of the Chaotic powers"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aiteng the Highest Heaven, Tuli-di the just Sun-Emperor, Aolan-jun of the sworn war, Lianta-mu the merciful - keeps the Confucian rites and the Mandate of Heaven, and names the Chaotic powers the demon-marshals (mo / Nahua tzitzimitl), warded; the dragon-throne and the celestial register bind the realm.",
+      "Neutral": "honors the zu-ancestors (the deified worthy officials of the celestial register) and the Nahua calpolli fore-spirits, and the local earth-and-grain, river and mountain powers; the great powers invoked at the teomiao-pyramid and the ancestral Ci situationally; the calendar-round and the harvest kept.",
+      "Chaotic": "Venerates the Chaotic powers of the canon - chief among them Maluo / Marakatl, the War-Fire, the Blood-Sun that must be fed by the offered heart - and names the One (Aiteng) and the Lawful powers the cold tyrant-gods of the soft; the jaguar war-cult and the skull-rack atop the teomiao the altars, the calendar-round binding the wards to the blood-sun."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded by the dragon-court as the demon-marshals (mo) outside the celestial order or as the Nahua tzitzimitl star-demons, keep their morphs + an epithet: Maraxus -> Maluo the War-Fire Marshal (Nahua Marakatl the Blood-Sun); Vacidus -> Wuci the Devourer (Nahua Wakitl the Hungering-Dark); Lusanto -> Lusan the Coin-Serpent (Nahua Lusankoatl the Hoard-Serpent).",
+    "clergy_ladder": {
+      "1": "Daoshi-tu (acolyte) / Tlamacazton (Nahua novice)",
+      "3": "Daoshi (priest) / Tlamacazqui (Nahua priest)",
+      "5": "Fashi (ritual-master) / Teopixqui (Nahua god-guardian)",
+      "7": "Gaogong (high priest) / Tlenamacac (Nahua fire-and-blood priest)",
+      "9": "Tianshi (celestial master) / Hueyi Teopixqui (Nahua great sacrificer)"
+    },
+    "religious_orders_pattern": "the Miao (Sinitic temple) or the Teomiao (the sun-pyramid god-house atop the great pyramid) of [power]: 'the Miao of Tuli-di', 'the Teomiao of Maluo', crowned by the skull-rack; the ancestral Ci (clan-shrine) for the zu.",
+    "saints_pattern": "deified worthy officials and heroes enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao; and the fallen jaguar-and-eagle warriors and offered captives who become sun-feeding companions, honored at the teomiao and the skull-rack.",
+    "holy_symbol_motifs": {
+      "Tuli-di": "a red sun-disc above the scales and seal of office, ringed by the feathered serpent",
+      "Gaidun-di": "a green mountain over the grain-altar and the chinampa-field",
+      "Maluo": "an obsidian knife over a blood-fed sun, wreathed in dragon-fire"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-junk and lake-canoe (acalli) names: 'the Jade Dragon', 'the Quetzal of Huaztlan', 'the Heaven-Mandate', 'the Feathered Serpent'",
+    "military_units": "the [general] Ying (camp/army) / the [color] Banner over the Nahua warrior-societies: 'the Tiger Ying', 'the Azure Banner', 'the Jaguar Knights (Ocelotl)', 'the Eagle Knights (Cuauhtli)'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Cup', 'The Plum-and-Cacao House', 'The Octli-and-Tea Court'",
+    "dungeons_ruins": "fallen warlord cheng and drowned teomiao-pyramids: 'the Sunken Teomiao of [name]', 'the Ruined Cheng of [warlord]', 'the lost Altepetl of [tlatoani]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Zhongyan",
+      "Yunlong",
+      "Zhiyuan",
+      "Bowen",
+      "Mingyuan",
+      "Anguo",
+      "Wenbo",
+      "Jingyao",
+      "Shenglong",
+      "Baoshan",
+      "Tolra-tzin",
+      "Teo-Maraka",
+      "Cuauh-zi",
+      "Ocelo-jun",
+      "Itz-min",
+      "Yao-tzin"
+    ],
+    "personal_f": [
+      "Lihua",
+      "Yurong",
+      "Meixiang",
+      "Shuhui",
+      "Wanqing",
+      "Zhilan",
+      "Fenghua",
+      "Caiyun",
+      "Suyin",
+      "Qingzhao",
+      "Cihua-xochi",
+      "Quetz-mei",
+      "Tonal-hua",
+      "Citlal-nu",
+      "Xochi-tzin",
+      "Yolo-lian"
+    ],
+    "clan_xing": [
+      "Li",
+      "Wang",
+      "Zhang",
+      "Chen",
+      "Zhao",
+      "Huang",
+      "Sun",
+      "Lin",
+      "Calpolli Cuauhtli",
+      "Calpolli Ocelotl",
+      "Calpolli Coatl",
+      "Calpolli Xochitl",
+      "Calpolli Itztli",
+      "Calpolli Quetzal"
+    ],
+    "epithets_cognomina": [
+      "the Dragon (Long)",
+      "the Tiger (Hu)",
+      "the Jaguar (Ocelotl)",
+      "the Eagle (Cuauhtli)",
+      "Jade-blade",
+      "the Sun-blessed",
+      "Cloud-rider",
+      "of Anahuac"
+    ],
+    "flagship_settlements": [
+      "Huaztlan (the capital chengtepe - the dragon-serpent river-land)",
+      "Jin-cheng (the golden city)",
+      "Da-teomiao (the great sun-pyramid seat)",
+      "Bei-guan (the north-pass fortress)",
+      "Quetz-tlan (the feather-place city)",
+      "Atez-cheng (the lake-city of the chinampa)"
+    ]
+  }
+}

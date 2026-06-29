@@ -1,0 +1,355 @@
+{
+  "kit_id": "hinogard",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_07",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (frankish) backbone + east_asian (japonic) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_08"
+  ],
+  "homeland": "Hinogard",
+  "blend": {
+    "backbone": "germanic (frankish / Old High German register: the kuning/herizogo and the truhtin-treuwa lord-vassal bond, High German shift th>d/d>t/k>ch-hh, -o/-i endings, dithematic Hilde-/Gund-/-ric names)",
+    "overlay": "east_asian (japonic: the island land of -yama/-gawa and the -no-fields, the jinja shrine-folk and the clan-villages, the daimyo-and-samurai houses, mora-timed open CV speech, honorific X-no-Y linking, SOV agglutinative grammar)",
+    "lean": "Germanic-heavy - a Frankish feudal war-aristocracy enthroned over the Japanese island-clans: the Frankish lord-and-vassal bond fused with the samurai loyalty-code, two warrior feudalisms made one. The Frankish herizogo and his sworn vassals rule from the burg; the daimyo-houses and the shrine-folk of the islands serve beneath as the sworn bushi of the realm."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_08 Yamatai-base (Japonic / East Asian). CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Japonic-Japanese base = Civilized, and any Civ parent -> Civ, so Hinogard is Civilized (feudal). Concept: a Frankish war-aristocracy that conquered the Japanese island-clans and set up as feudal lords over them - the Frankish lord-and-vassal bond (truhtin/treuwa) meeting the samurai's loyalty-code (shujun/chugi), two warrior feudalisms fused ('the fire-island realm'). Backbone = Germanic (frankish / Old High German: the ruling war-aristocracy, the herizogo/kuning register, the High German consonant shift, dithematic names); overlay/substrate = Japonic (the island land of -yama and -gawa, the daimyo-houses and the bushi retainers, the jinja shrine-folk and the clan-villages, mora-timed open-syllable speech, the X-no-Y honorific linking). Common-word lexicon and rank titles use the real Old High German (Frankish) and Japanese registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents - Frankish reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column), Japonic NATIVE-kami variants SECONDARY (family_east_asian theonym_sets.japonic, treated exactly as Yamataian treats them - wholly native kami, never the Sinitic forms, never real Shinto kami). PROVISIONAL: alignment (Lawful/Neutral) is a per-hybrid design choice pending the alignment pass - the Frankish feudal oath-order and the samurai bushido way both read Lawful (the sworn lord-vassal bond, the disciplined warrior-code), but an older island layer of the wild kami and the mountain-oni reads Neutral. Register choice: Germanic-base hybrids default to the GOTHIC/continental reflexes, but Hinogard deliberately takes the FRANKISH (OHG) reflexes because the feudal lord-vassal bond is the Frankish/Merovan inheritance (the parallel to the daimyo-samurai relation) - flag for Jedidiah if a uniform Germanic register is wanted instead. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Frankish / Old High German) backbone - root-initial stress, sharp stops, the High German consonant shift (th>d, d>t, k>ch/hh; truhtin, herizogo), w>w/wu, endings -o/-i, dithematic compounding - meeting a Japonic overlay: open CV moras (only coda -n), the five vowels a i u e o, pitch accent, no consonant clusters, rendaku (sequential voicing) in compounds, the X-no-Y honorific linking and the -yama/-gawa/-no toponyms. Per the CSV: softened consonants (the OHG shift and the cluster-free Japonic moras) over a rigid rhythm (heavy Germanic root-stress meeting strict mora-timing); grammar shifts toward SOV with agglutinative case-particles and strong-verb stems (the Japonic substrate carried on Frankish strong stems). Theophoric on the Frankish reflexes (Dulro-, Erlant-) with Japonic native-kami variants (-no-kami, -hime).",
+    "phonotactics": "Frankish CVC with OHG clusters (st, sk, hr, kn) and the shifted stops (ch/hh, t, d), root-initial stress, dithematic compounds; the Japonic substrate strips clusters into open CV moras and adds rendaku voicing and the -no- linking particle; dithematic Frankish burg-names over -yama / -gawa / -shiro island toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (frankish / OHG) phonology dominant",
+      "sound_changes": [
+        "Japonic open CV moras filtered into Frankish syllable shape: drop final root-vowels and impose codas/clusters (kawa>gaw, yama>jam, mori>mor, minato>minat); the mora-rhythm bends to a single heavy root-initial Frankish stress",
+        "the High German consonant shift reaches the Japonic roots: t>d/z, k>ch/hh, intervocalic stops soften (tetsu>dezz, machi>mach, sato>sad); Frankish stops t/d/ch held in the lean words",
+        "Japonic toponymic morphemes adapt to Frankish form: -no (field) > -an/-en clipped, -yama > -jam/-am, -gawa > -gaw with retained rendaku voicing, -shiro > -shir",
+        "rendaku (sequential voicing) is kept as the one audible Japonic signature in compounds, but Frankish clusters override the no-cluster rule (kn, hr, st, br permitted; shima>shimb, seto>sezt)",
+        "Frankish-sourced kin/quality/abstract/war roots take OHG shape unchanged-in-spirit (-o/-i endings, mihhil, swarz, isarn), supplying the prestige register; short Japonic roots gain a Frankish coda or -o"
+      ],
+      "source_tilt": "island/land/terrain/material/staple words from Japonic roots (the island substrate works the land and sea: the -yama/-gawa/-no land, the rice and silk and iron-ore); kin-line/quality/abstract/rule/war words from Frankish roots (the OHG ruling register: mihhil, swarz, isarn, the truhtin-bond); every chosen root is then run through the one Frankish-shaped sound-law so the split is inaudible",
+      "portmanteaus": [
+        "city miyako+burg>miyaburg", "fort toride+burg>toriburg", "temple jinja+harug>jinharug", "citadel shiro+hohburg>shirhoburg", "clan uji+kunni>ujkun", "son musuko+sunu>musun", "daughter musume+dohter>musdohter", "sacred imi+heilag>imheil"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Japonic island/land/material roots + Frankish (OHG) rule/kin/quality roots, all run through one Frankish-shaped sound-law (clusters imposed, mora-rhythm bent to root-initial stress, High German shift reaching the Japonic stems, rendaku kept as the lone substrate signature); portmanteaus mark the blended institutions and bloodline. One language - Frankish-shaped, Japonic-substrated - not a slash list.",
+    "feature_words": {
+      "river": "gaw",
+      "stream": "nagar",
+      "lake": "koh",
+      "sea": "umb",
+      "bay": "ur",
+      "cape": "misach",
+      "isle": "shimb",
+      "mountain": "jamberg",
+      "hill": "ohk",
+      "ridge": "on",
+      "forest": "mor",
+      "wood": "hayes",
+      "plain": "noan",
+      "marsh": "numb",
+      "ford": "wadarfurt",
+      "pass": "doge",
+      "vale": "tand",
+      "march": "marcha",
+      "coast": "hamb",
+      "neck": "kub",
+      "narrows": "sezt",
+      "waste": "aranwuost",
+      "road": "michstraz",
+      "way": "doweg",
+      "track": "komich"
+    },
+    "settlement_words": {
+      "hamlet": "sad",
+      "village": "murb",
+      "town": "mach",
+      "city": "miyaburg",
+      "fort": "toriburg",
+      "port": "minat",
+      "market": "ichmerchat",
+      "temple_town": "jinharug",
+      "citadel": "shirhoburg"
+    },
+    "kinship": {
+      "son": "musun",
+      "daughter": "musdohter",
+      "house": "iehus",
+      "kin": "ujkun",
+      "ancestor": "senzfater"
+    },
+    "adjectives": {
+      "great": "mihhil",
+      "little": "luzzil",
+      "old": "alt",
+      "new": "niuwi",
+      "black": "swarz",
+      "white": "wiz",
+      "red": "rot",
+      "golden": "guldin",
+      "iron": "isarn",
+      "high": "hoh",
+      "far": "ferro",
+      "sacred": "imheil",
+      "fair": "fagar"
+    },
+    "resources": {
+      "salt": "shiosalz",
+      "iron": "dezz",
+      "bronze": "akagan",
+      "silver": "ginsilb",
+      "gold": "kingold",
+      "jade": "hisuw",
+      "silk": "kinu",
+      "rice": "kom",
+      "horse": "umros",
+      "tea": "chah"
+    },
+    "directional": {
+      "upper": "obar",
+      "lower": "nidar",
+      "north": "nord",
+      "south": "sund",
+      "east": "ost",
+      "west": "west",
+      "inner": "uchin",
+      "outer": "sotut"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-yama (mountain; Japonic)",
+      "-gawa (river; Japonic, rendaku)",
+      "-shiro / -jo (castle; Japonic)",
+      "-machi (town; Japonic)",
+      "-no (field; Japonic)",
+      "-burg (Frankish fort)",
+      "-heim / -haim (Frankish home)"
+    ],
+    "patronymic_form": "the Frankish ruling house keeps a dithematic lineage-name and -ingen (descendant of); the Japonic island-clans keep the uji / -shi clan-name borne first with the -no- linking (X no Y) and the house-suffix -ke; the throne fuses both - a herizogo of a Frankish dithematic line who also holds a Japonic clan-seat.",
+    "gendered_endings": {
+      "male": "-o / -ich / -ramn / -hari (Frankish ruling); -ro / -suke / -maru (Japonic)",
+      "female": "-a / -lind / -gund (Frankish); -ko / -e / -hime (Japonic)"
+    },
+    "diminutive_form": "-ilo (Frankish) / -maru, -chan (Japonic)",
+    "compounding_rule": "Frankish dithematic ([quality|feature](stem) + element: Isarn-burg, iron-fort; Hrod-heim, glory-home) layered over Japonic feature-compounds with rendaku ([quality]+type: Kuro-yama black-mountain, Aka-shiro red-castle -> rendaku -gawa): the capital Hino-gard (the fire-island stronghold), Hilde-shiro (the war-castle of the Hilde-line)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Frankish war-aristocracy over the Japanese island-clans: the kuning and his herizogo-dukes at the crown, the grafo-counts over the provinces, the truhtin-lords and their sworn vassals; the daimyo-houses and their bushi retainers serve beneath as the sworn warriors of the realm, the kannushi shrine-priesthood and the village-folk beneath them)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Truhtin",
+        "domain_native": "Truhti"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marcha-grafo",
+        "domain_native": "Marcha"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Grafo",
+        "domain_native": "Grafscaf"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Herizogo",
+        "domain_native": "Herizogtuom"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Furisto",
+        "domain_native": "Furstuom"
+      },
+      "kingdom": {
+        "ruler": "Shogun",
+        "domain": "Kingdom",
+        "ruler_native": "Kuning",
+        "domain_native": "Kuningrihhi"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Keisar",
+        "domain_native": "Keisarrihhi"
+      }
+    },
+    "_tiers_note": "Frankish (OHG) feudal ladder, ascending, with the Japonic clan co-titles beneath. Truhtin (sworn lord; *druhtinaz, the lord-of-the-war-band) barony over a Truhti; Marcha-grafo (march-count) march; Grafo (count) county over a Grafscaf; Herizogo (war-leader, duke; *harja-tugon) duchy over a Herizogtuom; Furisto (the first, prince) principality; Kuning (king) kingdom over a Kuningrihhi; Keisar (emperor < Caesar) empire over the Keisarrihhi. The conquered island-clans keep their Daimyo (great-house lord, sworn as the duke's vassals), Shugo (province-governor) and Jito (estate-lord) beneath the Frankish crown; the bushi (samurai) are the sworn retainers, the kannushi (shrine-priest) stands outside the ladder. Rank titles fuse the real Old High German (Frankish) and Japanese registers (allowed).",
+    "heir": "Kuning-barn (the king's child; the heir) / Yotsugi (the designated heir, Japonic)",
+    "honorifics": {
+      "lord": "Truhtin / Tono",
+      "lady": "Frouwa / Hime",
+      "champion": "Wigant (Frankish warrior) / Bushi (samurai)",
+      "your_grace": "Truhtin min",
+      "elder": "Altisto (the eldest)"
+    },
+    "vassalage": {
+      "liege": "Truhtin / Shujun",
+      "vassal": "Scalc (servant-man) / Kerai (retainer)",
+      "fealty": "Treuwa (troth) / Chugi (loyal fealty)",
+      "tribute": "Gelt (Frankish) / Nengu (Japonic)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Keisar": "Keisarin",
+      "Kuning": "Kuningin",
+      "Furisto": "Furstin",
+      "Herizogo": "Herizogin",
+      "Grafo": "Gravin",
+      "Marcha-grafo": "Marcha-gravin",
+      "Truhtin": "Truhtina"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Shogun": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Frankish ruling stock carry a dithematic name + -ingen lineage; the Japonic island-clans carry a clan-name (uji/-shi) borne first with the given name (X no Y); the ruling line fuses both - a dithematic Frankish given-name over a held island clan-seat. Order given-first for the Frankish lords, clan-first for the island-clans.",
+    "surname_source": [
+      "Frankish -ingen lineage (ruling houses)",
+      "Japonic clan / uji / -shi",
+      "branch-house -ke (Japonic)",
+      "fief / deed / animal byname"
+    ],
+    "dual_register": "the Frankish war-aristocracy keep OHG dithematic names (Hilde-, Gund-, Hrod-, -ric, -hari, -ramn); the Japanese island-clans keep their clan + given names (Kurokawa no Takeshi) on the native stock.",
+    "theophoric": "Frankish devotional on the morphed canon-reflexes (the Dulro- 'sun-' and Erlant- 'war-iron-' elements): Dulro-hari (Dulro's-army), Erlant-ric (war-iron-ruler); the Japonic substrate keeps the native-kami devotion + an element (-maru child/blade, Take- valor, Kami- divine): Takebimaru, names honoring Terashi-no-kami.",
+    "diminutive": "-ilo (Frankish) / -maru, -chan (Japonic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Frankish reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column: the High German shift th>d, d>t), Japonic variants SECONDARY and treated exactly as Yamataian treats them: wholly NATIVE kami (family_east_asian theonym_sets.japonic), NOT borrowed from the Sinitic forms and never real Shinto kami. ALIGNMENT IS PROVISIONAL (Lawful/Neutral): the Frankish feudal oath-order and the samurai bushido way both read Lawful (the sworn lord-vassal bond, the disciplined warrior-code, the kami of sun and blade and ancestors), but an older island layer reads Neutral (the wild kami, the mountain-oni, the local hearth- and grove-spirits). Both treatments given below pending Jedidiah's alignment decision (see gdd-culture-emergence-and-territory.md open questions).",
+    "the_one": "Aiterno (Frankish < *Aiternaz; Japonic Takami-no-kami) - the distant Ancient One, the High-Heaven One above the lesser powers, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Dulro (Jp. Terashi-no-kami) - the sun, the just brightness, right-rule",
+      "Orlandus": "Erlant (Jp. Hagane-no-kami) - iron, the blade-oath, war",
+      "Gaiandus": "Giando (Jp. Iwane-no-kami) - the enduring earth, the rock-root mountain",
+      "Numeno": "Numino (Jp. Amatsukaze-no-kami) - air, lightning, sky-wisdom",
+      "Realta": "Rialda (Jp. Megumi-hime) - the mother, mercy, healing"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aiterno foremost, Dulro the just-bright, Erlant of the sworn war, Rialda the merciful, Giando the steadfast earth (and their kami faces: Terashi-no-kami, Hagane-no-kami) - and names the Chaotic powers warded and unworshipped (the Frankish ungiwiht/devils, the wild oni); the sworn lord-vassal oath and the bushido way are the social ideal",
+      "Neutral": "ancestral and local - the deified war-dead of the ruling house and the senzo (forebears) of the clans, the hearth- and grove-spirits and the island kami of mountain, shrine and field; the great powers invoked at the grove-temple and the jinja situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterno - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as ungiwiht (Frankish monsters/devils) or as fierce kami and oni (Japonic), keep their morphs + an epithet: Maraxus -> Marach the War-Brand (Jp. Takebi-no-kami the War-Flame); Vacidus -> Wachid the Unmaker (Jp. Utsuro-no-kami the Devouring Void); Lusanto -> Lusando the Hoard-Worm (Jp. Kogane-Orochi the gold hoard-serpent).",
+    "clergy_ladder": {
+      "1": "Burg-scalc (shrine-servant, novice) / Miko",
+      "3": "Priast (priest) / Kannushi",
+      "5": "Heilag-priast (holy seer-priest) / Negi",
+      "7": "Ubar-priast (high priest) / Guji",
+      "9": "Altisto-priast (eldest priest of the realm) / Saishu"
+    },
+    "religious_orders_pattern": "the Harug (Frankish grove-temple) or Jinja (Japonic shrine) of [power]: 'the Harug of Dulro', 'the Jinja of Terashi-no-kami', within its torii and sacred grove.",
+    "saints_pattern": "the deified war-dead of the ruling house (honored at the howe and the grove) and the great ancestors and fallen heroes enshrined as kami (the eirei) at the clan jinja; 'the kami [name]'.",
+    "holy_symbol_motifs": {
+      "Dulro": "a sun-disc over a crossed sword (the kami-face: a rising sun-disc above a mirror and blade)",
+      "Erlant": "an iron sword crossed with a spear (the kami-face: a bare blade before a torii)",
+      "Giando": "the green island-hill beneath the standing stones and the sacred mountain"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-keels and atakebune named in Frankish kennings and Japonic blade-names: 'the Wave-Cutter', 'the Iron Boar', 'Hagane-maru', 'Boat of Dulro'",
+    "military_units": "the Kuning's hari (war-host) and the clan sonae (battle-formation): 'the Hari of Hinogard', 'the Crimson Sonae', 'the Iron-helms', 'the Tiger Gun'",
+    "taverns": "'The [Adjective] [Noun]': 'The Floating Plum', 'The Boar and Blade', 'The Iron Teahouse'",
+    "dungeons_ruins": "fallen burgs, abandoned shiro and haunted jinja: 'the Burg of [name]', 'the ruined Shiro of [clan]', 'the Howe of the Hildingen'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Hildirih",
+      "Gundahari",
+      "Hrodland",
+      "Theudirih",
+      "Sigiramn",
+      "Adalo",
+      "Liutprant",
+      "Wolfhari",
+      "Dulro-hari",
+      "Erlant-ric",
+      "Kurokawa no Takeshi",
+      "Akiyama no Yoshihiro",
+      "Takemori no Kagehisa",
+      "Iwakura no Munenori",
+      "Hoshino no Hayato",
+      "Shirakawa no Saburo",
+      "Toramaru",
+      "Takebimaru"
+    ],
+    "personal_f": [
+      "Hildigund",
+      "Swanahild",
+      "Adalinda",
+      "Hrodgund",
+      "Gerlinda",
+      "Theudelind",
+      "Hanae",
+      "Sakurako",
+      "Kohime",
+      "Aoi no Kaede",
+      "Iwakura no Mitsuko",
+      "Tsukino"
+    ],
+    "clan_houses": [
+      "the Hildingen (ruling house)",
+      "the Gundingen",
+      "the Hrodingen",
+      "the Theudingen",
+      "the Wolfingen",
+      "the Adalingen",
+      "Kurokawa-ke",
+      "Akiyama-ke",
+      "Iwakura-ke",
+      "Takemori-ke",
+      "Hoshino-ke",
+      "Shirakawa-ke"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "of the Fire-isle",
+      "the Oath-keeper",
+      "the Loyal (Chugi)",
+      "Blade-saint",
+      "the Tiger (Tora)",
+      "the Far-marcher",
+      "the Pine (Matsu)"
+    ],
+    "flagship_settlements": [
+      "Hinogard (the chief seat - the fire-island stronghold)",
+      "Hilde-shiro (the ruling-house war-castle)",
+      "Isarn-burg (the iron-fort)",
+      "Kuro-yama (the black-mountain seat)",
+      "Terashi-jinja (the sun-shrine town)",
+      "Hrod-minato (the glory-port)"
+    ]
+  }
+}

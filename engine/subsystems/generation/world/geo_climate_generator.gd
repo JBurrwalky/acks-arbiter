@@ -132,6 +132,11 @@ static func _precipitation(field: GeoField, campaign_seed: int) -> void:
 	var raw := PackedFloat32Array()
 	raw.resize(n)
 
+	# Orographic uplift reads the GEOMORPHIC (pre-incision) surface so a river-carved
+	# windward cell still registers its windward rise — the incised channel would
+	# otherwise read as a dry leeward dip and drift the rain shadow off the relief.
+	# Falls back to the live surface when the snapshot is absent (hand-built fields).
+	var geo_surface := field.pre_incision_surface if field.pre_incision_surface.size() == n else field.surface
 	# West→east parcel sweep: evaporate over water, rain on windward uplift.
 	for row in range(h):
 		var moisture := MOISTURE_START
@@ -142,8 +147,8 @@ static func _precipitation(field: GeoField, campaign_seed: int) -> void:
 				moisture = minf(moisture + EVAP_RATE * tfac, MOISTURE_CEILING)
 				raw[i] = 0.0
 			else:
-				var prev_h := field.surface[i] if col == 0 else field.surface[i - 1]
-				var uplift := maxf(field.surface[i] - prev_h, 0.0)
+				var prev_h := geo_surface[i] if col == 0 else geo_surface[i - 1]
+				var uplift := maxf(geo_surface[i] - prev_h, 0.0)
 				var frac := clampf(BASE_RAIN + OROGRAPHIC_COEF * uplift, 0.0, 1.0)
 				var rain := moisture * frac
 				raw[i] = rain

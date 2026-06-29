@@ -6,30 +6,49 @@
     "north_american"
   ],
   "_schema": "gdd-naming-conventions.md 2.6",
-  "catalog_number": 41,
-  "sub_palette": "mayan + woodland-overlay (cross-family blend)",
+  "csv_id": "HYB_55",
+  "catalog_number": null,
+  "_numbering_note": "(was v1 Tikan; csv_id authoritative)",
+  "sub_palette": "mayan + woodland-overlay (cross-family blend, Mesoamerican-leaning)",
   "synthesis_sources": [
-    11,
-    16
+    "BASE_10",
+    "BASE_11"
   ],
   "homeland": "Tikala",
   "blend": {
     "backbone": "mayan (mesoamerican, Ixalan)",
     "overlay": "woodland (north_american, Oronan)",
+    "lean": "Mesoamerican (Mayan)-heavy - a jungle pyramid-civ (a Tikal of the deep forest) reaching into the eastern woods: Maya k'uhul ajaw kingship and the witz-pyramid rule, the matrilineal longhouse-clan forest folk endure and seat the local lords beneath.",
     "note": "a jungle pyramid-civ (a Tikal) reaching into the eastern forests - Maya k'uhul ajaw kingship over matrilineal longhouse-clan forest folk"
   },
   "government": "feudal",
+  "civ_or_clan": "civ",
   "alignment_allowed": [
     "Lawful",
+    "Neutral",
     "Chaotic"
   ],
-  "_note": "Cross-family blend (Mayan + Woodland): a jungle-and-forest civ - Maya pyramid-city kingship grafted onto an Eastern-Woodland matrilineal longhouse-clan society. Backbone = Mayan (mesoamerican, Ixalan: glottalized phonology, the witz-pyramids, the k'uhul ajaw, the Long Count); overlay = Woodland (north_american, Oronan: the matrilineal ohwachira clans and clan-mothers, the longhouse and forest-grove, the labial-free register). civ = feudal. Seeds/shifts Lawful or Chaotic (the ordered calendar-theocracy vs the war-and-blood cult). Common-word lexicon and rank titles use the real Maya/Iroquois registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Mayan primary, Woodland variant), never real gods.",
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_10 (Mesoamerican/Mayan civ) x BASE_11 (North American/Woodland clan). CIV/CLAN DECIDED by inheritance: Mesoamerican base = Civilized, Woodland base = Clanhold, and any Civ parent -> Civ, so Tikan is Civilized (feudal). Concept: a jungle-and-forest civ - a Maya pyramid-city kingship (a Tikal of the deep forest) grafted onto an Eastern-Woodland matrilineal longhouse-clan society. Backbone = Mayan (mesoamerican, Ixalan: glottalized phonology, the witz-pyramids, the k'uhul ajaw, the Long Count); overlay/substrate = Woodland (north_american, Oronan: the matrilineal ohwachira clans and clan-mothers, the longhouse and forest-grove, the labial-free register). Common-word lexicon now a SINGLE FUSED tongue (Mayan-shaped, Woodland-substrated) per gdd-hybrid-conlang-fusion.md; rank titles DISPLAY in English with the existing Maya forms preserved as *_native; DEITY names are morphs of the Agrippan canon from both parents (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. All human cultures allow Lawful/Neutral/Chaotic (the ordered calendar-theocracy, the ancestral middle way, and the war-and-blood cult). [REWORKED 2026-06-28 to base/hybrid model: csv_id HYB_55; all-three alignment; English display titles + native; deep-fusion lexicon + fusion_rules.]",
   "phonology": {
     "palette": "Classic Maya backbone (glottalized b'/t'/k'/tz'/ch'; x = sh; aj-/ix- agentives; -aj/-ab endings) with a Woodland overlay (the labial-free Iroquoian register; long -onon/-wenne compounds in the forest substrate); theophoric on the Maya morphs (Tulax-, Marakab-) with Woodland variants (Tularonon-, Waraksonon-).",
     "phonotactics": "CVC; Maya glottalization and final glottal stop; the Woodland overlay contributes labial-free long compounds.",
-    "transparent_ratio": 0.4
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "mesoamerican (mayan) phonology dominant",
+      "sound_changes": [
+        "Woodland long polysynthetic compounds clip to a Maya CVC root: the ka-/o-/-onha/-onton affixes shed, the bare stem kept (karhakonha>karhakon, kanonhsa>kanonh, ononta>onon)",
+        "Woodland labial-free inventory yields to the Maya consonants; the Maya glottalized series (b'/t'/k'/tz'/ch') and final glottal stop impose on every root",
+        "Maya root-initial weight and vowel length + glottal stop on all words; x = sh kept; the Woodland nasal vowels (en/on) resolve to plain a/e/i/o/u",
+        "retain the Maya aj-/ix- agentives and -aj/-ab/-tun endings and the Woodland -onon signature on a few forest/clan roots; very short roots take a Maya -a' / glottal close"
+      ],
+      "source_tilt": "land/forest/longhouse/material/staple words from the Woodland roots (the forest substrate works the land and raises the longhouse); rule/kin-line/temple/quality/war words from the Mayan roots (the ruling pyramid-register); every root then filtered to one Maya-shaped phonology",
+      "portmanteaus": [
+        "deep_forest karhakon+k'aax>karhak'aax", "longhouse kanonhsa+nah>kanonah", "city kanataowanen+k'uhul-kah>kanahkah", "fort kanen'to+paa'>kanpaa'", "clan ohwachira+ch'ib'al>ohch'ib'", "kin ch'ib'al+ohwachira>ch'ibwara", "sacred karihwiyo+k'uhul>k'uhwiyo"
+      ]
+    }
   },
   "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Woodland forest/land/longhouse/material roots + Mayan rule/kin/temple roots, all run through one Maya-shaped sound-law (glottalization, final glottal stop, x=sh, root-initial weight); portmanteaus mark the blended forest-and-pyramid institutions and the matrilineal bloodline.",
     "feature_words": {
       "river": "ha'",
       "stream": "yok'ha'",
@@ -39,31 +58,32 @@
       "cape": "ni'",
       "isle": "peten",
       "mountain": "witz",
-      "hill": "mul",
+      "hill": "onon",
       "ridge": "puuk",
-      "forest": "k'aax",
-      "deep_forest": "karhakonha",
-      "plain": "chakan",
+      "forest": "karhak'",
+      "deep_forest": "karhak'aax",
+      "plain": "kahent",
       "marsh": "ak'alche'",
       "ford": "bejha'",
       "pass": "bej",
       "vale": "jom",
       "cenote": "tz'onot",
+      "grove": "kerhitkon",
       "coast": "pachk'ak'nab",
       "neck": "kal",
       "narrows": "halab",
       "waste": "chaltun",
       "road": "sacbe",
       "way": "beel",
-      "track": "xokbil"
+      "track": "oskon"
     },
     "settlement_words": {
       "hamlet": "otoch",
       "village": "kah",
-      "longhouse": "kanonhsa",
+      "longhouse": "kanonah",
       "town": "noh-kah",
-      "city": "k'uhul-kah",
-      "fort": "paa'",
+      "city": "kanahkah",
+      "fort": "kanpaa'",
       "market": "k'iwik",
       "temple_town": "k'uh-nah",
       "citadel": "nohol-paa'"
@@ -71,8 +91,8 @@
     "kinship": {
       "son": "mehen",
       "daughter": "al",
-      "house": "nah / kanonhsa",
-      "kin": "ch'ib'al (matrilineal, Woodland-style)",
+      "house": "kanonah",
+      "kin": "ch'ibwara",
       "ancestor": "uchben"
     },
     "adjectives": {
@@ -87,7 +107,7 @@
       "iron": "took'",
       "high": "ka'anal",
       "far": "naach",
-      "sacred": "k'uhul",
+      "sacred": "k'uhwiyo",
       "fair": "kiichpan"
     },
     "resources": {
@@ -100,7 +120,7 @@
       "maize": "ixim",
       "obsidian": "taj",
       "feather": "k'uk'",
-      "tobacco": "k'uutz"
+      "tobacco": "oyenk'"
     },
     "directional": {
       "upper": "yok'ol",
@@ -119,7 +139,7 @@
       "-witz (pyramid-mountain)",
       "-ha' (water/river)",
       "-peten (island/region)",
-      "-karhakon (deep forest, Woodland overlay)",
+      "-karhak' (deep forest, Woodland overlay)",
       "Noh-/Chak-/Ek- (great-/red-/black-)"
     ],
     "patronymic_form": "the ch'ib'al (lineage), here MATRILINEAL on the Woodland pattern - names bestowed by the clan-mother; aj- (he of) / ix- (she of); the k'uhul ajaw line traces its dynasty; calendar-day birth-names.",
@@ -128,51 +148,55 @@
       "female": "Ix- (she of)"
     },
     "diminutive_form": "Chan- (small) prefix",
-    "compounding_rule": "[quality|color](stem) + feature: Chak-witz (red-pyramid), Ek-nahb (black-lake); the Woodland overlay yields -karhakon (deep-forest) compounds and the clan-totem houses."
+    "compounding_rule": "[quality|color](stem) + feature: Chak-witz (red-pyramid), Ek-nahb (black-lake); the Woodland overlay yields -karhak' (deep-forest) compounds and the clan-totem houses."
   },
   "title_ladder": {
     "government": "feudal (a jungle pyramid-kingship over matrilineal forest-clans: the k'uhul ajaw and the ajaw nobility, but the clan-mothers of the ohwachira-clans seat the local batabs - a Maya crown on a Woodland clan-base)",
     "tiers": {
       "barony": {
-        "ruler": "Batab'",
-        "domain": "Batab'il"
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Batab'",
+        "domain_native": "Batab'il"
       },
       "march": {
-        "ruler": "Nakom",
-        "domain": "Nakomil"
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Nakom",
+        "domain_native": "Nakomil"
       },
       "county": {
-        "ruler": "Sajal",
-        "domain": "Sajalil"
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Sajal",
+        "domain_native": "Sajalil"
       },
       "duchy": {
-        "ruler": "Ajaw",
-        "domain": "Ajawil"
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Ajaw",
+        "domain_native": "Ajawil"
       },
       "principality": {
-        "ruler": "K'uhul Ajaw",
-        "domain": "K'uhul-Ajawil"
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "K'uhul Ajaw",
+        "domain_native": "K'uhul-Ajawil"
       },
       "kingdom": {
-        "ruler": "Kalomte'",
-        "domain": "Kalomte'il"
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Kalomte'",
+        "domain_native": "Kalomte'il"
       },
       "empire": {
-        "ruler": "Noh-Kalomte'",
-        "domain": "Noh-Kalomte'il"
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Noh-Kalomte'",
+        "domain_native": "Noh-Kalomte'il"
       }
     },
-    "_tiers_note": "Mayan backbone, ascending, on a Woodland clan-base. Batab' (local chief, seated by the clan-mother) barony; Nakom (war-captain) march; Sajal (subordinate governor) county; Ajaw (town-king) duchy; K'uhul Ajaw (holy lord) principality; Kalomte' (overlord) kingdom; Noh-Kalomte' (great overlord) empire. The matrilineal ohwachira-clans and their clan-mothers (the Woodland overlay) choose and may depose the batabs; the ah-k'in priests and the Long Count order the realm. (Rank titles are the real Maya/Iroquois register, allowed.)",
-    "female_forms": {
-      "Noh-Kalomte'": "Ix-Noh-Kalomte'",
-      "Kalomte'": "Ix-Kalomte'",
-      "K'uhul Ajaw": "Ix-K'uhul-Ajaw",
-      "Ajaw": "Ix-Ajaw",
-      "Sajal": "Ix-Sajal",
-      "Nakom": "Ix-Nakom",
-      "Batab'": "Ix-Batab'",
-      "_clan_mother": "the clan-mother (Woodland overlay) seats the batabs"
-    },
+    "_tiers_note": "Mayan backbone, ascending, on a Woodland clan-base. Batab' (local chief, seated by the clan-mother) barony; Nakom (war-captain) march; Sajal (subordinate governor) county; Ajaw (town-king) duchy; K'uhul Ajaw (holy lord) principality; Kalomte' (overlord) kingdom; Noh-Kalomte' (great overlord) empire. The matrilineal ohwachira-clans and their clan-mothers (the Woodland overlay) choose and may depose the batabs; the ah-k'in priests and the Long Count order the realm. (Native rank titles are the real Maya/Iroquois register, allowed; DISPLAY titles are English.)",
     "heir": "Baah-ch'ok (head-youth, the heir-apparent; named within the matrilineal clan)",
     "honorifics": {
       "lord": "Ajaw",
@@ -186,6 +210,26 @@
       "vassal": "Yajaw (under-lord)",
       "fealty": "Patan-t'an (oath of service)",
       "tribute": "Patan"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are plain ENGLISH - NO approved foreign term applies here (neither the Maya nor the Woodland ranks are on the approved commonly-known list), so there is no foreign display term and approved_foreign_terms_used is omitted. The *_native conlang forms (Mayan, with the Woodland clan-mother overlay) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Noh-Kalomte'": "Ix-Noh-Kalomte'",
+      "Kalomte'": "Ix-Kalomte'",
+      "K'uhul Ajaw": "Ix-K'uhul-Ajaw",
+      "Ajaw": "Ix-Ajaw",
+      "Sajal": "Ix-Sajal",
+      "Nakom": "Ix-Nakom",
+      "Batab'": "Ix-Batab'",
+      "_clan_mother": "the clan-mother (Woodland overlay) seats the batabs"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
     }
   },
   "people_name_convention": {
@@ -201,8 +245,8 @@
     "diminutive": "Chan- (small) prefix"
   },
   "religion": {
-    "_note": "Deity-names are morphs of the Agrippan canon (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. Tikan seeds/shifts Lawful or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The witz-pyramid and the forest-grove keep the rites; the Long Count and the clan-mothers' thanksgivings bind the year.",
-    "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, reviled as the far tyrant when Chaotic",
+    "_note": "Deity-names are morphs of the Agrippan canon (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. Tikan seeds/shifts Lawful, Neutral, or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The witz-pyramid and the forest-grove keep the rites; the Long Count and the clan-mothers' thanksgivings bind the year.",
+    "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, acknowledged but set aside when Neutral, reviled as the far tyrant when Chaotic",
     "sample_deity_renames": {
       "Tulrius": "Tulax (Wd. Tularonon) - sun and right-order; Lawful power",
       "Gaiandus": "Kayanab (Wd. Kayanonon) - the enduring earth and forest; Lawful power",
@@ -211,6 +255,7 @@
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench, Kayanab), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the uchben (ancestral dead), the day-lords, the clan-mothers' thanksgivings, and the local k'uh and forest-spirits",
       "Chaotic": "venerate the Chaotic powers (the war-fire Marakab, the blood-cult, the raid), demonize the Lawful powers and the One"
     },
     "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Marakab the War-Fire (Wd. Waraksonon); when Chaotic - Tulrius -> Tulax the Blinding, Aeternus -> Aj Ternaj the Far Tyrant.",
@@ -308,7 +353,7 @@
       "Tikala (the holy capital)",
       "Noh-Witz (the great pyramid-city)",
       "Chak-Ha' (the red-river town)",
-      "Ek-Karhakon (the black deep-forest town)",
+      "Ek-Karhak' (the black deep-forest town)",
       "Tulax-K'uhnah (the sun-temple seat)",
       "Yaaxtun-Peten (the jade-island)"
     ]

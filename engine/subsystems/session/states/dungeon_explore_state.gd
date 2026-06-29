@@ -23,6 +23,7 @@ const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const UnitInfoPanelScene := preload("res://scenes/maps/dungeon_unit_info_panel.gd")
 const ControlGroupBarScene := preload("res://scenes/maps/dungeon_control_group_bar.gd")
 const MinimapScene := preload("res://scenes/maps/dungeon_minimap.gd")
+const WorldViewportFrame := preload("res://scenes/maps/world_viewport_frame.gd")
 const LootGenerator := preload("res://engine/subsystems/combat/loot_generator.gd")
 const LootModalScript := preload("res://scenes/ui/party_inventory/loot_distribution_modal.gd")
 
@@ -154,8 +155,24 @@ func enter(runner, context: Dictionary) -> void:
 	_scene.movement_cell_reached.connect(_on_movement_cell_reached)
 	_scene.movement_path_complete.connect(_on_movement_path_complete)
 
+	# Wrap the dungeon Node3D in a bar-tracking SubViewport so it renders only in
+	# the area above the session status bar — the same framing the wilderness map
+	# uses (world_viewport_frame.gd tracks EventBus.bar_height_changed). own_world_3d
+	# isolates the dungeon's 3D world (it carries its own camera, light, and
+	# WorldEnvironment), matching the combat map's SubViewport. _scene stays the
+	# renderer reference; all DungeonHUD children now render inside the SubViewport
+	# (and so clip above the bar / can't be buried by it).
+	var dungeon_frame: SubViewportContainer = WorldViewportFrame.new()
+	dungeon_frame.name = "DungeonViewportFrame"
+	dungeon_frame.stretch = true
+	var dungeon_sv := SubViewport.new()
+	dungeon_sv.name = "DungeonSubViewport"
+	dungeon_sv.own_world_3d = true
+	dungeon_sv.handle_input_locally = true
+	dungeon_frame.add_child(dungeon_sv)
+	dungeon_sv.add_child(_scene)
 	runner.get_nav_stack().push_node(
-		_scene, "dungeon_%s" % entrance.get("id", "unknown")
+		dungeon_frame, "dungeon_%s" % entrance.get("id", "unknown")
 	)
 
 	# Create tokens

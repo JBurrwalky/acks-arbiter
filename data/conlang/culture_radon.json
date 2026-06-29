@@ -1,0 +1,358 @@
+{
+  "kit_id": "radon",
+  "tier": "culture",
+  "inherits": [
+    "celtic",
+    "near_eastern"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_13",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "celtic (goidelic) backbone + near_eastern (egyptian) overlay (cross-family blend, Celtic-leaning)",
+  "synthesis_sources": [
+    "BASE_02",
+    "BASE_05"
+  ],
+  "homeland": "Mag Itru",
+  "blend": {
+    "backbone": "celtic (Insular / Goidelic register: ri/tuath/flaith, Mac-/O- patronymics, the fian war-band, initial mutation c>ch / b>bh / t>th / d>dh, broad vs slender consonants, root-initial stress, the brithem's law and the fili's praise)",
+    "overlay": "near_eastern (egyptian: the itru river-land, the per-netjer temple-houses, the niut river-cities, construct toponyms Per-/Niut-/Ta-, breathy vowels and dj/tj/kh, aspect-based verbs over the substrate)",
+    "lean": "Celtic-heavy - a Goidelic mercenary-dynasty enthroned on the Nile: a fian war-host of Galatian guardsmen (Celtic spears hired by the river-kingdom) seized the delta-cities and set themselves up as warrior-kings over the temple-priesthood and the scribal populace; the cattle-raiding hero-clans rule, the per-temples and the river-kingdom endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_02 (Celtic / Insular Goidelic) x BASE_05 (Egyptian / abydosian river-kingdom). CIV/CLAN DECIDED by inheritance: Celtic base = Clanhold, Egyptian base = Civilized, and any Civ parent -> Civ, so Radon is Civilized (feudal). Concept: Celtic mercenary-dynasts in the Nile delta - the Galatian guardsmen who truly served Ptolemaic Egypt, here a fian war-host that seized the river-cities and enthroned itself as a feudal warrior-aristocracy over the existing temple-priesthood, scribes, and river-cities of the Egyptian kingdom. Backbone = Celtic (GOIDELIC/Insular: the ruling war-aristocracy, the ri/tuath/flaith register, Mac-/O- patronymics, the fian war-band, initial mutation); overlay/substrate = Egyptian (the itru river, the per-netjer temples, the niut river-cities, the scribal and priestly populace, the Per-/Niut-/Ta- construct toponyms). Common-word lexicon and rank titles use the real Gaelic and Egyptian registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (CELTIC reflexes primary - the family_celtic theonym_set; Egyptian morphs secondary - the abydosian deity-morphs), never real Celtic/Egyptian gods. The kingdom-tier DISPLAY ruler is the approved foreign term 'Pharaoh' (the Egyptian realm's iconic throne, which the Celtic dynasts assumed); the conlang Goidelic form sits in ruler_native. [2026-06-27: all human cultures allow Lawful/Neutral/Chaotic. Ruler/domain DISPLAY titles are English (or an approved foreign term); conlang titles are in ruler_native/domain_native for NPC dialogue. Deities are the canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Insular Celtic (Goidelic) backbone - initial consonant mutation (lenition c>ch, b>bh, t>th, d>dh; nasalization), broad vs slender consonants, root-initial stress, the fian/ri/tuath register, vowels a e i o u (long marks dropped) - meeting an Egyptian overlay: dj/tj/kh, l tends to r, v tends to w, the long -aa and feminine -et endings, breathy reconstructed vowels. Per the CSV: breathy vowels and liquid consonants - the Egyptian breathiness carried on the soft, lenited Goidelic liquids (the bh/dh/mh and the broad/slender l, r, n); grammar is VSO with root patterns and mutations (the Insular-Celtic VSO order and the Egyptian root-pattern templates meeting in the mutation system). Theophoric on the Celtic reflexes (Toran-, Orlann-) with Egyptian construct variants (Tjuraa-, Djeroraa-).",
+    "phonotactics": "CV/CVC; mutation-driven Goidelic clusters (ch, bh, dh, mh) meeting Egyptian dj/tj/kh onsets and long -aa codas; root-initial stress with a breathy Egyptian vowel-quality; Goidelic personal names over Per-/Niut-/Ta- construct toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "celtic (goidelic) phonology dominant",
+      "sound_changes": [
+        "Egyptian onsets folded into the Goidelic inventory: dj > d/g (slender d before front vowels, g before back), tj > t, kh > ch, q > c; the Egyptian liquids already lean r, the breathy w stays",
+        "Egyptian -aa / -et endings drop or shorten to the Goidelic shape: long -aa > -a or bare consonant, feminine -et > -e/-id, the construct -t softens; roots take Goidelic broad/slender colouring",
+        "Goidelic initial mutation lives on the substrate roots too: lenition c>ch, b>bh, t>th, d>dh, m>mh applies to fused stems in compound/genitive position",
+        "Goidelic root-initial stress on every word; broad-vs-slender consonant pairing imposed throughout, so the Egyptian roots are re-voweled to one Goidelic colour-pattern",
+        "retain Goidelic ch, bh, dh, mh and the slender l/r/n; retain a faint Egyptian dj/kh in a few sacral/material roots so both ancestries stay audible"
+      ],
+      "source_tilt": "land/river/material/staple words from Egyptian roots (the conquered Nile-folk keep their itru-river, sekhet-fields, bia-iron, it-grain) re-shaped to Goidelic phonology; kin-line/quality/abstract/rule/war words from Goidelic roots (the fian war-aristocracy's ruling register: mor, derg, sen, ard, iarn, mac); every root then run through one sound-law so the split is inaudible at the surface",
+      "portmanteaus": [
+        "son sa+mac>samac", "daughter sat+ingen>satingen", "house per+tech>pertech", "kin abet+fine>abfine", "fort menenu+dun>menedun", "temple_town per-netjer+nemed>pernemed", "citadel sebakh+caiseal>sebcaiseal", "city niut+cathair>niucathair"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Egyptian land/river/material/staple roots re-shaped to Goidelic phonology + Goidelic kin/quality/abstract/rule/war roots, all run through one Goidelic-dominant sound-law (lenition, broad/slender, root-initial stress); portmanteaus mark the blended bloodline and the shared institutions (kin, fort, temple, citadel, city). One word per concept, no slashes.",
+    "feature_words": {
+      "river": "itra",
+      "stream": "mern",
+      "lake": "shech",
+      "sea": "wadwer",
+      "bay": "chent",
+      "cape": "tadeser",
+      "isle": "iun",
+      "mountain": "deu",
+      "hill": "caa",
+      "ridge": "achet",
+      "forest": "methen",
+      "desert": "deshrach",
+      "plain": "sechet",
+      "marsh": "idech",
+      "ford": "dath",
+      "pass": "roch",
+      "vale": "glenn",
+      "march": "crich",
+      "coast": "wedeb",
+      "neck": "neheb",
+      "narrows": "seger",
+      "waste": "deshra",
+      "road": "wath",
+      "way": "mith",
+      "track": "shemed"
+    },
+    "settlement_words": {
+      "hamlet": "whyd",
+      "village": "niusher",
+      "town": "niut",
+      "city": "niucathair",
+      "fort": "menedun",
+      "port": "meryd",
+      "market": "chut",
+      "temple_town": "pernemed",
+      "citadel": "sebcaiseal"
+    },
+    "kinship": {
+      "son": "samac",
+      "daughter": "satingen",
+      "house": "pertech",
+      "kin": "abfine",
+      "ancestor": "tepser"
+    },
+    "adjectives": {
+      "great": "mor",
+      "little": "becc",
+      "old": "sen",
+      "new": "nua",
+      "black": "dub",
+      "white": "find",
+      "red": "derg",
+      "golden": "orda",
+      "iron": "iarn",
+      "high": "ard",
+      "far": "cian",
+      "sacred": "noib",
+      "fair": "caem"
+    },
+    "resources": {
+      "salt": "hemath",
+      "iron": "bia",
+      "bronze": "hemte",
+      "silver": "hedh",
+      "gold": "nebu",
+      "incense": "senether",
+      "grain": "ith",
+      "lapis": "chesbedh",
+      "cattle": "bo",
+      "horse": "remach"
+    },
+    "directional": {
+      "upper": "uachtar",
+      "lower": "iochtar",
+      "north": "tuaiscert",
+      "south": "deiscert",
+      "east": "airther",
+      "west": "iarthar",
+      "inner": "inmedon",
+      "outer": "immechtrach"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Per- (house/temple of; Egyptian construct)",
+      "Niut- (city of; Egyptian)",
+      "Ta- (land of; Egyptian)",
+      "Pa- (the; Egyptian)",
+      "Dun- (fort; Goidelic)",
+      "Rath- (ringfort; Goidelic)"
+    ],
+    "patronymic_form": "the Goidelic ruling stock keep the Mac- (son of) / O-Ua (descendant of) patronymic and the cland/fine kin-group; the Egyptian populace keep the 'sa-' (son of) filiation and theophoric constructs; the throne fuses both - a ri who also carries a Per- house-name.",
+    "gendered_endings": {
+      "male": "-an / -ach (Goidelic ruling); (consonant) / -mose / -hotep (Egyptian)",
+      "female": "-in / -nat (Goidelic); -et / -it / -nefru (Egyptian)"
+    },
+    "diminutive_form": "-an / -in (Goidelic) / -sheri (Egyptian)",
+    "compounding_rule": "Goidelic [quality|feature](stem) + element (Dun-derg, red-fort; Ard-mor, great-height) layered over Egyptian construct-chains (Per-[god], Niut-[god], Ta-[noun]): the capital Mag Itru (the river-plain), Per-Toran (temple-city of Toran), Ta-Orlann (the iron-land)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Goidelic war-aristocracy over the Egyptian river-kingdom: the ri and his flaith-kin at the crown, the toisech-chiefs over the niut-cities, the fian-spears sworn to the war-host; the hem-netjer priesthood and the scribal per-aat serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Aire",
+        "domain_native": "Airecht"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Maor",
+        "domain_native": "Maoracht"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Toisech",
+        "domain_native": "Toisecht"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Flaith",
+        "domain_native": "Flaithes"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Ri Tuaithe",
+        "domain_native": "Tuath"
+      },
+      "kingdom": {
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Ruiri",
+        "domain_native": "Morthuath"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Ard-ri Nesut",
+        "domain_native": "Ard-rige"
+      }
+    },
+    "_tiers_note": "Insular Celtic (Goidelic) ladder, ascending, with the Egyptian substrate co-titles beneath. Aire (noble) barony; Maor (warden) march; Toisech (sept-chief) county over a Toisecht; Flaith (lord) duchy over a Flaithes; Ri Tuaithe (king of a tuath) principality; Ruiri (over-king) kingdom - the enthroned Celtic over-king who assumed the Egyptian throne, displayed as Pharaoh - over a Morthuath; Ard-ri Nesut (the high-king; Goid. ard-ri + Eg. nesut) empire over the Ard-rige. The conquered river-cities keep their Egyptian sepati (nomarch) and hem-netjer (priest) beneath the Goidelic crown; the per-aa style survives as the highest sacral honorific of the enthroned ruiri. The brithem (judge) and fili (poet-seer), and the Egyptian wab and hem-netjer, stand outside the ladder. Rank titles fuse the real Gaelic and Egyptian registers (allowed).",
+    "heir": "Tanaiste (the heir-elect / second); Sa-Nesut (king's son, Egyptian style)",
+    "honorifics": {
+      "lord": "Triath / Neb",
+      "lady": "Bantriath / Nebet",
+      "champion": "Caur (Goidelic hero) / Aha (Egyptian warrior)",
+      "your_grace": "A Ri",
+      "elder": "Sruith / Tepi-a"
+    },
+    "vassalage": {
+      "liege": "Flaith",
+      "vassal": "Ceile (client) / Bak (Egyptian)",
+      "fealty": "Giall (pledge-hostage) / Ankh (the living-oath, Egyptian)",
+      "tribute": "Cis / Inu (Egyptian)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Ard-ri Nesut": "Ard-rigan Nesyt",
+      "Ruiri": "Ruirigan",
+      "Ri Tuaithe": "Rigan",
+      "Flaith": "Banflaith",
+      "Toisech": "Bantoisech",
+      "Maor": "Banmaor",
+      "Aire": "Banaire"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Pharaoh": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Goidelic ruling stock carry a personal name + Mac-/O- patronymic and cland/fine; the Egyptian populace carry a theophoric given name + sa- filiation; order given-first.",
+    "surname_source": [
+      "Goidelic Mac-/O- patronymic and cland/fine",
+      "Per- house (Egyptian)",
+      "sa- filiation",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Goidelic war-aristocracy keep Gaelic names + a praise-epithet from the fili (Conall, Cormac, Mac-, O-, the Hound, the Red); the Egyptian river-folk keep theophoric names (X-hotep, Mery-X, Sa-X) on the morphed canon-stems.",
+    "theophoric": "Goidelic devotional on the morphed Celtic reflexes (Mael-Toran, Gilla-Orlann, Cu-Orlann); Egyptian devotional constructs: Tjuraa-hotep (Tjuraa-is-content), Mery-Djeroraa (beloved-of-Djeroraa), Sa-Riaret (son-of-Riaret).",
+    "diminutive": "-an / -in (Goidelic) / -sheri (Egyptian)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - CELTIC (Insular / Goidelic) reflexes PRIMARY (family_celtic theonym_set), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Celtic/Egyptian gods. All three alignments: the Lawful keep the sun-and-oath powers, the Neutral the ancestral war-dead and the land and river powers, the Chaotic the war-fury and raven powers; the druidic drui/fili and the Egyptian hem-netjer mediate side by side.",
+    "the_one": "Eternan (Eg. Atjernaa) - the Ancient One beyond the god-kin, the hidden distant maker, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Toran (Eg. Tjuraa) - the sun, the just brightness and right-order",
+      "Orlandus": "Orlann (Eg. Oranetj) - the iron-oath, battle, war",
+      "Gaiandus": "Gaian (Eg. Geandaa) - the enduring land, the black alluvial earth",
+      "Numeno": "Numan (Eg. Numenaa) - air, lightning and sky-wisdom",
+      "Realta": "Realtan (Eg. Riaret) - the mother, the mercy-star, healing",
+      "Delorum": "Dolar (Eg. Djeroraa) - death, the rest of the dead, lord of the peaceful dead"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Eternan, Toran the just (the sun above the feather of right-order), Orlann of the sworn oath-war, Realtan the merciful - and names the Chaotic powers as the warded ill-kin (Goid. namnamed at the cairn; Eg. framed as -kin of the great serpent Hefau), unworshipped; the fian's sworn oath and the just over-king are the social ideal",
+      "Neutral": "the ancestral war-dead (the deified heroes of the ruling cland and the Tuath-de) and the akhu / justified dead of the per-temples and the river-land; the great powers invoked at the nemed-grove and the per-netjer situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-fury and the raven - and names the Lawful powers, and Eternan, as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers keep their morphs + a portfolio epithet (distinct per power; warded at the cairn and framed as -kin of the great serpent Hefau): Maraxus -> Maragan the War-Fire (Eg. Marakhu the City-Burner); Vacidus -> Faicid the Unmaker (Eg. Wakedjet, the Devouring Hefau); Lusanto -> Losand the Hoard-Worm.",
+    "clergy_ladder": {
+      "1": "Drui-dalta (druid-novice) / Wab",
+      "3": "Drui (druid) / Hem-netjer",
+      "5": "Faith (seer-priest) / Hem-netjer Sen-nu (second prophet)",
+      "7": "Ard-drui (arch-druid) / Hem-netjer Tepy (first prophet)",
+      "9": "Ollam (supreme sage) / Hem-netjer Aa (great prophet)"
+    },
+    "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Per-netjer (Egyptian god's-house) of [power]: 'the Nemed of Toran', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the ruling cland (honored at the cairn and the holy well) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
+    "holy_symbol_motifs": {
+      "Toran": "a triskele sun-wheel over the feather of right-order",
+      "Orlann": "an iron spear crossed with a torc (oath-ring) and the river-standard",
+      "Gaian": "the black alluvial field beneath the temple-pylon"
+    }
+  },
+  "banks_patterns": {
+    "ships": "curach river-boats and war-barques: 'Barque of Toran', 'the Grey Hound', 'Raven of the Itru'",
+    "military_units": "the [cland] Fian (warrior-band) and the temple divisions: 'the Fian of the Red Branch', 'the Standard of Orlann', 'the Division of Tjuraa', 'the Hound-spears'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Salmon and Stele'",
+    "dungeons_ruins": "buried per-temples and fallen raths: 'the Tomb of Nesut [name]', 'the Sunken Per-netjer', 'the Rath of the Hound'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Conall",
+      "Cormac",
+      "Diarmait",
+      "Eogan",
+      "Fergal",
+      "Lugaid",
+      "Niall",
+      "Ronan",
+      "Cathal",
+      "Murchad",
+      "Mael-Toran",
+      "Cu-Orlann",
+      "Tjuraa-hotep",
+      "Mery-Djeroraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Oranetj-mose",
+      "Tjuraa-mose",
+      "Sa-Tjuraa",
+      "Djeroraa-nakht"
+    ],
+    "personal_f": [
+      "Eithne",
+      "Fionnuala",
+      "Gormlaith",
+      "Orlaith",
+      "Nessa",
+      "Aoife",
+      "Muirenn",
+      "Realtan-nat",
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Sat-Djeroraa",
+      "Numenaa-et",
+      "Sat-Tjuraa"
+    ],
+    "clan_houses": [
+      "Cland Conaill (ruling cland)",
+      "Cland Cormaic",
+      "Ui Eogain",
+      "Ui Niad",
+      "Per-Tjuraa",
+      "Per-Djeroraa",
+      "Per-Riaret",
+      "Per-Numenaa",
+      "Per-Oranetj",
+      "Cland Murchada",
+      "Per-Geandaa",
+      "Ui Cathail"
+    ],
+    "epithets_cognomina": [
+      "the Hound (Cu)",
+      "Lion-of-the-River",
+      "the Justified (maa-kheru)",
+      "of the Itru",
+      "the Oath-keeper",
+      "City-breaker",
+      "the Far-marcher",
+      "Sun-faced"
+    ],
+    "flagship_settlements": [
+      "Mag Itru (the chief seat - the river-plain)",
+      "Dun Conaill (the ruling-cland fort)",
+      "Per-Toran (temple-city of the sun)",
+      "Niut-aat (the great river-city)",
+      "Rath Iarn (the iron ringfort)",
+      "Ta-Orlann (the iron-land march)"
+    ]
+  }
+}

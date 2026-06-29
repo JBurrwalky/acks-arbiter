@@ -93,7 +93,9 @@ static func process_monthly_tick(
 		summary["action"] = "accumulated"
 		return summary
 	# Challenger emerges.
-	var ruler_id: String = String(domain_data.get("owner_character_id", ""))
+	# owner_character_id is a nullable column; String() throws on a null Variant.
+	var owner_v: Variant = domain_data.get("owner_character_id")
+	var ruler_id: String = "" if owner_v == null else str(owner_v)
 	var ruler_level: int = _get_ruler_level(ruler_id)
 	var challenger_level: int = maxi(1, ruler_level - 2)
 	var challenger_character_id: String = _create_challenger_character(

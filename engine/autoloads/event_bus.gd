@@ -99,6 +99,11 @@ signal party_map_changed(party_id: String, from_map_id: String, to_map_id: Strin
 ## for cross-autoload signal portability.
 signal map_view_mode_changed(from_mode: int, to_mode: int)
 
+## The session status bar's "Regions" toggle flipped. The 3D wilderness renderer
+## listens and shows/hides its translucent named-region colour overlay. [param enabled]
+## is the toggle's new pressed state. UI-only; no game state changes.
+signal region_overlay_toggled(enabled: bool)
+
 ## The party has moved into a dungeon room.
 signal room_entered(room_id: String)
 
@@ -1042,6 +1047,13 @@ signal notification_requested(data: Dictionary)
 
 ## Player requested to make camp from the status bar.
 signal camp_requested
+
+## The session status bar's effective occluding height changed (drag, height
+## state change, show/hide, or window resize). [param height_px] is the number
+## of pixels the bar currently covers at the bottom of the screen — 0 when the
+## bar is hidden. The world viewport frame listens here and shrinks its bottom
+## edge to match so the map viewport is never drawn behind the bar.
+signal bar_height_changed(height_px: float)
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,364 @@
+{
+  "kit_id": "ionbria",
+  "tier": "culture",
+  "inherits": [
+    "celtic",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_15",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "celtic (goidelic) backbone + classical (hellenic) overlay (cross-family blend, Celtic-leaning)",
+  "synthesis_sources": [
+    "BASE_02",
+    "BASE_07"
+  ],
+  "homeland": "Galanpolis",
+  "blend": {
+    "backbone": "celtic (goidelic register: ri/tuath/dun/rath, mac/ua patronymics, initial consonant mutation, broad-slender contrast, root-initial stress, the cland war-aristocracy and the sworn hosting)",
+    "overlay": "classical (hellenic: the polis and the agora, the archon civic register, pitch-accent learning, -os/-on/-polis toponyms, the philosophers and the fleets)",
+    "lean": "Celtic-heavy - a Goidelic warrior-aristocracy (the cland war-bands that crossed into the east and settled among the Greek cities) enthroned over the Hellenic city-civilization: the sworn cland holds the crown and the hosting, the learned poleis and their fleets endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_02 (Celtic / Goidelic) x BASE_07 (Hellenic/Classical). CIV/CLAN DECIDED by inheritance: Celtic base = Clanhold, Greek/Classical base = Civilized, and any Civ parent -> Civ, so Ionbria is Civilized (feudal). Concept: a Goidelic Celtic warrior-aristocracy - the Galatians who crossed into the east as war-bands and settled near the Greek poleis of Anatolia and the Aegean - that made itself a ruling cland over the Hellenic city-civilization (a Celtic-Hellenistic fusion: a Celtic war-aristocracy over Greek poleis and their learned populace). Backbone = Celtic (GOIDELIC: the ruling cland and the sworn hosting, the ri/tuath/flaith register, mac/ua patronymics); overlay/substrate = Classical (HELLENIC: the polis and the agora, the archon civic register, the learned populace, the fleets, -os/-on/-polis toponyms). Common-word lexicon and rank titles use the real Gaelic and Greek registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Celtic Goidelic reflexes PRIMARY from family_celtic theonym_set, Hellenic variants SECONDARY following achillean's deity-morph register), never real Celtic/Greek gods. PROVISIONAL: alignment is a per-hybrid design choice pending the alignment pass - the Celtic war-oath and the cland's hosting meet the Hellenic civic law and the polis' settled order. Register choice: this Celtic-base hybrid uses the GOIDELIC reflexes (Galanpolis = the Gauls' city), per the Galatian rationale - flag for Jedidiah if the Brythonic register is wanted instead. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Celtic (Goidelic) backbone - root-initial stress, initial consonant mutation (lenition c>ch, b>bh/v, m>mh/v, t>th, d>dh; nasalization), the broad-slender consonant contrast, vowels a e i o u (long marks dropped in data), mac/ua patronymic prefixes - meeting a Hellenic overlay: vowel-rich a e i o u with long e/o, aspirates th/ph/kh, sibilant s, the civic -os/-on/-eus/-e endings and -polis. Per the CSV: a pitch accent set over lyrical, vowel-rich Goidelic sound (the Hellenic pitch lifting the Celtic vowels); grammar is VSO with complex aspects carried on the Celtic initial-mutation system (the verb-first Celtic frame over the Greek aspectual layer). Theophoric on the Celtic reflexes (Toran-, Orlann-) with Hellenic variants (Tulrio-, Orlandro-).",
+    "phonotactics": "CV / CVC; mutation-driven Celtic clusters and the broad-slender contrast meeting Hellenic onset-clusters (kt, pt, ps, th, ph, kh) and the open vowel-final -os/-on; root-initial stress with a Hellenic penultimate pull; Goidelic Dun-/Rath-/Cill- names over -polis / -os / -eia civic toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "celtic (goidelic) phonology dominant",
+      "sound_changes": [
+        "Hellenic civic endings adapted to Goidelic: final -os>-as/-a, -on>-an, -e>-a, -eus>-each; the case-vowel drops or relenites onto a Goidelic stem (potamos>potam, thalassa>talas)",
+        "Hellenic pitch-accent yields to Goidelic root-initial stress on every word; the penultimate pull is lost",
+        "Greek aspirates and clusters fold into the Goidelic inventory: ph>f, kh>c/ch, ps>s, initial pt-/kt- simplify to t-/c-; Greek single s kept, but z/x>s",
+        "all roots, from either parent, take Goidelic lenition and the broad-slender contrast: medial b/m>bh/v, c>ch, t>th, d>dh where slender; long marks dropped in data",
+        "very short Greek roots take a Goidelic -an/-a closing; Greek -polis as a bound element softens to -bal (lenited baile) in coinages"
+      ],
+      "source_tilt": "sea/coast/land-terrain, civic/polis, material and staple words from Greek roots (the Hellenic substrate works the harbours, the poleis, the fields and the trades: thalassa>talas, polis>balas, sitos>siot, argyros>airgir); kin-line/quality/abstract/rule/war words from Goidelic roots (the ruling cland register: mor, sean, dubh, ri, sluag); every chosen root then run through the one Goidelic-shaped sound-law so the seam is inaudible",
+      "portmanteaus": [
+        "city cathair+polis>cathbal",
+        "fort dun+phrourion>dunfror",
+        "temple_town nemed+hieron>nemiar",
+        "citadel rath+akropolis>rathacar",
+        "son mac+huios>machos",
+        "daughter inghean+thygater>inghter",
+        "kin fine+genos>fingen",
+        "sacred naomh+hieros>naviar"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Greek sea/civic/material/staple roots + Goidelic kin/quality/rule/war roots, all run through one Goidelic-shaped sound-law (lenition, broad-slender, root-initial stress, Greek endings adapted); portmanteaus mark the blended institutions and bloodline. One word per concept, no slashes.",
+    "feature_words": {
+      "river": "potam",
+      "stream": "sruth",
+      "lake": "loch",
+      "sea": "talas",
+      "bay": "colpa",
+      "cape": "acra",
+      "isle": "inis",
+      "mountain": "sliabh",
+      "hill": "cnoc",
+      "ridge": "druim",
+      "forest": "coill",
+      "wood": "drima",
+      "plain": "mag",
+      "marsh": "corrach",
+      "ford": "poras",
+      "pass": "bearna",
+      "vale": "gleann",
+      "coast": "acta",
+      "neck": "istma",
+      "narrows": "caol",
+      "waste": "earam",
+      "road": "bothar",
+      "way": "sli",
+      "track": "atrap"
+    },
+    "settlement_words": {
+      "hamlet": "clachan",
+      "village": "baile",
+      "town": "asta",
+      "city": "cathbal",
+      "fort": "dunfror",
+      "port": "liman",
+      "market": "agra",
+      "temple_town": "nemiar",
+      "citadel": "rathacar"
+    },
+    "kinship": {
+      "son": "machos",
+      "daughter": "inghter",
+      "house": "teach",
+      "kin": "fingen",
+      "ancestor": "sinsear"
+    },
+    "adjectives": {
+      "great": "mor",
+      "little": "beag",
+      "old": "sean",
+      "new": "nua",
+      "black": "dubh",
+      "white": "ban",
+      "red": "dearg",
+      "golden": "orga",
+      "iron": "iarann",
+      "high": "ard",
+      "far": "fada",
+      "sacred": "naviar",
+      "fair": "fionn"
+    },
+    "resources": {
+      "salt": "salann",
+      "iron": "iarann",
+      "bronze": "creumha",
+      "silver": "airgir",
+      "gold": "or",
+      "cattle": "bo",
+      "wine": "ina",
+      "grain": "siot",
+      "wool": "olann",
+      "horse": "each"
+    },
+    "directional": {
+      "upper": "uachtar",
+      "lower": "iochtar",
+      "north": "tuaisceart",
+      "south": "deisceart",
+      "east": "oirthear",
+      "west": "iarthar",
+      "inner": "isteach",
+      "outer": "amach"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Dun- (fort; Goidelic)",
+      "Rath- (ring-fort; Goidelic)",
+      "Cill- (church/cell; Goidelic)",
+      "Ard- (height; Goidelic)",
+      "Mag- (plain; Goidelic)",
+      "-polis (city; Hellenic)",
+      "-os / -on (Hellenic place)",
+      "-eia / -ia (Hellenic)"
+    ],
+    "patronymic_form": "the Goidelic ruling stock carry the Mac- (son of) / Ua- (descendant of) patronymic and the fine/cland lineage-name (the war-cland of the ri); the Hellenic populace keep the -ides / -ades patronymic and the polis/deme demonym of origin; the throne fuses both - a ri who also bears an archon-seat and a polis-title.",
+    "gendered_endings": {
+      "male": "-an / -ach (Goidelic ruling); -os / -es / -eus (Hellenic)",
+      "female": "-in / -nat (Goidelic); -e / -a / -is (Hellenic)"
+    },
+    "diminutive_form": "-an / -in (Goidelic) / -ion / -iskos (Hellenic)",
+    "compounding_rule": "Goidelic compounds ([fort-type|quality|saint](stem) + element: Dun-derg, red-fort; Ard-mor, great-height) layered over Hellenic civic compounds (feature/quality + -polis / linking -o-: Neapolis, Melanoros): the capital Galanpolis (the Gauls' city), Dun-Toran (Toran's-fort), Toran-polis (Toran's-city)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Goidelic war-aristocracy over the Hellenic poleis: the ri and his flaith-kin at the crown, the tigerna-lords and the archon-governors over the city-provinces, the sworn hosting of the cland bound to the throne; the archons and the strategoi of the fleets, the agora and the philosophers' schools serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Tigerna",
+        "domain_native": "Tigernas"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Flaith-criche",
+        "domain_native": "Crich"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Flaith",
+        "domain_native": "Flaithes"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Toisech",
+        "domain_native": "Toiseces"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Ri-tuaithe",
+        "domain_native": "Tuath"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Ruiri",
+        "domain_native": "Ruirecht"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Ard-ri",
+        "domain_native": "Ard-rige"
+      }
+    },
+    "_tiers_note": "Goidelic ladder, ascending, with the Hellenic substrate co-titles beneath. Tigerna (lord) barony over a Tigernas; Flaith-criche (lord of the border) march over a Crich (the border-land); Flaith (noble lord) county over a Flaithes; Toisech (chief / war-leader) duchy over a Toiseces; Ri-tuaithe (king of a tuath) principality over a Tuath (the petty kingdom); Ruiri (over-king) kingdom over a Ruirecht; Ard-ri (high king) empire over an Ard-rige (the high-kingship). The conquered poleis keep their Hellenic archon (city-magistrate) and strategos (general / fleet-commander) beneath the Celtic crown - the county ruler is displayed by the archon's title. The brithem (judge) and the fili/ollam (poet-sage), and the Hellenic hierophant, stand outside the ladder. Rank titles fuse the real Gaelic and Greek registers (allowed).",
+    "heir": "Tanaiste (the designated heir; the Hellenic Diadochos for the polis-line)",
+    "honorifics": {
+      "lord": "Flaith / Kyrios",
+      "lady": "Banflaith / Kyria",
+      "champion": "Caur (Goidelic champion) / Hippeus (Hellenic knight)",
+      "your_grace": "A flaith / Megistos",
+      "elder": "Sinser (the eldest) / Geron"
+    },
+    "vassalage": {
+      "liege": "Flaith / Hegemon",
+      "vassal": "Cel-sine (sworn client) / Symmachos (Hellenic ally)",
+      "fealty": "Luige (oath) / Horkos (Hellenic oath)",
+      "tribute": "Cain (Goidelic tribute) / Phoros (Hellenic tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Ard-ri": "Ard-rigan",
+      "Ruiri": "Ruirigan",
+      "Ri-tuaithe": "Rigan-tuaithe",
+      "Toisech": "Bantoisech",
+      "Flaith": "Banflaith",
+      "Flaith-criche": "Banflaith-criche",
+      "Tigerna": "Tigernain"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Goidelic ruling stock carry a personal name + Mac- / Ua- patronymic and a fine/cland lineage; the Hellenic populace carry a personal name + -ides patronymic + polis/deme demonym; order given-first.",
+    "surname_source": [
+      "Goidelic Mac- / Ua- patronymic",
+      "fine/cland lineage",
+      "Hellenic -ides patronymic",
+      "polis/deme of origin (Hellenic locational)",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Goidelic war-aristocracy keep Gaelic names (the -an/-ach stems with Mac-/Ua- patronymics and a cland lineage); the Hellenic city-folk keep Greek names (the -on/-os/-eus stems with -ides patronymics and deme demonyms).",
+    "theophoric": "Celtic devotional on the morphed god-reflexes (Toran-mac, Mael-Orlann 'devotee of Orlann'); Hellenic devotional on the morphed stems (Tulrio-, Orlandro-, Numeno-): Tulriodoros (gift of Tulrios), Orlandrokles.",
+    "diminutive": "-an / -in (Goidelic) / -ion / -iskos (Hellenic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Celtic GOIDELIC reflexes PRIMARY (family_celtic theonym_set), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Celtic/Greek gods. Alignment PROVISIONAL: the Celtic war-oath and the cland's hosting meet the Hellenic civic law and the polis' settled order.",
+    "the_one": "Eternan (Celtic; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Toran (Hell. Tulrios) - the sun, fire, and justice",
+      "Orlandus": "Orlann (Hell. Orlandros) - iron, oath, war",
+      "Gaiandus": "Gaian (Hell. Gaiandros) - the enduring earth, cold, endurance",
+      "Numeno": "Numan (Hell. Numenos) - air, lightning, sky-wisdom",
+      "Realta": "Realtan (Hell. Realtia) - the mother, mercy, healing"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers fuath (spectres) / daimones, warded and unworshipped; the cland-oath and the polis' civic law bind alike, the sworn hosting and the ordered polis the social ideal",
+      "Neutral": "the ancestral war-dead (the deified ri and the heroes of the ruling cland) and the city-heroes of the poleis (the heroon-dead); the great powers invoked at the nemed-grove and the polis-temple situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eternan - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fuath (Celtic spectres) or -daimon (Hellenic demon), keep their morphs + an epithet: Maraxus -> Maragan the War-Brand (Hell. Maraxos the Tyrant-Flame); Vacidus -> Faicid the Unmaker (Hell. Vakidos-daimon); Lusanto -> Losand the Hoard-Worm (Hell. Lusandos the Drowner-of-Gold).",
+    "clergy_ladder": {
+      "1": "Cele-nemid (temple-servant) / Neokoros",
+      "3": "Drui (priest)",
+      "5": "Ard-drui (high priest) / Hiereus",
+      "7": "Primh-drui (chief priest) / Archiereus",
+      "9": "Sinser-drui (eldest priest) / Megas Hierophant"
+    },
+    "religious_orders_pattern": "the Nemed (Celtic sacred grove) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Nemed of Toran', 'the Temenos of Tulrios'.",
+    "saints_pattern": "the deified ri and the heroes of the ruling cland (the war-dead honored at the cairn / the dun), and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
+    "holy_symbol_motifs": {
+      "Toran": "a sun-wheel over a crossed spear and scales",
+      "Orlann": "an iron spear crossed with an oath-ring",
+      "Gaian": "the standing stones above the olive-terrace"
+    }
+  },
+  "banks_patterns": {
+    "ships": "the war-curach and the long-keel, named in Celtic kennings and Hellenic virtue-names: 'the Wave-Hound', 'Raven of Galanpolis', 'the Nike', 'Pride of the Muir'",
+    "military_units": "the ri's sluagh (the sworn hosting / war-band) and the polis levies: 'the Sluagh of Galanpolis', 'the Spear-cland', 'the Bronze Phalanx of the poleis'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Spear and Olive', 'The Golden Curach'",
+    "dungeons_ruins": "sunken poleis and fallen Celtic duns: 'the Akropolis of [name]', 'the Sunken Nemed', 'the Cairn of the Ri', 'the broken Dun-rath'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Conall",
+      "Niall",
+      "Diarmaid",
+      "Cormac",
+      "Brennos",
+      "Aodhan",
+      "Ruadhan",
+      "Fergal",
+      "Donncha",
+      "Lugaid",
+      "Theron",
+      "Kallias",
+      "Lysandros",
+      "Ariston",
+      "Demetrios",
+      "Nikandros",
+      "Eumenes",
+      "Stratos"
+    ],
+    "personal_f": [
+      "Niamh",
+      "Aoife",
+      "Deirdre",
+      "Sadhbh",
+      "Etain",
+      "Mor",
+      "Findabair",
+      "Theodora",
+      "Kallisto",
+      "Stratonike",
+      "Eirene",
+      "Lysandra",
+      "Daphne",
+      "Arete"
+    ],
+    "clan_houses": [
+      "the Cland Conaill (ruling cland)",
+      "the Ua Neill",
+      "the Cland Cormaic",
+      "the Ua Brennain",
+      "the Cland Lugaid",
+      "the Theronides (Hellenic gens)",
+      "the Kalliades",
+      "the Lysandrides",
+      "the Aristides",
+      "the Eumenides",
+      "the Ua Diarmata",
+      "the Demetriades"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "Hound-of-Galanpolis",
+      "the Spear-king",
+      "ho Megas (the Great)",
+      "the Oath-keeper",
+      "City-warden",
+      "the Far-marcher",
+      "Storm-voiced"
+    ],
+    "flagship_settlements": [
+      "Galanpolis (the chief seat - the Gauls' city)",
+      "Dun-Conaill (the ruling-cland fort)",
+      "Toran-polis (Toran's-city)",
+      "Neapolis (the new polis of the substrate)",
+      "Rath-Cormaic (the ruling-cland ring-fort)",
+      "Akropolis-cairn (the citadel over the old cairn)"
+    ]
+  }
+}

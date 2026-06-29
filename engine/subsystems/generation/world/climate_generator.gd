@@ -57,7 +57,14 @@ const TEMPERATE_THRESHOLD_C := 8.0 # above → C group, else D group
 const WET_THRESHOLD := 0.65        # A group: above → Af rainforest
 const MONSOON_SEASONALITY := 0.6   # A group: seasonal regime → Am
 const SUMMER_DRY_SEASONALITY := 0.55  # C group: summer-dry → Csa/Csb
-const CONTINENTAL_MILD_C := 2.0    # D group: above → Dfa/Dfb, else Dfc
+# D group (continental) summer/winter severity bands, split on the annual-mean
+# temperature (the field carries no monthly temps to do real warmest/coldest-month
+# Köppen). CONTINENTAL_MILD_C stays the woods/taiga edge — Dfa/Dfb map to woods,
+# Dfc/Dfd to taiga in _assign_biome — so emitting all four codes refines the Köppen
+# label without moving any biome boundary.
+const CONTINENTAL_WARM_C := 4.0    # D group: above → Dfa (hot summer), else Dfb (warm summer)
+const CONTINENTAL_MILD_C := 2.0    # D group: woods/taiga edge (Dfa/Dfb above, Dfc/Dfd below)
+const CONTINENTAL_COLD_C := -2.0   # D group: above → Dfc (subarctic), else Dfd (very cold winter)
 
 # Deep interior (terrain-system §7.1: forest_dense "in deep interior").
 const DEEP_INTERIOR_OCEAN_DISTANCE := 7
@@ -109,7 +116,16 @@ static func _classify_koppen(temp: float, precip: float, seasonality: float) -> 
 		if seasonality > SUMMER_DRY_SEASONALITY:
 			return "Csa" if temp > 15.0 else "Csb"
 		return "Cfa" if temp > 15.0 else "Cfb"
-	return "Dfa" if temp > CONTINENTAL_MILD_C else "Dfc"
+	# D group: four summer/winter severity bands. CONTINENTAL_MILD_C remains the
+	# woods/taiga boundary, so biome output is unchanged (Dfa/Dfb → woods, Dfc/Dfd
+	# → taiga); the finer codes light up the previously-dead Dfb/Dfd biome arms.
+	if temp > CONTINENTAL_WARM_C:
+		return "Dfa"
+	if temp > CONTINENTAL_MILD_C:
+		return "Dfb"
+	if temp > CONTINENTAL_COLD_C:
+		return "Dfc"
+	return "Dfd"
 
 
 ## Biome + default subtype per gdd-terrain-system.md §7.1, plus its §7.2

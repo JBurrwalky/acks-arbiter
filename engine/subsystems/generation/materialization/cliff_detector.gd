@@ -63,7 +63,10 @@ static func detect(grid: Dictionary, river_hexes: Dictionary, threshold_override
 		var eb2 := float(rec["eb"])
 		var high: Vector2i = a if ea2 > eb2 else b
 		var low: Vector2i = b if ea2 > eb2 else a
-		var height_ft: int = roundi(float(rec["delta"]) * RAW_TO_FEET)
+		# Banker's rounding (round half to even) per CLAUDE.md — this height feeds
+		# ClimbResolver's game mechanics (spike/throw counts, fall distance), so it
+		# follows the project's rounding rule like every other mechanical value.
+		var height_ft: int = XPAwardCalculator.bankers_round(float(rec["delta"]) * RAW_TO_FEET)
 		var ctype: String = HexCliffEdgeData.CANYON if river_hexes.has(low) else HexCliffEdgeData.CLIFF
 		var cliff := HexCliffEdgeData.make(high, low, height_ft, ctype)
 		if cliff != null:

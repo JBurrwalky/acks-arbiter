@@ -66,9 +66,14 @@ func test_bar_builds_three_zones_and_drag_handle() -> void:
 	check(bar._log_zone != null, "log zone (placeholder) is constructed")
 	check(bar._widget_zone.columns == 3,
 		"widget zone is a 3-column grid; got %d" % bar._widget_zone.columns)
-	# 9 cells in the 3×3 grid (3 rows × 3 cols).
-	check(bar._widget_zone.get_child_count() == 9,
-		"widget zone has 9 cells (3×3); got %d" % bar._widget_zone.get_child_count())
+	# 12 cells across the 3-column grid: rows 1-2 are full (3 each); the remaining
+	# 6 — camp, notebook, the two mutually-exclusive cross-scale toggles
+	# (_view_mode_btn / _enter_region_btn, added in migration 119), the "Regions"
+	# overlay toggle, and the notification box. The context-gated toggles are never
+	# all visible at once, so the *rendered* layout stays the ~3×3 of
+	# gdd-ui-architecture.md §3.8 even though the grid structurally holds 12 children.
+	check(bar._widget_zone.get_child_count() == 12,
+		"widget zone has 12 cells; got %d" % bar._widget_zone.get_child_count())
 	check(bar._hex_info_panel != null, "hex info panel is constructed")
 	check(bar._water_label != null, "water label is constructed")
 

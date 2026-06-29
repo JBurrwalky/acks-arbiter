@@ -3,31 +3,57 @@
   "tier": "culture",
   "inherits": "near_eastern",
   "_schema": "gdd-naming-conventions.md 2.6",
-  "catalog_number": 6,
-  "sub_palette": "akkadian+egyptian (intra-family blend)",
+  "csv_id": "HYB_21",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (was #6 in the v1 system); csv_id is authoritative.",
+  "sub_palette": "akkadian backbone + egyptian overlay (intra-family blend, Mesopotamian-leaning)",
   "synthesis_sources": [
-    4,
-    5
+    "BASE_03",
+    "BASE_05"
   ],
   "homeland": "Sumsa",
   "blend": {
     "backbone": "akkadian",
-    "overlay": "egyptian"
+    "overlay": "egyptian",
+    "lean": "Mesopotamian-heavy - an Akkadian river-valley law-civ that absorbed a southern solar-funerary (Egyptian) people: the Two-Rivers register of rule, kin, temple and land dominates, with the Nile/desert/tomb-cult vocabulary folded in beneath one Akkadian phonology."
   },
   "government": "feudal",
+  "civ_or_clan": "civ",
   "alignment_allowed": [
     "Lawful",
-    "Neutral"
+    "Neutral",
+    "Chaotic"
   ],
-  "_note": "Intra-Near-Eastern blend (Mesopotamian + Egyptian): a river-valley law-giving civ with a solar-funerary overlay. Backbone = Akkadian (phonology, morphology, administrative titles); overlay = Egyptian (Per-/Pa- toponyms, -et/-aa touches, sun-disc and tomb-cult flavor). civ = feudal. Even split Lawful/Neutral. Common-word lexicon and rank titles use the real Akkadian/Egyptian registers (allowed, catalog 5.3); DEITY names are SECOND-ORDER phoneme-morphs: the Agrippan canon as already morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology — giving the Near-Eastern family a shared Punic-cognate ancestor.",
+  "_note": "Intra-Near-Eastern blend (Mesopotamian + Egyptian): a river-valley law-giving civ with a solar-funerary overlay. Backbone = Akkadian (phonology, morphology, administrative titles); overlay = Egyptian (Per-/Pa- toponyms, -et/-aa touches, sun-disc and tomb-cult flavor). civ = feudal. Common-word lexicon and rank titles use the real Akkadian/Egyptian registers (allowed, catalog 5.3); DEITY names are SECOND-ORDER phoneme-morphs: the Agrippan canon as already morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology - giving the Near-Eastern family a shared Punic-cognate ancestor. [REWORKED 2026-06-27 to base/hybrid model: csv_id HYB_21; all-three alignment; English display titles + Akkadian ruler_native; deep-fusion lexicon + fusion_rules.]",
   "phonology": {
     "palette": "Akkadian backbone (sh, ', kh, ts, q; vowels a i u; endings -u/-tu/-um; mimation) with Egyptian overlay touches (occasional -aa/-et, Per-/Pa- in toponyms); theophoric stems are second-order morphs of the Punic forms (Tulrishu-, Arganzu-, Urlanzu-, Rialtu-).",
     "phonotactics": "CVC; mimation -um; construct chains; gutturals frequent; stress penultimate.",
-    "transparent_ratio": 0.35
+    "transparent_ratio": 0.35,
+    "fusion_rules": {
+      "lean": "near-eastern (akkadian) phonology dominant",
+      "sound_changes": [
+        "Egyptian dj/tj collapse into Akkadian emphatics/sibilants: dj>z or t, tj>s or t (the southern stops fold into the Two-Rivers inventory)",
+        "Egyptian kh is retained (shared with Akkadian kh); Egyptian h/' kept; Egyptian r-for-l preserved",
+        "Egyptian endings take Akkadian case-vowels and mimation: long -aa>-u, feminine -et/-it>-tu, bare consonant-final roots gain -u/-um",
+        "Akkadian penultimate stress imposed on every root from either parent; construct chains (Bit-/Per-/Kar-/Pa-) carry the compounds",
+        "vowels normalize to the Akkadian a/i/u triad (Egyptian reconstructed e/o>i/u); CVC syllable shape preferred"
+      ],
+      "source_tilt": "Nile/desert/funerary words and several material/staple terms draw on Egyptian roots (the absorbed southern people keep their river, sand, tomb and trade-good words); rule, kin, temple and the broader land/terrain vocabulary draw on Akkadian roots (the dominant Two-Rivers register); every chosen root is then run through the Akkadian sound-filter so the split is inaudible.",
+      "portmanteaus": [
+        "desert deshret+sheru>deshru (the red waste, Egy desher + Akk seru)",
+        "temple-town per-netjer+per-ili>per-netjeru (the god's-house city)",
+        "oasis wehat+namu>wehatu (the green in the waste)",
+        "river itru+naru>itnaru (the great river)",
+        "tomb-fort menenu+dimtu>menendu (the funerary stronghold)",
+        "sun-temple per-ra+ekallu>per-ekallu (the solar great-house)",
+        "incense senetjer+qutrinnu>senetrinnu (the god's-fragrance)"
+      ]
+    }
   },
   "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Egyptian Nile/desert/funerary/material roots + Akkadian rule/kin/temple/land roots, all run through one Akkadian-shaped sound-law (Egyptian dj/tj folded to emphatics, -aa/-et to -u/-tu, penultimate stress, construct chains); portmanteaus mark the blended river/solar/funerary institutions. One word per concept - no slash pairs.",
     "feature_words": {
-      "river": "naru",
+      "river": "itnaru",
       "stream": "atappu",
       "lake": "agammu",
       "sea": "tamtu",
@@ -39,14 +65,14 @@
       "hill": "tillu",
       "ridge": "bamtu",
       "forest": "qishtu",
-      "desert": "deshret",
+      "desert": "deshru",
       "plain": "ugaru",
       "marsh": "apparu",
       "ford": "nebiru",
       "pass": "babu",
-      "oasis": "wehat",
+      "oasis": "wehatu",
       "coast": "ahu",
-      "neck": "kishadu",
+      "neck": "nehebtu",
       "narrows": "nerebu",
       "road": "harranu",
       "way": "urhu",
@@ -60,13 +86,13 @@
       "fort": "dimtu",
       "port": "kar",
       "market": "mahiru",
-      "temple_town": "per-ili",
+      "temple_town": "per-netjeru",
       "citadel": "ekallu"
     },
     "kinship": {
-      "son": "mar / sa",
-      "daughter": "marat / sat",
-      "house": "bit / per",
+      "son": "maru",
+      "daughter": "martu",
+      "house": "bitu",
       "ancestor": "abu"
     },
     "adjectives": {
@@ -77,7 +103,7 @@
       "black": "salmu",
       "white": "pesu",
       "red": "samu",
-      "golden": "huras",
+      "golden": "hurasu",
       "iron": "parzillu",
       "high": "shaqu",
       "far": "ruqu",
@@ -90,7 +116,7 @@
       "bronze": "siparru",
       "silver": "kaspu",
       "gold": "hurasu",
-      "incense": "qutrinnu",
+      "incense": "senetrinnu",
       "grain": "she'u",
       "lapis": "uqnu",
       "fish": "nunu",
@@ -127,44 +153,49 @@
     "government": "feudal (Mesopotamian backbone; the law-code/temple bureaucracy and a southern solar-kingship overlay are narrative flavor)",
     "tiers": {
       "barony": {
-        "ruler": "Hazannu",
-        "domain": "Hazannutu"
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hazannu",
+        "domain_native": "Hazannutu"
       },
       "march": {
-        "ruler": "Massaru",
-        "domain": "Massarutu"
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Massaru",
+        "domain_native": "Massarutu"
       },
       "county": {
-        "ruler": "Shaknu",
-        "domain": "Shaknutu"
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Shaknu",
+        "domain_native": "Shaknutu"
       },
       "duchy": {
-        "ruler": "Turtanu",
-        "domain": "Turtanutu"
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Turtanu",
+        "domain_native": "Turtanutu"
       },
       "principality": {
-        "ruler": "Rubu",
-        "domain": "Rubutu"
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rubu",
+        "domain_native": "Rubutu"
       },
       "kingdom": {
-        "ruler": "Sharru",
-        "domain": "Sharrutu"
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Sharru",
+        "domain_native": "Sharrutu"
       },
       "empire": {
-        "ruler": "Shar-Per",
-        "domain": "Per-Sharrutu"
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Shar-Per",
+        "domain_native": "Per-Sharrutu"
       }
     },
-    "_tiers_note": "Akkadian backbone, ascending; the imperial tier blends in the Egyptian overlay: Shar-Per (king of the Great House) over the Per-Sharrutu. -u/-utu rhyme the lower tiers (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (governor) county; Turtanu (commander) duchy; Rubu (prince) principality. (Rank titles are the real Akkadian/Egyptian register, allowed.)",
-    "female_forms": {
-      "Shar-Per": "Sharrat-Per",
-      "Sharru": "Sharratu",
-      "Rubu": "Rubatu",
-      "Turtanu": "Turtanutu",
-      "Shaknu": "Shaknatu",
-      "Massaru": "Massartu",
-      "Hazannu": "Hazannatu"
-    },
+    "_tiers_note": "Akkadian backbone, ascending; the imperial tier blends in the Egyptian overlay: Shar-Per (king of the Great House) over the Per-Sharrutu. -u/-utu rhyme the lower native tiers (Hazannu/Hazannutu ... Sharru/Sharrutu). Hazannu (mayor) barony; Massaru (warden) march; Shaknu (governor) county; Turtanu (commander) duchy; Rubu (prince) principality. DISPLAY titles are English, except the kingdom tier shows the approved foreign throne-term Pharaoh (the Egyptian-overlay kingship; the native form remains Sharru, the v1 empire tier was Shar-Per). (Rank titles are the real Akkadian/Egyptian register, allowed.)",
     "heir": "Mar-Sharri (son of the king / crown prince)",
     "honorifics": {
       "lord": "Belu / Neb (Egy)",
@@ -178,7 +209,29 @@
       "vassal": "Ardu (servant)",
       "fealty": "Ade (loyalty-oath)",
       "tribute": "Biltu / Mandattu"
-    }
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Shar-Per": "Sharrat-Per",
+      "Sharru": "Sharratu",
+      "Rubu": "Rubatu",
+      "Turtanu": "Turtanutu",
+      "Shaknu": "Shaknatu",
+      "Massaru": "Massartu",
+      "Hazannu": "Hazannatu"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Pharaoh": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ]
   },
   "people_name_convention": {
     "order": "given (often theophoric) + patronymic (mar-X), or an Egyptian-style filiation (sa-X) and earned epithet for the southern nobility.",
@@ -193,13 +246,18 @@
     "diminutive": "-anu"
   },
   "religion": {
-    "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology with an Egyptian solar-funerary coloring — never real Mesopotamian or Egyptian gods. Lawful/Neutral; a law-stele cult over a solar and tomb-cult overlay.",
+    "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology with an Egyptian solar-funerary coloring - never real Mesopotamian or Egyptian gods. Lawful/Neutral/Chaotic; a law-stele cult over a solar and tomb-cult overlay.",
     "the_one": "Atharnu (< Punic Atharon < Aeternus; the great distant maker, honored through His ministers)",
     "sample_deity_renames": {
       "Tulrius": "Tulrishu (sun and judgment)",
       "Orlandus": "Urlanzu (iron-sworn)",
       "Argentus": "Arganzu (trade and the city)",
       "Realta": "Rialtu (the mother)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Atharnu the distant maker, Tulrishu the just-judge of the law-stele, Urlanzu of the sworn iron, Rialtu the merciful mother - inscribed on the stele and honored in the sun-temple; the Chaotic powers are named -lemnu (evil) and warded.",
+      "Neutral": "the justified dead and the ancestral law-givers (the deified Just) and the city-spirits of the Bit-ili / Per-netjer; the great powers invoked at temple and tomb-chapel situationally.",
+      "Chaotic": "Venerates the Chaotic powers of the canon (the Coin-Serpent, the City-Burner, the Devourer), and names the Lawful powers - and Atharnu - as the distant tyrant-makers to be defied; the law-stele is a thing to be broken."
     },
     "demon_epithet_pattern": "each opposing power (the Chaotic 13 for this Lawful-leaning realm) keeps its morphed name + its own portfolio epithet (distinct per power; '-lemnu' = evil may be appended): Maraxus -> Marakshu the City-Burner; Lusanto -> Lusantu the Coin-Serpent; Vacidus -> Wakidu the Devourer.",
     "clergy_ladder": {

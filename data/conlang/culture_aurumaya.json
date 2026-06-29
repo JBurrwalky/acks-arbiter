@@ -1,0 +1,349 @@
+{
+  "kit_id": "aurumaya",
+  "tier": "culture",
+  "inherits": [
+    "classical",
+    "mesoamerican"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_44",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "classical (latinate) backbone + mesoamerican (mayan) overlay (cross-family blend, Latinate-leaning)",
+  "synthesis_sources": [
+    "BASE_06",
+    "BASE_10"
+  ],
+  "homeland": "Aurumaya",
+  "blend": {
+    "backbone": "classical (latinate register: the -us/-a/-um endings, penultimate stress, the legion and the via, the gens and the cognomen, the Rex/Imperator ladder, vowel-rich open syllables)",
+    "overlay": "mesoamerican (mayan: the jungle city-states of pyramid-acropolis and stela, the k'uhul ajaw holy-lord and the Long-Count calendar, glottalized stops, jade and cacao and maize, the witz-altar and the feathered-serpent temple)",
+    "lean": "Latinate-heavy - a legionary aristocracy (an imperial gens-house) enthroned over the Maya jungle-cities of jade and the pyramid: the eagle-standard and the via rule, the stela-carving k'uhul-kah endures and serves beneath. The golden eagle and the jade pyramid; the legion and the feathered-serpent temple."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_06 (Classical/Mediterranean, latinate) x BASE_10 (Mesoamerican, mayan). CIV/CLAN DECIDED by inheritance: both parents are Civilized (latinate civ + mayan civ), so Aurumaya is Civilized (feudal). Concept: a Roman-Mesoamerican realm - a Latinate legion-empire that conquered the Maya jungle city-states and set up as Imperator over the pyramid-temples (Aurum 'gold' + maya). Backbone = Classical/Latinate (the ruling legionary aristocracy, the Rex/Imperator register, the tripartite gens-name); overlay/substrate = Mayan (the jungle terrain, the witz-pyramids, the stela-carving populace, the calendar-day names). Common-word lexicon and rank titles draw on the real Latin and Maya registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Latinate canon-morphs PRIMARY, Mayan variants SECONDARY), never real gods. Ruler/domain DISPLAY titles are English (or an approved commonly-known foreign term: 'Imperator' for the empire ruler); conlang titles live in ruler_native/domain_native for NPC dialogue. All human cultures allow Lawful/Neutral/Chaotic. Register choice: Latinate-base hybrids default to the Roman/Latinate reflexes; Maya substrate supplies the jungle/pyramid/material/staple words.",
+  "phonology": {
+    "palette": "Classical/Latinate backbone - vowel-rich a e i o u, liquids l/r, sibilant s, sharp stops p t c(=k) b d g, f/v, penultimate stress, open syllables, the -us/-a/-um/-ius endings, the legion-register tripartite names - meeting a Mayan overlay: glottalized b'/t'/k'/tz'/ch', x (=sh), vowel length and the glottal stop, the agentive aj-/ix-, the -aj/-il/-an/-tun/-ab endings, vigesimal (base-20) counting and the Long-Count calendar. Per the CSV: vibrant vowels with precise consonants; grammar SVO with vigesimal case-inflections carried on the Latinate stems. Theophoric on the Latinate reflexes (Tulrian-, Orlandus-) with Maya construct variants (Tulax-, Orlanab-).",
+    "phonotactics": "CV / CVC; Latinate onset clusters (st, tr, pr, cl, sp) and vowel-final preference meeting Maya glottalization and the final glottal stop softened to a vowel; penultimate stress; gens-binomials over aj-/ix- + calendar-day substrate names; the -tun/-ab Maya endings Latinized to -tum/-abum where they survive.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "classical (latinate) phonology dominant",
+      "sound_changes": [
+        "Maya glottalized/ejective stops -> Latin plain inventory: b'>b, t'>t, k'>c(=k), tz'>z/s, ch'>c; x(sh)>x/s; final glottal stop ' >0 (or > a linking vowel)",
+        "Maya endings drop or Latinize: final -aj/-il/-an/-tun/-ab -> Latin -a/-us/-um/-ia (or -tun>-tum, -ab>-abum); roots take a penultimate-stressed Latinate vowel-final shape",
+        "Latinate penultimate stress on all words; Latin clusters (st, tr, pr, cl, sp) permitted; vowel-final endings preferred over the Maya consonant-final/CVC shape",
+        "retain Latin -us/-a/-um/-ius and Maya x (=sh) plus vigesimal counting; very short Maya roots take a Latin -um/-us ending; vowel length collapses to plain Latin vowels"
+      ],
+      "source_tilt": "land/terrain/material/staple words from Mayan roots (the jungle substrate works the land - jade, cacao, maize, the witz-pyramid, the ha'-river, the k'aax-forest); kin-line/quality/abstract/rule/war/law words from Latin roots (the ruling register - the gens, the legion, the law, magnus/novus, the via and the imperium); every root then filtered to one Latinate phonology",
+      "portmanteaus": [
+        "city urbs+k'uhul-kah>urbkaha", "pyramid-temple aedes+witz>aedwitza", "citadel arx+paa'>arpaa", "stela-court forum+k'iwik>forwika", "son filius+mehen>filmehen", "daughter filia+al>filala", "sacred sacer+k'uhul>sacuhul", "jade-stone marmor+yaaxtun>marmaaxtun"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Mayan jungle/pyramid/material/staple roots + Latin rule/kin/law/abstract roots, all run through one Latinate-shaped sound-law (Maya glottals collapsed, endings Latinized to -us/-a/-um, penultimate stress); portmanteaus mark the blended institutions and bloodline. No slashes - one word per concept.",
+    "feature_words": {
+      "river": "ha'a",
+      "stream": "yokha",
+      "lake": "nahba",
+      "sea": "mare",
+      "bay": "sinkapa",
+      "cape": "prom",
+      "isle": "petena",
+      "mountain": "witzmons",
+      "hill": "mula",
+      "ridge": "puuca",
+      "forest": "kaxa",
+      "wood": "chea",
+      "plain": "chakanus",
+      "marsh": "akalchea",
+      "ford": "bejada",
+      "pass": "beja",
+      "vale": "joma",
+      "coast": "pachora",
+      "neck": "kala",
+      "narrows": "halaba",
+      "waste": "chaltuna",
+      "road": "sacbia",
+      "way": "iter",
+      "track": "xokbia"
+    },
+    "settlement_words": {
+      "hamlet": "otocellus",
+      "village": "kaha",
+      "town": "nohkaha",
+      "city": "urbkaha",
+      "fort": "arpaa",
+      "port": "ostha",
+      "market": "forwika",
+      "temple_town": "aedwitza",
+      "citadel": "arpaa-nohol"
+    },
+    "kinship": {
+      "son": "filmehen",
+      "daughter": "filala",
+      "house": "gens",
+      "kin": "chibala",
+      "ancestor": "uchbenus"
+    },
+    "adjectives": {
+      "great": "magnus",
+      "little": "parvus",
+      "old": "vetus",
+      "new": "novus",
+      "black": "ekater",
+      "white": "albus",
+      "red": "chakrufus",
+      "golden": "aureus",
+      "iron": "tocferrus",
+      "high": "altus",
+      "far": "naachus",
+      "sacred": "sacuhul",
+      "fair": "kichpanus"
+    },
+    "resources": {
+      "salt": "taabsal",
+      "iron": "tocferrum",
+      "silver": "argentum",
+      "gold": "takinaurum",
+      "jade": "marmaaxtun",
+      "cacao": "kakawa",
+      "maize": "ximen",
+      "obsidian": "tajus",
+      "feather": "kuka",
+      "honey": "kaba"
+    },
+    "directional": {
+      "upper": "superus",
+      "lower": "inferus",
+      "north": "xamanus",
+      "south": "noholus",
+      "east": "lakinus",
+      "west": "chikinus",
+      "inner": "intra",
+      "outer": "extra"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-um (Latinate)",
+      "-ia (Latinate)",
+      "-pola (Latinate civic)",
+      "-witza (pyramid-mountain; Maya witz Latinized)",
+      "Noh- (great-; Maya)",
+      "Chak- / Ek'- (red-/black-; Maya color-prefix)"
+    ],
+    "patronymic_form": "the Latinate ruling gens keeps a tripartite name (praenomen + nomen-gens + cognomen); the Maya populace keep the aj- (he of) / ix- (she of) prefix and the ch'ib'al lineage with calendar-day birth-names; the throne fuses both - an Imperator who also carries a witz-dynasty stela-count.",
+    "gendered_endings": {
+      "male": "-us / -ius (Latinate ruling); Aj- (he of) prefix (Maya)",
+      "female": "-a / -ia (Latinate); Ix- (she of) prefix (Maya)"
+    },
+    "diminutive_form": "-ulus / -illa (Latinate) / Chan- (small, Maya prefix)",
+    "compounding_rule": "Latinate [adjective|resource](stem) + feature-word, eliding before a vowel (aureus + witza -> Aurwitza, the gold-pyramid) layered over Maya [color|quality]-prefix + feature (Chak-ha'a, red-river; Noh-kaha, great-town); the capital Aurumaya (Aurum-maya, the gold-of-the-maya), Chak-Witza (the red-pyramid seat)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Latinate legion-aristocracy over the Maya jungle-cities: the Imperator and his Rex-kin at the crown, the Comes-governors over the urbkaha city-states, the Castellanus-castellans sworn to the legion; the ah-k'in sun-priests and the stela-carving scribes serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Castellanus",
+        "domain_native": "Castellania"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Limitanus",
+        "domain_native": "Limitania"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Comes",
+        "domain_native": "Comitatus"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Dux",
+        "domain_native": "Ducatus"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Princeps-Ajaw",
+        "domain_native": "Principatus"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Rex",
+        "domain_native": "Regnum"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Imperator-Kalomte'",
+        "domain_native": "Imperium"
+      }
+    },
+    "_tiers_note": "Latinate ladder, ascending, with the Maya substrate overlay at the high tiers. Castellanus (castellan; from Roman castellum) barony; Limitanus (frontier-warden; from limes/limitanei) march, leaving Dux for its proper meaning; Comes (companion-governor) county over a Comitatus; Dux (war-leader) duchy over a Ducatus; Princeps fused with the Maya Ajaw (holy-lord) at the principality; Rex (king) kingdom over a Regnum; the Imperator (the approved foreign empire-title) fused with the Maya Kalomte' (overlord/high-king) over the Imperium. The conquered cities keep their Maya sajal (subordinate governor) and ah-k'in (sun-priest) beneath the Latinate crown. Rank titles fuse the real Latin and Maya registers (allowed). Latin/realm size thresholds come from the ACKS domain rules; not reproduced here for IP.",
+    "heir": "Caesar (heir-designate to the Imperator; the Maya call him the Baah-ch'ok, head-youth)",
+    "honorifics": {
+      "lord": "Dominus / Ajaw",
+      "lady": "Domina / Ix-Ajaw",
+      "champion": "Eques (Latinate knight) / Holkan (Maya warrior)",
+      "your_grace": "Eminentia",
+      "elder": "Senex (the eldest) / Chilam (the Maya elder-seer)"
+    },
+    "vassalage": {
+      "liege": "Patronus",
+      "vassal": "Cliens / Yajaw (Maya under-lord)",
+      "fealty": "Fides (Latin troth) / Patan-t'an (Maya oath of service)",
+      "tribute": "Tributum (Latin) / Patan (Maya)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler': 'Imperator' for the empire ruler). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "female_forms_native": {
+      "Imperator-Kalomte'": "Imperatrix-Kalomte'",
+      "Rex": "Regina",
+      "Princeps-Ajaw": "Principissa-Ajaw",
+      "Dux": "Ducissa",
+      "Comes": "Comitissa",
+      "Limitanus": "Limitana",
+      "Castellanus": "Castellana"
+    },
+    "female_forms_display": {
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Prince": "Princess",
+      "Duke": "Duchess",
+      "Count": "Countess",
+      "Marquis": "Marquise",
+      "Baron": "Baroness"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Latinate ruling stock carry a tripartite name (praenomen + nomen-gens + cognomen); the Maya populace carry an aj-/ix- prefix + calendar-day given name + ch'ib'al lineage; order given-first.",
+    "surname_source": [
+      "inherited gens (Latinate clan)",
+      "ch'ib'al lineage (Maya)",
+      "earned cognomen / deed-name",
+      "Aj-/Ix- + place (Maya)"
+    ],
+    "dual_register": "the Latinate legion-aristocracy keep the tripartite gens-names (Marcus, Valerius, a cognomen); the Maya city-folk keep aj-/ix- + calendar-day names on the morphed canon-stems.",
+    "theophoric": "Latinate devotional on the canon-reflexes (Tulrian-, Orlandus-, Realtus-); Maya devotional constructs: Aj-Tulax (he of Tulax), Ix-Rialtaj (she of Rialtaj), calendar-day-and-power names.",
+    "diminutive": "-ulus / -illa (Latinate) / Chan- (small, Maya prefix)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (family_classical / agrippan canonical pantheon keys, the latinate reflexes), Mayan variants SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real gods (no Itzamna, Kukulkan, Chaac, Jupiter, Mars). Shared pantheon, two registers. Aurumaya allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Long-Count calendar and the witz-pyramid altar bind the Imperator-Kalomte' to the powers as much as the legion-augury does.",
+    "the_one": "Aeternus (Maya Aj Ternaj) - the One / True God, honored in liturgy not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tulrius (Maya Tulax) - the sun and justice",
+      "Orlandus": "Orlandus (Maya Orlanab) - iron, oath, war",
+      "Gaiandus": "Gaiandus (Maya Kayanab) - the enduring earth",
+      "Numeno": "Numeno (Maya Numench) - sky and scribe-wisdom",
+      "Realta": "Realta (Maya Ix Rialtaj) - the mother, mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just (Tulax), Orlandus of the sworn legion (Orlanab), Realta the merciful (Ix Rialtaj) - and names the Chaotic powers as demons, warded; the legion-oath and the calendar-rite bind alike",
+      "Neutral": "all powers ambivalent - the uchben (ancestral dead, the deified gens and the k'uhul ajaw line), the day-lords and local k'uh (spirits) foregrounded; the great powers invoked at the aedwitza-pyramid and the via-shrine situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon (Maraxus the war-fire, the feathered-serpent's dark face), and names the Lawful powers - and Aeternus - as the tyrant-gods to be defied; the bloodletting-rite turned to conquest."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded when Lawful, keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Maya Marakab the War-Fire); Vacidus -> Vacidus the Unmaker (Maya Wakix the Devourer); Lusanto -> Lusantus the Coin-Serpent (Maya Lusankaan the Hoard-Serpent).",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Ah-miatz (novice-scribe)",
+      "3": "Sacerdos (priest) / Ah-k'in (sun-priest, day-keeper)",
+      "5": "Flamen / Ah-k'uhun (god-keeper priest)",
+      "7": "Pontifex (high priest) / Nakom-k'in (sacrificer-priest)",
+      "9": "Pontifex Maximus / Ah-k'in Mai (high priest)"
+    },
+    "religious_orders_pattern": "the Collegium (Latinate) or the K'uh-nah (god-house) atop the witz (pyramid) of [power]: 'the Collegium of Tulrius', 'the K'uh-nah of Tulax'.",
+    "saints_pattern": "Divus/Diva [name] (the deified founders and the deified k'uhul ajaw ancestors, the uchben), inscribed on the stela and honored at the pyramid-tomb and the via-catacomb.",
+    "holy_symbol_motifs": {
+      "Tulrius": "a rayed sun-disc above the balance and the bloodletting-stela",
+      "Orlandus": "an iron oath-ring crossed with the legion-eagle and the obsidian blade",
+      "Gaiandus": "the maize-field beneath the jade pyramid"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river trade-canoes and coastal war-galleys: 'Aquila of the Ha'a', 'the Jade Canoe', 'Victrix of the Witz'",
+    "military_units": "the Legio and the Maya Holkan war-host: 'Legio Prima Aurata' (the Gilded Legion), 'the Jaguar Holkan', 'the Eagle-and-Serpent Cohort'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Cacao Cup', 'The Eagle and Pyramid'",
+    "dungeons_ruins": "vine-choked pyramids and fallen legion-forts: 'the lost Witza of [ajaw]', 'the Sunken Castellania', 'the Catacombs of Divus [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Marcus Tulrian",
+      "Lucius Aurelian",
+      "Gaius Valerian",
+      "Titus Cassian",
+      "Quintus Severus",
+      "Aulus Florian",
+      "Decius Octavian",
+      "Servius Vitus",
+      "Aj-Tulax",
+      "Aj-Balam",
+      "Aj-Sak-Mo'",
+      "Aj-Chak-Ek'",
+      "Aj-Kan",
+      "Aj-Took'",
+      "Aj-Orlanab",
+      "Aj-Bolon"
+    ],
+    "personal_f": [
+      "Aurelia Tullia",
+      "Valeria Severina",
+      "Cornelia Marcia",
+      "Livia Florentia",
+      "Octavia Sabina",
+      "Drusilla Caelia",
+      "Ix-Rialtaj",
+      "Ix-Sak-Nik",
+      "Ix-Chak",
+      "Ix-Kan",
+      "Ix-Bolon",
+      "Ix-Yax"
+    ],
+    "clan_houses": [
+      "the gens Valeria (ruling house)",
+      "the gens Aurelia",
+      "the gens Cornelia",
+      "the gens Tullia",
+      "Ch'ib'al Balam",
+      "Ch'ib'al K'uk'",
+      "Ch'ib'al Kan",
+      "Ch'ib'al Chak-Ek'",
+      "Ch'ib'al Took'",
+      "the gens Severa",
+      "Ch'ib'al Yax",
+      "the gens Octavia"
+    ],
+    "epithets_cognomina": [
+      "Aurelius the Gilded",
+      "Magnus the Great",
+      "Aquila the Eagle",
+      "Balam the Jaguar",
+      "Quetzal-plumed",
+      "the Stela-writer",
+      "of the Jade River",
+      "the Sun-faced"
+    ],
+    "flagship_settlements": [
+      "Aurumaya (the chief seat - the gold-of-the-maya)",
+      "Chak-Witza (the red-pyramid capital-fort)",
+      "Aurwitza (the gilded-pyramid temple-city)",
+      "Castra Aurata (the gilded legion-fort)",
+      "Urbkaha Magna (the great city-state)",
+      "Yaaxtun-Petena (the jade-island colony)"
+    ]
+  }
+}

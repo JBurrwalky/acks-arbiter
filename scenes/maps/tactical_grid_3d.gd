@@ -79,8 +79,29 @@ static func _load_texture(path: String) -> Texture2D:
 	if not ResourceLoader.exists(path):
 		return null
 	var tex: Texture2D = load(path)
+	tex = _ensure_mipmaps(tex)
 	_texture_cache[path] = tex
 	return tex
+
+
+## Guarantee the texture carries a mip chain, rebuilding it as an ImageTexture
+## if not. The .import files are gitignored ("auto-regenerated from source"),
+## and Godot's detect-3d auto-mipmap pass only fires for textures referenced by
+## *saved* material resources — never for the StandardMaterial3D instances this
+## class builds in code. Without mipmaps, the detailed floor/wall textures
+## undersample at the zoomed-out isometric view and read as screen-door speckle.
+## When the import already supplies mipmaps this is a cheap no-op.
+static func _ensure_mipmaps(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null or img.has_mipmaps():
+		return tex
+	if img.is_compressed():
+		if img.decompress() != OK:
+			return tex  # Can't add mipmaps to an undecodable format; leave as-is.
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
 
 
 static func _get_material(key: String, color: Color, unshaded: bool = true) -> StandardMaterial3D:
@@ -106,6 +127,10 @@ static func _make_textured_material(tex_path: String, uv_scale: float, tiled: bo
 		mat.albedo_texture = tex
 		if tiled:
 			mat.uv1_scale = Vector3(uv_scale, uv_scale, uv_scale)
+		# Mipmap + anisotropic filtering so minified/grazing-angle surfaces
+		# don't undersample into speckle (see floor builder note).
+		mat.texture_filter = \
+			BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	mat.albedo_color = Color.WHITE
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -347,6 +372,11 @@ static func build_floor_multimesh_voxel(
 	if floor_tex != null:
 		floor_mat.albedo_texture = floor_tex
 		floor_mat.uv1_scale = Vector3(FLOOR_UV_SCALE, FLOOR_UV_SCALE, FLOOR_UV_SCALE)
+		# Floors are viewed at a grazing isometric angle and minified heavily
+		# when zoomed out. Anisotropic mipmap filtering kills the texel-
+		# undersampling speckle that otherwise looks like screen-door dither.
+		floor_mat.texture_filter = \
+			BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	mmi.material_override = floor_mat
 	mmi.name = "FloorSlabs"
 	mmi.set_meta("base_color", Color.WHITE)

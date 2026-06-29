@@ -1,0 +1,359 @@
+{
+  "kit_id": "hinaztl",
+  "tier": "culture",
+  "inherits": [
+    "east_asian",
+    "mesoamerican"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_51",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "east_asian (japonic) backbone + mesoamerican (nahuatl) overlay (cross-family blend, Japonic-leaning)",
+  "synthesis_sources": [
+    "BASE_08",
+    "BASE_10"
+  ],
+  "homeland": "Hinoztlan",
+  "blend": {
+    "backbone": "east_asian (japonic / Sengoku register: the Shogun/Daimyo war-houses, the samurai retainers, the kami-shrine and the castle-town, open CV moras and pitch accent, clan-first dithematic names, -no-kami honorifics)",
+    "overlay": "mesoamerican (nahuatl / Aztec substrate: the teocalli sun-pyramids, the calpolli wards, the jungle and the chinampa, the absolutive -tl/-tli and reverential -tzin, the calendar-round and the flower-war)",
+    "lean": "Japonic-heavy - a Japonic samurai war-aristocracy (a Shogun-house) enthroned over the Nahuatl pyramid-cities of the sun: the shrine-isle and the war-banner above, the calpolli wards and the teocalli priesthood enduring and serving beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_08 (Japonic, Yamataian-style) x BASE_10 (Nahuatl, Nahuan-style). CIV/CLAN DECIDED by inheritance: Japonic base = Clanhold, Nahuatl base = Civilized, and any Civ parent -> Civ, so Hinaztl is Civilized (feudal). Concept: a Japonic samurai war-host (a rising-sun Shogunate of shrine-isles) that crossed to and conquered the Nahuatl pyramid-empires of the sun and set up as overlords over the teocalli-cities (a Japonic-Aztec fusion; 'sun-from-the-place-of-tl', the rising sun over the flower-war). Backbone = Japonic (the ruling samurai war-aristocracy, the Shogun/Daimyo register, the kami-shrine, clan-first names); overlay/substrate = Nahuatl (the teocalli pyramid-temples, the calpolli wards, the jungle/material/staple lexicon, the -tl/-tzin morphology). Common-word lexicon and rank titles use the real Japanese and Nahuatl registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon - Japonic NATIVE-kami canon-morphs PRIMARY (family_east_asian theonym_sets.japonic), Nahuatl morphs SECONDARY (family_mesoamerican theonym_sets.nahuatl), never real kami or Aztec gods. FOREIGN TERMS: the ruler DISPLAY titles use approved commonly-known foreign words - 'Shogun' (kingdom) and 'Daimyo' (duchy); all other tiers display in English. The *_native conlang forms (kingdom Shogun = Hinotaisho; duchy Daimyo = Tlatono) are for NPC DIALOGUE ONLY. [2026-06-28: all human cultures allow Lawful/Neutral/Chaotic; the Japonic warrior-way meets the Nahuatl sun-cult - Lawful keeps the ordered way of the blade and the just sun, Chaotic the blood-fed war-sun and the wild kami, Neutral the ancestral dead and the calendar-round.]",
+  "phonology": {
+    "palette": "Japonic backbone - open CV moras (only coda -n), five vowels a i u e o, pitch accent, no consonant clusters, rendaku (sequential voicing) in compounds, clan(-shi/uji)-first dithematic names, kami honorifics -no-kami/-no-mikoto/-hime - meeting a Nahuatl overlay: the absolutive -tl/-tli and reverential -tzin, the consonants tl, tz, ch, x (sh), hu/uh (w), ku, the place-suffixes -tlan/-tepec/-co, CV(C). Per the CSV: glottal stops with mora-timed rhythm - the Nahuatl -tl/glottal substrate resyllabified onto the strict Japonic CV-mora frame, so Nahuatl roots lose their -tl cluster and gain Japonic open syllables. Grammar shifts SOV with vigesimal honorifics (the Nahuatl base-20 reverential layered on the Japanese honorific stack). Theophoric on the Japonic native-kami reflexes (Terashi-, Hagane-) with Nahuatl morph variants (Tolra-, Maraka-).",
+    "phonotactics": "strict CV moras, vowel-final, only coda -n; the Nahuatl -tl resolves to -te/-to or drops, tz to z/ch, glottal stop to 0; rendaku voicing in compounds; clan-first dithematic Japonic names over -tlan/-tepec/-co place-roots resyllabified to Japonic shape.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "east-asian (japonic) phonology dominant",
+      "sound_changes": [
+        "Nahuatl absolutive -tl/-tli -> Japonic open-mora coda: -tl > -te/-to (atl>ate, tepetl>tepete) or drops where final; the -tl cluster is never word-final in the fused tongue",
+        "Nahuatl tz/x/glottal -> Japonic inventory: tz > z or ch, x(sh) > sh, glottal-stop > 0; consonant clusters broken by epenthetic vowels into CV moras",
+        "Japonic pitch-accent and strict CV(V)(n) syllable shape imposed on every root; no codas but -n; rendaku voicing in compounds (k>g, t>d, h>b after a first element)",
+        "retain Japonic kami honorifics (-no-kami) and rendaku, and the Nahuatl -tzin reverential (resyllabified, kept as a borrowed honorific); short roots take a Japonic final vowel"
+      ],
+      "source_tilt": "jungle/terrain/material/staple and pyramid words from Nahuatl roots (the substrate works the land and raises the teocalli: tepetl>tepete mountain, cuauhtla>kawatora forest, centli>senchi maize, teocuitlatl>teokitate gold, teocalli>teokari pyramid-temple); rule/kin-line/shrine/land-order/war words from Japonic roots (the ruling register: musuko son, jinja shrine, machi town, michi road, tetsu iron); every root then filtered to one Japonic phonology",
+      "portmanteaus": [
+        "city miyako+altepetl>miyatepe", "pyramid-temple jinja+teocalli>jinkari", "fort toride+yaocalli>toriyao", "citadel shiro+tecpancalli>shirotekpa", "son musuko+pilli>musupiri", "daughter musume+ichpochtli>musuichi", "sacred imi+teoyo>imiteo"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Nahuatl jungle/pyramid/material-roots + Japonic rule/kin/shrine-roots, all run through one Japonic-shaped sound-law (the -tl/glottal substrate resyllabified to CV moras); portmanteaus mark the blended institutions and bloodline. No slash forms - one word per concept.",
+    "feature_words": {
+      "river": "kawa",
+      "stream": "apane",
+      "lake": "atezuka",
+      "sea": "umi",
+      "bay": "ura",
+      "cape": "misaki",
+      "isle": "shima",
+      "mountain": "tepete",
+      "hill": "tepeto",
+      "ridge": "one",
+      "forest": "kawatora",
+      "wood": "kawate",
+      "plain": "ishitawa",
+      "marsh": "zokia",
+      "ford": "watari",
+      "pass": "toge",
+      "vale": "tani",
+      "jungle": "kawatla",
+      "coast": "hama",
+      "neck": "kubi",
+      "narrows": "seto",
+      "waste": "teotara",
+      "road": "michi",
+      "way": "do",
+      "track": "komichi"
+    },
+    "settlement_words": {
+      "hamlet": "shakari",
+      "village": "kapori",
+      "town": "machi",
+      "city": "miyatepe",
+      "fort": "toriyao",
+      "port": "minato",
+      "market": "ichi",
+      "temple_town": "jinkari",
+      "citadel": "shirotekpa"
+    },
+    "kinship": {
+      "son": "musupiri",
+      "daughter": "musuichi",
+      "house": "ie",
+      "kin": "uji",
+      "ancestor": "senzo"
+    },
+    "adjectives": {
+      "great": "oo",
+      "little": "ko",
+      "old": "furu",
+      "new": "ara",
+      "black": "kuro",
+      "white": "shiro",
+      "red": "chichi",
+      "golden": "kogane",
+      "iron": "kurogane",
+      "high": "taka",
+      "far": "too",
+      "sacred": "imiteo",
+      "fair": "kiyo"
+    },
+    "resources": {
+      "salt": "shio",
+      "iron": "tetsu",
+      "bronze": "akagane",
+      "silver": "iztaki",
+      "gold": "teokitate",
+      "jade": "charuchi",
+      "cacao": "kakawa",
+      "maize": "senchi",
+      "obsidian": "izuchi",
+      "feather": "ketsari",
+      "horse": "uma"
+    },
+    "directional": {
+      "upper": "ue",
+      "lower": "shita",
+      "north": "kita",
+      "south": "minami",
+      "east": "higashi",
+      "west": "nishi",
+      "inner": "uchi",
+      "outer": "soto"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-shiro / -jo (castle; Japonic)",
+      "-machi (town; Japonic)",
+      "-yama (mountain; Japonic)",
+      "-gawa (river; Japonic, rendaku)",
+      "-tepe (mountain-place; Nahuatl -tepec resyllabified)",
+      "-tlan / -tora (place-of / jungle; Nahuatl resyllabified)",
+      "Hino- (sun; Japonic great-prefix)",
+      "Huei- / Hue- (great; Nahuatl)"
+    ],
+    "patronymic_form": "the Japonic ruling stock keep the clan/house name (uji / -shi) before the given name, -no- linking clan and name (X no Y) and house-suffix -ke; the Nahuatl populace keep the calpolli (ward) name and the calendar-day name, with -tzin reverential for the honored; the throne fuses both - a Shogun-house clan-name over a teocalli lineage.",
+    "gendered_endings": {
+      "male": "-ro / -suke / -maru (Japonic ruling); -tzin / by deed (Nahuatl)",
+      "female": "-ko / -e / -hime (Japonic); -tzin / Sihua- (Nahuatl Cihua- resyllabified)"
+    },
+    "diminutive_form": "-maru (Japonic; boys/blades/ships) / -ton (Nahuatl)",
+    "compounding_rule": "Japonic clan-first dithematic ([clan] no [given]; quality/feature + type: Kuro-yama black-mountain, rendaku kawa -> -gawa) layered over Nahuatl place-roots ([quality|feature] + -tepe/-tora/-co): the capital Hino-tepe (sun-mountain-place), Take-no-toriyao (the bamboo war-fort)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Japonic samurai war-aristocracy over the Nahuatl pyramid-cities of the sun: the Shogun and his Daimyo war-houses at the crown, the Shugo-governors over the teocalli-cities, the samurai retainers sworn to the war-banner; the teopixqui sun-priesthood and the calpolli wards serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Jito",
+        "domain_native": "Sho"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Shugodai",
+        "domain_native": "Sakai"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Shugo",
+        "domain_native": "Kuni"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Tlatono",
+        "domain_native": "Ryogoku"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Kokushu",
+        "domain_native": "Ryo"
+      },
+      "kingdom": {
+        "ruler": "Shogun",
+        "domain": "Kingdom",
+        "ruler_native": "Hinotaisho",
+        "domain_native": "Bakufu"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Tenno",
+        "domain_native": "Tenka"
+      }
+    },
+    "_tiers_note": "Japonic clanhold ladder, ascending, ruling over the Nahuatl pyramid-city substrate. Jito (estate-lord) barony; Shugodai (border deputy) march; Shugo (province-governor) county; the Daimyo (great-name war-lord; native Tlatono, a Japonic-Nahuatl fusion of tlatoani 'speaker-king' + -no house-mark) duchy over a Ryogoku; Kokushu (province-master) principality; the Shogun (military overlord; native Hinotaisho, the 'sun-great-general') kingdom over the Bakufu (tent-government); the Tenno (heavenly sovereign) reigns over Tenka (all-under-heaven) as emperor. The conquered cities keep their Nahuatl tlatoani (city-speaker) and teopixqui (god-guardian) beneath the Japonic crown; the kannushi (shrine-priest) and the tlenamacac (fire-offering priest) stand outside the ladder. DISPLAY titles are English except the two approved foreign terms - Daimyo (duchy) and Shogun (kingdom). Rank titles fuse the real Japanese and Nahuatl registers (allowed).",
+    "heir": "Yotsugi (the designated heir; the Shogun's chosen son) / Tlatocapiri (the ruling-prince of the substrate-line)",
+    "honorifics": {
+      "lord": "Tono / Teku: (Nahuatl tecuhtli resyllabified)",
+      "lady": "Hime / Sihuapiri (Nahuatl cihuapilli)",
+      "champion": "Bushi (samurai) / Yaokizki (Nahuatl warrior)",
+      "your_grace": "Tono",
+      "your_majesty": "Heika",
+      "elder": "Otona (the eldest)"
+    },
+    "vassalage": {
+      "liege": "Shujun",
+      "vassal": "Kerai (retainer) / Tekitki (Nahuatl service-bound)",
+      "fealty": "Chugi (loyal fealty) / Tenawate (Nahuatl oath-bond)",
+      "tribute": "Nengu / Tlakarakiri (Nahuatl tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, EXCEPT the two approved commonly-known foreign terms set in 'ruler': Daimyo (duchy) and Shogun (kingdom). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ],
+    "female_forms_native": {
+      "Tenno": "Jotei",
+      "Hinotaisho": "Onna-hinotaisho",
+      "Kokushu": "Onna-kokushu",
+      "Tlatono": "Sihua-tlatono",
+      "Shugo": "Onna-shugo",
+      "Shugodai": "Onna-shugodai",
+      "Jito": "Onna-jito"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Shogun": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Japonic ruling stock carry the clan/house name (uji/-shi) first, then a given name, samurai adding the -no- form (X no Y) and a gen-puku adult name; the Nahuatl populace carry a calendar-day name + a deed/war-name + the calpolli (ward); order clan/ward-first.",
+    "surname_source": [
+      "Japonic clan/house (uji, -shi)",
+      "Japonic branch-house (-ke)",
+      "Nahuatl calpolli (ward)",
+      "Nahuatl calendar-day or deed/war-name"
+    ],
+    "dual_register": "the Japonic buke (warrior houses) keep a clan name + court/military title; the Nahuatl pipiltin (nobles) keep a teocalli lineage + -tzin reverential titles, the macehualtin (commoners) a day-name + ward.",
+    "theophoric": "Japonic devotional on the native-kami reflexes (Terashi-maru, names honoring Terashi-no-kami) + an element (-maru child/blade, Take- valor, Kami- divine); Nahuatl devotional morph-constructs: Teo-Marakatl (divine war-fire), Tolra-tzin (revered sun) on the morphed canon-stems.",
+    "diminutive": "-maru (Japonic) / -tzin / -ton (Nahuatl)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Japonic NATIVE-kami canon-morphs PRIMARY (family_east_asian.json theonym_sets.japonic; the wholly-native kami, NOT the Sinitic forms), Nahuatl morphs SECONDARY (family_mesoamerican.json theonym_sets.nahuatl), never real kami or Aztec gods (no Amaterasu/Susanoo, no Quetzalcoatl/Huitzilopochtli/Tlaloc). Same shared pantheon, two faces (honji-suijaku: the kami of the shrine-isle and the power of the sun-pyramid are one). Lawful/Neutral/Chaotic: the Lawful keep the ordered way of the blade and the just sun (the kami of sun, steel and ancestors); the Chaotic the blood-fed war-sun and the wild kami (the war-flame, the devouring void, the mountain-oni); the Neutral the ancestral dead (senzo) and the calendar-round, honored at the household shrine and the teocalli.",
+    "the_one": "Takami-no-kami (Japonic; Nahuatl Aiternatl) - the High-Heaven One, distant above the myriad kami, honored not petitioned (and, where the realm turns Chaotic, reviled with the Nahuatl substrate as the Tyrant-Sun)",
+    "sample_deity_renames": {
+      "Tulrius": "Terashi-no-kami (Nahuatl Tolratl) - the Shining One, sun and right-rule",
+      "Orlandus": "Hagane-no-kami (Nahuatl Orlantzin) - the Steel One, the blade-oath and war",
+      "Gaiandus": "Iwane-no-kami (Nahuatl Gaiantli) - the Rock-Root, the enduring mountain",
+      "Numeno": "Amatsukaze-no-kami (Nahuatl Numenatl) - the Heaven-Wind, sky and wisdom",
+      "Realta": "Megumi-hime (Nahuatl Rialtzin) - the Mercy-Maiden, mother and healing"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Takami-no-kami, Terashi-no-kami the just sun, Hagane-no-kami of the sworn blade, Megumi-hime the merciful - and names the Chaotic powers oni and tzitzimitl (devils), warded; the warrior-way and the just sun bind alike",
+      "Neutral": "the ancestral dead (the senzo and eirei of the ruling house) and the calendar-round powers of the teocalli and the household shrine; the great powers invoked at the jinja-grove and the pyramid situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - chief among them Takebi-no-kami the War-Flame (the Nahuatl Marakatl, the Blood-Sun that must be fed) - and names the Lawful powers, and Takami-no-kami, as the cold tyrant-gods to be defied and starved of blood."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as oni (Japonic devils) or tzitzimitl (Nahuatl star-demons), keep their morphs + an epithet: Maraxus -> Takebi-no-kami the War-Flame (Nahuatl Marakatl the Blood-Sun); Vacidus -> Utsuro-no-kami the Devouring Void (Nahuatl Wakitl the Hungering-Dark); Lusanto -> Kogane-Orochi the gold hoard-serpent (Nahuatl Lusankoatl).",
+    "clergy_ladder": {
+      "1": "Miko (shrine-attendant) / Tlamacazton (novice)",
+      "3": "Kannushi (shrine-priest) / Tlamacazki",
+      "5": "Negi (senior priest) / Teopixki (god-guardian)",
+      "7": "Guji (chief priest) / Tlenamakak (fire-offering priest)",
+      "9": "Saishu (high priest of the realm) / Hueyi Teopixki (great sacrificer)"
+    },
+    "religious_orders_pattern": "the Jinja (Japonic shrine) within its torii and sacred grove, or the Teokari (Nahuatl pyramid-temple) crowning the sun-pyramid, of [power]: 'the Jinja of Terashi-no-kami', 'the Teokari of Takebi-no-kami'.",
+    "saints_pattern": "great ancestors and fallen heroes enshrined as kami (the eirei, honored dead) at the clan jinja, and the offered captives and conqueror-tlatoque honored as sun-feeding companions at the teocalli and the skull-rack.",
+    "holy_symbol_motifs": {
+      "Terashi-no-kami": "a rising sun-disc above a mirror and sword, crowning a stepped pyramid",
+      "Hagane-no-kami": "a bare blade crossed before a torii",
+      "Takebi-no-kami": "an obsidian knife over a blood-fed war-sun"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-junk and lake war-canoe names: 'the Wave-Cutter', 'the Storm-Crane', 'the Quetzal of the Sun', 'Hagane-maru'",
+    "military_units": "the [clan] Gun (host) / the [order] knights and the [color] Sonae (battle-formation): 'the Crimson Sonae', 'the Eagle Gun', 'the Jaguar-Samurai of the Sun'",
+    "taverns": "'The [Adjective] [Noun]': 'The Floating Plum', 'The Obsidian Teahouse', 'The Cacao Court'",
+    "dungeons_ruins": "fallen shiro (castles) and abandoned teokari (sun-pyramids): 'the ruined Shiro of [clan]', 'the Sunken Teokari of [name]', 'the haunted Jinja of [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Takeshi",
+      "Hideo",
+      "Katsuro",
+      "Yoshihiro",
+      "Kagehisa",
+      "Toramaru",
+      "Nobuhide",
+      "Hayato",
+      "Teo-Marakatl",
+      "Kuauchi-maru",
+      "Itzmin-suke",
+      "Yaotaro",
+      "Tochi-maru",
+      "Maza-tzin",
+      "Sipakti-ro",
+      "Akatl-hide"
+    ],
+    "personal_f": [
+      "Hanae",
+      "Chiyo",
+      "Sumire",
+      "Aoi",
+      "Kaede",
+      "Sakurako",
+      "Tsukino",
+      "Kohime",
+      "Sochi-hime",
+      "Sitlali-ko",
+      "Ketsari-e",
+      "Malina-tzin",
+      "Yoloti-ko",
+      "Sihua-aoi",
+      "Papalo-e",
+      "Tonari-hime"
+    ],
+    "clan_uji": [
+      "Kurokawa (ruling house)",
+      "Akiyama",
+      "Takemori",
+      "Hinomori",
+      "Yamabe",
+      "Kapori Kuauchi",
+      "Kapori Oselo",
+      "Kapori Koate",
+      "Tepekawa",
+      "Shirakawa",
+      "Kapori Itzuchi",
+      "Tepetono"
+    ],
+    "epithets_cognomina": [
+      "the Tiger (Tora)",
+      "the Eagle (Kuauchi)",
+      "the Jaguar (Oselo)",
+      "Iron-arm",
+      "the Sun-blessed",
+      "Obsidian-heart",
+      "the Storm",
+      "the Flower-warrior"
+    ],
+    "flagship_settlements": [
+      "Hinoztlan (the chief seat - the sun-place capital)",
+      "Hino-tepe (the sun-mountain city)",
+      "Shiroyama (the castle-mount)",
+      "Chichi-apane (the red-river town)",
+      "Terashi-jinkari (the sun-shrine pyramid-seat)",
+      "Take-no-toriyao (the bamboo war-fort)"
+    ]
+  }
+}

@@ -1,0 +1,376 @@
+{
+  "kit_id": "hellaria",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_30",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (old_persian / axsatran backbone) + classical (hellenic / achillean overlay) - cross-family blend, Persian-leaning",
+  "synthesis_sources": [
+    "BASE_04",
+    "BASE_07"
+  ],
+  "homeland": "Persephyra",
+  "blend": {
+    "backbone": "near_eastern (old_persian / axsatran register: the Xshayathiya and his satraps, Old-Persian phonology, ezafe-linked construct, Arta the Truth and the farnah-glory, theophoric on the shifted canon-stems Turvasa-/Urlaspa-/Arta-)",
+    "overlay": "classical (hellenic / achillean: the polis and the agora, the strategos and the basileus, the sea-faring craft, Greek -os/-on civic and learned vocabulary, aspirates th/ph/kh, the heroon and the mysteria)",
+    "lean": "Persian-heavy - the satrapal court of the King of Kings sits over the Greek poleis of the coast: the Old-Persian throne, road and fire-order rules; the Hellenic city, harbour and school endure and serve beneath. Persepolis and Athens in one crown - the satrap and the polis fused."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_04 Axsatra (Achaemenid Persia, near_eastern + old_persian register) x BASE_07 Achillea (Classical Greek, classical + hellenic). CIV/CLAN DECIDED by inheritance: both parents are Civilized, so Hellaria is Civilized (feudal). Concept: a Greco-Persian realm - the Hellenistic-Achaemenid synthesis, a Seleucid-Persian court where the satrapy and the polis are one people. Backbone/lean = Persian (the satrapal throne, the Old-Persian court register, the Arta/farnah religion, the land-and-kin and rule vocabulary); overlay/substrate = Greek (the coastal poleis, the agora and harbour, the sea/civic/learned/material vocabulary, the philosophic schools). Common-word lexicon is a SINGLE fused tongue (Persian-shaped, Greek-substrated) per gdd-hybrid-conlang-fusion.md; rank titles use the real Old-Persian and Greek registers (allowed, catalog 5.3), with English display titles and an approved foreign term where set. DEITY names are morphs of the Agrippan canon from both parents (Old-Persian-shifted Sargonid morphs PRIMARY per axsatran, Hellenic morphs SECONDARY per achillean), never real Iranian/Greek gods. All human cultures allow Lawful/Neutral/Chaotic. Approved foreign display terms: kingdom = Shah (Persian); county = Archon (Greek) - recorded in approved_foreign_terms_used.",
+  "phonology": {
+    "palette": "Old Persian (Indo-Iranian) backbone - flowing vowels a i u with long a/i/u, spirants th(0)/x(kh)/f, sibilants s/sh/z/c, r l, nasals m n, semivowels y v/w, aspirate h, characteristic endings -a/-ah/-iya/-ana/-aspa/-arta/-farnah, the ezafe genitive-of-relation '-ahya' - meeting a Hellenic overlay: Greek civic and sea vocabulary (-os/-on/-eus), the aspirates th/ph/kh (shared with Persian), open vowel-final syllables. Per the CSV: pitch accent with flowing vowels, the Greek pitch adapted to Persian vowel-flow and poetic stress; grammar SOV with complex aspects carried on the ezafe construct-chain. Theophoric on the Old-Persian-shifted canon morphs (Turvasa-, Urlaspa-, Arta-) with Hellenic devotional variants (Tulrio-, Orlandro-).",
+    "phonotactics": "CV(C); Persian clusters (xsh-, sp-, st-, fr-, vr-, thr-) meeting Greek clusters (kt, pt, st, ps, ph, th, kh); vowel length distinctive; ezafe '-ahya' linking; pitch-accent flowing vowels with a Persian heavy-syllable pull; Greek -os/-on civic endings persianized to -a/-ah on the fused stems.",
+    "transparent_ratio": 0.38,
+    "fusion_rules": {
+      "lean": "iranian (old persian) phonology dominant",
+      "sound_changes": [
+        "Greek civic/nominative endings persianize: -os>-a, -on>-a/-ah, -eus>-ava, -e>-a; roots become vowel-final on the Persian -a/-ah pattern",
+        "Greek pitch accent adapted to Persian flowing vowels and poetic/heavy-syllable stress; the genitive ezafe '-ahya' links construct-chains",
+        "shared aspirates th/ph/kh retained from both parents; Greek ps/pt/kt simplify toward Persian onsets (ps>s, pt>t, kt>xt); Greek double-s>sh (thalassa>thalasha)",
+        "Persian spirant/sibilant inventory dominant: collapse to a i u (long a/i/u), s/sh/z/c, x(kh), f; very short Greek roots take a Persian -a/-ah ending"
+      ],
+      "source_tilt": "sea/civic/learned/material words from Greek roots (the coastal poleis, the harbour, the agora, the schools, marble/wine/oil); rule/kin/court/land words from Persian roots (the satrapal throne, the bloodline, the road and the fire-order, terrain and staple); every root then filtered to one Persian-shaped phonology",
+      "portmanteaus": [
+        "city pura+polis>purapola",
+        "sea draya+thalassa>drayalasha",
+        "port limen+draya-pura>limendraya",
+        "market agora+vahanam>agavahan",
+        "temple_town atashana+hieron>atashieron",
+        "citadel vazraka-dida+akropolis>akrodida",
+        "son puthra+huios>puthrios",
+        "sacred yazata+hieros>yazieros"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Greek sea/civic/learned/material roots + Persian rule/kin/court/land roots, all run through one Old-Persian-shaped sound-law (Greek -os/-on persianized to -a/-ah, pitch adapted to flowing vowels, shared th/ph/kh kept); portmanteaus mark the blended institutions and bloodline. No slash forms - one word per concept.",
+    "feature_words": {
+      "river": "rautah",
+      "stream": "rhoa",
+      "lake": "limna",
+      "sea": "drayalasha",
+      "ocean": "vazraka-drayalasha",
+      "bay": "kolpa",
+      "cape": "akra",
+      "isle": "nesa",
+      "mountain": "kaufa",
+      "hill": "lopha",
+      "ridge": "parshva",
+      "forest": "vana",
+      "wood": "drima",
+      "plain": "ravah",
+      "marsh": "anupa",
+      "ford": "vitar",
+      "pass": "duvara",
+      "vale": "napa",
+      "coast": "akta",
+      "neck": "gardan",
+      "narrows": "tanga",
+      "waste": "erema",
+      "road": "patha",
+      "way": "raha",
+      "track": "pand"
+    },
+    "settlement_words": {
+      "hamlet": "vith",
+      "village": "dema",
+      "town": "asta",
+      "city": "purapola",
+      "fort": "dida",
+      "port": "limendraya",
+      "market": "agavahan",
+      "colony": "apoika",
+      "temple_town": "atashieron",
+      "citadel": "akrodida"
+    },
+    "kinship": {
+      "son": "puthrios",
+      "daughter": "duxta",
+      "house": "oika",
+      "father": "pita",
+      "ancestor": "fravashi (the honored fore-spirit)"
+    },
+    "adjectives": {
+      "great": "vazraka",
+      "little": "kasu",
+      "old": "palaya",
+      "new": "nava",
+      "black": "syava",
+      "white": "spaita",
+      "red": "ruxsha",
+      "golden": "zaranya",
+      "iron": "ayah",
+      "high": "barzan",
+      "low": "katha",
+      "far": "duraya",
+      "sacred": "yazieros",
+      "fair": "naiba",
+      "true": "arta (true / right)",
+      "false": "drauga (the lie)"
+    },
+    "resources": {
+      "salt": "halsa",
+      "iron": "ayah",
+      "silver": "ardata",
+      "gold": "zaranya",
+      "wine": "oina",
+      "oil": "elaya",
+      "grain": "yava",
+      "marble": "marmara",
+      "fish": "masya",
+      "purple_dye": "porphyra"
+    },
+    "directional": {
+      "upper": "upari",
+      "lower": "athah",
+      "north": "apaxtara",
+      "south": "nimroz",
+      "east": "ushastara (sunrise)",
+      "west": "shamtara (sunset)",
+      "inner": "antar",
+      "outer": "para",
+      "near": "nazda",
+      "far": "duraya"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-pura (city of; Persian)",
+      "-pola (Greek polis, persianized)",
+      "Dida- (fort of; Persian)",
+      "Atash- (fire of; Persian)",
+      "-stana (place of; Persian)",
+      "-marz (march of; Persian)",
+      "-eia / -ia (Greek place-of)"
+    ],
+    "patronymic_form": "the Persian satrapal nobility keep filiation 'X-ahya puthrios' (son of X) or compact 'X-puthrios' and a house (vith-X); the Greek city-folk keep the Hellenic patronymic on the fused stem (-ida, from -ides) plus a polis demonym; the throne fuses both - a Xshayathiya who also carries a polis-founder's name; theophoric given names on the shifted god-stems and on Arta-.",
+    "gendered_endings": {
+      "male": "-a / -ah / -aspa / -puthrios (Persian); -a (Greek -os persianized) / -ida (Greek patronymic)",
+      "female": "-a / -i / -duxta / -banu (Persian); -a / -e (Greek)"
+    },
+    "diminutive_form": "-aka / -ka (Persian) / -ion (Greek)",
+    "compounding_rule": "Persian quality/relation + element via the ezafe '-ahya' (Arta-xshaca truth-realm, Vahu-farnah good-glory) layered over Greek civic compounds persianized ([adjective|resource] + feature with the old Greek linking -o- flattened: Nea-pola new-city, Spaita-akra white-cape); toponyms Dida-[name] (fort of), [name]-pura / [name]-pola (city of), Atash-[power] (fire of); the capital Persephyra (the Persian-Greek throne-seat)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Greco-Persian court: the Xshayathiya / Shah at the crown over the Greek poleis of the coast, the satraps and strategoi as his great vassals, the eparch-archons over the cities, the magi tending the fire and the philosophers the schools, both serving beneath the throne)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Vispati",
+        "domain_native": "Vis"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marzapana",
+        "domain_native": "Marz"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Eparch-Framatar",
+        "domain_native": "Eparchia"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Xshacapavan-Strategos",
+        "domain_native": "Xshacapavanam (satrapy)"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Vispuhra-Dynastes",
+        "domain_native": "Dahyu"
+      },
+      "kingdom": {
+        "ruler": "Shah",
+        "domain": "Kingdom",
+        "ruler_native": "Xshayathiya",
+        "domain_native": "Xshacam"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Xshayathiya Xshayathiyanam",
+        "domain_native": "Vispa-Dahyu (all the lands)"
+      }
+    },
+    "_tiers_note": "Persian-lean ladder with the Hellenic co-titles fused beneath, ascending. Vispati (clan-lord of a vis) barony; Marzapana (march-warden, the marzban) march; Eparch-Framatar (the appointed city-governor, Greek eparch + Persian framatar) county - DISPLAYED as Archon (the approved Greek term); Xshacapavan-Strategos (the satrap who is also the general of the poleis) duchy over a satrapy; Vispuhra-Dynastes (prince of the blood and dynast) principality over a great province (Dahyu); Xshayathiya (king) kingdom over a Xshacam - DISPLAYED as Shah (the approved Persian term); Xshayathiya Xshayathiyanam (King of Kings) empire over the Vispa-Dahyu, all the lands. The Greek cities keep their archon and strategos beneath the Persian crown; the magi (Magu) and the philosophic schools stand outside the ladder. Rank titles fuse the real Old-Persian and Greek registers (allowed).",
+    "heir": "Mathishta-Diadochos (the greatest successor-designate; Persian mathishta + Greek diadochos)",
+    "honorifics": {
+      "lord": "Khvatava / Kyria",
+      "lady": "Banuka / Kyria",
+      "knight": "Asabara (horseman) / Hippeus",
+      "champion": "Asabara / Aristeus (the best)",
+      "your_grace": "Khvatava",
+      "your_majesty": "Xshayathiya / Megas Shah",
+      "elder": "Mathishta (the greatest / eldest)"
+    },
+    "vassalage": {
+      "liege": "Khvatava / Hegemon",
+      "vassal": "Bandaka (the king's bondsman) / Symmachos (the allied city)",
+      "fealty": "Bandaka (the bond) / Horkos (the Greek oath)",
+      "tribute": "Baji (tribute) / Phoros (the Greek levy)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except where an approved commonly-known foreign term is set in 'ruler': kingdom = Shah (Persian), county = Archon (Greek). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Xshayathiya Xshayathiyanam": "Xshayarsha-banu (the Banuka of Kings)",
+      "Xshayathiya": "Xshayathi-banu",
+      "Vispuhra-Dynastes": "Vispuhri-Dynastissa",
+      "Xshacapavan-Strategos": "Xshacapavi-Strategissa",
+      "Eparch-Framatar": "Eparchissa-Framatri",
+      "Marzapana": "Marzapani",
+      "Vispati": "Vispatni"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Shah": "Shahbanu",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Shah (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "given (often theophoric on the shifted god-stems or an Arta-/Vahu- virtue-name) + filiation (X-puthrios) or Greek patronymic (-ida); nobles add a house (vith-X) and a court/satrapal or polis office; the renowned earn an honest-deed or descriptive epithet; order given-first.",
+    "surname_source": [
+      "Persian filiation (X-puthrios = son-of-X)",
+      "Greek patronymic (-ida, from -ides)",
+      "theophoric given (Turvasa-data = Turvasa-given; Baga-X)",
+      "virtue-name (Arta-xshathra = truth-rule)",
+      "office (satrap, marzban, archon, strategos) or polis demonym"
+    ],
+    "dual_register": "the Persian court-and-satrapal nobility carry a house (vith) and a satrapal office; the Greek city nobility carry a polis demonym and a Hellenic patronymic (-ida); commoners of either stock use filiation/patronymic + earned epithet; the throne fuses both.",
+    "theophoric": "given names from the shifted deity-stems + a Persian or Greek element: Baga-X (god-X), X-data (X-given), X-farnah (glory-of-X), Vahu-X (good-X) on the Persian side; Tulrio-, Orlandro-, Numeno- compounds on the Hellenic side. e.g. Turvasa-data, Baga-Urlaspa, Artafarnah, Tulriokles, Orlandroteron.",
+    "diminutive": "-aka / -ka (Persian) / -ion (Greek)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - the Old-Persian-shifted Sargonid morphs PRIMARY (family_near_eastern via axsatran: Turvasa, Urlaspa, Naumana, Arzanta, Asturna), the Hellenic morphs SECONDARY (family_classical via achillean: Tulrios, Orlandros, Numenos), never real Iranian/Zoroastrian or Greek gods. Lawful henotheist but TOLERANT, as the Persian backbone: Asturna the Wise Lord most high upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The empire shelters the Greek city-cults under Asturna's peace - the polis keeps its mysteria and heroon beside the fire-altar. Alignment all three (per the standard human pass).",
+    "the_one": "Asturna (< Aeternus / Sargonid Itarnu; Greek reflex Aiternos - the Wise Lord Most High, upholder of Arta and source of the king's farnah-glory, revered above His ministers, honored not petitioned)",
+    "sample_deity_renames": {
+      "Tulrius": "Turvasa (Greek Tulrios) - the sun and Arta, lamp of right-order; Lawful",
+      "Orlandus": "Urlaspa (Greek Orlandros) - the iron-oath, war and the cavalier; Lawful",
+      "Numeno": "Naumana (Greek Numenos) - the good mind, wisdom and the law; Lawful",
+      "Argentus": "Arzanta (Greek Argenthos) - trade, the road and the harbour; Lawful",
+      "Realta": "Riyata (Greek Rialthe) - the Lady of Waters, mother and mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers under Asturna the Wise Lord - Turvasa the just, Urlaspa of the sworn war, Naumana of wisdom, Arzanta of the road and harbour, Riyata the merciful - keeps Arta (Truth) as the cardinal virtue and names the Chaotic powers the hosts of Drauga the Lie, warded; the fire-altar and the polis-temple uphold the right-order alike",
+      "Neutral": "the honest dead and the just kings kept as fravashi (fore-spirits) and the deified founders kept as Heros at the heroon; the great powers invoked at the Atash fire-altar and the city mysteria situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - the hosts of Drauga - and names Asturna and the Lawful powers as the tyrant-order to be defied; the Lie set against the Truth."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, the hosts of Drauga the Lie (warded as daeva or marked -daimon in the Greek cities), keep their shifted name + a hostile portfolio-epithet: Maraxus -> Marakhsha the Burner-of-Cities (Greek Maraxos the Tyrant-Flame); Vacidus -> Vakida the Devouring-Void (Greek Vakidos the Unmaker); Lusanto -> Lusanta the Coin-Serpent, the Lie made gold.",
+    "clergy_ladder": {
+      "1": "Athravan (fire-tender acolyte) / Neokoros (temple-keeper)",
+      "3": "Magu (magus / priest) / Hiereus",
+      "5": "Magupati (chief magus of a fire-temple) / Archiereus",
+      "7": "Dahyu-Magupati (provincial chief magus) / Hierophant",
+      "9": "Magupatan Magupat (the chief of chief magi) / Megas Hierophant"
+    },
+    "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana) on the Persian side - 'the Atashana of Turvasa'; the Mysteria/Temenos of [power] on the Greek side - 'the Mysteries of Numenos'; the magi keep the ever-burning fire (Atar) on the altar while the polis keeps its temenos.",
+    "saints_pattern": "the honest dead and the just kings kept as fravashi (fore-spirits) and petitioned at the fire-altar - 'the Arta-true [name]' (the righteous [name]); and the deified founders kept as Heros [name], venerated at a heroon (tomb-shrine) in the Greek cities.",
+    "holy_symbol_motifs": {
+      "Asturna": "a winged ring-disc (the farnah-glory) above a fire-altar, ringed by an olive-branch",
+      "Turvasa": "a rayed sun above the upright Arta-measure and the scales",
+      "Urlaspa": "an iron spear crossed with an oath-ring"
+    }
+  },
+  "banks_patterns": {
+    "ships": "the Greek-built galleys of a Persian crown: 'Bearer of the Baji', 'the Farnah', 'Nike of Persephyra', 'Boat of Arzanta'",
+    "military_units": "the Persian Spada (host) and the Greek phalanx-of-the-poleis: 'the Spada of Urlaspa', 'the Ten-Thousand (Anushiya)', 'the Bronze Phalanx of Persephyra'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Farnah', 'The Cup of Truth (Arta-jam)', 'The Amber Kylix'",
+    "dungeons_ruins": "fallen apadana-halls and dead temples of both stocks: 'the dead Atashana of [name]', 'the buried Apadana of Dida-[name]', 'the Labyrinth of Heros [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Turvasa-data",
+      "Baga-Urlaspa",
+      "Artafarnah",
+      "Vahu-Arzanta",
+      "Asturna-data",
+      "Artaxshathra",
+      "Vishtaspa",
+      "Tulriokles",
+      "Orlandroteron",
+      "Naumana-data",
+      "Aryabarza",
+      "Stratophernes",
+      "Numenodata",
+      "Arta-puthrios",
+      "Megabazos-shifted Megabaza",
+      "Aspaturvasa",
+      "Tirvana",
+      "Hieron-Arta",
+      "Vindafarnah",
+      "Kallias-Baga"
+    ],
+    "personal_f": [
+      "Riyata-banu",
+      "Artaduxta",
+      "Vahudata",
+      "Atusa",
+      "Parisata",
+      "Riyata-farnah",
+      "Banuka-Arta",
+      "Stratonike-banu",
+      "Naumana-banu",
+      "Eudora-Arta",
+      "Artazata",
+      "Vispa-banu",
+      "Roshanak",
+      "Phaidra-Riyata",
+      "Farnah-banu",
+      "Gayanta-duxta"
+    ],
+    "clan_houses": [
+      "Vith-Turvasa",
+      "Vith-Urlaspa",
+      "Vith-Naumana",
+      "Vith-Arzanta",
+      "Vith-Asturna",
+      "the Tulriokleida (the Greek house)",
+      "the Stratophernida",
+      "Vith-Aryabarza",
+      "Vith-Vishtaspa",
+      "the Kalliada",
+      "Vith-Tirvana",
+      "the Hieronida"
+    ],
+    "epithets_cognomina": [
+      "the Arta-true (the Honest)",
+      "Friend-not-of-the-Lie",
+      "the Far-rider",
+      "ho Megas (the Great)",
+      "the King's Bandaka",
+      "Harbour-builder",
+      "the Tolerant",
+      "Spear-of-Urlaspa"
+    ],
+    "flagship_settlements": [
+      "Persephyra (the chief seat - the Persian-Greek throne-city)",
+      "Atashieron-Turvasa (the great fire-temple town)",
+      "Akrodida-Vazraka (the great citadel)",
+      "Nea-Pola (the new polis of the coast)",
+      "Marz-Apaxtara (the northern march-seat)",
+      "Limendraya-Arzanta (the great harbour-port)"
+    ]
+  }
+}

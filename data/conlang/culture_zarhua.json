@@ -1,0 +1,365 @@
+{
+  "kit_id": "zarhua",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_32",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (old_persian / Achaemenid register) backbone + east_asian (sinitic) substrate (cross-family blend, Persian-leaning)",
+  "synthesis_sources": [
+    "BASE_04",
+    "BASE_09"
+  ],
+  "homeland": "Zarhua",
+  "blend": {
+    "backbone": "near_eastern (old persian / Achaemenid register: Xshayathiya/satrap rulership, the ezafe genitive-of-relation '-ahya', vowel-length, the -aspa/-arta/-farnah elements, retained th/x/f spirants, Arta the Truth and the king's farnah-glory)",
+    "overlay": "east_asian (sinitic: the Mandate-of-Heaven mandarin bureaucracy, the walled cheng river-cities, the silk and jade and tea of the caravan-road, monosyllabic roots, -di/-jun/-wang celestial titles, SVO isolating syntax)",
+    "lean": "Persian-heavy - a Sogdian-Iranian caravan-court reaching east into Cathay, the Shah and his satraps enthroned over a Sinitic mandarin order: the Old-Persian ezafe and the court register dominate, the Sinitic bureaucracy of scribes and silk-rivers endures and serves beneath. The ezafe and the Mandate fused."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_04 (Old Persian / Achaemenid, the Axsatran backbone) x BASE_09 (Sinitic / Chinese, the Jinxian substrate). CIV/CLAN DECIDED by inheritance: both parents are Civilized (Persian satrapal empire + Sinitic Mandate realm), and any Civ parent -> Civ, so Zarhua is Civilized (feudal). Concept: a Perso-Sinitic silk-road empire - Sogdiana reaching Cathay. An Iranian caravan-court that drove east along the silk-road, married the river-valley mandarin order of the east, and set up as Shah-of-shahs over a Sinitic bureaucracy: the ezafe and the Mandate fused, caravan-court and mandarin. Backbone = Old Persian (the ruling court, the Xshayathiya/satrap register, the ezafe, Arta and farnah); overlay/substrate = Sinitic (the cheng river-cities, the silk/jade/tea trade-goods, the mandarin scribal bureaucracy, the Mandate of Heaven). Common-word lexicon is a SINGLE FUSED tongue (Sinitic material/river/bureaucratic roots + Persian rule/kin/court/land roots, all run through one Old-Persian-shaped sound-law); rank titles are English DISPLAY with Old-Persian *_native forms. DEITY names are morphs of the Agrippan canon from both parents (Persian-shifted reflexes PRIMARY, the Axsatran set; Sinitic morphs SECONDARY, the Jinxian/family_east_asian sinitic set), never real Iranian/Zoroastrian/Chinese gods. The cardinal virtue ARTA (Truth) carries over from the Persian backbone; the Mandate of Heaven (Tianming, morphed Tian-farnah) legitimizes the throne. All human cultures allow Lawful/Neutral/Chaotic. Ruler/domain DISPLAY titles are English with the approved foreign term 'Shah' at the kingdom tier (commonly-known); conlang titles in ruler_native/domain_native for NPC dialogue.",
+  "phonology": {
+    "palette": "Old Persian (Indo-Iranian) backbone - vowels a i u with long a/i/u, spirants th(0)/x(kh)/f, sibilants s/sh/z/zh and c(ts), r l, nasals m n, semivowels y v/w, aspirate h, the signature endings -a/-ah/-ish/-iya/-ana/-aspa/-arta/-farnah, the ezafe '-i-' and the genitive-of-relation '-ahya' - meeting a Sinitic substrate: monosyllabic roots, finals -n/-ng, the -di/-jun/-wang celestial titles, the silk-and-river trade vocabulary. Per the CSV: analytic flow with rich vowel length, the Sinitic monosyllables stretched onto Persian flowing vowels and bound by the ezafe; grammar is SVO with isolating poetic syntax (the Sinitic word-order carried on Old-Persian connective particles, no heavy case-stacking). Theophoric on the Persian-shifted reflexes (Turvasa-, Urlaspa-, Arta-) with Sinitic deity-variants beneath (Tuli-, Gaidun-).",
+    "phonotactics": "CV(C) with Persian clusters xsh-, sp-, st-, fr-, vr-, thr- at onset, but a strong pull toward the open Sinitic syllable medially (the borrowed monosyllables stay light); finals -n/-ng tolerated from the substrate; vowel length distinctive; stress on heavy syllables with a poetic, end-weighted lilt; the ezafe '-i-' links noun to qualifier (rud-i-zar, the river of gold).",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "iranian (old persian) phonology dominant",
+      "sound_changes": [
+        "Sinitic tones dropped entirely; the bare monosyllable kept as a light root (jiang>jang, si>si, cheng>cheng)",
+        "Sinitic isolating monosyllables fitted to Persian flowing vowels: a final consonant root may take a Persian -a/-ah, and short roots lengthen a vowel to scan (mi>maya, yu>yuva, ze>zaya)",
+        "Sinitic finals -n/-ng retained but Persian onset-clusters (xsh-, sp-, st-, fr-, thr-) permitted; no tone, no Sinitic retroflex zh/ch - they soften to sh/c/j",
+        "the ezafe '-i-' and the relation-particle '-ahya' bind compounds in place of Sinitic juxtaposition; Old-Persian end-weighted stress on all words",
+        "retain Persian th/x/f, the -aspa/-arta/-farnah endings and Arta-theophorics; very short Sinitic roots take a Persian vowel-ending to flow"
+      ],
+      "source_tilt": "river/silk/bureaucratic/material/trade words from Sinitic roots (the eastern river-cities and the caravan goods - silk, jade, tea, the mandarin office); rule/kin/court/land/quality/war words from Old Persian roots (the ruling court register); every root then filtered to one Old-Persian-shaped phonology so the split is invisible at the surface",
+      "portmanteaus": [
+        "city cheng+pura>chengpura",
+        "silk si+ardata>siyarda (silk-as-silver, the caravan coin)",
+        "fort zhai+dida>zhaida",
+        "temple-town miao+atashana>miyatasha",
+        "mandarin-seat (bureau-city) guan+pura>guanpura",
+        "son zi+puthra>ziputhra",
+        "daughter nu+duxta>nuduxta",
+        "mandate (heaven-glory) tian+farnah>tianfarnah",
+        "jade-road yu+patha>yuvapatha"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Sinitic river/silk/material/bureaucratic roots + Old-Persian rule/kin/court/land roots, all run through one Old-Persian-shaped sound-law (tones dropped, monosyllables fitted to flowing Persian vowels, bound by the ezafe); portmanteaus mark the silk-road institutions where the caravan-court and the mandarin order married. One language - Persian-shaped, Sinitic-substrated - not a slash list.",
+    "feature_words": {
+      "river": "jang",
+      "stream": "xiva",
+      "lake": "huva",
+      "sea": "draya",
+      "ocean": "vazraka-draya",
+      "bay": "wana",
+      "cape": "jiyaa",
+      "isle": "dava",
+      "mountain": "kaufa",
+      "hill": "linga",
+      "ridge": "ganga",
+      "forest": "vana",
+      "wood": "muva",
+      "plain": "ravah",
+      "marsh": "zaya",
+      "ford": "duva",
+      "pass": "guan",
+      "vale": "guva",
+      "coast": "anha",
+      "neck": "gardan",
+      "narrows": "xiya",
+      "waste": "huang",
+      "road": "patha",
+      "way": "luva",
+      "track": "pand"
+    },
+    "settlement_words": {
+      "hamlet": "cuna",
+      "village": "vis",
+      "town": "zhena",
+      "city": "chengpura",
+      "fort": "zhaida",
+      "port": "matava",
+      "market": "shiva",
+      "temple_town": "miyatasha",
+      "citadel": "vazraka-zhaida"
+    },
+    "kinship": {
+      "son": "ziputhra",
+      "daughter": "nuduxta",
+      "house": "vith",
+      "kin": "zuva",
+      "ancestor": "fravashi"
+    },
+    "adjectives": {
+      "great": "vazraka",
+      "little": "kasu",
+      "old": "guva",
+      "new": "nava",
+      "black": "syava",
+      "white": "spaita",
+      "red": "ruxsha",
+      "golden": "zaranya",
+      "iron": "ayah",
+      "high": "barzan",
+      "far": "duraya",
+      "sacred": "yazata",
+      "fair": "naiba",
+      "true": "arta",
+      "false": "drauga"
+    },
+    "resources": {
+      "salt": "yana",
+      "iron": "ayah",
+      "bronze": "raudha",
+      "silver": "ardata",
+      "gold": "zaranya",
+      "jade": "yuva",
+      "silk": "siyarda",
+      "grain": "maya",
+      "tea": "chava",
+      "horse": "aspa"
+    },
+    "directional": {
+      "upper": "upari",
+      "lower": "athah",
+      "north": "apaxtara",
+      "south": "nimroz",
+      "east": "ushastara",
+      "west": "shamtara",
+      "inner": "antar",
+      "outer": "para"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-pura (city of; Old Persian)",
+      "Dida- / -zhaida (fort of; Persian dida fused with Sinitic zhai)",
+      "Atash- (fire of; Old Persian)",
+      "-cheng (walled river-city; Sinitic substrate)",
+      "-guan (pass / frontier-gate; Sinitic)",
+      "-stana (place of; Old Persian)"
+    ],
+    "patronymic_form": "the Old-Persian court nobility carry a house (vith-X) and a satrapal/court office, with filiation 'X-ahya ziputhra' (son of X) or compact 'X-ziputhra'; the Sinitic mandarin populace keep a clan-root (zu) + given name and an examination-rank; the throne fuses both - a Shah who carries a vith-house and holds the Mandate over the cheng-cities.",
+    "gendered_endings": {
+      "male": "-a / -ah / -aspa / -arta (Persian court); a clan-root + auspicious given (Sinitic substrate)",
+      "female": "-a / -i / -duxta / -banu (Persian court); flower/jade-meaning given (Sinitic substrate)"
+    },
+    "diminutive_form": "-aka / -ka (Persian) / Xiao- prefix (Sinitic)",
+    "compounding_rule": "Old-Persian ezafe and relation-construct ([noun]-i-[qualifier]: rud-i-zar, river-of-gold; Arta-xshaca, truth-realm; X-ahya) layered over Sinitic feature+type juxtaposition (Jang-cheng, river-city; Yuva-patha, jade-road): the capital Zarhua (Zar-hua, the golden river-flower), Dida-Turvasa (fort of Turvasa), Jang-pura (the river-city)."
+  },
+  "title_ladder": {
+    "government": "feudal (an Old-Persian caravan-court over the Sinitic mandarin cities: the Shah and his vith-kin at the crown holding the Mandate, the satrap-governors over the cheng-provinces, the asabara cavalier-retainers sworn to the road; the mandarin shi-officials and the magi-scribes serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Vispati",
+        "domain_native": "Vis"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marzapana",
+        "domain_native": "Marz"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Framatar",
+        "domain_native": "Parada"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Xshacapavan",
+        "domain_native": "Xshacapavanam"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Vispuhra",
+        "domain_native": "Dahyu"
+      },
+      "kingdom": {
+        "ruler": "Shah",
+        "domain": "Kingdom",
+        "ruler_native": "Xshayathiya",
+        "domain_native": "Xshacam"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Xshayathiya Xshayathiyanam",
+        "domain_native": "Vispa-Dahyu"
+      }
+    },
+    "_tiers_note": "Old-Persian ladder, ascending, with the Sinitic mandarin substrate beneath. Vispati (clan-lord of a vis) barony; Marzapana (march-warden, the marzban) march; Framatar (appointed director/governor) county over a Parada; Xshacapavan (SATRAP, protector of the realm) duchy over a satrapy; Vispuhra (prince of the blood) principality over a great province (Dahyu); Xshayathiya (king) kingdom - DISPLAYED as Shah (the approved foreign term, commonly-known) - over a Xshacam; Xshayathiya Xshayathiyanam (King of Kings) empire over the Vispa-Dahyu, all the lands. The eastern cities keep their Sinitic Dudu (frontier military command) and the mandarin Bo/Hou peerage and the shi-officials beneath the Persian crown; the magi (Magu) and the scribal mandarins stand outside the ladder. Rank DISPLAY titles are English (with Shah at kingdom); the Old-Persian *_native forms are for dialogue.",
+    "heir": "Mathishta (the greatest; crown prince) / Visa-ziputhra (the Shah's son; the heir)",
+    "honorifics": {
+      "lord": "Khvatava / Daren (Sinitic official)",
+      "lady": "Banuka / Furen (Sinitic)",
+      "champion": "Asabara (Persian cavalier) / Wushi (Sinitic warrior)",
+      "your_grace": "Khvatava",
+      "your_majesty": "Xshayathiya (the Shah)",
+      "elder": "Mathishta (the greatest / eldest)"
+    },
+    "vassalage": {
+      "liege": "Khvatava",
+      "vassal": "Bandaka (the Shah's loyal bondsman) / Chen (Sinitic subject)",
+      "fealty": "Bandaka (the bond) / Mengyue (Sinitic sworn covenant)",
+      "tribute": "Baji (tribute) / Gongfu (Sinitic tribute-due)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, with the approved foreign term 'Shah' at the kingdom tier (commonly-known, recorded in approved_foreign_terms_used). The *_native conlang forms (Old-Persian, with Sinitic co-titles) are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Xshayathiya Xshayathiyanam": "Xshayarsha-banu",
+      "Xshayathiya": "Xshayathi-banu",
+      "Vispuhra": "Vispuhri",
+      "Xshacapavan": "Xshacapavi",
+      "Framatar": "Framatri",
+      "Marzapana": "Marzapani",
+      "Vispati": "Vispatni"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Shah": "Shahbanu",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Shah (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Old-Persian court nobility carry a theophoric or Arta-/Vahu- virtue given-name + filiation (X-ziputhra) + a vith-house and office; the Sinitic mandarin stock carry a clan-root + an auspicious given name + an examination-rank; order given-first for the Persian court, clan-first for the mandarin substrate, with the court register prevailing at the throne.",
+    "surname_source": [
+      "Old-Persian house (vith-X)",
+      "filiation (X-ziputhra = son-of-X)",
+      "Sinitic clan-root (zu)",
+      "office (satrap, marzban, mandarin-rank) or earned silk-road epithet"
+    ],
+    "dual_register": "the Persian caravan-court nobility carry a vith-house, a theophoric/virtue name and a court-satrapal office; the Sinitic mandarin city-folk carry a clan-root + auspicious given name and an examination-rank.",
+    "theophoric": "Persian court names from the shifted deity-stems + an Old-Persian element: Baga-X (god-X), X-data (X-given), X-farnah (glory-of-X), Vahu-X (good-X), Arta- (truth-): Turvasa-data, Baga-Urlaspa, Artafarnah, Vahu-Arzanta; the Sinitic substrate invokes the celestial powers' epithets and the Mandate (Tian-en, heaven's grace) on the Sinitic morph-stems (Tuli-, Gaidun-).",
+    "diminutive": "-aka / -ka (Persian) / Xiao- prefix (Sinitic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Old-Persian-shifted reflexes PRIMARY (the Axsatran set: Turvasa, Urlaspa, Naumana, Arzanta, Gayanta, Riyata, Asturna), Sinitic morphs SECONDARY (the Jinxian / family_east_asian sinitic set: Tuli-di, Gaidun-di, Numeng-jun, Lianta-mu), recognizably the same powers under two faces, never real Iranian/Zoroastrian/Chinese gods. Lawful henotheist but TOLERANT (the silk-road empire shelters its subject cults): Asturna the Wise Lord Most High upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Mandate of Heaven (morphed Tian-farnah) legitimizes the Shah; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie. All three alignments are playable.",
+    "the_one": "Asturna (< Aeternus / the Persian-shifted Itarnu; the Sinitic face Aiteng, the Highest Heaven) - the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory and the Mandate, revered above His ministers, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Turvasa (Sinitic Tuli-di) - the sun and Arta, lamp of right-order; Lawful",
+      "Orlandus": "Urlaspa (Sinitic Aolan) - the iron-oath, war and the cavalier; Lawful",
+      "Numeno": "Naumana (Sinitic Numeng-jun) - the good mind, wisdom and the law; Lawful",
+      "Argentus": "Arzanta (Sinitic Argan) - trade, the silk-road and increase; Lawful",
+      "Gaiandus": "Gayanta (Sinitic Gaidun-di) - the enduring earth and mountain",
+      "Realta": "Riyata (Sinitic Lianta-mu) - the Lady of Waters, mother and mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Asturna the Wise Lord, Turvasa of Arta, Urlaspa of the sworn war, Riyata the merciful - upholds Arta against Drauga the Lie, and names the Chaotic powers the hosts of the Lie, warded; the Shah's farnah and the Mandate of Heaven bind the realm.",
+      "Neutral": "honors the fravashi (the honored fore-spirits) of the court-houses and the Sinitic zu-ancestors and the local earth-and-grain and river powers; the great powers invoked at the fire-altar and the miao situationally; the road and the harvest kept.",
+      "Chaotic": "Venerates the Chaotic powers of the canon, the hosts of Drauga, and names the Lawful powers - and Asturna - as the tyrant-gods to be defied; the Lie made a creed."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the hosts of Drauga the Lie (Sinitic mo, demon-marshals), keep their shifted morph + a hostile portfolio-epithet: Maraxus -> Marakhsha the Burner-of-Cities (Sinitic Maluo the War-Fire Marshal); Vacidus -> Vakida the Devouring-Void (Sinitic Wuci the Devourer); Lusanto -> Lusanta the Coin-Serpent (Sinitic Lusan; the Lie made gold).",
+    "clergy_ladder": {
+      "1": "Athravan (fire-tender acolyte) / Daoshi-tu",
+      "3": "Magu (magus / priest) / Daoshi",
+      "5": "Magupati (chief magus of a fire-temple) / Fashi (ritual-master)",
+      "7": "Dahyu-Magupati (provincial chief magus) / Gaogong (high priest)",
+      "9": "Magupatan Magupat (the chief of chief magi) / Tianshi (celestial master)"
+    },
+    "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana), or the Sinitic Miao (temple) of [power]: 'the Atashana of Turvasa', 'the Miao of Tuli-di'; the magi keep the ever-burning fire (Atar) on the altar.",
+    "saints_pattern": "the honest dead and the just shahs and worthy mandarins, kept as fravashi (fore-spirits) and enrolled in the celestial register, petitioned at the fire-altar and the ancestral Ci (clan-shrine); 'the Arta-true [name]' (the righteous [name]).",
+    "holy_symbol_motifs": {
+      "Asturna": "a winged ring-disc (the farnah-glory) above a fire-altar, ringed by the silk-road circuit",
+      "Turvasa": "a rayed sun above the upright Arta-measure and the seal of office",
+      "Urlaspa": "an iron spear crossed with an oath-ring over the caravan-standard"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-barge and silk-road caravan-names (a land-and-river empire's few craft): 'Bearer of the Baji', 'the Farnah', 'Boat of Arzanta', 'the Jade Junk of the Jang'",
+    "military_units": "the [number/power] Spada (host) and the cavalier wings and the city banners: 'the Spada of Urlaspa', 'the Ten-Thousand (Anushiya)', 'the Azure Banner of the Jang'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Farnah', 'The Cup of Truth (Arta-jam)', 'The Silk and Jade'",
+    "dungeons_ruins": "fallen apadana-halls and dead fire-temples and ruined frontier-cheng: 'the dead Atashana of [name]', 'the buried Apadana of Dida-[name]', 'the Ruined Cheng of [satrap]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Turvasa-data",
+      "Baga-Urlaspa",
+      "Artafarnah",
+      "Vahu-Arzanta",
+      "Asturna-data",
+      "Artaxshathra",
+      "Vishtaspa",
+      "Naumana-data",
+      "Aryabarza",
+      "Urlaspa-farnah",
+      "Arta-ziputhra",
+      "Vindafarnah",
+      "Si-aspa (the silk-rider)",
+      "Jang-data (river-given)",
+      "Tuli-farnah",
+      "Bagabuxsha"
+    ],
+    "personal_f": [
+      "Riyata-banu",
+      "Artaduxta",
+      "Vahudata",
+      "Atusa",
+      "Parisata",
+      "Riyata-farnah",
+      "Banuka-Arta",
+      "Naumana-banu",
+      "Artazata",
+      "Vispa-banu",
+      "Roshanak",
+      "Yuva-duxta (jade-daughter)",
+      "Lianta-banu",
+      "Gayanta-duxta"
+    ],
+    "clan_houses": [
+      "Vith-Turvasa",
+      "Vith-Urlaspa",
+      "Vith-Naumana",
+      "Vith-Arzanta (the silk-road house)",
+      "Vith-Asturna",
+      "Vith-Vishtaspa",
+      "Vith-Aryabarza",
+      "Vith-Vindafarnah",
+      "the Zu-Jang (the river-clan)",
+      "the Zu-Si (the silk-clan)",
+      "Vith-Tirvana",
+      "the Zu-Cheng (the city-clan)"
+    ],
+    "epithets_cognomina": [
+      "the Arta-true (the Honest)",
+      "Friend-not-of-the-Lie",
+      "the Far-rider of the Silk-Road",
+      "Gold-giver",
+      "the Shah's Bandaka",
+      "Road-builder",
+      "the Tolerant",
+      "Spear-of-Urlaspa"
+    ],
+    "flagship_settlements": [
+      "Zarhua (the throne-city; Zar-hua, the golden river-flower)",
+      "Atashana-Turvasa (the great fire-temple town)",
+      "Dida-Vazraka (the great citadel)",
+      "Jang-pura (the river-city of the silk-road)",
+      "Marz-Ushastara (the eastern march-seat, toward the sunrise)",
+      "Yuva-cheng (the jade-city of the caravan-road)"
+    ]
+  }
+}
