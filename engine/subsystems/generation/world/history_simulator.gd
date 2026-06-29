@@ -56,6 +56,7 @@ var _river_edge_any: Dictionary  # "q,r,e" -> true for ANY river edge, both widt
 var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
 var _ocean_id: Dictionary = {}        # ocean Vector2i -> connected-ocean id (sea-lane validity)
 var _coastal_oceans: Dictionary = {}  # coastal land Vector2i -> {ocean id: true} it borders
+var _sea_lane_neighbors: Dictionary = {}  # coastal Vector2i -> Array[Vector2i] coastal hexes within sea_lane_range sharing an ocean (§5.3 overseas)
 var _expand_jitter_by_hex: Dictionary = {}  # land Vector2i -> §7.2 expansion tie-break factor
 var _terrain_mult_cache: Dictionary = {}  # culture_id -> {Vector2i -> mult} (terrain is static)
 
@@ -117,6 +118,7 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 	_n_ticks = _params.history_ticks()
 	_build_ordered_keys()
 	_precompute_ocean_components()   # §7.4d: sea lanes require a shared ocean body
+	_precompute_sea_lanes()          # §5.3: static coastal sea-lane adjacency for overseas expansion
 	_precompute_expand_jitter()      # §7.2: break the canonical-tie expansion strip bias
 	_build_river_barriers(ctx.get("river_edges", []))
 	_precompute_edge_damp()
@@ -824,6 +826,30 @@ func _compute_frontier(pol: Dictionary) -> Array:
 				"river_crossed": river_crossed,
 				"settle": is_settle,
 			})
+	# §5.3 overseas frontier: a POPULATED coastal hex can colonize EMPTY coastal hexes
+	# reachable by sea lane (≤ sea_lane_range, shared ocean — the same test contiguity uses,
+	# so the colony stays bridged until war breaks the link). Land-adjacent targets are
+	# already in `seen` from the loop above, so this only adds genuine over-water targets.
+	# Colonization of empty land only — no amphibious contest (that is war, _phase_war).
+	var overseas_dist := {}   # target Vector2i -> nearest owned-coastal hop distance
+	for key in pol["hexes"]:
+		if int(_grid[key]["population_band"]) <= 0 or not _sea_lane_neighbors.has(key):
+			continue
+		for tgt in _sea_lane_neighbors[key]:
+			if seen.has(tgt) or str(_grid[tgt]["owner_polity_id"]) != "":
+				continue
+			var d := _hex_distance(key, tgt)
+			if not overseas_dist.has(tgt) or d < int(overseas_dist[tgt]):
+				overseas_dist[tgt] = d
+	for tgt in overseas_dist:
+		seen[tgt] = true
+		var pref := _expansion_preference(pol, tgt)
+		var mult: float = _terrain_mult(pol, tgt) * float(_expand_jitter_by_hex.get(tgt, 1.0)) \
+				* pref * _sea_cross_factor(int(overseas_dist[tgt]))
+		out.append({
+			"hex": tgt, "mult": mult, "pref": pref,
+			"river_crossed": false, "settle": true, "overseas": true,
+		})
 	return out
 
 
@@ -2242,6 +2268,35 @@ func _shared_ocean(a: Vector2i, b: Vector2i) -> bool:
 		if ia.has(id):
 			return true
 	return false
+
+
+## §5.3: the static coastal sea-lane adjacency graph. For every coastal land hex, the
+## OTHER coastal land hexes within `sea_lane_range` that share an ocean body — the set of
+## overseas colonization targets a settlement there could reach. Ocean + coast never change,
+## so this is precomputed once. Neighbour lists are canonically sorted for determinism. It
+## reuses the SAME range/shared-ocean test as `_connected_components`, so any colony this
+## founds is, by construction, sea-bridged to its launch hex until war breaks the link.
+func _precompute_sea_lanes() -> void:
+	_sea_lane_neighbors = {}
+	var coastal: Array = _coastal_oceans.keys()
+	coastal.sort_custom(_canonical_less)
+	for c in coastal:
+		var neighbors: Array = []
+		for other in coastal:
+			if other == c:
+				continue
+			if _hex_distance(c, other) <= _c.sea_lane_range and _shared_ocean(c, other):
+				neighbors.append(other)
+		if not neighbors.is_empty():
+			_sea_lane_neighbors[c] = neighbors
+
+
+## §5.3 soft sea-crossing cost: the expansion-mult factor for an overseas target [param d]
+## sea-hexes from its nearest owned coastal launch hex (1..sea_lane_range). Near colonies
+## are preferred; overseas is generally dispreferred vs contiguous land. Within the hard
+## sea_lane_range cap (no colony is ever founded beyond it).
+func _sea_cross_factor(d: int) -> float:
+	return _c.sea_cross_base * pow(_c.sea_cross_decay, float(maxi(0, d - 1)))
 
 
 ## §7.2 expansion tie-break jitter. A small, deterministic, per-hex factor so equal-

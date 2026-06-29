@@ -12,6 +12,7 @@ extends Node
 @onready var _controller_tests = $HexMapControllerTests
 @onready var _climb_resolver_tests = $ClimbResolverTests
 @onready var _territory_cap_tests = $TerritoryCapTests
+@onready var _overseas_tests = $OverseasTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -600,7 +601,7 @@ func run() -> void:
 	var passed := 0
 	var failed := 0
 
-	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _override_tests, _dice_tests,
+	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _overseas_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests, _hp_roll_panel_tests,

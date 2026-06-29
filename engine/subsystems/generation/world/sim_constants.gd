@@ -435,6 +435,20 @@ var consolidate_rate: float = 0.5
 var saturation_hex_fraction: float = 0.75
 var saturation_pop_fraction: float = 0.50
 
+# --- §5.3 Overseas expansion (PEACEFUL colonization of empty coastal land) ------
+# A coastal polity (owns a POPULATED coastal hex) may colonize an EMPTY coastal hex
+# reachable by SEA LANE — within `sea_lane_range` (the SAME 10-hex limit §7.4d contiguity
+# uses). Reusing that one distance keeps colonization, contiguity, and the war-split rule
+# in lockstep: a colony stays bridged to the realm while linked, and AUTO-SECEDES via
+# `_phase_contiguity` the moment war stretches its nearest sea link past the range (ancient
+# realms can't govern across more open water than that — Jedidiah 2026-06-29). No stored
+# sea-link marker is needed; connectivity is recomputed live from geometry every tick.
+# A soft, distance-scaled SEA_CROSS_COST keeps it sane: near colonies are preferred and
+# overseas is generally dispreferred vs contiguous land. No amphibious CONTEST of enemy
+# hexes here (that is war, _phase_war). [PROVISIONAL]
+var sea_cross_base: float = 0.6     # expansion-mult factor at the nearest (1-hex) sea hop
+var sea_cross_decay: float = 0.92   # × per extra hex of sea distance: 0.6·0.92^(d-1)
+
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5

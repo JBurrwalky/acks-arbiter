@@ -36982,3 +36982,36 @@ on-tick dispatch.
 - Then Phase 4 (hybrid emergence — highest arch risk, Opus review).
 - Backlog: ascendant-polity pop-growth boost (the agreed compensation lever if coverage dips); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
 **Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), + this (P3b).
+
+## Session 2026-06-29 — Culture emergence Phase 3c: overseas expansion (§5.3)
+
+**Task:** Phase 3c (handoff §5.3, the Opus-review gate — touches the §7.4d contiguity contract). Coastal polities colonize empty coastal hexes across short sea gaps; colonies must respect the 10-hex sea-lane governance distance and SPLIT off if war stretches their nearest sea link past it.
+**Model used:** Opus 4.8 (design review, implementation, calibration + test verification).
+**Completed:**
+- **Design ruling (Jedidiah, this session):** REVISE the handoff's "no hard distance cap" — overseas reach is capped at `sea_lane_range` (the SAME 10-hex limit §7.4d contiguity uses). No one governs/fights across more open water than that (migrations, a later phase, are the exception). A realm that loses the coast keeping its colony within range must SPLIT.
+- **The reuse-`sea_lane_range` insight:** because overseas reach == the contiguity sea-lane range, the split is AUTOMATIC and needs NO new code. A colony ≤10 hex (shared ocean) is in the capital's `_connected_components` component → never severed; the moment war pushes its nearest link past 10, it drops out of that component → existing `_phase_contiguity` sheds it (secede / absorb / revert). No stored sea-link marker needed (connectivity is recomputed live from geometry).
+- **`HistorySimulator._precompute_sea_lanes`** (hooked after `_precompute_ocean_components` in `run()`): builds `_sea_lane_neighbors` (static — each coastal land hex → coastal hexes within `sea_lane_range` sharing an ocean; same distance + shared-ocean test contiguity uses).
+- **`HistorySimulator._compute_frontier`** now appends an overseas-frontier block: for each POPULATED owned coastal hex, its EMPTY sea-lane neighbours become settle entries (`overseas=true`), weighted by `_sea_cross_factor(d)` = `sea_cross_base · sea_cross_decay^(d-1)`. Land frontier processed first so land-adjacent targets win the `seen` dedup. Colonization of EMPTY land only — no amphibious contest (that is war). `_settle_wilderness` (existing) plants the colony.
+- **`SimConstants`**: `sea_cross_base=0.6`, `sea_cross_decay=0.92` (PROVISIONAL). Reuses `sea_lane_range`.
+- **New suite `tests/test_setting_overseas.gd`** (15 checks, registered): sea-lane precompute links within range / not beyond; overseas frontier includes a reachable empty coast (flagged overseas, positive weight) but not an enemy-owned one; depopulated coast can't launch; colony within range = one component (not severed); colony beyond range = separate component (the split).
+**Decisions made:**
+- Reach == `sea_lane_range` (one governing distance for colonization + contiguity + split). Confirmed with Jedidiah before building.
+- Launch requirement = owns a POPULATED coastal hex ("coastal settlement of any size"; no civ/size gate). Any non-beastman coastal polity (beastmen never reach `_compute_frontier`).
+- Colonization of empty coastal land only; amphibious WAR is out of scope for 3c.
+- Soft distance-decayed `SEA_CROSS_COST` keeps colonies sane (near preferred, overseas dispreferred vs contiguous land) — PROVISIONAL.
+**Interfaces defined or changed:**
+- `HistorySimulator`: new member `_sea_lane_neighbors`; new methods `_precompute_sea_lanes()`, `_sea_cross_factor(d)`. `_compute_frontier` entries may carry `overseas=true`.
+- `SimConstants`: `sea_cross_base`, `sea_cross_decay`.
+**Database changes:** None. (No sea-link marker / column — the handoff's suggested marker is redundant; connectivity is geometry-derived live.)
+**Tests added/updated:**
+- New `SettingOverseasTests` — 15 checks, all pass.
+- Full suite **477 passed / 16 failed** (warm-DB run 2; run 1 on fresh DB is the documented FK-noise artifact, ignore). 477 = prior 476 + the new suite; the 16 are the known unrelated combat/proficiency/ZoC failures. Zero new failures; determinism + all setting-stage suites green.
+- **Calibration (overseas ON, Large×12):** wilderness 64.2 / civ_owned 69.8 / unowned 25.8 / realms 31.0 / indep_civ 13.3 — vs 3b 59.2 / 69.8 / 24.8 / 31.1 / 13.6. Wilderness +5 (new colonies are wilderness-CLASS frontier), concentrated on high-coastline/archipelago seeds (1005/1006/1008/1011); civ_owned, unowned, realm counts neutral (no fragmentation). Within the accepted coverage envelope (compensate via ascendant pop growth if wanted).
+**Known issues:**
+- Overseas colonies raise wilderness % on heavy-coastline maps (colonies are frontier). Expected, not a carpet. `sea_cross_base` is the lever if colonies want to be more selective.
+- River-border (3b) + colony aesthetics still not visually verified in-engine — recommend eyeballing the political map with the renderer.
+- `_compute_frontier` overseas block is O(coastal-owned × sea-lane-neighbours) per polity per tick; the per-pair sea-lane graph is precomputed once (ocean/coast are static).
+**Next session should:**
+- **Phase 4 — hybrid culture emergence** (`culture_synthesis_parents`): first-order hybrids emerge at runtime where base cultures meet. HIGHEST architecture risk in the arc; Opus review. The 54 hybrid naming kits + 122 name banks are already built (P1); this wires mechanical emergence.
+- Backlog: ascendant-polity pop-growth boost (the agreed coverage-compensation lever); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap. P5 (clanhold migration) still DEFERRED.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), ed30921 (P3b), + this (P3c). PHASE 3 COMPLETE.
