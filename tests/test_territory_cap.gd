@@ -13,6 +13,7 @@ func run_all_tests() -> void:
 	test_helpers()
 	test_deforestation_steps()
 	test_cleared_subtype_mapping()
+	test_reforestation_targets()
 	if not has_failures():
 		print("TerritoryCapTests: all tests passed (%d checks)" % test_count())
 
@@ -133,6 +134,36 @@ func test_cleared_subtype_mapping() -> void:
 		"clear_scrub caps at Borderlands (terminal)")
 	check(TerritoryCap._human_biome_cap("clear", "clear_grassland", false) == "civilized",
 		"clear_grassland unlocks Civilized")
+
+
+func test_reforestation_targets() -> void:
+	# A was-forest clear hex regrows to the climate's non-dense climax; needs a woods neighbor (natural).
+	var t1 := Deforestation.reforest_target("clear", "clear_grassland", "woods", "Cfb", false)
+	check(t1.get("biome") == "woods" and t1.get("subtype") == "" and t1.get("needs_neighbor") == "woods",
+		"clear(was woods) -> plain forest, needs woods neighbor")
+	# Cold band regrows to taiga.
+	var t2 := Deforestation.reforest_target("clear", "clear_steppe", "woods", "Dfc", false)
+	check(t2.get("biome") == "woods" and t2.get("subtype") == "forest_taiga",
+		"clear(was woods, cold) -> taiga")
+	# A was-jungle clear hex regrows to jungle (needs a jungle neighbor).
+	var t3 := Deforestation.reforest_target("clear", "clear_savanna", "jungle", "Aw", false)
+	check(t3.get("biome") == "jungle" and t3.get("needs_neighbor") == "jungle",
+		"clear(was jungle) -> jungle")
+	# A NEVER-forest clear hex does not afforest.
+	check(Deforestation.reforest_target("clear", "clear_grassland", "", "Cfb", false).is_empty(),
+		"naturally-clear hex does not afforest")
+	# Plain forest -> dense is ELVEN-only, and only where dense is the climate climax.
+	check(Deforestation.reforest_target("woods", "", "woods", "Cfb", true).get("subtype") == "forest_dense",
+		"elf restores plain forest -> dense (temperate)")
+	check(Deforestation.reforest_target("woods", "", "woods", "Cfb", false).is_empty(),
+		"natural reforestation stops at plain forest (no dense)")
+	check(Deforestation.reforest_target("woods", "", "woods", "Dfc", true).is_empty(),
+		"elf does not grow dense in a taiga (cold) climate")
+	# Climax biomes have no up-step.
+	check(Deforestation.reforest_target("woods", "forest_dense", "woods", "Cfb", true).is_empty(),
+		"dense forest is at climax")
+	check(Deforestation.reforest_target("jungle", "", "jungle", "Af", true).is_empty(),
+		"jungle is at climax")
 
 
 func test_helpers() -> void:

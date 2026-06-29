@@ -31,6 +31,35 @@ static func next_step(biome: String, subtype: String, koppen: String) -> Diction
 	return {"biome": biome, "subtype": subtype}
 
 
+## The ONE up-step a reforesting hex takes toward its original/climax state (§5.4),
+## or {} when the hex is already at its ceiling. Reforestation reverses deforestation
+## stepwise: clear → forest/jungle, then (ELVEN only) plain forest → dense.
+##   - Only a WAS-FOREST clear hex regrows (original_biome ∈ {woods, jungle}); a
+##     naturally-clear hex never afforests.
+##   - Natural ceiling is "Forest" (the climate's non-dense climax: taiga for cold,
+##     else plain); elves restore the dense/jungle climax too.
+##   - `needs_neighbor` (a biome string, "" = none) is the natural seed-source
+##     requirement; elves are exempt (the caller skips it when elven).
+## The caller owns the per-tick rate + threshold (SimConstants.reforest_* /
+## clear_ticks_step); jungle uses reforest_ticks_jungle, others clear_ticks_step.
+static func reforest_target(biome: String, subtype: String, original_biome: String,
+		koppen: String, elven: bool) -> Dictionary:
+	if biome == "clear":
+		if original_biome == "jungle":
+			return {"biome": "jungle", "subtype": "", "needs_neighbor": "jungle"}
+		if original_biome == "woods":
+			# regrow to the climate's non-dense climax (taiga for cold, else plain forest)
+			var sub := "forest_taiga" if (koppen == "Dfc" or koppen == "Dfd") else ""
+			return {"biome": "woods", "subtype": sub, "needs_neighbor": "woods"}
+		return {}   # naturally-clear (never-forest) hex — no original to restore to
+	if biome == "woods" and subtype == "":
+		# plain forest → dense: ELVEN only, and only where dense is the climate climax
+		if elven and (koppen == "Cfa" or koppen == "Cfb" or koppen == "Dfa" or koppen == "Dfb"):
+			return {"biome": "woods", "subtype": "forest_dense", "needs_neighbor": ""}
+		return {}
+	return {}   # dense / taiga / jungle are at the climax — no up-step
+
+
 ## §5.3 climate-band → cleared `clear` subtype. Keyed on the persisted Köppen code
 ## (setting_hexes.koppen) and the source woodland subtype. Taiga always clears to
 ## steppe; tropical → savanna; arid → scrub (Borderlands-terminal, §5.2);

@@ -36889,3 +36889,36 @@ on-tick dispatch.
 - Wire the runtime classification resolver (`classification_advancement.gd`) + a runtime EventScheduler deforestation phase with the market-class accelerator.
 - Phase 3 (expansion constraints), then Phase 4 (hybrid emergence — Opus review).
 **Commits:** 62ca2e9 (P1), 31d1cfb (P2a), + this (P2b).
+
+## Session 2026-06-29 — Culture emergence Phase 2c: reforestation (natural + elven)
+
+**Task:** Complete Phase 2 (handoff §4) — reforestation: depopulated was-forest land regrows, and elf-held land is actively reforested, reversing the §5.4 deforestation steps.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **`Deforestation.reforest_target(biome, subtype, original_biome, koppen, elven)`** (pure): the ONE up-step toward original/climax, or {} at the ceiling. Only a WAS-FOREST clear hex regrows (`original_biome` ∈ {woods, jungle}) — naturally-clear grassland never afforests. clear → climate climax (taiga for cold, else plain forest); clear(was-jungle) → jungle; plain forest → dense is ELVEN-only and only where dense is the climate climax (Cfa/Cfb/Dfa/Dfb). `needs_neighbor` = the natural seed-source biome ("" = none); elves are exempt.
+- **`HistorySimulator._phase_reforestation`** (new 4a phase, after deforestation in both tick paths): iterates `_land_keys`. Rate by mode — depopulated (pop==0) → natural +1/tick; elf-dominant held (pop>0) → elven +2/tick. A was-forest clear/plain hex accrues `clearing_progress` (reused as up-progress) toward the step threshold (`reforest_ticks_jungle=15` for jungle, else `clear_ticks_step=20`), then flips the biome up and resets. Natural requires a target-biome neighbor (`_has_neighbor_biome`); elves don't. At-climax / not-a-was-forest hexes instead REVERSE any in-progress clearing (drain clearing_progress). Deterministic (no RNG).
+- **Constants** (`sim_constants.gd`, PROVISIONAL): `reforest_rate_natural=1`, `reforest_rate_elf=2`, `reforest_rate_elf_adj=3` (runtime), `reforest_ticks_jungle=15`.
+**Decisions made:**
+- **clearing_progress is reused for up-progress** (the two directions are mutually exclusive per hex per tick — deforestation is human pop>0; reforestation is pop==0 or elf-held). The one ambiguous biome (plain forest, which can clear-down OR elven-regrow-up) is disambiguated by actor: the elven-dense branch treats progress as up; everything else drains it down.
+- **Natural ceiling is Forest/taiga, not Dense** (§5.4); only elves restore the dense climax. A cold-band cleared hex regrows to taiga (its local climax), not generic plain forest.
+- **Sim-time elven rate is uniform +2** — the §5.4 `+3`-adjacent-to-elven-settlement uses the runtime settlement set (deferred, same reason as 2b's `+2`).
+- **Only was-forest clear hexes regrow** (`original_biome` set); virgin grassland never afforests, even for elves ("restore toward original_biome" — no original, no target).
+**Interfaces defined or changed:**
+- `Deforestation.reforest_target(...)` (pure; shared by sim + future runtime phase).
+- `HistorySimulator._phase_reforestation`/`_reforest_hex`/`_has_neighbor_biome` (new); `_phase_reforestation` is the 13th tick phase (after deforestation).
+- `SimConstants.reforest_rate_natural/reforest_rate_elf/reforest_rate_elf_adj/reforest_ticks_jungle`.
+**Database changes:**
+- None (reuses `setting_hexes.clearing_progress` from migration 178).
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_reforestation_targets` (TerritoryCapTests now 58 checks): climate-climax regrowth, was-jungle→jungle, no-afforestation of virgin clear, elven-only dense, climax biomes have no up-step.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged; zero new failures). Determinism green. Calibration smoke wilderness **69.3% → 72.9%** (reforestation regrowing depopulated land — the cap↔deforest↔reforest cycle now balances ~73%).
+**Known issues:**
+- Elven `+3`-adjacent + the runtime EventScheduler reforestation/deforestation phases (6-mile gameplay) NOT built — sim-time only.
+- Rare cross-actor edge: a human partially clears a plain forest, then elves restore to dense — the residual down-progress is read as up-progress (bounded ≤ threshold ticks). Accepted for v1.
+- Runtime `classification_advancement.gd` cap-gating still unwired (Phase 2a follow-on).
+- Parallel editor work (`hex_map_renderer_3d.gd`, `assets/wilderness_kit/`) still uncommitted in the tree — not mine; left untouched. Phase 2c committed with ONLY my files.
+**Next session should:**
+- **Phase 3 — expansion constraints** (handoff §5): cap-aware unfavorable-terrain avoidance (§4.6 per-race preference order), natural-borders preference (rivers/coast/mountain-spine + the consolidate-before-expand saturation gate), overseas expansion (coordinate with §7.4d contiguity — Opus review). Hook `_phase_expansion`/`_resolve_contest` frontier scoring + `sim_constants` weights.
+- Then Phase 4 (hybrid emergence — highest arch risk, Opus review). Phase 5 (clanhold migration) DEFERRED.
+- Backlog: runtime EventScheduler deforestation/reforestation phases + market/settlement accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), + this (P2c). Phase 2 COMPLETE.

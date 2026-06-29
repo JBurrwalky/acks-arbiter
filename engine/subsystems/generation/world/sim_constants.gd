@@ -348,9 +348,16 @@ var classification_advance_fraction: float = 0.60
 # SIM-TIME NOTE: the §5.4 "+2/tick adjacent to a market class III+ settlement"
 # accelerator is a RUNTIME-phase feature (market class is assigned at Layer 6,
 # after the history sim) — the sim uses the uniform base rate.
-var clear_ticks_step: int = 20        # Dense Forest → Forest, and Forest → Clear
+var clear_ticks_step: int = 20        # Dense Forest → Forest, Forest → Clear, and Clear → Forest regrowth
 var clear_ticks_jungle: int = 30      # Jungle → Clear (slower)
 var clear_rate_base: int = 1          # clearing_progress accrued per tick (sim-time, uniform)
+# Reforestation (§5.4). Natural runs on depopulated (pop-0) hexes; elven on
+# elf-held hexes. SIM-TIME NOTE: the §5.4 "+3/tick adjacent to an elven settlement"
+# uses the runtime settlement set — the sim uses the uniform elf rate. [PROVISIONAL]
+var reforest_rate_natural: int = 1    # +1/tick on a depopulated was-forest hex
+var reforest_rate_elf: int = 2        # +2/tick on an elf-held hex
+var reforest_rate_elf_adj: int = 3    # +3/tick next to an elven settlement (RUNTIME phase)
+var reforest_ticks_jungle: int = 15   # Clear → Jungle regrowth (faster than it cleared)
 
 # --- Migration (§8) ---------------------------------------------------------
 var migrant_fraction: float = 0.30

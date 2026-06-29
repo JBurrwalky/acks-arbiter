@@ -184,6 +184,7 @@ func _tick(tick: int) -> void:
 		_phase_substrate(tick)    # 4a
 		_phase_demography(tick)   # 4a
 		_phase_deforestation(tick) # 4a — graduated clearing past the §4 biome cap
+		_phase_reforestation(tick) # 4a — depopulated/elf regrowth (reverses clearing)
 		_phase_log(tick)          # 4g
 		return
 	# Profiling path (set `_profile = true`) — accumulates per-phase microseconds
@@ -202,6 +203,7 @@ func _tick(tick: int) -> void:
 	_phase_substrate(tick); t = _mark("substrate", t)
 	_phase_demography(tick); t = _mark("demography", t)
 	_phase_deforestation(tick); t = _mark("deforestation", t)
+	_phase_reforestation(tick); t = _mark("reforestation", t)
 	_phase_log(tick); t = _mark("log", t)
 
 
@@ -567,6 +569,67 @@ func _accrue_clearing(key: Vector2i) -> void:
 	hex["biome"] = str(step["biome"])
 	hex["biome_subtype"] = str(step["subtype"])
 	hex["clearing_progress"] = 0
+
+
+# ---------------------------------------------------------------------------
+# 4a — Reforestation (§5.4): a depopulated was-forest hex regrows naturally, and an
+# elf-held hex is actively reforested. Reverses deforestation stepwise (clear →
+# forest/jungle → [elven] dense). Reuses clearing_progress as up-progress; only a
+# was-forest clear hex (original_biome set) regrows. Deterministic (no RNG). Runs
+# after deforestation; the two never touch the same hex in a tick (deforestation is
+# human pop>0; reforestation is pop==0 or elf-held).
+# ---------------------------------------------------------------------------
+
+func _phase_reforestation(_tick: int) -> void:
+	for key in _land_keys:
+		_reforest_hex(key)
+
+
+func _reforest_hex(key: Vector2i) -> void:
+	var hex: Dictionary = _grid[key]
+	var pop := int(hex["population_band"])
+	var elven := false
+	var r := 0
+	if pop == 0:
+		r = _c.reforest_rate_natural               # depopulated land regrows
+	elif _dominant_race(key) == "elf":
+		elven = true
+		r = _c.reforest_rate_elf                   # elf-held (sim-time uniform; +3-adjacency is runtime)
+	else:
+		return                                      # human/dwarf-held — no reforestation
+	if r <= 0:
+		return
+	var biome := str(hex["biome"])
+	var up := Deforestation.reforest_target(biome, str(hex["biome_subtype"]),
+			str(hex.get("original_biome", "")), str(hex["koppen"]), elven)
+	# No up-step (at climax / not a was-forest clear): reverse any in-progress clearing.
+	if up.is_empty():
+		if Deforestation.is_clearable(biome):
+			var p0 := int(hex.get("clearing_progress", 0))
+			if p0 > 0:
+				hex["clearing_progress"] = maxi(0, p0 - r)
+		return
+	# Natural needs a seed neighbor of the target biome; elves are exempt.
+	var need := str(up["needs_neighbor"])
+	if not elven and need != "" and not _has_neighbor_biome(key, need):
+		return
+	var threshold: int = _c.reforest_ticks_jungle if str(up["biome"]) == "jungle" else _c.clear_ticks_step
+	var prog := int(hex.get("clearing_progress", 0)) + r
+	if prog < threshold:
+		hex["clearing_progress"] = prog
+		return
+	hex["biome"] = str(up["biome"])
+	hex["biome_subtype"] = str(up["subtype"])
+	hex["clearing_progress"] = 0
+
+
+## True when any of the 6 neighbors of [param key] has biome [param biome].
+func _has_neighbor_biome(key: Vector2i, biome: String) -> bool:
+	for off in _OFF:
+		var n: Vector2i = key + off
+		if _grid.has(n) and str(_grid[n]["biome"]) == biome:
+			return true
+	return false
 
 
 func _update_tier(pol: Dictionary) -> void:
