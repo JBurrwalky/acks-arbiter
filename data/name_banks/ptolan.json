@@ -1,0 +1,473 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Genos Theronides",
+      "Genos Lysandrides",
+      "the Ptolemaioi",
+      "Genos Kalliades",
+      "per-Tjuraa",
+      "Genos Aristides",
+      "Genos Nikandrides",
+      "per-Riaret",
+      "Genos Dioklides",
+      "Genos Eumenides",
+      "per-Atjernaa",
+      "Genos Sostratides",
+      "Theronson",
+      "Ptolemaiosson",
+      "Kalliasson",
+      "Aristonson",
+      "Lysandrosson",
+      "Demetriosson",
+      "Apollodorosson",
+      "Nikandrosson",
+      "Tulrio-dorosson",
+      "Menelosson",
+      "Dioklesson",
+      "Tjuraa-hotepson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Per-netjer"
+    ],
+    "epithet": [
+      "ho Soter",
+      "ho Megas",
+      "Philadelphos",
+      "Euergetes",
+      "ho Sophos",
+      "maa-kheru",
+      "Chrysous",
+      "ho Dikaios",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Anatolakhetis",
+      "Anakra",
+      "Argyrosakte",
+      "Boreasatrapos",
+      "Dysisdeshretos",
+      "Erythroshelos",
+      "Esohodos",
+      "Exohyle",
+      "Halasisthmos",
+      "Hypselositropotamos",
+      "Kaloskleisoura",
+      "Katokolpos",
+      "Kemoslimne",
+      "Leukoslophos",
+      "Megasmeros",
+      "Mikrosmitos",
+      "Nebiosnape",
+      "Neosnesos",
+      "Notosoros",
+      "Oinosporos",
+      "Othonesekhetos",
+      "Palaiostenon",
+      "Papyrosthalassa",
+      "Porphyrawehatos",
+      "Senethymosakhetis",
+      "Sidereosakra",
+      "Siderosakte",
+      "Sitosatrapos",
+      "Teledeshretos",
+      "Zeshieroshelos"
+    ],
+    "military_unit": [
+      "the Bronze Phalanx",
+      "the Delta Companies"
+    ],
+    "personal_female": [
+      "Berenike",
+      "Arsinoe",
+      "Kleia",
+      "Theodora",
+      "Daphne",
+      "Arete",
+      "Kallisto",
+      "Riaret-nefru",
+      "Stratonike",
+      "Eirene",
+      "Demetria",
+      "Sat-Tjuraa",
+      "Pheronike",
+      "Eudora",
+      "Thalia",
+      "Mery-Riaret",
+      "Nikaia",
+      "Xanthe",
+      "Aristea",
+      "Kleopatris",
+      "Ptolemaie",
+      "Lysandre",
+      "Demetrie",
+      "Apollodore",
+      "Nikandre",
+      "Tulrio-dore",
+      "Menele",
+      "Diokle",
+      "Eumene",
+      "Kleite",
+      "Sostrate",
+      "Numenie",
+      "Ariste",
+      "Maraxos",
+      "Maraxose",
+      "Numenos",
+      "Numenose",
+      "Realta",
+      "Realtae",
+      "Tulrios"
+    ],
+    "personal_male": [
+      "Theron",
+      "Ptolemaios",
+      "Kallias",
+      "Ariston",
+      "Lysandros",
+      "Demetrios",
+      "Apollodoros",
+      "Nikandros",
+      "Tulrio-doros",
+      "Menelos",
+      "Diokles",
+      "Tjuraa-hotep",
+      "Sa-Riaret",
+      "Eumenes",
+      "Kleitos",
+      "Sostratos",
+      "Numenios",
+      "Mery-Tjuraa",
+      "Aristos",
+      "Berenikos",
+      "Arsinoos",
+      "Kleios",
+      "Theodoros",
+      "Daphnos",
+      "Aretos",
+      "Stratonikos",
+      "Eirenos",
+      "Sat-Tjuraos",
+      "Pheronikos",
+      "Eudoros",
+      "Thalios",
+      "Nikaios",
+      "Xanthos",
+      "Aristeos",
+      "Kleopatros",
+      "Maraxos",
+      "Maraxosos",
+      "Numenos",
+      "Numenosos",
+      "Realta"
+    ],
+    "settlement": [
+      "Ptola",
+      "Neapolis",
+      "Per-Tjuraa",
+      "Akra Leuke",
+      "Niut-aat",
+      "Limen Megas",
+      "Anatolagora",
+      "Anakte",
+      "Argyrosasty",
+      "Boreasdemos",
+      "Dysiskome",
+      "Erythroslimen",
+      "Esolophos",
+      "Exoniautopolis",
+      "Halaspernetpolis",
+      "Hypselosphrourion",
+      "Kalosporos",
+      "Katosebakropolis",
+      "Kemosagora",
+      "Leukosakte",
+      "Megasasty",
+      "Mikrosdemos",
+      "Nebioskome",
+      "Neoslimen",
+      "Notoslophos",
+      "Oinosniautopolis",
+      "Othonepernetpolis",
+      "Palaiosphrourion",
+      "Papyrosporos",
+      "Porphyrasebakropolis",
+      "Senethymosagora",
+      "Sidereosakte",
+      "Siderosasty",
+      "Sitosdemos",
+      "Telekome",
+      "Zeshieroslimen",
+      "Anatolelophos",
+      "Anoniautopolis",
+      "Argyrospernetpolis",
+      "Boreasphrourion"
+    ],
+    "ship": [
+      "Nike",
+      "Pride of Ptola",
+      "Barque of Tjuraa"
+    ],
+    "tavern": [
+      "The Amber Kylix",
+      "The Golden Lotus",
+      "The Erythros Argyros",
+      "The Hypselos Halas",
+      "The Kalos Nebios",
+      "The Kemos Oinos",
+      "The Leukos Othone",
+      "The Megas Papyros",
+      "The Mikros Porphyra",
+      "The Nebios Senethymos",
+      "The Neos Sideros",
+      "The Palaios Sitos"
+    ]
+  },
+  "culture_id": "ptolan",
+  "family": [
+    "near_eastern",
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_ptolan.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "ptolan",
+  "lexicon": {
+    "adjectives": {
+      "black": "kemos",
+      "fair": "kalos",
+      "far": "tele",
+      "golden": "nebios",
+      "great": "megas",
+      "high": "hypselos",
+      "iron": "sidereos",
+      "little": "mikros",
+      "new": "neos",
+      "old": "palaios",
+      "red": "erythros",
+      "sacred": "zeshieros",
+      "white": "leukos"
+    },
+    "directional": {
+      "east": "anatole",
+      "inner": "eso",
+      "lower": "kato",
+      "north": "boreas",
+      "outer": "exo",
+      "south": "notos",
+      "upper": "ano",
+      "west": "dysis"
+    },
+    "feature_words": {
+      "bay": "kolpos",
+      "cape": "akra",
+      "coast": "akte",
+      "desert": "deshretos",
+      "ford": "poros",
+      "forest": "hyle",
+      "hill": "lophos",
+      "isle": "nesos",
+      "lake": "limne",
+      "marsh": "helos",
+      "mountain": "oros",
+      "narrows": "stenon",
+      "neck": "isthmos",
+      "oasis": "wehatos",
+      "pass": "kleisoura",
+      "plain": "sekhetos",
+      "ridge": "akhetis",
+      "river": "itropotamos",
+      "road": "hodos",
+      "sea": "thalassa",
+      "stream": "meros",
+      "track": "atrapos",
+      "vale": "nape",
+      "way": "mitos"
+    },
+    "resources": {
+      "gold": "nebios",
+      "grain": "sitos",
+      "incense": "senethymos",
+      "iron": "sideros",
+      "linen": "othone",
+      "papyrus": "papyros",
+      "purple_dye": "porphyra",
+      "salt": "halas",
+      "silver": "argyros",
+      "wine": "oinos"
+    },
+    "settlement_words": {
+      "citadel": "sebakropolis",
+      "city": "niautopolis",
+      "fort": "phrourion",
+      "hamlet": "kome",
+      "market": "agora",
+      "port": "limen",
+      "temple_town": "pernetpolis",
+      "town": "asty",
+      "village": "demos"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[adjective|resource](stem) + feature with linking -o-; Nea-Polis (new-city); the Egyptian overlay yields Per-[god] and Niut-[god].",
+    "gendered_endings": {
+      "female": [
+        "e",
+        "a",
+        "is"
+      ],
+      "male": [
+        "os",
+        "es",
+        "eus"
+      ]
+    },
+    "patronymic_form": "patronymic -ides / -ou (son of) + polis demonym; the Egyptian substrate keeps filiation sa-X; the royal house traces the Ptole- dynastic line.",
+    "toponymic_suffixes": [
+      "polis / -oupolis",
+      "Per-",
+      "Niut-",
+      "eia / -ia",
+      "Ptole-",
+      "on"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "drowned Greek poleis and Egyptian tomb-temples: 'the Labyrinth of Heros [name]', 'the Sunken Per-netjer'",
+    "military_units": "the [Adjective] Phalanx / the [nome] Companies: 'the Bronze Phalanx', 'the Delta Companies'",
+    "ships": "grain-fleet and war-galley names: 'Nike', 'Pride of Ptola', 'Barque of Tjuraa'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Golden Lotus'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon (Hellenic reflexes primary, from classical theonym treatment; Egyptian variants secondary, from near_eastern theonym_sets), never real Greek/Egyptian gods. The Ptolan fuse the two cults (a Serapis-style syncretism): each power has a Hellenic court-name and an Egyptian temple-name, held to be one. Ptolan stance follows its CURRENT alignment (see worship_by_alignment). The polis-temple and the Egyptian Per-netjer keep the rites together.",
+    "clergy_ladder": {
+      "1": "Neokoros (temple-keeper)",
+      "3": "Hiereus (priest)",
+      "5": "Archiereus (high priest)",
+      "7": "Hem-netjer Tepy (first prophet, Egy overlay)",
+      "9": "Megas Hierophant"
+    },
+    "demon_epithet_pattern": "the demonized set (the Chaotic powers, when Lawful) take dread epithets: Maraxus -> Maraxos the Tyrant-Flame (Egy. Marakhu the City-Burner); Vacidus -> Wakedjet the Devourer; Lusanto -> Lusandros the Coin-Serpent.",
+    "holy_symbol_motifs": {
+      "Aiternos": "the winged disc above the polis-eagle",
+      "Realta": "a sheltering mother-goddess over the lotus",
+      "Tulrios": "a radiate sun above the double crown"
+    },
+    "religious_orders_pattern": "the Temenos (sacred precinct) or Per-netjer (god's-house) of [power]: 'the Temenos of Tulrios', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "deified kings and founder-heroes (Greek Heros [name]; Egyptian the justified dead, maa-kheru), venerated at the temple and the royal tomb.",
+    "sample_deity_renames": {
+      "Maraxus": "Maraxos (Egy. Marakhu) - the war-fire; Chaotic, demonized",
+      "Numeno": "Numenos - sky-wisdom; Lawful",
+      "Realta": "Realta (Egy. Riaret) - the mother; Neutral-honored",
+      "Tulrius": "Tulrios (Egy. Tjuraa) - sun and right-order; Lawful"
+    },
+    "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral, defied as the tyrant-god when Chaotic",
+    "worship_by_alignment": {
+      "Chaotic": "venerate the Chaotic powers of the canon (Maraxos/Marakhu and their kin), and name the Lawful powers - and the One - as the tyrant-gods to be defied",
+      "Lawful": "revere the One (Aiternos/Atjernaa) and the Lawful powers (Tulrios, Orlandros, Numenos, Gauandos), demonize the Chaotic powers",
+      "Neutral": "all powers ambivalent; foreground the deified ancestors (the justified dead) and the local temple-cults of place"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Hellenic backbone, ascending, with an Egyptian overlay at the nome and the crown. DISPLAY titles are English except two approved foreign terms: Archon (the Greek polis-magistrate) at county, and Pharaoh at kingdom (the Ptolemies styled themselves Pharaoh - the realm's iconic throne). ruler_native carries the full Greek register: Toparch barony; Phrourarch (garrison-commander) march; Nomarch (governor of an Egyptian nome) county; Strategos (general-governor) duchy; Dynastes (prince) principality; Basileus (king) kingdom; Basileus Megas, styled Per-aa (Pharaoh) to the native temples, empire. The Greek court and the Egyptian priesthood share the rule. (Rank titles are the real Greek/Egyptian register, allowed.)",
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Basileus": "Basilissa",
+      "Basileus Megas (Per-aa)": "Basilissa Megale (Per-aat)",
+      "Dynastes": "Dynastissa",
+      "Nomarch": "Nomarchissa",
+      "Phrourarch": "Phrourarchissa",
+      "Strategos": "Strategissa",
+      "Toparch": "Toparchissa"
+    },
+    "government": "feudal (a Hellenistic kingdom over an Egyptian land: the Greek court styled Pharaoh to the native temples, wearing the double crown; the Greek polis-magistracy - the Archon - over the Egyptian nome-substrate)",
+    "heir": "Diadochos (successor-designate)",
+    "honorifics": {
+      "knight": "Hippeus",
+      "lady": "Kyria",
+      "lord": "Kyrios",
+      "your_grace": "Megistos",
+      "your_majesty": "Basileu / Per-aa"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Toparchy",
+        "ruler": "Baron",
+        "ruler_native": "Toparch"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Nomos",
+        "ruler": "Archon",
+        "ruler_native": "Nomarch"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Strategia",
+        "ruler": "Duke",
+        "ruler_native": "Strategos"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Autokratoria",
+        "ruler": "Emperor",
+        "ruler_native": "Basileus Megas (Per-aa)"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Basileia",
+        "ruler": "Pharaoh",
+        "ruler_native": "Basileus"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Phrourarchia",
+        "ruler": "Marquis",
+        "ruler_native": "Phrourarch"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Dynasteia",
+        "ruler": "Prince",
+        "ruler_native": "Dynastes"
+      }
+    },
+    "vassalage": {
+      "fealty": "Horkos (oath)",
+      "liege": "Hegemon",
+      "tribute": "Phoros",
+      "vassal": "Hypekoos (subject)"
+    }
+  }
+}
