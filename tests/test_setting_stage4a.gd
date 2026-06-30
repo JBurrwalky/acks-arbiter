@@ -106,7 +106,7 @@ func test_logistic_growth_increment() -> void:
 
 
 func test_growth_approaches_cap() -> void:
-	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "deep"  # 240 ticks — plenty to fill
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var pop := int(ctx["hex_grid"][Vector2i(1, 0)]["population_band"])
@@ -117,7 +117,7 @@ func test_growth_approaches_cap() -> void:
 
 
 func test_classification_advances_when_full() -> void:
-	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "deep"
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var tc := str(ctx["hex_grid"][Vector2i(1, 0)]["territory_class"])
@@ -125,19 +125,19 @@ func test_classification_advances_when_full() -> void:
 
 
 func test_diffusion_spreads_culture_to_neighbors() -> void:
-	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "short"
 	HistorySimulator.new().run(ctx, _stable_constants())
 	# The hexes flanking the homeland should now carry some Agrippan weight.
 	for nq in [1, 3]:
 		var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(nq, 0)]["culture_weights"]))
-		check(w is Dictionary and float(w.get("agrippan", 0.0)) > 0.0,
+		check(w is Dictionary and float(w.get("quirium", 0.0)) > 0.0,
 			"diffusion should spread culture to neighbor q=%d" % nq)
 
 
 func test_diffusion_conserves_then_normalizes() -> void:
 	# After finalize every inhabited hex's culture_weights sum to 1.0.
-	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(5, Vector2i(2, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "short"
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(2, 0)]["culture_weights"]))
@@ -148,30 +148,30 @@ func test_diffusion_conserves_then_normalizes() -> void:
 
 
 func test_assimilation_is_noop_for_pure_homeland() -> void:
-	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "short"
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"]))
 	# Pure homeland stays ~100% its own culture (diffusion bleeds a sliver to
 	# neighbors but assimilation pulls it back; normalization restores 1.0).
-	check(float(w.get("agrippan", 0.0)) > 0.99, "homeland should remain dominantly its own culture")
+	check(float(w.get("quirium", 0.0)) > 0.99, "homeland should remain dominantly its own culture")
 
 
 func test_assimilation_converts_foreign_hex() -> void:
 	# A held hex seeded with a FOREIGN culture should assimilate toward the
 	# owner's culture over time (svg 0.5 × step 0.5 = 0.25/tick lerp).
-	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "quirium", "lawful")
 	# Overwrite the homeland's substrate to a foreign culture, owner still pol_0001.
-	ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"] = JSON.stringify({"vargari": 1.0})
+	ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"] = JSON.stringify({"albawyn": 1.0})
 	ctx["params"].history_length = "short"
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var w = JSON.parse_string(str(ctx["hex_grid"][Vector2i(1, 0)]["culture_weights"]))
-	check(float(w.get("agrippan", 0.0)) > float(w.get("vargari", 0.0)),
+	check(float(w.get("quirium", 0.0)) > float(w.get("albawyn", 0.0)),
 		"owner culture should overtake the foreign culture via assimilation")
 
 
 func test_replay_frames_emitted() -> void:
-	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "agrippan", "lawful")
+	var ctx := _make_ctx(3, Vector2i(1, 0), 500, "quirium", "lawful")
 	ctx["params"].history_length = "short"  # 80 ticks, cadence 1 → 80 + final = 81
 	HistorySimulator.new().run(ctx, _stable_constants())
 	var frames: Array = ctx["sim_replay_frames"]

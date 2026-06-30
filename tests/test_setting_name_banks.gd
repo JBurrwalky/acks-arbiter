@@ -12,11 +12,13 @@ extends "res://tests/test_suite_base.gd"
 const SCRIPT_REL_PATH := "res://tools/build_name_banks.py"
 const BANKS_DIR := "res://data/name_banks/"
 const MIN_CORE := 10
-# 11 human BASE kits + 54 first-order HYBRID kits + the demihuman/beastman/legacy
-# member kits assembled by build_name_banks.py (gdd-culture-emergence-and-territory
-# .md §3.5). The freshness gate (test_build_tool_check_mode_passes) is the real
-# authority on the set; this count is a coarse tripwire for accidental add/drop.
-const EXPECTED_BANK_COUNT := 122
+# 11 human BASE kits + 46 first-order HYBRID kits + 6 demihuman + 10 beastman banks
+# assembled by build_name_banks.py (gdd-culture-emergence-and-territory.md §3.5). The
+# 49 legacy single-culture member kits were retired 2026-06-29 (the bases + runtime
+# hybrids supersede them; the old roster was never seeded). The freshness gate
+# (test_build_tool_check_mode_passes) is the real authority on the set; this count is a
+# coarse tripwire for accidental add/drop.
+const EXPECTED_BANK_COUNT := 73
 
 
 func run_all_tests() -> void:
@@ -58,17 +60,17 @@ func test_all_banks_load_with_core_categories() -> void:
 
 
 func test_loader_accessors_civ() -> void:
-	var bank := NameBankLoader.bank_for("agrippan")
-	check(not bank.is_empty(), "agrippan bank should load")
-	check(NameBankLoader.race(bank) == "human", "agrippan race should be human")
-	check(NameBankLoader.government(bank) == "feudal", "agrippan government feudal")
+	var bank := NameBankLoader.bank_for("quirium")
+	check(not bank.is_empty(), "quirium bank should load")
+	check(NameBankLoader.race(bank) == "human", "quirium race should be human")
+	check(NameBankLoader.government(bank) == "feudal", "quirium government feudal")
 	check(NameBankLoader.names(bank, "personal_male").has("Marcus"),
-		"agrippan personal_male should include the seed 'Marcus'")
+		"quirium personal_male should include the seed 'Marcus'")
 	check(NameBankLoader.ruler_title(bank, "empire") == "Imperator",
-		"agrippan empire ruler should be Imperator")
-	check(NameBankLoader.domain_title(bank, "kingdom") == "Regnum",
-		"agrippan kingdom domain should be Regnum")
-	check(not NameBankLoader.religion(bank).is_empty(), "agrippan carries religion block")
+		"quirium empire ruler should be the approved foreign term Imperator")
+	check(NameBankLoader.domain_title(bank, "kingdom") == "Kingdom",
+		"quirium kingdom domain displays as the English 'Kingdom'")
+	check(not NameBankLoader.religion(bank).is_empty(), "quirium carries religion block")
 
 
 func test_loader_accessors_beastman() -> void:
@@ -88,12 +90,12 @@ func test_loader_accessors_beastman() -> void:
 
 
 func test_inheritance_recorded() -> void:
-	var agrippan := NameBankLoader.bank_for("agrippan")
-	check(NameBankLoader.family(agrippan) == ["classical"],
-		"agrippan inherits the classical family")
-	var sargonid := NameBankLoader.bank_for("sargonid")
-	check(NameBankLoader.family(sargonid).size() == 2,
-		"sargonid is a cross-family blend (two bases)")
+	var quirium := NameBankLoader.bank_for("quirium")
+	check(NameBankLoader.family(quirium) == ["classical"],
+		"quirium inherits the single classical family")
+	var aryamark := NameBankLoader.bank_for("aryamark")
+	check(NameBankLoader.family(aryamark).size() == 2,
+		"a hybrid (aryamark) is a cross-family blend of two bases")
 
 
 func test_endonym_only() -> void:

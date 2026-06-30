@@ -37015,3 +37015,26 @@ on-tick dispatch.
 - **Phase 4 — hybrid culture emergence** (`culture_synthesis_parents`): first-order hybrids emerge at runtime where base cultures meet. HIGHEST architecture risk in the arc; Opus review. The 54 hybrid naming kits + 122 name banks are already built (P1); this wires mechanical emergence.
 - Backlog: ascendant-polity pop-growth boost (the agreed coverage-compensation lever); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap. P5 (clanhold migration) still DEFERRED.
 **Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), ed30921 (P3b), + this (P3c). PHASE 3 COMPLETE.
+
+## Session 2026-06-29 — Retire the 49 legacy member culture kits (GDD Q11)
+
+**Task:** Jedidiah flagged the 122-bank count as inflated by stale kits. Audited, confirmed 49 dormant legacy human "member" kits, and (on his ruling) physically RETIRED them — the deferred GDD Q11 cleanup.
+**Model used:** Opus 4.8 (audit, dependency analysis, execution, verification).
+**Completed:**
+- **Audit:** 122 name banks = 122 conlang kits (1:1, auto-discovered). Composition: 11 human BASE + 6 demihuman + 10 beastman (all actively seeded) + 46 hybrid conlang-only (reserved for Phase 4) + **49 legacy human member kits (dormant)**. No true orphans; 1 dangling ref (`beastmen` generic kit → no `beastmen` bank, already code-handled via `CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID` exclusion). Of the 49 members, 32 single-family + 17 cross-family blends — all equally dormant (humans seed only bases; hybrids synthesize from `BASE_01..11` + `elvish`/`dwarven`/`beastman` families, NOT member ids — verified).
+- **Deleted 147 files:** the 49 members' `data/cultures/<id>.json` + `data/conlang/culture_<id>.json` + `data/name_banks/<id>.json`. Re-ran `tools/build_name_banks.py` → 73 banks + manifest (count 73), validation GREEN, `--check` freshness OK. Only `_manifest.json` changed among surviving banks (the other 73 are byte-identical → deterministic build, Phase-1 banks were fresh).
+- **Engine fallbacks repointed:** the two hardcoded `else "agrippan"` last-resort culture fallbacks in `name_generator.gd` / `infrastructure_generator.gd` → `"albawyn"` (a base). (`ids_by_tier("human")` always returns the 11 bases now, so the literal is unreachable, but it's correct.)
+- **Build-script sample list** (`build_name_banks.py` spot_check) repointed off members (self-healing anyway via the in-cultures filter).
+- **4 test suites repointed off member fixtures** (verified replacement properties): `test_setting_name_banks` agrippan→`quirium` (classical/feudal/Marcus/Imperator; Regnum→"Kingdom" since bases use English-display domains now) + sargonid→`aryamark` (2-family hybrid); `test_setting_stage4a` agrippan→quirium, vargari→albawyn (synthetic instances, cosmetic); `test_setting_stage6` agrippan→quirium (+ "Regnum"→"Kingdom" assertion); `test_npc_personality` abydosian→`kemetra` (5-axis `npc.personality_weight_biases`). `EXPECTED_BANK_COUNT` 122→73.
+**Decisions made:**
+- Retire all 49 (Jedidiah: "retire them now"). Confirmed safe: never seeded, not hybrid parents, not demihuman/beastman. The 17 cross-family member blends are dormant too; their only test use (a 2-family fixture) repoints to a hybrid bank (hybrids ARE 2-family), so no coverage lost.
+- Generation output is UNCHANGED by the retirement (the 49 were never in any seed pool) → determinism + calibration unaffected.
+**Interfaces defined or changed:** None (pure data + fixture cleanup). `CultureCatalogLoader` now loads 28 cultures, `NameBankLoader` 73 banks.
+**Database changes:** None.
+**Tests added/updated:** 4 suites repointed (above). Full suite **477 passed / 16 failed** (warm-DB run 2) — unchanged baseline; SettingNameBanks 1115 checks (was 1850; fewer banks = fewer per-bank checks), Stage4a/Stage6/NpcPersonality green. The 16 are the known unrelated combat/proficiency failures.
+**Known issues:**
+- The generic `beastmen` mechanical kit still references a non-existent `beastmen` bank — harmless (code excludes it via `GENERIC_BEASTMAN_CULTURE_ID`), left as-is.
+- docs/ may still mention retired member cultures in prose (informational, non-breaking) — not swept.
+**Next session should:**
+- Phase 4 — hybrid culture emergence (the 46 hybrid banks are now the clear forward-looking set; highest arch risk, Opus review).
+- Backlog unchanged: ascendant-pop-growth coverage lever; runtime EventScheduler defor/refor phases; wire runtime classification_advancement to TerritoryCap.

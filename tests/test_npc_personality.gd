@@ -129,10 +129,10 @@ func test_culture_loader_accessor() -> void:
 	# The accessor must return {} for an unknown culture and a dict for a known one.
 	check(CultureCatalogLoader.biases_for_culture("definitely_not_a_culture").is_empty(),
 		"unknown culture should yield empty biases")
-	var abydosian := CultureCatalogLoader.biases_for_culture("abydosian")
-	# abydosian.json carries personality_weight_biases (verified at build time).
-	check(abydosian is Dictionary and not abydosian.is_empty(),
-		"abydosian should carry personality_weight_biases")
+	var kemetra := CultureCatalogLoader.biases_for_culture("kemetra")
+	# kemetra.json carries personality_weight_biases (verified at build time).
+	check(kemetra is Dictionary and not kemetra.is_empty(),
+		"kemetra should carry personality_weight_biases")
 
 
 # ---------------------------------------------------------------------------
@@ -272,11 +272,11 @@ func test_classed_npc_builder_wiring() -> void:
 func test_culture_id_threads_through() -> void:
 	# A culture_id string in the public generate() context must reach the sampler's
 	# culture-bias term (the path NpcRulerGenerator / BaselineNpcStocker now use).
-	# abydosian biases five axes, so for a fixed seed the output changes vs no culture.
+	# kemetra biases five axes, so for a fixed seed the output changes vs no culture.
 	var differed := false
 	for i in range(6):
 		var sk := "culture_thread_%d" % i
-		var with_c := _gen.generate({"tier": "B", "seed_key": sk, "alignment": "neutral", "culture_id": "abydosian"})
+		var with_c := _gen.generate({"tier": "B", "seed_key": sk, "alignment": "neutral", "culture_id": "kemetra"})
 		var without_c := _gen.generate({"tier": "B", "seed_key": sk, "alignment": "neutral", "culture_id": ""})
 		if with_c.all_axis_scores() != without_c.all_axis_scores():
 			differed = true
@@ -290,7 +290,7 @@ func test_baseline_stocker_threads_culture() -> void:
 	var differed := false
 	for i in range(6):
 		var seed_suffix := "s%d" % i
-		var with_c := BaselineNpcStocker._make_personality_json("cleric", "neutral", "Test", "abydosian", seed_suffix)
+		var with_c := BaselineNpcStocker._make_personality_json("cleric", "neutral", "Test", "kemetra", seed_suffix)
 		var without_c := BaselineNpcStocker._make_personality_json("cleric", "neutral", "Test", "", seed_suffix)
 		if with_c != without_c:
 			differed = true

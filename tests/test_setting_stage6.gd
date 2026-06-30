@@ -58,20 +58,20 @@ func test_pick_unused_dedup() -> void:
 
 
 func test_assembler_determinism() -> void:
-	var bank := NameBankLoader.bank_for("agrippan")
+	var bank := NameBankLoader.bank_for("quirium")
 	var a := NameAssembler.settlement_name(bank,
-		WorldGenRng.stream(7, "settlement_name", 0, "stl_0005"), {}, "agrippan", false)
+		WorldGenRng.stream(7, "settlement_name", 0, "stl_0005"), {}, "quirium", false)
 	var b := NameAssembler.settlement_name(bank,
-		WorldGenRng.stream(7, "settlement_name", 0, "stl_0005"), {}, "agrippan", false)
+		WorldGenRng.stream(7, "settlement_name", 0, "stl_0005"), {}, "quirium", false)
 	check(a == b and not a.is_empty(), "same seed+entity -> same name (%s/%s)" % [a, b])
 
 
 func test_civ_realm_name() -> void:
-	var bank := NameBankLoader.bank_for("agrippan")
+	var bank := NameBankLoader.bank_for("quirium")
 	var name := NameAssembler.realm_name(bank, "kingdom", "Agrippa", "Agrippola",
-		"Valerius", WorldGenRng.stream(3, "polity_name", 0, "pol_0001"), {}, "agrippan")
+		"Valerius", WorldGenRng.stream(3, "polity_name", 0, "pol_0001"), {}, "quirium")
 	check(not name.is_empty(), "civ realm name non-empty")
-	check(name.contains("Regnum"), "kingdom realm uses the domain title 'Regnum' (%s)" % name)
+	check(name.contains("Kingdom"), "kingdom realm uses the English domain title 'Kingdom' (%s)" % name)
 
 
 func test_beastman_realm_name() -> void:
@@ -87,12 +87,12 @@ func test_beastman_realm_name() -> void:
 
 
 func test_feature_subtype_matched() -> void:
-	var bank := NameBankLoader.bank_for("agrippan")
+	var bank := NameBankLoader.bank_for("quirium")
 	var used := {}
 	var forest := NameAssembler.feature_name(bank, "forest",
-		WorldGenRng.stream(5, "region_name", 0, "reg_0001"), used, "agrippan")
+		WorldGenRng.stream(5, "region_name", 0, "reg_0001"), used, "quirium")
 	check(not forest.is_empty(), "forest feature name non-empty (%s)" % forest)
-	# 'silva' is the Agrippan forest-word; a subtype-matched compound contains it.
+	# 'silva' is the classical (quirium) forest-word; a subtype-matched compound contains it.
 	check(forest.to_lower().contains("silv"),
 		"forest feature is built on the forest-word 'silva' (%s)" % forest)
 
