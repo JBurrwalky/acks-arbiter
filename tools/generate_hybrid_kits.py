@@ -24,10 +24,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CULT = os.path.join(ROOT, "data", "cultures")
 CONL = os.path.join(ROOT, "data", "conlang")
 
-BASE_CSV = {'BASE_01':'thiodmark','BASE_02':'albawyn','BASE_03':'shinarur','BASE_04':'aryastan',
-            'BASE_05':'kemetra','BASE_06':'vallica','BASE_07':'hellaspol','BASE_08':'hinowa',
-            'BASE_09':'huaxia','BASE_10':'tollanaz','BASE_11':'manitland'}
-CLAN = {"thiodmark", "albawyn", "manitland"}
+BASE_CSV = {'BASE_01':'thiodons','BASE_02':'albawyn','BASE_03':'shamhar','BASE_04':'aryastan',
+            'BASE_05':'kemetra','BASE_06':'vallica','BASE_07':'ellinike','BASE_08':'yamatsu',
+            'BASE_09':'qinzhao','BASE_10':'tollteca','BASE_11':'wendaki'}
+CLAN = {"thiodons", "albawyn", "wendaki"}
 BASES = set(BASE_CSV.values())
 DEMIBEAST = {"aelvaneth","thalvaneth","xilvaneth","khordurn","gormdurn","khraaldurn","orc","goblin",
              "gnoll","bugbear","hobgoblin","kobold","lizardman","ogre","troll","troglodyte","beastmen"}
@@ -56,7 +56,7 @@ def pair_map():
         names = [BASE_CSV[str(s)] for s in ss if str(s) in BASE_CSV]
         if len(names) == 2:
             m[frozenset(names)] = k
-    m[frozenset(['thiodmark', 'albawyn'])] = 'brythald'   # legacy [6,7] synthesis_sources
+    m[frozenset(['thiodons', 'albawyn'])] = 'brythald'   # legacy [6,7] synthesis_sources
     return m
 
 

@@ -12,7 +12,7 @@
       "csv_id": "HYB_33",
       "culture_synthesis_parents": [
         "aryastan",
-        "tollanaz"
+        "tollteca"
       ]
     },
     "alignment": {
@@ -126,8 +126,8 @@
     },
     "flavor_text": {
       "one_line": "Xochistan — cosmopolitan merchant oligarchy of the synthesis; law, prosperity, enterprise.",
-      "one_paragraph": "The Xochistan are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Tollanaz [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
+      "one_paragraph": "The Xochistan are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Tollteca [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
     },
-    "_generated": "archetype blend of aryastan x tollanaz [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of aryastan x tollteca [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

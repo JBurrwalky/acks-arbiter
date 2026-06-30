@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_42",
       "culture_synthesis_parents": [
-        "hinowa",
-        "vallica"
+        "vallica",
+        "yamatsu"
       ]
     },
     "alignment": {
@@ -25,8 +25,8 @@
     },
     "terrain": {
       "seed_biomes": [
-        "forest",
-        "grassland"
+        "grassland",
+        "forest"
       ],
       "coastal_start": "E"
     },
@@ -65,9 +65,9 @@
       },
       "preferred_troop_types": [
         "heavy_infantry",
+        "light_infantry",
         "archers",
-        "light_cavalry",
-        "light_infantry"
+        "light_cavalry"
       ]
     },
     "npc": {
@@ -76,7 +76,7 @@
         "societal_orthodoxy": 1.5,
         "civility": 1.0,
         "self_interest": 1.0,
-        "stress_reactivity": 0.5
+        "stress_reactivity": -0.5
       }
     },
     "class_kit_weights": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Waitalia — domineering imperial hegemony of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Waitalia are a vigorous imperial hegemony people, a first-order synthesis of Hinowa and Vallica [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, archers, light_cavalry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Waitalia are a vigorous imperial hegemony people, a first-order synthesis of Vallica and Yamatsu [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of hinowa x vallica [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of vallica x yamatsu [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

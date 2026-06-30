@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_38",
       "culture_synthesis_parents": [
-        "huaxia",
-        "kemetra"
+        "kemetra",
+        "qinzhao"
       ]
     },
     "alignment": {
@@ -26,8 +26,8 @@
     "terrain": {
       "seed_biomes": [
         "grassland",
-        "forest",
-        "savanna"
+        "savanna",
+        "forest"
       ],
       "coastal_start": "E"
     },
@@ -65,10 +65,10 @@
         "mercantile": 0.133
       },
       "preferred_troop_types": [
-        "crossbowmen",
         "heavy_infantry",
-        "heavy_cavalry",
-        "chariots"
+        "chariots",
+        "archers",
+        "crossbowmen"
       ]
     },
     "npc": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Longkem — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
-      "one_paragraph": "The Longkem are a measured sacerdotal hierocracy people, a first-order synthesis of Huaxia and Kemetra [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field crossbowmen, heavy_infantry, heavy_cavalry. Outsiders are met as proselytizing; their patrons touch law."
+      "one_paragraph": "The Longkem are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Qinzhao [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
     },
-    "_generated": "archetype blend of huaxia x kemetra [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of kemetra x qinzhao [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

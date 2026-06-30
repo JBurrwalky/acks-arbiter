@@ -208,17 +208,17 @@
       "The Tsaatu Wuya"
     ]
   },
-  "culture_id": "manitland",
+  "culture_id": "wendaki",
   "family": [
     "north_american"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_manitland.json",
+    "source": "data/conlang/culture_wendaki.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "clanhold",
-  "kit_id": "manitland",
+  "kit_id": "wendaki",
   "lexicon": {
     "adjectives": {
       "black": "tuhu",

@@ -11,7 +11,7 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_05",
       "culture_synthesis_parents": [
-        "thiodmark",
+        "thiodons",
         "vallica"
       ]
     },
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Quirgard — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Quirgard are a warlike martial aristocracy people, a first-order synthesis of Thiodmark and Vallica [Conquest Aristocracy (thiodmark over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Quirgard are a warlike martial aristocracy people, a first-order synthesis of Thiodons and Vallica [Conquest Aristocracy (thiodons over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of thiodmark x vallica [Conquest Aristocracy (thiodmark over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of thiodons x vallica [Conquest Aristocracy (thiodons over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

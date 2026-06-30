@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "hinowa",
+      "culture_id": "yamatsu",
       "csv_id": "BASE_08",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Hinowan",
-      "toponym": "Hinowa",
+      "demonym": "Yamatsu",
+      "toponym": "Yamato",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ"
@@ -81,7 +81,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "hinowa",
+    "name_bank_key": "yamatsu",
     "phonemic_palette": "Japonic: open CV moras (only coda -n); five vowels a i u e o; pitch accent; no consonant clusters; rendaku (sequential voicing) in compounds; clan(-shi/uji) + given; kami honorifics -no-kami/-no-mikoto/-hime.",
     "phenotype_notes": "Features of the Japanese analog (setting-lore §5.3).",
     "language": {
@@ -122,8 +122,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Hinowan (Japanese) — the generic Japanese base culture (BASE_08); civilized.",
-      "one_paragraph": "The Hinowan are the generic Japanese base culture (BASE_08) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in forest, grassland. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Japanese register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Yamatsun (Japanese) — the generic Japanese base culture (BASE_08); civilized.",
+      "one_paragraph": "The Yamatsun are the generic Japanese base culture (BASE_08) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in forest, grassland. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Japanese register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

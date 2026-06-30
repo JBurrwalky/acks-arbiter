@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_53",
       "culture_synthesis_parents": [
-        "huaxia",
-        "tollanaz"
+        "qinzhao",
+        "tollteca"
       ]
     },
     "alignment": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Huaztl — domineering imperial hegemony of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Huaztl are a warlike imperial hegemony people, a first-order synthesis of Huaxia and Tollanaz [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field crossbowmen, heavy_infantry, heavy_cavalry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Huaztl are a warlike imperial hegemony people, a first-order synthesis of Qinzhao and Tollteca [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field crossbowmen, heavy_infantry, heavy_cavalry. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of huaxia x tollanaz [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of qinzhao x tollteca [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

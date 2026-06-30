@@ -210,17 +210,17 @@
       "The Salmu Uqnu"
     ]
   },
-  "culture_id": "shinarur",
+  "culture_id": "shamhar",
   "family": [
     "near_eastern"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_shinarur.json",
+    "source": "data/conlang/culture_shamhar.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "shinarur",
+  "kit_id": "shamhar",
   "lexicon": {
     "adjectives": {
       "black": "salmu",

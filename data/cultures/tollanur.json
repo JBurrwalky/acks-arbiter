@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_26",
       "culture_synthesis_parents": [
-        "shinarur",
-        "tollanaz"
+        "shamhar",
+        "tollteca"
       ]
     },
     "alignment": {
@@ -123,8 +123,8 @@
     },
     "flavor_text": {
       "one_line": "Tollanur — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
-      "one_paragraph": "The Tollanur are a vigorous sacerdotal hierocracy people, a first-order synthesis of Shinarur and Tollanaz [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
+      "one_paragraph": "The Tollanur are a vigorous sacerdotal hierocracy people, a first-order synthesis of Shamhar and Tollteca [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
     },
-    "_generated": "archetype blend of shinarur x tollanaz [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of shamhar x tollteca [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

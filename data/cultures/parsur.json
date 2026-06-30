@@ -12,7 +12,7 @@
       "csv_id": "HYB_20",
       "culture_synthesis_parents": [
         "aryastan",
-        "shinarur"
+        "shamhar"
       ]
     },
     "alignment": {
@@ -126,8 +126,8 @@
     },
     "flavor_text": {
       "one_line": "Parsur — cosmopolitan merchant oligarchy of the synthesis; law, prosperity, enterprise.",
-      "one_paragraph": "The Parsur are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Shinarur [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
+      "one_paragraph": "The Parsur are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Shamhar [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
     },
-    "_generated": "archetype blend of aryastan x shinarur [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of aryastan x shamhar [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

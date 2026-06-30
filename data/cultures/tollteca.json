@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "tollanaz",
+      "culture_id": "tollteca",
       "csv_id": "BASE_10",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Tollanaz",
-      "toponym": "Tollanaz",
+      "demonym": "Tolltecs",
+      "toponym": "Tollan",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ"
@@ -77,7 +77,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "tollanaz",
+    "name_bank_key": "tollteca",
     "phonemic_palette": "Nahuatl backbone (absolutive -tl/-tli/-tzin; tl/tz/ch/x; place -tlan/-tepec) with a Mayan overlay (glottalized touches, x = sh shared, the aj-/ix- agentives in the substrate); theophoric on the Nahua names with Maya variants.",
     "phenotype_notes": "Synthesis of Mayan + Aztec per setting-lore §5.3 (blend the listed features; exclude the inverse).",
     "language": {
@@ -118,8 +118,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Tollanaz (Mesoamerican) — the generic Mesoamerican base culture (BASE_10); civilized.",
-      "one_paragraph": "The Tollanaz are the generic Mesoamerican base culture (BASE_10) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in savanna, grassland. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Mesoamerican register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Tolltecs (Mesoamerican) — the generic Mesoamerican base culture (BASE_10); civilized.",
+      "one_paragraph": "The Tolltecs are the generic Mesoamerican base culture (BASE_10) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in savanna, grassland. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Mesoamerican register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

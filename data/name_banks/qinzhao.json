@@ -203,17 +203,17 @@
       "The Tie Yu"
     ]
   },
-  "culture_id": "huaxia",
+  "culture_id": "qinzhao",
   "family": [
     "east_asian"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_huaxia.json",
+    "source": "data/conlang/culture_qinzhao.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "huaxia",
+  "kit_id": "qinzhao",
   "lexicon": {
     "adjectives": {
       "black": "hei",

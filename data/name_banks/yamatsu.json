@@ -223,17 +223,17 @@
       "The Oo Uma"
     ]
   },
-  "culture_id": "hinowa",
+  "culture_id": "yamatsu",
   "family": [
     "east_asian"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_hinowa.json",
+    "source": "data/conlang/culture_yamatsu.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "hinowa",
+  "kit_id": "yamatsu",
   "lexicon": {
     "adjectives": {
       "black": "kuro",

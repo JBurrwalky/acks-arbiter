@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_45",
       "culture_synthesis_parents": [
-        "manitland",
-        "vallica"
+        "vallica",
+        "wendaki"
       ]
     },
     "alignment": {
@@ -26,8 +26,8 @@
     "terrain": {
       "seed_biomes": [
         "grassland",
-        "savanna",
-        "forest"
+        "forest",
+        "savanna"
       ],
       "coastal_start": "E"
     },
@@ -65,10 +65,10 @@
         "arcane": 0.109
       },
       "preferred_troop_types": [
-        "horse_archers",
-        "light_cavalry",
+        "heavy_infantry",
         "light_infantry",
-        "heavy_infantry"
+        "archers",
+        "horse_archers"
       ]
     },
     "npc": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Novarom — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Novarom are a warlike martial aristocracy people, a first-order synthesis of Manitland and Vallica [Conquest Aristocracy (manitland over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Novarom are a warlike martial aristocracy people, a first-order synthesis of Vallica and Wendaki [Conquest Aristocracy (wendaki over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of manitland x vallica [Conquest Aristocracy (manitland over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of vallica x wendaki [Conquest Aristocracy (wendaki over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

@@ -12,7 +12,7 @@
       "csv_id": "HYB_17",
       "culture_synthesis_parents": [
         "albawyn",
-        "huaxia"
+        "qinzhao"
       ]
     },
     "alignment": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Fusangwyn — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Fusangwyn are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Huaxia [Conquest Aristocracy (albawyn over huaxia)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Fusangwyn are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Qinzhao [Conquest Aristocracy (albawyn over qinzhao)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of albawyn x huaxia [Conquest Aristocracy (albawyn over huaxia)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of albawyn x qinzhao [Conquest Aristocracy (albawyn over qinzhao)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

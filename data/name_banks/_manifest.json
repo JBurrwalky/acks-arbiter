@@ -190,6 +190,25 @@
       "government": "feudal",
       "race": "human"
     },
+    "ellinike": {
+      "counts": {
+        "clan_house": 24,
+        "dungeon_ruin": 1,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 1,
+        "personal_female": 40,
+        "personal_male": 40,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "classical"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
     "fusangwyn": {
       "counts": {
         "clan_house": 22,
@@ -299,25 +318,6 @@
       "government": "feudal",
       "race": "human"
     },
-    "hellaspol": {
-      "counts": {
-        "clan_house": 24,
-        "dungeon_ruin": 1,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 1,
-        "personal_female": 40,
-        "personal_male": 40,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
-        "classical"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
     "hellmark": {
       "counts": {
         "clan_house": 24,
@@ -416,24 +416,6 @@
       "government": "feudal",
       "race": "human"
     },
-    "hinowa": {
-      "counts": {
-        "clan_house": 24,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 2,
-        "personal_female": 35,
-        "personal_male": 37,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
-        "east_asian"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
     "hobgoblin": {
       "counts": {
         "clan_house": 24,
@@ -465,24 +447,6 @@
       },
       "family": [
         "near_eastern",
-        "east_asian"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
-    "huaxia": {
-      "counts": {
-        "clan_house": 24,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 2,
-        "personal_female": 28,
-        "personal_male": 24,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
         "east_asian"
       ],
       "government": "feudal",
@@ -713,24 +677,6 @@
       "government": "clanhold",
       "race": "human"
     },
-    "manitland": {
-      "counts": {
-        "clan_house": 20,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 3,
-        "personal_female": 30,
-        "personal_male": 30,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
-        "north_american"
-      ],
-      "government": "clanhold",
-      "race": "human"
-    },
     "manitour": {
       "counts": {
         "clan_house": 24,
@@ -878,6 +824,24 @@
       "family": [
         "near_eastern",
         "classical"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "qinzhao": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 28,
+        "personal_male": 24,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "east_asian"
       ],
       "government": "feudal",
       "race": "human"
@@ -1117,6 +1081,25 @@
       "government": "feudal",
       "race": "human"
     },
+    "shamhar": {
+      "counts": {
+        "clan_house": 24,
+        "dungeon_ruin": 1,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 1,
+        "personal_female": 29,
+        "personal_male": 29,
+        "settlement": 40,
+        "ship": 2,
+        "tavern": 12
+      },
+      "family": [
+        "near_eastern"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
     "shidhean": {
       "counts": {
         "clan_house": 24,
@@ -1132,25 +1115,6 @@
       "family": [
         "celtic",
         "east_asian"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
-    "shinarur": {
-      "counts": {
-        "clan_house": 24,
-        "dungeon_ruin": 1,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 1,
-        "personal_female": 29,
-        "personal_male": 29,
-        "settlement": 40,
-        "ship": 2,
-        "tavern": 12
-      },
-      "family": [
-        "near_eastern"
       ],
       "government": "feudal",
       "race": "human"
@@ -1211,7 +1175,7 @@
       "government": "feudal",
       "race": "elf"
     },
-    "thiodmark": {
+    "thiodons": {
       "counts": {
         "clan_house": 24,
         "epithet": 16,
@@ -1267,24 +1231,6 @@
       "government": "feudal",
       "race": "human"
     },
-    "tollanaz": {
-      "counts": {
-        "clan_house": 24,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 3,
-        "personal_female": 29,
-        "personal_male": 28,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
-        "mesoamerican"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
     "tollangard": {
       "counts": {
         "clan_house": 24,
@@ -1320,6 +1266,24 @@
       },
       "family": [
         "near_eastern",
+        "mesoamerican"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "tollteca": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 3,
+        "personal_female": 29,
+        "personal_male": 28,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
         "mesoamerican"
       ],
       "government": "feudal",
@@ -1435,6 +1399,24 @@
       "government": "feudal",
       "race": "human"
     },
+    "wendaki": {
+      "counts": {
+        "clan_house": 20,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 3,
+        "personal_female": 30,
+        "personal_male": 30,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "north_american"
+      ],
+      "government": "clanhold",
+      "race": "human"
+    },
     "xilvaneth": {
       "counts": {
         "clan_house": 24,
@@ -1489,6 +1471,24 @@
       "family": [
         "near_eastern",
         "mesoamerican"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "yamatsu": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 35,
+        "personal_male": 37,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "east_asian"
       ],
       "government": "feudal",
       "race": "human"

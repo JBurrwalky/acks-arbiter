@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_48",
       "culture_synthesis_parents": [
-        "hellaspol",
-        "tollanaz"
+        "ellinike",
+        "tollteca"
       ]
     },
     "alignment": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Oracmaya — cosmopolitan merchant oligarchy of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Oracmaya are a vigorous merchant oligarchy people, a first-order synthesis of Hellaspol and Tollanaz [Peer Synthesis / Mercantile]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as cosmopolitan; their patrons touch war."
+      "one_paragraph": "The Oracmaya are a vigorous merchant oligarchy people, a first-order synthesis of Ellinike and Tollteca [Peer Synthesis / Mercantile]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as cosmopolitan; their patrons touch war."
     },
-    "_generated": "archetype blend of hellaspol x tollanaz [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of ellinike x tollteca [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

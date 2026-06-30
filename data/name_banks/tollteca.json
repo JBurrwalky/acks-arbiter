@@ -209,17 +209,17 @@
       "The Tepiton Xihuitl"
     ]
   },
-  "culture_id": "tollanaz",
+  "culture_id": "tollteca",
   "family": [
     "mesoamerican"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_tollanaz.json",
+    "source": "data/conlang/culture_tollteca.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "tollanaz",
+  "kit_id": "tollteca",
   "lexicon": {
     "adjectives": {
       "black": "tliltic",

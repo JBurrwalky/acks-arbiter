@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_07",
       "culture_synthesis_parents": [
-        "hinowa",
-        "thiodmark"
+        "thiodons",
+        "yamatsu"
       ]
     },
     "alignment": {
@@ -25,8 +25,8 @@
     },
     "terrain": {
       "seed_biomes": [
-        "forest",
         "grassland",
+        "forest",
         "taiga"
       ],
       "coastal_start": "E"
@@ -65,10 +65,10 @@
         "mercantile": 0.106
       },
       "preferred_troop_types": [
+        "heavy_cavalry",
         "heavy_infantry",
         "archers",
-        "light_cavalry",
-        "heavy_cavalry"
+        "light_cavalry"
       ]
     },
     "npc": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Hinogard — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Hinogard are a warlike martial aristocracy people, a first-order synthesis of Hinowa and Thiodmark [Conquest Aristocracy (thiodmark over hinowa)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, archers, light_cavalry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Hinogard are a warlike martial aristocracy people, a first-order synthesis of Thiodons and Yamatsu [Conquest Aristocracy (thiodons over yamatsu)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of hinowa x thiodmark [Conquest Aristocracy (thiodmark over hinowa)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of thiodons x yamatsu [Conquest Aristocracy (thiodons over yamatsu)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

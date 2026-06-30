@@ -2,11 +2,11 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "thiodmark",
+      "culture_id": "thiodons",
       "csv_id": "BASE_01",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Thiodmark",
+      "demonym": "Thiodons",
       "toponym": "Thiodmark",
       "tier": "human",
       "race": "human",
@@ -82,7 +82,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "thiodmark",
+    "name_bank_key": "thiodons",
     "phonemic_palette": "Gothic/continental Germanic: stops + th/dh, w, h; masc -s/-a, fem -o; ai/au diphthongs; dithematic compounds; theophoric stems are the Gothic reflexes (Thulrs-, Erlanda-, Numins-, Gauanda-).",
     "phenotype_notes": "Features of the Germanic analog (setting-lore §5.3).",
     "language": {
@@ -123,8 +123,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Thiodmark (Germanic) — the generic Germanic base culture (BASE_01); clanhold.",
-      "one_paragraph": "The Thiodmark are the generic Germanic base culture (BASE_01) of the base/hybrid emergence model — a clanhold people seeded directly by the simulation in grassland, forest, taiga. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Germanic register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Thiodons (Germanic) — the generic Germanic base culture (BASE_01); clanhold.",
+      "one_paragraph": "The Thiodons are the generic Germanic base culture (BASE_01) of the base/hybrid emergence model — a clanhold people seeded directly by the simulation in grassland, forest, taiga. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Germanic register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

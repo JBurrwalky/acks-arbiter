@@ -12,7 +12,7 @@
       "csv_id": "HYB_04",
       "culture_synthesis_parents": [
         "kemetra",
-        "thiodmark"
+        "thiodons"
       ]
     },
     "alignment": {
@@ -126,8 +126,8 @@
     },
     "flavor_text": {
       "one_line": "Kemetric — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Kemetric are a warlike martial aristocracy people, a first-order synthesis of Kemetra and Thiodmark [Conquest Aristocracy (thiodmark over kemetra)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, chariots, archers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Kemetric are a warlike martial aristocracy people, a first-order synthesis of Kemetra and Thiodons [Conquest Aristocracy (thiodons over kemetra)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, chariots, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of kemetra x thiodmark [Conquest Aristocracy (thiodmark over kemetra)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of kemetra x thiodons [Conquest Aristocracy (thiodons over kemetra)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

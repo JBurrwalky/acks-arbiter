@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_10",
       "culture_synthesis_parents": [
-        "manitland",
-        "thiodmark"
+        "thiodons",
+        "wendaki"
       ]
     },
     "alignment": {
@@ -26,9 +26,9 @@
     "terrain": {
       "seed_biomes": [
         "grassland",
-        "savanna",
         "forest",
-        "taiga"
+        "taiga",
+        "savanna"
       ],
       "coastal_start": "E"
     },
@@ -66,10 +66,10 @@
         "arcane": 0.081
       },
       "preferred_troop_types": [
-        "horse_archers",
-        "light_cavalry",
-        "light_infantry",
-        "heavy_cavalry"
+        "heavy_cavalry",
+        "heavy_infantry",
+        "archers",
+        "horse_archers"
       ]
     },
     "npc": {
@@ -126,8 +126,8 @@
     },
     "flavor_text": {
       "one_line": "Maniheim — wary tribal confederation of the synthesis; kinship, honor, valor.",
-      "one_paragraph": "The Maniheim are a warlike tribal confederation people, a first-order synthesis of Manitland and Thiodmark [Confederated Peoples]. They prize kinship, honor, valor, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as wary; their patrons touch war."
+      "one_paragraph": "The Maniheim are a warlike tribal confederation people, a first-order synthesis of Thiodons and Wendaki [Confederated Peoples]. They prize kinship, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as wary; their patrons touch war."
     },
-    "_generated": "archetype blend of manitland x thiodmark [Confederated Peoples] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of thiodons x wendaki [Confederated Peoples] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

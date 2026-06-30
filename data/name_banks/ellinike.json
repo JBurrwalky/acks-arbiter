@@ -233,17 +233,17 @@
       "The Neos Sitos"
     ]
   },
-  "culture_id": "hellaspol",
+  "culture_id": "ellinike",
   "family": [
     "classical"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_hellaspol.json",
+    "source": "data/conlang/culture_ellinike.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "hellaspol",
+  "kit_id": "ellinike",
   "lexicon": {
     "adjectives": {
       "black": "melas",

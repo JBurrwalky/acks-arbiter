@@ -12,7 +12,7 @@
       "csv_id": "HYB_15",
       "culture_synthesis_parents": [
         "albawyn",
-        "hellaspol"
+        "ellinike"
       ]
     },
     "alignment": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Ionbria — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Ionbria are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Hellaspol [Conquest Aristocracy (albawyn over hellaspol)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Ionbria are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Ellinike [Conquest Aristocracy (albawyn over ellinike)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of albawyn x hellaspol [Conquest Aristocracy (albawyn over hellaspol)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of albawyn x ellinike [Conquest Aristocracy (albawyn over ellinike)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

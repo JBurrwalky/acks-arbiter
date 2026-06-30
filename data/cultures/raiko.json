@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_37",
       "culture_synthesis_parents": [
-        "hinowa",
-        "kemetra"
+        "kemetra",
+        "yamatsu"
       ]
     },
     "alignment": {
@@ -25,9 +25,9 @@
     },
     "terrain": {
       "seed_biomes": [
-        "forest",
         "grassland",
-        "savanna"
+        "savanna",
+        "forest"
       ],
       "coastal_start": "E"
     },
@@ -66,9 +66,9 @@
       },
       "preferred_troop_types": [
         "heavy_infantry",
+        "chariots",
         "archers",
-        "light_cavalry",
-        "chariots"
+        "light_cavalry"
       ]
     },
     "npc": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Raiko — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
-      "one_paragraph": "The Raiko are a measured sacerdotal hierocracy people, a first-order synthesis of Hinowa and Kemetra [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, archers, light_cavalry. Outsiders are met as proselytizing; their patrons touch law."
+      "one_paragraph": "The Raiko are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Yamatsu [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
     },
-    "_generated": "archetype blend of hinowa x kemetra [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of kemetra x yamatsu [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

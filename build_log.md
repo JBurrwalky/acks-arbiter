@@ -37115,3 +37115,12 @@ on-tick dispatch.
 **Known issues:** Hybrid NAMES still reference the old Roman/"rom"/"quir" roots (romkem, novarom, quirgard) — those regenerate in workstream item #2 (rules-based naming engine), next.
 **Next session should:** **Naming workstream #2 — the rules-based naming engine:** word-coiner (phonology palette+phonotactics → novel word) + phonemic-shifter (re-render a name through a target's sound-laws); Conquest = conquered-endonym-in-conqueror's-register, Peer = coin "the <top-shared-trait>-folk", Confederated = coin a "people/nation" root. Peer ties surfaced to Jedidiah. Build, generate, EVALUATE quality (pivot to a structured-LLM batch if stilted). Then #3 = spec the stratified deity-usage + Conquest merge-gating (clan-conquers-civ only) into gdd-hybrid-conlang-fusion.md.
 **Commits:** ca4f910 (P4a) + 916d31e (P4b) + this (Vallica rename + determinism fix).
+
+## Session 2026-06-29 — Naming workstream #1b: overhaul 7 base culture names
+
+**Task:** Jedidiah flagged most base names as poor-sounding or place-suffix-based (a culture name must name the PEOPLE, not the place). Renamed 7 of 11 bases (name-only).
+**Model used:** Opus 4.8.
+**Completed:** Quirium→Vallica (earlier), Thiodmark→**Thiodons**, Hellaspol→**Ellinike**, Shinarur→**Shamhar**, Tollanaz→**Tollteca**, Manitland→**Wendaki**, Huaxia→**Qinzhao**, Hinowa→**Yamatsu** (Albawyn/Aryastan/Kemetra kept). Each = name-only: renamed base kit + conlang kit + bank, updated identity (culture_id/demonym/toponym/name_bank_key) + flavor_text, kept all traits/phonology/names. Updated `BASE_CSV` (+ the hardcoded `brythald` pair) in both tools; re-ran `--generate` so all 46 hybrids' `culture_synthesis_parents` use new names; patched the 9 authored hybrids by hand. Conventions §85.
+**Decisions:** demonym=PEOPLE (Thiodons), toponym=LAND (Thiodmark); `-mark/-gard/-heim` are place-suffixes, valid only on toponyms — this invalidates the place-suffix hybrid names (aryamark/hellmark/ashurheim/tollangard/hinogard) for the hybrid-naming redo.
+**Tests:** Suite **477/16** (clean baseline; zero new failures). Seeding 217 + name-banks 82/1250 green. No test referenced the renamed bases.
+**Next:** redo the hybrid-naming proposal (workstream #2) against the NEW base roots + the people-name rule (no place-suffixes); then apply hybrid renames; then #3 deity/merge-gating GDD spec.

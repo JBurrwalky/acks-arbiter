@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "manitland",
+      "culture_id": "wendaki",
       "csv_id": "BASE_11",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Manitland",
-      "toponym": "Manitland",
+      "demonym": "Wendaki",
+      "toponym": "Wendaki",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "clan"
@@ -81,7 +81,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "manitland",
+    "name_bank_key": "wendaki",
     "phonemic_palette": "Plains, Comanche-leaning: roots paa (water), toya (mountain), huupi (tree), soni (grass), taabe (sun), mua (moon), puuku (horse), numu (people); the barred-u vowel (written u); endings -pu/-bo/-tu; Apache nantan; pan-Plains akicita. Descriptive deed-names in the usual rendering.",
     "phenotype_notes": "Features of the Plains-nomad analog (setting-lore §5.3).",
     "language": {
@@ -122,8 +122,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Manitland (Amerindian) — the generic Amerindian base culture (BASE_11); clanhold.",
-      "one_paragraph": "The Manitland are the generic Amerindian base culture (BASE_11) of the base/hybrid emergence model — a clanhold people seeded directly by the simulation in grassland, savanna. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Amerindian register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Wendaki (Amerindian) — the generic Amerindian base culture (BASE_11); clanhold.",
+      "one_paragraph": "The Wendaki are the generic Amerindian base culture (BASE_11) of the base/hybrid emergence model — a clanhold people seeded directly by the simulation in grassland, savanna. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Amerindian register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

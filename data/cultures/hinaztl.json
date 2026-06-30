@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_51",
       "culture_synthesis_parents": [
-        "hinowa",
-        "tollanaz"
+        "tollteca",
+        "yamatsu"
       ]
     },
     "alignment": {
@@ -25,9 +25,9 @@
     },
     "terrain": {
       "seed_biomes": [
-        "forest",
+        "savanna",
         "grassland",
-        "savanna"
+        "forest"
       ],
       "coastal_start": "E"
     },
@@ -66,9 +66,9 @@
       },
       "preferred_troop_types": [
         "heavy_infantry",
+        "light_infantry",
         "archers",
-        "light_cavalry",
-        "light_infantry"
+        "light_cavalry"
       ]
     },
     "npc": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Hinaztl — domineering imperial hegemony of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Hinaztl are a vigorous imperial hegemony people, a first-order synthesis of Hinowa and Tollanaz [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, archers, light_cavalry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Hinaztl are a vigorous imperial hegemony people, a first-order synthesis of Tollteca and Yamatsu [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of hinowa x tollanaz [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of tollteca x yamatsu [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

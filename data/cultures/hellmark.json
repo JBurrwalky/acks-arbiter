@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_06",
       "culture_synthesis_parents": [
-        "hellaspol",
-        "thiodmark"
+        "ellinike",
+        "thiodons"
       ]
     },
     "alignment": {
@@ -126,8 +126,8 @@
     },
     "flavor_text": {
       "one_line": "Hellmark — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Hellmark are a warlike martial aristocracy people, a first-order synthesis of Hellaspol and Thiodmark [Conquest Aristocracy (thiodmark over hellaspol)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Hellmark are a warlike martial aristocracy people, a first-order synthesis of Ellinike and Thiodons [Conquest Aristocracy (thiodons over ellinike)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of hellaspol x thiodmark [Conquest Aristocracy (thiodmark over hellaspol)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of ellinike x thiodons [Conquest Aristocracy (thiodons over ellinike)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

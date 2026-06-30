@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "shinarur",
+      "culture_id": "shamhar",
       "csv_id": "BASE_03",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Shinarur",
-      "toponym": "Shinarur",
+      "demonym": "Shamharu",
+      "toponym": "Shamhar",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ"
@@ -81,7 +81,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "shinarur",
+    "name_bank_key": "shamhar",
     "phonemic_palette": "Akkadian: sh, ', kh, ts, q; vowels a i u; endings -u/-tu/-um; theophoric stems are morphed canon-names (Tullaru-, Argantu-, Urlandu-, Numunu-).",
     "phenotype_notes": "Features of the Mesopotamian analog (setting-lore §5.3).",
     "language": {
@@ -122,8 +122,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Shinarur (Mesopotamian) — the generic Mesopotamian base culture (BASE_03); civilized.",
-      "one_paragraph": "The Shinarur are the generic Mesopotamian base culture (BASE_03) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, savanna. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Mesopotamian register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Shamharu (Mesopotamian) — the generic Mesopotamian base culture (BASE_03); civilized.",
+      "one_paragraph": "The Shamharu are the generic Mesopotamian base culture (BASE_03) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, savanna. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Mesopotamian register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

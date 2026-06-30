@@ -12,7 +12,7 @@
       "csv_id": "HYB_03",
       "culture_synthesis_parents": [
         "aryastan",
-        "thiodmark"
+        "thiodons"
       ]
     },
     "alignment": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Aryamark — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Aryamark are a warlike martial aristocracy people, a first-order synthesis of Aryastan and Thiodmark [Conquest Aristocracy (thiodmark over aryastan)]. They prize conquest, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Aryamark are a warlike martial aristocracy people, a first-order synthesis of Aryastan and Thiodons [Conquest Aristocracy (thiodons over aryastan)]. They prize conquest, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of aryastan x thiodmark [Conquest Aristocracy (thiodmark over aryastan)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of aryastan x thiodons [Conquest Aristocracy (thiodons over aryastan)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

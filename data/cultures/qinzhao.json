@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "huaxia",
+      "culture_id": "qinzhao",
       "csv_id": "BASE_09",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Huaxian",
-      "toponym": "Huaxia",
+      "demonym": "Qinzhao",
+      "toponym": "Qinguo",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ"
@@ -81,7 +81,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "huaxia",
+    "name_bank_key": "qinzhao",
     "phonemic_palette": "Sinitic: monosyllabic morphemes; syllable (C)(G)V(C) with only -n/-ng codas; tones (unmarked); no consonant clusters; surname(1) + given(1-2); celestial titles -di/-jun/-wang.",
     "phenotype_notes": "Features of the Chinese analog (setting-lore §5.3).",
     "language": {
@@ -122,8 +122,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Huaxian (Chinese) — the generic Chinese base culture (BASE_09); civilized.",
-      "one_paragraph": "The Huaxian are the generic Chinese base culture (BASE_09) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Chinese register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Qinzhaon (Chinese) — the generic Chinese base culture (BASE_09); civilized.",
+      "one_paragraph": "The Qinzhaon are the generic Chinese base culture (BASE_09) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Chinese register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

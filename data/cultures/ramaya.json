@@ -12,7 +12,7 @@
       "csv_id": "HYB_39",
       "culture_synthesis_parents": [
         "kemetra",
-        "tollanaz"
+        "tollteca"
       ]
     },
     "alignment": {
@@ -123,8 +123,8 @@
     },
     "flavor_text": {
       "one_line": "Ramaya — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
-      "one_paragraph": "The Ramaya are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Tollanaz [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
+      "one_paragraph": "The Ramaya are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Tollteca [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
     },
-    "_generated": "archetype blend of kemetra x tollanaz [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of kemetra x tollteca [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

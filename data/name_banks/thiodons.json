@@ -229,17 +229,17 @@
       "The Rauds Silubr"
     ]
   },
-  "culture_id": "thiodmark",
+  "culture_id": "thiodons",
   "family": [
     "germanic"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_thiodmark.json",
+    "source": "data/conlang/culture_thiodons.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "clanhold",
-  "kit_id": "thiodmark",
+  "kit_id": "thiodons",
   "lexicon": {
     "adjectives": {
       "black": "swarts",
