@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "brythald",
+      "demonym": "Brythald",
+      "toponym": "Bryten",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_01",
+      "culture_synthesis_parents": [
+        "albawyn",
+        "thiodmark"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.45
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.525,
+      "size_exponent_bias": 0.2
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.525,
+      "collapse_proneness": 0.75,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.22
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.641,
+        "religious": 0.155,
+        "mercantile": 0.106,
+        "arcane": 0.098
+      },
+      "preferred_troop_types": [
+        "light_infantry",
+        "chariots",
+        "berserkers",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "expressiveness": 1.0,
+        "stress_reactivity": 1.0,
+        "self_interest": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.0,
+      "primitive": 1.0
+    }
+  },
+  "flavor": {
+    "name_bank_key": "brythald",
+    "phonemic_palette": "germanic (anglo-saxon / Old English) / celtic (brythonic / Welsh-Cumbric substrate)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, celtic",
+      "script": "own_script"
+    },
+    "social_structure": "tribal_confederation",
+    "values": {
+      "core_values": [
+        "kinship",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "austere",
+      "signature_feature": "austere halls of the Brythald"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Brythald — wary tribal confederation of the synthesis; kinship, honor, valor.",
+      "one_paragraph": "The Brythald are a warlike tribal confederation people, a first-order synthesis of Albawyn and Thiodmark [Confederated Peoples]. They prize kinship, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as wary; their patrons touch war."
+    },
+    "_generated": "archetype blend of albawyn x thiodmark [Confederated Peoples] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

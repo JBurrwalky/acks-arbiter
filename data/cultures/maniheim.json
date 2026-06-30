@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "maniheim",
+      "demonym": "Maniheim",
+      "toponym": "Vinheim",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_10",
+      "culture_synthesis_parents": [
+        "manitland",
+        "thiodmark"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.525,
+      "size_exponent_bias": 0.25
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.55,
+      "collapse_proneness": 0.75,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.16
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.677,
+        "religious": 0.121,
+        "mercantile": 0.121,
+        "arcane": 0.081
+      },
+      "preferred_troop_types": [
+        "horse_archers",
+        "light_cavalry",
+        "light_infantry",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "stress_reactivity": 1.0,
+        "societal_orthodoxy": -1.0,
+        "self_interest": -0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.0,
+      "primitive": 1.0
+    }
+  },
+  "flavor": {
+    "name_bank_key": "maniheim",
+    "phonemic_palette": "germanic (norse: the longship-folk; nominative -r, w- lost before round vowels (Wod->Od-), ai>ei, i/u-umlaut, -son/-dottir, the konungr/jarl/godi register, the dithematic Thor-/Gunn-/-ulfr name-stock) / north_american (woodland: Iroquoian/Haudenosaunee register, labial-free, the longhouse-clans (kanonhsa / ohwachira), the kanata-towns, the royaner/hoyaneh sachem ranks and the clan-mothers (Iakoia:ner), the forest substrate (karhakonha) and the totemic clan-powers)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, north_american",
+      "script": "own_script"
+    },
+    "social_structure": "tribal_confederation",
+    "values": {
+      "core_values": [
+        "kinship",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "austere",
+      "signature_feature": "austere halls of the Maniheim"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Maniheim — wary tribal confederation of the synthesis; kinship, honor, valor.",
+      "one_paragraph": "The Maniheim are a warlike tribal confederation people, a first-order synthesis of Manitland and Thiodmark [Confederated Peoples]. They prize kinship, honor, valor, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as wary; their patrons touch war."
+    },
+    "_generated": "archetype blend of manitland x thiodmark [Confederated Peoples] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

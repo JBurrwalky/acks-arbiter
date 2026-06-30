@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "wabanstan",
+      "demonym": "Wabanstan",
+      "toponym": "Wabanstan",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_34",
+      "culture_synthesis_parents": [
+        "aryastan",
+        "manitland"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.7,
+      "size_exponent_bias": 0.2
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.55
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.503,
+        "mercantile": 0.205,
+        "religious": 0.154,
+        "arcane": 0.137
+      },
+      "preferred_troop_types": [
+        "archers",
+        "heavy_cavalry",
+        "heavy_infantry",
+        "horse_archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "stress_reactivity": 1.0,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0,
+        "in_group_loyalty": 1.0,
+        "civility": 1.0
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.54,
+      "primitive": 0.46
+    }
+  },
+  "flavor": {
+    "name_bank_key": "wabanstan",
+    "phonemic_palette": "old_persian (Achaemenid court register: the Xshayathiya/satrapal ladder, the paradise-garden and the royal road, theophorics on Arta- and the shifted canon-stems, flowing a/i/u vowels with long counterparts, ezafe genitive-of-relation '-ahya', spirants th/x/f and sibilants s/sh/z/c, the -aspa/-arta/-farnah/-data endings) / woodland (Iroquois/Haudenosaunee: the matrilineal longhouse-clans (ohwachira) and the Grand Council of sachems, the forest-and-lake material world, labial-sparse polysynthetic compounds, glottal stops and nasal vowels, the clan-mothers who raise and depose the chiefs)",
+    "language": {
+      "language_name": "old_persian",
+      "language_family": "near_eastern, north_american",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Wabanstan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Wabanstan — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Wabanstan are a warlike martial aristocracy people, a first-order synthesis of Aryastan and Manitland [Conquest Aristocracy (manitland over aryastan)]. They prize conquest, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of aryastan x manitland [Conquest Aristocracy (manitland over aryastan)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

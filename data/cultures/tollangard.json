@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "tollangard",
+      "demonym": "Tollangard",
+      "toponym": "Tollangard",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_09",
+      "culture_synthesis_parents": [
+        "thiodmark",
+        "tollanaz"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.55,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.7,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.3
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.622,
+        "religious": 0.173,
+        "mercantile": 0.14,
+        "arcane": 0.066
+      },
+      "preferred_troop_types": [
+        "heavy_cavalry",
+        "heavy_infantry",
+        "archers",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "mysticism": 1.0,
+        "stress_reactivity": 0.5,
+        "self_interest": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "tollangard",
+    "phonemic_palette": "germanic (norse register: konungr/jarl, nominative -r, -son/-dottir, retained th/dh, ei/ey diphthongs, root-initial stress, dithematic names) / mesoamerican (nahuatl: the altepetl pyramid-cities, the teocalli temple-priesthood, the calpolli wards, the -tl/-tli absolutive and -tzin reverential, -tlan/-tepec/-co place-suffixes, the feathered-serpent kingship)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, mesoamerican",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Tollangard"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Tollangard — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Tollangard are a warlike martial aristocracy people, a first-order synthesis of Thiodmark and Tollanaz [Conquest Aristocracy (thiodmark over tollanaz)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of thiodmark x tollanaz [Conquest Aristocracy (thiodmark over tollanaz)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

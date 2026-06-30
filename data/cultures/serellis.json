@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "serellis",
+      "demonym": "Serellis",
+      "toponym": "Serellis",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_47",
+      "culture_synthesis_parents": [
+        "hellaspol",
+        "huaxia"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna",
+        "forest"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.575,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.45,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.65,
+      "collapse_proneness": 0.625,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.48
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.514,
+        "mercantile": 0.179,
+        "arcane": 0.179,
+        "religious": 0.128
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "marines",
+        "crossbowmen"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "expressiveness": 1.0,
+        "self_interest": -1.0,
+        "epistemic_curiosity": 1.0,
+        "stress_reactivity": 0.5,
+        "societal_orthodoxy": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "serellis",
+    "phonemic_palette": "classical (hellenic register: the polis-academy, -os/-on/-e endings, th/ph/kh aspirates, vowel-rich open syllables, the philosopher and the strategos, the -arch/-archy title-rhyme) / east_asian (sinitic: the jiang river-valleys and the silk-road, the Confucian mandarin bureaucracy of the celestial court, the walled cheng, monosyllabic substrate roots, the -di/-jun celestial register)",
+    "language": {
+      "language_name": "classical",
+      "language_family": "classical, east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "imperial_hegemony",
+    "values": {
+      "core_values": [
+        "law",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Serellis"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Serellis — domineering imperial hegemony of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Serellis are a vigorous imperial hegemony people, a first-order synthesis of Hellaspol and Huaxia [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of hellaspol x huaxia [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

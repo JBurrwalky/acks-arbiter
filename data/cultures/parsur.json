@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "parsur",
+      "demonym": "Parsur",
+      "toponym": "Parsur",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_20",
+      "culture_synthesis_parents": [
+        "aryastan",
+        "shinarur"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.7
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.55,
+      "defense": 0.6,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.75,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.75
+    },
+    "rulership": {
+      "sphere_weights": {
+        "religious": 0.307,
+        "military": 0.292,
+        "mercantile": 0.237,
+        "arcane": 0.164
+      },
+      "preferred_troop_types": [
+        "archers",
+        "heavy_cavalry",
+        "heavy_infantry",
+        "chariots"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0,
+        "mysticism": 1.0,
+        "civility": 1.0,
+        "affective_compassion": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "parsur",
+    "phonemic_palette": "near_eastern (akkadian: the alu/bit river-cities of the Two Rivers, the sangu temple-priesthood, construct-chain toponyms, emphatic gutturals q/kh/sh/', mimation -u/-um/-tu, SOV agglutinative grammar, penultimate stress)",
+    "language": {
+      "language_name": "near_eastern",
+      "language_family": "near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "sacerdotal_hierocracy",
+    "values": {
+      "core_values": [
+        "law",
+        "piety",
+        "tradition"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "proselytizing"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Parsur"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Parsur — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
+      "one_paragraph": "The Parsur are a vigorous sacerdotal hierocracy people, a first-order synthesis of Aryastan and Shinarur [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as proselytizing; their patrons touch law."
+    },
+    "_generated": "archetype blend of aryastan x shinarur [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

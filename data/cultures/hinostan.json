@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "hinostan",
+      "demonym": "Hinostan",
+      "toponym": "Hinostan",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_31",
+      "culture_synthesis_parents": [
+        "aryastan",
+        "hinowa"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.725
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.55,
+      "defense": 0.75,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.375,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.67
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.352,
+        "religious": 0.259,
+        "mercantile": 0.204,
+        "arcane": 0.185
+      },
+      "preferred_troop_types": [
+        "archers",
+        "heavy_cavalry",
+        "heavy_infantry",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0,
+        "civility": 1.0,
+        "stress_reactivity": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.54,
+      "primitive": 0.46
+    }
+  },
+  "flavor": {
+    "name_bank_key": "hinostan",
+    "phonemic_palette": "near_eastern (old_persian register: the Xshayathiya/satrapal court, the ezafe genitive-of-relation, Arta the right-order, theophoric -data/-farnah names, spirant th/x/f, the paridaida rose-garden, SOV with heavy-syllable stress) / east_asian (japonic: the shrine-isle and the kami, open CV moras, the -no- honorific link, rendaku voicing, castle-towns and daimyo houses, the disciplined warrior-way, native island/shrine/material vocabulary)",
+    "language": {
+      "language_name": "near_eastern",
+      "language_family": "near_eastern, east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "sacerdotal_hierocracy",
+    "values": {
+      "core_values": [
+        "law",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "proselytizing"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "revered"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Hinostan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Hinostan — proselytizing sacerdotal hierocracy of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Hinostan are a vigorous sacerdotal hierocracy people, a first-order synthesis of Aryastan and Hinowa [Peer Synthesis / Theocratic]. They prize law, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as proselytizing; their patrons touch war."
+    },
+    "_generated": "archetype blend of aryastan x hinowa [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

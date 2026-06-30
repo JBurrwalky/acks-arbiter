@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "wahellas",
+      "demonym": "Wahellas",
+      "toponym": "Wahellas (the Isle-Hellas; the shrine-isles and the poleis of the inner sea)",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_46",
+      "culture_synthesis_parents": [
+        "hellaspol",
+        "hinowa"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.725
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna",
+        "forest"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.55,
+      "defense": 0.675,
+      "size_exponent_bias": 0
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.35,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.55,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.4
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.375,
+        "arcane": 0.295,
+        "mercantile": 0.174,
+        "religious": 0.156
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "marines",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "expressiveness": 1.0,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0,
+        "civility": 1.0
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.54,
+      "primitive": 0.46
+    }
+  },
+  "flavor": {
+    "name_bank_key": "wahellas",
+    "phonemic_palette": "",
+    "language": {
+      "language_name": "classical",
+      "language_family": "classical, east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "scholar_magocracy",
+    "values": {
+      "core_values": [
+        "law",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "aloof"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Wahellas"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Wahellas — aloof scholar magocracy of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Wahellas are a vigorous scholar magocracy people, a first-order synthesis of Hellaspol and Hinowa [Peer Synthesis / Scholastic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as aloof; their patrons touch war."
+    },
+    "_generated": "archetype blend of hellaspol x hinowa [Peer Synthesis / Scholastic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

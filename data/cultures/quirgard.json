@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "quirgard",
+      "demonym": "Quirgard",
+      "toponym": "Quirgard",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_05",
+      "culture_synthesis_parents": [
+        "quirium",
+        "thiodmark"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.8
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.85,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.5
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.603,
+        "mercantile": 0.157,
+        "religious": 0.141,
+        "arcane": 0.099
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "archers",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.5,
+        "in_group_loyalty": 1.5,
+        "stress_reactivity": -0.5,
+        "self_interest": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "quirgard",
+    "phonemic_palette": "germanic (gothic register: thiudans/reiks, dithematic -s/-az names, retained th/w, ai/au diphthongs, heavy root-initial stress) / classical (latinate: the urbs/oppidum cities, the via road-net, the rex/consul/comes civic register, the senate and the law, -us/-a/-um endings, penultimate stress, the togate populace)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, classical",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Quirgard"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Quirgard — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Quirgard are a warlike martial aristocracy people, a first-order synthesis of Quirium and Thiodmark [Conquest Aristocracy (thiodmark over quirium)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of quirium x thiodmark [Conquest Aristocracy (thiodmark over quirium)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

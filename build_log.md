@@ -37079,3 +37079,25 @@ on-tick dispatch.
 - The 9 recovered kits' deeper fields (seed_biomes — irrelevant since hybrids never seed; old scalar tuning) are left as authored; tune during 4b alongside the 46 generated kits for consistency.
 **Next session should:** **4b — the hybrid-kit generator:** blend the 46 missing hybrids from their parent bases (asymmetric by lean; scalars=lean-weighted mean, sphere/terrain=lean-weighted union, civ_or_clan via §3.4, all-three alignment), write as `culture_class="hybrid"` kits, commit all 55. Add the load-time parent-pair→hybrid lookup + a `CultureCatalogLoader.culture_synthesis_parents` accessor. THEN 4c border merge, 4d conquest merge, 4e tests/calibration.
 **Commits:** 3738cda + de4300f (9 hybrids recovered: conlang+banks), + this (9 hybrid mechanical kits recovered+adjusted).
+
+## Session 2026-06-29 — Phase 4b: generate the 46 hybrid mechanical kits (archetype blend)
+
+**Task:** Produce the 46 missing hybrid mechanical kits so all 55 base-pair hybrids exist as static `culture_class="hybrid"` kits (the architecture decided in 4a). Jedidiah's design constraint: AVOID simple mechanical averaging (it clusters hybrids toward a bland centroid).
+**Model used:** Opus 4.8 (design, generator, validation, tuning).
+**Design decisions (Jedidiah, this session):**
+- **Archetype model, NOT averaging.** Hybrid traits are sourced per-trait by cultural ROLE + a directional "character push," with UNION on the repertoire — the union + per-trait sourcing is what produces distinctness. Three primary archetypes from the parents' civ/clan (§3.2): **Conquest Aristocracy** (clan×civ — martial elite over an absorbed civ), **Peer Synthesis** (civ×civ), **Confederated Peoples** (clan×clan). Peer Synthesis sub-flavors by the combined SECONDARY sphere (military is universally dominant, so it can't differentiate): **Hegemonic / Mercantile / Theocratic / Scholastic / Classical**.
+- **No emergent "tension" trait** (Jedidiah): traits come only from the parents (+ archetype push), no dissimilarity term.
+- **Full-detail kits** matching the authored 9 (mechanical + templated flavor).
+**Completed:**
+- **`tools/generate_hybrid_kits.py`** (committed, reusable): archetype classifier + sub-flavor selector + per-archetype scalar recipe + sphere blend/tilt + troop/NPC-bias union + class-weight/road blend + full templated flavor (values, architecture, flavor_text, phonemic_palette pulled from the conlang blend). `--validate` (regression vs the 9) / `--generate` (writes the 46).
+- **Validation:** the recipe reproduces the 9 hand-authored hybrids to **8/9 within ~0.12 mean-abs-delta** (shidhean 0.028, sargonid 0.053); the 1 outlier (`tikan`, 0.31) is a deliberate bespoke "peaceful despite fierce parents" kit — kept authored, not generated. Tuned the directional pushes (Peer collapse min−0.15→mean, rigidity max+0.10→mean+0.05, Hegemonic aggr +0.15→+0.05, Confederated collapse +0.05→+0.15) to center the formula.
+- **Generated the 46** (full-detail kits, culture_class="hybrid", culture_synthesis_parents). **Distinctness confirmed:** every scalar well-spread (stdev 0.09–0.15), no extreme blowouts (nothing ≤0.2 or ≥0.95), **zero exact-scalar duplicates** — the averaging-clustering problem is solved.
+**Decisions made:** generated kits keep the 9 authored ones untouched; flavor is templated (refinable narratively); `tikan`-type bespoke pairs among the 46 (if any feel wrong) are the user's to hand-tune — the formula gives a coherent default.
+**Interfaces:** all 55 hybrids are now static catalog entries. parent-pair→hybrid lookup (4c) will scan `culture_synthesis_parents`.
+**Database changes:** None.
+**Tests:** Suite **477/16** (unchanged); SettingStage3 seeding green (the 55 hybrids load as culture_class="hybrid", excluded from seeding). data/cultures now 83 (28 base/demi/beast + 55 hybrid).
+**Known issues:**
+- Flavor_text is templated (some generic phrasing); the conlang phonemic_palette is real. Narrative polish is optional/runtime-LLM territory.
+- The archetype→civ/clan mapping is deterministic; a few clan×civ pairs the author intended as peaceful (tikan) won't match the Conquest default — review the 46 and hand-tune any that feel mischaracterized.
+**Next session should:** **4c — border merge roll.** Add the parent-pair→hybrid load-time lookup + `CultureCatalogLoader.culture_synthesis_parents` accessor; in `_resolve_contest`/`_phase_expansion`, the merge-vs-displace roll between two distinct human BASE cultures grows HYB(A,B) substrate weight (per-pair lock). Then 4d conquest merge, 4e tests+calib.
+**Commits:** ca4f910 (P4a: 9 kits) + this (P4b: 46 generated + generator tool).

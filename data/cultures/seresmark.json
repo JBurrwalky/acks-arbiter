@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "seresmark",
+      "demonym": "Seresmark",
+      "toponym": "Seresmark",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_08",
+      "culture_synthesis_parents": [
+        "huaxia",
+        "thiodmark"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.6,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.65,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.36
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.659,
+        "religious": 0.122,
+        "mercantile": 0.122,
+        "arcane": 0.097
+      },
+      "preferred_troop_types": [
+        "crossbowmen",
+        "heavy_infantry",
+        "heavy_cavalry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "self_interest": -1.0,
+        "expressiveness": 0.5,
+        "stress_reactivity": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "seresmark",
+    "phonemic_palette": "germanic (norse / Old Norse register: konungr/jarl, the -son/-dottir patronymics, nominative -r, ai>ei, initial w- lost before round vowels, dithematic -ar/-orm/-ulf names, the river-and-sea far-trader vik-stock) / east_asian (sinitic: the -cheng silk-cities, the -jiang rivers and -shan mountains, the Confucian -di/-wang/-jun mandarin bureaucracy, monosyllabic surname-first names, the contour-toned isolating substrate)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Seresmark"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Seresmark — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Seresmark are a warlike martial aristocracy people, a first-order synthesis of Huaxia and Thiodmark [Conquest Aristocracy (thiodmark over huaxia)]. They prize conquest, honor, valor, lean toward the military sphere, and field crossbowmen, heavy_infantry, heavy_cavalry. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of huaxia x thiodmark [Conquest Aristocracy (thiodmark over huaxia)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

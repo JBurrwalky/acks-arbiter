@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "ramaya",
+      "demonym": "Ramaya",
+      "toponym": "Ramaya",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_39",
+      "culture_synthesis_parents": [
+        "kemetra",
+        "tollanaz"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.725
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.4,
+      "defense": 0.475,
+      "size_exponent_bias": -0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.775,
+      "collapse_proneness": 0.6,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.39
+    },
+    "rulership": {
+      "sphere_weights": {
+        "religious": 0.472,
+        "military": 0.285,
+        "mercantile": 0.147,
+        "arcane": 0.095
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "chariots",
+        "archers",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.5,
+        "mysticism": 1.5,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": -0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "ramaya",
+    "phonemic_palette": "near_eastern (egyptian register: per/nesut/heqa, the itru river-cult and the solar god-king, theophoric on morphed canon-stems, dj/tj/kh, -aa/-et endings, construct-chain toponyms) / mesoamerican (mayan: the witz pyramid-acropolis and carved stela, the k'uhul ajaw holy-lord and the Long-Count, jade and cacao and quetzal-feather, glottalized stops, vigesimal counting)",
+    "language": {
+      "language_name": "near_eastern",
+      "language_family": "near_eastern, mesoamerican",
+      "script": "own_script"
+    },
+    "social_structure": "sacerdotal_hierocracy",
+    "values": {
+      "core_values": [
+        "law",
+        "piety",
+        "tradition"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "proselytizing"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "revered"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Ramaya"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Ramaya — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
+      "one_paragraph": "The Ramaya are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Tollanaz [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
+    },
+    "_generated": "archetype blend of kemetra x tollanaz [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}
