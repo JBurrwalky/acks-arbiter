@@ -37058,3 +37058,24 @@ on-tick dispatch.
 **Known issues:**
 - LESSON for future culture cleanups: a kit's `csv_id` prefix (`HYB_` vs `BASE_` vs none) is the authoritative type signal — NOT the presence/absence of a mechanical kit. The member heuristic should have excluded `HYB_*`.
 **Next session should:** Resume Phase 4 build — 4a is now "build the parent-pair→hybrid definition table" (all 55 kits exist; no authoring needed), then 4b synthesis engine, 4c border merge, 4d conquest merge, 4e tests. Fold the resolved Phase-4 design decisions into the GDD as each sub-phase lands (per Jedidiah).
+
+## Session 2026-06-29 — Phase 4a: recover + adjust 9 hybrid mechanical kits; STATIC-hybrid architecture
+
+**Task:** Begin Phase 4 (hybrid emergence). Jedidiah directed recovering the 9 over-deleted hybrids' MECHANICAL kits too ("they were valuable; use what was there and adjust"). Design recon surfaced the core forks; this session recovers + adjusts the 9 and locks the architecture.
+**Model used:** Opus 4.8 (design review, recovery, adjustment, verification).
+**Design decisions (Jedidiah, this session):**
+- **Merge resolution forks:** asymmetric blend by the kit's authored LEAN; merge changes SUBSTRATE culture-weights only (reuse diffusion/go-native; no polity-identity flip); per-base-pair LOCK-IN once a merge fires; complete all 55 pairings.
+- **Hybrid mechanical source = STATIC authored kits, NOT runtime synthesis.** Every hybrid is a `data/cultures/<id>.json` kit with `culture_class="hybrid"` + `culture_synthesis_parents=[a,b]`; loaded like a base but excluded from seeding (`bases_only` filter excludes `!= "base"`); emergence looks it up by parent pair. **This eliminates the GDD's "highest-architecture-risk" item** (runtime culture-instance mutation) — GDD §3.6 + §9 Concern updated to RESOLVED.
+- **The other 46 hybrid mechanical kits will be GENERATED at build time (sub-phase 4b)** by trait-blending the two parent bases (lean-weighted), committed + hand-tunable — before any merge wiring.
+**Completed (4a):**
+- Recovered the 9 hybrid MECHANICAL kits from git `8654bd8~1` (shidhean/senecar/sumset/sargonid/ptolan/serican/thracan/ryujin/tikan — the full rich shape: terrain/expansion/conquest/lifecycle/infrastructure/rulership/npc/class_kit_weights).
+- **Adjusted all 9:** `identity.culture_class="hybrid"`; `identity.csv_id=HYB_NN`; `identity.culture_synthesis_parents=[base_a,base_b]` (from the conlang `synthesis_sources`); `alignment.allowed`→ all three (§3.7 supersedes the kits' old 2-of-3 restriction).
+- GDD §3.6/§9, conventions §85 (culture_class now 3-valued: base|hybrid|member) updated.
+**Decisions made:** parent-pair→hybrid lookup is DERIVED at load from `culture_synthesis_parents` (no separate `hybrids.json` table needed). Recovery > re-authoring (hand-authored kits, higher fidelity).
+**Interfaces:** new `identity.culture_class="hybrid"` value; new `identity.culture_synthesis_parents` field on hybrid kits.
+**Database changes:** None (a `setting_polities.culture_synthesis_parents` column will land in 4b/4c when emergence persists).
+**Tests:** Suite **477/16** (unchanged); SettingStage3 (seeding) 217 checks green — hybrids excluded from seeding (culture_class != base), not seeded, dormant until emergence. No catalog-count assertions exist. Name-banks 82/1250.
+**Known issues:**
+- The 9 recovered kits' deeper fields (seed_biomes — irrelevant since hybrids never seed; old scalar tuning) are left as authored; tune during 4b alongside the 46 generated kits for consistency.
+**Next session should:** **4b — the hybrid-kit generator:** blend the 46 missing hybrids from their parent bases (asymmetric by lean; scalars=lean-weighted mean, sphere/terrain=lean-weighted union, civ_or_clan via §3.4, all-three alignment), write as `culture_class="hybrid"` kits, commit all 55. Add the load-time parent-pair→hybrid lookup + a `CultureCatalogLoader.culture_synthesis_parents` accessor. THEN 4c border merge, 4d conquest merge, 4e tests/calibration.
+**Commits:** 3738cda + de4300f (9 hybrids recovered: conlang+banks), + this (9 hybrid mechanical kits recovered+adjusted).

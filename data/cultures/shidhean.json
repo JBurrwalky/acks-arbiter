@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "shidhean",
+      "catalog_number": 29,
+      "demonym": "Shidhean",
+      "toponym": "Shidara",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        7,
+        10
+      ],
+      "culture_class": "hybrid",
+      "csv_id": "HYB_16",
+      "culture_synthesis_parents": [
+        "albawyn",
+        "hinowa"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.7
+    },
+    "terrain": {
+      "seed_biomes": [
+        "forest",
+        "hills",
+        "mountains"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.7,
+      "defense": 0.8,
+      "size_exponent_bias": -0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.4,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.5,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.4
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.4,
+        "mercantile": 0.1,
+        "religious": 0.25,
+        "arcane": 0.25
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "archers",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "civility": 1.0,
+        "expressiveness": -1.0,
+        "self_interest": 0.5,
+        "societal_orthodoxy": 0.5,
+        "mysticism": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.7,
+      "primitive": 0.3
+    }
+  },
+  "flavor": {
+    "name_bank_key": "shidhean",
+    "phonemic_palette": "Fused Celtic-Japonic: soft, vowel-rich; lenition (c>ch, t>th) meets the open CV mora; consonants k g t d s sh ch ts n m r w y, glottal stop; endings fuse Celtic -an/-ach with Japonic -no/-ama/-shi; pitch-and-stress mixed.",
+    "phenotype_notes": "Synthesis of Celtic + Japanese per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Celtic-Japonic Deep Fusion",
+      "language_family": "celtic, east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "honor",
+        "tradition",
+        "glory"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "defying the ancestors"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "revered",
+      "divine": "revered",
+      "notes": "Celtic + Japanese register; deity-morphs in name_bank 'shidhean'."
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "rugged",
+      "signature_feature": "stone halls of the Shidhean"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "nature",
+        "knowledge"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Shidhean — wary clan confederation of the forest; honor, tradition.",
+      "one_paragraph": "The Shidhean (Celtic + Japanese) are a assertive clan confederation people seeded in forest, hills, mountains. They prize honor, tradition, glory, lean toward the military sphere, and field heavy_infantry, archers, light_cavalry. Outsiders are met as wary; their patrons touch war, nature, knowledge."
+    }
+  }
+}
