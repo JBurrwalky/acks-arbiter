@@ -12,7 +12,7 @@
       "csv_id": "HYB_41",
       "culture_synthesis_parents": [
         "hellaspol",
-        "quirium"
+        "vallica"
       ]
     },
     "alignment": {
@@ -74,10 +74,10 @@
     "npc": {
       "personality_weight_biases": {
         "societal_orthodoxy": 1.5,
+        "epistemic_curiosity": 1.0,
         "expressiveness": 1.0,
         "in_group_loyalty": 1.0,
-        "epistemic_curiosity": 1.0,
-        "stress_reactivity": -0.5
+        "civility": 0.5
       }
     },
     "class_kit_weights": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Ausonia — cosmopolitan merchant oligarchy of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Ausonia are a vigorous merchant oligarchy people, a first-order synthesis of Hellaspol and Quirium [Peer Synthesis / Mercantile]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as cosmopolitan; their patrons touch war."
+      "one_paragraph": "The Ausonia are a vigorous merchant oligarchy people, a first-order synthesis of Hellaspol and Vallica [Peer Synthesis / Mercantile]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as cosmopolitan; their patrons touch war."
     },
-    "_generated": "archetype blend of hellaspol x quirium [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of hellaspol x vallica [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

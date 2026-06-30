@@ -2,12 +2,12 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "quirium",
+      "culture_id": "vallica",
       "csv_id": "BASE_06",
       "culture_class": "base",
       "catalog_number": null,
-      "demonym": "Quirian",
-      "toponym": "Quirium",
+      "demonym": "Vallican",
+      "toponym": "Vallica",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ"
@@ -81,7 +81,7 @@
     }
   },
   "flavor": {
-    "name_bank_key": "quirium",
+    "name_bank_key": "vallica",
     "phonemic_palette": "Latinate: a e i o u; p t c(=k) b d g f s v l r m n; endings -us/-a/-um/-ius/-or; penultimate stress.",
     "phenotype_notes": "Features of the Roman analog (setting-lore §5.3).",
     "language": {
@@ -122,8 +122,8 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Quirian (Roman) — the generic Roman base culture (BASE_06); civilized.",
-      "one_paragraph": "The Quirian are the generic Roman base culture (BASE_06) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Roman register (lexicon, titles, religion, and names) of its source member culture."
+      "one_line": "Vallican (Roman) — the generic Roman base culture (BASE_06); civilized.",
+      "one_paragraph": "The Vallican are the generic Roman base culture (BASE_06) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Roman register (lexicon, titles, religion, and names) of its source member culture."
     }
   }
 }

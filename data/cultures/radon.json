@@ -73,11 +73,11 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "societal_orthodoxy": 1.5,
         "mysticism": 1.5,
+        "societal_orthodoxy": 1.5,
         "expressiveness": 1.0,
-        "stress_reactivity": 1.0,
-        "in_group_loyalty": 1.0
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0
       }
     },
     "class_kit_weights": {

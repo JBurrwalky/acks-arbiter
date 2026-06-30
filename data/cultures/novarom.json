@@ -12,7 +12,7 @@
       "csv_id": "HYB_45",
       "culture_synthesis_parents": [
         "manitland",
-        "quirium"
+        "vallica"
       ]
     },
     "alignment": {
@@ -74,9 +74,9 @@
     "npc": {
       "personality_weight_biases": {
         "societal_orthodoxy": 1.5,
-        "stress_reactivity": 1.0,
         "in_group_loyalty": 1.0,
-        "self_interest": -0.5,
+        "stress_reactivity": 1.0,
+        "civility": 0.5,
         "mysticism": 0.5
       }
     },
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Novarom — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Novarom are a warlike martial aristocracy people, a first-order synthesis of Manitland and Quirium [Conquest Aristocracy (manitland over quirium)]. They prize conquest, honor, valor, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Novarom are a warlike martial aristocracy people, a first-order synthesis of Manitland and Vallica [Conquest Aristocracy (manitland over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field horse_archers, light_cavalry, light_infantry. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of manitland x quirium [Conquest Aristocracy (manitland over quirium)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of manitland x vallica [Conquest Aristocracy (manitland over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

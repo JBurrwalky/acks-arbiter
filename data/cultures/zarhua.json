@@ -61,8 +61,8 @@
       "sphere_weights": {
         "military": 0.365,
         "mercantile": 0.307,
-        "religious": 0.164,
-        "arcane": 0.164
+        "arcane": 0.164,
+        "religious": 0.164
       },
       "preferred_troop_types": [
         "archers",
@@ -73,11 +73,11 @@
     },
     "npc": {
       "personality_weight_biases": {
+        "civility": 1.0,
         "self_interest": 1.0,
         "societal_orthodoxy": 1.0,
-        "civility": 1.0,
-        "expressiveness": 0.5,
-        "stress_reactivity": 0.5
+        "affective_compassion": 0.5,
+        "epistemic_curiosity": 0.5
       }
     },
     "class_kit_weights": {

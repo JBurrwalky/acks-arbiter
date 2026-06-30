@@ -21,7 +21,7 @@
         "Neutral",
         "Chaotic"
       ],
-      "rigidity": 0.725
+      "rigidity": 0.775
     },
     "terrain": {
       "seed_biomes": [
@@ -50,7 +50,7 @@
       ]
     },
     "lifecycle": {
-      "peak_strength": 0.7,
+      "peak_strength": 0.65,
       "collapse_proneness": 0.375,
       "end_state": "enduring"
     },
@@ -60,9 +60,9 @@
     "rulership": {
       "sphere_weights": {
         "military": 0.352,
-        "religious": 0.259,
+        "arcane": 0.259,
         "mercantile": 0.204,
-        "arcane": 0.185
+        "religious": 0.185
       },
       "preferred_troop_types": [
         "archers",
@@ -74,10 +74,10 @@
     "npc": {
       "personality_weight_biases": {
         "in_group_loyalty": 1.5,
+        "civility": 1.0,
         "self_interest": 1.0,
         "societal_orthodoxy": 1.0,
-        "civility": 1.0,
-        "stress_reactivity": 0.5
+        "affective_compassion": 0.5
       }
     },
     "class_kit_weights": {
@@ -93,7 +93,7 @@
       "language_family": "near_eastern, east_asian",
       "script": "own_script"
     },
-    "social_structure": "sacerdotal_hierocracy",
+    "social_structure": "scholar_magocracy",
     "values": {
       "core_values": [
         "law",
@@ -104,11 +104,11 @@
         "dishonoring the synthesis",
         "betraying kin or oath"
       ],
-      "attitude_toward_outsiders": "proselytizing"
+      "attitude_toward_outsiders": "aloof"
     },
     "magic_attitude": {
       "arcane": "respected",
-      "divine": "revered"
+      "divine": "respected"
     },
     "architecture_style": {
       "primary_material": "stone",
@@ -124,9 +124,9 @@
       ]
     },
     "flavor_text": {
-      "one_line": "Hinostan — proselytizing sacerdotal hierocracy of the synthesis; law, honor, valor.",
-      "one_paragraph": "The Hinostan are a vigorous sacerdotal hierocracy people, a first-order synthesis of Aryastan and Hinowa [Peer Synthesis / Theocratic]. They prize law, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as proselytizing; their patrons touch war."
+      "one_line": "Hinostan — aloof scholar magocracy of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Hinostan are a vigorous scholar magocracy people, a first-order synthesis of Aryastan and Hinowa [Peer Synthesis / Scholastic]. They prize law, honor, valor, lean toward the military sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as aloof; their patrons touch war."
     },
-    "_generated": "archetype blend of aryastan x hinowa [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of aryastan x hinowa [Peer Synthesis / Scholastic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

@@ -76,9 +76,9 @@
       "personality_weight_biases": {
         "in_group_loyalty": 1.5,
         "mysticism": 1.0,
-        "stress_reactivity": 0.5,
+        "affective_compassion": -0.5,
         "self_interest": 0.5,
-        "affective_compassion": -0.5
+        "societal_orthodoxy": 0.5
       }
     },
     "class_kit_weights": {

@@ -12,7 +12,7 @@
       "csv_id": "HYB_36",
       "culture_synthesis_parents": [
         "kemetra",
-        "quirium"
+        "vallica"
       ]
     },
     "alignment": {
@@ -73,10 +73,10 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "societal_orthodoxy": 1.5,
         "mysticism": 1.5,
+        "societal_orthodoxy": 1.5,
         "in_group_loyalty": 1.0,
-        "stress_reactivity": -0.5,
+        "civility": 0.5,
         "self_interest": 0.5
       }
     },
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Romkem — proselytizing sacerdotal hierocracy of the synthesis; law, piety, tradition.",
-      "one_paragraph": "The Romkem are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Quirium [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
+      "one_paragraph": "The Romkem are a measured sacerdotal hierocracy people, a first-order synthesis of Kemetra and Vallica [Peer Synthesis / Theocratic]. They prize law, piety, tradition, lean toward the religious sphere, and field heavy_infantry, chariots, archers. Outsiders are met as proselytizing; their patrons touch law."
     },
-    "_generated": "archetype blend of kemetra x quirium [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of kemetra x vallica [Peer Synthesis / Theocratic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

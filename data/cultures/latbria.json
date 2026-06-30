@@ -12,7 +12,7 @@
       "csv_id": "HYB_14",
       "culture_synthesis_parents": [
         "albawyn",
-        "quirium"
+        "vallica"
       ]
     },
     "alignment": {
@@ -74,9 +74,9 @@
       "personality_weight_biases": {
         "societal_orthodoxy": 1.5,
         "expressiveness": 1.0,
-        "stress_reactivity": 1.0,
         "in_group_loyalty": 1.0,
-        "self_interest": 0.5
+        "stress_reactivity": 1.0,
+        "civility": -0.5
       }
     },
     "class_kit_weights": {
@@ -124,8 +124,8 @@
     },
     "flavor_text": {
       "one_line": "Latbria — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Latbria are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Quirium [Conquest Aristocracy (albawyn over quirium)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Latbria are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Vallica [Conquest Aristocracy (albawyn over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of albawyn x quirium [Conquest Aristocracy (albawyn over quirium)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of albawyn x vallica [Conquest Aristocracy (albawyn over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

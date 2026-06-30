@@ -172,7 +172,7 @@
       "Aemilus"
     ],
     "settlement": [
-      "Quirium",
+      "Vallica",
       "Aurelium",
       "Castra Ferrata",
       "Portus Magnus",
@@ -216,7 +216,7 @@
     "ship": [
       "Victrix",
       "Aquila",
-      "Dawn of Quirium"
+      "Dawn of Vallica"
     ],
     "tavern": [
       "The Gilded Amphora",
@@ -233,17 +233,17 @@
       "The Pulcher Vinum"
     ]
   },
-  "culture_id": "quirium",
+  "culture_id": "vallica",
   "family": [
     "classical"
   ],
   "generator": {
     "deterministic": true,
-    "source": "data/conlang/culture_quirium.json",
+    "source": "data/conlang/culture_vallica.json",
     "tool": "tools/build_name_banks.py"
   },
   "government": "feudal",
-  "kit_id": "quirium",
+  "kit_id": "vallica",
   "lexicon": {
     "adjectives": {
       "black": "ater",
@@ -348,7 +348,7 @@
     "_note": "Settlement/region names assemble from lexicon+morphology; other categories follow these patterns (full lists assembled by the build step).",
     "dungeons_ruins": "[Tomb/Vault/Catacomb] of [name]: the Catacombs of Divus Aurelius",
     "military_units": "Legio [ordinal] [cognomen]: Legio Prima Ferrata (the Iron Legion)",
-    "ships": "virtue/eagle/dawn names: Victrix, Aquila, Dawn of Quirium",
+    "ships": "virtue/eagle/dawn names: Victrix, Aquila, Dawn of Vallica",
     "taverns": "The [Adjective] [Noun]: The Gilded Amphora, The Iron Eagle"
   },
   "race": "human",

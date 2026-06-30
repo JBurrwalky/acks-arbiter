@@ -61,8 +61,8 @@
       "sphere_weights": {
         "religious": 0.408,
         "military": 0.327,
-        "mercantile": 0.133,
-        "arcane": 0.133
+        "arcane": 0.133,
+        "mercantile": 0.133
       },
       "preferred_troop_types": [
         "crossbowmen",
@@ -73,11 +73,11 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "societal_orthodoxy": 1.5,
         "mysticism": 1.5,
+        "societal_orthodoxy": 1.5,
         "self_interest": -1.0,
-        "expressiveness": 0.5,
-        "stress_reactivity": 0.5
+        "civility": 0.5,
+        "epistemic_curiosity": 0.5
       }
     },
     "class_kit_weights": {

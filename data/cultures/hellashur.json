@@ -72,11 +72,11 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "expressiveness": 1.0,
-        "societal_orthodoxy": 1.0,
-        "mysticism": 1.0,
         "epistemic_curiosity": 1.0,
-        "self_interest": -0.5
+        "expressiveness": 1.0,
+        "mysticism": 1.0,
+        "societal_orthodoxy": 1.0,
+        "civility": 0.5
       }
     },
     "class_kit_weights": {

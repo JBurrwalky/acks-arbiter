@@ -11,8 +11,8 @@
       "culture_class": "hybrid",
       "csv_id": "HYB_05",
       "culture_synthesis_parents": [
-        "quirium",
-        "thiodmark"
+        "thiodmark",
+        "vallica"
       ]
     },
     "alignment": {
@@ -65,19 +65,19 @@
         "arcane": 0.099
       },
       "preferred_troop_types": [
+        "heavy_cavalry",
         "heavy_infantry",
-        "light_infantry",
         "archers",
-        "heavy_cavalry"
+        "light_infantry"
       ]
     },
     "npc": {
       "personality_weight_biases": {
-        "societal_orthodoxy": 1.5,
         "in_group_loyalty": 1.5,
-        "stress_reactivity": -0.5,
-        "self_interest": 0.5,
-        "affective_compassion": -0.5
+        "societal_orthodoxy": 1.5,
+        "affective_compassion": -0.5,
+        "civility": 0.5,
+        "self_interest": 0.5
       }
     },
     "class_kit_weights": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Quirgard — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
-      "one_paragraph": "The Quirgard are a warlike martial aristocracy people, a first-order synthesis of Quirium and Thiodmark [Conquest Aristocracy (thiodmark over quirium)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
+      "one_paragraph": "The Quirgard are a warlike martial aristocracy people, a first-order synthesis of Thiodmark and Vallica [Conquest Aristocracy (thiodmark over vallica)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_cavalry, heavy_infantry, archers. Outsiders are met as domineering; their patrons touch war."
     },
-    "_generated": "archetype blend of quirium x thiodmark [Conquest Aristocracy (thiodmark over quirium)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of thiodmark x vallica [Conquest Aristocracy (thiodmark over vallica)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

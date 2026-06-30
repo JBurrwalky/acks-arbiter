@@ -74,10 +74,10 @@
     "npc": {
       "personality_weight_biases": {
         "expressiveness": 1.0,
-        "stress_reactivity": 1.0,
         "in_group_loyalty": 1.0,
         "mysticism": 1.0,
-        "self_interest": 0.5
+        "stress_reactivity": 1.0,
+        "affective_compassion": -0.5
       }
     },
     "class_kit_weights": {

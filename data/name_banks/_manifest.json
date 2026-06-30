@@ -902,25 +902,6 @@
       "government": "feudal",
       "race": "human"
     },
-    "quirium": {
-      "counts": {
-        "clan_house": 24,
-        "dungeon_ruin": 1,
-        "epithet": 16,
-        "feature": 30,
-        "military_unit": 1,
-        "personal_female": 40,
-        "personal_male": 40,
-        "settlement": 40,
-        "ship": 3,
-        "tavern": 12
-      },
-      "family": [
-        "classical"
-      ],
-      "government": "feudal",
-      "race": "human"
-    },
     "radon": {
       "counts": {
         "clan_house": 24,
@@ -1375,6 +1356,25 @@
       ],
       "government": "clanhold",
       "race": "beastman"
+    },
+    "vallica": {
+      "counts": {
+        "clan_house": 24,
+        "dungeon_ruin": 1,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 1,
+        "personal_female": 40,
+        "personal_male": 40,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "classical"
+      ],
+      "government": "feudal",
+      "race": "human"
     },
     "wabanstan": {
       "counts": {

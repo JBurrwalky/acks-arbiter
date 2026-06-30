@@ -75,9 +75,9 @@
     "npc": {
       "personality_weight_biases": {
         "in_group_loyalty": 1.5,
-        "expressiveness": 1.0,
         "epistemic_curiosity": 1.0,
-        "stress_reactivity": 0.5,
+        "expressiveness": 1.0,
+        "affective_compassion": -0.5,
         "self_interest": -0.5
       }
     },

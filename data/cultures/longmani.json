@@ -60,8 +60,8 @@
     "rulership": {
       "sphere_weights": {
         "military": 0.65,
-        "religious": 0.122,
         "mercantile": 0.122,
+        "religious": 0.122,
         "arcane": 0.106
       },
       "preferred_troop_types": [
@@ -73,11 +73,11 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "stress_reactivity": 1.0,
+        "in_group_loyalty": 1.0,
         "self_interest": -1.0,
         "societal_orthodoxy": -1.0,
-        "in_group_loyalty": 1.0,
-        "expressiveness": 0.5
+        "stress_reactivity": 1.0,
+        "epistemic_curiosity": 0.5
       }
     },
     "class_kit_weights": {

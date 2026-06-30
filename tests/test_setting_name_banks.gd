@@ -60,17 +60,17 @@ func test_all_banks_load_with_core_categories() -> void:
 
 
 func test_loader_accessors_civ() -> void:
-	var bank := NameBankLoader.bank_for("quirium")
-	check(not bank.is_empty(), "quirium bank should load")
-	check(NameBankLoader.race(bank) == "human", "quirium race should be human")
-	check(NameBankLoader.government(bank) == "feudal", "quirium government feudal")
+	var bank := NameBankLoader.bank_for("vallica")
+	check(not bank.is_empty(), "vallica bank should load")
+	check(NameBankLoader.race(bank) == "human", "vallica race should be human")
+	check(NameBankLoader.government(bank) == "feudal", "vallica government feudal")
 	check(NameBankLoader.names(bank, "personal_male").has("Marcus"),
-		"quirium personal_male should include the seed 'Marcus'")
+		"vallica personal_male should include the seed 'Marcus'")
 	check(NameBankLoader.ruler_title(bank, "empire") == "Imperator",
-		"quirium empire ruler should be the approved foreign term Imperator")
+		"vallica empire ruler should be the approved foreign term Imperator")
 	check(NameBankLoader.domain_title(bank, "kingdom") == "Kingdom",
-		"quirium kingdom domain displays as the English 'Kingdom'")
-	check(not NameBankLoader.religion(bank).is_empty(), "quirium carries religion block")
+		"vallica kingdom domain displays as the English 'Kingdom'")
+	check(not NameBankLoader.religion(bank).is_empty(), "vallica carries religion block")
 
 
 func test_loader_accessors_beastman() -> void:
@@ -90,9 +90,9 @@ func test_loader_accessors_beastman() -> void:
 
 
 func test_inheritance_recorded() -> void:
-	var quirium := NameBankLoader.bank_for("quirium")
-	check(NameBankLoader.family(quirium) == ["classical"],
-		"quirium inherits the single classical family")
+	var vallica := NameBankLoader.bank_for("vallica")
+	check(NameBankLoader.family(vallica) == ["classical"],
+		"vallica inherits the single classical family")
 	var aryamark := NameBankLoader.bank_for("aryamark")
 	check(NameBankLoader.family(aryamark).size() == 2,
 		"a hybrid (aryamark) is a cross-family blend of two bases")

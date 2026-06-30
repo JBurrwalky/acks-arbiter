@@ -73,11 +73,11 @@
     },
     "npc": {
       "personality_weight_biases": {
-        "self_interest": -1.0,
         "in_group_loyalty": 1.0,
         "mysticism": 1.0,
-        "expressiveness": 0.5,
-        "stress_reactivity": 0.5
+        "self_interest": -1.0,
+        "affective_compassion": -0.5,
+        "epistemic_curiosity": 0.5
       }
     },
     "class_kit_weights": {

@@ -12,7 +12,7 @@
       "csv_id": "HYB_29",
       "culture_synthesis_parents": [
         "aryastan",
-        "quirium"
+        "vallica"
       ]
     },
     "alignment": {
@@ -74,10 +74,10 @@
     "npc": {
       "personality_weight_biases": {
         "societal_orthodoxy": 1.5,
-        "self_interest": 1.0,
-        "in_group_loyalty": 1.0,
         "civility": 1.0,
-        "stress_reactivity": -0.5
+        "in_group_loyalty": 1.0,
+        "self_interest": 1.0,
+        "affective_compassion": 0.5
       }
     },
     "class_kit_weights": {
@@ -125,8 +125,8 @@
     },
     "flavor_text": {
       "one_line": "Romaria — cosmopolitan merchant oligarchy of the synthesis; law, prosperity, enterprise.",
-      "one_paragraph": "The Romaria are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Quirium [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
+      "one_paragraph": "The Romaria are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Vallica [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
     },
-    "_generated": "archetype blend of aryastan x quirium [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+    "_generated": "archetype blend of aryastan x vallica [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
   }
 }

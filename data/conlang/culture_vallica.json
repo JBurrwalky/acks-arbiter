@@ -1,5 +1,5 @@
 {
-  "kit_id": "quirium",
+  "kit_id": "vallica",
   "tier": "culture",
   "inherits": [
     "classical"
@@ -16,7 +16,7 @@
     "Neutral",
     "Chaotic"
   ],
-  "_note": "Generic Roman base (BASE_06): the family-level Latinate base culture under the base/hybrid emergence model (gdd-culture-emergence-and-territory.md). Single-language Latinate, seeded directly (no blend, no fusion_rules, no synthesis_sources). The consul/rex/imperator register, the urbs and the via, the marching legions. The phonology, lexicon, morphology, deities and seed name-stock are carried from culture_agrippan.json (kept SEPARATELY as the Agrippan canon's home register - Agrippa remains the reference culture other cultures rename their deities FROM); Quirium is the generic, un-named Roman base from which Latinate hybrids may emerge. CIV/CLAN: Civilized (feudal) - a centralized Roman-style state. Common-word lexicon and rank titles use the real Latin register (allowed, culture-catalog 5.3); DEITY names are the canon's home forms (canon-morphs), never real gods. Ruler/domain DISPLAY titles are ENGLISH (or an approved foreign term); the Latin titles are carried in ruler_native/domain_native for NPC dialogue. APPROVED FOREIGN TERM: the empire ruler displays as Imperator (the commonly-known Roman term).",
+  "_note": "Generic Roman base (BASE_06): the family-level Latinate base culture under the base/hybrid emergence model (gdd-culture-emergence-and-territory.md). Single-language Latinate, seeded directly (no blend, no fusion_rules, no synthesis_sources). The consul/rex/imperator register, the urbs and the via, the marching legions. The phonology, lexicon, morphology, deities and seed name-stock are carried from culture_agrippan.json (kept SEPARATELY as the Agrippan canon's home register - Agrippa remains the reference culture other cultures rename their deities FROM); Vallica is the generic, un-named Roman base from which Latinate hybrids may emerge. CIV/CLAN: Civilized (feudal) - a centralized Roman-style state. Common-word lexicon and rank titles use the real Latin register (allowed, culture-catalog 5.3); DEITY names are the canon's home forms (canon-morphs), never real gods. Ruler/domain DISPLAY titles are ENGLISH (or an approved foreign term); the Latin titles are carried in ruler_native/domain_native for NPC dialogue. APPROVED FOREIGN TERM: the empire ruler displays as Imperator (the commonly-known Roman term).",
   "phonology": {
     "palette": "Latinate: a e i o u; p t c(=k) b d g f s v l r m n; endings -us/-a/-um/-ius/-or; penultimate stress.",
     "phonotactics": "CV / CVC; vowel-final common; clusters st/tr/pr/cl/sp; geminates ll/ss/tt allowed.",
@@ -271,7 +271,7 @@
   },
   "banks_patterns": {
     "_note": "Settlement/region names assemble from lexicon+morphology; other categories follow these patterns (full lists assembled by the build step).",
-    "ships": "virtue/eagle/dawn names: Victrix, Aquila, Dawn of Quirium",
+    "ships": "virtue/eagle/dawn names: Victrix, Aquila, Dawn of Vallica",
     "military_units": "Legio [ordinal] [cognomen]: Legio Prima Ferrata (the Iron Legion)",
     "taverns": "The [Adjective] [Noun]: The Gilded Amphora, The Iron Eagle",
     "dungeons_ruins": "[Tomb/Vault/Catacomb] of [name]: the Catacombs of Divus Aurelius"
@@ -366,7 +366,7 @@
       "Victor"
     ],
     "flagship_settlements": [
-      "Quirium the capital",
+      "Vallica the capital",
       "Aurelium",
       "Castra Ferrata",
       "Portus Magnus",

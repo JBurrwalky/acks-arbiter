@@ -25,7 +25,7 @@ CULT = os.path.join(ROOT, "data", "cultures")
 CONL = os.path.join(ROOT, "data", "conlang")
 
 BASE_CSV = {'BASE_01':'thiodmark','BASE_02':'albawyn','BASE_03':'shinarur','BASE_04':'aryastan',
-            'BASE_05':'kemetra','BASE_06':'quirium','BASE_07':'hellaspol','BASE_08':'hinowa',
+            'BASE_05':'kemetra','BASE_06':'vallica','BASE_07':'hellaspol','BASE_08':'hinowa',
             'BASE_09':'huaxia','BASE_10':'tollanaz','BASE_11':'manitland'}
 CLAN = {"thiodmark", "albawyn", "manitland"}
 BASES = set(BASE_CSV.values())
@@ -71,21 +71,22 @@ def archetype(a, b):
 
 def subflavor(ma, mb):
     sa, sb = ma["rulership"]["sphere_weights"], mb["rulership"]["sphere_weights"]
-    comb = {k: (sa.get(k, 0) + sb.get(k, 0)) / 2 for k in set(sa) | set(sb)}
+    comb = {k: (sa.get(k, 0) + sb.get(k, 0)) / 2 for k in sorted(set(sa) | set(sb))}
     if comb.get("military", 0) >= 0.45:
         return "Hegemonic"
     nonmil = {k: v for k, v in comb.items() if k != "military"}
-    top = max(nonmil, key=nonmil.get) if nonmil else None
+    # sorted keys so a tie in the secondary sphere breaks alphabetically (deterministic)
+    top = max(sorted(nonmil), key=lambda k: nonmil[k]) if nonmil else None
     return {"religious": "Theocratic", "mercantile": "Mercantile", "arcane": "Scholastic"}.get(top, "Classical")
 
 
 def blend_spheres(sa, sb, tilt, wlean):
-    keys = set(sa) | set(sb)
+    keys = sorted(set(sa) | set(sb))   # deterministic
     out = {k: wlean * sa.get(k, 0) + (1 - wlean) * sb.get(k, 0) for k in keys}
     if tilt:
         out[tilt] = out.get(tilt, 0) * 1.4
     s = sum(out.values()) or 1.0
-    return {k: round(v / s, 3) for k, v in sorted(out.items(), key=lambda x: -x[1])}
+    return {k: round(v / s, 3) for k, v in sorted(out.items(), key=lambda x: (-x[1], x[0]))}
 
 
 def union_list(a, b, cap=4):
@@ -98,10 +99,11 @@ def union_list(a, b, cap=4):
 
 def union_npc(a, b, cap=5):
     out = {}
-    for k in set(a) | set(b):
+    for k in sorted(set(a) | set(b)):   # sorted: deterministic union iteration
         va, vb = a.get(k, 0), b.get(k, 0)
         out[k] = va if abs(va) >= abs(vb) else vb
-    return dict(sorted(out.items(), key=lambda x: -abs(x[1]))[:cap])
+    # secondary key = axis name so ties at the cap boundary break deterministically
+    return dict(sorted(out.items(), key=lambda x: (-abs(x[1]), x[0]))[:cap])
 
 
 def sc(m):
@@ -258,7 +260,7 @@ def write_kit(kit, pa, pb):
         arch, {"Theocratic": "sacerdotal_hierocracy", "Mercantile": "merchant_oligarchy",
                "Hegemonic": "imperial_hegemony", "Scholastic": "scholar_magocracy",
                "Classical": "imperial_bureaucracy"}.get(label.split("/")[-1].strip(), "imperial_bureaucracy"))
-    top_sphere = max(spheres, key=spheres.get)
+    top_sphere = sorted(spheres.items(), key=lambda x: (-x[1], x[0]))[0][0]
     patron = {"military": "war", "religious": "law", "mercantile": "trade", "arcane": "knowledge"}
     flav_name = label.split("/")[-1].strip()
     aggr_adj = ("warlike" if s["aggr"] >= 0.75 else "vigorous" if s["aggr"] >= 0.5 else "measured")
@@ -270,7 +272,7 @@ def write_kit(kit, pa, pb):
     SPHERE_VALUES = {"military": ["honor", "valor"], "religious": ["piety", "tradition"],
                      "mercantile": ["prosperity", "enterprise"], "arcane": ["knowledge", "mastery"]}
     ARCH_VALUES = {"Conquest": ["conquest", "rule"], "Confederated": ["kinship", "freedom"], "Peer": ["law", "order"]}
-    top2 = [k for k, _ in sorted(spheres.items(), key=lambda x: -x[1])[:2]]
+    top2 = [k for k, _ in sorted(spheres.items(), key=lambda x: (-x[1], x[0]))[:2]]
     core_values = []
     for sp in top2:
         for v in SPHERE_VALUES.get(sp, []):
