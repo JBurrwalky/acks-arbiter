@@ -1,0 +1,401 @@
+{
+  "kit_id": "ryujin",
+  "tier": "culture",
+  "inherits": [
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_50",
+  "catalog_number": null,
+  "_numbering_note": "(was v1 Ryujin; csv_id authoritative)",
+  "sub_palette": "japonic backbone + sinitic overlay (intra-family blend, Japonic-leaning)",
+  "synthesis_sources": [
+    "BASE_08",
+    "BASE_09"
+  ],
+  "homeland": "Ryujo",
+  "blend": {
+    "backbone": "japonic",
+    "overlay": "sinitic"
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "Intra-East-Asian hybrid (Chinese + Japanese) under the base/hybrid model. BASE_08 (Japonic) x BASE_09 (Sinitic). Both parents are east_asian sub-palettes, so inherits is the SINGLE family east_asian (intra-family blend). A sinicized Sino-Japanese maritime kingdom of the dragon-throne (Ryujin = dragon-god; homeland Ryujo). Backbone = Japonic (phonology, clan structure, the rule/kin/shrine/land register); overlay/substrate = Sinitic (Chinese-model bureaucracy, on'yomi court titles, the tributary system, the river/silk/bureaucratic/material register). civ = feudal. SYNCRETIC religion (honji-suijaku): honors BOTH the Chinese celestial powers (Sinitic names) and the native kami (Japonic names) as one power under two faces. Common-word lexicon is a SINGLE FUSED tongue (Japonic-shaped, Sinitic-substrated; see phonology.fusion_rules); rank titles use the real Sino-Japanese/Ryukyuan register for the *_native forms, English for display. DEITY names draw on BOTH family_east_asian.json theonym sets (Sinitic + Japonic faces), never real gods. [REWORKED 2026-06-28 to base/hybrid model: csv_id HYB_50; all-three alignment; English display titles + native; deep-fusion lexicon + fusion_rules.]",
+  "phonology": {
+    "palette": "Japonic base (open CV moras; vowels a i u e o; rendaku) dominant, with a Sino-Japanese (on'yomi) Sinitic substrate: Chinese loanwords read in Japanese phonology, a court/bureaucratic register; clan(-shi) + given.",
+    "phonotactics": "strict CV moras, vowel-final (only coda -n); on'yomi compounds in the high register; rendaku in compounds.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "east-asian (japonic) phonology dominant",
+      "sound_changes": [
+        "Sinitic codas resolved to Japonic CV: -ng>0 with vowel epenthesis, final stops>vowel, tones dropped (only -n survives as a coda)",
+        "Sinitic monosyllables read on'yomi and given an open final mora (e.g. jiang>ko/sen, jin>kin, si>shi): vowel-final throughout",
+        "Japonic root-initial mora-timing and pitch; rendaku (sequential voicing) in compounds (kawa>-gawa, shima>-jima)",
+        "retain Japonic CV-mora shape and the five vowels a i u e o; Sinitic sh/ch/j on'yomi reflexes kept as the high-register seasoning"
+      ],
+      "source_tilt": "river/silk/bureaucratic/material/staple words from Sinitic on'yomi roots (the celestial-bureaucratic substrate of trade and craft: kinu<si, gin<yin, gyoku<yu); rule/kin/shrine/land words from Japonic roots (the ruling clan register: yama, mori, ie, miya); every root then filtered to one Japonic-shaped phonology",
+      "portmanteaus": [
+        "citadel honjo+chengbao>honbo", "temple_town miya+miao>miyabyo", "city miyako+cheng>miyajo", "kin uji+zu>ujizo", "house ie+jia>iega", "sacred imi+sheng>imisei", "silk kinu+si>kinushi"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Japonic land/rule/kin/shrine roots + Sinitic river/silk/bureaucratic/material roots, all run through one Japonic-shaped (CV-mora, vowel-final) sound-law; portmanteaus mark the blended institutions and bloodline. NO slashes - one word per concept.",
+    "feature_words": {
+      "river": "kawa",
+      "stream": "nagare",
+      "lake": "ko",
+      "sea": "umi",
+      "bay": "wan",
+      "cape": "misaki",
+      "isle": "shima",
+      "mountain": "yama",
+      "hill": "oka",
+      "ridge": "one",
+      "forest": "mori",
+      "wood": "hayashi",
+      "plain": "no",
+      "marsh": "numa",
+      "ford": "watari",
+      "pass": "toge",
+      "vale": "tani",
+      "coast": "hama",
+      "neck": "kubi",
+      "narrows": "seto",
+      "waste": "koya",
+      "road": "kaido",
+      "way": "michi",
+      "track": "komichi"
+    },
+    "settlement_words": {
+      "hamlet": "sato",
+      "village": "mura",
+      "town": "machi",
+      "city": "miyajo",
+      "fort": "jo",
+      "port": "minato",
+      "market": "ichi",
+      "temple_town": "miyabyo",
+      "citadel": "honbo"
+    },
+    "kinship": {
+      "son": "musuko",
+      "daughter": "musume",
+      "house": "iega",
+      "kin": "ujizo",
+      "ancestor": "senzo"
+    },
+    "adjectives": {
+      "great": "dai",
+      "little": "sho",
+      "old": "furu",
+      "new": "shin",
+      "black": "koku",
+      "white": "haku",
+      "red": "aka",
+      "golden": "kin",
+      "iron": "tetsu",
+      "high": "taka",
+      "far": "en",
+      "sacred": "imisei",
+      "fair": "rei"
+    },
+    "resources": {
+      "salt": "shio",
+      "iron": "tetsu",
+      "bronze": "seido",
+      "silver": "gin",
+      "gold": "kin",
+      "jade": "gyoku",
+      "silk": "kinushi",
+      "pearl": "shinju",
+      "rice": "kome",
+      "tea": "cha"
+    },
+    "directional": {
+      "upper": "ue",
+      "lower": "shita",
+      "north": "kita",
+      "south": "minami",
+      "east": "higashi",
+      "west": "nishi",
+      "inner": "uchi",
+      "outer": "soto"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-jo (castle)",
+      "-to (capital/island)",
+      "-zan / -yama (mountain)",
+      "-gawa / -sen (river)",
+      "-ji (temple)",
+      "-minato (port)"
+    ],
+    "patronymic_form": "clan/house name (-shi / ujizo) first, then given; Sino-Japanese court titles; -no- linking; on'yomi style-names for officials and clergy.",
+    "gendered_endings": {
+      "male": "-ro / -suke / -maru",
+      "female": "-ko / -hime; -in for the cloistered"
+    },
+    "diminutive_form": "-maru / -ko",
+    "compounding_rule": "[clan] no [given]; toponyms feature/quality + type, often on'yomi: Dai-jo (great-castle), Ryu-to (dragon-capital), Kin-zan (gold-mountain); rendaku voicing in compounds (kawa -> -gawa)."
+  },
+  "title_ladder": {
+    "government": "feudal (a sinicized Sino-Japanese kingdom on the Chinese model: the Tei/O over a bureaucracy of court ranks, the dragon-throne; a maritime trading realm)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Aji",
+        "domain_native": "Aji-ryo"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Sakimori",
+        "domain_native": "Sakai"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Bugyo",
+        "domain_native": "Gun"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Kokushi",
+        "domain_native": "Kuni"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Shinno",
+        "domain_native": "Shinno-ryo"
+      },
+      "kingdom": {
+        "ruler": "Shogun",
+        "domain": "Kingdom",
+        "ruler_native": "O",
+        "domain_native": "Okoku"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Tei",
+        "domain_native": "Teikoku"
+      }
+    },
+    "_tiers_note": "Sino-Japanese sinicized monarchy, ascending. The Tei (emperor; on'yomi of Chinese 'di') over the O (kings) and Shinno (royal princes); the bureaucracy of Bugyo (commissioner) and Kokushi (province-governor) on the Chinese/Ritsuryo model; the Aji are the local lords (Ryukyuan register); Sakimori guard the frontier. DISPLAY titles are English, save the approved foreign terms Daimyo (duchy) and Shogun (kingdom). The *_native forms are the real Sino-Japanese/Ryukyuan register, for NPC dialogue.",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ],
+    "heir": "Taishi (crown prince); Seishi (heir)",
+    "honorifics": {
+      "lord": "Tono",
+      "lady": "Hime",
+      "warrior": "Samurai",
+      "your_grace": "Denka",
+      "your_majesty": "Heika"
+    },
+    "vassalage": {
+      "liege": "Kunshu",
+      "vassal": "Kashin (retainer)",
+      "fealty": "Chusei (loyal fealty)",
+      "tribute": "Choko (tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, save the approved foreign terms set in 'ruler' (Daimyo for the duchy, Shogun for the kingdom). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Tei": "Jotei",
+      "O": "Joo",
+      "Shinno": "Naishinno",
+      "Kokushi": "Onna-kokushi",
+      "Bugyo": "Onna-bugyo",
+      "Sakimori": "Onna-sakimori",
+      "Aji": "Anji"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Shogun": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "clan/house (-shi / ujizo) first, then given; officials take a Sino-Japanese court rank; the cultured a Buddhist or studio name (-in/-an).",
+    "surname_source": [
+      "clan/house (-shi)",
+      "fief/locational",
+      "court office",
+      "Buddhist/art name (Sino-Japanese)"
+    ],
+    "dual_register": "the court and bureaucracy use Sino-Japanese (on'yomi) names and titles; the common folk Japanese (kun'yomi) names.",
+    "theophoric": "names honor both the kami and the celestial powers + an element: Ryu- (dragon), -maru, Ten- (heaven, on'yomi): e.g. Ryutaro, Tenmaru, names blessing both Terashi-no-kami and Tuli-di.",
+    "diminutive": "-maru / -in"
+  },
+  "religion": {
+    "_note": "Ryujin is SYNCRETIC (the Sino-Japanese honji-suijaku BELIEF): the world HOLDS each power to be one being under two faces - a Chinese celestial official (Sinitic name) and a native kami (Japonic name). This is a belief, NOT a naming operation: the temple-namer never concatenates the two faces. Each holy site takes ONE name, chosen by its building type (see naming_rule), so naming costs exactly what a single-pantheon culture costs. Across a province the player sees the celestial face on Miao/Jiin halls and the kami face on Miya/Jinja shrines, and infers they are the same power - the syncretism surfaces through the spread of names, not within any one name. Faces draw on BOTH family_east_asian.json theonym sets; never real gods. Lawful/Neutral/Chaotic (all human cultures, per the alignment pass); the dragon-powers of sea and storm are especially honored (Ryujo, the dragon-realm).",
+    "the_one": {
+      "celestial": "Tentei (Aiteng, Highest Heaven)",
+      "kami": "Takami-no-kami (the High-Heaven kami)",
+      "_belief": "one power, two faces"
+    },
+    "deity_faces": {
+      "Tulrius": {
+        "celestial": "Tuli-di",
+        "kami": "Terashi-no-kami",
+        "portfolio": "sun, justice"
+      },
+      "Realta": {
+        "celestial": "Lianta-mu",
+        "kami": "Megumi-hime",
+        "portfolio": "mother, mercy"
+      },
+      "Gaiandus": {
+        "celestial": "Gaidun-di",
+        "kami": "Iwane-no-kami",
+        "portfolio": "earth, mountain, endurance"
+      },
+      "Numeno": {
+        "celestial": "Numeng-jun",
+        "kami": "Amatsukaze-no-kami",
+        "portfolio": "sky-wind, wisdom"
+      },
+      "Orlandus": {
+        "celestial": "Aolan-jun",
+        "kami": "Hagane-no-kami",
+        "portfolio": "iron-oath, war"
+      }
+    },
+    "demon_faces": {
+      "Maraxus": {
+        "celestial": "Maluo",
+        "kami": "Takebi-no-kami",
+        "epithet": "the War-Fire"
+      },
+      "Vacidus": {
+        "celestial": "Wuci",
+        "kami": "Utsuro-no-kami",
+        "epithet": "the Devourer"
+      },
+      "Lusanto": {
+        "celestial": "Lusan",
+        "kami": "Kogane-Orochi",
+        "epithet": "the Hoard-Serpent"
+      }
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers under both faces - Tentei/Takami-no-kami on high, Tuli-di/Terashi-no-kami the just, Aolan-jun/Hagane-no-kami of the sworn war, Lianta-mu/Megumi-hime the merciful - and wards the Chaotic powers as ma / oni; the celestial rite and the kami-shrine bind alike.",
+      "Neutral": "the ancestral dead (senzo) of the dragon-houses and the local earth-and-grain and sea powers; the great celestial officials and the kami invoked situationally at the Miao-hall and the Jinja-shrine; the dragon-kings of the sea especially honored.",
+      "Chaotic": "venerates the Chaotic powers of the canon under both faces (Maluo/Takebi-no-kami, Wuci/Utsuro-no-kami, Lusan/Kogane-Orochi), and names the Lawful celestial order - and Tentei - as the tyrant-heaven to be defied."
+    },
+    "naming_rule": "ONE name per holy site, selected by building type: a celestial hall (Miao, Jiin) takes the power's .celestial face; a kami-shrine (Miya, Jinja) takes its .kami face. The namer reads one field and formats '[building] of [face]' - identical cost to any single-pantheon culture. NEVER emit both faces in one name. The honji-suijaku identity (the two faces are one power) is surfaced in lore/dialogue text, not in proper names.",
+    "clergy_ladder": {
+      "1": "Doji (acolyte-child)",
+      "3": "Shinkan / Daoshi (priest)",
+      "5": "Sozu (prelate)",
+      "7": "Daisojo (high prelate)",
+      "9": "Tendo-shi (master of the heavenly way)"
+    },
+    "religious_orders_pattern": "ONE face per site by building type (see naming_rule): celestial hall -> 'the Jiin of Tuli-di', 'the Miao of Gaidun-di'; kami-shrine -> 'the Miya of Terashi-no-kami', 'the Jinja of Iwane-no-kami'. Both kinds occur across a realm; each name carries a single face.",
+    "saints_pattern": "deified sages, dragon-kings and ancestral heroes; named with the single face matching their site (celestial hall or kami-shrine).",
+    "holy_symbol_motifs": {
+      "Tuli-di": "a sun-disc above a coiled dragon and mirror (celestial face)",
+      "Terashi-no-kami": "a rising sun-disc above a mirror and sword (kami face)",
+      "the dragon-powers": "a sea-dragon encircling a flaming pearl"
+    }
+  },
+  "banks_patterns": {
+    "ships": "a maritime dragon-realm: trade-junk and dragon-prowed ship names: 'the Dragon-Pearl', 'Wave-Sovereign', 'the Ten-thousand-li Wind'",
+    "military_units": "the [clan] Gun / the [color] Banner: 'the Azure-Dragon Banner', 'the Pearl Guard'",
+    "taverns": "'The [Adjective] [Noun]': 'The Dragon and Pearl', 'The Jade Wave Teahouse'",
+    "dungeons_ruins": "sunken sea-shrines and ruined dragon-jo: 'the Sunken Miya of [name]', 'the Dragon-tomb of [O]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Ryutaro",
+      "Tenma",
+      "Kaito",
+      "Seiji",
+      "Ryunosuke",
+      "Takumi",
+      "Kanemori",
+      "Shinji",
+      "Tatsuya",
+      "Umito",
+      "Reizan",
+      "Koryu",
+      "Tenshin",
+      "Ryohei",
+      "Masumi",
+      "Genryu",
+      "Soun",
+      "Ryuji",
+      "Tomonaga",
+      "Kaicho"
+    ],
+    "personal_f": [
+      "Tamayo",
+      "Ryuko",
+      "Kaiyo",
+      "Mizuki",
+      "Tsukiyo",
+      "Renka",
+      "Shinju",
+      "Umiko",
+      "Tamae",
+      "Reiko",
+      "Sairyu",
+      "Hotaru",
+      "Kohaku",
+      "Mio",
+      "Nagisa",
+      "Tenka",
+      "Ayaka",
+      "Suiren",
+      "Ryuhime",
+      "Kanae"
+    ],
+    "clan_shi": [
+      "Ryukawa",
+      "Tatsumi",
+      "Seikai",
+      "Umino",
+      "Kaimon",
+      "Tenmei",
+      "Kuniyoshi",
+      "Hoshikawa",
+      "Kanenaga",
+      "Shinkai",
+      "Ryusei",
+      "Wadatsu"
+    ],
+    "epithets_cognomina": [
+      "the Dragon (Ryu)",
+      "the Pearl (Tama)",
+      "Sea-lord",
+      "the Wise (Sei)",
+      "Wave-rider",
+      "the Golden (Kin)",
+      "the Far-voyager",
+      "Storm-caller"
+    ],
+    "flagship_settlements": [
+      "Ryujo (the dragon-castle capital)",
+      "Tatsu-minato (the dragon-port)",
+      "Dai-jo (the great castle-city)",
+      "Kin-zan (the gold-mountain hold)",
+      "Ryu-miya (the dragon-shrine town)",
+      "Shinju-to (the pearl-isle)"
+    ]
+  }
+}

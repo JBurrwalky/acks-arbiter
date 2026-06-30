@@ -862,6 +862,26 @@
       "government": "feudal",
       "race": "human"
     },
+    "ptolan": {
+      "counts": {
+        "clan_house": 24,
+        "dungeon_ruin": 1,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 40,
+        "personal_male": 40,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "near_eastern",
+        "classical"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
     "quirgard": {
       "counts": {
         "clan_house": 21,
@@ -1000,6 +1020,63 @@
       "government": "feudal",
       "race": "human"
     },
+    "ryujin": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 22,
+        "personal_male": 23,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "east_asian"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "sargonid": {
+      "counts": {
+        "clan_house": 24,
+        "dungeon_ruin": 1,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 28,
+        "personal_male": 30,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "near_eastern",
+        "classical"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "senecar": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 31,
+        "personal_male": 40,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "celtic",
+        "north_american"
+      ],
+      "government": "clanhold",
+      "race": "human"
+    },
     "serellis": {
       "counts": {
         "clan_house": 24,
@@ -1035,6 +1112,44 @@
       },
       "family": [
         "germanic",
+        "east_asian"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "serican": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 32,
+        "personal_male": 29,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "classical",
+        "east_asian"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "shidhean": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 40,
+        "personal_male": 38,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "celtic",
         "east_asian"
       ],
       "government": "feudal",
@@ -1079,6 +1194,24 @@
       "government": "feudal",
       "race": "human"
     },
+    "sumset": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 1,
+        "personal_female": 31,
+        "personal_male": 30,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "near_eastern"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
     "thalvaneth": {
       "counts": {
         "clan_house": 24,
@@ -1113,6 +1246,44 @@
         "germanic"
       ],
       "government": "clanhold",
+      "race": "human"
+    },
+    "thracan": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 2,
+        "personal_female": 38,
+        "personal_male": 40,
+        "settlement": 40,
+        "ship": 3,
+        "tavern": 12
+      },
+      "family": [
+        "classical",
+        "north_american"
+      ],
+      "government": "feudal",
+      "race": "human"
+    },
+    "tikan": {
+      "counts": {
+        "clan_house": 24,
+        "epithet": 16,
+        "feature": 30,
+        "military_unit": 1,
+        "personal_female": 24,
+        "personal_male": 24,
+        "settlement": 40,
+        "ship": 2,
+        "tavern": 12
+      },
+      "family": [
+        "mesoamerican",
+        "north_american"
+      ],
+      "government": "feudal",
       "race": "human"
     },
     "tollanaz": {
@@ -1380,6 +1551,6 @@
       "race": "human"
     }
   },
-  "count": 73,
+  "count": 82,
   "schema_version": 1
 }

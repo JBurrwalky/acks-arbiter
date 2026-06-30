@@ -12,13 +12,13 @@ extends "res://tests/test_suite_base.gd"
 const SCRIPT_REL_PATH := "res://tools/build_name_banks.py"
 const BANKS_DIR := "res://data/name_banks/"
 const MIN_CORE := 10
-# 11 human BASE kits + 46 first-order HYBRID kits + 6 demihuman + 10 beastman banks
-# assembled by build_name_banks.py (gdd-culture-emergence-and-territory.md §3.5). The
-# 49 legacy single-culture member kits were retired 2026-06-29 (the bases + runtime
-# hybrids supersede them; the old roster was never seeded). The freshness gate
-# (test_build_tool_check_mode_passes) is the real authority on the set; this count is a
-# coarse tripwire for accidental add/drop.
-const EXPECTED_BANK_COUNT := 73
+# 11 human BASE kits + 55 first-order HYBRID kits (all 11C2 base pairs) + 6 demihuman
+# + 10 beastman banks assembled by build_name_banks.py (gdd-culture-emergence-and-
+# territory.md §3.5). 40 legacy single-culture member kits were retired 2026-06-29 (the
+# bases + runtime hybrids supersede them; the old roster was never seeded). The freshness
+# gate (test_build_tool_check_mode_passes) is the real authority on the set; this count is
+# a coarse tripwire for accidental add/drop.
+const EXPECTED_BANK_COUNT := 82
 
 
 func run_all_tests() -> void:

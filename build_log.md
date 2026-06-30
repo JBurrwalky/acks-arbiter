@@ -37038,3 +37038,23 @@ on-tick dispatch.
 **Next session should:**
 - Phase 4 — hybrid culture emergence (the 46 hybrid banks are now the clear forward-looking set; highest arch risk, Opus review).
 - Backlog unchanged: ascendant-pop-growth coverage lever; runtime EventScheduler defor/refor phases; wire runtime classification_advancement to TerritoryCap.
+
+## Session 2026-06-29 — CORRECTION: recover 9 hybrids wrongly swept by the member retirement
+
+**Task:** While scoping Phase 4, Jedidiah caught that 9 hybrid pairings had no kit. Root-caused to the member retirement (commit 8654bd8) over-deleting — recovered them.
+**Model used:** Opus 4.8.
+**What went wrong:** The retirement's member heuristic was "data/cultures mechanical kit + race human + no `culture_class==base`". 9 hybrids were authored in the OLD style (a mechanical kit ALONGSIDE their conlang kit + `HYB_NN` csv_id), so they matched the heuristic and were deleted as "members". They are exactly the 9 base-pairs the conlang-only hybrid set (46) didn't cover — so the 55-pair hybrid space had a 9-hole gap.
+**The 9 (HYB_csv = pair):** HYB_16 shidhean = albawyn×hinowa; HYB_19 senecar = albawyn×manitland; HYB_21 sumset = kemetra×shinarur; HYB_22 sargonid = quirium×shinarur; HYB_35 ptolan = hellaspol×kemetra; HYB_43 serican = huaxia×quirium; HYB_49 thracan = hellaspol×manitland; HYB_50 ryujin = hinowa×huaxia; HYB_55 tikan = manitland×tollanaz.
+**Completed:**
+- Recovered the 9 **conlang kits ONLY** (`git checkout 8654bd8~1 -- data/conlang/culture_<id>.json`) — NOT their legacy mechanical kits, matching the other 46 conlang-only hybrids (Phase 4 synthesizes hybrid mechanics from the two parent bases at runtime; a recovered mechanical kit would just be dormant dead weight again).
+- Regenerated banks → **82** (was 73): 11 base + **55 hybrid** (now complete, all 11C2 pairs) + 6 demihuman + 10 beastman. Validation green, `--check` fresh.
+- `EXPECTED_BANK_COUNT` 73 → 82; conventions §85 corrected (40 members retired, not 49; the 9 hybrid recovery + the rule to exclude `csv_id` `HYB_*` when retiring members).
+**Decisions made:**
+- Recover (not re-author): the kits were hand-authored; recovery is higher-fidelity than fresh portmanteaus. Supersedes the earlier "author the 9" answer.
+- Conlang-only recovery (no mechanical kit) — keeps all 55 hybrids uniform for the Phase 4 synthesis path.
+- The OTHER 40 deleted kits ARE genuine old-roster members (non-`HYB` csv_id) — correctly retired, not recovered.
+**Interfaces/Database changes:** None.
+**Tests added/updated:** `EXPECTED_BANK_COUNT` 82. Full suite **477/16** (unchanged); SettingNameBanksTests 1250 checks (was 1115; +9 hybrid banks). Generation unaffected (hybrids aren't seeded until Phase 4 emerges them).
+**Known issues:**
+- LESSON for future culture cleanups: a kit's `csv_id` prefix (`HYB_` vs `BASE_` vs none) is the authoritative type signal — NOT the presence/absence of a mechanical kit. The member heuristic should have excluded `HYB_*`.
+**Next session should:** Resume Phase 4 build — 4a is now "build the parent-pair→hybrid definition table" (all 55 kits exist; no authoring needed), then 4b synthesis engine, 4c border merge, 4d conquest merge, 4e tests. Fold the resolved Phase-4 design decisions into the GDD as each sub-phase lands (per Jedidiah).

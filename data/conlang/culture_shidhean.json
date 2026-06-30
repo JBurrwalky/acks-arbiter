@@ -1,0 +1,365 @@
+{
+  "kit_id": "shidhean",
+  "tier": "culture",
+  "inherits": [
+    "celtic",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": null,
+  "sub_palette": "celtic-japonic deep fusion (cross-family blend, extreme)",
+  "synthesis_sources": [
+    "BASE_02",
+    "BASE_08"
+  ],
+  "homeland": "Shidara",
+  "blend": {
+    "type": "deep fusion",
+    "parents": [
+      "celtic (goidelic)",
+      "japonic/japanese (east_asian)"
+    ],
+    "note": "a NEW emergent culture, neither Celtic nor Japanese - a mist-shrouded mountain-forest realm of honor-clans and grove-spirits; the soft, vowel-rich tongue, titles and gods are fused forms between the two parents."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "Cross-family DEEP BLEND (Celtic + Japanese): a single emergent people of misted peaks and deep forests - honor-bound clans served by grove-and-mountain spirit-keepers, drawing on the druid's lore and the warrior's code without being either. Not backbone+overlay: the lexicon, titles and deity-names are genuinely fused (Celtic lenition/-an + Japonic CV moras/-no). civ = feudal. Seeds/shifts Lawful or Chaotic (the ordered honor-clans vs the wild spirit-frenzy). Common-word lexicon and rank titles fuse the real Gaelic/Japanese registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon, never real gods. [REWORKED 2026-06-27 to the base/hybrid model: csv_id HYB_16; all human cultures allow Lawful/Neutral/Chaotic; ruler/domain DISPLAY titles now English (or an approved foreign term), the fused conlang titles moved to ruler_native/domain_native for NPC dialogue; worship_by_alignment completed to all three. Deep-fusion blend, lexicon, deities (canonical Agrippan morphs) and name stock retained from the v1 kit.]",
+  "phonology": {
+    "palette": "Fused Celtic-Japonic: soft, vowel-rich; lenition (c>ch, t>th) meets the open CV mora; consonants k g t d s sh ch ts n m r w y, glottal stop; endings fuse Celtic -an/-ach with Japonic -no/-ama/-shi; pitch-and-stress mixed.",
+    "phonotactics": "CV/CVC; mutation-clusters soften into open syllables; vowel-final frequent.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "deep fusion (Celtic-Japonic), balanced; soft vowel-rich phonology",
+      "sound_changes": [
+        "Celtic root + Japonic root weld into one stem; neither parent dominates - the join is mid-word (loch+ko>lokko, sruth+no>sruthno, magh+no>magno)",
+        "Japonic open CV-mora shape governs the tail: a fused word tends to end vowel-final on a Japonic element (-no, -ko, -ma/-yama, -shi, -michi, -minato)",
+        "Celtic lenition softens the clusters at the seam (c>ch, t>th, bd>open): cathair>cathiro, rath+jo>rathjo, dun+machi>dunmachi",
+        "geminate the consonant at a short Celtic+Japonic join rather than break the syllable: loch+ko>lokko, cnoc+ka>cnokka, becc+chi>becchi",
+        "Japonic moraic vowel-stacking absorbs Celtic vowels (long/doubled vowels kept): cian+too>ciantoo, sean+furu>senfuru, find+shiro>findshiro",
+        "signature phonemes from both stay audible - Celtic sruth-/loch-/dun-/cath- onsets and Japonic -yama/-mori/-shio/-tetsu finals"
+      ],
+      "source_tilt": "land/terrain/water/staple roots split evenly and fuse (Celtic loch/sruth/magh/cnoc + Japonic -ko/-no/-yama/-mori); the join is welded so the two ancestries are inseparable rather than one-sourced - a balanced deep fusion, not a substrate under a prestige register",
+      "portmanteaus": [
+        "lake loch+-ko>lokko", "stream sruth+-no>sruthno", "hill cnoc+-ka>cnokka", "plain magh+-no>magno", "mountain shian/sliabh+yama>shiyama", "forest fiodh+mori>fimori", "old sean+furu>senfuru", "town dun+machi>dunmachi"
+      ]
+    }
+  },
+  "lexicon": {
+    "feature_words": {
+      "river": "abakai",
+      "stream": "sruthno",
+      "lake": "lokko",
+      "sea": "murumi",
+      "bay": "camasu",
+      "cape": "rinmisaki",
+      "isle": "inishima",
+      "mountain": "shiyama",
+      "hill": "cnokka",
+      "ridge": "drumane",
+      "forest": "fimori",
+      "wood": "caillno",
+      "plain": "magno",
+      "marsh": "moinuma",
+      "ford": "athwatari",
+      "pass": "beltoge",
+      "vale": "glentan",
+      "mist": "ceokiri",
+      "coast": "trachama",
+      "neck": "muikubi",
+      "narrows": "caoseto",
+      "waste": "fasano",
+      "road": "bomichi",
+      "way": "slido",
+      "track": "lorkei"
+    },
+    "settlement_words": {
+      "hamlet": "trebsato",
+      "village": "bailemura",
+      "town": "dunmachi",
+      "city": "cathiro",
+      "fort": "rathjo",
+      "port": "longminato",
+      "market": "oenichi",
+      "temple_town": "nemiya",
+      "citadel": "dunshiro"
+    },
+    "kinship": {
+      "son": "macco",
+      "daughter": "ingenko",
+      "house": "teke",
+      "kin": "finuji",
+      "ancestor": "sensenathir"
+    },
+    "adjectives": {
+      "great": "moro",
+      "little": "becchi",
+      "old": "senfuru",
+      "new": "nuashi",
+      "black": "dubkuro",
+      "white": "findshiro",
+      "red": "dergaka",
+      "golden": "orkin",
+      "iron": "iarntetsu",
+      "high": "ardtaka",
+      "far": "ciantoo",
+      "sacred": "noibimi",
+      "fair": "caemkiyo"
+    },
+    "resources": {
+      "salt": "salannshio",
+      "iron": "iarntetsu",
+      "silver": "argatgin",
+      "gold": "orkin",
+      "jade": "yaxhisui",
+      "rice": "arbkome",
+      "tea": "cha",
+      "silk": "kinu",
+      "oak-and-pine": "doromatsu",
+      "horse": "echma"
+    },
+    "directional": {
+      "upper": "uasue",
+      "lower": "isshita",
+      "north": "tuaidkita",
+      "south": "tessminami",
+      "east": "airhigashi",
+      "west": "iarnishi",
+      "inner": "medonuchi",
+      "outer": "immesoto"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Dun- (fort)",
+      "-yama (mountain)",
+      "-mori (forest)",
+      "-machi (town)",
+      "Shi- / Kuro- (sacred-/black-)",
+      "-no (of)"
+    ],
+    "patronymic_form": "the finuji (clan) names by an animal or mountain; Celtic Mac-/O- fuse with the Japonic clan-first order (X no Y); names bestowed at the coming-of-age rite.",
+    "gendered_endings": {
+      "male": "-an / -o / -maru",
+      "female": "-nat / -ko / -hime"
+    },
+    "diminutive_form": "-an / -ko",
+    "compounding_rule": "[quality|feature](stem) + element: Kuro-shiyama (black-mountain), Shi-fimori (sacred-forest); clan-totem + -no for the houses."
+  },
+  "title_ladder": {
+    "government": "feudal (mist-realm honor-clans: the high-sovereign at Shidara over clan-lords and grove-keepers; the brithem-code and the warrior's honor bind, the council of elders advises)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Aijito",
+        "domain_native": "Aijitoryo"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Maorsaki",
+        "domain_native": "Crichsakai"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Tigosho",
+        "domain_native": "Tigoshoryo"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Flaimyo",
+        "domain_native": "Flaimyoryo"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rikoshu",
+        "domain_native": "Rikoshuryo"
+      },
+      "kingdom": {
+        "ruler": "Shogun",
+        "domain": "Kingdom",
+        "ruler_native": "Ruirio",
+        "domain_native": "Ruirioku"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Ardtenno",
+        "domain_native": "Ardtenka"
+      }
+    },
+    "_tiers_note": "Fused Celtic-Japonic ladder, ascending; the titles blend the two (Celtic aire/tigern/flaith/ri + Japonic jito/shugo/daimyo/o/tenno). Aijito (land-lord) barony; Maorsaki (border-warden) march; Tigosho (province-lord) county; Flaimyo (great-lord) duchy; Rikoshu (prince) principality; Ruirio (king) kingdom; Ardtenno (high-sovereign) empire over Ardtenka. The brithem-code and the honor-bound clans order the realm. (Rank titles fuse the real Gaelic/Japanese register, allowed.)",
+    "heir": "Tanaiste-yotsugi (the designated heir)",
+    "honorifics": {
+      "lord": "Tiarno",
+      "lady": "Hime",
+      "champion": "Caurbushi (hero-warrior)",
+      "your_grace": "Ruirio",
+      "elder": "Sruithgami"
+    },
+    "vassalage": {
+      "liege": "Flaimyo",
+      "vassal": "Ceilekerai (sworn client-retainer)",
+      "fealty": "Giallchugi (the binding-loyalty)",
+      "tribute": "Cisnengu"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Ardtenno": "Ardtennohime",
+      "Ruirio": "Ruiriohime",
+      "Rikoshu": "Rikoshuhime",
+      "Flaimyo": "Flaimyohime",
+      "Tigosho": "Tigoshohime",
+      "Maorsaki": "Maorsakihime",
+      "Aijito": "Aijitohime"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Shogun": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the finuji (clan) name first, then a personal name bestowed at the coming-of-age; a deed or grove-vision byname; the high-born take an honor-name.",
+    "surname_source": [
+      "finuji (clan, by animal/mountain)",
+      "coming-of-age personal name",
+      "deed/grove-vision byname"
+    ],
+    "dual_register": "the clan-lords carry a finuji and an honor-name; commoners a clan-totem name.",
+    "theophoric": "names invoke the grove-and-mountain powers + a fused element: Mael-/Mi- (devotee), -maru, Kami-/Cu- (spirit/hound): e.g. Mael-Toranshi, Gaiwane-maru.",
+    "diminutive": "-an / -ko"
+  },
+  "religion": {
+    "_note": "Deity-names are fused morphs of the Agrippan canon (Celtic + Japonic), never real Celtic/Japanese gods. Shidhean seeds/shifts Lawful or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met at the grove-shrine (nemiya) and the misted peak; the spirit-keepers (fused druid-and-shrine-priest) mediate, and the honored ancestral dead are kept at the clan-shrine.",
+    "the_one": "Eterami (< Aeternus; fused Celtic Eternan / Japonic Takami) - the Ancient-Above, the sky over the misted peaks; revered when Lawful, set aside when Chaotic",
+    "sample_deity_renames": {
+      "Tulrius": "Toranshi (the sun, the shining order; Lawful power)",
+      "Gaiandus": "Gaiwane (the enduring rock-mountain; Lawful power)",
+      "Realta": "Realhime (the mercy-mother; Neutral-honored)",
+      "Maraxus": "Maratake (the war-flame, the spirit-frenzy; Chaotic power)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Eterami) and the Lawful powers (Toranshi, Orhagane, Gaiwane, Num-ami), demonize the Chaotic powers (Maratake, Faikido, Losankr)",
+      "Neutral": "Honors the ancestral dead and the local powers of hearth, grove and land; the great powers of the canon are invoked situationally rather than worshipped whole.",
+      "Chaotic": "venerate the Chaotic powers (Maratake the war-flame, the wild grove-frenzy), demonize the Lawful powers and the One"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Maratake the War-Flame, Vacidus -> Faikido the Unmaker; when Chaotic - Tulrius -> Toranshi the Cold-Light, Aeternus -> Eterami the Far Tyrant.",
+    "clergy_ladder": {
+      "1": "Drui-deshi (lore-novice)",
+      "3": "Druikannushi (grove-priest)",
+      "5": "Faithnegi (seer-priest)",
+      "7": "Ardruikan (arch-keeper)",
+      "9": "Ollamguji (supreme sage-keeper)"
+    },
+    "religious_orders_pattern": "the Nemiya (grove-shrine) of [power] on the misted slope: 'the Nemiya of Toranshi', within its torii-arch and sacred grove.",
+    "saints_pattern": "the Tuath-kami (the god-kin and grove-spirits) and the ancestral heroes of the finuji, enshrined at the clan-shrine and the holy peak.",
+    "holy_symbol_motifs": {
+      "Toranshi": "a sun-wheel above crossed oak and pine",
+      "Gaiwane": "a mist-wreathed grey peak over a torii",
+      "Realhime": "a moon-mirror above a healing-spring"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river and lake craft and mountain palanquins: 'the Grey Heron', 'the Mist-Crane', 'the Salmon of the Glentan'",
+    "military_units": "the [finuji] Fiangun (warrior-host) / the [clan] honor-band: 'the Red-Branch Sonae', 'the Pine-clan bushi'",
+    "taverns": "'The [Adjective] [Noun]': 'The Salmon and Maple', 'The Mist Teahouse'",
+    "dungeons_ruins": "abandoned grove-shrines and ruined mountain-rathjo: 'the lost Nemiya of [name]', 'the haunted Shiro of [finuji]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Conmaru",
+      "Cormashi",
+      "Diarno",
+      "Eoganobu",
+      "Fergano",
+      "Lughiro",
+      "Ronshin",
+      "Aedmaru",
+      "Takeshiro",
+      "Munemael",
+      "Tadhgaki",
+      "Yoshilann",
+      "Kaelan",
+      "Naoghan",
+      "Senno",
+      "Hidegal",
+      "Brentaro",
+      "Cuhito",
+      "Ruadshin",
+      "Toranmaru"
+    ],
+    "personal_f": [
+      "Aoifeko",
+      "Niamhime",
+      "Sadbhana",
+      "Eithko",
+      "Aoihana",
+      "Orlahime",
+      "Caoimhe",
+      "Yukinat",
+      "Brighmi",
+      "Sumiren",
+      "Deirko",
+      "Mihana",
+      "Etannat",
+      "Saorhime",
+      "Tuathlako",
+      "Reiseach",
+      "Muirko",
+      "Hanaedh",
+      "Aoshenna",
+      "Realhana"
+    ],
+    "clan_finuji": [
+      "Finuji Cu-okami (hound-wolf)",
+      "Finuji Bran-karasu (raven)",
+      "Finuji Torc-shishi (boar)",
+      "Finuji Os-shika (deer)",
+      "Finuji Sionnach-kitsu (fox)",
+      "Finuji Iolar-washi (eagle)",
+      "Finuji Math-kuma (bear)",
+      "Finuji Bradan-sake (salmon)",
+      "Finuji Gius-matsu (pine)",
+      "Finuji Corr-tsuru (crane)",
+      "Finuji Dair-kashi (oak)",
+      "Finuji Ceo-kiri (mist)"
+    ],
+    "epithets_cognomina": [
+      "the Mist-walker",
+      "the Hound (Cu)",
+      "Pine-heart",
+      "the Honor-bound",
+      "of the Grey Peak",
+      "the Swift-blade",
+      "Grove-warden",
+      "the Red-Branch"
+    ],
+    "flagship_settlements": [
+      "Shidara (the high seat)",
+      "Kuro-shiyama (the black-mountain hold)",
+      "Shi-fimori (the sacred-forest town)",
+      "Dun-machi (the fort-town)",
+      "Nemiya-no-Toranshi (the sun-grove shrine)",
+      "Lokko-glentan (the lake-vale)"
+    ]
+  },
+  "csv_id": "HYB_16",
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (was #29 in the v1 culture system); csv_id is authoritative."
+}
