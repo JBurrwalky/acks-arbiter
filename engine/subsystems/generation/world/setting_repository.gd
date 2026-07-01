@@ -32,7 +32,7 @@ const POLITY_COLUMNS := [
 	"ruler_level", "ruler_quality", "capital_q", "capital_r", "liege_id",
 	"vassalized_by_war", "founded_tick", "fell_tick", "fade_onset_tick",
 	"civ_or_clan_state", "garrison_coverage", "morale_seed",
-	"internal_vassals", "name",
+	"internal_vassals", "name", "culture_synthesis_parents",
 ]
 const FALLEN_POLITY_COLUMNS := ["polity_id", "toponym_root", "hexes", "era_tick"]
 const SETTLEMENT_COLUMNS := [

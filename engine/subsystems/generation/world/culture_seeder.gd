@@ -655,6 +655,7 @@ static func _make_polity(pid: String, cid: String, alignment: String,
 		"morale_seed": "[]",
 		"internal_vassals": "[]",
 		"name": "",
+		"culture_synthesis_parents": "[]",   # §4d: seed polities are base cultures (never hybrids)
 	}
 
 
@@ -906,4 +907,5 @@ static func _make_beastman_polity(pid: String, cid: String, capital: Vector2i,
 		"morale_seed": "[]",
 		"internal_vassals": "[]",
 		"name": "",
+		"culture_synthesis_parents": "[]",   # §4d: seed polities are base cultures (never hybrids)
 	}

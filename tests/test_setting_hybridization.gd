@@ -19,6 +19,12 @@ func run_all_tests() -> void:
 	test_below_seam_threshold_no_merge()
 	test_displace_decision_no_merge()
 	test_decision_locked_and_deterministic()
+	# §4d — conquest merge (gated) + finalize relabel + persistence
+	test_conquest_merge_gating()
+	test_conquest_merge_symmetric()
+	test_dominant_populated_culture()
+	test_finalize_relabels_hybrid_realm()
+	test_finalize_keeps_base_realm()
 	print("SettingHybridizationTests: all tests passed (%d checks)" % test_count())
 
 
@@ -178,3 +184,80 @@ func test_decision_locked_and_deterministic() -> void:
 	sim._phase_hybridization(0)
 	check(sim._merge_decisions.has("ellinike|vallica"),
 		"the phase locks the pair decision on first contact")
+
+
+# --- §4d conquest merge (gated) ----------------------------------------------
+
+func test_conquest_merge_gating() -> void:
+	# thiodons (clan) x vallica (civ) -> wallans. §6.4: merges ONLY clan-over-civ.
+	var sim := _sim({
+		"thiodons": _base("thiodons", "clan", "germanic"),
+		"vallica": _base("vallica", "civ", "classical"),
+		"wallans": _hybrid_inst("wallans", "civ"),
+	})
+	sim._merge_decisions = {"thiodons|vallica": "merge"}   # isolate the gate from the roll
+	check(sim._conquest_merge_target("thiodons", "vallica") == "wallans",
+		"clan-over-civ conquest converts toward the Conquest hybrid")
+	check(sim._conquest_merge_target("vallica", "thiodons") == "",
+		"civ-over-clan conquest is gated out (§6.4) — assimilates toward the owner")
+
+
+func test_conquest_merge_symmetric() -> void:
+	# ellinike x vallica = same-class (both civ) -> symmetric, no direction gate.
+	var sim := _peer_sim()
+	sim._merge_decisions = {"ellinike|vallica": "merge"}
+	check(sim._conquest_merge_target("ellinike", "vallica") == "ausonians",
+		"same-class conquest merges to the hybrid")
+	check(sim._conquest_merge_target("vallica", "ellinike") == "ausonians",
+		"same-class conquest is symmetric (either conqueror)")
+	# a displace-locked pair never converts.
+	sim._merge_decisions = {"ellinike|vallica": "displace"}
+	check(sim._conquest_merge_target("ellinike", "vallica") == "",
+		"a displace-locked pair assimilates toward the owner, not a hybrid")
+
+
+# --- §4d finalize relabel + persistence --------------------------------------
+
+func test_dominant_populated_culture() -> void:
+	var sim := _peer_sim()
+	sim._grid = {
+		Vector2i(0, 0): {"population_band": 100},
+		Vector2i(1, 0): {"population_band": 100},
+	}
+	sim._culture_w = {
+		Vector2i(0, 0): {"ausonians": 0.8, "ellinike": 0.2},
+		Vector2i(1, 0): {"ausonians": 0.6, "vallica": 0.4},
+	}
+	var dom := sim._dominant_populated_culture({"hexes": [Vector2i(0, 0), Vector2i(1, 0)]})
+	check(str(dom["cid"]) == "ausonians", "the mass-weighted dominant culture is the hybrid")
+	check(is_equal_approx(float(dom["share"]), 0.7), "...at its mass share, got %f" % float(dom["share"]))
+
+
+func _relabel_sim(hybrid_weight: float) -> HistorySimulator:
+	var sim := _peer_sim()
+	sim._n_ticks = 100
+	sim._events = []
+	sim._grid = {Vector2i(0, 0): {"population_band": 100}}
+	sim._culture_w = {Vector2i(0, 0): {"ausonians": hybrid_weight, "ellinike": 1.0 - hybrid_weight}}
+	sim._polities = {"pol_1": {"id": "pol_1", "culture_id": "ellinike", "alive": true, "hexes": [Vector2i(0, 0)]}}
+	return sim
+
+
+func test_finalize_relabels_hybrid_realm() -> void:
+	var sim := _relabel_sim(0.9)   # substrate dominantly the hybrid
+	sim._finalize_hybrid_identities()
+	var pol: Dictionary = sim._polities["pol_1"]
+	check(str(pol["culture_id"]) == "ausonians",
+		"a hybrid-dominant realm is relabeled to the hybrid at finalize")
+	check(pol["culture_synthesis_parents"] == ["ellinike", "vallica"],
+		"...and records its base parents, got %s" % str(pol.get("culture_synthesis_parents")))
+
+
+func test_finalize_keeps_base_realm() -> void:
+	var sim := _relabel_sim(0.1)   # substrate still dominantly the base
+	sim._finalize_hybrid_identities()
+	var pol: Dictionary = sim._polities["pol_1"]
+	check(str(pol["culture_id"]) == "ellinike",
+		"a base-dominant realm keeps its base culture")
+	check(pol["culture_synthesis_parents"] == [],
+		"...and carries an empty synthesis-parents list")

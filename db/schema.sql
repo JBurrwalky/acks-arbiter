@@ -3745,6 +3745,7 @@ CREATE TABLE IF NOT EXISTS setting_polities (
     morale_seed TEXT NOT NULL DEFAULT '[]',
     internal_vassals TEXT NOT NULL DEFAULT '[]',
     name TEXT NOT NULL DEFAULT '',
+    culture_synthesis_parents TEXT NOT NULL DEFAULT '[]',
     PRIMARY KEY (campaign_id, id)
 );
 

@@ -439,7 +439,19 @@ func _assimilate_held_hexes(tick: int) -> void:
 					* (1.0 - resist) * _params.cultural_assimilation, 0.0, 1.0)
 			if rate <= 0.0:
 				continue
-			_culture_w[key] = _lerp_toward(_culture_w[key], culture_id, rate)
+			# §4d conquest merge: on a held hex carrying a foreign BASE substrate, a
+			# gated (owner, subject) merge converts it toward HYB(A,B) instead of the
+			# owner — so conquered/contested zones become the hybrid (§6.4: clan x civ
+			# only when the owner/conqueror is the clan). Alignment still assimilates
+			# toward the realm's own alignment.
+			var culture_target := culture_id
+			if _is_human_base(culture_id):
+				var subj := _dominant_other_culture(_culture_w[key], culture_id)
+				if subj != "":
+					var hyb := _conquest_merge_target(culture_id, subj)
+					if hyb != "":
+						culture_target = hyb
+			_culture_w[key] = _lerp_toward(_culture_w[key], culture_target, rate)
 			_alignment_w[key] = _lerp_toward(_alignment_w[key], alignment, rate)
 
 
@@ -554,6 +566,90 @@ func _family_set(cid: String) -> Dictionary:
 		if f != "":
 			out[f] = true
 	return out
+
+
+## §4d CONQUEST merge target for a conqueror's held hex: the hybrid HYB(owner,
+## subject) to assimilate the hex toward instead of the owner, or "" (assimilate
+## toward the owner as usual). §6.4 gate: a clan x civ pair merges ONLY when the
+## owner (conqueror) is the clan; civ-over-clan and unknown pairs displace. Reuses
+## the §4c per-pair lock (_merge_decisions) — so a pair that border-merged in §4c
+## and one that conquest-merges here resolve to the SAME hybrid/decision.
+func _conquest_merge_target(owner_cid: String, subject_cid: String) -> String:
+	if not (_is_human_base(owner_cid) and _is_human_base(subject_cid)):
+		return ""
+	var hyb := CultureCatalogLoader.hybrid_for_parents(owner_cid, subject_cid)
+	if hyb == "":
+		return ""
+	# §6.4: a clan x civ Conquest hybrid forms ONLY clan-over-civ (owner = the clan).
+	var oc := _civ_or_clan_of(owner_cid)
+	if oc != _civ_or_clan_of(subject_cid) and oc != "clan":
+		return ""
+	var pkey := (owner_cid + "|" + subject_cid) if owner_cid < subject_cid \
+			else (subject_cid + "|" + owner_cid)
+	var decision = _merge_decisions.get(pkey)
+	if decision == null:
+		decision = _decide_merge(owner_cid, subject_cid, pkey)
+		_merge_decisions[pkey] = decision
+	return hyb if decision == "merge" else ""
+
+
+## The mass-weighted dominant culture across a polity's POPULATED hexes and its
+## share (0..1). mass(c) = Σ_hex culture_w[hex][c] × population_band. Deterministic
+## (single pass, lexical tie-break). {"cid": "", "share": 0.0} if no populated mass.
+func _dominant_populated_culture(pol: Dictionary) -> Dictionary:
+	var mass := {}
+	var total := 0.0
+	for key in pol["hexes"]:
+		var pop := float(_grid[key]["population_band"])
+		if pop <= 0.0:
+			continue
+		for c in _culture_w.get(key, {}):
+			var m := float(_culture_w[key][c]) * pop
+			mass[str(c)] = float(mass.get(str(c), 0.0)) + m
+			total += m
+	if total <= 0.0:
+		return {"cid": "", "share": 0.0}
+	var best := ""
+	var best_m := -1.0
+	var keys := mass.keys()
+	keys.sort()
+	for c in keys:
+		if float(mass[c]) > best_m:
+			best_m = float(mass[c])
+			best = str(c)
+	return {"cid": best, "share": best_m / total}
+
+
+## §4d FINALIZE relabel (Jedidiah 2026-06-30): the sim ran on base ids; a realm
+## whose POPULATED substrate is now dominantly a HYBRID (>= hybrid_adopt_min_share)
+## is relabeled to that hybrid for the present-day handoff — culture_id becomes the
+## hybrid and culture_synthesis_parents=[base_a, base_b] is recorded (persisted to
+## setting_polities). Base realms carry an empty parents list. Runs at finalize
+## (after the tick loop), so it never perturbs the sim dynamics. Sorted iteration.
+func _finalize_hybrid_identities() -> void:
+	var catalog := CultureCatalogLoader.load_all()
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		pol["culture_synthesis_parents"] = []
+		var dom := _dominant_populated_culture(pol)
+		var cid := str(dom["cid"])
+		if cid == "" or cid == str(pol["culture_id"]):
+			continue
+		var inst: Dictionary = _culture_instances.get(cid, {})
+		if str(inst.get("culture_class", "")) != "hybrid":
+			continue
+		if float(dom["share"]) < _c.hybrid_adopt_min_share:
+			continue
+		var parents := CultureCatalogLoader.culture_synthesis_parents(catalog.get(cid, {}))
+		if parents.size() != 2:
+			continue
+		var from_cid := str(pol["culture_id"])
+		pol["culture_id"] = cid
+		pol["culture_synthesis_parents"] = [str(parents[0]), str(parents[1])]
+		_emit_event(_n_ticks, "cultural_shift", [pid], [from_cid, cid],
+				pol["hexes"], 0.6, "hybrid_emerged")
 
 
 # ---------------------------------------------------------------------------
@@ -4264,6 +4360,7 @@ func _rle_owners() -> String:
 # ---------------------------------------------------------------------------
 
 func _finalize(ctx: Dictionary) -> void:
+	_finalize_hybrid_identities()   # §4d — relabel realms whose people became a hybrid (before handoff/serialize)
 	_serialize_substrate()
 	_assign_present_day_handoff()   # 4g §12: ruler level/class + seeded morale
 	_score_event_significance()     # 4g §11.3: per-event significance
@@ -4330,6 +4427,8 @@ func _polity_rows() -> Array:
 			"morale_seed": str(pol.get("morale_seed", "[]")),
 			"internal_vassals": _internal_vassals_json(pol),
 			"name": str(pol.get("name", "")),
+			# §4d: [base_a, base_b] when this realm's people became a hybrid, else [].
+			"culture_synthesis_parents": JSON.stringify(pol.get("culture_synthesis_parents", [])),
 			# §5.3 rolled-race hint — carried IN-MEMORY to Layer 5 naming (which reads
 			# ctx["sim_polities"]); not a setting_polities column, so save ignores it.
 			"beastman_race": str(pol.get("beastman_race", "")),

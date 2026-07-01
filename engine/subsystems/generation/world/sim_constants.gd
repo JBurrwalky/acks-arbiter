@@ -468,6 +468,19 @@ var hybrid_merge_base_p: float = 0.25    # base per-pair merge-vs-displace proba
 var hybrid_merge_family_bonus: float = 1.6  # x when the two bases share a language family
 var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex toward the hybrid
 
+# --- §4d Hybrid emergence — conquest merge + finalize relabel ----------------
+# CONQUEST merge (dynamic, substrate): on a conqueror's held hex carrying a
+# foreign BASE substrate, if the (owner, subject) pair merges — §6.4 gated
+# (clan x civ ONLY when the OWNER is the clan; civ-over-clan displaces; same-class
+# symmetric; reuses the §4c per-pair lock) — _assimilate_held_hexes converts the
+# hex toward HYB(A,B) instead of toward the owner, so conquered/contested zones
+# become the hybrid. NO mid-sim polity-identity flip (Jedidiah): the sim runs on
+# base ids and only the SUBSTRATE goes hybrid. FINALIZE relabel: a realm whose
+# populated substrate is dominantly a hybrid (>= hybrid_adopt_min_share) has its
+# present-day culture_id relabeled to that hybrid + culture_synthesis_parents
+# persisted (setting_polities). [PROVISIONAL]
+var hybrid_adopt_min_share: float = 0.5   # a hybrid's mass share of a realm to relabel it at finalize
+
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5
