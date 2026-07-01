@@ -13,6 +13,8 @@ const CULTURES_DIR := "res://data/cultures/"
 
 static var _cache: Dictionary = {}
 static var _loaded: bool = false
+static var _pair_lookup: Dictionary = {}        # unordered parent-pair key -> hybrid culture_id
+static var _pair_lookup_built: bool = false
 
 
 ## { culture_id: record_dict }, loaded once and cached.
@@ -56,6 +58,8 @@ static func load_all() -> Dictionary:
 static func clear_cache() -> void:
 	_cache = {}
 	_loaded = false
+	_pair_lookup = {}
+	_pair_lookup_built = false
 
 
 # --- Field accessors (tolerant of the stripped beastman schema, §5.3) -------
@@ -76,13 +80,18 @@ static func tier(record: Dictionary) -> String:
 	return str(identity(record).get("tier", "human"))
 
 
-## "base" | "member" — the base/hybrid culture-emergence model
-## (gdd-culture-emergence-and-territory.md §3.1). Only the 11 human BASE cultures
-## carry culture_class="base"; the seeder restricts the human seed pool to bases
-## (hybrids emerge at runtime; old member kits are never seeded). Records that
-## omit the field default to "member".
+## "base" | "hybrid" | "member" — the base/hybrid culture-emergence model
+## (gdd-culture-emergence-and-territory.md §3.1/§3.6). Only the 11 human BASE
+## cultures carry culture_class="base"; the 55 first-order hybrids carry "hybrid"
+## (seed-excluded, looked up by parent pair on emergence). The seeder restricts
+## the human seed pool to bases. Records that omit the field default to "member".
 static func culture_class(record: Dictionary) -> String:
 	return str(identity(record).get("culture_class", "member"))
+
+
+## [base_a_id, base_b_id] for a hybrid record (gdd §3.6); [] for base/member.
+static func culture_synthesis_parents(record: Dictionary) -> Array:
+	return identity(record).get("culture_synthesis_parents", [])
 
 
 static func race(record: Dictionary) -> String:
@@ -159,3 +168,36 @@ static func id_for_beastman_race(r: String) -> String:
 
 static func _culture_id_of(record: Dictionary) -> String:
 	return str(record.get("mechanical", {}).get("identity", {}).get("culture_id", ""))
+
+
+# --- Parent-pair -> hybrid lookup (gdd-culture-emergence-and-territory.md §3.6) ---
+# Built once by scanning the hybrid catalog records' culture_synthesis_parents;
+# no separate definition-table file. The key is order-independent, so
+# hybrid_for_parents(a, b) == hybrid_for_parents(b, a).
+
+## The hybrid culture_id for the unordered BASE pair {a, b}, or "" if none is
+## defined (or a == b, or either is unknown). First-order only: both inputs must
+## be base culture_ids. Loads/caches the catalog on first call.
+static func hybrid_for_parents(a: String, b: String) -> String:
+	if not _pair_lookup_built:
+		_build_pair_lookup()
+	return str(_pair_lookup.get(_pair_key(a, b), ""))
+
+
+static func _pair_key(a: String, b: String) -> String:
+	return (a + "|" + b) if a < b else (b + "|" + a)
+
+
+static func _build_pair_lookup() -> void:
+	_pair_lookup = {}
+	var recs := load_all()
+	var keys := recs.keys()
+	keys.sort()   # deterministic; a pair maps to at most one hybrid anyway
+	for cid in keys:
+		var rec: Dictionary = recs[cid]
+		if culture_class(rec) != "hybrid":
+			continue
+		var parents := culture_synthesis_parents(rec)
+		if parents.size() == 2:
+			_pair_lookup[_pair_key(str(parents[0]), str(parents[1]))] = str(cid)
+	_pair_lookup_built = true

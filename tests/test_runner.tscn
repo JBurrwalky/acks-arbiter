@@ -494,6 +494,7 @@
 [ext_resource type="Script" path="res://tests/test_climb_resolver.gd" id="478_climb_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_territory_cap.gd" id="479_territory_cap_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_overseas.gd" id="480_overseas_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_hybridization.gd" id="481_hybridization_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1976,3 +1977,6 @@ script = ExtResource("479_territory_cap_tests")
 
 [node name="OverseasTests" type="Node" parent="."]
 script = ExtResource("480_overseas_tests")
+
+[node name="HybridizationTests" type="Node" parent="."]
+script = ExtResource("481_hybridization_tests")

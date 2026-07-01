@@ -449,6 +449,25 @@ var saturation_pop_fraction: float = 0.50
 var sea_cross_base: float = 0.6     # expansion-mult factor at the nearest (1-hex) sea hop
 var sea_cross_decay: float = 0.92   # × per extra hex of sea distance: 0.6·0.92^(d-1)
 
+# --- §4c Hybrid emergence — border merge (substrate only; NO polity flip) ----
+# GDD §3.3 (merge-vs-displace) + §3.6 (static hybrid kits). At a substrate SEAM —
+# a hex where two DISTINCT human BASE cultures each hold >= hybrid_seam_threshold
+# in its culture_weights — a per-BASE-PAIR merge-vs-displace decision fires once
+# and LOCKS (a property of the seed, revealed on first contact). On MERGE the
+# pair's seam hexes grow the static hybrid HYB(A,B) (looked up by parent pair) at
+# hybrid_merge_rate, at the expense of both parents (via _lerp_toward). SUBSTRATE
+# ONLY — the polity keeps its identity; a hybrid never seeds and never flips a
+# polity here (adoption/persistence is §4d). SCOPE (Jedidiah 2026-06-30): only
+# SAME-CLASS pairs blend at a peaceful border — civ x civ (Peer) and clan x clan
+# (Confederated); clan x civ (Conquest) hybrids emerge from CONQUEST in §4d (they
+# model a conqueror over a subject, which a peaceful border lacks). The merge
+# probability is PROVISIONAL engineering (base x shared-language-family; parity /
+# alignment drivers deferred to the §4e calibration pass). [PROVISIONAL]
+var hybrid_seam_threshold: float = 0.2   # each base's min hex weight for a real seam
+var hybrid_merge_base_p: float = 0.25    # base per-pair merge-vs-displace probability
+var hybrid_merge_family_bonus: float = 1.6  # x when the two bases share a language family
+var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex toward the hybrid
+
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
 var conversion_morale_svg_gate: float = 0.5

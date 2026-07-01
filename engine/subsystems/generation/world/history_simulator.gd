@@ -63,6 +63,7 @@ var _terrain_mult_cache: Dictionary = {}  # culture_id -> {Vector2i -> mult} (te
 # Substrate parsed into memory for the tick loop (re-serialized at finalize).
 var _culture_w: Dictionary = {}  # Vector2i -> {culture_id: weight}
 var _alignment_w: Dictionary = {} # Vector2i -> {alignment: weight}
+var _merge_decisions: Dictionary = {}  # §4c base-pair key "a|b" -> "merge"/"displace", locked once per pair
 
 var _polities: Dictionary = {}   # id -> mutable polity dict (+ runtime hexes[])
 var _settlements: Array = []     # emerged settlement records
@@ -185,6 +186,7 @@ func _tick(tick: int) -> void:
 		_phase_consolidation(tick) # 4e-b (significance floor: merge sub-floor fragments)
 		_phase_go_native(tick)    # 4e-c (conqueror adopts a large, more-developed subject)
 		_phase_substrate(tick)    # 4a
+		_phase_hybridization(tick) # 4c — border merge grows HYB(A,B) into base-vs-base seams
 		_phase_demography(tick)   # 4a
 		_phase_deforestation(tick) # 4a — graduated clearing past the §4 biome cap
 		_phase_reforestation(tick) # 4a — depopulated/elf regrowth (reverses clearing)
@@ -204,6 +206,7 @@ func _tick(tick: int) -> void:
 	_phase_consolidation(tick); t = _mark("consolidation", t)
 	_phase_go_native(tick); t = _mark("go_native", t)
 	_phase_substrate(tick); t = _mark("substrate", t)
+	_phase_hybridization(tick); t = _mark("hybridize", t)
 	_phase_demography(tick); t = _mark("demography", t)
 	_phase_deforestation(tick); t = _mark("deforestation", t)
 	_phase_reforestation(tick); t = _mark("reforestation", t)
@@ -438,6 +441,119 @@ func _assimilate_held_hexes(tick: int) -> void:
 				continue
 			_culture_w[key] = _lerp_toward(_culture_w[key], culture_id, rate)
 			_alignment_w[key] = _lerp_toward(_alignment_w[key], alignment, rate)
+
+
+# ---------------------------------------------------------------------------
+# 4c — Hybrid emergence (border merge; GDD §3.3 + §3.6 — substrate only)
+# ---------------------------------------------------------------------------
+
+## At each substrate SEAM — a land hex where two DISTINCT human BASE cultures each
+## hold >= hybrid_seam_threshold — a per-base-pair merge-vs-displace decision fires
+## once and LOCKS; a locked-merge pair grows the static hybrid HYB(A,B) into its
+## seam hexes at hybrid_merge_rate, at the expense of both parents (via
+## _lerp_toward). SUBSTRATE ONLY — no polity flips (adoption/persistence is §4d).
+## SCOPE (Jedidiah 2026-06-30): peaceful-border merges are SAME-CLASS only — civ x
+## civ (Peer) and clan x clan (Confederated); clan x civ (Conquest) emerges from
+## conquest in §4d. Runs after _phase_substrate so the tick's diffusion has already
+## mixed the border. Deterministic: canonical _land_keys order + a tick-independent
+## per-pair draw.
+func _phase_hybridization(_tick: int) -> void:
+	for key in _land_keys:
+		var w: Dictionary = _culture_w.get(key, {})
+		if w.size() < 2:
+			continue
+		var pair := _top_two_bases(w)
+		if pair.is_empty():
+			continue
+		var ca: String = pair[0]   # seam-dominant base
+		var cb: String = pair[1]
+		if float(w.get(cb, 0.0)) < _c.hybrid_seam_threshold:
+			continue
+		# Peaceful border merges are same-class only (Peer / Confederated); a
+		# clan x civ pair is a Conquest hybrid and emerges via §4d conquest instead.
+		if _civ_or_clan_of(ca) != _civ_or_clan_of(cb):
+			continue
+		var hyb := CultureCatalogLoader.hybrid_for_parents(ca, cb)
+		if hyb == "":
+			continue
+		var pkey := (ca + "|" + cb) if ca < cb else (cb + "|" + ca)
+		var decision = _merge_decisions.get(pkey)
+		if decision == null:
+			decision = _decide_merge(ca, cb, pkey)
+			_merge_decisions[pkey] = decision
+		if decision == "merge":
+			_culture_w[key] = _lerp_toward(w, hyb, _c.hybrid_merge_rate)
+
+
+## The top two DISTINCT human-base culture_ids in a hex's weights, dominant first;
+## [] if fewer than two human bases are present. Deterministic (weight desc, then
+## culture_id asc on ties — the ascending pre-sort makes the first-seen win).
+func _top_two_bases(w: Dictionary) -> Array:
+	var a := ""
+	var wa := -1.0
+	var b := ""
+	var wb := -1.0
+	var keys := w.keys()
+	keys.sort()
+	for cid in keys:
+		if not _is_human_base(str(cid)):
+			continue
+		var v := float(w[cid])
+		if v > wa:
+			b = a
+			wb = wa
+			a = str(cid)
+			wa = v
+		elif v > wb:
+			b = str(cid)
+			wb = v
+	if a == "" or b == "":
+		return []
+	return [a, b]
+
+
+func _is_human_base(cid: String) -> bool:
+	var inst: Dictionary = _culture_instances.get(cid, {})
+	return str(inst.get("culture_class", "")) == "base" \
+			and str(inst.get("race", "human")) == "human"
+
+
+func _civ_or_clan_of(cid: String) -> String:
+	return str(_culture_instances.get(cid, {}).get("civ_or_clan", "civ"))
+
+
+## Per-pair merge-vs-displace, locked once. PROVISIONAL drivers: a base probability
+## boosted when the two bases share a language family, resolved by one tick-
+## independent draw so the outcome is a stable property of (seed, pair). Parity /
+## alignment drivers (§3.3) are deferred to the §4e calibration pass.
+func _decide_merge(ca: String, cb: String, pkey: String) -> String:
+	var p := _c.hybrid_merge_base_p
+	if _shares_language_family(ca, cb):
+		p *= _c.hybrid_merge_family_bonus
+	var roll := WorldGenRng.stream(_campaign_seed, "hybridize_decide", 0, pkey).randf()
+	return "merge" if roll < p else "displace"
+
+
+## Do two cultures share any language family? Reads the instance language_family
+## (comma-separated on cross-family hybrids; a single family for bases).
+func _shares_language_family(ca: String, cb: String) -> bool:
+	var fa := _family_set(ca)
+	if fa.is_empty():
+		return false
+	for f in _family_set(cb):
+		if fa.has(f):
+			return true
+	return false
+
+
+func _family_set(cid: String) -> Dictionary:
+	var out := {}
+	var raw := str(_culture_instances.get(cid, {}).get("language_family", ""))
+	for part in raw.split(","):
+		var f := part.strip_edges().to_lower()
+		if f != "":
+			out[f] = true
+	return out
 
 
 # ---------------------------------------------------------------------------

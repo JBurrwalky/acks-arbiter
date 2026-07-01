@@ -103,6 +103,19 @@ static func run(ctx: Dictionary) -> bool:
 			instances[cid] = _jitter_instance(catalog[cid], campaign_seed)
 	ctx["culture_instances"] = instances
 
+	# Hybrid instances (gdd-culture-emergence-and-territory.md §3.6): the 55 first-
+	# order hybrids are seed-EXCLUDED as polities, but their instances must exist so
+	# a Phase-4 border merge can look one up by parent pair and the substrate /
+	# classification can read its race/tier/civ_or_clan when its weight grows. Built
+	# for every hybrid catalog record (deterministic — per-culture RNG stream); inert
+	# until a merge grows the hybrid's weight. Mutating the same dict ctx already
+	# holds (as the generic-beastman injection below does).
+	var hybrid_ids := catalog.keys()
+	hybrid_ids.sort()
+	for hcid in hybrid_ids:
+		if CultureCatalogLoader.culture_class(catalog[hcid]) == "hybrid" and not instances.has(hcid):
+			instances[hcid] = _jitter_instance(catalog[hcid], campaign_seed)
+
 	# Draw each seed's alignment.
 	for i in range(selected.size()):
 		selected[i]["alignment"] = _draw_alignment(
@@ -386,6 +399,10 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		"tier": CultureCatalogLoader.tier(record),
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": str(CultureCatalogLoader.identity(record).get("civ_or_clan", "civ")),
+		# §4c hybrid emergence: culture_class identifies BASE cultures (only base x
+		# base seams merge), language_family drives the shared-family merge bonus.
+		"culture_class": CultureCatalogLoader.culture_class(record),
+		"language_family": str(record.get("flavor", {}).get("language", {}).get("language_family", "")),
 		"toponym": CultureCatalogLoader.toponym(record),
 		# §7.4f "prestige": civilization level (class_kit_weights.developed) that
 		# drives go-native — a conqueror adopts a large, more-developed subject.
