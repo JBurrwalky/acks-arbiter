@@ -37234,3 +37234,72 @@ on-tick dispatch.
 **Next session should:**
 - Phase 4e: hybrid-emergence integration test (a full generated-map run producing >= 1 hybrid realm, deterministic) + the calibration pass — add the parity/alignment merge drivers (§3.3), tune prevalence via `tools/calib_sweep.tscn`, and verify wilderness / realm-count neutrality vs the §17 targets.
 **Commits:** d01279c (Phase 4d).
+
+## Session 2026-07-01 - Watchable history replay: animate culture + territory layers, seed labels
+
+**Task:** The Screen C history-sim replay animated only political ownership; the Culture and Territory (civ/borderlands/wilderness) layers showed the present-day end-state, so cultures spreading and the civilization frontier advancing were not watchable epoch by epoch. Jedidiah needs those visible to troubleshoot how the runtime maps turn out, plus a culture-seed label ("Vallican_01") per polity so seed cultures are legible during the sim before they earn a proper name.
+
+**Model used:** Opus 4.8, implementation + design.
+
+**Completed:**
+- Migration 180 (db/migrations/180_setting_replay_culture_territory.sql): ADD COLUMN culture_by_hex, territory_by_hex to setting_replay_frames; seed_label to setting_replay_palette. Non-destructive '' defaults; schema.sql updated to match.
+- SettingRepository: REPLAY_FRAME_COLUMNS = [tick, owner_by_hex, culture_by_hex, territory_by_hex]; REPLAY_PALETTE_COLUMNS = [polity_id, color, seed_label]. (Determinism hasher keys on these constants, so the new columns hash automatically; determinism stays reproducible since the data is deterministic.)
+- HistorySimulator: generalized _rle_owners into _rle_field(value_of: Callable) (shared RLE over canonical hex order); _capture_replay_frame now captures owner_by_hex, culture_by_hex (_dominant_key of _culture_w), territory_by_hex (territory_class). _build_palette computes seed_label "<CultureName>_NN" via per-culture ordinal in sorted-polity-id order; _seed_culture_name capitalizes the culture id.
+- ReplayFrameDecoder.decode_value_map: keeps EVERY hex incl. '' entries (frame-authoritative), vs decode_owner_map which skips ''.
+- political_map_view.gd: _culture_override / _territory_override maps + show_cultures() / show_territories() (cleared by bind); _culture_of() / _territory_of() read frame override when loaded else present-day; set_seed_labels() + seed_culture_colors(ids) (deterministic union pre-seed); frame-aware _replay_tooltip + _owner_label (seed label first, eventual name in parens).
+- screen_generate_replay.gd: _show_frame pushes per-frame culture + territory; begin_replay builds seed_labels from palette + pre-seeds culture colours from _all_frame_cultures() union; _on_mode_selected keeps replay_mode active for Political/Culture/Territory (Biome/Elevation stay present-day terrain); updated layer-toggle comments/tooltips.
+
+**Decisions made:**
+- Seed label rides on setting_replay_palette (already enumerates every frame owner, including dead polities kept in _polities) rather than setting_fallen_polities (selective) or setting_polities (alive-only). Avoids touching FALLEN_POLITY_COLUMNS / the fallen hash.
+- Culture/territory decode is frame-authoritative (include '' entries); the view must not fall back to present-day for a "none" hex - otherwise an extinct culture would show its end-state.
+- Culture colours pre-seeded from the union across all frames so a culture that spreads then dies still draws in its own hue on rewind.
+- Biome/Elevation deliberately left present-day (terrain never changes across the history).
+
+**Interfaces defined or changed:**
+- setting_replay_frames: +culture_by_hex TEXT, +territory_by_hex TEXT (RLE, canonical hex order, ''=none).
+- setting_replay_palette: +seed_label TEXT ("Vallican_01").
+- ReplayFrameDecoder.decode_value_map(rle, ordered_hexes) -> {Vector2i: value} (keeps '').
+- HistorySimulator._rle_field(value_of: Callable) -> String.
+- political_map_view: show_cultures(map), show_territories(map), set_seed_labels(dict), seed_culture_colors(ids).
+
+**Database changes:** Migration 180 (3 ADD COLUMN). No data migration needed for existing campaigns (defaults ''); the columns are repopulated on the next generate().
+
+**Tests added/updated:** test_campaign_creation_seams.gd - decode_value_map unit check (keeps '' hex); live checks that frames carry culture_by_hex/territory_by_hex, territory values are valid ACKS classes, owned hexes carry a dominant culture, and every palette polity has a "<Culture>_NN" seed label. Full headless suite 478 passed / 16 failed on two consecutive runs = exact prior baseline (the 16 are unrelated pre-existing failures: proficiency popup, combat LOS/ZoC, party split/merge, armor, encounters). CampaignCreationSeamsTests green both runs (35 checks).
+
+**Decisions/conventions:** Added coding_conventions.md section 88 (watchable replay: shared _rle_field, decode_value_map frame-authority, union culture colours, palette-carried seed label). Supersedes the section 80 "replay frames store ownership only" note.
+
+**Known issues:**
+- In-engine visual verification (godot-ai MCP project_run + scrub the replay) not yet done this session - logic + headless tests only. Recommend a smoke pass: generate a setting, open Screen C, scrub Culture and Territory layers, confirm they animate and the Political tooltip shows "<Culture>_NN".
+- Pre-existing "unsupported format character in operator '%'" log noise near Stage4e is NOT from this work (political_map_view isn't loaded headless; sim format strings are valid %s/%02d and all setting-gen suites pass).
+
+**Next session should:**
+- In-engine smoke verification of the animated Culture/Territory layers + seed-label tooltip via godot-ai MCP.
+- Optional: consider a per-frame culture/territory LEGEND or on-map count caption on Screen C (currently only the realms-count caption animates).
+
+
+## Session 2026-06-30 — Phase 4e: hybrid-emergence calibration + integration test (CULTURE ARC COMPLETE)
+
+**Task:** Phase 4e — verify hybrids actually emerge on generated maps, calibrate prevalence, add an integration test. Closes the culture-emergence build.
+**Model used:** Opus 4.8.
+**Completed:**
+- Extended `tools/calib_sweep.gd` with hybrid-emergence metrics (hybrid_realms via culture_synthesis_parents, distinct_hybrids, hybrid_dom_hexes + diagnostics realms_hyb_plurality / max_hyb_share) — the standing harness now measures hybrid prevalence.
+- DIAGNOSED the emergence chain (sweeps + targeted HYBDBG debug, since removed): hybrid SUBSTRATE emerges robustly; whole hybrid REALMS emerge when a realm ADOPTS its large, prestigious emergent hybrid via §7.4f GO-NATIVE (the "reuse go-native" path from Jedidiah's original ruling) — enabled because the seeder injects the 55 hybrid instances (Phase 4c), making them go-native-eligible.
+- FIXED the recording gap: go-native sets culture_id but NOT culture_synthesis_parents, and `_finalize_hybrid_identities` skipped realms already == their dominant. Added **Case 1** (a realm whose culture_id is ALREADY a hybrid records its parent bases at finalize) alongside **Case 2** (a base-owned realm whose populated substrate is dominantly a hybrid is relabeled). So BOTH go-native and substrate-dominance hybrid realms persist their parents.
+- DECISION (Jedidiah AskUserQuestion): "embrace go-native + record" over "finalize-only" — go-native adopting the emergent hybrid IS the realm-emergence mechanism (matches the original "reuse go-native" ruling; a ruling class adopts the blended identity of its people). Reverted the interim go-native-excludes-hybrids guard.
+- CALIBRATED `hybrid_merge_base_p` 0.25 -> 0.5 (Large×6 sweeps): 0.5 gives ~0.67 hybrid realms/map (3 on strong-contact seed 1000, 0 on isolated seeds) + ~26 hybrid-dominant substrate hexes/map, §17-NEUTRAL (wild 57.3 vs 58 baseline; realms 28.5 vs 30.5). 0.7 was hotter (1.83 realms but a seed-1000 runaway at 239 hexes ~= half the map); 0.5 tames the variance. `hybrid_adopt_min_share` 0.5 -> 0.35 (Case 2 plurality not majority; Case 1/go-native dominates in practice). All PROVISIONAL — bump base_p toward 0.7 for more prominent hybrids.
+- `test_setting_hybridization.gd` + `test_hybrid_emerges_on_generated_map`: a full large seed-1000 generation asserting hybrid substrate hexes > 0 AND >= 1 recorded hybrid realm (the whole 4c->4d->4e chain end to end).
+**Decisions made:**
+- Hybrids manifest at TWO levels: (1) SUBSTRATE / regions (conquest+border zones become dominantly a hybrid -> Layer-5 names them with the 55 hybrid name banks) — the primary, robust manifestation; (2) whole REALMS via go-native adoption — occasional, contact-dependent. Both realistic.
+- The §3.3 parity/alignment merge drivers stay DEFERRED: the per-pair-locked decision + the go-native developed-gradient already yield a sensible prevalence, and parity/alignment are contextual (don't fit the per-pair lock cleanly). Intentional simplification, not a gap.
+**Interfaces defined or changed:**
+- HistorySimulator._finalize_hybrid_identities: Case 1 records culture_synthesis_parents for go-native'd hybrid realms; Case 2 relabels substrate-dominant base realms. `_phase_go_native` may now adopt hybrid subjects (present in _culture_instances since Phase 4c).
+- SimConstants.hybrid_merge_base_p=0.5, hybrid_adopt_min_share=0.35 (both PROVISIONAL).
+- calib_sweep.gd hybrid metrics (kept for future tuning).
+**Database changes:** None (4e is calibration + test; the culture_synthesis_parents migration 179 landed in 4d).
+**Tests added/updated:** test_setting_hybridization.gd += the full-generated-map integration test (33 checks total). Suite **478/16** on two consecutive runs = baseline + this suite, 0 new failures; SettingCalibration green (§17-neutral), SettingGenerationDataFreshness green (determinism holds).
+**Known issues:**
+- Hybrid REALMS are contact-dependent (some maps 0) — inherent to procedural geography; substrate/region hybrids appear on ~half the maps. base_p is the prevalence knob.
+- In-engine visual verification (hybrid regions NAMED by Layer 5 + shown on the political map) not yet done — recommend an eyeball pass.
+**Next session should:**
+- The culture-emergence build (base/hybrid, territory gating, deforestation, expansion, hybrid emergence 4a-4e) is COMPLETE. Optional: playtest-tune base_p; in-engine verify hybrid region naming/rendering. Phase 5 (clanhold migration / Völkerwanderung) remains DEFERRED (design sketch only).
+**Commits:** 6520eea (Phase 4e).
