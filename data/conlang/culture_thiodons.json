@@ -218,11 +218,31 @@
     "_note": "Deity-names are the Gothic-branch reflexes of the common-Germanic theonym ancestors (family_germanic.json theonym_ancestors, the gothic column) - phoneme-morphs of the Agrippan canon, never real Germanic gods. All three alignments present: Lawful kin keep the high oath-and-sun powers, Chaotic kin the wolf-and-fire powers, Neutral kin the ancestral war-dead and the earth-and-grove powers; the One is distant.",
     "the_one": "Aiterns (< *Aiternaz < Aeternus; the distant All-Father, seldom petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Thulrs (sun and judgment)",
-      "Orlandus": "Erlands (the iron-oath, war)",
-      "Gaiandus": "Gauands (the enduring earth)",
-      "Numeno": "Numins (the storm-mind, sky-wisdom)",
-      "Realta": "Riala (the mother, mercy)"
+      "Tulrius": {
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "gloss": "sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "gloss": "the iron-oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "gloss": "the storm-mind, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded; the war-oath binds and the high gods uphold the kin.",

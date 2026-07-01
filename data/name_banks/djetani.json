@@ -369,12 +369,48 @@
     "religious_orders_pattern": "the Per-netjer (god's-house/temple) of [power]: 'the Per-netjer of Tjuraa'; the imperial collegia recast as the Kolegaa of [power]: 'the Kolegaa of Oranetj' (the legion-cult).",
     "saints_pattern": "the deified dead (akhu) and god-kings, venerated at tomb-temples as 'the justified [name]' (maa-kheru); the deified imperial founders styled Diwaa [name] (adapted Divus).",
     "sample_deity_renames": {
-      "Delorum": "Djeroraa (Lat. Delori) - lord of the peaceful dead",
-      "Gaiandus": "Geandaa (Lat. Gaiandi) - the enduring earth and the flood-field",
-      "Numeno": "Numenaa (Lat. Numeni) - sky and scribe-wisdom",
-      "Orlandus": "Oranetj (Lat. Orlandi) - iron, oath, war",
-      "Realta": "Riaret (Lat. Realti) - the mother, mercy",
-      "Tulrius": "Tjuraa (Lat. Tulri) - the sun-disc and right-order"
+      "Delorum": {
+        "gloss": "lord of the peaceful dead",
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Delori",
+        "secondary_family": "classical"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and the flood-field",
+        "primary": "Geandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandi",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Numeni",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandi",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Realti",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun-disc and right-order",
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulri",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Atjernaa (< Aeternus; Lat. Aeternaa) - the hidden distant maker, honored not petitioned",
     "worship_by_alignment": {

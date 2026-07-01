@@ -374,11 +374,41 @@
     "religious_orders_pattern": "the Temenjia (temple-and-shrine precinct) of [power] on the isle: 'the Temenjia of Tulrios', within its torii-gate and sacred olive-and-cherry grove.",
     "saints_pattern": "the Heros-kami (the deified heroes and grove-and-sea spirits) and the great ancestors of the oikos, enshrined as kami at the heroon and the clan-jinja of the holy isle; 'the Heros [name]' / 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiandros (the enduring earth-mountain; Japonic face Iwanos-no-kami, the Rock-Root; Lawful power)",
-      "Numeno": "Numenos (the sky-wisdom lord; Japonic face Amatkazos-no-kami)",
-      "Orlandus": "Orlandros (iron, oath and war; Japonic face Haganos-no-kami, the Steel One)",
-      "Realta": "Realtia (the mercy-mother; Japonic face Megumihime; Neutral-honored)",
-      "Tulrius": "Tulrios (the sun and just rule; Japonic face Terashio-no-kami, the Shining One; Lawful power)"
+      "Gaiandus": {
+        "gloss": "the enduring earth-mountain; Lawful power",
+        "primary": "Gaiandros",
+        "primary_family": "classical",
+        "secondary": "Iwanos-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "the sky-wisdom lord",
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "secondary": "Amatkazos-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath and war",
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "secondary": "Haganos-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mercy-mother; Neutral-honored",
+        "primary": "Realtia",
+        "primary_family": "classical",
+        "secondary": "Megumihime",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and just rule; Lawful power",
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Terashio-no-kami",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Aiternos (< Aeternus; Hellenic Aiternos, Japonic kami-face Takami-no-kami) - the One, the unknowable source, the High-Heaven distant above the myriad powers; honored not petitioned, revered when Lawful, set aside when Chaotic",
     "worship_by_alignment": {

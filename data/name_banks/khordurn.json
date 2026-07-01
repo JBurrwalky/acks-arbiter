@@ -366,10 +366,26 @@
     "religious_orders_pattern": "the Drumgrund (festival-hall) of [power]: 'the Drumgrund of Orlundrumm', loud with hammers on the feast-days.",
     "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), named at every hearth and tomb.",
     "sample_deity_renames": {
-      "Delorum": "Delrundrumm (death and the honored dead; the ancestor-warden, masc.)",
-      "Gaiandus": "Gundundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)",
-      "Orlandus": "Orlundrumm (the forge, the smith, oaths and iron; the most honored god, masc.)",
-      "Realta": "Reltadrumma (the hearth-mother, mercy; honored, fem.)"
+      "Delorum": {
+        "gloss": "death and the honored dead; the ancestor-warden, masc.",
+        "primary": "Delrundrumm",
+        "primary_family": "dwarven"
+      },
+      "Gaiandus": {
+        "gloss": "the mountain, the mine, the deep earth; co-foremost, masc.",
+        "primary": "Gundundrumm",
+        "primary_family": "dwarven"
+      },
+      "Orlandus": {
+        "gloss": "the forge, the smith, oaths and iron; the most honored god, masc.",
+        "primary": "Orlundrumm",
+        "primary_family": "dwarven"
+      },
+      "Realta": {
+        "gloss": "the hearth-mother, mercy; honored, fem.",
+        "primary": "Reltadrumma",
+        "primary_family": "dwarven"
+      }
     },
     "the_one": "Atrundrumm (< Aeternus; sacred-masculine ending -drumm; the Stone-Father, the First Shaper; honored at the great festivals but distant from the daily ancestor-prayers; revered most when Lawful)",
     "worship_by_alignment": {

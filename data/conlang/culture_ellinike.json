@@ -221,10 +221,26 @@
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Hellenic phonology (-os/-on/-es; th/ph/kh) - recognizably the same powers, never real Greek gods.",
     "the_one": "Aiternos (< Aeternus; the One, unknowable source, honored not petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Tulrios (sun-justice)",
-      "Orlandus": "Orlandros (iron-sworn)",
-      "Numeno": "Numenos (wisdom-lord)",
-      "Numia": "Numios (of the sea)"
+      "Tulrius": {
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "gloss": "sun-justice"
+      },
+      "Orlandus": {
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "gloss": "iron-sworn"
+      },
+      "Numeno": {
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "gloss": "wisdom-lord"
+      },
+      "Numia": {
+        "primary": "Numios",
+        "primary_family": "classical",
+        "gloss": "of the sea"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiternos honored above all, Tulrios the just, Orlandros of the sworn oath, Numenos of wisdom - upholding the laws of the polis and the temenos; names the Chaotic powers daimones (demons), warded.",

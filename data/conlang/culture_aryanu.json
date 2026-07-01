@@ -260,12 +260,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Persian-shifted reflexes PRIMARY (axsatran's Old-Persian-shifted set: Turvasa, Urlaspa, Naumana, Arzanta, Asturna), Woodland morphs SECONDARY (family_north_american.json theonym_sets.woodland: Tularonon, Oranhonon, Kayanonon, here softened toward the Persian register as Tularsa, Oransa, Kayansa), never real Iranian/Zoroastrian or Iroquois gods. Lawful henotheist but TOLERANT (the Persian lean): Asturna the Wise Lord most high upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie; the king's word is bond. The empire shelters the subject cults under Asturna's peace - the woodland council keeps its calendar of thanksgivings at the rite-longhouse beneath the fire-temple's tolerance. Worship vs demonization follows the culture's CURRENT alignment (worship_by_alignment).",
     "the_one": "Asturna (< Aeternus / Itarnu / woodland Aterhonon; the Wise Lord Most High, the Sky-Holder-Above, upholder of Arta and source of the king's farnah-glory, revered above His ministers and acknowledged at the council-fire)",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (the sun and Arta, the day-keeper; woodland Tularsa; Lawful)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; woodland Nunarsa; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; woodland Oransa; Lawful)",
-      "Argentus": "Arzanta (trade, the road and increase; woodland Arensa; Lawful)",
-      "Gaiandus": "Gayanta (the enduring earth and the rooted oak; woodland Kayansa)",
-      "Realta": "Riyata (the Lady of Waters, the mother and life-giver, clan-mother of the powers; woodland Riyawenne)"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tularsa",
+        "secondary_family": "north_american",
+        "gloss": "the sun and Arta, the day-keeper; Lawful"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Nunarsa",
+        "secondary_family": "north_american",
+        "gloss": "the good mind, wisdom and the law; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Oransa",
+        "secondary_family": "north_american",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Argentus": {
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Arensa",
+        "secondary_family": "north_american",
+        "gloss": "trade, the road and increase; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Kayansa",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth and the rooted oak"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Riyawenne",
+        "secondary_family": "north_american",
+        "gloss": "the Lady of Waters, the mother and life-giver, clan-mother of the powers"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates Asturna the Wise Lord and the Lawful powers (Turvasa the just, Urlaspa of the sworn war, Naumana of the law, Arzanta of the road, Riyata the merciful), upholds ARTA and names the Chaotic powers the hosts of DRAUGA the Lie, warded; the fire-altar and the council-rite bind alike, and the king's word is bond",

@@ -221,10 +221,34 @@
     "_note": "Tollanaz uses the Nahuatl divine-names primarily, with the Maya names as the older substrate register (court-Nahua / folk-Maya) - the same shared Agrippan pantheon under two name-sets, never real Meso gods. The Plumed-Serpent (the feathered serpent) is the dynastic KINGSHIP-symbol and Toltec legitimacy, NOT a god. Tollanaz seeds/shifts Lawful, Neutral, or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment).",
     "the_one": "Aiternatl (< Aeternus; Maya substrate: Aj Ternaj) - the One; revered as supreme Giver-of-Life when Lawful, set aside when Neutral, reviled as the tyrant-sun when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Tolratl / Maya Tulax (sun and law; Lawful power)",
-      "Numeno": "Numenatl / Maya Numench (sky-wisdom; Lawful power)",
-      "Realta": "Rialtzin / Maya Ix Rialtaj (the mother; Neutral-honored)",
-      "Maraxus": "Marakatl / Maya Marakab (the war-fire; Chaotic power)"
+      "Tulrius": {
+        "primary": "Tolratl",
+        "primary_family": "mesoamerican",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "sun and law; Lawful power"
+      },
+      "Numeno": {
+        "primary": "Numenatl",
+        "primary_family": "mesoamerican",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "sky-wisdom; Lawful power"
+      },
+      "Realta": {
+        "primary": "Rialtzin",
+        "primary_family": "mesoamerican",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Marakatl",
+        "primary_family": "mesoamerican",
+        "secondary": "Marakab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the war-fire; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aiternatl) and the Lawful powers (Tolratl, Orlantzin, Numenatl, Gaiantli), demonize the Chaotic",

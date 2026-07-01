@@ -356,11 +356,41 @@
     "religious_orders_pattern": "the Hof (Norse temple) or Miao (Sinitic temple) of [power]: 'the Hof of Thulr', 'the Miao of Tuli-di'; the ancestral Ci (Sinitic clan-shrine) for the zu.",
     "saints_pattern": "the deified war-dead and konungar of the Norse aett, honored at the haugr (howe) and the hof; and the worthy officials and heroes of the silk-empire enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
     "sample_deity_renames": {
-      "Gaiandus": "Geyandr (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
-      "Numeno": "Nymir (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
-      "Orlandus": "Orlund (Sinitic Aolan-jun) - iron, oath, war",
-      "Realta": "Rjalta (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy",
-      "Tulrius": "Thulr (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+      "Gaiandus": {
+        "gloss": "the enduring earth, lord of mountains",
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air, lightning, sky-wisdom",
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Aolan-jun",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, the Mother of Mercy",
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice, the Sun-Justice Emperor",
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Eitnir (Norse; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
     "worship_by_alignment": {

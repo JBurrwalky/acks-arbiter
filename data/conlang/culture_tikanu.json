@@ -254,10 +254,34 @@
     "_note": "Deity-names are morphs of the Agrippan canon (Mayan primary, from family_mesoamerican theonym_sets.mayan; Woodland variant, from family_north_american theonym_sets.woodland), never real Maya/Iroquois gods. Tikan seeds/shifts Lawful, Neutral, or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The witz-pyramid and the forest-grove keep the rites; the Long Count and the clan-mothers' thanksgivings bind the year.",
     "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, acknowledged but set aside when Neutral, reviled as the far tyrant when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Tulax (Wd. Tularonon) - sun and right-order; Lawful power",
-      "Gaiandus": "Kayanab (Wd. Kayanonon) - the enduring earth and forest; Lawful power",
-      "Realta": "Ix Rialtaj (Wd. Realwenne) - the mother, the clan-mother of the powers; Neutral-honored",
-      "Maraxus": "Marakab (Wd. Waraksonon) - the war-fire; Chaotic power"
+      "Tulrius": {
+        "primary": "Tulax",
+        "primary_family": "mesoamerican",
+        "secondary": "Tularonon",
+        "secondary_family": "north_american",
+        "gloss": "sun and right-order; Lawful power"
+      },
+      "Gaiandus": {
+        "primary": "Kayanab",
+        "primary_family": "mesoamerican",
+        "secondary": "Kayanonon",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth and forest; Lawful power"
+      },
+      "Realta": {
+        "primary": "Ix Rialtaj",
+        "primary_family": "mesoamerican",
+        "secondary": "Realwenne",
+        "secondary_family": "north_american",
+        "gloss": "the mother, the clan-mother of the powers; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Marakab",
+        "primary_family": "mesoamerican",
+        "secondary": "Waraksonon",
+        "secondary_family": "north_american",
+        "gloss": "the war-fire; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aj Ternaj) and the Lawful powers (Tulax, Orlanab, Numench, Kayanab), demonize the Chaotic powers (Marakab, Wakix, Lusankaan)",

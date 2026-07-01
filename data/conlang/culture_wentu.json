@@ -253,11 +253,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru, Urlandu, Numunu, Gayandu, Rialtu), Sinitic celestial morphs SECONDARY (family_east_asian theonym_sets.sinitic: Tuli, Aolan, Numeng, Gaidun, Lianta), never real Mesopotamian/Chinese gods. The Akkadian temple-stele tradition and the Sinitic Mandate-of-Heaven are read as one order: the law-tablet IS the celestial register. All three alignments.",
     "the_one": "Itarnu (Akk; Sin Aiteng) - the Highest Heaven and the great distant one, the source of the Mandate, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Sin Tuli) - the sun and judgment, the Sun-Justice power of the stele and the celestial register",
-      "Orlandus": "Urlandu (Sin Aolan) - iron, oath, war",
-      "Gaiandus": "Gayandu (Sin Gaidun) - the enduring earth, lord of mountains and the grain-altar",
-      "Numeno": "Numunu (Sin Numeng) - sky and scribe-wisdom, patron of the cuneiform-and-mandarin ministry",
-      "Realta": "Rialtu (Sin Lianta) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and judgment, the Sun-Justice power of the stele and the celestial register"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Aolan",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth, lord of mountains and the grain-altar"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng",
+        "secondary_family": "east_asian",
+        "gloss": "sky and scribe-wisdom, patron of the cuneiform-and-mandarin ministry"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - filed in the celestial register and inscribed on the law-stele; names the Chaotic powers -lemnu (evil) or mo (demon-marshals), warded; the law-tablet and the Mandate bind alike",

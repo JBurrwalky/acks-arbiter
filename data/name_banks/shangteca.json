@@ -335,12 +335,48 @@
     "religious_orders_pattern": "the Miao (Sinitic temple) or the Teomiao (the sun-pyramid god-house atop the great pyramid) of [power]: 'the Miao of Tuli-di', 'the Teomiao of Maluo', crowned by the skull-rack; the ancestral Ci (clan-shrine) for the zu.",
     "saints_pattern": "deified worthy officials and heroes enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao; and the fallen jaguar-and-eagle warriors and offered captives who become sun-feeding companions, honored at the teomiao and the skull-rack.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaidun-di (Nahua Gaiantli) - the Earth Emperor, lord of mountains and the chinampa",
-      "Maraxus": "Maluo (Nahua Marakatl) - the War-Fire Marshal, the Blood-Sun of the jaguar-cult; chief of the Chaotic powers",
-      "Numeno": "Numeng-jun (Nahua Numenatl) - the Sage Lord of the winds, the feathered-serpent wind",
-      "Orlandus": "Aolan-jun (Nahua Orlantzin) - the iron Lord of oath and war",
-      "Realta": "Lianta-mu (Nahua Rialtzin) - the Mother of Mercy, the Lady of Waters",
-      "Tulrius": "Tuli-di (Nahua Tolratl) - the Sun-Justice Emperor, lord of the celestial register; Lawful"
+      "Gaiandus": {
+        "gloss": "the Earth Emperor, lord of mountains and the chinampa",
+        "primary": "Gaidun-di",
+        "primary_family": "east_asian",
+        "secondary": "Gaiantli",
+        "secondary_family": "mesoamerican"
+      },
+      "Maraxus": {
+        "gloss": "the War-Fire Marshal, the Blood-Sun of the jaguar-cult; chief of the Chaotic powers",
+        "primary": "Maluo",
+        "primary_family": "east_asian",
+        "secondary": "Marakatl",
+        "secondary_family": "mesoamerican"
+      },
+      "Numeno": {
+        "gloss": "the Sage Lord of the winds, the feathered-serpent wind",
+        "primary": "Numeng-jun",
+        "primary_family": "east_asian",
+        "secondary": "Numenatl",
+        "secondary_family": "mesoamerican"
+      },
+      "Orlandus": {
+        "gloss": "the iron Lord of oath and war",
+        "primary": "Aolan-jun",
+        "primary_family": "east_asian",
+        "secondary": "Orlantzin",
+        "secondary_family": "mesoamerican"
+      },
+      "Realta": {
+        "gloss": "the Mother of Mercy, the Lady of Waters",
+        "primary": "Lianta-mu",
+        "primary_family": "east_asian",
+        "secondary": "Rialtzin",
+        "secondary_family": "mesoamerican"
+      },
+      "Tulrius": {
+        "gloss": "the Sun-Justice Emperor, lord of the celestial register; Lawful",
+        "primary": "Tuli-di",
+        "primary_family": "east_asian",
+        "secondary": "Tolratl",
+        "secondary_family": "mesoamerican"
+      }
     },
     "the_one": "Aiteng (< Aeternus; the Nahua face Aiternatl) - the Highest Heaven, the source of the Mandate, served not petitioned by the dragon-court; named the Tyrant-Sun by the Chaotic jaguar-cult of the substrate",
     "worship_by_alignment": {

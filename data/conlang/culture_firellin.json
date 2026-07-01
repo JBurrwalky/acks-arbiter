@@ -258,11 +258,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic GOIDELIC reflexes PRIMARY (family_celtic theonym_set), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Celtic/Greek gods. Alignment PROVISIONAL: the Celtic war-oath and the cland's hosting meet the Hellenic civic law and the polis' settled order.",
     "the_one": "Eternan (Celtic; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Hell. Tulrios) - the sun, fire, and justice",
-      "Orlandus": "Orlann (Hell. Orlandros) - iron, oath, war",
-      "Gaiandus": "Gaian (Hell. Gaiandros) - the enduring earth, cold, endurance",
-      "Numeno": "Numan (Hell. Numenos) - air, lightning, sky-wisdom",
-      "Realta": "Realtan (Hell. Realtia) - the mother, mercy, healing"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tulrios",
+        "secondary_family": "classical",
+        "gloss": "the sun, fire, and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Orlandros",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth, cold, endurance"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numenos",
+        "secondary_family": "classical",
+        "gloss": "air, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Realtia",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy, healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers fuath (spectres) / daimones, warded and unworshipped; the cland-oath and the polis' civic law bind alike, the sworn hosting and the ordered polis the social ideal",

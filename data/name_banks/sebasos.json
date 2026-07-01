@@ -371,10 +371,32 @@
     "religious_orders_pattern": "the Temenos (sacred precinct) or Per-netjer (god's-house) of [power]: 'the Temenos of Tulrios', 'the Per-netjer of Tjuraa'.",
     "saints_pattern": "deified kings and founder-heroes (Greek Heros [name]; Egyptian the justified dead, maa-kheru), venerated at the temple and the royal tomb.",
     "sample_deity_renames": {
-      "Maraxus": "Maraxos (Egy. Marakhu) - the war-fire; Chaotic, demonized",
-      "Numeno": "Numenos - sky-wisdom; Lawful",
-      "Realta": "Realta (Egy. Riaret) - the mother; Neutral-honored",
-      "Tulrius": "Tulrios (Egy. Tjuraa) - sun and right-order; Lawful"
+      "Maraxus": {
+        "gloss": "the war-fire; Chaotic, demonized",
+        "primary": "Maraxos",
+        "primary_family": "classical",
+        "secondary": "Marakhu",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky-wisdom; Lawful",
+        "primary": "Numenos",
+        "primary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother; Neutral-honored",
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "sun and right-order; Lawful",
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral, defied as the tyrant-god when Chaotic",
     "worship_by_alignment": {

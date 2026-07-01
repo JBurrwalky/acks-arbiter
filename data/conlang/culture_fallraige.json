@@ -257,11 +257,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic theonym_set, the Insular-Celtic forms), Latinate variants SECONDARY (the agrippan/Latinate canon forms, which are near-canonical because agrippan is the canon's home register), never real Celtic/Roman gods. Alignment PROVISIONAL (Lawful/Neutral): the Celtic clan-honor-and-oath order meets the Roman law-and-senate tradition.",
     "the_one": "Eternan (Goidelic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Lat Tulrius) - the sun, fire and justice",
-      "Orlandus": "Orlann (Lat Orlandus) - iron, oath, war",
-      "Gaiandus": "Gaian (Lat Gaiandus) - the enduring earth",
-      "Numeno": "Numan (Lat Numeno / Numenius) - sky and law-wisdom",
-      "Realta": "Realtan (Lat Realta) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tulrius",
+        "secondary_family": "classical",
+        "gloss": "the sun, fire and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Orlandus",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numeno",
+        "secondary_family": "classical",
+        "gloss": "sky and law-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Realta",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers fomoir (demons), warded and unworshipped; the clan-oath of the fine and the law-stele of the senate bind alike, and the just ruiri rules by both",

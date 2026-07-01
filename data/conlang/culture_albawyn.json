@@ -220,10 +220,26 @@
     "_note": "Deity-names are phoneme-morphs of the Agrippan canon through Insular-Celtic phonology (family_celtic.json theonym_set) - never real Celtic gods. All three alignments: Lawful kin keep the sun-and-oath powers; Neutral the ancestral dead, the land and the nature-powers; Chaotic the war-fury and raven powers. Druidic: the drui and the fili mediate; the Tuath-de are the god-kin.",
     "the_one": "Eternan (< Aeternus; the Ancient One beyond the god-kin, seldom petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Toran (the sun, the just brightness)",
-      "Orlandus": "Orlann (the iron-oath, battle)",
-      "Realta": "Realtan (the mother, the mercy-star)",
-      "Gaiandus": "Gaian (the enduring land)"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "gloss": "the sun, the just brightness"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "gloss": "the iron-oath, battle"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "gloss": "the mother, the mercy-star"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "gloss": "the enduring land"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan, Toran the just brightness, Orlann of the sworn oath, Realtan the merciful - and names the Chaotic powers as the demon-kin, warded; the sun-oath and the brithem's law bind alike.",

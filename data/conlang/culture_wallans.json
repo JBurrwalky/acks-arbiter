@@ -256,11 +256,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column), Latinate variants SECONDARY (the agrippan/Latinate canon forms, which are near-canonical because agrippan is the canon's home register), never real Germanic/Roman gods. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Roman law-and-senate tradition.",
     "the_one": "Aiterns (Gothic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Thulrs (Lat Tulrius) - the sun and justice",
-      "Orlandus": "Erlands (Lat Orlandus) - iron, oath, war",
-      "Gaiandus": "Gauands (Lat Gaiandus) - the enduring earth",
-      "Numeno": "Numins (Lat Numeno / Numenius) - sky and law-wisdom",
-      "Realta": "Riala (Lat Realta) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Tulrius",
+        "secondary_family": "classical",
+        "gloss": "the sun and justice"
+      },
+      "Orlandus": {
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Orlandus",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Numeno",
+        "secondary_family": "classical",
+        "gloss": "sky and law-wisdom"
+      },
+      "Realta": {
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Realta",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded and unworshipped; the war-oath of the war-band and the law-stele of the senate bind alike, and the just thiudans rules by both",

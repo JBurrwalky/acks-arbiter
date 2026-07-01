@@ -356,11 +356,41 @@
     "religious_orders_pattern": "the Harug (Frankish grove-temple) or Jinja (Japonic shrine) of [power]: 'the Harug of Dulro', 'the Jinja of Terashi-no-kami', within its torii and sacred grove.",
     "saints_pattern": "the deified war-dead of the ruling house (honored at the howe and the grove) and the great ancestors and fallen heroes enshrined as kami (the eirei) at the clan jinja; 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Giando (Jp. Iwane-no-kami) - the enduring earth, the rock-root mountain",
-      "Numeno": "Numino (Jp. Amatsukaze-no-kami) - air, lightning, sky-wisdom",
-      "Orlandus": "Erlant (Jp. Hagane-no-kami) - iron, the blade-oath, war",
-      "Realta": "Rialda (Jp. Megumi-hime) - the mother, mercy, healing",
-      "Tulrius": "Dulro (Jp. Terashi-no-kami) - the sun, the just brightness, right-rule"
+      "Gaiandus": {
+        "gloss": "the enduring earth, the rock-root mountain",
+        "primary": "Giando",
+        "primary_family": "germanic",
+        "secondary": "Iwane-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air, lightning, sky-wisdom",
+        "primary": "Numino",
+        "primary_family": "germanic",
+        "secondary": "Amatsukaze-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, the blade-oath, war",
+        "primary": "Erlant",
+        "primary_family": "germanic",
+        "secondary": "Hagane-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, healing",
+        "primary": "Rialda",
+        "primary_family": "germanic",
+        "secondary": "Megumi-hime",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the just brightness, right-rule",
+        "primary": "Dulro",
+        "primary_family": "germanic",
+        "secondary": "Terashi-no-kami",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Aiterno (Frankish < *Aiternaz; Japonic Takami-no-kami) - the distant Ancient One, the High-Heaven One above the lesser powers, honored not petitioned",
     "worship_by_alignment": {

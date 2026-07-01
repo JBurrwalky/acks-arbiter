@@ -254,10 +254,26 @@
     "_note": "Deity-names are fused morphs of the Agrippan canon (Celtic + Iroquoian), never real Celtic/Iroquois gods. Senecar seeds/shifts Neutral or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met in the nemed-grove and the deep forest; the spirit-keepers (fused druid-and-faithkeeper) mediate; the ancestral dead and the Tuath-spirits are honored at the cairn and the burial-grove.",
     "the_one": "Eteronon (< Aeternus; fused Celtic Eternan / Iroquoian Aterhonon) - the Sky-Ancient-Above; acknowledged and set aside (Neutral), reviled as the far tyrant when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Toranon (the sun, the day-keeper; Lawful power)",
-      "Gaiandus": "Gaianon (the enduring earth and forest; Lawful power)",
-      "Realta": "Realwen (the mother, clan-mother of the powers; Neutral-honored)",
-      "Maraxus": "Marakson (the war-fire; Chaotic power)"
+      "Tulrius": {
+        "primary": "Toranon",
+        "primary_family": "celtic",
+        "gloss": "the sun, the day-keeper; Lawful power"
+      },
+      "Gaiandus": {
+        "primary": "Gaianon",
+        "primary_family": "celtic",
+        "gloss": "the enduring earth and forest; Lawful power"
+      },
+      "Realta": {
+        "primary": "Realwen",
+        "primary_family": "celtic",
+        "gloss": "the mother, clan-mother of the powers; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Marakson",
+        "primary_family": "celtic",
+        "gloss": "the war-fire; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "Venerates the Lawful powers of the canon - Eteronon foremost - and names the Chaotic powers as demons to be warded.",

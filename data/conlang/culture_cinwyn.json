@@ -254,11 +254,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic theonym_set), Sinitic variants SECONDARY (family_east_asian theonym_sets.sinitic, rendered in the jinxian -di/-jun celestial register), never real Celtic/Chinese gods. The Goidelic warrior-clans keep their sword-and-oath powers honored at the nemed-grove; the conquered silk-empire keeps its Celestial Bureaucracy under the Mandate of Heaven, and the two are quietly identified (one power, two faces). All human cultures allow Lawful/Neutral/Chaotic: Lawful reads the just Mandate-throne and the sworn cland-oath, Neutral reads the older clan ancestral war-dead and the local earth-and-grain powers.",
     "the_one": "Eternan (Celtic; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor",
-      "Orlandus": "Orlann (Sinitic Aolan-jun) - iron, oath, war",
-      "Gaiandus": "Gaian (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
-      "Numeno": "Numan (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
-      "Realta": "Realtan (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and justice, the Sun-Justice Emperor"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Aolan-jun",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth, lord of mountains"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian",
+        "gloss": "air, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy, the Mother of Mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan foremost, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers as the fuath (Goidelic spectres/foes) or the Sinitic mo (demon-marshals), warded and unworshipped; the cland-oath, the just ri and the Mandate-throne are the social ideal",

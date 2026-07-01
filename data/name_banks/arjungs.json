@@ -361,11 +361,41 @@
     "religious_orders_pattern": "the Alhs (Germanic grove-temple) or the Atashana (Persian fire-temple) of [power]: 'the Alhs of Thulrs', 'the Atashana of Turvasa'; the magi keep the ever-burning fire (Atar) on the altar.",
     "saints_pattern": "the Anses (the deified war-dead of the ruling Alan house) and the honest dead and just kings of the Persian cities, kept as fravashi (fore-spirits) and honored at the howe, the standing stone, and the fire-altar; 'the Arta-true [name]' (the righteous [name]).",
     "sample_deity_renames": {
-      "Gaiandus": "Gauands (Pers. Gayanta) - the enduring earth and mountain",
-      "Numeno": "Numins (Pers. Naumana) - sky, lightning, and the good-mind wisdom",
-      "Orlandus": "Erlands (Pers. Urlaspa) - iron, oath, war, and the cavalier",
-      "Realta": "Riala (Pers. Riyata) - the mother, mercy, the Lady of Waters",
-      "Tulrius": "Thulrs (Pers. Turvasa) - the sun, justice, and the lamp of right-order"
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gayanta",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky, lightning, and the good-mind wisdom",
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Naumana",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war, and the cavalier",
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Urlaspa",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, the Lady of Waters",
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Riyata",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun, justice, and the lamp of right-order",
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Turvasa",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Aiterns (Gothic; Persian Asturna) - the distant Ancient One and Wise Lord Most High, upholder of Arta, honored not petitioned",
     "worship_by_alignment": {

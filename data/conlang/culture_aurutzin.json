@@ -254,11 +254,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (family_classical / agrippan canonical pantheon keys, the latinate reflexes), Mayan variants SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real gods (no Itzamna, Kukulkan, Chaac, Jupiter, Mars). Shared pantheon, two registers. Aurumaya allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Long-Count calendar and the witz-pyramid altar bind the Imperator-Kalomte' to the powers as much as the legion-augury does.",
     "the_one": "Aeternus (Maya Aj Ternaj) - the One / True God, honored in liturgy not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrius (Maya Tulax) - the sun and justice",
-      "Orlandus": "Orlandus (Maya Orlanab) - iron, oath, war",
-      "Gaiandus": "Gaiandus (Maya Kayanab) - the enduring earth",
-      "Numeno": "Numeno (Maya Numench) - sky and scribe-wisdom",
-      "Realta": "Realta (Maya Ix Rialtaj) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just (Tulax), Orlandus of the sworn legion (Orlanab), Realta the merciful (Ix Rialtaj) - and names the Chaotic powers as demons, warded; the legion-oath and the calendar-rite bind alike",

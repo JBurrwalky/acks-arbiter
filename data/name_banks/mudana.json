@@ -363,12 +363,48 @@
     "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power] and its Atash (fire of [power]): 'the Bit-ili of Tullaru', 'the Atash of Tullaru'.",
     "saints_pattern": "the deified law-givers and just kings of the cities, kept as fravartu (fore-spirits) and inscribed on the temple-stele; honored at the ziggurat and the fire-altar; 'the Just [name]', 'the Arta-true [name]'.",
     "sample_deity_renames": {
-      "Argentus": "Argantu (Persian Arzanta) - trade, the road and increase",
-      "Gaiandus": "Gayandu (Persian Gayanta) - the enduring earth and mountain",
-      "Numeno": "Numunu (Persian Naumana) - sky, the good mind and scribe-wisdom",
-      "Orlandus": "Urlandu (Persian Urlaspa) - iron, oath, war and the cavalier",
-      "Realta": "Rialtu (Persian Riyata) - the mother, the Lady of Waters, mercy",
-      "Tulrius": "Tullaru (Persian Turvasa) - the sun and judgment, lamp of right-order"
+      "Argentus": {
+        "gloss": "trade, the road and increase",
+        "primary": "Argantu",
+        "primary_family": "near_eastern",
+        "secondary": "Arzanta",
+        "secondary_family": "near_eastern"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gayanta",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky, the good mind and scribe-wisdom",
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Naumana",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war and the cavalier",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Urlaspa",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, the Lady of Waters, mercy",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Riyata",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment, lamp of right-order",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Turvasa",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Itarnu (Akkadian; Persian Asturna) - the great distant one, honored not petitioned, source of the Shah's farnah-glory",
     "worship_by_alignment": {

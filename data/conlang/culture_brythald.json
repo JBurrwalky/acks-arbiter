@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Anglo-Saxon reflexes PRIMARY (from family_germanic theonym_ancestors, the anglo_saxon column), Brythonic variants SECONDARY (reflexed from family_celtic theonym_set into p-Celtic), never real Germanic/Celtic gods. ALIGNMENT LENS IS PROVISIONAL: Arthurian Bryten reads Lawful (Aetern the Wyrd-father and the sworn fellowship of the Round Board), but an older Anglo-Saxon heathen layer reads Neutral (the ielde and the hus-wihta). Both treatments given below pending Jedidiah's alignment decision (see gdd-culture-emergence-and-territory.md open questions).",
     "the_one": "Aetern (< Aeternus; Brythonic Eternan) - the Ancient One, the Wyrd-father above the lesser powers",
     "sample_deity_renames": {
-      "Tulrius": "Thulor (Bryth. Toran) - the sun, the just brightness",
-      "Gaiandus": "Geand (Bryth. Gaian) - the enduring earth",
-      "Orlandus": "Eorland (Bryth. Orlann) - iron, oath, war",
-      "Realta": "Realda (Bryth. Realtan) - the mother, the mercy-star",
-      "Numeno": "Numen (Bryth. Numan) - sky, lightning, sky-wisdom"
+      "Tulrius": {
+        "primary": "Thulor",
+        "primary_family": "germanic",
+        "secondary": "Toran",
+        "secondary_family": "celtic",
+        "gloss": "the sun, the just brightness"
+      },
+      "Gaiandus": {
+        "primary": "Geand",
+        "primary_family": "germanic",
+        "secondary": "Gaian",
+        "secondary_family": "celtic",
+        "gloss": "the enduring earth"
+      },
+      "Orlandus": {
+        "primary": "Eorland",
+        "primary_family": "germanic",
+        "secondary": "Orlann",
+        "secondary_family": "celtic",
+        "gloss": "iron, oath, war"
+      },
+      "Realta": {
+        "primary": "Realda",
+        "primary_family": "germanic",
+        "secondary": "Realtan",
+        "secondary_family": "celtic",
+        "gloss": "the mother, the mercy-star"
+      },
+      "Numeno": {
+        "primary": "Numen",
+        "primary_family": "germanic",
+        "secondary": "Numan",
+        "secondary_family": "celtic",
+        "gloss": "sky, lightning, sky-wisdom"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aetern foremost, Thulor the just-bright, Realda the merciful, Geand the steadfast earth - and names the Chaotic powers deoflu (devils), warded and unworshipped; the sworn fellowship and the just high-king are the social ideal",

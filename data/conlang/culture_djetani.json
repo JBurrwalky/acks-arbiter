@@ -261,12 +261,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (the abydosian column, Tjuraa<Tulrius etc.), Latinate morphs SECONDARY (the agrippan column), never real Egyptian/Roman gods. Standard lens (Lawful/Neutral/Chaotic). Concept: the sun-disc temple-cult of the Black Land endures beneath the imperial eagle; strong funerary cult (akhu) under a Latin civic-religious overlay.",
     "the_one": "Atjernaa (< Aeternus; Lat. Aeternaa) - the hidden distant maker, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (Lat. Tulri) - the sun-disc and right-order",
-      "Orlandus": "Oranetj (Lat. Orlandi) - iron, oath, war",
-      "Gaiandus": "Geandaa (Lat. Gaiandi) - the enduring earth and the flood-field",
-      "Numeno": "Numenaa (Lat. Numeni) - sky and scribe-wisdom",
-      "Realta": "Riaret (Lat. Realti) - the mother, mercy",
-      "Delorum": "Djeroraa (Lat. Delori) - lord of the peaceful dead"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulri",
+        "secondary_family": "classical",
+        "gloss": "the sun-disc and right-order"
+      },
+      "Orlandus": {
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandi",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Geandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandi",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth and the flood-field"
+      },
+      "Numeno": {
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Numeni",
+        "secondary_family": "classical",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Realti",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy"
+      },
+      "Delorum": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Delori",
+        "secondary_family": "classical",
+        "gloss": "lord of the peaceful dead"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa the hidden, Tjuraa the just sun, Oranetj of the sworn legion-oath, Riaret the merciful - upholding right-order (maat) and the imperial law alike; names the Chaotic powers as Hefau-kin (serpent-brood) and warded -lemnaa (adapted Latin), set against both the temple and the eagle.",

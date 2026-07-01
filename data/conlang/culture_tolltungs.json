@@ -256,13 +256,55 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Norse Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Nahuatl variants SECONDARY (family_mesoamerican theonym_sets, the nahuatl column), never real Norse/Aztec gods. ALIGNMENT IS PROVISIONAL (Chaotic/Neutral), broadened from huitzilan's Chaotic-only: the blood-cult heritage survives as the Chaotic streak (the offered heart atop the teocalli, the berserker's frenzy of the war-host), but Neutral worship - the ancestral war-dead and the city-powers invoked situationally - is now also available. Pending the alignment pass.",
     "the_one": "Eitnir (Norse; Nahua Aiternatl) - the distant Ancient One, the cold sky above the lesser powers; honored or reviled by alignment",
     "sample_deity_renames": {
-      "Tulrius": "Thulr (Nahua Tolratl) - the sun and justice, the sky-fire of the conquerors",
-      "Orlandus": "Orlund (Nahua Orlantzin) - iron, oath, war",
-      "Gaiandus": "Geyandr (Nahua Gaiantli) - the enduring earth, the maize-ground",
-      "Numeno": "Nymir (Nahua Numenatl) - sky, lightning, sky-wisdom",
-      "Realta": "Rjalta (Nahua Rialtzin) - the mother, mercy",
-      "Maraxus": "Marhr (Nahua Marakatl) - the War-Fire, the Blood-Sun of the cult",
-      "Lusanto": "Lusandr (Nahua Lusankoatl) - the hoard-serpent, the feathered worm"
+      "Tulrius": {
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tolratl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and justice, the sky-fire of the conquerors"
+      },
+      "Orlandus": {
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Orlantzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Gaiantli",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth, the maize-ground"
+      },
+      "Numeno": {
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Numenatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "sky, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Rialtzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy"
+      },
+      "Maraxus": {
+        "primary": "Marhr",
+        "primary_family": "germanic",
+        "secondary": "Marakatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the War-Fire, the Blood-Sun of the cult"
+      },
+      "Lusanto": {
+        "primary": "Lusandr",
+        "primary_family": "germanic",
+        "secondary": "Lusankoatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the hoard-serpent, the feathered worm"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "Venerates the Lawful powers of the canon - Eitnir foremost - and names the Chaotic powers as demons to be warded.",

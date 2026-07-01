@@ -256,11 +256,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Norse reflexes PRIMARY (from family_germanic.json theonym_ancestors, the norse column), Woodland variants SECONDARY (from family_north_american.json theonym_sets.woodland; labial-free, matching real Iroquoian), never real Norse gods or real Indigenous powers. Shared pantheon, two registers. Alignment PROVISIONAL ([Neutral]): a settled frontier kindred - the Norse ancestor-cult (the deified aett-dead) and the Woodland clan-and-forest spirits both read Neutral; the great powers are invoked situationally at the hof-grove and the rite-longhouse rather than worshipped wholesale.",
     "the_one": "Eitnir (Norse; Woodland Aterhonon) - the distant Ancient One, the Sky-Holder-Above, acknowledged but set aside, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Thulr (Woodland Tularonon) - the sun, the day-keeper, justice",
-      "Orlandus": "Orlund (Woodland Oranhonon) - iron, oath, war",
-      "Gaiandus": "Geyandr (Woodland Kayanonon) - the enduring earth, the earth-holder",
-      "Numeno": "Nymir (Woodland Nunaronon) - air, sky-wisdom, lightning",
-      "Realta": "Rjalta (Woodland Realwenne) - the mother, mercy, the clan-mother of the powers"
+      "Tulrius": {
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tularonon",
+        "secondary_family": "north_american",
+        "gloss": "the sun, the day-keeper, justice"
+      },
+      "Orlandus": {
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Oranhonon",
+        "secondary_family": "north_american",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Kayanonon",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth, the earth-holder"
+      },
+      "Numeno": {
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Nunaronon",
+        "secondary_family": "north_american",
+        "gloss": "air, sky-wisdom, lightning"
+      },
+      "Realta": {
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Realwenne",
+        "secondary_family": "north_american",
+        "gloss": "the mother, mercy, the clan-mother of the powers"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "Venerates the Lawful powers of the canon - Eitnir foremost - and names the Chaotic powers as demons to be warded.",

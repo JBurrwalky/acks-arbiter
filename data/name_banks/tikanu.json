@@ -328,10 +328,34 @@
     "religious_orders_pattern": "the K'uh-nah (god-house) atop the witz (pyramid) of [power], and the forest-grove of the clans: 'the K'uh-nah of Tulax', 'the grove of Tularonon'.",
     "saints_pattern": "the deified k'uhul ajaw ancestors (the uchben) and the honored clan-mothers, kept in the day-count and the clan-recital; honored at the pyramid-tomb and the forest-grove.",
     "sample_deity_renames": {
-      "Gaiandus": "Kayanab (Wd. Kayanonon) - the enduring earth and forest; Lawful power",
-      "Maraxus": "Marakab (Wd. Waraksonon) - the war-fire; Chaotic power",
-      "Realta": "Ix Rialtaj (Wd. Realwenne) - the mother, the clan-mother of the powers; Neutral-honored",
-      "Tulrius": "Tulax (Wd. Tularonon) - sun and right-order; Lawful power"
+      "Gaiandus": {
+        "gloss": "the enduring earth and forest; Lawful power",
+        "primary": "Kayanab",
+        "primary_family": "mesoamerican",
+        "secondary": "Kayanonon",
+        "secondary_family": "north_american"
+      },
+      "Maraxus": {
+        "gloss": "the war-fire; Chaotic power",
+        "primary": "Marakab",
+        "primary_family": "mesoamerican",
+        "secondary": "Waraksonon",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the mother, the clan-mother of the powers; Neutral-honored",
+        "primary": "Ix Rialtaj",
+        "primary_family": "mesoamerican",
+        "secondary": "Realwenne",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "sun and right-order; Lawful power",
+        "primary": "Tulax",
+        "primary_family": "mesoamerican",
+        "secondary": "Tularonon",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Aj Ternaj (< Aeternus; Woodland variant Aterhonon) - the One; revered as the supreme maker when Lawful, acknowledged but set aside when Neutral, reviled as the far tyrant when Chaotic",
     "worship_by_alignment": {

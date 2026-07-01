@@ -253,12 +253,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Sinitic canon-morphs PRIMARY (the Jinxian / family_east_asian theonym_sets.sinitic: Tuli-di, Aolan-jun, Gaidun-di, Numeng-jun, Lianta-mu), Nahuatl morphs SECONDARY (the Nahuan / family_mesoamerican theonym_sets.nahuatl: Tolratl, Marakatl, Gaiantli, Numenatl, Rialtzin), recognizably the same powers under two faces, never real Chinese/Aztec gods (no Tian-shang-di, Guan-yu, Quetzalcoatl, Tezcatlipoca, Huitzilopochtli). Shared pantheon, two registers married. A Celestial Bureaucracy under the Mandate of Heaven laid over the calendar-round: the One (Aiteng, the Nahua face Aiternatl) presides as Highest Heaven; the Lawful powers are the celestial officials (the -di emperors and -jun lords of the dragon-court); the jungle war-cult of the substrate leans to the Chaotic blood-sun (Marakatl). The Mandate (Tianming) legitimizes the throne, the calendar-round and the offered heart bind the calpolli wards. Worship vs demonization follows the culture's CURRENT alignment (see worship_by_alignment).",
     "the_one": "Aiteng (< Aeternus; the Nahua face Aiternatl) - the Highest Heaven, the source of the Mandate, served not petitioned by the dragon-court; named the Tyrant-Sun by the Chaotic jaguar-cult of the substrate",
     "sample_deity_renames": {
-      "Tulrius": "Tuli-di (Nahua Tolratl) - the Sun-Justice Emperor, lord of the celestial register; Lawful",
-      "Orlandus": "Aolan-jun (Nahua Orlantzin) - the iron Lord of oath and war",
-      "Gaiandus": "Gaidun-di (Nahua Gaiantli) - the Earth Emperor, lord of mountains and the chinampa",
-      "Numeno": "Numeng-jun (Nahua Numenatl) - the Sage Lord of the winds, the feathered-serpent wind",
-      "Realta": "Lianta-mu (Nahua Rialtzin) - the Mother of Mercy, the Lady of Waters",
-      "Maraxus": "Maluo (Nahua Marakatl) - the War-Fire Marshal, the Blood-Sun of the jaguar-cult; chief of the Chaotic powers"
+      "Tulrius": {
+        "primary": "Tuli-di",
+        "primary_family": "east_asian",
+        "secondary": "Tolratl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Sun-Justice Emperor, lord of the celestial register; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Aolan-jun",
+        "primary_family": "east_asian",
+        "secondary": "Orlantzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "the iron Lord of oath and war"
+      },
+      "Gaiandus": {
+        "primary": "Gaidun-di",
+        "primary_family": "east_asian",
+        "secondary": "Gaiantli",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Earth Emperor, lord of mountains and the chinampa"
+      },
+      "Numeno": {
+        "primary": "Numeng-jun",
+        "primary_family": "east_asian",
+        "secondary": "Numenatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Sage Lord of the winds, the feathered-serpent wind"
+      },
+      "Realta": {
+        "primary": "Lianta-mu",
+        "primary_family": "east_asian",
+        "secondary": "Rialtzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Mother of Mercy, the Lady of Waters"
+      },
+      "Maraxus": {
+        "primary": "Maluo",
+        "primary_family": "east_asian",
+        "secondary": "Marakatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the War-Fire Marshal, the Blood-Sun of the jaguar-cult; chief of the Chaotic powers"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiteng the Highest Heaven, Tuli-di the just Sun-Emperor, Aolan-jun of the sworn war, Lianta-mu the merciful - keeps the Confucian rites and the Mandate of Heaven, and names the Chaotic powers the demon-marshals (mo / Nahua tzitzimitl), warded; the dragon-throne and the celestial register bind the realm.",

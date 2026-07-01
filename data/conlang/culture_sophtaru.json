@@ -257,11 +257,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru, Urlandu, Gayandu, Numunu, Rialtu, Itarnu), Hellenic morph variants SECONDARY (family_classical / achillean: Tulrios, Orlandros, Numenos), never real Mesopotamian or Greek gods. All three alignments: the Akkadian law-stele tradition meets the Greek civic cult of the polis.",
     "the_one": "Itarnu (Akkadian; Hellenic Aiternos) - the great distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Hellenic Tulrios) - the sun and judgment",
-      "Orlandus": "Urlandu (Hellenic Orlandros) - iron, oath, war",
-      "Gaiandus": "Gayandu (Hellenic Gaiandros) - the enduring earth",
-      "Numeno": "Numunu (Hellenic Numenos) - sky and scribe-wisdom",
-      "Realta": "Rialtu (Hellenic Realtia) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Tulrios",
+        "secondary_family": "classical",
+        "gloss": "the sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandros",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Numenos",
+        "secondary_family": "classical",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Realtia",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers lemnu (evil ones) or daimones, warded; the law-stele and the polis-oath bind alike",

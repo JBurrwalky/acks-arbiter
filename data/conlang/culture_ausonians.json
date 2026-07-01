@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Latinate near-canonical keys PRIMARY (agrippan IS the canon's home register; Tulrius/Orlandus/Gaiandus/Numeno/Realta and Aeternus the One stand near-unchanged), Hellenic learned variants SECONDARY (the achillean -os/-os morphs, recognizably the same powers), never real Greco-Roman gods. All three alignments worshipped (standard lens).",
     "the_one": "Aeternus (the One / True God, near-canonical; Hellenic learned variant Aiternos) - honored in liturgy, not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrius (Hellenic Tulrios) - the sun and judgment, the canon-key near-unchanged",
-      "Orlandus": "Orlandus (Hellenic Orlandros) - iron, oath, war",
-      "Gaiandus": "Gaiandus (Hellenic Gaiandros) - the enduring earth",
-      "Numeno": "Numeno (Hellenic Numenos) - sky, wisdom, the scholar's lord",
-      "Realta": "Realta (Hellenic Realte) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Tulrios",
+        "secondary_family": "classical",
+        "gloss": "the sun and judgment, the canon-key near-unchanged"
+      },
+      "Orlandus": {
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Orlandros",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Numenos",
+        "secondary_family": "classical",
+        "gloss": "sky, wisdom, the scholar's lord"
+      },
+      "Realta": {
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Realte",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers of the canon - Aeternus, Tulrius the just, Orlandus of the sworn legion, Realta the merciful, Numeno of the academy - at the templum and the temenos alike; the imperial law and the philosopher's reason are held to bind as one, and the Chaotic powers are named daimones, warded.",

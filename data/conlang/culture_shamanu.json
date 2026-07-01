@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru-, Urlandu-, Numunu-), Plains morphs SECONDARY (family_north_american.json theonym_sets.plains, also used by numinan: Torawi, Olanta, Kayanta), never real Mesopotamian/Plains gods. Same shared pantheon, two name-registers for one people. All three alignments; stance follows current alignment (worship_by_alignment). The powers are met both at the built bit-ili/ziggurat of the river-cities AND through the vision-quest (puha) and the medicine-cairn of the open plain.",
     "the_one": "Itarnu (< Aeternus; Plains echo Ateruna) - the distant Great-Above, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Plains Torawi) - the sun and judgment",
-      "Orlandus": "Urlandu (Plains Olanta) - iron, oath, war",
-      "Gaiandus": "Gayandu (Plains Kayanta) - the enduring earth and plain",
-      "Numeno": "Numunu (Plains Nimawi) - sky and scribe-wisdom",
-      "Realta": "Rialtu (Plains Reawina) - the mother, mercy and rain"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Torawi",
+        "secondary_family": "north_american",
+        "gloss": "the sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Olanta",
+        "secondary_family": "north_american",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth and plain"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Reawina",
+        "secondary_family": "north_american",
+        "gloss": "the mother, mercy and rain"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - at the law-stele of the bit-ili and the medicine-cairn alike; names the Chaotic powers -lemnu (Akkadian evil) or the dread sky-set, warded; the temple-oath and the vision-word bind together",

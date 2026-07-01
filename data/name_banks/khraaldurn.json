@@ -366,10 +366,26 @@
     "religious_orders_pattern": "the Drumgrund (festival-hall) of [power]: 'the Drumgrund of Orluundrumm', and the cairn-rolls of the ancestors kept beside it.",
     "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), kept on the longest ancestor-rolls of any dwarves, named at every cairn.",
     "sample_deity_renames": {
-      "Delorum": "Delruundrumm (death and the honored dead; the ancestor-warden, central here, masc.)",
-      "Gaiandus": "Gunduundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)",
-      "Orlandus": "Orluundrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
-      "Realta": "Reltaadrumma (the hearth-mother, mercy; honored, fem.)"
+      "Delorum": {
+        "gloss": "death and the honored dead; the ancestor-warden, central here, masc.",
+        "primary": "Delruundrumm",
+        "primary_family": "dwarven"
+      },
+      "Gaiandus": {
+        "gloss": "the mountain, the mine, the deep earth; co-foremost, masc.",
+        "primary": "Gunduundrumm",
+        "primary_family": "dwarven"
+      },
+      "Orlandus": {
+        "gloss": "the forge, the smith, oaths and iron; most honored god, masc.",
+        "primary": "Orluundrumm",
+        "primary_family": "dwarven"
+      },
+      "Realta": {
+        "gloss": "the hearth-mother, mercy; honored, fem.",
+        "primary": "Reltaadrumma",
+        "primary_family": "dwarven"
+      }
     },
     "the_one": "Atruundrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at the great festivals, most distant of all from the daily cairn-prayers)",
     "worship_by_alignment": {

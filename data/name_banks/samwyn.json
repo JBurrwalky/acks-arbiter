@@ -345,11 +345,41 @@
     "religious_orders_pattern": "the Nemed (Gaelic sacred grove) or Bit-ili (Akkadian god-house) of [power]: 'the Nemed of Toran', 'the Bit-ili of Tullaru'; the Gaelic substrate keeps Cill- (church/cell): 'Cill-Toran'.",
     "saints_pattern": "the sinser (the deified war-dead of the ruling cland) and the deified law-givers of the cities, honored at the carn (cairn), the nemed-grove and the ziggurat.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaian (Akk Gayandu) - the enduring earth",
-      "Numeno": "Numan (Akk Numunu) - sky, lightning, scribe-wisdom",
-      "Orlandus": "Orlann (Akk Urlandu) - iron, oath, war",
-      "Realta": "Realtan (Akk Rialtu) - the mother, mercy",
-      "Tulrius": "Toran (Akk Tullaru) - the sun and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gayandu",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky, lightning, scribe-wisdom",
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numunu",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Urlandu",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Rialtu",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice",
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tullaru",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Eternan (Celtic; Akk Itarnu) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

@@ -349,10 +349,26 @@
     "religious_orders_pattern": "the Bit-ili (god-house/ziggurat) of [power]: 'the Bit-ili of Tullaru'; the law-court keeps its stele in the Latin overlay as the Curia.",
     "saints_pattern": "deified law-givers and just magistrates inscribed on the temple-stele; 'the Just [name]' / Latin 'Divus [name]'.",
     "sample_deity_renames": {
-      "Argentus": "Argantu (trade and the city; Lawful)",
-      "Numeno": "Numunu (the scribe-wisdom, keeper of the code; Lawful)",
-      "Orlandus": "Urlandu (the iron-oath, war; Lawful)",
-      "Tulrius": "Tullaru (sun and judgment, lord of the law-stele; Lawful)"
+      "Argentus": {
+        "gloss": "trade and the city; Lawful",
+        "primary": "Argantu",
+        "primary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "the scribe-wisdom, keeper of the code; Lawful",
+        "primary": "Numunu",
+        "primary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war; Lawful",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "sun and judgment, lord of the law-stele; Lawful",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern"
+      }
     },
     "the_one": "Itarnu (< Aeternus; Latinate variant Aeternus - the supreme Lawgiver of Heaven, source of the Mandate of order, revered above all)",
     "worship_by_alignment": {

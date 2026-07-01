@@ -366,12 +366,48 @@
     "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana), or the Sinitic Miao (temple) of [power]: 'the Atashana of Turvasa', 'the Miao of Tuli-di'; the magi keep the ever-burning fire (Atar) on the altar.",
     "saints_pattern": "the honest dead and the just shahs and worthy mandarins, kept as fravashi (fore-spirits) and enrolled in the celestial register, petitioned at the fire-altar and the ancestral Ci (clan-shrine); 'the Arta-true [name]' (the righteous [name]).",
     "sample_deity_renames": {
-      "Argentus": "Arzanta (Sinitic Argan) - trade, the silk-road and increase; Lawful",
-      "Gaiandus": "Gayanta (Sinitic Gaidun-di) - the enduring earth and mountain",
-      "Numeno": "Naumana (Sinitic Numeng-jun) - the good mind, wisdom and the law; Lawful",
-      "Orlandus": "Urlaspa (Sinitic Aolan) - the iron-oath, war and the cavalier; Lawful",
-      "Realta": "Riyata (Sinitic Lianta-mu) - the Lady of Waters, mother and mercy",
-      "Tulrius": "Turvasa (Sinitic Tuli-di) - the sun and Arta, lamp of right-order; Lawful"
+      "Argentus": {
+        "gloss": "trade, the silk-road and increase; Lawful",
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Argan",
+        "secondary_family": "east_asian"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "the good mind, wisdom and the law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Aolan",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters, mother and mercy",
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, lamp of right-order; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Asturna (< Aeternus / the Persian-shifted Itarnu; the Sinitic face Aiteng, the Highest Heaven) - the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory and the Mandate, revered above His ministers, honored not petitioned",
     "worship_by_alignment": {

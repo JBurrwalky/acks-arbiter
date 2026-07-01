@@ -349,11 +349,41 @@
     "religious_orders_pattern": "the Alhs (Germanic grove-temple) or Templum / Collegium (Latinate) of [power]: 'the Alhs of Thulrs', 'the Collegium of Tulrius'.",
     "saints_pattern": "the Anses (the deified war-dead of the ruling house) and the Latin Divus/Diva (deified founders and law-givers of the cities), honored at the howe and inscribed on the senate-stele.",
     "sample_deity_renames": {
-      "Gaiandus": "Gauands (Lat Gaiandus) - the enduring earth",
-      "Numeno": "Numins (Lat Numeno / Numenius) - sky and law-wisdom",
-      "Orlandus": "Erlands (Lat Orlandus) - iron, oath, war",
-      "Realta": "Riala (Lat Realta) - the mother, mercy",
-      "Tulrius": "Thulrs (Lat Tulrius) - the sun and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "sky and law-wisdom",
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Numeno",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Orlandus",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Realta",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice",
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Tulrius",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Aiterns (Gothic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

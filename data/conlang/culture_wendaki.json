@@ -220,11 +220,31 @@
     "_note": "Deity-names are morphs of the Agrippan canon in the Plains register (family_north_american.json theonym_sets.plains), never real Plains gods. Shared pantheon, Plains names. Manitland seeds/shifts across all three alignments; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met through the vision-quest (puha) and the open sky; the sacred bluff or medicine-cairn is the altar - there are few built temples.",
     "the_one": "Ateruna (< Aeternus; the Great-Above - acknowledged as the distant maker when Lawful or Neutral, reviled as the cold sky-tyrant when Chaotic)",
     "sample_deity_renames": {
-      "Maraxus": "Maraksa (the war-fire, the raider; Chaotic power)",
-      "Dementus": "Tamawi (the storm-thunder; Chaotic power)",
-      "Realta": "Reawina (the mother, the life-giver; Neutral-honored)",
-      "Gaiandus": "Kayanta (the enduring earth; Lawful power)",
-      "Tulrius": "Torawi (the sun, justice; Lawful power)"
+      "Maraxus": {
+        "primary": "Maraksa",
+        "primary_family": "north_american",
+        "gloss": "the war-fire, the raider; Chaotic power"
+      },
+      "Dementus": {
+        "primary": "Tamawi",
+        "primary_family": "north_american",
+        "gloss": "the storm-thunder; Chaotic power"
+      },
+      "Realta": {
+        "primary": "Reawina",
+        "primary_family": "north_american",
+        "gloss": "the mother, the life-giver; Neutral-honored"
+      },
+      "Gaiandus": {
+        "primary": "Kayanta",
+        "primary_family": "north_american",
+        "gloss": "the enduring earth; Lawful power"
+      },
+      "Tulrius": {
+        "primary": "Torawi",
+        "primary_family": "north_american",
+        "gloss": "the sun, justice; Lawful power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerate the Lawful powers (Torawi the just sun, Kayanta the enduring earth, the One Ateruna the Great-Above) and the medicine (puha) of the sworn vision; name the Chaotic powers (Maraksa, Tamawi, Lusanta) dread-spirits to be warded on the high bluff",

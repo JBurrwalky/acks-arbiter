@@ -362,10 +362,26 @@
     "religious_orders_pattern": "the Drumgrund (festival-hall) or the caldera-rite of [power]: 'the Gorm-Drumgrund of Marakkadrumm', loud with hammers and the offering-fires.",
     "saints_pattern": "the honored forefathers and master-smiths of the clans (the durnad), and, in the fire-cult, the great sacrificers, named at hearth, tomb, and pyre.",
     "sample_deity_renames": {
-      "Gaiandus": "Gundunndrumm (the mountain, the mine, the deep earth; honored, masc.)",
-      "Maraxus": "Marakkadrumm (the forge-fire and the volcano; the fire-cult's power, fed with human sacrifice; Chaotic, masc.)",
-      "Orlandus": "Orlunndrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
-      "Realta": "Reltaddrumma (the hearth-mother, mercy; honored, fem.)"
+      "Gaiandus": {
+        "gloss": "the mountain, the mine, the deep earth; honored, masc.",
+        "primary": "Gundunndrumm",
+        "primary_family": "dwarven"
+      },
+      "Maraxus": {
+        "gloss": "the forge-fire and the volcano; the fire-cult's power, fed with human sacrifice; Chaotic, masc.",
+        "primary": "Marakkadrumm",
+        "primary_family": "dwarven"
+      },
+      "Orlandus": {
+        "gloss": "the forge, the smith, oaths and iron; most honored god, masc.",
+        "primary": "Orlunndrumm",
+        "primary_family": "dwarven"
+      },
+      "Realta": {
+        "gloss": "the hearth-mother, mercy; honored, fem.",
+        "primary": "Reltaddrumma",
+        "primary_family": "dwarven"
+      }
     },
     "the_one": "Atrunndrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at festivals, distant from daily prayer; named the Cold-Vault by the fire-cult)",
     "worship_by_alignment": {

@@ -371,12 +371,36 @@
     "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana): 'the Atashana of Turvasa'; the magi keep the ever-burning fire (Atar) on the altar.",
     "saints_pattern": "the honest dead and the just kings, kept as fravashi (fore-spirits) and petitioned at the fire-altar; 'the Arta-true [name]' (the righteous [name]).",
     "sample_deity_renames": {
-      "Argentus": "Arzanta (trade, the road and increase; Lawful)",
-      "Gaiandus": "Gayanta (the enduring earth and mountain)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; Lawful)",
-      "Realta": "Riyata (the Lady of Waters, mother and mercy)",
-      "Tulrius": "Turvasa (the sun and Arta, lamp of right-order; Lawful)"
+      "Argentus": {
+        "gloss": "trade, the road and increase; Lawful",
+        "primary": "Arzanta",
+        "primary_family": "near_eastern"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "the good mind, wisdom and the law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters, mother and mercy",
+        "primary": "Riyata",
+        "primary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, lamp of right-order; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern"
+      }
     },
     "the_one": "Asturna (< Aeternus / canon Itarnu; the Wise Lord Most High, upholder of Arta and source of the king's farnah-glory, revered above His ministers)",
     "worship_by_alignment": {

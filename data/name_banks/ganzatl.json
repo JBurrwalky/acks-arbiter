@@ -366,12 +366,48 @@
     "religious_orders_pattern": "the Atawitza (the fire-altar pyramid) or the Paridak'uh (the sacred walled garden) of [power]: 'the Atawitza of Turvasa', 'the Paridak'uh of Riyata'; the magi keep the ever-burning Atar on the witz-altar amid the flowering garden.",
     "saints_pattern": "the fravashi (the honest dead and just Shahs kept as fore-spirits) and the deified k'uhul-ajaw ancestors (the uchben), petitioned at the fire-altar, the carved stela, and the pyramid-tomb; 'the Arta-true [name]' (the righteous [name]).",
     "sample_deity_renames": {
-      "Argentus": "Arzanta (Mayan Arkanab) - trade, the road and increase; Lawful",
-      "Gaiandus": "Gayanta (Mayan Kayanab) - the enduring earth, the maize-jungle",
-      "Numeno": "Naumana (Mayan Numench) - the good mind, sky-wisdom and the glyph-law; Lawful",
-      "Orlandus": "Urlaspa (Mayan Orlanab) - the iron-oath, war and the cavalier; Lawful",
-      "Realta": "Riyata (Mayan Ix Rialtaj) - the Lady of Waters and the flowering moon, mother and mercy",
-      "Tulrius": "Turvasa (Mayan Tulax) - the sun and Arta, the lamp of right-order; Lawful"
+      "Argentus": {
+        "gloss": "trade, the road and increase; Lawful",
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Arkanab",
+        "secondary_family": "mesoamerican"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth, the maize-jungle",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican"
+      },
+      "Numeno": {
+        "gloss": "the good mind, sky-wisdom and the glyph-law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters and the flowering moon, mother and mercy",
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, the lamp of right-order; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican"
+      }
     },
     "the_one": "Asturna (< Aeternus / Axsatran Asturna; the Wise Lord Most High, upholder of Arta and source of the king's farnah-glory; Mayan substrate variant Aj Ternaj, the sky-most-high maker) - revered above His ministers when Lawful, set aside when Neutral",
     "worship_by_alignment": {

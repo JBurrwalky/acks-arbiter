@@ -264,12 +264,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian Sargonid reflexes PRIMARY (the family_near_eastern / hammuran morphs), Old-Persian variants SECONDARY (the axsatran shifted stems), never real Mesopotamian/Iranian gods. All three alignments (standard lens). The Akkadian temple-cult is the spine; the Persian fire-and-Arta register is the courtly overlay - the crown keeps both the bit-ili god-house and the atash fire-altar.",
     "the_one": "Itarnu (Akkadian; Persian Asturna) - the great distant one, honored not petitioned, source of the Shah's farnah-glory",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Persian Turvasa) - the sun and judgment, lamp of right-order",
-      "Orlandus": "Urlandu (Persian Urlaspa) - iron, oath, war and the cavalier",
-      "Gaiandus": "Gayandu (Persian Gayanta) - the enduring earth and mountain",
-      "Numeno": "Numunu (Persian Naumana) - sky, the good mind and scribe-wisdom",
-      "Realta": "Rialtu (Persian Riyata) - the mother, the Lady of Waters, mercy",
-      "Argentus": "Argantu (Persian Arzanta) - trade, the road and increase"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Turvasa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun and judgment, lamp of right-order"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Urlaspa",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war and the cavalier"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gayanta",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Naumana",
+        "secondary_family": "near_eastern",
+        "gloss": "sky, the good mind and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Riyata",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, the Lady of Waters, mercy"
+      },
+      "Argentus": {
+        "primary": "Argantu",
+        "primary_family": "near_eastern",
+        "secondary": "Arzanta",
+        "secondary_family": "near_eastern",
+        "gloss": "trade, the road and increase"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu the distant, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful, Numunu of the law-stele - upholding the right-order (the Persian Arta) and naming the Chaotic powers -lemnu (evil) or the hosts of the Lie, warded; the law-stele and the fire-altar bind alike",

@@ -348,11 +348,41 @@
     "religious_orders_pattern": "the Collegium (college/order) of the forum-temple or the Iantemplum (shrine-isle temple) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Iantemplum of Teraso', within its sacred court and torii-grove.",
     "saints_pattern": "the deified founders and heroes (Divus/Diva [name], the justified dead) venerated at the civic temples, and the great ancestors enshrined as kami at the isle-iantemplum (the honored dead); 'Divus [name]' and 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiandus (Jp Iwano-no-kami) - the enduring earth and mountain",
-      "Numeno": "Numeno (Jp Amatkazus-no-kami) - air, sky and scribe-wisdom",
-      "Orlandus": "Orlandus (Jp Hagano-no-kami) - iron, oath, war, the blade and the eagle",
-      "Realta": "Realta (Jp Megumarus-hime) - the mother, mercy and healing",
-      "Tulrius": "Tulrius (Jp Teraso-no-kami) - the sun and right-rule, the rayed sun-disc and the rising sun"
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Iwano-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air, sky and scribe-wisdom",
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Amatkazus-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war, the blade and the eagle",
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Hagano-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy and healing",
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Megumarus-hime",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and right-rule, the rayed sun-disc and the rising sun",
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Teraso-no-kami",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Aeternus (the One / True God; Jp shrine-name Takamus-no-kami) - the distant Ancient One, the High-Heaven One above the myriad powers, honored in liturgy not petitioned",
     "worship_by_alignment": {

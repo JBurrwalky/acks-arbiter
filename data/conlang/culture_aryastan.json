@@ -226,12 +226,36 @@
     "_note": "Deity-names are the Old-Persian-shifted morphs of the Agrippan canon (Tullaru -> Turvasa, Urlandu -> Urlaspa, Numunu -> Naumana, Argantu -> Arzanta, Rialtu -> Riyata, Itarnu -> Asturna), recognizably the same powers, never real Iranian/Zoroastrian gods. Lawful henotheist but TOLERANT: Asturna the Wise Lord most high upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie; the Shah's word is bond. The realm shelters the cults of its subject peoples under Asturna's peace - foreign gods are tolerated in the satrapies, never suppressed.",
     "the_one": "Asturna (< Aeternus / canon Itarnu; the Wise Lord Most High, upholder of Arta and source of the king's farnah-glory, revered above His ministers)",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (the sun and Arta, lamp of right-order; Lawful)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; Lawful)",
-      "Argentus": "Arzanta (trade, the road and increase; Lawful)",
-      "Gaiandus": "Gayanta (the enduring earth and mountain)",
-      "Realta": "Riyata (the Lady of Waters, mother and mercy)"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "gloss": "the sun and Arta, lamp of right-order; Lawful"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "gloss": "the good mind, wisdom and the law; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Argentus": {
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "gloss": "trade, the road and increase; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "gloss": "the Lady of Waters, mother and mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Asturna the Wise Lord, Turvasa of Arta, Urlaspa of the sworn war, Naumana of the good mind, Riyata the merciful - and names the Chaotic powers the hosts of Drauga the Lie, warded; the oath and the king's word bind alike, for the cardinal sin is the Lie.",

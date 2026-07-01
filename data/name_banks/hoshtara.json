@@ -364,11 +364,41 @@
     "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana) for the court powers - 'the Atashana of Turvasa'; the Jinjana (kami-fire shrine-town) of [power] for the island faces - 'the Jinjana of Terashi-no-kami', within its torii and sacred grove; the two named as one power, two faces.",
     "saints_pattern": "the honest dead and the just Shahs kept as fravashi (fore-spirits) at the fire-altar - 'the Arta-true [name]'; and the great island ancestors and fallen heroes enshrined as kami (the eirei) at the clan jinjana - 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gayanta (the enduring earth and mountain; island face Iwane-no-kami, the Rock-Root)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; island face Amatsukaze-no-kami; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; island face Hagane-no-kami, the Steel One; Lawful)",
-      "Realta": "Riyata (the Lady of Waters, mother and mercy; island face Megumi-hime, the Mercy-Maiden)",
-      "Tulrius": "Turvasa (the sun and Arta, lamp of right-order; island face Terashi-no-kami, the Shining One; Lawful)"
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Iwane-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "the good mind, wisdom and the law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Amatsukaze-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Hagane-no-kami",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters, mother and mercy",
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Megumi-hime",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, lamp of right-order; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Terashi-no-kami",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Asturna (< Aeternus / Sargonid Itarnu; the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory; the islands name His high face Takami-no-kami, the High-Heaven One above the myriad kami)",
     "worship_by_alignment": {

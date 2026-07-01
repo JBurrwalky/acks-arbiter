@@ -343,11 +343,41 @@
     "religious_orders_pattern": "the Bit-ili (god-house/temple) or the Jinbitu (shrine-isle temple) of [power]: 'the Bit-ili of Tullaru', 'the Jinbitu of Terashu', within its ziggurat-court and torii-grove.",
     "saints_pattern": "the deified law-givers and heroes inscribed on the temple-stele, and the great ancestors enshrined as kami at the isle-jinbitu (the honored dead); 'the Just [name]', 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gayandu (Jp Iwanu) - the enduring earth and mountain",
-      "Numeno": "Numunu (Jp Amatsukazu) - sky and scribe-wisdom",
-      "Orlandus": "Urlandu (Jp Haganu) - iron, oath, war",
-      "Realta": "Rialtu (Jp Megumu) - the mother, mercy",
-      "Tulrius": "Tullaru (Jp Terashu) - the sun and judgment"
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Iwanu",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Amatsukazu",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Haganu",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Megumu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Terashu",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Itarnu (Akkadian; Jp shrine-name Takamu-no-kami) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

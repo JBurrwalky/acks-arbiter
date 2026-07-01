@@ -348,11 +348,41 @@
     "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power] in the river-cities, and the medicine-cairn or vision-bluff of [power] on the open plain: 'the Bit-ili of Tullaru', 'the Medicine-Bluff of Maraksa'.",
     "saints_pattern": "the deified law-givers and heroes inscribed on the temple-stele of the cities, and the great chiefs and vision-seers who became sky- and animal-spirits; honored at the ziggurat, the burial-scaffold and the medicine-cairn.",
     "sample_deity_renames": {
-      "Gaiandus": "Gayandu (Plains Kayanta) - the enduring earth and plain",
-      "Numeno": "Numunu (Plains Nimawi) - sky and scribe-wisdom",
-      "Orlandus": "Urlandu (Plains Olanta) - iron, oath, war",
-      "Realta": "Rialtu (Plains Reawina) - the mother, mercy and rain",
-      "Tulrius": "Tullaru (Plains Torawi) - the sun and judgment"
+      "Gaiandus": {
+        "gloss": "the enduring earth and plain",
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Olanta",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy and rain",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Reawina",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Torawi",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Itarnu (< Aeternus; Plains echo Ateruna) - the distant Great-Above, honored not petitioned",
     "worship_by_alignment": {

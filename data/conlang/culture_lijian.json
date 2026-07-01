@@ -255,10 +255,34 @@
     "_note": "Deity-names are fused morphs of the Agrippan canon (Latin reflexes primary, Sinitic variants secondary), never real Roman/Chinese gods. All-three alignment: Serica's stance follows its CURRENT alignment (see worship_by_alignment). A Celestial Bureaucracy under the Mandate of Heaven, fused with the Roman law-cult: the One (Aiterneng) is Highest Heaven and source of the Mandate; the Lawful powers the celestial magistracy that gave the law; the templ-miao temple and the law-curia keep the rite.",
     "the_one": "Aiterneng (< Aeternus; fused Latin Aeternus / Sinitic Aiteng) - Highest Heaven, the source of the Mandate and the law; revered above all when Lawful, served-not-petitioned when Neutral",
     "sample_deity_renames": {
-      "Tulrius": "Tulin (Sinitic Tuli-di) - sun and judgment, lord of the law-stele; Lawful power",
-      "Orlandus": "Orlanus (Sinitic Orla-jun) - the iron-oath, war; Lawful power",
-      "Numeno": "Numengus (Sinitic Numeng-jun) - the scribe-wisdom, keeper of the codex; Lawful power",
-      "Realta": "Relianta (Sinitic Lianta-mu) - the mother of mercy; Neutral-honored"
+      "Tulrius": {
+        "primary": "Tulin",
+        "primary_family": "classical",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian",
+        "gloss": "sun and judgment, lord of the law-stele; Lawful power"
+      },
+      "Orlandus": {
+        "primary": "Orlanus",
+        "primary_family": "classical",
+        "secondary": "Orla-jun",
+        "secondary_family": "east_asian",
+        "gloss": "the iron-oath, war; Lawful power"
+      },
+      "Numeno": {
+        "primary": "Numengus",
+        "primary_family": "classical",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian",
+        "gloss": "the scribe-wisdom, keeper of the codex; Lawful power"
+      },
+      "Realta": {
+        "primary": "Relianta",
+        "primary_family": "classical",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian",
+        "gloss": "the mother of mercy; Neutral-honored"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aiterneng) and the Lawful powers (Tulin, Orlanus, Numengus, Gaidunus), demonize the Chaotic demon-marshals (Maraluo, Wucidus, Lusanus)",

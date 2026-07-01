@@ -208,10 +208,26 @@
     "_note": "Deity-names are the Khordurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real Tolkien/Norse/Warhammer dwarf-gods; they take the sacred GENDERED ending -drumm (masc) / -drumma (fem) - the anvil-named class, distinct from mortal -un/-ar/-ok / -a/-na/-ra and the common-noun root. ANCESTOR-CENTRIC: daily liturgy and prayer go to the honored dead (the durnad) and clan-fathers (fadrun) at the tomb-hall; the gods are honored at yearly/seasonal FESTIVALS, foremost the forge (Orlundrumm) and the mine/mountain (Gundundrumm). The drumgrund (festival-hall), loud with hammers on the feast-days, is where the gods are sung.",
     "the_one": "Atrundrumm (< Aeternus; sacred-masculine ending -drumm; the Stone-Father, the First Shaper; honored at the great festivals but distant from the daily ancestor-prayers; revered most when Lawful)",
     "sample_deity_renames": {
-      "Orlandus": "Orlundrumm (the forge, the smith, oaths and iron; the most honored god, masc.)",
-      "Gaiandus": "Gundundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)",
-      "Realta": "Reltadrumma (the hearth-mother, mercy; honored, fem.)",
-      "Delorum": "Delrundrumm (death and the honored dead; the ancestor-warden, masc.)"
+      "Orlandus": {
+        "primary": "Orlundrumm",
+        "primary_family": "dwarven",
+        "gloss": "the forge, the smith, oaths and iron; the most honored god, masc."
+      },
+      "Gaiandus": {
+        "primary": "Gundundrumm",
+        "primary_family": "dwarven",
+        "gloss": "the mountain, the mine, the deep earth; co-foremost, masc."
+      },
+      "Realta": {
+        "primary": "Reltadrumma",
+        "primary_family": "dwarven",
+        "gloss": "the hearth-mother, mercy; honored, fem."
+      },
+      "Delorum": {
+        "primary": "Delrundrumm",
+        "primary_family": "dwarven",
+        "gloss": "death and the honored dead; the ancestor-warden, masc."
+      }
     },
     "worship_by_alignment": {
       "Neutral": "the dwarven norm: daily prayer to the honored dead (the durnad) and clan-fathers (fadrun) at the tomb-hall; the gods honored at yearly/seasonal festivals, foremost the forge (Orlundrumm) and the mountain/mine (Gundundrumm), the powers of fire and earth; the One and the rest acknowledged distantly",

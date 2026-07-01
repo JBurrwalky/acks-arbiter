@@ -361,11 +361,31 @@
     "religious_orders_pattern": "the Alhs (temple / sacred grove) of [power]: 'the Alhs of Erlands'.",
     "saints_pattern": "the Anses (deified forebears) honored at the grave-howe; 'the Blessed [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gauands (the enduring earth)",
-      "Numeno": "Numins (the storm-mind, sky-wisdom)",
-      "Orlandus": "Erlands (the iron-oath, war)",
-      "Realta": "Riala (the mother, mercy)",
-      "Tulrius": "Thulrs (sun and judgment)"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gauands",
+        "primary_family": "germanic"
+      },
+      "Numeno": {
+        "gloss": "the storm-mind, sky-wisdom",
+        "primary": "Numins",
+        "primary_family": "germanic"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war",
+        "primary": "Erlands",
+        "primary_family": "germanic"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riala",
+        "primary_family": "germanic"
+      },
+      "Tulrius": {
+        "gloss": "sun and judgment",
+        "primary": "Thulrs",
+        "primary_family": "germanic"
+      }
     },
     "the_one": "Aiterns (< *Aiternaz < Aeternus; the distant All-Father, seldom petitioned)",
     "worship_by_alignment": {

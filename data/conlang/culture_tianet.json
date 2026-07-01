@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Egyptian reflexes PRIMARY (family_near_eastern egyptian sub-palette, the abydosian column: phoneme-morphs through Egyptian phonology, l>r, v>w, -us/-a>-aa/-et, dj/tj/kh flavor), Sinitic celestial-court variants SECONDARY (family_east_asian.json theonym_sets.sinitic, the jinxian column: the -di/-jun/-mu celestial bureau) - never real Egyptian/Chinese gods. The two are named as one power under two faces: the sun-disc of the river-temple and the celestial emperor of the bureau are the same god. Lawful/Neutral/Chaotic; a god-king funerary cult fused with a Mandate-of-Heaven celestial bureaucracy.",
     "the_one": "Atjernaa (Egyptian; < Aeternus; Sinitic Aiteng) - the hidden distant maker and Highest Heaven, source of the Mandate, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (Sinitic Tuli-di) - the sun-disc and right-order; the Sun-Justice Emperor of the celestial bureau",
-      "Delorum": "Djeroraa (Sinitic Delu) - lord of the peaceful dead, the funerary judge",
-      "Gaiandus": "Gauandj (Sinitic Gaidun-di) - the enduring earth and the river-flood, lord of mountains and grain",
-      "Numeno": "Numenaa (Sinitic Numeng-jun) - sky-wisdom and the scribal arts, the Sage Lord of winds",
-      "Realta": "Riaret (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian",
+        "gloss": "the sun-disc and right-order; the Sun-Justice Emperor of the celestial bureau"
+      },
+      "Delorum": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Delu",
+        "secondary_family": "east_asian",
+        "gloss": "lord of the peaceful dead, the funerary judge"
+      },
+      "Gaiandus": {
+        "primary": "Gauandj",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth and the river-flood, lord of mountains and grain"
+      },
+      "Numeno": {
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian",
+        "gloss": "sky-wisdom and the scribal arts, the Sage Lord of winds"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy, the Mother of Mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa the Highest Heaven, Tjuraa the just sun-disc (Tuli-di of the celestial bureau), Gauandj of the river-flood, Riaret the merciful - ordered by the funerary rites of the per-netjer and the Confucian celestial ritual alike; names the Chaotic powers the Hefau-kin (the serpent-brood) and the demon-marshals (mo), warded",

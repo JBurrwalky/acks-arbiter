@@ -258,11 +258,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic (Goidelic) reflexes PRIMARY (family_celtic theonym_set, reflexed through Insular-Celtic phonology), Akkadian variants SECONDARY (the family_near_eastern / hammuran morphs), never real Celtic/Mesopotamian gods. All three alignments: the Gaelic war-oath and druid-lore order meets the Akkadian law-stele and temple tradition.",
     "the_one": "Eternan (Celtic; Akk Itarnu) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Akk Tullaru) - the sun and justice",
-      "Orlandus": "Orlann (Akk Urlandu) - iron, oath, war",
-      "Gaiandus": "Gaian (Akk Gayandu) - the enduring earth",
-      "Numeno": "Numan (Akk Numunu) - sky, lightning, scribe-wisdom",
-      "Realta": "Realtan (Akk Rialtu) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tullaru",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Urlandu",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gayandu",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numunu",
+        "secondary_family": "near_eastern",
+        "gloss": "sky, lightning, scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Rialtu",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan foremost, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers as the fomori (Gaelic demon-host) or -lemnu (Akkadian evil), warded; the war-oath and the law-stele bind alike",

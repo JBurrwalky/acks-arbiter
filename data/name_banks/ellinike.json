@@ -368,10 +368,26 @@
     "religious_orders_pattern": "the Mysteria/Temenos of [power]: 'the Mysteries of Numenos'.",
     "saints_pattern": "Heros [name] (deified hero/founder), venerated at a heroon (tomb-shrine).",
     "sample_deity_renames": {
-      "Numeno": "Numenos (wisdom-lord)",
-      "Numia": "Numios (of the sea)",
-      "Orlandus": "Orlandros (iron-sworn)",
-      "Tulrius": "Tulrios (sun-justice)"
+      "Numeno": {
+        "gloss": "wisdom-lord",
+        "primary": "Numenos",
+        "primary_family": "classical"
+      },
+      "Numia": {
+        "gloss": "of the sea",
+        "primary": "Numios",
+        "primary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron-sworn",
+        "primary": "Orlandros",
+        "primary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "sun-justice",
+        "primary": "Tulrios",
+        "primary_family": "classical"
+      }
     },
     "the_one": "Aiternos (< Aeternus; the One, unknowable source, honored not petitioned)",
     "worship_by_alignment": {

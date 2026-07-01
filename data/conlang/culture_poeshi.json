@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Hellenic Greek reflexes PRIMARY (family_classical/achillean, the -os/-on/-es Hellenic forms), Sinitic celestial morphs SECONDARY (family_east_asian.json theonym_sets.sinitic), never real Greek/Chinese gods. The academy's philosophy of the One meets the celestial bureaucracy of the Mandate: the philosophers contemplate Aiternos/Aiteng the unknowable source, the mandarins serve the celestial powers as officials of Highest Heaven.",
     "the_one": "Aiternos (Hellenic, < Aeternus; Sinitic Aiteng, the Highest Heaven and source of the Mandate) - the One, unknowable source, honored and contemplated, not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrios (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor",
-      "Orlandus": "Orlandros (Sinitic Aolan-jun) - iron, oath, war",
-      "Gaiandus": "Gaiandros (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
-      "Numeno": "Numenos (Sinitic Numeng-jun) - air and sage-wisdom of the winds",
-      "Realta": "Realtia (Sinitic Lianta-mu) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and justice, the Sun-Justice Emperor"
+      },
+      "Orlandus": {
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "secondary": "Aolan-jun",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandros",
+        "primary_family": "classical",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth, lord of mountains"
+      },
+      "Numeno": {
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian",
+        "gloss": "air and sage-wisdom of the winds"
+      },
+      "Realta": {
+        "primary": "Realtia",
+        "primary_family": "classical",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiternos contemplated, Tulrios the just, Orlandros of the sworn oath, Realtia the merciful - as the celestial officials of Highest Heaven and the patrons of the academy; the philosopher's reason and the mandarin's rite bind alike, and the Chaotic powers are named daimones (Hellenic) or the mo demon-marshals (Sinitic), warded outside the celestial order.",

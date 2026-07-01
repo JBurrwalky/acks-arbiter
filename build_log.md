@@ -37176,3 +37176,29 @@ on-tick dispatch.
 **Next session should:**
 - Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + a CultureCatalogLoader accessor; merge-vs-displace roll in _resolve_contest / _phase_expansion between two distinct human BASE cultures -> grow HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ per §6.4 / emergence §3.3).
 **Commits:** 3381462 (naming #3 GDD spec).
+
+## Session 2026-07-01 — Deity-morph data shape: structured per-family split
+
+**Task:** Refactor `religion.sample_deity_renames` in the hybrid conlang kits from one packed string per canon-deity (`PRIMARY (Lang. SECONDARY) - gloss`) into a structured object, so the future runtime deity router (gdd-hybrid-conlang-fusion.md §6.2) can look up morphs by parent family without re-parsing. Data-shape refactor + reader update only — the router itself was NOT built. Supports naming workstream #3 (deity stratification, GDD spec committed 3381462).
+**Model used:** Opus 4.8 (survey, parser design, implementation, verification).
+**Completed:**
+- NEW `tools/restructure_deity_renames.py` — idempotent, deterministic one-off (mirrors build_name_banks.py style). Splits each `sample_deity_renames` value into `{primary, primary_family, secondary?, secondary_family?, gloss?}`. Modes `--report`/`--check`/apply. Applied to 70 culture kits / 345 deity entries; re-run is a byte-identical no-op.
+- Updated `tools/build_name_banks.py` `deity_stems_for()` to read `value["primary"]` (legacy bare-string fallback kept). Rebuilt all 82 name banks (`python tools/build_name_banks.py`); `--check` GREEN. Verified the `categories.*` pools are BYTE-IDENTICAL (0 non-`religion` lines changed across the 70 rebuilt banks) — only the `religion` passthrough shape shifted.
+- Left `religion.the_one` a string (carries `< Aeternus` etymology + occasionally >2 morphs, e.g. zetana; not part of the stratified pantheon). Left beastman `venerated` and xianjin's already-object `the_one` untouched.
+- Updated GDD `gdd-hybrid-conlang-fusion.md` §6.1/§6.2/§7 to the implemented shape (removed the "deferred" note); added `docs/coding_conventions.md` §87.
+**Decisions made:**
+- Shape is ROLE-keyed (`primary`/`secondary` + `*_family`), NOT the task/GDD's sketched family-keyed `{germanic: .., near_eastern: ..}`. Forced by the ACTUAL data, discovered in the survey: (a) INVERSIONS — `sebasos` (near_eastern×classical) and the `kaimets/Delorum` entry carry the primary morph in `inherits[1]`, so "PRIMARY→inherits[0]" is false; (b) same-family Peer hybrids (ausonians/hekana/mudana/tollteca) hold two morphs from ONE family that collide on a family key. Role keys carry family as a VALUE and keep `primary` positionally stable → byte-identical name banks.
+- `primary_family` derived from the SECONDARY's tag (primary = complementary inherits family), with a kit-level dominant-family fallback for no-secondary entries (so sebasos/Numeno labels classical, not inherits[0] near_eastern). The `(Lang. X)` tag vocabulary varies per kit → `TAG_FAMILY` normalization map.
+- Robustness: round-trip guard (refuse to rewrite unless `json.dumps(indent=2, ensure_ascii=False)+"\n"` reproduces the file — matches generate_hybrid_kits.py's writer, so no reformatting churn); fail-loud parse validation (`_MORPH_RE`, family ∈ inherits, no descriptor-word leakage); explicit `OVERRIDES` for tag-less secondaries (hoshtara's "island face X-no-kami", 5 entries) rather than a fuzzy heuristic.
+**Interfaces defined or changed:**
+- `data/conlang/culture_*.json` `religion.sample_deity_renames[canon]` is now an object `{primary: str, primary_family: str, secondary?: str, secondary_family?: str, gloss?: str}` (was a packed string). This passes through verbatim into `data/name_banks/<id>.json` `religion` (read opaquely by NameBankLoader; the future §6.2 router selects on `primary_family`/`secondary_family`).
+- `build_name_banks.deity_stems_for(religion, is_beastman)` now reads `sample_deity_renames[*]["primary"]` for theophoric stems.
+**Database changes:** None.
+**Tests added/updated:** None added. Held the baseline — clean measurement run 476 suites passed / 17 failed (41 assertion failures), matching the documented ~*/17 baseline (GeoField-height asserts + flaky combat/session/movement, e.g. test_geo_field_layer3, test_combat_maneuvers — all carry-forward). SettingNameBanksTests (1250 checks) and SettingGenerationDataFreshness GREEN; ZERO failing tests touch conlang/name_bank/deity/religion; categories.* pools byte-identical → no name-bank content drift → zero NEW failures. (Env note: the first headless run hung on a stale/contended class cache from concurrent worktree Godot zombies — `CampaignRepository` Nil at test_runner._ready → "Cannot infer type" cascade; killed the worktree test instances + `--import` to regenerate the cache, then re-ran clean.)
+**Known issues:**
+- Per-morph secondary flavor text ("the Shining One", "island face") is folded into the shared `gloss` or dropped — the shape carries one gloss per deity, not per morph. Extend the shape if per-register epithets are wanted later.
+- Pre-existing: the kaimets canon KEY is `"Delorum / death-lord"` (a slashed key) — preserved as-is, not normalized (out of scope).
+- Shape is [PROVISIONAL] until the §6.2 temple/shrine router consumes it.
+**Next session should:**
+- Phase 4c (unchanged priority): load-time parent-pair→hybrid lookup (scan culture_synthesis_parents) + a CultureCatalogLoader accessor; merge-vs-displace roll in _resolve_contest / _phase_expansion (Conquest gated clan-over-civ per §6.4 / emergence §3.3). When the NPC/temple/shrine deity router lands, consume the new `*_family` keys.
+**Commits:** (this session, explicit pathspec) — tools/restructure_deity_renames.py, tools/build_name_banks.py, 70 × data/conlang/culture_*.json, 70 × data/name_banks/*.json + _manifest.json, generation/gdd-hybrid-conlang-fusion.md, docs/coding_conventions.md.

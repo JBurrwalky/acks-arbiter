@@ -219,10 +219,26 @@
     "_note": "Deity-names are the Sinitic morphs of the Agrippan canon (family_east_asian.json theonym_sets.sinitic) - never real Chinese gods. A Celestial Bureaucracy under the Mandate of Heaven: the One (Aiteng) presides as Highest Heaven; the Lawful powers are the celestial officials (-di emperors, -jun lords); the Neutral honor ancestors (the zu) and the local earth-and-grain powers; the Chaotic defy the celestial order. Confucian rites and ancestor-veneration order all.",
     "the_one": "Aiteng (< Aeternus; the Highest Heaven, the source of the Mandate, served not petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Tuli-di (the Sun-Justice Emperor)",
-      "Gaiandus": "Gaidun-di (the Earth Emperor, lord of mountains)",
-      "Realta": "Lianta-mu (the Mother of Mercy)",
-      "Numeno": "Numeng-jun (the Sage Lord of the winds)"
+      "Tulrius": {
+        "primary": "Tuli-di",
+        "primary_family": "east_asian",
+        "gloss": "the Sun-Justice Emperor"
+      },
+      "Gaiandus": {
+        "primary": "Gaidun-di",
+        "primary_family": "east_asian",
+        "gloss": "the Earth Emperor, lord of mountains"
+      },
+      "Realta": {
+        "primary": "Lianta-mu",
+        "primary_family": "east_asian",
+        "gloss": "the Mother of Mercy"
+      },
+      "Numeno": {
+        "primary": "Numeng-jun",
+        "primary_family": "east_asian",
+        "gloss": "the Sage Lord of the winds"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful celestial officials under the Mandate - Aiteng the Highest Heaven, Tuli-di the Sun-Justice Emperor, Gaidun-di the Earth Emperor, Numeng-jun the Sage Lord - and names the Chaotic powers the demon-marshals (mo), warded; the celestial bureaucracy and the rites of the Mandate order all.",

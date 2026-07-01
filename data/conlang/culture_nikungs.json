@@ -258,11 +258,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - NORSE Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Norse/Greek gods. Alignment PROVISIONAL (Neutral/Lawful): the Norse war-oath and hird-loyalty meet the Hellenic civic law and the basileus' settled order.",
     "the_one": "Eitnir (Norse; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Thulr (Hell. Tulrios) - the sun, fire, and justice",
-      "Orlandus": "Orlund (Hell. Orlandros) - iron, oath, war",
-      "Gaiandus": "Geyandr (Hell. Gaiandros) - the enduring earth, cold, endurance",
-      "Numeno": "Nymir (Hell. Numenos) - air, lightning, sky-wisdom",
-      "Realta": "Rjalta (Hell. Realtia) - the mother, mercy, healing"
+      "Tulrius": {
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tulrios",
+        "secondary_family": "classical",
+        "gloss": "the sun, fire, and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Orlandros",
+        "secondary_family": "classical",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth, cold, endurance"
+      },
+      "Numeno": {
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Numenos",
+        "secondary_family": "classical",
+        "gloss": "air, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Realtia",
+        "secondary_family": "classical",
+        "gloss": "the mother, mercy, healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eitnir, Thulr the just, Orlund of the sworn war, Rjalta the merciful - and names the Chaotic powers fjandr (fiends) / daimones, warded and unworshipped; the hird-oath and the basileus' civic law bind alike, the enthroned guard and the ordered polis the social ideal",

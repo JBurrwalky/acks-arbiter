@@ -479,7 +479,14 @@ def deity_stems_for(religion, is_beastman):
             stems.extend(first_token(x) for x in canon)
         ren = religion.get("sample_deity_renames")
         if isinstance(ren, dict):
-            stems.extend(first_token(v) for v in ren.values())
+            # Structured shape (tools/restructure_deity_renames.py): each value is
+            # {primary, primary_family, [secondary, secondary_family], [gloss]}; the
+            # PRIMARY morph is the theophoric stem (== first_token of the legacy
+            # packed string, so banks are byte-identical across the refactor). A
+            # bare-string value is the pre-refactor form — kept as a fallback.
+            for v in ren.values():
+                morph = v.get("primary", "") if isinstance(v, dict) else v
+                stems.append(first_token(morph))
     return sorted(dedup_keep_order(s for s in stems if s))
 
 

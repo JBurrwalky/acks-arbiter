@@ -259,11 +259,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column: Thulrs, Erlands, Gauands, Numins, Riala, Aiterns), Old-Persian/axsatran variants SECONDARY (the axsatran shifted morphs: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna), never real Germanic/Iranian/Zoroastrian gods. The cardinal Persian virtue ARTA (Truth/Right-order) and its opposite DRAUGA (the Lie) carry over as the court's moral vocabulary, fused with the Germanic war-oath. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Persian Arta tradition; both read Lawful-friendly, the steppe-riders' ancestor-cult reads Neutral. The realm is broadly TOLERANT in the Persian manner - the thiudans shelters the subject cults beneath the crown.",
     "the_one": "Aiterns (Gothic; Persian Asturna) - the distant Ancient One and Wise Lord Most High, upholder of Arta, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Thulrs (Pers. Turvasa) - the sun, justice, and the lamp of right-order",
-      "Orlandus": "Erlands (Pers. Urlaspa) - iron, oath, war, and the cavalier",
-      "Gaiandus": "Gauands (Pers. Gayanta) - the enduring earth and mountain",
-      "Numeno": "Numins (Pers. Naumana) - sky, lightning, and the good-mind wisdom",
-      "Realta": "Riala (Pers. Riyata) - the mother, mercy, the Lady of Waters"
+      "Tulrius": {
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Turvasa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun, justice, and the lamp of right-order"
+      },
+      "Orlandus": {
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Urlaspa",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war, and the cavalier"
+      },
+      "Gaiandus": {
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gayanta",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Numeno": {
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Naumana",
+        "secondary_family": "near_eastern",
+        "gloss": "sky, lightning, and the good-mind wisdom"
+      },
+      "Realta": {
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Riyata",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, mercy, the Lady of Waters"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - upholding Arta (right-order) and naming the Chaotic powers the hosts of Drauga the Lie, warded as skohsla (Gothic demons); the war-oath and the king's-word-as-bond bind alike",

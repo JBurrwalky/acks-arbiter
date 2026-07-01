@@ -256,10 +256,34 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Hellenic Greek reflexes PRIMARY (the hellenic morphs, -os/-on/-ios; th/ph/kh), Plains variants SECONDARY (the family_north_american theonym_sets.plains morphs), never real Greek/Plains gods. Thracan allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met in the mystery-rite and the vision-quest, under the open sky and at the kurgan-tomb; the war-king is initiate and war-leader both.",
     "the_one": "Aiterunos (< Aeternus; fused Hellenic Aiternos / Plains Ateruna) - the Sky-Eternal over the grass-sea; revered when Lawful, acknowledged as the distant maker when Neutral, reviled as the cold tyrant when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Toravios (the sun, the just light; Plains Torawi; Lawful power)",
-      "Orlandus": "Orlantos (the iron-oath, war; Plains Olanta; Lawful power)",
-      "Dementus": "Tamawios (the storm-thunder; Plains Tamawi; Chaotic power)",
-      "Maraxus": "Maraksios (the war-fire, the raid; Plains Maraksa; Chaotic power)"
+      "Tulrius": {
+        "primary": "Toravios",
+        "primary_family": "classical",
+        "secondary": "Torawi",
+        "secondary_family": "north_american",
+        "gloss": "the sun, the just light; Lawful power"
+      },
+      "Orlandus": {
+        "primary": "Orlantos",
+        "primary_family": "classical",
+        "secondary": "Olanta",
+        "secondary_family": "north_american",
+        "gloss": "the iron-oath, war; Lawful power"
+      },
+      "Dementus": {
+        "primary": "Tamawios",
+        "primary_family": "classical",
+        "secondary": "Tamawi",
+        "secondary_family": "north_american",
+        "gloss": "the storm-thunder; Chaotic power"
+      },
+      "Maraxus": {
+        "primary": "Maraksios",
+        "primary_family": "classical",
+        "secondary": "Maraksa",
+        "secondary_family": "north_american",
+        "gloss": "the war-fire, the raid; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aiterunos) and the Lawful powers (Toravios, Orlantos, Numawios, Gaiantos), demonize the Chaotic powers (Maraksios, Tamawios, Lusantios)",

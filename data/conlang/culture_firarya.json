@@ -259,11 +259,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic theonym_set: Toran, Orlann, Gaian, Numan, Realtan, Eternan, Dolar, Nochtluan, Raithan), Old-Persian/axsatran variants SECONDARY (the axsatran shifted morphs: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna), never real Celtic/Iranian/Zoroastrian gods. The cardinal Persian virtue ARTA (Truth/Right-order) and its opposite DRAUGA (the Lie) carry over as the court's moral vocabulary, fused with the Celtic warrior-oath and the geis (the binding vow); the breaking of a geis is the Celtic face of the Lie. Alignment per the standard lens (Lawful/Neutral/Chaotic): the Celtic warrior-oath and the Persian Arta tradition read Lawful-friendly, the horse-clans' ancestor-cult and the cattle-raid reads Neutral, the wild Chaotic powers of the hunt and the war-fire keep their cults. The realm is broadly TOLERANT in the Persian manner - the ruiri shelters the subject cults beneath the crown.",
     "the_one": "Eternan (Celtic; Persian Asturna) - the distant Ancient One and Wise Lord Most High, upholder of Arta, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Pers. Turvasa) - the sun, fire, light, and justice; the lamp of right-order",
-      "Orlandus": "Orlann (Pers. Urlaspa) - iron, oath, war, and the cavalier",
-      "Gaiandus": "Gaian (Pers. Gayanta) - the enduring earth, cold, and mountain",
-      "Numeno": "Numan (Pers. Naumana) - air, lightning, sky-wisdom, and the good-mind",
-      "Realta": "Realtan (Pers. Riyata) - the mother, mercy, healing, the Lady of Waters"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Turvasa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun, fire, light, and justice; the lamp of right-order"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Urlaspa",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war, and the cavalier"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gayanta",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth, cold, and mountain"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Naumana",
+        "secondary_family": "near_eastern",
+        "gloss": "air, lightning, sky-wisdom, and the good-mind"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Riyata",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, mercy, healing, the Lady of Waters"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan, Toran the just, Orlann of the sworn war, Realtan the merciful - upholding Arta (right-order) and naming the Chaotic powers the hosts of Drauga the Lie, warded as the fomoraig (the demon-brood); the warrior-oath, the geis, and the king's-word-as-bond bind alike",

@@ -253,10 +253,26 @@
     "_note": "Deity-names are morphs of the Agrippan canon (Akkadian primary, from near_eastern theonym_sets; Latinate canon-form as the learned variant), never real Mesopotamian/Roman gods. Sargonid is the apex law-empire: it reveres the One (Itarnu) above His ministers and the Lawful powers as the celestial magistracy that gave the law; the Chaotic powers are the demon-marshals it exists to suppress. The law-stele and the temple-tower (ziggurat) are the altars. (Though all three alignments are now permitted in play, the culture's character remains strongly Lawful.)",
     "the_one": "Itarnu (< Aeternus; Latinate variant Aeternus - the supreme Lawgiver of Heaven, source of the Mandate of order, revered above all)",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (sun and judgment, lord of the law-stele; Lawful)",
-      "Orlandus": "Urlandu (the iron-oath, war; Lawful)",
-      "Numeno": "Numunu (the scribe-wisdom, keeper of the code; Lawful)",
-      "Argentus": "Argantu (trade and the city; Lawful)"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "gloss": "sun and judgment, lord of the law-stele; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "gloss": "the iron-oath, war; Lawful"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "gloss": "the scribe-wisdom, keeper of the code; Lawful"
+      },
+      "Argentus": {
+        "primary": "Argantu",
+        "primary_family": "near_eastern",
+        "gloss": "trade and the city; Lawful"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu above all, Tullaru the just lord of the law-stele, Urlandu of the sworn iron-oath, Numunu keeper of the code, Argantu of the lawful city - and names the Chaotic powers the demon-marshals (-lemnu), warded and suppressed; the law-code and the temple-tower bind the order. This is the empire's apex creed.",

@@ -331,11 +331,41 @@
     "religious_orders_pattern": "the Collegium (Latinate) or the K'uh-nah (god-house) atop the witz (pyramid) of [power]: 'the Collegium of Tulrius', 'the K'uh-nah of Tulax'.",
     "saints_pattern": "Divus/Diva [name] (the deified founders and the deified k'uhul ajaw ancestors, the uchben), inscribed on the stela and honored at the pyramid-tomb and the via-catacomb.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiandus (Maya Kayanab) - the enduring earth",
-      "Numeno": "Numeno (Maya Numench) - sky and scribe-wisdom",
-      "Orlandus": "Orlandus (Maya Orlanab) - iron, oath, war",
-      "Realta": "Realta (Maya Ix Rialtaj) - the mother, mercy",
-      "Tulrius": "Tulrius (Maya Tulax) - the sun and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice",
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican"
+      }
     },
     "the_one": "Aeternus (Maya Aj Ternaj) - the One / True God, honored in liturgy not petitioned",
     "worship_by_alignment": {

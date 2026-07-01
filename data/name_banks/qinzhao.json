@@ -332,10 +332,26 @@
     "religious_orders_pattern": "the Miao (temple) of [power]: 'the Miao of Tuli-di'; the ancestral Ci (clan-shrine) for the zu.",
     "saints_pattern": "deified heroes and worthy officials enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao; 'the Lord [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaidun-di (the Earth Emperor, lord of mountains)",
-      "Numeno": "Numeng-jun (the Sage Lord of the winds)",
-      "Realta": "Lianta-mu (the Mother of Mercy)",
-      "Tulrius": "Tuli-di (the Sun-Justice Emperor)"
+      "Gaiandus": {
+        "gloss": "the Earth Emperor, lord of mountains",
+        "primary": "Gaidun-di",
+        "primary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "the Sage Lord of the winds",
+        "primary": "Numeng-jun",
+        "primary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the Mother of Mercy",
+        "primary": "Lianta-mu",
+        "primary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the Sun-Justice Emperor",
+        "primary": "Tuli-di",
+        "primary_family": "east_asian"
+      }
     },
     "the_one": "Aiteng (< Aeternus; the Highest Heaven, the source of the Mandate, served not petitioned)",
     "worship_by_alignment": {

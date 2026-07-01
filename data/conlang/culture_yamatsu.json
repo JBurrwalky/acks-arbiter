@@ -224,10 +224,26 @@
     "_note": "Deity-names are NATIVE kami, independently coined (family_east_asian.json theonym_sets.japonic) - they do NOT borrow the Chinese forms (the tongues are unrelated) and are never real Shinto kami. The kami pervade all things; the ancestral dead (senzo) are honored at the household shrine. Lawful/Neutral/Chaotic per the base model (all human cultures): the Lawful keep the ordered way of the warrior (the kami of sun, blade and ancestors); the Chaotic the wild kami and the war-fury (the storm, the war-flame, the mountain-oni); the Neutral honor the ancestral dead and the local kami situationally.",
     "the_one": "Takami-no-kami (< the One, Aeternus, rendered as native kami; the High-Heaven One, distant above the myriad kami)",
     "sample_deity_renames": {
-      "Tulrius": "Terashi-no-kami (the Shining One, sun and right-rule)",
-      "Orlandus": "Hagane-no-kami (the Steel One, the blade-oath and war)",
-      "Gaiandus": "Iwane-no-kami (the Rock-Root, the enduring mountain)",
-      "Realta": "Megumi-hime (the Mercy-Maiden, mother and healing)"
+      "Tulrius": {
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian",
+        "gloss": "the Shining One, sun and right-rule"
+      },
+      "Orlandus": {
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian",
+        "gloss": "the Steel One, the blade-oath and war"
+      },
+      "Gaiandus": {
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian",
+        "gloss": "the Rock-Root, the enduring mountain"
+      },
+      "Realta": {
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian",
+        "gloss": "the Mercy-Maiden, mother and healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "keeps the ordered way of the warrior and the right-rule of the sun: Takami-no-kami above, Terashi-no-kami the sun and just rule, Hagane-no-kami of the sworn blade, Megumi-hime the merciful; the wild and devouring kami are named oni and warded at the torii",

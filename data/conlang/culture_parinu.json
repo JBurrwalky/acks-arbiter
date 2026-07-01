@@ -256,11 +256,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (the agrippan keys, the reference culture other cultures rename FROM), Plains morphs SECONDARY (family_north_american.json theonym_sets.plains / numinan), never real Roman/Plains gods. Shared pantheon, two registers (Latin primary, Plains secondary). Novarom allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met both at the built temple-on-the-forum and at the medicine-bluff of the open sky - the law-stone and the vision-quest (puha) honored alike.",
     "the_one": "Aeternus (Plains Ateruna) - the One / True God; honored in liturgy and acknowledged as the distant Great-Above, not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrius (Plains Torawi) - the sun and justice, the law-stone and the open sky",
-      "Orlandus": "Orlandus (Plains Olanta) - iron, oath, war; the legion-eagle and the war-lance",
-      "Gaiandus": "Gaiandus (Plains Kayanta) - the enduring earth, the field and the grass-sea",
-      "Numeno": "Numeno (Plains Nimawi) - air, sky-wisdom, the scribe and the seer",
-      "Realta": "Realta (Plains Reawina) - the mother, mercy, the life-giving rain"
+      "Tulrius": {
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Torawi",
+        "secondary_family": "north_american",
+        "gloss": "the sun and justice, the law-stone and the open sky"
+      },
+      "Orlandus": {
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Olanta",
+        "secondary_family": "north_american",
+        "gloss": "iron, oath, war; the legion-eagle and the war-lance"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth, the field and the grass-sea"
+      },
+      "Numeno": {
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american",
+        "gloss": "air, sky-wisdom, the scribe and the seer"
+      },
+      "Realta": {
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Reawina",
+        "secondary_family": "north_american",
+        "gloss": "the mother, mercy, the life-giving rain"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just, Orlandus of the sworn legion, Realta the merciful - at the forum-temple and the medicine-bluff alike, and names the Chaotic powers daemones (Latin) or the dread-spirits (Plains), warded; the law-stone and the vision-quest bind together",
