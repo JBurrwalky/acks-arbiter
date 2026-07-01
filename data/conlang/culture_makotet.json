@@ -1,0 +1,361 @@
+{
+  "kit_id": "makotet",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_37",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (egyptian) lean + east_asian (japonic) substrate (cross-family fusion, Egyptian-leaning)",
+  "synthesis_sources": [
+    "BASE_05",
+    "BASE_08"
+  ],
+  "homeland": "Raiko-ta-Itru (the Sun-Realm of the River-Isles)",
+  "blend": {
+    "lean_parent": "near_eastern (egyptian: the per/niut river-temples, the hem-netjer priesthood and god-king ideology, the Pa-/Per-/Niut- construct toponyms, dj/tj/kh phonology, -aa/-et endings, VSO grammar, l>r and v>w)",
+    "substrate_parent": "east_asian (japonic: the open CV-mora islands and shrine-isles, the kami of mountain and sea, the rice-and-silk-and-jade staple words, the torii-shrine and the castle-town)",
+    "lean": "Near-Eastern-heavy (Egyptian) - a single fused people of the sun-river-isles, where the temple-Nile of the god-king and the shrine-isle of the sun-goddess's line grew into one tongue and one rite: the sun-disc and the rising sun as one. The Egyptian temple/Nile/rule register is the backbone; the Japonic island/shrine/material/staple words are the substrate. Not a ruling elite over a populace - one merged people, one fused language (per gdd-hybrid-conlang-fusion.md)."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_05 (Egyptian, Abydosian register) x BASE_08 (Japonic, Yamataian register). FUSION-FIRST (gdd-hybrid-conlang-fusion.md): a SINGLE fused tongue, one word per concept, derived by principled sound-change from both parents - not a slash-pair dual-register gloss. CIV/CLAN DECIDED by inheritance: Egyptian (Near-Eastern) base = Civilized, Japonic base = Clanhold, and any Civ parent -> Civ, so Raiko is Civilized (feudal). Concept: the river-temple and the shrine-isle as one - the sun-disc of the temple-Nile and the rising sun of the island-arc, the solar pharaoh and the sun-goddess's line grown into a single rite over the river-cities of a sun-blessed island-realm (an Egypto-Japonic fusion; 'Rai-ko', the sun-child realm). Lean = Egyptian (the rule/temple/Nile/kin/land register, the Per-/Niut-/Pa- construct toponyms, the -aa/-et endings, VSO); substrate = Japonic (island, shrine, mountain, sea, rice, silk, jade - the land, material and staple words). Common-word lexicon and rank titles use the real Egyptian register (allowed, catalog 5.3), with the Japonic substrate words fused into Egyptian phonology; DEITY names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (the abydosian column: Tjuraa, Oranetj, Geandaa, Numenaa, Riaret, Atjernaa), Japonic kami-morphs SECONDARY (the yamataian / family_east_asian.json japonic column, hardened to Egyptian shape), never real Egyptian gods or Shinto kami. All three alignments (per 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic). Ruler/domain DISPLAY titles are ENGLISH except the kingdom which uses the approved commonly-known term 'Pharaoh' (the Great House / solar god-king) and the duchy which uses 'Daimyo' (the great island-house lord, the apt Japonic-substrate co-rank); conlang titles in ruler_native/domain_native (Egyptian) for NPC dialogue. CSV phonetic profile 'Soft consonants with breathy vowels'; grammar 'VSO, Honorific root patterns'.",
+  "phonology": {
+    "palette": "Near-Eastern (Egyptian) lean - dj, tj, kh, h, sh, q consonants, l>r and v>w, triconsonantal-flavored stems, -aa/-et endings, VSO order, breathy long vowels - taking up an East-Asian (Japonic) substrate: open CV moras, the five vowels a i u e o, the island/shrine/mountain/sea/rice/silk/jade word-stock, rendaku voicing. Per the CSV: soft consonants with breathy vowels (the Japonic CV gentleness audible beneath the Egyptian dj/tj/kh softening and the long -aa/-et opens); grammar is VSO with honorific root patterns (the Egyptian verb-first order over a substrate of Japonic honorific kami-suffixes reshaped to Egyptian -aa/-et closes). Theophoric on the Egyptian canon-morphs (Tjuraa-, Oranetj-) with the Japonic kami-morphs as the shrine register (Terashaa-, Haganetj-).",
+    "phonotactics": "CVC and CV-aa/-et opens (Egyptian); Japonic CV-mora roots shed or breathe-out their final vowel into an Egyptian -aa/-et/-u close or harden consonant-final; clusters dj/tj/kh; long breathy -aa; Pa-/Per-/Niut-/Ta- construct toponyms over -maa/-shimaa island-and-shrine elements; stress varies (the Egyptian pattern overrides Japonic pitch-accent).",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "near-eastern (egyptian) phonology dominant",
+      "sound_changes": [
+        "Japonic open CV-moras adapt to Egyptian shape: the final open vowel breathes out into a long -aa/-et or an -u close, or the stem hardens consonant-final, then takes an Egyptian nominal -aa/-et ending (yama>djamaa, shima>shimaa, mori>meraa, umi>wemaa, kawa>khawaa)",
+        "Japonic plain consonants soften toward the Egyptian inventory: k>k/kh, t>t/tj, s>sh before high vowels, d>dj, voiced g/b retained; Japonic l would go r but Japonic has no l (the Egyptian l>r and v>w laws bite on Egyptian-source roots: itru, wadj)",
+        "Japonic pitch-accent is overridden; word order is Egyptian VSO; the Japonic -no linking particle is kept honorifically but reshaped (X-no-Y > X-na- / -en-)",
+        "the Egyptian a/e/i/o/u vowels with long breathy -aa dominate; Japonic e/o admitted in stressed substrate roots; retain Egyptian dj, tj, kh, sh, q and the Japonic open-vowel color of substrate stems; triconsonantal-root coloring imposed on borrowed stems",
+        "very short Japonic roots take an Egyptian -aa/-et/-u ending to reach a CV(C)-aa shape (ko>kuraa, no>nuaa/sekhet-substrate, do>djaa, cha>tjaa)"
+      ],
+      "source_tilt": "island/shrine/mountain/sea/coast/material/staple words from Japonic roots (the substrate land and its making - shima, yama, umi, jinja, kome, kinu, hisui, uma), then filtered to Egyptian phonology; kin-line/rule/temple/Nile/land/quality/abstract/war words from Egyptian roots (the lean register - itru, per, niut, sa, aa, djeser, bia, mesha); every chosen root then run through the one Egyptian-shaped sound-law so the split is invisible at the surface",
+      "portmanteaus": [
+        "isle iu+shima>iushimaa",
+        "shrine-town jinja+per-netjer>jinper",
+        "citadel shiro+sebakh>shirbakh",
+        "castle-fort toride+menenu>toremenu",
+        "son sa+musuko>samusaa",
+        "daughter sat+musume>satmusaa",
+        "sacred djeser+imi>djesimi",
+        "sun-realm (capital element) rai+ko>raiko"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Japonic island/shrine/material/staple roots + Egyptian rule/kin/temple/Nile/land roots, all run through one Egyptian-shaped sound-law (CV-moras breathed into -aa/-et opens or hardened, dj/tj/kh softening, VSO); portmanteaus mark the blended institutions and bloodline. One word per concept, no slashes.",
+    "feature_words": {
+      "river": "itru",
+      "stream": "meraa",
+      "lake": "sheko",
+      "sea": "wedjumi",
+      "bay": "uraa",
+      "cape": "misaket",
+      "isle": "iushimaa",
+      "mountain": "djamaa",
+      "hill": "qaaka",
+      "ridge": "akhone",
+      "forest": "meraat",
+      "plain": "sekhno",
+      "marsh": "idehu",
+      "ford": "watjaa",
+      "pass": "rotoge",
+      "vale": "tjanu",
+      "coast": "wedjeb",
+      "neck": "nehkubi",
+      "narrows": "segeret",
+      "waste": "araanu",
+      "road": "watmichi",
+      "way": "mitdo",
+      "track": "shemiket"
+    },
+    "settlement_words": {
+      "hamlet": "whysaa",
+      "village": "niuraa",
+      "town": "niumachi",
+      "city": "niut-aa",
+      "fort": "toremenu",
+      "port": "minet",
+      "market": "khuichi",
+      "temple_town": "jinper",
+      "citadel": "shirbakh"
+    },
+    "kinship": {
+      "son": "samusaa",
+      "daughter": "satmusaa",
+      "house": "perie",
+      "kin": "ujaa",
+      "ancestor": "tepsenzaa"
+    },
+    "adjectives": {
+      "great": "aa",
+      "little": "nedjko",
+      "old": "iafuru",
+      "new": "maaraa",
+      "black": "kemkuro",
+      "white": "hedjshiro",
+      "red": "deshaka",
+      "golden": "nebkogane",
+      "iron": "biaganu",
+      "high": "qataka",
+      "far": "watoo",
+      "sacred": "djesimi",
+      "fair": "neferyo"
+    },
+    "resources": {
+      "salt": "hemshio",
+      "iron": "biaganu",
+      "bronze": "hemtaka",
+      "silver": "hedjgin",
+      "gold": "nebkin",
+      "jade": "hisaa",
+      "silk": "kinuaa",
+      "rice": "itkome",
+      "tea": "tjaa",
+      "horse": "biauma"
+    },
+    "directional": {
+      "upper": "khentue",
+      "lower": "pehushita",
+      "north": "mehet",
+      "south": "resy",
+      "east": "iabhigashi",
+      "west": "imnnishi",
+      "inner": "imyuchi",
+      "outer": "rwtysoto"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Per- (house/temple-of; Egyptian construct)",
+      "Niut- (city-of; Egyptian)",
+      "Pa- (the-; Egyptian)",
+      "Ta- (land-of; Egyptian)",
+      "-shimaa (isle; from Japonic -shima, breathed to the Egyptian -aa)",
+      "-djamaa (mountain; from Japonic -yama, softened)"
+    ],
+    "patronymic_form": "the Egyptian filiation 'sa-' (son of) and theophoric given names are the lead form; the Japonic substrate keeps a reduced honorific -na- / -en- (from -no-) before the given name; nobility carry no inherited surname (filiation + epithet, or a Per- house-name) in the Egyptian manner. The throne fuses both - a Nesut who also heads an island Per- house with a -na- shrine-lineage.",
+    "gendered_endings": {
+      "male": "(consonant) / -mose / -hotep (Egyptian); -maru / -suke softened to -masaa / -seket (Japonic-substrate)",
+      "female": "-et / -it / -nefru (Egyptian); -ko / -hime breathed to -kaa / -himet (Japonic-substrate)"
+    },
+    "diminutive_form": "-sheri (little; Egyptian) / -maru (Japonic-substrate, child/blade/ship)",
+    "compounding_rule": "Egyptian construct-chains (Per-[god], Niut-[god], Pa-[noun], Ta-[land]) layered over fused feature-compounds (quality + island/shrine element): the capital Raiko (the sun-realm, rai + ko), Per-Tjuraa (temple of Tjuraa), Niut-aa (the great city), Kem-djamaa (black-mountain isle), Pa-iushimaa (the isle). Quality + feature in the Egyptian manner: aa (great), kem (black), djeser (sacred) lead the compound."
+  },
+  "title_ladder": {
+    "government": "feudal (a fused sun-temple-and-isle realm: the Nesut and his iry-pat kin at the crown over the Tenka-isles, the Sepati-nomarchs over the niut river-cities, the great island-houses - the daimyo of the shrine-isles - sworn beneath; the hem-netjer priesthood and the kannushi-shrine-keepers serve the one sun-rite together)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hatia",
+        "domain_native": "Hatiat"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Wer-khaset",
+        "domain_native": "Khaset"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Sepati",
+        "domain_native": "Sepat"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Mer-mesha",
+        "domain_native": "Mesha"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Heqa-aa",
+        "domain_native": "Heqat-aat"
+      },
+      "kingdom": {
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Nesut",
+        "domain_native": "Nesutat"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Per-aa",
+        "domain_native": "Per-aat"
+      }
+    },
+    "_tiers_note": "Egyptian ladder, ascending. Hatia (mayor) barony; Wer-khaset (great-one of the frontier-land) march; Sepati/Sepat (nomarch/nome) county; Mer-mesha (army-overseer/general) duchy; Heqa-aa (great ruler) principality; Nesut (king) kingdom; Per-aa (Pharaoh, lit. the Great House) empire over the Per-aat. DISPLAY titles are English except the kingdom which uses the approved commonly-known term 'Pharaoh' (set in 'ruler', its native Egyptian form remaining Nesut) and the duchy which uses 'Daimyo' (the great island-house lord, the Japonic-substrate co-rank, its native Egyptian form remaining Mer-mesha). NOTE the foreign term 'Pharaoh' sits at the kingdom tier here (the solar god-king of the realm) while the native Per-aa caps the empire; the English 'Emperor' is shown at the empire tier. The Japonic substrate keeps its shugo-governor and kannushi-priest beneath the Egyptian crown; the hem-netjer (god's-servant) and the scribal sesh stand outside the ladder. Rank native-forms use the real Egyptian register (allowed).",
+    "heir": "Sa-Nesut (king's son / crown prince); Iry-pat (hereditary heir)",
+    "honorifics": {
+      "lord": "Neb",
+      "lady": "Nebet",
+      "champion": "Aha (Egyptian warrior) / Bushaa (the warrior, from Japonic bushi, breathed)",
+      "your_grace": "Hem-ek (your person/majesty)",
+      "elder": "Semsu (the eldest / elder)"
+    },
+    "vassalage": {
+      "liege": "Neb",
+      "vassal": "Bak (servant)",
+      "fealty": "Ankh (the living-oath)",
+      "tribute": "Inu / Nengaa (the isle-render, from Japonic nengu)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the kingdom which uses the approved commonly-known term 'Pharaoh' (the solar god-king) and the duchy which uses 'Daimyo' (the great island-house lord). The *_native conlang (Egyptian) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Per-aa": "Per-aat",
+      "Nesut": "Nesyt",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha-et",
+      "Sepati": "Sepatit",
+      "Wer-khaset": "Wert-khaset",
+      "Hatia": "Hatiat"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "Pharaoh": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Pharaoh (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "given (often theophoric) + Egyptian filiation (sa-X) and/or earned epithet; no inherited surname; the Japonic-substrate folk add a reduced honorific -na- shrine-lineage before the given name; order given-first (both parents agree - the Egyptian given-first and the reshaped Japonic honorific link).",
+    "surname_source": [
+      "Egyptian filiation (sa- = son-of)",
+      "theophoric given (Tjuraa-hotep = Tjuraa-is-content)",
+      "Japonic-substrate shrine-lineage (-na-)",
+      "deed/office epithet"
+    ],
+    "dual_register": "the temple-and-Nile register carries Egyptian theophoric names (X-hotep, X-mose, Mery-X, Sa-X) on the morphed canon-stems; the island-shrine substrate carries fused given names on the kami-morphs (Terashaa-, Haganetj-) with -masaa/-himet endings breathed to the lean phonology.",
+    "theophoric": "Egyptian devotional constructs lead: X-hotep (X-is-content), X-mose (X-is-born), Mery-X (beloved-of-X), Sa-X (son-of-X) - e.g. Tjuraa-hotep, Mery-Riaret; the shrine register builds on the Japonic kami-morphs: Terashaa-mose (Terashaa-is-born), Haganetj-hotep, Mery-Megumaa.",
+    "diminutive": "-sheri (Egyptian) / -maru (Japonic-substrate)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (family_near_eastern / abydosian, the egyptian column: Tjuraa, Oranetj, Geandaa, Numenaa, Riaret, Atjernaa), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, hardened/breathed to Egyptian shape), never real Egyptian gods or Shinto kami. The fused rite identifies the sun-temple-power and the shrine-kami as one face - the sun-disc and the rising sun as one: the hem-netjer of the per-netjer and the kannushi of the torii keep the same powers. All three alignments; strong solar god-king and funerary cult fused with the household shrine and ancestral kami.",
+    "the_one": "Atjernaa (Egyptian; Jp shrine-name Takamaa-no-kami) - the hidden distant maker, the High-Heaven One above the myriad powers, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tjuraa (Jp Terashaa) - the sun and right-order, the solar disc and the rising sun",
+      "Orlandus": "Oranetj (Jp Haganetj) - iron, oath, war",
+      "Gaiandus": "Geandaa (Jp Iwanaa) - the enduring earth and mountain",
+      "Numeno": "Numenaa (Jp Amatkazaa) - air, sky and scribe-wisdom",
+      "Realta": "Riaret (Jp Megumaa) - the mother, mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Atjernaa, Tjuraa the just sun, Oranetj of the sworn oath, Riaret the merciful - at the per-netjer and the torii-grove alike, and names the Chaotic powers as the -kin of the great serpent Hefau or the aramitama (the wild spirits), warded; the right-order of the sun-temple and the kami-rite bind together",
+      "Neutral": "the deified dead (the akhu inscribed on the tomb-stele and the senzaa enshrined at the household jinper) and the river-and-isle spirits of the per-netjer and the shrine-isles; the great powers invoked at temple and torii situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-flame and the devouring serpent, the storm-kami and the mountain-oni - and names the Lawful powers, and Atjernaa, as the tyrant-powers to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the -kin of the great serpent Hefau (Egyptian) or the aramitama (Japonic wild spirits), keep their morphs + an epithet: Maraxus -> Marakhu the City-Burner (Jp Takebaa the War-Flame); Vacidus -> Wakedjet the Devouring Hefau (Jp Utsuraa the Devouring Void); Lusanto -> Lusantj the Hoard-Worm (Jp Koganaa-Orochaa the gold serpent).",
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte) / Mikaa (shrine-attendant)",
+      "3": "Hem-netjer (god's-servant/priest) / Kannushaa",
+      "5": "Hem-netjer Sen-nu (second prophet) / Negaa",
+      "7": "Hem-netjer Tepy (first prophet/high priest) / Gujaa",
+      "9": "Hem-netjer Aa (great prophet) / Saishaa (high priest of the realm)"
+    },
+    "religious_orders_pattern": "the Per-netjer (god's-house/temple) or the Jinper (shrine-isle temple) of [power]: 'the Per-netjer of Tjuraa', 'the Jinper of Terashaa', within its pylon-court and torii-grove.",
+    "saints_pattern": "the deified dead (akhu) and sun-god-kings venerated at tomb-temples ('the justified [name]', maa-kheru), and the great ancestors enshrined as kami at the isle-jinper (the honored dead); 'the kami [name]'.",
+    "holy_symbol_motifs": {
+      "Tjuraa": "a sun-disc above the feather of right-order, mirrored in a rising-sun mirror",
+      "Oranetj": "an iron blade crossed before a torii and the temple-standard",
+      "Geandaa": "the alluvial field and the island-mountain beneath the pylon"
+    }
+  },
+  "banks_patterns": {
+    "ships": "solar-barques and isle war-keels: 'Barque of Tjuraa', 'the Wave-Cutter', 'Beloved of the River', 'Terashaa-maru'",
+    "military_units": "the [god] Division and the isle-house sonae (battle-formations): 'the Division of Oranetj', 'the Sun-Standard', 'the Crimson Sonae'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Floating Pylon', 'The Sun and Torii'",
+    "dungeons_ruins": "tombs and pyramids of the sun-god-kings and fallen isle-shiro: 'the Tomb of Per-aa [name]', 'the Sunken Per-netjer', 'the haunted Jinper of [name]', 'the ruined Shirbakh'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tjuraa-hotep",
+      "Tjuraa-mose",
+      "Oranetj-mose",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Geandaa-nakht",
+      "Sa-Tjuraa",
+      "Terashaa-mose",
+      "Haganetj-hotep",
+      "Mery-Terashaa",
+      "Iwanaa-nakht",
+      "Terashaa-em-akh",
+      "Haganetj-mose",
+      "Amatkazaa-hotep",
+      "Takebaa-maru"
+    ],
+    "personal_f": [
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Geandaa-et",
+      "Riaret-nefret",
+      "Sat-Tjuraa",
+      "Numenaa-et",
+      "Tjuraa-nefru",
+      "Terashaa-nefru",
+      "Megumaa-himet",
+      "Mery-Megumaa",
+      "Terashaa-et",
+      "Megumaa-nefret",
+      "Sat-Terashaa",
+      "Riaret-himet",
+      "Sat-Riaret"
+    ],
+    "houses_filiation": [
+      "per-Tjuraa",
+      "per-Oranetj",
+      "per-Geandaa",
+      "per-Numenaa",
+      "per-Riaret",
+      "sa-Tjuraa",
+      "per-Terashaa (the chief shrine-isle house)",
+      "per-Haganetj",
+      "per-Iwanaa",
+      "per-Megumaa",
+      "the Kem-djamaa house (of the black-mountain isle)",
+      "the Aka-iushimaa house (of the red isle)"
+    ],
+    "epithets_cognomina": [
+      "maa-kheru (the justified)",
+      "Sun-faced",
+      "the River-blessed",
+      "of the Sun-Isles",
+      "Gold-of-Honor",
+      "the Far-marching",
+      "the Wave-rider",
+      "the Enduring"
+    ],
+    "flagship_settlements": [
+      "Raiko (the chief seat - the sun-realm, rai + ko)",
+      "Per-Tjuraa (the great temple-city of the sun)",
+      "Niut-aa (the great city)",
+      "Kar-Terashaa (Terashaa's-port)",
+      "Aka-shirbakh (the red citadel)",
+      "Pa-iushimaa (the holy isle)"
+    ]
+  }
+}

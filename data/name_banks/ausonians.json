@@ -1,0 +1,443 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Valerii",
+      "the Cornelii",
+      "the Aurelii",
+      "the Fabii",
+      "the Theronides",
+      "the Aristides",
+      "the Lysandrides",
+      "the Tullii",
+      "the Charaxides",
+      "the Octavii",
+      "the Telamonides",
+      "the Severi"
+    ],
+    "dungeon_ruin": [
+      "the Catacombs of Divus Aurelius",
+      "the Labyrinth of Heros Theron",
+      "the Sunken Akropolis"
+    ],
+    "epithet": [
+      "Ferrus the Iron",
+      "ho Megas",
+      "Sapiens the Wise",
+      "ho Dikaios",
+      "Aquila the Eagle",
+      "Nikephoros",
+      "Magnus the Great",
+      "ho Sophos",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Altusakra",
+      "Argyrusakta",
+      "Ateramnis",
+      "Austercampus",
+      "Boreascollis",
+      "Elaiumdrymus",
+      "Extreremus",
+      "Ferrumhodus",
+      "Ferrusisthmus",
+      "Frumenkleisura",
+      "Ikhthyskolpus",
+      "Imuslacus",
+      "Inferusmarthalia",
+      "Intramons",
+      "Khryseusnesus",
+      "Khrysusokeanus",
+      "Leukuspalus",
+      "Longusrhakis",
+      "Magnusrivus",
+      "Marmarusemita",
+      "Novusilva",
+      "Oinustenum",
+      "Parvusvada",
+      "Porphyravallis",
+      "Propusvia",
+      "Pulkherakra",
+      "Rufusakta",
+      "Sacrieronamnis",
+      "Saliscampus",
+      "Superuscollis"
+    ],
+    "military_unit": [
+      "s legions and the city-phalanxes:",
+      ","
+    ],
+    "personal_female": [
+      "Aurelia Valeria",
+      "Theodora Charixene",
+      "Livia Cornelia",
+      "Daphne Aristea",
+      "Octavia Drusilla",
+      "Arete Lysandra",
+      "Tullia Caelia",
+      "Phaidra Nikaia",
+      "Marcia Fabia",
+      "Kallisto Leontia",
+      "Antonia Severina",
+      "Pelagia Demetria",
+      "Florentia Sabina",
+      "Eudora Hiera",
+      "Junia Portia",
+      "Stratonike Melaina",
+      "Aemilia Lucilla",
+      "Eirene Xanthe",
+      "Gaiandus",
+      "Gaiandusa",
+      "Numeno",
+      "Numenoa",
+      "Orlandus",
+      "Orlandusa",
+      "Realta",
+      "Realtaa",
+      "Tulrius",
+      "Tulriusa"
+    ],
+    "personal_male": [
+      "Marcus Valerius",
+      "Lucius Caelius",
+      "Theron Charaxides",
+      "Aurelian Fabius",
+      "Damon Aristides",
+      "Cassian Severus",
+      "Stratos Lysandrides",
+      "Tullius Octavian",
+      "Hieron Nikandrides",
+      "Florian Cornel",
+      "Phaedros Dioklides",
+      "Vitus Drusus",
+      "Menelos Telamonides",
+      "Severus Albinus",
+      "Ariston Eumenides",
+      "Maxen Tiberian",
+      "Diokles Peliades",
+      "Octavian Fabius",
+      "Eurymachos Leontides",
+      "Cornel Vitellius",
+      "Gaiandus",
+      "Gaiandusus",
+      "Numeno",
+      "Numenous",
+      "Orlandus",
+      "Orlandusus",
+      "Realta",
+      "Realtaus",
+      "Tulrius",
+      "Tulriusus"
+    ],
+    "settlement": [
+      "Urbopolis Magna",
+      "Portilimen",
+      "Neapolis",
+      "Castra Ferrata",
+      "Scholakadem",
+      "Akra Leuke",
+      "Altusagora",
+      "Argyrusakropolis",
+      "Aterakta",
+      "Austerapoikia",
+      "Boreasasty",
+      "Elaiumcastrurion",
+      "Extracollis",
+      "Ferrumportilimen",
+      "Ferrusurbopolis",
+      "Frumenvada",
+      "Ikhthysvicellus",
+      "Imusvicus",
+      "Inferusagora",
+      "Intrakropolis",
+      "Khryseusakta",
+      "Khrysusapoikia",
+      "Leukusasty",
+      "Longuscastrurion",
+      "Magnuscollis",
+      "Marmarusportilimen",
+      "Novusurbopolis",
+      "Oinusvada",
+      "Parvusvicellus",
+      "Porphyravicus",
+      "Propusagora",
+      "Pulkherakropolis",
+      "Rufusakta",
+      "Sacrieronapoikia",
+      "Salisasty",
+      "Superuscastrurion",
+      "Ultracollis",
+      "Vetusportilimen",
+      "Altusurbopolis",
+      "Argyrusvada"
+    ],
+    "ship": [
+      "Aquila",
+      "Nike",
+      "Pride of Ausonia",
+      "Boat of Tulrius"
+    ],
+    "tavern": [
+      "The Gilded Amphora",
+      "The Bronze Helm and Eagle",
+      "The Altus Argyrus",
+      "The Ater Elaium",
+      "The Ferrus Ferrum",
+      "The Imus Frumen",
+      "The Khryseus Ikhthys",
+      "The Leukus Khrysus",
+      "The Magnus Marmarus",
+      "The Novus Oinus",
+      "The Parvus Porphyra",
+      "The Pulkher Salis"
+    ]
+  },
+  "culture_id": "ausonians",
+  "family": [
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_ausonians.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "ausonians",
+  "lexicon": {
+    "adjectives": {
+      "black": "ater",
+      "fair": "pulkher",
+      "far": "ultra",
+      "golden": "khryseus",
+      "great": "magnus",
+      "high": "altus",
+      "iron": "ferrus",
+      "little": "parvus",
+      "low": "imus",
+      "new": "novus",
+      "old": "vetus",
+      "red": "rufus",
+      "sacred": "sacrieron",
+      "white": "leukus"
+    },
+    "directional": {
+      "far": "longus",
+      "inner": "intra",
+      "lower": "inferus",
+      "near": "propus",
+      "north": "boreas",
+      "outer": "extra",
+      "south": "auster",
+      "upper": "superus"
+    },
+    "feature_words": {
+      "bay": "kolpus",
+      "cape": "akra",
+      "coast": "akta",
+      "ford": "vada",
+      "forest": "silva",
+      "hill": "collis",
+      "isle": "nesus",
+      "lake": "lacus",
+      "marsh": "palus",
+      "mountain": "mons",
+      "narrows": "stenum",
+      "neck": "isthmus",
+      "ocean": "okeanus",
+      "pass": "kleisura",
+      "plain": "campus",
+      "ridge": "rhakis",
+      "river": "amnis",
+      "road": "via",
+      "sea": "marthalia",
+      "stream": "rivus",
+      "track": "semita",
+      "vale": "vallis",
+      "waste": "eremus",
+      "way": "hodus",
+      "wood": "drymus"
+    },
+    "resources": {
+      "fish": "ikhthys",
+      "gold": "khrysus",
+      "grain": "frumen",
+      "iron": "ferrum",
+      "marble": "marmarus",
+      "oil": "elaium",
+      "purple_dye": "porphyra",
+      "salt": "salis",
+      "silver": "argyrus",
+      "wine": "oinus"
+    },
+    "settlement_words": {
+      "citadel": "akropolis",
+      "city": "urbopolis",
+      "colony": "apoikia",
+      "fort": "castrurion",
+      "hamlet": "vicellus",
+      "market": "agora",
+      "port": "portilimen",
+      "town": "asty",
+      "village": "vicus"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Latinate [adjective|resource](stem) + feature-word, eliding before a vowel (ater + silva -> Atrasilva), layered over Hellenic [adjective|resource]-o-[feature] linking compounds (leukus + akra -> Leukakra; Nea + polis -> Neapolis): the capital Urbopolis Magna, the harbor-city Portilimen, the academy-town Scholakadem.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "is"
+      ],
+      "male": [
+        "us",
+        "ius",
+        "eus"
+      ]
+    },
+    "patronymic_form": "the Latinate ruling stock keep the gens-trinomial lineage-name (praenomen + nomen + cognomen); the Hellenic learned and civic register keep the patronymic -ides (son-of) and the polis demonym; the throne fuses both - an Imperator who carries a Latin gens and a Greek academy-style honorific.",
+    "toponymic_suffixes": [
+      "um",
+      "ia",
+      "ium",
+      "polis",
+      "ion",
+      "castra"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen forums and buried temene: 'the Catacombs of Divus Aurelius', 'the Labyrinth of Heros Theron', 'the Sunken Akropolis'",
+    "military_units": "the Imperator's legions and the city-phalanxes: 'Legio Prima Ferrata (the Iron Legion)', 'the Bronze Phalanx', 'the Eagle-and-Olive'",
+    "ships": "war-galleys and merchant triremes: 'Aquila' (the eagle), 'Nike' (victory), 'Pride of Ausonia', 'Boat of Tulrius'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Bronze Helm and Eagle'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate near-canonical keys PRIMARY (agrippan IS the canon's home register; Tulrius/Orlandus/Gaiandus/Numeno/Realta and Aeternus the One stand near-unchanged), Hellenic learned variants SECONDARY (the achillean -os/-os morphs, recognizably the same powers), never real Greco-Roman gods. All three alignments worshipped (standard lens).",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Neokorus",
+      "3": "Sacerdos (priest) / Hiereus",
+      "5": "Flamen / Arkhiereus",
+      "7": "Pontifex (high priest) / Hierophant",
+      "9": "Pontifex Maximus / Megas Hierophant"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as daimones (Hellenic demons) or named with a Latin malum-epithet, keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Hellenic Maraxos the City-Burner); Vacidus -> Vacidus the Unmaker (Hellenic Vakidos-daimon); Lusento -> Lusentus the Coin-Serpent (Hellenic Lysentos the Hoard-Worm).",
+    "holy_symbol_motifs": {
+      "Numeno": "the open scroll beneath the night-sky and the academy-lamp",
+      "Orlandus": "an iron oath-ring on a tower crossed with the legion-eagle",
+      "Tulrius": "a rayed sun-disc above a balance and an olive-branch"
+    },
+    "religious_orders_pattern": "the Collegium (Latin) or Temenos (Greek) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Temenos of Numenos'.",
+    "saints_pattern": "the Divi (the deified founders and law-givers of the gens, Divus [name]) and the Heroes (the deified founders of the polis, Heros [name]), honored at the templum and the heroon.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaiandus (Hellenic Gaiandros) - the enduring earth",
+      "Numeno": "Numeno (Hellenic Numenos) - sky, wisdom, the scholar's lord",
+      "Orlandus": "Orlandus (Hellenic Orlandros) - iron, oath, war",
+      "Realta": "Realta (Hellenic Realte) - the mother, mercy",
+      "Tulrius": "Tulrius (Hellenic Tulrios) - the sun and judgment, the canon-key near-unchanged"
+    },
+    "the_one": "Aeternus (the One / True God, near-canonical; Hellenic learned variant Aiternos) - honored in liturgy, not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aeternus - as the tyrant-gods to be defied; the cult of Maraxos the Tyrant-Flame burns the eagle and the olive alike.",
+      "Lawful": "venerates the Lawful powers of the canon - Aeternus, Tulrius the just, Orlandus of the sworn legion, Realta the merciful, Numeno of the academy - at the templum and the temenos alike; the imperial law and the philosopher's reason are held to bind as one, and the Chaotic powers are named daimones, warded.",
+      "Neutral": "the deified ancestors (the Divi of the gens and the Heroes of the polis) and the city-spirits of the forum and the agora; the great powers invoked at the templum-grove and the temenos situationally."
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Latinate ladder, ascending, with the Hellenic substrate co-titles fused beneath. Castellanus (castle-holder) barony; Limitarkhus (march-commander; Lat limes + Gk -arkhos) march; Komarkhus (district-archon; the county ruler displays as the approved foreign term 'Archon') county over a Komarkhia; Strategus (the general; the Greek war-command taken as the duke) duchy; Princeps (the first-man) principality; Basileus (king) kingdom over a Basileia; Imperator-Autokrator (the Latin imperator fused with the Greek autokrator) empire over the Imperium (the empire ruler displays as the approved foreign term 'Imperator'). The poleis keep their Greek Eparch (governor) and the legion its Latin Legatus beneath the imperial crown. The philosophos (scholar) and the Pontifex (priest) stand outside the ladder. Rank titles fuse the real Latin and Greek registers (allowed, catalog 5.3).",
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Archon' at county and 'Imperator' at empire). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Archon": "Archontissa",
+      "Baron": "Baroness",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Basileus": "Basilissa",
+      "Castellanus": "Castellana",
+      "Imperator-Autokrator": "Imperatrix-Autokrateira",
+      "Komarkhus": "Komarkhissa",
+      "Limitarkhus": "Limitarkhissa",
+      "Princeps": "Principissa",
+      "Strategus": "Strategissa"
+    },
+    "government": "feudal (a Latinate imperium over a shared Greco-Latin civilization: the Imperator and his Princeps-kin at the crown, the Comites/Archontes over the provinces and poleis, the Castellani sworn to the legion; the Greek learned orders - the philosophoi, the strategoi-admirals, the agora-magistrates - serve and counsel beneath)",
+    "heir": "Caesar-Diadokhus (the heir-designate; the Latin Caesar fused with the Greek diadochos, 'the successor')",
+    "honorifics": {
+      "champion": "Eques (Latin knight) / Hippeus (Hellenic knight)",
+      "elder": "Presbys (the elder)",
+      "lady": "Domina / Kyria",
+      "lord": "Dominus / Kyrios",
+      "your_grace": "Eminentia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Castellania",
+        "ruler": "Baron",
+        "ruler_native": "Castellanus"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Komarkhia",
+        "ruler": "Archon",
+        "ruler_native": "Komarkhus"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Strategia",
+        "ruler": "Duke",
+        "ruler_native": "Strategus"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Imperium",
+        "ruler": "Imperator",
+        "ruler_native": "Imperator-Autokrator"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Basileia",
+        "ruler": "King",
+        "ruler_native": "Basileus"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Limitarkhia",
+        "ruler": "Marquis",
+        "ruler_native": "Limitarkhus"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Principatus",
+        "ruler": "Prince",
+        "ruler_native": "Princeps"
+      }
+    },
+    "vassalage": {
+      "fealty": "Fides (troth) / Horkus (Hellenic oath)",
+      "liege": "Patronus / Hegemon",
+      "tribute": "Tributum / Phorus",
+      "vassal": "Cliens / Symmakhus (Hellenic ally)"
+    }
+  }
+}

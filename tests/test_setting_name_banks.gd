@@ -93,9 +93,9 @@ func test_inheritance_recorded() -> void:
 	var vallica := NameBankLoader.bank_for("vallica")
 	check(NameBankLoader.family(vallica) == ["classical"],
 		"vallica inherits the single classical family")
-	var aryamark := NameBankLoader.bank_for("aryamark")
-	check(NameBankLoader.family(aryamark).size() == 2,
-		"a hybrid (aryamark) is a cross-family blend of two bases")
+	var arjungs := NameBankLoader.bank_for("arjungs")
+	check(NameBankLoader.family(arjungs).size() == 2,
+		"a hybrid (arjungs) is a cross-family blend of two bases")
 
 
 func test_endonym_only() -> void:

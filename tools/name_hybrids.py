@@ -190,8 +190,8 @@ def pair_map():
 
 if __name__ == "__main__":
     pm = pair_map()
-    sample = ["romkem", "sargonid", "serican", "novarom", "aryamark", "kemetric",
-              "brythald", "hellaria", "zarkemet", "longkem", "hinoshinar", "tollangard"]
+    sample = ["djetani", "tamkari", "lijian", "parinu", "arjungs", "kaimets",
+              "brythald", "zetana", "hekana", "tianet", "barushi", "tolltungs"]
     print(f"{'kit(old)':12s} {'parents':22s} {'arch':12s} {'NEW name':14s} gloss / note")
     for kit in sample:
         if kit not in pm:

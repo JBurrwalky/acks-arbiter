@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "kemenu",
+      "demonym": "Kemenu",
+      "toponym": "Denalikem",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_40",
+      "culture_synthesis_parents": [
+        "kemetra",
+        "wendaki"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.85
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.4,
+      "size_exponent_bias": 0.2
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.65,
+      "collapse_proneness": 0.45,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.25
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.472,
+        "religious": 0.285,
+        "mercantile": 0.13,
+        "arcane": 0.112
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "chariots",
+        "archers",
+        "horse_archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "mysticism": 1.5,
+        "societal_orthodoxy": 1.5,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0,
+        "civility": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.54,
+      "primitive": 0.46
+    }
+  },
+  "flavor": {
+    "name_bank_key": "kemenu",
+    "phonemic_palette": "near_eastern (egyptian, Old/New Kingdom register: the per-aa god-king and nesut crown, the per-netjer temple-bureaucracy and hem-netjer priesthood, the itru river-cult and Nile-valley nomes, construct toponyms Per-/Niut-/Ta-, dj/tj/kh consonants, -aa/-et endings, VSO sentence-shape) / north_american (plains, Comanche-leaning: the puuku horse-herds and kutsu bison of the open sonipi grassland and the high toya mountain, the akicita warrior-societies and paraibo chiefs raised by council, ejective consonants and glottal stops, polysynthetic descriptive compounds, the vision-quest puha and the medicine-cairn)",
+    "language": {
+      "language_name": "near_eastern",
+      "language_family": "near_eastern, north_american",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "revered"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Kemenu"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Kemenu — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Kemenu are a warlike martial aristocracy people, a first-order synthesis of Kemetra and Wendaki [Conquest Aristocracy (wendaki over kemetra)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, chariots, archers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of kemetra x wendaki [Conquest Aristocracy (wendaki over kemetra)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

@@ -1,0 +1,372 @@
+{
+  "kit_id": "hekana",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern"
+  ],
+  "_inherits_note": "Intra-family blend: both parents are near_eastern sub-palettes (Persian/axsatran prestige lean + Egyptian/abydosian substrate), so inherits lists near_eastern once.",
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_28",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "old_persian (axsatran) backbone + egyptian (abydosian) substrate (Persian-leaning fusion: the satrapal court-tongue over the Nile temple-register)",
+  "synthesis_sources": [
+    "BASE_04",
+    "BASE_05"
+  ],
+  "homeland": "Zarkemet",
+  "blend": {
+    "backbone": "old_persian / axsatran register: the satrapal empire-tongue (Xshayathiya/Xshacapavan, vith-houses, Arta the Truth, -aspa/-arta/-farnah/-data endings, the ezafe genitive '-ahya', heavy-syllable stress shifted toward a flowing poetic meter)",
+    "overlay": "egyptian / abydosian: the Nile (itru) and its inundation, the per-netjer temple and its hem-netjer priesthood, the funerary cult of the justified dead, dj/tj/kh consonants and -aa/-et endings, the per/niut construct toponyms",
+    "lean": "Persian-heavy - an Achaemenid satrapy-empire planted on the Nile: the Shah crowned as Pharaoh, the rose-court (the paridaida-garden and the apadana-hall) raised over the temple of the river. The Persian rule/kin/court register dominates; the Egyptian substrate endures in the words for the river, the temple, the tomb, and the worked material."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-register hybrid under the base/hybrid model. BASE_04 (Achaemenid Persia / Axsatran) x BASE_05 (Ancient Egypt / Abydosian). CIV/CLAN DECIDED by inheritance: both parents are Civilized (feudal), so Zarkemet is Civilized (feudal). Concept = Achaemenid Egypt: a Persian satrapy-empire on the Nile, the Shah (Xshayathiya) crowned and worshipped as Pharaoh (Per-aa), the satrapal rose-court enthroned over the temple-cities of the river. Backbone/LEAN = Old Persian (the Axsatran satrapal register: the ruling court, the vith-houses, the Arta/Truth ideal, the -aspa/-farnah/-data name-elements); substrate = Egyptian (the Abydosian Nile/temple/funerary register: itru the river, per-netjer the temple, the justified dead, dj/tj/kh phonology). Common-word lexicon is a single FUSED tongue (gdd-hybrid-conlang-fusion.md) - Egyptian land/temple/material roots run through Old-Persian phonology, with portmanteaus marking the blended institutions; rank titles use the real Old-Persian/satrapal register (allowed, catalog 5.3) with the Egyptian temple co-titles beneath. DEITY names are morphs of the Agrippan canon from both parents - Persian-shifted canon morphs PRIMARY (the Axsatran set: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna), Egyptian morphs SECONDARY (the Abydosian set), never real Persian/Egyptian gods. Approved foreign display term: the kingdom-tier ruler shows as 'Shah' (the iconic Persian throne; recorded in approved_foreign_terms_used). Religiously TOLERANT in the Axsatran manner: Asturna's peace shelters the Nile cults under the satrapal crown; all three alignments worship (Lawful upholds Arta, Chaotic serves Drauga the Lie). Ruler/domain DISPLAY titles are English (or the approved 'Shah'); conlang titles live in ruler_native/domain_native for NPC dialogue.",
+  "phonology": {
+    "palette": "Old Persian (axsatran) backbone - vowels a i u with long a/i/u, spirants th(0)/x(kh)/f, sibilants s/sh/z/zh and c(ts), r l, nasals m n, semivowels y v/w, aspirate h; signature endings -a/-ah/-iya/-ana/-aspa/-arta/-farnah/-data and the ezafe genitive '-ahya' - meeting an Egyptian substrate: the dj/tj/kh consonants, the long -aa and feminine -et, the per/niut construct toponyms. Per the CSV: breathy vowels carried on a poetic meter; grammar is VSO with an aspect-based ezafe construction. Theophoric on the Persian-shifted canon morphs (Turvasa-, Urlaspa-, Arta-, Baga-) with Egyptian temple-variants (Per-, Mery-) beneath.",
+    "phonotactics": "CV(C); permitted Persian clusters xsh-, sp-, st-, fr-, vr-, thr- absorbing the Egyptian dj/tj/kh as single onsets; vowel length distinctive and breathy; poetic-meter stress (heavy syllables, but softened to a flowing line); the ezafe '-ahya' binds the construct; dithematic Persian court-names over Per-/Niut-/Atash- construct toponyms.",
+    "transparent_ratio": 0.35,
+    "fusion_rules": {
+      "lean": "iranian (old persian) phonology dominant",
+      "sound_changes": [
+        "Egyptian dj/tj/kh kept but reshaped to Persian onsets: dj>z/zh, tj>ch/sh, kh>x; the Egyptian glottal weakens to 0",
+        "Egyptian endings adapt to the Persian vowel-system: long -aa>-a/-ah, feminine -et>-a/-at, -u>0; roots take a Persian -a/-ah where they would end bare",
+        "Old-Persian stress and the ezafe '-ahya' imposed on every root; the breathy long vowels of Egyptian fold into the distinctive Persian a/i/u length, carried on a poetic line",
+        "retain the Persian spirants th/x/f and sibilants sh/z/zh and a signature Egyptian dj/tj/kh per word so both ancestries stay audible; very short Egyptian roots take a Persian -a ending"
+      ],
+      "source_tilt": "Egyptian roots for the Nile/temple/funerary/material and staple words (the river-substrate keeps its land: itru, per-netjer, nebu, deshret); Old-Persian roots for rule/kin/court/land/abstract/war words (the satrapal register: pura, puthra, vith, vazraka, aspa); every chosen root is then run through the Persian sound-law so the split is invisible at the surface.",
+      "portmanteaus": [
+        "river itru+rautah>itrautah",
+        "city niut+pura>niupura",
+        "fort menenu+dida>menudida",
+        "temple per-netjer+atashana>parnatashana",
+        "citadel sebakh+vazraka-dida>sebvazdida",
+        "son sa+puthra>saputhra",
+        "daughter sat+duxta>satduxta",
+        "sacred djeser+yazata>zeshazata"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Egyptian Nile/temple/funerary/material roots + Old-Persian rule/kin/court/land roots, all run through one Old-Persian-shaped sound-law (dj>z/zh, tj>ch/sh, kh>x; Egyptian endings folded into Persian -a/-ah; ezafe-bound, poetic stress); portmanteaus mark the blended institutions and the married bloodline. NO slash-pairs - one word per concept.",
+    "feature_words": {
+      "river": "itrautah",
+      "stream": "mervish",
+      "lake": "shekena",
+      "sea": "wazdraya",
+      "bay": "xenta",
+      "cape": "zeshra",
+      "isle": "iudvipa",
+      "mountain": "zewkaufa",
+      "hill": "qagarda",
+      "ridge": "axparshva",
+      "forest": "mechvana",
+      "desert": "deshreta",
+      "plain": "sexravah",
+      "marsh": "ideanupa",
+      "ford": "zatvitar",
+      "pass": "roduvara",
+      "oasis": "wexata",
+      "coast": "wezpada",
+      "neck": "nexgardan",
+      "narrows": "segtanga",
+      "road": "watpatha",
+      "way": "mitraha",
+      "track": "shempand"
+    },
+    "settlement_words": {
+      "hamlet": "wexvith",
+      "village": "shervis",
+      "town": "niudahyu",
+      "city": "niupura",
+      "fort": "menudida",
+      "port": "merdrayapura",
+      "market": "xutvahanam",
+      "temple_town": "parnatashana",
+      "citadel": "sebvazdida"
+    },
+    "kinship": {
+      "son": "saputhra",
+      "daughter": "satduxta",
+      "house": "pervith",
+      "father": "pita",
+      "ancestor": "tepifravashi"
+    },
+    "adjectives": {
+      "great": "vazraka",
+      "little": "kasnedjes",
+      "old": "zarvan",
+      "new": "navmaw",
+      "black": "kemsyava",
+      "white": "hezspaita",
+      "red": "ruxsher",
+      "golden": "nebzaranya",
+      "iron": "biaayah",
+      "high": "qabarzan",
+      "far": "duraya",
+      "sacred": "zeshazata",
+      "fair": "nefnaiba",
+      "true": "arta",
+      "false": "drauga"
+    },
+    "resources": {
+      "salt": "hemnamaka",
+      "iron": "biaayah",
+      "bronze": "hemtraudha",
+      "silver": "hezardata",
+      "gold": "nebzaranya",
+      "incense": "sentjbauidi",
+      "grain": "ityava",
+      "lapis": "xesbkasaka",
+      "fish": "remasya",
+      "horse": "aspa"
+    },
+    "directional": {
+      "upper": "xentupari",
+      "lower": "pehathah",
+      "north": "mehapaxtara",
+      "south": "resnimroz",
+      "east": "ushastara",
+      "west": "shamtara",
+      "inner": "imyantar",
+      "outer": "rwtpara",
+      "near": "nazda",
+      "far": "duraya"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-pura (city of; Old Persian)",
+      "Dida- (fort of; Old Persian)",
+      "Atash- (fire of; Old Persian)",
+      "Per- (house/temple of; Egyptian)",
+      "Niut- (city of; Egyptian)",
+      "-stana (place of; Old Persian)",
+      "Pa- (the; Egyptian)"
+    ],
+    "patronymic_form": "the Persian court-and-satrapal nobility carry a vith-house (vith-X) and a satrapal/court office, with filiation 'X-ahya puthra' (son of X) or compact 'X-puthra'; the Egyptian temple-and-river populace keep the 'sa-' (son of) filiation and theophoric per-constructs; the throne fuses both - a Xshayathiya who is also crowned Per-aa and carries a vith-house over a Per- temple-name.",
+    "gendered_endings": {
+      "male": "-a / -ah / -aspa (Old Persian); -ef / (consonant) (Egyptian)",
+      "female": "-a / -i / -banu (Old Persian); -et / -nefru (Egyptian)"
+    },
+    "diminutive_form": "-aka / -ka (Old Persian) / -sheri (Egyptian)",
+    "compounding_rule": "Old-Persian quality/relation + element (Arta-xshaca, truth-realm; Baga-data, god-given), construct via the ezafe '-ahya', layered over Egyptian per/niut construct-chains (Per-[god], Niut-[name]): the capital Zarkemet (Zar- rose/gold + Kemet the black-land), Dida-Itrautah (fort of the river), Per-Turvasa (temple of the sun)."
+  },
+  "title_ladder": {
+    "government": "feudal (an Old-Persian satrapal court enthroned over the Egyptian temple-cities of the Nile: the Xshayathiya - crowned also as Per-aa - and his vispuhra-kin at the crown, the Xshacapavan-satraps over the nomes, the marzapana-wardens of the marches; the hem-netjer priesthood and the sepati nomarchs serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Vispati",
+        "domain_native": "Vis"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Marzapana",
+        "domain_native": "Marz"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Framatar",
+        "domain_native": "Parada"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Xshacapavan",
+        "domain_native": "Xshacapavanam"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Vispuhra",
+        "domain_native": "Dahyu"
+      },
+      "kingdom": {
+        "ruler": "Shah",
+        "domain": "Kingdom",
+        "ruler_native": "Xshayathiya",
+        "domain_native": "Xshacam"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Xshayathiya Xshayathiyanam",
+        "domain_native": "Vispa-Dahyu"
+      }
+    },
+    "_tiers_note": "Old-Persian (axsatran) ladder, ascending, with the Egyptian temple-substrate co-titles beneath. Vispati (clan-lord of a vis) barony; Marzapana (march-warden, the marzban) march; Framatar (appointed governor) county over a Parada; Xshacapavan (SATRAP, protector of the realm) duchy over a satrapy (Xshacapavanam); Vispuhra (prince of the blood) principality over a great province (Dahyu); Xshayathiya (king) kingdom over a Xshacam - the kingdom-tier ruler shown by the approved foreign term 'Shah' (the Persian throne), crowned also as Per-aa (Pharaoh) on the Nile; Xshayathiya Xshayathiyanam (King of Kings) empire over the Vispa-Dahyu, all the lands. The conquered temple-cities keep their Egyptian sepati (nomarch) and hatia (mayor) and the hem-netjer priesthood beneath the Persian crown; the magi (magu) tend the Atash-fire and the Egyptian wab-priests the river-temple, outside the ladder. Rank titles are the real Old-Persian/satrapal register (allowed); 'Shah' is an approved commonly-known foreign display term.",
+    "heir": "Mathishta (the greatest; crown prince) / Sa-Nesut (the king's son, in the Egyptian temple-register)",
+    "honorifics": {
+      "lord": "Khvatava / Neb",
+      "lady": "Banuka / Nebet",
+      "champion": "Asabara (horseman/cavalier) / Aha (Egyptian warrior)",
+      "your_grace": "Khvatava",
+      "your_majesty": "Xshayathiya / Per-aa ankh-wedja-seneb",
+      "elder": "Zarvan-pati (the eldest)"
+    },
+    "vassalage": {
+      "liege": "Khvatava",
+      "vassal": "Bandaka (the king's loyal bondsman) / Bak (Egyptian servant)",
+      "fealty": "Bandaka (the bond) / Ankh (the Egyptian living-oath)",
+      "tribute": "Baji (tribute) / Inu (Egyptian tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH, except the kingdom-tier ruler which uses the approved foreign term 'Shah' (set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "approved_foreign_terms_used": [
+      "Shah (kingdom)"
+    ],
+    "female_forms_native": {
+      "Xshayathiya Xshayathiyanam": "Xshayarsha-banu",
+      "Xshayathiya": "Xshayathi-banu",
+      "Vispuhra": "Vispuhri",
+      "Xshacapavan": "Xshacapavi",
+      "Framatar": "Framatri",
+      "Marzapana": "Marzapani",
+      "Vispati": "Vispatni"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Shah": "Shahbanu",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "given (often theophoric on the Persian-shifted stems, or an Arta-/Vahu- virtue-name) + filiation (X-puthra); the Persian court-nobility add a vith-house and a satrapal/court office; the Egyptian temple-folk use a theophoric per-name + sa- filiation; order given-first.",
+    "surname_source": [
+      "filiation (X-puthra = son-of-X; Egyptian sa-X)",
+      "vith-house (Old Persian noble line)",
+      "theophoric given (Baga-data = god-given; Turvasa-data; Egyptian Mery-X)",
+      "virtue-name (Arta-xshathra = truth-rule) / earned deed-epithet"
+    ],
+    "dual_register": "the Persian court-and-satrapal nobility carry a vith-house and office and Persian-shifted theophorics (Turvasa-, Urlaspa-, Arta-, Baga-); the Egyptian temple-and-river populace keep theophoric per-names (Mery-X, X-hotep) on the morphed canon-stems with sa- filiation; the throne fuses both - a Persian dithematic court-name crowned as Per-aa.",
+    "theophoric": "Persian-register given names from the shifted deity-stems + an Old Persian element: Baga-X (god-X), X-data (X-given), X-farnah (glory-of-X), Vahu-X (good-X), Arta- (Truth); Egyptian-register devotionals: Mery-X (beloved-of-X), X-hotep (X-is-content), Sa-X (son-of-X) on the Egyptian morphs. e.g. Turvasa-data, Baga-Urlaspa, Mery-Tjuraa, Sa-Riaret.",
+    "diminutive": "-aka / -ka (Old Persian) / -sheri (Egyptian)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - the Persian-shifted canon morphs PRIMARY (the Axsatran set: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna, from family_near_eastern via the Old-Persian shift) and the Egyptian morphs SECONDARY (the Abydosian set: Tjuraa, Djeroraa, Riaret, Numenaa), recognizably the same powers, never real Persian/Egyptian gods. Lawful henotheist but TOLERANT in the Axsatran manner: Asturna the Wise Lord Most High upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie; the Shah's word is bond. The satrapal crown shelters the Nile cults - the per-netjer temples of the river and the funerary cult of the justified dead - under Asturna's peace, never suppressing them. All three alignments worship.",
+    "the_one": "Asturna (< Aeternus; the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory; in the Egyptian temple-register Atjernaa, the hidden distant maker)",
+    "sample_deity_renames": {
+      "Tulrius": "Turvasa (the sun and Arta, lamp of right-order; Egyptian temple-name Tjuraa; Lawful)",
+      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; Lawful)",
+      "Gaiandus": "Gayanta (the enduring earth and the river's-mountain)",
+      "Numeno": "Naumana (the good mind, wisdom and the law; Egyptian Numenaa; Lawful)",
+      "Realta": "Riyata (the Lady of Waters, mother and mercy; Egyptian Riaret)",
+      "Delorum": "Djerlaspa (lord of the peaceful dead and the funerary rite; Egyptian Djeroraa)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Asturna Most High, Turvasa the just sun, Urlaspa of the sworn war, Naumana of the law, Riyata the merciful - upholds ARTA (Truth) against DRAUGA (the Lie), keeps the ever-burning Atash-fire and honors the justified dead of the Nile; names the Chaotic powers the hosts of Drauga, warded",
+      "Neutral": "the honored fore-spirits (the fravashi of the vith-houses and the akhu, the justified dead of the river) and the city-spirits of the per-netjer; the great powers invoked at the fire-altar and the river-temple situationally, as Arta and circumstance require",
+      "Chaotic": "Venerates the Chaotic powers of the canon as the hosts of Drauga the Lie made glorious, and names the Lawful powers - and Asturna - as the tyrant-gods of a false order to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers are the hosts of Drauga the Lie, each keeping its morph + a hostile portfolio-epithet (Persian primary, Egyptian secondary): Maraxus -> Marakhsha the Burner-of-Cities (Egyptian Marakhu); Vacidus -> Vakida the Devouring-Void (Egyptian Wakedjet the Hefau); Lusanto -> Lusanta the Coin-Serpent (the Lie made gold).",
+    "clergy_ladder": {
+      "1": "Athravan (fire-tender acolyte) / Wab (Egyptian purification-priest)",
+      "3": "Magu (magus / priest) / Hem-netjer (god's-servant)",
+      "5": "Magupati (chief magus of a fire-temple) / Hem-netjer Sen-nu (second prophet)",
+      "7": "Dahyu-Magupati (provincial chief magus) / Hem-netjer Tepy (first prophet)",
+      "9": "Magupatan Magupat (chief of chief magi) / Hem-netjer Aa (great prophet)"
+    },
+    "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana) - 'the Atashana of Turvasa' - over the Egyptian Per-netjer (god's-house) of the river - 'the Per-netjer of Tjuraa'; the magi keep the ever-burning fire (Atar), the wab-priests the river-rite.",
+    "saints_pattern": "the honest dead and the just Shahs kept as fravashi (fore-spirits) and petitioned at the fire-altar ('the Arta-true [name]'), alongside the deified justified dead of the Nile (the akhu) honored at the tomb-temple ('the justified [name]', maa-kheru).",
+    "holy_symbol_motifs": {
+      "Asturna": "a winged ring-disc (the farnah-glory) above a fire-altar set on the river-bank",
+      "Turvasa": "a rayed sun above the upright Arta-measure and the feather of right-order",
+      "Urlaspa": "an iron spear crossed with an oath-ring"
+    }
+  },
+  "banks_patterns": {
+    "ships": "Nile river-barges and royal-road craft (a river-and-land empire): 'Bearer of the Baji', 'the Farnah', 'Barque of Turvasa', 'Beloved of the Itrautah'",
+    "military_units": "the [number/power] Spada (host) and the Immortal-style guard, with the Egyptian river-divisions: 'the Spada of Urlaspa', 'the Ten-Thousand (Anushiya)', 'the Division of the River'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Farnah', 'The Cup of Truth (Arta-jam)', 'The Rose and Lotus'",
+    "dungeons_ruins": "fallen apadana-halls, dead fire-temples and sunken Nile tomb-temples: 'the dead Atashana of [name]', 'the buried Apadana of Dida-[name]', 'the Sunken Per-netjer of [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Turvasa-data",
+      "Baga-Urlaspa",
+      "Artafarnah",
+      "Vahu-Gayanta",
+      "Asturna-data",
+      "Artaxshathra",
+      "Naumana-data",
+      "Vishtaspa",
+      "Aryabarza",
+      "Urlaspa-farnah",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Turvasa-hotep",
+      "Aspaturvasa",
+      "Mery-Naumana",
+      "Sa-Turvasa",
+      "Pa-Itrautah",
+      "Vindafarnah",
+      "Djerlaspa-data",
+      "Marduniya"
+    ],
+    "personal_f": [
+      "Riyata-banu",
+      "Artaduxta",
+      "Vahudata",
+      "Atusa",
+      "Parisata",
+      "Riyata-farnah",
+      "Banuka-Arta",
+      "Naumana-banu",
+      "Riaret-nefru",
+      "Mery-Riyata",
+      "Sat-Turvasa",
+      "Gayanta-duxta",
+      "Riyata-nefret",
+      "Artazata",
+      "Vispa-banu",
+      "Farnah-banu",
+      "Satduxta-Riyata",
+      "Roshanak"
+    ],
+    "clan_houses": [
+      "Vith-Turvasa (ruling house)",
+      "Vith-Urlaspa",
+      "Vith-Naumana",
+      "Vith-Gayanta",
+      "Vith-Asturna",
+      "Vith-Riyata",
+      "Vith-Aryabarza",
+      "Vith-Vishtaspa",
+      "Per-Tjuraa (temple-house)",
+      "Per-Riaret",
+      "Per-Djeroraa",
+      "Vith-Vindafarnah"
+    ],
+    "epithets_cognomina": [
+      "the Arta-true (the Honest)",
+      "Crowned-on-the-River",
+      "the Rose-and-Sun",
+      "Friend-not-of-the-Lie",
+      "the Far-rider",
+      "Gold-giver",
+      "the Tolerant",
+      "maa-kheru (the justified)"
+    ],
+    "flagship_settlements": [
+      "Zarkemet (the throne-city - the rose of the black-land)",
+      "Parnatashana-Turvasa (the great fire-and-river temple-town of the sun)",
+      "Dida-Vazraka (the great citadel)",
+      "Niupura-Itrautah (the river-city)",
+      "Marz-Mehapaxtara (the northern delta march-seat)",
+      "Paridaida-Riyata (the watered paradise-garden by the Nile)"
+    ]
+  }
+}

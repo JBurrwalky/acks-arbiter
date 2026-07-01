@@ -1,0 +1,369 @@
+{
+  "kit_id": "nikitu",
+  "tier": "culture",
+  "inherits": [
+    "classical",
+    "north_american"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_49",
+  "catalog_number": null,
+  "_numbering_note": "(was v1 Thracan; csv_id authoritative)",
+  "sub_palette": "classical (hellenic) backbone + north_american (plains) overlay (cross-family blend, Hellenic-leaning)",
+  "synthesis_sources": [
+    "BASE_07",
+    "BASE_11"
+  ],
+  "homeland": "Thracia",
+  "blend": {
+    "backbone": "classical (hellenic/greek register: the basileus/strategos rank-line, -os/-on/-ides names, retained aspirates th/ph/kh, the polis civic frame and the mystery-cult)",
+    "overlay": "north_american (plains horse-nomads: the band/division kin-frame, the war chief and warrior-society, vision-quest religion, open-vowel deed-names, paa/toya/soni/puuku terrain-roots)",
+    "lean": "Hellenic-heavy - Greek horse-lords of the open grassland: a Hellenic war-aristocracy (the basileus and his companion-society) over a mounted Plains war-clan substrate; the polis-frame, the rank-ladder and the mystery-cult lead, the grass-sea, the herd and the vision-quest endure beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_07 Achillean (Greek/Hellenic) x BASE_11 Numinan (Plains horse-nomads). Concept: Greek horse-lords of the plains - a Hellenic people who wed the polis, the bronze-panoply and the mystery-cult to the Plains horse-raid, the war-band and the vision-quest; a single emergent people of the grass-sea, neither Greek nor Plains. Backbone = Hellenic (Greek: the basileus/strategos rank-line, -os/-on/-ides names, the mystery-cult, the polis civic frame); overlay/substrate = Plains (the band/division kin-frame, the war chief and warrior-society, the vision-quest, the open-vowel terrain-roots). CIV/CLAN by inheritance: a Greek/Hellenic (Civilized) parent and a Plains (Clanhold) parent, and any Civ parent -> Civ, so Thracan is Civilized (feudal) - a polis-of-tents over the war-clans. Common-word lexicon and rank titles use the real Greek and Plains registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Hellenic reflexes primary, Plains variants secondary), never real Greek/Plains gods. All human cultures allow Lawful/Neutral/Chaotic (the ordered war-host, the herding peace, the raid-frenzy). Ruler/domain DISPLAY titles are English (or an approved commonly-known foreign term - Archon for county); the *_native conlang forms are for NPC dialogue only. [REWORKED 2026-06-28 to base/hybrid model: csv_id HYB_49; all-three alignment; English display titles + native; deep-fusion lexicon + fusion_rules.]",
+  "phonology": {
+    "palette": "Hellenic (Greek) backbone - aspirates th/ph/kh, -os/-on/-es/-eus/-ides endings, the patronymic -id-, moderate onset clusters (st/tr/pr/kl/kt/pt), penultimate stress - meeting a Plains overlay: open flowing vowels, glottal stops, the barred-u (written u), -bi/-pu/-tu/-wa endings and CV(C) descriptive deed-roots. Harsh aspirate-and-cluster Greek over open Plains vowels; theophoric on the Hellenic reflexes (Toravios-, Orlantos-) with Plains construct variants (Torawi-, Olanta-).",
+    "phonotactics": "CV / CVC; Greek clusters (kt/pt/st/ph/th/kh) softening toward Plains open vowels; vowel-final preferred; -os/-on/-ides over -bi/-wa/-tu Plains endings; glottal stop in the Plains substrate.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "classical (hellenic/greek) phonology dominant",
+      "sound_changes": [
+        "Plains glottal stops and bare CV roots take a Greek frame: a Greek onset-cluster or aspirate is admitted, and the word ends -os/-on/-a/-ides; the barred-u (u) -> Greek u/o",
+        "Plains terminal -bi/-pu/-tu/-hubi reduce or fuse: kept as a softened medial (-b-/-p-) under a Greek ending, not a final inflection",
+        "Greek penultimate stress and aspirates (th/ph/kh) on all words; Greek clusters (kt/pt/st/ph/kh) permitted; geminates allowed",
+        "retain Greek th/ph/kh and -os/-ides AND the Plains open-vowel flow and a few signature roots (paa-, toya-, soni-, puuku-, taabe-); every root then filtered to one Hellenic-shaped phonology"
+      ],
+      "source_tilt": "land/terrain, beast/herd, mountain and material/staple words from Plains roots (the substrate works the grass and the herd: paa water, toya mountain, soni grass, puuku horse, kutsu bison); rule/rank, kin-line, civic and abstract land-of-rule words from Greek roots (the ruling register: basileus, strategos, polis, -ides, hieros); every root then run through one Greek-shaped sound-law so the split is invisible at the surface",
+      "portmanteaus": [
+        "river potamos+hunubi>potahubios",
+        "sea thalassa+paa>thalapaios",
+        "town asty+nuki>astynukon",
+        "tent-polis polis+kahni>polikahnos",
+        "horse hippos+puuku>hippukos",
+        "bison tauros+kutsu>taurkutsos",
+        "son huios+tua>huitua",
+        "daughter thygater+petu>thygapeta",
+        "sacred hieros+puha>hierpuhos"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Plains terrain/beast/material-roots + Greek rule/kin/civic-roots, all run through one Hellenic-shaped sound-law (Greek aspirates, clusters and -os/-on/-ides endings over the Plains open-vowel flow); portmanteaus mark the blended institutions and bloodline of the grass-sea.",
+    "feature_words": {
+      "river": "potahubios",
+      "stream": "rhopahubi",
+      "lake": "limnopawi",
+      "sea": "thalapaios",
+      "bay": "kolponaki",
+      "cape": "akronaki",
+      "isle": "nesokobos",
+      "mountain": "orotoya",
+      "hill": "lophtoyabi",
+      "ridge": "rhachtoyaki",
+      "forest": "hylhuupos",
+      "wood": "drymhuupi",
+      "plain": "pedsonios",
+      "grass-sea": "talsoni-pedion",
+      "marsh": "helsokobi",
+      "ford": "pormios",
+      "pass": "kleistoyavi",
+      "vale": "naptoyaka",
+      "coast": "aktnakios",
+      "neck": "isthtahu",
+      "narrows": "stenkuyapa",
+      "waste": "eremakosh",
+      "road": "hodchanku",
+      "way": "porpoyo",
+      "track": "atrotapi"
+    },
+    "settlement_words": {
+      "hamlet": "komnukon",
+      "village": "demnukon",
+      "town": "astynukon",
+      "tent-polis": "polikahnos",
+      "fort": "phrourtuhuya",
+      "port": "limpaakon",
+      "market": "agnarumos",
+      "temple_town": "temtunawos",
+      "citadel": "akrkahnos"
+    },
+    "kinship": {
+      "son": "huitua",
+      "daughter": "thygapeta",
+      "house": "oikahnos",
+      "kin": "genonumu",
+      "ancestor": "progkuhtsos"
+    },
+    "adjectives": {
+      "great": "megpios",
+      "little": "miktuekos",
+      "old": "palkuhtsi",
+      "new": "nehimos",
+      "black": "meltuhos",
+      "white": "leuktosa",
+      "red": "erythekos",
+      "golden": "chrysohapos",
+      "iron": "siderpuhwi",
+      "high": "hypswaios",
+      "far": "telmanaki",
+      "sacred": "hierpuhos",
+      "fair": "kaltsaatos"
+    },
+    "resources": {
+      "salt": "halonabios",
+      "iron": "siderpuhwi",
+      "silver": "argyrohapi",
+      "gold": "chrysohapos",
+      "horse": "hippukos",
+      "bison": "taurkutsos",
+      "hide": "dermsarios",
+      "wine": "oinos",
+      "grain": "sitonapos",
+      "feather": "pterwuyos"
+    },
+    "directional": {
+      "upper": "anotukwa",
+      "lower": "kattubitsi",
+      "north": "borkuhma",
+      "south": "notyuanos",
+      "east": "anatobios",
+      "west": "dystaabos",
+      "inner": "esnaboo",
+      "outer": "exkwita"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-polis (tent-city)",
+      "-toya (mountain)",
+      "-potahubi (river)",
+      "-pedsoni (plain)",
+      "Mel-/Erysh- (black-/red-)",
+      "-wa / -on (of)"
+    ],
+    "patronymic_form": "patronymic -ides (Greek) fused with the band-name (genonumu); a deed- or vision-name earned at the first raid; an animal+quality byname.",
+    "gendered_endings": {
+      "male": "-os / -ios / -wi",
+      "female": "-a / -e / -wina"
+    },
+    "diminutive_form": "-ion / -tsi",
+    "compounding_rule": "[quality|animal](stem) + feature: Mel-orotoya (black-mountain), Hippuku-pedsoni (horse-plain); the band named for its deed or its herd; -polis for the tent-cities."
+  },
+  "title_ladder": {
+    "government": "feudal (a Hellenic war-aristocracy over the mounted Plains war-clans of the grass-sea: the war-king and his companion-society at the crown, the strategos-generals over the band-musters, the toparch-lords sworn to the war-host; the assembly of riders and the mystery-cult raise and check the war-king)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Toparnan",
+        "domain_native": "Toparnania"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Phrourwap",
+        "domain_native": "Phrourneto"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Eparaibo",
+        "domain_native": "Eparowa"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Strategwa",
+        "domain_native": "Strategia"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Dynaraibo",
+        "domain_native": "Dynarowa"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Basinaika",
+        "domain_native": "Basinaikia"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Autoknaika",
+        "domain_native": "Autoknaikia"
+      }
+    },
+    "_tiers_note": "Fused Hellenic-Plains ladder, ascending, with the Greek-Plains co-titles beneath. Toparnan (lord; Gk toparch + Plains nantan) barony; Phrourwap (border war-chief; Gk phrour- + Plains tekwuniwap) march; Eparaibo (district-chief; Gk eparch + Plains paraibo) county, shown as Archon (the commonly-known Greek civic magistracy); Strategwa (war-general; Gk strategos) duchy; Dynaraibo (great-chief prince; Gk dynastes + Plains pia-paraibo) principality; Basinaika (war-king; Gk basileus + Plains naika) kingdom; Autoknaika (high war-king; Gk autokrator + Plains naika) empire. The assembly of riders and the mystery-cult check the war-king. Rank titles fuse the real Greek and Plains registers (allowed).",
+    "heir": "Diadnaika (the war-king's successor-designate; Gk diadochos + naika)",
+    "honorifics": {
+      "lord": "Kyrnan",
+      "lady": "Kyrwina",
+      "champion": "Hipkappi (horse-champion)",
+      "your_grace": "Basinaika",
+      "elder": "Gerteheola"
+    },
+    "vassalage": {
+      "liege": "Hegemnaika",
+      "vassal": "Hetairo-akonta (companion-brave)",
+      "fealty": "Horktoha (the sworn word)",
+      "tribute": "Phorwonha"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - Archon at county). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ],
+    "female_forms_native": {
+      "Autoknaika": "Autoknaikessa",
+      "Basinaika": "Basinaikessa",
+      "Dynaraibo": "Dynaraiba",
+      "Strategwa": "Strategissa",
+      "Eparaibo": "Eparaiba",
+      "Phrourwap": "Phrourwapa",
+      "Toparnan": "Toparnana"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "a child-name, replaced at the first raid by a deed- or vision-name; the genonumu (war-band-clan); a Greek -ides patronymic for the high-born; an animal+quality byname.",
+    "surname_source": [
+      "genonumu (war-band-clan)",
+      "deed/vision-name",
+      "-ides patronymic (high-born)",
+      "animal+quality byname"
+    ],
+    "dual_register": "the war-king and companion-society bear deed-names and Greek honor-styles; others a band-name + vision-name.",
+    "theophoric": "names invoke the sky, sun and war-powers + a fused element: -machos (war), Hipp- (horse), Mel- (black), or a vision-sign: e.g. Maraksios-machos, Hipp-toravios.",
+    "diminutive": "-ion / -tsi"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Hellenic Greek reflexes PRIMARY (the hellenic morphs, -os/-on/-ios; th/ph/kh), Plains variants SECONDARY (the family_north_american theonym_sets.plains morphs), never real Greek/Plains gods. Thracan allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met in the mystery-rite and the vision-quest, under the open sky and at the kurgan-tomb; the war-king is initiate and war-leader both.",
+    "the_one": "Aiterunos (< Aeternus; fused Hellenic Aiternos / Plains Ateruna) - the Sky-Eternal over the grass-sea; revered when Lawful, acknowledged as the distant maker when Neutral, reviled as the cold tyrant when Chaotic",
+    "sample_deity_renames": {
+      "Tulrius": "Toravios (the sun, the just light; Plains Torawi; Lawful power)",
+      "Orlandus": "Orlantos (the iron-oath, war; Plains Olanta; Lawful power)",
+      "Dementus": "Tamawios (the storm-thunder; Plains Tamawi; Chaotic power)",
+      "Maraxus": "Maraksios (the war-fire, the raid; Plains Maraksa; Chaotic power)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aiterunos) and the Lawful powers (Toravios, Orlantos, Numawios, Gaiantos), demonize the Chaotic powers (Maraksios, Tamawios, Lusantios)",
+      "Neutral": "all powers ambivalent - somewhat honored, somewhat feared; foreground the ancestral war-dead, the herd- and sky-spirits and the vision-medicine (puha) of place; the great powers invoked at the kurgan and the mystery-precinct situationally",
+      "Chaotic": "venerate the Chaotic powers (Maraksios the war-fire, Tamawios the storm, the raid-frenzy of the mystery-rite), demonize the Lawful powers and the One"
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment) take dread epithets: when Lawful - Maraxus -> Maraksios the War-Fire (Plains Maraksa the Raider), Dementus -> Tamawios the Mad-Storm; when Chaotic - Tulrius -> Toravios the Cold-Sun (Plains Torawi), Aeternus -> Aiterunos the Sky-Tyrant.",
+    "clergy_ladder": {
+      "1": "Mystos-shi (initiate-novice)",
+      "3": "Hierowika (mystery-priest)",
+      "5": "Hierophwakan (revealer-seer)",
+      "7": "Archmystos (high initiate)",
+      "9": "Megas-Hierophnaika (the war-king's great seer)"
+    },
+    "religious_orders_pattern": "the Tem-shinato (mystery-precinct and sacred cairn) of [power] on the high ground: 'the Tem-shinato of Maraksios', and the vision-rite of the riders.",
+    "saints_pattern": "the great war-kings and mystery-initiates who became sky-riders; honored at the kurgan-tomb and the mystery-precinct.",
+    "holy_symbol_motifs": {
+      "Toravios": "a radiate sun above a galloping horse",
+      "Maraksios": "a bronze spear and horsetail-standard beneath a thunder-cloud",
+      "Tamawios": "the forked storm over the grass-sea"
+    }
+  },
+  "banks_patterns": {
+    "ships": "(horse-lords of the grass) the war-standards and famed steeds bear names, not ships: 'Storm-Mane', 'the Bronze Lance', 'Wind-Drinker' (a famed horse)",
+    "military_units": "the companion-society and the rider-host: the [animal] Hetairoi (companions) / the [chief] riders: 'the Wolf-Companions', 'the Storm-Riders'",
+    "taverns": "the wine-tent and the war-feast: 'the Bronze Kylix', 'the Mare's-Milk Tent'",
+    "dungeons_ruins": "kurgan barrow-tombs and abandoned tent-polis grounds: 'the Kurgan of [war-king]', 'the Ghost-Camp of [band]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Therax",
+      "Hippon",
+      "Toryon",
+      "Diokai",
+      "Lysoni",
+      "Sitanos",
+      "Rhesnos",
+      "Charaxwi",
+      "Kotanos",
+      "Spartanos",
+      "Maraxon",
+      "Demoska",
+      "Stratoni",
+      "Phaedwi",
+      "Kallinos",
+      "Eumaska",
+      "Telamwi",
+      "Aristwi",
+      "Nikanos",
+      "Pelska"
+    ],
+    "personal_f": [
+      "Bendina",
+      "Kotia",
+      "Therawi",
+      "Daphnoska",
+      "Arewina",
+      "Kalliwi",
+      "Phaidwi",
+      "Stratoska",
+      "Eudoska",
+      "Nikaia",
+      "Melaina",
+      "Thalwi",
+      "Xanthoska",
+      "Hipponoe",
+      "Lysoska",
+      "Demewina",
+      "Aristoska",
+      "Kleiawi",
+      "Charixwi",
+      "Realwina"
+    ],
+    "clan_genolowa": [
+      "Genonumu Hippon (horse-clan)",
+      "Genonumu Lykos (wolf-clan)",
+      "Genonumu Taurkutsos (bison-clan)",
+      "Genonumu Aetos (eagle-clan)",
+      "Genonumu Maraxon (war-clan)",
+      "Genonumu Therax (beast-clan)",
+      "Genonumu Stratoni (host-clan)",
+      "Genonumu Mel (black-clan)",
+      "Genonumu Charax",
+      "Genonumu Pelska",
+      "Genonumu Kallinos",
+      "Genonumu Demoska"
+    ],
+    "epithets_cognomina": [
+      "the Storm-rider",
+      "Bronze-Lance",
+      "the Far-galloped",
+      "Horse-tamer (Hippodamos)",
+      "the Wolf",
+      "the Initiate",
+      "Sun-helm",
+      "the Raid-Storm"
+    ],
+    "flagship_settlements": [
+      "Thracia (the great muster-camp)",
+      "Mel-orotoya (the black-mountain rite)",
+      "Hippuku-pedsoni (the horse-plain)",
+      "Maraksios-shinato (the war-cairn)",
+      "Poltisha Megas (the great tent-city)",
+      "Erysh-potahubi (the red-river camp)"
+    ]
+  }
+}

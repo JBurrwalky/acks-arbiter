@@ -1,0 +1,459 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Cland Conaill",
+      "Cland Cormaic",
+      "Ui Eogain",
+      "Ui Niad",
+      "Per-Tjuraa",
+      "Per-Djeroraa",
+      "Per-Riaret",
+      "Per-Numenaa",
+      "Per-Oranetj",
+      "Cland Murchada",
+      "Per-Geandaa",
+      "Ui Cathail",
+      "Macconall",
+      "Maccormac",
+      "Macdiarmait",
+      "Maceogan",
+      "Macfergal",
+      "Maclugaid",
+      "Macniall",
+      "Macronan",
+      "Maccathal",
+      "Macmurchad",
+      "Macmael-toran",
+      "Maccu-orlann"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Per-netjer",
+      "the Rath of the Hound"
+    ],
+    "epithet": [
+      "the Hound",
+      "Lion-of-the-River",
+      "the Justified",
+      "of the Itru",
+      "the Oath-keeper",
+      "City-breaker",
+      "the Far-marcher",
+      "Sun-faced",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Airtherachet",
+      "Ardcaa",
+      "Becchent",
+      "Biacrich",
+      "Bodath",
+      "Caemdeshra",
+      "Chesbedhdeshrach",
+      "Ciandeu",
+      "Deiscertglenn",
+      "Dergidech",
+      "Dubitra",
+      "Findiun",
+      "Hedhmern",
+      "Hemathmethen",
+      "Hemtemith",
+      "Iarneheb",
+      "Iartharoch",
+      "Immechtrachsechet",
+      "Inmedonseger",
+      "Iochtarshech",
+      "Ithshemed",
+      "Mortadeser",
+      "Nebuwadwer",
+      "Noibwath",
+      "Nuawedeb",
+      "Ordachet",
+      "Remachcaa",
+      "Senchent",
+      "Senethercrich",
+      "Tuaiscertdath"
+    ],
+    "military_unit": [
+      "the Fian of the Red Branch",
+      "the Standard of Orlann",
+      "the Division of Tjuraa",
+      "the Hound-spears"
+    ],
+    "personal_female": [
+      "Eithne",
+      "Fionnuala",
+      "Gormlaith",
+      "Orlaith",
+      "Nessa",
+      "Aoife",
+      "Muirenn",
+      "Realtan-nat",
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Sat-Djeroraa",
+      "Numenaa-et",
+      "Sat-Tjuraa",
+      "Eogin",
+      "Ronin",
+      "Mael-Torin",
+      "Oranetj-in",
+      "Tjuraa-in",
+      "Dolar",
+      "Dolarin",
+      "Gaian",
+      "Gaianin",
+      "Numan",
+      "Numanin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Conall",
+      "Cormac",
+      "Diarmait",
+      "Eogan",
+      "Fergal",
+      "Lugaid",
+      "Niall",
+      "Ronan",
+      "Cathal",
+      "Murchad",
+      "Mael-Toran",
+      "Cu-Orlann",
+      "Tjuraa-hotep",
+      "Mery-Djeroraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Oranetj-mose",
+      "Tjuraa-mose",
+      "Sa-Tjuraa",
+      "Djeroraa-nakht",
+      "Dolar",
+      "Dolaran",
+      "Gaian",
+      "Gaianan",
+      "Numan",
+      "Numanan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Mag Itru",
+      "Dun Conaill",
+      "Per-Toran",
+      "Niut-aat",
+      "Rath Iarn",
+      "Ta-Orlann",
+      "Airthercaa",
+      "Ardchut",
+      "Beccdath",
+      "Biamenedun",
+      "Bomeryd",
+      "Caemniucathair",
+      "Chesbedhniusher",
+      "Cianiut",
+      "Deiscertpernemed",
+      "Dergsebcaiseal",
+      "Dubwedeb",
+      "Findwhyd",
+      "Hedhcaa",
+      "Hemathchut",
+      "Hemtedath",
+      "Iarnmenedun",
+      "Iartharmeryd",
+      "Immechtrachniucathair",
+      "Inmedoniusher",
+      "Iochtarniut",
+      "Ithpernemed",
+      "Morsebcaiseal",
+      "Nebuwedeb",
+      "Noibwhyd",
+      "Nuacaa",
+      "Ordachut",
+      "Remachdath",
+      "Senmenedun",
+      "Senethermeryd",
+      "Tuaiscertniucathair",
+      "Uachtarniusher",
+      "Airtherniut",
+      "Ardpernemed",
+      "Beccsebcaiseal"
+    ],
+    "ship": [
+      "Barque of Toran",
+      "the Grey Hound",
+      "Raven of the Itru"
+    ],
+    "tavern": [
+      "The Golden Lotus",
+      "The Salmon and Stele",
+      "The Ard Bia",
+      "The Becc Bo",
+      "The Caem Chesbedh",
+      "The Cian Hedh",
+      "The Derg Hemath",
+      "The Dub Hemte",
+      "The Find Ith",
+      "The Iarn Nebu",
+      "The Mor Remach",
+      "The Noib Senether"
+    ]
+  },
+  "culture_id": "cemraige",
+  "family": [
+    "celtic",
+    "near_eastern"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_cemraige.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "cemraige",
+  "lexicon": {
+    "adjectives": {
+      "black": "dub",
+      "fair": "caem",
+      "far": "cian",
+      "golden": "orda",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarn",
+      "little": "becc",
+      "new": "nua",
+      "old": "sen",
+      "red": "derg",
+      "sacred": "noib",
+      "white": "find"
+    },
+    "directional": {
+      "east": "airther",
+      "inner": "inmedon",
+      "lower": "iochtar",
+      "north": "tuaiscert",
+      "outer": "immechtrach",
+      "south": "deiscert",
+      "upper": "uachtar",
+      "west": "iarthar"
+    },
+    "feature_words": {
+      "bay": "chent",
+      "cape": "tadeser",
+      "coast": "wedeb",
+      "desert": "deshrach",
+      "ford": "dath",
+      "forest": "methen",
+      "hill": "caa",
+      "isle": "iun",
+      "lake": "shech",
+      "march": "crich",
+      "marsh": "idech",
+      "mountain": "deu",
+      "narrows": "seger",
+      "neck": "neheb",
+      "pass": "roch",
+      "plain": "sechet",
+      "ridge": "achet",
+      "river": "itra",
+      "road": "wath",
+      "sea": "wadwer",
+      "stream": "mern",
+      "track": "shemed",
+      "vale": "glenn",
+      "waste": "deshra",
+      "way": "mith"
+    },
+    "resources": {
+      "bronze": "hemte",
+      "cattle": "bo",
+      "gold": "nebu",
+      "grain": "ith",
+      "horse": "remach",
+      "incense": "senether",
+      "iron": "bia",
+      "lapis": "chesbedh",
+      "salt": "hemath",
+      "silver": "hedh"
+    },
+    "settlement_words": {
+      "citadel": "sebcaiseal",
+      "city": "niucathair",
+      "fort": "menedun",
+      "hamlet": "whyd",
+      "market": "chut",
+      "port": "meryd",
+      "temple_town": "pernemed",
+      "town": "niut",
+      "village": "niusher"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Goidelic [quality|feature](stem) + element (Dun-derg, red-fort; Ard-mor, great-height) layered over Egyptian construct-chains (Per-[god], Niut-[god], Ta-[noun]): the capital Mag Itru (the river-plain), Per-Toran (temple-city of Toran), Ta-Orlann (the iron-land).",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "it"
+      ],
+      "male": [
+        "an",
+        "mose"
+      ]
+    },
+    "patronymic_form": "the Goidelic ruling stock keep the Mac- (son of) / O-Ua (descendant of) patronymic and the cland/fine kin-group; the Egyptian populace keep the 'sa-' (son of) filiation and theophoric constructs; the throne fuses both - a ri who also carries a Per- house-name.",
+    "toponymic_suffixes": [
+      "Per-",
+      "Niut-",
+      "Ta-",
+      "Pa-",
+      "Dun-",
+      "Rath-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "buried per-temples and fallen raths: 'the Tomb of Nesut [name]', 'the Sunken Per-netjer', 'the Rath of the Hound'",
+    "military_units": "the [cland] Fian (warrior-band) and the temple divisions: 'the Fian of the Red Branch', 'the Standard of Orlann', 'the Division of Tjuraa', 'the Hound-spears'",
+    "ships": "curach river-boats and war-barques: 'Barque of Toran', 'the Grey Hound', 'Raven of the Itru'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Salmon and Stele'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - CELTIC (Insular / Goidelic) reflexes PRIMARY (family_celtic theonym_set), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Celtic/Egyptian gods. All three alignments: the Lawful keep the sun-and-oath powers, the Neutral the ancestral war-dead and the land and river powers, the Chaotic the war-fury and raven powers; the druidic drui/fili and the Egyptian hem-netjer mediate side by side.",
+    "clergy_ladder": {
+      "1": "Drui-dalta (druid-novice) / Wab",
+      "3": "Drui (druid) / Hem-netjer",
+      "5": "Faith (seer-priest) / Hem-netjer Sen-nu (second prophet)",
+      "7": "Ard-drui (arch-druid) / Hem-netjer Tepy (first prophet)",
+      "9": "Ollam (supreme sage) / Hem-netjer Aa (great prophet)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers keep their morphs + a portfolio epithet (distinct per power; warded at the cairn and framed as -kin of the great serpent Hefau): Maraxus -> Maragan the War-Fire (Eg. Marakhu the City-Burner); Vacidus -> Faicid the Unmaker (Eg. Wakedjet, the Devouring Hefau); Lusanto -> Losand the Hoard-Worm.",
+    "holy_symbol_motifs": {
+      "Gaian": "the black alluvial field beneath the temple-pylon",
+      "Orlann": "an iron spear crossed with a torc (oath-ring) and the river-standard",
+      "Toran": "a triskele sun-wheel over the feather of right-order"
+    },
+    "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Per-netjer (Egyptian god's-house) of [power]: 'the Nemed of Toran', 'the Per-netjer of Tjuraa'.",
+    "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the ruling cland (honored at the cairn and the holy well) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
+    "sample_deity_renames": {
+      "Delorum": "Dolar (Eg. Djeroraa) - death, the rest of the dead, lord of the peaceful dead",
+      "Gaiandus": "Gaian (Eg. Geandaa) - the enduring land, the black alluvial earth",
+      "Numeno": "Numan (Eg. Numenaa) - air, lightning and sky-wisdom",
+      "Orlandus": "Orlann (Eg. Oranetj) - the iron-oath, battle, war",
+      "Realta": "Realtan (Eg. Riaret) - the mother, the mercy-star, healing",
+      "Tulrius": "Toran (Eg. Tjuraa) - the sun, the just brightness and right-order"
+    },
+    "the_one": "Eternan (Eg. Atjernaa) - the Ancient One beyond the god-kin, the hidden distant maker, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - the war-fury and the raven - and names the Lawful powers, and Eternan, as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eternan, Toran the just (the sun above the feather of right-order), Orlann of the sworn oath-war, Realtan the merciful - and names the Chaotic powers as the warded ill-kin (Goid. namnamed at the cairn; Eg. framed as -kin of the great serpent Hefau), unworshipped; the fian's sworn oath and the just over-king are the social ideal",
+      "Neutral": "the ancestral war-dead (the deified heroes of the ruling cland and the Tuath-de) and the akhu / justified dead of the per-temples and the river-land; the great powers invoked at the nemed-grove and the per-netjer situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Insular Celtic (Goidelic) ladder, ascending, with the Egyptian substrate co-titles beneath. Aire (noble) barony; Maor (warden) march; Toisech (sept-chief) county over a Toisecht; Flaith (lord) duchy over a Flaithes; Ri Tuaithe (king of a tuath) principality; Ruiri (over-king) kingdom - the enthroned Celtic over-king who assumed the Egyptian throne, displayed as Pharaoh - over a Morthuath; Ard-ri Nesut (the high-king; Goid. ard-ri + Eg. nesut) empire over the Ard-rige. The conquered river-cities keep their Egyptian sepati (nomarch) and hem-netjer (priest) beneath the Goidelic crown; the per-aa style survives as the highest sacral honorific of the enthroned ruiri. The brithem (judge) and fili (poet-seer), and the Egyptian wab and hem-netjer, stand outside the ladder. Rank titles fuse the real Gaelic and Egyptian registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Pharaoh": "Queen",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Aire": "Banaire",
+      "Ard-ri Nesut": "Ard-rigan Nesyt",
+      "Flaith": "Banflaith",
+      "Maor": "Banmaor",
+      "Ri Tuaithe": "Rigan",
+      "Ruiri": "Ruirigan",
+      "Toisech": "Bantoisech"
+    },
+    "government": "feudal (a Goidelic war-aristocracy over the Egyptian river-kingdom: the ri and his flaith-kin at the crown, the toisech-chiefs over the niut-cities, the fian-spears sworn to the war-host; the hem-netjer priesthood and the scribal per-aat serve beneath)",
+    "heir": "Tanaiste (the heir-elect / second); Sa-Nesut (king's son, Egyptian style)",
+    "honorifics": {
+      "champion": "Caur (Goidelic hero) / Aha (Egyptian warrior)",
+      "elder": "Sruith / Tepi-a",
+      "lady": "Bantriath / Nebet",
+      "lord": "Triath / Neb",
+      "your_grace": "A Ri"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Airecht",
+        "ruler": "Baron",
+        "ruler_native": "Aire"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Toisecht",
+        "ruler": "Count",
+        "ruler_native": "Toisech"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Flaithes",
+        "ruler": "Duke",
+        "ruler_native": "Flaith"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Ard-rige",
+        "ruler": "Emperor",
+        "ruler_native": "Ard-ri Nesut"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Morthuath",
+        "ruler": "Pharaoh",
+        "ruler_native": "Ruiri"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Maoracht",
+        "ruler": "Marquis",
+        "ruler_native": "Maor"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Tuath",
+        "ruler": "Prince",
+        "ruler_native": "Ri Tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Giall (pledge-hostage) / Ankh (the living-oath, Egyptian)",
+      "liege": "Flaith",
+      "tribute": "Cis / Inu (Egyptian)",
+      "vassal": "Ceile (client) / Bak (Egyptian)"
+    }
+  }
+}

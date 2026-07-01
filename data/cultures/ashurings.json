@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "ashurings",
+      "demonym": "Ashurings",
+      "toponym": "Ashurheim",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_02",
+      "culture_synthesis_parents": [
+        "shamhar",
+        "thiodons"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.7
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.5,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.6,
+      "collapse_proneness": 0.55,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.36
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.583,
+        "religious": 0.175,
+        "mercantile": 0.142,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "chariots",
+        "archers",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "mysticism": 1.0,
+        "societal_orthodoxy": 1.0,
+        "affective_compassion": -0.5,
+        "civility": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "ashurings",
+    "phonemic_palette": "germanic (continental / Gothic register: thiudans/reiks, dithematic -s/-az names, retained th/w, ai/au diphthongs, heavy root-initial stress) / near_eastern (akkadian: the alu/bit river-cities, the sangu temple-priesthood, construct-chain toponyms, emphatic gutturals, SOV agglutinative grammar)",
+    "language": {
+      "language_name": "germanic",
+      "language_family": "germanic, near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "stone",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Ashurings"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Ashurings — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Ashurings are a warlike martial aristocracy people, a first-order synthesis of Shamhar and Thiodons [Conquest Aristocracy (thiodons over shamhar)]. They prize conquest, honor, valor, lean toward the military sphere, and field heavy_infantry, chariots, archers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of shamhar x thiodons [Conquest Aristocracy (thiodons over shamhar)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

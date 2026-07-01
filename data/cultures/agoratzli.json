@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "agoratzli",
+      "demonym": "Agoratzli",
+      "toponym": "Oracmaya",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_48",
+      "culture_synthesis_parents": [
+        "ellinike",
+        "tollteca"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.55
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.5,
+      "defense": 0.55,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.675,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.42
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.357,
+        "mercantile": 0.295,
+        "religious": 0.192,
+        "arcane": 0.156
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "marines",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "epistemic_curiosity": 1.0,
+        "expressiveness": 1.0,
+        "in_group_loyalty": 1.0,
+        "mysticism": 1.0,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "agoratzli",
+    "phonemic_palette": "classical (hellenic register: the polis and the oracle, -os/-on/-e/-eus endings, aspirates th/ph/kh, patronymic -id-, vowel-rich open syllables, root-penultimate stress, the archon and the basileus) / mesoamerican (mayan: the jungle city-states of the witz-pyramid and the carved stela, the ballgame and the bloodletting-rite, glottalized stops and the agentive aj-/ix-, the jade/cacao/maize wealth, the day-lord calendar that orders the realm beneath the oracle)",
+    "language": {
+      "language_name": "classical",
+      "language_family": "classical, mesoamerican",
+      "script": "own_script"
+    },
+    "social_structure": "merchant_oligarchy",
+    "values": {
+      "core_values": [
+        "law",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "cosmopolitan"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Agoratzli"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Agoratzli — cosmopolitan merchant oligarchy of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Agoratzli are a vigorous merchant oligarchy people, a first-order synthesis of Ellinike and Tollteca [Peer Synthesis / Mercantile]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, marines. Outsiders are met as cosmopolitan; their patrons touch war."
+    },
+    "_generated": "archetype blend of ellinike x tollteca [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

@@ -1,0 +1,433 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the gens Valeria",
+      "the gens Aurelia",
+      "the gens Cornelia",
+      "the gens Tullia",
+      "Ch'ib'al Balam",
+      "Ch'ib'al K'uk'",
+      "Ch'ib'al Kan",
+      "Ch'ib'al Chak-Ek'",
+      "Ch'ib'al Took'",
+      "the gens Severa",
+      "Ch'ib'al Yax",
+      "the gens Octavia",
+      "Gens Aj-Tulax",
+      "Gens Aj-Balam",
+      "Gens Aj-Sak-Mo'",
+      "Gens Aj-Chak-Ek'",
+      "Gens Aj-Kan",
+      "Gens Aj-Took'",
+      "Gens Aj-Orlanab",
+      "Gens Aj-Bolon"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Castellania"
+    ],
+    "epithet": [
+      "Aurelius the Gilded",
+      "Magnus the Great",
+      "Aquila the Eagle",
+      "Balam the Jaguar",
+      "Quetzal-plumed",
+      "the Stela-writer",
+      "of the Jade River",
+      "the Sun-faced",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Albusakalchea",
+      "Altusbeja",
+      "Argentumbejada",
+      "Aureuschakanus",
+      "Chakrufuschaltuna",
+      "Chikinuschea",
+      "Ekaterha'a",
+      "Extrahalaba",
+      "Inferusiter",
+      "Intrajoma",
+      "Kabakala",
+      "Kakawakaxa",
+      "Kichpanusmare",
+      "Kukamula",
+      "Lakinusnahba",
+      "Magnuspachora",
+      "Marmaaxtunpetena",
+      "Naachusprom",
+      "Noholuspuuca",
+      "Novusacbia",
+      "Parvusinkapa",
+      "Sacuhulwitzmons",
+      "Superusxokbia",
+      "Taabsalyokha",
+      "Tajusakalchea",
+      "Takinaurumbeja",
+      "Tocferrumbejada",
+      "Tocferruschakanus",
+      "Vetuschaltuna",
+      "Xamanuschea"
+    ],
+    "military_unit": [
+      "Legio Prima Aurata",
+      "the Jaguar Holkan",
+      "the Eagle-and-Serpent Cohort"
+    ],
+    "personal_female": [
+      "Aurelia Tullia",
+      "Valeria Severina",
+      "Cornelia Marcia",
+      "Livia Florentia",
+      "Octavia Sabina",
+      "Drusilla Caelia",
+      "Ix-Rialtaj",
+      "Ix-Sak-Nik",
+      "Ix-Chak",
+      "Ix-Kan",
+      "Ix-Bolon",
+      "Ix-Yax",
+      "Gaiandus",
+      "Gaiandusa",
+      "Numeno",
+      "Numenoa",
+      "Orlandus",
+      "Orlandusa",
+      "Realta",
+      "Realtaa",
+      "Tulrius",
+      "Tulriusa"
+    ],
+    "personal_male": [
+      "Marcus Tulrian",
+      "Lucius Aurelian",
+      "Gaius Valerian",
+      "Titus Cassian",
+      "Quintus Severus",
+      "Aulus Florian",
+      "Decius Octavian",
+      "Servius Vitus",
+      "Aj-Tulax",
+      "Aj-Balam",
+      "Aj-Sak-Mo'",
+      "Aj-Chak-Ek'",
+      "Aj-Kan",
+      "Aj-Took'",
+      "Aj-Orlanab",
+      "Aj-Bolon",
+      "Gaiandus",
+      "Gaiandusus",
+      "Numeno",
+      "Numenous",
+      "Orlandus",
+      "Orlandusus",
+      "Realta",
+      "Realtaus",
+      "Tulrius",
+      "Tulriusus"
+    ],
+    "settlement": [
+      "Aurumaya",
+      "Chak-Witza",
+      "Aurwitza",
+      "Castra Aurata",
+      "Urbkaha Magna",
+      "Yaaxtun-Petena",
+      "Albusaedwitza",
+      "Altusarpaa",
+      "Argentumarpaa-nohol",
+      "Aureusbejada",
+      "Chakrufusforwika",
+      "Chikinuskaha",
+      "Ekatermula",
+      "Extranohkaha",
+      "Inferusostha",
+      "Introtocellus",
+      "Kabapachora",
+      "Kakawurbkaha",
+      "Kichpanusaedwitza",
+      "Kukarpaa",
+      "Lakinusarpaa-nohol",
+      "Magnusbejada",
+      "Marmaaxtunforwika",
+      "Naachuskaha",
+      "Noholusmula",
+      "Novusnohkaha",
+      "Parvusostha",
+      "Sacuhulotocellus",
+      "Superuspachora",
+      "Taabsalurbkaha",
+      "Tajusaedwitza",
+      "Takinaurumarpaa",
+      "Tocferrumarpaa-nohol",
+      "Tocferrusbejada",
+      "Vetusforwika",
+      "Xamanuskaha",
+      "Ximenmula",
+      "Albusnohkaha",
+      "Altusostha",
+      "Argentumotocellus"
+    ],
+    "ship": [
+      "Aquila of the Ha",
+      ","
+    ],
+    "tavern": [
+      "The Gilded Amphora",
+      "The Cacao Cup",
+      "The Eagle and Pyramid",
+      "The Albus Argentum",
+      "The Altus Kaba",
+      "The Aureus Kakawa",
+      "The Chakrufus Kuka",
+      "The Ekater Marmaaxtun",
+      "The Kichpanus Taabsal",
+      "The Magnus Tajus",
+      "The Naachus Takinaurum",
+      "The Novus Tocferrum"
+    ]
+  },
+  "culture_id": "aurutzin",
+  "family": [
+    "classical",
+    "mesoamerican"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_aurutzin.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "aurutzin",
+  "lexicon": {
+    "adjectives": {
+      "black": "ekater",
+      "fair": "kichpanus",
+      "far": "naachus",
+      "golden": "aureus",
+      "great": "magnus",
+      "high": "altus",
+      "iron": "tocferrus",
+      "little": "parvus",
+      "new": "novus",
+      "old": "vetus",
+      "red": "chakrufus",
+      "sacred": "sacuhul",
+      "white": "albus"
+    },
+    "directional": {
+      "east": "lakinus",
+      "inner": "intra",
+      "lower": "inferus",
+      "north": "xamanus",
+      "outer": "extra",
+      "south": "noholus",
+      "upper": "superus",
+      "west": "chikinus"
+    },
+    "feature_words": {
+      "bay": "sinkapa",
+      "cape": "prom",
+      "coast": "pachora",
+      "ford": "bejada",
+      "forest": "kaxa",
+      "hill": "mula",
+      "isle": "petena",
+      "lake": "nahba",
+      "marsh": "akalchea",
+      "mountain": "witzmons",
+      "narrows": "halaba",
+      "neck": "kala",
+      "pass": "beja",
+      "plain": "chakanus",
+      "ridge": "puuca",
+      "river": "ha'a",
+      "road": "sacbia",
+      "sea": "mare",
+      "stream": "yokha",
+      "track": "xokbia",
+      "vale": "joma",
+      "waste": "chaltuna",
+      "way": "iter",
+      "wood": "chea"
+    },
+    "resources": {
+      "cacao": "kakawa",
+      "feather": "kuka",
+      "gold": "takinaurum",
+      "honey": "kaba",
+      "iron": "tocferrum",
+      "jade": "marmaaxtun",
+      "maize": "ximen",
+      "obsidian": "tajus",
+      "salt": "taabsal",
+      "silver": "argentum"
+    },
+    "settlement_words": {
+      "citadel": "arpaa-nohol",
+      "city": "urbkaha",
+      "fort": "arpaa",
+      "hamlet": "otocellus",
+      "market": "forwika",
+      "port": "ostha",
+      "temple_town": "aedwitza",
+      "town": "nohkaha",
+      "village": "kaha"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Latinate [adjective|resource](stem) + feature-word, eliding before a vowel (aureus + witza -> Aurwitza, the gold-pyramid) layered over Maya [color|quality]-prefix + feature (Chak-ha'a, red-river; Noh-kaha, great-town); the capital Aurumaya (Aurum-maya, the gold-of-the-maya), Chak-Witza (the red-pyramid seat).",
+    "gendered_endings": {
+      "female": [
+        "a"
+      ],
+      "male": [
+        "us"
+      ]
+    },
+    "patronymic_form": "the Latinate ruling gens keeps a tripartite name (praenomen + nomen-gens + cognomen); the Maya populace keep the aj- (he of) / ix- (she of) prefix and the ch'ib'al lineage with calendar-day birth-names; the throne fuses both - an Imperator who also carries a witz-dynasty stela-count.",
+    "toponymic_suffixes": [
+      "um",
+      "ia",
+      "pola",
+      "witza",
+      "Noh-",
+      "Chak- / Ek'-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "vine-choked pyramids and fallen legion-forts: 'the lost Witza of [ajaw]', 'the Sunken Castellania', 'the Catacombs of Divus [name]'",
+    "military_units": "the Legio and the Maya Holkan war-host: 'Legio Prima Aurata' (the Gilded Legion), 'the Jaguar Holkan', 'the Eagle-and-Serpent Cohort'",
+    "ships": "river trade-canoes and coastal war-galleys: 'Aquila of the Ha'a', 'the Jade Canoe', 'Victrix of the Witz'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Cacao Cup', 'The Eagle and Pyramid'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (family_classical / agrippan canonical pantheon keys, the latinate reflexes), Mayan variants SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real gods (no Itzamna, Kukulkan, Chaac, Jupiter, Mars). Shared pantheon, two registers. Aurumaya allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Long-Count calendar and the witz-pyramid altar bind the Imperator-Kalomte' to the powers as much as the legion-augury does.",
+    "clergy_ladder": {
+      "1": "Cultor (acolyte) / Ah-miatz (novice-scribe)",
+      "3": "Sacerdos (priest) / Ah-k'in (sun-priest, day-keeper)",
+      "5": "Flamen / Ah-k'uhun (god-keeper priest)",
+      "7": "Pontifex (high priest) / Nakom-k'in (sacrificer-priest)",
+      "9": "Pontifex Maximus / Ah-k'in Mai (high priest)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded when Lawful, keep their morphs + an epithet: Maraxus -> Maraxus the Tyrant-Flame (Maya Marakab the War-Fire); Vacidus -> Vacidus the Unmaker (Maya Wakix the Devourer); Lusanto -> Lusantus the Coin-Serpent (Maya Lusankaan the Hoard-Serpent).",
+    "holy_symbol_motifs": {
+      "Gaiandus": "the maize-field beneath the jade pyramid",
+      "Orlandus": "an iron oath-ring crossed with the legion-eagle and the obsidian blade",
+      "Tulrius": "a rayed sun-disc above the balance and the bloodletting-stela"
+    },
+    "religious_orders_pattern": "the Collegium (Latinate) or the K'uh-nah (god-house) atop the witz (pyramid) of [power]: 'the Collegium of Tulrius', 'the K'uh-nah of Tulax'.",
+    "saints_pattern": "Divus/Diva [name] (the deified founders and the deified k'uhul ajaw ancestors, the uchben), inscribed on the stela and honored at the pyramid-tomb and the via-catacomb.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaiandus (Maya Kayanab) - the enduring earth",
+      "Numeno": "Numeno (Maya Numench) - sky and scribe-wisdom",
+      "Orlandus": "Orlandus (Maya Orlanab) - iron, oath, war",
+      "Realta": "Realta (Maya Ix Rialtaj) - the mother, mercy",
+      "Tulrius": "Tulrius (Maya Tulax) - the sun and justice"
+    },
+    "the_one": "Aeternus (Maya Aj Ternaj) - the One / True God, honored in liturgy not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon (Maraxus the war-fire, the feathered-serpent's dark face), and names the Lawful powers - and Aeternus - as the tyrant-gods to be defied; the bloodletting-rite turned to conquest.",
+      "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just (Tulax), Orlandus of the sworn legion (Orlanab), Realta the merciful (Ix Rialtaj) - and names the Chaotic powers as demons, warded; the legion-oath and the calendar-rite bind alike",
+      "Neutral": "all powers ambivalent - the uchben (ancestral dead, the deified gens and the k'uhul ajaw line), the day-lords and local k'uh (spirits) foregrounded; the great powers invoked at the aedwitza-pyramid and the via-shrine situationally"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Latinate ladder, ascending, with the Maya substrate overlay at the high tiers. Castellanus (castellan; from Roman castellum) barony; Limitanus (frontier-warden; from limes/limitanei) march, leaving Dux for its proper meaning; Comes (companion-governor) county over a Comitatus; Dux (war-leader) duchy over a Ducatus; Princeps fused with the Maya Ajaw (holy-lord) at the principality; Rex (king) kingdom over a Regnum; the Imperator (the approved foreign empire-title) fused with the Maya Kalomte' (overlord/high-king) over the Imperium. The conquered cities keep their Maya sajal (subordinate governor) and ah-k'in (sun-priest) beneath the Latinate crown. Rank titles fuse the real Latin and Maya registers (allowed). Latin/realm size thresholds come from the ACKS domain rules; not reproduced here for IP.",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler': 'Imperator' for the empire ruler). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Castellanus": "Castellana",
+      "Comes": "Comitissa",
+      "Dux": "Ducissa",
+      "Imperator-Kalomte'": "Imperatrix-Kalomte'",
+      "Limitanus": "Limitana",
+      "Princeps-Ajaw": "Principissa-Ajaw",
+      "Rex": "Regina"
+    },
+    "government": "feudal (a Latinate legion-aristocracy over the Maya jungle-cities: the Imperator and his Rex-kin at the crown, the Comes-governors over the urbkaha city-states, the Castellanus-castellans sworn to the legion; the ah-k'in sun-priests and the stela-carving scribes serve beneath)",
+    "heir": "Caesar (heir-designate to the Imperator; the Maya call him the Baah-ch'ok, head-youth)",
+    "honorifics": {
+      "champion": "Eques (Latinate knight) / Holkan (Maya warrior)",
+      "elder": "Senex (the eldest) / Chilam (the Maya elder-seer)",
+      "lady": "Domina / Ix-Ajaw",
+      "lord": "Dominus / Ajaw",
+      "your_grace": "Eminentia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Castellania",
+        "ruler": "Baron",
+        "ruler_native": "Castellanus"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Comitatus",
+        "ruler": "Count",
+        "ruler_native": "Comes"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Ducatus",
+        "ruler": "Duke",
+        "ruler_native": "Dux"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Imperium",
+        "ruler": "Imperator",
+        "ruler_native": "Imperator-Kalomte'"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Regnum",
+        "ruler": "King",
+        "ruler_native": "Rex"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Limitania",
+        "ruler": "Marquis",
+        "ruler_native": "Limitanus"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Principatus",
+        "ruler": "Prince",
+        "ruler_native": "Princeps-Ajaw"
+      }
+    },
+    "vassalage": {
+      "fealty": "Fides (Latin troth) / Patan-t'an (Maya oath of service)",
+      "liege": "Patronus",
+      "tribute": "Tributum (Latin) / Patan (Maya)",
+      "vassal": "Cliens / Yajaw (Maya under-lord)"
+    }
+  }
+}

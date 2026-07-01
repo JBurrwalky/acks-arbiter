@@ -1,0 +1,371 @@
+{
+  "kit_id": "mantiko",
+  "tier": "culture",
+  "inherits": [
+    "classical",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_46",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "classical (hellenic/greek) lean + east_asian (japonic) substrate (cross-family fusion, Hellenic-leaning)",
+  "synthesis_sources": [
+    "BASE_07",
+    "BASE_08"
+  ],
+  "homeland": "Wahellas (the Isle-Hellas; the shrine-isles and the poleis of the inner sea)",
+  "blend": {
+    "lean_parent": "classical (hellenic/greek, achillean register: the polis city-states, the -os/-on/-eus endings, the aspirates th/ph/kh, the patronymic -ides, the agora and the temenos, penultimate stress, the Tulrios/Orlandros canon-morphs)",
+    "substrate_parent": "east_asian (japonic, yamataian register: the open CV-mora shrine-isles and castle-towns, the kami of mountain and sea, the rice-and-silk-and-jade staple words, the torii-shrine, the daimyo house and the -no- linking particle)",
+    "lean": "Hellenic-heavy (Greek) - a single fused people of the inner-sea isles, where the polis of the philosopher and the shrine-isle of the monk grew into one tongue and one rite: the olive and the cherry on one slope, the agora before the torii. The Hellenic polis/civic/learned register is the backbone; the Japonic island/shrine/material/staple words are the substrate. Not a ruling elite over a populace - one merged people, one fused language (per gdd-hybrid-conlang-fusion.md)."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_07 (Greek, Achillean register) x BASE_08 (Japonic, Yamataian register). FUSION-FIRST (gdd-hybrid-conlang-fusion.md): a SINGLE fused tongue, one word per concept, derived by principled sound-change from both parents - not a slash-pair dual-register gloss. CIV/CLAN DECIDED by inheritance: Greek (Classical) base = Civilized, Japonic base = Clanhold, and any Civ parent -> Civ, so Wahellas is Civilized (feudal). Concept: the polis and the shrine-isle as one - the philosopher and the monk, the olive and the cherry, the agora and the torii - the Hellenic city-states of the inner sea grown together with the kami-shrines of the island-arc into a single rite over a sea-strewn isle-realm ('Wa' + 'Hellas', the harmony-Hellas / isle-Hellas). Lean = Hellenic (the rule/kin/civic/learned/land register, the -os/-on/-eus endings, the patronymic -ides, the agora/temenos, penultimate stress); substrate = Japonic (island, shrine, mountain, sea, rice, silk, jade, the castle-town - the land, material and staple words). Common-word lexicon and rank titles use the real Greek register (allowed, catalog 5.3), with the Japonic substrate words fused into Hellenic phonology; DEITY names are morphs of the Agrippan canon - Hellenic canon-morphs PRIMARY (the achillean column: Tulrios, Orlandros, Numenos, Gaiandros, Realtia, Aiternos), Japonic kami-morphs SECONDARY (the yamataian / family_east_asian.json japonic column, softened to Hellenic shape), never real Greek gods or Shinto kami. All three alignments (per 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic). Ruler/domain DISPLAY titles are ENGLISH except the county which uses the approved commonly-known term 'Archon' (the city-magistrate, the Hellenic civic-lord) and the duchy which uses 'Daimyo' (the great island-house lord, the apt Japonic-substrate co-rank); conlang titles in ruler_native/domain_native (Hellenic) for NPC dialogue. CSV phonetic profile 'Soft consonants with pitch accent'; grammar 'SOV, Honorific complex aspects'.",
+  "phonology": {
+    "palette": "Classical (Hellenic) lean - aspirates th/ph/kh, the liquids l/r, sibilant s, stops p t k b d g, vowel-rich a e i o u with long e/o, -os/-on/-es/-eus endings, penultimate stress, the patronymic -id- - taking up an East-Asian (Japonic) substrate: open CV moras, the five vowels a i u e o, the island/shrine/mountain/sea/rice/silk/jade word-stock, rendaku voicing, pitch accent. Per the CSV: soft consonants with pitch accent (the Japonic CV gentleness and pitch-rise audible beneath the Hellenic aspirate-and-liquid softening and the open -os/-on closes); grammar is SOV with honorific complex aspects (the Japonic verb-final order and the honorific kami-suffixes reshaped into a Hellenic morphology of -os/-on/-eus closes and aspectual particles). Theophoric on the Hellenic canon-morphs (Tulrio-, Orlandro-) with the Japonic kami-morphs as the shrine register (Terashio-, Haganos-).",
+    "phonotactics": "CV / CVC; Hellenic onset clusters (st, tr, pr, kl, sp, ph, th, kh, ps) meeting Japonic CV-moras that shed or soften their final vowel into a Hellenic -os/-on/-e/-eus close or open vowel-final; Japonic -no/-yama/-shima/-mori elements take Hellenic endings (yama>oramos, shima>nesimos, mori>morion); penultimate stress overrides Japonic pitch-accent; -polis/-eia/-os toponyms over -nesos/-shima island-and-shrine elements.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "classical (hellenic/greek) phonology dominant",
+      "sound_changes": [
+        "Japonic open CV-moras adapt to Hellenic shape: the final open vowel is kept vowel-final or recut to a Hellenic -os/-on/-e/-eus close; very short Japonic roots take a Hellenic -os/-on ending (yama>oramos, shima>nesimos, mori>morion, umi>thalimi, kawa>potamo)",
+        "Japonic plain consonants soften toward the Hellenic inventory: k>k/kh, t>t/th, s>s/sh-to-s, voiced g/d/b retained; Japonic has no l, so l is moot and r is kept; geminates resolved into Hellenic single stops or clusters",
+        "Japonic pitch-accent is overridden by Hellenic penultimate stress; word order stays Japonic-substrate SOV but is dressed in Hellenic case-endings; the Japonic -no linking particle is kept honorifically but reshaped (X-no-Y > X-on- / -o-)",
+        "retain the Hellenic aspirates th/ph/kh, the -os/-on/-eus closes and the patronymic -ides, and the audible Japonic -shima/-yama/-mori/-shio island-and-shrine signatures softened into Hellenic finals; the seam is welded so the two ancestries both stay heard"
+      ],
+      "source_tilt": "rule / kin-line / civic / learned / land-feature / quality / abstract / war words from Hellenic roots (the polis register: potamos, oros, polis, hieros, sideros, megas); island / shrine / material / staple words from Japonic roots, softened to Hellenic shape (the substrate: nesimos<shima, shrines, kome<rice, kinu<silk, hisui<jade); every chosen root then run through one Hellenic-shaped sound-law so the split is invisible at the surface",
+      "portmanteaus": [
+        "isle nesos+shima>nesimos",
+        "shrine-town temenos+jinja>temenjia",
+        "mountain oros+yama>oramos",
+        "forest hyle+mori>hylemori",
+        "castle-citadel akropolis+shiro>akroshiro",
+        "son huios+musuko>huiosko",
+        "daughter thygater+musume>thygatme",
+        "sacred hieros+imi>hierimi",
+        "silk porphyra/-+kinu>kinyra",
+        "rice sitos+kome>sitokome"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Hellenic rule/kin/civic/learned/land-roots + Japonic island/shrine/material/staple-roots, all run through one Hellenic-shaped sound-law; portmanteaus mark the blended institutions, the shrine-isle, and the bloodline. NO slash-pair dual-register forms - one word per concept.",
+    "feature_words": {
+      "river": "potamo",
+      "stream": "rhoos",
+      "lake": "limnako",
+      "sea": "thalimi",
+      "bay": "kolposura",
+      "cape": "akrasaki",
+      "isle": "nesimos",
+      "mountain": "oramos",
+      "hill": "lophoka",
+      "ridge": "rhachione",
+      "forest": "hylemori",
+      "wood": "drymos",
+      "plain": "pedino",
+      "marsh": "helonuma",
+      "ford": "porwatari",
+      "pass": "kleitoge",
+      "vale": "napetani",
+      "coast": "aktehama",
+      "neck": "isthmikubi",
+      "narrows": "stenoseto",
+      "waste": "eremano",
+      "road": "hodomichi",
+      "way": "poros",
+      "track": "atrapos"
+    },
+    "settlement_words": {
+      "hamlet": "komesato",
+      "village": "demura",
+      "town": "astymachi",
+      "city": "polis",
+      "fort": "phrourjo",
+      "port": "limenato",
+      "market": "agorichi",
+      "temple_town": "temenjia",
+      "citadel": "akroshiro"
+    },
+    "kinship": {
+      "son": "huiosko",
+      "daughter": "thygatme",
+      "house": "oikoie",
+      "kin": "genuji",
+      "ancestor": "progonzo"
+    },
+    "adjectives": {
+      "great": "megas",
+      "little": "mikroko",
+      "old": "palaifuru",
+      "new": "neoara",
+      "black": "melaskuro",
+      "white": "leukshiro",
+      "red": "erythraka",
+      "golden": "chrysgane",
+      "iron": "siderganos",
+      "high": "hypselos",
+      "far": "telethoo",
+      "sacred": "hierimi",
+      "fair": "kaliyo"
+    },
+    "resources": {
+      "salt": "halashio",
+      "iron": "siderganos",
+      "bronze": "chalkagane",
+      "silver": "argyrgin",
+      "gold": "chrysokin",
+      "jade": "hisyos",
+      "silk": "kinyra",
+      "rice": "sitokome",
+      "tea": "chaos",
+      "horse": "hippuma"
+    },
+    "directional": {
+      "upper": "anoue",
+      "lower": "katoshita",
+      "north": "boreaskita",
+      "south": "notminami",
+      "east": "anathigashi",
+      "west": "dysnishi",
+      "inner": "esouchi",
+      "outer": "exosoto"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-polis (city)",
+      "-nesos / -nesimos (isle)",
+      "-oramos / -yama (mountain)",
+      "-mori (forest-grove)",
+      "-jia / -temenjia (shrine-precinct)",
+      "-on / -eia / -o (Hellenic locational close)"
+    ],
+    "patronymic_form": "the Hellenic patronymic -ides / -ades (son of) fuses with the Japonic clan-first order and the -no- linking particle (oikos no X, X-ides); the noble house keeps an oikos-name (-ke softened to -oie); names given at the coming-of-age rite.",
+    "gendered_endings": {
+      "male": "-os / -on / -eus / -ro",
+      "female": "-e / -a / -is / -hime"
+    },
+    "diminutive_form": "-ion / -iskos (Hellenic) softened over -ko (Japonic)",
+    "compounding_rule": "[adjective|resource](stem) + feature-word with Hellenic linking -o-, the Japonic element fused into the tail: melas + oramos -> Melanoramos (black-mountain), Nea + Polis -> Neapolis, Shi- + temenjia -> Hieratemenjia (sacred shrine-town); rendaku-style softening at the seam."
+  },
+  "title_ladder": {
+    "government": "feudal (an isle-Hellenic monarchy of the inner sea: the basileus at Wahellas over the strategos-dukes and the city-archons; the polis-council and the shrine-elders advise, the daimyo-houses of the great isles rule their precincts, the brotherhood of the philosopher and the monk orders the realm)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Toparchos",
+        "domain_native": "Toparchsho"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Phrourarchos",
+        "domain_native": "Phrourarchsakai"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Eparchos",
+        "domain_native": "Eparchkuni"
+      },
+      "duchy": {
+        "ruler": "Daimyo",
+        "domain": "Duchy",
+        "ruler_native": "Strategos",
+        "domain_native": "Strategryo"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Dynastes",
+        "domain_native": "Dynasteryo"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Basileus",
+        "domain_native": "Basileitenka"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Autokrator",
+        "domain_native": "Autokratenka"
+      }
+    },
+    "_tiers_note": "Hellenic-lean ladder, ascending, with the Japonic substrate fused into the domain-tails. Toparchos (place-ruler) barony; Phrourarchos (garrison-warden) march; Eparchos (city-magistrate, shown as the approved 'Archon') county; Strategos (general-governor, shown as the approved 'Daimyo' - the great island-house lord) duchy; Dynastes (prince-ruler) principality; Basileus (king) kingdom over a Basilei-tenka (the realm-under-heaven, the Japonic tenka fused on); Autokrator (self-ruler) empire over the Autokrat-enka. The polis-council (boule), the shrine-elders and the daimyo-houses order the realm beneath the crown. (Rank titles fuse the real Greek register with the Japonic substrate, allowed; Archon and Daimyo are the approved commonly-known display terms.)",
+    "heir": "Diadochos-yotsugi (the successor-designate, the named heir)",
+    "honorifics": {
+      "lord": "Kyrios / Tono",
+      "lady": "Kyria / Hime",
+      "champion": "Hippobushi (knight-warrior; Hellenic hippeus + Japonic bushi)",
+      "your_grace": "Megistos",
+      "elder": "Presbygami (the eldest; Hellenic presbys)"
+    },
+    "vassalage": {
+      "liege": "Hegemon",
+      "vassal": "Symmakerai (sworn ally-retainer; Hellenic symmachos + Japonic kerai)",
+      "fealty": "Horkchugi (the oath-loyalty; Hellenic horkos + Japonic chugi)",
+      "tribute": "Phornengu (Hellenic phoros + Japonic nengu)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - Archon for the county, Daimyo for the duchy). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Autokrator": "Autokrateira",
+      "Basileus": "Basilissa",
+      "Dynastes": "Dynastissa",
+      "Strategos": "Strategissa",
+      "Eparchos": "Eparchissa",
+      "Phrourarchos": "Phrourarchissa",
+      "Toparchos": "Toparchissa"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Daimyo": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Daimyo (duchy)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the oikos (house/clan) name fuses with the Hellenic personal-first habit and the Japonic clan-first order; commonly personal + patronymic (-ides) + oikos/isle-demonym, or oikos no X for the high-born; an honor-name taken at the coming-of-age rite.",
+    "surname_source": [
+      "patronymic (son-of, -ides)",
+      "oikos / house (Japonic uji softened to -oie)",
+      "polis / isle of origin (locational demonym)",
+      "deed or shrine-vision byname"
+    ],
+    "dual_register": "the renowned carry an oikos and an honor-name and a descriptive epithet (ho Megas); commoners a single name + isle-demonym or trade-name.",
+    "theophoric": "names invoke the canon-morphs + a fused element: Tulrio-/Numeno- (Hellenic devotion), -maru (child/blade), Terashi-/Take- (the shrine-kami register): e.g. Tulriokles, Terashimaru, names honoring Orlandros and Terashio-no-kami.",
+    "diminutive": "-ion / -iskos / -ko"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Hellenic canon-morphs PRIMARY (the achillean column: Tulrios, Orlandros, Numenos, Gaiandros, Realtia, softened through Hellenic -os/-on/-eus and th/ph/kh), Japonic kami-morphs SECONDARY (the yamataian / family_east_asian.json japonic column: Terashi-no-kami, Hagane-no-kami, Iwane-no-kami, softened to Hellenic shape), never real Greek gods or Shinto kami. Wahellas seeds/shifts across all three alignments; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met at the temenos and the torii-shrine of the isle; the hierophant-and-kannushi (fused philosopher-priest and shrine-keeper) mediate, and the honored ancestral dead are kept at the household heroon and the clan-jinja.",
+    "the_one": "Aiternos (< Aeternus; Hellenic Aiternos, Japonic kami-face Takami-no-kami) - the One, the unknowable source, the High-Heaven distant above the myriad powers; honored not petitioned, revered when Lawful, set aside when Chaotic",
+    "sample_deity_renames": {
+      "Tulrius": "Tulrios (the sun and just rule; Japonic face Terashio-no-kami, the Shining One; Lawful power)",
+      "Orlandus": "Orlandros (iron, oath and war; Japonic face Haganos-no-kami, the Steel One)",
+      "Gaiandus": "Gaiandros (the enduring earth-mountain; Japonic face Iwanos-no-kami, the Rock-Root; Lawful power)",
+      "Numeno": "Numenos (the sky-wisdom lord; Japonic face Amatkazos-no-kami)",
+      "Realta": "Realtia (the mercy-mother; Japonic face Megumihime; Neutral-honored)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aiternos) and the Lawful powers - Tulrios the just, Orlandros of the sworn war, Gaiandros the enduring, Realtia the merciful - at the temenos and the sun-shrine; the philosopher's law and the warrior's honor-code bind alike, and the Chaotic powers are named the kakodaimones (evil spirits) and warded.",
+      "Neutral": "honors the ancestral dead (the heroes of the oikos, the eirei of the clan-jinja) and the local powers of hearth, isle, grove and sea; the great powers of the canon are invoked situationally at the temenos and the torii rather than worshipped whole.",
+      "Chaotic": "venerates the Chaotic powers of the canon - the war-flame and the wild storm-kami of the untamed isles - and names the Lawful powers, and the One, as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the demonized set (by current alignment) keep their morphs + a dread epithet, distinct per power: when Lawful - Maraxus -> Maraxos the Tyrant-Flame (Japonic Takebios the War-Fury), Vacidus -> Vakidos the Unmaker (Japonic Utsuros the Devouring Void), Lusanto -> Lusantos the Hoard-Serpent (Japonic Koganorochi); when Chaotic - Tulrius -> Tulrios the Cold-Light, Aeternus -> Aiternos the Far Tyrant.",
+    "clergy_ladder": {
+      "1": "Neokoro-miko (temple-and-shrine attendant)",
+      "3": "Hierokannushi (priest of temenos and shrine)",
+      "5": "Archiernegi (high priest, senior keeper)",
+      "7": "Hierophanguji (hierophant-chief)",
+      "9": "Megahierophant-saishu (supreme hierophant of the realm)"
+    },
+    "religious_orders_pattern": "the Temenjia (temple-and-shrine precinct) of [power] on the isle: 'the Temenjia of Tulrios', within its torii-gate and sacred olive-and-cherry grove.",
+    "saints_pattern": "the Heros-kami (the deified heroes and grove-and-sea spirits) and the great ancestors of the oikos, enshrined as kami at the heroon and the clan-jinja of the holy isle; 'the Heros [name]' / 'the kami [name]'.",
+    "holy_symbol_motifs": {
+      "Tulrios": "a radiate sun-disc above an olive-branch, a mirror and the scales",
+      "Orlandros": "an iron spear crossed before a torii and an oath-ring",
+      "Gaiandros": "a mist-wreathed grey peak over an olive-terrace and a torii"
+    }
+  },
+  "banks_patterns": {
+    "ships": "war-galleys and shrine-junks of the inner sea, feminine -is and isle-virtue names: 'the Nesimos', 'the Wave-Crane', 'Pride of Wahellas', 'Hagane-nesos'",
+    "military_units": "the [Adjective] Phalanx / the [color] Sonae (battle-formation): 'the Bronze Phalanx', 'the Crimson Sonae', 'the Olive-and-Cherry Lochos'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Floating Olive', 'The Cherry Teahouse'",
+    "dungeons_ruins": "sunken poleis and abandoned isle-shrines: 'the drowned Akroshiro of [oikos]', 'the haunted Temenjia of [name]', 'the Labyrinth of Heros Theron'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tulriokles",
+      "Theronobu",
+      "Stratoshiro",
+      "Hieromaru",
+      "Damashin",
+      "Phaedros",
+      "Kalliosuke",
+      "Menelos",
+      "Aristokage",
+      "Terashimaru",
+      "Lysandros",
+      "Hidekleios",
+      "Nikandros",
+      "Peliaro",
+      "Leontaro",
+      "Yoshikles",
+      "Eumenshin",
+      "Takebimaru",
+      "Charaxos",
+      "Naokleides"
+    ],
+    "personal_f": [
+      "Theodora",
+      "Daphnae",
+      "Aretehime",
+      "Thaliako",
+      "Phaidra",
+      "Kallistohime",
+      "Sumireia",
+      "Eudora",
+      "Pelagia",
+      "Sakurene",
+      "Leontia",
+      "Melaina",
+      "Charixene",
+      "Nikaia",
+      "Hanaethea",
+      "Hiera",
+      "Lysandra",
+      "Tsukirene",
+      "Xanthe",
+      "Kleiako"
+    ],
+    "clan_houses": [
+      "the oikos Theronides (ruling house)",
+      "the oikos Kurokranos (black-isle)",
+      "the oikos Aristides",
+      "the oikos Takemorios",
+      "the oikos Hieronides",
+      "the oikos Iwakranos",
+      "the oikos Lysandrides",
+      "the oikos Hoshinos",
+      "the oikos Peliades",
+      "the oikos Shirakranos",
+      "the oikos Leontides",
+      "the oikos Matsuoikos (pine-house)"
+    ],
+    "epithets_cognomina": [
+      "ho Megas (the Great)",
+      "ho Sophos (the Wise)",
+      "the Tiger (ho Toros)",
+      "Chrysous (Golden)",
+      "ho Dikaios (the Just)",
+      "of the Shrine-Isle",
+      "the Blade-saint (Hippobushi)",
+      "the Olive-and-Cherry"
+    ],
+    "flagship_settlements": [
+      "Wahellas (the chief polis, the isle-seat)",
+      "Neapolis-nesimos (the new isle-city)",
+      "Akroshiro-Leuke (the white citadel-castle)",
+      "Hieratemenjia (the sacred shrine-town)",
+      "Kuro-oramos (the black-mountain hold)",
+      "Sakurapolis (the cherry-blossom city)"
+    ]
+  }
+}

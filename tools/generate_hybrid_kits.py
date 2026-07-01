@@ -31,7 +31,7 @@ CLAN = {"thiodons", "albawyn", "wendaki"}
 BASES = set(BASE_CSV.values())
 DEMIBEAST = {"aelvaneth","thalvaneth","xilvaneth","khordurn","gormdurn","khraaldurn","orc","goblin",
              "gnoll","bugbear","hobgoblin","kobold","lizardman","ogre","troll","troglodyte","beastmen"}
-RECOVERED = {'shidhean','senecar','sumset','sargonid','ptolan','serican','thracan','ryujin','tikan'}
+RECOVERED = {'shidean','cenumu','ramqet','tamkari','sebasos','lijian','nikitu','xianjin','tikanu'}
 
 
 def load_mech(cid):

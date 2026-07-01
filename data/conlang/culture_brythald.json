@@ -10,8 +10,8 @@
   "csv_id": "HYB_01",
   "sub_palette": "anglo_saxon + brythonic-substrate (cross-family blend, Germanic-leaning)",
   "synthesis_sources": [
-    6,
-    7
+    "BASE_01",
+    "BASE_02"
   ],
   "homeland": "Bryten",
   "blend": {
@@ -42,7 +42,14 @@
       ],
       "source_tilt": "land/water/terrain words lean Brythonic substrate roots (afon, cwm, pen, caer, nant, llyn, coed run through the OE filter); kin-line/quality/abstract/rule/war words from Old English roots (sunu, micel, eald, halig, mearc); every root then filtered to one OE-shaped phonology so the split is inaudible",
       "portmanteaus": [
-        "fort caer+burh>caerburh", "temple llan+ealh>hlanealh", "citadel caer+heah-burh>caerheah", "kin tud+cynn>tudcynn", "son map+sunu>mapsunu", "daughter merch+dohtor>merchdoht", "sacred halig+llan>halhlan", "clan tud+maeg>tudmaeg"
+        "fort caer+burh>caerburh",
+        "temple llan+ealh>hlanealh",
+        "citadel caer+heah-burh>caerheah",
+        "kin tud+cynn>tudcynn",
+        "son map+sunu>mapsunu",
+        "daughter merch+dohtor>merchdoht",
+        "sacred halig+llan>halhlan",
+        "clan tud+maeg>tudmaeg"
       ]
     }
   },

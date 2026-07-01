@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "zetana",
+      "demonym": "Zetana",
+      "toponym": "Persephyra",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_30",
+      "culture_synthesis_parents": [
+        "aryastan",
+        "ellinike"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.5,
+      "defense": 0.625,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.15,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.425,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.67
+    },
+    "rulership": {
+      "sphere_weights": {
+        "mercantile": 0.353,
+        "military": 0.288,
+        "arcane": 0.198,
+        "religious": 0.162
+      },
+      "preferred_troop_types": [
+        "archers",
+        "heavy_cavalry",
+        "heavy_infantry",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "civility": 1.0,
+        "epistemic_curiosity": 1.0,
+        "expressiveness": 1.0,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "zetana",
+    "phonemic_palette": "near_eastern (old_persian / axsatran register: the Xshayathiya and his satraps, Old-Persian phonology, ezafe-linked construct, Arta the Truth and the farnah-glory, theophoric on the shifted canon-stems Turvasa-/Urlaspa-/Arta-) / classical (hellenic / achillean: the polis and the agora, the strategos and the basileus, the sea-faring craft, Greek -os/-on civic and learned vocabulary, aspirates th/ph/kh, the heroon and the mysteria)",
+    "language": {
+      "language_name": "near_eastern",
+      "language_family": "near_eastern, classical",
+      "script": "own_script"
+    },
+    "social_structure": "merchant_oligarchy",
+    "values": {
+      "core_values": [
+        "law",
+        "prosperity",
+        "enterprise"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "cosmopolitan"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Zetana"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "trade",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Zetana — cosmopolitan merchant oligarchy of the synthesis; law, prosperity, enterprise.",
+      "one_paragraph": "The Zetana are a vigorous merchant oligarchy people, a first-order synthesis of Aryastan and Ellinike [Peer Synthesis / Mercantile]. They prize law, prosperity, enterprise, lean toward the mercantile sphere, and field archers, heavy_cavalry, heavy_infantry. Outsiders are met as cosmopolitan; their patrons touch trade."
+    },
+    "_generated": "archetype blend of aryastan x ellinike [Peer Synthesis / Mercantile] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

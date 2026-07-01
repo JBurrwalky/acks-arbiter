@@ -45,7 +45,7 @@ A small set (~5–8) of culturally-loaded concepts get **true blends** of both r
 - **source_tilt:** land/terrain/material/staple → Akkadian roots (naru→*nar*, qishtu→*kisht*, she'u→*shew*); kin-line/quality/abstract/war → Gothic roots (mikils→*mikil*, swarts→*swart*, marh→*marh*).
 - **portmanteaus:** city alu+rabu→*alrab*; fort dimtu+burg→*dimburg*; temple bit-ili+alhs→*bitalh*; citadel ekallu+burg→*ekalburg*; son sunus+mar→*sunmar*; daughter dauhtar+marat→*dauhtmar*; sacred weihs+ellu→*weihel*.
 
-Sample output: `river: nar · mountain: shadberg · forest: kisht · town: als · fort: dimburg · son: sunmar · great: mikil · grain: shew · horse: marh`. One language — Germanic-shaped, Akkadian-substrated — not a slash list. See `data/conlang/culture_ashurheim.json` for the full reworked lexicon.
+Sample output: `river: nar · mountain: shadberg · forest: kisht · town: als · fort: dimburg · son: sunmar · great: mikil · grain: shew · horse: marh`. One language — Germanic-shaped, Akkadian-substrated — not a slash list. See `data/conlang/culture_ashurings.json` for the full reworked lexicon.
 
 ---
 
@@ -59,7 +59,40 @@ Sample output: `river: nar · mountain: shadberg · forest: kisht · town: als �
 
 ---
 
-## 5. Open Questions / Architectural Concerns
+## 5. Hybrid demonym naming — the people-name (2026-06-30)
+
+The fusion protocol (§2–4) governs the hybrid's *lexicon*. This section governs its **name** — the demonym (what the people call themselves), distinct from the toponym (the land). **The culture id names the PEOPLE, never the place:** `-mark`/`-gard`/`-heim`/`-land`/`-briga` are place-suffixes and belong only on the `toponym` field, never on a demonym. All 55 hybrids were (re)named to this rule on 2026-06-30 (Jedidiah's naming pass); `brythald` is his own coinage and exempt. (Historical note: the worked example above, "Ashurheim," is now **Ashurings**.)
+
+### 5.1 Naming by archetype
+The archetype (emergence GDD §3.2) sets the naming device:
+
+- **Conquest** (clan × civ) — the conquered civ's people, **re-voiced in the conqueror clan's phonology + that clan's people-ending**. The same civ under three conquerors yields three register-variants (Vallica → Gothic **Wallans** / Goidelic **Fallraige** / Comanche **Parinu**). Place-suffixes stay valid on the toponym (the *land* the Wallans hold may still be a *-mark*).
+- **Peer** (civ × civ) — a **coined word for the pair's distinctive shared trait**, built from the two parents' own lexemes for that concept, with a register-drawn ending. NOT "the ⟨trait⟩-folk" glued onto every pair (that clusters); the coined word carries the distinctiveness. Loyalty/military/orthodoxy are near-universal and are skipped as anchors, so the distinctive trait spreads across religious / mercantile / arcane / epistemic / expressive.
+- **Confederated** (clan × clan) — a **coined "people/nation" word** in the fused tongue (Samanumu = Gothic *samana* "together" + Comanche *numu* "people").
+
+### 5.2 Clan people-registers (Conquest endings)
+| clan | register | people-endings |
+|---|---|---|
+| Thiodons | Gothic/continental Germanic (v→w, hard k/g, ai/au) | `-ans` · `-ungs` · `-ings` |
+| Albawyn | Goidelic Celtic (lenition c→ch, t→th, m→v) | `-raige` "folk of" · `Fir-` "men of" · `-wyn` |
+| Wendaki | Comanche/Plains Numic (no native /l/→r, no /zh/→s) | `-nu`/`-numu` "people" · `-teka` band |
+
+### 5.3 Peer/Confederated coinage constraints (Jedidiah)
+- **No real-world deity NAMES** (no Mithra/Isis/Serapis — the same reason real Rome is barred). Generic god-*words* are fine (Akkadian *ilu*, Nahuatl *teotl*, Sinitic *shén* 神, Egyptian *netjer*).
+- **Names must read as a people/nation, not a cult.**
+- **No verbatim real-world ethnonyms.** Real cross-exonyms (what one culture called the other — *Seres*, *Lijian*, *Yauna*) are inspiration only; final names are coined from concept-lexemes, not lifted labels.
+- Ties on the shared trait are surfaced for Jedidiah to pick.
+
+### 5.4 The 55 (new id · parents · device)
+**Conquest (24):** arjungs (thiodons×aryastan, Arya+Gothic -ungs) · kaimets (×kemetra, Kemet ai-diphthong) · wallans (×vallica, V→W +-ans) · nikungs (×ellinike, *Nike*+-ungs) · jamats (×yamatsu, Yamat Y→J) · kinshungs (×qinzhao, Qin zh→sh +-ungs) · ashurings (×shamhar, Ashur+-ings) · tolltungs (×tollteca, Toltec+-ungs) · firarya (albawyn×aryastan, Fir-Arya) · cemraige (×kemetra, Kemet lenited+-raige) · fallraige (×vallica, V→F+-raige) · firellin (×ellinike, Fir-Ellin) · shidean (×yamatsu, bespoke *sídhe*, kept) · cinwyn (×qinzhao, Qin→Cin+-wyn) · samwyn (×shamhar, Sham+-wyn) · tollraige (×tollteca, Toltec+-raige) · aryanu (wendaki×aryastan, Arya+-nu) · kemenu (×kemetra, Kemet+-nu) · parinu (×vallica, V→P l→r+-nu) · nikitu (×ellinike, *Nike*+-tu) · matsunu (×yamatsu, Matsu+-nu) · saonu (×qinzhao, Zhao zh→s+-nu) · shamanu (×shamhar, Shamar+-nu) · tikanu (×tollteca, bespoke Tikan+-nu).
+
+**Confederated (3):** brythald (thiodons×albawyn, Jedidiah's, kept) · samanumu (thiodons×wendaki, *samana*+*numu* "together-people") · cenumu (albawyn×wendaki, *cenél*+*numu* "kindred-people").
+
+**Peer (28), by distinctive trait:** ausonians (ellinike×vallica, Gk name for Roman Italy) · artavians (aryastan×vallica, OPer *arta* "order") · djetani (kemetra×vallica, Egy *djet* "eternity") · tamkari (shamhar×vallica, Akk *tamkāru* "merchants") · lijian (qinzhao×vallica, Sinitic exonym-form for Rome) · zetana (aryastan×ellinike, seekers: Gk *zētē*) · danshi (aryastan×qinzhao, seekers: *dānā*+*shì*) · mudana (aryastan×shamhar, seekers: Akk *mūdû*) · reitus (vallica×yamatsu, faithful: Jp *rei*+Lat *ritus*) · ramqet (kemetra×shamhar, faithful: Akk *ramku*) · kiyotzin (tollteca×yamatsu, faithful: Jp *kiyo*+Nah *-tzin*) · shangteca (qinzhao×tollteca, traders: Chi *shāng*+*-teca*) · agoratzli (ellinike×tollteca, traders: Gk *agora*+Nah *tianquiztli*) · chulet [Ch'ulet] (kemetra×tollteca, faithful: Maya *ch'ul*) · ganzatl (aryastan×tollteca, traders: OPer *ganza*) · barushi (shamhar×yamatsu, diviners: Akk *bārû*) · hoshtara (aryastan×yamatsu, arcane: Jp *hoshi*=OPer *stara* "star") · makotet (kemetra×yamatsu, faithful: Jp *makoto*) · xianjin (qinzhao×yamatsu, arcane: Chi *xiān* 仙) · mantiko (ellinike×yamatsu, seers: Gk *mantis*+Jp *miko*) · sophtaru (ellinike×shamhar, seekers: Gk *sophia*+Akk *ṭupšarru*) · wentu (qinzhao×shamhar, seekers: Chi *wén* 文) · poeshi (ellinike×qinzhao, eloquent: Gk *poiēsis*=Chi *shī* "poetry") · aurutzin (tollteca×vallica, traders: Lat *aurum*+Nah *-tzin*) · iluteo (shamhar×tollteca, god-people: Akk *ilu*=Nah *teotl*) · tianet (kemetra×qinzhao, celestial: Chi *tiān* 天) · sebasos (ellinike×kemetra, lore: Egy *seba*) · hekana (aryastan×kemetra, arcane: Egy *heka*).
+
+---
+
+## 6. Open Questions / Architectural Concerns
 
 - **Depth of coinage.** Full lexicon coverage (every concept fused, as here) vs a core subset — current decision is full coverage. Revisit if authoring load is too high across 55 kits.
 - **Etymology transparency.** `fusion_rules` documents the derivation so names stay reproducible and reviewable; if that proves noisy in the data files, it could move to a sidecar doc.

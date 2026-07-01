@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "kiyotzin",
+      "demonym": "Kiyotzin",
+      "toponym": "Hinoztlan",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_51",
+      "culture_synthesis_parents": [
+        "tollteca",
+        "yamatsu"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.675
+    },
+    "terrain": {
+      "seed_biomes": [
+        "savanna",
+        "grassland",
+        "forest"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.65,
+      "defense": 0.675,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.25,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.65,
+      "collapse_proneness": 0.625,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.42
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.564,
+        "religious": 0.201,
+        "arcane": 0.117,
+        "mercantile": 0.117
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "archers",
+        "light_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "in_group_loyalty": 1.5,
+        "civility": 1.0,
+        "mysticism": 1.0,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "kiyotzin",
+    "phonemic_palette": "east_asian (japonic / Sengoku register: the Shogun/Daimyo war-houses, the samurai retainers, the kami-shrine and the castle-town, open CV moras and pitch accent, clan-first dithematic names, -no-kami honorifics) / mesoamerican (nahuatl / Aztec substrate: the teocalli sun-pyramids, the calpolli wards, the jungle and the chinampa, the absolutive -tl/-tli and reverential -tzin, the calendar-round and the flower-war)",
+    "language": {
+      "language_name": "east_asian",
+      "language_family": "east_asian, mesoamerican",
+      "script": "own_script"
+    },
+    "social_structure": "imperial_hegemony",
+    "values": {
+      "core_values": [
+        "law",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "revered"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Kiyotzin"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Kiyotzin — domineering imperial hegemony of the synthesis; law, honor, valor.",
+      "one_paragraph": "The Kiyotzin are a vigorous imperial hegemony people, a first-order synthesis of Tollteca and Yamatsu [Peer Synthesis / Hegemonic]. They prize law, honor, valor, lean toward the military sphere, and field heavy_infantry, light_infantry, archers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of tollteca x yamatsu [Peer Synthesis / Hegemonic] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}
