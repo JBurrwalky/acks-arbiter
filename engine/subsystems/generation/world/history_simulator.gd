@@ -69,7 +69,7 @@ var _polities: Dictionary = {}   # id -> mutable polity dict (+ runtime hexes[])
 var _settlements: Array = []     # emerged settlement records
 var _settlement_index: Dictionary = {}  # "q,r,polity_id" -> record ref (O(1) emerge lookup)
 var _events: Array = []          # §11 event log
-var _replay_frames: Array = []   # {tick, owner_by_hex}
+var _replay_frames: Array = []   # {tick, owner_by_hex, culture_by_hex, territory_by_hex}
 var _next_settlement_seq: int = 1
 var _next_event_seq: int = 1
 
@@ -633,22 +633,32 @@ func _finalize_hybrid_identities() -> void:
 		if not pol["alive"]:
 			continue
 		pol["culture_synthesis_parents"] = []
+		var owner_cid := str(pol["culture_id"])
+		# Case 1: the realm already IS a hybrid — it adopted its large, prestigious
+		# emergent hybrid culture via §7.4f go-native (the "reuse go-native" path,
+		# Jedidiah). Record its parent bases so the present-day handoff knows its
+		# provenance (go-native itself doesn't set culture_synthesis_parents).
+		if str(_culture_instances.get(owner_cid, {}).get("culture_class", "")) == "hybrid":
+			var op := CultureCatalogLoader.culture_synthesis_parents(catalog.get(owner_cid, {}))
+			if op.size() == 2:
+				pol["culture_synthesis_parents"] = [str(op[0]), str(op[1])]
+			continue
+		# Case 2: a base-owned realm whose POPULATED substrate has become dominantly a
+		# hybrid (>= hybrid_adopt_min_share) is relabeled to that hybrid at finalize.
 		var dom := _dominant_populated_culture(pol)
 		var cid := str(dom["cid"])
-		if cid == "" or cid == str(pol["culture_id"]):
+		if cid == "" or cid == owner_cid:
 			continue
-		var inst: Dictionary = _culture_instances.get(cid, {})
-		if str(inst.get("culture_class", "")) != "hybrid":
+		if str(_culture_instances.get(cid, {}).get("culture_class", "")) != "hybrid":
 			continue
 		if float(dom["share"]) < _c.hybrid_adopt_min_share:
 			continue
 		var parents := CultureCatalogLoader.culture_synthesis_parents(catalog.get(cid, {}))
 		if parents.size() != 2:
 			continue
-		var from_cid := str(pol["culture_id"])
 		pol["culture_id"] = cid
 		pol["culture_synthesis_parents"] = [str(parents[0]), str(parents[1])]
-		_emit_event(_n_ticks, "cultural_shift", [pid], [from_cid, cid],
+		_emit_event(_n_ticks, "cultural_shift", [pid], [owner_cid, cid],
 				pol["hexes"], 0.6, "hybrid_emerged")
 
 
@@ -4327,28 +4337,48 @@ func _phase_log(_tick: int) -> void:
 # Replay frames (§15)
 # ---------------------------------------------------------------------------
 
+## A replay snapshot: ownership, dominant culture and territory class per hex, each
+## RLE-encoded over canonical hex order so the Political, Culture and Territory layers
+## all animate epoch by epoch (not just ownership).
 func _capture_replay_frame(tick: int) -> void:
-	_replay_frames.append({"tick": tick, "owner_by_hex": _rle_owners()})
+	_replay_frames.append({
+		"tick": tick,
+		"owner_by_hex": _rle_owners(),
+		"culture_by_hex": _rle_field(func(key: Vector2i) -> String:
+			return _dominant_key(_culture_w.get(key, {}))),
+		"territory_by_hex": _rle_field(func(key: Vector2i) -> String:
+			return str(_grid[key]["territory_class"])),
+	})
 
 
 ## RLE of owner_polity_id over canonical hex order: runs "polity:count" joined
 ## by ';'; '' = unowned.
 func _rle_owners() -> String:
+	return _rle_field(func(key: Vector2i) -> String:
+		return str(_grid[key]["owner_polity_id"]))
+
+
+## Generic RLE of a per-hex string field over canonical hex order (r ASC, q ASC —
+## the SettingRepository.list_hexes order the ReplayFrameDecoder reverses): runs of
+## "value:count" joined by ';'. '' = the field's "none" value. Values carry no ':'
+## (polity/culture ids and territory classes are colon-free), so the decoder splits
+## on the LAST colon.
+func _rle_field(value_of: Callable) -> String:
 	var runs: Array = []
 	var current := ""
 	var count := 0
 	var started := false
 	for key in _ordered_keys:
-		var owner := str(_grid[key]["owner_polity_id"])
+		var v := str(value_of.call(key))
 		if not started:
-			current = owner
+			current = v
 			count = 1
 			started = true
-		elif owner == current:
+		elif v == current:
 			count += 1
 		else:
 			runs.append("%s:%d" % [current, count])
-			current = owner
+			current = v
 			count = 1
 	if started:
 		runs.append("%s:%d" % [current, count])
@@ -4796,10 +4826,27 @@ func _significance_for(type: String, severity: float) -> float:
 func _build_palette() -> Array:
 	var rows: Array = []
 	var i := 0
+	var culture_seq := {}   # culture_id -> count assigned so far (per-culture ordinal)
 	for pid in _sorted_polity_ids():
-		rows.append({"polity_id": str(pid), "color": WorldPalette.hex_at(i)})
+		var cid := str(_polities[pid]["culture_id"])
+		var ord := int(culture_seq.get(cid, 0)) + 1
+		culture_seq[cid] = ord
+		rows.append({
+			"polity_id": str(pid),
+			"color": WorldPalette.hex_at(i),
+			"seed_label": "%s_%02d" % [_seed_culture_name(cid), ord],
+		})
 		i += 1
 	return rows
+
+
+## Human-facing form of a seed culture_id for the replay label ("vallican" ->
+## "Vallican"). Just capitalises the first letter — culture ids are already the
+## rules-based people-name, so the label reads as the culture at a glance.
+func _seed_culture_name(cid: String) -> String:
+	if cid == "":
+		return "Unclaimed"
+	return cid.substr(0, 1).to_upper() + cid.substr(1)
 
 
 # ---------------------------------------------------------------------------

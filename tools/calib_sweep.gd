@@ -29,9 +29,16 @@ func _ready() -> void:
 	var beastman := {}
 	for id in CultureCatalogLoader.ids_by_tier("beastman"):
 		beastman[str(id)] = true
+	var catalog := CultureCatalogLoader.load_all()
+	var hybrid_ids := {}
+	for cid in catalog:
+		if CultureCatalogLoader.culture_class(catalog[cid]) == "hybrid":
+			hybrid_ids[str(cid)] = true
 
 	var keys := ["wilderness_class_pct", "civ_owned_land_pct", "unowned_pct",
-			"realms_total", "independent_civ_realms"]
+			"realms_total", "independent_civ_realms",
+			"hybrid_realms", "distinct_hybrids", "hybrid_dom_hexes",
+			"realms_hyb_plurality", "max_hyb_share"]
 	var sums := {}
 	for k in keys:
 		sums[k] = 0.0
@@ -45,13 +52,14 @@ func _ready() -> void:
 		if not ok:
 			printerr("[calib] generate FAILED seed ", seed_base + i)
 			continue
-		var m := _measure(cid, beastman)
+		var m := _measure(cid, beastman, hybrid_ids)
 		rows.append(m)
 		for k in keys:
 			sums[k] += float(m[k])
-		print("[calib] seed %d  wild %.1f  civ_owned %.1f  unowned %.1f  realms %d  indep_civ %d" % [
-				seed_base + i, m["wilderness_class_pct"], m["civ_owned_land_pct"],
-				m["unowned_pct"], int(m["realms_total"]), int(m["independent_civ_realms"])])
+		print("[calib] seed %d  wild %.1f  realms %d  || HYB realms %d dom_hexes %d distinct %d  hyb_plurality_realms %d max_hyb_share %.2f" % [
+				seed_base + i, m["wilderness_class_pct"], int(m["realms_total"]),
+				int(m["hybrid_realms"]), int(m["hybrid_dom_hexes"]), int(m["distinct_hybrids"]),
+				int(m["realms_hyb_plurality"]), m["max_hyb_share"]])
 
 	var cnt := float(maxi(1, rows.size()))
 	print("[calib] ============================================================")
@@ -62,28 +70,64 @@ func _ready() -> void:
 	get_tree().quit(0)
 
 
-func _measure(cid: String, beastman: Dictionary) -> Dictionary:
+func _measure(cid: String, beastman: Dictionary, hybrid_ids: Dictionary) -> Dictionary:
 	var land := 0
 	var unowned_land := 0
 	var wild_class := 0
+	var hybrid_dom_hexes := 0
 	var owner_counts := {}
+	var realm_mass := {}   # pid -> {culture_id: mass=Σ weight×pop over its POPULATED hexes}
 	for h in SettingRepository.list_hexes(cid):
 		if str(h.water) != "":
 			continue
 		land += 1
 		if str(h.territory_class) == "wilderness":
 			wild_class += 1
+		var cw = JSON.parse_string(str(h.culture_weights))
+		if hybrid_ids.has(_dominant_culture(str(h.culture_weights))):
+			hybrid_dom_hexes += 1
 		var o := str(h.owner_polity_id)
 		if o == "":
 			unowned_land += 1
 		else:
 			owner_counts[o] = int(owner_counts.get(o, 0)) + 1
+			var pop := float(h.population_band)
+			if pop > 0.0 and typeof(cw) == TYPE_DICTIONARY:
+				var m: Dictionary = realm_mass.get(o, {})
+				for c in cw:
+					m[str(c)] = float(m.get(str(c), 0.0)) + float(cw[c]) * pop
+				realm_mass[o] = m
+	# Per-realm plurality diagnostic (mirrors HistorySimulator._dominant_populated_culture).
+	var realms_hyb_plurality := 0
+	var max_hyb_share := 0.0
+	for pid in realm_mass:
+		var m: Dictionary = realm_mass[pid]
+		var tot := 0.0
+		var best := ""
+		var best_m := -1.0
+		for c in m:
+			tot += float(m[c])
+		var mk := m.keys()
+		mk.sort()
+		for c in mk:
+			if float(m[c]) > best_m:
+				best_m = float(m[c])
+				best = str(c)
+		if hybrid_ids.has(best):
+			realms_hyb_plurality += 1
+			max_hyb_share = maxf(max_hyb_share, best_m / maxf(tot, 1.0))
 	var polities := SettingRepository.list_polities(cid)
 	var civ_owned := 0
 	var independent_civ := 0
+	var hybrid_realms := 0
+	var hybrids := {}
 	for p in polities:
 		var cs := str(p.culture_id)
 		var hc := int(owner_counts.get(str(p.id), 0))
+		var csp := str(p.get("culture_synthesis_parents", "[]"))
+		if csp != "" and csp != "[]":
+			hybrid_realms += 1
+			hybrids[cs] = true
 		if beastman.has(cs):
 			continue
 		civ_owned += hc
@@ -95,4 +139,24 @@ func _measure(cid: String, beastman: Dictionary) -> Dictionary:
 		"unowned_pct": 100.0 * float(unowned_land) / float(maxi(1, land)),
 		"realms_total": float(polities.size()),
 		"independent_civ_realms": float(independent_civ),
+		"hybrid_realms": float(hybrid_realms),
+		"distinct_hybrids": float(hybrids.size()),
+		"hybrid_dom_hexes": float(hybrid_dom_hexes),
+		"realms_hyb_plurality": float(realms_hyb_plurality),
+		"max_hyb_share": max_hyb_share,
 	}
+
+
+## Dominant (highest-weight) culture id in a culture_weights JSON string, or "".
+func _dominant_culture(cw_json: String) -> String:
+	var cw = JSON.parse_string(cw_json)
+	if typeof(cw) != TYPE_DICTIONARY:
+		return ""
+	var best := ""
+	var best_w := -1.0
+	for k in cw:
+		var w := float(cw[k])
+		if w > best_w:
+			best_w = w
+			best = str(k)
+	return best

@@ -25,6 +25,8 @@ func run_all_tests() -> void:
 	test_dominant_populated_culture()
 	test_finalize_relabels_hybrid_realm()
 	test_finalize_keeps_base_realm()
+	# §4e integration — the whole emergence chain on a full generated map
+	test_hybrid_emerges_on_generated_map()
 	print("SettingHybridizationTests: all tests passed (%d checks)" % test_count())
 
 
@@ -261,3 +263,49 @@ func test_finalize_keeps_base_realm() -> void:
 		"a base-dominant realm keeps its base culture")
 	check(pol["culture_synthesis_parents"] == [],
 		"...and carries an empty synthesis-parents list")
+
+
+# --- §4e integration: hybrids emerge on a full generated map -----------------
+
+func test_hybrid_emerges_on_generated_map() -> void:
+	# Full pipeline at a producing seed (large, seed 1000) — the whole emergence
+	# chain end to end: hybrid SUBSTRATE at conquest/contest zones, plus at least
+	# one realm that ADOPTED a hybrid identity (go-native, recorded at finalize).
+	# PROVISIONAL: keyed to the calibrated hybrid_merge_base_p=0.5; if merge
+	# prevalence is retuned, re-pick a producing seed via tools/calib_sweep.tscn.
+	var cid := CampaignRepository.create_campaign("HybEmergenceTest", "w")
+	var params := SettingParameters.new()
+	params.map_size = "large"
+	check(SettingGenerator.new().generate(cid, 1000, params),
+		"large seed-1000 generation succeeds")
+
+	var hyb_ids := {}
+	var cat := CultureCatalogLoader.load_all()
+	for k in cat:
+		if CultureCatalogLoader.culture_class(cat[k]) == "hybrid":
+			hyb_ids[str(k)] = true
+
+	var substrate := 0
+	for h in SettingRepository.list_hexes(cid):
+		if str(h.water) != "":
+			continue
+		var cw = JSON.parse_string(str(h.culture_weights))
+		if typeof(cw) != TYPE_DICTIONARY:
+			continue
+		var best := ""
+		var bw := -1.0
+		for c in cw:
+			if float(cw[c]) > bw:
+				bw = float(cw[c])
+				best = str(c)
+		if hyb_ids.has(best):
+			substrate += 1
+	check(substrate > 0,
+		"hybrid cultures emerge in the substrate at contact zones (got %d hybrid-dominant hexes)" % substrate)
+
+	var hyb_realms := 0
+	for p in SettingRepository.list_polities(cid):
+		if str(p.get("culture_synthesis_parents", "[]")) != "[]":
+			hyb_realms += 1
+	check(hyb_realms >= 1,
+		"at least one realm adopts a recorded hybrid identity (got %d)" % hyb_realms)

@@ -464,7 +464,7 @@ var sea_cross_decay: float = 0.92   # × per extra hex of sea distance: 0.6·0.9
 # probability is PROVISIONAL engineering (base x shared-language-family; parity /
 # alignment drivers deferred to the §4e calibration pass). [PROVISIONAL]
 var hybrid_seam_threshold: float = 0.2   # each base's min hex weight for a real seam
-var hybrid_merge_base_p: float = 0.25    # base per-pair merge-vs-displace probability
+var hybrid_merge_base_p: float = 0.5     # base per-pair merge-vs-displace probability
 var hybrid_merge_family_bonus: float = 1.6  # x when the two bases share a language family
 var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex toward the hybrid
 
@@ -479,7 +479,7 @@ var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex to
 # populated substrate is dominantly a hybrid (>= hybrid_adopt_min_share) has its
 # present-day culture_id relabeled to that hybrid + culture_synthesis_parents
 # persisted (setting_polities). [PROVISIONAL]
-var hybrid_adopt_min_share: float = 0.5   # a hybrid's mass share of a realm to relabel it at finalize
+var hybrid_adopt_min_share: float = 0.35  # a hybrid's mass share of a realm to relabel it at finalize (plurality, not majority — the base core is entrenched, so a hybrid rarely reaches an outright majority; the relabel already requires the hybrid to be the realm's LARGEST culture)
 
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago
