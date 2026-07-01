@@ -37206,3 +37206,31 @@ on-tick dispatch.
 **Next session should:**
 - Phase 4d: conquest merge + persistence. On conquest (a base conquers a distinct base), roll merge-vs-displace with the §6.4 gate (clan x civ -> Conquest hybrid ONLY when the clan wins; civ-over-clan displaces; civ x civ / clan x clan symmetric); when a polity's territory goes dominantly hybrid, flip its culture_id to the hybrid + persist culture_synthesis_parents to setting_polities (a migration). Then 4e: emergence tests + calibration (parity/alignment drivers, prevalence via calib_sweep, baseline-neutral).
 **Commits:** ce86099 (Phase 4c).
+
+
+## Session 2026-06-30 — Phase 4d: hybrid emergence conquest merge + persistence
+
+**Task:** Phase 4d — the CONQUEST-trigger hybrid merge (§6.4-gated) + the finalize relabel that makes a realm's people become the hybrid, persisted to setting_polities.
+**Model used:** Opus 4.8.
+**Completed:**
+- CONQUEST merge: `HistorySimulator._assimilate_held_hexes` retargeted — on a conqueror's held hex carrying a foreign BASE substrate, `_conquest_merge_target(owner, subject)` returns the hybrid to assimilate toward INSTEAD of the owner (conquered/contested zones become the hybrid). §6.4 gate: clan×civ merges ONLY clan-over-civ (owner=clan); civ-over-clan + unknown pairs displace (assimilate toward owner); same-class symmetric. Reuses the §4c per-pair lock (`_merge_decisions`) — a pair that border-merged (§4c) and one that conquest-merges resolve to the SAME hybrid/decision. Alignment still assimilates toward the realm's own alignment.
+- FINALIZE relabel (Jedidiah via AskUserQuestion — "relabel at finalize"): `_finalize_hybrid_identities()` (first line of `_finalize`, before serialize/handoff) — a realm whose POPULATED substrate (`_dominant_populated_culture`, mass-weighted) is dominantly a HYBRID at >= `hybrid_adopt_min_share`=0.5 gets culture_id relabeled to that hybrid + `culture_synthesis_parents=[base_a,base_b]` recorded; base realms carry []. Emits a "cultural_shift"/"hybrid_emerged" event. NO mid-sim identity flip — the sim runs on base ids; this is a present-day handoff relabel (calibration-safe).
+- Persistence: migration 179 (`ALTER TABLE setting_polities ADD COLUMN culture_synthesis_parents TEXT NOT NULL DEFAULT '[]'`; auto-discovered from db/migrations/), schema.sql column, `SettingRepository.POLITY_COLUMNS` += culture_synthesis_parents (auto-hashed by setting_dataset_hasher, which keys on POLITY_COLUMNS), `_polity_rows()` emits the JSON field.
+- SimConstants: `hybrid_adopt_min_share`=0.5 (§4d PROVISIONAL).
+- **FIX (caught in verification):** adding a column to `SettingRepository.POLITY_COLUMNS` requires EVERY `save_polities` row-builder to carry it — `_polity_rows()` (sim output) AND the seeder's `_make_polity`/`_make_beastman_polity` (the tick-0 SEED snapshot persisted at `setting_generator.gd:152`). I initially only added it to `_polity_rows`; the seed builders lacked it, so `_bulk_insert` (which fails loudly on a missing key) rejected the seed save → `generate()` returned false → a full world-gen cascade (100% wilderness, 0 polities, regions unnamed, ~20 suites red). Added `"culture_synthesis_parents": "[]"` to both seed builders (seed polities are always base cultures). Restored 478/16.
+- test_setting_hybridization.gd extended (§4d): conquest-merge gating (clan-over-civ merges, civ-over-clan gated-out, displace-lock), same-class symmetric conquest, `_dominant_populated_culture` mass-weighting, finalize relabel (hybrid-dominant -> relabeled + parents) + base-dominant kept (parents []).
+**Decisions made:**
+- Persistence = FINALIZE RELABEL (Jedidiah, AskUserQuestion): the sim runs on base ids (no mid-sim polity-identity flip, per the standing ruling); only the SUBSTRATE goes hybrid mid-sim; at finalize, hybrid-dominant realms are relabeled for the present-day map + naming. Calibration-safe (a handoff fact, not a sim-dynamics flip).
+- Conquest merge reuses the §4c per-pair lock (unified: a base-pair merges/displaces consistently across border + conquest); the §6.4 directional gate (clan-over-civ) is applied at the conquest site (owner = conqueror) BEFORE consulting the lock.
+- The retarget also converts same-class PEACEFUL-border owned hexes (owned mixed substrate), not just conquered ones — ACCEPTED: a stable border producing a hybrid people is realistic + lets Peer/Confed realms actually become hybrids (enabling the relabel). §4c's `_phase_hybridization` remains the (weaker, assimilation-eroded) seam seeder incl. the unowned buffer.
+**Interfaces defined or changed:**
+- setting_polities.culture_synthesis_parents (JSON [base_a,base_b] or []); migration 179; `SettingRepository.POLITY_COLUMNS` += it; sim_polities row field.
+- `HistorySimulator._conquest_merge_target(owner,subject)->String`; `_dominant_populated_culture(pol)->{cid,share}`; `_finalize_hybrid_identities()`.
+- `SimConstants.hybrid_adopt_min_share`.
+**Database changes:** migration 179 (setting_polities.culture_synthesis_parents; non-destructive ADD COLUMN default '[]').
+**Tests added/updated:** test_setting_hybridization.gd extended with §4d coverage (30 checks total: 4c + 4d). Suite **478/16** on two consecutive runs = the pre-4d baseline + the extended suite, ZERO new failures. The 16 are pre-existing UI/combat/flaky failures + a pre-existing `koppen` hex-fixture — none culture/4d-related. (Determinism hash carries the new POLITY_COLUMNS column automatically via setting_dataset_hasher.)
+**Known issues:**
+- The retarget converts owned mixed substrate broadly (border + conquest); prevalence is gated only by the per-pair merge probability (base x family). Full prevalence / parity / alignment calibration is §4e.
+**Next session should:**
+- Phase 4e: hybrid-emergence integration test (a full generated-map run producing >= 1 hybrid realm, deterministic) + the calibration pass — add the parity/alignment merge drivers (§3.3), tune prevalence via `tools/calib_sweep.tscn`, and verify wilderness / realm-count neutrality vs the §17 targets.
+**Commits:** d01279c (Phase 4d).
