@@ -37176,3 +37176,33 @@ on-tick dispatch.
 **Next session should:**
 - Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + a CultureCatalogLoader accessor; merge-vs-displace roll in _resolve_contest / _phase_expansion between two distinct human BASE cultures -> grow HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ per §6.4 / emergence §3.3).
 **Commits:** 3381462 (naming #3 GDD spec).
+
+
+## Session 2026-06-30 — Phase 4c: hybrid emergence border merge (substrate)
+
+**Task:** Implement Phase 4c — the runtime border merge that emerges first-order hybrids into the culture substrate (load-time parent-pair->hybrid lookup + _phase_hybridization). Design per gdd-culture-emergence §3.3/§3.6 + gdd-hybrid-conlang-fusion §6.4.
+**Model used:** Opus 4.8.
+**Completed:**
+- CultureCatalogLoader: hybrid_for_parents(a,b) — load-time, cached, order-independent parent-pair->hybrid_id lookup (scans culture_class=="hybrid" records' culture_synthesis_parents); + culture_synthesis_parents(record) accessor; clear_cache() resets the pair cache; culture_class doc updated (base|hybrid|member).
+- CultureSeeder: eagerly builds instances for all 55 hybrid catalog records (seed-EXCLUDED as polities, present for lookup per §3.6; deterministic per-culture RNG stream, no perturbation to seeded jitter). Added culture_class + language_family to every _jitter_instance.
+- HistorySimulator._phase_hybridization(tick) — scans substrate SEAMS (a land hex where two DISTINCT human BASE cultures each hold >= hybrid_seam_threshold); a per-BASE-PAIR merge-vs-displace decision (locked once; tick-independent draw), gated to SAME-CLASS pairs (civ x civ Peer, clan x clan Confederated); on merge grows HYB(A,B) via _lerp_toward (sum-preserving). SUBSTRATE ONLY — no polity flip; assimilation/expansion/diffusion untouched (minimal calibration blast-radius). Hooked after _phase_substrate in BOTH tick paths. Helpers: _top_two_bases, _is_human_base, _civ_or_clan_of, _decide_merge, _shares_language_family, _family_set. State: _merge_decisions.
+- SimConstants: hybrid_seam_threshold=0.2, hybrid_merge_base_p=0.25, hybrid_merge_family_bonus=1.6, hybrid_merge_rate=0.08 (all §4c PROVISIONAL).
+- tests/test_setting_hybridization.gd (19 checks; registered — 4 edits: tscn ext_resource+node, runner @onready+run-loop): lookup order-independence + Confed/Conquest resolution + misses; _top_two_bases picks bases over hybrids; shared-language-family; merge grows hybrid + shrinks both parents + sum=1; Conquest pair skipped at a border; below-threshold no-merge; displace/lock/determinism.
+**Decisions made:**
+- 4c SCOPE = SAME-CLASS peaceful-border merges only (Peer + Confederated); Conquest (clan x civ) emerges via §4d conquest (a peaceful border lacks the conqueror-over-subject the Conquest kit models, and §6.4's clan-over-civ gate needs a clear winner). Jedidiah-chosen (AskUserQuestion).
+- Merge probability is PROVISIONAL: base_p x shared-language-family, one tick-INDEPENDENT per-pair draw (a stable property of seed+pair, revealed on first contact). Parity + alignment drivers (§3.3) deferred to §4e calibration.
+- Hybrid instances built EAGERLY at seed (all 55) — simplest + deterministic, avoids lazy campaign-seed threading; inert until a merge grows the weight.
+- Substrate-only, no assimilation change (4c isolated for calibration safety); the hybrid reaches a small seam equilibrium under assimilation counter-pressure — domination/persistence is §4d.
+**Interfaces defined or changed:**
+- CultureCatalogLoader.hybrid_for_parents(a: String, b: String) -> String; .culture_synthesis_parents(record) -> Array.
+- Culture INSTANCE now carries culture_class + language_family (added in CultureSeeder._jitter_instance).
+- HistorySimulator._phase_hybridization(tick); _merge_decisions dict (pair-key "a|b" -> "merge"/"displace", canonical a<b); RNG stream tag "hybridize_decide" (tick 0, key=pair).
+- SimConstants.hybrid_seam_threshold / hybrid_merge_base_p / hybrid_merge_family_bonus / hybrid_merge_rate.
+**Database changes:** None (4c is in-memory substrate; persistence is §4d).
+**Tests added/updated:** test_setting_hybridization.gd (19 checks, new, registered). Suite 478/16 on two consecutive runs (477 baseline + this suite; the 16 are pre-existing UI/combat/flaky failures — none culture-related). SettingStage3 now bounds-checks the 55 hybrid instances too (217->382 checks, all green); the "no hybrid is seeded" invariant (Stage3) still passes.
+**Known issues:**
+- The hybrid seam-substrate reaches only a small equilibrium under assimilation counter-pressure (expected for 4c); it becomes dominant/persistent only once §4d flips the polity + retargets assimilation.
+- Merge probability drivers are minimal (base x family); parity/alignment + prevalence calibration are §4e.
+**Next session should:**
+- Phase 4d: conquest merge + persistence. On conquest (a base conquers a distinct base), roll merge-vs-displace with the §6.4 gate (clan x civ -> Conquest hybrid ONLY when the clan wins; civ-over-clan displaces; civ x civ / clan x clan symmetric); when a polity's territory goes dominantly hybrid, flip its culture_id to the hybrid + persist culture_synthesis_parents to setting_polities (a migration). Then 4e: emergence tests + calibration (parity/alignment drivers, prevalence via calib_sweep, baseline-neutral).
+**Commits:** ce86099 (Phase 4c).
