@@ -66,6 +66,19 @@ func _ready() -> void:
 	print("[calib] === CALIB SWEEP %s × %d (mean) ===" % [size, rows.size()])
 	for k in keys:
 		print("[calib]   %-24s %.2f" % [k, float(sums[k]) / cnt])
+	# Per-culture land dominance (diagnostic): owned hexes per culture across all
+	# seeds, as % of all land — surfaces runaway cultures + demihuman persistence.
+	var cland := {}
+	var total_land := 0.0
+	for m in rows:
+		total_land += float(m["land"])
+		for c in m["culture_land"]:
+			cland[str(c)] = float(cland.get(str(c), 0.0)) + float(m["culture_land"][c])
+	var ck := cland.keys()
+	ck.sort_custom(func(a, b): return float(cland[a]) > float(cland[b]))
+	print("[calib] --- top cultures by owned land (%% of all land, summed over seeds) ---")
+	for i in range(mini(14, ck.size())):
+		print("[calib]   %-14s %.1f%%" % [str(ck[i]), 100.0 * float(cland[ck[i]]) / maxf(total_land, 1.0)])
 	print("[calib] ============================================================")
 	get_tree().quit(0)
 
@@ -144,7 +157,18 @@ func _measure(cid: String, beastman: Dictionary, hybrid_ids: Dictionary) -> Dict
 		"hybrid_dom_hexes": float(hybrid_dom_hexes),
 		"realms_hyb_plurality": float(realms_hyb_plurality),
 		"max_hyb_share": max_hyb_share,
+		"culture_land": _culture_land(polities, owner_counts),
+		"land": float(land),
 	}
+
+
+## owned-land hexes per present-day culture_id (across all polities).
+func _culture_land(polities: Array, owner_counts: Dictionary) -> Dictionary:
+	var out := {}
+	for p in polities:
+		var cs := str(p.culture_id)
+		out[cs] = int(out.get(cs, 0)) + int(owner_counts.get(str(p.id), 0))
+	return out
 
 
 ## Dominant (highest-weight) culture id in a culture_weights JSON string, or "".

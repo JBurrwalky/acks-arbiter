@@ -355,6 +355,12 @@ func _diffuse_culture() -> void:
 		var w_n: Dictionary = _culture_w[n]
 		if w_h.is_empty() and w_n.is_empty():
 			continue
+		# Race separation: no cultural bleed between two POPULATED hexes of different
+		# races (human <-> elf/dwarf). Empty/unpopulated hexes are ungated so a race
+		# still diffuses into unclaimed land of its own kind.
+		if int(_grid[h]["population_band"]) > 0 and int(_grid[n]["population_band"]) > 0 \
+				and _dominant_race(h) != _dominant_race(n):
+			continue
 		_apply_pair_diffusion(deltas, h, n, w_h, w_n, edge["coef"])
 	for key in deltas:
 		var w: Dictionary = _culture_w[key]
@@ -424,6 +430,12 @@ func _assimilate_held_hexes(tick: int) -> void:
 			# threshold, which re-arms assimilation next tick.
 			if float(_culture_w.get(key, {}).get(culture_id, 0.0)) >= 0.999:
 				continue
+			# Race separation (Jedidiah 2026-07-01): a realm assimilates only SAME-RACE
+			# hexes. Ruling a different-race subject population (humans over an elf/dwarf
+			# province) leaves that substrate intact — demihumans are subjects, not
+			# culturally converted. Race changes only via razing/genocide + resettlement.
+			if _dominant_race(key) != _culture_race(culture_id):
+				continue
 			# §7.4b: a moderate-success revolt halts this sovereign's culture
 			# replacement on its hexes for a few ticks.
 			if has_blocks:
@@ -448,9 +460,33 @@ func _assimilate_held_hexes(tick: int) -> void:
 			if _is_human_base(culture_id):
 				var subj := _dominant_other_culture(_culture_w[key], culture_id)
 				if subj != "":
-					var hyb := _conquest_merge_target(culture_id, subj)
-					if hyb != "":
-						culture_target = hyb
+					# Peer-hybrid vigor (Jedidiah 2026-07-01): once the hex's dominant
+					# non-owner culture is a hybrid OF THE OWNER'S OWN BASE — the realm's
+					# emergent fusion, grown here by a prior tick's merge — keep driving the
+					# hex toward THAT hybrid rather than reverting to the base. Otherwise the
+					# hybrid grows only until it overtakes the foreign base, then IS the
+					# subject; _conquest_merge_target(base, hybrid) returns "" (a hybrid is
+					# not a base) and assimilation drags the hex back to the owner base,
+					# reabsorbing every hybrid pocket before it reaches whole-realm scale
+					# (the observed "small pockets reabsorbed" failure). Letting the fusion
+					# run to completion is what lets Peer (and Conquest) hybrids relabel a
+					# realm at §4d finalize.
+					if _is_hybrid(subj) and _hybrid_has_parent(subj, culture_id) \
+							and _civ_or_clan_of(subj) == "civ":
+						# CIV hybrids only — the "Peer" vigor the design asks for. A CLAN
+						# hybrid (Confederated clan×clan, or a clan-classified Conquest
+						# hybrid) must NOT consolidate into a realm: clan cultures are
+						# clanholds (is_clanhold), which clamp their hexes to wilderness
+						# density and seat NO settlements (§5.3). Letting a clan hybrid take
+						# over a realm's held hexes therefore erases its urban centres — the
+						# start region can end up settlement-less (no start city). Clan
+						# hybrids stay substrate (their §4c/§4d role); only civ fusions grow
+						# to whole-realm scale.
+						culture_target = subj
+					else:
+						var hyb := _conquest_merge_target(culture_id, subj)
+						if hyb != "":
+							culture_target = hyb
 			_culture_w[key] = _lerp_toward(_culture_w[key], culture_target, rate)
 			_alignment_w[key] = _lerp_toward(_alignment_w[key], alignment, rate)
 
@@ -739,6 +775,27 @@ func _dominant_race(key: Vector2i) -> String:
 	if cid == "":
 		return "human"
 	return str(_culture_instances.get(cid, {}).get("race", "human"))
+
+
+## A culture's race (from its instance; "human" default). Culture spread is
+## RACE-GATED — humans never adopt elf/dwarf culture (or vice versa); demihumans
+## are ruled as a distinct subject race, not culturally converted. Race changes
+## only via genocide + resettlement (razing), never gradual cultural flow.
+func _culture_race(cid: String) -> String:
+	return str(_culture_instances.get(cid, {}).get("race", "human"))
+
+
+func _is_hybrid(cid: String) -> bool:
+	return str(_culture_instances.get(cid, {}).get("culture_class", "")) == "hybrid"
+
+
+## Is `base_cid` one of hybrid `hyb`'s two parent bases? Reads the parents carried
+## on the culture instance (culture_seeder._jitter_instance) — no catalog lookup.
+func _hybrid_has_parent(hyb: String, base_cid: String) -> bool:
+	for p in _culture_instances.get(hyb, {}).get("culture_synthesis_parents", []):
+		if str(p) == base_cid:
+			return true
+	return false
 
 
 ## The next classification up, or "" when already civilized.
@@ -3359,6 +3416,11 @@ func _phase_go_native(tick: int) -> void:
 		var s_cid := str(subject["cid"])
 		var share := float(subject["share"])
 		if s_cid == "" or share < _c.go_native_min_share:
+			continue
+		# Race separation (Jedidiah 2026-07-01): a realm never adopts a different-RACE
+		# culture — humans don't become elves/dwarves and vice versa (they live too
+		# differently). Go-native is within-race prestige adoption only.
+		if _culture_race(s_cid) != _culture_race(owner_cid):
 			continue
 		var gradient := _developed(s_cid) - _developed(owner_cid)
 		if gradient <= 0.0:

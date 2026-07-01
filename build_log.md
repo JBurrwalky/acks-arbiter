@@ -37303,3 +37303,32 @@ on-tick dispatch.
 **Next session should:**
 - The culture-emergence build (base/hybrid, territory gating, deforestation, expansion, hybrid emergence 4a-4e) is COMPLETE. Optional: playtest-tune base_p; in-engine verify hybrid region naming/rendering. Phase 5 (clanhold migration / Völkerwanderung) remains DEFERRED (design sketch only).
 **Commits:** 6520eea (Phase 4e).
+
+## Session 2026-07-01 — Culture rebalance: hybrid reabsorption fix (Peer-hybrid realms)
+
+**Task:** Rebalance hybrid emergence per playtest feedback — Peer (civ×civ) hybrids weren't forming at whole-realm scale ("small pockets reabsorbed"). User directive: "Boost Peer-hybrid vigor."
+**Model used:** Opus 4.8 (diagnosis + implementation + calibration).
+**Completed:**
+- Proved both "vigor" levers were architecturally INERT: `_developed()` is consumed ONLY in `_phase_go_native`, which never sees a hybrid as a subject culture (`_subject_culture_share` returns the dominant non-owner, always a base; a thin hybrid seam is never the plurality). Verified by cranking a go-native hybrid bonus to 5.0 → BYTE-IDENTICAL output. Removed both the go-native gradient bonus (sim_constants `hybrid_go_native_bonus`) AND the seeder's `HYBRID_VIGOR` dev bump. The prior round's 2.88 hybrid-realms came from the race-gate + qinzhao levers, NOT "vigor."
+- Found + fixed the REAL bug (the "pockets reabsorbed" report): in `_assimilate_held_hexes`, once a held hex's dominant non-owner culture is itself a hybrid, `_conquest_merge_target(base, hybrid)` returns "" (a hybrid is not a base), so assimilation reverts the hex to the owner BASE and ERODES the emergent hybrid before it reaches whole-realm scale. Fix: when the dominant-other is a CIV hybrid of the owner's own base, keep driving the hex toward that hybrid (`culture_target = subj`) instead of reverting. Peer (and civ-Conquest) hybrids now consolidate to realms. Added `_is_hybrid(cid)`, `_hybrid_has_parent(hyb, base)`; `_jitter_instance` carries `culture_synthesis_parents` on the instance (no per-tick catalog lookup).
+- CIV-GATED the retarget (`_civ_or_clan_of(subj) == "civ"`): a CLAN hybrid (Confederated clan×clan, or clan-classified Conquest) must NOT consolidate into a realm — clan cultures are clanholds, which clamp their hexes to wilderness density and seat NO urban settlements (§5.3). Ungated, clan hybrids (e.g. samanumu = thiodons×wendaki) took over realms and erased urban settlements → 0-settlement worlds → materialization break. Clan hybrids stay substrate (their §4c/§4d role); only civ fusions grow to whole-realm scale.
+- Calibrated `hybrid_merge_base_p` 0.5 → 0.2: the reabsorption fix made hybrids viable at realm scale, so far fewer border-merges are now needed. Large×8: ~6.4 hybrid realms/large map, §17 in band (wild 52.1%, civ 73.9%), distinct ~2.1; Peer/civ hybrid ids (xianjin, shangteca, kinshungs, wallans) now appear as REALM cultures. (Ungated retarget @ base_p=0.5 overshot to 15 realms + §17 broke to wild 43%.)
+- Hardened `test_setting_materialization` (Jedidiah-approved via AskUserQuestion "keep fix, harden test"): 3 assertions assumed ≥1 URBAN settlement, but a tiny/short world can materialize all-Class-VI (realm-head / County seats only — the test's own line-1003 comment anticipates this). Line 559 → `placed+nc>0` (≥1 settlement of ANY kind); the copy-from-`setting_settlements` check gated on `placed>0`; the `history_context`-keys check now samples an entrance WITH provenance (also DE-FLAKES the old `LIMIT 1`, which could land on a `{}` County seat even when urban settlements existed). Full coverage preserved whenever urban settlements emerge.
+**Decisions made:**
+- "Vigor" (the `developed` scalar) is NOT a usable lever for hybrid REALM formation — the mechanism is substrate accumulation + finalize relabel, and base-assimilation REABSORPTION was the blocker. (§4e's prior "hybrid realms emerge via go-native" narrative was based on an inert path.)
+- Only CIV hybrids consolidate to realms; clan hybrids stay substrate (they are clanholds — dense-realm formation is contradictory).
+- Test fragility (a fixed marginal micro-seed) is handled by hardening the test to its own stated all-Class-VI invariant, NOT by constraining the sim (large maps stay healthy).
+**Interfaces defined or changed:**
+- `HistorySimulator._is_hybrid(cid) -> bool`, `_hybrid_has_parent(hyb: String, base_cid: String) -> bool`.
+- Culture instance dict now carries `culture_synthesis_parents: Array` (`CultureSeeder._jitter_instance`).
+- `SimConstants`: removed `hybrid_go_native_bonus`; `hybrid_merge_base_p` 0.5 → 0.2.
+**Database changes:** none.
+**Tests added/updated:**
+- `test_setting_materialization.gd`: hardened 3 assertions for the all-Class-VI world + de-flaked the history_context sampling. Suite = 478/16 on run 2 (warm), `SettingMaterializationTests: all tests passed (214 checks)` — net-zero new failures vs the 478/16 baseline (confirmed by git-stash isolation: my changes stashed → identical 478/16; the ONLY suite my changes flipped was materialization, now hardened).
+**Known issues:**
+- Any culture-model change perturbs the deterministic sim trajectory; the materialization test's marginal seed (424242/small/short) now yields an all-Class-VI world — handled via the (approved) test hardening.
+- Foreign parallel-editor work is in the working tree (replay culture/territory layers: setting_repository.gd REPLAY_* columns, migration 180, replay_frame_decoder.gd, screen_generate_replay.gd, political_map_view.gd, test_campaign_creation_seams.gd, schema.sql, wilderness assets/shader/GDD) — committed the rebalance via EXPLICIT pathspec only; foreign changes left uncommitted. Baseline 16 failures (clanhold_annex, stamp_powers/language, settlement_kind schema, GeoField height, combat LOS/ZoC, etc.) are pre-existing/foreign, present with my changes stashed too.
+- Elf "fading" reassessment still deferred (separate from this rebalance).
+**Next session should:**
+- (If desired) tune hybrid prevalence via `hybrid_merge_base_p` (0.2 → higher for more, lower for fewer) — currently ~6.4 realms/large map.
+- P5 clanhold migration (still deferred).

@@ -402,6 +402,10 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		# §4c hybrid emergence: culture_class identifies BASE cultures (only base x
 		# base seams merge), language_family drives the shared-family merge bonus.
 		"culture_class": CultureCatalogLoader.culture_class(record),
+		# Parent bases of a hybrid instance ([] for bases) — lets the sim recognize a
+		# realm's OWN emergent fusion (a hybrid of its base) without a catalog lookup on
+		# the per-tick assimilation path (see _assimilate_held_hexes sticky-hybrid guard).
+		"culture_synthesis_parents": CultureCatalogLoader.culture_synthesis_parents(record),
 		"language_family": str(record.get("flavor", {}).get("language", {}).get("language_family", "")),
 		"toponym": CultureCatalogLoader.toponym(record),
 		# §7.4f "prestige": civilization level (class_kit_weights.developed) that

@@ -556,7 +556,11 @@ func test_settlements_materialized(cid: String) -> void:
 	var nc := int(_mat_result.get("county_settlement_count", 0))
 	check(placed + nc == _count("settlement_entrances", "map_id", rid),
 		"settlement_count + M4-2 County settlements match settlement_entrances on the region map")
-	check(placed > 0, "≥1 settlement placed in the start region (%d)" % placed)
+	# A tiny/short world can materialize with NO urban settlement — only the realm-head /
+	# County seats (the all-Class-VI case the test_start_position note below anticipates).
+	# The region still always has ≥1 settlement (urban OR seat); the urban-specific checks
+	# further down are gated on urban settlements having actually emerged.
+	check(placed + nc > 0, "≥1 settlement (urban or County seat) in the start region (%d+%d)" % [placed, nc])
 	# M4-2 settlements attach to County+ realm-head seats, NEVER to Marquis/Baron sub-fiefs
 	# (those are hamlets/watchtowers — no market). And no settlement is below Class VI.
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se JOIN domains d ON se.parent_domain_id = d.id WHERE se.map_id = ? AND d.establishment_method = 'materialized_subfief'", [rid]) == 0,
@@ -578,14 +582,21 @@ func test_settlements_materialized(cid: String) -> void:
 		"settlement parent_domain_id resolves to a domain")
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND parent_domain_id IS NOT NULL", [cid]) > 0,
 		"≥1 settlement wired to its parent domain")
-	# Name + market_class faithfully copied from setting_settlements.
-	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND EXISTS (SELECT 1 FROM setting_settlements ss WHERE ss.campaign_id = se.campaign_id AND ss.name = se.name AND ss.market_class = se.market_class)", [cid]) > 0,
-		"settlement name + market_class copied from setting_settlements")
+	# Name + market_class faithfully copied from setting_settlements — only meaningful when
+	# urban settlements emerged (an all-seat world has no setting_settlements to copy from).
+	if placed > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND EXISTS (SELECT 1 FROM setting_settlements ss WHERE ss.campaign_id = se.campaign_id AND ss.name = se.name AND ss.market_class = se.market_class)", [cid]) > 0,
+			"settlement name + market_class copied from setting_settlements")
 	# history_context present + well-formed (principle 3 provenance).
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND (history_context = '' OR history_context IS NULL)", [cid]) == 0,
 		"every settlement has a history_context")
+	# M2b urban settlements carry full provenance; M4-2 County seats carry an empty {} (they
+	# are seated from the political layer, not a setting_settlement). Sample an entrance that
+	# HAS provenance, so this checks a real urban settlement — and is simply skipped in an
+	# all-seat world. (Also de-flakes the old LIMIT 1, which could land on a {} County seat
+	# even when urban settlements existed.)
 	CampaignRepository.db.query_with_bindings(
-		"SELECT history_context FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? LIMIT 1", [cid, rid])
+		"SELECT history_context FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? AND history_context != '' AND history_context != '{}' LIMIT 1", [cid, rid])
 	if not CampaignRepository.db.query_result.is_empty():
 		var hc = JSON.parse_string(str(CampaignRepository.db.query_result[0].get("history_context", "{}")))
 		check(hc is Dictionary, "history_context parses as a JSON object")

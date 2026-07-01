@@ -464,7 +464,7 @@ var sea_cross_decay: float = 0.92   # × per extra hex of sea distance: 0.6·0.9
 # probability is PROVISIONAL engineering (base x shared-language-family; parity /
 # alignment drivers deferred to the §4e calibration pass). [PROVISIONAL]
 var hybrid_seam_threshold: float = 0.2   # each base's min hex weight for a real seam
-var hybrid_merge_base_p: float = 0.5     # base per-pair merge-vs-displace probability
+var hybrid_merge_base_p: float = 0.2     # base per-pair merge-vs-displace probability
 var hybrid_merge_family_bonus: float = 1.6  # x when the two bases share a language family
 var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex toward the hybrid
 

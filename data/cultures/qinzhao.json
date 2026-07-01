@@ -76,8 +76,8 @@
       }
     },
     "class_kit_weights": {
-      "developed": 0.9,
-      "primitive": 0.1
+      "developed": 0.7,
+      "primitive": 0.3
     }
   },
   "flavor": {
