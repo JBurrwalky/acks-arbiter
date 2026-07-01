@@ -37124,3 +37124,55 @@ on-tick dispatch.
 **Decisions:** demonym=PEOPLE (Thiodons), toponym=LAND (Thiodmark); `-mark/-gard/-heim` are place-suffixes, valid only on toponyms — this invalidates the place-suffix hybrid names (aryamark/hellmark/ashurheim/tollangard/hinogard) for the hybrid-naming redo.
 **Tests:** Suite **477/16** (clean baseline; zero new failures). Seeding 217 + name-banks 82/1250 green. No test referenced the renamed bases.
 **Next:** redo the hybrid-naming proposal (workstream #2) against the NEW base roots + the people-name rule (no place-suffixes); then apply hybrid renames; then #3 deity/merge-gating GDD spec.
+
+
+## Session 2026-06-30 — Naming workstream #2: rename all 54 hybrids to rules-based people-names
+
+**Task:** Redo the hybrid-naming proposal against the NEW base roots + the people-not-place rule; coin in reviewable batches of 5; then apply the renames (data + code + docs) and verify.
+**Model used:** Opus 4.8.
+**Completed:**
+- Coined + Jedidiah-approved NEW people-names for all 54 first-order hybrids across 11 review batches (brythald kept as his own coinage). Full old->new table + method in gdd-hybrid-conlang-fusion.md §5.
+- Method by archetype: Conquest (24) = the conquered civ re-voiced in the conqueror clan's phonology + that clan's people-ending (Thiodons Gothic -ans/-ungs/-ings; Albawyn Goidelic -raige/Fir-/-wyn; Wendaki Comanche -nu/-teka; e.g. quirgard->wallans, novarom->parinu, hellmark->nikungs). Peer (28) = a coined word for the pair's distinctive shared trait, built from BOTH parents' lexemes + a register ending (romkem->djetani, serican->lijian, ptolan->sebasos). Confederated (2) = a coined people/nation word (maniheim->samanumu, senecar->cenumu).
+- Applied via a one-off script + the generator: flipped each conlang kit_id + filename; fixed brythald's stale conlang synthesis_sources ([6,7]->[BASE_01,BASE_02]); repointed generate_hybrid_kits.py RECOVERED to the 9 new ids and re-ran --generate (rebuilt the 46 generated kits, whose demonym/prose all derive from the id); rename+hand-patched the 9 authored kits (preserving authored mechanicals); applied a Ch'ulet demonym override (generator only emits id.capitalize()); deleted + rebuilt all 82 name banks.
+- Repointed references: tests/test_setting_name_banks.gd (aryamark->arjungs), tools/build_name_banks.py + tools/name_hybrids.py samples, gdd-culture-catalog.md (shidhean example->shidean), gdd-culture-emergence-and-territory.md (sargonid->tamkari validation ref), NEW gdd-hybrid-conlang-fusion.md §5 (naming-method section + full 55 table), docs/coding_conventions.md §85 (rename-mechanics note).
+**Decisions made:**
+- Peer naming re-grounded mid-run (Jedidiah): dropped the cross-exonym / real-ethnonym approach + the Latin -ans default; returned to coined shared-trait words in the two parents' blended register. in_group_loyalty treated as near-universal (like military/orthodoxy) so the distinctive trait spreads across religious/mercantile/arcane/epistemic/expressive.
+- Naming constraints: demonym names the PEOPLE not the place (-mark/-gard/-heim only on toponyms); NO real deity NAMES (generic god-words ok: ilu/teotl/shen/netjer); names read as a people/nation not a cult; NO verbatim real-world ethnonyms (cross-exonyms like Seres/Lijian/Yauna are inspiration only, coined not lifted); Peer trait ties surfaced for Jedidiah's pick.
+- brythald kept (his coinage). ptolan/serican/sargonid (prior keepers) replaced by coined forms once the base overhaul invalidated their roots. shidean kept the bespoke sidhe theme (respelled).
+**Interfaces defined or changed:**
+- 54 hybrid culture_ids renamed (old->new table in gdd-hybrid-conlang-fusion §5.4). culture_synthesis_parents UNCHANGED (they reference stable BASE ids, so parent-refs never move on a hybrid rename). generate_hybrid_kits.py RECOVERED set now = {shidean,cenumu,ramqet,tamkari,sebasos,lijian,nikitu,xianjin,tikanu}.
+- A hybrid's id lives in TWO coordinated places: the conlang FILENAME stem (generator pair_map) AND the conlang internal kit_id field (bank builder keys off it, expects filename==kit_id). Both must agree on a rename.
+**Database changes:** None (data files only).
+**Tests added/updated:** test_setting_name_banks.gd repointed aryamark->arjungs. No new tests (rename is name-only; Phase 4e adds emergence tests).
+**Known issues:**
+- Cosmetic: a few conlang banks_patterns still embed an old demonym in sample unit/ship names (e.g. "the Hari of Aryamark" in the arjungs bank) — left as-is to avoid corrupting homeland/toponym fields via a blanket replace; polish in a later narrative pass (kits' _generated note already flags "refine narratively").
+- Toponyms (land names) preserved unchanged across the people-rename; some still echo the old people-name (Serica for lijian) — intentional (land != people); revisit only if desired.
+**Next session should:**
+- Naming workstream #3: spec into gdd-hybrid-conlang-fusion.md the stratified deity usage (Conquest: temples+nobles=conqueror deity-names, shrines+commoners=conquered; Peer/Confed=fuse via the sound-laws — a RUNTIME/materialization feature) + the Conquest MERGE-GATING (clan-conquers-civ only; the static kits assume the clan is the conqueror, so civ-over-clan must displace, not merge).
+- Then Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + CultureCatalogLoader accessor; merge-vs-displace roll growing HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ).
+**Commits:** 68f0da3 (naming #2: rename all 54 hybrids).
+
+
+## Session 2026-06-30 — Naming workstream #3: deity stratification + Conquest merge-gating (GDD spec)
+
+**Task:** Spec the stratified deity usage + the Conquest merge-gating into gdd-hybrid-conlang-fusion.md (naming workstream #3; sequenced before Phase 4c).
+**Model used:** Opus 4.8.
+**Completed:**
+- gdd-hybrid-conlang-fusion.md §6 (NEW) + §7 (2 open questions): the deity-usage + merge-gating spec. gdd-culture-emergence-and-territory.md §3.3 gets the gating rule cross-referenced at the merge-vs-displace branch.
+- KEY FINDING (verified against the data): every hybrid conlang religion.sample_deity_renames already carries TWO deity morphs per Agrippan canon-name (one per parent family), written "PRIMARY (Lang. SECONDARY)". PRIMARY = the linguistic backbone (blend.lean / inherits[0]) — a LINGUISTIC axis, DECOUPLED from the religious conqueror. So deity stratification needs NO data change, only runtime routing.
+- Conquest stratification (§6.2): temples + Ruler/Noble NPCs -> the CONQUEROR's morph; shrines + commoner/peasant NPCs -> the CONQUERED's morph. Route by parent-FAMILY (conqueror = the clan), NOT by primary/secondary slot. Checked all 24: the 16 Germanic/Celtic conquests have conqueror=primary, but the 8 Wendaki conquests keep the settled civ as their linguistic backbone (a nomad conqueror adopting the administrative tongue), so their conqueror (Wendaki) sits in the SECONDARY morph — hence route by family, not slot.
+- Peer/Confed fusion (§6.3): no conqueror -> the primary (backbone-fused) morph used uniformly; it is already the canon-name reflexed through the fused phonology (the "hybridize via the conlang sound-laws" result Jedidiah asked for).
+- Merge-gating (§6.4 + emergence §3.3): clan x civ merges ONLY when the CLAN wins (-> clan-over-civ Conquest hybrid); civ-over-clan DISPLACES (no merge); civ x civ (Peer) + clan x clan (Confed) are SYMMETRIC (no gating). One archetype-level gate — conqueror derived from civ_or_clan (the clan parent); no new kit field, no per-hybrid flag.
+**Decisions made:**
+- Decoupled the LINGUISTIC backbone (which tongue's phonology dominates the lexicon) from the RELIGIOUS conqueror (who owns the temples). This resolves the Wendaki-conquest "inversion" (civ backbone but clan conqueror) WITHOUT re-authoring 8 lexicons, and is historically apt (Yuan/Qing/post-Rome).
+- Merge-gating is archetype-level, not per-hybrid, because all 24 Conquest kits uniformly encode clan=conqueror (the naming pass enforced this).
+**Interfaces defined or changed:**
+- Runtime contract (future): the deity router selects the morph tagged with the CLAN family for temples/nobles and the CIV family for shrines/commoners (Conquest); the primary morph uniformly (Peer/Confed). The Phase-4c merge-vs-displace roll gates clan x civ to clan-winner-only.
+- Noted data-shape refinement (deferred to materialization): split the per-deity "Primary (Lang. Secondary)" string into {family: morph} for clean family-keyed lookup.
+**Database changes:** None.
+**Tests added/updated:** None (GDD spec only; no code/data touched).
+**Known issues:**
+- Deity-morph data shape is parse-y (one string per deity); the clean {family: morph} split is deferred to the NPC/temple/shrine materialization pass (§7 open Q).
+**Next session should:**
+- Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + a CultureCatalogLoader accessor; merge-vs-displace roll in _resolve_contest / _phase_expansion between two distinct human BASE cultures -> grow HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ per §6.4 / emergence §3.3).
+**Commits:** 3381462 (naming #3 GDD spec).
