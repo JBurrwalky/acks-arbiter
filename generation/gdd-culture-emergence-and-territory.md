@@ -85,6 +85,8 @@ TRIGGER B — CONQUEST (A annexes B's hexes, or vice versa)
 
 This reuses the existing border-contest, assimilation, and go-native machinery (§6) and inserts the merge branch alongside the displace branch.
 
+**Archetype gating (2026-06-30, naming workstream #3).** Which merges may produce which archetype is constrained so the static kits' fixed conqueror-assumption always holds (full spec in [`gdd-hybrid-conlang-fusion.md`](gdd-hybrid-conlang-fusion.md) §6.4): a **clan × civ** contact produces the Conquest hybrid **only when the CLAN is the winner/aggressor** (clan-over-civ); a **civ conquering a clan DISPLACES** — no merge, the clanhold scatters or is absorbed as subjects, no new people forms. **civ × civ** (Peer) and **clan × clan** (Confederated) merges are **symmetric** — either winner yields the same kit, so no gating. The conqueror is the clan parent (derived from `civ_or_clan`), so no new kit field is needed. This keeps the Conquest hybrid's people-name (the conqueror's people-ending) and its two-register deity usage (temples/nobles = conqueror, shrines/commoners = conquered) well-defined at runtime. Phase 4c's merge-vs-displace roll enforces this gate.
+
 **Merge-probability drivers — decided 2026-06-27.** The chance a contact resolves as *merge* rather than *displace* is a function of:
 
 - **Relative strength / size** — near-parity favors merge; a lopsided border favors displacement (the strong absorb the weak).

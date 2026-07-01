@@ -92,9 +92,43 @@ The archetype (emergence GDD §3.2) sets the naming device:
 
 ---
 
-## 6. Open Questions / Architectural Concerns
+## 6. Deity usage & Conquest merge-gating (2026-06-30, naming workstream #3)
+
+Two coupled runtime rules that finish the hybrid model: **how** a hybrid's pantheon is voiced at play time, and **which** runtime merges may produce which archetype. Both are MATERIALIZATION/runtime features — specced here, implemented when NPC/temple/shrine naming lands (deity stratification) and in Phase 4c/4d (merge gating).
+
+### 6.1 The data already in place
+Every hybrid conlang `religion.sample_deity_renames` maps each Agrippan canon-name to **two morphs — one per parent family** — written `PRIMARY (Lang. SECONDARY)`:
+- `arjungs` (Conquest): `Thulrs (Pers. Turvasa)` — Gothic primary, Persian secondary.
+- `djetani` (Peer): `Tjuraa (Lat. Tulri)` — Egyptian primary, Latin secondary.
+- `samanumu` (Confed): `Thulr (Woodland Tularonon)` — Norse primary, Woodland secondary.
+
+`religion._note` states which family is primary/secondary. **PRIMARY = the linguistic backbone** (`blend.lean` / `inherits[0]`) — the tongue whose phonology dominates the fused language. This is a *linguistic* axis, **decoupled** from the *religious* conqueror (§6.2). No new data is needed for stratification; both morphs already exist, family-tagged.
+
+### 6.2 Deity stratification — Conquest hybrids (two registers)
+Per Jedidiah: a conquered people keeps its gods in the folk layer while the conqueror's gods rule the state cult. Same canon-deity, two names:
+- **Temples + Ruler/Noble NPCs → the CONQUEROR's morph** (the clan).
+- **Shrines + commoner/peasant NPCs → the CONQUERED's morph** (the civ).
+
+**Route by parent-FAMILY (conqueror = the clan, §6.4), not by primary/secondary slot.** For the Germanic/Celtic conquests the conqueror *is* the primary (Gothic/Goidelic backbone), so temples read the primary. But the **8 Wendaki conquests keep the settled civ as their linguistic backbone** (a nomad conqueror adopting the literate administrative tongue — historically the norm: Mongols/Yuan, Manchu/Qing, Germanic/Rome), so there the conqueror (Wendaki) is the **secondary** morph and the temples read the *secondary*. The materializer selects "the morph tagged with the **clan** family," whichever slot it occupies. *(Impl note: the two morphs currently share one string `Primary (Lang. Secondary)`; a clean materializer wants them split to `{family: morph}` per canon-deity — a later data-shape refinement, not a re-authoring.)*
+
+### 6.3 Deity fusion — Peer & Confederated hybrids (one register)
+No conqueror → no elite/folk split. The **primary (backbone-fused) morph is used uniformly** at temples and shrines — it is already the canon-name reflexed through the fused phonology (`Tjuraa < Tulrius`), i.e. the "hybridize via the conlang sound-laws" result Jedidiah asked for. The secondary morph survives as a dialectal/older variant for flavor, not stratified by class.
+
+### 6.4 Conquest merge-gating (Phase 4c/4d rule)
+The static Conquest kits assume ONE fixed conqueror — the **clan** — baked into both the people-name (the conqueror's people-ending, §5.1) and the deity stratification (§6.2). Runtime must honor that assumption:
+- **clan × civ merge fires ONLY when the CLAN is the winner/aggressor** → the Conquest hybrid (clan-over-civ).
+- **civ conquers clan → DISPLACE, never merge** — the civilized realm scatters or absorbs the clanhold as subjects; no new people forms.
+- **civ × civ (Peer) and clan × clan (Confederated) are SYMMETRIC** — either party may trigger the merge; the kit is identical regardless of who won, so no gating.
+
+Because all 24 Conquest kits encode clan-as-conqueror uniformly, **one archetype-level gate suffices — no per-hybrid gating flag.** The engine derives the conqueror from `civ_or_clan` on the two base parents (the clan parent), so no new kit field is required. This is the rule the Phase 4c merge-vs-displace roll enforces (emergence GDD §3.6).
+
+---
+
+## 7. Open Questions / Architectural Concerns
 
 - **Depth of coinage.** Full lexicon coverage (every concept fused, as here) vs a core subset — current decision is full coverage. Revisit if authoring load is too high across 55 kits.
 - **Etymology transparency.** `fusion_rules` documents the derivation so names stay reproducible and reviewable; if that proves noisy in the data files, it could move to a sidecar doc.
 - **Deep-fusion vs lean-fusion.** All hybrids currently use the same protocol. If some pairings (e.g. a light, recent contact) should stay more diglossic, that would need a per-hybrid "fusion depth" flag — not currently modeled.
 - **Name banks.** The build step that assembles `data/name_banks/` from kits should draw on the fused lexicon, not the retired slash forms.
+- **Deity-morph data shape (§6.1).** The two per-deity morphs currently live in one string `Primary (Lang. Secondary)`. The temple/shrine router (§6.2) needs to select by parent-family; a clean shape is `sample_deity_renames[canon] = {<family_a>: morph, <family_b>: morph}` (or a `morphs_by_family` sidecar). Deferred to the NPC/temple/shrine materialization pass — the current strings are sufficient for the spec and are family-tagged, just parse-y.
+- **Wendaki-conquest backbone (§6.2).** The 8 Wendaki conquests carry the *settled civ* as their linguistic backbone, so the conqueror (Wendaki) is the deity **secondary**. The decoupling (route religion by conqueror-family, not by backbone) resolves this and is arguably more realistic (nomad conqueror adopts the administrative tongue). Left as-is; revisit only if a uniform "conqueror = backbone" is ever wanted (that would mean re-fusing 8 lexicons — heavy, not recommended).
