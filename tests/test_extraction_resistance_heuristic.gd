@@ -93,7 +93,13 @@ func test_garrison_below_50pct_does_not_resist() -> void:
 	_add_garrison_unit(2.0)  # 2 < 5 (50% of 10)
 	var result := ExtractionResistanceHeuristic.evaluate(_domain_id, attacker, 100)
 	check(not bool(result.get("will_resist", true)), "below 50% → no resist")
-	check(String(result.get("reason", "")) == "garrison_below_50pct_threshold", "reason cited")
+	check(String(result.get("reason", "")) == "garrison_below_threshold", "reason cited")
+	# The Phase-3 regression anchor: with NO disposition the generalized
+	# threshold is exactly the 0.50 placeholder (gdd-ruler-ai.md §7.3).
+	check(absf(float(result.get("threshold_ratio", 0.0)) - 0.5) < 0.000001,
+		"no-disposition threshold ratio anchors at 0.50")
+	check(absf(float(result.get("threshold_br", 0.0)) - 5.0) < 0.000001,
+		"threshold_br unchanged from the placeholder (5.0 vs attacker 10)")
 
 
 func test_garrison_at_50pct_resists() -> void:
@@ -110,4 +116,4 @@ func test_garrison_above_50pct_resists() -> void:
 	_add_garrison_unit(7.5)
 	var result := ExtractionResistanceHeuristic.evaluate(_domain_id, attacker, 100)
 	check(bool(result.get("will_resist", false)), "above 50% → resist")
-	check(String(result.get("reason", "")) == "garrison_meets_50pct_threshold", "reason cited")
+	check(String(result.get("reason", "")) == "garrison_meets_threshold", "reason cited")

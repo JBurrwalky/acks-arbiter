@@ -185,9 +185,11 @@ static func _stronghold_hex(stronghold_id: String) -> Array:
 	var owner_id: String = String(CampaignRepository.db.query_result[0].get("owner_character_id", ""))
 	if owner_id.is_empty():
 		return []
-	# Find the owner's domain.
+	# Find the owner's domain (deterministic first row — same ordering contract
+	# as the activity handlers' _resolve_domain_for_ruler).
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1", [owner_id]):
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
+		[owner_id]):
 		return []
 	if CampaignRepository.db.query_result.is_empty():
 		return []

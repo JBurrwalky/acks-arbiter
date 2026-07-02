@@ -1,0 +1,81 @@
+{
+  "comment": "Planner-level intents for the NPC Ruler AI (gdd-ruler-ai.md §5/§11; the four composite ids approved by Jedidiah 2026-06-28, plus withstand_siege — a §5.3 catalog action that existed in no activity JSON and must be registerable for the §9.2 vocabulary validation). The planner's other candidates (administer_domain, oversee_investment, issue_decree, train_troops, repress_population, call_to_arms, conscript_troops, levy_militia, hire_mercenaries) live in domain_category.json. Category 'ruler_ai' is planner-internal: no UI block lists these ids, so they never surface as player launchers (UI blocks hard-code their id lists).",
+  "activities": [
+    {
+      "id": "raise_garrison",
+      "category": "ruler_ai",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["ruler_of_domain", "garrison_below_funding_target"],
+      "remote_capable": false,
+      "effect_summary": "Composite: fund the garrison to the RAW 2gp/family universal minimum (+2 clanhold offset; wilderness targets 4gp/family per the base-morale threshold — PROJECT CALL) via conscripts then militia (tribal warriors for clanholds); if levy pools fall short, start the mercenary pipeline via solicit_mercenaries",
+      "raw_citation": "acore_axioms_strongholds_and_domains.xml §garrison L216-234 (2gp minimum; L233 wilderness 4gp base-morale threshold, borderlands 3gp customary — NOT enforced floors), §monthly_event_modifiers L486; ax_domains_of_chaos.xml L36 (clanhold blocks); ax_campaign_play.xml L689-704 (solicitation), L566 (hiring needs prior solicitation)"
+    },
+    {
+      "id": "hold",
+      "category": "ruler_ai",
+      "frequency": "singular",
+      "activity_level": "trivial",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "trivial_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["ruler_of_domain"],
+      "remote_capable": false,
+      "is_launchable": false,
+      "effect_summary": "Bank the treasury and take no discretionary action this month (the planner's anti-thrash floor; no handler — deliberate no-op per gdd-ruler-ai.md §5.2)",
+      "raw_citation": "gdd-ruler-ai.md §5.2 (PROJECT CALL — ACKS does not require a ruler to act each month)"
+    },
+    {
+      "id": "defensive_resistance",
+      "category": "ruler_ai",
+      "frequency": "singular",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["ruler_of_domain", "hostile_army_present"],
+      "remote_capable": false,
+      "effect_summary": "Resist requisition/loot/invasion: disposition-modulated BR threshold over the vassal federation (Phase-3 logic; Phase-1 stub)",
+      "raw_citation": "daw_campaigning_armies.xml L729-855 (invasion/occupation); gdd-ruler-ai.md §7.3 (threshold is PROJECT CALL over the army-warfare placeholder)"
+    },
+    {
+      "id": "manage_stronghold",
+      "category": "ruler_ai",
+      "frequency": "singular",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["ruler_of_domain", "stronghold_below_minimum_or_ruined"],
+      "remote_capable": false,
+      "param_schema": {
+        "mode": "string (auto|build|repair)",
+        "budget_cp": "int (optional spend cap, build mode)"
+      },
+      "effect_summary": "Abstract build/upgrade toward the territory minimum stronghold value, or atomic post-siege rebuild + restore from ruin",
+      "raw_citation": "acore_axioms_strongholds_and_domains.xml §minimum_stronghold_value L88-94, §insufficient_stronghold L452-456; daw_sieges.xml §stronghold_repair L455-462; ax_campaign_play.xml L843 (1 day per 500gp pacing); daw_equipment_and_construction.xml L747-765"
+    },
+    {
+      "id": "withstand_siege",
+      "category": "ruler_ai",
+      "frequency": "singular",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "anywhere",
+      "prerequisites": ["ruler_of_domain", "besieged"],
+      "remote_capable": false,
+      "is_launchable": false,
+      "effect_summary": "Withdraw to the stronghold and withstand the siege (resolution rides the army-warfare siege path; no handler until Phase 3 — registered so the planner candidate validates against the vocabulary)",
+      "raw_citation": "daw_sieges.xml (siege resolution); gdd-ruler-ai.md §5.3 (fortification x crisis)"
+    }
+  ]
+}

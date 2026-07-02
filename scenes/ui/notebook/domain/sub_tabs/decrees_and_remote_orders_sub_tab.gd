@@ -421,8 +421,11 @@ func _params_for(activity_def_id: String) -> Dictionary:
 			var is_numeric: bool = kind in ["tax", "liturgy", "tithe"]
 			var value: Variant
 			if is_numeric:
+				# rate_spin reads gp/family (RAW-facing units); IssueDecreeHandler
+				# expects cp/family (matches tax_rate_cp_per_family et al. and the
+				# RulerActionCatalog "VALUE IS CP" contract) — convert at dispatch.
 				var spin: SpinBox = picker.get("rate_spin")
-				value = int(spin.value) if spin != null else 0
+				value = int(spin.value) * 100 if spin != null else 0
 			else:
 				var le: LineEdit = picker.get("text_edit")
 				value = le.text if le != null else ""

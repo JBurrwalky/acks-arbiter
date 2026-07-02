@@ -26,6 +26,21 @@ const HEIGHT_GAIN := 2.0          # field surface [0,1] -> world Y. ~2.5x vertic
 								  # exaggeration vs real (1 hex=6mi=1 unit; 0.45 surface
 								  # span=3500m=0.9 units). Was 3.0 (~3.7x, read as cliffs).
 const WATER_LEVEL_RAW := 0.30     # below this the field is ocean; water mesh Y
+## Mountain ruggedness (gdd-wilderness-hex-3d.md §17.3): a ridged-noise height bump added to
+## mountain hexes in _hex_height. The corner-averaging in _corner_component_avg propagates a
+## tapered, watertight version to the shared corners for free — peaks rise, the saddles
+## between hexes stay lower — so the rounded bumps gain varied relief. Render-only; the hex
+## grid (shader, world-XZ) and edge/tag data are untouched.
+const RUGGED_AMP := 0.56          # world-unit height the ridged noise adds at a mountain peak
+const RUGGED_FREQ := 0.63         # noise frequency (per world unit); adjacent hexes differ
+## Sub-hex crags (§17.3): mountain hexes SUBDIVIDE each fan wedge and displace the INTERIOR
+## sub-vertices by a finer, zero-mean ridged noise. The perimeter stays flat between the
+## pinned corners (disp tapers to 0 as the centre-weight a → 0), so it's watertight with ANY
+## neighbour — mountain edges tessellate to identical points, plains edges share the straight
+## corner line. Peaks come from the coarse per-hex noise; crags from this.
+const MOUNTAIN_SUBDIV := 4        # barycentric subdivisions per fan wedge on mountain hexes
+const RUGGED_FINE_AMP := 0.3      # crag amplitude (world units), zero-mean ± around the surface
+const RUGGED_FINE_FREQ := 2.4     # crag frequency (per world unit) — finer than the peak noise
 const CHUNK_HEXES := 8            # ~8x8 hexes per mesh chunk (offset-space)
 const TEX_SIZE := 512            # common albedo size for the Texture2DArray
 
@@ -39,10 +54,13 @@ const EDGE_MARGIN := 24.0        # px from a viewport edge that triggers edge-pa
 const EDGE_PAN_RATE := 0.85      # fraction of the view height panned per second
 
 # Terrain-class -> Texture2DArray layer index. Order fixed; the array is built
-# from res://assets/wilderness_textures/<name>.jpg in this order.
+# from res://assets/wilderness_textures/<name>.png in this order. Toon floor set
+# (2026-06-29, gdd-wilderness-hex-3d.md §17.2): no separate clear/forest tile — both
+# reuse the grassland floor (forests are scatter on top); swamp is now its own toon
+# tile rather than darkened jungle.
 const _LAYER_FILES := [
-	"clear", "grassland", "savanna", "tundra", "forest_floor", "jungle",
-	"desert", "badlands", "mountain", "volcanic", "snow", "jungle",  # 11 = swamp (darkened jungle)
+	"grassland", "grassland", "savanna", "tundra", "grassland", "jungle",
+	"desert", "badlands", "mountain", "volcanic", "snow", "swamp",
 ]
 const LAYER_CLEAR := 0
 const LAYER_GRASSLAND := 1
@@ -142,6 +160,8 @@ var _map_data: HexMapData = null
 var _field = null                 # GeoField (reconstructed; cached)
 var _field_ready := false
 var _campaign_seed := 0
+var _rugged_noise: FastNoiseLite = null   # coarse per-hex peak noise (§17.3)
+var _rugged_fine_noise: FastNoiseLite = null   # fine sub-hex crag noise for subdivision (§17.3)
 
 var _camera: Camera3D = null
 var _terrain_root: Node3D = null
@@ -156,6 +176,9 @@ var _model_scene_cache := {}
 ## their settlements get the clanhold building (Jedidiah: clanhold realms only). Built once.
 var _clan_cultures := {}
 var _clan_cultures_ready := false
+## Baron-tier stronghold seat hexes (no watchtower) — handed to _build_farmland so they
+## render as worked land instead. Populated in _build_landmarks before the deferred farmland.
+var _barony_seat_hexes := {}
 var _river_root: Node3D = null
 var _river_material_cache: StandardMaterial3D = null
 var _river_water_cache: ShaderMaterial = null   # #3 animated water (when the PNG is present)
@@ -188,6 +211,12 @@ var _region_overlay_enabled := false   # driven by EventBus.region_overlay_toggl
 var _region_label_root: Node3D = null
 var _city_label_root: Node3D = null
 var _token_root: Node3D = null
+## "Enter Settlement" / "Enter Dungeon" HUD buttons — shown when the party stands on a
+## settlement/dungeon entrance hex; emit the entry signals the session state consumes.
+## (Ported from the 2D hex_map_renderer, which the 3D swap left behind.)
+var _entry_hud: CanvasLayer = null
+var _enter_dungeon_btn: Button = null
+var _enter_settlement_btn: Button = null
 var _splat_material: ShaderMaterial = null
 var _albedo_array: Texture2DArray = null
 var _chunks: Array = []           # MeshInstance3D list (for rebuild)
@@ -244,6 +273,7 @@ func _ready() -> void:
 	_build_environment()
 	_build_camera()
 	_build_splat_material()
+	_build_entry_hud()
 	EventBus.region_overlay_toggled.connect(_on_region_overlay_toggled)
 
 
@@ -288,6 +318,8 @@ func _on_map_loaded(_map_id: String) -> void:
 	_build_landmarks()
 	_build_regions()          # named-region colour overlay + region name labels (static geography)
 	_rebuild_tokens()
+	_update_enter_dungeon_button()
+	_update_enter_settlement_button()
 	_fit_camera()
 	# Scatter is deferred so it never blocks the session-load flow (this runs inside
 	# controller.load_map()); it also refreshes with fog via _on_visibility_updated.
@@ -308,6 +340,8 @@ func _on_visibility_updated() -> void:
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
 	_rebuild_tokens()
+	_update_enter_dungeon_button()
+	_update_enter_settlement_button()
 
 
 func _on_frontier_grown(_map_id: String) -> void:
@@ -389,8 +423,31 @@ func _hex_height(coord: Vector2i) -> float:
 		if t != null and t.water != "":
 			raw = WATER_LEVEL_RAW
 	var y := raw * HEIGHT_GAIN
+	# Mountain ruggedness (§17.3): a ridged bump per mountain hex centre. _corner_component_avg
+	# averages this over the sharing hexes, so corners get a tapered, watertight share — no
+	# seam, and markers/scatter/cliffs all ride the same rugged surface.
+	if t != null and t.elevation == "mountains" and t.water == "":
+		var mxz := WildernessHexMath.axial_to_world(coord)
+		# ZERO-MEAN displacement (± around the field height): the hex's rendered surface
+		# averages back to the RAW elevation, so ruggedizing never systematically inflates
+		# a mountain away from what elevation_raw wants — only the texture roughens.
+		y += _rugged_noise_value(mxz) * RUGGED_AMP
 	_hex_height_cache[coord] = y
 	return y
+
+
+## Ridged height noise centred on ~0 at a world-XZ point (peaks along ridgelines, dips in the
+## troughs), so the mountain bump raises AND lowers around the field height — mean stays at
+## RAW. Lazily built from the seed.
+func _rugged_noise_value(xz: Vector2) -> float:
+	if _rugged_noise == null:
+		_rugged_noise = FastNoiseLite.new()
+		_rugged_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		_rugged_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
+		_rugged_noise.fractal_octaves = 4
+		_rugged_noise.frequency = RUGGED_FREQ
+		_rugged_noise.seed = _campaign_seed
+	return _rugged_noise.get_noise_2d(xz.x, xz.y)
 
 
 func _tag_height(coord: Vector2i) -> float:
@@ -450,6 +507,7 @@ func _build_chunk(coords: Array) -> void:
 		var center := Vector3(center_xz.x, ch, center_xz.y)
 		var own_layer := float(_biome_layer(t))
 		var center_uv2 := _vertex_uv2([coord])
+		var is_rugged := t.elevation == "mountains" and t.water == ""   # subdivide + crag (§17.3)
 
 		# Precompute the 6 corner positions + fog/water (height = mean of sharing hexes).
 		var corner_pos := []
@@ -478,10 +536,15 @@ func _build_chunk(coords: Array) -> void:
 					nb_layer = float(_biome_layer(nt))
 			var layers := Color(own_layer, nb_layer, 0.0, 0.0)
 			var i1 := (i + 1) % 6
-			# Centre is pure own; both edge corners blend own<->neighbour 50/50.
-			_emit_vertex(st, center, Color(1.0, 0.0, 0.0, 0.0), layers, center_uv2)
-			_emit_vertex(st, corner_pos[i], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i])
-			_emit_vertex(st, corner_pos[i1], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i1])
+			if is_rugged:
+				# Subdivided, crag-displaced wedge (interior only; perimeter stays watertight).
+				_emit_rugged_wedge(st, center, center_uv2, corner_pos[i], corner_pos[i1],
+					corner_uv2[i], corner_uv2[i1], layers)
+			else:
+				# Centre is pure own; both edge corners blend own<->neighbour 50/50.
+				_emit_vertex(st, center, Color(1.0, 0.0, 0.0, 0.0), layers, center_uv2)
+				_emit_vertex(st, corner_pos[i], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i])
+				_emit_vertex(st, corner_pos[i1], Color(0.5, 0.5, 0.0, 0.0), layers, corner_uv2[i1])
 
 	st.generate_normals()
 	st.generate_tangents()
@@ -509,6 +572,63 @@ func _emit_vertex(st: SurfaceTool, pos: Vector3, weights: Color, layers: Color, 
 	st.set_uv(Vector2(pos.x, pos.z))   # world XZ; shader rescales by tex_scale
 	st.set_uv2(uv2)
 	st.add_vertex(pos)
+
+
+## Subdivided + crag-displaced fan wedge for a mountain hex (§17.3). Barycentrically tessellate
+## the wedge (apex = hex centre `c`, base edge = the two pinned corners `ki`/`ki1`) into
+## MOUNTAIN_SUBDIV rows and displace each sub-vertex's Y by the fine ridged noise, TAPERED by
+## the centre-weight `a` so the base edge (a=0, the shared hex perimeter) stays flat between the
+## pinned corners → watertight. Weights + fog uv2 barycentrically match the un-subdivided wedge,
+## and layers are constant per wedge (no biome-index interpolation).
+func _emit_rugged_wedge(st: SurfaceTool, c: Vector3, c_uv2: Vector2, ki: Vector3, ki1: Vector3,
+		ki_uv2: Vector2, ki1_uv2: Vector2, layers: Color) -> void:
+	var n := MOUNTAIN_SUBDIV
+	var nf := float(n)
+	var verts := {}   # Vector2i(p, q) -> {pos, w, uv2}; p = row (0 apex … n base), q = 0..p
+	for p in range(n + 1):
+		for q in range(p + 1):
+			var a := float(n - p) / nf     # centre weight: 1 at apex, 0 on the perimeter edge
+			var b := float(p - q) / nf
+			var cc := float(q) / nf
+			var base := c * a + ki * b + ki1 * cc
+			var disp := _rugged_fine_value(Vector2(base.x, base.z)) * RUGGED_FINE_AMP * smoothstep(0.0, 0.25, a)
+			verts[Vector2i(p, q)] = {
+				"pos": Vector3(base.x, base.y + disp, base.z),
+				"w": Color(0.5 + 0.5 * a, 0.5 - 0.5 * a, 0.0, 0.0),
+				"uv2": c_uv2 * a + ki_uv2 * b + ki1_uv2 * cc,
+			}
+	for p in range(n):
+		for q in range(p + 1):   # "up" triangles — same winding as the un-subdivided wedge
+			_emit_sub(st, verts[Vector2i(p, q)], layers)
+			_emit_sub(st, verts[Vector2i(p + 1, q)], layers)
+			_emit_sub(st, verts[Vector2i(p + 1, q + 1)], layers)
+		for q in range(p):       # "down" triangles fill the gaps
+			_emit_sub(st, verts[Vector2i(p, q)], layers)
+			_emit_sub(st, verts[Vector2i(p + 1, q + 1)], layers)
+			_emit_sub(st, verts[Vector2i(p, q + 1)], layers)
+
+
+func _emit_sub(st: SurfaceTool, v: Dictionary, layers: Color) -> void:
+	st.set_color(v["w"])
+	st.set_custom(0, layers)
+	var pos: Vector3 = v["pos"]
+	st.set_uv(Vector2(pos.x, pos.z))
+	st.set_uv2(v["uv2"])
+	st.add_vertex(pos)
+
+
+## Fine sub-hex crag noise, zero-mean ~[-1,1] at a world-XZ point. Higher frequency than the
+## per-hex peak noise so adjacent sub-vertices differ. Lazily built from the seed (+offset so
+## it decorrelates from the coarse noise).
+func _rugged_fine_value(xz: Vector2) -> float:
+	if _rugged_fine_noise == null:
+		_rugged_fine_noise = FastNoiseLite.new()
+		_rugged_fine_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		_rugged_fine_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
+		_rugged_fine_noise.fractal_octaves = 5
+		_rugged_fine_noise.frequency = RUGGED_FINE_FREQ
+		_rugged_fine_noise.seed = _campaign_seed + 101
+	return _rugged_fine_noise.get_noise_2d(xz.x, xz.y)
 
 
 ## Average world-Y over the given coords (skips off-map).
@@ -759,7 +879,7 @@ func _build_splat_material() -> void:
 func _build_albedo_array() -> Texture2DArray:
 	var images: Array[Image] = []
 	for name in _LAYER_FILES:
-		var path := "res://assets/wilderness_textures/%s.jpg" % name
+		var path := "res://assets/wilderness_textures/%s.png" % name
 		var tex := load(path) as Texture2D
 		if tex == null:
 			push_warning("wilderness renderer: missing albedo %s" % path)
@@ -920,27 +1040,38 @@ func _build_farmland() -> void:
 	var settlement_hexes := {}
 	for s in _query_settlement_entrances():
 		settlement_hexes[Vector2i(int(s.get("hex_q", 0)), int(s.get("hex_r", 0)))] = true
+	# Eligible = clear/grassland in a civilized/borderlands domain, OR a Baron stronghold
+	# seat (its watchtower was dropped). Never on a settlement hex. style picks the tile set.
+	var farm_style := {}   # Vector2i -> "civilized" | "borderlands"
 	for coord in _map_data.hexes.keys():
 		if not _reveal_all_fog and _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN:
 			continue
 		if settlement_hexes.has(coord):
 			continue
 		var t := _terrain(coord)
-		if t == null or t.water != "" or t.biome != "clear":
+		if t == null or t.water != "":
 			continue
-		if t.biome_subtype != HexTerrainData.SUBTYPE_NONE and t.biome_subtype != HexTerrainData.SUBTYPE_CLEAR_GRASSLAND:
+		var is_barony: bool = _barony_seat_hexes.has(coord)
+		var clear_ground := t.biome == "clear" and (
+			t.biome_subtype == HexTerrainData.SUBTYPE_NONE
+			or t.biome_subtype == HexTerrainData.SUBTYPE_CLEAR_GRASSLAND)
+		var in_domain := (t.civilization == HexTerrainData.TERRITORY_CIVILIZED
+			or t.civilization == HexTerrainData.TERRITORY_BORDERLANDS)
+		if not (is_barony or (clear_ground and in_domain)):
 			continue
-		var style := ""
-		if t.civilization == HexTerrainData.TERRITORY_CIVILIZED:
-			style = "civilized"
-		elif t.civilization == HexTerrainData.TERRITORY_BORDERLANDS:
-			style = "borderlands"
-		else:
-			continue
+		farm_style[coord] = "borderlands" if t.civilization == HexTerrainData.TERRITORY_BORDERLANDS else "civilized"
+	for coord in farm_style:
+		var style: String = farm_style[coord]
 		var rng := WorldGenRng.stream(_campaign_seed, "farmland", 0, "%d,%d" % [coord.x, coord.y])
-		var n := 1 + (rng.randi() % 2)
-		var path := "%s/%s-farmland-%d.gltf" % [BUILDING_DIR, style, n]
-		_place_fitted_scene(_farmland_root, coord, path, FARMLAND_FOOTPRINT, float(rng.randi() % 4) * (PI * 0.5))
+		var count := FARM_PER_HEX_MIN + (rng.randi() % (FARM_PER_HEX_MAX - FARM_PER_HEX_MIN + 1))
+		for _i in range(count):
+			var variant := 1 + (rng.randi() % 2)
+			var path := "%s/%s-farmland-%d.gltf" % [BUILDING_DIR, style, variant]
+			var ang := rng.randf() * TAU
+			var rad := sqrt(rng.randf()) * FARM_JITTER * WildernessHexMath.HEX_RADIUS
+			var off := Vector2(cos(ang) * rad, sin(ang) * rad)
+			_place_fitted_scene(_farmland_root, coord, path, FARMLAND_FOOTPRINT,
+				float(rng.randi() % 4) * (PI * 0.5), off)
 
 
 # ---------------------------------------------------------------------------
@@ -1344,18 +1475,25 @@ func _build_landmarks() -> void:
 		_place_settlement_building(coord, int(settlement_classes[coord]), bool(settlement_clan.get(coord, false)))
 		_place_city_label(coord, str(settlement_names.get(coord, "")))
 
-	# Strongholds (where no settlement sits): a small DIM cube in the dedicated
-	# stronghold root, so the group can be hidden when zoomed out (the feudal fill
-	# can place hundreds). Deduped against settlements; no letter (keeps them quiet).
-	var stronghold_hexes := {}
+	# Strongholds: only Marquis-tier (and higher) seats render as watchtowers; the numerous
+	# Baron-tier feudal-fill leaves drop to farmland instead (handed to _build_farmland via
+	# _barony_seat_hexes). Deduped against settlements (a settlement on the seat wins). A hex
+	# with both a March seat + its seat Barony takes the higher tier.
+	_barony_seat_hexes = {}
+	var stronghold_tier := {}   # Vector2i -> max realm-title rank
 	for h in _query_strongholds():
 		var coord := Vector2i(int(h.get("location_hex_q", 0)), int(h.get("location_hex_r", 0)))
-		if not settlement_classes.has(coord):
-			stronghold_hexes[coord] = true
-	for coord in stronghold_hexes:
+		if settlement_classes.has(coord):
+			continue
+		var rank := int(_TITLE_RANK.get(str(h.get("realm_title", "Baron")), 0))
+		stronghold_tier[coord] = maxi(int(stronghold_tier.get(coord, -1)), rank)
+	for coord in stronghold_tier:
 		if _fog_value(coord) < 0.25:
 			continue
-		_place_stronghold_marker(coord)
+		if int(stronghold_tier[coord]) >= _MARQUIS_RANK:
+			_place_stronghold_marker(coord)
+		else:
+			_barony_seat_hexes[coord] = true
 	_update_stronghold_lod()
 
 	# Dungeons: a purple pyramid at each entrance. Shown regardless of fog for now —
@@ -1371,6 +1509,16 @@ const LANDMARK_SIZE := 0.36
 ## when the camera's ortho size exceeds this (zoomed out) — see _update_stronghold_lod.
 const STRONGHOLD_SIZE := 0.18
 const STRONGHOLD_LOD_ZOOM := 18.0
+## Non-market-class strongholds (baron/marquis seats) render as a small watchtower model
+## instead of the dim cube (Jedidiah 2026-06-29). Auto-fitted; sits in _stronghold_root so
+## it keeps the zoomed-in LOD gate. Falls back to the cube if the model can't load.
+const STRONGHOLD_MODEL := "res://assets/wilderness_kit/building/WatchTower_SecondAge_Level1.gltf"
+const STRONGHOLD_FOOTPRINT := 0.175
+## Only Marquis-tier (and higher) stronghold seats render as watchtowers; the numerous
+## Baron-tier feudal-fill leaves drop to farmland instead (Jedidiah 2026-06-29). Title
+## ladder: Baron < Marquis < Count < Duke < Prince < King < Emperor (realm_title_resolver.gd).
+const _TITLE_RANK := {"Baron": 0, "Marquis": 1, "Count": 2, "Duke": 3, "Prince": 4, "King": 5, "Emperor": 6}
+const _MARQUIS_RANK := 1
 
 # --- Settlement building + farmland models (Jedidiah 2026-06-29) ------------------
 ## Settlement buildings by market class: civ-MC-I … civ-MC-VI for civilized realms,
@@ -1379,12 +1527,15 @@ const STRONGHOLD_LOD_ZOOM := 18.0
 ## than a Class-VI hamlet regardless of the source model's native scale. (Mountains were
 ## tried + cut — too exaggerated; their assets were removed.)
 const BUILDING_DIR := "res://assets/wilderness_kit/building"
-const SETTLEMENT_FOOTPRINT_MIN := 0.5     # MC VI (hamlet) footprint, world units
-const SETTLEMENT_FOOTPRINT_STEP := 0.12   # added per class below VI (MC I = +5 steps)
-## Farmland tiles fill cultivated hexes: clear/grassland, inside a domain (civilized or
-## borderlands territory), with no settlement. civilized-farmland-* vs borderlands-farmland-*
-## by the hex's territory class; two variants each, seeded per hex.
-const FARMLAND_FOOTPRINT := 0.4     # a small cultivated patch, not a hex-filling field
+const SETTLEMENT_FOOTPRINT_MIN := 0.75    # MC VI (hamlet) footprint, world units
+const SETTLEMENT_FOOTPRINT_STEP := 0.16   # added per class below VI (MC I = +5 steps -> ~1.55)
+## Farmland tiles fill cultivated hexes (clear/grassland in a civilized/borderlands domain,
+## no settlement) AND the Baron-tier stronghold seats (whose watchtowers are dropped). 1-3
+## jittered tiles per hex; civilized-farmland-* vs borderlands-farmland-* by territory.
+const FARMLAND_FOOTPRINT := 0.17    # a small cultivated patch
+const FARM_PER_HEX_MIN := 1
+const FARM_PER_HEX_MAX := 3
+const FARM_JITTER := 0.55           # fraction of HEX_RADIUS the farm tiles scatter within
 
 
 func _place_landmark(coord: Vector2i, text: String) -> void:
@@ -1452,7 +1603,8 @@ func _ensure_clan_cultures() -> void:
 ## widest XZ extent == [param footprint], centred on the hex, and seated so its base rests
 ## on the terrain. [param yaw] spins it about its centre. Returns false if the model is
 ## missing/empty (caller can fall back). Scale-agnostic — works whatever the source units.
-func _place_fitted_scene(parent: Node3D, coord: Vector2i, path: String, footprint: float, yaw: float) -> bool:
+func _place_fitted_scene(parent: Node3D, coord: Vector2i, path: String, footprint: float, yaw: float,
+		xz_offset: Vector2 = Vector2.ZERO) -> bool:
 	var packed := _load_packed(path)
 	if packed == null:
 		return false
@@ -1463,7 +1615,7 @@ func _place_fitted_scene(parent: Node3D, coord: Vector2i, path: String, footprin
 		inst.free()
 		return false
 	var s := footprint / fp
-	var xz := WildernessHexMath.axial_to_world(coord)
+	var xz := WildernessHexMath.axial_to_world(coord) + xz_offset
 	var holder := Node3D.new()
 	holder.position = Vector3(xz.x, _hex_height(coord), xz.y)
 	holder.rotation = Vector3(0.0, yaw, 0.0)
@@ -1525,6 +1677,9 @@ func _landmark_cube_material() -> StandardMaterial3D:
 ## A small, dim red cube for a stronghold (no letter). Sits in _stronghold_root so the
 ## whole layer can be hidden when zoomed out; recessive vs the brighter settlement cube.
 func _place_stronghold_marker(coord: Vector2i) -> void:
+	if _place_fitted_scene(_stronghold_root, coord, STRONGHOLD_MODEL, STRONGHOLD_FOOTPRINT, 0.0):
+		return
+	# Fallback: the original dim cube if the watchtower model can't be loaded.
 	var xz := WildernessHexMath.axial_to_world(coord)
 	var base_y := _hex_height(coord)
 	var cube := MeshInstance3D.new()
@@ -1604,12 +1759,168 @@ func _query_strongholds() -> Array:
 	if _map_data == null:
 		return []
 	if not CampaignRepository.db.query_with_bindings("""
-			SELECT location_hex_q, location_hex_r FROM strongholds
-			WHERE location_map_id = ? AND status IN ('completed', 'claimed')
-			      AND location_hex_q IS NOT NULL AND location_hex_r IS NOT NULL
+			SELECT s.location_hex_q, s.location_hex_r, d.realm_title
+			FROM strongholds s LEFT JOIN domains d ON s.domain_id = d.id
+			WHERE s.location_map_id = ? AND s.status IN ('completed', 'claimed')
+			      AND s.location_hex_q IS NOT NULL AND s.location_hex_r IS NOT NULL
 		""", [_map_data.id]):
 		return []
 	return CampaignRepository.db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Enter Settlement / Enter Dungeon HUD buttons (ported from the 2D renderer). Appear when
+# the party stands on a settlement/dungeon entrance hex; emit the entry signals the
+# session state (wilderness_explore_state) consumes to run the transition.
+# ---------------------------------------------------------------------------
+
+func _build_entry_hud() -> void:
+	_entry_hud = CanvasLayer.new()
+	_entry_hud.layer = 10   # above the world, below the status bar (80) and dice prompts
+	add_child(_entry_hud)
+	var vbox := VBoxContainer.new()
+	vbox.anchor_left = 1.0
+	vbox.anchor_right = 1.0
+	vbox.anchor_top = 0.0
+	vbox.anchor_bottom = 0.0
+	vbox.grow_horizontal = Control.GROW_DIRECTION_BEGIN   # size to content, hug the right edge
+	vbox.grow_vertical = Control.GROW_DIRECTION_END
+	vbox.offset_right = -240.0   # clear the ~220px EntityOutliner "Orders" sidebar on the right
+	vbox.offset_top = 24.0
+	vbox.add_theme_constant_override("separation", 8)
+	_entry_hud.add_child(vbox)
+
+	_enter_dungeon_btn = Button.new()
+	_enter_dungeon_btn.text = "Enter Dungeon"
+	_enter_dungeon_btn.visible = false
+	_enter_dungeon_btn.pressed.connect(_on_enter_dungeon_pressed)
+	_style_overlay_button(_enter_dungeon_btn)
+	vbox.add_child(_enter_dungeon_btn)
+
+	_enter_settlement_btn = Button.new()
+	_enter_settlement_btn.text = "Enter Settlement"
+	_enter_settlement_btn.visible = false
+	_enter_settlement_btn.pressed.connect(_on_enter_settlement_pressed)
+	_style_overlay_button(_enter_settlement_btn)
+	vbox.add_child(_enter_settlement_btn)
+
+
+## Show the "Enter <name>" dungeon button when the party's hex holds a dungeon entrance.
+func _update_enter_dungeon_button() -> void:
+	if _enter_dungeon_btn == null or _map_data == null:
+		return
+	var party_hex := _map_data.party_hex
+	for entrance in CampaignRepository.get_dungeon_entrances_for_map(_map_data.id):
+		if int(entrance.get("hex_q", 999)) == party_hex.x and int(entrance.get("hex_r", 999)) == party_hex.y:
+			_enter_dungeon_btn.text = "Enter %s" % str(entrance.get("name", "Dungeon"))
+			_enter_dungeon_btn.set_meta("entrance_data", entrance)
+			_enter_dungeon_btn.visible = true
+			return
+	_enter_dungeon_btn.visible = false
+
+
+## Show the "Enter <name>" settlement button when the party's hex holds a settlement entrance.
+func _update_enter_settlement_button() -> void:
+	if _enter_settlement_btn == null or _map_data == null:
+		return
+	var party_hex := _map_data.party_hex
+	for entrance in CampaignRepository.get_settlement_entrances_for_map(_map_data.id):
+		if int(entrance.get("hex_q", 999)) == party_hex.x and int(entrance.get("hex_r", 999)) == party_hex.y:
+			_enter_settlement_btn.text = "Enter %s" % str(entrance.get("name", "Settlement"))
+			_enter_settlement_btn.set_meta("entrance_data", entrance)
+			_enter_settlement_btn.visible = true
+			return
+	_enter_settlement_btn.visible = false
+
+
+## Enter the dungeon on the party's hex. Lazily generates the voxel layout on first entry,
+## then emits dungeon_entry_requested at the default entry cell. (The 2D renderer offers a
+## transition-cell picker when a dungeon has several; that modal is a follow-up — this enters
+## at the primary entry.)
+func _on_enter_dungeon_pressed() -> void:
+	var entrance: Dictionary = _enter_dungeon_btn.get_meta("entrance_data", {})
+	if entrance.is_empty():
+		return
+	var pre = JSON.parse_string(str(entrance.get("dungeon_data", "")))
+	var is_generated: bool = pre is Dictionary and (pre.has("cells") or pre.has("levels"))
+	if not is_generated:
+		var generated: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+		if generated.is_empty():
+			push_error("wilderness 3D: dungeon generation failed for '%s'" % str(entrance.get("id", "?")))
+			return
+	var dungeon_dict = JSON.parse_string(str(entrance.get("dungeon_data", "")))
+	if not (dungeon_dict is Dictionary):
+		return
+	var entry_pos: Vector2i
+	if dungeon_dict.has("cells"):
+		var entry_dict: Dictionary = dungeon_dict.get("entry", {})
+		entry_pos = Vector2i(int(entry_dict.get("col", 0)), int(entry_dict.get("row", 0)))
+	else:
+		var levels: Array = dungeon_dict.get("levels", [])
+		if levels.is_empty():
+			return
+		var level1: Dictionary = levels[0]
+		entry_pos = Vector2i(int(level1.get("entry_col", 0)), int(level1.get("entry_row", 0)))
+	dungeon_entry_requested.emit(entrance, entry_pos)
+
+
+## Enter the settlement on the party's hex. Lazily stocks a baseline interior on first entry,
+## then emits settlement_entry_requested at the first entry PoI. (The 2D renderer offers a
+## gate picker when several exist; that modal is a follow-up — this enters at the first gate.)
+func _on_enter_settlement_pressed() -> void:
+	var entrance: Dictionary = _enter_settlement_btn.get_meta("entrance_data", {})
+	if entrance.is_empty():
+		return
+	var entrance_id := str(entrance.get("id", ""))
+	if not SettlementDictBuilder.has_relational_pois(entrance_id) \
+			and str(entrance.get("settlement_data", "")).is_empty():
+		SettlementLayoutGenerator.new().seed_pois(
+			entrance_id, int(entrance.get("market_class", 6)), str(entrance.get("name", "Settlement")))
+	var settlement_dict = null
+	if SettlementDictBuilder.has_relational_pois(entrance_id):
+		settlement_dict = SettlementDictBuilder.build_from_pois(entrance_id, entrance)
+	else:
+		settlement_dict = JSON.parse_string(str(entrance.get("settlement_data", "")))
+	if not (settlement_dict is Dictionary):
+		return
+	var entry_pois: Array = []
+	for district in settlement_dict.get("districts", []):
+		for poi in district.get("pois", []):
+			if poi.get("is_entry_exit", false):
+				entry_pois.append(poi)
+	if not entry_pois.is_empty():
+		settlement_entry_requested.emit(entrance, str(entry_pois[0].get("id", "")))
+		return
+	# Fallback: the first PoI of the first district so the player can still enter.
+	var districts: Array = settlement_dict.get("districts", [])
+	if districts.is_empty():
+		return
+	var pois: Array = districts[0].get("pois", [])
+	if not pois.is_empty():
+		settlement_entry_requested.emit(entrance, str(pois[0].get("id", "")))
+
+
+## Parchment-on-dark styling so the button reads over the map (mirrors the 2D renderer).
+func _style_overlay_button(btn: Button) -> void:
+	var bg_normal := StyleBoxFlat.new()
+	bg_normal.bg_color = Color(0.90, 0.84, 0.74, 0.96)
+	bg_normal.border_color = Color(0.46, 0.33, 0.19, 1.0)
+	bg_normal.set_border_width_all(1)
+	bg_normal.set_corner_radius_all(5)
+	bg_normal.content_margin_left = 12.0
+	bg_normal.content_margin_right = 12.0
+	bg_normal.content_margin_top = 6.0
+	bg_normal.content_margin_bottom = 6.0
+	var bg_hover := bg_normal.duplicate() as StyleBoxFlat
+	bg_hover.bg_color = Color(0.82, 0.76, 0.65, 0.98)
+	var bg_pressed := bg_normal.duplicate() as StyleBoxFlat
+	bg_pressed.bg_color = Color(0.70, 0.64, 0.54, 1.0)
+	btn.add_theme_stylebox_override("normal", bg_normal)
+	btn.add_theme_stylebox_override("hover", bg_hover)
+	btn.add_theme_stylebox_override("pressed", bg_pressed)
+	btn.add_theme_color_override("font_color", Color(0.09, 0.06, 0.03, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.09, 0.06, 0.03, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(0.09, 0.06, 0.03, 1.0))
 
 
 # ---------------------------------------------------------------------------
@@ -1931,7 +2242,7 @@ func _update_stronghold_lod() -> void:
 func _build_environment() -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-55, -50, 0)
-	light.light_energy = 1.15
+	light.light_energy = 0.85
 	light.shadow_enabled = true
 	add_child(light)
 
@@ -1941,7 +2252,9 @@ func _build_environment() -> void:
 	e.background_color = Color(0.55, 0.70, 0.88)   # sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_color = Color(0.55, 0.58, 0.62)
-	e.ambient_light_energy = 0.55
+	# Low ambient: high ambient washed the toon colours past 1.0 AND filled the shadow side so
+	# the hillshade couldn't darken slopes. 0.30 keeps lit ≈ 1.0 and lets the shadow band read.
+	e.ambient_light_energy = 0.30
 	env.environment = e
 	add_child(env)
 

@@ -495,6 +495,12 @@
 [ext_resource type="Script" path="res://tests/test_territory_cap.gd" id="479_territory_cap_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_overseas.gd" id="480_overseas_tests"]
 [ext_resource type="Script" path="res://tests/test_setting_hybridization.gd" id="481_hybridization_tests"]
+[ext_resource type="Script" path="res://tests/test_strategic_disposition.gd" id="482_strategic_disposition_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_action_catalog.gd" id="483_ruler_action_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_ai_monthly.gd" id="484_ruler_ai_monthly_tests"]
+[ext_resource type="Script" path="res://tests/test_issue_decree_handler.gd" id="485_issue_decree_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_crisis_lod.gd" id="486_ruler_crisis_lod_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_narration_state.gd" id="487_ruler_narration_state_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1980,3 +1986,21 @@ script = ExtResource("480_overseas_tests")
 
 [node name="HybridizationTests" type="Node" parent="."]
 script = ExtResource("481_hybridization_tests")
+
+[node name="StrategicDispositionTests" type="Node" parent="."]
+script = ExtResource("482_strategic_disposition_tests")
+
+[node name="RulerActionCatalogTests" type="Node" parent="."]
+script = ExtResource("483_ruler_action_catalog_tests")
+
+[node name="RulerAiMonthlyTests" type="Node" parent="."]
+script = ExtResource("484_ruler_ai_monthly_tests")
+
+[node name="IssueDecreeHandlerTests" type="Node" parent="."]
+script = ExtResource("485_issue_decree_handler_tests")
+
+[node name="RulerCrisisLodTests" type="Node" parent="."]
+script = ExtResource("486_ruler_crisis_lod_tests")
+
+[node name="RulerNarrationStateTests" type="Node" parent="."]
+script = ExtResource("487_ruler_narration_state_tests")

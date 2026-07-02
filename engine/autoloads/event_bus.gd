@@ -1308,6 +1308,27 @@ signal realm_title_changed(domain_id: String, old_title: String, new_title: Stri
 
 
 # ---------------------------------------------------------------------------
+# NPC Ruler AI (gdd-ruler-ai.md §11). Declared at Phase 0 per the build
+# handoff; emitters land with the planner (Phase 2: ruler_action_taken;
+# Phase 3: LOD pair; Phase 4: ruler_strategy_reassessed).
+# ---------------------------------------------------------------------------
+
+## Emitted by RulerAI after an active-set NPC ruler executes its monthly
+## action deterministically. outcome = the structured handler result.
+## Consumers: retroactive narration (Seam A), unified log, observability.
+signal ruler_action_taken(ruler_npc_id: String, domain_id: String, action_id: String, outcome: Dictionary)
+
+## Emitted when a validated LLM strategy-reassessment suggestion is accepted
+## as a scorer situational modifier (Seam B; no-op under the mock provider).
+signal ruler_strategy_reassessed(ruler_npc_id: String, trigger: String, changes: Dictionary)
+
+## Emitted by RulerLodManager on active-set promotion/demotion (gdd-ruler-ai.md
+## §8.2). Consumers: observability, save/load reconciliation.
+signal ruler_activated_for_lod(ruler_npc_id: String)
+signal ruler_deactivated_for_lod(ruler_npc_id: String)
+
+
+# ---------------------------------------------------------------------------
 # Phase 8 — Favors & Duties Monthly System (gdd-domain-tab.md §11 +
 # acore_axioms_strongholds_and_domains.xml §favors_and_duties L352-372)
 # ---------------------------------------------------------------------------

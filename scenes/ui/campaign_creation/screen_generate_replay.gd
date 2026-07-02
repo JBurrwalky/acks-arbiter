@@ -61,10 +61,10 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", Color(0.93, 0.86, 0.7))
 	root.add_child(title)
 
-	# Layer toggles (mirror Screen D's left column). Political animates the per-epoch
-	# ownership; Biome/Elevation/Territory/Culture render the PRESENT-DAY world (replay
-	# frames store ownership only), so flipping to them shows the end-state map — handy
-	# for reading what culture/terrain a hex ends up as while scrubbing the history.
+	# Layer toggles (mirror Screen D's left column). Political, Culture and Territory all
+	# animate per epoch from the stored frames — watch realms rise, cultures spread, and the
+	# civilized frontier advance across the ages. Biome/Elevation are terrain (unchanging),
+	# so they render the present-day world.
 	var layers_row := HBoxContainer.new()
 	layers_row.add_theme_constant_override("separation", 10)
 	root.add_child(layers_row)
@@ -73,7 +73,7 @@ func _build_ui() -> void:
 	layer_lbl.add_theme_color_override("font_color", Color(0.72, 0.68, 0.6))
 	layers_row.add_child(layer_lbl)
 	_mode_btn = OptionButton.new()
-	_mode_btn.tooltip_text = "Switch map layer. Political animates the history; Biome/Elevation/Territory/Culture show the present-day world."
+	_mode_btn.tooltip_text = "Switch map layer. Political, Culture and Territory animate the history; Biome and Elevation show the present-day terrain."
 	for m in _MODE_LABELS:
 		_mode_btn.add_item(m)
 	_mode_btn.select(_PMV.Mode.POLITICAL)
@@ -197,7 +197,8 @@ func begin_replay(campaign_id: String) -> void:
 	_ordered_hexes = SettingRepository.list_hexes(campaign_id)
 	_index = 0
 	if _map != null:
-		_map.bind(_ordered_hexes, SettingRepository.list_replay_palette(campaign_id))
+		var palette := SettingRepository.list_replay_palette(campaign_id)
+		_map.bind(_ordered_hexes, palette)
 		_map.set_rivers(SettingRepository.list_river_edges(campaign_id))
 		# Re-entry (Watch again) rehydration: always start on the animated Political layer.
 		if _mode_btn != null:
@@ -231,6 +232,19 @@ func begin_replay(campaign_id: String) -> void:
 			if root != "":
 				names[pid] = "the Old %s" % root
 		_map.set_polity_meta(names, lieges, tiers)
+		# Culture-seed labels ("Vallican_01") from the replay palette — every polity that
+		# appears in any frame is in the palette, so a fallen/unnamed realm still reads as
+		# its seed culture while scrubbing.
+		var seed_labels := {}
+		for row in palette:
+			var pid := str(row.get("polity_id", ""))
+			var sl := str(row.get("seed_label", ""))
+			if pid != "" and sl != "":
+				seed_labels[pid] = sl
+		_map.set_seed_labels(seed_labels)
+		# Pre-seed culture colours from the UNION of cultures across every frame, so a
+		# culture that spreads then dies out still draws in its own hue while scrubbing.
+		_map.seed_culture_colors(_all_frame_cultures())
 	if _frames.is_empty():
 		finish()
 		return
@@ -247,10 +261,11 @@ func _on_mode_selected(idx: int) -> void:
 	if _map == null:
 		return
 	_map.set_mode(idx)
-	# POLITICAL is the only layer that honours the per-frame ownership override, so its
-	# tooltip stays frame-aware ("Realm: X this epoch"). The static layers show the full
-	# present-day tooltip (culture / territory / populations) for the hovered hex.
-	_map.set_replay_mode(idx == _PMV.Mode.POLITICAL)
+	# Political, Culture and Territory all carry per-frame overrides, so their tooltips
+	# stay frame-aware (this epoch's realm / culture / frontier). Biome and Elevation are
+	# terrain — unchanging across the history — so they show the present-day tooltip.
+	_map.set_replay_mode(idx == _PMV.Mode.POLITICAL or idx == _PMV.Mode.CULTURE
+		or idx == _PMV.Mode.TERRITORY)
 
 
 func _on_sovereign_toggled(on: bool) -> void:
@@ -309,6 +324,12 @@ func _show_frame(i: int) -> void:
 		str(frame.get("owner_by_hex", "")), _ordered_hexes)
 	if _map != null:
 		_map.show_owners(owners)
+		# Push this epoch's culture + territory too, so those layers animate with the
+		# political map instead of showing the present-day end-state.
+		_map.show_cultures(ReplayFrameDecoder.decode_value_map(
+			str(frame.get("culture_by_hex", "")), _ordered_hexes))
+		_map.show_territories(ReplayFrameDecoder.decode_value_map(
+			str(frame.get("territory_by_hex", "")), _ordered_hexes))
 	if _scrub != null:
 		_scrub.set_value_no_signal(_index)
 	if _pos_label != null:
@@ -324,6 +345,17 @@ func _epoch_caption(tick: int, realms: int) -> String:
 	var years_ago := (_last_tick - tick) * _YEARS_PER_TICK
 	var era := "Present day" if years_ago <= 0 else ("%s years ago" % _commas(years_ago))
 	return "Epoch %d of %d  ·  %s  ·  %d realms" % [_index + 1, _frames.size(), era, realms]
+
+
+## The set of distinct non-empty culture ids across every stored frame — the palette
+## needs the union (not just present-day) so an extinct culture keeps its colour on rewind.
+func _all_frame_cultures() -> Array:
+	var seen := {}
+	for frame in _frames:
+		for c in ReplayFrameDecoder.decode_runs(str(frame.get("culture_by_hex", ""))):
+			if str(c) != "":
+				seen[str(c)] = true
+	return seen.keys()
 
 
 func _count_realms(owners: Dictionary) -> int:

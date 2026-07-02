@@ -2455,22 +2455,31 @@ func _cube_round(x: float, y: float, z: float) -> Vector2i:
 func _build_ruler(campaign_id: String, campaign_seed: int, p: Dictionary) -> String:
 	var rc := str(p.get("ruler_class", ""))
 	var level := int(p.get("ruler_level", 1))
+	var ruler_id := ""
 	if _is_beastman_class(rc):
-		return BeastmanRulerMaterializer.build_and_persist(rc, level, campaign_id, p)
-	var roll := WorldGenRng.stream(campaign_seed, "ruler_template", 0, str(p.get("id", ""))).randi_range(3, 18)
-	var builder := ClassedNpcBuilder.new()
-	var res: Dictionary = builder.build_and_persist(rc, campaign_id, {
-		"level": level,
-		"character_type": "npc",
-		"tier": "named",
-		"role": "ruler",
-		"culture_id": str(p.get("culture_id", "")),
-		"generate_personality": true,
-		"forced_roll": roll,
-	})
-	if res is Dictionary and bool(res.get("ok", false)):
-		return str(res.get("character_id", ""))
-	return ""
+		ruler_id = BeastmanRulerMaterializer.build_and_persist(rc, level, campaign_id, p)
+	else:
+		var roll := WorldGenRng.stream(campaign_seed, "ruler_template", 0, str(p.get("id", ""))).randi_range(3, 18)
+		var builder := ClassedNpcBuilder.new()
+		var res: Dictionary = builder.build_and_persist(rc, campaign_id, {
+			"level": level,
+			"character_type": "npc",
+			"tier": "named",
+			"role": "ruler",
+			"culture_id": str(p.get("culture_id", "")),
+			"generate_personality": true,
+			"forced_roll": roll,
+		})
+		if res is Dictionary and bool(res.get("ok", false)):
+			ruler_id = str(res.get("character_id", ""))
+	# StrategicDisposition (gdd-ruler-ai.md §4 Phase 0). The beastman path has
+	# no personality JSON → the builder degrades to the neutral baseline. The
+	# realm row does not exist yet, so relational dicts stay empty here (no
+	# realm_relations exist at materialization anyway). Non-fatal on failure.
+	if not ruler_id.is_empty():
+		if StrategicDispositionBuilder.build_and_persist_for_character(ruler_id) == null:
+			push_warning("SettingMaterializer._build_ruler: disposition build failed for character=%s" % ruler_id)
+	return ruler_id
 
 
 ## A polity's CROWN domain — its ruler's apex / personal seat. ABSTRACTED (no

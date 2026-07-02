@@ -7,6 +7,13 @@ extends RefCounted
 ## land in the next month's revenue collection.
 ##
 ## params_json shape: { "domain_id": String, "decree_kind": String, "value": ... }
+##
+## For decree_kind in {tax, liturgy, tithe}, "value" is CP/family — matching
+## the domains.{tax,liturgy,tithe}_rate_cp_per_family columns it writes and
+## the cp-scale contract RulerActionScorer compares against current_tax_cp
+## (RulerActionCatalog callers pass cp directly, "VALUE IS CP"). UI callers
+## presenting a gp/family control MUST convert gp -> cp (x100) before
+## dispatching this activity; see decrees_and_remote_orders_sub_tab.gd.
 
 
 const _ALLOWED_DECREE_KINDS: Array = [
@@ -33,14 +40,14 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 
 	match kind:
 		"tax":
-			settings["tax_rate_cp_per_family"] = int(value) if value != null else 2
-			summary = "Tax rate set to %d gp/family" % settings["tax_rate_cp_per_family"]
+			settings["tax_rate_cp_per_family"] = int(value) if value != null else 200
+			summary = "Tax rate set to %d gp/family" % (int(settings["tax_rate_cp_per_family"]) / 100)
 		"liturgy":
-			settings["liturgy_rate_cp_per_family"] = int(value) if value != null else 1
-			summary = "Liturgy rate set to %d gp/family" % settings["liturgy_rate_cp_per_family"]
+			settings["liturgy_rate_cp_per_family"] = int(value) if value != null else 100
+			summary = "Liturgy rate set to %d gp/family" % (int(settings["liturgy_rate_cp_per_family"]) / 100)
 		"tithe":
-			settings["tithe_rate_cp_per_family"] = int(value) if value != null else 1
-			summary = "Tithe rate set to %d gp/family" % settings["tithe_rate_cp_per_family"]
+			settings["tithe_rate_cp_per_family"] = int(value) if value != null else 100
+			summary = "Tithe rate set to %d gp/family" % (int(settings["tithe_rate_cp_per_family"]) / 100)
 		"religion_change":
 			settings["religion"] = String(value) if value != null else ""
 			summary = "Religion changed to '%s' (-4 morale this month, -2 ongoing)" % settings["religion"]
@@ -77,7 +84,7 @@ static func _resolve_domain_for_ruler(character_id: String) -> String:
 	if character_id.is_empty():
 		return ""
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1",
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
 		[character_id]
 	):
 		return ""

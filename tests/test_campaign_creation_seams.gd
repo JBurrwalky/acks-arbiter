@@ -83,6 +83,11 @@ func test_replay_decode_units() -> void:
 	check(owners.size() == 4, "unowned hex skipped (4 of 5 owned)")
 	check(str(owners.get(Vector2i(0, 0), "")) == "pol_a", "hex (0,0) -> pol_a")
 	check(not owners.has(Vector2i(2, 0)), "hex (2,0) unowned -> absent")
+	# decode_value_map keeps EVERY hex (incl. '' entries) — culture/territory layers are
+	# frame-authoritative and must not fall back to present-day for a "none" hex.
+	var vals: Dictionary = ReplayFrameDecoder.decode_value_map("pol_a:2;:1;pol_b:2", hexes)
+	check(vals.size() == 5, "value map keeps all 5 hexes, including the empty one")
+	check(str(vals.get(Vector2i(2, 0), "x")) == "", "empty run decodes to '' (kept, not skipped)")
 
 
 func test_replay_decode_live(cid: String) -> void:
@@ -101,6 +106,39 @@ func test_replay_decode_live(cid: String) -> void:
 			all_real = false
 			break
 	check(all_real, "every decoded owner hex is a real grid hex")
+	# Culture + territory now animate too: every frame carries the two extra RLE fields.
+	check(last.has("culture_by_hex") and last.has("territory_by_hex"),
+		"frames carry culture_by_hex + territory_by_hex")
+	var terr: Dictionary = ReplayFrameDecoder.decode_value_map(
+		str(last.get("territory_by_hex", "")), ordered)
+	check(terr.size() > 0, "present-day territory frame decodes")
+	var terr_ok := true
+	for k in terr:
+		var tc := str(terr[k])
+		if tc != "" and tc not in ["civilized", "borderlands", "wilderness"]:
+			terr_ok = false
+			break
+	check(terr_ok, "every territory value is a valid ACKS classification")
+	# Culture frame values must be real culture ids that also appear in the hex substrate
+	# present-day OR at least parse as non-empty ids over owned land.
+	var cult: Dictionary = ReplayFrameDecoder.decode_value_map(
+		str(last.get("culture_by_hex", "")), ordered)
+	var owned_has_culture := false
+	for k in owners:
+		if str(cult.get(k, "")) != "":
+			owned_has_culture = true
+			break
+	check(owned_has_culture, "owned hexes carry a dominant culture in the present-day frame")
+	# Seed labels: every palette polity has a "<Culture>_NN" label.
+	var palette := SettingRepository.list_replay_palette(cid)
+	check(palette.size() > 0, "replay palette non-empty")
+	var labels_ok := true
+	for row in palette:
+		var sl := str(row.get("seed_label", ""))
+		if not sl.contains("_") or sl == "":
+			labels_ok = false
+			break
+	check(labels_ok, "every polity has a culture-seed label like Vallican_01")
 
 
 # --- review assembler --------------------------------------------------------

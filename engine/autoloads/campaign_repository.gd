@@ -5336,7 +5336,8 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"specialist_commissions",
 	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
 	"override_log", "parties", "pois", "pursuit_states", "realm_relations",
-	"realms", "reputation_entries", "restricted_cooldowns", "roads", "scheduled_events", "settlement_entrances",
+	"realms", "reputation_entries", "restricted_cooldowns", "roads", "ruler_ai_state",
+	"ruler_dispositions", "scheduled_events", "settlement_entrances",
 	"setting_domains", "setting_events", "setting_fallen_polities", "setting_hexes", "setting_parameters",
 	"setting_fortifications", "setting_narrative", "setting_poi_seeds", "setting_polities",
 	"setting_regions", "setting_replay_frames", "setting_replay_palette", "setting_river_edges",
@@ -7927,7 +7928,7 @@ func primary_domain_id_for_character(character_id: String) -> String:
 	if character_id.is_empty():
 		return ""
 	if not db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at LIMIT 1",
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
 		[character_id]
 	):
 		return ""

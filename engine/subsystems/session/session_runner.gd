@@ -829,6 +829,14 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# stall forever. Idempotent per siege via get_events_for_owner.
 	SiegeResolver.reconcile_ticks_on_session_load(_scheduler, campaign_id)
 
+	# Ruler AI Phase 4 (2026-07-02): drop the in-memory LOD sync cache on
+	# session load. The next RulerLodManager.sync hydrates its prior set from
+	# the PERSISTED ruler_ai_state tiers, so a restored snapshot (including an
+	# in-process load of an older save) diffs against the restored DB rather
+	# than a stale in-memory set (gdd-ruler-ai.md 8.2 save/load
+	# reconciliation).
+	RulerLodManager.clear_cache()
+
 	# 7e. Register activity executor + strenuous accountant (Domain Phase 3,
 	#     2026-05-07). Owns "activity_complete" and "ongoing_session_complete"
 	#     event handlers per gdd-realtime-scheduler.md §4.8. The registry is

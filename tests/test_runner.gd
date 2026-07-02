@@ -14,6 +14,18 @@ extends Node
 @onready var _territory_cap_tests = $TerritoryCapTests
 @onready var _overseas_tests = $OverseasTests
 @onready var _hybridization_tests = $HybridizationTests
+# 2026-07-01 — Ruler AI Phase 0 (StrategicDisposition builder + persistence)
+@onready var _strategic_disposition_tests = $StrategicDispositionTests
+# 2026-07-01 — Ruler AI Phase 1 (action catalog + manage_stronghold/raise_garrison)
+@onready var _ruler_action_catalog_tests = $RulerActionCatalogTests
+# 2026-07-01 — Ruler AI Phase 2 (scorer + monthly batch + backdrop auto-stabilize)
+@onready var _ruler_ai_monthly_tests = $RulerAiMonthlyTests
+# 2026-07-02 — issue_decree gp/cp units regression coverage
+@onready var _issue_decree_handler_tests = $IssueDecreeHandlerTests
+# 2026-07-02 — Ruler AI Phase 3 (crisis responder + §7.3 resistance + LOD)
+@onready var _ruler_crisis_lod_tests = $RulerCrisisLodTests
+# 2026-07-02 - Ruler AI Phase 4 (narrator seams + ruler_ai_state persistence)
+@onready var _ruler_narration_state_tests = $RulerNarrationStateTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -602,7 +614,7 @@ func run() -> void:
 	var passed := 0
 	var failed := 0
 
-	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _overseas_tests, _hybridization_tests, _override_tests, _dice_tests,
+	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _overseas_tests, _hybridization_tests, _strategic_disposition_tests, _ruler_action_catalog_tests, _ruler_ai_monthly_tests, _issue_decree_handler_tests, _ruler_crisis_lod_tests, _ruler_narration_state_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests, _hp_roll_panel_tests,

@@ -3894,20 +3894,99 @@ CREATE TABLE IF NOT EXISTS setting_poi_seeds (
 );
 
 -- History-replay frames (§7.2 replay_frames[]; history-sim §15,
--- REPLAY_CADENCE = 4 ticks). owner_by_hex is run-length encoded over the
--- canonical hex order (r ASC, then q ASC): runs of "polity_id:count" joined
--- by ';' ('' polity_id = unowned). The palette is per-campaign stable so a
--- realm keeps its color across frames (gdd-campaign-creation-ui.md §7).
+-- REPLAY_CADENCE = 4 ticks). Each *_by_hex is run-length encoded over the
+-- canonical hex order (r ASC, then q ASC): runs of "value:count" joined by ';'
+-- ('' value = none). owner_by_hex holds polity ownership; culture_by_hex the
+-- dominant culture_id per hex; territory_by_hex the civ/borderlands/wilderness
+-- class (migration 180) — so the replay animates political, culture AND
+-- territory layers epoch by epoch, not just ownership. The palette is
+-- per-campaign stable so a realm keeps its color across frames
+-- (gdd-campaign-creation-ui.md §7).
 CREATE TABLE IF NOT EXISTS setting_replay_frames (
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
     tick INTEGER NOT NULL,
     owner_by_hex TEXT NOT NULL DEFAULT '',
+    culture_by_hex TEXT NOT NULL DEFAULT '',
+    territory_by_hex TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (campaign_id, tick)
 );
 
+-- seed_label (migration 180): a stable culture-seed identity per polity
+-- ("Vallican_01") for the replay tooltip, so realms that never earn a proper
+-- name still read as their seed culture rather than a bare pol id.
 CREATE TABLE IF NOT EXISTS setting_replay_palette (
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
     polity_id TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '',
+    seed_label TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (campaign_id, polity_id)
 );
+
+-- StrategicDisposition strategic layer, one row per NPC ruler (migration 181;
+-- gdd-ruler-ai.md §10, approved 2026-06-28; struct per gdd-npc-personality.md
+-- §8.2). Derived — and regenerable — from characters.personality +
+-- characters.alignment via StrategicDispositionBuilder. The 7 strategic-axis
+-- ints snapshot the personality axes at build time; the 8 weights are the §8.3
+-- derivation outputs (floats clamped 0-1). aggression_toward /
+-- alliance_preference are serialized {realm_id: float} JSON dicts, '{}' when
+-- realm relations are absent (gdd-ruler-ai.md §4.3 graceful degradation).
+CREATE TABLE IF NOT EXISTS ruler_dispositions (
+    character_id TEXT PRIMARY KEY REFERENCES characters(id),
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    motivation_primary TEXT NOT NULL DEFAULT '',
+    motivation_secondary TEXT NOT NULL DEFAULT '',
+    epistemic_curiosity INTEGER NOT NULL DEFAULT 5,
+    societal_orthodoxy INTEGER NOT NULL DEFAULT 5,
+    affective_compassion INTEGER NOT NULL DEFAULT 5,
+    stress_reactivity INTEGER NOT NULL DEFAULT 5,
+    self_interest INTEGER NOT NULL DEFAULT 5,
+    in_group_loyalty INTEGER NOT NULL DEFAULT 5,
+    mysticism INTEGER NOT NULL DEFAULT 5,
+    research_weight REAL NOT NULL DEFAULT 0.0,
+    religious_weight REAL NOT NULL DEFAULT 0.0,
+    economic_weight REAL NOT NULL DEFAULT 0.0,
+    military_weight REAL NOT NULL DEFAULT 0.0,
+    expansion_weight REAL NOT NULL DEFAULT 0.0,
+    fortification_weight REAL NOT NULL DEFAULT 0.0,
+    diplomatic_weight REAL NOT NULL DEFAULT 0.0,
+    oppression_weight REAL NOT NULL DEFAULT 0.0,
+    crisis_response TEXT NOT NULL DEFAULT 'defensive'
+        CHECK(crisis_response IN ('aggressive', 'defensive', 'diplomatic', 'cautious')),
+    aggression_toward TEXT NOT NULL DEFAULT '{}',
+    alliance_preference TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ruler_dispositions_campaign
+    ON ruler_dispositions(campaign_id);
+
+-- Migration 182: ruler_ai_state — per-ruler planner runtime state, one row per
+-- NPC ruler the Regional-LOD system has ever activated (gdd-ruler-ai.md §10,
+-- approved by Jedidiah 2026-06-28). Persists what the Phase-3 in-memory LOD
+-- cache could not: the ruler's current LOD tier (§8.1 'active'/'backdrop') for
+-- save/load reconciliation, the §8.2 demotion grace stamp (demotion_pending_day
+-- is the calendar day the ruler LEFT the play window's geometry; NULL when not
+-- pending — the ruler stays active until ~1 month elapses or it re-enters),
+-- the last strategic turn taken (day + top-scored action id, written by
+-- RulerAI.process_campaign_month), and a small {cache_key: entry} JSON
+-- narration cache so Seam-A retroactive narration is not regenerated for the
+-- same (day, action) — gdd-ruler-ai.md §9.1. Derived runtime state: a
+-- drop-and-rebuild loses only narration cache and grace stamps (the next
+-- RulerLodManager.sync regenerates tiers), so it is non-destructive in practice.
+CREATE TABLE IF NOT EXISTS ruler_ai_state (
+    character_id TEXT PRIMARY KEY REFERENCES characters(id),
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    lod_tier TEXT NOT NULL DEFAULT 'backdrop'
+        CHECK(lod_tier IN ('active', 'backdrop')),
+    last_strategic_turn_day INTEGER NOT NULL DEFAULT 0,
+    last_action_id TEXT NOT NULL DEFAULT '',
+    demotion_pending_day INTEGER,
+    narration_cache TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ruler_ai_state_campaign
+    ON ruler_ai_state(campaign_id);
+

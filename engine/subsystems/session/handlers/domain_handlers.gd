@@ -133,6 +133,26 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			"venture_results": venture_results,
 		}
 
+	# Ruler AI Phase 2 (gdd-ruler-ai.md §3.2/§3.3/§8.4) [NEEDS-OPUS-REVIEW —
+	# the planner/stabilizer integration + the auto_pause gate below]:
+	# classify each domain before resolution. PC-owned domains resolve exactly
+	# as before; ACTIVE-set NPC rulers get full planner turns AFTER the loop;
+	# every other non-player domain (backdrop NPC rulers, ownerless abstract
+	# domains) gets the cheap §8.4 auto-stabilize pass on its morale roll so
+	# off-camera realms hold steady instead of spiraling.
+	var pc_ids: Dictionary = _player_character_ids()
+	# Ruler AI Phase 3: Regional-LOD activation (gdd-ruler-ai.md §8) replaces
+	# the Phase-2 provisional set — sync() also emits the promote/demote
+	# signals and lazily builds dispositions for newly-promoted rulers.
+	# Passing calendar_day enables the demotion grace (gdd-ruler-ai Phase 4):
+	# a ruler the play window moved away from keeps planning ~1 month
+	# before demoting.
+	var lod_scheduler = _runner.get_scheduler() \
+		if _runner != null and _runner.has_method("get_scheduler") else null
+	var active_ruler_ids: Array = RulerLodManager.sync(
+		_campaign_id, lod_scheduler, [], calendar_day).get("active", [])
+	var has_player_domain := false
+
 	var domain_results: Array = []
 	for domain_data: Dictionary in domains:
 		# Phase 11B: skip terminal-state domains entirely. abandoned /
@@ -143,7 +163,14 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		if lifecycle_state == LifecycleHandler.STATE_ABANDONED \
 			or lifecycle_state == LifecycleHandler.STATE_SALTED_TO_RUIN:
 			continue
-		var result := _resolve_domain_month(domain_data, calendar_day)
+		var owner_v: Variant = domain_data.get("owner_character_id")
+		var owner: String = String(owner_v) if owner_v != null else ""
+		var is_player_domain: bool = not owner.is_empty() and pc_ids.has(owner)
+		has_player_domain = has_player_domain or is_player_domain
+		var resolve_opts: Dictionary = {}
+		if not is_player_domain and not active_ruler_ids.has(owner):
+			resolve_opts = RulerBackdropStabilizer.resolution_options()
+		var result := _resolve_domain_month(domain_data, calendar_day, resolve_opts)
 		domain_results.append(result)
 		_save_domain(domain_data, result)
 		_emit_signals(domain_data, result)
@@ -160,9 +187,20 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		# revert if not.
 		RulerDeathHandler.tick_succession_grace(domain_data, calendar_day)
 
+	# Ruler AI Phase 2 (§3.2): active-set NPC rulers take their deterministic
+	# monthly turns AFTER the economic resolution, with the post-resolution
+	# result dicts in hand for threat context. Batch, no UI interrupt, no LLM;
+	# handler mutations persist through the handlers' own repository writes.
+	var ruler_reports: Array = RulerAI.process_campaign_month(
+		_campaign_id, calendar_day, active_ruler_ids, domain_results)
+
+	# gdd-ruler-ai.md §3.2: no auto_pause for NPC rulers — the monthly-report
+	# modal pauses the clock only when the PLAYER owns a domain in the
+	# campaign. [NEEDS-OPUS-REVIEW: this changes the previous behavior of
+	# pausing whenever ANY domain exists; NPC-only campaigns now tick through.]
 	return {
-		"auto_pause": true,
-		"pause_reason": "Domain monthly report — %s" % month_name,
+		"auto_pause": has_player_domain,
+		"pause_reason": ("Domain monthly report — %s" % month_name) if has_player_domain else "",
 		"next_events": next_events,
 		"presentation": {
 			"type": "domain_monthly_report",
@@ -172,7 +210,27 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		"commerce_results": commerce_results,
 		"syndicate_results": syndicate_results,
 		"venture_results": venture_results,
+		"ruler_reports": ruler_reports,
 	}
+
+
+## PLAYER-SIDE character ids as a lookup set ({id: true}): every PC, plus
+## every henchman employed by a PC — a henchman heir who inherits the player's
+## domain (RulerDeathHandler heir_kind='henchman') keeps the domain player-side
+## (the monthly report still pauses; the NPC planner never touches it).
+func _player_character_ids() -> Dictionary:
+	var out: Dictionary = {}
+	if CampaignRepository.db.query_with_bindings("""
+		SELECT id FROM characters
+		WHERE campaign_id = ?
+		  AND (character_type = 'pc'
+		       OR (character_type = 'henchman' AND employer_id IN (
+		           SELECT id FROM characters
+		           WHERE campaign_id = ? AND character_type = 'pc')))
+	""", [_campaign_id, _campaign_id]):
+		for row in CampaignRepository.db.query_result:
+			out[String((row as Dictionary).get("id", ""))] = true
+	return out
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +240,15 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 ## Resolve one month for a single domain by delegating to the Phase 0 resolvers.
 ## All math lives in the resolvers; this method's job is orchestration plus
 ## ledger writes plus the random event roll.
-func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictionary:
+##
+## [param opts] carries the §8.4 backdrop auto-stabilize flags
+## (RulerBackdropStabilizer.resolution_options(); empty = normal resolution):
+##   assume_garrison_funded — suppress the -1/gp-short morale modifier for
+##       THIS roll only (expenses/ledger stay real).
+##   neglect_morale_floor — off-camera current morale cannot fall below
+##       min(prior, 0) (Apathetic) from neglect.
+func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
+		opts: Dictionary = {}) -> Dictionary:
 	var domain_id: String = domain_data.get("id", "")
 	var domain_name: String = domain_data.get("name", "Unknown")
 	var territory: String = String(domain_data.get("territory_type", "wilderness"))
@@ -280,7 +346,19 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	if faith_ruler_morale_bonus != 0:
 		base_morale = int(base_morale) + faith_ruler_morale_bonus
 
-	var event_modifiers_sum: int = _event_modifiers_sum(domain_data, garrison)
+	# §8.4 backdrop auto-stabilize (gdd-ruler-ai.md): the morale ROLL sees the
+	# garrison as funded to minimum; the real garrison summary above still
+	# drives expenses.
+	var morale_garrison: Dictionary = garrison
+	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_GARRISON_FUNDED, false)):
+		morale_garrison = RulerBackdropStabilizer.adjust_garrison_summary(garrison)
+	var event_modifiers_sum: int = _event_modifiers_sum(domain_data, morale_garrison)
+	# §8.4 item 2: the assumed-administration grant is ONLY the +1 morale-roll
+	# modifier — added here, never via the administer_domain_completed flag
+	# (which _save_domain would read as the +5% XP bonus).
+	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_ADMINISTERED, false)) \
+			and int(domain_data.get("administer_domain_completed_this_month", 0)) == 0:
+		event_modifiers_sum += RulerBackdropStabilizer.ADMINISTER_MORALE_BONUS
 	var repression_bonus: int = int(domain_data.get(
 		"repression_cp_per_family_this_month", 0))
 	var is_repressed: bool = bool(domain_data.get(
@@ -289,6 +367,9 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int) -> Dictio
 	var morale := DomainMoraleResolver.resolve_current_morale(
 		domain_data, base_morale, event_modifiers_sum,
 		repression_bonus, is_repressed, morale_roll)
+	if bool(opts.get(RulerBackdropStabilizer.OPT_NEGLECT_MORALE_FLOOR, false)):
+		morale = RulerBackdropStabilizer.apply_neglect_floor(
+			morale, int(domain_data.get("morale", 0)), event_modifiers_sum)
 
 	var morale_tier: String = DomainMoraleResolver.morale_tier(morale["current_morale"])
 	var growth := DomainGrowthResolver.resolve_growth(
@@ -523,6 +604,15 @@ func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
 		# Reset Phase 3 transient modifiers after consumption.
 		"administer_domain_completed_this_month": 0,
 		"pending_investment_cp": 0,
+		# Ruler AI Phase 2 [NEEDS-OPUS-REVIEW]: repression is a MONTHLY stance —
+		# the roll above consumed the +1/gp bonus and the morale-cap, so the
+		# "_this_month" columns reset like the other transients (this was the
+		# repress_population handler's own documented contract, previously
+		# unimplemented: nothing ever cleared the flags, so one repression
+		# permanently capped morale at 0 and recurred forever). Sustained
+		# repression = repress again next month.
+		"is_repressed_this_month": 0,
+		"repression_cp_per_family_this_month": 0,
 	}
 
 	# Phase 11D.5 polish: population-growth refill of the tribal-warrior pool.

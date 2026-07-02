@@ -487,7 +487,7 @@ static func _consecrate_ruler_vagary_pick_for_army(army: Dictionary) -> String:
 	if owner_id.is_empty():
 		return ""
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1", [owner_id]
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1", [owner_id]
 	):
 		return ""
 	if CampaignRepository.db.query_result.is_empty():

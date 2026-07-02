@@ -2,7 +2,9 @@ class_name DomainActivityHandlersRegistration
 extends RefCounted
 
 ## Registers all 16 domain-category activity handlers with an
-## ActivityHandlerRegistry. Called once during SessionRunner setup.
+## ActivityHandlerRegistry, plus the ruler-AI composite intents
+## (data/activities/ruler_ai_category.json — gdd-ruler-ai.md §11, approved).
+## Called once during SessionRunner setup.
 ##
 ## Mapping mirrors data/activities/domain_category.json. Phase 5/9 will add
 ## additional category handlers (troops, faith, magical, etc.) by adding
@@ -26,3 +28,9 @@ static func register_all(registry: ActivityHandlerRegistry) -> void:
 	registry.register("supervise_construction",  SuperviseConstructionHandler.on_complete)
 	registry.register("military_campaign",       MilitaryCampaignHandler.on_complete)
 	registry.register("repress_population",      RepressPopulationHandler.on_complete)
+	# Ruler-AI composite intents (gdd-ruler-ai.md §5/§11; ruler_ai_category.json).
+	# "hold" has NO handler by design (§5.2 — a deliberate no-op the planner
+	# resolves without dispatch); defensive_resistance is a Phase-3 stub.
+	registry.register("raise_garrison",          RaiseGarrisonHandler.on_complete)
+	registry.register("manage_stronghold",       ManageStrongholdHandler.on_complete)
+	registry.register("defensive_resistance",    DefensiveResistanceHandler.on_complete)

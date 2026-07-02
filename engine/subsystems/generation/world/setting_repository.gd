@@ -59,8 +59,8 @@ const ROAD_COLUMNS := ["id", "hexes", "from_settlement_id", "to_settlement_id",
 # setting_fortifications removed (Jedidiah 2026-06-21): the runtime materializer's feudal
 # stronghold tree replaces the sim's redundant fort layer. The (now-unwritten) table is
 # left in place to avoid a destructive migration; its save/list helpers were removed.
-const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
-const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
+const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex", "culture_by_hex", "territory_by_hex"]
+const REPLAY_PALETTE_COLUMNS := ["polity_id", "color", "seed_label"]
 const NARRATIVE_COLUMNS := ["id", "kind", "subject_id", "body", "is_fallback"]
 const DOMAIN_COLUMNS := ["id", "polity_id", "liege_domain_id", "tier_index", "title",
 	"ruler_class", "ruler_level", "ruler_name", "realm_name", "seat_q", "seat_r",

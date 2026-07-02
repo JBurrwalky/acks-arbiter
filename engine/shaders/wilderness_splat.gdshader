@@ -20,12 +20,35 @@ uniform vec3 fog_hidden_color : source_color = vec3(0.015, 0.015, 0.02);
 uniform vec3 fog_explored_color : source_color = vec3(0.34, 0.34, 0.38);
 uniform float blend_jitter = 0.4;         // edge-dither strength (feathered transition)
 uniform float dither_freq = 2.6;          // dither feature frequency (per world unit)
+// Desert (6) / badlands (7) / mountain (8) / volcanic (9) / snow-glacial (10) are
+// high-contrast and feather harshly (sharp, deep intrusions into neighbours). Damp the edge
+// jitter for those pairs so the transition stays smooth + shallow, while gentle grass/forest
+// edges keep their feathering. jitter_hi_scale=0 → clean geometric hex edge (no feather).
+uniform float jitter_hi_scale : hint_range(0.0, 1.0) = 0.15;
 // Relief readability: the geometry is kept gently exaggerated (HEIGHT_GAIN ~2x) so
 // slopes don't read as cliffs, but that leaves gentle HILLS hard to see. Instead of
 // adding height back, exaggerate the slope of the NORMAL the engine LIGHTS with, so a
 // gentle hill shades as if steeper. Purely a lighting effect — geometry is untouched.
-uniform float relief_gain = 4.0;          // 1 = real normals; higher = hills read more
+uniform float relief_gain = 5.0;          // 1 = real normals; higher = hills read more
 uniform float relief_cavity = 0.18;       // extra ambient darkening on any slope (AO feel)
+// Cel hillshade (gdd-wilderness-hex-3d.md §17.1.1): a SOFT 2-band slope shade reads as the
+// §9.1 cartographic hatching. cel_hillshade=false falls back to a smooth narrow Lambert
+// wash (the art §7.2 environment default) — the A/B toggle the GDD asks for.
+uniform bool cel_hillshade = true;
+uniform float shade_threshold : hint_range(0.0, 1.0) = 0.45;   // dot(N,L) split between the 2 bands
+uniform float shade_softness : hint_range(0.001, 0.5) = 0.09;  // transition width (lower = crisper cel)
+uniform float shade_lit : hint_range(0.0, 1.5) = 1.0;          // lit-band multiplier
+uniform float shade_dark : hint_range(0.0, 1.0) = 0.42;        // shadow-band multiplier (lower = stronger)
+uniform float wash_min : hint_range(0.0, 1.0) = 0.65;          // smooth-mode floor
+uniform float wash_max : hint_range(0.0, 1.5) = 1.0;           // smooth-mode ceiling
+// Atmospheric wash (art §7.5): a small mood tint multiplied over the surface. Daylight
+// cool-blue by default; the renderer can drive it per time-of-day later.
+uniform vec3 atmospheric_tint : source_color = vec3(0.82, 0.88, 1.0);
+uniform float atmospheric_blend : hint_range(0.0, 1.0) = 0.08;
+// Toon posterize: quantise the albedo into flat colour bands so even FLAT terrain reads cel
+// (the slope hillshade only acts where there's relief). Fewer steps = stronger banding;
+// raise toward 32 to effectively disable.
+uniform float posterize_steps : hint_range(2.0, 32.0) = 8.0;
 
 varying vec3 v_world;
 varying vec4 v_weights;
@@ -66,7 +89,13 @@ vec3 sample_terrain(vec2 uv, vec2 world_xz) {
 	float blend = v_weights.y;
 	float dw = smoothstep(0.04, 0.25, blend);
 	float n = vnoise(world_xz * dither_freq) - 0.5;
-	blend = clamp(blend + n * blend_jitter * dw, 0.0, 0.5);
+	// Damp the jitter when either side is a high-contrast arid/rocky/icy layer (6 desert …
+	// 10 snow) — those feather too sharply and too deep otherwise.
+	float jitter = blend_jitter;
+	if ((v_layers.x >= 6.0 && v_layers.x <= 10.0) || (v_layers.y >= 6.0 && v_layers.y <= 10.0)) {
+		jitter *= jitter_hi_scale;
+	}
+	blend = clamp(blend + n * jitter * dw, 0.0, 0.5);
 	vec3 a = texture(biome_albedo, vec3(uv, v_layers.x)).rgb;
 	vec3 b = texture(biome_albedo, vec3(uv, v_layers.y)).rgb;
 	return mix(a, b, blend);
@@ -117,6 +146,11 @@ void fragment() {
 	vec3 terrain = sample_terrain(uv, v_world.xz);
 	vec3 albedo = mix(terrain, water_color, clamp(v_water, 0.0, 1.0));
 
+	// Atmospheric mood wash (art §7.5) — small tint over the whole surface.
+	albedo = mix(albedo, albedo * atmospheric_tint, atmospheric_blend);
+	// Toon posterize: snap to flat colour bands (cel read on flat ground too).
+	albedo = floor(albedo * posterize_steps + 0.5) / posterize_steps;
+
 	// Relief readability (land only): tilt the lit NORMAL toward its slope so the
 	// directional light shades gentle hills as if they were steeper. NORMAL is
 	// view-space, so go to world, exaggerate the horizontal components, come back.
@@ -153,4 +187,20 @@ void fragment() {
 	ALBEDO = albedo;
 	ROUGHNESS = mix(0.92, 0.35, clamp(v_water, 0.0, 1.0));
 	METALLIC = 0.0;
+}
+
+// Cel hillshade: a SOFT 2-band slope shade over the (relief-exaggerated) NORMAL set in
+// fragment() — reads as cartographic hatching (§17.1.1) rather than smooth engine light.
+// cel_hillshade=false → a smooth narrow Lambert wash (art §7.2). Ambient still fills the
+// shadow band, so the dark side reads as drawn shading, not black.
+void light() {
+	float ndl = max(0.0, dot(NORMAL, LIGHT));
+	float shade;
+	if (cel_hillshade) {
+		float t = smoothstep(shade_threshold - shade_softness, shade_threshold + shade_softness, ndl);
+		shade = mix(shade_dark, shade_lit, t);
+	} else {
+		shade = mix(wash_min, wash_max, ndl);
+	}
+	DIFFUSE_LIGHT += ALBEDO * LIGHT_COLOR * ATTENUATION * shade;
 }
