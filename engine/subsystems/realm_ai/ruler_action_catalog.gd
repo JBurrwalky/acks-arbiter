@@ -35,7 +35,17 @@ const ACTION_IDS := [
 	"raise_garrison", "repress_population", "train_troops", "hold",
 	"manage_stronghold", "defensive_resistance", "call_to_arms",
 	"withstand_siege",
+	# --- Faction FF-3: realm diplomacy (§5.6) — active-LOD sovereigns only ---
+	"propose_treaty", "denounce", "issue_ultimatum", "declare_war", "sue_for_peace",
 ]
+
+# --- Faction FF-3: realm diplomacy action ids (§5.6). Gated to active-LOD
+#     SOVEREIGNS (world_state.is_sovereign) — the deliberate war-ceiling raise
+#     (§11.2): backdrop/regional rulers keep the ruler-AI v1 defend-only ceiling.
+#     Target selection + resolution live in RealmDiplomacyActions; the catalog
+#     only offers the candidate + weight so the scorer ranks it. ---
+const DIPLOMACY_ACTION_IDS := ["propose_treaty", "denounce", "issue_ultimatum",
+	"declare_war", "sue_for_peace"]
 
 # §5.1 economic actions.
 const BASE_ADMINISTER := 0.45
@@ -52,6 +62,12 @@ const BASE_MANAGE_STRONGHOLD := 0.45
 const BASE_DEFENSIVE_RESISTANCE := 0.50
 const BASE_CALL_TO_ARMS := 0.40
 const BASE_WITHSTAND_SIEGE := 0.45
+# --- Faction FF-3 §5.6 diplomacy base values (PROJECT CALL). ---
+const BASE_PROPOSE_TREATY := 0.35
+const BASE_DENOUNCE := 0.20
+const BASE_ISSUE_ULTIMATUM := 0.25
+const BASE_DECLARE_WAR := 0.40
+const BASE_SUE_FOR_PEACE := 0.45
 
 ## Investment tranche the planner commits per oversee_investment action
 ## (PROJECT CALL): 1,000 gp — the RAW granularity of agricultural investment
@@ -175,6 +191,15 @@ static func available_for(ruler: Dictionary, domain: Dictionary,
 	if besieged:
 		out.append(_candidate("withstand_siege", BASE_WITHSTAND_SIEGE,
 			"fortification_weight", {}, true))
+
+	# --- Faction FF-3 §5.6: realm diplomacy — active-LOD SOVEREIGNS ONLY. The
+	#     war-ceiling raise (§11.2): backdrop/regional rulers keep defend-only.
+	#     RealmDiplomacyActions supplies the per-target candidate params (it holds
+	#     the target-selection + resolution logic); the catalog just appends them
+	#     so the scorer ranks them alongside the domestic actions. ---
+	if bool(world_state.get("is_sovereign", false)):
+		for c in RealmDiplomacyActions.candidates_for_sovereign(ruler, domain, world_state):
+			out.append(c)
 
 	return out
 

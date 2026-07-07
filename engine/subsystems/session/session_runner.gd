@@ -347,6 +347,13 @@ func _ready() -> void:
 	# disposition drift. Idempotent; the monthly quiet-decay runs from the
 	# domain monthly tick, not here.
 	RealmRelationsDrift.register_listeners()
+	# --- Faction FF-3: realm diplomacy & rebellion (gdd-faction-framework.md §5.2) ---
+	# Register the §5.2 vassal-loyalty trigger listeners once per session so
+	# succession / conquest / treaty-broken events fire a vassal-edge loyalty roll
+	# and route the §5.3 compliance ladder (2− seeds a plot; 3-5 opens a petition).
+	# Idempotent; the annual-investiture + tribute-hike triggers fire from their
+	# owning subsystems via VassalLoyaltyTriggers.fire_for_liege.
+	VassalLoyaltyTriggers.register_listeners()
 	# Eyes of the Eagle V2 (2026-06-03) — refresh the party visibility bonus
 	# on the hexmap whenever an inventory change or party-membership change
 	# could affect a member's `has_eyes_of_the_eagle` flag. Cheap (single

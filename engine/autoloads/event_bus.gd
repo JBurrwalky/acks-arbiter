@@ -2175,3 +2175,42 @@ signal rumor_verified(rumor_id: String, accuracy: String)
 ## A rumor's source was destroyed; it goes stale immediately regardless of
 ## its normal decay timer (RumorRegistry.invalidate, §4.6).
 signal rumor_expired(rumor_id: String)
+
+
+# ---------------------------------------------------------------------------
+# --- Faction FF-3: realm diplomacy & rebellion (gdd-faction-framework.md §5) ---
+# Realm-politics signals emitted by the FF-3 services (VassalLoyaltyResolver,
+# TreatyResolver, RealmDiplomacyActions, RebelCoalition, ResignationLadder).
+# Consumers: GameLog / Seam-A narration (L-3), the domain UI, the quest/rumor
+# system (plot rumors). All deterministic; no LLM in FF-3.
+# ---------------------------------------------------------------------------
+
+## A vassal's loyalty roll resolved to a compliance-ladder band (§5.2/§5.3).
+## outcome is the RAW loyalty band ("hostility"/"resignation"/"grudging"/
+## "loyal"/"fanatic"); behavior is the §5.3 compliance tag written on the edge.
+signal vassal_loyalty_resolved(vassal_assignment_id: String, outcome: String, behavior: String)
+
+## A treaty was signed between two realms (§5.5). kind is the treaty kind.
+signal treaty_signed(treaty_id: String, realm_a_id: String, realm_b_id: String, kind: String)
+
+## A treaty was broken by a realm (§5.5). breaker_realm_id is the offender;
+## the reputational-contagion ledger writes follow this emit.
+signal treaty_broken(treaty_id: String, breaker_realm_id: String, victim_realm_id: String)
+
+## A realm diplomacy action executed (§5.6) — propose_treaty/denounce/
+## issue_ultimatum/declare_war/sue_for_peace. outcome carries the resolution
+## payload (accepted/refused/countered, war justification, etc.).
+signal realm_diplomacy_action_taken(actor_realm_id: String, action_id: String, target_realm_id: String, outcome: Dictionary)
+
+## A rebellion plot changed lifecycle state (§5.7). new_status is one of the
+## faction_plots status values (brewing/recruiting/ready/launched/exposed/
+## abandoned/resolved).
+signal rebellion_plot_updated(plot_id: String, new_status: String, instigator_faction_id: String)
+
+## A rebellion launched: committed domains flipped to a new rebel realm-mirror
+## faction and realm_relations(rebels, liege) = hostile (§5.7 LAUNCH).
+signal rebellion_launched(plot_id: String, rebel_realm_id: String, liege_realm_id: String)
+
+## A resignation-ladder petition changed state (§5.9). kind = release/transfer/
+## appeal; resolution = filed/granted/refused/bought_off/escalated/withdrawn.
+signal realm_petition_resolved(petition_id: String, kind: String, resolution: String)

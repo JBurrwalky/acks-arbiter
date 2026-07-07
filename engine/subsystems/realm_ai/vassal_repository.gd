@@ -26,6 +26,8 @@ const _UPDATE_FIELDS := [
 	"base_loyalty_modifier",
 	"last_loyalty_roll_day",
 	"last_loyalty_outcome",
+	# --- Faction FF-3: realm diplomacy & rebellion (§5.3 compliance ladder) ---
+	"compliance_behavior",
 ]
 
 
@@ -139,6 +141,15 @@ static func record_loyalty_roll(id: String, outcome: String, calendar_day: int) 
 		SET last_loyalty_outcome = ?, last_loyalty_roll_day = ?, updated_at = datetime('now')
 		WHERE id = ?
 	""", [outcome, calendar_day, id])
+
+
+# --- Faction FF-3: realm diplomacy & rebellion (§5.3 compliance ladder) ---
+## Write the §5.3 compliance-behavior tag onto the vassal edge. Thin wrapper over
+## update() so VassalLoyaltyResolver need not know the whitelist mechanics.
+static func db_set_compliance(id: String, behavior: String) -> bool:
+	if id.is_empty():
+		return false
+	return update(id, {"compliance_behavior": behavior})
 
 
 static func update(id: String, fields: Dictionary) -> bool:

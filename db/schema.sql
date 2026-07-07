@@ -4418,3 +4418,17 @@ CREATE TABLE IF NOT EXISTS rumor_settlement_pool (
 
 CREATE INDEX IF NOT EXISTS idx_rumor_settlement_pool_settlement ON rumor_settlement_pool(settlement_id);
 
+-- ===========================================================================
+-- Faction FF-3: realm diplomacy & rebellion (migration 193)
+-- Doc-sync copies of the ALTER TABLE ADD COLUMN statements in
+-- db/migrations/193_faction_ff3_realm_diplomacy.sql. schema.sql is a
+-- documentation snapshot (the runtime DB is built from migrations only); these
+-- ALTERs are appended here (not inlined into the FF-1 CREATE TABLE blocks) to
+-- keep the parallel-track merge mechanical. See §5.3 / §5.7 of the GDD.
+-- ===========================================================================
+ALTER TABLE vassal_assignments ADD COLUMN compliance_behavior TEXT NOT NULL DEFAULT 'full_compliance'
+    CHECK(compliance_behavior IN (
+        'over_compliance', 'full_compliance', 'under_compliance',
+        'resignation_seeking', 'rebellious'));
+ALTER TABLE faction_plots ADD COLUMN ready_since_day INTEGER NOT NULL DEFAULT 0;
+

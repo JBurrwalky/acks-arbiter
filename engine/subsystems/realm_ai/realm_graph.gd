@@ -137,16 +137,23 @@ static func is_same_realm(domain_a: String, domain_b: String) -> bool:
 
 
 static func is_allied(apex_a: String, apex_b: String) -> bool:
-	## v1: no formal-alliance edges in Phase 7. Phase 8's Office / Treaty
-	## mechanics (favors_and_duties) will land the alliance writes; until then
-	## this returns false. Structure ready for Phase 8.
+	## Faction FF-3 (§5.5): true iff an ACTIVE treaty of kind 'alliance' or
+	## 'defensive_pact' exists between the two apices' realms. Before FF-3 this was
+	## hard-false (no alliance edges existed); the treaties table (§4.3) is now its
+	## backing store. Inputs are apex DOMAIN ids (RealmGraph's currency); mapped to
+	## realm rows via RealmRepository.get_realm_for_domain.
 	if apex_a.is_empty() or apex_b.is_empty():
 		return false
 	if apex_a == apex_b:
 		return false  # Use is_same_realm for self.
-	# Future: SELECT 1 FROM realm_alliances WHERE
-	#   (apex_a_id=? AND apex_b_id=?) OR (apex_a_id=? AND apex_b_id=?).
-	return false
+	var realm_a: Dictionary = RealmRepository.get_realm_for_domain(apex_a)
+	var realm_b: Dictionary = RealmRepository.get_realm_for_domain(apex_b)
+	var ra: String = String(realm_a.get("id", ""))
+	var rb: String = String(realm_b.get("id", ""))
+	if ra == "" or rb == "" or ra == rb:
+		return false
+	return not CampaignRepository.ff_get_active_treaty_between(
+		ra, rb, ["alliance", "defensive_pact"]).is_empty()
 
 
 # ---------------------------------------------------------------------------

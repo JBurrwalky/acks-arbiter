@@ -137,6 +137,16 @@ static func _utility(candidate: Dictionary, disposition: StrategicDisposition,
 	var weight: float = 0.0
 	if disposition != null:
 		weight = float(disposition.weights().get(weight_key, 0.0))
+	# --- Faction FF-3 (§5.6): realm diplomacy actions (propose_treaty / denounce /
+	#     issue_ultimatum / declare_war / sue_for_peace) score through this SAME
+	#     generic path — weight-gated on diplomatic_weight (or expansion_weight for
+	#     declare_war), with a neutral situational product (they carry no §6.2
+	#     morale/treasury/garrison row, so _situational_product returns 1.0). A
+	#     non-diplomatic ruler's diplomatic_weight is low, so these naturally lose
+	#     to domestic actions — no special-case gating needed here; the catalog's
+	#     is_sovereign gate is what restricts them to active-LOD sovereigns. The
+	#     §7 crisis-bias channel still applies to the crisis_modulated ones
+	#     (declare_war / sue_for_peace) via _situational_product's biases block. ---
 	return base * weight * _situational_product(candidate, ctx)
 
 

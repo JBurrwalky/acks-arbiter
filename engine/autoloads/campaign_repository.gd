@@ -6372,6 +6372,236 @@ func ff_list_tithe_shares(domain_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+# ===========================================================================
+# --- Faction FF-3: realm diplomacy & rebellion (gdd-faction-framework.md §5) ---
+# Runtime CRUD for the FF-1 schema-only tables whose resolvers land in FF-3:
+# treaties (§5.5), faction_plots + faction_plot_members (§5.7), realm_petitions
+# (§5.9). All campaign-scoped; the purge cascade + savegame scope map already
+# cover every one of these tables (registered in FF-1), so no scope-map edit is
+# needed. Booleans serialize to 1/0 int per conventions §105.
+# ===========================================================================
+
+# --- treaties (§5.5) -------------------------------------------------------
+
+## Upsert a treaty row. Pass a dict with the treaties columns; `id` is minted
+## when absent. Returns the row id, or "" on failure.
+func ff_upsert_treaty(data: Dictionary) -> String:
+	var id_v: String = String(data.get("id", ""))
+	if id_v == "":
+		id_v = generate_id()
+	var duration_v: Variant = data.get("duration_months", null)
+	if duration_v != null and int(duration_v) <= 0:
+		duration_v = null
+	var broken_by_v: Variant = data.get("broken_by_realm_id", null)
+	if broken_by_v != null and String(broken_by_v) == "":
+		broken_by_v = null
+	var broken_day_v: Variant = data.get("broken_day", null)
+	var ok := db.query_with_bindings(
+		"""INSERT OR REPLACE INTO treaties
+			(id, campaign_id, kind, realm_a_id, realm_b_id, terms, signed_day,
+			 duration_months, status, broken_by_realm_id, broken_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[id_v, String(data.get("campaign_id", "")), String(data.get("kind", "")),
+		 String(data.get("realm_a_id", "")), String(data.get("realm_b_id", "")),
+		 String(data.get("terms", "{}")), int(data.get("signed_day", 0)),
+		 duration_v, String(data.get("status", "active")),
+		 broken_by_v, broken_day_v])
+	if not ok:
+		push_error("CampaignRepository.ff_upsert_treaty: failed kind=%s" % data.get("kind", ""))
+		return ""
+	return id_v
+
+
+func ff_get_treaty(treaty_id: String) -> Dictionary:
+	if db.query_with_bindings("SELECT * FROM treaties WHERE id = ?", [treaty_id]) \
+			and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+## Active treaties naming a realm on either side. [param kinds] optionally filters
+## to a subset of treaty kinds (empty = all kinds).
+func ff_list_active_treaties_for_realm(realm_id: String, kinds: Array = []) -> Array:
+	if db.query_with_bindings(
+			"""SELECT * FROM treaties
+			   WHERE status = 'active' AND (realm_a_id = ? OR realm_b_id = ?)
+			   ORDER BY signed_day ASC, id ASC""",
+			[realm_id, realm_id]):
+		var rows: Array = db.query_result.duplicate()
+		if kinds.is_empty():
+			return rows
+		var out: Array = []
+		for r in rows:
+			if kinds.has(String((r as Dictionary).get("kind", ""))):
+				out.append(r)
+		return out
+	return []
+
+
+## The active treaty (of any of [param kinds], or any kind when empty) between a
+## realm pair, order-independent. {} if none.
+func ff_get_active_treaty_between(realm_a_id: String, realm_b_id: String, kinds: Array = []) -> Dictionary:
+	if db.query_with_bindings(
+			"""SELECT * FROM treaties
+			   WHERE status = 'active'
+			     AND ((realm_a_id = ? AND realm_b_id = ?) OR (realm_a_id = ? AND realm_b_id = ?))
+			   ORDER BY signed_day DESC, id ASC""",
+			[realm_a_id, realm_b_id, realm_b_id, realm_a_id]):
+		for r in db.query_result:
+			if kinds.is_empty() or kinds.has(String((r as Dictionary).get("kind", ""))):
+				return r
+	return {}
+
+
+func ff_list_treaties_for_campaign(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM treaties WHERE campaign_id = ? ORDER BY signed_day ASC, id ASC",
+		[campaign_id])
+	return db.query_result.duplicate()
+
+
+# --- faction_plots + members (§5.7) ----------------------------------------
+
+## Upsert a plot row. `id` is minted when absent. Returns the row id, or "".
+func ff_upsert_plot(data: Dictionary) -> String:
+	var id_v: String = String(data.get("id", ""))
+	if id_v == "":
+		id_v = generate_id()
+	var target_v: Variant = data.get("target_faction_id", null)
+	if target_v != null and String(target_v) == "":
+		target_v = null
+	var ok := db.query_with_bindings(
+		"""INSERT OR REPLACE INTO faction_plots
+			(id, campaign_id, kind, instigator_faction_id, target_faction_id,
+			 secrecy, launch_condition, status, ready_since_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[id_v, String(data.get("campaign_id", "")), String(data.get("kind", "rebellion")),
+		 String(data.get("instigator_faction_id", "")), target_v,
+		 int(data.get("secrecy", 10)), String(data.get("launch_condition", "{}")),
+		 String(data.get("status", "brewing")), int(data.get("ready_since_day", 0))])
+	if not ok:
+		push_error("CampaignRepository.ff_upsert_plot: failed kind=%s" % data.get("kind", ""))
+		return ""
+	return id_v
+
+
+func ff_get_plot(plot_id: String) -> Dictionary:
+	if db.query_with_bindings("SELECT * FROM faction_plots WHERE id = ?", [plot_id]) \
+			and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+## Plots in [param statuses] (empty = all) for a campaign, oldest-first.
+func ff_list_plots_for_campaign(campaign_id: String, statuses: Array = []) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_plots WHERE campaign_id = ? ORDER BY created_at ASC, id ASC",
+		[campaign_id])
+	var rows: Array = db.query_result.duplicate()
+	if statuses.is_empty():
+		return rows
+	var out: Array = []
+	for r in rows:
+		if statuses.has(String((r as Dictionary).get("status", ""))):
+			out.append(r)
+	return out
+
+
+## The active (non-terminal) rebellion plot a given faction instigates, or {}.
+func ff_get_active_plot_by_instigator(instigator_faction_id: String, kind: String = "rebellion") -> Dictionary:
+	if db.query_with_bindings(
+			"""SELECT * FROM faction_plots
+			   WHERE instigator_faction_id = ? AND kind = ?
+			     AND status IN ('brewing', 'recruiting', 'ready', 'launched')
+			   ORDER BY created_at DESC LIMIT 1""",
+			[instigator_faction_id, kind]) and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+func ff_upsert_plot_member(plot_id: String, faction_id: String, commitment: String, joined_day: int) -> bool:
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO faction_plot_members
+			(plot_id, faction_id, commitment, joined_day)
+		   VALUES (?, ?, ?, ?)""",
+		[plot_id, faction_id, commitment, joined_day])
+
+
+func ff_list_plot_members(plot_id: String, commitments: Array = []) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_plot_members WHERE plot_id = ? ORDER BY joined_day ASC, faction_id ASC",
+		[plot_id])
+	var rows: Array = db.query_result.duplicate()
+	if commitments.is_empty():
+		return rows
+	var out: Array = []
+	for r in rows:
+		if commitments.has(String((r as Dictionary).get("commitment", ""))):
+			out.append(r)
+	return out
+
+
+# --- realm_petitions (§5.9) ------------------------------------------------
+
+## Upsert a petition row. `id` minted when absent. Returns the row id, or "".
+func ff_upsert_petition(data: Dictionary) -> String:
+	var id_v: String = String(data.get("id", ""))
+	if id_v == "":
+		id_v = generate_id()
+	var liege_v: Variant = data.get("liege_domain_id", null)
+	if liege_v != null and String(liege_v) == "":
+		liege_v = null
+	var resolved_v: Variant = data.get("resolved_day", null)
+	var ok := db.query_with_bindings(
+		"""INSERT OR REPLACE INTO realm_petitions
+			(id, campaign_id, petitioner_domain_id, liege_domain_id, kind,
+			 status, filed_day, resolved_day, terms)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[id_v, String(data.get("campaign_id", "")),
+		 String(data.get("petitioner_domain_id", "")), liege_v,
+		 String(data.get("kind", "release")), String(data.get("status", "filed")),
+		 int(data.get("filed_day", 0)), resolved_v, String(data.get("terms", "{}"))])
+	if not ok:
+		push_error("CampaignRepository.ff_upsert_petition: failed kind=%s" % data.get("kind", ""))
+		return ""
+	return id_v
+
+
+func ff_get_petition(petition_id: String) -> Dictionary:
+	if db.query_with_bindings("SELECT * FROM realm_petitions WHERE id = ?", [petition_id]) \
+			and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+## Open (status='filed'|'escalated') petitions filed against a liege domain,
+## oldest-first — what the liege's realm-politics step adjudicates.
+func ff_list_open_petitions_for_liege(liege_domain_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM realm_petitions
+		   WHERE liege_domain_id = ? AND status IN ('filed', 'escalated')
+		   ORDER BY filed_day ASC, id ASC""",
+		[liege_domain_id])
+	return db.query_result.duplicate()
+
+
+## Open petitions filed by a petitioner domain (used to avoid double-filing).
+func ff_list_open_petitions_for_petitioner(petitioner_domain_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM realm_petitions
+		   WHERE petitioner_domain_id = ? AND status IN ('filed', 'escalated')
+		   ORDER BY filed_day ASC, id ASC""",
+		[petitioner_domain_id])
+	return db.query_result.duplicate()
+
+
+func ff_list_petitions_for_campaign(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM realm_petitions WHERE campaign_id = ? ORDER BY filed_day ASC, id ASC",
+		[campaign_id])
+	return db.query_result.duplicate()
+
+
 func fetch_reputation_entry(party_id: String, scope_type: String, scope_id: String) -> Dictionary:
 	if not db.query_with_bindings(
 			"""SELECT * FROM reputation_entries
