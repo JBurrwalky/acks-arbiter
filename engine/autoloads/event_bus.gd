@@ -2175,3 +2175,12 @@ signal rumor_verified(rumor_id: String, accuracy: String)
 ## A rumor's source was destroyed; it goes stale immediately regardless of
 ## its normal decay timer (RumorRegistry.invalidate, §4.6).
 signal rumor_expired(rumor_id: String)
+
+
+# --- Live LLM L-3 ---
+## NarrativeUpgrader progress (gdd-live-llm-integration.md §13.2): emitted once
+## per attempted setting_narrative block during a live upgrade/backfill pass, so
+## the campaign-creation UI / Settings "Upgrade existing narration…" action can
+## show a "done / total" bar. `done` is monotonic up to `total`; a run that is
+## cancelled simply stops emitting.
+signal setting_narrative_upgraded(campaign_id: String, done: int, total: int)

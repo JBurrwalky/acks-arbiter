@@ -19,6 +19,9 @@ extends Node
 # Async suite — NOT dispatched via the normal _run_suite() sync loop below;
 # awaited directly in run() (see the "Async suites" block).
 @onready var _llm_generate_async_tests = $LlmGenerateAsyncTests
+# Live LLM L-3: consumer-wiring async suite (Seam A live, A6 ordering,
+# NarrativeUpgrader, Seam B triggers) — also awaited in the async block.
+@onready var _llm_l3_consumers_tests = $LlmL3ConsumersTests
 @onready var _terrain_tests = $HexTerrainDataTests
 @onready var _controller_tests = $HexMapControllerTests
 @onready var _climb_resolver_tests = $ClimbResolverTests
@@ -1305,7 +1308,7 @@ func run() -> void:
 	# still read via the same has_failures()/fail_count() surface from
 	# test_suite_base.gd, so pass/fail accounting is uniform.
 	# ---------------------------------------------------------------------
-	for async_suite in [_llm_generate_async_tests]:
+	for async_suite in [_llm_generate_async_tests, _llm_l3_consumers_tests]:
 		if async_suite == null:
 			push_error("TestRunner: missing async test suite node — check scene tree")
 			failed += 1

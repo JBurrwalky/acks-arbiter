@@ -50,6 +50,15 @@ static var _pending: Dictionary = {}
 
 ## The full Seam-B flow for one ruler. Returns
 ## {reassessed: bool, reason?: String, changes?: Dictionary}.
+##
+## Live LLM L-3 (gdd-live-llm-integration.md §5.3): a COROUTINE. The mock /
+## unconfigured path executes ZERO awaits (returns the
+## {reassessed:false, reason:"llm_not_configured"} no-op same-frame). The live
+## path awaits generate() with response_mode="json" and validate_suggestion as
+## the consumer validator (§11.3), so an invalid suggestion never reaches
+## apply_validated as valid — the strict rejection (incl. the bare issue_decree
+## bias-key, conventions §93) is enforced BOTH inside generate() (the validator
+## handoff) and again by apply_validated below. Validation is NOT relaxed.
 static func reassess(ruler_npc_id: String, trigger: String,
 		situation: Dictionary = {}) -> Dictionary:
 	if ruler_npc_id.is_empty() or trigger.is_empty():
@@ -59,7 +68,7 @@ static func reassess(ruler_npc_id: String, trigger: String,
 			or String(ruler.get("character_type", "")) in ["pc", "henchman"]:
 		return {"reassessed": false, "reason": "not_npc_ruler"}
 	# §9.2 mock no-op: no request is made — the stub could only return the
-	# generic fallback envelope (and would warn per call).
+	# generic fallback envelope. ZERO awaits execute on this path.
 	if not LLMManager.is_configured():
 		return {"reassessed": false, "reason": "llm_not_configured"}
 	var context: Dictionary = {
@@ -68,10 +77,26 @@ static func reassess(ruler_npc_id: String, trigger: String,
 		"trigger": trigger,
 	}
 	context.merge(situation)
-	var env: ResponseEnvelope = LLMManager.request_narration(context)
+	# Live path: JSON response, decoration QoS, consumer validator handoff. The
+	# validator wraps validate_suggestion in generate()'s {valid, reason} shape.
+	var env: ResponseEnvelope = await LLMManager.generate(context, {
+		"qos": "decoration",
+		"response_mode": "json",
+		"validator": Callable(RulerStrategyReassessor, "_validator_for_generate"),
+	})
 	if env == null or not env.success or env.is_fallback:
 		return {"reassessed": false, "reason": "fallback_envelope"}
 	return apply_validated(ruler_npc_id, trigger, JSON.parse_string(env.text))
+
+
+## generate()'s consumer-validator contract (§11.3): receives the parsed JSON,
+## returns {valid: bool, reason: String}. Delegates to validate_suggestion so
+## the SAME strict schema (incl. the bare-issue_decree rejection) gates the live
+## path before the envelope is ever delivered.
+static func _validator_for_generate(parsed: Variant) -> Dictionary:
+	var verdict: Dictionary = validate_suggestion(parsed)
+	return {"valid": bool(verdict.get("valid", false)),
+		"reason": String(verdict.get("reason", ""))}
 
 
 ## Validate + accept a structured suggestion (the post-envelope half of

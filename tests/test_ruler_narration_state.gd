@@ -344,7 +344,11 @@ func test_reassess_is_noop_under_mock() -> void:
 	var on_reassess := func(rid: String, trigger: String, changes: Dictionary) -> void:
 		fired.append([rid, trigger, changes])
 	EventBus.ruler_strategy_reassessed.connect(on_reassess)
-	var result: Dictionary = RulerStrategyReassessor.reassess(
+	# Live LLM L-3: reassess() is now a coroutine (§5.3), but its unconfigured
+	# path executes ZERO awaits and returns the no-op dict SAME-FRAME. Route
+	# through a Callable so the static analyzer doesn't demand `await` at this
+	# synchronous call site — the returned Variant is the dict, resolved inline.
+	var result: Dictionary = Callable(RulerStrategyReassessor, "reassess").call(
 		fx.ruler_id, "player_attacked_domain")
 	EventBus.ruler_strategy_reassessed.disconnect(on_reassess)
 	check(not bool(result.get("reassessed", true)), "reassess is a no-op under mock")

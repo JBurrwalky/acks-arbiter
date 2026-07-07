@@ -170,7 +170,23 @@ func _on_approved(start_settlement_id: String = "") -> void:
 	var world_hash := SettingDatasetHasher.compute_world_hash(_campaign_id)
 	SettingRepository.lock_setting(_campaign_id, world_hash)
 	EventBus.world_approved.emit(_campaign_id)
+	# --- Live LLM L-3: Layer-7 narrative-upgrade hook (§13.2 trigger a) ---
+	# If a provider is configured, upgrade the template narration to live prose
+	# now that the world is locked (save_narrative is the ONE lock-exempt writer,
+	# A3). Fire-and-forget: the upgrade streams in via
+	# EventBus.setting_narrative_upgraded and the failing blocks keep their
+	# templates, so this never blocks routing into the game. Inert (no await
+	# executes past the guard) when unconfigured.
+	if LLMManager.is_configured():
+		_upgrade_narration_async(_campaign_id)
 	campaign_ready.emit(_campaign_id, start_settlement_id)
+
+
+## Fire-and-forget Live LLM L-3 upgrade pass over the just-locked world's
+## narration (gdd-live-llm-integration.md §13.2). Kept as its own coroutine so
+## _on_approved stays synchronous for its non-LLM callers.
+func _upgrade_narration_async(campaign_id: String) -> void:
+	await NarrativeUpgrader.run(campaign_id)
 
 
 ## Screen D "Regenerate world": a deliberate re-roll — drop any entered seed/share

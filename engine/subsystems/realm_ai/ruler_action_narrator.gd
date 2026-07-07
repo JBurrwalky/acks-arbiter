@@ -72,6 +72,67 @@ static func narrate_action(ruler_npc_id: String, domain_id: String, action_id: S
 	return env
 
 
+# ---------------------------------------------------------------------------
+# Live LLM L-3 — Seam A live path (gdd-live-llm-integration.md §5.3, §13.1)
+# ---------------------------------------------------------------------------
+
+## Awaitable sibling of narrate_action(). Behaviourally IDENTICAL to
+## narrate_action() when no provider is configured — it executes ZERO `await`
+## statements on that path (the no-variance bar, §5.1.1), so an unconfigured
+## caller completes same-frame and gets byte-identical text. When a provider
+## IS configured, it awaits LLMManager.generate() (decoration QoS, coalesced
+## by cache_key) and stores the returned prose with is_fallback=false.
+##
+## §13.1 stale-fallback rule: a cache HIT whose stored entry has
+## is_fallback=true WHILE LLMManager.is_configured() is true is treated as a
+## MISS — the old template text is regenerated (live) and overwritten. This
+## fixes the unconditional re-serve of stale fallbacks after a provider is
+## configured mid-campaign.
+static func narrate_action_live(ruler_npc_id: String, domain_id: String, action_id: String,
+		action_outcome: Dictionary, calendar_day: int = -1,
+		variant_key: String = "") -> ResponseEnvelope:
+	var ruler: Dictionary = CampaignRepository.get_character(ruler_npc_id)
+	var campaign_id: String = String(ruler.get("campaign_id", ""))
+	var configured: bool = LLMManager.is_configured()
+	var cache_key: String = ""
+	if calendar_day >= 0 and not ruler_npc_id.is_empty():
+		cache_key = "%d|%s" % [calendar_day, action_id]
+		if not variant_key.is_empty():
+			cache_key += "|%s" % variant_key
+		var cached: Dictionary = _cached_entry(ruler_npc_id, cache_key)
+		if not cached.is_empty():
+			# §13.1: a stale fallback cache entry is a MISS while configured —
+			# fall through to regenerate. Otherwise serve the cached entry.
+			var cached_is_fallback: bool = bool(cached.get("is_fallback", true))
+			if not (configured and cached_is_fallback):
+				var env_cached := ResponseEnvelope.new()
+				env_cached.success = true
+				env_cached.text = String(cached.get("text", ""))
+				env_cached.context_id = "ruler_narration_cache"
+				env_cached.provider = String(cached.get("provider", "mock"))
+				env_cached.is_fallback = cached_is_fallback
+				return env_cached
+
+	var context: Dictionary = _assemble(ruler, ruler_npc_id, domain_id, action_id, action_outcome)
+	var env: ResponseEnvelope = null
+	if configured:
+		# CONFIGURED: this is the ONLY branch that awaits. Coalesce by cache_key
+		# so two same-day narrations of one action share a single request.
+		var live_cache_key: String = cache_key if not cache_key.is_empty() \
+			else "%s|%s|%s" % [ruler_npc_id, action_id, variant_key]
+		env = await LLMManager.generate(context, {
+			"qos": "decoration", "cache_key": live_cache_key})
+	# Unconfigured OR a live request that failed / came back as a generic
+	# fallback: substitute the deterministic template (§9.3), same as
+	# narrate_action(). No await executes here.
+	if env == null or not env.success or env.is_fallback:
+		var context_id: String = env.context_id if env != null else "ruler_narration_template"
+		env = ResponseEnvelope.fallback(template_narration(action_id, context), context_id)
+	if not cache_key.is_empty() and not campaign_id.is_empty():
+		_store_cache_entry(campaign_id, ruler_npc_id, cache_key, env, calendar_day)
+	return env
+
+
 ## The §9.1 ruler_action_narration context Dictionary (public for tests and
 ## for a future observation UI that wants the raw package).
 static func assemble_context(ruler_npc_id: String, domain_id: String,

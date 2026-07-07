@@ -65,10 +65,13 @@ static func _table_specs() -> Dictionary:
 			"columns": SettingRepository.ROAD_COLUMNS,
 			"order_by": "id ASC",
 		},
-		"setting_narrative": {
-			"columns": SettingRepository.NARRATIVE_COLUMNS,
-			"order_by": "id ASC",
-		},
+		# Live LLM L-3 (gdd-live-llm-integration.md §13.2, A3): setting_narrative
+		# is DELIBERATELY EXCLUDED from the determinism hash. Its body/is_fallback
+		# are a presentation cache the NarrativeUpgrader may rewrite in place after
+		# the Layer-8 lock; including it would make an LLM upgrade change the §80
+		# world hash. The hash covers canonical MECHANICAL tables only. (Mirrors
+		# the *_placeholder exclusion already applied to setting_quests /
+		# setting_rumors below.)
 		"setting_replay_frames": {
 			"columns": SettingRepository.REPLAY_FRAME_COLUMNS,
 			"order_by": "tick ASC",
