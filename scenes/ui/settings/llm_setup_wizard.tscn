@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/settings/llm_setup_wizard.gd" id="1_script"]
+
+[node name="LlmSetupWizard" type="CanvasLayer"]
+layer = 32
+script = ExtResource("1_script")
