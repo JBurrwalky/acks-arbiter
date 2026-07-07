@@ -2214,3 +2214,12 @@ signal rebellion_launched(plot_id: String, rebel_realm_id: String, liege_realm_i
 ## A resignation-ladder petition changed state (§5.9). kind = release/transfer/
 ## appeal; resolution = filed/granted/refused/bought_off/escalated/withdrawn.
 signal realm_petition_resolved(petition_id: String, kind: String, resolution: String)
+
+
+# --- Live LLM L-3 ---
+## NarrativeUpgrader progress (gdd-live-llm-integration.md §13.2): emitted once
+## per attempted setting_narrative block during a live upgrade/backfill pass, so
+## the campaign-creation UI / Settings "Upgrade existing narration…" action can
+## show a "done / total" bar. `done` is monotonic up to `total`; a run that is
+## cancelled simply stops emitting.
+signal setting_narrative_upgraded(campaign_id: String, done: int, total: int)

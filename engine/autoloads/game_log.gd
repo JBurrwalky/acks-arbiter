@@ -67,6 +67,22 @@ var _name_cache: Dictionary = {}
 ## if _ready is invoked twice during testing.
 var _signals_connected: bool = false
 
+# --- Live LLM L-3: Seam-A ordered pending queue (A6, §5.3) ---
+## Ruler-action narration is the one log category that can await a live LLM
+## envelope, so its append order must be preserved regardless of which
+## request resolves first. Each ruler_action_taken emission reserves a slot
+## (in emission order) in this array BEFORE it awaits; the awaited envelope
+## fills its slot; slots flush head-first so a completed entry appends only
+## after every earlier slot has flushed. A head slot whose request times out
+## or fails still flushes (with its deterministic template), unblocking those
+## behind it. Under an unconfigured provider every slot is filled same-frame
+## in reservation order (zero awaits), so behaviour is byte-identical to the
+## pre-L-3 synchronous handler. Other log categories append independently and
+## never touch this queue.
+##
+## Slot shape: {filled: bool, args: {summary, actor_id, target_id, data}}.
+var _ruler_pending_slots: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Lifecycle
@@ -203,6 +219,9 @@ func _resolve_party_id(party_id: String) -> String:
 func _on_session_ended() -> void:
 	_stores.clear()
 	_name_cache.clear()
+	# Drop any un-flushed Seam-A slots so they don't leak into the next session
+	# (§5.3): in-flight ruler narration is cosmetic and safe to discard.
+	_ruler_pending_slots.clear()
 
 
 func _on_campaign_saved(campaign_id: String) -> void:
@@ -734,6 +753,12 @@ func _connect_domain_signals() -> void:
 	# active-LOD rulers (the 6-mile play window + buffer), so the LOD gate is the
 	# relevance filter — off-camera backdrop rulers never reach the log.
 	EventBus.ruler_action_taken.connect(_on_ruler_action_taken)
+	# Live LLM L-3: wire the Ruler Seam-B trigger sites (handoff-ruler-ai-build.md
+	# §10.3/§10.5). RulerSeamBTrigger connects siege_started / domain_conquered /
+	# domain_morale_changed to RulerStrategyReassessor.reassess() with a per-ruler
+	# 1-game-month cooldown. Inert under the mock provider (reassess() is a no-op),
+	# so this is safe to wire unconditionally — it fires only once a provider lands.
+	RulerSeamBTrigger.connect_signals()
 	# Army-warfare §7.6 world-log integration: every concluded field battle surfaces
 	# in the unified log — silent NPC-vs-NPC (npc_battle_resolved) and interactive
 	# player battles (pc_battle_concluded). battle_concluded carries only
@@ -816,16 +841,51 @@ func _on_domain_morale_changed(domain_id: String, old_morale: int, new_morale: i
 ## reuse ruler_ai_state.narration_cache instead of re-generating.
 func _on_ruler_action_taken(ruler_npc_id: String, domain_id: String,
 		action_id: String, outcome: Dictionary) -> void:
+	# --- Live LLM L-3: A6 ordered pending queue (§5.3). ---
+	# Reserve this emission's slot SYNCHRONOUSLY, in emission order, BEFORE any
+	# await. This is what preserves append order under a live provider even
+	# when a later emission's request resolves first.
+	var slot: Dictionary = {"filled": false, "args": {}}
+	_ruler_pending_slots.append(slot)
+
 	var variant_key: String = String(outcome.get("decree_kind", ""))
 	var calendar_day: int = Timekeeping.get_calendar_day()
-	var env: ResponseEnvelope = RulerActionNarrator.narrate_action(
+	# narrate_action_live executes ZERO awaits when unconfigured (fills the
+	# slot same-frame); awaits the decoration-QoS envelope when configured.
+	var env: ResponseEnvelope = await RulerActionNarrator.narrate_action_live(
 		ruler_npc_id, domain_id, action_id, outcome, calendar_day, variant_key)
 	var text: String = env.text if env != null else ""
 	if text.strip_edges().is_empty():
 		# Degrade to a bare engine-truth line if narration somehow yields nothing.
 		text = "%s: %s" % [_name(ruler_npc_id), String(outcome.get("summary", action_id))]
-	_append("domain", "ruler_action", text, ruler_npc_id, domain_id,
-		{"action_id": action_id, "is_fallback": env.is_fallback if env != null else true})
+	slot["args"] = {
+		"summary": text,
+		"actor_id": ruler_npc_id,
+		"target_id": domain_id,
+		"data": {"action_id": action_id, "is_fallback": env.is_fallback if env != null else true},
+	}
+	slot["filled"] = true
+	_flush_ruler_slots()
+
+
+## Flush filled ruler-action slots head-first (A6, §5.3): append every leading
+## filled slot, stopping at the first unfilled one (head-of-line blocking).
+## Called after any slot fills. A head slot that timed out / failed still
+## produces a template envelope (narrate_action_live never returns unfilled),
+## so it flushes and unblocks the rest — head-of-line blocking is bounded by
+## the decoration QoS timeout inside generate().
+func _flush_ruler_slots() -> void:
+	while not _ruler_pending_slots.is_empty():
+		var head: Dictionary = _ruler_pending_slots[0]
+		if not bool(head.get("filled", false)):
+			return  # head not ready yet; a later fill will resume the flush
+		_ruler_pending_slots.pop_front()
+		var args: Dictionary = head.get("args", {})
+		_append("domain", "ruler_action",
+			String(args.get("summary", "")),
+			String(args.get("actor_id", "")),
+			String(args.get("target_id", "")),
+			args.get("data", {}))
 
 
 ## Army-warfare §7.6 world-log integration. Fires for every concluded field battle

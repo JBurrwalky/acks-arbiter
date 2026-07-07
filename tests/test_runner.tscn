@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://tests/test_llm_request_queue.gd" id="500_llm_request_queue_tests"]
 [ext_resource type="Script" path="res://tests/test_llm_generate_wall.gd" id="501_llm_generate_wall_tests"]
 [ext_resource type="Script" path="res://tests/test_llm_generate_async.gd" id="502_llm_generate_async_tests"]
+[ext_resource type="Script" path="res://tests/test_llm_l3_consumers.gd" id="520_llm_l3_consumers_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff1_schema.gd" id="503_faction_ff1_schema_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff1_realm_mirrors.gd" id="504_faction_ff1_realm_mirrors_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff1_stance_api.gd" id="505_faction_ff1_stance_api_tests"]
@@ -2083,6 +2084,9 @@ script = ExtResource("501_llm_generate_wall_tests")
 
 [node name="LlmGenerateAsyncTests" type="Node" parent="."]
 script = ExtResource("502_llm_generate_async_tests")
+
+[node name="LlmL3ConsumersTests" type="Node" parent="."]
+script = ExtResource("520_llm_l3_consumers_tests")
 
 [node name="FactionFF1SchemaTests" type="Node" parent="."]
 script = ExtResource("503_faction_ff1_schema_tests")

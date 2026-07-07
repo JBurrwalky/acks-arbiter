@@ -287,10 +287,16 @@ static func save_replay_palette(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_replay_palette", REPLAY_PALETTE_COLUMNS, rows)
 
 
-## Idempotent upsert: a block can be re-saved in place (e.g. a later LLM pass
-## upgrades a deterministic template). Keyed on (campaign_id, id).
+## Idempotent upsert: a block can be re-saved in place (e.g. the NarrativeUpgrader
+## L-3 pass upgrades a deterministic template to provider prose). Keyed on
+## (campaign_id, id).
+##
+## Live LLM L-3 (gdd-live-llm-integration.md §13.2, A3): the ONE lock-exempt
+## writer — bypass_lock=true so the upgrade backfill can run AFTER the Layer-8
+## approval lock. Narrative body/is_fallback are presentation, not mechanics;
+## every other setting table remains frozen once locked.
 static func save_narrative(campaign_id: String, rows: Array) -> bool:
-	return _bulk_insert(campaign_id, "setting_narrative", NARRATIVE_COLUMNS, rows, true)
+	return _bulk_insert(campaign_id, "setting_narrative", NARRATIVE_COLUMNS, rows, true, false, true)
 
 
 ## Quest & Rumor Q-1 (QuestSeeder's Q-2 write path; schema landed here so Q-2
@@ -401,8 +407,13 @@ static func _reject_if_locked(campaign_id: String, op: String) -> bool:
 
 
 static func _bulk_insert(campaign_id: String, table: String, columns: Array,
-		rows: Array, replace: bool = false, clear_first: bool = false) -> bool:
-	if _reject_if_locked(campaign_id, "save into %s" % table):
+		rows: Array, replace: bool = false, clear_first: bool = false,
+		bypass_lock: bool = false) -> bool:
+	# Live LLM L-3 (gdd-live-llm-integration.md §13.2, A3): save_narrative is the
+	# ONE lock-exempt writer (bypass_lock=true) — setting_narrative body/is_fallback
+	# are presentation, not mechanics, so the NarrativeUpgrader may upgrade them
+	# after the Layer-8 lock. Every other table stays frozen.
+	if not bypass_lock and _reject_if_locked(campaign_id, "save into %s" % table):
 		return false
 	if rows.is_empty() and not clear_first:
 		return true

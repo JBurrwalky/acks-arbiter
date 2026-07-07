@@ -5,11 +5,13 @@ extends RefCounted
 ##
 ## The narrative layer EXPLAINS what the generator already built — it never adds,
 ## moves, or invents a mechanical fact (§10.1/§10.3). Every block is a
-## DETERMINISTIC template assembled from the persisted mechanical data; if and
-## only if an LLM provider is configured (LLMManager.is_configured()) is a block
-## upgraded IN PLACE to provider-authored prose (is_fallback → 0). With the mock
-## provider OR no provider at all, the pipeline still yields a complete brief +
-## timeline + per-entity blocks — "engine-first, LLM-second" (handoff §18).
+## DETERMINISTIC template assembled from the persisted mechanical data and is
+## emitted with is_fallback=1. Live LLM upgrading is NO LONGER done here (the
+## synchronous generation pipeline must never block on the network): it moved to
+## the separate NarrativeUpgrader batch pass (gdd-live-llm-integration.md §13.2),
+## which awaits generate() per is_fallback=1 block. build_blocks(ctx) exposes the
+## pure block+context pairs the upgrader rebuilds — "engine-first, LLM-second"
+## (handoff §18).
 ##
 ## ZERO RNG: templates are pure functions of the mechanical data, so the §80
 ## determinism hash over setting_narrative is stable across runs.
@@ -64,6 +66,19 @@ var _events: Array = []             # parsed event dicts {y, type, polities, cul
 
 
 func run(ctx: Dictionary) -> bool:
+	ctx["sim_narrative"] = build_blocks(ctx)
+	return true
+
+
+## Live LLM L-3 (gdd-live-llm-integration.md §5.3, §13.2): the pure, zero-RNG,
+## template-only block assembly, extracted from run() so NarrativeUpgrader can
+## rebuild the exact same block+context pairs deterministically from persisted
+## setting data and upgrade the is_fallback=1 ones. Each block is
+## {id, kind, subject_id, body, is_fallback, context}: `context` is the payload
+## a live provider would receive (fallback = the template body), and is NOT a
+## persisted column (save_narrative writes only NARRATIVE_COLUMNS), so it rides
+## along for the upgrader without touching the determinism hash.
+func build_blocks(ctx: Dictionary) -> Array:
 	_index_polities(ctx)
 	_index_events(ctx)
 
@@ -79,9 +94,7 @@ func run(ctx: Dictionary) -> bool:
 		blocks.append(_poi_block(p))
 	blocks.append(_brief_block(ctx))
 	# §9.8 quests / per-rumor / per-religion / region-polish: DEFERRED (see header).
-
-	ctx["sim_narrative"] = blocks
-	return true
+	return blocks
 
 
 # --- indexing ----------------------------------------------------------------
@@ -364,26 +377,24 @@ func _brief_block(ctx: Dictionary) -> Dictionary:
 
 # --- the provider wall -------------------------------------------------------
 
-## Wrap a deterministic template as a narrative row. The template IS the output
-## unless a configured provider returns usable prose (then is_fallback → 0). The
-## context dict is what a real provider would receive; `fallback` lets it ground
-## or skip. Never blocks: if unconfigured we never call out.
+## Wrap a deterministic template as a narrative row.
+##
+## Live LLM L-3 (gdd-live-llm-integration.md §5.3): TEMPLATE-ONLY. The
+## generation pipeline is synchronous and must never block on the network, so
+## the never-executed live branch that used to live here has been removed —
+## every block is emitted with is_fallback=1. Live upgrading now happens in the
+## separate NarrativeUpgrader batch pass (§13.2), which awaits generate() per
+## block. The returned `context` is the payload a provider would receive
+## (task_type = "setting_narrative:<kind>", fallback = the template body): the
+## upgrader reuses it verbatim; it is NOT a persisted column.
 func _wrap(kind: String, subject_id: String, template_body: String, context: Dictionary) -> Dictionary:
-	var body := template_body
-	var is_fallback := 1
-	if LLMManager.is_configured():
-		var payload := context.duplicate()
-		payload["task_type"] = kind
-		payload["subject_id"] = subject_id
-		payload["fallback"] = template_body
-		var resp: ResponseEnvelope = LLMManager.request_narration(payload)
-		if resp != null and resp.success and not resp.is_fallback \
-				and resp.text.strip_edges() != "":
-			body = resp.text
-			is_fallback = 0
 	var id := kind if subject_id == "" else "%s:%s" % [kind, subject_id]
+	var payload := context.duplicate()
+	payload["task_type"] = "setting_narrative:%s" % kind
+	payload["subject_id"] = subject_id
+	payload["fallback"] = template_body
 	return {"id": id, "kind": kind, "subject_id": subject_id,
-		"body": body, "is_fallback": is_fallback}
+		"body": template_body, "is_fallback": 1, "context": payload}
 
 
 # --- helpers -----------------------------------------------------------------
