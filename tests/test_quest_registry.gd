@@ -54,6 +54,18 @@ class FakeRepo:
 	func get_quest_reward_for_quest(quest_id: String) -> Dictionary:
 		return rewards.get(quest_id, {})
 
+	# Q-4 landed the real domain-grant disbursement path (_disburse_domain_grant
+	# reads the grant row); the fake stores grants by id and records the stamped
+	# single owner. create_vassal_assignment is intentionally ABSENT so the pure
+	# unit test skips the DB vassalage write (§ code guards it with has_method).
+	var grants: Dictionary = {}  # grant_id -> Dictionary
+	func get_domain_grant(grant_id: String) -> Dictionary:
+		return grants.get(grant_id, {})
+	func set_domain_grant_owner(grant_id: String, owner_pc_id: String) -> bool:
+		if grants.has(grant_id):
+			grants[grant_id]["single_owner_pc_id"] = owner_pc_id
+		return true
+
 
 func run_all_tests() -> void:
 	test_create_quest_emits_discovered()
@@ -69,7 +81,7 @@ func run_all_tests() -> void:
 	test_abandon_transitions_and_blocks_terminal()
 	test_can_turn_in_gate()
 	test_disburse_reward_gold_awards_xp()
-	test_disburse_reward_domain_is_q4_stub()
+	test_disburse_reward_domain_single_owner_no_level_gate()
 	if not has_failures():
 		print("QuestRegistry: all tests passed.")
 
@@ -301,7 +313,11 @@ func test_disburse_reward_gold_awards_xp() -> void:
 		"disburse_reward should transition status to completed")
 
 
-func test_disburse_reward_domain_is_q4_stub() -> void:
+# Q-4 landed the real domain-grant disbursement (§8.8/§9.6): forces single-owner
+# selection with NO level gate, stamps the grant owner, writes vassalage, and is
+# XP-EXEMPT. (This test superseded the Q-1-era "returns empty stub" assertion once
+# Q-4 implemented the path.)
+func test_disburse_reward_domain_single_owner_no_level_gate() -> void:
 	var ctx := _make_registry()
 	var repo: FakeRepo = ctx["repo"]
 	var registry: QuestRegistry = ctx["registry"]
@@ -314,7 +330,20 @@ func test_disburse_reward_domain_is_q4_stub() -> void:
 		"domain_grant_id": "grant1", "political_favor": "", "total_gp_value": 30000,
 		"xp_eligible": 0, "variance_applied": 0.0,
 	}
+	repo.grants["grant1"] = {
+		"id": "grant1", "quest_reward_id": "rew_domain", "hex_ids": "[]",
+		"territory_class": "wilderness", "estimated_families": 0,
+		"stronghold_present": 0, "stronghold_value": 0, "vassal_obligations": "{}",
+		"title_granted": "", "single_owner_pc_id": "",
+	}
 
 	var result := registry.disburse_reward("q_disburse_domain", "pc1")
-	check(result.is_empty(),
-		"domain-grant disbursement is Q-4 scope (single-owner + vassalage) — Q-1 stub should return empty, not silently misvalue")
+	check(not result.is_empty(), "domain disbursement returns a payload (Q-4 implemented it)")
+	check(String(result.get("reward_type", "")) == "domain", "payload reward_type is domain")
+	check(int(result.get("xp_awarded", -1)) == 0, "domain grant is XP-EXEMPT (§8.8)")
+	check(String(result.get("single_owner_pc_id", "")) == "pc1",
+		"the recipient PC is stamped as the forced single owner (no level gate, §9.6)")
+	check(String(repo.grants["grant1"].get("single_owner_pc_id", "")) == "pc1",
+		"the domain_grants row records the single owner")
+	check(registry.get_quest("q_disburse_domain").status == "completed",
+		"domain disbursement transitions the quest to completed")
