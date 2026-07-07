@@ -12,6 +12,11 @@
     "call_to_arms": "{ruler} sends riders to summon the vassals of {realm} to war.",
     "hold": "{ruler} bides, husbanding the strength of {realm}.",
     "withstand_siege": "{ruler} looks to the walls as {realm} endures the siege.",
+    "propose_treaty": "{ruler} dispatches envoys from {realm} to treat with a neighboring court.",
+    "denounce": "{ruler} publicly denounces a rival before the assembled court of {realm}.",
+    "issue_ultimatum": "{ruler} delivers an ultimatum to a rival power, staking the honor of {realm} upon it.",
+    "declare_war": "{ruler} calls the banners of {realm} and declares war upon a rival realm.",
+    "sue_for_peace": "{ruler} sues for peace, seeking to spare {realm} further bloodshed.",
     "_default": "{ruler} attends to the affairs of {realm}."
   }
 }
