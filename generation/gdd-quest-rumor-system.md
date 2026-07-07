@@ -621,19 +621,20 @@ On the condition being met: set `is_complete=true`, emit **`quest_completion_rea
 2. completion_dialogue performed (LLM/template).
 3. Reward-recipient selection (§9.6): player picks the PC.
 4. QuestRegistry.disburse_reward(quest_id, recipient_pc_id):
-     gold    → add to PC; if xp_eligible, award 1 XP/gp on disbursement (§8.2)
-     item    → to PC inventory; XP only if later sold-unused (RAW, §8.2)
-     domain  → vassalage flow (§9.6, level-9 gate); political → recorded on the sheet
+     gold    → add to PC; award 1 XP/gp on disbursement (§8.2 ruling)
+     item    → to PC inventory; award XP = item GP-equivalent on disbursement (§8.2; no sold-unused double-count)
+     political→ recorded on the sheet; award XP = its GP-equivalent (§8.2)
+     domain  → vassalage flow (§9.6, level-9 gate); XP-EXEMPT (§8.8)
 5. status → "completed"; completed_day set; quest-sourced rumors → stale (§4.6);
    emit quest_turned_in(quest_id, recipient_pc_id, reward_summary).
 ```
 
-The **unaccepted-completion path** ("you're the ones who cleared the ogre? here — you've earned it"): if the party never accepted but the threat is resolved and they visit a satisfied questgiver, dialogue offers turn-in directly; the questgiver's attitude gates whether they honor an unpromised deed (Friendly/Indifferent yes; Unfriendly no — PROJECT CALL, §16 O-Q4).
+The **unaccepted-completion path** ("you're the ones who cleared the ogre? here — you've earned it"): if the party never accepted but the threat is resolved and they visit a satisfied questgiver, dialogue offers turn-in directly; the questgiver's attitude gates whether they honor an unpromised deed — **Friendly/Indifferent pay; Unfriendly do not — except a questgiver with high `honesty` and/or low `self_interest` (personality axes) pays regardless of a cool attitude, refusing only when Hostile** (Jedidiah, 2026-07-07, closing §16 O-Q4).
 
 ### 9.6 Reward-recipient selection
 
 - **Gold:** player picks one PC to receive it (then may redistribute manually — identical to treasure division; no forced split). XP per §8.2.
-- **Item:** player picks one PC; item to inventory; transferable afterward; XP only if sold-unused.
+- **Item:** player picks one PC; item to inventory; transferable afterward; XP = item GP-equivalent on disbursement (§8.2 ruling).
 - **Domain:** player picks one PC who **must be level 9+** (else held in trust, §8.8); confirmation dialog states the vassalage terms; **not** freely transferable between PCs.
 - **Political favor:** player picks one PC; recorded on the sheet; some favors (guild membership, alliance) benefit the party indirectly; not transferable.
 
@@ -748,7 +749,7 @@ Migration ordering note: `quests.questgiver_faction_id` FKs `factions(id)` (fact
 
 ### 13.1 Reward vs. treasure economy
 
-Target ratio of quest reward to total session income (§2.3): **10–25%** for dungeon quests (dungeon treasure dominates), **25–50%** for lair quests, **50–100%** for creature bounties (little/no lair treasure), **N/A** for domain grants (transformative). The formula (§8.1) is set to land in these bands; the worked example (Appendix C) verifies one case at ~36%.
+Target ratio of quest reward to expected treasure (§2.3): **10–25%** for dungeon quests (dungeon treasure dominates), **25–50%** for lair quests, **50–100%** for creature bounties, **N/A** for domain grants (transformative). Treasure-bearing rewards are computed directly as this percentage of the **pre-estimated** on-site treasure (§8.1); creature bounties — whose lone monsters carry little/no treasure — instead pay **2× monster XP** so the reward never collapses to ~0 (Jedidiah, 2026-07-07). The worked example (Appendix C) verifies a bounty at ~53%.
 
 ### 13.2 Quest density
 
@@ -793,7 +794,7 @@ Every subsystem gets focused unit tests; boundaries get integration tests; **the
 
 Ordered by build impact. Each is either a design decision deferred to you or a rule I could not cite in the corpus.
 
-1. **O-Q1 — Does quest gold grant XP?** RAW says "wages and business transactions do not grant treasure XP" (`acore_adventures_and_encounters.xml:596`), yet treasure recovered to civilization grants 1 XP/gp (`:585`). A quest bounty is ambiguous — reward for adventuring (treasure-like) or payment for a job (business-like). **Default in this GDD:** `xp_eligible = true` (quest gold grants 1 XP/gp on disbursement). The `xp_eligible` flag lets you flip it globally. **Which is it?** This materially affects levelling pace. *(No RAW citation resolves it.)*
+1. **O-Q1 — Does quest gold grant XP? — RESOLVED (Jedidiah, 2026-07-07): YES.** Quest rewards grant XP equal to their monetary (GP) value on disbursement (gold at face; item/favor at GP-equivalent). Domain grants remain XP-exempt (a domain is land, not coin — §8.8). Specced in §2.2/§8.2/§9.5.
 2. **O-Q2 — Reward multipliers and the treasure-ratio target.** The multipliers (lair 0.50 / dungeon 0.25 / brigand 0.75 / bounty 1.00 / time-based 0.50/0.25) and the daily rate (avg-level × 25 gp) are PROJECT CALL, calibrated to the §13.1 bands. Confirm the bands (10–25% dungeon, 25–50% lair, 50–100% bounty) are the feel you want, or retune.
 3. **O-Q3 — Accuracy distributions and the reliability signal.** Are the §4.2 tables right (esp. `npc` at 40/20/20/20 and `historical` at 30/30/25/15)? And do you want the **reliability** cue (§4.4) shown to the player at all, or should truth be discoverable only by verification (harder, more paranoid)?
 4. **O-Q4 — Unaccepted-completion honoring.** Should a satisfied questgiver pay for a deed the party never formally accepted (the "you're the ones who cleared the ogre?" path, §9.5)? Default: yes if Friendly/Indifferent, no if Unfriendly. Confirm, or require formal acceptance for any reward.
