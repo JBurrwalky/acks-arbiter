@@ -38284,3 +38284,158 @@ on-tick dispatch.
 **Tests added/updated:** `tests/test_dialogue_phase1.gd::test_ask_rumor_catalog_row_resolves_to_rumor` — new regression covering the ask_rumor resolution path end-to-end (catalog row -> adjudicator outcome -> reply-planner template key).
 **Known issues:** None introduced. Full headless suite: 509 passed / 16 failed, two consecutive identical runs — the 16 are the unchanged pre-Wave-0/Wave-0 carry-forward baseline (hex map controller, proficiency popup, combat maneuvers, containers, party_members, flyer pathing — all unrelated to dialogue). Net-zero new failures; `DialoguePhase1` passes with the new test.
 **Next session should:** Resume Phase 2 dialogue build. When the live quest/rumor system lands (gdd-quest-rumor-system.md §2.5), replace `DialogueAdjudicator._stub_rumor`'s placeholder pool with real rumor-pool lookup — the resolution wiring is now correct, so that swap is isolated to `_stub_rumor`.
+
+## Session 2026-07-07 — Wave 1 (Social/LLM Stack): Live LLM L-2 (Setup Wizard + Settings UI)
+
+**Task:** Build Phase L-2 of `gdd-live-llm-integration.md` (§12.4 wizard, §12.1-12.3 settings/key-security, §14.2 usage panel) per `docs/master-build-plan-social-llm-stack.md` Wave 1 Track A. One of five parallel Wave-1 tracks (isolated git worktree, off the committed Wave-0 base).
+**Model used:** Sonnet 5 (UI-only track).
+**Completed:**
+- `scenes/ui/settings/llm_setup_wizard.gd`/`.tscn` — a `NavigationStack`-pushed CanvasLayer (layer 32) wizard: three-branch flow (Ollama Cloud recommended / Ollama local-LAN / Offline), masked API-key entry with hold-to-show + the §12.3 plaintext-storage disclosure beside the field, Test Connection (`await LLMManager.test_connection("ollama")`, interactive QoS, spinner, redacted errors), model dropdown from the response, Save (writes `LlmSettings`, `set_provider`, `GameState.save_settings`, `_sync_queue_concurrency`).
+- `settings_screen.gd` — replaced the Phase-J placeholder `_build_llm_section` with provider summary, offline toggle, inline edit fields (masked key + disclosure), parallel-requests spinbox, Re-query models / Save fields / Re-run wizard / "Upgrade existing narration…" buttons, the §14.2 usage panel (per-task token/request/failure counts + avg latency via `MathUtils.bankers_round`, lifetime from `user://llm_usage.jsonl`, static ollama.com quota note, NO invented dollar figures), and a §14.3 diagnostics block.
+- `main_menu_screen.gd` — the §12.4 first-run banner (shown only when `settings.cfg` has no `[llm]` section; either button materializes the section so it never repeats).
+**Decisions made:**
+- Test Connection configures the registered provider instance in place (no `set_provider`) so an unsaved/invalid draft never flips the active provider or emits `llm_provider_changed`; only Save activates.
+- The NarrativeUpgrader offer (sibling L-3's deliverable) is resolved lazily via `ProjectSettings.get_global_class_list()` + `has_method` guard and invoked through `Object.call("run", ...)` — parser-safe and no-op if L-3 hasn't merged; keeps the wizard self-contained.
+- Settings edit fields are read-only displays; all mutation flows through the wizard (single `is_configured()` re-evaluation point).
+**Interfaces defined or changed:** No new cross-subsystem signals/methods — L-2 is a pure consumer of L-0/L-1 (`LLMManager.test_connection`/`set_provider`/`is_configured`/`settings`, `GameState.save_settings`, `EventBus.llm_provider_changed`). Node paths recorded for the in-engine MCP verification pass (wizard root `LlmSetupWizard`; settings LLM-section node ids).
+**Database changes:** None (settings persist via `user://settings.cfg`).
+**Tests added/updated:** None — scene scripts aren't loaded by the headless suite; L-2 is MCP-verified in-engine (deferred to the UI verification pass).
+**Known issues:** UI param-collection (topic input / bribe amount / employer select) for the dialogue moves is a separate follow-up; the campaign-creation Layer-7 progress modal is not built (only the architectural trigger + progress signal, in L-3). §8.7 live-key probes still need a human pass.
+**Next session should:** In-engine MCP verification of the wizard's three branches; the deferred progress-modal UI.
+
+---
+
+## Session 2026-07-07 — Wave 1 (Social/LLM Stack): Live LLM L-3 (Seam A live + NarrativeUpgrader) + Ruler Seam B wiring
+
+**Task:** Build Phase L-3 (consumer wiring) of `gdd-live-llm-integration.md` §19/§5.3/§13.1-13.2 AND the Ruler Seam-B trigger wiring per `docs/handoff-ruler-ai-build.md` §10.3/§10.5. One of five parallel Wave-1 tracks (isolated worktree). Both pieces share `ruler_strategy_reassessor.gd`, so one agent owns them.
+**Model used:** Opus (determinism-sensitive: the Seam-A no-variance bar + no-relaxed-validation).
+**Completed:**
+- `ruler_action_narrator.gd`: `narrate_action_live(...)` coroutine — cache check, `_assemble`, `if is_configured(): await LLMManager.generate(ctx, {"qos":"decoration","cache_key":...})` else deterministic template same-frame (ZERO awaits); §13.1 stale-fallback rule (a `is_fallback=true` cache hit while configured is treated as a miss and regenerated). Sync `narrate_action()` kept untouched.
+- `game_log.gd`: `_on_ruler_action_taken` now an async handler with the A6 ORDERED PENDING QUEUE (`_ruler_pending_slots` — each emission reserves a slot in order, awaited envelope fills it, slots flush head-first, a timed-out head flushes its template and unblocks the rest); byte-identical to today when unconfigured.
+- `narrative_generator.gd`: extracted `build_blocks(ctx) -> Array` (pure, zero-RNG); `_wrap()` is now template-only.
+- `narrative_upgrader.gd` (new, `class_name NarrativeUpgrader`): `run(campaign_id, opts) -> {upgraded, failed, skipped, cancelled}` coroutine — per `is_fallback=1` block `await generate(payload, {"qos":"batch"})`, upsert via `SettingRepository.save_narrative`, cancellable, idempotent, emits `setting_narrative_upgraded(campaign_id, done, total)`.
+- A3 rulings applied: `SettingRepository.save_narrative` is the ONE lock-exempt writer (`_bulk_insert` gained `bypass_lock`); `setting_narrative` REMOVED from `SettingDatasetHasher` (presentation cache, not mechanics).
+- `ruler_seam_b_trigger.gd` (new, `RulerSeamBTrigger`): `connect_signals()` (idempotent, at `GameLog._ready`), `dispatch(ruler_npc_id, trigger, situation) -> bool` with a per-ruler 1-game-month cooldown; wired to the 3 significance sites — `siege_started` (→ stronghold.domain_id → owner), `domain_conquered` (the ruler who lost it), `domain_morale_changed` with `new_morale <= -2` (Turbulent). `reassess()` is now a coroutine internally; validation NEVER relaxed (bare `issue_decree` bias key stays rejected, §93). Handlers are inert under mock (gate on `is_configured()`) so they fire the moment a provider lands.
+**Decisions made:**
+- Seam-B trigger as a dedicated `RefCounted` dispatcher hosted at `GameLog._ready` (mirrors Seam A) — single testable init point, cooldown ledger + significance-site resolution in one place, and keeps L-3's edits OUT of FF-3's ruler-AI files (catalog/scorer/`process_campaign_month`).
+- Fire-and-forget coroutines from synchronous engine steps use `Object.call("method", ...)` (autoload) / `Callable(Class,"m").call(...)` (static) to sidestep the static-analyzer await demand — the same trick §102 documents for tests, now in production (Seam-A queue, Seam-B dispatch).
+- The narrative block `context` key is deliberately non-persisted (`_bulk_insert` reads only `NARRATIVE_COLUMNS`), so it rides along for the upgrader without touching the DB or the now-excluded hash.
+**Interfaces defined or changed:**
+- `EventBus.setting_narrative_upgraded(campaign_id: String, done: int, total: int)`.
+- `RulerActionNarrator.narrate_action_live(ruler_npc_id, domain_id, action_id, action_outcome, calendar_day:=-1, variant_key:="") -> ResponseEnvelope` (coroutine, zero-await unconfigured).
+- `NarrativeGenerator.build_blocks(ctx) -> Array` (pure); `NarrativeUpgrader.run(campaign_id, opts:={}) -> Dictionary` (coroutine).
+- `RulerStrategyReassessor.reassess(...)` now a coroutine (same signature). `RulerSeamBTrigger.connect_signals()/dispatch(...)/clear_cooldowns()`; `const TURBULENT_MORALE := -2`.
+- `SettingRepository.save_narrative` now lock-exempt; `_bulk_insert(..., bypass_lock:=false)`.
+**Database changes:** None (upgrader writes existing `setting_narrative`; hasher/lock changes are code-only). **Hash note:** `setting_narrative` removed from the dataset hash (A3) — Stage-0/8 hash-expectation tests updated accordingly.
+**Tests added/updated:** `test_llm_l3_consumers.gd` — no-variance bar (unconfigured `narrate_action_live` == `narrate_action`), A6 ordering (staggered fake completions, timed-out-head unblock), upgrader idempotency (only `is_fallback=1` rows change), Seam-B triggers fire on all 3 sites under a live mock + respect the 1-month cooldown + strict-reject the bare `issue_decree` bias key.
+**Known issues:** Seam-B triggers are INERT until a real provider is configured (by design — `reassess()` is a mock no-op); the live-mock tests prove wiring/cooldown but a real-provider smoke test remains for §8.7. The Layer-7 progress-modal UI is deferred (architectural trigger + progress signal in place).
+**Next session should:** Real-provider smoke test of Seam A/B + NarrativeUpgrader once a key is configured; the Layer-7 progress modal.
+
+---
+
+## Session 2026-07-07 — Wave 1 (Social/LLM Stack): Faction FF-3 (Realm Diplomacy & Rebellion)
+
+**Task:** Build the §5 Realm Layer of `gdd-faction-framework.md` per `docs/handoff-faction-ff3-build.md` (vassal loyalty triggers + compliance ladder, treaties, ruler-AI diplomacy actions, rebel coalitions + plot secrecy, player-as-vassal mirror, resignation ladder A+B+C). One of five parallel Wave-1 tracks (isolated worktree, Opus).
+**Model used:** Opus.
+**Completed:**
+- Migration `193_faction_ff3_realm_diplomacy.sql` — only TWO genuinely-new state fields (FF-1's 188/189 already created every §5 table): `vassal_assignments.compliance_behavior` (§5.3 edge tag) + `faction_plots.ready_since_day` (§5.7 "6 months ready" trigger). Did not need 194.
+- `engine/subsystems/factions/`: `vassal_loyalty_resolver.gd` (§5.2 modifier stack over the henchman-loyalty roll), `vassal_loyalty_triggers.gd` (roll triggers + §5.3 compliance routing), `treaty_resolver.gd` (5 treaty kinds + breach/renewal/contagion; `RealmGraph.is_allied()` now reads active alliance/defensive_pact), `realm_diplomacy_actions.gd` (§5.6 propose_treaty/denounce/issue_ultimatum/declare_war/sue_for_peace — the war-ceiling raise for active-LOD sovereigns), `rebel_coalition.gd` (§5.7 SEED→SOUND OUT→READY→LAUNCH→RESOLVE + §7.4 plot secrecy), `resignation_ladder.gd` (paths A petition / B appeal / C exile), `player_vassal_service.gd` (§5.8 PC fealty + monthly Favors&Duties + solicitation answer), `realm_politics.gd` (§5.4 sovereign realm-politics step).
+- `engine/shared_types/seeded_dice.gd` (new `SeededDice`) — a `RefCounted` wrapping the project dice contract `roll(count, sides)` over a seeded RNG, built per-(actor, month) via `SeededDice.for_monthly`; threaded into `RulerAI` so production realm-politics/diplomacy is deterministic + FakeDice-compatible.
+- Diplomacy actions registered in `ruler_action_catalog.gd` + scored in `ruler_action_scorer.gd` (active-LOD sovereigns only, weight-gated); `ruler_ai.gd` gained the sovereign realm-politics step + diplomacy dispatch.
+**Decisions made:**
+- FF-3/FF-4 boundary: built ONLY the §5.7 rebellion secret-loyalty-rolls + §7.4 plot secrecy. Did NOT build `AllegianceEvaluator.evaluate` / feign-betrayal / divided-loyalty (FF-4, needs FF-2 orgs). The Orso capstone asserts realm-layer beats only.
+- `declare_war` registers an `npc_challenger` `domain_threat` on the target (attributed to the declarer); the existing `ThreatEscalationDriver` fields the force + dispatches on the target's next active-LOD turn — faithful reuse of the army-warfare seam, no new offensive pipeline.
+- Rebel realm minting: committed domains flip to a new realm via `RealmRepository.create_realm` + `FactionRegistry.ensure_realm_mirror`; `_repoint_domains_to_realm` re-points `domains.realm_id` + nulls `liege_domain_id` (runtime cache flip). Full liege-chain re-parenting surgery stays with the realms-titles path; RESOLVE records intent + ledger.
+- `_culture_mod` uses a v1 HYB(A,B) prefix heuristic for conquest-hybrid relatedness (flagged for FF-2 to replace with `CultureCatalogLoader.hybrid_for_parents`); religion nemesis is the alignment proxy FF-1 documented.
+**Interfaces defined or changed:**
+- 7 new `EventBus` signals: `vassal_loyalty_resolved`, `treaty_signed`, `treaty_broken`, `realm_diplomacy_action_taken`, `rebellion_plot_updated`, `rebellion_launched`, `realm_petition_resolved`.
+- `VassalLoyaltyResolver.roll_for_trigger/project_modifier_breakdown/behavior_for_outcome`; `TreatyResolver.sign_treaty/break_treaty/detect_breach/renew_treaty/has_non_aggression/call_to_arms_eligible`; `RebelCoalition.seed_rebellion/sound_out/check_ready/launch/erode_secrecy/expose`; `ResignationLadder.choose_rung/file_petition/resolve_petition_as_liege/escalate_to_appeal/adjudicate_appeal/abdicate_into_exile`; `RealmPolitics.process_sovereign`; `PlayerVassalService.swear_fealty/monthly_favors_and_duties/refuse_demand/answer_solicitation`; `SeededDice.for_monthly`/`roll`.
+- `CampaignRepository` FF-3 CRUD block (treaty/plot/plot_member/petition — 18 methods; FF-1 already registered these tables in the purge cascade).
+- `ruler_action_catalog.gd`: `DIPLOMACY_ACTION_IDS` + 5 diplomacy ids added to `ACTION_IDS`. **Their `RulerActionNarrator` Seam-A phrases were added post-merge** (see the merge/triage entry).
+**Database changes:** Migration 193 (2 additive columns). No new tables.
+**Tests added/updated:** `test_faction_ff3_{loyalty,treaties,diplomacy,rebellion}.gd` + `test_faction_ff3_orso_capstone.gd` (the §7.5 Orso worked example as a realm-layer integration fixture). All pass post-triage.
+**Known issues:**
+- **[NEEDS-OPUS-REVIEW]** §5.2 modifier magnitudes: the SOUND OUT band outcomes shift vs the §7.5 prose (a non-henchman −2 makes FANATIC hard to reach); the capstone asserts load-bearing beats robustly, but the modifier calibration is worth confirming.
+- Battle-loss loyalty trigger is wired via `domain_conquered` (stronghold loss) but NOT `battle_concluded` (that signal carries only battle_id/outcome; resolving the loser's realm needs battle-row plumbing) — `VassalLoyaltyTriggers.fire_for_liege` is the exposed entry point for the owning subsystem.
+- Counter-plot revokes an exposed plotter's most-recent favor (RAW lever) only; hostage-duty / pre-emptive-tribute-relief documented, not implemented v1 (arrest is out of scope).
+- Vagary-driven realm drift and the full rebel liege-chain surgery remain FF-2/realms-titles follow-ups.
+**Next session should:** FF-2 (organizations — unblocks the full §7 AllegianceEvaluator/feign-betrayal = FF-4); confirm the §5.2 modifier calibration.
+
+---
+
+## Session 2026-07-07 — Wave 1 (Social/LLM Stack): NPC Dialogue Phase 2 (Transactions)
+
+**Task:** Build the §16 "Phase 2 — Transactions" scope of `gdd-npc-dialogue.md` per `docs/handoff-dialogue-p2-build.md` (Social Status Profile, `ask_question` + knowledge disclosure, offer/bribe/terms moves, hiring-through-dialogue, slander ledger, Gather-Information dual path). One of five parallel Wave-1 tracks (isolated worktree, Sonnet).
+**Model used:** Sonnet 5.
+**Completed:**
+- `engine/shared_types/status_profile.gd` (`StatusProfile`) + `status_profile_builder.gd` — §7 evidence assembler (believed_alignment/harm_evidence_tier from reputation + this NPC's own memories; status_tier from reputation + noble rank + dress band + entourage). `to_resolver_context()` emits ONLY RAW modifier-line keys; `status_tier`/`dress_quality` deliberately EXCLUDED so they never reach the sacred tone tables (§7.1). `status_differential_modifier(npc_tier_rank, ask_is_relevant)` for the §6.5 Track-2 differential.
+- `npc_knowledge_reader.gd` — reads `characters.personality.knowledge` (JSON, no new table); `willingness_for_topic` (strictest-wins); tolerates empty knowledge (generator unbuilt).
+- `per_issue_resolver.gd` (`PerIssueResolver`) — the §6.5 Track-2 resolver (NEW this phase; Phase 1 built only the tone track): 2d6 + tone stack + relationship + terms + status-differential → result bands (RAW hiring-band pattern). Reuses `InteractionResolver._apply_sacred_modifiers` for the tone stack but does NOT re-apply reputation (the tone-track roll owns reputation).
+- `hire_through_dialogue.gd` — thin wrapper over `henchman_lifecycle_manager` (`attempt_hire`/`finalize_hire`) adding the interview's ±1 situational modifier + disposition classification (accept/accept_elan/try_again/refuse/refuse_slander) + the §11.4 slander delta via `ReputationSystem`.
+- Dialogue integration: `dialogue_session.gd` `submit_move` gained a 3rd `params` arg (backward-compatible), `set_speaker`, `status_profile()`, `gather_information(mode)`; `dialogue_adjudicator.gd` new outcome consts + dispatch for knowledge/bribe/terms/gather/hire; move catalog + Tier-0 templates extended.
+**Decisions made:**
+- Knowledge lives in `characters.personality.knowledge` (per npc-personality §6.4), NOT a new table → migration 195 NOT needed. `ask_question` is hidden when the NPC has no matching knowledge and resolves gracefully (`no_knowledge`, no crash, no lie — lie fabrication is Phase 3).
+- Two-resolver discipline: Track-1 tone → `InteractionResolver` (owns reputation cascade); Track-2 per-issue → `PerIssueResolver` (no reputation re-apply; status-differential is Track-2 only).
+- Harm evidence is highest-tier-wins → exactly ONE RAW threat line (not additive): a personally-harmed target emits `personally_harmed` (−5), not also `harmed_friends_belief`.
+- **[NEEDS-OPUS-REVIEW]** `offer_bribe` sets `has_bribery=true` + `bribery_quality` regardless of the speaker's Bribery proficiency (GDD §5.2 "the offer IS the bribe"); pure RAW `ax_reactions:96` requires the proficiency. Flagged for ruling.
+- **[NEEDS-OPUS-REVIEW]** the §6.5 status-differential constants, bribe-amount→quality bands, and dress/status thresholds are all PROJECT CALL, un-tuned. Confirm during calibration.
+- Gather-Information rumor PAYLOAD is stub-empty until Quest-Rumor Q-3's registry is injected via `context.deps.rumor_registry` (the shell + dual-path is built here; the payload is Q-3's).
+**Interfaces defined or changed:**
+- `StatusProfile` struct + `StatusProfileBuilder.build(party_id, speaker_id, npc_id, scene, rep_system)`.
+- `NpcKnowledgeReader.willingness_for_topic/disclosable_entry`; `PerIssueResolver.resolve(tone, current_attitude, resolver_ctx, terms_modifier, status_modifier, dice)`; `HireThroughDialogue.hireable_as/attempt/finalize/apply_slander`.
+- `DialogueSession.submit_move(move_id, free_text:="", params:={})` (3rd arg additive), `set_speaker`, `status_profile`, `gather_information`. `DialogueAdjudicator.bribe_quality_for_amount` + new outcome consts.
+**Database changes:** None (StatusProfile computed; slander reuses `reputation_entries`; negotiated terms reuse `npc_issues.terms` from migration 191).
+**Tests added/updated:** `test_dialogue_phase2.gd` (status profile, per-issue, knowledge, hiring interview + slander, gather-info). Pass post-triage.
+**Known issues:** UI param collection (topic/bribe-amount/terms/employer) is a menu-button-with-empty-params follow-up (graceful degradation: empty ask → no_knowledge, zero bribe → quality 0). EventScheduler time-ladder wiring still stubbed (inherited from Phase 1). Reputation cascade only applies when an entry point injects `deps.rep_system`.
+**Next session should:** Phase 3 (request_action, ruler audience + Seam-B packet, army parley, lying/demeanor-beat, capability registry); the dialogue-move param-collection UI. Quest-Rumor Q-5 wires the quest adapters into this phase's move slots.
+
+---
+
+## Session 2026-07-07 — Wave 1 (Social/LLM Stack): Quest-Rumor Q-2 + Q-4 + Q-3
+
+**Task:** Build Sessions Q-2 (questgiver minting + seeding), Q-4 (completion/turn-in/lifecycle), Q-3 (rumor delivery) of `gdd-quest-rumor-system.md` per `docs/handoff-quest-rumor-build.md` §4/§6/§5, on the Q-1 foundation. One of five parallel Wave-1 tracks (isolated worktree, Opus; built Q-2→Q-4→Q-3 sequentially for subsystem coherence).
+**Model used:** Opus.
+**Completed:**
+- **Q-2** — `quest_seeder.gd` (`QuestSeeder.seed(ctx) -> int`): replaced `infrastructure_generator.gd::_seed_quests_DEFERRED` with the real pass — scans threats (dungeons/lairs/brigand towns/sim_events/PoIs), mints ABSTRACT questgivers (`qg_<settlement_id>` handles, promoted on approach), rolls the density gate (~1 per 4 eligible threats, 3–8/region), values rewards via `RewardValuator`, writes `setting_quests` + the §6.8 quest-sourced `setting_rumors`; `SettingMaterializer._materialize_quests/_materialize_rumors` copy seed→runtime. Determinism is the acceptance gate (same seed → byte-equal mechanical columns); the Appendix-C worked example reproduces.
+- **Q-4** — `quest_completion_watcher.gd` (`QuestCompletionWatcher`, session-scoped, register/unregister_listeners): maps `lair_cleared`/`combat_ended`/`combatant_downed`/`hex_entered`/`poi_discovered` → completion types (idempotent, backdrop-ignored, emits `quest_completion_ready`). `quest_lifecycle_resolver.gd` + `QuestRegistry` Q-4 additions: `disburse_reward` (all types; XP = reward GP value; **domain path built** — forces single-owner selection, NO level gate, writes vassalage, XP-exempt), `disburse_reward_unaccepted` (O-Q4 personality gate), `fail_quests_for_dead_questgiver`, `expire_due_quests`.
+- **Q-3** — `RumorRegistry` delivery: `share_one_for_npc` (per-band reaction-share), `carouse_outcome` (60/40 cash/rumor + 5%/carouser-level accuracy bonus), `venturer_rumormonger` (1d4), `board_read` (no-throw, market_class ≥ IV), `gather_information` (public-NPC reaction roll), `decay_pass` (current→stale after seeded 1d6 months, persistent never decays) slotted into the monthly tick ahead of the `domains.is_empty()` early-return, `invalidate_for_source`/`_for_quest`. No reliability cue (§4.4).
+**Decisions made:**
+- Backdrop questgivers stay ABSTRACT at setting-gen (the PoI seed→runtime LOD precedent) — QuestSeeder writes only ctx dicts, never the runtime `characters`/`quests` tables; full NPC minting deferred to on-approach materialization.
+- Questgiver income = urban_families × 6 gp/family/month (order-of-magnitude cap for the §8.6 affordability clamp; `sim_polities` carries no monthly-income field at this layer).
+- The unaccepted-completion honor gate is PARAMETRIC (`disburse_reward_unaccepted` takes attitude/honesty/self_interest, caller-resolved) — no persistent `honesty` column exists yet; keeps `QuestRegistry` storage-agnostic.
+- Domain-grant vassalage write goes through a `CampaignRepository.create_vassal_assignment` seam (delegating to `VassalRepository`) so unit-test fakes opt out via `has_method`. **This same seam was the Q-1-regression source** — see the merge/triage entry.
+- `carouse_outcome` is a `RumorRegistry` service the carousing surface calls (cash-only, models the boss cash-income abstraction), not a mutation of the syndicate carousing handler.
+**Interfaces defined or changed:**
+- `QuestSeeder.seed(ctx) -> int`; `QuestCompletionWatcher._init(registry, repository, campaign_id)/register_listeners/unregister_listeners`.
+- `QuestRegistry.disburse_reward(quest_id, recipient_pc_id, calendar_day:=-1)`, `disburse_reward_unaccepted(...)`, `fail_quests_for_dead_questgiver(npc_id)`, `expire_due_quests(calendar_day)`.
+- `RumorRegistry.share_one_for_npc/carouse_outcome/venturer_rumormonger/board_read/gather_information/decay_pass/invalidate_for_source/invalidate_for_quest`.
+- `CampaignRepository.list_quests_by_completion_target/list_live_quests_by_questgiver/list_expired_quests/set_domain_grant_owner/create_vassal_assignment/list_current_rumors/list_rumors_by_quest`.
+- `SettingMaterializer._materialize_quests/_materialize_rumors`.
+**Database changes:** None — Q-1 (migration 192) landed every table. `domain_grants`/vassalage writes use existing tables.
+**Tests added/updated:** `test_quest_seeder.gd`, `test_quest_completion_lifecycle.gd`, `test_rumor_delivery.gd` (+ the Q-1 `test_quest_registry.gd` domain-grant test updated post-triage). Pass.
+**Known issues:** `clear_dungeon` completion detection is best-effort (`combat_ended` carries no per-target defeated_ids or dungeon_id — a future `dungeon_cleared` signal would close it); `kill_target`/`clear_lair` are reliable. Questgiver income proxy + abstract-handle LOD promotion are noted. `QuestSeeder.regenerate_pass` (runtime monthly re-mint) is a follow-up (only rumor decay wired this session).
+**Next session should:** Q-5 (dialogue quest adapters — needs Dialogue P2, now built) and Q-6 (faction `post_job` bridge — needs FF-2) in Wave 2; the on-approach questgiver NPC-minting pass.
+
+---
+
+## Session 2026-07-07 — Wave 1 parallel-build orchestration: base-mismatch recovery, git-merge integration, regression triage
+
+**Task:** Coordinate the five parallel Wave-1 tracks (LLM L-2, LLM L-3+SeamB, FF-3, Dialogue P2, Quest Q-2/Q-4/Q-3) via one Workflow dispatch; merge into `main`; run the central headless suite; triage to net-zero. Authored the two `[HANDOFF TO AUTHOR]` docs first (`docs/handoff-faction-ff3-build.md`, `docs/handoff-dialogue-p2-build.md`).
+**Model used:** Sonnet 5 (orchestration), Opus (3 of the 5 build tracks).
+**Completed:**
+- **Base-mismatch recovery (root-caused a real orchestration bug).** The first Wave-1 Workflow run built against a base MISSING Wave 0 — because Wave 0 was never committed and the Workflow tool forks its isolation worktrees off the local **`origin/main`** tracking ref (NOT local `main`, NOT the working tree). Two tracks (Quest, Dialogue P2) detected their absent deps and RECONSTRUCTED them (Quest re-landed Q-1 at a colliding migration 187), making that output unmergeable. Fix, in three steps once the true cause was found: (1) committed Wave 0 to `main` (`9b25da4`) — nothing pushed to GitHub; (2) fast-forwarded local `main`; (3) discovered the tool reads `origin/main` and repointed the LOCAL tracking ref via `git update-ref refs/remotes/origin/main 9b25da4` (no network). Re-ran; verified all 5 worktrees then forked off the Wave-0 base.
+- **Git-merge integration.** Because all 5 worktrees shared the committed `9b25da4` base, used real `git merge` (each worktree committed on its `worktree-*` branch). LLM-L2 + FF-3 merged conflict-free; the rest had only mechanical `test_runner.tscn`/`.gd` ext-resource-id collisions (all tracks started at id 520) + one `event_bus.gd` append — resolved by keeping both labeled blocks and renumbering ext ids to 520–528.
+- **Regression triage (7 fixes to reach net-zero).** First merged run 514/21 (5 new failures), second 518/17 (1), third 519/16 (net-zero). Root causes: (1)+(2) `String(null)` crashes — an invalid GDScript constructor — on nullable DB columns in `rebel_coalition.gd::launch()` (faction alignment/religion/culture) and `hire_through_dialogue.gd::hireable_as()` (employer_id); both fixed with a null-safe `_s()` helper (the whole hire hot path threw before this). (3) `:=` type-inference failures on untyped-param method returns (`rumor_registry.gd`, `status_profile_builder.gd`) — explicit annotations. (4) `test_faction_ff3_orso_capstone.gd` `_realm()` calls missing the alignment arg. (5) `test_faction_ff3_rebellion.gd` informant fixture — a non-henchman −2 modifier made FANATIC unreachable at dice 12; configured the candidate as a henchman. (6) `test_llm_l3_consumers.gd` `"Lawful"`→`"lawful"` (alignment CHECK). (7) `test_quest_registry.gd` — a Q-1-era test asserted the domain-grant path was an empty stub, but Q-4 IMPLEMENTED it (and the test's FakeRepo lacked `get_domain_grant`); renamed + updated to assert Q-4's real single-owner/XP-exempt behavior. **The final (17th) failure was an FF-3 gap:** its 5 diplomacy actions were added to `RulerActionCatalog.ACTION_IDS` without Seam-A narration phrases, so they collided on `_default` and broke `test_ruler_narration_state`'s distinct-template check — added distinct phrases to `data/templates/ruler_action_templates.json`.
+- **Verified two-run stable at 519 passed / 16 failed** — the 16 are the exact pre-existing Wave-0 baseline set (net-zero new failures). 519 = 509 baseline + 10 new Wave-1 suites, all passing.
+**Decisions made:**
+- Committed each wave on a real commit (Wave 0 = `9b25da4`) precisely BECAUSE the tool needs `origin/main` to carry the base — the missing commit was the entire root cause of the first failed run.
+- Used `git merge` of committed worktree branches (not the Wave-0 hand-copy approach) since a shared committed base made real merges clean and conflict-surfacing.
+- The `String(null)` idiom bit three separate files across two tracks — promoted to a coding convention (see below).
+**Interfaces defined or changed:** None (integration/merge). New helper convention: a null-safe `_s(v, default)` for nullable DB-column string coercion.
+**Database changes:** None beyond the tracks' own migration 193; verified 188–193 apply cleanly in sequence (no 187, no dupes).
+**Tests added/updated:** None new (integration); all 10 Wave-1 suites verified green + the Q-1 `test_quest_registry` domain test updated for Q-4.
+**Known issues:**
+- Local `origin/main` tracking ref is temporarily at the Wave-1 base; **restored to the true remote value `4245ae0` at wrap** so `git push` behaves correctly. Nothing was pushed to GitHub.
+- 4 `[NEEDS-OPUS-REVIEW]` flags: FF-3 §5.2 modifier calibration; Dialogue-P2 bribe-proficiency mapping + §6.5 status/bribe/dress constants.
+- The `henchman_calamity_watcher._is_henchman` `get_character` "not found" push_error on non-henchman `combatant_downed` ids is benign log noise (a `has_character` guard would silence it project-wide) — flagged, not fixed.
+**Next session should:** PAUSE before Wave 2 per Jedidiah's standing instruction. Wave 2 = Faction FF-2 (organizations), Quest-Rumor Q-5 (dialogue adapters, needs Dialogue P2 ✓) + Q-6 (faction post_job, needs FF-2), Dialogue Phase 3. Consider an Opus pass on the 4 review flags. Restore/confirm `origin/main` before any push.
