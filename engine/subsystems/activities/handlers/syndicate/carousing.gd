@@ -10,6 +10,16 @@ extends RefCounted
 ##   * Plannable: NO — not in plannable list per ax_campaign_play.xml L1232.
 
 
+# --- Quest-Rumor Q-3: carousing rumor seam ---------------------------------
+# This SYNDICATE hijink handler models the boss's cash-income abstraction and
+# stays cash-only (correct for syndicate play, ax_thief_skill_update.xml §196).
+# The PLAYER-facing carousing 60/40 cash/rumor split (§4.3a) + weighted rumor
+# draw + 5%/carouser-level accuracy bonus lives in
+# RumorRegistry.carouse_outcome(carouser_level, party_id, rng, calendar_day,
+# settlement_pool) — the PC/settlement carousing surface calls that on a
+# Hear-Noise success. Both share the RAW 3d12×5×level cash figure (below).
+
+
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var hijink_id := String(state.get("hijink_assignment_id", state.get("hijink_id", "")))
 	if hijink_id.is_empty():

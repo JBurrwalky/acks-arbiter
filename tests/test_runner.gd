@@ -74,6 +74,10 @@ extends Node
 @onready var _faction_ff3_diplomacy_tests = $FactionFF3DiplomacyTests
 @onready var _faction_ff3_rebellion_tests = $FactionFF3RebellionTests
 @onready var _faction_ff3_orso_capstone_tests = $FactionFF3OrsoCapstoneTests
+# 2026-07-07 - Quest & Rumor Q-2/Q-3/Q-4 (seeder, delivery, completion/lifecycle)
+@onready var _quest_seeder_tests = $QuestSeederTests
+@onready var _quest_completion_lifecycle_tests = $QuestCompletionLifecycleTests
+@onready var _rumor_delivery_tests = $RumorDeliveryTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -1300,7 +1304,11 @@ func run() -> void:
 			_faction_ff3_treaties_tests,
 			_faction_ff3_diplomacy_tests,
 			_faction_ff3_rebellion_tests,
-			_faction_ff3_orso_capstone_tests]:
+			_faction_ff3_orso_capstone_tests,
+			# 2026-07-07 — Quest & Rumor Q-2/Q-3/Q-4
+			_quest_seeder_tests,
+			_quest_completion_lifecycle_tests,
+			_rumor_delivery_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

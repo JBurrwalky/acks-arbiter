@@ -190,29 +190,27 @@ func _is_terminal(status: String) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Turn-in + disbursement (§9.5, §9.6, §11.1) — STUB pending Q-4
+# Turn-in + disbursement (§9.5, §9.6, §11.1)
 # ---------------------------------------------------------------------------
 
 ## quest_turn_in precheck (§11.1): true when the quest is complete and not
-## yet turned in. Full unaccepted-completion personality gating (§9.5,
-## O-Q4 — high-honesty/low-self-interest givers pay unless Hostile) is a Q-4
-## concern; this Q-1 stub checks only the mechanical precondition.
+## yet turned in (terminal). Mechanical precondition only; the O-Q4
+## unaccepted-completion personality gate is applied in
+## disburse_reward_unaccepted().
 func can_turn_in(quest_id: String) -> bool:
 	var quest := get_quest(quest_id)
 	if quest == null:
 		return false
-	return quest.is_complete and quest.status != "completed"
+	return quest.is_complete and not _is_terminal(quest.status)
 
 
-## Reward-recipient selection + disbursement orchestration (§9.5/§9.6/§8.2).
-## Q-1 lands the mechanical disbursement path (writes quest_rewards row
-## already present on the quest, awards XP via RewardValuator.reward_xp,
-## marks status=completed, emits quest_turned_in) for the STRAIGHTFORWARD
-## reward types (gold/item/political). The domain-grant single-owner +
-## vassalage flow (§8.8/§9.6) and the O-Q4 unaccepted-completion honor
-## gating are Q-4 (Opus) — this method defers to `_disburse_domain_grant`
-## which is intentionally a stub raising via push_error until Q-4 lands it.
-func disburse_reward(quest_id: String, recipient_pc_id: String) -> Dictionary:
+## §9.5/§9.6/§8.2 reward disbursement (ACCEPTED path). Applies the reward to
+## the recipient PC, awards XP = reward GP value (domain XP-exempt),
+## transitions status→completed, stales quest-sourced rumors, emits
+## quest_turned_in + a category:"quest" Unified-Log entry. Returns the reward
+## payload dict, or {} on failure.
+func disburse_reward(quest_id: String, recipient_pc_id: String,
+		calendar_day: int = -1) -> Dictionary:
 	var quest := get_quest(quest_id)
 	if quest == null or not can_turn_in(quest_id):
 		return {}
@@ -222,12 +220,73 @@ func disburse_reward(quest_id: String, recipient_pc_id: String) -> Dictionary:
 		return {}
 	var reward := QuestRewardData.from_dict(reward_row)
 	if reward.reward_type == "domain":
-		return _disburse_domain_grant(quest, reward, recipient_pc_id)
+		return _disburse_domain_grant(quest, reward, recipient_pc_id, calendar_day)
+	return _apply_and_finalize(quest, reward, recipient_pc_id, calendar_day)
+
+
+## §9.5 UNACCEPTED-completion path ("you're the ones who cleared the ogre?").
+## The party never formally accepted, but the threat is resolved and they
+## visit a satisfied questgiver. The giver's attitude gates whether they honor
+## an unpromised deed (O-Q4):
+##   - Friendly / Indifferent → pay.
+##   - Unfriendly → do NOT pay, EXCEPT a giver with high `honesty` and/or low
+##     `self_interest` pays regardless of a cool attitude.
+##   - Hostile → never pay (even the honest giver refuses when Hostile).
+## `honesty`/`self_interest` are personality axes on a 1-10 scale (caller
+## resolves them from the NPC's personality; 5 = neutral). Returns the reward
+## payload on payment, or {} if the giver refuses (quest left as-is).
+func disburse_reward_unaccepted(quest_id: String, recipient_pc_id: String,
+		attitude: String, honesty: int = 5, self_interest: int = 5,
+		calendar_day: int = -1) -> Dictionary:
+	var quest := get_quest(quest_id)
+	if quest == null or not can_turn_in(quest_id):
+		return {}
+	if not _honors_unaccepted(attitude, honesty, self_interest):
+		return {}
+	return disburse_reward(quest_id, recipient_pc_id, calendar_day)
+
+
+## O-Q4 gate as a pure predicate (unit-testable).
+func _honors_unaccepted(attitude: String, honesty: int, self_interest: int) -> bool:
+	if attitude == "hostile":
+		return false
+	if attitude in ["friendly", "indifferent"]:
+		return true
+	# neutral / unfriendly: pay only if the giver is unusually honest or
+	# selfless (high honesty >=7 OR low self_interest <=3).
+	return honesty >= 7 or self_interest <= 3
+
+
+## Apply a non-domain reward, award XP, finalize the quest, emit signals+log.
+func _apply_and_finalize(quest: QuestData, reward: QuestRewardData,
+		recipient_pc_id: String, calendar_day: int) -> Dictionary:
+	var xp := RewardValuator.reward_xp(
+		reward.total_gp_value, reward.reward_type, reward.xp_eligible)
+	# Apply the material reward to the recipient PC.
+	match reward.reward_type:
+		"gold", "mixed":
+			if reward.gold_value > 0 and _repo.has_method("add_coins_cp"):
+				_repo.add_coins_cp(recipient_pc_id, reward.gold_value * 100)
+		"item":
+			if reward.item_id != "" and _repo.has_method("add_inventory_item"):
+				_repo.add_inventory_item({
+					"character_id": recipient_pc_id,
+					"item_key": reward.item_id,
+					"name": reward.item_description if reward.item_description != "" else reward.item_id,
+					"quantity": 1, "slot": "pack",
+				})
+		"political":
+			pass  # recorded on the sheet by the dialogue/sheet layer (Q-5)
+	if xp > 0:
+		_award_xp(recipient_pc_id, xp)
 	quest.status = "completed"
 	quest.reward_recipient_pc_id = recipient_pc_id
+	if calendar_day >= 0:
+		quest.completed_day = calendar_day
 	if not save_quest(quest):
 		return {}
-	var xp := RewardValuator.reward_xp(reward.total_gp_value, reward.reward_type, reward.xp_eligible)
+	# §4.6: quest leaving available/accepted stales its quest-sourced rumors
+	# (the RumorRegistry invalidation hook, wired by the caller/watcher).
 	var payload := {
 		"reward_type": reward.reward_type,
 		"gold_value": reward.gold_value,
@@ -236,19 +295,125 @@ func disburse_reward(quest_id: String, recipient_pc_id: String) -> Dictionary:
 		"total_gp_value": reward.total_gp_value,
 		"xp_awarded": xp,
 	}
-	EventBus.quest_turned_in.emit(quest_id, recipient_pc_id, payload)
+	EventBus.quest_turned_in.emit(quest.id, recipient_pc_id, payload)
+	_log_quest_beat(quest, "turned_in",
+		"Quest turned in: reward %d gp (%d XP)" % [reward.total_gp_value, xp])
 	return payload
 
 
-## §8.8/§9.6 domain-grant disbursement — forces single-owner selection with
-## NO level gate (O-Q14), writes vassalage. Deferred to Q-4 (Opus review for
-## the vassalage/Favors-and-Duties integration). Q-1 leaves this a documented
-## stub so the dispatch above is exercised and callers get a clear signal
-## rather than a silently-wrong disbursement.
-func _disburse_domain_grant(_quest: QuestData, _reward: QuestRewardData,
-		_recipient_pc_id: String) -> Dictionary:
-	push_error("QuestRegistry.disburse_reward: domain-grant disbursement is Q-4 scope, not yet built.")
-	return {}
+## §8.8/§9.6 domain-grant disbursement — forces SINGLE-owner selection with
+## NO level gate (O-Q14), writes the domain_grants owner + a vassalage
+## assignment (liege = questgiver, vassal = recipient). XP-exempt (§8.8).
+## Returns the payload, or {} on failure. The recipient_pc_id IS the forced
+## single owner — the caller (UI) must have already made the player choose it.
+func _disburse_domain_grant(quest: QuestData, reward: QuestRewardData,
+		recipient_pc_id: String, calendar_day: int) -> Dictionary:
+	if recipient_pc_id == "":
+		push_error("QuestRegistry._disburse_domain_grant: a single owner PC must be chosen (§9.6).")
+		return {}
+	# Stamp the single owner onto the domain_grants row (no level gate — any
+	# PC may own; §8.8 gates only the follower-bonus EFFECTS, not possibility).
+	if reward.domain_grant_id != "":
+		var grant_row: Dictionary = _repo.get_domain_grant(reward.domain_grant_id)
+		if not grant_row.is_empty():
+			var grant := DomainGrantData.from_dict(grant_row)
+			grant.single_owner_pc_id = recipient_pc_id
+			if _repo.has_method("save_domain_grant"):
+				_repo.save_domain_grant(grant)
+			elif _repo.has_method("set_domain_grant_owner"):
+				_repo.set_domain_grant_owner(reward.domain_grant_id, recipient_pc_id)
+	# Vassalage: acceptance makes the recipient a vassal of the questgiver
+	# (§2.4). Non-henchman PC vassal. Routed through the repo's
+	# create_vassal_assignment seam (present on the real CampaignRepository,
+	# absent on unit-test fakes — so the DB write is skipped in pure tests).
+	if quest.questgiver_id != "" and _repo.has_method("create_vassal_assignment"):
+		_repo.create_vassal_assignment({
+			"campaign_id": _campaign_id,
+			"liege_character_id": quest.questgiver_id,
+			"vassal_character_id": recipient_pc_id,
+			"assigned_calendar_day": max(0, calendar_day),
+			"status": "active",
+			"is_henchman_vassal": false,
+		})
+	# §8.8: domain grants are XP-EXEMPT (reward_xp returns 0 for reward_type
+	# "domain"); do NOT award XP here.
+	quest.status = "completed"
+	quest.reward_recipient_pc_id = recipient_pc_id
+	if calendar_day >= 0:
+		quest.completed_day = calendar_day
+	if not save_quest(quest):
+		return {}
+	var payload := {
+		"reward_type": "domain",
+		"domain_grant_id": reward.domain_grant_id,
+		"total_gp_value": reward.total_gp_value,
+		"xp_awarded": 0,
+		"single_owner_pc_id": recipient_pc_id,
+	}
+	EventBus.quest_turned_in.emit(quest.id, recipient_pc_id, payload)
+	_log_quest_beat(quest, "turned_in",
+		"Domain granted to %s (vassalage to %s)" % [recipient_pc_id, quest.questgiver_id])
+	return payload
+
+
+# ---------------------------------------------------------------------------
+# §9.7 lifecycle sweeps (dead questgiver, expiry) — Q-4
+# ---------------------------------------------------------------------------
+
+## §9.7 dead-questgiver failure: every live quest whose questgiver is `npc_id`
+## transitions to failed. Returns the count failed. Called when a questgiver
+## dies (characters.day_of_death written).
+func fail_quests_for_dead_questgiver(npc_id: String) -> int:
+	var rows: Array = _repo.list_live_quests_by_questgiver(npc_id, _campaign_id)
+	var count := 0
+	for row in rows:
+		var q := QuestData.from_dict(row)
+		if fail(q.id, "questgiver_dead"):
+			_log_quest_beat(q, "failed", "Quest failed: questgiver died")
+			count += 1
+	return count
+
+
+## §9.7 expiry sweep (monthly decay pass host): every available/accepted quest
+## past its expires_day transitions to expired. Returns the count expired.
+## Re-minting if the threat persists is the QuestSeeder regeneration pass's
+## job (§6.4) — this method only performs the expiry transition.
+func expire_due_quests(calendar_day: int) -> int:
+	var rows: Array = _repo.list_expired_quests(_campaign_id, calendar_day)
+	var count := 0
+	for row in rows:
+		var q := QuestData.from_dict(row)
+		if expire(q.id):
+			_log_quest_beat(q, "expired", "Quest expired")
+			count += 1
+	return count
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+func _award_xp(pc_id: String, xp: int) -> void:
+	if not _repo.has_method("get_character") or not _repo.has_method("update_character_fields"):
+		return
+	var row: Dictionary = _repo.get_character(pc_id)
+	if row.is_empty():
+		return
+	var new_xp := int(row.get("xp", 0)) + xp
+	_repo.update_character_fields(pc_id, {"xp": new_xp})
+	EventBus.xp_awarded.emit(pc_id, xp)
+
+
+## Emit a category:"quest" Unified-Log entry at a material beat (§9.3).
+func _log_quest_beat(quest: QuestData, type_key: String, summary: String) -> void:
+	EventBus.log_entry_added.emit({
+		"category": "quest",
+		"type": type_key,
+		"summary": summary,
+		"actor_id": quest.questgiver_id,
+		"target_id": quest.id,
+		"data": {"quest_id": quest.id, "threat_type": quest.threat_type},
+	})
 
 
 # ---------------------------------------------------------------------------
