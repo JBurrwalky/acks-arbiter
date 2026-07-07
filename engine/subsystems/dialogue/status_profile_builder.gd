@@ -263,18 +263,18 @@ static func _effective_score(rep, npc_id: String, scene: Dictionary) -> int:
 		return 0
 	var best := 0
 	if npc_id != "":
-		var personal := rep.get_score(ReputationEntry.SCOPE_TIER_A_NPC, npc_id)
+		var personal: int = rep.get_score(ReputationEntry.SCOPE_TIER_A_NPC, npc_id)
 		if personal == 0:
 			personal = rep.get_score(ReputationEntry.SCOPE_TIER_B_NPC, npc_id)
 		best = personal
 	var settlement_id := String(scene.get("settlement_id", ""))
 	if settlement_id != "":
-		var s := rep.get_effective_score(ReputationEntry.SCOPE_SETTLEMENT, settlement_id)
+		var s: int = rep.get_effective_score(ReputationEntry.SCOPE_SETTLEMENT, settlement_id)
 		if abs(s) > abs(best):
 			best = s
 	var domain_id := String(scene.get("domain_id", ""))
 	if domain_id != "" and settlement_id == "":
-		var d := rep.get_effective_score(ReputationEntry.SCOPE_DOMAIN, domain_id)
+		var d: int = rep.get_effective_score(ReputationEntry.SCOPE_DOMAIN, domain_id)
 		if abs(d) > abs(best):
 			best = d
 	return best

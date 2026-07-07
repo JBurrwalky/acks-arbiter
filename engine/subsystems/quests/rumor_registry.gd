@@ -227,7 +227,7 @@ func carouse_outcome(carouser_level: int, party_id: String, rng: RandomNumberGen
 		calendar_day: int, settlement_pool: Array) -> Dictionary:
 	# 60/40 split (§4.3a). randf() < 0.60 → cash.
 	if rng.randf() < 0.60:
-		var cash := (rng.randi_range(1, 12) + rng.randi_range(1, 12) + rng.randi_range(1, 12)) \
+		var cash: int = (rng.randi_range(1, 12) + rng.randi_range(1, 12) + rng.randi_range(1, 12)) \
 			* 5 * max(1, carouser_level)
 		return {"branch": "cash", "cash_gp": cash}
 	# Rumor branch: weighted draw over the eligible (non-stale) pool.
@@ -237,7 +237,7 @@ func carouse_outcome(carouser_level: int, party_id: String, rng: RandomNumberGen
 			eligible.append(r)
 	if eligible.is_empty():
 		# No rumor to give → fall back to cash so the success is never wasted.
-		var cash2 := (rng.randi_range(1, 12) + rng.randi_range(1, 12) + rng.randi_range(1, 12)) \
+		var cash2: int = (rng.randi_range(1, 12) + rng.randi_range(1, 12) + rng.randi_range(1, 12)) \
 			* 5 * max(1, carouser_level)
 		return {"branch": "cash", "cash_gp": cash2}
 	var chosen := _weighted_pick(eligible, rng)
