@@ -110,6 +110,18 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	# personal wallet), regardless of domain presence.
 	var venture_results: Array = VentureMonthlyResolver.process_campaign_month(_campaign_id)
 
+	# --- Quest-Rumor Q-3: rumor decay pass ---------------------------------
+	# §10.1 order step (2): rumor decay + invalidation runs on the monthly tick
+	# AFTER world-change resolution and BEFORE the board refresh. Batch style,
+	# no auto_pause, no LLM (the NpcSyndicateMonthlyResolver precedent). Runs
+	# EVERY month regardless of domain presence — rumors exist without domains,
+	# so this is placed ahead of the domains.is_empty() early-return below.
+	# QuestSeeder.regenerate_pass (§6.4 new/expiring quests) is a later phase;
+	# the quest-expiry sweep (QuestRegistry.expire_due_quests, Q-4) is wired by
+	# the seeder-regeneration phase alongside re-minting.
+	var rumor_registry := RumorRegistry.new(CampaignRepository, _campaign_id)
+	var rumors_decayed: int = rumor_registry.decay_pass(_campaign_id, calendar_day)
+
 	# Always reschedule for next month — commerce alone is reason enough to
 	# keep ticking.
 	var next_month_rounds: int = Timekeeping.DAYS_PER_MONTH * Timekeeping.ROUNDS_PER_DAY
@@ -131,6 +143,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			"commerce_results": commerce_results,
 			"syndicate_results": syndicate_results,
 			"venture_results": venture_results,
+			"rumors_decayed": rumors_decayed,  # Quest-Rumor Q-3
 		}
 
 	# Ruler AI Phase 2 (gdd-ruler-ai.md §3.2/§3.3/§8.4) [NEEDS-OPUS-REVIEW —
@@ -243,6 +256,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		"syndicate_results": syndicate_results,
 		"venture_results": venture_results,
 		"ruler_reports": ruler_reports,
+		"rumors_decayed": rumors_decayed,  # Quest-Rumor Q-3
 	}
 
 

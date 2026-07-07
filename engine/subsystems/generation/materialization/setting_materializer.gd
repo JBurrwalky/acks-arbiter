@@ -115,6 +115,9 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		# M2c: roads/rivers projected onto the 6-mile play map.
 		and _materialize_rivers(campaign_id, region_map_id, result)
 		and _materialize_roads(campaign_id, region_map_id, result)
+		# --- Quest-Rumor Q-2: seed → runtime quests/rumors ---------------
+		and _materialize_quests(campaign_id, region_map_id, result)
+		and _materialize_rumors(campaign_id, region_map_id, result)
 	)
 	if not content_ok:
 		errors.append("content placement failed")
@@ -1161,6 +1164,106 @@ func _materialize_pois(campaign_id: String, region_map_id: String, result: Dicti
 		placed += 1
 	result["poi_count"] = placed
 	return true
+
+
+# --- Quest-Rumor Q-2: seed → runtime quests/rumors -------------------------
+## Copy the setting_quests seed rows whose threat_hex parent is in-window onto
+## runtime `quests` rows (mechanical columns verbatim; §3.2). The seed's
+## abstract questgiver handle (qg_<settlement>) is stored in questgiver_id — the
+## full NPC materializes on approach (LOD, §6.2/§10.2). threat_hex is remapped
+## to the carrier child (3,3), matching the PoI projection. Placeholders stay
+## intact (LLM/mock fills the prose columns later).
+func _materialize_quests(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return true
+	var db = CampaignRepository.db
+	var placed := 0
+	for s in SettingRepository.list_quest_seeds(campaign_id):
+		var parent := _parse_hex_str(str(s.get("threat_hex", "")))
+		if not in_window.has("%d,%d" % [parent.x, parent.y]):
+			continue
+		var child := _carrier_child(parent.x, parent.y, 3, 3)
+		var reward = JSON.parse_string(str(s.get("reward", "{}")))
+		var reward_dict: Dictionary = reward if reward is Dictionary else {}
+		if not db.query_with_bindings("""
+			INSERT INTO quests (id, campaign_id, status, questgiver_id, questgiver_faction_id,
+				questgiver_motivation, threat_type, threat_source_id, threat_hex,
+				completion_type, completion_target_id, is_complete, title, description,
+				posting_type, posting_range, created_day)
+			VALUES (?, ?, 'available', ?, ?, '', ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 1)
+		""", [
+			str(s.get("id", "")), campaign_id, str(s.get("questgiver_npc_id", "")),
+			(null if str(s.get("questgiver_faction_id", "")).is_empty() else str(s.get("questgiver_faction_id"))),
+			str(s.get("threat_type", "")), str(s.get("threat_source_id", "")),
+			"%d,%d" % [child.x, child.y],
+			str(s.get("completion_type", "")), str(s.get("completion_target_id", "")),
+			str(s.get("title_placeholder", "")), str(s.get("description_placeholder", "")),
+			str(s.get("posting_type", "posted")), int(s.get("posting_range", 8)),
+		]):
+			result["errors"].append("quest insert failed for %s" % str(s.get("id", "")))
+			return false
+		# Companion quest_rewards row (§8 / §12): carry the frozen gold value.
+		if not db.query_with_bindings("""
+			INSERT INTO quest_rewards (id, quest_id, reward_type, gold_value,
+				total_gp_value, xp_eligible)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [
+			CampaignRepository.generate_id(), str(s.get("id", "")),
+			str(reward_dict.get("reward_type", "gold")),
+			int(reward_dict.get("gold_value", 0)), int(reward_dict.get("total_gp_value", 0)),
+			1 if bool(reward_dict.get("xp_eligible", true)) else 0,
+		]):
+			result["errors"].append("quest_reward insert failed for %s" % str(s.get("id", "")))
+			return false
+		placed += 1
+	result["quest_count"] = placed
+	return true
+
+
+## Copy setting_rumors seed rows (in-window by origin_hex, plus non-hex-keyed
+## ones) onto runtime `rumors` rows verbatim (§3.2). freshness carried through.
+func _materialize_rumors(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	var in_window := _in_window_parents(region_map_id)
+	if in_window.is_empty():
+		return true
+	var db = CampaignRepository.db
+	var placed := 0
+	for s in SettingRepository.list_rumor_seeds(campaign_id):
+		var parent := _parse_hex_str(str(s.get("origin_hex", "")))
+		if not in_window.has("%d,%d" % [parent.x, parent.y]):
+			continue
+		var child := _carrier_child(parent.x, parent.y, 3, 3)
+		var quest_fk = s.get("source_quest_id", "")
+		if not db.query_with_bindings("""
+			INSERT INTO rumors (id, campaign_id, source_type, source_id, source_quest_id,
+				content_hint, narrated_text, accuracy, accuracy_detail, knowledge_category,
+				origin_hex, settlement_range, min_npc_tier, freshness, known_to_party,
+				verified, created_day)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
+		""", [
+			str(s.get("id", "")), campaign_id, str(s.get("source_type", "")),
+			str(s.get("source_id", "")),
+			(null if str(quest_fk).is_empty() else str(quest_fk)),
+			str(s.get("content_hint", "")), str(s.get("narrated_placeholder", "")),
+			str(s.get("accuracy", "true")), str(s.get("accuracy_detail", "")),
+			str(s.get("knowledge_category", "local")),
+			"%d,%d" % [child.x, child.y],
+			int(s.get("settlement_range", 5)), str(s.get("min_npc_tier", "C")),
+			str(s.get("freshness", "current")),
+		]):
+			result["errors"].append("rumor insert failed for %s" % str(s.get("id", "")))
+			return false
+		placed += 1
+	result["rumor_count"] = placed
+	return true
+
+
+static func _parse_hex_str(hex_str: String) -> Vector2i:
+	var parts := hex_str.split(",")
+	if parts.size() != 2:
+		return Vector2i(-2147483647, -2147483647)
+	return Vector2i(int(parts[0]), int(parts[1]))
 
 
 ## Set of water (ocean/lake) 6-mile hexes on [param region_map_id], keyed "q,r". Any

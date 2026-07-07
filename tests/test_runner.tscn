@@ -18,6 +18,9 @@
 [ext_resource type="Script" path="res://tests/test_quest_registry.gd" id="510_quest_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_rumor_registry.gd" id="511_rumor_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_rumor_persistence.gd" id="512_quest_rumor_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_seeder.gd" id="520_quest_seeder_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_completion_lifecycle.gd" id="521_quest_completion_lifecycle_tests"]
+[ext_resource type="Script" path="res://tests/test_rumor_delivery.gd" id="522_rumor_delivery_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2104,3 +2107,12 @@ script = ExtResource("511_rumor_registry_tests")
 
 [node name="QuestRumorPersistenceTests" type="Node" parent="."]
 script = ExtResource("512_quest_rumor_persistence_tests")
+
+[node name="QuestSeederTests" type="Node" parent="."]
+script = ExtResource("520_quest_seeder_tests")
+
+[node name="QuestCompletionLifecycleTests" type="Node" parent="."]
+script = ExtResource("521_quest_completion_lifecycle_tests")
+
+[node name="RumorDeliveryTests" type="Node" parent="."]
+script = ExtResource("522_rumor_delivery_tests")

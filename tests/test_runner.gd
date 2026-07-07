@@ -66,6 +66,10 @@ extends Node
 @onready var _quest_registry_tests = $QuestRegistryTests
 @onready var _rumor_registry_tests = $RumorRegistryTests
 @onready var _quest_rumor_persistence_tests = $QuestRumorPersistenceTests
+# 2026-07-07 - Quest & Rumor Q-2/Q-3/Q-4 (seeder, delivery, completion/lifecycle)
+@onready var _quest_seeder_tests = $QuestSeederTests
+@onready var _quest_completion_lifecycle_tests = $QuestCompletionLifecycleTests
+@onready var _rumor_delivery_tests = $RumorDeliveryTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -1284,7 +1288,11 @@ func run() -> void:
 			_quest_rumor_shared_types_tests,
 			_quest_registry_tests,
 			_rumor_registry_tests,
-			_quest_rumor_persistence_tests]:
+			_quest_rumor_persistence_tests,
+			# 2026-07-07 — Quest & Rumor Q-2/Q-3/Q-4
+			_quest_seeder_tests,
+			_quest_completion_lifecycle_tests,
+			_rumor_delivery_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

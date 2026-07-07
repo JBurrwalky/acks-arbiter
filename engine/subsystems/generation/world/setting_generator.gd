@@ -233,6 +233,15 @@ func _run_infrastructure(ctx: Dictionary) -> bool:
 	# Wilderness POI seeds (§9.7).
 	if not SettingRepository.save_poi_seeds(campaign_id, ctx.get("sim_poi_seeds", [])):
 		return false
+	# --- Quest-Rumor Q-2: quest/rumor seed persistence ---------------------
+	# QuestSeeder (run inside InfrastructureGenerator) populated
+	# ctx["setting_quests"]/["setting_rumors"]. INSERT quests BEFORE rumors —
+	# a quest-sourced rumor carries a source_quest_id FK → setting_quests(id)
+	# (the reverse of the _DATA_TABLES DELETE order, which is children-first).
+	if not SettingRepository.save_quest_seeds(campaign_id, ctx.get("setting_quests", [])):
+		return false
+	if not SettingRepository.save_rumor_seeds(campaign_id, ctx.get("setting_rumors", [])):
+		return false
 	# Deforestation (§9.4) + territory promotions live on the hex substrate.
 	return _persist_hexes(ctx)
 

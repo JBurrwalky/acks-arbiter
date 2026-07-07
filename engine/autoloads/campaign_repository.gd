@@ -6716,6 +6716,41 @@ func list_quests_by_hex(hex: String, campaign_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+# --- Quest-Rumor Q-4: completion-watcher lookup + failure filter -----------
+## Quests matching a (completion_type, completion_target_id) pair — the
+## QuestCompletionWatcher's detection query (§9.4). Non-terminal filtering is
+## done by the watcher (it needs the full row anyway).
+func list_quests_by_completion_target(completion_type: String, target_id: String,
+		campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM quests
+		   WHERE completion_type = ? AND completion_target_id = ? AND campaign_id = ?""",
+		[completion_type, target_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+## Live (non-terminal) quests whose questgiver is a given NPC — used by the
+## §9.7 dead-questgiver failure filter (a dead giver's quests fail).
+func list_live_quests_by_questgiver(npc_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM quests
+		   WHERE questgiver_id = ? AND campaign_id = ?
+		     AND status IN ('available', 'accepted')""",
+		[npc_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+## Accepted-or-available quests past their expires_day — the §9.7 expiry sweep
+## (monthly decay pass). expires_day NULL rows never expire.
+func list_expired_quests(campaign_id: String, calendar_day: int) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM quests
+		   WHERE campaign_id = ? AND status IN ('available', 'accepted')
+		     AND expires_day IS NOT NULL AND expires_day <= ?""",
+		[campaign_id, calendar_day])
+	return db.query_result.duplicate()
+
+
 ## Columns that store SQLite NULL rather than a sentinel default when the
 ## in-memory value is the QuestData "unset" sentinel (-1 for the nullable
 ## day-int fields, "" for nullable FK-string fields).
@@ -6785,6 +6820,25 @@ func get_domain_grant(grant_id: String) -> Dictionary:
 			or db.query_result.is_empty():
 		return {}
 	return db.query_result[0]
+
+
+# --- Quest-Rumor Q-4: domain-grant vassalage seam --------------------------
+## §2.4/§9.6 domain-grant vassalage: delegates to VassalRepository so
+## QuestRegistry can create the liege↔vassal assignment through a repo seam
+## (unit-test fakes omit this method, so pure tests skip the DB write).
+func create_vassal_assignment(data: Dictionary) -> String:
+	return VassalRepository.create_assignment(data)
+
+
+# --- Quest-Rumor Q-4: domain-grant single-owner stamp ----------------------
+## §9.6 forces a single owner at turn-in — stamp it (no level gate, O-Q14).
+func set_domain_grant_owner(grant_id: String, owner_pc_id: String) -> bool:
+	var ok := db.query_with_bindings(
+		"UPDATE domain_grants SET single_owner_pc_id = ? WHERE id = ?",
+		[null if owner_pc_id == "" else owner_pc_id, grant_id])
+	if not ok:
+		push_error("CampaignRepository.set_domain_grant_owner: failed. id=%s" % grant_id)
+	return ok
 
 
 const _RUMOR_COLUMNS := [
@@ -6871,6 +6925,24 @@ func add_rumor_to_settlement_pool(rumor_id: String, settlement_id: String) -> bo
 	return db.query_with_bindings(
 		"INSERT OR IGNORE INTO rumor_settlement_pool (rumor_id, settlement_id) VALUES (?, ?)",
 		[rumor_id, settlement_id])
+
+
+# --- Quest-Rumor Q-3: rumor decay pass + quest-source invalidation ----------
+## Every `current` rumor in the campaign — the decay-pass batch input.
+func list_current_rumors(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM rumors WHERE campaign_id = ? AND freshness = 'current' ORDER BY id ASC",
+		[campaign_id])
+	return db.query_result.duplicate()
+
+
+## Rumors pointing at a given quest (source_quest_id) — §4.6 quest-source
+## invalidation when a quest leaves available/accepted.
+func list_rumors_by_quest(quest_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM rumors WHERE source_quest_id = ? AND campaign_id = ?",
+		[quest_id, campaign_id])
+	return db.query_result.duplicate()
 
 
 # ---------------------------------------------------------------------------

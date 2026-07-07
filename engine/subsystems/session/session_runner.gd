@@ -71,6 +71,8 @@ var _baseline_npc_stocker: BaselineNpcStocker = null
 ## religious_site (tier='shrine' per Q-UGS-30). Other stronghold archetypes
 ## leave registered_settlement_poi_id NULL.
 var _stronghold_poi_registrar: StrongholdPoiRegistrar = null
+# Quest-Rumor Q-4: session-scoped quest completion watcher (see load_session).
+var _quest_completion_watcher: QuestCompletionWatcher = null
 ## Long-lived WildernessHandlers instance owning ALL wilderness event handlers
 ## (Option 2 — background-party resolution, 2026-06-12; previously only the
 ## cross-state day-tick lived here and travel/encounter/activity handlers were
@@ -800,6 +802,18 @@ func load_session(campaign_id: String, party_id: String) -> void:
 		_stronghold_poi_registrar.unregister()
 	_stronghold_poi_registrar = StrongholdPoiRegistrar.new()
 	_stronghold_poi_registrar.register()
+	# --- Quest-Rumor Q-4: quest completion watcher ------------------------
+	# Signal-driven completion detection (gdd-quest-rumor-system.md §9.4):
+	# subscribes to lair_cleared/combat_ended/combatant_downed/hex_entered/
+	# poi_discovered and flips is_complete on matching runtime quests. Session-
+	# scoped like PoiEmergenceHandler; re-created per load_session.
+	if _quest_completion_watcher != null:
+		_quest_completion_watcher.unregister_listeners()
+		_quest_completion_watcher = null
+	var quest_registry := QuestRegistry.new(CampaignRepository, campaign_id)
+	_quest_completion_watcher = QuestCompletionWatcher.new(
+		quest_registry, CampaignRepository, campaign_id)
+	_quest_completion_watcher.register_listeners()
 	var has_domain_tick := false
 	for ev in _scheduler.get_all_events():
 		if ev.event_type == "domain_monthly_tick":

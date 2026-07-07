@@ -82,7 +82,7 @@ func run(ctx: Dictionary) -> bool:
 	# already covers strongholds; the sim's parallel fort layer was redundant. Roads-only.
 	# §9.7 runs AFTER deforestation so POI placement reads the final biomes.
 	ctx["sim_poi_seeds"] = PoiGenerator.new().run(ctx)
-	_seed_quests_DEFERRED(ctx)
+	_seed_quests(ctx)
 	return true
 
 
@@ -112,9 +112,17 @@ func run(ctx: Dictionary) -> bool:
 ##    origin_hex, settlement_range, freshness, source_quest_id). Layer 7 LLM
 ##    fills the narrative text; all mechanical facts are frozen here.
 ##  - Determinism: WorldGenRng.stream(seed, "quest"/"rumor", 0, entity_id).
-## See coding_conventions §83 and project memory project_setting_generation_build.
-func _seed_quests_DEFERRED(_ctx: Dictionary) -> void:
-	pass
+# --- Quest-Rumor Q-2: questgiver minting + seeding -------------------------
+## §9.8 quest/rumor seeding — LANDED (Q-2, gdd-quest-rumor-system.md §6/§3.2).
+## Replaces the parked no-op: mints questgivers (abstract at setting-gen, full
+## NPCs on approach — §6.2/§10.2 LOD), scans threats (dungeons/lairs/events +
+## PoI rumor seeds), rolls the density gate, values rewards via RewardValuator,
+## and writes ctx["setting_quests"]/ctx["setting_rumors"] (persisted by
+## setting_generator._run_infrastructure via SettingRepository.save_quest_seeds/
+## save_rumor_seeds). Determinism: QuestSeeder routes every roll through
+## WorldGenRng.stream (§3.3). See gdd-quest-rumor-system.md Appendix C.
+func _seed_quests(ctx: Dictionary) -> void:
+	QuestSeeder.seed(ctx)
 
 
 # --- §9.1 settlement stocking (rank-size model, regrounded 2026-06-14) --------
