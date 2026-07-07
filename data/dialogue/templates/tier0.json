@@ -84,6 +84,83 @@
       "default": {
         "any": "{npc_name} nods a curt goodbye."
       }
+    },
+    "ask_question": {
+      "disclosed": {
+        "any": "{npc_name} tells {speaker_name} what they know: \"{knowledge_fact}\""
+      },
+      "no_knowledge": {
+        "any": "{npc_name} spreads their hands. \"On that, I can't help you.\""
+      },
+      "not_trusted": {
+        "any": "{npc_name} shakes their head. \"I don't know you well enough to speak of that.\""
+      },
+      "wants_payment": {
+        "any": "{npc_name} rubs thumb and fingers together. \"Knowledge like that has a price.\""
+      },
+      "refused": {
+        "any": "{npc_name}'s mouth sets in a line. \"I'll not speak of it.\""
+      },
+      "default": {
+        "any": "{npc_name} considers the question."
+      }
+    },
+    "offer_bribe": {
+      "bribed": {
+        "any": "{npc_name} pockets the coin, manner easing. \"Well — since you ask so kindly.\""
+      },
+      "default": {
+        "any": "{npc_name} eyes the offered purse."
+      }
+    },
+    "offer_terms": {
+      "terms": {
+        "any": "{npc_name} weighs the revised terms."
+      },
+      "default": {
+        "any": "{npc_name} considers the terms {speaker_name} lays out."
+      }
+    },
+    "offer_hire_henchman": {
+      "accept_elan": {
+        "any": "{npc_name} grins and clasps {speaker_name}'s hand. \"Aye — gladly! When do we ride?\""
+      },
+      "accept": {
+        "any": "{npc_name} nods. \"Your terms suit me. I'll take service.\""
+      },
+      "try_again": {
+        "any": "{npc_name} hesitates. \"Sweeten the deal and we'll talk.\""
+      },
+      "refuse": {
+        "any": "{npc_name} shakes their head. \"Not on those terms.\""
+      },
+      "refuse_slander": {
+        "any": "{npc_name} sneers and turns away. \"I'd not serve the likes of you — and I'll say as much to any who ask.\""
+      },
+      "default": {
+        "any": "{npc_name} weighs the offer of service."
+      }
+    },
+    "offer_hire_specialist": {
+      "accept_elan": {"any": "{npc_name} beams. \"An excellent arrangement. I accept.\""},
+      "accept": {"any": "{npc_name} inclines their head. \"Agreed. My services are yours.\""},
+      "try_again": {"any": "{npc_name} purses their lips. \"The fee will need to be higher.\""},
+      "refuse": {"any": "{npc_name} declines. \"I cannot take this on.\""},
+      "refuse_slander": {"any": "{npc_name} bristles. \"I'll not work for you — and others will hear why.\""},
+      "default": {"any": "{npc_name} considers the commission."}
+    },
+    "offer_hire_mercenary": {
+      "accept_elan": {"any": "{npc_name} the captain slaps the table. \"My company's yours — and glad of the work!\""},
+      "accept": {"any": "{npc_name} the captain nods. \"We'll take your coin and your contract.\""},
+      "try_again": {"any": "{npc_name} the captain folds their arms. \"My lads won't march for that. Better terms.\""},
+      "refuse": {"any": "{npc_name} the captain declines the contract."},
+      "refuse_slander": {"any": "{npc_name} spits. \"We don't soldier for the likes of you.\""},
+      "default": {"any": "{npc_name} the captain considers the contract."}
+    },
+    "gather_information": {
+      "default": {
+        "any": "{speaker_name} makes the rounds, listening for word worth having."
+      }
     }
   },
   "fallback": "{npc_name} responds."

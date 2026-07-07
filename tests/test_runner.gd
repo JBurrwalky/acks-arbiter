@@ -60,6 +60,8 @@ extends Node
 @onready var _faction_ff1_ledger_drift_tests = $FactionFF1LedgerDriftTests
 # 2026-07-07 - NPC Dialogue Phase 1 ("The Spine"): session/catalog/adjudicator/memory + exit test
 @onready var _dialogue_phase1_tests = $DialoguePhase1Tests
+# 2026-07-07 - NPC Dialogue Phase 2 ("Transactions"): status profile/ask_question/offer moves/hiring/slander/gather + exit test
+@onready var _dialogue_phase2_tests = $DialoguePhase2Tests
 # 2026-07-07 - Quest & Rumor Q-1 (schema, registries, RewardValuator)
 @onready var _reward_valuator_tests = $RewardValuatorTests
 @onready var _quest_rumor_shared_types_tests = $QuestRumorSharedTypesTests
@@ -1279,6 +1281,8 @@ func run() -> void:
 			_faction_ff1_ledger_drift_tests,
 			# 2026-07-07 — NPC Dialogue Phase 1 ("The Spine")
 			_dialogue_phase1_tests,
+			# 2026-07-07 — NPC Dialogue Phase 2 ("Transactions")
+			_dialogue_phase2_tests,
 			# 2026-07-07 — Quest & Rumor Q-1 (schema, registries, RewardValuator)
 			_reward_valuator_tests,
 			_quest_rumor_shared_types_tests,

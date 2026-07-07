@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://tests/test_quest_registry.gd" id="510_quest_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_rumor_registry.gd" id="511_rumor_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_rumor_persistence.gd" id="512_quest_rumor_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_phase2.gd" id="520_dialogue_phase2_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2104,3 +2105,6 @@ script = ExtResource("511_rumor_registry_tests")
 
 [node name="QuestRumorPersistenceTests" type="Node" parent="."]
 script = ExtResource("512_quest_rumor_persistence_tests")
+
+[node name="DialoguePhase2Tests" type="Node" parent="."]
+script = ExtResource("520_dialogue_phase2_tests")

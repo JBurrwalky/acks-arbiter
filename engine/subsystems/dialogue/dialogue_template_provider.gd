@@ -50,6 +50,8 @@ func render(plan: Dictionary, slots: Dictionary = {}) -> String:
 		"speaker_name": slots.get("speaker_name", "you"),
 		"new_attitude": attitude,
 		"rumor_text": plan.get("rumor_text", "something half-remembered"),
+		# --- Dialogue Phase 2 ---
+		"knowledge_fact": plan.get("knowledge_fact", "what they know"),
 	}
 	return _fill(tmpl, fills)
 
